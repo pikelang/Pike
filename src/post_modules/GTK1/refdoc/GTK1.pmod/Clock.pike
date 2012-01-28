@@ -11,23 +11,23 @@
 //! 
 //! Note, however, that the accuracy of the gtkclock widget is limited
 //! to 1 second.
-//!@expr{ GTK.Clock( GTK.ClockRealtime );@}
-//!@xml{<image>../images/gtk_clock.png</image>@}
+//!@expr{ GTK1.Clock( GTK1.ClockRealtime );@}
+//!@xml{<image>../images/gtk1_clock.png</image>@}
 //!
-//!@expr{ GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();@}
-//!@xml{<image>../images/gtk_clock_2.png</image>@}
+//!@expr{ GTK1.Clock( GTK1.ClockDecreasing )->set_seconds(10000)->start();@}
+//!@xml{<image>../images/gtk1_clock_2.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Label;
+inherit GTK1.Label;
 
-static GTK.Clock create( int type );
+protected GTK1.Clock create( int type );
 //! type is one of @[CLOCK_DECREASING], @[CLOCK_INCREASING] and @[CLOCK_REALTIME];
 //!
 //!
 
-GTK.Clock set_format( string fmt );
+GTK1.Clock set_format( string fmt );
 //! Set the format of a GtkClock widget. The syntax of the format
 //! string is identical to that of the function strftime(3). Further
 //! information about time format strings can be found on this man
@@ -36,14 +36,14 @@ GTK.Clock set_format( string fmt );
 //!
 //!
 
-GTK.Clock set_seconds( int seconds );
+GTK1.Clock set_seconds( int seconds );
 //! Set the current time as displayed by the clock in count-up and
 //! count-down modes. This function has no effect in realtime mode, as
 //! the clock time is determined by the system clock in realtime mode.
 //!
 //!
 
-GTK.Clock set_update_interval( int seconds );
+GTK1.Clock set_update_interval( int seconds );
 //! Set the interval at which the GtkClock widget is updated. The
 //! seconds parameter is used to determine how often the time shown on
 //! the widget is updated. The default value is to update every second,
@@ -52,7 +52,7 @@ GTK.Clock set_update_interval( int seconds );
 //!
 //!
 
-GTK.Clock start( );
+GTK1.Clock start( );
 //! Start the clock counting in count-up or count-down modes. The clock
 //! will begin counting up or down from the time when this function is
 //! called, until gtk_clock_stop is called. This function has no effect
@@ -60,7 +60,7 @@ GTK.Clock start( );
 //!
 //!
 
-GTK.Clock stop( );
+GTK1.Clock stop( );
 //! Stop the clock counting in count-up or count-down modes. The clock
 //! ceases counting up or down, and the last time reached remains on
 //! the display. This function has no effect in the realtime mode (you

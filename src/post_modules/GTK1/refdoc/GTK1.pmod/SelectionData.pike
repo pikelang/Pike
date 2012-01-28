@@ -24,23 +24,23 @@ int length( );
 //!
 //!
 
-GDK.Atom selection( );
+GDK1.Atom selection( );
 //! The selection id, as a GDK(Atom).
 //!
 //!
 
-GTK.SelectionData set( string data );
+GTK1.SelectionData set( string data );
 //!  Store new data into a GtkSelectionData object. Should _only_ by
 //!  called from a selection handler callback.
 //!
 //!
 
-GDK.Atom target( );
+GDK1.Atom target( );
 //! The target, as a GDK(Atom).
 //!
 //!
 
-GDK.Atom type( );
+GDK1.Atom type( );
 //! The selection type, as a GDK(Atom).
 //!
 //!

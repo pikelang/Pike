@@ -9,19 +9,19 @@
 //! @b{toggle@}
 //!
 
-inherit GTK.Bin;
+inherit GTK1.Bin;
 
-GTK.Item deselect( );
+GTK1.Item deselect( );
 //! Emulate a 'deselect' event.
 //!
 //!
 
-GTK.Item select( );
+GTK1.Item select( );
 //! Emulate a 'select' event.
 //!
 //!
 
-GTK.Item toggle( );
+GTK1.Item toggle( );
 //! Emulate a 'toggle' event.
 //!
 //!

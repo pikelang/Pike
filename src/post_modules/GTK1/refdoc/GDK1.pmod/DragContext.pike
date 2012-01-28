@@ -6,45 +6,45 @@
 //!
 //!
 
-GDK.DragContext drag_abort( int time );
+GDK1.DragContext drag_abort( int time );
 //! Abort the drag
 //!
 //!
 
-GDK.DragContext drag_drop( int time );
+GDK1.DragContext drag_drop( int time );
 //!
 
-GDK.DragContext drag_finish( int success, int del, int time );
+GDK1.DragContext drag_finish( int success, int del, int time );
 //! If success is true, the drag succeded.
 //! If del is true, the source should be deleted.
 //! time is the current time.
 //!
 //!
 
-GDK.DragContext drag_set_icon_default( );
+GDK1.DragContext drag_set_icon_default( );
 //! Use the default drag icon associated with the source widget.
 //!
 //!
 
-GDK.DragContext drag_set_icon_pixmap( GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y );
+GDK1.DragContext drag_set_icon_pixmap( GDK1.Pixmap p, GDK1.Bitmap b, int hot_x, int hot_y );
 //! Set the drag pixmap, and optionally mask.
 //! The hot_x and hot_y coordinates will be the location of the mouse pointer,
 //! relative to the upper left corner of the pixmap.
 //!
 //!
 
-GDK.DragContext drag_set_icon_widget( GTK.Widget widget, int hot_x, int hot_y );
+GDK1.DragContext drag_set_icon_widget( GTK1.Widget widget, int hot_x, int hot_y );
 //! Set the drag widget. This is a widget that will be shown, and then
 //! dragged around by the user during this drag.
 //!
 //!
 
-GDK.DragContext drag_status( int action, int time );
+GDK1.DragContext drag_status( int action, int time );
 //! Setting action to -1 means use the suggested action
 //!
 //!
 
-GDK.DragContext drop_reply( int ok, int time );
+GDK1.DragContext drop_reply( int ok, int time );
 //!
 
 int get_action( );
@@ -67,7 +67,7 @@ int get_protocol( );
 //!
 //!
 
-GTK.Widget get_source_widget( );
+GTK1.Widget get_source_widget( );
 //! Return the drag source widget.
 //!
 //!

@@ -1,5 +1,5 @@
-//! The GTK.HScale widget is used to allow the user to select a value
-//! using a horizontal slider. A GTK.Adjustment is used to set the
+//! The GTK1.HScale widget is used to allow the user to select a value
+//! using a horizontal slider. A GTK1.Adjustment is used to set the
 //! initial value, the lower and upper bounds, and the step and page
 //! increments.
 //! 
@@ -9,15 +9,15 @@
 //! places shown can be set using the parent W(Scale) class's
 //! functions.
 //! 
-//!@expr{ GTK.Hscale(GTK.Adjustment())->set_usize(300,30)@}
-//!@xml{<image>../images/gtk_hscale.png</image>@}
+//!@expr{ GTK1.Hscale(GTK1.Adjustment())->set_usize(300,30)@}
+//!@xml{<image>../images/gtk1_hscale.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Scale;
+inherit GTK1.Scale;
 
-static GTK.Hscale create( GTK.Adjustment settings );
+protected GTK1.Hscale create( GTK1.Adjustment settings );
 //! Used to create a new hscale widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. 

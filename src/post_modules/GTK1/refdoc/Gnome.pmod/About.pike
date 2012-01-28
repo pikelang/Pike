@@ -13,7 +13,7 @@
 
 inherit Gnome.Dialog;
 
-static Gnome.About create( string title, string version, string copyright, array authors, string comment, string|void logo );
+protected Gnome.About create( string title, string version, string copyright, array authors, string comment, string|void logo );
 //! Creates a new GNOME About dialog. title, version, copyright, and
 //! authors are displayed first, in that order. comments is typically
 //! the location for multiple lines of text, if necessary. (Separate

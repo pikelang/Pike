@@ -8,31 +8,31 @@
 //! The combo box has two principal parts that you as the programmer
 //! really care about: The W(entry) and the W(list).
 //! 
-//!@expr{ GTK.Combo()@}
-//!@xml{<image>../images/gtk_combo.png</image>@}
+//!@expr{ GTK1.Combo()@}
+//!@xml{<image>../images/gtk1_combo.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 
-static GTK.Combo create( );
+protected GTK1.Combo create( );
 //! Create a new combo box
 //!
 //!
 
-GTK.Combo disable_activate( );
+GTK1.Combo disable_activate( );
 //! This will disable the 'activate' signal for the entry widget in the
 //! combo box.
 //!
 //!
 
-GTK.Entry get_entry( );
+GTK1.Entry get_entry( );
 //! The entry widget
 //!
 //!
 
-GTK.Combo set_case_sensitive( int sensitivep );
+GTK1.Combo set_case_sensitive( int sensitivep );
 //! set_case_sensitive() toggles whether or not GTK searches for
 //! entries in a case sensitive manner. This is used when the Combo
 //! widget is asked to find a value from the list using the current
@@ -42,21 +42,21 @@ GTK.Combo set_case_sensitive( int sensitivep );
 //! current entry if the user presses the key combination MOD-1 and
 //! "Tab". MOD-1 is often mapped to the "Alt" key, by the xmodmap
 //! utility. Note, however that some window managers also use this key
-//! combination, which will override its use within GTK.
+//! combination, which will override its use within GTK1.
 //!
 //!
 
-GTK.Combo set_item_string( GTK.Item item, string text );
+GTK1.Combo set_item_string( GTK1.Item item, string text );
 //! The item is one of the ones in the list subwidget.
 //!
 //!
 
-GTK.Combo set_popdown_strings( array strings );
+GTK1.Combo set_popdown_strings( array strings );
 //! Set the values in the popdown list.
 //!
 //!
 
-GTK.Combo set_use_arrows( int use_arrows );
+GTK1.Combo set_use_arrows( int use_arrows );
 //! set_use_arrows() lets the user change the value in the entry using
 //! the up/down arrow keys. This doesn't bring up the list, but rather
 //! replaces the current text in the entry with the next list entry (up
@@ -70,7 +70,7 @@ GTK.Combo set_use_arrows( int use_arrows );
 //!
 //!
 
-GTK.Combo set_use_arrows_always( int always_arrows );
+GTK1.Combo set_use_arrows_always( int always_arrows );
 //! set_use_arrows_always() allows the use the the up/down arrow keys
 //! to cycle through the choices in the dropdown list, just as with
 //! set_use_arrows, but it wraps around the values in the list,
@@ -79,7 +79,7 @@ GTK.Combo set_use_arrows_always( int always_arrows );
 //!
 //!
 
-GTK.Combo set_value_in_list( int value_must_be_in_list, int ok_if_empty );
+GTK1.Combo set_value_in_list( int value_must_be_in_list, int ok_if_empty );
 //! If value_must_be_in_list is true, the user will not be able to
 //! enter any value that is not in the list. If ok_if_empty is true,
 //! empty values are possible as well as the values in the list.

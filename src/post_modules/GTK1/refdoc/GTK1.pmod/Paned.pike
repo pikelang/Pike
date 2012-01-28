@@ -1,4 +1,4 @@
-//! GTK.Paned is the base class for widgets with two panes, arranged
+//! GTK1.Paned is the base class for widgets with two panes, arranged
 //! either horizontally (W(HPaned)) or vertically (W(VPaned)). Child
 //! widgets are added to the panes of the widget with pack1() and
 //! pack2(). The division beween the two children is set by default
@@ -10,11 +10,11 @@
 //! does not draw any relief around the children or around the
 //! separator. (The space in which the separator is called the
 //! gutter). Often, it is useful to put each child inside a W(Frame)
-//! with the shadow type set to GTK.ShadowIn so that the gutter
+//! with the shadow type set to GTK1.ShadowIn so that the gutter
 //! appears as a ridge.
 //! 
 //! Each child has two options that can be set, resize and shrink. If
-//! resize is true, then when the GTK.Paned is resized, that child will
+//! resize is true, then when the GTK1.Paned is resized, that child will
 //! expand or shrink along with the paned widget. If shrink is true,
 //! then when that child can be made smaller than it's requisition by
 //! the user. Setting shrink to 0 allows the application to set a
@@ -27,15 +27,15 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-GTK.Paned add1( GTK.Widget left_or_top );
+GTK1.Paned add1( GTK1.Widget left_or_top );
 //! Set the left or topmost item.
 //! This is equivalent to pack1(left_or_top,0,1)
 //!
 //!
 
-GTK.Paned add2( GTK.Widget right_or_bottom );
+GTK1.Paned add2( GTK1.Widget right_or_bottom );
 //! Set the right or bottommost item
 //! This is equivalent to pack2(left_or_top,0,1)
 //!
@@ -71,27 +71,27 @@ int get_min_position( );
 //!
 //!
 
-GTK.Paned pack1( GTK.Widget widget, int resize, int shrink );
+GTK1.Paned pack1( GTK1.Widget widget, int resize, int shrink );
 //! Add a child to the top or left pane.
 //!
 //!
 
-GTK.Paned pack2( GTK.Widget widget, int resize, int shrink );
+GTK1.Paned pack2( GTK1.Widget widget, int resize, int shrink );
 //! Add a child to the bottom or right pane.
 //!
 //!
 
-GTK.Paned set_gutter_size( int gsize );
+GTK1.Paned set_gutter_size( int gsize );
 //! Set the width of the gutter. (The area between the two panes).
 //!
 //!
 
-GTK.Paned set_handle_size( int hsize );
+GTK1.Paned set_handle_size( int hsize );
 //! The size of the handle in pixels
 //!
 //!
 
-GTK.Paned set_position( int position );
+GTK1.Paned set_position( int position );
 //! Set the position of the separator, as if set by the user. If
 //! position is negative, the remembered position is forgotten, and
 //! the division is recomputed from the the requisitions of the

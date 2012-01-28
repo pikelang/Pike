@@ -4,17 +4,17 @@
 
 inherit Gnome.DruidPage;
 
-static Gnome.DruidPageFinish create( );
+protected Gnome.DruidPageFinish create( );
 //! Creates a new Gnome.DruidPageStandard widget.
 //!
 //!
 
-Gnome.DruidPageFinish set_bg_color( GDK.Color color );
+Gnome.DruidPageFinish set_bg_color( GDK1.Color color );
 //! This will set the background color to be the specified color.
 //!
 //!
 
-Gnome.DruidPageFinish set_logo_bg_color( GDK.Color color );
+Gnome.DruidPageFinish set_logo_bg_color( GDK1.Color color );
 //! This will set the background color of the logo
 //!
 //!
@@ -24,12 +24,12 @@ Gnome.DruidPageFinish set_text( string text );
 //!
 //!
 
-Gnome.DruidPageFinish set_text_color( GDK.Color color );
+Gnome.DruidPageFinish set_text_color( GDK1.Color color );
 //! Set the text color
 //!
 //!
 
-Gnome.DruidPageFinish set_textbox_color( GDK.Color color );
+Gnome.DruidPageFinish set_textbox_color( GDK1.Color color );
 //! This will set the textbox color to be the specified color.
 //!
 //!
@@ -39,7 +39,7 @@ Gnome.DruidPageFinish set_title( string title );
 //!
 //!
 
-Gnome.DruidPageFinish set_title_color( GDK.Color color );
+Gnome.DruidPageFinish set_title_color( GDK1.Color color );
 //! Set the title color
 //!
 //!

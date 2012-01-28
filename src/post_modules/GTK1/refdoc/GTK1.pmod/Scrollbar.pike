@@ -7,5 +7,5 @@
 //!
 //!
 
-inherit GTK.Range;
+inherit GTK1.Range;
 

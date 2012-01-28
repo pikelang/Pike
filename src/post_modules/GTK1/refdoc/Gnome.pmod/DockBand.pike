@@ -10,19 +10,19 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
 int append( Gnome.DockItem child, int offset );
 //! Add child to the band with the specified offset as the last element.
 //!
 //!
 
-static Gnome.DockBand create( );
+protected Gnome.DockBand create( );
 //! Create a new Gnome.DockBand widget.
 //!
 //!
 
-int get_child_offset( GTK.Widget child );
+int get_child_offset( GTK1.Widget child );
 //! Retrieve the offset of the child
 //!
 //!
@@ -57,7 +57,7 @@ int prepend( Gnome.DockItem child, int offset );
 //!
 //!
 
-Gnome.DockBand set_child_offset( GTK.Widget child, int offset );
+Gnome.DockBand set_child_offset( GTK1.Widget child, int offset );
 //! Set the offset for the specified child of the band.
 //!
 //!

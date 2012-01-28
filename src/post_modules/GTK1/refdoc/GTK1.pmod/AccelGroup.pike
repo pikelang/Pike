@@ -5,9 +5,9 @@
 //!
 //!
 
-inherit GTK.Data;
+inherit GTK1.Data;
 
-GTK.AccelGroup add_accel( GTK.Widget widget, string signal, int key, int modifiers, int flags );
+GTK1.AccelGroup add_accel( GTK1.Widget widget, string signal, int key, int modifiers, int flags );
 //! the widget is the one in which the signal specified by 'signal'
 //! recides.
 //! 
@@ -17,15 +17,15 @@ GTK.AccelGroup add_accel( GTK.Widget widget, string signal, int key, int modifie
 //!
 //!
 
-static GTK.AccelGroup create( );
+protected GTK1.AccelGroup create( );
 //! Create a new accelerator group
 //!
 //!
 
-GTK.AccelGroup destroy( );
+GTK1.AccelGroup destroy( );
 //!
 
-GTK.AccelGroup remove( GTK.Widget widget, int key, int modifiers );
+GTK1.AccelGroup remove( GTK1.Widget widget, int key, int modifiers );
 //! Remove all bindings for the specified key/mask in the specified object.
 //!
 //!

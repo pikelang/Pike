@@ -2,7 +2,7 @@
 //!
 //!
 
-GTK.CTreeNode get_children( );
+GTK1.CTreeNode get_children( );
 //! Return the first child
 //!
 //!
@@ -22,7 +22,7 @@ int get_level( );
 //!
 //!
 
-GTK.CTreeNode get_parent( );
+GTK1.CTreeNode get_parent( );
 //! Return the parent node of this node
 //!
 //!

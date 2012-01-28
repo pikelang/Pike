@@ -14,9 +14,9 @@
 //!
 //!
 
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 
-static Gnome.FileEntry create( string history_id, string browse_dialog_title );
+protected Gnome.FileEntry create( string history_id, string browse_dialog_title );
 //! Creates a new Gnome.FileEntry widget.
 //!
 //!
@@ -38,7 +38,7 @@ Gnome.Entry gnome_entry( );
 //!
 //!
 
-GTK.Entry gtk_entry( );
+GTK1.Entry gtk_entry( );
 //! Get the W(Entry) component of the widget for lower-level
 //! manipulation.
 //!

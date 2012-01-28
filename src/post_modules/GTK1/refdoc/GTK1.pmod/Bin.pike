@@ -2,9 +2,9 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-GTK.Widget get_child( );
+GTK1.Widget get_child( );
 //! Returns the (one and only) child of this container.
 //!
 //!

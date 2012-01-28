@@ -32,7 +32,7 @@
 //! @b{layout_changed@}
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
 Gnome.Dock add_floating_item( Gnome.DockItem item, int x, int y, int orientation );
 //! Add item to dock and make it floating at the specified (x, y)
@@ -53,16 +53,16 @@ Gnome.Dock add_item( Gnome.DockItem item, int placement, int band_num, int posit
 Gnome.Dock allow_floating_items( int allow );
 //!
 
-static Gnome.Dock create( );
+protected Gnome.Dock create( );
 //!
 
-GTK.Widget get_client_area( );
+GTK1.Widget get_client_area( );
 //!
 
 Gnome.DockItem get_item_by_name( string name );
 //!
 
-Gnome.Dock set_client_area( GTK.Widget area );
+Gnome.Dock set_client_area( GTK1.Widget area );
 //!  Specify a widget for the dock's client area.
 //!
 //!

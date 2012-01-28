@@ -9,11 +9,11 @@
 //! context it is in. Messages are stacked in last-in-first-out order,
 //! not context identifier order.
 //!  
-//!@expr{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()@}
-//!@xml{<image>../images/gtk_statusbar.png</image>@}
+//!@expr{ lambda() {object sb = GTK1.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()@}
+//!@xml{<image>../images/gtk1_statusbar.png</image>@}
 //!
-//!@expr{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()@}
-//!@xml{<image>../images/gtk_statusbar_2.png</image>@}
+//!@expr{ lambda() {object sb = GTK1.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()@}
+//!@xml{<image>../images/gtk1_statusbar_2.png</image>@}
 //!
 //! 
 //!
@@ -24,9 +24,9 @@
 //! @b{text_pushed@}
 //!
 
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 
-static GTK.Statusbar create( );
+protected GTK1.Statusbar create( );
 //! Create a new statusbar widget
 //!
 //!
@@ -38,7 +38,7 @@ int get_context_id( string context );
 //!
 //!
 
-GTK.Statusbar pop( int context );
+GTK1.Statusbar pop( int context );
 //! Remove the topmost message.
 //!
 //!
@@ -49,7 +49,7 @@ int push( int context, string data );
 //!
 //!
 
-GTK.Statusbar remove( int context, int id );
+GTK1.Statusbar remove( int context, int id );
 //! Remove the specified message (the message id is the second argument).
 //!
 //!

@@ -6,12 +6,12 @@
 //! it isn't present, and shows it otherwise.
 //! 
 //! @pre{
-//! GTK.InputDialog inputd;
+//! GTK1.InputDialog inputd;
 //! void create_input_dialog ()
 //! {
 //!   if (!inputd)
 //!   {
-//!     inputd = GTK.InputDialog();
+//!     inputd = GTK1.InputDialog();
 //!     inputd-&gt;close_button()-&gt;signal_connect("clicked",inputd-&gt;hide, 0);
 //!     inputd-&gt;save_button()-&gt;hide();
 //!     inputd-&gt;show();
@@ -20,8 +20,8 @@
 //!     inputd-&gt;show();
 //! }
 //! @}
-//!@expr{ GTK.InputDialog()@}
-//!@xml{<image>../images/gtk_inputdialog.png</image>@}
+//!@expr{ GTK1.InputDialog()@}
+//!@xml{<image>../images/gtk1_inputdialog.png</image>@}
 //!
 //!
 //!
@@ -35,19 +35,19 @@
 //!
 //!
 
-inherit GTK.Dialog;
+inherit GTK1.Dialog;
 
-static GTK.InputDialog create( );
+protected GTK1.InputDialog create( );
 //! Create a new input dialog window.
 //!
 //!
 
-GTK.Button get_close_button( );
+GTK1.Button get_close_button( );
 //! The 'close' button of the dialog.
 //!
 //!
 
-GTK.Button get_save_button( );
+GTK1.Button get_save_button( );
 //! The 'save' button of the dialog.
 //!
 //!

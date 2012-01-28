@@ -1,15 +1,15 @@
 //! A horizontal scrollbar.
 //! General documentation: See W(Scrollbar)
-//!@expr{ GTK.Hscrollbar(GTK.Adjustment())->set_usize(300,15)@}
-//!@xml{<image>../images/gtk_hscrollbar.png</image>@}
+//!@expr{ GTK1.Hscrollbar(GTK1.Adjustment())->set_usize(300,15)@}
+//!@xml{<image>../images/gtk1_hscrollbar.png</image>@}
 //!
 //!
 //!
 //!
 
-inherit GTK.Scrollbar;
+inherit GTK1.Scrollbar;
 
-static GTK.Hscrollbar create( GTK.Adjustment adjustment );
+protected GTK1.Hscrollbar create( GTK1.Adjustment adjustment );
 //! Used to create a new vscale widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. Specifying 0 might

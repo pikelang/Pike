@@ -27,21 +27,21 @@
 //! The argument order for the W(Adjustment) constructor is:
 //! value, lower, upper, step_increment, page_increment, page_size
 //!
-//!@expr{ GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)@}
-//!@xml{<image>../images/gtk_spinbutton.png</image>@}
+//!@expr{ GTK1.SpinButton( GTK1.Adjustment(),0.1, 1 )->set_usize(60,20)@}
+//!@xml{<image>../images/gtk1_spinbutton.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Entry;
+inherit GTK1.Entry;
 
-GTK.SpinButton configure( GTK.Adjustment range, float climb_rate, int precision );
+GTK1.SpinButton configure( GTK1.Adjustment range, float climb_rate, int precision );
 //! Adjustment (with the lower/upper/increse values), climb_rate and digits
 //!
 //!
 
-static GTK.SpinButton create( GTK.Adjustment range, float climb_rate, int precision );
+protected GTK1.SpinButton create( GTK1.Adjustment range, float climb_rate, int precision );
 //!  The climb_rate argument take a value between 0.0 and 1.0 and
 //!  indicates the amount of acceleration that the Spin Button has. The
 //!  digits argument specifies the number of decimal places to which
@@ -92,90 +92,90 @@ int get_wrap( );
 //!
 //!
 
-GTK.SpinButton set_adjustment( GTK.Adjustment range );
+GTK1.SpinButton set_adjustment( GTK1.Adjustment range );
 //! Set a new adjustment.
 //!
 //!
 
-GTK.SpinButton set_digits( int precision );
+GTK1.SpinButton set_digits( int precision );
 //! Set the number of digits to show to the user.
 //!
 //!
 
-GTK.SpinButton set_numeric( int numericp );
+GTK1.SpinButton set_numeric( int numericp );
 //! If true, it is a numeric value.  This prevents a user from typing
 //! anything other than numeric values into the text box of a Spin
 //! Button
 //!
 //!
 
-GTK.SpinButton set_shadow_type( int type );
+GTK1.SpinButton set_shadow_type( int type );
 //! Type is one of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
-GTK.SpinButton set_snap_to_ticks( int snapp );
+GTK1.SpinButton set_snap_to_ticks( int snapp );
 //! Set the Spin Button to round the value to the nearest
 //! step_increment, which is set within the Adjustment object used with
 //! the Spin Button
 //!
 //!
 
-GTK.SpinButton set_update_policy( int policy );
-//! The possible values of policy are either GTK.UpdateAlways or
-//! GTK.UpdateIfValid.
+GTK1.SpinButton set_update_policy( int policy );
+//! The possible values of policy are either GTK1.UpdateAlways or
+//! GTK1.UpdateIfValid.
 //! 
 //! These policies affect the behavior of a Spin Button when parsing
 //! inserted text and syncing its value with the values of the
 //! Adjustment.
 //! 
-//! In the case of GTK.UpdateIfValid the Spin Button value only gets
+//! In the case of GTK1.UpdateIfValid the Spin Button value only gets
 //! changed if the text input is a numeric value that is within the
 //! range specified by the Adjustment. Otherwise the text is reset
 //! to the current value.
 //! 
-//! In case of GTK.UpdateAlways errors are ignored while converting text
+//! In case of GTK1.UpdateAlways errors are ignored while converting text
 //! into a numeric value.
 //!
 //!
 
-GTK.SpinButton set_value( float to );
+GTK1.SpinButton set_value( float to );
 //! Set the value.
 //!
 //!
 
-GTK.SpinButton set_wrap( int wrapp );
+GTK1.SpinButton set_wrap( int wrapp );
 //! If true, the spin button will wrap from the lowest to the highest
 //! value, and the highest to the lowest.
 //!
 //!
 
-GTK.SpinButton spin( int direction, float increment );
+GTK1.SpinButton spin( int direction, float increment );
 //! If you want to alter the value of a Spin Value relative to its
 //! current value, then this ffunction can be used.
 //! 
 //! The direction paramenter is one of @[SPIN_END], @[SPIN_HOME], @[SPIN_PAGE_BACKWARD], @[SPIN_PAGE_FORWARD], @[SPIN_STEP_BACKWARD], @[SPIN_STEP_FORWARD] and @[SPIN_USER_DEFINED]
 //! 
-//!  GTK.SpinStepForward and GTK.SpinStepBackward change the value
+//!  GTK1.SpinStepForward and GTK1.SpinStepBackward change the value
 //!  of the Spin Button by the amount specified by increment, unless
 //!  increment is equal to 0, in which case the value is changed by the
 //!  value of step_increment in theAdjustment.
 //! 
-//! GTK.SpinPageForward and GTK.SpinPageBackward simply alter the
+//! GTK1.SpinPageForward and GTK1.SpinPageBackward simply alter the
 //! value of the Spin Button by increment.
 //! 
-//! GTK.SpinHome sets the value of the Spin Button to the bottom of the
+//! GTK1.SpinHome sets the value of the Spin Button to the bottom of the
 //! Adjustments range.
 //! 
-//! GTK.SpinEnd sets the value of the Spin Button to the top of the
+//! GTK1.SpinEnd sets the value of the Spin Button to the top of the
 //! Adjustments range.
 //! 
-//! GTK.SpinUserDefined simply alters the value of the Spin Button by
+//! GTK1.SpinUserDefined simply alters the value of the Spin Button by
 //! the specified amount.
 //!
 //!
 
-GTK.SpinButton update( );
+GTK1.SpinButton update( );
 //! Explicitly request that the Spin Button updates itself
 //!
 //!

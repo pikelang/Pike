@@ -15,7 +15,7 @@
 //! @b{unselect_icon@}
 //!
 
-inherit GTK.Widget;
+inherit GTK1.Widget;
 
 Gnome.IconList append( string icon_filename, string text );
 //! Appends an icon to the specified icon list. The icon's image is
@@ -31,7 +31,7 @@ Gnome.IconList clear( );
 //!
 //!
 
-static Gnome.IconList create( int icon_widt, int flags );
+protected Gnome.IconList create( int icon_widt, int flags );
 //! Creates a new icon list widget. The icon columns are allocated a
 //! width of icon_width pixels. Icon captions will be word-wrapped to
 //! this width as well.
@@ -117,7 +117,7 @@ Gnome.IconList set_col_spacing( int pixels );
 //!
 //!
 
-Gnome.IconList set_hadjustment( GTK.Adjustment hadj );
+Gnome.IconList set_hadjustment( GTK1.Adjustment hadj );
 //!  Sets the adjustment to be used for horizontal scrolling.  This is
 //!  normally not required, as the icon list can be simply inserted in
 //!  a W(ScrolledWindow) and scrolling will be handled automatically.
@@ -166,7 +166,7 @@ Gnome.IconList set_text_spacing( int pixels );
 //!
 //!
 
-Gnome.IconList set_vadjustment( GTK.Adjustment hadj );
+Gnome.IconList set_vadjustment( GTK1.Adjustment hadj );
 //!  Sets the adjustment to be used for vertical scrolling.  This is
 //!  normally not required, as the icon list can be simply inserted in
 //!  a W(ScrolledWindow) and scrolling will be handled automatically.

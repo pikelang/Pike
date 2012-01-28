@@ -1,7 +1,7 @@
 //! The contents of a handle box can be 'dragged' out of the box by the user.
 //! The contents will then be placed in a separate window.
-//!@expr{ GTK.HandleBox()->add(GTK.Label("The contents"))@}
-//!@xml{<image>../images/gtk_handlebox.png</image>@}
+//!@expr{ GTK1.HandleBox()->add(GTK1.Label("The contents"))@}
+//!@xml{<image>../images/gtk1_handlebox.png</image>@}
 //!
 //!
 //!
@@ -15,9 +15,9 @@
 //!
 //!
 
-inherit GTK.Bin;
+inherit GTK1.Bin;
 
-static GTK.HandleBox create( );
+protected GTK1.HandleBox create( );
 //! Create a new handle box widget.
 //!
 //!
@@ -52,7 +52,7 @@ int get_snap_edge( );
 //!
 //!
 
-GTK.HandleBox set_handle_position( int pos );
+GTK1.HandleBox set_handle_position( int pos );
 //! The position of the handle. One of @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP]
 //!
 //!
@@ -62,12 +62,12 @@ int set_set_shrink_on_detach( );
 //!
 //!
 
-GTK.HandleBox set_shadow_type( int shadow_type );
+GTK1.HandleBox set_shadow_type( int shadow_type );
 //! One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
-GTK.HandleBox set_snap_edge( int pos );
+GTK1.HandleBox set_snap_edge( int pos );
 //! The edge to snap to. One of @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP], or -1 for unset.
 //!
 //!

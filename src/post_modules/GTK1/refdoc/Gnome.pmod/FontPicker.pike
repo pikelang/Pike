@@ -11,9 +11,9 @@
 //! @b{font_set@}
 //!
 
-inherit GTK.Button;
+inherit GTK1.Button;
 
-static Gnome.FontPicker create( );
+protected Gnome.FontPicker create( );
 //! Create a new font pick button
 //!
 //!
@@ -32,7 +32,7 @@ Gnome.FontPicker fi_set_use_font_in_label( int use_font_in_label, int size );
 //!
 //!
 
-GDK.Font get_font( );
+GDK1.Font get_font( );
 //! Retrieves the font from the font selection dialog.
 //!
 //!
@@ -74,7 +74,7 @@ Gnome.FontPicker set_title( string title );
 //!
 //!
 
-Gnome.FontPicker uw_set_widget( GTK.Widget widget );
+Gnome.FontPicker uw_set_widget( GTK1.Widget widget );
 //! Set the user-supplied widget as the inside of the font picker. This
 //! only applies with Gnome.FontPickerModeUserWidget.
 //!

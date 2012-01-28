@@ -14,5 +14,5 @@
 //! @b{prepare@}
 //!
 
-inherit GTK.Bin;
+inherit GTK1.Bin;
 

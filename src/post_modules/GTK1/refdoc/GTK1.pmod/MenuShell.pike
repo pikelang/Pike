@@ -1,7 +1,7 @@
-//! A GTK.MenuShell is the abstract base class used to derive the
+//! A GTK1.MenuShell is the abstract base class used to derive the
 //! W(Menu) and W(MenuBar) subclasses.
 //! 
-//! A GTK.MenuShell is a container of W(MenuItem) objects arranged in a
+//! A GTK1.MenuShell is a container of W(MenuItem) objects arranged in a
 //! list which can be navigated, selected, and activated by the user to
 //! perform application functions. A W(MenuItem) can have a submenu
 //! associated with it, allowing for nested hierarchical menus.
@@ -34,14 +34,14 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-GTK.MenuShell activate_item( GTK.Widget menu_item, int force_deactivate );
+GTK1.MenuShell activate_item( GTK1.Widget menu_item, int force_deactivate );
 //! Activates the menu item within the menu shell.
 //!
 //!
 
-GTK.MenuShell append( GTK.Widget what );
+GTK1.MenuShell append( GTK1.Widget what );
 //! Adds a new W(MenuItem) to the end of the menu shell's item
 //! list. Same as 'add'.
 //!
@@ -52,7 +52,7 @@ array children( );
 //!
 //!
 
-GTK.MenuShell deactivate( );
+GTK1.MenuShell deactivate( );
 //! Deactivates the menu shell. Typically this results in the menu
 //! shell being erased from the screen.
 //!
@@ -63,18 +63,18 @@ int get_active( );
 //!
 //!
 
-GTK.MenuShell insert( GTK.Widget what, int where );
+GTK1.MenuShell insert( GTK1.Widget what, int where );
 //! Add a widget after the specified location
 //!
 //!
 
-GTK.MenuShell prepend( GTK.Widget what );
+GTK1.MenuShell prepend( GTK1.Widget what );
 //! Add a menu item to the start of the widget (for a menu: top, for a
 //! bar: left)
 //!
 //!
 
-GTK.MenuShell select_item( GTK.Widget menuitem );
+GTK1.MenuShell select_item( GTK1.Widget menuitem );
 //! Selects the menu item from the menu shell.
 //!
 //!

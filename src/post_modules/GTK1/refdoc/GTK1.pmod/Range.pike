@@ -27,11 +27,11 @@
 //! 
 //! It may take a little while to get used to, but by default,
 //! scrollbars as well as scale widgets can take the keyboard focus in
-//! GTK. If you think your users will find this too confusing, you can
-//! always disable this by unsetting the GTK.CanFocus flag on the
+//! GTK1. If you think your users will find this too confusing, you can
+//! always disable this by unsetting the GTK1.CanFocus flag on the
 //! scrollbar, like this:
 //! 
-//! @tt{scrollbar->unset_flag( GTK.CanFocus );@}
+//! @tt{scrollbar->unset_flag( GTK1.CanFocus );@}
 //! 
 //! The key bindings (which are, of course, only active when the widget
 //! has focus) are slightly different between horizontal and vertical
@@ -44,9 +44,9 @@
 //!
 //!
 
-inherit GTK.Widget;
+inherit GTK1.Widget;
 
-GTK.Adjustment get_adjustment( );
+GTK1.Adjustment get_adjustment( );
 //!
 
 int get_button( );
@@ -91,7 +91,7 @@ int get_x_click_point( );
 int get_y_click_point( );
 //!
 
-GTK.Range set_adjustment( GTK.Adjustment pos );
+GTK1.Range set_adjustment( GTK1.Adjustment pos );
 //! set_adjustment() does absolutely nothing if you pass it the
 //! adjustment that range is already using, regardless of whether you
 //! changed any of its fields or not. If you pass it a new Adjustment,
@@ -103,20 +103,20 @@ GTK.Range set_adjustment( GTK.Adjustment pos );
 //!
 //!
 
-GTK.Range set_update_policy( int when );
+GTK1.Range set_update_policy( int when );
 //! The "update policy" of a range widget defines at what points during
 //! user interaction it will change the value field of its Adjustment
 //! and emit the "value_changed" signal on this Adjustment. The update
 //! policies are:
 //! @dl
-//! @item GTK.UpdatePolicyContinuous
+//! @item GTK1.UpdatePolicyContinuous
 //! This is the default. The "value_changed" signal is emitted
 //! continuously, i.e., whenever the slider is moved by even the
 //! tiniest amount.
-//! @item GTK.UpdatePolicyDiscontinuous
+//! @item GTK1.UpdatePolicyDiscontinuous
 //!  The "value_changed" signal is only emitted once the slider has
 //! stopped moving and the user has released the mouse button.
-//! @item GTK.UpdatePolicyDelayed
+//! @item GTK1.UpdatePolicyDelayed
 //! The "value_changed" signal is emitted when the user releases
 //! the mouse button, or if the slider stops moving for a short period
 //! of time.
@@ -125,7 +125,7 @@ GTK.Range set_update_policy( int when );
 //!
 //!
 
-GTK.Range slider_update( );
+GTK1.Range slider_update( );
 //! Update the slider values.
 //!
 //!

@@ -5,8 +5,8 @@
 //!
 //!
 
-static GDK.Image create( int|void fast_mode, Image.Image|void image );
-//! Create a new GDK.Image object. The firstargument is either 0, which
+protected GDK1.Image create( int|void fast_mode, Image.Image|void image );
+//! Create a new GDK1.Image object. The firstargument is either 0, which
 //! indicates that you want a 'slow' image. If you use '1', you
 //! indicate that you want a 'fast' image. Fast images are stored in
 //! shared memory, and thus are not sent over any network. But please
@@ -21,7 +21,7 @@ static GDK.Image create( int|void fast_mode, Image.Image|void image );
 //!
 //!
 
-GDK.Image destroy( );
+GDK1.Image destroy( );
 //! Destructor. Destroys the image. Automatically called by pike when
 //! the object is destructed.
 //!
@@ -42,7 +42,7 @@ string get_pnm( );
 //!
 //!
 
-GDK.Image grab( GTK.Widget widget, int xoffset, int yoffset, int width, int height );
+GDK1.Image grab( GTK1.Widget widget, int xoffset, int yoffset, int width, int height );
 //! Call this function to grab a portion of a widget (argument 1) to the image.
 //! Grabbing non-toplevel widgets may produce unexpected results.
 //! To get the size of a widget use -&gt;xsize() and -&gt;ysize().
@@ -52,13 +52,13 @@ GDK.Image grab( GTK.Widget widget, int xoffset, int yoffset, int width, int heig
 //!
 //!
 
-GDK.Image set( Image.Image|int image_or_xsize, int|void ysize );
+GDK1.Image set( Image.Image|int image_or_xsize, int|void ysize );
 //! Call this to set this image to either the contents of a pike image
 //! or a blank image of a specified size.
 //!
 //!
 
-GDK.Image set_pixel( int x, int y, int pixel );
+GDK1.Image set_pixel( int x, int y, int pixel );
 //! Set the pixel value of a pixel. Please note that the pixel argument
 //! is a X-pixel value, which is not easily gotten from a RGB color. 
 //! See get_pixel and set.

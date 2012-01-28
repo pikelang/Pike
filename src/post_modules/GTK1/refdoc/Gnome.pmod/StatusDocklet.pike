@@ -34,9 +34,9 @@
 //!
 //!
 
-inherit GTK.Object;
+inherit GTK1.Object;
 
-static Gnome.StatusDocklet create( );
+protected Gnome.StatusDocklet create( );
 //! Creates a new status docklet object with the default parameters. By
 //! default the docklet object will try to contact a panel 20 times. It
 //! will try to find a panel every 15 seconds. You need to bind the
@@ -49,7 +49,7 @@ static Gnome.StatusDocklet create( );
 //!
 //!
 
-GTK.Plug get_plug( );
+GTK1.Plug get_plug( );
 //! the current W(plug) holding the docklet
 //!
 //!

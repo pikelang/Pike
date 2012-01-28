@@ -17,14 +17,14 @@
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
 Gnome.Less clear( );
 //! Clears all the text
 //!
 //!
 
-static Gnome.Less create( );
+protected Gnome.Less create( );
 //! Creates a new GnomeLess widget.
 //!
 //!
@@ -48,7 +48,7 @@ Gnome.Less set_fixed_font( int fixed );
 //!
 //!
 
-Gnome.Less set_font( GDK.Font font );
+Gnome.Less set_font( GDK1.Font font );
 //! Sets the font of the text to be displayed in the GnomeLess widget
 //! gl to font.
 //! Note: This will not affect text already being displayed. If you use

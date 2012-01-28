@@ -1,8 +1,8 @@
 //!
 
-inherit GTK.Bin;
+inherit GTK1.Bin;
 
-static Gnome.DockItem create( string name, int behavior );
+protected Gnome.DockItem create( string name, int behavior );
 //! Create a new GnomeDockItem named name, with the specified behavior.
 //!  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. 
 //!  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. 
@@ -16,7 +16,7 @@ static Gnome.DockItem create( string name, int behavior );
 int get_behavior( );
 //!
 
-GTK.Widget get_child( );
+GTK1.Widget get_child( );
 //! Retrieve the child of the item.
 //!
 //!

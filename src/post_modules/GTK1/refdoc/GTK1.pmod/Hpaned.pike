@@ -6,14 +6,14 @@
 //! 
 //! See W(Paned) for details.
 //! 
-//!@expr{ GTK.Hpaned()->add1(GTK.Label("Left\nSide\nOf\nPane"))->add2(GTK.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)@}
-//!@xml{<image>../images/gtk_hpaned.png</image>@}
+//!@expr{ GTK1.Hpaned()->add1(GTK1.Label("Left\nSide\nOf\nPane"))->add2(GTK1.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)@}
+//!@xml{<image>../images/gtk1_hpaned.png</image>@}
 //!
 //!
 //!
 //!
 
-inherit GTK.Paned;
+inherit GTK1.Paned;
 
-static GTK.Hpaned create( );
+protected GTK1.Hpaned create( );
 //!

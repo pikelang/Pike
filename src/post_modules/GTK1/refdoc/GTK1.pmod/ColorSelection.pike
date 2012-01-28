@@ -11,15 +11,15 @@
 //! widget changes, either when the user changes it or if it's set
 //! explicitly through set_color().
 //! 
-//!@expr{ GTK.ColorSelection()@}
-//!@xml{<image>../images/gtk_colorselection.png</image>@}
+//!@expr{ GTK1.ColorSelection()@}
+//!@xml{<image>../images/gtk1_colorselection.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
-static GTK.ColorSelection create( );
+protected GTK1.ColorSelection create( );
 //! Create a new color selection.
 //!
 //!
@@ -32,7 +32,7 @@ array get_color( );
 //!
 //!
 
-GTK.ColorSelection set_color( array color );
+GTK1.ColorSelection set_color( array color );
 //! You can set the current color explicitly by calling this function
 //! with an array of colors (floats). The length of the array depends
 //! on whether opacity is enabled or not. Position 0 contains the red
@@ -42,13 +42,13 @@ GTK.ColorSelection set_color( array color );
 //!
 //!
 
-GTK.ColorSelection set_update_policy( int policy );
+GTK1.ColorSelection set_update_policy( int policy );
 //! one of @[UPDATE_ALWAYS], @[UPDATE_CONTINUOUS], @[UPDATE_DELAYED], @[UPDATE_DISCONTINUOUS] and @[UPDATE_IF_VALID].
 //! 
-//! The default policy is GTK.UpdateContinuous which means that the
+//! The default policy is GTK1.UpdateContinuous which means that the
 //! current color is updated continuously when the user drags the
 //! sliders or presses the mouse and drags in the hue-saturation wheel
 //! or value bar. If you experience performance problems, you may want
-//! to set the policy to GTK.UpdateDiscontinuous or GTK.UpdateDelayed.
+//! to set the policy to GTK1.UpdateDiscontinuous or GTK1.UpdateDelayed.
 //!
 //!

@@ -1,4 +1,4 @@
-//! The GTK.Adjustment object represents a value which has an associated
+//! The GTK1.Adjustment object represents a value which has an associated
 //! lower and upper bound, together with step and page increments, and
 //! a page size. It is used within several GTK+ widgets, including
 //! GtkSpinButton, GtkViewport, and GtkRange (which is a base class for
@@ -25,16 +25,16 @@
 //!
 //!
 
-inherit GTK.Data;
+inherit GTK1.Data;
 
-GTK.Adjustment changed( );
+GTK1.Adjustment changed( );
 //! Call this when you have modified anything except the value member
 //! of the adjustment.
 //!
 //!
 
-GTK.Adjustment clamp_page( float lower, float upper );
-//! Updates the GTK.Adjustment value to ensure that the range between
+GTK1.Adjustment clamp_page( float lower, float upper );
+//! Updates the GTK1.Adjustment value to ensure that the range between
 //! lower and upper is in the current page (i.e. between value and
 //! value + page_size). If the range is larger than the page size,
 //! then only the start of it will be in the current page. A
@@ -42,7 +42,7 @@ GTK.Adjustment clamp_page( float lower, float upper );
 //!
 //!
 
-static GTK.Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
+protected GTK1.Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
 //! The value argument is the initial value you want to give to the
 //! adjustment, usually corresponding to the topmost or leftmost
 //! position of an adjustable widget. The lower argument specifies the
@@ -116,7 +116,7 @@ float set_set_upper( );
 //!
 //!
 
-GTK.Adjustment set_value( float to );
+GTK1.Adjustment set_value( float to );
 //! Set the value component.
 //!
 //!

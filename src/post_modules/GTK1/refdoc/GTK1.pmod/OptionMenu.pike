@@ -3,37 +3,37 @@
 //! choice. When activated the OptionMenu displays a popup W(Menu)
 //! which allows the user to make a new choice.
 //! 
-//!@expr{ GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));@}
-//!@xml{<image>../images/gtk_optionmenu.png</image>@}
+//!@expr{ GTK1.OptionMenu()->set_menu(GTK1.Menu()->add( GTK1.MenuItem("Option 1") ));@}
+//!@xml{<image>../images/gtk1_optionmenu.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Button;
+inherit GTK1.Button;
 
-static GTK.OptionMenu create( );
+protected GTK1.OptionMenu create( );
 //! Create a new option menu widget
 //!
 //!
 
-GTK.Menu get_menu( );
+GTK1.Menu get_menu( );
 //! Returns the W(Menu) associated with the OptionMenu.
 //!
 //!
 
-GTK.OptionMenu remove_menu( );
+GTK1.OptionMenu remove_menu( );
 //! Remove the menu.
 //!
 //!
 
-GTK.OptionMenu set_history( int index );
+GTK1.OptionMenu set_history( int index );
 //! Selects the menu item specified by index making it the newly
 //! selected value for the option menu.
 //!
 //!
 
-GTK.OptionMenu set_menu( GTK.Menu menu );
+GTK1.OptionMenu set_menu( GTK1.Menu menu );
 //! Provides the GtkMenu that is popped up to allow the user to choose
 //! a new value. You should provide a simple menu avoiding the use of
 //! tearoff menu items, submenus, and accelerators.

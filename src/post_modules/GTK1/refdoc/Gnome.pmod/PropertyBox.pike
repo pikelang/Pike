@@ -40,7 +40,7 @@
 
 inherit Gnome.Dialog;
 
-int append_page( GTK.Widget child, GTK.Widget tab_label );
+int append_page( GTK1.Widget child, GTK1.Widget tab_label );
 //! Appends a new page to the Gnome.PropertyBox.
 //! widget is the widget that is being inserted, and tab_label will be
 //! used as the label for this configuration page.
@@ -53,7 +53,7 @@ Gnome.PropertyBox changed( );
 //!
 //!
 
-static Gnome.PropertyBox create( );
+protected Gnome.PropertyBox create( );
 //! Creates a new Gnome.PropertyBox widget.
 //!
 //!

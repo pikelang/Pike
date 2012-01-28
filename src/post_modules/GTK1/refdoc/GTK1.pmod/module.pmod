@@ -2578,7 +2578,7 @@ int false( );
 //!
 
 void flush( );
-//! Flush GDK. Not normally needed, can be useful while doing calculations.
+//! Flush GDK1. Not normally needed, can be useful while doing calculations.
 //!
 //!
 
@@ -2592,10 +2592,10 @@ array gnome_init( string app_id, string app_version, array argv, int|void corba_
 //!
 //!
 
-void grab_add( GTK.Widget widget );
+void grab_add( GTK1.Widget widget );
 //!
 
-void grab_remove( GTK.Widget widget );
+void grab_remove( GTK1.Widget widget );
 //!
 
 array gtk_init( array|void argc, int|void no_pgtkrc );
@@ -2639,7 +2639,7 @@ void parse_rc( string rc );
 //!
 //!
 
-GDK.Window root_window( );
+GDK1.Window root_window( );
 //! Returns the root window of the current display
 //!
 //!
@@ -2655,7 +2655,7 @@ array setup_gtk( array|void argv, int|void do_not_parse_rc );
 //! The second argument, if supplied, indicates that pike specific *rc files
 //! should @b{not@} be parsed.
 //! 
-//! The most common usage is GTK.setup_gtk(argv);
+//! The most common usage is GTK1.setup_gtk(argv);
 //!
 //!
 

@@ -6,9 +6,9 @@
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
-static Gnome.IconEntry create( string history_id, string title );
+protected Gnome.IconEntry create( string history_id, string title );
 //! Creates a new icon entry widget
 //!
 //!
@@ -30,7 +30,7 @@ Gnome.FileEntry gnome_file_entry( );
 //!
 //!
 
-GTK.Entry gtk_entry( );
+GTK1.Entry gtk_entry( );
 //! Get the W(Entry) widget that's part of the entry
 //!
 //!

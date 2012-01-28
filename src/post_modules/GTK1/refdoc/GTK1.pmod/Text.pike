@@ -13,40 +13,40 @@
 //!      <li> You cannot add text to the widget before it is realized.</li>
 //!     </ul>
 //! 
-//!@expr{ GTK.Text(GTK.Adjustment(),GTK.Adjustment())@}
-//!@xml{<image>../images/gtk_text.png</image>@}
+//!@expr{ GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())@}
+//!@xml{<image>../images/gtk1_text.png</image>@}
 //!
-//!@expr{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])@}
-//!@xml{<image>../images/gtk_text_2.png</image>@}
+//!@expr{ function_object(call_out(GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())->set_text, 0, "Some text")[0])@}
+//!@xml{<image>../images/gtk1_text_2.png</image>@}
 //!
-//!@expr{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])@}
-//!@xml{<image>../images/gtk_text_3.png</image>@}
+//!@expr{ function_object(call_out(GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())->insert, 0, "Some text", 0, GDK1.Color(255,255,0), GDK1.Color(0,0,0))[0])@}
+//!@xml{<image>../images/gtk1_text_3.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Editable;
+inherit GTK1.Editable;
 
-GTK.Text backward_delete( int nchars );
+GTK1.Text backward_delete( int nchars );
 //! Delete n characters backwards from the cursor position
 //!
 //!
 
-static GTK.Text create( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment );
-//!  Creates a new GTK.Text widget, initialized with the given
+protected GTK1.Text create( GTK1.Adjustment xadjustment, GTK1.Adjustment yadjustment );
+//!  Creates a new GTK1.Text widget, initialized with the given
 //!  Gtk.Adjustments. These pointers can be used to track the viewing
-//!  position of the GTK.Text widget. Passing NULL to either or both of
+//!  position of the GTK1.Text widget. Passing NULL to either or both of
 //!  them will make the text widget create it's own. You can set these
 //!  later with the function gtk_text_set_adjustment()
 //!
 //!
 
-GTK.Text forward_delete( int nchars );
+GTK1.Text forward_delete( int nchars );
 //! Delete n characters forward from the cursor position
 //!
 //!
 
-GTK.Text freeze( );
+GTK1.Text freeze( );
 //! Freezes the widget which disallows redrawing of the widget until it
 //! is thawed. This is useful if a large number of changes are going to
 //! made to the text within the widget, reducing the amount of flicker
@@ -70,53 +70,53 @@ string get_text( );
 //!
 //!
 
-GTK.Text insert( string text, GDK.Font font, GDK.Color bg, GDK.Color fg );
+GTK1.Text insert( string text, GDK1.Font font, GDK1.Color bg, GDK1.Color fg );
 //! syntax:
 //! object insert(string what); OR
-//! object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR
-//! object insert(string what, 0, GDK.Color fg, GDK.Color bg); OR
-//! object insert(string what, 0, GDK.Color fg); OR
-//! object insert(string what, 0, 0, GDK.Color bg);
+//! object insert(string what, GDK1.Font font, GDK1.Color fg, GDK1.Color bg); OR
+//! object insert(string what, 0, GDK1.Color fg, GDK1.Color bg); OR
+//! object insert(string what, 0, GDK1.Color fg); OR
+//! object insert(string what, 0, 0, GDK1.Color bg);
 //! 
 //!
 //! Insert new text, optionally with colors.
 //!
 //!
 
-GTK.Text set_adjustments( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment );
+GTK1.Text set_adjustments( GTK1.Adjustment xadjustment, GTK1.Adjustment yadjustment );
 //! Change the adjustments (as supplied to the constructor) to other
 //! adjustments.
 //!
 //!
 
-GTK.Text set_editable( int editablep );
+GTK1.Text set_editable( int editablep );
 //! If true, the user can change the text in the widget.
 //!
 //!
 
-GTK.Text set_line_wrap( int linewrapp );
+GTK1.Text set_line_wrap( int linewrapp );
 //! If true, the widget will automatically wrap the contents.
 //!
 //!
 
-GTK.Text set_point( int point );
+GTK1.Text set_point( int point );
 //! Sets the cursor at the given point. In this case a point
 //! constitutes the number of characters from the extreme upper left
 //! corner of the widget.
 //!
 //!
 
-GTK.Text set_text( string to );
+GTK1.Text set_text( string to );
 //! Set the text to the specified string.
 //!
 //!
 
-GTK.Text set_word_wrap( int wordwrapp );
+GTK1.Text set_word_wrap( int wordwrapp );
 //! If true, the widget will automatically wrap the contents.
 //!
 //!
 
-GTK.Text thaw( );
+GTK1.Text thaw( );
 //! unfreeze the widget.
 //!
 //!

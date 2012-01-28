@@ -11,7 +11,7 @@
 //! @b{close@}
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
 Gnome.Dialog append_button_with_pixmap( string name, string pixmap_file );
 //!
@@ -34,7 +34,7 @@ Gnome.Dialog close( );
 //!
 //!
 
-static Gnome.Dialog create( string title, string... buttons );
+protected Gnome.Dialog create( string title, string... buttons );
 //! Creates a new Gnome.Dialog, with the given title, and any button
 //! names in the arg list. Buttons can be simple names, such as "My
 //! Button", or gnome-stock defines such as GNOME.StockButtonOK,
@@ -48,7 +48,7 @@ static Gnome.Dialog create( string title, string... buttons );
 //!
 //!
 
-Gnome.Dialog editable_enters( GTK.Editable widget );
+Gnome.Dialog editable_enters( GTK1.Editable widget );
 //! Normally if there's an editable widget (such as GtkEntry) in your
 //! dialog, pressing Enter will activate the editable rather than the
 //! default dialog button. However, in most cases, the user expects to
@@ -57,7 +57,7 @@ Gnome.Dialog editable_enters( GTK.Editable widget );
 //!
 //!
 
-GTK.Vbox get_vbox( );
+GTK1.Vbox get_vbox( );
 //!
 
 int run( );
@@ -106,7 +106,7 @@ Gnome.Dialog set_default( int button );
 //!
 //!
 
-Gnome.Dialog set_parent( GTK.Window parent );
+Gnome.Dialog set_parent( GTK1.Window parent );
 //! Dialogs have "parents," usually the main application window which
 //! spawned them. This function will let the window manager know about
 //! the parent-child relationship. Usually this means the dialog must

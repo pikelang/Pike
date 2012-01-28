@@ -5,5 +5,5 @@
 //! @b{disconnect@}
 //!
 
-inherit GTK.Object;
+inherit GTK1.Object;
 

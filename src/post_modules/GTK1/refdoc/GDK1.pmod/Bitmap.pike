@@ -5,25 +5,25 @@
 //!
 //!
 
-inherit GDK.Drawable;
+inherit GDK1.Drawable;
 
-static GDK.Bitmap create( int|Image.Image xsize_or_image, int|void ysize, string|void bitmap );
-//! Create a new GDK.Bitmap object.
+protected GDK1.Bitmap create( int|Image.Image xsize_or_image, int|void ysize, string|void bitmap );
+//! Create a new GDK1.Bitmap object.
 //! Argument is either an Image.Image object, or {xsisze,ysize,xbitmapdata}.
 //!
 //!
 
-GDK.Bitmap destroy( );
+GDK1.Bitmap destroy( );
 //! Destructor. Destroys the bitmap. This will free the bitmap on the X-server.
 //!
 //!
 
-GDK.Bitmap ref( );
+GDK1.Bitmap ref( );
 //! Add a reference
 //!
 //!
 
-GDK.Bitmap unref( );
+GDK1.Bitmap unref( );
 //! Remove a reference
 //!
 //!

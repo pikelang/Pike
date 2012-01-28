@@ -18,16 +18,16 @@
 //! can be hidden using hide_fileop_buttons() and shown again using
 //! show_fileop_buttons().
 //! 
-//!@expr{ GTK.FileSelection("File selector")@}
-//!@xml{<image>../images/gtk_fileselection.png</image>@}
+//!@expr{ GTK1.FileSelection("File selector")@}
+//!@xml{<image>../images/gtk1_fileselection.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
-GTK.FileSelection complete( string pattern );
+GTK1.FileSelection complete( string pattern );
 //! Will attempt to match pattern to a valid filename in the current
 //! directory. If a match can be made, the matched filename will appear
 //! in the text entry field of the file selection dialog. If a partial
@@ -36,7 +36,7 @@ GTK.FileSelection complete( string pattern );
 //!
 //!
 
-static GTK.FileSelection create( string window_title );
+protected GTK1.FileSelection create( string window_title );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename
@@ -44,17 +44,17 @@ static GTK.FileSelection create( string window_title );
 //!
 //!
 
-GTK.Button get_cancel_button( );
+GTK1.Button get_cancel_button( );
 //! The cancel button
 //!
 //!
 
-GTK.Clist get_dir_list( );
+GTK1.Clist get_dir_list( );
 //! The list of directories
 //!
 //!
 
-GTK.Clist get_file_list( );
+GTK1.Clist get_file_list( );
 //! The list of files
 //!
 //!
@@ -64,51 +64,51 @@ string get_filename( );
 //!
 //!
 
-GTK.Button get_fileop_c_dir( );
+GTK1.Button get_fileop_c_dir( );
 //! The create directory button in the file operation button group
 //!
 //!
 
-GTK.Button get_fileop_del_file( );
+GTK1.Button get_fileop_del_file( );
 //! The delete file button in the file operation button group
 //!
 //!
 
-GTK.Button get_fileop_ren_file( );
+GTK1.Button get_fileop_ren_file( );
 //! The rename file button in the file operation button group
 //!
 //!
 
-GTK.Button get_help_button( );
+GTK1.Button get_help_button( );
 //! The help button
 //!
 //!
 
-GTK.OptionMenu get_history_pulldown( );
+GTK1.OptionMenu get_history_pulldown( );
 //! Used to create the drop-down directory histor
 //!
 //!
 
-GTK.Button get_ok_button( );
+GTK1.Button get_ok_button( );
 //! The ok button
 //!
 //!
 
-GTK.FileSelection hide_fileop_buttons( );
+GTK1.FileSelection hide_fileop_buttons( );
 //! Hides the file operation buttons that normally appear at the top of
 //! the dialog. Useful if you wish to create a custom file selector,
-//! based on GTK.FileSelection.
+//! based on GTK1.FileSelection.
 //!
 //!
 
-GTK.FileSelection set_filename( string fname );
+GTK1.FileSelection set_filename( string fname );
 //! Sets a default path for the file requestor. If filename includes a
 //! directory path, then the requestor will open with that path as its
 //! current working directory.
 //!
 //!
 
-GTK.FileSelection show_fileop_buttons( );
+GTK1.FileSelection show_fileop_buttons( );
 //! Shows the file operation buttons, if they have previously been
 //! hidden. The rest of the widgets in the dialog will be resized
 //! accordingly.

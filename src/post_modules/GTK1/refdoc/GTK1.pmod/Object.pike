@@ -9,10 +9,10 @@
 //!
 //!
 
-GTK.Object destroy( );
+GTK1.Object destroy( );
 //!
 
-GTK.Object signal_block( mixed signal_id );
+GTK1.Object signal_block( mixed signal_id );
 //! Temporarily block a signal handler. No signals will be received
 //! while the hander is blocked.
 //! See signal connect for more info.
@@ -23,7 +23,7 @@ mixed signal_connect( string signal, function callback, mixed|void callback_arg 
 //! Connect a signal to a pike function. The function will be called with
 //! the last argument to this function as it's first argument (defaults
 //! to 0), the second argument is always the widget, any other
-//! arguments are the ones supplied by GTK.
+//! arguments are the ones supplied by GTK1.
 //! 
 //! The return value of this function can be used to remove a signal
 //! with signal_disconnect, and block and unblock the signal will
@@ -45,13 +45,13 @@ mixed signal_connect_new( string signal, function callback, mixed|void callback_
 //! 
 //! The old interface:
 //! @pre{
-//!   void signal_handler( mixed my_arg, GTK.Object object,
+//!   void signal_handler( mixed my_arg, GTK1.Object object,
 //!                        mixed ... signal_arguments )
 //! @}
 //! The new interface:
 //! @pre{
 //!   void signal_handler( mixed ... signal_arguments,
-//!                        mixed my_arg, GTK.Object object )
+//!                        mixed my_arg, GTK1.Object object )
 //! @}
 //! 
 //! The return value of this function can be used to remove a signal
@@ -61,13 +61,13 @@ mixed signal_connect_new( string signal, function callback, mixed|void callback_
 //!
 //!
 
-GTK.Object signal_disconnect( mixed signal_id );
+GTK1.Object signal_disconnect( mixed signal_id );
 //! Remove a signal formerly added by signal_connect. The argument is
 //! the return value of signal_connect(). See signal connect for more info.
 //!
 //!
 
-GTK.Object signal_emit( string signal_name );
+GTK1.Object signal_emit( string signal_name );
 //! Halt the emit of the current named signal.
 //! Useful in signal handlers when you want to override the behaviour
 //! of some default signal handler (key press events, as an example)
@@ -75,7 +75,7 @@ GTK.Object signal_emit( string signal_name );
 //!
 //!
 
-GTK.Object signal_unblock( mixed signal_id );
+GTK1.Object signal_unblock( mixed signal_id );
 //! Unblock a formerly blocked signal handler. See signal_block and
 //! signal_connect for more info.
 //!
