@@ -155,7 +155,7 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 
 #define BA_PAGE(a, n)   ((a)->pages[(n) - 1])
 #define BA_BLOCKN(a, p, n) ((ba_block_header)(((char*)(p+1)) + (n)*((a)->block_size)))
-#define BA_CHECK_PTR(a, p, ptr)	((char*)ptr > (char*)p && (char*)BA_LASTBLOCK(a,p) >= (char*)ptr)
+#define BA_CHECK_PTR(a, p, ptr)	((size_t)((char*)ptr - (char*)(p)) <= (a)->offset)
 #define BA_LASTBLOCK(a, p) ((ba_block_header)((char*)p + (a)->offset))
 #define BA_NUM(p) (p ? p->n : 0)
 
