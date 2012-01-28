@@ -122,22 +122,22 @@ struct block_allocator {
 struct ba_page {
     struct ba_block_header * first;
     ba_page next, prev;
+    ba_block_t used;
     ba_page_t hchain;
     ba_page_t n;
 };
 
 struct ba_block_header {
     struct ba_block_header * next;
-    ba_block_t left;
 #ifdef BA_DEBUG
     uint32_t magic;
 #endif
 };
 
-PMOD_EXPORT INLINE void ba_free_empty(struct block_allocator * a,
-				     ba_page p);
-PMOD_EXPORT INLINE void ba_free_full(struct block_allocator * a,
-				     ba_page p, ba_block_header ptr);
+#define BA_ONE	((ba_block_header)1)
+
+PMOD_EXPORT void ba_low_free(struct block_allocator * a,
+				    ba_page p, ba_block_header ptr);
 PMOD_EXPORT void ba_show_pages(struct block_allocator * a);
 PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
 			 ba_page_t blocks);
@@ -235,11 +235,10 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 
 
-    if (!(p = a->first) || !BA_CHECK_PTR(a, p, ptr))
+    p = a->first;
+    if (!BA_CHECK_PTR(a, p, ptr))
 	goto SLOWPATH;
     ((ba_block_header)ptr)->next = a->first_blk;
-    ((ba_block_header)ptr)->left = a->first_blk ?
-	    a->first_blk->left + 1 : 1;
     a->first_blk = (ba_block_header)ptr;
     //INC(good);
     return;
@@ -251,7 +250,8 @@ SLOWPATH:
     }
 #endif
     
-    if (unlikely(!(p = a->last_free) || !BA_CHECK_PTR(a, p, ptr))) {
+    p = a->last_free;
+    if (unlikely(!BA_CHECK_PTR(a, p, ptr))) {
 	INC(bad);
 	ba_find_page(a, ptr);
 	p = a->last_free;
@@ -259,23 +259,15 @@ SLOWPATH:
 	INC(likely);
     }
 
-    // block was full!
-    if (unlikely(!p->first)) {
-	ba_free_full(a, p, (ba_block_header)ptr);
-	INC(ugly);
-	return;
-    }
-    
     ((ba_block_header)ptr)->next = p->first;
-    ((ba_block_header)ptr)->left = p->first->left + 1;
     p->first = (ba_block_header)ptr;
-    
+
     // page is empty
-    if (unlikely(((ba_block_header)ptr)->left == a->blocks)) {
+    if (!(--p->used) || !(((ba_block_header)ptr)->next)) {
 #ifdef COUNT
 	if (a->num_pages > max) max = a->num_pages;
 #endif
-	ba_free_empty(a, p);
+	ba_low_free(a, p, (ba_block_header)ptr);
 	INC(empty);
     }
 }
@@ -382,7 +374,7 @@ SLOWPATH:
     for (n = 1; n <= a->num_pages; n++) {				\
 	ba_block_t i;							\
 	ba_page p = BA_PAGE(a, n);					\
-	used = a->blocks - (p->first ? p->first->left : 0);		\
+	used = (p == a->first) ? a->blocks : p->used;			\
 	for (i = 0; used && i < a->blocks; i++) {			\
 	    BLOCK = ((struct DATA*)(p+1)) + i;				\
 	    if (FCOND) {						\

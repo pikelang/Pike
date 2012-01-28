@@ -87,11 +87,9 @@ PMOD_EXPORT void ba_show_pages(struct block_allocator * a) {
 	ba_page p = BA_PAGE(a, i);
 	ba_block_t blocks_used;
 	if (p == a->first) {
-	    if (!a->first_blk) blocks_used = a->blocks;
-	    else blocks_used = a->blocks - a->first_blk->left;
+	    blocks_used = 0;
 	} else {
-	    if (!p->first) blocks_used = a->blocks;
-	    else blocks_used = a->blocks - p->first->left;
+	    blocks_used = p->used;
 	}
 	fprintf(stderr, "%d(%p[%u])\t%f\t(%u %d) --> (prev: %p[%u] | next: %p[%u])\n",
 		i, p, p->n, blocks_used/(double)a->blocks * 100,
@@ -136,6 +134,40 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
     ba_realloc(a);
 }
 
+static INLINE void ba_free_page(struct block_allocator * a, ba_page p) {
+    p->first = BA_BLOCKN(a, p, 0);
+    p->used = 0;
+    if (a->blueprint) {
+	//xmemset(p+1, a->blueprint, a->block_size, a->blocks);
+	size_t len = (a->blocks - 1) * a->block_size, clen = a->block_size;
+	p++;
+	memcpy(p, a->blueprint, a->block_size);
+
+	while (len > clen) {
+	    memcpy(((char*)(p)) + clen, p, clen);
+	    len -= clen;
+	    clen <<= 1;
+	}
+
+	if (len) memcpy(((char*)(p)) + clen, p, len);
+	p--;
+    }
+
+    do {
+	char * ptr = (char*)(p+1);
+	
+	while (ptr < BA_LASTBLOCK(a, p)) {
+#ifdef BA_DEBUG
+	    PIKE_MEM_RW(((ba_block_header)ptr)->magic);
+	    ((ba_block_header)ptr)->magic = BA_MARK_FREE;
+#endif
+	    ((ba_block_header)ptr)->next = (ba_block_header)(ptr+a->block_size);
+	    ptr+=a->block_size;
+	}
+	BA_LASTBLOCK(a, p)->next = NULL;
+    } while (0);
+}
+
 PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {
     unsigned int i;
 
@@ -166,13 +198,7 @@ PMOD_EXPORT INLINE void ba_count_all(struct block_allocator * a, size_t *num, si
     *size = BA_BYTES(a) + a->num_pages * BA_PAGESIZE(a);
     for (i = 0; i < a->num_pages; i++) {
 	ba_page p = a->pages[i];
-	if (p == a->first) {
-	    if (a->first_blk) n += a->first_blk->left;
-	    else n += a->blocks;
-	} else {
-	    if (p->first) n+= p->first->left;
-	    else n += a->blocks;
-	}
+	n+= p->used;
     }
 
     *num = n;
@@ -443,32 +469,30 @@ PMOD_EXPORT INLINE void ba_check_allocator(struct block_allocator * a,
 static INLINE void ba_alloc_page(struct block_allocator * a) {
     ba_page p;
     unsigned int i;
+    void * ptr;
 
     if (unlikely(a->num_pages == a->allocated)) {
 	ba_grow(a);
     }
 
     a->num_pages++;
+    ptr = malloc(BA_PAGESIZE(a));
+    if (!ptr) BA_ERROR("no mem. alloc returned zero.");
 #ifdef BA_DEBUG
     if (BA_PAGE(a, a->num_pages)) {
-	void * new = malloc(BA_PAGESIZE(a));
 	fprintf(stderr, "reusing unfreed page %d, data: %p -> %p\n", a->num_pages,
-		p+1, new);
+		p+1, ptr);
 	a->num_pages--;
 	ba_show_pages(a);
 	a->num_pages++;
-	BA_PAGE(a, a->num_pages) = p = new;
-	BA_ERROR("dont continue\n");
     } else
 #endif
-    BA_PAGE(a, a->num_pages) = p = (ba_page)malloc(sizeof(struct ba_page) + BA_PAGESIZE(a));
-    if (!p) {
-	BA_ERROR("no mem. alloc returned zero.");
-    }
+    BA_PAGE(a, a->num_pages) = p = (ba_page)ptr;
     p->n = a->num_pages;
 #ifdef BA_DEBUG
     if (!p->n) BA_ERROR("num pages cannot be zero\n");
 #endif
+    ba_free_page(a, p);
     p->next = p->prev = NULL;
     a->last = a->first = p;
     IF_HASH(
@@ -477,30 +501,6 @@ static INLINE void ba_alloc_page(struct block_allocator * a) {
 	ba_check_allocator(a, "ba_alloc after insert", __FILE__, __LINE__);
 #endif
     );
-    p->first = BA_BLOCKN(a, p, 0);
-
-    if (a->blueprint) {
-	size_t len = (a->blocks - 1) * a->block_size, clen = a->block_size;
-	memcpy(p+1, a->blueprint, a->block_size);
-
-	while (len > clen) {
-	    memcpy(((char*)(p+1)) + clen, p+1, clen);
-	    len -= clen;
-	    clen <<= 1;
-	}
-
-	if (len) memcpy(((char*)(p+1)) + clen, p+1, len);
-    }
-
-    for (i = 0; i < a->blocks; i++) {
-#ifdef BA_DEBUG
-	PIKE_MEM_RW(BA_BLOCKN(a, p, i)->magic);
-	BA_BLOCKN(a, p, i)->magic = BA_MARK_FREE;
-#endif
-	BA_BLOCKN(a, p, i)->next = BA_BLOCKN(a, p, i+1);
-	BA_BLOCKN(a, p, i)->left = a->blocks - (i);
-    }
-    BA_LASTBLOCK(a, p)->next = NULL;
 #ifdef BA_DEBUG
     PIKE_MEM_RW(BA_LASTBLOCK(a, p)->magic);
     BA_LASTBLOCK(a, p)->magic = BA_MARK_FREE;
@@ -524,12 +524,11 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 	p->prev = NULL;
 	p->next = NULL;
 	p->first = NULL;
-#ifdef BA_DEBUG
-#endif
+	p->used = a->blocks;
     }
 
     if (a->first) {
-#if 1//def BA_DEBUG
+#ifdef BA_DEBUG
 	if (!a->first->first) {
 	    ba_show_pages(a);
 	    BA_ERROR("no free blk in page %p[%u]\n", a->first,
@@ -544,7 +543,7 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 	a->first->next = NULL;
     } else ba_alloc_page(a);
 
-#if 1//def BA_DEBUG
+#ifdef BA_DEBUG
     if (!a->first->first) {
 	ba_show_pages(a);
 	BA_ERROR("a->first has no first block!\n");
@@ -558,37 +557,36 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
     a->first_blk = a->first->first;
 }
 
-PMOD_EXPORT void ba_free_empty(struct block_allocator * a, ba_page p) {
-    if (a->empty_pages == a->max_empty_pages) {
-	ba_remove_page(a, p);
-	return;
-    }
-    if (p->next) p->next->prev = p->prev;
-    else a->last = p->prev;
-    if (p->prev) {
-	p->prev->next = p->next;
-	p->prev = NULL;
-    }
-    a->last_free = NULL;
-    p->next = a->empty;
-    a->empty = p;
-    a->empty_pages ++;
-}
+PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
+			     ba_block_header ptr) {
+    // page was full
+    if (unlikely(!ptr->next)) {
 
-PMOD_EXPORT void ba_free_full(struct block_allocator * a,
-			      ba_page p, ba_block_header ptr) {
-    ptr->next = NULL;
-    ptr->left = 1;
-
-    if (a->first) {
-	p->prev = a->last;
-	a->last->next = p;
-	a->last = p;
-	p->first = ptr;
-    } else {
-	p->prev = p->next = NULL;
-	a->first = a->last = p;
-	a->first_blk = ptr;
+	if (a->first) {
+	    p->prev = a->last;
+	    a->last->next = p;
+	    a->last = p;
+	    p->first = ptr;
+	} else {
+	    p->prev = p->next = NULL;
+	    a->first = a->last = p;
+	    a->first_blk = ptr;
+	}
+    } else if (!p->used) {
+	if (a->empty_pages == a->max_empty_pages) {
+	    ba_remove_page(a, p);
+	    return;
+	}
+	if (p->next) p->next->prev = p->prev;
+	else a->last = p->prev;
+	if (p->prev) {
+	    p->prev->next = p->next;
+	    p->prev = NULL;
+	}
+	a->last_free = NULL;
+	p->next = a->empty;
+	a->empty = p;
+	a->empty_pages ++;
     }
 }
 
