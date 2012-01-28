@@ -165,6 +165,7 @@ static INLINE void ba_free_page(struct block_allocator * a, ba_page p) {
 	p--;
     }
 
+#ifdef BA_CHAIN_PAGE
     do {
 	char * ptr = (char*)(p+1);
 	
@@ -178,6 +179,9 @@ static INLINE void ba_free_page(struct block_allocator * a, ba_page p) {
 	}
 	BA_LASTBLOCK(a, p)->next = NULL;
     } while (0);
+#else
+    p->first->next = BA_ONE;
+#endif
 }
 
 PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {

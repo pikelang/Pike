@@ -211,6 +211,13 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 	ba_low_alloc(a);
     } else INC(good);
     ptr = a->first_blk;
+#ifndef BA_CHAIN_PAGE
+    if (ptr->next == BA_ONE) {
+	a->first_blk = (ba_block_header)(((char*)ptr) + a->block_size);
+	a->first_blk->next = (a->first_blk == BA_LASTBLOCK(a, a->first)) ?
+		NULL : BA_ONE;
+    } else
+#endif
     a->first_blk = ptr->next;
 #ifdef BA_DEBUG
     ((ba_block_header)ptr)->magic = BA_MARK_ALLOC;
