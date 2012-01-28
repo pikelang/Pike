@@ -25,8 +25,7 @@ static INLINE void ba_htable_insert(const struct block_allocator * a,
 #define BA_NBLOCK(a, p, ptr)	((uintptr_t)((char*)ptr - (char)(p+1))/(a)->block_size)
 
 #define BA_DIVIDE(a, b)	    ((a) / (b) + (!!((a) & ((b)-1))))
-#define BA_PAGESIZE(a)	    ((a)->blocks * (a)->block_size) 
-#define BA_SPAGE_SIZE(a)    (sizeof(struct ba_page) + (BA_DIVIDE((a)->blocks, sizeof(uintptr_t)*8) - 1)*sizeof(uintptr_t))
+#define BA_PAGESIZE(a)	    (sizeof(struct ba_page) + (a)->blocks * (a)->block_size) 
 #define BA_HASH_MASK(a)  (((a->allocated)) - 1)
 
 #ifdef BA_HASH_THLD
@@ -111,16 +110,29 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
 	block_size += (BA_ALIGNMENT - (block_size & (BA_ALIGNMENT - 1)));
 #endif
 
-    page_size = block_size * blocks;
-    a->offset = sizeof(struct ba_page) + page_size - block_size;
+    page_size = block_size * blocks + BLOCK_HEADER_SIZE;
 
     a->first_blk = NULL;
     a->empty = a->first = a->last_free = NULL;
 
+#ifdef BA_DEBUG
+    fprintf(stderr, "blocks: %u block_size: %u page_size: %u\n",
+	    blocks, block_size, page_size);
+#endif
+
+    // is not multiple of memory page size
     if ((page_size & (page_size - 1))) {
 	page_size = round_up32(page_size);
-	a->blocks = page_size/block_size;
-    } else a->blocks = blocks;
+    }
+    a->blocks = (page_size - BLOCK_HEADER_SIZE)/block_size;
+    a->offset = sizeof(struct ba_page) + (a->blocks - 1) * block_size;
+#ifdef BA_DEBUG
+    fprintf(stderr, "blocks: %u block_size: %u page_size: %u mallocing size: %u, next pages: %u\n",
+	    a->blocks, block_size, blocks * block_size,
+	    BA_PAGESIZE(a)+sizeof(struct ba_page),
+	    round_up32(BA_PAGESIZE(a)+sizeof(struct ba_page)));
+#endif
+
 
     a->magnitude = (uint16_t)ctz32(page_size); 
     a->block_size = block_size;
