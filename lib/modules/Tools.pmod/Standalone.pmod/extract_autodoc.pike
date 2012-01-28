@@ -670,13 +670,14 @@ string extract(string filename, string imgdest,
     else
       werror("%s\n", describe_backtrace(err));
 
-    return 0;
+    // return 0;
   }
 
   if(!result) result="";
 
   if(sizeof(result) && imgdest)
-    result = Tools.AutoDoc.ProcessXML.moveImages(result, builddir,
+    result = Tools.AutoDoc.ProcessXML.moveImages(result,
+						 combine_path(filename, ".."),
 						 imgdest, !verbosity);
   return result+"\n";
 }
