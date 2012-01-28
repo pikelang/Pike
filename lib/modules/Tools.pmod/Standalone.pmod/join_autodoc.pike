@@ -115,7 +115,7 @@ void recurse(array(string) sources, string save_to,
 
 Node load_tree(string fn) {
   if(sub_cache[fn]) return m_delete(sub_cache, fn);
-  return Parser.XML.Tree.simple_parse_file(fn)[0];
+  return Parser.XML.Tree.simple_parse_file(fn)->get_first_element();
 }
 
 int(0..1) join_files(array(string) files, string save_to,
