@@ -221,12 +221,23 @@ PMOD_EXPORT INLINE void ba_count_all(struct block_allocator * a, size_t *num, si
 }
 
 PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
-    ba_free_all(a);
+    unsigned int i;
+    for (i = 0; i < a->num_pages; i++) {
+	ba_page p = a->pages[i];
+	PIKE_MEM_RW_RANGE(BA_BLOCKN(a, p, 0), BA_PAGESIZE(a));
+	free(p);
+    }
+
     PIKE_MEM_RW_RANGE(a->pages, BA_BYTES(a));
     free(a->pages);
-    a->allocated = 0;
+    a->first_blk = NULL;
+    a->last_free = NULL;
+    a->empty = a->first = a->last = NULL;
     a->htable = NULL;
     a->pages = NULL;
+    a->empty_pages = 0;
+    a->allocated = 0;
+    a->num_pages = 0;
 }
 
 static INLINE void ba_grow(struct block_allocator * a) {
