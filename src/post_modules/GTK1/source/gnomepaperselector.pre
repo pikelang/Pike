@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.PaperSelector;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 //! IMG: Gnome.PaperSelector()
 void create();
 string get_name();

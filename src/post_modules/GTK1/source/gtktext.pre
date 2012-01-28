@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Text;
-inherit GTK.Editable;
+class GTK1.Text;
+inherit GTK1.Editable;
 //! The Text widget allows multiple lines of text to be displayed and
 //! edited. It supports both multi-colored and multi-font text,
 //! allowing them to be mixed in any way we wish. It also has a wide
@@ -16,13 +16,13 @@ inherit GTK.Editable;
 //!      <li> You cannot add text to the widget before it is realized.</li>
 //!     </ul>
 //! </p>
-//! IMG: GTK.Text(GTK.Adjustment(),GTK.Adjustment())
-//! IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])
-//! IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])
-void create( ?GTK.Adjustment xadjustment, ?GTK.Adjustment yadjustment );
-//!  Creates a new GTK.Text widget, initialized with the given
+//! IMG: GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())
+//! IMG: function_object(call_out(GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())->set_text, 0, "Some text")[0])
+//! IMG: function_object(call_out(GTK1.Text(GTK1.Adjustment(),GTK1.Adjustment())->insert, 0, "Some text", 0, GDK1.Color(255,255,0), GDK1.Color(0,0,0))[0])
+void create( ?GTK1.Adjustment xadjustment, ?GTK1.Adjustment yadjustment );
+//!  Creates a new GTK1.Text widget, initialized with the given
 //!  Gtk.Adjustments. These pointers can be used to track the viewing
-//!  position of the GTK.Text widget. Passing NULL to either or both of
+//!  position of the GTK1.Text widget. Passing NULL to either or both of
 //!  them will make the text widget create it's own. You can set these
 //!  later with the function gtk_text_set_adjustment()
 void set_editable( int editablep );
@@ -31,7 +31,7 @@ void set_word_wrap( int wordwrapp );
 //! If true, the widget will automatically wrap the contents.
 void set_line_wrap( int linewrapp );
 //! If true, the widget will automatically wrap the contents.
-void set_adjustments( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment );
+void set_adjustments( GTK1.Adjustment xadjustment, GTK1.Adjustment yadjustment );
 //! Change the adjustments (as supplied to the constructor) to other
 //! adjustments.
 void set_point( int point );
@@ -50,13 +50,13 @@ void freeze();
 //! seen by the user.
 void thaw();
 //! unfreeze the widget.
-void insert(string text, ?GDK.Font font, ?GDK.Color bg, ?GDK.Color fg )
+void insert(string text, ?GDK1.Font font, ?GDK1.Color bg, ?GDK1.Color fg )
 //! syntax:<p>
 //! object insert(string what); OR<br />
-//! object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR<br />
-//! object insert(string what, 0, GDK.Color fg, GDK.Color bg); OR<br />
-//! object insert(string what, 0, GDK.Color fg); OR<br />
-//! object insert(string what, 0, 0, GDK.Color bg);<br />
+//! object insert(string what, GDK1.Font font, GDK1.Color fg, GDK1.Color bg); OR<br />
+//! object insert(string what, 0, GDK1.Color fg, GDK1.Color bg); OR<br />
+//! object insert(string what, 0, GDK1.Color fg); OR<br />
+//! object insert(string what, 0, 0, GDK1.Color bg);<br />
 //! </p><p>
 //!
 //! Insert new text, optionally with colors.</p>

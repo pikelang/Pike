@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Range;
-inherit GTK.Widget;
+class GTK1.Range;
+inherit GTK1.Widget;
 //! The category of range widgets includes the ubiquitous scrollbar
 //! widget and the less common "scale" widget. Though these two types
 //! of widgets are generally used for different purposes, they are
@@ -30,11 +30,11 @@ inherit GTK.Widget;
 //! </p><p>
 //! It may take a little while to get used to, but by default,
 //! scrollbars as well as scale widgets can take the keyboard focus in
-//! GTK. If you think your users will find this too confusing, you can
-//! always disable this by unsetting the GTK.CanFocus flag on the
+//! GTK1. If you think your users will find this too confusing, you can
+//! always disable this by unsetting the GTK1.CanFocus flag on the
 //! scrollbar, like this:
 //! </p><p>
-//! <tt>scrollbar->unset_flag( GTK.CanFocus );</tt>
+//! <tt>scrollbar->unset_flag( GTK1.CanFocus );</tt>
 //! </p><p>
 //! The key bindings (which are, of course, only active when the widget
 //! has focus) are slightly different between horizontal and vertical
@@ -50,19 +50,19 @@ void set_update_policy( int when );
 //! and emit the "value_changed" signal on this Adjustment. The update
 //! policies are:
 //! <p><dl>
-//! <dt>GTK.UpdatePolicyContinuous</dt>
+//! <dt>GTK1.UpdatePolicyContinuous</dt>
 //! <dd>This is the default. The "value_changed" signal is emitted
 //! continuously, i.e., whenever the slider is moved by even the
 //! tiniest amount.</dd>
-//! <dt>GTK.UpdatePolicyDiscontinuous</dt>
+//! <dt>GTK1.UpdatePolicyDiscontinuous</dt>
 //! <dd> The "value_changed" signal is only emitted once the slider has
 //! stopped moving and the user has released the mouse button.</dd>
-//! <dt>GTK.UpdatePolicyDelayed</dt>
+//! <dt>GTK1.UpdatePolicyDelayed</dt>
 //! <dd>The "value_changed" signal is emitted when the user releases
 //! the mouse button, or if the slider stops moving for a short period
 //! of time.</dd>
 //! </dl></p>
-void set_adjustment( GTK.Adjustment pos );
+void set_adjustment( GTK1.Adjustment pos );
 //! set_adjustment() does absolutely nothing if you pass it the
 //! adjustment that range is already using, regardless of whether you
 //! changed any of its fields or not. If you pass it a new Adjustment,
@@ -87,6 +87,6 @@ member float old_value;
 member float old_lower;
 member float old_upper;
 member float old_page_size;
-member GTK.Adjustment adjustment;
+member GTK1.Adjustment adjustment;
 
 

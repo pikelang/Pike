@@ -1,11 +1,11 @@
 /* -*- C -*- */
-class GDK.DragContext;
+class GDK1.DragContext;
 //! The drag context contains all information about the drag'n'drop
 //! connected to the signal to which it is an argument.
 //! <p>
 //! NOIMG
 //! </p>
-GTK.Widget get_source_widget()
+GTK1.Widget get_source_widget()
 //! Return the drag source widget.
 {
   my_pop_n_elems(args);
@@ -61,7 +61,7 @@ void drop_reply(int ok, int time)
   RETURN_THIS();
 }
 
-void drag_set_icon_widget(GTK.Widget widget,int hot_x,int hot_y)
+void drag_set_icon_widget(GTK1.Widget widget,int hot_x,int hot_y)
 //! Set the drag widget. This is a widget that will be shown, and then
 //! dragged around by the user during this drag.
 {
@@ -82,7 +82,7 @@ void drag_set_icon_default()
   RETURN_THIS();
 }
 
-void drag_set_icon_pixmap(GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y )
+void drag_set_icon_pixmap(GDK1.Pixmap p, GDK1.Bitmap b, int hot_x, int hot_y )
 //! Set the drag pixmap, and optionally mask.<br />
 //! The hot_x and hot_y coordinates will be the location of the mouse pointer,
 //! relative to the upper left corner of the pixmap.

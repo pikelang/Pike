@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GDK.Color;
-//! The GDK.Color object is used to represent a color.
-//! When you call GDK.Color(r,g,b) the color will be allocated
+class GDK1.Color;
+//! The GDK1.Color object is used to represent a color.
+//! When you call GDK1.Color(r,g,b) the color will be allocated
 //! from the X-server. The constructor can return an  exception if there are
 //! no more colors to allocate.
 //! NOIMG
@@ -20,7 +20,7 @@ void create(object|int color_or_r,int|void g,int|void b)
     struct object *o;
     get_all_args("GdkColor", args, "%o", &o);
     if( !get_color_from_pikecolor( o, &r, &g, &b ) )
-      Pike_error("Bad argument 1 to GDK.Color(). Exptected color object\n");
+      Pike_error("Bad argument 1 to GDK1.Color(). Exptected color object\n");
   }
   else
   {
@@ -72,7 +72,7 @@ int blue()
 }
 
 int pixel()
-//! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</a>.
+//! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK1.Image->set_pixel</a>.
 {
   push_int(((GdkColor *)THIS->obj)->pixel);
 }

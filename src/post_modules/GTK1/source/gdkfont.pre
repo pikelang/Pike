@@ -1,5 +1,5 @@
 /* -*- C -*- */
-class GDK.Font;
+class GDK1.Font;
 //! The GdkFont data type represents a font for drawing on the
 //! screen. These functions provide support for loading fonts, and also
 //! for determining the dimensions of characters and strings when drawn

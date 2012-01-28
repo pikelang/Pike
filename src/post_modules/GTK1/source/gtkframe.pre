@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Frame;
-inherit GTK.Container;
+class GTK1.Frame;
+inherit GTK1.Container;
 //! The frame widget is a Bin that surrounds its child with a
 //! decorative frame and an optional label. If present, the label is
 //! drawn in a gap in the top side of the frame. The position of the
@@ -8,9 +8,9 @@ inherit GTK.Container;
 //! <p>
 //! Used to visually group objects.
 //! </p><p>
-//! IMG: GTK.Frame("Title")->add(GTK.Label("Contents"))
-//! IMG: GTK.Frame()->add(GTK.Label("Contents"))
-//! IMG: GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)
+//! IMG: GTK1.Frame("Title")->add(GTK1.Label("Contents"))
+//! IMG: GTK1.Frame()->add(GTK1.Label("Contents"))
+//! IMG: GTK1.Frame()->add(GTK1.Label("Contents"))->set_shadow_type(GTK1.SHADOW_IN)
 //! </p>
 void create( ?string label_text );
 //! Create a new W(Frame) widget.

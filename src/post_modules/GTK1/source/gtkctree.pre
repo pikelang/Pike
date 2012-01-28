@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Ctree;
-inherit GTK.Clist;
+class GTK1.Ctree;
+inherit GTK1.Clist;
 //! The GtkCTree widget is used for showing a hierarchical tree to the
 //! user, for example a directory tree.
 //! <p>
@@ -55,7 +55,7 @@ void create( int columns, int tree_column );
 //! tree_column is the column that has the tree graphics (lines and
 //! expander buttons).
 
-void insert_node( GTK.CTreeNode parent, GTK.CTreeNode sibling,
+void insert_node( GTK1.CTreeNode parent, GTK1.CTreeNode sibling,
                   array(string) text, int is_leaf, int expanded )
 //! At least one of parent or sibling must be specified.
 //! If both are specified, sibling->parent() must be equal to parent.
@@ -110,68 +110,68 @@ void insert_node( GTK.CTreeNode parent, GTK.CTreeNode sibling,
   push_pgdkobject( sibling, pgtk_ctree_node_program );
 }
 
-void remove_node( GTK.CTreeNode node );
+void remove_node( GTK1.CTreeNode node );
 //! Remove a node and it's subnodes from the tree.
 //! The nodes will be destroyed, so you cannot add them again.
-int is_viewable( GTK.CTreeNode node );
+int is_viewable( GTK1.CTreeNode node );
 //! Returns 1 if a certain node can be viewed (with or without
 //! scrolling of the tree).<p>
 //! Returns 0 if the node is in a folded part of the tree.</p>
-GTK.CTreeNode last( GTK.CTreeNode node );
+GTK1.CTreeNode last( GTK1.CTreeNode node );
 //! Returns the last child of the last child of the last child... of
 //! the given node.
-GTK.CTreeNode find_node_ptr( GTK.CTreeRow node );
+GTK1.CTreeNode find_node_ptr( GTK1.CTreeRow node );
 //! Given a W(CTreeRow) (deprectated structure in PiGTK), return the
 //! W(CTreeNode) associated with the row.
-GTK.CTreeNode node_nth( int row );
+GTK1.CTreeNode node_nth( int row );
 //! Return the node that is currently visible on the specified row.
-int find( GTK.CTreeNode node, GTK.CTreeNode|void start );
+int find( GTK1.CTreeNode node, GTK1.CTreeNode|void start );
 //! Returns true if the node is a child of the start node.<br />
 //! 
 //! If you omit the starting node, the tree will be searched from
 //! the root.
-int is_ancestor( GTK.CTreeNode node, GTK.CTreeNode child );
+int is_ancestor( GTK1.CTreeNode node, GTK1.CTreeNode child );
 //! Returns true if <b>node</b> is an ancestor of <b>child</b>
 int is_hot_spot( int x, int y );
 //! Returns true if the given coordinates lie on an expander button
-void move( GTK.CTreeNode node,
-           GTK.CTreeNode new_parent,
-           GTK.CTreeNode new_sibling );
+void move( GTK1.CTreeNode node,
+           GTK1.CTreeNode new_parent,
+           GTK1.CTreeNode new_sibling );
 //! Move a node. Coordinates work as for insert.
 
-void expand( ?GTK.CTreeNode node );
+void expand( ?GTK1.CTreeNode node );
 //! Expand the node, showing it's children.
 //! If no node is given, expand the toplevel of the tree
-void expand_recursive( ?GTK.CTreeNode node );
+void expand_recursive( ?GTK1.CTreeNode node );
 //! Expand the node, showing it's children, it's childrens children, etc.
 //! If no node is given, expand the whole tree
-void expand_to_depth( ?GTK.CTreeNode node, int depth );
+void expand_to_depth( ?GTK1.CTreeNode node, int depth );
 //! Expand depth levels of the tree, starting with the specified node.
 //! If no node is given, start with the toplevel node.
-void collapse( ?GTK.CTreeNode node );
+void collapse( ?GTK1.CTreeNode node );
 //! Collapse the node, hiding it's children.
 //! If no node is given, expand the toplevel of the tree
-void collapse_recursive( ?GTK.CTreeNode node );
+void collapse_recursive( ?GTK1.CTreeNode node );
 //! Collapse the node, showing it's children, it's childrens children, etc.
 //! If no node is given, collapse the whole tree
-void collapse_to_depth( ?GTK.CTreeNode node, int depth );
+void collapse_to_depth( ?GTK1.CTreeNode node, int depth );
 //! Collapse depth levels of the tree, starting with the specified node.
 //! If no node is given, start with the toplevel node.
-void toggle_expansion( ?GTK.CTreeNode node );
+void toggle_expansion( ?GTK1.CTreeNode node );
 //! If the node is expanded, collapse it, and if it's collapsed, expand it.
-void toggle_expansion_recursive( ?GTK.CTreeNode node );
+void toggle_expansion_recursive( ?GTK1.CTreeNode node );
 //! Toggle the expansion of the whole subtree, starting with node.
-void select( GTK.CTreeNode node );
+void select( GTK1.CTreeNode node );
 //! Select a node.
-void select_recursive( GTK.CTreeNode node );
+void select_recursive( GTK1.CTreeNode node );
 //! Select a node and it's children.
-void unselect( GTK.CTreeNode node );
+void unselect( GTK1.CTreeNode node );
 //! Unselect a node.
-void unselect_recursive( GTK.CTreeNode node );
+void unselect_recursive( GTK1.CTreeNode node );
 //! Unselect a node and it's children.
 
 
-void find_by_row_data(object data, ?GTK.CtreeNode root)
+void find_by_row_data(object data, ?GTK1.CtreeNode root)
 //! Find a node in the tree starting with root, that has the given user data.
 //! If no node is found, 0 is returned.
 {
@@ -193,17 +193,17 @@ void find_by_row_data(object data, ?GTK.CtreeNode root)
     push_pgdkobject( row, pgtk_ctree_node_program );
 }
 
-void node_set_text( GTK.CTreeNode node, int column, string text );
+void node_set_text( GTK1.CTreeNode node, int column, string text );
 //! Set the text in a cell
-void node_set_pixmap( GTK.CTreeNode node, int column,
-                      GDK.Pixmap pixmap, ?GDK.Bitmap mask );
+void node_set_pixmap( GTK1.CTreeNode node, int column,
+                      GDK1.Pixmap pixmap, ?GDK1.Bitmap mask );
 //! Set the pixmap in a cell
-void node_set_pixtext( GTK.CTreeNode node, int column, string text,
-                       int spacing, GDK.Pixmap pixmap, ?GDK.Bitmap mask );
+void node_set_pixtext( GTK1.CTreeNode node, int column, string text,
+                       int spacing, GDK1.Pixmap pixmap, ?GDK1.Bitmap mask );
 //! Set the pixmap and text in a cell
-void set_node_info( GTK.CTreeNode node, string text, int spacing,
-                    GDK.Pixmap pixmap_closed, GDK.Bitmap mask_closed,
-                    GDK.Pixmap pixmap_opened, GDK.Bitmap mask_opened,
+void set_node_info( GTK1.CTreeNode node, string text, int spacing,
+                    GDK1.Pixmap pixmap_closed, GDK1.Bitmap mask_closed,
+                    GDK1.Pixmap pixmap_opened, GDK1.Bitmap mask_opened,
                     int is_leaf, int expanded );
 //! <table>
 //! <tr><td> text :</td><td>The texts to be shown in each column.</td></tr>
@@ -223,17 +223,17 @@ void set_node_info( GTK.CTreeNode node, string text, int spacing,
 //! <td>Whether this node should start out expanded or not.</td></tr>
 //! </table>
 
-void node_set_shift( GTK.CTreeNode node, int column,
+void node_set_shift( GTK1.CTreeNode node, int column,
                      int vertical, int horizontal );
 //! Shift the given cell the given amounts in pixels.
-void node_set_selectable( GTK.CTreeNode node, int selectablep );
+void node_set_selectable( GTK1.CTreeNode node, int selectablep );
 //! Whether this node can be selected by the user.
-int node_get_selectable( GTK.CTreeNode node );
+int node_get_selectable( GTK1.CTreeNode node );
 //! Return whether or not this node can be selcted by the user
-int node_get_cell_type( GTK.CTreeNode node, int column );
+int node_get_cell_type( GTK1.CTreeNode node, int column );
 //! Return the celltype of this node.
 
-string node_get_text(GTK.CTreeNode node, int column)
+string node_get_text(GTK1.CTreeNode node, int column)
 //! Returns the text of the specified node
 {
   struct object *x;
@@ -256,7 +256,7 @@ string node_get_text(GTK.CTreeNode node, int column)
     push_int(0);
 }
 
-mapping node_get_pixmap( GTK.CtreeNode node, int column )
+mapping node_get_pixmap( GTK1.CtreeNode node, int column )
 //! Returns the pixmap and mask of this node in a mapping:<br />
 //! ([ "pixmap":the_pixmap, "mask":the_bitmap ])
 {
@@ -291,7 +291,7 @@ mapping node_get_pixmap( GTK.CtreeNode node, int column )
 }
 
 
-mapping node_get_pixtext(GTK.CTreeNode n, int columne )
+mapping node_get_pixtext(GTK1.CTreeNode n, int columne )
 //! Returns the pixmap, mask and text of this node in a mapping:<br />
 //! ([ "pixmap":the_pixmap, "mask":the_bitmap, "text":the_text ])
 {
@@ -336,20 +336,20 @@ mapping node_get_pixtext(GTK.CTreeNode n, int columne )
   f_aggregate_mapping( 8 );
 }
 
-void node_set_row_style( GTK.CTreeNode node, GTK.Style style );
+void node_set_row_style( GTK1.CTreeNode node, GTK1.Style style );
 //! Set the style of a row
-GTK.Style node_get_row_style( GTK.CTreeNode node );
+GTK1.Style node_get_row_style( GTK1.CTreeNode node );
 //! Return the style of a row
-void node_set_cell_style( GTK.CTreeNode node, int col, GTK.Style style );
+void node_set_cell_style( GTK1.CTreeNode node, int col, GTK1.Style style );
 //! Set the style of a cell
-GTK.Style node_get_cell_style( GTK.CTreeNode node, int col );
+GTK1.Style node_get_cell_style( GTK1.CTreeNode node, int col );
 //! Return the style of a cell
-void node_set_foreground( GTK.CTreeNode node, GDK.Color col );
+void node_set_foreground( GTK1.CTreeNode node, GDK1.Color col );
 //! Set the foreground of a row
-void node_set_background( GTK.CTreeNode node, GDK.Color color );
+void node_set_background( GTK1.CTreeNode node, GDK1.Color color );
 //! Set the background of a row
 
-void node_set_row_data(GTK.CTreeNode node, object data)
+void node_set_row_data(GTK1.CTreeNode node, object data)
 //! Set the user data associated with the specified node.
 //! This data can be used to find nodes, and when a node is selected it
 //! can be easily retrieved using node_get_row_data.
@@ -367,7 +367,7 @@ void node_set_row_data(GTK.CTreeNode node, object data)
   RETURN_THIS();
 }
 
-object node_get_row_data(GTK.CTreeNode n)
+object node_get_row_data(GTK1.CTreeNode n)
 //! Return the data associated with a node, or 0.
 {
   struct object *row;
@@ -383,11 +383,11 @@ object node_get_row_data(GTK.CTreeNode n)
     push_int( 0 );
 }
 
-void node_moveto( GTK.CTreeNode row, int column,
+void node_moveto( GTK1.CTreeNode row, int column,
                   float row_align, float col_align );
 //! Scroll the tree so a specified node (and column) is visible.
 //! If the node is folded, it's first visible parent will be shown.
-int node_is_visible( GTK.CTreeNode node );
+int node_is_visible( GTK1.CTreeNode node );
 //! Return 1 if the node is currently visible
 void set_indent( int npixels );
 //! Set the indentation level
@@ -407,18 +407,18 @@ void gtk_ctree_set_drag_compare_func (GtkCTree     	      *ctree,
 				      GtkCTreeCompareDragFunc  cmp_func);
 */
 
-void sort_node( ?GTK.CTreeNode node );
+void sort_node( ?GTK1.CTreeNode node );
 //! Sort the specified node.
-void sort_recursive( ?GTK.CTreeNode node );
+void sort_recursive( ?GTK1.CTreeNode node );
 //! Sort the specified node and it's children.
 
-class GTK.CTreeNode;
+class GTK1.CTreeNode;
 //! This is one of the nodes (branch or leaf) of the CTree.<br />
 //! They are the equivalent of row numbers in a normal CList.
 %{
 #define GTK_CTREENODE(X) ((GtkCTreeNode *)X)
 %}
-GTK.CTreeRow row()
+GTK1.CTreeRow row()
 //! Returns the CTreeRow associated with this CTreeNode.<br />
 //! <b>DEPRECATED</b>, all CTreeRow functions are also available
 //! directly in this object.
@@ -427,7 +427,7 @@ GTK.CTreeRow row()
   push_pgdkobject( GTK_CTREE_ROW( THIS->obj ), pgtk_ctree_row_program );
 }
 
-GTK.CTreeNode parent()
+GTK1.CTreeNode parent()
 //! Returns the parent node
 {
   my_pop_n_elems(args);
@@ -435,7 +435,7 @@ GTK.CTreeNode parent()
                    pgtk_ctree_node_program );
 }
 
-GTK.CtreeNode child()
+GTK1.CtreeNode child()
 //! Returns the first child node
 {
   my_pop_n_elems(args);
@@ -444,14 +444,14 @@ GTK.CtreeNode child()
 }
 
 
-GTK.CtreeNode next()
+GTK1.CtreeNode next()
 //! Returns the next sibling (the next on the same  level)
 {
   my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_NODE_NEXT( THIS->obj ), pgtk_ctree_node_program );
 }
 
-GTK.CtreeNode prev()
+GTK1.CtreeNode prev()
 //! Returns the previous sibling (the next on the same level)
 {
   my_pop_n_elems(args);
@@ -479,14 +479,14 @@ int get_expanded()
   push_int( GTK_CTREE_ROW( THIS->obj )->expanded );
 }
 
-class GTK.CTreeRow;
+class GTK1.CTreeRow;
 //! This class is deprecated.
 %{
 #define GTK_CTREEROW(X) ((GtkCTreeRow *)X)
 %}
-member GTK.CTreeNode parent;
+member GTK1.CTreeNode parent;
 //! Return the parent node of this node
-member GTK.CTreeNode children;
+member GTK1.CTreeNode children;
 //! Return the first child
 member int level;
 //! Return the level of this node (0 for root, 1 for a child of the root, etc)

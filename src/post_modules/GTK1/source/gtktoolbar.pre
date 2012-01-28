@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Toolbar;
-inherit GTK.Container;
+class GTK1.Toolbar;
+inherit GTK1.Container;
 //! Toolbars are usually used to group some number of widgets in order
 //! to simplify customization of their look and layout. Typically a
 //! toolbar consists of buttons with icons, labels and tooltips, but
@@ -10,9 +10,9 @@ inherit GTK.Container;
 
 //! <p>
 //! Examples:
-//! IMG: lambda(){object t=GTK.Toolbar( GTK.ORIENTATION_HORIZONTAL, GTK.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Frame(), lambda(){},0);return t;}()
-//! IMG: lambda(){object t=GTK.Toolbar( GTK.ORIENTATION_VERTICAL, GTK.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Frame(), lambda(){},0);return t;}()
-//! IMG: lambda(){object i=GDK.Image()->set(Image.Image(20,20)->test());object t=GTK.Toolbar( GTK.ORIENTATION_HORIZONTAL, GTK.TOOLBAR_BOTH );t->append_item( "Button 1", "Tooltip 1", "", GTK.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Image(i), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Image(i), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Image(i), lambda(){},0);return t;}()
+//! IMG: lambda(){object t=GTK1.Toolbar( GTK1.ORIENTATION_HORIZONTAL, GTK1.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK1.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK1.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK1.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK1.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK1.Frame(), lambda(){},0);return t;}()
+//! IMG: lambda(){object t=GTK1.Toolbar( GTK1.ORIENTATION_VERTICAL, GTK1.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK1.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK1.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK1.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK1.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK1.Frame(), lambda(){},0);return t;}()
+//! IMG: lambda(){object i=GDK1.Image()->set(Image.Image(20,20)->test());object t=GTK1.Toolbar( GTK1.ORIENTATION_HORIZONTAL, GTK1.TOOLBAR_BOTH );t->append_item( "Button 1", "Tooltip 1", "", GTK1.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK1.Image(i), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK1.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK1.Image(i), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK1.Image(i), lambda(){},0);return t;}()
 //! </p>
 signal orientation_changed;
 signal style_changed;
@@ -21,15 +21,15 @@ void create( int orientation, int style );
 //! CONST(GTK_ORIENTATION). Style is one of CONST(GTK_TOOLBAR)
 
 void append_item( string label, string tooltip,
-                  string prv,  GTK.Widget icon,
+                  string prv,  GTK1.Widget icon,
                   function(callback) clicked );
 //! <p>Adds a new button to the start of the toolbar.</p>
 void prepend_item( string label, string tooltip, string prv,
-                   GTK.Widget icon, function(callback) clicked );
+                   GTK1.Widget icon, function(callback) clicked );
 //! Arguments as for append_item
 //! <p>Adds a new button to the end of the toolbar.</p>
 void insert_item( string label, string tooltip, string prv,
-                  GTK.Widget icon, function(callback) clicked,
+                  GTK1.Widget icon, function(callback) clicked,
                   int position );
 //! Arguments as for append_item, but an extra position argument at the end.
 //! <p>Adds a new button after the item at the specified position.</p>
@@ -40,11 +40,11 @@ void prepend_space();
 void insert_space( int pixels );
 //! Inserts a small space at the specified postion.
 
-void append_widget( GTK.Widget widget, string tootip, string prv );
+void append_widget( GTK1.Widget widget, string tootip, string prv );
 //! Append a custom widgets. Arguments are widget, tooltip, private
-void prepend_widget( GTK.Widget widget, string tootip, string prv );
+void prepend_widget( GTK1.Widget widget, string tootip, string prv );
 //! Prepend a custom widgets. Arguments are widget, tooltip, private
-void insert_widget( GTK.Widget widget, string tootip, string prv, int pos );
+void insert_widget( GTK1.Widget widget, string tootip, string prv, int pos );
 //! Insert a custom widgets.
 
 void set_orientation( int orientation );

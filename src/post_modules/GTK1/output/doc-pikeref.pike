@@ -165,7 +165,7 @@ protected string make_pike_refdoc( string pgtkdoc,
 protected string module_name( Class cls )
 {
   if( has_prefix( cls->name, "Gnome." ) ) return "Gnome";
-  if( has_prefix( cls->name, "GDK." ) )   return "GDK";
+  if( has_prefix( cls->name, "GDK1." ) )   return "GDK1";
   return "GTK1";
 }
 
@@ -175,8 +175,8 @@ protected string class_name( Class cls, int|void nmn )
   if(!nmn)
     mn = module_name( cls )+".";
   if( has_prefix( cls->name, "Gnome." ) ) return mn+cls->name[6..];
-  if( has_prefix( cls->name, "GDK." ) )   return mn+cls->name[4..];
-  if( has_prefix( cls->name, "GTK1." ) )   return mn+cls->name[4..];
+  if( has_prefix( cls->name, "GDK1." ) )   return mn+cls->name[5..];
+  if( has_prefix( cls->name, "GTK1." ) )   return mn+cls->name[5..];
   return mn+cls->name;
 }
 

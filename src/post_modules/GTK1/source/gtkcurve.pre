@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GTK.Curve;
-inherit GTK.DrawingArea;
-//! IMG: GTK.Curve()
+class GTK1.Curve;
+inherit GTK1.DrawingArea;
+//! IMG: GTK1.Curve()
 void create();
 void reset();
 void set_gamma( float gamma );

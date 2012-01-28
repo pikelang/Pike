@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.NumberEntry;
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 //!  Provides an entry line for numbers. This routine does not attempt
 //!  to do any validation on the valid number ranges, but provides a
 //!  button that will let the user bring up a calculator to fill in the
@@ -13,7 +13,7 @@ void create(string history_id, string calc_dialog_title );
 Gnome.Entry gnome_entry( );
 //! Get the W(GnomeEntry) component of the Gnome.NumberEntry for
 //! lower-level manipulation.
-GTK.Entry gtk_entry();
+GTK1.Entry gtk_entry();
 //! Get the W(Entry) component of the Gnome.NumberEntry for Gtk+-level
 //! manipulation.
 void set_title( string title );

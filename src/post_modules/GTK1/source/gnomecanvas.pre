@@ -3,12 +3,12 @@ DISABLED {
 
 require gnome;
 class Gnome.Canvas;
-inherit GTK.Layout;
+inherit GTK1.Layout;
 //! The GNOME canvas is an engine for displaying structured graphics
 //! and simplifying the development of complex graphic-based
 //! applications.
 //! <p>
-//! It is, however, not yet wrapped in Pike GTK.
+//! It is, however, not yet wrapped in Pike GTK1.
 //! </p>
 FUNCTION(create, "function(int|void:void)");
 NAME_ARGS(anti_alias);

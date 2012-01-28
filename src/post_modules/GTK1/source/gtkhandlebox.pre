@@ -1,14 +1,14 @@
 /* -*- C -*- */
 require gtk_120;
-class GTK.HandleBox;
+class GTK1.HandleBox;
 //! The contents of a handle box can be 'dragged' out of the box by the user.
 //! The contents will then be placed in a separate window.
-//! IMG: GTK.HandleBox()->add(GTK.Label("The contents"))
+//! IMG: GTK1.HandleBox()->add(GTK1.Label("The contents"))
 signal child_attached;
 //! Called when a new child is added to the box
 signal child_detached;
 //! Called when a child is removed from the box
-inherit GTK.Bin;
+inherit GTK1.Bin;
 void create();
 //! Create a new handle box widget.
 void set_shadow_type( int shadow_type );

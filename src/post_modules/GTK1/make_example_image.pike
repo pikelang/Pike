@@ -25,7 +25,7 @@ string tags( string imgdata)
 
 void grab(object w, string s)
 {
-  object i = GDK.Image();
+  object i = GDK1.Image();
   if(w->xsize() == 40 || w->ysize() == 40 )
   {
     werror("Image dimensions are 0x0!\n");
@@ -63,11 +63,11 @@ int main(int argc, array (string) argv)
     return 1;
 #endif
   else
-    GTK.setup_gtk( "make_gtkexample", 1 );
+    GTK1.setup_gtk( "make_gtkexample", 1 );
 
   if(argv[2] != "TOP")
   {
-    w = GTK.Window( GTK.WindowToplevel );
+    w = GTK1.Window( GTK1.WindowToplevel );
     w->set_title("Example image generation");
     w->add( ex=get_widget_from( source ) );
     w->set_border_width(20);

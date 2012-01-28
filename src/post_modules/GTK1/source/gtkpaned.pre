@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GTK.Paned;
-inherit GTK.Container;
-//! GTK.Paned is the base class for widgets with two panes, arranged
+class GTK1.Paned;
+inherit GTK1.Container;
+//! GTK1.Paned is the base class for widgets with two panes, arranged
 //! either horizontally (W(HPaned)) or vertically (W(VPaned)). Child
 //! widgets are added to the panes of the widget with pack1() and
 //! pack2(). The division beween the two children is set by default
@@ -13,11 +13,11 @@ inherit GTK.Container;
 //! does not draw any relief around the children or around the
 //! separator. (The space in which the separator is called the
 //! gutter). Often, it is useful to put each child inside a W(Frame)
-//! with the shadow type set to GTK.ShadowIn so that the gutter
+//! with the shadow type set to GTK1.ShadowIn so that the gutter
 //! appears as a ridge.
 //! </p><p>
 //! Each child has two options that can be set, resize and shrink. If
-//! resize is true, then when the GTK.Paned is resized, that child will
+//! resize is true, then when the GTK1.Paned is resized, that child will
 //! expand or shrink along with the paned widget. If shrink is true,
 //! then when that child can be made smaller than it's requisition by
 //! the user. Setting shrink to 0 allows the application to set a
@@ -27,10 +27,10 @@ inherit GTK.Container;
 //! The application can set the position of the slider as if it were
 //! set by the user, by calling set_position().
 //! </p>
-void add1( GTK.Widget left_or_top );
+void add1( GTK1.Widget left_or_top );
 //! Set the left or topmost item.<br />
 //! This is equivalent to pack1(left_or_top,0,1)
-void add2( GTK.Widget right_or_bottom );
+void add2( GTK1.Widget right_or_bottom );
 //! Set the right or bottommost item<br />
 //! This is equivalent to pack2(left_or_top,0,1)
 void set_handle_size( int hsize );
@@ -42,9 +42,9 @@ void set_position( int position );
 //! position is negative, the remembered position is forgotten, and
 //! the division is recomputed from the the requisitions of the
 //! children.
-void pack1( GTK.Widget widget, int resize, int shrink );
+void pack1( GTK1.Widget widget, int resize, int shrink );
 //! Add a child to the top or left pane.
-void pack2( GTK.Widget widget, int resize, int shrink );
+void pack2( GTK1.Widget widget, int resize, int shrink );
 //! Add a child to the bottom or right pane.
 
 member int handle_size;

@@ -1,5 +1,5 @@
 /* -*- C -*- */
-class GDK.Event;
+class GDK1.Event;
 %{
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
@@ -236,7 +236,7 @@ string _sprintf(int flag)
     push_undefined();
     return;
   }
-  push_text( "GDK.Event(" );
+  push_text( "GDK1.Event(" );
   push_text( "type" ); pgdk_event__index( 1 );
   push_text( ")" );
   f_add( 3 );

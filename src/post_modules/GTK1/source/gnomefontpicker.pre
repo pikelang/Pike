@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.FontPicker;
-inherit GTK.Button;
+inherit GTK1.Button;
 //!  GnomeFontPicker - Button that displays current font; click to select new font.
 //! IMG: Gnome.FontPicker();
 //! IMG: Gnome.FontPicker()->set_mode( Gnome.FontPickerModeFontInfo );
@@ -24,12 +24,12 @@ void fi_set_show_size( int show_size );
 //! If show_size is TRUE, font size will be displayed along with font
 //! chosen by user. This only applies if current button mode is
 //! Gnome.FontPickerModeFontInfo.
-void uw_set_widget( GTK.Widget widget );
+void uw_set_widget( GTK1.Widget widget );
 //! Set the user-supplied widget as the inside of the font picker. This
 //! only applies with Gnome.FontPickerModeUserWidget.
 string get_font_name();
 //! Retrieve name of font from font selection dialog.
-GDK.Font get_font();
+GDK1.Font get_font();
 //! Retrieves the font from the font selection dialog.
 int set_font_name( string fontname );
 //! Set or update the currently displayed font in the font picker dialog

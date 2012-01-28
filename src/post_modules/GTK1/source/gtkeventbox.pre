@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.EventBox;
-inherit GTK.Bin;
+class GTK1.EventBox;
+inherit GTK1.Bin;
 //! Some gtk widgets don't have associated X windows, so they just draw
 //! on their parents. Because of this, they cannot receive events and
 //! if they are incorrectly sized, they don't clip so you can get messy
@@ -22,7 +22,7 @@ inherit GTK.Bin;
 //! for a widget without a window. Examples of such widgets are labels
 //! and images.
 //! </p>
-//! IMG: GTK.EventBox()->set_usize(100,100)
+//! IMG: GTK1.EventBox()->set_usize(100,100)
 void create();
 //! Create a new event box widget
 

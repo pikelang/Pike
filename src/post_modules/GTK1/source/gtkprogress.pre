@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Progress;
-inherit GTK.Widget;
+class GTK1.Progress;
+inherit GTK1.Widget;
 void set_show_text( int textp );
 //! If true, write a text in the progress bar.
 void set_text_alignment( float xalign, float yalign );
@@ -25,7 +25,7 @@ void set_format_string( string format );
 //! %: Insert a %
 //! </pre></blockquote>The default format is '%P%%'
 //! </p>
-void set_adjustment( GTK.Adjustment adjustment );
+void set_adjustment( GTK1.Adjustment adjustment );
 //! Sets the adjustment to use. See the adjustment documentation for more info
 void configure( float value, float min, float max );
 //! Sets the current value, the minimum value and the maximum value.

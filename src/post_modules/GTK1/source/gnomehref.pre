@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Href;
-inherit GTK.Button;
+inherit GTK1.Button;
 //! This widget is a GtkButton button that contains a URL. When clicked
 //! it invokes the configured browser for the URL you provided.
 //! <p>

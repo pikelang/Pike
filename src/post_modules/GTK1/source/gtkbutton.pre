@@ -1,13 +1,13 @@
 /* -*- C -*- */
-class GTK.Button;
-inherit GTK.Container;
+class GTK1.Button;
+inherit GTK1.Container;
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.
-//! IMG: GTK.Button("A button")
-//! IMG: GTK.Button("A button\nwith multiple lines\nof text")
-//! IMG: GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.Image(100,40)->test())))
+//! IMG: GTK1.Button("A button")
+//! IMG: GTK1.Button("A button\nwith multiple lines\nof text")
+//! IMG: GTK1.Button()->add(GTK1.Image(GDK1.Image(0)->set(Image.Image(100,40)->test())))
 
-member GTK.Widget child;
+member GTK1.Widget child;
 //! The (one and only) child of this container.
 signal pressed;
 //! Called when the button is pressed

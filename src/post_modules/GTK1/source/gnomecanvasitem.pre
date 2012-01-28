@@ -2,7 +2,7 @@
 DISABLED {
 require gnome;
 class Gnome.CanvasItem;
-inherit GTK.Object;
+inherit GTK1.Object;
 // The base canvas item class
 signal event;
 

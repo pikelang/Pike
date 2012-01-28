@@ -1,5 +1,5 @@
 /* -*- C -*- */
-class GTK.GammaCurve;
+class GTK1.GammaCurve;
 //! A gamma curve widget.. Rather complex.
 //! <p>
 //! Lets the user edit a gamma curve (a one-to-one mapping usually used
@@ -9,11 +9,11 @@ class GTK.GammaCurve;
 //! are guaranteed that every input value will have a (not necessarily
 //! unique) output value specified.
 //! </p>
-//! IMG: GTK.GammaCurve()->set_usize(210,130)
-inherit GTK.Vbox;
+//! IMG: GTK1.GammaCurve()->set_usize(210,130)
+inherit GTK1.Vbox;
 void create();
 //! Create a new gamma curve
-member GTK.Curve curve;
+member GTK1.Curve curve;
 //! The actual curve
 member float gamma;
 //! The current gamma value

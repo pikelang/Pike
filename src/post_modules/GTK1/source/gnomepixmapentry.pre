@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.PixmapEntry;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 //! Entry for large images with a preview. Unlike GnomeIconEntry, it
 //! does not scale the images to a specific size and shows them
 //! 1:1. This is perfect for selection of backgrounds and such. It also

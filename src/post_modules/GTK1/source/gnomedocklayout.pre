@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.DockLayout;
-inherit GTK.Object;
+inherit GTK1.Object;
 %{
 #define GNOME_DOCK_LAYOUT_ITEM(X) ((GnomeDockLayoutItem *)X)
 %}

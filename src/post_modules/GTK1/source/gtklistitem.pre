@@ -1,6 +1,6 @@
 /* -*- C -*- */
 DISABLED {
-class GTK.ListItem;
+class GTK1.ListItem;
 //! This type of items can be placed in a 'List' widget. 
 inherit item;
 FUNCTION(create, "function(string|void:void)");

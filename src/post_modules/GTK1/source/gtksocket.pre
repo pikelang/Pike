@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Socket;
-inherit GTK.Container;
+class GTK1.Socket;
+inherit GTK1.Container;
 %{
 #ifndef __NT__
 #include <gdk/gdkx.h>
@@ -8,9 +8,9 @@ inherit GTK.Container;
 #include <gdk/win32/gdkwin32.h>
 #endif
 %}
-//! Together with W(Plug), GTK.Socket provides the ability to embed
+//! Together with W(Plug), GTK1.Socket provides the ability to embed
 //! widgets from one process into another process in a fashion that is
-//! transparent to the user. One process creates a GTK.Socket widget
+//! transparent to the user. One process creates a GTK1.Socket widget
 //! and, passes the XID of that widget's window to the other process,
 //! which then creates a W(Plug) window with that XID. Any widgets
 //! contained in the W(Plug) then will appear inside the first
@@ -26,7 +26,7 @@ inherit GTK.Container;
 //!  A socket can also be used to swallow arbitrary pre-existing
 //!  top-level windows using steal(), though the integration when this
 //!  is done will not be as close as between a W(Plug) and a
-//!  GTK.Socket.
+//!  GTK1.Socket.
 //! </p>
 void create();
 void steal( int window_id );

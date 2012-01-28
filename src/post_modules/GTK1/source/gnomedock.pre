@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Dock;
-inherit GTK.Container;
+inherit GTK1.Container;
 
 //! GnomeDock is a container widget designed to let users move around
 //! widgets such as toolbars, menubars and so on.
@@ -50,9 +50,9 @@ void add_floating_item( Gnome.DockItem item, int x, int y, int orientation );
 //! Add item to dock and make it floating at the specified (x, y)
 //! coordinates (relative to the root window of the screen).
 
-void set_client_area( GTK.Widget area );
+void set_client_area( GTK1.Widget area );
 //!  Specify a widget for the dock's client area.
-GTK.Widget get_client_area( );
+GTK1.Widget get_client_area( );
 Gnome.DockItem  get_item_by_name( string name, null, null, null, null );
 /* layout stuff left */
 

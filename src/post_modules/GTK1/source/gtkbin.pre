@@ -1,8 +1,8 @@
 /* -*- C -*- */
-class GTK.Bin;
+class GTK1.Bin;
 //! A container that can only contain one child.
-inherit GTK.Container;
-member GTK.Widget child;
+inherit GTK1.Container;
+member GTK1.Widget child;
 //! Returns the (one and only) child of this container.
 
 

@@ -509,8 +509,8 @@ class Type
       case "void": /* needed for return types */
 	return "void";
 
-      case "GTK.CtreeNode":
-	name = "GTK.CTreeNode";
+      case "GTK1.CtreeNode":
+	name = "GTK1.CTreeNode";
 
       default:
 	if( classes[ name ] )
@@ -555,7 +555,7 @@ class Type
       case "Image.Color.Color":
 	return "object(implements "+PROG_IMAGE_COLOR_COLOR_ID+")"+optp;
 
-      case "GDK.Atom": // implemented in pike
+      case "GDK1.Atom": // implemented in pike
 	return "object"+optp;
 
       case "callback":
@@ -567,8 +567,8 @@ class Type
       case "void": /* needed for return types */
 	return "void";
 
-      case "GTK.CtreeNode":
-	name = "GTK.CTreeNode";
+      case "GTK1.CtreeNode":
+	name = "GTK1.CTreeNode";
 
       default:
 	if( classes[ name ] )
@@ -1029,9 +1029,9 @@ class Class( string name, string file, int line )
 
   string pike_name()
   {
-    if( sscanf(name, "GTK.%s", string pn ) )
+    if( sscanf(name, "GTK1.%s", string pn ) )
       return pn;
-    return (replace(name,"GDK","Gdk")-".");
+    return (replace(name,"GDK1","Gdk")-".");
   }
 
 
@@ -1065,7 +1065,7 @@ class Class( string name, string file, int line )
 
   int is_gtkobject()
   {
-    if( name == "GTK.Object" )
+    if( name == "GTK1.Object" )
       return 1;
     if( inherits )
       return inherits->is_gtkobject();
@@ -1078,7 +1078,11 @@ class Class( string name, string file, int line )
       return _cname;
     if( name == "_global" )  return "";
     string mn = (name/".")[0];
+    if (mn == "GDK1") mn = "GDK";
+    if (mn == "GTK1") mn = "GTK";
     string cn = (name/".")[-1];
+    if (cn == "GDK1") cn = "GDK";
+    if (cn == "GTK1") cn = "GTK";
     if( mn == cn )
       return mn;
     if( mn == "Gnome" && (has_prefix( cn, "Applet" ) ) )
@@ -1128,8 +1132,8 @@ class Class( string name, string file, int line )
   string c_type( )
   {
     string bt = name-".";
-    bt = replace(bt, "GTK", "Gtk" );
-    bt = replace(bt, "GDK", "Gdk" );
+    bt = replace(bt, "GTK1", "Gtk" );
+    bt = replace(bt, "GDK1", "Gdk" );
     bt = replace(bt, "GNOME", "Gnome" );
     return bt;
   }
@@ -1158,10 +1162,10 @@ class Class( string name, string file, int line )
     string nn = (name/".")[-1];
     switch( mn )
     {
-     case "GDK":
+     case "GDK1":
        _push="  push_gdkobject( %s, "+lower_case(nn)+" );";
        break;
-     case "GTK":
+     case "GTK1":
      case "Gnome":
        _push="  push_gtkobjectclass( %s, p"+c_name()+"_program );";
        break;

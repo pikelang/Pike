@@ -1,8 +1,8 @@
 /* -*- C -*- */
-class GTK.Entry;
-inherit GTK.Editable;
+class GTK1.Entry;
+inherit GTK1.Editable;
 //! Use this widget when you want the user to input a single line of text.
-//! IMG: GTK.Entry()->set_text("Hello world")->set_editable(1)
+//! IMG: GTK1.Entry()->set_text("Hello world")->set_editable(1)
 void create();
 void set_text( string text );
 //! Set the text to the specified string. The old text is dropped.

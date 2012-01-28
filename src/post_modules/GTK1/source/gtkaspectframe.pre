@@ -1,10 +1,10 @@
 /* -*- C -*- */
-class GTK.AspectFrame;
-inherit GTK.Frame;
+class GTK1.AspectFrame;
+inherit GTK1.Frame;
 //! A W(Frame) widget  that always maintain a specified ratio
 //! between width and height. width/height == ratio
 //!
-//! IMG: GTK.Aspect_frame("Title",0.5,0.5,0.4,0)->add( GTK.Label("Wrong aspect"))->set_usize(200,200)
+//! IMG: GTK1.Aspect_frame("Title",0.5,0.5,0.4,0)->add( GTK1.Label("Wrong aspect"))->set_usize(200,200)
 void set( float xalign,float yalign,float ratio,int obey_child);
 //! Set the aspec values. Arguments are xalign, yalign, ratio, obey_child
 //! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is

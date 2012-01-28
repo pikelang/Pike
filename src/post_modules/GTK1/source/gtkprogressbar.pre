@@ -1,12 +1,12 @@
 /* -*- C -*- */
-class GTK.ProgressBar;
-inherit GTK.Progress;
+class GTK1.ProgressBar;
+inherit GTK1.Progress;
 //! A simple progress bar. Useful when you are doing things that take a long
 //! time. Try to always have an 'abort' button whenever it makes sence.
-//! IMG: GTK.ProgressBar()->update(0.1)
-//! IMG: GTK.ProgressBar()->set_show_text(1)->update(0.3)
-//! IMG: GTK.ProgressBar()->update(0.6)
-//! IMG: GTK.ProgressBar()->update(1.0)
+//! IMG: GTK1.ProgressBar()->update(0.1)
+//! IMG: GTK1.ProgressBar()->set_show_text(1)->update(0.3)
+//! IMG: GTK1.ProgressBar()->update(0.6)
+//! IMG: GTK1.ProgressBar()->update(1.0)
 void create();
 //! Create a new progress bar.
 //! The default values are:<br />
@@ -14,7 +14,7 @@ void create();
 void update( float fraction );
 //! 0.0 is the minimum value, 1.0 is the maximum value.
 void set_bar_style( int style );
-//! One of GTK.ProgressContinuous or GTK.ProgressDiscrete
+//! One of GTK1.ProgressContinuous or GTK1.ProgressDiscrete
 void set_discrete_blocks( int blocks );
 //! The number of discrete blocks in the progress bar
 void set_activity_step( int stepp );
@@ -23,8 +23,8 @@ void set_activity_blocks( int blocks );
 //! The number of activity blocks
 void set_orientation( int style );
 //! One of
-//! GTK.ProgressLeftToRight, GTK.ProgressRightToLeft,
-//! GTK.ProgressBottomToTop or GTK.ProgressTopToBottom
+//! GTK1.ProgressLeftToRight, GTK1.ProgressRightToLeft,
+//! GTK1.ProgressBottomToTop or GTK1.ProgressTopToBottom
 member int activity_pos;
 //! The position of the progress meter in pixels.
 member int activity_step;

@@ -1,12 +1,12 @@
 /* -*- C -*- */
-class GDK.GC;
+class GDK1.GC;
 //! A GC, or Graphics Context, is used for most low-level drawing operation.
 //! <p>
 //! As an example, the foreground color, background color and drawing
 //! function is stored in the GC.</p>
 //!
 //! NOIMG
-void create( GTK.Widget|GDK.Drawable context, mapping|void attributes )
+void create( GTK1.Widget|GDK1.Drawable context, mapping|void attributes )
 //! The argument is a either a W(Widget) or a GDK(Drawable) in
 //! which the gc will be valid.
 {
@@ -125,16 +125,16 @@ mapping(string:mixed) get_values()
   f_aggregate_mapping( Pike_sp-osp );
 }
 
-void set_foreground(GDK.Color color)
-//! Set the foreground to the specified GDK.Color.
+void set_foreground(GDK1.Color color)
+//! Set the foreground to the specified GDK1.Color.
 {
   struct object *o;
   get_all_args("set_foreground", args, "%o", &o);
   gdk_gc_set_foreground( (GdkGC*)THIS->obj, get_gdkobject(o, color));
   RETURN_THIS();
 }
-void set_background(GDK.Color color)
-//! Set the background to the specified GDK.Color.
+void set_background(GDK1.Color color)
+//! Set the background to the specified GDK1.Color.
 {
   struct object *o;
   get_all_args("set_background", args, "%o", &o);
@@ -142,8 +142,8 @@ void set_background(GDK.Color color)
   RETURN_THIS();
 }
 
-void set_font(GDK.Font font)
-//! Set the font to the specified GDK.Font.
+void set_font(GDK1.Font font)
+//! Set the font to the specified GDK1.Font.
 {
   struct object *o;
   get_all_args("set_font", args, "%o", &o);
@@ -161,7 +161,7 @@ void set_fill(int fill )
 }
 
 
-void set_tile(GDK.Pixmap tile)
+void set_tile(GDK1.Pixmap tile)
 //! Set the background type. Fill must be GDK_TILED
 {
   struct object *o;
@@ -172,7 +172,7 @@ void set_tile(GDK.Pixmap tile)
 }
 
 
-void set_stipple(GDK.Bitmap stipple)
+void set_stipple(GDK1.Bitmap stipple)
 //! Set the background type. Fill must be GDK_STIPPLED or GDK_OPAQUE_STIPPLED
 {
   struct object *o;
@@ -202,8 +202,8 @@ void set_ts_origin(int x, int y)
   RETURN_THIS();
 }
 
-void set_clip_mask(GDK.Bitmap mask)
-//! Set the clip mask to the specified GDK.Bitmap
+void set_clip_mask(GDK1.Bitmap mask)
+//! Set the clip mask to the specified GDK1.Bitmap
 {
   if (args == 1)
   {
@@ -216,7 +216,7 @@ void set_clip_mask(GDK.Bitmap mask)
   RETURN_THIS();
 }
 
-void set_clip_rectangle(GDK.Rectangle|void rect)
+void set_clip_rectangle(GDK1.Rectangle|void rect)
 //! Sets the clip mask for a graphics context from a rectangle. The
 //! clip mask is interpreted relative to the clip origin.
 {
@@ -231,7 +231,7 @@ void set_clip_rectangle(GDK.Rectangle|void rect)
   RETURN_THIS();
 }
 
-void set_clip_region(GDK.Region rect)
+void set_clip_region(GDK1.Region rect)
 //! Sets the clip mask for a graphics context from a region. The
 //! clip mask is interpreted relative to the clip origin.
 {
@@ -268,9 +268,9 @@ void set_dashes( int offset, array dashes )
 
 void set_line_attributes( int line_width, int line_style, int cap_style, int join_style )
 //! Control how lines are drawn.
-//! line_style is one of GDK.LineSolid, GDK.LineOnOffDash and GDK.LineDoubleDash.
-//! cap_style is one of GDK.CapNotLast, GDK.CapButt, GDK.CapRound and GDK.CapProjecting.
-//! join_style is one of GDK.JoinMiter, GDK.JoinRonud and GDK.JoinBevel.
+//! line_style is one of GDK1.LineSolid, GDK1.LineOnOffDash and GDK1.LineDoubleDash.
+//! cap_style is one of GDK1.CapNotLast, GDK1.CapButt, GDK1.CapRound and GDK1.CapProjecting.
+//! join_style is one of GDK1.JoinMiter, GDK1.JoinRonud and GDK1.JoinBevel.
 {
     int a, b, c, d;
     get_all_args("set_line_attributes", args, "%d%d%d%d", &a,&b,&c,&d);
@@ -279,8 +279,8 @@ void set_line_attributes( int line_width, int line_style, int cap_style, int joi
 }
 
 void set_function(int fun)
-//! Set the function to the specified one. One of GDK.Xor,
-//! GDK.Invert and GDK.Copy.
+//! Set the function to the specified one. One of GDK1.Xor,
+//! GDK1.Invert and GDK1.Copy.
 {
   INT_TYPE a;
   get_all_args("set_function", args, "%i", &a);
@@ -288,7 +288,7 @@ void set_function(int fun)
   RETURN_THIS();
 }
 
-void copy( GDK.GC source )
+void copy( GDK1.GC source )
 //! Copy all attributes from the source GC
 {
     struct object *o;
