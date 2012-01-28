@@ -42,23 +42,27 @@
 
 
 #if defined(PIKE_CORE) || defined(DYNAMIC_MODULE)
-#include "global.h"
-#include "pike_error.h"
+# include "global.h"
+# include "pike_error.h"
 #else
-#ifdef PMOD_EXPORT
-# undef PMOD_EXPORT
-#endif
-#define PMOD_EXPORT
-#include <stdio.h>
-#include <unistd.h>
+# ifdef PMOD_EXPORT
+#  undef PMOD_EXPORT
+# endif
+# define PMOD_EXPORT
+# include <stdio.h>
+# include <unistd.h>
 
 static inline void _Pike_error(int line, char * file, char * msg) {
     fprintf(stderr, "%s:%d\t%s\n", file, line, msg);
     _exit(1);
 }
-#define Pike_error(x)	do { _Pike_error(__LINE__, __FILE__, errbuf); } while(0)
-#define INLINE __inline__
-#define ATTRIBUTE(x)	__attribute__(x)
+# define Pike_error(x)	do { _Pike_error(__LINE__, __FILE__, errbuf); } while(0)
+# ifndef INLINE
+#  define INLINE __inline__
+# endif
+# ifndef ATTRIBUTE
+#  define ATTRIBUTE(x)	__attribute__(x)
+# endif
 #endif
 
 #if defined(BA_DEBUG) || (!defined(PIKE_CORE) && !defined(DYNAMIC_MODULE) \
