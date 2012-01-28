@@ -9,7 +9,7 @@ inherit GTK1.CheckButton;
 //! <p> To connect the buttons, use another button in the desired group
 //! as the second argument to GTK1.RadioButton().
 //! </p>
-//! IMG: GTK1.Radio_button("Button");
+//! IMG: GTK1.RadioButton("Button");
 void create(string|void title, GTK1.RadioButton|void groupmember)
 //!  Normal creation:<p>
 //! object GTK1.RadioButton(string title) - First button (with label)<br />
