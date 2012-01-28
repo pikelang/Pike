@@ -346,24 +346,26 @@ SLOWPATH:
  * the payload data (i.e. that aren't x). This can be used in BSIZE to
  * make the block fit within a page. */
 #ifndef BLOCK_HEADER_SIZE
-#define BLOCK_HEADER_SIZE 0
+#undef BLOCK_HEADER_SIZE
 #endif
+/* we assume here that malloc has 8 bytes of overhead */
+#define BLOCK_HEADER_SIZE (sizeof(struct ba_page) + sizeof(void*))
 
 
 #define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
   BLOCK_ALLOC(DATA,							\
-              ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /			\
-              sizeof (struct DATA))
+      ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /	\
+      sizeof (struct DATA))
 
 #define PTR_HASH_ALLOC_FILL_PAGES(DATA, PAGES)				\
   PTR_HASH_ALLOC(DATA,							\
-                 ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /			\
-                 sizeof (struct DATA))
+     ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /	\
+     sizeof (struct DATA))
 
 #define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA, PAGES)			\
   PTR_HASH_ALLOC_FIXED(DATA,						\
-                       ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /		\
-                       sizeof (struct DATA))
+       ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /	\
+       sizeof (struct DATA))
 
 #define MS(x)	#x
 
