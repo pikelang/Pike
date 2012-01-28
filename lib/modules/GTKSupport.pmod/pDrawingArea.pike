@@ -30,10 +30,10 @@ this_program size(int x, int y)
 {
   if(!is_realized) return this;
   ::size(x,y);
-  if(!bgc) bgc = GDK.GC( background_pix||backing_store||this );
+  if(!bgc) bgc = GDK1.GC( background_pix||backing_store||this );
   object nb;
   if((x>_xsize || y>_ysize) && x && y)
-    nb = GDK.Pixmap( Image.Image(max(x,_xsize),max(y,_ysize)) );
+    nb = GDK1.Pixmap( Image.Image(max(x,_xsize),max(y,_ysize)) );
   if(nb && backing_store)
   {
     nb->draw_pixmap( bgc, backing_store, 0,0,0,0, _xsize, _ysize );
@@ -102,9 +102,9 @@ void create()
 //   ::set_usize( 100,100 );
 }
 
-GDK.Pixmap background_pix;
-GDK.Pixmap background_color;
-void set_background( GDK.Pixmap to )
+GDK1.Pixmap background_pix;
+GDK1.Pixmap background_color;
+void set_background( GDK1.Pixmap to )
 {
   if(to->red)
     background_color = to;

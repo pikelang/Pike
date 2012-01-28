@@ -1,19 +1,10 @@
 #pike __REAL_VERSION__
 
-#if constant(GTK) && constant(GTK.Widget)
+#if constant(GTK2) && constant(GTK2.Widget)
 
-#define INDEX(x) GTK[x]
+#define INDEX(x) GTK2[x]
 
-//! GDK wrapper module.
-//!
-//! This is a convenience module that is identical to either
-//! either the @[GDK2] or the @[GDK1] module depending on
-//! which (if any) of them is available.
-//!
-//! @seealso
-//!   @[GDK1], @[GDK2]
-
-//! @decl import GTK
+//! @decl import GTK2
 
 //! @decl constant Atom
 
@@ -28,7 +19,7 @@ object Atom = class
     object get_atom()
     {
       if(ra) return ra;
-      return ra = GTK->Gdk_Atom( n, 0 );
+      return ra = GTK2->Gdk_Atom( n, 0 );
     }
     string get_name()
     {
@@ -56,12 +47,12 @@ mixed `[](string what)
     return INDEX("Gdk"+what);
   if(!zero_type(INDEX("GDK_"+what)))
     return INDEX("GDK_"+what);
-  if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
-    return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
+  if(!zero_type(INDEX("GDK_"+upper_case(GTK2->unsillycaps(what)))))
+    return INDEX("GDK_"+upper_case(GTK2->unsillycaps(what)));
   return UNDEFINED;
 //   return  GDKSupport[what];
 }
 
-#else /* constant(GTK.Widget) */
+#else /* constant(GTK2.Widget) */
 constant this_program_does_not_exist=1;
 #endif

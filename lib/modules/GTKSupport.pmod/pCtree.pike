@@ -114,13 +114,13 @@ class Node
       return !!ctree::node_get_cell_type(node,cell);
    }
 
-   Node set_background(GDK.Color color)
+   Node set_background(GDK1.Color color)
    {
       ctree::node_set_background(node,color);
       return this;
    }
 
-   Node set_foreground(GDK.Color color)
+   Node set_foreground(GDK1.Color color)
    {
       ctree::node_set_foreground(node, color);
       return this;
@@ -181,14 +181,14 @@ class Node
       return node_get_pixtext(node,column);
    }
 
-   Node set_pixmap(int column, GDK.Pixmap pixmap,void|object(GDK.Bitmap) mask )
+   Node set_pixmap(int column, GDK1.Pixmap pixmap,void|object(GDK1.Bitmap) mask )
    {
       ctree::node_set_pixmap(node,column,pixmap,mask);
       return this;
    }
 
    Node set_pixtext( int column, string text, int spacing,
-		     GDK.Pixmap pixmap, object(GDK.Bitmap)|void mask)
+		     GDK1.Pixmap pixmap, object(GDK1.Bitmap)|void mask)
    {
       ctree::node_set_pixtext(node,column,text,spacing,pixmap,mask);
       return this;
@@ -206,10 +206,10 @@ class Node
    }
 
    Node set_info(string text, int spacing,
-		 object(GDK.Pixmap)|void pixmap_closed,
-		 object(GDK.Bitmap)|void mask_closed,
-		 object(GDK.Pixmap)|void pixmap_opened,
-		 object(GDK.Bitmap)|void mask_opened,
+		 object(GDK1.Pixmap)|void pixmap_closed,
+		 object(GDK1.Bitmap)|void mask_closed,
+		 object(GDK1.Pixmap)|void pixmap_opened,
+		 object(GDK1.Bitmap)|void mask_opened,
 		 int is_leaf, int expanded )
    {
       ctree::set_node_info(node,text,spacing,pixmap_closed,
