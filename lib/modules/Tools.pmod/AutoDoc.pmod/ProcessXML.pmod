@@ -263,8 +263,8 @@ string moveImages(string docXMLFile,
   string cwd = getcwd();
   SimpleNode n;
   mixed err = catch {
-    n = simple_parse_input(docXMLFile)[0];
-  };
+      n = simple_parse_input(docXMLFile)->get_first_element();
+    };
   if (err) {
     int offset;
     if (sscanf(err[0], "%*s[Offset: %d]", offset) == 2) {
