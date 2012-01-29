@@ -13,6 +13,9 @@ mapping sub_cache = ([]);
 int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 protected constant Node = Parser.XML.Tree.SimpleNode;
+protected constant SimpleHeaderNode = Parser.XML.Tree.SimpleHeaderNode;
+protected constant SimpleRootNode = Parser.XML.Tree.SimpleRootNode;
+protected constant SimpleTextNode = Parser.XML.Tree.SimpleTextNode;
 
 int main(int n, array(string) args)
 {
@@ -149,7 +152,8 @@ string low_join_files(array(string) files, string post_process_log,
   if(!sizeof(files)) {
     if (verbosity > 1)
       werror("No content to merge.\n");
-    return "<autodoc></autodoc>";
+    return "<?xml version='1.0' encoding='utf-8'?>\n"
+      "<autodoc/>\n";
   }
 
   if(sizeof(files)==1) {
@@ -221,8 +225,16 @@ string low_join_files(array(string) files, string post_process_log,
   if (!fail) {
     if (verbosity > 0)
       werror("\rRendering XML...\n");
-    string res = dest->html_of_node();
+    SimpleRootNode root = SimpleRootNode();
+    root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
+						  "encoding":"utf-8" ])),
+			      SimpleTextNode("\n"),
+			      dest,
+			      SimpleTextNode("\n"),
+			   }));
+    string res = root->html_of_node();
     dest->zap_tree();
+    root->zap_tree();
     return res;
   }
   dest->zap_tree();

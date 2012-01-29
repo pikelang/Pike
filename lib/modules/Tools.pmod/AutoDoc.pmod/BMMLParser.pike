@@ -209,11 +209,12 @@ string url_quote(string s)
 
 string mkdocument(string s,string title)
 {
-  return ("<autodoc>"
-	  "<namespace name='predef'>" +
-	  s+
-	  "</namespace>"+
-	  "</autodoc>");
+  return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
+			"<autodoc>"
+			"<namespace name='predef'>" +
+			s+
+			"</namespace>"+
+			"</autodoc>\n");
 }
 
 string strip_prefix(string s)

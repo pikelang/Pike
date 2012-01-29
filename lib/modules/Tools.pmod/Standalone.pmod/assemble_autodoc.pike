@@ -9,6 +9,9 @@ constant description = "Assembles AutoDoc output file.";
 #define CommentNode Parser.XML.Tree.CommentNode
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
+#define RootNode Parser.XML.Tree.RootNode
+#define HeaderNode Parser.XML.Tree.HeaderNode
+#define TextNode Parser.XML.Tree.TextNode
 
 int chapter;
 
@@ -560,12 +563,20 @@ int(0..1) main(int num, array(string) args)
 
   make_toc();
 
+  Node root = RootNode();
+  root->replace_children(({ HeaderNode(([ "version":"1.0",
+					  "encoding":"utf-8" ])),
+			    TextNode("\n"),
+			    n,
+			    TextNode("\n"),
+			 }));
+
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Writing final manual source file.\n");
   if (outfile) {
-    Stdio.write_file(outfile, (string)n);
+    Stdio.write_file(outfile, (string)root);
   } else {
-    write( (string)n );
+    write( (string)root );
   }
   // Zap the XML trees so that the gc doesn't have to.
   m->zap_tree();

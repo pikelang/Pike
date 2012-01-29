@@ -1127,7 +1127,8 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 	 return sizeof(in);
       }
       string read() {
-	 return "<autodoc>\n" + doc + "</autodoc>";
+	 return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
+			       "<autodoc>\n" + doc + "</autodoc>\n");
       }
    }();
 

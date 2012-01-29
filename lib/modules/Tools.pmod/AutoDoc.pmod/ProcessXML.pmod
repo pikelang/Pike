@@ -365,7 +365,15 @@ string moveImages(string docXMLFile,
       }
     }
   );
-  return n->html_of_node();
+  SimpleRootNode root = SimpleRootNode();
+  root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
+						"encoding":"utf-8",
+					     ])),
+			    SimpleTextNode("\n"),
+			    n,
+			    SimpleTextNode("\n"),
+			 }));
+  return root->html_of_node();
 }
 
 //========================================================================
@@ -473,6 +481,11 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
   SimpleNode dest_has_doc;
   multiset(string) dest_modifiers = (<>);
   array(SimpleNode) other_children = ({});
+
+  if ((dest->get_node_type() == Parser.XML.Tree.XML_ROOT) ||
+      (source->get_node_type() == Parser.XML.Tree.XML_ROOT)) {
+    error("mergeTrees() MUST be called with element nodes.\n");
+  }
 
   foreach(dest->get_children(), SimpleNode node) {
     string name = getName(node);
@@ -1224,6 +1237,9 @@ class NScope
   // or docgroup.
   protected void create(SimpleNode tree, string|void path)
   {
+    if (tree->get_node_type() == XML_ROOT) {
+      tree = tree->get_first_element();
+    }
     type = tree->get_any_name();
     name = tree->get_attributes()->name;
     if (path) {
