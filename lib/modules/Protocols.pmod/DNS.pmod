@@ -112,6 +112,11 @@ int safe_bind(Stdio.UDP udp, mixed ... args)
       udp->bind(@args);
       return 1;
     };
+#if constant(System.EADDRINUSE)
+  if (errno() == System.EADDRINUSE) return 0;
+#endif
+  werror("Protocols.DNS: Binding of UDP port failed with errno %d: %s\n",
+	 errno(), strerror(errno()));
   master()->handle_error(err);
   return 0;
 }
