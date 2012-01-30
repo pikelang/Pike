@@ -4437,6 +4437,18 @@ static void file_open_socket(INT32 args)
       push_int(0);
       return;
     }
+
+#ifdef IPV6_V6ONLY
+    if ((family<0? SOCKADDR_FAMILY(addr):family) == AF_INET6) {
+      /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
+       * Needed on WIN32.
+       * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+       */
+      o = 0;
+      fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+    }
+#endif
+
 #ifdef SO_REUSEPORT
     /* FreeBSD 7.x wants this to reuse portnumbers.
      * Linux 2.6.x seems to have reserved a slot for the option, but not
@@ -4486,6 +4498,18 @@ static void file_open_socket(INT32 args)
       push_int(0);
       return;
     }
+
+#ifdef IPV6_V6ONLY
+    if ((family<0? AF_INET:family) == AF_INET6) {
+      /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
+       * Needed on WIN32.
+       * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+       */
+      o = 0;
+      fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+    }
+#endif
+
 #ifdef SO_REUSEPORT
     /* FreeBSD 7.x wants this to reuse portnumbers.
      * Linux 2.6.x seems to have reserved a slot for the option, but not

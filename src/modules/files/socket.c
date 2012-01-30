@@ -288,6 +288,17 @@ static void port_bind(INT32 args)
   }
 #endif
 
+#ifdef IPV6_V6ONLY
+  if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
+     * Needed on WIN32.
+     * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+     */
+    int o = 0;
+    fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+  }
+#endif
+
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();

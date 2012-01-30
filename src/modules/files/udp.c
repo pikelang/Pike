@@ -248,6 +248,16 @@ static void udp_bind(INT32 args)
     Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
 
+#ifdef IPV6_V6ONLY
+  if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    /* Attempt to enable dual-stack (ie mapped IPv4 adresses). Needed on WIN32.
+     * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+     */
+    o = 0;
+    fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+  }
+#endif
+
 #ifndef SOL_IP
 #ifdef HAVE_GETPROTOBYNAME
   if (ip_proto_num == -1) {
@@ -941,6 +951,17 @@ static void udp_connect(INT32 args)
 	Pike_error("Stdio.UDP->connect: failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
+
+#ifdef IPV6_V6ONLY
+     if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+       /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
+	* Needed on WIN32.
+	* cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+	*/
+       int o = 0;
+       fd_setsockopt(FD, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+     }
+#endif
   }
 
   tmp=FD;
