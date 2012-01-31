@@ -4438,7 +4438,7 @@ static void file_open_socket(INT32 args)
       return;
     }
 
-#ifdef IPV6_V6ONLY
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
     if ((family<0? SOCKADDR_FAMILY(addr):family) == AF_INET6) {
       /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
        * Needed on WIN32.
@@ -4499,7 +4499,7 @@ static void file_open_socket(INT32 args)
       return;
     }
 
-#ifdef IPV6_V6ONLY
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
     if ((family<0? AF_INET:family) == AF_INET6) {
       /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
        * Needed on WIN32.

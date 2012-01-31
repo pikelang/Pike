@@ -288,7 +288,7 @@ static void port_bind(INT32 args)
   }
 #endif
 
-#ifdef IPV6_V6ONLY
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
   if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
      * Needed on WIN32.

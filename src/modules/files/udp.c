@@ -248,7 +248,7 @@ static void udp_bind(INT32 args)
     Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
 
-#ifdef IPV6_V6ONLY
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
   if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     /* Attempt to enable dual-stack (ie mapped IPv4 adresses). Needed on WIN32.
      * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
@@ -952,7 +952,7 @@ static void udp_connect(INT32 args)
      }
      set_close_on_exec(FD, 1);
 
-#ifdef IPV6_V6ONLY
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
      if (SOCKADDR_FAMILY(addr) == AF_INET6) {
        /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
 	* Needed on WIN32.
