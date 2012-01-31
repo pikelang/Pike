@@ -2,7 +2,11 @@
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;
+
+//! Support for the Domain Name System protocol.
+//!
 //! RFC 1034, RFC 1035 and RFC 2308
+
   protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
@@ -643,19 +647,26 @@ protected string ANY;
 
 protected void create()
 {
-  // Check if IPv6 support is available.
+  // Check if IPv6 support is available, and that mapped IPv4 is enabled.
   catch {
-    // Note: Attempt to open a port on the IPv6 loopback (::1)
+    // Note: Attempt to bind on the IPv6 loopback (::1)
     //       rather than on IPv6 any (::), to make sure some
     //       IPv6 support is actually configured. This is needed
-    //       since eg Solaris happily opens ports on :: even
+    //       since eg Solaris happily binds on :: even
     //       if no IPv6 interfaces are configured.
     //       Try IPv6 any (::) too for paranoia reasons.
-    Stdio.Port p = Stdio.Port();
-    if (p->bind(0, 0, "::1") && p->bind(0, 0, "::")) {
+    //       For even more paranoia, try sending some data
+    //       from :: to the drain services on 127.0.0.1 and ::1.
+    //
+    // If the tests fail, we regard the IPv6 support as broken,
+    // and use just IPv4.
+    Stdio.UDP udp = Stdio.UDP();
+    if (udp->bind(0, "::1") && udp->bind(0, "::") &&
+	(udp->send("127.0.0.1", 9, "/dev/null") == 9) &&
+	(udp->send("::1", 9, "/dev/null") == 9)) {
       ANY = "::";
     }
-    destruct(p);
+    destruct(udp);
   };
 }
 
