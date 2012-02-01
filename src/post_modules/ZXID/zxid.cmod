@@ -20,6 +20,7 @@
 #include "mapping.h"
 #include "pike_types.h"
 #include "threads.h"
+#include "dmalloc.h"
 
 #include "zxid_config.h"
 
@@ -72,6 +73,21 @@ DECLARATIONS
     Pike_error("Invalid class for argument %d\n", arg); \
   }
 
+#ifdef malloc
+/* DMALLOC or similar. */
+void *malloc_wrapper(size_t bytes)
+{
+  return malloc(bytes);
+}
+void *realloc_wrapper(void *ptr, size_t bytes)
+{
+  return realloc(ptr, bytes);
+}
+void free_wrapper(void *ptr)
+{
+  free(ptr);
+}
+#endif
 
 /*! @class Configuration
  *!
@@ -88,6 +104,14 @@ PIKECLASS Configuration {
 
   INIT {
     THIS->conf.ctx = zx_init_ctx();
+
+#ifdef malloc
+    /* Support for dmalloc. */
+    THIS->conf.ctx->malloc_func = malloc_wrapper;
+    THIS->conf.ctx->realloc_func = realloc_wrapper;
+    THIS->conf.ctx->free_func = free_wrapper;
+#endif
+
     zxid_init_conf(&THIS->conf, NULL);
     THIS->conf_m = allocate_mapping(8);
 #ifdef USE_CURL
