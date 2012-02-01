@@ -213,6 +213,7 @@ PIKECLASS Configuration {
     CHECK_ARG_INT(MK_STRING("BOOTSTRAP_LEVEL"), THIS->conf.bootstrap_level);
     CHECK_ARG_INT(MK_STRING("BARE_URL_ENTITYID"),
 		  THIS->conf.bare_url_entityid);
+    /* FIXME: BUTTON_URL */
     CHECK_ARG_STRING(MK_STRING("CDC_URL"), THIS->conf.cdc_url);
     CHECK_ARG_INT(MK_STRING("CDC_CHOICE"), THIS->conf.cdc_choice);
     CHECK_ARG_STRING(MK_STRING("CONTACT_ORG"), THIS->conf.contact_org);
@@ -229,6 +230,10 @@ PIKECLASS Configuration {
     CHECK_ARG_CHAR(MK_STRING("DI_ALLOW_CREATE"), THIS->conf.di_allow_create);
     CHECK_ARG_INT(MK_STRING("DI_NID_FMT"), THIS->conf.di_nid_fmt);
     CHECK_ARG_INT(MK_STRING("DI_A7N_ENC"), THIS->conf.di_a7n_enc);
+    CHECK_ARG_INT(MK_STRING("DEBUG"), zx_debug);
+    LOW_CHECK_ARG(MK_STRING("DEBUG_LOG"),
+		  ((TYPEOF(*s) == PIKE_T_STRING) && !s->u.string->size_shift),
+		  zxid_set_opt_cstr(&THIS->conf, 6, s->u.string->str));
     CHECK_ARG_INT(MK_STRING("ERR"), THIS->conf.log_err);
     CHECK_ARG_INT(MK_STRING("ERR_IN_ACT"), THIS->conf.log_err_in_act);
     CHECK_ARG_INT(MK_STRING("ENC_TAIL_OPT"), THIS->conf.enc_tail_opt);
@@ -301,9 +306,16 @@ PIKECLASS Configuration {
     CHECK_ARG_STRING(MK_STRING("NEW_USER_PAGE"), THIS->conf.new_user_page);
     CHECK_ARG_MAP(MK_STRING("OUTMAP"), THIS->conf.outmap);
     CHECK_ARG_STRING(MK_STRING("ORG_NAME"), THIS->conf.org_name);
-    CHECK_ARG_STRING(MK_STRING("ORG_URL"), THIS->conf.org_url);
 
-    CHECK_ARG_STRING(MK_STRING("PATH"), THIS->conf.path);
+    LOW_CHECK_ARG(MK_STRING("PATH"),
+		  ((TYPEOF(*s) == PIKE_T_STRING) &&
+		   !s->u.string->size_shift),
+		  do {
+		    if (THIS->conf.path) {
+		      ZX_FREE(THIS->conf.ctx, THIS->conf.path);
+		    }
+		    THIS->conf.path = strdup(s->u.string->str);
+		  } while(0));
     CHECK_ARG_INT(MK_STRING("PDP_ENA"), THIS->conf.pdp_ena);
     CHECK_ARG_STRING(MK_STRING("PDP_URL"), THIS->conf.pdp_url);
     CHECK_ARG_STRING(MK_STRING("PDP_CALL_URL"), THIS->conf.pdp_call_url);
