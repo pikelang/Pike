@@ -407,17 +407,21 @@ PIKECLASS Configuration {
     program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
   {
     CVAR zxid_ses ses;
+    CVAR struct Configuration_struct *config;
+
+    INIT
+    {
+      THIS->config = parent_storage(1);
+    }
 
     EXIT
     {
-      struct Configuration_struct *config = parent_storage(1);
-
       if (THIS->ses.sesbuf) {
-	ZX_FREE(&config->conf.ctx, THIS->ses.sesbuf);
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesbuf);
 	THIS->ses.sesbuf = NULL;
       }
       if (THIS->ses.sid) {
-	ZX_FREE(&config->conf.ctx, THIS->ses.sid);
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sid);
 	THIS->ses.sid = NULL;
       }
     }
