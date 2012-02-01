@@ -11363,26 +11363,10 @@ void yyexplain_not_implements(int severity_level,
 PMOD_EXPORT void *parent_storage(int depth)
 {
   struct external_variable_context loc;
-  struct program *p;
 
-
-  loc.o=Pike_fp->current_object;
-  p=loc.o->prog;
-  if(!p)
-  {
-    /* magic fallback */
-    p=get_program_for_object_being_destructed(loc.o);
-    if(!p)
-    {
-      Pike_error("Cannot access parent of destructed object.\n");
-    }
-  }
-
-  if((Pike_fp->fun & 0xffff) == 0xffff)
-    Pike_error("Cannot access parent storage!\n");
-
-  loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
+  loc.o = Pike_fp->current_object;
+  loc.parent_identifier = 0;
+  loc.inherit = Pike_fp->context;
   
   find_external_context(&loc, depth);
 
