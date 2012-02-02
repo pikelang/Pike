@@ -4541,6 +4541,13 @@ string describe_function (function f)
 {
   if (!f) return 0;
 
+  object o = function_object([function(mixed...:void|mixed)]f);
+  if (o && (object_program(o) == _disable_threads)) {
+    // Special case to avoid the search() below, which
+    // can call `==(), which will fail hard in this case.
+    return "_disable_threads()->__EVENT_HANDLER__";
+  }
+
   string name;
 
   if (name = search(all_constants(), f)) return name;
@@ -4555,7 +4562,6 @@ string describe_function (function f)
   else 
     if (catch (name = function_name (f))) name = "function";
 
-  object o = function_object([function(mixed...:void|mixed)]f);
   if(object_program (o)) { // Check if it's an object in a way that
 			   // (hopefully) doesn't call any functions
 			   // in it (neither `== nor `!).
