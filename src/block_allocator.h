@@ -214,8 +214,7 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 #ifndef BA_CHAIN_PAGE
     if (ptr->next == BA_ONE) {
 	a->first_blk = (ba_block_header)(((char*)ptr) + a->block_size);
-	a->first_blk->next = (a->first_blk == BA_LASTBLOCK(a, a->first)) ?
-		NULL : BA_ONE;
+	a->first_blk->next = (ba_block_header)(size_t)!(a->first_blk == BA_LASTBLOCK(a, a->first));
     } else
 #endif
     a->first_blk = ptr->next;
@@ -228,7 +227,7 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 
 ATTRIBUTE((always_inline))
 static INLINE void ba_free(struct block_allocator * a, void * ptr) {
-    ba_page p;
+    ba_page p = NULL;
 
 #ifdef BA_DEBUG
     if (a->empty_pages == a->num_pages) {
@@ -242,14 +241,17 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 
 
-    p = a->first;
-    if (!BA_CHECK_PTR(a, p, ptr))
-	goto SLOWPATH;
-    ((ba_block_header)ptr)->next = a->first_blk;
-    a->first_blk = (ba_block_header)ptr;
-    //INC(good);
-    return;
-SLOWPATH:
+    if (BA_CHECK_PTR(a, a->first, ptr)) {
+      ((ba_block_header)ptr)->next = a->first_blk;
+      a->first_blk = (ba_block_header)ptr;
+      //INC(good);
+      return;
+    } else if (BA_CHECK_PTR(a, a->last_free, ptr)) {
+      p = a->last_free;
+      ((ba_block_header)ptr)->next = p->first;
+      p->first = (ba_block_header)ptr;
+      if ((--p->used) && (((ba_block_header)ptr)->next)) return;
+    }
 
 #ifdef BA_DEBUG
     if (a->num_pages == 1) {
@@ -257,26 +259,7 @@ SLOWPATH:
     }
 #endif
     
-    p = a->last_free;
-    if (unlikely(!BA_CHECK_PTR(a, p, ptr))) {
-	INC(bad);
-	ba_find_page(a, ptr);
-	p = a->last_free;
-    } else {
-	INC(likely);
-    }
-
-    ((ba_block_header)ptr)->next = p->first;
-    p->first = (ba_block_header)ptr;
-
-    // page is empty
-    if (!(--p->used) || !(((ba_block_header)ptr)->next)) {
-#ifdef COUNT
-	if (a->num_pages > max) max = a->num_pages;
-#endif
-	ba_low_free(a, p, (ba_block_header)ptr);
-	INC(empty);
-    }
+    ba_low_free(a, p, (ba_block_header)ptr);
 }
 
 #endif /* BLOCK_ALLOCATOR_H */

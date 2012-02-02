@@ -586,6 +586,14 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 			     ba_block_header ptr) {
+    if (!p) {
+	ba_find_page(a, ptr);
+	p = a->last_free;
+	((ba_block_header)ptr)->next = p->first;
+	p->first = (ba_block_header)ptr;
+	p->used--;
+    }
+
     // page was full
     if (unlikely(!ptr->next)) {
 
@@ -617,8 +625,8 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
     }
 }
 
-PMOD_EXPORT void ba_find_page(struct block_allocator * a,
-			      const void * ptr) {
+PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
+				     const void * ptr) {
     ba_page_t n;
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_low_free", __FILE__, __LINE__);
