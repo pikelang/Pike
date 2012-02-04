@@ -517,7 +517,7 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
 {
   exporter->export(combine_path(refdocdir, "src_images"), "images");
   exporter->export(combine_path(refdocdir, "structure/modref.css"),
-		   "modref/modref.css");
+		   "modref/style.css");
   if (verbose) {
     progress("Assembling... ");
   }
