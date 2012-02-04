@@ -3,9 +3,7 @@
     <title>Pike Reference Manual - $title$</title>
     <link rel='stylesheet' href='$style$' />
   </head>
-  <body topmargin="0" leftmargin="0" marginheight="0" marginwidth="0"
-	bgcolor="#ffffff" text="#000000" link="#000099" alink="#002040"
-	vlink="#000099">
+  <body link="#0768b2" alink="#002040" vlink="#0768b2">
     <header>
       <div>
 	<div style="text-align:right;">Extracted from $version$ as of $date$.</div>
@@ -28,30 +26,26 @@
     </header>
 
     <div>
-      <div style="float:left; background:#f0f0f0;
-		  min-width:180px; margin-top:3px;">
+      <div class="navbar">
 	<nav>
 	  $navbar$
 	</nav>
       </div>
-      <div style="width:520px; overflow:hidden;">
+      <div class="navbox">
 	<nav>
-	  <div style="background:#e0e0e0; overflow:hidden; padding:3px;
-		      margin:3px;" class="sidebar">
-	    <a href="$prev_url$"
-	       style="float:left;"
+	  <div class="sidebar">
+	    <a href="$prev_url$" class="left"
 	       ><img src="$imagedir$prev.gif" hspace="3"
 		     border="0" alt="previous"
 		     >$prev_title$</a>
-	    <a href="$next_url$"
-	       style="float:right; text-align:right;"
+	    <a href="$next_url$" class="right"
 	       >$next_title$<img src="$imagedir$next.gif" hspace="3"
-					border="0" alt="next"
-					></a>
+				 border="0" alt="next"
+				 ></a>
 	  </div>
 	</nav>
       </div>
-      <div style="width:520px; overflow:hidden;">
+      <div class="contentbox">
 	<article>
 	  <h1>$type$ $title$</h1>
 	  $contents$
