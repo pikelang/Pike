@@ -586,7 +586,7 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 			     ba_block_header ptr) {
-    if (!p) {
+    if (likely(!p)) {
 	ba_find_page(a, ptr);
 	p = a->last_free;
 	((ba_block_header)ptr)->next = p->first;
@@ -625,6 +625,7 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
     }
 }
 
+ATTRIBUTE((always_inline))
 PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 				     const void * ptr) {
     ba_page_t n;
