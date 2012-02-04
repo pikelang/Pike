@@ -422,14 +422,18 @@ class Node
     if(!sizeof(children)) return "";
 
     String.Buffer res = String.Buffer(3000);
-    res->add("<tr><td nowrap='nowrap'><br /><b>", what, "</b></td></tr>\n");
+    res->add("<br /><b>", what, "</b>\n"
+	     "<div style='margin-left:0.5em;'>\n");
 
     foreach(children, Node node)
     {
       string my_name = Parser.encode_html_entities(node->name);
-      if(node->type=="method")
+      if(node->type=="method") {
 	my_name+="()";
-      else if (node->type == "namespace") {
+	if (node == this_object()) {
+	  my_name="<b>"+my_name+"</b>";
+	}
+      } else if (node->type == "namespace") {
 	my_name="<b>"+my_name+"::</b>";
       }
       else 
@@ -437,11 +441,11 @@ class Node
 
       res->add("<tr><td nowrap='nowrap'>&nbsp;");
       if(node==this_object())
-	res->add( my_name );
+	res->add( my_name, "<br />\n" );
       else
-	res->add( "<a href='", make_link(node), "'>", my_name, "</a>" );
-      res->add("</td></tr>\n");
+	res->add( "<a href='", make_link(node), "'>", my_name, "</a><br />\n" );
     }
+    res->add("</div>\n");
     return (string)res;
   }
 
@@ -475,7 +479,7 @@ class Node
 
     res += make_hier_list(root);
 
-    res+="<table border='0' cellpadding='1' cellspacing='0' class='sidebar'>";
+    res+="<div class='sidebar'>";
 
     res += make_navbar_really_low(root->module_children, "Modules");
 
@@ -488,7 +492,7 @@ class Node
       res += make_navbar_really_low(root->method_children, "Methods");
     }
 
-    return res+"</table>";
+    return res+"</div>";
   }
 
   string make_navbar()
@@ -706,7 +710,7 @@ class TopNode {
     resolve_reference = my_resolve_reference;
     if(!sizeof(method_children)) return "";
 
-    string contents = "<table class='sidebar'><tr>";
+    string contents = "<nav><table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
       contents += "<td nowrap='nowrap' valign='top'>" +
@@ -715,7 +719,7 @@ class TopNode {
     contents += "</tr><tr><td colspan='4' nowrap='nowrap'>" +
       parse_children(Parser.XML.Tree.parse_input(data),
 		     "docgroup", parse_docgroup, 1) +
-      "</td></tr></table>";
+      "</td></tr></table></nav>";
 
     return contents;
   }
