@@ -193,7 +193,7 @@ class Node
 	array names = ({});
 	Parser.HTML parser = Parser.HTML();
 	parser->case_insensitive_tag(1);
-	parser->xml_tag_syntax(0);
+	parser->xml_tag_syntax(3);
 	parser->add_tag("method",
 			lambda(Parser.HTML p, mapping m) {
 			  names += ({ Parser.parse_html_entities(m->name) });
