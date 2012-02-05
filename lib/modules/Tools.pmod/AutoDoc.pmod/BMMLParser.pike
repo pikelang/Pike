@@ -432,6 +432,7 @@ string convert_page(string path, string fname,
       string part;
       int section;
       array(string) section_path;
+      string symbol_type = "method";
 
       part=parts[partno];
       if(!strlen(part)) continue;
@@ -498,6 +499,7 @@ string convert_page(string path, string fname,
 	     (sscanf(rest,"    %*[\t ]%s", part_name) != 2))
 	    perror("Warning DIRECTIVE section broken!\n");
 
+	  symbol_type = "directive";
 	  part_names = map(part_name/"\n", String.trim_all_whites);
 
 	  rest = "";
@@ -600,20 +602,20 @@ string convert_page(string path, string fname,
       if(partno && part_names) {
 	if (sizeof(part_names) == 1) {
 	  parts[partno]="<docgroup homogen-name='" + part_name +
-	    "' homogen-type='method'>\n"
-	    "<method name='" + part_name + "'>\n" +
+	    "' homogen-type='" + symbol_type + "'>\n"
+	    "<" + symbol_type + " name='" + part_name + "'>\n" +
 	    // FIXME <returntype> & <arguments>.
-	    "</method>\n" + parts[partno] + "</docgroup>\n";
+	    "</" + symbol_type + ">\n" + parts[partno] + "</docgroup>\n";
 	} else {
 	  // Multiple symbols documented at the same time.
 	  // Currently only used by the preprocessor doc.
-	  parts[partno]="<docgroup homogen-type='method'>\n"
-	    "<method name='" + part_names *
+	  parts[partno]="<docgroup homogen-type='" + symbol_type + "'>\n"
+	    "<" + symbol_type + " name='" + part_names *
 	    ("'>\n" +
 	     // FIXME <returntype> & <arguments>.
-	     "</method>\n<method name='") + "'>\n" +
+	     "</" + symbol_type + ">\n<" + symbol_type + " name='") + "'>\n" +
 	    // FIXME <returntype> & <arguments>.
-	    "</method>\n" + parts[partno] + "</docgroup>\n";
+	    "</" + symbol_type + ">\n" + parts[partno] + "</docgroup>\n";
 	}
       }
     }
