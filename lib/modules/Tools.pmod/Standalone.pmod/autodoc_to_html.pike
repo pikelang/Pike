@@ -95,7 +95,9 @@ string render_tag(string tag, mapping(string:string) attrs, int|void term)
   return res + ">";
 }
 
-Node get_first_element(Node n) {
+Node get_first_element(Node n)
+{
+  if (!n) return UNDEFINED;
   foreach(n->get_children(), Node c)
     if(c->get_node_type()==XML_ELEMENT) {
       if(c->get_any_name()!="source-position")
@@ -103,7 +105,7 @@ Node get_first_element(Node n) {
       else
 	position->update(c);
     }
-  error( "Node had no element child.\n" );
+  return UNDEFINED;
 }
 
 int section, subsection;
@@ -1108,6 +1110,8 @@ string parse_not_doc(Node n) {
   string ret = "";
   int method, argument, variable, const, typedf;
 
+  if (!n) return "";
+
   foreach(n->get_children(), Node c) {
 
     if(c->get_node_type()!=XML_ELEMENT)
@@ -1125,10 +1129,9 @@ string parse_not_doc(Node n) {
 
     case "method":
       if(method++) ret += "<br />\n";
-#ifdef DEBUG
+#if 0
       if(!c->get_first_element("returntype"))
-	continue;
-	// error( "No returntype element in method element.\n" );
+	error( "No returntype element in method element.\n" );
 #endif
       switch( c->get_attributes()->name )
       {
