@@ -710,7 +710,7 @@ class TopNode {
     resolve_reference = my_resolve_reference;
     if(!sizeof(method_children)) return "";
 
-    string contents = "<nav><table class='sidebar'><tr>";
+    string contents = "<nav><table class='sidebar' style='width:100%;'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
       contents += "<td nowrap='nowrap' valign='top'>" +
