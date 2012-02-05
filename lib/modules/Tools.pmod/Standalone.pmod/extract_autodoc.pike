@@ -185,6 +185,11 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       }
     }
     root_ts = st->mtime;
+  } else if (st = file_stat(srcdir+"/.bmmlrc")) {
+    if (Stdio.read_file(srcdir+"/.bmmlrc") == "prefix internal\n") {
+      root = ({ "c::" });
+    }
+    root_ts = st->mtime;
   }
 
   foreach(get_dir(builddir), string fn) {
@@ -495,7 +500,8 @@ string extract(string filename, string imgdest,
     }
     file = replace(file, "Myslq", "Mysql");
     Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
-    return bmml_parser->convert_page(filename, basename(filename), file, flags);
+    return bmml_parser->convert_page(filename, basename(filename), file,
+				     flags, root);
   }
 
   int i;

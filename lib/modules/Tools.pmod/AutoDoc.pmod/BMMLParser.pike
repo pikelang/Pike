@@ -207,11 +207,15 @@ string url_quote(string s)
 		 
 }
 
-string mkdocument(string s,string title)
+string mkdocument(string s, string title, array(string)|void root)
 {
+  string namespace = "predef";
+  if (root && sizeof(root) && has_suffix(root[0], "::")) {
+    namespace = root[0][..<2];
+  }
   return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
 			"<autodoc>"
-			"<namespace name='predef'>" +
+			"<namespace name='" + namespace + "'>" +
 			s+
 			"</namespace>"+
 			"</autodoc>\n");
@@ -364,9 +368,10 @@ string mkindex(string topic, int usehead)
 
 /* Convert a page */
 string convert_page(string path, string fname,
-		    string|void cont, .Flags|void flags)
+		    string|void cont, .Flags|void flags,
+		    array(string)|void root)
 {
-  string output, short;
+  string output, short = "";
   int headno;
   string name;
 
@@ -392,13 +397,17 @@ string convert_page(string path, string fname,
     array(string) module_path = name/".";
 
     if ((sizeof(parts) > 1) || (sizeof(module_path) > 1)) {
-      foreach(module_path; int i; string segment) {
-	string type = "module";
-	if (i == sizeof(module_path)-1) {
-	  type = "class";
+      if (name == "preprocessor") {
+	root = ({ "cpp::" });
+      } else {
+	foreach(module_path; int i; string segment) {
+	  string type = "module";
+	  if (i == sizeof(module_path)-1) {
+	    type = "class";
+	  }
+	  header += "<" + type + " name='" + html_quote(segment) + "'>\n";
+	  trailer = "</" + type + ">\n" + trailer;
 	}
-	header += "<" + type + " name='" + html_quote(segment) + "'>\n";
-	trailer = "</" + type + ">\n" + trailer;
       }
     } else if (known_constants[name]) {
       header += "<docgroup homogen-name='" + html_quote(name) +
@@ -418,6 +427,7 @@ string convert_page(string path, string fname,
     for(int partno=0; partno<sizeof(parts); partno++)
     {
       string part_name="error";
+      array(string) part_names;
       array(string) sections;
       string part;
       int section;
@@ -469,6 +479,8 @@ string convert_page(string path, string fname,
 	  
 	  rest="\t<tt>"+part_name+"</tt> - "+b;
 
+	  part_names = ({ part_name });
+
 	  // FALL_THROUGH
 	case "RETURN VALUE":
 	case "RETURN VALUES":
@@ -480,6 +492,15 @@ string convert_page(string path, string fname,
 	case "THANKS":
 	case "BUGS":
 	  rest=magic(rest, 0);
+	  break;
+	case "DIRECTIVE":
+	  if((sscanf(rest, "\t%s", part_name) != 1) &&
+	     (sscanf(rest,"    %*[\t ]%s", part_name) != 2))
+	    perror("Warning DIRECTIVE section broken!\n");
+
+	  part_names = map(part_name/"\n", String.trim_all_whites);
+
+	  rest = "";
 	  break;
 	case "NOTES":
 	case "NOTES, TODOs AND OTHER THINGS":
@@ -526,7 +547,6 @@ string convert_page(string path, string fname,
 
 	case "EXAMPLES":
 	case "EXAMPLE":
-	case "DIRECTIVE":
 	case "PREPROCESSOR DIRECTIVES":
 	  rest="<tt>"+magic(rest,1)+"</tt>";
 	  break;
@@ -577,17 +597,28 @@ string convert_page(string path, string fname,
 	// Empty part!
 	parts[partno] = "";
       }
-      if(partno && part_name)
-      {
-	parts[partno]="<docgroup homogen-name='" + part_name +
-	  "' homogen-type='method'>\n"
-	  "<method name='" + part_name + "'>" +
-	  // FIXME <returntype> & <arguments>.
-	  "</method>" + parts[partno] + "</docgroup>\n";
+      if(partno && part_names) {
+	if (sizeof(part_names) == 1) {
+	  parts[partno]="<docgroup homogen-name='" + part_name +
+	    "' homogen-type='method'>\n"
+	    "<method name='" + part_name + "'>\n" +
+	    // FIXME <returntype> & <arguments>.
+	    "</method>\n" + parts[partno] + "</docgroup>\n";
+	} else {
+	  // Multiple symbols documented at the same time.
+	  // Currently only used by the preprocessor doc.
+	  parts[partno]="<docgroup homogen-type='method'>\n"
+	    "<method name='" + part_names *
+	    ("'>\n" +
+	     // FIXME <returntype> & <arguments>.
+	     "</method>\n<method name='") + "'>\n" +
+	    // FIXME <returntype> & <arguments>.
+	    "</method>\n" + parts[partno] + "</docgroup>\n";
+	}
       }
     }
     output = mkdocument(header + parts*"\n" + trailer,
-			"Pike: " + name);
+			"Pike: " + name, root);
   }
   else if(path[strlen(path)-5..]==".bmml")
   {
@@ -661,7 +692,7 @@ string convert_page(string path, string fname,
     cont="<doc placeholder='true'><text><p>" + sections*"\n</p>\n<p>\n" +
       "</p></text></doc>\n";
 
-    return mkdocument(cont, title || "Pike manual");
+    return mkdocument(cont, title || "Pike manual", root);
 #else
     return "";
 #endif
@@ -725,7 +756,7 @@ string convert_page(string path, string fname,
       tmp+=line+"\n";
     }
     output=mkdocument(output,"Pike: "+
-		      replace((fname/"/")[-1],"_"," "));
+		      replace((fname/"/")[-1],"_"," "), root);
 #else
     return "";
 #endif
