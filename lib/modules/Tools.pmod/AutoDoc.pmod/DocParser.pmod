@@ -61,6 +61,7 @@ mapping(string : DocTokenType) keywordtype =
   "namespace" : METAKEYWORD,
   "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
+  "directive" : METAKEYWORD,
   "inherit" : METAKEYWORD,
   "enum" : METAKEYWORD,
   "endenum" : METAKEYWORD,
@@ -963,6 +964,25 @@ protected class DocParserClass {
 	  i->name = s;
 	  i->classname = s;
 	  meta->inherits += ({ i });
+	}
+	break;
+
+      case "directive":
+	{
+          if (endkeyword)
+            parseError("@%s must stand alone", endkeyword);
+          int first = !meta->type;
+          if (!meta->type)
+            meta->type = "decl";
+          else if (meta->type != "decl")
+            parseError("@directive can not be combined with @%s", meta->type);
+          if (meta->appears)
+            parseError("@appears before @directive");
+          if (meta->belongs)
+            parseError("@belongs before @directive");
+          meta->type = "decl";
+	  string s = String.trim_all_whites(arg);
+          meta->decls += ({ .PikeObjects.CppDirective(s) });
 	}
 	break;
 

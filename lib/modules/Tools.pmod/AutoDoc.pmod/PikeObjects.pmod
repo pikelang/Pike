@@ -601,6 +601,20 @@ class Import {
   }
 }
 
+//! Representation of an inherit.
+class CppDirective {
+  //!
+  inherit PikeObject;
+
+  //!
+  constant objtype = "directive";
+
+  protected void create(string directive)
+  {
+    name = directive;
+  }
+}
+
 //! Base class for representing classes, modules and namespaces.
 //!
 //! @seealso

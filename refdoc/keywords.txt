@@ -112,6 +112,32 @@ Examples:
 
 _______________________________________________________________________________
 
+Keyword:      @directive
+
+Description:  Document a Pike cpp directive.
+
+	      The rest of the line should be the cpp directive to document.
+
+Arguments:    [name]
+              Where:
+                [name] is a cpp directive.
+Children:     Documentation for the directive.
+Groups with:  @directive
+Note:         Typically only used in the cpp:: namespace.
+Examples:
+              //! @directive #include
+              //!
+              //! The @tt{#include@} directive is used
+              //! to include source code from a different file.
+
+              //! @directive #if
+              //! @directive #endif
+	      //!
+              //!  This is how to document multiple related directives
+	      //!  with one documentation string.
+
+_______________________________________________________________________________
+
 Keyword:      @endclass
 Description:  Leave the class scope entered by @class.
 Arguments:    [name]

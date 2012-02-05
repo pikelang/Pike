@@ -1035,6 +1035,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "import":
   case "typedef":
   case "variable":
+  case "directive":
     // These don't have children.
     attrs->class_path = path;
     return;
@@ -1108,7 +1109,7 @@ string render_class_path(Node n,int|void class_only)
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, const, typedf;
+  int method, argument, variable, const, typedf, cppdir;
 
   if (!n) return "";
 
@@ -1232,6 +1233,12 @@ string parse_not_doc(Node n) {
 
     // We don't need import information.
     case "import":
+      break;
+
+    case "directive":
+      if(cppdir++) ret += "<br />\n";
+      ret += "<tt><font color='#006666'>" + c->get_attributes()->name +
+	"</font></tt>";
       break;
 
     default:

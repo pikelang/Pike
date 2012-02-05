@@ -68,6 +68,7 @@ protected private void processWarning(string message, mixed ... args) {
 //   <constant/>
 //   <typedef/>
 //   <inherit/>
+//   <directive/>
 //   <doc/>
 // </docgroup>
 //
@@ -408,7 +409,7 @@ protected int isText(SimpleNode node) { return node->get_node_type() == XML_TEXT
 protected string renderType(SimpleNode node)
 {
   SimpleNode type_node;
-  if ((< "method", "variable", "constant",
+  if ((< "method", "variable", "constant", "directive",
 	 "typedef", "inherit", "import" >)[node->get_any_name()]) {
     type_node = node;
   } else {
@@ -416,6 +417,7 @@ protected string renderType(SimpleNode node)
       node->get_first_element("method") ||
       node->get_first_element("variable") ||
       node->get_first_element("constant") ||
+      node->get_first_element("directive") ||
       node->get_first_element("typedef") ||
       node->get_first_element("inherit") ||
       node->get_first_element("import");

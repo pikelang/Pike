@@ -90,6 +90,7 @@ class Node
   array(Node) class_children  = ({ });
   array(Node) module_children = ({ });
   array(Node) enum_children = ({ });
+  array(Node) directive_children = ({ });
   array(Node) method_children = ({ });
 
   Node parent;
@@ -112,6 +113,7 @@ class Node
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
     sort(enum_children->name, enum_children);
+    sort(directive_children->name, directive_children);
     sort(method_children->name, method_children);
 
     method_children = check_uniq(method_children);
@@ -206,6 +208,33 @@ class Node
 	return ({ "" });
 	break;
 
+      case "directive":
+	if( m["homogen-name"] ) {
+	  string name = m["homogen-name"];
+	  directive_children +=
+	    ({ Node( "directive", name, c, this_object() ) });
+	  return ({ "" });
+	}
+
+	// Several different directives documented with the same blurb.
+	array directives = ({});
+	Parser.HTML dirparser = Parser.HTML();
+	dirparser->case_insensitive_tag(1);
+	dirparser->xml_tag_syntax(3);
+	dirparser->add_tag("directive",
+			   lambda(Parser.HTML p, mapping m) {
+			     directives += ({
+			       Parser.parse_html_entities(m->name)
+			     });
+			   } );
+	dirparser->finish(c);
+	foreach(Array.uniq(directives) - ({ 0, "" }), string name) {
+	  directive_children +=
+	    ({ Node( "directive", name, c, this_object() ) });
+	}
+	return ({ "" });
+	break;
+
       case "constant":
       case "variable":
       case "inherit":
@@ -262,9 +291,10 @@ class Node
 
   string make_faked_wrapper(string s)
   {
-    if(type=="method")
-      s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
+    if((type == "method") || (type == "directive"))
+      s = sprintf("<docgroup homogen-type='%s' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
+		  type,
 		  Parser.encode_html_entities(name), s);
     else
       s = sprintf("<%s name='%s'>\n%s\n</%s>\n",
@@ -489,6 +519,7 @@ class Node
       res += make_navbar_really_low(root->namespace_children, "Namespaces");
     else {
       res += make_navbar_really_low(root->enum_children, "Enums");
+      res += make_navbar_really_low(root->directive_children, "Directives");
       res += make_navbar_really_low(root->method_children, "Methods");
     }
 
@@ -497,7 +528,7 @@ class Node
 
   string make_navbar()
   {
-    if(type=="method")
+    if((type == "method") || (type == "directive"))
       return make_navbar_low(parent);
     else
       return make_navbar_low(this_object());
@@ -509,6 +540,7 @@ class Node
       parent->class_children+
       parent->module_children+
       parent->enum_children+
+      parent->directive_children+
       parent->method_children;
   }
 
@@ -518,6 +550,7 @@ class Node
       class_children+
       module_children+
       enum_children+
+      directive_children+
       method_children;
   }
 
@@ -585,6 +618,7 @@ class Node
     class_children->make_html(template, path, exporter);
     module_children->make_html(template, path, exporter);
     enum_children->make_html(template, path, exporter);
+    directive_children->make_html(template, path, exporter);
     method_children->make_html(template, path, exporter);
 
     int num_segments = sizeof(make_filename()/"/")-1;
@@ -666,6 +700,7 @@ class TopNode {
 	class_children += x->class_children;
 	module_children += x->module_children;
 	enum_children += x->enum_children;
+	directive_children += x->directive_children;
 	method_children += x->method_children;
       }
     type = "autodoc";
@@ -684,7 +719,7 @@ class TopNode {
   int(0..0) find_prev_node() { return 0; }
   int(0..0) find_next_node() { return 0; }
   string make_class_path(void|int(0..1) header) {
-    if(header && sizeof(method_children)) {
+    if(header && (sizeof(method_children) + sizeof(directive_children))) {
       if(default_namespace)
 	return "namespace "+default_namespace;
       else
@@ -706,20 +741,46 @@ class TopNode {
     return (string)res;
   }
 
+  string make_directive_page(array(Node) children)
+  {
+    String.Buffer res = String.Buffer(3500);
+    foreach(children, Node node)
+      res->add("&nbsp;<a href='", make_link(node), "'>",
+	       Parser.encode_html_entities(node->name),
+	       "</a><br />\n");
+    return (string)res;
+  }
+
   string make_content() {
     resolve_reference = my_resolve_reference;
-    if(!sizeof(method_children)) return "";
+    if(!sizeof(method_children) && !sizeof(directive_children)) return "";
 
-    string contents = "<nav><table class='sidebar' style='width:100%;'><tr>";
-    foreach(method_children/( sizeof(method_children)/4.0 ),
-            array(Node) children)
-      contents += "<td nowrap='nowrap' valign='top'>" +
-	make_method_page(children) + "</td>";
+    string contents = "<nav><table class='sidebar' style='width:100%;'>\n";
+    if (sizeof(directive_children)) {
+      contents += "<tr>\n";
+      foreach(directive_children/( sizeof(directive_children)/4.0 ),
+	      array(Node) children)
+	contents += "<td nowrap='nowrap' valign='top'>" +
+	  make_directive_page(children) + "</td>";
+      contents += "</tr>\n";
+      if (sizeof(method_children)) {
+	contents += "<tr><td colspan='4'><hr /></td></tr>\n";
+      }
+    }
+    if (sizeof(method_children)) {
+      contents += "<tr>\n";
+      foreach(method_children/( sizeof(method_children)/4.0 ),
+	      array(Node) children)
+	contents += "<td nowrap='nowrap' valign='top'>" +
+	  make_method_page(children) + "</td>";
+      contents += "</tr>\n";
+    }
 
-    contents += "</tr><tr><td colspan='4' nowrap='nowrap'>" +
+    contents += "<tr><td colspan='4' nowrap='nowrap'>" +
       parse_children(Parser.XML.Tree.parse_input(data),
 		     "docgroup", parse_docgroup, 1) +
-      "</td></tr></table></nav>";
+      "</td></tr>\n"
+      "</table></nav>";
 
     return contents;
   }
