@@ -844,6 +844,18 @@ int main(int argc, array(string) argv)
   }
 
   if (git_dir && Stdio.exist(git_dir)) {
+    string desc = Stdio.read_bytes(git_dir + "/description");
+    if (!desc || has_prefix(desc, "Unnamed repository")) {
+      // Set a description.
+      Stdio.write_file(git_dir + "/description",
+		       "Autodoc: Pike documentation.\n");
+    }
+
+    if (!Stdio.exist(git_dir + "/git-daemon-export-ok")) {
+      // Make the repository available via anonymous git.
+      Stdio.write_file(git_dir + "/git-daemon-export-ok", "");
+    }
+
     // Note that the git-show-ref command used by git_refs() below
     // will fail with code 1 for the empty git repository.
     mixed err = catch {
