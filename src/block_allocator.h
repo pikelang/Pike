@@ -100,8 +100,40 @@ struct block_allocator {
     uint32_t block_size;
     ba_page_t num_pages;
     char * blueprint;   /* 88 */
+#ifdef BA_STATS
+    size_t st_max;
+    size_t st_used;
+    size_t st_max_pages;
+    size_t st_max_allocated;
+    char * st_name;
+    struct mallinfo st_mallinfo;
+#endif
 };
-#define BA_INIT(block_size, blocks) {\
+#ifdef BA_STATS
+#define BA_INIT(block_size, blocks, name) {\
+    NULL/*first_blk*/,\
+    0/*offset*/,\
+    NULL/*last_free*/,\
+    NULL/*first*/,\
+    blocks/*blocks*/,\
+    0/*magnitude*/,\
+    NULL/*htable*/,\
+    NULL/*pages*/,\
+    NULL/*last*/,\
+    NULL/*empty*/,\
+    0/*empty_pages*/,\
+    BA_MAX_EMPTY/*max_empty_pages*/,\
+    0/*allocated*/,\
+    block_size/*block_size*/,\
+    0/*num_pages*/,\
+    NULL/*blueprint*/,\
+    0/*st_max*/,\
+    0/*st_used*/,\
+    0/*st_max_pages*/,\
+    0/*st_max_allocated*/,\
+    name/*st_name*/ }
+#else
+#define BA_INIT(block_size, blocks, name) {\
     NULL/*first_blk*/,\
     0/*offset*/,\
     NULL/*last_free*/,\
@@ -118,6 +150,7 @@ struct block_allocator {
     block_size/*block_size*/,\
     0/*num_pages*/,\
     NULL/*blueprint*/ }
+#endif
 
 struct ba_page {
     struct ba_block_header * first;
@@ -149,6 +182,9 @@ PMOD_EXPORT void ba_remove_page(struct block_allocator * a, ba_page p);
 PMOD_EXPORT void ba_print_htable(const struct block_allocator * a);
 PMOD_EXPORT void ba_check_allocator(struct block_allocator * a, char*, char*, int);
 #endif
+#ifdef BA_STATS
+PMOD_EXPORT void ba_print_stats(struct block_allocator * a);
+#endif
 PMOD_EXPORT void ba_free_all(struct block_allocator * a);
 PMOD_EXPORT void ba_count_all(struct block_allocator * a, size_t *num, size_t *size);
 PMOD_EXPORT void ba_destroy(struct block_allocator * a);
@@ -167,6 +203,12 @@ static char* count_name = NULL;
 #else
 #define COUNT_NAME(x)
 #define IF_COUNT(x)
+#endif
+
+#ifdef BA_STATS
+# define IF_STATS(x)	do { x; } while(0)
+#else
+# define IF_STATS(x)	do { } while(0)
 #endif
 
 #ifdef BA_HASH_STATS
@@ -221,6 +263,15 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 #ifdef BA_DEBUG
     ((ba_block_header)ptr)->magic = BA_MARK_ALLOC;
 #endif
+#ifdef BA_STATS
+    if (++a->st_used > a->st_max) {
+      a->st_max = a->st_used;
+      a->st_max_allocated = a->allocated;
+      a->st_max_pages = a->num_pages;
+      a->st_mallinfo = mallinfo();
+    }
+#endif
+    
     return ptr;
 }
 
@@ -240,6 +291,9 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     ((ba_block_header)ptr)->magic = BA_MARK_FREE;
 #endif
 
+#ifdef BA_STATS
+    a->st_used--;
+#endif
 
     if (BA_CHECK_PTR(a, a->first, ptr)) {
       ((ba_block_header)ptr)->next = a->first_blk;
@@ -378,7 +432,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 } while(0)
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\
-	BA_INIT(sizeof(struct DATA), (BSIZE));				\
+	BA_INIT(sizeof(struct DATA), (BSIZE), #DATA);			\
 static struct DATA PIKE_CONCAT(DATA,_blueprint);			\
 									\
 void PIKE_CONCAT3(new_,DATA,_context)(void)				\
@@ -447,8 +501,13 @@ DO_IF_RUN_UNLOCKED(                                                     \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
 })									\
 									\
+ATTRIBUTE((destructor))							\
+static void PIKE_CONCAT(print_stats_,DATA)(void) {			\
+  IF_STATS(ba_print_stats(&PIKE_CONCAT(DATA, _allocator)));		\
+}									\
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
+  IF_STATS(ba_print_stats(&PIKE_CONCAT(DATA, _allocator)));		\
   ba_destroy(&PIKE_CONCAT(DATA, _allocator));				\
   IF_COUNT(print_stats(););						\
   INIT_COUNT();								\

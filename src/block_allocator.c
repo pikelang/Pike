@@ -99,6 +99,47 @@ PMOD_EXPORT void ba_show_pages(struct block_allocator * a) {
     }
 }
 
+#ifdef BA_STATS
+PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
+    FILE *f;
+    size_t used = a->st_max * a->block_size;
+    size_t malloced = a->st_max_pages * (a->block_size * a->blocks);
+    size_t overhead = a->st_max_pages * sizeof(struct ba_page);
+    int mall = a->st_mallinfo.uordblks;
+    int moverhead = a->st_mallinfo.fordblks;
+    size_t all = (size_t)sbrk(0) - (size_t)statptr;
+    overhead += a->st_max_allocated * 2 * sizeof(void*);
+    const char * fmt = "%s: max used %.1lf kb in %.1lf kb (#%lld) pages"
+		     " (overhead %.2lf kb)"
+		     " mall: %.1lf kb overhead: %.1lf kb sbrek: %.1lf kb"
+		     " page_size: %d block_size: %d\n";
+    if (a->st_max == 0) return;
+#if 0
+    f = fopen("/dev/shm/plogs.txt", "a");
+    fprintf(f, fmt,
+	   a->st_name,
+	   used / 1024.0, malloced / 1024.0, overhead / 1024.0,
+	   mall / 1024.0,
+	   moverhead / 1024.0,
+	   all / 1024.0,
+	   a->block_size * a->blocks,
+	   a->block_size
+	   );
+    fclose(f);
+#endif
+    printf(fmt,
+	   a->st_name,
+	   used / 1024.0, malloced / 1024.0,
+	   a->st_max_pages, overhead / 1024.0,
+	   mall / 1024.0,
+	   moverhead / 1024.0,
+	   all / 1024.0,
+	   a->block_size * a->blocks,
+	   a->block_size
+	   );
+}
+#endif
+
 //#define BA_ALIGNMENT	8
 
 PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
@@ -238,6 +279,9 @@ PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
     a->empty_pages = 0;
     a->allocated = 0;
     a->num_pages = 0;
+#ifdef BA_STATS
+    a->st_max = a->st_used = 0;
+#endif
 }
 
 static INLINE void ba_grow(struct block_allocator * a) {
