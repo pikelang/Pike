@@ -1,6 +1,6 @@
 #ifndef CB_CRITBIT_H
 #define CB_CRITBIT_H
-#define CONCAT2_(a, b)		a ## ## b
+#define CONCAT2_(a, b)		a ## b
 #define CONCAT2(a, b)		CONCAT2_(a, b)
 #define CONCAT3(a, b, c)	CONCAT2(a, CONCAT2(b, c))
 #define CONCAT4(a, b, c, d)	CONCAT2(a, CONCAT3(b, c, d))
