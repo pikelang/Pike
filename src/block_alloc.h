@@ -3,6 +3,9 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
+#ifdef PIKE_NEW_BLOCK_ALLOC
+# include "block_allocator.h"
+#else /* PIKE_NEW_BLOCK_ALLOC */
 
 #undef PRE_INIT_BLOCK
 #undef DO_PRE_INIT_BLOCK
@@ -816,3 +819,4 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
   return p;								     \
 }
+#endif /* PIKE_NEW_BLOCK_ALLOC */
