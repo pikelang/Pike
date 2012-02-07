@@ -1,6 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#ifdef BA_STATS
+# include <unistd.h>
+# include <malloc.h>
+# include <mcheck.h>
+#endif
 
 #include "bitvector.h"
 
