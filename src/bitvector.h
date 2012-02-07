@@ -291,4 +291,31 @@ static inline uint32_t ctz64(const uint64_t i) {
 # endif /* PIKE_BYTEORDER == 1234 */
 #endif
 
+#ifndef HAS___BUILTIN_IA32_SFENCE
+#undef HAS___BUILTIN_IA32_MOVNTI
+#undef HAS___BUILTIN_IA32_MOVNTI64
+#undef HAS___BUILTIN_IA32_MOVNTQ
+#endif
+
+/* these fallbacks are not at all non-temporal */
+#ifndef HAS___BUILTIN_IA32_MOVNTI
+# warning using fake movnti
+# define __builtin_ia32_movnti(p, i)	do { *(p) = (i); } while(0)
+#endif
+
+#ifndef HAS___BUILTIN_IA32_MOVNTI64
+# ifdef HAS___BUILTIN_IA32_MOVNTQ
+#  define __builtin_ia32_movnti64(p, i)	__builtin_ia32_movntq(p, i)
+# else
+# warning using fake movnti64
+#  define __builtin_ia32_movnti64(p, i)	do { *(p) = (i); } while(0)
+# endif
+#endif
+
+#if SIZEOF_CHAR_P == 8
+# define PIKE_MOVNTPTR(p, ptr)	__builtin_ia32_movnti64((long long int*)(p), (long long int)(ptr))
+#else
+# define PIKE_MOVNTPTR(p, ptr)	__builtin_ia32_movnti((int*)(p), (int)(ptr))
+#endif
+
 #endif /* BITVECTOR_H */
