@@ -1,6 +1,9 @@
 #ifndef BLOCK_ALLOCATOR_H
 #define BLOCK_ALLOCATOR_H
 #include <stdint.h>
+#ifdef BA_MEMTRACE
+ #include <stdio.h>
+#endif
 
 //#define BA_DEBUG
 //#define COUNT
@@ -244,10 +247,27 @@ static ATTRIBUTE((destructor)) void print_stats() {
 #define INC(X) do { } while (0)
 #endif
 
+#ifdef BA_MEMTRACE
+static int _do_mtrace;
+static char _ba_buf[256];
+static inline void emit(int n) {
+    if (!_do_mtrace) return;
+    fflush(NULL);
+    write(3, _ba_buf, n);
+    fflush(NULL);
+}
+
+static ATTRIBUTE((constructor)) void _________() {
+    _do_mtrace = !!getenv("MALLOC_TRACE");
+}
+
+# define PRINT(fmt, args...)     emit(snprintf(_ba_buf, sizeof(_ba_buf), fmt, args))
+#endif
+
 ATTRIBUTE((always_inline,malloc))
 static INLINE void * ba_alloc(struct block_allocator * a) {
     ba_block_header ptr;
-    
+
     if (unlikely(!a->first_blk)) {
 	INC(full);
 	ba_low_alloc(a);
@@ -262,6 +282,9 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
     a->first_blk = ptr->next;
 #ifdef BA_DEBUG
     ((ba_block_header)ptr)->magic = BA_MARK_ALLOC;
+#endif
+#ifdef BA_MEMTRACE
+    PRINT("%% %p 0x%x\n", ptr, a->block_size);
 #endif
 #ifdef BA_STATS
     if (++a->st_used > a->st_max) {
@@ -279,6 +302,10 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 ATTRIBUTE((always_inline))
 static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     ba_page p = NULL;
+
+#ifdef BA_MEMTRACE
+    PRINT("%% %p\n", ptr);
+#endif
 
 #ifdef BA_DEBUG
     if (a->empty_pages == a->num_pages) {
