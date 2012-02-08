@@ -6,7 +6,6 @@
 #endif
 
 //#define BA_DEBUG
-//#define COUNT
 
 #ifdef HAS___BUILTIN_EXPECT
 #define likely(x)	(__builtin_expect((x), 1))
@@ -79,8 +78,6 @@ extern char errbuf[];
 #define BA_ERROR(x...)	do { snprintf(errbuf, 8191, x); Pike_error(errbuf); } while(0)
 #endif
 
-
-
 typedef struct ba_block_header * ba_block_header;
 typedef struct ba_page * ba_page;
 
@@ -109,6 +106,7 @@ struct block_allocator {
     size_t st_max_pages;
     size_t st_max_allocated;
     char * st_name;
+    size_t good, bad, ugly, likely, max, full, empty;
     struct mallinfo st_mallinfo;
 #endif
 };
@@ -134,7 +132,8 @@ struct block_allocator {
     0/*st_used*/,\
     0/*st_max_pages*/,\
     0/*st_max_allocated*/,\
-    name/*st_name*/ }
+    name/*st_name*/,\
+    0,0,0,0,0,0,0/*counter*/}
 #else
 #define BA_INIT(block_size, blocks, name) {\
     NULL/*first_blk*/,\
@@ -198,19 +197,11 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #define BA_LASTBLOCK(a, p) ((ba_block_header)((char*)p + (a)->offset))
 #define BA_NUM(p) (p ? p->n : 0)
 
-#ifdef COUNT
-#define IF_COUNT(x)	do { x; } while(0)
-#define COUNT_NAME(x)	do { count_name = (x); } while(0)
-static size_t good = 0, bad = 0, ugly = 0, likely = 0, max = 0, full = 0, empty = 0;
-static char* count_name = NULL;
-#else
-#define COUNT_NAME(x)
-#define IF_COUNT(x)
-#endif
-
 #ifdef BA_STATS
+# define INC(X) do { (a->X++); } while (0)
 # define IF_STATS(x)	do { x; } while(0)
 #else
+# define INC(X) do { } while (0)
 # define IF_STATS(x)	do { } while(0)
 #endif
 
@@ -226,25 +217,6 @@ static void ba_print_hash_stats(struct block_allocator * a) {
     av_length = (double)a->num_pages / ends;
     fprintf(stderr, "HASH STATS:\naverage chain length: %f\n", av_length);
 }
-#endif
-
-#if defined(COUNT) || defined(BA_HASH_STATS)
-static ATTRIBUTE((destructor)) void print_stats() {
-# ifdef COUNT
-    if (good || bad || ugly || likely || max) {
-	if (count_name) fprintf(stderr, "%s ", count_name);
-	fprintf(stderr, "COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max %lu full %lu empty\n", good, bad, ugly, likely, max, full, empty);
-    }
-# endif
-}
-#endif
-
-#ifdef COUNT
-#define INIT_COUNT()	do { good = bad = ugly = likely = full = empty = 0; } while(0)
-#define INC(X) do { (X++); } while (0)
-#else
-#define INIT_COUNT() do { } while(0)
-#define INC(X) do { } while (0)
 #endif
 
 #ifdef BA_MEMTRACE
@@ -536,8 +508,6 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   IF_STATS(ba_print_stats(&PIKE_CONCAT(DATA, _allocator)));		\
   ba_destroy(&PIKE_CONCAT(DATA, _allocator));				\
-  IF_COUNT(print_stats(););						\
-  INIT_COUNT();								\
 }									\
 									\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
@@ -561,7 +531,6 @@ PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
 									\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
-    COUNT_NAME(#DATA);							\
     DO_PRE_INIT_BLOCK(((struct DATA *)(PIKE_CONCAT(DATA,_allocator).blueprint = (char*)&PIKE_CONCAT(DATA, _blueprint))));	\
     /*fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator));*/\
 }

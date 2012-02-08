@@ -142,6 +142,10 @@ PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
 	   a->block_size * a->blocks,
 	   a->block_size
 	   );
+    if (a->good || a->bad || a->ugly || a->likely || a->max) {
+	printf("COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max %lu full %lu empty\n", a->good, a->bad, a->ugly, a->likely, a->max,
+		a->full, a->empty);
+    }
 }
 #endif
 
@@ -437,9 +441,6 @@ static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
 					const void * ptr) {
     ba_page p;
     ba_page_t n1, n2;
-#ifdef COUNT
-    count_name = "hash";
-#endif
     n1 = a->htable[hash1(a, ptr) & BA_HASH_MASK(a)];
     n2 = a->htable[hash2(a, ptr) & BA_HASH_MASK(a)];
 
