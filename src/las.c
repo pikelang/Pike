@@ -415,16 +415,14 @@ void free_all_nodes(void)
   if(!Pike_compiler->previous)
   {
     node *tmp;
-    size_t e=0, s=0;
 
 #ifndef PIKE_DEBUG
-    if(cumulative_parse_error)
-    {
-#endif
-      
+    if(cumulative_parse_error) {
+#else
+      size_t e=0, s=0;
       count_memory_in_node_ss(&e, &s);
-      if(e)
-      {
+      if(e) {
+#endif
 	WALK_NONFREE_BLOCKS(node_s, tmp, tmp->token != USHRT_MAX, {
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
@@ -460,9 +458,8 @@ void free_all_nodes(void)
 #ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
 	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
-#endif
       }
-#ifndef PIKE_DEBUG
+#else
     }
 #endif
     free_all_node_s_blocks();
