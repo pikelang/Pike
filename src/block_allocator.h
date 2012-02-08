@@ -63,7 +63,7 @@ static inline void _Pike_error(int line, char * file, char * msg) {
     fprintf(stderr, "%s:%d\t%s\n", file, line, msg);
     _exit(1);
 }
-# define Pike_error(x)	do { _Pike_error(__LINE__, __FILE__, errbuf); } while(0)
+# define Pike_error(x...)	do { sprintf(errbuf, x); _Pike_error(__LINE__, __FILE__, errbuf); } while(0)
 # ifndef INLINE
 #  define INLINE __inline__
 # endif
@@ -78,9 +78,9 @@ static inline void _Pike_error(int line, char * file, char * msg) {
 extern char errbuf[];
 
 #ifdef BA_DEBUG
-#define BA_ERROR(x...)	do { fprintf(stderr, "ERROR at %s:%d\n", __FILE__, __LINE__); ba_print_htable(a); ba_show_pages(a); snprintf(errbuf, 8191, x); Pike_error(errbuf); } while(0)
+#define BA_ERROR(x...)	do { fprintf(stderr, "ERROR at %s:%d\n", __FILE__, __LINE__); ba_print_htable(a); ba_show_pages(a); Pike_error(x); } while(0)
 #else
-#define BA_ERROR(x...)	do { snprintf(errbuf, 8191, x); Pike_error(errbuf); } while(0)
+#define BA_ERROR(x...)	do { Pike_error(x); } while(0)
 #endif
 
 typedef struct ba_block_header * ba_block_header;
@@ -170,7 +170,7 @@ PMOD_EXPORT void ba_show_pages(const struct block_allocator * a);
 PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
 			 ba_page_t blocks);
 PMOD_EXPORT void ba_low_alloc(struct block_allocator * a);
-PMOD_EXPORT void ba_find_page(struct block_allocator * a,
+PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 			      const void * ptr);
 PMOD_EXPORT void ba_remove_page(struct block_allocator * a, ba_page p);
 #ifdef BA_DEBUG

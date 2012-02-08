@@ -574,7 +574,7 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 #ifdef BA_DEBUG
 	if (!a->first->first) {
 	    ba_show_pages(a);
-	    BA_ERROR("no free blk in page %p\n", a->first);
+	    BA_ERROR("no free blk in page %lx\n", (long int)a->first);
 	}
 #endif
 	a->first->prev = NULL;
@@ -674,7 +674,7 @@ PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 	    );
     ba_print_htable(a);
 #endif
-    BA_ERROR("Unknown pointer (not found in hash) %p\n", ptr);
+    BA_ERROR("Unknown pointer (not found in hash) %lx\n", (long int)ptr);
 }
 
 
