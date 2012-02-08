@@ -193,7 +193,6 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 
 #ifdef BA_STATS
 # define INC(X) do { (a->stats.X++); } while (0)
-# define PRCOUNT(X)	printf(#X " %lu ", a->stats.X);
 # define IF_STATS(x)	do { x; } while(0)
 #else
 # define INC(X) do { } while (0)

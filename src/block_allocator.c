@@ -89,33 +89,39 @@ PMOD_EXPORT void ba_show_pages(const struct block_allocator * a) {
 }
 
 #ifdef BA_STATS
+# define PRCOUNT(X)	fprintf(stat_file, #X " %5.1lf %% ", (a->stats.X/all)*100);
+static FILE * stat_file = NULL;
+ATTRIBUTE((constructor))
+static void ba_stats_init() {
+    char * fname = getenv("BA_STAT_TRACE");
+    if (fname) {
+	stat_file = fopen(fname, "w");
+    } else stat_file = stderr;
+}
+ATTRIBUTE((destructor))
+static void ba_stats_deinit() {
+    if (stat_file != stderr) {
+	fclose(stat_file);
+	stat_file = stderr;
+    }
+}
 PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
     FILE *f;
+    int i;
+    double all;
     struct block_alloc_stats * s = &a->stats;
     size_t used = s->st_max * a->block_size;
     size_t malloced = s->st_max_pages * (a->block_size * a->blocks);
     size_t overhead = s->st_max_pages * sizeof(struct ba_page);
     int mall = s->st_mallinfo.uordblks;
     int moverhead = s->st_mallinfo.fordblks;
-    const char * fmt = "%s: max used %.1lf kb in %.1lf kb (#%lld) pages"
+    const char * fmt = "%s:\n max used %.1lf kb in %.1lf kb (#%lld) pages"
 		     " (overhead %.2lf kb)"
 		     " mall: %.1lf kb overhead: %.1lf kb "
 		     " page_size: %d block_size: %d\n";
     overhead += s->st_max_allocated * 2 * sizeof(void*);
     if (s->st_max == 0) return;
-#if 0
-    f = fopen("/dev/shm/plogs.txt", "a");
-    fprintf(f, fmt,
-	   s->st_name,
-	   used / 1024.0, malloced / 1024.0, overhead / 1024.0,
-	   mall / 1024.0,
-	   moverhead / 1024.0,
-	   s->block_size * s->blocks,
-	   s->block_size
-	   );
-    fclose(f);
-#endif
-    printf(fmt,
+    fprintf(stat_file, fmt,
 	   s->st_name,
 	   used / 1024.0, malloced / 1024.0,
 	   s->st_max_pages, overhead / 1024.0,
@@ -124,14 +130,16 @@ PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
 	   a->block_size * a->blocks,
 	   a->block_size
 	   );
-    printf("free COUNTS: ");
+    all = ((a->stats.free_fast1 + a->stats.free_fast2 + a->stats.find_linear + a->stats.find_hash + a->stats.free_empty + a->stats.free_full));
+    if (all == 0.0) return;
+    fprintf(stat_file, "free COUNTS: ");
     PRCOUNT(free_fast1);
     PRCOUNT(free_fast2);
     PRCOUNT(find_linear);
     PRCOUNT(find_hash);
     PRCOUNT(free_empty);
     PRCOUNT(free_full);
-    printf("\n");
+    fprintf(stat_file, " all %lu\n", (long unsigned int)all);
 }
 #endif
 
