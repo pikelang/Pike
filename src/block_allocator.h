@@ -84,6 +84,27 @@ typedef struct ba_page * ba_page;
 typedef uint32_t ba_page_t;
 typedef uint32_t ba_block_t;
 
+#ifdef BA_STATS
+struct block_alloc_stats {
+    size_t st_max;
+    size_t st_used;
+    size_t st_max_pages;
+    size_t st_max_allocated;
+    char * st_name;
+    size_t good, bad, ugly, likely, max, full, empty;
+    struct mallinfo st_mallinfo;
+};
+# define BA_INIT_STATS(block_size, blocks, name) {\
+    0/*st_max*/,\
+    0/*st_used*/,\
+    0/*st_max_pages*/,\
+    0/*st_max_allocated*/,\
+    name/*st_name*/,\
+    0,0,0,0,0,0,0}
+#else
+# define BA_INIT_STATS(block_size, blocks, name)
+#endif
+
 struct block_allocator {
     ba_block_header first_blk;
     size_t offset;
@@ -101,16 +122,9 @@ struct block_allocator {
     ba_page_t num_pages;
     char * blueprint;   /* 88 */
 #ifdef BA_STATS
-    size_t st_max;
-    size_t st_used;
-    size_t st_max_pages;
-    size_t st_max_allocated;
-    char * st_name;
-    size_t good, bad, ugly, likely, max, full, empty;
-    struct mallinfo st_mallinfo;
+    struct block_alloc_stats stats;
 #endif
 };
-#ifdef BA_STATS
 #define BA_INIT(block_size, blocks, name) {\
     NULL/*first_blk*/,\
     0/*offset*/,\
@@ -128,31 +142,8 @@ struct block_allocator {
     block_size/*block_size*/,\
     0/*num_pages*/,\
     NULL/*blueprint*/,\
-    0/*st_max*/,\
-    0/*st_used*/,\
-    0/*st_max_pages*/,\
-    0/*st_max_allocated*/,\
-    name/*st_name*/,\
-    0,0,0,0,0,0,0/*counter*/}
-#else
-#define BA_INIT(block_size, blocks, name) {\
-    NULL/*first_blk*/,\
-    0/*offset*/,\
-    NULL/*last_free*/,\
-    NULL/*first*/,\
-    blocks/*blocks*/,\
-    0/*magnitude*/,\
-    NULL/*htable*/,\
-    NULL/*pages*/,\
-    NULL/*last*/,\
-    NULL/*empty*/,\
-    0/*empty_pages*/,\
-    BA_MAX_EMPTY/*max_empty_pages*/,\
-    0/*allocated*/,\
-    block_size/*block_size*/,\
-    0/*num_pages*/,\
-    NULL/*blueprint*/ }
-#endif
+    BA_INIT_STATS(block_size, blocks, name)\
+}
 
 struct ba_page {
     struct ba_block_header * first;
@@ -198,7 +189,7 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #define BA_NUM(p) (p ? p->n : 0)
 
 #ifdef BA_STATS
-# define INC(X) do { (a->X++); } while (0)
+# define INC(X) do { (a->stats.X++); } while (0)
 # define IF_STATS(x)	do { x; } while(0)
 #else
 # define INC(X) do { } while (0)
@@ -239,6 +230,9 @@ static ATTRIBUTE((constructor)) void _________() {
 ATTRIBUTE((always_inline,malloc))
 static INLINE void * ba_alloc(struct block_allocator * a) {
     ba_block_header ptr;
+#ifdef BA_STATS
+    struct block_alloc_stats *s = &a->stats;
+#endif
 
     if (unlikely(!a->first_blk)) {
 	INC(full);
@@ -259,11 +253,11 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
     PRINT("%% %p 0x%x\n", ptr, a->block_size);
 #endif
 #ifdef BA_STATS
-    if (++a->st_used > a->st_max) {
-      a->st_max = a->st_used;
-      a->st_max_allocated = a->allocated;
-      a->st_max_pages = a->num_pages;
-      a->st_mallinfo = mallinfo();
+    if (++s->st_used > s->st_max) {
+      s->st_max = s->st_used;
+      s->st_max_allocated = a->allocated;
+      s->st_max_pages = a->num_pages;
+      s->st_mallinfo = mallinfo();
     }
 #endif
     
@@ -291,7 +285,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 
 #ifdef BA_STATS
-    a->st_used--;
+    a->stats.st_used--;
 #endif
 
     if (BA_CHECK_PTR(a, a->first, ptr)) {

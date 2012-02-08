@@ -107,44 +107,42 @@ PMOD_EXPORT void ba_show_pages(struct block_allocator * a) {
 #ifdef BA_STATS
 PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
     FILE *f;
-    size_t used = a->st_max * a->block_size;
-    size_t malloced = a->st_max_pages * (a->block_size * a->blocks);
-    size_t overhead = a->st_max_pages * sizeof(struct ba_page);
-    int mall = a->st_mallinfo.uordblks;
-    int moverhead = a->st_mallinfo.fordblks;
-    size_t all = (size_t)sbrk(0) - (size_t)statptr;
-    overhead += a->st_max_allocated * 2 * sizeof(void*);
+    struct block_alloc_stats * s = &a->stats;
+    size_t used = s->st_max * a->block_size;
+    size_t malloced = s->st_max_pages * (a->block_size * a->blocks);
+    size_t overhead = s->st_max_pages * sizeof(struct ba_page);
+    int mall = s->st_mallinfo.uordblks;
+    int moverhead = s->st_mallinfo.fordblks;
+    overhead += s->st_max_allocated * 2 * sizeof(void*);
     const char * fmt = "%s: max used %.1lf kb in %.1lf kb (#%lld) pages"
 		     " (overhead %.2lf kb)"
-		     " mall: %.1lf kb overhead: %.1lf kb sbrek: %.1lf kb"
+		     " mall: %.1lf kb overhead: %.1lf kb "
 		     " page_size: %d block_size: %d\n";
-    if (a->st_max == 0) return;
+    if (s->st_max == 0) return;
 #if 0
     f = fopen("/dev/shm/plogs.txt", "a");
     fprintf(f, fmt,
-	   a->st_name,
+	   s->st_name,
 	   used / 1024.0, malloced / 1024.0, overhead / 1024.0,
 	   mall / 1024.0,
 	   moverhead / 1024.0,
-	   all / 1024.0,
-	   a->block_size * a->blocks,
-	   a->block_size
+	   s->block_size * s->blocks,
+	   s->block_size
 	   );
     fclose(f);
 #endif
     printf(fmt,
-	   a->st_name,
+	   s->st_name,
 	   used / 1024.0, malloced / 1024.0,
-	   a->st_max_pages, overhead / 1024.0,
+	   s->st_max_pages, overhead / 1024.0,
 	   mall / 1024.0,
 	   moverhead / 1024.0,
-	   all / 1024.0,
 	   a->block_size * a->blocks,
 	   a->block_size
 	   );
-    if (a->good || a->bad || a->ugly || a->likely || a->max) {
-	printf("COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max %lu full %lu empty\n", a->good, a->bad, a->ugly, a->likely, a->max,
-		a->full, a->empty);
+    if (s->good || s->bad || s->ugly || s->likely || s->max) {
+	printf("COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max %lu full %lu empty\n", s->good, s->bad, s->ugly, s->likely, s->max,
+		s->full, s->empty);
     }
 }
 #endif
@@ -289,7 +287,7 @@ PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
     a->allocated = 0;
     a->num_pages = 0;
 #ifdef BA_STATS
-    a->st_max = a->st_used = 0;
+    a->stats.st_max = a->stats.st_used = 0;
 #endif
 }
 
