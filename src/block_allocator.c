@@ -157,7 +157,7 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
     page_size = block_size * blocks + BLOCK_HEADER_SIZE;
 
     a->first_blk = NULL;
-    a->empty = a->first = a->last_free = NULL;
+    a->last = a->empty = a->first = a->last_free = NULL;
 
 #ifdef BA_DEBUG
     fprintf(stderr, "blocks: %u block_size: %u page_size: %u\n",
@@ -241,7 +241,7 @@ PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {
 
     a->num_pages = 0;
     a->empty_pages = 0;
-    a->empty = a->first = a->last_free = NULL;
+    a->last = a->empty = a->first = a->last_free = NULL;
     a->first_blk = NULL;
     a->allocated = BA_ALLOC_INITIAL;
     memset(a->pages, 0, a->allocated * sizeof(ba_page));
@@ -466,8 +466,8 @@ static INLINE void ba_htable_delete(const struct block_allocator * a,
 #endif
 }
 
-static INLINE ba_page ba_htable_lookup(const struct block_allocator * a,
-					const void * ptr) {
+static INLINE void ba_htable_lookup(struct block_allocator * a,
+				    const void * ptr) {
     ba_page p1, p2;
     p1 = a->pages[hash1(a, ptr) & BA_HASH_MASK(a)];
     p2 = a->pages[hash2(a, ptr) & BA_HASH_MASK(a)];
@@ -475,19 +475,19 @@ static INLINE ba_page ba_htable_lookup(const struct block_allocator * a,
     while (p1 || p2) {
 	if (p1) {
 	    if (BA_CHECK_PTR(a, p1, ptr)) {
-		return p1;
+		a->last_free = p1;
+		return;
 	    }
 	    p1 = p1->hchain;
 	}
 	if (p2) {
 	    if (BA_CHECK_PTR(a, p2, ptr)) {
-		return p2;
+		a->last_free = p2;
+		return;
 	    }
 	    p2 = p2->hchain;
 	}
     }
-
-    return NULL;
 }
 
 #ifdef BA_DEBUG
@@ -616,14 +616,6 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 			     ba_block_header ptr) {
-    if (likely(!p)) {
-	ba_find_page(a, ptr);
-	p = a->last_free;
-	((ba_block_header)ptr)->next = p->first;
-	p->first = (ba_block_header)ptr;
-	p->used--;
-    }
-
     // page was full
     if (unlikely(!ptr->next)) {
 	INC(free_full);
@@ -656,32 +648,35 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
     }
 }
 
-ATTRIBUTE((always_inline))
+static INLINE void ba_htable_linear_lookup(struct block_allocator * a,
+				    const void * ptr) {
+    PAGE_LOOP(a, {
+	if (BA_CHECK_PTR(a, p, ptr)) {
+	    a->last_free = p;
+	    return;
+	}
+    });
+}
+
 PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 				     const void * ptr) {
-    ba_page p;
+    a->last_free = NULL;
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_low_free", __FILE__, __LINE__);
 #endif
 #ifdef BA_HASH_THLD
     if (a->num_pages <= BA_HASH_THLD) {
 	INC(find_linear);
-	PAGE_LOOP(a, {
-	    if (BA_CHECK_PTR(a, p, ptr)) {
-		a->last_free = p;
-		return;
-	    }
-	});
+	ba_htable_linear_lookup(a, ptr);
     } else {
 #endif
 	INC(find_hash);
-	p = ba_htable_lookup(a, ptr);
-	if (p) {
-	    a->last_free = p;
-	    return;
-	}
+	ba_htable_lookup(a, ptr);
 #ifdef BA_HASH_THLD
     }
+
+    if (a->last_free) return;
+    
 #endif
 #ifdef BA_DEBUG
     fprintf(stderr, "magnitude: %u\n", a->magnitude);

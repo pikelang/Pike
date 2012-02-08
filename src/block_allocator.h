@@ -287,6 +287,12 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
       p->first = (ba_block_header)ptr;
       if ((--p->used) && (((ba_block_header)ptr)->next)) return;
       INC(free_fast2);
+    } else {
+      ba_find_page(a, ptr);
+      p = a->last_free;
+      ((ba_block_header)ptr)->next = p->first;
+      p->first = (ba_block_header)ptr;
+      if ((--p->used) && (((ba_block_header)ptr)->next)) return;
     }
 
 #ifdef BA_DEBUG
