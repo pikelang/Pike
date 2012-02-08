@@ -5,6 +5,11 @@
  #include <stdio.h>
 #endif
 
+#ifndef PIKE_XCONCAT
+#define PIKE_CONCAT(X, Y)	X##Y
+#define PIKE_XCONCAT(X, Y)	PIKE_CONCAT(X, Y)
+#endif
+
 //#define BA_DEBUG
 
 #ifdef HAS___BUILTIN_EXPECT
@@ -112,7 +117,6 @@ struct block_allocator {
     ba_page first;	/* 24 */
     ba_block_t blocks;
     uint32_t magnitude;
-    ba_page_t * htable;
     ba_page * pages;
     ba_page last;       /* 48 */
     ba_page empty;
@@ -132,7 +136,6 @@ struct block_allocator {
     NULL/*first*/,\
     blocks/*blocks*/,\
     0/*magnitude*/,\
-    NULL/*htable*/,\
     NULL/*pages*/,\
     NULL/*last*/,\
     NULL/*empty*/,\
@@ -148,9 +151,8 @@ struct block_allocator {
 struct ba_page {
     struct ba_block_header * first;
     ba_page next, prev;
+    ba_page hchain;
     ba_block_t used;
-    ba_page_t hchain;
-    ba_page_t n;
 };
 
 struct ba_block_header {
@@ -164,7 +166,7 @@ struct ba_block_header {
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a,
 				    ba_page p, ba_block_header ptr);
-PMOD_EXPORT void ba_show_pages(struct block_allocator * a);
+PMOD_EXPORT void ba_show_pages(const struct block_allocator * a);
 PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
 			 ba_page_t blocks);
 PMOD_EXPORT void ba_low_alloc(struct block_allocator * a);
@@ -186,7 +188,6 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #define BA_BLOCKN(a, p, n) ((ba_block_header)(((char*)(p+1)) + (n)*((a)->block_size)))
 #define BA_CHECK_PTR(a, p, ptr)	((size_t)((char*)ptr - (char*)(p)) <= (a)->offset)
 #define BA_LASTBLOCK(a, p) ((ba_block_header)((char*)p + (a)->offset))
-#define BA_NUM(p) (p ? p->n : 0)
 
 #ifdef BA_STATS
 # define INC(X) do { (a->stats.X++); } while (0)
@@ -194,20 +195,6 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #else
 # define INC(X) do { } while (0)
 # define IF_STATS(x)	do { } while(0)
-#endif
-
-#ifdef BA_HASH_STATS
-static void ba_print_hash_stats(struct block_allocator * a) {
-    double av_length;
-    ba_page_t n, ends = 0;
-    for (n = 0; n < a->num_pages; n++) {
-	if (!a->pages[n]->hchain) {
-	    ends++;
-	}
-    }
-    av_length = (double)a->num_pages / ends;
-    fprintf(stderr, "HASH STATS:\naverage chain length: %f\n", av_length);
-}
 #endif
 
 #ifdef BA_MEMTRACE
