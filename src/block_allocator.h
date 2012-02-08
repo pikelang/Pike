@@ -401,14 +401,27 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 
 #define MS(x)	#x
 
-#define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE)	do {		\
+/* goto considered harmful */
+#define LOW_PAGE_LOOP2(a, label, C...)	do {			\
+    ba_page_t __n;						\
+    for (__n = 0; __n < a->allocated; __n++) {			\
+	ba_page p = a->pages[__n];				\
+	while (p) {						\
+	    ba_page t = p->hchain;				\
+	    do { C; goto SURVIVE ## label; } while(0);		\
+	    goto label; SURVIVE ## label: p = t;		\
+	}							\
+    }								\
+label:								\
+    0;								\
+} while(0)
+#define LOW_PAGE_LOOP(a, l, C...)	LOW_PAGE_LOOP2(a, l, C)
+#define PAGE_LOOP(a, C...)	LOW_PAGE_LOOP(a, PIKE_XCONCAT(page_loop_label, __LINE__), C)
+
+#define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE...)	do {		\
     struct block_allocator * a = &PIKE_CONCAT(DATA, _allocator);	\
-    ba_page_t n;							\
-    ba_block_t used;							\
-    for (n = 1; n <= a->num_pages; n++) {				\
-	ba_block_t i;							\
-	ba_page p = BA_PAGE(a, n);					\
-	used = (p == a->first) ? a->blocks : p->used;			\
+    PAGE_LOOP(a, {							\
+	ba_block_t i, used = (p == a->first) ? a->blocks : p->used;	\
 	for (i = 0; used && i < a->blocks; i++) {			\
 	    BLOCK = ((struct DATA*)(p+1)) + i;				\
 	    if (FCOND) {						\
@@ -416,7 +429,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 		--used;							\
 	    }								\
 	}								\
-    }									\
+    });									\
 } while(0)
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\

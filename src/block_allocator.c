@@ -44,22 +44,6 @@ static INLINE void ba_htable_grow(struct block_allocator * a);
     fprintf(stderr, #name": %p\n", a->name);\
 } while (0)
 
-/* goto considered harmful */
-#define LOW_PAGE_LOOP2(a, label, C)	do {			\
-    ba_page_t __n, stop = 0;					\
-    for (__n = 0; __n < a->allocated; __n++) {			\
-	ba_page p = a->pages[__n];				\
-	while (p) {						\
-	    ba_page t = p->hchain;				\
-	    do { C; goto SURVIVE ## label; } while(0);		\
-	    goto label; SURVIVE ## label: p = t;		\
-	}							\
-    }								\
-label:								\
-    0;								\
-} while(0)
-#define LOW_PAGE_LOOP(a, l, C)	LOW_PAGE_LOOP2(a, l, C)
-#define PAGE_LOOP(a, C)	LOW_PAGE_LOOP(a, PIKE_XCONCAT(page_loop_label, __LINE__), C)
 
 PMOD_EXPORT void ba_show_pages(const struct block_allocator * a) {
     unsigned int i = 0;
