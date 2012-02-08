@@ -97,11 +97,11 @@ PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
     size_t overhead = s->st_max_pages * sizeof(struct ba_page);
     int mall = s->st_mallinfo.uordblks;
     int moverhead = s->st_mallinfo.fordblks;
-    overhead += s->st_max_allocated * 2 * sizeof(void*);
     const char * fmt = "%s: max used %.1lf kb in %.1lf kb (#%lld) pages"
 		     " (overhead %.2lf kb)"
 		     " mall: %.1lf kb overhead: %.1lf kb "
 		     " page_size: %d block_size: %d\n";
+    overhead += s->st_max_allocated * 2 * sizeof(void*);
     if (s->st_max == 0) return;
 #if 0
     f = fopen("/dev/shm/plogs.txt", "a");
@@ -124,10 +124,14 @@ PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
 	   a->block_size * a->blocks,
 	   a->block_size
 	   );
-    if (s->good || s->bad || s->ugly || s->likely || s->max) {
-	printf("COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max %lu full %lu empty\n", s->good, s->bad, s->ugly, s->likely, s->max,
-		s->full, s->empty);
-    }
+    printf("free COUNTS: ");
+    PRCOUNT(free_fast1);
+    PRCOUNT(free_fast2);
+    PRCOUNT(find_linear);
+    PRCOUNT(find_hash);
+    PRCOUNT(free_empty);
+    PRCOUNT(free_full);
+    printf("\n");
 }
 #endif
 
@@ -175,6 +179,7 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
     // we start with management structures for 16 pages
     a->allocated = BA_ALLOC_INITIAL;
     a->pages = (ba_page*)malloc(BA_ALLOC_INITIAL * sizeof(ba_page));
+    if (!a->pages) Pike_error("nomem");
     memset(a->pages, 0, BA_ALLOC_INITIAL * sizeof(ba_page));
 }
 
@@ -313,6 +318,7 @@ static INLINE void ba_htable_grow(struct block_allocator * a) {
     old = a->allocated;
     a->allocated *= 2;
     a->pages = (ba_page*)realloc(a->pages, a->allocated * sizeof(ba_page));
+    if (!a->pages) Pike_error("nomem");
     memset(a->pages+old, 0, old * sizeof(ba_page));
     for (n = 0; n < old; n++) {
 	ba_page * b = a->pages + n;
@@ -350,6 +356,7 @@ static INLINE void ba_htable_shrink(struct block_allocator * a) {
     }
 
     a->pages = (ba_page*)realloc(a->pages, a->allocated * sizeof(ba_page));
+    if (!a->pages) Pike_error("nomem");
 }
 
 #ifdef BA_DEBUG
@@ -611,7 +618,7 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 
     // page was full
     if (unlikely(!ptr->next)) {
-
+	INC(free_full);
 	if (a->first) {
 	    p->prev = a->last;
 	    a->last->next = p;
@@ -623,6 +630,7 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 	    a->first_blk = ptr;
 	}
     } else if (!p->used) {
+	INC(free_empty);
 	if (a->empty_pages == a->max_empty_pages) {
 	    ba_remove_page(a, p);
 	    return;
@@ -649,6 +657,7 @@ PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 #endif
 #ifdef BA_HASH_THLD
     if (a->num_pages <= BA_HASH_THLD) {
+	INC(find_linear);
 	PAGE_LOOP(a, {
 	    if (BA_CHECK_PTR(a, p, ptr)) {
 		a->last_free = p;
@@ -657,6 +666,7 @@ PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 	});
     } else {
 #endif
+	INC(find_hash);
 	p = ba_htable_lookup(a, ptr);
 	if (p) {
 	    a->last_free = p;

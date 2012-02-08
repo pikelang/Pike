@@ -96,7 +96,8 @@ struct block_alloc_stats {
     size_t st_max_pages;
     size_t st_max_allocated;
     char * st_name;
-    size_t good, bad, ugly, likely, max, full, empty;
+    size_t free_fast1, free_fast2, free_full, free_empty, max, full, empty;
+    size_t find_linear, find_hash;
     struct mallinfo st_mallinfo;
 };
 # define BA_INIT_STATS(block_size, blocks, name) {\
@@ -105,7 +106,8 @@ struct block_alloc_stats {
     0/*st_max_pages*/,\
     0/*st_max_allocated*/,\
     name/*st_name*/,\
-    0,0,0,0,0,0,0}
+    0,0,0,0,0,0,0,\
+    0,0}
 #else
 # define BA_INIT_STATS(block_size, blocks, name)
 #endif
@@ -191,6 +193,7 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 
 #ifdef BA_STATS
 # define INC(X) do { (a->stats.X++); } while (0)
+# define PRCOUNT(X)	printf(#X " %lu ", a->stats.X);
 # define IF_STATS(x)	do { x; } while(0)
 #else
 # define INC(X) do { } while (0)
@@ -222,9 +225,8 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 #endif
 
     if (unlikely(!a->first_blk)) {
-	INC(full);
 	ba_low_alloc(a);
-    } else INC(good);
+    }
     ptr = a->first_blk;
 #ifndef BA_CHAIN_PAGE
     if (ptr->next == BA_ONE) {
@@ -278,13 +280,14 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     if (BA_CHECK_PTR(a, a->first, ptr)) {
       ((ba_block_header)ptr)->next = a->first_blk;
       a->first_blk = (ba_block_header)ptr;
-      //INC(good);
+      INC(free_fast1);
       return;
     } else if (BA_CHECK_PTR(a, a->last_free, ptr)) {
       p = a->last_free;
       ((ba_block_header)ptr)->next = p->first;
       p->first = (ba_block_header)ptr;
       if ((--p->used) && (((ba_block_header)ptr)->next)) return;
+      INC(free_fast2);
     }
 
 #ifdef BA_DEBUG
