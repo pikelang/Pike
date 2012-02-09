@@ -148,8 +148,8 @@ class ExecTest(string id,Test test)
 //! data to stdout. @[id] is the current test.
 void _shoot(string id)
 {
-   object test;
-   float tg=gauge { (test=Tools.Shoot[id]())->perform(); };
+   object test = Tools.Shoot[id]();
+   float tg=gauge { test->perform(); };
 
    if (Stdio.is_dir("/proc/"+getpid()+"/.")) {
      string s;
