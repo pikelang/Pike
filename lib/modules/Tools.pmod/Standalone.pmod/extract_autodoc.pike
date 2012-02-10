@@ -17,6 +17,8 @@ int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 int source_timestamp;
 
+int num_updated_files;
+
 // See the BMML rewriter further below about these values.
 // Not that there is both a start and an end sentinel.
 constant bmml_invalidation_times = ({
@@ -26,10 +28,12 @@ constant bmml_invalidation_times = ({
 int bmml_invalidate_before;
 int bmml_invalidate_after;
 
-int main(int n, array(string) args) {
-
+int main(int n, array(string) args)
+{
   string srcdir, builddir = "./";
   array(string) root = ({"predef::"});
+
+  int return_count;
 
   foreach(Getopt.find_all_options(args, ({
     ({ "srcdir",     Getopt.HAS_ARG,      "--srcdir" }),
@@ -38,6 +42,7 @@ int main(int n, array(string) args) {
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
     ({ "root",       Getopt.HAS_ARG,      "--root" }),
     ({ "compat",     Getopt.NO_ARG,       "--compat" }),
+    ({ "count",      Getopt.NO_ARG,       "--count" }),
     ({ "timestamp",  Getopt.HAS_ARG,      "--source-timestamp" }),
     ({ "no-dynamic", Getopt.NO_ARG,       "--no-dynamic" }),
     ({ "keep-going", Getopt.NO_ARG,       "--keep-going" }),
@@ -63,6 +68,9 @@ int main(int n, array(string) args) {
       break;
     case "compat":
       flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
+    case "count":
+      return_count = 1;
       break;
     case "no-dynamic":
       flags |= Tools.AutoDoc.FLAG_NO_DYNAMIC;
@@ -128,6 +136,8 @@ int main(int n, array(string) args) {
 	  exit(1);
 	}
 
+	num_updated_files++;
+
 	if (sizeof(res) && (res != "\n")) {
 	  // Validate the extracted XML.
 	  mixed err = catch {
@@ -156,6 +166,9 @@ int main(int n, array(string) args) {
     werror("No source directory or input files given.\n");
     return 1;
   }
+
+  if (return_count) return num_updated_files;
+  return 0;
 }
 
 void recurse(string srcdir, string builddir, int root_ts, array(string) root)
@@ -197,6 +210,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if (!Stdio.exist(srcdir + fn[..<4])) {
 	if (verbosity > 0)
 	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
+
+	num_updated_files++;
 	rm(builddir + fn);
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
@@ -322,7 +337,10 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 		   "%s",
 		   builddir + fn + ".xml", describe_error(err));
 	    Stdio.write_file(builddir+fn+".brokenxml", res);
-	    rm(builddir+fn+".xml");
+	    if (Stdio.exist(builddir+fn+".xml")) {
+	      num_updated_files++;
+	      rm(builddir+fn+".xml");
+	    }
 	    Stdio.write_file(builddir+fn+".xml.stamp",
 			     (string)source_timestamp);
 	    werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
@@ -333,6 +351,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
+	  num_updated_files++;
 	  Stdio.write_file(builddir+fn+".xml", res);
 	}
 	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
