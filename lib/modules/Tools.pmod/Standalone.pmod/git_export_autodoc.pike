@@ -450,12 +450,14 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
 
   string timestamp = (src_commit->author[0]/" ")[-2];
+  int num_changes;
 
   if (verbose) {
     progress("Extracting from src... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=src", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
@@ -464,8 +466,9 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting from lib... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=lib", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
@@ -474,19 +477,24 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting from doc... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=doc", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
 		"--builddir=build/doc/doc",
 		"--imgdir=build/doc/images" }));
-  if (verbose) {
-    progress("Joining... ");
+  if (num_changes) {
+    if (verbose) {
+      progress("Joining... ");
+    }
+    Tools.Standalone.join_autodoc()->
+      main(5, ({ "join_autodoc", "--quiet", "--post-process",
+		 "build/autodoc.xml", "build/doc" }));
+  } else if (verbose) {
+    progress("No changes to join. ");
   }
-  Tools.Standalone.join_autodoc()->
-    main(5, ({ "join_autodoc", "--quiet", "--post-process",
-	       "build/autodoc.xml", "build/doc" }));
   if (!Stdio.exist("build/autodoc.xml")) {
     // No autodoc.xml created.
     if (verbose) {
