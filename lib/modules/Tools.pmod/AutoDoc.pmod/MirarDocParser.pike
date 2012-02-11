@@ -95,7 +95,7 @@ constant makepic = ({
 
   array indices(mixed x)
   {
-    if (x == Image.Color) {
+    if (x == Color) {
       return sort(predef::indices(x));
     }
     return predef::indices(x);
@@ -103,7 +103,7 @@ constant makepic = ({
 
   array values(mixed x)
   {
-    if (x == Image.Color) {
+    if (x == Color) {
       array res = predef::values(x);
       sort(predef::indices(x), res);
       return res;
