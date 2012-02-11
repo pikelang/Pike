@@ -423,16 +423,20 @@ void move_appendices(Node n) {
     }
     else {
       c->remove_node();
-      werror("Removed untargeted appendix %O.\n", name);
+      if (verbose) {
+	werror("Removed untargeted appendix %O.\n", name);
+      }
     }
   }
   if(sizeof(appendix_queue)) {
-    werror("Failed to find appendi%s %s.\n",
-	   (sizeof(appendix_queue)==1?"x":"ces"),
-	   String.implode_nicely(map(indices(appendix_queue),
-				     lambda(string in) {
-				       return "\""+in+"\"";
-				     })) );
+    if (verbose) {
+      werror("Failed to find appendi%s %s.\n",
+	     (sizeof(appendix_queue)==1?"x":"ces"),
+	     String.implode_nicely(map(indices(appendix_queue),
+				       lambda(string in) {
+					 return "\""+in+"\"";
+				       })) );
+    }
     foreach(values(appendix_queue), Node a) {
       // Remove the place-holder.
       a(ElementNode("appendix", ([])));
