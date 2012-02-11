@@ -119,6 +119,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	  mixed err;
 	  if (err = catch{
 	    program ret = load_module(file);
+	    if (ret && ret->this_program_does_not_exist)
+	      ret = 0;
 	    master()->programs[file] = ret;
 	  }) {
 	    log_msg("Failed to load %O: %s\n",
