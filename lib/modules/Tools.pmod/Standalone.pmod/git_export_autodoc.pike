@@ -557,21 +557,21 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
     // The single page layout is only interesting
     // after the chapters have been written...
     Tools.Standalone.assemble_autodoc()->
-      main(11, ({ "assemble_autodoc", "-o", "build/onepage.xml", "--compat",
-		  "--keep-going", "--pike-version", pike_version,
+      main(12, ({ "assemble_autodoc", "-o", "build/onepage.xml", "--compat",
+		  "--keep-going", "-q", "--pike-version", pike_version,
 		  "--timestamp", timestamp,
 		  combine_path(refdocdir, "structure/onepage.xml"),
 		  "build/autodoc.xml" }));
   }
   Tools.Standalone.assemble_autodoc()->
-    main(11, ({ "assemble_autodoc", "-o", "build/traditional.xml", "--compat",
-		"--keep-going", "--pike-version", pike_version,
+    main(12, ({ "assemble_autodoc", "-o", "build/traditional.xml", "--compat",
+		"--keep-going", "-q", "--pike-version", pike_version,
 		"--timestamp", timestamp,
 		combine_path(refdocdir, "structure/traditional.xml"),
 		"build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(10, ({ "assemble_autodoc", "-o", "build/modref.xml",
-		"--keep-going", "--pike-version", pike_version,
+    main(11, ({ "assemble_autodoc", "-o", "build/modref.xml",
+		"--keep-going", "-q", "--pike-version", pike_version,
 		"--timestamp", timestamp,
 		combine_path(refdocdir, "structure/modref.xml"),
 		"build/autodoc.xml" }));
