@@ -12,6 +12,7 @@ constant description = "Assembles AutoDoc output file.";
 #define RootNode Parser.XML.Tree.RootNode
 #define HeaderNode Parser.XML.Tree.HeaderNode
 #define TextNode Parser.XML.Tree.TextNode
+#define ElementNode Parser.XML.Tree.ElementNode
 
 int chapter;
 int appendix;
@@ -234,7 +235,8 @@ void enqueue_move(Node target, Node parent) {
   bucket[0] = mvEntry(target, parent);
 }
 
-Node parse_file(string fn) {
+Node parse_file(string fn)
+{
   Node n;
   mixed err = catch {
     n = Parser.XML.Tree.parse_file(fn);
@@ -298,7 +300,9 @@ void chapter_ref_expansion(Node n, string dir) {
 }
 
 int filec;
-void ref_expansion(Node n, string dir, void|string file) {
+void ref_expansion(Node n, string dir, void|string file)
+{
+  string path;
   foreach(n->get_elements(), Node c) {
     switch(c->get_tag_name()) {
 
@@ -335,8 +339,16 @@ void ref_expansion(Node n, string dir, void|string file) {
 	error("chapter-ref element outside file element\n");
       if(!c->get_attributes()->file)
 	error("No file attribute on chapter-ref element.\n");
-      n->replace_child(c, c = parse_file(combine_path(refdocdir, c->get_attributes()->file))->
-		       get_first_element("chapter") );
+      path = combine_path(refdocdir, c->get_attributes()->file);
+      if (!Stdio.exist(path)) {
+	if ((verbose >= Tools.AutoDoc.FLAG_VERBOSE) ||
+	    (!(flags & Tools.AutoDoc.FLAG_COMPAT))) {
+	  werror("Warning: Chapter file %O not found.\n", path);
+	}
+	n->remove_child(c);
+	break;
+      }
+      n->replace_child(c, c = parse_file(path)->get_first_element("chapter") );
       // fallthrough
     case "chapter":
       mapping m = c->get_attributes();
@@ -348,6 +360,9 @@ void ref_expansion(Node n, string dir, void|string file) {
       break;
 
     case "appendix-ref":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
       if(!file)
 	error("appendix-ref element outside file element\n");
       if(c->get_attributes()->name) {
@@ -362,10 +377,21 @@ void ref_expansion(Node n, string dir, void|string file) {
       }
       if(!c->get_attributes()->file)
 	error("Neither file nor name attribute on appendix-ref element.\n");
-      c = c->replace_node( parse_file(c->get_attributes()->file)->
-			   get_first_element("appendix") );
+      path = combine_path(refdocdir, c->get_attributes()->file);
+      if (!Stdio.exist(path)) {
+	if ((verbose >= Tools.AutoDoc.FLAG_VERBOSE) ||
+	    (!(flags & Tools.AutoDoc.FLAG_COMPAT))) {
+	  werror("Warning: Appendix file %O not found.\n", path);
+	}
+	n->remove_child(c);
+	break;
+      }
+      c = c->replace_node( parse_file(path)->get_first_element("appendix") );
       // fallthrough
     case "appendix":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
       c->get_attributes()->number = (string)++appendix;
 
       // No more than 26 appendicies...
@@ -400,13 +426,18 @@ void move_appendices(Node n) {
       werror("Removed untargeted appendix %O.\n", name);
     }
   }
-  if(sizeof(appendix_queue))
+  if(sizeof(appendix_queue)) {
     werror("Failed to find appendi%s %s.\n",
 	   (sizeof(appendix_queue)==1?"x":"ces"),
 	   String.implode_nicely(map(indices(appendix_queue),
 				     lambda(string in) {
 				       return "\""+in+"\"";
 				     })) );
+    foreach(values(appendix_queue), Node a) {
+      // Remove the place-holder.
+      a(ElementNode("appendix", ([])));
+    }
+  }
 }
 
 Node wrap(Node n, Node wrapper) {
@@ -479,6 +510,28 @@ void move_items(Node n, mapping jobs)
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     foreach(indices(ns_queue), string name)
       werror("Failed to move namespace %O.\n", name);
+}
+
+void clean_empty_files(Node n)
+{
+  foreach(n->get_elements("dir"), Node d) {
+    foreach(d->get_elements("file"), Node f) {
+      foreach(f->get_elements("appendix"), Node a) {
+	if (!sizeof(a->get_elements())) {
+	  // Empty appendix.
+	  f->remove_child(a);
+	}
+      }
+      if (!sizeof(f->get_elements())) {
+	// No documentation in this file.
+	d->remove_child(f);
+      }
+    }
+    if (!sizeof(d->get_elements())) {
+      // Remove the directory as well.
+      n->remove_child(d);
+    }
+  }
 }
 
 string make_toc_entry(Node n) {
@@ -568,6 +621,9 @@ int(0..1) main(int num, array(string) args)
     case "keep-going":
       flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
       break;
+    case "compat":
+      flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
     }
   }
   args = Getopt.get_args(args);
@@ -624,6 +680,8 @@ int(0..1) main(int num, array(string) args)
     if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
       return 1;
   }
+
+  clean_empty_files(n);
 
   make_toc();
 

@@ -1381,6 +1381,9 @@ string layout_toploop(Node n, Git.Export|void exporter) {
       break;
 
     case "appendix":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
       res += parse_appendix(c);
       break;
 

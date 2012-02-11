@@ -864,6 +864,14 @@ int low_main(string doc_file, string template_file, string outdir,
 			  "$date$":top->timestamp,
 		       ]) );
   }
+
+  if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+    // Fix markup bugs affecting the images path.
+    template = replace(template,
+		       ({ "$dotdot$/images/" }),
+		       ({ "$imagedir$" }));
+  }
+
   top->make_html(template, outdir, exporter);
   ENDPROFILE("main");
 
@@ -883,7 +891,8 @@ int main(int argc, array(string) argv)
   foreach(Getopt.find_all_options(argv, ({
     ({ "verbose", Getopt.NO_ARG,  "-v,--verbose"/"," }),
     ({ "quiet",   Getopt.NO_ARG,  "-q,--quiet"/"," }),
-    ({ "help",    Getopt.NO_ARG,  "--help"  }),
+    ({ "help",    Getopt.NO_ARG,  "--help"/"," }),
+    ({ "compat",  Getopt.NO_ARG,  "--compat"/"," }),
   })), array opt)
     switch(opt[0]) {
     case "verbose":
@@ -901,6 +910,9 @@ int main(int argc, array(string) argv)
 	    "\t[--help] <input-file> <template-file> <output-dir>"
 	    " [<namespace>]\n");
       return 0;
+    case "compat":
+      flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
     }
   argv = Getopt.get_args(argv)[1..];
   if(sizeof(argv)<4) {
