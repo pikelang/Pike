@@ -34,7 +34,7 @@ if test x$with_ffmpeg = xyes ; then
   fi
 
   AC_CHECK_HEADERS([avcodec.h ffmpeg/avcodec.h libffmpeg/avcodec.h \
-                    libavcodec/avcodec.h])
+                    libavcodec/avcodec.h libavutil/avutil.h])
 
 dnl ffmpeg and avcodec are the same libs... with 2 differents..
 dnl don't ask me why.
@@ -105,7 +105,7 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
       AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
       dnl PIKE_FEATURE(FFmpeg)
 
-      AC_CHECK_FUNCS(avcodec_decode_audio av_codec_next)
+      AC_CHECK_FUNCS(avcodec_decode_audio avcodec_decode_audio2 av_codec_next)
     else 
       PIKE_FEATURE(FFmpeg,[no (not working)])
     fi
