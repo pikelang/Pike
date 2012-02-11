@@ -23,6 +23,7 @@ protected private void processWarning(string message, mixed ... args) {
 //
 // <autodoc>
 //   <namespace/>
+//   <appendix/> <!-- Note: Only in compat mode! -->
 //   <doc/>?
 // </autodoc>
 //
@@ -296,6 +297,11 @@ string moveImages(string docXMLFile,
             }
             counter = 0;
             break;
+
+  	  case "appendix":
+	    if(attr->name != "")
+	      parents += ({ "APPENDIX" + hash(attr->name) });
+	    break;
 
 	  case "chapter":
 	    if(attr->name != "")

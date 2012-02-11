@@ -291,6 +291,9 @@ class Node
 
   string make_faked_wrapper(string s)
   {
+    if (type=="appendix")
+      return "<appendix name='"+name+"'>"+s+"</appendix>";
+
     if((type == "method") || (type == "directive"))
       s = sprintf("<docgroup homogen-type='%s' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
@@ -515,9 +518,10 @@ class Node
 
     res += make_navbar_really_low(root->class_children, "Classes");
 
-    if(root->is_TopNode)
+    if(root->is_TopNode) {
       res += make_navbar_really_low(root->namespace_children, "Namespaces");
-    else {
+      res += make_navbar_really_low(root->appendix_children, "Appendices");
+    } else {
       res += make_navbar_really_low(root->enum_children, "Enums");
       res += make_navbar_really_low(root->directive_children, "Directives");
       res += make_navbar_really_low(root->method_children, "Methods");
@@ -600,6 +604,9 @@ class Node
 
     resolve_reference = my_resolve_reference;
 
+    if(type=="appendix")
+      return parse_appendix(n, 1);
+
     String.Buffer contents = String.Buffer(100000);
     resolve_class_paths(n);
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
@@ -667,6 +674,7 @@ class TopNode {
 
   constant is_TopNode = 1;
   array(Node) namespace_children = ({ });
+  array(Node) appendix_children = ({ });
 
   string pike_version = version();
   string timestamp;
@@ -694,6 +702,7 @@ class TopNode {
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
     sort(namespace_children->name, namespace_children);
+    sort(appendix_children->name, appendix_children);
     foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
 	//	namespace_children -= ({ x });
@@ -709,6 +718,7 @@ class TopNode {
 
   Parser.HTML get_parser() {
     Parser.HTML parser = ::get_parser();
+    parser->add_container("appendix", parse_node);
     parser->add_container("namespace", parse_node);
     return parser;
   }
@@ -787,6 +797,7 @@ class TopNode {
 
   void make_html(string template, string path, Git.Export|void exporter) {
     PROFILE();
+    appendix_children->make_html(template, path, exporter);
     namespace_children->make_html(template, path, exporter);
     ::make_html(template, path, exporter);
     ENDPROFILE("top_make_html");

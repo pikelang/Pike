@@ -14,8 +14,10 @@ constant description = "Assembles AutoDoc output file.";
 #define TextNode Parser.XML.Tree.TextNode
 
 int chapter;
+int appendix;
 
 mapping queue = ([]);
+mapping appendix_queue = ([]);
 mapping ns_queue = ([]);
 array(Node) chapters = ({});
 
@@ -309,6 +311,8 @@ void ref_expansion(Node n, string dir, void|string file) {
 	  string name = c->get_elements()[0]->get_tag_name();
 	  if(name == "chapter" || name == "chapter-ref")
 	    file = "chapter_" + (1+chapter);
+	  else if(name == "appendix" || name == "appendix-ref")
+	    file = "appendix_" + (string)({ 65+appendix });
 	  else
 	    file = "file_" + (++filec);
 	}
@@ -343,6 +347,32 @@ void ref_expansion(Node n, string dir, void|string file) {
       chapter_ref_expansion(c, dir);
       break;
 
+    case "appendix-ref":
+      if(!file)
+	error("appendix-ref element outside file element\n");
+      if(c->get_attributes()->name) {
+	Entry e = mvEntry(c, n);
+	e->args = ([ "number": (string)++appendix ]);
+	appendix_queue[c->get_attributes()->name] = e;
+
+	// No more than 26 appendicies...
+	toc += ({ ({ c->get_attributes()->name, file,
+		     ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
+	break;
+      }
+      if(!c->get_attributes()->file)
+	error("Neither file nor name attribute on appendix-ref element.\n");
+      c = c->replace_node( parse_file(c->get_attributes()->file)->
+			   get_first_element("appendix") );
+      // fallthrough
+    case "appendix":
+      c->get_attributes()->number = (string)++appendix;
+
+      // No more than 26 appendicies...
+      toc += ({ ({ c->get_attributes()->name, file,
+		   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
+      break;
+
     case "void":
       n->remove_child(c);
       void_node->add_child(c);
@@ -355,6 +385,28 @@ void ref_expansion(Node n, string dir, void|string file) {
       break;
     }
   }
+}
+
+void move_appendices(Node n) {
+  foreach(n->get_elements("appendix"), Node c) {
+    string name = c->get_attributes()->name;
+    Node a = appendix_queue[name];
+    if(a) {
+      a(c);
+      m_delete(appendix_queue, name);
+    }
+    else {
+      c->remove_node();
+      werror("Removed untargeted appendix %O.\n", name);
+    }
+  }
+  if(sizeof(appendix_queue))
+    werror("Failed to find appendi%s %s.\n",
+	   (sizeof(appendix_queue)==1?"x":"ces"),
+	   String.implode_nicely(map(indices(appendix_queue),
+				     lambda(string in) {
+				       return "\""+in+"\"";
+				     })) );
 }
 
 Node wrap(Node n, Node wrapper) {
@@ -539,9 +591,15 @@ int(0..1) main(int num, array(string) args)
     ref_expansion(n, ".");
   };
   if (err) {
-    werror("ref_expansion() failed:\n"
-	   "  ch:%d toc:%O\n",
-	   chapter, toc);
+    if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+      werror("ref_expansion() failed:\n"
+	     "  ch:%d app:%d toc:%O\n",
+	     chapter, appendix, toc);
+    } else {
+      werror("ref_expansion() failed:\n"
+	     "  ch:%d toc:%O\n",
+	     chapter, toc);
+    }
     if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
       throw(err);
   }
@@ -550,6 +608,12 @@ int(0..1) main(int num, array(string) args)
     werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
   m = m->get_first_element("autodoc");
+
+  if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+      werror("Moving appendices.\n");
+    move_appendices(m);
+  }
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Executing node insertions.\n");

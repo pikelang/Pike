@@ -192,7 +192,7 @@ constant makepic = ({
 
 string execute;
 
-mapping parse=([ ]);
+mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
 
 int verbosity = 1;
@@ -225,7 +225,7 @@ Quoting: Only '<' must be quoted as '&lt;'.
 
 */
 
-mapping moduleM, classM, methodM, argM, nowM, descM;
+mapping moduleM, classM, methodM, argM, nowM, descM, appendixM;
 
 mapping focM(mapping dest,string name,string line)
 {
@@ -289,6 +289,15 @@ mapping keywords=
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	},
+  "appendix":lambda(string arg, string currentfile, int line)
+	     {
+	       if (!(flags & .FLAG_COMPAT)) {
+		 report(.FLAG_NORMAL,currentfile,line,
+			"Appendices are only supported in compat mode.\n");
+		 return;
+	       }
+	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),format_line(currentfile,line));
+	       report(.FLAG_VERBOSE,currentfile,line,"appendix "+arg); },
   "module":lambda(string arg, string currentfile, int line)
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),format_line(currentfile,line));
 	    methodM=0;
@@ -878,6 +887,9 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
+	f->write("<"+enttype+" name="+S(name)+">\n");
+	break;
       case "class":
       case "module":
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
@@ -1097,6 +1109,7 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
       case "class":
       case "module":
 	 f->write("</"+enttype+">\n\n");
@@ -1112,7 +1125,7 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 {
    if (verbosity > 0)
      werror("modules: " +
-	    sort(indices(parse))*", " +
+	    sort(indices(parse)-({" appendix"}))*", " +
 	    "\n");
 
    namespace = namespace || "predef::";
@@ -1138,10 +1151,15 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
    mixed err = catch {
        // Module documentation exists in a namespace...
        f->write("<namespace name='" + namespace + "'>\n");
-       foreach (sort(indices(parse)-({"_order"})),string module)
+       foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
 	 document("module",parse[module],module,module+".", f, "-", 1);
        f->write("</namespace>\n");
      };
+
+   // But appendices do not.
+   if(appendixM)
+      foreach(parse[" appendix"]->_order, string title)
+	document("appendix",parse[" appendix"][title],title,"", f, "-", 1);
 
    cd(here);
    if (err) throw(err);
