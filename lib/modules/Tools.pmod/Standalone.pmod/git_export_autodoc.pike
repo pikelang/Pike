@@ -547,10 +547,6 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
   rm("build/traditional.xml");
   rm("build/modref.xml");
   string pike_version = get_version();
-  if (pike_version != prev_pike_version) {
-    werror("Version: %s\n", pike_version);
-    prev_pike_version = pike_version;
-  }
   string timestamp = (src_commit->author[0]/" ")[-2];
 
   Parser.XML.Tree.SimpleRootNode autodoc =
