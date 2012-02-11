@@ -452,26 +452,25 @@ static INLINE void ba_htable_delete(const struct block_allocator * a,
 
 static INLINE void ba_htable_lookup(struct block_allocator * a,
 				    const void * ptr) {
-    ba_page p1, p2;
-    p1 = a->pages[hash1(a, ptr) & BA_HASH_MASK(a)];
-    p2 = a->pages[hash2(a, ptr) & BA_HASH_MASK(a)];
+    ba_page p;
+    ba_page_t h[2];
+    unsigned char c, b = 0;
+    h[0] = hash1(a, ptr);
+    h[1] = hash2(a, ptr);
 
-    while (p1 || p2) {
-	if (p1) {
-	    if (BA_CHECK_PTR(a, p1, ptr)) {
-		a->last_free = p1;
-		return;
-	    }
-	    p1 = p1->hchain;
+    c = ((uintptr_t)ptr >> (a->magnitude - 1)) & 1;
+
+LOOKUP:
+    p = a->pages[h[c] & BA_HASH_MASK(a)];
+    while (p) {
+	if (BA_CHECK_PTR(a, p, ptr)) {
+	    a->last_free = p;
+	    return;
 	}
-	if (p2) {
-	    if (BA_CHECK_PTR(a, p2, ptr)) {
-		a->last_free = p2;
-		return;
-	    }
-	    p2 = p2->hchain;
-	}
+	p = p->hchain;
     }
+    c = !c;
+    if (!(b++)) goto LOOKUP;
 }
 
 #ifdef BA_DEBUG
