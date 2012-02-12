@@ -511,9 +511,12 @@ void move_items(Node n, mapping jobs)
       m_delete(jobs, name);
   }
 
-  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
     foreach(indices(ns_queue), string name)
       werror("Failed to move namespace %O.\n", name);
+  }
+  foreach(values(ns_queue), Node n)
+    n(ElementNode("namespace", ([])));
 }
 
 void clean_empty_files(Node n)
@@ -521,6 +524,12 @@ void clean_empty_files(Node n)
   foreach(n->get_elements("dir"), Node d) {
     foreach(d->get_elements("file"), Node f) {
       foreach(f->get_elements("appendix"), Node a) {
+	if (!sizeof(a->get_elements())) {
+	  // Empty appendix.
+	  f->remove_child(a);
+	}
+      }
+      foreach(f->get_elements("namespace"), Node a) {
 	if (!sizeof(a->get_elements())) {
 	  // Empty appendix.
 	  f->remove_child(a);
@@ -679,8 +688,7 @@ int(0..1) main(int num, array(string) args)
     werror("Executing node insertions.\n");
   move_items(m, queue);
   if(sizeof(queue)) {
-    if (verbose)
-      report_failed_entries(queue, "");
+    report_failed_entries(queue, "");
     if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
       return 1;
   }
