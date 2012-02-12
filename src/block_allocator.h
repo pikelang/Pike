@@ -150,20 +150,20 @@ struct block_allocator {
 #ifndef BA_USE_MEMALIGN
     ba_page last_free;
 #endif
+    uint32_t block_size;
     uint32_t magnitude;
-    uint32_t blocks;
     ba_page first; /* doube linked list of other pages (!free,!full,!alloc) */
 #ifndef BA_USE_MEMALIGN
     ba_page * pages;
-#endif
-    ba_page empty; /* single linked list of empty pages */
-    uint32_t empty_pages, max_empty_pages;
-#ifndef BA_USE_MEMALIGN
-    uint32_t allocated;
 #else
     ba_page full; /* doube linked list of full pages */
 #endif
-    uint32_t block_size;
+    ba_page empty; /* single linked list of empty pages */
+    uint32_t empty_pages, max_empty_pages;
+    uint32_t blocks;
+#ifndef BA_USE_MEMALIGN
+    uint32_t allocated;
+#endif
     uint32_t num_pages;
     char * blueprint;
 #ifdef BA_STATS
@@ -175,14 +175,14 @@ struct block_allocator {
     0/*offset*/,\
     NULL/*free_blk*/,\
     NULL/*alloc*/,\
+    block_size/*block_size*/,\
     0/*magnitude*/,\
-    blocks/*blocks*/,\
     NULL/*first*/,\
+    NULL/*full*/,\
     NULL/*empty*/,\
     0/*empty_pages*/,\
     BA_MAX_EMPTY/*max_empty_pages*/,\
-    NULL/*full*/,\
-    block_size/*block_size*/,\
+    blocks/*blocks*/,\
     0/*num_pages*/,\
     NULL/*blueprint*/,\
     BA_INIT_STATS(block_size, blocks, name)\
@@ -193,15 +193,15 @@ struct block_allocator {
     NULL/*free_blk*/,\
     NULL/*alloc*/,\
     NULL/*last_free*/,\
-    NULL/*first*/,\
-    blocks/*blocks*/,\
+    block_size/*block_size*/,\
     0/*magnitude*/,\
+    NULL/*first*/,\
     NULL/*pages*/,\
     NULL/*empty*/,\
     0/*empty_pages*/,\
     BA_MAX_EMPTY/*max_empty_pages*/,\
+    blocks/*blocks*/,\
     0/*allocated*/,\
-    block_size/*block_size*/,\
     0/*num_pages*/,\
     NULL/*blueprint*/,\
     BA_INIT_STATS(block_size, blocks, name)\
@@ -233,7 +233,7 @@ PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
 			 uint32_t blocks);
 PMOD_EXPORT void ba_low_alloc(struct block_allocator * a);
 #ifndef BA_USE_MEMALIGN
-PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
+PMOD_EXPORT void ba_find_page(struct block_allocator * a,
 			      const void * ptr);
 #endif
 PMOD_EXPORT void ba_remove_page(struct block_allocator * a, ba_page p);
@@ -351,7 +351,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #ifdef BA_STATS
     a->stats.st_used--;
 #endif
-    if (BA_CHECK_PTR(a, a->alloc, ptr)) {
+    if (likely(BA_CHECK_PTR(a, a->alloc, ptr))) {
 	INC(free_fast1);
 	((ba_block_header)ptr)->next = a->free_blk;
 	a->free_blk = (ba_block_header)ptr;
