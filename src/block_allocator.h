@@ -40,6 +40,7 @@
 } while(0)
 
 //#define BA_DEBUG
+//#define BA_USE_MEMALIGN
 
 #ifdef HAS___BUILTIN_EXPECT
 #define likely(x)	(__builtin_expect((x), 1))
@@ -143,14 +144,22 @@ struct block_alloc_stats {
 
 struct block_allocator {
     size_t offset;
+#ifdef BA_USE_MEMALIGN
+    ba_page full;
+#else
     ba_page last_free;
+#endif
     ba_page first;
     ba_block_t blocks;
     uint32_t magnitude;
+#ifndef BA_USE_MEMALIGN
     ba_page * pages;
+#endif
     ba_page empty;
     ba_page_t empty_pages, max_empty_pages;
+#ifndef BA_USE_MEMALIGN
     ba_page_t allocated;
+#endif
     uint32_t block_size;
     ba_page_t num_pages;
     char * blueprint;
@@ -158,6 +167,22 @@ struct block_allocator {
     struct block_alloc_stats stats;
 #endif
 };
+#ifdef BA_USE_MEMALIGN
+#define BA_INIT(block_size, blocks, name) {\
+    0/*offset*/,\
+    NULL/*full*/,\
+    NULL/*first*/,\
+    blocks/*blocks*/,\
+    0/*magnitude*/,\
+    NULL/*empty*/,\
+    0/*empty_pages*/,\
+    BA_MAX_EMPTY/*max_empty_pages*/,\
+    block_size/*block_size*/,\
+    0/*num_pages*/,\
+    NULL/*blueprint*/,\
+    BA_INIT_STATS(block_size, blocks, name)\
+}
+#else
 #define BA_INIT(block_size, blocks, name) {\
     0/*offset*/,\
     NULL/*last_free*/,\
@@ -174,11 +199,14 @@ struct block_allocator {
     NULL/*blueprint*/,\
     BA_INIT_STATS(block_size, blocks, name)\
 }
+#endif
 
 struct ba_page {
     struct ba_block_header * first;
     ba_page next, prev;
+#ifndef BA_USE_MEMALIGN
     ba_page hchain;
+#endif
     ba_block_t used;
 };
 
@@ -197,8 +225,10 @@ PMOD_EXPORT void ba_show_pages(const struct block_allocator * a);
 PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
 			 ba_page_t blocks);
 PMOD_EXPORT void ba_low_alloc(struct block_allocator * a);
+#ifndef BA_USE_MEMALIGN
 PMOD_EXPORT INLINE void ba_find_page(struct block_allocator * a,
 			      const void * ptr);
+#endif
 PMOD_EXPORT void ba_remove_page(struct block_allocator * a, ba_page p);
 #ifdef BA_DEBUG
 PMOD_EXPORT void ba_print_htable(const struct block_allocator * a);
@@ -286,7 +316,7 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 
 ATTRIBUTE((always_inline))
 static INLINE void ba_free(struct block_allocator * a, void * ptr) {
-    ba_page p = NULL;
+    ba_page p;
 
 #ifdef BA_MEMTRACE
     PRINT("%% %p\n", ptr);
@@ -307,6 +337,11 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     a->stats.st_used--;
 #endif
 
+#ifdef BA_USE_MEMALIGN
+    p = (ba_page)((uintptr_t)ptr &
+			  ((~(uintptr_t)0) << (a->magnitude)));
+#else
+
     if (BA_CHECK_PTR(a, a->last_free, ptr)) {
 	p = a->last_free;
     } else if (BA_CHECK_PTR(a, a->first, ptr)) {
@@ -315,6 +350,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 	ba_find_page(a, ptr);
 	p = a->last_free;
     }
+#endif
     ((ba_block_header)ptr)->next = p->first;
     p->first = (ba_block_header)ptr;
     if ((--p->used) && (((ba_block_header)ptr)->next)) return;
@@ -419,6 +455,23 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 
 #define MS(x)	#x
 
+#ifdef BA_USE_MEMALIGN
+#define LOW_PAGE_LOOP2(a, label, C...)	do {			\
+    char __c = 3;						\
+    const ba_page T[3] = { a->full, a->first, a->empty };	\
+    ba_page p;							\
+    retry ## label:						\
+    p = T[__c-1];						\
+    while (p) {							\
+	ba_page t = p->next;					\
+	do { C; goto SURVIVE ## label; } while(0);		\
+	goto label; SURVIVE ## label: p = t;			\
+    }								\
+    if (--__c) goto retry ## label;				\
+label:								\
+    0;								\
+} while (0)
+#else
 /* goto considered harmful */
 #define LOW_PAGE_LOOP2(a, label, C...)	do {			\
     ba_page_t __n;						\
@@ -433,6 +486,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 label:								\
     0;								\
 } while(0)
+#endif
 #define LOW_PAGE_LOOP(a, l, C...)	LOW_PAGE_LOOP2(a, l, C)
 #define PAGE_LOOP(a, C...)	LOW_PAGE_LOOP(a, PIKE_XCONCAT(page_loop_label, __LINE__), C)
 
