@@ -273,20 +273,20 @@ static ATTRIBUTE((constructor)) void _________() {
 
 ATTRIBUTE((always_inline,malloc))
 static INLINE void * ba_alloc(struct block_allocator * a) {
-    ba_page p = a->first;
+    ba_page p;
     ba_block_header ptr;
 #ifdef BA_STATS
     struct block_alloc_stats *s = &a->stats;
 #endif
 
-    if (!p || !p->first) {
+    if (unlikely(!(p = a->first) || !(ptr = p->first))) {
 	ba_low_alloc(a);
 #ifdef BA_DEBUG
 	ba_check_allocator(a, "after ba_low_alloc", __FILE__, __LINE__);
 #endif
 	p = a->first;
+	ptr = p->first;
     }
-    ptr = p->first;
 #ifndef BA_CHAIN_PAGE
     if (ptr->next == BA_ONE) {
 	p->first = (ba_block_header)(((char*)ptr) + a->block_size);
