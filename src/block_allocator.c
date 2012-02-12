@@ -238,6 +238,8 @@ PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {
 	free(p);
     });
 
+    a->free_blk = NULL;
+    a->alloc = NULL;
     a->num_pages = 0;
     a->empty_pages = 0;
     a->empty = a->first = NULL;
@@ -275,6 +277,8 @@ PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
 	free(p);
     });
 
+    a->free_blk = NULL;
+    a->alloc = NULL;
 #ifdef BA_USE_MEMALIGN
     a->full = NULL;
 #else
@@ -667,6 +671,7 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 	a->alloc = NULL;
 	ba_alloc_page(a);
     }
+    a->alloc->next = NULL;
 
     a->free_blk = a->alloc->first;
 
