@@ -304,7 +304,9 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 #ifdef BA_STATS
     if (++s->st_used > s->st_max) {
       s->st_max = s->st_used;
+#ifndef BA_USE_MEMALIGN
       s->st_max_allocated = a->allocated;
+#endif
       s->st_max_pages = a->num_pages;
       s->st_mallinfo = mallinfo();
     }
@@ -338,14 +340,17 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 
 #ifdef BA_USE_MEMALIGN
+    INC(free_fast1);
     p = (ba_page)((uintptr_t)ptr &
 			  ((~(uintptr_t)0) << (a->magnitude)));
 #else
 
     if (BA_CHECK_PTR(a, a->last_free, ptr)) {
 	p = a->last_free;
+	INC(free_fast1);
     } else if (BA_CHECK_PTR(a, a->first, ptr)) {
 	p = a->first;
+	INC(free_fast2);
     } else {
 	ba_find_page(a, ptr);
 	p = a->last_free;

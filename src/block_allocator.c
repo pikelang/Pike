@@ -604,8 +604,8 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 	DOUBLE_LINK(a->full, p);
 #else
 	p->next = NULL;
-	p->first = NULL;
 #endif
+	p->first = NULL;
     }
 
     if (a->first) return;
@@ -637,7 +637,15 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 #ifdef BA_USE_MEMALIGN
 	DOUBLE_UNLINK(a->full, p);
 #endif
-	DOUBLE_LINK(a->first, p);
+#if 1
+	if (a->first) {
+	    p->prev = a->first;
+	    p->next = a->first->next;
+	    a->first->next = p;
+	    if (p->next) p->next->prev = p;
+	} else
+#endif
+	    DOUBLE_LINK(a->first, p);
     } else if (!p->used) {
 	INC(free_empty);
 	if (a->empty_pages == a->max_empty_pages) {
