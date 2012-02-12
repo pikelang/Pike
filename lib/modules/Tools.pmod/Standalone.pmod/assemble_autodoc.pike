@@ -96,7 +96,7 @@ class Entry (Node target) {
   constant type = "";
   mapping args;
   string _sprintf() {
-    return sprintf("%sTarget( %O )", type, target);
+    return sprintf("%sEntry( %O )", type, target);
   }
 }
 
@@ -143,7 +143,7 @@ class mvEntry {
   inherit Entry;
   constant type = "mv";
 
-  protected Node parent;
+  Node parent;
 
   protected void create(Node target, Node parent)
   {
@@ -465,9 +465,61 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
 
   foreach( ({ "module", "class", "docgroup" }), string type)
     foreach(n->get_elements(type), Node c) {
+      mapping parent = jobs;
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
+      string parent_name;
       mapping e = jobs[ name ];
+      if (!e /*&& (flags & Tools.AutoDoc.FLAG_COMPAT)*/) {
+	array(string) path;
+	if (path = ([
+	      "/precompiled/FILE": "Stdio.FILE"/".",
+	      "/precompiled/condition": "Thread.Condition"/".",
+	      "/precompiled/fifo": "Thread.Fifo"/".",
+	      "/precompiled/file": "Stdio.File"/".",
+	      "/precompiled/gdbm": "Gdbm.gdbm"/".",
+	      "/precompiled/mpz": "Gmp.mpz"/".",
+	      "/precompiled/mutex": "Thread.Mutex"/".",
+	      "/precompiled/mysql": "Mysql.mysql"/".",
+	      "/precompiled/mysql_result": "Mysql.mysql_result"/".",
+	      "/precompiled/port": "Stdio.Port"/".",
+	      "/precompiled/queue": "Thread.Queue"/".",
+	      "/precompiled/regexp": "Regexp"/".",
+	      "/precompiled/sql": "Sql.sql"/".",
+	      "/precompiled/sql/msql": "Msql.msql"/".",
+	      "/precompiled/sql/mysql": "Mysql.mysql"/".",
+	      "/precompiled/sql/mysql_result": "Mysql.mysql_result"/".",
+	      "/precompiled/sql/postgres": "Postgres.postgres"/".",
+	      "/precompiled/sql/sql_result": "Sql.sql_result"/".",
+	      "/precompiled/stack": "Stack"/".",
+	      "/precompiled/string_buffer": "String.Buffer"/".",
+	    ])[name]) {
+	  e = jobs;
+	  foreach(path; int i; name) {
+	    if (i) parent_name = path[i-1];
+	    parent = e;
+	    e = e[name];
+	    if (!e) {
+	      if ((parent != jobs) && parent[0] && parent[0]->parent) {
+		// There's a move for our parent, but we can't use it directly,
+		// since there may be more nodes that need moving.
+		//
+		// So we add a move for ourselves.
+		//
+		// NB: This is a bit round-about, since we could just add
+		//     ourselves directly...
+		Node dummy = ElementNode("insert-move",
+					 ([ "entity":path[..i]*"." ]));
+		parent[0]->parent->add_child_after(dummy, parent[0]->target);
+		Entry new_mv = mvEntry(dummy, parent[0]->parent);
+		e = parent[name] = ([ 0: new_mv ]);
+		continue;
+	      }
+	      break;
+	    }
+	  }
+	}
+      }
       if(!e) continue;
 
       Node wr = Node(XML_ELEMENT, n->get_tag_name(),
@@ -476,6 +528,13 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
 	wr = wrap( wr, wrapper->clone() );
 
       move_items_low(c, e, wr);
+
+      if ((parent != jobs) && !sizeof(e)) {
+	m_delete(parent, name);
+	name = parent_name;
+	e = jobs[e];
+	if (!e) continue;
+      }
 
       if(!sizeof(e))
 	m_delete(jobs, name);
