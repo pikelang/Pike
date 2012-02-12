@@ -10,6 +10,35 @@
 #define PIKE_XCONCAT(X, Y)	PIKE_CONCAT(X, Y)
 #endif
 
+#define DOUBLE_LINK(head, o)	do {		\
+    (o)->prev = NULL;				\
+    (o)->next = head;				\
+    if (head) (head)->prev = (o);		\
+    (head) = (o);				\
+} while(0)
+
+#define DOUBLE_UNLINK(head, o)	do {		\
+    if ((o)->prev) (o)->prev->next = (o)->next;	\
+    else (head) = (o)->next;			\
+    if ((o)->next) (o)->next->prev = (o)->prev;	\
+    (o)->next = (o)->prev = NULL;		\
+} while(0)
+
+#define DOUBLE_SHIFT(head)	do {		\
+    (head)->prev = NULL;			\
+    (head) = (head)->next;			\
+    if (head) (head)->prev = NULL;		\
+} while(0)
+
+#define SINGLE_SHIFT(head)	do {		\
+    (head) = (head)->next;			\
+} while(0)
+
+#define SINGLE_LINK(head, o)	do {		\
+    (o)->next = head;				\
+    (head) = (o);				\
+} while(0)
+
 //#define BA_DEBUG
 
 #ifdef HAS___BUILTIN_EXPECT
@@ -113,33 +142,29 @@ struct block_alloc_stats {
 #endif
 
 struct block_allocator {
-    ba_block_header first_blk;
     size_t offset;
     ba_page last_free;
-    ba_page first;	/* 24 */
+    ba_page first;
     ba_block_t blocks;
     uint32_t magnitude;
     ba_page * pages;
-    ba_page last;       /* 48 */
     ba_page empty;
     ba_page_t empty_pages, max_empty_pages;
     ba_page_t allocated;
     uint32_t block_size;
     ba_page_t num_pages;
-    char * blueprint;   /* 88 */
+    char * blueprint;
 #ifdef BA_STATS
     struct block_alloc_stats stats;
 #endif
 };
 #define BA_INIT(block_size, blocks, name) {\
-    NULL/*first_blk*/,\
     0/*offset*/,\
     NULL/*last_free*/,\
     NULL/*first*/,\
     blocks/*blocks*/,\
     0/*magnitude*/,\
     NULL/*pages*/,\
-    NULL/*last*/,\
     NULL/*empty*/,\
     0/*empty_pages*/,\
     BA_MAX_EMPTY/*max_empty_pages*/,\
@@ -218,22 +243,28 @@ static ATTRIBUTE((constructor)) void _________() {
 
 ATTRIBUTE((always_inline,malloc))
 static INLINE void * ba_alloc(struct block_allocator * a) {
+    ba_page p = a->first;
     ba_block_header ptr;
 #ifdef BA_STATS
     struct block_alloc_stats *s = &a->stats;
 #endif
 
-    if (unlikely(!a->first_blk)) {
+    if (!p || !p->first) {
 	ba_low_alloc(a);
+#ifdef BA_DEBUG
+	ba_check_allocator(a, "after ba_low_alloc", __FILE__, __LINE__);
+#endif
+	p = a->first;
     }
-    ptr = a->first_blk;
+    ptr = p->first;
 #ifndef BA_CHAIN_PAGE
     if (ptr->next == BA_ONE) {
-	a->first_blk = (ba_block_header)(((char*)ptr) + a->block_size);
-	a->first_blk->next = (ba_block_header)(size_t)!(a->first_blk == BA_LASTBLOCK(a, a->first));
+	p->first = (ba_block_header)(((char*)ptr) + a->block_size);
+	p->first->next = (ba_block_header)(size_t)!(p->first == BA_LASTBLOCK(a, p));
     } else
 #endif
-    a->first_blk = ptr->next;
+    p->first = ptr->next;
+    p->used++;
 #ifdef BA_DEBUG
     ((ba_block_header)ptr)->magic = BA_MARK_ALLOC;
 #endif
@@ -276,31 +307,18 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     a->stats.st_used--;
 #endif
 
-    if (BA_CHECK_PTR(a, a->first, ptr)) {
-      ((ba_block_header)ptr)->next = a->first_blk;
-      a->first_blk = (ba_block_header)ptr;
-      INC(free_fast1);
-      return;
-    } else if (BA_CHECK_PTR(a, a->last_free, ptr)) {
-      p = a->last_free;
-      ((ba_block_header)ptr)->next = p->first;
-      p->first = (ba_block_header)ptr;
-      if ((--p->used) && (((ba_block_header)ptr)->next)) return;
-      INC(free_fast2);
+    if (BA_CHECK_PTR(a, a->last_free, ptr)) {
+	p = a->last_free;
+    } else if (BA_CHECK_PTR(a, a->first, ptr)) {
+	p = a->first;
     } else {
-      ba_find_page(a, ptr);
-      p = a->last_free;
-      ((ba_block_header)ptr)->next = p->first;
-      p->first = (ba_block_header)ptr;
-      if ((--p->used) && (((ba_block_header)ptr)->next)) return;
+	ba_find_page(a, ptr);
+	p = a->last_free;
     }
+    ((ba_block_header)ptr)->next = p->first;
+    p->first = (ba_block_header)ptr;
+    if ((--p->used) && (((ba_block_header)ptr)->next)) return;
 
-#ifdef BA_DEBUG
-    if (a->num_pages == 1) {
-	BA_ERROR("absolutely not planned!\n");
-    }
-#endif
-    
     ba_low_free(a, p, (ba_block_header)ptr);
 }
 
@@ -447,8 +465,9 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
 BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
+  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "before alloc_"#DATA, __FILE__, __LINE__);)			\
   tmp = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA, _allocator));	\
-  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "alloc_"#DATA, __FILE__, __LINE__);)			\
+  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "after alloc_"#DATA, __FILE__, __LINE__);)			\
   PIKE_MEM_RW(*tmp);							\
   PIKE_MEM_WO(*tmp);							\
   INIT_BLOCK(tmp);							\

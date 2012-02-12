@@ -59,11 +59,7 @@ PMOD_EXPORT void ba_show_pages(const struct block_allocator * a) {
 
     PAGE_LOOP(a, {
 	ba_block_t blocks_used;
-	if (p == a->first) {
-	    blocks_used = 0;
-	} else {
-	    blocks_used = p->used;
-	}
+	blocks_used = p->used;
 	fprintf(stderr, "(%p)\t%f\t(%u %d) --> (prev: %p | next: %p)\n",
 		p, blocks_used/(double)a->blocks * 100,
 		blocks_used,
@@ -140,8 +136,7 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
 
     page_size = block_size * blocks + BLOCK_HEADER_SIZE;
 
-    a->first_blk = NULL;
-    a->last = a->empty = a->first = a->last_free = NULL;
+    a->empty = a->first = a->last_free = NULL;
 
 #ifdef BA_DEBUG
     fprintf(stderr, "blocks: %u block_size: %u page_size: %u\n",
@@ -225,8 +220,7 @@ PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {
 
     a->num_pages = 0;
     a->empty_pages = 0;
-    a->last = a->empty = a->first = a->last_free = NULL;
-    a->first_blk = NULL;
+    a->empty = a->first = a->last_free = NULL;
     a->allocated = BA_ALLOC_INITIAL;
     memset(a->pages, 0, a->allocated * sizeof(ba_page));
 }
@@ -254,9 +248,8 @@ PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
 
     PIKE_MEM_RW_RANGE(a->pages, BA_BYTES(a));
     free(a->pages);
-    a->first_blk = NULL;
     a->last_free = NULL;
-    a->empty = a->first = a->last = NULL;
+    a->empty = a->first = NULL;
     a->pages = NULL;
     a->empty_pages = 0;
     a->allocated = 0;
@@ -537,7 +530,7 @@ static INLINE void ba_alloc_page(struct block_allocator * a) {
     if (!p) BA_ERROR("no mem. alloc returned zero.");
     ba_free_page(a, p);
     p->next = p->prev = NULL;
-    a->last = a->first = p;
+    a->first = p;
     ba_htable_insert(a, p);
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_alloc after insert", __FILE__, __LINE__);
@@ -560,25 +553,16 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
     //fprintf(stderr, "allocating new page. was %p\n", p);
     if (a->first) {
 	ba_page p = a->first;
-	if (p->next) a->first = p->next;
-	else a->first = a->last = NULL;
-	p->prev = NULL;
+	DOUBLE_SHIFT(a->first);
 	p->next = NULL;
 	p->first = NULL;
-	p->used = a->blocks;
     }
 
-    if (a->first) {
-#ifdef BA_DEBUG
-	if (!a->first->first) {
-	    ba_show_pages(a);
-	    BA_ERROR("no free blk in page %lx\n", (long int)a->first);
-	}
-#endif
-	a->first->prev = NULL;
-    } else if (a->empty_pages) {
-	a->last = a->first = a->empty;
-	a->empty = a->empty->next;
+    if (a->first) return;
+
+    if (a->empty_pages) {
+	a->first = a->empty;
+	SINGLE_SHIFT(a->empty);
 	a->empty_pages--;
 	a->first->next = NULL;
     } else ba_alloc_page(a);
@@ -593,8 +577,6 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_alloc after grow", __FILE__, __LINE__);
 #endif
-
-    a->first_blk = a->first->first;
 }
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
@@ -602,31 +584,15 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
     // page was full
     if (unlikely(!ptr->next)) {
 	INC(free_full);
-	if (a->first) {
-	    p->prev = a->last;
-	    a->last->next = p;
-	    a->last = p;
-	    p->first = ptr;
-	} else {
-	    p->prev = p->next = NULL;
-	    a->first = a->last = p;
-	    a->first_blk = ptr;
-	}
+	DOUBLE_LINK(a->first, p);
     } else if (!p->used) {
 	INC(free_empty);
 	if (a->empty_pages == a->max_empty_pages) {
 	    ba_remove_page(a, p);
 	    return;
 	}
-	if (p->next) p->next->prev = p->prev;
-	else a->last = p->prev;
-	if (p->prev) {
-	    p->prev->next = p->next;
-	    p->prev = NULL;
-	}
-	a->last_free = NULL;
-	p->next = a->empty;
-	a->empty = p;
+	DOUBLE_UNLINK(a->first, p);
+	SINGLE_LINK(a->empty, p);
 	a->empty_pages ++;
     }
 }
@@ -702,9 +668,7 @@ PMOD_EXPORT void ba_remove_page(struct block_allocator * a,
     // we know that p == a->last_free
     a->last_free = NULL;
 
-    if (p->prev) p->prev->next = p->next;
-    if (p->next) p->next->prev = p->prev;
-    else a->last = p->prev;
+    DOUBLE_UNLINK(a->first, p);
 
 #ifdef BA_DEBUG
     memset(p, 0, sizeof(struct ba_page));
