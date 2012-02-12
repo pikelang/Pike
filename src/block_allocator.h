@@ -144,14 +144,23 @@ struct block_alloc_stats {
 #endif
 
 struct block_allocator {
+#ifdef BA_USE_MEMALIGN
+    uint32_t block_size;
+    uint32_t magnitude;
+#else
     size_t offset;
+#endif
     ba_block_header free_blk; /* next free blk in alloc */
     ba_page alloc; /* current page used for allocating */
 #ifndef BA_USE_MEMALIGN
     ba_page last_free;
 #endif
+#ifdef BA_USE_MEMALIGN
+    size_t offset;
+#else
     uint32_t block_size;
     uint32_t magnitude;
+#endif
     ba_page first; /* doube linked list of other pages (!free,!full,!alloc) */
 #ifndef BA_USE_MEMALIGN
     ba_page * pages;
@@ -172,11 +181,11 @@ struct block_allocator {
 };
 #ifdef BA_USE_MEMALIGN
 #define BA_INIT(block_size, blocks, name) {\
-    0/*offset*/,\
-    NULL/*free_blk*/,\
-    NULL/*alloc*/,\
     block_size/*block_size*/,\
     0/*magnitude*/,\
+    NULL/*free_blk*/,\
+    NULL/*alloc*/,\
+    0/*offset*/,\
     NULL/*first*/,\
     NULL/*full*/,\
     NULL/*empty*/,\
@@ -351,7 +360,13 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #ifdef BA_STATS
     a->stats.st_used--;
 #endif
+#ifdef BA_USE_MEMALIGN
+    p = (ba_page)((uintptr_t)ptr &
+			  ((~(uintptr_t)0) << (a->magnitude)));
+    if (likely(p == a->alloc)) {
+#else
     if (likely(BA_CHECK_PTR(a, a->alloc, ptr))) {
+#endif
 	INC(free_fast1);
 	((ba_block_header)ptr)->next = a->free_blk;
 	a->free_blk = (ba_block_header)ptr;
@@ -359,8 +374,6 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     }
 
 #ifdef BA_USE_MEMALIGN
-    p = (ba_page)((uintptr_t)ptr &
-			  ((~(uintptr_t)0) << (a->magnitude)));
     INC(free_fast2);
 #else
 
