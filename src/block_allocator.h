@@ -351,29 +351,27 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #ifdef BA_STATS
     a->stats.st_used--;
 #endif
+    if (BA_CHECK_PTR(a, a->alloc, ptr)) {
+	INC(free_fast1);
+	((ba_block_header)ptr)->next = a->free_blk;
+	a->free_blk = (ba_block_header)ptr;
+	return;
+    }
 
 #ifdef BA_USE_MEMALIGN
     p = (ba_page)((uintptr_t)ptr &
 			  ((~(uintptr_t)0) << (a->magnitude)));
+    INC(free_fast2);
 #else
 
     if (BA_CHECK_PTR(a, a->last_free, ptr)) {
 	p = a->last_free;
-	INC(free_fast1);
-    } else if (BA_CHECK_PTR(a, a->first, ptr)) {
-	p = a->first;
 	INC(free_fast2);
     } else {
 	ba_find_page(a, ptr);
 	p = a->last_free;
     }
 #endif
-    if (likely(p == a->alloc)) {
-	INC(free_fast1);
-	((ba_block_header)ptr)->next = a->free_blk;
-	a->free_blk = (ba_block_header)ptr;
-	return;
-    }
     ((ba_block_header)ptr)->next = p->first;
     p->first = (ba_block_header)ptr;
     if ((--p->used) && (((ba_block_header)ptr)->next)) {
