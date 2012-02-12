@@ -37,7 +37,7 @@ static INLINE void ba_htable_grow(struct block_allocator * a);
 #define BA_HASH_MASK(a)  (((a->allocated)) - 1)
 
 #ifdef BA_HASH_THLD
-# define BA_BYTES(a)	( (sizeof(ba_page) + ((a->allocated > BA_HASH_THLD) ? sizeof(ba_page_t) : 0)) * ((a)->allocated) )
+# define BA_BYTES(a)	( (sizeof(ba_page) + ((a->allocated > BA_HASH_THLD) ? sizeof(uint32_t) : 0)) * ((a)->allocated) )
 #else
 # define BA_BYTES(a)	( (sizeof(ba_page) * ((a)->allocated) )
 #endif
@@ -61,12 +61,13 @@ PMOD_EXPORT void ba_show_pages(const struct block_allocator * a) {
     PRINT_NODE(a, first);
 #ifdef BA_USE_MEMALIGN
     PRINT_NODE(a, full);
+    PRINT_NODE(a, alloc);
 #else
     PRINT_NODE(a, last_free);
 #endif
 
     PAGE_LOOP(a, {
-	ba_block_t blocks_used;
+	uint32_t blocks_used;
 	blocks_used = p->used;
 	fprintf(stderr, "(%p)\t%f\t(%u %d) --> (prev: %p | next: %p)\n",
 		p, blocks_used/(double)a->blocks * 100,
@@ -134,7 +135,7 @@ PMOD_EXPORT void ba_print_stats(struct block_allocator * a) {
 //#define BA_ALIGNMENT	8
 
 PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
-			 uint32_t block_size, ba_page_t blocks) {
+			 uint32_t block_size, uint32_t blocks) {
     uint32_t page_size;
 
 #ifdef BA_ALIGNMENT
@@ -295,7 +296,7 @@ PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
 static INLINE void ba_grow(struct block_allocator * a) {
     if (a->allocated) {
 	// try to detect 32bit overrun?
-	if (a->allocated >= ((ba_page_t)1 << (sizeof(ba_page_t)*8-1))) {
+	if (a->allocated >= ((uint32_t)1 << (sizeof(uint32_t)*8-1))) {
 	    BA_ERROR("too many pages.\n");
 	}
 	ba_htable_grow(a);
@@ -312,27 +313,27 @@ static INLINE void ba_grow(struct block_allocator * a) {
     t ^= (t >> 7) ^ (t >> 4);	\
 } while(0)
 
-static INLINE ba_page_t hash1(const struct block_allocator * a,
+static INLINE uint32_t hash1(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
     MIX(t);
 
-    return (ba_page_t) t;
+    return (uint32_t) t;
 }
 
-static INLINE ba_page_t hash2(const struct block_allocator * a,
+static INLINE uint32_t hash2(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
     t++;
     MIX(t);
 
-    return (ba_page_t) t;
+    return (uint32_t) t;
 }
 
 static INLINE void ba_htable_grow(struct block_allocator * a) {
-    ba_page_t n, old;
+    uint32_t n, old;
     old = a->allocated;
     a->allocated *= 2;
     a->pages = (ba_page*)realloc(a->pages, a->allocated * sizeof(ba_page));
@@ -342,7 +343,7 @@ static INLINE void ba_htable_grow(struct block_allocator * a) {
 	ba_page * b = a->pages + n;
 
 	while (*b) {
-	    ba_page_t h = hash1(a, BA_LASTBLOCK(a, *b)) & BA_HASH_MASK(a);
+	    uint32_t h = hash1(a, BA_LASTBLOCK(a, *b)) & BA_HASH_MASK(a);
 	    if (h != n) {
 		ba_page p = *b;
 		*b = p->hchain;
@@ -356,7 +357,7 @@ static INLINE void ba_htable_grow(struct block_allocator * a) {
 }
 
 static INLINE void ba_htable_shrink(struct block_allocator * a) {
-    ba_page_t n;
+    uint32_t n;
 
     a->allocated /= 2;
 
@@ -383,7 +384,7 @@ PMOD_EXPORT void ba_print_htable(const struct block_allocator * a) {
 
     for (i = 0; i < a->allocated; i++) {
 	ba_page p = a->pages[i];
-	ba_page_t hval;
+	uint32_t hval;
 	if (!p) {
 	    fprintf(stderr, "empty %u\n", i);
 	}
@@ -403,7 +404,7 @@ PMOD_EXPORT void ba_print_htable(const struct block_allocator * a) {
  */
 static INLINE void ba_htable_insert(const struct block_allocator * a,
 				    ba_page p) {
-    ba_page_t hval = hash1(a, BA_LASTBLOCK(a, p));
+    uint32_t hval = hash1(a, BA_LASTBLOCK(a, p));
     ba_page * b = a->pages + (hval & BA_HASH_MASK(a));
 
 
@@ -432,10 +433,10 @@ static INLINE void ba_htable_insert(const struct block_allocator * a,
 
 #if 0
 static INLINE void ba_htable_replace(const struct block_allocator * a, 
-				     const void * ptr, const ba_page_t n,
-				     const ba_page_t new) {
-    ba_page_t hval = hash1(a, ptr);
-    ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
+				     const void * ptr, const uint32_t n,
+				     const uint32_t new) {
+    uint32_t hval = hash1(a, ptr);
+    uint32_t * b = a->htable + (hval & BA_HASH_MASK(a));
 
     while (*b) {
 	if (*b == n) {
@@ -458,7 +459,7 @@ static INLINE void ba_htable_replace(const struct block_allocator * a,
 
 static INLINE void ba_htable_delete(const struct block_allocator * a,
 				    ba_page p) {
-    ba_page_t hval = hash1(a, BA_LASTBLOCK(a, p));
+    uint32_t hval = hash1(a, BA_LASTBLOCK(a, p));
     ba_page * b = a->pages + (hval & BA_HASH_MASK(a));
 
     while (*b) {
@@ -479,7 +480,7 @@ static INLINE void ba_htable_delete(const struct block_allocator * a,
 static INLINE void ba_htable_lookup(struct block_allocator * a,
 				    const void * ptr) {
     ba_page p;
-    ba_page_t h[2];
+    uint32_t h[2];
     unsigned char c, b = 0;
     h[0] = hash1(a, ptr);
     h[1] = hash2(a, ptr);
@@ -503,7 +504,7 @@ LOOKUP:
 #ifdef BA_DEBUG
 PMOD_EXPORT INLINE void ba_check_allocator(struct block_allocator * a,
 				    char *fun, char *file, int line) {
-    ba_page_t n;
+    uint32_t n;
     int bad = 0;
     ba_page p;
 
@@ -511,10 +512,62 @@ PMOD_EXPORT INLINE void ba_check_allocator(struct block_allocator * a,
 	fprintf(stderr, "too many empty pages.\n");
 	bad = 1;
     }
+#ifdef BA_USE_MEMALIGN
+    if (a->alloc) {
+	if (a->alloc == a->first) {
+	    fprintf(stderr, "alloc is first\n");
+	    bad = 1;
+	}
+	if (a->alloc == a->full) {
+	    fprintf(stderr, "alloc is full\n");
+	    bad = 1;
+	}
+	if (a->alloc == a->empty) {
+	    fprintf(stderr, "alloc is empty\n");
+	    bad = 1;
+	}
+    }
+
+    if (a->empty && a->empty == a->full) {
+	fprintf(stderr, "full is empty\n");
+	bad = 1;
+    }
+
+    p = a->empty;
+    while (p) {
+	if (p->used) {
+	    fprintf(stderr, "free is not empty\n");
+	    bad = 1;
+	}
+	p = p->next;
+    }
+    p = a->full;
+    while (p) {
+	if (p->used != a->blocks) {
+	    fprintf(stderr, "full is not full\n");
+	    bad = 1;
+	}
+	if (p->first) {
+	    fprintf(stderr, "full has free block: %p\n", p->first);
+	    bad = 1;
+	}
+	p = p->next;
+    }
+
+    n = 0;
+    PAGE_LOOP(a, {
+	if (n++ >= a->num_pages) {
+	    fprintf(stderr, "broken lists (found %u of %u pages)\n",
+		    n, a->num_pages);
+	    bad = 1;
+	    break;
+	}
+    });
+#endif
 
 #ifndef BA_USE_MEMALIGN
     for (n = 0; n < a->allocated; n++) {
-	ba_page_t hval;
+	uint32_t hval;
 	int found = 0;
 	p = a->pages[n];
 
@@ -574,7 +627,7 @@ static INLINE void ba_alloc_page(struct block_allocator * a) {
     if (!p) BA_ERROR("no mem. alloc returned zero.");
     ba_free_page(a, p);
     p->next = p->prev = NULL;
-    a->first = p;
+    a->alloc = p;
 #ifndef BA_USE_MEMALIGN
     ba_htable_insert(a, p);
 #endif
@@ -586,7 +639,7 @@ static INLINE void ba_alloc_page(struct block_allocator * a) {
     BA_LASTBLOCK(a, p)->magic = BA_MARK_FREE;
     PIKE_MEM_RW(BA_BLOCKN(a, p, 0)->magic);
     BA_BLOCKN(a, p, 0)->magic = BA_MARK_ALLOC;
-    ba_check_allocator(a, "ba_alloc after insert", __FILE__, __LINE__);
+    ba_check_allocator(a, "ba_alloc after insert.", __FILE__, __LINE__);
 #endif
 }
 
@@ -595,30 +648,30 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_alloc top", __FILE__, __LINE__);
 #endif
-
-    //fprintf(stderr, "allocating new page. was %p\n", p);
-    if (a->first) {
-	ba_page p = a->first;
-	DOUBLE_SHIFT(a->first);
+    if (a->alloc) {
+	a->alloc->first = NULL;
+	a->alloc->used = a->blocks;
 #ifdef BA_USE_MEMALIGN
-	DOUBLE_LINK(a->full, p);
-#else
-	p->next = NULL;
+	DOUBLE_LINK(a->full, a->alloc);
 #endif
-	p->first = NULL;
     }
 
-    if (a->first) return;
-
-    if (a->empty_pages) {
-	a->first = a->empty;
+    if (a->first) {
+	a->alloc = a->first;
+	DOUBLE_SHIFT(a->first);
+    } else if (a->empty) {
+	a->alloc = a->empty;
 	SINGLE_SHIFT(a->empty);
 	a->empty_pages--;
-	a->first->next = NULL;
-    } else ba_alloc_page(a);
+    } else {
+	a->alloc = NULL;
+	ba_alloc_page(a);
+    }
+
+    a->free_blk = a->alloc->first;
 
 #ifdef BA_DEBUG
-    if (!a->first->first) {
+    if (!a->free_blk) {
 	ba_show_pages(a);
 	BA_ERROR("a->first has no first block!\n");
     }
@@ -631,22 +684,7 @@ PMOD_EXPORT void ba_low_alloc(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 			     ba_block_header ptr) {
-    // page was full
-    if (unlikely(!ptr->next)) {
-	INC(free_full);
-#ifdef BA_USE_MEMALIGN
-	DOUBLE_UNLINK(a->full, p);
-#endif
-#if 1
-	if (a->first) {
-	    p->prev = a->first;
-	    p->next = a->first->next;
-	    a->first->next = p;
-	    if (p->next) p->next->prev = p;
-	} else
-#endif
-	    DOUBLE_LINK(a->first, p);
-    } else if (!p->used) {
+    if (!p->used) {
 	INC(free_empty);
 	if (a->empty_pages == a->max_empty_pages) {
 	    ba_remove_page(a, p);
@@ -655,6 +693,12 @@ PMOD_EXPORT void ba_low_free(struct block_allocator * a, ba_page p,
 	DOUBLE_UNLINK(a->first, p);
 	SINGLE_LINK(a->empty, p);
 	a->empty_pages ++;
+    } else { // page was full
+	INC(free_full);
+#ifdef BA_USE_MEMALIGN
+	DOUBLE_UNLINK(a->full, p);
+#endif
+	DOUBLE_LINK(a->first, p);
     }
 }
 
