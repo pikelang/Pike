@@ -3,9 +3,6 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
-#ifdef PIKE_NEW_BLOCK_ALLOC
-# include "block_allocator.h"
-#else /* PIKE_NEW_BLOCK_ALLOC */
 
 #undef PRE_INIT_BLOCK
 #undef DO_PRE_INIT_BLOCK
@@ -75,6 +72,98 @@
 #define BA_INLINE
 #endif
 
+#ifdef PIKE_NEW_BLOCK_ALLOC
+# define ba_error Pike_error
+# include "global.h"
+# include "pike_error.h"
+# include "pike_memory.h"
+# define EXPORT PMOD_EXPORT
+# include "GJAlloc/block_allocator.h"
+# undef EXPORT
+/* we assume here that malloc has 8 bytes of overhead */
+#define BLOCK_HEADER_SIZE (sizeof(struct ba_page) + sizeof(void*))
+
+
+#define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  BLOCK_ALLOC(DATA,							\
+      ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /		\
+      sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  PTR_HASH_ALLOC(DATA,							\
+     ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /		\
+     sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA, PAGES)			\
+  PTR_HASH_ALLOC_FIXED(DATA,						\
+       ((PIKE_MALLOC_PAGE_SIZE * (PAGES)) - BLOCK_HEADER_SIZE) /	\
+       sizeof (struct DATA))
+
+#define MS(x)	#x
+
+#define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE...)	do {	\
+    struct block_allocator * a = &PIKE_CONCAT(DATA, _allocator);	\
+    PAGE_LOOP(a, {							\
+	uint32_t i, used = (p == a->alloc) ? a->blocks : p->used;	\
+	for (i = 0; used && i < a->blocks; i++) {			\
+	    BLOCK = ((struct DATA*)(p+1)) + i;				\
+	    if (FCOND) {						\
+		do CODE while(0);					\
+		--used;							\
+	    }								\
+	}								\
+    });									\
+} while(0)
+
+#define BLOCK_ALLOC_LOW(DATA,BSIZE)					\
+static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\
+	BA_INIT(sizeof(struct DATA), (BSIZE), #DATA);			\
+static struct DATA PIKE_CONCAT(DATA,_blueprint);			\
+									\
+void PIKE_CONCAT3(new_,DATA,_context)(void) {}				\
+									\
+BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
+{									\
+  struct DATA *tmp;							\
+  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "before alloc_"#DATA, __FILE__, __LINE__);)			\
+  tmp = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA, _allocator));	\
+  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "after alloc_"#DATA, __FILE__, __LINE__);)			\
+  PIKE_MEM_RW(*tmp);							\
+  PIKE_MEM_WO(*tmp);							\
+  INIT_BLOCK(tmp);							\
+  return tmp;								\
+}									\
+									\
+BA_STATIC BA_INLINE							\
+void BA_UL(PIKE_CONCAT(really_free_,DATA))(struct DATA *d)		\
+{									\
+  EXIT_BLOCK(d);							\
+  DO_PRE_INIT_BLOCK(d);							\
+  ba_free(&PIKE_CONCAT(DATA, _allocator), (void*)d);			\
+  IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator),		\
+	    "really_free_"#DATA, __FILE__, __LINE__);)			\
+  PIKE_MEM_NA(*d);							\
+}									\
+									\
+static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
+{									\
+  IF_STATS(ba_print_stats(&PIKE_CONCAT(DATA, _allocator)));		\
+  ba_destroy(&PIKE_CONCAT(DATA, _allocator));				\
+}									\
+									\
+void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num_, size_t *size_)	\
+{									\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
+  ba_count_all(&PIKE_CONCAT(DATA, _allocator), num_, size_);		\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+}                                                                       \
+									\
+void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
+{                                                                       \
+    DO_PRE_INIT_BLOCK(((struct DATA *)(PIKE_CONCAT(DATA,_allocator).blueprint = (char*)&PIKE_CONCAT(DATA, _blueprint))));	\
+}
+#else /* PIKE_NEW_BLOCK_ALLOC */
+
 #define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
   BLOCK_ALLOC(DATA,							\
               ((PIKE_MALLOC_PAGE_SIZE * (PAGES))			\
@@ -115,7 +204,7 @@
 	}								\
     }									\
 } while(0)
-#define BLOCK_ALLOC(DATA,BSIZE)						\
+#define BLOCK_ALLOC_LOW(DATA,BSIZE)					\
 									\
 struct PIKE_CONCAT(DATA,_block)						\
 {									\
@@ -234,16 +323,6 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
   return tmp;								\
 }									\
 									\
-DO_IF_RUN_UNLOCKED(                                                     \
-struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
-{									\
-  struct DATA *ret;  							\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
-  ret=PIKE_CONCAT3(alloc_,DATA,_unlocked)();  				\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
-  return ret;								\
-})									\
-									\
 DO_IF_DMALLOC(                                                          \
 static void PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (struct DATA *d,	\
 						    const char *msg)	\
@@ -251,17 +330,6 @@ static void PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (struct DATA *d,	\
   /* Separate function to allow gdb breakpoints. */			\
   fprintf (stderr, "struct " TOSTR(DATA)				\
 	   " at %p is still in use %s\n", d, msg);			\
-}									\
-\
-PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
-    struct PIKE_CONCAT(DATA,_block) *p = PIKE_CONCAT(DATA,_blocks);	\
-    int c = 0;\
-    fprintf(stderr, "blocks of "#DATA"\n");\
-    while (p) {\
-	double filled = (double)p->used/BSIZE * 100;\
-	fprintf(stderr, "%d\t%f\n", c++, filled);\
-	p = p->next;\
-    }									\
 }									\
 									\
 static void PIKE_CONCAT(dmalloc_late_free_,DATA) (struct DATA *d)	\
@@ -436,14 +504,6 @@ void BA_UL(PIKE_CONCAT(really_free_,DATA))(struct DATA *d)		\
   }									\
 }									\
 									\
-DO_IF_RUN_UNLOCKED(                                                     \
-		   void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)	\
-{									\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
-  BA_UL(PIKE_CONCAT(really_free_,DATA))(d);				\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
-})									\
-									\
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
@@ -484,13 +544,6 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
   }									\
 }									\
 									\
-void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
-{									\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
-  PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)();  			\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
-}                                                                       \
-									\
 void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num_, size_t *size_)	\
 {									\
   size_t num=0, size=0;							\
@@ -525,7 +578,34 @@ void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
   DO_IF_RUN_UNLOCKED(mt_init(&PIKE_CONCAT(DATA,_mutex)));               \
   PIKE_CONCAT(DATA,_free_blocks)=0;					\
 }
+#endif /* PIKE_NEW_BLOCK_ALLOC */
 
+#define BLOCK_ALLOC(DATA,BSIZE)						\
+	BLOCK_ALLOC_LOW(DATA,BSIZE)					\
+DO_IF_RUN_UNLOCKED(                                                     \
+		   void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)	\
+{									\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
+  BA_UL(PIKE_CONCAT(really_free_,DATA))(d);				\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+})									\
+									\
+void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
+{									\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
+  PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)();  			\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+}                                                                       \
+									\
+DO_IF_RUN_UNLOCKED(                                                     \
+struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
+{									\
+  struct DATA *ret;  							\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
+  ret=PIKE_CONCAT3(alloc_,DATA,_unlocked)();  				\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+  return ret;								\
+})
 
 
 #define LOW_PTR_HASH_ALLOC(DATA,BSIZE)					     \
@@ -819,4 +899,4 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
   return p;								     \
 }
-#endif /* PIKE_NEW_BLOCK_ALLOC */
+

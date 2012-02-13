@@ -18,9 +18,9 @@
 #include "operators.h"
 #include "builtin_functions.h"
 
-#define CB_USE_BLOCK_ALLOC
+//#define CB_USE_BLOCK_ALLOC
 #ifdef CB_USE_BLOCK_ALLOC
-# include "block_allocator.h"
+# include "block_alloc.h"
 
 static struct block_allocator allocator;
 
