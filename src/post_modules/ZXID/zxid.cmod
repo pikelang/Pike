@@ -445,6 +445,12 @@ PIKECLASS Configuration {
     CVAR zxid_ses ses;
     CVAR struct Configuration_struct *config;
 
+    /*! @decl string(0..255) session_id
+     *!
+     *! Session id (if any).
+     */
+    PIKEVAR string session_id;
+
     INIT
     {
       THIS->config = parent_storage(1);
@@ -459,6 +465,32 @@ PIKECLASS Configuration {
       if (THIS->ses.sid) {
 	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sid);
 	THIS->ses.sid = NULL;
+      }
+    }
+
+    /*! @decl void create(string|void session_id)
+     *!
+     *!   Create a new or look up an existing session.
+     */
+    PIKEFUN void create(string(0..255)|void session_id)
+      flags ID_PROTECTED;
+    {
+      if (session_id && !session_id->size_shift) {
+	struct Configuration_Session_struct *this = THIS;
+	if (this->session_id) {
+	  free_string(this->session_id);
+	}
+	copy_shared_string(this->session_id, session_id);
+	THREADS_ALLOW();
+	if (!zxid_get_ses(&this->config->conf, &this->ses, session_id->str)) {
+	  /* New session. */
+	  if (this->ses.sid) {
+	    ZX_FREE(this->config->conf.ctx, this->ses.sid);
+	    this->ses.sid = NULL;
+	  }
+	  this->ses.sid = zx_dup_cstr(this->config->conf.ctx, session_id->str);
+	}
+	THREADS_DISALLOW();
       }
     }
 
@@ -477,9 +509,18 @@ PIKECLASS Configuration {
       int res_len = 0;
       struct Configuration_struct *config = parent_storage(1);
       zxid_ses *ses = &THIS->ses;
+      int extra = 0;
 
-      init_string_builder_alloc(&mutable_query, query->len, query->size_shift);
+      if (THIS->session_id) {
+	extra = 3 + THIS->session_id->len;
+      }
+      init_string_builder_alloc(&mutable_query, query->len + extra,
+				query->size_shift);
       string_builder_shared_strcat(&mutable_query, query);
+      if (extra) {
+	string_builder_strcat(&mutable_query, "&s=");
+	string_builder_shared_strcat(&mutable_query, THIS->session_id);
+      }
 
       THREADS_ALLOW();
 
