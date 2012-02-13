@@ -37,11 +37,14 @@ class Configuration
     return conf;
   }
 
+  protected string url = "/";
+
   // Perform some parsing here.
   protected void create(mapping(string(0..255):string(0..255)|array(string(0..255))) conf)
   {
     conf += ([]);
     while(1) {
+      url = conf->URL || url;
       if (stringp(conf->REDIRECT_HACK_ZXID_URL)) {
 	array(string(0..255)) a = conf->REDIRECT_HACK_ZXID_URL/"?";
 	if (sizeof(a) > 1) {
@@ -100,9 +103,14 @@ class Configuration
       case '<':	// HTML-content.
 	return ([ "data":raw_res, "type":"text/html" ]);
       case 'L':	// Location header.
-	if (has_prefix(raw_res, "Location:"));
+	if (!has_prefix(raw_res, "Location:")) break;
 	raw_res =
 	  String.trim_all_whites((raw_res/"\r\n")[0][sizeof("Location:")..]);
+
+	if (has_prefix(raw_res, "?")) {
+	  // Prefix with the URL.
+	  raw_res = url + raw_res;
+	}
 	return ([ "error":Protocols.HTTP.HTTP_FOUND,
 		  "rettext":"Redirect to " + raw_res,
 		  "extra_heads":([ "Location":raw_res ]) ]);
@@ -121,7 +129,8 @@ class Configuration
       case 'd':	// Authentication completed. LDIF-entry.
 	break;
       case 'z':	// Authentication failure.
-	break;
+	auth_info = UNDEFINED;
+	return 0;
       case '{':	// Success, JSON result.
 	auth_info = Standards.JSON.decode(raw_res);
 	return 0;
