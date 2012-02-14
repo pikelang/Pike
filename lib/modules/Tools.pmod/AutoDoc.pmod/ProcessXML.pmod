@@ -521,9 +521,12 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     }
   }
 
-  array(SimpleNode) children = source->get_children();
+  array(SimpleNode) children = source->get_elements();
   foreach(children; int i; SimpleNode node) {
     switch(node->get_any_name()) {
+      case "appendix":
+	// FIXME: Warn when not in compat mode.
+	// FALL_THROUGH
       case "namespace":
       case "class":
       case "module":
