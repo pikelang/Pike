@@ -348,7 +348,19 @@ void ref_expansion(Node n, string dir, void|string file)
 	n->remove_child(c);
 	break;
       }
-      n->replace_child(c, c = parse_file(path)->get_first_element("chapter") );
+      mixed err = catch {
+	  n->replace_child(c, c = parse_file(path)->
+			   get_first_element("chapter") );
+	};
+      if (err) {
+	n->remove_child(c);
+	if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) {
+	  werror("Chapter ref for %O failed:\n"
+		 "%s\n", path, describe_backtrace(err));
+	  break;
+	}
+	throw(err);
+      }
       // fallthrough
     case "chapter":
       mapping m = c->get_attributes();
@@ -386,7 +398,19 @@ void ref_expansion(Node n, string dir, void|string file)
 	n->remove_child(c);
 	break;
       }
-      c = c->replace_node( parse_file(path)->get_first_element("appendix") );
+      err = catch {
+	  c = c->replace_node( parse_file(path)->
+			       get_first_element("appendix") );
+	};
+      if (err) {
+	n->remove_child(c);
+	if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) {
+	  werror("Appendix ref for %O failed:\n"
+		 "%s\n", path, describe_backtrace(err));
+	  break;
+	}
+	throw(err);
+      }
       // fallthrough
     case "appendix":
       if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
