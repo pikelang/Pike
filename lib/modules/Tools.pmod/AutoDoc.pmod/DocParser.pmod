@@ -564,8 +564,10 @@ protected class DocParserClass {
 
     array(string) attrnames = attributenames[keyword];
     int attrcount = sizeof(attrnames || ({}) );
-    if (attrcount < sizeof(args))
+    if (attrcount < sizeof(args)) {
       parseError(sprintf("@%s with too many parameters", keyword));
+      args = args[..attrcount-1];
+    }
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
     foreach(required_attributes[keyword]||({}), string attrname) {
