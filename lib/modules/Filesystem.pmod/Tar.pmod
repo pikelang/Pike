@@ -327,6 +327,20 @@ class _Tar
 
   protected void extract_bits (string dest, Record r, int which_bits)
   {
+#if constant (utime)
+    if (!(which_bits & EXTRACT_SKIP_MTIME))
+      utime (dest, r->mtime, r->mtime, 1);
+#endif
+
+#if constant (chmod)
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk()) {
+      if (which_bits & EXTRACT_SKIP_EXT_MODE)
+	chmod (dest, r->mode & 0777);
+      else
+	chmod (dest, r->mode & 07777);
+    }
+#endif
+
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
       int uid;
@@ -343,20 +357,6 @@ class _Tar
 
       chown (dest, uid, gid, 1);
     }
-#endif
-
-#if constant (chmod)
-    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk()) {
-      if (which_bits & EXTRACT_SKIP_EXT_MODE)
-	chmod (dest, r->mode & 0777);
-      else
-	chmod (dest, r->mode & 07777);
-    }
-#endif
-
-#if constant (utime)
-    if (!(which_bits & EXTRACT_SKIP_MTIME))
-      utime (dest, r->mtime, r->mtime, 1);
 #endif
   }
 
