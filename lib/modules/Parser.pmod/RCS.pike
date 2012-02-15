@@ -548,88 +548,115 @@ this_program parse(array raw, void|function(string:void) progress_callback)
 // manual calls to gc().                                     / jhs, 2004-02-24
 
 //! Returns the file contents from the revision @[rev], without performing
-//! any keyword expansion.
+//! any keyword expansion. If @[dont_cache_data] is set we will not keep
+//! intermediate revisions in memory unless they already existed. This will
+//! cut down memory use at the expense of slow access to older revisions.
 //! @seealso
 //!   @[expand_keywords_for_revision()]
-string get_contents_for_revision( string|Revision rev )
+string get_contents_for_revision( string|Revision rev,
+				  void|int(0..1) dont_cache_data)
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( rev->text ) return rev->text;
-  Revision parent = revisions[rev->rcs_prev];
-  string old = get_contents_for_revision( parent ), diff = rev->rcs_text;
-  String.Buffer new = String.Buffer();
-  function append = new->add;
-  int op, of, ot, dt, at, cnt, from, lines;
-  while( sizeof( diff ) )
-  {
-    sscanf( diff, "%c%d %d\n%s", op, from, lines, diff );
-    if( op == 'd' )
-    {
-      cnt = from - at - 1; // possibly scan forward past a few lines...
-      if( cnt && of < sizeof(old) )
-      {
-	ot = of - 1;
-	while( cnt-- )
-	{
-	  ot = search( old, "\n", ++ot );
-	  if( ot == -1 )
-	  {
-	    ot = sizeof( old );
+  
+  //  Find first revision with expanded text content and apply subsequent
+  //  diffs.
+  string base;
+  array(Revision) diff_revs = ({ rev });
+  Revision cur = rev;
+  do {
+    if (cur = revisions[cur->rcs_prev]) {
+      base = cur->text;
+      if (!base)
+	diff_revs += ({ cur });
+    }
+  } while (cur && !base);
+  if (!base)
+    return 0;
+  
+  Revision clear_in_next_iter = 0;
+  foreach (reverse(diff_revs), Revision cur) {
+    string diff = cur->rcs_text;
+    String.Buffer new = String.Buffer();
+    string old = base;
+    function append = new->add;
+    int op, of, ot, dt, at, cnt, from, lines;
+    while (sizeof(diff)) {
+      sscanf( diff, "%c%d %d\n%s", op, from, lines, diff );
+      if( op == 'd' ) {
+	cnt = from - at - 1; // possibly scan forward past a few lines...
+	if( cnt && of < sizeof(old) ) {
+	  ot = of - 1;
+	  while( cnt-- ) {
+	    ot = search( old, "\n", ++ot );
+	    if( ot == -1 ) {
+	      ot = sizeof( old );
+	      break;
+	    }
+	  }
+	  append( old[of..ot++] ); // ...who were intact since last rev...
+	  of = ot;
+	}
+	at = from + lines - 1; // ...to the [lines] lines from line [at]...
+	while( lines-- ) {
+	  of = search( old, "\n", of );
+	  if( of == -1 ) {
+	    of = sizeof( old );
+	    break;
+	  }
+	  of++;
+	} // ...that should simply be deleted (not passed on to [new])
+      } else {
+	// op == 'a'
+	cnt = from - at; // possibly scan forward past a few lines...
+	if( cnt && of < sizeof(old) ) {
+	  ot = of - 1;
+	  while( cnt-- ) {
+	    ot = search( old, "\n", ++ot );
+	    if(ot == -1) {
+	      ot = sizeof( old );
+	      break;
+	    }
+	  }
+	  append( old[of..ot++] ); // ...who were intact since last rev...
+	  of = ot;
+	}
+	at = from; // ...to the line...
+	dt = -1;
+	while( lines-- ) {
+	  dt = search( diff, "\n", ++dt );
+	  if(dt == -1) {
+	    dt = sizeof( diff );
 	    break;
 	  }
 	}
-	append( old[of..ot++] ); // ...who were intact since last rev...
-	of = ot;
+	append( diff[..dt++] ); // ...where we should add [lines] new rows.
+	diff = diff[dt..];
       }
-      at = from + lines - 1; // ...to the [lines] lines from line [at]...
-      while( lines-- )
-      {
-	of = search( old, "\n", of );
-	if( of == -1 )
-	{
-	  of = sizeof( old );
-	  break;
-	}
-	of++;
-      } // ...that should simply be deleted (not passed on to [new])
     }
-    else // op == 'a'
-    {
-      cnt = from - at; // possibly scan forward past a few lines...
-      if( cnt && of < sizeof(old) )
-      {
-	ot = of - 1;
-	while( cnt-- )
-	{
-	  ot = search( old, "\n", ++ot );
-	  if(ot == -1)
-	  {
-	    ot = sizeof( old );
-	    break;
-	  }
-	}
-	append( old[of..ot++] ); // ...who were intact since last rev...
-	of = ot;
-      }
-      at = from; // ...to the line...
-      dt = -1;
-      while( lines-- )
-      {
-	dt = search( diff, "\n", ++dt );
-	if(dt == -1)
-	{
-	  dt = sizeof( diff );
-	  break;
-	}
-      }
-      append( diff[..dt++] ); // ...where we should add [lines] new rows.
-      diff = diff[dt..];
+    append( old[of..] );
+    base = new->get();
+    
+    //  Caller may request that intermediate revisions are not stored
+    //  in memory longer than necessary.
+    if (dont_cache_data) {
+      if (clear_in_next_iter)
+	clear_in_next_iter->text = 0;
+      if (!cur->text)
+	clear_in_next_iter = cur;
     }
+    cur->text = base;
   }
-  append( old[of..] );
-  return rev->text = new->get();
+  
+  //  Return for requested revision
+  string res = rev->text;
+  if (dont_cache_data)
+    rev->text = 0;
+  return res;
 }
+
+
 
 protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 					"Locker" /*"Log"*/ "RCSfile"
