@@ -15,6 +15,7 @@ string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
 		     }) * "&";
 }
 
+//!
 class Configuration
 {
   inherit ZXID::Configuration : Configuration;
@@ -67,6 +68,7 @@ class Configuration
     }
   }
 
+  //!
   class Session
   {
     inherit Configuration::Session;
