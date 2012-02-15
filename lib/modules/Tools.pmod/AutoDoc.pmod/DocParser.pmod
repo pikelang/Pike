@@ -146,6 +146,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_constant" : standard,
   "_enum" : (< "constant" >) + standard,
   "_typedef" : standard,
+  "_directive" : standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
