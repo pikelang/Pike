@@ -61,6 +61,12 @@
  * data.
  */
 #define BACKEND_OOB_IS_SIMULATED
+
+#if defined(HAVE_CFRUNLOOPRUNINMODE)
+/* Have kqueue+CFRunLoop variant (Mac OSX, iOS) */
+#define BACKEND_USES_CFRUNLOOP
+#endif /* HAVE_CFRUNLOOPRUNINMODE */
+
 #else  /* !HAVE_POLL && !HAVE_KQUEUE */
 /*
  * Backend using select(2)

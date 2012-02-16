@@ -87,12 +87,18 @@
 #include <sys/event.h>
 #endif /* HAVE_SYS_EVENT_H */
 
+/* for kqueue + CFRunLoop */
+#ifdef HAVE_CORESERVICES_CORESERVICES_H
+#include <CoreServices/CoreServices.h>
+#endif /* HAVE_CORESERVICES_CORESERVICES_H */
+
 /* The following are used on Linux'es that have an old libc. */
 #ifdef HAVE_SYSCALL_H
 #include <syscall.h>
 #elif defined(HAVE_SYS_SYSCALL_H)
 #include <sys/syscall.h>
 #endif /* HAVE_SYSCALL_H || HAVE_SYS_SYSCALL_H */
+
 
 /*
  * Debugging and tracing.
@@ -178,6 +184,10 @@ PMOD_EXPORT struct Backend_struct *default_backend = NULL;
 #ifdef DO_PIKE_CLEANUP
 static int num_active_backends = 0;
 #endif
+
+#if defined(BACKEND_USES_CFRUNLOOP)
+static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info);
+#endif /* BACKEND_USES_CFRUNLOOP */
 
 static int backend_do_call_outs(struct Backend_struct *me);
 static void backend_verify_call_outs(struct Backend_struct *me);
@@ -2348,7 +2358,7 @@ PIKECLASS Backend
  */
 
 #define POLL_EVENT	struct pollfd
-#define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
+#define OPEN_POLL_DEVICE(X)	open(PIKE_POLL_DEVICE, O_RDWR)
 #define CHILD_NEEDS_TO_REOPEN
 
 #define DECLARE_POLL_EXTRAS		\
@@ -2499,7 +2509,7 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 #define PDB_GET_EVENTS(EVENT)	EVENT.events
 
 /* FIXME: Might want another value instead on POLL_SET_SIZE. */
-#define OPEN_POLL_DEVICE()	epoll_create(POLL_SET_SIZE)
+#define OPEN_POLL_DEVICE(X)	epoll_create(POLL_SET_SIZE)
 
 #define DECLARE_POLL_EXTRAS		\
   POLL_EVENT poll_fds[POLL_SET_SIZE]
@@ -2696,7 +2706,13 @@ static void pb_copy_selectors(struct pb_selectors *to,
 
 
 #define POLL_EVENT	struct kevent
-#define OPEN_POLL_DEVICE()	kqueue()
+
+#if defined(BACKEND_USES_CFRUNLOOP)
+#define OPEN_POLL_DEVICE(X)	my_kqueue(X)
+#else
+#define OPEN_POLL_DEVICE(X)	kqueue()
+#endif
+
 #define CHILD_NEEDS_TO_REOPEN
 
 #define PIKE_POLL_DEVICE	"kqueue"
@@ -2890,6 +2906,16 @@ PIKECLASS PollDeviceBackend
    * POLL/SELECT fd sets
    */
   CVAR int set;
+#if defined(BACKEND_USES_CFRUNLOOP)
+  CVAR int go_cf;
+  CVAR CFFileDescriptorRef fdref;
+  CVAR CFRunLoopSourceRef source;
+  CVAR int event_count;
+#endif /* BACKEND_USES_CFRUNLOOP */
+#ifdef DECLARE_POLL_EXTRAS
+    /* Declare any extra variables needed by MY_POLL(). */
+  CVAR struct kevent* poll_fds;
+#endif /* DECLARE_POLL_EXTRAS */
 
   DECLARE_STORAGE
 
@@ -2939,15 +2965,59 @@ PIKECLASS PollDeviceBackend
 #endif /* BACKEND_USES_POLL_DEVICE */
   }
 
+
+#if defined(BACKEND_USES_CFRUNLOOP)
+  /* we place this declaration here rather than at the top in order to avoid struct-y unpleasantness */
+  int init_cf(struct PollDeviceBackend_struct *me, int i);
+
+  int my_kqueue(struct PollDeviceBackend_struct *me)
+  {
+    int i;
+
+    i = kqueue();
+    if(me->go_cf)
+      return init_cf(me, i);
+    else return i;
+  }
+
+  int init_cf(struct PollDeviceBackend_struct *me, int i)
+  {
+    CFFileDescriptorContext context = {0, me, NULL, NULL, NULL};
+
+    me->fdref = CFFileDescriptorCreate(kCFAllocatorDefault, i, true, noteEvents, &context);
+    CFRetain(me->fdref);
+
+    me->source = CFFileDescriptorCreateRunLoopSource(kCFAllocatorDefault, me->fdref, 0);
+    CFFileDescriptorEnableCallBacks(me->fdref, kCFFileDescriptorReadCallBack);	
+    CFRetain(me->source);
+
+    return i;
+  }
+
+  void exit_cf(struct PollDeviceBackend_struct *me)
+  {
+    if(me->source)
+    {
+      CFRunLoopSourceInvalidate(me->source);
+      CFRelease(me->source);
+    }
+
+    if(me->fdref)
+      CFRelease(me->fdref);
+  }
+
+#endif /* BACKEND_USES_CFRUNLOOP */
+
   /* This is called in the child process to restore
    * poll state after fork() in case of detaching.
    */
   static void pdb_REOPEN_POLL_DEVICE(struct PollDeviceBackend_struct *me)
   {
     int fd;
+
     while ((close(me->set) < 0) && (errno == EINTR))
       ;
-    while (((fd = OPEN_POLL_DEVICE()) < 0) && (errno == EINTR))
+    while (((fd = OPEN_POLL_DEVICE(me)) < 0) && (errno == EINTR))
       ;
     if (fd < 0) {
       Pike_fatal("Failed to reopen " PIKE_POLL_DEVICE
@@ -2971,7 +3041,24 @@ PIKECLASS PollDeviceBackend
     {FOR_EACH_ACTIVE_FD_BOX (me->backend, box) {
 	pdb_UPDATE_BLACK_BOX (me, box->fd, box->events);
       }}
+
   }
+
+#if defined(BACKEND_USES_CFRUNLOOP)
+static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info) {
+    struct kevent kev;
+    struct timespec tv;
+    struct PollDeviceBackend_struct * this_backend;
+    int fd;
+	
+    tv.tv_sec = 0;
+    tv.tv_nsec = 0;
+    this_backend = (struct PollDeviceBackend_struct *)info;
+    fd = CFFileDescriptorGetNativeDescriptor(fdref);
+    kevent(fd, NULL, 0, this_backend->poll_fds, POLL_SET_SIZE, &tv);
+    this_backend->event_count = POLL_SET_SIZE;
+}
+#endif /* BACKEND_USES_CFRUNLOOP */
 
   static struct PollDeviceBackend_struct **pdb_backends = NULL;
   static int num_pdb_backends = 0;
@@ -3140,7 +3227,6 @@ PIKECLASS PollDeviceBackend
    *								>WRITE
    */
 
-
 #ifdef POLL_DEBUG
   static void pdb_describe_event(struct Backend_struct *me, POLL_EVENT event)
   {
@@ -3216,6 +3302,10 @@ PIKECLASS PollDeviceBackend
       call_backend_monitor_cb (me, &me->before_callback);
 
     {
+#ifdef BACKEND_USES_CFRUNLOOP
+	  double cf_timeout;
+#endif /* BACKEND_USES_CFRUNLOOP */
+
 #ifdef TIMEOUT_IS_MILLISECONDS
       int poll_timeout;
 #elif defined(TIMEOUT_IS_TIMEVAL)
@@ -3256,6 +3346,23 @@ PIKECLASS PollDeviceBackend
       THREADS_ALLOW();
 
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
+
+#ifdef BACKEND_USES_CFRUNLOOP
+    if(pdb->go_cf)
+    {
+      cf_timeout = next_timeout->tv_sec + (next_timeout->tv_usec / 1000000.0);
+
+      pdb->event_count = 0;
+      pdb->poll_fds = (poll_fds);
+      CFFileDescriptorEnableCallBacks(pdb->fdref, kCFFileDescriptorReadCallBack);
+      CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source, kCFRunLoopDefaultMode);
+      CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
+
+      i = pdb->event_count;
+      pdb->poll_fds = NULL;
+}
+else
+#endif /* BACKEND_USES_CFRUNLOOP */
       i = PDB_POLL(pdb->set, poll_timeout);
 
       IF_PD(fprintf(stderr, " => %d (timeout was: %d)\n", i, poll_timeout));
@@ -3275,8 +3382,8 @@ PIKECLASS PollDeviceBackend
       int num_active = i;
       struct fd_callback_box fd_list = {
 	me, NULL, &fd_list,
-	-1, 0, 0,
-	NULL,
+	-1, 0,
+        0, NULL
       };
       struct fd_callback_box *box;
       ONERROR free_fd_list;
@@ -3515,7 +3622,7 @@ PIKECLASS PollDeviceBackend
       timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
-
+	
     me->exec_thread = 0;
     UNSET_ONERROR (uwp);
   }
@@ -3542,6 +3649,9 @@ PIKECLASS PollDeviceBackend
   {
     struct timeval timeout;	/* Got bogus gcc warning on timeout.tv_usec. */
 
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
     if (sleep_time && TYPEOF(*sleep_time) == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
@@ -3565,6 +3675,40 @@ PIKECLASS PollDeviceBackend
 				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
   }
 
+#ifdef BACKEND_USES_CFRUNLOOP
+/*! @decl int enble_core_foundation(int(0..1) enable)
+ *!   On systems with CoreFoundation (OSX, iOS, etc), use CoreFoundation
+ *!   to poll for events. This enables system level technologies that rely
+ *!   on CoreFoundation Runloops to function properly.
+ *!
+ *!  @param enable
+ *!    enable or disable this functionality
+ *!
+ *!  @returns
+ *!    the previous value of this setting.
+ *!
+ */
+PIKEFUN int enable_core_foundation(int enable)
+{
+  int x = THIS->go_cf;
+
+  if(enable && !THIS->go_cf)
+  {
+    THIS->go_cf = 1;
+    init_cf(THIS, THIS->set);
+  }
+  else if(!enable && THIS->go_cf)
+  {
+    THIS->go_cf = 0;
+    exit_cf(THIS);
+  }
+  pop_stack();
+
+  push_int(x);
+}
+#endif /* BACKEND_USES_CFRUNLOOP */
+
+
   EXTRA
   {
     pdb_offset = Pike_compiler->new_program->inherits[1].storage_offset -
@@ -3573,6 +3717,10 @@ PIKECLASS PollDeviceBackend
     /* /dev/poll and kqueue fds get invalidated at fork. */
     dmalloc_accept_leak(add_to_callback(&fork_child_callback,
 					reopen_all_pdb_backends, NULL, NULL));
+
+#ifdef BACKEND_USES_CFRUNLOOP
+    add_integer_constant("GOT_CORE_FOUNDATION", 1, 0);
+#endif /* BACKEND_USES_CFRUNLOOP */
   }
 
   INIT
@@ -3592,7 +3740,7 @@ PIKECLASS PollDeviceBackend
 
     IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
 		  THR_NO, me->id));
-    if ((THIS->set = OPEN_POLL_DEVICE()) < 0) {
+    if ((THIS->set = OPEN_POLL_DEVICE(THIS)) < 0) {
       Pike_error("Failed to open poll device (errno:%d)\n", errno);
     }
     set_close_on_exec(THIS->set, 1);
@@ -3606,8 +3754,13 @@ PIKECLASS PollDeviceBackend
     IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: Closing poll device...\n",
 		    THR_NO, me->id));
 
+#ifdef BACKEND_USES_CFRUNLOOP 
+    exit_cf(THIS);
+#endif /* BACKEND_USES_CFRUNLOOP */
+
     if (THIS->set >= 0)
       fd_close(THIS->set);
+
     unregister_pdb_backend(THIS);
   }
 }
@@ -3615,7 +3768,7 @@ PIKECLASS PollDeviceBackend
 /*! @endclass
  */
 
-#endif /* BACKEND_USES_POLL_DEVUCE || BACKEND_USES_KQUEUE */
+#endif /* BACKEND_USES_POLL_DEVICE || BACKEND_USES_KQUEUE */
 
 #ifdef HAVE_POLL
 
@@ -3875,7 +4028,7 @@ PIKECLASS PollBackend
       int num_active = i;
       struct fd_callback_box fd_list = {
 	NULL, NULL, NULL,
-	-1, 0, 0,
+	-1, 0, 0
 	NULL,
       };
       struct fd_callback_box *box;
@@ -4432,8 +4585,8 @@ PIKECLASS SelectBackend
       int num_active = i;
       struct fd_callback_box fd_list = {
 	me, NULL, &fd_list,
-	-1, 0, 0,
-	NULL,
+	-1, 0, 
+	 0, NULL
       };
       struct fd_callback_box *box;
       ONERROR free_fd_list;

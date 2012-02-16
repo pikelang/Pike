@@ -2,6 +2,8 @@ AC_REVISION("$Id$")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
+
+
 rm -f config.warnings 2>/dev/null
 
 if_autoconf(2,50,[
@@ -970,6 +972,35 @@ AC_DEFUN(PIKE_AC_DEBUG, [
   ulimit -a 1>&AC_FD_CC
   echo "DEBUG: ++++++++++++++++++++++++++++++++++" 1>&AC_FD_CC
 ])
+
+# Convenience function for querying Frameworks
+AC_DEFUN([AC_CHECK_FRAMEWORK],
+[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
+AS_LITERAL_IF([$1],
+         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
+         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
+AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
+[ac_check_framework_save_LIBS=$LIBS
+LIBS="-framework $1 $5 $LIBS"
+AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
+          [AS_VAR_SET(ac_Framework, yes)],
+          [AS_VAR_SET(ac_Framework, no)])
+LIBS=$ac_check_framework_save_LIBS])
+AS_IF([test AS_VAR_GET(ac_Framework) = yes],
+      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
+  LIBS="-framework $1 $LIBS"
+])],
+      [$4])dnl
+AS_VAR_POPDEF([ac_Framework])dnl
+])# AC_CHECK_FRAMEWORK
+
+# AH_CHECK_FRAMEWORK(FRAMEWORK)
+# ---------------------
+m4_define([AH_CHECK_FRAMEWORK],
+[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
+        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
+
+
 
 PIKE_AC_DEBUG
 
@@ -3391,9 +3422,9 @@ AC_CHECK_FUNCS(sigsetjmp setjmp _setjmp siglongjmp longjmp _longjmp)
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
   AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
-
   AC_CHECK_FUNCS(kqueue)
-
+  AC_CHECK_FRAMEWORK(CoreServices, CFRunLoopRunInMode)
+  AC_CHECK_FUNCS(CFRunLoopRunInMode)
   AC_MSG_CHECKING(for poll device)
   AC_CACHE_VAL(pike_cv_device_devpoll, [
     pike_cv_poll_device="no"
