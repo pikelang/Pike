@@ -4028,7 +4028,7 @@ PIKECLASS PollBackend
       int num_active = i;
       struct fd_callback_box fd_list = {
 	NULL, NULL, NULL,
-	-1, 0, 0
+	-1, 0, 0,
 	NULL,
       };
       struct fd_callback_box *box;
