@@ -145,7 +145,7 @@ void filter_weak_suites(int min_keylength)
   preferred_suites =
     filter(preferred_suites,
 	   lambda(int suite, int min_keylength) {
-	     array(int) def = CIPHER_SUITES[suite];
+	     array(int) def = [array(int)]CIPHER_SUITES[suite];
 	     return def && (CIPHER_algorithms[def[1]] >= min_keylength);
 	   }, min_keylength);
 }

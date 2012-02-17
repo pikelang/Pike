@@ -51,7 +51,7 @@ array(string) certificate_chain;
 
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
-void set_cipher_suite(int suite, int version)
+void set_cipher_suite(int suite, ProtocolVersion|int version)
 {
   array res = .Cipher.lookup(suite, version);
   cipher_suite = suite;
