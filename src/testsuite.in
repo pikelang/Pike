@@ -964,7 +964,7 @@ test_any([[
   // These backtraces have caused SEGV's due to function pointers
   // out of bounds. cf [bug 6156].
   return sizeof(describe_backtrace(catch {
-      Builtin.__Backtrace_Test__();
+      Builtin.__Backtrace_Tester__();
     })) > 0;
 ]], 1)
 
@@ -972,8 +972,8 @@ test_any([[
   // Test that backtraces with event handlers are rendered correctly.
   // These backtraces have caused SEGV's due to function pointers
   // out of bounds. cf [bug 6156].
-  return catch { Builtin.__Backtrace_Test__(); }[2][-1][2];
-]], "__EVENT_HANDLER__")
+  return catch { Builtin.__Backtrace_Tester__(); }[1][-1][2];
+]], Builtin.__Backtrace_Tester__)
 
 test_any([[
   // Test multiple inherit of same symbol,
