@@ -9955,7 +9955,7 @@ void init_builtin_efuns(void)
 			   tSet(tArr(tMix)),
 			   tSet(tOr(tInt0,tVar(2)))),
 
-		 tMapStuff(tOr(tPrg(tObj),tFunction),tMix,
+		 tMapStuff(tAnd(tNot(tArray),tOr(tPrg(tObj),tFunction)),tMix,
 			   tMap(tStr,tVar(2)),
 			   tMap(tStr,tInt01),
 			   tMap(tStr,tObj),
