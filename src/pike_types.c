@@ -6217,7 +6217,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      * function call checker.
      */
     tmp = NULL;
-    if ((fun_type->car->type == T_NOT) &&
+    if (((arg_type->type != T_NOT) ||
+	 (arg_type->car->type != T_MIXED)) &&
+	(fun_type->car->type == T_NOT) &&
 	(fun_type->car->car->type == T_OR) &&
 	((fun_type->car->car->car->type == T_MIXED) ||
 	 (fun_type->car->car->cdr->type == T_MIXED))) {
