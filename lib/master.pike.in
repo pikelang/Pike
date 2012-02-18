@@ -5758,6 +5758,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 #ifndef RESOLVER_HACK
 	ret = compat_handler_cache[tmp] = compat_handler;
 #endif
+      } else {
+	ret = compat_handler;
       }
     }
 
