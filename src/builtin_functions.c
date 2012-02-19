@@ -2656,16 +2656,25 @@ PMOD_EXPORT void f_allocate(INT32 args)
     INT32 e;
     push_array (a);
     if (init) {
-      for(e=0;e<size;e++)
-	copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
+      if ((1 << TYPEOF(*init)) & (BIT_BASIC|BIT_FUNCTION|
+				  BIT_OBJECT|BIT_PROGRAM)) {
+#ifdef PIKE_RUN_UNLOCKED
+# warning NOT SAFE
+#endif
+	  if (TYPEOF(*init) <= MAX_REF_TYPE)
+	      *(init->u.refs) += size;
+	  cmemset(a->item, init, sizeof(struct svalue), size);
+	// add size references
+      } else
+	  for(e=0;e<size;e++)
+	    copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
       a->type_field = 1 << TYPEOF(*init);
     }
     else {
       /* It's somewhat quirky that allocate(17) and allocate(17, UNDEFINED)
        * have different behavior, but it's of some use, and it's compatible
        * with previous versions. */
-      for(e=0;e<size;e++)
-	ITEM (a)[e] = svalue_undefined;
+      cmemset(ITEM(a), &svalue_undefined, sizeof(struct svalue), size);
       a->type_field = BIT_INT;
     }
     stack_pop_n_elems_keep_top (args);

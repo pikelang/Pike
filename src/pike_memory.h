@@ -178,6 +178,21 @@ PMOD_EXPORT void mexec_free(void *ptr);
 void init_pike_memory (void);
 void exit_pike_memory (void);
 
+/*
+ * Fill dst with n blocks of size s from src
+ */
+static INLINE void cmemset(char * dst, char * src, size_t s,
+			   size_t n) {
+    if (n) {
+	memcpy(dst, src, s);
+
+	for (--n,n *= s; n >= s; n -= s,s <<= 1)
+	    memcpy(dst + s, dst, s);
+
+	if (n) memcpy(dst + s, dst, n);
+    }
+}
+
 #undef BLOCK_ALLOC
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS

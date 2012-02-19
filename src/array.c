@@ -114,12 +114,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
   
-  {
-    struct svalue *item = ITEM(v);
-    struct svalue *item_end = item + v->size;
-    while (item < item_end)
-      *item++ = svalue_int_zero;
-  }
+  cmemset((char*)ITEM(v), (char*)&svalue_int_zero,
+	  sizeof(struct svalue), (size_t)v->size);
 
   return v;
 }

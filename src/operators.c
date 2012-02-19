@@ -3640,8 +3640,7 @@ PMOD_EXPORT void o_multiply(void)
 				     sp[-2].u.string->size_shift);
 	pos=ret->str;
 	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
-	for(e=0;e<sp[-1].u.integer;e++,pos+=len)
-	  MEMCPY(pos,sp[-2].u.string->str,len);
+	cmemset(pos, sp[-2].u.string->str, len, sp[-1].u.integer);
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
 	return;

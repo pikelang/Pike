@@ -5,5 +5,6 @@
 
 #define EXPORT PMOD_EXPORT
 #define ctz ctz32
+#define BA_CMEMSET cmemset
 
 #include "GJAlloc/block_allocator.c"
