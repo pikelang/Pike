@@ -404,7 +404,7 @@ test_codec(ISO_8859-7:1987,iso-ir-126,ISO_8859-7,ISO-8859-7,ELOT_928,dnl
 ECMA-118,greek,greek8,csISOLatinGreek)
 test_codec(T.101-G2,iso-ir-128,csISO128T101G2)
 test_codec(ISO_8859-8:1988,iso-ir-138,ISO_8859-8,ISO-8859-8,hebrew,dnl
-csISOLatinHebrew)
+csISOLatinHebrew,visual)
 dnl test_codec(ISO_8859-8-E,csISO88598E,ISO-8859-8-E)
 dnl test_codec(ISO_8859-8-I,csISO88598I,ISO-8859-8-I)
 test_codec(CSN_369103,iso-ir-139,csISO139CSN369103)
@@ -537,7 +537,7 @@ dnl test_codec(UTF-32BE)
 dnl test_codec(UTF-32LE)
 dnl test_codec(BOCU-1,csBOCU-1)
 dnl test_codec(UNICODE-1-1-UTF-7,csUnicode11UTF7)
-test_codec(UTF-8)
+test_codec(UTF-8,unicode-1-1-utf-8)
 test_codec(UTF-EBCDIC)
 test_codec(ISO-8859-13)
 test_codec(ISO-8859-14,iso-ir-199,ISO_8859-14:1998,ISO_8859-14,latin8,dnl
