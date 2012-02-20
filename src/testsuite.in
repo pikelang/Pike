@@ -5501,6 +5501,8 @@ test_any_equal([[
 	   (m[X(0.5)] = 1, sizeof (m))});
 ]], [[({4, 4, 5})]])
 
+test_do(add_constant("cnt");)
+
 test_eq([[sizeof(mtest_m2)]],sizeof(mtest_i2))
 test_any([[int e;multiset q=(<>),p=(<>); for(e=0;e<1000;e++) { p[reverse(e)]=1; q+=(<reverse(e)>); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
 
