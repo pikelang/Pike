@@ -2374,7 +2374,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
 	    /* Low surrogate */
 	    c &= 0x3ff;
-	    c |= ((out_str[--j] & 0x3ff)<<10) | 0x10000;
+	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
 	  }
 	}
 	out_str[j++] = c;
