@@ -2059,11 +2059,21 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
+ *! @param s
+ *!   String of UTF-8 encoded data to decode.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept and decode the extension used by @[string_to_utf8()].
+ *!     @value 2
+ *!       Accept and decode UTF-8 encoded UTF-16 (ie accept and
+ *!       decode valid surrogates).
+ *!   @endint
+ *!
  *! @note
  *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
- *!
- *!   Accepts and decodes the extension used by @[string_to_utf8()] if
- *!   @[extended] is @expr{1@}.
  *!
  *! @note
  *!   In conformance with RFC 3629 and Unicode 3.1 and later,
@@ -2113,13 +2123,16 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 		       c, i);
       }
 
-#define GET_CONT_CHAR(in, i, c) do {					\
+#define GET_CHAR(in, i, c) do {						\
 	i++;								\
 	if (i >= in->len)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
 			 "Truncated UTF-8 sequence at end of string.\n"); \
 	c = STR0 (in)[i];						\
+      } while(0)
+#define GET_CONT_CHAR(in, i, c) do {					\
+	GET_CHAR(in, i, c);						\
 	if ((c & 0xc0) != 0x80)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
@@ -2156,11 +2169,32 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	    UTF8_SEQ_ERROR ("0xe0 ", c, i - 1, "is a non-shortest form");
 	  cont = 1;
 	}
-	else if (!extended && c == 0xed) {
+	else if (!(extended & 1) && c == 0xed) {
 	  GET_CONT_CHAR (in, i, c);
-	  if (c > 0x9f)
-	    UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
-			    "an invalid surrogate character");
+	  if (c & 0x20) {
+	    /* Surrogate. */
+	    if (!(extended & 2)) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
+			      "a UTF-16 surrogate character");
+	    }
+	    if (c & 0x10) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
+			      "a UTF-16 low surrogate character");
+	    }
+	    GET_CONT_CHAR(in, i, c);
+
+	    GET_CHAR (in, i, c);
+	    if (c != 0xed) {
+	      UTF8_SEQ_ERROR ("", c, i-1, "UTF-16 low surrogate "
+			      "character required");
+	    }
+	    GET_CONT_CHAR (in, i, c);
+	    if ((c & 0xf0) != 0xb0) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i-1, "UTF-16 low surrogate "
+			      "character required");
+	    }
+	    shift = 2;
+	  }
 	  cont = 1;
 	}
 	else
@@ -2179,7 +2213,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	      UTF8_SEQ_ERROR ("0xf0 ", c, i - 1, "is a non-shortest form");
 	    cont = 2;
 	  }
-	  else if (!extended) {
+	  else if (!(extended & 1)) {
 	    if (c > 0xf4)
 	      UTF8_SEQ_ERROR ("", c, i, "would decode to "
 			      "a character outside the valid UTF-8 range");
@@ -2203,7 +2237,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
 			 i);
 
-	else if (!extended)
+	else if (!(extended & 1))
 	  UTF8_SEQ_ERROR ("", c, i, "would decode to "
 			  "a character outside the valid UTF-8 range");
 
@@ -2247,6 +2281,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       while(cont--)
 	GET_CONT_CHAR (in, i, c);
 
+#undef GET_CHAR
 #undef GET_CONT_CHAR
 #undef UTF8_SEQ_ERROR
     }
@@ -2335,6 +2370,11 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	  while(cont--) {
 	    unsigned int c2 = STR0(in)[i++] & 0x3f;
 	    c = (c << 6) | c2;
+	  }
+	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
+	    /* Low surrogate */
+	    c &= 0x3ff;
+	    c |= ((out_str[--j] & 0x3ff)<<10) | 0x10000;
 	  }
 	}
 	out_str[j++] = c;
