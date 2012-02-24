@@ -680,24 +680,6 @@ class AsyncClient
   //! @note
   //!   Some important headers are set to:
   //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and 
-  //!   @expr{"Content-Transfer-Encoding: 8bit"@}.
-  //!   The @expr{"Date:"@} header is set to the current local time.
-  //!   The @expr{"Message-Id"@} header is set to a @[Standards.UUID]
-  //!   followed by the hostname as returned by @[gethostname()].
-  //!
-  //! @note
-  //!   If @[gethostname()] is not supported, it will be replaced
-  //!   with the string @expr{"localhost"@}.
-  //!
-  //! @throws
-  //!   If the mail server returns any other return code than
-  //!   200-399 an exception will be thrown.
-
-  //! Sends an e-mail. Wrapper function that uses @[send_message].
-  //!
-  //! @note
-  //!   Some important headers are set to:
-  //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and 
   //!   @expr{"Content-Transfer-Encoding: 8bit"@}. @expr{"Date:"@}
   //!   header isn't used at all.
   //!
