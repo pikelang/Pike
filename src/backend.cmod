@@ -3676,7 +3676,7 @@ else
   }
 
 #ifdef BACKEND_USES_CFRUNLOOP
-/*! @decl int enble_core_foundation(int(0..1) enable)
+/*! @decl int enable_core_foundation(int(0..1) enable)
  *!   On systems with CoreFoundation (OSX, iOS, etc), use CoreFoundation
  *!   to poll for events. This enables system level technologies that rely
  *!   on CoreFoundation Runloops to function properly.
@@ -3705,6 +3705,23 @@ PIKEFUN int enable_core_foundation(int enable)
   pop_stack();
 
   push_int(x);
+}
+
+/*! @decl int query_core_foundation_enabled()
+ *!
+ *! On systems with CoreFoundation (OSX, iOS, etc), indicate whether
+ *! CoreFoundation is being used by this backend to poll for events.
+ *!
+ *! @returns
+ *! the current state of CoreFoundation polling: 1=enabled, 0=disabled
+ *!
+ */
+PIKEFUN int query_core_foundation_enabled()
+{
+  int x = THIS->go_cf;
+
+  push_int(x);
+  return;
 }
 #endif /* BACKEND_USES_CFRUNLOOP */
 
