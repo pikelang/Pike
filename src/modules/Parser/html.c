@@ -61,10 +61,10 @@ extern struct program *parser_html_program;
 
 /*! @class HTML
  *! This is a simple parser for SGML structured markups. It's not
- *! really HTML, but it's useful for that *! purpose.
+ *! really HTML, but it's useful for that purpose.
  *!
  *! The simple way to use it is to give it some information about
- *! available tags and containers, and what callbacks those is to
+ *! available tags and containers, and what callbacks those are to
  *! call.
  *!
  *! The object is easily reused, by calling the @[clone()] function.
