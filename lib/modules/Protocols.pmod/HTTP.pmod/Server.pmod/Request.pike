@@ -383,7 +383,7 @@ protected void parse_post()
   if ( request_headers["content-type"] && 
        has_prefix(request_headers["content-type"], "multipart/form-data") )
   {
-    MIME.Message messg = MIME.Message(body_raw, request_headers);
+    MIME.Message messg = MIME.Message(body_raw, request_headers, 0, 1);
     if(!messg->body_parts) return;
 
     foreach(messg->body_parts, object part) {
