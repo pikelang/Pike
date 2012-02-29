@@ -1619,8 +1619,15 @@ class async_client
 	       }, callback, @args);
   }
 
+  //! Close the client.
+  //!
+  //! @note
+  //!   All active requests are aborted.
   void close()
   {
+    foreach(requests; ; Request r) {
+      remove(r);
+    }
     udp::close();
     udp::set_read_callback(0);
   }
