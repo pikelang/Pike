@@ -1427,6 +1427,7 @@ class client
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
 // FIXME: Randomized source port!
+//! Asynchronous DNS client.
 class async_client
 {
   inherit client;
@@ -1560,6 +1561,7 @@ class async_client
     }
   }
 
+  //!
   void host_to_ip(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1572,6 +1574,7 @@ class async_client
     }
   }
 
+  //!
   void ip_to_host(string ip, function callback, mixed ... args)
   {
     do_query(arpa_from_ip(ip), C_IN, T_PTR,
@@ -1580,6 +1583,7 @@ class async_client
 	     @args);
   }
 
+  //!
   void get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1591,6 +1595,7 @@ class async_client
     }
   }
 
+  //!
   void get_mx(string host, function callback, mixed ... args)
   {
     get_mx_all(host,
