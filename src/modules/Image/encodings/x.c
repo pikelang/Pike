@@ -587,7 +587,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b = (translate[*(s++)]<<(32-vbpp)) && 0xffffffff;
+	    b = (translate[*(s++)]<<(32-vbpp)) & 0xffffffff;
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
