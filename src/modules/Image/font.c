@@ -576,7 +576,7 @@ void font_write(INT32 args)
 	 to_write2 = STR2(sp[j-args].u.string);
 	 for (i = 0; i < to_write_len; i++)
 	 {
-	   if (to_write2[i] < (unsigned INT32)this->chars)
+	   if ((unsigned INT32)to_write2[i] < this->chars)
 	   {
 	     if (xsize+char_width(this,to_write2[i]) > max)
 	       max=xsize+char_width(this,to_write2[i]);
