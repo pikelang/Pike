@@ -431,7 +431,8 @@ static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   while( nbytes )
   {
     char *pp = buffer;
-    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
+    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
+		   &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
     {
@@ -449,7 +450,8 @@ static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   while( nbytes )
   {
     char *pp = buffer;
-    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
+    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
+		   &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
       *(data++) = *(pp++);
