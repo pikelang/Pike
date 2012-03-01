@@ -3415,7 +3415,7 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
   }
 
   if (!size)
-    return allocate_multiset (0, indval && MULTISET_INDVAL, cmp_less);
+    return allocate_multiset (0, indval & MULTISET_INDVAL, cmp_less);
 
   for (idx = 0;; idx++) {
     l = vect[idx].u.multiset;
@@ -3427,11 +3427,11 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
        is_identical (cmp_less, &l->msd->cmp_less) :
        l->msd->cmp_less.type == T_INT)) {
     res = copy_multiset (l);
-    multiset_set_flags (res, indval && MULTISET_INDVAL);
+    multiset_set_flags (res, indval & MULTISET_INDVAL);
     idx++;
   }
   else
-    res = allocate_multiset (size, indval && MULTISET_INDVAL, cmp_less);
+    res = allocate_multiset (size, indval & MULTISET_INDVAL, cmp_less);
   SET_ONERROR (uwp, do_free_multiset, res);
 
   for (; idx < count; idx++)
