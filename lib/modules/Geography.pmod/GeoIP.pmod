@@ -2,8 +2,8 @@ void sanitize(array(string) f) {
     for (int i = 0; i < sizeof(f); i++) {
         if (f[i][0] == '"' && f[i][-1] == '"') {
             f[i] = f[i][1..sizeof(f[i])-2];
-        }   
-    }   
+	}
+    }
 }
 
 //! Parsing function for geoip databases in the format used my
@@ -44,7 +44,7 @@ class IP {
     //! functions the locations are instances of
     //! @[Geography.Countries.Country].
     mixed from_ip(string ip) {
-	return tree[ip] || tree[tree->previous(ip)]; 
+	return tree[ip] || tree[tree->previous(ip)];
     }
 }
 
@@ -56,13 +56,13 @@ class IPv4 {
 
     //! @decl void create(string file_name, function(string,ADT.CritBit.IPv4Tree:void) fun)
     //! @decl void create(ADT.CritBit.IPv4Tree tree)
-    //! 
+    //!
     //! Objects of this class can either be created from a file
-    //! @expr{file_name@} with an optional parsing function @expr{fun@}. 
+    //! @expr{file_name@} with an optional parsing function @expr{fun@}.
     //! When @expr{fun@} is omitted, it defaults to
     //! @[Geography.GeoIP.parse_maxmind]. @expr{fun@} will be called for each line in
     //! @expr{file_name@} and the critbit tree to add the entry to.
-    //! 
+    //!
     //! Alternatively, an instance of @[ADT.CritBit.IPv4Tree] can be passed.
     //! @expr{tree@} is expected to map the first address of each range to
     //! its geographical location.
