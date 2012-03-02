@@ -1449,7 +1449,12 @@ int low_main(string title, string input_file, string|void output_file,
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE) {
     werror("Layouting...\n");
   }
-  manual_title = m->title || (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
+  if (flags & Tools.AutoDoc.NO_DYNAMIC) {
+    manual_title = m->title || "Pike Reference Manual";
+  } else {
+    manual_title = m->title ||
+      (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
+  }
   layout_toploop(n, exporter);
 
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE) {
