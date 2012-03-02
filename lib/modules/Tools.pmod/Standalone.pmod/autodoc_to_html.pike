@@ -1449,7 +1449,7 @@ int low_main(string title, string input_file, string|void output_file,
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE) {
     werror("Layouting...\n");
   }
-  if (flags & Tools.AutoDoc.NO_DYNAMIC) {
+  if (flags & Tools.AutoDoc.FLAG_NO_DYNAMIC) {
     manual_title = m->title || "Pike Reference Manual";
   } else {
     manual_title = m->title ||
