@@ -1008,7 +1008,11 @@ int main(int argc, array(string) argv)
 	git("remote", "add", "-f", "--tags", "origin", src_git);
       }
     }
-    git("fetch", "--force", "--tags", "--update-head-ok", "origin");
+    git("fetch", "--force", "--prune", "--tags", "--update-head-ok", "origin");
+    // Due to bugs in --prune in some versions of git (eg 1.7.7),
+    // we may have lost the remote heads above, so we refetch them.
+    git("fetch", "--force", "--tags", "--update-head-ok", "origin",
+	"+refs/heads/*:refs/remotes/origin/*");
 
     // Clean the work dir.
     if (!has_prefix(git("stash"), "No local changes ")) {
