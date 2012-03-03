@@ -94,7 +94,7 @@ array(int) getversion()
   return ({ maj, min, build });
 }
 
-int low_bump_version(int|void is_release)
+int low_bump_version()
 {
   string s = Stdio.read_file(pike_base_name+"/src/version.h");
   sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
@@ -110,7 +110,7 @@ void cvs_bump_version(int|void is_release)
   Process.create_process( ({ "cvs", "update", "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
-  int rel = low_bump_version(is_release);
+  int rel = low_bump_version();
 
   Process.create_process( ({ "cvs", "commit", "-m",
 			     "release number bumped to "+rel+" by export.pike",
@@ -166,7 +166,7 @@ int svn_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
 
-  int rel = low_bump_version(is_release);
+  int rel = low_bump_version();
 
   string s = svn_cmd("commit", "-m",
 		     "release number bumped to "+rel+" by export.pike",
@@ -204,7 +204,7 @@ void git_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
 
-  int rel = low_bump_version(is_release);
+  int rel = low_bump_version();
 
   string attrs = Stdio.read_file(pike_base_name+"/.gitattributes");
 
