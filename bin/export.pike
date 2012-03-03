@@ -213,7 +213,25 @@ void git_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
 
-  string rel = low_bump_version();
+  int bump_minor = 0;
+
+  string branch =
+    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD")->stdout);
+
+  if (has_prefix(branch, "refs/heads/")) {
+    branch = branch[sizeof("refs/heads/")..];
+    string upstream_branch =
+      String.trim_all_whites(git_cmd("config", "--get",
+				     "branch."+branch+".merge")->stdout);
+    if (has_prefix(upstream_branch, "refs/heads/")) {
+      upstream_branch = upstream_branch[sizeof("refs/heads/")..];
+
+      // Bump the minor if the upstream branch is a single number.
+      bump_minor = (sizeof(upstream_branch/".") < 2) && (int)upstream_branch;
+    }
+  }
+
+  string rel = low_bump_version(bump_minor);
 
   string attrs = Stdio.read_file(pike_base_name+"/.gitattributes");
 
