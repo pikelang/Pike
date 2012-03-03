@@ -1486,7 +1486,7 @@ class NScopeStack
       foreach(sort(indices(failures)), string ref) {
 	mapping(string:int) where = failures[ref];
 	f->write("  %O: %{%O:%d, %}\n",
-	       ref, (array)where);
+		 ref, sort((array)where));
 	foreach(indices(where), string source)
 	  if(rev[source])
 	    rev[source] += ({ ref });
@@ -1496,7 +1496,7 @@ class NScopeStack
       f->write("\n\nReference source: Reference targets.\n\n");
       foreach(sort(indices(rev)), string source) {
 	array(string) targets = rev[source];
-	f->write("%O:%{ %O%}\n", source, targets);
+	f->write("%O:%{ %O%}\n", source, sort(targets));
       }
       f->close();
     }
