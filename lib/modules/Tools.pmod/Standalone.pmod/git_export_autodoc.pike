@@ -665,8 +665,6 @@ void export_autodoc_for_ref(string ref)
     string prev_refdoc_sha1 = "";
     if (src_commit->parent) {
       doc_parents = Array.uniq(map(src_commit->parent, src_to_doc));
-      prev_autodoc_sha1 = get_autodoc_hash(doc_parents[0]);
-
       prev_refdoc_sha1 = get_refdoc_sha1(src_commit->parent[0]);
     }
 
@@ -694,6 +692,10 @@ void export_autodoc_for_ref(string ref)
 	}
 	if (++loop_count >= 1000) break;
       }
+    }
+
+    if (sizeof(doc_parents)) {
+      prev_autodoc_sha1 = get_autodoc_hash(doc_parents[0]);
     }
 
     string doc_mark;
