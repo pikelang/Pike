@@ -1485,8 +1485,9 @@ class NScopeStack
       mapping(string:array(string)) rev = ([]);
       foreach(sort(indices(failures)), string ref) {
 	mapping(string:int) where = failures[ref];
-	f->write("  %O: %{%O:%d, %}\n",
-		 ref, sort((array)where));
+	array(array(string|int)) srcs = (array)where;
+	sort(map(srcs, predef::`[], 0), srcs);
+	f->write("  %O: %{%O:%d, %}\n", ref, srcs);
 	foreach(indices(where), string source)
 	  if(rev[source])
 	    rev[source] += ({ ref });
