@@ -493,7 +493,18 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
       string parent_name;
-      mapping e = jobs[ name ];
+      mapping e;
+      if (name) {
+	name = replace(name, "-", ".");
+	e = jobs[ name ];
+      } else if (type == "docgroup") {
+	// Check if any of the symbols in the group is relevant.
+	foreach(c->get_elements("method"), Node m) {
+	  mapping attrs = m->get_attributes();
+	  name = attrs->name && replace(attrs->name, "-", ".");
+	  if (e = jobs[name]) break;
+	}
+      }
       if (!e /*&& (flags & Tools.AutoDoc.FLAG_COMPAT)*/) {
 	array(string) path;
 	if (path = ([
