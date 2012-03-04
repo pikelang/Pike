@@ -477,8 +477,11 @@ Node wrap(Node n, Node wrapper) {
   return wrapper;
 }
 
-protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
+protected void move_items_low(Node parent, Node n, mapping jobs,
+			      void|Node wrapper) {
   if(jobs[0]) {
+    // Detach the node from its original parent.
+    parent->remove_child(n);
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
     else
@@ -562,7 +565,7 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
       if(wrapper)
 	wr = wrap( wr, wrapper->clone() );
 
-      move_items_low(c, e, wr);
+      move_items_low(n, c, e, wr);
 
       if ((parent != jobs) && !sizeof(e)) {
 	m_delete(parent, name);
@@ -599,7 +602,7 @@ void move_items(Node n, mapping jobs)
     Node wr = Node(XML_ELEMENT, "autodoc",
 		   n->get_attributes()+(["hidden":"1"]), 0);
 
-    move_items_low(c, e, wr);
+    move_items_low(n, c, e, wr);
 
     if(!sizeof(e))
       m_delete(jobs, name);
