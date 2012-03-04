@@ -673,7 +673,7 @@ void make_toc() {
 
 void report_failed_entries(mapping scope, string path) {
   if(scope[0]) {
-    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
+    if (verbose >= Tools.AutoDoc.FLAG_NORMAL) {
       werror("Failed to move %s\n", path[1..]);
     }
     scope[0](CommentNode(sprintf("<insert-move entity=\"%s\" />", path[1..])));
