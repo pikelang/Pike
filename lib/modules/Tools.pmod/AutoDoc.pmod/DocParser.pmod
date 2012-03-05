@@ -37,7 +37,7 @@ enum DocTokenType {
   BRACEKEYWORD = 2,	//! eg @expr{@@i{@@}@}
   DELIMITERKEYWORD = 3,	//! eg @expr{@@param@}
   CONTAINERKEYWORD = 4,	//! eg @expr{@@mapping@}
-  SINGLEKEYWORD = 5,	//! eg @expr{@@deprecated@}
+  SINGLEKEYWORD = 5,	//! None existant.
   ENDKEYWORD = 6,	//! eg @expr{@@endmapping@}
   ERRORKEYWORD = 7,	//! eg @expr{@@invalid@}
 
@@ -79,8 +79,8 @@ mapping(string : DocTokenType) keywordtype =
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
 
-  "deprecated" : SINGLEKEYWORD,
-  "obsolete" : SINGLEKEYWORD,
+  "deprecated" : DELIMITERKEYWORD,
+  "obsolete" : DELIMITERKEYWORD,
 
   "bugs" : DELIMITERKEYWORD,
   "copyright" : DELIMITERKEYWORD,
