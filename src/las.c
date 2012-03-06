@@ -1168,14 +1168,15 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 
     copy_pike_type(res->type, id->type);
 
-    /* FIXME */
+    /* FIXME: The IDENTIFIER_IS_ALIAS case isn't handled! */
     if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
     {
       if (!(PTR_FROM_INT(parent_prog, i)->id_flags & ID_LOCAL)) {
 	/* It's possible to overload the identifier. */
 	res->node_info = OPT_EXTERNAL_DEPEND;
       } else if (id->func.const_info.offset != -1) {
-	struct svalue *s = &parent_prog->constants[id->func.const_info.offset].sval;
+	struct program *p = PROG_FROM_INT(parent_prog, i);
+	struct svalue *s = &p->constants[id->func.const_info.offset].sval;
 	if ((TYPEOF(*s) == T_PROGRAM) &&
 	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
 	  /* The constant program refers to its parent, so we need as well. */
