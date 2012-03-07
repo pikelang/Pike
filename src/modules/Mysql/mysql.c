@@ -466,6 +466,9 @@ static void pike_mysql_reconnect (int reconnect)
   {
     /* Disable the automatic reconnect. */
     my_bool reconnectp = 0;
+    if (PIKE_MYSQL->options &&
+      (val = simple_mapping_string_lookup(PIKE_MYSQL->options, "reconnect")))
+      if (!SAFE_IS_ZERO(val)) reconnectp = 1;
     mysql_options(mysql, MYSQL_OPT_RECONNECT, &reconnectp);
   }
 #endif
