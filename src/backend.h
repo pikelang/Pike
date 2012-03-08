@@ -78,6 +78,8 @@ PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
 
+void count_memory_in_call_out_ss(size_t *num, size_t *size);
+void count_memory_in_compat_cb_boxs(size_t *num, size_t *size);
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1

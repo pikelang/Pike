@@ -291,6 +291,9 @@ extern size_t gc_ext_weak_refs;
 typedef void gc_cycle_check_cb (void *data, int weak);
 
 struct gc_frame;
+void count_memory_in_ba_mixed_frames(size_t *num, size_t *size);
+void count_memory_in_gc_rec_frames(size_t *num, size_t *size);
+void count_memory_in_mc_markers(size_t *num, size_t *size);
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);

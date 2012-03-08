@@ -7175,14 +7175,27 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   } while(0)
 
   COUNT(array);
+  COUNT(ba_mixed_frame);
+  COUNT(call_out_s);
   COUNT(callable);
   COUNT(callback);
+  COUNT(catch_context);
+  COUNT(compat_cb_box);
+  COUNT(destroy_called_mark);
+  COUNT(gc_rec_frame);
   COUNT(mapping);
+  COUNT(marker);
+  COUNT(mc_marker);
   COUNT(multiset);
+  COUNT(node_s);
   COUNT(object);
   COUNT(pike_frame);
+  COUNT(pike_list_node);
+  COUNT(pike_type);
   COUNT(program);
+  COUNT(short_pike_string);
   COUNT(string);
+  COUNT(supporter_marker);
 
 #ifdef DEBUG_MALLOC
   {

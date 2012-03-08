@@ -948,6 +948,7 @@ void yytype_error(const char *msg, struct pike_type *expected_t,
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
+void count_memory_in_supporter_markers(size_t *num, size_t *size);
 void verify_supporters(void);
 void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
