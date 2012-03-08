@@ -7112,8 +7112,13 @@ struct callback *add_memory_usage_callback(callback_func call,
  *!   with information about how many arrays/mappings/strings etc. there
  *!   are currently allocated and how much memory they use.
  *!
+ *!   The entries in the mapping are typically paired, with one
+ *!   named @expr{"num_" + SYMBOL + "s"@} containing a count,
+ *!   and the other named @expr{SYMBOL + "_bytes"@} containing
+ *!   a best effort approximation of the size in bytes.
+ *!
  *! @note
- *!   Exactly what this function returns is version dependant.
+ *!   Exactly what fields this function returns is version dependant.
  *!
  *! @seealso
  *!   @[_verify_internals()]
@@ -7125,59 +7130,24 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   pop_n_elems(args);
   ss=Pike_sp;
 
-  count_memory_in_mappings(&num, &size);
-  push_text("num_mappings");
-  push_ulongest(num);
-  push_text("mapping_bytes");
-  push_ulongest(size);
 
-  count_memory_in_strings(&num, &size);
-  push_text("num_strings");
-  push_ulongest(num);
-  push_text("string_bytes");
-  push_ulongest(size);
+#define COUNT(TYPE) do {					\
+    PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
+    push_text("num_" #TYPE "s");				\
+    push_ulongest(num);						\
+    push_text(#TYPE "_bytes");					\
+    push_ulongest(size);					\
+  } while(0)
 
-  count_memory_in_arrays(&num, &size);
-  push_text("num_arrays");
-  push_ulongest(num);
-  push_text("array_bytes");
-  push_ulongest(size);
-
-  count_memory_in_programs(&num,&size);
-  push_text("num_programs");
-  push_ulongest(num);
-  push_text("program_bytes");
-  push_ulongest(size);
-
-  count_memory_in_multisets(&num, &size);
-  push_text("num_multisets");
-  push_ulongest(num);
-  push_text("multiset_bytes");
-  push_ulongest(size);
-
-  count_memory_in_objects(&num, &size);
-  push_text("num_objects");
-  push_ulongest(num);
-  push_text("object_bytes");
-  push_ulongest(size);
-
-  count_memory_in_callbacks(&num, &size);
-  push_text("num_callbacks");
-  push_ulongest(num);
-  push_text("callback_bytes");
-  push_ulongest(size);
-
-  count_memory_in_callables(&num, &size);
-  push_text("num_callables");
-  push_ulongest(num);
-  push_text("callable_bytes");
-  push_ulongest(size);
-
-  count_memory_in_pike_frames(&num, &size);
-  push_text("num_frames");
-  push_ulongest(num);
-  push_text("frame_bytes");
-  push_ulongest(size);
+  COUNT(array);
+  COUNT(callable);
+  COUNT(callback);
+  COUNT(mapping);
+  COUNT(multiset);
+  COUNT(object);
+  COUNT(pike_frame);
+  COUNT(program);
+  COUNT(string);
 
 #ifdef DEBUG_MALLOC
   {
@@ -7186,29 +7156,10 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
     extern void count_memory_in_memlocs(size_t*, size_t*);
     extern void count_memory_in_memhdrs(size_t*, size_t*);
 
-    count_memory_in_memory_maps(&num, &size);
-    push_text("num_memory_maps");
-    push_ulongest(num);
-    push_text("memory_map_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memory_map_entrys(&num, &size);
-    push_text("num_memory_map_entries");
-    push_ulongest(num);
-    push_text("memory_map_entrie_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memlocs(&num, &size);
-    push_text("num_memlocs");
-    push_ulongest(num);
-    push_text("memloc_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memhdrs(&num, &size);
-    push_text("num_memhdrs");
-    push_ulongest(num);
-    push_text("memhdr_bytes");
-    push_ulongest(size);
+    COUNT(memory_map);
+    COUNT(memory_map_entry);
+    COUNT(memloc);
+    COUNT(memhdr);
   }
 #endif
 
