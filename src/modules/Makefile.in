@@ -21,6 +21,13 @@ force:
 $(MODULES) no : Makefile force
 	@test $@ = "no" || \
 	( echo "#### Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
+	  if [ -d $@ ]; then \
+	    rm $@.fail 2>/dev/null; \
+	  else \
+	    echo "#### You need to rerun configure to get $@." >$@.fail; \
+	    echo; echo; cat $@.fail >&2; echo; echo; \
+	    exit 0; \
+	  fi; \
 	  cd $@ && \
 	  { test -f build_type || \
 	    { rm remake >/dev/null 2>&1 || :; \
