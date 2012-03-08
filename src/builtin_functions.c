@@ -7127,9 +7127,44 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   size_t num,size;
   struct svalue *ss;
+#ifdef HAVE_MALLINFO
+  struct mallinfo mi = mallinfo();
+#endif
   pop_n_elems(args);
   ss=Pike_sp;
 
+#ifdef HAVE_MALLINFO
+
+  push_text("num_malloc_blocks");
+  push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
+  push_text("malloc_bytes");
+  /* NB: Kludge for glibc: hblkhd is intended for malloc overhead
+   *     according to the Solaris manpages, but glibc keeps the
+   *     amount of mmapped memory there, and uses the arena only
+   *     for the amount from sbrk.
+   *
+   *     The hblkhd value on proper implementations should be
+   *     small enough not to affect the total much, so no need
+   *     for a special case.
+   */
+  push_ulongest(mi.arena + mi.hblkhd);
+
+  push_text("num_malloc");
+  push_ulongest(mi.ordblks + mi.smblks);
+  push_text("malloc_bytes");
+  if (!mi.smblks) {
+    /* NB: Kludge for dlmalloc: usmblks contains the max uordblks value. */
+    push_ulongest(mi.uordblks);
+  } else {
+    push_ulongest(mi.usmblks + mi.uordblks);
+  }
+
+  push_text("num_free_blocks");
+  push_int(1);
+  push_text("free_block_bytes");
+  push_ulongest(mi.fsmblks + mi.fordblks);
+
+#endif
 
 #define COUNT(TYPE) do {					\
     PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
