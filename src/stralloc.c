@@ -2146,6 +2146,18 @@ static INLINE size_t memory_in_string (struct pike_string *s)
     return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
 }
 
+void count_memory_in_short_pike_strings(size_t *num, size_t *size)
+{
+  size_t num_=0, size_=0;
+  count_memory_in_short_pike_string0s(num, size);
+  count_memory_in_short_pike_string1s(&num_, &size_);
+  *num += num_;
+  *size += size_;
+  count_memory_in_short_pike_string2s(&num_, &size_);
+  *num += num_;
+  *size += size_;
+}
+
 void count_memory_in_strings(size_t *num, size_t *size)
 {
   unsigned INT32 e;
