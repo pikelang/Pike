@@ -636,4 +636,9 @@
  */
 #define PIKE_OOB_WORKS -1
 
+/* dlmalloc has mallinfo. */
+#if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
+#define HAVE_MALLINFO
+#endif
+
 #endif /* MACHINE_H */
