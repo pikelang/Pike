@@ -525,19 +525,16 @@ string http_encode(string in)
   return replace(in, [array(string)]url_from, [array(string)]url_to);
 }
 
-//! Return the query part, coded according to RFC 1738.
+//! Return the query part, coded according to RFC 1738, or zero.
 string get_http_query() {
-  mapping(string:string) out = ([]);
-  foreach(get_query_variables(); string name; string value)
-    out[http_encode(name)] = http_encode(value);
-  return ((array)out)[*]*"="*"&";
+  return query;
 }
 
 //! Return the path and query part of the URI, coded according to RFC
 //! 1738.
 string get_http_path_query() {
-  return http_encode(((path||"")/"/")[*])*"/" +
-    (query?"?"+get_http_query():"");
+  string q = get_http_query();
+  return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
 }
 
 
