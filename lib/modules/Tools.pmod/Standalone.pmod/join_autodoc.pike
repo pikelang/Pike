@@ -44,11 +44,14 @@ int main(int n, array(string) args)
   if(has_value(args, "--help") || sizeof(args)<3) {
     write("pike -x join_autodoc <destination.xml> <builddir>\n");
     write("pike -x join_autodoc [--post-process] [-q|--quiet] [-v|--verbose]\n"
-	  "      <dest.xml> files_to_join.xml [...]\n");
+	  "     <dest.xml> files_to_join.xml [...]\n");
     return 1;
   }
 
   recurse( args[2..], args[1], post_process, flags );
+  foreach(values(sub_cache), Node n) {
+    n->zap_tree();
+  }
 }
 
 void recurse(array(string) sources, string save_to,
@@ -128,7 +131,7 @@ int(0..1) join_files(array(string) files, string save_to,
   if (post_process) {
     post_process_log = combine_path(save_to, "../resolution.log");
   }
-  string data = low_join_files(files, post_process_log, flags);
+  string data = low_join_files(files, save_to, post_process_log, flags);
 
   if (!data) return 1;
 
@@ -146,8 +149,8 @@ int(0..1) join_files(array(string) files, string save_to,
   return 0;
 }
 
-string low_join_files(array(string) files, string post_process_log,
-		      Tools.AutoDoc.Flags flags)
+string low_join_files(array(string) files, string save_to,
+		      string post_process_log, Tools.AutoDoc.Flags flags)
 {
   if(!sizeof(files)) {
     if (verbosity > 1)
@@ -159,6 +162,8 @@ string low_join_files(array(string) files, string post_process_log,
   if(sizeof(files)==1) {
     if (verbosity > 1)
       werror("Only one content file present. Copy instead of merge.\n");
+    Node n = m_delete(sub_cache, files[0]);
+    if (n) sub_cache[save_to] = n;
     return Stdio.read_bytes(files[0]);
   }
 
@@ -233,8 +238,7 @@ string low_join_files(array(string) files, string post_process_log,
 			      SimpleTextNode("\n"),
 			   }));
     string res = root->html_of_node();
-    dest->zap_tree();
-    root->zap_tree();
+    sub_cache[save_to] = dest;
     return res;
   }
   dest->zap_tree();
