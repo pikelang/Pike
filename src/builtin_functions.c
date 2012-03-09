@@ -7543,7 +7543,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(program);
   COUNT(short_pike_string);
   COUNT(string);
-  COUNT(supporter_marker);
+  /*  COUNT(supporter_marker); */
 
 #ifdef DEBUG_MALLOC
   {
