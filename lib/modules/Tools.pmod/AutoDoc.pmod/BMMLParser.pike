@@ -535,7 +535,18 @@ string convert_page(string path, string fname,
 	case "SEE ALSO":
 	  rest=replace(rest,({"\n"," ","\t"}),({"","",""}));
 	  a=rest/",";
-	  b = map(a, lambda(string tmp) { return "<ref>" + tmp + "</ref>"; });
+	  b = map(a, lambda(string tmp) {
+		       string to = tmp;
+		       foreach(({ "builtin/", "efun/", "files/", "math/",
+				  "modules/math/", "modules/math", }),
+			       string prefix) {
+			 if (has_prefix(to, prefix)) {
+			   to = "predef::" + to[sizeof(prefix)..];
+			   break;
+			 }
+		       }
+		       return "<ref to='" + to + "'>" + tmp + "</ref>";
+		     });
 	  rest = magic(implode_nicely(b), 0);
 	  break;
 

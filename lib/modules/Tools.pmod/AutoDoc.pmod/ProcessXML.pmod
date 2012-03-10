@@ -1007,7 +1007,7 @@ protected class ScopeStack {
 	     "idents:%O\n"
 	     "stack:%O\n",
 	     ref, idents,
-	     scopeArr);
+	     namespaceStack);
     }
 #endif /* 0 */
 
@@ -1034,7 +1034,7 @@ protected class ScopeStack {
       string firstIdent = idents[0];
       for(int i = sizeof(scopes[namespace]); i--;) {
 	Scope s = scopes[namespace][i];
-	if (s->idents[firstIdent])
+	if (s->idents[firstIdent] || s->idents["/precompiled/" + firstIdent])
 	  if (s->type == "params" && !not_param) {
 	    return ([ "param" : ref ]);
 	  }
@@ -1048,6 +1048,7 @@ protected class ScopeStack {
 		res += name + ".";
 	      //werror("[[[[ name == %O\n", name);
 	    }
+	    if (!s->idents[firstIdent]) res += "/precompiled/";
 	    matches += ({ res + ref });
 	  }
       }
@@ -1419,7 +1420,8 @@ class NScope
   }
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
-    int(1..1)|NScope scope = symbols[path[0]];
+    int(1..1)|NScope scope =
+      symbols[path[0]] || symbols["/precompiled/"+path[0]];
     if (!scope) {
       // Not immediately available in this scope.
       if (inherits) {
@@ -1520,7 +1522,9 @@ class NScopeStack
   {
     int(1..1)|NScope scope = top->symbols[symbol];
     if (!scope) {
-      error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      if (!(scope = top->symbols["/precompiled/" + symbol])) {
+	error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      }
     }
     if (!objectp(scope)) {
       error("Symbol %s is not a scope.\n"
@@ -1547,7 +1551,7 @@ class NScopeStack
     int(1..1)|NScope val = scopes;
     foreach(path, string sym) {
       if (objectp(val)) {
-	val = val->symbols[sym];
+	val = val->symbols[sym] || val->symbols["/precompiled/" + sym];
       } else {
 	return 0;
       }
