@@ -540,12 +540,7 @@ class Node
 
   array(Node) find_siblings()
   {
-    return
-      parent->class_children+
-      parent->module_children+
-      parent->enum_children+
-      parent->directive_children+
-      parent->method_children;
+    return parent->find_children();
   }
 
   array(Node) find_children()
