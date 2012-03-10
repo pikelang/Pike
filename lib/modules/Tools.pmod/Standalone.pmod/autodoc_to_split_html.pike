@@ -322,7 +322,7 @@ class Node
 
   string make_filename()
   {
-    return make_filename_low()[5..]+".html";
+    return make_filename_low()+".html";
   }
 
   string make_link(Node to)
@@ -723,7 +723,7 @@ class TopNode {
     return parser;
   }
 
-  string make_filename_low() { return "__index"; }
+  string make_filename_low() { return "ex"; }
   string make_filename() { return "index.html"; }
   array(Node) get_ancestors() { return ({ }); }
   int(0..0) find_prev_node() { return 0; }
