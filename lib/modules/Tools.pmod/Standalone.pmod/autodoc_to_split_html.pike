@@ -19,6 +19,93 @@ mapping profiling = ([]);
 #define PROFILE int profilet=gethrtime
 #define ENDPROFILE(X) profiling[(X)] += gethrtime()-profilet;
 
+constant navigation_js = #"
+/* Functions for rendering the navigation. */
+
+/* The variables
+ *   module_children, class_children, enum_children, directive_children,
+ *   method_children, namespace_children, appendix_children
+ *   and siblings are assumed to have been set to arrays of nodes.
+ *
+ * The variable current is assumed to have been set to the node
+ * representing the current document.
+ */
+
+function escapehtml(/* string */text)
+{
+  text = text.split('&').join('&amp;');
+  text = text.split('<').join('&lt;');
+  return text.split('>').join('&gt;');
+}
+
+function basedir(/* string */path)
+{
+  var i = path.lastIndexOf('/');
+  if (i < 1) return '';
+  return path.substring(0, i);
+}
+
+function has_prefix(/* string */prefix, /* string */other)
+{
+  return other.substring(0, prefix.length) == prefix;
+}
+
+function adjust_link(/* string */link)
+{
+  var reldir = basedir(current.link);
+  var dots = '';
+  while (reldir != '' && !has_prefix(link, reldir + '/')) {
+    dots += '../';
+    reldir = basedir(reldir);
+  }
+  return dots + link.substring(reldir.length);
+}
+
+function low_navbar(/* Document */document, /* string */heading,
+                    /* array(node) */nodes, /* string */suffix)
+{
+  if (!nodes || !nodes.length) return;
+
+  document.write('<br /><b>' + escapehtml(heading) + '</b>\\n');
+
+  document.write('<div style=\"margin-left:0.5em;\">\\n');
+  var i;
+  for (i=0; i < nodes.length; i++) {
+    var n = nodes[i];
+    var name = '<b>' + escapehtml(n.name + suffix) + '</b>';
+    if (n.link == current.link) {
+      document.write(name);
+    } else {
+      document.write('<a href=\"' + adjust_link(n.link) + '\">');
+      document.write(name);
+      document.write('</a>');
+    }
+    document.write('<br />\\n');
+  }
+  document.write('</div>\\n');
+}
+
+/* Render the left navigation bar. */
+function navbar(/* string */document)
+{
+  document.write('<div class=\"sidebar\">\\n');
+  low_navbar(document, 'Modules', module_children, '');
+  low_navbar(document, 'Classes', class_children, '');
+  low_navbar(document, 'Enums', enum_children, '');
+  low_navbar(document, 'Directives', directive_children, '');
+  low_navbar(document, 'Methods', method_children, '()');
+  low_navbar(document, 'Namespaces', namespace_children, '::');
+  low_navbar(document, 'Appendices', appendix_children, '');
+  document.write('</div>\\n');
+}
+";
+
+string encode_json(mixed val)
+{
+  return Standards.JSON.encode(val,
+    Standards.JSON.HUMAN_READABLE|Standards.JSON.PIKE_CANONICAL);
+}
+
 string cquote(string n)
 {
   string ret="";
@@ -325,11 +412,31 @@ class Node
     return make_filename_low()+".html";
   }
 
-  string make_link(Node to)
+  string make_index_filename()
+  {
+    if((type == "method") || (type == "directive")) {
+      return parent->make_index_filename();
+    }
+    // NB: We need the full path for the benefit of the exporter.
+    return make_filename_low() + "/index";
+  }
+
+  string make_parent_index_filename()
+  {
+    if (parent) return parent->make_index_filename();
+    return make_index_filename();
+  }
+
+  string low_make_link(string to)
   {
     // FIXME: Optimize the length of relative links
     int num_segments = sizeof(make_filename()/"/") - 1;
-    return ("../"*num_segments)+to->make_filename();
+    return ("../"*num_segments)+to;
+  }
+
+  string make_link(Node to)
+  {
+    return low_make_link(to->make_filename());
   }
 
   array(Node) get_ancestors()
@@ -450,38 +557,6 @@ class Node
     return _raw_class_path;
   }
 
-  string make_navbar_really_low(array(Node) children, string what)
-  {
-    if(!sizeof(children)) return "";
-
-    String.Buffer res = String.Buffer(3000);
-    res->add("<br /><b>", what, "</b>\n"
-	     "<div style='margin-left:0.5em;'>\n");
-
-    foreach(children, Node node)
-    {
-      string my_name = Parser.encode_html_entities(node->name);
-      if(node->type=="method") {
-	my_name+="()";
-	if (node == this_object()) {
-	  my_name="<b>"+my_name+"</b>";
-	}
-      } else if (node->type == "namespace") {
-	my_name="<b>"+my_name+"::</b>";
-      }
-      else 
-	my_name="<b>"+my_name+"</b>";
-
-      res->add("<tr><td nowrap='nowrap'>&nbsp;");
-      if(node==this_object())
-	res->add( my_name, "<br />\n" );
-      else
-	res->add( "<a href='", make_link(node), "'>", my_name, "</a><br />\n" );
-    }
-    res->add("</div>\n");
-    return (string)res;
-  }
-
   string make_hier_list(Node node)
   {
     string res="";
@@ -512,22 +587,13 @@ class Node
 
     res += make_hier_list(root);
 
-    res+="<div class='sidebar'>";
-
-    res += make_navbar_really_low(root->module_children, "Modules");
-
-    res += make_navbar_really_low(root->class_children, "Classes");
-
-    if(root->is_TopNode) {
-      res += make_navbar_really_low(root->namespace_children, "Namespaces");
-      res += make_navbar_really_low(root->appendix_children, "Appendices");
-    } else {
-      res += make_navbar_really_low(root->enum_children, "Enums");
-      res += make_navbar_really_low(root->directive_children, "Directives");
-      res += make_navbar_really_low(root->method_children, "Methods");
-    }
-
-    return res+"</div>";
+    return res +
+      "<script language='javascript'>navbar(document)</script>\n"
+      "<noscript>\n"
+      "<div class='sidebar'>\n"
+      "<a href='index.html'><b>Symbol index</b></a><br />\n"
+      "</div>\n"
+      "</noscript>\n";
   }
 
   string make_navbar()
@@ -536,6 +602,41 @@ class Node
       return make_navbar_low(parent);
     else
       return make_navbar_low(this_object());
+  }
+
+  string low_make_index_js(string name, array(Node) nodes)
+  {
+    array(mapping(string:string)) a =
+      map(nodes, lambda(Node n) {
+		   return ([ "name":n->name,
+			     "link":n->make_filename() ]);
+		 });
+    sort(a->name, a);
+    return sprintf("var %s = %s;\n", name, encode_json(a));
+  }
+
+  string make_index_js()
+  {
+    string res = "var siblings = children;\n";
+
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {				\
+      res += low_make_index_js(#CHILDREN, CHILDREN);			\
+    } while (0)
+
+    LOW_MAKE_INDEX_JS(module_children);
+    LOW_MAKE_INDEX_JS(class_children);
+    LOW_MAKE_INDEX_JS(enum_children);
+    LOW_MAKE_INDEX_JS(directive_children);
+    LOW_MAKE_INDEX_JS(method_children);
+
+    res += sprintf("var namespace_children = %s;\n", encode_json(({})));
+    res += sprintf("var appendix_children = %s;\n", encode_json(({})));
+
+    return res +
+      "var children = module_children.concat(class_children,\n"
+      "                                      enum_children,\n"
+      "                                      directive_children,\n"
+      "                                      method_children);\n";
   }
 
   array(Node) find_siblings()
@@ -617,6 +718,19 @@ class Node
 
   void make_html(string template, string path, Git.Export|void exporter)
   {
+    if ((type != "method") && (type != "directive")) {
+      string index_js = make_index_js();
+
+      string index = make_index_filename() + ".js";
+      if (exporter) {
+        exporter->filemodify(Git.MODE_FILE, path + "/" + index);
+        exporter->data(index_js);
+      } else {
+        Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
+        Stdio.write_file(path + "/" + index, index_js);
+      }
+    }
+
     class_children->make_html(template, path, exporter);
     module_children->make_html(template, path, exporter);
     enum_children->make_html(template, path, exporter);
@@ -639,7 +753,23 @@ class Node
       prev_url   = make_link(prev);
     }
 
-    string extra_headers = "";
+    string extra_headers =
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_parent_index_filename() + ".js")) +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_index_filename() + ".js")) +
+      sprintf("<script language='javascript'>\n"
+	      "var current = %s;\n"
+	      "</script>\n",
+	      replace(encode_json(([ "name":name,
+				     "link":make_filename()
+				  ])),
+                      ({ "&", "<", ">" }), ({ "&amp;", "&lt;", "&gt;" }))) +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link("navigation.js"));
 
     string res = replace(template,
       (["$navbar$": make_navbar(),
@@ -676,6 +806,20 @@ class TopNode {
 
   string pike_version = version();
   string timestamp;
+
+  string make_index_js()
+  {
+    string res = ::make_index_js();
+
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {				\
+      res += low_make_index_js(#CHILDREN, CHILDREN);			\
+    } while (0)
+
+    LOW_MAKE_INDEX_JS(namespace_children);
+    LOW_MAKE_INDEX_JS(appendix_children);
+
+    return res;
+  }
 
   void create(string _data) {
     PROFILE();
@@ -795,6 +939,13 @@ class TopNode {
 
   void make_html(string template, string path, Git.Export|void exporter) {
     PROFILE();
+    if (exporter) {
+      exporter->filemodify(Git.MODE_FILE, path + "/navigation.js");
+      exporter->data(navigation_js);
+    } else {
+      Stdio.mkdirhier(path);
+      Stdio.write_file(path + "/navigation.js", navigation_js);
+    }
     appendix_children->make_html(template, path, exporter);
     namespace_children->make_html(template, path, exporter);
     ::make_html(template, path, exporter);
