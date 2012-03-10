@@ -639,6 +639,8 @@ class Node
       prev_url   = make_link(prev);
     }
 
+    string extra_headers = "";
+
     string res = replace(template,
       (["$navbar$": make_navbar(),
 	"$contents$": make_content(),
@@ -652,6 +654,7 @@ class Node
 	"$dotdot$": extra_prefix,
 	"$imagedir$":image_prefix(),
 	"$filename$": _Roxen.html_encode_string(make_filename()),
+	"$extra_headers$": extra_headers,
       ]));
 
     if (exporter) {
@@ -865,6 +868,13 @@ int low_main(string doc_file, string template_file, string outdir,
     template = replace(template,
 		       ({ "$dotdot$/images/" }),
 		       ({ "$imagedir$" }));
+
+    if (!has_value(template, "$extra_headers$")) {
+      template = replace(template,
+			 ({ "<head>" }),
+			 ({ "<head>\n"
+			    "$extra_headers$" }));
+    }
   }
 
   top->make_html(template, outdir, exporter);
