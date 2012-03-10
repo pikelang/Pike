@@ -379,7 +379,8 @@ class Node
   string make_faked_wrapper(string s)
   {
     if (type=="appendix")
-      return "<appendix name='"+name+"'>"+s+"</appendix>";
+      return "<appendix name='" + Parser.encode_html_entities(name) + "'>" +
+	s + "</appendix>";
 
     if((type == "method") || (type == "directive"))
       s = sprintf("<docgroup homogen-type='%s' homogen-name='%s'>\n"
