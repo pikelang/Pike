@@ -187,6 +187,9 @@ static void gz_deflate_create(INT32 args)
       }
       if (GET_TYPE(STRING, "dictionary"))
       {
+	if (tmp->u.string->size_shift)
+	  Pike_error("dictionary cannot be a wide string in "
+		     "gz_deflate->create().\n");
 	THIS->dict = tmp->u.string;
 	add_ref(THIS->dict);
       }
@@ -208,7 +211,8 @@ LVL_CHECK:
       if(THIS->level < Z_NO_COMPRESSION ||
 	 THIS->level > Z_BEST_COMPRESSION)
       {
-	Pike_error("Compression level out of range for gz_deflate->create()\n");
+	Pike_error("Compression level out of range for "
+		   "gz_deflate->create()\n");
       }
     }
   }
@@ -684,6 +688,9 @@ static void gz_inflate_create(INT32 args)
     struct svalue *tmp;
 
     if (GET_TYPE(STRING, "dictionary")) {
+      if (tmp->u.string->size_shift)
+	Pike_error("dictionary cannot be a wide string in "
+		   "gz_inflate->create().\n");
       THIS->dict = tmp->u.string;
       add_ref(THIS->dict);
     }
