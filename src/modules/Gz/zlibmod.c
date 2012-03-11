@@ -710,7 +710,7 @@ static void gz_inflate_create(INT32 args)
   switch(tmp)
   {
   case Z_OK:
-#if 0 // this apparently works with newer zlibs only.
+#if 0 /* this apparently works with newer zlibs only. */
     if (THIS->dict) {
       int err;
 
