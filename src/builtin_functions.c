@@ -7137,7 +7137,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
   push_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
-  push_text("malloc_bytes");
+  push_text("malloc_block_bytes");
   /* NB: Kludge for glibc: hblkhd is intended for malloc overhead
    *     according to the Solaris manpages, but glibc keeps the
    *     amount of mmapped memory there, and uses the arena only
