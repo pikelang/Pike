@@ -648,6 +648,11 @@
 #define MALLINFO_FIELD_TYPE size_t
 #endif  /* MALLINFO_FIELD_TYPE */
 
+#ifdef HAVE_STDDEF_H
+/* Needed for size_t. */
+#include <stddef.h>
+#endif
+
 /* dlmalloc definition of struct mallinfo. */
 struct mallinfo {
   MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
