@@ -7127,13 +7127,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   size_t num,size;
   struct svalue *ss;
-#ifdef HAVE_MALLINFO
+#ifdef USE_DL_MALLOC
+  struct mallinfo mi = dlmallinfo();
+#elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
 #endif
   pop_n_elems(args);
   ss=Pike_sp;
 
-#ifdef HAVE_MALLINFO
+#if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
   push_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
