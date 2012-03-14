@@ -625,30 +625,13 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 
 /* #define HAVE_USR_INCLUDE_MALLOC_H */
 
-#ifdef HAVE_USR_INCLUDE_MALLOC_H
-#include "/usr/include/malloc.h"
-
 /* PIKE change start */
-#elif defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
-#include <malloc.h>
+
+/* This is handled by global.h (aka acconfig.h) included
+ * at the top of the file.
+ */
+
 /* PIKE change end */
-
-#else /* HAVE_USR_INCLUDE_MALLOC_H */
-
-struct mallinfo {
-  MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
-  MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
-  MALLINFO_FIELD_TYPE smblks;   /* always 0 */
-  MALLINFO_FIELD_TYPE hblks;    /* always 0 */
-  MALLINFO_FIELD_TYPE hblkhd;   /* space in mmapped regions */
-  MALLINFO_FIELD_TYPE usmblks;  /* maximum total allocated space */
-  MALLINFO_FIELD_TYPE fsmblks;  /* always 0 */
-  MALLINFO_FIELD_TYPE uordblks; /* total allocated space */
-  MALLINFO_FIELD_TYPE fordblks; /* total free space */
-  MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
-};
-
-#endif /* HAVE_USR_INCLUDE_MALLOC_H */
 #endif /* NO_MALLINFO */
 
 #ifdef __cplusplus
