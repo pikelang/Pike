@@ -667,6 +667,8 @@ struct mallinfo {
   MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
 };
 
+struct mallinfo dlmallinfo(void);
+
 #endif /* HAVE_USR_INCLUDE_MALLOC_H */
 
 #endif
