@@ -922,9 +922,11 @@ void f_rm(INT32 args)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
     {
-      i=rmdir(str->str) != -1;
+      while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
+	;
     }else{
-      i=unlink(str->str) != -1;
+      while (!(i = unlink(str->str) != -1) && (errno == EINTR))
+	;
     }
 #ifdef __NT__
     /* NT looks at the permissions on the file itself and refuses to
@@ -936,9 +938,11 @@ void f_rm(INT32 args)
       else {
 	if(S_IFDIR == (S_IFMT & st.st_mode))
 	{
-	  i=rmdir(str->str) != -1;
+	  while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
+	    ;
 	}else{
-	  i=unlink(str->str) != -1;
+	  while (!(i = unlink(str->str) != -1) && (errno == EINTR))
+	    ;
 	}
 	if (!i) {		/* Failed anyway; try to restore the old mode. */
 	  int olderrno = errno;
@@ -1835,10 +1839,13 @@ void f_mv(INT32 args)
 	  if (!(st.st_mode & _S_IWRITE))
 	    if (chmod (s, st.st_mode | _S_IWRITE))
 	      goto nt_rename_kludge_fail;
-	  if ((st.st_mode & S_IFMT) == S_IFDIR)
-	    err = rmdir (s);
-	  else
-	    err = unlink (s);
+	  if ((st.st_mode & S_IFMT) == S_IFDIR) {
+	    while ((err = rmdir (s)) && (errno == EINTR))
+	      ;
+	  } else {
+	    while ((err = unlink (s)) && (errno == EINTR))
+	      ;
+	  }
 	  if (!err) {		/* Success. */
 	    i = 0;
 	    goto nt_rename_kludge_end;
