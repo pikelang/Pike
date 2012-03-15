@@ -328,8 +328,18 @@ class _Tar
   protected void extract_bits (string dest, Record r, int which_bits)
   {
 #if constant (utime)
-    if (!(which_bits & EXTRACT_SKIP_MTIME))
-      utime (dest, r->mtime, r->mtime, 1);
+    if (!(which_bits & EXTRACT_SKIP_MTIME)) {
+      mixed err = catch {
+	  utime (dest, r->mtime, r->mtime, 1);
+	};
+      if (err) {
+#ifdef __NT__
+	// utime() is currently not supported for directories on WIN32.
+	if (!r->isdir())
+#endif
+	  werror("Tar: Failed to set modification time for %O.\n", dest);
+      }
+    }
 #endif
 
 #if constant (chmod)
