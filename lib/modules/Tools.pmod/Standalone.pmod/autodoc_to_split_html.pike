@@ -9,6 +9,10 @@ mapping (string:Node) refs   = ([ ]);
 string default_namespace;
 
 string extra_prefix = "";
+string low_image_prefix()
+{
+  return ::image_prefix();
+}
 string image_prefix()
 {
   return extra_prefix + ::image_prefix();
@@ -86,7 +90,7 @@ function low_navbar(/* Document */document, /* string */heading,
 }
 
 /* Render the left navigation bar. */
-function navbar(/* string */document)
+function navbar(/* Document */document)
 {
   document.write('<div class=\"sidebar\">\\n');
   low_navbar(document, 'Modules', module_children, '');
@@ -119,6 +123,8 @@ string cquote(string n)
     }
   }
   ret += n;
+  // Make sure "index.html" is free...
+  if (has_suffix(ret, "index")) ret = "_" + ret;
   return ret;
 }
 
@@ -428,16 +434,16 @@ class Node
     return make_index_filename();
   }
 
-  string low_make_link(string to)
+  string low_make_link(string to, int|void extra_levels)
   {
     // FIXME: Optimize the length of relative links
-    int num_segments = sizeof(make_filename()/"/") - 1;
+    int num_segments = sizeof(make_filename()/"/") + extra_levels - 1;
     return ("../"*num_segments)+to;
   }
 
-  string make_link(Node to)
+  string make_link(Node to, int|void extra_levels)
   {
-    return low_make_link(to->make_filename());
+    return low_make_link(to->make_filename(), extra_levels);
   }
 
   array(Node) get_ancestors()
@@ -558,7 +564,40 @@ class Node
     return _raw_class_path;
   }
 
-  string make_hier_list(Node node)
+  string low_make_classic_navbar(array(Node) children, string what,
+				 int|void extra_levels)
+  {
+    if(!sizeof(children)) return "";
+
+    String.Buffer res = String.Buffer(3000);
+    res->add("<br /><b>", what, "</b>\n"
+	     "<div style='margin-left:0.5em;'>\n");
+
+    foreach(children, Node node)
+    {
+      string my_name = Parser.encode_html_entities(node->name);
+      if(node->type=="method") {
+	my_name+="()";
+	if (node == this_object()) {
+	  my_name="<b>"+my_name+"</b>";
+	}
+      } else if (node->type == "namespace") {
+	my_name="<b>"+my_name+"::</b>";
+      }
+      else
+	my_name="<b>"+my_name+"</b>";
+
+      if(node==this_object())
+	res->add( my_name, "<br />\n" );
+      else
+	res->add( "<a href='", make_link(node, extra_levels), "'>",
+		  my_name, "</a><br />\n" );
+    }
+    res->add("</div>\n");
+    return (string)res;
+  }
+
+  string make_hier_list(Node node, int|void extra_levels)
   {
     string res="";
 
@@ -566,7 +605,7 @@ class Node
     {
       if(node->type=="namespace" && node->name==default_namespace)
 	node = node->parent;
-      res += make_hier_list(node->parent);
+      res += make_hier_list(node->parent, extra_levels);
 
       string my_class_path =
 	(node->is_TopNode)?"[Top]":node->make_class_path();
@@ -576,9 +615,21 @@ class Node
 		       Parser.encode_html_entities(my_class_path));
       else
 	res += sprintf("<a href='%s'><b>%s</b></a><br />\n",
-		       make_link(node),
+		       make_link(node, extra_levels),
 		       Parser.encode_html_entities(my_class_path));
     }
+    return res;
+  }
+
+  string make_classic_navbar(int|void extra_levels)
+  {
+    string res="";
+
+    res += make_hier_list(this_object(), extra_levels);
+
+    res += low_make_classic_navbar(module_children, "Modules", extra_levels);
+    res += low_make_classic_navbar(class_children, "Classes", extra_levels);
+
     return res;
   }
 
@@ -592,7 +643,8 @@ class Node
       "<script language='javascript'>navbar(document)</script>\n"
       "<noscript>\n"
       "<div class='sidebar'>\n"
-      "<a href='index.html'><b>Symbol index</b></a><br />\n"
+      "<a href='" + low_make_link(make_index_filename() + ".html") + "'>"
+      "<b>Symbol index</b></a><br />\n"
       "</div>\n"
       "</noscript>\n";
   }
@@ -717,6 +769,54 @@ class Node
     return (string)contents;
   }
 
+  string make_link_list(array(Node) children, int|void extra_levels)
+  {
+    String.Buffer res = String.Buffer(3500);
+    foreach(children, Node node)
+      res->add("&nbsp;<a href='", make_link(node, extra_levels), "'>",
+	       Parser.encode_html_entities(node->name),
+	       "()</a><br />\n");
+    return (string)res;
+  }
+
+  string low_make_index_page(int|void extra_levels)
+  {
+    resolve_reference = my_resolve_reference;
+
+    string contents = "";
+
+    foreach(({ enum_children, directive_children, method_children }),
+	    array(Node) children) {
+
+      if (children && sizeof(children)) {
+	if (sizeof(contents)) {
+	  contents += "<tr><td colspan='4'><hr /></td></tr>\n";
+	}
+
+	contents += "<tr>\n";
+	foreach(children/( sizeof(children)/4.0 ), array(Node) children) {
+	  contents += "<td nowrap='nowrap' valign='top'>" +
+	    make_link_list(children, extra_levels) + "</td>";
+	}
+	contents += "</tr>\n";
+      }
+    }
+
+    return contents;
+  }
+
+  string make_index_page(int|void extra_levels)
+  {
+    string contents = low_make_index_page(extra_levels);
+    if (sizeof(contents)) {
+      contents =
+	"<nav><table class='sidebar' style='width:100%;'>\n" +
+	contents +
+	"</table></nav>";
+    }
+    return contents;
+  }
+
   void make_html(string template, string path, Git.Export|void exporter)
   {
     if ((type != "method") && (type != "directive")) {
@@ -729,6 +829,38 @@ class Node
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
         Stdio.write_file(path + "/" + index, index_js);
+      }
+
+      string index_html = make_index_page(1);
+      index = make_index_filename() + ".html";
+
+      int num_segments = sizeof(index/"/")-1;
+      string extra_prefix = "../"*num_segments;
+      string style = low_make_link("style.css", 1);
+      string imagedir = low_make_link(low_image_prefix(), 1);
+
+      index_html =
+	replace(template,
+		(["$navbar$": make_classic_navbar(1),
+		  "$contents$": index_html,
+		  "$prev_url$": "",
+		  "$prev_title$": "",
+		  "$next_url$": "",
+		  "$next_title$": "",
+		  "$type$": String.capitalize("Index of " + type),
+		  "$title$": _Roxen.html_encode_string(make_class_path(1)),
+		  "$style$": style,
+		  "$dotdot$": extra_prefix,
+		  "$imagedir$":imagedir,
+		  "$filename$": _Roxen.html_encode_string(index),
+		  "$extra_headers$": "",
+		]));
+
+      if (exporter) {
+        exporter->filemodify(Git.MODE_FILE, path + "/" + index);
+        exporter->data(index_html);
+      } else {
+        Stdio.write_file(path + "/" + index, index_html);
       }
     }
 
@@ -884,58 +1016,42 @@ class TopNode {
     return "";
   }
 
-  string make_method_page(array(Node) children)
+  string make_classic_navbar(int|void extra_levels)
   {
-    String.Buffer res = String.Buffer(3500);
-    foreach(children, Node node)
-      res->add("&nbsp;<a href='", make_link(node), "'>",
-	       Parser.encode_html_entities(node->name),
-	       "()</a><br />\n");
-    return (string)res;
+    string res = ::make_classic_navbar(extra_levels);
+
+    res += low_make_classic_navbar(namespace_children, "Namespaces",
+				   extra_levels);
+    res += low_make_classic_navbar(appendix_children, "Appendices",
+				   extra_levels);
+
+    return res;
   }
 
-  string make_directive_page(array(Node) children)
+  string make_navbar()
   {
-    String.Buffer res = String.Buffer(3500);
-    foreach(children, Node node)
-      res->add("&nbsp;<a href='", make_link(node), "'>",
-	       Parser.encode_html_entities(node->name),
-	       "</a><br />\n");
-    return (string)res;
+    return make_classic_navbar();
+  }
+
+  string low_make_index_page(int|void extra_levels)
+  {
+    string contents = ::low_make_index_page(extra_levels);
+    string doc = parse_children(Parser.XML.Tree.parse_input(data),
+				"docgroup", parse_docgroup, 1);
+
+    if (sizeof(doc)) {
+      doc = "<tr><td colspan='4' nowrap='nowrap'>" + doc + "</td></tr>\n";
+      if (sizeof(contents)) {
+	contents += "<tr><td colspan='4'><hr /></td></tr>\n";
+      }
+    }
+    return contents + doc;
   }
 
   string make_content() {
     resolve_reference = my_resolve_reference;
-    if(!sizeof(method_children) && !sizeof(directive_children)) return "";
 
-    string contents = "<nav><table class='sidebar' style='width:100%;'>\n";
-    if (sizeof(directive_children)) {
-      contents += "<tr>\n";
-      foreach(directive_children/( sizeof(directive_children)/4.0 ),
-	      array(Node) children)
-	contents += "<td nowrap='nowrap' valign='top'>" +
-	  make_directive_page(children) + "</td>";
-      contents += "</tr>\n";
-      if (sizeof(method_children)) {
-	contents += "<tr><td colspan='4'><hr /></td></tr>\n";
-      }
-    }
-    if (sizeof(method_children)) {
-      contents += "<tr>\n";
-      foreach(method_children/( sizeof(method_children)/4.0 ),
-	      array(Node) children)
-	contents += "<td nowrap='nowrap' valign='top'>" +
-	  make_method_page(children) + "</td>";
-      contents += "</tr>\n";
-    }
-
-    contents += "<tr><td colspan='4' nowrap='nowrap'>" +
-      parse_children(Parser.XML.Tree.parse_input(data),
-		     "docgroup", parse_docgroup, 1) +
-      "</td></tr>\n"
-      "</table></nav>";
-
-    return contents;
+    return make_index_page();
   }
 
   void make_html(string template, string path, Git.Export|void exporter) {
