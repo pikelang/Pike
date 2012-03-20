@@ -4,6 +4,8 @@ Changes since Pike 7.8.352 (third 7.8 release):
 Extensions and New Functions
 ----------------------------
 
+o Added module ZXID
+
 o Added module Search.
 
   This module implements a free text search database. It needs some
@@ -49,6 +51,17 @@ o Protocols.HTTP
   Allow directly specifying the body of a POST request (needed for the Google
   Apps API).
 
+  A more complete list of response codes and descriptions is included and used.
+
+  Query includes proxy support for GET (http/https) and POST (https) in both 
+  sync and async mode.
+
+  Query exposes close() so you do not have to wait for garbage collection.
+
+  Server adds Basic Range support.
+
+o  Regexp.PCRE.replace() adds support for capture groups.
+
 o Updated timezone data to tzdata2010o.
 
 o String.normalize_space
@@ -81,12 +94,46 @@ o SSL
   Added support for AES to SSL3, and fixed bug that prevented some
   handshake failure alerts to be sent to the client.
 
-o SSL
-
   Implemented RFC 5746 "TLS Renegotiation Indication Extension".
+
+  Support parsing of Hello Extensions (RFC 5246 7.4.1.4).
 
 o ADT.Heap->values and ->num_values can now be overloaded.
 
+o Added support for binding a Protocols.DNS server to multiple port/interface 
+  combinations.
+
+o Support for asynchronous DNS query replies in Protocols.DNS.
+
+o Calendar
+ 
+    dwim_time() should know how to parse ISO 8601 timestamps.
+
+    Added Calendar.Greek. 
+
+o Process.spawn(), popen() and system() et al now use Process.Process.
+
+o Process.Process adds support for spawning processes via forkd.
+
+o Added functions to access the numerator and the denominator of a Gmp.mpq.
+
+o Added lower level functions Tools.X509.[dr]sa_sign_key(). This makes it 
+  easier to create hierarchial certificates. make_selfsigned_[dr]sa_certificate() 
+  now use the corresponding [dr]sa_sign_key().
+
+o Added SSL3.sslfile.{set,query}_callbacks() as per Stdio.File.
+
+o Added the !-modifier for sscanf().
+
+o Added Int.reflect().
+
+o Image.Dims adds support for Photoshop files.
+
+o Added Gmp.encode_json().
+
+o Added Thread.Queue.peek_array.
+
+o Add System.getloadavg() on platforms that support the getloadavg() call.
 
 Optimizations
 -------------
@@ -99,6 +146,8 @@ o Nettle.hash
   is 1 MB). This change improves ApacheBench numbers ~20% for a Roxen
   benchmark on a quad-core Core i5.
 
+o String.trim_all_whites is 10% faster and includes all Unicode.
+
 
 Deprecations
 ------------
@@ -106,6 +155,8 @@ Deprecations
 o The libpq based old Postgres driver is now deprecated. The new pgsql
   driver is faster, better tested, more stable, maintained, has more
   features, does not depend on external libraries and is less filling.
+  
+o Stdio.File: << is deprecated.
 
 
 Incompatible changes
@@ -125,6 +176,11 @@ o Signal handlers in GTK2 do no longer get their arguments in the
 
 Bug fixes
 ---------
+
+o Fixed backward compatibility for Calendar.iso_name() and 
+  Calendar.iso_short_name().
+
+o Fix evaluation order for Calendar.YMD.`+().
 
 o Fixed backtraces when Protocols.HTTP.Query objects where garbage
   collected. [bug 5730]
@@ -184,7 +240,39 @@ o Fixed several issues related to lables on the X and Y axises
 o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
   files with space in the name from being accessable.
 
+o Multiple multipart file submissions in Protocols.HTTP.Server will be 
+  preserved as suggested by HTML5.
+
+o Protocols.HTTP.Query fixes broken state when open_socket() has thrown 
+  an error.
+
+o Tools.Standalone.httpserver has fixed entity encoding. Makes files 
+  with spaces in them accessible.
+
+o Protocols.HTTP Sets the content-length header for zero-length data. 
+  Fixes [bug 5936].
+
+o Protocols.HTTP.Query uses content-length instead of content_length. 
+  The latter will be corrected in the encode method, but is problematic 
+  when that function is overridden.
+
+o Protocols.HTTP.Query filters weak SSL-ciphers rather than explicitly 
+  listing strong ones.
+
+o Protocols.HTTP includes some close, state reset and keep-alive handling 
+  fixes.
+
 o Fixed bug that prevented the literal zero from being considered a constant.
+
+o Added Autodoc support for new-style getter and setter syntax.
+
+o Fixed support for documenting arguments to implicit create().
+
+o Fixed bugs in handling of abrupt SSL3 remote close. sslfile now also triggers 
+  EPIPE errors if the user attempts to read or write to a connection that 
+  has been abruptly closed (to detect truncation attacks better).
+
+o Fixed issue where SSL3 async_client objects became garbage even after close().
 
 
 Building and installing
@@ -198,6 +286,40 @@ o Some potential fixes for --enable-pikelib mode on platforms had
 o Some issues with the support for building modules needing
   a C++ compiler have been fixed.
 
+o Made it possible to override $(OS) with an environment variable 
+  $PIKE_BUILD_OS.
+
+o Check for configure scripts built with pre-propagated_variables pike.
+
+o Added Nettle/config.guess that knows about MaxOS X and x86_64.
+
+o Fix broken detection of libjpeg lossless transformation support.
+
+o Installer will no longer dump sql driver files that depend on 
+  system libraries.
+
+o Fixed support for --without-threads.
+
+o Fix to make dump.pike dump itself just like any other module class.
+
+o Improved support for LIBPIKE.
+
+o Added PIKE_CORE define to detect when not compiling a module.
+
+o Improved support for autoconf 2.6x.
+
+o Ensure that --with-rtldebug enables assertions.
+
+o Now attempts to set up the PKG_CONFIG_PATH.
+
+o Tools.Testsuite: 
+  
+    Added some functions to make pretty logging in tests easier.
+
+    Tools.Standalone.test_pike passes the verbosity level in an environment 
+    variable TEST_VERBOSITY to subtests.
+
+    Tools.Testsuite accumulates multiple result reports.
 
 Changes since Pike 7.8.316 (second 7.8 release):
 ----------------------------------------------------------------------
