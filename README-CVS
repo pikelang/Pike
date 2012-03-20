@@ -1,23 +1,26 @@
 $Id$
 
 
-HOW TO BUILD PIKE FROM CVS
+HOW TO BUILD PIKE FROM SOURCE CONTROL
 
 If you like to live at the bleeding edge you can download Pike from
-CVS with all the latest additions from the developers.  There are two
+Git with all the latest additions from the developers.  There are two
 major branches in the archive, the latest stable branch and latest
 development branch.  Stable versions have an even minor version
 number, i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches
 have an odd minor version.
 
-Keep in mind that the CVS versions are under heavy development and
+Keep in mind that the Git versions are under heavy development and
 have not been tested nearly as well as the offcial releases.  You use
 the code AT YOUR OWN RISK.
 
+See also:
+
+  http://pike.ida.liu.se/development/git/
 
 DEPENDENCIES
 
-Building from CVS requires the same tools as building from a source
+Building from Git requires the same tools as building from a source
 distribution (gnu m4, bison and a C compiler, suggested also GNU make
 and libz), and then some.  In addition to thosee requirements, you
 need a working Pike, autoconf and gcc (to generate the dependency
@@ -28,24 +31,23 @@ Not all autoconf versions meet Pike's requirements.  Autoconf version
 are known to not work.
 
 
-CHECKING OUT PIKE FROM CVS
+CHECKING OUT PIKE FROM GIT
 
-1. Get a recent version of cvs.
+1. Get a recent version of git.
 
-2. Login to the CVS server:
+2. Clone the Pike repository:
 
-         cvs -d :pserver:anon@cvs.roxen.com:/cvs login
-
-   Just hit enter on the password prompt.
+         git clone git://pike-git.lysator.liu.se/pike.git
 
 3. Check out the source:
 
-         cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.8
+	 cd pike
+         git checkout -b 7.8 origin/7.8
 
    substitute 7.8 for whatever version you want to get.
 
 The top-level makefile (in this directory, not the src directory) has
-all the magic you need to build Pike directly from CVS.  Just type
+all the magic you need to build Pike directly from Git.  Just type
 'make'.  It is preferable to build from the toplevel since it avoids
 contaminating the source tree with object files and other generated
 files.
@@ -73,7 +75,7 @@ source              Prepare the source tree for compilation without
                     the need for a preexisting installed Pike.
 force_autoconfig    Force a build of the configure scripts.  This is
                     useful e.g. if a new module directory is added in
-                    the CVS.
+                    the Git repository.
 force_configure     Force configure to be run (recursively).
 reconfigure         Remove the cached results from previous configure
                     runs and rerun configure recursively. If you have
@@ -92,12 +94,12 @@ force_dump_modules  Force all Pike modules to be redumped, not just
                     those whose source files have changed.
 snapshot            Create a snapshot export tarball.
 export              Create a source dist and bump up the build number
-                    (if you have cvs write access).  Please do not
+                    (if you have git write access).  Please do not
                     check in the generated files.
 clean               Remove all the built binary files.
 cvsclean            Remove all files that are generated automatically,
                     i.e. bring the tree back to the state as if it
-                    was checked out from the CVS.
+                    was checked out from Git.
 
 
 CONFIGURE OPTIONS AND BUILD VARIABLES
@@ -118,7 +120,7 @@ CONFIGUREARGS setting isn't affected.
 The build targets also creates a script 'pike' in the bin subdirectory
 which runs the built Pike directly without installing it first.  If
 you want to use Pike this way (which is mainly useful if you update
-from CVS often), you should consider doing 'make dump_modules' to make
+from Git often), you should consider doing 'make dump_modules' to make
 it start faster.
 
 
@@ -197,7 +199,7 @@ Instructions if you want to do the build more manually:
    'make INSTALLARGS="--traditional" install' instead.
 
 After doing this, DO NOT commit the generated files.  They are placed
-in .cvsignore files so you shouldn't have to bother with them.
+in .gitignore files so you shouldn't have to bother with them.
 
 
 IF IT DOESN'T WORK
