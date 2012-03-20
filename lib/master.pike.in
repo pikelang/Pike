@@ -3608,7 +3608,7 @@ void _main(array(string) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright © 1994-2009 Linköping University\n"
+        exit(0, string_to_utf8(version() + " Copyright © 1994-2012 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
             "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));

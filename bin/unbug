@@ -3129,7 +3129,7 @@ int main(int argc, array(string) argv)
 {
   write(#"UNBUG $Id$
 Copyright 2001-2002, Roxen Internet Software AB.
-Copyright 2002-2008, Department of Computer and Information Science,
+Copyright 2002-2012, Department of Computer and Information Science,
                      Linköping University
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
