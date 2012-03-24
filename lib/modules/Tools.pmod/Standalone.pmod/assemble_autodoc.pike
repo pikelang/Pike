@@ -502,7 +502,8 @@ protected void move_items_low(Node parent, Node n, mapping jobs,
 	e = jobs[ name ];
       } else if (type == "docgroup") {
 	// Check if any of the symbols in the group is relevant.
-	foreach(c->get_elements("method"), Node m) {
+	foreach(c->get_elements("method")+c->get_elements("directive"),
+		Node m) {
 	  mapping attrs = m->get_attributes();
 	  name = attrs->name && replace(attrs->name, "-", ".");
 	  if (e = jobs[name]) break;
