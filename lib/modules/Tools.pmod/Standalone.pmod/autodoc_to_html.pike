@@ -1264,7 +1264,7 @@ string parse_not_doc(Node n) {
 
     case "directive":
       if(cppdir++) ret += "<br />\n";
-      ret += "<tt><font color='#006666'>" + c->get_attributes()->name +
+      ret += "<tt><font color='#006666'>" + quote(c->get_attributes()->name) +
 	"</font></tt>";
       break;
 
@@ -1301,7 +1301,8 @@ string parse_docgroup(Node n) {
 			     child->value_of_node();
 			 }));
 	foreach(names, string name)
-	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+	  ret += type +
+	    "<font size='+1'><b>" + quote(name) + "</b></font><br />\n";
       }
     }
     else
