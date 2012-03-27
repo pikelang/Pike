@@ -1,0 +1,316 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "interpret.h"
+#include "module_support.h"
+#include "builtin_functions.h"
+#include "gimod_config.h"
+
+DECLARATIONS
+
+#ifdef HAVE_GI
+
+#include <girepository.h>
+
+/*! @module GI
+ */
+
+static void throw_gerror(GError *error)
+{
+  Pike_error("%s\n", error->message);
+}
+
+static void push_gi_info(GIBaseInfo *info);
+
+/*! @class BaseInfo
+ */
+
+PIKECLASS BaseInfo
+{
+  CVAR GIBaseInfo *info;
+
+  INIT
+    {
+      THIS->info = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->info != NULL) {
+	g_base_info_unref(THIS->info);
+	THIS->info = NULL;
+      }
+    }
+
+  /*! @decl string get_name()
+   */
+  PIKEFUN string get_name()
+  {
+    pop_n_elems(args);
+    push_text(g_base_info_get_name(THIS->info));
+  }
+
+  /*! @decl string get_namespace()
+   */
+  PIKEFUN string get_namespace()
+  {
+    pop_n_elems(args);
+    push_text(g_base_info_get_namespace(THIS->info));
+  }
+
+  /*! @decl BaseInfo get_container()
+   */
+  PIKEFUN BaseInfo get_container()
+  {
+    GIBaseInfo *container = g_base_info_get_container(THIS->info);
+    pop_n_elems(args);
+    if (container)
+      push_gi_info(container);
+    else
+      push_int(0);
+  }
+
+  PIKEFUN string _sprintf (int flag, ...)
+    flags ID_STATIC;
+  {
+    pop_n_elems(args);
+
+    if (flag != 'O' || THIS->info == NULL)
+      push_int(0);
+    else {
+      push_constant_text("%O(%s)");
+      push_program(Pike_fp->current_program);
+      push_text(g_base_info_get_name(THIS->info));
+      f_sprintf(3);
+    }
+  }
+}
+
+/*! @class FunctionInfo
+ */
+
+PIKECLASS FunctionInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class CallbackInfo
+ */
+
+PIKECLASS CallbackInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class StructInfo
+ */
+
+PIKECLASS StructInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class EnumInfo
+ */
+
+PIKECLASS EnumInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class ObjectInfo
+ */
+
+PIKECLASS ObjectInfo
+{
+  INHERIT BaseInfo;
+
+  /*! @decl array(FunctionInfo) get_methods()
+   */
+  PIKEFUN array(FunctionInfo) get_methods()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_object_info_get_n_methods((GIObjectInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_object_info_get_method((GIObjectInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
+}
+
+/*! @class InterfaceInfo
+ */
+
+PIKECLASS InterfaceInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class ConstantInfo
+ */
+
+PIKECLASS ConstantInfo
+{
+  INHERIT BaseInfo;
+}
+
+/*! @class UnionInfo
+ */
+
+PIKECLASS UnionInfo
+{
+  INHERIT BaseInfo;
+}
+
+
+static void push_gi_info(GIBaseInfo *info)
+{
+  struct program *p;
+  if (info == NULL)
+    Pike_error("Missing info\n");
+  switch(g_base_info_get_type(info)) {
+  case GI_INFO_TYPE_FUNCTION:
+    p = FunctionInfo_program; break;
+  case GI_INFO_TYPE_CALLBACK:
+    p = CallbackInfo_program; break;
+  case GI_INFO_TYPE_STRUCT:
+    p = StructInfo_program; break;
+  case GI_INFO_TYPE_ENUM:
+  case GI_INFO_TYPE_FLAGS:
+    p = EnumInfo_program; break;
+  case GI_INFO_TYPE_OBJECT:
+    p = ObjectInfo_program; break;
+  case GI_INFO_TYPE_INTERFACE:
+    p = InterfaceInfo_program; break;
+  case GI_INFO_TYPE_CONSTANT:
+    p = ConstantInfo_program; break;
+  case GI_INFO_TYPE_UNION:
+    p = UnionInfo_program; break;
+  default:
+    Pike_error("No class for %d\n", g_base_info_get_type(info));
+  }
+  {
+    struct object *o = clone_object(p, 0);
+    struct BaseInfo_struct *that =
+      (struct BaseInfo_struct *)get_storage (o, BaseInfo_program);
+    that->info = g_base_info_ref(info);
+    push_object(o);
+  }
+}
+
+/*! @class Repository
+ */
+
+PIKECLASS Repository
+{
+  CVAR GIRepository *repository;
+
+  INIT
+    {
+      THIS->repository = NULL;
+    }
+
+  /*! @decl array(BaseInfo) get_infos(string namespace)
+   */
+  PIKEFUN array(BaseInfo) get_infos(string namespace)
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_irepository_get_n_infos(THIS->repository,
+				    (gchar *)STR0(namespace));
+    if (num < 0)
+      Pike_error("Namespace '%S' not loaded\n", namespace);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info = g_irepository_get_info(THIS->repository,
+				    (gchar *)STR0(namespace), i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
+  
+  /*! @decl void require(string namespace, string|void version, int(0..1)|void lazy)
+   */
+  PIKEFUN void require(string namespace, string|void version, int(0..1)|void lazy)
+  {
+    GError *error = NULL;
+    GTypelib *typelib;
+
+    typelib = g_irepository_require(THIS->repository,
+				    (gchar *)STR0(namespace),
+				    (version? (gchar *)STR0(version) : NULL),
+				    ((lazy != NULL && !UNSAFE_IS_ZERO(lazy))? 
+				     G_IREPOSITORY_LOAD_FLAG_LAZY : 0),
+				    &error);
+
+    if(error)
+      throw_gerror(error);
+
+    pop_n_elems(args);  /* Should be "RETURN;", but that is broken... */
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @decl Repository get_default_repository()
+ */
+
+PIKEFUN Repository get_default_repository()
+{
+  static struct object *default_repository = NULL;
+  if (default_repository == NULL) {
+    struct object *o = clone_object(Repository_program, 0);
+    struct Repository_struct *that =
+      (struct Repository_struct *)get_storage (o, Repository_program);
+    that->repository = g_irepository_get_default();
+    default_repository = o;
+  }
+  ref_push_object(default_repository);
+}
+
+/*! @endmodule
+ */
+
+#endif
+
+PIKE_MODULE_INIT
+{
+#ifdef HAVE_GI
+  g_type_init();
+  INIT
+#endif
+}
+
+PIKE_MODULE_EXIT
+{
+#ifdef HAVE_GI
+  EXIT
+#endif
+}

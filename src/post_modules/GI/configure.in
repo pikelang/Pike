@@ -1,0 +1,43 @@
+AC_INIT(gi.cmod)
+AC_CONFIG_HEADER(gimod_config.h)
+
+AC_ARG_WITH(gi,[  --with(out)-gi        Support GObject introspection via libgirepository (GI)],[],[with_gi=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(GI)
+
+AC_SUBST(GI_CFLAGS)
+AC_SUBST(GI_LIBS)
+
+if test x$with_gi = xyes ; then
+  PIKE_FEATURE_NODEP(GI)
+
+  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
+  if ${ac_tool_prefix}pkg-config gobject-introspection-1.0 2>/dev/null ; then
+    GI_CFLAGS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --cflags`"
+    GI_LIBS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --libs`"
+  else
+    AC_CHECK_LIB(girepository-1.0, g_irepository_get_default, [GI_LIBS=-lgirepository-1.0])
+  fi
+
+  OLDCPPFLAGS="$CPPFLAGS"
+  OLDLIBS="$LIBS"
+  CPPFLAGS="$GI_CFLAGS $CPPFLAGS"
+  LIBS="$GI_LIBS $LIBS"
+
+  AC_CHECK_HEADER(girepository.h, [gi_header_ok=yes])
+  AC_CHECK_FUNC(g_irepository_get_default, [gi_lib_ok=yes])
+
+  if test xyesyes = "x$gi_header_ok$gi_lib_ok" ; then
+    AC_DEFINE(HAVE_GI, 1, [Define if GI is available and to be built])
+    PIKE_FEATURE_OK(GI)
+  else
+    GI_CFLAGS=""
+    GI_LIBS=""
+    CPPFLAGS="$OLDCPPFLAGS"
+    LIBS="$OLDLIBS"
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
