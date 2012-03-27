@@ -1,0 +1,11 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=gi.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @GI_LIBS@
+MODULE_CFLAGS=@CFLAGS@ @GI_CFLAGS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+@dynamic_module_makefile@
+
+gi.o: $(SRCDIR)/gi.c
+
+@dependencies@
