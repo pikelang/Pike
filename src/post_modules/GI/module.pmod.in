@@ -1,0 +1,69 @@
+#pike __REAL_VERSION__
+
+inherit @module@ : GI;
+
+#if constant(@module@.Repository)
+
+class DynamicImporter {
+  static Repository repository = get_default_repository();
+
+  class IntrospectionModule {
+
+    static string namespace;
+
+    static void create(string namespace_, string|void version)
+    {
+      namespace = namespace_;
+      repository->require(namespace, version);
+    }
+
+    static string _sprintf(int mode)
+    {
+      return mode == 'O' && sprintf("%O.%s", DynamicImporter::this, namespace);
+    }
+
+    static mixed wrap(BaseInfo info)
+    {
+      /* FIXME */
+      return info;
+    }
+
+    static mixed `[](string name)
+    {
+      BaseInfo info = repository->find_by_name(namespace, name);
+      if (!info) return UNDEFINED;
+      return wrap(info);
+    }
+
+    static array(string) _indices()
+    {
+      return Array.uniq(repository->get_infos(namespace)->get_name());
+    }
+
+    static array(string) _values()
+    {
+      return rows(this, _indices());
+    }
+  };
+
+  static mapping(string:mixed) cache = ([]);
+
+  static mixed `[](string namespace)
+  {
+    if (cache[namespace])
+      return cache[namespace];
+    if (!repository->enumerate_versions(namespace))
+      return UNDEFINED;
+    IntrospectionModule m = IntrospectionModule(namespace);
+    if (m)
+      cache[namespace] = m;
+    return m;
+  }
+
+  static array(string) _indices() { return indices(cache); }
+  static array(string) _values() { return values(cache); }
+}
+
+DynamicImporter repository = DynamicImporter();
+
+#endif
