@@ -24,6 +24,11 @@ static void throw_gerror(GError *error)
   Pike_error("%s\n", error->message);
 }
 
+static void free_glist_full_free(void *p)
+{
+  g_list_free_full(p, free);
+}
+
 static void push_gi_info(GIBaseInfo *info);
 
 /*! @class BaseInfo
@@ -226,6 +231,54 @@ PIKECLASS Repository
     {
       THIS->repository = NULL;
     }
+
+  /*! @decl array(string) enumerate_versions(strig namespace)
+   */
+  PIKEFUN array(string) enumerate_versions(string namespace)
+  {
+    ONERROR onerror;
+    int count = 0;
+    GList *item, *versions =
+      g_irepository_enumerate_versions(THIS->repository,
+				       (gchar *)STR0(namespace));
+    if (versions == NULL) {
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+    SET_ONERROR(onerror, free_glist_full_free, versions);
+    pop_n_elems(args);
+    for (item = versions; item; item = item->next) {
+        char *version = item->data;
+	push_text(version);
+	f_utf8_to_string(1);
+	count++;
+    }
+    UNSET_ONERROR(onerror);
+    free_glist_full_free(versions);
+    f_aggregate(count);
+  }
+
+  /*! @decl BaseInfo find_by_name(string namespace, string name)
+   */
+  PIKEFUN BaseInfo find_by_name(string namespace, string name)
+  {
+    ONERROR onerror;
+    GIBaseInfo *info =
+      g_irepository_find_by_name(THIS->repository,
+				 (gchar *)STR0(namespace),
+				 (gchar *)STR0(name));
+    if (info) {
+      SET_ONERROR(onerror, g_base_info_unref, info);
+      pop_n_elems(args);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(info);
+    } else {
+      pop_n_elems(args);
+      push_int(0);
+    }
+  }
 
   /*! @decl array(BaseInfo) get_infos(string namespace)
    */
