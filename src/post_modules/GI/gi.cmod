@@ -18,6 +18,8 @@ DECLARATIONS
 
 #include <girepository.h>
 
+static GQuark object_quark;
+
 /*! @module GI
  */
 
@@ -48,6 +50,7 @@ PIKECLASS GObject
   EXIT
     {
       if (THIS->obj != NULL) {
+	g_object_set_qdata(THIS->obj, object_quark, NULL);
 	g_object_unref(THIS->obj);
 	THIS->obj = NULL;
       }
@@ -65,26 +68,32 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
     if (!arg->v_pointer) {
       push_int(0);
       break;
-    }
-    push_constant_text("GI.repository.");
-    push_text(g_base_info_get_namespace(info));
-    push_constant_text(".");
-    push_text(g_base_info_get_name(info));
-    f_add(4);
-    APPLY_MASTER ("resolv", 1);
-    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-      Pike_error("Failed to resolve GI object class.\n");
-    apply(Pike_sp[-1].u.object, "Instance", 0);
-    stack_pop_keep_top();
-    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-      Pike_error("Failed to instantiate GI object class.\n");
-    {
-      struct GObject_struct *that =
-	(struct GObject_struct *)get_storage (Pike_sp[-1].u.object,
-					      GObject_program);
-      if (that == NULL)
-	Pike_error("No storage for GObject!\n");
-      g_object_ref ((that->obj = arg->v_pointer));
+    } else {
+      struct object *obj = g_object_get_qdata(arg->v_pointer, object_quark);
+      if (obj == NULL) {
+	push_constant_text("GI.repository.");
+	push_text(g_base_info_get_namespace(info));
+	push_constant_text(".");
+	push_text(g_base_info_get_name(info));
+	f_add(4);
+	APPLY_MASTER ("resolv", 1);
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+	  Pike_error("Failed to resolve GI object class.\n");
+	apply(Pike_sp[-1].u.object, "Instance", 0);
+	stack_pop_keep_top();
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+	  Pike_error("Failed to instantiate GI object class.\n");
+	{
+	  struct GObject_struct *that =
+	    (struct GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
+						  GObject_program);
+	  if (that == NULL)
+	    Pike_error("No storage for GObject!\n");
+	  g_object_ref ((that->obj = arg->v_pointer));
+	  g_object_set_qdata(that->obj, object_quark, obj);
+	}
+      } else
+	ref_push_object(obj);
     }
     break;
 
@@ -559,6 +568,7 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_GI
   g_type_init();
+  object_quark = g_quark_from_static_string("PikeGI::object");
   INIT
 #endif
 }
