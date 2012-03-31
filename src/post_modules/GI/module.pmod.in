@@ -13,6 +13,12 @@ class DynamicImporter {
 
     class Function(static FunctionInfo info)
     {
+      class BoundFunction(static object obj)
+      {
+	static mixed `()(mixed ... args) { Function::`()(obj, @args); }
+	static string _sprintf(int mode) { return Function::_sprintf(mode); }
+      }
+
       static mixed `()(mixed ... args)
       {
 	return info->invoke(@args);
@@ -24,6 +30,51 @@ class DynamicImporter {
 				      IntrospectionModule::this,
 				      info->get_name());
       }
+    }
+
+    class Object
+    {
+      static ObjectInfo info;
+      static mapping(string:mixed) attrs = ([]);
+
+      class Instance {
+	inherit GObject;
+
+	static string _sprintf(int mode)
+	{
+	  return mode == 'O' && sprintf("%O()", Object::this);
+	}
+	
+	static mixed bind(mixed value)
+	{
+	  if (objectp(value) && object_program(value) == Function)
+	    return value->BoundFunction(this);
+	}
+
+	static array(string) _indices() { return Object::_indices(); }
+	static array(string) _values() { return Object::_values(); }
+	static mixed `[](string index) { return bind(Object::`[](index)); }
+	static mixed `->(string index) { return bind(Object::`->(index)); }
+      };
+
+      static string _sprintf(int mode)
+      {
+	return mode == 'O' && sprintf("%O.%s",
+				      IntrospectionModule::this,
+				      info->get_name());
+      }
+
+      static void create(ObjectInfo oi)
+      {
+	info = oi;
+	array(ObjectInfo) methods = info->get_methods();
+	attrs += mkmapping(methods->get_name(), map(methods, Function));
+      }
+
+      static array(string) _indices() { return indices(attrs); }
+      static array(string) _values() { return values(attrs); }
+      static mixed `[](string index) { return attrs[index]; }
+      static mixed `->(string index) { return attrs[index]; }
     }
 
     static void create(string namespace_, string|void version)
@@ -39,7 +90,9 @@ class DynamicImporter {
 
     static mixed wrap(BaseInfo info)
     {
-      if (object_program(info) == FunctionInfo)
+      if (object_program(info) == ObjectInfo)
+	return Object([object(ObjectInfo)]info);
+      else if (object_program(info) == FunctionInfo)
 	return Function([object(FunctionInfo)]info);
       /* FIXME */
       return info;

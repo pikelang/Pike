@@ -9,6 +9,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "operators.h"
 #include "gimod_config.h"
 
 DECLARATIONS
@@ -32,8 +33,65 @@ static void free_glist_full_free(void *p)
 
 static void push_gi_info(GIBaseInfo *info);
 
-/*! @class BaseInfo
+/*! @class GObject
  */
+
+PIKECLASS GObject
+{
+  CVAR GObject *obj;
+
+  INIT
+    {
+      THIS->obj = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->obj != NULL) {
+	g_object_unref(THIS->obj);
+	THIS->obj = NULL;
+      }
+    }
+}
+
+/*! @endclass
+ */
+
+static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
+{
+  switch(g_base_info_get_type(info)) {
+
+  case GI_INFO_TYPE_OBJECT:
+    if (!arg->v_pointer) {
+      push_int(0);
+      break;
+    }
+    push_constant_text("GI.repository.");
+    push_text(g_base_info_get_namespace(info));
+    push_constant_text(".");
+    push_text(g_base_info_get_name(info));
+    f_add(4);
+    APPLY_MASTER ("resolv", 1);
+    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+      Pike_error("Failed to resolve GI object class.\n");
+    apply(Pike_sp[-1].u.object, "Instance", 0);
+    stack_pop_keep_top();
+    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+      Pike_error("Failed to instantiate GI object class.\n");
+    {
+      struct GObject_struct *that =
+	(struct GObject_struct *)get_storage (Pike_sp[-1].u.object,
+					      GObject_program);
+      if (that == NULL)
+	Pike_error("No storage for GObject!\n");
+      g_object_ref ((that->obj = arg->v_pointer));
+    }
+    break;
+
+  default:
+    Pike_error("Don't know how to push a base %d\n", g_base_info_get_type(info));
+  }
+}
 
 static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
 {
@@ -75,6 +133,18 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     f_utf8_to_string(1);
     break;
 
+  case GI_TYPE_TAG_INTERFACE:
+    {
+      ONERROR onerror;
+      GIBaseInfo *info2;
+      info2 = g_type_info_get_interface(info);
+      SET_ONERROR(onerror, g_base_info_unref, info2);
+      push_gi_argument_interface(arg, info2);
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(info2);
+    }
+    break;
+
   default:
     Pike_error("Don't know how to push a %d\n", g_type_info_get_tag(info));
   }
@@ -106,6 +176,9 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
     Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(&ti));
   }  
 }
+
+/*! @class BaseInfo
+ */
 
 PIKECLASS BaseInfo
 {
