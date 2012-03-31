@@ -258,14 +258,28 @@ PIKECLASS FunctionInfo
     GIArgument retval;
     GITypeInfo *ti;
     struct svalue *mark = Pike_sp-args;
-    int i, num_args = args;
+    int i = 0, arg_num, num_args = args;
     GIArgument *in_args =
       (num_args? xalloc(num_args * sizeof(GIArgument)) : NULL);
+    GIFunctionInfoFlags flags = g_function_info_get_flags (THIS->info);
     SET_ONERROR(onerror, free, in_args);
-    for (i=0; i<num_args; i++) {
+    if (flags & GI_FUNCTION_IS_METHOD) {
+      if (args < 1 || TYPEOF(*mark) != T_OBJECT)
+	Pike_error("Missing object for method call\n");
+      else {
+	struct GObject_struct *that =
+	  (struct GObject_struct *)get_storage (mark->u.object,
+						GObject_program);
+	if (that == NULL)
+	  Pike_error("Instance argument is not a GObject\n");
+	in_args[0].v_pointer = that->obj;
+	i++;
+      }
+    }
+    for (arg_num=0; i<num_args; i++, arg_num++) {
       ONERROR onerror2;
       GIArgInfo *ai;
-      ai = g_callable_info_get_arg(THIS->info, i);
+      ai = g_callable_info_get_arg(THIS->info, arg_num);
       if (!ai)
 	Pike_error("Too many arguments to function %s\n",
 		   g_base_info_get_name(THIS->info));
