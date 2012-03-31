@@ -11,6 +11,21 @@ class DynamicImporter {
 
     static string namespace;
 
+    class Function(static FunctionInfo info)
+    {
+      static mixed `()(mixed ... args)
+      {
+	return info->invoke(@args);
+      }
+
+      static string _sprintf(int mode)
+      {
+	return mode == 'O' && sprintf("%O.%s",
+				      IntrospectionModule::this,
+				      info->get_name());
+      }
+    }
+
     static void create(string namespace_, string|void version)
     {
       namespace = namespace_;
@@ -24,6 +39,8 @@ class DynamicImporter {
 
     static mixed wrap(BaseInfo info)
     {
+      if (object_program(info) == FunctionInfo)
+	return Function([object(FunctionInfo)]info);
       /* FIXME */
       return info;
     }

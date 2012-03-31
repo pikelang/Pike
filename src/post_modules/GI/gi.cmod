@@ -8,6 +8,7 @@
 #include "interpret.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 #include "gimod_config.h"
 
 DECLARATIONS
@@ -33,6 +34,78 @@ static void push_gi_info(GIBaseInfo *info);
 
 /*! @class BaseInfo
  */
+
+static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
+{
+  switch (g_type_info_get_tag(info)) {
+  case GI_TYPE_TAG_VOID:
+    push_int(0);
+    break;
+  case GI_TYPE_TAG_BOOLEAN:
+    push_int(arg->v_boolean);
+    break;
+  case GI_TYPE_TAG_INT8:
+    push_int(arg->v_int8);
+    break;
+  case GI_TYPE_TAG_UINT8:
+    push_int(arg->v_uint8);
+    break;
+  case GI_TYPE_TAG_INT16:
+    push_int(arg->v_int16);
+    break;
+  case GI_TYPE_TAG_UINT16:
+    push_int(arg->v_uint16);
+    break;
+  case GI_TYPE_TAG_INT32:
+    push_int(arg->v_int32);
+    break;
+  case GI_TYPE_TAG_UINT32:
+    push_int64(arg->v_uint32);
+    break;
+  case GI_TYPE_TAG_INT64:
+    push_int64(arg->v_int64);
+    break;
+  case GI_TYPE_TAG_UINT64:
+    /* FIXME... */
+    push_int64(arg->v_uint64);
+    break;
+
+  case GI_TYPE_TAG_UTF8:
+    push_text(arg->v_pointer);
+    f_utf8_to_string(1);
+    break;
+
+  default:
+    Pike_error("Don't know how to push a %d\n", g_type_info_get_tag(info));
+  }
+}
+
+static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
+{
+  GITypeInfo ti;
+
+  g_arg_info_load_type(ai, &ti);
+
+  switch (g_type_info_get_tag(&ti)) {
+  case GI_TYPE_TAG_VOID:
+    Pike_error("Too many arguments\n");
+
+  case GI_TYPE_TAG_BOOLEAN:
+    arg->v_boolean = (UNSAFE_IS_ZERO(s)? FALSE : TRUE);
+    break;
+
+  case GI_TYPE_TAG_UTF8:
+    if (TYPEOF(*s) != PIKE_T_STRING)
+      Pike_error("Expected string\n");
+    ref_push_string(s->u.string);
+    f_string_to_utf8(1);
+    arg->v_pointer = STR0(Pike_sp[-1].u.string);
+    break;
+    
+  default:
+    Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(&ti));
+  }  
+}
 
 PIKECLASS BaseInfo
 {
@@ -101,6 +174,48 @@ PIKECLASS BaseInfo
 PIKECLASS FunctionInfo
 {
   INHERIT BaseInfo;
+
+  /*! @decl mixed invoke(mixed ... args)
+   */
+  PIKEFUN mixed invoke(mixed ... a)
+  {
+    ONERROR onerror;
+    gboolean ok;
+    GError *error = NULL;
+    GIArgument retval;
+    GITypeInfo *ti;
+    struct svalue *mark = Pike_sp-args;
+    int i, num_args = args;
+    GIArgument *in_args =
+      (num_args? xalloc(num_args * sizeof(GIArgument)) : NULL);
+    SET_ONERROR(onerror, free, in_args);
+    for (i=0; i<num_args; i++) {
+      ONERROR onerror2;
+      GIArgInfo *ai;
+      ai = g_callable_info_get_arg(THIS->info, i);
+      if (!ai)
+	Pike_error("Too many arguments to function %s\n",
+		   g_base_info_get_name(THIS->info));
+      SET_ONERROR(onerror2, g_base_info_unref, ai);
+      get_gi_argument(mark+i, &in_args[i], ai);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(ai);
+    }
+    ok = g_function_info_invoke(THIS->info, in_args, num_args,
+				NULL, 0, &retval, &error);
+    UNSET_ONERROR(onerror);
+    free(in_args);
+    if(error)
+      throw_gerror(error);
+    if(!ok)
+      Pike_error("Function not invoked\n");
+    pop_n_elems(Pike_sp - mark);
+    ti = g_callable_info_get_return_type(THIS->info);
+    SET_ONERROR(onerror, g_base_info_unref, ti);
+    push_gi_argument(&retval, ti);
+    UNSET_ONERROR(onerror);
+    g_base_info_unref(ti);
+  }
 }
 
 /*! @class CallbackInfo
