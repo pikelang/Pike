@@ -101,7 +101,7 @@ class DynamicImporter {
       {
 	info = ei;
 	array(ObjectInfo) vals = info->get_values();
-	map = mkmapping(vals->get_name(), vals->get_value());
+	map = mkmapping(upper_case(vals->get_name()[*]), vals->get_value());
       }
 
       static array(string) _indices() { return indices(map); }
