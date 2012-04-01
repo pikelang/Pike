@@ -164,6 +164,37 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
   }
 }
 
+static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
+				      GIBaseInfo *info)
+{
+  switch(g_base_info_get_type(info)) {
+
+  case GI_INFO_TYPE_OBJECT:
+    if (UNSAFE_IS_ZERO(s)) {
+      arg->v_pointer = NULL;
+      break;
+    }
+    if (TYPEOF(*s) != T_OBJECT)
+      Pike_error("object expected\n");
+    else {
+      struct GObject_struct *that =
+	(struct GObject_struct *)get_storage (s->u.object, GObject_program);
+      if (that == NULL)
+	Pike_error("argument is not a GObject\n");
+      if (that->obj == NULL ||
+	  !g_type_is_a(G_OBJECT_TYPE(that->obj),
+		       g_registered_type_info_get_g_type(info)))
+	Pike_error("Object is not a %s\n",
+		   g_base_info_get_name(info));
+      arg->v_pointer = that->obj;
+    }
+    break;
+
+  default:
+    Pike_error("Don't know how to get a base %d\n", g_base_info_get_type(info));
+  }
+}
+
 static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
 				 GITypeInfo *ti)
 {
@@ -257,6 +288,19 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       arg->v_pointer = arr->data;
     }
     break;
+
+  case GI_TYPE_TAG_INTERFACE:
+    {
+      ONERROR onerror;
+      GIBaseInfo *info;
+      info = g_type_info_get_interface(ti);
+      SET_ONERROR(onerror, g_base_info_unref, info);
+      get_gi_argument_interface(s, arg, info);
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(info);
+    }
+    break;
+
   default:
     Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(ti));
   }  
