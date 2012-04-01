@@ -52,7 +52,7 @@ class DynamicImporter {
 	}
 
 	static array(string) _indices() { return Object::_indices(); }
-	static array(string) _values() { return Object::_values(); }
+	static array(mixed) _values() { return Object::_values(); }
 	static mixed `[](string index) { return bind(Object::`[](index)); }
 	static mixed `->(string index) { return bind(Object::`->(index)); }
       };
@@ -76,7 +76,7 @@ class DynamicImporter {
       }
 
       static array(string) _indices() { return indices(attrs); }
-      static array(string) _values() { return values(attrs); }
+      static array(mixed) _values() { return values(attrs); }
       static mixed `[](string index) { return attrs[index]; }
       static mixed `->(string index) { return attrs[index]; }
     }
@@ -141,7 +141,7 @@ class DynamicImporter {
       return Array.uniq(repository->get_infos(namespace)->get_name());
     }
 
-    static array(string) _values()
+    static array(mixed) _values()
     {
       return rows(this, _indices());
     }
@@ -162,7 +162,7 @@ class DynamicImporter {
   }
 
   static array(string) _indices() { return indices(cache); }
-  static array(string) _values() { return values(cache); }
+  static array(mixed) _values() { return values(cache); }
 }
 
 DynamicImporter repository = DynamicImporter();
