@@ -169,6 +169,13 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
 {
   switch(g_base_info_get_type(info)) {
 
+  case GI_INFO_TYPE_ENUM:
+  case GI_INFO_TYPE_FLAGS:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_long = s->u.integer;
+    break;
+
   case GI_INFO_TYPE_OBJECT:
     if (UNSAFE_IS_ZERO(s)) {
       arg->v_pointer = NULL;
