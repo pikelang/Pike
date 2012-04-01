@@ -351,8 +351,8 @@ PIKECLASS FunctionInfo
     GIArgument retval;
     GITypeInfo *ti;
     struct svalue *mark = Pike_sp-args;
-    int i = 0, arg_num, num_args = args;
-    GIArgument *in_args =
+    int i = 0, arg_num, num_out_args = 0, num_args = args;
+    GIArgument out_args[8], *in_args =
       (num_args? xalloc(num_args * sizeof(GIArgument)) : NULL);
     GIFunctionInfoFlags flags = g_function_info_get_flags (THIS->info);
     SET_ONERROR(onerror, free, in_args);
@@ -383,11 +383,18 @@ PIKECLASS FunctionInfo
 		   g_base_info_get_name(THIS->info));
       SET_ONERROR(onerror2, g_base_info_unref, ai);
       get_gi_argument(mark+i, &in_args[i], ai);
+      if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
+	if(num_out_args >= 8)
+	  Pike_error("Too many inout args...\n");
+	out_args[num_out_args] = in_args[i];
+	in_args[i].v_pointer = &out_args[num_out_args];
+	num_out_args++;
+      }
       UNSET_ONERROR(onerror2);
       g_base_info_unref(ai);
     }
     ok = g_function_info_invoke(THIS->info, in_args, num_args,
-				NULL, 0, &retval, &error);
+				out_args, num_out_args, &retval, &error);
     UNSET_ONERROR(onerror);
     free(in_args);
     if(error)
