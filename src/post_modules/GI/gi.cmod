@@ -281,6 +281,11 @@ PIKECLASS FunctionInfo
 						GObject_program);
 	if (that == NULL)
 	  Pike_error("Instance argument is not a GObject\n");
+	if (that->obj == NULL ||
+	    !g_type_is_a(G_OBJECT_TYPE(that->obj),
+			 g_registered_type_info_get_g_type(g_base_info_get_container(THIS->info))))
+	  Pike_error("Object is not a %s\n",
+		     g_base_info_get_name(g_base_info_get_container(THIS->info)));
 	in_args[0].v_pointer = that->obj;
 	i++;
       }
