@@ -64,6 +64,11 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
 {
   switch(g_base_info_get_type(info)) {
 
+  case GI_INFO_TYPE_ENUM:
+  case GI_INFO_TYPE_FLAGS:
+    push_int(arg->v_long);
+    break;
+
   case GI_INFO_TYPE_OBJECT:
     if (!arg->v_pointer) {
       push_int(0);
