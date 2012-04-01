@@ -69,6 +69,10 @@ class DynamicImporter {
 	info = oi;
 	array(ObjectInfo) methods = info->get_methods();
 	attrs += mkmapping(methods->get_name(), map(methods, Function));
+	foreach(info->get_interfaces(); ; InterfaceInfo ii) {
+	  array(ObjectInfo) methods = ii->get_methods();
+	  attrs += mkmapping(methods->get_name(), map(methods, Function));
+	}
       }
 
       static array(string) _indices() { return indices(attrs); }

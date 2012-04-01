@@ -434,6 +434,39 @@ PIKECLASS EnumInfo
   INHERIT BaseInfo;
 }
 
+/*! @class InterfaceInfo
+ */
+
+PIKECLASS InterfaceInfo
+{
+  INHERIT BaseInfo;
+
+  /*! @decl array(FunctionInfo) get_methods()
+   */
+  PIKEFUN array(FunctionInfo) get_methods()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_interface_info_get_n_methods((GIInterfaceInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_interface_info_get_method((GIInterfaceInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
+}
+
 /*! @class ObjectInfo
  */
 
@@ -465,14 +498,31 @@ PIKECLASS ObjectInfo
     UNSET_ONERROR(onerror);
     RETURN arr;
   }
-}
 
-/*! @class InterfaceInfo
- */
-
-PIKECLASS InterfaceInfo
-{
-  INHERIT BaseInfo;
+  /*! @decl array(InterfaceInfo) get_interfaces()
+   */
+  PIKEFUN array(InterfaceInfo) get_interfaces()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_object_info_get_n_interfaces((GIObjectInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_object_info_get_interface((GIObjectInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
 }
 
 /*! @class ConstantInfo
