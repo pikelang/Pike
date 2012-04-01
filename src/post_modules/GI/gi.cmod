@@ -164,13 +164,10 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
   }
 }
 
-static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
+static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
+				 GITypeInfo *ti)
 {
-  GITypeInfo ti;
-
-  g_arg_info_load_type(ai, &ti);
-
-  switch (g_type_info_get_tag(&ti)) {
+  switch (g_type_info_get_tag(ti)) {
   case GI_TYPE_TAG_VOID:
     Pike_error("Too many arguments\n");
 
@@ -233,10 +230,44 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
     f_string_to_utf8(1);
     arg->v_pointer = STR0(Pike_sp[-1].u.string);
     break;
-    
+
+  case GI_TYPE_TAG_ARRAY:
+    if (UNSAFE_IS_ZERO(s)) {
+      arg->v_pointer = NULL;
+      break;
+    }
+    if (TYPEOF(*s) != PIKE_T_ARRAY)
+      Pike_error("array expected\n");
+    else {
+      ONERROR onerror;
+      INT32 i;
+      GArray *arr;
+      GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
+      SET_ONERROR(onerror, g_base_info_unref, itemti);
+      arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
+			      FALSE, sizeof(gpointer) /*FIXME*/,
+			      s->u.array->size);
+      for (i=0; i<s->u.array->size; i++) {
+	GIArgument a;
+	get_gi_argument_type(&ITEM(s->u.array)[i], &a, itemti);
+	g_array_insert_val(arr, i, a);
+      }
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(itemti);
+      arg->v_pointer = arr->data;
+    }
+    break;
   default:
-    Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(&ti));
+    Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(ti));
   }  
+}
+
+static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
+{
+  GITypeInfo ti;
+
+  g_arg_info_load_type(ai, &ti);
+  get_gi_argument_type(s, arg, &ti);
 }
 
 /*! @class BaseInfo
