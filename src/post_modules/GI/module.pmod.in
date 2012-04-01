@@ -67,8 +67,12 @@ class DynamicImporter {
       static void create(ObjectInfo oi)
       {
 	info = oi;
-	array(ObjectInfo) methods = info->get_methods();
-	attrs += mkmapping(methods->get_name(), map(methods, Function));
+	while (oi) {
+	  array(ObjectInfo) methods = oi->get_methods();
+	  attrs = mkmapping(methods->get_name(), map(methods, Function))
+	    + attrs;
+	  oi = oi->get_parent();
+	}
 	foreach(info->get_interfaces(); ; InterfaceInfo ii) {
 	  array(ObjectInfo) methods = ii->get_methods();
 	  attrs += mkmapping(methods->get_name(), map(methods, Function));
