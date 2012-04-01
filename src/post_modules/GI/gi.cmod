@@ -614,6 +614,25 @@ PIKECLASS ObjectInfo
     UNSET_ONERROR(onerror);
     RETURN arr;
   }
+
+  /*! @decl ObjectInfo get_parent()
+   */
+  PIKEFUN ObjectInfo get_parent()
+  {
+    ONERROR onerror;
+    GIBaseInfo *info =
+      (GIBaseInfo *)g_object_info_get_parent((GIObjectInfo *)THIS->info);
+    if (info == NULL) {
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+    SET_ONERROR(onerror, g_base_info_unref, info);
+    pop_n_elems(args);
+    push_gi_info(info);
+    UNSET_ONERROR(onerror);
+    g_base_info_unref(info);
+  }
 }
 
 /*! @class ConstantInfo
