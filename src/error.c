@@ -31,7 +31,7 @@
 /* #define ERROR_DEBUG */
 
 PMOD_EXPORT const char msg_fatal_error[] =
-  "%s:%d: Fatal error:\n";
+  "%s:%ld: Fatal error:\n";
 #ifdef PIKE_DEBUG
 PMOD_EXPORT const char msg_unsetjmp_nosync_1[] =
   "UNSETJMP out of sync! (last SETJMP at %s)!\n";

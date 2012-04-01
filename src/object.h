@@ -40,7 +40,7 @@ extern struct program *magic_values_program;
 extern struct program *magic_types_program;
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
 #endif
 
 #define free_object(O) do{						\

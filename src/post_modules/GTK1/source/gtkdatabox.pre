@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gtkdatabox;
-class GTK.Databox;
-inherit GTK.Vbox;
+class GTK1.Databox;
+inherit GTK1.Vbox;
 %{
 #include <gtkdatabox.h>
 %}
@@ -16,7 +16,7 @@ add_global {
 //! The widget may be used as display for oscilloscopes or other
 //! applications that need to display fast changes in their data.
 //! </p>
-//! IMG:   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;
+//! IMG:   GTK1.Databox x=GTK1.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK1.Color(Image.Color.red), GTK1.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;
 
 constant int GTK_DATABOX_NOT_DISPLAYED;
 constant int GTK_DATABOX_POINTS;
@@ -120,18 +120,18 @@ void rescale_with_values( float minx, float miny, float maxx, float maxy )
   RETURN_THIS();
 }
 
-int set_color(int index, *GDK.Color color );
+int set_color(int index, *GDK1.Color color );
 int set_data_type( int index, int type, int dot_size );
 //! Type is one of CONST(GTK_DATABOX_)
 int data_add_x_y( int nelems, array(float,nofree) x, array(float,nofree) y,
-                  *GDK.Color color, int type, int dot_size );
+                  *GDK1.Color color, int type, int dot_size );
 //! Type is one of CONST(GTK_DATABOX_)
 int data_add_x( int nelems, array(float,nofree) x,
-                int shared_Y_index, *GDK.Color color,
+                int shared_Y_index, *GDK1.Color color,
                 int type, int dot_size );
 //! Type is one of CONST(GTK_DATABOX_)
 int data_add_y( int nelems, array(float,nofree) y, int shared_X_index,
-                *GDK.Color color, int type, int dot_size );
+                *GDK1.Color color, int type, int dot_size );
 //! Type is one of CONST(GTK_DATABOX_)
 int data_destroy( int index );
 int data_destroy_all( );

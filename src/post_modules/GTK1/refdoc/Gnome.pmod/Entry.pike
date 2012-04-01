@@ -11,7 +11,7 @@
 //!
 //!
 
-inherit GTK.Combo;
+inherit GTK1.Combo;
 
 Gnome.Entry append_history( int save, string text );
 //! Adds a history item of the given text to the tail of the history
@@ -20,15 +20,15 @@ Gnome.Entry append_history( int save, string text );
 //!
 //!
 
-static Gnome.Entry create( string|void history_id );
+protected Gnome.Entry create( string|void history_id );
 //! Creates a new GnomeEntry widget. If history_id is not 0, then
 //! the history list will be saved and restored between uses under the
 //! given id.
 //!
 //!
 
-GTK.Entry gtk_entry( );
-//! Obtain pointer to Gnome.Entry's internal GTK.Entry text entry
+GTK1.Entry gtk_entry( );
+//! Obtain pointer to Gnome.Entry's internal GTK1.Entry text entry
 //!
 //!
 

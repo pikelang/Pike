@@ -6,7 +6,7 @@ add_global
 };
 
 class Gnome.AppletWidget;
-inherit GTK.Plug;
+inherit GTK1.Plug;
 //! Applets are basically GNOME applications whose window sits inside
 //! the panel. Also the panel "takes care" of the applets by providing
 //! them with session saving and restarting, window management (inside
@@ -18,8 +18,8 @@ inherit GTK.Plug;
 //! int main( int argc, array argv )
 //! {
 //! &nbsp; Gnome.init( "hello", "1.0", argv, 0 );
-//! &nbsp; Gnome.AppletWidget("hello")-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
-//! &nbsp; GTK.applet_widget_gtk_main();
+//! &nbsp; Gnome.AppletWidget("hello")-&gt;add(GTK1.Label("Hello World!"))-&gt;show_all();
+//! &nbsp; GTK1.applet_widget_gtk_main();
 //! }
 //! </pre>
 //! This creates an applet which just sits on the panel, not really
@@ -73,9 +73,9 @@ inherit GTK.Plug;
 //! &nbsp; Gnome.AppletWidget w;
 //! &nbsp; Gnome.init( "hello", "1.0", argv, 0 );
 //! &nbsp; w = Gnome.AppletWidget("hello");
-//! &nbsp; w-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//! &nbsp; w-&gt;add(GTK1.Label("Hello World!"))-&gt;show_all();
 //! &nbsp; w-&gt;register_callback( "hello", "Hello there", hello_there, 0 );
-//! &nbsp; GTK.applet_widget_gtk_main();
+//! &nbsp; GTK1.applet_widget_gtk_main();
 //! }
 //! </pre>
 //! Now the user will see a "Hello There" menu item on the applet menu,
@@ -104,7 +104,7 @@ void create( string applet_name );
 //! cancel the load before calling add, you should call
 //! abort_load.
 
-void add( GTK.Widget what );
+void add( GTK1.Widget what );
 //! Add a child (widget) to the applet. This finishes the handshaking
 //! with the panel started in applet_widget_new. You should never call
 //! this function twice for the same applet. If you have already
@@ -112,11 +112,11 @@ void add( GTK.Widget what );
 //! applet, use abort_load.
 
 require define HAVE_APPLET_BIND_EVENTS;
-void add_full( GTK.Widget what, int bind_events );
+void add_full( GTK1.Widget what, int bind_events );
 //! As add, but this function is only for special applets and you
 //! should use bind_events on some internal widget if bind_events was
 //! FALSE. Normally you'll just want to use add.
-void bind_events( GTK.Widget to );
+void bind_events( GTK1.Widget to );
 //! Binds the 2nd and 3rd button clicks over this widget. Normally this
 //! is done during add, but if you need to bind events over a widget
 //! which you added later, use this function.
@@ -135,7 +135,7 @@ void set_tooltip( string to );
 //! Set a tooltip on the entire applet that will follow the tooltip
 //! setting from the panel configuration.
 
-void set_widget_tooltip( GTK.Widget widget, string text );
+void set_widget_tooltip( GTK1.Widget widget, string text );
 //! Set a tooltip on the widget that will follow the tooltip setting
 //! from the panel configuration.
 

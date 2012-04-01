@@ -95,7 +95,9 @@ string render_tag(string tag, mapping(string:string) attrs, int|void term)
   return res + ">";
 }
 
-Node get_first_element(Node n) {
+Node get_first_element(Node n)
+{
+  if (!n) return UNDEFINED;
   foreach(n->get_children(), Node c)
     if(c->get_node_type()==XML_ELEMENT) {
       if(c->get_any_name()!="source-position")
@@ -103,7 +105,7 @@ Node get_first_element(Node n) {
       else
 	position->update(c);
     }
-  error( "Node had no element child.\n" );
+  return UNDEFINED;
 }
 
 int section, subsection;
@@ -224,6 +226,33 @@ string parse_chapter(Node n, void|int noheader) {
   }
 
   ret += low_parse_chapter(n, (int)n->get_attributes()->number);
+
+  if(!noheader)
+    ret = ret + "</dd></dl>"; 
+
+  return ret;
+}
+
+string parse_appendix(Node n, void|int noheader) {
+  string ret ="";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Appendix " +
+      (string)({ 64+(int)n->get_attributes()->number }) + ". " +
+      n->get_attributes()->name + "</font></td></tr></table><br />\n"
+      "</dt><dd>";
+
+  Node c = n->get_first_element("doc");
+  if(c)
+    ret += parse_text(c);
+  else
+    error( "No doc element in appendix.\n" );
+
+#ifdef DEBUG
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in appendix node.\n" );
+#endif
 
   if(!noheader)
     ret = ret + "</dd></dl>"; 
@@ -736,7 +765,8 @@ string parse_doc(Node n, void|int no_text) {
     case "param":
       foreach(c->get_elements("param"), Node d)
 	ret += lay->dochead + "Parameter " + lay->parameter +
-	  quote(d->get_attributes()->name) + lay->_parameter + lay->_dochead +
+	  quote(d->get_attributes()->name || "") +
+	  lay->_parameter + lay->_dochead +
 	  "<dd></dd>";
       if (c = c->get_first_element("text")) {
 	ret += lay->docbody + parse_text(c) + lay->_docbody;
@@ -1032,6 +1062,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "import":
   case "typedef":
   case "variable":
+  case "directive":
     // These don't have children.
     attrs->class_path = path;
     return;
@@ -1105,7 +1136,9 @@ string render_class_path(Node n,int|void class_only)
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, const, typedf;
+  int method, argument, variable, const, typedf, cppdir;
+
+  if (!n) return "";
 
   foreach(n->get_children(), Node c) {
 
@@ -1124,10 +1157,9 @@ string parse_not_doc(Node n) {
 
     case "method":
       if(method++) ret += "<br />\n";
-#ifdef DEBUG
+#if 0
       if(!c->get_first_element("returntype"))
-	continue;
-	// error( "No returntype element in method element.\n" );
+	error( "No returntype element in method element.\n" );
 #endif
       switch( c->get_attributes()->name )
       {
@@ -1230,6 +1262,12 @@ string parse_not_doc(Node n) {
     case "import":
       break;
 
+    case "directive":
+      if(cppdir++) ret += "<br />\n";
+      ret += "<tt><font color='#006666'>" + quote(c->get_attributes()->name) +
+	"</font></tt>";
+      break;
+
     default:
       error( "Illegal element " + c->get_any_name() + " in !doc.\n" );
       break;
@@ -1263,7 +1301,8 @@ string parse_docgroup(Node n) {
 			     child->value_of_node();
 			 }));
 	foreach(names, string name)
-	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+	  ret += type +
+	    "<font size='+1'><b>" + quote(name) + "</b></font><br />\n";
       }
     }
     else
@@ -1342,6 +1381,13 @@ string layout_toploop(Node n, Git.Export|void exporter) {
         cd(cwd);
       break;
 
+    case "appendix":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
+      res += parse_appendix(c);
+      break;
+
     case "chapter":
       res += parse_chapter(c);
       break;
@@ -1404,7 +1450,12 @@ int low_main(string title, string input_file, string|void output_file,
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE) {
     werror("Layouting...\n");
   }
-  manual_title = m->title || (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
+  if (flags & Tools.AutoDoc.FLAG_NO_DYNAMIC) {
+    manual_title = m->title || "Pike Reference Manual";
+  } else {
+    manual_title = m->title ||
+      (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
+  }
   layout_toploop(n, exporter);
 
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE) {

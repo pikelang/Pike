@@ -1,5 +1,5 @@
 /* -*- C -*- */
-class GDK.Drawable;
+class GDK1.Drawable;
 %{
 #ifndef __NT__
 #include <gdk/gdkx.h>
@@ -7,13 +7,13 @@ class GDK.Drawable;
 #include <gdk/win32/gdkwin32.h>
 #endif
 %}
-//! The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
+//! The GDK1.Bitmap, GDK1.Window and GDK1.Pixmap classes are all GDK drawables.
 //! <br />
 //! This means that you can use the same set of functions to draw in them.<br />
 //! <p>
 //! Pixmaps are offscreen drawables. They can be drawn upon with the
 //! standard drawing primitives, then copied to another drawable (such
-//! as a GDK.Window) with window->draw_pixmap(), set as the background
+//! as a GDK1.Window) with window->draw_pixmap(), set as the background
 //! for a window or widget, or otherwise used to show graphics (in a
 //! W(Pixmap), as an example). The depth of a pixmap is the number of
 //! bits per pixels. Bitmaps are simply pixmaps with a depth of
@@ -21,7 +21,7 @@ class GDK.Drawable;
 //! on or off).
 //! </p><p>
 //! Bitmaps are mostly used as masks when drawing pixmaps, or as a
-//! shape for a GDK.Window or a W(Widget)
+//! shape for a GDK1.Window or a W(Widget)
 //! </p>
 %{
 #undef TWIN

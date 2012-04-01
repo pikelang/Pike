@@ -9,8 +9,8 @@
 //! int main( int argc, array argv )
 //! {
 //!   Gnome.init( "hello", "1.0", argv, 0 );
-//!   Gnome.AppletWidget("hello")-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
-//!   GTK.applet_widget_gtk_main();
+//!   Gnome.AppletWidget("hello")-&gt;add(GTK1.Label("Hello World!"))-&gt;show_all();
+//!   GTK1.applet_widget_gtk_main();
 //! }
 //! @}
 //! This creates an applet which just sits on the panel, not really
@@ -63,9 +63,9 @@
 //!   Gnome.AppletWidget w;
 //!   Gnome.init( "hello", "1.0", argv, 0 );
 //!   w = Gnome.AppletWidget("hello");
-//!   w-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//!   w-&gt;add(GTK1.Label("Hello World!"))-&gt;show_all();
 //!   w-&gt;register_callback( "hello", "Hello there", hello_there, 0 );
-//!   GTK.applet_widget_gtk_main();
+//!   GTK1.applet_widget_gtk_main();
 //! }
 //! @}
 //! Now the user will see a "Hello There" menu item on the applet menu,
@@ -89,7 +89,7 @@
 //! @b{tooltip_state@}
 //!
 
-inherit GTK.Plug;
+inherit GTK1.Plug;
 
 Gnome.AppletWidget abort_load( );
 //!  Abort the applet loading, once applet has been created, this is a
@@ -99,7 +99,7 @@ Gnome.AppletWidget abort_load( );
 //!
 //!
 
-Gnome.AppletWidget add( GTK.Widget what );
+Gnome.AppletWidget add( GTK1.Widget what );
 //! Add a child (widget) to the applet. This finishes the handshaking
 //! with the panel started in applet_widget_new. You should never call
 //! this function twice for the same applet. If you have already
@@ -113,7 +113,7 @@ Gnome.AppletWidget callback_set_sensitive( string name, int sensitive );
 //!
 //!
 
-static Gnome.AppletWidget create( string applet_name );
+protected Gnome.AppletWidget create( string applet_name );
 //! Make a new applet and register us with the panel, if you decide to
 //! cancel the load before calling add, you should call
 //! abort_load.
@@ -199,7 +199,7 @@ Gnome.AppletWidget set_tooltip( string to );
 //!
 //!
 
-Gnome.AppletWidget set_widget_tooltip( GTK.Widget widget, string text );
+Gnome.AppletWidget set_widget_tooltip( GTK1.Widget widget, string text );
 //! Set a tooltip on the widget that will follow the tooltip setting
 //! from the panel configuration.
 //!

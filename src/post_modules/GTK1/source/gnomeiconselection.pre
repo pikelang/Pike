@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.IconSelection;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 void create();
 //! reates a new icon selection widget, it uses a W(GnomeIconList) for
 //! the listing of icons

@@ -1,6 +1,6 @@
 /* -*- C -*- */
 DISABLED {
-class GTK.List;
+class GTK1.List;
 //! This class is not yet finished enough to be usable.
 signal selection_changed;
 //! ...
@@ -11,7 +11,7 @@ signal unselect_child;
 inherit container;
 void create();
 FUNCTION(selection, "function(void:array(object))");
-RETURNS(array(GTK.Widget));
+RETURNS(array(GTK1.Widget));
 {
   GList *s = GTK_LIST( THIS->obj )->selection;
   int j = 0;
@@ -40,7 +40,7 @@ void undo_selection();
 void end_drag_selection();
 
 FUNCTION(insert_items, "function(array(object),int:object)");
-ARGS(array(GTK.ListItem),int);
+ARGS(array(GTK1.ListItem),int);
 NAME_ARGS(items,position);
 {
   struct array *a;
@@ -61,7 +61,7 @@ NAME_ARGS(items,position);
 }
 
 FUNCTION(append_items, "function(array(object):object)");
-ARGS(array(GTK.ListItem),int);
+ARGS(array(GTK1.ListItem),int);
 NAME_ARGS(items,position);
 {
   struct array *a;
@@ -81,7 +81,7 @@ NAME_ARGS(items,position);
 }
 
 FUNCTION(prepend_items, "function(array(object):object)");
-ARGS(array(GTK.ListItem),int);
+ARGS(array(GTK1.ListItem),int);
 NAME_ARGS(items,position);
 {
   struct array *a;
@@ -101,7 +101,7 @@ NAME_ARGS(items,position);
 }
 
 FUNCTION(remove_items, "function(array(object):object)");
-ARGS(array(GTK.ListItem),int);
+ARGS(array(GTK1.ListItem),int);
 NAME_ARGS(items,position);
 {
   struct array *a;

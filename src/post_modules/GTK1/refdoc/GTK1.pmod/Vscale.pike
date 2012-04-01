@@ -1,4 +1,4 @@
-//! The GTK.VScale widget is used to allow the user to select a value
+//! The GTK1.VScale widget is used to allow the user to select a value
 //! using a vertical slider. A GtkAdjustment is used to set the initial
 //! value, the lower and upper bounds, and the step and page
 //! increments.
@@ -7,16 +7,16 @@
 //! places shown can be set using the parent W(Scale) class's
 //! functions.
 //! 
-//!@expr{ GTK.Vscale(GTK.Adjustment())->set_usize(30,100)@}
-//!@xml{<image>../images/gtk_vscale.png</image>@}
+//!@expr{ GTK1.Vscale(GTK1.Adjustment())->set_usize(30,100)@}
+//!@xml{<image>../images/gtk1_vscale.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Scale;
+inherit GTK1.Scale;
 
-static GTK.Vscale create( GTK.Adjustment settings );
+protected GTK1.Vscale create( GTK1.Adjustment settings );
 //! Used to create a new vscale widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. Specifying 0 might

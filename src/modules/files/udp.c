@@ -134,7 +134,7 @@ struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
    
-  int nonblocking;
+  int inet_flags;
 
   int type;
   int protocol;
@@ -212,20 +212,30 @@ static void udp_bind(INT32 args)
     fd_close(fd);
   }
 
+  THIS->inet_flags &= ~PIKE_INET_FLAG_IPV6;
+
   addr_len = get_inet_addr(&addr, (args > 1 && TYPEOF(Pike_sp[1-args])==PIKE_T_STRING?
 				   Pike_sp[1-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
 			    Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
-			    Pike_sp[-args].u.integer : -1), 1);
+			    Pike_sp[-args].u.integer : -1),
+			   THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
+
+#ifdef AF_INET6
+  if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    THIS->inet_flags |= PIKE_INET_FLAG_IPV6;
+  }
+#endif
 
   fd = fd_socket(SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   if(fd < 0)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->bind: failed to create socket\n");
+    Pike_error("Stdio.UDP->bind: failed to create socket (%d, %d, %d)\n",
+	       SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   }
 
   /* Make sure this fd gets closed on exec. */
@@ -238,6 +248,16 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
+
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
+  if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    /* Attempt to enable dual-stack (ie mapped IPv4 adresses). Needed on WIN32.
+     * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+     */
+    o = 0;
+    fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+  }
+#endif
 
 #ifndef SOL_IP
 #ifdef HAVE_GETPROTOBYNAME
@@ -331,9 +351,10 @@ void udp_enable_multicast(INT32 args)
 
   get_all_args("enable_multicast", args, "%s", &ip);
 
-  get_inet_addr(&reply, ip, NULL, -1, 1);
+  get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(reply) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -382,9 +403,10 @@ void udp_add_membership(INT32 args)
 
   get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
 
-  get_inet_addr(&addr, group, NULL, -1, 1);
+  get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -393,9 +415,10 @@ void udp_add_membership(INT32 args)
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    get_inet_addr(&addr, address, NULL, -1, 1);
+    get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
+    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
 
@@ -425,9 +448,10 @@ void udp_drop_membership(INT32 args)
 
   get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
 
-  get_inet_addr(&addr, group, NULL, -1, 1);
+  get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -436,9 +460,10 @@ void udp_drop_membership(INT32 args)
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    get_inet_addr(&addr, address, NULL, -1, 1);
+    get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
+    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
 
@@ -656,8 +681,19 @@ void udp_read(INT32 args)
 
   push_constant_text("ip");
 #ifdef fd_inet_ntop
-  push_text( fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
-			   buffer, sizeof(buffer) ) );
+  fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
+		buffer, sizeof(buffer) );
+  /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
+   *
+   * Make the Pike-level code believe it has an actual IPv4 address
+   * when getting a mapped address (::FFFF:a.b.c.d).
+   */
+  if ((!strncmp(buffer, "::FFFF:", 7) || !strncmp(buffer, "::ffff:", 7)) &&
+      !strchr(buffer + 7, ':')) {
+    push_text(buffer+7);
+  } else {
+    push_text(buffer);
+  }
 #else
   push_text( inet_ntoa( *SOCKADDR_IN_ADDR(from) ) );
 #endif
@@ -666,7 +702,7 @@ void udp_read(INT32 args)
   push_int(ntohs(from.ipv4.sin_port));
   f_aggregate_mapping( 6 );
 
-  if (!THIS->nonblocking)
+  if (!(THIS->inet_flags & PIKE_INET_FLAG_NB))
     INVALIDATE_CURRENT_TIME();
 }
 
@@ -719,7 +755,8 @@ void udp_sendto(INT32 args)
 			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
 			  Pike_sp[1-args].u.string->str : NULL),
 			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
-			  Pike_sp[1-args].u.integer : -1), 1);
+			  Pike_sp[1-args].u.integer : -1),
+			 THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
   fd = FD;
@@ -765,7 +802,7 @@ void udp_sendto(INT32 args)
   }
   pop_n_elems(args);
   push_int64(res);
-  if (!THIS->nonblocking)
+  if (!(THIS->inet_flags & PIKE_INET_FLAG_NB))
     INVALIDATE_CURRENT_TIME();
 }
 
@@ -798,6 +835,7 @@ void zero_udp(struct object *o)
 {
   INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_udp_event);
   THIS->my_errno = 0;
+  THIS->inet_flags = PIKE_INET_FLAG_UDP;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
   /* map_variable handles read_callback. */
@@ -858,7 +896,7 @@ static void udp_set_nonblocking(INT32 args)
      pop_stack();
   }
   set_nonblocking(FD,1);
-  THIS->nonblocking = 1;
+  THIS->inet_flags |= PIKE_INET_FLAG_NB;
   ref_push_object(THISOBJ);
 }
 
@@ -870,7 +908,7 @@ static void udp_set_blocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
   set_nonblocking(FD,0);
-  THIS->nonblocking = 0;
+  THIS->inet_flags &= ~PIKE_INET_FLAG_NB;
   pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
@@ -913,7 +951,8 @@ static void udp_connect(INT32 args)
 			    (TYPEOF(*dest_port) == PIKE_T_STRING?
 			     dest_port->u.string->str : NULL),
 			    (TYPEOF(*dest_port) == PIKE_T_INT?
-			     dest_port->u.integer : -1), 0);
+			     dest_port->u.integer : -1),
+			    THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
   if(FD < 0)
@@ -925,6 +964,17 @@ static void udp_connect(INT32 args)
 	Pike_error("Stdio.UDP->connect: failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
+
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
+     if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+       /* Attempt to enable dual-stack (ie mapped IPv4 adresses).
+	* Needed on WIN32.
+	* cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
+	*/
+       int o = 0;
+       fd_setsockopt(FD, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+     }
+#endif
   }
 
   tmp=FD;
@@ -932,7 +982,7 @@ static void udp_connect(INT32 args)
   tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
   THREADS_DISALLOW();
 
-  if (!THIS->nonblocking)
+  if (!(THIS->inet_flags & PIKE_INET_FLAG_NB))
     INVALIDATE_CURRENT_TIME();
 
   if(tmp < 0)
@@ -987,7 +1037,17 @@ static void udp_query_address(INT32 args)
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
-  push_text(buffer);
+  /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
+   *
+   * Make the Pike-level code believe it has an actual IPv4 address
+   * when getting a mapped address (::FFFF:a.b.c.d).
+   */
+  if ((!strncmp(buffer, "::FFFF:", 7) || !strncmp(buffer, "::ffff:", 7)) &&
+      !strchr(buffer + 7, ':')) {
+    push_text(buffer+7);
+  } else {
+    push_text(buffer);
+  }
 }
 
 /*! @decl void set_backend (Pike.Backend backend)

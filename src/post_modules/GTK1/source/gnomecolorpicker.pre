@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.ColorPicker;
-inherit GTK.Button;
+inherit GTK1.Button;
 
 //! This widget provides color selection facilities to your
 //! application. The widget appears as a button which contains a "color

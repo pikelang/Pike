@@ -121,7 +121,7 @@ struct define
 struct cpp
 {
   struct hash_table *defines;
-  INT32 current_line;
+  INT_TYPE current_line;
   INT32 compile_errors;
   struct pike_string *current_file;
   struct string_builder buf;
@@ -465,6 +465,10 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
 /*! @endclass
  */
 
+/*! @namespace predef:: */
+/*! @decl import cpp:: */
+/*! @endnamespace */
+
 /* #pike handling. */
 
 void cpp_change_compat(struct cpp *this, int major, int minor)
@@ -504,6 +508,338 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
 
 /* #if macros and functions. */
 
+/*! @namespace cpp::
+ *!
+ *!   Pike has a builtin C-style preprocessor. It works similar to the
+ *!   ANSI-C preprocessor but has a few extra features. These and the
+ *!   default set of preprocessor macros are described here.
+ */
+
+/*! @directive #!
+ *!
+ *!   All lines beginning with @[#!] will be regarded as comments,
+ *!   to enable shell integration. It is recommended that Pike applications
+ *!   begin with the line @tt{"#! /usr/bin/env pike"@} for maximum cross
+ *!   platform compatibility.
+ */
+
+/*! @directive #charset
+ *!
+ *!   Inform the preprocessor about which charset the file is encoded with.
+ *!   The Locale.Charset module is called with this string to decode the
+ *!   remainder of the file.
+ */
+
+/*! @directive #if
+ *!
+ *!   The @[#if] directive can evaluate simple expressions and, if
+ *!   the expression is evaluates to true, "activate" the code block that
+ *!   follows. The code block ends when an @[#endif], @[#else],
+ *!   @[#elseif] or @[#elif] block is encountered at the same
+ *!   nesting depth.
+ *!
+ *!   The @[#if] expressions may include defines, integer, string
+ *!   and float constants, @tt{?:@}, @tt{||@} and @tt{&&@} operations,
+ *!   @tt{~@}, @tt{^@}, @tt{!@}, @tt{|@} and @tt{&@} operations,
+ *!   @tt{<@}, @tt{>@}, @tt{<=@}, @tt{>=@}, @tt{==@} and @tt{!=@} operations,
+ *!   @tt{+@}, @tt{-@}, @tt{*@}, @tt{/@}, @tt{<<@} and @tt{>>@} operations
+ *!   and paranthesis.
+ *!
+ *!   Strings may also be indexed with the @tt{[]@} index operator.
+ *!   Finally there are three special "functions" available in @[#if]
+ *!   expressions; @[defined()], @[efun()] and @[constant()].
+ *!
+ *! @seealso
+ *!   @[#ifdef], @[#ifndef], @[#elif], @[#else], @[#endif],
+ *!   @[defined()], @[constant()], @[efun()]
+ */
+
+/*! @directive #ifdef
+ *!
+ *!   Check whether an identifier is a macro.
+ *!
+ *!   The directive
+ *!
+ *!     @tt{#ifdef @i{<identifier>@}@}
+ *!
+ *!   is equvivalent to
+ *!
+ *!     @tt{#if @[defined](@i{<identifier>@})@}
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifndef], @[defined]
+ */
+
+/*! @directive #ifndef
+ *!
+ *!   Check whether an identifier is not a macro.
+ *!
+ *!   This is the inverse of @[#ifdef].
+ *!
+ *!   The directive
+ *!
+ *!     @tt{#ifndef @i{<identifier>@}@}
+ *!
+ *!   is equvivalent to
+ *!
+ *!     @tt{#if !@[defined](@i{<identifier>@})@}
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[defined]
+ */
+
+/*! @directive #endif
+ *!
+ *!   End a block opened with @[#if], @[#ifdef], @[#ifndef],
+ *!   @[#else], @[#elseif] or @[#elif].
+ *!
+ *! @example
+ *!   @code
+ *!   #ifdef DEBUG
+ *!     do_debug_stuff();
+ *!   #endif // DEBUG
+ *!   @endcode
+ */
+
+/*! @directive #else
+ *!
+ *!   This directive is used to divide the current code block into another
+ *!   code block with inverse activation.
+ *!
+ *! @example
+ *!   @code
+ *!   #ifdef FAST_ALGORITHM
+ *!     do_fast_algorithm();
+ *!   #elif defined(EXPERIMENTAL_ALGORITHM)
+ *!     do_experimental_algorithm();
+ *!   #else
+ *!     do_default_algorithm();
+ *!   #endif
+ *!   @endcode
+ */
+
+/*! @directive #elif
+ *! @directive #elseif
+ *!
+ *! These work as a combined @[#else] and @[#if] without
+ *! adding an extra level of nesting.
+ *!
+ *! @example
+ *!
+ *!   The following two are equvivalent:
+ *!
+ *!   @code
+ *!   #ifdef A
+ *!     // Code for A.
+ *!   #else
+ *!   #ifdef B
+ *!     // Code for B.
+ *!   #else
+ *!   #ifdef C
+ *!     // Code for C.
+ *!   #else
+ *!     // Code for D.
+ *!   #endif
+ *!   #endif
+ *!   #endif
+ *!   @endcode
+ *!
+ *!   And
+ *!
+ *!   @code
+ *!   #ifdef A
+ *!     // Code for A.
+ *!   #elif defined(B)
+ *!     // Code for B.
+ *!   #elseif defined(C)
+ *!     // Code for C.
+ *!   #else
+ *!     // Code for D.
+ *!   #endif
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ */
+
+/*! @directive #error
+ *!
+ *!   Throw an error during preprocessing.
+ *!
+ *!   This directive causes a cpp error. It can be used to notify
+ *!   the user that certain functions are missing and similar things.
+ *!
+ *! @note
+ *!   Note that this directive will cause @[cpp()] to throw
+ *!   an error at the end of preprocessing, which will cause
+ *!   any compilation to fail.
+ *!
+ *! @example
+ *!   @code
+ *!   #if !constant(Yp)
+ *!   #error Support for NIS not available.
+ *!   #endif
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#warning]
+ */
+
+/*! @directive #warning
+ *!
+ *!   Generate a warning during preprocessing.
+ *!
+ *!   This directive causes a cpp warning, it can be used to notify
+ *!   the user that certain functions are missing and similar things.
+ *!
+ *! @example
+ *!   @code
+ *!   #if !constant(Yp)
+ *!   #warning Support for NIS not available. Some features may not work.
+ *!   #endif
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#error]
+ */
+
+/*! @directive #include
+ *!
+ *!   @[#include] is used to insert the contents of another file into
+ *!   the processed file at the place of the include directive.
+ *!
+ *!   Files can be referenced either by absolute or relative path from the
+ *!   source file, or searched for in the include paths.
+ *!
+ *!   To include a file with absolute or relative path, use double quotes,
+ *!   e.g. @tt{#include "constants.pike"@} or @tt{#include "../debug.h"@}.
+ *!
+ *!   To include from the include paths, use less than and greater than,
+ *!   e.g. @tt{#include <profiling.h>@}.
+ *!
+ *!   It is also possible to include a file whose path is defined in a
+ *!   preprocessor macro, e.g. @tt{#include USER_SETTINGS@}.
+ */
+
+/*! @directive #line
+ *! @directive #<integer>
+ *!
+ *!   A hash character followed by a number or by the string
+ *!   @tt{"line"@} and a number will make the preprocessor line counter
+ *!   set this number as the line number for the next line and adjust the
+ *!   following lines accordingly.
+ *!
+ *!   All error messages from Pike will use these line numbers.
+ *!
+ *!   Optionally the number may be followed by a file name, e.g.
+ *!   @tt{#line 1 "/home/pike/program.pike.in"@}. Then this
+ *!   filename will be used instead of the current file for error
+ *!   messages.
+*/
+
+/*! @directive #pike
+ *!
+ *!   Set the Pike compiler backward compatibility level.
+ *!
+ *!   This tells the compiler which version of Pike it should
+ *!   attempt to emulate from this point on in the current
+ *!   compilation unit.
+ *!
+ *!   This is typically used to "quick-fix" old code to work
+ *!   with more recent versions of Pike.
+ *!
+ *! @example
+ *!   @code
+ *!   // This code was written for Pike 7.2, and depends on
+ *!   // the old behaviour for @[7.2::dirname()].
+ *!   #pike 7.2
+ *!
+ *!   // ... Code that uses @[dirname()] ...
+ *!   @endcode
+ *!
+ *!   This directive is also needed for Pike modules that
+ *!   have been installed globally, and might be used by
+ *!   a Pike that has been started with the @tt{-V@} flag.
+ *!
+ *! @example
+ *!   @code
+ *!   // Pike modules that are bundled with Pike are
+ *!   // typically written for the same version of Pike.
+ *!   #pike __REAL_VERSION__
+ *!   @endcode
+ */
+
+/*! @directive #""
+ *!   If a string literal is opened with @tt{#"@} newlines in the
+ *!   string will end up in the string literal, instead of triggering a
+ *!   @tt{"newline in string"@} error.
+ *!
+ *! @note
+ *!   Newlines will be converted to @tt{\n@} characters in the string
+ *!   even if the newlines in the file are something else.
+ *!
+ *!   This preprocessor directive may appear anywhere a string may
+ *!   appear.
+ *!
+ *! @seealso
+ *!   @[#string]
+ */
+
+/*! @directive #string
+ *!   The preprocessor directive @[#string] will load the file in the
+ *!   string that follows and insert its contents as a string. This
+ *!   preprocessor directive may appear anywhere a string may appear.
+ *!
+ *! @example
+ *!   @code
+ *!   do_something(#string "the_file.wks");
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#include]
+ */
+
+/*! @directive #pragma
+ *!
+ *!   This is a generic directive for flags to the compiler.
+ *!
+ *!   These are some of the flags that are available:
+ *!   @string
+ *!     @value "all_inline"
+ *!       This is the same as adding the modifier @tt{inline@}
+ *!       to all functions that follow.
+ *!     @value "all_final"
+ *!       Instructs the compiler to mark all symbols as @tt{final@}.
+ *!     @value "all_nomask"
+ *!       Deprecated version of @tt{"all_final"@}.
+ *!     @value "save_parent"
+ *!       Cause nested classes to save a reference to their
+ *!       surrounding class even if not strictly needed.
+ *!     @value "dont_save_parent"
+ *!       Inverse of @tt{"save_parent"@}. This is needed to override
+ *!       if the global symbol @[predef::__pragma_save_parent__]
+ *!       has been set.
+ *!     @value "strict_types"
+ *!       Enable warnings for all cases where the compiler
+ *!       isn't certain that the types are correct.
+ *!   @endstring
+*/
+
+/*! @decl int(0..1) defined(mixed identifier)
+ *!
+ *!   Check whether an identifier is a cpp macro or not.
+ *!
+ *! @returns
+ *!   @[defined] returns true if the symbol given as argument
+ *!   is defined.
+ *!
+ *! @note
+ *!   @tt{#if defined(MY_DEF)@} is equvivalent to
+ *!   @tt{#ifdef MY_DEF@}.
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[constant()]
+ */
 static void check_defined(struct cpp *this,
 			  struct define *def,
 			  struct define_argument *args,
@@ -674,6 +1010,14 @@ static void cpp_low_constant(struct cpp *this, int value)
   push_int(res);
 }
 
+/*! @decl int(0..1) constant(mixed identifier)
+ *! @decl __deprecated__ int(0..1) efun(mixed identifier)
+ *!
+ *!   Check whether the argument resolves to a constant or not.
+ *!
+ *! @seealso
+ *!   @[#if], @[defined()]
+ */
 void cpp_func_constant(struct cpp *this, INT32 args)
 {
   if (args != 1) {
@@ -733,6 +1077,25 @@ static struct define *alloc_empty_define(struct pike_string *name,
   return def;
 }
 
+/*! @directive #undef
+ *! @directive #undefine
+ *!
+ *!   This removes the effect of a @[#define], all subsequent occurances of
+ *!   the undefined identifier will not be replaced by anything.
+ *!
+ *! @note
+ *!   Note that when undefining a macro, you just give the identifer,
+ *!   not the arguments.
+ *!
+ *! @example
+ *!   // Strip debug
+ *!   #define werror(X ...) 0
+ *!   #include "/home/someone/experimental/stuff.h"
+ *!   #undef werror
+ *!
+ *! @seealso
+ *!   @[#define], @[defined()]
+ */
 static void undefine(struct cpp *this,
 		     struct pike_string *name)
 {
@@ -758,9 +1121,35 @@ static void undefine(struct cpp *this,
   free((char *)d);
 }
 
-static void do_magic_define(struct cpp *this,
-			    char *name,
-			    magic_define_fun fun)
+/*! @directive #define
+ *!
+ *!   This directive is used to define or redefine a cpp macro.
+ *!
+ *!   The simplest way to use define is to write
+ *!
+ *!   @code
+ *!     #define @b{@i{<identifier>@}@} @i{<replacement string>@}
+ *!   @endcode
+ *!
+ *!   which will cause all subsequent occurances of @tt{@b{@i{<identifier@}@}@}
+ *!   to be replaced with the @tt{@i{<replacement string>@}@}.
+ *!
+ *!   Define also has the capability to use arguments, thus a line like
+ *!
+ *!   @code
+ *!     #define @b{@i{<identifier>@}@}(arg1, arg2) @i{<replacement string>@}
+ *!   @endcode
+ *!
+ *!   would cause @tt{@b{@i{<identifer>@}@}@} to be a macro. All occurances of
+ *!   '@tt{@b{@i{<identifier>@}@}(something1,something2d)@}' would be replaced
+ *!   with the @tt{@i{<replacement string>@}@}.
+ *!   And in the @tt{@i{<replacement string>@}@}, @tt{arg1@} and @tt{arg2@}
+ *!   will be replaced with @tt{something1@} and @tt{something2@}.
+ */
+
+static struct define *do_magic_define(struct cpp *this,
+				      char *name,
+				      magic_define_fun fun)
 {
   struct define* def;
 
@@ -778,6 +1167,8 @@ static void do_magic_define(struct cpp *this,
     def = alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
   this->defines=hash_insert(this->defines, & def->link);
+
+  return def;
 }
 
 static void add_define(struct cpp *this,
@@ -1610,6 +2001,10 @@ static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
                                            struct define_argument *args,
                                            struct string_builder *tmp);
+static void insert_pragma(struct cpp *this,
+			  struct define *def,
+			  struct define_argument *args,
+			  struct string_builder *tmp);
 #define SHIFT 0
 #include "preprocessor.h"
 #undef SHIFT
@@ -1646,6 +2041,12 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
 }
 
 /*** Magic defines ***/
+
+/*! @decl constant __LINE__
+ *!
+ *! This define contains the current line number, represented as an
+ *! integer, in the source file.
+ */
 static void insert_current_line(struct cpp *this,
 				struct define *def,
 				struct define_argument *args,
@@ -1654,6 +2055,10 @@ static void insert_current_line(struct cpp *this,
   string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
 }
 
+/*! @decl constant __FILE__
+ *!
+ *! This define contains the file path and name of the source file.
+ */
 static void insert_current_file_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
@@ -1663,6 +2068,10 @@ static void insert_current_file_as_string(struct cpp *this,
 		    this->current_file->size_shift, tmp);
 }
 
+/*! @decl constant __DIR__
+ *!
+ *! This define contains the directory path of the source file.
+ */
 static void insert_current_dir_as_string(struct cpp *this,
                                          struct define *def,
                                          struct define_argument *args,
@@ -1676,6 +2085,11 @@ static void insert_current_dir_as_string(struct cpp *this,
   pop_stack();
 }
 
+/*! @decl constant __TIME__
+ *!
+ *! This define contains the current time at the time of compilation,
+ *! e.g. "12:20:51".
+ */
 static void insert_current_time_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
@@ -1690,6 +2104,11 @@ static void insert_current_time_as_string(struct cpp *this,
   PUSH_STRING0((p_wchar0 *)buf+11, 8, tmp);
 }
 
+/*! @decl constant __DATE__
+ *!
+ *! This define contains the current date at the time of compilation,
+ *! e.g. "Jul 28 2001".
+ */
 static void insert_current_date_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
@@ -1705,6 +2124,15 @@ static void insert_current_date_as_string(struct cpp *this,
   PUSH_STRING0((p_wchar0 *)buf+19, 5, tmp);
 }
 
+/*! @decl constant __VERSION__
+ *!
+ *! This define contains the current Pike version as a float. If
+ *! another Pike version is emulated, this define is updated
+ *! accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_VERSION__]
+ */
 static void insert_current_version(struct cpp *this,
 				   struct define *def,
 				   struct define_argument *args,
@@ -1715,6 +2143,14 @@ static void insert_current_version(struct cpp *this,
 }
 
 
+/*! @decl constant __MINOR__
+ *! This define contains the minor part of the current Pike version,
+ *! represented as an integer. If another Pike version is emulated,
+ *! this define is updated accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_MINOR__]
+ */
 static void insert_current_minor(struct cpp *this,
 				 struct define *def,
 				 struct define_argument *args,
@@ -1723,13 +2159,95 @@ static void insert_current_minor(struct cpp *this,
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
 }
 
-
+/*! @decl constant __MAJOR__
+ *!
+ *! This define contains the major part of the current Pike version,
+ *! represented as an integer. If another Pike version is emulated,
+ *! this define is updated accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_MAJOR__]
+ */
 static void insert_current_major(struct cpp *this,
 				 struct define *def,
 				 struct define_argument *args,
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_major);
+}
+
+/* _Pragma(STRING) */
+/*! @decl void _Pragma(string directive)
+ *!
+ *! This macro inserts the corresponding @[#pragma] @[directive]
+ *! in the source.
+ *!
+ *! e.g. @expr{_Pragma("strict_types")@} is the same
+ *! as @expr{#pragma strict_types@} .
+ *!
+ *! @seealso
+ *!   @[#pragma]
+ */
+static void insert_pragma(struct cpp *this,
+			  struct define *def,
+			  struct define_argument *args,
+			  struct string_builder *tmp)
+{
+  int i;
+  int in_string = 0;
+  PCHARP arg = args->arg;
+  ptrdiff_t len = args->len;
+
+  /* Make some reasonable amount of space. */
+  string_build_mkspace(tmp, len + 20, arg.shift);
+
+  string_builder_strcat(tmp, "\n#pragma ");
+
+  /* Destringize the argument. */
+  for (i = 0; i < len; i++) {
+    p_wchar2 ch = INDEX_PCHARP(arg, i);
+    switch(ch) {
+    case '\n': case '\r':
+      ch = ' ';
+      /* FALL_THROUGH */
+    case ' ': case '\t':
+      if (in_string) {
+	string_builder_putchar(tmp, ch);
+      }
+      break;
+    case '\"':
+      in_string = !in_string;
+      break;
+    case '\\':
+      if (in_string) {
+	ch = (++i < len) ? INDEX_PCHARP(arg, i) : '\0';
+	if ((ch != '\\') && (ch != '\"')) {
+	  cpp_error(this, "Invalid \\-escape in _Pragma().");
+	  break;
+	}
+      }
+      /* FALL_THROUGH */
+    default:
+      if (in_string) {
+	string_builder_putchar(tmp, ch);
+      } else {
+	cpp_error(this, "Invalid character outside of string.");
+      }
+      break;
+    }
+  }
+
+  if (in_string) {
+    cpp_error(this, "Unterminated string constant.");
+  }
+
+  string_builder_sprintf(tmp, "\n# %ld ", (long)this->current_line);
+  PUSH_STRING_SHIFT(this->current_file->str,
+		    this->current_file->len,
+		    this->current_file->size_shift,
+		    tmp);
+  string_builder_putchar(tmp, '\n');
+
 }
 
 static void insert_callback_define(struct cpp *this,
@@ -1739,7 +2257,9 @@ static void insert_callback_define(struct cpp *this,
 {
   ref_push_string( def->link.s );
   push_string( make_shared_binary_pcharp( args[0].arg, args[0].len ) );
-  if (safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 2, 0 ) && TYPEOF(sp[-1]) == T_STRING ) {
+  if (safe_apply_handler( "evaluate_define",
+			  this->handler, this->compat_handler, 2, 0 ) &&
+      TYPEOF(sp[-1]) == T_STRING ) {
     string_builder_shared_strcat(tmp, sp[-1].u.string);
     pop_stack();
   }
@@ -1752,26 +2272,13 @@ static void insert_callback_define_no_args(struct cpp *this,
 {
   struct svalue *save_sp = Pike_sp;
   ref_push_string( def->link.s );
-  if (safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 1, 0 ) && TYPEOF(sp[-1]) == T_STRING )
+  if (safe_apply_handler( "evaluate_define",
+			  this->handler, this->compat_handler, 1, 0 ) &&
+      TYPEOF(sp[-1]) == T_STRING )
     string_builder_shared_strcat(tmp, sp[-1].u.string);
   if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
 }
 
-/*! @namespace predef:: */
-/*! @decl import cpp:: */
-/*! @endnamespace */
-
-/*! @namespace cpp:: */
-
-/*! @decl constant __VERSION__
- *!
- *! This define contains the current Pike version as a float. If
- *! another Pike version is emulated, this define is updated
- *! accordingly.
- *!
- *! @seealso
- *!   @[__REAL_VERSION__]
- */
 
 /*! @decl constant __REAL_VERSION__
  *!
@@ -1782,15 +2289,6 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   @[__VERSION__]
  */
 
-/*! @decl constant __MAJOR__
- *!
- *! This define contains the major part of the current Pike version,
- *! represented as an integer. If another Pike version is emulated,
- *! this define is updated accordingly.
- *!
- *! @seealso
- *!   @[__REAL_MAJOR__]
- */
 
 /*! @decl constant __REAL_MAJOR__
  *!
@@ -1801,14 +2299,6 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   @[__MAJOR__]
  */
 
-/*! @decl constant __MINOR__
- *! This define contains the minor part of the current Pike version,
- *! represented as an integer. If another Pike version is emulated,
- *! this define is updated accordingly.
- *!
- *! @seealso
- *!   @[__REAL_MINOR__]
- */
 
 /*! @decl constant __REAL_MINOR__
  *!
@@ -1837,32 +2327,25 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   @[__BUILD__]
  */
 
-/*! @decl constant __LINE__
- *!
- *! This define contains the current line number, represented as an
- *! integer, in the source file.
- */
 
-/*! @decl constant __FILE__
- *!
- *! This define contains the file path and name of the source file.
- */
 
-/*! @decl constant __DIR__
- *!
- *! This define contains the directory path of the source file.
- */
 
-/*! @decl constant __DATE__
- *!
- *! This define contains the current date at the time of compilation,
- *! e.g. "Jul 28 2001".
- */
 
-/*! @decl constant __TIME__
+
+
+/*! @decl constant static_assert
  *!
- *! This define contains the current time at the time of compilation,
- *! e.g. "12:20:51".
+ *!   This define expands to the symbol @[_Static_assert].
+ *!
+ *!   It is the preferred way to perform static
+ *!   (ie compile-time) assertions.
+ *!
+ *! @note
+ *!   The macro can also be used to check for whether static assertions
+ *!   are supported.
+ *!
+ *! @seealso
+ *!   @[_Static_assert()]
  */
 
 /*! @decl constant __PIKE__
@@ -2148,16 +2631,21 @@ void f_cpp(INT32 args)
 
   init_string_builder(&this.buf, 0);
 
-
+  /* These attempt to be compatible with the C standard. */
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
-  do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
+
+  /* These are from the 201x C standard. */
+  do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
+  simple_add_define(&this, "static_assert", "_Static_assert");
+
+  /* These are Pike extensions. */
+  do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__VERSION__",insert_current_version);
   do_magic_define(&this,"__MAJOR__",insert_current_major);
   do_magic_define(&this,"__MINOR__",insert_current_minor);
-
 
   {
 #if 0

@@ -5,21 +5,21 @@
 //! inserted horizontally from left to right or right to left depending
 //! on the call used.
 //!
-//!@expr{ GTK.Hbox(0,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image>../images/gtk_hbox.png</image>@}
+//!@expr{ GTK1.Hbox(0,0)->add(GTK1.Button("Hello"))->add(GTK1.Button("World"))->pack_end_defaults(GTK1.Button("From right"))->pack_start_defaults(GTK1.Button("From left"))@}
+//!@xml{<image>../images/gtk1_hbox.png</image>@}
 //!
-//!@expr{ GTK.Hbox(1,0)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image>../images/gtk_hbox_2.png</image>@}
+//!@expr{ GTK1.Hbox(1,0)->add(GTK1.Button("Hello"))->add(GTK1.Button("World"))->pack_end_defaults(GTK1.Button("From right"))->pack_start_defaults(GTK1.Button("From left"))@}
+//!@xml{<image>../images/gtk1_hbox_2.png</image>@}
 //!
-//!@expr{ GTK.Hbox(1,40)->add(GTK.Button("Hello"))->add(GTK.Button("World"))->pack_end_defaults(GTK.Button("From right"))->pack_start_defaults(GTK.Button("From left"))@}
-//!@xml{<image>../images/gtk_hbox_3.png</image>@}
+//!@expr{ GTK1.Hbox(1,40)->add(GTK1.Button("Hello"))->add(GTK1.Button("World"))->pack_end_defaults(GTK1.Button("From right"))->pack_start_defaults(GTK1.Button("From left"))@}
+//!@xml{<image>../images/gtk1_hbox_3.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Box;
+inherit GTK1.Box;
 
-static GTK.Hbox create( int all_same_size, int hpadding );
+protected GTK1.Hbox create( int all_same_size, int hpadding );
 //! Create a new horizontal box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! hpadding is added to the left and right of the children.

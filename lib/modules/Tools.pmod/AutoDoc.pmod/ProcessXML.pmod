@@ -23,6 +23,7 @@ protected private void processWarning(string message, mixed ... args) {
 //
 // <autodoc>
 //   <namespace/>
+//   <appendix/> <!-- Note: Only in compat mode! -->
 //   <doc/>?
 // </autodoc>
 //
@@ -68,6 +69,7 @@ protected private void processWarning(string message, mixed ... args) {
 //   <constant/>
 //   <typedef/>
 //   <inherit/>
+//   <directive/>
 //   <doc/>
 // </docgroup>
 //
@@ -263,8 +265,8 @@ string moveImages(string docXMLFile,
   string cwd = getcwd();
   SimpleNode n;
   mixed err = catch {
-    n = simple_parse_input(docXMLFile)[0];
-  };
+      n = simple_parse_input(docXMLFile)->get_first_element();
+    };
   if (err) {
     int offset;
     if (sscanf(err[0], "%*s[Offset: %d]", offset) == 2) {
@@ -296,6 +298,11 @@ string moveImages(string docXMLFile,
             counter = 0;
             break;
 
+  	  case "appendix":
+	    if(attr->name != "")
+	      parents += ({ "APPENDIX" + hash(attr->name) });
+	    break;
+
 	  case "chapter":
 	    if(attr->name != "")
 	      parents += ({ "CHAPTER" + hash(attr->name) });
@@ -312,11 +319,15 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
+            string imageFilename;
             array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
-                || children[0]->get_node_type() != XML_TEXT)
-              processError("bad image tag: %s\n", n->html_of_node());
-            string imageFilename = children[0]->get_text();
+                || children[0]->get_node_type() != XML_TEXT) {
+	      if (!(imageFilename = n->get_attributes()["src"]))
+		processError("bad image tag: %s\n", n->html_of_node());
+	      processWarning("Invalid image tag: %s\n", n->html_of_node());
+	    } else
+	      imageFilename = children[0]->get_text();
             imageFilename = combine_path(imageSourceDir, imageFilename);
             imageFilename = combine_path(cwd, imageFilename);
             string formatExt = (basename(imageFilename) / ".")[-1];
@@ -361,7 +372,15 @@ string moveImages(string docXMLFile,
       }
     }
   );
-  return n->html_of_node();
+  SimpleRootNode root = SimpleRootNode();
+  root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
+						"encoding":"utf-8",
+					     ])),
+			    SimpleTextNode("\n"),
+			    n,
+			    SimpleTextNode("\n"),
+			 }));
+  return root->html_of_node();
 }
 
 //========================================================================
@@ -372,95 +391,211 @@ protected int isAutoDoc(SimpleNode node) { return node->get_any_name() == "autod
 protected int isNameSpace(SimpleNode node) { return node->get_any_name() == "namespace"; }
 protected int isClass(SimpleNode node) { return node->get_any_name() == "class"; }
 protected int isModule(SimpleNode node) { return node->get_any_name() == "module"; }
+protected int isInherit(SimpleNode node) { return node->get_any_name() == "inherit"; }
+protected int isImport(SimpleNode node) { return node->get_any_name() == "import"; }
 protected int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
+protected int isDocGroup(SimpleNode node) { return node->get_any_name() == "docgroup"; }
+protected int isModifiers(SimpleNode node) { return node->get_any_name() == "modifiers"; }
 
-protected string getName(SimpleNode node) { return node->get_attributes()["name"]; }
+protected string getName(SimpleNode node) {
+  string name = node->get_attributes() && node->get_attributes()["name"];
+  if (name) {
+    if (isInherit(node) || isImport(node)) {
+      // Separate name-space for inherits and imports.
+      return node->get_any_name() + ":" + name;
+    }
+  }
+  return name;
+}
+
+protected int isText(SimpleNode node) { return node->get_node_type() == XML_TEXT; }
+
+// This function is just used to get something suitable to use
+// for sorting multiple docgroups for the same symbol.
+protected string renderType(SimpleNode node)
+{
+  SimpleNode type_node;
+  if ((< "method", "variable", "constant", "directive",
+	 "typedef", "inherit", "import" >)[node->get_any_name()]) {
+    type_node = node;
+  } else {
+    type_node =
+      node->get_first_element("method") ||
+      node->get_first_element("variable") ||
+      node->get_first_element("constant") ||
+      node->get_first_element("directive") ||
+      node->get_first_element("typedef") ||
+      node->get_first_element("inherit") ||
+      node->get_first_element("import");
+    if (!type_node) {
+      werror("Unknown type_node: %O\n", node->render_xml());
+      type_node = node;
+    }
+  }
+  return type_node->render_xml();
+}
 
 protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
 {
   // NB: There can only be one <text> node in a <doc> node,
   //     and it comes first among the element nodes.
   SimpleNode orig_text = orig->get_first_element("text");
-  SimpleNode new_text = orig->get_first_element("text");
-  if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
-    orig->replace_child(orig_text, new_text);
-  } else if (sizeof(String.trim_all_whites(new_text->value_of_node()))) {
-    orig_text->replace_children(orig_text->get_children() +
-				new_text->get_children());
+  SimpleNode new_text = new->get_first_element("text");
+  if (new_text && sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+    if (!orig_text) {
+      orig->add_child(new_text);
+    } else if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+      orig->replace_child(orig_text, new_text);
+    } else {
+      orig_text->replace_children(orig_text->get_children() +
+				  new_text->get_children());
+    }
   }
 
   // Append the remaining (typically <group>) nodes in new after
   // the previously existing in orig.
-  array(SimpleNode) new_children = new->get_children();
-  orig->replace_children(orig->get_children() +
-			 new_children[search(new_children, new_text)+1..]);
+  array(SimpleNode) new_children = new->get_children() - ({ new_text });
+  orig->replace_children(orig->get_children() + new_children);
 }
 
-//!   Puts all children of @[source] into the tree @[dest], in their right
-//!   place module-hierarchically.
+//!   Puts all children of @[source] into the tree @[dest], in their
+//!   correct place module-hierarchically.
+//!
 //!   Used to merge the results of extractions of different Pike and C files.
+//!
+//!   Some minor effort is expended to normalize the result to some
+//!   sort of canonical order.
+//!
 //! @param source
 //! @param dest
 //!   The nodes @[source] and @[dest] are @tt{<class>@}, @tt{<module>@},
 //!   @tt{<namespace>@} or @tt{<autodoc>@} nodes that are identical in
 //!   the sense that they represent the same module, class or namespace.
 //!   Typically they both represent @tt{<autodoc>@} nodes.
+//!
+//! @note
+//!   Both @[source] and @[dest] are modified destructively.
+//!
 //! @note
 //!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
 //!   that have been marked with @@appears or @@belongs, are still in the
 //!   wrong place in the tree, so @[handleAppears()] (or @[postProcess()])
 //!   must be called on the whole documentation tree to relocate them once
 //!   the tree has been fully merged.
-void mergeTrees(SimpleNode dest, SimpleNode source) {
+void mergeTrees(SimpleNode dest, SimpleNode source)
+{
   mapping(string : SimpleNode) dest_children = ([]);
+  mapping(string : array(SimpleNode)) dest_groups = ([]);
   SimpleNode dest_has_doc;
+  multiset(string) dest_modifiers = (<>);
+  array(SimpleNode) other_children = ({});
 
-  foreach(dest->get_children(), SimpleNode node)
-    if (isNameSpace(node) || isClass(node) || isModule(node))
-      dest_children[getName(node)] = node;
-    else if (isDoc(node))
-      dest_has_doc = node;
+  if ((dest->get_node_type() == Parser.XML.Tree.XML_ROOT) ||
+      (source->get_node_type() == Parser.XML.Tree.XML_ROOT)) {
+    error("mergeTrees() MUST be called with element nodes.\n");
+  }
 
-  array(SimpleNode) children = source->get_children();
-  foreach(children; int i; SimpleNode node)
+  foreach(dest->get_children(), SimpleNode node) {
+    string name = getName(node);
+    if (name) {
+      dest_children[name] = node;
+    } else if (isDoc(node)) {
+      // Strip empty doc nodes.
+      if (sizeof(String.trim_all_whites(node->value_of_node())))
+	dest_has_doc = node;
+    } else if (isDocGroup(node)) {
+      // Docgroups are special:
+      //  * More than one symbol my be documented in the group.
+      //  * The same symbol may be documented multiple times
+      //    with different signatures.
+      foreach(node->get_elements(), SimpleNode sub) {
+	if (name = getName(sub)) {
+	  dest_groups[name] += ({ node });
+	}
+      }
+    } else if (isModifiers(node)) {
+      dest_modifiers = (multiset(string))node->get_elements()->get_any_name();
+    } else if (!isText(node) ||
+	       sizeof(String.trim_all_whites(node->value_of_node()))) {
+      other_children += ({ node });
+    }
+  }
+
+  array(SimpleNode) children = source->get_elements();
+  foreach(children; int i; SimpleNode node) {
     switch(node->get_any_name()) {
+      case "appendix":
+	// FIXME: Warn when not in compat mode.
+	// FALL_THROUGH
       case "namespace":
       case "class":
       case "module":
       case "enum":
-      case "typedef":
         {
-        string name = getName(node);
-        SimpleNode n = dest_children[name];
-        if (n) {
-          if (node->get_any_name() != n->get_any_name())
-            processError("entity '" + name +
-                         "' used both as a " + node->get_any_name() +
-			 " and a " + n->get_any_name());
-          mergeTrees(n, node);
-        }
-        else
-          dest->add_child(node);
+	  string name = getName(node);
+
+	  if (!name) {
+	    processError("No name for %s:\n"
+			 "%O\n",
+			 node->get_any_name(), node->render_xml()[..256]);
+	  }
+
+	  SimpleNode n = dest_children[name];
+	  if (n) {
+	    if (node->get_any_name() != n->get_any_name()) {
+	      if (!(<"module", "class">)[n->get_any_name()] ||
+		  !(<"module", "class">)[node->get_any_name()]) {
+		processError("entity '" + name +
+			     "' used both as a " + node->get_any_name() +
+			     " and a " + n->get_any_name() + ".");
+	      }
+	      processWarning("entity '" + name +
+			     "' used both as a " + node->get_any_name() +
+			     " and a " + n->get_any_name() + ".");
+	      processWarning("Converting to 'class'.");
+	      n->set_tag_name("class");
+	      node->set_tag_name("class");
+	    }
+	  } else {
+	    // Create a dummy node to merge with, so that we can normalize.
+	    n = SimpleElementNode(node->get_any_name(),
+				  node->get_attributes());
+	    dest_children[name] = n;
+	  }
+	  mergeTrees(n, node);
         }
 	children[i] = 0;
         break;
-      case "inherit":
-      case "import":
-      case "modifiers":
-        // these shouldn't be duplicated..
+
+      case "docgroup":
+	{
+	  foreach(node->get_elements(), SimpleNode sub) {
+	    string name = getName(sub);
+	    if (!name) continue;
+	    dest_groups[name] += ({ node });
+	  }
+	  SimpleNode doc = node->get_first_element("doc");
+	  if (doc && !sizeof(String.trim_all_whites(doc->value_of_node()))) {
+	    // The doc is NULL.
+	    node->remove_child(doc);
+	  }
+        }
+	children[i] = 0;
         break;
+
+      case "modifiers":
+        dest_modifiers |= (multiset)node->get_elements()->get_any_name();
+        break;
+
       case "doc":
-        if (dest_has_doc) {
+	if (!sizeof(String.trim_all_whites(node->value_of_node()))) {
+	  // NULL doc.
+	} else if (dest_has_doc) {
 	  if ((node->get_attributes()["placeholder"] == "true") ||
-	      !sizeof(String.trim_all_whites(node->value_of_node())) ||
 	      (String.trim_all_whites(node->value_of_node()) ==
 	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
-	    // New doc is placeholder, empty or same as old.
-	    children[i] = 0;
-	    break;
-	  }
-	  if ((dest_has_doc->get_attributes()["placeholder"] != "true") &&
-	      sizeof(String.trim_all_whites(dest_has_doc->value_of_node()))) {
+	    // New doc is placeholder or same as old.
+	  } else if (dest_has_doc->get_attributes()["placeholder"] != "true") {
 	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
 	    // werror("New doc: %O\n", node->value_of_node());
 	    if (isNameSpace(dest))
@@ -474,20 +609,85 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
 			     getName(dest));
 	    else
 	      processWarning("Duplicate documentation");
+	    // Attempt to merge the two.
 	    mergeDoc(dest_has_doc, node);
-	    children[i] = 0;
 	  } else {
 	    // Old doc was placeholder or empty.
-	    dest->remove_child(dest_has_doc);
+	    dest_has_doc = node;
 	  }
-        }
-        // fall through
+        } else {
+	  dest_has_doc = node;
+	}
+	children[i] = 0;
+	break;
+
       default:
-        dest->add_child(node);
+	if (!isText(node) ||
+	    sizeof(String.trim_all_whites(node->value_of_node()))) {
+	  if (node->get_any_name() != "source-position") {
+	    werror("Got other node: %O\n", node->render_xml());
+	  }
+	  other_children += ({ node });
+	}
 	children[i] = 0;
 	break;
     }
+  }
+
   source->replace_children(children - ({ 0 }));
+
+  // Create a canonical order (and whitespace) for the children
+  // of the dest node.
+  children = ({});
+
+  if (sizeof(dest_modifiers)) {
+    SimpleElementNode modifiers = SimpleElementNode("modifiers", ([]));
+    modifiers->replace_children(map(indices(dest_modifiers),
+				    SimpleElementNode, ([])));
+    children = ({ SimpleTextNode("\n"), modifiers });
+  }
+
+  if (dest_has_doc) {
+    children += ({ SimpleTextNode("\n"), dest_has_doc });
+  }
+
+  multiset(SimpleNode) added_nodes = (<>);
+
+  foreach(sort(indices(dest_groups)), string name) {
+    array(SimpleNode) nodes = dest_groups[name];
+
+    if (!nodes) continue;
+
+    if (sizeof(nodes) > 1)
+      sort(map(nodes, renderType), nodes);
+
+    foreach(nodes, SimpleNode n) {
+      if (added_nodes[n]) continue;
+
+      children += ({ SimpleTextNode("\n"), n, });
+      added_nodes[n] = 1;
+    }
+  }
+
+  foreach(sort(indices(dest_children)), string name) {
+    SimpleNode node = dest_children[name];
+
+    if (!node) continue;
+
+    children += ({ SimpleTextNode("\n"), node, });
+  }
+
+  // Handle any remaining nodes.
+  if (sizeof(other_children)) {
+    if (!isText(other_children[0]))
+      children += ({ SimpleTextNode("\n") });
+    children += other_children;
+    if (!isText(other_children[-1]))
+      children += ({ SimpleTextNode("\n") });
+  } else
+    children += ({ SimpleTextNode("\n") });
+
+  dest->replace_children(children);
 }
 
 protected void reportError(string filename, mixed ... args) {
@@ -807,7 +1007,7 @@ protected class ScopeStack {
 	     "idents:%O\n"
 	     "stack:%O\n",
 	     ref, idents,
-	     scopeArr);
+	     namespaceStack);
     }
 #endif /* 0 */
 
@@ -834,7 +1034,7 @@ protected class ScopeStack {
       string firstIdent = idents[0];
       for(int i = sizeof(scopes[namespace]); i--;) {
 	Scope s = scopes[namespace][i];
-	if (s->idents[firstIdent])
+	if (s->idents[firstIdent] || s->idents["/precompiled/" + firstIdent])
 	  if (s->type == "params" && !not_param) {
 	    return ([ "param" : ref ]);
 	  }
@@ -848,6 +1048,7 @@ protected class ScopeStack {
 		res += name + ".";
 	      //werror("[[[[ name == %O\n", name);
 	    }
+	    if (!s->idents[firstIdent]) res += "/precompiled/";
 	    matches += ({ res + ref });
 	  }
       }
@@ -1048,6 +1249,9 @@ class NScope
   // or docgroup.
   protected void create(SimpleNode tree, string|void path)
   {
+    if (tree->get_node_type() == XML_ROOT) {
+      tree = tree->get_first_element();
+    }
     type = tree->get_any_name();
     name = tree->get_attributes()->name;
     if (path) {
@@ -1216,7 +1420,8 @@ class NScope
   }
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
-    int(1..1)|NScope scope = symbols[path[0]];
+    int(1..1)|NScope scope =
+      symbols[path[0]] || symbols["/precompiled/"+path[0]];
     if (!scope) {
       // Not immediately available in this scope.
       if (inherits) {
@@ -1282,8 +1487,9 @@ class NScopeStack
       mapping(string:array(string)) rev = ([]);
       foreach(sort(indices(failures)), string ref) {
 	mapping(string:int) where = failures[ref];
-	f->write("  %O: %{%O:%d, %}\n",
-	       ref, (array)where);
+	array(array(string|int)) srcs = (array)where;
+	sort(map(srcs, predef::`[], 0), srcs);
+	f->write("  %O: %{%O:%d, %}\n", ref, srcs);
 	foreach(indices(where), string source)
 	  if(rev[source])
 	    rev[source] += ({ ref });
@@ -1293,7 +1499,7 @@ class NScopeStack
       f->write("\n\nReference source: Reference targets.\n\n");
       foreach(sort(indices(rev)), string source) {
 	array(string) targets = rev[source];
-	f->write("%O:%{ %O%}\n", source, targets);
+	f->write("%O:%{ %O%}\n", source, sort(targets));
       }
       f->close();
     }
@@ -1316,7 +1522,9 @@ class NScopeStack
   {
     int(1..1)|NScope scope = top->symbols[symbol];
     if (!scope) {
-      error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      if (!(scope = top->symbols["/precompiled/" + symbol])) {
+	error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      }
     }
     if (!objectp(scope)) {
       error("Symbol %s is not a scope.\n"
@@ -1343,7 +1551,7 @@ class NScopeStack
     int(1..1)|NScope val = scopes;
     foreach(path, string sym) {
       if (objectp(val)) {
-	val = val->symbols[sym];
+	val = val->symbols[sym] || val->symbols["/precompiled/" + sym];
       } else {
 	return 0;
       }

@@ -2921,8 +2921,6 @@ the PRIVATE_CRT stuff in install.pike.\n");
 		       combine_path(doc_prefix, "src", "core_autodoc.xml"));
       try_install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
 		  combine_path(doc_prefix, "src", "images"), 0);
-      try_install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
-		   combine_path(doc_prefix, "src", "Makefile"));
     }
     else if(!export) {
       mkdirhier(combine_path(doc_prefix, "src", "images"));
@@ -2937,6 +2935,14 @@ the PRIVATE_CRT stuff in install.pike.\n");
 		    combine_path(doc_prefix, "src", "src_images"), 0);
     try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
 		    combine_path(doc_prefix, "src", "structure"), 0);
+    try_install_dir(combine_path(vars->DOCDIR_SRC, "chapters"),
+		    combine_path(doc_prefix, "src", "chapters"), 0);
+
+    foreach(({"Makefile", "doxfilter.sh", "doxygen.cfg", "inlining.txt",
+	      "keywords.txt", "syntax.txt", "tags.txt", "template.xsl",
+	      "xml.txt", }), string f)
+      install_file(combine_path(vars->DOCDIR_SRC, f),
+		   combine_path(doc_prefix, "src", f));
 
     foreach(({"install_module", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)

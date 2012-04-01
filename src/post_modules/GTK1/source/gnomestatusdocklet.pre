@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require docklets;
 class Gnome.StatusDocklet;
-inherit GTK.Object;
+inherit GTK1.Object;
 %{
 #include <status-docklet.h>
 #define GNOME_STATUS_DOCKLET(X) ((StatusDocklet *)X)
@@ -39,7 +39,7 @@ signal build_plug;
 //! This signal is emitted when you actually need to build the widget
 //! that you want to place inside the plug in the status docklet. It
 //! should be 22 by 22, and if it is larger it will be cropped.
-member GTK.Plug plug;
+member GTK1.Plug plug;
 //! the current W(plug) holding the docklet
 void create();
 //! Creates a new status docklet object with the default parameters. By

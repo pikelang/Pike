@@ -2059,11 +2059,21 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
+ *! @param s
+ *!   String of UTF-8 encoded data to decode.
+ *!
+ *! @param extended
+ *!   Bitmask with extension options.
+ *!   @int
+ *!     @value 1
+ *!       Accept and decode the extension used by @[string_to_utf8()].
+ *!     @value 2
+ *!       Accept and decode UTF-8 encoded UTF-16 (ie accept and
+ *!       decode valid surrogates).
+ *!   @endint
+ *!
  *! @note
  *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
- *!
- *!   Accepts and decodes the extension used by @[string_to_utf8()] if
- *!   @[extended] is @expr{1@}.
  *!
  *! @note
  *!   In conformance with RFC 3629 and Unicode 3.1 and later,
@@ -2113,13 +2123,16 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 		       c, i);
       }
 
-#define GET_CONT_CHAR(in, i, c) do {					\
+#define GET_CHAR(in, i, c) do {						\
 	i++;								\
 	if (i >= in->len)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
 			 "Truncated UTF-8 sequence at end of string.\n"); \
 	c = STR0 (in)[i];						\
+      } while(0)
+#define GET_CONT_CHAR(in, i, c) do {					\
+	GET_CHAR(in, i, c);						\
 	if ((c & 0xc0) != 0x80)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
@@ -2156,11 +2169,32 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	    UTF8_SEQ_ERROR ("0xe0 ", c, i - 1, "is a non-shortest form");
 	  cont = 1;
 	}
-	else if (!extended && c == 0xed) {
+	else if (!(extended & 1) && c == 0xed) {
 	  GET_CONT_CHAR (in, i, c);
-	  if (c > 0x9f)
-	    UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
-			    "an invalid surrogate character");
+	  if (c & 0x20) {
+	    /* Surrogate. */
+	    if (!(extended & 2)) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
+			      "a UTF-16 surrogate character");
+	    }
+	    if (c & 0x10) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i - 1, "would decode to "
+			      "a UTF-16 low surrogate character");
+	    }
+	    GET_CONT_CHAR(in, i, c);
+
+	    GET_CHAR (in, i, c);
+	    if (c != 0xed) {
+	      UTF8_SEQ_ERROR ("", c, i-1, "UTF-16 low surrogate "
+			      "character required");
+	    }
+	    GET_CONT_CHAR (in, i, c);
+	    if ((c & 0xf0) != 0xb0) {
+	      UTF8_SEQ_ERROR ("0xed ", c, i-1, "UTF-16 low surrogate "
+			      "character required");
+	    }
+	    shift = 2;
+	  }
 	  cont = 1;
 	}
 	else
@@ -2179,7 +2213,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	      UTF8_SEQ_ERROR ("0xf0 ", c, i - 1, "is a non-shortest form");
 	    cont = 2;
 	  }
-	  else if (!extended) {
+	  else if (!(extended & 1)) {
 	    if (c > 0xf4)
 	      UTF8_SEQ_ERROR ("", c, i, "would decode to "
 			      "a character outside the valid UTF-8 range");
@@ -2203,7 +2237,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
 			 i);
 
-	else if (!extended)
+	else if (!(extended & 1))
 	  UTF8_SEQ_ERROR ("", c, i, "would decode to "
 			  "a character outside the valid UTF-8 range");
 
@@ -2247,6 +2281,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       while(cont--)
 	GET_CONT_CHAR (in, i, c);
 
+#undef GET_CHAR
 #undef GET_CONT_CHAR
 #undef UTF8_SEQ_ERROR
     }
@@ -2335,6 +2370,11 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	  while(cont--) {
 	    unsigned int c2 = STR0(in)[i++] & 0x3f;
 	    c = (c << 6) | c2;
+	  }
+	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
+	    /* Low surrogate */
+	    c &= 0x3ff;
+	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
 	  }
 	}
 	out_str[j++] = c;
@@ -7430,8 +7470,13 @@ struct callback *add_memory_usage_callback(callback_func call,
  *!   with information about how many arrays/mappings/strings etc. there
  *!   are currently allocated and how much memory they use.
  *!
+ *!   The entries in the mapping are typically paired, with one
+ *!   named @expr{"num_" + SYMBOL + "s"@} containing a count,
+ *!   and the other named @expr{SYMBOL + "_bytes"@} containing
+ *!   a best effort approximation of the size in bytes.
+ *!
  *! @note
- *!   Exactly what this function returns is version dependant.
+ *!   Exactly what fields this function returns is version dependant.
  *!
  *! @seealso
  *!   @[_verify_internals()]
@@ -7440,62 +7485,78 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   size_t num,size;
   struct svalue *ss;
+#ifdef USE_DL_MALLOC
+  struct mallinfo mi = dlmallinfo();
+#elif HAVE_MALLINFO
+  struct mallinfo mi = mallinfo();
+#endif
   pop_n_elems(args);
   ss=Pike_sp;
 
-  count_memory_in_mappings(&num, &size);
-  push_text("num_mappings");
-  push_ulongest(num);
-  push_text("mapping_bytes");
-  push_ulongest(size);
+#if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
-  count_memory_in_strings(&num, &size);
-  push_text("num_strings");
-  push_ulongest(num);
-  push_text("string_bytes");
-  push_ulongest(size);
+  push_text("num_malloc_blocks");
+  push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
+  push_text("malloc_block_bytes");
+  /* NB: Kludge for glibc: hblkhd is intended for malloc overhead
+   *     according to the Solaris manpages, but glibc keeps the
+   *     amount of mmapped memory there, and uses the arena only
+   *     for the amount from sbrk.
+   *
+   *     The hblkhd value on proper implementations should be
+   *     small enough not to affect the total much, so no need
+   *     for a special case.
+   */
+  push_ulongest(mi.arena + mi.hblkhd);
 
-  count_memory_in_arrays(&num, &size);
-  push_text("num_arrays");
-  push_ulongest(num);
-  push_text("array_bytes");
-  push_ulongest(size);
+  push_text("num_malloc");
+  push_ulongest(mi.ordblks + mi.smblks);
+  push_text("malloc_bytes");
+  if (!mi.smblks) {
+    /* NB: Kludge for dlmalloc: usmblks contains the max uordblks value. */
+    push_ulongest(mi.uordblks);
+  } else {
+    push_ulongest(mi.usmblks + mi.uordblks);
+  }
 
-  count_memory_in_programs(&num,&size);
-  push_text("num_programs");
-  push_ulongest(num);
-  push_text("program_bytes");
-  push_ulongest(size);
+  push_text("num_free_blocks");
+  push_int(1);
+  push_text("free_block_bytes");
+  push_ulongest(mi.fsmblks + mi.fordblks);
 
-  count_memory_in_multisets(&num, &size);
-  push_text("num_multisets");
-  push_ulongest(num);
-  push_text("multiset_bytes");
-  push_ulongest(size);
+#endif
 
-  count_memory_in_objects(&num, &size);
-  push_text("num_objects");
-  push_ulongest(num);
-  push_text("object_bytes");
-  push_ulongest(size);
+#define COUNT(TYPE) do {					\
+    PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
+    push_text("num_" #TYPE "s");				\
+    push_ulongest(num);						\
+    push_text(#TYPE "_bytes");					\
+    push_ulongest(size);					\
+  } while(0)
 
-  count_memory_in_callbacks(&num, &size);
-  push_text("num_callbacks");
-  push_ulongest(num);
-  push_text("callback_bytes");
-  push_ulongest(size);
-
-  count_memory_in_callables(&num, &size);
-  push_text("num_callables");
-  push_ulongest(num);
-  push_text("callable_bytes");
-  push_ulongest(size);
-
-  count_memory_in_pike_frames(&num, &size);
-  push_text("num_frames");
-  push_ulongest(num);
-  push_text("frame_bytes");
-  push_ulongest(size);
+  COUNT(array);
+  COUNT(ba_mixed_frame);
+  COUNT(callable);
+  COUNT(callback);
+  COUNT(catch_context);
+  COUNT(compat_cb_box);
+  COUNT(destroy_called_mark);
+  COUNT(gc_rec_frame);
+  COUNT(mapping);
+  COUNT(marker);
+  COUNT(mc_marker);
+  COUNT(multiset);
+  COUNT(node_s);
+  COUNT(object);
+  COUNT(pike_frame);
+  COUNT(pike_list_node);
+  COUNT(pike_type);
+  COUNT(program);
+  COUNT(short_pike_string);
+  COUNT(string);
+#ifdef PIKE_DEBUG
+  COUNT(supporter_marker);
+#endif
 
 #ifdef DEBUG_MALLOC
   {
@@ -7504,29 +7565,10 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
     extern void count_memory_in_memlocs(size_t*, size_t*);
     extern void count_memory_in_memhdrs(size_t*, size_t*);
 
-    count_memory_in_memory_maps(&num, &size);
-    push_text("num_memory_maps");
-    push_ulongest(num);
-    push_text("memory_map_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memory_map_entrys(&num, &size);
-    push_text("num_memory_map_entries");
-    push_ulongest(num);
-    push_text("memory_map_entrie_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memlocs(&num, &size);
-    push_text("num_memlocs");
-    push_ulongest(num);
-    push_text("memloc_bytes");
-    push_ulongest(size);
-
-    count_memory_in_memhdrs(&num, &size);
-    push_text("num_memhdrs");
-    push_ulongest(num);
-    push_text("memhdr_bytes");
-    push_ulongest(size);
+    COUNT(memory_map);
+    COUNT(memory_map_entry);
+    COUNT(memloc);
+    COUNT(memhdr);
   }
 #endif
 
@@ -8253,7 +8295,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 {
   char *s;
   INT_TYPE i;
-  extern char * dynamic_location(const char *file, int line);
+  extern char * dynamic_location(const char *file, INT_TYPE line);
   extern char * dmalloc_default_location;
 
   if(args)
@@ -9314,7 +9356,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     struct program *id_prog, *p2;
     int func = SUBTYPEOF(Pike_sp[-args]);
     struct identifier *id;
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = NULL;
 
     if (p == pike_trampoline_program) {
@@ -9964,7 +10006,7 @@ void init_builtin_efuns(void)
 			   tSet(tArr(tMix)),
 			   tSet(tOr(tInt0,tVar(2)))),
 
-		 tMapStuff(tOr(tPrg(tObj),tFunction),tMix,
+		 tMapStuff(tAnd(tNot(tArray),tOr(tPrg(tObj),tFunction)),tMix,
 			   tMap(tStr,tVar(2)),
 			   tMap(tStr,tInt01),
 			   tMap(tStr,tObj),

@@ -4,7 +4,7 @@
 //! such as buttons in a toolbar.
 //! 
 //! An individual tooltip belongs to a group of tooltips. A group is
-//! created with a call to GTK.Tooltips(). Every tooltip in the
+//! created with a call to GTK1.Tooltips(). Every tooltip in the
 //! group can then be turned off with a call to disable()
 //! and enabled with enable().
 //! 
@@ -21,41 +21,41 @@
 //!
 //!
 
-inherit GTK.Data;
+inherit GTK1.Data;
 
-static GTK.Tooltips create( );
+protected GTK1.Tooltips create( );
 //! Creates an empty group of tooltips. This function initialises a
-//! GTK.Tooltips structure. Without at least one such structure, you
+//! GTK1.Tooltips structure. Without at least one such structure, you
 //! can not add tips to your application.
 //!
 //!
 
-GTK.Tooltips disable( );
+GTK1.Tooltips disable( );
 //! Disable this tooltip collection
 //!
 //!
 
-GTK.Tooltips enable( );
+GTK1.Tooltips enable( );
 //! Enable this tooltip collection
 //!
 //!
 
-GTK.Tooltips force_window( );
+GTK1.Tooltips force_window( );
 //! Realize the tooltip window (as returned from get_gdkwindow())
 //!
 //!
 
-GTK.Tooltips set_colors( GDK.Color foreground, GDK.Color background );
+GTK1.Tooltips set_colors( GDK1.Color foreground, GDK1.Color background );
 //! Changes the foreground and background colors.
 //!
 //!
 
-GTK.Tooltips set_delay( int delay );
+GTK1.Tooltips set_delay( int delay );
 //! Set the delat (in seconds)
 //!
 //!
 
-GTK.Tooltips set_tip( GTK.Widget in, string to );
+GTK1.Tooltips set_tip( GTK1.Widget in, string to );
 //! Adds a tooltip containing the message tip_text to the specified
 //! W(Widget).
 //!

@@ -1,18 +1,18 @@
 //!
 
-inherit GTK.DrawingArea;
+inherit GTK1.DrawingArea;
 
-static GTK.GLArea create( array gloptions );
+protected GTK1.GLArea create( array gloptions );
 //!
 
-GTK.GLArea make_current( );
+GTK1.GLArea make_current( );
 //!
 
-GTK.GLArea swap_buffers( );
+GTK1.GLArea swap_buffers( );
 //!
 
-GTK.GLArea wait_gdk( );
+GTK1.GLArea wait_gdk( );
 //!
 
-GTK.GLArea wait_gl( );
+GTK1.GLArea wait_gl( );
 //!

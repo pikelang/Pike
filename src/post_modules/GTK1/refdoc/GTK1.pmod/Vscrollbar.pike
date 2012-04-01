@@ -1,14 +1,14 @@
 //! General documentation: See W(Scrollbar)
-//!@expr{ GTK.Vscrollbar(GTK.Adjustment())->set_usize(15,60)@}
-//!@xml{<image>../images/gtk_vscrollbar.png</image>@}
+//!@expr{ GTK1.Vscrollbar(GTK1.Adjustment())->set_usize(15,60)@}
+//!@xml{<image>../images/gtk1_vscrollbar.png</image>@}
 //!
 //!
 //!
 //!
 
-inherit GTK.Scrollbar;
+inherit GTK1.Scrollbar;
 
-static GTK.Vscrollbar create( GTK.Adjustment pos );
+protected GTK1.Vscrollbar create( GTK1.Adjustment pos );
 //! Used to create a new vscrollbar widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. Specifying 0 might

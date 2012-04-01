@@ -4,7 +4,7 @@
 //!
 //!
 
-inherit GTK.Box;
+inherit GTK1.Box;
 
 mapping get_child_ipadding( );
 //! Return the default inter-child padding ([ "x":xpadding, "y":ypadding ])
@@ -27,22 +27,22 @@ int get_spacing( );
 //!
 //!
 
-GTK.ButtonBox set_child_ipadding( int child_number, int child_padding );
+GTK1.ButtonBox set_child_ipadding( int child_number, int child_padding );
 //! Set the padding for a specific child.
 //!
 //!
 
-GTK.ButtonBox set_child_size( int child_number, int child_size );
+GTK1.ButtonBox set_child_size( int child_number, int child_size );
 //! Set the size of a specified child
 //!
 //!
 
-GTK.ButtonBox set_layout( int layout );
+GTK1.ButtonBox set_layout( int layout );
 //! layout is one of @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]
 //!
 //!
 
-GTK.ButtonBox set_spacing( int spacing );
+GTK1.ButtonBox set_spacing( int spacing );
 //! in pixels
 //!
 //!

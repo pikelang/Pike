@@ -1,11 +1,11 @@
 /* -*- C -*- */
-class GTK.Scale;
-//! The GTK.Scale widget is an abstract class, used only for deriving
-//! the subclasses GTK.Hscale and GTK.Vscale.
+class GTK1.Scale;
+//! The GTK1.Scale widget is an abstract class, used only for deriving
+//! the subclasses GTK1.Hscale and GTK1.Vscale.
 //! <p>
 //! See W(Range) for generic range documentation
 //! </p>
-inherit GTK.Range;
+inherit GTK1.Range;
 void set_digits( int precision );
 //! Sets the number of decimal places that are displayed in the value.
 void set_draw_value( int drawp );

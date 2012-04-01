@@ -166,7 +166,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->current_program=P;		\
   pike_frame->locals=0;				\
   pike_frame->num_locals=0;			\
-  pike_frame->fun=-1;				\
+  pike_frame->fun = FUNCTION_BUILTIN;		\
   pike_frame->pc=0;				\
   pike_frame->context=NULL;                     \
   Pike_fp = pike_frame
@@ -187,10 +187,9 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
     add_ref(pike_frame->current_program);	\
   }while(0)
 
-/* Note: there could be a problem with programs without functions */
 #define LOW_SET_FRAME_CONTEXT(X)					     \
   pike_frame->context=(X);						     \
-  pike_frame->fun=pike_frame->context->identifier_level;		\
+  pike_frame->fun = FUNCTION_BUILTIN;					\
   pike_frame->current_storage=o->storage+pike_frame->context->storage_offset
 
 #define SET_FRAME_CONTEXT(X)						\

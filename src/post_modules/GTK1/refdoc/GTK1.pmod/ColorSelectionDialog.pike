@@ -2,8 +2,8 @@
 //! widget in a dialog window. Use the subwidget functions below to access the
 //! different subwidgets directly.
 //! 
-//!@expr{ GTK.ColorSelectionDialog("Select color")@}
-//!@xml{<image>../images/gtk_colorselectiondialog.png</image>@}
+//!@expr{ GTK1.ColorSelectionDialog("Select color")@}
+//!@xml{<image>../images/gtk1_colorselectiondialog.png</image>@}
 //!
 //! 
 //!
@@ -14,29 +14,29 @@
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
-static GTK.ColorSelectionDialog create( string title );
+protected GTK1.ColorSelectionDialog create( string title );
 //! Create a new color selection dialog with the specified title.
 //!
 //!
 
-GTK.Button get_cancel_button( );
+GTK1.Button get_cancel_button( );
 //! Return the cancel button widget.
 //!
 //!
 
-GTK.ColorSelection get_colorsel( );
+GTK1.ColorSelection get_colorsel( );
 //! Return the color selection widget
 //!
 //!
 
-GTK.Button get_help_button( );
+GTK1.Button get_help_button( );
 //! Return the help button
 //!
 //!
 
-GTK.Button get_ok_button( );
+GTK1.Button get_ok_button( );
 //! Return the ok button
 //!
 //!

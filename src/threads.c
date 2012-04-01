@@ -1501,7 +1501,8 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        preliminary check that at least 35 ms real time has passed. If
        not yet true we'll postpone the next check a full interval. */
     struct timeval                tv;
-    if (ACCURATE_GETTIMEOFDAY(&tv) == 0) {
+    ACCURATE_GETTIMEOFDAY(&tv);
+    {
 #ifdef INT64
       static INT64 real_time_last_check = 0;
       INT64 real_time_now = tv.tv_sec * 1000000 + tv.tv_usec;

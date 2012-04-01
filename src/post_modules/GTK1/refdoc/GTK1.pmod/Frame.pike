@@ -5,39 +5,39 @@
 //! 
 //! Used to visually group objects.
 //! 
-//!@expr{ GTK.Frame("Title")->add(GTK.Label("Contents"))@}
-//!@xml{<image>../images/gtk_frame.png</image>@}
+//!@expr{ GTK1.Frame("Title")->add(GTK1.Label("Contents"))@}
+//!@xml{<image>../images/gtk1_frame.png</image>@}
 //!
-//!@expr{ GTK.Frame()->add(GTK.Label("Contents"))@}
-//!@xml{<image>../images/gtk_frame_2.png</image>@}
+//!@expr{ GTK1.Frame()->add(GTK1.Label("Contents"))@}
+//!@xml{<image>../images/gtk1_frame_2.png</image>@}
 //!
-//!@expr{ GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)@}
-//!@xml{<image>../images/gtk_frame_3.png</image>@}
+//!@expr{ GTK1.Frame()->add(GTK1.Label("Contents"))->set_shadow_type(GTK1.SHADOW_IN)@}
+//!@xml{<image>../images/gtk1_frame_3.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-static GTK.Frame create( string|void label_text );
+protected GTK1.Frame create( string|void label_text );
 //! Create a new W(Frame) widget.
 //!
 //!
 
-GTK.Frame set_label( string|void label_text );
+GTK1.Frame set_label( string|void label_text );
 //! Set the text of the label.
 //!
 //!
 
-GTK.Frame set_label_align( float xalign, float yalign );
+GTK1.Frame set_label_align( float xalign, float yalign );
 //! Arguments are xalignment and yalignment.
 //! 0.0 is left or topmost, 1.0 is right or bottommost.
 //! The default value for a newly created Frame is 0.0.
 //!
 //!
 
-GTK.Frame set_shadow_type( int shadow_type );
+GTK1.Frame set_shadow_type( int shadow_type );
 //! Set the shadow type for the Frame widget. The type is one of
 //! @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!

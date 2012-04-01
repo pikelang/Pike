@@ -1,25 +1,25 @@
-//! a GTK.TearoffMenuItem is a special W(MenuItem) which is used to
+//! a GTK1.TearoffMenuItem is a special W(MenuItem) which is used to
 //! tear off and reattach its menu.
 //! 
-//! When its menu is shown normally, the GTK.TearoffMenuItem is drawn
+//! When its menu is shown normally, the GTK1.TearoffMenuItem is drawn
 //! as a dotted line indicating that the menu can be torn
 //! off. Activating it causes its menu to be torn off and displayed in
 //! its own window as a tearoff menu.
 //! 
-//! When its menu is shown as a tearoff menu, the GTK.TearoffMenuItem
+//! When its menu is shown as a tearoff menu, the GTK1.TearoffMenuItem
 //! is drawn as a dotted line which has a left pointing arrow graphic
 //! indicating that the tearoff menu can be reattached. Activating it
 //! will erase the tearoff menu window.
-//!@expr{ GTK.TearoffMenuItem()->set_usize( 100,0 )@}
-//!@xml{<image>../images/gtk_tearoffmenuitem.png</image>@}
+//!@expr{ GTK1.TearoffMenuItem()->set_usize( 100,0 )@}
+//!@xml{<image>../images/gtk1_tearoffmenuitem.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.MenuItem;
+inherit GTK1.MenuItem;
 
-static GTK.TearoffMenuItem create( );
+protected GTK1.TearoffMenuItem create( );
 //! Create a new tear of menu item
 //!
 //!

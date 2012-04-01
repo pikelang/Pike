@@ -9,14 +9,14 @@
 //!
 //!
 
-inherit GTK.MenuItem;
+inherit GTK1.MenuItem;
 
-static GTK.PixmapMenuItem create( );
+protected GTK1.PixmapMenuItem create( );
 //! Creates a new pixmap menu item.
 //!
 //!
 
-GTK.PixmapMenuItem set_pixmap( GTK.Widget pixmap );
+GTK1.PixmapMenuItem set_pixmap( GTK1.Widget pixmap );
 //! Set the pixmap of the menu item.
 //!
 //!

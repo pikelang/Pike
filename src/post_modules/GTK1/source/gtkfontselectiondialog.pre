@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.FontSelectionDialog;
-inherit GTK.Window;
+class GTK1.FontSelectionDialog;
+inherit GTK1.Window;
 //! The GtkFontSelectionDialog widget is a dialog box for selecting a font.
 //! <p>
 //! To set the font which is initially selected, use set_font_name().
@@ -10,7 +10,7 @@ inherit GTK.Window;
 //! To change the text which is shown in the preview area, use
 //! set_preview_text().
 //! </p><p>
-//! The base filter is not yet implemented in Pike GTK.
+//! The base filter is not yet implemented in Pike GTK1.
 //! </p><p><i><font size="-1">
 //! Filters can be used to limit the fonts shown. There are 2 filters in
 //! the GtkFontSelectionDialog - a base filter and a user filter. The
@@ -21,14 +21,14 @@ inherit GTK.Window;
 //! user, by using the 'Reset Filter' button or changing the options on
 //! the 'Filter' page of the dialog.
 //! </font></i></p>
-//! TIMG: GTK.FontSelectionDialog("Select a font")
-member GTK.FontSelection fontsel;
+//! TIMG: GTK1.FontSelectionDialog("Select a font")
+member GTK1.FontSelection fontsel;
 //! The W(FontSelection) widget
-member GTK.Button ok_button;
+member GTK1.Button ok_button;
 //! The ok button
-member GTK.Button apply_button;
+member GTK1.Button apply_button;
 //! The apply button
-member GTK.Button cancel_button;
+member GTK1.Button cancel_button;
 //! The cancel button
 void create( string title );
 //! Create a new font selection dialog with the specified window title

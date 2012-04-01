@@ -611,7 +611,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
 	  case T_STRING: {
 	    struct pike_string *file;
-	    INT32 lineno;
+	    INT_TYPE lineno;
 	    if(Pike_fp->pc &&
 	       (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
 	      push_string(file);
@@ -649,7 +649,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       {
 	case T_STRING: {
 	  struct pike_string *file;
-	  INT32 lineno;
+	  INT_TYPE lineno;
 	  if(Pike_fp->pc &&
 	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
 	    push_string(file);
@@ -5474,6 +5474,54 @@ static int generate_sizeof(node *n)
 
 extern int generate_call_function(node *n);
 
+/*! @decl void _Static_assert(int constant_expression, string constant_message)
+ *!
+ *!   Perform a compile-time assertion check.
+ *!
+ *!   If @[constant_expression] is false, a compiler error message
+ *!   containing @[constant_message] will be generated.
+ *!
+ *! @note
+ *!   Note that the function call compiles to the null statement,
+ *!   and thus does not affect the run-time.
+ *!
+ *! @seealso
+ *!   @[cpp::static_assert]
+ */
+static int generate__Static_assert(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  ptrdiff_t tmp;
+  node **expr = my_get_arg(&_CDR(n), 0);
+  node **msg = my_get_arg(&_CDR(n), 1);
+  if(!expr || !msg || count_args(CDR(n)) != 2) {
+    yyerror("Bad number of arguments to _Static_assert().");
+    return 1;
+  }
+  tmp = eval_low(*msg, 0);
+  if (tmp < 1) {
+    yyerror("Argument 2 to _Static_assert() is not constant.");
+    return 1;
+  }
+  if (tmp > 1) pop_n_elems(tmp-1);
+  if (TYPEOF(Pike_sp[-1]) != T_STRING) {
+    yyerror("Bad argument 2 to _Static_assert(), expected string.");
+    return 1;
+  }
+  tmp = eval_low(*expr, 0);
+  if (tmp < 1) {
+    pop_stack();
+    yyerror("Argument 1 to _Static_assert is not constant.");
+    return 1;
+  }
+  if (tmp > 1) pop_n_elems(tmp-1);
+  if (SAFE_IS_ZERO(Pike_sp-1)) {
+    my_yyerror("Assertion failed: %S", Pike_sp[-2].u.string);
+  }
+  pop_n_elems(2);
+  return 1;
+}
+
 /*! @class string_assignment
  */
 
@@ -5827,6 +5875,10 @@ multiset & mapping -> mapping
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("call_function",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
 
+  /* From the 201x C standard */
+  ADD_EFUN2("_Static_assert", NULL,
+	    tFunc(tInt tStr, tVoid), OPT_TRY_OPTIMIZE,
+	    NULL, generate__Static_assert);
 
   start_new_program();
   ADD_STORAGE(struct string_assignment_storage);

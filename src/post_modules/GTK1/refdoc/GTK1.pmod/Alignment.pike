@@ -17,16 +17,16 @@
 //!
 //!
 
-inherit GTK.Bin;
+inherit GTK1.Bin;
 
-static GTK.Alignment create( float xalign, float yalign, float xscale, float yscale );
+protected GTK1.Alignment create( float xalign, float yalign, float xscale, float yscale );
 //! @xml{<matrix>@}
 //! @xml{<r>@}@xml{<c>@}xalign :@xml{</c>@}
 //! @xml{<c>@}the horizontal alignment of the child widget, from 0 (left) to 1 (right).@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  yalign :@xml{</c>@}
 //! @xml{<c>@}the vertical alignment of the child widget, from 0 (top) to 1 (bottom).@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  xscale :@xml{</c>@}
-//! @xml{<c>@}the amount that the child widget expands horizontally to fill up unused space, from 0 to 1. A value of 0 indicates that the child widget should never expand. A value of 1 indicates that the child widget will expand to fill all of the space allocated for the GTK.Alignment.@xml{</c>@}@xml{</r>@}
+//! @xml{<c>@}the amount that the child widget expands horizontally to fill up unused space, from 0 to 1. A value of 0 indicates that the child widget should never expand. A value of 1 indicates that the child widget will expand to fill all of the space allocated for the GTK1.Alignment.@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  yscale :@xml{</c>@}
 //! @xml{<c>@}the amount that the child widget expands vertically to fill up unused space, from 0 to 1. The values are similar to xscale.@xml{</c>@}@xml{</r>@}
 //! @xml{</matrix>@}
@@ -43,7 +43,7 @@ float get_xscale( );
 //! unused space, from 0 to 1. A value of 0 indicates that the child
 //! widget should never expand. A value of 1 indicates that the child
 //! widget will expand to fill all of the space allocated for the
-//! GTK.Alignment.
+//! GTK1.Alignment.
 //!
 //!
 
@@ -58,14 +58,14 @@ float get_yscale( );
 //!
 //!
 
-GTK.Alignment set( float xalign, float yalign, float xscale, float yscale );
+GTK1.Alignment set( float xalign, float yalign, float xscale, float yscale );
 //! @xml{<matrix>@}
 //! @xml{<r>@}@xml{<c>@}xalign :@xml{</c>@}
 //! @xml{<c>@}the horizontal alignment of the child widget, from 0 (left) to 1 (right).@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  yalign :@xml{</c>@}
 //! @xml{<c>@}the vertical alignment of the child widget, from 0 (top) to 1 (bottom).@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  xscale :@xml{</c>@}
-//! @xml{<c>@}the amount that the child widget expands horizontally to fill up unused space, from 0 to 1. A value of 0 indicates that the child widget should never expand. A value of 1 indicates that the child widget will expand to fill all of the space allocated for the GTK.Alignment.@xml{</c>@}@xml{</r>@}
+//! @xml{<c>@}the amount that the child widget expands horizontally to fill up unused space, from 0 to 1. A value of 0 indicates that the child widget should never expand. A value of 1 indicates that the child widget will expand to fill all of the space allocated for the GTK1.Alignment.@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}                  yscale :@xml{</c>@}
 //! @xml{<c>@}the amount that the child widget expands vertically to fill up unused space, from 0 to 1. The values are similar to xscale.@xml{</c>@}@xml{</r>@}
 //! @xml{</matrix>@}

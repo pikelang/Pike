@@ -4850,7 +4850,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	  if(sizeof(tmp)>=3)
 	  {
-	    if(functionp(tmp[2])) {
+	    if(functionp(tmp[2])|programp(tmp[2])) {
 	      data = describe_function ([function]tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
@@ -5898,6 +5898,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 #ifndef RESOLVER_HACK
 	ret = compat_handler_cache[tmp] = compat_handler;
 #endif
+      } else {
+	ret = compat_handler;
       }
     }
 

@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Appbar;
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 //!  A bar that GNOME applications put on the bottom of the windows to
 //!  display status, progress, hints for menu items or a minibuffer for
 //!  getting some sort of response. It has a stack for status messages
@@ -55,8 +55,8 @@ void set_progress( float percentage );
 //! name, in light of the get_progress name which is not the opposite
 //! of set_progress. Maybe this function should die.
 
-GTK.Progress get_progress();
-//! Returns GTK.Progress widget pointer, so that the progress bar may
+GTK1.Progress get_progress();
+//! Returns GTK1.Progress widget pointer, so that the progress bar may
 //! be manipulated further.
 
 void refresh();

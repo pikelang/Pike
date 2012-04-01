@@ -1,6 +1,6 @@
 /* -*- C -*- */
-void copy_area( GDK.GC gc, int xdest, int ydest,
-                GTK.Widget source, int xsource, int ysource,
+void copy_area( GDK1.GC gc, int xdest, int ydest,
+                GTK1.Widget source, int xsource, int ysource,
                 int width, int height )
 //! Copies the rectangle defined by xsource,ysource and width,height
 //! from the source drawable, and places the results at xdest,ydest in
@@ -37,10 +37,10 @@ void clear( int|void x, int|void y, int|void width, int|void height )
   RETURN_THIS();
 }
 
-void draw_point(GDK.GC gc, int x, int y)
+void draw_point(GDK1.GC gc, int x, int y)
 //! img_begin
-//! w = GTK.DrawingArea()->set_usize(10,10);
-//! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+//! w = GTK1.DrawingArea()->set_usize(10,10);
+//! delay: g = GDK1.GC(w)->set_foreground( GDK1.Color(255,0,0) );
 //! delay:  for(int x = 0; x<10; x++) w->draw_point(g, x, x);
 //! img_end
 {
@@ -52,10 +52,10 @@ void draw_point(GDK.GC gc, int x, int y)
   RETURN_THIS();
 }
 
-void draw_line(GDK.GC gc, int x1, int y1, int x2, int y2)
+void draw_line(GDK1.GC gc, int x1, int y1, int x2, int y2)
 //! img_begin
-//! w = GTK.DrawingArea()->set_usize(100,100);
-//! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+//! w = GTK1.DrawingArea()->set_usize(100,100);
+//! delay: g = GDK1.GC(w)->set_foreground( GDK1.Color(255,0,0) );
 //! delay:  for(int x = 0; x<10; x++) w->draw_line(g,x*10,0,100-x*10,99);
 //! img_end
 {
@@ -67,17 +67,17 @@ void draw_line(GDK.GC gc, int x1, int y1, int x2, int y2)
   RETURN_THIS();
 }
 
-void draw_rectangle(GDK.GC gc, int filledp, int x1, int y1, int x2, int y2)
+void draw_rectangle(GDK1.GC gc, int filledp, int x1, int y1, int x2, int y2)
 //! img_begin
-//!  w = GTK.DrawingArea()->set_usize(100,100);
-//! delay:  g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+//!  w = GTK1.DrawingArea()->set_usize(100,100);
+//! delay:  g = GDK1.GC(w)->set_foreground( GDK1.Color(255,0,0) );
 //! delay: for(int x = 0; x<10; x++) w->draw_rectangle(g,0,x*10,0,100-x*10,99);
 //! img_end
 //! img_begin
-//! w = GTK.DrawingArea()->set_usize(100,100);
-//! delay:   g = GDK.GC(w);
+//! w = GTK1.DrawingArea()->set_usize(100,100);
+//! delay:   g = GDK1.GC(w);
 //! delay:  for(int x = 0; x<30; x++) {
-//! delay:   g->set_foreground(GDK.Color(random(255),random(255),random(255)) );
+//! delay:   g->set_foreground(GDK1.Color(random(255),random(255),random(255)) );
 //! delay:   w->draw_rectangle(g,1,x*10,0,100-x*10,99);
 //! delay: }
 //! img_end
@@ -89,7 +89,7 @@ void draw_rectangle(GDK.GC gc, int filledp, int x1, int y1, int x2, int y2)
   RETURN_THIS();
 }
 
-void draw_arc(GDK.GC gc, int filledp, int x1, int y1, int x2, int y2,
+void draw_arc(GDK1.GC gc, int filledp, int x1, int y1, int x2, int y2,
               int angle1, int angle2)
 //! Draws a single circular or elliptical arc.  Each arc is specified
 //! by a rectangle and two angles. The center of the circle or ellipse
@@ -107,7 +107,7 @@ void draw_arc(GDK.GC gc, int filledp, int x1, int y1, int x2, int y2,
   RETURN_THIS();
 }
 
-void draw_text(GDK.GC gc, GDK.Font font, int x, int y,
+void draw_text(GDK1.GC gc, GDK1.Font font, int x, int y,
                string text, int forcewide )
 //! y is used as the baseline for the text.<br />
 //! If forcewide is true, the string will be expanded to a wide string
@@ -124,7 +124,7 @@ void draw_text(GDK.GC gc, GDK.Font font, int x, int y,
   RETURN_THIS();
 }
 
-void draw_pixmap(GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc,
+void draw_pixmap(GDK1.GC gc, GDK1.Pixmap pixmap, int xsrc, int ysrc,
                  int xdest, int ydest, int width, int height)
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Pixmap) at xdest,ydest in the destination drawable
@@ -137,7 +137,7 @@ void draw_pixmap(GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc,
   RETURN_THIS();
 }
 
-void draw_bitmap(GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc,
+void draw_bitmap(GDK1.GC gc, GDK1.Bitmap bitmap, int xsrc, int ysrc,
                  int xdest, int ydest, int width, int height)
 //! Draw a GDK(Bitmap) in this drawable.<br />
 //! <b>NOTE:</b> This drawable must be a bitmap as well. This will be
@@ -152,7 +152,7 @@ void draw_bitmap(GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc,
   RETURN_THIS();
 }
 
-void draw_image(GDK.GC gc, GDK.Image image, int xsrc, int ysrc,
+void draw_image(GDK1.GC gc, GDK1.Image image, int xsrc, int ysrc,
                  int xdest, int ydest, int width, int height)
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Image) at xdest,ydest in the destination drawable
@@ -166,7 +166,7 @@ void draw_image(GDK.GC gc, GDK.Image image, int xsrc, int ysrc,
 }
 
 /*
-  void draw_polygon( GDK.GC gc,int filled,
+  void draw_polygon( GDK1.GC gc,int filled,
                      array(array(float,size=2)) coordinates)
  gc, filledp, array with xy pairs
 */

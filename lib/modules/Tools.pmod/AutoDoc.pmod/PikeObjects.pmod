@@ -601,6 +601,20 @@ class Import {
   }
 }
 
+//! Representation of an inherit.
+class CppDirective {
+  //!
+  inherit PikeObject;
+
+  //!
+  constant objtype = "directive";
+
+  protected void create(string directive)
+  {
+    name = directive;
+  }
+}
+
 //! Base class for representing classes, modules and namespaces.
 //!
 //! @seealso
@@ -756,6 +770,12 @@ class AutoDoc {
 
   //!
   constant objtype = "autodoc";
+
+  string xml(.Flags|void flags) {
+    // Add an XML header and encode the result as UTF-8.
+    return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n" +
+			  ::xml(flags) + "\n");
+  }
 }
 
 //! A modifier range, e.g.:

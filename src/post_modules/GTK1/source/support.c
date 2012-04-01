@@ -12,7 +12,7 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl );
 void pgtk_verify_setup()
 {
   if( !pigtk_is_setup )
-    Pike_error("You must call GTK.setup_gtk( argv ) first\n");
+    Pike_error("You must call GTK1.setup_gtk( argv ) first\n");
 }
 
 void pgtk_verify_gnome_setup()
@@ -397,7 +397,7 @@ GdkAtom get_gdkatom( struct object *o )
     pop_stack();
     return r;
   }
-  Pike_error("Got non GDK.Atom object to get_gdkatom()\n");
+  Pike_error("Got non GDK1.Atom object to get_gdkatom()\n");
 }
 
 
@@ -446,7 +446,7 @@ struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i )
 
 void push_atom( GdkAtom a )
 {
-  /* this should really be inserted in the GDK.Atom mapping. */
+  /* this should really be inserted in the GDK1.Atom mapping. */
   push_pgdkobject( (void *)a, pgdk__atom_program );
 }
 
@@ -670,7 +670,7 @@ static void push_param_r( GtkArg *param, GtkType t )
 
 
 /* This function makes a few assumptions about how signal handlers are
- * called in GTK. I could not find any good documentation about that,
+ * called in GTK1. I could not find any good documentation about that,
  * and the source is somewhat obscure (for good reasons, it's a highly
  * non-trivial thing to do)
  *

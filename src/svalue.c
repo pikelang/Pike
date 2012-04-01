@@ -1510,14 +1510,14 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  }
 	  else if (id && id->func.offset != -1) {
 	    char *file;
-	    INT32 line;
+	    INT_TYPE line;
 	    if ((file = low_get_line_plain (prog->program + id->func.offset,
 					    prog, &line, 1))) {
 	      my_strcat("function(");
 	      my_strcat(file);
 	      free(file);
 	      if (line) {
-		sprintf(buf, ":%d", line);
+		sprintf(buf, ":%ld", (long)line);
 		my_strcat(buf);
 	      }
 	      my_putchar(')');
@@ -1659,13 +1659,13 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	}
 	else {
 	  char *file;
-	  INT32 line;
+	  INT_TYPE line;
 	  if ((file = low_get_program_line_plain (prog, &line, 1))) {
 	    my_strcat("object(");
 	    my_strcat(file);
 	    free(file);
 	    if (line) {
-	      sprintf(buf, ":%d", line);
+	      sprintf(buf, ":%ld", (long)line);
 	      my_strcat(buf);
 	    }
 	    my_putchar(')');
@@ -1733,13 +1733,13 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
       {
 	char *file;
-	INT32 line;
+	INT_TYPE line;
 	if ((file = low_get_program_line_plain (prog, &line, 1))) {
 	  my_strcat("program(");
 	  my_strcat(file);
 	  free(file);
 	  if (line) {
-	    sprintf(buf, ":%d", line);
+	    sprintf(buf, ":%ld", (long)line);
 	    my_strcat(buf);
 	  }
 #if 0

@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GTK.Editable;
-inherit GTK.Widget;
-//! The GTK.Editable class is a base class for widgets for editing text,
+class GTK1.Editable;
+inherit GTK1.Widget;
+//! The GTK1.Editable class is a base class for widgets for editing text,
 //! such as W(Entry) and W(Text). It cannot be instantiated by
 //! itself. The editable class contains functions for generically
 //! manipulating an editable widget, a large number of action signals
@@ -11,8 +11,8 @@ inherit GTK.Widget;
 signal activate;
 //! Indicates that the user has activated the widget in some
 //! fashion. Generally, this will be done with a keystroke. (The
-//! default binding for this action is Return for GTK.Entry and
-//! Control-Return for GTK.Text.
+//! default binding for this action is Return for GTK1.Entry and
+//! Control-Return for GTK1.Text.
 signal changed;
 //! Called when the text in the edit area is changed
 signal insert_text;

@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.IconEntry;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 //! This widget provides the facilities to select an icon. An icon is
 //! displayed inside a button, when the button is pressed, an Icon
 //! selector (a dialog with a W(GnomeIconSelection) widget) pops up to let
@@ -16,7 +16,7 @@ Gnome.FileEntry gnome_file_entry();
 //! Get the W(GnomeFileEntry) widget that's part of the entry
 Gnome.Entry gnome_entry();
 //! Get the W(GnomeEntry) widget that's part of the entry
-GTK.Entry gtk_entry();
+GTK1.Entry gtk_entry();
 //! Get the W(Entry) widget that's part of the entry
 string get_filename();
 //! Gets the file name of the image if it was possible to load it into

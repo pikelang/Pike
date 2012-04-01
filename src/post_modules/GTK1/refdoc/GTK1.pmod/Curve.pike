@@ -1,30 +1,30 @@
-//!@expr{ GTK.Curve()@}
-//!@xml{<image>../images/gtk_curve.png</image>@}
+//!@expr{ GTK1.Curve()@}
+//!@xml{<image>../images/gtk1_curve.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.DrawingArea;
+inherit GTK1.DrawingArea;
 
-static GTK.Curve create( );
+protected GTK1.Curve create( );
 //!
 
 array get_vector( int num_points );
 //!
 
-GTK.Curve reset( );
+GTK1.Curve reset( );
 //!
 
-GTK.Curve set_curve_type( int type );
+GTK1.Curve set_curve_type( int type );
 //! One of @[CURVE_TYPE_FREE], @[CURVE_TYPE_LINEAR] and @[CURVE_TYPE_SPLINE];
 //!
 //!
 
-GTK.Curve set_gamma( float gamma );
+GTK1.Curve set_gamma( float gamma );
 //!
 
-GTK.Curve set_range( float min_x, float max_x, float min_y, float max_y );
+GTK1.Curve set_range( float min_x, float max_x, float min_y, float max_y );
 //!
 
-GTK.Curve set_vector( int nelems, array curve );
+GTK1.Curve set_vector( int nelems, array curve );
 //!

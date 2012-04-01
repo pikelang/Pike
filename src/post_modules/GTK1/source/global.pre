@@ -54,7 +54,7 @@ void parse_rc(string rc)
 /*   gtk_widget_propagate_default_style(); */
 }
 
-GDK.Window root_window()
+GDK1.Window root_window()
 //! Returns the root window of the current display
 {
   static struct object *_pgtk_root_window;
@@ -101,7 +101,7 @@ array(string) gnome_init(string app_id, string app_version,
   INT_TYPE flags=0;
 
   if( pigtk_is_setup )
-    Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+    Pike_error( "You should only call GTK1.setup_gtk() or Gnome.init() once\n");
 
   switch( args )
   {
@@ -204,13 +204,13 @@ array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! The second argument, if supplied, indicates that pike specific *rc files
 //! should <b>not</b> be parsed.
 //! <p>
-//! The most common usage is GTK.setup_gtk(argv);</p>
+//! The most common usage is GTK1.setup_gtk(argv);</p>
 {
   gchar **data;
   int argc;
 
   if( pigtk_is_setup )
-    Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+    Pike_error( "You should only call GTK1.setup_gtk() or Gnome.init() once\n");
 
   if(args)
     data = get_argv( &argc, args );
@@ -230,7 +230,7 @@ array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 }
 
 void flush()
-//! Flush GDK. Not normally needed, can be useful while doing calculations.
+//! Flush GDK1. Not normally needed, can be useful while doing calculations.
 {
   gdk_flush();
   while(g_main_iteration( 0 ) );
@@ -301,7 +301,7 @@ int false()
   push_int( 0 );
 }
 
-void grab_add(GTK.Widget widget)
+void grab_add(GTK1.Widget widget)
 {
   struct object *o;
   get_all_args( "gtk_grab_add", args, "%o", &o );
@@ -309,7 +309,7 @@ void grab_add(GTK.Widget widget)
   my_pop_n_elems( args );
 }
 
-void grab_remove(GTK.Widget widget)
+void grab_remove(GTK1.Widget widget)
 {
   struct object *o;
   get_all_args( "gtk_grab_remove", args, "%o", &o );
@@ -391,7 +391,7 @@ void move_cursor( int dx, int dy )
   XWarpPointer( GDK_DISPLAY(), None, None, 0, 0, 0, 0, x, y );
 }
 
-void move_cursor_abs( GDK.Window w, int dx, int dy )
+void move_cursor_abs( GDK1.Window w, int dx, int dy )
 //! Move the mouse-cursor to x,y, relative to the upper left corner of
 //! the specified window. This will generate a normal motion event.
 //!

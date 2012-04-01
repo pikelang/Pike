@@ -58,6 +58,7 @@
 #define LE_A_B_GROUPED	12	/* Both the above two flags. */
 #endif
 #define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
+#define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -4286,7 +4287,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* void <= zero <= any_type */
     if (array_cnt >= 0) {
       /* !array(zero) */
-      return 1;
+      if (!(flags & LE_EXPLICIT_ZERO) ||
+	  ((b->type == T_INT) && !array_cnt)) {
+	return 1;
+      }
     }
   }
 
@@ -6213,7 +6217,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      * function call checker.
      */
     tmp = NULL;
-    if ((fun_type->car->type == T_NOT) &&
+    if (((arg_type->type != T_NOT) ||
+	 (arg_type->car->type != T_MIXED)) &&
+	(fun_type->car->type == T_NOT) &&
 	(fun_type->car->car->type == T_OR) &&
 	((fun_type->car->car->car->type == T_MIXED) ||
 	 (fun_type->car->car->cdr->type == T_MIXED))) {
@@ -6249,8 +6255,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	arg_type = zero_type_string;
       }
 
-      if (!(/*(flags & CALL_INVERTED_TYPES)?
-	      low_pike_types_le(tmp2, arg_type, 0, LE_A_B_SWAPPED): */
+      if (!((flags & CALL_INVERTED_TYPES)?
+	    low_pike_types_le(tmp2, arg_type, 0,
+			      LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
 	    low_pike_types_le(arg_type, tmp2, 0, 0)) &&
 	  ((flags & CALL_STRICT) ||
 	   !low_match_types(arg_type, tmp2, NO_SHORTCUTS))) {

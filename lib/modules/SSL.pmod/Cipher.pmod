@@ -424,7 +424,7 @@ class DHKeyExchange
 //!     @elem CipherSpec 1
 //!       Initialized @[CipherSpec] for the @[suite].
 //!   @endarray
-array lookup(int suite, ProtocolVersion version)
+array lookup(int suite, ProtocolVersion|int version)
 {
   CipherSpec res = CipherSpec();
   int ke_method;

@@ -7,7 +7,7 @@
 //! To change the text which is shown in the preview area, use
 //! set_preview_text().
 //! 
-//! The base filter is not yet implemented in Pike GTK.
+//! The base filter is not yet implemented in Pike GTK1.
 //! @i{
 //! Filters can be used to limit the fonts shown. There are 2 filters in
 //! the GtkFontSelectionDialog - a base filter and a user filter. The
@@ -18,35 +18,35 @@
 //! user, by using the 'Reset Filter' button or changing the options on
 //! the 'Filter' page of the dialog.
 //! @}
-//!@expr{ GTK.FontSelectionDialog("Select a font")@}
-//!@xml{<image>../images/gtk_fontselectiondialog.png</image>@}
+//!@expr{ GTK1.FontSelectionDialog("Select a font")@}
+//!@xml{<image>../images/gtk1_fontselectiondialog.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
-static GTK.FontSelectionDialog create( string title );
+protected GTK1.FontSelectionDialog create( string title );
 //! Create a new font selection dialog with the specified window title
 //!
 //!
 
-GTK.Button get_apply_button( );
+GTK1.Button get_apply_button( );
 //! The apply button
 //!
 //!
 
-GTK.Button get_cancel_button( );
+GTK1.Button get_cancel_button( );
 //! The cancel button
 //!
 //!
 
-GTK.FontSelection get_fontsel( );
+GTK1.FontSelection get_fontsel( );
 //! The W(FontSelection) widget
 //!
 //!
 
-GTK.Button get_ok_button( );
+GTK1.Button get_ok_button( );
 //! The ok button
 //!
 //!

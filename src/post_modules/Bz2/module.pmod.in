@@ -2,6 +2,8 @@
 
 inherit @module@ : Bz2;
 
+#if constant(@module@.File)
+
 #define DATA_CHUNK_SIZE 64*1024
 
 class File
@@ -29,3 +31,5 @@ class File
     return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
   }
 }
+
+#endif

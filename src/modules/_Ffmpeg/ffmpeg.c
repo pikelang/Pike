@@ -78,6 +78,11 @@
 #endif
 #endif
 
+#ifdef HAVE_LIBAVUTIL_AVUTIL_H
+#include <libavutil/avutil.h>
+#define USE_AVMEDIA_TYPE_ENUM 1
+#endif
+
 #ifdef AV_MEM
 #define FF_ALLOC(x)	av_mallocz(x)
 #define FF_FREE(x)	av_free(x)
@@ -302,14 +307,22 @@ static void f_get_codec_status(INT32 args) {
   push_text("flags");		push_int( THIS->codec_context.flags );
   cnt = 5;
 
+#ifdef USE_AVMEDIA_TYPE_ENUM
+  if(THIS->codec->type == AVMEDIA_TYPE_AUDIO) {
+#else
   if(THIS->codec->type == CODEC_TYPE_AUDIO) {
+#endif
     /* audio only */
     push_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
     push_text("channels");	push_int( THIS->codec_context.channels );
     cnt += 2;
   }
 
+#ifdef USE_AVMEDIA_TYPE_ENUM
+  if(THIS->codec->type == AVMEDIA_TYPE_VIDEO) {
+#else
   if(THIS->codec->type == CODEC_TYPE_VIDEO) {
+#endif
     /* video only */
     push_text("frame_rate");
 #ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
@@ -329,6 +342,10 @@ static void f_get_codec_status(INT32 args) {
 
 #ifndef HAVE_AVCODEC_DECODE_AUDIO
 #define avcodec_decode_audio avcodec_decode_audio2
+#ifndef HAVE_AVCODEC_DECODE_AUDIO2
+#define avcodec_decode_audio2 avcodec_decode_audio3
+#define USE_AVPACKET_FOR_DECODE
+#endif
 #endif
 
 /*! @decl mapping|int decode(string data)
@@ -355,6 +372,9 @@ static void f_decode(INT32 args) {
   struct pike_string *idata;
   int len, samples_size;
   struct svalue feeder;
+#ifdef USE_AVPACKET_FOR_DECODE
+  AVPacket avp;
+#endif
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1, expected string.\n");
@@ -387,9 +407,18 @@ static void f_decode(INT32 args) {
   }
 
   /* one pass decoding */
+#ifdef USE_AVPACKET_FOR_DECODE
+  av_init_packet(&avp);
+  avp.data = STR0(idata);
+  avp.size = idata->len;
+  len = avcodec_decode_audio(&THIS->codec_context,
+			     (short *)THIS->outbuf, &samples_size,
+			     &avp);
+#else
   len = avcodec_decode_audio(&THIS->codec_context,
 			     (short *)THIS->outbuf, &samples_size,
 		  	     STR0(idata), idata->len);
+#endif
   if(len < 0)
     Pike_error("Error while decoding.\n");
   if(samples_size > 0) {
@@ -643,6 +672,15 @@ PIKE_MODULE_INIT {
    * Internal type of codec.
    *
    */
+#ifdef USE_AVMEDIA_TYPE_ENUM
+  add_integer_constant("AVMEDIA_TYPE_UNKNOWN", AVMEDIA_TYPE_UNKNOWN, 0);
+  add_integer_constant("AVMEDIA_TYPE_AUDIO", AVMEDIA_TYPE_AUDIO, 0);
+  add_integer_constant("AVMEDIA_TYPE_VIDEO", AVMEDIA_TYPE_VIDEO, 0);
+  add_integer_constant("AVMEDIA_TYPE_DATA", AVMEDIA_TYPE_DATA, 0);
+  add_integer_constant("AVMEDIA_TYPE_SUBTITLE", AVMEDIA_TYPE_SUBTITLE, 0);
+  add_integer_constant("AVMEDIA_TYPE_ATTACHMENT", AVMEDIA_TYPE_ATTACHMENT, 0);
+  add_integer_constant("AVMEDIA_TYPE_NB", AVMEDIA_TYPE_NB, 0);
+#else
   add_integer_constant("CODEC_TYPE_AUDIO", CODEC_TYPE_AUDIO, 0);
   add_integer_constant("CODEC_TYPE_VIDEO", CODEC_TYPE_VIDEO, 0);
 #ifndef CODEC_ID_NONE
@@ -651,6 +689,7 @@ PIKE_MODULE_INIT {
 #else
 #ifdef CODEC_TYPE_UNKNOWN
   add_integer_constant("CODEC_TYPE_UNKNOWN", CODEC_TYPE_UNKNOWN, 0);
+#endif
 #endif
 #endif
 

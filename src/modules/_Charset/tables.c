@@ -15730,6 +15730,7 @@ const struct charset_def charset_map[] = {
   { "us", map_ANSI_X3_4_1968, MODE_94 },                              /* :: us */
   { "usascii", map_ANSI_X3_4_1968, MODE_94 },                         /* :: us-ascii */
   { "vietnamese", map_TCVN_5712_1993, MODE_96 },                      /* :: vietnamese */
+  { "visual", map_ISO_8859_8_1999, MODE_96 },                         /* :: visual */
   { "vscii", map_TCVN_5712_1993, MODE_96 },                           /* :: vscii */
   { "welsh", map_ISO_IR_182, MODE_96 },                               /* :: welsh */
   { "x02017", map_JIS_C6220_1969_jp, MODE_94 },                       /* :: x0201-7 */

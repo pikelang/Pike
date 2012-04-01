@@ -1,9 +1,9 @@
 /* -*- C -*- */
-class GTK.ButtonBox;
+class GTK1.ButtonBox;
 //! More or less equivalent to a normal box, but you can set a few
 //! layout schemes that are not available for normal boxes.
 //! See the hbox and vbox documentation for examples.
-inherit GTK.Box;
+inherit GTK1.Box;
 void set_spacing(int spacing);
 //! in pixels
 void set_layout( int layout );

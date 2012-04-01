@@ -9,9 +9,9 @@
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
-static Gnome.PixmapEntry create( string history_id, string browse_dialog_title, int do_preview );
+protected Gnome.PixmapEntry create( string history_id, string browse_dialog_title, int do_preview );
 //! Creates a new pixmap entry widget, if do_preview is false, the
 //! preview is hidden but the files are still loaded so that it's easy
 //! to show it. For a pixmap entry without preview, use the

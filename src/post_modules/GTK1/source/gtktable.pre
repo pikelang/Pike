@@ -1,12 +1,12 @@
 /* -*- C -*- */
-class GTK.Table;
-inherit GTK.Container;
+class GTK1.Table;
+inherit GTK1.Container;
 //! The Gtk.Table allow the programmer to arrange widgets in rows and
 //! columns, making it easy to align many widgets next to each other,
 //! horizontally and vertically.
 //! <p>
-//! IMG: GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0"), 0, 1, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,0"), 1, 2, 0, 1)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
-//! IMG: GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0-1,0"), 0, 2, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
+//! IMG: GTK1.Table(2,2,0)->attach_defaults( GTK1.Label("0,0"), 0, 1, 0, 1)->attach_defaults( GTK1.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK1.Label("1,0"), 1, 2, 0, 1)->attach_defaults( GTK1.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
+//! IMG: GTK1.Table(2,2,0)->attach_defaults( GTK1.Label("0,0-1,0"), 0, 2, 0, 1)->attach_defaults( GTK1.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK1.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)
 //! </p>
 void create( int width, int height, int homogeneousp );
 //! Used to create a new table widget. An initial size must be given by
@@ -20,7 +20,7 @@ void create( int width, int height, int homogeneousp );
 void resize( int rows, int columns );
 //! If you need to change a table's size after it has been created,
 //! this function allows you to do so.
-void attach( GTK.Widget subwidget, int left, int right,
+void attach( GTK1.Widget subwidget, int left, int right,
              int top, int bottom, int xoptions, int yoptions,
              int xpad, int ypad );
 //! The left and right attach arguments specify where to place the
@@ -38,28 +38,28 @@ void attach( GTK.Widget subwidget, int left, int right,
 //! <p>
 //! These options are:
 //! <ul>
-//! <li> GTK.Fill - If the table box is larger than the widget, and
+//! <li> GTK1.Fill - If the table box is larger than the widget, and
 //! GTK_FILL is specified, the widget will expand to use all the room
 //! available.</li>
-//! <li> GTK.Shrink - If the table widget was allocated less space then
+//! <li> GTK1.Shrink - If the table widget was allocated less space then
 //! was requested (usually by the user resizing the window), then the
 //! widgets would normally just be pushed off the bottom of the window
 //! and disappear. If GTK_SHRINK is specified, the widgets will shrink
 //! with the table.</li>
-//! <li> GTK.Expand - This will cause the table cell to expand to use
+//! <li> GTK1.Expand - This will cause the table cell to expand to use
 //! up any remaining space in the window.</li>
 //!  </ul>
 //! </p><p>
 //! Padding is just like in boxes, creating a clear area around the
 //! widget specified in pixels</p>
-void attach_defaults( GTK.Widget subwidget, int left, int right,
+void attach_defaults( GTK1.Widget subwidget, int left, int right,
                       int top, int bottom );
 //! As there are many options associated with attach(), this
 //! convenience function provides the programmer with a means to add
 //! children to a table with identical padding and expansion options.
 //! <p>
 //! xoptions, yoptions, xpadding and ypadding are all set the their
-//! default values. For the options that is GTK.Fill|GTK.Expand. For
+//! default values. For the options that is GTK1.Fill|GTK1.Expand. For
 //! the padding it is 0.</p>
 void set_col_spacing( int x, int spacing );
 //! alters the amount of space between a given table column and the

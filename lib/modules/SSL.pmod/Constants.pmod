@@ -68,20 +68,24 @@ constant CIPHER_idea	 = 8;
 constant CIPHER_aes	 = 9;
 constant CIPHER_aes256	 = 10;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-constant CIPHER_algorithms = (< CIPHER_null, 
-				CIPHER_rc4_40,
-				CIPHER_rc2,
-				CIPHER_des40,
+
+//! Mapping from cipher algorithm to effective key length.
+constant CIPHER_algorithms = ([
+  CIPHER_null:		0, 
+  CIPHER_rc4_40:	40,
+  CIPHER_rc2:		40,
+  CIPHER_des40:		40,
 #ifndef WEAK_CRYPTO_40BIT
-				CIPHER_rc4,
-				CIPHER_des,
-				CIPHER_3des,
-				CIPHER_fortezza,
-				CIPHER_idea,
-				CIPHER_aes,
-				CIPHER_aes256,
+  CIPHER_rc4:		128,
+  CIPHER_des:		56,
+  CIPHER_3des:		168,
+  CIPHER_fortezza:	96,
+  CIPHER_idea:		128,
+  CIPHER_aes:		128,
+  CIPHER_aes256:	256,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-			     >);
+]);
+
 /* Hash algorithms as per RFC 5246 7.4.1.4.1. */
 constant HASH_none     = 0;
 constant HASH_md5      = 1;
@@ -413,6 +417,31 @@ constant CIPHER_SUITES =
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
+
+constant preferred_rsa_suites = ({
+#ifndef WEAK_CRYPTO_40BIT
+  TLS_rsa_with_aes_256_cbc_sha,
+  TLS_rsa_with_aes_128_cbc_sha,		// Mandatory in RFC 5246 (TLS 1.2).
+  SSL_rsa_with_idea_cbc_sha,
+  SSL_rsa_with_rc4_128_sha,
+  SSL_rsa_with_rc4_128_md5,
+  SSL_rsa_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
+  SSL_rsa_with_des_cbc_sha,
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+  SSL_rsa_export_with_rc4_40_md5,
+  SSL_rsa_with_null_sha,
+  SSL_rsa_with_null_md5,
+});
+
+constant preferred_dhe_dss_suites = ({
+#ifndef WEAK_CRYPTO_40BIT
+  TLS_dhe_dss_with_aes_256_cbc_sha,
+  TLS_dhe_dss_with_aes_128_cbc_sha,
+  SSL_dhe_dss_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
+  SSL_dhe_dss_with_des_cbc_sha,
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+  SSL_dhe_dss_export_with_des40_cbc_sha,
+});
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
 constant HANDSHAKE_hello_request	= 0;

@@ -1,13 +1,13 @@
 /* -*- C -*- */
-class GTK.Clist;
-inherit GTK.Container;
+class GTK1.Clist;
+inherit GTK1.Container;
 
 //! The GtkCList widget is a multi-column list widget that is capable
 //! of handling literally thousands of rows of information. Each column
 //! can optionally have a title, which itself is optionally active,
 //! allowing us to bind a function to it's selection.
 
-//! IMG: GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)
+//! IMG: GTK1.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)
 
 signal select_row;
 //! Called when a row is selected
@@ -37,14 +37,14 @@ void create( int columns );
 //! Not all columns have to be visible, some can be used to store data that is
 //! related to a certain cell in the list.
 //!</p>
-void set_hadjustment( GTK.Adjustment adjustment );
+void set_hadjustment( GTK1.Adjustment adjustment );
 //! Set the W(Adjustment) object used for horizontal scrolling
-void set_vadjustment( GTK.Adjustment adjustment );
+void set_vadjustment( GTK1.Adjustment adjustment );
 //! Set the W(Adjustment) object used for vertical scrolling
 
-GTK.Adjustment get_hadjustment();
+GTK1.Adjustment get_hadjustment();
 //! Return the W(Adjustment) object used for horizontal scrolling
-GTK.Adjustment get_vadjustment();
+GTK1.Adjustment get_vadjustment();
 //! Return the W(Adjustment) object used for vertical scrolling
 
 
@@ -93,11 +93,11 @@ void set_column_title( int column, string title );
 
 string get_column_title( int column );
 //! Returns the title of a specified column.
-void set_column_widget( int column, GTK.Widget widget );
+void set_column_widget( int column, GTK1.Widget widget );
 //! Put a widget as a column title. The widget will be added to a
 //! W(Button).
 
-GTK.Widget get_column_widget( int column );
+GTK1.Widget get_column_widget( int column );
 //! Return the widget for the specified column title
 void set_column_visibility( int column, int visiblep );
 //! Hide or show a column
@@ -153,7 +153,7 @@ void get_text(int row, int col)
     push_int(0);
 }
 
-void set_pixmap(int row, int col, GDK.Pixmap image, GDK.Bitmap mask )
+void set_pixmap(int row, int col, GDK1.Pixmap image, GDK1.Bitmap mask )
 //! Set the pixmap of the specified cell. The mask is optional
 {
   INT_TYPE x, y;
@@ -200,7 +200,7 @@ void get_pixmap(int row, int column)
 }
 
 void set_pixtext(int row, int column, string text,
-                 int spacing, GDK.Pixmap image, GDK.Bitmap|void mask)
+                 int spacing, GDK1.Pixmap image, GDK1.Bitmap|void mask)
 //! Set the pixmap and text of the specified cell. The mask is optional
 //! The spacing is the number of pixels between the pixmap and the text.
 {
@@ -261,7 +261,7 @@ mapping get_pixtext(int row, int col)
   f_aggregate_mapping( 8 );
 }
 
-void set_foreground(int row, GDK.Color color)
+void set_foreground(int row, GDK1.Color color)
 //! Set the foreground color of the specified row to the specified color
 {
   struct object *a;
@@ -274,7 +274,7 @@ void set_foreground(int row, GDK.Color color)
   RETURN_THIS();
 }
 
-void set_background(int row, GDK.Color color)
+void set_background(int row, GDK1.Color color)
 //! Set the background color of the specified row the the specified color
 {
   struct object *a;
@@ -287,12 +287,12 @@ void set_background(int row, GDK.Color color)
   RETURN_THIS();
 }
 
-void set_cell_style( int row, int column, GTK.Style style );
+void set_cell_style( int row, int column, GTK1.Style style );
 //! Set a W(Style) for a specific cell
-GTK.Style get_cell_style( int row, int col );
+GTK1.Style get_cell_style( int row, int col );
 //! return the W(Style) associated with a specific cell
-void set_row_style( int row, GTK.Style style );
-GTK.Style get_row_style( int row );
+void set_row_style( int row, GTK1.Style style );
+GTK1.Style get_row_style( int row );
 //! Return the W(style) object associated with the specified row
 void set_shift( int row, int column, int yshift, int xshift );
 //! The contents of the specified cell will be drawn shifted (indented)
@@ -417,7 +417,7 @@ void row_move( int from_row, int to_row );
 //! Move the specified row to just before the specified destination
 //! row.
 
-GDK.Color get_foreground( int row )
+GDK1.Color get_foreground( int row )
 //! Return the foregroun color for the specified row
 {
   GtkCListRow *clist_row;
@@ -445,7 +445,7 @@ GDK.Color get_foreground( int row )
   }
 }
 
-GDK.Color get_background( int row )
+GDK1.Color get_background( int row )
 //! Return the background color of a specified row
 {
   GtkCListRow *clist_row;

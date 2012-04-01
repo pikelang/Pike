@@ -61,6 +61,12 @@
  * data.
  */
 #define BACKEND_OOB_IS_SIMULATED
+
+#if defined(HAVE_CFRUNLOOPRUNINMODE)
+/* Have kqueue+CFRunLoop variant (Mac OSX, iOS) */
+#define BACKEND_USES_CFRUNLOOP
+#endif /* HAVE_CFRUNLOOPRUNINMODE */
+
 #else  /* !HAVE_POLL && !HAVE_KQUEUE */
 /*
  * Backend using select(2)
@@ -76,6 +82,7 @@ PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
 
+void count_memory_in_compat_cb_boxs(size_t *num, size_t *size);
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1

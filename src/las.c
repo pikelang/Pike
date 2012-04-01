@@ -427,8 +427,9 @@ void free_all_nodes(void)
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
-		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",
-			(void *)tmp, tmp->current_file->str, tmp->line_number,
+		fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
+			(void *)tmp,
+			tmp->current_file->str, (long)tmp->line_number,
 			tmp->token);
 
 		debug_malloc_dump_references(tmp,0,2,0);
@@ -1144,14 +1145,15 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 
     copy_pike_type(res->type, id->type);
 
-    /* FIXME */
+    /* FIXME: The IDENTIFIER_IS_ALIAS case isn't handled! */
     if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
     {
       if (!(PTR_FROM_INT(parent_prog, i)->id_flags & ID_LOCAL)) {
 	/* It's possible to overload the identifier. */
 	res->node_info = OPT_EXTERNAL_DEPEND;
       } else if (id->func.const_info.offset != -1) {
-	struct svalue *s = &parent_prog->constants[id->func.const_info.offset].sval;
+	struct program *p = PROG_FROM_INT(parent_prog, i);
+	struct svalue *s = &p->constants[id->func.const_info.offset].sval;
 	if ((TYPEOF(*s) == T_PROGRAM) &&
 	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
 	  /* The constant program refers to its parent, so we need as well. */
@@ -3534,8 +3536,8 @@ void fix_type_field(node *n)
 
 #ifdef PIKE_DEBUG
       if (l_flag>2)
-	safe_pike_fprintf (stderr, "Checking call to %S at %S:%d.\n", name,
-			   n->current_file, n->line_number);
+	safe_pike_fprintf (stderr, "Checking call to %S at %S:%ld.\n", name,
+			   n->current_file, (long)n->line_number);
 #endif /* PIKE_DEBUG */
 
       /* NOTE: new_check_call() steals a reference from f! */
@@ -5039,7 +5041,7 @@ static void optimize(node *n)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *save_file =
     dmalloc_touch(struct pike_string *, c->lex.current_file);
-  INT32 save_line = c->lex.current_line;
+  INT_TYPE save_line = c->lex.current_line;
 
   do
   {
@@ -5561,9 +5563,9 @@ int dooptcode(struct pike_string *name,
 	  struct compilation *c = THIS_COMPILATION;
 
 	  if(a_flag > 1)
-	    fprintf(stderr,"%s:%d: IDENTIFIER OPTIMIZATION %s == %s\n",
+	    fprintf(stderr,"%s:%ld: IDENTIFIER OPTIMIZATION %s == %s\n",
 		    c->lex.current_file->str,
-		    c->lex.current_line,
+		    (long)c->lex.current_line,
 		    name->str,
 		    foo->u.efun->name->str);
 #endif

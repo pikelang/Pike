@@ -1,9 +1,9 @@
 //! A calendar widget.
-//!@expr{ GTK.Calendar();@}
-//!@xml{<image>../images/gtk_calendar.png</image>@}
+//!@expr{ GTK1.Calendar();@}
+//!@xml{<image>../images/gtk1_calendar.png</image>@}
 //!
-//!@expr{ GTK.Calendar()->select_day( 16 );@}
-//!@xml{<image>../images/gtk_calendar_2.png</image>@}
+//!@expr{ GTK1.Calendar()->select_day( 16 );@}
+//!@xml{<image>../images/gtk1_calendar_2.png</image>@}
 //!
 //!
 //!
@@ -23,24 +23,24 @@
 //! @b{prev_year@}
 //!
 
-inherit GTK.Widget;
+inherit GTK1.Widget;
 
-GTK.Calendar clear_marks( );
+GTK1.Calendar clear_marks( );
 //! Remove all day markers
 //!
 //!
 
-static GTK.Calendar create( );
+protected GTK1.Calendar create( );
 //! Create a new calendar widget
 //!
 //!
 
-GTK.Calendar display_options( int options );
+GTK1.Calendar display_options( int options );
 //! Bitwise or of one or more of @[CALENDAR_NO_MONTH_CHANGE], @[CALENDAR_SHOW_DAY_NAMES], @[CALENDAR_SHOW_HEADING], @[CALENDAR_SHOW_WEEK_NUMBERS] and @[CALENDAR_WEEK_START_MONDAY].
 //!
 //!
 
-GTK.Calendar freeze( );
+GTK1.Calendar freeze( );
 //! Suspend all dynamic updating of the widget
 //!
 //!
@@ -108,12 +108,12 @@ int get_year( );
 //!
 //!
 
-GTK.Calendar mark_day( int day_of_month );
+GTK1.Calendar mark_day( int day_of_month );
 //! Mark a day
 //!
 //!
 
-GTK.Calendar select_day( int day_of_month );
+GTK1.Calendar select_day( int day_of_month );
 //! Select a certain day of the currently selected month
 //!
 //!
@@ -123,17 +123,17 @@ int select_month( int month, int year );
 //!
 //!
 
-GTK.Calendar set_marked_date_color( int index, GDK.Color color );
+GTK1.Calendar set_marked_date_color( int index, GDK1.Color color );
 //! Set the color to use to mark dates
 //!
 //!
 
-GTK.Calendar thaw( );
+GTK1.Calendar thaw( );
 //! Resume dynamic updating of the widget
 //!
 //!
 
-GTK.Calendar unmark_day( int day_of_month );
+GTK1.Calendar unmark_day( int day_of_month );
 //! Unmark a day
 //!
 //!

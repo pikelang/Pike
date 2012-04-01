@@ -1,14 +1,14 @@
 /* -*- C -*- */
-class GTK.ToggleButton;
-inherit GTK.Button;
+class GTK1.ToggleButton;
+inherit GTK1.Button;
 //! Toggle buttons are derived from normal buttons and are very
 //! similar, except they will always be in one of two states,
 //! alternated by a click. They may be depressed, and when you click
 //! again, they will pop back up. Click again, and they will pop back
 //! down.
 //! <p>
-//! IMG: GTK.ToggleButton("Toggle button")
-//! IMG: GTK.ToggleButton("Toggle button")->set_active( 1 )
+//! IMG: GTK1.ToggleButton("Toggle button")
+//! IMG: GTK1.ToggleButton("Toggle button")->set_active( 1 )
 //! </p>
 signal toggled;
 void create(?string label)

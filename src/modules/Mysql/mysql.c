@@ -378,11 +378,10 @@ static void pike_mysql_set_options(struct mapping *options)
 
 static void low_query(INT32 args, char *name, int flags);
 
-static void connection_set_charset()
+static void connection_set_charset (struct pike_string *charset)
 {
   int res;
   MYSQL *mysql = PIKE_MYSQL->mysql;
-  struct pike_string *charset = PIKE_MYSQL->conn_charset;
 
 #if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
   /* Update the default charset for the connection,
@@ -467,6 +466,9 @@ static void pike_mysql_reconnect (int reconnect)
   {
     /* Disable the automatic reconnect. */
     my_bool reconnectp = 0;
+    if (PIKE_MYSQL->options &&
+      (val = simple_mapping_string_lookup(PIKE_MYSQL->options, "reconnect")))
+      if (!SAFE_IS_ZERO(val)) reconnectp = 1;
     mysql_options(mysql, MYSQL_OPT_RECONNECT, &reconnectp);
   }
 #endif
@@ -573,7 +575,7 @@ static void pike_mysql_reconnect (int reconnect)
 
 #ifndef RECONNECT_CHARSET_IS_SET
   if (PIKE_MYSQL->conn_charset)
-    connection_set_charset();
+    connection_set_charset (PIKE_MYSQL->conn_charset);
 #endif
 }
 
@@ -1792,10 +1794,10 @@ static void f_set_charset (INT32 args)
     SIMPLE_ARG_ERROR ("set_charset", 0,
 		      "The charset name cannot contain a NUL character.");
 
+  connection_set_charset (charset);
   if (PIKE_MYSQL->conn_charset)
     free_string (PIKE_MYSQL->conn_charset);
   copy_shared_string (PIKE_MYSQL->conn_charset, charset);
-  connection_set_charset();
   pop_n_elems (args);
 }
 

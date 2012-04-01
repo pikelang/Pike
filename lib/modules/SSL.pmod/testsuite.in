@@ -81,7 +81,7 @@ int a() {
 }
 ]])
 
-test_true([[
+test_do([[
   add_constant("client_msg", Crypto.Random.random_string(65536));
 ]])
 

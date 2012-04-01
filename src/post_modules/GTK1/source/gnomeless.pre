@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Less;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 //! This widget implements a graphical "more" command. It allows the
 //! user to view a text file. There are various possible ways to
 //! specify the contents to display: loading the data from a file (by
@@ -48,7 +48,7 @@ int write_filestream(Stdio.File fd)
   stack_swap();
   pop_stack();
 }
-void set_font( GDK.Font font );
+void set_font( GDK1.Font font );
 //! Sets the font of the text to be displayed in the GnomeLess widget
 //! gl to font.<p>
 //! Note: This will not affect text already being displayed. If you use

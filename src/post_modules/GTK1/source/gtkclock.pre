@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
-class GTK.Clock;
-inherit GTK.Label;
+class GTK1.Clock;
+inherit GTK1.Label;
 //! The GtkClock widget provides an easy way of providing a textual
 //! clock in your application. It supports realtime display, as well as
 //! count up and count down modes. The clock widget could conceivably
@@ -15,8 +15,8 @@ inherit GTK.Label;
 //! </p><p>
 //! Note, however, that the accuracy of the gtkclock widget is limited
 //! to 1 second.</p>
-//! IMG: GTK.Clock( GTK.ClockRealtime );
-//! IMG: GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();
+//! IMG: GTK1.Clock( GTK1.ClockRealtime );
+//! IMG: GTK1.Clock( GTK1.ClockDecreasing )->set_seconds(10000)->start();
 
 constant int GTK_CLOCK_INCREASING;
 constant int GTK_CLOCK_DECREASING;

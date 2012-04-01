@@ -37,7 +37,7 @@ enum DocTokenType {
   BRACEKEYWORD = 2,	//! eg @expr{@@i{@@}@}
   DELIMITERKEYWORD = 3,	//! eg @expr{@@param@}
   CONTAINERKEYWORD = 4,	//! eg @expr{@@mapping@}
-  SINGLEKEYWORD = 5,	//! eg @expr{@@deprecated@}
+  SINGLEKEYWORD = 5,	//! None existant.
   ENDKEYWORD = 6,	//! eg @expr{@@endmapping@}
   ERRORKEYWORD = 7,	//! eg @expr{@@invalid@}
 
@@ -61,6 +61,7 @@ mapping(string : DocTokenType) keywordtype =
   "namespace" : METAKEYWORD,
   "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
+  "directive" : METAKEYWORD,
   "inherit" : METAKEYWORD,
   "enum" : METAKEYWORD,
   "endenum" : METAKEYWORD,
@@ -78,7 +79,8 @@ mapping(string : DocTokenType) keywordtype =
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
 
-  "deprecated" : SINGLEKEYWORD,
+  "deprecated" : DELIMITERKEYWORD,
+  "obsolete" : DELIMITERKEYWORD,
 
   "bugs" : DELIMITERKEYWORD,
   "copyright" : DELIMITERKEYWORD,
@@ -130,7 +132,7 @@ mapping(string:array(string)) required_attributes =
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
-  "copyright", "thanks",
+  "copyright", "thanks", "obsolete",
 >);
 
 mapping(string : multiset(string)) allowedChildren =
@@ -144,6 +146,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_constant" : standard,
   "_enum" : (< "constant" >) + standard,
   "_typedef" : standard,
+  "_directive" : standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
@@ -340,6 +343,7 @@ protected class DocParserClass {
     "elem" : elemArgHandler,
     "index" : indexArgHandler,
     "deprecated" : deprArgHandler,
+    "obsolete" : deprArgHandler,
     "section" : sectionArgHandler,
     "type" : typeArgHandler,
     "value" : valueArgHandler,
@@ -358,7 +362,7 @@ protected class DocParserClass {
     //  werror("%%%%%% got type == %O\n", t->xml());
     string s = parser->parseLiteral() || parser->parseIdents();
     if (!s) {
-      parseError("@member: expected indentifier or literal constant, got %O", arg);
+      parseError("@member: expected type followed by identifier or literal constant, got %O", arg);
       s = "";
     }
     parser->eat(EOF);
@@ -414,7 +418,11 @@ protected class DocParserClass {
     return xmltag("value", xmlquote(s));
   }
 
-  protected string deprArgHandler(string keyword, string arg) {
+  protected string deprArgHandler(string keyword, string arg)
+  {
+    if (keyword != "deprecated") {
+      parseError("Illegal keyword: @%s, did you mean @deprecated?");
+    }
     .PikeParser parser = .PikeParser(arg, currentPosition);
     if (parser->peekToken() == EOF)
       return "";
@@ -473,7 +481,7 @@ protected class DocParserClass {
       if (s2)
         return xmltag("maxvalue", xmlquote(s2));
       else
-        parseError("@value: expected indentifier or literal constant, got %O", arg);
+        parseError("@value: expected identifier or literal constant, got %O", arg);
     return "";
   }
 
@@ -557,8 +565,10 @@ protected class DocParserClass {
 
     array(string) attrnames = attributenames[keyword];
     int attrcount = sizeof(attrnames || ({}) );
-    if (attrcount < sizeof(args))
+    if (attrcount < sizeof(args)) {
       parseError(sprintf("@%s with too many parameters", keyword));
+      args = args[..attrcount-1];
+    }
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
     foreach(required_attributes[keyword]||({}), string attrname) {
@@ -957,6 +967,25 @@ protected class DocParserClass {
 	  i->name = s;
 	  i->classname = s;
 	  meta->inherits += ({ i });
+	}
+	break;
+
+      case "directive":
+	{
+          if (endkeyword)
+            parseError("@%s must stand alone", endkeyword);
+          int first = !meta->type;
+          if (!meta->type)
+            meta->type = "decl";
+          else if (meta->type != "decl")
+            parseError("@directive can not be combined with @%s", meta->type);
+          if (meta->appears)
+            parseError("@appears before @directive");
+          if (meta->belongs)
+            parseError("@belongs before @directive");
+          meta->type = "decl";
+	  string s = String.trim_all_whites(arg);
+          meta->decls += ({ .PikeObjects.CppDirective(s) });
 	}
 	break;
 

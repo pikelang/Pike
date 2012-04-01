@@ -2,27 +2,27 @@
 //!
 //!
 
-inherit GTK.Item;
+inherit GTK1.Item;
 
-GTK.MenuItem activate( );
+GTK1.MenuItem activate( );
 //! Emulate an activate signal
 //!
 //!
 
-GTK.MenuItem configure( int toggle_indicator, int submenu_indicator );
+GTK1.MenuItem configure( int toggle_indicator, int submenu_indicator );
 //! First argument is 'show_toggle_indicator', second is
 //! 'show_submenu_indicator'.
 //!
 //!
 
-static GTK.MenuItem create( string|void label );
+protected GTK1.MenuItem create( string|void label );
 //! If a string is supplied, a W(Label) widget is created using that
 //! string and added to the item. Otherwise, you should add another
 //! widget to the list item with -&gt;add().
 //!
 //!
 
-GTK.MenuItem deselect( );
+GTK1.MenuItem deselect( );
 //! Emulate a deselect signal
 //!
 //!
@@ -62,27 +62,27 @@ int get_toggle_size( );
 //!
 //!
 
-GTK.MenuItem remove_submenu( );
+GTK1.MenuItem remove_submenu( );
 //! Remove the submenu for this menu button.
 //!
 //!
 
-GTK.MenuItem right_justify( );
+GTK1.MenuItem right_justify( );
 //! Make the menu item stick to the right edge of it's container.
 //!
 //!
 
-GTK.MenuItem select( );
+GTK1.MenuItem select( );
 //! Emulate a select signal
 //!
 //!
 
-GTK.MenuItem set_placement( int dir );
+GTK1.MenuItem set_placement( int dir );
 //! (sub menu placement) One of @[DIRECTION_LEFT] and @[DIRECTION_RIGHT]
 //!
 //!
 
-GTK.MenuItem set_submenu( GTK.Widget menu );
+GTK1.MenuItem set_submenu( GTK1.Widget menu );
 //! Set the submenu for this menu button.
 //!
 //!

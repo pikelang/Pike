@@ -81,7 +81,7 @@ void INAME(INT32 args)
 		(haystack->ysize!=haystack_cert->ysize))
 	      Pike_error("Argument 3 must be the same size as haystack error in image->"NAME"()\n");
 	  
-	  if ((TYPEOF(sp[3-args]) == T_INT))
+	  if (TYPEOF(sp[3-args]) == T_INT)
 	    {
 	      foo=sp[3-args].u.integer;
 	      type=3;

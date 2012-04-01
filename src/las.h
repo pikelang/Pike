@@ -113,9 +113,10 @@ struct node_s
   struct pike_type *type;
   struct pike_string *name;
   struct node_s *parent;
-  unsigned INT16 line_number;
+  INT_TYPE line_number;
   unsigned INT16 node_info;
   unsigned INT16 tree_info;
+  unsigned INT16 pad;
   /* The stuff from this point on is hashed. */
   unsigned INT16 token;
   union node_data u;

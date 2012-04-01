@@ -28,7 +28,7 @@ CTreeNode next( );
 //!
 //!
 
-GTK.CTreeNode parent( );
+GTK1.CTreeNode parent( );
 //! Returns the parent node
 //!
 //!
@@ -38,7 +38,7 @@ CTreeNode prev( );
 //!
 //!
 
-GTK.CTreeRow row( );
+GTK1.CTreeRow row( );
 //! Returns the CTreeRow associated with this CTreeNode.
 //! @b{DEPRECATED@}, all CTreeRow functions are also available
 //! directly in this object.

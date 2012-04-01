@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GTK.Adjustment;
-inherit GTK.Data;
-//! The GTK.Adjustment object represents a value which has an associated
+class GTK1.Adjustment;
+inherit GTK1.Data;
+//! The GTK1.Adjustment object represents a value which has an associated
 //! lower and upper bound, together with step and page increments, and
 //! a page size. It is used within several GTK+ widgets, including
 //! GtkSpinButton, GtkViewport, and GtkRange (which is a base class for
@@ -71,7 +71,7 @@ void changed();
 //! of the adjustment.
 
 void clamp_page( float lower, float upper );
-//! Updates the GTK.Adjustment value to ensure that the range between
+//! Updates the GTK1.Adjustment value to ensure that the range between
 //! lower and upper is in the current page (i.e. between value and
 //! value + page_size). If the range is larger than the page size,
 //! then only the start of it will be in the current page. A

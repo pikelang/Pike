@@ -20,15 +20,17 @@
  *       [/] uLPC
  *       [X] Pike 0.5
  *       [X] Pike 0.6
- *       [/] Pike 7.0
- *       [ ] Pike 7.2
- *       [ ] Pike 7.4
+ *       [X] Pike 7.0
+ *       [X] Pike 7.2
+ *       [/] Pike 7.4
  *       [ ] Pike 7.6
  *       [ ] Pike 7.8
  *       [ ] Pike 7.9
  *
  *   [X] Export directly exportable refs before starting on
  *       each new branch.
+ *
+ *   [/] Export refs when the corresponding commit is exported.
  *
  *   [X] Convert the autodoc.xml to assembled xml.
  *       [X] onepage.xml
@@ -100,7 +102,7 @@
  *       [X] MirarDoc
  *       [/] AutoDoc
  *
- *   [/] Reduce the number of changed files by removeing the
+ *   [/] Reduce the number of changed files by removing the
  *       Pike version and timestamp from assembled xml.
  *       [X] Use the version and timestamp from the source
  *           Pike and the commit timestamp.
@@ -129,7 +131,6 @@ string git_binary = "git";
 string git_dir;
 string work_dir = "doc-work-dir";
 string work_git = ".git";
-string refdocdir = combine_path(__FILE__, "../../../../../refdoc");
 
 string git(string git_cmd, string ... args)
 {
@@ -169,8 +170,14 @@ mapping(string:array(string)) doc_to_src = ([]);
 //! sha1 for the autodoc.xml blob.
 mapping(string:string) autodoc_hash = ([]);
 
+//! Mapping from source commit to refdoc sha1.
+mapping(string:string) refdoc_hash = ([]);
+
 //! Mapping from source reference to source commit sha1.
 mapping(string:string) src_refs = ([]);
+
+//! Lookup from source commit sha1 to the corresponding references (if any).
+mapping(string:multiset(string)) rev_refs = ([]);
 
 //! Mapping from doc reference to doc commit sha1 or export reference.
 mapping(string:string) doc_refs = ([]);
@@ -200,6 +207,7 @@ void get_refs(string git_dir, mapping(string:string) refs, int|void is_src)
 	  !has_prefix(ref_name, "refs/tags/") &&
 	  !has_prefix(ref_name, "refs/notes/source_revs")) continue;
     }
+    if (ref_name == "refs/heads/HEAD") continue;
     refs[ref_name] = fields[0];
   }
 }
@@ -226,35 +234,45 @@ string get_sha1_for_path(string git_dir, string tree_sha1, string path)
   return "";
 }
 
-void get_src_commits(string doc_sha1_path)
+array(string) get_doc_parents(string doc_sha1)
 {
-  string notes_blob =
-    get_sha1_for_path(git_dir, "refs/notes/source_revs", doc_sha1_path);
-  if (!sizeof(notes_blob)) return;
-  array(string) src_sha1s =
-    Git.git(git_dir, "cat-file", "blob", notes_blob)/"\n" - ({ "" });
-  string doc_sha1 = doc_sha1_path - "/";
-  if (!sizeof(src_sha1s)) {
-    werror("Failed to find the Source-revisions for doc commit %s:\n",
-	   doc_sha1);
-    exit(1);
-  }
-  doc_to_src[doc_sha1] = src_sha1s;
-  foreach(src_sha1s, string src_sha1) {
-    src_to_doc[src_sha1] = doc_sha1;
-  }
-  // Get the sha1 for the autodoc.xml blob while we're at it.
+  array(string) parents = doc_to_parents[doc_sha1];
+  if (!zero_type(parents)) return parents;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
-  if (commit->tree) {
-    string autodoc_sha1 =
-      get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
-    if (autodoc_sha1) {
-      autodoc_hash[doc_sha1] = autodoc_sha1;
-    }
-  }
   if (commit->parent) {
     doc_to_parents[doc_sha1] = commit->parent;
   }
+  // Get the sha1 for the autodoc.xml blob while we're at it.
+  if (commit->tree) {
+    string autodoc_sha1 =
+      get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
+    autodoc_hash[doc_sha1] = autodoc_sha1;
+  }
+  return parents;
+}
+
+string get_autodoc_hash(string doc_sha1)
+{
+  string autodoc_sha1 = autodoc_hash[doc_sha1];
+  if (!zero_type(autodoc_sha1)) return autodoc_sha1;
+  mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
+  if (commit->tree) {
+    autodoc_sha1 =
+      get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
+    autodoc_hash[doc_sha1] = autodoc_sha1;
+  }
+  // Set the parents for the commit while we're at it.
+  if (commit->parent) {
+    doc_to_parents[doc_sha1] = commit->parent;
+  }
+  return autodoc_sha1;
+}
+
+string get_refdoc_sha1(string rev)
+{
+  string res = refdoc_hash[rev];
+  if (res) return res;
+  return refdoc_hash[rev] = get_sha1_for_path(work_git, rev, "refdoc");
 }
 
 Git.Export exporter;
@@ -360,6 +378,20 @@ string get_version()
     if (Stdio.exist("src/post_modules/GL/gen.pike")) {
       return "pike_modules/GL";
     }
+    if (Stdio.exist("lib/modules/Search.pmod/types.h") ||
+	Stdio.exist("lib/modules/Search.pmod/module.pmod") ||
+	Stdio.exist("src/modules/_WhiteFish/whitefish.c")) {
+      return "pike_modules/Search";
+    }
+    if (Stdio.exist("lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike")) {
+      return "pike_modules/Filesystem.Monitor";
+    }
+    if (Stdio.exist("1x1/01-baseline-preview.jpg")) {
+      return "extra-tests";
+    }
+    if (Stdio.exist("tools/sprshd")) {
+      return "nt-tools";
+    }
   }
 
   error("Unable to determine version of Pike!\n");
@@ -373,8 +405,10 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting... ");
   }
+#if 0
   rm("build/autodoc.xml.stamp");
   rm("build/autodoc.xml");
+#endif
   string img;
   string imgsrc;
   foreach(({"refdoc/src_images", "src/modules/Image/doc", "tutorial" }),
@@ -423,12 +457,14 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
 
   string timestamp = (src_commit->author[0]/" ")[-2];
+  int num_changes;
 
   if (verbose) {
     progress("Extracting from src... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=src", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
@@ -437,8 +473,9 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting from lib... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=lib", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
@@ -447,19 +484,24 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting from doc... ");
   }
-  Tools.Standalone.extract_autodoc()->
-    main(11, ({ "extract_autodoc", "-q", "--compat",
+  num_changes +=
+    Tools.Standalone.extract_autodoc()->
+    main(12, ({ "extract_autodoc", "-q", "--compat", "--count",
 		"--keep-going", "--no-dynamic",
 		"--srcdir=doc", "--source-timestamp", timestamp,
 		"--imgsrc=" + imgsrc,
 		"--builddir=build/doc/doc",
 		"--imgdir=build/doc/images" }));
-  if (verbose) {
-    progress("Joining... ");
+  if (num_changes) {
+    if (verbose) {
+      progress("Joining... ");
+    }
+    Tools.Standalone.join_autodoc()->
+      main(5, ({ "join_autodoc", "--quiet", "--post-process",
+		 "build/autodoc.xml", "build/doc" }));
+  } else if (verbose) {
+    progress("No changes to join. ");
   }
-  Tools.Standalone.join_autodoc()->
-    main(5, ({ "join_autodoc", "--quiet", "--post-process",
-	       "build/autodoc.xml", "build/doc" }));
   if (!Stdio.exist("build/autodoc.xml")) {
     // No autodoc.xml created.
     if (verbose) {
@@ -488,9 +530,16 @@ void export_images(Parser.XML.Tree.SimpleNode node,
 
 void assemble_autodoc(mapping(string:array(string)) src_commit)
 {
+  string refdocdir = "build/refdoc";
+  if (Stdio.exist("refdoc/structure/modref.xml")) {
+    // After modref.xml was added, we can use the refdoc files
+    // from the repository for assembly.
+    refdocdir = "refdoc";
+  }
+
   exporter->export(combine_path(refdocdir, "src_images"), "images");
   exporter->export(combine_path(refdocdir, "structure/modref.css"),
-		   "modref/modref.css");
+		   "modref/style.css");
   if (verbose) {
     progress("Assembling... ");
   }
@@ -504,21 +553,25 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
     Parser.XML.Tree.simple_parse_file("build/autodoc.xml");
   export_images(autodoc, "build/doc/images", "images");
 
+  if (Stdio.exist("refdoc/structure/onepage.xml")) {
+    // The single page layout is only interesting
+    // after the chapters have been written...
+    Tools.Standalone.assemble_autodoc()->
+      main(12, ({ "assemble_autodoc", "-o", "build/onepage.xml", "--compat",
+		  "--keep-going", "-q", "--pike-version", pike_version,
+		  "--timestamp", timestamp,
+		  combine_path(refdocdir, "structure/onepage.xml"),
+		  "build/autodoc.xml" }));
+  }
   Tools.Standalone.assemble_autodoc()->
-    main(10, ({ "assemble_autodoc", "-o", "build/onepage.xml",
-		"--keep-going", "--pike-version", pike_version,
-		"--timestamp", timestamp,
-		combine_path(refdocdir, "structure/onepage.xml"),
-		"build/autodoc.xml" }));
-  Tools.Standalone.assemble_autodoc()->
-    main(10, ({ "assemble_autodoc", "-o", "build/traditional.xml",
-		"--keep-going", "--pike-version", pike_version,
+    main(12, ({ "assemble_autodoc", "-o", "build/traditional.xml", "--compat",
+		"--keep-going", "-q", "--pike-version", pike_version,
 		"--timestamp", timestamp,
 		combine_path(refdocdir, "structure/traditional.xml"),
 		"build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(10, ({ "assemble_autodoc", "-o", "build/modref.xml",
-		"--keep-going", "--pike-version", pike_version,
+    main(11, ({ "assemble_autodoc", "-o", "build/modref.xml",
+		"--keep-going", "-q", "--pike-version", pike_version,
 		"--timestamp", timestamp,
 		combine_path(refdocdir, "structure/modref.xml"),
 		"build/autodoc.xml" }));
@@ -526,18 +579,27 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
 
 void export_refdoc(mapping(string:array(string)) src_commit)
 {
+  string refdocdir = "build/refdoc"; //this_program::refdocdir;
+  if (Stdio.exist("refdoc/structure/modref.html")) {
+    // After modref.xml was added, we can use the refdoc files
+    // from the repository for html.
+    refdocdir = "refdoc";
+  }
+
   if (verbose) {
     progress("HTML... ");
   }
   Tools.Standalone.autodoc_to_html converter =
     Tools.Standalone.autodoc_to_html();
   converter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET|
-    Tools.AutoDoc.FLAG_NO_DYNAMIC;
+    Tools.AutoDoc.FLAG_NO_DYNAMIC|Tools.AutoDoc.FLAG_COMPAT;
   converter->verbosity = Tools.AutoDoc.FLAG_QUIET;
   converter->image_path = "../images/";
-  // onepage:
-  converter->low_main("Pike Reference Manual", "build/onepage.xml",
-		      "index.html", exporter);
+  if (Stdio.exist("build/onepage.xml")) {
+    // onepage:
+    converter->low_main("Pike Reference Manual", "build/onepage.xml",
+			"index.html", exporter);
+  }
   // traditional:
   converter->low_main("Pike Reference Manual", "build/traditional.xml",
 		      "index.html", exporter);
@@ -548,7 +610,7 @@ void export_refdoc(mapping(string:array(string)) src_commit)
   Tools.Standalone.autodoc_to_split_html splitter =
     Tools.Standalone.autodoc_to_split_html();
   splitter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET|
-    Tools.AutoDoc.FLAG_NO_DYNAMIC;
+    Tools.AutoDoc.FLAG_NO_DYNAMIC|Tools.AutoDoc.FLAG_COMPAT;
   splitter->verbosity = Tools.AutoDoc.FLAG_QUIET;
   splitter->image_path = "../images/";
   splitter->default_namespace = "predef";
@@ -600,9 +662,10 @@ void export_autodoc_for_ref(string ref)
     mapping(string:array(string)) src_commit = get_commit(work_git, src_rev);
     array(string) doc_parents = ({});
     string prev_autodoc_sha1;
+    string prev_refdoc_sha1 = "";
     if (src_commit->parent) {
       doc_parents = Array.uniq(map(src_commit->parent, src_to_doc));
-      prev_autodoc_sha1 = autodoc_hash[doc_parents[0]];
+      prev_refdoc_sha1 = get_refdoc_sha1(src_commit->parent[0]);
     }
 
     if (sizeof(doc_parents) > 1) {
@@ -617,16 +680,22 @@ void export_autodoc_for_ref(string ref)
 	string p = parent_queue->get();
 	if (visited[p]) continue;
 	visited[p] = 1;
-	if (doc_to_parents[p]) {
-	  doc_parents -= doc_to_parents[p];
+
+	array(string) grandparents = get_doc_parents(p);
+	if (grandparents) {
+	  doc_parents -= grandparents;
 	  if (sizeof(doc_parents) <= 1) break;
-	  foreach(doc_to_parents[p], string gp) {
+	  foreach(grandparents, string gp) {
 	    if (visited[gp]) continue;
 	    parent_queue->put(gp);
 	  }
 	}
 	if (++loop_count >= 1000) break;
       }
+    }
+
+    if (sizeof(doc_parents)) {
+      prev_autodoc_sha1 = get_autodoc_hash(doc_parents[0]);
     }
 
     string doc_mark;
@@ -645,7 +714,13 @@ void export_autodoc_for_ref(string ref)
       string new_autodoc_sha1 = Git.hash_blob(autodoc_xml);
 
       // If it hasn't changed, we don't need to do anything.
-      if (new_autodoc_sha1 == prev_autodoc_sha1) break;
+      if (new_autodoc_sha1 == prev_autodoc_sha1) {
+
+	// Except if the /refdoc directory has changed...
+	string refdoc_sha1 = get_refdoc_sha1(src_rev);
+	if (refdoc_sha1 == prev_refdoc_sha1)
+	  break;
+      }
 
       if (!sizeof(doc_parents)) {
 	// Force the commit to not have any parents.
@@ -730,6 +805,25 @@ void export_autodoc_for_ref(string ref)
       exporter->notemodify(doc_mark);
       exporter->data(doc_to_src[doc_mark]*"\n" + "\n");
     }
+
+    // Update any refs to the just committed rev.
+    if (rev_refs[src_rev]) {
+      int flush;
+      foreach(rev_refs[src_rev];string src_ref;) {
+	if (src_ref != ref) {
+	  exporter->reset(src_ref, doc_mark);
+	  m_delete(src_refs, src_ref);
+	  if (verbose) {
+	    progress(sprintf("Updating %s. ", src_ref));
+	  }
+	  flush |= has_prefix(src_ref, "refs/heads/");
+	}
+      }
+      if (flush) {
+	exporter->checkpoint();
+      }
+    }
+
     if (err) {
       string msg = describe_error(err);
       if (!has_prefix(msg, "process_line failed: ") &&
@@ -755,7 +849,6 @@ int main(int argc, array(string) argv)
      ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "git-dir", Getopt.HAS_ARG, "--git-dir,--gitdir"/"," }),
      ({ "source",  Getopt.HAS_ARG, "--source-repository"/"," }),
-     ({ "refdoc",  Getopt.HAS_ARG, "--refdoc"/"," }),
 				  })), array(string) opt) {
     switch(opt[0]) {
     case "verbose":
@@ -775,9 +868,6 @@ int main(int argc, array(string) argv)
 	warn("Destination git repository specified multiple times.\n");
       git_dir = opt[1];
       break;
-    case "refdoc":
-      refdocdir = opt[1];
-      break;
     case "source":
       if (src_git)
 	warn("Source git repository specified multiple times.\n");
@@ -786,7 +876,6 @@ int main(int argc, array(string) argv)
     }
   }
 
-  refdocdir = combine_path(getcwd(), refdocdir);
 
   exporter = Git.Export(git_dir);
 
@@ -796,6 +885,18 @@ int main(int argc, array(string) argv)
   }
 
   if (git_dir && Stdio.exist(git_dir)) {
+    string desc = Stdio.read_bytes(git_dir + "/description");
+    if (!desc || has_prefix(desc, "Unnamed repository")) {
+      // Set a description.
+      Stdio.write_file(git_dir + "/description",
+		       "Autodoc: Pike documentation.\n");
+    }
+
+    if (!Stdio.exist(git_dir + "/git-daemon-export-ok")) {
+      // Make the repository available via anonymous git.
+      Stdio.write_file(git_dir + "/git-daemon-export-ok", "");
+    }
+
     // Note that the git-show-ref command used by git_refs() below
     // will fail with code 1 for the empty git repository.
     mixed err = catch {
@@ -811,14 +912,56 @@ int main(int argc, array(string) argv)
 	  Git.git(git_dir,
 		  "ls-tree", "refs/notes/source_revs",
 		  "--name-only", "-r")/"\n";
-	foreach(revs; int i; string doc_commit) {
-	  if (doc_commit == "") continue;
-	  if (verbose) {
-	    werror("\rRetrieving existing commits (%d/%d)... ",
-		   i+1, sizeof(revs)-1);
-	  }
-	  get_src_commits(doc_commit);
+
+	int i;
+	string doc_sha1;
+	array(string) src_sha1s;
+	if (verbose) {
+	  werror("\rRetrieving existing doc commits (%d/%d)... ",
+		 i, sizeof(revs));
 	}
+	foreach(Git.git(git_dir, "log", "--all", "--format=raw",
+			"--notes=refs/notes/source_revs")/"\n",
+		string line) {
+	  if (!sizeof(line)) continue;
+	  if (has_prefix(line, "    ")) {
+	    // Log message or source_rev.
+	    if (src_sha1s) {
+	      src_sha1s += ({ line[4..] });
+	      src_to_doc[line[4..]] = doc_sha1;
+	    }
+	  } else {
+	    array(string) fields = line/" ";
+	    switch(fields[0]) {
+	    case "commit":
+	      if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+		doc_to_src[doc_sha1] = src_sha1s;
+		src_sha1s = UNDEFINED;
+		i++;
+	      }
+	      if (verbose) {
+		werror("\rRetrieving existing doc commits (%d/%d)... ",
+		       i+1, sizeof(revs));
+	      }
+	      doc_sha1 = fields[1];
+	      break;
+	    case "Notes":
+	      if (fields[1] == "(source_revs):") {
+		src_sha1s = ({});
+	      } else if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+		doc_to_src[doc_sha1] = src_sha1s;
+		src_sha1s = UNDEFINED;
+		i++;
+	      }
+	      break;
+	    }
+	  }
+	}
+	if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+	  doc_to_src[doc_sha1] = src_sha1s;
+	  i++;
+	}
+	// FIXME: Check that all notes were accounted for?
 	if (verbose) werror("\n");
       }
     };
@@ -868,6 +1011,10 @@ int main(int argc, array(string) argv)
       }
     }
     git("fetch", "--force", "--prune", "--tags", "--update-head-ok", "origin");
+    // Due to bugs in --prune in some versions of git (eg 1.7.7),
+    // we may have lost the remote heads above, so we refetch them.
+    git("fetch", "--force", "--tags", "--update-head-ok", "origin",
+	"+refs/heads/*:refs/remotes/origin/*");
 
     // Clean the work dir.
     if (!has_prefix(git("stash"), "No local changes ")) {
@@ -886,13 +1033,38 @@ int main(int argc, array(string) argv)
   mkdir("build/doc/doc");
   mkdir("build/doc/images");
 
-  // Git between 1.7.7 and 1.7.9 have an infinite loop in the
+  // Git between 1.7.7 and 1.7.8.1 have an infinite loop in the
   // LF to CRLF filter, which is triggered by some Pike commits.
   // Since we don't care about CRLF (or in fact the affected files
   // at all), we just disable CRLF conversion entirely.
   Stdio.write_file(work_git + "/info/attributes",
 		   "# Kludge around infinite loop in git 1.7.7 and 1.7.8.\n"
 		   "* eol=lf\n");
+
+  // Set up a refdoc directory with the initial version of modref.html et al.
+  if (!Stdio.exist("build/refdoc/structure/modref.html")) {
+    werror("Searching for original refdoc version...");
+    array(string) revs = git("rev-list", "refs/remotes/origin/7.4",
+			     "--", "refdoc/structure/modref.html")/"\n" -
+      ({ "" });
+    if (!sizeof(revs)) {
+      werror("\nFailed to find initial revision for "
+	     "refdoc/structure/modref.html.\n");
+      exit(1);
+    }
+
+    string rev = revs[-1];
+    werror(" %s\n", rev);
+    git("checkout", "-f", rev);
+    if (!Stdio.exist("refdoc/structure/modref.html")) {
+      werror("No refdoc/structure/modref.html in revision!\n");
+      exit(1);
+    }
+    if (!Stdio.cp("refdoc", "build/refdoc")) {
+      werror("Failed to copy initial refdoc directory.\n");
+      exit(1);
+    }
+  }
 
   // Get the current references for the source directory.
   get_refs(work_git, src_refs, 1);
@@ -903,6 +1075,7 @@ int main(int argc, array(string) argv)
   //
   // Note that this can only happen if we have a git_dir.
   foreach(doc_refs - src_refs; string ref; string sha1) {
+    if (ref == "HEAD") continue;
     if (verbose) {
       werror("Deleting obsolete %s (obsolete).\n", ref);
     }
@@ -913,6 +1086,22 @@ int main(int argc, array(string) argv)
     }
   }
 
+  foreach(src_refs; string ref; string sha1) {
+    rev_refs[sha1] += (< ref >);
+  }
+
+  // Start with the ref for HEAD.
+  string master_ref;
+  catch {
+    master_ref = String.trim_all_whites(Git.git(work_git, "symbolic-ref",
+						"refs/remotes/origin/HEAD"));
+    if (has_prefix(master_ref, "refs/remotes/origin/")) {
+      master_ref = "refs/heads/" + master_ref[sizeof("refs/remotes/origin/")..];
+    }
+
+    Git.git(git_dir, "symbolic-ref", "HEAD", master_ref);
+  };
+
   // Then export the remaining refs.
   while (sizeof(src_refs)) {
     // Check if any of the refs is trivial to export.
@@ -922,6 +1111,7 @@ int main(int argc, array(string) argv)
       if (doc_sha1 && (src_to_doc[src_sha1] == doc_sha1)) {
 	// Already up-to-date.
 	m_delete(src_refs, ref);
+	if (ref == master_ref) master_ref = UNDEFINED;
       } else if (doc_sha1 = src_to_doc[src_sha1]) {
 	// Already exported.
 	exporter->reset(ref, doc_sha1);
@@ -929,16 +1119,24 @@ int main(int argc, array(string) argv)
 	  // Flush all heads as soon as possible.
 	  exporter->checkpoint();
 	}
-	werror("Updated %s (already exported).\n", ref);
 	m_delete(src_refs, ref);
+	if (ref == master_ref) master_ref = UNDEFINED;
       }
     }
     if (!sizeof(src_refs)) break;
-    // Update the "earliest" of the remaining refs.
-    string ref = sort(indices(src_refs))[0];
+    // Update one of the remaining refs at semi-random,
+    // The master branch first, then the other branches,
+    // and last any remaining refs.
+    string ref = master_ref;
+    if (!src_refs[ref]) {
+      array(string) refs = filter(indices(src_refs), has_prefix, "refs/heads/");
+      if (!sizeof(refs)) refs = indices(src_refs);
+      ref = random(refs);
+    }
     export_autodoc_for_ref(ref);
     m_delete(src_refs, ref);
     exporter->checkpoint();
+    master_ref = UNDEFINED;
   }
   exporter->checkpoint();
 

@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.AccelGroup;
-inherit GTK.Data;
+class GTK1.AccelGroup;
+inherit GTK1.Data;
 //! An AccelGroup stores keybindings.
 //! A group is automatically created by W(MenuFactory)
 //!
@@ -13,7 +13,7 @@ void create()
   THIS->obj = (void *)gtk_accel_group_new();
 /* add_ref(fp->current_object);   one extra ref... No, not really */
 }
-void add_accel(GTK.Widget widget, string signal,
+void add_accel(GTK1.Widget widget, string signal,
                int key, int modifiers, int flags )
 //! the widget is the one in which the signal specified by 'signal'
 //! recides.
@@ -32,7 +32,7 @@ void add_accel(GTK.Widget widget, string signal,
                       get_gtkobject( o ), sig );
   RETURN_THIS();
 }
-void remove(GTK.Widget widget, int key, int modifiers )
+void remove(GTK1.Widget widget, int key, int modifiers )
 //! Remove all bindings for the specified key/mask in the specified object.
 {
   struct object *o;

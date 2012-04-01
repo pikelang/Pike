@@ -806,26 +806,33 @@ test_encoding(XBM,[[
   img=c*img;
 ]],)
 
-test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
-(["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
+cond_resolv( Image.PNG.decode_header, [[
+  test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
+  (["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
+]])
 
-test_true( Image.PNG.encode(Image.Image(5,5)) )
-test_true( Image.PNG.encode(Image.Image(5,5), ([])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":0])) )
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":"x"])) )
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(4,4)])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(5,5)])) )
-dnl FIXME: Test that alpha is actually encoded
-dnl FIXME: Test "palette" attribute
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["zlevel":"x"])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
+cond_resolv( Image.PNG.encode, [[
+  test_true( Image.PNG.encode(Image.Image(5,5)) )
+  test_true( Image.PNG.encode(Image.Image(5,5), ([])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":0])) )
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":"x"])) )
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(4,4)])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(5,5)])) )
+  dnl FIXME: Test that alpha is actually encoded
+  dnl FIXME: Test "palette" attribute
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["zlevel":"x"])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
+]])
+
+dnl ACK!  cond_resolv does not nest.  But if Gz.RLE or Gz.FIXED exists, it
+dnl means the Gz module is there, and in that case Image.PNG should be too...
 cond_resolv( Gz.RLE, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.RLE])) )
 ]])
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
 cond_resolv( Gz.FIXED, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FIXED])) )
 ]])

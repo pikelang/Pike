@@ -1,11 +1,11 @@
 /* -*- C -*- */
-class GTK.Label;
-inherit GTK.Misc;
+class GTK1.Label;
+inherit GTK1.Misc;
 //! A simple text label.
-//! IMG: GTK.Label("A simple text label")
-//! IMG: GTK.Label("Multi\nline text\nlabel here")
-//! IMG: GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_LEFT)
-//! IMG: GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_RIGHT)
+//! IMG: GTK1.Label("A simple text label")
+//! IMG: GTK1.Label("Multi\nline text\nlabel here")
+//! IMG: GTK1.Label("Multi\nline text\nlabel here")->set_justify(GTK1.JUSTIFY_LEFT)
+//! IMG: GTK1.Label("Multi\nline text\nlabel here")->set_justify(GTK1.JUSTIFY_RIGHT)
 void create( string text );
 //! Creates a new label.
 void set_text( string text );

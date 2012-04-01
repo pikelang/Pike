@@ -2,5 +2,5 @@
 //!
 //!
 
-inherit GTK.Widget;
+inherit GTK1.Widget;
 

@@ -23,9 +23,9 @@
 //!
 //!
 
-inherit GTK.Button;
+inherit GTK1.Button;
 
-static Gnome.ColorPicker create( );
+protected Gnome.ColorPicker create( );
 //! Creates a new GNOME color picker widget. This returns a widget in
 //! the form of a small button containing a swatch representing the
 //! current selected color. When the button is clicked, a

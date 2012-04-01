@@ -1,28 +1,28 @@
 /* -*- C -*- */
-class GTK.Pixmap;
-inherit GTK.Misc;
+class GTK1.Pixmap;
+inherit GTK1.Misc;
 //! Pixmaps are data structures that contain pictures. These pictures
 //! can be used in various places, but most visibly as icons on the
 //! X-Windows desktop, or as cursors. A bitmap is a 2-color pixmap.
 //! <p>
-//! To use pixmaps in GTK, you must first build a GDK.Pixmap object
-//! using GDK.Pixmap.
+//! To use pixmaps in GTK, you must first build a GDK1.Pixmap object
+//! using GDK1.Pixmap.
 //! </p><p>
-//! The pixels in a GTK.Pixmap cannot be manipulated by the application
+//! The pixels in a GTK1.Pixmap cannot be manipulated by the application
 //! after creation, since under the X Window system the pixel data is
 //! stored on the X server and so is not available to the client
 //! application. If you want to create graphical images which can be
 //! manipulated by the application, look at W(Image).
 //! </p><p>
-//! IMG: GTK.Pixmap( GDK.Pixmap( Image.Image(100,100)->test()) )
-//! IMG: GTK.Pixmap( GDK.Pixmap( Image.Image(100,100)->test()), GDK.Bitmap(Image.Image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
+//! IMG: GTK1.Pixmap( GDK1.Pixmap( Image.Image(100,100)->test()) )
+//! IMG: GTK1.Pixmap( GDK1.Pixmap( Image.Image(100,100)->test()), GDK1.Bitmap(Image.Image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
 //! </p>
 
-void create( GDK.Pixmap pixmap, ?GDK.Bitmap mask );
+void create( GDK1.Pixmap pixmap, ?GDK1.Bitmap mask );
 //! Create a new pixmap object, and sets the image and the mask.
 
-void set( GDK.Pixmap pixmap, ?GDK.Bitmap mask );
-//! Sets the GDK.Pixmap image and the optinal GDK.Bitmap mask
+void set( GDK1.Pixmap pixmap, ?GDK1.Bitmap mask );
+//! Sets the GDK1.Pixmap image and the optinal GDK1.Bitmap mask
 
 member int build_insensitive;
 
@@ -68,13 +68,13 @@ void set_build_insensitive( int buildp );
 //! Set to TRUE if an extra pixmap should be automatically created to
 //! use when the pixmap is insensitive.
 
-void set_insensitive_pixmap(GDK.Pixmap insensitive_pixmap)
+void set_insensitive_pixmap(GDK1.Pixmap insensitive_pixmap)
 //! Set the pixmap to use when the pixmap is insensitive.
 {
   struct object *o;
   get_all_args( "set_pixmap_insensitive", args, "%o", &o );
   if(!get_gdkobject( o, pixmap ))
-    Pike_error("This is not a GDK.Pixmap\n");
+    Pike_error("This is not a GDK1.Pixmap\n");
   if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive !=
       get_gdkobject( o, pixmap ) )
   {

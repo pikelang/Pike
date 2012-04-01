@@ -8,6 +8,7 @@
 #include "zlib_machine.h"
 #include "module.h"
 #include "program.h"
+#include "mapping.h"
 #include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
@@ -38,7 +39,7 @@ struct zipper
   int  level;
   int  state;
   struct z_stream_s gz;
-  struct pike_string *epilogue;
+  struct pike_string *epilogue, *dict;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
 #endif /* _REENTRANT */
@@ -85,9 +86,14 @@ struct zipper
 
 /*! @decl void create(int(-9..9)|void level, int|void strategy,@
  *!                   int(8..15)|void window_size)
+ *! @decl void create(mapping options)
  *!
  *! This function can also be used to re-initialize a Gz.deflate object
  *! so it can be re-used.
+ *!
+ *! If a mapping is passed as the only argument, it will accept the
+ *! parameters described below as indices, and additionally it accepts
+ *! a @expr{string@} as @expr{dictionary@}.
  *!
  *! @param level
  *!   Indicates the level of effort spent to make the data compress
@@ -142,6 +148,9 @@ static void gz_deflate_create(INT32 args)
 /*     mt_unlock(& THIS->lock); */
   }
 
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
+
   if(args>2)
   {
     if(TYPEOF(sp[2-args]) != T_INT)
@@ -152,20 +161,59 @@ static void gz_deflate_create(INT32 args)
       Pike_error("Invalid window size for gz_deflate->create().\n");
   }
 
+#define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
+		      || ((type) == PIKE_T_MAPPING && "mapping")\
+		      || ((type) == PIKE_T_ARRAY && "array")	\
+		      || ((type) == PIKE_T_FLOAT && "float")	\
+		      || ((type) == PIKE_T_INT && "int")	\
+		      || ((type) == PIKE_T_OBJECT && "object")	\
+		      || "mixed")
+#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
+   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
+       "got type %s for " name ".", TTS(PIKE_T_##type), TTS(TYPEOF(*tmp))), 0)))
   if(args)
   {
-    if(TYPEOF(sp[-args]) != T_INT)
-      Pike_error("Bad argument 1 to gz->create()\n");
-    THIS->level=sp[-args].u.integer;
-    if( THIS->level < 0 )
-    {
-      wbits = -wbits;
-      THIS->level = -THIS->level;
-    }
-    if(THIS->level < Z_NO_COMPRESSION ||
-       THIS->level > Z_BEST_COMPRESSION)
-    {
-      Pike_error("Compression level out of range for gz_deflate->create()\n");
+    if (TYPEOF(sp[-args]) == T_MAPPING && args == 1) {
+      struct mapping *m = sp[-args].u.mapping;
+      struct svalue *tmp;
+
+      if (GET_TYPE(INT, "strategy")) strategy = tmp->u.integer;
+      if (GET_TYPE(INT, "window_size"))
+      {
+	wbits = tmp->u.integer;
+	if (wbits == 0) wbits = 15;
+	if (wbits < 8 || wbits > 15)
+	  Pike_error("Invalid window size for gz_deflate->create().\n");
+      }
+      if (GET_TYPE(STRING, "dictionary"))
+      {
+	if (tmp->u.string->size_shift)
+	  Pike_error("dictionary cannot be a wide string in "
+		     "gz_deflate->create().\n");
+	THIS->dict = tmp->u.string;
+	add_ref(THIS->dict);
+      }
+      if (GET_TYPE(INT, "level"))
+      {
+	  THIS->level = tmp->u.integer;
+	  goto LVL_CHECK;
+      }
+    } else {
+      if(TYPEOF(sp[-args]) != T_INT)
+	Pike_error("Bad argument 1 to gz->create()\n");
+      THIS->level=sp[-args].u.integer;
+LVL_CHECK:
+      if( THIS->level < 0 )
+      {
+	wbits = -wbits;
+	THIS->level = -THIS->level;
+      }
+      if(THIS->level < Z_NO_COMPRESSION ||
+	 THIS->level > Z_BEST_COMPRESSION)
+      {
+	Pike_error("Compression level out of range for "
+		   "gz_deflate->create()\n");
+      }
     }
   }
 
@@ -209,6 +257,14 @@ static void gz_deflate_create(INT32 args)
   switch(tmp)
   {
   case Z_OK:
+    if (THIS->dict) {
+      int err;
+      err = deflateSetDictionary(&THIS->gz, (const Bytef*)THIS->dict->str,
+				 THIS->dict->len);
+      if (err != Z_OK) {
+	Pike_error("failed to set dictionary in deflate init.\n");
+      }
+    }
     return;
 
   case Z_VERSION_ERROR:
@@ -560,6 +616,8 @@ static void exit_gz_deflate(struct object *o)
 /*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
   do_free_string(THIS->epilogue);
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -583,6 +641,12 @@ static void exit_gz_deflate(struct object *o)
  */
 
 /*! @decl void create(int|void window_size)
+ *! @decl void create(mapping options)
+ *!
+ *! If called with a mapping as only argument, @expr{create@} accepts
+ *! the entries @expr{window_size@} (described below) and @expr{dictionary@},
+ *! which is a string to be set as dictionary.
+ *!
  *! The window_size value is passed down to inflateInit2 in zlib.
  *!
  *! If the argument is negative, no header checks are done, and no
@@ -606,7 +670,7 @@ static void exit_gz_deflate(struct object *o)
  */
 static void gz_inflate_create(INT32 args)
 {
-  int tmp;
+  int tmp, *tmp_p = &tmp;
   if(THIS->gz.state)
   {
 /*     mt_lock(& THIS->lock); */
@@ -618,13 +682,33 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
   {
-    tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
+    struct mapping *m = Pike_sp[-1].u.mapping;
+    struct svalue *tmp;
+
+    if (GET_TYPE(STRING, "dictionary")) {
+      if (tmp->u.string->size_shift)
+	Pike_error("dictionary cannot be a wide string in "
+		   "gz_inflate->create().\n");
+      THIS->dict = tmp->u.string;
+      add_ref(THIS->dict);
+    }
+    if (GET_TYPE(INT, "window_size"))
+      *tmp_p=inflateInit2(& THIS->gz, tmp->u.integer);
+    else
+      *tmp_p=inflateInit( &THIS->gz );
   }
   else
   {
-    tmp=inflateInit( &THIS->gz );
+    if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+    {
+      tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
+    }
+    else
+    {
+      tmp=inflateInit( &THIS->gz );
+    }
   }
   pop_n_elems(args);
 
@@ -633,6 +717,17 @@ static void gz_inflate_create(INT32 args)
   switch(tmp)
   {
   case Z_OK:
+#if 0 /* this apparently works with newer zlibs only. */
+    if (THIS->dict) {
+      int err;
+
+      err = inflateSetDict(&THIS->gz, (const Bytef*)THIS->dict->str,
+			   THIS->dict->len);
+
+      if (err != Z_OK)
+	    Pike_error("inflateSetDict on startup failed.\n");
+    }
+#endif
     return;
 
   case Z_VERSION_ERROR:
@@ -705,6 +800,11 @@ static int do_inflate(dynamic_buffer *buf,
       low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
 
       if(ret == Z_BUF_ERROR) ret=Z_OK;
+
+      if (ret == Z_NEED_DICT && this->dict)
+	ret = inflateSetDictionary(&this->gz,
+				   (const Bytef*)this->dict->str,
+				   this->dict->len);
 
       if(ret != Z_OK)
       {
@@ -931,6 +1031,8 @@ static void exit_gz_inflate(struct object *o)
 /*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
   do_free_string(THIS->epilogue);
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -986,7 +1088,7 @@ PIKE_MODULE_INIT
   ADD_STORAGE(struct zipper);
   
   /* function(int|void,int|void:void) */
-  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid),0);
+  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
   /* function(string,int|void:string) */
   ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
 
@@ -1023,7 +1125,7 @@ PIKE_MODULE_INIT
   ADD_STORAGE(struct zipper);
   
   /* function(int|void:void) */
-  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
+  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tMapping,tOr(tInt,tVoid)),tVoid),0);
   /* function(string:string) */
   ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
   /* function(:string) */

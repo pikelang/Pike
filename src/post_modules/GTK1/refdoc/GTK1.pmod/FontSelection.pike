@@ -1,15 +1,15 @@
-//!@expr{ GTK.FontSelection()@}
-//!@xml{<image>../images/gtk_fontselection.png</image>@}
+//!@expr{ GTK1.FontSelection()@}
+//!@xml{<image>../images/gtk1_fontselection.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Notebook;
+inherit GTK1.Notebook;
 
-static GTK.FontSelection create( );
+protected GTK1.FontSelection create( );
 //!
 
-GDK.Font get_font( );
+GDK1.Font get_font( );
 //!
 
 string get_font_name( );
@@ -18,12 +18,12 @@ string get_font_name( );
 string get_preview_text( );
 //!
 
-GTK.FontSelection set_font_name( string xlfd );
+GTK1.FontSelection set_font_name( string xlfd );
 //! This sets the currently displayed font. It should be a valid X Logical
 //! Font Description font name (anything else will be ignored), e.g.
 //! "-adobe-courier-bold-o-normal--25-*-*-*-*-*-*-*"
 //!
 //!
 
-GTK.FontSelection set_preview_text( string text );
+GTK1.FontSelection set_preview_text( string text );
 //!

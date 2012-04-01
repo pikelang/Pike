@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Dialog;
-inherit GTK.Window;
+inherit GTK1.Window;
 //! Gnome.Dialog gives dialogs a consistent look and feel, while making
 //! them more convenient to program. Gnome.Dialog makes it easy to use
 //! stock buttons, makes it easier to handle delete_event, and adds
@@ -11,7 +11,7 @@ inherit GTK.Window;
 signal clicked;
 signal close;
 
-member GTK.Vbox vbox;
+member GTK1.Vbox vbox;
 
 void create(string title, string ... buttons)
 //! Creates a new Gnome.Dialog, with the given title, and any button
@@ -57,7 +57,7 @@ void create(string title, string ... buttons)
   push_int( 0 );
 }
 
-void set_parent( GTK.Window parent );
+void set_parent( GTK1.Window parent );
 //! Dialogs have "parents," usually the main application window which
 //! spawned them. This function will let the window manager know about
 //! the parent-child relationship. Usually this means the dialog must
@@ -120,7 +120,7 @@ void set_close( int click_closes );
 //! Gnome.Dialog subclasses, such as Gnome.MessageBox and
 //! Gnome.PropertyBox, have this parameter set to TRUE by default.
 
-void editable_enters( GTK.Editable widget );
+void editable_enters( GTK1.Editable widget );
 //! Normally if there's an editable widget (such as GtkEntry) in your
 //! dialog, pressing Enter will activate the editable rather than the
 //! default dialog button. However, in most cases, the user expects to

@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.FileEntry;
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 //! This widget provides an entry box with history (a W(GnomeEntry))
 //! and a button which can pop up a file selector dialog box
 //! W(GtkFileSelection). It also accepts DND drops from the filemanager
@@ -15,7 +15,7 @@ Gnome.Entry gnome_entry( );
 //! Get the W(GnomeEntry) component of the widget for lower-level
 //! manipulation.
 
-GTK.Entry gtk_entry( );
+GTK1.Entry gtk_entry( );
 //! Get the W(Entry) component of the widget for lower-level
 //! manipulation.
 

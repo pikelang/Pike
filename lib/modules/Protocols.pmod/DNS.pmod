@@ -1,7 +1,11 @@
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;
+
+//! Support for the Domain Name System protocol.
+//!
 //! RFC 1034, RFC 1035 and RFC 2308
+
   protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
@@ -104,6 +108,21 @@ enum EntryType
   //! Type - SPF - Sender Policy Framework (RFC 4408)
   T_SPF=99,
 };
+
+int safe_bind(Stdio.UDP udp, mixed ... args)
+{
+  mixed err = catch {
+      udp->bind(@args);
+      return 1;
+    };
+#if constant(System.EADDRINUSE)
+  if (errno() == System.EADDRINUSE) return 0;
+#endif
+  werror("Protocols.DNS: Binding of UDP port failed with errno %d: %s\n",
+	 errno(), strerror(errno()));
+  master()->handle_error(err);
+  return 0;
+}
 
 //! Low level DNS protocol
 class protocol
@@ -612,6 +631,33 @@ class protocol
   }
 };
 
+protected string ANY;
+
+protected void create()
+{
+  // Check if IPv6 support is available, and that mapped IPv4 is enabled.
+  catch {
+    // Note: Attempt to bind on the IPv6 loopback (::1)
+    //       rather than on IPv6 any (::), to make sure some
+    //       IPv6 support is actually configured. This is needed
+    //       since eg Solaris happily binds on :: even
+    //       if no IPv6 interfaces are configured.
+    //       Try IPv6 any (::) too for paranoia reasons.
+    //       For even more paranoia, try sending some data
+    //       from :: to the drain services on 127.0.0.1 and ::1.
+    //
+    // If the tests fail, we regard the IPv6 support as broken,
+    // and use just IPv4.
+    Stdio.UDP udp = Stdio.UDP();
+    if (udp->bind(0, "::1") && udp->bind(0, "::") &&
+	(udp->send("127.0.0.1", 9, "/dev/null") == 9) &&
+	(udp->send("::1", 9, "/dev/null") == 9)) {
+      ANY = "::";
+    }
+    destruct(udp);
+  };
+}
+
 //! Base class for implementing a Domain Name Service (DNS) server.
 //!
 //! This class is typically used by inheriting it,
@@ -750,7 +796,8 @@ class server
   //! Open one or more new DNS server ports.
   //!
   //! @param ip
-  //!   The IP to bind to. Defaults to @expr{0@} (ie ANY).
+  //!   The IP to bind to. Defaults to @expr{"::"@} or @expr{0@} (ie ANY)
+  //!   depending on whether IPv6 support is present or not.
   //!
   //! @param port
   //!   The port number to bind to. Defaults to @expr{53@}.
@@ -767,7 +814,7 @@ class server
       if(stringp(arg1))
        args = ({ arg1, 53 });
       else
-       args = ({ 0, arg1 });
+       args = ({ ANY, arg1 });
     }
     else
       args = ({ arg1 }) + args;
@@ -778,10 +825,10 @@ class server
     for(int i;i<sizeof(args);i+=2) {
       Stdio.UDP udp = Stdio.UDP();
       if(args[i]) {
-       if (!udp->bind(args[i+1],args[i]))
+	if (!safe_bind(udp, args[i+1], args[i]))
          error("DNS: failed to bind host:port %s:%d.\n", args[i],args[i+1]);
       } else {
-       if(!udp->bind(args[i+1]))
+	if(!safe_bind(udp, args[i+1]))
          error("DNS: failed to bind port %d.\n", args[i+1]);
       }
       udp->set_read_callback(rec_data, udp);
@@ -1049,7 +1096,7 @@ class client
     }
   }
 
-//! Perform a syncronous DNS query.
+//! Perform a synchronous DNS query.
 //! 
 //! @param s
 //!   Result of @[Protocols.DNS.protocol.mkquery]
@@ -1068,9 +1115,9 @@ class client
     object udp = Stdio.UDP();
     // Attempt to randomize the source port.
     for (i = 0; i < RETRIES; i++) {
-      if (!catch { udp->bind(1024 + random(65536-1024)); }) continue;
+      if (!safe_bind(udp, 1024 + random(65536-1024), ANY)) continue;
     }
-    if (i >= RETRIES) udp->bind(0);
+    if (i >= RETRIES) safe_bind(udp, 0, ANY) || udp->bind(0);
 #if 0
     werror("Protocols.DNS.client()->do_sync_query(%O)\n"
 	   "UDP Address: %s\n"
@@ -1389,7 +1436,7 @@ class client
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
 // FIXME: Randomized source port!
-//!
+//! Asynchronous DNS client.
 class async_client
 {
   inherit client;
@@ -1527,6 +1574,7 @@ class async_client
     }
   }
 
+  //!
   void host_to_ip(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1539,6 +1587,7 @@ class async_client
     }
   }
 
+  //!
   void ip_to_host(string ip, function callback, mixed ... args)
   {
     do_query(arpa_from_ip(ip), C_IN, T_PTR,
@@ -1547,6 +1596,7 @@ class async_client
 	     @args);
   }
 
+  //!
   void get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1558,6 +1608,7 @@ class async_client
     }
   }
 
+  //!
   void get_mx(string host, function callback, mixed ... args)
   {
     get_mx_all(host,
@@ -1572,8 +1623,15 @@ class async_client
 	       }, callback, @args);
   }
 
+  //! Close the client.
+  //!
+  //! @note
+  //!   All active requests are aborted.
   void close()
   {
+    foreach(requests; ; Request r) {
+      remove(r);
+    }
     udp::close();
     udp::set_read_callback(0);
   }
@@ -1582,7 +1640,14 @@ class async_client
   protected void create(void|string|array(string) server,
 			void|string|array(string) domain)
   {
-    if(!udp::bind(0))
+    int i;
+    // Attempt to randomize the source port.
+    for (i = 0; i < RETRIES; i++) {
+      if (safe_bind(udp::this, 1024 + random(65536-1024), ANY)) break;
+    }
+    if((i >= RETRIES) &&
+       !safe_bind(udp::this, 0, ANY) &&
+       !safe_bind(udp::this, 0))
       error( "DNS: failed to bind a port.\n" );
 #if 0
     werror("Protocols.DNS.async_client(%O, %O)\n"

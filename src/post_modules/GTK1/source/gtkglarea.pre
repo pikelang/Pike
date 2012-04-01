@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require glarea;
-class GTK.GLArea;
-inherit GTK.DrawingArea;
+class GTK1.GLArea;
+inherit GTK1.DrawingArea;
 add_global {
 #include <gtkgl/gdkgl.h>
 #include <gtkgl/gtkglarea.h>

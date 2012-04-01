@@ -1,9 +1,9 @@
 /* -*- C -*- */
-class GTK.Calendar;
-inherit GTK.Widget;
+class GTK1.Calendar;
+inherit GTK1.Widget;
 //! A calendar widget.
-//! IMG: GTK.Calendar();
-//! IMG: GTK.Calendar()->select_day( 16 );
+//! IMG: GTK1.Calendar();
+//! IMG: GTK1.Calendar()->select_day( 16 );
 
 signal month_changed;
 signal day_selected;
@@ -108,14 +108,14 @@ array(array(int)) get_day()
   f_aggregate( 6 );
 }
 
-void set_marked_date_color(int index, GDK.Color color)
+void set_marked_date_color(int index, GDK1.Color color)
 //! Set the color to use to mark dates
 {
   INT_TYPE n;
   struct object *o;
   get_all_args( "set_marked_date_color", args, "%i%o", &n, &o );
   if(!get_gdkobject(o, color))
-    Pike_error("Argument 2 is not a GDK.Color object\n");
+    Pike_error("Argument 2 is not a GDK1.Color object\n");
   n--;
   if(n > 30 || n<0)
     Pike_error("Argument 1 is not between 1 and 31, inclusive\n");

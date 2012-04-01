@@ -1,21 +1,21 @@
 //! Exactly like W(RadioButton), but it is an menu item.
-//!@expr{ GTK.RadioMenuItem("Menu item")@}
-//!@xml{<image>../images/gtk_radiomenuitem.png</image>@}
+//!@expr{ GTK1.RadioMenuItem("Menu item")@}
+//!@xml{<image>../images/gtk1_radiomenuitem.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.MenuItem;
+inherit GTK1.MenuItem;
 
-static GTK.RadioMenuItem create( string|void title, GTK.RadioMenuItem groupmember );
-//! object GTK.RadioMenuItem(string title) - First button (with label)
-//! object GTK.RadioMenuItem()->add(widget) - First button (with widget)
-//! object GTK.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)
-//! object GTK.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)
+protected GTK1.RadioMenuItem create( string|void title, GTK1.RadioMenuItem groupmember );
+//! object GTK1.RadioMenuItem(string title) - First button (with label)
+//! object GTK1.RadioMenuItem()->add(widget) - First button (with widget)
+//! object GTK1.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)
+//! object GTK1.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)
 //!
 //!
 
-GTK.RadioMenuItem set_group( GTK.RadioMenuItem groupmember );
+GTK1.RadioMenuItem set_group( GTK1.RadioMenuItem groupmember );
 //! the argument is another radio menu item to whose group this button
 //! should be added to. It is prefereable to use the second argument to
 //! the constructor instead, but if you for some reason want to move

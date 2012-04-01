@@ -23,15 +23,15 @@ mapping low_load_image( string filename, mapping|array|void bgcol )
   return Image._load( filename );
 }
 
-//! Loads and decodes an image as a @[GDK.Pixmap].
+//! Loads and decodes an image as a @[GDK1.Pixmap].
 //!
 //! @returns
 //! @mapping
 //!   @member string "format"
 //!     The MIME content type of the image.
-//!   @member GDK.Bitmap "alpha"
+//!   @member GDK1.Bitmap "alpha"
 //!     The alpha channel of the image, if any. Otherwise @expr{0@}.
-//!   @member GDK.Bitmap "img"
+//!   @member GDK1.Bitmap "img"
 //!     The decoded image.
 //! @endmapping
 mapping load_image( string filename, array|void bgcol )
@@ -39,20 +39,20 @@ mapping load_image( string filename, array|void bgcol )
   if(mapping a = low_load_image( filename, bgcol ) )
   return ([
     "format":a->format,
-    "alpha": a->alpha && GDK.Bitmap( a->alpha ),
-    "img":  GDK.Pixmap( a->img ),
+    "alpha": a->alpha && GDK1.Bitmap( a->alpha ),
+    "img":  GDK1.Pixmap( a->img ),
   ]);
 }
 
-//! Decodes an image as a @[GDK.Pixmap].
+//! Decodes an image as a @[GDK1.Pixmap].
 //!
 //! @returns
 //! @mapping
 //!   @member string "format"
 //!     The MIME content type of the image.
-//!   @member GDK.Bitmap "alpha"
+//!   @member GDK1.Bitmap "alpha"
 //!     The alpha channel of the image, if any. Otherwise @expr{0@}.
-//!   @member GDK.Bitmap "img"
+//!   @member GDK1.Bitmap "img"
 //!     The decoded image.
 //! @endmapping
 mapping decode_image( string data, mapping|array|void tocolor )
@@ -60,8 +60,8 @@ mapping decode_image( string data, mapping|array|void tocolor )
   if(mapping a = low_decode_image( data,tocolor ) )
   return ([
     "format":a->format,
-    "alpha": a->alpha && GDK.Bitmap( a->alpha ),
-    "img":   GDK.Pixmap( a->img ),
+    "alpha": a->alpha && GDK1.Bitmap( a->alpha ),
+    "img":   GDK1.Pixmap( a->img ),
   ]);
 }
 

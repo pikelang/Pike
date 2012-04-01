@@ -1,6 +1,6 @@
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
 Gnome.IconSelection add_defaults( );
 //! Adds the default pixmap directory into the selection widget.
@@ -19,7 +19,7 @@ Gnome.IconSelection clear( int|void not_shown );
 //!
 //!
 
-static Gnome.IconSelection create( );
+protected Gnome.IconSelection create( );
 //! reates a new icon selection widget, it uses a W(GnomeIconList) for
 //! the listing of icons
 //!

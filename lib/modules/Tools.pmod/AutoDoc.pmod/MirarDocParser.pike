@@ -30,6 +30,24 @@ constant makepic = ({
     return Image.load(IMAGE_DIR + \"lena.gif\");
   }
 
+  array indices(mixed x)
+  {
+    if (x == Image.Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Image.Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
+  }
+
   object|string render();
 
   string make() {
@@ -45,6 +63,9 @@ constant makepic = ({
   }
 
   object|string render() {
+    // Make sure we get the same images every time,
+    // even if they have a random component.
+    random_seed(0x6aa6a66a);
 ",
   // Prior to 7.3.11 there were implicit imports of Image
   // and Stdio. cf src/modules/Image/illustration.pike.
@@ -75,6 +96,24 @@ constant makepic = ({
     return load(IMAGE_DIR + \"lena.gif\");
   }
 
+  array indices(mixed x)
+  {
+    if (x == Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
+  }
+
   object|string render();
 
   string make() {
@@ -90,6 +129,9 @@ constant makepic = ({
   }
 
   object|string render() {
+    // Make sure we get the same images every time,
+    // even if they have a random component.
+    random_seed(0x6aa6a66a);
 ",
   // Prior to 0.7.3 the Image module classes were all lower-case.
   #"// Pike 0.6 illustration, implicit imports, only Image.image.
@@ -118,6 +160,24 @@ constant makepic = ({
     return load(IMAGE_DIR + \"lena.gif\");
   }
 
+  array indices(mixed x)
+  {
+    if (x == Image.Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Image.Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
+  }
+
   object|string render();
 
   string make() {
@@ -133,12 +193,15 @@ constant makepic = ({
   }
 
   object|string render() {
+    // Make sure we get the same images every time,
+    // even if they have a random component.
+    random_seed(0x6aa6a66a);
 ",
 });
 
 string execute;
 
-mapping parse=([ ]);
+mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
 
 int verbosity = 1;
@@ -171,7 +234,7 @@ Quoting: Only '<' must be quoted as '&lt;'.
 
 */
 
-mapping moduleM, classM, methodM, argM, nowM, descM;
+mapping moduleM, classM, methodM, argM, nowM, descM, appendixM;
 
 mapping focM(mapping dest,string name,string line)
 {
@@ -235,6 +298,15 @@ mapping keywords=
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	},
+  "appendix":lambda(string arg, string currentfile, int line)
+	     {
+	       if (!(flags & .FLAG_COMPAT)) {
+		 report(.FLAG_NORMAL,currentfile,line,
+			"Appendices are only supported in compat mode.\n");
+		 return;
+	       }
+	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),format_line(currentfile,line));
+	       report(.FLAG_VERBOSE,currentfile,line,"appendix "+arg); },
   "module":lambda(string arg, string currentfile, int line)
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),format_line(currentfile,line));
 	    methodM=0;
@@ -407,6 +479,10 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     return ({ _Roxen.html_encode_string(value) });
   }
 
+  string orig_value = value;
+
+  value = lower_case(value);
+
   string tag = p->parse_tag_name(value[1..<1]);
 
   array(string) ret = ({});
@@ -422,7 +498,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     nesting->pop();
   } else if (!sizeof(tag) || has_value(tag, "(") || has_value(tag, ")")) {
     // Insufficient quoting of paired < and >.
-    return ({ _Roxen.html_encode_string(value) });
+    return ({ _Roxen.html_encode_string(orig_value) });
   } else {
     if (dtd_nesting[tag]) {
       if (has_value(nesting, dtd_nesting[tag])) {
@@ -433,7 +509,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
 	ret += ({ "<" + dtd_nesting[tag] + ">" });
       }
     }
-    if (has_suffix(value, " />")) {
+    if (has_suffix(value, "/>")) {
       // Self-terminating tag.
     } else if (self_terminating[tag]) {
       value = value[..<1] + " />";
@@ -475,6 +551,12 @@ string fixdesc(string s,string prefix,void|string where)
 		  "'&lt;'", "'&gt;'", "\"&lt;\"", "\"&gt;\"",
 	       }));
 
+   parser->set_extra(where);
+
+   s = parser->finish(s)->read();
+
+   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
+
    nesting = ADT.Stack();
    nesting->push(0);	// End sentinel.
 
@@ -482,10 +564,6 @@ string fixdesc(string s,string prefix,void|string where)
 
    s = nesting_parser->finish(s)->read() + pop_to_tag(UNDEFINED) * "";
 
-   parser->set_extra(where);
-
-   s = parser->finish(s)->read();
-   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
    s = htmlify(s);
 
    if (where && !(flags & .FLAG_NO_DYNAMIC))
@@ -818,6 +896,9 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
+	f->write("<"+enttype+" name="+S(name)+">\n");
+	break;
       case "class":
       case "module":
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
@@ -1037,6 +1118,7 @@ void document(string enttype,
 
    switch (enttype)
    {
+      case "appendix":
       case "class":
       case "module":
 	 f->write("</"+enttype+">\n\n");
@@ -1052,7 +1134,7 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 {
    if (verbosity > 0)
      werror("modules: " +
-	    sort(indices(parse))*", " +
+	    sort(indices(parse)-({" appendix"}))*", " +
 	    "\n");
 
    namespace = namespace || "predef::";
@@ -1067,7 +1149,8 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 	 return sizeof(in);
       }
       string read() {
-	 return "<autodoc>\n" + doc + "</autodoc>";
+	 return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
+			       "<autodoc>\n" + doc + "</autodoc>\n");
       }
    }();
 
@@ -1077,10 +1160,15 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
    mixed err = catch {
        // Module documentation exists in a namespace...
        f->write("<namespace name='" + namespace + "'>\n");
-       foreach (sort(indices(parse)-({"_order"})),string module)
+       foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
 	 document("module",parse[module],module,module+".", f, "-", 1);
        f->write("</namespace>\n");
      };
+
+   // But appendices do not.
+   if(appendixM)
+      foreach(parse[" appendix"]->_order, string title)
+	document("appendix",parse[" appendix"][title],title,"", f, "-", 1);
 
    cd(here);
    if (err) throw(err);
@@ -1090,7 +1178,6 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 						  (flags & .FLAG_VERB_MASK) <
 						  .FLAG_VERBOSE);
      };
-   werror("Autodoc:\n%O\n", autodoc);
    throw(err);
 }
 
@@ -1209,6 +1296,9 @@ array(string) make_illustration(array(string) templates,
     ip = UNDEFINED;
     err = catch {
 	ip = compile_string(code, "-", handler);
+	// Make sure we get the same images every time,
+	// even if they have a random component.
+	random_seed(0x6aa6a66a);
 	object g = ip(name, verbosity, type);
 	return ({ g->make() });
       };
@@ -1251,7 +1341,7 @@ void create(string image_dir, void|.Flags flags)
 
   parser->add_container("li",
     lambda(Parser.HTML p, mapping m, string c) {
-      return "<group><item/><text>" + c + "</text></group>";
+      return "<group><item /><text>" + c + "</text></group>";
     });
 
   parser->add_container("illustration",
@@ -1297,6 +1387,9 @@ void create(string image_dir, void|.Flags flags)
       err = catch {
 	g = compile_string(execute + c)
 	  (illustration_counter, name);
+	// Make sure we get the same images every time,
+	// even if they have a random component.
+	random_seed(0x6aa6a66a);
 	g->main();
       };
 
@@ -1443,6 +1536,9 @@ void create(string image_dir, void|.Flags flags)
   void create(int _img_counter, string _prefix) {
     img_counter = _img_counter;
     prefix = _prefix;
+    // Make sure we get the same images every time,
+    // even if they have a random component.
+    random_seed(0x6aa6a66a);
   }
 
   string illustration(string|Image.Image img, mapping|object extra,

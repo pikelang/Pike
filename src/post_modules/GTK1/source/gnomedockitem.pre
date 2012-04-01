@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.DockItem;
-inherit GTK.Bin;
+inherit GTK1.Bin;
 
 signal dock_drag_begin;
 //! This signal is emitted as soon as the user starts dragging the dock item.
@@ -23,7 +23,7 @@ void create( string name, int behavior );
 //!  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
 //!  Gnome.DockItemBehLocked specifies that users cannot drag the item around.
 //! </p>
-GTK.Widget get_child( );
+GTK1.Widget get_child( );
 //! Retrieve the child of the item.
 
 string get_name( );

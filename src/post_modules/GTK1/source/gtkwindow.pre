@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Window;
-inherit GTK.Bin;
+class GTK1.Window;
+inherit GTK1.Bin;
 //! The basic window. Nothing much to say about it. It can only contain
 //! one child widget. Show the main window last to avoid annoying
 //! flashes when the subwidget (and it's subwidgets) are added to it,
@@ -15,19 +15,19 @@ void set_wmclass( string name, string class );
 //! Set the window manager application name and class.
 void set_title( string title );
 //! Set the window title. The default title is the value sent to
-//! setup_gtk, or if none is sent, Pike GTK.
-void set_focus( GTK.Widget child );
+//! setup_gtk, or if none is sent, Pike GTK1.
+void set_focus( GTK1.Widget child );
 //! Set the focus widget to the specified child. Please note that this
 //! is normaly handled automatically.
 int activate_focus();
 //! Activate the focus widget
 int activate_default();
 //! Activate the default widget
-void add_accel_group( GTK.AccelGroup group );
+void add_accel_group( GTK1.AccelGroup group );
 //! This function adds an accelerator group to the window. The shortcuts in
 //! the table will work in the window, it's child, and all children of
 //! it's child that do not select keyboard input.
-void set_transient_for( GTK.Window parent );
+void set_transient_for( GTK1.Window parent );
 //! Mark this window as a transient window for the parent window.
 //! Most window managers renders transient windows differently (different
 //! borders, sometimes no resize widgets etc)
@@ -43,11 +43,11 @@ void remove_embedded_xid( int x_window_id );
 //! Remove the embeded X window
 void add_embedded_xid( int x_window_id );
 //! Add an embedded X-window
-void remove_accel_group( GTK.AccelGroup table );
+void remove_accel_group( GTK1.AccelGroup table );
 //! Remove a previously installed table.
-void set_default( GTK.Widget default_widget );
+void set_default( GTK1.Widget default_widget );
 //! Set the default widget to the specified widget.
-//! The specified widget <b>must</b> have the GTK.CanDefault flag set.
+//! The specified widget <b>must</b> have the GTK1.CanDefault flag set.
 void set_position( int pos );
 //! one of CONST(GTK_WIN)
 void set_policy( int allow_shrink, int allow_grow, int auto_shrink );
@@ -80,9 +80,9 @@ void set_icon_name( string name )
   RETURN_THIS();
 }
 
-void set_icon( ?GDK.Pixmap p, ?GDK.Bitmap b, ?GDK.Window w )
+void set_icon( ?GDK1.Pixmap p, ?GDK1.Bitmap b, ?GDK1.Window w )
 //! Set the icon to the specified image (with mask) or the specified
-//! GDK.Window. It is up to the window manager to display the icon. 
+//! GDK1.Window. It is up to the window manager to display the icon. 
 //! Most window manager handles window and pixmap icons, but only a
 //! few can handle the mask argument. If you want a shaped icon, the
 //! only safe bet is a shaped window.
@@ -123,11 +123,11 @@ member string wmclass_class;
 //! The window manager class of this application.
 member string title;
 //! The title of the window
-member GTK.Widget focus_widget;
+member GTK1.Widget focus_widget;
 //! The focus widget
-member GTK.Widget default_widget;
+member GTK1.Widget default_widget;
 //! The default widget
-member GTK.Window transient_parent;
+member GTK1.Window transient_parent;
 //! The parent window for this window if this is a transient window, 0
 //! otherwise.
 

@@ -1,7 +1,7 @@
 /* -*- C -*- */
 DISABLED {
-class GTK.TreeItem;
-inherit GTK.Item;
+class GTK1.TreeItem;
+inherit GTK1.Item;
 //! A item to be places in a W(Tree).
 //! <br />The item can have a subtree attached to it.
 //! <br />A subtree is a normal tree.
@@ -16,14 +16,14 @@ void create(?string label)
   if(args)
   {
     char *s;
-    get_all_args("GTK.Tree_item", args, "%s", &s);
+    get_all_args("GTK1.Tree_item", args, "%s", &s);
     THIS->obj = GTK_OBJECT( gtk_tree_item_new_with_label( s ) );
   } else {
     THIS->obj = GTK_OBJECT( gtk_tree_item_new( ) );
   }
   pgtk__init_this_object();
 }
-void set_subtree( GTK.Tree tree );
+void set_subtree( GTK1.Tree tree );
 //! Sets the subtree.
 void remove_subtree();
 //! Removes the subtree.

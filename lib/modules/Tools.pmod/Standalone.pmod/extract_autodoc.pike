@@ -17,6 +17,8 @@ int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 int source_timestamp;
 
+int num_updated_files;
+
 // See the BMML rewriter further below about these values.
 // Not that there is both a start and an end sentinel.
 constant bmml_invalidation_times = ({
@@ -26,10 +28,12 @@ constant bmml_invalidation_times = ({
 int bmml_invalidate_before;
 int bmml_invalidate_after;
 
-int main(int n, array(string) args) {
-
+int main(int n, array(string) args)
+{
   string srcdir, builddir = "./";
   array(string) root = ({"predef::"});
+
+  int return_count;
 
   foreach(Getopt.find_all_options(args, ({
     ({ "srcdir",     Getopt.HAS_ARG,      "--srcdir" }),
@@ -38,6 +42,7 @@ int main(int n, array(string) args) {
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
     ({ "root",       Getopt.HAS_ARG,      "--root" }),
     ({ "compat",     Getopt.NO_ARG,       "--compat" }),
+    ({ "count",      Getopt.NO_ARG,       "--count" }),
     ({ "timestamp",  Getopt.HAS_ARG,      "--source-timestamp" }),
     ({ "no-dynamic", Getopt.NO_ARG,       "--no-dynamic" }),
     ({ "keep-going", Getopt.NO_ARG,       "--keep-going" }),
@@ -63,6 +68,9 @@ int main(int n, array(string) args) {
       break;
     case "compat":
       flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
+    case "count":
+      return_count = 1;
       break;
     case "no-dynamic":
       flags |= Tools.AutoDoc.FLAG_NO_DYNAMIC;
@@ -127,7 +135,30 @@ int main(int n, array(string) args) {
 	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
 	  exit(1);
 	}
+
+	num_updated_files++;
+
+	if (sizeof(res) && (res != "\n")) {
+	  // Validate the extracted XML.
+	  mixed err = catch {
+	      Parser.XML.Tree.simple_parse_input(res);
+	    };
+	  if (err) {
+	    werror("Extractor generated broken XML for file %s:\n"
+		   "%s",
+		   builddir + fn + ".xml", describe_error(err));
+	    rm(builddir+fn+".xml");
+	    Stdio.write_file(builddir+fn+".brokenxml", res);
+	    Stdio.write_file(builddir+fn+".xml.stamp",
+			     (string)source_timestamp);
+	    werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
+	    if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
+	    exit(1);
+	  }
+	}
+
         Stdio.write_file(builddir+fn+".xml", res);
+	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
       }
     }
   }
@@ -135,6 +166,9 @@ int main(int n, array(string) args) {
     werror("No source directory or input files given.\n");
     return 1;
   }
+
+  if (return_count) return num_updated_files;
+  return 0;
 }
 
 void recurse(string srcdir, string builddir, int root_ts, array(string) root)
@@ -148,8 +182,25 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     //      "7.0::".
     root = (Stdio.read_file(srcdir+"/.autodoc")/"\n")[0]/" " - ({""});
     if (!sizeof(root) || !has_suffix(root[0], "::")) {
-      // The default namespace is predef::
-      root = ({ "predef::" }) + root;
+      if (sizeof(root) && has_value(root[0], "::")) {
+	// Broken .autodoc file
+	werror("Invalid syntax in %s.\n"
+	       ":: Must be last in the token.\n",
+	       srcdir + "/.autodoc");
+	if (!flags & Tools.AutoDoc.FLAG_COMPAT) {
+	  error("Invalid syntax in .autodoc file.\n");
+	}
+	array(string) a = root[0]/"::";
+	root = ({ a[0] + "::" }) + a[1..] + root[1..];
+      } else {
+	// The default namespace is predef::
+	root = ({ "predef::" }) + root;
+      }
+    }
+    root_ts = st->mtime;
+  } else if (st = file_stat(srcdir+"/.bmmlrc")) {
+    if (Stdio.read_file(srcdir+"/.bmmlrc") == "prefix internal\n") {
+      root = ({ "c::" });
     }
     root_ts = st->mtime;
   }
@@ -159,6 +210,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if (!Stdio.exist(srcdir + fn[..<4])) {
 	if (verbosity > 0)
 	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
+
+	num_updated_files++;
 	rm(builddir + fn);
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
@@ -194,6 +247,46 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
   // do not recurse into the build dir directory to avoid infinite loop
   // by building the autodoc of the autodoc and so on
   if(search(builddir, srcdir) == -1) {
+    foreach(filter(get_dir(srcdir), has_suffix, ".cmod"), string fn) {
+      Stdio.Stat stat = file_stat(srcdir + fn);
+      if (!stat || !stat->isreg) continue;
+      int mtime = stat->mtime;
+
+      // Check for #cmod_include.
+      multiset(string) checked = (<>);
+      string data = Stdio.read_bytes(srcdir + fn);
+      foreach(filter(data/"\n", has_prefix, "#"), string line) {
+	if (sscanf(line, "#%*[ \t]cmod_include%*[ \t]\"%s\"", string inc) > 2) {
+	  if (!checked[inc]) {
+	    checked[inc] = 1;
+	    stat = file_stat(combine_path(srcdir, inc));
+	    if (stat && stat->isreg && stat->mtime > mtime) {
+	      mtime = stat->mtime;
+	    }
+	  }
+	}
+      }
+
+      string target = fn[..<5] + ".c";
+      stat = file_stat(srcdir + target);
+      if (!stat || stat->mtime <= mtime) {
+	// Regenerate the target.
+	mixed err;
+	if (err = catch {
+	    Tools.Standalone.precompile()->
+	      main(6, ({ "precompile.pike", "--api=max", "-w",
+			 "-o", srcdir+target, srcdir+fn }));
+	  }) {
+	  // Something failed.
+	  werror("Precompilation of %s to %s failed:\n"
+		 "%s",
+		 srcdir+fn, srcdir+target, describe_error(err));
+	  rm(srcdir+target);
+	  rm(builddir+target+".xml");
+	  rm(builddir+target+".xml.stamp");
+	}
+      }
+    }
     foreach(get_dir(srcdir), string fn) {
       if(fn=="CVS") continue;
       if(fn[0]=='.') continue;
@@ -233,8 +326,32 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	    exit(1);
 	  res = "";
 	}
+
+	if (sizeof(res) && (res != "\n")) {
+	  // Validate the extracted XML.
+	  mixed err = catch {
+	      Parser.XML.Tree.simple_parse_input(res);
+	    };
+	  if (err) {
+	    werror("Extractor generated broken XML for file %s:\n"
+		   "%s",
+		   builddir + fn + ".xml", describe_error(err));
+	    Stdio.write_file(builddir+fn+".brokenxml", res);
+	    if (Stdio.exist(builddir+fn+".xml")) {
+	      num_updated_files++;
+	      rm(builddir+fn+".xml");
+	    }
+	    Stdio.write_file(builddir+fn+".xml.stamp",
+			     (string)source_timestamp);
+	    werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
+	    if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
+	    exit(1);
+	  }
+	}
+
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
+	  num_updated_files++;
 	  Stdio.write_file(builddir+fn+".xml", res);
 	}
 	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
@@ -402,13 +519,14 @@ string extract(string filename, string imgdest,
     }
     file = replace(file, "Myslq", "Mysql");
     Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
-    return bmml_parser->convert_page(filename, basename(filename), file, flags);
+    return bmml_parser->convert_page(filename, basename(filename), file,
+				     flags, root);
   }
 
   int i;
   if (has_value(file, "**""!") ||
-      ((((i = search(file, "//! ""module ")) != -1) ||
-	((i = search(file, "//! ""submodule ")) != -1)) &&
+      ((((i = search(file, "//""! ""module ")) != -1) ||
+	((i = search(file, "//""! ""submodule ")) != -1)) &&
        (sizeof(array_sscanf(file[i..],"%s\n%*s")[0]/" ") == 3))) {
     // Mirar-style markup.
     if(imgsrc && imgdest) {
@@ -477,27 +595,27 @@ string extract(string filename, string imgdest,
 		    }) }),
 		    "/Calendar.pmod/Islamic.pmod":
 		    ({ ({
-		      "//! submodule Gregorian\n",
+		      "//""! submodule Gregorian\n",
 		    }), ({
-		      "//! submodule Islamic\n",
+		      "//""! submodule Islamic\n",
 		    }) }),
 		    "/Calendar_I.pmod/Gregorian.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		    "/Calendar_I.pmod/Stardate.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		    "/Calendar_I.pmod/module.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		  ]); string suffix; array(array(string)) repl) {
 	    if (has_suffix(filename, suffix)) {
@@ -577,13 +695,14 @@ string extract(string filename, string imgdest,
     else
       werror("%s\n", describe_backtrace(err));
 
-    return 0;
+    // return 0;
   }
 
   if(!result) result="";
 
   if(sizeof(result) && imgdest)
-    result = Tools.AutoDoc.ProcessXML.moveImages(result, builddir,
+    result = Tools.AutoDoc.ProcessXML.moveImages(result,
+						 combine_path(filename, ".."),
 						 imgdest, !verbosity);
   return result+"\n";
 }

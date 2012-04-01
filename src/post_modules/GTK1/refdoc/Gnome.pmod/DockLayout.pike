@@ -18,7 +18,7 @@
 //!
 //!
 
-inherit GTK.Object;
+inherit GTK1.Object;
 
 int add_floating_item( Gnome.DockItem item, int x, int y, int orientation );
 //! Add item to the layout as a floating item with the specified (x, y)
@@ -36,7 +36,7 @@ int add_to_dock( Gnome.Dock dock );
 //!
 //!
 
-static Gnome.DockLayout create( );
+protected Gnome.DockLayout create( );
 //! Create a new Gnome.DockLayout widget.
 //!
 //!

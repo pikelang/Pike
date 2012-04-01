@@ -1,16 +1,16 @@
 /* -*- C -*- */
 require gnome;
-class GTK.Dial;
-inherit GTK.Widget;
+class GTK1.Dial;
+inherit GTK1.Widget;
 //! This widget provides an analog dial widget, similar to, for
 //! example, a physical volume control on a stereo. Dial values can be
 //! changable or read-only for value reporting.
 
-//! IMG: GTK.Dial( GTK.Adjustment() );
-//! IMG: GTK.Dial( GTK.Adjustment(10.0) )->set_percentage(0.4);
+//! IMG: GTK1.Dial( GTK1.Adjustment() );
+//! IMG: GTK1.Dial( GTK1.Adjustment(10.0) )->set_percentage(0.4);
 
-void create( GTK.Adjustment adjustment );
-GTK.Adjustment get_adjustment();
+void create( GTK1.Adjustment adjustment );
+GTK1.Adjustment get_adjustment();
 
 void set_update_policy( int when );
 //! The "update policy" of a range widget defines at what points during
@@ -18,20 +18,20 @@ void set_update_policy( int when );
 //! and emit the "value_changed" signal on this Adjustment. The update
 //! policies are:
 //! <dl>
-//! <dt>GTK.UpdatePolicyContinuous</dt>
+//! <dt>GTK1.UpdatePolicyContinuous</dt>
 //! <dd>This is the default. The "value_changed" signal is emitted
 //! continuously, i.e., whenever the slider is moved by even the
 //! tiniest amount.</dd>
-//! <dt>GTK.UpdatePolicyDiscontinuous</dt>
+//! <dt>GTK1.UpdatePolicyDiscontinuous</dt>
 //! <dd> The "value_changed" signal is only emitted once the slider has
 //! stopped moving and the user has released the mouse button.</dd>
-//! <dt>GTK.UpdatePolicyDelayed</dt>
+//! <dt>GTK1.UpdatePolicyDelayed</dt>
 //! <dd>The "value_changed" signal is emitted when the user releases
 //! the mouse button, or if the slider stops moving for a short period
 //! of time.</dd>
 //! </dl>
 
-void set_adjustment( GTK.Adjustment pos );
+void set_adjustment( GTK1.Adjustment pos );
 //! set_adjustment() does absolutely nothing if you pass it the
 //! adjustment that range is already using, regardless of whether you
 //! changed any of its fields or not. If you pass it a new Adjustment,
@@ -42,7 +42,7 @@ void set_adjustment( GTK.Adjustment pos );
 //! the slider and redraw if necessary.
 
 void set_percentage( float percent );
-//! Sets the GTK.Dial's value to percent of
+//! Sets the GTK1.Dial's value to percent of
 //! dial->adjustment->upper. The upper value is set when the
 //! GtkAdjustment is created.
 

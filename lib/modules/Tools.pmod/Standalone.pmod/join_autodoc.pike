@@ -13,6 +13,9 @@ mapping sub_cache = ([]);
 int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 protected constant Node = Parser.XML.Tree.SimpleNode;
+protected constant SimpleHeaderNode = Parser.XML.Tree.SimpleHeaderNode;
+protected constant SimpleRootNode = Parser.XML.Tree.SimpleRootNode;
+protected constant SimpleTextNode = Parser.XML.Tree.SimpleTextNode;
 
 int main(int n, array(string) args)
 {
@@ -41,11 +44,14 @@ int main(int n, array(string) args)
   if(has_value(args, "--help") || sizeof(args)<3) {
     write("pike -x join_autodoc <destination.xml> <builddir>\n");
     write("pike -x join_autodoc [--post-process] [-q|--quiet] [-v|--verbose]\n"
-	  "      <dest.xml> files_to_join.xml [...]\n");
+	  "     <dest.xml> files_to_join.xml [...]\n");
     return 1;
   }
 
   recurse( args[2..], args[1], post_process, flags );
+  foreach(values(sub_cache), Node n) {
+    n->zap_tree();
+  }
 }
 
 void recurse(array(string) sources, string save_to,
@@ -54,6 +60,7 @@ void recurse(array(string) sources, string save_to,
   array files = ({});
   int mtime;
 
+  Stdio.Stat dstat = file_stat(save_to) && file_stat(save_to + ".stamp");
   foreach(sources, string builddir) {
     Stdio.Stat stat = file_stat(builddir);
     if (!stat) {
@@ -74,6 +81,14 @@ void recurse(array(string) sources, string save_to,
 	stat = file_stat(builddir+fn+"/.cache.xml");
 	if(stat) {
 	  files += ({ builddir+fn+"/.cache.xml" });
+
+#if 0
+	  if (dstat && stat->mtime > dstat->mtime) {
+	    werror("Rebuilding %O due to %O.\n",
+		   save_to, builddir + fn + "/.cache.xml");
+	  }
+#endif
+
 	  mtime = max(mtime, stat->mtime);
 	}
       }
@@ -86,6 +101,12 @@ void recurse(array(string) sources, string save_to,
 	Stdio.Stat stat = file_stat(builddir+fn);
 	if(stat->isdir || stat->size < 3) continue;
 	files += ({ builddir+fn });
+#if 0
+	if (dstat && stat->mtime > dstat->mtime) {
+	  werror("Rebuilding %O due to %O.\n",
+		 save_to, builddir + fn);
+	}
+#endif
 	mtime = max(mtime, stat->mtime);
       }
     } else {
@@ -93,7 +114,6 @@ void recurse(array(string) sources, string save_to,
       mtime = max(mtime, stat->mtime);
     }
   }
-  Stdio.Stat dstat = file_stat(save_to) && file_stat(save_to + ".stamp");
   if(dstat && dstat->mtime > mtime) return;
   int res = join_files(files, save_to, post_process, flags);
   if(res) exit(res);
@@ -101,7 +121,7 @@ void recurse(array(string) sources, string save_to,
 
 Node load_tree(string fn) {
   if(sub_cache[fn]) return m_delete(sub_cache, fn);
-  return Parser.XML.Tree.simple_parse_file(fn)[0];
+  return Parser.XML.Tree.simple_parse_file(fn)->get_first_element();
 }
 
 int(0..1) join_files(array(string) files, string save_to,
@@ -111,7 +131,7 @@ int(0..1) join_files(array(string) files, string save_to,
   if (post_process) {
     post_process_log = combine_path(save_to, "../resolution.log");
   }
-  string data = low_join_files(files, post_process_log, flags);
+  string data = low_join_files(files, save_to, post_process_log, flags);
 
   if (!data) return 1;
 
@@ -129,18 +149,21 @@ int(0..1) join_files(array(string) files, string save_to,
   return 0;
 }
 
-string low_join_files(array(string) files, string post_process_log,
-		      Tools.AutoDoc.Flags flags)
+string low_join_files(array(string) files, string save_to,
+		      string post_process_log, Tools.AutoDoc.Flags flags)
 {
   if(!sizeof(files)) {
     if (verbosity > 1)
       werror("No content to merge.\n");
-    return "<autodoc></autodoc>";
+    return "<?xml version='1.0' encoding='utf-8'?>\n"
+      "<autodoc/>\n";
   }
 
   if(sizeof(files)==1) {
     if (verbosity > 1)
       werror("Only one content file present. Copy instead of merge.\n");
+    Node n = m_delete(sub_cache, files[0]);
+    if (n) sub_cache[save_to] = n;
     return Stdio.read_bytes(files[0]);
   }
 
@@ -151,18 +174,18 @@ string low_join_files(array(string) files, string post_process_log,
   // Attempt to keep the result in a canonic order.
   sort(files);
 
-  if (verbosity > 1)
-    werror("Reading %s...\n", files[0]);
-  Node dest = load_tree(files[0]);
+  Node dest = Parser.XML.Tree.SimpleElementNode("autodoc", ([]));
 
   int fail;
 
-  foreach(files[1..], string filename)
+  foreach(files, string filename)
   {    
     Node src;
     if (mixed err = catch {
-      src = load_tree( filename );
-    }) {
+	if (verbosity > 1)
+	  werror("Reading %s...\n", filename);
+	src = load_tree( filename );
+      }) {
       if (arrayp(err)) {
 	throw(err);
       }
@@ -207,8 +230,15 @@ string low_join_files(array(string) files, string post_process_log,
   if (!fail) {
     if (verbosity > 0)
       werror("\rRendering XML...\n");
-    string res = dest->html_of_node();
-    dest->zap_tree();
+    SimpleRootNode root = SimpleRootNode();
+    root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
+						  "encoding":"utf-8" ])),
+			      SimpleTextNode("\n"),
+			      dest,
+			      SimpleTextNode("\n"),
+			   }));
+    string res = root->html_of_node();
+    sub_cache[save_to] = dest;
     return res;
   }
   dest->zap_tree();

@@ -247,6 +247,9 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  else if(data[pos]=='<') {
 	    for(pos++; pos<len; pos++)
 	      if(data[pos]=='>') break;
+	  } else if (!data[pos]) {
+	    pos--;
+	    break;
 	  }
 	  else
 	    Pike_error("Illegal character after #string\n");

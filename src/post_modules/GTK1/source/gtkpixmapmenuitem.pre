@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
-class GTK.PixmapMenuItem;
-inherit GTK.MenuItem;
+class GTK1.PixmapMenuItem;
+inherit GTK1.MenuItem;
 //! GtkPixmapMenuItem works like a normal GTK menu item, but you can
 //! insert a arbitrary widget (most often a pixmap widget), which is
 //! displayed at the left side. The advantage is that indentation is
@@ -12,7 +12,7 @@ inherit GTK.MenuItem;
 //! not what you want. This widget solves the problem).
 void create();
 //! Creates a new pixmap menu item.
-void set_pixmap( GTK.Widget pixmap );
+void set_pixmap( GTK1.Widget pixmap );
 //! Set the pixmap of the menu item.
 
 

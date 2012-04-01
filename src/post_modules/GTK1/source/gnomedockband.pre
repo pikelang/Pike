@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.DockBand;
-inherit GTK.Container;
+inherit GTK1.Container;
 //! Gnome.DockBand is a widget implementing a "dock band", i.e. a
 //! horizontal or vertical stripe containing dockable widgets.
 //! <p>
@@ -18,18 +18,18 @@ void set_orientation( int orientation );
 //! Set the orientation.
 int get_orientation( );
 //! Retrieve the orientation
-int insert( Gnome.DockItem(GTK.Widget) child, int offset, int position );
+int insert( Gnome.DockItem(GTK1.Widget) child, int offset, int position );
 //! Add child to the band at the specified position, with the specified
 //! offset from the previous item (or from the beginning of the band,
 //! if this is the first item).
-int prepend( Gnome.DockItem(GTK.Widget) child, int offset );
+int prepend( Gnome.DockItem(GTK1.Widget) child, int offset );
 //! Add child to the band with the specified offset as the first element.
 
-int append( Gnome.DockItem(GTK.Widget) child, int offset );
+int append( Gnome.DockItem(GTK1.Widget) child, int offset );
 //! Add child to the band with the specified offset as the last element.
-void set_child_offset( GTK.Widget child, int offset );
+void set_child_offset( GTK1.Widget child, int offset );
 //! Set the offset for the specified child of the band.
-int get_child_offset( GTK.Widget child );
+int get_child_offset( GTK1.Widget child );
 //! Retrieve the offset of the child
 int get_num_children();
 //! Retrieve the number of children

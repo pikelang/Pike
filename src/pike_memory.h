@@ -153,10 +153,11 @@ PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 #ifdef __i386__
 __attribute__((fastcall)) 
 #endif
-size_t (*hashmem)(const void *, size_t, size_t);
+  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
-PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
+PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
+PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
 /*
 PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,

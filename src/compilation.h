@@ -149,7 +149,7 @@
 #endif
 
   SNAME(program_state,Pike_compiler)
-  ZMEMBER(INT32,last_line,0)
+  ZMEMBER(INT_TYPE,last_line,0)
   STRMEMBER(last_file,0)
   ZMEMBER(struct object *,fake_object,0)
   ZMEMBER(struct program *,new_program,0)

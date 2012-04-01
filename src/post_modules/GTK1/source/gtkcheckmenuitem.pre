@@ -1,10 +1,10 @@
 /* -*- C -*- */
-class GTK.CheckMenuItem;
-inherit GTK.MenuItem;
+class GTK1.CheckMenuItem;
+inherit GTK1.MenuItem;
 //! A check menu item is more or less identical to a check button, but it
 //! should be used in menus.
-//! IMG: GTK.CheckMenuItem("Hi there")
-//! IMG: GTK.CheckMenuItem("Hi there")->set_active(1)
+//! IMG: GTK1.CheckMenuItem("Hi there")
+//! IMG: GTK1.CheckMenuItem("Hi there")->set_active(1)
 signal toggled;
 //! Called when the state of the menu item is changed
 void create(string|void label)

@@ -9,10 +9,16 @@ constant description = "Assembles AutoDoc output file.";
 #define CommentNode Parser.XML.Tree.CommentNode
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
+#define RootNode Parser.XML.Tree.RootNode
+#define HeaderNode Parser.XML.Tree.HeaderNode
+#define TextNode Parser.XML.Tree.TextNode
+#define ElementNode Parser.XML.Tree.ElementNode
 
 int chapter;
+int appendix;
 
 mapping queue = ([]);
+mapping appendix_queue = ([]);
 mapping ns_queue = ([]);
 array(Node) chapters = ({});
 
@@ -90,7 +96,7 @@ class Entry (Node target) {
   constant type = "";
   mapping args;
   string _sprintf() {
-    return sprintf("%sTarget( %O )", type, target);
+    return sprintf("%sEntry( %O )", type, target);
   }
 }
 
@@ -137,7 +143,7 @@ class mvEntry {
   inherit Entry;
   constant type = "mv";
 
-  protected Node parent;
+  Node parent;
 
   protected void create(Node target, Node parent)
   {
@@ -229,7 +235,8 @@ void enqueue_move(Node target, Node parent) {
   bucket[0] = mvEntry(target, parent);
 }
 
-Node parse_file(string fn) {
+Node parse_file(string fn)
+{
   Node n;
   mixed err = catch {
     n = Parser.XML.Tree.parse_file(fn);
@@ -293,7 +300,9 @@ void chapter_ref_expansion(Node n, string dir) {
 }
 
 int filec;
-void ref_expansion(Node n, string dir, void|string file) {
+void ref_expansion(Node n, string dir, void|string file)
+{
+  string path;
   foreach(n->get_elements(), Node c) {
     switch(c->get_tag_name()) {
 
@@ -306,6 +315,8 @@ void ref_expansion(Node n, string dir, void|string file) {
 	  string name = c->get_elements()[0]->get_tag_name();
 	  if(name == "chapter" || name == "chapter-ref")
 	    file = "chapter_" + (1+chapter);
+	  else if(name == "appendix" || name == "appendix-ref")
+	    file = "appendix_" + (string)({ 65+appendix });
 	  else
 	    file = "file_" + (++filec);
 	}
@@ -328,8 +339,28 @@ void ref_expansion(Node n, string dir, void|string file) {
 	error("chapter-ref element outside file element\n");
       if(!c->get_attributes()->file)
 	error("No file attribute on chapter-ref element.\n");
-      n->replace_child(c, c = parse_file(combine_path(refdocdir, c->get_attributes()->file))->
-		       get_first_element("chapter") );
+      path = combine_path(refdocdir, c->get_attributes()->file);
+      if (!Stdio.exist(path)) {
+	if ((verbose >= Tools.AutoDoc.FLAG_VERBOSE) ||
+	    (!(flags & Tools.AutoDoc.FLAG_COMPAT))) {
+	  werror("Warning: Chapter file %O not found.\n", path);
+	}
+	n->remove_child(c);
+	break;
+      }
+      mixed err = catch {
+	  n->replace_child(c, c = parse_file(path)->
+			   get_first_element("chapter") );
+	};
+      if (err) {
+	n->remove_child(c);
+	if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) {
+	  werror("Chapter ref for %O failed:\n"
+		 "%s\n", path, describe_backtrace(err));
+	  break;
+	}
+	throw(err);
+      }
       // fallthrough
     case "chapter":
       mapping m = c->get_attributes();
@@ -338,6 +369,58 @@ void ref_expansion(Node n, string dir, void|string file) {
       toc += ({ ({ m->title, file, m->number }) });
       chapters += ({ c });
       chapter_ref_expansion(c, dir);
+      break;
+
+    case "appendix-ref":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
+      if(!file)
+	error("appendix-ref element outside file element\n");
+      if(c->get_attributes()->name) {
+	Entry e = mvEntry(c, n);
+	e->args = ([ "number": (string)++appendix ]);
+	appendix_queue[c->get_attributes()->name] = e;
+
+	// No more than 26 appendicies...
+	toc += ({ ({ c->get_attributes()->name, file,
+		     ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
+	break;
+      }
+      if(!c->get_attributes()->file)
+	error("Neither file nor name attribute on appendix-ref element.\n");
+      path = combine_path(refdocdir, c->get_attributes()->file);
+      if (!Stdio.exist(path)) {
+	if ((verbose >= Tools.AutoDoc.FLAG_VERBOSE) ||
+	    (!(flags & Tools.AutoDoc.FLAG_COMPAT))) {
+	  werror("Warning: Appendix file %O not found.\n", path);
+	}
+	n->remove_child(c);
+	break;
+      }
+      err = catch {
+	  c = c->replace_node( parse_file(path)->
+			       get_first_element("appendix") );
+	};
+      if (err) {
+	n->remove_child(c);
+	if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) {
+	  werror("Appendix ref for %O failed:\n"
+		 "%s\n", path, describe_backtrace(err));
+	  break;
+	}
+	throw(err);
+      }
+      // fallthrough
+    case "appendix":
+      if (!(flags & Tools.AutoDoc.FLAG_COMPAT)) {
+	error("Appendices are only supported in compat mode.\n");
+      }
+      c->get_attributes()->number = (string)++appendix;
+
+      // No more than 26 appendicies...
+      toc += ({ ({ c->get_attributes()->name, file,
+		   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
       break;
 
     case "void":
@@ -354,6 +437,37 @@ void ref_expansion(Node n, string dir, void|string file) {
   }
 }
 
+void move_appendices(Node n) {
+  foreach(n->get_elements("appendix"), Node c) {
+    string name = c->get_attributes()->name;
+    Node a = appendix_queue[name];
+    if(a) {
+      a(c);
+      m_delete(appendix_queue, name);
+    }
+    else {
+      c->remove_node();
+      if (verbose) {
+	werror("Removed untargeted appendix %O.\n", name);
+      }
+    }
+  }
+  if(sizeof(appendix_queue)) {
+    if (verbose) {
+      werror("Failed to find appendi%s %s.\n",
+	     (sizeof(appendix_queue)==1?"x":"ces"),
+	     String.implode_nicely(map(indices(appendix_queue),
+				       lambda(string in) {
+					 return "\""+in+"\"";
+				       })) );
+    }
+    foreach(values(appendix_queue), Node a) {
+      // Remove the place-holder.
+      a(ElementNode("appendix", ([])));
+    }
+  }
+}
+
 Node wrap(Node n, Node wrapper) {
   if(wrapper->count_children())
     wrap(n, wrapper[0]);
@@ -363,8 +477,11 @@ Node wrap(Node n, Node wrapper) {
   return wrapper;
 }
 
-protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
+protected void move_items_low(Node parent, Node n, mapping jobs,
+			      void|Node wrapper) {
   if(jobs[0]) {
+    // Detach the node from its original parent.
+    parent->remove_child(n);
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
     else
@@ -375,9 +492,73 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
 
   foreach( ({ "module", "class", "docgroup" }), string type)
     foreach(n->get_elements(type), Node c) {
+      mapping parent = jobs;
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
-      mapping e = jobs[ name ];
+      string parent_name;
+      mapping e;
+      if (name) {
+	name = replace(name, "-", ".");
+	e = jobs[ name ];
+      } else if (type == "docgroup") {
+	// Check if any of the symbols in the group is relevant.
+	foreach(c->get_elements("method")+c->get_elements("directive"),
+		Node m) {
+	  mapping attrs = m->get_attributes();
+	  name = attrs->name && replace(attrs->name, "-", ".");
+	  if (e = jobs[name]) break;
+	}
+      }
+      if (!e /*&& (flags & Tools.AutoDoc.FLAG_COMPAT)*/) {
+	array(string) path;
+	if (path = ([
+	      "/precompiled/FILE": "Stdio.FILE"/".",
+	      "/precompiled/condition": "Thread.Condition"/".",
+	      "/precompiled/fifo": "Thread.Fifo"/".",
+	      "/precompiled/file": "Stdio.File"/".",
+	      "/precompiled/gdbm": "Gdbm.gdbm"/".",
+	      "/precompiled/mpz": "Gmp.mpz"/".",
+	      "/precompiled/mutex": "Thread.Mutex"/".",
+	      "/precompiled/mysql": "Mysql.mysql"/".",
+	      "/precompiled/mysql_result": "Mysql.mysql_result"/".",
+	      "/precompiled/port": "Stdio.Port"/".",
+	      "/precompiled/queue": "Thread.Queue"/".",
+	      "/precompiled/regexp": "Regexp"/".",
+	      "/precompiled/sql": "Sql.sql"/".",
+	      "/precompiled/sql/msql": "Msql.msql"/".",
+	      "/precompiled/sql/mysql": "Mysql.mysql"/".",
+	      "/precompiled/sql/mysql_result": "Mysql.mysql_result"/".",
+	      "/precompiled/sql/postgres": "Postgres.postgres"/".",
+	      "/precompiled/sql/sql_result": "Sql.sql_result"/".",
+	      "/precompiled/stack": "Stack"/".",
+	      "/precompiled/string_buffer": "String.Buffer"/".",
+	    ])[name]) {
+	  e = jobs;
+	  foreach(path; int i; name) {
+	    if (i) parent_name = path[i-1];
+	    parent = e;
+	    e = e[name];
+	    if (!e) {
+	      if ((parent != jobs) && parent[0] && parent[0]->parent) {
+		// There's a move for our parent, but we can't use it directly,
+		// since there may be more nodes that need moving.
+		//
+		// So we add a move for ourselves.
+		//
+		// NB: This is a bit round-about, since we could just add
+		//     ourselves directly...
+		Node dummy = ElementNode("insert-move",
+					 ([ "entity":path[..i]*"." ]));
+		parent[0]->parent->add_child_after(dummy, parent[0]->target);
+		Entry new_mv = mvEntry(dummy, parent[0]->parent);
+		e = parent[name] = ([ 0: new_mv ]);
+		continue;
+	      }
+	      break;
+	    }
+	  }
+	}
+      }
       if(!e) continue;
 
       Node wr = Node(XML_ELEMENT, n->get_tag_name(),
@@ -385,7 +566,14 @@ protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
       if(wrapper)
 	wr = wrap( wr, wrapper->clone() );
 
-      move_items_low(c, e, wr);
+      move_items_low(n, c, e, wr);
+
+      if ((parent != jobs) && !sizeof(e)) {
+	m_delete(parent, name);
+	name = parent_name;
+	e = jobs[e];
+	if (!e) continue;
+      }
 
       if(!sizeof(e))
 	m_delete(jobs, name);
@@ -415,15 +603,46 @@ void move_items(Node n, mapping jobs)
     Node wr = Node(XML_ELEMENT, "autodoc",
 		   n->get_attributes()+(["hidden":"1"]), 0);
 
-    move_items_low(c, e, wr);
+    move_items_low(n, c, e, wr);
 
     if(!sizeof(e))
       m_delete(jobs, name);
   }
 
-  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
     foreach(indices(ns_queue), string name)
       werror("Failed to move namespace %O.\n", name);
+  }
+  foreach(values(ns_queue), Node n)
+    n(ElementNode("namespace", ([])));
+}
+
+void clean_empty_files(Node n)
+{
+  foreach(n->get_elements("dir"), Node d) {
+    foreach(d->get_elements("file"), Node f) {
+      foreach(f->get_elements("appendix"), Node a) {
+	if (!sizeof(a->get_elements())) {
+	  // Empty appendix.
+	  f->remove_child(a);
+	}
+      }
+      foreach(f->get_elements("namespace"), Node a) {
+	if (!sizeof(a->get_elements())) {
+	  // Empty appendix.
+	  f->remove_child(a);
+	}
+      }
+      if (!sizeof(f->get_elements())) {
+	// No documentation in this file.
+	d->remove_child(f);
+      }
+    }
+    if (!sizeof(d->get_elements())) {
+      // Remove the directory as well.
+      n->remove_child(d);
+    }
+  }
 }
 
 string make_toc_entry(Node n) {
@@ -455,7 +674,7 @@ void make_toc() {
 
 void report_failed_entries(mapping scope, string path) {
   if(scope[0]) {
-    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
+    if (verbose >= Tools.AutoDoc.FLAG_NORMAL) {
       werror("Failed to move %s\n", path[1..]);
     }
     scope[0](CommentNode(sprintf("<insert-move entity=\"%s\" />", path[1..])));
@@ -513,6 +732,9 @@ int(0..1) main(int num, array(string) args)
     case "keep-going":
       flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
       break;
+    case "compat":
+      flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
     }
   }
   args = Getopt.get_args(args);
@@ -536,9 +758,15 @@ int(0..1) main(int num, array(string) args)
     ref_expansion(n, ".");
   };
   if (err) {
-    werror("ref_expansion() failed:\n"
-	   "  ch:%d toc:%O\n",
-	   chapter, toc);
+    if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+      werror("ref_expansion() failed:\n"
+	     "  ch:%d app:%d toc:%O\n",
+	     chapter, appendix, toc);
+    } else {
+      werror("ref_expansion() failed:\n"
+	     "  ch:%d toc:%O\n",
+	     chapter, toc);
+    }
     if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
       throw(err);
   }
@@ -548,24 +776,39 @@ int(0..1) main(int num, array(string) args)
   Node m = parse_file(args[2]);
   m = m->get_first_element("autodoc");
 
+  if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+      werror("Moving appendices.\n");
+    move_appendices(m);
+  }
+
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Executing node insertions.\n");
   move_items(m, queue);
   if(sizeof(queue)) {
-    if (verbose)
-      report_failed_entries(queue, "");
+    report_failed_entries(queue, "");
     if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
       return 1;
   }
 
+  clean_empty_files(n);
+
   make_toc();
+
+  Node root = RootNode();
+  root->replace_children(({ HeaderNode(([ "version":"1.0",
+					  "encoding":"utf-8" ])),
+			    TextNode("\n"),
+			    n,
+			    TextNode("\n"),
+			 }));
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Writing final manual source file.\n");
   if (outfile) {
-    Stdio.write_file(outfile, (string)n);
+    Stdio.write_file(outfile, (string)root);
   } else {
-    write( (string)n );
+    write( (string)root );
   }
   // Zap the XML trees so that the gc doesn't have to.
   m->zap_tree();

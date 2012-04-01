@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.DateEdit;
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 //! The GnomeDateEdit widget provides a way to enter dates and times
 //! with a helper calendar to let the user select the date.
 //! IMG: Gnome.DateEdit(time(),1,1);

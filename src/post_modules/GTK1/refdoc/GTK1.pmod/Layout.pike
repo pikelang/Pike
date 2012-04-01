@@ -1,20 +1,20 @@
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-static GTK.Layout create( GTK.Adjustment hadjustment, GTK.Adjustment vadjustment );
+protected GTK1.Layout create( GTK1.Adjustment hadjustment, GTK1.Adjustment vadjustment );
 //!
 
-GTK.Layout freeze( );
+GTK1.Layout freeze( );
 //!
 
-GTK.Adjustment get_hadjustment( );
+GTK1.Adjustment get_hadjustment( );
 //!
 
 int get_height( );
 //!
 
-GTK.Adjustment get_vadjustment( );
+GTK1.Adjustment get_vadjustment( );
 //!
 
 int get_width( );
@@ -26,20 +26,20 @@ int get_xoffset( );
 int get_yoffset( );
 //!
 
-GTK.Layout move( GTK.Widget widget, int x, int y );
+GTK1.Layout move( GTK1.Widget widget, int x, int y );
 //!
 
-GTK.Layout put( GTK.Widget widget, int x, int y );
+GTK1.Layout put( GTK1.Widget widget, int x, int y );
 //!
 
-GTK.Layout set_hadjustment( GTK.Adjustment adj );
+GTK1.Layout set_hadjustment( GTK1.Adjustment adj );
 //!
 
-GTK.Layout set_size( int xsize, int ysize );
+GTK1.Layout set_size( int xsize, int ysize );
 //!
 
-GTK.Layout set_vadjustment( GTK.Adjustment adj );
+GTK1.Layout set_vadjustment( GTK1.Adjustment adj );
 //!
 
-GTK.Layout thaw( );
+GTK1.Layout thaw( );
 //!

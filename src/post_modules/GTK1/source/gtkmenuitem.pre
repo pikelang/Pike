@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.MenuItem;
-inherit GTK.Item;
+class GTK1.MenuItem;
+inherit GTK1.Item;
 //! Menu items, to be added to menues.
 void create(string|void label)
 //! If a string is supplied, a W(Label) widget is created using that
@@ -25,7 +25,7 @@ void create(string|void label)
   pgtk__init_this_object();
 }
 
-void set_submenu( GTK.Widget menu );
+void set_submenu( GTK1.Widget menu );
 //! Set the submenu for this menu button.
 void remove_submenu();
 //! Remove the submenu for this menu button.

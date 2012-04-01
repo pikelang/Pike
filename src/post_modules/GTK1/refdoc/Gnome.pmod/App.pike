@@ -20,7 +20,7 @@
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
 Gnome.App add_dock_item( Gnome.DockItem item, int placement, int band_num, int band_position, int|void offset );
 //! Create a new Gnome.DockItem widget containing widget, and add it
@@ -38,7 +38,7 @@ Gnome.App add_dock_item( Gnome.DockItem item, int placement, int band_num, int b
 //!
 //!
 
-Gnome.App add_docked( GTK.Widget widget, string name, int behavior, int placement, int band_num, int band_position, int|void offset );
+Gnome.App add_docked( GTK1.Widget widget, string name, int behavior, int placement, int band_num, int band_position, int|void offset );
 //! Create a new Gnome.DockItem widget containing widget, and add it
 //! to app's dock with the specified layout information. Notice that,
 //! if automatic layout configuration is enabled, the layout is
@@ -56,7 +56,7 @@ Gnome.App add_docked( GTK.Widget widget, string name, int behavior, int placemen
 //!
 //!
 
-Gnome.App add_toolbar( GTK.Toolbar toolbar, string name, int behavior, int placement, int band_num, int band_position, int|void offset );
+Gnome.App add_toolbar( GTK1.Toolbar toolbar, string name, int behavior, int placement, int band_num, int band_position, int|void offset );
 //! Create a new Gnome.DockItem widget containing toolbar, and add it
 //! to app's dock with the specified layout information. Notice that,
 //! if automatic layout configuration is enabled, the layout is
@@ -74,7 +74,7 @@ Gnome.App add_toolbar( GTK.Toolbar toolbar, string name, int behavior, int place
 //!
 //!
 
-static Gnome.App create( string appname, string|void title );
+protected Gnome.App create( string appname, string|void title );
 //! Create a new (empty) application window. You must specify the
 //! application's name (used internally as an identifier). title can be
 //! left as 0, in which case the window's title will not be set.
@@ -155,22 +155,22 @@ Gnome.App request_string( string question, function callback, mixed cb_arg2 );
 //!
 //!
 
-Gnome.App set_contents( GTK.Widget contents );
+Gnome.App set_contents( GTK1.Widget contents );
 //! Sets the status bar of the application window.
 //!
 //!
 
-Gnome.App set_menus( GTK.MenuBar menu_bar );
+Gnome.App set_menus( GTK1.MenuBar menu_bar );
 //! Sets the menu bar of the application window.
 //!
 //!
 
-Gnome.App set_statusbar( GTK.Widget statusbar );
+Gnome.App set_statusbar( GTK1.Widget statusbar );
 //! Sets the status bar of the application window.
 //!
 //!
 
-Gnome.App set_toolbar( GTK.Toolbar toolbar );
+Gnome.App set_toolbar( GTK1.Toolbar toolbar );
 //! Sets the main toolbar of the application window.
 //!
 //!

@@ -94,14 +94,23 @@ array(int) getversion()
   return ({ maj, min, build });
 }
 
-int low_bump_version(int|void is_release)
+string low_bump_version(int|void bump_minor)
 {
   string s = Stdio.read_file(pike_base_name+"/src/version.h");
-  sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
-  rel++;
-  Stdio.write_file( pike_base_name+"/src/version.h",
-		    pre+" PIKE_BUILD_VERSION "+rel+post );
-  return rel;
+  if (bump_minor) {
+    sscanf(s, "%s PIKE_MINOR_VERSION %d%s", string pre, int minor, string post);
+    minor++;
+    s = pre + " PIKE_MINOR_VERSION " + minor + post;
+  }
+  sscanf(s, "%s PIKE_BULD_VERSION %d%s", string pre, int rel, string post);
+  if (bump_minor) {
+    rel = 0;
+  } else {
+    rel++;
+  }
+  s = pre + " PIKE_BUILD_VERSION " + rel + post;
+  Stdio.write_file( pike_base_name+"/src/version.h", s);
+  return ((array(string))getversion())*".";
 }
 
 void cvs_bump_version(int|void is_release)
@@ -110,7 +119,7 @@ void cvs_bump_version(int|void is_release)
   Process.create_process( ({ "cvs", "update", "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
-  int rel = low_bump_version(is_release);
+  string rel = low_bump_version();
 
   Process.create_process( ({ "cvs", "commit", "-m",
 			     "release number bumped to "+rel+" by export.pike",
@@ -166,7 +175,7 @@ int svn_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
 
-  int rel = low_bump_version(is_release);
+  string rel = low_bump_version();
 
   string s = svn_cmd("commit", "-m",
 		     "release number bumped to "+rel+" by export.pike",
@@ -204,7 +213,25 @@ void git_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
 
-  int rel = low_bump_version(is_release);
+  int bump_minor = 0;
+
+  string branch =
+    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD")->stdout);
+
+  if (has_prefix(branch, "refs/heads/")) {
+    branch = branch[sizeof("refs/heads/")..];
+    string upstream_branch =
+      String.trim_all_whites(git_cmd("config", "--get",
+				     "branch."+branch+".merge")->stdout);
+    if (has_prefix(upstream_branch, "refs/heads/")) {
+      upstream_branch = upstream_branch[sizeof("refs/heads/")..];
+
+      // Bump the minor if the upstream branch is a single number.
+      bump_minor = (sizeof(upstream_branch/".") < 2) && (int)upstream_branch;
+    }
+  }
+
+  string rel = low_bump_version(bump_minor);
 
   string attrs = Stdio.read_file(pike_base_name+"/.gitattributes");
 

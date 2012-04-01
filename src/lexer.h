@@ -705,7 +705,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	lex->current_line=lex_atoi(buf)-1;
+	lex->current_line = lex_strtol(buf, NULL, 10)-1;
 	SKIPSPACE();
 	if(GOBBLE('"'))
 	{

@@ -16,7 +16,7 @@
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
 Gnome.Calculator clear( int reset );
 //! Resets the calculator back to zero. If reset is TRUE, results
@@ -24,7 +24,7 @@ Gnome.Calculator clear( int reset );
 //!
 //!
 
-static Gnome.Calculator create( );
+protected Gnome.Calculator create( );
 //! Create a new calculator widget
 //!
 //!

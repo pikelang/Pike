@@ -10,16 +10,16 @@
 
 inherit Gnome.Dialog;
 
-static Gnome.Scores create( int n_scores, array names, array scores, array times, int clear );
+protected Gnome.Scores create( int n_scores, array names, array scores, array times, int clear );
 //!
 
-Gnome.Scores set_color( int pos, GDK.Color color );
+Gnome.Scores set_color( int pos, GDK1.Color color );
 //!
 
 Gnome.Scores set_current_player( int index );
 //!
 
-Gnome.Scores set_def_color( GDK.Color color );
+Gnome.Scores set_def_color( GDK1.Color color );
 //!
 
 Gnome.Scores set_logo_label_title( string txt );
@@ -28,5 +28,5 @@ Gnome.Scores set_logo_label_title( string txt );
 Gnome.Scores set_logo_pixmap( string logofile );
 //!
 
-Gnome.Scores set_logo_widget( GTK.Widget widget );
+Gnome.Scores set_logo_widget( GTK1.Widget widget );
 //!

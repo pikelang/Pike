@@ -282,12 +282,13 @@ struct identifier
   struct pike_string *name;
   struct pike_type *type;
   unsigned INT32 filename_strno;	/* Index in strings. */
-  unsigned INT32 linenumber;
+  INT_TYPE linenumber;
   unsigned INT8 identifier_flags;	/* IDENTIFIER_??? */
   unsigned INT8 run_time_type;		/* PIKE_T_??? */
   unsigned INT16 opt_flags;		/* OPT_??? */
 #ifdef PROFILING
   unsigned INT32 num_calls;		/* Total number of calls. */
+  unsigned INT32 recur_depth;		/* Recursion depth during timing. */
   cpu_time_t total_time;		/* Total time with children. */
   cpu_time_t self_time;			/* Total time excluding children. */
 #endif /* PROFILING */
@@ -680,7 +681,7 @@ static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
 #endif
 
 #if defined (USE_DLL) && defined (DYNAMIC_MODULE)
@@ -793,7 +794,7 @@ void optimize_program(struct program *p);
 void fsort_program_identifier_index(unsigned short *start,
 				    unsigned short *end,
 				    struct program *p);
-struct pike_string *find_program_name(struct program *p, INT32 *line);
+struct pike_string *find_program_name(struct program *p, INT_TYPE *line);
 int override_identifier (struct reference *ref, struct pike_string *name);
 void fixate_program(void);
 struct program *low_allocate_program(void);
@@ -802,7 +803,7 @@ void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp);
-PMOD_EXPORT void debug_start_new_program(int line, const char *file);
+PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
@@ -928,32 +929,38 @@ int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 			      struct object *parent, int parent_identifier);
 int program_index_no_free(struct svalue *to, struct svalue *what,
 			  struct svalue *ind);
-int get_small_number(char **q);
-void ext_store_program_line (struct program *prog, INT32 line, struct pike_string *file);
+INT_TYPE get_small_number(char **q);
+void ext_store_program_line (struct program *prog, INT_TYPE line,
+			     struct pike_string *file);
 void start_line_numbering(void);
-void store_linenumber(INT32 current_line, struct pike_string *current_file);
+void store_linenumber(INT_TYPE current_line, struct pike_string *current_file);
 PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
-						     INT32 *linep);
+						     INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
-						 INT32 *linep);
-PMOD_EXPORT char *low_get_program_line_plain (struct program *prog, INT32 *linep,
+						 INT_TYPE *linep);
+PMOD_EXPORT char *low_get_program_line_plain (struct program *prog,
+					      INT_TYPE *linep,
 					      int malloced);
 PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
-					     struct program *prog, INT32 *linep);
+					     struct program *prog,
+					     INT_TYPE *linep);
 PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
-				      INT32 *linep, int malloced);
+				      INT_TYPE *linep, int malloced);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
-					 struct program *prog, INT32 *linep);
+					 struct program *prog,
+					 INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
-						       int fun, INT32 *linep);
+						       int fun,
+						       INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
-						    int fun, INT32 *linep);
+						    int fun,
+						    INT_TYPE *linep);
 PMOD_EXPORT void va_yyreport(int severity_level,
-			     struct pike_string *file, INT32 line,
+			     struct pike_string *file, INT_TYPE line,
 			     struct pike_string *system, INT32 args,
 			     const char *fmt, va_list vargs);
 PMOD_EXPORT void low_yyreport(int severity_level,
-			      struct pike_string *file, INT32 line,
+			      struct pike_string *file, INT_TYPE line,
 			      struct pike_string *system,
 			      INT32 args, const char *fmt, ...);
 PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
@@ -962,9 +969,9 @@ PMOD_EXPORT void yywarning(char *fmt, ...);
 PMOD_EXPORT void my_yyerror(const char *fmt,...);
 PMOD_EXPORT void yyerror(const char *s);
 void yytype_report(int severity_level,
-		   struct pike_string *expect_file, INT32 expect_line, 
+		   struct pike_string *expect_file, INT_TYPE expect_line,
 		   struct pike_type *expected_t,
-		   struct pike_string *got_file, INT32 got_line,
+		   struct pike_string *got_file, INT_TYPE got_line,
 		   struct pike_type *got_t,
 		   INT32 args, const char *fmt, ...);
 void yytype_error(const char *msg, struct pike_type *expected_t,
@@ -972,6 +979,7 @@ void yytype_error(const char *msg, struct pike_type *expected_t,
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
+void count_memory_in_supporter_markers(size_t *num, size_t *size);
 void verify_supporters(void);
 void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
@@ -981,7 +989,8 @@ int call_dependants(struct Supporter *s, int finish);
 int report_compiler_dependency(struct program *p);
 struct compilation;
 void run_pass2(struct compilation *c);
-PMOD_EXPORT void enter_compiler(struct pike_string *filename, int linenumber);
+PMOD_EXPORT void enter_compiler(struct pike_string *filename,
+				INT_TYPE linenumber);
 PMOD_EXPORT void exit_compiler(void);
 struct program *compile(struct pike_string *aprog,
 			struct object *ahandler,

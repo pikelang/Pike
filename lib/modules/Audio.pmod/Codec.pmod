@@ -63,7 +63,13 @@ class decoder {
     err = catch(codec = _Ffmpeg.ffmpeg(codec_map[cn]->decoder[1], 0));
 #else
     foreach(Array.filter(_Ffmpeg.list_codecs(), lambda(mapping m, string n) { return m->name == n; }, codecname), mapping fc)
-      if(!fc->encoder_flg && fc->type == _Ffmpeg.CODEC_TYPE_AUDIO) {
+      if(!fc->encoder_flg &&
+#if constant(_Ffmpeg.AVMEDIA_TYPE_AUDIO)
+	 fc->type == _Ffmpeg.AVMEDIA_TYPE_AUDIO
+#else
+	 fc->type == _Ffmpeg.CODEC_TYPE_AUDIO
+#endif
+	 ) {
         err = catch(codec = _Ffmpeg.ffmpeg(fc->id, 0));
 	break;
       }

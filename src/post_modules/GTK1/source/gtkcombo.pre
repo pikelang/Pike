@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.Combo;
-inherit GTK.Hbox;
+class GTK1.Combo;
+inherit GTK1.Hbox;
 //! Thee combo box is another fairly simple widget that is really just
 //! a collection of other widgets. From the user's point of view, the
 //! widget consists of a text entry box and a pull down menu from which
@@ -11,7 +11,7 @@ inherit GTK.Hbox;
 //! The combo box has two principal parts that you as the programmer
 //! really care about: The W(entry) and the W(list).
 //! </p>
-//! IMG: GTK.Combo()
+//! IMG: GTK1.Combo()
 void create();
 //! Create a new combo box
 void set_value_in_list( int value_must_be_in_list, int ok_if_empty );
@@ -48,9 +48,9 @@ void set_case_sensitive( int sensitivep );
 //! current entry if the user presses the key combination MOD-1 and
 //! "Tab". MOD-1 is often mapped to the "Alt" key, by the xmodmap
 //! utility. Note, however that some window managers also use this key
-//! combination, which will override its use within GTK.
+//! combination, which will override its use within GTK1.
 
-void set_item_string( GTK.Item item, string text );
+void set_item_string( GTK1.Item item, string text );
 //! The item is one of the ones in the list subwidget.
 void set_popdown_strings(array(string) strings)
 //! Set the values in the popdown list.
@@ -73,9 +73,9 @@ void set_popdown_strings(array(string) strings)
 void disable_activate();
 //! This will disable the 'activate' signal for the entry widget in the
 //! combo box.
-member GTK.Entry entry;
+member GTK1.Entry entry;
 //! The entry widget
-/* member GTK.List list;
+/* member GTK1.List list;
  //! The list widget, contains the list of choices as W(Label) widgets.
 */
 

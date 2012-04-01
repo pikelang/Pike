@@ -29,11 +29,14 @@ string usage = #"[options] <from> > <to>
 
  Supported options are:
 
-   --api=<n>	Require a minimum API version.
+   --api=<n>	 Require a minimum API version.
 
-   -h,--help	Display this help text.
+   -h,--help	 Display this help text.
 
-   -v,--version	Display the API version.
+   -v,--version	 Display the API version.
+
+   -w,--warnings Generate warnings instead of errors for
+                 recoverable errors.
 
  The input can look something like this:
 
@@ -199,6 +202,19 @@ static parser_pike PP = parser_pike();
 #endif
 
 int api;	// Requested API level.
+
+int warnings;
+
+void warn(string s, mixed ... args)
+{
+  if (warnings) {
+    if (sizeof(args)) s = sprintf(s, @args);
+    werror(s);
+    return;
+  }
+  error(s, @args);
+}
+
 
 /* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
@@ -426,8 +442,7 @@ PikeType convert_ctype(array tokens)
       return PikeType("float");
 
     default:
-      werror("Unknown C type.\n");
-      exit(0);
+      error("Unknown C type.\n");
   }
 }
 
@@ -712,8 +727,7 @@ class PikeType
 	  return "LONGEST";
 
 	default:
-	  werror("Unknown type %s\n",btype);
-	  exit(1);
+	  error("Unknown type %s\n", btype);
       }
     }
 
@@ -1107,11 +1121,10 @@ class PikeType
 		    // Make sure that the user specifies
 		    // the correct minimum API level
 		    // for build-script compatibility.
-		    werror("%s:%d: API level 3 (or higher) is required "
-			   "for type %s.\n",
-			   t->file, t->line,
-			   PC.simple_reconstitute(({ t, tok[1] })));
-		    exit(1);
+		    warn("%s:%d: API level 3 (or higher) is required "
+			 "for type %s.\n",
+			 t->file, t->line,
+			 PC.simple_reconstitute(({ t, tok[1] })));
 		  }
 		  t = PC.Token(merge(tok[1][1..sizeof(tok[1])-2]));
 		}
@@ -1338,8 +1351,7 @@ mapping parse_attributes(array attr, void|string location,
 		   attr[0][0]->line);
 	    if(location)
 	      werror("%s: This is where the attributes belong\n", location);
-	    werror("This is what I got: %O\n", attr[0]);
-	    exit(1);
+	    error("This is what I got: %O\n", attr[0]);
 	  }
 	  attributes[(string)attr[0]]=1;
 	  break;
@@ -1352,15 +1364,13 @@ mapping parse_attributes(array attr, void|string location,
       }
 
       if(!(really_valid_attributes || valid_attributes)[(string)attr[0]]) {
-	werror("%s:%d: Invalid attribute name %O.\n",
-	       attr[0]->file, attr[0]->line, (string)attr[0]);
-	exit(1);
+	error("%s:%d: Invalid attribute name %O.\n",
+	      attr[0]->file, attr[0]->line, (string)attr[0]);
       }
     }
 
   if(attributes->optfunc && !attributes->efun) {
-    werror("Only efuns may have an optfunc.\n");
-    exit(1);
+    warn("Only efuns may have an optfunc.\n");
   }
 
   return attributes;
@@ -2019,10 +2029,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	p=parse_type(proto,0);
 	if(arrayp(proto[p]))
 	{
-	  werror("%s:%d: Missing return type?\n",
-		 proto[p][0]->file||"-",
-		 proto[p][0]->line);
-	  exit(1);
+	  error("%s:%d: Missing return type?\n",
+		proto[p][0]->file||"-",
+		proto[p][0]->line);
 	}
 	string name=(string)proto[p];
 	name_occurances[name]++;
@@ -2054,10 +2063,9 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	if(arrayp(proto[p]))
 	{
-	  werror("%s:%d: Missing type?\n",
-		 proto[p][0]->file||"-",
-		 proto[p][0]->line);
-	  exit(1);
+	  error("%s:%d: Missing type?\n",
+		proto[p][0]->file||"-",
+		proto[p][0]->line);
 	}
 	string location=proto[p]->file+":"+proto[p]->line;
 
@@ -2131,14 +2139,12 @@ static struct %s *%s_gdb_dummy_ptr;
 	{
 	  if(sizeof(args) != 1)
 	  {
-	    werror("%s must take one argument.\n");
-	    exit(1);
+	    warn("%s must take one argument.\n");
 	  }
 	  if(sprintf("%s",args[0]->type()) != "mixed")
 	  {
-	    werror("%s:%s must take a mixed argument (was declared as %s)\n",
-		   location, name, args[0]->type());
-	    exit(1);
+	    warn("%s:%s must take a mixed argument (was declared as %s)\n",
+		 location, name, args[0]->type());
 	  }
 	}
 
@@ -2658,12 +2664,15 @@ int main(int argc, array(string) argv)
 {
   mixed x;
 
+  string outpath;
   if( has_suffix( lower_case(dirname( argv[0] )), "standalone.pmod" ) )
     usage = "pike -x " + basename( argv[0] )-".pike" + " " + usage;
   foreach(Getopt.find_all_options( argv, ({
       ({ "api",        Getopt.HAS_ARG,      "--api"/"," }),
       ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }),
+      ({ "output",     Getopt.HAS_ARG,      "-o,--out"/"," }),
       ({ "version",    Getopt.NO_ARG,       "-v,--version"/"," }),
+      ({ "warnings",   Getopt.NO_ARG,       "-w,--warnings"/"," }),
    })), array opt ) {
     switch(opt[0]) {
     case "version":
@@ -2673,6 +2682,12 @@ int main(int argc, array(string) argv)
       write( usage );
       return 0;
     case "api":
+      if (lower_case(opt[1]) == "max") {
+	// This is used by eg the autodoc extractor, to ensure
+	// that all files are precompilable.
+	api = (int)precompile_api_version;
+	break;
+      }
       api = (int)opt[1];
       if (api > (int)precompile_api_version) {
 	werror("Unsupported API version: %d (max: %d)\n",
@@ -2684,6 +2699,12 @@ int main(int argc, array(string) argv)
 	       "must not be specified with the --api option.\n");
 	return 1;
       }
+      break;
+    case "output":
+      outpath = opt[1];
+      break;
+    case "warnings":
+      warnings = 1;
       break;
     }
   }
@@ -2874,8 +2895,12 @@ int main(int argc, array(string) argv)
     // NOTA BENE: DECLARATIONS are not handled automatically
     //            on the file level
   }
+  Stdio.File out = Stdio.stdout;
+  if (outpath) {
+    out = Stdio.File(outpath, "twc", 0666);
+  }
   if(getenv("PIKE_DEBUG_PRECOMPILER"))
-    write(PC.simple_reconstitute(x));
+    out->write(PC.simple_reconstitute(x));
   else
-    write(PC.reconstitute_with_line_numbers(x));
+    out->write(PC.reconstitute_with_line_numbers(x));
 }

@@ -14,9 +14,9 @@
 //! @b{time_changed@}
 //!
 
-inherit GTK.Hbox;
+inherit GTK1.Hbox;
 
-static Gnome.DateEdit create( int the_time, int show_time, int use_24_format );
+protected Gnome.DateEdit create( int the_time, int show_time, int use_24_format );
 //! Creates a new GnomeDateEdit widget which can be used to provide an
 //! easy to use way for entering dates and times.
 //!

@@ -5,17 +5,17 @@ mixed cast( string type );
 //!
 //!
 
-static GDK.Rectangle create( int x, int y, int width, int height );
+protected GDK1.Rectangle create( int x, int y, int width, int height );
 //! Create a new rectangle
 //!
 //! NOIMG
 //!
 //!
 
-GDK.Rectangle destroy( );
+GDK1.Rectangle destroy( );
 //!
 
-GDK.Rectangle set( int x, int y, int width, int height );
+GDK1.Rectangle set( int x, int y, int width, int height );
 //! Set the upper left corner and the size of the rectangle.
 //!
 //!

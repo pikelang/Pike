@@ -618,12 +618,14 @@ array arrayify(void|array|mixed x)
 int(-1..1) oid_sort_func(string a, string b)
 {
     int a1, b1;
-    sscanf(a, "%d.%s", a1, a);
-    sscanf(b, "%d.%s", b1, b);
+    sscanf(a, "%d.%[0-9.]", a1, string a_rest);
+    sscanf(b, "%d.%[0-9.]", b1, string b_rest);
     if (a1>b1) return 1;
     if (a1<b1) return -1;
-    if (a==b) return 0;
-    return oid_sort_func(a,b);
+    if (!a_rest || a_rest == "") a_rest = "0";
+    if (!b_rest || b_rest == "") b_rest = "0";
+    if (a_rest == b_rest) return 0;
+    return oid_sort_func(a_rest, b_rest);
 }
 
 protected array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)

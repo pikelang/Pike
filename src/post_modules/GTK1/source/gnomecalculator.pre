@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gnome;
 class Gnome.Calculator;
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 //! This widget provides a simple calculator that you can embed in your
 //! applications for doing quick computations.
 //! <p>

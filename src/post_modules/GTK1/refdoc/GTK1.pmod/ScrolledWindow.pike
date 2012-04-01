@@ -3,25 +3,25 @@
 //! window, and it will be accessible regardless of the size by using
 //! the scrollbars.
 //! 
-//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(100,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
-//!@xml{<image>../images/gtk_scrolledwindow.png</image>@}
+//!@expr{ GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(100,80)->set_policy(GTK1.POLICY_AUTOMATIC,GTK1.POLICY_AUTOMATIC)@}
+//!@xml{<image>../images/gtk1_scrolledwindow.png</image>@}
 //!
-//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(70,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
-//!@xml{<image>../images/gtk_scrolledwindow_2.png</image>@}
+//!@expr{ GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(70,80)->set_policy(GTK1.POLICY_AUTOMATIC,GTK1.POLICY_AUTOMATIC)@}
+//!@xml{<image>../images/gtk1_scrolledwindow_2.png</image>@}
 //!
-//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(80,80)@}
-//!@xml{<image>../images/gtk_scrolledwindow_3.png</image>@}
+//!@expr{ GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A small label"))->set_usize(80,80)@}
+//!@xml{<image>../images/gtk1_scrolledwindow_3.png</image>@}
 //!
-//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)@}
-//!@xml{<image>../images/gtk_scrolledwindow_4.png</image>@}
+//!@expr{ GTK1.ScrolledWindow(GTK1.Adjustment(),GTK1.Adjustment())->add(GTK1.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)@}
+//!@xml{<image>../images/gtk1_scrolledwindow_4.png</image>@}
 //!
 //! 
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
-GTK.ScrolledWindow add( GTK.Widget victim );
+GTK1.ScrolledWindow add( GTK1.Widget victim );
 //! Add a widget to this container.
 //! This is equivalent to the
 //! C-GTK function gtk_scrolled_window_add_with_viewport or
@@ -34,17 +34,17 @@ GTK.ScrolledWindow add( GTK.Widget victim );
 //!
 //!
 
-static GTK.ScrolledWindow create( GTK.Adjustment hadjustment, GTK.Adjustment vadjustments );
+protected GTK1.ScrolledWindow create( GTK1.Adjustment hadjustment, GTK1.Adjustment vadjustments );
 //! The two adjustments are most commonly set to 0.
 //!
 //!
 
-GTK.Adjustment get_hadjustment( );
+GTK1.Adjustment get_hadjustment( );
 //! Return the horizontal adjustment used to scroll the window
 //!
 //!
 
-GTK.Hscrollbar get_hscrollbar( );
+GTK1.Hscrollbar get_hscrollbar( );
 //! The horizontal scrollbar
 //!
 //!
@@ -59,12 +59,12 @@ int get_hscrollbar_visible( );
 //!
 //!
 
-GTK.Adjustment get_vadjustment( );
+GTK1.Adjustment get_vadjustment( );
 //! Return the vertical adjustment used to scroll the window
 //!
 //!
 
-GTK.Vscrollbar get_vscrollbar( );
+GTK1.Vscrollbar get_vscrollbar( );
 //! The vertical scrollbar
 //!
 //!
@@ -85,23 +85,23 @@ int get_window_placement( );
 //!
 //!
 
-GTK.ScrolledWindow set_hadjustment( GTK.Adjustment hadjustment );
+GTK1.ScrolledWindow set_hadjustment( GTK1.Adjustment hadjustment );
 //! Set the horizontal adjustment object
 //!
 //!
 
-GTK.ScrolledWindow set_placement( int window_corner_placement );
+GTK1.ScrolledWindow set_placement( int window_corner_placement );
 //! The location of the window relative to the scrollbars.
 //! One of @[CORNER_BOTTOM_LEFT], @[CORNER_BOTTOM_RIGHT], @[CORNER_TOP_LEFT] and @[CORNER_TOP_RIGHT]
 //!
 //!
 
-GTK.ScrolledWindow set_policy( int xpolicy, int ypolicy );
+GTK1.ScrolledWindow set_policy( int xpolicy, int ypolicy );
 //! vertical and horiz policy. Both are one of @[POLICY_ALWAYS], @[POLICY_AUTOMATIC] and @[POLICY_NEVER]
 //!
 //!
 
-GTK.ScrolledWindow set_vadjustment( GTK.Adjustment vadjustment );
+GTK1.ScrolledWindow set_vadjustment( GTK1.Adjustment vadjustment );
 //! Set the vertical adjustment object
 //!
 //!

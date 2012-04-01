@@ -1,13 +1,13 @@
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.
-//!@expr{ GTK.Button("A button")@}
-//!@xml{<image>../images/gtk_button.png</image>@}
+//!@expr{ GTK1.Button("A button")@}
+//!@xml{<image>../images/gtk1_button.png</image>@}
 //!
-//!@expr{ GTK.Button("A button\nwith multiple lines\nof text")@}
-//!@xml{<image>../images/gtk_button_2.png</image>@}
+//!@expr{ GTK1.Button("A button\nwith multiple lines\nof text")@}
+//!@xml{<image>../images/gtk1_button_2.png</image>@}
 //!
-//!@expr{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.Image(100,40)->test())))@}
-//!@xml{<image>../images/gtk_button_3.png</image>@}
+//!@expr{ GTK1.Button()->add(GTK1.Image(GDK1.Image(0)->set(Image.Image(100,40)->test())))@}
+//!@xml{<image>../images/gtk1_button_3.png</image>@}
 //!
 //!
 //!
@@ -33,24 +33,24 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
-GTK.Button clicked( );
+GTK1.Button clicked( );
 //! Emulate a 'clicked' event (press followed by release).
 //!
 //!
 
-static GTK.Button create( string|void label_text );
+protected GTK1.Button create( string|void label_text );
 //! If a string is supplied, a W(Label) is created and added to the button.
 //!
 //!
 
-GTK.Button enter( );
+GTK1.Button enter( );
 //! Emulate a 'enter' event.
 //!
 //!
 
-GTK.Widget get_child( );
+GTK1.Widget get_child( );
 //! The (one and only) child of this container.
 //!
 //!
@@ -60,22 +60,22 @@ int get_relief( );
 //!
 //!
 
-GTK.Button leave( );
+GTK1.Button leave( );
 //! Emulate a 'leave' event.
 //!
 //!
 
-GTK.Button pressed( );
+GTK1.Button pressed( );
 //! Emulate a 'press' event.
 //!
 //!
 
-GTK.Button released( );
+GTK1.Button released( );
 //! Emulate a 'release' event.
 //!
 //!
 
-GTK.Button set_relief( int newstyle );
+GTK1.Button set_relief( int newstyle );
 //! One of @[RELIEF_HALF], @[RELIEF_NONE] and @[RELIEF_NORMAL]
 //!
 //!

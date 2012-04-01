@@ -97,7 +97,7 @@ ptrdiff_t insert_opcode(p_instr *opcode)
 ptrdiff_t insert_opcode2(unsigned int f,
 			 INT32 b,
 			 INT32 c,
-			 INT32 current_line,
+			 INT_TYPE current_line,
 			 struct pike_string *current_file)
 {
   p_instr *p;
@@ -128,7 +128,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
 ptrdiff_t insert_opcode1(unsigned int f,
 			 INT32 b,
-			 INT32 current_line,
+			 INT_TYPE current_line,
 			 struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
@@ -139,7 +139,8 @@ ptrdiff_t insert_opcode1(unsigned int f,
   return insert_opcode2(f,b,0,current_line,current_file);
 }
 
-ptrdiff_t insert_opcode0(int f,int current_line, struct pike_string *current_file)
+ptrdiff_t insert_opcode0(int f, INT_TYPE current_line,
+			 struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -192,7 +193,7 @@ INT32 assemble(int store_linenumbers)
   {
     for (e = 0; e < length; e++) {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "~~~%4d %4lx %*s", c[e].line,
+      fprintf(stderr, "~~~%4ld %4lx %*s", (long)c[e].line,
 	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
       dump_instr(c+e);
       fprintf(stderr,"\n");
@@ -209,7 +210,7 @@ INT32 assemble(int store_linenumbers)
   if (store_linenumbers) {
     p_wchar2 *current_tripple;
     struct pike_string *previous_file = NULL;
-    int previous_line = 0;
+    INT_TYPE previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
 
     /* Count the number of F_FILENAME/F_LINE pseudo-ops we need to add. */
@@ -252,7 +253,7 @@ INT32 assemble(int store_linenumbers)
       if (c[e].line != previous_line) {
 	current_tripple[0] = F_LINE;
 	current_tripple[1] = c[e].line;
-	current_tripple[2] = 0;
+	current_tripple[2] = c[e].line>>32;
 	current_tripple += 3;
 	previous_line = c[e].line;
       }
@@ -296,8 +297,8 @@ INT32 assemble(int store_linenumbers)
     c=(p_instr *)instrbuf.s.str;
     for(e=0;e<length;e++,c++) {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, " * %4d %4lx ",
-	      c->line, DO_NOT_WARN((unsigned long)e));
+      fprintf(stderr, " * %4ld %4lx ",
+	      (long)c->line, DO_NOT_WARN((unsigned long)e));
       dump_instr(c);
       if ((instrs[c->opcode - F_OFFSET].flags & I_POINTER) &&
 	  (c->arg > max_label)) {
@@ -496,7 +497,7 @@ INT32 assemble(int store_linenumbers)
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4d %4lx %*s", c->line,
+      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
 	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
       dump_instr(c);
       fprintf(stderr,"\n");
@@ -805,7 +806,7 @@ static p_instr *instructions;
 /* insopt{0,1,2} push an instruction on instrstack. */
 
 static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
-			       int cl, struct pike_string *cf)
+			       INT_TYPE cl, struct pike_string *cf)
 {
   p_instr *p;
 
@@ -831,7 +832,8 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
   return p;
 }
 
-static INLINE p_instr *insopt1(int f, INT32 a, int cl, struct pike_string *cf)
+static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
+			       struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
@@ -841,7 +843,7 @@ static INLINE p_instr *insopt1(int f, INT32 a, int cl, struct pike_string *cf)
   return insopt2(f,a,0,cl, cf);
 }
 
-static INLINE p_instr *insopt0(int f, int cl, struct pike_string *cf)
+static INLINE p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -945,13 +947,13 @@ static void do_optimization(int topop, int topush, ...)
   int q=0;
   int oplen;
   struct pike_string *cf;
-  INT32 cl=instr(0)->line;
+  INT_TYPE cl=instr(0)->line;
 
 #ifdef PIKE_DEBUG
   if(a_flag>5)
   {
     int e;
-    fprintf(stderr,"PEEP at %d:",cl);
+    fprintf(stderr, "PEEP at %ld:", cl);
     for(e = topop; e--;)
     {
       fprintf(stderr," ");
@@ -1064,7 +1066,7 @@ static int asm_opt(void)
     for(e=0;e<length;e++,c++)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr,"<<<%4d: %*s",c->line,synch_depth,"");
+      fprintf(stderr,"<<<%4ld: %*s",(long)c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -1113,7 +1115,7 @@ static int asm_opt(void)
     for(e=0;e<length;e++,c++)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr,">>>%4d: %*s",c->line,synch_depth,"");
+      fprintf(stderr,">>>%4ld: %*s",(long)c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;

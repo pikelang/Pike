@@ -359,7 +359,9 @@ extern PMOD_EXPORT const  struct svalue svalue_undefined,
 #define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
 
 #define IS_DESTRUCTED(X) \
-  ((TYPEOF(*(X)) == PIKE_T_OBJECT || TYPEOF(*(X))==PIKE_T_FUNCTION) && !(X)->u.object->prog)
+  (((TYPEOF(*(X)) == PIKE_T_OBJECT) ||					\
+    ((TYPEOF(*(X))==PIKE_T_FUNCTION) &&					\
+     (SUBTYPEOF(*(X)) != FUNCTION_BUILTIN))) && !(X)->u.object->prog)
 
 #define check_destructed(S)			\
   do{						\
@@ -374,10 +376,11 @@ extern PMOD_EXPORT const  struct svalue svalue_undefined,
 
 /* var MUST be a variable!!! */
 #define safe_check_destructed(var) do{ \
-    if((TYPEOF(*var) == PIKE_T_OBJECT || TYPEOF(*var)==PIKE_T_FUNCTION) && !var->u.object->prog) \
-    var=&svalue_int_zero; \
-}while(0)
+    if(IS_DESTRUCTED(var))	       \
+      var=&svalue_int_zero;	       \
+  }while(0)
 
+/* FIXME: Is this actually used for functions? */
 #define check_short_destructed(U,T) \
 do{ \
   union anything *_u=(U); \

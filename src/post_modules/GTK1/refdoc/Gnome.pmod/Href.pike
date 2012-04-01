@@ -11,9 +11,9 @@
 //!
 //!
 
-inherit GTK.Button;
+inherit GTK1.Button;
 
-static Gnome.Href create( string url, string|void label );
+protected Gnome.Href create( string url, string|void label );
 //! Created a GNOME href object, a label widget with a clickable action
 //! and an associated URL. If label is set to 0, url is used as the
 //! label.

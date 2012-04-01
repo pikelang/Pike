@@ -1,23 +1,23 @@
 //! A simple progress bar. Useful when you are doing things that take a long
 //! time. Try to always have an 'abort' button whenever it makes sence.
-//!@expr{ GTK.ProgressBar()->update(0.1)@}
-//!@xml{<image>../images/gtk_progressbar.png</image>@}
+//!@expr{ GTK1.ProgressBar()->update(0.1)@}
+//!@xml{<image>../images/gtk1_progressbar.png</image>@}
 //!
-//!@expr{ GTK.ProgressBar()->set_show_text(1)->update(0.3)@}
-//!@xml{<image>../images/gtk_progressbar_2.png</image>@}
+//!@expr{ GTK1.ProgressBar()->set_show_text(1)->update(0.3)@}
+//!@xml{<image>../images/gtk1_progressbar_2.png</image>@}
 //!
-//!@expr{ GTK.ProgressBar()->update(0.6)@}
-//!@xml{<image>../images/gtk_progressbar_3.png</image>@}
+//!@expr{ GTK1.ProgressBar()->update(0.6)@}
+//!@xml{<image>../images/gtk1_progressbar_3.png</image>@}
 //!
-//!@expr{ GTK.ProgressBar()->update(1.0)@}
-//!@xml{<image>../images/gtk_progressbar_4.png</image>@}
+//!@expr{ GTK1.ProgressBar()->update(1.0)@}
+//!@xml{<image>../images/gtk1_progressbar_4.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Progress;
+inherit GTK1.Progress;
 
-static GTK.ProgressBar create( );
+protected GTK1.ProgressBar create( );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0
@@ -64,34 +64,34 @@ int get_orientation( );
 //!
 //!
 
-GTK.ProgressBar set_activity_blocks( int blocks );
+GTK1.ProgressBar set_activity_blocks( int blocks );
 //! The number of activity blocks
 //!
 //!
 
-GTK.ProgressBar set_activity_step( int stepp );
+GTK1.ProgressBar set_activity_step( int stepp );
 //! Include activity blocks (empty gaps in the progressbar, ala windows 98)
 //!
 //!
 
-GTK.ProgressBar set_bar_style( int style );
-//! One of GTK.ProgressContinuous or GTK.ProgressDiscrete
+GTK1.ProgressBar set_bar_style( int style );
+//! One of GTK1.ProgressContinuous or GTK1.ProgressDiscrete
 //!
 //!
 
-GTK.ProgressBar set_discrete_blocks( int blocks );
+GTK1.ProgressBar set_discrete_blocks( int blocks );
 //! The number of discrete blocks in the progress bar
 //!
 //!
 
-GTK.ProgressBar set_orientation( int style );
+GTK1.ProgressBar set_orientation( int style );
 //! One of
-//! GTK.ProgressLeftToRight, GTK.ProgressRightToLeft,
-//! GTK.ProgressBottomToTop or GTK.ProgressTopToBottom
+//! GTK1.ProgressLeftToRight, GTK1.ProgressRightToLeft,
+//! GTK1.ProgressBottomToTop or GTK1.ProgressTopToBottom
 //!
 //!
 
-GTK.ProgressBar update( float fraction );
+GTK1.ProgressBar update( float fraction );
 //! 0.0 is the minimum value, 1.0 is the maximum value.
 //!
 //!

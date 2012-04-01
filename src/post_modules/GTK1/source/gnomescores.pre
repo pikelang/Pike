@@ -14,9 +14,9 @@ void create(uint n_scores,
             array(time_t) times,
             int clear);
 void set_logo_pixmap( string logofile );
-void set_logo_widget( GTK.Widget widget );
-void set_color( int pos, GDK.Color color );
-void set_def_color( GDK.Color color );
+void set_logo_widget( GTK1.Widget widget );
+void set_color( int pos, GDK1.Color color );
+void set_def_color( GDK1.Color color );
 void set_logo_label_title( string txt );
 void set_current_player( int index );
 

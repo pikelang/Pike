@@ -1,7 +1,7 @@
 /* -*- C -*- */
-class GTK.Misc;
-inherit GTK.Widget;
-//! The GTK.Misc widget is an abstract widget which is not useful
+class GTK1.Misc;
+inherit GTK1.Widget;
+//! The GTK1.Misc widget is an abstract widget which is not useful
 //! itself, but is used to derive subclasses which have alignment and
 //! padding attributes.
 //! <p>
@@ -15,9 +15,9 @@ inherit GTK.Widget;
 //! the widgets position.
 //! </p>
 //!
-//! IMG: GTK.Vbox(0,0)->add(GTK.Label("Label"))->set_usize(100,20)
-//! IMG: GTK.Vbox(0,0)->add(GTK.Label("Label")->set_alignment(1.0,0.0))->set_usize(100,20)
-//! IMG: GTK.Vbox(0,0)->add(GTK.Label("Label")->set_alignment(0.0,0.0))->set_usize(100,20)
+//! IMG: GTK1.Vbox(0,0)->add(GTK1.Label("Label"))->set_usize(100,20)
+//! IMG: GTK1.Vbox(0,0)->add(GTK1.Label("Label")->set_alignment(1.0,0.0))->set_usize(100,20)
+//! IMG: GTK1.Vbox(0,0)->add(GTK1.Label("Label")->set_alignment(0.0,0.0))->set_usize(100,20)
 void set_alignment( float xalign, float yalign );
 //! Sets the alignment of the widget.
 //! 0.0 is left or topmost, 1.0 is right or bottommost.

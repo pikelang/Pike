@@ -7,20 +7,20 @@
 //! are guaranteed that every input value will have a (not necessarily
 //! unique) output value specified.
 //! 
-//!@expr{ GTK.GammaCurve()->set_usize(210,130)@}
-//!@xml{<image>../images/gtk_gammacurve.png</image>@}
+//!@expr{ GTK1.GammaCurve()->set_usize(210,130)@}
+//!@xml{<image>../images/gtk1_gammacurve.png</image>@}
 //!
 //!
 //!
 
-inherit GTK.Vbox;
+inherit GTK1.Vbox;
 
-static GTK.GammaCurve create( );
+protected GTK1.GammaCurve create( );
 //! Create a new gamma curve
 //!
 //!
 
-GTK.Curve get_curve( );
+GTK1.Curve get_curve( );
 //! The actual curve
 //!
 //!

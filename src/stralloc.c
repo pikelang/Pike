@@ -91,6 +91,10 @@ static unsigned int HASH_PREFIX=64;
 static unsigned int need_more_hash_prefix_depth=0;
 #endif
 
+/* Force a new hashkey to be generated early during init. */
+static unsigned int need_new_hashkey_depth=0xffff;
+static size_t hashkey = 0xa55aa55a;
+
 static unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
@@ -100,7 +104,7 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 /*** Main string hash function ***/
 
 #define StrHash(s,len) low_do_hash(s,len,0)
-#define low_do_hash(STR,LEN,SHIFT) hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT) )
+#define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
 
@@ -358,8 +362,9 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 						      size_t hval)
 {
   struct pike_string *curr,**prev, **base;
-#ifndef HASH_PREFIX
   unsigned int depth=0;
+#ifndef HASH_PREFIX
+  unsigned int prefix_depth=0;
 #endif
   size_t h;
   LOCK_BUCKET(hval);
@@ -388,23 +393,28 @@ static INLINE struct pike_string *internal_findstring(const char *s,
       UNLOCK_BUCKET(hval);
       return curr;		/* pointer to string */
     }
+    depth++;
 #ifndef HASH_PREFIX
     if (curr->len > (ptrdiff_t)HASH_PREFIX)
-      depth++;
+      prefix_depth++;
 #endif
+  }
+  if (depth > need_new_hashkey_depth) {
+    /* Keep track of whether the hashtable is getting unbalanced. */
+    need_new_hashkey_depth = depth;
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
-  if (depth > need_more_hash_prefix_depth)
+  if (prefix_depth > need_more_hash_prefix_depth)
   {
 #if 0
     fprintf(stderr,
-	    "depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
+	    "prefix_depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
 	    "  HASH_PREFIX=%d\n",
-	    depth, num_strings, need_more_hash_prefix_depth,
+	    prefix_depth, num_strings, need_more_hash_prefix_depth,
 	    HASH_PREFIX);
 #endif /* 0 */
-    need_more_hash_prefix_depth = depth;
+    need_more_hash_prefix_depth = prefix_depth;
   }
 #endif /* !HASH_PREFIX */
   UNLOCK_BUCKET(hval);
@@ -647,18 +657,28 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   num_strings++;
   UNLOCK_BUCKET(hval);
 
-  if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
+  if(num_strings > MAX_AVG_LINK_LENGTH * htable_size) {
     stralloc_rehash();
+  }
 
 #ifndef HASH_PREFIX
   /* These heuristics might require tuning! /Hubbe */
-  if(need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4)
+  if((need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4) ||
+     (need_new_hashkey_depth > MAX_AVG_LINK_LENGTH * 16))
   {
     /* Changed heuristic 2005-01-17:
      *
      *   Increase HASH_PREFIX if there's some bucket containing
      *   more than MAX_AVG_LINK_LENGTH * 4 strings that are longer
      *   than HASH_PREFIX.
+     * /grubba
+     *
+     * Changed heuristic 2011-12-30:
+     *
+     *   Generate a new hash key if there's some bucket containing
+     *   more than MAX_AVG_LINK_LENGTH * 16 strings. This ought to
+     *   suffice to alleviate the #hashdos vulnerability.
+     *
      * /grubba
      */
 
@@ -677,15 +697,21 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
 #endif
 
-    /* NOTE: No need to update to the corect value, since that will
+    /* A simple mixing function. */
+    hashkey ^= (hashkey << 5) | (current_time.tv_sec ^ current_time.tv_usec);
+
+    if (need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4) {
+      HASH_PREFIX=HASH_PREFIX*2;
+#if 0
+      fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
+	      HASH_PREFIX);
+#endif /* 0 */
+    }
+    /* NOTE: No need to update to the correct values, since that will
      *       be done on demand.
      */
+    need_new_hashkey_depth = 0;
     need_more_hash_prefix_depth=0;
-    HASH_PREFIX=HASH_PREFIX*2;
-#if 0
-    fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
-	    HASH_PREFIX);
-#endif /* 0 */
 
     for(h=0;h<htable_size;h++)
     {
@@ -2142,6 +2168,18 @@ static INLINE size_t memory_in_string (struct pike_string *s)
     }
   else
     return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
+}
+
+void count_memory_in_short_pike_strings(size_t *num, size_t *size)
+{
+  size_t num_=0, size_=0;
+  count_memory_in_short_pike_string0s(num, size);
+  count_memory_in_short_pike_string1s(&num_, &size_);
+  *num += num_;
+  *size += size_;
+  count_memory_in_short_pike_string2s(&num_, &size_);
+  *num += num_;
+  *size += size_;
 }
 
 void count_memory_in_strings(size_t *num, size_t *size)

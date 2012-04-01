@@ -1,6 +1,6 @@
 /* -*- C -*- */
-class GTK.FileSelection;
-inherit GTK.Window;
+class GTK1.FileSelection;
+inherit GTK1.Window;
 //! GtkFileSelection should be used to retrieve file or directory names
 //! from the user. It will create a new dialog window containing a
 //! directory list, and a file list corresponding to the current
@@ -21,26 +21,26 @@ inherit GTK.Window;
 //! can be hidden using hide_fileop_buttons() and shown again using
 //! show_fileop_buttons().
 //! </p><p>
-//! TIMG: GTK.FileSelection("File selector")
+//! TIMG: GTK1.FileSelection("File selector")
 //! </p>
 
-member GTK.Button ok_button;
+member GTK1.Button ok_button;
 //! The ok button
-member GTK.Button cancel_button;
+member GTK1.Button cancel_button;
 //! The cancel button
-member GTK.Button help_button;
+member GTK1.Button help_button;
 //! The help button
-member GTK.Button fileop_c_dir;
+member GTK1.Button fileop_c_dir;
 //! The create directory button in the file operation button group
-member GTK.Button fileop_del_file;
+member GTK1.Button fileop_del_file;
 //! The delete file button in the file operation button group
-member GTK.Button fileop_ren_file;
+member GTK1.Button fileop_ren_file;
 //! The rename file button in the file operation button group
-member GTK.Clist dir_list;
+member GTK1.Clist dir_list;
 //! The list of directories
-member GTK.Clist file_list;
+member GTK1.Clist file_list;
 //! The list of files
-member GTK.OptionMenu history_pulldown;
+member GTK1.OptionMenu history_pulldown;
 //! Used to create the drop-down directory histor
 
 string get_filename();
@@ -61,7 +61,7 @@ void show_fileop_buttons();
 void hide_fileop_buttons();
 //! Hides the file operation buttons that normally appear at the top of
 //! the dialog. Useful if you wish to create a custom file selector,
-//! based on GTK.FileSelection.
+//! based on GTK1.FileSelection.
 void complete( string pattern );
 //! Will attempt to match pattern to a valid filename in the current
 //! directory. If a match can be made, the matched filename will appear

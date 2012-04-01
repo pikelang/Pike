@@ -4,19 +4,19 @@
 //!
 //!
 
-inherit GTK.Window;
+inherit GTK1.Window;
 
-static GTK.Dialog create( );
+protected GTK1.Dialog create( );
 //! Create a new dialog widget.
 //!
 //!
 
-GTK.HbuttonBox get_action_area( );
+GTK1.HbuttonBox get_action_area( );
 //! The action area, this is where the buttons (ok, cancel etc) go
 //!
 //!
 
-GTK.Vbox get_vbox( );
+GTK1.Vbox get_vbox( );
 //! The vertical box that should contain the contents of the dialog
 //!
 //!

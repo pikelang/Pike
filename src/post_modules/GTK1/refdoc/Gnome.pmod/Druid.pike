@@ -6,7 +6,7 @@
 //! the set of W(Gnome.DruidPage) widgets. The Gnome.Druid widget is the
 //! main widget that interacts with the user. It has a Next, a Prev,
 //! and a Cancel button, and acts as a container for the pages. It is
-//! not a top-level window, so it needs to be put in a W(GTK.Window) in
+//! not a top-level window, so it needs to be put in a W(GTK1.Window) in
 //! almost all cases. The W(Gnome.DruidPage) is a virtual widget, from
 //! which all of the actual content of the page inherits from. There
 //! are currently three of these available within gnome-libs.
@@ -41,7 +41,7 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
 Gnome.Druid append_page( Gnome.DruidPage page );
 //! This will append a GnomeDruidPage into the internal list of pages
@@ -49,7 +49,7 @@ Gnome.Druid append_page( Gnome.DruidPage page );
 //!
 //!
 
-static Gnome.Druid create( );
+protected Gnome.Druid create( );
 //! Create a new druid
 //!
 //!

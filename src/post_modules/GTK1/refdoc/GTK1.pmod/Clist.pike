@@ -2,8 +2,8 @@
 //! of handling literally thousands of rows of information. Each column
 //! can optionally have a title, which itself is optionally active,
 //! allowing us to bind a function to it's selection.
-//!@expr{ GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)@}
-//!@xml{<image>../images/gtk_clist.png</image>@}
+//!@expr{ GTK1.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)@}
+//!@xml{<image>../images/gtk1_clist.png</image>@}
 //!
 //!
 //!
@@ -47,7 +47,7 @@
 //!
 //!
 
-inherit GTK.Container;
+inherit GTK1.Container;
 
 int append( array columns );
 //!  The return value of indicates the index of the row that was just
@@ -58,37 +58,37 @@ int append( array columns );
 //!
 //!
 
-GTK.Clist clear( );
+GTK1.Clist clear( );
 //! remove all rows
 //!
 //!
 
-GTK.Clist column_title_active( int column );
+GTK1.Clist column_title_active( int column );
 //! Make a specific column title active
 //!
 //!
 
-GTK.Clist column_title_passive( int column );
+GTK1.Clist column_title_passive( int column );
 //! Make a specific column title passive
 //!
 //!
 
-GTK.Clist column_titles_active( );
+GTK1.Clist column_titles_active( );
 //! The column titles can be pressed
 //!
 //!
 
-GTK.Clist column_titles_hide( );
+GTK1.Clist column_titles_hide( );
 //! Hide the column titles
 //!
 //!
 
-GTK.Clist column_titles_passive( );
+GTK1.Clist column_titles_passive( );
 //! The column titles can't be pressed
 //!
 //!
 
-GTK.Clist column_titles_show( );
+GTK1.Clist column_titles_show( );
 //! Show the column titles.
 //!
 //!
@@ -98,7 +98,7 @@ int columns_autosize( );
 //!
 //!
 
-static GTK.Clist create( int columns );
+protected GTK1.Clist create( int columns );
 //! Create a new empty clist, columns columns wide.
 //! 
 //! Not all columns have to be visible, some can be used to store data that is
@@ -113,19 +113,19 @@ int find_row_from_data( object data );
 //!
 //!
 
-GTK.Clist freeze( );
+GTK1.Clist freeze( );
 //! freeze all visual updates of the list, and then thaw the list after
 //! you have made a number of changes and the updates wil occure in a
 //! more efficent mannor than if you made them on a unfrozen list
 //!
 //!
 
-GDK.Color get_background( int row );
+GDK1.Color get_background( int row );
 //! Return the background color of a specified row
 //!
 //!
 
-GTK.Style get_cell_style( int row, int col );
+GTK1.Style get_cell_style( int row, int col );
 //! return the W(Style) associated with a specific cell
 //!
 //!
@@ -140,7 +140,7 @@ string get_column_title( int column );
 //!
 //!
 
-GTK.Widget get_column_widget( int column );
+GTK1.Widget get_column_widget( int column );
 //! Return the widget for the specified column title
 //!
 //!
@@ -165,17 +165,17 @@ int get_focus_row( );
 //!
 //!
 
-GDK.Color get_foreground( int row );
+GDK1.Color get_foreground( int row );
 //! Return the foregroun color for the specified row
 //!
 //!
 
-GTK.Adjustment get_hadjustment( );
+GTK1.Adjustment get_hadjustment( );
 //! Return the W(Adjustment) object used for horizontal scrolling
 //!
 //!
 
-GTK.Clist get_pixmap( int row, int column );
+GTK1.Clist get_pixmap( int row, int column );
 //! Return the pixmap for the specified cell
 //!
 //!
@@ -196,7 +196,7 @@ int get_row_height( );
 //!
 //!
 
-GTK.Style get_row_style( int row );
+GTK1.Style get_row_style( int row );
 //! Return the W(style) object associated with the specified row
 //!
 //!
@@ -243,12 +243,12 @@ int get_sort_type( );
 //!
 //!
 
-GTK.Clist get_text( int row, int col );
+GTK1.Clist get_text( int row, int col );
 //! Return the text associated with a specific cell.
 //!
 //!
 
-GTK.Adjustment get_vadjustment( );
+GTK1.Adjustment get_vadjustment( );
 //! Return the W(Adjustment) object used for vertical scrolling
 //!
 //!
@@ -265,7 +265,7 @@ int insert( int row, array columns );
 //!
 //!
 
-GTK.Clist moveto( int row, int column, float xpos, float ypos );
+GTK1.Clist moveto( int row, int column, float xpos, float ypos );
 //! Make the specified row and column visible, and place it relative to
 //! xpos and ypos in the area the Clist occupies.   xpos and ypos
 //! are relative, 0.0 == top, 1.0 == bottom
@@ -286,30 +286,30 @@ int prepend( array columns );
 //!
 //!
 
-GTK.Clist remove( int row );
+GTK1.Clist remove( int row );
 //! Delete a specified row. If you want to remove all rows in a Clist,
 //! use 'clear()' instead of calling remove multiple times.
 //!
 //!
 
-GTK.Clist row_move( int from_row, int to_row );
+GTK1.Clist row_move( int from_row, int to_row );
 //! Move the specified row to just before the specified destination
 //! row.
 //!
 //!
 
-GTK.Clist select_all( );
+GTK1.Clist select_all( );
 //! Select all rows
 //!
 //!
 
-GTK.Clist select_row( int row, int column );
+GTK1.Clist select_row( int row, int column );
 //! Select the given row. The column is sent to the signal handler, but
 //! ignored for all other purposes.
 //!
 //!
 
-GTK.Clist set_auto_sort( int sortp );
+GTK1.Clist set_auto_sort( int sortp );
 //! If true, the clist will automatically be re-sorted when new rows
 //! are inserted. Please note that it will not be resorted if the text
 //! in cells are changed, use 'sort()' to force a reorder. The sort
@@ -317,71 +317,71 @@ GTK.Clist set_auto_sort( int sortp );
 //!
 //!
 
-GTK.Clist set_background( int row, GDK.Color color );
+GTK1.Clist set_background( int row, GDK1.Color color );
 //! Set the background color of the specified row the the specified color
 //!
 //!
 
-GTK.Clist set_button_actions( int button, int action );
+GTK1.Clist set_button_actions( int button, int action );
 //! Action is a bitwise or of @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD], @[BUTTONBOX_START], @[BUTTON_DRAGS], @[BUTTON_EXPANDS], @[BUTTON_IGNORED] and @[BUTTON_SELECTS]
 //! Button is the mouse button (normally 1-3, 4 and 5 sometimes beeing
 //! scroll wheel up and scroll wheel down)
 //!
 //!
 
-GTK.Clist set_cell_style( int row, int column, GTK.Style style );
+GTK1.Clist set_cell_style( int row, int column, GTK1.Style style );
 //! Set a W(Style) for a specific cell
 //!
 //!
 
-GTK.Clist set_column_auto_resize( int column, int autoresizep );
+GTK1.Clist set_column_auto_resize( int column, int autoresizep );
 //! Automatically resize a column to the width of it's widest contents.
 //!
 //!
 
-GTK.Clist set_column_justification( int column, int justification );
+GTK1.Clist set_column_justification( int column, int justification );
 //! justification is one of @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //!
 //!
 
-GTK.Clist set_column_max_width( int column, int width );
+GTK1.Clist set_column_max_width( int column, int width );
 //! if width 6lt; 0 , there is no restriction
 //!
 //!
 
-GTK.Clist set_column_min_width( int column, int width );
+GTK1.Clist set_column_min_width( int column, int width );
 //! Width in pixels
 //!
 //!
 
-GTK.Clist set_column_resizeable( int column, int resizeablep );
+GTK1.Clist set_column_resizeable( int column, int resizeablep );
 //! Make a column resizable, or remove it's the resizability.
 //!
 //!
 
-GTK.Clist set_column_title( int column, string title );
+GTK1.Clist set_column_title( int column, string title );
 //! Set the column title of a specified column. It is a good idea to
 //! set the titles before the column title buttons are shown.
 //!
 //!
 
-GTK.Clist set_column_visibility( int column, int visiblep );
+GTK1.Clist set_column_visibility( int column, int visiblep );
 //! Hide or show a column
 //!
 //!
 
-GTK.Clist set_column_widget( int column, GTK.Widget widget );
+GTK1.Clist set_column_widget( int column, GTK1.Widget widget );
 //! Put a widget as a column title. The widget will be added to a
 //! W(Button).
 //!
 //!
 
-GTK.Clist set_column_width( int column, int width );
+GTK1.Clist set_column_width( int column, int width );
 //! Width in pixels
 //!
 //!
 
-GTK.Clist set_compare_func( function cmpfun );
+GTK1.Clist set_compare_func( function cmpfun );
 //! Set the compare function. The function will be called with a
 //! mapping as it's only argument, like this:@pre{
 //!   ([
@@ -401,33 +401,33 @@ GTK.Clist set_compare_func( function cmpfun );
 //!
 //!
 
-GTK.Clist set_foreground( int row, GDK.Color color );
+GTK1.Clist set_foreground( int row, GDK1.Color color );
 //! Set the foreground color of the specified row to the specified color
 //!
 //!
 
-GTK.Clist set_hadjustment( GTK.Adjustment adjustment );
+GTK1.Clist set_hadjustment( GTK1.Adjustment adjustment );
 //! Set the W(Adjustment) object used for horizontal scrolling
 //!
 //!
 
-GTK.Clist set_pixmap( int row, int col, GDK.Pixmap image, GDK.Bitmap mask );
+GTK1.Clist set_pixmap( int row, int col, GDK1.Pixmap image, GDK1.Bitmap mask );
 //! Set the pixmap of the specified cell. The mask is optional
 //!
 //!
 
-GTK.Clist set_pixtext( int row, int column, string text, int spacing, GDK.Pixmap image, GDK.Bitmap mask );
+GTK1.Clist set_pixtext( int row, int column, string text, int spacing, GDK1.Pixmap image, GDK1.Bitmap mask );
 //! Set the pixmap and text of the specified cell. The mask is optional
 //! The spacing is the number of pixels between the pixmap and the text.
 //!
 //!
 
-GTK.Clist set_reorderable( int reorderablep );
+GTK1.Clist set_reorderable( int reorderablep );
 //! If true, the user can drag around the rows in the list.
 //!
 //!
 
-GTK.Clist set_row_data( int row, object data );
+GTK1.Clist set_row_data( int row, object data );
 //! Set the user data associated with the specified row.
 //! This data can be used to find rows, and when a row is selected it
 //! can be easily retrieved using node_get_row_data.
@@ -436,31 +436,31 @@ GTK.Clist set_row_data( int row, object data );
 //!
 //!
 
-GTK.Clist set_row_height( int pixels );
+GTK1.Clist set_row_height( int pixels );
 //! in pixels
 //!
 //!
 
-GTK.Clist set_row_style( int row, GTK.Style style );
+GTK1.Clist set_row_style( int row, GTK1.Style style );
 //!
 
-GTK.Clist set_selectable( int row, int selectablep );
+GTK1.Clist set_selectable( int row, int selectablep );
 //! If true, the row can be selected by the user, otherwise it cannot
 //! be selected, only focused.
 //!
 //!
 
-GTK.Clist set_selection_mode( int mode );
+GTK1.Clist set_selection_mode( int mode );
 //! One of @[SELECTION_BROWSE], @[SELECTION_EXTENDED], @[SELECTION_MULTIPLE] and @[SELECTION_SINGLE]
 //!
 //!
 
-GTK.Clist set_shadow_type( int shadowtype );
+GTK1.Clist set_shadow_type( int shadowtype );
 //! One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT]
 //!
 //!
 
-GTK.Clist set_shift( int row, int column, int yshift, int xshift );
+GTK1.Clist set_shift( int row, int column, int yshift, int xshift );
 //! The contents of the specified cell will be drawn shifted (indented)
 //! the specifid number of pixels.
 //! 
@@ -470,54 +470,54 @@ GTK.Clist set_shift( int row, int column, int yshift, int xshift );
 //!
 //!
 
-GTK.Clist set_sort_column( int column );
+GTK1.Clist set_sort_column( int column );
 //!
 
-GTK.Clist set_sort_type( int direction );
+GTK1.Clist set_sort_type( int direction );
 //! Ascending or descending (One of @[SORT_ASCENDING] and @[SORT_DESCENDING])
 //!
 //!
 
-GTK.Clist set_text( int row, int column, string text );
+GTK1.Clist set_text( int row, int column, string text );
 //! Set the text for the specified cell. Please note that even if auto
 //! sorting is enabled, the row will not be resorted. Use the 'sort()'
 //! function.
 //!
 //!
 
-GTK.Clist set_use_drag_icons( int dragiconsp );
+GTK1.Clist set_use_drag_icons( int dragiconsp );
 //! If true, hard coded drag icons will be used.
 //!
 //!
 
-GTK.Clist set_vadjustment( GTK.Adjustment adjustment );
+GTK1.Clist set_vadjustment( GTK1.Adjustment adjustment );
 //! Set the W(Adjustment) object used for vertical scrolling
 //!
 //!
 
-GTK.Clist sort( );
+GTK1.Clist sort( );
 //! Set the column on which all sorting will be performed
 //!
 //!
 
-GTK.Clist thaw( );
+GTK1.Clist thaw( );
 //! freeze all visual updates of the list, and then thaw the list after
 //! you have made a number of changes and the updates wil occure in a
 //! more efficent mannor than if you made them on a unfrozen list
 //!
 //!
 
-GTK.Clist undo_selection( );
+GTK1.Clist undo_selection( );
 //! Undo the previous selection
 //!
 //!
 
-GTK.Clist unselect_all( );
+GTK1.Clist unselect_all( );
 //! Unselect all rows
 //!
 //!
 
-GTK.Clist unselect_row( int row, int column );
+GTK1.Clist unselect_row( int row, int column );
 //! Unselect the given row. The column is sent to the signal handler,
 //! but ignored for all other purposes.
 //!
