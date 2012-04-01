@@ -477,12 +477,52 @@ PIKECLASS StructInfo
   INHERIT BaseInfo;
 }
 
+/*! @class ValueInfo
+ */
+
+PIKECLASS ValueInfo
+{
+  INHERIT BaseInfo;
+
+  /*! @decl int get_value()
+   */
+  PIKEFUN int get_value()
+  {
+    RETURN g_value_info_get_value((GIValueInfo *)THIS->info);
+  }
+}
+
 /*! @class EnumInfo
  */
 
 PIKECLASS EnumInfo
 {
   INHERIT BaseInfo;
+
+  /*! @decl array(ValueInfo) get_values()
+   */
+  PIKEFUN array(ValueInfo) get_values()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_enum_info_get_n_values((GIEnumInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_enum_info_get_value((GIEnumInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
 }
 
 /*! @class InterfaceInfo
@@ -616,6 +656,8 @@ static void push_gi_info(GIBaseInfo *info)
     p = ConstantInfo_program; break;
   case GI_INFO_TYPE_UNION:
     p = UnionInfo_program; break;
+  case GI_INFO_TYPE_VALUE:
+    p = ValueInfo_program; break;
   default:
     Pike_error("No class for %d\n", g_base_info_get_type(info));
   }

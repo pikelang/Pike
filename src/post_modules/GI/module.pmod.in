@@ -81,6 +81,31 @@ class DynamicImporter {
       static mixed `->(string index) { return attrs[index]; }
     }
 
+    class Enum
+    {
+      static EnumInfo info;
+      static mapping(string:int) map;
+
+      static string _sprintf(int mode)
+      {
+	return mode == 'O' && sprintf("%O.%s",
+				      IntrospectionModule::this,
+				      info->get_name());
+      }
+
+      static void create(EnumInfo ei)
+      {
+	info = ei;
+	array(ObjectInfo) vals = info->get_values();
+	map = mkmapping(vals->get_name(), vals->get_value());
+      }
+
+      static array(string) _indices() { return indices(map); }
+      static array(int) _values() { return values(map); }
+      static mixed `[](string index) { return map[index]; }
+      static mixed `->(string index) { return map[index]; }
+    }
+
     static void create(string namespace_, string|void version)
     {
       namespace = namespace_;
@@ -98,6 +123,8 @@ class DynamicImporter {
 	return Object([object(ObjectInfo)]info);
       else if (object_program(info) == FunctionInfo)
 	return Function([object(FunctionInfo)]info);
+      else if (object_program(info) == EnumInfo)
+        return Enum([object(EnumInfo)]info);
       /* FIXME */
       return info;
     }
