@@ -173,6 +173,37 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
     arg->v_boolean = (UNSAFE_IS_ZERO(s)? FALSE : TRUE);
     break;
 
+  case GI_TYPE_TAG_INT8:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_int8 = s->u.integer;
+    break;
+  case GI_TYPE_TAG_UINT8:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_uint8 = s->u.integer;
+    break;
+  case GI_TYPE_TAG_INT16:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_int16 = s->u.integer;
+    break;
+  case GI_TYPE_TAG_UINT16:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_uint16 = s->u.integer;
+    break;
+  case GI_TYPE_TAG_INT32:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_int32 = s->u.integer;
+    break;
+  case GI_TYPE_TAG_UINT32:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    arg->v_uint32 = s->u.integer;
+    break;
+
   case GI_TYPE_TAG_UTF8:
     if (TYPEOF(*s) != PIKE_T_STRING)
       Pike_error("Expected string\n");
