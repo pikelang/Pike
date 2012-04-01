@@ -209,6 +209,23 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
     arg->v_uint32 = s->u.integer;
     break;
 
+  case GI_TYPE_TAG_FLOAT:
+    if (TYPEOF(*s) == PIKE_T_INT)
+      arg->v_float = s->u.integer;
+    else if (TYPEOF(*s) == PIKE_T_FLOAT)
+      arg->v_float = s->u.float_number;
+    else
+      Pike_error("float expected\n");
+    break;
+  case GI_TYPE_TAG_DOUBLE:
+    if (TYPEOF(*s) == PIKE_T_INT)
+      arg->v_double = s->u.integer;
+    else if (TYPEOF(*s) == PIKE_T_FLOAT)
+      arg->v_double = s->u.float_number;
+    else
+      Pike_error("float expected\n");
+    break;
+
   case GI_TYPE_TAG_UTF8:
     if (TYPEOF(*s) != PIKE_T_STRING)
       Pike_error("Expected string\n");
