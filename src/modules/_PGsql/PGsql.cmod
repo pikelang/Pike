@@ -204,16 +204,18 @@ ret2:	  PD((stderr,"PGsql getstring %d\n",length));
 	  PD((stderr,"PGsql getstring %s\n",psb->s->str));
 	  return finish_string_builder(&sb);
 	}
-	else if(!psb)
+	if(!psb)
 	  init_string_builder(psb=&sb,0);
 	string_builder_binary_strcat0(psb,THIS->plow,left);
       }
       flushifneeded();
-      for(;len>BUFSIZE;len-=left,p+=left)
-	if((left=rread(p,len,0))<=0)
-	  goto bad;
-      if(!len)
-	goto ret2;
+      if(length)
+      { for(;len>BUFSIZE;len-=left,p+=left)
+	  if((left=rread(p,len,0))<=0)
+	    goto bad;
+        if(!len)
+	  goto ret2;
+      }
       left=rread(THIS->buf,BUFSIZE,1);
       THIS->phigh=(THIS->plow=THIS->buf)+left;
     } while(left>0);
