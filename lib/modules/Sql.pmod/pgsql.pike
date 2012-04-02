@@ -74,6 +74,7 @@ private mapping(string:mixed) options;
 private array(string) lastmessage=({});
 private int clearmessage;
 private int earlyclose;
+private int reconnectp;
 private mapping(string:array(mixed)) notifylist=([]);
 mapping(string:string) _runtimeparameter;
 state _mstate;
@@ -176,6 +177,9 @@ protected string _sprintf(int type, void|mapping flags)
 //! @param options
 //! Currently supports at least the following:
 //! @mapping
+//!   @member int "reconnect"
+//!	Set it to zero to disable automatic reconnects upon losing
+//!     the connection to the database
 //!   @member int "use_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will fallback
@@ -1047,7 +1051,7 @@ private int reconnect(void|int force)
     _c=0;
     foreach(prepareds;;mapping tp)
       m_delete(tp,"preparedname");
-    if(!(connectmtxkey = _stealmutex.trylock(2)))
+    if(!reconnectp || !(connectmtxkey = _stealmutex.trylock(2)))
       return 0;				    // Recursive reconnect, bailing out
   }
   if(!(_c=getsocket()))
@@ -1068,7 +1072,10 @@ private int reconnect(void|int force)
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
-  foreach(options-(<"use_ssl","force_ssl","cache_autoprepared_statements">);
+  if(intp(options->reconnect))
+    reconnectp=options->reconnect;
+  foreach(options
+    -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect">);
    string name;mixed value)
     plugbuf+=({name,"\0",(string)value,"\0"});
   plugbuf+=({"\0"});
