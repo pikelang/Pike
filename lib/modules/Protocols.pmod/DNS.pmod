@@ -664,7 +664,34 @@ protected void create()
     if (udp->bind(0, "::1") && udp->bind(0, "::") &&
 	(udp->send("127.0.0.1", 9, "/dev/null") == 9) &&
 	(udp->send("::1", 9, "/dev/null") == 9)) {
-      ANY = "::";
+      // Note: The above tests are apparently not sufficient, since
+      //       WIN32 happily pretends to send stuff to ::ffff:0:0/96...
+      Stdio.UDP udp2 = Stdio.UDP();
+      if (udp2->bind(0, "127.0.0.1")) {
+	// IPv4 is present.
+	array(string) a = udp2->query_address()/" ";
+	int port = (int)a[1];
+	string key = Crypto.Random.random_string(16);
+	udp2->set_nonblocking();
+
+	// We shouldn't get any lost packets, since we're on the loop-back,
+	// but for paranoia reasons we perform a couple of retries.
+      retry:
+	for (int i = 0; i < 16; i++) {
+	  if (!udp->send("127.0.0.1", port, key)) continue;
+	  // udp2->wait() throws errors on WIN32.
+	  catch(udp2->wait(1));
+	  mapping res;
+	  while ((res = udp2->read())) {
+	    if (res->data == key) {
+	      // Mapped IPv4 seems to work.
+	      ANY = "::";
+	      break retry;
+	    }
+	  }
+	}
+	destruct(udp2);
+      }
     }
     destruct(udp);
   };
@@ -859,6 +886,7 @@ class client
     array(string) res = ({});
     foreach(({
       "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+      "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
       "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
     }),string key)
     {
@@ -877,6 +905,16 @@ class client
 	catch {
 	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
 				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
+				"Parameters\\Interfaces\\" + key, val) });
+	};
+      }
+      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
+			     "Parameters\\Interfaces"), string key)
+      {
+	catch {
+	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+				"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
@@ -1120,22 +1158,26 @@ class client
       udp->send(nameservers[i % sizeof(nameservers)], 53, s);
 
       // upd->wait() can throw an error sometimes.
-      catch
-      {
-  	while (udp->wait(RETRY_DELAY))
-        {
-  	  // udp->read() can throw an error on connection refused.
-  	  catch {
-  	    m = udp->read();
-  	    if ((m->port == 53) &&
-  		(m->data[0..1] == s[0..1]) &&
-  		has_value(nameservers, m->ip)) {
-  	      // Success.
-  	      return decode_res(m->data);
-  	    }
-  	  };
-        }
+      //
+      // One common case is on WIN32 where select complains
+      // about it not being a socket.
+      catch {
+	udp->wait(RETRY_DELAY);
       };
+      // Make sure that udp->read() doesn't block.
+      udp->set_nonblocking();
+      // udp->read() can throw an error on connection refused.
+      catch {
+	m = udp->read();
+	if (m && (m->port == 53) &&
+	    (m->data[0..1] == s[0..1]) &&
+	    has_value(nameservers, m->ip)) {
+	  // Success.
+	  return decode_res(m->data);
+	}
+      };
+      // Restore blocking state for udp->send() on retry.
+      udp->set_blocking();
     }
     // Failure.
     return 0;
