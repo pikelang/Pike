@@ -187,7 +187,6 @@ CORE_OBJ= \
  svalue.o \
  las.o \
  builtin_functions.o \
- block_allocator.o \
  peep.o @DLOPEN_O@ @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@
@@ -1467,8 +1466,7 @@ HFILES=						\
   builtin.protos					\
   iterators.protos				\
   facetgroup.protos				\
-  rbtree.protos					\
-  block_allocator.protos
+  rbtree.protos
 
 $(HFILES): precompile.sh-stamp
 

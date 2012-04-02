@@ -78,7 +78,7 @@
 # include "pike_error.h"
 # include "pike_memory.h"
 # define EXPORT PMOD_EXPORT
-# include "GJAlloc/block_allocator.h"
+# include "gjalloc.h"
 # undef EXPORT
 /* we assume here that malloc has 8 bytes of overhead */
 #define BLOCK_HEADER_SIZE (sizeof(struct ba_page) + sizeof(void*))

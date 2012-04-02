@@ -2574,6 +2574,25 @@ TEST_BUILTIN(__cntlz8, 23)
 TEST_BUILTIN(__cnttz4, 23)
 TEST_BUILTIN(__cnttz8, 23)
 
+AC_TRY_RUN([
+#include <gjalloc.h>
+    struct block_allocator a;
+    int main() {
+	return 0;
+    }
+    ],
+    [pike_has_gjalloc=yes],
+    [pike_has_gjalloc=no],
+    [pike_has_gjalloc=no])
+
+if test "$pike_has_gjalloc" = yes; then
+  AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [foo])
+  LIBS="${LIBS} -lgjalloc"
+else
+  PIKE_MSG_WARN([ Gjalloc could not be found, thats bad!])
+fi
+
+
 #############################################################################
 
 # Script to translate from POSIX paths to native paths.

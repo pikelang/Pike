@@ -434,5 +434,24 @@ if test "$pike_cv_itimer_type_is_02" = yes; then
   AC_DEFINE(ITIMER_TYPE_IS_02)
 fi
 
+AC_MSG_CHECKING([if gjalloc works])
+AC_TRY_RUN([
+#include <gjalloc.h>
+    struct block_allocator a;
+    int main() {
+	return 0;
+    }
+    ],
+    [pike_has_gjalloc=yes],
+    [pike_has_gjalloc=no],
+    [pike_has_gjalloc=no])
+
+if test "$pike_has_gjalloc" = yes; then
+    AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [foo])
+else
+    PIKE_ENABLE_BUNDLE(GJAlloc, [
+	pike_has_gjalloc 
+    ])
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

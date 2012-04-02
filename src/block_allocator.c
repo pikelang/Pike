@@ -7,4 +7,4 @@
 #define ctz ctz32
 #define BA_CMEMSET cmemset
 
-#include "GJAlloc/block_allocator.c"
+#include "gjalloc.c"
