@@ -331,7 +331,10 @@ void async_got_host(string server,int port)
    if (!server)
    {
       async_failed();
-      close_connection();	//  we may be destructed here
+      if (this_object()) {
+	//  we may be destructed here
+	close_connection();
+      }
       return;
    }
 
