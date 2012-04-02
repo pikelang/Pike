@@ -1825,8 +1825,11 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		}
 		value=(string)value;
 		if(String.width(value)>8)
-		  ERROR("Wide string %O not supported for type OID %d\n",
-		   value,dtoid[i]);
+	          if(dtoid[i]==BYTEAOID)
+		    value=string_to_utf8(value);
+		  else
+		    ERROR("Wide string %O not supported for type OID %d\n",
+		     value,dtoid[i]);
 		len+=k=sizeof(value);
 		plugbuf+=({_c.plugint32(k),value});
 		break;
