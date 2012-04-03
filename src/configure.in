@@ -2574,6 +2574,8 @@ TEST_BUILTIN(__cntlz8, 23)
 TEST_BUILTIN(__cnttz4, 23)
 TEST_BUILTIN(__cnttz8, 23)
 
+OLDLIBS=$LIBS
+LIBS="${LIBS} -lgjalloc"
 AC_TRY_RUN([
 #include <gjalloc.h>
     struct block_allocator a;
@@ -2587,8 +2589,8 @@ AC_TRY_RUN([
 
 if test "$pike_has_gjalloc" = yes; then
   AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [foo])
-  LIBS="${LIBS} -lgjalloc"
 else
+  LIBS=$OLDLIBS
   PIKE_MSG_WARN([ Gjalloc could not be found, thats bad!])
 fi
 
