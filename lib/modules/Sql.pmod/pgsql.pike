@@ -104,12 +104,15 @@ private int connectionclosed;
 
 private string host, database, user, pass;
 private int port;
+private multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
 private object createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
 private object dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
-private object limitpostfix
- =Regexp("[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
+private object execfetchlimit
+ =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
+[Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
+[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 Thread.Mutex _querymutex;
 Thread.Mutex _stealmutex;
 
@@ -1683,7 +1686,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
   int tstart;
-  if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH)
+  if(forcecache==1
+   || forcecache!=0 && (sizeof(q)>=MINPREPARELENGTH || cachealways[q]))
   { array(string) plugbuf=({});
     if(tp=prepareds[q])
     { if(tp->preparedname)
@@ -1914,7 +1918,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       }
       _c.portal->_statuscmdcomplete=UNDEFINED;
       _sendexecute(_fetchlimit
-       && !limitpostfix->match(q)		    // Optimisation for LIMIT 1
+       && !(cachealways[q]
+	|| sizeof(q)>=MINPREPARELENGTH && execfetchlimit->match(q))
        && FETCHLIMITLONGRUN);
       if(tp)
       { _decodemsg(bindcomplete);
