@@ -3849,6 +3849,23 @@ int main(int argc, char **argv)
 
     xDarwin*)
       LIBS="${OLDLIBS}"
+
+    #
+    # it would probably be better to create a compilation test should this
+    # behavior change in the future, however for now, we accept this as "good enough"
+    #
+    AC_MSG_CHECKING([whether Darwin dislikes threads and mach includes])
+    case "`uname -r`" in
+      [1-9].*)
+        AC_MSG_RESULT([no (10.5 or older)])
+      ;;
+      *)
+	AC_DEFINE([USE_DARWIN_THREADS_WITHOUT_MACH], [1], [Define if pthreads and mach headers conflict])
+        AC_MSG_RESULT([yes (10.6 or newer)])
+        pike_cv_osx_threads_dislike_mach=yes
+      ;;
+  esac
+
     ;;
 
     *)

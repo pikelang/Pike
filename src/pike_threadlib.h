@@ -88,6 +88,9 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #include <sched.h>
 #endif
 
+#ifdef USE_DARWIN_THREADS_WITHOUT_MACH
+/* OSX Threads don't get along with mach headers! */
+#else
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
@@ -97,6 +100,7 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #ifdef HAVE_MACH_MACH_INIT_H
 #include <mach/mach_init.h>
 #endif
+#endif /* USE_DARWIN_THREADS_WITHOUT_MACH */
 
 
 /* Restore the fp macro. */
