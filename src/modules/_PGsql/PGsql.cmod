@@ -299,7 +299,7 @@ outofmem: Pike_fatal("Out of memory\n");
     long totalrecvd=0, recvdbstats=0;
     int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
-    int alltext, isutf8=0;
+    int alltext, forcetext, isutf8=0;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
     struct object*portal,*pgsqlsess;
@@ -330,6 +330,10 @@ outofmem: Pike_fatal("Out of memory\n");
 
     ref_push_object(portal); ref_push_string(MK_STRING("_alltext"));
     f_arrow(2); alltext=Pike_sp[-1].u.integer;
+    pop_stack();
+
+    ref_push_object(portal); ref_push_string(MK_STRING("_forcetext"));
+    f_arrow(2); forcetext=Pike_sp[-1].u.integer;
     pop_stack();
 
     ref_push_object(portal); ref_push_string(MK_STRING("_buffer"));
@@ -369,17 +373,18 @@ outofmem: Pike_fatal("Out of memory\n");
       for(i=0; i<cols; i++)
       { int collen=low_getint32();
 	if(collen>0)
-	{ struct svalue drd,*svp;
+	{ struct svalue drd;
+	  int typ;
 	  msglen-=collen;
 	  array_index_no_free(&drd,datarowdesc,i);
-	  svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
+	  typ = low_mapping_string_lookup(drd.u.mapping,
+	   MK_STRING("type"))->u.integer;
 	  free_svalue(&drd);
-	  switch(svp->u.integer)
-	  {
-#if SIZEOF_FLOAT_TYPE>=8
+	  switch(typ)
+	  { case FLOAT4OID:
+#if SIZEOF_FLOAT>=8
 	    case FLOAT8OID:
 #endif
-	    case FLOAT4OID:
 	      if(!alltext)
 	      { char*tb=xalloc(collen+1);
 		char*p=tb;
@@ -399,6 +404,24 @@ outofmem: Pike_fatal("Out of memory\n");
 	    default:
 	      push_string(low_getstring(collen));
 	      break;
+	    case BOOLOID:
+	    { int val=low_getbyte();
+	      switch(val)
+	      { case 'f':val=0;
+		  break;
+	        case 't':val=1;
+	      }
+	      if(alltext)
+	      { struct pike_string*s;
+	        s = MK_STRING("f");
+	        if(val)
+	          s = MK_STRING("t");
+	        ref_push_string(s);
+	      }
+	      else
+	        push_int(val);
+	      break;
+	    }
 	    case TEXTOID:
 	    case BPCHAROID:
 	    case VARCHAROID:
@@ -406,60 +429,61 @@ outofmem: Pike_fatal("Out of memory\n");
 	      if(isutf8)
 		f_utf8_to_string(1);
 	      break;
-	    case BOOLOID:
-	    { int val=low_getbyte();
-	      if(alltext)
-	      { struct pike_string*s;
-		s = MK_STRING("f");
-		if(val)
-		  s = MK_STRING("t");
-		ref_push_string(s);
+	    case INT8OID:
+	    case INT2OID:
+	    case OIDOID:
+	    case INT4OID:
+	      if(forcetext)
+	      { push_string(low_getstring(collen));
+	        if(!alltext)
+	          o_cast_to_int();
 	      }
 	      else
-		push_int(val);
-	      break;
-	    }
-	    case INT2OID:push_int(low_getint16());
-	      break;
-	    case INT8OID:
-	    { LONGEST firstword = low_getint32();
+	      { switch(typ)
+	        { case INT2OID:push_int(low_getint16());
+	            break;
+	          case INT8OID:
+	          { LONGEST firstword = low_getint32();
 #if SIZEOF_LONGEST>=8
-	      push_longest((firstword<<32)|(low_getint32()&0xffffffffU));
-#else
-	      int nextword = low_getint32();
-	      switch(firstword)
-	      { default:
-		  push_int(firstword);push_int(32);f_lsh(2);
-		  if(nextword>=0)
-		    goto nextor;
-		  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-		  f_or(2);
-		  goto tor;
-		case -1:
-		  if(nextword<0)
-		    goto simple;
-		  push_int(firstword);push_int(32);f_lsh(2);
-		  goto nextor;
-		case 0:
-		  if(nextword<0)
-		  { push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-tor:		    if(nextword&1)
-		    { nextword=1;
-nextor:		      push_int(nextword);
-		      f_or(2);
-		    }
-		  }
-		  else
-simple:		    push_int(nextword);
+	            push_longest((firstword<<32)|(low_getint32()&0xffffffffU));
+#else             
+	            int nextword = low_getint32();
+	            switch(firstword)
+	            { default:
+	                push_int(firstword);push_int(32);f_lsh(2);
+	                if(nextword>=0)
+	                  goto nextor;
+	                push_int((nextword>>1)&0x7fffffff); push_int(1);
+			f_lsh(2); f_or(2);
+	                goto tor;
+	              case -1:
+	                if(nextword<0)
+	                  goto simple;
+	                push_int(firstword);push_int(32);f_lsh(2);
+	                goto nextor;
+	              case 0:
+	                if(nextword<0)
+	                { push_int((nextword>>1)&0x7fffffff); push_int(1);
+			  f_lsh(2);
+tor:	                  if(nextword&1)
+	                  { nextword=1;
+nextor:	                    push_int(nextword);
+	                    f_or(2);
+	                  }
+	                }
+	                else
+simple:	                  push_int(nextword);
+	            }
+#endif            
+	            break;
+	          }
+	          case OIDOID:
+	          case INT4OID:push_int(low_getint32());
+	        }
+	        if(alltext)
+	          o_cast_to_string();
 	      }
-#endif
-	      break;
-	    }
-	    case OIDOID:
-	    case INT4OID:push_int(low_getint32());
 	  }
-	  if(alltext && Pike_sp[-1].type != PIKE_T_STRING)
-	    o_cast_to_string();
 	}
 	else if(!collen)
 	  push_empty_string();

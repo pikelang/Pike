@@ -74,7 +74,6 @@ private mapping(string:mixed) options;
 private array(string) lastmessage=({});
 private int clearmessage;
 private int earlyclose;
-private int reconnectp;
 private mapping(string:array(mixed)) notifylist=([]);
 mapping(string:string) _runtimeparameter;
 state _mstate;
@@ -190,6 +189,11 @@ protected string _sprintf(int type, void|mapping flags)
 //!   @member int "force_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will abort
+//!   @member int "text_query"
+//!	Send queries to and retrieve results from the database using text
+//!     instead of the, generally more efficient, default native binary method.
+//!     Turning this on will allow multiple statements per query separated
+//!     by semicolons
 //!   @member int "cache_autoprepared_statements"
 //!	If set to zero, it disables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
@@ -764,7 +768,8 @@ final int _decodemsg(void|state waitforstate)
 	  { int len=_c.getint16();
 	    res->length=len>=0?len:"variable";
 	  }
-	  res->atttypmod=_c.getint32();res->formatcode=_c.getint16();
+	  res->atttypmod=_c.getint32();
+	  res->formatcode=_c.getint16();	// Currently broken in Postgres
 	  a[i]=res;
 	}
 #ifdef DEBUGMORE
@@ -798,16 +803,37 @@ final int _decodemsg(void|state waitforstate)
 	  datarowdesc=_c.portal->_datarowdesc;
 	  int cols=_c.getint16();
 	  int atext = _c.portal->_alltext;	  // cache locally for speed
+	  int forcetext = _c.portal->_forcetext;  // cache locally for speed
 	  string cenc=_runtimeparameter[CLIENT_ENCODING];
 	  a=allocate(cols,UNDEFINED);
 	  msglen-=2+4*cols;
-	  foreach(a;int i;)
+	  foreach(datarowdesc;int i;mapping m)
 	  { int collen=_c.getint32();
 	    if(collen>0)
 	    { msglen-=collen;
 	      mixed value;
-	      switch(datarowdesc[i]->type)
-	      { default:value=_c.getstring(collen);
+	      switch(int typ=m->type)
+	      { case FLOAT4OID:
+#if SIZEOF_FLOAT>=8
+	        case FLOAT8OID:
+#endif
+		  if(!atext)
+		  { value=(float)_c.getstring(collen);
+		    break;
+		  }
+	        default:value=_c.getstring(collen);
+		  break;
+		case CHAROID:
+		  value=atext?_c.getstring(1):_c.getbyte();
+		  break;
+		case BOOLOID:value=_c.getbyte();
+	          switch(value)
+		  { case 'f':value=0;
+		      break;
+		    case 't':value=1;
+		  }
+		  if(atext)
+		    value=value?"t":"f";
 		  break;
 		case TEXTOID:
 		case BPCHAROID:
@@ -816,29 +842,26 @@ final int _decodemsg(void|state waitforstate)
 		  if(cenc==UTF8CHARSET && catch(value=utf8_to_string(value)))
 		    ERROR("%O contains non-%s characters\n",value,UTF8CHARSET);
 		  break;
-		case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
-		  break;
-		case BOOLOID:value=_c.getbyte();
-		  if(atext)
-		    value=value?"t":"f";
-		  break;
-		case INT8OID:value=_c.getint64();
-		  break;
-#if SIZEOF_FLOAT>=8
-		case FLOAT8OID:
-#endif
-		case FLOAT4OID:
-		  value=_c.getstring(collen);
-		  if(!atext)
-		    value=(float)value;
-		  break;
-		case INT2OID:value=_c.getint16();
-		  break;
-		case OIDOID:
-		case INT4OID:value=_c.getint32();
+	        case INT8OID:case INT2OID:
+		case OIDOID:case INT4OID:
+		  if(forcetext)
+		  { value=_c.getstring(collen);
+		    if(!atext)
+		      value=(int)value;
+		  }
+		  else
+		  { switch(typ)
+		    { case INT8OID:value=_c.getint64();
+		        break;
+		      case INT2OID:value=_c.getint16();
+			break;
+		      case OIDOID:
+		      case INT4OID:value=_c.getint32();
+		    }
+	            if(atext)
+		      value=(string)value;
+		  }
 	      }
-	      if(atext&&!stringp(value))
-		value=(string)value;
 	      a[i]=value;
 	    }
 	    else if(!collen)
@@ -1054,7 +1077,7 @@ private int reconnect(void|int force)
     _c=0;
     foreach(prepareds;;mapping tp)
       m_delete(tp,"preparedname");
-    if(!reconnectp || !(connectmtxkey = _stealmutex.trylock(2)))
+    if(!options->reconnect || !(connectmtxkey = _stealmutex.trylock(2)))
       return 0;				    // Recursive reconnect, bailing out
   }
   if(!(_c=getsocket()))
@@ -1075,10 +1098,10 @@ private int reconnect(void|int force)
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
-  if(intp(options->reconnect))
-    reconnectp=options->reconnect;
+  options->reconnect=zero_type(options->reconnect) || options->reconnect;
   foreach(options
-    -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect">);
+    -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
+       "text_query">);
    string name;mixed value)
     plugbuf+=({name,"\0",(string)value,"\0"});
   plugbuf+=({"\0"});
@@ -1601,6 +1624,10 @@ final private array(string) closestatement(mapping tp)
 //! @mapping
 //!  @member int ":_cache"
 //!   Forces caching on or off for the query at hand.
+//!  @member int ":_text"
+//!   Forces text mode in communication with the database for queries on or off
+//!   for the query at hand.  Potentially more efficient than the default
+//!   binary method for simple queries with small or no result sets.
 //! @endmapping
 //!
 //! @returns
@@ -1620,10 +1647,13 @@ final private array(string) closestatement(mapping tp)
 //! database backends.
 //!
 //! @note
-//! This function does not support multiple queries in one querystring.
+//! This function, by default, does not support multiple queries in one
+//! querystring.
 //! I.e. it allows for but does not require a trailing semicolon, but it
 //! simply ignores any commands after the first unquoted semicolon.  This can
 //! be viewed as a limited protection against SQL-injection attacks.
+//! To make it support multiple queries in one querystring, use the
+//! @ref{:_text@} option. 
 //!
 //! @seealso
 //!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
@@ -1633,6 +1663,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 { string preparedname="";
   string portalname="";
   int forcecache=-1;
+  int forcetext=options->text_query;
   string cenc=_runtimeparameter[CLIENT_ENCODING];
   switch(cenc)
   { case UTF8CHARSET:
@@ -1656,6 +1687,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	if(name[1]=='_')	       // Special option parameter
 	{ switch(name)
 	  { case ":_cache":forcecache=(int)value;
+	      break;
+	    case ":_text":forcetext=(int)value;
 	      break;
 	  }
 	  continue;
@@ -1686,7 +1719,13 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
   int tstart;
-  if(forcecache==1
+  if(forcetext)
+  { if(bindings)
+      q = .sql_util.emulate_bindings(q, bindings, this);
+    if(unnamedportalinuse)
+      throw("Unnamed portal in use, needed for simple query");
+  }
+  else if(forcecache==1
    || forcecache!=0 && (sizeof(q)>=MINPREPARELENGTH || cachealways[q]))
   { array(string) plugbuf=({});
     if(tp=prepareds[q])
@@ -1731,8 +1770,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     tp=UNDEFINED;
   connectionclosed=0;
   for(;;)
-  { .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped,
-     from);
+  { .pgsql_util.pgsql_result(this,q,_fetchlimit,
+     portalbuffersize,_alltyped,from,forcetext);
     if(unnamedportalinuse)
       portalname=PORTALPREFIX+(string)pportalcount++;
     else
@@ -1743,202 +1782,208 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     clearmessage=1;
     mixed err;
     if(!(err = catch
-    { if(!sizeof(preparedname) || !tp || !tp->preparedname)
-      { PD("Parse statement %s\n",preparedname);
-	// Even though the protocol doesn't require the Parse command to be
-	// followed by a flush, it makes a VERY noticeable difference in
-	// performance if it is omitted; seems like a flaw in the PostgreSQL
-	// server v8.3.3
-	_c.sendcmd(({"P",_c.plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
-	 preparedname,"\0",q,"\0",_c.plugint16(0)}),3);
-	PD("Query: %O\n",q);
-      }			 // sends Parameter- and RowDescription for 'S'
-      if(!tp || !tp->datatypeoid)
-      { PD("Describe statement %s\n",preparedname);
-	_c.sendcmd(({"D",_c.plugint32(4+1+sizeof(preparedname)+1),
-	 "S",preparedname,"\0"}),1);
+    { if(forcetext)
+      { _c.sendcmd(({"Q",_c.plugint32(4+sizeof(q)+1),q,"\0"}),1);
+        PD("Simple query: %O\n",q);
       }
       else
-      { skippeddescribe++;
-	_c.portal->_datatypeoid=tp->datatypeoid;
-	_c.portal->_datarowdesc=tp->datarowdesc;
-      }
-      { array(string) plugbuf=({"B",UNDEFINED});
-	int len=4+sizeof(portalname)+1+sizeof(preparedname)+1
-	 +2+sizeof(paramValues)*(2+4)+2+2;
-	plugbuf+=({portalname,"\0",preparedname,"\0",
-	 _c.plugint16(sizeof(paramValues))});
-	if(!tp || !tp->datatypeoid)
-	{ _decodemsg(gotparameterdescription);
-	  if(tp)
-	    tp->datatypeoid=_c.portal->_datatypeoid;
-	}
-	array dtoid=_c.portal->_datatypeoid;
-	if(sizeof(dtoid)!=sizeof(paramValues))
-	  USERERROR(
-	   sprintf("Invalid number of bindings, expected %d, got %d\n",
-	    sizeof(dtoid),sizeof(paramValues)));
-	foreach(dtoid;;int textbin)
-	  plugbuf+=({_c.plugint16(oidformat(textbin))});
-	plugbuf+=({_c.plugint16(sizeof(paramValues))});
-	foreach(paramValues;int i;mixed value)
-	{ if(zero_type(value))
-	    plugbuf+=({_c.plugint32(-1)});				// NULL
-	  else if(stringp(value) && !sizeof(value))
-	  { int k=0;
-	    switch(dtoid[i])
-	    { default:
-		k=-1;	     // cast empty strings to NULL for non-string types
-	      case BYTEAOID:
-	      case TEXTOID:
-	      case XMLOID:
-	      case BPCHAROID:
-	      case VARCHAROID:;
-	    }
-	    plugbuf+=({_c.plugint32(k)});
-	  }
-	  else
-	    switch(dtoid[i])
-	    { case TEXTOID:
-	      case BPCHAROID:
-	      case VARCHAROID:
-	      { if(!value)
-		{ plugbuf+=({_c.plugint32(-1)});
-		  break;
-		}
-		value=(string)value;
-		switch(cenc)
-		{ case UTF8CHARSET:
-		    value=string_to_utf8(value);
-		    break;
-		  default:
-		    if(String.width(value)>8)
-		      ERROR("Don't know how to convert %O to %s encoding\n",
-		       value,cenc);
-		}
-		int k;
-		len+=k=sizeof(value);
-		plugbuf+=({_c.plugint32(k),value});
-		break;
-	      }
-	      default:
-	      { int k;
-		if(!value)
-		{ plugbuf+=({_c.plugint32(-1)});
-		  break;
-		}
-		value=(string)value;
-		if(String.width(value)>8)
-	          if(dtoid[i]==BYTEAOID)
-		    value=string_to_utf8(value);
-		  else
-		    ERROR("Wide string %O not supported for type OID %d\n",
-		     value,dtoid[i]);
-		len+=k=sizeof(value);
-		plugbuf+=({_c.plugint32(k),value});
-		break;
-	      }
-	      case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
-		do
-		{ int tval;
-		  if(stringp(value))
-		    tval=value[0];
-		  else if(!intp(value))
-		  { value=!!value;			// cast to boolean
-		    break;
-		  }
-		  else
-		     tval=value;
-		  switch(tval)
-		  { case 'o':case 'O':
-		      catch
-		      { tval=value[1];
-			value=tval=='n'||tval=='N';
-		      };
-		      break;
-		    default:
-		      value=1;
-		      break;
-		    case 0:case 'f':case 'F':case 'n':case 'N':
-		      value=0;
-		      break;
-		  }
-		}
-		while(0);
-		plugbuf+=({_c.plugbyte(value)});
-		break;
-	      case CHAROID:
-		if(intp(value))
-		  len++,plugbuf+=({_c.plugint32(1),_c.plugbyte(value)});
-		else
-		{ value=(string)value;
-		  switch(sizeof(value))
-		  { default:
-		      ERROR("\"char\" types must be 1 byte wide, got %O\n",
-		       value);
-		    case 0:
-		      plugbuf+=({_c.plugint32(-1)});		// NULL
-		      break;
-		    case 1:len++;
-		      plugbuf+=({_c.plugint32(1),_c.plugbyte(value[0])});
-		  }
-		}
-		break;
-	      case INT8OID:len+=8;
-		plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
-		break;
-	      case OIDOID:
-	      case INT4OID:len+=4;
-		plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
-		break;
-	      case INT2OID:len+=2;
-		plugbuf+=({_c.plugint32(2),_c.plugint16((int)value)});
-		break;
-	    }
-	}
-	if(!tp || !tp->datarowdesc)
-	{ if(tp && dontcacheprefix->match(q))	      // Don't cache FETCH/COPY
-	    m_delete(prepareds,q),tp=0;
-	  _decodemsg(gotrowdescription);
-	  if(tp)
-	    tp->datarowdesc=_c.portal->_datarowdesc;
-	}
-	{ array a;int i;
-	  len+=(i=sizeof(a=_c.portal->_datarowdesc))*2;
-	  plugbuf+=({_c.plugint16(i)});
-	  foreach(a;;mapping col)
-	    plugbuf+=({_c.plugint16(oidformat(col->type))});
-	}
-	plugbuf[1]=_c.plugint32(len);
-	PD("Bind portal %s statement %s\n",portalname,preparedname);
-	_c.sendcmd(plugbuf);
-#ifdef DEBUGMORE
-	PD("%O\n",plugbuf);
+      { if(!sizeof(preparedname) || !tp || !tp->preparedname)
+        { PD("Parse statement %s\n",preparedname);
+          // Even though the protocol doesn't require the Parse command to be
+          // followed by a flush, it makes a VERY noticeable difference in
+          // performance if it is omitted; seems like a flaw in the PostgreSQL
+          // server v8.3.3
+          _c.sendcmd(({"P",_c.plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
+           preparedname,"\0",q,"\0",_c.plugint16(0)}),3);
+          PD("Query: %O\n",q);
+        }			 // sends Parameter- and RowDescription for 'S'
+        if(!tp || !tp->datatypeoid)
+        { PD("Describe statement %s\n",preparedname);
+          _c.sendcmd(({"D",_c.plugint32(4+1+sizeof(preparedname)+1),
+           "S",preparedname,"\0"}),1);
+        }
+        else
+        { skippeddescribe++;
+          _c.portal->_datatypeoid=tp->datatypeoid;
+          _c.portal->_datarowdesc=tp->datarowdesc;
+        }
+        { array(string) plugbuf=({"B",UNDEFINED});
+          int len=4+sizeof(portalname)+1+sizeof(preparedname)+1
+           +2+sizeof(paramValues)*(2+4)+2+2;
+          plugbuf+=({portalname,"\0",preparedname,"\0",
+           _c.plugint16(sizeof(paramValues))});
+          if(!tp || !tp->datatypeoid)
+          { _decodemsg(gotparameterdescription);
+            if(tp)
+              tp->datatypeoid=_c.portal->_datatypeoid;
+          }
+          array dtoid=_c.portal->_datatypeoid;
+          if(sizeof(dtoid)!=sizeof(paramValues))
+            USERERROR(
+             sprintf("Invalid number of bindings, expected %d, got %d\n",
+              sizeof(dtoid),sizeof(paramValues)));
+          foreach(dtoid;;int textbin)
+            plugbuf+=({_c.plugint16(oidformat(textbin))});
+          plugbuf+=({_c.plugint16(sizeof(paramValues))});
+          foreach(paramValues;int i;mixed value)
+          { if(zero_type(value))
+              plugbuf+=({_c.plugint32(-1)});				// NULL
+            else if(stringp(value) && !sizeof(value))
+            { int k=0;
+              switch(dtoid[i])
+              { default:
+          	k=-1;	     // cast empty strings to NULL for non-string types
+                case BYTEAOID:
+                case TEXTOID:
+                case XMLOID:
+                case BPCHAROID:
+                case VARCHAROID:;
+              }
+              plugbuf+=({_c.plugint32(k)});
+            }
+            else
+              switch(dtoid[i])
+              { case TEXTOID:
+                case BPCHAROID:
+                case VARCHAROID:
+                { if(!value)
+          	  { plugbuf+=({_c.plugint32(-1)});
+          	    break;
+          	  }
+          	  value=(string)value;
+          	  switch(cenc)
+          	  { case UTF8CHARSET:
+          	      value=string_to_utf8(value);
+          	      break;
+          	    default:
+          	      if(String.width(value)>8)
+          	        ERROR("Don't know how to convert %O to %s encoding\n",
+          	         value,cenc);
+          	  }
+          	  int k;
+          	  len+=k=sizeof(value);
+          	  plugbuf+=({_c.plugint32(k),value});
+          	  break;
+                }
+                default:
+                { int k;
+          	  if(!value)
+          	  { plugbuf+=({_c.plugint32(-1)});
+          	    break;
+          	  }
+          	  value=(string)value;
+          	  if(String.width(value)>8)
+                    if(dtoid[i]==BYTEAOID)
+          	      value=string_to_utf8(value);
+          	    else
+          	      ERROR("Wide string %O not supported for type OID %d\n",
+          	       value,dtoid[i]);
+          	  len+=k=sizeof(value);
+          	  plugbuf+=({_c.plugint32(k),value});
+          	  break;
+                }
+                case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
+          	do
+          	{ int tval;
+          	  if(stringp(value))
+          	    tval=value[0];
+          	  else if(!intp(value))
+          	  { value=!!value;			// cast to boolean
+          	    break;
+          	  }
+          	  else
+          	     tval=value;
+          	  switch(tval)
+          	  { case 'o':case 'O':
+          	      catch
+          	      { tval=value[1];
+          		value=tval=='n'||tval=='N';
+          	      };
+          	      break;
+          	    default:
+          	      value=1;
+          	      break;
+          	    case 0:case 'f':case 'F':case 'n':case 'N':
+          	      value=0;
+          	      break;
+          	  }
+          	}
+          	while(0);
+          	plugbuf+=({_c.plugbyte(value)});
+          	break;
+                case CHAROID:
+          	if(intp(value))
+          	  len++,plugbuf+=({_c.plugint32(1),_c.plugbyte(value)});
+          	else
+          	{ value=(string)value;
+          	  switch(sizeof(value))
+          	  { default:
+          	      ERROR("\"char\" types must be 1 byte wide, got %O\n",
+          	       value);
+          	    case 0:
+          	      plugbuf+=({_c.plugint32(-1)});		// NULL
+          	      break;
+          	    case 1:len++;
+          	      plugbuf+=({_c.plugint32(1),_c.plugbyte(value[0])});
+          	  }
+          	}
+          	break;
+                case INT8OID:len+=8;
+          	  plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
+          	  break;
+                case OIDOID:
+                case INT4OID:len+=4;
+          	  plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
+          	  break;
+                case INT2OID:len+=2;
+          	  plugbuf+=({_c.plugint32(2),_c.plugint16((int)value)});
+          	  break;
+              }
+          }
+          if(!tp || !tp->datarowdesc)
+          { if(tp && dontcacheprefix->match(q))	      // Don't cache FETCH/COPY
+              m_delete(prepareds,q),tp=0;
+            _decodemsg(gotrowdescription);
+            if(tp)
+              tp->datarowdesc=_c.portal->_datarowdesc;
+          }
+          { array a;int i;
+            len+=(i=sizeof(a=_c.portal->_datarowdesc))*2;
+            plugbuf+=({_c.plugint16(i)});
+            foreach(a;;mapping col)
+              plugbuf+=({_c.plugint16(oidformat(col->type))});
+          }
+          plugbuf[1]=_c.plugint32(len);
+          PD("Bind portal %s statement %s\n",portalname,preparedname);
+          _c.sendcmd(plugbuf);
+#ifdef   DEBUGMORE
+          PD("%O\n",plugbuf);
 #endif
-      }
-      _c.portal->_statuscmdcomplete=UNDEFINED;
-      _sendexecute(_fetchlimit
-       && !(cachealways[q]
-	|| sizeof(q)>=MINPREPARELENGTH && execfetchlimit->match(q))
-       && FETCHLIMITLONGRUN);
-      if(tp)
-      { _decodemsg(bindcomplete);
-	int tend=gethrtime();
-	if(tend==tstart)
-	  m_delete(prepareds,q);
-	else
-	{ tp->hits++;
-	  totalhits++;
-	  if(!tp->preparedname)
-	  { if(sizeof(preparedname))
-	      tp->preparedname=preparedname;
-	    tstart=tend-tstart;
-	    if(!tp->tparse || tp->tparse>tstart)
-	      tp->tparse=tstart;
-	  }
-	  tp->trunstart=tend;
-	}
-	tprepared=tp;
+        }
+        _c.portal->_statuscmdcomplete=UNDEFINED;
+        _sendexecute(_fetchlimit
+         && !(cachealways[q]
+          || sizeof(q)>=MINPREPARELENGTH && execfetchlimit->match(q))
+         && FETCHLIMITLONGRUN);
+        if(tp)
+        { _decodemsg(bindcomplete);
+          int tend=gethrtime();
+          if(tend==tstart)
+            m_delete(prepareds,q);
+          else
+          { tp->hits++;
+            totalhits++;
+            if(!tp->preparedname)
+            { if(sizeof(preparedname))
+                tp->preparedname=preparedname;
+              tstart=tend-tstart;
+              if(!tp->tparse || tp->tparse>tstart)
+                tp->tparse=tstart;
+            }
+            tp->trunstart=tend;
+          }
+          tprepared=tp;
+        }
       }
     }))
       break;
