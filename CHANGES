@@ -5,6 +5,9 @@ Extensions and New Functions
 ----------------------------
 
 o Added module ZXID
+  This module provides an interface to the ZXID Identity Management 
+  toolkit, which implements (among other tasks) the SAML 2.0, Liberty 
+  ID-WSF 2.0, and XACML 2.0 protocols.
 
 o Added module Search.
 
@@ -60,7 +63,7 @@ o Protocols.HTTP
 
   Server adds Basic Range support.
 
-o  Regexp.PCRE.replace() adds support for capture groups.
+o Regexp.PCRE.replace() adds support for capture groups.
 
 o Updated timezone data to tzdata2010o.
 
