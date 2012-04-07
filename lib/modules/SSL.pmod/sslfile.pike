@@ -2264,6 +2264,12 @@ protected int ssl_close_callback (int called_from_real_backend)
   return -1;
 }
 
+//! The next protocol chosen by the client during next protocol
+//! negotiation.
+string `->next_protocol() {
+    return conn->next_protocol;
+}
+
 #else // constant(SSL.Cipher.CipherAlgorithm)
 constant this_program_does_not_exist = 1;
 #endif

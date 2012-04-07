@@ -459,6 +459,7 @@ constant HANDSHAKE_finished		= 20;
 constant HANDSHAKE_cerificate_url       = 21;
 constant HANDSHAKE_certificate_status   = 22;
 constant HANDSHAKE_supplemental_data    = 23;
+constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
 
 constant AUTHLEVEL_none		= 1;
 constant AUTHLEVEL_ask		= 2;
@@ -486,3 +487,4 @@ constant EXTENSION_client_authz			= 7;		// RFC 5878.
 constant EXTENSION_server_authz			= 8;		// RFC 5878.
 constant EXTENSION_signature_algorithms		= 13;		// RFC 5246.
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746.
+constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
