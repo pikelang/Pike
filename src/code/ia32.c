@@ -18,7 +18,8 @@
 #undef REG_NONE
 #endif
 
-enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4};
+enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4,
+	       REG_ESP = 4, REG_EBP = 5, REG_ESI = 6, REG_EDI = 7, };
 
 #define REG_BITMASK ((1 << REG_NONE) - 1)
 
@@ -78,6 +79,13 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
     PUSH_ADDR (&(ADDR));						\
   } while (0)
+
+#define MOV_REG_TO_REG(FROM, TO) do {				\
+    CHECK_VALID_REG(FROM);					\
+    MAKE_VALID_REG(TO);						\
+    add_to_program (0x89);	/* Move r32 to r/m32. */	\
+    add_to_program (0xc0 | ((FROM)<<3) | (TO));			\
+  } while(0)
 
 #define MOV_REG_TO_ABSADDR(REG, ADDR) do {				\
     CHECK_VALID_REG (REG);						\
@@ -205,6 +213,37 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
   } while (0)
 
+#define MOV_RELSTACK_TO_REG(OFFSET, REG) do {				\
+    INT32 off_ = (OFFSET);						\
+    MAKE_VALID_REG (REG);						\
+    /* movl offset(%esp), %reg */					\
+    add_to_program (0x8b); /* Move r/m32 to r32. */			\
+    if (off_ < -128 || off_ > 127) {					\
+      add_to_program (0x84 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      PUSH_INT (off_);							\
+    }									\
+    else if (off_) {							\
+      add_to_program (0x44 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      add_to_program (off_);						\
+    }									\
+    else {								\
+      add_to_program (0x04 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+    }									\
+  } while (0)
+
+#define PUSH_REG(REG) do {			\
+    CHECK_VALID_REG (REG);			\
+    add_to_program (0x50 + (REG));		\
+  } while (0)
+
+#define POP_REG(REG) do {			\
+    MAKE_VALID_REG (REG);			\
+    add_to_program (0x58 + (REG));		\
+  } while (0)
+
 #define ADD_VAL_TO_REG(VAL, REG) do {					\
     INT32 val_ = (VAL);							\
     CHECK_VALID_REG (REG);						\
@@ -299,6 +338,45 @@ static int alloc_regs = 0, valid_regs = 0;
 	PUSH_INT (val_);						\
     }									\
   } while (0)
+
+#define CMP_REG_IMM32(REG, IMM) do {		\
+    if ((REG) == REG_EAX) {			\
+      add_to_program(0x3d);			\
+    } else {					\
+      add_to_program(0x81);			\
+      add_to_program(0xf8 | (REG));		\
+    }						\
+    PUSH_INT((IMM));				\
+  } while (0)
+
+#define CMP_REG_REG(REG1, REG2) do {			\
+    add_to_program(0x39);				\
+    add_to_program(0xc0 | ((REG1)<<3) | (REG2));	\
+  } while (0)
+
+#define JNE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x75);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define JE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x74);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define RET() do {					\
+    add_to_program(0xc3);				\
+  } while (0);
 
 #define CALL_RELATIVE(X) do{						\
   struct program *p_=Pike_compiler->new_program;			\
