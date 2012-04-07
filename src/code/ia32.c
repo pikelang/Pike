@@ -390,6 +390,36 @@ static int alloc_regs = 0, valid_regs = 0;
     ((INT32)(X)) - (INT32)(p_->program + p_->num_program);              \
 }while(0)
 
+#ifdef INS_ENTRY
+void ia32_ins_entry(void)
+{
+#ifdef REGISTER_DEBUG
+  /* All registers are valid here... */
+  valid_regs = 0xff;
+#endif
+  /* Push all registers that the ABI requires to be preserved.
+   *
+   * cf Sys V ABI Intel386 Architecture Supplement 4th ed 3-11:
+   *   "Registers %ebp, %ebx, %edi, %esi, and %esp ``belong'' to the cal-
+   *    ling function."
+   *
+   * also cf Fig 3-16.
+   */
+  PUSH_REG(REG_EBP);
+  MOV_REG_TO_REG(REG_ESP, REG_EBP);
+  /* FIXME: Add local storage here if needed. */
+  PUSH_REG(REG_EDI);
+  PUSH_REG(REG_ESI);
+  PUSH_REG(REG_EBX);
+  /* Funcall arguments (4 * 4 bytes). */
+  ADD_VAL_TO_REG(-0x10, REG_ESP);
+
+#ifdef REGISTER_DEBUG
+  valid_regs = 0;
+#endif
+}
+#endif
+
 static void update_arg1(INT32 value)
 {
   MOV_VAL_TO_RELSTACK (value, 0);
@@ -793,6 +823,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
 void ins_f_byte(unsigned int b)
 {
   void *addr;
+  INT32 rel_addr = 0;
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
@@ -859,16 +890,84 @@ void ins_f_byte(unsigned int b)
 	addr = (void *)f_get_iterator;
       }
       break;
+
+#ifdef OPCODE_INLINE_RETURN
+  case F_CATCH - F_OFFSET:
+    {
+      /* Special argument for the F_CATCH instruction. */
+      addr = inter_return_opcode_F_CATCH;
+      /* FIXME: Is there really no easier way to get at EIP? */
+      add_to_program(0xe8);
+      PUSH_INT(0);
+      POP_REG(REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, REG_EAX);
+      rel_addr = PIKE_PC;
+      MOV_REG_TO_RELSTACK(REG_EAX, 0);
+    }
+    break;
+#endif
   }
 #endif /* !DEBUG_MALLOC */
 
   ia32_call_c_function(addr);
+
+#ifdef INS_ENTRY
+  if (instrs[b].flags & I_RETURN) {
+    INT32 skip;
+#ifdef REGISTER_DEBUG
+    INT32 orig_valid_regs = valid_regs;
+    valid_regs = 0xff;
+#endif
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      /* There's no easy way to get at EIP directly,
+       * so we assume that the function we called
+       * above exited with a RET, in which case EIP
+       * is at ESP[-4]...
+       */
+      MOV_RELSTACK_TO_REG(-4, REG_ESI);
+      ADD_VAL_TO_REG(JUMP_EPILOGUE_SIZE, REG_ESI);
+    }
+    CMP_REG_IMM32(REG_EAX, -1);
+    JNE(0);
+    skip = (INT32)PIKE_PC;
+    ADD_VAL_TO_REG(0x10, REG_ESP);	/* Funcall arguments (4 * 4 bytes). */
+    POP_REG(REG_EBX);
+    POP_REG(REG_ESI);
+    POP_REG(REG_EDI);
+    POP_REG(REG_EBP);
+    RET();
+    Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      CMP_REG_REG(REG_EAX, REG_ESI);
+      JE(0x02);
+      add_to_program (0xff);	/* jmp *%eax */
+      add_to_program (0xe0);
+#ifdef REGISTER_DEBUG
+      valid_regs = orig_valid_regs;
+#endif
+      return;
+    }
+#ifdef REGISTER_DEBUG
+    valid_regs = orig_valid_regs;
+#endif
+  }
+#endif
 
 #ifdef OPCODE_RETURN_JUMPADDR
   if (instrs[b].flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     add_to_program (0xff);	/* jmp *%eax */
     add_to_program (0xe0);
+
+#ifdef OPCODE_INLINE_RETURN
+    if (b + F_OFFSET == F_CATCH) {
+      upd_pointer(rel_addr - 4, PIKE_PC + 6 - rel_addr);
+    }
+#endif
   }
 #endif
 }
@@ -1204,4 +1303,8 @@ void ia32_init_interpreter_state(void)
       ia32_clflush_size = cpu_info.clflush_size * 8;
     }
   }
+
+#ifdef OPCODE_INLINE_RETURN
+  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+#endif
 }
