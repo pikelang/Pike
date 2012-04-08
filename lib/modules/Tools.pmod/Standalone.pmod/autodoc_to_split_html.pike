@@ -1133,6 +1133,16 @@ int low_main(string doc_file, string template_file, string outdir,
 
   if (flags & Tools.AutoDoc.FLAG_COMPAT) {
     // Fix markup bugs affecting the images path.
+
+    // These first two affect commits prior to and including 7.3.11.
+    template = replace(template,
+		       "<img src=\"images/",
+		       "<img src=\"$imagedir$");
+    template = replace(template,
+		       "<td background=\"images/",
+		       "<td background=\"$imagedir$");
+
+    // This one however affects quite a few more.
     template = replace(template,
 		       ({ "$dotdot$/images/" }),
 		       ({ "$imagedir$" }));
