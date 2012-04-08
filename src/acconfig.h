@@ -681,4 +681,7 @@ struct mallinfo dlmallinfo(void);
 
 #endif
 
+/* Define this if GJAlloc should be used. */
+#undef PIKE_NEW_BLOCK_ALLOC
+
 #endif /* MACHINE_H */
