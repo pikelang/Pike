@@ -623,6 +623,17 @@ string extract(string filename, string imgdest,
 	      break;
 	    }
 	  }
+	  if (has_suffix(filename, "/Image/colors.c") &&
+	      has_value(file, "sort(grey")) {
+	    // Special fix to force stable output
+	    // for the list of colors. (Used to be mapping-sort...)
+	    if (!has_value(file, "sort(grey->name(), grey);")) {
+	      file = replace(file, "sort(grey",
+			     "sort(grey->name(), grey);"
+			     "sort(colored->name(), colored);"
+			     "sort(grey");
+	    }
+	  }
 	}
 
 	int lineno = 1;
