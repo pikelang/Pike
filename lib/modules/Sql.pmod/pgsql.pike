@@ -276,6 +276,53 @@ string host_info()
    _c?_c.query_fd():-1,host,port,backendpid);
 }
 
+//! Returns true if the connection seems to be open.
+//!
+//! @note
+//!   This function only checks that there's an open connection,
+//!   and that the other end hasn't closed it yet. No data is
+//!   sent over the connection.
+//!
+//!   For a more reliable check of whether the connection
+//!   is alive, please use @[ping()].
+//!
+//! @seealso
+//!   @[ping()]
+int is_open()
+{ return _c&&_c.query_fd()>=0;
+}
+
+//! @decl int ping()
+//!
+//! Check whether the connection is alive.
+//!
+//! @returns
+//!   Returns one of the following:
+//!   @int
+//!     @value 0
+//!       Everything ok.
+//!     @value 1
+//!       The connection reconnected automatically.
+//!     @value -1
+//!       The server has gone away, and the connection is dead.
+//!   @endint
+//!
+//! @seealso
+//!   @[is_open()]
+int ping()
+{ int oldbackendpid=backendpid;
+  mixed err;
+  if(_c && (err = catch
+    { _c.sendflush();
+      return backendpid!=oldbackendpid;
+    }))
+  { PD("%O\n",err);
+    if(reconnect(1))
+      return 1;
+  }
+  return -1;
+}
+
 final private object getsocket(void|int nossl)
 { object lcon = Stdio.File();
   if(!lcon.connect(host,port))
@@ -1083,7 +1130,8 @@ private int reconnect(void|int force)
   if(!(_c=getsocket()))
   { string msg=sprintf("Couldn't connect to database on %s:%d",host,port);
     if(force)
-    { lastmessage+=({msg});
+    { if(!sizeof(lastmessage) || lastmessage[sizeof(lastmessage)-1]!=msg)
+        lastmessage+=({msg});
       return 0;
     }
     else
