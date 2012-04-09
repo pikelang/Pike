@@ -108,11 +108,13 @@ int PIKE_OPCODE_ALIGN;
 
 void INS_ENTRY(void)
 	Mark the entry point from eval_instruction().
-	Useful to add startup code.
+	Useful to add startup code. Note that this in turn
+	will typically require use of OPCODE_INLINE_RETURN.
 
 int ENTRY_PROLOGUE_SIZE
 	Size (in opcodes) of the prologue inserted by INS_ENTRY, which
-	should be skipped e.g. when tail recursing.
+	should be skipped e.g. when tail recursing. Required when
+	INS_ENTRY is used.
 
 void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 	Relocate the copy of 'p'->program at 'new' to be able
@@ -218,5 +220,15 @@ void CHECK_RELOC(size_t reloc, size_t program_size)
 	Check if a relocation is valid for the program.
 	Should throw an error on bad relocations.
 
-void DISASSEMBLE_CODE(void *adrr, size_t bytes)
+void DISASSEMBLE_CODE(void *addr, size_t bytes)
 	Debug function that dumps the generated code on stderr.
+
+Help structures and functions implemented in other places:
+
+struct instr instrs[];
+	Array of bytecode instruction definitions. Indexed by
+	F-opcode minus F_OFFSET. See opcodes.h for details.
+
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
+	Function to simplify implementation of F_CATCH in
+	OPCODE_INLINE_RETURN mode. See interpret.c for details.
