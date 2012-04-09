@@ -234,6 +234,7 @@ protected void create(void|string _host, void|string _database,
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
     port = PGSQL_DEFAULT_PORT;
+  _runtimeparameter=([]);
   _querymutex=Thread.Mutex();
   _stealmutex=Thread.Mutex();
   reconnect();
@@ -598,12 +599,14 @@ final private string pinpointerror(void|string query,void|string offset)
 }
 
 private void phasedreconnect()
-{ connectionclosed=1;
-  if(!reconnect(1))
-  { sleep(RECONNECTDELAY);
+{ if(!connectionclosed)
+  { connectionclosed=1;
     if(!reconnect(1))
-    { sleep(RECONNECTBACKOFF);
-      reconnect(1);
+    { sleep(RECONNECTDELAY);
+      if(!reconnect(1))
+      { sleep(RECONNECTBACKOFF);
+        reconnect(1);
+      }
     }
   }
 }
@@ -992,8 +995,7 @@ final int _decodemsg(void|state waitforstate)
 	     +({pinpointerror(_c.portal->_query,msgresponse->P)})
 	     +showbindings()));
 	  case "57P01":case "57P02":case "57P03":
-	    preplastmessage();phasedreconnect();
-            PD(a2nls(lastmessage));
+	    preplastmessage();phasedreconnect();PD(a2nls(lastmessage));
 	    USERERROR(a2nls(lastmessage));
 	  case "08P01":case "42P05":
 	    errtype=protocolerror;
@@ -1140,14 +1142,14 @@ private int reconnect(void|int force)
   _closesent=0;
   _mstate=unauthenticated;
   qstate=queryidle;
-  _runtimeparameter=([]);
+  portalsinflight=unnamedportalinuse=0;
   array(string) plugbuf=({"",_c.plugint32(PG_PROTOCOL(3,0))});
   if(user)
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
   options->reconnect=zero_type(options->reconnect) || options->reconnect;
-  foreach(options
+  foreach((options+_runtimeparameter)
     -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
        "text_query">);
    string name;mixed value)
@@ -1209,6 +1211,8 @@ void reload()
 void resync(void|int special)
 { mixed err;
   int didsync;
+  if(!is_open()&&!reconnect(1))
+    ERROR(a2nls(lastmessage));
   if(err = catch
     { sendclose(1);
       PD("Portalsinflight: %d\n",portalsinflight);
