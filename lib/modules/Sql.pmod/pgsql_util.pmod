@@ -345,7 +345,8 @@ private void releasesession()
     { PD("CopyDone\n");
       _pgsqlsess._c.sendcmd("c\0\0\0\4",1);
     }
-    _pgsqlsess.resync(2);
+    if(_pgsqlsess.is_open())
+      _pgsqlsess.resync(2);
   }
   _qmtxkey=UNDEFINED;
   _pgsqlsess=UNDEFINED;
