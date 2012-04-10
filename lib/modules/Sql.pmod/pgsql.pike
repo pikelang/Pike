@@ -1151,7 +1151,8 @@ private int reconnect(void|int force)
   options->reconnect=zero_type(options->reconnect) || options->reconnect;
   foreach((options+_runtimeparameter)
     -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
-       "text_query">);
+       "text_query","is_superuser","server_encoding","server_version",
+       "integer_datetimes">);
    string name;mixed value)
     plugbuf+=({name,"\0",(string)value,"\0"});
   plugbuf+=({"\0"});
