@@ -1681,6 +1681,8 @@ final private array(string) closestatement(mapping tp)
 //!   Forces text mode in communication with the database for queries on or off
 //!   for the query at hand.  Potentially more efficient than the default
 //!   binary method for simple queries with small or no result sets.
+//!   Note that this mode causes all but the first query result of a list
+//!   of semicolon separated statements to be discarded.
 //! @endmapping
 //!
 //! @returns
@@ -1821,9 +1823,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   }					  // pgsql_result autoassigns to portal
   else
     tp=UNDEFINED;
-  connectionclosed=0;
   for(;;)
-  { .pgsql_util.pgsql_result(this,q,_fetchlimit,
+  { connectionclosed=0;
+    .pgsql_util.pgsql_result(this,q,_fetchlimit,
      portalbuffersize,_alltyped,from,forcetext);
     if(unnamedportalinuse)
       portalname=PORTALPREFIX+(string)pportalcount++;
