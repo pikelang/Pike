@@ -101,6 +101,23 @@ o SSL
 
   Support parsing of Hello Extensions (RFC 5246 7.4.1.4).
 
+o Stdio
+
+  New methods in Stdio.File: 
+
+    set_callbacks() and query_callbacks() for handling several callbacks at once.
+    
+    send_fd() and receive_fd() allow file descriptors to be sent and received over 
+    UNIX-domain sockets.
+
+  The type for Stdio.Fd.create() is now as documented. 
+
+  Stdio.Terminfo contains a new class, MetaTerminfoDB, that merges several terminfo directories.
+
+  Stdio.File()->query_address() now knows about IPv6-mapped IPv4 addresses.
+
+  Added some extra magic to Stdio.File()->connect() when mixing IPv4 and IPv6 addresses.
+
 o ADT.Heap->values and ->num_values can now be overloaded.
 
 o Added support for binding a Protocols.DNS server to multiple port/interface 
@@ -138,6 +155,11 @@ o Added Thread.Queue.peek_array.
 
 o Add System.getloadavg() on platforms that support the getloadavg() call.
 
+o Pike.Backend has reinstated call_out memory usage, and a new function, 
+  Pike.DefaultBackend.get_stats() for viewing this data.
+
+o Locale.Charset now supports encoding and decoding UTF32.
+
 Optimizations
 -------------
 
@@ -151,6 +173,10 @@ o Nettle.hash
 
 o String.trim_all_whites is 10% faster and includes all Unicode.
 
+o Improved performance of Process.run when threads aren't supported.
+
+o Locale.Charset improves performance of encoders when replacement is active 
+  by a few magnitudes.
 
 Deprecations
 ------------
@@ -279,9 +305,43 @@ o Fixed bugs in handling of abrupt SSL3 remote close. sslfile now also triggers
 
 o Fixed issue where SSL3 async_client objects became garbage even after close().
 
+o Stdio.{write,append}_file() now throw errors in ALL failure modes.
 
-Building and installing
------------------------
+o Stdio.cp should now work on directory trees on Windows.
+
+o Stdio.File()->query_address() should return a correct errno when given a 
+  socket with an invalid protocol family.
+
+o Stdio.File()->file_peek() now refrains from releasing the interpreter lock 
+  if there's no timeout.
+
+o Fix a buffer overrun when formatting Gmp.mpz as floats if the precision 
+  exceeds the number of digits.
+
+o Parser.XML.Tree contains fixes for add_child_before() and add_child_after().
+
+o Parser.Tabular fixes support for Stdio.File objects. For example:
+
+  Pike v7.8 release 468 running Hilfe v3.5 (Incremental Pike Frontend)  
+  > Parser.Tabular(Stdio.File("data.csv"), Stdio.File("format.csv"));      
+
+o Tools.X509 uses a unique serial number for each selfsigned certificate. 
+  Firefox otherwise complains about serial number clashes.
+
+o Fixed return value from Regexp.PCRE.exec to always have entries for all 
+  submatches.
+
+o sprintf: Ensure that decimal points are used  when floats are formatted in 
+  casts etc. Previously the float formatting in casts and in sprintf("%O",...) 
+  were susceptible to locale settings and could therefore use something other 
+  than  a '.' as decimal separator. Note that sprintf("%f",...)  is still 
+  locale sensitive.
+
+o Fuse has fixed support for readlink().
+
+
+Building, installing and developer tools
+----------------------------------------
 
 o Fixed some library searchpath issues.
 
@@ -315,7 +375,18 @@ o Improved support for autoconf 2.6x.
 
 o Ensure that --with-rtldebug enables assertions.
 
-o Now attempts to set up the PKG_CONFIG_PATH.
+o Configure script now attempts to set up the PKG_CONFIG_PATH.
+
+o Updated the ABI selector for MacOS X. Default to attempting the compiler 
+  default ABI (instead of forcing 32-bit ABI).
+
+o CMOD Enhancements
+
+    Tools.Standalone.precompile supports ranges for strings and negative 
+    int(low..high) bounds.
+
+    Fixed bug in generate_overload_func_for() when there are alternatives 
+    accepting zero arguments.
 
 o Tools.Testsuite: 
   
