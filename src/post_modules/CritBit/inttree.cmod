@@ -1,37 +1,8 @@
 /* vim:syntax=c
  */
 #ifdef cmod___CMOD__
-#ifdef __SSE4_2__
-# include <smmintrin.h>
-#endif
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "array.h"
-#include "pike_error.h"
-#include "pike_float.h"
-#include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
-#include "operators.h"
-#include "builtin_functions.h"
 
-#ifdef CB_USE_BLOCK_ALLOC
-# include "tree_block_alloc.h"
-
-static blk_alloc_t allocator;
-
-# define CB_NODE_ALLOC()	alloc_item(allocator)
-# define CB_NODE_FREE(x)	free_item(allocator, (void*)(x))
-#endif
-
-#define CB_STATIC
-#define CB_INLINE
-#define CB_SOURCE
-#define CB_NAMESPACE
+#include "common.h"
 
 #include "critbit/int2svalue.h"
 #define CB_PRINT_KEY(buf, key)		do \
@@ -191,20 +162,15 @@ PIKECLASS IPv4Tree {
 /*! @endmodule */
 
 void pike_init_inttree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    allocator = init_allocator(128, sizeof(cb_node));
-#endif
     INIT
 }
 
 void pike_exit_inttree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    free(allocator);
-    allocator = NULL;
-#endif
     EXIT
 }
 #else
-void pike_init_inttree_module(void) {}
+void pike_init_inttree_module(void) {
+    add_integer_constant("this_program_does_not_exist", 1, 0);
+}
 void pike_exit_inttree_module(void) {}
 #endif
