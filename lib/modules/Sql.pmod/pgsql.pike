@@ -181,7 +181,10 @@ protected string _sprintf(int type, void|mapping flags)
 //! @mapping
 //!   @member int "reconnect"
 //!	Set it to zero to disable automatic reconnects upon losing
-//!     the connection to the database
+//!     the connection to the database.  Not setting it, or setting
+//!     it to one, will cause one timed reconnect to take place.
+//!     Setting it to -1 will cause the system to try and reconnect
+//!     indefinitely
 //!   @member int "use_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will fallback
@@ -604,8 +607,8 @@ private void phasedreconnect()
     if(!reconnect(1))
     { sleep(RECONNECTDELAY);
       if(!reconnect(1))
-      { sleep(RECONNECTBACKOFF);
-        reconnect(1);
+      { do sleep(RECONNECTBACKOFF);
+        while(!reconnect(1) && options->reconnect==-1);
       }
     }
   }
