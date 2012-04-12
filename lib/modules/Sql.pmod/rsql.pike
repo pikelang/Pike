@@ -21,6 +21,7 @@ protected int seqno = 0;
 
 protected private string host, user, pw;
 protected private int port;
+protected private mapping options;
 
 protected void low_reconnect()
 {
@@ -46,6 +47,7 @@ protected void low_reconnect()
     ERROR("Initial handshake error on "+host+(port? ":"+port:"")+"\n");
   }
   sock = losock;
+  // FIXME: Propagate options?
   if(!do_request('L', ({user,pw}), 1)) {
     sock = 0;
     if(losock)
@@ -55,12 +57,13 @@ protected void low_reconnect()
 }
 
 protected void low_connect(string the_host, int the_port, string the_user,
-			string the_pw)
+			   string the_pw, mapping the_options)
 {
   host = the_host;
   port = the_port;
   user = the_user;
   pw = the_pw;
+  options = the_options;
   low_reconnect();
 }
 
@@ -224,7 +227,8 @@ array(mapping(string:mixed)) query(mixed ... args)
   return do_request('@', args);
 }
 
-void create(string|void host, string|void db, string|void user, string|void _pw)
+void create(string|void host, string|void db, string|void user,
+	    string|void _pw, mapping|void options)
 {
   string pw = _pw;
   _pw = "CENSORED";
@@ -264,6 +268,6 @@ void create(string|void host, string|void db, string|void user, string|void _pw)
   }
   int port = 0;
   sscanf(host, "%s:%d", host, port);
-  low_connect(host, port, user, pw);
+  low_connect(host, port, user, pw, options);
   select_db(db);
 }

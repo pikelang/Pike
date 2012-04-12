@@ -332,7 +332,8 @@ PIKECLASS ResObj
    *!
    *! Open the SQLite database stored at @[path].
    */
-  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
+ PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c,
+		     mapping|void options)
     flags ID_PROTECTED;
   {
     pop_n_elems(args-1);

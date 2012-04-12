@@ -1733,7 +1733,8 @@ string error()
 //! @seealso
 //!   @[Sql.Sql()]
 protected void create(string|void server, string|void database,
-		   string|void user, string|void password)
+		      string|void user, string|void password,
+		      mapping|void options)
 {
   if (con) {
     Disconnect(1);
