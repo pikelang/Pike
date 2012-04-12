@@ -298,7 +298,8 @@ PIKECLASS ResObj
 
   /* @decl void create(string path)
    */
-  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
+ PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c,
+		     mapping|void options)
     flags ID_PROTECTED;
   {
     pop_n_elems(args-1);

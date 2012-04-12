@@ -289,7 +289,8 @@ static void f_create(INT32 args)
 
   check_all_args("odbc->create", args,
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
-		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT, 0);
+		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT,
+		 BIT_MAPPING|BIT_INT|BIT_VOID, 0);
 
 #define GET_ARG(VAR, ARG) do {					\
     if ((args > (ARG)) && (sp[(ARG)-args].type == T_STRING)) {	\

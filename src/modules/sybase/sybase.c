@@ -517,7 +517,7 @@ static void f_connect (INT32 args) {
   
 }
 
-/* create (host,database,username,password,port) */
+/* create (host,database,username,password,port|options) */
 static void f_create (INT32 args) {
   char *host,*db,*user,*pass;
   CS_RETCODE ret;
@@ -530,7 +530,7 @@ static void f_create (INT32 args) {
   check_all_args("sybase->create",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_VOID,0);
+                 BIT_INT|BIT_MAPPING|BIT_VOID, 0);
   
   /* if connected, disconnect */
   if (this->context)

@@ -232,18 +232,20 @@ static void f_create (INT32 args)
 {
         /*port will be used as a string with a sprintf()*/
 	char * host=NULL, *db=NULL, *user=NULL, *pass=NULL, *port=NULL;
+	struct mapping *options = NULL;
 	int port_no = -1;
 	char port_buffer[10]; /*it's enough, we need only 6*/
 	PGconn * conn;
 	PQ_FETCH();
 
 	get_all_args("postgres->create",args,
-		     ".%s%s%s%s%d",
+		     ".%s%s%s%s%d%G",
 		     &host,
 		     &db,
 		     &user,
 		     &pass,
-		     &port_no);
+		     &port_no,
+		     &options);
 
 	if (port_no > 0) {
 	  if (port_no < 65536) {

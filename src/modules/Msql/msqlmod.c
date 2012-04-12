@@ -281,8 +281,9 @@ static void msql_mod_create (INT32 args)
 	char *colon;
 
 	check_all_args("Msql->create",args,
-			BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-			BIT_STRING|BIT_VOID,0);
+		       BIT_STRING|BIT_VOID, BIT_STRING|BIT_VOID,
+		       BIT_STRING|BIT_VOID, BIT_STRING|BIT_VOID,
+		       BIT_MAPPING|BIT_INT|BIT_VOID, 0);
 
 	if (args)
 	  if (sp[-args].u.string->len)

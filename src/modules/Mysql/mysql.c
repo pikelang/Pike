@@ -714,10 +714,13 @@ static void f_create(INT32 args)
 	  }
 	  if (args >= 5) {
 	    if (sp[4-args].type != T_MAPPING) {
-	      SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
+	      if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
+		SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
+	      }
+	    } else {
+	      add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
+	      pike_mysql_set_options(sp[4-args].u.mapping);
 	    }
-	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
-	    pike_mysql_set_options(sp[4-args].u.mapping);
 	  }
 	}
       }

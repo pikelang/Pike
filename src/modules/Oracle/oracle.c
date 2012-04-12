@@ -1848,7 +1848,7 @@ static void f_oracle_create(INT32 args)
 
   check_all_args("Oracle.oracle->create", args,
 		 BIT_STRING|BIT_INT, BIT_STRING|BIT_INT, BIT_STRING,
-		 BIT_STRING|BIT_VOID|BIT_INT, 0);
+		 BIT_STRING|BIT_VOID|BIT_INT, BIT_MAPPING|BIT_INT|BIT_VOID, 0);
 
   host = (Pike_sp[-args].type == T_STRING? Pike_sp[-args].u.string : NULL);
   database = (Pike_sp[1-args].type == T_STRING? Pike_sp[1-args].u.string : NULL);
