@@ -5,8 +5,9 @@ Extensions and New Functions
 ----------------------------
 
 o Added module ZXID
-  This module provides an interface to the ZXID Identity Management 
-  toolkit, which implements (among other tasks) the SAML 2.0, Liberty 
+
+  This module provides an interface to the ZXID Identity Management
+  toolkit, which implements (among other tasks) the SAML 2.0, Liberty
   ID-WSF 2.0, and XACML 2.0 protocols.
 
 o Added module Search.
@@ -56,7 +57,7 @@ o Protocols.HTTP
 
   A more complete list of response codes and descriptions is included and used.
 
-  Query includes proxy support for GET (http/https) and POST (https) in both 
+  Query includes proxy support for GET (http/https) and POST (https) in both
   sync and async mode.
 
   Query exposes close() so you do not have to wait for garbage collection.
@@ -103,33 +104,36 @@ o SSL
 
 o Stdio
 
-  New methods in Stdio.File: 
+  New methods in Stdio.File:
 
-    set_callbacks() and query_callbacks() for handling several callbacks at once.
-    
-    send_fd() and receive_fd() allow file descriptors to be sent and received over 
-    UNIX-domain sockets.
+    set_callbacks() and query_callbacks() for handling several callbacks at
+    once.
 
-  The type for Stdio.Fd.create() is now as documented. 
+    send_fd() and receive_fd() allow file descriptors to be sent and received
+    over UNIX-domain sockets.
 
-  Stdio.Terminfo contains a new class, MetaTerminfoDB, that merges several terminfo directories.
+  The type for Stdio.Fd.create() is now as documented.
+
+  Stdio.Terminfo contains a new class, MetaTerminfoDB, that merges several
+  terminfo directories.
 
   Stdio.File()->query_address() now knows about IPv6-mapped IPv4 addresses.
 
-  Added some extra magic to Stdio.File()->connect() when mixing IPv4 and IPv6 addresses.
+  Added some extra magic to Stdio.File()->connect() when mixing IPv4 and IPv6
+  addresses.
 
 o ADT.Heap->values and ->num_values can now be overloaded.
 
-o Added support for binding a Protocols.DNS server to multiple port/interface 
+o Added support for binding a Protocols.DNS server to multiple port/interface
   combinations.
 
 o Support for asynchronous DNS query replies in Protocols.DNS.
 
 o Calendar
- 
+
     dwim_time() should know how to parse ISO 8601 timestamps.
 
-    Added Calendar.Greek. 
+    Added Calendar.Greek.
 
 o Process.spawn(), popen() and system() et al now use Process.Process.
 
@@ -137,9 +141,10 @@ o Process.Process adds support for spawning processes via forkd.
 
 o Added functions to access the numerator and the denominator of a Gmp.mpq.
 
-o Added lower level functions Tools.X509.[dr]sa_sign_key(). This makes it 
-  easier to create hierarchial certificates. make_selfsigned_[dr]sa_certificate() 
-  now use the corresponding [dr]sa_sign_key().
+o Added lower level functions Tools.X509.[dr]sa_sign_key(). This makes it
+  easier to create hierarchial certificates.
+  make_selfsigned_[dr]sa_certificate() now use the corresponding
+  [dr]sa_sign_key().
 
 o Added SSL3.sslfile.{set,query}_callbacks() as per Stdio.File.
 
@@ -155,7 +160,7 @@ o Added Thread.Queue.peek_array.
 
 o Add System.getloadavg() on platforms that support the getloadavg() call.
 
-o Pike.Backend has reinstated call_out memory usage, and a new function, 
+o Pike.Backend has reinstated call_out memory usage, and a new function,
   Pike.DefaultBackend.get_stats() for viewing this data.
 
 o Locale.Charset now supports encoding and decoding UTF32.
@@ -175,7 +180,7 @@ o String.trim_all_whites is 10% faster and includes all Unicode.
 
 o Improved performance of Process.run when threads aren't supported.
 
-o Locale.Charset improves performance of encoders when replacement is active 
+o Locale.Charset improves performance of encoders when replacement is active
   by a few magnitudes.
 
 Deprecations
@@ -184,7 +189,7 @@ Deprecations
 o The libpq based old Postgres driver is now deprecated. The new pgsql
   driver is faster, better tested, more stable, maintained, has more
   features, does not depend on external libraries and is less filling.
-  
+
 o Stdio.File: << is deprecated.
 
 
@@ -206,138 +211,164 @@ o Signal handlers in GTK2 do no longer get their arguments in the
 Bug fixes
 ---------
 
-o Fixed backward compatibility for Calendar.iso_name() and 
-  Calendar.iso_short_name().
+o Architecture/OS specific:
 
-o Fix evaluation order for Calendar.YMD.`+().
+  - Fixed segfault in combine_path_nt on windows when the first char
+    of an appended path is wide.
 
-o Fixed backtraces when Protocols.HTTP.Query objects where garbage
-  collected. [bug 5730]
+  - Stdio.cp should now work on directory trees on Windows.
 
-o Fixed problem with Calendar.month_from_yday() when applied on week
-  53. [bug 5303]
+o Calendar module:
 
-o Fixed leak in the PNG decoder for images with tRNS chunk.
+  - Fixed backward compatibility for Calendar.iso_name() and
+    Calendar.iso_short_name().
 
-o System.normalize_path no long fails for files with 8-bit chars in
-  their names.
+  - Fix evaluation order for Calendar.YMD.`+().
 
-o Support undocumented OS behaviour on out-of-band data returning
-  EOPNOTSUPP and ECONNRESET when a stream is half closed.
-  The undocumented behaviour is found on (at least) 2.6.x Linux
-  and FreeBSD 7.x and 8.x.
+  - Fixed problem with Calendar.month_from_yday() when applied on week
+    53. [bug 5303]
 
-o Use nanosleep() when available instead of poll or select hacks for
-  the Pike-level sleep() function.
+o Compiler:
 
-o Fixed dangling cache reference in prepared statements when using CREATE
-  statements via Sql.pgsql.
+  - Fixed NULL-deref for compilation errors in range expressions.
 
-o Fixed broken (auto-re-) connect logic in Sql.pgsql.
+  - Fixed bug that prevented the literal zero from being considered a constant.
 
-o Support all text queries in Sql.pgsql.
+  - Fixed fatal error in the constant expression evaluator of the
+    compiler for certain code.
 
-o Improved widestring support for Parser.Tabular.
+o Documentation:
 
-o Fixed segfault in combine_path_nt on windows when the first char
-  of an appended path is wide.
+  - Added Autodoc support for new-style getter and setter syntax.
 
-o Fixed fatal error in the constant expression evaluator of the
-  compiler for certain code.
+  - Fixed support for documenting arguments to implicit create().
 
-o Fixed a problem in "pike -x module" that prevented auto tools from
-  running in the correct directory.
+o Graphics:
 
-o Fixed memory leak on out of memory in Mysql.fetch_json_result().
+  - Fixed leak in the PNG decoder for images with tRNS chunk.
 
-o Fixed locking problem in Mysql.
+  - Fixed several issues related to lables on the X and Y axises
+    and the calculation of xmaxvalue for the bars/line/linear case
+    in Graphics.Graph.
 
-o Fixed NULL-deref for compilation errors in range expressions.
+o I/O:
 
-o Fixed a segfault occuring if exit() is used from a thread when
-  the Pike runtime has been compiled with cleanup-on-exit enabled.
+  - Support undocumented OS behaviour on out-of-band data returning
+    EOPNOTSUPP and ECONNRESET when a stream is half closed.
+    The undocumented behaviour is found on (at least) 2.6.x Linux
+    and FreeBSD 7.x and 8.x.
 
-o Fixed so than an existing content-type is not overriden in
-  async_do_method_url.
+  - Stdio.{write,append}_file() now throw errors in ALL failure modes.
 
-o Fixed issue where GTK objects weren't destroyed properly.
-  http://pike.ida.liu.se/docs/tutorial/hello/window.xml now
-  works again.
+  - Stdio.File()->query_address() should return a correct errno when given
+    a socket with an invalid protocol family.
 
-o Fixed several issues related to lables on the X and Y axises 
-  and the calculation of xmaxvalue for the bars/line/linear case 
-  in Graphics.Graph.
+  - Stdio.File()->file_peek() now refrains from releasing the interpreter
+    lock if there's no timeout.
 
-o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
-  files with space in the name from being accessable.
+o Protocol modules:
 
-o Multiple multipart file submissions in Protocols.HTTP.Server will be 
-  preserved as suggested by HTML5.
+  - Fixed backtraces when Protocols.HTTP.Query objects where garbage
+    collected. [bug 5730]
 
-o Protocols.HTTP.Query fixes broken state when open_socket() has thrown 
-  an error.
+  - Multiple multipart file submissions in Protocols.HTTP.Server will be
+    preserved as suggested by HTML5.
 
-o Tools.Standalone.httpserver has fixed entity encoding. Makes files 
-  with spaces in them accessible.
+  - Protocols.HTTP.Query fixes broken state when open_socket() has thrown
+    an error.
 
-o Protocols.HTTP Sets the content-length header for zero-length data. 
-  Fixes [bug 5936].
+  - Tools.Standalone.httpserver has fixed entity encoding. Makes files
+    with spaces in them accessible.
 
-o Protocols.HTTP.Query uses content-length instead of content_length. 
-  The latter will be corrected in the encode method, but is problematic 
-  when that function is overridden.
+  - Protocols.HTTP Sets the content-length header for zero-length data.
+    Fixes [bug 5936].
 
-o Protocols.HTTP.Query filters weak SSL-ciphers rather than explicitly 
-  listing strong ones.
+  - Protocols.HTTP.Query uses content-length instead of content_length.
+    The latter will be corrected in the encode method, but is problematic
+    when that function is overridden.
 
-o Protocols.HTTP includes some close, state reset and keep-alive handling 
-  fixes.
+  - Protocols.HTTP.Query filters weak SSL-ciphers rather than explicitly
+    listing strong ones.
 
-o Fixed bug that prevented the literal zero from being considered a constant.
+  - Protocols.HTTP includes some close, state reset and keep-alive handling
+    fixes.
 
-o Added Autodoc support for new-style getter and setter syntax.
+  - Fixed so than an existing content-type is not overriden in
+    async_do_method_url.
 
-o Fixed support for documenting arguments to implicit create().
+o Runtime:
 
-o Fixed bugs in handling of abrupt SSL3 remote close. sslfile now also triggers 
-  EPIPE errors if the user attempts to read or write to a connection that 
-  has been abruptly closed (to detect truncation attacks better).
+  - Use nanosleep() when available instead of poll or select hacks for
+    the Pike-level sleep() function.
 
-o Fixed issue where SSL3 async_client objects became garbage even after close().
+  - Fixed a segfault occuring if exit() is used from a thread when
+    the Pike runtime has been compiled with cleanup-on-exit enabled.
 
-o Stdio.{write,append}_file() now throw errors in ALL failure modes.
+o sprintf:
 
-o Stdio.cp should now work on directory trees on Windows.
+  - Fix a buffer overrun when formatting Gmp.mpz as floats if the precision
+    exceeds the number of digits.
 
-o Stdio.File()->query_address() should return a correct errno when given a 
-  socket with an invalid protocol family.
+  - Ensure that decimal points are used when floats are formatted
+    in casts etc. Previously the float formatting in casts and in
+    sprintf("%O",...) were susceptible to locale settings and could
+    therefore use something other than a '.' as decimal separator.
+    Note that sprintf("%f",...) is still locale sensitive.
 
-o Stdio.File()->file_peek() now refrains from releasing the interpreter lock 
-  if there's no timeout.
+o Sql database modules:
 
-o Fix a buffer overrun when formatting Gmp.mpz as floats if the precision 
-  exceeds the number of digits.
+  - Fixed memory leak on out of memory in Mysql.fetch_json_result().
 
-o Parser.XML.Tree contains fixes for add_child_before() and add_child_after().
+  - Fixed locking problem in Mysql.
 
-o Parser.Tabular fixes support for Stdio.File objects. For example:
+  - Fixed dangling cache reference in prepared statements when using CREATE
+    statements via Sql.pgsql.
 
-  Pike v7.8 release 468 running Hilfe v3.5 (Incremental Pike Frontend)  
-  > Parser.Tabular(Stdio.File("data.csv"), Stdio.File("format.csv"));      
+  - Fixed broken (auto-re-) connect logic in Sql.pgsql.
 
-o Tools.X509 uses a unique serial number for each selfsigned certificate. 
-  Firefox otherwise complains about serial number clashes.
+  - Support all text queries in Sql.pgsql.
 
-o Fixed return value from Regexp.PCRE.exec to always have entries for all 
-  submatches.
+o SSL/TLS:
 
-o sprintf: Ensure that decimal points are used  when floats are formatted in 
-  casts etc. Previously the float formatting in casts and in sprintf("%O",...) 
-  were susceptible to locale settings and could therefore use something other 
-  than  a '.' as decimal separator. Note that sprintf("%f",...)  is still 
-  locale sensitive.
+  - Fixed bugs in handling of abrupt SSL3 remote close. sslfile now also
+    triggers EPIPE errors if the user attempts to read or write to a
+    connection that has been abruptly closed (to detect truncation
+    attacks better).
 
-o Fuse has fixed support for readlink().
+  - Fixed issue where SSL3 async_client objects became garbage even
+    after close().
+
+  - Tools.X509 uses a unique serial number for each selfsigned certificate.
+    Firefox otherwise complains about serial number clashes.
+
+o Misc:
+
+  - System.normalize_path no long fails for files with 8-bit chars in
+    their names.
+
+  - Improved widestring support for Parser.Tabular.
+
+  - Fixed a problem in "pike -x module" that prevented auto tools from
+    running in the correct directory.
+
+  - Fixed issue where GTK objects weren't destroyed properly.
+    http://pike.ida.liu.se/docs/tutorial/hello/window.xml now
+    works again.
+
+  - Fixed encoding/decoding bug in "pike -x httpserver" that prevented
+    files with space in the name from being accessable.
+
+  - Parser.XML.Tree contains fixes for add_child_before() and add_child_after().
+
+  - Parser.Tabular fixes support for Stdio.File objects. For example:
+
+    Pike v7.8 release 468 running Hilfe v3.5 (Incremental Pike Frontend)
+    > Parser.Tabular(Stdio.File("data.csv"), Stdio.File("format.csv"));
+
+  - Fixed return value from Regexp.PCRE.exec to always have entries for all
+    submatches.
+
+  - Fuse has fixed support for readlink().
 
 
 Building, installing and developer tools
@@ -351,7 +382,7 @@ o Some potential fixes for --enable-pikelib mode on platforms had
 o Some issues with the support for building modules needing
   a C++ compiler have been fixed.
 
-o Made it possible to override $(OS) with an environment variable 
+o Made it possible to override $(OS) with an environment variable
   $PIKE_BUILD_OS.
 
 o Check for configure scripts built with pre-propagated_variables pike.
@@ -360,7 +391,7 @@ o Added Nettle/config.guess that knows about MaxOS X and x86_64.
 
 o Fix broken detection of libjpeg lossless transformation support.
 
-o Installer will no longer dump sql driver files that depend on 
+o Installer will no longer dump sql driver files that depend on
   system libraries.
 
 o Fixed support for --without-threads.
@@ -377,22 +408,22 @@ o Ensure that --with-rtldebug enables assertions.
 
 o Configure script now attempts to set up the PKG_CONFIG_PATH.
 
-o Updated the ABI selector for MacOS X. Default to attempting the compiler 
+o Updated the ABI selector for MacOS X. Default to attempting the compiler
   default ABI (instead of forcing 32-bit ABI).
 
 o CMOD Enhancements
 
-    Tools.Standalone.precompile supports ranges for strings and negative 
+    Tools.Standalone.precompile supports ranges for strings and negative
     int(low..high) bounds.
 
-    Fixed bug in generate_overload_func_for() when there are alternatives 
+    Fixed bug in generate_overload_func_for() when there are alternatives
     accepting zero arguments.
 
-o Tools.Testsuite: 
-  
+o Tools.Testsuite:
+
     Added some functions to make pretty logging in tests easier.
 
-    Tools.Standalone.test_pike passes the verbosity level in an environment 
+    Tools.Standalone.test_pike passes the verbosity level in an environment
     variable TEST_VERBOSITY to subtests.
 
     Tools.Testsuite accumulates multiple result reports.
@@ -494,7 +525,7 @@ General
 o Sql.pgsql:
   - Substantial documentation improvements.
 
-o Stdio.Fd_ref is deprecated and in the process of being eliminated. 
+o Stdio.Fd_ref is deprecated and in the process of being eliminated.
   You have never used it before, so don't start using it now.
 
 
@@ -510,7 +541,7 @@ o Fixed bug in AGGR_ARR_EPILOGUE() (aka END_AGGREGATE_ARRAY()) that
 
 o Fixed multiset_delete_node to work with destructed indices. This
   fixes occasional bugs in various functions when there are destructed
-  objects in indices. 
+  objects in indices.
 
   You are encouraged to upgrade just for this fix since the bug creates
   (seemingly) random crashes that are hard to reproduce and track down.
@@ -535,7 +566,7 @@ o Fixed bug in fd_stat on windows when used on a file system with a
   long name.
 
 o Fixed off-by-one bug in Stdio.Readline that caused a space in the
-  last column to disappear instead of being converted to a linefeed 
+  last column to disappear instead of being converted to a linefeed
   when word wrapping is used.
 
 o Fix bug in FakeFile.read()
@@ -614,8 +645,8 @@ o Throttle calls to task_info() on OS X since they are quite
 Extensions and New Functions
 ----------------------------
 
-o Added support for specifying modifiers via a mapping to '*' in sprintf(). 
- 
+o Added support for specifying modifiers via a mapping to '*' in sprintf().
+
   See the documentation for details.
 
   This support is detectable by checking for
@@ -896,12 +927,12 @@ o The keyword protected
   NOTE: In the next release static will be deprecated.
 
 o extern declared variables
-  
+
   Variables can now be declared as 'extern'. This means that
   inheriting classes must have them. They can be used like normal
   variables in the base class.
 
-  Example: 
+  Example:
     class A
     {
 	extern int a;
@@ -1053,7 +1084,7 @@ o gethrtime, gethrvtime, gauge
   real time clocks in use.
 
 o ADT.BitBuffer
- 
+
   Added read() method that reads whole bytes from the buffer and
   returns as a string.
 
@@ -1358,7 +1389,7 @@ o Parser.HTML
   - Allow string and array as argument to _set_*_callback(). Those
     variants work just like a function only returning the string or
     array.
-  
+
 o Parser.Pike and Parser.C
 
   - Parser.Pike and Parser.C have been rewritten in C for increased
@@ -1846,7 +1877,7 @@ o Arg
       Opt name = HasOpt("-f")|HasOpt("--file")|Default("out");
       Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
     }
-  
+
     void main(int argc, array(string) argv)
     {
       Parser p = Parser(argv);
@@ -2157,17 +2188,17 @@ New simplified method to write external C/C++ modules
   | CC=gcc
   | CFLAGS := -O9 -fweb -shared -Wall $(CFLAGS) $(shell $(PIKE) -x cflags) -g
   | LD=$(CC) -shared -lGL
-  | 
+  |
   | all: Spike.so
   |
   | install: Spike.so
   | 	cp $< $(MODULE_INSTALL_DIR)
-  | 
+  |
   | Spike.so: Spike.o
   | 	$(LD) -o Spike.so Spike.o $(LDFLAGS)
-  | 
+  |
   | Spike.o: Spike.c
-  | 
+  |
   | Spike.c: Spike.cmod
   | 	$(PIKE) -x precompile $< > $@
 
