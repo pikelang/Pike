@@ -230,6 +230,9 @@ o Calendar module:
 
 o Compiler:
 
+  - Fixed issue where a stale pointer into the identifier table could
+    sometimes be dereferenced when defining getters and setters.
+
   - Fixed NULL-deref for compilation errors in range expressions.
 
   - Fixed bug that prevented the literal zero from being considered a constant.
