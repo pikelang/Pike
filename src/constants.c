@@ -213,18 +213,10 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action)
 #ifdef PIKE_DEBUG
 void present_constant_profiling(void)
 {
-  struct callable_block *b;
-  size_t e;
-  for(b=callable_blocks;b;b=b->next)
-  {
-    for(e=0;e<NELEM(b->x);e++)
-    {
-      if(b->x[e].name)
-      {
-	fprintf(stderr,"%010ld @E@: %s\n",b->x[e].runs, b->x[e].name->str);
-      }
-    }
-  }
+  struct callable *c;
+  WALK_NONFREE_BLOCKS (callable, c, c->name, {
+      fprintf(stderr,"%010ld @E@: %s\n",c->runs, c->name->str);
+    });
 }
 #endif
 

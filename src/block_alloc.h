@@ -101,6 +101,8 @@
 
 #define MS(x)	#x
 
+#define BLOCK_ALLOC_IN_USE(DATA) (!!PIKE_CONCAT (DATA, _allocator).num_pages)
+
 #define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE...)	do {	\
     struct block_allocator * a = &PIKE_CONCAT(DATA, _allocator);	\
     PAGE_LOOP(a, {							\
@@ -189,6 +191,8 @@ void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 #define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32) \
 			   DO_IF_DMALLOC( + sizeof(INT32)))
 #endif
+
+#define BLOCK_ALLOC_IN_USE(DATA) (!!PIKE_CONCAT (DATA, _blocks))
 
 #define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE)	do {		\
     struct PIKE_CONCAT(DATA,_block) * p;				\
