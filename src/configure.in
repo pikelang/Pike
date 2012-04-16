@@ -2588,7 +2588,7 @@ AC_TRY_RUN([
     [pike_has_gjalloc=no])
 
 if test "$pike_has_gjalloc" = yes; then
-  AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [foo])
+  AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [Define this if GJAlloc should be used.])
 else
   LIBS=$OLDLIBS
   PIKE_MSG_WARN([ Gjalloc could not be found, thats bad!])
