@@ -77,7 +77,8 @@ int(0..) main(int num, array(string) args)
 	   ecode++;
 	   // Don't report the error multiple times.
 	   to_run[idx] = 0;
-	 } else if (glob (test_glob, to_run_names[idx])) {
+	 } else if (glob (test_glob, to_run_names[idx]) ||
+		    glob (test_glob, id)) {
 	   ecode += Tools.Shoot.ExecTest(id,tests[id])
 	     ->run(seconds_per_test,maximum_runs);
 	   // Don't run test more than once if it matches several globs.
