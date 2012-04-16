@@ -184,31 +184,31 @@ protected string _sprintf(int type, void|mapping flags)
 //!     the connection to the database.  Not setting it, or setting
 //!     it to one, will cause one timed reconnect to take place.
 //!     Setting it to -1 will cause the system to try and reconnect
-//!     indefinitely
+//!     indefinitely.
 //!   @member int "use_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will fallback
-//!	to plain unencrypted
+//!	to plain unencrypted.
 //!   @member int "force_ssl"
 //!	If the database supports and allows SSL connections, the session
-//!	will be SSL encrypted, if not, the connection will abort
+//!	will be SSL encrypted, if not, the connection will abort.
 //!   @member int "text_query"
 //!	Send queries to and retrieve results from the database using text
 //!     instead of the, generally more efficient, default native binary method.
 //!     Turning this on will allow multiple statements per query separated
-//!     by semicolons
+//!     by semicolons.
 //!   @member int "cache_autoprepared_statements"
 //!	If set to zero, it disables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
 //!	when stored procedures and tables are redefined which leave stale
-//!	references in the already cached prepared statements
+//!	references in the already cached prepared statements.
 //!   @member string "client_encoding"
 //!	Character encoding for the client side, it defaults to using
 //!	the default encoding specified by the database, e.g.
 //!	@ref{UTF8@} or @ref{SQL_ASCII@}.
 //!   @member string "standard_conforming_strings"
 //!	When on, backslashes in strings must not be escaped any longer,
-//!	@[quote()] automatically adjusts quoting strategy accordingly
+//!	@[quote()] automatically adjusts quoting strategy accordingly.
 //!   @member string "escape_string_warning"
 //!	When on, a warning is issued if a backslash (\) appears in an
 //!	ordinary string literal and @[standard_conforming_strings] is off,
@@ -225,7 +225,7 @@ protected string _sprintf(int type, void|mapping flags)
 //!
 //! @seealso
 //!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
-//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=client+connection+defaults@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+defaults@}
 protected void create(void|string _host, void|string _database,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options)
 { pass = _pass; _pass = "CENSORED";
@@ -393,7 +393,7 @@ void cancelquery()
 //!
 //! @seealso
 //!   @[get_charset()], @[create()],
-//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
 void set_charset(string charset)
 { big_query(sprintf("SET CLIENT_ENCODING TO '%s'",quote(charset)));
 }
@@ -403,7 +403,7 @@ void set_charset(string charset)
 //!
 //! @seealso
 //!   @[set_charset()], @[getruntimeparameters()],
-//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
 string get_charset()
 { return _runtimeparameter[CLIENT_ENCODING];
 }
@@ -419,22 +419,22 @@ string get_charset()
 //!	@ref{UTF8@} or @ref{SQL_ASCII@}.
 //!   @member string "server_encoding"
 //!	Character encoding for the server side as determined when the
-//!	database was created, e.g. @ref{UTF8@} or @ref{SQL_ASCII@}
+//!	database was created, e.g. @expr{"UTF8"@} or @expr{"SQL_ASCII"@}.
 //!   @member string "DateStyle"
-//!	Date parsing/display, e.g. @ref{ISO, DMY@}
+//!	Date parsing/display, e.g. @expr{"ISO, DMY"@}.
 //!   @member string "TimeZone"
-//!	Default timezone used by the database, e.g. @ref{localtime@}
+//!	Default timezone used by the database, e.g. @expr{"localtime"@}.
 //!   @member string "standard_conforming_strings"
-//!	When on, backslashes in strings must not be escaped any longer
+//!	When on, backslashes in strings must not be escaped any longer.
 //!   @member string "session_authorization"
-//!	Displays the authorisationrole which the current session runs under
+//!	Displays the authorisationrole which the current session runs under.
 //!   @member string "is_superuser"
 //!	Indicates if the current authorisationrole has database-superuser
-//!	privileges
+//!	privileges.
 //!   @member string "integer_datetimes"
-//!	Reports wether the database supports 64-bit-integer dates and times
+//!	Reports wether the database supports 64-bit-integer dates and times.
 //!   @member string "server_version"
-//!	Shows the server version, e.g. @ref{8.3.3@}
+//!	Shows the server version, e.g. @expr{"8.3.3"@}.
 //! @endmapping
 //!
 //! The values can be changed during a session using SET commands to the
@@ -442,7 +442,7 @@ string get_charset()
 //! For other runtimeparameters check the PostgreSQL documentation.
 //!
 //! @seealso
-//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=client+connection+defaults@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+defaults@}
 //!
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
