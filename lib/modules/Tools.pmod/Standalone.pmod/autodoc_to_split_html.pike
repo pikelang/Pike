@@ -1134,6 +1134,12 @@ int low_main(string doc_file, string template_file, string outdir,
   if (flags & Tools.AutoDoc.FLAG_COMPAT) {
     // Fix markup bugs affecting the images path.
 
+    // The canonic Pike site has moved from
+    // pike.roxen.com to pike.ida.liu.se to pike.lysator.liu.se.
+    template = replace(template,
+		       ({ "pike.roxen.com", "pike.ida.liu.se" }),
+		       ({ "pike.lysator.liu.se", "pike.lysator.liu.se" }));
+
     // These first two affect commits prior to and including 7.3.11.
     template = replace(template,
 		       "<img src=\"images/",
