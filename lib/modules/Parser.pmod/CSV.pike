@@ -28,8 +28,7 @@ inherit Parser.Tabular;
 int parsehead(void|string delimiters)
 { if(skipemptylines())
     return 0;
-  string line;
-  line=_in->gets();
+  string line=_in->gets();
   if(!delimiters)
   { int countcomma,countsemicolon,counttab;
     countcomma=countsemicolon=counttab=0;
@@ -45,19 +44,15 @@ int parsehead(void|string delimiters)
     delimiters=countcomma>countsemicolon?countcomma>counttab?",":"\t":
       countsemicolon>counttab?";":"\t";
   }
+  _in->unread(line+"\n");
   multiset delim=(<>);
   foreach(delimiters;;int c)
     delim+=(<c>);
   array res=({ (["single":1]),0 });
-  string format="%[^"+replace(delimiters,(["\\":"\\\\","-":"\\-","]":"\\]"]))
-   +"]%*c%s";
-  line+=delimiters[..0];
-  do
-  { string word;
-    sscanf(line,format,word,line);
-    res+=({(["delim":delim,"name":String.trim_whites(word)])});
-  }
-  while(sizeof(line));
+  mapping m=(["delim":delim]);
+  _eol=0;
+  do res+=({m+(["name":_getdelimword(m)])});
+  while(!_eol);
   setformat(({res}));
   return 1;
 }
