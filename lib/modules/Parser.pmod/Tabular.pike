@@ -7,7 +7,7 @@
 
 #pike __REAL_VERSION__
 
-private Stdio.FILE in;
+Stdio.FILE _in;
 private int prefetch=1024;	 // TODO: Document and make this available
 				 // through compile().
 private String.Buffer alread=String.Buffer(prefetch);
@@ -63,14 +63,14 @@ void
   if(stringp(input))
     input=Stdio.FakeFile(input);
   if(!input->unread)
-    (in=Stdio.FILE())->assign(input);
+    (_in=Stdio.FILE())->assign(input);
   else
-    in=input;
+    _in=input;
 }
 
 #if 0			   // Currently unused function
 private int getchar()
-{ int c=in->getchar();
+{ int c=_in->getchar();
   if(c<0)
     throw(severity);
   alread->putchar(c);
@@ -80,7 +80,7 @@ private int getchar()
 
 private string read(int n)
 { string s;
-  s=in->read(n);
+  s=_in->read(n);
   alread->add(s);
   if(sizeof(s)!=n)
     throw(severity);
@@ -95,13 +95,13 @@ private string gets(int n)
       throw(severity);
   }
   else
-  { s=in->gets();
+  { s=_in->gets();
     if(!s)
        throw(severity);
     if(has_value(s,"\r"))	// Retrofix \r-only line endings
     { array t;
       t=s/"\r";
-      s=t[0];in->unread(t[1..]*"\n");
+      s=t[0];_in->unread(t[1..]*"\n");
     }
     alread->add(s);alread->putchar('\n');
     if(has_suffix(s,"\r"))
@@ -129,7 +129,7 @@ private class checkpoint
   { if(oldalread)
     { string back=alread->get();
       if(sizeof(back))
-      { in->unread(back);
+      { _in->unread(back);
         if(verb<0)
         { back-="\n";
           if(sizeof(back))
@@ -195,7 +195,7 @@ private mapping getrecord(array fmt,int found)
 delimready:
         for(;;)
         { i=0;
-          buf=in->read(pref);
+          buf=_in->read(pref);
           int c;
           FETCHAR(c,buf,i);
           while(c>=0)
@@ -236,7 +236,7 @@ delimready:
 csvready:
         for(;;)
         { i=0;
-          buf=in->read(pref);
+          buf=_in->read(pref);
           int c;
           FETCHAR(c,buf,i);
           while(c>=0)
@@ -296,7 +296,7 @@ csvready:
         }
       }
       alread->add(buf[..i-1]);
-      in->unread(buf[i..]);
+      _in->unread(buf[i..]);
       value=word->get();
     }
     if(m->match)
@@ -318,7 +318,7 @@ csvready:
         }
       }
       else
-      { string buf=in->read(m->prefetch || prefetch);
+      { string buf=_in->read(m->prefetch || prefetch);
         { array spr;
           if(!buf || !(spr=rgx->split(buf)))
           { alread->add(buf);
@@ -327,7 +327,7 @@ csvready:
                -"Regexp.SimpleRegexp");
             throw(severity);
           }
-          in->unread(buf[sizeof(value=spr[0])..]);
+          _in->unread(buf[sizeof(value=spr[0])..]);
         }
         alread->add(value);
         value-="\r";
@@ -386,10 +386,10 @@ private void add2map(mapping res,string name,mixed entry)
 //!  @[fetch()]
 int skipemptylines()
 { string line; int eof=1;
-  while((line=in->gets()) && String.width(line)==8 && emptyline->match(line))
+  while((line=_in->gets()) && String.width(line)==8 && emptyline->match(line))
     recordcount++;
   if(line)
-    eof=0,in->unread(line+"\n");
+    eof=0,_in->unread(line+"\n");
   return eof;
 }
 
@@ -492,7 +492,7 @@ ret:
 //! @seealso
 //!  @[fetch()]
 object feed(string content)
-{ in->unread(content);
+{ _in->unread(content);
   return this;
 }
 
