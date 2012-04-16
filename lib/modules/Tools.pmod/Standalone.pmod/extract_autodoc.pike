@@ -207,7 +207,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
   foreach(get_dir(builddir), string fn) {
     if ((fn != ".cache.xml") && has_suffix(fn, ".xml")) {
-      if (!Stdio.exist(srcdir + fn[..<4])) {
+      if (!Stdio.is_file(srcdir + fn[..<4])) {
 	if (verbosity > 0)
 	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
 
@@ -227,7 +227,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	  rm(builddir + fn + ".stamp");
 	}
       }
-    } else if (Stdio.is_dir(builddir + fn) && !Stdio.exist(srcdir + fn)) {
+    } else if (Stdio.is_dir(builddir + fn) && !Stdio.is_dir(srcdir + fn)) {
       // Recurse and clean away old obsolete files.
       recurse(srcdir + fn + "/", builddir + fn + "/", root_ts, root);
       rm(builddir + fn + ".cache.xml.stamp");
