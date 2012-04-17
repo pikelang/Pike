@@ -166,8 +166,8 @@ o Pike.Backend has reinstated call_out memory usage, and a new function,
 o Locale.Charset now supports encoding and decoding UTF32.
 
 o Added Sql.Sql()->is_open() and Sql.Sql()->ping(). Not that
-  your chosen database module must support these (Mysql 
-  currently does).
+  your chosen database module must support these (Mysql and pgsql
+  currently do).
 
 Optimizations
 -------------
@@ -334,6 +334,8 @@ o Sql database modules:
   - Fixed broken (auto-re-) connect logic in Sql.pgsql.
 
   - Support all text queries in Sql.pgsql.
+
+  - Fixed rare string corruption in Sql.pgsql.
 
 o SSL/TLS:
 
