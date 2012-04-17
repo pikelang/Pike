@@ -112,7 +112,7 @@ private string gets(int n)
   return s;
 }
 
-private class checkpoint
+class _checkpoint
 { private string oldalread;
 
   void create()
@@ -428,12 +428,12 @@ mapping fetch(void|array|mapping format)
 ret:
   { if(arrayp(format))
     { mixed err=catch
-      { checkpoint checkp=checkpoint();
+      { _checkpoint checkp=_checkpoint();
         foreach(format;;array|mapping fmt)
           if(arrayp(fmt))
             for(int found=0;;found=1)
             { mixed err=catch
-              { checkpoint checkp=checkpoint();
+              { _checkpoint checkp=_checkpoint();
 		mapping rec=getrecord(fmt,found);
 	        foreach(rec;string name;mixed value)
                   add2map(ret,name,value);
@@ -468,6 +468,8 @@ ret:
     { int found;
       do
       { found=0;
+	if(!mappingp(format))
+	  error("Empty format definition\n");
         foreach(format;string name;array|mapping subfmt)
           for(;;)
 	  { if(verb<0)
