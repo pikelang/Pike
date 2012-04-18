@@ -664,7 +664,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 #ifndef HASH_PREFIX
   /* These heuristics might require tuning! /Hubbe */
   if((need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4) ||
-     (need_new_hashkey_depth > MAX_AVG_LINK_LENGTH * 16))
+     (need_new_hashkey_depth > MAX_AVG_LINK_LENGTH * 128))
   {
     /* Changed heuristic 2005-01-17:
      *
