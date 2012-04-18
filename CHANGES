@@ -165,9 +165,12 @@ o Pike.Backend has reinstated call_out memory usage, and a new function,
 
 o Locale.Charset now supports encoding and decoding UTF32.
 
-o Added Sql.Sql()->is_open() and Sql.Sql()->ping(). Not that
+o Added Sql.Sql()->is_open() and Sql.Sql()->ping(). Note that
   your chosen database module must support these (Mysql and pgsql
   currently do).
+
+o MIME.ext_to_type() now knows about most all popular mime types (including 
+  ~700 new entries).
 
 Optimizations
 -------------
