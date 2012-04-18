@@ -161,7 +161,7 @@ class Plain
 
         res += with(subject[v[0]..v[1]-1], @substrings, @args); 
       }
-      i=v[1];
+      if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
     }
 
     res+=subject[i..];
