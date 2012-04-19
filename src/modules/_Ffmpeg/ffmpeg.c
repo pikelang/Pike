@@ -80,7 +80,13 @@
 
 #ifdef HAVE_LIBAVUTIL_AVUTIL_H
 #include <libavutil/avutil.h>
+/* FIXME: The following test is an approximation.
+ *        50.7.0 is known not to have the enum.
+ *        50.43.0 is known to have it.
+ */
+#if (LIBAVUTIL_VERSION_MAJOR > 50) || (LIBAVUTIL_VERSION_MINOR > 7)
 #define USE_AVMEDIA_TYPE_ENUM 1
+#endif
 #endif
 
 #ifdef AV_MEM
