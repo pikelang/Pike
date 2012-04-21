@@ -230,8 +230,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     } else if (Stdio.is_dir(builddir + fn) && !Stdio.is_dir(srcdir + fn)) {
       // Recurse and clean away old obsolete files.
       recurse(srcdir + fn + "/", builddir + fn + "/", root_ts, root);
-      rm(builddir + fn + ".cache.xml.stamp");
-      rm(builddir + fn + ".cache.xml");
+      rm(builddir + fn + "/.cache.xml.stamp");
+      rm(builddir + fn + "/.cache.xml");
       // Try deleting the directory.
       rm(builddir + fn);
       rm(builddir + ".cache.xml.stamp");
