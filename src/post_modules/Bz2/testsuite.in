@@ -120,6 +120,8 @@ test_any([[
 
   read_file->read_open("test_data_tmp.bz2");
   out_data = read_file->read();
+  string empty = read_file->read();
+  if( empty!="" ) return 0;
   read_file->close();
   Stdio.recursive_rm("test_data_tmp.bz2");
   return(in_data == out_data);

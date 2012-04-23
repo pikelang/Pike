@@ -1058,6 +1058,11 @@ PIKECLASS File
     int nr_of_bytes_old = 0;
     int i = 1;
 
+    if( THIS->bzerror == BZ_STREAM_END )
+    {
+      RETURN(empty_pike_string);
+    }
+
     if(args == 1){
       if(TYPEOF(*bytes) == T_INT){
 	to_be_read = bytes->u.integer;
