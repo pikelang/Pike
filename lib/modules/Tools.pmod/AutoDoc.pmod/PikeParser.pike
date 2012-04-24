@@ -789,11 +789,13 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->name = eatIdentifier();
     if (peekToken() == "=") {
       eat("=");
-      if (string l = parseLiteral())
-	// It's intentional that literalType doesn't return too
-	// specific types for integers, i.e. it's int instead of e.g.
-	// int(4711..4711).
-	c->type = literalType (l);
+    }
+    // FIXME: Warn if literal and no '='.
+    if (string l = parseLiteral()) {
+      // It's intentional that literalType doesn't return too
+      // specific types for integers, i.e. it's int instead of e.g.
+      // int(4711..4711).
+      c->type = literalType (l);
       // TODO: parse the expression ???
       //   added parsing only of types...
       //   a constant value will just be ignored.
