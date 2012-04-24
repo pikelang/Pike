@@ -213,6 +213,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
 	num_updated_files++;
 	rm(builddir + fn);
+	rm(builddir + fn[..<4] + ".brokenxml");
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
       } else if (source_timestamp && (source_timestamp < 950000000) &&
@@ -353,6 +354,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if (res != orig) {
 	  num_updated_files++;
 	  Stdio.write_file(builddir+fn+".xml", res);
+	  rm(builddir + fn + ".brokenxml");
 	}
 	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
       }
