@@ -128,7 +128,7 @@ int main(int n, array(string) args)
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
-      if(!dstat || dstat->mtime < stat->mtime) {
+      if(!dstat || dstat->mtime <= stat->mtime) {
         string res = extract(fn, imgdir, builddir, root);
 
         if(!res) {
@@ -319,7 +319,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
-      if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
+      if(!dstat || dstat->mtime <= stat->mtime || dstat->mtime <= root_ts) {
 	string res = extract(srcdir+fn, imgdir, builddir, root);
 	if(!res) {
 	  if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
