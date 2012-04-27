@@ -75,12 +75,18 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
       mov [edi+12], ecx;
     };
 #else  /* GCC_X86_ASM_STYLE */
-    __asm__ __volatile__("cpuid"
-			 : "=a" (cpuid_ptr[0]),
-			   "=b" (cpuid_ptr[1]),
-			   "=d" (cpuid_ptr[2]),
-			   "=c" (cpuid_ptr[3])
-			 : "0" (oper));
+
+    __asm__ __volatile__("pushl %%ebx      \n\t" /* save %ebx */
+                 "cpuid            \n\t"
+                 "movl %%ebx, %1   \n\t" /* save what cpuid just put in %ebx */
+                 "popl %%ebx       \n\t" /* restore the old %ebx */
+                 : "=a"(cpuid_ptr[0]), 
+                   "=r"(cpuid_ptr[1]), 
+                   "=c"(cpuid_ptr[2]), 
+                   "=d"(cpuid_ptr[3])
+                 : "0"(oper)
+                 : "cc");
+
 #endif
   } else {
     cpuid_ptr[0] = cpuid_ptr[1] = cpuid_ptr[2] = cpuid_ptr[3] = 0;

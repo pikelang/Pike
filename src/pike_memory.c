@@ -312,9 +312,13 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #endif
 
 #define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("cpuid"                                    \
-             : "=a" (a), "=b" (b), "=c" (c), "=d" (d)   \
-             : "a" (level))
+    __asm__ ("pushl %%ebx      \n\t"                    \
+             "cpuid \n\t"                               \
+             "movl %%ebx, %1   \n\t"                    \
+             "popl %%ebx       \n\t"                    \
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "a" (level)                              \
+             : "cc")
 
 #define bit_SSE4_2 (1<<20)
 
