@@ -802,22 +802,37 @@ int main(int ac,array(string) am)
    // Historical ordering...
    foreach (({"America", "Pacific", "Antarctica", "Atlantic", "Indian",
 	      "Europe", "Africa", "Asia", "Australia" }), string co) {
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
 		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 *", "+"}),");
       zone_names[co] = 0;
    }
    // Take care of any remaining zones (probably none).
-   foreach (sort(indices(zone_names)),string co)
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+   foreach (sort(indices(zone_names)),string co) {
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
 		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 *", "+"}),");
+   }
    t += "]);\n\n" +
      fragments[1];
+
+   // Cleanup white-space at end of line.
+   string t2 = t;
+   while ((t = replace(t2,
+		       ({ "                        \n",
+			  "                    \n",
+			  "                \n",
+			  "            \n",
+			  "        \n",
+			  "    \n",
+			  "  \n",
+			  " \n", }), ({ "\n" })*8)) != t2) {
+     t2 = t;
+   }
    
    mv("TZnames.pmod","TZnames.pmod~");
    werror("writing TZnames.pmod (%d bytes)...",sizeof(t));
