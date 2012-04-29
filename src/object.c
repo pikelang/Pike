@@ -2569,7 +2569,12 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  *!   @[lfun::]
  */
 
-/* The type argument to the magic index functions is intentionally
+/* Historical API notes:
+ *
+ * In Pike 7.3.14 to 7.9.5 the context and access arguments were instead
+ * represented by a single type argument.
+ *
+ * The type argument to the magic index functions is intentionally
  * undocumented since I'm not sure this API is satisfactory. The
  * argument would be explained as follows. /mast
  *
@@ -2584,9 +2589,28 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  */
 
 
-/*! @decl mixed ::`->(string index)
+/*! @decl mixed ::`->(string index, object|void context, int|void access)
  *!
  *! Builtin arrow operator.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to access.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! This function indexes the current object with the string @[index].
  *! This is useful when the arrow operator has been overloaded.
@@ -2596,17 +2620,39 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  */
 static void f_magic_index(INT32 args)
 {
-  struct inherit *inherit;
+  struct inherit *inherit = NULL;
   int type = 0, f;
   struct pike_string *s;
-  struct object *o;
+  struct object *o = NULL;
 
-  switch (args) {
+  switch(args) {
     default:
-    case 2:
-      if (TYPEOF(sp[-args+1]) != T_INT)
+    case 3:
+      if (TYPEOF(sp[2-args]) != T_INT)
 	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
-      type = sp[-args+1].u.integer;
+      type = sp[2-args].u.integer & 1;
+      /* FALL THROUGH */
+    case 2:
+      if (TYPEOF(sp[1-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[1-args].u.integer & 1);
+	if (sp[1-args].u.integer & 2) {
+	  if(!(o=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!o->prog)
+	    Pike_error("::`-> on destructed object.\n");
+	  inherit = o->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[1-args]) == T_OBJECT) {
+	o = sp[1-args].u.object;
+	if (o != MAGIC_THIS->o)
+	  Pike_error("::`-> context is not the current object.\n");
+	if(!o->prog)
+	  Pike_error("::`-> on destructed object.\n");
+	inherit = o->prog->inherits + SUBTYPEOF(sp[1-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|object|int");
+      }
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) != T_STRING)
@@ -2617,31 +2663,25 @@ static void f_magic_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR ("::`->", 1);
   }
 
-  if(!(o=MAGIC_THIS->o))
+  if(!o && !(o = MAGIC_THIS->o))
     Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("::`-> on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type: %d.\n", type);
+  if (!inherit) {
+    inherit = MAGIC_THIS->inherit;
+  }
+
+  /* NB: We could use really_low_find_shared_string_identifier()
+   *     in both cases, but we get the added benefit of the
+   *     identifier cache if we use find_shared_string_identifier().
+   */
+  if (type) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f = find_shared_string_identifier(s, inherit->prog);
   }
 
   pop_n_elems(args);
@@ -2658,9 +2698,32 @@ static void f_magic_index(INT32 args)
   }
 }
 
-/*! @decl void ::`->=(string index, mixed value)
+/*! @decl void ::`->=(string index, mixed value, @
+ *!                   object|void context, int|void access)
  *!
  *! Builtin arrow set operator.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to change the value of.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! This function indexes the current object with the string @[index],
  *! and sets it to @[value].
@@ -2673,16 +2736,38 @@ static void f_magic_set_index(INT32 args)
 {
   int type = 0, f;
   struct pike_string *s;
-  struct object *o;
+  struct object *o = NULL;
   struct svalue *val;
-  struct inherit *inherit;
+  struct inherit *inherit = NULL;
 
   switch (args) {
     default:
+    case 4:
+      if (TYPEOF(sp[3-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 4, "void|int");
+      type = sp[3-args].u.integer & 1;
+      /* FALL THROUGH */
     case 3:
-      if (TYPEOF(sp[-args+2]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|int");
-      type = sp[-args+2].u.integer;
+      if (TYPEOF(sp[2-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[2-args].u.integer & 1);
+	if (sp[2-args].u.integer & 2) {
+	  if(!(o=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!o->prog)
+	    Pike_error("::`-> on destructed object.\n");
+	  inherit = o->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	o = sp[2-args].u.object;
+	if (o != MAGIC_THIS->o)
+	  Pike_error("::`->= context is not the current object.\n");
+	if(!o->prog)
+	  Pike_error("::`->= on destructed object.\n");
+	inherit = o->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|object|int");
+      }
       /* FALL THROUGH */
     case 2:
       val = sp-args+1;
@@ -2695,31 +2780,25 @@ static void f_magic_set_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR ("::`->=", 2);
   }
 
-  if(!(o=MAGIC_THIS->o))
+  if(!o && !(o = MAGIC_THIS->o))
     Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("::`->= on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (!inherit) {
+    inherit = MAGIC_THIS->inherit;
+  }
+
+  /* NB: We could use really_low_find_shared_string_identifier()
+   *     in both cases, but we get the added benefit of the
+   *     identifier cache if we use find_shared_string_identifier().
+   */
+  if (type) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f = find_shared_string_identifier(s, inherit->prog);
   }
 
   if(f<0)
@@ -2736,7 +2815,23 @@ static void f_magic_set_index(INT32 args)
   }
 }
 
-/*! @decl mixed ::_indices()
+/*! @decl mixed ::_indices(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the identifiers of an object.
  *! This is useful when @[lfun::_indices] has been overloaded.
@@ -2746,57 +2841,77 @@ static void f_magic_set_index(INT32 args)
  */
 static void f_magic_indices (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_indices context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_indices on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      prog = MAGIC_THIS->inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	prog = MAGIC_THIS->inherit->prog;
-      } else {
-	prog = obj->prog;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	SET_SVAL(ITEM(res)[i], T_STRING, 0, string, id->name);
-	add_ref(id->name);
-	i++;
-      }
-      res->type_field |= BIT_STRING;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = BIT_STRING;
-      return;
-    case 2:
-      prog = obj->prog;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      SET_SVAL(ITEM(res)[i], T_STRING, 0, string, id->name);
+      add_ref(id->name);
+      i++;
+    }
+    res->type_field |= BIT_STRING;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = BIT_STRING;
+    return;
   }
 
   pop_n_elems (args);
@@ -2809,7 +2924,23 @@ static void f_magic_indices (INT32 args)
   res->type_field = BIT_STRING;
 }
 
-/*! @decl mixed ::_values()
+/*! @decl mixed ::_values(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the values of the identifiers of an
  *! object. This is useful when @[lfun::_values] has been overloaded.
@@ -2819,65 +2950,80 @@ static void f_magic_indices (INT32 args)
  */
 static void f_magic_values (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
-  struct inherit *inherit;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   TYPE_FIELD types;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_values context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_values on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_values", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	low_object_index_no_free (ITEM(res) + i, obj,
-				  e + inherit->identifier_level);
-	types |= 1 << TYPEOF(ITEM(res)[i]);
-	i++;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      low_object_index_no_free (ITEM(res) + i, obj,
+				e + inherit->identifier_level);
+      types |= 1 << TYPEOF(ITEM(res)[i]);
+      i++;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = types;
+    return;
   }
 
   pop_n_elems (args);
@@ -2891,7 +3037,23 @@ static void f_magic_values (INT32 args)
   res->type_field = types;
 }
 
-/*! @decl mixed ::_types()
+/*! @decl mixed ::_types(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the types of the identifiers of an
  *! object. This is useful when @[lfun::_types] has been overloaded.
@@ -2901,65 +3063,80 @@ static void f_magic_values (INT32 args)
  */
 static void f_magic_types (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
-  struct inherit *inherit;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   TYPE_FIELD types;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_types", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_types context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_types on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	SET_SVAL(ITEM(res)[i], PIKE_T_TYPE, 0, type, id->type);
-	add_ref(id->type);
-	i++;
-	types = BIT_TYPE;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      SET_SVAL(ITEM(res)[i], PIKE_T_TYPE, 0, type, id->type);
+      add_ref(id->type);
+      i++;
+      types = BIT_TYPE;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = types;
+    return;
   }
 
   pop_n_elems (args);
@@ -2988,40 +3165,54 @@ void init_object(void)
 
   enter_compiler(NULL, 0);
 
+  /* ::`->() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_index,tFunc(tStr tOr(tVoid,tInt),tMix),0);
+  ADD_FUNCTION("`()", f_magic_index,
+	       tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tMix), ID_PROTECTED);
   magic_index_program=end_program();
 
+  /* ::`->=() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_set_index,
-	       tFunc(tStr tMix tOr(tVoid,tInt),tVoid),0);
+  ADD_FUNCTION("`()", f_magic_set_index,
+	       tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt))
+		     tOr(tVoid,tInt), tVoid), ID_PROTECTED);
   magic_set_index_program=end_program();
 
+  /* ::_indices() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_indices,tFunc(tOr(tVoid,tInt),tArr(tStr)),0);
+  ADD_FUNCTION("`()", f_magic_indices,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArr(tStr)), ID_PROTECTED);
   magic_indices_program=end_program();
 
+  /* ::_values() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_values,tFunc(tOr(tVoid,tInt),tArray),0);
+  ADD_FUNCTION("`()", f_magic_values,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArray), ID_PROTECTED);
   magic_values_program=end_program();
 
+  /* ::_types() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_types,tFunc(tOr(tVoid,tInt),tArray),0);
+  ADD_FUNCTION("`()", f_magic_types,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArray), ID_PROTECTED);
   magic_types_program=end_program();
 
   exit_compiler();
