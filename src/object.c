@@ -675,7 +675,7 @@ PMOD_EXPORT struct object *get_master(void)
 
     f = find_identifier ("is_pike_master", master_program);
     if (f >= 0)
-      object_low_set_index (master_object, f, &svalue_int_one);
+      object_low_set_index (master_object, f, (struct svalue *)&svalue_int_one);
 
     /* fprintf(stderr, "Master loaded.\n"); */
 
