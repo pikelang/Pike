@@ -1099,6 +1099,7 @@ PIKECLASS File
       }
     }
 
+    free(buf);
     RETURN finish_string_builder(&retstr);
   }
 
