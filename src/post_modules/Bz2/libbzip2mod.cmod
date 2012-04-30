@@ -1046,21 +1046,18 @@ PIKECLASS File
    *! If len is omitted the whole file is read.
    *! If read is unsuccessful, 0 is returned.
    */
-  
+
   PIKEFUN string read(int|void bytes){
     void *buf = NULL;
-
-    /* FIXME: Ought to use string_builder instead. */
-    dynamic_buffer retbuf;
-    struct pike_string *retstr;
-    int to_be_read = 0;
-    int nr_of_bytes = 0;
-    int nr_of_bytes_old = 0;
-    int i = 1;
+    struct string_builder retstr;
+    int to_be_read;
+    int was_read;
 
     if( THIS->bzerror == BZ_STREAM_END )
     {
-      RETURN(empty_pike_string);
+      pop_n_elems(args);
+      push_empty_string();
+      return;
     }
 
     if(args == 1){
@@ -1079,52 +1076,33 @@ PIKECLASS File
     else{
       Pike_error("Bad number of arguments in call to Bz2.File->read.\n");
     }
-    
 
-	
-    initialize_buf(&retbuf);
-    THIS->bzerror = BZ_OK;
-    while((to_be_read > nr_of_bytes) && (THIS->bzerror != BZ_STREAM_END)){
-      buf = malloc(i * INFL_BUF_SIZE);
-      if(buf == NULL){
-	toss_buffer(&retbuf);
+    init_string_builder(&retstr, 0);
+    buf = malloc(to_be_read);
+    if( buf==NULL )
 	Pike_error("Failed to allocate memory in Bz2.File->read().\n");
-      }
-      nr_of_bytes = nr_of_bytes + bzRead ( &(THIS->bzerror), THIS->file, 
-					   buf, to_be_read - nr_of_bytes);
-            
-      if((args == 0) && (to_be_read == nr_of_bytes)){
-	/*make sure that we do this loop until end_of_file is reached*/
-	to_be_read += i * INFL_BUF_SIZE;
-	i = i * 2;
-      }
 
-      low_my_binary_strcat(buf, nr_of_bytes - nr_of_bytes_old, &retbuf);
-      free(buf);
-      nr_of_bytes_old = nr_of_bytes;
-      
+    while( to_be_read>0 && THIS->bzerror == BZ_OK )
+    {
+      was_read = bzRead( &(THIS->bzerror), THIS->file, buf, to_be_read );
+      string_builder_binary_strcat0( &retstr, buf, was_read );
+      if( args != 0 )
+        to_be_read -= was_read;
+
       switch(THIS->bzerror){
       case BZ_OK:
-	break;
       case BZ_STREAM_END:
 	break;
       default:
-	toss_buffer(&retbuf);
+	free(buf);
 	Pike_error("Error in Bz2.File()->read().\n");
-	}
+      }
     }
-    
-    if(nr_of_bytes <= 0){
-      toss_buffer(&retbuf);
-      RETURN(0);
-    }
-    else{
-      retstr = (make_shared_binary_string(retbuf.s.str, nr_of_bytes));
-      toss_buffer(&retbuf);
-      RETURN(retstr);
-    }  
+
+    RETURN finish_string_builder(&retstr);
   }
-  
+
+
   /*! @decl int(0..1) eof()
    *! @returns 
    *!  1 if EOF has been reached,
