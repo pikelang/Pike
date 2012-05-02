@@ -109,15 +109,15 @@ static void assign_accept_cb (struct port *p, struct svalue *cb)
   assign_svalue(& p->accept_callback, cb);
   if (UNSAFE_IS_ZERO (cb)) {
     if (p->box.backend)
-      set_fd_callback_events (&p->box, 0);
+      set_fd_callback_events (&p->box, 0, 0);
     set_nonblocking(p->box.fd,0);
   }
   else {
     if (!p->box.backend)
       INIT_FD_CALLBACK_BOX (&p->box, default_backend, p->box.ref_obj,
-			    p->box.fd, PIKE_BIT_FD_READ, got_port_event);
+			    p->box.fd, PIKE_BIT_FD_READ, got_port_event, 0);
     else
-      set_fd_callback_events (&p->box, PIKE_BIT_FD_READ);
+      set_fd_callback_events (&p->box, PIKE_BIT_FD_READ, 0);
     set_nonblocking(p->box.fd,1);
   }
 }
@@ -676,7 +676,7 @@ static void port_set_backend (INT32 args)
     change_backend_for_box (&p->box, backend);
   else
     INIT_FD_CALLBACK_BOX (&p->box, backend, p->box.ref_obj,
-			  p->box.fd, 0, got_port_event);
+			  p->box.fd, 0, got_port_event, 0);
 
   pop_n_elems (args - 1);
 }
@@ -698,7 +698,7 @@ static void port_query_backend (INT32 args)
 
 static void init_port_struct(struct object *o)
 {
-  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_port_event);
+  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_port_event, 0);
   THIS->my_errno=0;
   /* map_variable takes care of id and accept_callback. */
 }

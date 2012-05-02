@@ -32,6 +32,7 @@ FILE_FUNC("write_oob",file_write_oob,
 	       tFuncV(tArr(tStr), tMixed, tInt),
 	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
+/* TODO kqueue: we should add an read_fs_event() for when not using callback mode. */
 
 #ifdef HAVE_PIKE_SEND_FD
 FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tInt01))
@@ -81,8 +82,13 @@ FILE_FUNC("set_write_callback",file_set_write_callback, tFunc(CB_FUNC,tVoid))
 FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed:void) */
 FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback, tFunc(CB_FUNC,tVoid))
+/* function(mixed:void) */
+FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tFunc(tInt,tOr(tVoid,tMixed)) tInt,tVoid))
+
+FILE_FUNC("query_fs_event_flags",file_query_fs_event_flags, tFunc(tVoid,tInt))
 
 #undef CB_FUNC
+
 
 /* function(:void) */
 FILE_FUNC("_enable_callbacks",file__enable_callbacks, tFunc(tNone,tVoid))

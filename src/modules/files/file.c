@@ -46,6 +46,10 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#ifdef HAVE_SYS_EVENT_H
+#include <sys/event.h>
+#endif /* HAVE_SYS_EVENT_H */
+
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif /* HAVE_SYS_FILE_H */
@@ -265,16 +269,31 @@ static void debug_check_internals (struct my_file *f)
     struct my_file *f_ = (F);						\
     if (!f_->box.backend)						\
       INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
-			    f_->box.fd, (EVENTS), got_fd_event);	\
+			    f_->box.fd, (EVENTS), got_fd_event, 0);	\
     else								\
-      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS));	\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), 0);	\
+  } while (0)
+
+#define ADD_FD_EVENTS2(F, EVENTS, FFLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (!f_->box.backend)						\
+      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
+			    f_->box.fd, (EVENTS), got_fd_event, FFLAGS);	\
+    else								\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), FFLAGS);	\
   } while (0)
 
 /* Note: The file object might be freed after this. */
 #define SUB_FD_EVENTS(F, EVENTS) do {					\
     struct my_file *f_ = (F);						\
     if (f_->box.backend)						\
-      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS));	\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), 0);	\
+  } while (0)
+
+#define SUB_FD_EVENTS2(F, EVENTS, FLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (f_->box.backend)						\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), FLAGS);	\
   } while (0)
 
 static int got_fd_event (struct fd_callback_box *box, int event)
@@ -283,13 +302,15 @@ static int got_fd_event (struct fd_callback_box *box, int event)
   struct svalue *cb = &f->event_cbs[event];
 
   f->my_errno = errno;		/* Propagate backend setting. */
-
   /* The event is turned on again in the read and write functions. */
-  SUB_FD_EVENTS (f, 1 << event);
+  if(event != PIKE_FD_FS_EVENT)
+    SUB_FD_EVENTS (f, 1 << event);
 
   check_destructed (cb);
   if (!UNSAFE_IS_ZERO (cb)) {
-    apply_svalue (cb, 0);
+    if(event == PIKE_FD_FS_EVENT)
+      push_int(box->rflags);
+    apply_svalue (cb, event == PIKE_FD_FS_EVENT);
     if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
       pop_stack();
       return -1;
@@ -1649,12 +1670,21 @@ static void file_read_oob(INT32 args)
   THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
-static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
+static short get_fd_event_flags(struct my_file *f)
+{
+  if(f->box.backend)
+  {
+    return f->box.flags;
+  }
+  else return 0;
+}
+
+static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, int flags)
 {
   if (UNSAFE_IS_ZERO (cb)) {
     free_svalue (&f->event_cbs[event]);
     SET_SVAL(f->event_cbs[event], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-    SUB_FD_EVENTS (f, 1 << event);
+    SUB_FD_EVENTS2 (f, 1 << event, flags);
   }
   else {
 #ifdef __NT__
@@ -1663,7 +1693,7 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
     }
 #endif /* __NT__ */
     assign_svalue (&f->event_cbs[event], cb);
-    ADD_FD_EVENTS (f, 1 << event);
+    ADD_FD_EVENTS2 (f, 1 << event, flags);
   }
 }
 
@@ -1673,7 +1703,7 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
   {									\
     if(!args)								\
       SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
-    set_fd_event_cb (THIS, Pike_sp-args, EVENT);			\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT, 0);			\
   }									\
 									\
   static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
@@ -1682,10 +1712,35 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
     push_svalue(& THIS->event_cbs[EVENT]);				\
   }
 
+#define CBFUNCS2(CB, EVENT)						\
+  static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
+  {	\ 
+    if(!args)								\
+      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT, Pike_sp[-1].u.integer);			\
+  }									\
+									\
+  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
+  {									\
+    pop_n_elems(args);							\
+    push_svalue(& THIS->event_cbs[EVENT]);				\
+  } \
+
 CBFUNCS(read_callback, PIKE_FD_READ)
 CBFUNCS(write_callback, PIKE_FD_WRITE)
 CBFUNCS(read_oob_callback, PIKE_FD_READ_OOB)
 CBFUNCS(write_oob_callback, PIKE_FD_WRITE_OOB)
+CBFUNCS2(fs_event_callback, PIKE_FD_FS_EVENT)
+
+static void file_query_fs_event_flags(INT32 args)
+{
+  short flags;
+  pop_n_elems(args);
+  
+  flags = get_fd_event_flags(THIS);
+  push_int(flags);
+}
+
 
 static void file__enable_callbacks(INT32 args)
 {
@@ -2277,7 +2332,7 @@ static int do_close(int flags)
   case FILE_READ:
     if(f->open_mode & FILE_WRITE)
     {
-      SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB|PIKE_BIT_FD_FS_EVENT);
       fd_shutdown(FD, 0);
       f->open_mode &=~ FILE_READ;
       return 0;
@@ -2290,7 +2345,7 @@ static int do_close(int flags)
   case FILE_WRITE:
     if(f->open_mode & FILE_READ)
     {
-      SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB|PIKE_BIT_FD_FS_EVENT);
       fd_shutdown(FD, 1);
       f->open_mode &=~ FILE_WRITE;
 #ifdef HAVE_PIKE_SEND_FD
@@ -3511,7 +3566,7 @@ static void file_mode(INT32 args)
  *! Also, this object does not keep a reference to the backend.
  *!
  *! @seealso
- *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback]
+ *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback], @[set_fs_event_callback]
  */
 static void file_set_backend (INT32 args)
 {
@@ -3540,7 +3595,7 @@ static void file_set_backend (INT32 args)
     change_backend_for_box (&f->box, backend);
   else
     INIT_FD_CALLBACK_BOX (&f->box, backend, f->box.ref_obj,
-			  f->box.fd, 0, got_fd_event);
+			  f->box.fd, 0, got_fd_event, f->box.flags);
 
   pop_n_elems (args - 1);
 }
@@ -4214,7 +4269,7 @@ static void file_handle_events(int event)
     case PROG_EVENT_INIT:
       f->box.backend = NULL;
       init_fd (-1, 0, 0);
-      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event);
+      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event, f->box.flags);
 
       i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num +
 		      Pike_fp->context->identifier_level);
@@ -4288,7 +4343,7 @@ static void low_dup(struct object *toob,
   unhook_fd_callback_box (&to->box);
   if (from->box.backend)
     INIT_FD_CALLBACK_BOX (&to->box, from->box.backend, to->box.ref_obj,
-			  to->box.fd, from->box.events, got_fd_event);
+			  to->box.fd, from->box.events, got_fd_event, from->box.flags);
 
   for (ev = 0; ev < NELEM (to->event_cbs); ev++)
     assign_svalue (&to->event_cbs[ev], &from->event_cbs[ev]);
@@ -5752,6 +5807,8 @@ PIKE_MODULE_INIT
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
+   MAP_VARIABLE("_fs_event_callback",tMix,0,
+     	       OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),PIKE_T_MIXED);
 
   fd_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", fd_fd_factory,
@@ -5917,6 +5974,20 @@ PIKE_MODULE_INIT
 #ifdef HAVE_FSTATAT
   add_integer_constant("__HAVE_STATAT__",1,0);
 #endif
+
+#ifdef HAVE_KQUEUE
+  add_integer_constant("__HAVE_FS_EVENTS__",1,0);
+  add_integer_constant("NOTE_ATTRIB",NOTE_ATTRIB,0);
+  add_integer_constant("NOTE_WRITE",NOTE_WRITE,0);
+  add_integer_constant("NOTE_DELETE",NOTE_DELETE,0);
+  add_integer_constant("NOTE_EXTEND",NOTE_EXTEND,0);
+  add_integer_constant("NOTE_LINK",NOTE_LINK,0);
+  add_integer_constant("NOTE_RENAME",NOTE_RENAME,0);
+  add_integer_constant("NOTE_REVOKE",NOTE_REVOKE,0);
+#else
+  add_integer_constant("__HAVE_FS_EVENTS__",0,0);
+#endif /* HAVE_KQUEUE */
+
 
 #if 0
   /* Not implemented yet. */
