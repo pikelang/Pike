@@ -1732,6 +1732,7 @@ CBFUNCS(read_oob_callback, PIKE_FD_READ_OOB)
 CBFUNCS(write_oob_callback, PIKE_FD_WRITE_OOB)
 CBFUNCS2(fs_event_callback, PIKE_FD_FS_EVENT)
 
+
 static void file_query_fs_event_flags(INT32 args)
 {
   short flags;
@@ -5466,6 +5467,63 @@ void file_set_notify(INT32 args) {
  */
 
 #endif /* HAVE_NOTIFICATIONS */
+
+/*! @decl constant NOTE_ATTRIB = 8
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for attribute changes on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_WRITE = 2
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for writes to a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_DELETE = 1
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for deletion of a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_EXTEND = 4
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for extension events on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_LINK = 16
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for changes to a file's link count.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_RENAME = 32
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for move or rename events on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_REVOKE = 64
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for access revokation (unmount, etc).
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
 
 /*! @decl constant PROP_SEND_FD = 64
  *!

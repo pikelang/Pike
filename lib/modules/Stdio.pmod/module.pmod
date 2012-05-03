@@ -1199,6 +1199,10 @@ class File
   //! backend that means it will immediately start another round and
   //! check files and call outs anew.
   //!
+  //! @param event_mask
+  //!  An event mask specifing bitwise OR of one or more event types to
+  //!  monitor, selected from @[Stdio.NOTE_WRITE] and friends.
+  //! 
   //! @note
   //!   These functions do not set the file nonblocking.
   //!
