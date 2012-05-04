@@ -5,6 +5,15 @@ inherit .autodoc_to_html;
 
 constant description = "AutoDoc XML to splitted HTML converter.";
 
+/* Todo:
+ *
+ *   * List of classes (and modules?) that inherit the class (or module?).
+ *
+ *   * Inherited enums, variables and constants.
+ *
+ *   * Inherited functions and classes.
+ */
+
 mapping (string:Node) refs   = ([ ]);
 string default_namespace;
 
@@ -147,7 +156,8 @@ array(string) split_reference(string what) {
     return r;
 }
 
-string create_reference(string from, string to, string text) {
+string create_reference(string from, string to, string text,
+			string|void xlink_namespace_prefix) {
   array a = (to/"::");
   switch(sizeof(a)) {
   case 2:
@@ -166,10 +176,13 @@ string create_reference(string from, string to, string text) {
   default:
     error("Bad reference: %O\n", to);
   }
-  return "<font face='courier'><a href='" +
+  if (!xlink_namespace_prefix) xlink_namespace_prefix = "";
+  return "<a style='font-family:courier;' " +
+    xlink_namespace_prefix +
+    "href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
     text +
-    "</a></font>";
+    "</a>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
@@ -185,6 +198,7 @@ class Node
   array(Node) enum_children = ({ });
   array(Node) directive_children = ({ });
   array(Node) method_children = ({ });
+  array(array(string|Node)) inherits = ({});
 
   Node parent;
 
@@ -264,6 +278,28 @@ class Node
     return "";
   }
 
+  protected void add_ref(string path, string type, string name,
+			 string data, Node n, string c)
+  {
+    refs[path + name] = Node(type, name, data, n);
+    if (type == "inherit") {
+      Parser.HTML()->
+	add_containers(([ "classname":
+			  lambda(Parser.HTML p, mapping m, string c) {
+			    string resolved;
+			    if (resolved = m->resolved) {
+			      n->inherits += ({
+				({
+				  name, c,
+				  Parser.parse_html_entities(resolved),
+				})
+			      });
+			    }
+			  },
+		       ]) )->finish(c);
+    }
+  }
+
   array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     foreach(({"homogen-name", "belongs"}), string attr) {
@@ -338,28 +374,25 @@ class Node
 	    ( ([ "constant":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   refs[path + name] =
-		     Node( "constant", name, "", this_object());
+		   add_ref(path, "constant", name, "", this_object(), c);
 		 },
 		 "variable":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   refs[path + name] =
-		     Node( "variable", name, "", this_object());
+		   add_ref(path, "variable", name, "", this_object(), c);
 		 },
 		 "inherit":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   if (m->name) {
 		     string name = Parser.parse_html_entities(m->name);
-		     refs[path + name] =
-		       Node( "inherit", name, "", this_object());
+		     add_ref(path, "inherit", name, "", this_object(), c);
 		   }
 		 },
 	    ]) )->finish(c);
 	}
 	else
-	  refs[path + m["homogen-name"]] =
-	    Node( m["homogen-type"], m["homogen-name"], "", this_object());
+	  add_ref(path, m["homogen-type"], m["homogen-name"],
+		  "", this_object(), c);
 	break;
 
       }
@@ -741,7 +774,207 @@ class Node
     return tmp;
   }
 
-  protected string make_content() {
+  protected void make_inherit_graph(String.Buffer contents)
+  {
+    contents->add(lay->dochead, "Inherit graph", lay->_dochead);
+
+    string this_ref = raw_class_path();
+
+    mapping(string:string) names = ([
+      this_ref:this_ref,
+    ]);
+
+    // The number of non-graphed dependencies.
+    mapping(string:multiset(string)) forward_deps = ([]);
+    mapping(string:multiset(string)) backward_deps = ([]);
+
+    // First find all the inherits and assign the appropriate weights.
+    mapping(string:int) closure = ([]);
+    ADT.Queue q = ADT.Queue();
+    q->put(({ 1, "", this_ref, this_ref }));
+    while(sizeof(q)) {
+      [int weight, string name, string text, string ref] = q->get();
+      if (!names[ref]) names[ref] = text;
+      if (closure[ref] >= weight) continue; // Already handled.
+      closure[ref] = weight;
+      Node n = refs[ref];
+      if (!n) continue;
+      names[ref] = n->raw_class_path();
+      multiset(string) inhs = (<>);
+      if (sizeof(n->inherits)) {
+	foreach(n->inherits, array(string) entry) {
+	  if (entry[2] == ref) continue;	// Infinite loop averted.
+	  q->put(({ weight + 1 }) + entry);
+	  inhs[entry[2]] = 1;
+	}
+	foreach(inhs; string inh_ref;) {
+	  if (!backward_deps[inh_ref]) {
+	    backward_deps[inh_ref] = (<>);
+	  }
+	  backward_deps[inh_ref][ref] = 1;
+	}
+      }
+      forward_deps[ref] = inhs;
+    }
+
+    // Adjust, quote and link the names.
+    int no_predef_strip;
+    foreach(values(names), string name) {
+      if (!has_prefix(name, "predef::") || name == "predef::") {
+	no_predef_strip = 1;
+      }
+    }
+    foreach(names; string ref; string name) {
+      if (!no_predef_strip) {
+	name = name[sizeof("predef::")..];
+      }
+      name = Parser.encode_html_entities(name);
+      name = create_reference(make_filename(), ref, name, "xlink:");
+      names[ref] = name;
+    }
+
+    // Next, sort the references.
+    array(string) references = indices(closure);
+    array(int) weights = values(closure);
+    // Secondary sorting order is according to the reference string.
+    sort(references, weights);
+    // Primary sorting order is according to the weights.
+    sort(weights, references);
+
+    // The approach here is to select the node with the lowest
+    // priority, that has all dependencies satisfied.
+
+    mapping(string:int) priorities =
+      mkmapping(references, indices(references));
+
+    ADT.Priority_queue pq = ADT.Priority_queue();
+
+    foreach(forward_deps; string ref; multiset(string) deps) {
+      if (!sizeof(deps)) {
+	pq->push(priorities[ref], ref);
+      }
+    }
+
+    // NB: No lay->docbody! Neither <pre> nor <svg> may be inside a <dd>.
+    //     We simulate the <dd> with a style attribute instead.
+#ifdef NO_SVG
+    contents->add("<pre style='mergin-left:40px;'>\n");
+#else
+    // FIXME: Why isn't height=100% good enough for Firefox?
+    contents->add(sprintf("<svg"
+			  " xmlns='http://www.w3.org/2000/svg'"
+			  " version='1.1'"
+			  " xmlns:xlink='http://www.w3.org/1999/xlink'"
+			  " xml:space='preserve'"
+			  " style='margin-left:40px;'"
+			  " width='100%%' height='%dpx'>\n",
+			  sizeof(references)*20 + 5));
+    array(int) ystart = allocate(sizeof(references));
+#endif
+
+    int pos;
+    mapping(string:int) positions = ([]);
+    array(string) rev_positions = allocate(sizeof(references));
+    while (sizeof(pq)) {
+      string ref = pq->pop();
+      Node n = refs[ref];
+      positions[ref] = pos;
+      rev_positions[pos] = ref;
+      ystart[pos] = pos * 20 + 25;
+      multiset(int) inherit_positions = (<>);
+      if (n) {
+	foreach(n->inherits, array(string) entry) {
+	  inherit_positions[positions[entry[2]]] = 1;
+	}
+      }
+
+#ifdef NO_SVG
+      if (pos) {
+	for(int i = 0; i < pos; i++) {
+	  if (sizeof(backward_deps[rev_positions[i]])) {
+	    contents->add("&nbsp;|&nbsp;&nbsp;");
+	  } else {
+	    contents->add("&nbsp;&nbsp;&nbsp;&nbsp;");
+	  }
+	}
+	contents->add("\n");
+	int got;
+	for(int i = 0; i < pos; i++) {
+	  if (got) {
+	    contents->add("-");
+	  } else {
+	    contents->add("&nbsp;");
+	  }
+	  if (inherit_positions[i]) {
+	    contents->add("+--");
+	    got++;
+	    backward_deps[rev_positions[i]][ref] = 0;
+	  } else if (got) {
+	    contents->add("---");
+	  } else if (sizeof(backward_deps[rev_positions[i]])) {
+	    contents->add("|&nbsp;&nbsp;");
+	  } else {
+	    contents->add("&nbsp;&nbsp;&nbsp;");
+	  }
+	}
+      }
+      contents->add(names[ref], "\n");
+#else
+      if (pos) {
+	int got;
+	for(int i = 0; i < pos; i++) {
+	  if (inherit_positions[i]) {
+	    if (!got) {
+	      // Draw the horizontal line.
+	      contents->
+		add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    i*40 + 4, pos*20 + 15,
+			    pos*40 - 5, pos*20 + 15));
+	    }
+	    got++;
+	    backward_deps[rev_positions[i]][ref] = 0;
+	    if (!sizeof(backward_deps[rev_positions[i]])) {
+	      // Draw the inherit line.
+	      contents->
+		add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    i*40 + 5, ystart[i],
+			    i*40 + 5, pos*20 + 16));
+	    }
+	  } else if (got && sizeof(backward_deps[rev_positions[i]])) {
+	    // We have to jump over the line!
+	    contents->
+	      add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			  i*40 + 5, ystart[i],
+			  i*40 + 5, pos*20 + 12));
+	    ystart[i] = pos*20 + 18;
+	  }
+	}
+      }
+      contents->add(sprintf("<text x='%d' y='%d'"
+			    " text-decoration='underline'>%s</text>\n",
+			    pos*40, pos*20 + 20,
+			    names[ref]));
+#endif
+      pos++;
+
+      foreach(backward_deps[ref] || (<>); string dep_ref;) {
+	multiset(string) refs = forward_deps[dep_ref];
+	refs[ref] = 0;
+	if (!sizeof(refs)) {
+	  // All dependencies satisfied.
+	  pq->push(priorities[dep_ref], dep_ref);
+	}
+      }
+    }
+#ifdef NO_SVG
+    contents->add("</pre>\n");
+#else
+    contents->add("</svg>\n");
+#endif
+  }
+
+  protected string make_content()
+  {
     PROFILE();
     string err;
     Parser.XML.Tree.Node n;
@@ -758,6 +991,10 @@ class Node
 
     String.Buffer contents = String.Buffer(100000);
     resolve_class_paths(n);
+
+    if (sizeof(inherits)) {
+      make_inherit_graph(contents);
+    }
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
     contents->add( parse_children(n, "namespace", parse_namespace, 1) );
     contents->add( parse_children(n, "module", parse_module, 1) );
@@ -887,6 +1124,11 @@ class Node
     }
 
     string extra_headers =
+      sprintf("<style type='text/css'>\n"
+	      "svg line { stroke:#343434; stroke-width:2; }\n"
+	      "svg text { fill:#343434; }\n"
+	      "svg a { fill:#0768b2; }\n"
+	      "</style>\n") +
       sprintf("<script language='javascript' src='%s'>\n"
 	      "</script>\n",
 	      low_make_link(make_parent_index_filename() + ".js")) +
