@@ -2710,6 +2710,9 @@ static void pb_copy_selectors(struct pb_selectors *to,
 #ifndef PDB_GET_EVENTS
 #define PDB_GET_EVENTS(EVENT)	PB_GET_EVENTS(EVENT)
 #endif
+#ifndef PDB_GET_FLAGS
+#define PDB_GET_FLAGS(EVENT)	0
+#endif
 
 #elif defined(BACKEND_USES_KQUEUE)
 /*
@@ -2906,6 +2909,14 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 
 #ifndef MY_POLLHUP
 #define MY_POLLHUP	POLLHUP
+#endif
+
+#ifndef MY_POLLFSEVENT
+#define MY_POLLFSEVENT	0
+#endif
+
+#ifndef MY_POLLSIGNAL
+#define MY_POLLSIGNAL	0
 #endif
 
 #if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
@@ -3166,7 +3177,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
 
 #ifdef BACKEND_USES_POLL_DEVICE
 
-      pdb_UPDATE_BLACK_BOX(pdb, fd, new_events, flags);
+      pdb_UPDATE_BLACK_BOX(pdb, fd, new_events);
 
 #else  /* !BACKEND_USES_POLL_DEVICE */
       if (changed_events & PIKE_BIT_FD_READ) {
@@ -3438,8 +3449,8 @@ else
       int num_active = i;
       struct fd_callback_box fd_list = {
 	me, NULL, &fd_list,
-	-1, 0,
-        0, NULL
+	-1, 0, 0,
+        0, 0, NULL
       };
       struct fd_callback_box *box;
       ONERROR free_fd_list;
@@ -4123,7 +4134,7 @@ PIKECLASS PollBackend
       struct fd_callback_box fd_list = {
 	NULL, NULL, NULL,
 	-1, 0, 0,
-	NULL,
+	0, 0, NULL,
       };
       struct fd_callback_box *box;
       ONERROR free_fd_list;
@@ -4180,7 +4191,6 @@ PIKECLASS PollBackend
 	  fds.fd=fd;
 	  fds.events=POLLIN;
 	  fds.revents=0;
-	  fds.rflags = 0;
 	  ret=poll(&fds, 1,1 );
 	  if(fds.revents & POLLNVAL)
 	    Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
@@ -4240,7 +4250,7 @@ printf("events\n");
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLFSEVENT)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
 			  THR_NO, me->id, fd));
-	    box->rflags = poll_fds[i].fflags;
+	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
 	    box->revents |= PIKE_BIT_FD_FS_EVENT;
 	    DO_IF_DEBUG(handled = 1);
 	  }
@@ -4659,8 +4669,8 @@ PIKECLASS SelectBackend
       int num_active = i;
       struct fd_callback_box fd_list = {
 	me, NULL, &fd_list,
-	-1, 0, 
-	 0, NULL
+	-1, 0, 0,
+	0, 0, NULL
       };
       struct fd_callback_box *box;
       ONERROR free_fd_list;
