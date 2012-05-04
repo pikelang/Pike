@@ -5,6 +5,7 @@
 //! base for all Roman-kind of Calendars,
 //! ie, one with years, months, weeks and days
 //!
+//! inherits Time
 
 #pike __REAL_VERSION__
 
@@ -1439,7 +1440,8 @@ class cYear
 
 
 // ----------------------------------------------------------------
-//   Month
+//! class Month
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cMonth) Month=cMonth;
@@ -1730,6 +1732,8 @@ class cMonth
 //!	When adding, moving or subtracting years,
 //!	if tries to place the moved week in the 
 //!	resulting year.
+//!
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cWeek) Week=cWeek;
@@ -2068,7 +2072,8 @@ class cWeek
 }
 
 // ----------------------------------------------------------------
-//   Day
+//! class Day
+//! inherits YMD
 // ----------------------------------------------------------------
 
 class cDay
@@ -2518,12 +2523,24 @@ class cHour
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Minute
+//! inherits Time.Minute
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cMinute
 {
    inherit Time::cMinute;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class Second
+//! inherits Time.Second
+//! inherits YMD
+//------------------------------------------------------------------------
 
 class cSecond
 {
@@ -2532,12 +2549,23 @@ class cSecond
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Fraction
+//! inherits Time.Fraction
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cFraction
 {
    inherit Time::cFraction;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class SuperTimeRange
+//! inherits Time.SuperTimeRange
+//------------------------------------------------------------------------
 
 class cSuperTimeRange
 {

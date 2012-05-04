@@ -8,6 +8,8 @@
 //! 	This module can't be used by itself, but
 //! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
 //! 	for instance).
+//!
+//! inherits TimeRanges
 
 #pike __REAL_VERSION__
 
@@ -1591,7 +1593,7 @@ class cSecond
 //!	nanoseconds. A shorter or more precise time period then 
 //!	in nanoseconds is not possible within the current Fraction class.
 //!
-//! inherits TimeofDay
+//! inherits Second
 //------------------------------------------------------------------------
 
 function(mixed...:cFraction) Fraction=cFraction;
