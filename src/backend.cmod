@@ -2960,10 +2960,8 @@ PIKECLASS PollDeviceBackend
 	int q;
 #ifdef BACKEND_USES_KQUEUE
   struct kevent ev[2];
-printf("adding signal!\n");
   EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
   q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
-printf("q: %d\n", q);
 #endif
 	pop_n_elems(args);
   }
@@ -3475,7 +3473,6 @@ else
 #ifdef BACKEND_USES_KQUEUE
       if(poll_fds[i].filter == MY_POLLSIGNAL)
       {
-        printf("sig!\n");
         continue;
       }
 #endif /* BACKEND_USES_KQUEUE */
@@ -4202,11 +4199,12 @@ PIKECLASS PollBackend
 
 	check_box (box, fd);
 
-printf("events\n");
+#if 0
     if(PDB_CHECK_EVENT(poll_fds[i], MY_POLLSIGNAL))
     {
-      printf("SIGNAL EVENT RECEIVED!\n");
+      fprintf(stderr, "SIGNAL EVENT RECEIVED!\n");
     }
+#endif
 
 	{
 #ifdef PIKE_DEBUG
