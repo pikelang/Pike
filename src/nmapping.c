@@ -114,7 +114,7 @@ redo:
 
 static INLINE struct ht_bucket * ht_get_bucket(const struct hash_table * h,
 					       const uint32_t hval) {
-    struct ht_bucket * b = h->table[hval & h->hash_mask];
+    const struct ht_bucket * b = h->table[hval & h->hash_mask];
 
     if (b->freeze_count & HT_FLAG_REL) {
 	return b->u.b;
@@ -141,37 +141,36 @@ void ht_init_iterator(struct hash_iterator * it, const struct hash_table * h) {
 static INLINE struct svalue * ht_lookup(const struct hash_table * h,
 					const struct svalue * key) {
     const uint32_t hval = HT_HASH(key);
+    struct svalue * ret = NULL;
+    int frozen = 0;
     struct ht_bucket * b = ht_get_bucket(h, hval);
     struct ht_keypair * pair = b->u.k;
 
-    while (pair && (pair->hval != hval || !HT_IS_NEQ(pair->key, *key)))
-	pair = pair->next;
+    for (;pair && (pair->hval < hval); pair = pair->next) {}
 
-    if (pair) {
-	struct hash_iterator it;
+    for (;pair && (pair->hval == hval); pair = pair->next) {
 
-	if (HT_IS_IDENTICAL(pair->key, *key) return &(pair->value);
+	if (HT_IS_NEQ(pair->key, *key) || pair->deleted) continue;
 
-	ht_init_iterator(&it, h);
-	it.n = hval;
-	it.hash_mask = ~((uint32_t)0);
-	it.current = pair;
+	if (HT_IS_IDENTICAL(pair->key, *key)) {
+	    ret = &(pair->value);
+	    break;
+	}
 
-	do {
-	    if (HT_IS_IDENTICAL(pair->key, *key)) {
-		return &(pair->value);
-	    }
-	    if (!HT_IS_NEQ(pair->key, *key)) {
-		if (HT_IS_EQ(pair->key, *key)) {
-		    pair = ht_find_current(&it);
-		    return pair ? &(pair->value) : NULL;
-		}
-		pair = ht_iterate_bucket(&it);
-	    } else pair = pair->next;
-	} while (pair);
+	if (!frozen) {
+	    frozen = 1;
+	    ht_freeze_bucket(b);
+	}
+	
+
+	if (HT_IS_EQ(pair->key, *key)) {
+	    ret = &(pair->value);
+	}
     }
 
-    return NULL;
+    if (frozen) ht_unfreeze_bucket(b);
+
+    return ret;
 }
 
 static INLINE void ht_split_bucket(struct ht_bucket * src,
@@ -268,29 +267,39 @@ PMOD_EXPORT void ht_insert(struct hash_table * h,
 			   const struct svalue * key,
 			   const struct svalue * val) {
     const uint32_t hval = HT_HASH(key);
-    struct ht_bucket * b = ht_get_bucket(h, hval);
-    struct ht_keypair * k = b->u.k;
+    const struct ht_bucket * b = ht_get_bucket(h, hval);
+    struct ht_keypair ** t = &(b->u.k);
+    struct ht_keypair ** t = &(b->u.k);
     int frozen = 0;
     /* first look if the key is alreay in */
     
-    while (k) {
-	if (k->hval == hval) {
-	    if (HT_IS_IDENTICAL(*key, k->key)) break;
-	    if (HT_IS_NEQ(*key, k->key)) continue;
-	    // do expensive check
-	    if (!frozen) {
-		frozen = 1;
-		ht_freeze_bucket(b);
-	    }
-	    if (HT_IS_EQ(*key, k->key)) break;
+    while (*t && (*t)->hval < hval) {
+	t = &((*t)->next);
+    }
+
+    dst = t;
+
+    while (*t && (*t)->hval == hval) {
+	const struct ht_keypair * k = *t;
+
+	if (HT_IS_NEQ(*key, k->key)) continue;
+
+	if (HT_IS_IDENTICAL(*key, k->key)) {
+	    dst = t;
+	    goto insert_into;
+	}
+	// do expensive check
+	if (!frozen) {
+	    frozen = 1;
+	    ht_freeze_bucket(b);
+	}
+	if (HT_IS_EQ(*key, k->key)) {
+	    dst = t;
+	    goto insert_into;
 	}
     }
 
-    if (k) {
-	assign_svalue(&(k->val), val);
-	assign_svalue(&(k->key), key);
-	if (!k->deleted) h->size++;
-    } else {
+    if (1) {
 	/* the bucket might have changed ? */
 	//b = ht_get_bucket(h, hval);
 	h->size++;
@@ -298,8 +307,15 @@ PMOD_EXPORT void ht_insert(struct hash_table * h,
 	k->hval = hval;
 	assign_svalue_no_free(&(k->val), val);
 	assign_svalue_no_free(&(k->key), key);
-	ht_bucket_insert(b, k);
+	k->next = *dst;
+	*dst = k;
+    } else {
+insert_into:
+	assign_svalue(&(k->val), val);
+	assign_svalue(&(k->key), key);
+	if (!k->deleted) h->size++;
     }
+
     k->deleted = 0;
 
     if (frozen) {
