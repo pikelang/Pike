@@ -2406,11 +2406,9 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   poll_state[0].fd = fd;
   poll_state[0].events = POLLREMOVE;
   poll_state[0].revents = 0;
-  poll_state[0].rflags = 0;
   poll_state[1].fd = fd;
   poll_state[1].events = events;
   poll_state[1].revents = 0;
-  poll_state[1].rflags = 0;
 
   if (!events) {
     /* We're not interrested in the fd anymore. */
