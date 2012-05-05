@@ -752,14 +752,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     s = peekToken(WITH_NL);
   }
 
-  if (s == "import") {
-    Import i = Import();
-    i->position = position;
-    readToken();
-    i->classname = parseProgramName();
-    return i;
-  }
-  else if (s == "class") {
+  if (s == "class") {
     Class c = Class();
     c->position = position;
     c->modifiers = modifiers;
@@ -806,13 +799,14 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     skipUntil( (< ";", EOF >) );
     return c;
   }
-  else if (s == "inherit") {
-    Inherit i = Inherit();
+  else if ((s == "inherit") || (s == "import")) {
+    object(Inherit)|Import i;
+    i = (s == "inherit")?Inherit():Import();
     i->position = position;
     i->modifiers = modifiers;
     readToken();
-    i->classname = parseProgramName();
-    if (peekToken() == ":") {
+    i->name = i->classname = parseProgramName();
+    if ((s == "inherit") && (peekToken() == ":")) {
       readToken();
       i->name = eatIdentifier();
     } else {
