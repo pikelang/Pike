@@ -954,6 +954,14 @@ protected class ScopeStack {
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
+      if (name = ([ "7.8":"7.7",
+		    "7.6":"7.5",
+		    "7.4":"7.3",
+		    "7.2":"7.1",
+		    "7.0":"0.7" ])[name]) {
+	// Add an alias for development version.
+	scopes[name] = scopes[namespace];
+      }
     } else {
       if (!sizeof(scopes[namespace]||({}))) {
 	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
@@ -1594,6 +1602,16 @@ class NScopeStack
       default:
 	// Strip the trailing "::".
 	string inh = ref[0][..sizeof(ref[0])-3];
+	// Map intermediate version namespaces to existing.
+	// FIXME: This ought be done based on the set of namespaces.
+	inh = ([
+	  "0.7":"7.0",
+	  "7.1":"7.2",
+	  "7.3":"7.4",
+	  "7.5":"7.6",
+	  "7.7":"7.8",
+	  "7.9":"predef",
+	])[inh] || inh;
 	while(pos) {
 	  if (current->inherits && current->inherits[inh]) {
 	    string res = current->inherits[inh]->lookup(ref[1..]);
@@ -1602,6 +1620,7 @@ class NScopeStack
 	  pos--;
 	  current = stack[pos];
 	}
+	ref = ({ inh + "::" }) + ref[1..];
 	break;
       }
       return scopes->lookup(ref, 1);
