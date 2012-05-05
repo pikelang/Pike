@@ -26,25 +26,26 @@ protected array _values()
   return l[tail..head-1];
 }
 
-void write(mixed item)
+void write(mixed ... items)
 {
-  put(item);
+  put(@items);
 }
 
-//! @decl void write(mixed item)
-//! @decl void put(mixed item)
-//! Adds the @[item] to the queue.
+//! @decl void write(mixed ... items)
+//! @decl void put(mixed ... items)
+//! Adds @[items] to the queue.
 //
-void put(mixed item)
+void put(mixed ... items)
 {
-  if (head == sizeof(l))
-  {
+  if (sizeof(items) + head > sizeof(l)) {
     l = l[tail ..];
     head -= tail;
     tail = 0;
-    l += allocate(sizeof(l) + QUEUE_SIZE);
+    l += allocate(sizeof(l) + max(QUEUE_SIZE, sizeof(items)));
   }
-  l[head++] = item;
+  foreach (items; int n; mixed item) {
+      l[head++] = item;
+  }
 //  werror(sprintf("Queue->put: %O\n", l[tail..head-1]));
 }
 
