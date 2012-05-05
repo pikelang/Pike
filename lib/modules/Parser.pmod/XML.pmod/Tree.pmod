@@ -827,7 +827,19 @@ protected class VirtualNode {
   //  Public methods
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
+  //!
+  //! @seealso
+  //!   @[replace_attributes()]
   mapping(string:string) get_attributes()   { return (mAttributes); }
+
+  //! Replace the entire set of attributes.
+  //!
+  //! @seealso
+  //!   @[get_attributes()]
+  void replace_attributes(mapping(string:string) attrs)
+  {
+    mAttributes = attrs;
+  }
 
   //! Returns this nodes name-space adjusted attributes.
   //!
@@ -1447,6 +1459,9 @@ class WrappedSimple
 }
 
 //! Mixin for parsing XML.
+//!
+//! Uses @[Parser.XML.Simple] to perform
+//! the actual parsing.
 class XMLParser
 {
   this_program add_child(this_program);
@@ -1889,6 +1904,7 @@ class SimpleRootNode
     }
   }
 
+  //!
   protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags,
@@ -1901,6 +1917,7 @@ class SimpleRootNode
   }
 }
 
+//!
 class SimpleTextNode
 {
   inherit SimpleNode;
@@ -1908,12 +1925,15 @@ class SimpleTextNode
   {
     return SimpleTextNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
 }
 
+//!
 class SimpleCommentNode
 {
   inherit SimpleNode;
@@ -1921,12 +1941,15 @@ class SimpleCommentNode
   {
     return SimpleCommentNode(get_text());
   }
-  protected void create(string text)
+
+  //!
+  protected void create(string comment)
   {
-    ::create(XML_COMMENT, "", 0, text);
+    ::create(XML_COMMENT, "", 0, comment);
   }
 }
 
+//!
 class SimpleHeaderNode
 {
   inherit SimpleNode;
@@ -1934,12 +1957,15 @@ class SimpleHeaderNode
   {
     return SimpleHeaderNode(get_attributes());
   }
+
+  //!
   protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
 }
 
+//!
 class SimplePINode
 {
   inherit SimpleNode;
@@ -1947,6 +1973,8 @@ class SimplePINode
   {
     return SimplePINode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -1954,6 +1982,7 @@ class SimplePINode
   }
 }
 
+//!
 class SimpleDoctypeNode
 {
   inherit SimpleNode;
@@ -1961,6 +1990,8 @@ class SimpleDoctypeNode
   {
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
@@ -1971,6 +2002,7 @@ class SimpleDoctypeNode
   }
 }
 
+//!
 class SimpleDTDEntityNode
 {
   inherit SimpleNode;
@@ -1978,6 +2010,8 @@ class SimpleDTDEntityNode
   {
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -1985,6 +2019,7 @@ class SimpleDTDEntityNode
   }
 }
 
+//!
 class SimpleDTDElementNode
 {
   inherit SimpleNode;
@@ -1994,6 +2029,8 @@ class SimpleDTDElementNode
   {
     return SimpleDTDElementNode(get_full_name(), get_expression());
   }
+
+  //!
   protected void create(string name, array expression)
   {
     this_program::expression = expression;
@@ -2001,6 +2038,7 @@ class SimpleDTDElementNode
   }
 }
 
+//!
 class SimpleDTDAttlistNode
 {
   inherit SimpleNode;
@@ -2008,6 +2046,8 @@ class SimpleDTDAttlistNode
   {
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2015,6 +2055,7 @@ class SimpleDTDAttlistNode
   }
 }
 
+//!
 class SimpleDTDNotationNode
 {
   inherit SimpleNode;
@@ -2022,6 +2063,8 @@ class SimpleDTDNotationNode
   {
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2029,6 +2072,7 @@ class SimpleDTDNotationNode
   }
 }
 
+//!
 class SimpleElementNode
 {
   inherit SimpleNode;
@@ -2036,6 +2080,8 @@ class SimpleElementNode
   {
     return SimpleElementNode(get_full_name(), get_attributes());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
@@ -2120,6 +2166,7 @@ class RootNode
     }
   }
 
+  //!
   protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags)
@@ -2131,6 +2178,7 @@ class RootNode
   }
 }
 
+//!
 class TextNode
 {
   inherit Node;
@@ -2138,12 +2186,15 @@ class TextNode
   {
     return TextNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
 }
 
+//!
 class CommentNode
 {
   inherit Node;
@@ -2151,12 +2202,15 @@ class CommentNode
   {
     return CommentNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_COMMENT, "", 0, text);
   }
 }
 
+//!
 class HeaderNode
 {
   inherit Node;
@@ -2164,12 +2218,15 @@ class HeaderNode
   {
     return HeaderNode(get_attributes());
   }
+
+  //!
   protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
 }
 
+//!
 class PINode
 {
   inherit Node;
@@ -2177,6 +2234,8 @@ class PINode
   {
     return PINode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2184,6 +2243,7 @@ class PINode
   }
 }
 
+//!
 class DoctypeNode
 {
   inherit Node;
@@ -2191,6 +2251,8 @@ class DoctypeNode
   {
     return DoctypeNode(get_full_name(), get_attributes(), 0);
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
@@ -2201,6 +2263,7 @@ class DoctypeNode
   }
 }
 
+//!
 class DTDEntityNode
 {
   inherit Node;
@@ -2208,6 +2271,8 @@ class DTDEntityNode
   {
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2215,6 +2280,7 @@ class DTDEntityNode
   }
 }
 
+//!
 class DTDElementNode
 {
   inherit Node;
@@ -2224,6 +2290,8 @@ class DTDElementNode
   {
     return DTDElementNode(get_full_name(), get_expression());
   }
+
+  //!
   protected void create(string name, array expression)
   {
     this_program::expression = expression;
@@ -2231,6 +2299,7 @@ class DTDElementNode
   }
 }
 
+//!
 class DTDAttlistNode
 {
   inherit Node;
@@ -2238,6 +2307,8 @@ class DTDAttlistNode
   {
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2245,6 +2316,7 @@ class DTDAttlistNode
   }
 }
 
+//!
 class DTDNotationNode
 {
   inherit Node;
@@ -2252,6 +2324,8 @@ class DTDNotationNode
   {
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2259,6 +2333,7 @@ class DTDNotationNode
   }
 }
 
+//!
 class ElementNode
 {
   inherit Node;
@@ -2266,12 +2341,15 @@ class ElementNode
   {
     return ElementNode(get_full_name(), get_attributes());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
   }
 }
 
+//!
 class AttributeNode
 {
   inherit Node;
@@ -2279,6 +2357,8 @@ class AttributeNode
   {
     return AttributeNode(get_full_name(), get_text());
   }
+
+  //!
   protected void create(string name, string value)
   {
     ::create(XML_ATTR, name, 0, value);

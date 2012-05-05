@@ -3,7 +3,7 @@
 //!
 //! Validates an XML file according to a DTD.
 //!
-//! cf http://wwww.w3.org/TR/REC-xml/
+//! cf @url{http://www.w3.org/TR/REC-xml/@}
 //!
 
 #pike __REAL_VERSION__
