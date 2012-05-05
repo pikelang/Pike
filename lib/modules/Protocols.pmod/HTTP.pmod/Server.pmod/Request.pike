@@ -551,7 +551,7 @@ string make_response_header(mapping m)
 	 if (m->stop==-1) m->stop=m->size-1;
 	 if (m->start>=m->size ||
 	     m->stop>=m->size ||
-	     m->stop<m->size ||
+	     m->stop<m->start ||
 	     m->size<0)
 	    res[0]=protocol+" 416 Requested range not satisfiable";
 
