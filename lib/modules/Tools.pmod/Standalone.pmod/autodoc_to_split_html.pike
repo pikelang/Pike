@@ -288,13 +288,13 @@ class Node
 			  lambda(Parser.HTML p, mapping m, string c) {
 			    string resolved;
 			    if (resolved = m->resolved) {
-			      n->inherits += ({
-				({
-				  name, c,
-				  Parser.parse_html_entities(resolved),
-				})
-			      });
+			      resolved = Parser.parse_html_entities(resolved);
 			    }
+			    n->inherits += ({
+			      ({
+				name, c, resolved,
+			      })
+			    });
 			  },
 		       ]) )->finish(c);
     }
@@ -794,11 +794,15 @@ class Node
     q->put(({ 1, "", this_ref, this_ref }));
     while(sizeof(q)) {
       [int weight, string name, string text, string ref] = q->get();
+      if (!ref) ref = text;
       if (!names[ref]) names[ref] = text;
       if (closure[ref] >= weight) continue; // Already handled.
       closure[ref] = weight;
       Node n = refs[ref];
-      if (!n) continue;
+      if (!n) {
+	forward_deps[ref] = (<>);
+	continue;
+      }
       names[ref] = n->raw_class_path();
       multiset(string) inhs = (<>);
       if (sizeof(n->inherits)) {
@@ -810,7 +814,7 @@ class Node
 	    continue;	// Infinite loop averted.
 	  }
 	  q->put(({ weight + 1 }) + entry);
-	  inhs[entry[2]] = 1;
+	  inhs[entry[2]||entry[1]] = 1;
 	}
 	foreach(inhs; string inh_ref;) {
 	  if (!backward_deps[inh_ref]) {
@@ -825,12 +829,13 @@ class Node
     // Adjust, quote and link the names.
     int no_predef_strip;
     foreach(values(names), string name) {
-      if (!has_prefix(name, "predef::") || name == "predef::") {
+      if ((!has_prefix(name, "predef::") && has_value(name, "::")) ||
+	  name == "predef::") {
 	no_predef_strip = 1;
       }
     }
     foreach(names; string ref; string name) {
-      if (!no_predef_strip) {
+      if (!no_predef_strip && has_prefix(name, "predef::")) {
 	name = name[sizeof("predef::")..];
       }
       name = Parser.encode_html_entities(name);
@@ -841,8 +846,14 @@ class Node
 	name = "<tspan style='font-family:courier; font-weight:bold;'>" +
 	  name + "</tspan>";
 #endif
-      } else {
+      } else if (refs[ref]) {
 	name = create_reference(make_filename(), ref, name, "xlink:");
+      } else {
+#ifdef NO_SVG
+	name = "<span style='font-family:courier;'>" + name + "</span>";
+#else
+	name = "<tspan style='font-family:courier;'>" + name + "</tspan>";
+#endif
       }
       names[ref] = name;
     }
@@ -898,7 +909,7 @@ class Node
       multiset(int) inherit_positions = (<>);
       if (n) {
 	foreach(n->inherits, array(string) entry) {
-	  inherit_positions[positions[entry[2]]] = 1;
+	  inherit_positions[positions[entry[2]||entry[1]]] = 1;
 	}
       }
 
