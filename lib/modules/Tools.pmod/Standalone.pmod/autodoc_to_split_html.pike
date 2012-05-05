@@ -834,7 +834,16 @@ class Node
 	name = name[sizeof("predef::")..];
       }
       name = Parser.encode_html_entities(name);
-      name = create_reference(make_filename(), ref, name, "xlink:");
+      if (ref == this_ref) {
+#ifdef NO_SVG
+	name = "<b style='font-family:courier;'>" + name + "</b>";
+#else
+	name = "<tspan style='font-family:courier; font-weight:bold;'>" +
+	  name + "</tspan>";
+#endif
+      } else {
+	name = create_reference(make_filename(), ref, name, "xlink:");
+      }
       names[ref] = name;
     }
 
@@ -863,7 +872,7 @@ class Node
     // NB: No lay->docbody! Neither <pre> nor <svg> may be inside a <dd>.
     //     We simulate the <dd> with a style attribute instead.
 #ifdef NO_SVG
-    contents->add("<pre style='mergin-left:40px;'>\n");
+    contents->add("<pre style='margin-left:40px;'>\n");
 #else
     // FIXME: Why isn't height=100% good enough for Firefox?
     contents->add(sprintf("<svg"
@@ -955,8 +964,7 @@ class Node
 	  }
 	}
       }
-      contents->add(sprintf("<text x='%d' y='%d'"
-			    " text-decoration='underline'>%s</text>\n",
+      contents->add(sprintf("<text x='%d' y='%d'>%s</text>\n",
 			    pos*40, pos*20 + 20,
 			    names[ref]));
 #endif
@@ -1132,7 +1140,7 @@ class Node
       sprintf("<style type='text/css'>\n"
 	      "svg line { stroke:#343434; stroke-width:2; }\n"
 	      "svg text { fill:#343434; }\n"
-	      "svg a { fill:#0768b2; }\n"
+	      "svg a { fill:#0768b2; text-decoration: underline; }\n"
 	      "</style>\n") +
       sprintf("<script language='javascript' src='%s'>\n"
 	      "</script>\n",
