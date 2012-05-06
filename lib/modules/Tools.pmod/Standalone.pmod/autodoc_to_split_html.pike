@@ -776,7 +776,7 @@ class Node
 
   protected void make_inherit_graph(String.Buffer contents)
   {
-    contents->add(lay->dochead, "Inherit graph", lay->_dochead);
+    contents->add(lay->dochead, "Inheritance graph", lay->_dochead);
 
     string this_ref = raw_class_path();
 
