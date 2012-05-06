@@ -2619,7 +2619,10 @@ class cSuperTimeRange
 }
 
 //------------------------------------------------------------------------
-//! global convinience functions
+// Pop out doc-extractor context to the top-level scope.
+//! module Calendar
+//! submodule YMD
+// global convenience functions
 //------------------------------------------------------------------------
 
 //! method TimeRange parse(string fmt,string arg)
@@ -2974,8 +2977,8 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
        return 0;
 }
 
-//! function Day dwim_day(string date)
-//! function Day dwim_day(string date,TimeRange context)
+//! method Day dwim_day(string date)
+//! method Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
