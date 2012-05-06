@@ -152,7 +152,7 @@ class YMD
       return jd;
    }
 
-//! function method int unix_time()
+//! method int unix_time()
 //!     Returns the unix time integer corresponding to the start
 //!	of the time range object. (An unix time integer is UTC.)
 
@@ -277,7 +277,7 @@ class YMD
    int second_no() { return 0; }
    float fraction_no() { return 0.0; }
    
-//! function method datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
@@ -3208,7 +3208,7 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //-- auxillary functions------------------------------------------------
 
 //!
-//! function datetime(int|void unix_time)
+//! function mapping(string:int) datetime(int|void unix_time)
 //!     Replacement for localtime; gives back a mapping:
 //!	<pre>
 //!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
@@ -3228,8 +3228,8 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //!	</pre>
 //!	This is the same as calling <ref>Second</ref>()-><ref to=Second.datetime>datetime</ref>().
 //!
-//! function datetime_name(int|void unix_time)
-//! function datetime_short_name(int|void unix_time)
+//! function string datetime_name(int|void unix_time)
+//! function string datetime_short_name(int|void unix_time)
 //!     Compat functions; same as <ref>format_iso</ref>
 //!	and <ref>format_iso_short</ref>.
 //!	
