@@ -4375,8 +4375,9 @@ PIKECLASS List
    */
   PIKEFUN mixed tail()
   {
-    if (THIS->tail->prev) {
-      push_svalue(&THIS->tail->val);
+    struct pike_list_node * node = TAIL_SENTINEL(THIS);
+    if (THIS->head->next) {
+      push_svalue(&node->prev->val);
     } else {
       Pike_error("Empty list.\n");
     }
@@ -4482,7 +4483,12 @@ PIKECLASS List
 
       loc.o = Pike_fp->current_object;
       loc.parent_identifier = Pike_fp->fun;
-      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      if (loc.parent_identifier == FUNCTION_BUILTIN) {
+	loc.inherit = loc.o->prog->inherits
+		    + loc.o->prog->num_inherits - 1;
+      } else {
+	loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      }
       find_external_context(&loc, 1);
       return (struct List_struct *)(loc.o->storage +
 				    loc.inherit->storage_offset);
