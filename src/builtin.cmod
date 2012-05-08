@@ -4371,7 +4371,7 @@ PIKECLASS List
    *!   Throws an error if the list is empty.
    *!
    *! @seealso
-   *!   @[is_empty()], @[head()], @[pop()]
+   *!   @[is_empty()], @[head()], @[pop_back()]
    */
   PIKEFUN mixed tail()
   {
@@ -4383,6 +4383,16 @@ PIKECLASS List
     }
   }
 
+  static inline void pop_node(struct pike_list_node * node) {
+    push_svalue(&node->val);
+    if (node->refs == 2) {
+      unlink_list_node(node);
+    } else {
+      detach_list_node(node);
+    }
+    THIS->num_elems--;
+  }
+
   /*! @decl mixed pop()
    *!
    *!   Pop the element at the head of the list from the list.
@@ -4391,21 +4401,107 @@ PIKECLASS List
    *!   Throws an error if the list is empty.
    *!
    *! @seealso
-   *!   @[is_empty()], @[head()], @[tail()]
+   *!   @[is_empty()], @[head()], @[tail()], @[pop_back()]
    */
   PIKEFUN mixed pop()
   {
     if (THIS->head->next) {
-      push_svalue(&THIS->head->val);
-      if (THIS->head->refs == 2) {
-	unlink_list_node(THIS->head);
-      } else {
-	detach_list_node(THIS->head);
-      }
-      THIS->num_elems--;
+      pop_node(THIS->head);
     } else {
       Pike_error("Empty list.\n");
     }
+  }
+
+  /*! @decl mixed pop_back()
+   *!
+   *!   Pop the element at the tail of the list from the list.
+   *!
+   *! @throws
+   *!   Throws an error if the list is empty.
+   *!
+   *! @seealso
+   *!   @[is_empty()], @[head()], @[tail()], @[pop()]
+   */
+  PIKEFUN mixed pop_back()
+  {
+    const struct pike_list_node * node = TAIL_SENTINEL(THIS);
+    if (THIS->head->next) {
+      pop_node(node->prev);
+    } else {
+      Pike_error("Empty list.\n");
+    }
+  }
+
+  /*! @decl array _values()
+   *!
+   *! 	Returns an array of elements in the list.
+   */
+  PIKEFUN array _values()
+    flags ID_PROTECTED;
+  {
+      struct array * a;
+      push_int(THIS->num_elems);
+      f_allocate(1);
+
+      a = Pike_sp[-1].u.array;
+      if (THIS->num_elems) {
+	struct pike_list_node *node = THIS->head;
+	int i;
+	for (i = 0; i < THIS->num_elems; i++) {
+	  assign_svalue_no_free(ITEM(a) + i, &node->val);
+	  node = node->next;
+	}
+      }
+    }
+
+  /*! @decl mixed cast(string type)
+   *!
+   *! 	Cast the lists. @expr{array@} and @expr{object@} are the only
+   *! 	supported types.
+   */
+  PIKEFUN mixed cast(string type)
+    flags ID_PROTECTED;
+  {
+      if (type == MK_STRING("array")) {
+	pop_n_elems(args);
+	apply_current(f_List_cq__values_fun_num, 0);
+      } else if (type == MK_STRING("object")) {
+	pop_n_elems(args);
+	ref_push_object(Pike_fp->current_object);
+      } else {
+	Pike_error("Cannot cast to %o.\n", Pike_sp-1);
+      }
+  }
+
+
+  /*! @decl mixed `[](mixed key) */
+  PIKEFUN mixed `[](mixed key)
+    flags ID_PROTECTED;
+  {
+      struct pike_list_node *node;
+      INT_TYPE n;
+      if (TYPEOF(*key) != PIKE_T_INT) SIMPLE_BAD_ARG_ERROR("`[]", 1, "int");
+
+      n = key->u.integer;
+      if (n < 0) n = -(n+1);
+
+      if (n >= THIS->num_elems) Pike_error("out of bounds");
+
+      if (n >= THIS->num_elems >> 1) { /* use shorter direction */
+	n = THIS->num_elems - n - 1;
+	key->u.integer = - key->u.integer - 1;
+      }
+
+      if (key->u.integer < 0) {
+	node = TAIL_SENTINEL(THIS)->prev;
+	while (n--) node = node->prev;
+      } else {
+	node = THIS->head;
+	while (n--) node = node->next;
+      }
+
+      pop_n_elems(args);
+      push_svalue(&node->val);
   }
 
   /*! @decl void append(mixed ... values)
@@ -4448,17 +4544,31 @@ PIKECLASS List
     push_int(0);
   }
 
+  /*! @decl void flush()
+   *!
+   *! 	Empties the List.
+   */
+  PIKEFUN void flush() {
+    if (THIS->num_elems) {
+      while (THIS->head->next) {
+	if (THIS->head->refs == 2)
+	  unlink_list_node(THIS->head);
+	else
+	  detach_list_node(THIS->head);
+      }
+      THIS->num_elems = 0;
+    }
+  }
+
   /*! @decl protected void create(mixed ... values)
    *!
    *!   Create a new @[List], and initialize it with @[values].
-   *!
-   *! @fixme
-   *!   Ought to reset the @[List] if called multiple times.
    */
   PIKEFUN void create(mixed ... values)
     flags ID_PROTECTED;
   {
-    /* FIXME: Reset the list? */
+    if (THIS->num_elems)
+      apply_current(f_List_flush_fun_num, 0);
     apply_current(f_List_append_fun_num, args);
   }
 
