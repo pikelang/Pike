@@ -4593,12 +4593,7 @@ PIKECLASS List
 
       loc.o = Pike_fp->current_object;
       loc.parent_identifier = Pike_fp->fun;
-      if (loc.parent_identifier == FUNCTION_BUILTIN) {
-	loc.inherit = loc.o->prog->inherits
-		    + loc.o->prog->num_inherits - 1;
-      } else {
-	loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
-      }
+      loc.inherit = Pike_fp->context;
       find_external_context(&loc, 1);
       return (struct List_struct *)(loc.o->storage +
 				    loc.inherit->storage_offset);
