@@ -675,7 +675,7 @@ class TimeofDay
       return 0.0;
    }
 
-//! function mapping datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
