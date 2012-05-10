@@ -1384,6 +1384,13 @@ class Message {
       array(array(string|int)) arr =
 	tokenize(headers["content-type"]) / ({';'});
       array(string|int) p;
+      if (guess && sizeof(arr[0]) > 3) {
+	// Workspace Webmail 5.6.17 is known to be able to
+	// send attachments with the content-type header
+	// "application/msword application; name=\"Foo.doc\";"
+	// Strip the extraneous tokens.
+	arr[0] = arr[0][..2];
+      }
       if(sizeof(arr[0])!=3 || arr[0][1]!='/' ||
 	 !stringp(arr[0][0]) || !stringp(arr[0][2]))
 	if(sizeof(arr[0])==1 && stringp(arr[0][0]) &&
@@ -1392,7 +1399,7 @@ class Message {
 	else if(!guess)
 	  error("invalid Content-Type %O\n", headers["content-type"]);
 	else
-	  arr = ({ ({ "text", '/', "plain" }) }) + arr[1..];
+	  arr = ({ ({ "application", '/', "octet-stream" }) }) + arr[1..];
       type = lower_case(arr[0][0]);
       subtype = lower_case(arr[0][2]);
       foreach( arr[1..], p )
