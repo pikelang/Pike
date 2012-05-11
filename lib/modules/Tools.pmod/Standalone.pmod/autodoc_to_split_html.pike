@@ -839,22 +839,24 @@ class Node
 	name = name[sizeof("predef::")..];
       }
       name = Parser.encode_html_entities(name);
-      if (ref == this_ref) {
 #ifdef NO_SVG
+      if (ref == this_ref) {
 	name = "<b style='font-family:courier;'>" + name + "</b>";
+      } else if (refs[ref]) {
+	name = create_reference(make_filename(), ref, name);
+      } else {
+	name = "<span style='font-family:courier;'>" + name + "</span>";
+      }
 #else
+      if (ref == this_ref) {
 	name = "<tspan style='font-family:courier; font-weight:bold;'>" +
 	  name + "</tspan>";
-#endif
       } else if (refs[ref]) {
 	name = create_reference(make_filename(), ref, name, "xlink:");
       } else {
-#ifdef NO_SVG
-	name = "<span style='font-family:courier;'>" + name + "</span>";
-#else
 	name = "<tspan style='font-family:courier;'>" + name + "</tspan>";
-#endif
       }
+#endif
       names[ref] = name;
     }
 
@@ -894,12 +896,12 @@ class Node
 			  " style='margin-left:40px;'"
 			  " width='100%%' height='%dpx'>\n",
 			  sizeof(references)*20 + 5));
-    array(int) ystart = allocate(sizeof(references));
 #endif
 
     int pos;
     mapping(string:int) positions = ([]);
     array(string) rev_positions = allocate(sizeof(references));
+    array(int) ystart = allocate(sizeof(references));
     while (sizeof(pq)) {
       string ref = pq->pop();
       Node n = refs[ref];
