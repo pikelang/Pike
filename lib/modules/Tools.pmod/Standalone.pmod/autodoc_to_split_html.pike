@@ -187,6 +187,7 @@ string create_reference(string from, string to, string text,
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
 
+ADT.Stack pending_inherits;
 
 class Node
 {
@@ -199,6 +200,7 @@ class Node
   array(Node) directive_children = ({ });
   array(Node) method_children = ({ });
   array(array(string|Node)) inherits = ({});
+  array(Node) children = ({});
 
   Node parent;
 
@@ -289,6 +291,12 @@ class Node
 			    string resolved;
 			    if (resolved = m->resolved) {
 			      resolved = Parser.parse_html_entities(resolved);
+			      Node nn = refs[resolved];
+			      if (nn) {
+				nn->children += ({ n });
+			      } else {
+				pending_inherits->push(({ resolved, n }));
+			      }
 			    }
 			    n->inherits += ({
 			      ({
@@ -826,6 +834,11 @@ class Node
       forward_deps[ref] = inhs;
     }
 
+    foreach(children, Node n) {
+      string ref = n->raw_class_path();
+      names[ref] = ref;
+    }
+
     // Adjust, quote and link the names.
     int no_predef_strip;
     foreach(values(names), string name) {
@@ -895,7 +908,7 @@ class Node
 			  " xml:space='preserve'"
 			  " style='margin-left:40px;'"
 			  " width='100%%' height='%dpx'>\n",
-			  sizeof(references)*20 + 5));
+			  (sizeof(references) + sizeof(children))*20 + 5));
 #endif
 
     int pos;
@@ -992,6 +1005,33 @@ class Node
 	}
       }
     }
+
+    // Add the classes that we are a direct parent to.
+    if (sizeof(children)) {
+      int ppos = sizeof(closure) - 1;
+#ifdef NO_SVG
+      foreach(sort(children->raw_class_path()), string ref) {
+	contents->add("&nbsp;&nbsp;&nbsp;&nbsp;"*ppos,
+		      "&nbsp;|&nbsp;&nbsp;&nbsp;\n");
+	contents->add("&nbsp;&nbsp;&nbsp;&nbsp;"*ppos,
+		      "&nbsp;+--",
+		      names[ref], "\n");
+      }
+#else
+      contents->add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    ppos*40 + 5, ystart[ppos],
+			    ppos*40 + 5, (ppos + sizeof(children))*20 + 16));
+      foreach(sort(children->raw_class_path()); int i; string ref) {
+	contents->add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			      ppos*40 + 4, (ppos + i)*20 + 35,
+			      ppos*40 + 35, (ppos + i)*20 + 35,));
+	contents->add(sprintf("<text x='%d' y='%d'>%s</text>\n",
+			      ppos*40 + 40, (ppos + i)*20 + 40,
+			      names[ref]));
+      }
+#endif
+    }
+
 #ifdef NO_SVG
     contents->add("</pre>\n");
 #else
@@ -1226,6 +1266,8 @@ class TopNode {
     PROFILE();
     mapping m = localtime(time());
     timestamp = sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday);
+    pending_inherits = ADT.Stack();
+    pending_inherits->push(0);	// End sentinel.
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
@@ -1255,6 +1297,15 @@ class TopNode {
 	directive_children += x->directive_children;
 	method_children += x->method_children;
       }
+
+    array(string|Node) inh;
+    while (inh = pending_inherits->pop()) {
+      [string ref, Node child] = inh;
+      Node parent = refs[ref];
+      if (parent) {
+	parent->children += ({ child });
+      }
+    }
     type = "autodoc";
     ENDPROFILE("top_create");
   }
