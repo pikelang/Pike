@@ -824,6 +824,7 @@ class Node
 
   string low_make_index_js(string name, array(Node) nodes)
   {
+    if (!sizeof(nodes)) return "";
     array(mapping(string:string)) a =
       map(nodes,
 	  lambda(Node n) {
@@ -836,7 +837,7 @@ class Node
 
   string make_index_js()
   {
-    string res = "";
+    string res = "// Direct symbols for " + make_class_path() + ".\n\n";
 
 #define LOW_MAKE_INDEX_JS(CHILDREN) do {				\
       res += low_make_index_js(#CHILDREN, CHILDREN);			\
@@ -848,9 +849,6 @@ class Node
     LOW_MAKE_INDEX_JS(directive_children);
     LOW_MAKE_INDEX_JS(method_children);
 
-    res += sprintf("var namespace_children = %s;\n", encode_json(({})));
-    res += sprintf("var appendix_children = %s;\n", encode_json(({})));
-
     return res +
       "var children = module_children.concat(class_children,\n"
       "                                      enum_children,\n"
@@ -861,8 +859,7 @@ class Node
   string make_load_index_js()
   {
     string res =
-      "// Indirect loader of the symbol index for " +
-      make_class_path() + ".\n";
+      "// Indirect loader of the symbol index for " + make_class_path() + ".\n";
     if (sizeof(inherits)) {
       res += "\n// Load the symbols from our inherits.\n";
       foreach(inherits, array(string|Node) inh) {
