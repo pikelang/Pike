@@ -1058,7 +1058,7 @@ class Node
     String.Buffer contents = String.Buffer(100000);
     resolve_class_paths(n);
 
-    if (sizeof(inherits)) {
+    if (sizeof(inherits) || sizeof(children)) {
       make_inherit_graph(contents);
     }
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
