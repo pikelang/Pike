@@ -1145,6 +1145,10 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     struct object *o = Pike_sp[-args].u.object;
     int inherit_no = SUBTYPEOF(Pike_sp[-args]);
 
+    if (!o->prog || FIND_LFUN(o->prog, LFUN__SIZEOF) < 0) {
+      Pike_error("has_prefix(): Object in argument 1 lacks lfun::_sizeof().\n");
+    }
+
     apply_lfun(o, LFUN__SIZEOF, 0);
     if ((TYPEOF(Pike_sp[-1]) != T_INT) || (Pike_sp[-1].u.integer < b->len)) {
       pop_n_elems(args + 1);
