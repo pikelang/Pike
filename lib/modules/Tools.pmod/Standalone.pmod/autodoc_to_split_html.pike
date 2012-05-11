@@ -35,14 +35,119 @@ mapping profiling = ([]);
 constant navigation_js = #"
 /* Functions for rendering the navigation. */
 
-/* The variables
- *   module_children, class_children, enum_children, directive_children,
- *   method_children, namespace_children, appendix_children
- *   and siblings are assumed to have been set to arrays of nodes.
- *
- * The variable current is assumed to have been set to the node
+/* The variable current is assumed to have been set to the node
  * representing the current document.
  */
+
+/* These are all arrays of nodes. */
+var module_children = [];
+var class_children = [];
+var enum_children = [];
+var directive_children = [];
+var method_children = [];
+var namespace_children = [];
+var appendix_children = [];
+var children = [];
+
+function clear_children()
+{
+  module_children = [];
+  class_children = [];
+  enum_children = [];
+  directive_children = [];
+  method_children = [];
+  namespace_children = [];
+  appendix_children = [];
+  children = [];
+}
+
+function cmp_nodes(/* node */a, /* node */b)
+{
+  return (a.name > b.name) - (b.name > a.name);
+}
+
+function merge_node_lists(/* array(node) */old, /* array(node) */nodes)
+{
+  var i;
+  var hash = {};
+  for (i=0; i < old.length; i++) {
+    var node = old[i];
+
+    hash[node.name] = i+1;
+  }
+  for (i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var j = hash[node.name];
+    if (j) {
+      old[j-1] = node;
+    } else {
+      old[old.length] = node;
+    }
+  }
+  old.sort(cmp_nodes);
+  return old;
+}
+
+function add_module_children(/* array(node) */children)
+{
+  module_children = merge_node_lists(module_children, children);
+}
+
+function add_class_children(/* array(node) */children)
+{
+  class_children = merge_node_lists(class_children, children);
+}
+
+function add_enum_children(/* array(node) */children)
+{
+  enum_children = merge_node_lists(enum_children, children);
+}
+
+function add_directive_children(/* array(node) */children)
+{
+  directive_children = merge_node_lists(directive_children, children);
+}
+
+function add_method_children(/* array(node) */children)
+{
+  method_children = merge_node_lists(method_children, children);
+}
+
+function add_namespace_children(/* array(node) */children)
+{
+  namespace_children = merge_node_lists(namespace_children, children);
+}
+
+function add_appendix_children(/* array(node) */children)
+{
+  appendix_children = merge_node_lists(appendix_children, children);
+}
+
+function low_end_inherit(/* array(node) */nodes)
+{
+  var i;
+  for (i=0; i < nodes.length; i++) {
+    nodes[i].inherited = 1;
+  }
+}
+
+function end_inherit()
+{
+  low_end_inherit(module_children);
+  low_end_inherit(class_children);
+  low_end_inherit(enum_children);
+  low_end_inherit(directive_children);
+  low_end_inherit(method_children);
+  low_end_inherit(namespace_children);
+  low_end_inherit(appendix_children);
+}
+
+function emit_end_inherit()
+{
+  document.write(\"<script language='javascript'>\\n\" +
+                 \"end_inherit();\\n\" +
+                 \"</script>\\n\");
+}
 
 function escapehtml(/* string */text)
 {
@@ -74,6 +179,13 @@ function adjust_link(/* string */link)
   return dots + link.substring(reldir.length);
 }
 
+function emit_load_js(/* string */link)
+{
+  document.write(\"<script language='javascript' src='\" +
+                 adjust_link(link) + \"' >\\n\" +
+                 \"</script>\\n\");
+}
+
 function low_navbar(/* Document */document, /* string */heading,
                     /* array(node) */nodes, /* string */suffix)
 {
@@ -85,7 +197,10 @@ function low_navbar(/* Document */document, /* string */heading,
   var i;
   for (i=0; i < nodes.length; i++) {
     var n = nodes[i];
-    var name = '<b>' + escapehtml(n.name + suffix) + '</b>';
+    var name = escapehtml(n.name + suffix);
+    if (!n.inherited) {
+      name = '<b>' + name + '</b>';
+    }
     if (n.link == current.link) {
       document.write(name);
     } else {
@@ -469,6 +584,15 @@ class Node
     return make_filename_low() + "/index";
   }
 
+  string make_load_index_filename()
+  {
+    if((type == "method") || (type == "directive")) {
+      return parent->make_load_index_filename();
+    }
+    // NB: We need the full path for the benefit of the exporter.
+    return make_filename_low() + "/load_index.js";
+  }
+
   string make_parent_index_filename()
   {
     if (parent) return parent->make_index_filename();
@@ -701,17 +825,18 @@ class Node
   string low_make_index_js(string name, array(Node) nodes)
   {
     array(mapping(string:string)) a =
-      map(nodes, lambda(Node n) {
-		   return ([ "name":n->name,
-			     "link":n->make_filename() ]);
-		 });
+      map(nodes,
+	  lambda(Node n) {
+	    return ([ "name":n->name,
+		      "link":n->make_filename() ]);
+	  });
     sort(a->name, a);
-    return sprintf("var %s = %s;\n", name, encode_json(a));
+    return sprintf("add_%s(%s);\n", name, encode_json(a));
   }
 
   string make_index_js()
   {
-    string res = "var siblings = children;\n";
+    string res = "";
 
 #define LOW_MAKE_INDEX_JS(CHILDREN) do {				\
       res += low_make_index_js(#CHILDREN, CHILDREN);			\
@@ -731,6 +856,26 @@ class Node
       "                                      enum_children,\n"
       "                                      directive_children,\n"
       "                                      method_children);\n";
+  }
+
+  string make_load_index_js()
+  {
+    string res =
+      "// Indirect loader of the symbol index for " +
+      make_class_path() + ".\n";
+    if (sizeof(inherits)) {
+      res += "\n// Load the symbols from our inherits.\n";
+      foreach(inherits, array(string|Node) inh) {
+	Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
+	if (!n) continue;
+
+	res += "\n// Inherit " + n->make_class_path() + ".\n";
+	res += sprintf("emit_load_js(%q);\n", n->make_load_index_filename());
+      }
+      res += "\nemit_end_inherit();\n";
+    }
+    res += sprintf("\nemit_load_js(%q);\n", make_index_filename() + ".js");
+    return res;
   }
 
   array(Node) find_siblings()
@@ -1124,7 +1269,6 @@ class Node
   {
     if ((type != "method") && (type != "directive")) {
       string index_js = make_index_js();
-
       string index = make_index_filename() + ".js";
       if (exporter) {
         exporter->filemodify(Git.MODE_FILE, path + "/" + index);
@@ -1132,6 +1276,16 @@ class Node
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
         Stdio.write_file(path + "/" + index, index_js);
+      }
+
+      string load_index_js = make_load_index_js();
+      string load_index = make_load_index_filename();
+      if (exporter) {
+        exporter->filemodify(Git.MODE_FILE, path + "/" + load_index);
+        exporter->data(load_index_js);
+      } else {
+        Stdio.mkdirhier(combine_path(path + "/" + load_index, "../"));
+        Stdio.write_file(path + "/" + load_index, load_index_js);
       }
 
       string index_html = make_index_page(1);
@@ -1195,12 +1349,6 @@ class Node
 	      "svg text { fill:#343434; }\n"
 	      "svg a { fill:#0768b2; text-decoration: underline; }\n"
 	      "</style>\n") +
-      sprintf("<script language='javascript' src='%s'>\n"
-	      "</script>\n",
-	      low_make_link(make_parent_index_filename() + ".js")) +
-      sprintf("<script language='javascript' src='%s'>\n"
-	      "</script>\n",
-	      low_make_link(make_index_filename() + ".js")) +
       sprintf("<script language='javascript'>\n"
 	      "var current = %s;\n"
 	      "</script>\n",
@@ -1210,7 +1358,17 @@ class Node
                       ({ "&", "<", ">" }), ({ "&amp;", "&lt;", "&gt;" }))) +
       sprintf("<script language='javascript' src='%s'>\n"
 	      "</script>\n",
-	      low_make_link("navigation.js"));
+	      low_make_link("navigation.js")) +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_parent_index_filename() + ".js")) +
+      sprintf("<script language='javascript'>\n"
+	      "siblings = children;\n"
+	      "clear_children();\n"
+	      "</script>\n") +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_load_index_filename()));
 
     string res = replace(template,
       (["$navbar$": make_navbar(),
