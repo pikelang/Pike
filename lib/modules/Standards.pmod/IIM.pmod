@@ -207,9 +207,11 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	(string)record_set + ":" + (string)id;
 
       if (label == "coded character set") {
-	if (data == "\e%5") {
+	if (data == "\e%G") {
+	  res->charset = (res->charset || ({})) + ({ "UTF-8" });
+	} else if (data == "\e%5") {
 	  res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
-	}
+	}	
       }
 
       if (label == "special instructions" && lower_case(data) == "nyhedstjeneste")
