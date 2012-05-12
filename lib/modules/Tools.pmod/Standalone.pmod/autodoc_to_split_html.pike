@@ -48,6 +48,7 @@ var method_children = [];
 var namespace_children = [];
 var appendix_children = [];
 var children = [];
+var siblings = [];
 
 function clear_children()
 {
@@ -850,10 +851,10 @@ class Node
     LOW_MAKE_INDEX_JS(method_children);
 
     return res +
-      "var children = module_children.concat(class_children,\n"
-      "                                      enum_children,\n"
-      "                                      directive_children,\n"
-      "                                      method_children);\n";
+      "children = module_children.concat(class_children,\n"
+      "                                  enum_children,\n"
+      "                                  directive_children,\n"
+      "                                  method_children);\n";
   }
 
   string make_load_index_js()
