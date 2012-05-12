@@ -150,7 +150,16 @@
 struct program *file_program;
 struct program *file_ref_program;
 
-/*! @module Stdio
+/*! @module files
+ *!
+ *! Low-level implementations of file-related operations.
+ *!
+ *! @note
+ *!   This module should typically not be used directly by user-level
+ *!   code. You probably want to use the @[Stdio] module instead.
+ *!
+ *! @seealso
+ *!   @[Stdio]
  */
 
 /*! @class Fd_ref
@@ -198,9 +207,9 @@ static void fd_fd_factory(INT32 args)
 		      Pike_fp->context - Pike_fp->current_program->inherits);
 }
 
-/* @decl object(Fd) `_fd()
- *
- * Getter for the Fd object.
+/*! @decl object(Fd) `_fd()
+ *!
+ *! Getter for the Fd object.
  */
 static void fd_backtick__fd(INT32 args)
 {
@@ -211,6 +220,12 @@ static void fd_backtick__fd(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @module Stdio
  */
 
 /* The class below is not accurate, but it's the lowest exposed API
