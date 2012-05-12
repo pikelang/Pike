@@ -679,16 +679,20 @@ string extract(string filename, string imgdest,
 	     "type: %O\n"
 	     "name: %O\n", root, type, name);
 #endif /* 0 */
-      if(name == "master.pike")
-	name = "/master";
-      if(name == "module" && (filename/"/")[-1] != "module.pike") {
+      // Support filenames with embedded dots.
+      // cf GTK2:refdoc/GTK2.pmod/G.Object.pike
+      root += name/".";
+      name = root[-1];
+      root = root[..sizeof(root)-2];
+      if(name == "module" && type != "class") {
 	if(sizeof(root)<2)
 	  error("Unknown module parent name.\n");
 	name = root[-1];
 	root = root[..sizeof(root)-2];
       } else if ((name == "__default") && (sizeof(root) == 1)) {
 	// Pike backward compatibility module.
-	name = root[0][..sizeof(root[0])-3];
+	name = root[0];
+	if (has_suffix(name, "::")) name = name[..sizeof(name)-3];
 	root = ({});
 	type = "namespace";
       }
