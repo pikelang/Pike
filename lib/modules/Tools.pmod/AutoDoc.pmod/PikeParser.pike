@@ -894,8 +894,10 @@ array(array(string)|array(int)) tokenize(string s, int line) {
 	if (version == "__REAL_VERSION__") {
 	  version = "predef";
 	}
-	t += ({ "//! @decl import " + version + "::\n" });
-	p += ({ pos });
+	// NB: Surround the comment with whitespace, to keep
+	//     it from being associated with surrounding code.
+	t += ({ "\n", "//! @decl import " + version + "::\n", "\n" });
+	p += ({ pos + 2, pos, pos + 2 });
       }
       t += ({ "\n" });
       p += ({ pos });
