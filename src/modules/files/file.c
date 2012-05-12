@@ -168,7 +168,7 @@ struct program *file_ref_program;
  *! that call the corresponding functions in
  *! @[Fd].
  *!
- *! Used by @[File].
+ *! Used by @[Stdio.File].
  */
 
 /*! @decl Fd _fd
@@ -180,7 +180,7 @@ struct program *file_ref_program;
 
 /*! @class Fd
  *!
- *! Low level I/O operations. Use @[File] instead.
+ *! Low level I/O operations. Use @[Stdio.File] instead.
  */
 
 /*! @decl Fd fd_factory()
