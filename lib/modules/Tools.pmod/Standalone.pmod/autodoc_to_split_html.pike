@@ -858,20 +858,34 @@ class Node
 
   string make_load_index_js()
   {
-    string res =
-      "// Indirect loader of the symbol index for " + make_class_path() + ".\n";
+    string res = "";
     if (sizeof(inherits)) {
-      res += "\n// Load the symbols from our inherits.\n";
       foreach(inherits, array(string|Node) inh) {
 	Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
 	if (!n) continue;
 
-	res += "\n// Inherit " + n->make_class_path() + ".\n";
-	res += sprintf("emit_load_js(%q);\n", n->make_load_index_filename());
+	res += sprintf("// Inherit %s.\n"
+		       "emit_load_js(%q);\n"
+		       "\n",
+		       n->make_class_path(),
+		       n->make_load_index_filename());
       }
-      res += "\nemit_end_inherit();\n";
+      if (sizeof(res)) {
+	res = sprintf("// Load the symbols from our inherits.\n"
+		      "\n"
+		      "%s"
+		      "emit_end_inherit();\n"
+		      "\n",
+		      res);
+      }
     }
-    res += sprintf("\nemit_load_js(%q);\n", make_index_filename() + ".js");
+    res = sprintf("// Indirect loader of the symbol index for %s.\n"
+		  "\n"
+		  "%s"
+		  "emit_load_js(%q);\n",
+		  make_class_path(),
+		  res,
+		  make_index_filename() + ".js");
     return res;
   }
 
