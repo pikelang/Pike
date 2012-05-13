@@ -1730,9 +1730,12 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
 #define CBFUNCS2(CB, EVENT)						\
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
-    if(!args)								\
+    if(args<2)								\
       SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
-    set_fd_event_cb (THIS, Pike_sp-args, EVENT, Pike_sp[-1].u.integer);	\
+    if (TYPEOF(Pike_sp[1-args]) != T_INT)				\
+      SIMPLE_ARG_TYPE_ERROR("Stdio.File->set_" #CB, 2, "int");		\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT,				\
+		     Pike_sp[1-args].u.integer);			\
   }									\
 									\
   static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
