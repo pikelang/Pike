@@ -673,8 +673,8 @@ static struct pike_string *do_read(int fd,
   bytes_read=0;
   *err=0;
 
-  if(r <= DIRECT_BUFSIZE
-   || all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1))   /* r<<1 != power of two */
+  if(r <= DIRECT_BUFSIZE ||
+     (all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1)))   /* r<<1 != power of two */
   {
     struct pike_string *str;
 
@@ -1729,17 +1729,17 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
 
 #define CBFUNCS2(CB, EVENT)						\
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
-  {	\ 
+  {									\
     if(!args)								\
       SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
-    set_fd_event_cb (THIS, Pike_sp-args, EVENT, Pike_sp[-1].u.integer);			\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT, Pike_sp[-1].u.integer);	\
   }									\
 									\
   static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
   {									\
     pop_n_elems(args);							\
     push_svalue(& THIS->event_cbs[EVENT]);				\
-  } \
+  }
 
 CBFUNCS(read_callback, PIKE_FD_READ)
 CBFUNCS(write_callback, PIKE_FD_WRITE)
