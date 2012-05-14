@@ -165,7 +165,7 @@ protected int year_remaining_days(int y,int yday)
    return 365+year_leap_year(y)-yday;
 }
 
-//! function method int daystart_offset()
+//! @decl int daystart_offset()
 //!     Returns the offset to the start of the time range object
 //!     
 int daystart_offset()
@@ -564,12 +564,12 @@ class Vahid
       return vahid_name();
    }
 
-//! method Year year()
-//! method Year year(int n)
-//! method Year year(string name)
-//!     return a year in the vahid by number or name:
+//! @decl Year year()
+//! @decl Year year(int n)
+//! @decl Year year(string name)
+//!     Return a year in the vahid by number or name:
 //!
-//!     <tt>vahid-&gt;year("Alif")</tt>
+//!     @tt{vahid->year("Alif")@}
    cYear year(int|string ... yp)
    {
       int num;
