@@ -39,10 +39,6 @@
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
 
-    /* These calculations should always give some margin based on the size. */
-    /* One extra char for the sign. */
-#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
-
 /* The destructive multiset merge code is broken.
  * l->msd gets -1 refs.
  *
