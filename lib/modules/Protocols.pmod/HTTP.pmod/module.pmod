@@ -662,7 +662,8 @@ array(string) get_url_nice(string|Standards.URI url,
     seen[url]=1;
     c = get_url(url, query_variables, request_headers, con);
     if(!c) return 0;
-    if(c->status==302) url = c->headers->location;
+    if(c->status==302)
+      url = Standards.URI(c->headers->location, url);
   } while( c->status!=200 );
   return ({ c->headers["content-type"], c->data() });
 }
