@@ -142,7 +142,7 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
 	((char*)_buf)[length] = 0;
 	break;
     default:
-	Pike_error("Cannot receive shift %d as a string. %d\n", (int)shift);
+	Pike_error("Cannot receive shift %d as a string.\n", (int)shift);
     }
 
     r = MPI_Recv(_buf, length, type, status.MPI_SOURCE, tag,
@@ -164,6 +164,78 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
 
     return r;
 }
+
+int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
+{
+    unsigned int length = OBJ2_INTARRAY(buf)->i.length;
+    unsigned char shift = OBJ2_INTARRAY(buf)->i.shift;
+    int rank;
+
+    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    MPI_Comm_rank(comm, &rank);
+
+    if (rank != root) {
+	if (shift != OBJ2_INTARRAY(buf)->i.shift)
+	    Pike_fatal("Cannot (receive) broadcast of shift %d into buffer of shift %d.\n",
+		       (int)shift, (int)OBJ2_INTARRAY(buf)->i.shift);
+	if (length > OBJ2_INTARRAY(buf)->i.length)
+	    Pike_fatal("Buffer of shift %d and size %d to small for transmission of size %d.\n",
+		       (int)shift, OBJ2_INTARRAY(buf)->i.length, length);
+    }
+
+    return MPI_Bcast(OBJ2_INTARRAY(buf)->i.data, length,
+		     OBJ2_INTARRAY(buf)->i.type, root, comm);
+}
+
+static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
+{
+    unsigned char shift = (*ps)->size_shift;
+    unsigned int length = (*ps)->len << ((*ps)->size_shift);
+    MPI_Status status;
+    void *_buf;
+    int r, rank;
+
+    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    MPI_Comm_rank(comm, &rank);
+
+
+    if (rank != root) {
+	switch (shift) {
+	case 0:
+	case 1:
+	case 2:
+	    _buf = malloc(length+1);
+	    ((char*)_buf)[length] = 0;
+	    break;
+	default:
+	    Pike_error("Cannot receive shift %d as a string.\n", (int)shift);
+	}
+
+	r = MPI_Bcast(_buf, length, MPI_CHAR, root, comm);
+
+	switch (shift) {
+	case 0:
+	    *ps = make_shared_binary_string(_buf, length);
+	    break;
+	case 1:
+	    *ps = make_shared_binary_string1((p_wchar1*)_buf, length >> shift);
+	    break;
+	case 2:
+	    *ps = make_shared_binary_string2((p_wchar2*)_buf, length >> shift);
+	    break;
+	}
+
+	free(_buf);
+    } else
+	r = MPI_Bcast((*ps)->str, length, MPI_CHAR, root, comm);
+
+    return r;
+}
+
 
 int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 {
@@ -248,6 +320,29 @@ PIKECLASS Comm
 	    f_call_function(2);
 	    pop_n_elems(1);
 	}
+    }
+
+    PIKEFUN void Bcast(string buf, int root)
+    {
+	mpi_string_Bcast(&buf, root, THIS->comm);
+    }
+
+    PIKEFUN void Bcast(object buf, int root)
+    {
+	if (-1 == low_get_storage(buf->prog, Pointer_program)) {
+	    mpi_Bcast(buf, root, THIS->comm);
+	    pop_n_elems(args);
+	} else {
+	    struct pike_string *ps;
+
+	    mpi_string_Bcast(&ps, root, THIS->comm);
+	    //stack_pop_keep_top();
+	    pop_n_elems(args-1);
+	    push_string(ps);
+	    f_call_function(2);
+	    pop_n_elems(1);
+	}
+
     }
 
     PIKEFUN void Abort(int errorcode)
