@@ -7,7 +7,7 @@ PIKE_LIB=@PIKE_LIB@
 
 # Don't change this line.  Define EXTRALIBS before this line if you
 # wish to add any libraries.
-LIBS=@LIBS@ $(EXTRALIBS)
+LIBS=@LIBS@ $(EXTRALIBS) -lmpi
 
 # This is normall the install program in the source directory
 INSTALL=@INSTALL@
