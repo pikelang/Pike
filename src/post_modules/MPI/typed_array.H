@@ -2,15 +2,15 @@
 # cmod_undef ARRAY_CLASSIFY
 #cmod_endif
 #cmod_define ARRAY_CLASSIFY(x...) cmod_CONCAT_EVAL(name_prefix, ##x)
-    CVAR c_type *p;
-    CVAR unsigned int size;
+
+    CVAR struct mpi_info i;
 
     PIKEFUN void create(int size)
     flags ID_PROTECTED;
     {
-	if (THIS->p) Pike_error("create() called twice.\n");
-	THIS->size = size;
-	THIS->p = malloc(size * sizeof(*THIS->p));
+	if (THIS->i.data) Pike_error("create() called twice.\n");
+	THIS->i.length = size;
+	THIS->i.data = malloc(size * THIS->i.type_size);
 	/* memset(THIS->p, 0, size * sizeof(*THIS->p)); */
 	/* NOTE: This may point to formerly used memory and give access to
 	 * the (old) content of that memory.
@@ -21,23 +21,23 @@
 
     PIKEFUN void clear()
     {
-	if (!THIS->p) Pike_error("Nothing to clear.\n");
-	memset(THIS->p, 0, THIS->size * sizeof(*THIS->p));
+	if (!THIS->i.data) Pike_error("Nothing to clear.\n");
+	memset(THIS->i.data, 0, THIS->i.length * THIS->i.type_size);
     }
 
     PIKEFUN void assign(object other)
     {
 	if (!other || -1 == low_get_storage(other->prog, ARRAY_CLASSIFY(Array_program)))
 	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI." cmod_STRFY_EVAL(name_prefix) "Array)");
-	if (THIS->size < ARRAY_STORAGE(other)->size)
+	if (THIS->i.length < ARRAY_STORAGE(other)->i.length)
 	    Pike_error("Cannot assign from MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d to " cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
-		       ARRAY_STORAGE(other)->size, THIS->size);
-	if (!THIS->p)
+		       ARRAY_STORAGE(other)->i.length, THIS->i.length);
+	if (!THIS->i.data)
 	    Pike_error("Nothing to assign to.\n");
-	if (!ARRAY_STORAGE(other)->p)
+	if (!ARRAY_STORAGE(other)->i.data)
 	    Pike_error("Nothing to assign from.\n");
 
-	memcpy(THIS->p, ARRAY_STORAGE(other)->p, ARRAY_STORAGE(other)->size * sizeof(*THIS->p));
+	memcpy(THIS->i.data, ARRAY_STORAGE(other)->i.data, ARRAY_STORAGE(other)->i.length * THIS->i.type_size);
 	pop_n_elems(args);
     }
 
@@ -45,25 +45,25 @@
     {
 	c_type r;
 
-	if (!THIS->p) Pike_error("Nothing to index.\n");
+	if (!THIS->i.data) Pike_error("Nothing to index.\n");
 
-	if (idx >= THIS->size || idx < 0)
+	if (idx >= THIS->i.length || idx < 0)
 	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
-		       idx, THIS->size);
-	r = THIS->p[idx];
+		       idx, THIS->i.length);
+	r = ((c_type*)THIS->i.data)[idx];
 	pop_n_elems(args);
 	PUSH(r);
     }
 
     PIKEFUN pike_type `[]=(int idx, pike_type val)
     {
-	if (!THIS->p) Pike_error("Nothing to index.\n");
+	if (!THIS->i.data) Pike_error("Nothing to index.\n");
 
-	if (idx >= THIS->size || idx < 0)
+	if (idx >= THIS->i.length || idx < 0)
 	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
-		       idx, THIS->size);
+		       idx, THIS->i.length);
 
-	THIS->p[idx] = val;
+	((c_type*)THIS->i.data)[idx] = val;
 	stack_swap();
 	pop_n_elems(1);
     }
@@ -73,10 +73,10 @@
 	unsigned int i;
 	c_type r = 0;
 
-	if (!THIS->p) Pike_error("Nothing to sum.\n");
+	if (!THIS->i.data) Pike_error("Nothing to sum.\n");
 
-	for (i = 0; i < THIS->size; i++) {
-	    r += THIS->p[i];
+	for (i = 0; i < THIS->i.length; i++) {
+	    r += ((c_type*)THIS->i.data)[i];
 	}
 
 	PUSH(r);
@@ -84,14 +84,29 @@
 
     PIKEFUN int _sizeof()
     {
-	push_int(THIS->size);
+	push_int(THIS->i.length);
+    }
+
+    INIT
+    {
+	THIS->i.type = MPI_DATATYPE;
+	THIS->i.type_size = sizeof(c_type);
+	THIS->i.shift = MPI_SHIFT;
     }
 
     EXIT
     {
-	if (THIS->p) {
-	    free(THIS->p);
-	    THIS->p = NULL;
-	    THIS->size = 0;
+	if (THIS->i.data) {
+	    free(THIS->i.data);
+	    THIS->i.data = NULL;
+	    THIS->i.length = 0;
 	}
     }
+
+#cmod_undef pike_type
+#cmod_undef c_type
+#cmod_undef name_prefix
+#cmod_undef ARRAY_STORAGE
+#cmod_undef PUSH
+#cmod_undef MPI_DATATYPE
+#cmod_undef MPI_SHIFT
