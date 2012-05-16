@@ -61,6 +61,34 @@ PIKECLASS FloatArray
 #cmod_include "typed_array.H"
 }
 
+PIKECLASS Sentinel {
+    CVAR struct mpi_info i;
+    CVAR struct svalue other;
+
+    INIT {
+	SET_SVAL(THIS->other, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+    }
+
+    EXIT {
+	free_svalue(&THIS->other);
+    }
+}
+
+PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
+					       unsigned int length,
+					       unsigned char shift,
+					       void * p,
+					       struct svalue * other) {
+    struct object * o = low_clone(Sentinel_program);
+
+    OBJ2_SENTINEL(o)->i.length = length;
+    OBJ2_SENTINEL(o)->i.shift = shift;
+    OBJ2_SENTINEL(o)->i.type = type;
+    OBJ2_SENTINEL(o)->i.data = p;
+    assign_svalue(&OBJ2_SENTINEL(o)->other, other);
+    return o;
+}
+
 int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 {
     unsigned char shift;
