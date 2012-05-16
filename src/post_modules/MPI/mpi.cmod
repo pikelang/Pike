@@ -1,0 +1,397 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+#include "global.h"
+#include "object.h"
+#include "svalue.h"
+#include "interpret.h"
+#include "program.h"
+
+#include <mpi.h>
+
+#include <stdio.h>
+
+#include "module_support.h"
+
+/*
+ * TODO:
+ * communicators
+ * all kinds of send/recv
+ * reduce
+ * all_reduce (reduced result present everywhere)
+ * reduce_scatter
+ * gather
+ * scatter
+ * scan etc?
+ */
+
+DECLARATIONS
+
+PIKECLASS IntArray
+{
+#cmod_define pike_type int
+#cmod_define c_type int
+#cmod_define name_prefix Int
+#cmod_define ARRAY_STORAGE OBJ2_INTARRAY
+#cmod_define PUSH push_int
+#cmod_include "typed_array.H"
+#cmod_undef pike_type
+#cmod_undef c_type
+#cmod_undef name_prefix
+#cmod_undef ARRAY_STORAGE
+#cmod_undef PUSH
+}
+
+PIKECLASS FloatArray
+{
+#cmod_define pike_type float
+#cmod_define c_type double
+#cmod_define name_prefix Float
+#cmod_define ARRAY_STORAGE OBJ2_FLOATARRAY
+#cmod_define PUSH push_float
+#cmod_include "typed_array.H"
+#cmod_undef pike_type
+#cmod_undef c_type
+#cmod_undef name_prefix
+#cmod_undef ARRAY_STORAGE
+#cmod_undef PUSH
+}
+
+PIKECLASS Pointer
+{
+    CVAR struct svalue x;
+    CVAR int y;
+
+    PIKEFUN void create(mixed|void m)
+	flags ID_PROTECTED;
+    {
+	if (m) assign_svalue(&THIS->x, m);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN mixed `()()
+	flags ID_PROTECTED;
+    {
+	push_svalue(&THIS->x);
+    }
+
+    PIKEFUN mixed `()(mixed m)
+	flags ID_PROTECTED;
+    {
+	assign_svalue(&THIS->x, m);
+    }
+
+    INIT
+    {
+	SET_SVAL(THIS->x, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+    }
+
+    EXIT
+    {
+	free_svalue(&THIS->x);
+    }
+}
+
+void f_Send(INT32 args);
+static void mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm, struct pike_string **ps);
+
+PIKECLASS Comm
+/* flags ID_PRIVATE; */
+{
+    CVAR MPI_Comm comm;
+
+    PIKEFUN void Send(string|object buf, int dest, int|void tag)
+    {
+	if (args < 3)
+	    push_undefined();
+	ref_push_object(Pike_fp->current_object);
+	f_Send(4);
+    }
+
+    PIKEFUN void Recv(object buf, int source, int|void tag)
+    {
+	struct pike_string *ps = NULL;
+
+	mpi_Recv(buf, source, tag && tag->u.integer, THIS->comm, &ps);
+	if (ps) {
+	    pop_n_elems(args-1);
+	    push_string(ps);
+	    f_call_function(2);
+	    pop_n_elems(1);
+	} else
+	    pop_n_elems(args);
+    }
+
+    PIKEFUN void Abort(int errorcode)
+    {
+	MPI_Abort(THIS->comm, errorcode);
+    }
+
+    PIKEFUN void Barrier()
+    {
+	MPI_Barrier(THIS->comm);
+    }
+
+    PIKEFUN int rank()
+    {
+	int rank;
+
+	MPI_Comm_rank(THIS->comm, &rank);
+	push_int(rank);
+    }
+
+    PIKEFUN int size()
+    {
+	int size;
+
+	MPI_Comm_size(THIS->comm, &size);
+	push_int(size);
+    }
+
+    EXIT
+    {
+	/*
+	if (THIS->comm && THIS->comm != MPI_COMM_WORLD
+		&& (void*)THIS->comm != (void*)MPI_COMM_SELF)
+	    free(THIS->comm);
+	*/
+    }
+}
+
+PIKECLASS O
+{
+    INHERIT Pointer;
+
+    CVAR INT32 i;
+
+    PIKEFUN void set_i(int j)
+    {
+	THIS->i = j;
+	pop_n_elems(args);
+    }
+
+    PIKEFUN int get_i()
+    {
+	push_int(THIS->i);
+    }
+}
+
+PIKEFUN void psp(object o)
+{
+    fprintf(stderr, ">> [[%p]].\n", o->storage);
+    fprintf(stderr, ">> [[%d]].\n", *((INT32*)o->storage));
+    fprintf(stderr, ">> %s.\n", ((struct svalue*)(o->storage+4))->u.string->str);
+}
+
+/* TODO: guard against multiple calls */
+PIKEFUN void Init()
+{
+    MPI_Init(NULL, NULL); /* MPI Specification does not use &argc, &argv
+			     for anything, nor operate on it in any other
+			     way. AFAIK this holds for all implementations,
+			     but at least does for OpenMPI. */
+}
+
+/*
+PIKEFUN int Comm_size(object comm, object|void ptr)
+{
+    int size;
+
+    if (!comm || -1 == low_get_storage(comm->prog, Comm_program))
+	SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Comm)");
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (ptr) {
+	stack_swap();
+	pop_n_elems(1);
+	push_int(size);
+	f_call_function(2);
+    } else
+	pop_n_elems(args);
+
+    push_int(size);
+}
+
+PIKEFUN int Comm_rank(object comm, object|void ptr)
+{
+    int rank;
+
+    if (!comm || -1 == low_get_storage(comm->prog, Comm_program))
+	SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Comm)");
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (ptr) {
+	stack_swap();
+	pop_n_elems(1);
+	push_int(rank);
+	f_call_function(2);
+    } else
+	pop_n_elems(args);
+
+    push_int(rank);
+}
+*/
+
+
+/* TODO: guard against finalizing what has not been inited. */
+PIKEFUN void Finalize()
+{
+    MPI_Finalize();
+}
+
+PIKEFUN void Send(string buf, int dest, int|void tag, object|void comm)
+{
+    unsigned char shift = buf->size_shift;
+    unsigned int length = buf->len << shift;
+
+    fprintf(stderr, "string send!\n");
+
+    MPI_Send(&shift, 1, MPI_CHAR, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+    MPI_Send(&length, 1, MPI_INT, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+    MPI_Send(buf->str, length, MPI_CHAR, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+}
+
+PIKEFUN void Send(object buf, int dest, int|void tag, object|void comm)
+{
+    unsigned char shift;
+    unsigned int length;
+    MPI_Datatype type;
+
+    fprintf(stderr, "object send!\n");
+
+    if (!buf || -1 == low_get_storage(buf->prog, IntArray_program))
+	Pike_error("You can only send strings and MPI typed arrays.\n");
+
+    shift = 1 << 3;
+    type = MPI_INTEGER;
+    length = OBJ2_INTARRAY(buf)->size;
+
+    MPI_Send(&shift, 1, MPI_CHAR, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+    MPI_Send(&length, 1, MPI_INT, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+    MPI_Send(OBJ2_INTARRAY(buf)->p, length, type, dest, tag && tag->u.integer, MPI_COMM_WORLD);
+}
+
+static void mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm, struct pike_string **ps)
+{
+    unsigned char shift;
+    unsigned int length;
+    MPI_Status status;
+    MPI_Datatype type;
+    void *_buf;
+    struct svalue sval;
+
+    mark_free_svalue(&sval);
+
+    MPI_Recv(&shift, 1, MPI_CHAR, source, tag, comm, &status);
+    MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm,
+	     NULL);
+
+
+    switch (shift) {
+    case 0:
+    case 1:
+    case 2:
+	type = MPI_CHAR;
+	_buf = malloc(length+1);
+	((char*)_buf)[length] = 0;
+	break;
+    case 1<<3:
+	if (-1 == low_get_storage(buf->prog, IntArray_program))
+	    Pike_error("mpi_Recv: cannot receive integers into the buffer you passed.\n");
+	type = MPI_INT;
+	_buf = OBJ2_INTARRAY(buf)->p;
+	if (OBJ2_INTARRAY(buf)->size < length)
+	    Pike_error("Cannot receive %d integers into buffer of size %d.\n",
+		       length, OBJ2_INTARRAY(buf)->size);
+	break;
+#if 1 //def PIKE_DEBUG
+    default:
+	Pike_error("Received unknown type/shift: %d\n", (int)shift);
+#endif
+    }
+
+    MPI_Recv(_buf, length, type, status.MPI_SOURCE, tag,
+	     comm, NULL);
+
+    switch (shift) {
+    case 0:
+	*ps = make_shared_binary_string(_buf, length);
+	free(_buf);
+	break;
+    case 1:
+	*ps = make_shared_binary_string1((p_wchar1*)_buf, length >> shift);
+	free(_buf);
+	break;
+    case 2:
+	*ps = make_shared_binary_string2((p_wchar2*)_buf, length >> shift);
+	free(_buf);
+	break;
+    case 1<<3:
+	break;
+#ifdef PIKE_DEBUG
+    default:
+	Pike_fatal("Unknown MPI magic/shift %d!\n", (int)shift);
+#endif
+    }
+}
+
+/*
+PIKEFUN void Recv(object buf, int source, int|void tag, object|void comm)
+{
+    struct object *obuf = buf;
+    struct pike_string *ps;
+
+    if (comm && comm->prog != Comm_program) Pike_error("MPI.Recv: invalid program passed as comm.\n");
+
+    add_ref(obuf);
+
+    mpi_Recv((void**)&ps, source, tag && tag->u.integer, comm ? OBJ2_COMM(comm)->comm : MPI_COMM_WORLD);
+
+    pop_n_elems(args);
+    push_object(obuf);
+    push_string(ps);
+
+    f_call_function(2);
+}
+*/
+
+PIKECLASS Test
+{
+    PIKEVAR int anti;
+    PIKEFUN string foo()
+    {
+	push_text("yay!");
+	THIS->anti = 7;
+    }
+}
+
+PIKEFUN object `world()
+{
+    static struct object *comm_world = NULL;
+
+    if (!comm_world) {
+	comm_world = clone_object(Comm_program, 0);
+	OBJ2_COMM(comm_world)->comm = MPI_COMM_WORLD;
+    }
+
+    ref_push_object(comm_world);
+}
+
+
+PIKE_MODULE_INIT
+{
+  INIT;
+  /*
+  fprintf(stderr, ">> %p\n", THIS_->wupp);
+  THIS_->wupp = clone_object(Comm_program, 0);
+  fprintf(stderr, ">> %p\n", THIS_->wupp);
+  OBJ2_COMM(THIS_->wupp)->comm = MPI_COMM_WORLD;
+  */
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+} 
