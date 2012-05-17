@@ -94,6 +94,70 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
     return o;
 }
 
+PIKECLASS Op {
+    CVAR MPI_Op op;
+}
+
+PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op)
+{
+    struct object *o = low_clone(Op_program);
+
+    OBJ2_OP(o)->op = op;
+    return o;
+}
+
+#cmod_define EXPORT_OP(_op_) PIKEFUN object ` ## _op_()	\
+{							\
+    push_object(mpi_clone_op(MPI_ ## _op_));		\
+}
+
+EXPORT_OP(MAX)
+EXPORT_OP(MIN)
+EXPORT_OP(SUM)
+EXPORT_OP(PROD)
+EXPORT_OP(LAND)
+EXPORT_OP(BAND)
+EXPORT_OP(LOR)
+EXPORT_OP(BOR)
+EXPORT_OP(LXOR)
+EXPORT_OP(BXOR)
+EXPORT_OP(MAXLOC)
+EXPORT_OP(MINLOC)
+
+int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
+	       MPI_Op op, int root, MPI_Comm comm)
+{
+    unsigned char shift = OBJ2_INTARRAY(sendbuf)->i.shift;
+    unsigned int length = OBJ2_INTARRAY(sendbuf)->i.length;
+    int rank;
+
+    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
+    MPI_Comm_rank(comm, &rank);
+
+    if (OBJ2_INTARRAY(recvbuf)->i.shift != OBJ2_INTARRAY(sendbuf)->i.shift)
+	Pike_fatal("Reduce: recvbuf and sendbuf differ in shift (%d vs %d).\n",
+		   (int)OBJ2_INTARRAY(recvbuf)->i.shift, (int)OBJ2_INTARRAY(sendbuf)->i.shift);
+    if (OBJ2_INTARRAY(recvbuf)->i.length != OBJ2_INTARRAY(sendbuf)->i.length)
+	Pike_fatal("Reduce: recvbuf and sendbuf differ in size (%u vs %u).\n",
+		   OBJ2_INTARRAY(recvbuf)->i.length, OBJ2_INTARRAY(sendbuf)->i.length);
+
+    if (rank != root) {
+	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
+	    Pike_fatal("Cannot Reduce magic shift %d into buffer of magic shift %d.\n",
+		       (int)shift, OBJ2_INTARRAY(recvbuf)->i.shift);
+	if (length > OBJ2_INTARRAY(recvbuf)->i.length)
+	    Pike_fatal("Cannot Reduce magic shift %d and length %d into buffer of length %d.\n",
+		       (int)shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
+    }
+
+    return MPI_Reduce(OBJ2_INTARRAY(sendbuf)->i.data,
+		      OBJ2_INTARRAY(recvbuf)->i.data, length,
+		      OBJ2_INTARRAY(sendbuf)->i.type, op,
+		      root, comm);
+}
+
 int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 {
     unsigned char shift;
@@ -350,9 +414,16 @@ PIKECLASS Comm
 
     }
 
+    PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
+    {
+	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
+	pop_n_elems(args);
+    }
+
     PIKEFUN void Abort(int errorcode)
     {
 	MPI_Abort(THIS->comm, errorcode);
+	pop_n_elems(args);
     }
 
     PIKEFUN void Barrier()
@@ -376,14 +447,14 @@ PIKECLASS Comm
 	push_int(size);
     }
 
+    /*
     EXIT
     {
-	/*
 	if (THIS->comm && THIS->comm != MPI_COMM_WORLD
 		&& (void*)THIS->comm != (void*)MPI_COMM_SELF)
 	    free(THIS->comm);
-	*/
     }
+    */
 }
 
 PIKECLASS O
