@@ -87,6 +87,38 @@
 	push_int(THIS->i.length);
     }
 
+    PIKEFUN array _values()
+    flags ID_PROTECTED;
+    {
+	struct array *a;
+	push_int(THIS->i.length);
+	f_allocate(1);
+
+	a = Pike_sp[-1].u.array;
+	if (THIS->i.length) {
+	    unsigned int i;
+	    struct svalue sv;
+
+	    for (i = 0; i < THIS->i.length; i++) {
+		SET_SVAL((*(ITEM(a)+i)), CPIKE_TYPE, CPIKE_SUBTYPE, U_IND,
+			 ((c_type*)THIS->i.data)[i]);
+	    }
+	}
+    }
+
+    PIKEFUN array cast(string type)
+    flags ID_PROTECTED;
+    {
+	if (type == MK_STRING("array")) {
+	    pop_n_elems(args);
+	    apply_current(cmod_CONCAT_EVAL(f_, ARRAY_CLASSIFY(Array_cq__values_fun_num)), 0);
+	} else if (type == MK_STRING("object")) {
+	    pop_n_elems(args);
+	    ref_push_object(Pike_fp->current_object);
+	} else
+	    Pike_error("Cannot cast to %o.\n", Pike_sp-1);
+    }
+
     INIT
     {
 	THIS->i.type = MPI_DATATYPE;
@@ -110,3 +142,6 @@
 #cmod_undef PUSH
 #cmod_undef MPI_DATATYPE
 #cmod_undef MPI_SHIFT
+#cmod_undef CPIKE_TYPE
+#cmod_undef CPIKE_SUBTYPE
+#cmod_undef U_IND
