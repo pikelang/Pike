@@ -1360,7 +1360,8 @@ class Runtime_timezone_compiler
       Zone z;
       if (!(z = zones[s])) {
 	// Check if it's a known alias.
-	// FIXME: Ought to select the most recent user of the abbreviation.
+	// Note: TZnames.abbr2zones is sorted with
+	//       the most recent user first.
 	array(string) a = .TZnames.abbr2zones[s];
 	if (a && sizeof(a))
 	  return zone_cache[s] = find_zone(a[0]);
