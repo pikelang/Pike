@@ -26,6 +26,11 @@ mapping links=([]);
 array arules=({});
 array azones=({});
 
+mapping(string:array(string)) abbr2zones = ([
+  "DFT":({ "Europe/Oslo", "Europe/Paris" }),
+  "NFT":({ "Europe/Oslo", "Europe/Paris" }),
+]);
+
 #define FIXED(D)   (yjd+((D)-1))
 #define FIX_L(D)   (yjd+leap+((D)-1))
 #define LDAY(D,W)  (yjd+((D)-1)-( (yjd+((D)+(8-W)-1)) % 7))
@@ -272,6 +277,8 @@ class MyRule
 
    mapping rules=([]);
 
+   multiset(string) symbols = (<>);
+
    int amt=0;
 
    void create(string _id) { id=_id; }
@@ -282,6 +289,10 @@ class MyRule
 					  " ","%*[ \t]"));
 
       if (sizeof(a)<8) complain("illegal rule line format\n");
+
+      a[7] = (a[7]/" #")[0];
+      if (a[7] == "-") a[7] = "";
+      symbols[a[7]] = 1;
 
       if (!(int)a[0] && a[0]!="min")
 	 complain("unknown year %O\n",a[0]);
@@ -474,6 +485,26 @@ class Zone
 	  0, 0, "tz", 0}); // until
       a[5]=rule_shift(a);
       a[4]=clone_rule(a);
+
+      if (sizeof(a[2])) {
+	 foreach(a[2]/"/", string fmt) {
+	    MyRule rule = global::rules[a[1]];
+	    if (rule) {
+	       foreach(indices(rule->symbols), string sym) {
+		  if ((sizeof(sym) > 2) && (fmt != "%s")) continue;
+		  abbr2zones[sprintf(fmt, sym)] += ({ id });
+	       }
+	    } else if (a[1] == "Romania") {
+	       // Kludge for forward reference in tzdata2012c/europe
+	       // for Europe/Chisinau to the Romania rule.
+	       foreach(({ "", "S" }), string sym) {
+		  abbr2zones[sprintf(fmt, sym)] += ({ id });
+	       }
+	    } else {
+	       abbr2zones[fmt] += ({ id });
+	    }
+	 }
+      }
 
       rules+=({a});
    }
@@ -773,7 +804,7 @@ int main(int ac,array(string) am)
    t+=("\n"
        "// "+"-"*70+"\n");
 
-   mv("TZs.pike","TZs.pike~");
+   mv("TZs.h","TZs.h~");
    werror("writing TZs.h (%d bytes)...",sizeof(t));
    Stdio.File("TZs.h","wtc")->write(t);
    werror("\n");
@@ -818,7 +849,34 @@ int main(int ac,array(string) am)
 		 *", "+"}),");
    }
    t += "]);\n\n" +
-     fragments[1];
+      fragments[1];
+
+   // Update the abbreviation table as well.
+   fragments = t/" abbr2zones=";
+   if (sizeof(fragments) == 1) fragments = t/" abbr2zones =";
+   if (sizeof(fragments) > 2)
+      fragments = ({ fragments[0], fragments[1..] * " abbr2zones =" });
+   fragments[1] = (fragments[1]/"]);\n\n")[1..]*"]);\n\n";
+
+   t = fragments[0] + " abbr2zones =\n"
+      "([\n";
+
+   foreach(sort(indices(abbr2zones)), string abbr) {
+      string line = sprintf("   %q: ({", abbr);
+      foreach(sort(Array.uniq(abbr2zones[abbr])); int i; string zone) {
+	 string seg = sprintf("%s%q", i?", ":"", zone);
+	 if (sizeof(line) + sizeof(seg) < 77) {
+	    line += seg;
+	    continue;
+	 }
+	 t += line + ",\n";
+	 line = sprintf("       %q", zone);
+      }
+      t += line + "}),\n";
+   }
+
+   t += "]);\n\n" +
+      fragments[1];
 
    // Cleanup white-space at end of line.
    string t2 = t;
