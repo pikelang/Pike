@@ -1356,9 +1356,16 @@ class Runtime_timezone_compiler
 #endif
       if (!zone_cache) parse_all_rules();
       object ret = zone_cache[s];
-      if (ret) return ret;
+      if (!zero_type(ret)) return ret || UNDEFINED;
       Zone z;
-      if (!(z = zones[s])) return UNDEFINED;
+      if (!(z = zones[s])) {
+	// Check if it's a known alias.
+	// FIXME: Ought to select the most recent user of the abbreviation.
+	array(string) a = .TZnames.abbr2zones[s];
+	if (a && sizeof(a))
+	  return zone_cache[s] = find_zone(a[0]);
+	return UNDEFINED;
+      }
       ret = z->compile();
       foreach(z->aliases, string zone_alias) {
 	zone_cache[zone_alias] = ret;
