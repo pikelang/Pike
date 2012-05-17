@@ -8,6 +8,8 @@
 #include "svalue.h"
 #include "interpret.h"
 #include "program.h"
+#include "array.h"
+#include "builtin_functions.h"
 
 #include <mpi.h>
 
@@ -46,6 +48,9 @@ PIKECLASS IntArray
 #cmod_define PUSH push_int
 #cmod_define MPI_DATATYPE MPI_INT
 #cmod_define MPI_SHIFT (1<<3)
+#cmod_define CPIKE_TYPE PIKE_T_INT
+#cmod_define CPIKE_SUBTYPE NUMBER_NUMBER
+#cmod_define U_IND integer
 #cmod_include "typed_array.H"
 }
 
@@ -58,6 +63,9 @@ PIKECLASS FloatArray
 #cmod_define PUSH push_float
 #cmod_define MPI_DATATYPE MPI_DOUBLE
 #cmod_define MPI_SHIFT (2<<3)
+#cmod_define CPIKE_TYPE T_FLOAT
+#cmod_define CPIKE_SUBTYPE 0
+#cmod_define U_IND float_number
 #cmod_include "typed_array.H"
 }
 
