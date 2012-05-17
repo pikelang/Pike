@@ -158,6 +158,51 @@ int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 		      root, comm);
 }
 
+#define GEN(_name_) int mpi_ ## _name_(struct object *sendbuf,		\
+				       struct object *recvbuf,		\
+				       MPI_Op op, MPI_Comm comm)	\
+{									\
+    unsigned char shift = OBJ2_INTARRAY(sendbuf)->i.shift;		\
+    unsigned int length = OBJ2_INTARRAY(sendbuf)->i.length;		\
+    int rank;								\
+									\
+    MPI_Bcast(&shift, 1, MPI_CHAR, 0, comm);				\
+    MPI_Bcast(&length, 1, MPI_INT, 0, comm);				\
+									\
+    MPI_Comm_rank(comm, &rank);						\
+									\
+    if (OBJ2_INTARRAY(recvbuf)->i.shift					\
+	    != OBJ2_INTARRAY(sendbuf)->i.shift)				\
+	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in shift (%d vs %d).\n",\
+		   (int)OBJ2_INTARRAY(recvbuf)->i.shift,		\
+		   (int)OBJ2_INTARRAY(sendbuf)->i.shift);		\
+    if (OBJ2_INTARRAY(recvbuf)->i.length				\
+	    != OBJ2_INTARRAY(sendbuf)->i.length)			\
+	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in size (%u vs %u).\n",\
+		   OBJ2_INTARRAY(recvbuf)->i.length,			\
+		   OBJ2_INTARRAY(sendbuf)->i.length);			\
+									\
+    if (rank) {								\
+	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)			\
+	    Pike_fatal("Cannot " #_name_ " magic shift %d into buffer of magic shift %d.\n",\
+		       (int)shift, OBJ2_INTARRAY(recvbuf)->i.shift);	\
+	if (length > OBJ2_INTARRAY(recvbuf)->i.length)			\
+	    Pike_fatal("Cannot " #_name_ " magic shift %d and length %d into buffer of length %d.\n",\
+		       (int)shift, length,				\
+		       OBJ2_INTARRAY(recvbuf)->i.length);		\
+    }									\
+									\
+    return MPI_ ## _name_(OBJ2_INTARRAY(sendbuf)->i.data,		\
+		      OBJ2_INTARRAY(recvbuf)->i.data, length,		\
+		      OBJ2_INTARRAY(sendbuf)->i.type, op,		\
+		      comm);						\
+}
+
+GEN(Allreduce)
+GEN(Scan)
+
+#undef GEN
+
 int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 {
     unsigned char shift;
@@ -416,9 +461,27 @@ PIKECLASS Comm
 
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
+	if (-1 == low_get_storage(op->prog, Op_program))
+	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Op)");
+
 	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
 	pop_n_elems(args);
     }
+
+#cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
+					     object recvbuf, object op)	\
+    {									\
+	if (-1 == low_get_storage(op->prog, Op_program))		\
+	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Op)");		\
+									\
+	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_OP(op)->op, THIS->comm);	\
+	pop_n_elems(args);						\
+    }
+
+    GEN(Allreduce)
+    GEN(Scan)
+
+#cmod_undef GEN
 
     PIKEFUN void Abort(int errorcode)
     {
