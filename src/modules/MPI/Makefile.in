@@ -6,7 +6,7 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ -lmpi
 CONFIG_HEADERS=@CONFIG_HEADERS@
 PRECOMPILER_ARGS=--api=4
 
-@dynamic_module_makefile@
+@static_module_makefile@
 
 # Compatibility with stupid makes..
 mpi.o: $(SRCDIR)/mpi.c
