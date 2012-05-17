@@ -755,6 +755,21 @@ static void matrixX(_cross)(INT32 args)
    pop_stack();
 }
 
+extern PMOD_EXPORT struct object *mpi_clone_sentinel(MPI_Datatype, int , unsigned char,
+					      void *, struct object *);
+
+static void matrixX(get_sentinel)(INT32 args)
+{
+    struct object *sentinel = mpi_clone_sentinel(MATRIX_MPI_TYPE,
+						 THIS->xsize * THIS->ysize,
+						 MATRIX_MPI_SHIFT,
+						 THIS->m,
+						 Pike_fp->current_object);
+
+    pop_n_elems(args);
+    push_object(sentinel);
+}
+
 static void matrixX(_dot)(INT32 args)
 {
   struct matrixX(_storage) *mx=NULL;
@@ -1036,6 +1051,7 @@ void Xmatrix(init_math_)(void)
 
    ADD_FUNCTION("xsize", matrixX(_xsize), tFunc(tNone, tInt), 0);
    ADD_FUNCTION("ysize", matrixX(_ysize), tFunc(tNone, tInt), 0);
+   ADD_FUNCTION("get_sentinel", matrixX(get_sentinel), tFunc(tNone, tObj), 0);
 
    Pike_compiler->new_program->flags |= 
      PROGRAM_CONSTANT |
