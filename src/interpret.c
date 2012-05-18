@@ -2843,16 +2843,21 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
   return ret;
 }
 
-PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)
+PMOD_EXPORT void apply_lfun(struct object *o, int lfun, int args)
 {
+  int fun;
 #ifdef PIKE_DEBUG
-  if(fun < 0 || fun >= NUM_LFUNS)
+  if(lfun < 0 || lfun >= NUM_LFUNS)
     Pike_fatal("Apply lfun on illegal value!\n");
 #endif
   if(!o->prog)
-    PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
+    PIKE_ERROR("destructed object", "Apply on destructed object.\n",
+	       Pike_sp, args);
 
-  apply_low(o, (int)FIND_LFUN(o->prog,fun), args);
+  if ((fun = (int)FIND_LFUN(o->prog, lfun)) < 0)
+    Pike_error("Calling undefined lfun::%s.\n", lfun_names[lfun]);
+
+  apply_low(o, fun, args);
 }
 
 PMOD_EXPORT void apply_shared(struct object *o,
