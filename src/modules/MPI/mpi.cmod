@@ -260,7 +260,7 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
     case 1:
     case 2:
 	type = MPI_CHAR;
-	_buf = malloc(length+1);
+	_buf = xalloc(length+1);
 	((char*)_buf)[length] = 0;
 	break;
     default:
@@ -330,7 +330,7 @@ static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 	case 0:
 	case 1:
 	case 2:
-	    _buf = malloc(length+1);
+	    _buf = xalloc(length+1);
 	    ((char*)_buf)[length] = 0;
 	    break;
 	default:
