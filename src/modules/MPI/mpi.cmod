@@ -97,6 +97,21 @@ PIKECLASS FloatArray
 #cmod_include "typed_array.H"
 }
 
+PIKECLASS SingleArray
+{
+#cmod_define pike_type float
+#cmod_define c_type float
+#cmod_define name_prefix Single
+#cmod_define ARRAY_STORAGE OBJ2_SINGLEARRAY
+#cmod_define PUSH push_float
+#cmod_define MPI_DATATYPE MPI_FLOAT
+#cmod_define MPI_SHIFT (3<<3)
+#cmod_define CPIKE_TYPE T_FLOAT
+#cmod_define CPIKE_SUBTYPE 0
+#cmod_define U_IND float_number
+#cmod_include "typed_array.H"
+}
+
 PIKECLASS Sentinel {
     CVAR struct mpi_info i;
     CVAR struct object * other;
