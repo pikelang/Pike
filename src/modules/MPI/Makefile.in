@@ -4,11 +4,14 @@ OBJS=mpi.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ -lmpi
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
+CMOD_HEADERS=typed_array.H
 PRECOMPILER_ARGS=--api=4
 
 @static_module_makefile@
 
 # Compatibility with stupid makes..
 mpi.o: $(SRCDIR)/mpi.c
+
+$(SRCDIR)/mpi.c: $(CMOD_HEADERS)
 
 @dependencies@
