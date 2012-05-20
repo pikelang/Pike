@@ -39,6 +39,34 @@ struct mpi_info {
 
 DECLARATIONS
 
+#define IS_SENTINEL(x) (-1 != low_get_storage((x)->prog,		\
+					      IntArray_program)		\
+			|| -1 != low_get_storage((x)->prog,		\
+						 FloatArray_program)	\
+			|| -1 != low_get_storage((x)->prog,		\
+						 Sentinel_program))
+
+#define IS_SENTINEL_OR_PTR(x) (IS_SENTINEL(x) || -1 			\
+			       != low_get_storage((x)->prog,		\
+						  Pointer_program))
+
+#define ENSURE_SENTINEL(x, fun, argnum) do { if (!IS_SENTINEL(x))	\
+    SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
+			 "inherits(MPI.FloatArray)|"			\
+			 "inherits(MPI.Sentinel)");			\
+} while (0)
+
+#define FAIL_SENTINEL_OR_PTR(fun, argnum) do {				\
+    SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
+			 "inherits(MPI.FloatArray)|"			\
+			 "inherits(MPI.Sentinel)|string");		\
+} while (0)
+
+#define ENSURE_SENTINEL_OR_PTR(x, fun, argnum) do {			\
+    if (!(IS_SENTINEL_OR_PTR(x)))					\
+	FAIL_SENTINEL_OR_PTR(fun, argnum);				\
+} while (0)
+
 PIKECLASS IntArray
 {
 #cmod_define pike_type int
@@ -420,6 +448,7 @@ PIKECLASS Comm
 
     PIKEFUN void Send(object buf, int dest, int|void tag)
     {
+	ENSURE_SENTINEL(buf, "Send", 1);
 	mpi_Send(buf, dest, tag && tag->u.integer, THIS->comm);
 	pop_n_elems(args);
     }
@@ -428,11 +457,12 @@ PIKECLASS Comm
     {
 	struct pike_string *ps = NULL;
 
-	if (-1 == low_get_storage(buf->prog, Pointer_program)) {
-	    /* TODO: check for valid types */
+	if (IS_SENTINEL(buf)) {
 	    mpi_Recv(buf, source, tag && tag->u.integer, THIS->comm);
 	    pop_n_elems(args);
 	} else {
+	    if (-1 == low_get_storage(buf->prog, Pointer_program))
+		FAIL_SENTINEL_OR_PTR("Recv", 1);
 	    mpi_string_Recv(source, tag && tag->u.integer, THIS->comm, &ps);
 	    pop_n_elems(args-1);
 	    push_string(ps);
@@ -448,11 +478,14 @@ PIKECLASS Comm
 
     PIKEFUN void Bcast(object buf, int root)
     {
-	if (-1 == low_get_storage(buf->prog, Pointer_program)) {
+	if (IS_SENTINEL(buf)) {
 	    mpi_Bcast(buf, root, THIS->comm);
 	    pop_n_elems(args);
 	} else {
 	    struct pike_string *ps;
+
+	    if (-1 == low_get_storage(buf->prog, Pointer_program))
+		FAIL_SENTINEL_OR_PTR("Bcast", 1);
 
 	    mpi_string_Bcast(&ps, root, THIS->comm);
 	    //stack_pop_keep_top();
@@ -467,7 +500,9 @@ PIKECLASS Comm
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
 	if (-1 == low_get_storage(op->prog, Op_program))
-	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Op)");
+	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
+	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
+	ENSURE_SENTINEL(recvbuf, "Reduce", 2);
 
 	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
 	pop_n_elems(args);
@@ -477,7 +512,9 @@ PIKECLASS Comm
 					     object recvbuf, object op)	\
     {									\
 	if (-1 == low_get_storage(op->prog, Op_program))		\
-	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(MPI.Op)");		\
+	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
+	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
+	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
 									\
 	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_OP(op)->op, THIS->comm);	\
 	pop_n_elems(args);						\
