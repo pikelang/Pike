@@ -10,7 +10,7 @@
     {
 	if (THIS->i.data) Pike_error("create() called twice.\n");
 	THIS->i.length = size;
-	THIS->i.data = xalloc(size * THIS->i.type_size);
+	if (size) THIS->i.data = xalloc(size * THIS->i.type_size);
 	/* memset(THIS->p, 0, size * sizeof(*THIS->p)); */
 	/* NOTE: This may point to formerly used memory and give access to
 	 * the (old) content of that memory.
