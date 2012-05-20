@@ -402,10 +402,7 @@ PIKECLASS Pointer
     }
 }
 
-void f_Send(INT32 args);
-
 PIKECLASS Comm
-/* flags ID_PRIVATE; */
 {
     CVAR MPI_Comm comm;
 
@@ -518,32 +515,6 @@ PIKECLASS Comm
 	push_int(size);
     }
 
-    /*
-    EXIT
-    {
-	if (THIS->comm && THIS->comm != MPI_COMM_WORLD
-		&& (void*)THIS->comm != (void*)MPI_COMM_SELF)
-	    free(THIS->comm);
-    }
-    */
-}
-
-PIKECLASS O
-{
-    INHERIT Pointer;
-
-    CVAR INT32 i;
-
-    PIKEFUN void set_i(int j)
-    {
-	THIS->i = j;
-	pop_n_elems(args);
-    }
-
-    PIKEFUN int get_i()
-    {
-	push_int(THIS->i);
-    }
 }
 
 /* TODO: guard against multiple calls */
@@ -560,16 +531,6 @@ PIKEFUN void Init()
 PIKEFUN void Finalize()
 {
     MPI_Finalize();
-}
-
-PIKECLASS Test
-{
-    PIKEVAR int anti;
-    PIKEFUN string foo()
-    {
-	push_text("yay!");
-	THIS->anti = 7;
-    }
 }
 
 PIKEFUN object `world()
@@ -589,28 +550,9 @@ PIKEFUN int `ANY_SOURCE()
     push_int(MPI_ANY_SOURCE);
 }
 
-PIKEFUN void showptr(object o) {
-    fprintf(stderr, ">>> %p\n", OBJ2_INTARRAY(o));
-    fprintf(stderr, ">>> %p\n", OBJ2_FLOATARRAY(o));
-    pop_n_elems(args);
-}
-
-PIKEFUN void showptr2(object o) {
-    fprintf(stderr, ">>> %p\n", OBJ2_FLOATARRAY(o));
-    fprintf(stderr, ">>> %p\n", OBJ2_INTARRAY(o));
-    pop_n_elems(args);
-}
-
-
 PIKE_MODULE_INIT
 {
   INIT;
-  /*
-  fprintf(stderr, ">> %p\n", THIS_->wupp);
-  THIS_->wupp = clone_object(Comm_program, 0);
-  fprintf(stderr, ">> %p\n", THIS_->wupp);
-  OBJ2_COMM(THIS_->wupp)->comm = MPI_COMM_WORLD;
-  */
 }
 
 PIKE_MODULE_EXIT
