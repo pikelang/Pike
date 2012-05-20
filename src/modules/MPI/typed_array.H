@@ -47,8 +47,8 @@
 
 	if (!THIS->i.data) Pike_error("Nothing to index.\n");
 
-	if (idx >= THIS->i.length || idx < 0)
-	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
+	if ((unsigned int)idx >= THIS->i.length || idx < 0)
+	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %u.\n",
 		       idx, THIS->i.length);
 	r = ((c_type*)THIS->i.data)[idx];
 	pop_n_elems(args);
@@ -59,8 +59,8 @@
     {
 	if (!THIS->i.data) Pike_error("Nothing to index.\n");
 
-	if (idx >= THIS->i.length || idx < 0)
-	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
+	if ((unsigned int)idx >= THIS->i.length || idx < 0)
+	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %u.\n",
 		       idx, THIS->i.length);
 
 	((c_type*)THIS->i.data)[idx] = val;
