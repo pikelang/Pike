@@ -5,7 +5,7 @@
 
     CVAR struct mpi_info i;
 
-    PIKEFUN void create(int size)
+    PIKEFUN void create(int(0..) size)
     flags ID_PROTECTED;
     {
 	if (THIS->i.data) Pike_error("create() called twice.\n");
@@ -21,7 +21,7 @@
 
     PIKEFUN void clear()
     {
-	if (!THIS->i.data) Pike_error("Nothing to clear.\n");
+	if (!THIS->i.length) return;
 	memset(THIS->i.data, 0, THIS->i.length * THIS->i.type_size);
     }
 
@@ -32,10 +32,6 @@
 	if (THIS->i.length < ARRAY_STORAGE(other)->i.length)
 	    Pike_error("Cannot assign from MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %d to " cmod_STRFY_EVAL(name_prefix) "Array of size %d.\n",
 		       ARRAY_STORAGE(other)->i.length, THIS->i.length);
-	if (!THIS->i.data)
-	    Pike_error("Nothing to assign to.\n");
-	if (!ARRAY_STORAGE(other)->i.data)
-	    Pike_error("Nothing to assign from.\n");
 
 	memcpy(THIS->i.data, ARRAY_STORAGE(other)->i.data, ARRAY_STORAGE(other)->i.length * THIS->i.type_size);
 	pop_n_elems(args);
@@ -45,11 +41,10 @@
     {
 	c_type r;
 
-	if (!THIS->i.data) Pike_error("Nothing to index.\n");
-
 	if ((unsigned int)idx >= THIS->i.length || idx < 0)
 	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %u.\n",
 		       idx, THIS->i.length);
+
 	r = ((c_type*)THIS->i.data)[idx];
 	pop_n_elems(args);
 	PUSH(r);
@@ -57,8 +52,6 @@
 
     PIKEFUN pike_type `[]=(int idx, pike_type val)
     {
-	if (!THIS->i.data) Pike_error("Nothing to index.\n");
-
 	if ((unsigned int)idx >= THIS->i.length || idx < 0)
 	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %u.\n",
 		       idx, THIS->i.length);
@@ -73,7 +66,10 @@
 	unsigned int i;
 	c_type r = 0;
 
-	if (!THIS->i.data) Pike_error("Nothing to sum.\n");
+	if (!THIS->i.length) {
+	    PUSH(0);
+	    return;
+	}
 
 	for (i = 0; i < THIS->i.length; i++) {
 	    r += ((c_type*)THIS->i.data)[i];
@@ -91,18 +87,17 @@
     flags ID_PROTECTED;
     {
 	struct array *a;
+	unsigned int i;
+	struct svalue sv;
+
 	push_int(THIS->i.length);
 	f_allocate(1);
 
 	a = Pike_sp[-1].u.array;
-	if (THIS->i.length) {
-	    unsigned int i;
-	    struct svalue sv;
 
-	    for (i = 0; i < THIS->i.length; i++) {
-		SET_SVAL((*(ITEM(a)+i)), CPIKE_TYPE, CPIKE_SUBTYPE, U_IND,
-			 ((c_type*)THIS->i.data)[i]);
-	    }
+	for (i = 0; i < THIS->i.length; i++) {
+	    SET_SVAL((*(ITEM(a)+i)), CPIKE_TYPE, CPIKE_SUBTYPE, U_IND,
+		     ((c_type*)THIS->i.data)[i]);
 	}
     }
 
