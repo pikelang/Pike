@@ -665,8 +665,8 @@ int verify_certificate_chain(array(string) certs)
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return 1;
 
-  // a lack of certificates when we requre and must verify the certificates 
-  // is probably a failure.
+  // a lack of certificates when we reqiure and must verify the
+  // certificates is probably a failure.
   if(!certs || !sizeof(certs))
     return 0;
 
@@ -677,8 +677,9 @@ int verify_certificate_chain(array(string) certs)
   string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
     ->get_der();
 
-  // if we've got authorities, we need to check to see that the provided cert is authorized.
-  // is this useful for server connections???
+  // if we've got authorities, we need to check to see that the
+  // provided cert is authorized. is this useful for server
+  // connections???
   if(sizeof(context->authorities_cache))
   {
     foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
@@ -711,14 +712,13 @@ int verify_certificate_chain(array(string) certs)
 
   mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
 
-
   if(result->verified)
   {
     session->cert_data = result;
     return 1;
   }
-  else return 0;  
 
+ return 0;
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
