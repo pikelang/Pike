@@ -175,7 +175,7 @@ EXPORT_OP(BXOR)
 EXPORT_OP(MAXLOC)
 EXPORT_OP(MINLOC)
 
-int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
+static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 	       MPI_Op op, int root, MPI_Comm comm)
 {
     unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift,
@@ -209,7 +209,8 @@ int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 		      root, comm);
 }
 
-#define GEN(_name_) int mpi_ ## _name_(struct object *sendbuf,		\
+#define GEN(_name_) static inline int mpi_ ## _name_(			\
+				       struct object *sendbuf,		\
 				       struct object *recvbuf,		\
 				       MPI_Op op, MPI_Comm comm)	\
 {									\
@@ -254,7 +255,7 @@ GEN(Scan)
 
 #undef GEN
 
-int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
+static inline int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 {
     unsigned int shift, length;
     MPI_Status status;
@@ -280,7 +281,7 @@ int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 		    tag, comm, NULL);
 }
 
-static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_string **ps)
+static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_string **ps)
 {
     unsigned int shift, length;
     MPI_Status status;
@@ -328,7 +329,7 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
     return r;
 }
 
-int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
+static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 {
     unsigned int length = OBJ2_INTARRAY(buf)->i.length,
 		 shift = OBJ2_INTARRAY(buf)->i.shift;
@@ -352,7 +353,7 @@ int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 		     OBJ2_INTARRAY(buf)->i.type, root, comm);
 }
 
-static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
+static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 {
     unsigned int shift = (*ps)->size_shift,
 		 length = (*ps)->len << ((*ps)->size_shift);
@@ -400,7 +401,7 @@ static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 }
 
 
-int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
+static inline int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 {
     MPI_Send(&OBJ2_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
     MPI_Send(&OBJ2_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
@@ -495,7 +496,7 @@ PIKECLASS Comm
 	    mpi_Bcast(buf, root, THIS->comm);
 	    pop_n_elems(args);
 	} else {
-	    struct pike_string *ps;
+	    struct pike_string *ps = NULL;
 
 	    if (-1 == low_get_storage(buf->prog, Pointer_program))
 		FAIL_SENTINEL_OR_PTR("Bcast", 1);
