@@ -30,11 +30,11 @@
  */
 
 struct mpi_info {
-    MPI_Datatype type;
     unsigned int length;
     unsigned int type_size;
-    unsigned char shift;
+    unsigned int shift;
     void * data;
+    MPI_Datatype type;
 };
 
 DECLARATIONS
@@ -116,7 +116,7 @@ PIKECLASS Sentinel {
 
 PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
 					       unsigned int length,
-					       unsigned char shift,
+					       unsigned int shift,
 					       void * p,
 					       struct object * other) {
     struct object * o = low_clone(Sentinel_program);
@@ -163,29 +163,29 @@ EXPORT_OP(MINLOC)
 int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 	       MPI_Op op, int root, MPI_Comm comm)
 {
-    unsigned char shift = OBJ2_INTARRAY(sendbuf)->i.shift;
-    unsigned int length = OBJ2_INTARRAY(sendbuf)->i.length;
+    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift,
+		 length = OBJ2_INTARRAY(sendbuf)->i.length;
     int rank;
 
-    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
     MPI_Comm_rank(comm, &rank);
 
     if (OBJ2_INTARRAY(recvbuf)->i.shift != OBJ2_INTARRAY(sendbuf)->i.shift)
-	Pike_fatal("Reduce: recvbuf and sendbuf differ in shift (%d vs %d).\n",
-		   (int)OBJ2_INTARRAY(recvbuf)->i.shift, (int)OBJ2_INTARRAY(sendbuf)->i.shift);
+	Pike_fatal("Reduce: recvbuf and sendbuf differ in shift (%u vs %u).\n",
+		   OBJ2_INTARRAY(recvbuf)->i.shift, OBJ2_INTARRAY(sendbuf)->i.shift);
     if (OBJ2_INTARRAY(recvbuf)->i.length != OBJ2_INTARRAY(sendbuf)->i.length)
 	Pike_fatal("Reduce: recvbuf and sendbuf differ in size (%u vs %u).\n",
 		   OBJ2_INTARRAY(recvbuf)->i.length, OBJ2_INTARRAY(sendbuf)->i.length);
 
     if (rank != root) {
 	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
-	    Pike_fatal("Cannot Reduce magic shift %d into buffer of magic shift %d.\n",
-		       (int)shift, OBJ2_INTARRAY(recvbuf)->i.shift);
+	    Pike_fatal("Cannot Reduce magic shift %u into buffer of magic shift %u.\n",
+		       shift, OBJ2_INTARRAY(recvbuf)->i.shift);
 	if (length > OBJ2_INTARRAY(recvbuf)->i.length)
-	    Pike_fatal("Cannot Reduce magic shift %d and length %d into buffer of length %d.\n",
-		       (int)shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
+	    Pike_fatal("Cannot Reduce magic shift %u and length %d into buffer of length %d.\n",
+		       shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
     }
 
     return MPI_Reduce(OBJ2_INTARRAY(sendbuf)->i.data,
@@ -198,20 +198,20 @@ int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 				       struct object *recvbuf,		\
 				       MPI_Op op, MPI_Comm comm)	\
 {									\
-    unsigned char shift = OBJ2_INTARRAY(sendbuf)->i.shift;		\
-    unsigned int length = OBJ2_INTARRAY(sendbuf)->i.length;		\
+    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift,		\
+		 length = OBJ2_INTARRAY(sendbuf)->i.length;		\
     int rank;								\
 									\
-    MPI_Bcast(&shift, 1, MPI_CHAR, 0, comm);				\
+    MPI_Bcast(&shift, 1, MPI_INT, 0, comm);				\
     MPI_Bcast(&length, 1, MPI_INT, 0, comm);				\
 									\
     MPI_Comm_rank(comm, &rank);						\
 									\
     if (OBJ2_INTARRAY(recvbuf)->i.shift					\
 	    != OBJ2_INTARRAY(sendbuf)->i.shift)				\
-	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in shift (%d vs %d).\n",\
-		   (int)OBJ2_INTARRAY(recvbuf)->i.shift,		\
-		   (int)OBJ2_INTARRAY(sendbuf)->i.shift);		\
+	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in shift (%u vs %u).\n",\
+		   OBJ2_INTARRAY(recvbuf)->i.shift,			\
+		   OBJ2_INTARRAY(sendbuf)->i.shift);			\
     if (OBJ2_INTARRAY(recvbuf)->i.length				\
 	    != OBJ2_INTARRAY(sendbuf)->i.length)			\
 	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in size (%u vs %u).\n",\
@@ -220,11 +220,11 @@ int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 									\
     if (rank) {								\
 	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)			\
-	    Pike_fatal("Cannot " #_name_ " magic shift %d into buffer of magic shift %d.\n",\
-		       (int)shift, OBJ2_INTARRAY(recvbuf)->i.shift);	\
+	    Pike_fatal("Cannot " #_name_ " magic shift %u into buffer of magic shift %u.\n",\
+		       shift, OBJ2_INTARRAY(recvbuf)->i.shift);	\
 	if (length > OBJ2_INTARRAY(recvbuf)->i.length)			\
-	    Pike_fatal("Cannot " #_name_ " magic shift %d and length %d into buffer of length %d.\n",\
-		       (int)shift, length,				\
+	    Pike_fatal("Cannot " #_name_ " magic shift %u and length %d into buffer of length %d.\n",\
+		       shift, length,				\
 		       OBJ2_INTARRAY(recvbuf)->i.length);		\
     }									\
 									\
@@ -241,23 +241,22 @@ GEN(Scan)
 
 int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 {
-    unsigned char shift;
-    unsigned int length;
+    unsigned int shift, length;
     MPI_Status status;
     int r;
 
-    MPI_Recv(&shift, 1, MPI_CHAR, source, tag, comm, &status);
+    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &status);
     MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm, NULL);
 
     if (shift != OBJ2_INTARRAY(buf)->i.shift)
-	Pike_error("Trying to receive shift %d into buffer of shift %d.\n",
-		   (int)shift, (int)OBJ2_INTARRAY(buf)->i.shift);
+	Pike_error("Trying to receive shift %u into buffer of shift %u.\n",
+		   shift, OBJ2_INTARRAY(buf)->i.shift);
     if (OBJ2_INTARRAY(buf)->i.length < length)
 #if 0
 	Pike_error("Cannot receive MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d) into MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d).\n",
 		   length, OBJ2_INTARRAY(buf)->i.length);
 #else
-	Pike_error("Cannot receive magic shift %d length %d into length %d.\n",
+	Pike_error("Cannot receive magic shift %u length %d into length %d.\n",
 		   shift, length, OBJ2_INTARRAY(buf)->i.length);
 #endif
 
@@ -268,8 +267,7 @@ int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
 
 static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_string **ps)
 {
-    unsigned char shift;
-    unsigned int length;
+    unsigned int shift, length;
     MPI_Status status;
     MPI_Datatype type;
     void *_buf;
@@ -278,7 +276,7 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
 
     mark_free_svalue(&sval);
 
-    MPI_Recv(&shift, 1, MPI_CHAR, source, tag, comm, &status);
+    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &status);
     MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm,
 	     NULL);
 
@@ -292,7 +290,7 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
 	((char*)_buf)[length] = 0;
 	break;
     default:
-	Pike_error("Cannot receive shift %d as a string.\n", (int)shift);
+	Pike_error("Cannot receive shift %u as a string.\n", shift);
     }
 
     r = MPI_Recv(_buf, length, type, status.MPI_SOURCE, tag,
@@ -317,22 +315,22 @@ static int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_strin
 
 int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 {
-    unsigned int length = OBJ2_INTARRAY(buf)->i.length;
-    unsigned char shift = OBJ2_INTARRAY(buf)->i.shift;
+    unsigned int length = OBJ2_INTARRAY(buf)->i.length,
+		 shift = OBJ2_INTARRAY(buf)->i.shift;
     int rank;
 
-    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
     MPI_Comm_rank(comm, &rank);
 
     if (rank != root) {
 	if (shift != OBJ2_INTARRAY(buf)->i.shift)
-	    Pike_fatal("Cannot (receive) broadcast of shift %d into buffer of shift %d.\n",
-		       (int)shift, (int)OBJ2_INTARRAY(buf)->i.shift);
+	    Pike_fatal("Cannot (receive) broadcast of shift %u into buffer of shift %u.\n",
+		       shift, OBJ2_INTARRAY(buf)->i.shift);
 	if (length > OBJ2_INTARRAY(buf)->i.length)
-	    Pike_fatal("Buffer of shift %d and size %d to small for transmission of size %d.\n",
-		       (int)shift, OBJ2_INTARRAY(buf)->i.length, length);
+	    Pike_fatal("Buffer of shift %u and size %d to small for transmission of size %d.\n",
+		       shift, OBJ2_INTARRAY(buf)->i.length, length);
     }
 
     return MPI_Bcast(OBJ2_INTARRAY(buf)->i.data, length,
@@ -341,13 +339,13 @@ int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 
 static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 {
-    unsigned char shift = (*ps)->size_shift;
-    unsigned int length = (*ps)->len << ((*ps)->size_shift);
+    unsigned int shift = (*ps)->size_shift,
+		 length = (*ps)->len << ((*ps)->size_shift);
     MPI_Status status;
     void *_buf;
     int r, rank;
 
-    MPI_Bcast(&shift, 1, MPI_CHAR, root, comm);
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
     MPI_Comm_rank(comm, &rank);
@@ -362,7 +360,7 @@ static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 	    ((char*)_buf)[length] = 0;
 	    break;
 	default:
-	    Pike_error("Cannot receive shift %d as a string.\n", (int)shift);
+	    Pike_error("Cannot receive shift %u as a string.\n", shift);
 	}
 
 	r = MPI_Bcast(_buf, length, MPI_CHAR, root, comm);
@@ -389,7 +387,7 @@ static int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 
 int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 {
-    MPI_Send(&OBJ2_INTARRAY(buf)->i.shift, 1, MPI_CHAR, dest, tag, comm);
+    MPI_Send(&OBJ2_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
     MPI_Send(&OBJ2_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
     return MPI_Send(OBJ2_INTARRAY(buf)->i.data, OBJ2_INTARRAY(buf)->i.length,
 		    OBJ2_INTARRAY(buf)->i.type, dest, tag, comm);
@@ -436,10 +434,10 @@ PIKECLASS Comm
 
     PIKEFUN void Send(string buf, int dest, int|void tag)
     {
-	unsigned char shift = buf->size_shift;
-	unsigned int length = buf->len << shift;
+	unsigned int shift = buf->size_shift,
+		     length = buf->len << shift;
 
-	MPI_Send(&shift, 1, MPI_CHAR, dest, tag && tag->u.integer, THIS->comm);
+	MPI_Send(&shift, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
 	MPI_Send(&length, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
 	MPI_Send(buf->str, length, MPI_CHAR, dest, tag && tag->u.integer, THIS->comm);
 
