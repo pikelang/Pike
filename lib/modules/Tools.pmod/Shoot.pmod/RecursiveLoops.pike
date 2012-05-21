@@ -4,7 +4,7 @@ inherit Tools.Shoot.Test;
 constant name="Loops Recursed";
 
 int n=0;
-int iter=16;
+int iter=20;
 int d=5;
 
 void recur(int d)
