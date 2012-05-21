@@ -93,7 +93,7 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 
 /* Define the size of the cache that is used for method lookup. */
 /* A value of zero disables this cache */
-#define FIND_FUNCTION_HASHSIZE 15013
+#define FIND_FUNCTION_HASHSIZE 16384
 
 /* Programs with less methods will not use the cache for method lookups.. */
 #define FIND_FUNCTION_HASH_TRESHOLD 9
@@ -6436,7 +6436,7 @@ int find_shared_string_identifier(struct pike_string *name,
     size_t hashval;
     hashval = my_hash_string(name);
     hashval += prog->id;
-    hashval %= FIND_FUNCTION_HASHSIZE;
+    hashval &= (FIND_FUNCTION_HASHSIZE-1);
     if(is_same_string(cache[hashval].name,name) &&
        cache[hashval].id==prog->id)
       return cache[hashval].fun;
