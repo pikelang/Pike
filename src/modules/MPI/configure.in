@@ -1,11 +1,25 @@
 AC_INIT(mpi.cmod)
-
-AC_CONFIG_HEADER(config.h)
-
 AC_MODULE_INIT()
+AC_CONFIG_HEADER(mpi_config.h)
+define(TEST_BUILTIN, [
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_RUN([
+$3
+unsigned long lint;
+int main(int argc, char **argv)
+{
+    static volatile int foo = 0;
+    foo = (int)$1($2);
+    return 0;
+}
+    ],
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    ,
+    AC_MSG_RESULT(no)
+    )
+])
 
-AC_SUBST(AUTO)
+TEST_BUILTIN(__builtin_expect, [argc,0])
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
