@@ -539,6 +539,7 @@ PIKECLASS Comm
     PIKEFUN void Bcast(string buf, int root)
     {
 	mpi_string_Bcast(&buf, root, THIS->comm);
+	pop_n_elems(args);
     }
 
     PIKEFUN void Bcast(object buf, int root)
@@ -598,6 +599,7 @@ PIKECLASS Comm
 	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
 									\
 	mpi_ ## _name_(sendbuf, recvbuf, root, THIS->comm);		\
+	pop_n_elems(args);						\
     }
 
     GEN(Scatter)
