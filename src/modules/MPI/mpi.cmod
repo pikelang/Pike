@@ -460,6 +460,109 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
 		       root, comm);
 }
 
+static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
+			       struct object *displ, struct object *recvbuf,
+			       int root, MPI_Comm comm)
+{
+    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift;
+    int rank, size;
+    unsigned int count;
+    MPI_Status status;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	int i;
+
+	if (OBJ2_INTARRAY(counts)->i.length != (unsigned int)size)
+	    Pike_error("Scatterv: count array of wrong size (%u vs %U).\n",
+		       OBJ2_INTARRAY(counts)->i.length, size);
+	if (OBJ2_INTARRAY(displ)->i.length != (unsigned int)size)
+	    Pike_error("Scatterv: displacements array of wrong size (%u vs %u).\n",
+		       OBJ2_INTARRAY(displ)->i.length, size);
+
+	for (i = 0; i < size; i++) {
+	    if (((int*)OBJ2_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_INTARRAY(sendbuf)->i.length
+		|| (int)OBJ2_INTARRAY(sendbuf)->i.length < 0)
+		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
+			   i, OBJ2_INTARRAY(sendbuf)->i.length);
+	}
+    }
+
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Scatter(OBJ2_INTARRAY(counts)->i.data, 1, MPI_INT,
+		&count, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
+	Pike_error("Cannot Scatterv magic shift %u into buffer of magic shift %u.\n",
+		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
+    if (OBJ2_INTARRAY(recvbuf)->i.length < count)
+	Pike_error("Scatterv: to small buffer (%u vs %u) on rank %d.\n",
+		   OBJ2_INTARRAY(recvbuf)->i.length, count, rank);
+
+    return MPI_Scatterv(OBJ2_INTARRAY(sendbuf)->i.data, (int*)OBJ2_INTARRAY(counts)->i.data, (int*)OBJ2_INTARRAY(displ)->i.data, OBJ2_INTARRAY(sendbuf)->i.type,
+		       OBJ2_INTARRAY(recvbuf)->i.data, count, OBJ2_INTARRAY(sendbuf)->i.type,
+		       root, comm);
+}
+
+static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
+			      struct object *counts, struct object *displ,
+			      int root, MPI_Comm comm)
+{
+    unsigned int shift;
+    int rank, size;
+    unsigned int count;
+    MPI_Status status;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    if (rank == root) {
+	int i;
+
+	shift = OBJ2_INTARRAY(recvbuf)->i.shift;
+
+	if (OBJ2_INTARRAY(counts)->i.length != (unsigned int)size)
+	    Pike_error("Gatherv: count array of wrong size (%u vs %U).\n",
+		       OBJ2_INTARRAY(counts)->i.length, size);
+	if (OBJ2_INTARRAY(displ)->i.length != (unsigned int)size)
+	    Pike_error("Gatherv: displacements array of wrong size (%u vs %u).\n",
+		       OBJ2_INTARRAY(displ)->i.length, size);
+
+	for (i = 0; i < size; i++) {
+	    if (((int*)OBJ2_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_INTARRAY(recvbuf)->i.length
+		|| (int)OBJ2_INTARRAY(recvbuf)->i.length < 0)
+		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
+			   i, OBJ2_INTARRAY(sendbuf)->i.length);
+	}
+    }
+
+
+    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+    MPI_Scatter(OBJ2_INTARRAY(counts)->i.data, 1, MPI_INT,
+		&count, 1, MPI_INT, root, comm);
+
+    if (shift != OBJ2_INTARRAY(sendbuf)->i.shift)
+	Pike_error("Cannot Gatherv magic shift %u into buffer of magic shift %u.\n",
+		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
+    if (OBJ2_INTARRAY(sendbuf)->i.length < count)
+	Pike_error("Gatherv: to small buffer (%u vs %u) on rank %d.\n",
+		   OBJ2_INTARRAY(recvbuf)->i.length, count, rank);
+
+    return MPI_Gatherv(OBJ2_INTARRAY(sendbuf)->i.data,
+		       count, OBJ2_INTARRAY(sendbuf)->i.type,
+		       OBJ2_INTARRAY(recvbuf)->i.data,
+		       (int*)OBJ2_INTARRAY(counts)->i.data,
+		       (int*)OBJ2_INTARRAY(displ)->i.data,
+		       OBJ2_INTARRAY(recvbuf)->i.type, root, comm);
+}
+
 PIKECLASS Pointer
 {
     CVAR struct svalue x;
@@ -606,6 +709,34 @@ PIKECLASS Comm
     GEN(Gather)
 
 #cmod_undef GEN
+
+    PIKEFUN void Scatterv(object sendbuf, object counts, object displ,
+			  object recvbuf, int root)
+    {
+	ENSURE_SENTINEL(sendbuf, "Scatterv", 1);
+	if (-1 == low_get_storage(counts->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
+	if (-1 == low_get_storage(displ->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Scatterv", 3, "inherits(MPI.IntArray)");
+	ENSURE_SENTINEL(recvbuf, "Scatterv", 4);
+
+	mpi_Scatterv(sendbuf, counts, displ, recvbuf, root, THIS->comm);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN void Gatherv(object sendbuf, object recvbuf, object counts,
+			 object displ, int root)
+    {
+	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
+	ENSURE_SENTINEL(recvbuf, "Gatherv", 2);
+	if (-1 == low_get_storage(counts->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Gatherv", 3, "inherits(MPI.IntArray)");
+	if (-1 == low_get_storage(displ->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Gatherv", 4, "inherits(MPI.IntArray)");
+
+	mpi_Gatherv(sendbuf, recvbuf, counts, displ, root, THIS->comm);
+	pop_n_elems(args);
+    }
 
     PIKEFUN void Abort(int errorcode)
     {
