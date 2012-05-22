@@ -3220,8 +3220,7 @@ foreach: TOK_FOREACH
 		$9);
     } else {
       /* Error in lvalue */
-      free_node($6);
-      $$=$9;
+      $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6), $9);
     }
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
