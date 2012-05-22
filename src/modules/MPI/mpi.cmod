@@ -252,6 +252,7 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 
 GEN(Allreduce)
 GEN(Scan)
+GEN(Exscan)
 
 #undef GEN
 
@@ -536,6 +537,7 @@ PIKECLASS Comm
 
     GEN(Allreduce)
     GEN(Scan)
+    GEN(Exscan)
 
 #cmod_undef GEN
 
