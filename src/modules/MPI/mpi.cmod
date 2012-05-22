@@ -39,12 +39,12 @@ struct mpi_info {
 
 DECLARATIONS
 
-#define IS_SENTINEL(x) (-1 != low_get_storage((x)->prog,		\
+#define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
 					      IntArray_program)		\
 			|| -1 != low_get_storage((x)->prog,		\
 						 FloatArray_program)	\
 			|| -1 != low_get_storage((x)->prog,		\
-						 Sentinel_program))
+						 Sentinel_program)))
 
 #define IS_SENTINEL_OR_PTR(x) (IS_SENTINEL(x) || -1 			\
 			       != low_get_storage((x)->prog,		\
@@ -54,6 +54,12 @@ DECLARATIONS
     SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
 			 "inherits(MPI.FloatArray)|"			\
 			 "inherits(MPI.Sentinel)");			\
+} while (0)
+#define ENSURE_SENTINEL_OR_NULL(x, fun, argnum) do {			\
+    if ((x) && !IS_SENTINEL(x))						\
+	SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"	\
+			     "inherits(MPI.FloatArray)|"		\
+			     "inherits(MPI.Sentinel)|void");		\
 } while (0)
 
 #define FAIL_SENTINEL_OR_PTR(fun, argnum) do {				\
@@ -524,6 +530,16 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
     if (rank == root) {
 	int i;
 
+	if (!IS_SENTINEL(recvbuf))
+	    Pike_error("Gatherv: root (%d) really needs a recvbuf.\n",
+		       root);
+	if (!IS_SENTINEL(counts))
+	    Pike_error("Gatherv: root (%d) really needs a counts array.\n",
+		       root);
+	if (!IS_SENTINEL(displ))
+	    Pike_error("Gatherv: root (%d) really needs a displacements array.\n",
+		       root);
+
 	shift = OBJ2_INTARRAY(recvbuf)->i.shift;
 
 	if (OBJ2_INTARRAY(counts)->i.length != (unsigned int)size)
@@ -545,22 +561,23 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
 
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-    MPI_Scatter(OBJ2_INTARRAY(counts)->i.data, 1, MPI_INT,
+    MPI_Scatter(counts ? OBJ2_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
 		&count, 1, MPI_INT, root, comm);
 
     if (shift != OBJ2_INTARRAY(sendbuf)->i.shift)
 	Pike_error("Cannot Gatherv magic shift %u into buffer of magic shift %u.\n",
-		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
+		   OBJ2_INTARRAY(sendbuf)->i.shift, shift);
     if (OBJ2_INTARRAY(sendbuf)->i.length < count)
 	Pike_error("Gatherv: to small buffer (%u vs %u) on rank %d.\n",
-		   OBJ2_INTARRAY(recvbuf)->i.length, count, rank);
+		   OBJ2_INTARRAY(sendbuf)->i.length, count, rank);
 
     return MPI_Gatherv(OBJ2_INTARRAY(sendbuf)->i.data,
 		       count, OBJ2_INTARRAY(sendbuf)->i.type,
-		       OBJ2_INTARRAY(recvbuf)->i.data,
-		       (int*)OBJ2_INTARRAY(counts)->i.data,
-		       (int*)OBJ2_INTARRAY(displ)->i.data,
-		       OBJ2_INTARRAY(recvbuf)->i.type, root, comm);
+		       recvbuf ? OBJ2_INTARRAY(recvbuf)->i.data : NULL,
+		       counts ? (int*)OBJ2_INTARRAY(counts)->i.data : NULL,
+		       displ ? (int*)OBJ2_INTARRAY(displ)->i.data : NULL,
+		       recvbuf ? OBJ2_INTARRAY(recvbuf)->i.type : MPI_INT,
+		       root, comm);
 }
 
 PIKECLASS Pointer
@@ -724,15 +741,16 @@ PIKECLASS Comm
 	pop_n_elems(args);
     }
 
-    PIKEFUN void Gatherv(object sendbuf, object recvbuf, object counts,
-			 object displ, int root)
+    PIKEFUN void Gatherv(object sendbuf, object|void recvbuf,
+			 object|void counts, object|void displ,
+			 int root)
     {
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
-	ENSURE_SENTINEL(recvbuf, "Gatherv", 2);
-	if (-1 == low_get_storage(counts->prog, IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Gatherv", 3, "inherits(MPI.IntArray)");
-	if (-1 == low_get_storage(displ->prog, IntArray_program))
-	    SIMPLE_BAD_ARG_ERROR("Gatherv", 4, "inherits(MPI.IntArray)");
+	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
+	if (counts) if (-1 == low_get_storage(counts->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Gatherv", 3, "inherits(MPI.IntArray)|void");
+	if (displ) if (-1 == low_get_storage(displ->prog, IntArray_program))
+	    SIMPLE_BAD_ARG_ERROR("Gatherv", 4, "inherits(MPI.IntArray)|void");
 
 	mpi_Gatherv(sendbuf, recvbuf, counts, displ, root, THIS->comm);
 	pop_n_elems(args);
