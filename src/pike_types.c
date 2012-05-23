@@ -6276,6 +6276,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     if (fun_type->type == PIKE_T_FUNCTION) {
       /* Advance to the next argument. */
       fun_type = fun_type->cdr;
+#if 0
+      /* This test is too strict, and causes the type checker
+       * to complain about the last argument (even if correct)
+       * when there are too few arguments to the function.
+       */
       if (!(flags & CALL_NOT_LAST_ARG) &&
 	  (fun_type->type == PIKE_T_FUNCTION) &&
 	  !low_match_types(fun_type->car, void_type_string, 0)) {
@@ -6289,6 +6294,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	if (tmp) free_type(tmp);
 	break;
       }
+#endif /* 0 */
     }
     type_stack_mark();
     push_finished_type_with_markers(fun_type, b_markers, 0);
@@ -7111,7 +7117,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
   }
 
-  if ((tmp = get_first_arg_type(fun_type, flags))) {
+  if ((tmp = get_first_arg_type(fun_type, flags|CALL_NOT_LAST_ARG))) {
     struct pike_type *tmp2;
 
 #ifdef PIKE_DEBUG
