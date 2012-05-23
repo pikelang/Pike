@@ -1755,13 +1755,17 @@ TH_RETURN_TYPE new_thread_func(void *data)
   {
     if(throw_severity <= THROW_ERROR)
       call_handle_error();
-    if(throw_severity == THROW_EXIT)
+    else if(throw_severity == THROW_EXIT)
     {
       /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
        * active. Otoh it cannot be done later since it requires the
        * evaluator stacks in the gc calls. It's difficult to solve
        * without handing over the cleanup duty to the main thread. */
       pike_do_exit(throw_value.u.integer);
+    } else if (thread_state->thread_obj) {
+      /* Copy the thrown exit value to the thread_state here,
+       * if the thread hasn't been destructed. */
+      assign_svalue(&thread_state->result, &throw_value);
     }
   } else {
     INT32 args=arg.args->size;
