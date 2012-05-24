@@ -418,14 +418,20 @@ static inline int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 
 static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int root, MPI_Comm comm)
 {
-    unsigned int shift = OBJ2_INTARRAY(recvbuf)->i.shift, length;
+    unsigned int shift, length;
     int rank, size;
     MPI_Status status;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    length = OBJ2_INTARRAY(recvbuf)->i.length / size;
+    if (rank == root) {
+	if (!IS_SENTINEL(recvbuf))
+	    Pike_error("Gather: Rank root (%d) really needs a recvbuf.\n", root);
+	shift = OBJ2_INTARRAY(recvbuf)->i.shift;
+	length = OBJ2_INTARRAY(recvbuf)->i.length / size;
+    }
+
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
@@ -437,20 +443,29 @@ static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int
 		   shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
 
     return MPI_Gather(OBJ2_INTARRAY(sendbuf)->i.data, length, OBJ2_INTARRAY(sendbuf)->i.type,
-		      OBJ2_INTARRAY(recvbuf)->i.data, length, OBJ2_INTARRAY(sendbuf)->i.type,
+		      recvbuf ? OBJ2_INTARRAY(recvbuf)->i.data : NULL, length,
+		      recvbuf ? OBJ2_INTARRAY(recvbuf)->i.type
+			      : OBJ2_INTARRAY(sendbuf)->i.type,
 		      root, comm);
 }
 
 static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, int root, MPI_Comm comm)
 {
-    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift, length;
+    unsigned int shift, length;
     int rank, size;
     MPI_Status status;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    length = OBJ2_INTARRAY(sendbuf)->i.length / size;
+    if (rank == root) {
+	if (!IS_SENTINEL(sendbuf))
+	    Pike_error("Scatter: Rank root (%d) really needs a sendbuf.\n",
+		       root);
+	shift = OBJ2_INTARRAY(sendbuf)->i.shift;
+	length = OBJ2_INTARRAY(sendbuf)->i.length / size;
+    }
+
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
@@ -461,8 +476,10 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
 	Pike_error("Cannot Scatter buffer of magic shift %u, length %u into buffer of length %u.\n",
 		   shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
 
-    return MPI_Scatter(OBJ2_INTARRAY(sendbuf)->i.data, length, OBJ2_INTARRAY(sendbuf)->i.type,
-		       OBJ2_INTARRAY(recvbuf)->i.data, length, OBJ2_INTARRAY(sendbuf)->i.type,
+    return MPI_Scatter(sendbuf ? OBJ2_INTARRAY(sendbuf)->i.data : NULL, length,
+		       sendbuf ? OBJ2_INTARRAY(sendbuf)->i.type
+			       : OBJ2_INTARRAY(recvbuf)->i.type,
+		       OBJ2_INTARRAY(recvbuf)->i.data, length, OBJ2_INTARRAY(recvbuf)->i.type,
 		       root, comm);
 }
 
@@ -729,20 +746,26 @@ PIKECLASS Comm
 
 #cmod_undef GEN
 
-#cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
-					    object recvbuf, int root)	\
+#cmod_define ID(x) x
+#cmod_define NONE(x)
+#cmod_define GEN(_name_, GATHER, SCATTER)				\
+PIKEFUN void _name_(object SCATTER(|void) sendbuf,			\
+		    object GATHER(|void) recvbuf, 			\
+		    int root)						\
     {									\
-	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
-	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
+cmod_CONCAT_EVAL(ENSURE_SENTINEL,SCATTER(##_OR_NULL))(sendbuf, #_name_, 1); \
+cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 									\
 	mpi_ ## _name_(sendbuf, recvbuf, root, THIS->comm);		\
 	pop_n_elems(args);						\
     }
 
-    GEN(Scatter)
-    GEN(Gather)
+    GEN(Scatter, NONE, ID)
+    GEN(Gather, ID, NONE)
 
 #cmod_undef GEN
+#cmod_undef NONE
+#cmod_undef ID
 
     PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
 			  object|void displ, object recvbuf, int root)
