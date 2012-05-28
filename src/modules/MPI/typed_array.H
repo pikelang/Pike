@@ -124,7 +124,7 @@
     EXIT
     {
 	if (THIS->i.data) {
-	    free(THIS->i.data);
+	    if (!THIS->i.clone) free(THIS->i.data);
 	    THIS->i.data = NULL;
 	    THIS->i.length = 0;
 	}

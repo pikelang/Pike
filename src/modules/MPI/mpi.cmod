@@ -35,6 +35,7 @@ struct mpi_info {
     unsigned int shift;
     void * data;
     MPI_Datatype type;
+    unsigned char clone;
 };
 
 DECLARATIONS
@@ -72,6 +73,8 @@ DECLARATIONS
     if (!(IS_SENTINEL_OR_PTR(x)))					\
 	FAIL_SENTINEL_OR_PTR(fun, argnum);				\
 } while (0)
+
+static unsigned char mpi_finalized = 0;
 
 PIKECLASS IntArray
 {
@@ -153,19 +156,34 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
 
 PIKECLASS Op {
     CVAR MPI_Op op;
+    CVAR unsigned int *refcnt;
+    CVAR struct svalue ufun;
+
+    EXIT
+    {
+	if (THIS->refcnt) {
+	    if (!--*THIS->refcnt) {
+		if (!mpi_finalized) MPI_Op_free(&THIS->op);
+		free(THIS->refcnt);
+	    }
+
+	    free_svalue(&THIS->ufun);
+	}
+    }
 }
 
-PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op)
+PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op, unsigned int *refcnt)
 {
     struct object *o = low_clone(Op_program);
 
     OBJ2_OP(o)->op = op;
+    OBJ2_OP(o)->refcnt = refcnt;
     return o;
 }
 
 #cmod_define EXPORT_OP(_op_) PIKEFUN object ` ## _op_()	\
 {							\
-    push_object(mpi_clone_op(MPI_ ## _op_));		\
+    push_object(mpi_clone_op(MPI_ ## _op_, NULL));	\
 }
 
 EXPORT_OP(MAX)
@@ -180,6 +198,45 @@ EXPORT_OP(LXOR)
 EXPORT_OP(BXOR)
 EXPORT_OP(MAXLOC)
 EXPORT_OP(MINLOC)
+
+static inline struct object *mpi_clone_array(struct program *prog, unsigned int length, void *data)
+{
+    struct object *r = low_clone(prog);
+
+    OBJ2_INTARRAY(r)->i.clone = 1;
+    OBJ2_INTARRAY(r)->i.data = data;
+    OBJ2_INTARRAY(r)->i.length = length;
+
+    return r;
+}
+
+/* Any ideas appreciated! */
+struct {
+    struct svalue ufun;
+    struct program *bufprog;
+} mpi_pike_user_function;
+
+static void mpi_user_function(void *invec, void *outvec, int *len,
+			      MPI_Datatype *type)
+{
+    struct object *s1, *s2;
+    struct program *p;
+
+    push_svalue(&mpi_pike_user_function.ufun);
+
+    s1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
+    s2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
+
+    ref_push_object(s1);
+    ref_push_object(s2);
+
+    f_call_function(3);
+
+    push_object(s1);
+    f_destruct(1);
+    push_object(s2);
+    f_destruct(1);
+}
 
 static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 	       MPI_Op op, int root, MPI_Comm comm)
@@ -724,6 +781,17 @@ PIKECLASS Comm
 	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
 	ENSURE_SENTINEL(recvbuf, "Reduce", 2);
 
+	if (OBJ2_OP(op)->refcnt) {
+	    assign_svalue_no_free(&mpi_pike_user_function.ufun,
+				  &OBJ2_OP(op)->ufun);
+	    sub_ref(mpi_pike_user_function.ufun.u.dummy);
+	    /* mpi_Reduce et al. check for the same shift in both buffers
+	     * (and fail if those differ). As shifts should differ easier
+	     * than programs (i.e. Sentinel_program - lots of shifts, one
+	     * program) - we just need to store any one ->prog. */
+	    mpi_pike_user_function.bufprog = recvbuf->prog;
+	}
+
 	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
 	pop_n_elems(args);
     }
@@ -735,6 +803,13 @@ PIKECLASS Comm
 	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
 	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
+									\
+	if (OBJ2_OP(op)->refcnt) {					\
+	    assign_svalue_no_free(&mpi_pike_user_function.ufun,		\
+				  &OBJ2_OP(op)->ufun);			\
+	    sub_ref(mpi_pike_user_function.ufun.u.dummy);		\
+	    mpi_pike_user_function.bufprog = recvbuf->prog;		\
+	}								\
 									\
 	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_OP(op)->op, THIS->comm);	\
 	pop_n_elems(args);						\
@@ -828,6 +903,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 /* TODO: guard against multiple calls */
 PIKEFUN void Init()
 {
+    if (mpi_finalized)
+	Pike_error("MPI: MPI.Init() cannot be called after MPI.Finalize().\n");
     MPI_Init(NULL, NULL); /* MPI Specification does not use &argc, &argv
 			     for anything, nor operate on it in any other
 			     way. AFAIK this holds for all implementations,
@@ -838,7 +915,26 @@ PIKEFUN void Init()
 /* TODO: guard against finalizing what has not been inited. */
 PIKEFUN void Finalize()
 {
+    if (mpi_finalized)
+	Pike_error("MPI: MPI.Finalize() has been called before.\n");
+    mpi_finalized = 1;
     MPI_Finalize();
+}
+
+PIKEFUN object Op_create(function ufun, int commute)
+{
+    struct object *op;
+    MPI_Op mpiop;
+    unsigned int *refcnt = xalloc(sizeof(unsigned int));
+
+    *refcnt = 1;
+
+    MPI_Op_create(mpi_user_function, commute, &mpiop);
+    op = mpi_clone_op(mpiop, refcnt);
+    assign_svalue_no_free(&OBJ2_OP(op)->ufun, ufun);
+
+    pop_n_elems(args);
+    push_object(op);
 }
 
 PIKEFUN object `world()
