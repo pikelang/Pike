@@ -176,8 +176,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
   return generic_extract(s->str,s->size_shift,pos);
 }
 
-PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
-			       int value)
+void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
@@ -421,12 +420,12 @@ static INLINE struct pike_string *internal_findstring(const char *s,
   return 0; /* not found */
 }
 
-PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
+struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
 {
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
-PMOD_EXPORT struct pike_string *findstring(const char *foo)
+struct pike_string *findstring(const char *foo)
 {
   return binary_findstring(foo, strlen(foo));
 }
@@ -1442,8 +1441,8 @@ void dump_stralloc_strings(void)
 /*** String compare functions ***/
 
 /* does not take locale into account */
-PMOD_EXPORT int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
-					char *b, ptrdiff_t blen)
+int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
+			    char *b, ptrdiff_t blen)
 {
   int tmp;
   if(alen > blen)
@@ -1630,8 +1629,8 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
   }
 }
 
-PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
-							ptrdiff_t size)
+struct pike_string *realloc_unlinked_string(struct pike_string *a,
+					    ptrdiff_t size)
 {
   struct pike_string *r = NULL;
 
