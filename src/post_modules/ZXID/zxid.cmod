@@ -20,6 +20,7 @@
 #include "mapping.h"
 #include "pike_types.h"
 #include "threads.h"
+#include "pike_threadlib.h"
 #include "dmalloc.h"
 
 #include "zxid_config.h"
@@ -444,6 +445,7 @@ PIKECLASS Configuration {
   {
     CVAR zxid_ses ses;
     CVAR struct Configuration_struct *config;
+    CVAR PIKE_MUTEX_T session_lock;	/* ZXID isn't fully thread-safe yet. */
 
     /*! @decl string(0..255) session_id
      *!
@@ -454,10 +456,12 @@ PIKECLASS Configuration {
     INIT
     {
       THIS->config = parent_storage(1);
+      mt_init(&THIS->session_lock);
     }
 
     EXIT
     {
+      mt_destroy(&THIS->session_lock);
       if (THIS->ses.sesbuf) {
 	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesbuf);
 	THIS->ses.sesbuf = NULL;
@@ -482,6 +486,7 @@ PIKECLASS Configuration {
 	}
 	copy_shared_string(this->session_id, session_id);
 	THREADS_ALLOW();
+	mt_lock(&this->session_lock);
 	if (!zxid_get_ses(&this->config->conf, &this->ses, session_id->str)) {
 	  /* New session. */
 	  if (this->ses.sid) {
@@ -490,6 +495,7 @@ PIKECLASS Configuration {
 	  }
 	  this->ses.sid = zx_dup_cstr(this->config->conf.ctx, session_id->str);
 	}
+	mt_unlock(&this->session_lock);
 	THREADS_DISALLOW();
       }
     }
@@ -510,6 +516,7 @@ PIKECLASS Configuration {
       struct Configuration_struct *config = parent_storage(1);
       zxid_ses *ses = &THIS->ses;
       int extra = 0;
+      PIKE_MUTEX_T *session_lock = &THIS->session_lock;
 
       if (THIS->session_id) {
 	extra = 3 + THIS->session_id->len;
@@ -523,12 +530,14 @@ PIKECLASS Configuration {
       }
 
       THREADS_ALLOW();
+      mt_lock(session_lock);
 
       /* Let the library handle metadata. */
       res = zxid_simple_cf_ses(&config->conf, mutable_query.s->len,
 			       mutable_query.s->str, ses, &res_len,
 			       ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
 
+      mt_unlock(session_lock);
       THREADS_DISALLOW();
 
       free_string_builder(&mutable_query);
