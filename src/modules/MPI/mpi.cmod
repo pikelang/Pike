@@ -182,24 +182,6 @@ PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op, unsigned int *refcnt)
     return o;
 }
 
-#cmod_define EXPORT_OP(_op_) PIKEFUN object ` ## _op_()	\
-{							\
-    push_object(mpi_clone_op(MPI_ ## _op_, NULL));	\
-}
-
-EXPORT_OP(MAX)
-EXPORT_OP(MIN)
-EXPORT_OP(SUM)
-EXPORT_OP(PROD)
-EXPORT_OP(LAND)
-EXPORT_OP(BAND)
-EXPORT_OP(LOR)
-EXPORT_OP(BOR)
-EXPORT_OP(LXOR)
-EXPORT_OP(BXOR)
-EXPORT_OP(MAXLOC)
-EXPORT_OP(MINLOC)
-
 static inline struct object *mpi_clone_array(struct program *prog, unsigned int length, void *data)
 {
     struct object *r = low_clone(prog);
@@ -910,7 +892,6 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	MPI_Comm_size(THIS->comm, &size);
 	push_int(size);
     }
-
 }
 
 /* TODO: guard against multiple calls */
@@ -950,29 +931,34 @@ PIKEFUN object Op_create(function ufun, int commute)
     push_object(op);
 }
 
-PIKEFUN object `world()
-{
-    static struct object *comm_world = NULL;
-
-    if (!comm_world) {
-	comm_world = clone_object(Comm_program, 0);
-	OBJ2_COMM(comm_world)->comm = MPI_COMM_WORLD;
-    }
-
-    ref_push_object(comm_world);
-}
-
-PIKEFUN int `ANY_SOURCE()
-{
-    push_int(MPI_ANY_SOURCE);
-}
-
 PIKE_MODULE_INIT
 {
-  INIT;
+    struct object *co;
+
+    INIT;
+
+    ADD_INT_CONSTANT("ANY_SOURCE", MPI_ANY_SOURCE, 0);
+    add_object_constant("world", co = clone_object(Comm_program, 0), 0);
+    OBJ2_COMM(co)->comm = MPI_COMM_WORLD;
+
+#define EXPORT_OP(_op_) add_object_constant(		\
+	#_op_, mpi_clone_op(MPI_ ## _op_, NULL), 0);
+    EXPORT_OP(MAX)
+    EXPORT_OP(MIN)
+    EXPORT_OP(SUM)
+    EXPORT_OP(PROD)
+    EXPORT_OP(LAND)
+    EXPORT_OP(BAND)
+    EXPORT_OP(LOR)
+    EXPORT_OP(BOR)
+    EXPORT_OP(LXOR)
+    EXPORT_OP(BXOR)
+    EXPORT_OP(MAXLOC)
+    EXPORT_OP(MINLOC)
+#undef EXPORT_OP
 }
 
 PIKE_MODULE_EXIT
 {
-  EXIT;
+    EXIT;
 } 
