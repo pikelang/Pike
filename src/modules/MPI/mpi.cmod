@@ -74,7 +74,9 @@ DECLARATIONS
 	FAIL_SENTINEL_OR_PTR(fun, argnum);				\
 } while (0)
 
-static unsigned char mpi_finalized = 0;
+#define mpi_INITIALIZED	1
+#define mpi_FINALIZED	2
+static unsigned char mpi_status = 0;
 
 PIKECLASS IntArray
 {
@@ -164,7 +166,7 @@ PIKECLASS Op
     {
 	if (THIS->refcnt) {
 	    if (!--*THIS->refcnt) {
-		if (!mpi_finalized) MPI_Op_free(&THIS->op);
+		if (mpi_status != mpi_FINALIZED) MPI_Op_free(&THIS->op);
 		free(THIS->refcnt);
 	    }
 
@@ -733,6 +735,9 @@ PIKECLASS Comm
 	unsigned int shift = buf->size_shift,
 		     length = buf->len << shift;
 
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	INVALIDATE_CURRENT_TIME();
 
 	MPI_Send(&shift, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
@@ -744,6 +749,9 @@ PIKECLASS Comm
 
     PIKEFUN void Send(object buf, int dest, int|void tag)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	ENSURE_SENTINEL(buf, "Send", 1);
 	mpi_Send(buf, dest, tag && tag->u.integer, THIS->comm);
 	pop_n_elems(args);
@@ -752,6 +760,9 @@ PIKECLASS Comm
     PIKEFUN void Recv(object buf, int source, int|void tag)
     {
 	struct pike_string *ps = NULL;
+
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Recv is not to be called before MPI.Init() or after MPI.Finalize().\n");
 
 	if (IS_SENTINEL(buf)) {
 	    mpi_Recv(buf, source, tag && tag->u.integer, THIS->comm);
@@ -769,12 +780,18 @@ PIKECLASS Comm
 
     PIKEFUN void Bcast(string buf, int root)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Bcast is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	mpi_string_Bcast(&buf, root, THIS->comm);
 	pop_n_elems(args);
     }
 
     PIKEFUN void Bcast(object buf, int root)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Bcast is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	if (IS_SENTINEL(buf)) {
 	    mpi_Bcast(buf, root, THIS->comm);
 	    pop_n_elems(args);
@@ -796,6 +813,9 @@ PIKECLASS Comm
 
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Reduce is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	if (-1 == low_get_storage(op->prog, Op_program))
 	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
 	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
@@ -819,6 +839,8 @@ PIKECLASS Comm
 #cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
 					     object recvbuf, object op)	\
     {									\
+	if (mpi_status != mpi_INITIALIZED)				\
+	    Pike_error(#_name_ " is not to be called before MPI.Init() or after MPI.Finalize().\n"); \
 	if (-1 == low_get_storage(op->prog, Op_program))		\
 	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
@@ -848,6 +870,8 @@ PIKEFUN void _name_(object SCATTER(|void) sendbuf,			\
 		    object GATHER(|void) recvbuf, 			\
 		    int root)						\
     {									\
+	if (mpi_status != mpi_INITIALIZED)				\
+	    Pike_error(#_name_ " is not to be called before MPI.Init() or after MPI.Finalize().\n"); \
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,SCATTER(##_OR_NULL))(sendbuf, #_name_, 1); \
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 									\
@@ -865,6 +889,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
 			  object|void displ, object recvbuf, int root)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Scatterv is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
 	    SIMPLE_BAD_ARG_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
@@ -880,6 +907,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 			 object|void counts, object|void displ,
 			 int root)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Gatherv is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
 	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
@@ -893,27 +923,37 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
     PIKEFUN void Abort(int errorcode)
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Abort is not to be called before MPI.Init() or after MPI.Finalize().\n");
 	MPI_Abort(THIS->comm, errorcode);
 	pop_n_elems(args);
     }
 
     PIKEFUN void Barrier()
     {
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("Barrier is not to be called before MPI.Init() or after MPI.Finalize().\n");
 	INVALIDATE_CURRENT_TIME();
 	MPI_Barrier(THIS->comm);
     }
 
-    PIKEFUN int rank()
+    PIKEFUN int `rank()
     {
 	int rank;
+
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("rank is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
 
 	MPI_Comm_rank(THIS->comm, &rank);
 	push_int(rank);
     }
 
-    PIKEFUN int size()
+    PIKEFUN int `size()
     {
 	int size;
+
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("->size is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
 
 	MPI_Comm_size(THIS->comm, &size);
 	push_int(size);
@@ -923,8 +963,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 /* TODO: guard against multiple calls */
 PIKEFUN void Init()
 {
-    if (mpi_finalized)
-	Pike_error("MPI: MPI.Init() cannot be called after MPI.Finalize().\n");
+    if (mpi_status)
+	Pike_error("MPI: MPI.Init() cannot be called twice.\n");
+    mpi_status = mpi_INITIALIZED;
     MPI_Init(NULL, NULL); /* MPI Specification does not use &argc, &argv
 			     for anything, nor operate on it in any other
 			     way. AFAIK this holds for all implementations,
@@ -935,9 +976,9 @@ PIKEFUN void Init()
 /* TODO: guard against finalizing what has not been inited. */
 PIKEFUN void Finalize()
 {
-    if (mpi_finalized)
+    if (mpi_status == mpi_FINALIZED)
 	Pike_error("MPI: MPI.Finalize() has been called before.\n");
-    mpi_finalized = 1;
+    mpi_status = mpi_FINALIZED;
     MPI_Finalize();
 }
 
