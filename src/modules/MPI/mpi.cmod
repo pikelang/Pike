@@ -9,6 +9,7 @@
 #include "interpret.h"
 #include "program.h"
 #include "array.h"
+#include "pike_error.h"
 #include "builtin_functions.h"
 
 #include <mpi.h>
@@ -201,28 +202,51 @@ struct {
     struct program *bufprog;
 } mpi_pike_user_function;
 
+struct mpi_user_function_errstruct {
+    struct object *v1;
+    struct object *v2;
+};
+
+static void mpi_user_function_error(struct mpi_user_function_errstruct *v)
+{
+    INVALIDATE_CURRENT_TIME();
+
+    push_object(v->v1);
+    f_destruct(1);
+    push_object(v->v2);
+    f_destruct(1);
+    free(v);
+}
+
 static void mpi_user_function(void *invec, void *outvec, int *len,
 			      MPI_Datatype *type)
 {
-    struct object *s1, *s2;
+    ONERROR err;
     struct program *p;
+    struct mpi_user_function_errstruct *v
+	    = xalloc(sizeof(struct mpi_user_function_errstruct));
     struct svalue *old_sp = Pike_sp;
+
 
     push_svalue(&mpi_pike_user_function.ufun);
 
-    s1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
-    s2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
 
-    ref_push_object(s1);
-    ref_push_object(s2);
+    v->v1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
+    v->v2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
 
+    ref_push_object(v->v1);
+    ref_push_object(v->v2);
+
+    SET_ONERROR(err, mpi_user_function_error, v);
     f_call_function(3);
+    UNSET_ONERROR(err);
     INVALIDATE_CURRENT_TIME();
 
-    push_object(s1);
+    push_object(v->v1);
     f_destruct(1);
-    push_object(s2);
+    push_object(v->v2);
     f_destruct(1);
+    free(v);
 
 #ifndef PIKE_DEBUG
     if (Pike_sp-old_sp > 0)
