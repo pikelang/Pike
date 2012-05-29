@@ -215,6 +215,7 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
     ref_push_object(s2);
 
     f_call_function(3);
+    INVALIDATE_CURRENT_TIME();
 
     push_object(s1);
     f_destruct(1);
@@ -261,6 +262,8 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 		       shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
     }
 
+    INVALIDATE_CURRENT_TIME();
+
     return MPI_Reduce(OBJ2_INTARRAY(sendbuf)->i.data,
 		      OBJ2_INTARRAY(recvbuf)->i.data, length,
 		      OBJ2_INTARRAY(sendbuf)->i.type, op,
@@ -302,6 +305,8 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 		       OBJ2_INTARRAY(recvbuf)->i.length);		\
     }									\
 									\
+    INVALIDATE_CURRENT_TIME();						\
+									\
     return MPI_ ## _name_(OBJ2_INTARRAY(sendbuf)->i.data,		\
 		      OBJ2_INTARRAY(recvbuf)->i.data, length,		\
 		      OBJ2_INTARRAY(sendbuf)->i.type, op,		\
@@ -335,6 +340,8 @@ static inline int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm com
 		   shift, length, OBJ2_INTARRAY(buf)->i.length);
 #endif
 
+    INVALIDATE_CURRENT_TIME();
+
     return MPI_Recv(OBJ2_INTARRAY(buf)->i.data, length,
 		    OBJ2_INTARRAY(buf)->i.type, status.MPI_SOURCE,
 		    tag, comm, NULL);
@@ -350,6 +357,8 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pik
     int r;
 
     mark_free_svalue(&sval);
+
+    INVALIDATE_CURRENT_TIME();
 
     MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &status);
     MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm,
@@ -394,6 +403,8 @@ static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 		 shift = OBJ2_INTARRAY(buf)->i.shift;
     int rank;
 
+    INVALIDATE_CURRENT_TIME();
+
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
@@ -419,6 +430,8 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
     MPI_Status status;
     void *_buf;
     int r, rank;
+
+    INVALIDATE_CURRENT_TIME();
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
@@ -462,6 +475,8 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 
 static inline int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 {
+    INVALIDATE_CURRENT_TIME();
+
     MPI_Send(&OBJ2_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
     MPI_Send(&OBJ2_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
     return MPI_Send(OBJ2_INTARRAY(buf)->i.data, OBJ2_INTARRAY(buf)->i.length,
@@ -473,6 +488,8 @@ static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int
     unsigned int shift, length;
     int rank, size;
     MPI_Status status;
+
+    INVALIDATE_CURRENT_TIME();
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -517,6 +534,8 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
 	shift = OBJ2_INTARRAY(sendbuf)->i.shift;
 	length = OBJ2_INTARRAY(sendbuf)->i.length / size;
     }
+
+    INVALIDATE_CURRENT_TIME();
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
@@ -579,6 +598,8 @@ static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
 	}
     }
 
+
+    INVALIDATE_CURRENT_TIME();
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Scatter(counts ? OBJ2_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
@@ -646,6 +667,8 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
     }
 
 
+    INVALIDATE_CURRENT_TIME();
+
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Scatter(counts ? OBJ2_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
 		&count, 1, MPI_INT, root, comm);
@@ -709,6 +732,8 @@ PIKECLASS Comm
     {
 	unsigned int shift = buf->size_shift,
 		     length = buf->len << shift;
+
+	INVALIDATE_CURRENT_TIME();
 
 	MPI_Send(&shift, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
 	MPI_Send(&length, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
@@ -874,6 +899,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
     PIKEFUN void Barrier()
     {
+	INVALIDATE_CURRENT_TIME();
 	MPI_Barrier(THIS->comm);
     }
 
