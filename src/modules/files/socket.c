@@ -233,7 +233,9 @@ static void port_listen_fd(INT32 args)
  *! establish a connection.
  *!
  *! If the optional argument @[ip] is given, @[bind] will try to bind
- *! to an interface with that host name or IP number.
+ *! to an interface with that host name or IP number. Omitting this
+ *! will bind to all available IPv4 addresses; specifying "::" will
+ *! bind to all IPv4 and IPv6 addresses.
  *!
  *! @returns
  *!   1 is returned on success, zero on failure. @[errno] provides
