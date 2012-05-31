@@ -20,6 +20,26 @@ int main(int argc, char **argv)
     )
 ])
 
-TEST_BUILTIN(__builtin_expect, [argc,0])
+if test "x$with_MPI" == "xyes"
+then
+    TEST_BUILTIN(__builtin_expect, [argc,0])
+
+    AC_MSG_CHECKING(whether MPI is present)
+    AC_TRY_RUN([
+#include "mpi.h"
+
+    int main(int argc, char **argv)
+    {
+	MPI_Comm c;
+
+	return 0;
+    }
+	],
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAS_MPI, 1, [Whether MPI is available])
+	LIBS="${LIBS-} -lmpi",
+	AC_MSG_RESULT(no)
+    )
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

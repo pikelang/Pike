@@ -31,4 +31,9 @@ if test x$with_fftw = xyes ; then
   fi
 fi
 
+if test "x$with_MPI" == "xyes"
+then
+  AC_DEFINE(HAS_MPI, 1, [Whether MPI is available]),
+fi
+
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
