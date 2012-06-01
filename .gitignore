@@ -16,6 +16,7 @@ _$*
 *$
 *.old
 *.bak
+*.swp
 *.BAK
 *.orig
 *.rej
