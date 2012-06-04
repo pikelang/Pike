@@ -416,8 +416,7 @@ class Client(string|Standards.URI url, int|void boolean)
 //!@}
 class AsyncClient
 {
-  protected object request;
-  protected function user_data_ok;
+  protected Protocols.HTTP.Session http_session;
   protected string _url;
   protected int _boolean;
 
@@ -425,9 +424,10 @@ class AsyncClient
   {
     _url = url;
     _boolean = boolean;
+     http_session = Protocols.HTTP.Session();
   }
-  
-  protected void _data_ok()
+
+  protected void _data_ok(function user_data_ok, object request)
   {
     mixed result;
     if(request) {
@@ -443,17 +443,16 @@ class AsyncClient
   {
      return lambda(function data_ok, function fail, mixed ...args)
      {
-       user_data_ok = data_ok;
-       request = Protocols.HTTP.Session()->async_do_method_url(
-                       "POST",
-                        _url,
-			0,
-			encode_call( call, args ),
-			([ "content-type":"text/xml"]),
-			0,
-			_data_ok,
-			fail,
-			({ }));
-    };
+       http_session->async_do_method_url(
+           "POST",
+           _url,
+           0,
+           encode_call( call, args ),
+           ([ "content-type":"text/xml"]),
+           0,
+           Function.curry(_data_ok)(data_ok),
+           fail,
+           ({ }));
+     };
   }
 }
