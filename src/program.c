@@ -5641,19 +5641,24 @@ PMOD_EXPORT int add_integer_constant(const char *name,
   return simple_add_constant(name, &tmp, flags);
 }
 
+PMOD_EXPORT int low_add_integer_constant(struct pike_string *name,
+				     INT_ARG_TYPE i,
+				     INT32 flags)
+{
+  struct svalue tmp;
+  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
+  return add_constant(name, &tmp, flags);
+}
+
 PMOD_EXPORT int quick_add_integer_constant(const char *name,
 					   int name_length,
 					   INT_ARG_TYPE i,
 					   INT32 flags)
 {
-  struct svalue tmp;
-  struct pike_string *id;
   INT32 ret;
-
-  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
-  id=make_shared_binary_string(name,name_length);
-  ret=add_constant(id, &tmp, flags);
-  free_string(id);
+  struct pike_string *n = make_shared_binary_string(name, name_length);
+  ret=low_add_integer_constant(n, i, flags);
+  free_string(n);
   return ret;
 }
 
