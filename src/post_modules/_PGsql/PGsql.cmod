@@ -236,8 +236,7 @@ bad:
   }
 
   PIKEFUN void setportal(void|object portal)
-  { if(THIS->portal)
-      free_object(THIS->portal);
+  { do_free_object(THIS->portal);
     if((THIS->portal=portal))
     { debug_malloc_touch(THIS->portal);
       Pike_sp--;				/* don't decrease references */
