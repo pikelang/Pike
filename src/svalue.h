@@ -972,7 +972,7 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
 #endif
 
 #else /* FOO_PIKE_RUN_UNLOCKED */
-#define swap_svalues swap_svalues
+#define swap_svalues swap_svalues_unlocked
 #define free_svalue free_svalue_unlocked
 #define free_short_svalue free_short_svalue_unlocked 
 #define add_ref_svalue add_ref_svalue_unlocked
