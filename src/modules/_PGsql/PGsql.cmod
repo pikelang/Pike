@@ -86,6 +86,7 @@ PIKECLASS PGsql
   }
 
   EXIT
+    gc_trivial;
   { xfree(THIS->extrabuf);
   }
 
