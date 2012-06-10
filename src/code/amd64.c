@@ -1196,6 +1196,34 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     AMD64_ADD_IMM32(REG_RCX, b*sizeof(struct svalue));
     amd64_push_svaluep(REG_RCX);
     return;
+  case F_PROTECT_STACK:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    if (b) {
+      AMD64_ADD_REG_IMM32(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
+    }
+    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, fp_reg,
+			      OFFSETOF(pike_frame, expendible));
+    return;
+  case F_MARK_AT:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_mark_sp_reg();
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, locals));
+    if (b) {
+      AMD64_ADD_REG_IMM32(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
+    }
+    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, mark_sp_reg, 0x00);
+    AMD64_ADD_IMM32(mark_sp_reg, sizeof(struct svalue *));
+    dirty_regs |= 1 << mark_sp_reg;
+    /* FIXME: Deferred writing of Pike_mark_sp doen't seem to work reliably yet. */
+    if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+      AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+				OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+      dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+    }
+    return;
   }
   update_arg1(b);
   ins_f_byte(a);
@@ -1224,6 +1252,18 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_2_LOCALS:
     ins_f_byte_with_arg(F_LOCAL, b);
     ins_f_byte_with_arg(F_LOCAL, c);
+    return;
+  case F_INIT_FRAME:
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
+    amd64_load_fp_reg();
+    AMD64_LOAD_IMM32(ARG1_REG, b);
+    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, fp_reg,
+			      OFFSETOF(pike_frame, num_args));
+    if (b != c) {
+      AMD64_LOAD_IMM32(ARG1_REG, c);
+    }
+    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, fp_reg,
+			      OFFSETOF(pike_frame, num_locals));
     return;
   }
   update_arg2(c);
