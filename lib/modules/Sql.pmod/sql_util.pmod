@@ -49,8 +49,14 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
   function my_quote=(driver&&driver->quote?driver->quote:quote);
   v=map(values(bindings),
 	lambda(mixed m) {
-          if(zero_type(m))
-            return "NULL";
+	  if(zero_type(m))
+	    return "NULL";
+	  if (objectp (m) && m->is_val_null)
+	    // Note: Could need bug compatibility here - in some cases
+	    // we might be passed a null object that can be cast to
+	    // "", and before this it would be. This is an observed
+	    // compat issue in comment #7 in [bug 5900].
+	    return "NULL";
 	  if(multisetp(m))
 	    return sizeof(m) ? indices(m)[0] : "";
 	  return "'"+(intp(m)?(string)m:my_quote((string)m))+"'";
