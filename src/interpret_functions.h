@@ -2708,6 +2708,30 @@ OPCODE2(F_MAGIC_TYPES, "::_types", I_UPDATE_SP, {
   push_magic_index(magic_types_program, arg2, arg1);
 });
 
+OPCODE2(F_INIT_FRAME, "init_frame", 0, {
+    Pike_fp->num_args = arg1;
+    Pike_fp->num_locals = arg2;
+  });
+
+OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
+    Pike_fp->expendible = Pike_fp->locals + arg1;
+  });
+
+OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
+    INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
+    if (tmp > 0) {
+      if (arg2) {
+	push_undefines(tmp);
+      } else {
+	push_zeroes(tmp);
+      }
+    }
+  });
+
+OPCODE1(F_MARK_AT, "mark_at", I_UPDATE_SP, {
+    *(Pike_mark_sp++) = Pike_fp->locals + arg1;
+  });
+
 /*
 #undef PROG_COUNTER
 */
