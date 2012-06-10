@@ -406,6 +406,26 @@ PIKECLASS _pcre
 
 #define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
 
+#ifndef HAVE_PCRE_INFO
+   /* Reimplement the old deprecated interface.
+    *
+    * This interface was removed in PCRE library version 8.30 04-February-2012.
+    */
+   static int pcre_info(const pcre *argument_re, int *optptr, int *first_byte)
+   {
+     int count = 0;
+     int res;
+     if (first_byte) {
+       res = pcre_fullinfo(argument_re, NULL,
+			   PCRE_INFO_FIRSTBYTE, first_byte);
+       if (res) return res;
+     }
+     res = pcre_fullinfo(argument_re, NULL, PCRE_INFO_NAMECOUNT, &count);
+
+     return res?res:count;
+   }
+#endif
+
    PIKEFUN int|array(int) exec(string subject,
 			       void|int startoffset)
       {

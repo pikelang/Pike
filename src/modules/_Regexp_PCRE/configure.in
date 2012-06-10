@@ -18,7 +18,7 @@ if test x$with_libpcre = xyes ; then
       LIBS="${LIBS-} -lpcre"
       PIKE_FEATURE(Regexp.PCRE,[yes (libpcre)])
 
-      AC_CHECK_FUNCS(pcre_fullinfo pcre_get_stringnumber)
+      AC_CHECK_FUNCS(pcre_info pcre_fullinfo pcre_get_stringnumber)
     ])
   fi
 fi
