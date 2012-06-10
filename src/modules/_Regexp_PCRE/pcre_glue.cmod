@@ -415,12 +415,19 @@ PIKECLASS _pcre
    {
      int count = 0;
      int res;
+     if (optptr) {
+       unsigned long int opts = 0;
+       res = pcre_fullinfo(argument_re, NULL,
+			   PCRE_INFO_OPTIONS, &opts);
+       if (res) return res;
+       *optptr = opts;
+     }
      if (first_byte) {
        res = pcre_fullinfo(argument_re, NULL,
 			   PCRE_INFO_FIRSTBYTE, first_byte);
        if (res) return res;
      }
-     res = pcre_fullinfo(argument_re, NULL, PCRE_INFO_NAMECOUNT, &count);
+     res = pcre_fullinfo(argument_re, NULL, PCRE_INFO_CAPTURECOUNT, &count);
 
      return res?res:count;
    }
