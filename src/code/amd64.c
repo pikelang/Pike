@@ -1253,18 +1253,21 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte_with_arg(F_LOCAL, b);
     ins_f_byte_with_arg(F_LOCAL, c);
     return;
+#if 0
   case F_INIT_FRAME:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_load_fp_reg();
     AMD64_LOAD_IMM32(ARG1_REG, b);
-    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, fp_reg,
-			      OFFSETOF(pike_frame, num_args));
+    // FIXME: 16-bit store, or join b & c into a single 32-bit store.
+    AMD64_MOVE16_REG_TO_RELADDR(ARG1_REG, fp_reg,
+				OFFSETOF(pike_frame, num_args));
     if (b != c) {
       AMD64_LOAD_IMM32(ARG1_REG, c);
     }
-    AMD64_MOVE_REG_TO_RELADDR(ARG1_REG, fp_reg,
-			      OFFSETOF(pike_frame, num_locals));
+    AMD64_MOVE16_REG_TO_RELADDR(ARG1_REG, fp_reg,
+				OFFSETOF(pike_frame, num_locals));
     return;
+#endif
   }
   update_arg2(c);
   update_arg1(b);
