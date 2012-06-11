@@ -1210,7 +1210,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_mark_sp_reg();
-    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, locals));
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
     if (b) {
       AMD64_ADD_REG_IMM32(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
     }
