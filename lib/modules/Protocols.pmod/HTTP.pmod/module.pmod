@@ -50,6 +50,8 @@ constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
 constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
 constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
 
+constant HTTP_LEGALLY_RESTRICTED= 451; // Draft: Unavailable for Legal Reasons
+
 // Server errors
 constant HTTP_INTERNAL_ERR	= 500; // RFC 2616 10.5.1: Internal Server Error
 constant HTTP_NOT_IMPL		= 501; // RFC 2616 10.5.2: Not Implemented
@@ -116,6 +118,7 @@ constant response_codes =
   424:"424 Failed Dependency", // WebDAV
   425:"425 Unordered Collection", // RFC3648
   426:"426 Upgrade Required", // RFC2817
+  451:"451 Unavailable for Legal Reasons", // draft-tbray-http-legally-restricted-status
 
   // Internal Server Errors
   500:"500 Internal Server Error.",
