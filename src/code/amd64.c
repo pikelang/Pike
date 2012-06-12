@@ -191,19 +191,19 @@ static void and_reg_imm( enum amd64_reg reg, int imm32 )
   {
     if( reg == REG_RAX )
     {
-      opcode( 0x25 ); // AND rax,imm32
+      opcode( 0x25 ); /* AND rax,imm32 */
       id( imm32 );
     }
     else
     {
-      opcode( 0x81 ); // AND REG,imm32
+      opcode( 0x81 ); /* AND REG,imm32 */
       modrm( 3,4, reg);
       id( imm32 );
     }
   }
   else
   {
-    add_to_program(0x83); // AND REG,imm8
+    add_to_program(0x83); /* AND REG,imm8 */
     modrm( 3, 4, reg );
     ib( imm32 );
   }
@@ -211,7 +211,7 @@ static void and_reg_imm( enum amd64_reg reg, int imm32 )
 
 static void mov_mem16_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_reg to_reg )
 {
-  // FIXME: Really implement..
+  /* FIXME: Really implement... */
   mov_mem32_reg( from_reg, offset, to_reg );
   and_reg_imm( to_reg, 0xffff );
 }
@@ -223,7 +223,7 @@ static void shl_reg_imm( enum amd64_reg from_reg, int shift )
   rex( 1, from_reg, 0, 0 );
   if( shift == 1 )
   {
-    opcode( 0xd1 );     // RCL
+    opcode( 0xd1 );     /* RCL */
     modrm( 3, 2, from_reg );
   }
   else
@@ -391,19 +391,19 @@ static void add_reg_imm( enum amd64_reg reg, int imm32 )
   {
     if( reg == REG_RAX )
     {
-      opcode( 0x05 ); // ADD rax,imm32
+      opcode( 0x05 ); /* ADD rax,imm32 */
       id( imm32 );
     }
     else
     {
-      opcode( 0x81 ); // ADD REG,imm32
+      opcode( 0x81 ); /* ADD REG,imm32 */
       modrm( 3, 0, reg);
       id( imm32 );
     }
   }
   else
   {
-    add_to_program(0x83); // ADD REG,imm8
+    add_to_program(0x83); /* ADD REG,imm8 */
     modrm( 3, 0, reg );
     ib( imm32 );
   }
@@ -419,12 +419,12 @@ static void add_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
   if( r2 ) imm32 = -imm32;
 
   if( imm32 == 1  )
-    opcode( 0xff ); // INCL(DECL) r/m32
+    opcode( 0xff ); /* INCL(DECL) r/m32 */
   else if( imm32 >= -128 && imm32 < 128 )
-    opcode( 0x83 ); // ADD imm8,r/m32
+    opcode( 0x83 ); /* ADD imm8,r/m32 */
   else
   {
-    opcode( 0x81 ); // ADD imm32,r/m32
+    opcode( 0x81 ); /* ADD imm32,r/m32 */
     large = 1;
   }
   if( !offset )
@@ -464,12 +464,12 @@ static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
   rex( 1, 0, 0, reg );
 
   if( imm32 == 1 || imm32 == -1 )
-    opcode( 0xff ); // INCL r/m32
+    opcode( 0xff ); /* INCL r/m32 */
   else if( imm32 >= -128 && imm32 < 128 )
-    opcode( 0x83 ); // ADD imm8,r/m32
+    opcode( 0x83 ); /* ADD imm8,r/m32 */
   else
   {
-    opcode( 0x81 ); // ADD imm32,r/m32
+    opcode( 0x81 ); /* ADD imm32,r/m32 */
     large = 1;
   }
 
@@ -507,19 +507,19 @@ static void sub_reg_imm( enum amd64_reg reg, int imm32 )
   {
     if( reg == REG_RAX )
     {
-      opcode( 0x2d ); // SUB rax,imm32
+      opcode( 0x2d ); /* SUB rax,imm32 */
       id( imm32 );
     }
     else
     {
-      opcode( 0x81 ); // SUB REG,imm32
+      opcode( 0x81 ); /* SUB REG,imm32 */
       modrm( 3, 5, reg);
       id( imm32 );
     }
   }
   else
   {
-    opcode(0x83); // SUB REG,imm8
+    opcode(0x83); /* SUB REG,imm8 */
     modrm( 3, 5, reg );
     ib( imm32 );
   }
@@ -657,10 +657,10 @@ static void add_reg_imm_reg( enum amd64_reg src, long imm32, enum amd64_reg dst 
 /* load code adress + imm to reg, always 32bit offset */
 static void mov_rip_imm_reg( int imm, enum amd64_reg reg )
 {
-  imm -= 7; // The size of this instruction
+  imm -= 7; /* The size of this instruction. */
 
   rex( 1, reg, 0, 0 );
-  opcode( 0x8d ); // LEA
+  opcode( 0x8d ); /* LEA */
   modrm( 0, reg, 5 );
   id( imm );
 }
@@ -673,12 +673,12 @@ static void add_imm_mem( int imm32, enum amd64_reg reg, int offset )
   /* OPCODE */
   rex( 1, 0, 0, reg );
   if( imm32 == 1 || imm32 == -1 )
-    opcode( 0xff ); // INCL(decl) r/m32
+    opcode( 0xff ); /* INCL(decl) r/m32 */
   else if( -128 <= imm32 && 128 > imm32  )
-    opcode( 0x83 ); // ADD imm8,r/m32
+    opcode( 0x83 ); /* ADD imm8,r/m32 */
   else
   {
-    opcode( 0x81 ); // ADD imm32,r/m32
+    opcode( 0x81 ); /* ADD imm32,r/m32 */
     large = 1;
   }
 
@@ -994,10 +994,10 @@ void amd64_assign_local( int b )
   add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
   mov_reg_reg( ARG1_REG, REG_RBX );
 
-  // Free old svalue
+  /* Free old svalue. */
   amd64_free_svalue(ARG1_REG, 0);
 
-  // Copy sp[-1] -> local
+  /* Copy sp[-1] -> local */
   mov_mem_reg(sp_reg, -1*sizeof(struct svalue), REG_RAX);
   mov_mem_reg(sp_reg, -1*sizeof(struct svalue)+sizeof(long), REG_RCX);
 
@@ -1278,7 +1278,7 @@ void ins_f_byte(unsigned int b)
     else
     {
         ret_for_func = PIKE_PC;
-        pop(REG_RBX);	// Stack padding.
+        pop(REG_RBX);	/* Stack padding. */
         pop(REG_RBX);
         pop(REG_R12);
         pop(REG_R13);
@@ -1324,7 +1324,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   if (op == F_BRANCH) {
     ins_debug_instr_prologue(off, 0, 0);
     if (backward_jump) {
-        //md64_call_c_function(branch_check_threads_etc);
+        /* amd64_call_c_function(branch_check_threads_etc); */
         maybe_update_pc();
         amd64_ins_branch_check_threads_etc();
     }
@@ -1372,7 +1372,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       amd64_push_this_object();
       return;
     }
-    break; // Fallback to C-version
+    break; /* Fallback to C-version. */
   case F_NUMBER:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_push_int(b, 0);
