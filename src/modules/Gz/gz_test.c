@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <zlib.h>
 
+#ifndef OF
+# define OF _Z_OF // weird gentoo(?) zlib change
+#endif
+
 #ifdef STDC
 #  include <string.h>
 #  include <stdlib.h>
