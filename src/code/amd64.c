@@ -1223,10 +1223,10 @@ void ins_f_byte(unsigned int b)
         mov_mem_reg( REG_R10, 0, REG_RAX );
         mov_mem_reg( REG_R10, 8, REG_RCX );
         mov_mem_reg( REG_R10,16, REG_R8 );
-        mov_mem_reg( REG_R10,16, REG_R9 );
+        mov_mem_reg( REG_R10,24, REG_R9 );
         /* load done. */
-        mov_reg_mem( REG_R8, REG_R10,0);
-        mov_reg_mem(REG_R9, REG_R10,8);
+        mov_reg_mem(REG_R8,  REG_R10,0);
+        mov_reg_mem(REG_R9,  REG_R10,8);
         mov_reg_mem(REG_RAX, REG_R10,sizeof(struct svalue));
         mov_reg_mem(REG_RCX, REG_R10,8+sizeof(struct svalue));
         return;
