@@ -1315,6 +1315,20 @@ void ins_f_byte(unsigned int b)
     ins_debug_instr_prologue(b, 0, 0);
     amd64_pop_mark();
     return;
+  case F_POP_TO_MARK:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_mark_sp_reg();
+    amd64_load_sp_reg();
+    amd64_pop_mark();
+    mov_mem_reg(mark_sp_reg, 0, REG_RBX);
+    jmp(&label_A);
+    LABEL_B;
+    amd64_add_sp( -1 );
+    amd64_free_svalue( sp_reg, 0 );
+    LABEL_A;
+    cmp_reg_reg(REG_RBX, sp_reg);
+    jl(&label_B);
+    return;
   }
 
   amd64_call_c_opcode(addr,flags);
@@ -1799,6 +1813,24 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte_with_arg( F_LOCAL, b );
     ins_f_byte_with_arg( F_LOCAL, c );
 #endif
+    return;
+
+  case F_FILL_STACK:
+    {
+      LABELS();
+      if (!b) return;
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
+      amd64_load_fp_reg();
+      amd64_load_sp_reg();
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      add_reg_imm(ARG1_REG, b*sizeof(struct svalue));
+      jmp(&label_A);
+      LABEL_B;
+      amd64_push_int(0, c);
+      LABEL_A;
+      cmp_reg_reg(sp_reg, ARG1_REG);
+      jge(&label_B);
+    }
     return;
 
   case F_INIT_FRAME:
