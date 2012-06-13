@@ -1366,7 +1366,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
         /* decrement until 0. */
         /* if not 0, branch */
         /* otherwise, pop */
-        ins_debug_instr_prologue(op-F_OFFSET, a, 0);
+        ins_debug_instr_prologue(off, 0, 0);
         amd64_load_sp_reg();
         mov_mem32_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
         /* Is it a normal integer? subtype -> 0, type -> PIKE_T_INT */
@@ -1552,7 +1552,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_SIZEOF_LOCAL:
     {
       LABELS();
-      ins_debug_instr_prologue(b,0,0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_fp_reg();
       amd64_load_sp_reg();
 
@@ -1746,7 +1746,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte_with_2_args(F_EXTERNAL, b, c);
     return;
   case F_LOCAL_2_LOCAL:
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     if( b != c )
     {
         int b_c_dist = b-c;
@@ -1765,7 +1765,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     return;
   case F_2_LOCALS:
 #if 1
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_load_fp_reg();
     amd64_load_sp_reg();
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_R8);
