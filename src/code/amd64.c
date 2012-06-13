@@ -50,15 +50,17 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 #endif
 
 
-#define MAX_LABEL_USES 7
+#define MAX_LABEL_USES 6
 struct label {
   int n_label_uses;
+  ptrdiff_t addr;
   ptrdiff_t offset[MAX_LABEL_USES];
 };
 
 static void label( struct label *l )
 {
   int i;
+  if (l->addr >= 0) Pike_fatal("Label reused.\n");
   for( i=0; i<l->n_label_uses; i++ )
   {
     int dist = PIKE_PC - (l->offset[i] + 1);
@@ -73,6 +75,7 @@ static void label( struct label *l )
     /*          dist ); */
   }
   l->n_label_uses = 0;
+  l->addr = PIKE_PC;
 }
 
 static void modrm( int mod, int r, int m )
@@ -713,6 +716,11 @@ static void jump_rel8( struct label *res, unsigned char op )
 {
   opcode( op );
 
+  if (res->addr >= 0) {
+    ib(res->addr - (PIKE_PC+1));
+    return;
+  }
+
   if( res->n_label_uses >= MAX_LABEL_USES )
     Pike_fatal( "Label used too many times\n" );
   res->offset[res->n_label_uses] = PIKE_PC;
@@ -747,11 +755,13 @@ static void jmp( struct label *l ) { return jump_rel8( l, 0xeb ); }
 static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
 static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
 static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
+static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
 static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
+static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
 static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
 
 
-#define LABELS()  struct label label_A, label_B, label_C;label_A.n_label_uses = 0;label_B.n_label_uses = 0;label_C.n_label_uses = 0;
+#define LABELS()  struct label label_A, label_B, label_C;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;
 #define LABEL_A label(&label_A)
 #define LABEL_B label(&label_B)
 #define LABEL_C label(&label_C)
@@ -1329,9 +1339,9 @@ void ins_f_byte(unsigned int b)
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
       cmp_reg_reg( REG_RAX, REG_RCX );
-      je( &label_A );
+      je( &label_B );
       jmp_reg(REG_RAX);
-      LABEL_A;
+      LABEL_B;
       return;
     }
   }
