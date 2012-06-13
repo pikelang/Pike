@@ -1751,11 +1751,11 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     {
         int b_c_dist = b-c;
         amd64_load_fp_reg();
-        mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RAX );
-        add_reg_imm_reg( REG_RAX, b*sizeof(struct svalue), REG_RBX );
+        mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), REG_RBX );
+        add_reg_imm( REG_RBX, b*sizeof(struct svalue) );
         /* RBX points to dst. */
         amd64_free_svalue( REG_RBX, 0 );
-        /* assign rbx[0] = rbx[b-c] */
+        /* assign rbx[0] = rbx[c-b] */
         mov_mem_reg( REG_RBX, (c-b)*sizeof(struct svalue), REG_RAX );
         mov_mem_reg( REG_RBX, (c-b)*sizeof(struct svalue)+8, REG_RCX );
         mov_reg_mem( REG_RAX, REG_RBX, 0 );
