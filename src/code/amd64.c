@@ -158,17 +158,29 @@ static void low_mov_mem_reg(enum amd64_reg from_reg, ptrdiff_t offset, enum amd6
   if( offset == 0 && from_reg != REG_R13 && from_reg != REG_RBP )
   {
     modrm( 0, to_reg, from_reg );
+    if ((from_reg & 0x7) == 0x4) {
+      /* r12 and RSP trigger use of the SIB byte. */
+      sib(0, 4, from_reg);
+    }
   }
   else
   {
     if( offset < 128 && offset >= -128 )
     {
       modrm( 1, to_reg, from_reg );
+      if ((from_reg & 0x7) == 0x4) {
+	/* r12 and RSP trigger use of the SIB byte. */
+	sib(0, 4, from_reg);
+      }
       ib( offset );
     }
     else
     {
       modrm( 2, to_reg, from_reg );
+      if ((from_reg & 0x7) == 0x4) {
+	/* r12 and RSP trigger use of the SIB byte. */
+	sib(0, 4, from_reg);
+      }
       id(offset);
     }
   }
