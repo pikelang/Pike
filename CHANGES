@@ -382,9 +382,15 @@ o Misc:
 
   - Fuse has fixed support for readlink().
 
+  - Fixed infinite loop in Audio.Format when reading MP3 frames.
+
 
 Building, installing and developer tools
 ----------------------------------------
+
+o Fixes to allow Regexp.PCRE to compile against recent versions of PCRE lib.
+
+o Fix Gz module build on recent Gentoo Linux.
 
 o Fixed some library searchpath issues.
 
