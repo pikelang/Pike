@@ -7,7 +7,7 @@ int n=0;
 
 void perform()
 {
-   int iter = 22;
+   int iter = 26;
    int x=0;
 
    for (int a; a<iter; a++)
@@ -16,7 +16,7 @@ void perform()
 	    for (int d; d<iter; d++)
 	       for (int e; e<iter; e++)
 		  for (int f; f<iter; f++)
-		     x++;
+                    x++;
 
    n=x;
 }
