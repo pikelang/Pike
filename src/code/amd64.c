@@ -641,7 +641,7 @@ static void add_reg_imm_reg( enum amd64_reg src, long imm32, enum amd64_reg dst 
     }
     rex(1,dst,0,src);
     opcode( 0x8d ); /* LEA r64,m */
-    if( imm32 <= 0xf7 && imm32 >= -0x80 )
+    if( imm32 <= 0x7f && imm32 >= -0x80 )
     {
       modrm(1,dst,src);
       ib( imm32 );
