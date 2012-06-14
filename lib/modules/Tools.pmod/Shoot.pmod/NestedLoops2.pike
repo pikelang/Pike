@@ -8,7 +8,7 @@ int a,b,c,d,e,f;
 
 void perform()
 {
-#define ITER 28
+#define ITER 31
 
    for (a=0; a<ITER; a++)
       for (b=0; b<ITER; b++)
