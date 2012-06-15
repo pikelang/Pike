@@ -1207,7 +1207,7 @@ void amd64_update_pc(void)
     if (a_flag >= 60)
       fprintf (stderr, "pc %d  update pc via lea\n", tmp);
 #endif
-   amd64_prev_stored_pc = PIKE_PC;
+    amd64_prev_stored_pc = tmp;
   }
   else if ((disp = tmp - amd64_prev_stored_pc))
   {
@@ -1217,6 +1217,7 @@ void amd64_update_pc(void)
 #endif
     amd64_load_fp_reg();
     add_imm_mem(disp, fp_reg, OFFSETOF (pike_frame, pc));
+    amd64_prev_stored_pc += disp;
   }
    else {
 #ifdef PIKE_DEBUG
