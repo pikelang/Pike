@@ -106,8 +106,8 @@
 #define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE...)	do {	\
     struct block_allocator * a = &PIKE_CONCAT(DATA, _allocator);	\
     PAGE_LOOP(a, {							\
-	uint32_t i, used = (p == a->alloc) ? a->blocks : p->used;	\
-	for (i = 0; used && i < a->blocks; i++) {			\
+	uint32_t i, used = (p == a->alloc) ? a->l.blocks : p->used;	\
+	for (i = 0; used && i < a->l.blocks; i++) {			\
 	    BLOCK = ((struct DATA*)(p+1)) + i;				\
 	    if (FCOND) {						\
 		do CODE while(0);					\
