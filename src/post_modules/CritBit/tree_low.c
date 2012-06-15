@@ -2,13 +2,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifndef CB_NODE_ALLOC
-# define CB_NODE_ALLOC()	((cb_node_t)malloc(sizeof(cb_node)))
-#endif
-#ifndef CB_NODE_FREE
-# define CB_NODE_FREE(p)	free(p)
-#endif
-
 #ifndef HAS___BUILTIN_EXPECT
 # define __builtin_expect(x, expected_value) (x)
 #endif
