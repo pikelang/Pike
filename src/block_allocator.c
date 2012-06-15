@@ -6,5 +6,6 @@
 #define EXPORT PMOD_EXPORT
 #define ctz ctz32
 #define BA_CMEMSET cmemset
+#define BA_XALLOC xalloc
 
 #include "gjalloc.c"
