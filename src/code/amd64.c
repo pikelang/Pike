@@ -894,6 +894,8 @@ static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
 static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
 static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
 static void jno( struct label *l ) { return jump_rel8( l, 0x71 ); }
+static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
+static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
 static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
 static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
 
@@ -1517,6 +1519,14 @@ void ins_f_byte(unsigned int b)
     ins_f_byte(F_MARK);
     ins_f_byte(F_MARK);
     return;
+  case F_MARK_AND_CONST0:
+    ins_f_byte(F_MARK);
+    ins_f_byte(F_CONST0);
+    return;
+  case F_MARK_AND_CONST1:
+    ins_f_byte(F_MARK);
+    ins_f_byte(F_CONST1);
+    return;
   case F_POP_MARK:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_pop_mark();
@@ -1567,7 +1577,19 @@ void ins_f_byte(unsigned int b)
     jmp_reg(REG_RAX);
     }
     return;
-
+  case F_CLEAR_STRING_SUBTYPE:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem32_reg(sp_reg, OFFSETOF(svalue, type) - sizeof(struct svalue),
+		  REG_RAX);
+    /* NB: We only care about subtype 1! */
+    cmp_reg_imm(REG_RAX, (1<<16)|PIKE_T_STRING);
+    jne(&label_A);
+    and_reg_imm(REG_RAX, 0x1f);
+    mov_reg_mem32(REG_RAX,
+		  sp_reg, OFFSETOF(svalue, type) - sizeof(struct svalue));
+    LABEL_A;
+    return;
   }
 
   amd64_call_c_opcode(addr,flags);
@@ -1969,6 +1991,64 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
     add_reg_imm(REG_RCX, b*sizeof(struct svalue));
     amd64_push_svaluep(REG_RCX);
+    return;
+
+  case F_CLEAR_LOCAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RBX);
+    add_reg_imm(REG_RBX, b*sizeof(struct svalue));
+    amd64_free_svalue(REG_RBX, 0);
+    mov_imm_mem(0, REG_RBX, OFFSETOF(svalue, u.integer));
+    mov_imm_mem32(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+    return;
+
+  case F_INC_LOCAL_AND_POP:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
+      add_reg_imm(REG_RCX, b*sizeof(struct svalue));
+      mov_sval_type(REG_RCX, REG_RAX);
+      cmp_reg_imm(REG_RAX, PIKE_T_INT);
+      jne(&label_A);
+      /* Integer - Zap subtype and try just incrementing it. */
+      mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, type));
+      add_imm_mem(1, REG_RCX, OFFSETOF(svalue, u.integer));
+      jnc(&label_B);
+      add_imm_mem(-1, REG_RCX, OFFSETOF(svalue, u.integer));
+      LABEL_A;
+      /* Fallback to the C-implementation. */
+      update_arg1(b);
+      amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			  instrs[a-F_OFFSET].flags);
+      LABEL_B;
+    }
+    return;
+
+  case F_DEC_LOCAL_AND_POP:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
+      add_reg_imm(REG_RCX, b*sizeof(struct svalue));
+      mov_sval_type(REG_RCX, REG_RAX);
+      cmp_reg_imm(REG_RAX, PIKE_T_INT);
+      jne(&label_A);
+      /* Integer - Zap subtype and try just decrementing it. */
+      mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, __type));
+      add_imm_mem(-1, REG_RCX, OFFSETOF(svalue, u.integer));
+      jnc(&label_B);
+      add_imm_mem(1, REG_RCX, OFFSETOF(svalue, u.integer));
+      LABEL_A;
+      /* Fallback to the C-implementation. */
+      update_arg1(b);
+      amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			  instrs[a-F_OFFSET].flags);
+      LABEL_B;
+    }
     return;
 
   case F_CONSTANT:
