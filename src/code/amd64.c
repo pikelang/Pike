@@ -1325,12 +1325,12 @@ void amd64_ins_branch_check_threads_etc()
     jmp( &label_A );
     mov_imm_mem32( 0, REG_RSP, 0);
     branch_check_threads_update_etc = PIKE_PC;
-    if( (unsigned long)&fast_check_threads_counter < 0x7fffffffULL )
+    if( (unsigned long long)&fast_check_threads_counter < 0x7fffffffULL )
     {
       /* Short pointer. */
       clear_reg( REG_RAX );
       add_mem32_imm( REG_RAX,
-                     (int)DO_NOT_WARN(&fast_check_threads_counter),
+                     (int)(ptrdiff_t)&fast_check_threads_counter,
                      0x80 );
     }
     else
@@ -1338,7 +1338,7 @@ void amd64_ins_branch_check_threads_etc()
       mov_imm_reg( (long)&fast_check_threads_counter, REG_RAX);
       add_mem_imm( REG_RAX, 0, 0x80 );
     }
-    mov_imm_reg( branch_check_threads_etc, REG_RAX );
+    mov_imm_reg( (ptrdiff_t)branch_check_threads_etc, REG_RAX );
     jmp_reg(REG_RAX); /* ret in BCTE will return to desired point. */
   }
   LABEL_A;
