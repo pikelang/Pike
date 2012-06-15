@@ -140,8 +140,10 @@
 **!    
 **!    array grey=Array.filter(cs,lambda(object c) { return c->s==0; });
 **!    array colored=cs-grey;
-**! 
+**!
+**!    sort(grey->name(), grey);
 **!    sort(grey->v,grey);
+**!    sort(colored->name(), colored);
 **!    sort(Array.map(colored,lambda(object c)
 **! 			      {
 **! 				 return (c->h*50-c->s)*10+c->v;

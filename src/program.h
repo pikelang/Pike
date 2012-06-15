@@ -879,6 +879,9 @@ PMOD_EXPORT int simple_add_constant(const char *name,
 PMOD_EXPORT int add_integer_constant(const char *name,
 				     INT_ARG_TYPE i,
 				     INT32 flags);
+PMOD_EXPORT int low_add_integer_constant(struct pike_string *name,
+					   INT_ARG_TYPE i,
+					   INT32 flags);
 PMOD_EXPORT int quick_add_integer_constant(const char *name,
 					   int name_length,
 					   INT_ARG_TYPE i,

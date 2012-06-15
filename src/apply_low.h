@@ -319,51 +319,6 @@
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context->prog->program + function->func.offset;
 
-	/*
-	 * FIXME: The following stack stuff could probably
-	 *        be moved to an opcode.
-	 */
-
-	num_locals = READ_INCR_BYTE(pc);
-
-	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
-	  new_frame->expendible+=num_locals;
-
-	num_args = READ_INCR_BYTE(pc);
-
-#ifdef PIKE_DEBUG
-	if(num_locals < num_args)
-	  Pike_fatal("Wrong number of arguments or locals in function def.\n"
-		"num_locals: %d < num_args: %d\n",
-		num_locals, num_args);
-#endif
-
-	
-	if(function->identifier_flags & IDENTIFIER_VARARGS)
-	{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	  {
-	    push_undefines(num_args-args);
-	    f_aggregate(0);
-	  }else{
-	    f_aggregate(args - num_args); /* make array */
-	  }
-	  args = num_args+1;
-	}else{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	    push_undefines(num_args-args);
-	  else
-	    pop_n_elems(args - num_args);
-	  args=num_args;
-	}
-
-	if(num_locals > args)
-	  push_zeroes(num_locals-args);
-
-	new_frame->num_locals=num_locals;
-	new_frame->num_args=num_args;
 	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE

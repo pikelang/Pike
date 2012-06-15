@@ -4,10 +4,20 @@
 || for more information.
 */
 
-/*
- * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
- *
- * Henrik Grubbström 1999-04-02
+/*! @module files
+ */
+
+/*! @class sendfile
+ *!
+ *! Send @expr{headers + from_fd[off..off+len-1] + trailers@} to
+ *! @expr{to_fd@} asyncronously.
+ *!
+ *! @note
+ *!   This is the low-level implementation, which has several limitations.
+ *!   You probably want to use @[Stdio.sendfile()] instead.
+ *!
+ *! @seealso
+ *!   @[Stdio.sendfile()]
  */
 
 /*
@@ -1193,6 +1203,9 @@ static void sf_create(INT32 args)
   return;
 }
 
+/*! @endclass
+ */
+
 #endif /* _REENTRANT */
 
 /*
@@ -1230,3 +1243,6 @@ void exit_sendfile(void)
   }
 #endif /* _REENTRANT */
 }
+
+/*! @endmodule
+ */

@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 
+
 // MP3 file parser/formatter
 //
 // Author: Honza Petrous, hop@unibase.cz
@@ -97,7 +98,6 @@
     int prot = 0;
     int by, p=0, sw=0;
     mapping rv;
-
     if(mappingp(peekdata)) {
       rv = peekdata;
       peekdata = 0;
@@ -173,10 +173,16 @@
 	    blen = (int)(144 * bitrate / (float)srate + pad )-4;
 	    break;
 	}
+	string q;
 
-	string q = buffer->getbytes( blen,1 );
+	if(bitrate &&  blen > 0)
+	  q = buffer->getbytes( blen,1 );
+
+	else q = "";
+
 	if(!q)
 	  return 0;
+
 	return ([ "data": data + q,
 			"id": ID,
 			"layer": layer,

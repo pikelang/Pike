@@ -357,6 +357,7 @@ class DHParameters
     return this;
   }
 
+  //!
   protected void create(object ... args) {
     switch (sizeof(args))
     {
@@ -385,6 +386,7 @@ class DHKeyExchange
   Gmp.mpz other; /* Other party's value */
   Gmp.mpz secret; /* our =  g ^ secret mod p */
 
+  //!
   protected void create(DHParameters p) {
     parameters = p;
   }

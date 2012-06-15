@@ -23,6 +23,12 @@
 
 #else  /* GCC_IA32_ASM_STYLE */
 
+#define OPCODE_INLINE_RETURN
+void ia32_ins_entry(void);
+#define INS_ENTRY()	ia32_ins_entry()
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	0x09
+
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Don't need an lvalue in this case. */
 #define PROG_COUNTER ((unsigned char *)__builtin_return_address(0))
@@ -133,6 +139,19 @@ void ia32_flush_instruction_cache(void *addr, size_t len);
 void ia32_init_interpreter_state(void);
 #define INIT_INTERPRETER_STATE	ia32_init_interpreter_state
 
+#ifdef INS_ENTRY
+
+#define CALL_MACHINE_CODE(pc)                                           \
+  do {                                                                  \
+    /* The test is needed to get the labels to work... */               \
+    if (pc) {                                                           \
+      ((int (*)(void))(pc)) ();						\
+      goto inter_return_label;                                          \
+    }                                                                   \
+  } while(0)
+
+#else /* !INS_ENTRY */
+
 #ifdef CL_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)                                   \
@@ -159,5 +178,7 @@ void ia32_init_interpreter_state(void);
 
 #define EXIT_MACHINE_CODE()						\
   __asm__ __volatile__( "add $16,%%esp\n" : : )
+
+#endif /* INS_ENTRY */
 
 #endif /* GCC_IA32_ASM_STYLE */

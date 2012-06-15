@@ -1,25 +1,8 @@
 /* vim:syntax=c
  */
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "pike_error.h"
-#include "pike_float.h"
-#include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
-#include "operators.h"
-#include "builtin_functions.h"
-
 #ifdef cmod___CMOD__
 
-#define CB_SOURCE
-#define CB_STATIC
-#define CB_INLINE
-#define CB_NAMESPACE
+#include "common.h"
 
 #include "critbit/string2svalue.h"
 
@@ -46,17 +29,6 @@ static inline void cb_assign_svalue_key_string(cb_key key,
 #define CB_PUSH_STRING(str)	ref_push_string(str)
 #define CB_STRING_FROM_SVALUE(v)	((v)->u.string)
 #define CB_LOW_KEY_FROM_SVALUE(v)	CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(v))
-#define CB_USE_BLOCK_ALLOC
-#ifdef CB_USE_BLOCK_ALLOC
-# undef BLOCK_ALLOC_NEXT
-# define BLOCK_ALLOC_NEXT	parent
-# include "block_alloc.h"
-
-BLOCK_ALLOC_FILL_PAGES(cb_node, 2)
-# define CB_NODE_ALLOC()	CONCAT2(alloc_,CB_NAME(node))()
-# define CB_NODE_FREE(x)	CONCAT2(really_free_,CB_NAME(node))(x)
-#endif
-
 #include "tree_high.c"
 
 #define DEFAULT_CMOD_STORAGE static
@@ -93,9 +65,6 @@ PIKECLASS StringTree {
 /*! @endmodule */
 
 void pike_init_tree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    CONCAT3(init_, cb_node, _blocks)();
-#endif
     INIT
 }
 

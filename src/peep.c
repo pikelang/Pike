@@ -561,6 +561,7 @@ INT32 assemble(int store_linenumbers)
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
 	  (c[1].opcode != F_BYTE) &&
+	  (c[1].opcode != F_ENTRY) &&
 	  (c[1].opcode != F_DATA)) {
 	/* Don't add redundant code before labels or raw data. */
 	UPDATE_PC();

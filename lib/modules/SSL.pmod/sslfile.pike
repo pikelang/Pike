@@ -1608,7 +1608,7 @@ protected void update_internal_state (void|int assume_real_backend)
 			   got_extra_read_call_out);
     }
 
-    if (!got_extra_read_call_out && sizeof (read_buffer))
+    if (!got_extra_read_call_out && sizeof (read_buffer) && read_callback)
       // Got buffered read data, so schedule a call to
       // ssl_read_callback to handle it.
       got_extra_read_call_out = -1;
@@ -2262,6 +2262,12 @@ protected int ssl_close_callback (int called_from_real_backend)
   // Make sure the local backend exits after this, so that the error
   // isn't clobbered by later I/O.
   return -1;
+}
+
+//! The next protocol chosen by the client during next protocol
+//! negotiation.
+string `->next_protocol() {
+    return conn->next_protocol;
 }
 
 #else // constant(SSL.Cipher.CipherAlgorithm)

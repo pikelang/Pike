@@ -128,7 +128,7 @@ int main(int n, array(string) args)
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
-      if(!dstat || dstat->mtime < stat->mtime) {
+      if(!dstat || dstat->mtime <= stat->mtime) {
         string res = extract(fn, imgdir, builddir, root);
 
         if(!res) {
@@ -207,12 +207,13 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
   foreach(get_dir(builddir), string fn) {
     if ((fn != ".cache.xml") && has_suffix(fn, ".xml")) {
-      if (!Stdio.exist(srcdir + fn[..<4])) {
+      if (!Stdio.is_file(srcdir + fn[..<4])) {
 	if (verbosity > 0)
 	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
 
 	num_updated_files++;
 	rm(builddir + fn);
+	rm(builddir + fn[..<4] + ".brokenxml");
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
       } else if (source_timestamp && (source_timestamp < 950000000) &&
@@ -227,11 +228,11 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	  rm(builddir + fn + ".stamp");
 	}
       }
-    } else if (Stdio.is_dir(builddir + fn) && !Stdio.exist(srcdir + fn)) {
+    } else if (Stdio.is_dir(builddir + fn) && !Stdio.is_dir(srcdir + fn)) {
       // Recurse and clean away old obsolete files.
       recurse(srcdir + fn + "/", builddir + fn + "/", root_ts, root);
-      rm(builddir + fn + ".cache.xml.stamp");
-      rm(builddir + fn + ".cache.xml");
+      rm(builddir + fn + "/.cache.xml.stamp");
+      rm(builddir + fn + "/.cache.xml");
       // Try deleting the directory.
       rm(builddir + fn);
       rm(builddir + ".cache.xml.stamp");
@@ -319,7 +320,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
-      if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
+      if(!dstat || dstat->mtime <= stat->mtime || dstat->mtime <= root_ts) {
 	string res = extract(srcdir+fn, imgdir, builddir, root);
 	if(!res) {
 	  if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
@@ -353,6 +354,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if (res != orig) {
 	  num_updated_files++;
 	  Stdio.write_file(builddir+fn+".xml", res);
+	  rm(builddir + fn + ".brokenxml");
 	}
 	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
       }
@@ -623,6 +625,17 @@ string extract(string filename, string imgdest,
 	      break;
 	    }
 	  }
+	  if (has_suffix(filename, "/Image/colors.c") &&
+	      has_value(file, "sort(grey")) {
+	    // Special fix to force stable output
+	    // for the list of colors. (Used to be mapping-sort...)
+	    if (!has_value(file, "sort(grey->name(), grey);")) {
+	      file = replace(file, "sort(grey",
+			     "sort(grey->name(), grey);"
+			     "sort(colored->name(), colored);"
+			     "sort(grey");
+	    }
+	  }
 	}
 
 	int lineno = 1;
@@ -666,16 +679,20 @@ string extract(string filename, string imgdest,
 	     "type: %O\n"
 	     "name: %O\n", root, type, name);
 #endif /* 0 */
-      if(name == "master.pike")
-	name = "/master";
-      if(name == "module" && (filename/"/")[-1] != "module.pike") {
+      // Support filenames with embedded dots.
+      // cf GTK2:refdoc/GTK2.pmod/G.Object.pike
+      root += name/".";
+      name = root[-1];
+      root = root[..sizeof(root)-2];
+      if(name == "module" && type != "class") {
 	if(sizeof(root)<2)
 	  error("Unknown module parent name.\n");
 	name = root[-1];
 	root = root[..sizeof(root)-2];
       } else if ((name == "__default") && (sizeof(root) == 1)) {
 	// Pike backward compatibility module.
-	name = root[0][..sizeof(root[0])-3];
+	name = root[0];
+	if (has_suffix(name, "::")) name = name[..sizeof(name)-3];
 	root = ({});
 	type = "namespace";
       }

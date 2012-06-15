@@ -46,6 +46,10 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#ifdef HAVE_SYS_EVENT_H
+#include <sys/event.h>
+#endif /* HAVE_SYS_EVENT_H */
+
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif /* HAVE_SYS_FILE_H */
@@ -125,7 +129,9 @@
 #define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
-#define READ_BUFFER 8192
+#define READ_BUFFER		8192
+#define DIRECT_BUFSIZE		(64*1024)
+#define SMALL_NETBUF		2048
 #define INUSE_BUSYWAIT_DELAY	0.01
 #define INUSE_TIMEOUT		0.1
 
@@ -144,7 +150,16 @@
 struct program *file_program;
 struct program *file_ref_program;
 
-/*! @module Stdio
+/*! @module files
+ *!
+ *! Low-level implementations of file-related operations.
+ *!
+ *! @note
+ *!   This module should typically not be used directly by user-level
+ *!   code. You probably want to use the @[Stdio] module instead.
+ *!
+ *! @seealso
+ *!   @[Stdio]
  */
 
 /*! @class Fd_ref
@@ -153,7 +168,7 @@ struct program *file_ref_program;
  *! that call the corresponding functions in
  *! @[Fd].
  *!
- *! Used by @[File].
+ *! Used by @[Stdio.File].
  */
 
 /*! @decl Fd _fd
@@ -165,7 +180,7 @@ struct program *file_ref_program;
 
 /*! @class Fd
  *!
- *! Low level I/O operations. Use @[File] instead.
+ *! Low level I/O operations. Use @[Stdio.File] instead.
  */
 
 /*! @decl Fd fd_factory()
@@ -192,9 +207,9 @@ static void fd_fd_factory(INT32 args)
 		      Pike_fp->context - Pike_fp->current_program->inherits);
 }
 
-/* @decl object(Fd) `_fd()
- *
- * Getter for the Fd object.
+/*! @decl object(Fd) `_fd()
+ *!
+ *! Getter for the Fd object.
  */
 static void fd_backtick__fd(INT32 args)
 {
@@ -205,6 +220,12 @@ static void fd_backtick__fd(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @module Stdio
  */
 
 /* The class below is not accurate, but it's the lowest exposed API
@@ -263,16 +284,31 @@ static void debug_check_internals (struct my_file *f)
     struct my_file *f_ = (F);						\
     if (!f_->box.backend)						\
       INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
-			    f_->box.fd, (EVENTS), got_fd_event);	\
+			    f_->box.fd, (EVENTS), got_fd_event, 0);	\
     else								\
-      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS));	\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), 0);	\
+  } while (0)
+
+#define ADD_FD_EVENTS2(F, EVENTS, FFLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (!f_->box.backend)						\
+      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
+			    f_->box.fd, (EVENTS), got_fd_event, FFLAGS);	\
+    else								\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), FFLAGS);	\
   } while (0)
 
 /* Note: The file object might be freed after this. */
 #define SUB_FD_EVENTS(F, EVENTS) do {					\
     struct my_file *f_ = (F);						\
     if (f_->box.backend)						\
-      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS));	\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), 0);	\
+  } while (0)
+
+#define SUB_FD_EVENTS2(F, EVENTS, FLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (f_->box.backend)						\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), FLAGS);	\
   } while (0)
 
 static int got_fd_event (struct fd_callback_box *box, int event)
@@ -281,13 +317,15 @@ static int got_fd_event (struct fd_callback_box *box, int event)
   struct svalue *cb = &f->event_cbs[event];
 
   f->my_errno = errno;		/* Propagate backend setting. */
-
   /* The event is turned on again in the read and write functions. */
-  SUB_FD_EVENTS (f, 1 << event);
+  if(event != PIKE_FD_FS_EVENT)
+    SUB_FD_EVENTS (f, 1 << event);
 
   check_destructed (cb);
   if (!UNSAFE_IS_ZERO (cb)) {
-    apply_svalue (cb, 0);
+    if(event == PIKE_FD_FS_EVENT)
+      push_int(box->rflags);
+    apply_svalue (cb, event == PIKE_FD_FS_EVENT);
     if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
       pop_stack();
       return -1;
@@ -631,13 +669,16 @@ static struct pike_string *do_read(int fd,
 {
   ONERROR ebuf;
   ptrdiff_t bytes_read, i;
+  INT32 try_read;
   bytes_read=0;
   *err=0;
 
-  if(r <= 65536)
+  if(r <= DIRECT_BUFSIZE ||
+     (all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1)))   /* r<<1 != power of two */
   {
     struct pike_string *str;
 
+    i=r;
 
     str=begin_shared_string(r);
 
@@ -647,7 +688,9 @@ static struct pike_string *do_read(int fd,
       int fd=FD;
       int e;
       THREADS_ALLOW();
-      i = fd_read(fd, str->str+bytes_read, r);
+
+      try_read = i;
+      i = fd_read(fd, str->str+bytes_read, i);
       e=errno;
       THREADS_DISALLOW();
 
@@ -674,6 +717,24 @@ static struct pike_string *do_read(int fd,
 	}
 	break;
       }
+
+      /*
+       * Large reads cause the kernel to validate more memory before
+       * starting the actual read, and hence cause slowdowns.
+       * Ideally you read as much as you're going to receive.
+       * This buffer calculation algorithm tries to optimise the
+       * read length depending on past read chunksizes.
+       * For network reads this allows it to follow the packetsizes.
+       * The initial read will attempt the full buffer.  /srb
+       */
+      if( i < try_read )
+	i += SMALL_NETBUF;
+      else
+	i += (r-i)>>1;
+      if (i < SMALL_NETBUF)
+	i = SMALL_NETBUF;
+      if(i > r-SMALL_NETBUF)
+	i = r;
     }while(r);
 
     UNSET_ONERROR(ebuf);
@@ -692,18 +753,22 @@ static struct pike_string *do_read(int fd,
     /* For some reason, 8k seems to work faster than 64k.
      * (4k seems to be about 2% faster than 8k when using linux though)
      * /Hubbe (Per pointed it out to me..)
+     *
+     * The slowdowns most likely are because of memory validation
+     * done by the kernel for buffer space which is later unused
+     * (short read)   /srb
      */
-#define CHUNK ( 1024 * 8 )
-    INT32 try_read;
     dynamic_buffer b;
 
     b.s.str=0;
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    i = all && (r<<1)>r ? DIRECT_BUFSIZE : READ_BUFFER;
     do{
       int e;
       char *buf;
-      try_read=MINIMUM(CHUNK,r);
+
+      try_read = i;
 
       buf = low_make_buf_space(try_read, &b);
 
@@ -714,23 +779,13 @@ static struct pike_string *do_read(int fd,
 
       check_threads_etc();
 
-      if(i==try_read)
-      {
-	r-=i;
-	bytes_read+=i;
-	if(!all) break;
-      }
-      else if(i>0)
+      if(i>=0)
       {
 	bytes_read+=i;
 	r-=i;
-	low_make_buf_space(i - try_read, &b);
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	low_make_buf_space(-try_read, &b);
-	break;
+	if(try_read > i)
+	  low_make_buf_space(i - try_read, &b);
+	if(!all || !i) break;
       }
       else
       {
@@ -747,6 +802,16 @@ static struct pike_string *do_read(int fd,
 	  break;
 	}
       }
+
+      /* See explanation in previous loop above */
+      if( i < try_read )
+	i += SMALL_NETBUF;
+      else
+	i += (DIRECT_BUFSIZE-i)>>1;
+      if (i < SMALL_NETBUF)
+	i = SMALL_NETBUF;
+      if(i > r-SMALL_NETBUF)
+	i = r;
     }while(r);
 
     UNSET_ONERROR(ebuf);
@@ -755,7 +820,6 @@ static struct pike_string *do_read(int fd,
       ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
     return low_free_buf(&b);
-#undef CHUNK
   }
 }
 
@@ -1476,7 +1540,7 @@ static void file_peek(INT32 args)
     fd_set tmp;
     struct timeval tv;
 
-    tv.tv_usec=1;
+    tv.tv_usec=0;
     tv.tv_sec=0;
     fd_FD_ZERO(&tmp);
     fd_FD_SET(FD, &tmp);
@@ -1489,9 +1553,13 @@ static void file_peek(INT32 args)
 
     /* FIXME: Handling of EOF and not_eof */
 
-    THREADS_ALLOW();
-    ret = fd_select(ret+1,&tmp,0,0,&tv);
-    THREADS_DISALLOW();
+    if(tv.tv_sec || tv.tv_usec) {
+      THREADS_ALLOW();
+      ret = fd_select(ret+1,&tmp,0,0,&tv);
+      THREADS_DISALLOW();
+    }
+    else
+      ret = fd_select(ret+1,&tmp,0,0,&tv);
 
     if(ret < 0)
     {
@@ -1617,12 +1685,21 @@ static void file_read_oob(INT32 args)
   THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
-static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
+static short get_fd_event_flags(struct my_file *f)
+{
+  if(f->box.backend)
+  {
+    return f->box.flags;
+  }
+  else return 0;
+}
+
+static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, int flags)
 {
   if (UNSAFE_IS_ZERO (cb)) {
     free_svalue (&f->event_cbs[event]);
     SET_SVAL(f->event_cbs[event], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-    SUB_FD_EVENTS (f, 1 << event);
+    SUB_FD_EVENTS2 (f, 1 << event, flags);
   }
   else {
 #ifdef __NT__
@@ -1631,7 +1708,7 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
     }
 #endif /* __NT__ */
     assign_svalue (&f->event_cbs[event], cb);
-    ADD_FD_EVENTS (f, 1 << event);
+    ADD_FD_EVENTS2 (f, 1 << event, flags);
   }
 }
 
@@ -1641,7 +1718,24 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
   {									\
     if(!args)								\
       SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
-    set_fd_event_cb (THIS, Pike_sp-args, EVENT);			\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT, 0);			\
+  }									\
+									\
+  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
+  {									\
+    pop_n_elems(args);							\
+    push_svalue(& THIS->event_cbs[EVENT]);				\
+  }
+
+#define CBFUNCS2(CB, EVENT)						\
+  static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
+  {									\
+    if(args<2)								\
+      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)				\
+      SIMPLE_ARG_TYPE_ERROR("Stdio.File->set_" #CB, 2, "int");		\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT,				\
+		     Pike_sp[1-args].u.integer);			\
   }									\
 									\
   static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
@@ -1654,6 +1748,18 @@ CBFUNCS(read_callback, PIKE_FD_READ)
 CBFUNCS(write_callback, PIKE_FD_WRITE)
 CBFUNCS(read_oob_callback, PIKE_FD_READ_OOB)
 CBFUNCS(write_oob_callback, PIKE_FD_WRITE_OOB)
+CBFUNCS2(fs_event_callback, PIKE_FD_FS_EVENT)
+
+
+static void file_query_fs_event_flags(INT32 args)
+{
+  short flags;
+  pop_n_elems(args);
+  
+  flags = get_fd_event_flags(THIS);
+  push_int(flags);
+}
+
 
 static void file__enable_callbacks(INT32 args)
 {
@@ -2245,7 +2351,7 @@ static int do_close(int flags)
   case FILE_READ:
     if(f->open_mode & FILE_WRITE)
     {
-      SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB|PIKE_BIT_FD_FS_EVENT);
       fd_shutdown(FD, 0);
       f->open_mode &=~ FILE_READ;
       return 0;
@@ -2258,7 +2364,7 @@ static int do_close(int flags)
   case FILE_WRITE:
     if(f->open_mode & FILE_READ)
     {
-      SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB|PIKE_BIT_FD_FS_EVENT);
       fd_shutdown(FD, 1);
       f->open_mode &=~ FILE_WRITE;
 #ifdef HAVE_PIKE_SEND_FD
@@ -3220,7 +3326,7 @@ static void file_listxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-    int blen = 65536;
+    int blen = DIRECT_BUFSIZE;
     do_free = 1;
     ptr = xalloc( 1 );
     do {
@@ -3290,7 +3396,7 @@ static void file_getxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-    int blen = 65536;
+    int blen = DIRECT_BUFSIZE;
     do_free = 1;
     ptr = xalloc( 1 );
     do {
@@ -3479,7 +3585,7 @@ static void file_mode(INT32 args)
  *! Also, this object does not keep a reference to the backend.
  *!
  *! @seealso
- *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback]
+ *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback], @[set_fs_event_callback]
  */
 static void file_set_backend (INT32 args)
 {
@@ -3508,7 +3614,7 @@ static void file_set_backend (INT32 args)
     change_backend_for_box (&f->box, backend);
   else
     INIT_FD_CALLBACK_BOX (&f->box, backend, f->box.ref_obj,
-			  f->box.fd, 0, got_fd_event);
+			  f->box.fd, 0, got_fd_event, f->box.flags);
 
   pop_n_elems (args - 1);
 }
@@ -4182,7 +4288,7 @@ static void file_handle_events(int event)
     case PROG_EVENT_INIT:
       f->box.backend = NULL;
       init_fd (-1, 0, 0);
-      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event);
+      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event, f->box.flags);
 
       i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num +
 		      Pike_fp->context->identifier_level);
@@ -4256,7 +4362,7 @@ static void low_dup(struct object *toob,
   unhook_fd_callback_box (&to->box);
   if (from->box.backend)
     INIT_FD_CALLBACK_BOX (&to->box, from->box.backend, to->box.ref_obj,
-			  to->box.fd, from->box.events, got_fd_event);
+			  to->box.fd, from->box.events, got_fd_event, from->box.flags);
 
   for (ev = 0; ev < NELEM (to->event_cbs); ev++)
     assign_svalue (&to->event_cbs[ev], &from->event_cbs[ev]);
@@ -5380,6 +5486,63 @@ void file_set_notify(INT32 args) {
 
 #endif /* HAVE_NOTIFICATIONS */
 
+/*! @decl constant NOTE_ATTRIB = 8
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for attribute changes on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_WRITE = 2
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for writes to a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_DELETE = 1
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for deletion of a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_EXTEND = 4
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for extension events on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_LINK = 16
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for changes to a file's link count.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_RENAME = 32
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for move or rename events on a file.
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+/*! @decl constant NOTE_REVOKE = 64
+ *
+ *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for access revokation (unmount, etc).
+ *
+ *  @note
+ *   Available on systems that use kqueue.
+ */
+
+
 /*! @decl constant PROP_SEND_FD = 64
  *!
  *!   The @[Stdio.File] object might support the @[Stdio.File()->send_fd()]
@@ -5720,6 +5883,8 @@ PIKE_MODULE_INIT
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
+   MAP_VARIABLE("_fs_event_callback",tMix,0,
+     	       OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),PIKE_T_MIXED);
 
   fd_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", fd_fd_factory,
@@ -5885,6 +6050,20 @@ PIKE_MODULE_INIT
 #ifdef HAVE_FSTATAT
   add_integer_constant("__HAVE_STATAT__",1,0);
 #endif
+
+#ifdef HAVE_KQUEUE
+  add_integer_constant("__HAVE_FS_EVENTS__",1,0);
+  add_integer_constant("NOTE_ATTRIB",NOTE_ATTRIB,0);
+  add_integer_constant("NOTE_WRITE",NOTE_WRITE,0);
+  add_integer_constant("NOTE_DELETE",NOTE_DELETE,0);
+  add_integer_constant("NOTE_EXTEND",NOTE_EXTEND,0);
+  add_integer_constant("NOTE_LINK",NOTE_LINK,0);
+  add_integer_constant("NOTE_RENAME",NOTE_RENAME,0);
+  add_integer_constant("NOTE_REVOKE",NOTE_REVOKE,0);
+#else
+  add_integer_constant("__HAVE_FS_EVENTS__",0,0);
+#endif /* HAVE_KQUEUE */
+
 
 #if 0
   /* Not implemented yet. */

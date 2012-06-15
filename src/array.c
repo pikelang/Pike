@@ -928,7 +928,13 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ)) != -1) {
+    /* NB: It's not a good idea to use LFUN_EQ here if
+     *     there is neither LFUN_LT nor LFUN_GT, since
+     *     the sorting order may get confused, which
+     *     will cause merge_array_with_order() to fail.
+     */
+    if ((default_res == CMPFUN_UNORDERED) &&
+	(fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ)) != -1) {
       push_svalue(b);
       apply_low(a->u.object,
 		fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
@@ -967,7 +973,13 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ)) != -1) {
+    /* NB: It's not a good idea to use LFUN_EQ here if
+     *     there is neither LFUN_LT nor LFUN_GT, since
+     *     the sorting order may get confused, which
+     *     will cause merge_array_with_order() to fail.
+     */
+    if ((default_res == CMPFUN_UNORDERED) &&
+	(fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ)) != -1) {
       push_svalue(a);
       apply_low(b->u.object,
 		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);

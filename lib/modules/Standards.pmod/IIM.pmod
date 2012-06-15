@@ -205,8 +205,33 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	(string)record_set + ":" + (string)id;
 
       if (label == "coded character set") {
-	if (data == "\e%5") {
-	  res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
+	string charset = ([
+	  "\e%/@": "UTF-16",	// ISO-IR 162 (NB: Actually UCS-2 level 1)
+	  "\e%/A": "UTF-32",	// ISO-IR 163 (NB: Actually UCS-4 level 1)
+	  "\e%/B": "ISO-8859-1",// ISO-IR 125 (NB: Actually binary)
+	  "\e%/C": "UTF-16",	// ISO-IR 174 (NB: Actually UCS-2 level 2)
+	  "\e%/D": "UTF-32",	// ISO-IR 175 (NB: Actually UCS-4 level 2)
+	  "\e%/E": "UTF-16",	// ISO-IR 176 (NB: Actually UCS-2 level 3)
+	  "\e%/F": "UTF-32",	// ISO-IR 177 (NB: Actually UCS-4 level 3)
+	  "\e%/G": "UTF-8",	// ISO-IR 190 (NB: Actually UTF-8 level 1)
+	  "\e%/H": "UTF-8",	// ISO-IR 191 (NB: Actually UTF-8 level 2)
+	  "\e%/I": "UTF-8",	// ISO-IR 192 (NB: Actually UTF-8 level 3)
+	  "\e%/J": "UTF-16",	// ISO-IR 193 (NB: Actually UTF-16 level 1)
+	  "\e%/K": "UTF-16",	// ISO-IR 194 (NB: Actually UTF-16 level 2)
+	  "\e%/L": "UTF-16",	// ISO-IR 195 (NB: Actually UTF-16 level 3)
+	  "\e%5": "ISO-8859-1",
+	  "\e%@": "ISO-2022",	// ISO-IR 108, ISO-IR 178
+	  "\e%A": "NAPLPS",	// ISO-IR 108
+	  "\e%B": "UTF-1",	// ISO-IR 178
+	  "\e%C": "T.101 DS1",	// ISO-IR 131
+	  "\e%D": "T.101 DS2",	// ISO-IR 145
+	  "\e%E": "T.101 PHOTO",// ISO-IR 160
+	  "\e%F": "T.101 AUDIO",// ISO-IR 161
+	  "\e%G": "UTF-8",	// ISO-IR 196
+	  "\e%H": "T.107 VEMMI",// ISO-IR 188
+	])[data];
+	if (charset) {
+	  res->charset = (res->charset || ({})) + ({ charset });
 	}
       }
 

@@ -2450,7 +2450,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 #define DO_RECUR(XFLAGS) do{						   \
   PIKE_OPCODE_T *addr;							   \
   register struct pike_frame *new_frame;				   \
-  ptrdiff_t args;							   \
+  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));		   \
 									   \
   DO_IF_SECURITY(CHECK_DATA_SECURITY_OR_ERROR(Pike_fp->current_object,	   \
 					      SECURITY_BIT_CALL,	   \
@@ -2468,27 +2468,16 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   Pike_fp->return_addr = (PIKE_OPCODE_T *)(((INT32 *) addr) + 1);	\
   addr += GET_JUMP();							\
 									   \
-  new_frame->num_locals = READ_INCR_BYTE(addr);				   \
-  args = READ_INCR_BYTE(addr);						   \
   addr += ENTRY_PROLOGUE_SIZE;						   \
+									\
+  if (Pike_interpreter.trace_level > 3) {				\
+    fprintf(stderr, "-    Addr = 0x%+lx\n", addr);			\
+  }									\
 									   \
-  new_frame->num_args = new_frame->args = args;				   \
+  new_frame->args = args;						\
   new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
   new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
 									   \
-  push_zeroes(new_frame->num_locals - args);				   \
-                                                                           \
-  DO_IF_DEBUG({								   \
-    if(Pike_interpreter.trace_level > 3)				   \
-      fprintf(stderr,"-    Allocating %d extra locals.\n",		   \
-	      new_frame->num_locals - new_frame->num_args);		   \
-    if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {		   \
-      fatal("New locals below old locals: %p < %p\n",			   \
-	    new_frame->locals, Pike_fp->locals);			   \
-    }									   \
-  });									   \
-									   \
-                                                                           \
   SET_PROG_COUNTER(addr);						   \
   new_frame->fun=Pike_fp->fun;						   \
   DO_IF_PROFILING( new_frame->ident=Pike_fp->ident );			   \
@@ -2556,12 +2545,10 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
   {
     PIKE_OPCODE_T *faddr;
     ptrdiff_t num_locals;
-    ptrdiff_t args;
+    INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
 
     JUMP_SET_TO_PC_AT_NEXT (faddr);
     faddr += GET_JUMP();
-    num_locals = READ_INCR_BYTE(faddr);	/* ignored */
-    args = READ_INCR_BYTE(faddr);
 
     if(low_mega_apply(APPLY_LOW,
 		      args,
@@ -2595,14 +2582,12 @@ OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_ALL, {
 OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   INT32 num_locals;
   PIKE_OPCODE_T *addr;
-  INT32 args;
+  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
 
   FAST_CHECK_THREADS_ON_CALL();
 
   JUMP_SET_TO_PC_AT_NEXT (addr);
   addr += GET_JUMP();
-  num_locals = READ_INCR_BYTE(addr);
-  args = READ_INCR_BYTE(addr);
   addr += ENTRY_PROLOGUE_SIZE;
   SET_PROG_COUNTER(addr);
 
@@ -2616,13 +2601,6 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
     assign_svalues(Pike_fp->locals, Pike_sp-args, args, BIT_MIXED);
     pop_n_elems(Pike_sp - (Pike_fp->locals + args));
   }
-
-  push_zeroes(num_locals - args);
-
-  DO_IF_DEBUG({
-    if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)
-      Pike_fatal("Sp whacked!\n");
-  });
 
   FETCH;
   JUMP_DONE;
@@ -2707,6 +2685,30 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 OPCODE2(F_MAGIC_TYPES, "::_types", I_UPDATE_SP, {
   push_magic_index(magic_types_program, arg2, arg1);
 });
+
+OPCODE2(F_INIT_FRAME, "init_frame", 0, {
+    Pike_fp->num_args = arg1;
+    Pike_fp->num_locals = arg2;
+  });
+
+OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
+    Pike_fp->expendible = Pike_fp->locals + arg1;
+  });
+
+OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
+    INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
+    if (tmp > 0) {
+      if (arg2) {
+	push_undefines(tmp);
+      } else {
+	push_zeroes(tmp);
+      }
+    }
+  });
+
+OPCODE1(F_MARK_AT, "mark_at", I_UPDATE_SP, {
+    *(Pike_mark_sp++) = Pike_fp->locals + arg1;
+  });
 
 /*
 #undef PROG_COUNTER

@@ -137,11 +137,13 @@ struct fd_callback_box
   int revents;			/**< Bitfield with active events. Always clear
 				 * the corresponding event if you perform an
 				 * action that might affect it. */
+  int flags; /** < Bitfield used for system dependent flags, such as for kqueue(2) events */
+  int rflags; /** < Bitfield used for active flags, such as for kqueue(2) events */
   fd_box_callback callback;	/**< Function to call. Assumed to be valid if
 				 * any event is wanted. */
 };
 
-#define INIT_FD_CALLBACK_BOX(BOX, BACKEND, REF_OBJ, FD, EVENTS, CALLBACK) do { \
+#define INIT_FD_CALLBACK_BOX(BOX, BACKEND, REF_OBJ, FD, EVENTS, CALLBACK, FLAGS) do { \
     struct fd_callback_box *box__ = (BOX);				\
     box__->backend = (BACKEND);						\
     box__->ref_obj = (REF_OBJ);						\
@@ -149,7 +151,8 @@ struct fd_callback_box
     box__->fd = (FD);							\
     box__->events = (EVENTS);						\
     box__->revents = 0;							\
-    box__->callback = (CALLBACK);					\
+    box__->callback = (CALLBACK);	\
+    box__->flags = (FLAGS);			\
     if (box__->backend) hook_fd_callback_box (box__);			\
   } while (0)
 
@@ -159,7 +162,9 @@ struct fd_callback_box
 #define PIKE_FD_READ_OOB	2
 #define PIKE_FD_WRITE_OOB	3
 #define PIKE_FD_ERROR		4
-#define PIKE_FD_NUM_EVENTS	5
+/* FS_EVENT is currently only implemented in kqueue backends. */
+#define PIKE_FD_FS_EVENT		5
+#define PIKE_FD_NUM_EVENTS	6
 
 /* Flags for event bitfields. */
 #define PIKE_BIT_FD_READ	(1 << PIKE_FD_READ)
@@ -167,6 +172,8 @@ struct fd_callback_box
 #define PIKE_BIT_FD_READ_OOB	(1 << PIKE_FD_READ_OOB)
 #define PIKE_BIT_FD_WRITE_OOB	(1 << PIKE_FD_WRITE_OOB)
 #define PIKE_BIT_FD_ERROR	(1 << PIKE_FD_ERROR)
+/* FS_EVENT is currently only implemented in kqueue backends. */
+#define PIKE_BIT_FD_FS_EVENT	(1 << PIKE_FD_FS_EVENT)
 
 /* If an error condition occurs then all events except
  * PIKE_BIT_FD_ERROR are cleared from fd_callback_box.events. */
@@ -176,7 +183,7 @@ struct fd_callback_box
  * They may be used from within the gc recurse passes. */
 PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
-PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events);
+PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events, int flags);
 PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
 					 struct Backend_struct *new_be);
 PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
@@ -191,14 +198,17 @@ PMOD_EXPORT void set_read_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_write_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_read_oob_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_write_oob_callback(int fd,file_callback cb,void *data);
+PMOD_EXPORT void set_fs_event_callback(int fd,file_callback cb,void *data, int flags);
 PMOD_EXPORT file_callback query_read_callback(int fd);
 PMOD_EXPORT file_callback query_write_callback(int fd);
 PMOD_EXPORT file_callback query_read_oob_callback(int fd);
 PMOD_EXPORT file_callback query_write_oob_callback(int fd);
+PMOD_EXPORT file_callback query_fs_event_callback(int fd);
 PMOD_EXPORT void *query_read_callback_data(int fd);
 PMOD_EXPORT void *query_write_callback_data(int fd);
 PMOD_EXPORT void *query_read_oob_callback_data(int fd);
 PMOD_EXPORT void *query_write_oob_callback_data(int fd);
+PMOD_EXPORT void *query_fs_event_callback_data(int fd);
 #endif
 
 PMOD_EXPORT void backend_wake_up_backend(struct Backend_struct *be);

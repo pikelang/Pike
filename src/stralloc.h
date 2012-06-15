@@ -83,7 +83,7 @@ struct string_builder
 #define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
+struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
 #define free_string(s) do{ \
@@ -249,8 +249,7 @@ PMOD_EXPORT extern struct pike_string *empty_pike_string;
 /* Prototypes begin here */
 PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
 					 ptrdiff_t pos);
-void low_set_index(struct pike_string *s, ptrdiff_t pos,
-			       int value);
+void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
 PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
 CONVERT(0,2)

@@ -1,4 +1,6 @@
 //! module Calendar
+//!
+//! submodule TimeRanges
 
 #pike __REAL_VERSION__
 

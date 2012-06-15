@@ -5,6 +5,15 @@ inherit .autodoc_to_html;
 
 constant description = "AutoDoc XML to splitted HTML converter.";
 
+/* Todo:
+ *
+ *   * List of classes (and modules?) that inherit the class (or module?).
+ *
+ *   * Inherited enums, variables and constants.
+ *
+ *   * Inherited functions and classes.
+ */
+
 mapping (string:Node) refs   = ([ ]);
 string default_namespace;
 
@@ -26,14 +35,120 @@ mapping profiling = ([]);
 constant navigation_js = #"
 /* Functions for rendering the navigation. */
 
-/* The variables
- *   module_children, class_children, enum_children, directive_children,
- *   method_children, namespace_children, appendix_children
- *   and siblings are assumed to have been set to arrays of nodes.
- *
- * The variable current is assumed to have been set to the node
+/* The variable current is assumed to have been set to the node
  * representing the current document.
  */
+
+/* These are all arrays of nodes. */
+var module_children = [];
+var class_children = [];
+var enum_children = [];
+var directive_children = [];
+var method_children = [];
+var namespace_children = [];
+var appendix_children = [];
+var children = [];
+var siblings = [];
+
+function clear_children()
+{
+  module_children = [];
+  class_children = [];
+  enum_children = [];
+  directive_children = [];
+  method_children = [];
+  namespace_children = [];
+  appendix_children = [];
+  children = [];
+}
+
+function cmp_nodes(/* node */a, /* node */b)
+{
+  return (a.name > b.name) - (b.name > a.name);
+}
+
+function merge_node_lists(/* array(node) */old, /* array(node) */nodes)
+{
+  var i;
+  var hash = {};
+  for (i=0; i < old.length; i++) {
+    var node = old[i];
+
+    hash[node.name] = i+1;
+  }
+  for (i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var j = hash[node.name];
+    if (j) {
+      old[j-1] = node;
+    } else {
+      old[old.length] = node;
+    }
+  }
+  old.sort(cmp_nodes);
+  return old;
+}
+
+function add_module_children(/* array(node) */children)
+{
+  module_children = merge_node_lists(module_children, children);
+}
+
+function add_class_children(/* array(node) */children)
+{
+  class_children = merge_node_lists(class_children, children);
+}
+
+function add_enum_children(/* array(node) */children)
+{
+  enum_children = merge_node_lists(enum_children, children);
+}
+
+function add_directive_children(/* array(node) */children)
+{
+  directive_children = merge_node_lists(directive_children, children);
+}
+
+function add_method_children(/* array(node) */children)
+{
+  method_children = merge_node_lists(method_children, children);
+}
+
+function add_namespace_children(/* array(node) */children)
+{
+  namespace_children = merge_node_lists(namespace_children, children);
+}
+
+function add_appendix_children(/* array(node) */children)
+{
+  appendix_children = merge_node_lists(appendix_children, children);
+}
+
+function low_end_inherit(/* array(node) */nodes)
+{
+  var i;
+  for (i=0; i < nodes.length; i++) {
+    nodes[i].inherited = 1;
+  }
+}
+
+function end_inherit()
+{
+  low_end_inherit(module_children);
+  low_end_inherit(class_children);
+  low_end_inherit(enum_children);
+  low_end_inherit(directive_children);
+  low_end_inherit(method_children);
+  low_end_inherit(namespace_children);
+  low_end_inherit(appendix_children);
+}
+
+function emit_end_inherit()
+{
+  document.write(\"<script language='javascript'>\\n\" +
+                 \"end_inherit();\\n\" +
+                 \"</script>\\n\");
+}
 
 function escapehtml(/* string */text)
 {
@@ -65,6 +180,13 @@ function adjust_link(/* string */link)
   return dots + link.substring(reldir.length);
 }
 
+function emit_load_js(/* string */link)
+{
+  document.write(\"<script language='javascript' src='\" +
+                 adjust_link(link) + \"' >\\n\" +
+                 \"</script>\\n\");
+}
+
 function low_navbar(/* Document */document, /* string */heading,
                     /* array(node) */nodes, /* string */suffix)
 {
@@ -76,7 +198,10 @@ function low_navbar(/* Document */document, /* string */heading,
   var i;
   for (i=0; i < nodes.length; i++) {
     var n = nodes[i];
-    var name = '<b>' + escapehtml(n.name + suffix) + '</b>';
+    var name = escapehtml(n.name + suffix);
+    if (!n.inherited) {
+      name = '<b>' + name + '</b>';
+    }
     if (n.link == current.link) {
       document.write(name);
     } else {
@@ -147,7 +272,8 @@ array(string) split_reference(string what) {
     return r;
 }
 
-string create_reference(string from, string to, string text) {
+string create_reference(string from, string to, string text,
+			string|void xlink_namespace_prefix) {
   array a = (to/"::");
   switch(sizeof(a)) {
   case 2:
@@ -166,14 +292,18 @@ string create_reference(string from, string to, string text) {
   default:
     error("Bad reference: %O\n", to);
   }
-  return "<font face='courier'><a href='" +
+  if (!xlink_namespace_prefix) xlink_namespace_prefix = "";
+  return "<a style='font-family:courier;' " +
+    xlink_namespace_prefix +
+    "href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
     text +
-    "</a></font>";
+    "</a>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
 
+ADT.Stack pending_inherits;
 
 class Node
 {
@@ -185,6 +315,8 @@ class Node
   array(Node) enum_children = ({ });
   array(Node) directive_children = ({ });
   array(Node) method_children = ({ });
+  array(array(string|Node)) inherits = ({});
+  array(Node) children = ({});
 
   Node parent;
 
@@ -264,6 +396,34 @@ class Node
     return "";
   }
 
+  protected void add_ref(string path, string type, string name,
+			 string data, Node n, string c)
+  {
+    refs[path + name] = Node(type, name, data, n);
+    if (type == "inherit") {
+      Parser.HTML()->
+	add_containers(([ "classname":
+			  lambda(Parser.HTML p, mapping m, string c) {
+			    string resolved;
+			    if (resolved = m->resolved) {
+			      resolved = Parser.parse_html_entities(resolved);
+			      Node nn = refs[resolved];
+			      if (nn) {
+				nn->children += ({ n });
+			      } else {
+				pending_inherits->push(({ resolved, n }));
+			      }
+			    }
+			    n->inherits += ({
+			      ({
+				name, c, resolved,
+			      })
+			    });
+			  },
+		       ]) )->finish(c);
+    }
+  }
+
   array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     foreach(({"homogen-name", "belongs"}), string attr) {
@@ -338,28 +498,25 @@ class Node
 	    ( ([ "constant":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   refs[path + name] =
-		     Node( "constant", name, "", this_object());
+		   add_ref(path, "constant", name, "", this_object(), c);
 		 },
 		 "variable":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   refs[path + name] =
-		     Node( "variable", name, "", this_object());
+		   add_ref(path, "variable", name, "", this_object(), c);
 		 },
 		 "inherit":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   if (m->name) {
 		     string name = Parser.parse_html_entities(m->name);
-		     refs[path + name] =
-		       Node( "inherit", name, "", this_object());
+		     add_ref(path, "inherit", name, "", this_object(), c);
 		   }
 		 },
 	    ]) )->finish(c);
 	}
 	else
-	  refs[path + m["homogen-name"]] =
-	    Node( m["homogen-type"], m["homogen-name"], "", this_object());
+	  add_ref(path, m["homogen-type"], m["homogen-name"],
+		  "", this_object(), c);
 	break;
 
       }
@@ -426,6 +583,15 @@ class Node
     }
     // NB: We need the full path for the benefit of the exporter.
     return make_filename_low() + "/index";
+  }
+
+  string make_load_index_filename()
+  {
+    if((type == "method") || (type == "directive")) {
+      return parent->make_load_index_filename();
+    }
+    // NB: We need the full path for the benefit of the exporter.
+    return make_filename_low() + "/load_index.js";
   }
 
   string make_parent_index_filename()
@@ -659,18 +825,20 @@ class Node
 
   string low_make_index_js(string name, array(Node) nodes)
   {
+    if (!sizeof(nodes)) return "";
     array(mapping(string:string)) a =
-      map(nodes, lambda(Node n) {
-		   return ([ "name":n->name,
-			     "link":n->make_filename() ]);
-		 });
+      map(nodes,
+	  lambda(Node n) {
+	    return ([ "name":n->name,
+		      "link":n->make_filename() ]);
+	  });
     sort(a->name, a);
-    return sprintf("var %s = %s;\n", name, encode_json(a));
+    return sprintf("add_%s(%s);\n", name, encode_json(a));
   }
 
   string make_index_js()
   {
-    string res = "var siblings = children;\n";
+    string res = "// Direct symbols for " + make_class_path() + ".\n\n";
 
 #define LOW_MAKE_INDEX_JS(CHILDREN) do {				\
       res += low_make_index_js(#CHILDREN, CHILDREN);			\
@@ -682,14 +850,44 @@ class Node
     LOW_MAKE_INDEX_JS(directive_children);
     LOW_MAKE_INDEX_JS(method_children);
 
-    res += sprintf("var namespace_children = %s;\n", encode_json(({})));
-    res += sprintf("var appendix_children = %s;\n", encode_json(({})));
-
     return res +
-      "var children = module_children.concat(class_children,\n"
-      "                                      enum_children,\n"
-      "                                      directive_children,\n"
-      "                                      method_children);\n";
+      "children = module_children.concat(class_children,\n"
+      "                                  enum_children,\n"
+      "                                  directive_children,\n"
+      "                                  method_children);\n";
+  }
+
+  string make_load_index_js()
+  {
+    string res = "";
+    if (sizeof(inherits)) {
+      foreach(inherits, array(string|Node) inh) {
+	Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
+	if (!n) continue;
+
+	res += sprintf("// Inherit %s.\n"
+		       "emit_load_js(%q);\n"
+		       "\n",
+		       n->make_class_path(),
+		       n->make_load_index_filename());
+      }
+      if (sizeof(res)) {
+	res = sprintf("// Load the symbols from our inherits.\n"
+		      "\n"
+		      "%s"
+		      "emit_end_inherit();\n"
+		      "\n",
+		      res);
+      }
+    }
+    res = sprintf("// Indirect loader of the symbol index for %s.\n"
+		  "\n"
+		  "%s"
+		  "emit_load_js(%q);\n",
+		  make_class_path(),
+		  res,
+		  make_index_filename() + ".js");
+    return res;
   }
 
   array(Node) find_siblings()
@@ -741,7 +939,265 @@ class Node
     return tmp;
   }
 
-  protected string make_content() {
+  protected void make_inherit_graph(String.Buffer contents)
+  {
+    contents->add(lay->dochead, "Inheritance graph", lay->_dochead);
+
+    string this_ref = raw_class_path();
+
+    mapping(string:string) names = ([
+      this_ref:this_ref,
+    ]);
+
+    // The number of non-graphed dependencies.
+    mapping(string:multiset(string)) forward_deps = ([]);
+    mapping(string:multiset(string)) backward_deps = ([]);
+
+    // First find all the inherits and assign the appropriate weights.
+    mapping(string:int) closure = ([]);
+    ADT.Queue q = ADT.Queue();
+    q->put(({ 1, "", this_ref, this_ref }));
+    while(sizeof(q)) {
+      [int weight, string name, string text, string ref] = q->get();
+      if (!ref) ref = text;
+      if (!names[ref]) names[ref] = text;
+      if (closure[ref] >= weight) continue; // Already handled.
+      closure[ref] = weight;
+      Node n = refs[ref];
+      if (!n) {
+	forward_deps[ref] = (<>);
+	continue;
+      }
+      names[ref] = n->raw_class_path();
+      multiset(string) inhs = (<>);
+      if (sizeof(n->inherits)) {
+	foreach(n->inherits, array(string) entry) {
+	  if (entry[2] == ref) {
+	    if (verbosity && (ref == this_ref)) {
+	      werror("Circular inherit in %s.\n", this_ref);
+	    }
+	    continue;	// Infinite loop averted.
+	  }
+	  q->put(({ weight + 1 }) + entry);
+	  inhs[entry[2]||entry[1]] = 1;
+	}
+	foreach(inhs; string inh_ref;) {
+	  if (!backward_deps[inh_ref]) {
+	    backward_deps[inh_ref] = (<>);
+	  }
+	  backward_deps[inh_ref][ref] = 1;
+	}
+      }
+      forward_deps[ref] = inhs;
+    }
+
+    foreach(children, Node n) {
+      string ref = n->raw_class_path();
+      names[ref] = ref;
+    }
+
+    // Adjust, quote and link the names.
+    int no_predef_strip;
+    foreach(values(names), string name) {
+      if ((!has_prefix(name, "predef::") && has_value(name, "::")) ||
+	  name == "predef::") {
+	no_predef_strip = 1;
+      }
+    }
+    foreach(names; string ref; string name) {
+      if (!no_predef_strip && has_prefix(name, "predef::")) {
+	name = name[sizeof("predef::")..];
+      }
+      name = Parser.encode_html_entities(name);
+#ifdef NO_SVG
+      if (ref == this_ref) {
+	name = "<b style='font-family:courier;'>" + name + "</b>";
+      } else if (refs[ref]) {
+	name = create_reference(make_filename(), ref, name);
+      } else {
+	name = "<span style='font-family:courier;'>" + name + "</span>";
+      }
+#else
+      if (ref == this_ref) {
+	name = "<tspan style='font-family:courier; font-weight:bold;'>" +
+	  name + "</tspan>";
+      } else if (refs[ref]) {
+	name = create_reference(make_filename(), ref, name, "xlink:");
+      } else {
+	name = "<tspan style='font-family:courier;'>" + name + "</tspan>";
+      }
+#endif
+      names[ref] = name;
+    }
+
+    // Next, sort the references.
+    array(string) references = indices(closure);
+    array(int) weights = values(closure);
+    // Secondary sorting order is according to the reference string.
+    sort(references, weights);
+    // Primary sorting order is according to the weights.
+    sort(weights, references);
+
+    // The approach here is to select the node with the lowest
+    // priority, that has all dependencies satisfied.
+
+    mapping(string:int) priorities =
+      mkmapping(references, indices(references));
+
+    ADT.Priority_queue pq = ADT.Priority_queue();
+
+    foreach(forward_deps; string ref; multiset(string) deps) {
+      if (!sizeof(deps)) {
+	pq->push(priorities[ref], ref);
+      }
+    }
+
+    // NB: No lay->docbody! Neither <pre> nor <svg> may be inside a <dd>.
+    //     We simulate the <dd> with a style attribute instead.
+#ifdef NO_SVG
+    contents->add("<pre style='margin-left:40px;'>\n");
+#else
+    // FIXME: Why isn't height=100% good enough for Firefox?
+    contents->add(sprintf("<svg"
+			  " xmlns='http://www.w3.org/2000/svg'"
+			  " version='1.1'"
+			  " xmlns:xlink='http://www.w3.org/1999/xlink'"
+			  " xml:space='preserve'"
+			  " style='margin-left:40px;'"
+			  " width='100%%' height='%dpx'>\n",
+			  (sizeof(references) + sizeof(children))*20 + 5));
+#endif
+
+    int pos;
+    mapping(string:int) positions = ([]);
+    array(string) rev_positions = allocate(sizeof(references));
+    array(int) ystart = allocate(sizeof(references));
+    while (sizeof(pq)) {
+      string ref = pq->pop();
+      Node n = refs[ref];
+      positions[ref] = pos;
+      rev_positions[pos] = ref;
+      ystart[pos] = pos * 20 + 25;
+      multiset(int) inherit_positions = (<>);
+      if (n) {
+	foreach(n->inherits, array(string) entry) {
+	  inherit_positions[positions[entry[2]||entry[1]]] = 1;
+	}
+      }
+
+#ifdef NO_SVG
+      if (pos) {
+	for(int i = 0; i < pos; i++) {
+	  if (sizeof(backward_deps[rev_positions[i]])) {
+	    contents->add("&nbsp;|&nbsp;&nbsp;");
+	  } else {
+	    contents->add("&nbsp;&nbsp;&nbsp;&nbsp;");
+	  }
+	}
+	contents->add("\n");
+	int got;
+	for(int i = 0; i < pos; i++) {
+	  if (got) {
+	    contents->add("-");
+	  } else {
+	    contents->add("&nbsp;");
+	  }
+	  if (inherit_positions[i]) {
+	    contents->add("+--");
+	    got++;
+	    backward_deps[rev_positions[i]][ref] = 0;
+	  } else if (got) {
+	    contents->add("---");
+	  } else if (sizeof(backward_deps[rev_positions[i]])) {
+	    contents->add("|&nbsp;&nbsp;");
+	  } else {
+	    contents->add("&nbsp;&nbsp;&nbsp;");
+	  }
+	}
+      }
+      contents->add(names[ref], "\n");
+#else
+      if (pos) {
+	int got;
+	for(int i = 0; i < pos; i++) {
+	  if (inherit_positions[i]) {
+	    if (!got) {
+	      // Draw the horizontal line.
+	      contents->
+		add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    i*40 + 4, pos*20 + 15,
+			    pos*40 - 5, pos*20 + 15));
+	    }
+	    got++;
+	    backward_deps[rev_positions[i]][ref] = 0;
+	    if (!sizeof(backward_deps[rev_positions[i]])) {
+	      // Draw the inherit line.
+	      contents->
+		add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    i*40 + 5, ystart[i],
+			    i*40 + 5, pos*20 + 16));
+	    }
+	  } else if (got && sizeof(backward_deps[rev_positions[i]])) {
+	    // We have to jump over the line!
+	    contents->
+	      add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			  i*40 + 5, ystart[i],
+			  i*40 + 5, pos*20 + 12));
+	    ystart[i] = pos*20 + 18;
+	  }
+	}
+      }
+      contents->add(sprintf("<text x='%d' y='%d'>%s</text>\n",
+			    pos*40, pos*20 + 20,
+			    names[ref]));
+#endif
+      pos++;
+
+      foreach(backward_deps[ref] || (<>); string dep_ref;) {
+	multiset(string) refs = forward_deps[dep_ref];
+	refs[ref] = 0;
+	if (!sizeof(refs)) {
+	  // All dependencies satisfied.
+	  pq->push(priorities[dep_ref], dep_ref);
+	}
+      }
+    }
+
+    // Add the classes that we are a direct parent to.
+    if (sizeof(children)) {
+      int ppos = sizeof(closure) - 1;
+#ifdef NO_SVG
+      foreach(sort(children->raw_class_path()), string ref) {
+	contents->add("&nbsp;&nbsp;&nbsp;&nbsp;"*ppos,
+		      "&nbsp;|&nbsp;&nbsp;&nbsp;\n");
+	contents->add("&nbsp;&nbsp;&nbsp;&nbsp;"*ppos,
+		      "&nbsp;+--",
+		      names[ref], "\n");
+      }
+#else
+      contents->add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			    ppos*40 + 5, ystart[ppos],
+			    ppos*40 + 5, (ppos + sizeof(children))*20 + 16));
+      foreach(sort(children->raw_class_path()); int i; string ref) {
+	contents->add(sprintf("<line x1='%d' y1='%d' x2='%d' y2='%d' />\n",
+			      ppos*40 + 4, (ppos + i)*20 + 35,
+			      ppos*40 + 35, (ppos + i)*20 + 35,));
+	contents->add(sprintf("<text x='%d' y='%d'>%s</text>\n",
+			      ppos*40 + 40, (ppos + i)*20 + 40,
+			      names[ref]));
+      }
+#endif
+    }
+
+#ifdef NO_SVG
+    contents->add("</pre>\n");
+#else
+    contents->add("</svg>\n");
+#endif
+  }
+
+  protected string make_content()
+  {
     PROFILE();
     string err;
     Parser.XML.Tree.Node n;
@@ -758,6 +1214,10 @@ class Node
 
     String.Buffer contents = String.Buffer(100000);
     resolve_class_paths(n);
+
+    if (sizeof(inherits) || sizeof(children)) {
+      make_inherit_graph(contents);
+    }
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
     contents->add( parse_children(n, "namespace", parse_namespace, 1) );
     contents->add( parse_children(n, "module", parse_module, 1) );
@@ -821,7 +1281,6 @@ class Node
   {
     if ((type != "method") && (type != "directive")) {
       string index_js = make_index_js();
-
       string index = make_index_filename() + ".js";
       if (exporter) {
         exporter->filemodify(Git.MODE_FILE, path + "/" + index);
@@ -829,6 +1288,16 @@ class Node
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
         Stdio.write_file(path + "/" + index, index_js);
+      }
+
+      string load_index_js = make_load_index_js();
+      string load_index = make_load_index_filename();
+      if (exporter) {
+        exporter->filemodify(Git.MODE_FILE, path + "/" + load_index);
+        exporter->data(load_index_js);
+      } else {
+        Stdio.mkdirhier(combine_path(path + "/" + load_index, "../"));
+        Stdio.write_file(path + "/" + load_index, load_index_js);
       }
 
       string index_html = make_index_page(1);
@@ -887,12 +1356,11 @@ class Node
     }
 
     string extra_headers =
-      sprintf("<script language='javascript' src='%s'>\n"
-	      "</script>\n",
-	      low_make_link(make_parent_index_filename() + ".js")) +
-      sprintf("<script language='javascript' src='%s'>\n"
-	      "</script>\n",
-	      low_make_link(make_index_filename() + ".js")) +
+      sprintf("<style type='text/css'>\n"
+	      "svg line { stroke:#343434; stroke-width:2; }\n"
+	      "svg text { fill:#343434; }\n"
+	      "svg a { fill:#0768b2; text-decoration: underline; }\n"
+	      "</style>\n") +
       sprintf("<script language='javascript'>\n"
 	      "var current = %s;\n"
 	      "</script>\n",
@@ -902,7 +1370,17 @@ class Node
                       ({ "&", "<", ">" }), ({ "&amp;", "&lt;", "&gt;" }))) +
       sprintf("<script language='javascript' src='%s'>\n"
 	      "</script>\n",
-	      low_make_link("navigation.js"));
+	      low_make_link("navigation.js")) +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_parent_index_filename() + ".js")) +
+      sprintf("<script language='javascript'>\n"
+	      "siblings = children;\n"
+	      "clear_children();\n"
+	      "</script>\n") +
+      sprintf("<script language='javascript' src='%s'>\n"
+	      "</script>\n",
+	      low_make_link(make_load_index_filename()));
 
     string res = replace(template,
       (["$navbar$": make_navbar(),
@@ -958,6 +1436,8 @@ class TopNode {
     PROFILE();
     mapping m = localtime(time());
     timestamp = sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday);
+    pending_inherits = ADT.Stack();
+    pending_inherits->push(0);	// End sentinel.
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
@@ -987,6 +1467,15 @@ class TopNode {
 	directive_children += x->directive_children;
 	method_children += x->method_children;
       }
+
+    array(string|Node) inh;
+    while (inh = pending_inherits->pop()) {
+      [string ref, Node child] = inh;
+      Node parent = refs[ref];
+      if (parent) {
+	parent->children += ({ child });
+      }
+    }
     type = "autodoc";
     ENDPROFILE("top_create");
   }
@@ -1133,6 +1622,22 @@ int low_main(string doc_file, string template_file, string outdir,
 
   if (flags & Tools.AutoDoc.FLAG_COMPAT) {
     // Fix markup bugs affecting the images path.
+
+    // The canonic Pike site has moved from
+    // pike.roxen.com to pike.ida.liu.se to pike.lysator.liu.se.
+    template = replace(template,
+		       ({ "pike.roxen.com", "pike.ida.liu.se" }),
+		       ({ "pike.lysator.liu.se", "pike.lysator.liu.se" }));
+
+    // These first two affect commits prior to and including 7.3.11.
+    template = replace(template,
+		       "<img src=\"images/",
+		       "<img src=\"$imagedir$");
+    template = replace(template,
+		       "<td background=\"images/",
+		       "<td background=\"$imagedir$");
+
+    // This one however affects quite a few more.
     template = replace(template,
 		       ({ "$dotdot$/images/" }),
 		       ({ "$imagedir$" }));

@@ -87,7 +87,7 @@ extern struct mapping *gc_internal_mapping;
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 
-void really_free_mapping(struct mapping *md);
+PMOD_EXPORT void really_free_mapping(struct mapping *md);
 
 #define inl_free_mapping(M) do{						\
     struct mapping *m_=(M);						\

@@ -86,6 +86,9 @@ constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
+int has_next_protocol_negotiation;
+
+string next_protocol;
 
 #ifdef SSL3_PROFILING
 int timestamp;
@@ -133,9 +136,9 @@ Packet server_hello_packet()
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
-  if (secure_renegotiation) {
-    ADT.struct extensions = ADT.struct();
+  ADT.struct extensions = ADT.struct();
 
+  if (secure_renegotiation) {
     // RFC 5746 3.7:
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
@@ -145,8 +148,19 @@ Packet server_hello_packet()
     extension->put_var_string(client_verify_data + server_verify_data, 1);
 
     extensions->put_var_string(extension->pop_data(), 2);
-    struct->put_var_string(extensions->pop_data(), 2);
   }
+
+  if (has_next_protocol_negotiation && context->advertised_protocols) {
+    extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
+    ADT.struct extension = ADT.struct();
+    foreach (context->advertised_protocols;; string proto) {
+      extension->put_var_string(proto, 1);
+    }
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (!extensions->is_empty())
+      struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
@@ -651,8 +665,8 @@ int verify_certificate_chain(array(string) certs)
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return 1;
 
-  // a lack of certificates when we requre and must verify the certificates 
-  // is probably a failure.
+  // a lack of certificates when we reqiure and must verify the
+  // certificates is probably a failure.
   if(!certs || !sizeof(certs))
     return 0;
 
@@ -663,8 +677,9 @@ int verify_certificate_chain(array(string) certs)
   string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
     ->get_der();
 
-  // if we've got authorities, we need to check to see that the provided cert is authorized.
-  // is this useful for server connections???
+  // if we've got authorities, we need to check to see that the
+  // provided cert is authorized. is this useful for server
+  // connections???
   if(sizeof(context->authorities_cache))
   {
     foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
@@ -697,14 +712,13 @@ int verify_certificate_chain(array(string) certs)
 
   mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
 
-
   if(result->verified)
   {
     session->cert_data = result;
     return 1;
   }
-  else return 0;  
 
+ return 0;
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
@@ -871,6 +885,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      }
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
+	      break;
+	    case EXTENSION_next_protocol_negotiation:
+	      has_next_protocol_negotiation = 1;
 	      break;
 	    default:
 	      break;
@@ -1071,6 +1088,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
+    case HANDSHAKE_next_protocol:
+     {
+       next_protocol = input->get_var_string(1);
+       handshake_messages += raw;
+       return 1;
+     }
     case HANDSHAKE_finished:
      {
        string my_digest;

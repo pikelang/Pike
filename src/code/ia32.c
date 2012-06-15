@@ -18,7 +18,8 @@
 #undef REG_NONE
 #endif
 
-enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4};
+enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4,
+	       REG_ESP = 4, REG_EBP = 5, REG_ESI = 6, REG_EDI = 7, };
 
 #define REG_BITMASK ((1 << REG_NONE) - 1)
 
@@ -78,6 +79,13 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
     PUSH_ADDR (&(ADDR));						\
   } while (0)
+
+#define MOV_REG_TO_REG(FROM, TO) do {				\
+    CHECK_VALID_REG(FROM);					\
+    MAKE_VALID_REG(TO);						\
+    add_to_program (0x89);	/* Move r32 to r/m32. */	\
+    add_to_program (0xc0 | ((FROM)<<3) | (TO));			\
+  } while(0)
 
 #define MOV_REG_TO_ABSADDR(REG, ADDR) do {				\
     CHECK_VALID_REG (REG);						\
@@ -205,6 +213,37 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
   } while (0)
 
+#define MOV_RELSTACK_TO_REG(OFFSET, REG) do {				\
+    INT32 off_ = (OFFSET);						\
+    MAKE_VALID_REG (REG);						\
+    /* movl offset(%esp), %reg */					\
+    add_to_program (0x8b); /* Move r/m32 to r32. */			\
+    if (off_ < -128 || off_ > 127) {					\
+      add_to_program (0x84 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      PUSH_INT (off_);							\
+    }									\
+    else if (off_) {							\
+      add_to_program (0x44 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      add_to_program (off_);						\
+    }									\
+    else {								\
+      add_to_program (0x04 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+    }									\
+  } while (0)
+
+#define PUSH_REG(REG) do {			\
+    CHECK_VALID_REG (REG);			\
+    add_to_program (0x50 + (REG));		\
+  } while (0)
+
+#define POP_REG(REG) do {			\
+    MAKE_VALID_REG (REG);			\
+    add_to_program (0x58 + (REG));		\
+  } while (0)
+
 #define ADD_VAL_TO_REG(VAL, REG) do {					\
     INT32 val_ = (VAL);							\
     CHECK_VALID_REG (REG);						\
@@ -300,6 +339,45 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
   } while (0)
 
+#define CMP_REG_IMM32(REG, IMM) do {		\
+    if ((REG) == REG_EAX) {			\
+      add_to_program(0x3d);			\
+    } else {					\
+      add_to_program(0x81);			\
+      add_to_program(0xf8 | (REG));		\
+    }						\
+    PUSH_INT((IMM));				\
+  } while (0)
+
+#define CMP_REG_REG(REG1, REG2) do {			\
+    add_to_program(0x39);				\
+    add_to_program(0xc0 | ((REG1)<<3) | (REG2));	\
+  } while (0)
+
+#define JNE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x75);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define JE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x74);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define RET() do {					\
+    add_to_program(0xc3);				\
+  } while (0);
+
 #define CALL_RELATIVE(X) do{						\
   struct program *p_=Pike_compiler->new_program;			\
   add_to_program(0xe8);							\
@@ -311,6 +389,36 @@ static int alloc_regs = 0, valid_regs = 0;
   *(INT32 *)(p_->program + p_->num_program - 4)=                        \
     ((INT32)(X)) - (INT32)(p_->program + p_->num_program);              \
 }while(0)
+
+#ifdef INS_ENTRY
+void ia32_ins_entry(void)
+{
+#ifdef REGISTER_DEBUG
+  /* All registers are valid here... */
+  valid_regs = 0xff;
+#endif
+  /* Push all registers that the ABI requires to be preserved.
+   *
+   * cf Sys V ABI Intel386 Architecture Supplement 4th ed 3-11:
+   *   "Registers %ebp, %ebx, %edi, %esi, and %esp ``belong'' to the cal-
+   *    ling function."
+   *
+   * also cf Fig 3-16.
+   */
+  PUSH_REG(REG_EBP);
+  MOV_REG_TO_REG(REG_ESP, REG_EBP);
+  /* FIXME: Add local storage here if needed. */
+  PUSH_REG(REG_EDI);
+  PUSH_REG(REG_ESI);
+  PUSH_REG(REG_EBX);
+  /* Funcall arguments (4 * 4 bytes). */
+  ADD_VAL_TO_REG(-0x10, REG_ESP);
+
+#ifdef REGISTER_DEBUG
+  valid_regs = 0;
+#endif
+}
+#endif
 
 static void update_arg1(INT32 value)
 {
@@ -715,6 +823,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
 void ins_f_byte(unsigned int b)
 {
   void *addr;
+  INT32 rel_addr = 0;
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
@@ -781,16 +890,84 @@ void ins_f_byte(unsigned int b)
 	addr = (void *)f_get_iterator;
       }
       break;
+
+#ifdef OPCODE_INLINE_RETURN
+  case F_CATCH - F_OFFSET:
+    {
+      /* Special argument for the F_CATCH instruction. */
+      addr = inter_return_opcode_F_CATCH;
+      /* FIXME: Is there really no easier way to get at EIP? */
+      add_to_program(0xe8);
+      PUSH_INT(0);
+      POP_REG(REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, REG_EAX);
+      rel_addr = PIKE_PC;
+      MOV_REG_TO_RELSTACK(REG_EAX, 0);
+    }
+    break;
+#endif
   }
 #endif /* !DEBUG_MALLOC */
 
   ia32_call_c_function(addr);
+
+#ifdef INS_ENTRY
+  if (instrs[b].flags & I_RETURN) {
+    INT32 skip;
+#ifdef REGISTER_DEBUG
+    INT32 orig_valid_regs = valid_regs;
+    valid_regs = 0xff;
+#endif
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      /* There's no easy way to get at EIP directly,
+       * so we assume that the function we called
+       * above exited with a RET, in which case EIP
+       * is at ESP[-4]...
+       */
+      MOV_RELSTACK_TO_REG(-4, REG_ESI);
+      ADD_VAL_TO_REG(JUMP_EPILOGUE_SIZE, REG_ESI);
+    }
+    CMP_REG_IMM32(REG_EAX, -1);
+    JNE(0);
+    skip = (INT32)PIKE_PC;
+    ADD_VAL_TO_REG(0x10, REG_ESP);	/* Funcall arguments (4 * 4 bytes). */
+    POP_REG(REG_EBX);
+    POP_REG(REG_ESI);
+    POP_REG(REG_EDI);
+    POP_REG(REG_EBP);
+    RET();
+    Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      CMP_REG_REG(REG_EAX, REG_ESI);
+      JE(0x02);
+      add_to_program (0xff);	/* jmp *%eax */
+      add_to_program (0xe0);
+#ifdef REGISTER_DEBUG
+      valid_regs = orig_valid_regs;
+#endif
+      return;
+    }
+#ifdef REGISTER_DEBUG
+    valid_regs = orig_valid_regs;
+#endif
+  }
+#endif
 
 #ifdef OPCODE_RETURN_JUMPADDR
   if (instrs[b].flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     add_to_program (0xff);	/* jmp *%eax */
     add_to_program (0xe0);
+
+#ifdef OPCODE_INLINE_RETURN
+    if (b + F_OFFSET == F_CATCH) {
+      upd_pointer(rel_addr - 4, PIKE_PC + 6 - rel_addr);
+    }
+#endif
   }
 #endif
 }
@@ -1126,4 +1303,8 @@ void ia32_init_interpreter_state(void)
       ia32_clflush_size = cpu_info.clflush_size * 8;
     }
   }
+
+#ifdef OPCODE_INLINE_RETURN
+  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+#endif
 }

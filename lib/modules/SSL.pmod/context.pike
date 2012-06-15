@@ -137,6 +137,15 @@ array(int) preferred_auth_methods =
 //! Cipher suites we want to support, in order of preference, best first.
 array(int) preferred_suites;
 
+//! List of advertised protocols using using TLS next protocol negotiation.
+array(string) advertised_protocols;
+
+//! Protocols to advertise during handshake using the next protocol
+//! negotiation extension. Currently only used together with spdy.
+void advertise_protocols(string ... protos) {
+    advertised_protocols = protos;
+}
+
 //! Filter cipher suites from @[preferred_suites] that don't have
 //! a key with an effective length of at least @[min_keylength] bits.
 void filter_weak_suites(int min_keylength)

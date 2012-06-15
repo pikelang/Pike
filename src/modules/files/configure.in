@@ -67,7 +67,7 @@ AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd fstatat openat unlinkat)
+ fdopendir pathconf fpathconf dirfd fstatat openat unlinkat, kqueue)
 
 dnl AC_HAVE_FUNCS(libzfs_init zfs_path_to_zhandle)
 
@@ -1340,6 +1340,8 @@ if test "$pike_cv_have_notifications" = "yes"; then
 else
   AC_MSG_RESULT(no)
 fi
+
+AC_MSG_CHECKING(if filesystem notifications exists)
 
 AC_MSG_CHECKING(for pty master device)
 AC_CACHE_VAL(pike_cv_pty_master_pathname, [

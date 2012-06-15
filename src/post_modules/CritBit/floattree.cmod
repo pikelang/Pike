@@ -1,37 +1,8 @@
 /* vim:syntax=c
  */
 #ifdef cmod___CMOD__
-#ifdef __SSE4_2__
-# include <smmintrin.h>
-#endif
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "pike_error.h"
-#include "pike_float.h"
-#include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
-#include "operators.h"
-#include "builtin_functions.h"
 
-//#define CB_USE_BLOCK_ALLOC
-#ifdef CB_USE_BLOCK_ALLOC
-# include "block_alloc.h"
-
-static struct block_allocator allocator;
-
-# define CB_NODE_ALLOC()	ba_alloc(&allocator)
-# define CB_NODE_FREE(x)	ba_free(&allocator, (void*)(x))
-#endif
-
-#define CB_SOURCE
-#define CB_STATIC
-#define CB_INLINE
-#define CB_NAMESPACE
+#include "common.h"
 
 #include "critbit/float2svalue.h"
 #define CB_PRINT_KEY(buf, key)			\
@@ -83,21 +54,15 @@ PIKECLASS FloatTree {
 /*! @endmodule */
 
 void pike_init_floattree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    ba_init(&allocator, sizeof(cb_node), 128);
-#endif
     INIT
 }
 
 void pike_exit_floattree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    ba_destroy(&allocator);
-    //free(allocator);
-    //allocator = NULL;
-#endif
     EXIT
 }
 #else
-void pike_exit_floattree_module(void) {}
+void pike_exit_floattree_module(void) {
+    add_integer_constant("this_program_does_not_exist", 1, 0);
+}
 void pike_init_floattree_module(void) {}
 #endif

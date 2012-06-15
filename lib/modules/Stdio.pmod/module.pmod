@@ -87,6 +87,7 @@ class NonblockingStream
   NonblockingStream set_read_callback( function f, mixed ... rest );
   NonblockingStream set_write_callback( function f, mixed ... rest );
   NonblockingStream set_close_callback( function f, mixed ... rest );
+  NonblockingStream set_fs_event_callback( function f, int event_mask, mixed ... rest );
 
   optional NonblockingStream set_read_oob_callback(function f, mixed ... rest)
   {
@@ -159,6 +160,7 @@ class File
   function(mixed|void:int) ___close_callback;
   function(mixed|void,string|void:int) ___read_oob_callback;
   function(mixed|void:int) ___write_oob_callback;
+  function(mixed|void,int:int) ___fs_event_callback;
   mixed ___id;
 
 #ifdef __STDIO_DEBUG
@@ -971,6 +973,18 @@ class File
     return 0;
   }
 
+  protected int __stdio_fs_event_callback(int event_mask)
+  {
+    BE_WERR ("__stdio_fs_event_callback()");    
+    
+    if (!___fs_event_callback) return 0;
+
+  	if(errno())
+    	BE_WERR ("  got error " + strerror (errno()) + " from read()");
+    
+    return ___fs_event_callback(___id, event_mask);
+  }
+
   protected int __stdio_close_callback()
   {
     BE_WERR ("__stdio_close_callback()");
@@ -1097,6 +1111,7 @@ class File
   //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
   //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
   //! @decl void set_close_callback(function(mixed:int) close_cb)
+  //! @decl void set_fs_event_callback(function(mixed,int:int) fs_event_cb, int event_mask)
   //!
   //! These functions set the various callbacks, which will be called
   //! when various events occur on the stream. A zero as argument will
@@ -1184,6 +1199,10 @@ class File
   //! backend that means it will immediately start another round and
   //! check files and call outs anew.
   //!
+  //! @param event_mask
+  //!  An event mask specifing bitwise OR of one or more event types to
+  //!  monitor, selected from @[Stdio.NOTE_WRITE] and friends.
+  //! 
   //! @note
   //!   These functions do not set the file nonblocking.
   //!
@@ -1227,6 +1246,11 @@ class File
   //! works when there's no risk of getting more data on the stream.
   //! Otherwise the close callback will be silently deregistered if
   //! data arrives.
+  //!
+  //! @note
+  //! fs_event callbacks only trigger on systems that support these events.
+  //! Currently, this includes systems that use kqueue, such as Mac OS X,
+  //! and various flavours of BSD.
   //!
   //! @seealso
   //! @[set_callbacks], @[set_nonblocking()], @[set_id()],
@@ -1326,6 +1350,19 @@ class File
   CBFUNC(function(mixed|void,string|void:int), read_oob_callback)
   CBFUNC(function(mixed|void:int), write_oob_callback)
 
+  void set_fs_event_callback(function(mixed|void,int:int) c, int event_mask)
+  {
+    ___fs_event_callback=c;
+    if(c)
+    {
+       ::set_fs_event_callback(__stdio_fs_event_callback, event_mask);
+    }
+    else
+    {
+      ::set_fs_event_callback(0, 0);      
+    }
+  }
+
   void set_close_callback(function(mixed|void:int) c)  {
     ___close_callback=c;
     if (!___read_callback) {
@@ -1336,8 +1373,18 @@ class File
       }
     }
   }
+  
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
+
+  function(mixed|void,int:int) query_fs_event_callback()
+  {
+    return ___fs_event_callback;
+  }
+
+
+  // this getter is provided by Stdio.Fd.
+  // function(mixed|void:int) query_fs_event_callback() { return ___fs_event_callback; }
 
   array(function(mixed,void|string:int)) query_callbacks()
   {
@@ -2115,6 +2162,22 @@ class FILE
     bpos=0;
   }
 
+  private protected final int getchar_get_data()
+  {
+    b = "";
+    bpos=0;
+    return low_get_data();
+  }
+
+  private protected final void getchar_updatelinecache()
+  {
+    if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
+      cached_lines = ({cached_lines[lp][1..]}) + cached_lines[lp+1..];
+    else
+      cached_lines = ({});
+    lp=0;
+  }
+
   //! This function returns one character from the input stream.
   //!
   //! @returns
@@ -2123,16 +2186,13 @@ class FILE
   //! @note
   //!   Returns an @expr{int@} and not a @expr{string@} of length 1.
   //!
-  int getchar()
+  inline int getchar()
   {
-    if(sizeof(b) - bpos <= 0 && !get_data())
+    if(sizeof(b) - bpos <= 0 && !getchar_get_data())
       return -1;
 
-    if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
-      cached_lines = ({cached_lines[lp][1..]}) + cached_lines[lp+1..];
-    else
-      cached_lines = ({});
-    lp=0;
+    if(sizeof(cached_lines))
+      getchar_updatelinecache();
 
     return b[bpos++];
   }

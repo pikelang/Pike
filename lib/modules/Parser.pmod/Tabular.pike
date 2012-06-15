@@ -3,16 +3,17 @@
 //! character/column/delimiter-organised records.
 //!
 //! @seealso
-//!  @[Parser.LR]
+//!  @[Parser.LR], @url{http://www.wikipedia.org/wiki/Comma-separated_values@},
+//!  @url{http://www.wikipedia.org/wiki/EDIFACT@}
 
 #pike __REAL_VERSION__
 
-private Stdio.FILE in;
+Stdio.FILE _in;
+int _eol;
 private int prefetch=1024;	 // TODO: Document and make this available
 				 // through compile().
 private String.Buffer alread=String.Buffer(prefetch);
 private mapping|array fms;
-private int eol;
 private Regexp simple=Regexp("^[^[\\](){}<>^$|+*?\\\\]+$");
 private Regexp emptyline=Regexp("^[ \t\v\r\x1a]*$");
 private mixed severity=1;
@@ -63,14 +64,14 @@ void
   if(stringp(input))
     input=Stdio.FakeFile(input);
   if(!input->unread)
-    (in=Stdio.FILE())->assign(input);
+    (_in=Stdio.FILE())->assign(input);
   else
-    in=input;
+    _in=input;
 }
 
 #if 0			   // Currently unused function
 private int getchar()
-{ int c=in->getchar();
+{ int c=_in->getchar();
   if(c<0)
     throw(severity);
   alread->putchar(c);
@@ -80,7 +81,7 @@ private int getchar()
 
 private string read(int n)
 { string s;
-  s=in->read(n);
+  s=_in->read(n);
   alread->add(s);
   if(sizeof(s)!=n)
     throw(severity);
@@ -95,23 +96,23 @@ private string gets(int n)
       throw(severity);
   }
   else
-  { s=in->gets();
+  { s=_in->gets();
     if(!s)
        throw(severity);
     if(has_value(s,"\r"))	// Retrofix \r-only line endings
     { array t;
       t=s/"\r";
-      s=t[0];in->unread(t[1..]*"\n");
+      s=t[0];_in->unread(t[1..]*"\n");
     }
     alread->add(s);alread->putchar('\n');
     if(has_suffix(s,"\r"))
       s=s[..<1];
-    eol=1;
+    _eol=1;
   }
   return s;
 }
 
-private class checkpoint
+class _checkpoint
 { private string oldalread;
 
   void create()
@@ -129,7 +130,7 @@ private class checkpoint
   { if(oldalread)
     { string back=alread->get();
       if(sizeof(back))
-      { in->unread(back);
+      { _in->unread(back);
         if(verb<0)
         { back-="\n";
           if(sizeof(back))
@@ -142,6 +143,122 @@ private class checkpoint
 }
 
 #define FETCHAR(c,buf,i)	(catch((c)=(buf)[(i)++])?((c)=-1):(c))
+
+string _getdelimword(mapping m)
+{ multiset delim=m->delim;
+  int i,pref=m->prefetch || prefetch;
+  String.Buffer word=String.Buffer(pref);
+  string buf,skipclass;
+  skipclass="%[^"+(string)indices(delim)+"\"\r\x1a\n]";
+  if(sizeof(delim-(<',',';','\t',' '>)))
+delimready:
+    for(;;)
+    { i=0;
+      buf=_in->read(pref);
+      int c;
+      FETCHAR(c,buf,i);
+      while(c>=0)
+      { if(delim[c])
+          break delimready;
+        else switch(c)
+        { default:
+          { string s;
+            sscanf(buf[--i..],skipclass,s);
+            word->add(s);
+            i+=sizeof(s);
+            break;
+          }
+          case '\n':
+  	    FETCHAR(c,buf,i);
+  	    switch(c)
+  	    { default:i--;
+  	      case '\r':case '\x1a':;
+  	    }
+            _eol=1;
+            break delimready;
+          case '\r':
+  	    FETCHAR(c,buf,i);
+   	    if(c!='\n')
+   	      i--;
+            _eol=1;
+            break delimready;
+          case '\x1a':;
+        }
+        FETCHAR(c,buf,i);
+      }
+      if(!sizeof(buf))
+        throw(severity);
+      alread->add(buf);
+    }
+  else
+  { int leadspace=1,inquotes=0;
+csvready:
+    for(;;)
+    { i=0;
+      buf=_in->read(pref);
+      int c;
+      FETCHAR(c,buf,i);
+      while(c>=0)
+      { if(delim[c])
+        { if(!inquotes)
+            break csvready;
+          word->putchar(c);
+        }
+        else
+	  switch(c)
+          { case '"':leadspace=0;
+              if(!inquotes)
+                inquotes=1;
+              else if(FETCHAR(c,buf,i)=='"')
+                word->putchar(c);
+              else
+              { inquotes=0;
+                continue;
+              }
+              break;
+            default:leadspace=0;
+            case ' ':case '\t':
+              if(!leadspace)
+              { string s;
+                sscanf(buf[--i..],skipclass,s);
+                word->add(s);
+                i+=sizeof(s);
+              }
+              break;
+            case '\n':
+   	      FETCHAR(c,buf,i);
+   	      switch(c)
+   	      { default:i--;
+   	        case '\r':case '\x1a':;
+   	      }
+              if(!inquotes)
+              { _eol=1;
+                break csvready;
+              }
+              word->putchar('\n');
+   	      break;
+            case '\r':
+   	      FETCHAR(c,buf,i);
+   	      if(c!='\n')
+   	        i--;
+              if(!inquotes)
+              { _eol=1;
+                break csvready;
+              }
+              word->putchar('\n');
+            case '\x1a':;
+          }
+        FETCHAR(c,buf,i);
+      }
+      if(!sizeof(buf))
+        throw(severity);
+      alread->add(buf);
+    }
+  }
+  alread->add(buf[..i-1]);
+  _in->unread(buf[i..]);
+  return word->get();
+}
 
 private mapping getrecord(array fmt,int found)
 { mapping ret=([]),options;
@@ -162,7 +279,7 @@ private mapping getrecord(array fmt,int found)
     severity=2;
   if(verb<0)
     werror("Checking record %d for %O\n",recordcount,options->name);
-  eol=0;
+  _eol=0;
   foreach(fmt;int fi;array|mapping m)
   { if(fi<2)
       continue;
@@ -181,124 +298,12 @@ private mapping getrecord(array fmt,int found)
       }
       fmt[fi]=m;
     }
-    if(eol)
+    if(_eol)
       throw(severity);
     if(!zero_type(m->width))
       value=gets(m->width);
     if(m->delim)
-    { multiset delim=m->delim;
-      int i,pref=m->prefetch || prefetch;
-      String.Buffer word=String.Buffer(pref);
-      string buf,skipclass;
-      skipclass="%[^"+(string)indices(delim)+"\"\r\x1a\n]";
-      if(sizeof(delim-(<',',';','\t',' '>)))
-delimready:
-        for(;;)
-        { i=0;
-          buf=in->read(pref);
-          int c;
-          FETCHAR(c,buf,i);
-          while(c>=0)
-          { if(delim[c])
-              break delimready;
-            else switch(c)
-            { default:
-              { string s;
-                sscanf(buf[--i..],skipclass,s);
-                word->add(s);
-                i+=sizeof(s);
-                break;
-              }
-              case '\n':
-		FETCHAR(c,buf,i);
-		switch(c)
-		{ default:i--;
-		  case '\r':case '\x1a':;
-		}
-                eol=1;
-                break delimready;
-              case '\r':
-		FETCHAR(c,buf,i);
-		if(c!='\n')
-		  i--;
-                eol=1;
-                break delimready;
-	      case '\x1a':;
-            }
-            FETCHAR(c,buf,i);
-          }
-          if(!sizeof(buf))
-            throw(severity);
-          alread->add(buf);
-        }
-      else
-      { int leadspace=1,inquotes=0;
-csvready:
-        for(;;)
-        { i=0;
-          buf=in->read(pref);
-          int c;
-          FETCHAR(c,buf,i);
-          while(c>=0)
-          { if(delim[c])
-            { if(!inquotes)
-                break csvready;
-              word->putchar(c);
-            }
-            else switch(c)
-            { case '"':leadspace=0;
-                if(!inquotes)
-                  inquotes=1;
-                else if(FETCHAR(c,buf,i)=='"')
-                  word->putchar(c);
-                else
-                { inquotes=0;
-                  continue;
-                }
-                break;
-              default:leadspace=0;
-              case ' ':case '\t':
-                if(!leadspace)
-                { string s;
-                  sscanf(buf[--i..],skipclass,s);
-                  word->add(s);
-                  i+=sizeof(s);
-                }
-                break;
-              case '\n':
-		FETCHAR(c,buf,i);
-		switch(c)
-		{ default:i--;
-		  case '\r':case '\x1a':;
-		}
-                if(!inquotes)
-                { eol=1;
-                  break csvready;
-                }
-                word->putchar('\n');
-		break;
-              case '\r':
-		FETCHAR(c,buf,i);
-		if(c!='\n')
-		  i--;
-                if(!inquotes)
-                { eol=1;
-                  break csvready;
-                }
-                word->putchar('\n');
-	      case '\x1a':;
-            }
-            FETCHAR(c,buf,i);
-          }
-          if(!sizeof(buf))
-            throw(severity);
-          alread->add(buf);
-        }
-      }
-      alread->add(buf[..i-1]);
-      in->unread(buf[i..]);
-      value=word->get();
-    }
+      value=_getdelimword(m);
     if(m->match)
     { Regexp rgx;
       if(stringp(m->match))
@@ -318,7 +323,7 @@ csvready:
         }
       }
       else
-      { string buf=in->read(m->prefetch || prefetch);
+      { string buf=_in->read(m->prefetch || prefetch);
         { array spr;
           if(!buf || !(spr=rgx->split(buf)))
           { alread->add(buf);
@@ -327,7 +332,7 @@ csvready:
                -"Regexp.SimpleRegexp");
             throw(severity);
           }
-          in->unread(buf[sizeof(value=spr[0])..]);
+          _in->unread(buf[sizeof(value=spr[0])..]);
         }
         alread->add(value);
         value-="\r";
@@ -338,7 +343,7 @@ csvready:
     if(!m->drop)
       ret[m->name]=value;
   }
-  if(!eol && gets(0)!="")
+  if(!_eol && gets(0)!="")
     throw(severity);
   severity=1;
   if(verb&&verb!=-1)
@@ -386,10 +391,10 @@ private void add2map(mapping res,string name,mixed entry)
 //!  @[fetch()]
 int skipemptylines()
 { string line; int eof=1;
-  while((line=in->gets()) && String.width(line)==8 && emptyline->match(line))
+  while((line=_in->gets()) && String.width(line)==8 && emptyline->match(line))
     recordcount++;
   if(line)
-    eof=0,in->unread(line+"\n");
+    eof=0,_in->unread(line+"\n");
   return eof;
 }
 
@@ -423,12 +428,12 @@ mapping fetch(void|array|mapping format)
 ret:
   { if(arrayp(format))
     { mixed err=catch
-      { checkpoint checkp=checkpoint();
+      { _checkpoint checkp=_checkpoint();
         foreach(format;;array|mapping fmt)
           if(arrayp(fmt))
             for(int found=0;;found=1)
             { mixed err=catch
-              { checkpoint checkp=checkpoint();
+              { _checkpoint checkp=_checkpoint();
 		mapping rec=getrecord(fmt,found);
 	        foreach(rec;string name;mixed value)
                   add2map(ret,name,value);
@@ -463,6 +468,8 @@ ret:
     { int found;
       do
       { found=0;
+	if(!mappingp(format))
+	  error("Empty format definition\n");
         foreach(format;string name;array|mapping subfmt)
           for(;;)
 	  { if(verb<0)
@@ -492,7 +499,7 @@ ret:
 //! @seealso
 //!  @[fetch()]
 object feed(string content)
-{ in->unread(content);
+{ _in->unread(content);
   return this;
 }
 

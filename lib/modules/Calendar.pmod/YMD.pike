@@ -5,6 +5,7 @@
 //! base for all Roman-kind of Calendars,
 //! ie, one with years, months, weeks and days
 //!
+//! inherits Time
 
 #pike __REAL_VERSION__
 
@@ -151,7 +152,7 @@ class YMD
       return jd;
    }
 
-//! function method int unix_time()
+//! method int unix_time()
 //!     Returns the unix time integer corresponding to the start
 //!	of the time range object. (An unix time integer is UTC.)
 
@@ -276,7 +277,7 @@ class YMD
    int second_no() { return 0; }
    float fraction_no() { return 0.0; }
    
-//! function method datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
@@ -1439,7 +1440,8 @@ class cYear
 
 
 // ----------------------------------------------------------------
-//   Month
+//! class Month
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cMonth) Month=cMonth;
@@ -1730,6 +1732,8 @@ class cMonth
 //!	When adding, moving or subtracting years,
 //!	if tries to place the moved week in the 
 //!	resulting year.
+//!
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cWeek) Week=cWeek;
@@ -2068,7 +2072,8 @@ class cWeek
 }
 
 // ----------------------------------------------------------------
-//   Day
+//! class Day
+//! inherits YMD
 // ----------------------------------------------------------------
 
 class cDay
@@ -2518,12 +2523,24 @@ class cHour
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Minute
+//! inherits Time.Minute
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cMinute
 {
    inherit Time::cMinute;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class Second
+//! inherits Time.Second
+//! inherits YMD
+//------------------------------------------------------------------------
 
 class cSecond
 {
@@ -2532,12 +2549,23 @@ class cSecond
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Fraction
+//! inherits Time.Fraction
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cFraction
 {
    inherit Time::cFraction;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class SuperTimeRange
+//! inherits Time.SuperTimeRange
+//------------------------------------------------------------------------
 
 class cSuperTimeRange
 {
@@ -2591,7 +2619,10 @@ class cSuperTimeRange
 }
 
 //------------------------------------------------------------------------
-//! global convinience functions
+// Pop out doc-extractor context to the top-level scope.
+//! module Calendar
+//! submodule YMD
+// global convenience functions
 //------------------------------------------------------------------------
 
 //! method TimeRange parse(string fmt,string arg)
@@ -2946,8 +2977,8 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
        return 0;
 }
 
-//! function Day dwim_day(string date)
-//! function Day dwim_day(string date,TimeRange context)
+//! method Day dwim_day(string date)
+//! method Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
@@ -3177,7 +3208,7 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //-- auxillary functions------------------------------------------------
 
 //!
-//! function datetime(int|void unix_time)
+//! function mapping(string:int) datetime(int|void unix_time)
 //!     Replacement for localtime; gives back a mapping:
 //!	<pre>
 //!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
@@ -3197,8 +3228,8 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //!	</pre>
 //!	This is the same as calling <ref>Second</ref>()-><ref to=Second.datetime>datetime</ref>().
 //!
-//! function datetime_name(int|void unix_time)
-//! function datetime_short_name(int|void unix_time)
+//! function string datetime_name(int|void unix_time)
+//! function string datetime_short_name(int|void unix_time)
 //!     Compat functions; same as <ref>format_iso</ref>
 //!	and <ref>format_iso_short</ref>.
 //!	

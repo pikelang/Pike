@@ -716,11 +716,14 @@ static void f_create(INT32 args)
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
 	  }
 	  if (args >= 5) {
-	    if (TYPEOF(sp[4-args]) != T_MAPPING) {
-	      SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
+	    if (TYPEOF(sp[4-args]) != T_MAPPING){
+	      if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
+		SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
+	      }
+	    } else {
+	      add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
+	      pike_mysql_set_options(sp[4-args].u.mapping);
 	    }
-	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
-	    pike_mysql_set_options(sp[4-args].u.mapping);
 	  }
 	}
       }
