@@ -124,6 +124,20 @@ PIKECLASS SingleArray
 #cmod_include "typed_array.H"
 }
 
+PIKECLASS Status {
+    CVAR MPI_Status status;
+
+    PIKEFUN int `SOURCE()
+    {
+	push_int(THIS->status.MPI_SOURCE);
+    }
+
+    PIKEFUN int `TAG()
+    {
+	push_int(THIS->status.MPI_TAG);
+    }
+}
+
 PIKECLASS Sentinel {
     CVAR struct mpi_info i;
     CVAR struct object * other;
@@ -345,14 +359,17 @@ GEN(Exscan)
 
 #undef GEN
 
-static inline int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm comm)
+static inline int mpi_Recv(struct object *buf, int source, int tag,
+			   MPI_Comm comm, MPI_Status *status)
 {
     unsigned int shift, length;
-    MPI_Status status;
+    MPI_Status int_status;
     int r;
 
-    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &status);
-    MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm, NULL);
+    if (!status) status = &int_status;
+
+    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, status);
+    MPI_Recv(&length, 1, MPI_INT, status->MPI_SOURCE, status->MPI_TAG, comm, NULL);
 
     if (shift != OBJ2_INTARRAY(buf)->i.shift)
 	Pike_error("Trying to receive shift %u into buffer of shift %u.\n",
@@ -369,25 +386,28 @@ static inline int mpi_Recv(struct object *buf, int source, int tag, MPI_Comm com
     INVALIDATE_CURRENT_TIME();
 
     return MPI_Recv(OBJ2_INTARRAY(buf)->i.data, length,
-		    OBJ2_INTARRAY(buf)->i.type, status.MPI_SOURCE,
-		    tag, comm, NULL);
+		    OBJ2_INTARRAY(buf)->i.type, status->MPI_SOURCE,
+		    status->MPI_TAG, comm, NULL);
 }
 
-static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pike_string **ps)
+static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
+				  struct pike_string **ps, MPI_Status *status)
 {
     unsigned int shift, length;
-    MPI_Status status;
     MPI_Datatype type;
+    MPI_Status int_status;
     void *_buf;
     struct svalue sval;
     int r;
+
+    if (!status) status = &int_status;
 
     mark_free_svalue(&sval);
 
     INVALIDATE_CURRENT_TIME();
 
-    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &status);
-    MPI_Recv(&length, 1, MPI_INT, status.MPI_SOURCE, tag, comm,
+    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, status);
+    MPI_Recv(&length, 1, MPI_INT, status->MPI_SOURCE, status->MPI_TAG, comm,
 	     NULL);
 
 
@@ -403,7 +423,7 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm, struct pik
 	Pike_error("Cannot receive shift %u as a string.\n", shift);
     }
 
-    r = MPI_Recv(_buf, length, type, status.MPI_SOURCE, tag,
+    r = MPI_Recv(_buf, length, type, status->MPI_SOURCE, status->MPI_TAG,
 		 comm, NULL);
 
     switch (shift) {
@@ -453,7 +473,6 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 {
     unsigned int shift = (*ps)->size_shift,
 		 length = (*ps)->len << ((*ps)->size_shift);
-    MPI_Status status;
     void *_buf;
     int r, rank;
 
@@ -513,7 +532,6 @@ static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int
 {
     unsigned int shift, length;
     int rank, size;
-    MPI_Status status;
 
     INVALIDATE_CURRENT_TIME();
 
@@ -548,7 +566,6 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
 {
     unsigned int shift, length;
     int rank, size;
-    MPI_Status status;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -587,7 +604,6 @@ static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
     unsigned int shift;
     int rank, size;
     unsigned int count;
-    MPI_Status status;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -655,7 +671,6 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
     unsigned int shift;
     int rank, size;
     unsigned int count;
-    MPI_Status status;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
@@ -764,9 +779,12 @@ PIKECLASS Comm
 
 	INVALIDATE_CURRENT_TIME();
 
-	MPI_Send(&shift, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
-	MPI_Send(&length, 1, MPI_INT, dest, tag && tag->u.integer, THIS->comm);
-	MPI_Send(buf->str, length, MPI_CHAR, dest, tag && tag->u.integer, THIS->comm);
+	MPI_Send(&shift, 1, MPI_INT, dest, tag ? tag->u.integer : 0,
+		 THIS->comm);
+	MPI_Send(&length, 1, MPI_INT, dest, tag ? tag->u.integer : 0,
+		 THIS->comm);
+	MPI_Send(buf->str, length, MPI_CHAR, dest, tag ? tag->u.integer : 0,
+		 THIS->comm);
 
 	pop_n_elems(args);
     }
@@ -777,24 +795,30 @@ PIKECLASS Comm
 	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
 
 	ENSURE_SENTINEL(buf, "Send", 1);
-	mpi_Send(buf, dest, tag && tag->u.integer, THIS->comm);
+	mpi_Send(buf, dest, tag ? tag->u.integer : 0, THIS->comm);
 	pop_n_elems(args);
     }
 
-    PIKEFUN void Recv(object buf, int source, int|void tag)
+    PIKEFUN void Recv(object buf, int source, int|void tag, object|void status)
     {
 	struct pike_string *ps = NULL;
 
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Recv is not to be called before MPI.Init() or after MPI.Finalize().\n");
 
+	if (status && -1 == low_get_storage(status->prog, Status_program)) {
+	    SIMPLE_BAD_ARG_ERROR("Recv", 4, "inherits(MPI.Status)");
+	}
+
 	if (IS_SENTINEL(buf)) {
-	    mpi_Recv(buf, source, tag && tag->u.integer, THIS->comm);
+	    mpi_Recv(buf, source, tag ? tag->u.integer : 0, THIS->comm,
+		     status ? &OBJ2_STATUS(status)->status : NULL);
 	    pop_n_elems(args);
 	} else {
 	    if (-1 == low_get_storage(buf->prog, Pointer_program))
 		FAIL_SENTINEL_OR_PTR("Recv", 1);
-	    mpi_string_Recv(source, tag && tag->u.integer, THIS->comm, &ps);
+	    mpi_string_Recv(source, tag ? tag->u.integer : 0, THIS->comm, &ps,
+			    status ? &OBJ2_STATUS(status)->status : NULL);
 	    pop_n_elems(args-1);
 	    push_string(ps);
 	    f_call_function(2);
@@ -1029,6 +1053,7 @@ PIKE_MODULE_INIT
     INIT;
 
     ADD_INT_CONSTANT("ANY_SOURCE", MPI_ANY_SOURCE, 0);
+    ADD_INT_CONSTANT("ANY_TAG", MPI_ANY_TAG, 0);
     add_object_constant("world", co = clone_object(Comm_program, 0), 0);
     OBJ2_COMM(co)->comm = MPI_COMM_WORLD;
 
