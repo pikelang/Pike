@@ -2016,7 +2016,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       /* Integer - Zap subtype and try just incrementing it. */
       mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, type));
       add_imm_mem(1, REG_RCX, OFFSETOF(svalue, u.integer));
-      jnc(&label_B);
+      jno(&label_B);
       add_imm_mem(-1, REG_RCX, OFFSETOF(svalue, u.integer));
       LABEL_A;
       /* Fallback to the C-implementation. */
@@ -2038,9 +2038,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       cmp_reg_imm(REG_RAX, PIKE_T_INT);
       jne(&label_A);
       /* Integer - Zap subtype and try just decrementing it. */
-      mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, __type));
+      mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, type));
       add_imm_mem(-1, REG_RCX, OFFSETOF(svalue, u.integer));
-      jnc(&label_B);
+      jno(&label_B);
       add_imm_mem(1, REG_RCX, OFFSETOF(svalue, u.integer));
       LABEL_A;
       /* Fallback to the C-implementation. */
