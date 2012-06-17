@@ -59,6 +59,7 @@ DOCEND()
     CVAR INT32 decode_fun;
     CVAR INT32 copy_fun;
     CVAR INT32 insert_fun;
+    CVAR struct ba_local allocator;
 
 
 #undef CB_TRANSFORM_KEY

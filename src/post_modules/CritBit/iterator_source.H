@@ -43,37 +43,47 @@
 	    }
 	}
 
+static INT_TYPE cmod_CONCAT_EVAL(tree_class,_,iterator_class,_update)() {
+    /* we update all pointers here, as they might have been relocated */
+    INT_TYPE c = THIS->step;
+
+    THIS->tree = cmod_OBJ2_TREE(THIS->ptree)->tree;
+
+    THIS->lastrev = * THIS->revv;
+
+    if (THIS->tree) {
+	cb_node_t t = cb_index(THIS->tree, THIS->lastkey);
+	if (!t) { /* the last node was removed and freed. */
+	    if (c > 0) {
+		t = cb_find_next(THIS->tree, THIS->lastkey);
+		c--;
+	    } else {
+		t = cb_find_previous(THIS->tree, THIS->lastkey);
+		c++;
+	    }
+	}
+	THIS->lastnode = t;
+    } else {
+	THIS->lastnode = NULL;
+    }
+    return c;
+}
+
 	static inline int cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)() {
 	    cb_node_t t;
 	    INT_TYPE c = THIS->step;
 
-	    if (THIS->lastrev == *THIS->revv) {
-		t = THIS->lastnode;
-	    } else {
-		THIS->lastrev = * THIS->revv;
-
-		if (THIS->tree) {
-		    t = cb_index(THIS->tree, THIS->lastkey);
-		    if (t) {
-			THIS->lastnode = t;
-		    } else { /* the last node was removed and freed. */
-			if (c > 0) {
-			    t = cb_find_next(THIS->tree, THIS->lastkey);
-			    c--;
-			} else {
-			    t = cb_find_previous(THIS->tree, THIS->lastkey);
-			    c++;
-			}
-		    }
-		} else {
-		    t = NULL;
-		}
-	    }
-
+	    /* we have to free them even if the node is gone or relocated */
 	    if (THIS->lastnode) {
 		CB_FREE_KEY(THIS->lastkey);
 		CB_FREE_VALUE(&THIS->lastval);
 	    }
+
+	    if (THIS->lastrev != *THIS->revv) {
+		c = cmod_CONCAT_EVAL(tree_class,_,iterator_class,_update)();
+	    }
+
+	    t = THIS->lastnode;
 
 	    if (t) {
 		if (c > 0) {

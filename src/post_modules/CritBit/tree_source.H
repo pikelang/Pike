@@ -1,3 +1,25 @@
+#ifdef PIKE_NEW_BLOCK_ALLOC
+    void TREE_CLASSIFY(relocate_simple)(void * start, void * stop, ptrdiff_t diff) {
+	cb_node_t node = (cb_node_t)start;
+
+	if (THIS->tree) THIS->tree += diff;
+
+	while (node < (cb_node_t)stop) {
+	    if (node->parent) node->parent += diff;
+	    if (node->childs[0]) node->childs[0] += diff;
+	    if (node->childs[1]) node->childs[1] += diff;
+	    node++;
+	}
+	THIS->rev ++;
+    }
+    static cb_node_t TREE_CLASSIFY(node_alloc)() {
+	return ba_lalloc(&THIS->allocator);
+    }
+    static void TREE_CLASSIFY(node_free)(cb_node_t node) {
+	ba_lfree(&THIS->allocator, node);
+    }
+#endif
+
     INIT {
 	THIS->tree = NULL;
 	THIS->encode_fun = find_identifier
@@ -13,6 +35,10 @@
 	if (find_identifier("`[]=", TREE_CLASSIFY(_program)) == THIS->insert_fun) {
 	    THIS->copy_fun = -1;
 	}
+#ifdef PIKE_NEW_BLOCK_ALLOC
+	ba_init_local(&THIS->allocator, sizeof(struct cb_node), 32, 256,
+		      TREE_CLASSIFY(relocate_simple), NULL);
+#endif
     }
 static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
     if (THIS->copy_fun != -1 && THIS->insert_fun != -1) {
@@ -669,14 +695,29 @@ range_do_clone:
     }
 
     EXIT {
-#if 0 /* HAS___SYNC_VAL_COMPARE_AND_SWAP */
-	cb_node_t tree = THIS->tree;
-	if (tree && __sync_val_compare_and_swap(&(THIS->tree), tree, NULL)) {
-	    cb_free_node(tree);
+	cb_node_t node;
+
+#ifdef PIKE_NEW_BLOCK_ALLOC
+	if ((node = THIS->tree)) {
+	    THIS->tree = NULL;
+	    CB_FREE_KEY(node->key);
+	    if (CB_HAS_VALUE(node)) {
+		CB_FREE_VALUE(&node->value);
+	    }
+	    WALK_FORWARD(node, {
+		CB_FREE_KEY(node->key);
+		if (CB_HAS_VALUE(_)) {
+		    CB_FREE_VALUE(&node->value);
+		}
+	    });
+	    return;
 	}
+	ba_ldestroy(&THIS->allocator);
 #else
-	if (THIS->tree) cb_free_node(THIS->tree);
-	THIS->tree = NULL;
+	if ((node = THIS->tree)) {
+	    THIS->tree = NULL;
+	    cb_free_node(node);
+	}
 #endif
     }
 

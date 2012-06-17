@@ -16,14 +16,25 @@
 #include "operators.h"
 #include "builtin_functions.h"
 
-#include "dmalloc.h"
+#ifdef PIKE_NEW_BLOCK_ALLOC
+/*
+ * we have to rename these functions, they
+ * are already defined in bitvector.h
+ */
+# define round_up32_ my_round_up32_
+# define round_up32 my_round_up32
+# include "gjalloc.h"
+# undef round_up32_
+# undef round_up32
+#else
+/* we use this as a CVAR, and since we dont have
+ * PIKE_NEW_BLOCK_ALLOC as a cmod_define, we need
+ * an empty definition here
+ */
+struct ba_local {};
+#endif
 
-#ifndef CB_NODE_ALLOC
-# define CB_NODE_ALLOC()	((cb_node_t)xalloc(sizeof(cb_node)))
-#endif
-#ifndef CB_NODE_FREE
-# define CB_NODE_FREE(p)	xfree(p)
-#endif
+#include "dmalloc.h"
 
 #define CB_STATIC
 #define CB_INLINE

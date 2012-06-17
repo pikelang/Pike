@@ -8,16 +8,6 @@
 #define CB_PRINT_KEY(buf, key)			\
 	do { string_builder_sprintf((buf), "%f",\
 				    cb_decode_float((key).str)); } while(0)
-#include "tree_high.c"
-
-#define DEFAULT_CMOD_STORAGE static
-
-DECLARATIONS
-
-/*! @module ADT */
-/*! @module CritBit */
-
-PIKECLASS FloatTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class FloatTree
 #cmod_define cmod_OBJ2_TREE OBJ2_FLOATTREE
@@ -29,6 +19,18 @@ PIKECLASS FloatTree {
 #cmod_define reverse_ordered_keys 99.9, 80.4 and 14.2
 #cmod_define sample_value ({ 4, 5, 6 })
 #cmod_define extra_doc
+#cmod_include "redefine.H"
+#cmod_include "block_allocator.H"
+#include "tree_high.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @module ADT */
+/*! @module CritBit */
+
+PIKECLASS FloatTree {
 
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			      \
     struct svalue * __ = (s);						      \
@@ -40,8 +42,6 @@ PIKECLASS FloatTree {
 		     ? ((FLOAT_TYPE)(v)->u.integer)			\
 		     : (v)->u.float_number))
 #define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
-
-#cmod_include "redefine.H"
 
 #cmod_include "tree_header.H"
 #cmod_include "iterator_source.H"
