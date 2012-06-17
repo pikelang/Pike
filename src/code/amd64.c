@@ -239,13 +239,13 @@ static void shl_reg_imm( enum amd64_reg from_reg, int shift )
   rex( 1, from_reg, 0, 0 );
   if( shift == 1 )
   {
-    opcode( 0xd1 );     /* RCL */
-    modrm( 3, 2, from_reg );
+    opcode( 0xd1 );     /* SAL */
+    modrm( 3, 4, from_reg );
   }
   else
   {
     opcode( 0xc1 );
-    modrm( 3, 2, from_reg );
+    modrm( 3, 4, from_reg );
     ib( shift );
   }
 }
