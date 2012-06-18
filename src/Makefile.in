@@ -297,7 +297,7 @@ compiler-warnings : clean
 # the following target assumes MacOS X 10.6 or higher, and is configured to use garbage collection
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
-	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa \ 
+	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa \
 	  -dynamiclib -Wl,-no_pie -mpic-no-dynamic -Wl,-single_module \
 	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.9 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
 	  -isysroot /Developer/SDKs/MacOSX10.6.sdk 
