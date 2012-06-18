@@ -1,17 +1,23 @@
 #ifdef PIKE_NEW_BLOCK_ALLOC
+#define PTR_UPDATE(ptr, d)  do {		    \
+    if (ptr) {					    \
+	ptr = (cb_node_t)((char*)(ptr) + d);	    \
+    }									    \
+} while (0)
     void TREE_CLASSIFY(relocate_simple)(void * start, void * stop, ptrdiff_t diff) {
 	cb_node_t node = (cb_node_t)start;
 
-	if (THIS->tree) THIS->tree += diff;
+	PTR_UPDATE(THIS->tree, diff);
 
 	while (node < (cb_node_t)stop) {
-	    if (node->parent) node->parent += diff;
-	    if (node->childs[0]) node->childs[0] += diff;
-	    if (node->childs[1]) node->childs[1] += diff;
+	    PTR_UPDATE(node->parent, diff);
+	    PTR_UPDATE(node->childs[0], diff);
+	    PTR_UPDATE(node->childs[1], diff);
 	    node++;
 	}
 	THIS->rev ++;
     }
+#undef PTR_UPDATE
     static cb_node_t TREE_CLASSIFY(node_alloc)() {
 	return ba_lalloc(&THIS->allocator);
     }
