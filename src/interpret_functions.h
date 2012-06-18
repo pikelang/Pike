@@ -564,7 +564,6 @@ OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
     push_int(1);
     f_add(2);
     assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
-    pop_stack();
   }
 });
 
@@ -1064,8 +1063,7 @@ OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", I_UPDATE_SP, {
 
 OPCODE2(F_ASSIGN_LOCAL_NUMBER_AND_POP, "assign local number and pop", 0, {
   free_svalue(Pike_fp->locals + arg1);
-  Pike_fp->locals[arg1].u.integer = arg2;
-  Pike_fp->locals[arg1].type = PIKE_T_INT;
+  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, 0, integer, arg2);
 });
 
 OPCODE1(F_ASSIGN_GLOBAL, "assign global", 0, {
