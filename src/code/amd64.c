@@ -2179,11 +2179,77 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte(F_MARK);
     ins_f_byte_with_2_args(F_EXTERNAL, b, c);
     return;
+
+  case F_ADD_LOCAL_INT_AND_POP:
+   {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
+
+      /* arg1 = dst
+         arg2 = int
+      */
+      mov_sval_type( ARG1_REG, REG_RAX );
+      cmp_reg_imm( REG_RAX, PIKE_T_INT );
+      jne(&label_A); /* Fallback */
+      add_imm_mem( c, ARG1_REG,OFFSETOF(svalue,u.integer));
+      jno( &label_B);
+      add_imm_mem( -c, ARG1_REG,OFFSETOF(svalue,u.integer));
+      LABEL_A;
+      update_arg2(c);
+      update_arg1(b);
+      ins_f_byte(a); /* Will call C version */
+      LABEL_B;
+      return;
+     }
+  case F_ADD_LOCALS_AND_POP:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
+      add_reg_imm_reg( ARG1_REG,(c-b)*sizeof(struct svalue), ARG2_REG );
+
+      /* arg1 = dst
+         arg2 = src
+      */
+      mov_sval_type( ARG1_REG, REG_RAX );
+      mov_sval_type( ARG2_REG, REG_RBX );
+      shl_reg_imm( REG_RAX, 8 );
+      add_reg_reg( REG_RAX, REG_RBX );
+      cmp_reg_imm( REG_RAX, (PIKE_T_INT<<8) | PIKE_T_INT );
+      jne(&label_A); /* Fallback */
+      mov_mem_reg( ARG2_REG, OFFSETOF(svalue,u.integer), REG_RAX );
+      add_reg_mem( REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));
+      jo( &label_A);
+      /* Clear subtype */
+      mov_imm_mem( PIKE_T_INT, ARG1_REG,OFFSETOF(svalue,type));
+      mov_reg_mem( REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));
+      jmp( &label_B );
+
+      LABEL_A;
+      update_arg2(c);
+      update_arg1(b);
+      ins_f_byte(a); /* Will call C version */
+      LABEL_B;
+      return;
+    }
+
+  case F_ASSIGN_LOCAL_NUMBER_AND_POP:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
+    mov_reg_reg( ARG1_REG, REG_RBX );
+    amd64_free_svalue(ARG1_REG, 0);
+    mov_imm_mem(c, REG_RBX, OFFSETOF(svalue, u.integer));
+    mov_imm_mem32(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+    return;
+
   case F_LOCAL_2_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     if( b != c )
     {
-        int b_c_dist = b-c;
         amd64_load_fp_reg();
         mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), REG_RBX );
         add_reg_imm( REG_RBX, b*sizeof(struct svalue) );
