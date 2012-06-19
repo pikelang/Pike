@@ -202,7 +202,7 @@ typedef struct cb_node {
 
 typedef struct cb_node cb_node;
 
-CB_STATIC CB_INLINE cb_node_t cb_insert(const cb_node_t, const cb_key,
+CB_STATIC CB_INLINE void cb_insert(cb_node_t*, const cb_key,
 					const cb_value *);
 CB_STATIC CB_INLINE cb_node_t cb_find_next(cb_node_t, const cb_key);
 CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key);

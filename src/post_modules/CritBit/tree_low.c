@@ -137,7 +137,7 @@ CB_STATIC CB_INLINE cb_node_t cb_get_range(const cb_node_t tree, const cb_key a,
 	if (node != end) WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
 		/* printf("adding %p\n", _); */
-		cb_insert(ntree, _->key, &node->value);
+		cb_insert(&ntree, _->key, &node->value);
 		if (_ == end) break;
 	    }
 	});
@@ -561,18 +561,14 @@ static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value
     }
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_insert(cb_node_t tree, const cb_key key,
+CB_STATIC CB_INLINE void cb_insert(cb_node_t * tree, const cb_key key,
 				  const cb_value *val) {
 
-	if (!tree) {
-	    return tree = cb_node_from_string(key, val);
-	}
+	cb_check_node(*tree);
 
-	cb_check_node(tree);
+	if (!*tree) {
+	    *tree = cb_node_from_string(key, val);
+	} else cb_low_insert(*tree, key, val);
 
-	cb_low_insert(tree, key, val);
-
-	cb_check_node(tree);
-
-	return tree;
+	cb_check_node(*tree);
 }
