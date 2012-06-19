@@ -2028,6 +2028,16 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     return;
 
+  case F_INC_LOCAL:
+    ins_f_byte_with_arg(F_INC_LOCAL_AND_POP, b);
+    ins_f_byte_with_arg(F_LOCAL, b);
+    return;
+
+  case F_POST_INC_LOCAL:
+    ins_f_byte_with_arg(F_LOCAL, b);
+    ins_f_byte_with_arg(F_INC_LOCAL_AND_POP, b);
+    return;
+
   case F_DEC_LOCAL_AND_POP:
     {
       LABELS();
@@ -2050,6 +2060,16 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 			  instrs[a-F_OFFSET].flags);
       LABEL_B;
     }
+    return;
+
+  case F_DEC_LOCAL:
+    ins_f_byte_with_arg(F_DEC_LOCAL_AND_POP, b);
+    ins_f_byte_with_arg(F_LOCAL, b);
+    return;
+
+  case F_POST_DEC_LOCAL:
+    ins_f_byte_with_arg(F_LOCAL, b);
+    ins_f_byte_with_arg(F_DEC_LOCAL_AND_POP, b);
     return;
 
   case F_CONSTANT:
