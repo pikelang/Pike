@@ -1881,6 +1881,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_ASSIGN_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_sp_reg();
     amd64_assign_local(b);
     add_reg_imm_reg(sp_reg, -sizeof(struct svalue), ARG1_REG);
     amd64_ref_svalue(ARG1_REG, 0);
@@ -2184,6 +2185,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
    {
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
       add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
 
@@ -2207,6 +2209,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     {
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
       add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
       add_reg_imm_reg( ARG1_REG,(c-b)*sizeof(struct svalue), ARG2_REG );
@@ -2238,6 +2241,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
 
   case F_ASSIGN_LOCAL_NUMBER_AND_POP:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
     add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
     mov_reg_reg( ARG1_REG, REG_RBX );
