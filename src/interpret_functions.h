@@ -1642,6 +1642,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
   if(Pike_fp->expendible <= Pike_fp->locals + arg1)
   {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
+    DO_IF_DEBUG(Pike_fp->num_locals = arg1);
   }else{
     push_svalue(Pike_fp->locals + arg1);
   }
