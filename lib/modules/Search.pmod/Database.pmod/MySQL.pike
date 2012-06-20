@@ -214,11 +214,21 @@ void remove_document(string|Standards.URI uri, void|string language)
   if(!uri_id)
     return;
   array a;
-  if(language)
+  if(language) {
+    //  Need to remove this particular language fork as well as any
+    //  non-language version of the document (since they are mutually
+    //  exclusive).
+    //
+    //  Note however that a document with several language forks where
+    //  one fork is removed will keep that entry since we cannot know
+    //  which entries that are garbage and hence leave them in place.
+    //  It is up to the query filter to only show valid forks.
     a=db->query("select id from document where uri_id=%d and "
-		"language=%s",uri_id,language);
-  else
+		"(language=%s OR language IS NULL)", uri_id, language);
+  } else {
+    //  This also deletes any past language-specific forks
     a=db->query("select id from document where uri_id=%d",uri_id);
+  }
 
   if(!sizeof(a))
     return;
