@@ -78,29 +78,6 @@ static void label( struct label *l )
   l->addr = PIKE_PC;
 }
 
-static void modrm( int mod, int r, int m )
-{
-  add_to_program( ((mod<<6) | ((r&0x7)<<3) | (m&0x7)) );
-}
-
-static void sib( int scale, int index, enum amd64_reg base )
-{
-  add_to_program( (scale<<6) | ((index&0x7)<<3) | (base&0x7) );
-}
-
-static void rex( int w, enum amd64_reg r, int x, enum amd64_reg b )
-{
-  unsigned char res = 1<<6;
-  /* bit  7, 5-4 == 0 */
-  if( w )        res |= 1<<3;
-  if( r > 0x7 )  res |= 1<<2;
-  if( x       )  res |= 1<<1;
-  if( b > 0x7 )  res |= 1<<0;
-  if( res != (1<<6) )
-    add_to_program( res );
-}
-
-
 static void ib( char x )
 {
   add_to_program( x );
@@ -122,6 +99,57 @@ static void id( int x )
 
 /* x86 opcodes  */
 #define opcode(X) ib(X)
+
+
+static void modrm( int mod, int r, int m )
+{
+  ib( ((mod<<6) | ((r&0x7)<<3) | (m&0x7)) );
+}
+
+static void sib( int scale, int index, enum amd64_reg base )
+{
+  ib( (scale<<6) | ((index&0x7)<<3) | (base&0x7) );
+}
+
+
+static void modrm_sib( int mod, int r, int m )
+{
+  modrm( mod, r, m );
+  if( (m&7) == REG_RSP)
+    sib(0, REG_RSP, REG_RSP );
+}
+
+static void rex( int w, enum amd64_reg r, int x, enum amd64_reg b )
+{
+  unsigned char res = 1<<6;
+  /* bit  7, 5-4 == 0 */
+  if( w )        res |= 1<<3;
+  if( r > 0x7 )  res |= 1<<2;
+  if( x       )  res |= 1<<1;
+  if( b > 0x7 )  res |= 1<<0;
+  if( res != (1<<6) )
+    add_to_program( res );
+}
+
+
+static void offset_modrm_sib( int offset, int r, int m )
+{
+  /* OFFSET */
+  if( offset < -128  || offset > 127 )
+  {
+    modrm_sib( 2, r, m );
+    id( offset );
+  }
+  else if( offset || (m&7) == REG_RSP || (m&7) == REG_RBP )
+  {
+    modrm_sib( 1, r, m );
+    ib( offset );
+  }
+  else
+  {
+    modrm_sib( 0, r, m );
+  }
+}
 
 static void ret()
 {
@@ -152,39 +180,7 @@ static void low_mov_mem_reg(enum amd64_reg from_reg, ptrdiff_t offset,
                             enum amd64_reg to_reg)
 {
   opcode( 0x8b );
-
-  /* Using r13 or rbp will trigger RIP relative
-     if rex.W is set
-  */
-  if( offset == 0 && from_reg != REG_R13 && from_reg != REG_RBP )
-  {
-    modrm( 0, to_reg, from_reg );
-    if ((from_reg & 0x7) == 0x4) {
-      /* r12 and RSP trigger use of the SIB byte. */
-      sib(0, 4, from_reg);
-    }
-  }
-  else
-  {
-    if( offset < 128 && offset >= -128 )
-    {
-      modrm( 1, to_reg, from_reg );
-      if ((from_reg & 0x7) == 0x4) {
-	/* r12 and RSP trigger use of the SIB byte. */
-	sib(0, 4, from_reg);
-      }
-      ib( offset );
-    }
-    else
-    {
-      modrm( 2, to_reg, from_reg );
-      if ((from_reg & 0x7) == 0x4) {
-	/* r12 and RSP trigger use of the SIB byte. */
-	sib(0, 4, from_reg);
-      }
-      id(offset);
-    }
-  }
+  offset_modrm_sib(offset, to_reg, from_reg );
 }
 
 static void mov_mem_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_reg to_reg )
@@ -193,10 +189,11 @@ static void mov_mem_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_r
   low_mov_mem_reg( from_reg, offset, to_reg );
 }
 
-static void mov_mem32_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_reg to_reg )
+static void xor_reg_reg( enum amd64_reg reg1,  enum amd64_reg reg2 )
 {
-  rex( 0, to_reg, 0, from_reg );
-  low_mov_mem_reg( from_reg, offset, to_reg );
+  rex(1,reg1,0,reg2);
+  opcode( 0x31 );
+  modrm(3,reg1,reg2);
 }
 
 static void and_reg_imm( enum amd64_reg reg, int imm32 )
@@ -225,11 +222,19 @@ static void and_reg_imm( enum amd64_reg reg, int imm32 )
   }
 }
 
+static void mov_mem32_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_reg to_reg )
+{
+  rex( 0, to_reg, 0, from_reg );
+  low_mov_mem_reg( from_reg, offset, to_reg );
+}
+
 static void mov_mem16_reg( enum amd64_reg from_reg, ptrdiff_t offset, enum amd64_reg to_reg )
 {
-  /* FIXME: Really implement... */
+  /*
+    Actually doing a 16-bit read seems slower..
+  */
   mov_mem32_reg( from_reg, offset, to_reg );
-  and_reg_imm( to_reg, 0xffff );
+  and_reg_imm(to_reg, 0xffff);
 }
 
 static void add_reg_imm( enum amd64_reg src, int imm32);
@@ -248,13 +253,6 @@ static void shl_reg_imm( enum amd64_reg from_reg, int shift )
     modrm( 3, 4, from_reg );
     ib( shift );
   }
-}
-
-static void xor_reg_reg( enum amd64_reg reg1,  enum amd64_reg reg2 )
-{
-  rex(1,reg1,0,reg2);
-  opcode( 0x31 );
-  modrm(3,reg1,reg2);
 }
 
 static void clear_reg( enum amd64_reg reg )
@@ -287,35 +285,32 @@ static void mov_imm_reg( long imm, enum amd64_reg reg )
   }
 }
 
+static void low_mov_reg_mem(enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
+{
+  opcode( 0x89 );
+  offset_modrm_sib( offset, from_reg, to_reg );
+}
+
 static void mov_reg_mem( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
 {
   rex(1, from_reg, 0, to_reg );
-  opcode( 0x89 );
-
-  if( !offset && ((to_reg&7) != REG_RBP)  )
-  {
-    modrm( 0, from_reg, to_reg );
-    if( (to_reg&7) == REG_RSP)
-        sib(0, REG_RSP, REG_RSP );
-  }
-  else
-  {
-    if( offset < 128 && offset >= -128 )
-    {
-      modrm( 1, from_reg, to_reg );
-      if( (to_reg&7) == REG_RSP)
-        sib(0, REG_RSP, REG_RSP );
-      ib( offset );
-    }
-    else
-    {
-      modrm( 2, from_reg, to_reg );
-      if( (to_reg&7) == REG_RSP )
-          sib(0, REG_RSP, REG_RSP );
-      id( offset );
-    }
-  }
+  low_mov_reg_mem( from_reg, to_reg, offset );
 }
+
+static void mov_reg_mem32( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
+{
+  rex(0, from_reg, 0, to_reg );
+  low_mov_reg_mem( from_reg, to_reg, offset );
+}
+
+static void mov_reg_mem16( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
+{
+  opcode( 0x66 );
+  rex(0, from_reg, 0, to_reg );
+  low_mov_reg_mem( from_reg, to_reg, offset );
+}
+
+
 
 static void mov_imm_mem( long imm, enum amd64_reg to_reg, ptrdiff_t offset )
 {
@@ -323,21 +318,7 @@ static void mov_imm_mem( long imm, enum amd64_reg to_reg, ptrdiff_t offset )
   {
     rex( 1, 0, 0, to_reg );
     opcode( 0xc7 ); /* mov imm32 -> r/m64 (sign extend)*/
-    /* This does not work for rg&7 == 4 or 5. */
-    if( !offset && (to_reg&7) != 4 && (to_reg&7) != 5 )
-    {
-      modrm( 0, 0, to_reg );
-    }
-    else if( offset >= -128 && offset < 128 )
-    {
-      modrm( 1, 0, to_reg );
-      ib( offset );
-    }
-    else
-    {
-      modrm( 2, 0, to_reg );
-      id( offset );
-    }
+    offset_modrm_sib( offset, 0, to_reg );
     id( imm );
   }
   else
@@ -351,62 +332,26 @@ static void mov_imm_mem( long imm, enum amd64_reg to_reg, ptrdiff_t offset )
 
 
 
-static void mov_reg_mem32( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
-{
-  rex(0, from_reg, 0, to_reg );
-  opcode( 0x89 );
-
-  if( !offset && ((to_reg&7) != REG_RBP)  )
-  {
-    modrm( 0, from_reg, to_reg );
-    if( (to_reg&7) == REG_RSP)
-        sib(0, REG_RSP, REG_RSP );
-  }
-  else
-  {
-    if( offset < 128 && offset >= -128 )
-    {
-      modrm( 1, from_reg, to_reg );
-      if( (to_reg&7) == REG_RSP)
-        sib(0, REG_RSP, REG_RSP );
-      ib( offset );
-    }
-    else
-    {
-      modrm( 2, from_reg, to_reg );
-      if( (to_reg&7) == REG_RSP )
-          sib(0, REG_RSP, REG_RSP );
-      id( offset );
-    }
-  }
-}
-
-
 static void mov_imm_mem32( int imm, enum amd64_reg to_reg, ptrdiff_t offset )
 {
     rex( 0, 0, 0, to_reg );
     opcode( 0xc7 ); /* mov imm32 -> r/m32 (sign extend)*/
     /* This does not work for rg&7 == 4 or 5. */
-    if( !offset && (to_reg&7) != 4 && (to_reg&7) != 5 )
-    {
-      modrm( 0, 0, to_reg );
-    }
-    else if( offset >= -128 && offset < 128 )
-    {
-      modrm( 1, 0, to_reg );
-      ib( offset );
-    }
-    else
-    {
-      modrm( 2, 0, to_reg );
-      id( offset );
-    }
+    offset_modrm_sib( offset, 0, to_reg );
     id( imm );
 }
+
+static void sub_reg_imm( enum amd64_reg reg, int imm32 );
 
 static void add_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
+  if( imm32 < 0 )
+  {
+    /* This makes the disassembly easier to read. */
+    sub_reg_imm( reg, -imm32 );
+    return;
+  }
 
   rex( 1, 0, 0, reg );
 
@@ -432,12 +377,13 @@ static void add_reg_imm( enum amd64_reg reg, int imm32 )
   }
 }
 
-static void add_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
+
+static void low_add_mem_imm(int w, enum amd64_reg reg, int offset, int imm32 )
 {
   int r2 = imm32 == -1 ? 1 : 0;
   int large = 0;
   if( !imm32 ) return;
-  rex( 0, 0, 0, reg );
+  rex( w, 0, 0, reg );
 
   if( r2 ) imm32 = -imm32;
 
@@ -450,21 +396,7 @@ static void add_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
     opcode( 0x81 ); /* ADD imm32,r/m32 */
     large = 1;
   }
-  if( !offset )
-  {
-    modrm( 0, r2, reg );
-  }
-  else
-  if( offset < -128  || offset > 127 )
-  {
-    modrm( 2, r2, reg );
-    id( offset );
-  }
-  else
-  {
-    modrm( 1, r2, reg );
-    ib( offset );
-  }
+  offset_modrm_sib( offset, r2, reg );
   if( imm32 != 1  )
   {
       if( large )
@@ -474,54 +406,14 @@ static void add_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
   }
 }
 
-static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
+static void add_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
 {
-  int r2 = imm32 == -1 ? 1 : 0;
-  int large = 0;
-  if( !imm32 ) return;
-  rex( 1, 0, 0, reg );
-
-  if( imm32 == 1 || imm32 == -1 )
-    opcode( 0xff ); /* INCL r/m32 */
-  else if( imm32 >= -128 && imm32 < 128 )
-    opcode( 0x83 ); /* ADD imm8,r/m32 */
-  else
-  {
-    opcode( 0x81 ); /* ADD imm32,r/m32 */
-    large = 1;
-  }
-
-  if( !offset && (reg&7) != REG_RSP )
-  {
-    modrm( 0, r2, reg );
-  }
-  else if( offset < -128  || offset > 127 )
-  {
-    modrm( 2, r2, reg );
-    if( (reg&7) == REG_RSP )
-      sib(0, REG_RSP, REG_RSP );
-    id( offset );
-  }
-  else
-  {
-    modrm( 1, r2, reg );
-    if( (reg&7) == REG_RSP )
-      sib(0, REG_RSP, REG_RSP );
-    ib( offset );
-  }
-  if( imm32 != 1 && !r2 )
-  {
-    if( large )
-      id( imm32 );
-    else
-      ib( imm32 );
-  }
+  low_add_mem_imm( 0, reg, offset, imm32 );
 }
 
-
-static void sub_mem32_imm( enum amd64_reg reg, int offset, int imm32 )
+static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
 {
-  add_mem32_imm( reg, offset, -imm32 );
+  low_add_mem_imm( 1, reg, offset, imm32 );
 }
 
 static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
@@ -537,24 +429,7 @@ static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
   else
     Pike_fatal("Not sensible");
 
-  if( !offset && (reg&7) != REG_RSP )
-  {
-    modrm( 0, r2, reg );
-  }
-  else if( offset < -128  || offset > 127 )
-  {
-    modrm( 2, r2, reg );
-    if( (reg&7) == REG_RSP )
-      sib(0, REG_RSP, REG_RSP );
-    id( offset );
-  }
-  else
-  {
-    modrm( 1, r2, reg );
-    if( (reg&7) == REG_RSP )
-      sib(0, REG_RSP, REG_RSP );
-    ib( offset );
-  }
+  offset_modrm_sib( offset, r2, reg );
   if( imm32 != 1 && !r2 )
   {
     ib( imm32 );
@@ -563,10 +438,11 @@ static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
 
 static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
-#if 0
-  return add_reg_imm( reg, -imm32 );
-#else
   if( !imm32 ) return;
+
+  if( imm32 < 0 )
+    /* This makes the disassembly easier to read. */
+    return add_reg_imm( reg, -imm32 );
 
   rex( 1, 0, 0, reg );
 
@@ -590,7 +466,6 @@ static void sub_reg_imm( enum amd64_reg reg, int imm32 )
     modrm( 3, 5, reg );
     ib( imm32 );
   }
-#endif
 }
 
 static void test_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
@@ -716,22 +591,7 @@ static void add_reg_mem( enum amd64_reg dst, enum amd64_reg src, long off )
 {
   rex(1,dst,0,src);
   opcode( 0x3 );
-  if( off < 0x7f && off > -0x80 )
-  {
-    modrm( 1, dst, src );
-    if ((src & 0x7) == 0x4) {
-      sib(0, 4, src);
-    }
-    ib( off );
-  }
-  else
-  {
-    modrm( 2, dst, src );
-    if ((src & 0x7) == 0x4) {
-      sib(0, 4, src);
-    }
-    id( off );
-  }
+  offset_modrm_sib( off, dst, src );
 }
 
 
@@ -740,22 +600,7 @@ static void sub_reg_mem( enum amd64_reg dst, enum amd64_reg src, long off )
 {
   rex(1,dst,0,src);
   opcode( 0x2b );
-  if( off < 0x7f && off > -0x80 )
-  {
-    modrm( 1, dst, src );
-    if ((src & 0x7) == 0x4) {
-      sib(0, 4, src);
-    }
-    ib( off );
-  }
-  else
-  {
-    modrm( 2, dst, src );
-    if ((src & 0x7) == 0x4) {
-      sib(0, 4, src);
-    }
-    id( off );
-  }
+  offset_modrm_sib( off, dst, src );
 }
 
 
@@ -780,16 +625,7 @@ static void add_reg_imm_reg( enum amd64_reg src, long imm32, enum amd64_reg dst 
     }
     rex(1,dst,0,src);
     opcode( 0x8d ); /* LEA r64,m */
-    if( imm32 <= 0x7f && imm32 >= -0x80 )
-    {
-      modrm(1,dst,src);
-      ib( imm32 );
-    }
-    else
-    {
-      modrm(2,dst,src);
-      id( imm32 );
-    }
+    offset_modrm_sib( imm32, dst, src );
   }
 }
 
@@ -820,22 +656,7 @@ static void add_imm_mem( int imm32, enum amd64_reg reg, int offset )
     opcode( 0x81 ); /* ADD imm32,r/m32 */
     large = 1;
   }
-
-  /* OFFSET */
-  if( offset < -128  || offset > 127 )
-  {
-    modrm( 2, r2, reg );
-    id( offset );
-  }
-  else if( offset )
-  {
-    modrm( 1, r2, reg );
-    ib( offset );
-  }
-  else
-  {
-    modrm( 0, r2, reg );
-  }
+  offset_modrm_sib( offset, r2, reg );
 
   /* VALUE */
   if( imm32 != 1 && !r2 )
@@ -1105,7 +926,34 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
   {
     /* We need to see if refs got to 0. */
     jnz( &label_A );
-    /* else, call really_free_svalue */
+    /* if so, call really_free_svalue */
+    if( src != ARG1_REG )
+      mov_reg_reg( src, ARG1_REG );
+    amd64_call_c_function(really_free_svalue);
+  }
+  LABEL_A;
+}
+
+/* Type already in RAX */
+static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
+                                   int guaranteed_ref )
+{
+  LABELS();
+  /* if type > MAX_REF_TYPE+1 */
+  if( src == REG_RAX )
+    Pike_fatal("Clobbering RAX for free-svalue\n");
+  cmp_reg_imm(type,MAX_REF_TYPE);
+  jg( &label_A );
+
+  /* Load pointer to refs -> RAX */
+  mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
+   /* if( !--*RAX ) */
+  add_mem32_imm( REG_RAX, OFFSETOF(pike_string,refs),  -1);
+  if( !guaranteed_ref )
+  {
+    /* We need to see if refs got to 0. */
+    jnz( &label_A );
+    /* if so, call really_free_svalue */
     if( src != ARG1_REG )
       mov_reg_reg( src, ARG1_REG );
     amd64_call_c_function(really_free_svalue);
@@ -1651,6 +1499,41 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
   switch( op )
   {
+    case F_QUICK_BRANCH_WHEN_ZERO:
+    case F_QUICK_BRANCH_WHEN_NON_ZERO:
+      START_JUMP();
+      amd64_load_sp_reg();
+      amd64_add_sp( -1 );
+      mov_mem_reg( sp_reg, 8, REG_RAX );
+      test_reg(REG_RAX);
+      if( op == F_QUICK_BRANCH_WHEN_ZERO )
+        return jz_imm_rel32(0);
+      return jnz_imm_rel32(0);
+
+    case F_BRANCH_WHEN_ZERO:
+    case F_BRANCH_WHEN_NON_ZERO:
+      START_JUMP();
+      amd64_load_sp_reg();
+      mov_mem16_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
+      cmp_reg_imm( REG_RAX, PIKE_T_OBJECT );
+      je( &label_A );
+
+      amd64_add_sp( -1 );
+      mov_mem_reg( sp_reg, 8, REG_RBX );
+      amd64_free_svalue_type( sp_reg, REG_RAX, 0 );
+      test_reg( REG_RBX );
+      jmp( &label_B );
+
+      LABEL_A; /* It is an object. Use the C version. */
+      amd64_call_c_opcode(instrs[F_BRANCH_WHEN_ZERO-F_OFFSET].address,
+                          instrs[F_BRANCH_WHEN_ZERO-F_OFFSET].flags );
+      cmp_reg_imm( REG_RAX, -1 );
+
+      LABEL_B; /* Branch or not? */
+      if( op == F_BRANCH_WHEN_ZERO )
+        return jz_imm_rel32(0);
+      return jnz_imm_rel32(0);
+
     case F_LOOP:
       /* counter in pike_sp-1 */
       /* decrement until 0. */

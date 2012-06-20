@@ -1178,11 +1178,29 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   });
 });
 
-      
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_ZERO, "(Q) branch if zero", I_UPDATE_SP, {
+    if(Pike_sp[-1].u.integer)
+    {
+      DONT_BRANCH();
+    }else{
+      DO_BRANCH();
+    }
+    pop_stack();
+  });
+
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_NON_ZERO, "(Q) branch if not zero", I_UPDATE_SP, {
+  if(Pike_sp[-1].u.integer)
+  {
+    DO_BRANCH();
+  }else{
+    DONT_BRANCH();
+  }
+  pop_stack();
+});
+
 OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
