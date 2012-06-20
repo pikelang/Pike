@@ -129,12 +129,12 @@
 
 #define DOJUMP() do { \
     PIKE_OPCODE_T *addr;						\
-    INT32 tmp; \
+    INT32 tmp;                                                          \
     JUMP_SET_TO_PC_AT_NEXT (addr);					\
-    tmp = GET_JUMP(); \
-    SET_PROG_COUNTER(addr + tmp); \
-    FETCH; \
-    if(tmp < 0) \
+    tmp = GET_JUMP();                                                   \
+    SET_PROG_COUNTER(addr + tmp);                                       \
+    FETCH;                                                              \
+    if(tmp < 0)                                                         \
       FAST_CHECK_THREADS_ON_BRANCH();					\
   } while(0)
 
@@ -508,6 +508,46 @@ OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
 OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
   free_svalue(Pike_fp->locals + arg1);
   SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+});
+
+OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  struct svalue *src = Pike_fp->locals+arg2;
+  if( dst->type == PIKE_T_INT
+      && src->type == PIKE_T_INT
+      DO_IF_BIGNUM(
+        &&(!INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer))))
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += src->u.integer;
+  }
+  else
+  {
+    push_svalue( dst );
+    push_svalue( src );
+    f_add(2);
+    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
+    pop_stack();
+  }
+});
+
+OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( dst->type == PIKE_T_INT
+      DO_IF_BIGNUM(
+        &&(!INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2))))
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += arg2;
+  }
+  else
+  {
+    push_svalue( dst );
+    push_int( arg2 );
+    f_add(2);
+    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
+    pop_stack();
+  }
 });
 
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
@@ -1021,6 +1061,11 @@ OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", I_UPDATE_SP, {
   Pike_sp--;
 });
 
+OPCODE2(F_ASSIGN_LOCAL_NUMBER_AND_POP, "assign local number and pop", 0, {
+  free_svalue(Pike_fp->locals + arg1);
+  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, 0, integer, arg2);
+});
+
 OPCODE1(F_ASSIGN_GLOBAL, "assign global", 0, {
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,
@@ -1032,6 +1077,14 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_sp-1);
   pop_stack();
+});
+
+OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop", 0, {
+  struct svalue tmp;
+  SET_SVAL(tmp,PIKE_T_INT,0,integer,arg2);
+  object_low_set_index(Pike_fp->current_object,
+		       arg1 + Pike_fp->context->identifier_level,
+		       &tmp);
 });
 
 
@@ -1125,11 +1178,29 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   });
 });
 
-      
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_ZERO, "(Q) branch if zero", I_UPDATE_SP, {
+    if(Pike_sp[-1].u.integer)
+    {
+      DONT_BRANCH();
+    }else{
+      DO_BRANCH();
+    }
+    pop_stack();
+  });
+
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_NON_ZERO, "(Q) branch if not zero", I_UPDATE_SP, {
+  if(Pike_sp[-1].u.integer)
+  {
+    DO_BRANCH();
+  }else{
+    DONT_BRANCH();
+  }
+  pop_stack();
+});
+
 OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1589,6 +1660,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
   if(Pike_fp->expendible <= Pike_fp->locals + arg1)
   {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
+    DO_IF_DEBUG(Pike_fp->num_locals = arg1);
   }else{
     push_svalue(Pike_fp->locals + arg1);
   }

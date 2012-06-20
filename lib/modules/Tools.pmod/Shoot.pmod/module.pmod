@@ -76,6 +76,8 @@ class ExecTest(string id,Test test)
       string status;
       float tg=0.0;
       int testntot=0;
+      int loops = 1;
+      int nloops = 0;
 
       if (!silent) 
 	 write(test->name+"..........................."[sizeof(test->name)..]);
@@ -83,19 +85,20 @@ class ExecTest(string id,Test test)
       for (;;)
       {
 	 nruns++;
+	 nloops += loops;
 	 Stdio.File pipe=Stdio.File();
 #if 0
 	 werror("%O %s\n",
 	       runpike+
-	       ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }),
+	       ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }),
 		(runpike+
-		 ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }))*" ");
+		 ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }))*" ");
 #endif
 		
 	 object p=
 	    Process.create_process( 
 	       runpike+
-	       ({ "-e","Tools.Shoot._shoot(\""+id+"\")" }),
+	       ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }),
 	       (["stdout":pipe->pipe(Stdio.PROP_IPC)]) );
 	 int err = errno();
 	 status=pipe->read();
@@ -123,10 +126,11 @@ class ExecTest(string id,Test test)
 	 truns=time(t0)-tz;
 	 if (truns >= maximum_seconds || 
 	     nruns>=maximum_runs) break;
+	 if (id != "Overhead") loops <<= 1;
       }
 
-      useconds=tg/nruns;
-      tseconds=truns/nruns;
+      useconds=tg/nloops;
+      tseconds=truns/nloops;
 
       if (silent) return 0;
 
@@ -137,7 +141,7 @@ class ExecTest(string id,Test test)
 	    "(" + nruns + ")",
 	    (tg == 0.0)?"no time?":
 	    test->present_n?test->present_n(testntot,nruns,truns,tg,memusage):
-	    sprintf("%d%s/s", (int)((testntot || nruns)/tg),
+	    sprintf("%d%s/s", (int)((testntot || nloops)/tg),
 		    testntot?"":" runs"));
       return 0;
    }
@@ -145,11 +149,24 @@ class ExecTest(string id,Test test)
 
 //! This function is called in the spawned pike,
 //! to perform the test but also to write some important 
-//! data to stdout. @[id] is the current test.
-void _shoot(string id)
+//! data to stdout.
+//!
+//! @param id
+//!   @[id] is the current test.
+//!
+//! @param loops
+//!   The number of times to run the test.
+void _shoot(string id, int|void loops)
 {
-   object test = Tools.Shoot[id]();
-   float tg=gauge { test->perform(); };
+   object test;
+   int n = UNDEFINED;
+   float tg = gauge {
+       int i = loops || 1;
+       while (i--) {
+	 (test=Tools.Shoot[id]())->perform();
+	 if (test->present_n) n += test->n;
+       }
+     };
 
    if (Stdio.is_dir("/proc/"+getpid()+"/.")) {
      string s;
@@ -183,7 +200,7 @@ void _shoot(string id)
    write("%.6f\n",tg);
 
    if (test->present_n)
-     write("%d\n",test->n);
+     write("%d\n", n);
    else
      write("no\n");
 }

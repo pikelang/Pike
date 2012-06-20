@@ -15,7 +15,7 @@ void perform()
 	 for (c=0; c<ITER; c++)
 	    for (d=0; d<ITER; d++)
 	       for (e=0; e<ITER; e++)
-               for (f=0; f<ITER; f++)
+              for (int f; f<1; f++)
                    n++;
 }
 
