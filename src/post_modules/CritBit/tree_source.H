@@ -54,7 +54,7 @@ static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
 	pop_stack();
     } else {
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&cmod_OBJ2_TREE(o)->allocator, 1);
+	ba_lreserve(&cmod_OBJ2_TREE(o)->allocator, 2);
 #endif
 	cb_insert(&cmod_OBJ2_TREE(o)->tree, node->key, &node->value);
     }
@@ -141,7 +141,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		NEW_MAPPING_LOOP(md) {
 		    cb_key key = CB_KEY_FROM_SVALUE(&k->ind);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-		    ba_lreserve(&THIS->allocator, 1);
+		    ba_lreserve(&THIS->allocator, 2);
 #endif
 		    cb_insert(&THIS->tree, key, &k->val);
 		}
@@ -155,7 +155,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		for (i = 0; i < o->u.array->size; i+=2) {
 		    cb_key key = CB_KEY_FROM_SVALUE(ITEM(o->u.array)+i);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-		    ba_lreserve(&THIS->allocator, 1);
+		    ba_lreserve(&THIS->allocator, 2);
 #endif
 		    cb_insert(&THIS->tree, key, ITEM(o->u.array)+i+1);
 		}
@@ -230,7 +230,7 @@ DOCEND()
     PIKEFUN mixed `[]=(mixed key, mixed val) {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&THIS->allocator, 1);
+	ba_lreserve(&THIS->allocator, 2);
 #endif
 	cb_insert(&THIS->tree, k, val);
 #ifdef DEBUG_CHECK
@@ -250,7 +250,7 @@ DOCEND()
 	    Pike_error("chars, bits are too big for key.\n");
 	}
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&THIS->allocator, 1);
+	ba_lreserve(&THIS->allocator, 2);
 #endif
 	cb_insert(&THIS->tree, k, val);
 	stack_pop_keep_top();
