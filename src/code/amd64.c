@@ -8,18 +8,12 @@
 #include "builtin_functions.h"
 
 
-/* This is defined on windows */
-#ifdef REG_NONE
-#undef REG_NONE
-#endif
-
-
 /* Register encodings */
 enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 		REG_RSP = 4, REG_RBP = 5, REG_RSI = 6, REG_RDI = 7,
 		REG_R8 = 8, REG_R9 = 9, REG_R10 = 10, REG_R11 = 11,
 		REG_R12 = 12, REG_R13 = 13, REG_R14 = 14, REG_R15 = 15,
-		REG_NONE = 4};
+		REG_INVALID = -1};
 
 /* We reserve register r12 and above (as well as RSP, RBP and RBX). */
 #define REG_BITMASK	((1 << REG_MAX) - 1)
@@ -103,6 +97,8 @@ static void id( int x )
 
 static void modrm( int mod, int r, int m )
 {
+  if (r < 0) Pike_fatal("Using an invalid register(1)!\n");
+  if (m < 0) Pike_fatal("Using an invalid register(2)!\n");
   ib( ((mod<<6) | ((r&0x7)<<3) | (m&0x7)) );
 }
 
@@ -158,12 +154,14 @@ static void ret()
 
 static void push(enum amd64_reg reg )
 {
+  if (reg < 0) Pike_fatal("Pushing invalid register.\n");
   if (reg & 0x08) add_to_program(0x41);
   add_to_program(0x50 + (reg & 0x07));
 }
 
 static void pop(enum amd64_reg reg )
 {
+  if (reg < 0) Pike_fatal("Popping invalid register.\n");
   if (reg & 0x08) add_to_program(0x41);
   add_to_program(0x58 + (reg & 0x07));
 }
@@ -752,7 +750,7 @@ void amd64_ins_entry(void)
   amd64_flush_code_generator_state();
 }
 
-static enum amd64_reg sp_reg = 0, fp_reg = 0, mark_sp_reg = 0;
+static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
 static int dirty_regs = 0, ret_for_func = 0;
 ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
 static int branch_check_threads_update_etc = -1;
@@ -760,9 +758,9 @@ static int branch_check_threads_update_etc = -1;
 
 void amd64_flush_code_generator_state(void)
 {
-  sp_reg = 0;
-  fp_reg = 0;
-  mark_sp_reg = 0;
+  sp_reg = -1;
+  fp_reg = -1;
+  mark_sp_reg = -1;
   dirty_regs = 0;
   ret_for_func = 0;
   amd64_prev_stored_pc = -1;
@@ -790,7 +788,7 @@ static void flush_dirty_regs(void)
  */
 void amd64_load_fp_reg(void)
 {
-  if (!fp_reg) {
+  if (fp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
                 OFFSETOF(Pike_interpreter_struct, frame_pointer),
                 PIKE_FP_REG);
@@ -800,7 +798,7 @@ void amd64_load_fp_reg(void)
 
 void amd64_load_sp_reg(void)
 {
-  if (!sp_reg) {
+  if (sp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
                 OFFSETOF(Pike_interpreter_struct, stack_pointer),
                 PIKE_SP_REG);
@@ -810,7 +808,7 @@ void amd64_load_sp_reg(void)
 
 void amd64_load_mark_sp_reg(void)
 {
-  if (!mark_sp_reg) {
+  if (mark_sp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
                 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer),
                 PIKE_MARK_SP_REG);
@@ -1114,9 +1112,9 @@ static void sync_registers(int flags)
   maybe_update_pc();
   flush_dirty_regs();
 
-  if (flags & I_UPDATE_SP) sp_reg = 0;
-  if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
-  if (flags & I_UPDATE_FP) fp_reg = 0;
+  if (flags & I_UPDATE_SP) sp_reg = REG_INVALID;
+  if (flags & I_UPDATE_M_SP) mark_sp_reg = REG_INVALID;
+  if (flags & I_UPDATE_FP) fp_reg = REG_INVALID;
 }
 
 static void amd64_call_c_opcode(void *addr, int flags)
