@@ -2200,7 +2200,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       amd64_push_int(0, c);
       LABEL_A;
       cmp_reg_reg(sp_reg, ARG1_REG);
-      jge(&label_B);
+      jg(&label_B);
     }
     return;
 
