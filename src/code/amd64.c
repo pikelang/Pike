@@ -538,6 +538,31 @@ static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
   }
 }
 
+static void cmp_reg32_imm( enum amd64_reg reg, int imm32 )
+{
+  rex(0, 0, 0, reg);
+  if( imm32 > 0x7f || imm32 < -0x80 )
+  {
+    if( reg == REG_RAX )
+    {
+      opcode( 0x3d );
+      id( imm32 );
+    }
+    else
+    {
+      opcode( 0x81 );
+      modrm(3,7,reg);
+      id( imm32 );
+    }
+  }
+  else
+  {
+    opcode( 0x83 );
+    modrm( 3,7,reg);
+    ib( imm32 );
+  }
+}
+
 static void cmp_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
 {
   rex(1, reg1, 0, reg2);
@@ -890,7 +915,7 @@ static void amd64_push_svaluep(int reg)
   mov_reg_mem(REG_RAX, sp_reg, OFFSETOF(svalue, type));
   and_reg_imm(REG_RAX, 0x1f);
   mov_reg_mem(REG_RCX, sp_reg, OFFSETOF(svalue, u.refs));
-  cmp_reg_imm(REG_RAX, MAX_REF_TYPE);
+  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
   jg(&label_A);
   add_imm_mem( 1, REG_RCX,OFFSETOF(pike_string, refs));
  LABEL_A;
@@ -948,7 +973,7 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
   mov_sval_type( src, REG_RAX );
 
   /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg_imm( REG_RAX,MAX_REF_TYPE);
+  cmp_reg32_imm( REG_RAX,MAX_REF_TYPE);
   jg( &label_A );
 
   /* Load pointer to refs -> RAX */
@@ -976,7 +1001,7 @@ static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
   if( src == REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
 
-  cmp_reg_imm(type,MAX_REF_TYPE);
+  cmp_reg32_imm(type,MAX_REF_TYPE);
   jg( &label_A );
 
   /* Load pointer to refs -> RAX */
@@ -1005,7 +1030,7 @@ void amd64_ref_svalue( enum amd64_reg src, int already_have_type )
       and_reg_imm( REG_RAX, 0x1f );
 
   /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg_imm(REG_RAX, MAX_REF_TYPE );
+  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE );
   jg( &label_A );
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1285,13 +1310,13 @@ void ins_f_byte(unsigned int b)
     add_reg_imm_reg(sp_reg, -sizeof(struct svalue), REG_R10 );
     amd64_push_svaluep( REG_R10 );
     return;
-
+#if 0
   case F_EXIT_CATCH:
     ins_f_byte( F_ESCAPE_CATCH );
     amd64_load_sp_reg();
     amd64_push_int( 0, 1 );
     return;
-
+#endif
   case F_ADD_INTS:
     {
       amd64_load_sp_reg();
@@ -1302,7 +1327,7 @@ void ins_f_byte(unsigned int b)
      /* and_reg_imm( REG_RBX, 0x1f );*/
       add_reg_reg( REG_RAX, REG_RBX );
       /* and_reg_imm( REG_RAX, 0x1f1f ); */
-      cmp_reg_imm( REG_RAX, (PIKE_T_INT<<8)|PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX, (PIKE_T_INT<<8)|PIKE_T_INT );
       jne( &label_A );
       /* So. Both are actually integers. */
       mov_mem_reg( sp_reg,
@@ -1375,7 +1400,7 @@ void ins_f_byte(unsigned int b)
       /* Rax now has type + subtype. */
       mov_reg_reg( REG_RAX, REG_RBX );
       and_reg_imm( REG_RAX, 0x1f );
-      cmp_reg_imm( REG_RAX, PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX, PIKE_T_INT );
       jne( &label_A );
       /* It is an integer. */
       shr_reg_imm( REG_RBX, 16 );
@@ -1496,7 +1521,7 @@ void ins_f_byte(unsigned int b)
     mov_mem32_reg(sp_reg, OFFSETOF(svalue, type) - sizeof(struct svalue),
 		  REG_RAX);
     /* NB: We only care about subtype 1! */
-    cmp_reg_imm(REG_RAX, (1<<16)|PIKE_T_STRING);
+    cmp_reg32_imm(REG_RAX, (1<<16)|PIKE_T_STRING);
     jne(&label_A);
     and_reg_imm(REG_RAX, 0x1f);
     mov_reg_mem32(REG_RAX,
@@ -1539,6 +1564,12 @@ void ins_f_byte(unsigned int b)
   }
 }
 
+static void ALIGN()
+{
+  while( PIKE_PC & 7 )
+    ib( 0x90 );
+}
+
 int amd64_ins_f_jump(unsigned int op, int backward_jump)
 {
   int flags;
@@ -1574,39 +1605,36 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       if( op == F_QUICK_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
+
     case F_BRANCH_WHEN_ZERO:
     case F_BRANCH_WHEN_NON_ZERO:
       START_JUMP();
       amd64_load_sp_reg();
-      mov_mem8_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
-      cmp_reg_imm( REG_RAX, PIKE_T_OBJECT );
-      je( &label_A );
-      amd64_add_sp( -1 );
-      cmp_reg_imm( REG_RAX, PIKE_T_INT );
-      /* The add_sp above is not likely to have the zero-flag set
-       * after operation (since pike-sp is seldom 0).
-       */
-      jne( &label_C );
+      mov_mem8_reg( sp_reg, -sizeof(struct svalue),  REG_RCX );
+      cmp_reg32_imm( REG_RCX, PIKE_T_INT );
+      je( &label_C );
+     LABEL_A;
+      /* not an integer. Use svalue_is_true. */
+      add_reg_imm_reg(sp_reg, -sizeof(struct svalue), ARG1_REG );
+      amd64_call_c_function(svalue_is_true);
+      mov_reg_reg( REG_RAX, REG_RBX );
+      amd64_add_sp( -1 ); /* Pop the stack. */
+      amd64_free_svalue( sp_reg, 0 );
+      jmp( &label_B );
+
+     LABEL_C;
       /* integer */
-      mov_mem_reg( sp_reg, OFFSETOF(svalue,u.integer), REG_RBX );
+      mov_mem_reg( sp_reg,
+                   -sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
+                   REG_RBX );
+      amd64_add_sp(-1);
+
+     LABEL_B; /* Branch or not? */
       test_reg( REG_RBX );
-      jmp( &label_B );
-
-      LABEL_A; /* It is an object. Use the C version. */
-      amd64_call_c_opcode(instrs[F_BRANCH_WHEN_NON_ZERO-F_OFFSET].address,
-                          instrs[F_BRANCH_WHEN_NON_ZERO-F_OFFSET].flags );
-      amd64_load_sp_reg();
-      test_reg( REG_RAX );
-      jmp( &label_B );
-      LABEL_C;
-      /* not int or object. */
-      amd64_free_svalue_type( sp_reg, REG_RAX, 0 );
-      test_reg( sp_reg ); /* not zero. :) */
-
-      LABEL_B; /* Branch or not? */
       if( op == F_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
+
     case F_LOOP:
       /* counter in pike_sp-1 */
       /* decrement until 0. */
@@ -1616,7 +1644,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       amd64_load_sp_reg();
       mov_mem32_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
       /* Is it a normal integer? subtype -> 0, type -> PIKE_T_INT */
-      cmp_reg_imm( REG_RAX, PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX, PIKE_T_INT );
       jne( &label_A );
 
       /* if it is, is it 0? */
@@ -1656,7 +1684,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       mov_mem16_reg( sp_reg, -sizeof(struct svalue)*2,REG_RBX );
       cmp_reg_reg( REG_RAX, REG_RBX );
       jnz( &label_A ); /* Types differ */
-      cmp_reg_imm( REG_RAX, PIKE_T_OBJECT );
+      cmp_reg32_imm( REG_RAX, PIKE_T_OBJECT );
       je( &label_A ); /* Do not even bother with objects.. */
 
       mov_mem_reg( sp_reg, -sizeof(struct svalue)+8,  REG_RBX );
@@ -1665,7 +1693,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
       /* Optimization: The types are equal, pop_stack can be greatly
        * simplified if they are < max_reg_type */
-      cmp_reg_imm( REG_RAX,MAX_REF_TYPE+1);
+      cmp_reg32_imm( REG_RAX,MAX_REF_TYPE+1);
       jl( &label_B );
       /* cheap pop. We know that both are >= max_ref_type */
       amd64_add_sp( -2 );
@@ -1766,7 +1794,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       LABELS();
       amd64_load_sp_reg();
       mov_mem16_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
-      cmp_reg_imm( REG_RAX,PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX,PIKE_T_INT );
       jne( &label_A );
       mov_mem_reg(sp_reg,
                   -sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
@@ -1906,7 +1934,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       add_reg_imm( ARG1_REG, b*sizeof(struct svalue));
       mov_sval_type( ARG1_REG, REG_RAX );
       /* type in RAX, svalue in ARG1 */
-      cmp_reg_imm( REG_RAX, PIKE_T_ARRAY );
+      cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY );
       jne( &label_A );
       /* It's an array */
       /* move arg to point to the array */
@@ -1915,7 +1943,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem32_reg( ARG1_REG,OFFSETOF(array, size), REG_RAX );
       jmp( &label_C );
       LABEL_A;
-      cmp_reg_imm( REG_RAX, PIKE_T_STRING );
+      cmp_reg32_imm( REG_RAX, PIKE_T_STRING );
       jne( &label_B );
       /* It's a string */
       /* move arg to point to the string */
@@ -1941,9 +1969,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),
 			      ARG2_REG);
     mov_reg_reg(sp_reg, ARG1_REG);
-    mov_mem32_reg(ARG3_REG, OFFSETOF(inherit, identifier_level),
+    mov_mem16_reg(ARG3_REG, OFFSETOF(inherit, identifier_level),
                   ARG3_REG);
-    and_reg_imm(ARG3_REG, 0xffff);
     add_reg_imm(ARG3_REG, b);
     flush_dirty_regs();	/* In case an error is thrown. */
     call_imm(low_object_index_no_free);
@@ -1979,7 +2006,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
       add_reg_imm(REG_RCX, b*sizeof(struct svalue));
       mov_sval_type(REG_RCX, REG_RAX);
-      cmp_reg_imm(REG_RAX, PIKE_T_INT);
+      cmp_reg32_imm(REG_RAX, PIKE_T_INT);
       jne(&label_A);
       /* Integer - Zap subtype and try just incrementing it. */
       mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, type));
@@ -2013,7 +2040,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
       add_reg_imm(REG_RCX, b*sizeof(struct svalue));
       mov_sval_type(REG_RCX, REG_RAX);
-      cmp_reg_imm(REG_RAX, PIKE_T_INT);
+      cmp_reg32_imm(REG_RAX, PIKE_T_INT);
       jne(&label_A);
       /* Integer - Zap subtype and try just decrementing it. */
       mov_reg_mem32(REG_RAX, REG_RCX, OFFSETOF(svalue, type));
@@ -2118,28 +2145,35 @@ int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
     case F_BRANCH_IF_LOCAL:
       ins_debug_instr_prologue(op-F_OFFSET, a, 0);
       amd64_load_fp_reg();
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), REG_RAX);
-      add_reg_imm( REG_RAX, a*sizeof(struct svalue));
-      /* if( type == PIKE_T_OBJECT )
-           call c version...
-         else if( integer )
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      add_reg_imm( ARG1_REG, a*sizeof(struct svalue));
+      /* if( type == PIKE_T_INT )
            u.integer -> RAX
+         else if( type == PIKE_T_OBJECT || type == PIKE_T_FUNCTION )
+           call svalue_is_true(&local)
          else
            1 -> RAX
-      */
-      mov_sval_type( REG_RAX, REG_RCX );
-      cmp_reg_imm( REG_RCX, PIKE_T_OBJECT );
-      jne( &label_A );
-      cmp_reg_imm( REG_RCX, PIKE_T_INT );
-      jne( &label_B ); /* RAX is already true (pointer to local) */
 
-      update_arg1(a);
-      /* Note: Always call IF_LOCAL, the negation is done below. */
-      amd64_call_c_opcode( instrs[F_BRANCH_IF_LOCAL-F_OFFSET].address,
-                           instrs[F_BRANCH_IF_LOCAL-F_OFFSET].flags );
+        The tests are ordered assuming integers are most commonly
+        checked. That is not nessasarily true.
+      */
+      mov_sval_type( ARG1_REG, REG_RCX );
+      cmp_reg32_imm( REG_RCX, PIKE_T_INT );      je( &label_C );
+#if 0
+      cmp_reg32_imm( REG_RCX, PIKE_T_OBJECT );   je( &label_A );
+      cmp_reg32_imm( REG_RCX, PIKE_T_FUNCTION ); je( &label_A );
+      /* Not object, int or function. Always true. */
+
+      mov_imm_reg( 1, REG_RAX );
       jmp( &label_B );
-    LABEL_A;
-      mov_mem_reg( REG_RAX, OFFSETOF(svalue, u.integer ), REG_RAX );
+#endif
+      amd64_call_c_function(svalue_is_true);
+      jmp( &label_B );
+
+    LABEL_C;
+     mov_mem_reg( ARG1_REG, OFFSETOF(svalue, u.integer ), REG_RAX );
+    /* integer. */
+
     LABEL_B;
       test_reg( REG_RAX );
       if( op == F_BRANCH_IF_LOCAL )
@@ -2179,7 +2213,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
          arg2 = int
       */
       mov_sval_type( ARG1_REG, REG_RAX );
-      cmp_reg_imm( REG_RAX, PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX, PIKE_T_INT );
       jne(&label_A); /* Fallback */
       mov_imm_mem( PIKE_T_INT, ARG1_REG, OFFSETOF(svalue,type));
       add_imm_mem( c, ARG1_REG,OFFSETOF(svalue,u.integer));
@@ -2221,7 +2255,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       mov_sval_type( ARG2_REG, REG_RBX );
       shl_reg_imm( REG_RAX, 8 );
       add_reg_reg( REG_RAX, REG_RBX );
-      cmp_reg_imm( REG_RAX, (PIKE_T_INT<<8) | PIKE_T_INT );
+      cmp_reg32_imm( REG_RAX, (PIKE_T_INT<<8) | PIKE_T_INT );
       jne(&label_A); /* Fallback */
       mov_mem_reg( ARG2_REG, OFFSETOF(svalue,u.integer), REG_RAX );
       add_reg_mem( REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));
