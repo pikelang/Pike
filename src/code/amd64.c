@@ -1593,10 +1593,10 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       jmp( &label_B );
 
       LABEL_A; /* It is an object. Use the C version. */
-      amd64_call_c_opcode(instrs[F_BRANCH_WHEN_ZERO-F_OFFSET].address,
-                          instrs[F_BRANCH_WHEN_ZERO-F_OFFSET].flags );
+      amd64_call_c_opcode(instrs[F_BRANCH_WHEN_NON_ZERO-F_OFFSET].address,
+                          instrs[F_BRANCH_WHEN_NON_ZERO-F_OFFSET].flags );
       amd64_load_sp_reg();
-      cmp_reg_imm( REG_RAX, -1 );
+      test_reg( REG_RAX );
       jmp( &label_B );
       LABEL_C;
       /* not int or object. */
