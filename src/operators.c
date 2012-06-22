@@ -1734,7 +1734,8 @@ PMOD_EXPORT void f_add(INT32 args)
       while (args > 2) {
 	/* Pop the smallest element from the heap. */
 	FLOAT_ARG_TYPE top = Pike_sp[-args].u.float_number;
-	Pike_sp[-args] = *(--Pike_sp);
+	Pike_sp[-args] = Pike_sp[-1];
+        Pike_sp--;
 	args--;
 	float_heap_sift_down(Pike_sp-args, 0, args);
 
