@@ -550,6 +550,25 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   }
 });
 
+OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( dst->type == PIKE_T_INT
+      DO_IF_BIGNUM(
+        &&(!INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2))))
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += arg2;
+    push_int( dst->u.integer );
+  }
+  else
+  {
+    push_svalue( dst );
+    push_int( arg2 );
+    f_add(2);
+    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
+  }
+});
+
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
   if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
