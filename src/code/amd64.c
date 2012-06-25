@@ -65,7 +65,7 @@ static void label( struct label *l )
   {
     int dist = PIKE_PC - (l->offset[i] + 1);
     if( dist > 0x7f || dist < -0x80 )
-      Pike_fatal("Branch too far\n");
+      Pike_fatal("Branch %d too far\n", dist);
     Pike_compiler->new_program->program[l->offset[i]] = dist;
   }
   l->n_label_uses = 0;
@@ -849,16 +849,17 @@ static int jz_imm_rel32( int rel )
 #define      jne(X) jnz(X)
 #define      je(X)  jz(X)
 static void jmp( struct label *l ) { return jump_rel8( l, 0xeb ); }
-static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
-static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
-static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
-static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
 static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
 static void jno( struct label *l ) { return jump_rel8( l, 0x71 ); }
 static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
 static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
 static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
 static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
+static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
+static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
+static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
+static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
+static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 
 
 #define LABELS()  struct label label_A, label_B, label_C, label_D, label_E;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;label_D.addr = -1;label_D.n_label_uses = 0;label_E.addr=-1;label_E.n_label_uses=0;
@@ -1636,6 +1637,60 @@ void ins_f_byte(unsigned int b)
 #endif
     return;
 
+  case F_INDEX:
+    /*
+      pike_sp[-2][pike_sp[-1]]
+    */
+    amd64_load_sp_reg();
+    mov_mem8_reg( sp_reg, -2*sizeof(struct svalue), REG_RAX );
+    mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), REG_RBX );
+    shl_reg_imm( REG_RAX, 8 );
+    add_reg_reg( REG_RAX, REG_RBX );
+    mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, REG_RBX ); /* int */
+    mov_mem_reg( sp_reg, -2*sizeof(struct svalue)+8, REG_RCX ); /* value */
+    cmp_reg32_imm( REG_RAX, (PIKE_T_ARRAY<<8)|PIKE_T_INT );
+    jne( &label_A );
+
+    /* Array and int index. */
+    mov_mem32_reg( REG_RCX, OFFSETOF(array,size), REG_RDX );
+    cmp_reg32_imm( REG_RBX, 0 ); jge( &label_D );
+    /* less than 0, add size */
+    add_reg_reg( REG_RBX, REG_RDX );
+
+   LABEL_D;
+    cmp_reg32_imm( REG_RBX, 0 ); jl( &label_B ); // <0
+    cmp_reg_reg( REG_RBX, REG_RDX); jge( &label_B ); // >size
+
+    /* array, index inside array. push item, swap, pop, done */
+    push( REG_RCX ); /* Save array pointer */
+    mov_mem_reg( REG_RCX, OFFSETOF(array,item), REG_RCX );
+    shl_reg_imm( REG_RBX, 4 );
+    add_reg_reg( REG_RBX, REG_RCX );
+    /* This overwrites the array. */
+    amd64_add_sp( -1 );
+    amd64_push_svaluep_to( REG_RBX, -1 );
+
+    pop( REG_RCX );
+    /* We know it's an array. */
+    add_mem32_imm( REG_RCX, OFFSETOF(array,refs),  -1);
+    jnz( &label_C );
+    mov_reg_reg( REG_RCX, ARG1_REG );
+    amd64_call_c_function(really_free_array);
+    jmp( &label_C );
+
+   LABEL_A;
+#if 0
+    cmp_reg32_imm( REG_RAX, (PIKE_T_STRING<<8)|PIKE_T_INT );
+    jne( &label_B );
+#endif
+   LABEL_B;
+    /* something else. */
+    amd64_call_c_opcode( addr, flags );
+    amd64_load_sp_reg();
+   LABEL_C;
+    /* done */
+    return;
+
   case F_SIZEOF:
     {
       LABELS();
@@ -1662,6 +1717,7 @@ void ins_f_byte(unsigned int b)
       /* It's something else, svalue in RBX. */
       mov_reg_reg( REG_RBX, ARG1_REG );
       amd64_call_c_function( pike_sizeof );
+
      LABEL_C;/* all done, res in RAX */
       /* free value, store result */
       push( REG_RAX );
@@ -2097,6 +2153,129 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_f_byte( F_DUMB_RETURN );
     return;
 
+  case F_NEG_INT_INDEX:
+    {
+      LABELS();
+      amd64_load_sp_reg();
+      mov_mem8_reg( sp_reg, -1*sizeof(struct svalue),  REG_RAX );
+      cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY );
+      jne( &label_A );
+
+      mov_mem_reg( sp_reg,  -1*sizeof(struct svalue)+8, REG_RDX ); /* u.array */
+      /* -> arr[sizeof(arr)-b] */
+      mov_mem32_reg( REG_RDX, OFFSETOF(array,size), REG_RBX );
+      sub_reg_imm( REG_RBX, b );
+      js( &label_A ); /* if signed result, index outside array */
+
+      shl_reg_imm( REG_RBX, 4 );
+      add_reg_mem( REG_RBX, REG_RDX, OFFSETOF(array,item) );
+
+      /* This overwrites the array. */
+      amd64_push_svaluep_to( REG_RBX, -1 );
+
+      /* We know it's an array. */
+      add_mem32_imm( REG_RDX, OFFSETOF(array,refs),  -1);
+      jnz( &label_C );
+      mov_reg_reg( REG_RDX, ARG1_REG );
+      amd64_call_c_function(really_free_array);
+      jmp( &label_C );
+
+     LABEL_A;
+       update_arg1( b );
+       amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+                           instrs[a-F_OFFSET].flags);
+     LABEL_C;
+    }
+    return;
+
+  case F_POS_INT_INDEX:
+    {
+      LABELS();
+      amd64_load_sp_reg();
+      mov_mem8_reg( sp_reg, -1*sizeof(struct svalue),  REG_RAX );
+      cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY );
+      jne( &label_A );
+
+      mov_mem_reg( sp_reg,  -1*sizeof(struct svalue)+8, REG_RDX ); /* u.array */
+      /* -> arr[sizeof(arr)-b] */
+      mov_mem32_reg( REG_RDX, OFFSETOF(array,size), REG_RCX );
+      mov_imm_reg( b, REG_RBX);
+      cmp_reg_reg( REG_RCX, REG_RBX );
+      jg( &label_A ); /* b > RBX, index outside array */
+      shl_reg_imm( REG_RBX, 4 );
+      add_reg_mem( REG_RBX, REG_RDX, OFFSETOF(array,item) );
+
+      /* This overwrites the array. */
+      amd64_push_svaluep_to( REG_RBX, -1 );
+
+      /* We know it's an array. */
+      add_mem32_imm( REG_RDX, OFFSETOF(array,refs),  -1);
+      jnz( &label_C );
+      mov_reg_reg( REG_RDX, ARG1_REG );
+      amd64_call_c_function(really_free_array);
+      jmp( &label_C );
+
+     LABEL_A;
+       update_arg1( b );
+       amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+                           instrs[a-F_OFFSET].flags);
+     LABEL_C;
+    }
+    return;
+
+  case F_LOCAL_INDEX:
+    {
+      LABELS();
+      /*
+        pike_sp[-2][pike_sp[-1]]
+      */
+      amd64_load_sp_reg();
+      amd64_load_fp_reg();
+
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), REG_RDX);
+      add_reg_imm( REG_RDX, b*sizeof(struct svalue));
+      mov_mem8_reg( REG_RDX, 0, REG_RAX );
+      mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), REG_RBX );
+      shl_reg_imm( REG_RAX, 8 );
+      add_reg_reg( REG_RAX, REG_RBX );
+      mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, REG_RBX ); /* int */
+      mov_mem_reg( REG_RDX, 8, REG_RCX );                         /* value */
+      cmp_reg32_imm( REG_RAX, (PIKE_T_ARRAY<<8)|PIKE_T_INT );
+      jne( &label_A );
+
+      /* Array and int index. */
+      mov_mem32_reg( REG_RCX, OFFSETOF(array,size), REG_RDX );
+      cmp_reg32_imm( REG_RBX, 0 ); jge( &label_D );
+      /* less than 0, add size */
+      add_reg_reg( REG_RBX, REG_RDX );
+
+      LABEL_D;
+      cmp_reg32_imm( REG_RBX, 0 ); jl( &label_B ); // <0
+      cmp_reg_reg( REG_RBX, REG_RCX); jge( &label_B ); // >size
+
+      /* array, index inside array. push item, swap, pop, done */
+      mov_mem_reg( REG_RCX, OFFSETOF(array,item), REG_RCX );
+      shl_reg_imm( REG_RBX, 4 );
+      add_reg_reg( REG_RBX, REG_RCX );
+      amd64_push_svaluep_to( REG_RBX, -1 );
+      jmp( &label_C );
+
+      LABEL_A;
+#if 0
+      cmp_reg32_imm( REG_RAX, (PIKE_T_STRING<<8)|PIKE_T_INT );
+      jne( &label_B );
+#endif
+      LABEL_B;
+      /* something else. */
+      update_arg1(b);
+      amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			  instrs[a-F_OFFSET].flags);
+      LABEL_C;
+      /* done */
+    }
+    return;
+
+
   case F_ADD_NEG_INT:
     b = -b;
 
@@ -2149,14 +2328,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_ARROW_STRING:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_push_string(b, 1);
-    return;
-  case F_POS_INT_INDEX:
-    ins_f_byte_with_arg(F_NUMBER, b);
-    ins_f_byte(F_INDEX);
-    return;
-  case F_NEG_INT_INDEX:
-    ins_f_byte_with_arg(F_NEG_NUMBER, b);
-    ins_f_byte(F_INDEX);
     return;
   case F_MARK_AND_CONST0:
     ins_f_byte(F_MARK);
