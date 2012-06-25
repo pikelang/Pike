@@ -13,7 +13,13 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 		REG_RSP = 4, REG_RBP = 5, REG_RSI = 6, REG_RDI = 7,
 		REG_R8 = 8, REG_R9 = 9, REG_R10 = 10, REG_R11 = 11,
 		REG_R12 = 12, REG_R13 = 13, REG_R14 = 14, REG_R15 = 15,
-		REG_INVALID = -1};
+		REG_INVALID = -1,
+
+                REG_XMM0 = 0, REG_XMM1 = 1, REG_XMM2 = 2, REG_XMM3 = 3,
+                REG_XMM4 = 4, REG_XMM5 = 5, REG_XMM6 = 6, REG_XMM7 = 7,
+                REG_XMM8 = 8, REG_XMM9 = 9, REG_XMM10=10, REG_XMM11=11,
+                REG_XMM12=12, REG_XMM13=13, REG_XMM14=14, REG_XMM15=15,
+               };
 
 /* We reserve register r12 and above (as well as RSP, RBP and RBX). */
 #define REG_BITMASK	((1 << REG_MAX) - 1)
@@ -61,12 +67,6 @@ static void label( struct label *l )
     if( dist > 0x7f || dist < -0x80 )
       Pike_fatal("Branch too far\n");
     Pike_compiler->new_program->program[l->offset[i]] = dist;
-    /* fprintf( stderr, "assigning label @%x[%02x >%02x< %02x] -> %d\n", */
-    /*          l->offset[i], */
-    /*          Pike_compiler->new_program->program[l->offset[i]-1], */
-    /*          Pike_compiler->new_program->program[l->offset[i]], */
-    /*          Pike_compiler->new_program->program[l->offset[i]+1], */
-    /*          dist ); */
   }
   l->n_label_uses = 0;
   l->addr = PIKE_PC;
@@ -376,6 +376,28 @@ static void mov_imm_reg( long imm, enum amd64_reg reg )
     modrm( 3,0,reg );
     id( (int)imm  );
   }
+}
+
+static void mov_mem128_reg( enum amd64_reg from_reg, int offset, enum amd64_reg to_reg )
+{
+  if( from_reg > 7 )
+    Pike_fatal("Not supported\n");
+  rex(0,to_reg,0,from_reg);
+  opcode( 0x66 );
+  opcode( 0x0f );
+  opcode( 0x6f ); /* MOVDQA xmm,m128 */
+  offset_modrm_sib( offset, to_reg, from_reg );
+}
+
+static void mov_reg_mem128( enum amd64_reg from_reg, enum amd64_reg to_reg, int offset )
+{
+  if( from_reg > 7 )
+    Pike_fatal("Not supported\n");
+  rex(0,from_reg,0,to_reg);
+  opcode( 0x66 );
+  opcode( 0x0f );
+  opcode( 0x7f ); /* MOVDQA m128,xmm */
+  offset_modrm_sib( offset, from_reg, to_reg );
 }
 
 static void low_mov_reg_mem(enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
@@ -1021,7 +1043,7 @@ static void amd64_mark(int offset)
 static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
 {
   mov_mem8_reg( src, OFFSETOF(svalue,type), dst);
-  and_reg32_imm( dst, 0x1f );
+/*  and_reg32_imm( dst, 0x1f );*/
 }
 
 
@@ -1255,8 +1277,12 @@ static void amd64_call_c_opcode(void *addr, int flags)
 #ifdef PIKE_DEBUG
 static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
-  return;
   int flags = instrs[instr].flags;
+
+/* For now: It is very hard to read the disassembled source when
+   this is inserted */
+  if( !d_flag )
+    return;
 
   maybe_update_pc();
 
@@ -1588,11 +1614,14 @@ void ins_f_byte(unsigned int b)
   case F_SWAP:
     /*
       pike_sp[-1] = pike_sp[-2]
-
-      FIXME: Can be changed to
-      use movlq (128-bit mov, sse2)
     */
     amd64_load_sp_reg();
+    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), REG_RCX );
+    mov_mem128_reg( REG_RCX, 0, REG_XMM0 );
+    mov_mem128_reg( REG_RCX, 16, REG_XMM1 );
+    mov_reg_mem128( REG_XMM1, REG_RCX, 0 );
+    mov_reg_mem128( REG_XMM0, REG_RCX, 16 );
+#if 0
     add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), REG_R10);
     mov_mem_reg( REG_R10, 0, REG_RAX );
     mov_mem_reg( REG_R10, 8, REG_RCX );
@@ -1604,6 +1633,7 @@ void ins_f_byte(unsigned int b)
     mov_reg_mem(REG_RAX, REG_R10,sizeof(struct svalue));
     mov_reg_mem(REG_RCX, REG_R10,8+sizeof(struct svalue));
     /* save done. */
+#endif
     return;
 
   case F_POP_VALUE:
@@ -1713,10 +1743,9 @@ void ins_f_byte(unsigned int b)
     cmp_reg_reg(REG_RBX, sp_reg);
     jl(&label_B);
     return;
-#ifndef PIKE_DEBUG
     /* If we are compiling with debug, F_RETURN does extra checks */
+
   case F_RETURN:
-#endif
   case F_DUMB_RETURN:
     {
     LABELS();
@@ -1759,7 +1788,6 @@ void ins_f_byte(unsigned int b)
     LABEL_A;
     return;
   }
-
   amd64_call_c_opcode(addr,flags);
 
   if (instrs[b].flags & I_RETURN) {
@@ -1982,6 +2010,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   maybe_update_pc();
   addr=instrs[off].address;
   amd64_call_c_opcode(addr, flags);
+
   amd64_load_sp_reg();
   test_reg(REG_RAX);
 
@@ -2298,6 +2327,78 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_POST_DEC_LOCAL:
     ins_f_byte_with_arg(F_LOCAL, b);
     ins_f_byte_with_arg(F_DEC_LOCAL_AND_POP, b);
+    return;
+
+  case F_CALL_BUILTIN_AND_POP:
+    ins_f_byte_with_arg( F_CALL_BUILTIN, b );
+    ins_f_byte( F_POP_VALUE );
+    return;
+
+  case F_MARK_CALL_BUILTIN_AND_RETURN:
+    ins_f_byte_with_arg( F_MARK_CALL_BUILTIN, b );
+    ins_f_byte( F_DUMB_RETURN );
+    return;
+
+  case F_MARK_CALL_BUILTIN_AND_POP:
+    ins_f_byte_with_arg( F_MARK_CALL_BUILTIN, b );
+    ins_f_byte( F_POP_VALUE );
+    return;
+
+  case F_CALL_BUILTIN1_AND_POP:
+    ins_f_byte_with_arg( F_CALL_BUILTIN1, b );
+    ins_f_byte( F_POP_VALUE );
+    return;
+
+  case F_CALL_BUILTIN_AND_RETURN:
+    ins_f_byte_with_arg( F_CALL_BUILTIN, b );
+    ins_f_byte( F_DUMB_RETURN );
+    return;
+
+  case F_CALL_BUILTIN:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+
+    amd64_load_mark_sp_reg();
+    amd64_load_sp_reg();
+
+    mov_mem_reg( mark_sp_reg, -sizeof(struct svalue*), REG_RAX );
+    amd64_add_mark_sp( -1 );
+    mov_reg_reg( sp_reg, ARG1_REG );
+    sub_reg_reg( ARG1_REG, REG_RAX );
+    shr_reg_imm( ARG1_REG, 4 );
+    /* arg1 = (sp_reg - *--mark_sp)/16 (sizeof(svalue)) */
+
+  case F_MARK_CALL_BUILTIN:
+    if(a == F_MARK_CALL_BUILTIN )
+    {
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      mov_imm_reg( 0, ARG1_REG );
+    }
+
+  case F_CALL_BUILTIN1:
+    if(a == F_CALL_BUILTIN1 )
+    {
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      mov_imm_reg( 1, ARG1_REG );
+    }
+    /* Get function pointer */
+#if 0
+    amd64_load_fp_reg();
+    /* Ok.. This is.. interresting.
+       Let's trust that the efun really is constant, ok?
+    */
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame,context), REG_RAX );
+    mov_mem_reg( REG_RAX, OFFSETOF(inherit,prog), REG_RAX );
+    mov_mem_reg( REG_RAX, OFFSETOF(program,constants), REG_RAX );
+    add_reg_imm( REG_RAX, b*sizeof(struct program_constant) +
+                 OFFSETOF(program_constant,sval) );
+    mov_mem_reg( REG_RAX, OFFSETOF( svalue, u.efun ), REG_RAX );
+    mov_mem_reg( REG_RAX, OFFSETOF( callable, function), REG_RAX );
+    call_reg( REG_RAX );
+    sp_reg = -1;
+#else
+    amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
+                        I_UPDATE_SP);
+#endif
     return;
 
   case F_CONSTANT:
