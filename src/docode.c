@@ -2779,8 +2779,6 @@ INT32 do_code_block(node *n)
       emit2(F_FILL_STACK,
 	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
     }
-    emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args+1,
-	  Pike_compiler->compiler_frame->max_number_of_locals);
   } else {
     emit0(F_POP_TO_MARK);
     if (Pike_compiler->compiler_frame->max_number_of_locals !=
@@ -2788,9 +2786,9 @@ INT32 do_code_block(node *n)
       emit2(F_FILL_STACK,
 	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
     }
-    emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
-	  Pike_compiler->compiler_frame->max_number_of_locals);
   }
+  emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
+        Pike_compiler->compiler_frame->max_number_of_locals);
   if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
     emit1(F_PROTECT_STACK, Pike_compiler->compiler_frame->max_number_of_locals);
   }
