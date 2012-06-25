@@ -1617,9 +1617,9 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
-    if(Pike_sp[-1].u.integer < 0)
+    DO_IF_DEBUG(if(Pike_sp[-1].u.integer < 0)
       /* Isn't this an internal compiler error? /mast */
-      Pike_error("Foreach loop variable is negative!\n");
+                  Pike_error("Foreach loop variable is negative!\n"));
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
     DO_BRANCH();
     Pike_sp[-1].u.integer++;
