@@ -1636,6 +1636,42 @@ void ins_f_byte(unsigned int b)
 #endif
     return;
 
+  case F_SIZEOF:
+    {
+      LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
+      amd64_load_sp_reg();
+      add_reg_imm_reg( sp_reg, -sizeof(struct svalue), REG_RBX);
+      mov_sval_type( REG_RBX, REG_RAX );
+      /* type in RAX, svalue in ARG1 */
+      cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY ); jne( &label_A );
+      /* It's an array */
+      mov_mem_reg( REG_RBX, OFFSETOF(svalue, u.array ), ARG1_REG);
+      /* load size -> RAX*/
+      mov_mem32_reg( ARG1_REG,OFFSETOF(array, size), REG_RAX );
+      jmp( &label_C );
+
+     LABEL_A;
+      cmp_reg32_imm( REG_RAX, PIKE_T_STRING );  jne( &label_B );
+      /* It's a string */
+      mov_mem_reg( REG_RBX, OFFSETOF(svalue, u.string ), ARG1_REG);
+      /* load size ->RAX*/
+      mov_mem32_reg( ARG1_REG,OFFSETOF(pike_string, len ), REG_RAX );
+      jmp( &label_C );
+     LABEL_B;
+      /* It's something else, svalue in RBX. */
+      mov_reg_reg( REG_RBX, ARG1_REG );
+      amd64_call_c_function( pike_sizeof );
+     LABEL_C;/* all done, res in RAX */
+      /* free value, store result */
+      push( REG_RAX );
+      amd64_free_svalue( REG_RBX, 0 );
+      pop( REG_RAX );
+      mov_reg_mem(REG_RAX,    REG_RBX, OFFSETOF(svalue, u.integer));
+      mov_imm_mem(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+    }
+    return;
+
   case F_POP_VALUE:
     {
       ins_debug_instr_prologue(b, 0, 0);
@@ -2049,6 +2085,18 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     break; /* Fallback to C-version. */
 
+
+  case F_RETURN_LOCAL:
+    /* FIXME: The C version has a trick:
+       if locals+b < expendibles, pop to there
+       and return.
+
+       This saves a push, and the poping has to be done anyway.
+    */
+    ins_f_byte_with_arg( F_LOCAL, b );
+    ins_f_byte( F_DUMB_RETURN );
+    return;
+
   case F_ADD_NEG_INT:
     b = -b;
 
@@ -2251,14 +2299,22 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_push_svaluep(REG_RCX);
     return;
 
+  case F_CLEAR_2_LOCAL:
   case F_CLEAR_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), REG_RBX);
     add_reg_imm(REG_RBX, b*sizeof(struct svalue));
     amd64_free_svalue(REG_RBX, 0);
+    mov_imm_mem(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
     mov_imm_mem(0, REG_RBX, OFFSETOF(svalue, u.integer));
-    mov_imm_mem32(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+    if( a == F_CLEAR_2_LOCAL )
+    {
+      add_reg_imm( REG_RBX, sizeof(struct svalue ) );
+      amd64_free_svalue(REG_RBX, 0);
+      mov_imm_mem(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+      mov_imm_mem(0, REG_RBX, OFFSETOF(svalue, u.integer));
+    }
     return;
 
   case F_INC_LOCAL_AND_POP:
@@ -2328,6 +2384,22 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_f_byte_with_arg(F_LOCAL, b);
     ins_f_byte_with_arg(F_DEC_LOCAL_AND_POP, b);
     return;
+
+#if 0
+    /*
+      These really have to be done inline:
+
+       reg = (sp- *--mark_sp)>>16
+       ltosval_and_free(-(args+2)) -> pike_sp-args
+       call_builtin(reg)
+       -- stack now lvalue, result, so now..
+       ins_f_byte( F_ASSIGN or F_ASSIGN_AND_POP )
+    */
+  case F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP:
+  case F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN:
+
+    return;
+#endif
 
   case F_CALL_BUILTIN_AND_POP:
     ins_f_byte_with_arg( F_CALL_BUILTIN, b );
