@@ -10,7 +10,7 @@ void perform()
 {
     int res;
     foreach( const;;n )
-        res ++;
+        res=1;
     n++;
 }
 

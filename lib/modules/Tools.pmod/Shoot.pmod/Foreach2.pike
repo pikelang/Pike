@@ -9,10 +9,8 @@ int n;
 void perform()
 {
     int res;
-
     foreach( const;int ind; int i )
-        res ++;
-
+        res=1;
     n=sizeof(const);
 }
 
