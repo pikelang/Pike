@@ -1989,6 +1989,63 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
 
+    case F_FOREACH:
+      /* -4: array
+         -3: lvalue[0]
+         -2: lvalue[1]
+         -1: counter
+      */
+      amd64_load_sp_reg();
+      mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, REG_RAX );
+      mov_mem_reg( sp_reg, -4*sizeof(struct svalue)+8, REG_RBX );
+      mov_mem32_reg( REG_RBX, OFFSETOF(array,size), REG_RCX );
+      cmp_reg_reg( REG_RAX, REG_RCX );
+      je(&label_A);
+
+      /* increase counter */
+      add_mem_imm( sp_reg, -1*sizeof(struct svalue)+8, 1 );
+
+      /* get item */
+      mov_mem_reg( REG_RBX, OFFSETOF(array,item), REG_RBX );
+      shl_reg_imm( REG_RAX, 4 );
+      add_reg_reg( REG_RBX, REG_RAX );
+
+      mov_mem8_reg( sp_reg, -3*sizeof(struct svalue), REG_RAX );
+      cmp_reg_imm( REG_RAX,T_SVALUE_PTR);
+      jne( &label_C );
+
+      /* SVALUE_PTR optimization */
+      mov_mem_reg( sp_reg, -3*sizeof(struct svalue)+8, REG_RDX );
+      push( REG_RDX );
+      /* Free old value. */
+      amd64_free_svalue( REG_RDX, 0 );
+      pop( REG_RDX );
+
+      /* Assign new value. */
+      mov_mem_reg( REG_RBX, 0, REG_RAX );
+      mov_mem_reg( REG_RBX, 8, REG_RCX );
+      mov_reg_mem( REG_RAX, REG_RDX, 0 );
+      mov_reg_mem( REG_RCX, REG_RDX, 8 );
+
+      /* inc refs? */
+      and_reg_imm( REG_RAX, 0x1f );
+      cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
+      jg( &label_B );
+      add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
+      jmp( &label_B );
+
+     LABEL_C;
+      add_reg_imm_reg( sp_reg, -3*sizeof(struct svalue), ARG1_REG );
+      mov_reg_reg( REG_RBX, ARG2_REG );
+      amd64_call_c_function( assign_lvalue );
+      jmp(&label_B);
+
+     LABEL_A;
+      mov_imm_reg( 0, REG_RBX );
+     LABEL_B;
+      test_reg(REG_RBX);
+      return jnz_imm_rel32(0);
+
     case F_LOOP:
       /* counter in pike_sp-1 */
       /* decrement until 0. */
