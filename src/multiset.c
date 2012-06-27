@@ -3402,7 +3402,8 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
 {
   struct multiset *res, *l;
-  int size = 0, idx, indval = 0;
+  int size = 0, idx;
+  int indval_flag = 0;		/* 0 or MULTISET_INDVAL. */
   struct svalue *cmp_less = count ? &vect[0].u.multiset->msd->cmp_less : NULL;
   ONERROR uwp;
 
@@ -3411,27 +3412,28 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
     debug_malloc_touch (l);
     debug_malloc_touch (l->msd);
     size += multiset_sizeof (l);
-    if (!indval && l->msd->flags & MULTISET_INDVAL) indval = 1;
+    if (!indval_flag && l->msd->flags & MULTISET_INDVAL)
+      indval_flag = MULTISET_INDVAL;
   }
 
   if (!size)
-    return allocate_multiset (0, indval & MULTISET_INDVAL, cmp_less);
+    return allocate_multiset (0, indval_flag, cmp_less);
 
   for (idx = 0;; idx++) {
     l = vect[idx].u.multiset;
     if (l->msd->root) break;
   }
 
-  if (indval == !!(l->msd->flags & MULTISET_INDVAL) &&
+  if (indval_flag == (l->msd->flags & MULTISET_INDVAL) &&
       (cmp_less ?
        is_identical (cmp_less, &l->msd->cmp_less) :
        l->msd->cmp_less.type == T_INT)) {
     res = copy_multiset (l);
-    multiset_set_flags (res, indval & MULTISET_INDVAL);
+    multiset_set_flags (res, indval_flag);
     idx++;
   }
   else
-    res = allocate_multiset (size, indval & MULTISET_INDVAL, cmp_less);
+    res = allocate_multiset (size, indval_flag, cmp_less);
   SET_ONERROR (uwp, do_free_multiset, res);
 
   for (; idx < count; idx++)
