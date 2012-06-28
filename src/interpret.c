@@ -913,7 +913,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     ADD_RUNNED(instr);
 #endif /* HAVE_COMPUTED_GOTO */
 
-  if(d_flag)
+  if(d_flag )
   {
     backlogp++;
     if(backlogp >= BACKLOG) backlogp=0;
@@ -936,7 +936,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     INVALIDATE_SVAL(Pike_sp[1]);
     INVALIDATE_SVAL(Pike_sp[2]);
     INVALIDATE_SVAL(Pike_sp[3]);
-      
+
     if(Pike_sp<Pike_interpreter.evaluator_stack ||
        Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
       Pike_fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
@@ -945,7 +945,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
 		 Pike_mark_sp,
 		 Pike_interpreter.mark_stack,
 		 Pike_fp->locals);
-      
+
     if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
       Pike_fatal("Mark Stack error (overflow).\n");
 
@@ -955,10 +955,19 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
 
     if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
       Pike_fatal("stack error (overflow).\n");
-      
-    if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
-       Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-      Pike_fatal("Stack error (stupid!).\n");
+
+
+    /* The locals will not be correct when running FILL_STACK
+       (actually, they will always be incorrect before running FILL_STACK,
+       but at least currently that is the first opcode run).
+    */
+    if( instr+F_OFFSET != F_FILL_STACK )
+    {
+        if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
+           Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
+            Pike_fatal("Stack error (stupid! %p %p+%x).\n",Pike_sp,
+                       Pike_fp->locals, Pike_fp->num_locals*sizeof(struct svalue));
+    }
 
     if(Pike_interpreter.recoveries &&
        (Pike_sp-Pike_interpreter.evaluator_stack <
