@@ -149,7 +149,7 @@ PMOD_EXPORT int low_nt_create_thread(unsigned Pike_stack_size,
   }
   else
   {
-    return 1;
+    return errno;
   }
 }
 
