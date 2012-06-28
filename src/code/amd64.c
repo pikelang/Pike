@@ -49,6 +49,11 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 #define ARG6_REG	REG_R9
 #endif
 
+static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
+static int dirty_regs = 0, ret_for_func = 0;
+ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
+static int branch_check_threads_update_etc = -1;
+
 
 #define MAX_LABEL_USES 6
 struct label {
@@ -894,12 +899,6 @@ void amd64_ins_entry(void)
   amd64_flush_code_generator_state();
 }
 
-static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
-static int dirty_regs = 0, ret_for_func = 0;
-ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
-static int branch_check_threads_update_etc = -1;
-
-
 void amd64_flush_code_generator_state(void)
 {
   sp_reg = -1;
@@ -1142,6 +1141,7 @@ void amd64_assign_local( int b )
   amd64_free_svalue(ARG1_REG, 0);
 
   /* Copy sp[-1] -> local */
+  amd64_load_sp_reg();
   mov_mem_reg(sp_reg, -1*sizeof(struct svalue), REG_RAX);
   mov_mem_reg(sp_reg, -1*sizeof(struct svalue)+sizeof(long), REG_RCX);
 
@@ -1195,10 +1195,10 @@ static void amd64_stack_error(void)
 void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
+  const enum amd64_reg tmp_reg = REG_RAX;
 
   if(amd64_prev_stored_pc == - 1)
   {
-    enum amd64_reg tmp_reg = REG_RAX;
     amd64_load_fp_reg();
     mov_rip_imm_reg(tmp - PIKE_PC, tmp_reg);
     mov_reg_mem(tmp_reg, fp_reg, OFFSETOF(pike_frame, pc));
@@ -1406,8 +1406,8 @@ void ins_f_byte(unsigned int b)
   switch(b + F_OFFSET)
   {
   case F_DUP:
-    amd64_load_sp_reg();
     ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
     add_reg_imm_reg(sp_reg, -sizeof(struct svalue), REG_R10 );
     amd64_push_svaluep( REG_R10 );
     return;
@@ -1416,6 +1416,7 @@ void ins_f_byte(unsigned int b)
   case F_ESCAPE_CATCH:
 
   case F_EXIT_CATCH:
+    ins_debug_instr_prologue(b, 0, 0);
     ins_f_byte( F_ESCAPE_CATCH );
     amd64_load_sp_reg();
     amd64_push_int( 0, 1 );
@@ -1432,6 +1433,7 @@ void ins_f_byte(unsigned int b)
      */
   case F_LTOSVAL2_AND_FREE:
     {
+      ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -3*sizeof(struct svalue), REG_RBX );
       cmp_reg_imm( REG_RBX, T_SVALUE_PTR );
@@ -1477,6 +1479,7 @@ void ins_f_byte(unsigned int b)
 
   case F_LTOSVAL:
     {
+      ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -sizeof(struct svalue)*2, REG_RAX );
       /* lval type in RAX. */
@@ -1497,6 +1500,7 @@ void ins_f_byte(unsigned int b)
       mov_reg_reg( sp_reg, ARG1_REG );
       add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), ARG2_REG );
       amd64_call_c_function(lvalue_to_svalue_no_free);
+      amd64_load_sp_reg();
       amd64_add_sp(1);
       jmp(&label_B);
       LABEL_A;
@@ -1508,6 +1512,7 @@ void ins_f_byte(unsigned int b)
     return;
   case F_ASSIGN:
    {
+     ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -3*sizeof(struct svalue), REG_RAX );
       cmp_reg_imm( REG_RAX, T_SVALUE_PTR );
@@ -1543,6 +1548,7 @@ void ins_f_byte(unsigned int b)
    return;
   case F_ASSIGN_AND_POP:
    {
+     ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -3*sizeof(struct svalue), REG_RAX );
       cmp_reg_imm( REG_RAX, T_SVALUE_PTR );
@@ -1576,8 +1582,8 @@ void ins_f_byte(unsigned int b)
    return;
   case F_ADD_INTS:
     {
-      amd64_load_sp_reg();
       ins_debug_instr_prologue(b, 0, 0);
+      amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -sizeof(struct svalue)*2, REG_RAX );
       shl_reg_imm( REG_RAX, 8 );
       mov_mem8_reg( sp_reg,-sizeof(struct svalue), REG_RBX );
@@ -1616,6 +1622,7 @@ void ins_f_byte(unsigned int b)
     /*
       pike_sp[-1] = pike_sp[-2]
     */
+    ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
     add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), REG_RCX );
     mov_mem128_reg( REG_RCX, 0, REG_XMM0 );
@@ -1641,6 +1648,7 @@ void ins_f_byte(unsigned int b)
     /*
       pike_sp[-2][pike_sp[-1]]
     */
+    ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
     mov_mem8_reg( sp_reg, -2*sizeof(struct svalue), REG_RAX );
     mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), REG_RBX );
@@ -1747,6 +1755,7 @@ void ins_f_byte(unsigned int b)
   case F_ZERO_TYPE:
     {
       LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
       mov_mem32_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
       /* Rax now has type + subtype. */
@@ -1831,6 +1840,7 @@ void ins_f_byte(unsigned int b)
     LABEL_B;
     amd64_add_sp( -1 );
     amd64_free_svalue( sp_reg, 0 );
+    amd64_load_sp_reg();
     LABEL_A;
     cmp_reg_reg(REG_RBX, sp_reg);
     jl(&label_B);
@@ -1841,6 +1851,7 @@ void ins_f_byte(unsigned int b)
   case F_DUMB_RETURN:
     {
     LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
     amd64_load_fp_reg();
     /* Note: really mem16, but we & with PIKE_FRAME_RETURN_INTERNAL anyway */
     mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), REG_RAX );
@@ -1971,6 +1982,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       /* function or object. Use svalue_is_true. */
       add_reg_imm_reg(sp_reg, -sizeof(struct svalue), ARG1_REG );
       amd64_call_c_function(svalue_is_true);
+      amd64_load_sp_reg();
       mov_reg_reg( REG_RAX, REG_RBX );
       amd64_add_sp( -1 );
       amd64_free_svalue( sp_reg, 0 ); /* Pop the stack. */
@@ -1990,6 +2002,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       return jnz_imm_rel32(0);
 
     case F_FOREACH:
+      START_JUMP();
       /* -4: array
          -3: lvalue[0]
          -2: lvalue[1]
@@ -2047,11 +2060,11 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       return jnz_imm_rel32(0);
 
     case F_LOOP:
+      START_JUMP();
       /* counter in pike_sp-1 */
       /* decrement until 0. */
       /* if not 0, branch */
       /* otherwise, pop */
-      START_JUMP();
       amd64_load_sp_reg();
       mov_mem32_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
       /* Is it a normal integer? subtype -> 0, type -> PIKE_T_INT */
@@ -2090,6 +2103,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     case F_BRANCH_WHEN_EQ: /* sp[-2] != sp[-1] */
     case F_BRANCH_WHEN_NE: /* sp[-2] != sp[-1] */
 /*      START_JUMP();*/
+      ins_debug_instr_prologue(op, 0, 0);
       amd64_load_sp_reg();
       mov_mem16_reg( sp_reg, -sizeof(struct svalue),  REG_RAX );
       mov_mem16_reg( sp_reg, -sizeof(struct svalue)*2,REG_RBX );
@@ -2127,6 +2141,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
      /* Free sp_reg */
      mov_reg_reg( sp_reg, ARG1_REG );
      amd64_call_c_function( really_free_svalue );
+     amd64_load_sp_reg();
     LABEL_C;
      add_reg_imm_reg( sp_reg, sizeof(struct svalue), ARG1_REG );
      mov_mem_reg( ARG1_REG, OFFSETOF(svalue,u.refs),  REG_RAX );
@@ -2193,11 +2208,11 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_THIS_OBJECT:
     if( b == 0 )
     {
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_push_this_object();
       return;
     }
     break; /* Fallback to C-version. */
-
 
   case F_RETURN_LOCAL:
     /* FIXME: The C version has a trick:
@@ -2213,6 +2228,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_NEG_INT_INDEX:
     {
       LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -1*sizeof(struct svalue),  REG_RAX );
       cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY );
@@ -2248,6 +2264,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_POS_INT_INDEX:
     {
       LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg( sp_reg, -1*sizeof(struct svalue),  REG_RAX );
       cmp_reg32_imm( REG_RAX, PIKE_T_ARRAY );
@@ -2286,6 +2303,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       /*
         pike_sp[-2][pike_sp[-1]]
       */
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       amd64_load_fp_reg();
 
@@ -2339,6 +2357,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_ADD_INT:
     {
       LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem16_reg( sp_reg, -sizeof(struct svalue), REG_RAX );
       cmp_reg32_imm( REG_RAX,PIKE_T_INT );
@@ -2457,6 +2476,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if( a == F_ASSIGN_GLOBAL_AND_POP )
     {
       /* assign done, pop. */
+      amd64_load_sp_reg();
       amd64_add_sp( -1 );
       amd64_free_svalue( sp_reg, 1 );
     }
@@ -2493,7 +2513,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       LABEL_B;
       /* It's something else, svalue already in ARG1. */
       amd64_call_c_function( pike_sizeof );
-      amd64_load_sp_reg();
       LABEL_C;/* all done, res in RAX */
       /* Store result on stack */
       amd64_push_int_reg( REG_RAX );
@@ -2670,14 +2689,20 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_MARK_CALL_BUILTIN:
     if(a == F_MARK_CALL_BUILTIN )
     {
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      /* Note: It is not actually possible to do ins_debug_instr_prologue
+         here.
+         ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      */
       mov_imm_reg( 0, ARG1_REG );
     }
 
   case F_CALL_BUILTIN1:
     if(a == F_CALL_BUILTIN1 )
     {
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      /* Note: It is not actually possible to do ins_debug_instr_prologue
+         here.
+         ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      */
       mov_imm_reg( 1, ARG1_REG );
     }
     /* Get function pointer */
@@ -2835,7 +2860,6 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     return;
 
   case F_ADD_LOCAL_INT:
-    amd64_load_sp_reg();
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
@@ -2868,6 +2892,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       {
         /* push the local. */
         /* We know it's an integer (since we did not use the fallback) */
+        amd64_load_sp_reg();
         mov_mem_reg( ARG1_REG, OFFSETOF(svalue,u.integer), REG_RAX );
         amd64_push_int_reg( REG_RAX );
       }
@@ -2909,7 +2934,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     }
 
   case F_ASSIGN_LOCAL_NUMBER_AND_POP:
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_load_fp_reg();
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
     add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
