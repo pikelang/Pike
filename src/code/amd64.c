@@ -682,6 +682,7 @@ static void call_rel_imm32( int rel )
   rel -= 5; // counts from the next instruction
   opcode( 0xe8 );
   id( rel );
+  sp_reg = -1;
   return;
 }
 
@@ -1215,7 +1216,10 @@ void amd64_update_pc(void)
       fprintf (stderr, "pc %d  update pc relative: %d\n", tmp, disp);
 #endif
     amd64_load_fp_reg();
-    add_imm_mem(disp, fp_reg, OFFSETOF (pike_frame, pc));
+    mov_rip_imm_reg(tmp - PIKE_PC, tmp_reg);
+    mov_reg_mem(tmp_reg, fp_reg, OFFSETOF(pike_frame, pc));
+    /* amd64_load_fp_reg(); */
+    /* add_imm_mem(disp, fp_reg, OFFSETOF (pike_frame, pc)); */
     amd64_prev_stored_pc += disp;
   }
    else {
