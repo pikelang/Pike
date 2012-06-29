@@ -197,6 +197,7 @@ static boolean my_jpeg_marker_parser(j_decompress_ptr cinfo)
    length=jpeg_getc(cinfo)<<8;
    length|=jpeg_getc(cinfo);
    length-=2;
+   length &= 0xffff;
 
    mm=(struct my_marker*)xalloc(sizeof(struct my_marker)+length);
    mm->id=cinfo->unread_marker;
