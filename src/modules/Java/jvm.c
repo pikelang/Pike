@@ -1528,14 +1528,26 @@ struct cpu_context {
   ffi_closure closure;
   ffi_cif cif;
   ffi_type **atypes;
+  int statc;
 };
 
 static void ffi_dispatch(ffi_cif *cif, void *rval, void **args,
 			 void *userdata)
 {
   jvalue v;
-  native_dispatch(userdata, *(JNIEnv **)args[0], *(jclass *)args[1],
-		  args+2, &v);
+
+  /* userdata is a native_method_context pointer which has a cpu_context
+     as its first member (so we can find the statc flag) */
+  struct cpu_context *cpu = (struct cpu_context *) userdata;
+  
+  /* args[1] will contain the "this" pointer for instance methods and the
+     class reference for static methods. However, since native_dispatch()
+     expects the "this" pointer to be part of args while class is sent
+     separately we point to first arg based on statc. */
+  jclass jcls = cpu->statc ? *(jclass *)args[1] : 0;
+  void *first_arg = cpu->statc ? args + 2 : args + 1;
+  native_dispatch(userdata, *(JNIEnv **)args[0], jcls, first_arg, &v);
+
   switch(cif->rtype->type) {
   case FFI_TYPE_POINTER:
 #if FFI_SIZEOF_ARG == 8 && FFI_SIZEOF_JAVA_RAW == 4
@@ -1610,6 +1622,7 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
   ffi_abi abi;
   int na = 2;
 
+  ctx->statc = statc;
   ctx->atypes = atypes = xalloc(args*sizeof(ffi_type *));
   atypes[0] = &ffi_type_pointer;
   atypes[1] = &ffi_type_pointer;
@@ -2234,19 +2247,19 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
 struct natives_storage;
 
 struct native_method_context {
+  /* Note: cpu_context must be first so that ffi_dispatch() can cast
+     pointers between cpu_context and native_method_context. */
+  struct cpu_context cpu;
   struct svalue callback;
   struct pike_string *name, *sig;
   struct natives_storage *nat;
-  struct cpu_context cpu;
 };
 
 struct natives_storage {
-
   struct object *jvm, *cls;
   int num_methods;
   struct native_method_context *cons;
   JNINativeMethod *jnms;
-
 };
 
 static void make_java_exception(struct object *jvm, JNIEnv *env,
