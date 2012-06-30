@@ -35,7 +35,8 @@ The description of the error has the following format:</p>
 })
 </example>
 
-<p>If no error occurs, catch will return zero. You may emulate your own errors
+<p>If no error occurs, or if the <ref>break</ref> statement is
+encountered, catch will return zero. You may emulate your own errors
 using the function throw or error.</p>
 
 <example>
