@@ -7069,6 +7069,7 @@ int set_nonblocking(int fd,int which)
 }
 
 
+FILE *output;
 static int socketpair_fd = -1;
 int my_socketpair(int family, int type, int protocol, int sv[2])
 {
@@ -7143,6 +7144,24 @@ retry_connect:
     if(errno != EWOULDBLOCK)
     {
       int tmp2;
+#ifdef ETIMEDOUT
+      if (errno == ETIMEDOUT) {
+        SP_DEBUG((stderr,
+	          "my_socketpair: ETIMEDOUT!\n"
+		  "Do you have a firewall in the way?\n"));
+	/* ETIMEDOUT hints that quite a bit of time has passed,
+	 * so no need for further retries. */
+	fprintf(output, "TIMEOUT\n");
+	exit(0);
+      }
+#endif
+#ifdef ECONNREFUSED
+      if (errno == ECONNREFUSED) {
+        SP_DEBUG((stderr,
+	          "my_socketpair: ECONNREFUSED!\n"
+		  "Do you have a firewall in the way?\n"));
+      }
+#endif
       for(tmp2=0;tmp2<20;tmp2++)
       {
 	int tmp;
@@ -7229,7 +7248,6 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 }
 
 
-FILE *output;
 struct pollfd pollset[2];
 int fds[2];
 static int sent=0;
@@ -7249,6 +7267,9 @@ int ping(int fd)
   }while(r < 0 && errno==EINTR);
   if(r!=1)
   {
+    SP_DEBUG((stderr,
+	      "ping(%d): send(%d, \"x\", 1, MSG_OOB) failed with errno %d\n",
+	      fd, fds[fd], errno));
     fprintf(output,"XBYTES\n");
     exit(0);
   }
