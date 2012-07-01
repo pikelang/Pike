@@ -64,14 +64,6 @@
 
 #include <stdio.h>
 
-__attribute__((constructor)) static void wefuwefiuhiwe() {
-#ifdef PIKE_NEW_BLOCK_ALLOC
-    fprintf(stderr, "PIKE_NEW_BLOCK_ALLOC\n");
-#else
-    fprintf(stderr, "NO PIKE_NEW_BLOCK_ALLOC\n");
-#endif
-}
-
 /* #define DIFF_DEBUG */
 /* #define ENABLE_DYN_DIFF */
 
