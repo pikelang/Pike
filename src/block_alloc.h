@@ -72,7 +72,7 @@
 #define BA_INLINE
 #endif
 
-#ifdef PIKE_NEW_BLOCK_ALLOC
+#if 0 /*def PIKE_NEW_BLOCK_ALLOC*/
 # define ba_error Pike_error
 # include "global.h"
 # include "pike_error.h"
@@ -106,6 +106,7 @@
 #define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE...)	do {	\
     struct block_allocator * a = &PIKE_CONCAT(DATA, _allocator);	\
     if (a->alloc) a->alloc->h = a->h;					\
+    if (a->last_free) a->last_free->h = a->hf;				\
     PAGE_LOOP(a, {							\
 	uint32_t i, used = p->h.used;					\
 	for (i = 0; used && i < a->l.blocks; i++) {			\
