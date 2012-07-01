@@ -550,6 +550,25 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   }
 });
 
+OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( dst->type == PIKE_T_INT
+      DO_IF_BIGNUM(
+        &&(!INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2))))
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += arg2;
+    push_int( dst->u.integer );
+  }
+  else
+  {
+    push_svalue( dst );
+    push_int( arg2 );
+    f_add(2);
+    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
+  }
+});
+
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
   if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
@@ -1598,9 +1617,9 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
-    if(Pike_sp[-1].u.integer < 0)
+    DO_IF_DEBUG(if(Pike_sp[-1].u.integer < 0)
       /* Isn't this an internal compiler error? /mast */
-      Pike_error("Foreach loop variable is negative!\n");
+                  Pike_error("Foreach loop variable is negative!\n"));
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
     DO_BRANCH();
     Pike_sp[-1].u.integer++;
@@ -2549,7 +2568,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->args = args;						\
   new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
   new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
-									   \
+  DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \
   new_frame->fun=Pike_fp->fun;						   \
   DO_IF_PROFILING( new_frame->ident=Pike_fp->ident );			   \

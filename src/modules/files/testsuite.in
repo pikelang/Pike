@@ -372,7 +372,7 @@ test_any([[
   return f->query_backend() == b;
 ]], 1)
 
-cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEUE"]])
+cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEUE"] ]])
   run_sub_test(({"SRCDIR/kqueuetest.pike"}))
 cond_end
 

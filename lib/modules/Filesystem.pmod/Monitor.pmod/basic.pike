@@ -10,6 +10,70 @@
 //!
 //! This module is intended to be used for incremental scanning of
 //! a filesystem.
+//!
+//! Supports FSEvents on MacOS X and Inotify on Linux to provide low overhead monitoring; other
+//! systems use a less efficient polling approach.
+
+//
+// some necessary setup activities for systems that provide filesystem event monitoring
+//
+#if constant(Public.System.FSEvents.EventStream)
+#define HAVE_EVENTSTREAM 1
+#endif
+
+#if constant(Public.System.___Inotify)
+#define HAVE_INOTIFY 1
+#endif
+
+#if HAVE_EVENTSTREAM
+  System.FSEvents.EventStream eventstream = System.FSEvents.EventStream(({}), 3.0, System.FSEvents.kFSEventStreamEventIdSinceNow, System.FSEvents.kFSEventStreamCreateFlagNone);
+  array eventstream_paths = ({});
+
+  // This function is called when the FSEvents EventStream detects a change in one of the monitored directories.
+  void eventstream_callback(string path, int flags, int event_id)
+  {
+    if(path[-1] == '/') path = path[0..<1];
+    if(monitors[path])
+    {
+      monitors[path]->check(0);
+    }
+    else check(0);
+  }
+#elseif HAVE_INOTIFY
+
+  object instance;
+  object file;
+
+  void inotify_parse(mixed id, string data)
+  {
+        while (sizeof(data)) {
+	  array a;
+	  mixed err = catch {
+	  a = System.Inotify.parse_event(data);
+	};
+
+        if (err) {
+	  // TODO: might have a partial even struct here which gets completed
+	  // by the next call?? maybe add an internal buffer.
+  	  werror("Could not parse inotify event: %s\n", describe_error(err));
+	  return;
+	}
+        string path;
+        path = a[3];
+        if(path && monitors[path])
+        {
+          monitors[path]->check(0);
+        }
+        else
+        { check(0); // no need to look at the others if we're going to do a full scan.
+	  return;
+        }
+
+	data = data[a[4]..];
+    }
+  }
+
+#endif /* HAVE_EVENTSTREAM */
 
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
@@ -177,8 +241,45 @@ protected class Monitor(string path,
   int last_change = 0x7fffffff;	// Future...
   array(string) files;
 
+#ifdef HAVE_INOTIFY
+  int wd;
+#endif
+
   int `<(mixed m) { return next_poll < m; }
   int `>(mixed m) { return next_poll > m; }
+
+  void create()
+  {
+#if HAVE_EVENTSTREAM
+    int already_added = 0;
+    foreach(eventstream_paths;;string p)
+    {
+      if(has_prefix(path, p))
+        already_added = 1;
+    }
+    if(already_added) return;
+    eventstream_paths += ({path});
+    if(eventstream->is_started())
+      eventstream->stop();
+    eventstream->add_path(path);
+    eventstream->start();
+#elseif HAVE_INOTIFY
+  wd = instance->add_watch(path,
+		Inotify.IN_MOVED_FROM | Inotify.IN_UNMOUNT | 
+                Inotify.IN_MOVED_TO | Inotify.IN_MASK_ADD | 
+                Inotify.IN_MOVE_SELF | Inotify.IN_DELETE | 
+		Inotify.IN_MOVE | Inotify.IN_MODIFY | 
+                Inotify.IN_ATTRIB | Inotify.IN_DELETE_SELF | 
+                Inotify.IN_CREATE);
+#endif
+  }
+
+  void destroy()
+  {
+#if HAVE_INOTIFY
+    instance->rm_watch(wd);
+#endif /* HAVE_INOTIFY */
+  }
 
   //! Call a notification callback.
   //!
@@ -390,6 +491,7 @@ protected class Monitor(string path,
       }
       this_program::files = files;
       foreach(new_files, string file) {
+        if(filter_file(file)) continue;
 	file = canonic_path(Stdio.append_path(path, file));
 	Monitor m2 = monitors[file];
 	mixed err = catch {
@@ -477,7 +579,6 @@ protected class Monitor(string path,
   //!   @[file_deleted()], @[stable_data_change()]
   int(0..1) check(MonitorFlags|void flags)
   {
-    // werror("Checking monitor %O...\n", this);
     Stdio.Stat st = file_stat(path, 1);
     Stdio.Stat old_st = this_program::st;
     int orig_flags = this_program::flags;
@@ -491,6 +592,7 @@ protected class Monitor(string path,
 	  this_program::files = files;
 	  foreach(files, string file) {
 	    file = canonic_path(Stdio.append_path(path, file));
+            if(filter_file(file)) continue;
 	    if (monitors[file]) {
 	      // There's already a monitor for the file.
 	      // Assume it has already notified about existance.
@@ -656,6 +758,15 @@ protected void create(int|void max_dir_check_interval,
 		      int|void file_interval_factor,
 		      int|void stable_time)
 {
+#if HAVE_EVENTSTREAM
+  eventstream->callback_func = eventstream_callback;
+#elseif HAVE_INOTIFY
+  instance = Inotify._Instance();
+  file = Stdio.File(instance->get_fd(), "r");
+  file->set_nonblocking();
+  file->set_read_callback(inotify_parse);
+#endif
+  
   if (max_dir_check_interval > 0) {
     this_program::max_dir_check_interval = max_dir_check_interval;
   }
@@ -769,6 +880,7 @@ void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void stable_time)
 {
   path = canonic_path(path);
+  if(filter_file(path)) return;
   Monitor m = monitors[path];
   if (m) {
     if (!(flags & MF_AUTO)) {
@@ -792,6 +904,15 @@ void monitor(string path, MonitorFlags|void flags,
     monitors[path] = m;
     monitor_queue->push(m);
   }
+}
+
+int filter_file(string path)
+{
+  array x = path/"/";
+  foreach(x;; string pc)
+    if(pc && strlen(pc) && pc[0]=='.') {/* werror("skipping %O\n", path); */ return 1; }
+    
+  return 0;
 }
 
 //! Release a @[path] from monitoring.
@@ -1022,7 +1143,13 @@ protected void backend_check()
   mixed err = catch {
       t = check(0);
     };
+#if HAVE_EVENTSTREAM
+// if we are using FSEvents, we don't want to run this check more than once to prime the pumps.
+#elseif HAVE_INOTIFY
+// if we are using Inotify, we don't want to run this check more than once to prime the pumps.
+#else
   set_nonblocking(t);
+#endif /* HAVE_EVENTSTREAM */
   if (err) throw(err);
 }
 
@@ -1052,8 +1179,8 @@ void set_nonblocking(int|void t)
     if (t > max_dir_check_interval) t = max_dir_check_interval;
     if (t < 0) t = 0;
   }
-  if (backend) co_id = backend->call_out(backend_check, t);
-  else co_id = call_out(backend_check, t);
+//  if (backend) co_id = backend->call_out(backend_check, t);
+//  else co_id = call_out(backend_check, t);
 }
 
 //! Set the @[default_max_dir_check_interval].

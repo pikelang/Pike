@@ -759,6 +759,7 @@ int main(int argc, array(string) argv)
 		log_msg( "Conditional %d%s failed:\n"
 			 "%s\n", e+1, testline?" (line "+testline+")":"",
 			 describe_backtrace(err) );
+              print_code( condition );
 	      errors++;
 	      tmp = -1;
 	    }

@@ -314,6 +314,8 @@
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
 	  Pike_fatal("Pike code called within gc.\n");
+    new_frame->num_args = 0;
+    new_frame->num_locals = 0;
 #endif
 
 	debug_malloc_touch(Pike_fp);

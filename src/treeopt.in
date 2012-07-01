@@ -1063,8 +1063,21 @@ F_DO(-, 0 = +[node_is_true($$)]):
 
 
 // No body -- No reason to loop...
-F_FOREACH(F_VAL_LVAL(0, *), -):
-  F_POP_VALUE($0, -);
+F_FOREACH(F_VAL_LVAL(0 = +[!($$->node_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT))],
+		     1 = +[($$->token != ':')]), -):
+{
+  // Note: We still need to set the loop variable as if the last
+  //       turn of the loop has executed, in case it is used later.
+  $$ = mknode(F_POP_VALUE,
+	      mknode('?',
+		     mkefuncallnode("sizeof", $0),
+		     mknode(':',
+			    mknode(F_ASSIGN,
+				   mknode(F_INDEX, $0, mkintnode(-1)), $1),
+			    NULL)),
+	      0);
+}
+;
 F_LOOP(0, -):
   F_POP_VALUE($0, -);
 

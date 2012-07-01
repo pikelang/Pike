@@ -292,9 +292,9 @@ that is still missing is the ability to exit a loop in the middle of it.
 There are three ways to do this:</p>
 
 <subsection title="break">
-<p><tt>break</tt> exits a loop or switch statement immediately and continues
-executing after the loop. <tt>Break</tt> can not be used outside of a loop or
-switch. It is quite useful in conjunction with <tt>while(1)</tt> to
+<p><tt>break</tt> exits a loop, switch, or catch statement immediately and continues
+executing after the loop. <tt>Break</tt> can not be used outside of one of these.
+It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:</p>
 
 <example>
@@ -326,6 +326,11 @@ a:if(sizeof(arr1) >= sizeof(arr2))
   // execution continues here
 }
 </example>
+
+<p>Inside a <tt>catch</tt> block, <tt>break</tt> will terminate the block with no
+exception being thrown; <tt>catch</tt> will return zero, as if execution had
+continued to the end of the block.</p>
+
 </subsection>
 
 <subsection title="continue">
