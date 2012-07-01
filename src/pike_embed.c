@@ -162,7 +162,9 @@ void init_pike(char **argv, const char *file)
   {
     extern void init_mapping_blocks(void);
     extern void init_callable_blocks(void);
+#ifndef PIKE_NEW_BLOCK_ALLOC
     extern void init_gc_rec_frame_blocks(void);
+#endif
     extern void init_ba_mixed_frame_blocks(void);
     extern void init_pike_frame_blocks(void);
     extern void init_node_s_blocks(void);
@@ -171,7 +173,9 @@ void init_pike(char **argv, const char *file)
 
     init_mapping_blocks();
     init_callable_blocks();
+#ifndef PIKE_NEW_BLOCK_ALLOC
     init_gc_rec_frame_blocks();
+#endif
     init_ba_mixed_frame_blocks();
     init_catch_context_blocks();
     init_pike_frame_blocks();

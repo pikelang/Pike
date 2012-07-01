@@ -17,6 +17,11 @@
 #include "builtin_functions.h"
 
 #ifdef PIKE_NEW_BLOCK_ALLOC
+#undef PIKE_NEW_BLOCK_ALLOC
+#endif
+
+#ifdef PIKE_NEW_BLOCK_ALLOC
+#undef PIKE_NEW_BLOCK_ALLOC
 /*
  * we have to rename these functions, they
  * are already defined in bitvector.h

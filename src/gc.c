@@ -430,7 +430,32 @@ static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_ex
     rec_frames--;							\
   } while (0)
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
+#else
+#include "gjalloc.h"
+
+struct block_allocator gc_rec_frame_allocator =
+    BA_INIT(sizeof(struct gc_rec_frame), 4096/sizeof(struct gc_rec_frame));
+
+static INLINE void really_free_gc_rec_frame(struct gc_rec_frame * f) {
+#ifdef PIKE_DEBUG
+  if (f->rf_flags & GC_FRAME_FREED)
+    gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");
+  f->rf_flags |= GC_FRAME_FREED;
+  f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;
+  f->prev = f->next = f->cycle_id = f->cycle_piece =
+    (struct gc_rec_frame *) (ptrdiff_t) -1;
+#endif
+  rec_frames--;
+  ba_free(&gc_rec_frame_allocator, f);
+}
+
+void count_memory_in_gc_rec_frames(size_t *num, size_t * size) {
+  ba_count_all(&gc_rec_frame_allocator, num, size);
+}
+
+#endif
 
 /* Link and free_extra frames are approximately the same size, so let
  * them share block_alloc area. */
@@ -2031,7 +2056,11 @@ void exit_gc(void)
   if (!gc_keep_markers)
     cleanup_markers();
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
   free_all_gc_rec_frame_blocks();
+#else
+  ba_free_all(&gc_rec_frame_allocator);
+#endif
   free_all_ba_mixed_frame_blocks();
 
 #ifdef PIKE_DEBUG
@@ -2628,7 +2657,13 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 
 static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
   struct gc_rec_frame *r = alloc_gc_rec_frame();
+#else
+  struct gc_rec_frame *r =
+    (struct gc_rec_frame*)ba_alloc(&gc_rec_frame_allocator);
+  if (++rec_frames > max_rec_frames) max_rec_frames = rec_frames;
+#endif
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
     gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
