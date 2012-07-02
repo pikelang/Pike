@@ -3003,10 +3003,12 @@ static void initialize_dmalloc(void)
      *       the callback blocks before we perform the call
      *       to th_atfork().
      */
+#ifndef PIKE_NEW_BLOCK_ALLOC
     {
       extern void init_callback_blocks(void);
       init_callback_blocks();
     }
+#endif
 
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif

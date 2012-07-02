@@ -35,7 +35,18 @@ struct callback
 #define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
 #endif
 #endif
+
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
+#else
+#include "gjalloc.h"
+static struct block_allocator callback_allocator
+    = BA_INIT(sizeof(struct callback), CALLBACK_CHUNK);
+
+void count_memory_in_callbacks(size_t * num, size_t * size) {
+    ba_count_all(&callback_allocator, num, size);
+}
+#endif
 
 
 #ifdef PIKE_DEBUG
@@ -191,7 +202,11 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       l->free_func=(callback_func)remove_callback;
 #endif
 #endif
+#ifndef PIKE_NEW_BLOCK_ALLOC
       really_free_callback(l);
+#else
+      ba_free(&callback_allocator, l);
+#endif
     }else{
       ptr=& l->next;
     }
@@ -206,7 +221,11 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func free_func)
 {
   struct callback *l;
+#ifndef PIKE_NEW_BLOCK_ALLOC
   l=alloc_callback();
+#else
+  l=(struct callback*)ba_alloc(&callback_allocator);
+#endif
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;
@@ -246,11 +265,19 @@ void free_callback_list(struct callback_list *lst)
     if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
+#ifndef PIKE_NEW_BLOCK_ALLOC
     really_free_callback(l);
+#else
+    ba_free(&callback_allocator, l);
+#endif
   }
 }
 
 void cleanup_callbacks(void)
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
   free_all_callback_blocks();
+#else
+  ba_destroy(&callback_allocator);
+#endif
 }

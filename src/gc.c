@@ -468,6 +468,7 @@ struct ba_mixed_frame
   } u;
 };
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT u.next
 #undef INIT_BLOCK
@@ -476,10 +477,22 @@ struct ba_mixed_frame
 #define EXIT_BLOCK(f)
 
 BLOCK_ALLOC_FILL_PAGES (ba_mixed_frame, 2)
+#else
+static struct block_allocator ba_mixed_frame_allocator
+    = BA_INIT(sizeof(struct ba_mixed_frame), 4096/sizeof(struct ba_mixed_frame));
+
+void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
+  ba_count_all(&ba_mixed_frame_allocator, num, size);
+}
+#endif
 
 static INLINE struct link_frame *alloc_link_frame()
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
   struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+#else
+  struct ba_mixed_frame *f = (struct ba_mixed_frame*)ba_alloc(&ba_mixed_frame_allocator);
+#endif
   if (++link_frames > max_link_frames)
     max_link_frames = link_frames;
   return (struct link_frame *) f;
@@ -487,7 +500,11 @@ static INLINE struct link_frame *alloc_link_frame()
 
 static INLINE struct free_extra_frame *alloc_free_extra_frame()
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
   struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+#else
+  struct ba_mixed_frame *f = (struct ba_mixed_frame*)ba_alloc(&ba_mixed_frame_allocator);
+#endif
   free_extra_frames++;
   return (struct free_extra_frame *) f;
 }
@@ -495,13 +512,21 @@ static INLINE struct free_extra_frame *alloc_free_extra_frame()
 static INLINE void really_free_link_frame (struct link_frame *f)
 {
   link_frames--;
+#ifndef PIKE_NEW_BLOCK_ALLOC
   really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+#else
+  ba_free(&ba_mixed_frame_allocator, f);
+#endif
 }
 
 static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
 {
   free_extra_frames--;
+#ifndef PIKE_NEW_BLOCK_ALLOC
   really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+#else
+  ba_free(&ba_mixed_frame_allocator, f);
+#endif
 }
 
 /* These are only collected for the sake of gc_status. */
@@ -2058,10 +2083,11 @@ void exit_gc(void)
 
 #ifndef PIKE_NEW_BLOCK_ALLOC
   free_all_gc_rec_frame_blocks();
+  free_all_ba_mixed_frame_blocks();
 #else
   ba_free_all(&gc_rec_frame_allocator);
+  ba_free_all(&ba_mixed_frame_allocator);
 #endif
-  free_all_ba_mixed_frame_blocks();
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
