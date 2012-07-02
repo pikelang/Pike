@@ -2,6 +2,7 @@
 inherit Tools.Shoot.Test;
 
 constant name="String Creation (wide)";
+constant dont_dump_program = 1;
 
 int k = 200; /* variable to tune the time of the test */
 int n;
