@@ -412,6 +412,7 @@ static unsigned rec_frames, link_frames, free_extra_frames;
 static unsigned max_rec_frames, max_link_frames;
 static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_extra_frames = 0;
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 #undef INIT_BLOCK
 #define INIT_BLOCK(f) do {						\
     if (++rec_frames > max_rec_frames)					\
@@ -430,7 +431,6 @@ static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_ex
     rec_frames--;							\
   } while (0)
 
-#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
 #else
 #include "gjalloc.h"
@@ -564,6 +564,8 @@ static void gc_cycle_pop();
   (X)->flags=(X)->refs=(X)->weak_refs=0;		\
   (X)->frame = 0;
 #endif
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(f)
 
 #undef get_marker
 #define get_marker debug_get_marker
