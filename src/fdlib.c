@@ -452,7 +452,9 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     drive = toupper(*file) - 'A';
   else
     drive = -1;
-  
+
+  /* fprintf (stderr, "fd_stat %s drive %d\n", file, drive); */
+
   /* get info for file */
   hFind = FindFirstFile(file, &findbuf);
 
@@ -460,6 +462,8 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   {
     char abspath[_MAX_PATH + 1];
     UINT drive_type;
+
+    /* fprintf (stderr, "check root dir\n"); */
 
     if (!strpbrk(file, "./\\") ||
 	!_fullpath( abspath, file, _MAX_PATH ) ||
@@ -508,7 +512,12 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   }
 
   else {
-    char fstype[5]; /* Room for "FAT" and anything longer that begins with "FAT". */
+    char fstype[50];
+    /* Really only need room in this buffer for "FAT" and anything
+     * longer that begins with "FAT", but since GetVolumeInformation
+     * has shown to trig unreliable error codes for a too short buffer
+     * (see below), we allocate ample space. */
+
     BOOL res;
 
     if (drive >= 0) {
@@ -521,13 +530,20 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     else
       res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
 				  (LPSTR)&fstype, sizeof (fstype));
-    if (!res &&
-	/* Get ERROR_MORE_DATA if the fstype buffer wasn't long
-	 * enough, so let's ignore it. */
-	GetLastError() != ERROR_MORE_DATA) {
-      set_errno_from_win32_error (GetLastError());
-      FindClose (hFind);
-      return -1;
+
+    /* fprintf (stderr, "found, vol info: %d, %s\n", res, res ? fstype : "-"); */
+
+    if (!res) {
+      unsigned long w32_err = GetLastError();
+      /* Get ERROR_MORE_DATA if the fstype buffer wasn't long enough,
+       * so let's ignore it. That error is also known to be reported
+       * as ERROR_BAD_LENGTH in Vista and 7. */
+      if (w32_err != ERROR_MORE_DATA && w32_err != ERROR_BAD_LENGTH) {
+	/* fprintf (stderr, "GetVolumeInformation failure: %d\n", w32_err); */
+	set_errno_from_win32_error (w32_err);
+	FindClose (hFind);
+	return -1;
+      }
     }
 
     if (res && !strcmp (fstype, "FAT")) {
