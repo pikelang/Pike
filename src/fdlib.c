@@ -33,11 +33,18 @@ int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
 /* #define FD_DEBUG */
+/* #define FD_STAT_DEBUG */
 
 #ifdef FD_DEBUG
 #define FDDEBUG(X) X
 #else
 #define FDDEBUG(X)
+#endif
+
+#ifdef FD_STAT_DEBUG
+#define STATDEBUG(X) X
+#else
+#define STATDEBUG(X) do {} while (0)
 #endif
 
 /* _dosmaperr is internal but still exported in the dll interface. */
@@ -453,7 +460,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   else
     drive = -1;
 
-  /* fprintf (stderr, "fd_stat %s drive %d\n", file, drive); */
+  STATDEBUG (fprintf (stderr, "fd_stat %s drive %d\n", file, drive));
 
   /* get info for file */
   hFind = FindFirstFile(file, &findbuf);
@@ -463,9 +470,10 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     char abspath[_MAX_PATH + 1];
     UINT drive_type;
 
-    /* fprintf (stderr, "check root dir\n"); */
+    STATDEBUG (fprintf (stderr, "check root dir\n"));
 
     if (!strpbrk(file, ":./\\")) {
+      STATDEBUG (fprintf (stderr, "no path separators\n"));
       errno = ENOENT;
       return -1;
     }
@@ -473,9 +481,12 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     if (!_fullpath( abspath, file, _MAX_PATH ) ||
 	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
 	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
+      STATDEBUG (fprintf (stderr, "not a root %s\n", abspath));
       errno = ENOENT;
       return -1;
     }
+
+    STATDEBUG (fprintf (stderr, "abspath: %s\n", abspath));
 
     l = strlen (abspath);
     if (!ISSEPARATOR (abspath[l - 1])) {
@@ -487,9 +498,12 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
     drive_type = GetDriveType (abspath);
     if (drive_type == DRIVE_UNKNOWN || drive_type == DRIVE_NO_ROOT_DIR) {
+      STATDEBUG (fprintf (stderr, "invalid drive type: %u\n", drive_type));
       errno = ENOENT;
       return -1;
     }
+
+    STATDEBUG (fprintf (stderr, "faking root stat\n"));
 
     /* Root directories (e.g. C:\ and \\server\share\) are faked */
     findbuf.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
@@ -535,7 +549,8 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
 				  (LPSTR)&fstype, sizeof (fstype));
 
-    /* fprintf (stderr, "found, vol info: %d, %s\n", res, res ? fstype : "-"); */
+    STATDEBUG (fprintf (stderr, "found, vol info: %d, %s\n",
+			res, res ? fstype : "-"));
 
     if (!res) {
       unsigned long w32_err = GetLastError();
@@ -543,7 +558,8 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
        * so let's ignore it. That error is also known to be reported
        * as ERROR_BAD_LENGTH in Vista and 7. */
       if (w32_err != ERROR_MORE_DATA && w32_err != ERROR_BAD_LENGTH) {
-	/* fprintf (stderr, "GetVolumeInformation failure: %d\n", w32_err); */
+	STATDEBUG (fprintf (stderr, "GetVolumeInformation failure: %d\n",
+			    w32_err));
 	set_errno_from_win32_error (w32_err);
 	FindClose (hFind);
 	return -1;
@@ -555,6 +571,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 				       &findbuf.ftLastAccessTime,
 				       &findbuf.ftLastWriteTime,
 				       buf)) {
+	STATDEBUG (fprintf (stderr, "fat_filetimes_to_stattimes failed.\n"));
 	FindClose (hFind);
 	return -1;
       }
