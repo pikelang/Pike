@@ -465,9 +465,13 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
     /* fprintf (stderr, "check root dir\n"); */
 
-    if (!strpbrk(file, "./\\") ||
-	!_fullpath( abspath, file, _MAX_PATH ) ||
-	/* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
+    if (!strpbrk(file, ":./\\")) {
+      errno = ENOENT;
+      return -1;
+    }
+
+    if (!_fullpath( abspath, file, _MAX_PATH ) ||
+	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
 	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
       errno = ENOENT;
       return -1;
