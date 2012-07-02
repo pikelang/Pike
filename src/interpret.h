@@ -764,7 +764,12 @@ void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
 BLOCK_ALLOC (catch_context, 0);
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC(pike_frame,128);
+#else
+struct pike_frame * alloc_pike_frame();
+void really_free_pike_frame(struct pike_frame * f);
+#endif
 
 #ifdef PIKE_USE_MACHINE_CODE
 void call_check_threads_etc();

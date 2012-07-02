@@ -9,6 +9,7 @@
  */
 
 #include "global.h"
+#include "interpret.h"
 
 #undef CJUMP
 #undef AUTO_BIGNUM_LOOP_TEST

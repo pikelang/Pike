@@ -166,8 +166,8 @@ void init_pike(char **argv, const char *file)
     extern void init_gc_rec_frame_blocks(void);
     extern void init_ba_mixed_frame_blocks(void);
     extern void init_callback_blocks(void);
-#endif
     extern void init_pike_frame_blocks(void);
+#endif
     extern void init_node_s_blocks(void);
     extern void init_object_blocks(void);
 
@@ -180,9 +180,9 @@ void init_pike(char **argv, const char *file)
     /* This has already been done by initialize_dmalloc(). */
     init_callback_blocks();
 # endif /* !DEBUG_MALLOC */
+    init_pike_frame_blocks();
 #endif
     init_catch_context_blocks();
-    init_pike_frame_blocks();
     init_node_s_blocks();
     init_object_blocks();
     init_multiset();

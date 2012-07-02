@@ -1925,7 +1925,27 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
  )									\
 }while(0)
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
+#else
+#include "gjalloc.h"
+struct block_allocator pike_frame_allocator = BA_INIT(sizeof(struct pike_frame),
+							     4*4096/sizeof(struct pike_frame));
+INLINE struct pike_frame * alloc_pike_frame() {
+    struct pike_frame * f = (struct pike_frame *)ba_alloc(&pike_frame_allocator);
+    INIT_BLOCK(f);
+    return f;
+}
+
+INLINE void really_free_pike_frame(struct pike_frame * f) {
+    EXIT_BLOCK(f);
+    ba_free(&pike_frame_allocator, f);
+}
+
+void count_memory_in_pike_frames(size_t * num, size_t * size) {
+    ba_count_all(&pike_frame_allocator, num, size);
+}
+#endif
 
 
 void really_free_pike_scope(struct pike_frame *scope)
