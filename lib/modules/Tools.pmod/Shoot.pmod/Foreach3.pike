@@ -2,6 +2,7 @@
 inherit Tools.Shoot.Test;
 
 constant name="Foreach (arr,global)";
+constant dont_dump_program = 1;
 
 array const = enumerate(10000000);
 int n;
