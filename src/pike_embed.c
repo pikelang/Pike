@@ -161,8 +161,8 @@ void init_pike(char **argv, const char *file)
   fd_init();
   {
     extern void init_mapping_blocks(void);
-    extern void init_callable_blocks(void);
 #ifndef PIKE_NEW_BLOCK_ALLOC
+    extern void init_callable_blocks(void);
     extern void init_gc_rec_frame_blocks(void);
     extern void init_ba_mixed_frame_blocks(void);
     extern void init_callback_blocks(void);
@@ -172,8 +172,8 @@ void init_pike(char **argv, const char *file)
     extern void init_object_blocks(void);
 
     init_mapping_blocks();
-    init_callable_blocks();
 #ifndef PIKE_NEW_BLOCK_ALLOC
+    init_callable_blocks();
     init_gc_rec_frame_blocks();
     init_ba_mixed_frame_blocks();
 # if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)

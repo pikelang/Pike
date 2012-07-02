@@ -68,11 +68,6 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   low_add_constant(name, p?&s:NULL);
 }
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {						\
-    DO_IF_DEBUG (DOUBLELINK (first_callable, X));			\
-  } while (0)
-
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {		\
   DO_IF_DEBUG (DOUBLEUNLINK (first_callable, X)); \
@@ -82,7 +77,27 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
+#undef INIT_BLOCK
+#define INIT_BLOCK(X) do {						\
+    DO_IF_DEBUG (DOUBLELINK (first_callable, X));			\
+  } while (0)
+
+
 BLOCK_ALLOC_FILL_PAGES(callable,2)
+#else
+#include "gjalloc.h"
+static struct block_allocator callable_allocator
+    = BA_INIT(sizeof(struct callable), 2*4096/sizeof(struct callable));
+
+void really_free_callable(struct callable * c) {
+    EXIT_BLOCK(c);
+    ba_free(&callable_allocator, c);
+}
+void count_memory_in_callables(size_t * num, size_t * size) {
+    ba_count_all(&callable_allocator, num, size);
+}
+#endif
 
 int global_callable_flags=0;
 
@@ -94,7 +109,14 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       optimize_fun optimize,
 					       docode_fun docode)
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
   struct callable *f=alloc_callable();
+#else
+  struct callable *f=(struct callable*)ba_alloc(&callable_allocator);
+# ifdef PIKE_DEBUG
+  DOUBLELINK(first_callable, f);
+# endif
+#endif
   INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
   f->function=fun;
   f->name=name;

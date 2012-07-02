@@ -769,6 +769,7 @@ BLOCK_ALLOC(pike_frame,128);
 #else
 struct pike_frame * alloc_pike_frame();
 void really_free_pike_frame(struct pike_frame * f);
+void count_memory_in_pike_frames(size_t * num, size_t * size);
 #endif
 
 #ifdef PIKE_USE_MACHINE_CODE
