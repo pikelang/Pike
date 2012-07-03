@@ -436,7 +436,7 @@ BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
 #include "gjalloc.h"
 
 struct block_allocator gc_rec_frame_allocator =
-    BA_INIT(sizeof(struct gc_rec_frame), 4096/sizeof(struct gc_rec_frame));
+    BA_INIT_PAGES(sizeof(struct gc_rec_frame), 2*PIKE_MALLOC_PAGE_SIZE);
 
 static INLINE void really_free_gc_rec_frame(struct gc_rec_frame * f) {
 #ifdef PIKE_DEBUG
@@ -479,7 +479,7 @@ struct ba_mixed_frame
 BLOCK_ALLOC_FILL_PAGES (ba_mixed_frame, 2)
 #else
 static struct block_allocator ba_mixed_frame_allocator
-    = BA_INIT(sizeof(struct ba_mixed_frame), 4096/sizeof(struct ba_mixed_frame));
+    = BA_INIT_PAGES(sizeof(struct ba_mixed_frame), 2*PIKE_MALLOC_PAGE_SIZE);
 
 void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
   ba_count_all(&ba_mixed_frame_allocator, num, size);

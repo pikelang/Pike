@@ -88,7 +88,7 @@ BLOCK_ALLOC_FILL_PAGES(callable,2)
 #else
 #include "gjalloc.h"
 static struct block_allocator callable_allocator
-    = BA_INIT(sizeof(struct callable), 2*4096/sizeof(struct callable));
+    = BA_INIT_PAGES(sizeof(struct callable), 2*PIKE_MALLOC_PAGE_SIZE);
 
 void really_free_callable(struct callable * c) {
     EXIT_BLOCK(c);
