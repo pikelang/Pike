@@ -93,7 +93,24 @@ struct piece
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(p) free_string (p->s);
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES (piece, 2);
+#else
+#include "gjalloc.h"
+static struct block_allocator piece_allocator
+    = BA_INIT_PAGES(sizeof(struct piece), 2*PIKE_MALLOC_PAGE_SIZE);
+
+static INLINE struct piece * alloc_piece() {
+    struct piece * p = ba_alloc(&piece_allocator);
+    INIT_BLOCK(p);
+    return p;
+}
+
+static INLINE void really_free_piece(struct piece * p) {
+    EXIT_BLOCK(p);
+    ba_free(&piece_allocator, p);
+}
+#endif
 
 struct out_piece
 {
@@ -106,7 +123,22 @@ struct out_piece
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(p) free_svalue (&p->v)
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES (out_piece, 2);
+#else
+static struct block_allocator out_piece_allocator
+    = BA_INIT_PAGES(sizeof(struct out_piece), 2*PIKE_MALLOC_PAGE_SIZE);
+
+static INLINE struct out_piece * alloc_out_piece() {
+    struct out_piece * p = ba_alloc(&out_piece_allocator);
+    INIT_BLOCK(p);
+    return p;
+}
+static INLINE void really_free_out_piece(struct out_piece * p) {
+    EXIT_BLOCK(p);
+    ba_free(&out_piece_allocator, p);
+}
+#endif
 
 struct feed_stack
 {
@@ -141,7 +173,21 @@ struct feed_stack
     really_free_piece (f);						\
   }
 
+#ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC (feed_stack, 1);
+#else
+static struct block_allocator feed_stack_allocator
+    = BA_INIT_PAGES(sizeof(struct feed_stack), PIKE_MALLOC_PAGE_SIZE);
+static INLINE struct feed_stack * alloc_feed_stack() {
+    struct feed_stack * p = ba_alloc(&feed_stack_allocator);
+    INIT_BLOCK(p);
+    return p;
+}
+static INLINE void really_free_feed_stack(struct feed_stack * p) {
+    EXIT_BLOCK(p);
+    ba_free(&feed_stack_allocator, p);
+}
+#endif
 
 enum types {
   TYPE_TAG,			/* empty tag callback */
@@ -5305,9 +5351,11 @@ static void html_ignore_comments(INT32 args)
 void init_parser_html(void)
 {
    size_t offset;
+#ifndef PIKE_NEW_BLOCK_ALLOC
    init_piece_blocks();
    init_out_piece_blocks();
    init_feed_stack_blocks();
+#endif
 
    offset = ADD_STORAGE(struct parser_html_storage);
 
@@ -5486,9 +5534,15 @@ void init_parser_html(void)
 
 void exit_parser_html()
 {
+#ifndef PIKE_NEW_BLOCK_ALLOC
    free_all_piece_blocks();
    free_all_out_piece_blocks();
    free_all_feed_stack_blocks();
+#else
+   ba_destroy(&piece_allocator);
+   ba_destroy(&out_piece_allocator);
+   ba_destroy(&feed_stack_allocator);
+#endif
    exit_calc_chars();
 }
 
