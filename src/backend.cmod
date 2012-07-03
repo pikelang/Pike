@@ -1657,7 +1657,7 @@ PIKECLASS Backend
   }
 
 #ifndef tObjImpl_THREAD
-  /* Kludge for precompile.pike; it resolves object(Thread.Thread)
+  /* Kludge for precompile.pike; it resolves object(Thread)
    * to tObjImpl_THREAD, while "program_id.h" only knows about
    * tObjImpl_THREAD_ID.
    */
@@ -1674,7 +1674,7 @@ PIKECLASS Backend
    *! If Pike is compiled without thread support then @expr{1@} is
    *! returned if we're inside the backend, @expr{0@} otherwise.
    */
-  PIKEFUN object(Thread.Thread)|int(0..1) executing_thread()
+  PIKEFUN object(Thread)|int(0..1) executing_thread()
     /* FIXME: The type is too weak, but precompile.pike doesn't
      * understand different function variants in cpp branches. */
   {
