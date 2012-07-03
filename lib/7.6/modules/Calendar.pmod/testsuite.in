@@ -29,8 +29,9 @@ test_dwim("Tue Nov 19 07:04:03 MET 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 CST 2002","CST")
 test_dwim("Tue Nov 19 07:04:03 CET 2002","CET")
 test_dwim("Tue Nov 19 07:04:03  2002","CET")
-test_dwim("Tue Nov 19 07:04:03 NFT 2002","NFT")
-dnl test_dwim("Tue Nov 19 07:04:03 DFT 2002","DFT")
+dnl NFT (Norway-France Time) is the name for CET on AIX.
+test_dwim("Tue Nov 19 07:04:03 NFT 2002","CET")
+test_dwim("Tue Nov 19 07:04:03 DFT 2002","CET")
 test_dwim("Tue Nov 19 07:04:03 MET DST 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 METDST 2002","MET")
 
