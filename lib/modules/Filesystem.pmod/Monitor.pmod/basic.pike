@@ -1122,6 +1122,9 @@ protected Pike.Backend backend;
 //! Call-out identifier for @[backend_check()] if in
 //! nonblocking mode.
 //!
+//! Set to @expr{1@} when non_blocking mode without call_outs
+//! is in use.
+//!
 //! @seealso
 //!   @[set_nonblocking()], @[set_blocking()]
 protected mixed co_id;
@@ -1163,18 +1166,12 @@ void set_blocking()
 //!   @[check()], @[set_nonblocking()]
 protected void backend_check()
 {
-  co_id = 0;
+  if (co_id != 1) co_id = 0;
   int t;
   mixed err = catch {
       t = check(0);
     };
-#if HAVE_EVENTSTREAM
-// if we are using FSEvents, we don't want to run this check more than once to prime the pumps.
-#elseif HAVE_INOTIFY
-// if we are using Inotify, we don't want to run this check more than once to prime the pumps.
-#else
   set_nonblocking(t);
-#endif /* HAVE_EVENTSTREAM */
   if (err) throw(err);
 }
 
@@ -1204,8 +1201,16 @@ void set_nonblocking(int|void t)
     if (t > max_dir_check_interval) t = max_dir_check_interval;
     if (t < 0) t = 0;
   }
-//  if (backend) co_id = backend->call_out(backend_check, t);
-//  else co_id = call_out(backend_check, t);
+#if HAVE_EVENTSTREAM
+  // If we are using FSEvents, we don't need any call_outs.
+  co_id = 1;
+#elseif HAVE_INOTIFY
+  // If we are using Inotify, we don't need any call_outs.
+  co_id = 1;
+#else
+  if (backend) co_id = backend->call_out(backend_check, t);
+  else co_id = call_out(backend_check, t);
+#endif /* HAVE_EVENTSTREAM */
 }
 
 //! Set the @[default_max_dir_check_interval].
