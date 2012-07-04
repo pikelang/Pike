@@ -340,7 +340,13 @@ protected class Monitor(string path,
   //! path is checked (and only if it exists).
   protected void file_exists(string path, Stdio.Stat st)
   {
+    int t = time(1);
     call_callback(global::file_exists, path, st);
+    if (st->mtime + (stable_time || global::stable_time) >= t) {
+      // Not stable yet! We guess that the mtime is a
+      // fair indication of when the file last changed.
+      last_change = st->mtime;
+    }
   }
 
   //! File creation callback.
