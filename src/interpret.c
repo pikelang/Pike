@@ -1931,13 +1931,14 @@ BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
 #include "gjalloc.h"
 struct block_allocator pike_frame_allocator = BA_INIT_PAGES(sizeof(struct pike_frame),
 							    4*PIKE_MALLOC_PAGE_SIZE);
+ATTRIBUTE((malloc))
 INLINE struct pike_frame * alloc_pike_frame() {
     struct pike_frame * f = (struct pike_frame *)ba_alloc(&pike_frame_allocator);
     INIT_BLOCK(f);
     return f;
 }
 
-INLINE void really_free_pike_frame(struct pike_frame * f) {
+void really_free_pike_frame(struct pike_frame * f) {
     EXIT_BLOCK(f);
     ba_free(&pike_frame_allocator, f);
 }

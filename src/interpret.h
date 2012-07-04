@@ -767,6 +767,7 @@ BLOCK_ALLOC (catch_context, 0);
 #ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC(pike_frame,128);
 #else
+ATTRIBUTE((malloc))
 struct pike_frame * alloc_pike_frame();
 void really_free_pike_frame(struct pike_frame * f);
 void count_memory_in_pike_frames(size_t * num, size_t * size);
