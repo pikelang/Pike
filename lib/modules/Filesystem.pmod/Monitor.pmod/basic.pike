@@ -482,6 +482,7 @@ protected class Monitor(string path,
 				    int orig_flags, int flags)
   {
     if (st->isdir) {
+      int res = 0;
       array(string) files = get_dir(path) || ({});
       array(string) new_files = files;
       array(string) deleted_files = ({});
@@ -491,8 +492,9 @@ protected class Monitor(string path,
       }
       this_program::files = files;
       foreach(new_files, string file) {
-        if(filter_file(file)) continue;
+	res = 1;
 	file = canonic_path(Stdio.append_path(path, file));
+	if(filter_file(file)) continue;
 	Monitor m2 = monitors[file];
 	mixed err = catch {
 	    if (m2) {
@@ -512,7 +514,9 @@ protected class Monitor(string path,
 	}
       }
       foreach(deleted_files, string file) {
+	res = 1;
 	file = canonic_path(Stdio.append_path(path, file));
+	if(filter_file(file)) continue;
 	Monitor m2 = monitors[file];
 	mixed err = catch {
 	    if (m2) {
@@ -534,13 +538,28 @@ protected class Monitor(string path,
 	// Check the remaining files in the directory soon.
 	foreach(((files - new_files) - deleted_files), string file) {
 	  file = canonic_path(Stdio.append_path(path, file));
+	  if(filter_file(file)) continue;
 	  Monitor m2 = monitors[file];
 	  if (m2) {
 	    m2->bump(flags);
+	  } else {
+	    // Lost update due to race-condition:
+	    //
+	    //   Exist ==> Deleted ==> Exists
+	    //
+	    // with no update of directory inbetween.
+	    //
+	    // Create the lost submonitor again.
+	    res = 1;
+	    monitor(file, orig_flags | MF_AUTO | MF_HARD,
+		    max_dir_check_interval,
+		    file_interval_factor,
+		    stable_time);
+	    monitors[file]->check();
 	  }
 	}
       }
-      if (sizeof(new_files) || sizeof(deleted_files)) return 1;
+      return res;
     } else {
       attr_changed(path, st);
       return 1;
@@ -592,7 +611,7 @@ protected class Monitor(string path,
 	  this_program::files = files;
 	  foreach(files, string file) {
 	    file = canonic_path(Stdio.append_path(path, file));
-            if(filter_file(file)) continue;
+	    if(filter_file(file)) continue;
 	    if (monitors[file]) {
 	      // There's already a monitor for the file.
 	      // Assume it has already notified about existance.
