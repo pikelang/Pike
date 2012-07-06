@@ -127,6 +127,7 @@ string query_address(void|int(0..1) is_local) { return 0; }
 //!   @[Stdio.File()->read()]
 string read(void|int(0..) len, void|int(0..1) not_all) {
   if(!r) return 0;
+  if (len < 0) error("Cannot read negative number of characters.\n");
   int start=ptr;
   ptr += len;
   if(zero_type(len) || ptr>sizeof(data))
