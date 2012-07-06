@@ -4005,16 +4005,16 @@ size_t do_gc(void *ignored, int explicit_call)
       /* Upper limit on the new threshold based on gc_min_time_ratio. */
       double max_threshold = (objects_alloced+1.0) *
 	gc_time / (gc_min_time_ratio * non_gc_time);
-      if (max_threshold < new_threshold) {
-	new_threshold = max_threshold;
-	last_garbage_strategy = GARBAGE_MAX_INTERVAL;
-      }
 #ifdef GC_INTERVAL_DEBUG
       fprintf (stderr, "     max interval? min time ratio %g, "
 	       "max threshold %.12g -> %s\n",
 	       gc_min_time_ratio, max_threshold,
 	       max_threshold < new_threshold ? "yes" : "no");
 #endif
+      if (max_threshold < new_threshold) {
+	new_threshold = max_threshold;
+	last_garbage_strategy = GARBAGE_MAX_INTERVAL;
+      }
     }
 
 #if 0
