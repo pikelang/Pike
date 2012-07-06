@@ -4,6 +4,9 @@ test_eq(_Roxen.html_encode_string (0), "0")
 test_eq(_Roxen.html_encode_string (""), "")
 test_eq(_Roxen.html_encode_string (10), "10")
 test_eq(_Roxen.html_encode_string("a&b<c>d"), "a&amp;b&lt;c&gt;d")
+test_eq((int) _Roxen.html_encode_string (Int.NATIVE_MAX), Int.NATIVE_MAX);
+test_eq((int) _Roxen.html_encode_string (Int.NATIVE_MIN + 1), Int.NATIVE_MIN + 1);
+test_eq((int) _Roxen.html_encode_string (Int.NATIVE_MIN), Int.NATIVE_MIN);
 
 test_eq(_Roxen.http_decode_string(""), "")
 test_eq(_Roxen.http_decode_string("abc+d%20e%41"), "abc+d eA")

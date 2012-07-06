@@ -490,8 +490,8 @@ static void f_html_encode_string( INT32 args )
       /* Optimization, this is basically a inlined cast_int_to_string */
       {
 	char buf[21], *b = buf+19;
-	int neg, i, j=0;
-	i = Pike_sp[-1].u.integer;
+	int neg, j=0;
+	INT_TYPE i = Pike_sp[-1].u.integer;
 	pop_stack();
 	if( i < 0 )
 	{
