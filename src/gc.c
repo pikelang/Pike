@@ -4226,9 +4226,9 @@ void f_implicit_gc_real_time (INT32 args)
 void dump_gc_info(void)
 {
   fprintf(stderr,"Current number of things   : %d\n",num_objects);
-  fprintf(stderr,"Allocations since last gc  : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Allocations since last gc  : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  num_allocs);
-  fprintf(stderr,"Threshold for next gc      : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Threshold for next gc      : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  alloc_threshold);
   fprintf(stderr,"Projected current garbage  : %f\n",
 	  objects_freed * (double) num_allocs / (double) alloc_threshold);

@@ -67,11 +67,11 @@ extern double gc_average_slowness;
 #ifdef INT64
 #define ALLOC_COUNT_TYPE INT64
 #define ALLOC_COUNT_TYPE_MAX MAX_INT64
-#define PRINT_ALLOC_COUNT_TYPE "%"PRINTINT64"d"
+#define PRINT_ALLOC_COUNT_TYPE PRINTINT64"d"
 #else
 #define ALLOC_COUNT_TYPE unsigned long
 #define ALLOC_COUNT_TYPE_MAX ULONG_MAX
-#define PRINT_ALLOC_COUNT_TYPE "%lu"
+#define PRINT_ALLOC_COUNT_TYPE "lu"
 #endif
 
 extern int num_objects, got_unlinked_things;
