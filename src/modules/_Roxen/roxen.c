@@ -13,6 +13,7 @@
 
 #include "machine.h"
 
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -489,7 +490,7 @@ static void f_html_encode_string( INT32 args )
     case PIKE_T_INT:
       /* Optimization, this is basically a inlined cast_int_to_string */
       {
-	char buf[21], *b = buf+19;
+	char buf[21], *b = buf + (sizeof (buf) - 2);
 	int neg, j=0;
 	INT_TYPE i = Pike_sp[-1].u.integer;
 	if( i < 0 )
@@ -506,7 +507,7 @@ static void f_html_encode_string( INT32 args )
 	  neg = 0;
 	pop_stack();
 
-	buf[20] = 0;
+	buf[sizeof (buf) - 1] = 0;
 
 	while( i >= 10 )
 	{
@@ -515,6 +516,7 @@ static void f_html_encode_string( INT32 args )
 	}
 	b[ -j++ ] = '0'+(i%10);
 	if( neg )  b[ -j++ ] = '-';
+	assert (b - j + 1 >= buf);
 	push_text( b-j+1 );
       }
       return;
