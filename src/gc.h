@@ -75,7 +75,7 @@ extern double gc_average_slowness;
 #endif
 
 extern int num_objects, got_unlinked_things;
-extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
+extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold, saved_alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;

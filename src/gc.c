@@ -120,6 +120,13 @@ int gc_destruct_everything = 0;
 #endif
 size_t gc_ext_weak_refs;
 
+ALLOC_COUNT_TYPE saved_alloc_threshold;
+/* Used to backup alloc_threshold if the gc is disabled, so that it
+ * can be restored when it's enabled again. This is to not affect the
+ * gc interval if it's disabled only for a short duration.
+ * alloc_threshold is set to GC_MAX_ALLOC_THRESHOLD while it's
+ * disabled, to avoid complicating the test in GC_ALLOC(). */
+
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
@@ -3437,11 +3444,18 @@ size_t do_gc(void *ignored, int explicit_call)
   if(Pike_in_gc) return 0;
 
   if (gc_enabled <= 0 && (gc_enabled < 0 || !explicit_call)) {
-    num_allocs = 0;
-    alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
+    /* If this happens then the gc has been disabled for a very long
+     * time and num_allocs > GC_MAX_ALLOC_THRESHOLD. Have to reset
+     * num_allocs, but then we also reset saved_alloc_threshold to
+     * GC_MIN_ALLOC_THRESHOLD so that a gc is run quickly if it ever
+     * is enabled again. */
 #ifdef GC_INTERVAL_DEBUG
-    fprintf (stderr, "GC disabled: num_allocs 0, alloc_threshold max\n");
+    fprintf (stderr, "GC disabled: num_allocs %"PRINT_ALLOC_COUNT_TYPE", "
+	     ", alloc_threshold %"PRINT_ALLOC_COUNT_TYPE"\n",
+	     num_allocs, alloc_threshold);
 #endif
+    num_allocs = 0;
+    saved_alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
     if (gc_evaluator_callback) {
       remove_callback (gc_evaluator_callback);
       gc_evaluator_callback = NULL;
