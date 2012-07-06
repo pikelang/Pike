@@ -53,6 +53,12 @@ cond(0x8000000000000000, [[
 ]])
 test_eq([["(" + Int.NATIVE_MAX + ")"]], [[sprintf ("(%d)", Int.NATIVE_MAX)]])
 test_eq([["(" + Int.NATIVE_MIN + ")"]], [[sprintf ("(%d)", Int.NATIVE_MIN)]])
+test_eq([[Int.NATIVE_MAX]], [[(int) (Int.NATIVE_MAX + "")]])
+test_eq([[Int.NATIVE_MIN]], [[(int) (Int.NATIVE_MIN + "")]])
+test_eq([[(string) Int.NATIVE_MAX]], [[Int.NATIVE_MAX + ""]])
+test_eq([[(string) Int.NATIVE_MIN]], [[Int.NATIVE_MIN + ""]])
+test_eq([[(string) Int.NATIVE_MAX]], [[sprintf ("%d", Int.NATIVE_MAX)]])
+test_eq([[(string) Int.NATIVE_MIN]], [[sprintf ("%d", Int.NATIVE_MIN)]])
 
 # __func__
 test_eq(__func__, "a")
