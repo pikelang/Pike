@@ -286,9 +286,11 @@ mapping get_information(Stdio.File fd)
       int length;
       if (sizeof(length_s) == 2)
 	length = short_value(length_s);
+      else
+	break;
       //werror ("length: %O\n", short_value(length_s));
 
-      string data = fd->read(length-2);
+      string data = fd->read((length-2) & 0xffff);
       if (app == "\xff\xed") // APP14 Photoshop
       {
 	//werror("data: %O\n", data);
