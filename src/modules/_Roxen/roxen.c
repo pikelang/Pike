@@ -492,14 +492,19 @@ static void f_html_encode_string( INT32 args )
 	char buf[21], *b = buf+19;
 	int neg, j=0;
 	INT_TYPE i = Pike_sp[-1].u.integer;
-	pop_stack();
 	if( i < 0 )
 	{
 	  neg = 1;
 	  i = -i;
+	  if (i < 0) {
+	    /* The largest negative number cannot be negated. */
+	    o_cast_to_string();
+	    return;
+	  }
 	}
 	else
 	  neg = 0;
+	pop_stack();
 
 	buf[20] = 0;
 
