@@ -492,16 +492,11 @@ static void f_html_encode_string( INT32 args )
       {
 	char buf[21], *b = buf + (sizeof (buf) - 2);
 	int neg, j=0;
-	INT_TYPE i = Pike_sp[-1].u.integer;
-	if( i < 0 )
+	unsigned INT_TYPE i = Pike_sp[-1].u.integer;
+	if( Pike_sp[-1].u.integer < 0 )
 	{
 	  neg = 1;
-	  i = -i;
-	  if (i < 0) {
-	    /* The largest negative number cannot be negated. */
-	    o_cast_to_string();
-	    return;
-	  }
+	  i = -i; /* Always defined for unsigned - signed overflows are not. */
 	}
 	else
 	  neg = 0;
