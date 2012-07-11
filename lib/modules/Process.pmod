@@ -411,7 +411,22 @@ string locate_binary(array(string) path, string name)
   Stdio.Stat info;
   foreach(path, dir)
   {
-    string fname = dir + "/" + name;
+#ifdef __NT__
+#define PATH_SEPARATOR "\\"
+#define EXECUTABLE_EXTENSION ".EXE"
+    // Windows doesn't seem to strip quotation marks from PATH components that contain them
+    // so we need to do that here, otherwise we'll end up with a bogus path to stat on.
+    foreach(path;int i; string pc)
+    {
+       if(pc[0] == '"' && pc[-1] == '"')
+         path[i] = pc[1..sizeof(pc)-2];
+    }
+#else
+#define PATH_SEPARATOR "/"
+#define EXECUTABLE_EXTENSION ""
+#endif /* __NT__ */
+    
+    string fname = dir + PATH_SEPARATOR + name + EXECUTABLE_EXTENSION;
     if ((info = file_stat(fname))
 	&& (info[0] & 0111))
       return fname;
