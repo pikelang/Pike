@@ -7111,6 +7111,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       }
       if ((CAR(args) == prev) && CDR(args)) {
 	/* NOTE: The above test is NOT SHARED_NODES safe! */
+	CDR(args)->parent = args;
 	args = CDR(args);
 	break;
       }
