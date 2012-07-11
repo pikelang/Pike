@@ -7015,9 +7015,10 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
 }
 
 /* NOTE: fun_type loses a reference. */
-struct pike_type *new_check_call(struct pike_string *fun_name,
-				 struct pike_type *fun_type,
-				 node *args, INT32 *argno, INT32 flags)
+static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
+					    struct pike_type *fun_type,
+					    node *args, INT32 *argno,
+					    INT32 flags)
 {
   struct compilation *c = THIS_COMPILATION;
   struct pike_type *tmp = NULL;
@@ -7027,16 +7028,6 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   CHECK_COMPILER();
 
   debug_malloc_touch(fun_type);
-
-  while (args &&
-	 ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) &&
-	 fun_type) {
-    if (args->token == F_LVALUE_LIST) flags |= CALL_ARG_LVALUE;
-    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno,
-			      flags | (CDR(args)?CALL_NOT_LAST_ARG:0));
-    debug_malloc_touch(fun_type);
-    args = CDR(args);
-  }
 
   if (!args || !fun_type) {
     debug_malloc_touch(fun_type);
@@ -7163,6 +7154,81 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   }
   free_type(fun_type);
   return NULL;
+}
+
+/* NOTE: fun_type loses a reference. */
+struct pike_type *new_check_call(struct pike_string *fun_name,
+				 struct pike_type *fun_type,
+				 node *args, INT32 *argno, INT32 flags)
+{
+  node *orig_arg_parent = NULL;
+  INT32 orig_flags = flags;
+  int num_cdr = 0;
+  int num_lvalue = 0;
+
+  if (!args || !fun_type) {
+    debug_malloc_touch(fun_type);
+    return fun_type;
+  }
+
+  orig_arg_parent = args->parent;
+  args->parent = NULL;	/* End marker. */
+
+  debug_malloc_touch(fun_type);
+
+  while (args && fun_type) {
+    if ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) {
+      if (CDR(args)) {
+	num_cdr++;
+	flags |= CALL_NOT_LAST_ARG;
+      }
+      if (args->token == F_LVALUE_LIST) {
+	num_lvalue++;
+	flags |= CALL_ARG_LVALUE;
+      }
+      if (CAR(args)) {
+	CAR(args)->parent = args;
+	args = CAR(args);
+	continue;
+      } else if (CDR(args)) {
+	CDR(args)->parent = args;
+	args = CDR(args);
+	if (!--num_cdr) {
+	  flags = orig_flags | (num_lvalue?CALL_ARG_LVALUE:0);
+	}
+	continue;
+      }
+    } else {
+      fun_type = new_check_call_arg(fun_name, fun_type, args, argno, flags);
+      debug_malloc_touch(fun_type);
+
+      if (!fun_type) return NULL;
+    }
+
+    do {
+      node *prev = args;
+      if (args->token == F_LVALUE_LIST) {
+	if (!--num_lvalue) {
+	  flags = orig_flags | (num_cdr?CALL_NOT_LAST_ARG:0);
+	}
+      }
+      args = args->parent;
+      if (!args) {
+	prev->parent = orig_arg_parent;
+	break;
+      }
+      if ((CAR(args) == prev) && CDR(args)) {
+	/* NOTE: The above test is NOT SHARED_NODES safe! */
+	if (!--num_cdr) {
+	  flags = orig_flags | (num_lvalue?CALL_ARG_LVALUE:0);
+	}
+	args = CDR(args);
+	break;
+      }
+    } while(args);
+  }
+
+  return fun_type;
 }
 
 struct pike_type *zzap_function_return(struct pike_type *a,
