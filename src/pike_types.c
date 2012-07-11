@@ -7222,6 +7222,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	if (!--num_cdr) {
 	  flags = orig_flags | (num_lvalue?CALL_ARG_LVALUE:0);
 	}
+	CDR(args)->parent = args;
 	args = CDR(args);
 	break;
       }
