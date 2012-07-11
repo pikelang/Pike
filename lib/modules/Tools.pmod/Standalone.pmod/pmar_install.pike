@@ -513,7 +513,7 @@ string savetemp_pmar(string data, string filename)
   foreach(x;; dir)
   {
     object s;
-    if((s = file_stat(dir)) && s->isdir)
+    if(dir && (s = file_stat(dir)) && s->isdir)
     {
       break;
     }
