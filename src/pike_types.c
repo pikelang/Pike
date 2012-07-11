@@ -7217,7 +7217,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	prev->parent = orig_arg_parent;
 	break;
       }
-      if ((CAR(args) == prev) && CDR(args)) {
+      if ((CDR(args) != prev) && CDR(args)) {
 	/* NOTE: The above test is NOT SHARED_NODES safe! */
 	if (!--num_cdr) {
 	  flags = orig_flags | (num_lvalue?CALL_ARG_LVALUE:0);
