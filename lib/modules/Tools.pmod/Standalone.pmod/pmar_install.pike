@@ -10,11 +10,21 @@ constant description = "Pike packaged module (PMAR) installer.";
 int forcing;
 int ilocal;
 
+string md5; // the optional md5 checksum to compare the package against.
 string s; // the pmar file contents
 string fsroot; // the first directory in the pmar archive.
-
+object uri; // if a uri was passed as the pmar source, this is it.
+string tempfile; // if loaded from a remote source, we cache the file locally.
+string pmar_name; // the base pmar filename.
 int c;
 int cc;
+object file_object;
+int uninstall;
+int restart;
+
+mapping sysinfo, metadata;
+object moduletool;
+string system_module_path;
 
 //!
 //! a prototype installer for prepackaged modules
@@ -49,15 +59,21 @@ int cc;
 
 void print_help(array argv)
 {
-    werror("Usage: pike -x pmar_install [--local] [--force] [--help] pmarfile\n");
+    werror("Usage: %s [--local] [--force] [--md5=MD5HASH] [--help] pmarfile\n", argv[0]);
 }
 
 int main(int argc, array(string) argv)
 {
-
+  array components;
+  
   array opts = Getopt.find_all_options(argv,aggregate(
     ({"local",Getopt.NO_ARG,({"--local"}) }),
+    ({"uninstall",Getopt.NO_ARG,({"--uninstall"}) }),
+    ({"tempfile",Getopt.HAS_ARG,({"--tempfile"}) }),
+    ({"components",Getopt.HAS_ARG,({"--components"}) }),
     ({"force",Getopt.NO_ARG,({"--force"}) }),
+    ({"restart",Getopt.NO_ARG,({"--restart"}) }),
+    ({"md5",Getopt.HAS_ARG,({"--md5"}) }),
     ({"help",Getopt.NO_ARG,({"--help"}) }),
     ));
     
@@ -77,31 +93,142 @@ int main(int argc, array(string) argv)
         print_help(argv);
         return 0;
         break;
+      case "md5":
+        md5 = lower_case(opt[1]);
+        break;
       case "local":
         ilocal = 1;
         break;
       case "force":
         forcing = 1;
         break;
+      case "components":
+        components = decode_value(MIME.decode_base64(opt[1]));
+        break;
+      case "uninstall":
+        uninstall = 1;
+        break;
+      case "tempfile":
+        tempfile = opt[1];
+      case "restart":
+         restart = 1;
     }
   }
 
-  s = Stdio.read_file(argv[1]);
+  catch(uri = Standards.URI(argv[1]));
+  
+  if(uninstall)
+  {
+    write("Uninstalling in 5 seconds...\n");
+    sleep(5);
+    do_uninstall(components, ilocal);
+    write("Uninstall complete, restarting installation.\n");
+    
+    array monger_args = ({"-x", "pmar_install", "--restart"});
+    
+     if(ilocal)
+       monger_args += ({"--local"});
+     
+     if(tempfile)
+       monger_args += ({ "--tempfile=" + tempfile });  
+     monger_args += ({ (string)uri });
+   
+     Process.spawn_pike(monger_args);
+    return 0;
+  }  
+  
+  if(!uri) // probably a file specification.
+  {
+    uri = Standards.URI("file://" + combine_path(getcwd(), argv[1])); 
+    pmar_name = basename(uri->path);
+    write("Loading PMAR from local file " + (string)uri + "...\n"); 
+
+    s = Stdio.read_file(argv[1]);    
+    if(!s) 
+    {
+      werror("PMAR does not exist or contains no data.\n");
+      exit(1);
+    }
+ }
+  else if((<"file">)[uri->scheme])
+  {
+    s = Stdio.read_file(argv[1]);    
+    pmar_name = basename(uri->path);
+    if(!s) 
+    {
+      werror("PMAR does not exist or contains no data.\n");
+      exit(1);
+    }
+  }
+  else if((<"http", "https">)[uri->scheme])
+  {
+    pmar_name = basename(uri->path);
+    if(tempfile)
+    {
+      write("Reading from cached download.\n");
+      s = Stdio.read_file(tempfile);
+    }
+    else
+    {
+      write("Fetching PMAR from " + (string)uri + "...\n"); 
+      s = Protocols.HTTP.get_url_data(uri);
+    }
+    if(!s) 
+    {
+      werror("ERROR: PMAR does not exist or contains no data.\n");
+      exit(1);
+    }
+    if(!tempfile)
+      tempfile = savetemp_pmar(s, pmar_name);
+  }
+  else
+  {
+    werror("ERROR: Unsupported URI type " + uri->scheme + ".\n");
+    exit(1);
+  }
+  
+  file_object = Stdio.FakeFile(s);
+
+  // has this pmar been gzipped?  
+  if(s[0..2] == sprintf("%c%c%c", 0x1F, 0x8B, 0x08 ))
+  {
+#if constant(Gz.File)
+    write("Reading from gzipped archive.\n");
+    file_object = Gz.File(file_object);
+#else
+    werror("ERROR: Gz support is not available in this Pike. Please gunzip pmar before installing.\n");
+#endif /* Gz.File */
+  }
+
+  string checksum = md5hash(file_object->read());
+  write("MD5 Checksum of package: %s\n", checksum);
+
+  if(md5 && String.hex2string(md5) != String.hex2string(checksum))
+  {
+    werror("ERROR: MD5 mismatch; package is not genuine.\n");
+    werror("expected : %s\n", md5);
+    werror("got      : %s\n", checksum);
+    
+    if(tempfile) rm(tempfile);
+    exit(1);
+  }
+  else if(md5)
+  {
+    write("MD5 Checksum matches.\n");
+  }
+
+  file_object->seek(0);
+  
+  fsroot = Filesystem.Tar(pmar_name, 0, file_object)->get_dir()[0];
 
   // we assume that the first entry in the package file is the directory
   // that contains the module to be installed.
-  fsroot = Filesystem.Tar(argv[1], 0, Stdio.FakeFile(s))->get_dir()[0];
-
-  mapping sysinfo, metadata;
-  object moduletool;
-  string system_module_path;
 
   sysinfo = get_sysinfo();
-  metadata = get_package_metadata(s, fsroot);
+  metadata = get_package_metadata(file_object, fsroot);
   moduletool = Tools.Standalone.module();
 
   moduletool->load_specs(moduletool->include_path+"/specs");
-
  
   // we assume the local module install path is $HOME/lib/pike/modules.
   if(!ilocal)
@@ -113,7 +240,8 @@ int main(int argc, array(string) argv)
 
   if(!file_stat(system_module_path))
   {
-    werror("Error: module installation directory %s does not exist.\n", system_module_path);
+    werror("ERROR: module installation directory %s does not exist.\n", system_module_path);
+    if(tempfile) rm(tempfile);
     return 2;
   }
 
@@ -122,44 +250,93 @@ int main(int argc, array(string) argv)
 
   if(!forcing && !verify_suitable_package(metadata, sysinfo))
   {
-    werror("Package is not suitable for this system.\n");
+    werror("ERROR: Package is not suitable for this system.\n");
+    if(tempfile) rm(tempfile);
     return 1;
   }
-
 
   //
   // first, we should uninstall any modules included with this new package.
   //
-
-  foreach(metadata->MODULE/",";;string mod)
+  if(restart)
   {
-    mod = String.trim_all_whites(mod);
-    werror("Uninstalling any previous version of %s...\n", mod);
-
-    object d = Tools.Monger.MongerUser();
-    d->uninstall(mod, ilocal);
+    write("Restarting installation process.\n");
   }
+  else
+  {
+     array(string) comp = ({});
+     foreach(metadata->MODULE/",";;string mod)
+     {
+       mod = String.trim_all_whites(mod);
+      write("Uninstalling any previous version of %s...\n", mod);
 
-  if(!preinstall(this, getfs(s, "/")))
+      // we spawn a new pike to do this because Windows prohibits modifying a file if it's already
+      // in use, and the act of querying a module's existance will cause any .so files to be tied
+      // up for the duration of the process lifetime.
+    
+      object d = Tools.Monger.MongerUser();
+      string local_ver;
+      array local_components;
+     
+      [local_ver, local_components] = d->find_components(mod, ilocal);
+    
+      comp += local_components;
+#if 0    
+      object d = Tools.Monger.MongerUser();
+      d->uninstall(mod, ilocal);
+#endif /* 0 */
+    }
+  
+    if(sizeof(comp))
+    {
+      array monger_args = ({"-x", "pmar_install", "--uninstall"});
+    
+      if(ilocal)
+        monger_args += ({"--local"});
+     
+      monger_args += ({"--components=" + MIME.encode_base64(encode_value(Array.uniq(comp)))});
+      if(tempfile)
+        monger_args += ({ "--tempfile=" + tempfile });  
+      if(md5)
+        monger_args += ({ "--md5=" + md5 });  
+      monger_args += ({ (string)uri });
+   
+      Process.spawn_pike(monger_args);
+      return 0;
+    } 
+  }
+  
+  if(!preinstall(this, getfs(file_object, "/")))
   {
     werror("Preinstall failed.\n");
+    if(tempfile) rm(tempfile);
     return 1;
   }
 
-  if(has_dir(s, fsroot + "/MODULE"))
-    untar(s, system_module_path, fsroot + "/MODULE");
+  if(has_dir(file_object, fsroot + "/MODULE"))
+    untar(file_object, system_module_path, fsroot + "/MODULE");
 //  if(has_dir(s, fsroot + "/INCLUDE"))
 //    untar(s, system_include_path, fsroot + "/INCLUDE");
 //  if(has_dir(s, fsroot + "/MODREF"))
 //    untar(s, system_doc_path, fsroot + "/MODREF");
 
-  if(!postinstall(this, getfs(s, "/")))
+  if(!postinstall(this, getfs(file_object, "/")))
   {
     werror("Postinstall failed.\n");
+    if(tempfile) rm(tempfile);
     return 1;
   }
 
+  write("Installation complete.\n");
+
+  if(tempfile) rm(tempfile);
   return 0;
+}
+
+void do_uninstall(array components, int ilocal)
+{
+  object d = Tools.Monger.MongerUser();
+  d->low_uninstall(components, ilocal);
 }
 
 int runscript(string sn, object installer, object pmar)
@@ -167,7 +344,7 @@ int runscript(string sn, object installer, object pmar)
   object stat;
 
   // it's okay if we don't have any scripts.
-  if(!has_dir(s, fsroot+"/SCRIPTS"))
+  if(!has_dir(file_object, fsroot+"/SCRIPTS"))
     return 1;
 
   pmar = pmar->cd(fsroot+ "/SCRIPTS");
@@ -200,7 +377,7 @@ int postinstall(object installer, object pmar)
   return runscript("postinstall", installer, pmar);
 }
 
-int has_dir(string s, string fsroot)
+int has_dir(object s, string fsroot)
 {
   object t;
   object stat;
@@ -226,6 +403,7 @@ int has_dir(string s, string fsroot)
   return 1;
 }
 
+// TODO: we should also verify minimum/maximum valid pike versions, too.
 int verify_suitable_package(mapping metadata, mapping sysinfo)
 {
   int osok, procok;
@@ -248,14 +426,14 @@ mapping get_sysinfo()
   return System.uname();
 }
 
-mapping get_package_metadata(string s, string fsroot)
+mapping get_package_metadata(object s, string fsroot)
 {
   mapping metadata = ([]);
 
   object stat = getfs(s, fsroot)->stat("METADATA.TXT");
 
   if(!stat || !stat->isreg)
-    throw(Error.Generic("missing METADATA.TXT in package!\n"));
+    throw(Error.Generic("Missing METADATA.TXT in package!\n"));
 
   string f = getfs(s, fsroot)->open("METADATA.TXT", "r")->read();
 
@@ -272,11 +450,12 @@ mapping get_package_metadata(string s, string fsroot)
   return metadata;
 }
 
-protected Filesystem.System getfs(string source, string cwd) {
-  return Filesystem.Tar(sprintf("%s.tar", "d"), 0, Stdio.FakeFile(source))->cd(cwd);
+protected Filesystem.System getfs(object source, string cwd) {
+  source->seek(0);
+  return Filesystem.Tar(sprintf("%s.tar", "d"), 0, source)->cd(cwd);
 }
 
-int untar(string source, string path, void|string cwd) {
+int untar(object source, string path, void|string cwd) {
   if (!cwd)
     cwd = "/";
   object t = getfs(source, cwd);
@@ -291,7 +470,7 @@ int untar(string source, string path, void|string cwd) {
       c++;
       cc++;
       if (DEBUG)
-        write(sprintf("%O [dir]\n", dir));
+        write(sprintf("creating: %s [dir]\n", dir));
       mkdir(dir);
       c += untar(source, dir, Stdio.append_path(cwd, fname));
     }
@@ -299,10 +478,10 @@ int untar(string source, string path, void|string cwd) {
       string file = Stdio.append_path(path, fname);
       if (mixed err = catch{
         if (DEBUG)
-          write("%O [file %d bytes]\n", file, stat->size);
+          write("writing:  %s [file %d bytes]\n", file, stat->size);
           Stdio.write_file(file, t->cd(cwd)->open(fname, "r")->read());
       }) {
-        werror("%O [error writing file]\n\n", file);
+        werror("failed:   %s [error writing file]\n\n", file);
 //        throw(err);
       }
       c++;
@@ -314,4 +493,46 @@ int untar(string source, string path, void|string cwd) {
     }
   }
   return c;
+}
+
+string savetemp_pmar(string data, string filename)
+{
+  string fn;
+  string dir;
+  string path;
+  
+  mapping e = getenv();
+  
+  array x = ({});
+  x+=({e["TMP"]});
+  x+=({e["TMPDIR"]});
+  x+=({e["TEMP"]});
+  x+=({"C:\\TEMP"});
+  x+=({"/tmp"});
+
+  foreach(x;; dir)
+  {
+    object s;
+    if((s = file_stat(dir)) && s->isdir)
+    {
+      break;
+    }
+    else dir = 0;
+  }
+  
+  // fallback to the current directory.
+  if(!dir) dir = getcwd();
+  
+  fn = md5hash((string)random(1000) + filename + " " + (string)time());
+  path = combine_path(dir , fn);
+  
+  Stdio.write_file(path, data);
+//  write("Temp file: " + path + "\n");
+  return path;
+}
+
+string md5hash(string input)
+{
+  string h = Crypto.MD5()->hash(input);
+  return String.string2hex(h);
 }

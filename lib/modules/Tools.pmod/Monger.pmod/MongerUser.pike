@@ -445,9 +445,8 @@ void do_list(string|void name)
   }
 }
 
-int uninstall(string name, int|void _local)
+array find_components(string name, int|void _local)
 {
-  string dir;
   string local_ver;
   array components;
 
@@ -461,12 +460,31 @@ int uninstall(string name, int|void _local)
     components = master()->resolv(name)["__components"];
   };
 
+  return ({local_ver, components||({})});
+}
+
+int uninstall(string name, int|void _local)
+{
+  string local_ver;
+  array components;
+
+  [local_ver, components] = find_components(name, _local);
+
   if(!local_ver) return 0;
   if(!components)
   {
     werror("no components element found for this module. Unable to reliably uninstall.\n");
     return 0;
   }
+  
+  low_uninstall(components, _local);
+  
+  return 1;
+}
+
+void low_uninstall(array components, int _local)
+{    
+  string dir;
 
   if(_local)
   {
@@ -477,7 +495,9 @@ int uninstall(string name, int|void _local)
     dir = master()->system_module_path[-1];
   }
 
-  foreach(reverse(Array.sort_array(components, Array.oid_sort_func));; string comp)
+  array elems = reverse(Array.sort_array(components));
+  
+  foreach(elems;; string comp)
   {
     object s = file_stat(Stdio.append_path(dir, comp));
     if(!s)
@@ -485,12 +505,11 @@ int uninstall(string name, int|void _local)
       werror("warning: %s does not exist.\n", comp);
       continue;
     }
-
-    werror("deleting " + comp + " [%s]\n", (s->isdir?"dir":"file"));
-    rm(Stdio.append_path(dir, comp));
+    string path = Stdio.append_path(dir, comp);
+    
+    werror("deleting: " + path + " [%s]\n", (s->isdir?"dir":"file"));
+    rm(path);
   }
-
-  return 1;
 }
 
 class xmlrpc_handler
