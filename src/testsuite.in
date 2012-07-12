@@ -535,6 +535,14 @@ test_eq([[
 
 // Argument checking
 
+// Test new_check_call.
+test_eq([[
+  constant foo = 5;
+
+  // Test that it survives a F_ARG_LIST with CAR == CDR.
+  return foo%foo;
+]], 0)
+
 // Test get_all_args.
 test_eval_error([[
   // A trick to get some svalues to freed refcounted stuff on the stack.
