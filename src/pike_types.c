@@ -7217,14 +7217,25 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	prev->parent = orig_arg_parent;
 	break;
       }
-      if ((CDR(args) != prev) && CDR(args)) {
-	/* NOTE: The above test is NOT SHARED_NODES safe! */
+      if ((CAR(args) == prev) && CDR(args)) {
 	if (!--num_cdr) {
 	  flags = orig_flags | (num_lvalue?CALL_ARG_LVALUE:0);
 	}
-	CDR(args)->parent = args;
-	args = CDR(args);
-	break;
+	if (CDR(args) != prev) {
+	  CDR(args)->parent = args;
+	  args = CDR(args);
+	  break;
+	}
+	/* CAR(args) == CDR(args), so we need to recurse
+	 * since we can't differentiate otherwise.
+	 *
+	 * This should be a quite rare case, and the tree is
+	 * most likely very shallow, so this should be safe.
+	 */
+	fun_type = new_check_call(fun_name, fun_type, prev, argno, flags);
+	debug_malloc_touch(fun_type);
+
+	if (!fun_type) return NULL;
       }
     } while(args);
   }
