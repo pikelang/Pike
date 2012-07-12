@@ -90,7 +90,8 @@ int main(int argc, array(string) argv)
         use_source = 1;
         break;
       case "short":
-         use_short = 1;
+	use_short = 1;
+	break;
       case "local":
         use_local = 1;
         break;
