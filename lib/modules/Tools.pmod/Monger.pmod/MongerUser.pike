@@ -13,6 +13,8 @@ string builddir = getenv("HOME") + "/.monger";
 
 int use_force=0;
 int use_local=0;
+int use_short=0;
+int use_source=0;
 int show_urls=0;
 string my_command;
 string argument;
@@ -20,6 +22,8 @@ string my_version;
 string run_pike;
 array(string) pike_args = ({});
 string original_dir;
+
+object repo_obj;
 
 mapping created = (["files" : ({}), "dirs": ({})]);
 
@@ -47,8 +51,10 @@ int main(int argc, array(string) argv)
     ({"builddir",Getopt.HAS_ARG,({"--builddir"}) }),
     ({"install",Getopt.NO_ARG,({"--install"}) }),
     ({"local",Getopt.NO_ARG,({"--local"}) }),
+    ({"source",Getopt.NO_ARG,({"--source"}) }),
     ({"version",Getopt.HAS_ARG,({"--version"}) }),
     ({"force",Getopt.NO_ARG,({"--force"}) }),
+    ({"short",Getopt.NO_ARG,({"--short"}) }),
     ({"help",Getopt.NO_ARG,({"--help"}) }),
     ));
 
@@ -82,6 +88,11 @@ int main(int argc, array(string) argv)
       case "force":
         use_force = 1;
         break;
+      case "source":
+        use_source = 1;
+        break;
+      case "short":
+         use_short = 1;
       case "local":
         use_local = 1;
         break;
@@ -155,6 +166,10 @@ Usage: pike -x monger [options] modulename
                        the $HOME/.monger
 --force              force the performance of an action that might 
                        otherwise generate a warning
+--source             use source control url to obtain module source,
+                       if possible
+--short              when querying a module, don't show info about the 
+                       selected version.
 --local              perform installation in a user's local rather than 
                        system directory
 --version=ver        work with the specified version of the module
@@ -165,25 +180,69 @@ Usage: pike -x monger [options] modulename
 
 void do_query(string name, string|void version)
 {
-  mapping vi = get_module_action_data(name, version);
+  string rversion;
+  int module_id;
+  mapping vi = get_module_info(name);
   if( !vi ) return;
-
-  write("%s: %s\n", vi->name, vi->description);
+  module_id = (int)vi->module_id;
+  
+  write("Module: %s\n", vi->name);
+  write("Description: %s\n", vi->description);
   write("Author/Owner: %s\n", vi->owner);
-  write("Version: %s (%s)\t", vi->version, vi->version_type);
-  write("License: %s\n", vi->license);
-  write("Changes: %s\n\n", vi->changes);
-  if(vi->download && show_urls)
+  if(vi->source_control_type)
+    write("%s URL: %s\n", vi->source_control_type, vi->source_control_url);
+
+
+  array versions = get_module_versions(module_id);
+  
+  if(sizeof(versions))
   {
-    if(stringp(vi->download))
-      write("Download URL: %s\n\n", vi->download);
-    else if(arrayp(vi->download))
-      foreach(vi->download;;string u)
-          write("Download URL: %s\n\n", u);
-      
+    write("Current version: %s\n", versions[0]);
+    rversion = get_recommended_module_version(module_id);
+    if(rversion)
+      write("Recommended version: %s (for Pike %s)\n", rversion, get_pike_version());
+    else
+      write("No recommended version (for Pike %s)\n", get_pike_version());    
   }
-  if(vi->download)
-    write("This module is available for automated installation.\n");
+  else
+  {
+    write("No released versions.\n");
+  }
+
+  if(!use_short && version)
+  {
+    mapping svi;
+    catch(svi = get_module_version_info(module_id, version));
+
+    if(!svi) 
+    {
+      write("Version %s not available.\n", (string)version);
+      return 0;
+    }
+    
+    if(rversion && rversion == version) svi->version_type = "recommended";
+    else 
+    {
+      array rvs = get_compatible_module_versions(module_id);
+      if(rvs && search(rvs, version) != -1)
+        svi->version_type = "compatible";
+      else
+        svi->version_type = "not recommended";
+    }
+    write("Version: %s (%s)\t", svi->version, svi->version_type);
+    write("License: %s\n", svi->license);
+    write("Changes: %s\n\n", svi->changes);
+    if(svi->download && show_urls)
+    {
+      if(stringp(svi->download))
+        write("Download URL: %s\n\n", svi->download);
+      else if(arrayp(svi->download))
+        foreach(svi->download;;string u)
+          write("Download URL: %s\n\n", u);   
+    }
+    if(svi->download)
+      write("This module version is available for automated installation.\n");
+  }
 
   catch 
   {
@@ -194,20 +253,26 @@ void do_query(string name, string|void version)
   };
 }
 
-mapping get_module_action_data(string name, string|void version)
+object get_repository()
+{
+  if(!repo_obj)
+    repo_obj = xmlrpc_handler(repository);
+  return repo_obj;
+}
+
+string get_pike_version()
+{
+  return sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
+      (int)__REAL_MINOR__, (int)__REAL_BUILD__);
+}
+
+mapping get_module_info(string name)
 {
   int module_id;
-  string dv;
   mixed err;
-
-  string pike_version = 
-    sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
-      (int)__REAL_MINOR__, (int)__REAL_BUILD__);
-
-  object x = xmlrpc_handler(repository);
-
+  
   err = catch {
-    module_id = x->get_module_id(name);
+    module_id = get_repository()->get_module_id(name);
   };
   if(err)
   {
@@ -215,12 +280,62 @@ mapping get_module_action_data(string name, string|void version)
     return 0;
   }
 
+  mapping vi = get_repository()->get_module_info((int)module_id);
+
+  return vi;
+}
+
+array get_compatible_module_versions(int|string module)
+{
+  if(stringp(module))
+    module = get_repository()->get_module_id(module);
+  
+  array v = get_repository()->get_compatible_module_versions((int)module, get_pike_version());
+
+  return v;
+}
+
+string get_recommended_module_version(int|string module)
+{
+  if(stringp(module))
+    module = get_repository()->get_module_id(module);
+  
+  string v = get_repository()->get_recommended_module_version((int)module, get_pike_version());
+
+  return v;
+}
+
+array(string) get_module_versions(int|string module)
+{
+  if(stringp(module))
+    module = get_repository()->get_module_id(module);
+  
+  array v = get_repository()->get_module_versions((int)module);
+
+  return v;
+}
+
+mapping get_module_version_info(int|string module, string version)
+{
+  if(stringp(module))
+    module = get_repository()->get_module_id(module);
+  
+  mapping v = get_repository()->get_module_version_info((int)module, version);
+
+  return v;
+}
+
+// 
+mapping get_module_action_data(string name, string|void version)
+{
+  string dv;
+  mixed err;
+  mapping info = get_module_info(name);
+  
   string v;
 
-  mapping info = x->get_module_info((int)module_id);
-
   err = catch {
-    v = x->get_recommended_module_version((int)module_id, pike_version);
+    v = get_recommended_module_version(name);
   };
 
   if(err)
@@ -228,9 +343,11 @@ mapping get_module_action_data(string name, string|void version)
 
   info->version_type="recommended";
 
-  if(version && version != v)
+  if(!v)
+    info->version_type = "not found";  
+  else if(version && version != v)
     info->version_type="not recommended";
-
+  
   if(version && use_force)
   {
     dv=my_version;
@@ -240,7 +357,7 @@ mapping get_module_action_data(string name, string|void version)
     write("Requested version %s is not the recommended version.\n"
           "use --force to force %s of this version.\n", 
           version, my_command);
-    exit(1);
+    return 0;    
   }
   else if(version)
   {
@@ -254,111 +371,163 @@ mapping get_module_action_data(string name, string|void version)
     dv=v;
   }
   else
-    exit(1, "repository error: no recommended version to %s.\n"
+  {
+    write("repository error: no recommended version to %s.\n"
 	 "use --force --version=ver to force %s of a particular version.\n",
          my_command, my_command);
-
-  mapping vi = x->get_module_version_info((int)module_id, dv);
+     return 0;
+  }
+  mapping vi = get_module_version_info(name, dv);
 
   return vi + info;
 }
 
-void do_download(string name, string|void version)
+string get_file(mapping version_info, string|void path, int|void from_source)
 {
-  mapping vi = get_module_action_data(name, version);
-
-  if(vi->download)
+  if(from_source && version_info->source_control_url && sizeof( version_info->source_control_type))
   {
-    write("beginning download of version %s...\n", vi->version);
+    write("fetching source from source control (%s)...\n", version_info->source_control_type);
+    string bin = lower_case(version_info->source_control_type);
+    string lpath = version_info->name + "-source";
+    if(path) lpath = Stdio.append_path(path, lpath);
+    if(file_stat(lpath))
+      throw(Error.Generic(sprintf("get_file: repository path %s already exists.\n", lpath)));
+    if(!Process.search_path(bin))
+      throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
+    mapping res;
+    
+    switch(bin)
+    {
+      case "svn":
+        res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
+        if(res->exitcode)
+        {
+          werror(res->stderr);
+          throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
+        }
+        break;
+      case "hg":
+        res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
+        if(res->exitcode)
+        {
+          werror(res->stderr);
+          throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
+        }
+        break;
+      case "git":
+        res = Process.run(({"git", "clone", version_info->source_control_type, lpath}));
+        if(res->exitcode)
+        {
+          werror(res->stderr);
+          throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));        
+        }
+        break;
+      default:
+        throw(Error.Generic("Invalid source control type " + bin + ".\n"));
+    }
+
+    write("cloned %s repository to %s.", bin, lpath);
+    return lpath;
+  }
+  else if(from_source && !version_info->source_control_url)
+  {
+    throw(Error.Generic("cannot download from source control, no source control location specified.\n"));
+  }
+  else if(version_info->download)
+  {
+    write("beginning download of version %s...\n", version_info->version);
     array rq;
-    if(arrayp(vi->download))
-      foreach(vi->download;; string u)
+    if(arrayp(version_info->download))
+      foreach(version_info->download;; string u)
       {
         rq = Protocols.HTTP.get_url_nice(u);
         if(rq) break;  
       }
     else
-      rq = Protocols.HTTP.get_url_nice(vi->download);
+      rq = Protocols.HTTP.get_url_nice(version_info->download);
     if(!rq) 
-      exit(1, "download error: unable to access download url\n");
+      throw(Error.Generic("download error: unable to access download url\n"));
     else
     {
-      Stdio.write_file(vi->filename, rq[1]);
-      write("wrote module to file %s (%d bytes)\n", vi->filename, sizeof(rq[1]));
+      string lpath = version_info->filename;
+      if(path) lpath = combine_path(path, lpath);
+      Stdio.write_file(lpath, rq[1]);
+      
+      write("wrote module to file %s (%d bytes)\n", lpath, sizeof(rq[1]));
+      return lpath;
     }
   }
   else 
-    exit(1, "download error: no download available for this module version.\n");
+    return 0;
+}
+
+void do_download(string name, string|void version)
+{
+    mapping vi = get_module_action_data(name, version);
+    if(vi)
+      get_file(vi, 0, use_source);
+    else
+      exit(1, "download error: no suitable download available.\n");
 }
 
 void do_install(string name, string|void version)
 {
   int res;
-
+  string fn;
   mapping vi = get_module_action_data(name, version);
 
-  if(vi->download)
-  {
-    original_dir = getcwd();
-    cd(builddir);
+  original_dir = getcwd();
 
-    write("beginning download of version %s...\n", vi->version);
-    array rq;
-    if(arrayp(vi->download))
-      foreach(vi->download;; string u)
-      {
-        rq = Protocols.HTTP.get_url_nice(u);
-        if(rq) break;  
-      }
-    else
-      rq = Protocols.HTTP.get_url_nice(vi->download);
-    if(!rq) 
-      exit(1, "download error: unable to access download url\n");
-    else
-    {
-      Stdio.write_file(vi->filename, rq[1]);
-      write("wrote module to file %s (%d bytes)\n", vi->filename, sizeof(rq[1]));
-    }
-  }
+  if(vi)
+    fn = get_file(vi, builddir, use_source);
   else 
-    exit(1, "install error: no download available for this module version.\n");
+    exit(1, "install error: no suitable download available.\n");
+
+  cd(builddir);
 
   // now we should uncompress the file.
-  string fn;
 
-  if((vi->filename)[sizeof(vi->filename)-3..] == ".gz")
+  if(!use_source && file_stat(fn)->isreg)
   {
-    fn = (vi->filename)[0.. sizeof(vi->filename)-4];
-    write("uncompressing...%s\n", vi->filename);
-    if(!Process.search_path("gzip"))
-      exit(1, "install error: no gzip found in PATH.\n");
+    if((fn)[sizeof(fn)-3..] == ".gz")
+    {
+      write("uncompressing...%s\n", fn);
+      if(!Process.search_path("gzip"))
+        exit(1, "install error: no gzip found in PATH.\n");
+      else
+        res = Process.system("gzip -f -d " + fn);
+
+      if(res)
+        exit(1, "install error: uncompress failed.\n");
+  
+      fn = (fn)[0.. sizeof(fn)-4];
+    }
+    else fn = vi->filename;
+
+    created->file += ({ fn });
+
+    werror("working with tar file " + fn + "\n");
+
+    if(!Process.search_path("tar"))
+      exit(1, "install error: no tar found in PATH.\n");
     else
-      res = Process.system("gzip -f -d " + vi->filename);
-
+      res = Process.system("tar xvf " + fn);
+    
     if(res)
-      exit(1, "install error: uncompress failed.\n");
+      exit(1, "install error: untar failed.\n");
+    else
+      created->dirs += ({fn[0..sizeof(fn)-5]});  
 
+
+    // change directory to the module
+    cd(combine_path(builddir, fn[0..sizeof(fn)-5]));
   }
-  else fn = vi->filename;
-
-  created->file += ({ fn });
-
-  werror("working with tar file " + fn + "\n");
-
-  if(!Process.search_path("tar"))
-    exit(1, "install error: no tar found in PATH.\n");
   else
-    res = Process.system("tar xvf " + fn);
-
-  if(res)
-    exit(1, "install error: untar failed.\n");
-  else
-    created->dirs += ({fn[0..sizeof(fn)-5]});  
-
-
-  // change directory to the module
-  cd(combine_path(builddir, fn[0..sizeof(fn)-5]));
-
+  {
+    write("working with source control copy...\n");
+    created->dirs += ({fn});
+    cd(fn);
+  }
   // now, build the module.
 
   array jobs = ({"", "verify", (use_local?"local_":"") + "install"});
@@ -386,28 +555,30 @@ void do_install(string name, string|void version)
     {
       werror("install error: make %s failed.\n\n", j);
 
-      werror("the following files have been preserved in %s:\n\n%s\n\n", 
+      if(created->file)
+        werror("the following files have been preserved in %s:\n\n%s\n\n", 
              builddir, created->file * "\n");
 
-      werror("the following directories have been preserved in %s:\n\n%s\n\n", 
+      if(created->dirs)
+        werror("the following directories have been preserved in %s:\n\n%s\n\n", 
              builddir, created->dirs * "\n");
 
       exit(1);
     }
     else
     {
-       werror("make %s successful.\n", j);
+       write("make %s successful.\n", j);
     }
   }
 
   // now we should clean up our mess.
-  foreach(created->file, string file)
+  foreach(created->file || ({}), string file)
   {
     write("cleaning up %s\n", file);
     rm(file);
   }
 
-  foreach(created->dirs, string dir)
+  foreach(created->dirs || ({}), string dir)
   {
     write("removing directory %s\n", dir);
     Stdio.recursive_rm(dir);
@@ -512,6 +683,7 @@ void low_uninstall(array components, int _local)
   }
 }
 
+// make a remote xmlrpc service act more like a pike object.
 class xmlrpc_handler
 {
   Protocols.XMLRPC.Client x;
@@ -520,7 +692,6 @@ class xmlrpc_handler
   {
     x = Protocols.XMLRPC.Client(loc);
   }
- 
 
   protected class _caller (string n){
 
@@ -528,19 +699,17 @@ class xmlrpc_handler
     {
       array|Protocols.XMLRPC.Fault r;
       if(args)
-	r = x[n](@args);
+	      r = x[n](@args);
       else
-	r = x[n]();
+	      r = x[n]();
       if(objectp(r)) // we have an error, throw it.
         error(r->fault_string);
       else return r[0];
     }
-
   }
 
   function `->(string n, mixed ... args)
   {
     return _caller(n);
   }
-
 }
