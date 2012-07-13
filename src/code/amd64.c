@@ -1262,6 +1262,24 @@ static void maybe_update_pc(void)
   }
 }
 
+static void maybe_load_fp(void)
+{
+  static int last_prog_id=-1;
+  static size_t last_num_linenumbers=-1;
+
+  if(
+#ifdef PIKE_DEBUG
+    /* Update the pc more often for the sake of the opcode level trace. */
+     d_flag ||
+#endif
+     (amd64_prev_stored_pc == -1) ||
+     last_prog_id != Pike_compiler->new_program->id ||
+     last_num_linenumbers != Pike_compiler->new_program->num_linenumbers
+  ) {
+    amd64_load_fp_reg();
+  }
+}
+
 static void sync_registers(int flags)
 {
   maybe_update_pc();
@@ -1283,6 +1301,15 @@ static void amd64_call_c_opcode(void *addr, int flags)
 static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
   int flags = instrs[instr].flags;
+
+  /* Note: maybe_update_pc() is called by amd64_call_c_opcode() above,
+   *       which has the side-effect of loading fp_reg. Some of the
+   *       opcodes use amd64_call_c_opcode() in conditional segments.
+   *       This is to make sure that fp_reg is always loaded on exit
+   *       from such opcodes.
+   */
+
+  maybe_load_fp();
 
 /* For now: It is very hard to read the disassembled source when
    this is inserted */
