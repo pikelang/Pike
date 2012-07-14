@@ -1332,7 +1332,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
     amd64_call_c_function (simple_debug_instr_prologue_0);
 }
 #else  /* !PIKE_DEBUG */
-#define ins_debug_instr_prologue(instr, arg1, arg2)
+#define ins_debug_instr_prologue(instr, arg1, arg2) maybe_load_fp()
 #endif
 
 static void amd64_push_this_object( )
