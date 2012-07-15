@@ -3833,7 +3833,13 @@ static void f_sctx_getlasterror(INT32 args)
   LocalFree(lpMsgBuf);
 }
 
-
+/*! @decl string GetComputerName()
+ *!
+ *! Retrieves the NetBIOS name of the local computer.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
 static void f_GetComputerName(INT32 args)
 {
   char  name[MAX_COMPUTERNAME_LENGTH + 1];
@@ -3849,6 +3855,29 @@ static void f_GetComputerName(INT32 args)
   push_string(make_shared_binary_string(name, len));
 }
 
+/*! @decl string GetUserName()
+ *!
+ *! Retrieves the name of the user associated with the current thread.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
+#ifdef HAVE_GETUSERNAME
+static void f_GetUserName(INT32 args)
+{
+  char  name[UNLEN + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetUserName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetUserName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len-1));
+}
+#endif /* HAVE_GETUSERNAME */
 
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
@@ -4236,7 +4265,9 @@ void init_nt_system_calls(void)
   }
 
   ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
-}
+#ifdef HAVE_GETUSERNAME
+  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
+#endif /* HAVE_GETUSERNAME */}
 
 void exit_nt_system_calls(void)
 {

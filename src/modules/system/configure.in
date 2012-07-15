@@ -434,6 +434,6 @@ if test "$pike_cv_itimer_type_is_02" = yes; then
   AC_DEFINE(ITIMER_TYPE_IS_02)
 fi
 
-AC_HAVE_FUNCS(AllocConsole AttachConsole FreeConsole)
+AC_HAVE_FUNCS(GetUserName AllocConsole AttachConsole FreeConsole)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
