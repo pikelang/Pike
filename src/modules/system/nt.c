@@ -654,6 +654,81 @@ void f_RegGetValues_76(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+
+/*! @decl int FreeConsole()
+ *!
+ *! Detaches the calling process from its console.
+ *!
+ *! @note
+ *!  Before calling this function, @[Stdio.stderr], @[Stdio.stdout] and 
+ *!  @[Stdio.stdin] must be closed.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_FREECONSOLE
+void f_freeconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)FreeConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_FREECONSOLE */
+
+/*! @decl int AllocConsole()
+ *!
+ *! Allocates a new console for the calling process.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ALLOCCONSOLE
+void f_allocconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)AllocConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_ALOCCONSOLE */
+
+/*! @decl int AttachConsole(int pid)
+ *!
+ *! Attaches calling process to a specific console.
+ *!
+ *! @param pid
+ *   The identifier of the process whose console is to be used.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ATTACHCONSOLE
+void f_attachconsole(INT32 args)
+{
+  int rv;
+  int pid;
+  get_all_args("AttachConsole", args, "%d",
+               &pid);
+
+  rv = (int)AttachConsole(pid);
+
+  push_int(rv);
+}
+#endif /* HAVE_ATTACHCONSOLE */
+
+
 static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
@@ -3839,6 +3914,21 @@ void init_nt_system_calls(void)
   ADD_FUNCTION2("RegGetKeyNames_76", f_RegGetKeyNames_76,
 		tFunc(tInt tStr, tArr(tStr)),
 		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+/* function(void:int) */
+#ifdef HAVE_FREECONSOLE
+  ADD_FUNCTION("FreeConsole", f_freeconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_FREECONSOLE */
+
+/* function(void:int) */
+#ifdef HAVE_ALLOCCONSOLE
+  ADD_FUNCTION("AllocConsole", f_allocconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_ALLOCCONSOLE */
+
+/* function(int:int) */
+#ifdef HAVE_ATTACHCONSOLE
+  ADD_FUNCTION("AttachConsole", f_attachconsole, tFunc(tInt,tInt), 0);
+#endif /* HAVE_ATTACHCONSOLE */
 
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
