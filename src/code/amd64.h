@@ -29,6 +29,13 @@
     }									\
   } while(0)
 
+
+void amd64_start_function(int no_pc);
+void amd64_end_function(int no_pc);
+
+#define START_NEW_FUNCTION amd64_start_function
+#define END_FUNCTION       amd64_end_function
+
 void amd64_ins_entry(void);
 #define INS_ENTRY()	amd64_ins_entry()
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
