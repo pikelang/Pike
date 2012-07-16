@@ -17,7 +17,7 @@ string get_user()
 #if constant(System.GetUserName)
   return System.GetUserName();
 #elseif constant(System.getuid)
-  return getpwuid(System.getuid())[0];
+  return [string]getpwuid(System.getuid())[0];
 #else
   return "UNKNOWN";
 #endif /* System.GetUserName */
@@ -33,7 +33,7 @@ string get_home()
   string homedrive = [string]getenv("HOMEDRIVE");
   home = [string]getenv("HOMEPATH");
   if(homedrive)
-    home = homedrive + (home||"\");
+    home = homedrive + (home||"\\");
   if(home) return home;
 #endif
 
