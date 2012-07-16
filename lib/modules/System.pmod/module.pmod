@@ -16,11 +16,11 @@ string get_user()
 {
 #if constant(System.GetUserName)
   return System.GetUserName();
-#elseif constant(System.getuid)
-  return [string]getpwuid(System.getuid())[0];
+#elseif constant(getuid)
+  return [string]getpwuid(getuid())[0];
 #else
   return "UNKNOWN";
-#endif /* System.GetUserName */
+#endif
 }
 
 //! Get the full path for the current user's home directory
