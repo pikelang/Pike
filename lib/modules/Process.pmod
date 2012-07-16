@@ -455,20 +455,20 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
       res+=({"-m"+master()->_master_file_name});
     foreach (master()->pike_module_path;;string path)
       res+=({"-M" + path});
-    if(options->add_predefines)
+    if(options && options->add_predefines)
     {
       foreach (master()->predefines; string key; string value)
         res+=({"-D" + key + "=" + value});
     }
-    if(options->add_program_path)
+    if(options && options->add_program_path)
     {
-      foreach (master()->pike_program_path; string key; string value)
-        res+=({"-P" + key + "=" + value});
+      foreach (master()->pike_program_path;; string value)
+        res+=({"-P" + value});
     }
-    if(options->add_include_path)
+    if(options && options->add_include_path)
     {
-      foreach (master()->pike_include_path; string key; string value)
-        res+=({"-P" + key + "=" + value});
+      foreach (master()->pike_include_path;; string value)
+        res+=({"-P" + value});
     }
 
     if (sizeof(res) && !has_value(res[0],"/")
