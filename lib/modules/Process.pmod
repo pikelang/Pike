@@ -438,7 +438,10 @@ protected array(string) runpike;
 //!   Arguments for the new process.
 //!
 //! @param options
-//!   Process creation options. See @[Process.Process] for details.
+//!   Process creation options. See @[Process.Process] for details. May also
+//!   specify "add_predefines", "add_program_path", or "add_include_path" in
+//!   order to include these components in command path (module path is 
+//!   included by default.)
 //!
 //! @seealso
 //!   @[Process.Process]
@@ -451,9 +454,22 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     if (master()->_master_file_name)
       res+=({"-m"+master()->_master_file_name});
     foreach (master()->pike_module_path;;string path)
-      res+=({"-M"+path});
-
-    // FIXME: Defines? pike_program_path?
+      res+=({"-M" + path});
+    if(options->add_predefines)
+    {
+      foreach (master()->predefines; string key; string value)
+        res+=({"-D" + key + "=" + value});
+    }
+    if(options->add_program_path)
+    {
+      foreach (master()->pike_program_path; string key; string value)
+        res+=({"-P" + key + "=" + value});
+    }
+    if(options->add_include_path)
+    {
+      foreach (master()->pike_include_path; string key; string value)
+        res+=({"-P" + key + "=" + value});
+    }
 
     if (sizeof(res) && !has_value(res[0],"/")
 #ifdef __NT__
@@ -655,7 +671,7 @@ string search_path(string command)
 	 string t;
 	 if (s[0]=='~')  // some shells allow ~-expansion in PATH
 	 {
-	    if (s[0..1]=="~/" && (t=[string]getenv("HOME")))
+	    if (s[0..1]=="~/" && (t=System.get_home()))
 	       s=t+s[1..];
 	    else
 	    {
