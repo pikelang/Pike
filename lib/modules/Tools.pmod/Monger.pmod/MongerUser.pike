@@ -12,7 +12,7 @@ constant PURE_PIKE_PMAR = 2;
 constant PLATFORM_SPECIFIC_PMAR = 3;
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
-string builddir = get_home() + "/.monger";
+string builddir = combine_path(System.get_home()||".", ".monger");
 
 int use_force = 0;
 int use_local = 0;
@@ -746,7 +746,13 @@ void low_uninstall(array components, int _local)
 
   if(_local)
   {
-    dir = combine_path(get_home(), "lib/pike/modules");
+    dir = System.get_home();
+    if(!dir)
+    {
+      throw(Error.Generic("Unable to determine home directory. "
+            "Please set HOME environment variable and retry.\n"));
+    }
+    dir = combine_path(dir, "lib/pike/modules");
   }
   else
   {
@@ -770,21 +776,6 @@ void low_uninstall(array components, int _local)
   }
 }
 
-string get_home()
-{
-  string home = getenv("HOME");
-  if(home) return home;
-  
-#if __NT__
-  string homedrive = getenv("HOMEDRIVE");
-  home = getenv("HOMEPATH");
-  if(homedrive)
-    home = homedrive + home;
-  if(home) return home;
-#endif  
-    
-  throw("Unable to determin HOME directory.\n");
-}
 // make a remote xmlrpc service act more like a pike object.
 class xmlrpc_handler
 {
