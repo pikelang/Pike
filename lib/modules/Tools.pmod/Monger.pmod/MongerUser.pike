@@ -763,13 +763,13 @@ void low_uninstall(array components, int _local)
   
   foreach(elems;; string comp)
   {
-    object s = file_stat(Stdio.append_path(dir, comp));
+    string path = Stdio.append_path(dir, comp);
+    object s = file_stat(path);
     if(!s)
     {
-      werror("warning: %s does not exist.\n", comp);
+      werror("warning: %s does not exist.\n", path);
       continue;
     }
-    string path = Stdio.append_path(dir, comp);
     
     werror("deleting: " + path + " [%s]\n", (s->isdir?"dir":"file"));
     rm(path);

@@ -289,14 +289,12 @@ int main(int argc, array(string) argv)
       [local_ver, local_components] = d->find_components(mod, ilocal);
     
       comp += local_components;
-#if 0    
-      object d = Tools.Monger.MongerUser();
-      d->uninstall(mod, ilocal);
-#endif /* 0 */
     }
   
     if(sizeof(comp))
     {
+
+#ifdef __NT__
       array monger_args = ({"-x", "pmar_install", "--uninstall"});
     
       if(ilocal)
@@ -308,9 +306,15 @@ int main(int argc, array(string) argv)
       if(md5)
         monger_args += ({ "--md5=" + md5 });  
       monger_args += ({ (string)uri });
-   
+
+      write("Please wait while we restart Pike so that this module can be uninstalled.\n");
+
       Process.spawn_pike(monger_args);
       return 0;
+#else
+      do_uninstall(comp, ilocal);
+#endif /* __NT__ */
+
     } 
   }
   
@@ -322,11 +326,20 @@ int main(int argc, array(string) argv)
   }
 
   if(has_dir(file_object, fsroot + "/MODULE"))
-    untar(file_object, system_module_path, fsroot + "/MODULE");
+  {
+    mixed err;
+    err = catch(untar(file_object, system_module_path, fsroot + "/MODULE"));
+    if(err)
+    {
+      werror(err[0]);
+      werror("Installation of module failed.\n");
+      return 1;
+    }
 //  if(has_dir(s, fsroot + "/INCLUDE"))
 //    untar(s, system_include_path, fsroot + "/INCLUDE");
 //  if(has_dir(s, fsroot + "/MODREF"))
 //    untar(s, system_doc_path, fsroot + "/MODREF");
+  }
 
   if(!postinstall(this, getfs(file_object, "/")))
   {
@@ -490,7 +503,7 @@ int untar(object source, string path, void|string cwd) {
           Stdio.write_file(file, t->cd(cwd)->open(fname, "r")->read());
       }) {
         werror("failed:   %s [error writing file]\n\n", file);
-//        throw(err);
+        throw(err);
       }
       c++;
       cc++;
