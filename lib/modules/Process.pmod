@@ -468,7 +468,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     if(options && options->add_include_path)
     {
       foreach (master()->pike_include_path;; string value)
-        res+=({"-P" + value});
+        res+=({"-I" + value});
     }
 
     if (sizeof(res) && !has_value(res[0],"/")
