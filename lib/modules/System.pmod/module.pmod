@@ -26,17 +26,17 @@ string get_user()
 //! Get the full path for the current user's home directory
 string get_home()
 {
-  string home = getenv("HOME");
+  string home = [string]getenv("HOME");
   if(home) return home;
 
 #if __NT__
-  string homedrive = getenv("HOMEDRIVE");
-  home = getenv("HOMEPATH");
+  string homedrive = [string]getenv("HOMEDRIVE");
+  home = [string]getenv("HOMEPATH");
   if(homedrive)
-    home = homedrive + home;
+    home = homedrive + (home||"\");
   if(home) return home;
 #endif
-      
-  throw("Unable to determine HOME directory.\n");
+
+  return 0;      
 }
 
