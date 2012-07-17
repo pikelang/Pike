@@ -408,6 +408,7 @@ else
 fi
 fi
 
+AC_HAVE_FUNCS(GetUserName)
 
 AC_MSG_CHECKING(if get/setitimer 'which' type is tInt02)
 
@@ -464,7 +465,5 @@ AC_MSG_RESULT($pike_cv_have_rdtsc)
 if test "$pike_cv_have_rdtsc" = yes; then
   AC_DEFINE(HAVE_RDTSC)
 fi
-
-
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
