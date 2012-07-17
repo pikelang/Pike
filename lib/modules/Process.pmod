@@ -438,7 +438,10 @@ protected array(string) runpike;
 //!   Arguments for the new process.
 //!
 //! @param options
-//!   Process creation options. See @[Process.Process] for details.
+//!   Process creation options. See @[Process.Process] for details. May also 
+//!   specify "add_predefines", "add_program_path", or "add_include_path" in 
+//!   order to include these components in command path (module path is  
+//!   included by default.) 
 //!
 //! @seealso
 //!   @[Process.Process]
@@ -453,7 +456,21 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     foreach (master()->pike_module_path;;string path)
       res+=({"-M"+path});
 
-    // FIXME: Defines? pike_program_path?
+    if(options && options->add_predefines) 
+    { 
+      foreach (master()->predefines; string key; string value) 
+        res+=({"-D" + key + "=" + value}); 
+    } 
+    if(options && options->add_program_path) 
+    { 
+      foreach (master()->pike_program_path;; string value) 
+        res+=({"-P" + value}); 
+    } 
+    if(options && options->add_include_path) 
+    { 
+      foreach (master()->pike_include_path;; string value) 
+        res+=({"-I" + value}); 
+    }
 
     if (sizeof(res) && !has_value(res[0],"/")
 #ifdef __NT__
