@@ -643,7 +643,7 @@ string search_path(string command)
 	 string t;
 	 if (s[0]=='~')  // some shells allow ~-expansion in PATH
 	 {
-	    if (s[0..1]=="~/" && (t=[string]getenv("HOME")))
+	    if (s[0..1]=="~/" && (t=[string]System.get_home()))
 	       s=t+s[1..];
 	    else
 	    {

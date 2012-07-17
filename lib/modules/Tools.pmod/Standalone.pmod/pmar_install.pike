@@ -235,7 +235,14 @@ int main(int argc, array(string) argv)
     system_module_path = moduletool["system_module_path"];
   else 
   {
-    system_module_path = getenv("HOME") + "/lib/pike/modules";
+    system_module_path = System.get_home();
+    if(!system_module_path)
+    {
+      throw(Error.Generic("Unable to determine home directory. "
+                          "Please set HOME environment variable and retry.\n"));
+    }
+
+    system_module_path = combine_path(system_module_path, "lib/pike/modules");
   }
 
   if(!file_stat(system_module_path))
