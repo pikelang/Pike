@@ -8,14 +8,20 @@ constant version =
  sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 constant description = "Monger: the Pike module manger.";
 
-string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
-string builddir = getenv("HOME") + "/.monger";
+constant SOURCE_PACKAGE = 0;
+constant SOURCE_CONTROL = 1;
+constant PURE_PIKE_PMAR = 2;
+constant PLATFORM_SPECIFIC_PMAR = 3;
 
-int use_force=0;
-int use_local=0;
-int use_short=0;
-int use_source=0;
-int show_urls=0;
+string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
+string builddir = get_home() + "/.monger";
+
+int use_force = 0;
+int use_local = 0;
+int use_short = 0;
+int use_source = 0;
+int use_pmar = 0;
+int show_urls = 0;
 string my_command;
 string argument;
 string my_version;
@@ -52,6 +58,7 @@ int main(int argc, array(string) argv)
     ({"install",Getopt.NO_ARG,({"--install"}) }),
     ({"local",Getopt.NO_ARG,({"--local"}) }),
     ({"source",Getopt.NO_ARG,({"--source"}) }),
+    ({"pmar",Getopt.NO_ARG,({"--pmar"}) }),
     ({"version",Getopt.HAS_ARG,({"--version"}) }),
     ({"force",Getopt.NO_ARG,({"--force"}) }),
     ({"short",Getopt.NO_ARG,({"--short"}) }),
@@ -73,7 +80,7 @@ int main(int argc, array(string) argv)
         repository = opt[1];
         break;
       case "show_urls":
-	show_urls = 1;
+        show_urls = 1;
         break;
       case "builddir":
         Stdio.Stat fs = file_stat(opt[1]);
@@ -91,9 +98,12 @@ int main(int argc, array(string) argv)
       case "source":
         use_source = 1;
         break;
+      case "pmar":
+        use_pmar = 1;
+        break;      
       case "short":
-	use_short = 1;
-	break;
+        use_short = 1;
+        break;
       case "local":
         use_local = 1;
         break;
@@ -106,6 +116,7 @@ int main(int argc, array(string) argv)
     mkdir(builddir);
   else if (!fs->isdir)
     exit(1, "Build directory " + builddir + " is not a directory.\n");
+  
   
   foreach(opts,array opt)
   {
@@ -130,8 +141,13 @@ int main(int argc, array(string) argv)
         break;
       case "install":
         my_command=opt[0];
+        function f;
+        if(use_pmar)
+          f = do_pmar_install;
+        else 
+          f = do_install;
         if(argument)
-          do_install(argument, my_version||UNDEFINED);
+          f(argument, my_version||UNDEFINED);
         else
           exit(1, "install error: module name must be specified\n");
         break;
@@ -167,8 +183,8 @@ Usage: pike -x monger [options] modulename
                        the $HOME/.monger
 --force              force the performance of an action that might 
                        otherwise generate a warning
---source             use source control url to obtain module source,
-                       if possible
+--source             use source control url to obtain module source
+--pmar               attempt to use pmar (pre-built archive)
 --short              when querying a module, don't show info about the 
                        selected version.
 --local              perform installation in a user's local rather than 
@@ -240,9 +256,14 @@ void do_query(string name, string|void version)
       else if(arrayp(svi->download))
         foreach(svi->download;;string u)
           write("Download URL: %s\n\n", u);   
+      if(stringp(svi->pmar_download))
+        write("PMAR Download URL: %s\n\n", svi->pmar_download);
     }
+
     if(svi->download)
       write("This module version is available for automated installation.\n");
+    if(svi->has_pmar)
+      write("A prebuilt module archive (PMAR) is available for this version.\n");
   }
 
   catch 
@@ -385,7 +406,9 @@ mapping get_module_action_data(string name, string|void version)
 
 string get_file(mapping version_info, string|void path, int|void from_source)
 {
-  if(from_source && version_info->source_control_url && sizeof( version_info->source_control_type))
+  array rq;
+
+  if(from_source == SOURCE_CONTROL && version_info->source_control_url && sizeof( version_info->source_control_type))
   {
     write("fetching source from source control (%s)...\n", version_info->source_control_type);
     string bin = lower_case(version_info->source_control_type);
@@ -430,14 +453,36 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     write("cloned %s repository to %s.", bin, lpath);
     return lpath;
   }
-  else if(from_source && !version_info->source_control_url)
+  else if(from_source == SOURCE_CONTROL && !version_info->source_control_url)
   {
     throw(Error.Generic("cannot download from source control, no source control location specified.\n"));
+  }
+  else if(from_source == PURE_PIKE_PMAR && version_info->has_pmar)
+  {
+    write("beginning download of pure-pike PMAR for version %s...\n", version_info->version);
+    if(arrayp(version_info->pmar_download))
+      foreach(version_info->pmar_download;; string u)
+      {
+        rq = Protocols.HTTP.get_url_nice(u);
+        if(rq) break;  
+      }
+    else
+      rq = Protocols.HTTP.get_url_nice(version_info->pmar_download);
+    if(!rq) 
+      throw(Error.Generic("download error: unable to access download url\n"));
+    else
+    {
+      string lpath = version_info->filename;
+      if(path) lpath = combine_path(path, lpath);
+      Stdio.write_file(lpath, rq[1]);
+      
+      write("wrote pmar to file %s (%d bytes)\n", lpath, sizeof(rq[1]));
+      return lpath;
+    }
   }
   else if(version_info->download)
   {
     write("beginning download of version %s...\n", version_info->version);
-    array rq;
     if(arrayp(version_info->download))
       foreach(version_info->download;; string u)
       {
@@ -465,10 +510,53 @@ string get_file(mapping version_info, string|void path, int|void from_source)
 void do_download(string name, string|void version)
 {
     mapping vi = get_module_action_data(name, version);
+    int t = SOURCE_PACKAGE;
+    if(use_source) t = SOURCE_CONTROL;
+    else if(use_pmar) t = PURE_PIKE_PMAR;
     if(vi)
-      get_file(vi, 0, use_source);
+      get_file(vi, 0, t);
     else
       exit(1, "download error: no suitable download available.\n");
+}
+
+void do_pmar_install(string name, string|void version)
+{
+  mapping vi = get_module_action_data(name, version);
+  if(!vi)
+    exit(1, "install error: no suitable download available.\n");
+  if(!vi->has_pmar || !vi->pmar_download)
+    exit(1, "install error: no PMAR available for this version.\n");
+
+  array args = ({"-x", "pmar_install", vi->pmar_download});
+  if(use_local)
+    args += ({"--local"});
+
+  // TODO: if the repository returns the MD5 hash for the PMAR, we should pass that
+  // along to the installer for verification.
+  
+  object installer = Process.spawn_pike(args, ([]));
+  int res = installer->wait();
+
+#if __NT__
+// because NT is stupid, we have to do all kinds of "exit the process" tactics
+// in order to free in-use files. therefore, the call to pmar_install will return
+// before it's actually finished doing its thing.
+// 
+// it would probably be better if pmar_install signalled us in some way, but
+// that's a task for another day.
+  write("PMAR install will run in this console for a few more seconds.\n"
+        "Please check the output in your console to make sure the installation was a success.\n");
+#else
+  if(res)
+  {
+    werror("install error: PMAR install failed.\n");
+  }
+  else
+  {
+    write("install successful.\n");
+  }
+
+#endif
 }
 
 void do_install(string name, string|void version)
@@ -660,7 +748,7 @@ void low_uninstall(array components, int _local)
 
   if(_local)
   {
-    dir = combine_path(getenv("HOME"), "lib/pike/modules");
+    dir = combine_path(get_home(), "lib/pike/modules");
   }
   else
   {
@@ -684,6 +772,21 @@ void low_uninstall(array components, int _local)
   }
 }
 
+string get_home()
+{
+  string home = getenv("HOME");
+  if(home) return home;
+  
+#if __NT__
+  string homedrive = getenv("HOMEDRIVE");
+  home = getenv("HOMEPATH");
+  if(homedrive)
+    home = homedrive + home;
+  if(home) return home;
+#endif  
+    
+  throw("Unable to determin HOME directory.\n");
+}
 // make a remote xmlrpc service act more like a pike object.
 class xmlrpc_handler
 {
