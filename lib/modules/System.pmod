@@ -18,7 +18,7 @@ string get_user()
 #if constant(System.GetUserName)
   return System.GetUserName();
 #elseif constant(System.getuid)
-  return getpwuid(System.getuid())[0];
+  return [string]getpwuid(System.getuid())[0];
 #else
   return "UNKNOWN";
 #endif /* System.GetUserName */
