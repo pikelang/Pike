@@ -657,8 +657,9 @@ static void cmp_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
   modrm( 3, reg1, reg2 );
 }
 
-static int jmp_rel_imm32( int rel )
+static int jmp_rel_imm32( int addr )
 {
+  int rel = addr - (PIKE_PC + 5); // counts from the next instruction
   int res;
   opcode( 0xe9 );
   res = PIKE_PC;
@@ -666,20 +667,21 @@ static int jmp_rel_imm32( int rel )
   return res;
 }
 
-static void jmp_rel_imm( int rel )
+static void jmp_rel_imm( int addr )
 {
+  int rel = addr - (PIKE_PC + 2); // counts from the next instruction
   if(rel >= -0x80 && rel <= 0x7f )
   {
       opcode( 0xeb );
       ib( rel );
       return;
   }
-  jmp_rel_imm32( rel );
+  jmp_rel_imm32( addr );
 }
 
-static void call_rel_imm32( int rel )
+static void call_rel_imm32( int addr )
 {
-  rel -= 5; // counts from the next instruction
+  int rel = addr - (PIKE_PC + 5); // counts from the next instruction
   opcode( 0xe8 );
   id( rel );
   sp_reg = -1;
@@ -1393,7 +1395,7 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
 
   if( !branch_check_threads_update_etc )
   {
-    /* Create update + call to branch_check_threds_etc */
+    /* Create update + call to branch_check_threads_etc */
     if( !code_only )
       jmp( &label_A );
     branch_check_threads_update_etc = PIKE_PC;
@@ -1420,7 +1422,7 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
     /* Use C-stack for counter. We have padding added in entry */
     add_mem8_imm( REG_RSP, 0, 1 );
     jno( &label_B );
-    call_rel_imm32( branch_check_threads_update_etc-PIKE_PC );
+    call_rel_imm32( branch_check_threads_update_etc );
     LABEL_B;
   }
 }
@@ -1435,7 +1437,7 @@ static void amd64_return_from_function()
 {
   if( ret_for_func )
   {
-    jmp_rel_imm( ret_for_func - PIKE_PC );
+    jmp_rel_imm( ret_for_func );
   }
   else
   {
