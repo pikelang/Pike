@@ -38,7 +38,8 @@ string get_user()
 //!
 //! @note
 //! This method uses the standard environment variables for
-//! various systems to determine the home directory.string get_home()
+//! various systems to determine the home directory.
+string get_home()
 {
   string home = [string]getenv("HOME");
   if(home) return home;
