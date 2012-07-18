@@ -536,7 +536,7 @@ test_eq([[
 // Argument checking
 
 // Test new_check_call.
-test_eq([[
+test_any([[
   constant foo = 5;
 
   // Test that it survives a F_ARG_LIST with CAR == CDR.
