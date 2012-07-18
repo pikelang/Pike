@@ -453,5 +453,6 @@ else
 	pike_has_gjalloc 
     ])
 fi
+AC_HAVE_FUNCS(GetUserName AllocConsole AttachConsole FreeConsole)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

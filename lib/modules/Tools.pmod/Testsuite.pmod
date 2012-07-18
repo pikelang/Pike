@@ -372,24 +372,24 @@ array(int) low_run_script (array(string) command, mapping opts)
     // The subprocess didn't use report_result, probably.
     all_constants()->__watchdog_show_last_test();
     if (err == -1) {
-      werror("No result from subprocess (died of signal %s)\n",
+      werror("\nNo result from subprocess (died of signal %s)\n",
 	     signame (pid->last_signal()) || (string) pid->last_signal());
     } else {
-      werror("No result from subprocess (exited with error code %d).\n", err);
+      werror("\nNo result from subprocess (exited with error code %d).\n", err);
     }
     return 0;
   }
 
   else if (err == -1) {
     all_constants()->__watchdog_show_last_test();
-    werror ("Subprocess died of signal %s.\n",
+    werror ("\nSubprocess died of signal %s.\n",
 	    signame (pid->last_signal()) || (string) pid->last_signal());
     subresult->failed++;
   }
 
   else if (err && !subresult->failed) {
     all_constants()->__watchdog_show_last_test();
-    werror ("Subprocess exited with error code %d.\n", err);
+    werror ("\nSubprocess exited with error code %d.\n", err);
     subresult->failed++;
   }
 

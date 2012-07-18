@@ -340,7 +340,13 @@ protected class Monitor(string path,
   //! path is checked (and only if it exists).
   protected void file_exists(string path, Stdio.Stat st)
   {
+    int t = time(1);
     call_callback(global::file_exists, path, st);
+    if (st->mtime + (stable_time || global::stable_time) >= t) {
+      // Not stable yet! We guess that the mtime is a
+      // fair indication of when the file last changed.
+      last_change = st->mtime;
+    }
   }
 
   //! File creation callback.
@@ -482,6 +488,7 @@ protected class Monitor(string path,
 				    int orig_flags, int flags)
   {
     if (st->isdir) {
+      int res = 0;
       array(string) files = get_dir(path) || ({});
       array(string) new_files = files;
       array(string) deleted_files = ({});
@@ -491,8 +498,9 @@ protected class Monitor(string path,
       }
       this_program::files = files;
       foreach(new_files, string file) {
-        if(filter_file(file)) continue;
+	res = 1;
 	file = canonic_path(Stdio.append_path(path, file));
+	if(filter_file(file)) continue;
 	Monitor m2 = monitors[file];
 	mixed err = catch {
 	    if (m2) {
@@ -512,7 +520,9 @@ protected class Monitor(string path,
 	}
       }
       foreach(deleted_files, string file) {
+	res = 1;
 	file = canonic_path(Stdio.append_path(path, file));
+	if(filter_file(file)) continue;
 	Monitor m2 = monitors[file];
 	mixed err = catch {
 	    if (m2) {
@@ -534,13 +544,28 @@ protected class Monitor(string path,
 	// Check the remaining files in the directory soon.
 	foreach(((files - new_files) - deleted_files), string file) {
 	  file = canonic_path(Stdio.append_path(path, file));
+	  if(filter_file(file)) continue;
 	  Monitor m2 = monitors[file];
 	  if (m2) {
 	    m2->bump(flags);
+	  } else {
+	    // Lost update due to race-condition:
+	    //
+	    //   Exist ==> Deleted ==> Exists
+	    //
+	    // with no update of directory inbetween.
+	    //
+	    // Create the lost submonitor again.
+	    res = 1;
+	    monitor(file, orig_flags | MF_AUTO | MF_HARD,
+		    max_dir_check_interval,
+		    file_interval_factor,
+		    stable_time);
+	    monitors[file]->check();
 	  }
 	}
       }
-      if (sizeof(new_files) || sizeof(deleted_files)) return 1;
+      return res;
     } else {
       attr_changed(path, st);
       return 1;
@@ -592,7 +617,7 @@ protected class Monitor(string path,
 	  this_program::files = files;
 	  foreach(files, string file) {
 	    file = canonic_path(Stdio.append_path(path, file));
-            if(filter_file(file)) continue;
+	    if(filter_file(file)) continue;
 	    if (monitors[file]) {
 	      // There's already a monitor for the file.
 	      // Assume it has already notified about existance.
@@ -1097,6 +1122,9 @@ protected Pike.Backend backend;
 //! Call-out identifier for @[backend_check()] if in
 //! nonblocking mode.
 //!
+//! Set to @expr{1@} when non_blocking mode without call_outs
+//! is in use.
+//!
 //! @seealso
 //!   @[set_nonblocking()], @[set_blocking()]
 protected mixed co_id;
@@ -1138,18 +1166,12 @@ void set_blocking()
 //!   @[check()], @[set_nonblocking()]
 protected void backend_check()
 {
-  co_id = 0;
+  if (co_id != 1) co_id = 0;
   int t;
   mixed err = catch {
       t = check(0);
     };
-#if HAVE_EVENTSTREAM
-// if we are using FSEvents, we don't want to run this check more than once to prime the pumps.
-#elseif HAVE_INOTIFY
-// if we are using Inotify, we don't want to run this check more than once to prime the pumps.
-#else
   set_nonblocking(t);
-#endif /* HAVE_EVENTSTREAM */
   if (err) throw(err);
 }
 
@@ -1179,8 +1201,16 @@ void set_nonblocking(int|void t)
     if (t > max_dir_check_interval) t = max_dir_check_interval;
     if (t < 0) t = 0;
   }
-//  if (backend) co_id = backend->call_out(backend_check, t);
-//  else co_id = call_out(backend_check, t);
+#if HAVE_EVENTSTREAM
+  // If we are using FSEvents, we don't need any call_outs.
+  co_id = 1;
+#elseif HAVE_INOTIFY
+  // If we are using Inotify, we don't need any call_outs.
+  co_id = 1;
+#else
+  if (backend) co_id = backend->call_out(backend_check, t);
+  else co_id = call_out(backend_check, t);
+#endif /* HAVE_EVENTSTREAM */
 }
 
 //! Set the @[default_max_dir_check_interval].

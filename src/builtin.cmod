@@ -30,6 +30,7 @@
 #include "gc.h"
 #include "block_alloc.h"
 #include "pikecode.h"
+#include "opcodes.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -605,13 +606,19 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,
 			      "integer in the range -1..1 for 'enabled'");
       if (gc_enabled != set->u.integer) {
-	if (gc_enabled > 0)
-	  gc_enabled = set->u.integer;
-	else {
-	  gc_enabled = 1;
-	  if (alloc_threshold == GC_MAX_ALLOC_THRESHOLD)
-	    alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+	if (gc_enabled > 0) {
+	  /* Disabling automatic gc - save the old alloc_threshold and set it to
+	   * the maximum value to avoid getting gc_evaluator_callback added. */
+	  saved_alloc_threshold = alloc_threshold;
+	  alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
 	}
+	else if (set->u.integer > 0) {
+	  /* Enabling automatic gc - restore the old alloc_threshold. If the
+	   * gc interval has gotten longer than it should be then the
+	   * multiplier calculation in do_gc should compensate. */
+	  alloc_threshold = saved_alloc_threshold;
+	}
+	gc_enabled = set->u.integer;
       }
     }, {
       SET_SVAL(get, T_INT, NUMBER_NUMBER, integer, gc_enabled);
@@ -1680,6 +1687,66 @@ PIKEFUN void _putenv (string var, void|string val)
   }
 #endif /* !USE_SETENV */
 }
+
+#if defined(PIKE_DEBUG) && defined(PIKE_PORTABLE_BYTECODE)
+
+/*! @decl void disassemble(function fun)
+ *! @belongs Debug
+ *!
+ *!   Disassemble a Pike function to @[Stdio.stderr].
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime
+ *!   has been compiled with debug enabled.
+ */
+PIKEFUN void _disassemble(function fun)
+{
+  if ((TYPEOF(*fun) != T_FUNCTION) ||
+      (SUBTYPEOF(*fun) == FUNCTION_BUILTIN)) {
+    fprintf(stderr,
+	    "Disassembly only supported for functions implemented in Pike.\n");
+  } else if (!fun->u.object->prog) {
+    fprintf(stderr, "Function in destructed object.\n");
+  } else {
+    int f = SUBTYPEOF(*fun);
+    struct reference *ptr = PTR_FROM_INT(fun->u.object->prog, f);
+    struct program *p = PROG_FROM_PTR(fun->u.object->prog, ptr);
+    struct identifier *id = p->identifiers + ptr->identifier_offset;
+    if (id->func.offset >= 0) {
+      struct pike_string *tripples =
+	p->strings[read_program_data(p->program + id->func.offset, -1)];
+      switch(tripples->size_shift) {
+#define CASE(SHIFT)					\
+	case SHIFT:					\
+	  {						\
+	    PIKE_CONCAT(p_wchar, SHIFT) *str =		\
+	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
+	    int i=0;					\
+	    while(i < tripples->len) {			\
+	      fprintf(stderr, "@@@ %d: %s, %d, %d\n",	\
+		      i/3,				\
+		      instrs[*str - F_OFFSET].		\
+		      name,				\
+		      str[1], str[2]);			\
+	      str += 3;					\
+	      i += 3;					\
+	    }						\
+	  }						\
+	  break
+	CASE(0);
+	CASE(1);
+	CASE(2);
+#undef CASE
+      }
+    } else {
+      fprintf(stderr, "Prototype.\n");
+    }
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+#endif /* PIKE_DEBUG && PIKE_PORTABLE_BYTECODE */
 
 /*
  * Backtrace handling.

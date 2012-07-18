@@ -7228,21 +7228,20 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static char *file = NULL;
       static char *base, *cnt;
-      static INT32 off,pid;
+      static ptrdiff_t off;
+      static INT32 pid;
       static INT_TYPE line;
       static size_t len;
       static INT32 shift;
 
-      if(prog->linenumbers != base || prog->id != pid || offset < off)
-      {
-	base = cnt = prog->linenumbers;
-	off=line=0;
-	pid=prog->id;
-	file = 0;
-      }else{
-	if (cnt < prog->linenumbers + prog->num_linenumbers)
-	  goto fromold;
-      }
+      if(prog->linenumbers == base && prog->id == pid && offset > off &&
+	 cnt < prog->linenumbers + prog->num_linenumbers)
+	goto fromold;
+
+      base = cnt = prog->linenumbers;
+      off=line=0;
+      pid=prog->id;
+      file = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
@@ -7254,11 +7253,18 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  file = ++cnt;
 	  CHECK_FILE_ENTRY (prog, cnt, len, shift);
 	  cnt += len<<shift;
+	  continue;
 	}
 	off+=get_small_number(&cnt);
       fromold:
 	if(off > offset) break;
 	line+=get_small_number(&cnt);
+      }
+      if (cnt >= prog->linenumbers + prog->num_linenumbers) {
+	/* We reached the end of the table. Make sure
+	 * we get in sync again next time we're called.
+	 */
+	base = NULL;
       }
       linep[0]=line;
       if (file) {

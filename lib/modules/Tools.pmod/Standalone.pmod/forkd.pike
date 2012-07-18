@@ -1,5 +1,9 @@
 #pike __REAL_VERSION__
 
+#if !constant (Process.ForkdDecoder)
+constant this_program_does_not_exist = 1;
+#else
+
 //! Fork Daemon
 //!
 //! This is a light-weight daemon that can be used via @[Process.Process]
@@ -202,3 +206,5 @@ int main(int argc, array(string) argv)
 
   return -1;
 }
+
+#endif	// Process.ForkdDecoder

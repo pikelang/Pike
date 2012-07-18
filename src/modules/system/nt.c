@@ -654,6 +654,81 @@ void f_RegGetValues_76(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+
+/*! @decl int FreeConsole()
+ *!
+ *! Detaches the calling process from its console.
+ *!
+ *! @note
+ *!  Before calling this function, @[Stdio.stderr], @[Stdio.stdout] and 
+ *!  @[Stdio.stdin] must be closed.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_FREECONSOLE
+void f_freeconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)FreeConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_FREECONSOLE */
+
+/*! @decl int AllocConsole()
+ *!
+ *! Allocates a new console for the calling process.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ALLOCCONSOLE
+void f_allocconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)AllocConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_ALOCCONSOLE */
+
+/*! @decl int AttachConsole(int pid)
+ *!
+ *! Attaches calling process to a specific console.
+ *!
+ *! @param pid
+ *   The identifier of the process whose console is to be used.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ATTACHCONSOLE
+void f_attachconsole(INT32 args)
+{
+  int rv;
+  int pid;
+  get_all_args("AttachConsole", args, "%d",
+               &pid);
+
+  rv = (int)AttachConsole(pid);
+
+  push_int(rv);
+}
+#endif /* HAVE_ATTACHCONSOLE */
+
+
 static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
@@ -3758,7 +3833,13 @@ static void f_sctx_getlasterror(INT32 args)
   LocalFree(lpMsgBuf);
 }
 
-
+/*! @decl string GetComputerName()
+ *!
+ *! Retrieves the NetBIOS name of the local computer.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
 static void f_GetComputerName(INT32 args)
 {
   char  name[MAX_COMPUTERNAME_LENGTH + 1];
@@ -3774,6 +3855,29 @@ static void f_GetComputerName(INT32 args)
   push_string(make_shared_binary_string(name, len));
 }
 
+/*! @decl string GetUserName()
+ *!
+ *! Retrieves the name of the user associated with the current thread.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
+#ifdef HAVE_GETUSERNAME
+static void f_GetUserName(INT32 args)
+{
+  char  name[UNLEN + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetUserName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetUserName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len-1));
+}
+#endif /* HAVE_GETUSERNAME */
 
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
@@ -3839,6 +3943,21 @@ void init_nt_system_calls(void)
   ADD_FUNCTION2("RegGetKeyNames_76", f_RegGetKeyNames_76,
 		tFunc(tInt tStr, tArr(tStr)),
 		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+/* function(void:int) */
+#ifdef HAVE_FREECONSOLE
+  ADD_FUNCTION("FreeConsole", f_freeconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_FREECONSOLE */
+
+/* function(void:int) */
+#ifdef HAVE_ALLOCCONSOLE
+  ADD_FUNCTION("AllocConsole", f_allocconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_ALLOCCONSOLE */
+
+/* function(int:int) */
+#ifdef HAVE_ATTACHCONSOLE
+  ADD_FUNCTION("AttachConsole", f_attachconsole, tFunc(tInt,tInt), 0);
+#endif /* HAVE_ATTACHCONSOLE */
 
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
@@ -4146,7 +4265,9 @@ void init_nt_system_calls(void)
   }
 
   ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
-}
+#ifdef HAVE_GETUSERNAME
+  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
+#endif /* HAVE_GETUSERNAME */}
 
 void exit_nt_system_calls(void)
 {

@@ -11,6 +11,7 @@ constant describe_program = _describe_program;
 constant debug = _debug;
 constant optimizer_debug = _optimizer_debug;
 constant assembler_debug = _assembler_debug;
+constant disassemble = Builtin._disassemble;
 constant dump_program_tables = _dump_program_tables;
 constant locate_references = _locate_references;
 constant describe = _describe;

@@ -40,8 +40,9 @@
 # define CB_SOURCE
 #endif
 
-static inline cb_node_t cb_zap_node(cb_node_t);
-static inline cb_node_t cb_node_from_string(const cb_key, const cb_value *);
+static inline void cb_zap_node(const struct cb_tree*, cb_node_t);
+static inline cb_node_t cb_node_from_string(const struct cb_tree*,
+					    const cb_key, const cb_value *);
 
 
 static inline cb_key CB_KEY_FROM_STRING(const cb_string string) {
@@ -101,54 +102,56 @@ static inline cb_node_t node_init() {
     return tree;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_get_range(const cb_node_t tree, const cb_key a,
-				     const cb_key b) {
+CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree * src,
+				      struct cb_tree * dst,
+				      const cb_key a, const cb_key b) {
+    const cb_node_t tree = src->root;
     cb_node_t node = cb_index(tree, a);
     cb_node_t end = cb_index(tree, b);
     /* printf("start: %p, stop: %p in line %d\n", node, end, __LINE__); */
     if (!node) node = cb_find_next(tree, a);
     /* printf("start: %p, stop: %p in line %d\n", node, end, __LINE__); */
     if (node) {
-	cb_node_t ntree;
 
 	if ((end && !CB_HAS_VALUE(end)) || (end = cb_find_next(tree, b))) {
     /* printf("start: %p, stop: %p in line %d\n", node, end, __LINE__); */
-	    if (end == node) return NULL;
+	    if (end == node) return;
 
 	    WALK_BACKWARD(end, {
 		if (CB_HAS_VALUE(_)) {
-		    if (_ == node) return cb_node_from_string(node->key, &node->value);
+		    if (_ == node) {
+			cb_insert(dst, node->key, &node->value);
+		    }
 		    break;
 		}
-		if (_ == node) return NULL;
+		if (_ == node) return;
 	    });
     /* printf("start: %p, stop: %p in line %d\n", node, end, __LINE__); */
 	}
 	if (node && !CB_HAS_VALUE(node)) {
-	    if (end == node) return NULL;
+	    if (end == node) return;
 	    WALK_FORWARD(node, {
-		if (_ == end) return NULL;
+		if (_ == end) return;
 		if (CB_HAS_VALUE(_)) break;
 	    });
 	}
     /* printf("start: %p, stop: %p in line %d\n", node, end, __LINE__); */
-	ntree = cb_node_from_string(node->key, &node->value);
+	cb_insert(dst, node->key, &node->value);
 
 	if (node != end) WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
 		/* printf("adding %p\n", _); */
-		cb_insert(&ntree, _->key, &node->value);
+		cb_insert(dst, _->key, &_->value);
 		if (_ == end) break;
 	    }
 	});
 
-	/* printf("new range has %d members.\n", ntree->size); */
-	return ntree;
+	/* printf("new range has %d members.\n", dst->root->size); */
     }
-    return NULL;
 }
 
-static inline cb_node_t cb_node_from_string(const cb_key s,
+static inline cb_node_t cb_node_from_string(const struct cb_tree * tree, 
+					    const cb_key s,
 					    const cb_value * val) {
     cb_node_t node = node_init();
     CB_SET_KEY(node, s);
@@ -163,7 +166,8 @@ static inline cb_node_t cb_node_from_string(const cb_key s,
     return node;
 }
 
-static inline cb_node_t cb_clone_node(const cb_node_t node) {
+static inline cb_node_t cb_clone_node(const struct cb_tree * tree,
+				      const cb_node_t node) {
     cb_node_t nnode = CB_NODE_ALLOC();
 
     memcpy(nnode, node, sizeof(cb_node));
@@ -171,50 +175,53 @@ static inline cb_node_t cb_clone_node(const cb_node_t node) {
     CB_INIT_VALUE(node);
     CB_SET_CHILD(nnode, 0, CB_CHILD(nnode, 0));
     CB_SET_CHILD(nnode, 1, CB_CHILD(nnode, 1));
-    CB_CHILD(node, 0) = NULL;
-    CB_CHILD(node, 1) = NULL;
+    CB_SET_CHILD(node, 0, NULL);
+    CB_SET_CHILD(node, 1, NULL);
 
     return nnode;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_copy_tree(const cb_node_t from) {
-    cb_node_t new;
+CB_STATIC CB_INLINE void cb_copy_tree(struct cb_tree * dst,
+				      cb_node_t from) {
 
-    if (!from) return NULL;
+    cb_node_t parent;
+    cb_node_t node = from;
 
-    new = CB_NODE_ALLOC();
+    if (!from) return;
 
-    memcpy(new, from, sizeof(cb_node));
-    new->parent = NULL;
-    CB_ADD_KEY_REF(new->key);
-    CB_GET_VALUE(from, &new->value);
+    parent = from->parent;
+    from->parent = NULL;
 
-    if (CB_HAS_CHILD(new, 0)) CB_SET_CHILD(new, 0,
-					   cb_copy_tree(CB_CHILD(new, 0)));
-    if (CB_HAS_CHILD(new, 1)) CB_SET_CHILD(new, 1,
-					   cb_copy_tree(CB_CHILD(new, 1)));
-    return new;
+    if (CB_HAS_VALUE(from))
+	cb_insert(dst, from->key, &from->value);
+
+    WALK_FORWARD(node, {
+	if (CB_HAS_VALUE(_))
+	    cb_insert(dst, _->key, &_->value);
+    });
+
+    from->parent = parent;
 }
 
-static inline cb_node_t cb_free_node(cb_node_t node) {
+static void cb_free_node(const struct cb_tree * tree, cb_node_t node) {
     if (!node) {
 	CB_FATAL(("double free!\n"));
     }
     if (CB_HAS_CHILD(node, 0)) {
-	CB_CHILD(node, 0) = cb_free_node(CB_CHILD(node, 0));
+	cb_free_node(tree, CB_CHILD(node, 0));
+	CB_SET_CHILD(node, 0, NULL);
     }
     if (CB_HAS_CHILD(node, 1)) {
-	CB_CHILD(node, 1) = cb_free_node(CB_CHILD(node, 1));
+	cb_free_node(tree, CB_CHILD(node, 1));
+	CB_SET_CHILD(node, 1, NULL);
     }
-    return cb_zap_node(node);
+    cb_zap_node(tree, node);
 }
 
-static inline cb_node_t cb_zap_node(cb_node_t node) {
+static inline void cb_zap_node(const struct cb_tree * tree, cb_node_t node) {
     CB_FREE_KEY(node->key);
     CB_RM_VALUE(node);
     CB_NODE_FREE(node);
-
-    return NULL;
 }
 
 CB_STATIC CB_INLINE cb_node_t cb_find_first(cb_node_t tree) {
@@ -265,9 +272,9 @@ CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
     return NULL;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_delete(cb_node_t tree, const cb_key key,
-				  cb_value * val) {
-    cb_node_t node = cb_index(tree, key);
+CB_STATIC CB_INLINE void cb_delete(struct cb_tree * tree,
+				   const cb_key key, cb_value * val) {
+    cb_node_t node = cb_index(tree->root, key);
 
     if (node && CB_HAS_VALUE(node)) {
 	uint32_t bit;
@@ -277,7 +284,7 @@ CB_STATIC CB_INLINE cb_node_t cb_delete(cb_node_t tree, const cb_key key,
 	CB_RM_VALUE(node);
 	node->size--;
 
-	if (node == tree) goto PARENT;
+	if (node == tree->root) goto PARENT;
 
 	if (!CB_HAS_PARENT(node)) CB_ERROR(("broken tree\n"));
 
@@ -286,11 +293,11 @@ CB_STATIC CB_INLINE cb_node_t cb_delete(cb_node_t tree, const cb_key key,
 	    _->size--;
 	});
 
-	cb_check_node(tree);
+	cb_check_node(tree->root);
 
 	do {
 	    switch (CB_HAS_CHILD(node, 0) + CB_HAS_CHILD(node, 1)) {
-	    case 2: return tree;
+	    case 2: return;
 	    case 1:
 		CB_SET_CHILD(CB_PARENT(node), CB_BIT(node),
 			     CB_CHILD(node, CB_HAS_CHILD(node, 1)));
@@ -300,32 +307,33 @@ CB_STATIC CB_INLINE cb_node_t cb_delete(cb_node_t tree, const cb_key key,
 		break;
 	    }
 	    t = CB_PARENT(node);
-	    cb_zap_node(node);
+	    cb_zap_node(tree, node);
 	    /*  do some deletion */
 	    node = t;
 	} while (CB_HAS_PARENT(node) && !CB_HAS_VALUE(node));
 
 PARENT:
-	cb_check_node(tree);
-	if (node == tree && !CB_HAS_VALUE(node)) {
+	cb_check_node(tree->root);
+	if (node == tree->root && !CB_HAS_VALUE(node)) {
 	    switch (CB_HAS_CHILD(node, 0) + CB_HAS_CHILD(node, 1)) {
-	    case 2: return tree;
+	    case 2: return;
 	    case 1:
 		t = CB_CHILD(node, CB_HAS_CHILD(node, 1));
-		cb_zap_node(tree);
+		cb_zap_node(tree, tree->root);
 		cb_check_node(t);
 		t->parent = NULL;
-		return t;
+		tree->root = t;
+		break;
 	    case 0:
-		cb_zap_node(tree);
-		return NULL;
+		cb_zap_node(tree, tree->root);
+		tree->root = NULL;
+		break;
 	    }
 	}
 
     }
 
-    cb_check_node(tree);
-    return tree;
+    cb_check_node(tree->root);
 }
 
 CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
@@ -482,7 +490,9 @@ CB_STATIC CB_INLINE cb_node_t cb_find_le(const cb_node_t tree, const cb_key key)
     return ne;
 }
 
-static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value *val) {
+static inline int cb_low_insert(struct cb_tree * tree,
+				const cb_key key, const cb_value *val) {
+    cb_node_t node = tree->root;
     cb_size size;
     size.bits = 0;
     size.chars = 0;
@@ -514,7 +524,7 @@ static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value
 		return 0;
 	    }
 	    /*  overwrite not inplace by new key node */
-	    klon = cb_clone_node(node);
+	    klon = cb_clone_node(tree, node);
 	    node->size++;
 	    bit = CB_GET_BIT(node->key.str, size);
 
@@ -536,11 +546,11 @@ static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value
 		node = CB_CHILD(node, bit);
 		continue;
 	    }
-	    CB_SET_CHILD(node, bit, cb_node_from_string(key, val));
+	    CB_SET_CHILD(node, bit, cb_node_from_string(tree, key, val));
 	    return 1;
 	}
 
-	new = cb_clone_node(node);
+	new = cb_clone_node(tree, node);
 	node->size++;
 #ifdef DEBUG_CHECKS
 	if (CB_LT(CB_MIN(node->key.len, key.len), size)) {
@@ -553,7 +563,7 @@ static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value
 #endif /* DEBUG_CHECKS */
 	node->key.len = size;
 	bit = CB_GET_BIT(key.str, size);
-	CB_SET_CHILD(node, bit, cb_node_from_string(key, val));
+	CB_SET_CHILD(node, bit, cb_node_from_string(tree, key, val));
 	CB_SET_CHILD(node, !bit, new);
 	CB_RM_VALUE(node); /*  do not free here, clone does take ref */
 
@@ -561,14 +571,17 @@ static inline int cb_low_insert(cb_node_t node, const cb_key key, const cb_value
     }
 }
 
-CB_STATIC CB_INLINE void cb_insert(cb_node_t * tree, const cb_key key,
-				  const cb_value *val) {
+CB_STATIC CB_INLINE void cb_insert(struct cb_tree * tree,
+				   const cb_key key,
+				   const cb_value *val) {
+	if (!tree->root) {
+	    tree->root = cb_node_from_string(tree, key, val);
+	    return;
+	}
 
-	cb_check_node(*tree);
+	cb_check_node(tree->root);
 
-	if (!*tree) {
-	    *tree = cb_node_from_string(key, val);
-	} else cb_low_insert(*tree, key, val);
+	cb_low_insert(tree, key, val);
 
-	cb_check_node(*tree);
+	cb_check_node(tree->root);
 }

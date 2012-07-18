@@ -52,8 +52,8 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
 static int dirty_regs = 0, ret_for_func = 0;
 ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
-static int branch_check_threads_update_etc = -1;
-
+static int branch_check_threads_update_etc = 0;
+static int store_pc = 0;
 
 #define MAX_LABEL_USES 6
 struct label {
@@ -875,6 +875,41 @@ static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 #define LABEL_D label(&label_D)
 #define LABEL_E label(&label_E)
 
+static void amd64_ins_branch_check_threads_etc(int code_only);
+static int func_start = 0;
+
+/* Called at the start of a function. */
+void amd64_start_function(int store_lines )
+{
+  store_pc = store_lines;
+  branch_check_threads_update_etc = 0;
+  /*
+   * store_lines is true for any non-constant evaluation function
+   * In reality we should only do this if we are going to be using
+   * check_threads_etc (ie, if we have a loop).
+   *
+   * It does not really waste all that much space in the code, though.
+   *
+   * We could really do this one time per program instead of once per
+   * function.
+   *
+   * But it is very hard to know when a new program starts, and
+   * PIKE_PC is not reliable as a marker since constant evaluations
+   * are also done using this code. So for now, waste ~20 bytes per
+   * function in the program code.
+   */
+  if( store_lines )
+    amd64_ins_branch_check_threads_etc(1);
+  func_start = PIKE_PC;
+}
+
+/* Called when the current function is done */
+void amd64_end_function(int no_pc)
+{
+  branch_check_threads_update_etc = 0;
+}
+
+
 /* Machine code entry prologue.
  *
  * On entry:
@@ -894,9 +929,7 @@ void amd64_ins_entry(void)
   push(REG_R12);
   push(REG_RBX);
   sub_reg_imm(REG_RSP, 8);	/* Align on 16 bytes. */
-
   mov_reg_reg(ARG1_REG, Pike_interpreter_reg);
-
   amd64_flush_code_generator_state();
 }
 
@@ -904,11 +937,10 @@ void amd64_flush_code_generator_state(void)
 {
   sp_reg = -1;
   fp_reg = -1;
+  ret_for_func = 0;
   mark_sp_reg = -1;
   dirty_regs = 0;
-  ret_for_func = 0;
   amd64_prev_stored_pc = -1;
-  branch_check_threads_update_etc = -1;
 }
 
 static void flush_dirty_regs(void)
@@ -1246,6 +1278,7 @@ static void maybe_update_pc(void)
 {
   static int last_prog_id=-1;
   static size_t last_num_linenumbers=-1;
+  if( !store_pc ) return;
 
   if(
 #ifdef PIKE_DEBUG
@@ -1259,6 +1292,25 @@ static void maybe_update_pc(void)
     last_prog_id=Pike_compiler->new_program->id;
     last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
     UPDATE_PC();
+  }
+}
+
+static void maybe_load_fp(void)
+{
+  static int last_prog_id=-1;
+  static size_t last_num_linenumbers=-1;
+  if( !store_pc ) return;
+
+  if(
+#ifdef PIKE_DEBUG
+    /* Update the pc more often for the sake of the opcode level trace. */
+     d_flag ||
+#endif
+     (amd64_prev_stored_pc == -1) ||
+     last_prog_id != Pike_compiler->new_program->id ||
+     last_num_linenumbers != Pike_compiler->new_program->num_linenumbers
+  ) {
+    amd64_load_fp_reg();
   }
 }
 
@@ -1284,6 +1336,15 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
 {
   int flags = instrs[instr].flags;
 
+  /* Note: maybe_update_pc() is called by amd64_call_c_opcode() above,
+   *       which has the side-effect of loading fp_reg. Some of the
+   *       opcodes use amd64_call_c_opcode() in conditional segments.
+   *       This is to make sure that fp_reg is always loaded on exit
+   *       from such opcodes.
+   */
+
+  maybe_load_fp();
+
 /* For now: It is very hard to read the disassembled source when
    this is inserted */
   if( !d_flag )
@@ -1305,7 +1366,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
     amd64_call_c_function (simple_debug_instr_prologue_0);
 }
 #else  /* !PIKE_DEBUG */
-#define ins_debug_instr_prologue(instr, arg1, arg2)
+#define ins_debug_instr_prologue(instr, arg1, arg2) maybe_load_fp()
 #endif
 
 static void amd64_push_this_object( )
@@ -1320,16 +1381,21 @@ static void amd64_push_this_object( )
   amd64_add_sp( 1 );
 }
 
-void amd64_ins_branch_check_threads_etc()
+static void amd64_align()
+{
+  while( PIKE_PC & 3 )
+    ib( 0x90 );
+}
+
+static void amd64_ins_branch_check_threads_etc(int code_only)
 {
   LABELS();
 
-#if 1
-  if( branch_check_threads_update_etc == -1 )
+  if( !branch_check_threads_update_etc )
   {
-    /* Create update + call to branch_checl_threds_etc */
-    jmp( &label_A );
-    mov_imm_mem32( 0, REG_RSP, 0);
+    /* Create update + call to branch_check_threds_etc */
+    if( !code_only )
+      jmp( &label_A );
     branch_check_threads_update_etc = PIKE_PC;
     if( (unsigned long long)&fast_check_threads_counter < 0x7fffffffULL )
     {
@@ -1346,16 +1412,17 @@ void amd64_ins_branch_check_threads_etc()
     }
     mov_imm_reg( (ptrdiff_t)branch_check_threads_etc, REG_RAX );
     jmp_reg(REG_RAX); /* ret in BCTE will return to desired point. */
+    amd64_align();
   }
-  LABEL_A;
-  /* Use C-stack for counter. We have padding added in entry */
-  add_mem8_imm( REG_RSP, 0, 1 );
-  jno( &label_B );
-  call_rel_imm32( branch_check_threads_update_etc-PIKE_PC );
-  LABEL_B;
-#else
-  call_imm( &branch_check_threads_etc );
-#endif
+  if( !code_only )
+  {
+    LABEL_A;
+    /* Use C-stack for counter. We have padding added in entry */
+    add_mem8_imm( REG_RSP, 0, 1 );
+    jno( &label_B );
+    call_rel_imm32( branch_check_threads_update_etc-PIKE_PC );
+    LABEL_B;
+  }
 }
 
 
@@ -1382,12 +1449,6 @@ static void amd64_return_from_function()
     pop(REG_RBP);
     ret();
   }
-}
-
-static void amd64_align()
-{
-  while( PIKE_PC & 7 )
-    ib( 0x90 );
 }
 
 void ins_f_byte(unsigned int b)
@@ -1948,7 +2009,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     ins_debug_instr_prologue(off, 0, 0);                              \
     if (backward_jump) {                                              \
       maybe_update_pc();                                              \
-      amd64_ins_branch_check_threads_etc();                           \
+      amd64_ins_branch_check_threads_etc(0);                          \
     }                                                                 \
   } while(0)
 
@@ -2020,7 +2081,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       je(&label_A);
 
       /* increase counter */
-      add_mem_imm( sp_reg, -1*sizeof(struct svalue)+8, 1 );
+      add_mem_imm( sp_reg, -1*(int)sizeof(struct svalue)+8, 1 );
 
       /* get item */
       mov_mem_reg( REG_RBX, OFFSETOF(array,item), REG_RBX );
@@ -2187,8 +2248,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     add_to_program (0x74);	/* jz rel8 */
     add_to_program (0);		/* Bytes to skip. */
     skip = (INT32)PIKE_PC;
-    amd64_ins_branch_check_threads_etc();
-    /* amd64_call_c_function (branch_check_threads_etc); */
+    amd64_ins_branch_check_threads_etc(0);
     add_to_program (0xe9);	/* jmp rel32 */
     ret = DO_NOT_WARN ((INT32) PIKE_PC);
     PUSH_INT (0);

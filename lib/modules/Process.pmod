@@ -407,13 +407,24 @@ class Process
 // FIXME: Should probably be located elsewhere.
 string locate_binary(array(string) path, string name)
 {
-  string dir;
-  Stdio.Stat info;
-  foreach(path, dir)
+#ifdef __NT__
+  if( !has_suffix(lower_case(name), ".exe") )
+    name += ".exe";
+#endif
+
+  foreach(path, string dir)
   {
-    string fname = dir + "/" + name;
-    if ((info = file_stat(fname))
-	&& (info[0] & 0111))
+#ifdef __NT__
+    // Windows doesn't seem to strip quotation marks from PATH
+    // components that contain them so we need to do that here,
+    // otherwise we'll end up with a bogus path to stat on.
+    if(sizeof(dir) && dir[0] == '"' && dir[-1] == '"')
+         dir = dir[1..<1];
+#endif /* __NT__ */
+    
+    string fname = combine_path(dir, name);
+    Stdio.Stat info = file_stat(fname);
+    if (info && (info->mode & 0111))
       return fname;
   }
   return 0;
@@ -427,7 +438,10 @@ protected array(string) runpike;
 //!   Arguments for the new process.
 //!
 //! @param options
-//!   Process creation options. See @[Process.Process] for details.
+//!   Process creation options. See @[Process.Process] for details. May also
+//!   specify "add_predefines", "add_program_path", or "add_include_path" in
+//!   order to include these components in command path (module path is 
+//!   included by default.)
 //!
 //! @seealso
 //!   @[Process.Process]
@@ -440,9 +454,22 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     if (master()->_master_file_name)
       res+=({"-m"+master()->_master_file_name});
     foreach (master()->pike_module_path;;string path)
-      res+=({"-M"+path});
-
-    // FIXME: Defines? pike_program_path?
+      res+=({"-M" + path});
+    if(options && options->add_predefines)
+    {
+      foreach (master()->predefines; string key; string value)
+        res+=({"-D" + key + "=" + value});
+    }
+    if(options && options->add_program_path)
+    {
+      foreach (master()->pike_program_path;; string value)
+        res+=({"-P" + value});
+    }
+    if(options && options->add_include_path)
+    {
+      foreach (master()->pike_include_path;; string value)
+        res+=({"-I" + value});
+    }
 
     if (sizeof(res) && !has_value(res[0],"/")
 #ifdef __NT__
@@ -644,7 +671,7 @@ string search_path(string command)
 	 string t;
 	 if (s[0]=='~')  // some shells allow ~-expansion in PATH
 	 {
-	    if (s[0..1]=="~/" && (t=[string]getenv("HOME")))
+	    if (s[0..1]=="~/" && (t=System.get_home()))
 	       s=t+s[1..];
 	    else
 	    {

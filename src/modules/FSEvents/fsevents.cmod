@@ -244,8 +244,17 @@ PIKEFUN void start()
 
   if(THIS->isRunning)
   {
-    Pike_error("monitor is already running.\n");
+    Pike_error("EventStream: monitor is already running.\n");
   }
+
+  if(!THIS->_paths)
+    Pike_error("EventStream: no paths.\n");
+
+  if(!THIS->_sinceWhen)
+    Pike_error("EventStream: no startdate.\n");
+				
+  if(!THIS->_latency)
+    Pike_error("EventStream: no latency.\n");
 
   if(CFArrayGetCount(THIS->_paths))
   {	
@@ -257,15 +266,6 @@ PIKEFUN void start()
     context.retain = NULL;
     context.release = NULL;
     context.copyDescription = NULL;
-
-    if(!THIS->_paths)
-      Pike_error("no paths.\n");
-
-    if(!THIS->_sinceWhen)
-      Pike_error("no startdate.\n");
-				
-    if(!THIS->_latency)
-      Pike_error("no latency.\n");
 
     THIS->stream = FSEventStreamCreate(kCFAllocatorDefault,
       &event_callback,
@@ -283,7 +283,7 @@ PIKEFUN void start()
   }
   else
   {
-    Pike_error("No paths registered for monitoring.\n");
+    Pike_error("EventStream: No paths registered for monitoring.\n");
   }
 }
 

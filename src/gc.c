@@ -94,6 +94,7 @@ double gc_average_slowness = 0.9;
 /* #define GC_VERBOSE */
 /* #define GC_CYCLE_DEBUG */
 /* #define GC_STACK_DEBUG */
+/* #define GC_INTERVAL_DEBUG */
 
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
 #undef GC_VERBOSE
@@ -116,6 +117,13 @@ int gc_trace = 0, gc_debug = 0;
 int gc_destruct_everything = 0;
 #endif
 size_t gc_ext_weak_refs;
+
+ALLOC_COUNT_TYPE saved_alloc_threshold;
+/* Used to backup alloc_threshold if the gc is disabled, so that it
+ * can be restored when it's enabled again. This is to not affect the
+ * gc interval if it's disabled only for a short duration.
+ * alloc_threshold is set to GC_MAX_ALLOC_THRESHOLD while it's
+ * disabled, to avoid complicating the test in GC_ALLOC(). */
 
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
@@ -3498,8 +3506,18 @@ size_t do_gc(void *ignored, int explicit_call)
   if(Pike_in_gc) return 0;
 
   if (gc_enabled <= 0 && (gc_enabled < 0 || !explicit_call)) {
+    /* If this happens then the gc has been disabled for a very long
+     * time and num_allocs > GC_MAX_ALLOC_THRESHOLD. Have to reset
+     * num_allocs, but then we also reset saved_alloc_threshold to
+     * GC_MIN_ALLOC_THRESHOLD so that a gc is run quickly if it ever
+     * is enabled again. */
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr, "GC disabled: num_allocs %"PRINT_ALLOC_COUNT_TYPE", "
+	     ", alloc_threshold %"PRINT_ALLOC_COUNT_TYPE"\n",
+	     num_allocs, alloc_threshold);
+#endif
     num_allocs = 0;
-    alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
+    saved_alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
     if (gc_evaluator_callback) {
       remove_callback (gc_evaluator_callback);
       gc_evaluator_callback = NULL;
@@ -3946,6 +3964,9 @@ size_t do_gc(void *ignored, int explicit_call)
   {
     double multiplier, new_threshold;
     cpu_time_t last_non_gc_time, last_gc_time;
+#ifdef GC_INTERVAL_DEBUG
+    double tmp_dbl1, tmp_dbl2;
+#endif
 
     /* If we're at an automatic and timely gc then start_allocs ==
      * alloc_threshold and we're using gc_average_slowness in the
@@ -3956,6 +3977,17 @@ size_t do_gc(void *ignored, int explicit_call)
      * to give the appropriate weight to this last instance. */
     multiplier=pow(gc_average_slowness,
 		   (double) start_allocs / (double) alloc_threshold);
+
+#ifdef GC_INTERVAL_DEBUG
+    if (GC_VERBOSE_DO(1 ||) gc_trace) fputc ('\n', stderr);
+    fprintf (stderr, "IN:  GC start @ %"PRINT_CPU_TIME" "CPU_TIME_UNIT"\n"
+	     "     avg slow %g, start_allocs %"PRINT_ALLOC_COUNT_TYPE", "
+	     "alloc_threshold %"PRINT_ALLOC_COUNT_TYPE" -> mult %g\n",
+	     gc_start_real_time,
+	     gc_average_slowness, start_allocs, alloc_threshold, multiplier);
+    tmp_dbl1 = non_gc_time;
+    tmp_dbl2 = gc_time;
+#endif
 
     /* Comparisons to avoid that overflows mess up the statistics. */
     if (last_gc_end_real_time != -1 &&
@@ -3970,6 +4002,21 @@ size_t do_gc(void *ignored, int explicit_call)
       gc_time = gc_time * multiplier +
 	(last_gc_end_real_time - gc_start_real_time) * (1.0 - multiplier);
     }
+
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr,
+	     "     non_gc_time: %13"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "%.12g -> %.12g\n"
+	     "     gc_time:     %13"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "%.12g -> %.12g\n",
+	     last_non_gc_time, tmp_dbl1, non_gc_time,
+	     last_gc_end_real_time > gc_start_real_time ?
+	     last_gc_end_real_time - gc_start_real_time : (cpu_time_t) -1,
+	     tmp_dbl2, gc_time);
+    tmp_dbl1 = objects_alloced;
+    tmp_dbl2 = objects_freed;
+#endif
+
     {
       cpu_time_t gc_end_time = get_cpu_time();
       if (gc_end_time > gc_start_time)
@@ -3992,6 +4039,16 @@ size_t do_gc(void *ignored, int explicit_call)
     objects_freed = objects_freed * multiplier +
       unreferenced * (1.0 - multiplier);
 
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr,
+	     "     objects_alloced: %9"PRINT_ALLOC_COUNT_TYPE" allocs, "
+	     "%.12g -> %.12g\n"
+	     "     objects_freed:   %9"PRINT_ALLOC_COUNT_TYPE" unrefd, "
+	     "%.12g -> %.12g\n",
+	     start_allocs, tmp_dbl1, objects_alloced,
+	     unreferenced, tmp_dbl2, objects_freed);
+#endif
+
     if (last_non_gc_time == (cpu_time_t) -1 ||
 	gc_time / non_gc_time <= gc_time_ratio) {
       /* Calculate the new threshold by adjusting the average
@@ -4003,17 +4060,33 @@ size_t do_gc(void *ignored, int explicit_call)
       new_threshold = (objects_alloced+1.0) *
 	(gc_garbage_ratio_low * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_LOW;
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     strategy: low ratio %g, objs %"PRINTSIZET"u, "
+	       "new threshold -> %.12g\n",
+	       gc_garbage_ratio_low, start_num_objs, new_threshold);
+#endif
     }
     else {
       new_threshold = (objects_alloced+1.0) *
 	(gc_garbage_ratio_high * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_HIGH;
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     strategy: high ratio %g, objs %"PRINTSIZET"u, "
+	       "new threshold -> %.12g\n",
+	       gc_garbage_ratio_high, start_num_objs, new_threshold);
+#endif
     }
 
     if (non_gc_time > 0.0 && gc_min_time_ratio > 0.0) {
       /* Upper limit on the new threshold based on gc_min_time_ratio. */
       double max_threshold = (objects_alloced+1.0) *
 	gc_time / (gc_min_time_ratio * non_gc_time);
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     max interval? min time ratio %g, "
+	       "max threshold %.12g -> %s\n",
+	       gc_min_time_ratio, max_threshold,
+	       max_threshold < new_threshold ? "yes" : "no");
+#endif
       if (max_threshold < new_threshold) {
 	new_threshold = max_threshold;
 	last_garbage_strategy = GARBAGE_MAX_INTERVAL;
@@ -4036,6 +4109,12 @@ size_t do_gc(void *ignored, int explicit_call)
       alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     else
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
+
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr, "OUT: GC end   @ %"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "new capped threshold %"PRINT_ALLOC_COUNT_TYPE"\n",
+	     last_gc_end_real_time, alloc_threshold);
+#endif
 
     if (!explicit_call) {
       auto_gc_real_time += get_real_time() - gc_start_real_time;
@@ -4288,9 +4367,9 @@ void f_implicit_gc_real_time (INT32 args)
 void dump_gc_info(void)
 {
   fprintf(stderr,"Current number of things   : %d\n",num_objects);
-  fprintf(stderr,"Allocations since last gc  : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Allocations since last gc  : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  num_allocs);
-  fprintf(stderr,"Threshold for next gc      : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Threshold for next gc      : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  alloc_threshold);
   fprintf(stderr,"Projected current garbage  : %f\n",
 	  objects_freed * (double) num_allocs / (double) alloc_threshold);
