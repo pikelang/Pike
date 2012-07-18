@@ -463,24 +463,30 @@ INT32 assemble(int store_linenumbers)
   length=instrbuf.s.len / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
-#ifdef PIKE_PORTABLE_BYTECODE
-  if (store_linenumbers) {
-    ins_data(store_prog_string(tripples));
-    free_string(tripples);
-  } else {
-    ins_data(0);
-  }
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 
 #ifdef START_NEW_FUNCTION
   START_NEW_FUNCTION(store_linenumbers);
 #endif
 
+#ifdef PIKE_PORTABLE_BYTECODE
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
+  while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
 #endif
+
+  if (store_linenumbers) {
+    ins_data(store_prog_string(tripples));
+    free_string(tripples);
+  } else {
+    ins_data(0);
+  }
+#else
+#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
+  while( ( ((INT32) PIKE_PC) & (ALIGN_PIKE_JUMPS-1)))
+    ins_byte(0);
+#endif
+#endif /* PIKE_PORTABLE_BYTECODE */
 
   entry_point = PIKE_PC;
 
