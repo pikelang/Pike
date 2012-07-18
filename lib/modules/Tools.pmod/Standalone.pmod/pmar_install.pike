@@ -235,13 +235,9 @@ int main(int argc, array(string) argv)
     system_module_path = moduletool["system_module_path"];
   else 
   {
-    system_module_path = System.get_home();
-    if(!system_module_path)
-    {
-      throw(Error.Generic("Unable to determine home directory. "
-                          "Please set HOME environment variable and retry.\n"));
-    }
-    system_module_path = combine_path(system_module_path, "lib/pike/modules");
+    // local installations should have the local module path added.
+    system_module_path = get_local_modulepath();
+    add_module_path(system_module_path);
   }
 
   if(!file_stat(system_module_path))
@@ -287,7 +283,7 @@ int main(int argc, array(string) argv)
       array local_components;
      
       [local_ver, local_components] = d->find_components(mod, ilocal);
-    
+    werror("ilocal: %O, local_ver: %O, local_components: %O\n", ilocal, local_ver, local_components);
       comp += local_components;
     }
   
@@ -557,3 +553,18 @@ string md5hash(string input)
   string h = Crypto.MD5()->hash(input);
   return String.string2hex(h);
 }
+
+string get_local_modulepath()
+{
+  string dir = System.get_home();
+
+  if(!dir)
+  {
+    throw(Error.Generic("Unable to determine home directory. "
+          "Please set HOME environment variable and retry.\n"));
+  }
+  dir = combine_path(dir, "lib/pike/modules");
+
+  return dir;
+}
+

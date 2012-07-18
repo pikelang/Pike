@@ -104,6 +104,8 @@ int main(int argc, array(string) argv)
         break;
       case "local":
         use_local = 1;
+        // local installs should have the local module path added.
+        add_module_path(get_local_modulepath());
         break;
     }
   }
@@ -708,7 +710,7 @@ array find_components(string name, int|void _local)
   string local_ver;
   array components;
 
-  catch
+  mixed e = catch
   {
     local_ver = master()->resolv(name)["__version"];
 
@@ -718,6 +720,8 @@ array find_components(string name, int|void _local)
     components = master()->resolv(name)["__components"];
   };
 
+  if(e)
+   werror(e[0]);
   return ({local_ver, components||({})});
 }
 
@@ -746,13 +750,7 @@ void low_uninstall(array components, int _local)
 
   if(_local)
   {
-    dir = System.get_home();
-    if(!dir)
-    {
-      throw(Error.Generic("Unable to determine home directory. "
-            "Please set HOME environment variable and retry.\n"));
-    }
-    dir = combine_path(dir, "lib/pike/modules");
+    dir = get_local_modulepath();
   }
   else
   {
@@ -774,6 +772,20 @@ void low_uninstall(array components, int _local)
     werror("deleting: " + path + " [%s]\n", (s->isdir?"dir":"file"));
     rm(path);
   }
+}
+
+string get_local_modulepath()
+{
+  string dir = System.get_home();
+
+  if(!dir)
+  {
+    throw(Error.Generic("Unable to determine home directory. "
+          "Please set HOME environment variable and retry.\n"));
+  }
+  dir = combine_path(dir, "lib/pike/modules");
+ 
+  return dir;
 }
 
 // make a remote xmlrpc service act more like a pike object.
