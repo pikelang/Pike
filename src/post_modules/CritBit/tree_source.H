@@ -1,5 +1,5 @@
     INIT {
-	THIS->tree = NULL;
+	THIS->tree.root = NULL;
 	THIS->encode_fun = find_identifier
 		("encode_key", Pike_fp->current_object->prog);
 	THIS->decode_fun=find_identifier
@@ -20,8 +20,7 @@ static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
 	CB_PUSH_VALUE(node->value);
 	apply_low(o, THIS->insert_fun, 2);
 	pop_stack();
-    } else cmod_OBJ2_TREE(o)->tree =
-		cb_insert(cmod_OBJ2_TREE(o)->tree, node->key, &node->value);
+    } else cb_insert(& cmod_OBJ2_TREE(o)->tree, node->key, &node->value);
 }
 
 static inline void TREE_CLASSIFY(_copy_tree)(struct object *o, cb_node_t node) {
@@ -34,7 +33,7 @@ static inline void TREE_CLASSIFY(_copy_tree)(struct object *o, cb_node_t node) {
 		    pop_stack();
 		}
 	    });
-	} else cmod_OBJ2_TREE(o)->tree = cb_copy_tree(node);
+	} else cb_copy_tree(& cmod_OBJ2_TREE(o)->tree, node);
 }
 
 static inline struct object *
@@ -49,8 +48,7 @@ TREE_CLASSIFY(_clone_object)(const struct object *o) {
 	pop_stack();
     } else {
 	t = clone_object(Pike_fp->current_object->prog, 0);
-	if (cmod_OBJ2_TREE(o)->tree)
-	    cmod_OBJ2_TREE(t)->tree = cb_copy_tree(cmod_OBJ2_TREE(o)->tree);
+	cb_copy_tree(& cmod_OBJ2_TREE(t)->tree, cmod_OBJ2_TREE(o)->tree.root);
     }
     return t;
 }
@@ -70,10 +68,10 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
 	k = CB_KEY_FROM_SVALUE(key);
 
-	oldsize = (THIS->tree) ? THIS->tree->size : 0;
+	oldsize = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	if (oldsize) {
-	    THIS->tree = cb_delete(THIS->tree, k, Pike_sp++);
-	    size = (THIS->tree) ? THIS->tree->size : 0;
+	    cb_delete(& THIS->tree, k, Pike_sp++);
+	    size = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	    if (size < oldsize) {
 		THIS->rev++;
 		stack_pop_keep_top();
@@ -85,7 +83,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     }
 
     PIKEFUN int check_parenting_skills() {
-	push_int(cb_rec_check_parents(THIS->tree));
+	push_int(cb_rec_check_parents(THIS->tree.root));
     }
 
     DOCSTART() @decl void create(array|mapping|void o)
@@ -104,7 +102,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
 		NEW_MAPPING_LOOP(md) {
 		    cb_key key = CB_KEY_FROM_SVALUE(&k->ind);
-		    THIS->tree = cb_insert(THIS->tree, key, &k->val);
+		    cb_insert(& THIS->tree, key, &k->val);
 		}
 		return;
 	    }
@@ -115,7 +113,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
 		for (i = 0; i < o->u.array->size; i+=2) {
 		    cb_key key = CB_KEY_FROM_SVALUE(ITEM(o->u.array)+i);
-		    THIS->tree = cb_insert(THIS->tree, key, ITEM(o->u.array)+i+1);
+		    cb_insert(& THIS->tree, key, ITEM(o->u.array)+i+1);
 		}
 		return;
 	    }
@@ -129,19 +127,19 @@ DOCSTART() @decl int _sizeof()
  *! Gives the number of entries in the @[tree_class].
 DOCEND()
     PIKEFUN int _sizeof() {
-	push_int(THIS->tree ? THIS->tree->size : 0);
+	push_int(THIS->tree.root ? THIS->tree.root->size : 0);
     }
 
 DOCSTART() @decl array _indices()
  *! Returns a sorted array of indices of the @[tree_class].
 DOCEND()
     PIKEFUN array _indices() {
-	size_t size = THIS->tree ? THIS->tree->size : 0;
+	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    size_t start = 0;
 	    struct svalue * s;
 	    cb_key k;
-	    cb_node_t node = THIS->tree;
+	    cb_node_t node = THIS->tree.root;
 	    struct array * a = allocate_array_no_init(size, 0);
 	    push_array(a);
 	    if (CB_HAS_VALUE(node)) {
@@ -174,11 +172,11 @@ DOCSTART() @decl array _values()
  *! create a mapping with the same contents as this @[tree_class].
 DOCEND()
     PIKEFUN array _values() {
-	size_t size = THIS->tree ? THIS->tree->size : 0;
+	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    struct array * a = allocate_array_no_init(size, 0);
 	    push_array(a);
-	    cb_aggregate_values(THIS->tree, a, 0, size);
+	    cb_aggregate_values(THIS->tree.root, a, 0, size);
 	    return;
 	}
 	ref_push_array(&empty_array);
@@ -187,9 +185,9 @@ DOCEND()
     /*! @decl mixed `[]=(mixed key, mixed val) */
     PIKEFUN mixed `[]=(mixed key, mixed val) {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
-	THIS->tree = cb_insert(THIS->tree, k, val);
+	cb_insert(& THIS->tree, k, val);
 #ifdef DEBUG_CHECK
-	cb_check(THIS->tree, THIS->tree, k->str);
+	cb_check(THIS->tree.root, THIS->tree.root, k->str);
 #endif /* DEBUG_CHECK */
 	stack_pop_keep_top();
     }
@@ -204,7 +202,7 @@ DOCEND()
 	if (CB_LT(k.len, len)) {
 	    Pike_error("chars, bits are too big for key.\n");
 	}
-	THIS->tree = cb_insert(THIS->tree, k, val);
+	cb_insert(& THIS->tree, k, val);
 	stack_pop_keep_top();
     }
 
@@ -236,9 +234,9 @@ DOCEND()
     PIKEFUN mixed nth(int n) {
 	cb_node_t node;
 
-	if (THIS->tree) {
-	    if (n >= 0 && (size_t)n < THIS->tree->size) {
-		node = cb_get_nth(THIS->tree, n);
+	if (THIS->tree.root) {
+	    if (n >= 0 && (size_t)n < THIS->tree.root->size) {
+		node = cb_get_nth(THIS->tree.root, n);
 		if (node) {
 		    pop_stack();
 		    CB_PUSH_TRANSFORM_KEY(node->key);
@@ -262,8 +260,9 @@ DOCEND()
     PIKEFUN array _random() {
 	cb_node_t node;
 
-	if (THIS->tree) {
-	    node = cb_get_nth(THIS->tree, my_rand() % THIS->tree->size);
+	if (THIS->tree.root) {
+	    node = cb_get_nth(THIS->tree.root,
+			      my_rand() % THIS->tree.root->size);
 	    if (node) {
 		CB_PUSH_TRANSFORM_KEY(node->key);
 		push_svalue(&node->value);
@@ -284,7 +283,7 @@ DOCEND()
 	    cb_node_t n;
 	    cb_key k = CB_LOW_KEY_FROM_SVALUE(key);
 	    pop_stack();
-	    n = cb_index(THIS->tree, k);
+	    n = cb_index(THIS->tree.root, k);
 
 	    if (n && CB_HAS_VALUE(n)) {
 		push_svalue(&n->value);
@@ -300,8 +299,8 @@ DOCEND()
 	if (o->type == PIKE_T_OBJECT
 	    && o->u.object->prog == Pike_fp->current_object->prog) {
 	    cb_node_t tree1, tree2;
-	    tree1 = THIS->tree;
-	    tree2 = cmod_OBJ2_TREE(o->u.object)->tree;
+	    tree1 = THIS->tree.root;
+	    tree2 = cmod_OBJ2_TREE(o->u.object)->tree.root;
 
 	    if (tree1 == tree2) {
 		push_int(1);
@@ -338,14 +337,14 @@ DOCEND()
 	    SIMPLE_BAD_ARG_ERROR("`-", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
 	}
 
-	node = cmod_OBJ2_TREE(o->u.object)->tree;
+	node = cmod_OBJ2_TREE(o->u.object)->tree.root;
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    if (node) {
-		cb_node_t t = THIS->tree;
+		cb_node_t t = THIS->tree.root;
 		res = clone_object(Pike_fp->current_object->prog, 0);
 
-		if (node != THIS->tree)
+		if (node != THIS->tree.root)
 		    WALK_FORWARD(t, {
 			if (CB_HAS_VALUE(_) && !cb_index(node, _->key))
 			    COPY_NODE(res, _);
@@ -370,14 +369,14 @@ DOCEND()
 	    == low_get_storage(o->u.object->prog, TREE_CLASSIFY(_program))) {
 	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(CritBit." cmod_STRFY_EVAL(tree_class) ")");
 	}
-	tree1 = THIS->tree;
-	tree2 = cmod_OBJ2_TREE(o->u.object)->tree;
+	tree1 = THIS->tree.root;
+	tree2 = cmod_OBJ2_TREE(o->u.object)->tree.root;
 
 	if (tree1 && tree2) {
 	    struct object * res = NULL;
 	    if (tree1->size < tree2->size) {
 		tree1 = tree2;
-		tree2 = THIS->tree;
+		tree2 = THIS->tree.root;
 		res = CLONE_OBJECT(o->u.object);
 	    } else
 		res = CLONE_OBJECT(Pike_fp->current_object);
@@ -405,15 +404,15 @@ DOCEND()
     PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype) {
 	struct object * o = NULL;
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    cb_node_t start = NULL, stop = NULL;
 
 	    switch (atype & (INDEX_FROM_BEG | INDEX_FROM_END | OPEN_BOUND)) {
 	    case OPEN_BOUND:
-		start = cb_find_first(THIS->tree);
+		start = cb_find_first(THIS->tree.root);
 		break;
 	    case INDEX_FROM_BEG:
-		start = cb_find_ne(THIS->tree, CB_KEY_FROM_SVALUE(a));
+		start = cb_find_ne(THIS->tree.root, CB_KEY_FROM_SVALUE(a));
 		break;
 	    case INDEX_FROM_END:
 		goto illegal_index;
@@ -423,10 +422,10 @@ DOCEND()
 
 	    switch (btype & (INDEX_FROM_BEG | INDEX_FROM_END | OPEN_BOUND)) {
 	    case OPEN_BOUND:
-		stop = cb_find_last(THIS->tree);
+		stop = cb_find_last(THIS->tree.root);
 		break;
 	    case INDEX_FROM_BEG:
-		stop = cb_find_le(THIS->tree, CB_KEY_FROM_SVALUE(b));
+		stop = cb_find_le(THIS->tree.root, CB_KEY_FROM_SVALUE(b));
 		break;
 	    case INDEX_FROM_END:
 		goto illegal_index;
@@ -468,23 +467,23 @@ illegal_index:
     PIKEFUN mixed `[](mixed a, mixed b) {
 	struct object * o = NULL;
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    cb_node_t start = NULL, stop = NULL;
 
 	    if (TYPEOF(*a) == PIKE_T_INT && !a->u.integer) {
-		start = cb_find_first(THIS->tree);
+		start = cb_find_first(THIS->tree.root);
 	    } else {
 		cb_key key = CB_KEY_FROM_SVALUE(a);
-		start = cb_find_ne(THIS->tree, key);
+		start = cb_find_ne(THIS->tree.root, key);
 	    }
 
 	    if (!start) goto range_do_clone;
 
 	    if (TYPEOF(*b) == PIKE_T_INT && b->u.integer == MAX_INT_TYPE) {
-		stop = cb_find_last(THIS->tree);
+		stop = cb_find_last(THIS->tree.root);
 	    } else {
 		cb_key key = CB_KEY_FROM_SVALUE(b);
-		stop = cb_find_le(THIS->tree, key);
+		stop = cb_find_le(THIS->tree.root, key);
 	    }
 
 	    o = clone_object(Pike_fp->current_object->prog, 0);
@@ -515,11 +514,11 @@ range_do_clone:
 #cmod_endif
 
     PIKEFUN string ugly() {
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    struct string_builder s;
 
 	    init_string_builder(&s, 0);
-	    cb_print_tree(&s, THIS->tree, 0);
+	    cb_print_tree(&s, THIS->tree.root, 0);
 	    push_string(finish_string_builder(&s));
 	    return;
 	}
@@ -530,8 +529,8 @@ range_do_clone:
      *! Get the lexicographically first index in the tree.
     DOCEND()
     PIKEFUN key_ptype first() {
-	if (THIS->tree) {
-	    cb_node_t first = cb_find_first(THIS->tree);
+	if (THIS->tree.root) {
+	    cb_node_t first = cb_find_first(THIS->tree.root);
 	    if (first) {
 		CB_PUSH_TRANSFORM_KEY(first->key);
 		return;
@@ -544,8 +543,8 @@ range_do_clone:
      *! Get the lexicographically last index in the tree.
     DOCEND()
     PIKEFUN key_ptype last() {
-	if (THIS->tree) {
-	    cb_node_t last = cb_find_last(THIS->tree);
+	if (THIS->tree.root) {
+	    cb_node_t last = cb_find_last(THIS->tree.root);
 	    if (last) {
 		CB_PUSH_TRANSFORM_KEY(last->key);
 		return;
@@ -576,10 +575,11 @@ range_do_clone:
     PIKEFUN key_ptype previous(mixed current) {
 	CB_CHECK_KEY(current, "previous", 1);
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    cb_node_t previous;
 
-	    previous = cb_find_previous(THIS->tree, CB_LOW_KEY_FROM_SVALUE(current));
+	    previous = cb_find_previous(THIS->tree.root,
+					CB_LOW_KEY_FROM_SVALUE(current));
 	    pop_stack();
 	    if (previous) {
 		CB_PUSH_TRANSFORM_KEY(previous->key);
@@ -595,10 +595,11 @@ range_do_clone:
     PIKEFUN key_ptype next(mixed current) {
 	CB_CHECK_KEY(current, "next", 1);
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    cb_node_t next;
 
-	    next = cb_find_next(THIS->tree, CB_LOW_KEY_FROM_SVALUE(current));
+	    next = cb_find_next(THIS->tree.root,
+				CB_LOW_KEY_FROM_SVALUE(current));
 	    pop_stack();
 	    if (next) {
 		CB_PUSH_TRANSFORM_KEY(next->key);
@@ -622,8 +623,8 @@ range_do_clone:
      *! Calculate the depth of the tree.
      */
     PIKEFUN int depth() {
-	if (THIS->tree) {
-	    push_int(cb_get_depth(THIS->tree));
+	if (THIS->tree.root) {
+	    push_int(cb_get_depth(THIS->tree.root));
 	    return;
 	}
 
@@ -637,9 +638,7 @@ range_do_clone:
     PIKEFUN object copy() {
 	struct object * copy;
 	copy = clone_object(Pike_fp->current_object->prog, 0);
-	if (THIS->tree) {
-	    cmod_OBJ2_TREE(copy)->tree = cb_copy_tree(THIS->tree);
-	}
+	cb_copy_tree(& cmod_OBJ2_TREE(copy)->tree, THIS->tree.root);
 	push_object(copy);
     }
 
@@ -651,11 +650,12 @@ range_do_clone:
 	struct object * sub;
 	cb_node_t node = NULL;
 
-	if (THIS->tree) {
+	if (THIS->tree.root) {
 	    if (args == 0 || IS_UNDEFINED(key))
-		node = THIS->tree;
+		node = THIS->tree.root;
 	    else
-		node = cb_subtree_prefix(THIS->tree, CB_LOW_KEY_FROM_SVALUE(key));
+		node = cb_subtree_prefix(THIS->tree.root,
+					 CB_LOW_KEY_FROM_SVALUE(key));
 	}
 	sub = clone_object(Pike_fp->current_object->prog, 0);
 
@@ -669,15 +669,10 @@ range_do_clone:
     }
 
     EXIT {
-#if 0 /* HAS___SYNC_VAL_COMPARE_AND_SWAP */
-	cb_node_t tree = THIS->tree;
-	if (tree && __sync_val_compare_and_swap(&(THIS->tree), tree, NULL)) {
-	    cb_free_node(tree);
+	if (THIS->tree.root) {
+	    cb_free_node(& THIS->tree, THIS->tree.root);
+	    THIS->tree.root = NULL;
 	}
-#else
-	if (THIS->tree) cb_free_node(THIS->tree);
-	THIS->tree = NULL;
-#endif
     }
 
 /*! @endclass */
