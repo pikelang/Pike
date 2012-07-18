@@ -283,7 +283,6 @@ int main(int argc, array(string) argv)
       array local_components;
      
       [local_ver, local_components] = d->find_components(mod, ilocal);
-    werror("ilocal: %O, local_ver: %O, local_components: %O\n", ilocal, local_ver, local_components);
       comp += local_components;
     }
   
