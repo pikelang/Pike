@@ -92,14 +92,14 @@ static inline cb_size cb_prefix_count_fallback(const cb_string s1,
 }
 
 
-static inline cb_node_t node_init() {
-    cb_node_t tree;
+static inline cb_node_t node_init(const struct cb_tree * tree) {
+    cb_node_t node;
 
-    tree = CB_NODE_ALLOC();
-    memset(tree, 0, sizeof(cb_node));
-    CB_INIT_VALUE(tree);
+    node = CB_NODE_ALLOC(tree);
+    memset(node, 0, sizeof(cb_node));
+    CB_INIT_VALUE(node);
 
-    return tree;
+    return node;
 }
 
 CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree * src,
@@ -153,7 +153,7 @@ CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree * src,
 static inline cb_node_t cb_node_from_string(const struct cb_tree * tree, 
 					    const cb_key s,
 					    const cb_value * val) {
-    cb_node_t node = node_init();
+    cb_node_t node = node_init(tree);
     CB_SET_KEY(node, s);
     node->size = 1;
     CB_SET_VALUE(node, val);
@@ -168,7 +168,7 @@ static inline cb_node_t cb_node_from_string(const struct cb_tree * tree,
 
 static inline cb_node_t cb_clone_node(const struct cb_tree * tree,
 				      const cb_node_t node) {
-    cb_node_t nnode = CB_NODE_ALLOC();
+    cb_node_t nnode = CB_NODE_ALLOC(tree);
 
     memcpy(nnode, node, sizeof(cb_node));
     CB_ADD_KEY_REF(node->key);
@@ -221,7 +221,7 @@ static void cb_free_node(const struct cb_tree * tree, cb_node_t node) {
 static inline void cb_zap_node(const struct cb_tree * tree, cb_node_t node) {
     CB_FREE_KEY(node->key);
     CB_RM_VALUE(node);
-    CB_NODE_FREE(node);
+    CB_NODE_FREE(tree, node);
 }
 
 CB_STATIC CB_INLINE cb_node_t cb_find_first(cb_node_t tree) {

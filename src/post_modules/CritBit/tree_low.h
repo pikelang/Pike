@@ -209,6 +209,7 @@ typedef struct cb_node cb_node;
 
 typedef struct cb_tree {
     cb_node_t root;
+    struct ba_local allocator;
 } cb_tree;
 
 CB_STATIC CB_INLINE void cb_insert(cb_tree*, const cb_key,

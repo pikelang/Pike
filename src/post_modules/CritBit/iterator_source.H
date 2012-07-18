@@ -47,7 +47,7 @@ static INT_TYPE cmod_CONCAT_EVAL(tree_class,_,iterator_class,_update)() {
     /* we update all pointers here, as they might have been relocated */
     INT_TYPE c = THIS->step;
 
-    THIS->tree = cmod_OBJ2_TREE(THIS->ptree)->tree;
+    THIS->tree = cmod_OBJ2_TREE(THIS->ptree)->tree.root;
 
     THIS->lastrev = * THIS->revv;
 

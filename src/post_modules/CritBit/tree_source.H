@@ -3,12 +3,12 @@
 	cb_node_t node = (cb_node_t)start;
 
 	{
-	    cb_node_t tree = THIS->tree;
+	    cb_node_t tree = THIS->tree.root;
 
 	    ba_simple_rel_pointer(&tree, diff);
 
 	    if (tree >= node && tree < (cb_node_t)stop) {
-		THIS->tree = tree;
+		THIS->tree.root = tree;
 	    }
 	}
 
@@ -19,13 +19,6 @@
 	    node++;
 	}
 	THIS->rev ++;
-    }
-#undef PTR_UPDATE
-    static cb_node_t TREE_CLASSIFY(node_alloc)() {
-	return ba_lalloc(&THIS->allocator);
-    }
-    static void TREE_CLASSIFY(node_free)(cb_node_t node) {
-	ba_lfree(&THIS->allocator, node);
     }
 #endif
 
@@ -45,7 +38,7 @@
 	    THIS->copy_fun = -1;
 	}
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_init_local(&THIS->allocator, sizeof(struct cb_node), 32, 256,
+	ba_init_local(&THIS->tree.allocator, sizeof(struct cb_node), 32, 256,
 		      TREE_CLASSIFY(relocate_simple), NULL);
 #endif
     }
@@ -57,7 +50,7 @@ static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
 	pop_stack();
     } else {
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&cmod_OBJ2_TREE(o)->allocator, 2);
+	ba_lreserve(&cmod_OBJ2_TREE(o)->tree.allocator, 2);
 #endif
 	cb_insert(& cmod_OBJ2_TREE(o)->tree, node->key, &node->value);
     }
@@ -73,7 +66,12 @@ static inline void TREE_CLASSIFY(_copy_tree)(struct object *o, cb_node_t node) {
 		    pop_stack();
 		}
 	    });
-	} else cb_copy_tree(& cmod_OBJ2_TREE(o)->tree, node);
+	} else {
+#ifdef PIKE_NEW_BLOCK_ALLOC
+	    ba_lreserve(&cmod_OBJ2_TREE(o)->tree.allocator, node->size);
+#endif
+	    cb_copy_tree(& cmod_OBJ2_TREE(o)->tree, node);
+	}
 }
 
 static inline struct object *
@@ -88,7 +86,12 @@ TREE_CLASSIFY(_clone_object)(const struct object *o) {
 	pop_stack();
     } else {
 	t = clone_object(Pike_fp->current_object->prog, 0);
-	cb_copy_tree(& cmod_OBJ2_TREE(t)->tree, cmod_OBJ2_TREE(o)->tree.root);
+	if (cmod_OBJ2_TREE(o)->tree.root) {
+#ifdef PIKE_NEW_BLOCK_ALLOC
+	    ba_lreserve(&cmod_OBJ2_TREE(o)->tree.allocator, cmod_OBJ2_TREE(o)->tree.root->size);
+#endif
+	    cb_copy_tree(& cmod_OBJ2_TREE(t)->tree, cmod_OBJ2_TREE(o)->tree.root);
+	}
     }
     return t;
 }
@@ -143,7 +146,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		NEW_MAPPING_LOOP(md) {
 		    cb_key key = CB_KEY_FROM_SVALUE(&k->ind);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-		    ba_lreserve(&THIS->allocator, 2);
+		    ba_lreserve(&THIS->tree.allocator, 2);
 #endif
 		    cb_insert(& THIS->tree, key, &k->val);
 		}
@@ -157,7 +160,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		for (i = 0; i < o->u.array->size; i+=2) {
 		    cb_key key = CB_KEY_FROM_SVALUE(ITEM(o->u.array)+i);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-		    ba_lreserve(&THIS->allocator, 2);
+		    ba_lreserve(&THIS->tree.allocator, 2);
 #endif
 		    cb_insert(& THIS->tree, key, ITEM(o->u.array)+i+1);
 		}
@@ -232,7 +235,7 @@ DOCEND()
     PIKEFUN mixed `[]=(mixed key, mixed val) {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&THIS->allocator, 2);
+	ba_lreserve(&THIS->tree.allocator, 2);
 #endif
 	cb_insert(& THIS->tree, k, val);
 #ifdef DEBUG_CHECK
@@ -252,7 +255,7 @@ DOCEND()
 	    Pike_error("chars, bits are too big for key.\n");
 	}
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	ba_lreserve(&THIS->allocator, 2);
+	ba_lreserve(&THIS->tree.allocator, 2);
 #endif
 	cb_insert(& THIS->tree, k, val);
 	stack_pop_keep_top();
@@ -690,7 +693,12 @@ range_do_clone:
     PIKEFUN object copy() {
 	struct object * copy;
 	copy = clone_object(Pike_fp->current_object->prog, 0);
-	cb_copy_tree(& cmod_OBJ2_TREE(copy)->tree, THIS->tree.root);
+	if (THIS->tree.root) {
+#ifdef PIKE_NEW_BLOCK_ALLOC
+	    ba_lreserve(&cmod_OBJ2_TREE(o)->tree.allocator, THIS->tree.root->size);
+#endif
+	    cb_copy_tree(& cmod_OBJ2_TREE(copy)->tree, THIS->tree.root);
+	}
 	push_object(copy);
     }
 
