@@ -91,7 +91,11 @@ o Added Thread.Queue.peek_array.
 o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy. This is not
   believed to have been a security issue.
 
-o Added System.getloadavg() on platforms that support the getloadavg() call.
+o System
+
+  Added getloadavg() on platforms that support the getloadavg() call.
+
+  Added cross-platform get_home() and get_user() wrappers.
 
 o SSL
 
@@ -135,10 +139,17 @@ o Calendar
 
     Added Calendar.Greek.
 
-o Process.spawn(), popen() and system() et al now use Process.Process.
+o Process
+  
+  Process.spawn(), popen() and system() et al now use Process.Process.
 
-o Process.Process adds support for spawning processes via forkd.
+  Process.Process adds support for spawning processes via forkd.
 
+  Process.spawn_pike() can now optionally pass predefines as well as 
+  program and include path arguments.
+
+  Process.spawn_pike() should also be more reliable on Windows.
+ 
 o Added functions to access the numerator and the denominator of a Gmp.mpq.
 
 o Added lower level functions Tools.X509.[dr]sa_sign_key(). This makes it
@@ -189,6 +200,17 @@ o Improved performance of Process.run when threads aren't supported.
 
 o Locale.Charset improves performance of encoders when replacement is active
   by a few magnitudes.
+
+o pike -x pmar_install can install from an http/s url, supports gzipped
+  archives, md5 hash checking and better uninstall support on Windows.
+
+o Monger
+
+  Monger (pike -x monger) can now install pmar (pre-built module archives) 
+  from the module repository, when available (particularly useful on Windows).
+
+  Monger can also download and build from a module's source repository (svn, 
+  hg, git) when specified in the Pike module repository (modules.gotpike.org).
 
 Deprecations
 ------------
