@@ -12,7 +12,7 @@ int main(int argc, array(string) argv)
    if(sizeof(argv))
     dir = argv[1];
 
-#if constant(Pike.DefaultBackend.GOT_CORE_FOUNDATION)
+#if constant(Pike.DefaultBackend.HAVE_CORE_FOUNDATION)
    Pike.DefaultBackend.enable_core_foundation(1);
 #else
    werror("Pike does not have support for Core Foundation. FSEvents will not function!\n");
