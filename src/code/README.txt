@@ -92,6 +92,17 @@ void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
 void EXIT_MACHINE_CODE()
 	Clean up from CALL_MACHINE_CODE.
 
+void START_NEW_FUNCTION(int store_lines)
+	Called at the start of a function. store_lines is true for any
+	non-constant evaluation function. This hook can be used to
+	add common helper subroutines and/or reset code-generator state.
+
+void END_FUNCTION(int store_lines)
+	Called after all f-codes for a function have been emitted.
+	Typically used to clean up after START_NEW_FUNCTION().
+	store_lines will contain the same value as when
+	START_NEW_FUNCTION() was called.
+
 void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
 	Set PROG_COUNTER to a new value.
 
