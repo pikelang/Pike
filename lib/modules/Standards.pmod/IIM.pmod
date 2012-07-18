@@ -379,6 +379,7 @@ mapping get_information(Stdio.File fd)
       charset = ([
 	"cp_1252":"windows1252",
 	"cp_2":"macintosh",
+	"cp_utf8": "utf8",
       ])[charset] || charset;
     }
     //werror("Charset: %O\n", charset);
