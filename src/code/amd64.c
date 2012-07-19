@@ -2172,22 +2172,26 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 /*      START_JUMP();*/
       ins_debug_instr_prologue(op, 0, 0);
       amd64_load_sp_reg();
-      mov_mem16_reg( sp_reg, -sizeof(struct svalue),  REG_RAX );
+      mov_mem16_reg( sp_reg, -sizeof(struct svalue),  REG_RCX );
       mov_mem16_reg( sp_reg, -sizeof(struct svalue)*2,REG_RBX );
-      cmp_reg_reg( REG_RAX, REG_RBX );
+      cmp_reg_reg( REG_RCX, REG_RBX );
       jnz( &label_A ); /* Types differ */
-      cmp_reg32_imm( REG_RAX, PIKE_T_OBJECT );
-      je( &label_A ); /* Do not even bother with objects.. */
-
+      
+      /* Fallback to C for functions, objects and floats. */
+      mov_imm_reg(1, REG_RBX);
+      shl_reg32_reg(REG_RBX, REG_RCX);
+      and_reg_imm(REG_RBX, (BIT_FUNCTION|BIT_OBJECT|BIT_FLOAT));
+      jnz( &label_A );
+      
       mov_mem_reg( sp_reg, -sizeof(struct svalue)+8,  REG_RBX );
       sub_reg_mem( REG_RBX, sp_reg, -sizeof(struct svalue)*2+8);
       /* RBX will now be 0 if they are equal.*/
 
       /* Optimization: The types are equal, pop_stack can be greatly
-       * simplified if they are < max_reg_type */
-      cmp_reg32_imm( REG_RAX,MAX_REF_TYPE+1);
+       * simplified if they are <= max_ref_type */
+      cmp_reg32_imm( REG_RCX,MAX_REF_TYPE+1);
       jl( &label_B );
-      /* cheap pop. We know that both are >= max_ref_type */
+      /* cheap pop. We know that both are > max_ref_type */
       amd64_add_sp( -2 );
       jmp( &label_D );
 
