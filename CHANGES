@@ -96,6 +96,8 @@ o System
   Added getloadavg() on platforms that support the getloadavg() call.
 
   Added cross-platform get_home() and get_user() wrappers.
+  
+  Added GetUserName() for Windows systems.
 
 o SSL
 
@@ -247,6 +249,11 @@ o Architecture/OS specific:
 
   - Stdio.cp should now work on directory trees on Windows.
 
+  - Fixed bug that caused file_stat on Windows NT to not return a result 
+    on certain non-FAT filesystems. Fixes bug 6432.
+
+  - Fixed a root directory check in Stdio on Windows NT. Fixes bug 3759.
+
 o Calendar module:
 
   - Fixed backward compatibility for Calendar.iso_name() and
@@ -282,6 +289,8 @@ o Graphics:
   - Fixed several issues related to lables on the X and Y axises
     and the calculation of xmaxvalue for the bars/line/linear case
     in Graphics.Graph.
+
+  - Fix integer underflow in Image.JPEG. Fixes [bug 6413].
 
 o I/O:
 
@@ -335,6 +344,11 @@ o Runtime:
 
   - Fixed a segfault occuring if exit() is used from a thread when
     the Pike runtime has been compiled with cleanup-on-exit enabled.
+
+  - Fixed bug in new_check_call(). Fixes [bug 6442].
+
+  - Prevent short disablements of the gc from affecting gc intervals.
+
 
 o sprintf:
 
@@ -548,7 +562,6 @@ o Fixed memory leak in Image.WBF.
 o Fixed potential NULL-deref in Image.XWD.
 
 o Fixed potential NULL-deref in Image.PNG.
-
 
 Building and installing
 -----------------------
