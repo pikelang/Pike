@@ -108,11 +108,7 @@ class Stat
   object /* Filesystem.Base */ cd()
   {
     if(isdir())
-#ifndef __NT__
-      return filesystem->cd("/" + fullpath);
-#else
       return filesystem->cd(fullpath);
-#endif
     // fallback to tar, etc
 
     // something like this? /jhs
