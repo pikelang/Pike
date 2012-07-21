@@ -138,10 +138,10 @@ Filesystem.Stat stat(string file, int|void lstat)
    string full = combine_path(wd, file);
    if ( full!="" && full[0]=='/') full=full[1..];
 
-   if((a = file_stat(full = combine_path("/",root,full), lstat)))
+   if((a = file_stat(combine_path("/",root,full), lstat)))
    {
      Filesystem.Stat s = Filesystem.Stat();
-     s->fullpath = full;
+     s->fullpath = sprintf("/%s", full);
      s->name = file;
      s->filesystem = this;
      s->attach_statobject(a);
