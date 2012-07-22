@@ -497,11 +497,12 @@ OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", 0, {
 });
 
 OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
+  struct svalue *locals = Pike_fp->locals;
   int e;
-  free_mixed_svalues(Pike_fp->locals + arg1, 4);
+  free_mixed_svalues(locals + arg1, 4);
   for(e = 0; e < 4; e++)
   {
-    SET_SVAL(Pike_fp->locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    SET_SVAL(locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   }
 });
 
@@ -1920,11 +1921,12 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
 });
 
 OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
+  struct pike_frame *fp = Pike_fp;
   LOCAL_VAR(struct svalue tmp);
   SET_SVAL(tmp, PIKE_T_STRING, 1, string,
-	   Pike_fp->context->prog->strings[arg1]);
+	   fp->context->prog->strings[arg1]);
   mark_free_svalue (Pike_sp++);
-  index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
+  index_no_free(Pike_sp-1,fp->locals+arg2, &tmp);
   print_return_value();
 });
 

@@ -106,9 +106,10 @@ struct svalue
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do {	\
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
-    (SVAL).u.FIELD = (EXPR);				\
-    SET_SVAL_TYPE((SVAL), (TYPE));			\
-    SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));		\
+    struct svalue *__sptr = &(SVAL);			\
+    __sptr->u.FIELD = (EXPR);				\
+    SET_SVAL_TYPE(*__sptr, (TYPE));			\
+    SET_SVAL_SUBTYPE(*__sptr, (SUBTYPE));		\
   } while(0)
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
