@@ -103,14 +103,17 @@ struct svalue
 #define SUBTYPEOF(SVAL)	((SVAL).subtype)
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
-#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do {	\
+#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
-    struct svalue *__sptr = &(SVAL);			\
-    __sptr->u.FIELD = (EXPR);				\
-    SET_SVAL_TYPE(*__sptr, (TYPE));			\
-    SET_SVAL_SUBTYPE(*__sptr, (SUBTYPE));		\
+    struct svalue * __sv_ptr = &( SVAL );			\
+    __sv_ptr->u.FIELD = (EXPR);				\
+    SET_SVAL_TYPE(*__sv_ptr, (TYPE));			\
+    SET_SVAL_SUBTYPE(*__sv_ptr, (SUBTYPE));		\
   } while(0)
+
+/*
+*/
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
 #define PIKE_T_ARRAY 0
