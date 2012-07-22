@@ -1826,7 +1826,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      copy_shared_string(this->current_file,new_file);
 	      this->current_line=1;
 	      
-	      string_builder_binary_strcat(&this->buf, "#line 1 ", 4);
+	      string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
 	      PUSH_STRING_SHIFT(new_file->str, new_file->len,
 				new_file->size_shift, &this->buf);
 	      string_builder_putchar(&this->buf, '\n');

@@ -2721,7 +2721,7 @@ void f_cpp(INT32 args)
     free_mapping (predefs);
   }
 
-  string_builder_binary_strcat(&this.buf, "#line 1 ", 4);
+  string_builder_binary_strcat(&this.buf, "#line 1 ", 8);
   PUSH_STRING_SHIFT(this.current_file->str, this.current_file->len,
 		    this.current_file->size_shift, &this.buf);
   string_builder_putchar(&this.buf, '\n');
