@@ -1,15 +1,15 @@
 #ifndef CB_FLOAT_H
 #define CB_FLOAT_H
-#include <stdint.h>
 #include <math.h>
 #include "bitvector.h"
+#include "pike_int_types.h"
 
 #if SIZEOF_FLOAT_TYPE == 8
-typedef uint64_t CB_NAME(string);
-typedef uint64_t CB_NAME(char);
+typedef unsigned INT64 CB_NAME(string);
+typedef unsigned INT64 CB_NAME(char);
 #else
-typedef uint32_t CB_NAME(string);
-typedef uint32_t CB_NAME(char);
+typedef unsigned INT32 CB_NAME(string);
+typedef unsigned INT32 CB_NAME(char);
 #endif
 
 

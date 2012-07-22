@@ -1,6 +1,7 @@
 #include <stdlib.h>
-#include <stdint.h>
 #include <sys/types.h>
+
+#include "pike_int_types.h"
 
 #ifndef HAS___BUILTIN_EXPECT
 # define __builtin_expect(x, expected_value) (x)
@@ -56,10 +57,10 @@ static inline cb_size cb_prefix_count_fallback(const cb_string s1,
 					       const cb_size len,
 					       cb_size start) {
     size_t i;
-    uint32_t width = MAX(CB_WIDTH(s1), CB_WIDTH(s2));
+    unsigned INT32 width = MAX(CB_WIDTH(s1), CB_WIDTH(s2));
 
     for (i = start.chars; i < len.chars; i++) {
-	uint32_t diffbit = CB_COUNT_PREFIX(s1, s2, i);
+	unsigned INT32 diffbit = CB_COUNT_PREFIX(s1, s2, i);
 	start.bits = 0;
 
 	if (diffbit < width) { /*  are different */
@@ -73,7 +74,7 @@ static inline cb_size cb_prefix_count_fallback(const cb_string s1,
     }
 
     if (len.bits > start.bits) {
-	uint32_t diffbit = CB_COUNT_PREFIX(s1, s2, len.chars);
+	unsigned INT32 diffbit = CB_COUNT_PREFIX(s1, s2, len.chars);
 	if (diffbit < len.bits) { /*  are different */
 #ifdef ANNOY_DEBUG
 	    fprintf(stderr, "diff in bit %d (byte %d) %d\n", diffbit, len.chars, __LINE__);
@@ -251,7 +252,7 @@ CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node) {
 
 CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
     cb_size size;
-    uint32_t bit;
+    unsigned INT32 bit;
     size = cb_prefix_count(node->key.str, key.str,
 			   CB_MIN(node->key.len, key.len), size);
 
@@ -273,7 +274,7 @@ CB_STATIC CB_INLINE void cb_delete(struct cb_tree * tree,
     cb_node_t node = cb_index(tree->root, key);
 
     if (node && CB_HAS_VALUE(node)) {
-	uint32_t bit;
+	unsigned INT32 bit;
 	cb_node_t t;
 	if (val) CB_GET_VALUE(node, val);
 
@@ -338,7 +339,7 @@ CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
 
     while (node) {
 	if (CB_LT(node->key.len, key.len)) {
-	    uint32_t bit = CB_GET_BIT(key.str, node->key.len);
+	    unsigned INT32 bit = CB_GET_BIT(key.str, node->key.len);
 
 	    if (CB_HAS_CHILD(node, bit)) {
 		node = CB_CHILD(node, bit);
@@ -504,7 +505,7 @@ static inline int cb_low_insert(struct cb_tree * tree,
 	    cb_node_t klon;
 
 	    if (CB_S_EQ(size, node->key.len)) {
-		uint32_t bit;
+		unsigned INT32 bit;
 
 		klon = node;
 		if (CB_HAS_VALUE(klon))

@@ -49,7 +49,7 @@ PIKECLASS IntTree {
 
 cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
     cb_key key;
-    uint32_t a, b, c, d, e;
+    unsigned INT32 a, b, c, d, e;
 
     key.len.chars = 1;
     key.len.bits = 0;
@@ -78,12 +78,12 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
     char buf[19];
     size_t len;
 
-    uint32_t ip = (uint32_t)key.str;
+    unsigned INT32 ip = (unsigned INT32)key.str;
 
     if (key.len.bits || !key.len.chars) {
 	ip &= (~0U) << (32 - key.len.bits);
 	len = snprintf(buf, 19, "%u.%u.%u.%u/%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff, (uint32_t)(key.len.bits
+		       (ip>>8)&0xff, ip&0xff, (unsigned INT32)(key.len.bits
 							 - WASTED_BITS));
     } else {
 	len = snprintf(buf, 19, "%u.%u.%u.%u", ip>>24, (ip>>16)&0xff,
@@ -139,7 +139,7 @@ PIKECLASS IPv4Tree {
     }
 
     PIKEFUN int umask(int n) {
-	RETURN MASK(uint64_t, n);
+	RETURN MASK(unsigned INT64, n);
     }
 
     PIKEFUN int cmp_key(mixed a, mixed b) {
