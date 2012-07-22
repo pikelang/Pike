@@ -703,6 +703,16 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
+      case 'l':
+	if (ISWORD("line"))
+	{
+	  SKIPSPACE();
+
+	  if (LOOK() < '0' || LOOK() > '9') goto unknown_directive;
+
+	  READBUF(C!='\n' && C!=' ' && C!='\t');
+	  /* fallthrough */
+	} else goto unknown_directive;
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	lex->current_line = lex_strtol(buf, NULL, 10)-1;
@@ -791,6 +801,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	/* FALL_THROUGH */
 
       default:
+unknown_directive:
 	/* FIXME: This doesn't look all that safe...
 	 * buf isn't NUL-terminated, and it won't work on wide strings.
 	 * /grubba 1999-02-20
