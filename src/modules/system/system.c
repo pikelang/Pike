@@ -3448,15 +3448,15 @@ PIKE_MODULE_INIT
   
 /* function(string:array) */
   ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tArray), 0,
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   
 /* function(string:array) */
   ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray), 0,
-           OPT_TRY_OPTIMIZE);
+           OPT_EXTERNAL_DEPEND);
 #endif /* GETHOST_DECLARE */
 
   /*
