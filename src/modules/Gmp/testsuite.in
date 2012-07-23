@@ -268,6 +268,13 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
   test_eval_error(Gmp.mpz("abcd", 47))
   test_eval_error(Gmp.mpz(-17)->digits(256))
   test_eq(Gmp.mpz(0)->digits(256), "\0");
+  test_eval_error(Gmp.mpz(17)->digits(0))
+  test_eval_error(Gmp.mpz(17)->digits(1))
+  test_eq(Gmp.mpz(17)->digits(2), "10001");
+  test_eq(Gmp.mpz(17)->digits(3), "122");
+  test_eq(Gmp.mpz(17)->digits(10), "17");
+  test_eq(Gmp.mpz(17)->digits(36), "h");
+  test_eval_error(Gmp.mpz(17)->digits(37))
   test_eq(Gmp.mpz(17)->digits(256), "\021");
   test_eq(Gmp.mpz(4711)->size(2), 13)
   test_eval_error(Gmp.mpz(17) + 18 + "19")
