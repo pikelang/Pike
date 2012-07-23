@@ -360,6 +360,9 @@ void get_mpz_from_digits(MP_INT *tmp,
 			 struct pike_string *digits,
 			 int base)
 {
+  if (digits->size_shift)
+    Pike_error("Invalid digits, cannot convert to Gmp.mpz.\n");
+
   if(!base || ((base >= 2) && (base <= 36)))
   {
     int offset = 0;
@@ -367,9 +370,9 @@ void get_mpz_from_digits(MP_INT *tmp,
 
     if(digits->len > 1)
     {
-      if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '+')
+      if(STR0(digits)[0] == '+')
 	offset += 1;
-      else if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '-')
+      else if(STR0(digits)[0] == '-')
       {
 	offset += 1;
 	neg = 1;
@@ -385,9 +388,9 @@ void get_mpz_from_digits(MP_INT *tmp,
        */
       if(!base && digits->len > 2)
       {
-	if((INDEX_CHARP(digits->str, offset, digits->size_shift) == '0') &&
-	   ((INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'b') ||
-	    (INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'B')))
+	if((STR0(digits)[offset] == '0') &&
+	   ((STR0(digits)[offset+1] == 'b') ||
+	    (STR0(digits)[offset+1] == 'B')))
 	{
 	  offset += 2;
 	  base = 2;
@@ -403,9 +406,6 @@ void get_mpz_from_digits(MP_INT *tmp,
   }
   else if(base == 256)
   {
-    if (digits->size_shift)
-      Pike_error("Invalid digits, cannot convert to Gmp.mpz.\n");
-
 #ifdef HAVE_MPZ_IMPORT
     mpz_import (tmp, digits->len, 1, 1, 0, 0, digits->str);
 #else
@@ -567,9 +567,16 @@ MP_INT *debug_get_mpz(struct svalue *s,
  *!   or the value 256, in which case @[value] is taken to be the binary
  *!   representation in network byte order.
  *!
+ *!   Values in base @tt{[2..36]@} can be prefixed with @expr{"+"@} or
+ *!   @expr{"-"@}. Values prefixed with @expr{"0b"@} or @expr{"0B"@}
+ *!   will be interpreted as binary. Values prefixed with @expr{"0x"@}
+ *!   or @expr{"0X"@} will be interpreted as hexadecimal. Values
+ *!   prefixed with @expr{"0"@} will be interpreted as octal.
+ *!
  *! @note
- *!   Leading zeroes in @[value] are not significant. In particular leading
- *!   NUL characters are not preserved in base 256 mode.
+ *!   Leading zeroes in @[value] are not significant when a base is
+ *!   explicitly given. In particular leading NUL characters are not
+ *!   preserved in base 256 mode.
  */
 static void mpzmod_create(INT32 args)
 {
