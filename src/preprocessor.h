@@ -1599,7 +1599,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       new_lineno=STRTOL_PCHARP(foo, &foo, 10)-1;
       if(OUTP())
       {
-	string_builder_putchar(&this->buf, '#');
+	string_builder_binary_strcat(&this->buf, "#line ", 6);
 	PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (
 	  &this->buf, data + pos, ((WCHAR *)foo.ptr) - (data+pos));
       }
