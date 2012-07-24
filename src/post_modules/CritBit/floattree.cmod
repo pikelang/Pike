@@ -35,10 +35,18 @@ PIKECLASS FloatTree {
     SET_SVAL(*__, PIKE_T_FLOAT, 0, float_number, cb_decode_float((key).str)); \
 } while(0)
 #define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
-#define CB_STRING_FROM_SVALUE(v)	cb_encode_float((cb_float)	\
-		    (((v)->type == PIKE_T_INT )				\
-		     ? ((FLOAT_TYPE)(v)->u.integer)			\
-		     : (v)->u.float_number))
+
+static INLINE cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
+    cb_float f;
+
+    if (TYPEOF(*v) == PIKE_T_INT) {
+	f.f = (FLOAT_TYPE)v->u.integer;
+    } else {
+	f.f = v->u.float_number;
+    }
+
+    return cb_encode_float(f);
+}
 #define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
 
 #cmod_include "redefine.H"

@@ -43,7 +43,7 @@ static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
     }
 }
 
-static inline void cb_print_key(struct string_builder * buf, cb_key key) {
+static inline void cb_print_key(struct string_builder * buf, const cb_key key) {
     cb_size i;
 
     for (i.chars = 0; i.chars < key.len.chars; i.chars++) {

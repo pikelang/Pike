@@ -359,7 +359,8 @@ CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
     return NULL;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t tree, const cb_key key) {
+CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t tree,
+					   const cb_key key) {
     cb_size size;
     size_t bit;
     cb_node_t node;
