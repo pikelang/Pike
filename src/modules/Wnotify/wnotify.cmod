@@ -43,8 +43,6 @@
 DECLARATIONS
 #ifdef HAVE_FINDFIRSTCHANGENOTIFICATION
 
-void low_stop();
-
 /*! @class NotificationHandle
  */
 
