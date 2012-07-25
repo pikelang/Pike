@@ -41,7 +41,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
 		     int sl, const char *const salt,
                      int ml, const char *const magic)
 {
-  static char passwd[22], *p;
+  static char passwd[23], *p;
   unsigned char final[MD5_DIGEST_SIZE];
   int i;
   struct md5_ctx ctx;
