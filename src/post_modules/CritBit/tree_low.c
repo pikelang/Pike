@@ -251,7 +251,7 @@ CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node) {
 }
 
 CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
-    cb_size size;
+    cb_size size = {0,0};
     unsigned INT32 bit;
     size = cb_prefix_count(node->key.str, key.str,
 			   CB_MIN(node->key.len, key.len), size);
