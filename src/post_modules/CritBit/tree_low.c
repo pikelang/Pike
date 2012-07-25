@@ -251,20 +251,20 @@ CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node) {
 }
 
 CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
-    cb_size size = {0,0};
-    unsigned INT32 bit;
-    size = cb_prefix_count(node->key.str, key.str,
-			   CB_MIN(node->key.len, key.len), size);
+    cb_size start = {0,0};
 
-    if (CB_S_EQ(size, key.len)) { /*  key is substring */
-	return node;
-    }
+    do {
+	unsigned INT32 bit;
+	start = cb_prefix_count(node->key.str, key.str,
+				CB_MIN(node->key.len, key.len), start);
 
-    bit = CB_GET_BIT(key.str, size);
+	if (CB_S_EQ(start, key.len)) { /*  key is substring */
+	    return node;
+	}
 
-    if (CB_HAS_CHILD(node, bit)) {
-	return cb_subtree_prefix(CB_CHILD(node, bit), key);
-    }
+	bit = CB_GET_BIT(key.str, start);
+	node = CB_CHILD(node, bit);
+    } while (node);
 
     return NULL;
 }
