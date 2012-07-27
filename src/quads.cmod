@@ -1,0 +1,139 @@
+/*
+ * Quads-based Pike compiler backend.
+ *
+ * 2012-07-19 Henrik Grubbström
+ */
+
+#include "array.h"
+#include "opcodes.h"
+
+PIKECLASS Quad_state {
+  /* Block #0 is the start block, and block #1 is the end block. */
+  PIKEVAR array(Block) blocks;
+
+  PIKEVAR array(int) integers;
+
+  /* The block that is currently having quad instructions appended. */
+  PIKEVAR int current_block;
+
+  CVAR struct string_builder current_quads;
+
+  INIT {
+    init_string_builder(&THIS_QUAD_STATE->current_quads, 1);
+  }
+
+  /* A block of quad instructions. */
+  PIKECLASS Block {
+
+    /* The quads are encoded as (wide-)characters
+     *
+     *   OPCODE, DEST, ARG1, ARG2
+     *
+     * where negative values for ARG1 and ARG2 indicate
+     * integer constant integers[~value], and nonnegative
+     * indicate the corresponding temporary.
+     */
+    PIKEVAR string quads;
+    PIKEVAR array(int) pred;
+    PIKEVAR array(int) succ;
+
+    
+  }
+
+  PIKEFUN void create()
+  {
+    apply_current(Block_fun_num, 0);
+    apply_current(Block_fun_num, 0);
+    if (THIS_QUAD_STATE->blocks) {
+      free_array(THIS_QUAD_STATE->blocks);
+    }
+    THIS_QUAD_STATE->blocks = aggregate_array(2);
+    THIS_QUAD_STATE->current_block = 0;
+
+    if (THIS_QUAD_STATE->integers) {
+      free_array(THIS_QUAD_STATE->integers);
+    }
+    add_ref(THIS_QUAD_STATE->integers = empty_array);
+
+    reset_string_builder(&THIS_QUAD_STATE->current_quads);
+  }
+
+  PIKEFUN int add_integer_constant(int integer)
+  {
+    int i;
+    struct array a = THIS_QUAD_STATE->integers;
+    struct svalue *items = a->items;
+    for (i = 0; i < a->size; i++) {
+      if (items[i].u.integer == integer) {
+	break;
+      }
+    }
+    if (i >= a->size) {
+      i = a->size;
+      a = THIS_QUAD_STATE->integers = append_array(a, Pike_sp-1);
+    }
+    pop_stack();
+    push_int(0);
+    push_int(QUAD_INTEGER);
+    push_int(i);
+    push_int(0);
+    apply_current(Quad_emit_fun_num, 4);
+  }
+
+  /*! @int emit(int dest, int opcode, int arg1, int arg2)
+   *!
+   *! Add an opcode to the current block.
+   *!
+   *! @param opcode
+   *!
+   *! @param dest
+   *!   Temporary to assign, or @expr{~0@} to allocate a new
+   *!   temporary.
+   *!
+   *! @returns
+   *!   Returns the temporary assigned to by the opcode
+   *!   (ie typically @[dest]).
+   */
+  PIKEFUN int emit(int dest, int opcode, int arg1, int arg2)
+  {
+    struct pike_string *op = begin_wide_shared_string(3, 2);
+    p_wchar2 *s = op->str;
+    
+    s[0] = opcode;
+    s[1] = arg1;
+    s[2] = arg2;
+    op = end_shared_string(op);
+    if (op->refs > 1) {
+      /* The string existed since earlier, so try looking it up. */
+      struct svalue *old =
+	low_mapping_string_lookup(THIS_QUAD_STATE->live, op);
+      if (old) {
+	free_string(op);
+	if (!dest || (old->u.integer == dest)) {
+	  Pike_sp[-args] = old->u.integer;
+	  pop_n_elems(args-1);
+	  return;
+	}
+	Pike_sp[1-args].u.integer = QUAD_MOVE;
+	Pike_sp[2-args].u.integer = old->u.integer;
+	Pike_sp[3-args].u.integer = 0;
+	call_current(Quad_state_emit_fun_num, args);
+	return;
+      }
+    }
+    if (!dest) {
+      Pike_sp[-args] = dest = quad_new_temp(THIS_QUAD_STATE);
+    }
+    mapping_string_insert(THIS_QUAD_STATE->live, op, Pike_sp+1-args);
+    free_string(op);
+
+    apply(THIS_QUAD_STATE->blocks->
+	  items[THIS_QUAD_STATE->current_block].u.object,
+	  "emit", args);
+    if (op == BRANCH) {
+      THIS_QUAD_STATE->current_block = -1;
+    }
+  }
+
+  
+}

@@ -314,7 +314,7 @@ INT32 assemble(int store_linenumbers)
   }
 #endif /* PIKE_DEBUG */
 
-#ifndef INS_ENTRY
+#if !defined(INS_ENTRY) && !defined(QUAD_BACKEND)
   /* Replace F_ENTRY with F_NOP if we have no entry prologue. */
   for (c = (p_instr *) instrbuf.s.str, e = 0; e < length; e++, c++)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
@@ -464,6 +464,130 @@ INT32 assemble(int store_linenumbers)
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
 
+#ifdef QUAD_BACKEND
+  {
+    struct quad_state *quads = new_quads();
+
+#ifdef PIKE_PORTABLE_BYTECODE
+    if (store_linenumbers) {
+      quad_emit(quads, 0, F_DATA,
+		quad_int(quads, store_prog_string(tripples)), 0);
+      free_string(tripples);
+    } else {
+      quad_emit(quads, 0, F_DATA, 0, 0);
+    }
+#endif /* PIKE_PORTABLE_BYTECODE */
+
+    for(e=0;e<length;e++,c++)
+    {
+      ptrdiff_t ptr = -1
+      switch(c->opcode)
+      {
+      case F_NOP:
+      case F_NOTREACHED:
+      case F_START_FUNCTION:
+      case F_ALIGN:
+	break;
+
+      case F_BYTE:
+      case F_DATA:
+	/* Obsolete. */
+	break;
+
+      case F_ENTRY:
+        quad_emit(quads, 0, F_ENTRY, 0, 0);
+        break;
+
+      case F_LABEL:
+        if(c->arg == -1) {
+#ifdef PIKE_DEBUG
+	  if (!(debug_options & NO_PEEP_OPTIMIZING))
+	    Pike_fatal ("Failed to optimize away an unused label.\n");
+#endif
+	  break;
+	}
+        if (labels[c->arg] == -1) {
+	  labels[c->arg] = quad_emit(quads, 0, LABEL, 0, 0);
+	} else {
+	  quad_emit(quads, labels[c->arg], LABEL, 0, 0);
+	}
+        break;
+
+      case F_VOLATILE_RETURN:
+        ins_f_byte(F_RETURN);
+        break;
+
+      case F_POINTER:
+#ifdef PIKE_DEBUG
+        if(c->arg > max_label || c->arg < 0)
+	  Pike_fatal("Jump to unknown label?\n");
+#endif
+        if (labels[c->arg] == -1) {
+	  labels[c->arg] = quad_new_tmp(quads);
+	}
+        quad_emit(quads, 0, F_POINTER, labels[c->arg], 0);
+        break;
+
+      default:
+        if (instrs[c->opcode - F_OFFSET].flags & I_HASPOINTER) {
+	  int lbl;
+	  if (c[1].opcode != F_POINTER) {
+	    Pike_fatal("Missing pointer for opcode %s.\n",
+		       instrs[c->opcode - F_OFFSET].name);
+	  }
+	  lbl = c[1].arg;
+	  if ((ptr = labels[lbl]) == -1) {
+	    ptr = labels[lbl] = quad_new_tmp(quads);
+	  }
+	}
+        switch(instrs[c->opcode - F_OFFSET].flags & I_IS_MASK)
+	{
+	case 0:
+	case I_ISJUMP:
+	  quad_emit(quads, 0, c->opcode, 0, 0);
+	  break;
+	case I_HASARG:
+	case I_ISJUMPARG:
+	  quad_emit(quads, 0, c->opcode, quad_int(quads, c->arg), 0);
+	  break;
+	case I_TWO_ARGS:
+	case I_ISJUMPARGS:
+	  quad_emit(quads, 0, c->opcode,
+		    quad_int(quads, c->arg), quad_int(quads, c->arg2));
+	  break;
+	case I_ISPTRJUMP:
+	  quad_emit(quads, 0, c->opcode, ptr, 0);
+	  c++;
+	  break;
+	case I_ISPTRJUMPARG:
+	  quad_emit(quads, 0, c->opcode, quad_int(quads, c->arg), ptr);
+	  c++;
+	  break;
+	case I_ISPTRJUMPARGS:
+	  switch(c->opcode) {
+	  case F_BRANCH_IF_NOT_LOCAL_ARROW:
+	    quad_emit(quads, 0, F_LOCAL_ARROW,
+		      quad_int(quads, c->arg), quad_int(quads, c->arg2));
+	    quad_emit(quads, 0, F_BRANCH_WHEN_ZERO, 0, 0);
+	    break;
+	  default:
+	    Pike_fatal("Unsupported opcode: %s.\n",
+		       instrs[c->opcode - F_OFFSET].name);
+	    break;
+	  }
+	  c++;
+          break;
+#ifdef PIKE_DEBUG
+	default:
+	  Pike_fatal("Unknown instruction type.\n");
+#endif
+	}
+      }
+    }
+
+    entry_point = assemble_quads(quads);
+  }
+#else
 
 #ifdef START_NEW_FUNCTION
   START_NEW_FUNCTION(store_linenumbers);
@@ -765,6 +889,7 @@ INT32 assemble(int store_linenumbers)
       jumps[e]=tmp;
     }
   }
+#endif /* !QUAD_BACKEND */
 
   free((char *)labels);
 

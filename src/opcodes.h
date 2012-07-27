@@ -254,6 +254,65 @@ enum Pike_opcodes
   F_VOLATILE_RETURN,
 
   F_MAX_INSTR,
+
+#ifdef QUAD_BACKEND
+  /* Opcodes used by the QUAD backend. */
+  QUAD_OFFSET,
+
+  QUAD_LABEL,
+  QUAD_DATA,
+  QUAD_POINTER,
+
+  QUAD_ENTRY,
+  QUAD_GETARG,
+  QUAD_SETARG,
+  QUAD_CALL,
+  QUAD_RETURN,
+
+  QUAD_LOAD,
+  QUAD_STORE,
+
+  QUAD_ADD,
+  QUAD_SUB,
+  QUAD_INV,
+  QUAD_NEG,
+  QUAD_MUL,
+  QUAD_DIV,
+
+  QUAD_ADD_OVER,
+  QUAD_SUB_OVER,
+  QUAD_NEG_OVER,
+
+  QUAD_AND,
+  QUAD_OR,
+  QUAD_XOR,
+  QUAD_NOT,
+
+  QUAD_SHL,
+  QUAD_SHR,
+  QUAD_ASR,
+  QUAD_ROL,
+  QUAD_ROR,
+
+  QUAD_FILE,
+  QUAD_LINE,
+
+  QUAD_JMP,
+  QUAD_BRANCH,
+
+  QUAD_GT,
+  QUAD_LT,
+  QUAD_GE,
+  QUAD_LE,
+  QUAD_EQ,
+  QUAD_NE,
+
+  QUAD_INTEGER,
+  QUAD_ADDRESS,
+
+  QUAD_PHI,
+
+#endif /* QUAD_BACKEND */
 };
 
 #undef OPCODE0
