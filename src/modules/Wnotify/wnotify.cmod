@@ -176,7 +176,8 @@ PIKECLASS EventPoller
     pop_stack();
   }
 
-  /* @decl NotificationHandle|int poll(void|float timeout)
+  /*! @decl NotificationHandle|int poll(void|float timeout)
+   */
   PIKEFUN int poll(void|float timeout)
   {
     DWORD res;
