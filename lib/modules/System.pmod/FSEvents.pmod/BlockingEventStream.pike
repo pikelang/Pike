@@ -1,12 +1,17 @@
 //! A variation of @[EventStream] that provides a blocking interface.
 //!
 //! @note
-//!   A quirk of the underlying IO subsystem in CoreFoundation is that there is exactly
-//!   one runloop per thread. Because FSEvents uses CoreFoundation, this means that there's 
-//!   no meaningful way to specify which backend should process these events. Therefore,
-//!   always make sure that the thread you create the EventStream object is the same one 
-//!   you read events from, otherwise @[read_event] will run not run the EventLoop that
-//!   this EventStream is registered with, resulting in events never being delivered.
+//!   A quirk of the underlying IO subsystem in CoreFoundation is that
+//!   there is exactly one runloop per thread. Because FSEvents uses
+//!   CoreFoundation, this means that there's no meaningful way to
+//!   specify which backend should process these events. Therefore,
+//!   always make sure that the thread you create the EventStream
+//!   object is the same one you read events from, otherwise
+//!   @[read_event] will run not run the EventLoop that this
+//!   EventStream is registered with, resulting in events never being
+//!   delivered.
+
+#if constant(System.FSEvents.EventStream)
 
   inherit .EventStream;
 
@@ -59,3 +64,6 @@
     else
       return received_events->get();
   }
+#else
+constant this_program_does_not_exist=1;
+#endif
