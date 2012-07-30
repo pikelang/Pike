@@ -875,15 +875,15 @@ static int signum(char *name)
   return -1;
 }
 
-/*! @decl void signal(int sig, function(int|void:void) callback)
- *! @decl void signal(int sig)
+/*! @decl function(int|void:void) signal(int sig, function(int|void:void) callback)
+ *! @decl function(int|void:void) signal(int sig)
  *!
  *! Trap signals.
  *!
  *! This function allows you to trap a signal and have a function called
  *! when the process receives a signal. Although it IS possible to trap
- *! SIGBUS, SIGSEGV etc. I advice you not to. Pike should not receive any
- *! such signals and if it does it is because of bugs in the Pike
+ *! SIGBUS, SIGSEGV etc, I advise you not to; Pike should not receive any
+ *! such signals, and if it does, it is because of bugs in the Pike
  *! interpreter. And all bugs should be reported, no matter how trifle.
  *!
  *! The callback will receive the signal number as its only argument.
@@ -894,6 +894,9 @@ static int signum(char *name)
  *! is restored to the default handler.
  *!
  *! If the second argument is zero, the signal will be completely ignored.
+ *!
+ *! @returns
+ *! Returns the previous signal function, or 0 if none had been registered.
  *!
  *! @seealso
  *!   @[kill()], @[signame()], @[signum()]
