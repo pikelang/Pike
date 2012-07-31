@@ -242,7 +242,11 @@ static void udp_bind(INT32 args)
   set_close_on_exec(fd, 1);
 
   o=1;
-  if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+  /* linux kernel commit f24d43c07e208372aa3d3bff419afbf43ba87698 introduces
+   * a behaviour change where you can get used random ports if bound with
+   * SO_REUSEADDR. */
+  if(addr.ipv4.sin_port && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
+					 (char *)&o, sizeof(int)) < 0)
   {
     fd_close(fd);
     THIS->my_errno=errno;
