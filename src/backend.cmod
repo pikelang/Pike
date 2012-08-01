@@ -463,12 +463,23 @@ PIKECLASS Backend
 #define SWAP(X,Y) do{ struct Backend_CallOut_struct *_tmp=CALL(X); (CALL_(X)=CALL(Y))->pos=(X); (CALL_(Y)=_tmp)->pos=(Y); } while(0)
 
 #ifdef PIKE_DEBUG
-#define PROTECT_CALL_OUTS() \
-   if(me->inside_call_out) Pike_fatal("Recursive call in call_out module.\n"); \
-   me->inside_call_out=1
+  static void do_unprotect_call_outs(struct Backend_struct *me)
+  {
+    me->inside_call_out = 0;
+  }
+
+#define DECLARE_PROTECT_CALL_OUTS	ONERROR pco_err
+#define PROTECT_CALL_OUTS()					\
+  do {								\
+    if(me->inside_call_out)					\
+      Pike_fatal("Recursive call in call_out module.\n");	\
+    SET_ONERROR(pco_err, do_unprotect_call_outs, me);		\
+    me->inside_call_out=1;					\
+  } while(0)
  
-#define UNPROTECT_CALL_OUTS() \
-   me->inside_call_out=0
+#define UNPROTECT_CALL_OUTS()			\
+  CALL_AND_UNSET_ONERROR(pco_err)
+
 #else /* !PIKE_DEBUG */
 #define PROTECT_CALL_OUTS()
 #define UNPROTECT_CALL_OUTS()
@@ -650,6 +661,7 @@ PIKECLASS Backend
       size_t hval;
       struct Backend_struct *me = parent_storage(1);
       struct Backend_CallOut_struct *new = THIS;
+      DECLARE_PROTECT_CALL_OUTS;
 
       push_array(callable = aggregate_array(args - 1));
       args = 2;
@@ -663,20 +675,25 @@ PIKECLASS Backend
 	/* here we need to allocate space for more pointers */
 	struct Backend_CallOut_struct **new_heap;
 
-	if(!me->call_heap)
+	if(!me->call_heap || !me->call_hash)
 	{
-	  me->call_heap_size = 128;
-	  me->call_heap =
-	    (struct Backend_CallOut_struct **)xalloc(sizeof(struct Backend_CallOut_struct *) *
-					     me->call_heap_size);
-	  MEMSET(me->call_heap, 0, sizeof(struct Backend_CallOut_struct *) *
-		 me->call_heap_size);
-	  me->num_pending_calls = 0;
+	  if (!me->call_heap) {
+	    me->call_heap_size = 128;
+	    me->call_heap =
+	      (struct Backend_CallOut_struct **)
+	      xalloc(sizeof(struct Backend_CallOut_struct *) *
+		     me->call_heap_size);
+	    MEMSET(me->call_heap, 0, sizeof(struct Backend_CallOut_struct *) *
+		   me->call_heap_size);
+	    me->num_pending_calls = 0;
+	  }
 
-	  me->hash_size = hashprimes[me->hash_order];
-	  me->call_hash =
-	    (struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
-	  MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
+	  if (!me->call_hash) {
+	    me->hash_size = hashprimes[me->hash_order];
+	    me->call_hash =
+	      (struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
+	    MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
+	  }
 	}else{
 	  struct hash_ent *new_hash;
 	  int e;
@@ -919,6 +936,7 @@ PIKECLASS Backend
 	 struct timeval now;
 	 /* unlink call out */
 	 struct Backend_CallOut_struct *cc;
+	 DECLARE_PROTECT_CALL_OUTS;
 	 
 	 PROTECT_CALL_OUTS();
 	 cc=CALL(0);
@@ -1094,6 +1112,8 @@ PIKECLASS Backend
      {
        struct Backend_struct *me=THIS;
        int e;
+       DECLARE_PROTECT_CALL_OUTS;
+
        backend_verify_call_outs(me);
 
        PROTECT_CALL_OUTS();
@@ -1134,6 +1154,8 @@ PIKECLASS Backend
      {
        struct Backend_struct *me=THIS;
        int e;
+       DECLARE_PROTECT_CALL_OUTS;
+
        PROTECT_CALL_OUTS();
        backend_verify_call_outs(me);
        e=backend_find_call_out(me,f);
@@ -1180,6 +1202,7 @@ PIKECLASS Backend
        struct array *ret;
        struct timeval now;
        ONERROR err;
+       DECLARE_PROTECT_CALL_OUTS;
 
        backend_verify_call_outs(me);
        PROTECT_CALL_OUTS();
