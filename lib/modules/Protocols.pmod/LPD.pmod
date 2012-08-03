@@ -2,6 +2,7 @@
 // LPD.pmod: an implementation of the BSD lpd protocol (RFC 1179).
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
+// 2 August 2012 <bill@welliver.org> Bill Welliver>
 //
 
 #pike __REAL_VERSION__
@@ -16,7 +17,7 @@ class client {
   string jobtype;
   string jobname;
 
-  private int connect(string host, int port)
+  static int connect(string host, int port)
   {
     int a=random(10);
     // try to open one of the "official" local socket ports.
@@ -27,6 +28,14 @@ class client {
 
     return conn->connect(host, port);
   }
+
+static void send(string s)
+{
+#ifdef LPD_DEBUG
+  werror("LPD: sending %O\n", s);
+#endif
+  conn->write(s);
+}
 
 //! @decl int set_job_type(string type)
 //! Set the type of job to be sent to the printer to @i{type@}.
@@ -75,11 +84,37 @@ class client {
     if(!connect(host, port))
       return 0;
 
-    conn->write(sprintf("%c%s\n", 01, queue));
+    send(sprintf("%c%s\n", 01, queue));
     string resp= conn->read();
     conn->close();
-    return 1;
+    int res;
+    sscanf(resp, "%c", res);
+    return res;
   }
+
+static string make_control(int jn)
+{
+  string control="";
+  control+="H"+gethostname()+"\n";
+#if constant(getuid) && constant(getpwuid)
+  control+="P"+(getpwuid(getuid())[0]||"nobody")+"\n";
+#else
+  control+="P-1\n";
+#endif
+  control+=sprintf("%1sdfA%03d%s\n", (jobtype||"l"), jn, gethostname());
+  if(jobname)
+  {
+    control+="J" + jobname + "\n";
+    control+="N" + jobname + "\n";
+  }
+  else
+  { 
+    control+="JPike LPD Client Job " + jn + "\n";
+    control+="NPike LPD Client Job " + jn + "\n";
+  }
+
+  return control;
+}
 
 //! @decl string|int send_job(string queue, string job)
 //! Send print job consisting of data @i{job@} to printer @i{queue@}.
@@ -87,93 +122,67 @@ class client {
 //! Returns 1 if success, 0 otherwise.
   int send_job(string queue, string job)
   {
+    int jn = jobnum++;
     string resp;
 
     if(!queue) return 0;
 
     if(!connect(host, port))
       return 0;
-    // werror("connected to " + host + "\n");
 
-    string control="";
-    control+="H"+gethostname()+"\n";
-#if constant(getuid) && constant(getpwuid)
-    control+="P"+(getpwuid(getuid())[0]||"nobody")+"\n";
-#else
-    control+="P-1\n";
-#endif
-    control+=(jobtype||"l")+"dfA"+ sprintf("%03d%s", jobnum, gethostname())+"\n";
-    if(jobname)
-    {
-      control+="J" + jobname + "\n";
-      control+="N" + jobname + "\n";
-    }
-    else
-    { 
-      control+="JPike LPD Client Job " + jobnum + "\n";
-      control+="NPike LPD Client Job " + jobnum + "\n";
-    }
-    jobnum++;
-werror("job file:\n\n" + control  + "\n\n");
+    send(sprintf("\2%s\n",queue));
 
-    conn->write(sprintf("%c%s\n", 02, queue));
     resp=conn->read(1);
-    if((int)resp !=0)
+
+    if(resp[0] !='\0')
     {
-      werror("receive job failed.\n");
+      werror("receive job failed: %O.\n", resp);
       return 0;
     }
 
-    conn->write(sprintf("%c%s cfA%03d%s\n", 02, (string)sizeof(control),
-			jobnum,gethostname()));
+    string control = make_control(jn);
+    
+    werror("job file:\n\n" + control  + "\n\n");
+
+    send(sprintf("%c%s cfA%03d%s\n", 2, (string)sizeof(control),
+			jn, gethostname()));
 
     resp=conn->read(1);
-    if((int)resp !=0)
+    if(resp[0] !='\0')
     {
       werror("request receive control failed.\n");
       return 0;
     }
 
-    conn->write(sprintf("%s%c", control, 0));
+    send(sprintf("%s%c", control, 0));
 
     resp=conn->read(1);
-    if((int)resp !=0)
+    if(resp[0] !='\0')
     {
       werror("send receive control failed.\n");
       return 0;
     }
 
-    conn->write(sprintf("%c%s dfA%03d%s\n", 03, (string)sizeof(job), jobnum,
+    send(sprintf("%c%s dfA%03d%s\n", 3, (string)sizeof(job), jn,
 			gethostname()));
+
     resp=conn->read(1);
-    if((int)resp !=0)
+    if(resp[0] !='\0')
     {
       werror("request receive job failed.\n");
       return 0;
     }
 
-
-    conn->write(sprintf("%s%c", job, 0));
+    send(sprintf("%s%c", job, 0));
 
     resp=conn->read(1);
-    if((int)resp !=0)
+    if(resp[0] != '\0')
     {
       werror("send receive job failed.\n");
       return 0;
     }
 
-
-
-    // read the response. 
-
-//    resp=conn->read();
-    if((int)(resp)!=0) 
-    { 
-      conn->close();
-      return 0;
-    }
     conn->close();
-//    start_queue(queue);
     return 1;
   }
 
@@ -195,12 +204,14 @@ werror("job file:\n\n" + control  + "\n\n");
 #endif
 
     if(job)
-      conn->write(sprintf("%c%s %s %d\n", 05, queue, agent, job));
+      send(sprintf("%c%s %s %d\n", 05, queue, agent, job));
     else
-      conn->write(sprintf("%c%s %s\n", 05, queue, agent));
+      send(sprintf("%c%s %s\n", 05, queue, agent));
     string resp= conn->read();
     conn->close();
-    return 1;
+    int res;
+    sscanf(resp, "%c", res);
+    return res;
   }
 
 
@@ -215,7 +226,7 @@ werror("job file:\n\n" + control  + "\n\n");
     if(!connect(host, port))
       return 0;
 
-    conn->write(sprintf("%c%s\n", 04, queue));
+    send(sprintf("%c%s\n", 04, queue));
     string resp= conn->read();
     conn->close();
     return resp;
