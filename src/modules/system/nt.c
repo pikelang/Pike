@@ -4178,7 +4178,8 @@ void init_nt_system_calls(void)
   ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
 #ifdef HAVE_GETUSERNAME
   ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
-#endif /* HAVE_GETUSERNAME */}
+#endif /* HAVE_GETUSERNAME */
+}
 
 void exit_nt_system_calls(void)
 {
