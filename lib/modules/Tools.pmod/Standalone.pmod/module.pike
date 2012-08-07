@@ -176,6 +176,7 @@ void do_make(array(string) cmd)
 	"SYSTEM_MODULE_PATH=" + system_module_path,
 	"LOCAL_MODULE_PATH=" + lmp,
 	"RUNPIKE="+run_pike,
+	"FINAL_PIKE="+run_pike,
       });
   }
   else
