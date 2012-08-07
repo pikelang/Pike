@@ -480,6 +480,7 @@ PIKECLASS Backend
   CALL_AND_UNSET_ONERROR(pco_err)
 
 #else /* !PIKE_DEBUG */
+#define DECLARE_PROTECT_CALL_OUTS
 #define PROTECT_CALL_OUTS()
 #define UNPROTECT_CALL_OUTS()
 #endif /* PIKE_DEBUG */
