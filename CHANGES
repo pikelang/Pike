@@ -420,6 +420,11 @@ o Misc:
 
   - Fixed infinite loop in Audio.Format when reading MP3 frames.
 
+  - Added path to pike binary in pike -x module used by verify targets. 
+    Should also fix problems installing modules using pike -x monger.
+
+  - Reduce optimization in gethostby{addr,name} that could cause 
+    overzealous caching or results.
 
 Building, installing and developer tools
 ----------------------------------------
