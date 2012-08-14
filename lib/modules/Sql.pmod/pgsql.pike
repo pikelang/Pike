@@ -1961,7 +1961,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
           	    default:
           	      value=1;
           	      break;
-          	    case 0:case 'f':case 'F':case 'n':case 'N':
+		    case 0:case '0':case 'f':case 'F':case 'n':case 'N':
           	      value=0;
           	      break;
           	  }
