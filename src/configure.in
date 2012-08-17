@@ -4573,6 +4573,7 @@ AC_CHECK_FUNCS( \
  gmtime_r \
  gmtime_s \
  mallinfo \
+ mallopt \
  memchr \
  mktime \
  perror \
