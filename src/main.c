@@ -316,6 +316,30 @@ int main(int argc, char **argv)
 #endif
 #endif
 
+#ifdef HAVE_MALLOPT
+  TRACE((stderr, "Init malloc...\n"));
+
+  /* The malloc implementation in recent glibc (eg Linux)
+   * defaults to using one arena / thread. This means that
+   * memory once allocated from one thread can't later be
+   * allocated by another thread.
+   *
+   * cf [bug 6045] and http://sourceware.org/bugzilla/show_bug.cgi?id=11261
+   *
+   * We try to alleviate the problem by reducing the number
+   * of arenas as much as possible.
+   */
+
+#ifdef M_ARENA_TEST
+  /* NB: Some versions of glibc don't support setting M_ARENA_TEST to 0. */
+  /* Note also that the test is inverted since mallopt returns 0 on success. */
+  mallopt(M_ARENA_TEST, 0) && mallopt(M_ARENA_TEST, 1);
+#endif
+#ifdef M_ARENA_MAX
+  mallopt(M_ARENA_MAX, 1);
+#endif
+#endif /* HAVE_MALLOPT */
+
   TRACE((stderr, "Init master...\n"));
   
   find_lib_dir(argc, argv);
