@@ -195,6 +195,7 @@ PMOD_EXPORT void* dlrealloc(void*, size_t);
 PMOD_EXPORT void* dlmemalign(size_t, size_t);
 PMOD_EXPORT void* dlvalloc(size_t);
 PMOD_EXPORT void* dlpvalloc(size_t);
+PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define malloc	  dlmalloc
 #define free	  dlfree
 #define calloc    dlcalloc
@@ -202,6 +203,7 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define memalign  dlmemalign
 #define valloc	  dlvalloc
 #define pvalloc	  dlpvalloc
+/* No define for mallinfo since there's a struct with the same name. */
 #ifdef strdup
 #undef strdup
 #endif

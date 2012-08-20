@@ -7488,6 +7488,10 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   pop_n_elems(args);
   ss=Pike_sp;
 
+  /* TODO: If USE_DL_MALLOC is defined then this will report the
+   * statistics from our bundled Doug Lea malloc, and not the
+   * underlying system malloc. Ideally we should include both. */
+
 #if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
   push_text("num_malloc_blocks");
