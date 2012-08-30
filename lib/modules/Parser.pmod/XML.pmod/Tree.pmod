@@ -834,9 +834,15 @@ protected class VirtualNode {
   //! Returns this nodes name-space adjusted attributes.
   //!
   //! @note
-  //!   @[set_short_namespaces()] must have been called before
-  //!   calling this function.
+  //!   @[set_short_namespaces()] or @[set_short_attributes()] must
+  //!   have been called before calling this function.
   mapping get_short_attributes()   { return (mShortAttributes); }
+
+  //! Sets this nodes name-space adjusted attributes.
+  void set_short_attributes(mapping short_attrs)
+  {
+    mShortAttributes = short_attrs;
+  }
 
   //! Returns the node type. See defined node type constants.
   int get_node_type()        { return (mNodeType); }
@@ -1154,6 +1160,7 @@ protected class VirtualNode {
 			    void|mapping(string:string) backward_lookup)
   {
     if (!mTagName) return;
+    if (mShortAttributes) return;
     if (!forward_lookup) {
       forward_lookup = ([]);
       backward_lookup = ([]);
@@ -1292,7 +1299,7 @@ protected class VirtualNode {
     return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
-  //! Creates an XML representation fo the node sub tree and streams
+  //! Creates an XML representation for the node sub tree and streams
   //! the output to the file @[f]. If the flag @[preserve_roxen_entities]
   //! is set, entities on the form @tt{&foo.bar;@} will not be escaped.
   void render_to_file(Stdio.File f,
@@ -1567,6 +1574,7 @@ class XMLParser
                        mixed location, mixed ...extra)
   {
     this_program node;
+    mapping short_attr = attr;
 
     switch (type) {
     case "":
@@ -1607,6 +1615,7 @@ class XMLParser
           name = lower_case(name);
           attr = mkmapping(map(indices(attr), lower_case),
                            values(attr));
+	  short_attr = attr;
         }
         //  Parse namespace information of available.
         if (extra[0]->xmlns) {
@@ -1614,9 +1623,12 @@ class XMLParser
           attr = xmlns->Enter(attr);
           name = xmlns->Decode(name);
           xmlns->Leave();
-        }
+	  short_attr = UNDEFINED;
+	}
       }
-      return node_factory(XML_ELEMENT, name, attr, "");
+      node = node_factory(XML_ELEMENT, name, attr, "");
+      if (short_attr) node->set_short_attributes(short_attr);
+      return node;
 
     case ">":
       //  Create tree node for this container
@@ -1626,12 +1638,14 @@ class XMLParser
         if (extra[0]->force_lc) {
           name = lower_case(name);
           attr = mkmapping(map(indices(attr), lower_case), values(attr));
+	  short_attr = attr;
         }
         //  Parse namespace information of available.
         if (extra[0]->xmlns) {
           XMLNSParser xmlns = extra[0]->xmlns;
           name = xmlns->Decode(name);
           xmlns->Leave();
+	  short_attr = UNDEFINED;
         }
       }
       node = node_factory(XML_ELEMENT, name, attr, "");
@@ -1644,6 +1658,8 @@ class XMLParser
 	//  with neighboring text nodes.
 	Node text_node;
 	int(0..1) modified;
+
+	if (short_attr) node->set_short_attributes(short_attr);
 
 	foreach(contents; int i; Node child) {
 	  if (child->get_node_type() == XML_TEXT) {
@@ -1874,7 +1890,7 @@ class SimpleRootNode
   }
 
   protected SimpleNode node_factory(int type, string name,
-				 mapping attr, string|array text)
+				    mapping attr, string|array text)
   {
     switch(type) {
     case XML_TEXT: return SimpleTextNode(text);
@@ -2105,7 +2121,7 @@ class RootNode
   }
 
   protected Node node_factory(int type, string name,
-			   mapping attr, string|array text)
+			      mapping attr, string|array text)
   {
     switch(type) {
     case XML_TEXT: return TextNode(text);
