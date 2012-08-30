@@ -90,7 +90,8 @@ if test x$with_oracle = xyes; then
   	test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
   	     -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a" -o \
   	     -f "$pike_cv_oracle_oracle_home/lib/libcommon9.a" -o \
-  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon10.a"; then
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon10.a" -o \
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon11.a"; then
 
       echo "$pike_cv_oracle_oracle_home/lib" > conftest
 
@@ -102,7 +103,8 @@ if test x$with_oracle = xyes; then
 	     test -f "$dir/lib/libcommon.a" -o \
 		  -f "$dir/lib/libcommon8.a" -o \
 		  -f "$dir/lib/libcommon9.a" -o \
-		  -f "$dir/lib/libcommon10.a"; then
+		  -f "$dir/lib/libcommon10.a" -o \
+		  -f "$dir/lib/libcommon11.a"; then
   	    if test x"$pike_cv_oracle_oracle_home" = xno; then
   	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
   	    else
@@ -180,7 +182,7 @@ if test x$with_oracle = xyes; then
 
   if test "$oracle_include_dir" = "no"; then
     AC_MSG_RESULT(no)
-  elif test -d "$oracle_include_dir/rdbms/demo/"; then
+  elif test -f "$oracle_include_dir/rdbms/demo/ocidfn.h"; then
     AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
   else
     AC_MSG_RESULT($oracle_include_dir/rdbms/public/)
