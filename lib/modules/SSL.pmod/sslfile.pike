@@ -220,6 +220,7 @@ protected constant epipe_errnos = (<
 #define THREAD_T Thread.Thread
 #define THIS_THREAD() this_thread()
 
+
 protected void thread_error (string msg, THREAD_T other_thread)
 {
 #if 0 && constant (_locate_references)
@@ -522,7 +523,13 @@ protected void create (Stdio.File stream, SSL.context ctx,
   } LEAVE;
 }
 
-//! returns peer certificate information, if any.
+mixed get_server_names()
+{
+  return conn->server_names;
+}
+
+//! @returns
+//!   Returns peer certificate information, if any.
 mapping get_peer_certificate_info()
 {
   return conn->session->cert_data;
