@@ -100,10 +100,8 @@ void addRecord(int t,int s) {
 private array(string) select_server_certificate()
 {
   array(string) certs;
-
   if(context->select_server_certificate_func)
     certs = context->select_server_certificate_func(context, server_names);
-
   if(!certs)
     certs = context->certificates;
 
@@ -217,21 +215,51 @@ Packet client_hello()
   struct->put_fix_uint_array(cipher_suites, 2);
   struct->put_var_uint_array(compression_methods, 1, 1);
 
+  ADT.struct extensions = ADT.struct();
+  ADT.struct extension;
+  int have_extensions = 0;
+
   if (secure_renegotiation) {
-    ADT.struct extensions = ADT.struct();
+    have_extensions++;
 
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    ADT.struct extension = ADT.struct();
+    extension = ADT.struct();
     extension->put_var_string(client_verify_data, 1);
     extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
     extensions->put_var_string(extension->pop_data(), 2);
-    struct->put_var_string(extensions->pop_data(), 2);
   }
+
+  if(context->client_use_sni)
+  {
+    have_extensions++;
+    extension = ADT.struct();
+    if(context->client_server_names)
+    {
+      foreach(context->client_server_names;; string server_name)
+      {
+        ADT.struct hostname = ADT.struct();
+        hostname->put_uint(0, 1); // hostname
+        hostname->put_var_string(server_name, 2); // hostname
+ 
+        extension->put_var_string(hostname->pop_data(), 2);
+      }
+    }
+
+#ifdef SSL3_DEBUG
+  werror("SSL.handshake: Adding Server Name extension.\n");
+#endif
+
+    extensions->put_uint(EXTENSION_server_name, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  } 
+
+  if(have_extensions)
+    struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 
@@ -417,6 +445,10 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   {
     session->rsa = [object(Crypto.RSA)]key;
   }
+
+#ifdef SSL3_DEBUG
+  werror("Checking for Certificate.\n");
+#endif
 
   if (certs = select_server_certificate())
   {

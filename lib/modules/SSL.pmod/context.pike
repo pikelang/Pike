@@ -19,6 +19,15 @@ import .Constants;
 //!   @[sni_keys].
 Crypto.RSA rsa;
 
+//! Should an SSL client include the Server Name extension?
+//!
+//! If so, then client_server_names should specify the values to
+//! send.
+int client_use_sni = 0;
+
+//! Host names to send to the server when using the Server Name extension.
+array(string) client_server_names = ({});
+
 /* For client authentication */
 
 //! The client's private key (used with client certificate authentication)
@@ -359,10 +368,13 @@ private array(string) internal_select_server_certificate(.context context,
 {
   array(string) certs;
 
-  foreach(server_names;; string sn)
+  if(server_names && sizeof(server_names))
   {
-    if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
-      return certs;
+    foreach(server_names;; string sn)
+    {
+      if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
+        return certs;
+    }
   }
 
   return 0;
