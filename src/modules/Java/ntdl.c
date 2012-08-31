@@ -12,7 +12,9 @@
  */
 
 #include <tchar.h>
+#ifndef CONFIGURE
 #include "program.h"
+#endif
 
 #define JNI_CreateJavaVM createjavavm
 typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
@@ -70,7 +72,9 @@ static int open_nt_dll(void)
     RegCloseKey(key);
   }
   if((jvmdll=LoadLibrary(libname))==NULL) {
+#ifndef CONFIGURE
     yywarning("Failed to load JVM: '%s'\n", libname);
+#endif
     return -1;
   }
   else {
@@ -80,7 +84,9 @@ static int open_nt_dll(void)
     else {
       if(FreeLibrary(jvmdll))
 	jvmdll = NULL;
+#ifndef CONFIGURE
       yywarning("Failed to create JVM.\n");
+#endif
       return -2;
     }
   }
