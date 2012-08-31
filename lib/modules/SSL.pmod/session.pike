@@ -49,6 +49,12 @@ array(string) peer_certificate_chain;
 //! our certificate chain
 array(string) certificate_chain;
 
+//! The server's private key
+Crypto.RSA rsa;
+
+//! The server's dsa private key
+Crypto.DSA dsa;
+
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
 void set_cipher_suite(int suite, ProtocolVersion|int version)

@@ -217,6 +217,7 @@ protected constant epipe_errnos = (<
 #define THREAD_T Thread.Thread
 #define THIS_THREAD() this_thread()
 
+
 protected void thread_error (string msg, THREAD_T other_thread)
 {
 #if 0 && constant (_locate_references)
@@ -531,6 +532,11 @@ protected void create (Stdio.File stream, SSL.context ctx,
       if (is_client) queue_write();
     }
   } LEAVE;
+}
+
+mixed get_server_names()
+{
+  return conn->server_names;
 }
 
 //! @returns

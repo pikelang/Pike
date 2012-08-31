@@ -161,6 +161,7 @@ void send_packet(object packet, int|void priority)
     application::put(packet);
     break;
   }
+
 }
 
 //! Extracts data from the packet queues. Returns a string of data

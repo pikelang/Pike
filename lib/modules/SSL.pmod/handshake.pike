@@ -97,7 +97,29 @@ void addRecord(int t,int s) {
 }
 #endif
 
+private array(string) select_server_certificate()
+{
+  array(string) certs;
 
+  if(context->select_server_certificate_func)
+    certs = context->select_server_certificate_func(context, server_names);
+
+  if(!certs)
+    certs = context->certificates;
+
+  return certs;
+}
+
+private object select_server_key()
+{
+  object key;
+  if(context->select_server_key_func)
+    key = context->select_server_key_func(context, server_names);
+  if(!key) // fallback on previous behavior.
+    key = context->rsa || context->dsa;
+
+  return key;
+}
 
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
@@ -269,7 +291,7 @@ Packet server_key_exchange_packet()
     return 0;
   }
 
-  session->cipher_spec->sign(context, client_random + server_random, struct);
+  session->cipher_spec->sign(session, client_random + server_random, struct);
   return handshake_packet (HANDSHAKE_server_key_exchange,
 			  struct->pop_data());
 }
@@ -297,7 +319,7 @@ Packet client_key_exchange_packet()
     pending_read_state = res[0];
     pending_write_state = res[1];
 
-    data = (temp_key || context->rsa)->encrypt(premaster_secret);
+    data = (temp_key || session->rsa)->encrypt(premaster_secret);
 
     if(version[1] >= PROTOCOL_TLS_1_0)
       data=sprintf("%2c",sizeof(data))+data;
@@ -374,9 +396,35 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   /* Send Certificate, ServerKeyExchange and CertificateRequest as
    * appropriate, and then ServerHelloDone.
    */
-  if (context->certificates)
+
+  array(string) certs;
+#ifdef SSL3_DEBUG
+  werror("Selecting server key.\n");
+#endif
+
+  // populate the key to be used for the session.
+  object key = select_server_key();
+
+#ifdef SSL3_DEBUG
+  werror("Selected server key: %O\n", key);
+#endif
+
+  if(Program.implements(object_program(key), Crypto.DSA))
+  { 
+    session->dsa = [object(Crypto.DSA)]key;
+  }
+  else
   {
-    send_packet(certificate_packet(context->certificates));
+    session->rsa = [object(Crypto.RSA)]key;
+  }
+
+  if (certs = select_server_certificate())
+  {
+#ifdef SSL3_DEBUG
+  werror("Sending Certificate.\n");
+#endif
+
+    send_packet(certificate_packet(certs));
   }
   else if (session->cipher_spec->sign != .Cipher.anon_sign)
     // Otherwise the server will just silently send an invalid
@@ -461,7 +509,7 @@ Packet certificate_packet(array(string) certificates)
 {
   ADT.struct struct = ADT.struct();
   int len = 0;
-  
+
   if(certificates && sizeof(certificates))
     len = `+( @ Array.map(certificates, sizeof));
 #ifdef SSL3_DEBUG
@@ -536,10 +584,10 @@ string server_derive_master_secret(string data)
 #endif
      if(version[1] >= PROTOCOL_TLS_1_0) {
        if(sizeof(data)-2 == data[0]*256+data[1]) {
-	 premaster_secret = (temp_key || context->rsa)->decrypt(data[2..]);
+	 premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
        }
      } else {
-       premaster_secret = (temp_key || context->rsa)->decrypt(data);
+       premaster_secret = (temp_key || session->rsa)->decrypt(data);
      }
 #ifdef SSL3_DEBUG
      werror("premaster_secret: %O\n", premaster_secret);
@@ -1288,7 +1336,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  ADT.struct handshake_messages_struct = ADT.struct();
 	  handshake_messages_struct->put_fix_string(handshake_messages);
 	  verification_ok = session->cipher_spec->verify(
-	    context, "", handshake_messages_struct, signature);
+	    session, "", handshake_messages_struct, signature);
 	} || verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1510,7 +1558,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    Crypto.RSA rsa = Crypto.RSA();
 	    rsa->set_public_key(public_key->rsa->get_n(),
 				public_key->rsa->get_e());
-	    context->rsa = rsa;
+	    session->rsa = rsa;
 	  }
 	else
 	  {
@@ -1551,7 +1599,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	temp_struct->put_bignum(e);
 	int verification_ok;
 	if( catch{ verification_ok = session->cipher_spec->verify(
-	  context, client_random + server_random, temp_struct, signature); }
+	  session, client_random + server_random, temp_struct, signature); }
 	    || !verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1562,7 +1610,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 	Crypto.RSA rsa = Crypto.RSA();
 	rsa->set_public_key(n, e);
-	context->rsa = rsa;
+	session->rsa = rsa;
 	break;
       }
 
@@ -1653,10 +1701,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
       check_serv_cert: {
 	  switch (session->cipher_spec->sign) {
 	    case .Cipher.rsa_sign:
-	      if (context->rsa) break check_serv_cert;
+	      if (session->rsa) break check_serv_cert;
 	      break;
 	    case .Cipher.dsa_sign:
-	      if (context->dsa) break check_serv_cert;
+	      if (session->dsa) break check_serv_cert;
 	      break;
 	  }
 
