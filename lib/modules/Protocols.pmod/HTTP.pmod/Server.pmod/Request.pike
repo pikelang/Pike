@@ -598,6 +598,7 @@ string make_response_header(mapping m)
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
+   m += ([ ]);
    log_cb = _log_cb;
 
    if (request_headers->range && !m->start && zero_type(m->error))
