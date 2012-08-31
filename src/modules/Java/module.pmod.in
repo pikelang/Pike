@@ -1,6 +1,10 @@
 // -*- Pike -*-
 
 #pike __REAL_VERSION__
+
+constant dont_dump_program = 1;
+
+#if constant(@module@.jvm)
 inherit @module@;
 
 object machine;
@@ -768,10 +772,9 @@ object pkg;
 
 protected void create()
 {
-  program jvm = this->jvm;
-  if(jvm)
-    machine = jvm(getenv("CLASSPATH"));
+  machine = jvm(getenv("CLASSPATH"));
   if(machine)
     pkg = package("", (["jvm":machine]));
 }
 
+#endif /* Java.jvm */

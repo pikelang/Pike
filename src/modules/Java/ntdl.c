@@ -13,6 +13,7 @@
  */
 
 #include <tchar.h>
+#include "program.h"
 
 #define JNI_CreateJavaVM createjavavm
 typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
@@ -69,8 +70,10 @@ static int open_nt_dll(void)
     }
     RegCloseKey(key);
   }
-  if((jvmdll=LoadLibrary(libname))==NULL)
+  if((jvmdll=LoadLibrary(libname))==NULL) {
+    yywarning("Failed to load JVM: '%s'\n", libname);
     return -1;
+  }
   else {
     FARPROC proc;
     if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
@@ -78,6 +81,7 @@ static int open_nt_dll(void)
     else {
       if(FreeLibrary(jvmdll))
 	jvmdll = NULL;
+      yywarning("Failed to create JVM.\n");
       return -2;
     }
   }
