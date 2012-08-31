@@ -1511,6 +1511,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    secure_renegotiation = 1;
 	    missing_secure_renegotiation = 0;
 	    break;
+	  case EXTENSION_server_name:
+	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
+            break;
 	  default:
 	    // RFC 5246 7.4.1.4:
 	    // If a client receives an extension type in ServerHello
