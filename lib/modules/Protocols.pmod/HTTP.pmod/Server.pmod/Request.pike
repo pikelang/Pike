@@ -467,7 +467,7 @@ protected void close_cb()
    if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
 }
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(%O %O)",this_program,request_type,full_query);
 }
@@ -598,6 +598,7 @@ string make_response_header(mapping m)
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
+   m += ([ ]);
    log_cb = _log_cb;
 
    if (request_headers->range && !m->start && zero_type(m->error))
