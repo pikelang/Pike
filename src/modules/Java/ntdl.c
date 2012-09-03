@@ -74,7 +74,8 @@ static int open_nt_dll(void)
   }
   if((jvmdll=LoadLibrary(libname))==NULL) {
 #ifndef CONFIGURE
-    yywarning("Failed to load JVM: '%s'\n", libname);
+    yywarning("Failed to load JVM: '%s' (Err: %ld)\n",
+	      libname, (long)GetLastError());
 #endif
     return -1;
   }
