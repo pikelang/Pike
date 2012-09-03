@@ -45,6 +45,32 @@ class A {
 return sizeof(A("<!-- --><!-- --><x/>")->mChildren);
 ]], 3)
 
+// Tests of namespace handling in normal-mode.
+test_any([[
+  // InfoKOM 731715
+  object root = Parser.XML.Tree.simple_parse_input("<root/>");
+  object sub =
+    Parser.XML.Tree.SimpleNode(Parser.XML.Tree.XML_ELEMENT, "sub",
+                               ([ "foo" : "bar" ]), "");
+  root->get_elements("root")[0]->add_child(sub);
+  return root->render_xml();
+]], "<root><sub foo='bar'/></root>")
+
+test_any([[
+  // InfoKOM 731484
+  return Parser.XML.Tree.simple_parse_input(
+    "<feed xmlns='http://www.w3.org/2005/Atom'\n"
+    "      xmlns:example='http://www.example.com/example'>\n"
+    "  <entry>\n"
+    "   <category example:test='yes' label='Test' example:test='yes' term='test' />\n"
+    "  </entry>\n"
+    "</feed>")->render_xml();
+]], "<feed xmlns='http://www.w3.org/2005/Atom'"
+    " xmlns:example='http://www.example.com/example'>\n"
+    "  <entry>\n"
+    "   <category example:test='yes' label='Test' term='test'/>\n"
+    "  </entry>\n"
+    "</feed>")
 
 // NSTree
 

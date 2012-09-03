@@ -1160,7 +1160,6 @@ protected class VirtualNode {
 			    void|mapping(string:string) backward_lookup)
   {
     if (!mTagName) return;
-    if (mShortAttributes) return;
     if (!forward_lookup) {
       forward_lookup = ([]);
       backward_lookup = ([]);
@@ -1185,94 +1184,97 @@ protected class VirtualNode {
 	forward_lookup[attrs[attr_name]] = short_prefix;
       }
     }
-    // Then set the short namespace for this tag.
-    mShortNamespace = "";
-    if (sizeof(mNamespace)) {
-      if (!(mShortNamespace = forward_lookup[mNamespace])) {
+    if (!mShortAttributes) {
+      // Then set the short namespace for this tag.
+      mShortNamespace = "";
+      if (sizeof(mNamespace)) {
+	if (!(mShortNamespace = forward_lookup[mNamespace])) {
 #if 0
-	werror("Forward_lookup: %O\n"
-	       "Backward_lookup: %O\n"
-	       "mNamespace:%O\n",
-	       forward_lookup,
-	       backward_lookup,
-	       mNamespace);
+	  werror("Forward_lookup: %O\n"
+		 "Backward_lookup: %O\n"
+		 "mNamespace:%O\n",
+		 forward_lookup,
+		 backward_lookup,
+		 mNamespace);
 #endif /* 0 */
 
-	string found;
-	string full_name = get_full_name();
-	// Check if there are any longer namespaces that might match.
-	foreach(forward_lookup; string long;) {
-	  if (has_prefix(full_name, long) &&
-	      (!found || (sizeof(found) < sizeof(long)))) {
-	    found = long;
-	    break;
-	  }
-	}
-
-	if (found) {
-	  mTagName = full_name[sizeof(found)..];
-	  mNamespace = found;
-	  mShortNamespace = forward_lookup[found];
-	} else {
-	  // We need to allocate a short namespace symbol.
-	  // FIXME: This is O(n²).
-	  int i;
-	  while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
-	    i++;
-	  }
-	  backward_lookup[mShortNamespace] = mNamespace;
-	  forward_lookup[mNamespace] = mShortNamespace;
-	  attrs["xmlns:NS"+i] = mNamespace;
-	  short_attrs["xmlns:NS"+i] = mNamespace;
-	}
-      }
-    }
-    // Then set the short namespaces for any attributes.
-    foreach(indices(attrs), string attr_name) {
-      if (!has_prefix(attr_name, "xmlns:")) {
-	int i = -1;
-	int j;
-	while ((j = search(attr_name, ":", i + 1)) >= 0) {
-	  i = j;
-	}
-	while ((j = search(attr_name, "/", i + 1)) >= 0) {
-	  i = j;
-	}
-	if (i >= 0) {
-	  string ns = attr_name[..i];
-	  string prefix;
-
-	  // Check if we already have some namespace that is a longer
-	  // prefix of this attribute than ns. This isn't only for
-	  // looks; there are broken XML parsers that require the
-	  // break between the namespace and the attribute name to be
-	  // at a specific spot, e.g. the one used in the WebDAV
-	  // client in MS XP Pro.
-	  foreach (forward_lookup; string long;)
-	    if (sizeof (long) > sizeof (ns) && has_prefix (attr_name, long)) {
-	      ns = long;
-	      i = sizeof (long) - 1;
+	  string found;
+	  string full_name = get_full_name();
+	  // Check if there are any longer namespaces that might match.
+	  foreach(forward_lookup; string long;) {
+	    if (has_prefix(full_name, long) &&
+		(!found || (sizeof(found) < sizeof(long)))) {
+	      found = long;
 	      break;
 	    }
+	  }
 
-	  if (!(prefix = forward_lookup[ns])) {
+	  if (found) {
+	    mTagName = full_name[sizeof(found)..];
+	    mNamespace = found;
+	    mShortNamespace = forward_lookup[found];
+	  } else {
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
 	    int i;
-	    while(backward_lookup[prefix = ("NS"+i+":")]) {
+	    while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
 	      i++;
 	    }
-	    backward_lookup[mShortNamespace] = ns;
-	    forward_lookup[mNamespace] = prefix;
-	    attrs["xmlns:NS"+i] = ns;
-	    short_attrs["xmlns:NS"+i] = ns;
+	    backward_lookup[mShortNamespace] = mNamespace;
+	    forward_lookup[mNamespace] = mShortNamespace;
+	    attrs["xmlns:NS"+i] = mNamespace;
+	    short_attrs["xmlns:NS"+i] = mNamespace;
 	  }
-	  m_delete(short_attrs, attr_name);
-	  short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
 	}
       }
+      // Then set the short namespaces for any attributes.
+      foreach(indices(attrs), string attr_name) {
+	if (!has_prefix(attr_name, "xmlns:")) {
+	  int i = -1;
+	  int j;
+	  while ((j = search(attr_name, ":", i + 1)) >= 0) {
+	    i = j;
+	  }
+	  while ((j = search(attr_name, "/", i + 1)) >= 0) {
+	    i = j;
+	  }
+	  if (i >= 0) {
+	    string ns = attr_name[..i];
+	    string prefix;
+
+	    // Check if we already have some namespace that is a longer
+	    // prefix of this attribute than ns. This isn't only for
+	    // looks; there are broken XML parsers that require the
+	    // break between the namespace and the attribute name to be
+	    // at a specific spot, e.g. the one used in the WebDAV
+	    // client in MS XP Pro.
+	    foreach (forward_lookup; string long;)
+	      if (sizeof (long) > sizeof (ns) &&
+		  has_prefix (attr_name, long)) {
+		ns = long;
+		i = sizeof (long) - 1;
+		break;
+	      }
+
+	    if (!(prefix = forward_lookup[ns])) {
+	      // We need to allocate a short namespace symbol.
+	      // FIXME: This is O(n²).
+	      int i;
+	      while(backward_lookup[prefix = ("NS"+i+":")]) {
+		i++;
+	      }
+	      backward_lookup[mShortNamespace] = ns;
+	      forward_lookup[mNamespace] = prefix;
+	      attrs["xmlns:NS"+i] = ns;
+	      short_attrs["xmlns:NS"+i] = ns;
+	    }
+	    m_delete(short_attrs, attr_name);
+	    short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
+	  }
+	}
+      }
+      mShortAttributes = short_attrs;
     }
-    mShortAttributes = short_attrs;
     // And then do it for all the children.
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
