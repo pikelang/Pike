@@ -24,7 +24,7 @@ static HINSTANCE jvmdll = NULL;
 
 static int open_nt_dll(void)
 {
-  LPCTSTR libname=_T("jvm");
+  LPTSTR libname=_T("jvm");
   LPCTSTR keyname=_T("SOFTWARE\\JavaSoft\\Java Runtime Environment");
   HKEY key;
   TCHAR buffer[2*MAX_PATH+32];
@@ -89,14 +89,14 @@ static int open_nt_dll(void)
    * SetDllDirectory() with it.
    */
   kernel = GetModuleHandle("kernel32");
-  getdlldir = (void *)GetModuleHandle(kernel, "GetDllDirectoryA");
-  setdlldir = (void *)GetModuleHandle(kernel, "SetDllDirectoryA");
+  getdlldir = (void *)GetProcAddress(kernel, "GetDllDirectoryA");
+  setdlldir = (void *)GetProcAddress(kernel, "SetDllDirectoryA");
 
   if (setdlldir) {
     int cnt = 0;
 
     for(l = len; l--;) {
-      if (jvmdll[l] == '\\') {
+      if (libname[l] == '\\') {
 	/* Go up two directory levels. */
 	if (++cnt == 2) break;
       }
