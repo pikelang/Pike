@@ -690,6 +690,64 @@ void f_utime(INT32 args)
 }
 #endif
 
+#if !defined(HAVE_SYNC) && defined(__NT__)
+static void sync(void)
+{
+  /* NB: For some stupid reason FindFirstVolume()/FindNextVolume()
+   *     will only list local filesystems. So we have to fall
+   *     back to using GetLogicalDrives().
+   */
+  /* NB: \\.\ is the DOS device namespace prefix. */
+  char drive[8] = "\\\\.\\A:";
+  char *driveletter = drive + 4;
+  DWORD drives = GetLogicalDrives();
+  DWORD mask = 1;
+  /* Loop over all mounted volumes. */
+  while (mask) {
+    if (mask & drives) {
+      char device[MAX_PATH*2];
+      HANDLE volfile;
+
+      if (QueryDosDeviceA(driveletter, device, MAX_PATH*2)) {
+	volfile = CreateFileA(device, FILE_READ_DATA, FILE_SHARE_READ,
+			      NULL, OPEN_EXISTING, 0, NULL);
+	if (volfile != INVALID_HANDLE_VALUE) {
+	  CloseHandle(volfile);
+	}
+      }
+
+      /* Flush the drive. */
+      volfile = CreateFileA(drive, FILE_READ_DATA, FILE_SHARE_READ,
+			    NULL, OPEN_EXISTING, 0, NULL);
+      if (volfile != INVALID_HANDLE_VALUE) {
+	CloseHandle(volfile);
+      }
+    }
+    *driveletter++;
+    mask = mask << 1;
+  }
+}
+#define HAVE_SYNC
+#endif
+
+#ifdef HAVE_SYNC
+/*! @decl void sync()
+ *!
+ *! Flush operating system disk buffers to permanent storage.
+ *!
+ *! @note
+ *!   On some operating systems this may require
+ *!   administrative privileges.
+ */
+void f_sync(INT32 args)
+{
+  pop_n_elems(args);
+  THREADS_ALLOW_UID()
+  sync();
+  THREADS_DISALLOW_UID();
+}
+#endif
+
 #ifdef HAVE_INITGROUPS
 /*! @decl void initgroups(string name, int base_gid)
  *!
@@ -3259,6 +3317,10 @@ PIKE_MODULE_INIT
 	   OPT_SIDE_EFFECT);
   ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
 		0, OPT_SIDE_EFFECT);
+#endif
+
+#ifdef HAVE_SYNC
+  ADD_FUNCTION2("sync", f_sync, tFunc(tNone, tVoid), 0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_INITGROUPS
