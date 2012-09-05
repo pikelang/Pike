@@ -2846,14 +2846,14 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 {
 	    m->month=low=m->year->month(m->M);
 	 }
-	 if (m->W) 
+	 if (m->W)
 	    m->week=low=m->year->week("w"+m->W);
 
 	 if (!zero_type(m->D))
 	    m->day=low=(m->month||(context?context->month():cal->Month()))
 	       ->day((int)m->D);
 	 else if (!zero_type(m->a))
-	    m->day=low=m->year->day(m->a);
+	    m->day=low=(m->month || m->year)->day(m->a);
 	 else if (!zero_type(m->e))
 	    m->day=low=(m->week||(context?context->week():cal->Week()))
 	       ->day(m->e);
