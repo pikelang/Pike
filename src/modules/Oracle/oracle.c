@@ -2291,9 +2291,9 @@ static void f_big_typed_query_create(INT32 args)
 	      struct pike_string *s;
 	      {
 		struct svalue tmp;
-		if (TYPEOF(use_multiset_index (value->u.multiset,
-					       multiset_first (value->u.multiset),
-					       tmp)) == T_STRING)
+		if (TYPEOF(*use_multiset_index (value->u.multiset,
+						multiset_first (value->u.multiset),
+						tmp)) == T_STRING)
 		  s = tmp.u.string;
 		else
 		  s = NULL;
