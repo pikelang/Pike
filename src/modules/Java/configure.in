@@ -464,7 +464,6 @@ if test "x$with_java" = xyes; then
 #include <setjmp.h>
 #endif
 #include <stdio.h>
-#define CONFIGURE
 #ifdef __NT__
 #include <windows.h>
 #include "ntdl.c"

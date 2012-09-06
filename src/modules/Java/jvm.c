@@ -3854,13 +3854,24 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_JAVA
   struct svalue prog;
-  SET_SVAL_TYPE(prog, PIKE_T_PROGRAM);
-  SET_SVAL_SUBTYPE(prog, 0);
 
 #ifdef __NT__
-  if (open_nt_dll()<0)
+  switch(open_nt_dll()) {
+  case 0: break;
+  case -1:
+    yywarning("Failed to load JVM.\n");
     return;
+  case -2:
+    yywarning("Failed to create JVM.\n");
+    return;
+  default:
+    yywarning("Failed to initialize the JVM library.\n");
+    return;
+  }
 #endif /* __NT__ */
+
+  SET_SVAL_TYPE(prog, PIKE_T_PROGRAM);
+  SET_SVAL_SUBTYPE(prog, 0);
 
 #ifdef HAVE_IBMFINDDLL
   {
