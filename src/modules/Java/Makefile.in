@@ -13,3 +13,5 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 @dynamic_module_makefile@
 
 @dependencies@
+
+jvm.o: ntdl.c

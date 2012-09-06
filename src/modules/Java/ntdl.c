@@ -13,9 +13,6 @@
  */
 
 #include <tchar.h>
-#ifndef CONFIGURE
-#include "program.h"
-#endif
 
 #define JNI_CreateJavaVM createjavavm
 typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
@@ -24,50 +21,49 @@ static HINSTANCE jvmdll = NULL;
 
 static int open_nt_dll(void)
 {
-  LPTSTR libname=_T("jvm");
-  LPCTSTR keyname=_T("SOFTWARE\\JavaSoft\\Java Runtime Environment");
+  WCHAR buffer[2*MAX_PATH+32] = L"jvm";
+  WCHAR keyname[] = L"SOFTWARE\\JavaSoft\\Java Runtime Environment";
   HKEY key;
-  TCHAR buffer[2*MAX_PATH+32];
-  DWORD type, len = sizeof(buffer)-16;
+  WCHAR *libname = buffer;
+  DWORD type, len = sizeof(buffer)/2;
   DWORD l;
   HINSTANCE kernel;
-  DWORD (*getdlldir)(DWORD nBufferLength, LPTSTR lpBuffer);
-  BOOL (*setdlldir)(LPCTSTR lpPathname);
+  DWORD (WINAPI *getdlldir)(DWORD nBufferLength, WCHAR *lpBuffer) = NULL;
+  BOOL (WINAPI *setdlldir)(WCHAR *lpPathname) = NULL;
   
-  l = GetEnvironmentVariable("PIKE_JRE_JVMDLL", buffer, len);
+  l = GetEnvironmentVariableW(L"PIKE_JRE_JVMDLL", buffer, len);
   if (l > 0) {
-    libname = buffer;
     len = l;
   }
-  else if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
-                       KEY_READ, &key) == ERROR_SUCCESS ||
-          RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
-                       KEY_READ, &key) == ERROR_SUCCESS) {
-    LPCTSTR subkeyname=_T("1.2");
+  else if(RegOpenKeyExW(HKEY_CURRENT_USER, keyname, 0,
+			KEY_READ, &key) == ERROR_SUCCESS ||
+          RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyname, 0,
+			KEY_READ, &key) == ERROR_SUCCESS) {
+    WCHAR *subkeyname = L"1.2";
     HKEY subkey;
 
-    if(ERROR_SUCCESS == RegQueryValueEx(key, _T("CurrentVersion"), 0,
-					&type, buffer, &len) &&
-       type == REG_SZ)
+    if(ERROR_SUCCESS == RegQueryValueExW(key, L"CurrentVersion", 0,
+					 &type, buffer, &len) &&
+       type == REG_SZ) {
       subkeyname = buffer;
-    
-    if(RegOpenKeyEx(key, subkeyname, 0, KEY_READ, &subkey) ==
+    }
+
+    if(RegOpenKeyExW(key, subkeyname, 0, KEY_READ, &subkey) ==
        ERROR_SUCCESS) {
-      
+
       len = sizeof(buffer)-16;
 
-      if(ERROR_SUCCESS == RegQueryValueEx(subkey, _T("RuntimeLib"), 0,
-					  &type, buffer, &len))
+      if(ERROR_SUCCESS == RegQueryValueExW(subkey, L"RuntimeLib", 0,
+					   &type, buffer, &len))
 	switch(type) {
 	 case REG_SZ:
-	   libname = buffer;
+	   len /= sizeof(*buffer);
 	   break;
 	 case REG_EXPAND_SZ:
 	   {
-	     LPTSTR subbuffer = buffer+((len+1)/sizeof(TCHAR));
-	     l = ExpandEnvironmentStrings(buffer, subbuffer,
-					     sizeof(buffer)-len-2);
-	     if(l && l <= sizeof(buffer)-len-2) {
+	     WCHAR *subbuffer = buffer + MAX_PATH + 16;
+	     l = ExpandEnvironmentStringsW(buffer, subbuffer, MAX_PATH + 16);
+	     if(l && l <= MAX_PATH + 16) {
 	       libname = subbuffer;
 	       len = l;
 	     }
@@ -77,6 +73,8 @@ static int open_nt_dll(void)
       RegCloseKey(subkey);
     }
     RegCloseKey(key);
+  } else {
+    len = wcslen(buffer);
   }
 
   /* Java 6 and 7 jvm.dll have dependencies on msvcr71.dll and msvcr100.dll
@@ -88,9 +86,15 @@ static int open_nt_dll(void)
    * from the registry to "C:\Program Files\Java\jre\bin", and call
    * SetDllDirectory() with it.
    */
-  kernel = GetModuleHandle("kernel32");
-  getdlldir = (void *)GetProcAddress(kernel, "GetDllDirectoryA");
-  setdlldir = (void *)GetProcAddress(kernel, "SetDllDirectoryA");
+  kernel = GetModuleHandle(_T("kernel32"));
+  getdlldir = (void *)GetProcAddress(kernel, "GetDllDirectoryW");
+  setdlldir = (void *)GetProcAddress(kernel, "SetDllDirectoryW");
+
+  if (!setdlldir) {
+    /* Fallback to {Get,Set}CurrentDirectoryW(). */
+    getdlldir = GetCurrentDirectoryW;
+    setdlldir = SetCurrentDirectoryW;
+  }
 
   if (setdlldir) {
     int cnt = 0;
@@ -102,8 +106,8 @@ static int open_nt_dll(void)
       }
     }
     if (cnt == 2) {
-      TCHAR dlldirbuffer[2*MAX_PATH];
-      LPTSTR origdlldir = NULL;
+      WCHAR dlldirbuffer[MAX_PATH + 16];
+      WCHAR *origdlldir = NULL;
 
       libname[l] = 0;
 
@@ -115,7 +119,7 @@ static int open_nt_dll(void)
 	 *        directories from the dlldir load path if
 	 *        it has been used.
 	 */
-	if ((len = getdlldir(2*MAX_PATH, dlldirbuffer))) {
+	if ((len = getdlldir(MAX_PATH + 16, dlldirbuffer))) {
 	  dlldirbuffer[len] = 0;
 	  origdlldir = dlldirbuffer;
 	}
@@ -126,24 +130,20 @@ static int open_nt_dll(void)
       /* Restore the zapped diretory separator. */
       libname[l] = '\\';
 
-      jvmdll = LoadLibrary(libname);
+      jvmdll = LoadLibraryW(libname);
 
       /* Restore the original dlldir load path. */
       setdlldir(origdlldir);
     } else {
       /* Not enough directory levels. */
-      jvmdll = LoadLibrary(libname);
+      jvmdll = LoadLibraryW(libname);
     }
   } else {
     /* No SetDllDirectory(). */
-    jvmdll = LoadLibrary(libname);
+    jvmdll = LoadLibraryW(libname);
   }
 
   if (!jvmdll) {
-#ifndef CONFIGURE
-    yywarning("Failed to load JVM: '%s' (Err: %ld)\n",
-	      libname, (long)GetLastError());
-#endif
     return -1;
   }
   else {
@@ -153,9 +153,6 @@ static int open_nt_dll(void)
     else {
       if(FreeLibrary(jvmdll))
 	jvmdll = NULL;
-#ifndef CONFIGURE
-      yywarning("Failed to create JVM.\n");
-#endif
       return -2;
     }
   }
