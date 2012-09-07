@@ -30,7 +30,7 @@ struct object
 
 PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
-extern struct object *objects_to_destruct;
+PMOD_EXPORT extern struct object *objects_to_destruct;
 extern struct object *master_object;
 extern struct program *master_program;
 extern struct program *magic_index_program;
