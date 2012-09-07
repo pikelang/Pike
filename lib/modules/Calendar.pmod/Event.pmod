@@ -146,10 +146,8 @@ class Day_Event
 
   //! @decl int scan_jd(Calendar.Calendar realm, int jd,@
   //!                   int(-1..-1)|int(1..1) direction)
-  //! These methods has to be defined, and is what
-  //! really does some work. It should return the next or previos
-  //! julian day (>@i{jd@}) when the event occurs,
-  //! or the constant @[NODAY] if it doesn't.
+  //! This method has to be defined, and is what
+  //! really does some work.
   //!
   //! @param direction
   //!   @int
@@ -158,6 +156,11 @@ class Day_Event
   //!     @value -1
   //!	    Backward (previous).
   //!   @endint
+  //!
+  //! @returns
+  //!   It should return the next or previous
+  //!   julian day (>@i{jd@}) when the event occurs,
+  //!   or the constant @[NODAY] if it doesn't.
 
    int scan_jd(Calendar.Calendar realm,int jd,int(1..1)|int(-1..-1) direction);
 
@@ -855,6 +858,157 @@ class Weekday
    }
 }
 
+//! This class represents a solar event.
+//!
+//! The @[event_type] is one of
+//! @int
+//!   @value 0
+//!     Northern hemisphere spring equinox.
+//!   @value 1
+//!     Northern hemisphere summer solstice.
+//!   @value 2
+//!     Northern hemisphere spring equinox.
+//!   @value 3
+//!     Northern hemisphere summer solstice.
+//! @endint
+class Solar(int|void event_type)
+{
+  inherit Day_Event;
+
+  protected float solar_event(int y)
+  {
+    float res;
+
+    if (y < 1000) {
+      float yy = y/1000.0;
+      float y2 = yy*yy;
+      float y3 = y2*yy;
+      float y4 = y3*yy;
+
+      switch (event_type) {
+      case 0:
+	res = 1721139.29189 + 365242.13740 * yy + 0.06134 * y2 -
+	  0.00111 * y3 - 0.00071 * y4;
+	break;
+      case 1:
+	res = 1721233.25401 + 365241.72562 * yy + 0.05323 * y2 -
+	  0.00907 * y3 - 0.00025 * y4;
+	break;
+      case 2:
+	res = 1721325.70455 + 365242.49558 * yy + 0.11677 * y2 -
+	  0.00297 * y3 - 0.00074 * y4;
+	break;
+      case 3:
+	res = 1721414.39987 + 365242.88257 * yy + 0.00769 * y2 -
+	  0.00933 * y3 - 0.00006 * y4;
+	break;
+      }
+    } else {
+      float yy = (y - 2000)/1000.0;
+      float y2 = yy*yy;
+      float y3 = y2*yy;
+      float y4 = y3*yy;
+
+      switch (event_type) {
+      case 0:
+	res = 2451623.80984 + 365242.37404 * yy + 0.05169 * y2 -
+	  0.00411 * y3 - 0.00057 * y4;
+	break;
+      case 1:
+	res = 2451716.56767 + 365241.62603 * yy + 0.00325 * y2 -
+	  0.00888 * y3 - 0.00030 * y4;
+	break;
+      case 2:
+	res = 2451810.21715 + 365242.01767 * yy + 0.11575 * y2 -
+	  0.00337 * y3 - 0.00078 * y4;
+	break;
+      case 3:
+	res = 2451900.05952 + 365242.74049 * yy + 0.06223 * y2 -
+	  0.00823 * y3 - 0.00032 * y4;
+	break;
+      }
+    }
+
+    float delta_y = (res - 2451545.0) / 36525;
+
+    float omega = 628.30759 * delta_y - 0.04311;
+    float l = 1.0 + 0.0334 * cos(omega) + cos(2.0 * omega);
+
+    float S =
+      0.00485 * cos(5.6716 + 2.3411 * delta_y) +
+      0.00203 * cos(5.8858 + 3.5686 * delta_y) +
+      0.00199 * cos(5.9704 + 0.3523 * delta_y) +
+      0.00182 * cos(0.4860 + 5.3601 * delta_y) +
+      0.00156 * cos(1.2765 + 0.6438 * delta_y) +
+      0.00136 * cos(2.9936 + 3.4635 * delta_y) +
+      0.00077 * cos(3.8841 + 0.8540 * delta_y) +
+      0.00074 * cos(5.1787 + 2.7036 * delta_y) +
+      0.00070 * cos(4.2513 + 0.6547 * delta_y) +
+      0.00058 * cos(2.0911 + 4.1564 * delta_y) +
+      0.00052 * cos(5.1866 + 2.6298 * delta_y) +
+      0.00050 * cos(0.3669 + 2.1158 * delta_y) +
+      0.00045 * cos(4.3204 + 0.8650 * delta_y) +
+      0.00044 * cos(5.6749 + 4.1182 * delta_y) +
+      0.00029 * cos(1.0634 + 2.1540 * delta_y) +
+      0.00028 * cos(2.7074 + 4.1072 * delta_y) +
+      0.00017 * cos(5.0403 + 4.2316 * delta_y) +
+      0.00016 * cos(3.4565 + 4.4336 * delta_y) +
+      0.00014 * cos(3.4865 + 2.0407 * delta_y) +
+      0.00012 * cos(1.6649 + 3.1040 * delta_y) +
+      0.00012 * cos(5.0110 + 4.3940 * delta_y) +
+      0.00012 * cos(5.5992 + 3.7919 * delta_y) +
+      0.00009 * cos(3.9746 + 2.4804 * delta_y) +
+      0.00008 * cos(0.2697 + 5.2198 * delta_y);
+
+    res += S / l;
+    return res;
+  }
+
+  //! @note
+  //!   Returns unixtime in UTC to avoid losing the decimals!
+  int scan_jd(Calendar.Calendar realm, int jd, int(1..1)|int(-1..-1) direction)
+  {
+    [int y, int yjd, int leap] = gregorian_yjd(jd);
+
+    float res = solar_event(y);
+
+    if ((direction > 0) && (res < jd)) {
+      res = solar_event(y + 1);
+    } else if ((direction < 0) && (res >= jd)) {
+      res = solar_event(y - 1);
+    }
+
+    // Convert into an UTC timestamp.
+    return (int)((res - 2440588.0)*86400);
+  }
+
+  Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
+				     void|int(0..1) including)
+   {
+      if (!from) from=std_day();
+      int jd;
+      if (including) jd=(int)(from->julian_day());
+      else jd=(int)(from->end()->julian_day());
+      int utc = scan_jd(from->calendar(),jd-nd+1,1);
+      return (from->calendar()->Day)("unix_r",utc,from->ruleset())*nd;
+   }
+
+   //! Uses the virtual method @[scan_jd].
+   //! @seealso
+   //!   @[Event.previous]
+   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
+					  void|int(0..1) including)
+   {
+      if (!from) from=std_day();
+      int jd;
+      if (including) jd=(int)(from->end()->julian_day());
+      else jd=(floatp(from->julian_day())
+	       ?(int)floor(from->julian_day())
+	       :(from->julian_day()-1));
+      int utc = scan_jd(from->calendar(),jd+nd-1,-1);
+      return (from->calendar()->Day)("unix_r",utc,from->ruleset())*nd;
+   }
+}
 
 //! This class represents an easter.
 class Easter
