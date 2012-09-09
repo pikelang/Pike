@@ -876,14 +876,14 @@ class Solar(int|void event_type)
   inherit Day_Event;
 
   //! @array
-  //!   @item
+  //!   @elem array(float) 0..
   //!     @array
-  //!       @item 0 amplitude
-  //!         Days.
-  //!       @item 1 phase
-  //!         Radians @ year 2000.
-  //!       @item 2 period
-  //!         Radians/Year.
+  //!       @elem float 0
+  //!         Amplitude in days.
+  //!       @elem float 1
+  //!         Cosine phase in radians in year 2000.
+  //!       @elem float 2
+  //!         Period in radians/year.
   //!     @endarray
   //! @endarray
   protected constant periodic_table = ({
@@ -912,6 +912,88 @@ class Solar(int|void event_type)
     ({ 0.00009, 3.9746,   21.32991, }),
     ({ 0.00008, 0.2697,  294.24635, }),
   });
+
+  //! Polynomial terms for calculating the difference between TDT and UTC.
+  //!
+  //! The polynomials have been taken from NASA:
+  //! @url{http://eclipse.gsfc.nasa.gov/SEhelp/deltatpoly2004.html@}
+  //!
+  //! Each entry is an @expr{array(float)@}:
+  //! @array
+  //!   @elem float 0
+  //!     End year for the range.
+  //!   @elem float 1
+  //!     Year offset.
+  //!   @elem float 2
+  //!     Year divisor.
+  //!   @elem float 3..
+  //!     Polynomial factors with the highest exponent first.
+  //! @endarray
+  protected constant deltat_polynomials = ({
+    ({ -500.0, -1820.0, 100.0,
+       -20.0, 0.0, 32.0, }),
+    ({ 500.0, 0.0, 100.0,
+       0.0090316521, 0.022174192, -0.1798452,
+       -5.952053, 33.78311, -1014.41, 10583.6, }),
+    ({ 1600.0, -1000.0, 100.0,
+       0.0083572073, -0.005050998, -0.8503463,
+       0.319781, 71.23472, -556.01, 1574.2, }),
+    ({ 1700.0, -1600.0, 1.0,
+       0.000140272128, -0.01532, -0.9808, 120.0, }),
+    ({ 1800.0, -1700.0, 1.0,
+       0.000000851788756, 0.00013336, -0.0059285, 0.1603, 8.83, }),
+    ({ 1860.0, -1800.0, 1.0,
+       0.000000000875, -0.0000001699, 0.0000121272, -0.00037436,
+       0.0041116, 0.0068612, -0.332447, 13.72, }),
+    ({ 1900.0, -1860.0, 1.0,
+       0.000004288643, -0.0004473624, 0.01680668, -0.251754, 0.5737, 7.62, }),
+    ({ 1920.0, -1900.0, 1.0,
+       -0.000197, 0.0061966, -0.0598939, 1.494119, -2.79, }),
+    ({ 1941.0, -1920.0, 1.0,
+       0.0020936, -0.076100, 0.84493, 21.20, }),
+    ({ 1961.0, -1950.0, 1.0,
+       0.0003926188, 0.0042918455, 0.407, 29.07, }),
+    ({ 1986.0, -1975.0, 1.0,
+       0.001392758, 0.0038461538, 1.067, 45.45, }),
+    ({ 2005.0, -2000.0, 1.0,
+       0.00002373599, 0.000651814, 0.0017275, -0.060374, 0.3345, 63.86, }),
+    ({ 2050.0, -2000.0, 1.0,
+       0.005589, 0.32217, 62.92 }),
+    ({ 2150.0, -1820.0, 100.0,
+       32.0-185.724, 56.28, -20.0, }),
+    ({ Math.inf, -1820.0, 100.0,
+       32.0, 0.0, -20.0, }),
+  });
+
+  //! Terrestrial Dynamical Time difference from standard time.
+  //!
+  //! @returns
+  //!   Difference between TDT and UTC in seconds at the
+  //!   specified time.
+  int deltat(int unadjusted_utc)
+  {
+    // Approximation of the year. This ought to be good enough for
+    // most purposes given the uncertainty in the table values.
+    // 31556952 == 365.2425 * 24 * 60 * 60.
+    float y = 1970.0 + unadjusted_utc/31556952.0;
+
+    array(float) polynomial;
+    int l, c, h = sizeof(deltat_polynomials);
+    do {
+      c = (l + h)/2;
+      polynomial = deltat_polynomials[c];
+      if (y < polynomial[0]) h = c;
+      else l = c + 1;
+    } while (l < h);
+    float u = (y + polynomial[1])/polynomial[2];
+
+    float deltat = 0.0;
+    foreach(polynomial; int i; float factor) {
+      if (i < 3) continue;
+      deltat = deltat * u + factor;
+    }
+    return (int)round(deltat);
+  }
 
   //! Calculate the next event.
   //!
@@ -1035,7 +1117,8 @@ class Solar(int|void event_type)
     }
 
     // Convert into an UTC timestamp.
-    return (new_jd - 2440588)*86400 + (int)(offset * 86400.0);
+    int utc = (new_jd - 2440588)*86400 + (int)(offset * 86400.0);
+    return utc - deltat(utc);
   }
 
   Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
