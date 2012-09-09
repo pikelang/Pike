@@ -145,10 +145,21 @@ Event.Event make_event(string source)
       case "Equinox":
 	 if (sscanf(rule, "Equinox%*[ \t]%s", string type)) {
 	    switch(String.trim_all_whites(type)) {
-	    case "Vernal":
+	    case "Vernal": case "Northward":
 	       return Event.Solar(0);
-	    case "Autumnal":
+	    case "Autumnal": case "Southward":
 	       return Event.Solar(2);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
+      case "Solstice":
+	 if (sscanf(rule, "Solstice%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Summer": case "Northern":
+	       return Event.Solar(1);
+	    case "Winter": case "Southern":
+	       return Event.Solar(3);
 	    }
 	 }
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
