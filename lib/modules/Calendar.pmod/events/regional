@@ -90,7 +90,7 @@
 # Astronomical events
 
   Event "northward equinox"       - "Northward Equinox"       Equinox Vernal
-  Event "Southward equinox"       - "Southward Equinox"       Equinox Autumnal
+  Event "southward equinox"       - "Southward Equinox"       Equinox Autumnal
   Event "northern solstice"       - "Northern Solstice"       Solstice Northern
   Event "southern solstice"       - "Southern Solstice"       Solstice Southern
 
