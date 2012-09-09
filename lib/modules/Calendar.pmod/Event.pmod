@@ -858,7 +858,7 @@ class Weekday
    }
 }
 
-//! This class represents a solar event.
+//! This class represents a solar event as observed from Earth.
 //!
 //! The @[event_type] is one of
 //! @int
@@ -867,39 +867,95 @@ class Weekday
 //!   @value 1
 //!     Northern hemisphere summer solstice.
 //!   @value 2
-//!     Northern hemisphere spring equinox.
+//!     Northern hemisphere autumn equinox.
 //!   @value 3
-//!     Northern hemisphere summer solstice.
+//!     Northern hemisphere winter solstice.
 //! @endint
 class Solar(int|void event_type)
 {
   inherit Day_Event;
 
-  protected float solar_event(int y)
-  {
-    float res;
+  //! @array
+  //!   @item
+  //!     @array
+  //!       @item 0 amplitude
+  //!         Days.
+  //!       @item 1 phase
+  //!         Radians @ year 2000.
+  //!       @item 2 period
+  //!         Radians/Year.
+  //!     @endarray
+  //! @endarray
+  protected constant periodic_table = ({
+    ({ 0.00485, 5.67162,   33.757041, }),
+    ({ 0.00203, 5.88577,  575.338485, }),
+    ({ 0.00199, 5.97042,    0.352312, }),
+    ({ 0.00182, 0.48607, 7771.377155, }),
+    ({ 0.00156, 1.27653,  786.041946, }),
+    ({ 0.00136, 2.99359,  393.020973, }),
+    ({ 0.00077, 3.8841, 1150.67697, }),
+    ({ 0.00074, 5.1787,   52.96910, }),
+    ({ 0.00070, 4.2513,  157.73436, }),
+    ({ 0.00058, 2.0911,  588.49268, }),
+    ({ 0.00052, 5.1866,    2.62983, }),
+    ({ 0.00050, 0.3669,   39.81490, }),
+    ({ 0.00045, 4.3204,  522.36940, }),
+    ({ 0.00044, 5.6749,  550.75533, }),
+    ({ 0.00029, 1.0634,   77.55226, }),
+    ({ 0.00018, 2.7074, 1179.06290, }),	// NB: Some have amplitude 28 here.
+    ({ 0.00017, 5.0403,   79.62981, }),
+    ({ 0.00016, 3.4565, 1097.70789, }),
+    ({ 0.00014, 3.4865,  548.67778, }),
+    ({ 0.00012, 1.6649,  254.43145, }),
+    ({ 0.00012, 5.0110,  557.31428, }),
+    ({ 0.00012, 5.5992,  606.97767, }),
+    ({ 0.00009, 3.9746,   21.32991, }),
+    ({ 0.00008, 0.2697,  294.24635, }),
+  });
 
+  //! Calculate the next event.
+  //!
+  //! Based on Meeus Astronomical Algorithms Chapter 27.
+  array(int|float) solar_event(int y)
+  {
+    int jd;
+    float offset;
+
+    // First calculate an initial guess for the Julian day.
     if (y < 1000) {
       float yy = y/1000.0;
       float y2 = yy*yy;
       float y3 = y2*yy;
       float y4 = y3*yy;
 
+      // 4th degree polynomial around year 2BC.
       switch (event_type) {
       case 0:
-	res = 1721139.29189 + 365242.13740 * yy + 0.06134 * y2 -
+	offset = 365242 * yy;
+	jd = 1721139 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.29189 + 0.13740 * yy + 0.06134 * y2 -
 	  0.00111 * y3 - 0.00071 * y4;
 	break;
       case 1:
-	res = 1721233.25401 + 365241.72562 * yy + 0.05323 * y2 -
+	offset = 365241 * yy;
+	jd = 1721233 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.25401 + 0.72562 * yy + 0.05323 * y2 -
 	  0.00907 * y3 - 0.00025 * y4;
 	break;
       case 2:
-	res = 1721325.70455 + 365242.49558 * yy + 0.11677 * y2 -
+	offset = 365242 * yy;
+	jd = 1721325 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.70455 + 0.49558 * yy + 0.11677 * y2 -
 	  0.00297 * y3 - 0.00074 * y4;
 	break;
       case 3:
-	res = 1721414.39987 + 365242.88257 * yy + 0.00769 * y2 -
+	offset = 365242 * yy;
+	jd = 1721414 + (int)floor(offset);
+	offset -= floor(offset);
+        offset += 0.39987 + 0.88257 * yy + 0.00769 * y2 -
 	  0.00933 * y3 - 0.00006 * y4;
 	break;
       }
@@ -909,59 +965,59 @@ class Solar(int|void event_type)
       float y3 = y2*yy;
       float y4 = y3*yy;
 
+      // 4th degree polynomial around year 2000.
       switch (event_type) {
       case 0:
-	res = 2451623.80984 + 365242.37404 * yy + 0.05169 * y2 -
+	offset = 365242 * yy;
+	jd = 2451623 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.80984 + 0.37404 * yy + 0.05169 * y2 -
 	  0.00411 * y3 - 0.00057 * y4;
 	break;
       case 1:
-	res = 2451716.56767 + 365241.62603 * yy + 0.00325 * y2 -
+	offset = 365241 * yy;
+	jd = 2451716 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.56767 + 0.62603 * yy + 0.00325 * y2 -
 	  0.00888 * y3 - 0.00030 * y4;
 	break;
       case 2:
-	res = 2451810.21715 + 365242.01767 * yy + 0.11575 * y2 -
+	offset = 365242 * yy;
+	jd = 2451810 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.21715 + 0.01767 * yy + 0.11575 * y2 -
 	  0.00337 * y3 - 0.00078 * y4;
 	break;
       case 3:
-	res = 2451900.05952 + 365242.74049 * yy + 0.06223 * y2 -
+	offset = 365242 * yy;
+	jd = 2451900 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.05952 + 0.74049 * yy + 0.06223 * y2 -
 	  0.00823 * y3 - 0.00032 * y4;
 	break;
       }
     }
 
-    float delta_y = (res - 2451545.0) / 36525;
+    float delta_y = ((jd - 2451545) + offset) / 36525.0;
 
-    float omega = 628.30759 * delta_y - 0.04311;
-    float l = 1.0 + 0.0334 * cos(omega) + cos(2.0 * omega);
+    // Omega is in radians.
+    float omega = 628.30759 * delta_y - 0.0431096;
+    float l = 1.0 + 0.0334 * cos(omega) + 0.0007 * cos(2.0 * omega);
 
-    float S =
-      0.00485 * cos(5.6716 + 2.3411 * delta_y) +
-      0.00203 * cos(5.8858 + 3.5686 * delta_y) +
-      0.00199 * cos(5.9704 + 0.3523 * delta_y) +
-      0.00182 * cos(0.4860 + 5.3601 * delta_y) +
-      0.00156 * cos(1.2765 + 0.6438 * delta_y) +
-      0.00136 * cos(2.9936 + 3.4635 * delta_y) +
-      0.00077 * cos(3.8841 + 0.8540 * delta_y) +
-      0.00074 * cos(5.1787 + 2.7036 * delta_y) +
-      0.00070 * cos(4.2513 + 0.6547 * delta_y) +
-      0.00058 * cos(2.0911 + 4.1564 * delta_y) +
-      0.00052 * cos(5.1866 + 2.6298 * delta_y) +
-      0.00050 * cos(0.3669 + 2.1158 * delta_y) +
-      0.00045 * cos(4.3204 + 0.8650 * delta_y) +
-      0.00044 * cos(5.6749 + 4.1182 * delta_y) +
-      0.00029 * cos(1.0634 + 2.1540 * delta_y) +
-      0.00028 * cos(2.7074 + 4.1072 * delta_y) +
-      0.00017 * cos(5.0403 + 4.2316 * delta_y) +
-      0.00016 * cos(3.4565 + 4.4336 * delta_y) +
-      0.00014 * cos(3.4865 + 2.0407 * delta_y) +
-      0.00012 * cos(1.6649 + 3.1040 * delta_y) +
-      0.00012 * cos(5.0110 + 4.3940 * delta_y) +
-      0.00012 * cos(5.5992 + 3.7919 * delta_y) +
-      0.00009 * cos(3.9746 + 2.4804 * delta_y) +
-      0.00008 * cos(0.2697 + 5.2198 * delta_y);
+    // Adjusted to radians.
+    float S = 0.0;
+    foreach(periodic_table; int i; array(float) fun) {
+      S += fun[0] * cos(fun[1] + fun[2] * delta_y);
+    }
 
-    res += S / l;
-    return res;
+    offset += S / l;
+
+    // Adjust for Meeus starting julian days at 12:00 UTC.
+    offset += 0.5;
+
+    jd += (int)floor(offset);
+    offset -= (int)floor(offset);
+    return ({ jd, offset });
   }
 
   //! @note
@@ -970,16 +1026,16 @@ class Solar(int|void event_type)
   {
     [int y, int yjd, int leap] = gregorian_yjd(jd);
 
-    float res = solar_event(y);
+    [int new_jd, float offset] = solar_event(y);
 
-    if ((direction > 0) && (res < jd)) {
-      res = solar_event(y + 1);
-    } else if ((direction < 0) && (res >= jd)) {
-      res = solar_event(y - 1);
+    if ((direction > 0) && (new_jd < jd)) {
+      [new_jd, offset] = solar_event(y + 1);
+    } else if ((direction < 0) && (new_jd >= jd)) {
+      [int new_jd, offset] = solar_event(y - 1);
     }
 
     // Convert into an UTC timestamp.
-    return (int)((res - 2440588.0)*86400);
+    return (new_jd - 2440588)*86400 + (int)(offset * 86400.0);
   }
 
   Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
