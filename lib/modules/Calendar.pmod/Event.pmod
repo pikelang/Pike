@@ -1113,7 +1113,7 @@ class Solar(int|void event_type)
     if ((direction > 0) && (new_jd < jd)) {
       [new_jd, offset] = solar_event(y + 1);
     } else if ((direction < 0) && (new_jd >= jd)) {
-      [int new_jd, offset] = solar_event(y - 1);
+      [new_jd, offset] = solar_event(y - 1);
     }
 
     // Convert into an UTC timestamp.
