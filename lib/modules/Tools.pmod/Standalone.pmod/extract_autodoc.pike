@@ -708,13 +708,7 @@ string extract(string filename, string imgdest,
   if (err) {
     if (!verbosity)
       ;
-    else if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
-      werror("%O\n", err[0]);
-    else if (objectp(err) && _typeof(err) <= Tools.AutoDoc.AutoDocError)
-      werror("%O\n", err);
-    else
-      werror("%s\n", describe_backtrace(err));
-
+    werror("\nERROR: %s\n", describe_error(err));
     // return 0;
   }
 
