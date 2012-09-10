@@ -177,6 +177,9 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     werror("Extracting from %s\n", srcdir);
 
   Stdio.Stat st;
+  if(file_stat(srcdir+"/.noautodoc"))
+    return;
+
   if(st = file_stat(srcdir+"/.autodoc")) {
     // Note .autodoc files are space-separated to allow for namespaces like
     //      "7.0::".
