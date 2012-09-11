@@ -250,7 +250,8 @@ if test x$with_oracle = xyes; then
     else
       if test -f "$oracle_lib_dir/libcommon8.a" -o \
               -f "$oracle_lib_dir/libcommon9.a" -o \
-              -f "$oracle_lib_dir/libcommon10.a"; then
+              -f "$oracle_lib_dir/libcommon10.a" -o \
+              -f "$oracle_lib_dir/libcommon11.a"; then
         ORACLE_LIBS="-lclntsh"
       else
         if test -f "$oracle_lib_dir/libcore4.a"; then
