@@ -165,7 +165,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   }
 }
 
-void o_index(void)
+PMOD_EXPORT void o_index(void)
 {
   struct svalue s;
   index_no_free(&s,sp-2,sp-1);
