@@ -769,6 +769,11 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
 PMOD_EXPORT int svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);
+
+static INLINE int is_nidentical(const struct svalue * a, const struct svalue * b) {
+  return TYPEOF(*a) != T_OBJECT && TYPEOF(*b) != T_OBJECT && a->u.refs != b->u.refs;
+}
+
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int low_is_equal(const struct svalue *a,
