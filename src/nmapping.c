@@ -1,328 +1,320 @@
 #include "svalue.h"
 #include "gjalloc.h"
+#include "pike_macros.h"
 
-static struct block_allocator keypair_allocator
-    = BA_INIT(sizeof(struct ht_keypair), 1024);
+// these could probably use the same allocator
+static struct block_allocator mapping_allocator = BA_INIT(sizeof(struct mapping), 256),
+			      iter_allocator = BA_INIT(sizeof(struct mapping_iterator), 128);
+
+static INLINE int keypair_deleted(const struct keypair * k) {
+    return IS_UNDEFINED(&k->key);
+}
+
+void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data) {
+    struct keypair * start = (struct keypair*)_start,
+		   * stop  = (struct keypair*)_stop;
+    struct mapping m * = (struct mapping *)data;
+    struct mapping_iterator * it;
+    unsigned INT32 i;
+
+    for (; start < stop; start++) {
+	ba_simple_rel_pointer(&start->next);
+	if (keypair_deleted(start)) {
+	    ba_simple_rel_pointer(&start->u.next);
+	}
+    }
+
+    ba_simple_rel_pointer(&m->trash);
+
+    for (it = m->first_iterator; it; it = it->next) {
+	ba_simple_rel_pointer(&it->u.current);
+    }
+
+    for (i = 0; i <= m->hash_mask; i++) {
+	ba_simple_rel_pointer(m->table + i);
+    }
+}
+
+PMOD_EXPORT void really_free_mapping(struct mapping *m) {
+}
 
 ATTRIBUTE((malloc))
-static INLINE struct ht_keypair * ht_allocate() {
-    struct ht_keypair * k = (struct ht_keypair *)ba_alloc(&keypair_allocator);
+PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
+    struct mapping * m = ba_alloc(&mapping_allocator);
+    unsigned INT32 t = (1 << INITIAL_MAGNITUDE);
+    m->size = 0;
+    
+    while (size > t) t *= 2;
+
+    m->hash_mask = t - 1;
+    ba_init_local(&m->allocator, sizeof(struct keypair), t, 256, mapping_rel_simple, m);
+    m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
+    m->trash = NULL;
+    m->first_iterator = NULL;
+
+    return m;
 }
 
-static INLINE void ht_free(struct ht_keypair * k) {
-    free_svalue(k->key); 
-    free_svalue(k->value); 
-    ba_free(&keypair_allocator, k);
+static INLINE void free_keypair(void * _start, void * _stop, void * d) {
+    struct keypair * start = (struct keypair*)_start,
+		   * stop = (struct keypair*)_stop;
+
+    for (;start < stop; start++) {
+	if (keypair_deleted(start)) continue;
+	free_svalue(start->key);
+	free_svalue(start->u.val);
+    }
 }
 
-INLINE void ht_reset_iterator(struct hash_iterator * it) {
-    // detect grow/shrink. on grow, hash_mask needs to be 
-    // not so easy
+PMOD_EXPORT void do_free_mapping(struct mapping *m) {
+#ifdef DEBUG
+    if (m->first_iterator) Pike_fatal("found iterator in free. refcount seems wrong.\n");
+#endif
+    free(m->table);
+    ba_walk_local(&m->allocator, free_keypair, NULL);
+    ba_ldestroy(&m->allocator);
+    ba_free(&mapping_allocator, m);
 }
 
-/* 
- * Chains can be frozen. If they are, namely when an iterator is walking
- * through them, or during calls to code that can reenter, elements are
- * not deleted but rather flagged as deleted. Furthermore, chains are not
- * split until the last iterator leaves them (its the one that does it).
+static INLINE int reverse_cmpt(unsigned INT32 a, unsigned INT32 b) {
+    const unsigned INT32 t = a ^ b;
+
+    if (t) {
+	const unsigned INT32 m = (1U << __builtin_ctz(t));
+
+	if (a&m) return 1;
+	return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * this is called only when no iterators are present. this also means that
+ * code that reenters should not call this. this function also takes care
+ * of shrinking and growing the mapping, checking for need for defragmentation
+ * and so on.
  */
+static void low_mapping_cleanup(struct mapping * m) {
+    struct keypair * k = m->trash;
+    m->trash = NULL;
 
-static INLINE void ht_freeze_bucket(struct ht_bucket * b) {
-    ++b->freeze_count;
-}
-
-static INLINE void ht_bucket_insert(struct ht_bucket * b,
-				    struct ht_keypair * k) {
-    k->next = b->u.k;
-    b->u.k = k;
-}
-
-static INLINE void ht_unfreeze_bucket(struct hash_table * h,
-				      const uint32_t n) {
-    const struct ht_bucket b = h->table[n];
-    // TODO: flag the buckets which a delete happened on
-    // and check if it needs to be extended
-    if (!(--b.freeze_count & ~HT_FLAG_MASK) && b.freeze_count & HT_FLAG_MASK) {
-	struct ht_keypair ** k = &(b.k);
-	struct ht_keypair * tmp;
-	while (*k) {
-	    if ((*k)->deleted) {
-		tmp = *k;
-		*k = (*k)->next;
-		ht_free(tmp);
-		continue;
-	    }
-	    if (*k->hval & h->hash_mask != n) {
-		/* we have to split this one off */
-		tmp = *k;
-		*k = &((*k)->next);
-		ht_bucket_insert(h->table + (*k->hval & h->hash_mask),
-				 tmp);
-		continue;
-	    }
-	    k = &((*k)->next);
-	}
-
-	/* possibly split the bucket */
+    while (k) {
+	struct keypair * t = k->u.next;
+	ba_lfree(&m->allocator, k);
+	k = t;
     }
 }
 
-INLINE void ht_iterate_bucket(struct hash_iterator * it) {
-    if (it->current) {
-	it->current = it->current->next;
-    } else {
-	it->current = ht_get_bucket(it->h, it->n);
-    }
-
-    if (it->hash_mask > it->h->hash_mask) {
-	/* the table has been shrunken, so there might be extra entries, that
-	 * do not belong to the bucket we are walking currently */
-	while (it->current && it->n != (it->current->hval & it->hash_mask)) {
-	    it->current = it->current->next;
-	}
-    } else if (it->hash_mask > it->h->hash_mask) {
-	/* the table has been grown, so we have to continue to the next
-	 * bucket until we hit the table size limit */
-	it->n += it->hash_mask + 1;
-	if (it->n > it->h->hash_mask) {
-	    it->current = NULL;
-	}
-    }
-}
-
-struct ht_keypair * ht_iterate(struct hash_iterator * it, uint32_t steps) {
-    if (it->current) {
-	if (it->generation != it->h->generation)
-	    ht_reset_iterator(it);
-redo:
-	ht_iterate_bucket(it);
-	if (!it->current) {
-	    size_t n = it->n;
-	    for (; n <= it->h->hash_mask;) {
-	    }
-	    do {
-		if (++it->n > it->hash_mask) return NULL; /* done */
-		it->current = ht_get_bucket(it->h, it->n);
-	    } while(!it->current);
-	    goto redo;
-	}
-
-	if (--steps) goto redo;
-    }
-    return it->current;
-}
-
-static INLINE struct ht_bucket * ht_get_bucket(const struct hash_table * h,
-					       const uint32_t hval) {
-    const struct ht_bucket * b = h->table[hval & h->hash_mask];
-
-    if (b->freeze_count & HT_FLAG_REL) {
-	return b->u.b;
-    }
-    return b;
-}
-
-void ht_init_iterator(struct hash_iterator * it, const struct hash_table * h) {
-    uint32_t i;
-    it->h = h;
-    it->generation = h->generation;
-    it->hash_mask = h->hash_mask;
-    it->current = NULL;
-    for (i = 0; i <= it->hash_mask; i++) {
-	if (h->table[i].u.k) {
-	    it->current = h->table[i].u.k;
-	    it->n = i;
-	    break;
-	}
-    }
-}
-
-/* the returned pointer is only ok to use until the next mapping operation */
-static INLINE struct svalue * ht_lookup(const struct hash_table * h,
-					const struct svalue * key) {
-    const uint32_t hval = HT_HASH(key);
-    struct svalue * ret = NULL;
+PMOD_EXPORT void mapping_fix_type_field(struct mapping *m) {}
+PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags) {}
+PMOD_EXPORT void low_mapping_insert(struct mapping *m,
+				    const struct svalue *key,
+				    const struct svalue *val,
+				    int overwrite) {
+    unsigned INT32 hval = hash_svalue(key);
+    struct keypair ** t, * k;
+    struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
-    struct ht_bucket * b = ht_get_bucket(h, hval);
-    struct ht_keypair * pair = b->u.k;
 
-    for (;pair && (pair->hval < hval); pair = pair->next) {}
+    /* this is just for optimization */
+    ba_lreserve(&m->allocator, 1);
 
-    for (;pair && (pair->hval == hval); pair = pair->next) {
+    t = = m->table + hval; 
 
-	if (HT_IS_NEQ(pair->key, *key) || pair->deleted) continue;
+    for (;*t; t = &(*t->next)) {
+	int cmp = reverse_cmp(hval, (*t)->hval);
+	k = *t;
+	if (cmp == 1) continue;
+	if (cmp == -1) break;
+	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
 
-	if (HT_IS_IDENTICAL(pair->key, *key)) {
-	    ret = &(pair->value);
-	    break;
-	}
-
-	if (!frozen) {
-	    frozen = 1;
-	    ht_freeze_bucket(b);
-	}
-	
-
-	if (HT_IS_EQ(pair->key, *key)) {
-	    ret = &(pair->value);
-	}
-    }
-
-    if (frozen) ht_unfreeze_bucket(b);
-
-    return ret;
-}
-
-static INLINE void ht_split_bucket(struct ht_bucket * src,
-				   struct ht_bucket * dst) {
-    /* iterators present in the bucket, so we cannot split it, yet */
-    if (src->freeze_count & HT_FLAG_REL) {
-	*dst = *src;
-    } else if (src->freeze_count & ~HT_FLAG_MASK) {
-	src->freeze_count |= HT_FLAG_GROW;
-	dst->freeze_count = HT_FLAG_REL;
-	dst->u.b = src;
-    } else {
-	uint32_t mask = h->hash_mask + 1;
-	struct ht_keypair ** k = &(src->u.k);
-	struct ht_keypair * tmp;
-	// do the actual split
-	while (*k) {
-	    /* belongs into the next bucket */
-	    if ((*k)->hval & mask) {
-		tmp = *k;
-		*k = (*k)->next;
-		ht_bucket_insert(dst, tmp);
-		continue;
+	if (!is_identical(&k->key, key)) {
+	    int eq;
+	    if (!frozen) {
+		DOUBLELINK(m->first_iterator, (&it));
+		frozen = 1;
 	    }
-	    k = &((*k)->next);
+	    if (t != m->table + hval)
+		it.u.slot = t;
+
+	    eq = is_eq(&k->key, key);
+	    if (it.u.slot) {
+		t = it.u.slot;
+		k = *t;
+	    }
+	    if (!eq || keypair_deleted(k)) continue;
 	}
+
+	if (overwrite) {
+	    if (overwrite==2) {
+		assign_svalue(&k->key, key);
+	    }
+	    assign_svalue(&k->u.val, val);
+	}
+
+	goto unfreeze;
+    }
+
+    k = ba_lalloc(&m->allocator);
+    k->next = *t;
+    k->hval = hval;
+    assign_svalue_no_free(&k->key, key);
+    assign_svalue_no_free(&k->u.val, val);
+    *t = k;
+
+unfreeze:
+    if (frozen) {
+	DOUBLEUNLINK(m->first_iterator, (&it));
+	if (!m->first_iterator)
+	    low_mapping_cleanup(m);
     }
 }
 
-static INLINE void ht_merge_bucket(struct ht_bucket * one,
-				   struct ht_bucket * two) {
-    struct ht_keypair ** b;
-    if (two->freeze_count & HT_FLAG_REL) {
-	one->freeze_count ^= HT_FLAG_GROW;
+PMOD_EXPORT void mapping_insert(struct mapping *m,
+				const struct svalue *key,
+				const struct svalue *val) {
+    if (IS_UNDEFINED(key)) {
+	Pike_error("undefined is not a proper key.\n");
+    }
+    /* TODO: would 2 not be better? */
+    low_mapping_insert(m, key, val, 1);
+}
+
+static struct keypair * really_low_mapping_lookup(struct mapping *m, const struct svalue * key) {
+    unsigned INT32 hval = hash_svalue(key);
+    struct keypair ** t, * k;
+    struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
+    int frozen = 0;
+
+    t = = m->table + hval; 
+
+    for (;*t; t = &(*t->next)) {
+	int cmp = reverse_cmp(hval, (*t)->hval);
+	k = *t;
+	if (cmp == 1) continue;
+	if (cmp == -1) break;
+	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
+
+	if (!is_identical(&k->key, key)) {
+	    int eq;
+	    if (!frozen) {
+		DOUBLELINK(m->first_iterator, (&it));
+		frozen = 1;
+	    }
+	    if (t != m->table + hval)
+		it.u.slot = t;
+
+	    eq = is_eq(&k->key, key);
+	    if (it.u.slot) {
+		t = it.u.slot;
+		k = *t;
+	    }
+	    if (!eq || keypair_deleted(k)) continue;
+	}
+
+	goto unfreeze;
+    }
+    k = NULL;
+
+unfreeze:
+    if (frozen) {
+	DOUBLEUNLINK(m->first_iterator, (&it));
+	if (!m->first_iterator)
+	    low_mapping_cleanup(m);
+    }
+
+    return k;
+}
+
+PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
+				     const struct svalue *key,
+				     TYPE_T t) {
+    struct keypair * k = really_low_mapping_lookup(m, key);
+    return &k->val.u;
+}
+
+PMOD_EXPORT void map_delete_no_free(struct mapping *m,
+			const struct svalue *key,
+			struct svalue *to) {
+    unsigned INT32 hval = hash_svalue(key);
+    struct keypair ** t, * k;
+    struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
+    int frozen = 0;
+
+    t = = m->table + hval; 
+
+    for (;*t; t = &(*t->next)) {
+	int cmp = reverse_cmp(hval, (*t)->hval);
+	k = *t;
+	if (cmp == 1) continue;
+	if (cmp == -1) break;
+	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
+
+	if (!is_identical(&k->key, key)) {
+	    int eq;
+	    if (!frozen) {
+		DOUBLELINK(m->first_iterator, (&it));
+		frozen = 1;
+	    }
+	    if (t != m->table + hval)
+		it.u.slot = t;
+
+	    eq = is_eq(&k->key, key);
+	    if (it.u.slot) {
+		t = it.u.slot;
+		k = *t;
+	    }
+	    if (!eq || keypair_deleted(k)) continue;
+	}
+
+	goto unfreeze;
+    }
+    k = NULL;
+
+unfreeze:
+    if (frozen) {
+	DOUBLEUNLINK(m->first_iterator, (&it));
+	if (!m->first_iterator)
+	    low_mapping_cleanup(m);
+    }
+
+    if (!k) {
+	if (to) {
+	    SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
+	}
 	return;
     }
-    one->freeze_count += two->freeze_count & (~HT_FLAG_MASK);
 
-    if (!two->u.k) return;
-    // walk to the end of the chain
-    b = &(one->u.k);
+    free_svalue(&k->key);
 
-    while (*b) b = &((*b)->next);
-    *b = two->u.k;
-}
-
-static void ht_grow(struct hash_table * h) {
-    struct ht_bucket ** tmp;
-    uint32_t i, end = h->hash_mask + 1;
-    tmp = (struct ht_bucket**)
-	    realloc(h->table, (end*2)*sizeof(struct ht_bucket));
-    if (!tmp) {
-	// fail
-    }
-    memset(tmp+end, 0, end * sizeof(struct ht_bucket));
-    h->table = tmp;
-    // increase generation counter, since grows need to be noticed
-    // by iterators
-    for (i = 0; i < end; i++) {
-	ht_split_bucket(h->table[i], h->table[end+i]);	
-    }
-
-    h->generation++;
-    h->hash_mask = (end << 1) - 1;
-}
-
-static void ht_shrink(struct hash_table * h) {
-    struct ht_bucket ** tmp;
-
-    uint32_t i, end = (h->hash_mask >> 1) + 1;
-
-    for (i = 0; i < end; i++) {
-	ht_merge_bucket(h->table[i], h->table[i+end]);
-    }
-
-    tmp = (struct ht_bucket**)
-	    realloc(h->table, end * sizeof(struct ht_bucket));
-    if (!tmp) {
-	// do something
-    }
-    h->table = tmp;
-    h->hash_mask = end-1;
-}
-
-/* TODO 
- * we can keep them sorted by hval for free, since we have to walk the chain
- * anyhow. we can simply keep the slot we had to insert into
- *
- * this makes grow much more efficient, since we can split the chain at a
- * predefined spot.
- *
- */
-PMOD_EXPORT void ht_insert(struct hash_table * h,
-			   const struct svalue * key,
-			   const struct svalue * val) {
-    const uint32_t hval = HT_HASH(key);
-    const struct ht_bucket * b = ht_get_bucket(h, hval);
-    struct ht_keypair ** t = &(b->u.k);
-    struct ht_keypair ** t = &(b->u.k);
-    int frozen = 0;
-    /* first look if the key is alreay in */
-    
-    while (*t && (*t)->hval < hval) {
-	t = &((*t)->next);
-    }
-
-    dst = t;
-
-    while (*t && (*t)->hval == hval) {
-	const struct ht_keypair * k = *t;
-
-	if (HT_IS_NEQ(*key, k->key)) continue;
-
-	if (HT_IS_IDENTICAL(*key, k->key)) {
-	    dst = t;
-	    goto insert_into;
-	}
-	// do expensive check
-	if (!frozen) {
-	    frozen = 1;
-	    ht_freeze_bucket(b);
-	}
-	if (HT_IS_EQ(*key, k->key)) {
-	    dst = t;
-	    goto insert_into;
-	}
-    }
-
-    if (1) {
-	/* the bucket might have changed ? */
-	//b = ht_get_bucket(h, hval);
-	h->size++;
-	k = ht_allocate();
-	k->hval = hval;
-	assign_svalue_no_free(&(k->val), val);
-	assign_svalue_no_free(&(k->key), key);
-	k->next = *dst;
-	*dst = k;
+    if (to) {
+	move_svalue(to, &k->u.val);
     } else {
-insert_into:
-	assign_svalue(&(k->val), val);
-	assign_svalue(&(k->key), key);
-	if (!k->deleted) h->size++;
+	free_svalue(&k->u.key);
     }
 
-    k->deleted = 0;
+    *t = k->next;
 
-    if (frozen) {
-	ht_unfreeze_bucket(b);
+    if (m->first_iterator) {
+	k->u.next = m->trash;
+	m->trash = k;
+    } else {
+	ba_lfree(&m->allocator, k);
     }
 }
 
-PMOD_EXPORT void ht_delete(struct hash_table * h,
-			   const struct svalue * key) {
+PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
+PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
+					      const struct svalue *key) {
+    struct keypair * k = really_low_mapping_lookup(m, key);
+    return &k->val;
 }
+PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
+                                                     struct pike_string *p);
+PMOD_EXPORT void mapping_string_insert(struct mapping *m,
+                                       struct pike_string *p,
+                                       const struct svalue *val);
+PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
+				  struct pike_string *p,
+				  struct pike_string *val);
