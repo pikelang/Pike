@@ -82,7 +82,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     struct mapping * m = ba_alloc(&mapping_allocator);
     unsigned INT32 t = (1 << INITIAL_MAGNITUDE);
     m->size = 0;
-    
+
     while (size > t) t *= 2;
 
     m->hash_mask = t - 1;
