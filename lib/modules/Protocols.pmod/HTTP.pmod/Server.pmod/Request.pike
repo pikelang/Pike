@@ -703,7 +703,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    }
 
    send_pos=0;
-   my_fd->set_nonblocking(send_read,send_write,send_close);
    send_stop=strlen(header)+m->size;
 
    if (m->file)
@@ -718,6 +717,7 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_buf=send_buf[..send_stop-1];
 
    call_out(send_timeout,send_timeout_delay);
+   my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
 void finish(int clean)
