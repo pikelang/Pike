@@ -159,7 +159,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     /* this is just for optimization */
     ba_lreserve(&m->allocator, 1);
 
-    t = = m->table + hval & m->hash_mask;
+    t = m->table + hval & m->hash_mask;
 
     for (;*t; t = &(*t->next)) {
 	int cmp = reverse_cmp(hval, (*t)->hval);
@@ -223,7 +223,7 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
 
-    t = = m->table + hval & m->hash_mask;
+    t = m->table + hval & m->hash_mask;
 
     for (;*t; t = &(*t->next)) {
 	int cmp = reverse_cmp(hval, (*t)->hval);
@@ -275,7 +275,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
 
-    t = = m->table + hval & m->hash_mask;
+    t = m->table + hval & m->hash_mask;
 
     for (;*t; t = &(*t->next)) {
 	int cmp = reverse_cmp(hval, (*t)->hval);
