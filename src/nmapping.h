@@ -36,3 +36,46 @@ struct mapping_iterator {
     unsigned INT32 hash_mask;
     unsigned INT32 n;
 }
+
+static INLINE void mapping_it_init(struct mapping_iterator * it, struct mapping * m) {
+    DOUBLELINK(m->first_iterator, it);
+    it->u.current = NULL;
+    it->m = m;
+    it->hash_mask = m->hash_mask;
+    it->n = (unsigned INT32)-1;
+}
+
+static INLINE void mapping_it_exit(struct mapping_iterator * it) {
+    struct mapping * m = it->m;
+
+    DOUBLEUNLINK(m->first_iterator, it);
+
+    if (!m->first_iterator)
+	low_mapping_cleanup(m);
+}
+
+static INLINE int mapping_it_next(struct mapping_iterator * it,
+				  struct keypair ** slot) {
+    const struct keypair * k = it->u.current;
+    const struct mapping * m = it->m;
+    unsigned INT32 i = it->n;
+
+    if (it->hash_mask == m->hash_mask) {
+	return mapping_it_next_eq(it, slot);
+    } else if (it->hash_mask < m->hash_mask) {
+	/* mapping has grown in the meantime */
+	return mapping_it_next_grown(it, slot);
+    } else {
+	/* mapping has been shrunk in the meantime */
+	return mapping_it_next_shrunk(it, slot);
+    }
+}
+
+/* set iterator to continue iteration from k
+ */
+static INLINE void mapping_it_set(struct mapping_iterator * it, const struct keypair * k) {
+    const struct mapping * m = it->m;
+    it->u.current = k;
+    it->hash_mask = m->hash_mask;
+    it->n = m->hash_mask & k->hval;
+}

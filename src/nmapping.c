@@ -10,6 +10,45 @@ static INLINE int keypair_deleted(const struct keypair * k) {
     return IS_UNDEFINED(&k->key);
 }
 
+PMOD_EXPORT int mapping_it_next_eq(struct mapping_iterator * it, struct keypair ** slot) {
+    const struct keypair * k = it->u.current;
+    const struct mapping * m = it->m;
+    unsigned INT32 i = it->n;
+
+    if (k) {
+	k = k->next;
+    }
+
+    while (!k) {
+	if (i == it->hash_mask) break;
+	i++;
+	k = m->table[i];
+    }
+
+    it->n = i;
+    *slot = it->u.current = k;
+    return !!k;
+}
+
+/*
+ * the mapping has been grown since iterator creation. it means that it->has_mask is smaller
+ * than the mapping hash_mask. this effectively means that instead of increasing n by one and going
+ * to the next slot, we have to jump by it->hash_mask until we have handled all slots that belong
+ * to our it->n
+ */
+PMOD_EXPORT int mapping_it_next_grown(struct mapping_iterator * it, struct keypair ** slot) {
+    return 1;
+}
+
+/* the mapping has shrunk since iterator creation. this means that several original buckets have
+ * been merged into the same bucket. we have to manually filter the ones that do not belong to our
+ * n. otherwise it works very similar to the trivial case.
+ */
+
+PMOD_EXPORT int mapping_it_next_shrunk(struct mapping_iterator * it, struct keypair ** slot) {
+    return 1;
+}
+
 void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data) {
     struct keypair * start = (struct keypair*)_start,
 		   * stop  = (struct keypair*)_stop;
@@ -95,7 +134,7 @@ static INLINE int reverse_cmpt(unsigned INT32 a, unsigned INT32 b) {
  * of shrinking and growing the mapping, checking for need for defragmentation
  * and so on.
  */
-static void low_mapping_cleanup(struct mapping * m) {
+PMOD_EXPORT void low_mapping_cleanup(struct mapping * m) {
     struct keypair * k = m->trash;
     m->trash = NULL;
 
@@ -164,11 +203,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     *t = k;
 
 unfreeze:
-    if (frozen) {
-	DOUBLEUNLINK(m->first_iterator, (&it));
-	if (!m->first_iterator)
-	    low_mapping_cleanup(m);
-    }
+    if (frozen)
+	mapping_it_exit(&it);
 }
 
 PMOD_EXPORT void mapping_insert(struct mapping *m,
@@ -218,11 +254,8 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
     k = NULL;
 
 unfreeze:
-    if (frozen) {
-	DOUBLEUNLINK(m->first_iterator, (&it));
-	if (!m->first_iterator)
-	    low_mapping_cleanup(m);
-    }
+    if (frozen)
+	mapping_it_exit(&it);
 
     return k;
 }
@@ -273,11 +306,8 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     k = NULL;
 
 unfreeze:
-    if (frozen) {
-	DOUBLEUNLINK(m->first_iterator, (&it));
-	if (!m->first_iterator)
-	    low_mapping_cleanup(m);
-    }
+    if (frozen)
+	mapping_it_exit(&it);
 
     if (!k) {
 	if (to) {
