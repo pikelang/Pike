@@ -377,7 +377,10 @@ static void f_make_http_headers( INT32 args )
 static void f_http_decode_string(INT32 args)
 /*! @decl string http_decode_string(string encoded)
  *!
- *! Decodes an http transport-encoded string.
+ *! Decodes an http transport-encoded string. Knows about %XX and
+ *! %uXXXX syntax. Treats %UXXXX as %uXXXX. It will treat '+' as '+'
+ *! and not ' ', so form decoding needs to replace that in a second
+ *! step.
  */
 {
    int proc;
