@@ -37,7 +37,30 @@ PMOD_EXPORT int mapping_it_next_eq(struct mapping_iterator * it, struct keypair 
  * to our it->n
  */
 PMOD_EXPORT int mapping_it_next_grown(struct mapping_iterator * it, struct keypair ** slot) {
-    return 1;
+    const struct keypair * k = it->u.current;
+    const struct mapping * m = it->m;
+    unsigned INT32 i = it->n, bucket;
+
+    if (k) {
+	bucket = k->hval & m->hash_mask;
+	k = k->next;
+	if (!k) goto scan;
+    } else while (!k) {
+	if (i == it->hash_mask) break;
+
+	i++;
+	bucket = i;
+
+scan:
+	do {
+	    k = m->table[bucket];
+	    bucket += 1 + it->hash_mask;
+	} while (!k && bucket <= m->hash_mask);
+    }
+
+    it->n = i;
+    *slot = it->u.current = k;
+    return !!k;
 }
 
 /* the mapping has shrunk since iterator creation. this means that several original buckets have
@@ -46,7 +69,29 @@ PMOD_EXPORT int mapping_it_next_grown(struct mapping_iterator * it, struct keypa
  */
 
 PMOD_EXPORT int mapping_it_next_shrunk(struct mapping_iterator * it, struct keypair ** slot) {
-    return 1;
+    const struct keypair * k = it->u.current;
+    const struct mapping * m = it->m;
+    unsigned INT32 i = it->n;
+
+redo:
+
+    if (k) {
+	do {
+	    k = k->next;
+	} while (k->hval & it->hash_mask != i);
+    }
+
+    while (!k) {
+	if (i == it->hash_mask) break;
+	i++;
+	k = m->table[i&m->hash_mask];
+    }
+
+    if (k && (k->hval & it->hash_mask) != i) goto redo;
+
+    it->n = i;
+    *slot = it->u.current = k;
+    return !!k;
 }
 
 void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data) {
