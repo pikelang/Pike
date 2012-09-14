@@ -122,6 +122,8 @@ void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data
 PMOD_EXPORT void really_free_mapping(struct mapping *m) {
 }
 
+PMOD_EXPORT struct mapping * first_mapping = NULL;
+
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     struct mapping * m = ba_alloc(&mapping_allocator);
@@ -135,6 +137,8 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
     m->trash = NULL;
     m->first_iterator = NULL;
+
+    DOUBLELINK(first_mapping, m);
 
     return m;
 }

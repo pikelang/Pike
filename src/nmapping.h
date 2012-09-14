@@ -6,6 +6,10 @@
 # define INITIAL_MAGNITUDE	4
 #endif
 
+#ifndef AVG_CHAIN_LENGTH
+# define AVG_CHAIN_LENGTH	4
+#endif
+
 struct keypair {
     struct ht_keypair * next;
     unsigned INT32 hval;
@@ -24,6 +28,7 @@ struct mapping {
     struct hash_iterator * first_iterator;
     struct keypair * trash;
     struct ba_local allocator;
+    struct mapping * next, * prev;
 }
 
 struct mapping_iterator {
@@ -79,3 +84,5 @@ static INLINE void mapping_it_set(struct mapping_iterator * it, const struct key
     it->hash_mask = m->hash_mask;
     it->n = m->hash_mask & k->hval;
 }
+
+extern struct mapping * first_mapping;
