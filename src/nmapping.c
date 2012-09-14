@@ -139,6 +139,8 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     MEMSET((char*)m->table, 0, sizeof(struct keypair **)*t);
     m->trash = NULL;
     m->first_iterator = NULL;
+    /* this allows for faking mapping_data */
+    m->data = m;
 
     DOUBLELINK(first_mapping, m);
 

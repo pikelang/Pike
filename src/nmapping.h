@@ -29,6 +29,7 @@ struct mapping {
     struct keypair * trash;
     struct ba_local allocator;
     struct mapping * next, * prev;
+    struct mapping * data;
 }
 
 struct mapping_iterator {
@@ -86,3 +87,8 @@ static INLINE void mapping_it_set(struct mapping_iterator * it, const struct key
 }
 
 extern struct mapping * first_mapping;
+
+
+#define mapping_data	mapping
+#define MAPPING_LOOP(m)	for (e = 0; e <= m->hash_mask; e++) for (k = m->table[e]; k; k = k->next)
+#define NEW_MAPPING_LOOP(m)	MAPPING_LOOP(m)
