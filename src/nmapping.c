@@ -410,3 +410,121 @@ PMOD_EXPORT void mapping_string_insert(struct mapping *m,
 PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 				  struct pike_string *p,
 				  struct pike_string *val);
+PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
+				      struct pike_string *key1,
+				      struct pike_string *key2,
+				      int create);
+PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
+			   struct mapping *m,
+			   const struct svalue *key);
+
+static INLINE void fill_indices(void * _start, void * _stop, void * data) {
+    struct keypair * start = (struct keypair *)_start,
+		   * stop  = (struct keypair *)_stop;
+    struct array * a = (struct array *)data;
+
+    unsigned INT32 size = a->size;
+
+    while (start < stop) {
+	if (!keypair_deleted(start)) {
+	    assign_svalue_no_free(ITEM(a)+size, &start->key);
+	    size++;
+	}
+    }
+
+    a->size = size;
+}
+
+PMOD_EXPORT struct array *mapping_indices(struct mapping *m) {
+    struct array * a = real_allocate_array(0, m->size);
+
+    ba_walk_local(&m->allocator, fill_indices, a);
+
+    return a;
+}
+
+static INLINE void fill_values(void * _start, void * _stop, void * data) {
+    struct keypair * start = (struct keypair *)_start,
+		   * stop  = (struct keypair *)_stop;
+    struct array * a = (struct array *)data;
+
+    unsigned INT32 size = a->size;
+
+    while (start < stop) {
+	if (!keypair_deleted(start)) {
+	    assign_svalue_no_free(ITEM(a)+size, &start->u.val);
+	    size++;
+	}
+    }
+
+    a->size = size;
+}
+
+PMOD_EXPORT struct array *mapping_values(struct mapping *m) {
+    struct array * a = real_allocate_array(0, m->size);
+
+    ba_walk_local(&m->allocator, fill_values, a);
+
+    return a;
+}
+
+PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
+PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
+PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
+
+PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m) {
+    struct mapping * n = debug_allocate_mapping(m->size);
+    unsigned INT32 e;
+    struct keypair * k;
+
+    for (e = 0; e <= m->hash_mask; e++) if (k = m->table[e]) {
+	struct keypair ** slot = n->table + e;
+
+	do {
+	    struct keypair * t = ba_lalloc(&n->allocator);
+	    t->next = NULL;
+	    t->hval = k->hval;
+	    assign_svalue_no_free(&t->key, &k->key);
+	    assign_svalue_no_free(&t->u.val, &k->u.val);
+	    *slot = t;
+	    slot = &(t->next);
+	} while (k = k->next);
+    }
+
+    return n;
+}
+
+PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
+					    struct array *b, INT32 op);
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
+					      struct array *b, INT32 op);
+PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
+PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
+void describe_mapping(struct mapping *m,struct processing *p,int indent);
+node *make_node_from_mapping(struct mapping *m);
+PMOD_EXPORT void f_aggregate_mapping(INT32 args);
+PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
+						     struct mapping *p);
+PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
+			    struct mapping *m,
+			    const struct svalue *look_for,
+			    const struct svalue *key );
+PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
+#ifdef PIKE_DEBUG
+void check_mapping(const struct mapping *m);
+void check_all_mappings(void);
+#endif
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action);
+void gc_mark_mapping_as_referenced(struct mapping *m);
+void real_gc_cycle_check_mapping(struct mapping *m, int weak);
+unsigned gc_touch_all_mappings(void);
+void gc_check_all_mappings(void);
+void gc_mark_all_mappings(void);
+void gc_cycle_check_all_mappings(void);
+void gc_zap_ext_weak_refs_in_mappings(void);
+size_t gc_free_all_unreferenced_mappings(void);
+void simple_describe_mapping(struct mapping *m);
+void debug_dump_mapping(struct mapping *m);
+int mapping_is_constant(struct mapping *m,
+			struct processing *p);
