@@ -164,6 +164,12 @@ static INLINE int reverse_cmpt(unsigned INT32 a, unsigned INT32 b) {
     const unsigned INT32 t = a ^ b;
 
     if (t) {
+	/* if there is no machine instruction for ctz, something like
+	 *
+	 * m = (1 + (t^(t-1))) >> 1
+	 *
+	 * would work, too
+	 */
 	const unsigned INT32 m = (1U << __builtin_ctz(t));
 
 	if (a&m) return 1;
