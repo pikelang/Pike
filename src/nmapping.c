@@ -202,7 +202,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
 				    const struct svalue *val,
 				    int overwrite) {
-    unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = hash_svalue(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
@@ -224,9 +224,9 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 	    if (!frozen) {
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-	    }
-	    if (t != m->table + hval)
-		it.u.slot = t;
+		if (t != m->table + (hval & m->hash_mask))
+		    it.u.slot = t;
+	    } else it.u.slot = t;
 
 	    eq = is_eq(&k->key, key);
 	    if (it.u.slot) {
@@ -269,7 +269,7 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
 }
 
 static struct keypair * really_low_mapping_lookup(struct mapping *m, const struct svalue * key) {
-    unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = hash_svalue(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
@@ -288,9 +288,9 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
 	    if (!frozen) {
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-	    }
-	    if (t != m->table + hval)
-		it.u.slot = t;
+		if (t != m->table + (hval & m->hash_mask))
+		    it.u.slot = t;
+	    } else it.u.slot = t;
 
 	    eq = is_eq(&k->key, key);
 	    if (it.u.slot) {
@@ -321,7 +321,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			const struct svalue *key,
 			struct svalue *to) {
-    unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = hash_svalue(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
@@ -340,9 +340,9 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 	    if (!frozen) {
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-	    }
-	    if (t != m->table + hval)
-		it.u.slot = t;
+		if (t != m->table + (hval & m->hash_mask))
+		    it.u.slot = t;
+	    } else it.u.slot = t;
 
 	    eq = is_eq(&k->key, key);
 	    if (it.u.slot) {
