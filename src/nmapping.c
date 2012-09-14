@@ -126,15 +126,17 @@ PMOD_EXPORT struct mapping * first_mapping = NULL;
 
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
-    struct mapping * m = ba_alloc(&mapping_allocator);
+    struct mapping * m = (struct mapping *)ba_alloc(&mapping_allocator);
     unsigned INT32 t = (1 << INITIAL_MAGNITUDE);
     m->size = 0;
 
     while (size > t) t *= 2;
 
-    m->hash_mask = t - 1;
     ba_init_local(&m->allocator, sizeof(struct keypair), t, 256, mapping_rel_simple, m);
+    t /= AVG_CHAIN_LENGTH;
+    m->hash_mask = t - 1;
     m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
+    MEMSET((char*)m->table, 0, sizeof(struct keypair **)*t);
     m->trash = NULL;
     m->first_iterator = NULL;
 
@@ -256,6 +258,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     assign_svalue_no_free(&k->key, key);
     assign_svalue_no_free(&k->u.val, val);
     *t = k;
+    m->size ++;
 
 unfreeze:
     if (frozen)
@@ -380,6 +383,8 @@ unfreeze:
     }
 
     *t = k->next;
+
+    m->size --;
 
     if (m->first_iterator) {
 	k->u.next = m->trash;
