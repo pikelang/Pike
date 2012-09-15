@@ -130,10 +130,11 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     unsigned INT32 t = (1 << INITIAL_MAGNITUDE);
     m->size = 0;
 
+    size /= AVG_CHAIN_LENGTH;
+
     while (size > t) t *= 2;
 
     ba_init_local(&m->allocator, sizeof(struct keypair), t, 256, mapping_rel_simple, m);
-    t /= AVG_CHAIN_LENGTH;
     m->hash_mask = t - 1;
     m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
     MEMSET((char*)m->table, 0, sizeof(struct keypair **)*t);
@@ -168,7 +169,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m) {
     ba_free(&mapping_allocator, m);
 }
 
-static INLINE int reverse_cmpt(unsigned INT32 a, unsigned INT32 b) {
+static INLINE int reverse_cmp(unsigned INT32 a, unsigned INT32 b) {
     const unsigned INT32 t = a ^ b;
 
     if (t) {
