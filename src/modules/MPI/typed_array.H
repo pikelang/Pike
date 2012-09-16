@@ -52,6 +52,7 @@ DOCSTART() @decl pike_type `[](int idx)
  *! Gives the @expr{idx@}ths element of the ARRAY_CLASSIFY(Array).
 DOCEND()
     PIKEFUN pike_type `[](int idx)
+    flags ID_PROTECTED;
     {
 	c_type r;
 
@@ -69,6 +70,7 @@ DOCSTART() @decl pike_type `[]=(int idx, pike_type val)
  *! @expr{val@}.
 DOCEND()
     PIKEFUN pike_type `[]=(int idx, pike_type val)
+    flags ID_PROTECTED;
     {
 	if ((unsigned int)idx >= THIS->i.length || idx < 0)
 	    Pike_error("Invalid index %d in MPI." cmod_STRFY_EVAL(name_prefix) "Array of size %u.\n",
@@ -102,6 +104,7 @@ DOCSTART() @decl int _sizeof()
  *! 	The number of entries in this ARRAY_CLASSIFY(Array).
 DOCEND()
     PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
     {
 	push_int(THIS->i.length);
     }
@@ -109,6 +112,8 @@ DOCEND()
 DOCSTART() @decl array(pike_type) _values()
  *! @returns
  *! 	A Pike array copy of this array.
+ *! @example
+ *! array pike_array = values(typed_array);
 DOCEND()
     PIKEFUN array _values()
     flags ID_PROTECTED;
