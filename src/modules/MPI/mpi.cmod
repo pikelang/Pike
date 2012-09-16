@@ -1239,7 +1239,7 @@ PIKEFUN void Finalize()
     MPI_Finalize();
 }
 
-/*! @decl Op Op_create(function ufun, int commute)
+/*! @decl Op Op_create(function(object,object:void) ufun, int commute)
  *! Creates a user-defined MPI operation.
  *!
  *! @param ufun
