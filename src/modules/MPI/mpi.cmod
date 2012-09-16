@@ -41,6 +41,8 @@ struct mpi_info {
 
 DECLARATIONS
 
+/*! @module MPI */
+
 #define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
 					      IntArray_program)		\
 			|| -1 != low_get_storage((x)->prog,		\
@@ -124,20 +126,73 @@ PIKECLASS SingleArray
 #cmod_include "typed_array.H"
 }
 
+/*! @class Status
+ *! Objects of this class can be passed as the last argument to the receive
+ *! operation of @[MPI.Comm] communicators. After the operation has finished,
+ *! they will contain information about the sender the message was received
+ *! from and the tag used for communication.
+ *!
+ *! Therefore, Status objects are particularly helpful in combination with
+ *! @[MPI.ANY_SOURCE] and @[MPI.ANY_TAG].
+ *!
+ *! @seealso
+ *! 	@[MPI.Comm()->Recv()]
+ */
 PIKECLASS Status {
     CVAR MPI_Status status;
 
+    /*! @decl int SOURCE
+     *! Contains the source that the message was received from.
+     *!
+     *! @example
+     *!int main() {
+     *!	if (MPI.world->rank) {
+     *!		sleep(random(MPI.world->size)/10.0);
+     *!		MPI.world->Send(gethostname(), MPI.world->rank), 0);
+     *!	} else {
+     *!		MPI.Status status;
+     *!		MPI.Pointer p;
+     *!
+     *!		for (int i = 0; i < MPI.world->size; i++) {
+     *!			MPI.world->Recv(p, MPI.ANY_SOURCE, 0, status);
+     *!			write("Rank %d has hostname %s.\n", status->SOURCE, p());
+     *!		}
+     *!	}
+     *!
+     *!	return 0;
+     *!}
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()]
+     */
     PIKEFUN int `SOURCE()
     {
 	push_int(THIS->status.MPI_SOURCE);
     }
 
+    /*! @decl int TAG
+     *! Contains the tag that was used in the @[MPI.Comm()->Recv] operation.
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()]
+     */
     PIKEFUN int `TAG()
     {
 	push_int(THIS->status.MPI_TAG);
     }
 }
+/*! @endclass */
 
+/*! @class Sentinel
+ *! A @[Sentinel] is a kind of handle that can be given out by objects if
+ *! they want to allow @[MPI] to send from/receive into the memory areas
+ *! pointed to by the Sentinel.
+ *!
+ *! Other than that, @[Sentinel]s are not that useful from Pike.
+ *!
+ *! @seealso
+ *! 	@[Math.FMatrix()->get_sentinel()], @[Math.FMatrix]
+ */
 PIKECLASS Sentinel {
     CVAR struct mpi_info i;
     CVAR struct object * other;
@@ -155,6 +210,8 @@ PIKECLASS Sentinel {
     }
 }
 
+/*! @endclass */
+
 PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
 					       unsigned int length,
 					       unsigned int shift,
@@ -171,6 +228,16 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
     return o;
 }
 
+/*! @class Op
+ *! Objects of this class represent MPI operations used in collective
+ *! operations like @[MPI.Comm()->reduce()]. You can use operations
+ *! predefined by MPI or create your own.
+ *!
+ *! Other than that, @[Op]s are not that useful from Pike.
+ *!
+ *! @seealso
+ *! 	@[MPI] constants, @[MPI.Create_op()], @[MPI.Comm->Reduce()].
+ */
 PIKECLASS Op
 {
     CVAR MPI_Op op;
@@ -189,6 +256,7 @@ PIKECLASS Op
 	}
     }
 }
+/*! @endclass */
 
 PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op, unsigned int *refcnt)
 {
@@ -730,11 +798,40 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
 		       root, comm);
 }
 
+/*! @class Pointer
+ *! A pointer like class. Because @[MPI.Comm->Recv()] et al do not return
+ *! "results" but take references/pointers to the target storage, you need to
+ *! pass a @[Pointer] to @[MPI.Comm()->recv()] in order to receive the string.
+ *!
+ *! @example
+ *!int main() {
+ *!	string s;
+ *!	MPI.Pointer p = MPI.Pointer();
+ *!
+ *!	MPI.Init();
+ *!
+ *!	if (MPI.world->rank())
+ *!		MPI.world->Send(ctime(time(1)), 0);
+ *!	else
+ *!		for (int i = 1; i < MPI.world->size; i++) {
+ *!			MPI.world->Recv(p, i);
+ *!			write("Rank %03d says now is %s.\n", p());
+ *!		}
+ *!
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ */
 PIKECLASS Pointer
 {
     CVAR struct svalue x;
     CVAR int y;
 
+    /*! @decl void create()
+     *! @decl void create(mixed m)
+     *! If @expr{m@} is given, point to @expr{m@}, else point to
+     *! @expr{UNDEFINED@}.
+     */
     PIKEFUN void create(mixed|void m)
 	flags ID_PROTECTED;
     {
@@ -742,6 +839,11 @@ PIKECLASS Pointer
 	pop_n_elems(args);
     }
 
+    /*! @decl mixed `()()
+     *! @decl mixed `()(mixed m)
+     *! If called with 0 arguments, returns the pointee. If called with
+     *! argument @expr{m@}, now points to @expr{m@}.
+     */
     PIKEFUN mixed `()()
 	flags ID_PROTECTED;
     {
@@ -764,10 +866,28 @@ PIKECLASS Pointer
 	free_svalue(&THIS->x);
     }
 }
+/*! @endclass */
 
+/*! @class Comm
+ *! A communicator object holds a group of processes both relate messages
+ *! between those processes as well as perform collective operations,
+ *! in which all member processes of the communicator are involved.
+ */
 PIKECLASS Comm
 {
     CVAR MPI_Comm comm;
+
+    /*! @decl void Send(string buf, int dest, int|void tag)
+     *! @decl void Send(MPI.IntArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.FloatArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.SingleArray buf, int dest, int|void tag)
+     *! @decl void Send(MPI.Sentinel buf, int dest, int|void tag)
+     *! Sends the buffer @expr{buf@} to the process with @[rank] @expr{dest@},
+     *! marked with @expr{tag@}.
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm()->Recv()], @[MPI.Comm()->Bcast()], MPI_Send(3).
+     */
 
     PIKEFUN void Send(string buf, int dest, int|void tag)
     {
@@ -799,6 +919,51 @@ PIKECLASS Comm
 	pop_n_elems(args);
     }
 
+    /*! @decl void Recv(MPI.Pointer buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.IntArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.FloatArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.SingleArray buf, int source, int|void tag, MPI.Status|void status)
+     *! @decl void Recv(MPI.Sentinel buf, int source, int|void tag, MPI.Status|void status)
+     *! Receives a message from @expr{source@} with matching @expr{tag@} into
+     *! @expr{buf@}, storing the sender's rank and the tag used into the
+     *! optionally given @[MPI.Status].
+     *!
+     *! @note
+     *! 	The type of the buffer of the receiver site has to match the
+     *! 	type of the buffer of the sender. @b{Exception:@} If a string
+     *! 	is sent, it has to be received into a @[MPI.Pointer].
+     *!
+     *! @example
+     *!int main() {
+     *!	MPI.IntArray ia = MPI.IntArray(5);
+     *!
+     *! MPI.Init();
+     *!
+     *!	write("This is rank %d, %d processes total.\n", MPI.world->rank,
+     *!	      MPI.world->size);
+     *!
+     *!	if (MPI.world->rank) {
+     *!		for (int i = 0; i < sizeof(ia); i++) {
+     *!			ia[i] = MPI.world->rank + i;
+     *!		}
+     *!
+     *!		MPI.world->Send(ia, 0); // send to rank 0
+     *!	} else {
+     *!		for (int i = 0; i < MPI.world->size; i++) {
+     *!			MPI.world->Recv(ia, i);
+     *!			write("Rank %d sent %O to rank 0.\n", i, (array)ia);
+     *!		}
+     *!	}
+     *!
+     *!	MPI.Finalize();
+     *!	return 0;
+     *!}
+     *!			
+     *!
+     *! @seealso
+     *! 	@[MPI.Comm->Send()], @[MPI.Comm->Bcast()], @[MPI.ANY_SOURCE],
+     *!		@[MPI.ANY_TAG], MPI_Send(3).
+     */
     PIKEFUN void Recv(object buf, int source, int|void tag, object|void status)
     {
 	struct pike_string *ps = NULL;
@@ -1007,8 +1172,24 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	push_int(size);
     }
 }
+/*! @endclass */
 
 /* TODO: guard against multiple calls */
+/*! @decl void Init()
+ *! Initializes MPI. Has to be called before any other MPI Operation is
+ *! accessed, including @[MPI.world->size] and @[MPI.world->rank].
+ *!
+ *! @example
+ *!int main() {
+ *!	MPI.Init();
+ *!	write("I am process %d of %d.\n", MPI.comm->rank,
+ *!	      MPI.comm->size);
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ *! @seealso
+ *!	@[Finalize()], MPI_Init(3)
+ */
 PIKEFUN void Init()
 {
     if (mpi_status)
@@ -1022,6 +1203,12 @@ PIKEFUN void Init()
 
 
 /* TODO: guard against finalizing what has not been inited. */
+/*! @decl void Finalize()
+ *! Cleans up the MPI stack. Has to be called before program termination.
+ *!
+ *! @seealso
+ *!	@[Init()], MPI_Finalize(3)
+ */
 PIKEFUN void Finalize()
 {
     if (mpi_status == mpi_FINALIZED)
@@ -1030,6 +1217,49 @@ PIKEFUN void Finalize()
     MPI_Finalize();
 }
 
+/*! @decl Op Op_create(function ufun, int commute)
+ *! Creates a user-defined MPI operation.
+ *!
+ *! @param ufun
+ *!	The function that implements the @[MPI.Op] to be created.
+ *!
+ *! @param commute
+ *!	Set to @expr{1@} if the operation commutes.
+ *!
+ *! @example
+ *!void my_add_fun(object invec, object outvec) {
+ *!	for (int i = 0; i < sizeof(outvec); i++) {
+ *!	outvec[i] += invec[i];
+ *!}
+ *!
+ *!int main() {
+ *!	MPI.Op myadd;
+ *!	MPI.IntArray ia = MPI.IntArray(10), results;
+ *!
+ *!	MPI.Init();
+ *!
+ *!	myadd = MPI.Op_create(my_add_fun, 1);
+ *!
+ *!	for (int i = 0; i < sizeof(ia); i++)
+ *!		ia[i] = random(1000);
+ *!
+ *!	if (!MPI.world->rank) results = MPI.IntArray(sizeof(ia));
+ *!	MPI.world->Reduce(ia, results, 0);
+ *!	if (!MPI.world->rank)
+ *!		for (int i; i < sizeof(results); i++)
+ *!			write("%02d: %d\n", i, results[i]);
+ *!
+ *!	MPI.Finalize();
+ *!	return 0;
+ *!}
+ *!
+ *! @note
+ *!	User-defined MPI operations may @b{not@} call any MPI operations
+ *!	themselves.
+ *!
+ *! @seealso
+ *!	@[MPI.Comm->Reduce()], MPI_Op_create(3)
+ */
 PIKEFUN object Op_create(function ufun, int commute)
 {
     struct object *op;
@@ -1078,3 +1308,5 @@ PIKE_MODULE_EXIT
 {
     EXIT;
 } 
+
+/*! @endmodule */
