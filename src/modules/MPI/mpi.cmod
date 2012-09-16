@@ -250,6 +250,11 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
     return o;
 }
 
+PMOD_EXPORT struct op_info {
+    struct object *o;
+    void **data;
+};
+
 /*! @class Op
  *! Objects of this class represent MPI operations used in collective
  *! operations like @[MPI.Comm()->reduce()]. You can use operations
@@ -265,6 +270,8 @@ PIKECLASS Op
     CVAR MPI_Op op;
     CVAR unsigned int *refcnt;
     CVAR struct svalue ufun;
+    CVAR struct op_info (*create)(void *);
+    CVAR void *info;
 
     EXIT
     {
@@ -272,9 +279,10 @@ PIKECLASS Op
 	    if (!--*THIS->refcnt) {
 		if (mpi_status != mpi_FINALIZED) MPI_Op_free(&THIS->op);
 		free(THIS->refcnt);
+		if (THIS->info) free(THIS->info);
 	    }
 
-	    free_svalue(&THIS->ufun);
+	    if (!THIS->create) free_svalue(&THIS->ufun);
 	}
     }
 }
@@ -1296,6 +1304,21 @@ PIKEFUN object Op_create(function ufun, int commute)
 
     pop_n_elems(args);
     push_object(op);
+}
+
+PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct svalue *ufun, int commute, void *info) {
+    struct object *o;
+    MPI_Op mpiop;
+    unsigned int *refcnt = xalloc(sizeof(unsigned int));
+
+    *refcnt = 1;
+
+    MPI_Op_create(mpi_user_function, commute, &mpiop);
+    o = mpi_clone_op(mpiop, refcnt);
+    OBJ2_OP(o)->create = create;
+    OBJ2_OP(o)->info = info;
+
+    return o;
 }
 
 PIKE_MODULE_INIT
