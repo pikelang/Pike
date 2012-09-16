@@ -282,7 +282,7 @@ PIKECLASS Op
 		if (THIS->info) free(THIS->info);
 	    }
 
-	    if (!THIS->create) free_svalue(&THIS->ufun);
+	    free_svalue(&THIS->ufun);
 	}
     }
 }
