@@ -5,6 +5,7 @@
 
     CVAR struct mpi_info i;
 
+/*! @decl void create(int(0..) size) */
     PIKEFUN void create(int(0..) size)
     flags ID_PROTECTED;
     {
@@ -19,12 +20,22 @@
 	 */
     }
 
+DOCSTART() @decl void clear()
+ *! Sets all elements of the ARRAY_CLASSIFY(Array) to 0.
+DOCEND()
     PIKEFUN void clear()
     {
 	if (!THIS->i.length) return;
 	memset(THIS->i.data, 0, THIS->i.length * THIS->i.type_size);
     }
 
+DOCSTART() @decl void assign(ARRAY_CLASSIFY(Array) other)
+ *! Assigns the first @expr{sizeof(other)@} entries from @expr{other@} to the
+ *! respective entries in the current array.
+ *!
+ *! @throws
+ *! 	If @expr{sizeof(other) > sizeof(this)@}
+ DOCEND()
     PIKEFUN void assign(object other)
     {
 	if (!other || -1 == low_get_storage(other->prog, ARRAY_CLASSIFY(Array_program)))
@@ -37,6 +48,9 @@
 	pop_n_elems(args);
     }
 
+DOCSTART() @decl pike_type `[](int idx)
+ *! Gives the @expr{idx@}ths element of the ARRAY_CLASSIFY(Array).
+DOCEND()
     PIKEFUN pike_type `[](int idx)
     {
 	c_type r;
@@ -50,6 +64,10 @@
 	PUSH(r);
     }
 
+DOCSTART() @decl pike_type `[]=(int idx, pike_type val)
+ *! Sets the @expr{idx@}ths element of the ARRAY_CLASSIFY(Array) to
+ *! @expr{val@}.
+DOCEND()
     PIKEFUN pike_type `[]=(int idx, pike_type val)
     {
 	if ((unsigned int)idx >= THIS->i.length || idx < 0)
@@ -61,6 +79,7 @@
 	pop_n_elems(1);
     }
 
+/* Why did i put this in here? sum()? seriously? */
     PIKEFUN pike_type sum()
     {
 	unsigned int i;
@@ -78,11 +97,19 @@
 	PUSH(r);
     }
 
+DOCSTART() @decl int _sizeof()
+ *! @returns
+ *! 	The number of entries in this ARRAY_CLASSIFY(Array).
+DOCEND()
     PIKEFUN int _sizeof()
     {
 	push_int(THIS->i.length);
     }
 
+DOCSTART() @decl array(pike_type) _values()
+ *! @returns
+ *! 	A Pike array copy of this array.
+DOCEND()
     PIKEFUN array _values()
     flags ID_PROTECTED;
     {
@@ -101,7 +128,13 @@
 	}
     }
 
-    PIKEFUN array cast(string type)
+DOCSTART() @decl mixed cast(string type)
+ *! Supports casting (by copy) this ARRAY_CLASSIFY(Array) to a Pike array.
+ *!
+ *! @example
+ *! array pike_array = (array)typed_array;
+DOCEND()
+    PIKEFUN mixed cast(string type)
     flags ID_PROTECTED;
     {
 	if (type == MK_STRING("array")) {
