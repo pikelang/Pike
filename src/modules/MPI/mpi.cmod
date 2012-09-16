@@ -258,7 +258,7 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
  *! Other than that, @[Op]s are not that useful from Pike.
  *!
  *! @seealso
- *! 	@[MPI] constants, @[MPI.Create_op()], @[MPI.Comm->Reduce()].
+ *! 	@[MPI] constants, @[MPI.Op_create()], @[MPI.Comm->Reduce()].
  */
 PIKECLASS Op
 {
