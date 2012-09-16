@@ -81,6 +81,9 @@ DECLARATIONS
 #define mpi_FINALIZED	2
 static unsigned char mpi_status = 0;
 
+/*! @class IntArray
+ *! This class implements an array of 32 bit integers.
+ */
 PIKECLASS IntArray
 {
 #cmod_define pike_type int
@@ -95,7 +98,16 @@ PIKECLASS IntArray
 #cmod_define U_IND integer
 #cmod_include "typed_array.H"
 }
+/*! @endclass */
 
+/*! @class FloatArray
+ *! This class implements an array of double precision floats.
+ *!
+ *! @note
+ *! 	Values will be converted to and from the Pike float type,
+ *! 	which may introduce rounding errors if the types don't match in
+ *! 	your installation.
+ */
 PIKECLASS FloatArray
 {
 #cmod_define pike_type float
@@ -110,7 +122,16 @@ PIKECLASS FloatArray
 #cmod_define U_IND float_number
 #cmod_include "typed_array.H"
 }
+/*! @endclass */
 
+/*! @class SingleArray
+ *! This class implements an array of single precision floats.
+ *!
+ *! @note
+ *! 	Values will be converted to and from the Pike float type,
+ *! 	which may introduce rounding errors if the types don't match in
+ *! 	your installation.
+ */
 PIKECLASS SingleArray
 {
 #cmod_define pike_type float
@@ -125,6 +146,7 @@ PIKECLASS SingleArray
 #cmod_define U_IND float_number
 #cmod_include "typed_array.H"
 }
+/*! @endclass */
 
 /*! @class Status
  *! Objects of this class can be passed as the last argument to the receive
