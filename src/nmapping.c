@@ -10,6 +10,12 @@ static INLINE int keypair_deleted(const struct keypair * k) {
     return IS_UNDEFINED(&k->key);
 }
 
+static void unlink_iterator(struct mapping_iterator * it) {
+    struct mapping * m = it->m;
+    DOUBLEUNLINK(m->first_iterator, it);
+}
+
+
 PMOD_EXPORT int mapping_it_next_eq(struct mapping_iterator * it, struct keypair ** slot) {
     const struct keypair * k = it->u.current;
     const struct mapping * m = it->m;
@@ -215,6 +221,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
+    ONERROR err;
 
     /* this is just for optimization */
     ba_lreserve(&m->allocator, 1);
@@ -231,6 +238,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 	if (!is_identical(&k->key, key)) {
 	    int eq;
 	    if (!frozen) {
+		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
 		if (t != m->table + (hval & m->hash_mask))
@@ -264,8 +272,10 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     m->size ++;
 
 unfreeze:
-    if (frozen)
+    if (frozen) {
+	UNSET_ONERROR(err);
 	mapping_it_exit(&it);
+    }
 }
 
 PMOD_EXPORT void mapping_insert(struct mapping *m,
@@ -283,6 +293,7 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
+    ONERROR err;
 
     t = m->table + (hval & m->hash_mask);
 
@@ -296,6 +307,7 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
 	if (!is_identical(&k->key, key)) {
 	    int eq;
 	    if (!frozen) {
+		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
 		if (t != m->table + (hval & m->hash_mask))
@@ -315,8 +327,10 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
     k = NULL;
 
 unfreeze:
-    if (frozen)
+    if (frozen) {
 	mapping_it_exit(&it);
+	UNSET_ONERROR(err);
+    }
 
     return k;
 }
@@ -335,6 +349,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
+    ONERROR err;
 
     t = m->table + (hval & m->hash_mask);
 
@@ -348,6 +363,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 	if (!is_identical(&k->key, key)) {
 	    int eq;
 	    if (!frozen) {
+		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
 		if (t != m->table + (hval & m->hash_mask))
@@ -367,8 +383,10 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     k = NULL;
 
 unfreeze:
-    if (frozen)
+    if (frozen) {
 	mapping_it_exit(&it);
+	UNSET_ONERROR(err);
+    }
 
     if (!k) {
 	if (to) {
