@@ -513,6 +513,9 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m) {
     return n;
 }
 
+static struct mapping *or_mappings(struct mapping *a, struct mapping *b) {
+}
+
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
 PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op);
