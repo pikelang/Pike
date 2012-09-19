@@ -65,25 +65,36 @@ protected NullArg null_arg = NullArg();
 //! @param extraargs
 //!   The arguments following the query.
 //!
+//! @param bindings
+//!   Optional bindings mapping to which additional bindings will be
+//!   added. It's returned as the second element in the return value.
+//!   A new mapping is used if this isn't specified.
+//!
 //! @returns
 //!   Returns an array with two elements:
 //!   @array
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
 //!     @elem mapping(string|int:mixed) 1
-//!       A bindings mapping.
+//!       A bindings mapping. Zero if no bindings were added.
 //!   @endarray
 array(string|mapping(string|int:mixed))
-  handle_extraargs(string query, array(mixed) extraargs) {
+  handle_extraargs(string query, array(mixed) extraargs,
+		   void|mapping(string|int:mixed) bindings) {
 
   array(mixed) args=allocate(sizeof(extraargs));
-  mapping(string|int:mixed) b = ([]);
+  if (!bindings) bindings = ([]);
 
-  int a;
+  int a, new_bindings;
   foreach(extraargs; int j; mixed s) {
     if (stringp(s) || multisetp(s)) {
-      args[j]=":arg"+(a++);
-      b[args[j]] = s;
+      string bind_name;
+      do {
+	bind_name = ":arg"+(a++);
+      } while (!zero_type (bindings[bind_name]));
+      args[j]=bind_name;
+      bindings[bind_name] = s;
+      new_bindings = 1;
       continue;
     }
     if (intp(s) || floatp(s)) {
@@ -96,9 +107,8 @@ array(string|mapping(string|int:mixed))
     }
     error("Wrong type to query argument %d: %O\n", j + 1, s);
   }
-  if(!sizeof(b)) b=0;
 
-  return ({sprintf(query,@args), b});
+  return ({sprintf(query,@args), new_bindings && bindings});
 }
 
 //! Build a raw SQL query, given the cooked query and the variable bindings
