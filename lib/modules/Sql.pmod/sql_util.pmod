@@ -153,7 +153,7 @@ class UnicodeWrapper (
   }
 }
 
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+#if constant (___Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 
 class MySQLUnicodeWrapper
 //! Result wrapper for MySQL that performs UTF-8 decoding of all
