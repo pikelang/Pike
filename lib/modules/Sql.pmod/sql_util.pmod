@@ -24,6 +24,83 @@ void fallback()
   error( "Function not supported in this database." );
 }
 
+//! Wrapper to handle zero.
+//!
+//! @seealso
+//!   @[zero]
+protected class ZeroWrapper
+{
+  //! @returns
+  //!   Returns the following:
+  //!   @string
+  //!     @value "NULL"
+  //!       If @[fmt] is @expr{'s'@}.
+  //!     @value "ZeroWrapper()"
+  //!       If @[fmt] is @expr{'O'@}.
+  //!   @endstring
+  //!   Otherwise it formats a @expr{0@} (zero).
+  protected string _sprintf(int fmt, mapping(string:mixed) params)
+  {
+    if (fmt == 's') return "NULL";
+    if (fmt == 'O') return "ZeroWrapper()";
+    return sprintf(sprintf("%%*%c", fmt), params, 0);
+  }
+}
+
+//! Instance of @[ZeroWrapper] used by @[handle_extraargs()].
+protected ZeroWrapper zero = ZeroWrapper();
+
+protected class NullArg
+{
+  protected string _sprintf (int fmt)
+    {return fmt == 'O' ? "NullArg()" : "NULL";}
+}
+protected NullArg null_arg = NullArg();
+
+//! Handle @[sprintf]-based quoted arguments
+//!
+//! @param query
+//!   The query as sent to one of the query functions.
+//!
+//! @param extraargs
+//!   The arguments following the query.
+//!
+//! @returns
+//!   Returns an array with two elements:
+//!   @array
+//!     @elem string 0
+//!       The query altered to use bindings-syntax.
+//!     @elem mapping(string|int:mixed) 1
+//!       A bindings mapping.
+//!   @endarray
+array(string|mapping(string|int:mixed))
+  handle_extraargs(string query, array(mixed) extraargs) {
+
+  array(mixed) args=allocate(sizeof(extraargs));
+  mapping(string|int:mixed) b = ([]);
+
+  int a;
+  foreach(extraargs; int j; mixed s) {
+    if (stringp(s) || multisetp(s)) {
+      args[j]=":arg"+(a++);
+      b[args[j]] = s;
+      continue;
+    }
+    if (intp(s) || floatp(s)) {
+      args[j] = s || zero;
+      continue;
+    }
+    if (objectp (s) && s->is_val_null) {
+      args[j] = null_arg;
+      continue;
+    }
+    error("Wrong type to query argument %d: %O\n", j + 1, s);
+  }
+  if(!sizeof(b)) b=0;
+
+  return ({sprintf(query,@args), b});
+}
+
 //! Build a raw SQL query, given the cooked query and the variable bindings
 //! It's meant to be used as an emulation engine for those drivers not
 //! providing such a behaviour directly (i.e. Oracle).
