@@ -16,90 +16,6 @@ static void unlink_iterator(struct mapping_iterator * it) {
 }
 
 
-PMOD_EXPORT int mapping_it_next_eq(struct mapping_iterator * it, struct keypair ** slot) {
-    const struct keypair * k = it->u.current;
-    const struct mapping * m = it->m;
-    unsigned INT32 i = it->n;
-
-    if (k) {
-	k = k->next;
-    }
-
-    while (!k) {
-	if (i == it->hash_mask) break;
-	i++;
-	k = m->table[i];
-    }
-
-    it->n = i;
-    *slot = it->u.current = k;
-    return !!k;
-}
-
-/*
- * the mapping has been grown since iterator creation. it means that it->has_mask is smaller
- * than the mapping hash_mask. this effectively means that instead of increasing n by one and going
- * to the next slot, we have to jump by it->hash_mask until we have handled all slots that belong
- * to our it->n
- */
-PMOD_EXPORT int mapping_it_next_grown(struct mapping_iterator * it, struct keypair ** slot) {
-    const struct keypair * k = it->u.current;
-    const struct mapping * m = it->m;
-    unsigned INT32 i = it->n, bucket;
-
-    if (k) {
-	bucket = k->hval & m->hash_mask;
-	k = k->next;
-	if (!k) goto scan;
-    } else while (!k) {
-	if (i == it->hash_mask) break;
-
-	i++;
-	bucket = i;
-
-scan:
-	do {
-	    k = m->table[bucket];
-	    bucket += 1 + it->hash_mask;
-	} while (!k && bucket <= m->hash_mask);
-    }
-
-    it->n = i;
-    *slot = it->u.current = k;
-    return !!k;
-}
-
-/* the mapping has shrunk since iterator creation. this means that several original buckets have
- * been merged into the same bucket. we have to manually filter the ones that do not belong to our
- * n. otherwise it works very similar to the trivial case.
- */
-
-PMOD_EXPORT int mapping_it_next_shrunk(struct mapping_iterator * it, struct keypair ** slot) {
-    const struct keypair * k = it->u.current;
-    const struct mapping * m = it->m;
-    unsigned INT32 i = it->n;
-
-redo:
-
-    if (k) {
-	do {
-	    k = k->next;
-	} while (k->hval & it->hash_mask != i);
-    }
-
-    while (!k) {
-	if (i == it->hash_mask) break;
-	i++;
-	k = m->table[i&m->hash_mask];
-    }
-
-    if (k && (k->hval & it->hash_mask) != i) goto redo;
-
-    it->n = i;
-    *slot = it->u.current = k;
-    return !!k;
-}
-
 void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data) {
     struct keypair * start = (struct keypair*)_start,
 		   * stop  = (struct keypair*)_stop;
@@ -134,14 +50,19 @@ ATTRIBUTE((malloc))
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     struct mapping * m = (struct mapping *)ba_alloc(&mapping_allocator);
     unsigned INT32 t = (1 << INITIAL_MAGNITUDE);
+    unsigned INT32 mag = 32 - INITIAL_MAGNITUDE;
     m->size = 0;
 
     size /= AVG_CHAIN_LENGTH;
 
-    while (size > t) t *= 2;
+    while (size > t) {
+	mag--;
+	t *= 2;
+    }
 
     ba_init_local(&m->allocator, sizeof(struct keypair), t, 256, mapping_rel_simple, m);
     m->hash_mask = t - 1;
+    m->magnitude = mag;
     m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
     MEMSET((char*)m->table, 0, sizeof(struct keypair **)*t);
     m->trash = NULL;
@@ -211,13 +132,24 @@ PMOD_EXPORT void low_mapping_cleanup(struct mapping * m) {
     }
 }
 
+/* The idea here is to byteswap the hash value so that the most significant bits are
+ * high in entropy.
+ */
+static INLINE unsigned INT32 low_mapping_hash(const struct svalue * key) {
+    return __builtin_bswap32(hash_svalue(key));
+}
+
+static INLINE struct keypair ** low_get_bucket(const struct mapping * m, unsigned INT32 hval) {
+    return m->table + (hval >> m->magnitude);
+}
+
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m) {}
 PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags) {}
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
 				    const struct svalue *val,
 				    int overwrite) {
-    const unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = low_mapping_hash(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
@@ -226,13 +158,12 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     /* this is just for optimization */
     ba_lreserve(&m->allocator, 1);
 
-    t = m->table + (hval & m->hash_mask);
+    t = low_get_bucket(m, hval);
 
     for (;*t; t = &(*t->next)) {
-	int cmp = reverse_cmp(hval, (*t)->hval);
 	k = *t;
-	if (cmp == 1) continue;
-	if (cmp == -1) break;
+	if (hval > (*t)->hval) continue;
+	if (hval < (*t)->hval) break;
 	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
 
 	if (!is_identical(&k->key, key)) {
@@ -241,7 +172,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-		if (t != m->table + (hval & m->hash_mask))
+		if (t != low_get_bucket(m, hval))
 		    it.u.slot = t;
 	    } else it.u.slot = t;
 
@@ -268,6 +199,10 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     k->hval = hval;
     assign_svalue_no_free(&k->key, key);
     assign_svalue_no_free(&k->u.val, val);
+    if (t == low_get_bucket(m, hval) && !(k->next)) {
+	// TODO: we add into an empty bucket here, so we have to rechain the list, by finding
+	// the next and prev item. this would make iteration much easier.
+    }
     *t = k;
     m->size ++;
 
@@ -289,19 +224,18 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
 }
 
 static struct keypair * really_low_mapping_lookup(struct mapping *m, const struct svalue * key) {
-    const unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = low_mapping_hash(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
     ONERROR err;
 
-    t = m->table + (hval & m->hash_mask);
+    t = low_get_bucket(m, hval);
 
     for (;*t; t = &(*t->next)) {
-	int cmp = reverse_cmp(hval, (*t)->hval);
 	k = *t;
-	if (cmp == 1) continue;
-	if (cmp == -1) break;
+	if (hval > (*t)->hval) continue;
+	if (hval < (*t)->hval) break;
 	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
 
 	if (!is_identical(&k->key, key)) {
@@ -310,7 +244,7 @@ static struct keypair * really_low_mapping_lookup(struct mapping *m, const struc
 		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-		if (t != m->table + (hval & m->hash_mask))
+		if (t != low_get_bucket(m, hval))
 		    it.u.slot = t;
 	    } else it.u.slot = t;
 
@@ -345,19 +279,18 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			const struct svalue *key,
 			struct svalue *to) {
-    const unsigned INT32 hval = hash_svalue(key);
+    const unsigned INT32 hval = low_mapping_hash(key);
     struct keypair ** t, * k;
     struct mapping_iterator it = { NULL, NULL, NULL, 0, 0 };
     int frozen = 0;
     ONERROR err;
 
-    t = m->table + (hval & m->hash_mask);
+    t = low_get_bucket(m, hval);
 
     for (;*t; t = &(*t->next)) {
-	int cmp = reverse_cmp(hval, (*t)->hval);
 	k = *t;
-	if (cmp == 1) continue;
-	if (cmp == -1) break;
+	if (hval > (*t)->hval) continue;
+	if (hval < (*t)->hval) break;
 	if (keypair_deleted(k) || is_nidentical(&k->key, key)) continue;
 
 	if (!is_identical(&k->key, key)) {
@@ -366,7 +299,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 		SET_ONERROR(err, unlink_iterator, &it);
 		DOUBLELINK(m->first_iterator, (&it));
 		frozen = 1;
-		if (t != m->table + (hval & m->hash_mask))
+		if (t != low_get_bucket(m, hval))
 		    it.u.slot = t;
 	    } else it.u.slot = t;
 
@@ -493,27 +426,109 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
 
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m) {
     struct mapping * n = debug_allocate_mapping(m->size);
+    struct mapping_iterator it;
     unsigned INT32 e;
     struct keypair * k;
 
-    for (e = 0; e <= m->hash_mask; e++) if (k = m->table[e]) {
-	struct keypair ** slot = n->table + e;
+    mapping_builder_init(&it, n);
 
-	do {
-	    struct keypair * t = ba_lalloc(&n->allocator);
-	    t->next = NULL;
-	    t->hval = k->hval;
-	    assign_svalue_no_free(&t->key, &k->key);
-	    assign_svalue_no_free(&t->u.val, &k->u.val);
-	    *slot = t;
-	    slot = &(t->next);
-	} while (k = k->next);
+    for (e = 0; e <= m->hash_mask; e++) {
+	struct keypair * k;
+	for (k = m->table[e]; k; k = k->next) {
+	    mapping_builder_add(&it, k);
+	}
     }
+
+    mapping_builder_exit(&it);
 
     return n;
 }
 
-static struct mapping *or_mappings(struct mapping *a, struct mapping *b) {
+struct mapping_op_context {
+    struct mapping_iterator ita, itb, builder;
+}
+
+// this one also gets rid of the mapping
+static void cleanup_mapping_op(struct mapping_op_context * c) {
+    mapping_it_exit(&c->ita);
+    mapping_it_exit(&c->itb);
+    do_free_mapping(c->builder->m);
+    mapping_it_exit(&c->builder);
+}
+
+static struct mapping *or_mappings(const struct mapping *a, const struct mapping *b) {
+    // TODO: we want to use restrict here, since the keypairs can never alias
+    struct mapping * ret;
+    struct keypair * __restrict__ ka, * __restrict__ kb; 
+    struct mapping_op_context c;
+    struct keypair ** t;
+    struct mapping_iterator * itp;
+    ONERROR err;
+
+    if (a->size < b->size) {
+	struct mapping * t = a;
+	a = b;
+	b = t;
+    }
+
+    if (!b->size) return copy_mapping(b);
+
+    // TODO: maybe this is too much, but relocation is rather expensive
+    ret = debug_allocate_mapping(a->size + b->size);
+
+    mapping_builder_init(&c.buider, ret);
+
+    mapping_it_init(&c.ita, a);
+    mapping_it_next(&c.ita, &ka);
+
+    mapping_it_init(&c.itb, b);
+    mapping_it_next(&c.itb, &kb);
+
+    SET_ONERROR(err, cleanup_mapping_op, &c);
+
+    while (1) {
+	if (ka->hval < kb->hval) {
+	    t = &ka;
+	    itp = &c.ita;
+	    goto insert;
+	}
+	if (ka->hval > kb->hval) {
+	    t = &ka;
+	    itp = &c.ita;
+	    goto insert;
+	}
+
+	do {
+	     
+	} while (0);
+	
+insert:
+	mapping_builder_add(&c.builder, *t);
+	if (!mapping_it_next(itp, t)) {
+	    goto insert_rest;
+	}
+    }
+
+insert_rest:
+    if (itp == &ita) {
+	itp = &c.itb;
+	t = &kb;
+    } else {
+	itp = &c.ita;
+	t = &ka;
+    }
+
+    do {
+	mapping_builder_add(&c.builder, *t);
+    } while (mapping_it_next(itp, t));
+
+    UNSET_ONERROR(err);
+
+    mapping_builder_exit(&c.ita);
+    mapping_it_exit(&c.ita);
+    mapping_it_exit(&c.itb);
+
+    return ret;
 }
 
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);

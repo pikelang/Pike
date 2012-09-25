@@ -10,19 +10,22 @@
 # define AVG_CHAIN_LENGTH	4
 #endif
 
+// TODO this is maybe not layouted in the best
+// way possible?
 struct keypair {
     struct ht_keypair * next;
-    unsigned INT32 hval;
     struct svalue key;
     union {
 	struct svalue val;
 	struct ht_keypair * next;
     } u;
+    unsigned INT32 hval;
 }
 
 struct mapping {
     PIKE_MEMORY_OBJECT_MEMBERS;
     unsigned INT32 hash_mask;
+    unsigned INT32 magnitude;
     unsigned INT32 size;
     struct keypair ** table; 
     struct hash_iterator * first_iterator;
@@ -39,16 +42,12 @@ struct mapping_iterator {
 	struct ht_keypair ** slot;
     } u;
     struct mapping * m;
-    unsigned INT32 hash_mask;
-    unsigned INT32 n;
 }
 
 static INLINE void mapping_it_init(struct mapping_iterator * it, struct mapping * m) {
     DOUBLELINK(m->first_iterator, it);
     it->u.current = NULL;
     it->m = m;
-    it->hash_mask = m->hash_mask;
-    it->n = (unsigned INT32)-1;
 }
 
 static INLINE void mapping_it_exit(struct mapping_iterator * it) {
@@ -64,17 +63,32 @@ static INLINE int mapping_it_next(struct mapping_iterator * it,
 				  struct keypair ** slot) {
     const struct keypair * k = it->u.current;
     const struct mapping * m = it->m;
-    unsigned INT32 i = it->n;
+    unsigned INT32 i;
 
-    if (it->hash_mask == m->hash_mask) {
-	return mapping_it_next_eq(it, slot);
-    } else if (it->hash_mask < m->hash_mask) {
-	/* mapping has grown in the meantime */
-	return mapping_it_next_grown(it, slot);
+    if (!k) {
+	i = 0;
     } else {
-	/* mapping has been shrunk in the meantime */
-	return mapping_it_next_shrunk(it, slot);
+redo:
+	if (k->next) {
+	    k = k->next;
+	    goto done;
+	}
+	i = (k->hval >> m->magnitude) + 1;
+	k = NULL;
+	// TODO the iterator will reset after next() retuns
+	// 0 once
     }
+
+    for (; i <= m->hash_mask; i++) if (k = m->table[i]) break;
+
+done:
+    // TODO: we need to filter here on new elements, that have been
+    // added after the iterator was created. or maybe have a second iterator
+    // type for that
+    if (keypair_deleted(k)) goto redo;
+
+    *slot = it->u.current = k;
+    return !!k;
 }
 
 /* set iterator to continue iteration from k
@@ -82,8 +96,37 @@ static INLINE int mapping_it_next(struct mapping_iterator * it,
 static INLINE void mapping_it_set(struct mapping_iterator * it, const struct keypair * k) {
     const struct mapping * m = it->m;
     it->u.current = k;
-    it->hash_mask = m->hash_mask;
-    it->n = m->hash_mask & k->hval;
+}
+
+static INLINE void mapping_builder_init(struct mapping_iterator * it,
+					struct mapping * m) {
+    mapping_it_init(it, m);
+}
+
+static INLINE void mapping_builder_add(struct mapping_iterator * it, struct keypair * k) {
+    struct keypair ** slot, * n;
+    const struct mapping * m = it->m;
+
+    if (it->u.current) {
+	unsigned INT32 hval = it->u.current->hval;
+	if ((hval ^ k->hval) >> m->magnitude)
+	    goto new_slot;
+	slot = &k->next;    
+    } else {
+new_slot:
+	slot = low_get_bucket(m, k->hval);
+    }
+    n = ba_lalloc(&m->allocator);
+    n->next = NULL;
+    n->hval = k->hval;
+    assign_svalue_no_free(&n->key, &k->key);
+    assign_svalue_no_free(&n->u.val, &k->u.val);
+    *slot = n;
+    it->u.current = n
+}
+
+static INLINE void mapping_builder_finish(struct mapping_iterator * it) {
+    mapping_it_exit(it);
 }
 
 extern struct mapping * first_mapping;
