@@ -140,6 +140,8 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2);
 
 
 
+void mapping_free_keypair(struct mapping_data *md, struct keypair *k);
+
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size);
 
 /** Function that actually frees the mapping data, called by the wrapper
