@@ -23,6 +23,12 @@ ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
 #define THIS_MSEARCH ((struct pike_mem_searcher *)(Pike_fp->current_storage))
 
+/* NB: We use the least significant bit of memsearch_cache_threshold
+ *     to indicate whether we are at MIN_MEMSEARCH_THRESHOLD or not.
+ */
+#define MIN_MEMSEARCH_THRESHOLD	128
+static int memsearch_cache_threshold;
+
 static struct mapping *memsearch_cache;
 static struct program *pike_search_program;
 
