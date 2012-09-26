@@ -13,36 +13,76 @@ class Stat
   string name;
   object /* Filesystem.Base */ filesystem;
 
-  //! @dl
-  //! @item fifo
   //! Is the file a FIFO?
-  //! @item chr
-  //! Is the file a character device?
-  //! @item dir
-  //! Is the file (?) a directory?
-  //! @item blk
-  //! Is the file a block device?
-  //! @item reg
-  //! Is the file a regular file?
-  //! @item lnk
-  //! Is the file a link to some other file or directory?
-  //! @item sock
-  //! Is the file a socket?
-  //! @item door
-  //! @xml{<fixme>Document this function.</fixme>@}
-  //! @enddl
+  //!
   //! @returns
   //! 1 if the file is of a specific type
   //! 0 if the file is not.
   //! @seealso
   //! [set_type]
   int(0..1) isfifo() { return (mode&0xF000)==0x1000; }
+
+  //! Is the file a character device?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) ischr()  { return (mode&0xF000)==0x2000; }
+
+  //! Is the file (?) a directory?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) isdir()  { return (mode&0xF000)==0x4000; }
+
+  //! Is the file a block device?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) isblk()  { return (mode&0xF000)==0x6000; }
+
+  //! Is the file a regular file?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) isreg()  { return (mode&0xF000)==0x8000; }
+
+  //! Is the file a link to some other file or directory?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) islnk()  { return (mode&0xF000)==0xa000; }
+
+  //! Is the file a socket?
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) issock() { return (mode&0xF000)==0xc000; }
+
+  //! @xml{<fixme>Document this function.</fixme>@}
+  //!
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
   int(0..1) isdoor() { return (mode&0xF000)==0xd000; }
 
   //! Set a type for the stat-object.
