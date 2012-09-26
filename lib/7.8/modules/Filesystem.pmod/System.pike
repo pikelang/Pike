@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.8
 
 //! Implements an abstraction of the normal filesystem.
 
@@ -100,7 +100,7 @@ Filesystem.Base cd(string directory)
   directory = replace( directory, "\\", "/" );
 #endif
   if(!st) return 0;
-  if(st->isdir) // stay
+  if(st->isdir()) // stay
     return this_program(combine_path(wd, directory),
 			root, 1, parent);
   return st->cd(); // try something else

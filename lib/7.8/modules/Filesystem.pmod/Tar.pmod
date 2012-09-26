@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.8
 
 constant EXTRACT_SKIP_MODE = 1;
 constant EXTRACT_SKIP_EXT_MODE = 2;
