@@ -124,7 +124,7 @@
 
 #endif
 
-#define BLOCKSIZE 2048
+#define BLOCKSIZE 8192
 
 #define IS_SUCCESS(RES) ((RES == OCI_SUCCESS) || (RES == OCI_SUCCESS_WITH_INFO))
 
