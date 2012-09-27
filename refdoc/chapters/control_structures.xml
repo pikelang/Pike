@@ -248,8 +248,8 @@ the modem by using the functions <tt>write</tt> and <tt>gets</tt>.</p>
 
 <p><tt>Foreach</tt> is unique in that it does not have an explicit test expression
 evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
-the statement once for each element in an array. <tt>Foreach</tt> looks like
-this:</p>
+the statement once for each element in a set. <tt>Foreach</tt> has two
+syntaxes, the first of which look like this:</p>
 
 <example>
 foreach ( array_expression, variable )
@@ -281,26 +281,26 @@ for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 }
 </example>
 
-<p><tt>Foreach</tt> can also iterate over a mapping, providing both the key and the
-value at the same time:</p>
+<p>The second syntax for <tt>foreach</tt> is the more flexible iterator syntax,
+which can be used to iterate over arrays, mappings, multisets and strings as
+well as some objects. It also has the option of providing the index value:</p>
 
 <example>
-foreach ( mapping_expression; variable1; variable2 )
+foreach ( iterable_expression; optional_index_variable; optional_value_variable )
   statement;
 </example>
 
 <p>This is approximately equivalent to:</p>
 
 <example>
-mapping tmp1 = mapping_expression;
-array tmp2 = indices(tmp1);
-for ( tmp3 = 0; tmp3 &lt; sizeof(tmp2); tmp3++ )
-{
-  variable1 = tmp2 [ tmp3 ];
-  variable2 = tmp1 [ variable1 ];
+for (Iterator iter = get_iterator(iterable_expression); iter; iter->next()) {
+  optional_index_variable = iter->index();
+  optional_value_variable = iter->value();
   statement;
 }
 </example>
+
+<p>See <ref>get_iterator()</ref> for further details.</p>
 
 </subsection>
 </section>
