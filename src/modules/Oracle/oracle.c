@@ -110,7 +110,7 @@
  * NOTE: Ignored if STATIC_BUFFERS above is enabled.
  */
 
-#define POLLING_FETCH
+/* #define POLLING_FETCH */
 
 /* End user-changable defines */
 
