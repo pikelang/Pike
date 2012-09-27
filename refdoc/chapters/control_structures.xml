@@ -253,7 +253,7 @@ this:</p>
 
 <example>
 foreach ( array_expression, variable )
-  statement ;
+  statement;
 </example>
 
 <p>We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
@@ -273,10 +273,31 @@ function in chapter 2. What foreach does is:</p>
 doing the same thing with a <tt>for</tt> loop, as shown here:</p>
 
 <example>
-array tmp1= array_expression;
+array tmp1 = array_expression;
 for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 {
   variable = tmp1 [ tmp2 ];
+  statement;
+}
+</example>
+
+<p><tt>Foreach</tt> can also iterate over a mapping, providing both the key and the
+value at the same time:</p>
+
+<example>
+foreach ( mapping_expression; variable1; variable2 )
+  statement;
+</example>
+
+<p>This is approximately equivalent to:</p>
+
+<example>
+mapping tmp1 = mapping_expression;
+array tmp2 = indices(tmp1);
+for ( tmp3 = 0; tmp3 &lt; sizeof(tmp2); tmp3++ )
+{
+  variable1 = tmp2 [ tmp3 ];
+  variable2 = tmp1 [ variable1 ];
   statement;
 }
 </example>
