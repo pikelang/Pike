@@ -97,10 +97,13 @@
 %token TOK_WHILE
 %token TOK_XOR_EQ
 %token TOK_OPTIONAL
+%token TOK_SAFE_INDEX
+%token TOK_SAFE_START_INDEX
 
 
 %right '='
 %right '?'
+
 %left TOK_LOR
 %left TOK_LAND
 %left '|'
@@ -711,7 +714,7 @@ type_or_error: simple_type
     check_type_string($1->u.sval.u.type);
 #endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
-      free_type(Pike_compiler->compiler_frame->current_type); 
+      free_type(Pike_compiler->compiler_frame->current_type);
     copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		   $1->u.sval.u.type);
     free_node($1);
@@ -797,7 +800,7 @@ optional_constant: /* empty */
 
 def: modifiers optional_attributes type_or_error optional_constant optional_stars
      TOK_IDENTIFIER push_compiler_frame0
-  '(' 
+  '('
   {
     $<number>$ = 0;
     /* Check for the (very special) case of create and create_args. */
@@ -850,13 +853,13 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while(--$5>=0) push_type(T_ARRAY);
-    
+
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
     Pike_compiler->compiler_frame->current_return_type = compiler_pop_type();
-    
+
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-    
+
     e = $<number>9 + $10 - 1;
     if(Pike_compiler->varargs &&
        (!$<number>9 || (Pike_compiler->num_create_args >= 0)))
@@ -1188,7 +1191,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
    /* yychar = '}';	*/ /* Put the '}' back on the input stream */
   }
   | modifiers
-   '{' 
+   '{'
     {
       $<number>$=THIS_COMPILATION->lex.pragmas;
       THIS_COMPILATION->lex.pragmas|=$1;
@@ -1234,7 +1237,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
        islocal($3->u.sval.u.string) >= 0)
       my_yyerror("Variable %S appears twice in argument list.",
 		 $3->u.sval.u.string);
-    
+
     i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
     if (i >= 0) {
       /* Don't warn about unused arguments. */
@@ -1424,7 +1427,7 @@ full_type: type4
   ;
 
 type6: type | identifier_type ;
-  
+
 type: type '*'
   {
     if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
@@ -1489,7 +1492,7 @@ type4: type4 '|' type8 { push_type(T_OR); }
   ;
 
 type2: type2 '|' type8 { push_type(T_OR); }
-  | basic_type 
+  | basic_type
   ;
 
 type8: basic_type | identifier_type ;
@@ -1537,7 +1540,7 @@ basic_type:
   ;
 
 identifier_type: idents
-  { 
+  {
     resolv_constant($1);
 
     if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
@@ -1599,7 +1602,7 @@ identifier_type: idents
 	  }
 	}
 	/* FALL_THROUGH */
-      
+
       default:
 	if (Pike_compiler->compiler_pass!=1)
 	  my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
@@ -1607,7 +1610,7 @@ identifier_type: idents
 	push_int(0);
 	push_object_type(0, 0);
 	break;
-	
+
       case T_PROGRAM:
 	p = Pike_sp[-1].u.program;
 	push_object_type(0, p?(p->id):0);
@@ -1816,17 +1819,17 @@ opt_array_type: '(' type7 ')'
   ;
 
 opt_mapping_type: '('
-  { 
+  {
   }
   type7 ':'
-  { 
+  {
   }
   type7
-  { 
+  {
     push_reverse_type(T_MAPPING);
   }
   ')'
-  | /* empty */ 
+  | /* empty */
   {
     push_type(T_MIXED);
     push_type(T_MIXED);
@@ -1912,7 +1915,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
-  | optional_stars TOK_IDENTIFIER '=' expr0 
+  | optional_stars TOK_IDENTIFIER '=' expr0
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
@@ -1993,7 +1996,7 @@ block:'{'
   {
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  } 
+  }
   line_number_info
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
@@ -2142,7 +2145,7 @@ normal_label_statement: statement_with_semicolon
 /*    yychar = '}'; */	/* Put the '}' back on the input stream. */
     $$=0;
   }
-  | ';' { $$=0; } 
+  | ';' { $$=0; }
   ;
 
 statement: normal_label_statement
@@ -2240,7 +2243,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
       for(; e>=0; e--) {
 	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 	push_type(T_FUNCTION);
-      }    
+      }
       type=compiler_pop_type();
       Pike_compiler->compiler_frame->current_function_number =
 	define_function(name, type,
@@ -2299,7 +2302,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       push_type(T_FUNCTION);
     }
-    
+
     type=compiler_pop_type();
 
     name = $3->u.sval.u.string;
@@ -2369,7 +2372,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
   }
   ;
 
-local_function: TOK_IDENTIFIER push_compiler_frame1 func_args 
+local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     struct pike_string *name;
     struct pike_type *type;
@@ -2386,7 +2389,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     /***/
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-    
+
     e=$3-1;
     if(Pike_compiler->varargs)
     {
@@ -2401,7 +2404,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
     push_type(T_FUNCTION);
     }
-    
+
     type=compiler_pop_type();
     /***/
 
@@ -2488,7 +2491,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(Pike_compiler->compiler_frame->lexical_scope & 
+      if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
 	$$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
@@ -2512,7 +2515,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   ;
 
-local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args 
+local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     struct pike_string *name;
     struct pike_type *type;
@@ -2522,7 +2525,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     /***/
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
-    
+
     push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
@@ -2535,7 +2538,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     /***/
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-    
+
     e=$4-1;
     if(Pike_compiler->varargs)
     {
@@ -2550,7 +2553,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       push_type(T_FUNCTION);
     }
-    
+
     type=compiler_pop_type();
     /***/
 
@@ -2638,7 +2641,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(Pike_compiler->compiler_frame->lexical_scope & 
+      if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
         $$ = mktrampolinenode($<number>5,Pike_compiler->compiler_frame);
@@ -2846,7 +2849,7 @@ class: TOK_CLASS line_number_info optional_identifier
 	int nargs = Pike_compiler->num_create_args;
 
 	push_compiler_frame(SCOPE_LOCAL);
-	
+
 	/* Init: Prepend the create arguments. */
 	if (Pike_compiler->num_create_args < 0) {
 	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
@@ -2897,7 +2900,7 @@ class: TOK_CLASS line_number_info optional_identifier
 			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
 			  0,
 			  OPT_SIDE_EFFECT);
-	
+
 	if (Pike_compiler->compiler_pass == 2) {
 	  node *create_code = NULL;
 	  int f;
@@ -2929,7 +2932,7 @@ class: TOK_CLASS line_number_info optional_identifier
 		 */
 		free_type(local_node->type);
 		copy_pike_type(local_node->type, mixed_type_string);
-	  
+
 		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 					    variable[e].type, local_node);
 	      }
@@ -3098,7 +3101,7 @@ enum: TOK_ENUM
     type_stack_mark();
     push_type(T_ZERO);	/* Joined type so far. */
   }
-  optional_identifier '{' 
+  optional_identifier '{'
   {
     push_int(-1);	/* Previous value. */
     $<n>$ = mkconstantsvaluenode(Pike_sp-1);
@@ -3176,7 +3179,7 @@ end_cond: ')'
 
 optional_else_part: { $$=0; }
   | TOK_ELSE statement { $$=$2; }
-  ;      
+  ;
 
 safe_lvalue: lvalue
   {
@@ -3383,7 +3386,7 @@ return: TOK_RETURN expected_semicolon
     $$=mknode(F_RETURN,$2,0);
   }
   ;
-	
+
 unused: { $$=0; }
   | safe_comma_expr { $$=mkcastnode(void_type_string, $1);  }
   ;
@@ -3404,12 +3407,12 @@ comma_expr: comma_expr2
   | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
-          
+
 
 comma_expr2: expr0
   | comma_expr2 ',' expr0
   {
-    $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3); 
+    $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3);
   }
   ;
 
@@ -3466,7 +3469,7 @@ optional_comma: { $$=0; } | ',' { $$=1; };
 expr_list: { $$=0; }
   | expr_list2 optional_comma
   ;
-         
+
 
 expr_list2: expr00
   | expr_list2 ',' expr00 { $$=mknode(F_ARG_LIST,$1,$3); }
@@ -3489,7 +3492,7 @@ m_expr_list2: assoc_pair
   | m_expr_list2 ',' error
   ;
 
-assoc_pair:  expr0 expected_colon expr0 
+assoc_pair:  expr0 expected_colon expr0
   {
     $$=mknode(F_ARG_LIST,$1,$3);
   }
@@ -3515,23 +3518,23 @@ expr1: expr2
   | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
   | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
   | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
-  | expr1 TOK_LOR error 
+  | expr1 TOK_LOR error
   | expr1 TOK_LAND error
-  | expr1 '|' error   
-  | expr1 '^' error   
-  | expr1 '&' error   
-  | expr1 TOK_EQ error  
-  | expr1 TOK_NE error  
-  | expr1 '>' error   
-  | expr1 TOK_GE error  
-  | expr1 '<' error   
-  | expr1 TOK_LE error  
-  | expr1 TOK_LSH error 
-  | expr1 TOK_RSH error 
-  | expr1 '+' error   
-  | expr1 '-' error   
-  | expr1 '*' error   
-  | expr1 '%' error   
+  | expr1 '|' error
+  | expr1 '^' error
+  | expr1 '&' error
+  | expr1 TOK_EQ error
+  | expr1 TOK_NE error
+  | expr1 '>' error
+  | expr1 TOK_GE error
+  | expr1 '<' error
+  | expr1 TOK_LE error
+  | expr1 TOK_LSH error
+  | expr1 TOK_RSH error
+  | expr1 '+' error
+  | expr1 '-' error
+  | expr1 '*' error
+  | expr1 '%' error
   | expr1 '/' error
   ;
 
@@ -3624,7 +3627,7 @@ optional_block: /* EMPTY */ { $$=0; }
       /* Tentative return type. */
       push_type(T_MIXED);
     }
-    
+
     push_type(T_VOID);
     push_type(T_MANY);
 /*
@@ -3632,7 +3635,7 @@ optional_block: /* EMPTY */ { $$=0; }
     for(; e>=0; e--)
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 */
-    
+
     type=compiler_pop_type();
 
     name = get_new_name(NULL);
@@ -3643,7 +3646,7 @@ optional_block: /* EMPTY */ { $$=0; }
 	    (long)Pike_compiler->new_program->id,
 	    Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
-    
+
     f=dooptcode(name,
 		$5,
 		type,
@@ -3719,7 +3722,7 @@ implicit_modifiers:
   ;
 
 expr4: string
-  | TOK_NUMBER 
+  | TOK_NUMBER
   | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
   | catch
   | gauge
@@ -3748,6 +3751,72 @@ expr4: string
     $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
+  }
+  | expr4 TOK_SAFE_START_INDEX line_number_info expr0 ']'
+  {
+    /* A?[X] to ((tmp=A) && tmp[X]) */
+    if( $1->token == F_LOCAL )
+    {
+      $$=mknode(F_LAND, $1, mknode(F_INDEX,  $1, $4));
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1->type )
+      {
+        int temporary;
+        $1->type->refs++;
+
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
+                  mknode(F_INDEX,  mklocalnode(temporary,0), $4));
+      }
+      else
+      {
+        $$=mknode(F_INDEX, $1,$4);
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 TOK_SAFE_START_INDEX  line_number_info
+    range_bound expected_dot_dot range_bound ']'
+  {
+    /* A?[X..Y] to ((tmp=A) && tmp[X..Y]) */
+    node *range = mknode(':',$4,$6);
+    if( $1->token == F_LOCAL )
+    {
+      $$ = mknode( F_LAND, $1, mknode(F_RANGE, $1, range) );
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1->type )
+      {
+        int temporary;
+        $1->type->refs++;
+
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0) ),
+                  mknode(F_RANGE,  mklocalnode(temporary,0), range) );
+      }
+      else
+      {
+        $$ = mknode( F_LAND, $1, mknode(F_RANGE,$1,range) );
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+
+
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
   }
   | expr4 open_bracket_with_line_info error ']'
   {
@@ -3829,6 +3898,36 @@ expr4: string
   | expr4 TOK_ARROW line_number_info magic_identifier
   {
     $$=mknode(F_ARROW,$1,$4);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
+  {
+    /* A?->B to ((tmp=A) && tmp->B) */
+    int temporary;
+    if( $1->token == F_LOCAL )
+    {
+      $$=mknode(F_LAND, $1, mknode(F_ARROW,  $1, $4));
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1->type )
+      {
+        $1->type->refs++;
+
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
+                  mknode(F_ARROW,  mklocalnode(temporary,0), $4));
+      }
+      else
+      {
+        $$=mknode(F_ARROW, $1,$4);
+        yyerror("Indexing unexpected value.");
+      }
+    }
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }

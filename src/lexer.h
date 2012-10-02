@@ -1069,13 +1069,38 @@ unknown_directive:
       if(GOBBLE('<')) return TOK_MULTISET_START;
       return '(';
 
-    case ']':
     case '?':
+      if(GOBBLE(':'))
+        return TOK_LOR;
+
+      if(GOBBLE('-') ) /* safe index: ?->  or ?[] */
+      {
+        if( GOBBLE( '>' ) ) /* ?-> */
+            return TOK_SAFE_INDEX;
+        SKIPN(-1); /* Undo GOBBLE('-') above */
+      }
+
+      /* Probably wanted:
+
+         ?.   for safe constant index
+         ?[]  for safe [] index
+
+         They however conflict with valid ?: syntaxes.
+      */
+
+      /* if( GOBBLE('[' ) ) */
+      /*   return TOK_SAFE_START_INDEX; */
+
+      /* if( GOBBLE('.' ) ) */
+      /*   return TOK_SAFE_INDEX; */
+
+    case ']':
     case ',':
     case '~':
     case '@':
     case ')':
     case '[':
+
     case '{':
     case ';':
     case '}': return c;
