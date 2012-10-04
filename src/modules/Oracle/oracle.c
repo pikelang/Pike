@@ -1942,6 +1942,17 @@ static void f_oracle_create(INT32 args)
   return;
 }
 
+static void f_commit(INT32 args)
+{
+  sword ret = 0;
+  struct dbcon *dbcon=THIS_DBCON;
+  ret = OCITransCommit(dbcon->context, dbcon->error_handle, 0); 
+  if(ret != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
+  pop_n_elems(args);
+  push_int(0);
+}
+
 static void f_compile_query_create(INT32 args)
 {
   int rc;
@@ -2745,6 +2756,9 @@ PIKE_MODULE_INIT
 #endif
       MY_END_CLASS(compile_query);
     }
+
+    ADD_FUNCTION("commit", f_commit,
+                tFunc(tVoid, tVoid), ID_PUBLIC);
 
     ADD_FUNCTION("create", f_oracle_create,
 		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
