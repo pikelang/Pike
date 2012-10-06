@@ -83,6 +83,12 @@ class DynamicImporter {
       static array(mixed) _values() { return values(attrs); }
       static mixed `[](string index) { return attrs[index]; }
       static mixed `->(string index) { return attrs[index]; }
+
+      static Instance `()(mixed ... args)
+      {
+	/* FIXME */
+	return attrs["new"](@args);
+      }
     }
 
     class Enum
