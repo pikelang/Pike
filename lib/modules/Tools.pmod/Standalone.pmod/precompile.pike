@@ -1479,6 +1479,7 @@ int evaluate_method(mixed q)
   return val;
 }
 
+// Polymorphic overloader.
 array generate_overload_func_for(array(FuncData) d,
 				 int indent,
 				 int min_possible_arg,
@@ -1580,6 +1581,11 @@ array generate_overload_func_for(array(FuncData) d,
 
   if(best_method == -1)
   {
+    if (min_args == max_args) {
+      error("Can't differentiate between %d implementations of %s().\n",
+	    sizeof(d), name);
+    }
+
     /* Switch on number of arguments */
     out+=({PC.Token(sprintf("%*nswitch(args) {\n",indent))});
     for(int a=min_args;a<=max_args;a++)

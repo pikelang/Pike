@@ -103,13 +103,17 @@ struct svalue
 #define SUBTYPEOF(SVAL)	((SVAL).subtype)
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
-#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do {	\
+#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
-    (SVAL).u.FIELD = (EXPR);				\
-    SET_SVAL_TYPE((SVAL), (TYPE));			\
-    SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));		\
+    struct svalue * __sv_ptr = &( SVAL );			\
+    __sv_ptr->u.FIELD = (EXPR);				\
+    SET_SVAL_TYPE(*__sv_ptr, (TYPE));			\
+    SET_SVAL_SUBTYPE(*__sv_ptr, (SUBTYPE));		\
   } while(0)
+
+/*
+*/
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
 #define PIKE_T_ARRAY 0
@@ -972,7 +976,7 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
 #endif
 
 #else /* FOO_PIKE_RUN_UNLOCKED */
-#define swap_svalues swap_svalues
+#define swap_svalues swap_svalues_unlocked
 #define free_svalue free_svalue_unlocked
 #define free_short_svalue free_short_svalue_unlocked 
 #define add_ref_svalue add_ref_svalue_unlocked

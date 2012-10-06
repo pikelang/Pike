@@ -624,8 +624,8 @@ void f_limit(INT32 args)
       pop_n_elems(2); /* a > X, return a (-3)*/
 }
 
-/*! @decl int|float|object min(int|float|object ... args)
- *! @decl string min(string ... args)
+/*! @decl int|float|object min(int|float|object, int|float|object ... args)
+ *! @decl string min(string, string ... args)
  *! @decl int(0..0) min()
  *!
  *! Returns the smallest value among @[args]. Compared objects
@@ -656,8 +656,8 @@ void f_min(INT32 args)
   pop_n_elems(args-1);
 }
 
-/*! @decl int|float|object max(int|float|object ... args)
- *! @decl string max(string ... args)
+/*! @decl int|float|object max(int|float|object, int|float|object ... args)
+ *! @decl string max(string, string ... args)
  *! @decl int(0..0) max()
  *!
  *! Returns the largest value among @[args]. Compared objects
@@ -819,11 +819,12 @@ PIKE_MODULE_INIT
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
 
 #define CMP_TYPE							\
-  tOr4(tFuncV(tNone,tString,tString),					\
+  tOr4(tFuncV(tString,tString,tString),					\
        tFunc(tVoid,tInt0),						\
-       tFuncV(tNone,tSetvar(0,tOr(tInt,tFloat)),tVar(0)),		\
+       tFuncV(tSetvar(0,tOr(tInt,tFloat)),				\
+	      tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1))),	\
        tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
-	      tFuncV(tNone,tMix,tMix)))
+	      tFuncV(tMix,tMix,tMix)))
 
   ADD_EFUN("max",f_max,CMP_TYPE,0);
   ADD_EFUN("min",f_min,CMP_TYPE,0);

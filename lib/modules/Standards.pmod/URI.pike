@@ -179,6 +179,9 @@ string combine_uri_path(string base, string rel)
 //! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
 //!   Set the new base URI to this.
+//! @throws
+//!   An exception is thrown if the @[uri] is a relative URI or only a
+//!   fragment, and missing a @[base_uri].
 void reparse_uri(this_program|string|void base_uri)
 {
   string uri = raw_uri;
@@ -352,6 +355,9 @@ void reparse_uri(this_program|string|void base_uri)
 //!   When uri is another URI object, the created
 //!   URI will inherit all properties of the supplied uri
 //!   except, of course, for its base_uri.
+//! @throws
+//!   An exception is thrown if the @[uri] is a relative URI or only a
+//!   fragment, and missing a @[base_uri].
 void create(this_program|string uri,
 	    this_program|string|void base_uri)
 {

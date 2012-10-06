@@ -20,6 +20,9 @@ AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
+# ___Mysql.so is wrapped by lib/modules/Mysql.pmod.
+MODULE_WRAPPER_PREFIX="___"
+
 PIKE_FEATURE_WITHOUT(Mysql)
 
 OLD_LIBS=$LIBS

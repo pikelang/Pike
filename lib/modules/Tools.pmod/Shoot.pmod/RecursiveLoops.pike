@@ -4,11 +4,11 @@ inherit Tools.Shoot.Test;
 constant name="Loops Recursed";
 
 int n=0;
-int iter=16;
 int d=5;
 
 void recur(int d)
 {
+   int iter=24;
    if (d--)
       for (int i=0; i<iter; i++) recur(d);
    else

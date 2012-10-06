@@ -331,7 +331,7 @@ class _Tar
       if (err) {
 #ifdef __NT__
 	// utime() is currently not supported for directories on WIN32.
-	if (!r->isdir())
+	if (!r->isdir)
 #endif
 	  werror("Tar: Failed to set modification time for %O.\n", dest);
       }
@@ -339,7 +339,7 @@ class _Tar
 #endif
 
 #if constant (chmod)
-    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk()) {
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
       if (which_bits & EXTRACT_SKIP_EXT_MODE)
 	chmod (dest, r->mode & 0777);
       else
@@ -443,7 +443,7 @@ class _Tar
 	  string destpath = dest_dir +
 	    (stringp (filter_res) ? filter_res : subpath);
 
-	  if (r->isdir()) {
+	  if (r->isdir) {
 	    if (!Stdio.mkdirhier (destpath))
 	      error ("Failed to create directory %q: %s\n",
 		     destpath, strerror (errno()));
@@ -460,7 +460,7 @@ class _Tar
 		error ("Failed to create directory %q: %s\n",
 		       destpath, strerror (errno()));
 
-	    if (r->isreg()) {
+	    if (r->isreg) {
 	      Stdio.File o = Stdio.File();
 	      if (!o->open (destpath, "wct"))
 		error ("Failed to create %q: %s\n",
@@ -483,7 +483,7 @@ class _Tar
 	    }
 
 #if constant (symlink)
-	    else if (r->islnk()) {
+	    else if (r->islnk) {
 	      symlink (r->arch_linkname, destpath);
 
 	      if (do_extract_bits)
@@ -560,7 +560,7 @@ class _TarFS
   {
     Filesystem.Stat st = stat(directory);
     if(!st) return 0;
-    if(st->isdir()) // stay in this filesystem
+    if(st->isdir) // stay in this filesystem
     {
       object new = _TarFS(tar, st->fullpath, root, parent);
       return new;

@@ -230,6 +230,7 @@ private mixed delayederror;
 private int copyinprogress;
 int _fetchlimit;
 int _alltext;
+int _forcetext;
 
 #ifdef NO_LOCKING
 int _qmtxkey;
@@ -271,15 +272,16 @@ protected string _sprintf(int type, void|mapping flags)
 }
 
 void create(object pgsqlsess,string query,int fetchlimit,
- int portalbuffersize,int alltyped,array params)
+ int portalbuffersize,int alltyped,array params,int forcetext)
 { _pgsqlsess = pgsqlsess;
   _query = query;
   _datarows = ({ }); numrows = UNDEFINED;
   fetchmutex = Thread.Mutex();
-  _fetchlimit=fetchlimit;
+  _fetchlimit=forcetext?0:fetchlimit;
   _portalbuffersize=portalbuffersize;
   _alltext = !alltyped;
   _params = params;
+  _forcetext = forcetext;
   steallock();
 }
 
@@ -343,7 +345,8 @@ private void releasesession()
     { PD("CopyDone\n");
       _pgsqlsess._c.sendcmd("c\0\0\0\4",1);
     }
-    _pgsqlsess.resync(2);
+    if(_pgsqlsess.is_open())
+      _pgsqlsess.resync(2);
   }
   _qmtxkey=UNDEFINED;
   _pgsqlsess=UNDEFINED;

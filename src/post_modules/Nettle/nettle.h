@@ -20,7 +20,8 @@ extern struct program *nettle_hash_program;
 
 
 char *pike_crypt_md5(int pl, const char *const pw,
-                     int sl, const char *const salt);
+                     int sl, const char *const salt,
+                     int ml, const char *const magic);
 
 void hash_init(void);
 

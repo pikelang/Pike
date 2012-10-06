@@ -141,7 +141,29 @@ Event.Event make_event(string source)
 		    n,days)>=2)
 	    return Event.Easter_Relative(id,s,n);
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
-	 
+
+      case "Equinox":
+	 if (sscanf(rule, "Equinox%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Vernal": case "Northward":
+	       return Event.Solar(0);
+	    case "Autumnal": case "Southward":
+	       return Event.Solar(2);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
+      case "Solstice":
+	 if (sscanf(rule, "Solstice%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Summer": case "Northern":
+	       return Event.Solar(1);
+	    case "Winter": case "Southern":
+	       return Event.Solar(3);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
       case "Weekday":
 	 if (sscanf(rule,"Weekday%*[ \t]%s%*[ \t]%d days",
 		    wd,days)>=2 && (n=wd2n[wd]))

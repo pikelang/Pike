@@ -1,36 +1,8 @@
 /* vim:syntax=c
  */
 #ifdef cmod___CMOD__
-#ifdef __SSE4_2__
-# include <smmintrin.h>
-#endif
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "pike_error.h"
-#include "pike_float.h"
-#include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
-#include "operators.h"
-#include "builtin_functions.h"
 
-#ifdef CB_USE_BLOCK_ALLOC
-# include "tree_block_alloc.h"
-
-static blk_alloc_t allocator;
-
-# define CB_NODE_ALLOC()	alloc_item(allocator)
-# define CB_NODE_FREE(x)	free_item(allocator, (void*)(x))
-#endif
-
-#define CB_SOURCE
-#define CB_STATIC
-#define CB_INLINE
-#define CB_NAMESPACE
+#include "common.h"
 
 #include "critbit/float2svalue.h"
 #define CB_PRINT_KEY(buf, key)			\
@@ -63,10 +35,18 @@ PIKECLASS FloatTree {
     SET_SVAL(*__, PIKE_T_FLOAT, 0, float_number, cb_decode_float((key).str)); \
 } while(0)
 #define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
-#define CB_STRING_FROM_SVALUE(v)	cb_encode_float((cb_float)	\
-		    (((v)->type == PIKE_T_INT )				\
-		     ? ((FLOAT_TYPE)(v)->u.integer)			\
-		     : (v)->u.float_number))
+
+static INLINE cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
+    cb_float f;
+
+    if (TYPEOF(*v) == PIKE_T_INT) {
+	f.f = (FLOAT_TYPE)v->u.integer;
+    } else {
+	f.f = v->u.float_number;
+    }
+
+    return cb_encode_float(f);
+}
 #define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
 
 #cmod_include "redefine.H"
@@ -82,20 +62,15 @@ PIKECLASS FloatTree {
 /*! @endmodule */
 
 void pike_init_floattree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    allocator = init_allocator(128, sizeof(cb_node));
-#endif
     INIT
 }
 
 void pike_exit_floattree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    free(allocator);
-    allocator = NULL;
-#endif
     EXIT
 }
 #else
-void pike_exit_floattree_module(void) {}
+void pike_exit_floattree_module(void) {
+    add_integer_constant("this_program_does_not_exist", 1, 0);
+}
 void pike_init_floattree_module(void) {}
 #endif

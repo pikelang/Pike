@@ -3277,6 +3277,13 @@ void fix_type_field(node *n)
   n->type = 0;
   n->node_info &= ~OPT_TYPE_NOT_FIXED;
 
+  /*
+    These two are needed if we want to extract types
+    from nodes while building the tree.
+  */
+  if( CAR(n) ) fix_type_field(CAR(n));
+  if( CDR(n) ) fix_type_field(CDR(n));
+
   switch(n->token)
   {
   case F_SOFT_CAST:
@@ -3327,6 +3334,7 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, mixed_type_string);
       break;
     }
+
     if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression.");
 

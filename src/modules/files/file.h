@@ -32,7 +32,7 @@ struct my_file
   struct fd_callback_box box;	/* Must be first. */
   /* The box is hooked in whenever box.backend is set. */
 
-  struct svalue event_cbs[4];
+  struct svalue event_cbs[6];
   /* Callbacks can be set without having the corresponding bits in
    * box.events, but not the other way around. */
 
@@ -124,6 +124,9 @@ CBFUNCS(read_callback)
 CBFUNCS(write_callback)
 CBFUNCS(read_oob_callback)
 CBFUNCS(write_oob_callback)
+CBFUNCS(fs_event_callback)
+
+static void file_query_fs_event_flags(INT32 args);
 
 static void file_write(INT32 args);
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);

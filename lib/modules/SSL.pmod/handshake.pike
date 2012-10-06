@@ -86,6 +86,9 @@ constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
+int has_next_protocol_negotiation;
+
+string next_protocol;
 
 #ifdef SSL3_PROFILING
 int timestamp;
@@ -94,7 +97,27 @@ void addRecord(int t,int s) {
 }
 #endif
 
+private array(string) select_server_certificate()
+{
+  array(string) certs;
+  if(context->select_server_certificate_func)
+    certs = context->select_server_certificate_func(context, server_names);
+  if(!certs)
+    certs = context->certificates;
 
+  return certs;
+}
+
+private object select_server_key()
+{
+  object key;
+  if(context->select_server_key_func)
+    key = context->select_server_key_func(context, server_names);
+  if(!key) // fallback on previous behavior.
+    key = context->rsa || context->dsa;
+
+  return key;
+}
 
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
@@ -133,9 +156,9 @@ Packet server_hello_packet()
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
-  if (secure_renegotiation) {
-    ADT.struct extensions = ADT.struct();
+  ADT.struct extensions = ADT.struct();
 
+  if (secure_renegotiation) {
     // RFC 5746 3.7:
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
@@ -145,8 +168,19 @@ Packet server_hello_packet()
     extension->put_var_string(client_verify_data + server_verify_data, 1);
 
     extensions->put_var_string(extension->pop_data(), 2);
-    struct->put_var_string(extensions->pop_data(), 2);
   }
+
+  if (has_next_protocol_negotiation && context->advertised_protocols) {
+    extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
+    ADT.struct extension = ADT.struct();
+    foreach (context->advertised_protocols;; string proto) {
+      extension->put_var_string(proto, 1);
+    }
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (!extensions->is_empty())
+      struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
@@ -181,21 +215,51 @@ Packet client_hello()
   struct->put_fix_uint_array(cipher_suites, 2);
   struct->put_var_uint_array(compression_methods, 1, 1);
 
+  ADT.struct extensions = ADT.struct();
+  ADT.struct extension;
+  int have_extensions = 0;
+
   if (secure_renegotiation) {
-    ADT.struct extensions = ADT.struct();
+    have_extensions++;
 
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    ADT.struct extension = ADT.struct();
+    extension = ADT.struct();
     extension->put_var_string(client_verify_data, 1);
     extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
     extensions->put_var_string(extension->pop_data(), 2);
-    struct->put_var_string(extensions->pop_data(), 2);
   }
+
+  if(context->client_use_sni)
+  {
+    have_extensions++;
+    extension = ADT.struct();
+    if(context->client_server_names)
+    {
+      foreach(context->client_server_names;; string server_name)
+      {
+        ADT.struct hostname = ADT.struct();
+        hostname->put_uint(0, 1); // hostname
+        hostname->put_var_string(server_name, 2); // hostname
+ 
+        extension->put_var_string(hostname->pop_data(), 2);
+      }
+    }
+
+#ifdef SSL3_DEBUG
+  werror("SSL.handshake: Adding Server Name extension.\n");
+#endif
+
+    extensions->put_uint(EXTENSION_server_name, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  } 
+
+  if(have_extensions)
+    struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 
@@ -255,7 +319,7 @@ Packet server_key_exchange_packet()
     return 0;
   }
 
-  session->cipher_spec->sign(context, client_random + server_random, struct);
+  session->cipher_spec->sign(session, client_random + server_random, struct);
   return handshake_packet (HANDSHAKE_server_key_exchange,
 			  struct->pop_data());
 }
@@ -283,7 +347,7 @@ Packet client_key_exchange_packet()
     pending_read_state = res[0];
     pending_write_state = res[1];
 
-    data = (temp_key || context->rsa)->encrypt(premaster_secret);
+    data = (temp_key || session->rsa)->encrypt(premaster_secret);
 
     if(version[1] >= PROTOCOL_TLS_1_0)
       data=sprintf("%2c",sizeof(data))+data;
@@ -360,9 +424,39 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   /* Send Certificate, ServerKeyExchange and CertificateRequest as
    * appropriate, and then ServerHelloDone.
    */
-  if (context->certificates)
+
+  array(string) certs;
+#ifdef SSL3_DEBUG
+  werror("Selecting server key.\n");
+#endif
+
+  // populate the key to be used for the session.
+  object key = select_server_key();
+
+#ifdef SSL3_DEBUG
+  werror("Selected server key: %O\n", key);
+#endif
+
+  if(Program.implements(object_program(key), Crypto.DSA))
+  { 
+    session->dsa = [object(Crypto.DSA)]key;
+  }
+  else
   {
-    send_packet(certificate_packet(context->certificates));
+    session->rsa = [object(Crypto.RSA)]key;
+  }
+
+#ifdef SSL3_DEBUG
+  werror("Checking for Certificate.\n");
+#endif
+
+  if (certs = select_server_certificate())
+  {
+#ifdef SSL3_DEBUG
+  werror("Sending Certificate.\n");
+#endif
+
+    send_packet(certificate_packet(certs));
   }
   else if (session->cipher_spec->sign != .Cipher.anon_sign)
     // Otherwise the server will just silently send an invalid
@@ -447,7 +541,7 @@ Packet certificate_packet(array(string) certificates)
 {
   ADT.struct struct = ADT.struct();
   int len = 0;
-  
+
   if(certificates && sizeof(certificates))
     len = `+( @ Array.map(certificates, sizeof));
 #ifdef SSL3_DEBUG
@@ -522,10 +616,10 @@ string server_derive_master_secret(string data)
 #endif
      if(version[1] >= PROTOCOL_TLS_1_0) {
        if(sizeof(data)-2 == data[0]*256+data[1]) {
-	 premaster_secret = (temp_key || context->rsa)->decrypt(data[2..]);
+	 premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
        }
      } else {
-       premaster_secret = (temp_key || context->rsa)->decrypt(data);
+       premaster_secret = (temp_key || session->rsa)->decrypt(data);
      }
 #ifdef SSL3_DEBUG
      werror("premaster_secret: %O\n", premaster_secret);
@@ -651,8 +745,8 @@ int verify_certificate_chain(array(string) certs)
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return 1;
 
-  // a lack of certificates when we requre and must verify the certificates 
-  // is probably a failure.
+  // a lack of certificates when we reqiure and must verify the
+  // certificates is probably a failure.
   if(!certs || !sizeof(certs))
     return 0;
 
@@ -663,8 +757,9 @@ int verify_certificate_chain(array(string) certs)
   string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
     ->get_der();
 
-  // if we've got authorities, we need to check to see that the provided cert is authorized.
-  // is this useful for server connections???
+  // if we've got authorities, we need to check to see that the
+  // provided cert is authorized. is this useful for server
+  // connections???
   if(sizeof(context->authorities_cache))
   {
     foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
@@ -697,14 +792,13 @@ int verify_certificate_chain(array(string) certs)
 
   mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
 
-
   if(result->verified)
   {
     session->cert_data = result;
     return 1;
   }
-  else return 0;  
 
+ return 0;
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
@@ -871,6 +965,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      }
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
+	      break;
+	    case EXTENSION_next_protocol_negotiation:
+	      has_next_protocol_negotiation = 1;
 	      break;
 	    default:
 	      break;
@@ -1071,6 +1168,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
+    case HANDSHAKE_next_protocol:
+     {
+       next_protocol = input->get_var_string(1);
+       handshake_messages += raw;
+       return 1;
+     }
     case HANDSHAKE_finished:
      {
        string my_digest;
@@ -1265,7 +1368,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  ADT.struct handshake_messages_struct = ADT.struct();
 	  handshake_messages_struct->put_fix_string(handshake_messages);
 	  verification_ok = session->cipher_spec->verify(
-	    context, "", handshake_messages_struct, signature);
+	    session, "", handshake_messages_struct, signature);
 	} || verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1408,6 +1511,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    secure_renegotiation = 1;
 	    missing_secure_renegotiation = 0;
 	    break;
+	  case EXTENSION_server_name:
+	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
+            break;
 	  default:
 	    // RFC 5246 7.4.1.4:
 	    // If a client receives an extension type in ServerHello
@@ -1487,7 +1593,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    Crypto.RSA rsa = Crypto.RSA();
 	    rsa->set_public_key(public_key->rsa->get_n(),
 				public_key->rsa->get_e());
-	    context->rsa = rsa;
+	    session->rsa = rsa;
 	  }
 	else
 	  {
@@ -1528,7 +1634,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	temp_struct->put_bignum(e);
 	int verification_ok;
 	if( catch{ verification_ok = session->cipher_spec->verify(
-	  context, client_random + server_random, temp_struct, signature); }
+	  session, client_random + server_random, temp_struct, signature); }
 	    || !verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1539,7 +1645,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 	Crypto.RSA rsa = Crypto.RSA();
 	rsa->set_public_key(n, e);
-	context->rsa = rsa;
+	session->rsa = rsa;
 	break;
       }
 
@@ -1630,10 +1736,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
       check_serv_cert: {
 	  switch (session->cipher_spec->sign) {
 	    case .Cipher.rsa_sign:
-	      if (context->rsa) break check_serv_cert;
+	      if (session->rsa) break check_serv_cert;
 	      break;
 	    case .Cipher.dsa_sign:
-	      if (context->dsa) break check_serv_cert;
+	      if (session->dsa) break check_serv_cert;
 	      break;
 	  }
 

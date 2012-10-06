@@ -112,6 +112,11 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
   } while(0)
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
 
+void mapping_free_keypair(struct mapping_data *md, struct keypair *k)
+{
+  FREE_KEYPAIR(md, k);
+}
+
 #ifdef PIKE_DEBUG
 
 /** This function checks that the type field isn't lacking any bits.

@@ -32,12 +32,19 @@ protected void create(void|string data) {
 this_program feed( string x ) {
   if(String.width(x)!=8) error("Only eight bits wide characters allowed.\n");
   if(bob)
-    foreach(x; int p; int c)
+    foreach(x;; int c)
       put(c,8);
   else
-    data += x;
+  {
+      if(dptr) {
+          data = data[dptr..];
+          dptr = 0;
+      }
+      data += x;
+  }
   return this;
 }
+
 
 //! Drains the buffer of all full (8-bits wide) bytes.
 string drain() {
@@ -59,6 +66,8 @@ string drain() {
 
 protected int out_buffer, bib;
 
+#define pow2(X) (1<<(X))
+
 //! Get @[bits] from the buffer.
 //!
 //! @throws
@@ -79,18 +88,14 @@ int get( int bits ) {
     if(bob<n) error("BitBuffer undeflow.\n");
     out_buffer = (out_buffer<<n) | (in_buffer>>(bob-n));
     bib += n;
-    in_buffer &= pow(2,bob-n)-1;
+    in_buffer &= pow2(bob-n)-1;
     bob -= n;
   }
 
   int res = out_buffer>>(bib-bits);
-  out_buffer &= pow(2,bib-bits)-1;
+  out_buffer &= pow2(bib-bits)-1;
   bib-=bits;
 
-  if(dptr>64) {
-    data = data[dptr..];
-    dptr = 0;
-  }
   return res;
 }
 
@@ -122,6 +127,10 @@ protected int in_buffer, bob;
 //!   bit first.
 this_program put( int value, int bits ) {
   //  werror("\n%O %O %O\n", bob, bib, bits);
+  if(dptr) {
+    data = data[dptr..];
+    dptr = 0;
+  }
   if(!bits) return this;
   bob += bits;
   in_buffer <<= bits;

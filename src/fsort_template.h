@@ -4,6 +4,8 @@
 || for more information.
 */
 
+#include "stuff.h"
+
 #ifdef SORT_BY_INDEX
 /* Sort by index. */
 

@@ -313,6 +313,56 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 	  return s->mojt;
 	}
       }
+      /* Paranoia: Junk entry in the mapping. Remove it. */
+      SET_SVAL(stmp, T_STRING, 0, string, hashkey);
+      map_delete(memsearch_cache, &stmp);
+    }
+
+    if (memsearch_cache->data->size >= memsearch_cache_threshold) {
+      /* Perform a gc of all Search objects that only are
+       * referenced from the cache.
+       * Allow the cache to grow to double the size before
+       * the next synchronous gc.
+       */
+      struct keypair *k = NULL;
+      struct mapping_data *md = memsearch_cache->data;
+      int e;
+      int count = 0;
+      /* NB: We inline some stuff from mapping.c here to avoid copying the md.
+       */
+      for (e=0; e < md->hashsize; e++) {
+	struct keypair **prev;
+	for(prev = md->hash + e; (k = *prev);) {
+	  count++;
+	  if ((TYPEOF(k->val) <= MAX_REF_TYPE) &&
+	      (*k->val.u.refs == 1)) {
+	    /* map_delete(memsearch_cache, &k->ind); */
+	    *prev = k->next;
+	    free_svalue(&k->ind);
+	    free_svalue(&k->val);
+	    mapping_free_keypair(md, k);
+	    md->size--;
+	    continue;
+	  } else if (count < 10) {
+	    // locate_references(k->val.u.refs);
+	  }
+	  prev = &k->next;
+	}
+      }
+      memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;
+      if (memsearch_cache_threshold < MIN_MEMSEARCH_THRESHOLD) {
+	memsearch_cache_threshold = MIN_MEMSEARCH_THRESHOLD;
+      }
+    } else if ((memsearch_cache_threshold & 1) &&
+	       (memsearch_cache->data->size<<2 < memsearch_cache_threshold)) {
+      /* The real gc() has run and zapped some of our entries.
+       * Assume that all entries left in the cache have more than
+       * one reference.
+       */
+      memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;
+      if (memsearch_cache_threshold < MIN_MEMSEARCH_THRESHOLD) {
+	memsearch_cache_threshold = MIN_MEMSEARCH_THRESHOLD;
+      }
     }
 
     o=low_clone(pike_search_program);

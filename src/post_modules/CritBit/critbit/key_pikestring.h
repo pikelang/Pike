@@ -1,7 +1,7 @@
 #ifndef CB_KEY_PIKESTRING_H
 #define CB_KEY_PIKESTRING_H
-#include <stdint.h>
 #include "bitvector.h"
+#include "pike_int_types.h"
 
 typedef struct pike_string * CB_NAME(string);
 typedef p_wchar2 CB_NAME(char);
@@ -33,7 +33,7 @@ typedef p_wchar2 CB_NAME(char);
 #define CB_SIZE(key)	((key).len)
 #define CB_GET_BIT(str, pos)				\
 	(BITN(cb_char, CB_GET_CHAR((str), (pos).chars), (pos).bits))
-static inline uint32_t CB_COUNT_PREFIX(const cb_string s1, const cb_string s2, const size_t n) {
+static inline unsigned INT32 CB_COUNT_PREFIX(const cb_string s1, const cb_string s2, const size_t n) {
     cb_char c;
     c = CB_GET_CHAR(s1, n);
     c ^= CB_GET_CHAR(s2, n);
@@ -66,19 +66,19 @@ static inline cb_size cb_prefix_count_wide0(const cb_string s1,
 #endif
 
 #define PREFIX(n) do {						\
-    size_t k = j/sizeof(uint ##n ##_t);				\
-    for (;k < len.chars/sizeof(uint ##n ##_t);k++) {		\
-	uint ##n ##_t x = ((uint ##n ##_t *)p1)[k] 		\
-			^ ((uint ##n ##_t *)p2)[k];	    	\
+    size_t k = j/sizeof(unsigned INT ##n );				\
+    for (;k < len.chars/sizeof(unsigned INT ##n );k++) {		\
+	unsigned INT ##n x = ((unsigned INT ##n *)p1)[k] 		\
+			^ ((unsigned INT ##n *)p2)[k];	    	\
 	if (x) {						\
-	    uint32_t a;						\
+	    unsigned INT32 a;						\
 	    a = clz ##n(hton ##n(x));				\
-	    start.chars = k*sizeof(uint ##n ##_t) + a/8;	\
+	    start.chars = k*sizeof(unsigned INT ##n ) + a/8;	\
 	    start.bits = 24 + a % 8;				\
 	    return start;					\
 	}							\
     }								\
-    j = k*sizeof(uint ##n ##_t);				\
+    j = k*sizeof(unsigned INT ##n);				\
     } while(0)
 #ifdef lzc64
    PREFIX(64);
@@ -97,7 +97,7 @@ static inline cb_size cb_prefix_count_wide0(const cb_string s1,
     start.chars = j;
 
     if (len.bits) {
-	uint32_t a = clz8(((p_wchar0*)p1)[j]^((p_wchar0*)p2)[j]);
+	unsigned INT32 a = clz8(((p_wchar0*)p1)[j]^((p_wchar0*)p2)[j]);
 	start.bits = MINIMUM(len.bits, 24+a);
 	return start;
     }
@@ -133,10 +133,10 @@ static inline cb_size cb_prefix_count_widestring(const cb_string s1,
 		    s1->str, s1, s2->str, s2, t.chars, t.bits, r.chars,
 		    r.bits, len.chars, len.bits, start.chars, start.bits);
 	    fprintf(stderr, "here you die: %p, %lu\n", chrptr,
-		    r.bits/(uint64_t)zero);
+		    r.bits/(unsigned INT64)zero);
 	    fprintf(stderr, "%p %p %p", zero, n1, n2);
-	    n1 = n2 = (void*)(zero = (uint64_t)chrptr ^ (uint64_t)n1
-			      ^ (uint64_t)n2);
+	    n1 = n2 = (void*)(zero = (unsigned INT64)chrptr ^ (unsigned INT64)n1
+			      ^ (unsigned INT64)n2);
 	    fprintf(stderr, "%p %p %p %p %p %p", zero, n1, n2, rp, (void*)rp,
 		    tp, (void*)tp);
 	}

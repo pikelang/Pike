@@ -25,12 +25,24 @@ mapping links=([]);
 array arules=({});
 array azones=({});
 
+mapping(string:mapping(int:array(string))) abbr2zones = ([
+  "DFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
+  "NFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
+]);
+
 #define FIXED(D)   (yjd+((D)-1))
 #define FIX_L(D)   (yjd+leap+((D)-1))
 #define LDAY(D,W)  (yjd+((D)-1)-( (yjd+((D)+(8-W)-1)) % 7))
 #define LDAYL(D,W) (yjd+((D)-1)+leap-( (yjd+leap+((D)+(8-W)-1)) % 7))
 
 #define FIXID(id) replace(id,"/-+"/1,"__p"/1)
+
+void add_abbr(string abbr, string zone, int until)
+{
+   mapping(int:array(string)) zones = abbr2zones[abbr];
+   if (!zones) abbr2zones[abbr] = zones = ([]);
+   zones[until] += ({ zone });
+}
 
 int parse_offset(string t)
 {
@@ -271,6 +283,8 @@ class MyRule
 
    mapping rules=([]);
 
+   multiset(string) symbols = (<>);
+
    int amt=0;
 
    void create(string _id) { id=_id; }
@@ -281,6 +295,10 @@ class MyRule
 					  " ","%*[ \t]"));
 
       if (sizeof(a)<8) complain("illegal rule line format\n");
+
+      a[7] = (a[7]/" #")[0];
+      if (a[7] == "-") a[7] = "";
+      symbols[a[7]] = 1;
 
       if (!(int)a[0] && a[0]!="min")
 	 complain("unknown year %O\n",a[0]);
@@ -473,6 +491,27 @@ class Zone
 	  0, 0, "tz", 0}); // until
       a[5]=rule_shift(a);
       a[4]=clone_rule(a);
+
+      if (sizeof(a[2])) {
+	 int until = (a[5] == "forever")?0x7fffffff:(int)a[5];
+	 foreach(a[2]/"/", string fmt) {
+	    MyRule rule = global::rules[a[1]];
+	    if (rule) {
+	       foreach(indices(rule->symbols), string sym) {
+		  if ((sizeof(sym) > 2) && (fmt != "%s")) continue;
+		  add_abbr(sprintf(fmt, sym), id, until);
+	       }
+	    } else if (a[1] == "Romania") {
+	       // Kludge for forward reference in tzdata2012c/europe
+	       // for Europe/Chisinau to the Romania rule.
+	       foreach(({ "", "S" }), string sym) {
+		  add_abbr(sprintf(fmt, sym), id, until);
+	       }
+	    } else {
+	       add_abbr(fmt, id, until);
+	    }
+	 }
+      }
 
       rules+=({a});
    }
@@ -772,7 +811,7 @@ int main(int ac,array(string) am)
    t+=("\n"
        "// "+"-"*70+"\n");
 
-   mv("TZs.pike","TZs.pike~");
+   mv("TZs.h","TZs.h~");
    werror("writing TZs.h (%d bytes)...",sizeof(t));
    Stdio.File("TZs.h","wtc")->write(t);
    werror("\n");
@@ -801,22 +840,76 @@ int main(int ac,array(string) am)
    // Historical ordering...
    foreach (({"America", "Pacific", "Antarctica", "Atlantic", "Indian",
 	      "Europe", "Africa", "Asia", "Australia" }), string co) {
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
 		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 *", "+"}),");
       zone_names[co] = 0;
    }
    // Take care of any remaining zones (probably none).
-   foreach (sort(indices(zone_names)),string co)
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+   foreach (sort(indices(zone_names)),string co) {
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
 		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 *", "+"}),");
+   }
    t += "]);\n\n" +
-     fragments[1];
+      fragments[1];
+
+   // Update the abbreviation table as well.
+   fragments = t/" abbr2zones=";
+   if (sizeof(fragments) == 1) fragments = t/" abbr2zones =";
+   if (sizeof(fragments) > 2)
+      fragments = ({ fragments[0], fragments[1..] * " abbr2zones =" });
+   fragments[1] = (fragments[1]/"]);\n\n")[1..]*"]);\n\n";
+
+   t = fragments[0] + " abbr2zones =\n"
+      "([\n";
+
+   foreach(sort(indices(abbr2zones)), string abbr) {
+      string line = sprintf("   %q: ({", abbr);
+
+      mapping(int:array(string)) info = abbr2zones[abbr];
+      array(string) zones = ({});
+      array(int) until = ({});
+      foreach(info; int us; array(string) zs) {
+	 zones += zs;
+	 until += allocate(sizeof(zs), -us);
+      }
+      // Sort so that the most recent use comes first,
+      // and secondarily on the zone name.
+      sort(zones, until);
+      sort(until, zones);
+      foreach(Array.uniq(zones); int i; string zone) {
+	 string seg = sprintf("%s%q", i?", ":"", zone);
+	 if (sizeof(line) + sizeof(seg) < 77) {
+	    line += seg;
+	    continue;
+	 }
+	 t += line + ",\n";
+	 line = sprintf("       %q", zone);
+      }
+      t += line + "}),\n";
+   }
+
+   t += "]);\n\n" +
+      fragments[1];
+
+   // Cleanup white-space at end of line.
+   string t2 = t;
+   while ((t = replace(t2,
+		       ({ "                        \n",
+			  "                    \n",
+			  "                \n",
+			  "            \n",
+			  "        \n",
+			  "    \n",
+			  "  \n",
+			  " \n", }), ({ "\n" })*8)) != t2) {
+     t2 = t;
+   }
    
    mv("TZnames.pmod","TZnames.pmod~");
    werror("writing TZnames.pmod (%d bytes)...",sizeof(t));

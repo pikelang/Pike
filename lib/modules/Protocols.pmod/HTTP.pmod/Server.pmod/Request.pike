@@ -467,7 +467,7 @@ protected void close_cb()
    if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
 }
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(%O %O)",this_program,request_type,full_query);
 }
@@ -551,7 +551,7 @@ string make_response_header(mapping m)
 	 if (m->stop==-1) m->stop=m->size-1;
 	 if (m->start>=m->size ||
 	     m->stop>=m->size ||
-	     m->stop<m->size ||
+	     m->stop<m->start ||
 	     m->size<0)
 	    res[0]=protocol+" 416 Requested range not satisfiable";
 
@@ -598,6 +598,7 @@ string make_response_header(mapping m)
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
+   m += ([ ]);
    log_cb = _log_cb;
 
    if (request_headers->range && !m->start && zero_type(m->error))
@@ -633,7 +634,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    if (request_headers["if-modified-since"])
    {
       int t = .http_decode_date(request_headers["if-modified-since"]);
-
       if (t)
       {
 	 if (!m->stat && m->file)
@@ -645,6 +645,23 @@ void response_and_finish(mapping m, function|void _log_cb)
 	    m->error=304;
 	 }
       }
+   }
+
+   if (request_headers["if-none-match"] && m->extra_heads )
+   {
+       string et;
+       if((et = m->extra_heads->ETag) || (et =m->extra_heads->etag))
+       {
+           if( string key = request_headers["if-none-match"] )
+           {
+               if (key == et)
+               {
+                   m_delete(m,"file");
+                   m->data="";
+                   m->error=304;
+               }
+           }
+       }
    }
 
    string header=make_response_header(m);
@@ -686,7 +703,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    }
 
    send_pos=0;
-   my_fd->set_nonblocking(send_read,send_write,send_close);
    send_stop=strlen(header)+m->size;
 
    if (m->file)
@@ -701,6 +717,7 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_buf=send_buf[..send_stop-1];
 
    call_out(send_timeout,send_timeout_delay);
+   my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
 void finish(int clean)

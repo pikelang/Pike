@@ -827,14 +827,34 @@ protected class VirtualNode {
   //  Public methods
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
+  //!
+  //! @seealso
+  //!   @[replace_attributes()]
   mapping(string:string) get_attributes()   { return (mAttributes); }
+
+  //! Replace the entire set of attributes.
+  //!
+  //! @seealso
+  //!   @[get_attributes()]
+  void replace_attributes(mapping(string:string) attrs)
+  {
+    if (mShortAttributes && mShortAttributes == mAttributes)
+      mShortAttributes = attrs;
+    mAttributes = attrs;
+  }
 
   //! Returns this nodes name-space adjusted attributes.
   //!
   //! @note
-  //!   @[set_short_namespaces()] must have been called before
-  //!   calling this function.
+  //!   @[set_short_namespaces()] or @[set_short_attributes()] must
+  //!   have been called before calling this function.
   mapping get_short_attributes()   { return (mShortAttributes); }
+
+  //! Sets this nodes name-space adjusted attributes.
+  void set_short_attributes(mapping short_attrs)
+  {
+    mShortAttributes = short_attrs;
+  }
 
   //! Returns the node type. See defined node type constants.
   int get_node_type()        { return (mNodeType); }
@@ -1176,94 +1196,97 @@ protected class VirtualNode {
 	forward_lookup[attrs[attr_name]] = short_prefix;
       }
     }
-    // Then set the short namespace for this tag.
-    mShortNamespace = "";
-    if (sizeof(mNamespace)) {
-      if (!(mShortNamespace = forward_lookup[mNamespace])) {
+    if (!mShortAttributes) {
+      // Then set the short namespace for this tag.
+      mShortNamespace = "";
+      if (sizeof(mNamespace)) {
+	if (!(mShortNamespace = forward_lookup[mNamespace])) {
 #if 0
-	werror("Forward_lookup: %O\n"
-	       "Backward_lookup: %O\n"
-	       "mNamespace:%O\n",
-	       forward_lookup,
-	       backward_lookup,
-	       mNamespace);
+	  werror("Forward_lookup: %O\n"
+		 "Backward_lookup: %O\n"
+		 "mNamespace:%O\n",
+		 forward_lookup,
+		 backward_lookup,
+		 mNamespace);
 #endif /* 0 */
 
-	string found;
-	string full_name = get_full_name();
-	// Check if there are any longer namespaces that might match.
-	foreach(forward_lookup; string long;) {
-	  if (has_prefix(full_name, long) &&
-	      (!found || (sizeof(found) < sizeof(long)))) {
-	    found = long;
-	    break;
-	  }
-	}
-
-	if (found) {
-	  mTagName = full_name[sizeof(found)..];
-	  mNamespace = found;
-	  mShortNamespace = forward_lookup[found];
-	} else {
-	  // We need to allocate a short namespace symbol.
-	  // FIXME: This is O(n²).
-	  int i;
-	  while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
-	    i++;
-	  }
-	  backward_lookup[mShortNamespace] = mNamespace;
-	  forward_lookup[mNamespace] = mShortNamespace;
-	  attrs["xmlns:NS"+i] = mNamespace;
-	  short_attrs["xmlns:NS"+i] = mNamespace;
-	}
-      }
-    }
-    // Then set the short namespaces for any attributes.
-    foreach(indices(attrs), string attr_name) {
-      if (!has_prefix(attr_name, "xmlns:")) {
-	int i = -1;
-	int j;
-	while ((j = search(attr_name, ":", i + 1)) >= 0) {
-	  i = j;
-	}
-	while ((j = search(attr_name, "/", i + 1)) >= 0) {
-	  i = j;
-	}
-	if (i >= 0) {
-	  string ns = attr_name[..i];
-	  string prefix;
-
-	  // Check if we already have some namespace that is a longer
-	  // prefix of this attribute than ns. This isn't only for
-	  // looks; there are broken XML parsers that require the
-	  // break between the namespace and the attribute name to be
-	  // at a specific spot, e.g. the one used in the WebDAV
-	  // client in MS XP Pro.
-	  foreach (forward_lookup; string long;)
-	    if (sizeof (long) > sizeof (ns) && has_prefix (attr_name, long)) {
-	      ns = long;
-	      i = sizeof (long) - 1;
+	  string found;
+	  string full_name = get_full_name();
+	  // Check if there are any longer namespaces that might match.
+	  foreach(forward_lookup; string long;) {
+	    if (has_prefix(full_name, long) &&
+		(!found || (sizeof(found) < sizeof(long)))) {
+	      found = long;
 	      break;
 	    }
+	  }
 
-	  if (!(prefix = forward_lookup[ns])) {
+	  if (found) {
+	    mTagName = full_name[sizeof(found)..];
+	    mNamespace = found;
+	    mShortNamespace = forward_lookup[found];
+	  } else {
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
 	    int i;
-	    while(backward_lookup[prefix = ("NS"+i+":")]) {
+	    while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
 	      i++;
 	    }
-	    backward_lookup[mShortNamespace] = ns;
-	    forward_lookup[mNamespace] = prefix;
-	    attrs["xmlns:NS"+i] = ns;
-	    short_attrs["xmlns:NS"+i] = ns;
+	    backward_lookup[mShortNamespace] = mNamespace;
+	    forward_lookup[mNamespace] = mShortNamespace;
+	    attrs["xmlns:NS"+i] = mNamespace;
+	    short_attrs["xmlns:NS"+i] = mNamespace;
 	  }
-	  m_delete(short_attrs, attr_name);
-	  short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
 	}
       }
+      // Then set the short namespaces for any attributes.
+      foreach(indices(attrs), string attr_name) {
+	if (!has_prefix(attr_name, "xmlns:")) {
+	  int i = -1;
+	  int j;
+	  while ((j = search(attr_name, ":", i + 1)) >= 0) {
+	    i = j;
+	  }
+	  while ((j = search(attr_name, "/", i + 1)) >= 0) {
+	    i = j;
+	  }
+	  if (i >= 0) {
+	    string ns = attr_name[..i];
+	    string prefix;
+
+	    // Check if we already have some namespace that is a longer
+	    // prefix of this attribute than ns. This isn't only for
+	    // looks; there are broken XML parsers that require the
+	    // break between the namespace and the attribute name to be
+	    // at a specific spot, e.g. the one used in the WebDAV
+	    // client in MS XP Pro.
+	    foreach (forward_lookup; string long;)
+	      if (sizeof (long) > sizeof (ns) &&
+		  has_prefix (attr_name, long)) {
+		ns = long;
+		i = sizeof (long) - 1;
+		break;
+	      }
+
+	    if (!(prefix = forward_lookup[ns])) {
+	      // We need to allocate a short namespace symbol.
+	      // FIXME: This is O(n²).
+	      int i;
+	      while(backward_lookup[prefix = ("NS"+i+":")]) {
+		i++;
+	      }
+	      backward_lookup[mShortNamespace] = ns;
+	      forward_lookup[mNamespace] = prefix;
+	      attrs["xmlns:NS"+i] = ns;
+	      short_attrs["xmlns:NS"+i] = ns;
+	    }
+	    m_delete(short_attrs, attr_name);
+	    short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
+	  }
+	}
+      }
+      mShortAttributes = short_attrs;
     }
-    mShortAttributes = short_attrs;
     // And then do it for all the children.
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
@@ -1290,7 +1313,7 @@ protected class VirtualNode {
     return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
-  //! Creates an XML representation fo the node sub tree and streams
+  //! Creates an XML representation for the node sub tree and streams
   //! the output to the file @[f]. If the flag @[preserve_roxen_entities]
   //! is set, entities on the form @tt{&foo.bar;@} will not be escaped.
   void render_to_file(Stdio.File f,
@@ -1447,6 +1470,9 @@ class WrappedSimple
 }
 
 //! Mixin for parsing XML.
+//!
+//! Uses @[Parser.XML.Simple] to perform
+//! the actual parsing.
 class XMLParser
 {
   this_program add_child(this_program);
@@ -1565,6 +1591,7 @@ class XMLParser
                        mixed location, mixed ...extra)
   {
     this_program node;
+    mapping short_attr = attr;
 
     switch (type) {
     case "":
@@ -1605,6 +1632,7 @@ class XMLParser
           name = lower_case(name);
           attr = mkmapping(map(indices(attr), lower_case),
                            values(attr));
+	  short_attr = attr;
         }
         //  Parse namespace information of available.
         if (extra[0]->xmlns) {
@@ -1612,9 +1640,12 @@ class XMLParser
           attr = xmlns->Enter(attr);
           name = xmlns->Decode(name);
           xmlns->Leave();
-        }
+	  short_attr = UNDEFINED;
+	}
       }
-      return node_factory(XML_ELEMENT, name, attr, "");
+      node = node_factory(XML_ELEMENT, name, attr, "");
+      if (short_attr) node->set_short_attributes(short_attr);
+      return node;
 
     case ">":
       //  Create tree node for this container
@@ -1624,12 +1655,14 @@ class XMLParser
         if (extra[0]->force_lc) {
           name = lower_case(name);
           attr = mkmapping(map(indices(attr), lower_case), values(attr));
+	  short_attr = attr;
         }
         //  Parse namespace information of available.
         if (extra[0]->xmlns) {
           XMLNSParser xmlns = extra[0]->xmlns;
           name = xmlns->Decode(name);
           xmlns->Leave();
+	  short_attr = UNDEFINED;
         }
       }
       node = node_factory(XML_ELEMENT, name, attr, "");
@@ -1642,6 +1675,8 @@ class XMLParser
 	//  with neighboring text nodes.
 	Node text_node;
 	int(0..1) modified;
+
+	if (short_attr) node->set_short_attributes(short_attr);
 
 	foreach(contents; int i; Node child) {
 	  if (child->get_node_type() == XML_TEXT) {
@@ -1872,7 +1907,7 @@ class SimpleRootNode
   }
 
   protected SimpleNode node_factory(int type, string name,
-				 mapping attr, string|array text)
+				    mapping attr, string|array text)
   {
     switch(type) {
     case XML_TEXT: return SimpleTextNode(text);
@@ -1889,6 +1924,7 @@ class SimpleRootNode
     }
   }
 
+  //!
   protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags,
@@ -1901,6 +1937,7 @@ class SimpleRootNode
   }
 }
 
+//!
 class SimpleTextNode
 {
   inherit SimpleNode;
@@ -1908,12 +1945,15 @@ class SimpleTextNode
   {
     return SimpleTextNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
 }
 
+//!
 class SimpleCommentNode
 {
   inherit SimpleNode;
@@ -1921,12 +1961,15 @@ class SimpleCommentNode
   {
     return SimpleCommentNode(get_text());
   }
-  protected void create(string text)
+
+  //!
+  protected void create(string comment)
   {
-    ::create(XML_COMMENT, "", 0, text);
+    ::create(XML_COMMENT, "", 0, comment);
   }
 }
 
+//!
 class SimpleHeaderNode
 {
   inherit SimpleNode;
@@ -1934,12 +1977,15 @@ class SimpleHeaderNode
   {
     return SimpleHeaderNode(get_attributes());
   }
+
+  //!
   protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
 }
 
+//!
 class SimplePINode
 {
   inherit SimpleNode;
@@ -1947,6 +1993,8 @@ class SimplePINode
   {
     return SimplePINode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -1954,6 +2002,7 @@ class SimplePINode
   }
 }
 
+//!
 class SimpleDoctypeNode
 {
   inherit SimpleNode;
@@ -1961,6 +2010,8 @@ class SimpleDoctypeNode
   {
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
@@ -1971,6 +2022,7 @@ class SimpleDoctypeNode
   }
 }
 
+//!
 class SimpleDTDEntityNode
 {
   inherit SimpleNode;
@@ -1978,6 +2030,8 @@ class SimpleDTDEntityNode
   {
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -1985,6 +2039,7 @@ class SimpleDTDEntityNode
   }
 }
 
+//!
 class SimpleDTDElementNode
 {
   inherit SimpleNode;
@@ -1994,6 +2049,8 @@ class SimpleDTDElementNode
   {
     return SimpleDTDElementNode(get_full_name(), get_expression());
   }
+
+  //!
   protected void create(string name, array expression)
   {
     this_program::expression = expression;
@@ -2001,6 +2058,7 @@ class SimpleDTDElementNode
   }
 }
 
+//!
 class SimpleDTDAttlistNode
 {
   inherit SimpleNode;
@@ -2008,6 +2066,8 @@ class SimpleDTDAttlistNode
   {
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2015,6 +2075,7 @@ class SimpleDTDAttlistNode
   }
 }
 
+//!
 class SimpleDTDNotationNode
 {
   inherit SimpleNode;
@@ -2022,6 +2083,8 @@ class SimpleDTDNotationNode
   {
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2029,6 +2092,7 @@ class SimpleDTDNotationNode
   }
 }
 
+//!
 class SimpleElementNode
 {
   inherit SimpleNode;
@@ -2036,6 +2100,8 @@ class SimpleElementNode
   {
     return SimpleElementNode(get_full_name(), get_attributes());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
@@ -2103,7 +2169,7 @@ class RootNode
   }
 
   protected Node node_factory(int type, string name,
-			   mapping attr, string|array text)
+			      mapping attr, string|array text)
   {
     switch(type) {
     case XML_TEXT: return TextNode(text);
@@ -2120,6 +2186,7 @@ class RootNode
     }
   }
 
+  //!
   protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags)
@@ -2131,6 +2198,7 @@ class RootNode
   }
 }
 
+//!
 class TextNode
 {
   inherit Node;
@@ -2138,12 +2206,15 @@ class TextNode
   {
     return TextNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
 }
 
+//!
 class CommentNode
 {
   inherit Node;
@@ -2151,12 +2222,15 @@ class CommentNode
   {
     return CommentNode(get_text());
   }
+
+  //!
   protected void create(string text)
   {
     ::create(XML_COMMENT, "", 0, text);
   }
 }
 
+//!
 class HeaderNode
 {
   inherit Node;
@@ -2164,12 +2238,15 @@ class HeaderNode
   {
     return HeaderNode(get_attributes());
   }
+
+  //!
   protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
 }
 
+//!
 class PINode
 {
   inherit Node;
@@ -2177,6 +2254,8 @@ class PINode
   {
     return PINode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2184,6 +2263,7 @@ class PINode
   }
 }
 
+//!
 class DoctypeNode
 {
   inherit Node;
@@ -2191,6 +2271,8 @@ class DoctypeNode
   {
     return DoctypeNode(get_full_name(), get_attributes(), 0);
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
@@ -2201,6 +2283,7 @@ class DoctypeNode
   }
 }
 
+//!
 class DTDEntityNode
 {
   inherit Node;
@@ -2208,6 +2291,8 @@ class DTDEntityNode
   {
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2215,6 +2300,7 @@ class DTDEntityNode
   }
 }
 
+//!
 class DTDElementNode
 {
   inherit Node;
@@ -2224,6 +2310,8 @@ class DTDElementNode
   {
     return DTDElementNode(get_full_name(), get_expression());
   }
+
+  //!
   protected void create(string name, array expression)
   {
     this_program::expression = expression;
@@ -2231,6 +2319,7 @@ class DTDElementNode
   }
 }
 
+//!
 class DTDAttlistNode
 {
   inherit Node;
@@ -2238,6 +2327,8 @@ class DTDAttlistNode
   {
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2245,6 +2336,7 @@ class DTDAttlistNode
   }
 }
 
+//!
 class DTDNotationNode
 {
   inherit Node;
@@ -2252,6 +2344,8 @@ class DTDNotationNode
   {
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
@@ -2259,6 +2353,7 @@ class DTDNotationNode
   }
 }
 
+//!
 class ElementNode
 {
   inherit Node;
@@ -2266,12 +2361,15 @@ class ElementNode
   {
     return ElementNode(get_full_name(), get_attributes());
   }
+
+  //!
   protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
   }
 }
 
+//!
 class AttributeNode
 {
   inherit Node;
@@ -2279,6 +2377,8 @@ class AttributeNode
   {
     return AttributeNode(get_full_name(), get_text());
   }
+
+  //!
   protected void create(string name, string value)
   {
     ::create(XML_ATTR, name, 0, value);

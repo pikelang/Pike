@@ -752,14 +752,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     s = peekToken(WITH_NL);
   }
 
-  if (s == "import") {
-    Import i = Import();
-    i->position = position;
-    readToken();
-    i->classname = parseProgramName();
-    return i;
-  }
-  else if (s == "class") {
+  if (s == "class") {
     Class c = Class();
     c->position = position;
     c->modifiers = modifiers;
@@ -789,11 +782,13 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->name = eatIdentifier();
     if (peekToken() == "=") {
       eat("=");
-      if (string l = parseLiteral())
-	// It's intentional that literalType doesn't return too
-	// specific types for integers, i.e. it's int instead of e.g.
-	// int(4711..4711).
-	c->type = literalType (l);
+    }
+    // FIXME: Warn if literal and no '='.
+    if (string l = parseLiteral()) {
+      // It's intentional that literalType doesn't return too
+      // specific types for integers, i.e. it's int instead of e.g.
+      // int(4711..4711).
+      c->type = literalType (l);
       // TODO: parse the expression ???
       //   added parsing only of types...
       //   a constant value will just be ignored.
@@ -804,13 +799,14 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     skipUntil( (< ";", EOF >) );
     return c;
   }
-  else if (s == "inherit") {
-    Inherit i = Inherit();
+  else if ((s == "inherit") || (s == "import")) {
+    object(Inherit)|Import i;
+    i = (s == "inherit")?Inherit():Import();
     i->position = position;
     i->modifiers = modifiers;
     readToken();
-    i->classname = parseProgramName();
-    if (peekToken() == ":") {
+    i->name = i->classname = parseProgramName();
+    if ((s == "inherit") && (peekToken() == ":")) {
       readToken();
       i->name = eatIdentifier();
     } else {
@@ -891,6 +887,18 @@ array(array(string)|array(int)) tokenize(string s, int line) {
 
     // remove preprocessor directives:
     if (sizeof(s) > 1 && s[0..0] == "#") {
+      // But convert #pike directives to corresponding imports,
+      // so that the resolver can find the correct symbols later.
+      if (has_prefix(s, "#pike ") || has_prefix(s, "#pike\t")) {
+	string version = String.trim_all_whites(s[sizeof("#pike ")..]);
+	if (version == "__REAL_VERSION__") {
+	  version = "predef";
+	}
+	// NB: Surround the comment with whitespace, to keep
+	//     it from being associated with surrounding code.
+	t += ({ "\n", "//! @decl import " + version + "::\n", "\n" });
+	p += ({ pos + 2, pos, pos + 2 });
+      }
       t += ({ "\n" });
       p += ({ pos });
       continue;

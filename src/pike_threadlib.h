@@ -82,6 +82,9 @@
 #include <sched.h>
 #endif
 
+#ifdef USE_DARWIN_THREADS_WITHOUT_MACH
+/* OSX Threads don't get along with mach headers! */
+#else
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
@@ -91,6 +94,7 @@
 #ifdef HAVE_MACH_MACH_INIT_H
 #include <mach/mach_init.h>
 #endif
+#endif /* USE_DARWIN_THREADS_WITHOUT_MACH */
 
 /* Restore the fp macro. */
 #ifdef FRAMEPOINTER_WAS_DEFINED
@@ -574,6 +578,45 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL);
 #define ASSERT_THREAD_SWAPPED_IN() do { } while (0)
 #define DEBUG_CHECK_THREAD() do { } while (0)
 #endif
+
+/* THREADS_ALLOW and THREADS_DISALLOW unlocks the interpreter lock so
+ * that other threads may run in the pike interpreter. Must be used
+ * around code that might block, and may be used around code that just
+ * takes a lot of time. Note though in the latter case that the
+ * locking overhead is significant - the work should be on the order
+ * of microseconds or else it might even get slower.
+ *
+ * Between THREADS_ALLOW and THREADS_DISALLOW, you may not change any
+ * data structure that might be accessible by other threads, and you
+ * may not access any data they could possibly change.
+ *
+ * The following rules are just some special cases of the preceding
+ * statement:
+ *
+ * o  You may not throw pike exceptions, not even if you catch them
+ *    yourself.
+ * o  You may not create instances of any pike data type, because that
+ *    always implicitly modifies global structures (e.g. the doubly
+ *    linked lists that link together all arrays, mappings, multisets,
+ *    objects, and programs).
+ * o  You may not change the refcount of any pike structure, unless
+ *    all its other references are from your own code (see also last
+ *    item below).
+ * o  If you (prior to THREADS_ALLOW) have added your own ref to some
+ *    structure, you can assume that it continues to exist. Refs from
+ *    your own stack count in this regard, because you know that they
+ *    will remain until THREADS_DISALLOW. Note that even objects are
+ *    guaranteed to continue to exist, but they may be destructed at
+ *    any time.
+ * o  Only immutable data in structs you have refs to may be read, and
+ *    nothing may be changed.
+ * o  If you before THREADS_ALLOW have created your own instance of
+ *    some data type, i.e. so that you got the only ref to it, you can
+ *    safely change it. But changes that have effect on global
+ *    structures are still verboten - that includes freeing any pike
+ *    data type, and calling functions like finish_string_builder,
+ *    just to name one.
+ */
 
 /* The difference between THREADS_ALLOW and THREADS_ALLOW_UID is that
  * _disable_threads waits for the latter to hold in

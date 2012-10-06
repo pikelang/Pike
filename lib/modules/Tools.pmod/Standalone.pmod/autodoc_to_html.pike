@@ -1283,6 +1283,11 @@ string parse_docgroup(Node n) {
   mapping m = n->get_attributes();
   string ret = lay->docgroup;
 
+  if (m["homogen-type"] == "import") {
+    // We don't need import information.
+    return "";
+  }
+
   if(lay->typehead) {
     ret += lay->typehead;
     if(m["homogen-type"]) {

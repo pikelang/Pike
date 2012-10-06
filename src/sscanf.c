@@ -845,7 +845,7 @@ INPUT_IS_WIDE(								 \
  								         \
       case 'H':								\
 	{								\
-          int len=0;							\
+          unsigned long len=0;                                           \
           if(field_length == -1)					\
 	    field_length=1;						\
           if(field_length == 0)                                         \
@@ -882,7 +882,7 @@ INPUT_IS_WIDE(								 \
 	      eye++;							\
 	    }								\
 	  }								\
-	  if(eye+len > input_len)					\
+	  if(len > (int)input_len-eye)                                  \
 	  {								\
 	    chars_matched[0]=eye-field_length;				\
 	    return matches;						\

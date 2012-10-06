@@ -324,7 +324,6 @@ INT32 assemble(int store_linenumbers)
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
   aliases = uses + max_label + 2;
-
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -460,24 +459,33 @@ INT32 assemble(int store_linenumbers)
   }
 
   /* Time to create the actual bytecode. */
-
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
-  
-#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
-    ins_byte(0);
+
+
+#ifdef START_NEW_FUNCTION
+  START_NEW_FUNCTION(store_linenumbers);
 #endif
 
 #ifdef PIKE_PORTABLE_BYTECODE
+#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
+  while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
+    ins_byte(0);
+#endif
+
   if (store_linenumbers) {
     ins_data(store_prog_string(tripples));
     free_string(tripples);
   } else {
     ins_data(0);
   }
+#else
+#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
+  while( ( ((INT32) PIKE_PC) & (ALIGN_PIKE_JUMPS-1)))
+    ins_byte(0);
+#endif
 #endif /* PIKE_PORTABLE_BYTECODE */
 
   entry_point = PIKE_PC;
@@ -561,6 +569,7 @@ INT32 assemble(int store_linenumbers)
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
 	  (c[1].opcode != F_BYTE) &&
+	  (c[1].opcode != F_ENTRY) &&
 	  (c[1].opcode != F_DATA)) {
 	/* Don't add redundant code before labels or raw data. */
 	UPDATE_PC();
@@ -758,6 +767,10 @@ INT32 assemble(int store_linenumbers)
   }
 
   free((char *)labels);
+
+#ifdef END_FUNCTION
+  END_FUNCTION(store_linenumbers);
+#endif
 
 #ifdef PIKE_DEBUG
   if (a_flag > 6) {

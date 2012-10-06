@@ -372,6 +372,11 @@ test_any([[
   return f->query_backend() == b;
 ]], 1)
 
+cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEUE"] ]])
+  run_sub_test(({"SRCDIR/kqueuetest.pike"}))
+cond_end
+
+
 dnl Displaced tests for SSL.sslfile.
 run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "0"}))
 run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "1"}))

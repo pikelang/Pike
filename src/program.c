@@ -93,7 +93,7 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 
 /* Define the size of the cache that is used for method lookup. */
 /* A value of zero disables this cache */
-#define FIND_FUNCTION_HASHSIZE 15013
+#define FIND_FUNCTION_HASHSIZE 16384
 
 /* Programs with less methods will not use the cache for method lookups.. */
 #define FIND_FUNCTION_HASH_TRESHOLD 9
@@ -193,11 +193,11 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tInt),	/* "`!", */
   tFuncV(tZero,tVoid,tMix),	/* "`[]", */
   tFuncV(tZero tSetvar(0,tZero),tVoid,tVar(0)),	/* "`[]=", */
-  tFuncV(tStr,tVoid,tMix),	/* "`->", */
-  tFuncV(tStr tSetvar(0,tZero),tVoid,tVar(0)),	/* "`->=", */
-  tFuncV(tNone,tVoid,tInt),	/* "_sizeof", */
-  tFuncV(tNone,tVoid,tArray),	/* "_indices", */
-  tFuncV(tNone,tVoid,tArray),	/* "_values", */
+  tFuncV(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tMix),	/* "`->", */
+  tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
+  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tInt),	/* "_sizeof", */
+  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_indices", */
+  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_values", */
   tFuncV(tNone,tZero,tMix),	/* "`()", */
   tFuncV(tZero,tZero,tMix),	/* "``+", */
   tFuncV(tZero,tVoid,tMix),	/* "``-", */
@@ -881,7 +881,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`[]=()], @[lfun::`->=()]
  */
 
-/*! @decl mixed lfun::`->(string arg)
+/*! @decl mixed lfun::`->(string arg, object|void context, int|void access)
  *!
  *!   Arrow index callback.
  *!
@@ -889,15 +889,16 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
- *!   @[predef::`->()]
+ *!   @[predef::`->()], @[::`->()]
  */
 
-/*! @decl mixed lfun::`->=(string arg1, zero arg2)
+/*! @decl mixed lfun::`->=(string arg, zero value, @
+ *!                        object|void context, int|void access)
  *!
  *!   Arrow index assignment callback.
  *!
  *! @seealso
- *!   @[predef::`->=()], @[lfun::`[]=()]
+ *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()]
  */
 
 /*! @decl int lfun::_sizeof()
@@ -918,7 +919,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::sizeof()]
  */
 
-/*! @decl array lfun::_indices()
+/*! @decl array lfun::_indices(object|void context, int|void access)
  *!
  *!   List indices callback.
  *!
@@ -933,7 +934,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[::_indices()]
  */
 
-/*! @decl array lfun::_values()
+/*! @decl array lfun::_values(object|void context, int|void access)
  *!
  *!   List values callback.
  *!
@@ -1131,7 +1132,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::search()]
  */
 
-/*! @decl array lfun::_types()
+/*! @decl array lfun::_types(object|void context, int|void access)
  *!
  *!   List types callback.
  *!
@@ -1873,6 +1874,13 @@ struct node_s *resolve_identifier(struct pike_string *ident)
  * either when the identifier has no prefix (colon_colon_ref == 0) or
  * when the identifier has the prefix :: without any preceding identifier
  * (colon_colon_ref == 1).
+ *
+ * New in Pike 7.9.5 and later:
+ *
+ *   If colon_colon_ref is 1 and the selected inherit defines the
+ *   `->() lfun, code calling the lfun will be generated as follows:
+ *
+ *     inh::`->(ident, inh::this, 1)
  */
 struct node_s *program_magic_identifier (struct program_state *state,
 					 int state_depth, int inherit_num,
@@ -1923,26 +1931,65 @@ struct node_s *program_magic_identifier (struct program_state *state,
   }
 
   if (colon_colon_ref) {
+    int i = inherit_num;
+
     /* These are only recognized when prefixed with the :: operator. */
 
-    if (inherit_num < 0) inherit_num = 0;
+    if (inherit_num < 0) i = 0;
     if(ident == lfun_strings[LFUN_ARROW] ||
        ident == lfun_strings[LFUN_INDEX]) {
-      return mknode(F_MAGIC_INDEX, mknewintnode(inherit_num),
+      return mknode(F_MAGIC_INDEX, mknewintnode(i),
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN_ASSIGN_ARROW] ||
 	      ident == lfun_strings[LFUN_ASSIGN_INDEX]) {
-      return mknode(F_MAGIC_SET_INDEX, mknewintnode(inherit_num),
+      return mknode(F_MAGIC_SET_INDEX, mknewintnode(i),
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN__INDICES]) {
-      return mknode(F_MAGIC_INDICES, mknewintnode(inherit_num),
+      return mknode(F_MAGIC_INDICES, mknewintnode(i),
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN__VALUES]) {
-      return mknode(F_MAGIC_VALUES, mknewintnode(inherit_num),
+      return mknode(F_MAGIC_VALUES, mknewintnode(i),
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN__TYPES]) {
-      return mknode(F_MAGIC_TYPES, mknewintnode(inherit_num),
+      return mknode(F_MAGIC_TYPES, mknewintnode(i),
 		    mknewintnode(state_depth));
+    }
+
+    if (inherit_num && !TEST_COMPAT(7, 8) &&
+	(state->new_program->num_inherits > 1)) {
+      /* Check if there's an inherited lfun::`->() that we can call. */
+      int id;
+      struct program *prog = state->new_program->inherits[i].prog;
+      if (((id = FIND_LFUN(prog, LFUN_ARROW)) == -1) &&
+	  (prog == state->new_program)) {
+	/* We are allowed to see private symbols in ourselves... */
+	id = really_low_find_shared_string_identifier(lfun_strings[LFUN_ARROW],
+						      prog,
+						      SEE_PROTECTED|SEE_PRIVATE);
+      } else if ((id != -1) && (prog != state->new_program)) {
+	id = really_low_reference_inherited_identifier(state, i, id);
+      }
+      if ((id != -1) && (state->compiler_pass == 2)) {
+	if (inherit_num < 0) {
+	  /* Find the closest inherit containing the lfun::`->()
+	   * that is about to be called.
+	   *
+	   * In the single inherit case, this will always
+	   * result in inherit_num == 1.
+	   */
+	  struct inherit *inherits = state->new_program->inherits;
+	  inherit_num = PTR_FROM_INT(state->new_program, id)->inherit_offset;
+	  while (inherits[inherit_num].inherit_level > 1) {
+	    inherit_num--;
+	  }
+	}
+	return mknode(F_APPLY, mkexternalnode(state->new_program, id),
+		      mknode(F_ARG_LIST,
+			     mkstrnode(ident),
+			     mknode(F_ARG_LIST,
+				    mkthisnode(state->new_program, inherit_num),
+				    mkintnode(1))));
+      }
     }
   }
 
@@ -5594,19 +5641,24 @@ PMOD_EXPORT int add_integer_constant(const char *name,
   return simple_add_constant(name, &tmp, flags);
 }
 
+PMOD_EXPORT int low_add_integer_constant(struct pike_string *name,
+				     INT_ARG_TYPE i,
+				     INT32 flags)
+{
+  struct svalue tmp;
+  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
+  return add_constant(name, &tmp, flags);
+}
+
 PMOD_EXPORT int quick_add_integer_constant(const char *name,
 					   int name_length,
 					   INT_ARG_TYPE i,
 					   INT32 flags)
 {
-  struct svalue tmp;
-  struct pike_string *id;
   INT32 ret;
-
-  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
-  id=make_shared_binary_string(name,name_length);
-  ret=add_constant(id, &tmp, flags);
-  free_string(id);
+  struct pike_string *n = make_shared_binary_string(name, name_length);
+  ret=low_add_integer_constant(n, i, flags);
+  free_string(n);
   return ret;
 }
 
@@ -6384,7 +6436,7 @@ int find_shared_string_identifier(struct pike_string *name,
     size_t hashval;
     hashval = my_hash_string(name);
     hashval += prog->id;
-    hashval %= FIND_FUNCTION_HASHSIZE;
+    hashval &= (FIND_FUNCTION_HASHSIZE-1);
     if(is_same_string(cache[hashval].name,name) &&
        cache[hashval].id==prog->id)
       return cache[hashval].fun;
@@ -7176,21 +7228,20 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static char *file = NULL;
       static char *base, *cnt;
-      static INT32 off,pid;
+      static ptrdiff_t off;
+      static INT32 pid;
       static INT_TYPE line;
       static size_t len;
       static INT32 shift;
 
-      if(prog->linenumbers != base || prog->id != pid || offset < off)
-      {
-	base = cnt = prog->linenumbers;
-	off=line=0;
-	pid=prog->id;
-	file = 0;
-      }else{
-	if (cnt < prog->linenumbers + prog->num_linenumbers)
-	  goto fromold;
-      }
+      if(prog->linenumbers == base && prog->id == pid && offset > off &&
+	 cnt < prog->linenumbers + prog->num_linenumbers)
+	goto fromold;
+
+      base = cnt = prog->linenumbers;
+      off=line=0;
+      pid=prog->id;
+      file = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
@@ -7202,11 +7253,18 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  file = ++cnt;
 	  CHECK_FILE_ENTRY (prog, cnt, len, shift);
 	  cnt += len<<shift;
+	  continue;
 	}
 	off+=get_small_number(&cnt);
       fromold:
 	if(off > offset) break;
 	line+=get_small_number(&cnt);
+      }
+      if (cnt >= prog->linenumbers + prog->num_linenumbers) {
+	/* We reached the end of the table. Make sure
+	 * we get in sync again next time we're called.
+	 */
+	base = NULL;
       }
       linep[0]=line;
       if (file) {

@@ -30,6 +30,7 @@
 #include "gc.h"
 #include "block_alloc.h"
 #include "pikecode.h"
+#include "opcodes.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -605,13 +606,19 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,
 			      "integer in the range -1..1 for 'enabled'");
       if (gc_enabled != set->u.integer) {
-	if (gc_enabled > 0)
-	  gc_enabled = set->u.integer;
-	else {
-	  gc_enabled = 1;
-	  if (alloc_threshold == GC_MAX_ALLOC_THRESHOLD)
-	    alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+	if (gc_enabled > 0) {
+	  /* Disabling automatic gc - save the old alloc_threshold and set it to
+	   * the maximum value to avoid getting gc_evaluator_callback added. */
+	  saved_alloc_threshold = alloc_threshold;
+	  alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
 	}
+	else if (set->u.integer > 0) {
+	  /* Enabling automatic gc - restore the old alloc_threshold. If the
+	   * gc interval has gotten longer than it should be then the
+	   * multiplier calculation in do_gc should compensate. */
+	  alloc_threshold = saved_alloc_threshold;
+	}
+	gc_enabled = set->u.integer;
       }
     }, {
       SET_SVAL(get, T_INT, NUMBER_NUMBER, integer, gc_enabled);
@@ -1680,6 +1687,66 @@ PIKEFUN void _putenv (string var, void|string val)
   }
 #endif /* !USE_SETENV */
 }
+
+#if defined(PIKE_DEBUG) && defined(PIKE_PORTABLE_BYTECODE)
+
+/*! @decl void disassemble(function fun)
+ *! @belongs Debug
+ *!
+ *!   Disassemble a Pike function to @[Stdio.stderr].
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime
+ *!   has been compiled with debug enabled.
+ */
+PIKEFUN void _disassemble(function fun)
+{
+  if ((TYPEOF(*fun) != T_FUNCTION) ||
+      (SUBTYPEOF(*fun) == FUNCTION_BUILTIN)) {
+    fprintf(stderr,
+	    "Disassembly only supported for functions implemented in Pike.\n");
+  } else if (!fun->u.object->prog) {
+    fprintf(stderr, "Function in destructed object.\n");
+  } else {
+    int f = SUBTYPEOF(*fun);
+    struct reference *ptr = PTR_FROM_INT(fun->u.object->prog, f);
+    struct program *p = PROG_FROM_PTR(fun->u.object->prog, ptr);
+    struct identifier *id = p->identifiers + ptr->identifier_offset;
+    if (id->func.offset >= 0) {
+      struct pike_string *tripples =
+	p->strings[read_program_data(p->program + id->func.offset, -1)];
+      switch(tripples->size_shift) {
+#define CASE(SHIFT)					\
+	case SHIFT:					\
+	  {						\
+	    PIKE_CONCAT(p_wchar, SHIFT) *str =		\
+	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
+	    int i=0;					\
+	    while(i < tripples->len) {			\
+	      fprintf(stderr, "@@@ %d: %s, %d, %d\n",	\
+		      i/3,				\
+		      instrs[*str - F_OFFSET].		\
+		      name,				\
+		      str[1], str[2]);			\
+	      str += 3;					\
+	      i += 3;					\
+	    }						\
+	  }						\
+	  break
+	CASE(0);
+	CASE(1);
+	CASE(2);
+#undef CASE
+      }
+    } else {
+      fprintf(stderr, "Prototype.\n");
+    }
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+#endif /* PIKE_DEBUG && PIKE_PORTABLE_BYTECODE */
 
 /*
  * Backtrace handling.
@@ -4371,15 +4438,26 @@ PIKECLASS List
    *!   Throws an error if the list is empty.
    *!
    *! @seealso
-   *!   @[is_empty()], @[head()], @[pop()]
+   *!   @[is_empty()], @[head()], @[pop_back()]
    */
   PIKEFUN mixed tail()
   {
-    if (THIS->tail->prev) {
-      push_svalue(&THIS->tail->val);
+    struct pike_list_node * node = TAIL_SENTINEL(THIS);
+    if (THIS->head->next) {
+      push_svalue(&node->prev->val);
     } else {
       Pike_error("Empty list.\n");
     }
+  }
+
+  static inline void pop_node(struct pike_list_node * node) {
+    push_svalue(&node->val);
+    if (node->refs == 2) {
+      unlink_list_node(node);
+    } else {
+      detach_list_node(node);
+    }
+    THIS->num_elems--;
   }
 
   /*! @decl mixed pop()
@@ -4390,21 +4468,107 @@ PIKECLASS List
    *!   Throws an error if the list is empty.
    *!
    *! @seealso
-   *!   @[is_empty()], @[head()], @[tail()]
+   *!   @[is_empty()], @[head()], @[tail()], @[pop_back()]
    */
   PIKEFUN mixed pop()
   {
     if (THIS->head->next) {
-      push_svalue(&THIS->head->val);
-      if (THIS->head->refs == 2) {
-	unlink_list_node(THIS->head);
-      } else {
-	detach_list_node(THIS->head);
-      }
-      THIS->num_elems--;
+      pop_node(THIS->head);
     } else {
       Pike_error("Empty list.\n");
     }
+  }
+
+  /*! @decl mixed pop_back()
+   *!
+   *!   Pop the element at the tail of the list from the list.
+   *!
+   *! @throws
+   *!   Throws an error if the list is empty.
+   *!
+   *! @seealso
+   *!   @[is_empty()], @[head()], @[tail()], @[pop()]
+   */
+  PIKEFUN mixed pop_back()
+  {
+    const struct pike_list_node * node = TAIL_SENTINEL(THIS);
+    if (THIS->head->next) {
+      pop_node(node->prev);
+    } else {
+      Pike_error("Empty list.\n");
+    }
+  }
+
+  /*! @decl array _values()
+   *!
+   *! 	Returns an array of elements in the list.
+   */
+  PIKEFUN array _values()
+    flags ID_PROTECTED;
+  {
+      struct array * a;
+      push_int(THIS->num_elems);
+      f_allocate(1);
+
+      a = Pike_sp[-1].u.array;
+      if (THIS->num_elems) {
+	struct pike_list_node *node = THIS->head;
+	int i;
+	for (i = 0; i < THIS->num_elems; i++) {
+	  assign_svalue_no_free(ITEM(a) + i, &node->val);
+	  node = node->next;
+	}
+      }
+    }
+
+  /*! @decl mixed cast(string type)
+   *!
+   *! 	Cast the lists. @expr{array@} and @expr{object@} are the only
+   *! 	supported types.
+   */
+  PIKEFUN mixed cast(string type)
+    flags ID_PROTECTED;
+  {
+      if (type == MK_STRING("array")) {
+	pop_n_elems(args);
+	apply_current(f_List_cq__values_fun_num, 0);
+      } else if (type == MK_STRING("object")) {
+	pop_n_elems(args);
+	ref_push_object(Pike_fp->current_object);
+      } else {
+	Pike_error("Cannot cast to %o.\n", Pike_sp-1);
+      }
+  }
+
+
+  /*! @decl mixed `[](mixed key) */
+  PIKEFUN mixed `[](mixed key)
+    flags ID_PROTECTED;
+  {
+      struct pike_list_node *node;
+      INT_TYPE n;
+      if (TYPEOF(*key) != PIKE_T_INT) SIMPLE_BAD_ARG_ERROR("`[]", 1, "int");
+
+      n = key->u.integer;
+      if (n < 0) n = -(n+1);
+
+      if (n >= THIS->num_elems) Pike_error("out of bounds");
+
+      if (n >= THIS->num_elems >> 1) { /* use shorter direction */
+	n = THIS->num_elems - n - 1;
+	key->u.integer = - key->u.integer - 1;
+      }
+
+      if (key->u.integer < 0) {
+	node = TAIL_SENTINEL(THIS)->prev;
+	while (n--) node = node->prev;
+      } else {
+	node = THIS->head;
+	while (n--) node = node->next;
+      }
+
+      pop_n_elems(args);
+      push_svalue(&node->val);
   }
 
   /*! @decl void append(mixed ... values)
@@ -4447,17 +4611,31 @@ PIKECLASS List
     push_int(0);
   }
 
+  /*! @decl void flush()
+   *!
+   *! 	Empties the List.
+   */
+  PIKEFUN void flush() {
+    if (THIS->num_elems) {
+      while (THIS->head->next) {
+	if (THIS->head->refs == 2)
+	  unlink_list_node(THIS->head);
+	else
+	  detach_list_node(THIS->head);
+      }
+      THIS->num_elems = 0;
+    }
+  }
+
   /*! @decl protected void create(mixed ... values)
    *!
    *!   Create a new @[List], and initialize it with @[values].
-   *!
-   *! @fixme
-   *!   Ought to reset the @[List] if called multiple times.
    */
   PIKEFUN void create(mixed ... values)
     flags ID_PROTECTED;
   {
-    /* FIXME: Reset the list? */
+    if (THIS->num_elems)
+      apply_current(f_List_flush_fun_num, 0);
     apply_current(f_List_append_fun_num, args);
   }
 
@@ -4482,7 +4660,7 @@ PIKECLASS List
 
       loc.o = Pike_fp->current_object;
       loc.parent_identifier = Pike_fp->fun;
-      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+      loc.inherit = Pike_fp->context;
       find_external_context(&loc, 1);
       return (struct List_struct *)(loc.o->storage +
 				    loc.inherit->storage_offset);

@@ -5,6 +5,7 @@
 //! base for all Roman-kind of Calendars,
 //! ie, one with years, months, weeks and days
 //!
+//! inherits Time
 
 #pike __REAL_VERSION__
 
@@ -43,6 +44,97 @@ protected string f_year_number_from_name;
 protected int(0..1) year_leap_year(int y);
 
 protected int compat_week_day(int n);
+
+// Polynomial terms for calculating the difference between TDT and UTC.
+//
+// The polynomials have been taken from NASA:
+// @url{http://eclipse.gsfc.nasa.gov/SEhelp/deltatpoly2004.html@}
+//
+// Each entry is an @expr{array(float)@}:
+// @array
+//   @elem float 0
+//     End year for the range.
+//   @elem float 1
+//     Year offset.
+//   @elem float 2
+//     Year divisor.
+//   @elem float 3..
+//     Polynomial factors with the highest exponent first.
+// @endarray
+protected constant deltat_polynomials = ({
+  ({ -500.0, -1820.0, 100.0,
+     -20.0, 0.0, 32.0, }),
+  ({ 500.0, 0.0, 100.0,
+     0.0090316521, 0.022174192, -0.1798452,
+     -5.952053, 33.78311, -1014.41, 10583.6, }),
+  ({ 1600.0, -1000.0, 100.0,
+     0.0083572073, -0.005050998, -0.8503463,
+     0.319781, 71.23472, -556.01, 1574.2, }),
+  ({ 1700.0, -1600.0, 1.0,
+     0.000140272128, -0.01532, -0.9808, 120.0, }),
+  ({ 1800.0, -1700.0, 1.0,
+     0.000000851788756, 0.00013336, -0.0059285, 0.1603, 8.83, }),
+  ({ 1860.0, -1800.0, 1.0,
+     0.000000000875, -0.0000001699, 0.0000121272, -0.00037436,
+     0.0041116, 0.0068612, -0.332447, 13.72, }),
+  ({ 1900.0, -1860.0, 1.0,
+     0.000004288643, -0.0004473624, 0.01680668, -0.251754, 0.5737, 7.62, }),
+  ({ 1920.0, -1900.0, 1.0,
+     -0.000197, 0.0061966, -0.0598939, 1.494119, -2.79, }),
+  ({ 1941.0, -1920.0, 1.0,
+     0.0020936, -0.076100, 0.84493, 21.20, }),
+  ({ 1961.0, -1950.0, 1.0,
+     0.0003926188, 0.0042918455, 0.407, 29.07, }),
+  ({ 1986.0, -1975.0, 1.0,
+     0.001392758, 0.0038461538, 1.067, 45.45, }),
+  ({ 2005.0, -2000.0, 1.0,
+     0.00002373599, 0.000651814, 0.0017275, -0.060374, 0.3345, 63.86, }),
+  ({ 2050.0, -2000.0, 1.0,
+     0.005589, 0.32217, 62.92 }),
+  ({ 2150.0, -1820.0, 100.0,
+     32.0-185.724, 56.28, -20.0, }),
+  ({ Math.inf, -1820.0, 100.0,
+     32.0, 0.0, -20.0, }),
+});
+
+//! method float deltat(int unadjusted_utc)
+//! Terrestrial Dynamical Time difference from standard time.
+//!
+//! returns
+//!   An approximation of the difference between TDT and UTC
+//!   in fractional seconds at the specified time.
+//!
+//! The zero point is 1901-06-25T14:23:01 UTC
+//! (unix time -2162281019), ie the accumulated number
+//! of leap seconds since then is returned.
+//!
+//! note
+//!   The function is based on polynomials provided by NASA,
+//!   and the result may differ from actual for dates after 2004.
+float deltat(int unadjusted_utc)
+{
+  // Approximation of the year. This ought to be good enough for
+  // most purposes given the uncertainty in the table values.
+  // 31556952 == 365.2425 * 24 * 60 * 60.
+  float y = 1970.0 + unadjusted_utc/31556952.0;
+
+  array(float) polynomial;
+  int l, c, h = sizeof(deltat_polynomials);
+  do {
+    c = (l + h)/2;
+    polynomial = deltat_polynomials[c];
+    if (y < polynomial[0]) h = c;
+    else l = c + 1;
+  } while (l < h);
+  float u = (y + polynomial[1])/polynomial[2];
+
+  float deltat = 0.0;
+  foreach(polynomial; int i; float factor) {
+    if (i < 3) continue;
+    deltat = deltat * u + factor;
+  }
+  return deltat;
+}
 
 //------------------------------------------------------------------------
 //! class YMD
@@ -151,7 +243,7 @@ class YMD
       return jd;
    }
 
-//! function method int unix_time()
+//! method int unix_time()
 //!     Returns the unix time integer corresponding to the start
 //!	of the time range object. (An unix time integer is UTC.)
 
@@ -276,7 +368,7 @@ class YMD
    int second_no() { return 0; }
    float fraction_no() { return 0.0; }
    
-//! function method datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
@@ -413,6 +505,8 @@ class YMD
 //!	<br><tt>[3]</tt> as from the libc function ctime()
 //!	<br><tt>[4]</tt> as specified by the HTTP standard;
 //!	not language dependent.
+//!
+//!	The iso variants aim to be compliant with ISO-8601.
 
    string format_iso_ymd()
    {
@@ -1439,7 +1533,8 @@ class cYear
 
 
 // ----------------------------------------------------------------
-//   Month
+//! class Month
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cMonth) Month=cMonth;
@@ -1730,6 +1825,8 @@ class cMonth
 //!	When adding, moving or subtracting years,
 //!	if tries to place the moved week in the 
 //!	resulting year.
+//!
+//! inherits YMD
 // ----------------------------------------------------------------
 
 function(mixed...:cWeek) Week=cWeek;
@@ -2068,7 +2165,8 @@ class cWeek
 }
 
 // ----------------------------------------------------------------
-//   Day
+//! class Day
+//! inherits YMD
 // ----------------------------------------------------------------
 
 class cDay
@@ -2518,12 +2616,24 @@ class cHour
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Minute
+//! inherits Time.Minute
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cMinute
 {
    inherit Time::cMinute;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class Second
+//! inherits Time.Second
+//! inherits YMD
+//------------------------------------------------------------------------
 
 class cSecond
 {
@@ -2532,12 +2642,23 @@ class cSecond
    OVERLOAD_TIMEOFDAY;
 }
 
+//------------------------------------------------------------------------
+//! class Fraction
+//! inherits Time.Fraction
+//! inherits YMD
+//------------------------------------------------------------------------
+
 class cFraction
 {
    inherit Time::cFraction;
    inherit YMD_Time;
    OVERLOAD_TIMEOFDAY;
 }
+
+//------------------------------------------------------------------------
+//! class SuperTimeRange
+//! inherits Time.SuperTimeRange
+//------------------------------------------------------------------------
 
 class cSuperTimeRange
 {
@@ -2591,7 +2712,10 @@ class cSuperTimeRange
 }
 
 //------------------------------------------------------------------------
-//! global convinience functions
+// Pop out doc-extractor context to the top-level scope.
+//! module Calendar
+//! submodule YMD
+// global convenience functions
 //------------------------------------------------------------------------
 
 //! method TimeRange parse(string fmt,string arg)
@@ -2846,14 +2970,14 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 {
 	    m->month=low=m->year->month(m->M);
 	 }
-	 if (m->W) 
+	 if (m->W)
 	    m->week=low=m->year->week("w"+m->W);
 
 	 if (!zero_type(m->D))
 	    m->day=low=(m->month||(context?context->month():cal->Month()))
 	       ->day((int)m->D);
 	 else if (!zero_type(m->a))
-	    m->day=low=m->year->day(m->a);
+	    m->day=low=(m->month || m->year)->day(m->a);
 	 else if (!zero_type(m->e))
 	    m->day=low=(m->week||(context?context->week():cal->Week()))
 	       ->day(m->e);
@@ -2946,8 +3070,8 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
        return 0;
 }
 
-//! function Day dwim_day(string date)
-//! function Day dwim_day(string date,TimeRange context)
+//! method Day dwim_day(string date)
+//! method Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
@@ -3177,7 +3301,7 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //-- auxillary functions------------------------------------------------
 
 //!
-//! function datetime(int|void unix_time)
+//! function mapping(string:int) datetime(int|void unix_time)
 //!     Replacement for localtime; gives back a mapping:
 //!	<pre>
 //!	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
@@ -3197,8 +3321,8 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //!	</pre>
 //!	This is the same as calling <ref>Second</ref>()-><ref to=Second.datetime>datetime</ref>().
 //!
-//! function datetime_name(int|void unix_time)
-//! function datetime_short_name(int|void unix_time)
+//! function string datetime_name(int|void unix_time)
+//! function string datetime_short_name(int|void unix_time)
 //!     Compat functions; same as <ref>format_iso</ref>
 //!	and <ref>format_iso_short</ref>.
 //!	

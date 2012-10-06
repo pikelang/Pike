@@ -143,7 +143,7 @@ protected private int mkbool(string s) {
 
 //! @decl void create()
 //! @decl void create(string host, void|string database, void|string user,@
-//!                   void|string password)
+//!                   void|string password, void|mapping options)
 //!
 //! With no arguments, this function initializes (reinitializes if a
 //! connection had been previously set up) a connection to the
@@ -175,7 +175,7 @@ protected private int mkbool(string s) {
 //! @seealso
 //!   @[Sql.pgsql], @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 void create(void|string host, void|string database, void|string user,
-		void|string _pass) {
+	    void|string _pass, void|mapping options) {
 	string pass = _pass;
 	_pass = "CENSORED";
 	string real_host=host, real_db=database;

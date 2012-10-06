@@ -687,6 +687,8 @@ int main(int argc, array(string) argv)
 	  failure = 1;
 	} else {
 	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
+	  if (!(sub_succeeded || sub_failed || sub_skipped))
+	    continue;
 	  if (verbose) {
 	    log_status ("");
 	    log_msg("Subresult: %d tests, %d failed, %d skipped\n",
@@ -709,6 +711,9 @@ int main(int argc, array(string) argv)
     foreach(testsuites, string testsuite)
     {
       [string pike_compat, tests] = read_tests( testsuite );
+
+      if (!sizeof (tests))
+	continue;
 
       log_msg("Doing tests in %s%s (%s)\n", testsuite,
 	      pike_compat ? " in " + pike_compat + " compat mode" : "",
@@ -759,6 +764,7 @@ int main(int argc, array(string) argv)
 		log_msg( "Conditional %d%s failed:\n"
 			 "%s\n", e+1, testline?" (line "+testline+")":"",
 			 describe_backtrace(err) );
+              print_code( condition );
 	      errors++;
 	      tmp = -1;
 	    }

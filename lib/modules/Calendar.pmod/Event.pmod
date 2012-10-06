@@ -146,10 +146,8 @@ class Day_Event
 
   //! @decl int scan_jd(Calendar.Calendar realm, int jd,@
   //!                   int(-1..-1)|int(1..1) direction)
-  //! These methods has to be defined, and is what
-  //! really does some work. It should return the next or previos
-  //! julian day (>@i{jd@}) when the event occurs,
-  //! or the constant @[NODAY] if it doesn't.
+  //! This method has to be defined, and is what
+  //! really does some work.
   //!
   //! @param direction
   //!   @int
@@ -158,6 +156,11 @@ class Day_Event
   //!     @value -1
   //!	    Backward (previous).
   //!   @endint
+  //!
+  //! @returns
+  //!   It should return the next or previous
+  //!   julian day (>@i{jd@}) when the event occurs,
+  //!   or the constant @[NODAY] if it doesn't.
 
    int scan_jd(Calendar.Calendar realm,int jd,int(1..1)|int(-1..-1) direction);
 
@@ -855,6 +858,214 @@ class Weekday
    }
 }
 
+//! This class represents a solar event as observed from Earth.
+//!
+//! The @[event_type] is one of
+//! @int
+//!   @value 0
+//!     Northern hemisphere spring equinox.
+//!   @value 1
+//!     Northern hemisphere summer solstice.
+//!   @value 2
+//!     Northern hemisphere autumn equinox.
+//!   @value 3
+//!     Northern hemisphere winter solstice.
+//! @endint
+class Solar(int|void event_type)
+{
+  inherit Day_Event;
+
+  //! @array
+  //!   @elem array(float) 0..
+  //!     @array
+  //!       @elem float 0
+  //!         Amplitude in days.
+  //!       @elem float 1
+  //!         Cosine phase in radians in year 2000.
+  //!       @elem float 2
+  //!         Period in radians/year.
+  //!     @endarray
+  //! @endarray
+  protected constant periodic_table = ({
+    ({ 0.00485, 5.67162,   33.757041, }),
+    ({ 0.00203, 5.88577,  575.338485, }),
+    ({ 0.00199, 5.97042,    0.352312, }),
+    ({ 0.00182, 0.48607, 7771.377155, }),
+    ({ 0.00156, 1.27653,  786.041946, }),
+    ({ 0.00136, 2.99359,  393.020973, }),
+    ({ 0.00077, 3.8841, 1150.67697, }),
+    ({ 0.00074, 5.1787,   52.96910, }),
+    ({ 0.00070, 4.2513,  157.73436, }),
+    ({ 0.00058, 2.0911,  588.49268, }),
+    ({ 0.00052, 5.1866,    2.62983, }),
+    ({ 0.00050, 0.3669,   39.81490, }),
+    ({ 0.00045, 4.3204,  522.36940, }),
+    ({ 0.00044, 5.6749,  550.75533, }),
+    ({ 0.00029, 1.0634,   77.55226, }),
+    ({ 0.00018, 2.7074, 1179.06290, }),	// NB: Some have amplitude 28 here.
+    ({ 0.00017, 5.0403,   79.62981, }),
+    ({ 0.00016, 3.4565, 1097.70789, }),
+    ({ 0.00014, 3.4865,  548.67778, }),
+    ({ 0.00012, 1.6649,  254.43145, }),
+    ({ 0.00012, 5.0110,  557.31428, }),
+    ({ 0.00012, 5.5992,  606.97767, }),
+    ({ 0.00009, 3.9746,   21.32991, }),
+    ({ 0.00008, 0.2697,  294.24635, }),
+  });
+
+  //! Calculate the next event.
+  //!
+  //! Based on Meeus Astronomical Algorithms Chapter 27.
+  array(int|float) solar_event(int y)
+  {
+    int jd;
+    float offset;
+
+    // First calculate an initial guess for the Julian day.
+    if (y < 1000) {
+      float yy = y/1000.0;
+      float y2 = yy*yy;
+      float y3 = y2*yy;
+      float y4 = y3*yy;
+
+      // 4th degree polynomial around year 2BC.
+      switch (event_type) {
+      case 0:
+	offset = 365242 * yy;
+	jd = 1721139 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.29189 + 0.13740 * yy + 0.06134 * y2 -
+	  0.00111 * y3 - 0.00071 * y4;
+	break;
+      case 1:
+	offset = 365241 * yy;
+	jd = 1721233 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.25401 + 0.72562 * yy + 0.05323 * y2 -
+	  0.00907 * y3 - 0.00025 * y4;
+	break;
+      case 2:
+	offset = 365242 * yy;
+	jd = 1721325 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.70455 + 0.49558 * yy + 0.11677 * y2 -
+	  0.00297 * y3 - 0.00074 * y4;
+	break;
+      case 3:
+	offset = 365242 * yy;
+	jd = 1721414 + (int)floor(offset);
+	offset -= floor(offset);
+        offset += 0.39987 + 0.88257 * yy + 0.00769 * y2 -
+	  0.00933 * y3 - 0.00006 * y4;
+	break;
+      }
+    } else {
+      float yy = (y - 2000)/1000.0;
+      float y2 = yy*yy;
+      float y3 = y2*yy;
+      float y4 = y3*yy;
+
+      // 4th degree polynomial around year 2000.
+      switch (event_type) {
+      case 0:
+	offset = 365242 * yy;
+	jd = 2451623 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.80984 + 0.37404 * yy + 0.05169 * y2 -
+	  0.00411 * y3 - 0.00057 * y4;
+	break;
+      case 1:
+	offset = 365241 * yy;
+	jd = 2451716 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.56767 + 0.62603 * yy + 0.00325 * y2 -
+	  0.00888 * y3 - 0.00030 * y4;
+	break;
+      case 2:
+	offset = 365242 * yy;
+	jd = 2451810 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.21715 + 0.01767 * yy + 0.11575 * y2 -
+	  0.00337 * y3 - 0.00078 * y4;
+	break;
+      case 3:
+	offset = 365242 * yy;
+	jd = 2451900 + (int)floor(offset);
+	offset -= floor(offset);
+	offset += 0.05952 + 0.74049 * yy + 0.06223 * y2 -
+	  0.00823 * y3 - 0.00032 * y4;
+	break;
+      }
+    }
+
+    float delta_y = ((jd - 2451545) + offset) / 36525.0;
+
+    // Omega is in radians.
+    float omega = 628.30759 * delta_y - 0.0431096;
+    float l = 1.0 + 0.0334 * cos(omega) + 0.0007 * cos(2.0 * omega);
+
+    // Adjusted to radians.
+    float S = 0.0;
+    foreach(periodic_table; int i; array(float) fun) {
+      S += fun[0] * cos(fun[1] + fun[2] * delta_y);
+    }
+
+    offset += S / l;
+
+    // Adjust for Meeus starting julian days at 12:00 UTC.
+    offset += 0.5;
+
+    jd += (int)floor(offset);
+    offset -= (int)floor(offset);
+    return ({ jd, offset });
+  }
+
+  //! @note
+  //!   Returns unixtime in UTC to avoid losing the decimals!
+  int scan_jd(Calendar.Calendar realm, int jd, int(1..1)|int(-1..-1) direction)
+  {
+    [int y, int yjd, int leap] = gregorian_yjd(jd);
+
+    [int new_jd, float offset] = solar_event(y);
+
+    if ((direction > 0) && (new_jd < jd)) {
+      [new_jd, offset] = solar_event(y + 1);
+    } else if ((direction < 0) && (new_jd >= jd)) {
+      [new_jd, offset] = solar_event(y - 1);
+    }
+
+    // Convert into an UTC timestamp.
+    int utc = (new_jd - 2440588)*86400 + (int)(offset * 86400.0);
+    return utc - (int)round(Calendar.ISO.deltat(utc));
+  }
+
+  Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
+				     void|int(0..1) including)
+   {
+      if (!from) from=std_day();
+      int jd;
+      if (including) jd=(int)(from->julian_day());
+      else jd=(int)(from->end()->julian_day());
+      int utc = scan_jd(from->calendar(),jd-nd+1,1);
+      return (from->calendar()->Day)("unix_r",utc,from->ruleset())*nd;
+   }
+
+   //! Uses the virtual method @[scan_jd].
+   //! @seealso
+   //!   @[Event.previous]
+   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
+					  void|int(0..1) including)
+   {
+      if (!from) from=std_day();
+      int jd;
+      if (including) jd=(int)(from->end()->julian_day());
+      else jd=(floatp(from->julian_day())
+	       ?(int)floor(from->julian_day())
+	       :(from->julian_day()-1));
+      int utc = scan_jd(from->calendar(),jd+nd-1,-1);
+      return (from->calendar()->Day)("unix_r",utc,from->ruleset())*nd;
+   }
+}
 
 //! This class represents an easter.
 class Easter

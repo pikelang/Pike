@@ -548,6 +548,14 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
   rm("build/modref.xml");
   string pike_version = get_version();
   string timestamp = (src_commit->author[0]/" ")[-2];
+  string ctimestamp = (src_commit->committer[0]/" ")[-2];
+
+  if ((((int)timestamp) + 86400) < ((int)ctimestamp)) {
+    // More than 24 hours between author time and commit time.
+    // Use commit time instead. This is to avoid huge backdates
+    // (several years in some cases) in the generated manual.
+    timestamp = ctimestamp;
+  }
 
   Parser.XML.Tree.SimpleRootNode autodoc =
     Parser.XML.Tree.simple_parse_file("build/autodoc.xml");

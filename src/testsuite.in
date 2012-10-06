@@ -53,6 +53,12 @@ cond(0x8000000000000000, [[
 ]])
 test_eq([["(" + Int.NATIVE_MAX + ")"]], [[sprintf ("(%d)", Int.NATIVE_MAX)]])
 test_eq([["(" + Int.NATIVE_MIN + ")"]], [[sprintf ("(%d)", Int.NATIVE_MIN)]])
+test_eq([[Int.NATIVE_MAX]], [[(int) (Int.NATIVE_MAX + "")]])
+test_eq([[Int.NATIVE_MIN]], [[(int) (Int.NATIVE_MIN + "")]])
+test_eq([[(string) Int.NATIVE_MAX]], [[Int.NATIVE_MAX + ""]])
+test_eq([[(string) Int.NATIVE_MIN]], [[Int.NATIVE_MIN + ""]])
+test_eq([[(string) Int.NATIVE_MAX]], [[sprintf ("%d", Int.NATIVE_MAX)]])
+test_eq([[(string) Int.NATIVE_MIN]], [[sprintf ("%d", Int.NATIVE_MIN)]])
 
 # __func__
 test_eq(__func__, "a")
@@ -605,6 +611,14 @@ test_eq([[
 ]], 1)
 
 // Argument checking
+
+// Test new_check_call.
+test_any([[
+  constant foo = 5;
+
+  // Test that it survives a F_ARG_LIST with CAR == CDR.
+  return foo%foo;
+]], 0)
 
 // Test get_all_args.
 test_eval_error([[
@@ -9234,15 +9248,15 @@ cond([[all_constants()->_verify_internals]],
 test_compile_any([[import Stdio.Readline; mapping x=([]);]]);
 
 // testing preprocessor
-test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) ) ( (B) )")
-test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"# 1 \"-\"\n\nFOO BAR")
-test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
-test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
+test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"#line 1 \"-\"\n\n( (A) ) ( (B) )")
+test_eq([[cpp("#define FOO(X)\nFOO BAR")]],"#line 1 \"-\"\n\nFOO BAR")
+test_eq([[cpp("#define F 'F'\nF")]],"#line 1 \"-\"\n\n'F'")
+test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"#line 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
 test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
-	"# 1 \"-\"\n\n\n \"foo\" ")
-test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "# 1 \"-\"\n\n\n \"\" \n");
-test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "# 1 \"-\"\n\n\n \"\"  \n" /* Note: Added extra space for \r. */);
+	"#line 1 \"-\"\n\n\n \"foo\" ")
+test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "#line 1 \"-\"\n\n\n \"\" \n");
+test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "#line 1 \"-\"\n\n\n \"\"  \n" /* Note: Added extra space for \r. */);
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[
@@ -9258,14 +9272,14 @@ test_equal([[
 		 "constant val = TOSTR2(FOO);\n")()->val;
 ]], "")
 test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
-  "# 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#1 \"-\"\n bar")
+  "#line 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
 test_equal([[
   compile_string(Locale.Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
-test_eq([[cpp("\\\n")]], "# 1 \"-\"\n\n")
-test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "# 1 \"-\"\n\n\n\n\n")
+test_eq([[cpp("\\\n")]], "#line 1 \"-\"\n\n")
+test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "#line 1 \"-\"\n\n\n\n\n")
 test_any([[
   Stdio.write_file("testsuite_test.h", "");
   return compile_string(#"
@@ -9445,7 +9459,7 @@ test_do([[
 test_any([[
   class handler {mapping get_predefines() {return (["x": "1", "y": "", "z": 0]);}};
   return cpp ("x y z p", "-", 0, handler());
-]], "# 1 \"-\"\n1   p");
+]], "#line 1 \"-\"\n1   p");
 test_eval_error([[
   class handler {mixed get_predefines() {return (<"x">);}};
   cpp ("x y z", "-", 0, handler());

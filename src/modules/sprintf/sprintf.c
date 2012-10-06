@@ -1218,7 +1218,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  fprintf(stderr, "Sprinf-glop: %d (%c)\n",
 		  INDEX_PCHARP(a,tmp), INDEX_PCHARP(a,tmp));
 #endif
-	  if(COMPARE_PCHARP(a,>=,format_end))
+	  if(COMPARE_PCHARP(ADD_PCHARP(a, tmp),>=,format_end))
 	    sprintf_error(fs, "Unfinished pad string in format string.\n");
 	}
 	if(tmp)
@@ -2089,16 +2089,20 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '\'':
 	tmp=0;
-	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
-	{
-	  if(COMPARE_PCHARP(a,>=,format_end)) {
+	for(INC_PCHARP(a,1);
+	    COMPARE_PCHARP(ADD_PCHARP(a, tmp),<,format_end)
+	    && INDEX_PCHARP(a,tmp)!='\'';tmp++);
+
+	if (COMPARE_PCHARP(ADD_PCHARP(a, tmp),<,format_end)) {
+	    INC_PCHARP(a,tmp);
+	    continue;
+	} else {
+	    INC_PCHARP(a,tmp);
 	    yyreport(severity, type_check_system_string,
 		     0, "Unfinished pad string in format string.");
 	    ret = -1;
-	  }
+	    break;
 	}
-	INC_PCHARP(a,tmp);
-	continue;
 
       case '~':
       {

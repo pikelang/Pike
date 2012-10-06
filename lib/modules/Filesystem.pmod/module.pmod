@@ -36,14 +36,14 @@ class Stat
   //! 0 if the file is not.
   //! @seealso
   //! [set_type]
-  int(0..1) isfifo() { return (mode&0xF000)==0x1000; }
-  int(0..1) ischr()  { return (mode&0xF000)==0x2000; }
-  int(0..1) isdir()  { return (mode&0xF000)==0x4000; }
-  int(0..1) isblk()  { return (mode&0xF000)==0x6000; }
-  int(0..1) isreg()  { return (mode&0xF000)==0x8000; }
-  int(0..1) islnk()  { return (mode&0xF000)==0xa000; }
-  int(0..1) issock() { return (mode&0xF000)==0xc000; }
-  int(0..1) isdoor() { return (mode&0xF000)==0xd000; }
+  int(0..1) `->isfifo() { return (mode&0xF000)==0x1000; }
+  int(0..1) `->ischr()  { return (mode&0xF000)==0x2000; }
+  int(0..1) `->isdir()  { return (mode&0xF000)==0x4000; }
+  int(0..1) `->isblk()  { return (mode&0xF000)==0x6000; }
+  int(0..1) `->isreg()  { return (mode&0xF000)==0x8000; }
+  int(0..1) `->islnk()  { return (mode&0xF000)==0xa000; }
+  int(0..1) `->issock() { return (mode&0xF000)==0xc000; }
+  int(0..1) `->isdoor() { return (mode&0xF000)==0xd000; }
 
   //! Set a type for the stat-object.
   //! @note
@@ -107,7 +107,7 @@ class Stat
   //! the directory if the stated object was a directory, 0 otherwise.
   object /* Filesystem.Base */ cd()
   {
-    if(isdir())
+    if(isdir)
       return filesystem->cd(fullpath);
     // fallback to tar, etc
 

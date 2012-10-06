@@ -71,10 +71,22 @@ if test "x$CONFIG_SHELL" = "x" -a "x$BASH" = x; then
     AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
 Will attempt to restart configure with bash for performance.
 If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.])
-    CONFIG_SHELL="$ac_cv_path_bash_prog --norc"
-    export CONFIG_SHELL
-    echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
-    eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+    if_autoconf(2,63,[
+      # Autoconf 2.63 and later don't like CONFIG_SHELL containing args...
+      # It will break the generated config.status.
+      CONFIG_SHELL="$ac_cv_path_bash_prog"
+      export CONFIG_SHELL
+      echo $CONFIG_SHELL --norc "$srcdir/configure" $ac_configure_args
+      eval exec $CONFIG_SHELL --norc "$srcdir/configure" $ac_configure_args
+    ], [
+      # Autoconf 2.61 and earlier support CONFIG_SHELL containing args.
+      # Make sure the users config files aren't used. We don't want
+      # strange aliases and stuff confusing things...
+      CONFIG_SHELL="$ac_cv_path_bash_prog --norc"
+      export CONFIG_SHELL
+      echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+      eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+    ])
     exit 17
   fi
 else :; fi
@@ -3920,6 +3932,23 @@ int main(int argc, char **argv)
 
     xDarwin*)
       LIBS="${OLDLIBS}"
+
+    #
+    # it would probably be better to create a compilation test should this
+    # behavior change in the future, however for now, we accept this as "good enough"
+    #
+    AC_MSG_CHECKING([whether Darwin dislikes threads and mach includes])
+    case "`uname -r`" in
+      [1-9].*)
+        AC_MSG_RESULT([no (10.5 or older)])
+      ;;
+      *)
+	AC_DEFINE([USE_DARWIN_THREADS_WITHOUT_MACH], [1], [Define if pthreads and mach headers conflict])
+        AC_MSG_RESULT([yes (10.6 or newer)])
+        pike_cv_osx_threads_dislike_mach=yes
+      ;;
+  esac
+
     ;;
 
     *)
@@ -4544,6 +4573,7 @@ AC_CHECK_FUNCS( \
  gmtime_r \
  gmtime_s \
  mallinfo \
+ mallopt \
  memchr \
  mktime \
  perror \
@@ -7172,6 +7202,7 @@ int set_nonblocking(int fd,int which)
 }
 
 
+FILE *output;
 static int socketpair_fd = -1;
 int my_socketpair(int family, int type, int protocol, int sv[2])
 {
@@ -7246,6 +7277,24 @@ retry_connect:
     if(errno != EWOULDBLOCK)
     {
       int tmp2;
+#ifdef ETIMEDOUT
+      if (errno == ETIMEDOUT) {
+        SP_DEBUG((stderr,
+	          "my_socketpair: ETIMEDOUT!\n"
+		  "Do you have a firewall in the way?\n"));
+	/* ETIMEDOUT hints that quite a bit of time has passed,
+	 * so no need for further retries. */
+	fprintf(output, "TIMEOUT\n");
+	exit(0);
+      }
+#endif
+#ifdef ECONNREFUSED
+      if (errno == ECONNREFUSED) {
+        SP_DEBUG((stderr,
+	          "my_socketpair: ECONNREFUSED!\n"
+		  "Do you have a firewall in the way?\n"));
+      }
+#endif
       for(tmp2=0;tmp2<20;tmp2++)
       {
 	int tmp;
@@ -7332,7 +7381,6 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 }
 
 
-FILE *output;
 struct pollfd pollset[2];
 int fds[2];
 static int sent=0;
@@ -7352,6 +7400,9 @@ int ping(int fd)
   }while(r < 0 && errno==EINTR);
   if(r!=1)
   {
+    SP_DEBUG((stderr,
+	      "ping(%d): send(%d, \"x\", 1, MSG_OOB) failed with errno %d\n",
+	      fd, fds[fd], errno));
     fprintf(output,"XBYTES\n");
     exit(0);
   }

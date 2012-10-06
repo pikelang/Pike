@@ -10,8 +10,23 @@
 
 import .Constants;
 
-//! The server's private key
+//! The server's default private key
+//! 
+//! @note
+//!   If SNI (Server Name Indication) is used and multiple keys
+//!   are available, this key will not be used, instead the appropriate
+//!   SNI key will be used (the default implementation stores these in
+//!   @[sni_keys].
 Crypto.RSA rsa;
+
+//! Should an SSL client include the Server Name extension?
+//!
+//! If so, then client_server_names should specify the values to
+//! send.
+int client_use_sni = 0;
+
+//! Host names to send to the server when using the Server Name extension.
+array(string) client_server_names = ({});
 
 /* For client authentication */
 
@@ -31,6 +46,29 @@ array(array(string)) client_certificates = ({});
 //! applicable.) 
 function (.context,array(int),array(string):array(string))client_certificate_selector
   = internal_select_client_certificate;
+
+//! A function which will select an acceptable server certificate for 
+//! presentation to a client. This function will receive
+//! the SSL context, and an array of server names, if provided by the 
+//! client. This function should return an array of strings containing a 
+//! certificate chain, with the client certificate first, (and the root 
+//! certificate last, if applicable.) 
+//!
+//! The default implementation will select a certificate chain for a given server
+//! based on values contained in @[sni_certificates].
+function (.context,array(string):array(string)) select_server_certificate_func 
+  = internal_select_server_certificate;
+
+//! A function which will select an acceptable server key for 
+//! presentation to a client. This function will receive
+//! the SSL context, and an array of server names, if provided by the 
+//! client. This function should return an object matching the certificate
+//! for the server hostname.
+//!
+//! The default implementation will select the key for a given server
+//! based on values contained in @[sni_keys].
+function (.context,array(string):object) select_server_key_func 
+  = internal_select_server_key;
 
 //! Policy for client authentication. One of @[SSL.Constants.AUTHLEVEL_none],
 //! @[SSL.Constants.AUTHLEVEL_ask] and @[SSL.Constants.AUTHLEVEL_require].
@@ -114,7 +152,13 @@ int verify_certificates = 0;
 Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
 
-//! Servers dsa key.
+//! Servers default dsa key.
+//!
+//! @note
+//!   If SNI (Server Name Indication) is used and multiple keys
+//!   are available, this key will not be used, instead the appropriate
+//!   SNI key will be used (the default implementation stores these in
+//!   @[sni_keys].
 Crypto.DSA dsa;
 
 //! Parameters for dh keyexchange.
@@ -129,6 +173,20 @@ function(int:string) random;
 //! server's certificate first and root certificate last.
 array(string) certificates;
 
+//! A mapping containing certificate chains for use by SNI (Server Name
+//! Indication). Each entry should consist of a key indicating the server
+//! hostname and the value containing the certificate chain for that hostname.
+mapping(string:array(string)) sni_certificates = ([]);
+
+//! A mapping containing private keys for use by SNI (Server Name
+//! Indication). Each entry should consist of a key indicating the server
+//! hostname and the value containing the private key object for that hostname.
+//!
+//! @note
+//!  keys objects may be generated from a decoded key string using
+//!  @Standards.PKCS.RSA.parse_private_key()].
+mapping(string:object) sni_keys = ([]);
+
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
 array(int) preferred_auth_methods =
@@ -136,6 +194,15 @@ array(int) preferred_auth_methods =
 
 //! Cipher suites we want to support, in order of preference, best first.
 array(int) preferred_suites;
+
+//! List of advertised protocols using using TLS next protocol negotiation.
+array(string) advertised_protocols;
+
+//! Protocols to advertise during handshake using the next protocol
+//! negotiation extension. Currently only used together with spdy.
+void advertise_protocols(string ... protos) {
+    advertised_protocols = protos;
+}
 
 //! Filter cipher suites from @[preferred_suites] that don't have
 //! a key with an effective length of at least @[min_keylength] bits.
@@ -296,9 +363,43 @@ private void update_authorities()
 
 }
 
+private array(string) internal_select_server_certificate(.context context,
+  array(string) server_names)
+{
+  array(string) certs;
+
+  if(server_names && sizeof(server_names))
+  {
+    foreach(server_names;; string sn)
+    {
+      if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
+        return certs;
+    }
+  }
+
+  return 0;
+}
+
+private object internal_select_server_key(.context context,
+  array(string) server_names)
+{
+  object key;
+
+  if(server_names && sizeof(server_names))
+  {
+    foreach(server_names;; string sn)
+    {
+      if(context->sni_keys && (key = context->sni_keys[lower_case(sn)]))
+        return key;
+    }
+  }
+
+  return 0;
+}
+
 // FIXME: we only really know that RSA and DSS keys will get caught here.
 private array(string) internal_select_client_certificate(.context context, 
-array(int) acceptable_types, array(string) acceptable_authority_dns)
+  array(int) acceptable_types, array(string) acceptable_authority_dns)
 {
   if(!context->client_certificates|| 
          ![int]sizeof((context->client_certificates)))

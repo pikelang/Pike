@@ -7,7 +7,7 @@ int n=0;
 
 void perform()
 {
-   int iter = 16;
+  constant iter = 40;
    int x=0;
 
    for (int a; a<iter; a++)
@@ -15,9 +15,9 @@ void perform()
 	 for (int c; c<iter; c++)
 	    for (int d; d<iter; d++)
 	       for (int e; e<iter; e++)
-		  for (int f; f<iter; f++)
-		     x++;
-
+/* This is here to avoid the strength-reduce in the optimizer.. */
+		  for (int f; f<1; f++)
+                    x++;
    n=x;
 }
 

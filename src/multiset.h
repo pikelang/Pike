@@ -230,7 +230,7 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define free_multiset(M) do_free_multiset (M)
 #else
 
-void really_free_multiset (struct multiset *l);
+PMOD_EXPORT void really_free_multiset (struct multiset *l);
 
 #define free_multiset(L) do {						\
     struct multiset *_ms_ = (L);					\

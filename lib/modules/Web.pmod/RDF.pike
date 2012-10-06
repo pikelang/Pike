@@ -4,6 +4,7 @@
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
 
+//! The RDF XML namespace.
 constant rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
 // These should be in some generic namespace module. Perhaps.

@@ -269,10 +269,11 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
     case PIKE_T_FLOAT: {
       FLOAT_TYPE f = val->u.float_number;
       char b[MAX_FLOAT_SPRINTF_LEN];
-      if (PIKE_ISNAN (f))
-	Pike_error ("Cannot json encode NaN.\n");
-      if (PIKE_ISINF (f))
-	Pike_error ("Cannot json encode infinity.\n");
+      if (PIKE_ISNAN (f) || PIKE_ISINF (f))
+      {
+        string_builder_strcat(&ctx->buf, "null");
+        break;
+      }
       format_pike_float (b, f);
       string_builder_strcat (&ctx->buf, b);
       break;

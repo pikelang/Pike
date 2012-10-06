@@ -128,7 +128,7 @@
 	    }
 	    add_ref(THIS->ptree = tree);
 	    THIS->revv = &(cmod_OBJ2_TREE(tree)->rev);
-	    THIS->tree = cmod_OBJ2_TREE(tree)->tree;
+	    THIS->tree = cmod_OBJ2_TREE(tree)->tree.root;
 
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;

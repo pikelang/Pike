@@ -454,10 +454,13 @@ static INLINE struct compiler_frame *find_local_frame(INT32 depth)
  */
 static int do_lfun_call(int id, node *args)
 {
-#if 1
   struct compilation *c = THIS_COMPILATION;
   struct reference *ref =
     Pike_compiler->new_program->identifier_references + id;
+
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  do_docode(args,0);
 
   /* Test description:
    *
@@ -483,47 +486,34 @@ static int do_lfun_call(int id, node *args)
        (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
      !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
   {
-    int n=count_args(args);
-    if(n == Pike_compiler->compiler_frame->num_args)
+    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & ID_INLINE))
     {
-      do_docode(args,0);
-      if(Pike_compiler->compiler_frame->is_inline ||
-	 (ref->id_flags & ID_INLINE))
-      {
-	/* Identifier is declared inline/local
-	 * or in inlining pass.
+      /* Identifier is declared inline/local
+       * or in inlining pass.
+       */
+      if ((ref->id_flags & ID_INLINE) &&
+	  (!Pike_compiler->compiler_frame->is_inline)) {
+	/* Explicit local:: reference in first pass.
+	 *
+	 * RECUR directly to label 0.
+	 *
+	 * Note that we in this case don't know if we are overloaded or
+	 * not, and thus can't RECUR to the recur_label.
 	 */
-	if ((ref->id_flags & ID_INLINE) &&
-	    (!Pike_compiler->compiler_frame->is_inline)) {
-	  /* Explicit local:: reference in first pass.
-	   *
-	   * RECUR directly to label 0.
-	   *
-	   * Note that we in this case don't know if we are overloaded or
-	   * not, and thus can't RECUR to the recur_label.
-	   */
-	  do_jump(F_RECUR, 0);
-	} else {
-	  Pike_compiler->compiler_frame->
-	    recur_label=do_jump(F_RECUR,
-				Pike_compiler->compiler_frame->recur_label);
-	}
+	do_jump(F_RECUR, 0);
       } else {
-	/* Recur if not overloaded. */
-	emit1(F_COND_RECUR,id);
-	Pike_compiler->compiler_frame->
-	  recur_label=do_jump(F_POINTER,
-			      Pike_compiler->compiler_frame->recur_label);
+	Pike_compiler->compiler_frame->recur_label =
+	  do_jump(F_RECUR, Pike_compiler->compiler_frame->recur_label);
       }
-      return 1;
+    } else {
+      /* Recur if not overloaded. */
+      emit1(F_COND_RECUR,id);
+      Pike_compiler->compiler_frame->recur_label =
+	do_jump(F_POINTER, Pike_compiler->compiler_frame->recur_label);
     }
+  } else {
+    emit1(F_CALL_LFUN, id);
   }
-#endif
-
-  emit0(F_MARK);
-  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-  do_docode(args,0);
-  emit1(F_CALL_LFUN, id);
   POP_AND_DONT_CLEANUP;
   return 1;
 }
@@ -2747,26 +2737,63 @@ static int do_docode2(node *n, int flags)
 INT32 do_code_block(node *n)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct reference *id = NULL;
+  struct identifier *i = NULL;
   INT32 entry_point;
+  int aggregate_cnum = -1;
 #ifdef PIKE_DEBUG
   if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");
   current_stack_depth = 0;
 #endif
+
+  if (Pike_compiler->compiler_frame->current_function_number >= 0) {
+    id = Pike_compiler->new_program->identifier_references +
+      Pike_compiler->compiler_frame->current_function_number;
+    i = ID_FROM_PTR(Pike_compiler->new_program, id);
+  }
 
   init_bytecode();
   label_no=1;
 
   /* NOTE: This is no ordinary label... */
   low_insert_label(0);
-  emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
-  emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
   emit0(F_ENTRY);
   emit0(F_START_FUNCTION);
 
-  if(Pike_compiler->compiler_frame->current_function_number >= 0 &&
-     (Pike_compiler->new_program->identifier_references[
-       Pike_compiler->compiler_frame->current_function_number].id_flags &
-      ID_INLINE))
+  if (Pike_compiler->compiler_frame->num_args) {
+    emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
+  }
+  emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
+  if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+    struct svalue *sval =
+      simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
+    if (!sval) {
+      yyerror("predef::aggregate() is missing.\n");
+      Pike_fatal("No aggregate!\n");
+      return 0;
+    }
+    aggregate_cnum = store_constant(sval, 0, NULL);
+    emit1(F_CALL_BUILTIN, aggregate_cnum);
+    if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	Pike_compiler->compiler_frame->num_args+1) {
+      emit2(F_FILL_STACK,
+	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
+    }
+  } else {
+    emit0(F_POP_TO_MARK);
+    if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	Pike_compiler->compiler_frame->num_args) {
+      emit2(F_FILL_STACK,
+	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
+    }
+  }
+  emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
+        Pike_compiler->compiler_frame->max_number_of_locals);
+  if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
+    emit1(F_PROTECT_STACK, Pike_compiler->compiler_frame->max_number_of_locals);
+  }
+
+  if(id && (id->id_flags & ID_INLINE))
   {
     Pike_compiler->compiler_frame->recur_label=0;
     Pike_compiler->compiler_frame->is_inline=1;
@@ -2787,10 +2814,37 @@ INT32 do_code_block(node *n)
 
     /* NOTE: This is no ordinary label... */
     low_insert_label(Pike_compiler->compiler_frame->recur_label);
-    emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
-    emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
     emit0(F_ENTRY);
     emit0(F_START_FUNCTION);
+
+    if (Pike_compiler->compiler_frame->num_args) {
+      emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
+    }
+    emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
+    if (i && i->identifier_flags & IDENTIFIER_VARARGS) {
+      emit1(F_CALL_BUILTIN, aggregate_cnum);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args+1) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+      emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args+1,
+	    Pike_compiler->compiler_frame->max_number_of_locals);
+    } else {
+      emit0(F_POP_TO_MARK);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+      emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
+	    Pike_compiler->compiler_frame->max_number_of_locals);
+    }
+    if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
+      emit1(F_PROTECT_STACK,
+	    Pike_compiler->compiler_frame->max_number_of_locals);
+    }
+
     DO_CODE_BLOCK(n);
   }
   entry_point = assemble(1);

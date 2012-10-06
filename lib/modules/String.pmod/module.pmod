@@ -87,18 +87,22 @@ string common_prefix(array(string) strs)
   if(!sizeof(strs))
     return "";
 
+  strs = Array.uniq(strs);
+
+  if (sizeof(strs) == 1)
+    return strs[0];
+
   string strs0 = strs[0];
   int n, i;
-  
-  catch
-  {
-    for(n = 0; n < sizeof(strs0); n++)
-      for(i = 1; i < sizeof(strs); i++)
-	if(strs[i][n] != strs0[n])
-	  return strs0[0..n-1];
-  };
 
-  return strs0[0..n-1];
+  int sz = min(@map(strs, sizeof));
+  
+  for(n = 0; n < sz; n++)
+    for(i = 1; i < sizeof(strs); i++)
+      if(strs[i][n] != strs0[n])
+	return strs0[0..n-1];
+
+  return strs0[..sz-1];
 }
 
 // Do a fuzzy matching between two different strings and return a

@@ -97,8 +97,6 @@ class Configuration
       if (mappingp(query)) query = mapping_to_query(query);
       string raw_res = ::authenticate(query);
 
-      werror("Raw res: %O\n", raw_res);
-
       switch(sizeof(raw_res) && raw_res[0]) {
       case '*':	// Error.
 	error("SAML authentication failure: %s\n", raw_res[1..]);

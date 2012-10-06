@@ -627,8 +627,8 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //! @endmapping
 //!
 //! @param cert_chain
-//!   An array of certificates, with the relative-root last. Each certificate should
-//!   be a DER-encoded certificate.
+//!   An array of certificates, with the relative-root last. Each
+//!   certificate should be a DER-encoded certificate.
 //! @param authorities
 //!   A mapping from (DER-encoded) names to verifiers.
 //! @param require_trust
@@ -643,9 +643,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   mapping m = ([ ]);
 
-  array chain_obj = ({});
-  array chain_cert = ({});
- 
+  int len = sizeof(cert_chain);
+  array chain_obj = allocate(len);
+  array chain_cert = allocate(len);
+
   foreach(cert_chain; int idx; string c)
   {
      object cert = Standards.ASN1.Decode.simple_der_decode(c);
@@ -656,8 +657,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
        m->error_cert = idx;
        return m;
      }
-     chain_cert += ({cert});
-     chain_obj += ({tbs});
+
+     int idx = len-idx-1;
+     chain_cert[idx] = cert;
+     chain_obj[idx] = tbs;
   }
 
   foreach(chain_obj; int idx; TBSCertificate tbs)
@@ -769,28 +772,31 @@ mapping verify_certificate_chain(array(string) cert_chain,
       v = chain_obj[idx-1]->public_key;
     }
 
-    if (v && v->verify(chain_cert[idx]->elements[1],
-		       chain_cert[idx]->elements[0]->get_der(),
-		       chain_cert[idx]->elements[2]->value)
-	&& tbs)
+    if (v)
     {
-       X509_WERR("signature is verified..\n");
-       m->verified = 1;
+      if( v->verify(chain_cert[idx]->elements[1],
+                    chain_cert[idx]->elements[0]->get_der(),
+                    chain_cert[idx]->elements[2]->value)
+          && tbs)
+      {
+        X509_WERR("signature is verified..\n");
+        m->verified = 1;
 
-       // if we're the root of the chain and we've verified, this is
-       // the authority.
-       if(idx == 0)
-         m->authority = tbs->issuer;
+        // if we're the root of the chain and we've verified, this is
+        // the authority.
+        if(idx == 0)
+          m->authority = tbs->issuer;
  
-       if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
-    }
-    else
-    {
-      X509_WERR("signature _not_ verified...\n");
-      m->error_code = CERT_BAD_SIGNATURE;
-      m->error_cert = idx;
-      m->verified = 0;
-      return m;
+        if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
+      }
+      else
+      {
+        X509_WERR("signature _not_ verified...\n");
+        m->error_code = CERT_BAD_SIGNATURE;
+        m->error_cert = idx;
+        m->verified = 0;
+        return m;
+      }
     }
   }
   return m;

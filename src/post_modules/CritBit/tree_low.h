@@ -38,7 +38,7 @@
 #define CB_SET_CHILD(__parent, __bit, __child) do {	\
     cb_node_t _p = (__parent);				\
     cb_node_t _child = (__child);			\
-    uint32_t _bit = (__bit);				\
+    unsigned INT32 _bit = (__bit);				\
     if (_child) _child->parent = _p;			\
     CB_CHILD(_p, _bit) = _child;			\
 } while(0)
@@ -66,7 +66,7 @@
 	if (CB_HAS_CHILD(_, 0)) { _ = CB_CHILD(_, 0); }			\
 	else if (CB_HAS_CHILD(_, 1)) { _ = CB_CHILD(_, 1); }		\
 	else {								\
-	    uint32_t hit = 0, oldbit = 3; 				\
+	    unsigned INT32 hit = 0, oldbit = 3; 				\
 	    WALK_UP(_, oldbit, { 					\
 		/*printf("one step up: %d\n", oldbit);			\
 	printf("one step forward: %d %d %d\n", CB_HAS_PARENT(_),
@@ -87,7 +87,7 @@
 	/*printf("one step forward: %d %d %d\n",
 	 * CB_HAS_PARENT(_), CB_HAS_CHILD(_, 0), CB_HAS_CHILD(_, 1));*/		\
 	if (CB_HAS_PARENT(_)) {							\
-	    uint32_t bit = CB_BIT(_);						\
+	    unsigned INT32 bit = CB_BIT(_);						\
 	    _ = CB_PARENT(_);							\
 	    if (bit && CB_HAS_CHILD(_, 0)) {					\
 		_ = CB_CHILD(_, 0);						\
@@ -119,6 +119,11 @@
 # undef cb_node_t
 #endif
 #define cb_node_t	CB_TYPE(node)
+
+#ifdef cb_tree_t
+# undef cb_tree_t
+#endif
+#define cb_tree_t	CB_TYPE(tree)
 
 #ifdef cb_find_ne
 # undef cb_find_ne
@@ -202,13 +207,18 @@ typedef struct cb_node {
 
 typedef struct cb_node cb_node;
 
-CB_STATIC CB_INLINE cb_node_t cb_insert(const cb_node_t, const cb_key,
-					const cb_value *);
-CB_STATIC CB_INLINE cb_node_t cb_find_next(cb_node_t, const cb_key);
+typedef struct cb_tree {
+    cb_node_t root;
+} cb_tree;
+
+CB_STATIC CB_INLINE void cb_insert(cb_tree*, const cb_key,
+				   const cb_value *);
+CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t, const cb_key);
 CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key);
-CB_STATIC CB_INLINE cb_node_t cb_get_range(const cb_node_t tree,
-					   const cb_key a, const cb_key b);
-CB_STATIC CB_INLINE cb_node_t cb_copy_tree(const cb_node_t from);
+CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree *, struct cb_tree *,
+				      const cb_key, const cb_key);
+CB_STATIC CB_INLINE void cb_copy_tree(struct cb_tree * dst,
+				      cb_node_t from);
 CB_STATIC CB_INLINE cb_node_t cb_find_first(cb_node_t tree);
 CB_STATIC CB_INLINE cb_node_t cb_find_last(cb_node_t tree);
 CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node);
@@ -220,4 +230,4 @@ CB_STATIC CB_INLINE cb_node_t cb_find_previous(const cb_node_t tree,
 CB_STATIC CB_INLINE cb_node_t cb_get_nth(const cb_node_t tree, size_t n);
 CB_STATIC CB_INLINE cb_node_t cb_find_ne(const cb_node_t tree,
 					 const cb_key key);
-
+CB_STATIC CB_INLINE void cb_delete(struct cb_tree*, const cb_key, cb_value*);

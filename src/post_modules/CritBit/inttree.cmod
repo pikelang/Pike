@@ -1,37 +1,8 @@
 /* vim:syntax=c
  */
 #ifdef cmod___CMOD__
-#ifdef __SSE4_2__
-# include <smmintrin.h>
-#endif
-#include "cyclic.h"
-#include "global.h"
-#include "interpret.h"
-#include "mapping.h"
-#include "module.h"
-#include "array.h"
-#include "pike_error.h"
-#include "pike_float.h"
-#include "pike_types.h"
-#include "stralloc.h"
-#include "svalue.h"
-#include "array.h"
-#include "operators.h"
-#include "builtin_functions.h"
 
-#ifdef CB_USE_BLOCK_ALLOC
-# include "tree_block_alloc.h"
-
-static blk_alloc_t allocator;
-
-# define CB_NODE_ALLOC()	alloc_item(allocator)
-# define CB_NODE_FREE(x)	free_item(allocator, (void*)(x))
-#endif
-
-#define CB_STATIC
-#define CB_INLINE
-#define CB_SOURCE
-#define CB_NAMESPACE
+#include "common.h"
 
 #include "critbit/int2svalue.h"
 #define CB_PRINT_KEY(buf, key)		do \
@@ -78,7 +49,7 @@ PIKECLASS IntTree {
 
 cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
     cb_key key;
-    uint32_t a, b, c, d, e;
+    unsigned INT32 a, b, c, d, e;
 
     key.len.chars = 1;
     key.len.bits = 0;
@@ -107,12 +78,12 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
     char buf[19];
     size_t len;
 
-    uint32_t ip = (uint32_t)key.str;
+    unsigned INT32 ip = (unsigned INT32)key.str;
 
     if (key.len.bits || !key.len.chars) {
 	ip &= (~0U) << (32 - key.len.bits);
 	len = snprintf(buf, 19, "%u.%u.%u.%u/%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff, (uint32_t)(key.len.bits
+		       (ip>>8)&0xff, ip&0xff, (unsigned INT32)(key.len.bits
 							 - WASTED_BITS));
     } else {
 	len = snprintf(buf, 19, "%u.%u.%u.%u", ip>>24, (ip>>16)&0xff,
@@ -168,7 +139,7 @@ PIKECLASS IPv4Tree {
     }
 
     PIKEFUN int umask(int n) {
-	RETURN MASK(uint64_t, n);
+	RETURN MASK(unsigned INT64, n);
     }
 
     PIKEFUN int cmp_key(mixed a, mixed b) {
@@ -191,20 +162,15 @@ PIKECLASS IPv4Tree {
 /*! @endmodule */
 
 void pike_init_inttree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    allocator = init_allocator(128, sizeof(cb_node));
-#endif
     INIT
 }
 
 void pike_exit_inttree_module(void) {
-#ifdef CB_USE_BLOCK_ALLOC
-    free(allocator);
-    allocator = NULL;
-#endif
     EXIT
 }
 #else
-void pike_init_inttree_module(void) {}
+void pike_init_inttree_module(void) {
+    add_integer_constant("this_program_does_not_exist", 1, 0);
+}
 void pike_exit_inttree_module(void) {}
 #endif

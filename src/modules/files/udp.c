@@ -242,7 +242,11 @@ static void udp_bind(INT32 args)
   set_close_on_exec(fd, 1);
 
   o=1;
-  if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+  /* linux kernel commit f24d43c07e208372aa3d3bff419afbf43ba87698 introduces
+   * a behaviour change where you can get used random ports if bound with
+   * SO_REUSEADDR. */
+  if(addr.ipv4.sin_port && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
+					 (char *)&o, sizeof(int)) < 0)
   {
     fd_close(fd);
     THIS->my_errno=errno;
@@ -642,14 +646,14 @@ void udp_read(INT32 args)
 #endif
        case EBADF:
 	  if (THIS->box.backend)
-	    set_fd_callback_events (&THIS->box, 0);
+	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("Socket closed\n");
 #ifdef ESTALE
        case ESTALE:
 #endif
        case EIO:
 	  if (THIS->box.backend)
-	    set_fd_callback_events (&THIS->box, 0);
+	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("I/O error\n");
        case ENOMEM:
 #ifdef ENOSR
@@ -782,7 +786,7 @@ void udp_sendto(INT32 args)
 	  Pike_error("Too big message\n");
        case EBADF:
 	  if (THIS->box.backend)
-	    set_fd_callback_events (&THIS->box, 0);
+	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("Socket closed\n");
        case ENOMEM:
 #ifdef ENOSR
@@ -793,7 +797,7 @@ void udp_sendto(INT32 args)
 #ifdef ENOTSOCK
        case ENOTSOCK:
 	  if (THIS->box.backend)
-	    set_fd_callback_events (&THIS->box, 0);
+	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("Not a socket!!!\n");
 #endif
        case EWOULDBLOCK:
@@ -819,7 +823,7 @@ static int got_udp_event (struct fd_callback_box *box, int event)
 
   check_destructed (&u->read_callback);
   if (UNSAFE_IS_ZERO (&u->read_callback))
-    set_fd_callback_events (&u->box, 0);
+    set_fd_callback_events (&u->box, 0, 0);
   else {
     apply_svalue (&u->read_callback, 0);
     if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
@@ -833,7 +837,7 @@ static int got_udp_event (struct fd_callback_box *box, int event)
 
 void zero_udp(struct object *o)
 {
-  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_udp_event);
+  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_udp_event, 0);
   THIS->my_errno = 0;
   THIS->inet_flags = PIKE_INET_FLAG_UDP;
   THIS->type=SOCK_DGRAM;
@@ -872,14 +876,14 @@ static void udp_set_read_callback(INT32 args)
   assign_svalue(& u->read_callback, Pike_sp-1);
   if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
     if (u->box.backend)
-      set_fd_callback_events (&u->box, 0);
+      set_fd_callback_events (&u->box, 0, 0);
   }
   else {
     if (!u->box.backend)
       INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
-			    u->box.fd, PIKE_BIT_FD_READ, got_udp_event);
+			    u->box.fd, PIKE_BIT_FD_READ, got_udp_event, 0);
     else
-      set_fd_callback_events (&u->box, PIKE_BIT_FD_READ);
+      set_fd_callback_events (&u->box, PIKE_BIT_FD_READ, 0);
   }
 
   pop_stack();
@@ -1080,7 +1084,7 @@ static void udp_set_backend (INT32 args)
     change_backend_for_box (&u->box, backend);
   else
     INIT_FD_CALLBACK_BOX (&u->box, backend, u->box.ref_obj,
-			  u->box.fd, 0, got_udp_event);
+			  u->box.fd, 0, got_udp_event, 0);
 
   pop_n_elems (args - 1);
 }

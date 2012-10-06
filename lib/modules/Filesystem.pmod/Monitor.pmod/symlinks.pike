@@ -443,9 +443,10 @@ protected class Monitor
   protected void monitor(string path, int flags, int max_dir_interval,
 			 int file_interval_factor, int stable_time)
   {
+    object m;
     ::monitor(path, flags, max_dir_check_interval,
 	      file_interval_factor, stable_time);
-    monitors[path]->symlinks |= symlinks;
+    if((m = monitors[path])) m->symlinks |= symlinks;
   }
 
   //! Called when the status has changed for an existing file.

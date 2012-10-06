@@ -149,7 +149,7 @@ PMOD_EXPORT int low_nt_create_thread(unsigned Pike_stack_size,
   }
   else
   {
-    return 1;
+    return errno;
   }
 }
 
@@ -1387,8 +1387,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	* out. Another is the often lousy clock(3) resolution. */
 
        if (prev_tsc) {
-	 clock_t tsc_interval_time = clock_now - prev_clock;
-	 if (tsc_interval_time > 0) {
+	 if (clock_now > prev_clock) {
 	   /* Estimate the next interval just by extrapolating the
 	    * tsc/clock ratio of the last one. This adapts very
 	    * quickly but is also very "jumpy". That shouldn't matter
@@ -1401,6 +1400,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	    * (100 times/sec on linux/glibc 2.x). It also has the
 	    * effect that the actual tsc intervals will be closer to
 	    * 1/200 sec. */
+	   clock_t tsc_interval_time = clock_now - prev_clock;
 	   INT64 new_target_int =
 	     (tsc_elapsed * (CLOCKS_PER_SEC / 400)) / tsc_interval_time;
 	   if (new_target_int < target_int << 2)
@@ -1436,7 +1436,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	    * round on the old estimate, keeping prev_tsc and
 	    * prev_clock fixed to get a longer interval for the next
 	    * measurement. */
-	   if (tsc_interval_time < 0) {
+	   if (clock_now < prev_clock) {
 	     /* clock() wraps around fairly often as well. We still
 	      * keep the old interval but update the baselines in this
 	      * case. */
@@ -1460,7 +1460,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	 prev_tsc = tsc_now;
        }
 
-       if (clock_now - thread_start_clock < 0)
+       if (clock_now < thread_start_clock)
 	 /* clock counter has wrapped since the start of the time
 	  * slice. Let's reset and yield. */
 	 thread_start_clock = 0;
@@ -1552,7 +1552,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #elif defined (USE_CLOCK_FOR_SLICES)
   {
     clock_t clock_now = clock();
-    if (clock_now - thread_start_clock < 0)
+    if (clock_now < thread_start_clock)
       /* clock counter has wrapped since the start of the time slice.
        * Let's reset and yield. */
       thread_start_clock = 0;
@@ -1755,13 +1755,17 @@ TH_RETURN_TYPE new_thread_func(void *data)
   {
     if(throw_severity <= THROW_ERROR)
       call_handle_error();
-    if(throw_severity == THROW_EXIT)
+    else if(throw_severity == THROW_EXIT)
     {
       /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
        * active. Otoh it cannot be done later since it requires the
        * evaluator stacks in the gc calls. It's difficult to solve
        * without handing over the cleanup duty to the main thread. */
       pike_do_exit(throw_value.u.integer);
+    } else if (thread_state->thread_obj) {
+      /* Copy the thrown exit value to the thread_state here,
+       * if the thread hasn't been destructed. */
+      assign_svalue(&thread_state->result, &throw_value);
     }
   } else {
     INT32 args=arg.args->size;

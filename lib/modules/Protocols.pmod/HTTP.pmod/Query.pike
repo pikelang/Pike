@@ -62,6 +62,7 @@ int(0..1) https = 0;
 //!
 //! Used to detect whether keep-alive can be used.
 string host;
+string real_host; // the hostname passed during the call to *_request()
 int port;
 
 object con;
@@ -187,6 +188,12 @@ void start_tls(int|void blocking, int|void async)
     SSL_rsa_export_with_des40_cbc_sha,
   });
   context->random = Crypto.Random.random_string;
+
+  if(real_host)
+  {
+    context->client_use_sni = 1;
+    context->client_server_names = ({real_host});
+  }
 
   object read_callback=con->query_read_callback();
   object write_callback=con->query_write_callback();
@@ -333,7 +340,10 @@ void async_got_host(string server,int port)
    if (!server)
    {
       async_failed();
-      close_connection();	//  we may be destructed here
+      if (this_object()) {
+	//  we may be destructed here
+	close_connection();
+      }
       return;
    }
 
@@ -675,8 +685,8 @@ this_program sync_request(string server, int port, string query,
 {
   int kept_alive;
 
+  this_program::real_host = server;
   // start open the connection
-
   if(con && con->is_open() &&
      this_program::host == server &&
      this_program::port == port &&
@@ -786,6 +796,8 @@ this_program async_request(string server,int port,string query,
 #ifdef HTTP_QUERY_DEBUG
    werror("async_request %s:%d %q\n", server, port, query);
 #endif
+
+  this_program::real_host = server;
 
    int keep_alive = con && con->is_open() && (this_program::host == server) &&
      (this_program::port == port) && this_program::headers &&
@@ -1247,7 +1259,7 @@ protected void destroy()
    }
    async_id = 0;
 
-   close();
+   catch(close());
 }
 
 //! Close all associated file descriptors.

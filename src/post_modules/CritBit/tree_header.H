@@ -53,7 +53,7 @@ DOCSTART() @decl key_ptype encode_key(mixed o)
  *! everytime a key is stored or indexed in the tree.
 DOCEND()
 
-    CVAR cb_node_t tree;
+    CVAR struct cb_tree tree;
     CVAR size_t rev;
     CVAR INT32 encode_fun;
     CVAR INT32 decode_fun;

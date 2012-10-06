@@ -274,17 +274,27 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string crypt_md5(string password, string salt)
+/*! @decl string crypt_md5(string password, string salt, void|string magic)
  *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
  *! It is assumed that @[salt] does not contain "$".
  */
-PIKEFUN string crypt_md5(string pw, string salt)
+PIKEFUN string crypt_md5(string pw, string salt, void|string magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
-  hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str);
+  if(!magic)
+  {
+    hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
+                          3, "$1$");
+  }
+  else
+  {
+    hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
+                          magic->len, magic->str);
+  }
+
   push_text(hash);
 }
 

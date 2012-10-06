@@ -1599,7 +1599,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       new_lineno=STRTOL_PCHARP(foo, &foo, 10)-1;
       if(OUTP())
       {
-	string_builder_putchar(&this->buf, '#');
+	string_builder_binary_strcat(&this->buf, "#line ", 6);
 	PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (
 	  &this->buf, data + pos, ((WCHAR *)foo.ptr) - (data+pos));
       }
@@ -1773,7 +1773,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		free_string_builder(&tmp);
 
 		this->current_line = save_line;
-		string_builder_sprintf(&this->buf, "\n# %ld ",
+		string_builder_sprintf(&this->buf, "\n#line %ld ",
 				       (long)save_line);
 		PUSH_STRING_SHIFT(this->current_file->str,
 				  this->current_file->len,
@@ -1826,7 +1826,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      copy_shared_string(this->current_file,new_file);
 	      this->current_line=1;
 	      
-	      string_builder_binary_strcat(&this->buf, "# 1 ", 4);
+	      string_builder_binary_strcat(&this->buf, "#line 1 ", 8);
 	      PUSH_STRING_SHIFT(new_file->str, new_file->len,
 				new_file->size_shift, &this->buf);
 	      string_builder_putchar(&this->buf, '\n');
@@ -1872,7 +1872,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      this->current_file=save_current_file;
 	      this->current_line=save_current_line;
 	      
-	      sprintf(buffer,"\n# %ld ", (long)this->current_line);
+	      sprintf(buffer,"\n#line %ld ", (long)this->current_line);
 	      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
 	      PUSH_STRING_SHIFT(this->current_file->str,
 				this->current_file->len,

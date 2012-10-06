@@ -15,7 +15,7 @@ cmod_REDEFINE(extra_doc)
 # ifdef STRFY
 #  undef STRFY
 # endif
-# define STRFY(x...)	STRFY2(x)
+# define STRFY(x)	STRFY2(x)
 #endif
 #cmod_ifdef TREE_CLASSIFY
 # cmod_undef TREE_CLASSIFY

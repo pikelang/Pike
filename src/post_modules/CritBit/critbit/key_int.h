@@ -1,14 +1,14 @@
 #ifndef CB_KEY_PIKEINT_H
 #define CB_KEY_PIKEINT_H
-#include <stdint.h>
 #include "bitvector.h"
+#include "pike_int_types.h"
 
 #if SIZEOF_INT_TYPE == 4
-typedef uint32_t CB_NAME(string);
-typedef uint32_t CB_NAME(char);
+typedef unsigned INT32 CB_NAME(string);
+typedef unsigned INT32 CB_NAME(char);
 #else
-typedef uint64_t CB_NAME(string);
-typedef uint64_t CB_NAME(char);
+typedef unsigned INT64 CB_NAME(string);
+typedef unsigned INT64 CB_NAME(char);
 #endif
 
 #ifdef cb_char

@@ -254,4 +254,25 @@ cond_resolv( Nettle.Yarrow, [[
 	  String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
 	  String.hex2string("49a090656a6d93782e169994f41005a3616d3cd7")})]])
 ]])
+
+// crypt_md5
+
+test_eq(Nettle.crypt_md5("",""), "qRPK7m23GJusamGpoGLby/")
+test_eq(Nettle.crypt_md5("","",""), "oF5jz0K0HEfDANLadsTNI.")
+test_eq(Nettle.crypt_md5("","","$1$"), "qRPK7m23GJusamGpoGLby/")
+
+dnl From openssl passwd examples for option -1 (BSD)
+test_eq(Nettle.crypt_md5("password","xxxxxxxx"), "UYCIxa628.9qXjpQCjM4a.")
+dnl From openssl passwd examples for option -apr1
+test_eq(Nettle.crypt_md5("password","xxxxxxxx","$apr1$"), "dxHfLAsjHkDRmG83UXe8K0")
+dnl From John's sample hashes on http://openwall.info/wiki/
+test_eq(Nettle.crypt_md5("password","O3JMY.Tw"), "AdLnLjQ/5jXF9.MTp3gHv/")
+dnl GNU test vector
+test_eq(Nettle.crypt_md5("GNU libc manual","/iSaq7rB"), "EoUw5jJPPvAPECNaaWzMK/")
+dnl From cpan.org MD5Crypt.pm
+test_eq(Nettle.crypt_md5("passphrase","Vd3f8aG6"), "GcsdF4YCXb0PM2UmXjIoI1")
+dnl From PHP CRYPT_MD5 crypt() example
+test_eq(Nettle.crypt_md5("rasmuslerdorf","rasmusle"), "rISCgZzpwk3UhDidwXvin0")
+dnl From Python passlib.hash.md5_crypt
+test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
 END_MARKER

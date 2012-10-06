@@ -38,15 +38,10 @@ static const unsigned char itoa64[] =	/* 0 ... 63 => ascii - 64 */
 
 
 char *pike_crypt_md5(int pl, const char *const pw,
-		     int sl, const char *const salt)
+		     int sl, const char *const salt,
+                     int ml, const char *const magic)
 {
-  static const char *const magic = "$1$"; /*
-			       * This string is magic for
-			       * this algorithm.  Having
-			       * it this way, we can get
-			       * better later on
-			       */
-  static char passwd[22], *p;
+  static char passwd[23], *p;
   unsigned char final[MD5_DIGEST_SIZE];
   int i;
   struct md5_ctx ctx;
@@ -65,7 +60,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
   /* Generate second hash */
   /* ctx is now reset by md5_digest */
   md5_update(&ctx, pl, (uint8_t *) pw);
-  md5_update(&ctx, strlen(magic), (uint8_t *) magic);
+  md5_update(&ctx, ml, (uint8_t *) magic);
   md5_update(&ctx, sl, (uint8_t *) salt);
 
   /* Take as many charaters from first hash as there are
@@ -113,7 +108,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
   TO64(4, 10, 5);
   l = final[11];
   *p++ = itoa64[ l & 0x3f ];
-  *p++ = itoa64[ (l>>=6) & 0x3f ];
+  *p++ = itoa64[ (l>>6) & 0x3f ];
   *p = '\0';
 
   /* Clear some memory */

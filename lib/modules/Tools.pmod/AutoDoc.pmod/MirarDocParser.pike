@@ -325,11 +325,24 @@ mapping keywords=
 	    if (!nowM->modules) nowM->modules=(["_order":({})]);
 	    report(.FLAG_VERBOSE,currentfile,line,"submodule "+arg); },
   "method":lambda(string arg, string currentfile, int line)
-	  { if (!classM) return complain("method w/o class");
+	  { arg = stripws(arg);
+	    if (!sizeof(arg)) return "";
+	    if (!classM) return complain("method w/o class");
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM)
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":format_line(currentfile,line)])}); }
 	    methodM->decl+=({parse_decl(arg)}); descM=0; },
+  "function":lambda(string arg, string currentfile, int line)
+	     { // Function in a (sub-)module (as opposed to in a class).
+	       arg = stripws(arg);
+	       if (!sizeof(arg)) return "";
+	       if (!moduleM) return "";
+	       // Pop the current class.
+	       classM = moduleM;
+	       if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM)
+	       { if (!moduleM->methods) moduleM->methods=({});
+		 moduleM->methods+=({methodM=nowM=(["decl":({}),"_line":format_line(currentfile,line)])}); }
+	       methodM->decl+=({parse_decl(arg)}); descM=0; },
   "inherits":lambda(string arg, string currentfile, int line)
 	  { if (!nowM) return complain("inherits w/o class or module");
   	    if (nowM != classM) return complain("inherits outside class or module");
@@ -902,6 +915,19 @@ void document(string enttype,
       case "class":
       case "module":
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
+         if (huh->inherits) {
+	   foreach(huh->inherits, string inh) {
+	     string name = (inh/"::")[-1];
+	     name = (name/".")[-1];
+	     f->write(sprintf("<docgroup homogen-name='%s'"
+			      " homogen-type='inherit'>\n"
+			      "<inherit name='%s'>"
+			      "<classname>%s</classname>"
+			      "</inherit>\n"
+			      "</docgroup>\n",
+			      name, name, inh));
+	   }
+	 }
 	 break;
       default:
 	f->write("<docgroup homogen-type="+S(enttype));
@@ -941,16 +967,6 @@ void document(string enttype,
    if (huh->desc)
    {
       res+="<text>\n";
-
-      if (huh->inherits)
-      {
-	 string s="";
-	 foreach (huh->inherits,string what)
-	    res+="inherits "+make_nice_reference(what,prefix,what)+
-	      "<br/>\n";
-	 res+="<br/>\n";
-      }
-
       res+=fixdesc(huh->desc,prefix,huh->_line)+"\n";
       res+="</text>\n";
    }

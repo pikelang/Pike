@@ -377,7 +377,10 @@ static void f_make_http_headers( INT32 args )
 static void f_http_decode_string(INT32 args)
 /*! @decl string http_decode_string(string encoded)
  *!
- *! Decodes an http transport-encoded string.
+ *! Decodes an http transport-encoded string. Knows about %XX and
+ *! %uXXXX syntax. Treats %UXXXX as %uXXXX. It will treat '+' as '+'
+ *! and not ' ', so form decoding needs to replace that in a second
+ *! step.
  */
 {
    int proc;
@@ -487,33 +490,6 @@ static void f_html_encode_string( INT32 args )
     void o_cast_to_string();
 
     case PIKE_T_INT:
-      /* Optimization, this is basically a inlined cast_int_to_string */
-      {
-	char buf[21], *b = buf+19;
-	int neg, i, j=0;
-	i = Pike_sp[-1].u.integer;
-	pop_stack();
-	if( i < 0 )
-	{
-	  neg = 1;
-	  i = -i;
-	}
-	else
-	  neg = 0;
-
-	buf[20] = 0;
-
-	while( i >= 10 )
-	{
-	  b[ -j++ ] = '0'+(i%10);
-	  i /= 10;
-	}
-	b[ -j++ ] = '0'+(i%10);
-	if( neg )  b[ -j++ ] = '-';
-	push_text( b-j+1 );
-      }
-      return;
-
     case PIKE_T_FLOAT:
       /* Optimization, no need to check the resultstring for
        * unsafe characters. 
