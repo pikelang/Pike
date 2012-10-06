@@ -60,6 +60,15 @@ PIKECLASS GObject
 /*! @endclass
  */
 
+static void push_wrapper_name_from_info(GIBaseInfo *info)
+{
+  push_constant_text("GI.repository.");
+  push_text(g_base_info_get_namespace(info));
+  push_constant_text(".");
+  push_text(g_base_info_get_name(info));
+  f_add(4);
+}
+
 static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
 {
   switch(g_base_info_get_type(info)) {
@@ -76,11 +85,14 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
     } else {
       struct object *obj = g_object_get_qdata(arg->v_pointer, object_quark);
       if (obj == NULL) {
-	push_constant_text("GI.repository.");
-	push_text(g_base_info_get_namespace(info));
-	push_constant_text(".");
-	push_text(g_base_info_get_name(info));
-	f_add(4);
+	GType rttype = G_OBJECT_TYPE((GObject *)arg->v_pointer);
+	GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
+	if (rtinfo != NULL) {
+	  push_wrapper_name_from_info(rtinfo);
+	  g_base_info_unref(rtinfo);
+	}
+	else
+	  push_wrapper_name_from_info(info);
 	APPLY_MASTER ("resolv", 1);
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	  Pike_error("Failed to resolve GI object class.\n");
