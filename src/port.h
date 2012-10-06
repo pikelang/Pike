@@ -240,38 +240,52 @@ long long gethrtime(void);
 #define hrtime_t long long
 #endif
 
+#ifdef HAVE_UNION_INIT
+#define INFNAN_INDEX 0
+#define INFNAN_DATATYPE union
+#define INFNAN_INIT 
+#else
+#define INFNAN_INDEX -1
+#define INFNAN_DATATYPE struct
+#define INFNAN_INIT , {0.0}
+#endif
+
 #ifdef DOUBLE_IS_IEEE_BIG
-#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.d[-1])
-#define MAKE_NAN() (nan_.d[-1])
+#define DECLARE_INF static INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
-#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.d[-1])
-#define MAKE_NAN() (nan_.d[-1])
+#define DECLARE_INF static INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
 #else
 #ifdef FLOAT_IS_IEEE_BIG
-#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0x7f, 0x80, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0x7f, 0xc0, 0, 0 }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.f[-1])
-#define MAKE_NAN() (nan_.f[-1])
+#define DECLARE_INF static INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0x7f, 0x80, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0x7f, 0xc0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
-#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0, 0, 0x80, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0, 0, 0xc0, 0x7f }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.f[-1])
-#define MAKE_NAN() (nan_.f[-1])
+#define DECLARE_INF static INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0, 0, 0x80, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0, 0, 0xc0, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
 #else
+
+#undef INFNAN_INDEX
+#undef INFNAN_DATATYPE
+#undef INFNAN_INIT 
 
 #define DECLARE_INF
 #define DECLARE_NAN
