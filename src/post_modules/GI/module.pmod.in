@@ -68,6 +68,11 @@ class DynamicImporter {
 	static array(mixed) _values() { return Object::_values(); }
 	static mixed `[](string index) { return bind(Object::`[](index)); }
 	static mixed `->(string index) { return bind(Object::`->(index)); }
+
+	static void create(mapping(string:mixed)|void properties)
+	{
+	  ::create(info, properties);
+	}
       };
 
       static string _sprintf(int mode)
@@ -97,10 +102,9 @@ class DynamicImporter {
       static mixed `[](string index) { return attrs[index]; }
       static mixed `->(string index) { return attrs[index]; }
 
-      static Instance `()(mixed ... args)
+      static Instance `()(mapping(string:mixed)|void properties)
       {
-	/* FIXME */
-	return attrs["new"](@args);
+	return Instance(properties);
       }
     }
 

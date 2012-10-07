@@ -10,6 +10,7 @@
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "operators.h"
+#include "mapping.h"
 #include "gimod_config.h"
 
 DECLARATIONS
@@ -19,6 +20,7 @@ DECLARATIONS
 #include <girepository.h>
 
 static GQuark object_quark;
+static struct mapping *magic_mapping = NULL;
 
 /*! @module GI
  */
@@ -34,6 +36,7 @@ static void free_glist_full_free(void *p)
 }
 
 static void push_gi_info(GIBaseInfo *info);
+static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
 
 /*! @class GObject
  */
@@ -55,6 +58,23 @@ PIKECLASS GObject
 	THIS->obj = NULL;
       }
     }
+
+#ifndef tObjImpl_OBJECTINFO
+/* Break circular class dependency... */
+#define tObjImpl_OBJECTINFO tObj
+#endif
+
+  /*! @decl void create(ObjectInfo info, mapping(string:mixed)|void props)
+   */
+  PIKEFUN void create(ObjectInfo info, mapping(string:mixed)|void props)
+  {
+    if (THIS->obj != NULL)
+      Pike_error("GObject.create called twice!\n");
+    if (props != magic_mapping) {
+      THIS->obj = make_gobject_from_props(info, props);
+      g_object_set_qdata(THIS->obj, object_quark, Pike_fp->current_object);
+    }
+  }
 }
 
 /*! @endclass
@@ -96,7 +116,8 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
 	APPLY_MASTER ("resolv", 1);
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	  Pike_error("Failed to resolve GI object class.\n");
-	apply(Pike_sp[-1].u.object, "Instance", 0);
+	ref_push_mapping(magic_mapping);
+	apply(Pike_sp[-2].u.object, "Instance", 1);
 	stack_pop_keep_top();
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	  Pike_error("Failed to instantiate GI object class.\n");
@@ -106,6 +127,8 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
 						  GObject_program);
 	  if (that == NULL)
 	    Pike_error("No storage for GObject!\n");
+	  if (that->obj != NULL)
+	    Pike_error("GObject already initialized!\n");
 	  g_object_ref ((that->obj = arg->v_pointer));
 	  g_object_set_qdata(that->obj, object_quark, obj);
 	}
@@ -701,6 +724,208 @@ static void push_gi_info(GIBaseInfo *info)
   }
 }
 
+static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
+{
+  GType gt = G_VALUE_TYPE(v);
+  switch(G_TYPE_FUNDAMENTAL(gt)) {
+
+  case G_TYPE_CHAR:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_schar(v, s->u.integer);
+    break;
+  case G_TYPE_UCHAR:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_uchar(v, s->u.integer);
+    break;
+
+  case G_TYPE_BOOLEAN:
+    g_value_set_boolean(v, !UNSAFE_IS_ZERO(s));
+    break;
+
+  case G_TYPE_INT:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_int(v, s->u.integer);
+    break;
+  case G_TYPE_UINT:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_uint(v, s->u.integer);
+    break;
+  case G_TYPE_LONG:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_long(v, s->u.integer);
+    break;
+  case G_TYPE_ULONG:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_ulong(v, s->u.integer);
+    break;
+  case G_TYPE_INT64:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_int64(v, s->u.integer);
+    break;
+  case G_TYPE_UINT64:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_uint64(v, s->u.integer);
+    break;
+
+  case G_TYPE_ENUM:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_enum(v, s->u.integer);
+    break;
+
+  case G_TYPE_FLAGS:
+    if (TYPEOF(*s) != PIKE_T_INT)
+      Pike_error("int expected\n");
+    g_value_set_flags(v, s->u.integer);
+    break;
+
+  case G_TYPE_FLOAT:
+    if (TYPEOF(*s) == PIKE_T_INT)
+      g_value_set_float(v, (gfloat)s->u.integer);
+    else if (TYPEOF(*s) == PIKE_T_FLOAT)
+      g_value_set_float(v, (gfloat)s->u.float_number);
+    else
+      Pike_error("float expected\n");
+    break;
+
+  case G_TYPE_DOUBLE:
+    if (TYPEOF(*s) == PIKE_T_INT)
+      g_value_set_double(v, (gdouble)s->u.integer);
+    else if (TYPEOF(*s) == PIKE_T_FLOAT)
+      g_value_set_double(v, (gdouble)s->u.float_number);
+    else
+      Pike_error("float expected\n");
+    break;
+
+  case G_TYPE_STRING:
+    if (UNSAFE_IS_ZERO(s)) {
+      g_value_set_string(v, NULL);
+      break;
+    }
+    if (TYPEOF(*s) != PIKE_T_STRING)
+      Pike_error("Expected string\n");
+    ref_push_string(s->u.string);
+    f_string_to_utf8(1);
+    g_value_set_string(v, (const gchar *)STR0(Pike_sp[-1].u.string));
+    pop_stack();
+    break;
+    
+  default:
+    Pike_error("Don't know how to set a gvalue type %d\n",
+	       G_TYPE_FUNDAMENTAL(gt));
+  }
+}
+
+static int build_one_parameter(GObjectClass *class, GParameter *p,
+			       const struct svalue *name,
+			       const struct svalue *value)
+{
+  GParamSpec *pspec;
+  if (name == NULL || TYPEOF(*name) != PIKE_T_STRING)
+    Pike_error("Invalid type for parameter name\n");
+  ref_push_string(name->u.string);
+  f_string_to_utf8(1);
+  p->name = g_strdup((const gchar *)STR0(Pike_sp[-1].u.string));
+  pop_stack();
+  pspec = g_object_class_find_property(class, p->name);
+  if (pspec == NULL)
+    Pike_error("GObject %s does not support property %S\n",
+	       G_OBJECT_CLASS_NAME(class), name->u.string);
+  g_value_init(&p->value, G_PARAM_SPEC_VALUE_TYPE(pspec));
+  set_gvalue_from_svalue(&p->value, value);
+  return 1;
+}
+
+static guint build_parameters_from_mapping(GType gt, struct mapping *m,
+					   guint free_space,
+					   GParameter *parms)
+{
+  ONERROR onerror;
+  INT32 e;
+  struct keypair *k;
+  guint count = 0;
+  GObjectClass *class = g_type_class_ref(gt);
+  if (class == NULL)
+    Pike_error("Type class not available!\n");
+  SET_ONERROR(onerror, g_type_class_unref, class);
+  NEW_MAPPING_LOOP(m->data)
+    if (free_space &&
+	build_one_parameter(class, parms, &k->ind, &k->val)) {
+      --free_space;
+      count++;
+      parms++;
+    }
+  UNSET_ONERROR(onerror);
+  g_type_class_unref(class);
+  return count;
+}
+
+struct gparams_list {
+  guint nparam;
+  GParameter *params;
+};
+
+static void low_free_gparams(struct gparams_list *gpl)
+{
+  guint i;
+  guint nparam = gpl->nparam;
+  GParameter *params = gpl->params;
+  if (params) {
+    for (i = 0; i < nparam; i++) {
+      g_free((gchar *)params[i].name);
+      if (G_VALUE_TYPE(&params[i].value) != G_TYPE_INVALID)
+	g_value_unset(&params[i].value);
+    }
+    g_free(params);
+    gpl->params = NULL;
+  }
+}
+
+static GObject *make_gobject_from_props(struct object *info, struct mapping *props)
+{
+  ONERROR onerror;
+  GIObjectInfo *ginfo;
+  struct BaseInfo_struct *that;
+  GType gt;
+  GObject *obj;
+  struct gparams_list params = { 0, NULL };
+  if (info == NULL ||
+      (that =
+       (struct BaseInfo_struct *)get_storage (info, BaseInfo_program))
+      == NULL || that->info == NULL)
+    Pike_error("ObjectInfo missing\n");
+  ginfo = (GIObjectInfo *)that->info;
+  gt = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *)ginfo);
+  if (gt == G_TYPE_NONE)
+    Pike_error("Failed to get GType\n");
+  if (props != NULL && m_sizeof(props) > 0) {
+    params.nparam = m_sizeof(props);
+    params.params = g_new0(GParameter, params.nparam);
+    SET_ONERROR(onerror, low_free_gparams, &params);
+    params.nparam = build_parameters_from_mapping(gt, props, params.nparam,
+						  params.params);
+  }
+  obj = g_object_newv(gt, params.nparam, params.params);
+  if (obj == NULL)
+    Pike_error("Failed to create GObject\n");
+  if (params.params != NULL) {
+    UNSET_ONERROR(onerror);
+    low_free_gparams(&params);
+  }
+  if (G_IS_INITIALLY_UNOWNED(obj))
+    g_object_ref_sink(obj);
+  return obj;
+}
+
+
 /*! @class Repository
  */
 
@@ -839,6 +1064,7 @@ PIKE_MODULE_INIT
 #ifdef HAVE_GI
   g_type_init();
   object_quark = g_quark_from_static_string("PikeGI::object");
+  magic_mapping = allocate_mapping(0);
   INIT
 #endif
 }
@@ -847,5 +1073,9 @@ PIKE_MODULE_EXIT
 {
 #ifdef HAVE_GI
   EXIT
+  if(magic_mapping) {
+    free_mapping(magic_mapping);
+    magic_mapping = NULL;
+  }
 #endif
 }
