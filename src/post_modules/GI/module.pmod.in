@@ -37,7 +37,9 @@ class DynamicImporter {
 
 	class BoundMethod(static object obj)
 	{
-	  static mixed `()(mixed ... args) { Function::`()(obj, @args); }
+	  static mixed `()(mixed ... args) {
+	    return Function::`()(obj, @args);
+	  }
 	  static string _sprintf(int mode) {
 	    return mode == 'O' && sprintf("%O->%s", obj, info->get_name());
 	  }
