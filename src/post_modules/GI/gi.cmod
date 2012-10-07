@@ -194,6 +194,23 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     }
     break;
 
+  case GI_TYPE_TAG_GLIST:
+  case GI_TYPE_TAG_GSLIST:
+    {
+      INT32 count = 0;
+      GSList *list = arg->v_pointer;
+      while(list != NULL) {
+	GIArgument item;
+	GITypeInfo *item_info = g_type_info_get_param_type(info, 0);
+	item.v_pointer = list->data;
+	push_gi_argument(&item, item_info);
+	count++;
+	list = g_slist_next (list);
+      }
+      f_aggregate(count);
+    }
+    break;
+
   default:
     Pike_error("Don't know how to push a %d\n", g_type_info_get_tag(info));
   }
