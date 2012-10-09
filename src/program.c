@@ -2373,11 +2373,6 @@ void fixate_program(void)
     if (ref->id_flags & ID_HIDDEN) continue;
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
-
-    if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
-      yywarning("%S is private but not used anywhere.",
-		ID_FROM_PTR(p, ref)->name);
-    }
   }
 
   /* Ok, sort for binsearch */
@@ -2496,6 +2491,22 @@ void fixate_program(void)
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<NUM_LFUNS;i++) {
     int id = p->lfuns[i] = low_find_lfun(p, i);
+    if (id >= 0) {
+      // LFUNs are used.
+      p->identifier_references[id].id_flags |= ID_USED;
+    }
+  }
+
+  /* Complain about unused private symbols. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = p->identifier_references + i;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->inherit_offset != 0) continue;
+
+    if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
+      yywarning("%S is private but not used anywhere.",
+		ID_FROM_PTR(p, ref)->name);
+    }
   }
 
   /* Set the PROGRAM_LIVE_OBJ flag by looking for destroy() and
