@@ -22,6 +22,10 @@ struct keypair {
     unsigned INT32 hval;
 }
 
+struct reentrance_marker {
+    int marker;
+}
+
 struct mapping {
     PIKE_MEMORY_OBJECT_MEMBERS;
     unsigned INT32 hash_mask;
@@ -33,6 +37,7 @@ struct mapping {
     struct ba_local allocator;
     struct mapping * next, * prev;
     struct mapping * data;
+    struct reentrance_marker marker;
 }
 
 struct mapping_iterator {
@@ -44,11 +49,39 @@ struct mapping_iterator {
     struct mapping * m;
 }
 
-static INLINE void mapping_it_init(struct mapping_iterator * it, struct mapping * m) {
-    DOUBLELINK(m->first_iterator, it);
-    it->u.current = NULL;
-    it->m = m;
+static void clear_marker(struct reentrance_marker * m) {
+    m->marker = 0;
 }
+
+static INLINE void mark_enter(struct reentrance_marker * m) {
+    if (m->marker) Pike_error("Side effect free method reentered\n");
+    m->marker = 1; 
+}
+
+static INLINE void mark_leave(struct reentrance_marker * m) {
+    if (!m->marker) {
+	m->marker = 0;
+	Pike_error("marker is zero\n");
+    } else 
+	m->marker = 0;
+}
+
+static INLINE void mapping_it_reset(struct mapping_iterator * it) {
+    unsigned INT32 i = 0;
+    const struct mapping * m = it->m;
+    it->u.current = NULL;
+    for (; i <= m->hash_mask; i++) if (m->table[i]) {
+	it->u.current = m->table[i];
+	break;
+    }
+}
+
+static INLINE void mapping_it_init(struct mapping_iterator * it, const struct mapping * m) {
+    DOUBLELINK(m->first_iterator, it);
+    it->m = m;
+    mapping_it_reset(it);
+}
+
 
 static INLINE void mapping_it_exit(struct mapping_iterator * it) {
     struct mapping * m = it->m;
@@ -61,31 +94,22 @@ static INLINE void mapping_it_exit(struct mapping_iterator * it) {
 
 static INLINE int mapping_it_next(struct mapping_iterator * it,
 				  struct keypair ** slot) {
-    const struct keypair * k = it->u.current;
+    struct keypair * k = it->u.current;
     const struct mapping * m = it->m;
-    unsigned INT32 i;
 
-    if (!k) {
-	i = 0;
-    } else {
-redo:
+    if (!k) return 0;
+
+    do {
 	if (k->next) {
 	    k = k->next;
-	    goto done;
+	} else {
+	    i = (k->hval >> m->magnitude) + 1;
+	    k = NULL;
+
+	    for (; i <= m->hash_mask; i++) if (k = m->table[i]) break;
+	    if (!k) break;
 	}
-	i = (k->hval >> m->magnitude) + 1;
-	k = NULL;
-	// TODO the iterator will reset after next() retuns
-	// 0 once
-    }
-
-    for (; i <= m->hash_mask; i++) if (k = m->table[i]) break;
-
-done:
-    // TODO: we need to filter here on new elements, that have been
-    // added after the iterator was created. or maybe have a second iterator
-    // type for that
-    if (keypair_deleted(k)) goto redo;
+    } while (keypair_deleted(k));
 
     *slot = it->u.current = k;
     return !!k;
