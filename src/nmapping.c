@@ -70,6 +70,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     m->first_iterator = NULL;
     /* this allows for faking mapping_data */
     m->data = m;
+    m->flags = 0;
 
     DOUBLELINK(first_mapping, m);
 
@@ -824,15 +825,72 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    const struct svalue *look_for,
 			    const struct svalue *key );
 PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
+
+static void m_foreach(void * _start, void * _stop, void * d) {
+    struct mapping * m = (struct mapping *)_start;
+    void (*fun)(struct mapping *) = d;
+
+    while ((void*)m < _stop) {
+	fun(m++);
+    }
+}
+
 #ifdef PIKE_DEBUG
-void check_mapping(const struct mapping *m);
-void check_all_mappings(void);
+void check_mapping(const struct mapping *m) {}
+void check_all_mappings(void) {
+    ba_walk(&mapping_allocator, m_foreach, check_mapping);
+}
 #endif
-PMOD_EXPORT void visit_mapping (struct mapping *m, int action);
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action) {
+}
+
 void gc_mark_mapping_as_referenced(struct mapping *m);
-void real_gc_cycle_check_mapping(struct mapping *m, int weak);
-unsigned gc_touch_all_mappings(void);
-void gc_check_all_mappings(void);
+void real_gc_cycle_check_mapping(struct mapping *m, int weak) {
+}
+
+static void gc_check_mapping(struct mapping *m) {
+    GC_ENTER (m, T_MAPPING) {
+	unsigned INT32 e;
+	struct keypair * k;
+
+	switch (m->flags & MAPPING_WEAK) {
+	case MAPPING_WEAK_INDICES:
+	    MAPPING_LOOP(m) {
+		debug_gc_check_weak_svalues(&k->key, 1, " as mapping index");
+		debug_gc_check_svalues(&k->u.val, 1, " as mapping value");
+	    }
+	    break;
+	case MAPPING_WEAK_VALUES:
+	    MAPPING_LOOP(m) {
+		debug_gc_check_svalues(&k->key, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->u.val, 1, " as mapping value");
+	    }
+	    break;
+	case MAPPING_WEAK:
+	    MAPPING_LOOP(m) {
+		debug_gc_check_weak_svalues(&k->key, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->u.val, 1, " as mapping value");
+	    }
+	    break;
+	case 0:
+	    MAPPING_LOOP(m) {
+		debug_gc_check_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_svalues(&k->val, 1, " as mapping value");
+	    }
+	    break;
+	}
+    } GC_LEAVE;
+}
+
+unsigned gc_touch_all_mappings(void) {
+    ba_walk(&mapping_allocator, m_foreach, debug_gc_touch);
+    return ba_count(&mapping_allocator);
+}
+
+void gc_check_all_mappings(void) {
+    ba_walk(&mapping_allocator, m_foreach, gc_check_mapping);
+}
+
 void gc_mark_all_mappings(void);
 void gc_cycle_check_all_mappings(void);
 void gc_zap_ext_weak_refs_in_mappings(void);

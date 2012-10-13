@@ -31,6 +31,7 @@ struct mapping {
     unsigned INT32 hash_mask;
     unsigned INT32 magnitude;
     unsigned INT32 size;
+    unsigned INT32 flags;
     struct keypair ** table; 
     struct hash_iterator * first_iterator;
     struct keypair * trash;
