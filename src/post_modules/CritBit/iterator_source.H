@@ -43,6 +43,16 @@
 	    }
 	}
 
+	GC_CHECK {
+	    debug_gc_check_svalues(&THIS->lastval, 1, " as current CritBit iterator value");
+	    debug_gc_check(THIS->ptree, " as the parent of a CritBit iterator");
+	}
+
+	GC_RECURSE {
+	    gc_recurse_svalues(&THIS->lastval, 1);
+	    gc_recurse_object(THIS->ptree);
+	}
+
 	static inline int cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)() {
 	    cb_node_t t;
 	    INT_TYPE c = THIS->step;
