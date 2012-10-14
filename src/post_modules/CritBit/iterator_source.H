@@ -1,4 +1,4 @@
-    DOCSTART() @class Iterator
+    DOCSTART() @class _get_iterator
      *! Iterator class for tree_class trees. Supports iterating over ranges
      *! with arbitrary stepping and direction.
      *!
@@ -9,18 +9,30 @@
      *! @seealso
      *! 	@[predef::Iterator] for a description of the interface.
     DOCEND()
-    PIKECLASS iterator_class {
+    PIKECLASS _get_iterator
+	program_flags PROGRAM_USES_PARENT;
+    {
 	CVAR cb_node_t lastnode, tree;
 	CVAR cb_key lastkey;
 	CVAR cb_value lastval;
-	CVAR struct object * ptree;
 	CVAR size_t * revv, lastrev;
 	CVAR INT_TYPE step;
 	CVAR cb_key stop;
 
+
+	static struct object * TREE_CLASSIFY(_get_iterator_find_parent)()
+	{
+	  struct external_variable_context loc;
+
+	  loc.o = Pike_fp->current_object;
+	  loc.parent_identifier = Pike_fp->fun;
+	  loc.inherit = Pike_fp->context;
+	  find_external_context(&loc, 1);
+	  return loc.o;
+	}
+
 	INIT {
 	    THIS->lastval.type = T_VOID;
-	    THIS->ptree = NULL;
 	    THIS->lastnode = NULL;
 	    THIS->step = 1;
 	    THIS->stop.len.chars = 0;
@@ -37,20 +49,14 @@
 		CB_FREE_KEY(THIS->lastkey);
 		CB_FREE_VALUE(&THIS->lastval);
 	    }
-	    if (THIS->ptree) {
-		free_object(THIS->ptree);
-		THIS->ptree = NULL;
-	    }
 	}
 
 	GC_CHECK {
 	    debug_gc_check_svalues(&THIS->lastval, 1, " as current CritBit iterator value");
-	    debug_gc_check(THIS->ptree, " as the parent of a CritBit iterator");
 	}
 
 	GC_RECURSE {
 	    gc_recurse_svalues(&THIS->lastval, 1);
-	    gc_recurse_object(THIS->ptree);
 	}
 
 	static inline int cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)() {
@@ -122,21 +128,17 @@
 	    return !!t;
 	}
 
-	DOCSTART() @decl void create(tree_class tree, void|int step, @
-	 *!void|mixed start, void|mixed stop)
+	DOCSTART() @decl void create(void|int step, void|mixed start, void|mixed stop)
 	 *! Returns an iterator object that runs from @expr{start@} to
 	 *! @expr{stop@} using a stepsize of @expr{step@}. The arguments
 	 *! default to @expr{1@}, @expr{tree->first()@} and
 	 *! @expr{tree->last()@}, respectively.
 	DOCEND()
-	PIKEFUN void create(object tree, void|int step, void|mixed start,
+	PIKEFUN void create(void|int step, void|mixed start,
 			    void|mixed stop) {
 	    cb_node_t t = NULL;
+	    struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
 	    INT32 encode_fun;
-	    if (-1 == low_get_storage(tree->prog, TREE_CLASSIFY(_program))) {
-		SIMPLE_BAD_ARG_ERROR("create", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
-	    }
-	    add_ref(THIS->ptree = tree);
 	    THIS->revv = &(cmod_OBJ2_TREE(tree)->rev);
 	    THIS->tree = cmod_OBJ2_TREE(tree)->tree.root;
 
@@ -146,7 +148,7 @@
 	    encode_fun = cmod_OBJ2_TREE(tree)->encode_fun;
 
 	    if (THIS->tree) {
-		if (args < 2 || IS_UNDEFINED(step)) {
+		if (args == 0 || IS_UNDEFINED(step)) {
 		    THIS->step = 1;
 		} else {
 		    THIS->step = step->u.integer;
@@ -155,7 +157,7 @@
 		}
 
 		switch (args) {
-		case 4:
+		case 3:
 		    if (!IS_UNDEFINED(stop)) {
 			if (encode_fun >= 0) {
 			    push_svalue(stop);
@@ -168,7 +170,7 @@
 			THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
 			CB_ADD_KEY_REF(THIS->stop);
 		    }
-		case 3:
+		case 2:
 		    if (!IS_UNDEFINED(start)) {
 			cb_key s;
 			if (encode_fun >= 0) {
@@ -199,8 +201,8 @@
 			    }
 			}
 		    }
-		case 2:
 		case 1:
+		case 0:
 		    if (!t) t = (THIS->step < 0)
 				? cb_find_last(THIS->tree)
 				: cb_find_first(THIS->tree);
@@ -235,10 +237,11 @@
 
 	PIKEFUN key_ptype index() {
 	    if (THIS->lastnode) {
-		INT32 fun = cmod_OBJ2_TREE(THIS->ptree)->decode_fun;
+		struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+		INT32 fun = cmod_OBJ2_TREE(tree)->decode_fun;
 		CB_PUSH_KEY(THIS->lastkey);
 		if (fun >= 0)
-		    apply_low(THIS->ptree, fun, 1);
+		    apply_low(tree, fun, 1);
 	    } else push_undefined();
 	}
 

@@ -609,16 +609,6 @@ range_do_clone:
 	push_undefined();
     }
 
-    DOCSTART() @decl object _get_iterator()
-     *! @returns
-     *! This function returns an @[Iterator]-instance as would be created
-     *! with @expr{ADT.CritBit.TREE_CLASSIFY(.Iterator)(tree)@}
-    DOCEND()
-    PIKEFUN object _get_iterator() {
-	ref_push_object(Pike_fp->current_object);
-	push_object(clone_object(cmod_CONCAT_EVAL(tree_class,_,iterator_class,_program), 1));
-    }
-
     /*! @decl int(0..) depth()
      *! Calculate the depth of the tree.
      */
