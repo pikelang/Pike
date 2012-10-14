@@ -367,6 +367,7 @@ static INLINE void fill_indices(void * _start, void * _stop, void * data) {
 	    assign_svalue_no_free(ITEM(a)+size, &start->key);
 	    size++;
 	}
+	start++;
     }
 
     a->size = size;
@@ -392,6 +393,7 @@ static INLINE void fill_values(void * _start, void * _stop, void * data) {
 	    assign_svalue_no_free(ITEM(a)+size, &start->u.val);
 	    size++;
 	}
+	start++;
     }
 
     a->size = size;
@@ -405,9 +407,80 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m) {
     return a;
 }
 
-PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
-PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
-PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
+static INLINE void fill_both(void * _start, void * _stop, void * data) {
+    struct keypair * start = (struct keypair *)_start,
+		   * stop  = (struct keypair *)_stop;
+    struct array * a = (struct array *)data;
+
+    unsigned INT32 size = a->size;
+
+    while (start < stop) {
+	if (!keypair_deleted(start)) {
+	    struct array *b=allocate_array(2);
+	    assign_svalue(b->item+0, & k->key);
+	    assign_svalue(b->item+1, & k->u.val);
+	    b->type_field = (1 << TYPEOF(k->key)) | (1 << TYPEOF(k->u.val));
+	    SET_SVAL(*(ITEM(a)+size), T_ARRAY, 0, array, b);
+	    size++;
+	}
+	start++;
+    }
+
+    a->size = size;
+}
+
+PMOD_EXPORT struct array *mapping_to_array(struct mapping *m) {
+    struct array * a = real_allocate_array(0, m->size);
+
+    ba_walk_local(&m->allocator, fill_both, a);
+
+    return a;
+}
+
+struct replace_data {
+    struct mapping * m;
+    struct svalue * from, * to;
+};
+
+static INLINE replace_cb(void * _start, void * _stop, void * data) {
+    struct keypair * start = (struct keypair *)_start,
+		   * stop  = (struct keypair *)_stop;
+    struct replace_data * r = (struct replace_data*)data;
+
+    while (start < stop) {
+	if (!is_nidentical(r->from, &start->u.val)) {
+	    if (is_identical(r->from, &start->u.val) || is_eq(r->from, &start->u.val)) {
+		assign_svalue(&start->u.val, r->to);
+	    }
+	}
+	start ++;
+    }
+}
+
+PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to) {
+    const struct replace_data r = { m, from, to };
+    mark_enter(&m->marker);
+    ba_walk_local(&m->allocator, replace_cb, &r);
+    mark_leave(&m->marker);
+}
+
+PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val) {
+    struct mapping *m;
+    struct svalue *i,*v;
+    INT32 e;
+
+#ifdef PIKE_DEBUG
+    if(ind->size != val->size)
+	Pike_fatal("mkmapping on different sized arrays.\n");
+#endif
+
+    m=debug_allocate_mapping(ind->size);
+    i=ITEM(ind);
+    v=ITEM(val);
+    for(e=0;e<ind->size;e++) low_mapping_insert(m, i++, v++, 2);
+
+    return m;
+}
 
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m) {
     struct mapping * n = debug_allocate_mapping(m->size);
