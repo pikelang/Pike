@@ -37,6 +37,108 @@ static void free_glist_full_free(void *p)
 
 static void push_gi_info(GIBaseInfo *info);
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
+static void push_gvalue(const GValue *v);
+static void set_gvalue_from_svalue(GValue *v, const struct svalue *s);
+
+struct signal_data {
+  struct svalue cb;
+  struct svalue extra_args;
+};
+
+static void free_signal_data(struct signal_data *s, GClosure *gcl)
+{
+  free_svalue(&s->cb);
+  free_svalue(&s->extra_args);
+  g_free(s);
+}
+
+static void marshaller(GClosure *closure,
+		       GValue *return_value,
+		       guint n_params,
+		       const GValue *param_values,
+		       gpointer invocation_hint,
+		       gpointer marshal_data)
+{
+  typedef void (*marshal_func)(gpointer data1,
+			       gpointer data2,
+			       guint n_params, 
+			       const GValue *param_values,
+			       GValue *return_value);
+  marshal_func callback;
+  GCClosure *cc=(GCClosure *)closure;
+  gpointer data1, data2;
+
+  if (G_CCLOSURE_SWAP_DATA(closure)) {
+    data1=closure->data;
+    data2=g_value_peek_pointer(param_values+0);
+  } else {
+    data1=g_value_peek_pointer(param_values+0);
+    data2=closure->data;
+  }
+
+  callback=(marshal_func)(marshal_data? marshal_data : cc->callback);
+  callback(data1, data2, n_params-1, param_values+1, return_value);
+}
+
+struct signal_wrapper_context
+{
+  struct signal_data *d;
+  guint n_params;
+  const GValue *param_values;
+  GValue *return_value;
+};
+
+static void invoke_signal_func(void *arg)
+{
+  struct signal_wrapper_context *ctx = (struct signal_wrapper_context *)arg;
+  struct signal_data *d = ctx->d;
+  guint n_params = ctx->n_params;
+  const GValue *param_values = ctx->param_values;
+  GValue *return_value = ctx->return_value;
+  JMP_BUF recovery;
+  unsigned int i;
+  INT32 args = n_params;
+  struct svalue *osp = Pike_sp;
+
+  if (SETJMP(recovery)) {
+    pop_n_elems(Pike_sp-osp);
+    UNSETJMP(recovery);
+    call_handle_error();
+    if (return_value && G_VALUE_TYPE(return_value) != 0)
+      g_value_unset(return_value);
+    return;
+  }
+
+  for (i=0; i<n_params; i++) {
+    push_gvalue(&(param_values[i]));
+  }
+  if (TYPEOF(d->extra_args) == PIKE_T_ARRAY) {
+    struct array *a = d->extra_args.u.array;
+    INT32 asize = a->size;
+    check_stack(asize);
+    assign_svalues_no_free(Pike_sp, ITEM(a), asize, a->type_field);
+    Pike_sp += asize;
+    args += asize;
+  }
+  apply_svalue(&d->cb, args);
+  if (return_value && G_VALUE_TYPE(return_value) != 0 )
+    set_gvalue_from_svalue(return_value, &Pike_sp[-1]);
+  pop_stack();
+  UNSETJMP(recovery);
+}
+
+static void signal_func_wrapper(struct signal_data *d,
+				gpointer go,
+				guint n_params,
+				const GValue *param_values,
+				GValue *return_value)
+{
+  struct signal_wrapper_context ctx = {
+    d, n_params, param_values, return_value
+  };
+  call_with_interpreter(invoke_signal_func, &ctx);
+}
+
 
 /*! @class GObject
  */
@@ -74,6 +176,86 @@ PIKECLASS GObject
       THIS->obj = make_gobject_from_props(info, props);
       g_object_set_qdata(THIS->obj, object_quark, Pike_fp->current_object);
     }
+  }
+
+  /*! @decl int connect(string signal_spec, function callback, mixed ... extra_args)
+   */
+  PIKEFUN int connect(string signal_spec, function callback, mixed ... extra_args)
+  {
+    struct signal_data *b;
+    GClosure *gc;
+    guint sigid;
+    GQuark detail = 0;
+    gulong id;
+
+    if (signal_spec->size_shift ||
+	!g_signal_parse_name((const gchar *)STR0(signal_spec),
+			     G_OBJECT_TYPE(THIS->obj),
+			     &sigid, &detail, TRUE)) {
+      Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
+		 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+    }
+
+    b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
+    if (b==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("connect",sizeof(struct signal_data));
+    assign_svalue_no_free(&b->cb, callback);
+    if (extra_args) {
+      f_aggregate(args-2);
+      assign_svalue_no_free(&b->extra_args, Pike_sp-1);
+      pop_stack();
+      args = 2;
+    } else {
+      SET_SVAL(b->extra_args, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    }
+
+    gc=g_cclosure_new_swap(G_CALLBACK(signal_func_wrapper), b,
+			   (GClosureNotify)free_signal_data);
+    g_closure_set_marshal(gc, marshaller);
+
+    id = g_signal_connect_closure_by_id(G_OBJECT(THIS->obj), sigid, detail,
+					gc, FALSE);
+    RETURN id;
+  }
+
+  /*! @decl int connect_after(string signal_spec, function callback, mixed ... extra_args)
+   */
+  PIKEFUN int connect_after(string signal_spec, function callback, mixed ... extra_args)
+  {
+    struct signal_data *b;
+    GClosure *gc;
+    guint sigid;
+    GQuark detail = 0;
+    gulong id;
+
+    if (signal_spec->size_shift ||
+	!g_signal_parse_name((const gchar *)STR0(signal_spec),
+			     G_OBJECT_TYPE(THIS->obj),
+			     &sigid, &detail, TRUE)) {
+      Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
+		 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+    }
+
+    b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
+    if (b==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("connect_after",sizeof(struct signal_data));
+    assign_svalue_no_free(&b->cb, callback);
+    if (extra_args) {
+      f_aggregate(args-2);
+      assign_svalue_no_free(&b->extra_args, Pike_sp-1);
+      pop_stack();
+      args = 2;
+    } else {
+      SET_SVAL(b->extra_args, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    }
+
+    gc=g_cclosure_new_swap(G_CALLBACK(signal_func_wrapper), b,
+			   (GClosureNotify)free_signal_data);
+    g_closure_set_marshal(gc, marshaller);
+
+    id = g_signal_connect_closure_by_id(G_OBJECT(THIS->obj), sigid, detail,
+					gc, TRUE);
+    RETURN id;
   }
 }
 
@@ -738,6 +920,75 @@ static void push_gi_info(GIBaseInfo *info)
       (struct BaseInfo_struct *)get_storage (o, BaseInfo_program);
     that->info = g_base_info_ref(info);
     push_object(o);
+  }
+}
+
+static void push_gvalue(const GValue *v)
+{
+  GType gt = G_VALUE_TYPE(v);
+  switch(G_TYPE_FUNDAMENTAL(gt)) {
+
+  case G_TYPE_CHAR:
+    push_int(g_value_get_schar(v));
+    break;
+  case G_TYPE_UCHAR:
+    push_int(g_value_get_uchar(v));
+    break;
+
+  case G_TYPE_BOOLEAN:
+    push_int(g_value_get_boolean(v));
+    break;
+
+  case G_TYPE_INT:
+    push_int(g_value_get_int(v));
+    break;
+  case G_TYPE_UINT:
+    push_int(g_value_get_uint(v));
+    break;
+  case G_TYPE_LONG:
+    push_int(g_value_get_long(v));
+    break;
+  case G_TYPE_ULONG:
+    push_int(g_value_get_ulong(v));
+    break;
+  case G_TYPE_INT64:
+    push_int64(g_value_get_int64(v));
+    break;
+  case G_TYPE_UINT64:
+    push_int64(g_value_get_uint64(v));
+    break;
+
+  case G_TYPE_ENUM:
+    push_int(g_value_get_enum(v));
+    break;
+
+  case G_TYPE_FLAGS:
+    push_int(g_value_get_flags(v));
+    break;
+
+  case G_TYPE_FLOAT:
+    push_float(g_value_get_float(v));
+    break;
+
+  case G_TYPE_DOUBLE:
+    push_float(g_value_get_double(v));
+    break;
+
+  case G_TYPE_STRING:
+    {
+      const gchar *s = g_value_get_string(v);
+      if (s == NULL)
+	push_int(0);
+      else {
+	push_text(s);
+	f_utf8_to_string(1);
+      }
+      break;
+    }
+    
+  default:
+    Pike_error("Don't know how to push a gvalue type %d\n",
+	       G_TYPE_FUNDAMENTAL(gt));
   }
 }
 
