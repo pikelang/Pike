@@ -207,8 +207,7 @@ class XMLNSParser {
     mapping(string:string) result = ([]);
     foreach(attrs; string attr; string val) {
       int i;
-      if (!has_prefix(attr, "xmlns:") &&
-	  (i = search(attr, ":")) >= 0) {
+      if (!has_prefix(attr, "xmlns:") && (i = search(attr, ":")) >= 0) {
 	string key = attr[..i-1];
 	attr = attr[i+1..];
 	string prefix = namespaces[key];
@@ -230,6 +229,10 @@ class XMLNSParser {
     if (i >= 0) {
       key = name[..i-1];
       name = name[i+1..];
+    }
+    if (has_prefix(key||"", "xml") || (name == "xmlns")) {
+      if (key) name = key + ":" + name;
+      return name;
     }
     string prefix = namespace_stack->top()[key];
     if (!prefix) {
@@ -901,7 +904,7 @@ protected class VirtualNode {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
 	sscanf(reverse(name), "%[^/:]", mTagName);
 	mTagName=reverse(mTagName);
-	mNamespace=name[..<sizeof(mTagName)];
+	mShortNamespace = mNamespace = name[..<sizeof(mTagName)];
       }
       else {
 	mTagName = name;
@@ -1609,8 +1612,7 @@ class XMLParser
 
     case "<>":
       //  Create new tag node.
-      if (arrayp(extra) && sizeof(extra) &&
-          mappingp(extra[0])) {
+      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
         //  Convert tag and attribute names to lowercase
         //  if requested.
         if (extra[0]->force_lc) {
@@ -1646,6 +1648,7 @@ class XMLParser
         if (extra[0]->xmlns) {
           XMLNSParser xmlns = extra[0]->xmlns;
           name = xmlns->Decode(name);
+	  attr = mkmapping(map(indices(attr), xmlns->Decode), values(attr));
           xmlns->Leave();
 	  short_attr = UNDEFINED;
         }
