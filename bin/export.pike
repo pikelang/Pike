@@ -636,14 +636,14 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   {
     mystdin = Stdio.File();
     stdin_str = modifiers->stdin;
-    p = Process(cmd, modifiers + ([
+    p = Process.create_process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                   "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
                 ]));
   }
   else
-    p = Process(cmd, modifiers + ([
+    p = Process.create_process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                 ]));
