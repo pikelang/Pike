@@ -162,7 +162,7 @@ void cvs_bump_version(int|void is_release)
 string svn_cmd(string ... args)
 {
   mapping r =
-    Process.run( ({ "svn", "--non-interactive" }) + args,
+    run( ({ "svn", "--non-interactive" }) + args,
 		 ([ "cwd":pike_base_name ]) );
   if (r->exitcode) {
     werror(r->stderr||"");
@@ -204,7 +204,7 @@ string svn_get_repos()
 mapping git_cmd(string ... args)
 {
   mapping res =
-    Process.run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
+    run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
   if (res->exitcode) exit(res->exitcode);
   return res;
 }
@@ -613,3 +613,89 @@ Optional arguments:
 	with --name.
 --help  Show this text.
 ";
+
+
+mapping run(string|array(string) cmd, void|mapping modifiers)
+{
+  string gotstdout="", gotstderr="", stdin_str;
+  int exitcode;
+
+  if(!modifiers)
+    modifiers = ([]);
+
+  if(modifiers->stdout || modifiers->stderr)
+    throw( ({ "Can not redirect stdout or stderr in Process.run, "
+              "please use Process.Process instead.", backtrace() }) );
+
+  Stdio.File mystdout = Stdio.File();
+  Stdio.File mystderr = Stdio.File();
+  Stdio.File mystdin;
+
+  object p;
+  if(stringp(modifiers->stdin))
+  {
+    mystdin = Stdio.File();
+    stdin_str = modifiers->stdin;
+    p = Process(cmd, modifiers + ([
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                  "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
+                ]));
+  }
+  else
+    p = Process(cmd, modifiers + ([
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                ]));
+
+#if constant(Thread.Thread)
+  array threads = ({
+      thread_create( lambda() { gotstdout = mystdout->read(); } ),
+      thread_create( lambda() { gotstderr = mystderr->read(); } )
+    });
+
+  if (mystdin) {
+    threads += ({
+      thread_create(lambda(Stdio.File f) { f->write(stdin_str); }, mystdin )
+    });
+    mystdin = 0;
+  }
+
+  exitcode = p->wait();
+  threads->wait();
+
+#else //No threads, use callbacks
+  mystdout->set_read_callback( lambda( mixed i, string data) {
+                                 gotstdout += data;
+                               } );
+  mystderr->set_read_callback( lambda( mixed i, string data) {
+                                 gotstderr += data;
+                               } );
+  mystdout->set_close_callback( lambda () {
+                                  mystdout->set_read_callback(0);
+                                  mystdout = 0;
+                                });
+  mystderr->set_close_callback( lambda () {
+                                  mystderr->set_read_callback(0);
+                                  mystderr = 0;
+                                });
+
+  if (mystdin) {
+    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
+    sf->add_source(stdin_str);
+    sf->set_done_callback (lambda () {
+                             mystdin = 0;
+                           });
+    sf->start();
+  }
+
+  while( mystdout || mystderr || mystdin )
+    Pike.DefaultBackend( 1.0 );
+
+  exitcode = p->wait();
+#endif
+
+  return ([ "stdout"  : gotstdout,
+            "stderr"  : gotstderr,
+            "exitcode": exitcode   ]);
+}
