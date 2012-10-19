@@ -22,18 +22,57 @@ o Encoder, Decoder and Codec are now available in the Pike module.
   While the programs were always retrievable from the master object,
   now they can be inherited in codecs that wish to extend the master
   codecs.
-o The XMLRPC module can now serialize Calender objects. Only 200
-  responses will be attempted to be decoded. Fixed a bug in handling
-  of string values.
+o XMLRPC: 
+  - The XMLRPC module can now serialize Calender objects. Only 200
+    responses will be attempted to be decoded. Fixed a bug in handling
+    of string values.
+  - Fixed bug in decode of structs with no members.
+o Fixed handling of file length argument in nb_sendfile, bug 6118.
+o Locale.Charset: Fixed NULL-dereferencing in the decoder for EUC-CN 
+  and EUC-KR.
+o Web.Crawler: Support for URLs containing Unicode characters. Fixes 
+  bug 5958.
+o Survive crypt(3C) failing. Fixes bug 6013.
+o Fixed typo that could cause fatal when comparing objects with 
+  equal().
+o Fixed bugs in the formatting of mpz's as floats. In particular, 
+  this fixes a buffer overrun if the precision exceeds the number 
+  of digits.
+o Fixed special cases when dividing the empty array with a number.
+o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy, aka Crypto.CBC 
+  and Crypto.Buffer.
+o Fixed bug with extra zero element at the end in the arrays returned by
+  Thread.Queue.read_array.
+o Protect against segfault if the Regexp matcher runs out of C stack.
+o Fixed bug in random() for sizes larger than 31 bits, but smaller than 
+  the bignum threshold.
+o Split up the data to write in Stdio.sendfile, which can give a big 
+  performance boost when sending very large strings.
+o SSL: Disabled renegotiation, to address the ssl/tls renegotiate MITM 
+  attack, see http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+o Added Protocols.HTTP.do_async_method() from Pike 7.8.
+o SSL: Fixed bug with early calls to the write callback before the handshake was
+  finished. This bug is known to cause Protocols.HTTP.Query to hang
+  indefinitely in asynchronous mode for https. Likely to fix bug 4859.
+o Backported sort_fun and ignore_errors for Filesystem.Traversion from 7.8.
+o Fixed bug when seeking backwards in Gz.File.
+o append_path is now a wrapper function for append_path_unix or append_path_nt 
+  (more efficient).
+o Calendar: Fixed stepping of days by months or years to work in a more 
+  useful way. Previously e.g. Calendar.ISO.Day(2000,1,31)+Calendar.ISO.Month()  
+  would return March 2nd since there aren't 31 days in February and the Calendar
+  module would instead step 30 days forward from February 1st.
 
 Image related changes in Pike:
 
+o Fixed a JPEG underflow error, bug 6413.
 o Fixed infinite loop that could occur when feeding Image.XBM with
   malformed data.
 o Added option "file" to Image.PS.decode().
 o Image.PS.decode() now reads nonblocking from the pipes.
 o Added use of custom backend in Image.PS.
 o Fixed bug in a special case of GIF color decoding (bug 3536).
+o Image.PNG: Backported fix for bug 5138 from Pike 7.8.
 
 Database related changes in Pike:
 
@@ -60,6 +99,10 @@ o Added more methods to enable the buggy unicode decode support in
   enabling the normal unicode decode support. This means that no code
   using broken-unicode should rely on the BINARY flag on text fields
   to avoid utf-8 decoding.
+o  Mysql: fetch_json_result() now quotes \u2028 and \u2029. Fixes bug 
+   6103.
+o ODBC fixes backported from Pike 7.8, fixes bug 5595.
+o Mysql: Fixed reinitialization of the charset after reconnect.
 
 Mostly platform specific changes in Pike:
 
@@ -67,6 +110,12 @@ o win32: Fixed bug in RegGetValue{,s}() for fields of type *_SZ of length 0.
 o Darwin: Close the kqueue fd when a backend goes away. Should solve all
   kinds of "no more file descriptor" and "couldn't create backend wakeup
   pipe" problems on Darwin.
+o Fix Stdio.sendfile() on Darwin.
+o System.getgrent: The group member list can be NULL on MacOS X, fixes 
+  bug 6187.
+o Limit Darwin fd count to OPEN_MAX, fixes bug 5751.
+o Avoid segfault in combine_path_nt on windows when the first char of an
+  appended path is wide.
 
 Build fixes:
 
@@ -78,6 +127,8 @@ o Added /opt/csw/lib to list of library directories to check.
 o If compiler is GCC, also add all library directories listed by
   gcc -print-search-dirs.
 o Normalize library directory pathnames before adding them.
+o Better support for autoconf 2.6x.
+
 
 Other:
 
