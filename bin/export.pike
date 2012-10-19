@@ -102,7 +102,7 @@ string low_bump_version(int|void bump_minor)
     minor++;
     s = pre + " PIKE_MINOR_VERSION " + minor + post;
   }
-  sscanf(s, "%s PIKE_BULD_VERSION %d%s", string pre, int rel, string post);
+  sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
   if (bump_minor) {
     rel = 0;
   } else {
