@@ -1,9 +1,9 @@
 #! /usr/bin/env pike
 
-/* $Id$ */
-
 multiset except_modules = (<>);
 string vpath;
+
+string main_branch;
 
 string dirname(string dir)
 {
@@ -19,7 +19,8 @@ array(string) get_files(string path)
   array(string) files = get_dir(path);
 
   if(!getenv("PIKE_EXPORT_CVS_DIRS"))
-    files -= ({ "CVS", "RCS", ".cvsignore" });
+    files -= ({ "CVS", "RCS", ".git", ".svn", ".cvsignore", ".gitignore",
+		".gitattributes", });
 
   array(string) ret = ({});
   foreach(files, string fn)
@@ -33,6 +34,10 @@ array(string) get_files(string path)
       continue;
 
     if( path==vpath+"/bin" && except_modules[fn] )
+      continue;
+
+    //Don't include uncompressed bundle archives
+    if( path==vpath+"/bundles" && file_stat(path+"/"+fn+".tar.gz") )      
       continue;
 
     if( has_prefix(path, vpath+"/lib/modules") &&
@@ -89,27 +94,47 @@ array(int) getversion()
   return ({ maj, min, build });
 }
 
-void bump_version(int|void is_release)
+string low_bump_version(int|void bump_minor)
+{
+  string s = Stdio.read_file(pike_base_name+"/src/version.h");
+  if (bump_minor) {
+    sscanf(s, "%s PIKE_MINOR_VERSION %d%s", string pre, int minor, string post);
+    minor++;
+    s = pre + " PIKE_MINOR_VERSION " + minor + post;
+  }
+  sscanf(s, "%s PIKE_BULD_VERSION %d%s", string pre, int rel, string post);
+  if (bump_minor) {
+    rel = 0;
+  } else {
+    rel++;
+  }
+  s = pre + " PIKE_BUILD_VERSION " + rel + post;
+  Stdio.write_file( pike_base_name+"/src/version.h", s);
+  return ((array(string))getversion())*".";
+}
+
+void cvs_bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
   Process.create_process( ({ "cvs", "update", "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
-  string s = Stdio.read_file(pike_base_name+"/src/version.h");
-  sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
-  rel++;
-  Stdio.write_file( pike_base_name+"/src/version.h",
-		    pre+" PIKE_BUILD_VERSION "+rel+post );
+  string rel = low_bump_version();
+
   Process.create_process( ({ "cvs", "commit", "-m",
 			     "release number bumped to "+rel+" by export.pike",
 			     "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
+#if 0
+  // This causes a lot of noise in the Debian changelog for all test
+  // builds. It should only be done for a real release build. Besides,
+  // the maintainer address is out of date. /mast
   s = Stdio.read_file(pike_base_name+"/packaging/debian/changelog");
   if (s) {
     werror("Bumping Debian changelog.\n");
     array(int) version = getversion();
-    s = sprintf("pike%d.%d (%d.%d.%d-1) unstable; urgency=low\n"
+    s = sprintf("pike%d.%d (%d.%d.%d-1) experimental; urgency=low\n"
 		"\n" +
 		"  * %s\n"
 		"\n"
@@ -131,42 +156,107 @@ void bump_version(int|void is_release)
 			     )->wait();
 
   }
+#endif
+}
 
-  s = Stdio.read_file(pike_base_name+"/packaging/windows/pike.iss");
-  if (s) {
-    werror("Bumping Win32 setup script.\n");
-    array(int) version = getversion();
-    array(string) lines = replace(s, "\r\n", "\n")/"\n";
-
-    for (int i=0; i < sizeof(lines); i++) {
-      if (has_prefix(lines[i], "#define MAJOR ")) {
-	lines[i] = sprintf("#define MAJOR \"%d\"", version[0]);
-      } else if (has_prefix(lines[i], "#define MINOR ")) {
-	lines[i] = sprintf("#define MINOR \"%d\"", version[1]);
-      } else if (has_prefix(lines[i], "#define BUILD ")) {
-	lines[i] = sprintf("#define BUILD \"%d\"", version[2]);
-      } else if (has_prefix(lines[i], "#define INST ")) {
-	lines[i] = "#define INST \"1\"";
-      }
-    }
-
-    Stdio.write_file(pike_base_name+"/packaging/windows/pike.iss",
-		     lines*"\r\n");
-    Process.create_process( ({ "cvs", "commit", "-m",
-			       "release number bumped to "+rel+" by export.pike",
-			       "pike.iss" }),
-			     ([ "cwd":pike_base_name+"/packaging/windows" ])
-			     )->wait();
+string svn_cmd(string ... args)
+{
+  mapping r =
+    Process.run( ({ "svn", "--non-interactive" }) + args,
+		 ([ "cwd":pike_base_name ]) );
+  if (r->exitcode) {
+    werror(r->stderr||"");
+    exit(r->exitcode);
   }
+  return r->stdout;
+}
+
+int svn_bump_version(int|void is_release)
+{
+  werror("Bumping release number.\n");
+
+  string rel = low_bump_version();
+
+  string s = svn_cmd("commit", "-m",
+		     "release number bumped to "+rel+" by export.pike",
+		     "src/version.h");
+
+  return array_sscanf(s, "%*sCommitted revision %d.")[0];
+}
+
+Parser.XML.Tree.SimpleRootNode svn_get_info()
+{
+  return Parser.XML.Tree.simple_parse_input(svn_cmd("info", "--xml"));
+}
+
+string svn_get_url()
+{
+  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
+    get_elements("url")[0]->value_of_node();
+}
+
+string svn_get_repos()
+{
+  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
+    get_elements("repository")[0]->get_elements("root")[0]->value_of_node();
+}
+
+mapping git_cmd(string ... args)
+{
+  mapping res =
+    Process.run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
+  if (res->exitcode) exit(res->exitcode);
+  return res;
+}
+
+void git_bump_version(int|void is_release)
+{
+  werror("Bumping release number.\n");
+
+  int bump_minor = 0;
+
+  string branch =
+    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD")->stdout);
+
+  if (has_prefix(branch, "refs/heads/")) {
+    branch = branch[sizeof("refs/heads/")..];
+    string upstream_branch =
+      String.trim_all_whites(git_cmd("config", "--get",
+				     "branch."+branch+".merge")->stdout);
+    if (has_prefix(upstream_branch, "refs/heads/")) {
+      upstream_branch = upstream_branch[sizeof("refs/heads/")..];
+
+      // Bump the minor if the upstream branch is a single number.
+      bump_minor = (sizeof(upstream_branch/".") < 2) && (int)upstream_branch;
+    }
+  }
+
+  string rel = low_bump_version(bump_minor);
+
+  string attrs = Stdio.read_file(pike_base_name+"/.gitattributes");
+
+  if (attrs) {
+    string new_attrs = (attrs/"\n/src/version.h foreign_ident\n")*"\n";
+    if (new_attrs != attrs) {
+      werror("Adjusting attributes.\n");
+      Stdio.write_file(pike_base_name+"/.gitattributes", new_attrs);
+    }
+    git_cmd("add", ".gitattributes");
+  }
+
+  git_cmd("add", "src/version.h");
+
+  git_cmd("commit", "-m", "release number bumped to "+rel+" by export.pike");
 }
 
 array(string) build_file_list(string vpath, string list_file)
 {
-  array(string) ret=({ }), missing=({ });
   if(!file_stat(list_file)) {
     werror("Could not find %s\n", list_file);
     exit(1);
   }
+
+  array(string) ret=({ }), missing=({ });
   foreach(Stdio.read_file(list_file) / "\n", string line)
     {
       if( !sizeof(line) || line[0]=='#' )
@@ -207,10 +297,18 @@ string pike_base_name;
 string srcdir;
 int(0..1) rebuild, ignore_missing;
 
+
+void cleanup_git()
+{
+  /* Roll forward to a useable state. */
+  git_cmd("checkout", main_branch);
+}
+
 int main(int argc, array(string) argv)
 {
   array(string) files;
   string export_list, filename;
+  function(:void) git, svn;
   object cvs;
   int tag, snapshot, t;
 
@@ -279,8 +377,6 @@ int main(int argc, array(string) argv)
     return 1;
   }
 
-  export_list=srcdir+"/"+export_list;
-
   if(rebuild)
   {
     werror("Not yet finished!\n");
@@ -291,16 +387,88 @@ int main(int argc, array(string) argv)
     /* And other things... */
   }
 
-  if(tag && file_stat(pike_base_name+"/CVS"))
-  {
-    bump_version(1);
+  if (tag) {
+    if (file_stat(pike_base_name + "/.svn")) {
+      /* Tagging in svn is fast, so there's no need to
+       * do it asynchronously. We also want to perform
+       * the version bumps back-to-back, to avoid
+       * ambiguities regarding the stable version. */
 
-    array(int) version = getversion();
-    vpath = sprintf("Pike-v%d.%d.%d", @version);
-    string tag = sprintf("v%d_%d_%d", @version);
+      int r = svn_bump_version(1);
+      array(int) version = getversion();
+      vpath = sprintf("Pike-v%d.%d.%d", @version);
+      string tag = sprintf("v%d_%d_%d", @version);
 
-    werror("Creating tag "+tag+" in the background.\n");
-    cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
+      svn_bump_version();
+
+      string old_url, new_url;
+      svn_cmd("cp", "-r"+r, "-m",
+	      "This commit was manufactured by export.pike "
+	      "to create tag '"+tag+"'.", (old_url = svn_get_url()),
+	      (new_url = svn_get_repos()+"/tags/"+tag));
+
+      /* Use the tagged version to build the dist from */
+      svn_cmd("switch", new_url);
+      svn = lambda() {
+	      /* Switch back when we are done */
+	      svn_cmd("switch", old_url);
+	    };
+    } else if (file_stat(pike_base_name + "/.git")) {
+      main_branch =
+	String.trim_all_whites(git_cmd("symbolic-ref", "-q", "HEAD")->stdout);
+      if (!has_prefix(main_branch, "refs/heads/")) {
+	werror("Unexpected HEAD: %O\n", main_branch);
+	exit(1);
+      }
+      main_branch = main_branch[sizeof("refs/heads/")..];
+      string remote = String.trim_all_whites(git_cmd("remote")->stdout);
+      if (!sizeof(remote)) remote = UNDEFINED;
+      git = cleanup_git;	/* Restore state when we're done. */
+
+      if (remote) git_cmd("pull", "--rebase", remote);
+
+      /* Tagging in git is fast, so there's no need to
+       * do it asynchronously. We also want to perform
+       * the version bumps back-to-back, to avoid
+       * ambiguities regarding the stable version.
+       *
+       * Note that the tagging is performed in a
+       * second push in case the paranoia rebase
+       * below actually has any effect.
+       */
+
+      git_bump_version(1);
+      array(int) version = getversion();
+      vpath = sprintf("Pike-v%d.%d.%d", @version);
+      string tag = sprintf("v%d.%d.%d", @version);
+
+      git_bump_version();
+
+      if (remote) {
+	/* Push the result. */
+	git_cmd("pull", "--rebase", remote);	/* Paranoia... */
+	git_cmd("push", remote);
+      }
+
+      /* Now it's time for the tags. */
+      git_cmd("tag", tag, "HEAD^");
+      if (remote) {
+	git_cmd("push", remote, "refs/tags/" + tag + ":refs/tags/" + tag);
+      }
+
+      /* Bumping is done, now go back to the stable version,
+       * so that we can create the dist files. */
+      git_cmd("checkout", tag);
+    } else if(file_stat(pike_base_name+"/CVS")) {
+      cvs_bump_version(1);
+
+      array(int) version = getversion();
+      vpath = sprintf("Pike-v%d.%d.%d", @version);
+      string tag = sprintf("v%d_%d_%d", @version);
+
+      werror("Creating tag "+tag+" in the background.\n");
+      cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
+    }
   }
 
   t = t||time();
@@ -343,19 +511,20 @@ int main(int argc, array(string) argv)
   Stdio.write_file("buildid.txt", replace(stamp, symbols));
   files += ({ vpath+"/buildid.txt" });
 
-  werror("Creating "+filename+".tar.gz:\n");
+  werror("Creating "+filename+".tar.gz.\n");
 
   int first = 1;
   foreach(files/25.0, files)
     {
       if(Process.create_process
 	 ( ({"tar",
-	     first?"cvf":"rvf",
+	     first?"cf":"rf",
 	     pike_base_name+"/"+filename+".tar" }) +
 	   files)->wait())
       {
 	werror("Tar file creation failed!\n");
-	if(cvs) cvs->wait();
+	if (git) git();
+	else if(cvs) cvs->wait();
 	rm(vpath);
 	exit(1);
       }
@@ -374,11 +543,12 @@ int main(int argc, array(string) argv)
     Process.create_process( ({ "cp", "-R", build+"/doc_build/images",
 			       vpath+"/refdoc/images" }) )->wait();
     if(Process.create_process
-       ( ({"tar", "rvf", pike_base_name+"/"+filename+".tar",
+       ( ({"tar", "rf", pike_base_name+"/"+filename+".tar",
 	   vpath+"/refdoc/autodoc.xml", vpath+"/refdoc/images" }) )->wait())
       {
 	werror("Tar file creation failed!\n");
-	if(cvs) cvs->wait();
+	if (git) git();
+	else if (cvs) cvs->wait();
 	Stdio.recursive_rm(vpath);
 	exit(1);
       }
@@ -392,17 +562,23 @@ int main(int argc, array(string) argv)
      }) )->wait())
     {
       werror("Gzip failed!\n");
-      if(cvs) cvs->wait();
+      if (git) git();
+      else if (cvs) cvs->wait();
       exit(1);
     }
 
   rm("buildid.txt");
   werror("Done.\n");
 
-  if(cvs)
-  {
+  if (svn) {
+    // NB: In the svn case, we have already bumped the version.
+    svn();
+  } else if (git) {
+    // NB: In the git case, we have already bumped the version.
+    git();
+  } else if(cvs) {
     cvs->wait();
-    bump_version();
+    cvs_bump_version();
   }
 
   return 0;
