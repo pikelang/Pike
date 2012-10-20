@@ -71,6 +71,9 @@ static void clear_marker(struct reentrance_marker * m) {
 }
 
 /* definitions */
+void count_memory_in_mappings(size_t *num, size_t *size);
+void init_mapping_blocks();
+
 PMOD_EXPORT void low_mapping_cleanup(struct mapping * m);
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m);
 PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags);
@@ -94,7 +97,10 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 					      const struct svalue *key);
-PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m);
+PMOD_EXPORT struct keypair ** low_mapping_lookup_random(const struct mapping * m);
+static INLINE struct keypair * mapping_lookup_random(const struct mapping * m) {
+    return *low_mapping_lookup_random(m);
+}
 
 PMOD_EXPORT struct array *mapping_indices(struct mapping *m);
 
@@ -268,9 +274,13 @@ static INLINE void mapping_it_step(struct mapping_iterator * it) {
 
 static INLINE int mapping_it_next(struct mapping_iterator * it,
 				  struct keypair ** t) {
-    if (!it->current) return 0;
-    mapping_it_step(it);
-    if (!it->current) return 0;
+    if (it->current) {
+	mapping_it_step(it);
+    }
+    if (!it->current) {
+	*t = NULL;
+	return 0;
+    }
     *t = *it->current;
     return 1;
 }

@@ -13,6 +13,12 @@ static void unlink_iterator(struct mapping_iterator * it) {
     DOUBLEUNLINK(m->first_iterator, it);
 }
 
+void init_mapping_blocks() {}
+
+void count_memory_in_mappings(size_t * num, size_t * size) {
+    /* TODO: count iterators, aswell */
+    ba_count_all(&mapping_allocator, num, size);
+}
 
 void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data) {
     struct keypair * k = (struct keypair*)_start;
@@ -235,6 +241,7 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
 
     if (!(m->key_types & (1 << TYPEOF(*key)))) return NULL;
 
+    /* TODO: this might be good to have without lock */
     mark_enter(&m->marker);
 
     t = low_get_bucket(m, hval);
@@ -271,9 +278,9 @@ unfreeze:
     return t;
 }
 
-PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m) {
+PMOD_EXPORT struct keypair ** low_mapping_lookup_random(const struct mapping * m) {
   unsigned INT32 bucket, count;
-  struct keypair *k;
+  struct keypair ** t;
   
   /* Find a random, nonempty bucket */
   bucket=my_rand();
@@ -281,14 +288,14 @@ PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m) {
   
   /* Count entries in bucket */
   count=0;
-  for(k=m->table[bucket];k;k=k->next) count++;
+  for(t = m->table + (bucket&m->hash_mask); *t; t = &(*t)->next) count++;
   
   /* Select a random entry in this bucket */
   count = my_rand() % count;
-  k=m->table[bucket];
-  while(count-- > 0) k=k->next;
+  t=m->table + (bucket & m->hash_mask);
+  while(count-- > 0) t = &(*t)->next;
 
-  return k;
+  return t;
 }
 
 /* set iterator to continue iteration from k
@@ -1079,9 +1086,6 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
     return 1;
 }
 
-void describe_mapping(struct mapping *m,struct processing *p,int indent);
-node *make_node_from_mapping(struct mapping *m);
-
 PMOD_EXPORT void f_aggregate_mapping(INT32 args) {
     INT32 e;
     struct mapping * m = debug_allocate_mapping(args/2);
@@ -1096,12 +1100,108 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args) {
 }
 
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
-						     struct mapping *p);
+						     struct mapping *p) {
+  int not_complex;
+  struct mapping *ret;
+  INT32 e;
+  struct keypair *k;
+
+  if((m->val_types | m->key_types) & BIT_COMPLEX) {
+    not_complex = 0;
+    ret=allocate_mapping(m->size);
+  }
+  else {
+    not_complex = 1;
+    ret = copy_mapping(m);
+  }
+
+  if (p) {
+    struct svalue aa, bb;
+    SET_SVAL(aa, T_MAPPING, 0, mapping, m);
+    SET_SVAL(bb, T_MAPPING, 0, mapping, ret);
+    mapping_insert(p, &aa, &bb);
+  }
+
+  if (not_complex)
+    return ret;
+
+  ret->flags = m->flags;
+
+  check_stack(2);
+
+  mark_enter(&m->marker);
+
+  NEW_MAPPING_LOOP(m)
+  {
+    /* Place holders.
+     *
+     * NOTE: copy_svalues_recursively_no_free() may store stuff in
+     *       the destination svalue, and then call stuff that uses
+     *       the stack (eg itself).
+     */
+    push_int(0);
+    push_int(0);
+    copy_svalues_recursively_no_free(Pike_sp-2,&k->key, 1, p);
+    copy_svalues_recursively_no_free(Pike_sp-1,&k->u.val, 1, p);
+    
+    low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
+    pop_n_elems(2);
+  }
+
+  mark_leave(&m->marker);
+
+  return ret;
+}
+
+struct mapping_search_ctx {
+    struct keypair ** t;
+    struct svalue * key;
+};
+
+static int mapping_search_cb(void * _start, void * _stop, void * d) {
+    struct keypair * k = (struct keypair *)_start;
+    struct mapping_search_ctx * c = (struct mapping_search_ctx *)d;
+
+    do {
+	if (!keypair_deleted(k)) {
+	    if (is_nidentical(c->key, &k->u.val)) continue;
+	    if (is_identical(c->key, &k->u.val) || is_eq(c->key, &k->u.val)) {
+		*c->t = k;
+		return BA_STOP;
+	    }
+	}
+    } while ((void*)(++k) < _stop);
+
+    return BA_CONTINUE;
+}
+
 PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    const struct svalue *look_for,
-			    const struct svalue *key );
-PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
+			    const struct svalue *key ) {
+    struct keypair * k = NULL;
+
+    if (key) {
+	struct mapping_iterator it;
+	it.m = m;
+	mapping_it_set(&it, key);
+	mark_enter(&m->marker);
+	while (mapping_it_next(&it, &k)
+	       && (is_nidentical(look_for, &k->u.val) || !is_eq(look_for, &k->u.val)));
+	mark_leave(&m->marker);
+    } else {
+	struct mapping_search_ctx c = { &k, look_for };
+	mark_enter(&m->marker);
+	ba_walk_local(&m->allocator, mapping_search_cb, &c);
+	mark_leave(&m->marker);
+    }
+
+    if (k) {
+	assign_svalue_no_free(to,&k->key);
+    } else {
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
+    }
+}
 
 static int m_foreach(void * _start, void * _stop, void * d) {
     struct mapping * m = (struct mapping *)_start;

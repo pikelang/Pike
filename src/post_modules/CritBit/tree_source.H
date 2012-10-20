@@ -141,14 +141,14 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 	    case PIKE_T_MAPPING: {
 		struct keypair *k;
 		INT32 e;
-		struct mapping_data *md = o->u.mapping->data;
+		struct mapping * m = o->u.mapping;
 
-		NEW_MAPPING_LOOP(md) {
-		    cb_key key = CB_KEY_FROM_SVALUE(&k->ind);
+		NEW_MAPPING_LOOP(m->data) {
+		    cb_key key = CB_KEY_FROM_SVALUE(&keypair_ind(k));
 #ifdef PIKE_NEW_BLOCK_ALLOC
 		    ba_lreserve(&THIS->tree.allocator, 2);
 #endif
-		    cb_insert(& THIS->tree, key, &k->val);
+		    cb_insert(& THIS->tree, key, &keypair_val(k));
 		}
 		return;
 	    }

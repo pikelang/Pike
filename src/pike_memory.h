@@ -182,8 +182,9 @@ void exit_pike_memory (void);
 /*
  * Fill dst with n blocks of size s from src
  */
-static INLINE void cmemset(char * dst, char * src, size_t s,
+static INLINE void cmemset(void * _dst, const void * src, size_t s,
 			   size_t n) {
+    char * dst = (char*)dst;
     if (n) {
 	memcpy(dst, src, s);
 

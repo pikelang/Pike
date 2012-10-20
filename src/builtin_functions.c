@@ -4314,11 +4314,11 @@ PMOD_EXPORT void f_replace(INT32 args)
 	 TYPEOF(Pike_sp[-1]) == T_MAPPING)
      {
        struct mapping *m = Pike_sp[-1].u.mapping;
-       if( (m->data->ind_types & ~BIT_STRING) ||
-	   (m->data->val_types & ~BIT_STRING) ) {
+       if( (m_ind_types(m) & ~BIT_STRING) ||
+	   (m_val_types(m) & ~BIT_STRING) ) {
 	 mapping_fix_type_field(Pike_sp[-1].u.mapping);
-	 if( (m->data->ind_types & ~BIT_STRING) ||
-	     (m->data->val_types & ~BIT_STRING) ) {
+	 if( (m_ind_types(m) & ~BIT_STRING) ||
+	     (m_val_types(m) & ~BIT_STRING) ) {
 	   SIMPLE_BAD_ARG_ERROR("replace", 2, "mapping(string:string)");
 	 }
        }
@@ -6327,7 +6327,7 @@ static void f_interleave_array(INT32 args)
 
   /* Initialize the min array */
   for (i = 0; i < arr->size; i++) {
-    struct mapping_data *md;
+    struct mapping *m;
     /* e and k are used by NEW_MAPPING_LOOP() */
     INT32 e;
     struct keypair *k;
@@ -6337,20 +6337,20 @@ static void f_interleave_array(INT32 args)
       Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
-    md = ITEM(arr)[i].u.mapping->data;
-    NEW_MAPPING_LOOP(md) {
-      if (TYPEOF(k->ind) != T_INT) {
+    m = ITEM(arr)[i].u.mapping;
+    NEW_MAPPING_LOOP(m->data) {
+      if (TYPEOF(keypair_ind(k)) != T_INT) {
 	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
       }
-      if (low > k->ind.u.integer) {
-	low = k->ind.u.integer;
+      if (low > keypair_ind(k).u.integer) {
+	low = keypair_ind(k).u.integer;
 	if (low < 0) {
 	  Pike_error("interleave_array(): Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
 		low, i);
 	}
       }
-      if (max < k->ind.u.integer) {
-	max = k->ind.u.integer;
+      if (max < keypair_ind(k).u.integer) {
+	max = keypair_ind(k).u.integer;
       }
       nelems++;
     }
@@ -6410,7 +6410,7 @@ static void f_interleave_array(INT32 args)
       while (!ok) {
 	ok = 1;
 	NEW_MAPPING_LOOP(md) {
-	  int ind = k->ind.u.integer;
+	  int ind = keypair_ind(k).u.integer;
 	  if (tab[offset + ind]) {
 	    ok = 0;
 	    while (tab[++offset + ind])
@@ -6419,7 +6419,7 @@ static void f_interleave_array(INT32 args)
 	}
       }
       NEW_MAPPING_LOOP(md) {
-	tab[offset + k->ind.u.integer] = 1;
+	tab[offset + keypair_ind(k).u.integer] = 1;
       }
       while(tab[minfree]) {
 	minfree++;

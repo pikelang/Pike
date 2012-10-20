@@ -35,7 +35,7 @@ PIKE_SRC_DIR=$(SRCDIR)
 BUILD_BASE=
 
 # The precompiler API level used by cmod files in the src root directory.
-PRECOMPILER_ARGS=--api=3
+PRECOMPILER_ARGS=--api=4
 
 #
 # RPM and package builders, listen up, because this is your only

@@ -286,8 +286,111 @@ PIKECLASS Iterator
  *! @seealso
  *!   @[get_iterator]
  */
-PIKECLASS mapping_iterator
-{
+#cmod_ifndef OLD_MAPPING
+PIKECLASS mapping_iterator {
+  CVAR struct mapping_iterator it;
+
+  PIKEFUN mixed value() {
+    struct keypair * k = mapping_it_current(&THIS->it);
+    if (k) {
+      push_svalue(& keypair_val(k));
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN mixed index() {
+    struct keypair * k = mapping_it_current(&THIS->it);
+    if (k) {
+      push_svalue(& keypair_ind(k));
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->it.m) {
+      push_int(THIS->it.m->size);
+    } else {
+      push_undefined();
+    }
+  }
+
+
+  static int mi_step(struct mapping_iterator_struct *i)
+    {
+      mapping_it_step(&i->it);
+      return !!mapping_it_current(&i->it);
+    }
+  
+  PIKEFUN object `+(int(0..) steps)
+    {
+      struct object *o=low_clone(mapping_iterator_program);
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
+      OBJ2_MAPPING_ITERATOR(o)[0] = *THIS;
+      if (THIS->it.m)
+	add_ref(THIS->it.m);
+      while(--steps>=0 && mi_step(OBJ2_MAPPING_ITERATOR(o)));
+      RETURN o;
+    }
+
+  PIKEFUN object `+=(int(0..) steps)
+    {
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+=", 1,
+			  "This iterator doesn't support going backwards.\n");
+      while(--steps>=0 && mi_step(THIS));
+      REF_RETURN Pike_fp->current_object;
+    }
+
+  PIKEFUN int first()
+    {
+      if (!THIS->it.m->size) RETURN 0;
+      mapping_it_reset(&THIS->it);
+      RETURN !!mapping_it_current(&THIS->it);
+    }
+
+  /* Hubbe: Should this really be destructive ?? */
+  PIKEFUN object _random()
+    {
+      THIS->it.current = low_mapping_lookup_random(THIS->it.m);
+      REF_RETURN Pike_fp->current_object;
+    }
+
+  PIKEFUN int next() { RETURN mi_step(THIS); }
+  PIKEFUN int `!() {
+    RETURN !mapping_it_current(&THIS->it);
+  }
+
+  PIKEFUN void create(mapping map)
+    {
+      if(THIS->it.m)
+	Pike_error("Mapping iterators cannot be reused.\n");
+
+      add_ref(map);
+      mapping_it_init(&THIS->it, map);
+    }
+
+  INIT
+    {
+      THIS->it.m=NULL;
+    }
+
+  EXIT
+    gc_trivial;
+    {
+      if (THIS->it.m) {
+	mapping_it_exit(&THIS->it);
+	free_mapping(THIS->it.m);
+      }
+    }
+}
+#cmod_else
+PIKECLASS mapping_iterator {
   /* All variables *must* be before all functions! */
   CVAR int bucket;
   CVAR struct mapping *m;
@@ -319,8 +422,9 @@ PIKECLASS mapping_iterator
   {
     if (THIS->md) {
       push_int(THIS->md->size);
+    } else {
+      push_undefined();
     }
-    push_undefined();
   }
 
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
@@ -475,6 +579,7 @@ PIKECLASS mapping_iterator
       }
     }
 };
+#cmod_endif
 /*! @endclass
  */
 /*! @endmodule
@@ -1952,7 +2057,15 @@ int foreach_iterate(struct object *o, int do_step)
   {
     if(prog == mapping_iterator_program)
     {
+      struct keypair * k;
       struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
+#ifndef OLD_MAPPING
+
+      k = mapping_it_current(&i->it);
+      if (!k) return 0;
+      if (do_step && !mapping_it_next(&i->it, &k)) return 0;
+
+#else
 
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
       if (i->current == i->md->free_list) return 0;
@@ -1964,12 +2077,14 @@ int foreach_iterate(struct object *o, int do_step)
 	if (!i->current) return 0;
       }
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+      k = i->current;
+#endif
 
       if(TYPEOF(Pike_sp[-4]) != T_INT)
-	assign_lvalue(Pike_sp-4, & i->current->ind);
+	assign_lvalue(Pike_sp-4, & keypair_ind(k));
 	
       if(TYPEOF(Pike_sp[-2]) != T_INT)
-	assign_lvalue(Pike_sp-2, & i->current->val);
+	assign_lvalue(Pike_sp-2, & keypair_val(k));
 
       return 1;
     }
