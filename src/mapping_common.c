@@ -7,7 +7,9 @@ void gc_mark_all_mappings(void)
     gc_mark_mapping_pos = m->next;
 
     debug_malloc_touch(m);
+#ifdef OLD_MAPPING
     debug_malloc_touch(m->data);
+#endif
 
     if(gc_is_referenced(m))
       gc_mark_mapping_as_referenced(m);
@@ -37,27 +39,37 @@ void gc_zap_ext_weak_refs_in_mappings(void)
 size_t gc_free_all_unreferenced_mappings(void)
 {
   struct mapping *m,*next;
+#ifdef OLD_MAPPING
   struct mapping_data *md;
+#endif
   size_t unreferenced = 0;
 
   for(m=gc_internal_mapping;m;m=next)
   {
     debug_malloc_touch(m);
+#ifdef OLD_MAPPING
     debug_malloc_touch(m->data);
+#endif
 
     if(gc_do_free(m))
     {
       /* Got an extra ref from gc_cycle_pop(). */
+#ifdef OLD_MAPPING
       md = m->data;
+#endif
 
       debug_malloc_touch(m);
+#ifdef OLD_MAPPING
       debug_malloc_touch(md);
+#endif
 
+#ifdef OLD_MAPPING
       /* Protect against unlink_mapping_data() recursing too far. */
       m->data=&empty_data;
       add_ref(m->data);
-
       unlink_mapping_data(md);
+#endif
+
 #ifdef MAPPING_SIZE_DEBUG
       m->debug_size=0;
 #endif
@@ -120,7 +132,7 @@ PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
   struct svalue *s=low_mapping_lookup(m, key1);
   debug_malloc_touch(m);
 
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG) && defined(OLD_MAPPING)
   if(m->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif

@@ -7,6 +7,10 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
+#ifndef OLD_MAPPING
+#include "nmapping.h"
+#else
+
 #include "svalue.h"
 #include "dmalloc.h"
 #include "block_alloc_h.h"
@@ -398,4 +402,5 @@ int mapping_is_constant(struct mapping *m,
 #define gc_cycle_check_mapping(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_mapping, (X), (WEAK))
 
+#endif /* OLD_MAPPING */
 #endif /* MAPPING_H */

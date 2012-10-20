@@ -3,6 +3,24 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
+#ifndef OLD_MAPPING
+
+#include "nmapping.h"
+#include "pike_error.h"
+#define EXPORT PMOD_EXPORT
+#define ba_error Pike_error
+#define round_up32_ ba_round_up32_
+#define round_up32 ba_round_up32
+#define cmemset ba_cmemset
+#include "gjalloc/gjalloc.c"
+#undef cmemset
+#undef EXPORT
+#undef round_up32_
+#undef round_up32
+#undef ba_error
+#include "nmapping.c"
+
+#else
 
 #include "global.h"
 #include "main.h"
@@ -2750,3 +2768,4 @@ int mapping_is_constant(struct mapping *m,
   }
   return ret;
 }
+#endif /* OLD_MAPPING */
