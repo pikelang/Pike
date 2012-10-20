@@ -2615,8 +2615,8 @@ static int do_docode2(node *n, int flags)
 
 	    case T_MAPPING:
 	      mapping_fix_type_field(n->u.sval.u.mapping);
-	      if((n->u.sval.u.mapping->data->ind_types |
-		  n->u.sval.u.mapping->data->val_types) & BIT_COMPLEX)
+	      if((m_ind_types(n->u.sval.u.mapping) |
+		  m_val_types(n->u.sval.u.mapping)) & BIT_COMPLEX)
 		emit0(F_COPY_VALUE);
 	      break;
 

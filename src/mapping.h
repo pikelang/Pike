@@ -61,6 +61,8 @@ extern struct mapping *gc_internal_mapping;
 #define m_val_types(m) ((m)->data->val_types)
 #define mapping_get_flags(m) ((m)->data->flags)
 #define mapping_data_is_shared(m) ((m)->data->refs > 1)
+#define keypair_ind(k)	((k)->ind)
+#define keypair_val(k)	((k)->val)
 
 #define MD_KEYPAIRS(MD, HSIZE) \
    ( (struct keypair *)							\
@@ -257,6 +259,7 @@ PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
 PMOD_EXPORT void mapping_string_insert(struct mapping *m,
                                        struct pike_string *p,
                                        const struct svalue *val);
+PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m);
 
 /** A shortcut function for inserting an entry into a mapping for cases
   * where both the key and the value are Pike strings.

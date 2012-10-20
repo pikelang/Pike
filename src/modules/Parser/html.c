@@ -1244,8 +1244,8 @@ static void html_add_tags(INT32 args)
 
    NEW_MAPPING_LOOP(md)
       {
-	 push_svalue(&k->ind);
-	 push_svalue(&k->val);
+	 push_svalue(&keypair_ind(k));
+	 push_svalue(&keypair_val(k));
 	 html_add_tag(2);
 	 pop_stack();
       }
@@ -1265,8 +1265,8 @@ static void html_add_containers(INT32 args)
 
    NEW_MAPPING_LOOP(md)
       {
-	 push_svalue(&k->ind);
-	 push_svalue(&k->val);
+	 push_svalue(&keypair_ind(k));
+	 push_svalue(&keypair_val(k));
 	 html_add_container(2);
 	 pop_stack();
       }
@@ -1286,8 +1286,8 @@ static void html_add_entities(INT32 args)
 
    NEW_MAPPING_LOOP(md)
       {
-	 push_svalue(&k->ind);
-	 push_svalue(&k->val);
+	 push_svalue(&keypair_ind(k));
+	 push_svalue(&keypair_val(k));
 	 html_add_entity(2);
 	 pop_stack();
       }
@@ -1398,7 +1398,7 @@ static void html_quote_tags(INT32 args)
    pop_n_elems(args);
    NEW_MAPPING_LOOP(md) {
      int i;
-     struct array *arr = k->val.u.array;
+     struct array *arr = keypair_val(k).u.array;
      for (i = 0; i < arr->size; i += 3) {
        struct pike_string *end;
        push_svalue (arr->item+i+1);
@@ -5119,9 +5119,9 @@ static void html_case_insensitive_tag(INT32 args)
 
      md = THIS->maptag->data;
      NEW_MAPPING_LOOP(md) {
-       push_svalue(&k->ind);
+       push_svalue(&keypair_ind(k));
        f_lower_case(1);
-       push_svalue(&k->val);
+       push_svalue(&keypair_val(k));
      }
      f_aggregate_mapping(m_sizeof(THIS->maptag) * 2);
      free_mapping(THIS->maptag);
@@ -5129,9 +5129,9 @@ static void html_case_insensitive_tag(INT32 args)
 
      md = THIS->mapcont->data;
      NEW_MAPPING_LOOP(md) {
-       push_svalue(&k->ind);
+       push_svalue(&keypair_ind(k));
        f_lower_case(1);
-       push_svalue(&k->val);
+       push_svalue(&keypair_val(k));
      }
      f_aggregate_mapping(m_sizeof(THIS->mapcont) * 2);
      free_mapping(THIS->mapcont);

@@ -1632,9 +1632,9 @@ void f_exece(INT32 args)
     }
 
     NEW_MAPPING_LOOP(en->data) {
-      push_string(k->ind.u.string);
+      push_string(keypair_ind(k).u.string);
       push_constant_text("=");
-      push_string(k->val.u.string);
+      push_string(keypair_val(k).u.string);
       f_add(3);
       env[i++]=sp[-1].u.string->str;
       dmalloc_touch_svalue(sp-1);

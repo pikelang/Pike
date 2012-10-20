@@ -812,9 +812,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
       if (data->canonic) {
 	INT32 *order;
-	if (val->u.mapping->data->ind_types & ~(BIT_BASIC & ~BIT_TYPE)) {
+	if (m_ind_types(val->u.mapping) & ~(BIT_BASIC & ~BIT_TYPE)) {
 	  mapping_fix_type_field(val->u.mapping);
-	  if (val->u.mapping->data->ind_types & ~(BIT_BASIC & ~BIT_TYPE))
+	  if (m_ind_types(val->u.mapping) & ~(BIT_BASIC & ~BIT_TYPE))
 	    /* This doesn't let bignums through. That's necessary as
 	     * long as they aren't handled deterministically by the
 	     * sort function. */

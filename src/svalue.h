@@ -771,7 +771,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);
 
 static INLINE int is_nidentical(const struct svalue * a, const struct svalue * b) {
-  return TYPEOF(*a) != T_OBJECT && TYPEOF(*b) != T_OBJECT && a->u.refs != b->u.refs;
+  return TYPEOF(*a) != PIKE_T_OBJECT && TYPEOF(*b) != PIKE_T_OBJECT && a->u.refs != b->u.refs;
 }
 
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);

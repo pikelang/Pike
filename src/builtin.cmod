@@ -1470,31 +1470,15 @@ PIKEFUN mixed random(multiset m)
 PMOD_EXPORT
 PIKEFUN array random(mapping m)
 {
-  struct mapping_data *md=m->data;
-  size_t bucket, count;
-  struct keypair *k;
-  
+  struct keypair * k;
+
   if(!m_sizeof(m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
-  
-  /* Find a random, nonempty bucket */
-  bucket=my_rand() % md->hashsize;
-  while(! md->hash[bucket] )
-    if(++bucket > (size_t)md->hashsize)
-      bucket=0;
-  
-  /* Count entries in bucket */
-  count=0;
-  for(k=md->hash[bucket];k;k=k->next) count++;
-  
-  /* Select a random entry in this bucket */
-  count = my_rand() % count;
-  k=md->hash[bucket];
-  while(count-- > 0) k=k->next;
-  
+
+  k = mapping_lookup_random(m);
   /* Push result and return */
-  push_svalue(&k->ind);
-  push_svalue(&k->val);
+  push_svalue(&keypair_ind(k));
+  push_svalue(&keypair_val(k));
   f_aggregate(2);
   stack_swap();
   pop_stack();

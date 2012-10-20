@@ -1124,6 +1124,31 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
   return 0;
 }
 
+PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m) {
+  struct mapping_data *md=m->data;
+  size_t bucket, count;
+  struct keypair *k;
+  
+  if(!m_sizeof(m))
+    SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
+  
+  /* Find a random, nonempty bucket */
+  bucket=my_rand() % md->hashsize;
+  while(! md->hash[bucket] )
+    if(++bucket > (size_t)md->hashsize)
+      bucket=0;
+  
+  /* Count entries in bucket */
+  count=0;
+  for(k=md->hash[bucket];k;k=k->next) count++;
+  
+  /* Select a random entry in this bucket */
+  count = my_rand() % count;
+  k=md->hash[bucket];
+  while(count-- > 0) k=k->next;
+  return k;
+}
+
 PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
 {
   INT32 e;

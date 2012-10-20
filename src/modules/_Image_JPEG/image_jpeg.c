@@ -329,20 +329,20 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
    NEW_MAPPING_LOOP(md)
       {
 	 int z;
-	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_ARRAY)
+	 if (TYPEOF(keypair_ind(k)) != T_INT || TYPEOF(keypair_val(k)) != T_ARRAY)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
-	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
+	 if (keypair_ind(k).u.integer<0 || keypair_ind(k).u.integer>=NUM_QUANT_TBLS)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
 
-	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
+	 if ((z=store_int_in_table(keypair_val(k).u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
 		       " quant_table %"PRINTPIKEINT"d array is of illegal size (%d), "
 		       "expected %d integers\n",
-		       k->ind.u.integer,z,DCTSIZE2);
+		       keypair_ind(k).u.integer,z,DCTSIZE2);
 
-	 jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0);
+	 jpeg_add_quant_table(cinfo,keypair_ind(k).u.integer,table,100,0);
       }
 
    return 1;
@@ -367,24 +367,24 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
    NEW_MAPPING_LOOP(md)
       {
 	 int z;
-	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_ARRAY)
+	 if (TYPEOF(keypair_ind(k)) != T_INT || TYPEOF(keypair_val(k)) != T_ARRAY)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
-	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
+	 if (keypair_ind(k).u.integer<0 || keypair_ind(k).u.integer>=NUM_QUANT_TBLS)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int(0..%d):array)\n",NUM_QUANT_TBLS-1);
 
-	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
+	 if ((z=store_int_in_table(keypair_val(k).u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
 		       " quant_table %"PRINTPIKEINT"d array is of illegal size (%d), "
 		       "expected %d integers\n",
-		       k->ind.u.integer,z,DCTSIZE2);
+		       keypair_ind(k).u.integer,z,DCTSIZE2);
 
-	 /* jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0); */
+	 /* jpeg_add_quant_table(cinfo,keypair_ind(k).u.integer,table,100,0); */
 
 	 do /* ripped from jpeg_add_quant_table */
 	 {
-	    JQUANT_TBL ** qtblptr = & cinfo->quant_tbl_ptrs[k->ind.u.integer];
+	    JQUANT_TBL ** qtblptr = & cinfo->quant_tbl_ptrs[keypair_ind(k).u.integer];
 	    int i;
 	    long temp;
 
@@ -424,13 +424,13 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
-	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_STRING ||
-	     k->val.u.string->size_shift)
+	 if (TYPEOF(keypair_ind(k)) != T_INT || TYPEOF(keypair_val(k)) != T_STRING ||
+	     keypair_val(k).u.string->size_shift)
 	    Pike_error("Image.JPEG.encode: illegal value of option "
 		       "marker; expected mapping(int:8 bit string)\n");
-	 jpeg_write_marker(cinfo, k->ind.u.integer, 
-			   (const unsigned char *)k->val.u.string->str,
-			   k->val.u.string->len); 
+	 jpeg_write_marker(cinfo, keypair_ind(k).u.integer, 
+			   (const unsigned char *)keypair_val(k).u.string->str,
+			   keypair_val(k).u.string->len); 
       }
 
    return 1;
@@ -514,8 +514,8 @@ static int marker_exists_in_args(INT32 args, int which)
        md=v->u.mapping->data;
        NEW_MAPPING_LOOP(md)
        {
-	 if (TYPEOF(k->ind) == T_INT && TYPEOF(k->val) == T_STRING
-	     && k->ind.u.integer==which && !k->val.u.string->size_shift) {
+	 if (TYPEOF(keypair_ind(k)) == T_INT && TYPEOF(keypair_val(k)) == T_STRING
+	     && keypair_ind(k).u.integer==which && !keypair_val(k).u.string->size_shift) {
 	   return 1;
 	 }
        }

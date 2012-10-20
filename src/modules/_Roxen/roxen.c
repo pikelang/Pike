@@ -315,15 +315,15 @@ static void f_make_http_headers( INT32 args )
   /* loop to check len */
   NEW_MAPPING_LOOP( m->data )
   {
-    if( TYPEOF(k->ind) != PIKE_T_STRING || k->ind.u.string->size_shift )
+    if( TYPEOF(keypair_ind(k)) != PIKE_T_STRING || keypair_ind(k).u.string->size_shift )
       Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
-    if( TYPEOF(k->val) == PIKE_T_STRING && !k->val.u.string->size_shift )
-      total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
-    else if( TYPEOF(k->val) == PIKE_T_ARRAY )
+    if( TYPEOF(keypair_val(k)) == PIKE_T_STRING && !keypair_val(k).u.string->size_shift )
+      total_len +=  keypair_val(k).u.string->len + 2 + keypair_ind(k).u.string->len + 2;
+    else if( TYPEOF(keypair_val(k)) == PIKE_T_ARRAY )
     {
-      struct array *a = k->val.u.array;
-      ptrdiff_t i, kl = k->ind.u.string->len + 2 ;
+      struct array *a = keypair_val(k).u.array;
+      ptrdiff_t i, kl = keypair_ind(k).u.string->len + 2 ;
       for( i = 0; i<a->size; i++ )
         if( TYPEOF(a->item[i]) != PIKE_T_STRING ||
 	    a->item[i].u.string->size_shift )
@@ -349,18 +349,18 @@ static void f_make_http_headers( INT32 args )
   {
     unsigned char *s;
     ptrdiff_t l, c;
-    if( TYPEOF(k->val) == PIKE_T_STRING )
+    if( TYPEOF(keypair_val(k)) == PIKE_T_STRING )
     {
-      STRADD( k->ind ); *(pnt++) = ':'; *(pnt++) = ' ';
-      STRADD( k->val ); *(pnt++) = '\r'; *(pnt++) = '\n';
+      STRADD( keypair_ind(k) ); *(pnt++) = ':'; *(pnt++) = ' ';
+      STRADD( keypair_val(k) ); *(pnt++) = '\r'; *(pnt++) = '\n';
     }
     else
     {
-      struct array *a = k->val.u.array;
-      ptrdiff_t i, kl = k->ind.u.string->len + 2;
+      struct array *a = keypair_val(k).u.array;
+      ptrdiff_t i, kl = keypair_ind(k).u.string->len + 2;
       for( i = 0; i<a->size; i++ )
       {
-        STRADD( k->ind );    *(pnt++) = ':'; *(pnt++) = ' ';
+        STRADD( keypair_ind(k) );    *(pnt++) = ':'; *(pnt++) = ' ';
         STRADD( a->item[i] );*(pnt++) = '\r';*(pnt++) = '\n';
       }
     }

@@ -878,9 +878,9 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  md = tmp->data;
 	  NEW_MAPPING_LOOP(md)
 	  {
-	    push_svalue(& k->ind);
+	    push_svalue(& keypair_ind(k));
 	    o_cast(itype, run_time_itype);
-	    push_svalue(& k->val);
+	    push_svalue(& keypair_val(k));
 	    o_cast(vtype, run_time_vtype);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);

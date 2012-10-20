@@ -2582,24 +2582,24 @@ void f_cpp(INT32 args)
       else {
 	predefs = copy_mapping (sp[-1].u.mapping);
 	NEW_MAPPING_LOOP (predefs->data) {
-	  if (TYPEOF(k->ind) != T_STRING || !k->ind.u.string->len) {
+	  if (TYPEOF(keypair_ind(k)) != T_STRING || !keypair_ind(k).u.string->len) {
 	    push_constant_text ("Expected nonempty string as predefine name\n");
 	    push_constant_text ("Expected nonempty string as predefine name, got %O\n");
-	    push_svalue (&k->ind);
+	    push_svalue (&keypair_ind(k));
 	    sprintf_args = 2;
 	    free_mapping (predefs);
 	    predefs = NULL;
 	    goto predef_map_error;
-	  } else if (!(TYPEOF(k->val) == T_INT && !k->val.u.integer)
-		   && TYPEOF(k->val) != T_STRING
-		   && TYPEOF(k->val) != T_FUNCTION
-		   && TYPEOF(k->val) != T_OBJECT) {
+	  } else if (!(TYPEOF(keypair_val(k)) == T_INT && !keypair_val(k).u.integer)
+		   && TYPEOF(keypair_val(k)) != T_STRING
+		   && TYPEOF(keypair_val(k)) != T_FUNCTION
+		   && TYPEOF(keypair_val(k)) != T_OBJECT) {
 
 	     push_constant_text ("expected zero, string or function value for"
 				 " predefine\n");
 	     push_constant_text ("expected zero, string or function value for"
 				 " predefine %O\n");
-	     push_svalue (&k->ind);
+	     push_svalue (&keypair_ind(k));
 	     sprintf_args = 2;
 	     free_mapping (predefs);
 	     predefs = NULL;
@@ -2694,14 +2694,14 @@ void f_cpp(INT32 args)
     struct keypair *k;
     int e;
     NEW_MAPPING_LOOP (predefs->data) {
-      if (TYPEOF(k->val) == T_STRING)
-	add_define (&this, k->ind.u.string, k->val.u.string);
-      else if(TYPEOF(k->val) == T_FUNCTION || TYPEOF(k->val) == T_OBJECT)
+      if (TYPEOF(keypair_val(k)) == T_STRING)
+	add_define (&this, keypair_ind(k).u.string, keypair_val(k).u.string);
+      else if(TYPEOF(keypair_val(k)) == T_FUNCTION || TYPEOF(keypair_val(k)) == T_OBJECT)
       {
         struct define *def;
-        if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
+        if( index_shared_string( keypair_ind(k).u.string, keypair_ind(k).u.string->len-1) == ')' )
         {
-          struct pike_string *s = string_slice( k->ind.u.string, 0, k->ind.u.string->len-2);
+          struct pike_string *s = string_slice( keypair_ind(k).u.string, 0, keypair_ind(k).u.string->len-2);
           def = alloc_empty_define( s, 0 );
           def->magic = insert_callback_define;
           def->varargs=1;
@@ -2709,14 +2709,14 @@ void f_cpp(INT32 args)
         }
         else
         {
-          def = alloc_empty_define( k->ind.u.string, 0 );
-          k->ind.u.string->refs++;
+          def = alloc_empty_define( keypair_ind(k).u.string, 0 );
+          keypair_ind(k).u.string->refs++;
           def->magic = insert_callback_define_no_args;
         }
         this.defines = hash_insert( this.defines, &def->link );
       }
       else
-	add_define (&this, k->ind.u.string, empty_pike_string);
+	add_define (&this, keypair_ind(k).u.string, empty_pike_string);
     }
     free_mapping (predefs);
   }

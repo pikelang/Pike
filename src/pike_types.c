@@ -7403,8 +7403,8 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
   case T_MAPPING:
     type_stack_mark();
     if (m_sizeof(s->u.mapping)) {
-      push_type_field(s->u.mapping->data->val_types);
-      push_type_field(s->u.mapping->data->ind_types);
+      push_type_field(m_val_types(s->u.mapping));
+      push_type_field(m_ind_types(s->u.mapping));
     }
     else {
       push_type(T_ZERO);
