@@ -319,8 +319,8 @@ PIKECLASS mapping_iterator
   {
     if (THIS->md) {
       push_int(THIS->md->size);
-    }
-    push_undefined();
+    } else
+      push_undefined();
   }
 
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
