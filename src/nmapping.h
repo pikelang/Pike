@@ -8,7 +8,7 @@
 #define ba_error Pike_error
 #define round_up32_ ba_round_up32_
 #define round_up32 ba_round_up32
-#include "gjalloc/gjalloc.h"
+#include "gjalloc.h"
 #undef EXPORT
 #undef round_up32_
 #undef round_up32
@@ -345,5 +345,5 @@ extern struct mapping * first_mapping;
 extern struct mapping *gc_internal_mapping;
 
 #define mapping_data	mapping
-#define MAPPING_LOOP(m)	for (e = 0; (unsigned INT32)e <= m->hash_mask; e++) for (k = m->table[e]; k; k = k->next)
+#define MAPPING_LOOP(m)	for (e = 0; (unsigned INT32)e <= (m)->hash_mask; e++) for (k = (m)->table[e]; k; k = k->next)
 #define NEW_MAPPING_LOOP(m)	MAPPING_LOOP(m)

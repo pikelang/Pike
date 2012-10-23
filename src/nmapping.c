@@ -60,7 +60,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     m->size = 0;
     m->marker.marker = 0;
 
-    ba_init_local(&m->allocator, sizeof(struct keypair), size, 256, mapping_rel_simple, m);
+    ba_init_local(&m->allocator, sizeof(struct keypair), MINIMUM(size, 256), 256, mapping_rel_simple, m);
 
     size /= AVG_CHAIN_LENGTH;
 
@@ -219,8 +219,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 unfreeze:
     if (frozen) {
 	UNSET_ONERROR(err);
-	mark_leave(&m->marker);
     }
+    mark_leave(&m->marker);
 }
 
 PMOD_EXPORT void mapping_insert(struct mapping *m,
@@ -354,8 +354,8 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 unfreeze:
     if (frozen) {
 	UNSET_ONERROR(err);
-	mark_leave(&m->marker);
     }
+    mark_leave(&m->marker);
 
     if (!k) {
 	if (to) {
@@ -412,7 +412,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m) {
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 					      const struct svalue *key) {
     struct keypair ** t = really_low_mapping_lookup(m, key);
-    return *t ? &(*t)->u.val : NULL;
+    return t ? &(*t)->u.val : NULL;
 }
 
 static INLINE int fill_indices(void * _start, void * _stop, void * data) {
@@ -1155,7 +1155,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 
 struct mapping_search_ctx {
     struct keypair ** t;
-    struct svalue * key;
+    const struct svalue * key;
 };
 
 static int mapping_search_cb(void * _start, void * _stop, void * d) {
@@ -1456,8 +1456,23 @@ void gc_check_all_mappings(void) {
 
 #include "mapping_common.c"
 
-void simple_describe_mapping(struct mapping *m);
-void debug_dump_mapping(struct mapping *m);
+#ifdef PIKE_DEBUG
+
+void debug_dump_mapping(struct mapping *m)
+{
+  fprintf(stderr, "Refs=%d, next=%p, prev=%p",
+	  m->refs, m->next, m->prev);
+    fprintf(stderr, ", flags=0x%x, size=%u, hashsize=%u\n",
+	    m->data->flags, m->data->size, m->data->hash_mask + 1);
+    fprintf(stderr, "Indices type field =");
+    debug_dump_type_field(m_ind_types(m));
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Values type field =");
+    debug_dump_type_field(m_val_types(m));
+    fprintf(stderr, "\n");
+    simple_describe_mapping(m);
+}
+#endif
 
 struct mapping_is_constant_ctx {
     int ret;
