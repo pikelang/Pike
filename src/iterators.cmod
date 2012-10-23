@@ -286,7 +286,7 @@ PIKECLASS Iterator
  *! @seealso
  *!   @[get_iterator]
  */
-#cmod_if 0
+#cmod_if 1
 PIKECLASS mapping_iterator {
   CVAR struct mapping_iterator it;
 
@@ -2059,7 +2059,7 @@ int foreach_iterate(struct object *o, int do_step)
     {
       struct keypair * k;
       struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
-#if PIKE_NEW_BLOCK_ALLOC
+#ifdef PIKE_NEW_BLOCK_ALLOC
 
       k = mapping_it_current(&i->it);
       if (!k) return 0;
