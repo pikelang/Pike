@@ -184,7 +184,7 @@ void exit_pike_memory (void);
  */
 static INLINE void cmemset(void * _dst, const void * src, size_t s,
 			   size_t n) {
-    char * dst = (char*)dst;
+    char * dst = (char*)_dst;
     if (n) {
 	memcpy(dst, src, s);
 
