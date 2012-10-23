@@ -4879,11 +4879,11 @@ static void free_decode_data (struct decode_data *data, int delay,
 #ifdef PIKE_DEBUG
   if (!free_after_error) {
     NEW_MAPPING_LOOP (data->decoded->data) {
-      if (TYPEOF(k->val) == T_PROGRAM &&
-	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
+      if (TYPEOF(keypair_val(k)) == T_PROGRAM &&
+	  !(keypair_val(k).u.program->flags & PROGRAM_FINISHED)) {
 	decode_error (data, NULL,
 		      "Got unfinished program <%O> after decode: %O\n",
-		      &k->ind, &k->val);
+		      &keypair_ind(k), &keypair_val(k));
       }
     }
     if(data->unfinished_programs)

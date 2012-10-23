@@ -979,15 +979,15 @@ void describe_location(void *real_memblock,
       INT32 e;
       struct keypair *k;
       NEW_MAPPING_LOOP((struct mapping_data *) descblock)
-	if (&k->ind == (struct svalue *) location) {
+	if (&keypair_ind(k) == (struct svalue *) location) {
 	  fprintf(stderr, "%*s  **In index ", indent, "");
-	  safe_print_svalue (stderr, &k->ind);
+	  safe_print_svalue (stderr, &keypair_ind(k));
 	  fputc('\n', stderr);
 	  break;
 	}
-	else if (&k->val == (struct svalue *) location) {
+	else if (&keypair_val(k) == (struct svalue *) location) {
 	  fprintf(stderr, "%*s  **In value with index ", indent, "");
-	  safe_print_svalue (stderr, &k->ind);
+	  safe_print_svalue (stderr, &keypair_ind(k));
 	  fputc('\n', stderr);
 	  break;
 	}
