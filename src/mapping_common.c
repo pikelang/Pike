@@ -354,3 +354,16 @@ node *make_node_from_mapping(struct mapping *m)
   }
 }
 
+#ifdef PIKE_DEBUG
+
+void simple_describe_mapping(struct mapping *m)
+{
+  dynamic_buffer save_buf;
+  char *s;
+  init_buf(&save_buf);
+  describe_mapping(m,0,2);
+  s=simple_free_buf(&save_buf);
+  fprintf(stderr,"%s\n",s);
+  free(s);
+}
+#endif

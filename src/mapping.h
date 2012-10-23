@@ -7,7 +7,7 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
-#ifndef OLD_MAPPING
+#ifdef PIKE_NEW_BLOCK_ALLOC
 #include "nmapping.h"
 #else
 

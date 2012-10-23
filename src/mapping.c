@@ -3,21 +3,23 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
-#ifndef OLD_MAPPING
+#ifdef PIKE_NEW_BLOCK_ALLOC
 
 #include "nmapping.h"
 #include "pike_error.h"
+#if 0
 #define EXPORT PMOD_EXPORT
 #define ba_error Pike_error
 #define round_up32_ ba_round_up32_
 #define round_up32 ba_round_up32
 #define cmemset ba_cmemset
-#include "gjalloc/gjalloc.c"
+#include "gjalloc.c"
 #undef cmemset
 #undef EXPORT
 #undef round_up32_
 #undef round_up32
 #undef ba_error
+#endif
 #include "nmapping.c"
 
 #else
@@ -1146,9 +1148,6 @@ PMOD_EXPORT struct keypair * mapping_lookup_random(const struct mapping * m) {
   struct mapping_data *md=m->data;
   size_t bucket, count;
   struct keypair *k;
-  
-  if(!m_sizeof(m))
-    SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
   
   /* Find a random, nonempty bucket */
   bucket=my_rand() % md->hashsize;
@@ -2551,18 +2550,6 @@ void gc_check_all_mappings(void)
 #include "mapping_common.c"
 
 #ifdef PIKE_DEBUG
-
-void simple_describe_mapping(struct mapping *m)
-{
-  dynamic_buffer save_buf;
-  char *s;
-  init_buf(&save_buf);
-  describe_mapping(m,0,2);
-  s=simple_free_buf(&save_buf);
-  fprintf(stderr,"%s\n",s);
-  free(s);
-}
-
 
 void debug_dump_mapping(struct mapping *m)
 {
