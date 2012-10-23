@@ -695,7 +695,7 @@ range_do_clone:
 	copy = clone_object(Pike_fp->current_object->prog, 0);
 	if (THIS->tree.root) {
 #ifdef PIKE_NEW_BLOCK_ALLOC
-	    ba_lreserve(&cmod_OBJ2_TREE(o)->tree.allocator, THIS->tree.root->size);
+	    ba_lreserve(&cmod_OBJ2_TREE(copy)->tree.allocator, THIS->tree.root->size);
 #endif
 	    cb_copy_tree(& cmod_OBJ2_TREE(copy)->tree, THIS->tree.root);
 	}
