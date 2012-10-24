@@ -263,6 +263,30 @@ PIKECLASS GObject
 /*! @endclass
  */
 
+/*! @class GBoxed
+ */
+
+PIKECLASS GBoxed
+{
+  CVAR gpointer box;
+
+  INIT
+    {
+      THIS->box = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->box != NULL) {
+	THIS->box = NULL;
+      }
+    }
+}
+
+/*! @endclass
+ */
+
+
 static void push_wrapper_name_from_info(GIBaseInfo *info)
 {
   push_constant_text("GI.repository.");
@@ -310,6 +334,39 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
       }
     } else
       ref_push_object(obj);
+  }
+}
+
+static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
+{
+  if (!gbox) {
+    push_int(0);
+  } else {
+    GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
+    if (rtinfo != NULL) {
+	push_wrapper_name_from_info(rtinfo);
+	g_base_info_unref(rtinfo);
+    }
+    else if (info != NULL)
+      push_wrapper_name_from_info(info);
+    else
+      Pike_error("Received a box of an unregistered type!\n");
+    APPLY_MASTER ("resolv", 1);
+    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+      Pike_error("Failed to resolve GI box class.\n");
+    apply(Pike_sp[-1].u.object, "Instance", 0);
+    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+      Pike_error("Failed to instantiate GI box class.\n");
+    {
+      struct GBoxed_struct *that =
+	(struct GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
+					     GBoxed_program);
+      if (that == NULL)
+	Pike_error("No storage for GBoxed!\n");
+      if (that->box != NULL)
+	Pike_error("GBoxed already initialized!\n");
+      that->box = gbox;
+    }
   }
 }
 
@@ -716,6 +773,31 @@ PIKECLASS CallbackInfo
 PIKECLASS StructInfo
 {
   INHERIT BaseInfo;
+
+  /*! @decl array(FunctionInfo) get_methods()
+   */
+  PIKEFUN array(FunctionInfo) get_methods()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_struct_info_get_n_methods((GIStructInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
 }
 
 /*! @class ValueInfo
@@ -992,6 +1074,10 @@ static void push_gvalue(const GValue *v)
       }
       break;
     }
+
+  case G_TYPE_BOXED:
+    push_wrapped_boxed(g_value_get_boxed(v), NULL, gt);
+    break;
 
   case G_TYPE_OBJECT:
     push_wrapped_gobject(g_value_get_object(v), NULL);

@@ -117,6 +117,82 @@ class DynamicImporter {
       }
     }
 
+    class Struct
+    {
+      static StructInfo info;
+      static mapping(string:mixed) attrs = ([]);
+
+      static string _sprintf(int mode)
+      {
+	return mode == 'O' && sprintf("%O.%s",
+				      IntrospectionModule::this,
+				      info->get_name());
+      }
+
+      class Method
+      {
+	inherit Function;
+
+	class BoundMethod(static object box)
+	{
+	  static mixed `()(mixed ... args) {
+	    return Function::`()(box, @args);
+	  }
+	  static string _sprintf(int mode) {
+	    return mode == 'O' && sprintf("%O->%s", box, info->get_name());
+	  }
+	}
+
+	static string _sprintf(int mode)
+	{
+	  return mode == 'O' && sprintf("%O.%s", Struct::this,
+					info->get_name());
+	}
+      }
+
+      class Instance {
+	inherit GBoxed;
+	static private string _sprintf(int mode)
+	{
+	  return mode == 'O' && sprintf("%O()", Struct::this);
+	}
+
+	static private mixed bind(mixed value)
+	{
+	  if (objectp(value) && object_program(value) == Method)
+	    return value->BoundMethod(this);
+	}
+
+	static array(string) _indices() { return Struct::_indices(); }
+	static array(mixed) _values() { return Struct::_values(); }
+	static mixed `[](string index) { return bind(Struct::`[](index)); }
+	static mixed `->(string index, object|void o, int|void n) {
+	  if (o != Instance::this) {
+	    mixed real_value = ::`->(index, 2);
+	    if(real_value != UNDEFINED) return real_value;
+	  }
+	  return bind(Struct::`->(index));
+	}
+      }
+
+      static array(string) _indices() { return indices(attrs); }
+      static array(mixed) _values() { return values(attrs); }
+      static mixed `[](string index) { return attrs[index]; }
+      static mixed `->(string index) { return attrs[index]; }
+
+      static void create(StructInfo si)
+      {
+	info = si;
+	array(FunctionInfo) methods = si->get_methods();
+	attrs = mkmapping(methods->get_name(), map(methods, Method));
+      }
+
+      static Instance `()()
+      {
+	error("Can't allocate a struct\n");
+      }
+    }
+
     class Enum
     {
       static EnumInfo info;
@@ -161,6 +237,8 @@ class DynamicImporter {
 	return Function([object(FunctionInfo)]info);
       else if (object_program(info) == EnumInfo)
         return Enum([object(EnumInfo)]info);
+      else if (object_program(info) == StructInfo)
+	return Struct([object(StructInfo)]info);
       /* FIXME */
       return info;
     }
