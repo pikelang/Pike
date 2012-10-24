@@ -583,9 +583,25 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       arg->v_pointer = NULL;
       break;
     }
-    if (TYPEOF(*s) != PIKE_T_ARRAY)
+    if (TYPEOF(*s) != PIKE_T_ARRAY) {
+      if (TYPEOF(*s) == PIKE_T_STRING && !s->u.string->size_shift) {
+	GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
+	if (g_type_info_get_tag(itemti) == GI_TYPE_TAG_UINT8) {
+	  ONERROR onerror;
+	  GArray *arr;
+	  SET_ONERROR(onerror, g_base_info_unref, itemti);
+	  arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
+				  FALSE, sizeof(guint8), s->u.string->len);
+	  g_array_insert_vals(arr, 0, STR0(s->u.string), s->u.string->len);
+	  UNSET_ONERROR(onerror);
+	  g_base_info_unref(itemti);
+	  arg->v_pointer = arr->data;
+	  break;
+	} else
+	  g_base_info_unref(itemti);
+      }
       Pike_error("array expected\n");
-    else {
+    } else {
       ONERROR onerror;
       INT32 i;
       GArray *arr;
