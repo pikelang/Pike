@@ -562,6 +562,7 @@ static void f_fetch_row(INT32 args)
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
+  unsigned int old_tds_kludge = PIKE_ODBC_RES->odbc->flags & PIKE_ODBC_OLD_TDS_KLUDGE;
   RETCODE code;
  
   pop_n_elems(args);
@@ -604,9 +605,7 @@ static void f_fetch_row(INT32 args)
        * preferred, since less buffer space is wasted.
        */
 
-#ifdef __NT__
-      if (!len) {
-#endif /* __NT__ */
+      if (old_tds_kludge || !len) {
 
 	ODBC_ALLOW();
 
@@ -651,9 +650,7 @@ static void f_fetch_row(INT32 args)
 	PIKE_ODBC_RES->field_info[i].type = field_type;
 #endif
 
-#ifdef __NT__
       }
-#endif /* __NT__ */
 
 #ifdef ODBC_DEBUG
       fprintf(stderr, "ODBC:fetch_row(): Field %d: "
