@@ -428,6 +428,10 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     f_utf8_to_string(1);
     break;
 
+  case GI_TYPE_TAG_FILENAME:
+    push_text(arg->v_pointer);
+    break;
+
   case GI_TYPE_TAG_INTERFACE:
     {
       ONERROR onerror;
@@ -564,6 +568,13 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       Pike_error("Expected string\n");
     ref_push_string(s->u.string);
     f_string_to_utf8(1);
+    arg->v_pointer = STR0(Pike_sp[-1].u.string);
+    break;
+
+  case GI_TYPE_TAG_FILENAME:
+    if (TYPEOF(*s) != PIKE_T_STRING)
+      Pike_error("Expected string\n");
+    ref_push_string(s->u.string);
     arg->v_pointer = STR0(Pike_sp[-1].u.string);
     break;
 
