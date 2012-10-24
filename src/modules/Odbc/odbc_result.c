@@ -279,9 +279,11 @@ static void odbc_fix_fields(void)
       break;
     case SQL_DATE:
       push_text("date");
+      odbc_field_sizes[i] = 32;
       break;
     case SQL_TIMESTAMP:
       push_text("time");
+      odbc_field_sizes[i] = 32;
       break;
     case SQL_LONGVARCHAR:
 #ifdef SQL_WLONGVARCHAR
