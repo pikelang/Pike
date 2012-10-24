@@ -59,6 +59,34 @@ static PIKE_MUTEX_T connect_mutex STATIC_MUTEX_INIT;
  * Functions
  */
 
+int odbc_driver_is_old_freetds(HDBC odbc_conn)
+{
+  char buf[128];
+  SQLSMALLINT len;
+
+  if(SQLGetInfo(odbc_conn, SQL_DRIVER_NAME, buf, sizeof(buf), &len) == SQL_SUCCESS) {
+    int is_tds = 0;
+    push_text(buf);
+    f_lower_case(1);
+    push_constant_text("libtdsodbc");
+    f_has_value(2);
+    is_tds = !SAFE_IS_ZERO(&Pike_sp[-1]);
+    pop_stack();
+    
+    if(is_tds) {
+      if(SQLGetInfo(odbc_conn, SQL_DRIVER_VER, buf, sizeof(buf), &len) == SQL_SUCCESS) {
+	double version = atof(buf);
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC: detected freetds version: %f\n", version);
+#endif
+	if(version < 0.8 )
+	  return 1;
+      }
+    }
+  }
+  return 0;
+}
+
 /*
  * Helper functions
  */
@@ -363,6 +391,8 @@ static void f_create(INT32 args)
   ODBC_DISALLOW();
   odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
+  if(odbc_driver_is_old_freetds(hdbc))
+    PIKE_ODBC->flags |= PIKE_ODBC_OLD_TDS_KLUDGE;
   pop_n_elems(args);
 }
 

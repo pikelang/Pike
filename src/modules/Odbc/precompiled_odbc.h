@@ -136,7 +136,8 @@ struct precompiled_odbc_result {
 #define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(Pike_fp->current_storage))
 
 /* Flags */
-#define PIKE_ODBC_CONNECTED	1
+#define PIKE_ODBC_CONNECTED      1
+#define PIKE_ODBC_OLD_TDS_KLUDGE 2
 
 /* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
  *
