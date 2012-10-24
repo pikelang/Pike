@@ -964,6 +964,37 @@ PIKECLASS ObjectInfo
 PIKECLASS ConstantInfo
 {
   INHERIT BaseInfo;
+
+  struct const_value_context
+  {
+    GIConstantInfo *info;
+    GIArgument     *value;
+  };
+
+  static void free_const_value_context(void *ptr)
+  {
+    struct const_value_context *ctx = ptr;
+    g_constant_info_free_value(ctx->info, ctx->value);
+  }
+
+  /*! @decl mixed get()
+   */
+  PIKEFUN mixed get()
+  {
+    ONERROR onerror, onerror2;
+    GIArgument arg;
+    struct const_value_context ctx = { (GIConstantInfo *)THIS->info, &arg };
+    GITypeInfo *info = g_constant_info_get_type(ctx.info);
+    SET_ONERROR(onerror, g_base_info_unref, info);
+    g_constant_info_get_value(ctx.info, &arg);
+    SET_ONERROR(onerror2, free_const_value_context, &ctx);
+    push_gi_argument(&arg, info);
+    UNSET_ONERROR(onerror2);
+    g_constant_info_free_value(ctx.info, &arg);
+    UNSET_ONERROR(onerror);
+    g_base_info_unref(info);
+    stack_pop_n_elems_keep_top(args);
+  }
 }
 
 /*! @class UnionInfo

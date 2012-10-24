@@ -239,6 +239,8 @@ class DynamicImporter {
         return Enum([object(EnumInfo)]info);
       else if (object_program(info) == StructInfo)
 	return Struct([object(StructInfo)]info);
+      else if (object_program(info) == ConstantInfo)
+	return ([object(ConstantInfo)]info)->get();
       /* FIXME */
       return info;
     }
