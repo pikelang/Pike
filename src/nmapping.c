@@ -60,14 +60,14 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     m->size = 0;
     m->marker.marker = 0;
 
-    ba_init_local(&m->allocator, sizeof(struct keypair), MINIMUM(size, 256), 256, mapping_rel_simple, m);
-
     size /= AVG_CHAIN_LENGTH;
 
     while (size > (int)t) {
 	mag--;
 	t *= 2;
     }
+
+    ba_init_local(&m->allocator, sizeof(struct keypair), MINIMUM(t*AVG_CHAIN_LENGTH, 256), 256, mapping_rel_simple, m);
 
     m->hash_mask = t - 1;
     m->magnitude = mag;
@@ -76,7 +76,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     m->trash = NULL;
     m->first_iterator = NULL;
     /* this allows for faking mapping_data */
-    m->data = m;
+    m->data = (struct mapping_data * )m;
     m->flags = 0;
     m->key_types = m->val_types = 0;
 
@@ -165,6 +165,10 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     int frozen = 0;
     ONERROR err;
 
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+
     mark_enter(&m->marker);
 
     /* this is just for optimization */
@@ -177,7 +181,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 
     for (;*t; t = &((*t)->next)) {
 	k = *t;
-#if PIKE_DEBUG
+#ifdef PIKE_DEBUG
 	if (keypair_deleted(k)) Pike_error("ran into deleted keypair.");
 #endif
 	if (hval > (*t)->hval) continue;
@@ -239,6 +243,10 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
     int frozen = 0;
     ONERROR err;
 
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+
     if (!(m->key_types & (1 << TYPEOF(*key)))) return NULL;
 
     /* TODO: this might be good to have without lock */
@@ -248,7 +256,7 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
 
     for (;*t; t = &((*t)->next)) {
 	const struct keypair * k = *t;
-#if PIKE_DEBUG
+#ifdef PIKE_DEBUG
 	if (keypair_deleted(k)) Pike_error("ran into deleted keypair.");
 #endif
 	if (hval > (*t)->hval) continue;
@@ -330,7 +338,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
     it.current = low_get_bucket(m, hval);
 
     for (;(k = mapping_it_current(&it)); it.current = &(*it.current)->next) {
-#if PIKE_DEBUG
+#ifdef PIKE_DEBUG
 	if (keypair_deleted(k)) Pike_error("ran into deleted keypair.");
 #endif
 	if (hval > k->hval) continue;
@@ -432,8 +440,12 @@ static INLINE int fill_indices(void * _start, void * _stop, void * data) {
 }
 
 PMOD_EXPORT struct array *mapping_indices(struct mapping *m) {
-    struct array * a = real_allocate_array(0, m->size);
+    struct array * a;
 
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+    a = real_allocate_array(0, m->size);
     ba_walk_local(&m->allocator, fill_indices, a);
 
     return a;
@@ -457,8 +469,11 @@ static INLINE int fill_values(void * _start, void * _stop, void * data) {
 }
 
 PMOD_EXPORT struct array *mapping_values(struct mapping *m) {
-    struct array * a = real_allocate_array(0, m->size);
-
+    struct array * a;
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+    a = real_allocate_array(0, m->size);
     ba_walk_local(&m->allocator, fill_values, a);
 
     return a;
@@ -1207,6 +1222,8 @@ static int m_foreach(void * _start, void * _stop, void * d) {
     struct mapping * m = (struct mapping *)_start;
     void (*fun)(struct mapping *) = d;
 
+    fprintf(stderr, "walking mappings [%p .. %p)\n", _start, _stop);
+
     do {
 	fun(m);
     } while ((void*)(++m) < _stop);
@@ -1215,7 +1232,11 @@ static int m_foreach(void * _start, void * _stop, void * d) {
 }
 
 #ifdef PIKE_DEBUG
-void check_mapping(const struct mapping *m) {}
+void check_mapping(const struct mapping *m) {
+    if (!m->trash && m->allocator.h.used != m->size) {
+	Pike_error("allocator has %u blocks, but size is %u\n", m->allocator.h.used, m->size);
+    }
+}
 void check_all_mappings(void) {
     ba_walk(&mapping_allocator, m_foreach, check_mapping);
 }
@@ -1422,26 +1443,28 @@ static void gc_check_mapping(struct mapping *m) {
     GC_ENTER (m, T_MAPPING) {
 	struct keypair_foreach_cb c;
 
-	switch (m->flags & MAPPING_WEAK) {
-	case MAPPING_WEAK:
-	    c.kfun = real_gc_check_weak;
-	    c.vfun = real_gc_check_weak;
-	    break;
-	case MAPPING_WEAK_INDICES:
-	    c.kfun = real_gc_check_weak;
-	    c.vfun = real_gc_check;
-	    break;
-	case MAPPING_WEAK_VALUES:
-	    c.kfun = real_gc_check;
-	    c.vfun = real_gc_check_weak;
-	    break;
-	case 0:
-	    c.kfun = real_gc_check;
-	    c.vfun = real_gc_check;
-	    break;
-	}
+	if (!debug_gc_check(m, " as mapping")) {
+	    switch (m->flags & MAPPING_WEAK) {
+	    case MAPPING_WEAK:
+		c.kfun = real_gc_check_weak;
+		c.vfun = real_gc_check_weak;
+		break;
+	    case MAPPING_WEAK_INDICES:
+		c.kfun = real_gc_check_weak;
+		c.vfun = real_gc_check;
+		break;
+	    case MAPPING_WEAK_VALUES:
+		c.kfun = real_gc_check;
+		c.vfun = real_gc_check_weak;
+		break;
+	    case 0:
+		c.kfun = real_gc_check;
+		c.vfun = real_gc_check;
+		break;
+	    }
 
-	ba_walk_local(&m->allocator, keypair_check_foreach, &c);
+	    ba_walk_local(&m->allocator, keypair_check_foreach, &c);
+	}
     } GC_LEAVE;
 }
 
