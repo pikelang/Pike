@@ -4772,16 +4772,13 @@ PMOD_EXPORT void low_inherit(struct program *p,
 }
 
 PMOD_EXPORT void do_inherit(struct svalue *s,
-		INT32 flags,
-		struct pike_string *name)
+			    INT32 flags,
+			    struct pike_string *name)
 {
-  struct program *p=program_from_svalue(s);
-  low_inherit(p,
-	      TYPEOF(*s) == T_FUNCTION ? s->u.object : 0,
-	      TYPEOF(*s) == T_FUNCTION ? SUBTYPEOF(*s) : -1,
-	      0,
-	      flags,
-	      name);
+  struct object *parent_obj = NULL;
+  int parent_id = -1;
+  struct program *p = low_program_from_svalue(s, &parent_obj, &parent_id);
+  low_inherit(p, parent_obj, parent_id, 0, flags, name);
 }
 
 void compiler_do_inherit(node *n,
@@ -11026,11 +11023,14 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 {
   if(TYPEOF(*f) != T_FUNCTION) return 0;
   if(SUBTYPEOF(*f) == FUNCTION_BUILTIN) return 0;
+
   return low_program_from_function(f->u.object, SUBTYPEOF(*f));
 }
 
 /* NOTE: Does not add references to the return value! */
-PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
+PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
+						    struct object **parent_obj,
+						    int *parent_id)
 {
   switch(TYPEOF(*s))
   {
@@ -11054,18 +11054,29 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 #endif
       push_svalue(s);
       f_object_program(1);
-      p=program_from_svalue(Pike_sp-1);
+      p = low_program_from_svalue(Pike_sp-1, parent_obj, parent_id);
       pop_stack();
       return p; /* We trust that there is a reference somewhere... */
     }
 
   case T_FUNCTION:
-    return program_from_function(s);
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
+    return low_program_from_function(*parent_obj = s->u.object,
+				     *parent_id = SUBTYPEOF(*s));
+
   case T_PROGRAM:
     return s->u.program;
   default:
     return 0;
   }
+}
+
+/* NOTE: Does not add references to the return value! */
+PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
+{
+  struct object *parent_obj = NULL;
+  int parent_id = -1;
+  return low_program_from_svalue(s, &parent_obj, &parent_id);
 }
 
 #define FIND_CHILD_HASHSIZE 5003
