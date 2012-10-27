@@ -269,10 +269,12 @@ PIKECLASS GObject
 PIKECLASS GBoxed
 {
   CVAR gpointer box;
+  CVAR GType type;
 
   INIT
     {
       THIS->box = NULL;
+      THIS->type = G_TYPE_INVALID;
     }
 
   EXIT
@@ -342,15 +344,17 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
   if (!gbox) {
     push_int(0);
   } else {
-    GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
-    if (rtinfo != NULL) {
+    if (info != NULL) {
+      rttype = g_registered_type_info_get_g_type(info);
+      push_wrapper_name_from_info(info);
+    } else {
+      GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
+      if (rtinfo != NULL) {
 	push_wrapper_name_from_info(rtinfo);
 	g_base_info_unref(rtinfo);
+      } else
+	Pike_error("Received a box of an unregistered type!\n");
     }
-    else if (info != NULL)
-      push_wrapper_name_from_info(info);
-    else
-      Pike_error("Received a box of an unregistered type!\n");
     APPLY_MASTER ("resolv", 1);
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to resolve GI box class.\n");
@@ -366,6 +370,7 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
       if (that->box != NULL)
 	Pike_error("GBoxed already initialized!\n");
       that->box = gbox;
+      that->type = rttype;
     }
   }
 }
@@ -381,6 +386,10 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
 
   case GI_INFO_TYPE_OBJECT:
     push_wrapped_gobject(arg->v_pointer, info);
+    break;
+
+  case GI_INFO_TYPE_STRUCT:
+    push_wrapped_boxed(arg->v_pointer, info, G_TYPE_NONE);
     break;
 
   default:
@@ -496,6 +505,27 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
 	Pike_error("Object is not a %s\n",
 		   g_base_info_get_name(info));
       arg->v_pointer = that->obj;
+    }
+    break;
+
+  case GI_INFO_TYPE_STRUCT:
+    if (UNSAFE_IS_ZERO(s)) {
+      arg->v_pointer = NULL;
+      break;
+    }
+    if (TYPEOF(*s) != T_OBJECT)
+      Pike_error("object expected\n");
+    else {
+      struct GBoxed_struct *that =
+	(struct GBoxed_struct *)get_storage (s->u.object, GBoxed_program);
+      if (that == NULL)
+	Pike_error("argument is not a GBoxed\n");
+      if (that->box == NULL ||
+	  !g_type_is_a(that->type,
+		       g_registered_type_info_get_g_type(info)))
+	Pike_error("Object is not a %s\n",
+		   g_base_info_get_name(info));
+      arg->v_pointer = that->box;
     }
     break;
 
@@ -646,6 +676,37 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
   get_gi_argument_type(s, arg, &ti);
 }
 
+static gsize get_interface_size(GIBaseInfo *info)
+{
+  switch(g_base_info_get_type(info)) {
+  case GI_INFO_TYPE_STRUCT:
+    return g_struct_info_get_size ( (GIStructInfo *) info);
+  default:
+    return 0;
+  }
+}
+
+static gsize get_arg_size(GIArgInfo *ai)
+{
+  GITypeInfo ti;
+
+  g_arg_info_load_type(ai, &ti);
+  switch (g_type_info_get_tag(&ti)) {
+  case GI_TYPE_TAG_INTERFACE:
+    {
+      GIBaseInfo *info;
+      gsize ret;
+      info = g_type_info_get_interface(&ti);
+      ret = get_interface_size(info);
+      g_base_info_unref(info);
+      return ret;
+    }
+    break;
+  default:
+    return 0;
+  }
+}
+
 /*! @class BaseInfo
  */
 
@@ -727,10 +788,13 @@ PIKECLASS FunctionInfo
     GIArgument retval;
     GITypeInfo *ti;
     struct svalue *mark = Pike_sp-args;
-    int i = 0, arg_num, num_out_args = 0, num_args = args;
-    GIArgument out_args[8], *in_args =
-      (num_args? xalloc(num_args * sizeof(GIArgument)) : NULL);
+    int i = 0, arg_num, num_in_args = 0, num_out_args = 0, out_arg_0_num;
+    gint num_args = g_callable_info_get_n_args(THIS->info);
     GIFunctionInfoFlags flags = g_function_info_get_flags (THIS->info);
+    GIArgument *in_args = (num_args || (flags & GI_FUNCTION_IS_METHOD)?
+			   xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
+			   NULL);
+    GIArgument out_arg_0, *out_args = (num_args? in_args+num_args+1 : NULL);
     SET_ONERROR(onerror, free, in_args);
     if (flags & GI_FUNCTION_IS_METHOD) {
       if (args < 1 || TYPEOF(*mark) != T_OBJECT)
@@ -748,9 +812,10 @@ PIKECLASS FunctionInfo
 		     g_base_info_get_name(g_base_info_get_container(THIS->info)));
 	in_args[0].v_pointer = that->obj;
 	i++;
+	num_in_args++;
       }
     }
-    for (arg_num=0; i<num_args; i++, arg_num++) {
+    for (arg_num=0; arg_num<num_args; arg_num++) {
       ONERROR onerror2;
       GIArgInfo *ai;
       ai = g_callable_info_get_arg(THIS->info, arg_num);
@@ -758,19 +823,33 @@ PIKECLASS FunctionInfo
 	Pike_error("Too many arguments to function %s\n",
 		   g_base_info_get_name(THIS->info));
       SET_ONERROR(onerror2, g_base_info_unref, ai);
-      get_gi_argument(mark+i, &in_args[i], ai);
-      if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
-	if(num_out_args >= 8)
-	  Pike_error("Too many inout args...\n");
-	out_args[num_out_args] = in_args[i];
-	in_args[i].v_pointer = &out_args[num_out_args];
+      if (num_out_args == 0)
+	out_arg_0_num = arg_num;
+      if (g_arg_info_get_direction(ai) == GI_DIRECTION_OUT) {
+	gsize size = get_arg_size(ai);
+	out_args[num_out_args].v_pointer = NULL;
+	if (size > 0)
+	  out_args[num_out_args].v_pointer = g_slice_alloc0(size);
 	num_out_args++;
+      } else if (i<args) {
+	get_gi_argument(mark+i, &in_args[num_in_args++], ai);
+	if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
+	  out_args[num_out_args] = in_args[num_in_args-1];
+	  in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
+	  num_out_args++;
+	}
+	i++;
       }
       UNSET_ONERROR(onerror2);
       g_base_info_unref(ai);
     }
-    ok = g_function_info_invoke(THIS->info, in_args, num_args,
+    if (i<args)
+      Pike_error("Too many arguments to function %s\n",
+		 g_base_info_get_name(THIS->info));
+    ok = g_function_info_invoke(THIS->info, in_args, num_in_args,
 				out_args, num_out_args, &retval, &error);
+    if (num_out_args > 0)
+      out_arg_0 = out_args[0];
     UNSET_ONERROR(onerror);
     free(in_args);
     if(error)
@@ -780,9 +859,22 @@ PIKECLASS FunctionInfo
     pop_n_elems(Pike_sp - mark);
     ti = g_callable_info_get_return_type(THIS->info);
     SET_ONERROR(onerror, g_base_info_unref, ti);
-    push_gi_argument(&retval, ti);
-    UNSET_ONERROR(onerror);
-    g_base_info_unref(ti);
+    if(num_out_args > 0 && g_type_info_get_tag(ti) == GI_TYPE_TAG_VOID) {
+      GIArgInfo *ai;
+      GITypeInfo ati;
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(ti);
+      ai = g_callable_info_get_arg(THIS->info, out_arg_0_num);
+      SET_ONERROR(onerror, g_base_info_unref, ai);
+      g_arg_info_load_type(ai, &ati);
+      push_gi_argument(&out_arg_0, &ati);
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(ai);
+    } else {
+      push_gi_argument(&retval, ti);
+      UNSET_ONERROR(onerror);
+      g_base_info_unref(ti);
+    }
   }
 }
 
