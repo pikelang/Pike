@@ -7,9 +7,14 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
+#include "machine.h"
+
 #ifdef PIKE_NEW_BLOCK_ALLOC
+
 #include "nmapping.h"
+
 #else
+#error using old mapping
 
 #include "svalue.h"
 #include "dmalloc.h"

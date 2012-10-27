@@ -44,6 +44,22 @@ struct reentrance_marker {
     int marker;
 };
 
+struct mapping_data {
+    PIKE_MEMORY_OBJECT_MEMBERS;
+    unsigned INT32 hash_mask;
+    unsigned INT32 magnitude;
+    unsigned INT32 size;
+    unsigned INT32 flags;
+    TYPE_FIELD key_types, val_types;
+    struct keypair ** table; 
+    struct mapping_iterator * first_iterator;
+    struct keypair * trash;
+    struct ba_local allocator;
+    struct mapping * next, * prev;
+    void * data;
+    struct reentrance_marker marker;
+};
+
 struct mapping {
     PIKE_MEMORY_OBJECT_MEMBERS;
     unsigned INT32 hash_mask;
@@ -56,7 +72,7 @@ struct mapping {
     struct keypair * trash;
     struct ba_local allocator;
     struct mapping * next, * prev;
-    struct mapping * data;
+    struct mapping_data * data;
     struct reentrance_marker marker;
 };
 
@@ -264,12 +280,12 @@ static INLINE void mapping_it_step(struct mapping_iterator * it) {
 	    slot = &k->next;
 	} else {
 	    unsigned INT32 i = (k->hval >> m->magnitude) + 1;
-
+	    
 	    for (; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
 	}
     } while (*slot && keypair_deleted(*slot));
 
-    it->current = slot;
+    it->current = *slot ? slot : NULL;
 }
 
 static INLINE int mapping_it_next(struct mapping_iterator * it,
@@ -310,7 +326,13 @@ static INLINE void mapping_it_delete(struct mapping_iterator * it) {
 
 static INLINE void mapping_builder_init(struct mapping_iterator * it,
 					struct mapping * m) {
-    mapping_it_init(it, m);
+    it->current = NULL;
+    it->m = m;
+    it->next = it->prev = NULL;
+}
+
+static INLINE struct keypair * keypair_from_slot(struct keypair ** slot) {
+    return (struct keypair*)((char*)slot - offsetof(struct keypair, next));
 }
 
 static INLINE void mapping_builder_add(struct mapping_iterator * it, struct keypair * k) {
@@ -318,9 +340,8 @@ static INLINE void mapping_builder_add(struct mapping_iterator * it, struct keyp
     struct mapping * m = it->m;
 
     if (it->current) {
-	const struct keypair * k = *it->current;
-	unsigned INT32 hval = k->hval;
-	if ((hval ^ k->hval) >> m->magnitude)
+	const struct keypair * prev = keypair_from_slot(it->current);
+	if ((prev->hval ^ k->hval) >> m->magnitude)
 	    goto new_slot;
     } else {
 new_slot:
@@ -338,12 +359,11 @@ new_slot:
 }
 
 static INLINE void mapping_builder_finish(struct mapping_iterator * it) {
-    mapping_it_exit(it);
+    //mapping_it_exit(it);
 }
 
 extern struct mapping * first_mapping;
 extern struct mapping *gc_internal_mapping;
 
-#define mapping_data	mapping
 #define MAPPING_LOOP(m)	for (e = 0; (unsigned INT32)e <= (m)->hash_mask; e++) for (k = (m)->table[e]; k; k = k->next)
 #define NEW_MAPPING_LOOP(m)	MAPPING_LOOP(m)

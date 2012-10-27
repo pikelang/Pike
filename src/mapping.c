@@ -3,8 +3,9 @@
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
 */
-#ifdef PIKE_NEW_BLOCK_ALLOC
+#include "machine.h"
 
+#ifdef PIKE_NEW_BLOCK_ALLOC
 #include "nmapping.h"
 #include "pike_error.h"
 #if 0
@@ -23,7 +24,7 @@
 #include "nmapping.c"
 
 #else
-
+#error using old mapping
 #include "global.h"
 #include "main.h"
 #include "object.h"
