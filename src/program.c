@@ -11053,7 +11053,7 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
       }
 #endif
       push_svalue(s);
-      f_object_program(1);
+      o_cast(program_type_string, T_PROGRAM);
       p = low_program_from_svalue(Pike_sp-1, parent_obj, parent_id);
       pop_stack();
       return p; /* We trust that there is a reference somewhere... */
