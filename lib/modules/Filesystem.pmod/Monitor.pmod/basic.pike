@@ -721,20 +721,13 @@ protected class Monitor(string path,
 	(st->size != old_st->size)) {
       last_change = time(1);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
-    }
-    if ((flags & MF_RECURSE) && (st->isdir)) {
-      // Check the files in the directory soon.
-      foreach(files, string file) {
-	file = canonic_path(Stdio.append_path(path, file));
-	Monitor m2 = monitors[file];
-	if (m2) {
-	  m2->bump(flags);
-	}
-      }
-    }
-    if (last_change < time(1) - (stable_time || global::stable_time)) {
+    } else if (last_change < time(1) - (stable_time || global::stable_time)) {
       last_change = 0x7fffffff;
       stable_data_change(path, st);
+      return 1;
+    } else if (st->isdir && status_change(old_st, st, orig_flags, flags)) {
+      // Directory not stable yet.
+      last_change = time(1);
       return 1;
     }
     return 0;

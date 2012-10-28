@@ -1539,7 +1539,7 @@ void resolv_class(node *n)
 	pop_stack();
 	push_int(0);
       }else{
-	f_object_program(1);
+	o_cast(program_type_string, T_PROGRAM);
       }
       break;
 

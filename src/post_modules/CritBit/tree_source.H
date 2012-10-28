@@ -609,16 +609,6 @@ range_do_clone:
 	push_undefined();
     }
 
-    DOCSTART() @decl object _get_iterator()
-     *! @returns
-     *! This function returns an @[Iterator]-instance as would be created
-     *! with @expr{ADT.CritBit.TREE_CLASSIFY(.Iterator)(tree)@}
-    DOCEND()
-    PIKEFUN object _get_iterator() {
-	ref_push_object(Pike_fp->current_object);
-	push_object(clone_object(cmod_CONCAT_EVAL(tree_class,_,iterator_class,_program), 1));
-    }
-
     /*! @decl int(0..) depth()
      *! Calculate the depth of the tree.
      */
@@ -673,6 +663,25 @@ range_do_clone:
 	    cb_free_node(& THIS->tree, THIS->tree.root);
 	    THIS->tree.root = NULL;
 	}
+    }
+
+    /* keys are always non-complex, so we dont have to check them with the gc */
+    GC_CHECK {
+	cb_node_t node = THIS->tree.root;
+	WALK_FORWARD(node, {
+	    if (CB_HAS_VALUE(_)) {
+		debug_gc_check_svalues(&_->value, 1,  " as a CritBit node value");
+	    }
+	});
+    }
+
+    GC_RECURSE {
+	cb_node_t node = THIS->tree.root;
+	WALK_FORWARD(node, {
+	    if (CB_HAS_VALUE(_)) {
+		gc_recurse_svalues(&_->value, 1);
+	    }
+	});
     }
 
 /*! @endclass */

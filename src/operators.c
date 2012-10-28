@@ -508,12 +508,27 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     {
       struct object *o = sp[-1].u.object;
       int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog, LFUN_CAST);
-      if(f == -1)
-	Pike_error("No cast method in object.\n");
+      if(f == -1) {
+	if (run_time_type != T_PROGRAM) {
+	  Pike_error("No cast method in object.\n");
+	}
+	f_object_program(1);
+	return;
+      }
       push_string(describe_type(type));
       apply_low(o, f, 1);
+
+      if (run_time_type == T_PROGRAM) {
+	if (IS_UNDEFINED(Pike_sp-1)) {
+	  pop_stack();
+	  f_object_program(1);
+	  return;
+	}
+      }
+
       stack_pop_keep_top();
-    }else
+
+    } else
 
     switch(run_time_type)
     {
@@ -713,19 +728,30 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 
   if(run_time_type != TYPEOF(sp[-1]))
   {
-    if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
-    {
-      struct object *o = sp[-1].u.object;
-      int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
-			LFUN__IS_TYPE);
-      if( f != -1)
+    switch(TYPEOF(sp[-1])) {
+    case T_OBJECT:
+      if(sp[-1].u.object->prog)
       {
-	push_text(get_name_of_type(run_time_type));
-	apply_low(o, f, 1);
-	f=!UNSAFE_IS_ZERO(sp-1);
-	pop_stack();
-	if(f) goto emulated_type_ok;
+	struct object *o = sp[-1].u.object;
+	int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
+			  LFUN__IS_TYPE);
+	if( f != -1)
+	{
+	  push_text(get_name_of_type(run_time_type));
+	  apply_low(o, f, 1);
+	  f=!UNSAFE_IS_ZERO(sp-1);
+	  pop_stack();
+	  if(f) goto emulated_type_ok;
+	}
       }
+      break;
+    case T_FUNCTION:
+      /* Check that the function actually is a program. */
+      if ((run_time_type == T_PROGRAM) &&
+	  program_from_function(sp-1)) {
+	return;	/* No need for further post-processing. */
+      }
+      break;
     }
     Pike_error("Cast failed, wanted %s, got %s\n",
 	       get_name_of_type(run_time_type),
