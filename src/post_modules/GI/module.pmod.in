@@ -196,12 +196,18 @@ class DynamicImporter {
 	  if(fields[index])
 	    fields[index]->set_field(this, value);
 	}
+
+	static void create(mapping(string:mixed)|void properties)
+	{
+	  ::create(info, properties);
+	}
       }
 
       static array(string) _indices() { return indices(methods); }
       static array(mixed) _values() { return values(methods); }
       static mixed `[](string index) { return methods[index]; }
       static mixed `->(string index) { return methods[index]; }
+      static program cast(string type) { return type=="program" && Instance; }
 
       static void create(StructInfo si)
       {
@@ -212,9 +218,9 @@ class DynamicImporter {
 	methods = mkmapping(ms->get_name(), map(ms, Method));
       }
 
-      static Instance `()()
+      static Instance `()(mapping(string:mixed)|void properties)
       {
-	error("Can't allocate a struct\n");
+	return Instance(properties);
       }
     }
 

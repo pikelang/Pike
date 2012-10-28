@@ -36,8 +36,10 @@ static void free_glist_full_free(void *p)
   g_list_free_full(p, free);
 }
 
+struct GBoxed_struct;
 static void push_gi_info(GIBaseInfo *info);
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
+static void make_gboxed(struct GBoxed_struct *this, struct object *info, gboolean allocate);
 static void push_gvalue(const GValue *v);
 static void set_gvalue_from_svalue(GValue *v, const struct svalue *s);
 
@@ -270,19 +272,43 @@ PIKECLASS GBoxed
 {
   CVAR gpointer box;
   CVAR GType type;
+  CVAR gsize allocated_size;
 
   INIT
     {
       THIS->box = NULL;
       THIS->type = G_TYPE_INVALID;
+      THIS->allocated_size = 0;
     }
 
   EXIT
     {
       if (THIS->box != NULL) {
+	if (THIS->allocated_size)
+	  g_slice_free1(THIS->allocated_size, THIS->box);
 	THIS->box = NULL;
       }
     }
+
+#ifndef tObjImpl_STRUCTINFO
+/* Break circular class dependency... */
+#define tObjImpl_STRUCTINFO tObj
+#endif
+
+  /*! @decl void create(StructInfo info, mapping(string:mixed)|void props)
+   */
+  PIKEFUN void create(StructInfo info, mapping(string:mixed)|void props)
+  {
+    if (THIS->box != NULL)
+      Pike_error("GBoxed.create called twice!\n");
+    make_gboxed(THIS, info, props != magic_mapping);
+    if (THIS->box != NULL && props != NULL && m_sizeof(props) > 0) {
+      INT32 e;
+      struct keypair *k;
+      NEW_MAPPING_LOOP(props->data)
+	object_set_index(Pike_fp->current_object, 0, &k->ind, &k->val);
+    }
+  }
 }
 
 /*! @endclass
@@ -345,7 +371,6 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
     push_int(0);
   } else {
     if (info != NULL) {
-      rttype = g_registered_type_info_get_g_type(info);
       push_wrapper_name_from_info(info);
     } else {
       GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
@@ -358,7 +383,8 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
     APPLY_MASTER ("resolv", 1);
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to resolve GI box class.\n");
-    apply(Pike_sp[-1].u.object, "Instance", 0);
+    ref_push_mapping(magic_mapping);
+    apply(Pike_sp[-2].u.object, "Instance", 1);
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to instantiate GI box class.\n");
     {
@@ -370,7 +396,6 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
       if (that->box != NULL)
 	Pike_error("GBoxed already initialized!\n");
       that->box = gbox;
-      that->type = rttype;
     }
   }
 }
@@ -1575,6 +1600,21 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
   if (G_IS_INITIALLY_UNOWNED(obj))
     g_object_ref_sink(obj);
   return obj;
+}
+
+static void make_gboxed(struct GBoxed_struct *this, struct object *info, gboolean allocate)
+{
+  struct BaseInfo_struct *that;
+  if (info == NULL ||
+      (that =
+       (struct BaseInfo_struct *)get_storage (info, BaseInfo_program))
+      == NULL || that->info == NULL)
+    Pike_error("StructInfo missing\n");
+  this->type = g_registered_type_info_get_g_type(that->info);
+  if (allocate) {
+    if ((this->allocated_size = get_interface_size(that->info)))
+      this->box = g_slice_alloc0(this->allocated_size);
+  }
 }
 
 
