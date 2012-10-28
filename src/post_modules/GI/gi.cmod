@@ -764,7 +764,7 @@ PIKECLASS BaseInfo
       push_int(0);
     else {
       push_constant_text("%O(%s)");
-      push_program(Pike_fp->current_program);
+      ref_push_program(Pike_fp->current_program);
       push_text(g_base_info_get_name(THIS->info));
       f_sprintf(3);
     }
