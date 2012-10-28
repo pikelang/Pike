@@ -671,6 +671,9 @@ range_do_clone:
 	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
+#ifdef CB_GC_CHECK_KEY
+		CB_GC_CHECK_KEY(_->key);
+#endif
 		debug_gc_check_svalues(&_->value, 1,  " as a CritBit node value");
 	    }
 	});
@@ -681,6 +684,9 @@ range_do_clone:
 	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
+#ifdef CB_GC_RECURSE_KEY
+		CB_GC_RECURSE_KEY(_->key);
+#endif
 		gc_recurse_svalues(&_->value, 1);
 	    }
 	});
