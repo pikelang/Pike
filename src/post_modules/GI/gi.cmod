@@ -943,6 +943,33 @@ PIKECLASS FieldInfo
     g_base_info_unref(ti);
     stack_pop_n_elems_keep_top(args);
   }
+
+  /*! @decl void set_field(GBoxed box, mixed value)
+   */
+  PIKEFUN void set_field(GBoxed box, mixed value)
+  {
+    ONERROR onerror;
+    GIArgument val;
+    GITypeInfo *ti;
+    GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
+    struct GBoxed_struct *that =
+      (struct GBoxed_struct *)get_storage (box, GBoxed_program);
+    if (that == NULL)
+      Pike_error("argument is not a GBoxed\n");
+    if (that->box == NULL ||
+	!g_type_is_a(that->type,
+		     g_registered_type_info_get_g_type(sinfo)))
+      Pike_error("Boxed is not a %s\n",
+		 g_base_info_get_name(sinfo));
+    ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
+    SET_ONERROR(onerror, g_base_info_unref, ti);
+    get_gi_argument_type(value, &val, ti);
+    if (!g_field_info_set_field((GIFieldInfo *)THIS->info, that->box, &val))
+      Pike_error("Field can not be written\n");
+    UNSET_ONERROR(onerror);
+    g_base_info_unref(ti);
+    stack_pop_n_elems_keep_top(args);
+  }
 }
 
 /*! @class StructInfo

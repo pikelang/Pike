@@ -186,6 +186,16 @@ class DynamicImporter {
 	  }
 	  return bind(fields[index] || Struct::`[](index));
 	}
+	static mixed `->=(string index, mixed value, object|void o, int|void n) {
+	  if(fields[index])
+	    fields[index]->set_field(this, value);
+	  else
+	    return ::`->=(index, value);
+	}
+	static mixed `[]=(string index, mixed value) {
+	  if(fields[index])
+	    fields[index]->set_field(this, value);
+	}
       }
 
       static array(string) _indices() { return indices(methods); }
