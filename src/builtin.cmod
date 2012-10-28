@@ -1011,24 +1011,11 @@ PIKEFUN int program_inherits(program|object child, program parent)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
-  if (TYPEOF(*child) == PIKE_T_PROGRAM)
-    RETURN low_get_storage(child->u.program, parent) != -1;
-  else if (TYPEOF(*child) == PIKE_T_OBJECT) {
-    struct program *p = child->u.object->prog;
+  struct program *p = program_from_svalue(child);
 
-    if (!p) RETURN 0;
-    if (SUBTYPEOF(*child)) {
-      p = (p->inherits + SUBTYPEOF(*child))->prog;
-      if (p->flags & PROGRAM_USES_PARENT)
-	RETURN 0;
-    } else if ((p->flags & PROGRAM_USES_PARENT)
-	       && PARENT_INFO(child->u.object)->parent
-	       && PARENT_INFO(child->u.object)->parent->prog)
-      RETURN 0;
-    RETURN low_get_storage(p, parent) != -1;
-  }
-
-  SIMPLE_ARG_TYPE_ERROR("Program.inherits", 1, "program|object");
+  if (!p)
+    SIMPLE_ARG_TYPE_ERROR("Program.inherits", 1, "program|object");
+  RETURN low_get_storage(p, parent) != -1;
 }
 
 /*! @decl string defined(program p)
