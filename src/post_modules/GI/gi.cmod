@@ -808,17 +808,33 @@ PIKECLASS FunctionInfo
       if (args < 1 || TYPEOF(*mark) != T_OBJECT)
 	Pike_error("Missing object for method call\n");
       else {
-	struct GObject_struct *that =
-	  (struct GObject_struct *)get_storage (mark->u.object,
-						GObject_program);
-	if (that == NULL)
-	  Pike_error("Instance argument is not a GObject\n");
-	if (that->obj == NULL ||
-	    !g_type_is_a(G_OBJECT_TYPE(that->obj),
-			 g_registered_type_info_get_g_type(g_base_info_get_container(THIS->info))))
-	  Pike_error("Object is not a %s\n",
-		     g_base_info_get_name(g_base_info_get_container(THIS->info)));
-	in_args[0].v_pointer = that->obj;
+	GIBaseInfo *cont = g_base_info_get_container(THIS->info);
+	if (g_base_info_get_type(cont) == GI_INFO_TYPE_OBJECT ||
+	    g_base_info_get_type(cont) == GI_INFO_TYPE_INTERFACE) {
+	  struct GObject_struct *that =
+	    (struct GObject_struct *)get_storage (mark->u.object,
+						  GObject_program);
+	  if (that == NULL)
+	    Pike_error("Instance argument is not a GObject\n");
+	  if (that->obj == NULL ||
+	      !g_type_is_a(G_OBJECT_TYPE(that->obj),
+			   g_registered_type_info_get_g_type(cont)))
+	    Pike_error("Object is not a %s\n",
+		       g_base_info_get_name(cont));
+	  in_args[0].v_pointer = that->obj;
+	} else {
+	  struct GBoxed_struct *that =
+	    (struct GBoxed_struct *)get_storage (mark->u.object,
+						 GBoxed_program);
+	  if (that == NULL)
+	    Pike_error("Instance argument is not a GBoxed\n");
+	  if (that->box == NULL ||
+	      !g_type_is_a(that->type,
+			   g_registered_type_info_get_g_type(cont)))
+	    Pike_error("Boxed is not a %s\n",
+		       g_base_info_get_name(cont));
+	  in_args[0].v_pointer = that->box;
+	}
 	i++;
 	num_in_args++;
       }
