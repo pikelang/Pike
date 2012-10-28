@@ -135,9 +135,9 @@ class DateTree {
     }
 
     mixed `[]=(mixed key, mixed v) {
-	if (!intp(key)) {
+	if (objectp(key)) {
 	    int k = encode_key(key);
-	    backwards[key] = k;
+	    backwards[k] = key;
 	}
 
 	return ::`[]=(key, v);
@@ -373,7 +373,7 @@ class Reverse(object tree) {
 	return this_program(tree->copy());
     }
 
-    object subtree(mixed k) {
+    object get_subtree(mixed k) {
 	return this_program(tree->subtree(k));
     }
 
@@ -405,6 +405,30 @@ class Reverse(object tree) {
 
     mixed cast(string type) {
 	return tree->cast(type);
+    }
+
+    this_program `+(mixed o) {
+	if (objectp(o)) {
+	    if (Program.inherits(object_program(o), this_program))
+		return this_program(tree + o->tree);
+	    else if (Program.inherits(object_program(o), object_program(tree)))
+		return this_program(tree + o);
+	}
+	error("Bad argument 1 to `+()\n");
+    }
+
+    this_program `-(mixed o) {
+	if (objectp(o)) {
+	    if (Program.inherits(object_program(o), this_program))
+		return this_program(tree - o->tree);
+	    else if (Program.inherits(object_program(o), object_program(tree)))
+		return this_program(tree - o);
+	}
+	error("Bad argument 1 to `-()\n");
+    }
+
+    int(0..) _sizeof() {
+	return sizeof(tree);
     }
 }
 
@@ -457,26 +481,26 @@ class MultiTree {
     }
 
     array(int) _indices() {
-	return `+(@map(trees, indices));
+	return predef::`+(@map(trees, indices));
     }
 
     array(int) _values() {
-	return `+(@map(trees, values));
+	return predef::`+(@map(trees, values));
     }
 
     int(0..) _sizeof() {
-	return `+(@map(trees, sizeof));
+	return predef::`+(@map(trees, sizeof));
     }
 
-    mixed nth(int n) {
-	for (int i = 0; i < sizeof(trees); i++) {
+    array nth(int n) {
+	if (n >= 0) for (int i = 0; i < sizeof(trees); i++) {
 	    if (n < sizeof(trees[i])) {
-		return trees[i]->nth(i);
+		return trees[i]->nth(n);
 	    }
 	    n -= sizeof(trees[i]);
 	}
 
-	return UNDEFINED;
+	error("Index out of bounds.\n");
     }
 
     mixed _m_delete(mixed idx) {
@@ -534,10 +558,10 @@ class MultiTree {
 	return max(@trees->depth());
     }
 
-    this_program subtree(mixed k) {
+    this_program get_subtree(mixed k) {
 	this_program ret = this_program();
 	int i = itree(k);
-	ret->trees[i] = trees[i]->subtree(k);
+	ret->trees[i] = trees[i]->get_subtree(k);
 	return ret;
     }
 
@@ -555,7 +579,25 @@ class MultiTree {
     }
 
     mixed cast(string type) {
-	return `+(@trees->cast(type));
+	return predef::`+(@trees->cast(type));
+    }
+
+    this_program `+(mixed o) {
+	if (!(objectp(o) && Program.inherits(object_program(o), this_program))) error("Bad argument one to `+()\n");
+	this_program ret = this_program();
+	foreach (trees; int i; object t) {
+	    ret->trees[i] = t + o->trees[i];
+	}
+	return ret;
+    }
+
+    this_program `-(mixed o) {
+	if (!(objectp(o) && Program.inherits(object_program(o), this_program))) error("Bad argument one to `+()\n");
+	this_program ret = this_program();
+	foreach (trees; int i; object t) {
+	    ret->trees[i] = t - o->trees[i];
+	}
+	return ret;
     }
 }
 	
