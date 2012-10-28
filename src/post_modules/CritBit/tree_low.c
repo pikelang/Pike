@@ -28,9 +28,6 @@
 
 #ifndef cb_prefix_count
 # define cb_prefix_count		cb_prefix_count_fallback
-#else
-# undef cb_prefix_count
-# define cb_prefix_count		cb_prefix_count_fallback
 #endif
 
 #ifndef CB_SOURCE
@@ -56,7 +53,7 @@ static inline cb_size cb_prefix_count_fallback(const cb_string s1,
 					       const cb_string s2,
 					       const cb_size len,
 					       cb_size start) {
-    size_t i;
+    ptrdiff_t i;
     unsigned INT32 width = MAX(CB_WIDTH(s1), CB_WIDTH(s2));
 
     for (i = start.chars; i < len.chars; i++) {

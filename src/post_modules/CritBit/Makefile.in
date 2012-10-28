@@ -7,8 +7,8 @@ MODNAME=CritBit
 MODDIR=ADT.pmod/
 MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
-AUTODOC_SRC_IN=$(SRCDIR)/stringtree.c $(SRCDIR)/floattree.c $(SRCDIR)/inttree.c
-OBJS=glue.o inttree.o stringtree.o floattree.o
+AUTODOC_SRC_IN=$(SRCDIR)/stringtree.c $(SRCDIR)/floattree.c $(SRCDIR)/inttree.c $(SRCDIR)/bignumtree.c
+OBJS=glue.o inttree.o stringtree.o floattree.o bignumtree.o
 CONFIG_HEADERS=@CONFIG_HEADERS@
 CMOD_HEADERS=redefine.H tree_header.H iterator_source.H tree_source.H prefix.H
 COMMON_HEADERS=$(SRCDIR)/tree_high.c $(SRCDIR)/tree_low.h $(SRCDIR)/tree_low.c $(SRCDIR)/critbit/critbit.h $(SRCDIR)/common.h $(SRCDIR)/critbit/value_svalue.h $(SRCDIR)/bitvector.h
@@ -23,10 +23,13 @@ inttree.o: $(COMMON_HEADERS) $(SRCDIR)/inttree.c $(SRCDIR)/critbit/int2svalue.h 
 
 floattree.o: $(COMMON_HEADERS) $(SRCDIR)/floattree.c $(SRCDIR)/critbit/float2svalue.h $(SRCDIR)/critbit/key_float.h
 
+bignumtree.o: $(COMMON_HEADERS) $(SRCDIR)/bignumtree.c $(SRCDIR)/critbit/bignum2svalue.h $(SRCDIR)/critbit/key_bignum.h
+
 glue.o: $(SRCDIR)/glue.c
 
 $(SRCDIR)/stringtree.c: $(CMOD_HEADERS)
 $(SRCDIR)/inttree.c: $(CMOD_HEADERS)
 $(SRCDIR)/floattree.c: $(CMOD_HEADERS)
+$(SRCDIR)/bignumtree.c: $(CMOD_HEADERS)
 
 @dependencies@

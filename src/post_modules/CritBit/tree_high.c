@@ -12,10 +12,14 @@ static inline size_t _low_cb_check_node(cb_node_t node, const char *, int);
 
 #include "tree_low.c"
 
+#ifndef CB_FIRST_CHAR
+#define CB_FIRST_CHAR(key)	(0)
+#endif
+
 static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
     cb_size i;
 
-    for (i.chars = 0; i.chars < key.len.chars; i.chars++) {
+    for (i.chars = CB_FIRST_CHAR(key); i.chars < key.len.chars; i.chars++) {
 #ifdef CB_PRINT_CHAR
 	CB_PRINT_CHAR(buf, key.str, i.chars);
 #else
@@ -141,10 +145,18 @@ static inline int cb_print_path(struct string_builder *buf, cb_node_t node,
 static inline void cb_check(cb_node_t node, cb_node_t last, char *issue) {
 #ifdef DEBUG_CHECKS
     if (CB_LT(node->key.len, last->key.len)) {
-	printf("ERROR AT %s\n", issue);
-	cb_print_tree(last, 0);
-	printf("[%d, %d] is shorter than [%d, %d]\n", node->key.len.chars,
-	       node->key.len.bits, last->key.len.chars, last->key.len.bits);
+	struct string_builder buf;
+	init_string_builder(&buf, 0);
+	push_text("ERROR AT %s: %s\n[%d, %d] is shorter than [%d, %d]\n");
+	push_text(issue);
+	cb_print_tree(&buf, last, 0);
+	push_string(finish_string_builder(&buf));
+	push_int(node->key.len.chars);
+	push_int(node->key.len.bits);
+	push_int(last->key.len.chars);
+	push_int(last->key.len.bits);
+	f_werror(7);
+	pop_n_elems(1);
 	return;
     }
 #endif /* DEBUG_CHECKS */
