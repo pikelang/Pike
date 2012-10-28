@@ -432,6 +432,14 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     push_int64(arg->v_uint64);
     break;
 
+  case GI_TYPE_TAG_FLOAT:
+    push_float(arg->v_float);
+    break;
+
+  case GI_TYPE_TAG_DOUBLE:
+    push_float(arg->v_double);
+    break;
+
   case GI_TYPE_TAG_UTF8:
     push_text(arg->v_pointer);
     f_utf8_to_string(1);
