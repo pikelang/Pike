@@ -668,6 +668,7 @@ range_do_clone:
     /* keys are always non-complex, so we dont have to check them with the gc */
     GC_CHECK {
 	cb_node_t node = THIS->tree.root;
+	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
 		debug_gc_check_svalues(&_->value, 1,  " as a CritBit node value");
@@ -677,6 +678,7 @@ range_do_clone:
 
     GC_RECURSE {
 	cb_node_t node = THIS->tree.root;
+	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
 		gc_recurse_svalues(&_->value, 1);
