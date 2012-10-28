@@ -5,7 +5,7 @@
 constant this_program_does_not_exist = 1;
 #else
 
-inherit ADT._CritBit;
+inherit ADT._CritBit : C;
 //! @endignore
 
 //! Creates a CritBit tree for keys of type @expr{type@}. If no argument is given,
@@ -113,7 +113,7 @@ string get_ipv4(int ip, void|int prefix) {
 
 //!
 class DateTree {
-    inherit IntTree;
+    inherit C::IntTree;
     mapping(int:Calendar.TimeRange) backwards = ([]);
 
     //! Encodes a Calendar.TimeRange object into unix timestanp.
@@ -121,7 +121,6 @@ class DateTree {
 	if (objectp(o) && Program.inherits(object_program(o),
 					   Calendar.TimeRange)) {
 	    int t = o->unix_time();
-	    backwards[t] = o;
 	    return t;
 	}
 	return o;
@@ -133,6 +132,15 @@ class DateTree {
 	return has_index(backwards, i)
 	    ? backwards[i]
 	    : Calendar.Second("unix", i);
+    }
+
+    mixed `[]=(mixed key, mixed v) {
+	if (!intp(key)) {
+	    int k = encode_key(key);
+	    backwards[key] = k;
+	}
+
+	return ::`[]=(key, v);
     }
 
     //! Copy callback to also clone backwards
@@ -320,4 +328,284 @@ class MultiRangeSet {
     }
 }
 
-#endif	// constant (@module@)
+class Reverse(object tree) {
+    mixed `[](mixed k) {
+	return tree[k];
+    }
+
+    mixed `[]=(mixed k, mixed v) {
+	return tree[k] = v;
+    }
+
+    mixed next(mixed k) {
+	return tree->previous(k);
+    }
+
+    mixed previous(mixed k) {
+	return tree->next(k);
+    }
+
+    mixed first() {
+	return tree->last();
+    }
+
+    mixed last() {
+	return tree->first();
+    }
+
+    object _get_iterator(void|int step, void|mixed start, void|mixed stop) {
+	return tree->_get_iterator(-1*(step||1), stop, start);
+    }
+
+    mixed `[..](mixed a, int atype, mixed b, int btype) {
+	return tree->`[..](b, btype, a, atype);
+    }
+
+    array _values() {
+	return reverse(values(tree));
+    }
+
+    array _indices() {
+	return reverse(indices(tree));
+    }
+
+    object copy() {
+	return this_program(tree->copy());
+    }
+
+    object subtree(mixed k) {
+	return this_program(tree->subtree(k));
+    }
+
+    int(0..1) _equal(mixed other) {
+	if (!(objectp(other) && Program.inherits(object_program(other), this_program)))
+	    return 0;
+	return equal(tree, other->tree);
+    }
+
+    mixed _m_delete(mixed idx) {
+	return m_delete(tree, idx);
+    }
+
+    mixed nth(int n) {
+	return tree->nth(sizeof(tree)-n);
+    }
+
+    mixed _random() {
+	return random(tree);
+    }
+
+    int(0..) depth() {
+	return tree->depth();
+    }
+
+    mixed common_prefix() {
+	return tree->common_prefix();
+    }
+
+    mixed cast(string type) {
+	return tree->cast(type);
+    }
+}
+
+class MultiTree {
+    array(object) trees;
+    int itree(mixed k);
+
+    object tree(mixed k) {
+	int i = itree(k);
+	if (i == -1) error("Indexing %O with wrong type %O\n", this, k);
+	return trees[i];
+    }
+
+    void create(array|mapping|void init) {
+	if (mappingp(init)) {
+	    foreach (init; int i; mixed v) {
+		tree(i)[i] = v;
+	    }
+	} else if (arrayp(init)) {
+	    for (int j = 0; j < sizeof(init); j+=2) {
+		tree(init[j])[init[j]] = init[j+1];
+	    }
+	}
+    }
+
+    mixed `[](mixed i) {
+	return tree(i)[i];
+    }
+
+    mixed `[]=(mixed i, mixed m) {
+	return tree(i)[i] = m;
+    }
+
+    this_program `[..](mixed a, mixed atype, mixed b, mixed btype) {
+	this_program ret = this_program();
+	int ia = atype == Pike.OPEN_BOUND ? 0 : itree(a);
+	int ib = btype == Pike.OPEN_BOUND ? sizeof(trees)-1 : itree(b);
+
+	if (ia == ib) {
+	    ret->trees[ia] = trees[ia]->`[..](a, atype, b, btype);
+	} else {
+	    ret->trees[ia] = trees[ia]->`[..](a, atype, UNDEFINED, Pike.OPEN_BOUND);
+	    ret->trees[ib] = trees[ib]->`[..](UNDEFINED, Pike.OPEN_BOUND, b, btype);
+	    while (++ia < ib) {
+		ret->trees[ia] = trees[ia]->copy();
+	    }
+	}
+
+	return ret;
+    }
+
+    array(int) _indices() {
+	return `+(@map(trees, indices));
+    }
+
+    array(int) _values() {
+	return `+(@map(trees, values));
+    }
+
+    int(0..) _sizeof() {
+	return `+(@map(trees, sizeof));
+    }
+
+    mixed nth(int n) {
+	for (int i = 0; i < sizeof(trees); i++) {
+	    if (n < sizeof(trees[i])) {
+		return trees[i]->nth(i);
+	    }
+	    n -= sizeof(trees[i]);
+	}
+
+	return UNDEFINED;
+    }
+
+    mixed _m_delete(mixed idx) {
+	return m_delete(tree(idx), idx);
+    }
+
+    mixed _random() {
+	int n = random(sizeof(this));
+	return this[nth(n)];
+    }
+
+    int first() {
+	foreach (trees;; object t) {
+	    if (sizeof(t)) return t->first();
+	}
+    }
+
+    int last() {
+	for (int i = sizeof(trees)-1; i; i --) {
+	    if (sizeof(trees[i])) return trees[i]->last();
+	}
+    }
+
+    mixed next(mixed k) {
+	mixed ret;
+	int i = itree(k);
+	if (i == -1) error("Indexing %O with wrong type %O\n", this, k);
+	if (undefinedp(ret = trees[i]->next(k))) {
+	    for (i++; i < sizeof(trees); i++) {
+		if (sizeof(trees[i])) return trees[i]->first();
+	    }
+	}
+	return ret;
+    }
+
+    mixed previous(mixed k) {
+	mixed ret;
+	int i = itree(k);
+	if (i == -1) error("Indexing %O with wrong type %O\n", this, k);
+	if (undefinedp(ret = trees[i]->previous(k))) {
+	    for (i--; i; i--) {
+		if (sizeof(trees[i])) return trees[i]->last();
+	    }
+	}
+	return ret;
+    }
+
+    this_program copy() {
+	this_program ret = this_program();
+	ret->trees = trees->copy();
+	return ret;
+    }
+
+    int depth() {
+	return max(@trees->depth());
+    }
+
+    this_program subtree(mixed k) {
+	this_program ret = this_program();
+	int i = itree(k);
+	ret->trees[i] = trees[i]->subtree(k);
+	return ret;
+    }
+
+    int(0..1) _equal(mixed o) {
+	if (!(objectp(o) && Program.inherits(object_program(o), this_program))) return 0;
+	if (sizeof(o->trees) != sizeof(trees)) return 0;
+	foreach (trees; int i; object t) {
+	    if (!equal(t, o->trees[i])) return 0;
+	}
+	return 1;
+    }
+
+    object _get_iterator(void|int(-1..-1)|int(1..1) step) {
+	return MultiIterator(@trees->_get_iterator(step||1));
+    }
+
+    mixed cast(string type) {
+	return `+(@trees->cast(type));
+    }
+}
+	
+class MultiIterator {
+    array oit, it;
+
+    void create(object ... it) {
+	this_program::oit = it;
+	this_program::it = it + ({ });
+    }
+
+    int(0..1) `!() {
+	return !sizeof(it) || !it[0];
+    }
+
+    int(0..1) next() {
+	if (sizeof(it) && !it[0]->next()) it = it[1..];
+	while (sizeof(it) && !it[0]) it = it[1..];
+	return !!sizeof(it);
+    }
+
+    mixed value() {
+	if (!sizeof(it)) return UNDEFINED;
+	return it[0]->value();
+    }
+
+    mixed index() {
+	if (!sizeof(it)) return UNDEFINED;
+	return it[0]->index();
+    }
+
+    object _get_iterator() {
+	return this;
+    }
+}
+
+#if constant(ADT._CritBit.BigNumTree)
+// Don't let forcibly created "auto"bignums [Int.NATIVE_MIN, Int.NATIVE_MAX]
+// anywhere near this (except in the values, that's ok)!
+class IntTree {
+    inherit MultiTree;
+    array(object) trees = ({ Reverse(BigNumTree()), C::IntTree(), BigNumTree() });
+
+    int itree(mixed i) {
+	if (!intp(i)) error("Bad Index %O to %O\n", i, this);
+	if (is_bignum(i)) {
+	    return i < 0 ? 0 : 2;
+	} else return 1;
+    }
+}
+#endif // constant(ADT._CritBit.BigNumTree)
+
+#endif // constant(ADT._CritBit)

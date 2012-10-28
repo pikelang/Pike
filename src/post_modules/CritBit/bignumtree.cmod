@@ -1,0 +1,79 @@
+/* vim:syntax=c
+ */
+#include "machine.h"
+
+#define DEBUG_CHECKS
+#ifdef AUTO_BIGNUM
+
+#include "common.h"
+
+#include "critbit/bignum2svalue.h"
+static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
+    struct svalue s;
+
+    SET_SVAL(s, PIKE_T_OBJECT, 0, object, key.str);
+    string_builder_sprintf(buf, "%O", &s);
+}
+
+#define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
+    struct svalue * __ = (s);						\
+    SET_SVAL(*__, PIKE_T_OBJECT, 0, object, (key).str);			\
+    add_ref((key).str);							\
+} while(0)
+#define CB_PUSH_KEY(key)	ref_push_object((key).str);
+#define CB_STRING_FROM_SVALUE(v)	((v)->u.object)
+#define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
+#include "tree_high.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @ignore */
+/*! @module ADT */
+/*! @module CritBit */
+
+PIKECLASS BigNumTree {
+#cmod_define iterator_class Iterator
+#cmod_define tree_class BigNumTree
+#cmod_define cmod_OBJ2_TREE OBJ2_BIGNUMTREE
+#cmod_define T_KEY PIKE_T_OBJECT
+#cmod_define key_ptype bignum
+#cmod_define sval_type object
+/*
+#cmod_define sample_key 12
+#cmod_define sample_keys ({ 1025, 15000, 3 })
+#cmod_define ordered_keys 3, 1025 and 15000
+#cmod_define reverse_ordered_keys 15000, 1025 and 3
+#cmod_define sample_value ({ 1, 2 ,3 })
+#cmod_define extra_doc
+*/
+#cmod_include "redefine.H"
+
+#cmod_include "tree_header.H"
+#cmod_include "iterator_source.H"
+#undef THIS
+#define THIS THIS_BIGNUMTREE
+#cmod_include "tree_source.H"
+}
+
+PIKEFUN int(0..1) is_bignum(bignum i) {
+    if (TYPEOF(*i) == PIKE_T_INT) {
+	RETURN 0;
+    } else {
+	RETURN 1;
+    }
+}
+
+/*! @endmodule */
+/*! @endmodule */
+/*! @endignore */
+
+void pike_init_bignumtree_module(void) {
+    INIT
+}
+
+void pike_exit_bignumtree_module(void) {
+    EXIT
+}
+#endif
