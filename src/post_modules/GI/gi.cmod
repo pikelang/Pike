@@ -917,9 +917,9 @@ PIKECLASS FieldInfo
 {
   INHERIT BaseInfo;
 
-  /*! @decl int get_field(GBoxed box)
+  /*! @decl mixed get_field(GBoxed box)
    */
-  PIKEFUN int get_field(GBoxed box)
+  PIKEFUN mixed get_field(GBoxed box)
   {
     ONERROR onerror;
     GIArgument value;
