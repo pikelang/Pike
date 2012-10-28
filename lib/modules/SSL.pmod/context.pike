@@ -184,7 +184,7 @@ mapping(string:array(string)) sni_certificates = ([]);
 //!
 //! @note
 //!  keys objects may be generated from a decoded key string using
-//!  @Standards.PKCS.RSA.parse_private_key()].
+//!  @[Standards.PKCS.RSA.parse_private_key()].
 mapping(string:object) sni_keys = ([]);
 
 //! For client authentication. Used only if auth_level is AUTH_ask or
