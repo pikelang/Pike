@@ -120,7 +120,8 @@ class DynamicImporter {
     class Struct
     {
       static StructInfo info;
-      static mapping(string:mixed) attrs = ([]);
+      static mapping(string:FieldInfo) fields = ([]);
+      static mapping(string:Method) methods = ([]);
 
       static string _sprintf(int mode)
       {
@@ -152,39 +153,53 @@ class DynamicImporter {
 
       class Instance {
 	inherit GBoxed;
+
+	static private string format_fields()
+	{
+	  string s = 0;
+	  foreach(fields; string name; FieldInfo info)
+	    s = s? sprintf("%s, %s=%O", s, name, info->get_field(this)) :
+	      sprintf("%s=%O", name, info->get_field(this));
+	  return s || "";
+	}
+
 	static private string _sprintf(int mode)
 	{
-	  return mode == 'O' && sprintf("%O()", Struct::this);
+	  return mode == 'O' && sprintf("%O(%s)", Struct::this, format_fields());
 	}
 
 	static private mixed bind(mixed value)
 	{
+	  if (objectp(value) && object_program(value) == FieldInfo)
+	    return value->get_field(this);
 	  if (objectp(value) && object_program(value) == Method)
 	    return value->BoundMethod(this);
 	}
 
-	static array(string) _indices() { return Struct::_indices(); }
-	static array(mixed) _values() { return Struct::_values(); }
-	static mixed `[](string index) { return bind(Struct::`[](index)); }
+	static array(string) _indices() { return indices(fields)+Struct::_indices(); }
+	static array(mixed) _values() { return values(fields)->get_field(this)+Struct::_values(); }
+	static mixed `[](string index) { return bind(fields[index] || Struct::`[](index)); }
 	static mixed `->(string index, object|void o, int|void n) {
 	  if (o != Instance::this) {
 	    mixed real_value = ::`->(index, 2);
 	    if(real_value != UNDEFINED) return real_value;
 	  }
-	  return bind(Struct::`->(index));
+	  return bind(fields[index] || Struct::`[](index));
 	}
       }
 
-      static array(string) _indices() { return indices(attrs); }
-      static array(mixed) _values() { return values(attrs); }
-      static mixed `[](string index) { return attrs[index]; }
-      static mixed `->(string index) { return attrs[index]; }
+      static array(string) _indices() { return indices(methods); }
+      static array(mixed) _values() { return values(methods); }
+      static mixed `[](string index) { return methods[index]; }
+      static mixed `->(string index) { return methods[index]; }
 
       static void create(StructInfo si)
       {
 	info = si;
-	array(FunctionInfo) methods = si->get_methods();
-	attrs = mkmapping(methods->get_name(), map(methods, Method));
+	array(FieldInfo) fs = si->get_fields();
+	array(FunctionInfo) ms = si->get_methods();
+	fields = mkmapping(fs->get_name(), fs);
+	methods = mkmapping(ms->get_name(), map(ms, Method));
       }
 
       static Instance `()()

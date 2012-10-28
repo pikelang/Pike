@@ -894,6 +894,41 @@ PIKECLASS CallbackInfo
   INHERIT BaseInfo;
 }
 
+/*! @class FieldInfo
+ */
+
+PIKECLASS FieldInfo
+{
+  INHERIT BaseInfo;
+
+  /*! @decl int get_field(GBoxed box)
+   */
+  PIKEFUN int get_field(GBoxed box)
+  {
+    ONERROR onerror;
+    GIArgument value;
+    GITypeInfo *ti;
+    GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
+    struct GBoxed_struct *that =
+      (struct GBoxed_struct *)get_storage (box, GBoxed_program);
+    if (that == NULL)
+      Pike_error("argument is not a GBoxed\n");
+    if (that->box == NULL ||
+	!g_type_is_a(that->type,
+		     g_registered_type_info_get_g_type(sinfo)))
+      Pike_error("Boxed is not a %s\n",
+		 g_base_info_get_name(sinfo));
+    ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
+    SET_ONERROR(onerror, g_base_info_unref, ti);
+    if (!g_field_info_get_field((GIFieldInfo *)THIS->info, that->box, &value))
+      Pike_error("Field can not be read\n");
+    push_gi_argument(&value, ti);
+    UNSET_ONERROR(onerror);
+    g_base_info_unref(ti);
+    stack_pop_n_elems_keep_top(args);
+  }
+}
+
 /*! @class StructInfo
  */
 
@@ -915,6 +950,31 @@ PIKECLASS StructInfo
       GIBaseInfo *info;
       info =
 	(GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
+      SET_ONERROR(onerror2, g_base_info_unref, info);
+      push_gi_info(info);
+      UNSET_ONERROR(onerror2);
+      g_base_info_unref(info);
+      array_set_index_no_free(arr, i, Pike_sp-1);
+      pop_stack();
+    }
+    UNSET_ONERROR(onerror);
+    RETURN arr;
+  }
+
+  /*! @decl array(FieldInfo) get_fields()
+   */
+  PIKEFUN array(FieldInfo) get_fields()
+  {
+    ONERROR onerror, onerror2;
+    struct array *arr;
+    gssize i, num;
+    num = g_struct_info_get_n_fields((GIStructInfo *)THIS->info);
+    arr = allocate_array(num);
+    SET_ONERROR(onerror, do_free_array, arr);
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info =
+	(GIBaseInfo *)g_struct_info_get_field((GIStructInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1158,6 +1218,8 @@ static void push_gi_info(GIBaseInfo *info)
     p = UnionInfo_program; break;
   case GI_INFO_TYPE_VALUE:
     p = ValueInfo_program; break;
+  case GI_INFO_TYPE_FIELD:
+    p = FieldInfo_program; break;
   default:
     Pike_error("No class for %d\n", g_base_info_get_type(info));
   }
