@@ -8,6 +8,10 @@
 static struct block_allocator mapping_allocator = BA_INIT(sizeof(struct mapping), 256),
 			      iter_allocator = BA_INIT(sizeof(struct mapping_iterator), 128);
 
+void free_all_mapping_blocks() {
+    ba_destroy(&mapping_allocator);
+}
+
 static void unlink_iterator(struct mapping_iterator * it) {
     struct mapping * m = it->m;
     DOUBLEUNLINK(m->first_iterator, it);
@@ -84,6 +88,10 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
     add_ref(m);
 
     DOUBLELINK(first_mapping, m);
+
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
 
     return m;
 }
@@ -225,6 +233,9 @@ unfreeze:
 	UNSET_ONERROR(err);
     }
     mark_leave(&m->marker);
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
 }
 
 PMOD_EXPORT void mapping_insert(struct mapping *m,
@@ -317,7 +328,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     const struct svalue *key,
 				     TYPE_T type) {
     struct keypair ** t = really_low_mapping_lookup(m, key);
-    return *t ? &(*t)->u.val.u : NULL;
+    return t ? &(*t)->u.val.u : NULL;
 }
 
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
@@ -1091,6 +1102,9 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
     mapping_it_reset(&ita);
     mapping_it_reset(&itb);
 
+    ka = mapping_it_current(&ita);
+    kb = mapping_it_current(&itb);
+
     do {
 	if (ka->hval != kb->hval) return 0;
 	if (is_identical(&ka->key, &kb->key) && is_identical(&ka->u.val, &kb->u.val)) continue;
@@ -1235,6 +1249,10 @@ static int m_foreach(void * _start, void * _stop, void * d) {
 void check_mapping(const struct mapping *m) {
     if (!m->trash && m->allocator.h.used != m->size) {
 	Pike_error("allocator has %u blocks, but size is %u\n", m->allocator.h.used, m->size);
+    }
+
+    if (m->hash_mask != ~(unsigned INT32)0 >> m->magnitude) {
+	Pike_error("hash_mask %x and magnitude %u dont match.\n", m->hash_mask, m->magnitude);
     }
 }
 void check_all_mappings(void) {
@@ -1474,7 +1492,9 @@ unsigned gc_touch_all_mappings(void) {
 }
 
 void gc_check_all_mappings(void) {
-    ba_walk(&mapping_allocator, m_foreach, gc_check_mapping);
+    struct mapping *m;
+
+    for (m=first_mapping;m;m=m->next) gc_check_mapping(m);
 }
 
 #include "mapping_common.c"

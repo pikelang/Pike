@@ -133,6 +133,8 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, struc
 PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, struct array *b, INT32 op);
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
+void describe_mapping(struct mapping *m,struct processing *p,int indent);
+node *make_node_from_mapping(struct mapping *m);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 						     struct mapping *p);
@@ -181,6 +183,7 @@ void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 int mapping_is_constant(struct mapping *m,
 			struct processing *p);
+void free_all_mapping_blocks();
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 #define visit_mapping_ref(M, REF_TYPE)				\
@@ -243,10 +246,10 @@ static INLINE struct keypair ** low_get_bucket(const struct mapping * m, unsigne
 
 
 static INLINE void mapping_it_reset(struct mapping_iterator * it) {
-    unsigned INT32 i = 0;
+    unsigned INT32 i;
     const struct mapping * m = it->m;
-    struct keypair ** slot = NULL;
-    for (; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
+    struct keypair ** slot;
+    for (i = 0; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
     it->current = slot;
 }
 
@@ -273,19 +276,22 @@ static INLINE struct keypair * mapping_it_current(struct mapping_iterator * it) 
 static INLINE void mapping_it_step(struct mapping_iterator * it) {
     struct keypair ** slot = it->current;
     const struct mapping * m = it->m;
+    
+    if (slot) {
+	do {
+	    struct keypair * k = *slot;
+	    if (k->next) {
+		slot = &k->next;
+	    } else {
+		unsigned INT32 i = (k->hval >> m->magnitude) + 1;
+		slot = NULL;
+		
+		for (; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
+	    }
+	} while (slot && *slot && keypair_deleted(*slot));
 
-    do {
-	struct keypair * k = *slot;
-	if (k->next) {
-	    slot = &k->next;
-	} else {
-	    unsigned INT32 i = (k->hval >> m->magnitude) + 1;
-	    
-	    for (; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
-	}
-    } while (*slot && keypair_deleted(*slot));
-
-    it->current = *slot ? slot : NULL;
+	it->current = slot;
+    }
 }
 
 static INLINE int mapping_it_next(struct mapping_iterator * it,
