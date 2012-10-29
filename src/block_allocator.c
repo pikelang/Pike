@@ -8,4 +8,8 @@
 #define BA_CMEMSET cmemset
 #define BA_XALLOC xalloc
 
+#ifdef PIKE_DEBUG
+#define BA_DEBUG
+#endif
+
 #include "gjalloc.c"
