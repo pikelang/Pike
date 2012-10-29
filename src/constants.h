@@ -53,6 +53,7 @@ BLOCK_ALLOC_FILL_PAGES(callable,2);
 #else
 void really_free_callable(struct callable * c);
 void count_memory_in_callables(size_t * num, size_t * size);
+void free_all_callable_blocks();
 #endif
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,

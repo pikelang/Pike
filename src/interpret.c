@@ -1946,6 +1946,9 @@ void really_free_pike_frame(struct pike_frame * f) {
 void count_memory_in_pike_frames(size_t * num, size_t * size) {
     ba_count_all(&pike_frame_allocator, num, size);
 }
+void free_all_pike_frame_blocks() {
+    ba_destroy(&pike_frame_allocator);
+}
 #endif
 
 

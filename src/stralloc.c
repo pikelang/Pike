@@ -2186,9 +2186,15 @@ void cleanup_shared_string_table(void)
   num_strings=0;
 
 #ifdef DO_PIKE_CLEANUP
+# ifdef PIKE_NEW_BLOCK_ALLOC
+  ba_destroy(string_allocator+0);
+  ba_destroy(string_allocator+1);
+  ba_destroy(string_allocator+2);
+# else
   free_all_short_pike_string0_blocks();
   free_all_short_pike_string1_blocks();
   free_all_short_pike_string2_blocks();
+# endif
 #endif /* DO_PIKE_CLEANUP */
 }
 
