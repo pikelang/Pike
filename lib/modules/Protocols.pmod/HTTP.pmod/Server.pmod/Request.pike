@@ -51,7 +51,9 @@ protected class Port {
   void destroy();
 }
 
+//! The socket that this request came in on.
 Stdio.File my_fd;
+
 Port server_port;
 .HeaderParser headerparser;
 
@@ -579,6 +581,17 @@ string make_response_header(mapping m)
        res+=({"Connection: Close"});
 
    return res*"\r\n"+"\r\n\r\n";
+}
+
+//! Return the IP address that originated the request, or 0 if
+//! the IP address could not be determined. In the event of an
+//! error, @[my_fd]@tt{->errno()@} will be set.
+string get_ip()
+{
+	string addr = my_fd?->query_address();
+	if (!addr) return 0;
+	sscanf(addr,"%s ",addr);
+	return addr;
 }
 
 //! return a properly formatted response to the HTTP client
