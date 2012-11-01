@@ -39,7 +39,7 @@ struct callback
 #ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 #else
-#include "gjalloc.h"
+#include "block_allocator.h"
 static struct block_allocator callback_allocator
     = BA_INIT(sizeof(struct callback), CALLBACK_CHUNK);
 

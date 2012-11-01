@@ -441,7 +441,7 @@ static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_ex
 
 BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
 #else
-#include "gjalloc.h"
+#include "block_allocator.h"
 
 struct block_allocator gc_rec_frame_allocator =
     BA_INIT_PAGES(sizeof(struct gc_rec_frame), 2*PIKE_MALLOC_PAGE_SIZE);

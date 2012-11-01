@@ -21,11 +21,7 @@
  * we have to rename these functions, they
  * are already defined in bitvector.h
  */
-# define round_up32_ my_round_up32_
-# define round_up32 my_round_up32
-# include "gjalloc.h"
-# undef round_up32_
-# undef round_up32
+# include "block_allocator.h"
 #else
 /* we use this as a CVAR, and since we dont have
  * PIKE_NEW_BLOCK_ALLOC as a cmod_define, we need

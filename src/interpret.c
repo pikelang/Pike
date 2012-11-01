@@ -1928,7 +1928,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
 #ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
 #else
-#include "gjalloc.h"
+#include "block_allocator.h"
 struct block_allocator pike_frame_allocator = BA_INIT_PAGES(sizeof(struct pike_frame),
 							    4*PIKE_MALLOC_PAGE_SIZE);
 ATTRIBUTE((malloc))

@@ -1754,6 +1754,7 @@ AC_ARG_WITH(facets, MY_DESCR([--with-facets],
 
 AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
 				[disable struct pike_type (IGNORED).]))
+AC_ARG_WITH(new-block-alloc, MY_DESCR([--with-new-block-alloc],[enable the new block allocator]), [with_new_block_alloc=yes],[with_new_block_alloc=no])
 
 if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
@@ -1869,6 +1870,10 @@ if test "x$with_rtldebug" = xyes ; then
   AC_DEFINE(PIKE_DEBUG)
 fi
 
+if test "x$with_new_block_alloc" = xyes; then
+  AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [Use new block allocator.])
+fi
+
 #############################################################################
 
 
@@ -1910,6 +1915,8 @@ if test "$cflags_is_set" = "no"; then
       # gcc complains that it doesn't support this when compiling
       # without optimizations.
       AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
+    else
+      AC_SYS_COMPILER_FLAG(-fno-inline,CFLAGS)
     fi
     AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
     AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
@@ -2585,26 +2592,6 @@ TEST_BUILTIN(__cntlz4, 23)
 TEST_BUILTIN(__cntlz8, 23)
 TEST_BUILTIN(__cnttz4, 23)
 TEST_BUILTIN(__cnttz8, 23)
-
-OLDLIBS=$LIBS
-LIBS="${LIBS} -lgjalloc"
-AC_TRY_RUN([
-#include <gjalloc.h>
-    struct block_allocator a;
-    int main() {
-	return 0;
-    }
-    ],
-    [pike_has_gjalloc=yes],
-    [pike_has_gjalloc=no],
-    [pike_has_gjalloc=no])
-
-if test "$pike_has_gjalloc" = yes; then
-  AC_DEFINE([PIKE_NEW_BLOCK_ALLOC], [], [Define this if GJAlloc should be used.])
-else
-  LIBS=$OLDLIBS
-  PIKE_MSG_WARN([ Gjalloc could not be found, thats bad!])
-fi
 
 
 #############################################################################

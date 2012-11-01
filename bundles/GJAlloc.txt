@@ -1,3 +1,0 @@
-Clone GJAlloc from github (git://github.com/arneg/GJAlloc.git)
-and make a .tar.gz using the proper makefile targets. Alternatively,
-download it from http://fortranland.com/GJAlloc-0.08.tar.gz.

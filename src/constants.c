@@ -86,7 +86,7 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
 
 BLOCK_ALLOC_FILL_PAGES(callable,2)
 #else
-#include "gjalloc.h"
+#include "block_allocator.h"
 static struct block_allocator callable_allocator
     = BA_INIT_PAGES(sizeof(struct callable), 2*PIKE_MALLOC_PAGE_SIZE);
 

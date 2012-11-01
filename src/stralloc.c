@@ -598,7 +598,7 @@ BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
    } while(0)
 
 #else
-#include "gjalloc.h"
+#include "block_allocator.h"
 
 static struct block_allocator string_allocator[] = {
     BA_INIT(sizeof(struct short_pike_string0), SHORT_STRING_BLOCK),

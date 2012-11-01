@@ -96,7 +96,7 @@ struct piece
 #ifndef PIKE_NEW_BLOCK_ALLOC
 BLOCK_ALLOC_FILL_PAGES (piece, 2);
 #else
-#include "gjalloc.h"
+#include "gjalloc/gjalloc.h"
 static struct block_allocator piece_allocator
     = BA_INIT_PAGES(sizeof(struct piece), 2*PIKE_MALLOC_PAGE_SIZE);
 
