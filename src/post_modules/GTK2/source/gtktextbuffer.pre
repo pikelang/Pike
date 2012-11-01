@@ -645,9 +645,9 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     tag=gtk_text_tag_new(name);
     gtk_text_tag_table_add(gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj)),tag);
     NEW_MAPPING_LOOP(m->data) {
-      if (TYPEOF(k->ind) == PIKE_T_STRING) {
-	char *s=PGTK_GETSTR(&k->ind);
-	pgtk2_set_property(G_OBJECT(tag),s,&k->val);
+      if (TYPEOF(keypair_ind(k)) == PIKE_T_STRING) {
+	char *s=PGTK_GETSTR(&keypair_ind(k));
+	pgtk2_set_property(G_OBJECT(tag),s,&keypair_val(k));
 	PGTK_FREESTR(s);
       }
     }

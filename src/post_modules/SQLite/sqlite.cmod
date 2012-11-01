@@ -79,29 +79,29 @@ static void bind_arguments(sqlite3 *db,
   struct keypair *k;
   NEW_MAPPING_LOOP(md) {
     int idx;
-    switch(TYPEOF(k->ind)) {
+    switch(TYPEOF(keypair_ind(k))) {
     case T_INT:
-      idx = k->ind.u.integer;
+      idx = keypair_ind(k).u.integer;
       break;
     case T_STRING:
-      ref_push_string(k->ind.u.string);
+      ref_push_string(keypair_ind(k).u.string);
       f_string_to_utf8(1);
       idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
       pop_stack();
       if(!idx)
-	Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
+	Pike_error("Unknown bind index \"%S\".\n", keypair_ind(k).u.string);
       break;
     default:
       Pike_error("Bind index is not int|string.\n");
     }
-    switch(TYPEOF(k->val)) {
+    switch(TYPEOF(keypair_ind(k))) {
     case T_INT:
-      ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer),
+      ERR( sqlite3_bind_int64(stmt, idx, keypair_ind(k).u.integer),
 	   db );
       break;
     case T_STRING:
       {
-	struct pike_string *s = k->val.u.string;
+	struct pike_string *s = keypair_ind(k).u.string;
 	switch(s->size_shift) {
 	case 0:
 	  ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
@@ -126,7 +126,7 @@ static void bind_arguments(sqlite3 *db,
       }
       break;
     case T_FLOAT:
-      ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
+      ERR( sqlite3_bind_double(stmt, idx, (double)keypair_val(k).u.float_number),
 	   db);
       break;
     default:

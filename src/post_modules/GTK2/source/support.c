@@ -1295,15 +1295,15 @@ GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m) {
     Pike_error("Could not get a reference to type %s.\n",g_type_name(type));
   params=g_new0(GParameter,m_sizeof(m));
   NEW_MAPPING_LOOP(m->data) {
-    if (TYPEOF(k->ind) == PIKE_T_STRING) {
-      gchar *s=PGTK_GETSTR(&k->ind);
+    if (TYPEOF(keypair_ind(k)) == PIKE_T_STRING) {
+      gchar *s=PGTK_GETSTR(&keypair_ind(k));
       pspec=g_object_class_find_property(class,s);
       if (!pspec) {
 	PGTK_FREESTR(s);
 	continue;
       }
 /*      g_value_init(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec)); */
-      pgtk2_set_gvalue(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec),&k->val);
+      pgtk2_set_gvalue(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec),&keypair_val(k));
       params[i++].name=s;
     }
   }

@@ -168,14 +168,14 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
       notfirst = 1;
     }
 
-    if (TYPEOF(k->ind) != T_STRING)
+    if (TYPEOF(keypair_ind(k)) != T_STRING)
       Pike_error ("Cannot json encode mapping with non-string index %O.\n",
-		  &k->ind);
-    json_encode_recur (ctx, &k->ind);
+		  &keypair_ind(k));
+    json_encode_recur (ctx, &keypair_ind(k));
 
     string_builder_putchar (buf, ':');
     if (ctx->indent >= 0) string_builder_putchar (buf, ' ');
-    json_encode_recur (ctx, &k->val);
+    json_encode_recur (ctx, &keypair_val(k));
   }
 }
 
