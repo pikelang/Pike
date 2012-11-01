@@ -4,19 +4,11 @@
 #include "pike_macros.h"
 #include "svalue.h"
 #include "global.h"
-#define EXPORT PMOD_EXPORT
-#define ba_error Pike_error
-#define round_up32_ ba_round_up32_
-#define round_up32 ba_round_up32
-#include "gjalloc.h"
-#undef EXPORT
-#undef round_up32_
-#undef round_up32
-#undef ba_error
+#include "block_allocator.h"
 #include <stdint.h>
 
 #ifndef INITIAL_MAGNITUDE
-# define INITIAL_MAGNITUDE	4
+# define INITIAL_MAGNITUDE	8
 #endif
 
 #ifndef AVG_CHAIN_LENGTH
@@ -78,7 +70,10 @@ struct mapping {
 
 struct mapping_iterator {
     struct mapping_iterator * next, * prev;
-    struct keypair ** current;
+    union {
+	struct keypair * k;
+	struct keypair ** current;
+    } u;
     struct mapping * m;
 };
 
@@ -248,9 +243,12 @@ static INLINE struct keypair ** low_get_bucket(const struct mapping * m, unsigne
 static INLINE void mapping_it_reset(struct mapping_iterator * it) {
     unsigned INT32 i;
     const struct mapping * m = it->m;
-    struct keypair ** slot;
-    for (i = 0; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
-    it->current = slot;
+    struct keypair * k = NULL;
+    for (i = 0; i <= m->hash_mask; i++) if (m->table[i]) {
+	k = m->table[i];
+	break;
+    }
+    it->u.k = k;
 }
 
 static INLINE void mapping_it_init(struct mapping_iterator * it, struct mapping * m) {
@@ -270,54 +268,56 @@ static INLINE void mapping_it_exit(struct mapping_iterator * it) {
 }
 
 static INLINE struct keypair * mapping_it_current(struct mapping_iterator * it) {
-    return it->current ? *it->current : NULL;
+    return it->u.k;
 }
 
 static INLINE void mapping_it_step(struct mapping_iterator * it) {
-    struct keypair ** slot = it->current;
+    struct keypair * k = it->u.k;
     const struct mapping * m = it->m;
     
-    if (slot) {
-	do {
-	    struct keypair * k = *slot;
-	    if (k->next) {
-		slot = &k->next;
-	    } else {
-		unsigned INT32 i = (k->hval >> m->magnitude) + 1;
-		slot = NULL;
-		
-		for (; i <= m->hash_mask; i++) if (*(slot = m->table + i)) break;
-	    }
-	} while (slot && *slot && keypair_deleted(*slot));
+    do {
+	if (k->next) {
+	    k = k->next;
+	} else {
+	    unsigned INT32 i = (k->hval >> m->magnitude) + 1;
+	    k = NULL;
 
-	it->current = slot;
-    }
+	    for (; i <= m->hash_mask; i++) if (m->table[i]) {
+		k = m->table[i];
+		break;
+	    }
+	}
+    } while (k && keypair_deleted(k));
+
+    it->u.k = k;
 }
 
 static INLINE int mapping_it_next(struct mapping_iterator * it,
 				  struct keypair ** t) {
-    if (it->current) {
-	mapping_it_step(it);
-    }
-    if (!it->current) {
-	*t = NULL;
+    if (!it->u.k) {
+	if (t) *t = NULL;
 	return 0;
     }
-    *t = *it->current;
+
+    mapping_it_step(it);
+
+    if (!it->u.k) {
+	if (t) *t = NULL;
+	return 0;
+    }
+
+    if (t) *t = it->u.k;
     return 1;
 }
 
-static INLINE void mapping_it_delete(struct mapping_iterator * it) {
-    struct mapping * m = it->m;
-    struct keypair ** slot = it->current;
+static INLINE void mapping_delete_slot(struct mapping * m, struct keypair ** slot) {
     struct keypair * k;
-    if (!slot) return;
 
     k = *slot;
+    *slot = k->next;
 
     mark_free_svalue(&k->key);
     mark_free_svalue(&k->u.val);
-    mapping_it_step(it);
 
     /* this seems paradoxical. but we dont require iterators to be
      * registered with the mapping */
@@ -332,7 +332,7 @@ static INLINE void mapping_it_delete(struct mapping_iterator * it) {
 
 static INLINE void mapping_builder_init(struct mapping_iterator * it,
 					struct mapping * m) {
-    it->current = NULL;
+    it->u.current = NULL;
     it->m = m;
     it->next = it->prev = NULL;
 }
@@ -345,23 +345,24 @@ static INLINE void mapping_builder_add(struct mapping_iterator * it, struct keyp
     struct keypair * n;
     struct mapping * m = it->m;
 
-    if (it->current) {
-	const struct keypair * prev = keypair_from_slot(it->current);
+    if (it->u.current) {
+	const struct keypair * prev = keypair_from_slot(it->u.current);
 	if ((prev->hval ^ k->hval) >> m->magnitude)
 	    goto new_slot;
     } else {
 new_slot:
-	it->current = low_get_bucket(m, k->hval);
+	it->u.current = low_get_bucket(m, k->hval);
     }
     n = ba_lalloc(&m->allocator);
     n->next = NULL;
     n->hval = k->hval;
     assign_svalue_no_free(&n->key, &k->key);
     assign_svalue_no_free(&n->u.val, &k->u.val);
-    *it->current = n;
-    it->current = &n->next;
+    *it->u.current = n;
+    it->u.current = &n->next;
     m->key_types |= 1 << TYPEOF(k->key);
     m->val_types |= 1 << TYPEOF(k->u.val);
+    m->size++;
 }
 
 static INLINE void mapping_builder_finish(struct mapping_iterator * it) {
