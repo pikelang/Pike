@@ -261,9 +261,6 @@ unfreeze:
 PMOD_EXPORT void mapping_insert(struct mapping *m,
 				const struct svalue *key,
 				const struct svalue *val) {
-    if (IS_UNDEFINED(key)) {
-	Pike_error("undefined is not a proper key.\n");
-    }
     /* TODO: would 2 not be better? */
     low_mapping_insert(m, key, val, 1);
 }
@@ -432,7 +429,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m) {
 	struct keypair ** t = m->table + i;
 
 	while (*t) {
-	    const struct keypair * k = *t;
+	    struct keypair * k = *t;
 	    check_destructed(& k->u.val);
 
 	    if((TYPEOF(k->key) == T_OBJECT || TYPEOF(k->key) == T_FUNCTION) && !k->key.u.object->prog) {
