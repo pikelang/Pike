@@ -324,12 +324,12 @@ struct block_allocator {
 #endif
 };
 
-static INLINE int ba_is_low(struct ba_layout * l, struct ba_page_header * h) {
+static INLINE int ba_is_low(const struct ba_layout * l, const struct ba_page_header * h) {
     const uint32_t th = l->blocks >> 1;
     return h->used < th;
 }
 
-static INLINE int ba_is_high(struct ba_layout * l, struct ba_page_header * h) {
+static INLINE int ba_is_high(const struct ba_layout * l, const struct ba_page_header * h) {
     const uint32_t th = l->blocks >> 1;
     return h->first && h->used >= th;
 }
@@ -523,6 +523,9 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 #ifdef BA_STATS
     struct ba_stats *s = &a->stats;
 #endif
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "before ba_alloc", __FILE__, __LINE__);
+#endif
 
     if (unlikely(ba_empty(&a->h))) {
 #ifdef BA_DEBUG
@@ -560,7 +563,7 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
     }
 #endif
 #ifdef BA_DEBUG
-	ba_check_allocator(a, "after ba_alloc", __FILE__, __LINE__);
+    ba_check_allocator(a, "after ba_alloc", __FILE__, __LINE__);
 #endif
 
 #ifdef BA_USE_VALGRIND
@@ -590,6 +593,10 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 
 #ifdef BA_DEBUG
+    ba_check_allocator(a, "before ba_free", __FILE__, __LINE__);
+#endif
+
+#ifdef BA_DEBUG
     if (a->empty_pages == a->num_pages) {
 	BA_ERROR(a, "we did it!\n");
     }
@@ -616,6 +623,9 @@ DO_FREE:
 #ifdef BA_USE_VALGRIND
     VALGRIND_MAKE_MEM_NOACCESS(ptr, a->l.block_size);
     VALGRIND_MEMPOOL_FREE(a, ptr);
+#endif
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "after ba_free", __FILE__, __LINE__);
 #endif
 }
 

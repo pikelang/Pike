@@ -33,8 +33,20 @@ static void ba_update_slot(struct block_allocator * a,
 
 #define BA_BYTES(a)	( (sizeof(void*) * ((a)->allocated) ) )
 
+static void ba_print_header(const struct ba_page_header * h) {
+    fprintf(stderr, "{ %p, %u }", h->first, h->used);
+}
+
+static void ba_print_page(const struct ba_page * p) {
+    fprintf(stderr, "Page(%p, ", p);
+    if (p) ba_print_header(&p->h);
+    fprintf(stderr, ")");
+}
+
 #define PRINT_NODE(a, name) do {		\
-    fprintf(stderr, #name": %p\n", a->name);	\
+    fprintf(stderr, #name": ");			\
+    ba_print_page(a->name);			\
+    fprintf(stderr, "\n");			\
 } while (0)
 
 #define PRINT_LIST(a, name) do {		\
@@ -42,7 +54,8 @@ static void ba_update_slot(struct block_allocator * a,
     struct ba_page * _p = (a->name);		\
     fprintf(stderr, #name": ");			\
     while (_p) {				\
-	fprintf(stderr, "%p -> ", _p);		\
+	ba_print_page(_p);			\
+	fprintf(stderr, " -> ");		\
 	if (c++ > a->num_pages) break;		\
 	_p = _p->next;				\
     }						\
@@ -52,11 +65,17 @@ static void ba_update_slot(struct block_allocator * a,
 
 
 EXPORT void ba_show_pages(const struct block_allocator * a) {
-    fprintf(stderr, "allocated: %u\n", a->allocated);
-    fprintf(stderr, "num_pages: %u\n", a->num_pages);
-    fprintf(stderr, "max_empty_pages: %u\n", a->max_empty_pages);
-    fprintf(stderr, "empty_pages: %u\n", a->empty_pages);
+    fprintf(stderr, "\n==============================================================================\n");
+    fprintf(stderr, "pages: %u of %u\n", a->num_pages, a->allocated);
     fprintf(stderr, "magnitude: %u\n", a->magnitude);
+    fprintf(stderr, "empty_pages: %u of %u\n", a->empty_pages, a->max_empty_pages);
+    fprintf(stderr, "layout: %u of size %u (offset: %llu)\n", a->l.blocks, a->l.block_size,
+	    (unsigned long long)a->l.offset);
+    fprintf(stderr, "h: ");
+    ba_print_header(&a->h);
+    fprintf(stderr, "\nhf: ");
+    ba_print_header(&a->hf);
+    fprintf(stderr, "\n");
     PRINT_NODE(a, alloc);
     PRINT_LIST(a, pages[0]);
     PRINT_LIST(a, pages[1]);
@@ -76,6 +95,7 @@ EXPORT void ba_show_pages(const struct block_allocator * a) {
 		blocks_used,
 		p->prev, p->next);
     });
+    fprintf(stderr, "\n==============================================================================\n");
 }
 
 #ifdef BA_STATS
@@ -566,7 +586,7 @@ LOOKUP:
 }
 
 #ifdef BA_DEBUG
-EXPORT INLINE void ba_check_allocator(const struct block_allocator * a,
+EXPORT void ba_check_allocator(const struct block_allocator * a,
 				      const char *fun, const char *file,
 				      int line) {
     uint32_t n;
@@ -575,6 +595,38 @@ EXPORT INLINE void ba_check_allocator(const struct block_allocator * a,
 
     if (a->alloc)
 	a->alloc->h = a->h;
+
+    p = a->pages[BA_SLOT_HIGH];
+
+    while (p) {
+	if (p == a->alloc) {
+	    fprintf(stderr, "a->alloc found in list\n");
+	    bad = 1;
+	}
+	if (ba_is_low(&a->l, &p->h)) {
+	    fprintf(stderr, "page ");
+	    ba_print_page(p);
+	    fprintf(stderr, " is in wrong list\n");
+	    bad = 1;
+	}
+	p = p->next;
+    }
+
+    p = a->pages[BA_SLOT_LOW];
+
+    while (p) {
+	if (p == a->alloc) {
+	    fprintf(stderr, "a->alloc found in list\n");
+	    bad = 1;
+	}
+	if (ba_is_high(&a->l, &p->h)) {
+	    fprintf(stderr, "page ");
+	    ba_print_page(p);
+	    fprintf(stderr, " is in wrong list\n");
+	    bad = 1;
+	}
+	p = p->next;
+    }
 
     if (a->empty_pages > a->num_pages) {
 	fprintf(stderr, "too many empty pages.\n");
@@ -618,14 +670,10 @@ EXPORT INLINE void ba_check_allocator(const struct block_allocator * a,
 	}
 
     }
-    if (bad)
-	ba_print_htable(a);
-
     if (bad) {
 	ba_show_pages(a);
 	fprintf(stderr, "\nCalled from %s:%d:%s\n", fun, line, file);
-	fprintf(stderr, "pages: %u\n", a->num_pages);
-	BA_ERROR(a, "bad");
+	ba_error(a, "bad");
     }
 }
 #endif
