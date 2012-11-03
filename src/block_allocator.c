@@ -9,8 +9,12 @@
 #define BA_XALLOC xalloc
 
 #ifdef PIKE_DEBUG
-#undef BA_DEBUG
-#define BA_DEBUG
+# undef BA_DEBUG
+# define BA_DEBUG
+#endif
+
+#ifdef USE_VALGRIND
+# define BA_USE_VALGRIND
 #endif
 
 #include "gjalloc/gjalloc.c"
