@@ -349,18 +349,18 @@ EXPORT void ba_count_all(struct block_allocator * a, size_t *num,
     *num = ba_count(a);
 }
 
-EXPORT size_t ba_count(struct block_allocator * a) {
+EXPORT size_t ba_count(const struct block_allocator * a) {
     size_t n = 0;
-
-    if (a->alloc) a->alloc->h = a->h;
-    if (a->last_free) {
-	ba_update_slot(a, a->last_free, &a->hf);
-	a->last_free = NULL;
-    }
 
     PAGE_LOOP(a, {
 	n += p->h.used;
     });
+
+    if (a->alloc)
+	n += a->h.used - a->alloc->h.used;
+    if (a->last_free)
+	n += a->hf.used - a->last_free->h.used;
+
     return n;
 }
 
@@ -923,11 +923,16 @@ EXPORT void ba_remove_page(struct block_allocator * a) {
  * Here come local allocator definitions
  */
 
-EXPORT size_t ba_lcount(struct ba_local * a) {
+EXPORT size_t ba_lcount(const struct ba_local * a) {
     if (a->a) {
-	if (a->page) a->page->h = a->h;
-	if (a->last_free) a->last_free->h = a->hf;
-	return ba_count(a->a);
+	size_t n = ba_count(a->a);
+
+	if (a->page)
+	    n += a->h.used - a->page->h.used;
+	if (a->last_free)
+	    n += a->hf.used - a->last_free->h.used;
+
+	return n;
     } else {
 	return (size_t)(a->page ? a->h.used : 0);
     }
@@ -1150,7 +1155,10 @@ EXPORT void ba_walk(struct block_allocator * a, ba_walk_callback callback,
     if (a->alloc)
 	a->alloc->h = a->h;
 
-    if (a->last_free) ba_update_slot(a, a->last_free, &a->hf);
+    if (a->last_free) {
+	ba_update_slot(a, a->last_free, &a->hf);
+	a->last_free = NULL;
+    }
 
     PAGE_LOOP(a, {
 	if (p->h.used) {
@@ -1158,8 +1166,6 @@ EXPORT void ba_walk(struct block_allocator * a, ba_walk_callback callback,
 	}
     });
 
-    if (a->last_free)
-	a->hf = a->last_free->h;
     if (a->alloc)
 	a->h = a->alloc->h;
 }
@@ -1173,9 +1179,11 @@ EXPORT void ba_walk_local(struct ba_local * a, ba_walk_callback callback,
 	    ba_walk_page(&a->l, a->page, callback, data);
 	}
     } else {
-	if (a->last_free) ba_update_slot(a->a, a->last_free, &a->hf);
+	if (a->last_free) {
+	    ba_update_slot(a->a, a->last_free, &a->hf);
+	    a->last_free = NULL;
+	}
 	ba_walk(a->a, callback, data);
-	if (a->last_free) a->hf = a->last_free->h;
     }
     if (a->page)
 	a->h = a->page->h;
@@ -1323,7 +1331,7 @@ in_row:
 	    free_block->next = BA_ONE;
 	} else do {
 	    struct ba_block_header * tmp = free_block;
-	    size_t free_bytes = l->block_size;
+	    ptrdiff_t free_bytes = l->block_size;
 
 	    while ((char*)tmp->next == (char*)tmp + l->block_size) {
 		tmp = tmp->next;

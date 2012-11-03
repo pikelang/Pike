@@ -389,7 +389,7 @@ EXPORT void ba_print_hashstats(const struct block_allocator * a);
 EXPORT void ba_print_stats(struct block_allocator * a);
 #endif
 EXPORT void ba_free_all(struct block_allocator * a);
-EXPORT size_t ba_count(struct block_allocator * a);
+EXPORT size_t ba_count(const struct block_allocator * a);
 EXPORT void ba_count_all(struct block_allocator * a, size_t *num,
 			 size_t *size);
 EXPORT void ba_destroy(struct block_allocator * a);
@@ -723,7 +723,7 @@ EXPORT void ba_init_local(struct ba_local * a, uint32_t block_size,
 EXPORT void ba_local_grow(struct ba_local * a, uint32_t blocks);
 EXPORT void ba_local_get_page(struct ba_local * a);
 EXPORT void ba_local_get_free_page(struct ba_local * a, const void * ptr);
-EXPORT size_t ba_lcount(struct ba_local * a);
+EXPORT size_t ba_lcount(const struct ba_local * a);
 EXPORT void ba_ldestroy(struct ba_local * a);
 EXPORT void ba_lfree_all(struct ba_local * a);
 EXPORT void ba_walk_local(struct ba_local * a, ba_walk_callback, void * data); 
