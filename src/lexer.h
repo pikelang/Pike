@@ -1088,9 +1088,6 @@ unknown_directive:
          They however conflict with valid ?: syntaxes.
       */
 
-      /* if( GOBBLE('[' ) ) */
-      /*   return TOK_SAFE_START_INDEX; */
-
       /* if( GOBBLE('.' ) ) */
       /*   return TOK_SAFE_INDEX; */
 
@@ -1099,11 +1096,15 @@ unknown_directive:
     case '~':
     case '@':
     case ')':
-    case '[':
 
     case '{':
     case ';':
     case '}': return c;
+
+    case '[':
+      if( GOBBLE('?' ) )
+        return TOK_SAFE_START_INDEX;
+      return c;
 
     case '`':
     {
