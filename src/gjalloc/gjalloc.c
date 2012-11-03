@@ -204,7 +204,7 @@ EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
     a->alloc = NULL;
     a->h.first = NULL;
 
-#ifdef BA_DEBUG
+#if 0
     fprintf(stderr, "blocks: %u block_size: %u page_size: %lu\n",
 	    blocks, block_size, (unsigned long)BA_PAGESIZE(a->l));
 #endif
@@ -230,7 +230,7 @@ EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
     VALGRIND_CREATE_MEMPOOL(a, 0, 0);
 #endif
 
-#ifdef BA_DEBUG
+#if 0
     fprintf(stderr, " -> blocks: %u block_size: %u page_size: %lu mallocing size: %lu, next pages: %u magnitude: %u\n",
 	    a->l.blocks, block_size, (unsigned long)(BA_PAGESIZE(a->l)-sizeof(struct ba_page)),
 	    (unsigned long)BA_PAGESIZE(a->l),
@@ -522,8 +522,6 @@ static INLINE void ba_htable_insert(const struct block_allocator * a,
 #ifdef BA_DEBUG
     while (*b) {
 	if (*b == p) {
-	    fprintf(stderr, "inserting (%p) twice\n", p);
-	    fprintf(stderr, "is (%p)\n", *b);
 	    BA_ERROR(a, "double insert.\n");
 	    return;
 	}
@@ -532,7 +530,7 @@ static INLINE void ba_htable_insert(const struct block_allocator * a,
     b = a->htable + (hval & BA_HASH_MASK(a));
 #endif
 
-#if 0/*def BA_DEBUG */
+#if 0
     fprintf(stderr, "replacing bucket %u with page %u by %u\n",
 	    hval & BA_HASH_MASK(a), *b, n);
 #endif
@@ -703,7 +701,7 @@ static INLINE struct ba_page * ba_alloc_page(struct block_allocator * a) {
     ba_free_page(&a->l, p, a->blueprint);
     p->next = p->prev = NULL;
     ba_htable_insert(a, p);
-#ifdef BA_DEBUG
+#if 0
     fprintf(stderr, "allocated page %p[%p-%p].\n",
 	    p, BA_BLOCKN(a->l, p, 0), BA_LASTBLOCK(a->l, p));
     ba_check_allocator(a, "ba_alloc after insert.", __FILE__, __LINE__);
@@ -1066,7 +1064,7 @@ EXPORT INLINE void ba_local_grow(struct ba_local * a,
     a->l = l;
 
     if (transform) {
-#ifdef BA_DEBUG
+#if 0
 	fprintf(stderr, "transforming into allocator\n");
 #endif
 	a->a = (struct block_allocator *)
@@ -1193,7 +1191,7 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
 
     ba_list_defined(p, b, l);
 
-#ifdef BA_DEBUG
+#if 0
     fprintf(stderr, "sorting max %llu blocks\n",
 	    (unsigned long long)l->blocks);
 #endif
@@ -1209,8 +1207,8 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     while (b) {
 	uintptr_t n = BA_NBLOCK(*l, p, b);
-#ifdef BA_DEBUG
-	//fprintf(stderr, "block %llu is free\n", (long long unsigned)n);
+#if 0
+	fprintf(stderr, "block %llu is free\n", (long long unsigned)n);
 #endif
 	bv_set(&v, n, 1);
 	if (b->next == BA_ONE) {
@@ -1219,7 +1217,7 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
 	} else b = b->next;
     }
 
-#ifdef BA_DEBUG
+#if 0
     //bv_print(&v);
 #endif
 
@@ -1233,7 +1231,7 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
 	v.length = i+1;
     }
 
-#ifdef BA_DEBUG
+#if 0
     //bv_print(&v);
 #endif
 
