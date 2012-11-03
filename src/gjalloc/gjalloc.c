@@ -790,11 +790,13 @@ static void ba_update_slot(struct block_allocator * a,
 
 EXPORT void ba_global_get_page(struct block_allocator * a) {
     a->alloc = ba_get_page(a, a->alloc);
+
     if (a->alloc == a->last_free) {
-	ba_update_slot(a, a->last_free, &a->hf);
+	a->h = a->hf;
 	a->last_free = NULL;
+    } else {
+	a->h = a->alloc->h;
     }
-    a->h = a->alloc->h;
 }
 
 static INLINE void ba_low_get_free_page(struct block_allocator * a,
