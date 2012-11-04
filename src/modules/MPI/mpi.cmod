@@ -236,12 +236,14 @@ PIKECLASS Sentinel {
 
 PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
 					       unsigned int length,
+					       unsigned int type_size,
 					       unsigned int shift,
 					       void * p,
 					       struct object * other) {
     struct object * o = low_clone(Sentinel_program);
 
     OBJ2_SENTINEL(o)->i.length = length;
+    OBJ2_SENTINEL(o)->i.type_size = type_size;
     OBJ2_SENTINEL(o)->i.shift = shift;
     OBJ2_SENTINEL(o)->i.type = type;
     OBJ2_SENTINEL(o)->i.data = p;
@@ -272,6 +274,7 @@ PIKECLASS Op
     CVAR struct svalue ufun;
     CVAR struct op_info (*create)(void *);
     CVAR void *info;
+    CVAR unsigned int len, shift;
 
     EXIT
     {
@@ -312,21 +315,27 @@ static inline struct object *mpi_clone_array(struct program *prog, unsigned int 
 struct {
     struct svalue ufun;
     struct program *bufprog;
+    struct object *op;
 } mpi_pike_user_function;
 
 struct mpi_user_function_errstruct {
     struct object *v1;
     struct object *v2;
+    void **p1, **p2;
 };
 
 static void mpi_user_function_error(struct mpi_user_function_errstruct *v)
 {
     INVALIDATE_CURRENT_TIME();
 
-    push_object(v->v1);
-    f_destruct(1);
-    push_object(v->v2);
-    f_destruct(1);
+    if (v->p1) *v->p1 = *v->p2 = NULL;
+
+    debug_malloc_touch(v->v1);
+    destruct_object(v->v1, DESTRUCT_EXPLICIT);
+    debug_malloc_touch(v->v2);
+    destruct_object(v->v2, DESTRUCT_EXPLICIT);
+    destruct_objects_to_destruct();
+
     free(v);
 }
 
@@ -343,8 +352,29 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
     push_svalue(&mpi_pike_user_function.ufun);
 
 
-    v->v1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
-    v->v2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
+    if (mpi_pike_user_function.bufprog) {
+	v->v1 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, invec);
+	v->v2 = mpi_clone_array(mpi_pike_user_function.bufprog, *len, outvec);
+	v->p1 = v->p2 = NULL;
+    } else {
+	struct op_info oinfo;
+	unsigned int tsize;
+
+	MPI_Type_size(*type, (int*)&tsize);
+
+	/* TODO: can this even happen? i think not, but have to be sure! */
+	if (*(unsigned int*)len * tsize
+		!= OBJ2_OP(mpi_pike_user_function.op)->len)
+	    Pike_fatal("Pike defined MPI operation with nonmatching length (%d (%d)received vs %d in op).\n",
+		       *len * tsize, tsize, OBJ2_OP(mpi_pike_user_function.op)->len);
+
+	oinfo = OBJ2_OP(mpi_pike_user_function.op)->create(OBJ2_OP(mpi_pike_user_function.op)->info);
+	v->v1 = oinfo.o;
+	*(v->p1 = oinfo.data) = invec;
+	oinfo = OBJ2_OP(mpi_pike_user_function.op)->create(OBJ2_OP(mpi_pike_user_function.op)->info);
+	v->v2 = oinfo.o;
+	*(v->p2 = oinfo.data) = outvec;
+    }
 
     ref_push_object(v->v1);
     ref_push_object(v->v2);
@@ -354,10 +384,14 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
     UNSET_ONERROR(err);
     INVALIDATE_CURRENT_TIME();
 
-    push_object(v->v1);
-    f_destruct(1);
-    push_object(v->v2);
-    f_destruct(1);
+    if (v->p1) *v->p1 = *v->p2 = NULL;
+
+    debug_malloc_touch(v->v1);
+    destruct_object(v->v1, DESTRUCT_EXPLICIT);
+    debug_malloc_touch(v->v2);
+    destruct_object(v->v2, DESTRUCT_EXPLICIT);
+    destruct_objects_to_destruct();
+
     free(v);
 
 #ifndef PIKE_DEBUG
@@ -1068,11 +1102,26 @@ PIKECLASS Comm
 	    assign_svalue_no_free(&mpi_pike_user_function.ufun,
 				  &OBJ2_OP(op)->ufun);
 	    sub_ref(mpi_pike_user_function.ufun.u.dummy);
-	    /* mpi_Reduce et al. check for the same shift in both buffers
-	     * (and fail if those differ). As shifts should differ easier
-	     * than programs (i.e. Sentinel_program - lots of shifts, one
-	     * program) - we just need to store any one ->prog. */
-	    mpi_pike_user_function.bufprog = recvbuf->prog;
+	    if (!OBJ2_OP(op)->create) {
+		/* mpi_Reduce et al. check for the same shift in both buffers
+		 * (and fail if those differ). As shifts should differ easier
+		 * than programs (i.e. Sentinel_program - lots of shifts, one
+		 * program) - we just need to store any one ->prog. */
+		mpi_pike_user_function.bufprog = recvbuf->prog;
+	    } else {
+		if (OBJ2_OP(op)->len != OBJ2_SENTINEL(recvbuf)->i.length
+			* OBJ2_SENTINEL(recvbuf)->i.type_size)
+		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",
+			       OBJ2_OP(op)->len,
+			       OBJ2_SENTINEL(recvbuf)->i.length
+			       * OBJ2_SENTINEL(recvbuf)->i.type_size);
+		if (OBJ2_OP(op)->shift != OBJ2_SENTINEL(recvbuf)->i.shift)
+		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",
+			       OBJ2_OP(op)->shift,
+			       OBJ2_SENTINEL(recvbuf)->i.shift);
+		mpi_pike_user_function.bufprog = NULL;
+		mpi_pike_user_function.op = op;
+	    }
 	}
 
 	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
@@ -1093,7 +1142,23 @@ PIKECLASS Comm
 	    assign_svalue_no_free(&mpi_pike_user_function.ufun,		\
 				  &OBJ2_OP(op)->ufun);			\
 	    sub_ref(mpi_pike_user_function.ufun.u.dummy);		\
-	    mpi_pike_user_function.bufprog = recvbuf->prog;		\
+	    if (!OBJ2_OP(op)->create) {					\
+		mpi_pike_user_function.bufprog = recvbuf->prog;		\
+	    } else {							\
+		if (OBJ2_OP(op)->len != OBJ2_SENTINEL(recvbuf)->i.length\
+			* OBJ2_SENTINEL(recvbuf)->i.type_size)		\
+		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",\
+			       OBJ2_OP(op)->len,			\
+			       OBJ2_SENTINEL(recvbuf)->i.length		\
+			       * OBJ2_SENTINEL(recvbuf)->i.type_size);	\
+		if (OBJ2_OP(op)->shift					\
+			!= OBJ2_SENTINEL(recvbuf)->i.shift)		\
+		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",\
+			       OBJ2_OP(op)->shift,			\
+			       OBJ2_SENTINEL(recvbuf)->i.shift);	\
+		mpi_pike_user_function.bufprog = NULL;			\
+		mpi_pike_user_function.op = op;				\
+	    }								\
 	}								\
 									\
 	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_OP(op)->op, THIS->comm);	\
@@ -1306,7 +1371,7 @@ PIKEFUN object Op_create(function ufun, int commute)
     push_object(op);
 }
 
-PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct svalue *ufun, int commute, void *info) {
+PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct svalue *ufun, int commute, void *info, int shift, int len) {
     struct object *o;
     MPI_Op mpiop;
     unsigned int *refcnt = xalloc(sizeof(unsigned int));
@@ -1317,6 +1382,9 @@ PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct sv
     o = mpi_clone_op(mpiop, refcnt);
     OBJ2_OP(o)->create = create;
     OBJ2_OP(o)->info = info;
+    OBJ2_OP(o)->shift = shift;
+    OBJ2_OP(o)->len = len;
+    assign_svalue_no_free(&OBJ2_OP(o)->ufun, ufun);
 
     return o;
 }
