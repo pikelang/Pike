@@ -76,6 +76,15 @@ PIKE_MODULE_EXIT
    exit_math_transforms();
 }
 
+
+#ifdef HAS_MPI
+void matrix_op_create(INT32 args);
+void imatrix_op_create(INT32 args);
+void lmatrix_op_create(INT32 args);
+void fmatrix_op_create(INT32 args);
+void smatrix_op_create(INT32 args);
+#endif
+
 PIKE_MODULE_INIT
 {
    int i;
@@ -98,4 +107,12 @@ PIKE_MODULE_INIT
    add_float_constant("e", 2.7182818284590452354   ,0);
    add_float_constant("inf", MAKE_INF(1), 0);
    add_float_constant("nan", MAKE_NAN(), 0);
+   //ADD_FUNCTION("op_create", fmatrixOp_create_, tFunc(tFunction tInt tInt, tObj), 0);
+#ifdef HAS_MPI
+   add_function_constant("Matrix_op_create", matrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("IMatrix_op_create", imatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("LMatrix_op_create", lmatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("FMatrix_op_create", fmatrix_op_create, "function(function,int,int,int:object)", 0);
+   add_function_constant("SMatrix_op_create", smatrix_op_create, "function(function,int,int,int:object)", 0);
+#endif
 }

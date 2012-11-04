@@ -43,6 +43,22 @@ extern struct program *math_fmatrix_program;
 extern struct program *math_lmatrix_program;
 #endif /* INT64 */
 
+#ifdef HAS_MPI
+struct size_info {
+    int x, y;
+};
+
+struct op_info {
+    struct object *o;
+    void **data;
+};
+
+extern PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *),
+					    struct svalue *ufun, int commute,
+					    void *info, int shift, int len);
+
+#endif
+
 #define PNAME "Matrix"
 #define FTYPE double
 #define PTYPE tFloat

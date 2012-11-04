@@ -350,6 +350,10 @@ void matrixX(__sprintf)(INT32 args)
    INT_TYPE x,y,n=0;
    char buf[80]; /* no %6.6g is bigger */
 
+   if (!THIS->m) {
+       Pike_error("Some weirdo is calling sprintf with no ->m!\n");
+   }
+
    get_all_args("_sprintf",args,"%i",&x);
 
    switch (x)
@@ -756,13 +760,14 @@ static void matrixX(_cross)(INT32 args)
 }
 
 #ifdef HAS_MPI
-extern PMOD_EXPORT struct object *mpi_clone_sentinel(MPI_Datatype, int , unsigned char,
-					      void *, struct object *);
+extern PMOD_EXPORT struct object *mpi_clone_sentinel(MPI_Datatype, unsigned int, unsigned int,
+						     unsigned int, void *, struct object *);
 
 static void matrixX(get_sentinel)(INT32 args)
 {
     struct object *sentinel = mpi_clone_sentinel(MATRIX_MPI_TYPE,
 						 THIS->xsize * THIS->ysize,
+						 (unsigned int)sizeof(FTYPE),
 						 MATRIX_MPI_SHIFT,
 						 THIS->m,
 						 Pike_fp->current_object);
@@ -770,6 +775,40 @@ static void matrixX(get_sentinel)(INT32 args)
     pop_n_elems(args);
     push_object(sentinel);
 }
+
+static struct op_info matrixX(_obj_create)(void *sinfo)
+{
+    struct object *o = low_clone(XmatrixY(math_,_program));
+    struct op_info info = {o, (void**)&((struct matrixX(_storage)*)get_storage(o, XmatrixY(math_,_program)))->m};
+
+    ((struct matrixX(_storage)*)get_storage(o, XmatrixY(math_,_program)))->xsize = ((struct size_info*)sinfo)->x;
+    ((struct matrixX(_storage)*)get_storage(o, XmatrixY(math_,_program)))->ysize = ((struct size_info*)sinfo)->y;
+
+    return info;
+}
+
+/* ufun, commute, x, y */
+void matrixX(_op_create)(INT32 args)
+{
+    struct size_info *sinfo = xalloc(sizeof(struct size_info*));
+    struct object *o;
+
+    if (args < 4) {
+	//SIMPLE_TOO_FEW_ARGS_ERROR(#xmatrixX(Op_create_), 4);
+	SIMPLE_TOO_FEW_ARGS_ERROR("Op_create_", 4);
+	/* TODO: typecheck */
+    }
+
+    sinfo->x = Pike_sp[-args+2].u.integer;
+    sinfo->y = Pike_sp[-args+3].u.integer;
+
+    fprintf(stderr, "> (%d)prelen: %d * %d %d\n", args, (int)sizeof(FTYPE), sinfo->x, sinfo->y);
+    o = mpi_ex_op(matrixX(_obj_create), Pike_sp-args, Pike_sp[-args+1].u.integer, sinfo, MATRIX_MPI_SHIFT, sizeof(FTYPE)*sinfo->x*sinfo->y);
+
+    pop_n_elems(args);
+    push_object(o);
+}
+
 #endif
 
 static void matrixX(_dot)(INT32 args)
