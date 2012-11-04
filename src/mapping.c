@@ -117,6 +117,10 @@ void mapping_free_keypair(struct mapping_data *md, struct keypair *k)
   FREE_KEYPAIR(md, k);
 }
 
+static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
+    return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
+}
+
 #ifdef PIKE_DEBUG
 
 /** This function checks that the type field isn't lacking any bits.
@@ -549,7 +553,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize - 1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
+    if(check_type_contains(md->ind_types, key))			\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
@@ -572,7 +576,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize-1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
+    if(check_type_contains(md->ind_types, key))			\
     {								\
       k2=omd->hash[h2 & (omd->hashsize - 1)];			        \
       prev= md->hash + h;					\

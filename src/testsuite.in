@@ -5779,6 +5779,24 @@ void create()
 
 ]])
 
+test_any([[
+    mapping m = ([ "foo" : 1 ]);
+    class A {
+	int __hash() { return hash_value("foo"); }
+	int `==(mixed o) { return o == "foo"; }
+    };
+    return m[A()];
+]], 1)
+
+test_any([[
+    mapping m = ([ "foo" : 1 ]);
+    class A {
+	int __hash() { return hash_value("foo"); }
+	int `==(mixed o) { return o == "foo"; }
+    };
+    return sizeof(m - ([ A() : 1 ]));
+]], 0)
+
 test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
 test_false( `+( ([1:2]) ) == ([1:2]) )
 test_equal([[ `+( ([1:2]), ([1:2])  )]],[[ ([1:2]) ]])
