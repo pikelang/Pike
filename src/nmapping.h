@@ -7,14 +7,6 @@
 #include "block_allocator.h"
 #include <stdint.h>
 
-#ifndef INITIAL_MAGNITUDE
-# define INITIAL_MAGNITUDE	8
-#endif
-
-#ifndef AVG_CHAIN_LENGTH
-# define AVG_CHAIN_LENGTH	4
-#endif
-
 #define MAPPING_WEAK_INDICES	2
 #define MAPPING_WEAK_VALUES	4
 #define MAPPING_WEAK		6
@@ -36,6 +28,7 @@ struct reentrance_marker {
     int marker;
 };
 
+/* this exists as a dirty hack, to emulate m->data */
 struct mapping_data {
     PIKE_MEMORY_OBJECT_MEMBERS;
     unsigned INT32 hash_mask;
@@ -203,19 +196,6 @@ static INLINE INT16 mapping_get_flags(const struct mapping * m) {
     return (INT16)m->flags;
 }
 
-static INLINE void mark_enter(struct reentrance_marker * m) {
-    if (m->marker) Pike_error("Side effect free method neentered\n");
-    m->marker = 1; 
-}
-
-static INLINE void mark_leave(struct reentrance_marker * m) {
-    if (!m->marker) {
-	m->marker = 0;
-	Pike_error("marker is zero\n");
-    } else 
-	m->marker = 0;
-}
-
 #define mapping_data_is_shared(m) ((m)->refs > 1)
 #define map_delete(m,key) map_delete_no_free(m, key, 0)
 #define keypair_ind(k)	((k)->key)
@@ -231,6 +211,9 @@ static INLINE int keypair_deleted(const struct keypair * k) {
     return TYPEOF(k->key) == PIKE_T_FREE;
 }
 
+/* The idea here is to byteswap the hash value so that the most significant bits are
+ * high in entropy.
+ */
 static INLINE unsigned INT32 low_mapping_hash(const struct svalue * key) {
     return __builtin_bswap32(hash_svalue(key));
 }
@@ -308,26 +291,6 @@ static INLINE int mapping_it_next(struct mapping_iterator * it,
 
     if (t) *t = it->u.k;
     return 1;
-}
-
-static INLINE void mapping_delete_slot(struct mapping * m, struct keypair ** slot) {
-    struct keypair * k;
-
-    k = *slot;
-    *slot = k->next;
-
-    mark_free_svalue(&k->key);
-    mark_free_svalue(&k->u.val);
-
-    /* this seems paradoxical. but we dont require iterators to be
-     * registered with the mapping */
-    if (m->first_iterator) {
-	k->u.next = m->trash;
-	m->trash = k;
-    } else {
-	ba_lfree(&m->allocator, k);
-    }
-    m->size --;
 }
 
 static INLINE void mapping_builder_init(struct mapping_iterator * it,

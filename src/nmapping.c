@@ -4,12 +4,124 @@
 #include "interpret.h"
 #include "pike_macros.h"
 
+#ifndef INITIAL_MAGNITUDE
+# define INITIAL_MAGNITUDE	4
+#endif
+
+#ifndef AVG_CHAIN_LENGTH
+# define AVG_CHAIN_LENGTH	4
+#endif
+
 // these could probably use the same allocator
 static struct block_allocator mapping_allocator = BA_INIT(sizeof(struct mapping), 256),
 			      iter_allocator = BA_INIT(sizeof(struct mapping_iterator), 128);
 
 void free_all_mapping_blocks() {
     ba_destroy(&mapping_allocator);
+}
+
+static INLINE int mapping_can_destruct(const struct mapping * m) {
+    return m->refs == 1 && !(m->flags & MAPPING_WEAK);
+}
+
+static INLINE void mark_enter(struct reentrance_marker * m) {
+    m->marker++;
+}
+
+static INLINE void mark_check(struct reentrance_marker * m) {
+    if (m->marker) Pike_error("Object callback is not side effect free: %u!\n", m->marker);
+}
+
+static INLINE void mark_leave(struct reentrance_marker * m) {
+#ifdef PIKE_DEBUG
+    if (!m->marker) {
+	Pike_error("marker is zero\n");
+    } else
+#endif
+	m->marker--;
+}
+
+
+static void mapping_grow(struct mapping * m) {
+    unsigned INT32 hash_mask = m->hash_mask + 1;
+    unsigned INT32 magnitude = m->magnitude;
+    unsigned INT32 i;
+    unsigned INT32 size = m->size / AVG_CHAIN_LENGTH;
+
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+
+    while (size > hash_mask) {
+	magnitude --;
+	hash_mask *= 2;
+    }
+
+    m->table = (struct keypair**)xrealloc(m->table, sizeof(struct keypair *) * hash_mask);
+    MEMSET((char*)(m->table + m->hash_mask + 1), 0,
+	   sizeof(struct keypair *) * (hash_mask - 1 - m->hash_mask));
+
+    i = m->hash_mask;
+
+    m->hash_mask = hash_mask - 1;
+    m->magnitude = magnitude;
+
+    for (;; i--) {
+	struct keypair ** t = m->table + i;
+	struct keypair ** slot = t;
+
+	while (*t) {
+	    struct keypair ** slot2 = low_get_bucket(m, (*t)->hval);
+
+	    if (slot != slot2) {
+		*slot2 = *t;
+		*t = NULL;
+		slot = t = slot2;
+	    }
+	    t = &(*t)->next;
+	}
+
+	if (!i) break;
+    }
+
+#ifdef PIKE_DEBUG
+    check_mapping(m);
+#endif
+}
+
+static void mapping_shrink(struct mapping * m) {
+}
+
+static INLINE void mapping_try_rehash(struct mapping * m) {
+    unsigned INT32 hsize = AVG_CHAIN_LENGTH * (m->hash_mask + 1);
+
+    if (m->size >= 2 * hsize) {
+	mapping_grow(m);
+    } else if (m->size < hsize / 2) {
+	mapping_shrink(m);
+    }
+}
+
+static INLINE void mapping_delete_slot(struct mapping * m, struct keypair ** slot) {
+    struct keypair * k;
+
+    k = *slot;
+    *slot = k->next;
+
+    mark_free_svalue(&k->key);
+    mark_free_svalue(&k->u.val);
+
+    /* this seems paradoxical. but we dont require iterators to be
+     * registered with the mapping */
+    if (m->first_iterator) {
+	k->u.next = m->trash;
+	m->trash = k;
+    } else {
+	ba_lfree(&m->allocator, k);
+    }
+    m->size--;
+
+    mapping_try_rehash(m);
 }
 
 static void unlink_iterator(struct mapping_iterator * it) {
@@ -37,6 +149,10 @@ void mapping_rel_simple(void * _start, void * _stop, ptrdiff_t diff, void * data
 	}
     } while ((void*)(++k) < _stop);
 
+    /*
+     * NOTE: this function is only called once, unless we start using ba_lreserve
+     * reserving more than one element.
+     */
     ba_simple_rel_pointer((char*)&m->trash, diff);
 
     for (it = m->first_iterator; it; it = it->next) {
@@ -70,7 +186,8 @@ PMOD_EXPORT void really_free_mapping(struct mapping *m) {
     if (m->first_iterator) Pike_fatal("found iterator in free. refcount seems wrong.\n");
 #endif
     free(m->table);
-    ba_walk_local(&m->allocator, free_keypairs, NULL);
+    if ((m->val_types | m->key_types) & BIT_REF_TYPES)
+	ba_walk_local(&m->allocator, free_keypairs, NULL);
     ba_ldestroy(&m->allocator);
     DOUBLE_UNLINK(first_mapping, m);
     ba_free(&mapping_allocator, m);
@@ -99,7 +216,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size) {
 
     m->hash_mask = t - 1;
     m->magnitude = mag;
-    m->table = (struct keypair **)xalloc(sizeof(struct keypair **)*t);
+    m->table = (struct keypair **)xalloc(sizeof(struct keypair *)*t);
     MEMSET((char*)m->table, 0, sizeof(struct keypair **)*t);
     m->trash = NULL;
     m->first_iterator = NULL;
@@ -147,7 +264,7 @@ static INLINE int reverse_cmp(unsigned INT32 a, unsigned INT32 b) {
 
 /*
  * this is called only when no iterators are present. this also means that
- * code that reenters should not call this. this function also takes care
+ * code that reenters should not call this. TODO: this function also takes care
  * of shrinking and growing the mapping, checking for need for defragmentation
  * and so on.
  */
@@ -162,16 +279,17 @@ PMOD_EXPORT void low_mapping_cleanup(struct mapping * m) {
     }
 }
 
-/* The idea here is to byteswap the hash value so that the most significant bits are
- * high in entropy.
- */
 static void unmark_and_unlink(struct mapping_iterator * it) {
     mark_leave(&it->m->marker);
     unlink_iterator(it);
 }
 
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m) {}
-PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags) {}
+
+PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags) {
+    m->flags = flags;
+}
+
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
 				    const struct svalue *val,
@@ -180,12 +298,6 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     struct keypair ** t, * k;
     int frozen = 0;
     ONERROR err;
-
-#ifdef PIKE_DEBUG
-    check_mapping(m);
-#endif
-
-    mark_enter(&m->marker);
 
     /* this is just for optimization */
     ba_lreserve(&m->allocator, 1);
@@ -232,6 +344,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #ifdef PIKE_DEBUG
     check_mapping(m);
 #endif
+    mark_check(&m->marker);
 
     k = ba_lalloc(&m->allocator);
     k->next = *t;
@@ -247,12 +360,12 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #ifdef PIKE_DEBUG
     check_mapping(m);
 #endif
+    mapping_try_rehash(m);
 
 unfreeze:
     if (frozen) {
 	UNSET_ONERROR(err);
     }
-    mark_leave(&m->marker);
 #ifdef PIKE_DEBUG
     check_mapping(m);
 #endif
@@ -265,7 +378,8 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
     low_mapping_insert(m, key, val, 1);
 }
 
-static struct keypair ** really_low_mapping_lookup(struct mapping *m, const struct svalue * key) {
+static struct keypair ** really_low_mapping_lookup(struct mapping *m,
+						   const struct svalue * key) {
     const unsigned INT32 hval = low_mapping_hash(key);
     struct keypair ** t;
     int frozen = 0;
@@ -275,10 +389,8 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
     check_mapping(m);
 #endif
 
-    if (!(m->key_types & (1 << TYPEOF(*key)))) return NULL;
-
-    /* TODO: this might be good to have without lock */
-    mark_enter(&m->marker);
+    if (TYPEOF(*key) != PIKE_T_OBJECT && !(m->key_types & (1 << TYPEOF(*key))))
+	return NULL;
 
     t = low_get_bucket(m, hval);
 
@@ -289,13 +401,13 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
 	    Pike_error("ran into deleted keypair.");
 	}
 #endif
-	if (hval > (*t)->hval) continue;
-	if (hval < (*t)->hval) break;
+	if (hval > k->hval) continue;
+	if (hval < k->hval) break;
 	if (is_nidentical(&k->key, key)) continue;
 
 	if (!is_identical(&k->key, key)) {
-	    int eq;
 	    if (!frozen) {
+		mark_enter(&m->marker);
 		SET_ONERROR(err, mark_leave, &m->marker);
 		frozen = 1;
 	    }
@@ -310,8 +422,8 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m, const stru
 unfreeze:
     if (frozen) {
 	UNSET_ONERROR(err);
+	mark_leave(&m->marker);
     }
-    mark_leave(&m->marker);
 
     return t;
 }
@@ -352,56 +464,19 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
     return t ? &(*t)->u.val.u : NULL;
 }
 
-PMOD_EXPORT void map_delete_no_free(struct mapping *m,
-			const struct svalue *key,
-			struct svalue *to) {
-    const unsigned INT32 hval = low_mapping_hash(key);
-    struct keypair ** t;
-    int frozen = 0;
-    ONERROR err;
+PMOD_EXPORT void map_delete_no_free(struct mapping *m, const struct svalue *key,
+				    struct svalue *to) {
+    struct keypair ** t = really_low_mapping_lookup(m, key);
 
-    if (!(m->key_types & (1 << TYPEOF(*key)))) goto not_found;
-
-    mark_enter(&m->marker);
-
-    for (t = low_get_bucket(m, hval); *t; t = &(*t)->next) {
-	const struct keypair * k = *t;
-#ifdef PIKE_DEBUG
-	if (keypair_deleted(k)) {
-	    Pike_error("ran into deleted keypair.");
-	}
-#endif
-	if (hval > k->hval) continue;
-	if (hval < k->hval) break;
-	if (is_nidentical(&k->key, key)) continue;
-
-	if (!is_identical(&k->key, key)) {
-	    int eq;
-	    if (!frozen) {
-		SET_ONERROR(err, mark_leave, &m->marker);
-		frozen = 1;
-	    }
-
-	    if (!is_eq(&k->key, key)) continue;
-	}
-
-	goto unfreeze;
-    }
-    t = NULL;
-
-unfreeze:
-    if (frozen) {
-	UNSET_ONERROR(err);
-    }
-    mark_leave(&m->marker);
 
     if (!t) {
-not_found:
 	if (to) {
 	    SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
 	}
 	return;
     }
+
+    mark_check(&m->marker);
 
     free_svalue(&(*t)->key);
 
@@ -412,6 +487,7 @@ not_found:
     }
 
     mapping_delete_slot(m, t);
+    mapping_try_rehash(m);
 }
 
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m) {
@@ -446,7 +522,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m) {
 
     m->key_types = key_types;
     m->val_types = val_types;
-    /* TODO: possibly shrink hash table */
+
+    mapping_try_rehash(m);
 }
 
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
@@ -576,7 +653,8 @@ PMOD_EXPORT void mapping_replace(struct mapping *m, struct svalue *from, struct 
 }
 
 /* TODO
- * The above functions iterate over the mapping completely. they should update the type fields
+ * The above functions iterate over the mapping completely. they should update the type
+ * fields
  */
 
 PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val) {
@@ -617,6 +695,14 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m) {
     return n;
 }
 
+static struct mapping * destructive_copy_mapping(struct mapping *m) {
+    if (mapping_can_destruct(m)) {
+	add_ref(m);
+	return m;
+    }
+    return copy_mapping(m);
+}
+
 struct mapping_op_context {
     struct mapping_iterator ita, itb, builder;
 };
@@ -626,6 +712,15 @@ static void cleanup_mapping_op(struct mapping_op_context * c) {
     mark_leave(&c->ita.m->marker);
     mark_leave(&c->itb.m->marker);
     do_free_mapping(c->builder.m);
+}
+
+static void destructive_or_mappings(struct mapping *a, const struct mapping *b) {
+    unsigned INT32 e;
+    struct keypair * k;
+
+    MAPPING_LOOP(b) {
+	low_mapping_insert(a, &k->key, &k->u.val, 2);
+    }
 }
 
 static struct mapping *or_mappings(struct mapping *a, struct mapping *b) {
@@ -643,7 +738,7 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b) {
 	b = t;
     }
 
-    if (!b->size) return copy_mapping(a);
+    if (!b->size) return destructive_copy_mapping(a);
 
     /* TODO: maybe this is too much, but relocation is rather expensive */
     ret = debug_allocate_mapping(a->size + b->size);
@@ -716,6 +811,8 @@ insert_rest:
     UNSET_ONERROR(err);
     mark_leave(&a->marker);
     mark_leave(&b->marker);
+
+    mapping_try_rehash(ret);
 
     return ret;
 }
@@ -807,7 +904,18 @@ insert_rest:
     mark_leave(&a->marker);
     mark_leave(&b->marker);
 
+    mapping_try_rehash(ret);
+
     return ret;
+}
+
+static void destructive_subtract_mappings(struct mapping *a, const struct mapping *b) {
+    unsigned INT32 e;
+    struct keypair *k;
+
+    MAPPING_LOOP(b) {
+	map_delete_no_free(a, &k->key, NULL);
+    }
 }
 
 static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b) {
@@ -819,7 +927,7 @@ static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b) {
     struct mapping_iterator * itp;
     ONERROR err;
 
-    if (!b->size || !a->size) return copy_mapping(a);
+    if (!b->size || !a->size) return destructive_copy_mapping(a);
 
     /* TODO: maybe this is too much, but relocation is rather expensive */
     ret = debug_allocate_mapping(a->size);
@@ -883,6 +991,8 @@ skip:
     mark_leave(&a->marker);
     mark_leave(&b->marker);
 
+    mapping_try_rehash(ret);
+
     return ret;
 }
 
@@ -915,7 +1025,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b) {
 	b = t;
     }
 
-    if (!b->size) return copy_mapping(a);
+    if (!b->size) return destructive_copy_mapping(a);
 
     /* TODO: maybe this is too much, but relocation is rather expensive */
     ret = debug_allocate_mapping(b->size + a->size);
@@ -1013,16 +1123,28 @@ done:
     mark_leave(&a->marker);
     mark_leave(&b->marker);
 
+    mapping_try_rehash(ret);
+
     return ret;
 }
 
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op) {
   switch (op) {
   case PIKE_ARRAY_OP_SUB:
+    if (mapping_can_destruct(a)) {
+	add_ref(a);
+	destructive_subtract_mappings(a, b);
+	return a;
+    }
     return subtract_mappings(a, b);
   case PIKE_ARRAY_OP_AND:
     return and_mappings(a, b);
   case PIKE_ARRAY_OP_OR:
+    if (mapping_can_destruct(a)) {
+	add_ref(a);
+	destructive_or_mappings(a, b);
+	return a;
+    }
     return or_mappings(a, b);
   case PIKE_ARRAY_OP_XOR:
     return xor_mappings(a, b);
@@ -1035,11 +1157,13 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, struc
     struct svalue * key = ITEM(b);
 
     if (op == PIKE_ARRAY_OP_SUB) {
-	a = copy_mapping(a);
+	a = destructive_copy_mapping(a);
 
 	for (i = 0; i < b->size; i++) {
 	    map_delete_no_free(a, key++, NULL);
 	}
+
+	mapping_try_rehash(a);
 
 	return a;
     } else if (op == PIKE_ARRAY_OP_AND) {
@@ -1049,6 +1173,8 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, struc
 	    struct keypair ** t = really_low_mapping_lookup(a, key);
 	    if (*t) low_mapping_insert(ret, &(*t)->key, &(*t)->u.val, 0);
 	}
+
+	mapping_try_rehash(ret);
 	
 	return ret;
     } else Pike_error("unsupported operation");
@@ -1088,7 +1214,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
     {
 #if 1 /* major optimization */
       if(e==m->size)
-	return copy_mapping(m);
+	return destructive_copy_mapping(m);
 #endif
     
       if(m->refs == 1)
@@ -1114,6 +1240,8 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   if(!ret)
     Pike_fatal("add_mappings is confused!\n");
 #endif
+  mapping_try_rehash(ret);
+
   return ret;
 }
 
@@ -1179,7 +1307,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   }
   else {
     not_complex = 1;
-    ret = copy_mapping(m);
+    ret = destructive_copy_mapping(m);
   }
 
   if (p) {
@@ -1288,17 +1416,42 @@ void check_mapping(const struct mapping *m) {
     unsigned INT32 count = m->size;
     unsigned INT32 used = (unsigned INT32)ba_lcount(&m->allocator);
     struct keypair * k;
+    unsigned INT32 i;
 
     for (k = m->trash; k; k = k->u.next) count++;
 
     if (used != count) {
-	Pike_error("allocator has %u blocks, but size is %u\n", used, count);
+	fprintf(stderr, "allocator has %u blocks, but size is %u\n", used, count);
     }
 
     if (m->hash_mask != ~(unsigned INT32)0 >> m->magnitude) {
-	Pike_error("hash_mask %x and magnitude %u dont match.\n", m->hash_mask, m->magnitude);
+	fprintf(stderr, "hash_mask %x and magnitude %u dont match.\n", m->hash_mask,
+		m->magnitude);
+    }
+
+    count = m->size;
+    for (i = 0; i <= m->hash_mask; i++) {
+	struct keypair * k = m->table[i];
+	unsigned INT32 hval = 0;
+
+	while (k) {
+	    count--;
+	    if (hval > k->hval) {
+		fprintf(stderr, "%p is not sorted properly: %u > %u\n", k, hval, k->hval);
+	    }
+	    if (m->table + i != low_get_bucket(m, k->hval)) {
+		fprintf(stderr, "%p is in wrong bucket %p[%u] vs %p\n", k, m->table + i,
+			i, low_get_bucket(m, k->hval));
+	    }
+	    k = k->next;
+	}
+    }
+
+    if (count) {
+	fprintf(stderr, "entries got lost. %u vs %u\n", m->size, m->size - count);
     }
 }
+
 void check_all_mappings(void) {
     ba_walk(&mapping_allocator, m_foreach, check_mapping);
 }
