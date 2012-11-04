@@ -471,7 +471,9 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	}
 	pop_stack();
 	STACK_LEVEL_DONE(0);
-	break;
+	/* do not mix the return value of __hash, since this makes using
+	 * hash_value pointless */
+	return q;
       }
     }
     /* FALL THROUGH */
