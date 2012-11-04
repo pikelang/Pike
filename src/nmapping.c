@@ -41,6 +41,16 @@ static INLINE void mark_leave(struct reentrance_marker * m) {
 	m->marker--;
 }
 
+static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
+    /*
+     * objects can equal anything. this has to work both ways.
+     */
+    return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
+}
+
+static INLINE int check_type_overlap(TYPE_FIELD t1, TYPE_FIELD t2) {
+    return (t1|t2) & BIT_OBJECT || t1 & t2;
+}
 
 static void mapping_grow(struct mapping * m) {
     unsigned INT32 hash_mask = m->hash_mask + 1;
@@ -389,8 +399,7 @@ static struct keypair ** really_low_mapping_lookup(struct mapping *m,
     check_mapping(m);
 #endif
 
-    if (TYPEOF(*key) != PIKE_T_OBJECT && !(m->key_types & (1 << TYPEOF(*key))))
-	return NULL;
+    if (!check_type_contains(m->key_types, key)) return NULL;
 
     t = low_get_bucket(m, hval);
 
@@ -560,6 +569,8 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m) {
     a = real_allocate_array(0, m->size);
     ba_walk_local(&m->allocator, fill_indices, a);
 
+    m->key_types = a->type_field;
+
     return a;
 }
 
@@ -590,6 +601,8 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m) {
     a = real_allocate_array(0, m->size);
     ba_walk_local(&m->allocator, fill_values, a);
 
+    m->val_types = a->type_field;
+
     return a;
 }
 
@@ -617,7 +630,7 @@ static INLINE int fill_both(void * _start, void * _stop, void * data) {
 PMOD_EXPORT struct array *mapping_to_array(struct mapping *m) {
     struct array * a = real_allocate_array(0, m->size);
 
-    a->type_field = PIKE_T_ARRAY;
+    a->type_field = BIT_ARRAY;
 
     ba_walk_local(&m->allocator, fill_both, a);
 
@@ -1253,7 +1266,8 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
     if (a==b) return 1;
     if (m_sizeof(a) != m_sizeof(b)) return 0;
     if (!m_sizeof(a)) return 1;
-    if (!((a->key_types & b->key_types) | (a->val_types & b->val_types))) return 0;
+    if (!check_type_overlap(a->key_types, b->key_types) ||
+	!check_type_overlap(a->val_types, b->val_types)) return 0;
 
     curr.pointer_a = a;
     curr.pointer_b = b;
@@ -1376,19 +1390,26 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    const struct svalue *key ) {
     struct keypair * k = NULL;
 
-    if (key) {
-	struct mapping_iterator it;
-	it.m = m;
-	mapping_it_set(&it, key);
-	mark_enter(&m->marker);
-	while (mapping_it_next(&it, &k)
-	       && (is_nidentical(look_for, &k->u.val) || !is_eq(look_for, &k->u.val)));
-	mark_leave(&m->marker);
-    } else {
-	struct mapping_search_ctx c = { &k, look_for };
-	mark_enter(&m->marker);
-	ba_walk_local(&m->allocator, mapping_search_cb, &c);
-	mark_leave(&m->marker);
+    /*
+     * TODO: what is the key start actually used for. i guess whats happening here
+     * is actually very bad, since the two cases are not compatible
+     */
+
+    if (check_type_contains(m->val_types, look_for)) {
+	if (key) {
+	    struct mapping_iterator it;
+	    it.m = m;
+	    mapping_it_set(&it, key);
+	    mark_enter(&m->marker);
+	    while (mapping_it_next(&it, &k)
+		   && (is_nidentical(look_for, &k->u.val) || !is_eq(look_for, &k->u.val)));
+	    mark_leave(&m->marker);
+	} else {
+	    struct mapping_search_ctx c = { &k, look_for };
+	    mark_enter(&m->marker);
+	    ba_walk_local(&m->allocator, mapping_search_cb, &c);
+	    mark_leave(&m->marker);
+	}
     }
 
     if (k) {
