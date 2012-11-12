@@ -106,7 +106,7 @@ void set_id(mixed _id) { id = _id; }
 //! @seealso
 //!   @[Stdio.File()->read_function()]
 function(:string) read_function(int nbytes) {
-  return lambda() { read(nbytes); };
+  return lambda() { return read(nbytes); };
 }
 
 //! @seealso
