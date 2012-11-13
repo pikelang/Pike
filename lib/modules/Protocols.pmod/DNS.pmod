@@ -10,12 +10,20 @@
 
 #pike __REAL_VERSION__
 
+// documentation taken from RFC 2136
+//! No error condition.
 final constant NOERROR=0;
+//! The name server was unable to interpret the request due to a format error.
 final constant FORMERR=1;
+//!The name server encountered an internal failure while processing this request, for example an operating system error or a forwarding timeout.
 final constant SERVFAIL=2;
+//! Some name that ought to exist, does not exist.
 final constant NXDOMAIN=3;
+//! The name server does not support the specified Opcode.
 final constant NOTIMPL=4;
+//! The name server refuses to perform the specified operation for policy or security reasons.
 final constant REFUSED=5;
+//! Some RRset that ought to exist, does not exist.
 final constant NXRRSET=8;
 
 final constant QUERY=0;
@@ -90,7 +98,7 @@ enum EntryType
   //! Type - text strings
   T_TXT=16,
 
-  //! Type - IPv6 address record (RFC 1886, deprecated) 
+  //! Type - IPv6 address record (RFC 1886)
   T_AAAA=28,
 
   //! Type - Location Record (RFC 1876)
@@ -736,7 +744,9 @@ class server
   //!   or a result mapping if not:
   //!   @mapping
   //!     @member int "rcode"
+  //!       0 (or omit) for success, otherwise one of the Protocols.DNS.* constants
   //!     @member array(mapping(string:string|int))|void "an"
+  //!       Answer section:
   //!       @array
   //!         @elem mapping(string:string|int) entry
   //!           @mapping
@@ -746,8 +756,23 @@ class server
   //!           @endmapping
   //!       @endarray
   //!     @member array|void "qd"
+  //!       Question section, same format as @[an]; omit to return the original question
   //!     @member array|void "ns"
+  //!       Authority section (usually NS records), same format as @[an]
   //!     @member array|void "ar"
+  //!       Additional section, same format as @[an]
+  //!     @member int "aa"
+  //!       Set to 1 to include the Authoritative Answer bit in the response
+  //!     @member int "tc"
+  //!       Set to 1 to include the TrunCated bit in the response
+  //!     @member int "rd"
+  //!       Set to 1 to include the Recursion Desired bit in the response
+  //!     @member int "ra"
+  //!       Set to 1 to include the Recursion Available bit in the response
+  //!     @member int "cd"
+  //!       Set to 1 to include the Checking Disabled bit in the response
+  //!     @member int "ad"
+  //!       Set to 1 to include the Authenticated Data bit in the response
   //!   @endmapping
   protected mapping reply_query(mapping query, mapping udp_data,
 				 function(mapping:void) cb)
