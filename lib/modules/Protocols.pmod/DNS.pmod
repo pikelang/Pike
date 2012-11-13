@@ -865,7 +865,7 @@ class server
 
   }
 
-  protected void destory()
+  protected void destroy()
   {
     if(sizeof(ports))
     {
