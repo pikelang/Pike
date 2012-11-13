@@ -319,6 +319,12 @@ mapping get_information(Stdio.File fd)
 	break;
       }
     } while (1);
+  } else if (marker == "8B") {
+    //  May be a native PSD file. It should start with "8BPS\0\1" to be valid.
+    string marker2 = fd->read(4);
+    if (marker2 == "PS\0\1") {
+      photoshop_data = "8BPS\0\1" + fd->read();
+    }
   } else {
     //werror("unknown marker: %O neither JPEG nor Postscript\n", marker);
     return ([]);
