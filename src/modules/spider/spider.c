@@ -1042,7 +1042,7 @@ void f_fd_info(INT32 args)
 static void program_name(struct program *p)
 {
   char *f;
-  INT32 n=0;
+  INT_TYPE n=0;
   ref_push_program(p);
   APPLY_MASTER("program_name", 1);
   if(TYPEOF(sp[-1]) == T_STRING)
