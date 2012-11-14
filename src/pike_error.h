@@ -51,7 +51,7 @@ static inline void Pike_fatal (const char *fmt, ...)
 #if 1
 PMOD_EXPORT extern const char msg_fatal_error[];
 #define Pike_fatal \
- (fprintf(stderr,msg_fatal_error,__FILE__,__LINE__),debug_fatal)
+ (fprintf(stderr,msg_fatal_error,__FILE__,(long)__LINE__),debug_fatal)
 #else
 /* This is useful when debugging assembler code sometimes... -Hubbe */
 #define Pike_fatal \
