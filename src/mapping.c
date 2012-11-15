@@ -121,6 +121,10 @@ static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s)
     return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
 }
 
+static INLINE int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
+    return t1 & t2 || (t1|t2) & BIT_OBJECT;
+}
+
 #ifdef PIKE_DEBUG
 
 /** This function checks that the type field isn't lacking any bits.
@@ -1879,6 +1883,9 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   check_mapping_for_destruct(b);
 
   if(m_sizeof(a) != m_sizeof(b)) return 0;
+
+  if (!check_type_overlaps(a->data->ind_types, b->data->ind_types) ||
+      !check_type_overlaps(a->data->val_types, b->data->val_types)) return 0;
 
   curr.pointer_a = a;
   curr.pointer_b = b;
