@@ -882,7 +882,7 @@ INPUT_IS_WIDE(								 \
 	      eye++;							\
 	    }								\
 	  }								\
-	  if(len > (int)input_len-eye)                                  \
+	  if(len > (unsigned long)(input_len-eye))                      \
 	  {								\
 	    chars_matched[0]=eye-field_length;				\
 	    return matches;						\
