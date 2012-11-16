@@ -223,14 +223,11 @@ dvb_stream_data *sl_getstream(dvb_data *parent, unsigned int pid) {
 
 }
 
-char *mk_devname(int devno, char *basename) {
+static char devname_buf[24];
 
-  char *devname;
-
-  if((devname = malloc(sizeof(basename)+4)) == NULL)
-      return NULL;
-  sprintf(devname, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
-  return devname;
+static INLINE char *mk_devname(int devno, const char *basename) {
+  sprintf(devname_buf, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
+  return devname_buf;
 }
 
 
@@ -262,29 +259,27 @@ char *mk_devname(int devno, char *basename) {
  */
 static void f_create(INT32 args) {
 
-  int fefd;
+  int fefd, devno;
   char *devname;
 
   if(DVB->cardn != -1)
     Pike_error("Create already called!\n");
 
-  DVB->cardn = 0;
+  devno = 0;
   if(args) {
     if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
-      DVB->cardn = (u_short)Pike_sp[-1].u.integer;
+      devno = (u_short)Pike_sp[-1].u.integer;
   }
 
-  if((devname = mk_devname(DVB->cardn, FRONTENDDEVICE)) == NULL)
-      Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(devno, FRONTENDDEVICE);
   fefd = open (devname, O_RDWR | O_NONBLOCK);
   if (fefd < 0) {
-      DVB->cardn = -1;
-      /* free(devname); */
       Pike_error("Opening frontend '%s' failed.\n", devname);
   }
   DVB->fefd = fefd;
+  DVB->cardn = devno;
 
   /* Make sure this fd gets closed on exec. */
   set_close_on_exec(fefd, 1);
@@ -579,8 +574,7 @@ static void f_zap(INT32 args) {
   satno = (u_short)Pike_sp[-1].u.integer;
 
 #if HAVE_DVB < 30
-  if((devname = mk_devname(dvb->cardn, SECDEVICE)) == NULL)
-      Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(dvb->cardn, SECDEVICE);
   secfd = open (devname, O_RDWR);
   /* free(devname); */
   if (secfd == -1) {
@@ -625,14 +619,13 @@ static void f_zap(INT32 args) {
  */
 static void f_get_pids(INT32 args) {
 
-  dvb_pid_t pids[7];
+  dvb_pid_t pids[5];
   int cnt = 0, dmx, ret;
   char *devname;
 
   pop_n_elems(args);
   if(!sl_count(DVB)) {
-    if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-        Pike_error("Internal error: can't malloc buffer.\n");
+    devname = mk_devname(DVB->cardn, DEMUXDEVICE);
     dmx = open (devname, O_RDWR | O_NONBLOCK);
     /* free(devname); */
     if (dmx < 0)
@@ -659,12 +652,7 @@ static void f_get_pids(INT32 args) {
     cnt++;
     push_text("pcr");		push_int( pids[DMX_PES_PCR] & 0x1fff );
     cnt++;
-    push_text("other");		push_int( pids[DMX_PES_OTHER] & 0x1fff );
-    cnt++;
-    if(cnt)
-      f_aggregate_mapping( 2 * cnt );
-    else
-      push_int(0);
+    f_aggregate_mapping( 2 * cnt );
   } else
     push_int(0);
   if(!sl_count(DVB))
@@ -844,10 +832,8 @@ static void f_parse_pat(INT32 args) {
   char *devname;
 
   pop_n_elems(args);
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -1008,10 +994,8 @@ static void f_parse_pmt(INT32 args)
 
   check_all_args("DVB.dvb->analyze_pmt", args, BIT_INT, BIT_INT, 0);
 
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -1301,10 +1285,8 @@ static void f_stream_create(INT32 args) {
   if( !dvbprog || !(dvbstor = (dvb_data *)get_storage( dvbprog, dvb_program )) )
     Pike_error("This class cannot be instantiated directly\n");
 
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   fd = open (devname, O_RDWR /*| O_NONBLOCK*/);
-  /* free(devname); */
   if (fd < 0) {
       Pike_error("Opening DEMUX failed.\n");
   }
@@ -1514,10 +1496,8 @@ static void f_audio_create(INT32 args) {
       devno = (u_short)Pike_sp[-1].u.integer;
   }
   pop_n_elems(args);
-  if((devname = mk_devname(devno, AUDIODEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(devno, AUDIODEVICE);
   DVBAudio->fd = open( devname, O_RDWR );
-  /* free(devname); */
   if (DVBAudio->fd < 0) {
       DVB->cardn = -1;
       Pike_error("Opening audio device failed.\n");
@@ -1858,3 +1838,4 @@ PIKE_MODULE_EXIT {
 }
 
 #endif
+
