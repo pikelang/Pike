@@ -1281,6 +1281,7 @@ PIKECLASS Backend
     (FD) < (ME)->fd_boxes_start + (ME)->fd_boxes_size ?			\
     GET_ACTIVE_BOX (ME, FD) : NULL)
 
+
    static struct fd_callback_box *safe_get_box (struct Backend_struct *me, int fd)
    {
      if (fd < 0) {
@@ -1299,6 +1300,11 @@ PIKECLASS Backend
 	 return me->fd_boxes[fd];
      }
      return NULL;
+   }
+
+   PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd( struct Backend_struct *me, int fd )
+   {
+       return safe_get_box( me, fd );
    }
 
 /* NOTE: Some versions of AIX seem to have a
