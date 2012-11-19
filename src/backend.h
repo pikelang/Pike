@@ -188,6 +188,8 @@ PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
 					 struct Backend_struct *new_be);
 PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
 
+PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd (struct Backend_struct *me, int fd);
+
 /* Old style callback interface. This only accesses the default backend. It
  * can't be mixed with the new style interface above for the same fd. */
 
