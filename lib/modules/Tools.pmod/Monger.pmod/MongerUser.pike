@@ -439,7 +439,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         }
         break;
       case "git":
-        res = Process.run(({"git", "clone", version_info->source_control_type, lpath}));
+        res = Process.run(({"git", "clone", version_info->source_control_url, lpath}));
         if(res->exitcode)
         {
           werror(res->stderr);
