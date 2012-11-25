@@ -1,0 +1,41 @@
+
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=PDF
+MODDIR=Parser.pmod/
+MODULE_PMOD_IN=$(SRCDIR)/PDF.pmod.in
+MODULE_WRAPPER_PREFIX=_
+OBJS=pdf.o
+
+@dynamic_module_makefile@
+
+# Ragel targets
+
+# Enable this to include ragel in the build chain.
+ENABLE_RAGEL=yes
+
+RAGEL = ragel -G2 -C
+
+RAGEL_TARGETS=rl/pdf.c
+
+$(SRCDIR)/rl/%.c: rl/%.rl
+	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
+	  echo "cd $(SRCDIR) && $(RAGEL) -o rl/$*.c rl/$*.rl"; \
+	  cd "$(SRCDIR)" && $(RAGEL) -o rl/$*.c rl/$*.rl; \
+	elif [ -f $@ ]; then \
+	  echo "touch $@"; \
+	  touch $@; \
+	else \
+	  echo "C target $@ missing."; \
+	  false; \
+	fi
+
+source: $(RAGEL_TARGETS)
+
+ragel_clean:
+	cd "$(SRCDIR)" && $(RM) $(RAGEL_TARGETS)
+
+$(SRCDIR)/pdf.c: $(SRCDIR)/rl/pdf.c
+
+@dependencies@

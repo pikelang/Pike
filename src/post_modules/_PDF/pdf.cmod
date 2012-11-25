@@ -1,0 +1,103 @@
+/* vim:syntax=c
+ */
+#include "global.h"
+#include "interpret.h"
+#include "parse.h"
+#include "module.h"
+
+static struct object * create_reference(const unsigned char * start, const unsigned char * end);
+
+#include "rl/pdf.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+PIKECLASS Reference {
+    PIKEVAR string ref;
+
+    PIKEFUN int __hash() {
+	struct svalue sv;
+
+	SET_SVAL(sv, PIKE_T_STRING, 0, string, THIS->ref);
+
+	RETURN hash_svalue(&sv);
+    }
+
+    PIKEFUN int `==(mixed o) {
+	struct svalue sv;
+
+	SET_SVAL(sv, PIKE_T_STRING, 0, string, THIS->ref);
+
+	RETURN is_eq(&sv, o);
+    }
+}
+
+/*! Class representing a PDF @expr{name@} object. This is used in all places, where a @expr{name@} can
+ *! be mistaken for a @expr{string@}.
+ */
+PIKECLASS name {
+    PIKEVAR string name;
+
+    PIKEFUN int __hash() {
+	struct svalue sv;
+
+	SET_SVAL(sv, PIKE_T_STRING, 0, string, THIS->name);
+
+	RETURN hash_svalue(&sv);
+    }
+
+    PIKEFUN int `==(mixed o) {
+	struct svalue sv;
+
+	SET_SVAL(sv, PIKE_T_STRING, 0, string, THIS->name);
+
+	RETURN is_eq(&sv, o);
+    }
+
+    PIKEFUN string cast(string type) {
+	ref_push_string(THIS->name);
+    }
+}
+
+static struct object * create_reference(const unsigned char * start, const unsigned char * end) {
+    struct object * o = low_clone(Reference_program);
+    struct pike_string * ref = make_shared_binary_string((const char*)start, end-start);
+
+    OBJ2_REFERENCE(o)->ref = ref;
+
+    return o;
+}
+
+static struct object * create_name(const unsigned char * start, const unsigned char * end) {
+    struct object * o = low_clone(name_program);
+    struct pike_string * name = make_shared_binary_string((const char*)start, end-start);
+
+    OBJ2_NAME(o)->name = name;
+
+    return o;
+}
+
+
+PIKECLASS Reader {
+    CVAR struct parse_context c;
+
+    INIT {
+	parse_context_init(&THIS->c);
+    }
+
+    EXIT {
+	// free the parse stack
+    }
+
+    PIKEFUN int feed(string data) {
+	int ret = parse_object(&THIS->c, data);
+
+	if (!ret) {
+	    push_svalue(stack_top(&THIS->c.stack));
+	    return;
+	}
+
+	push_int(ret);
+    }
+}
