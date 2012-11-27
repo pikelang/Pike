@@ -94,7 +94,7 @@ PIKECLASS Reader {
 	int ret = parse_object(&THIS->c, data);
 
 	if (!ret) {
-	    push_svalue(stack_top(&THIS->c.stack));
+	    push_svalue(stack_top(&THIS->c.stack)+1);
 	    return;
 	}
 
