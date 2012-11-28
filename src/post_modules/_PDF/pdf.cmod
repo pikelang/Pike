@@ -5,15 +5,11 @@
 #include "parse.h"
 #include "module.h"
 
-static struct object * create_reference(const unsigned char * start, const unsigned char * end);
-
-#include "rl/pdf.c"
-
 #define DEFAULT_CMOD_STORAGE static
 
 DECLARATIONS
 
-PIKECLASS Reference {
+PIKECLASS reference {
     PIKEVAR string ref;
 
     PIKEFUN int __hash() {
@@ -33,8 +29,27 @@ PIKECLASS Reference {
     }
 }
 
-/*! Class representing a PDF @expr{name@} object. This is used in all places, where a @expr{name@} can
- *! be mistaken for a @expr{string@}.
+PIKECLASS pdf_object {
+    PIKEVAR int id;
+    PIKEVAR int rev;
+    PIKEVAR mixed data;
+    PIKEVAR string raw;
+
+    PIKEFUN mixed `()() {
+	push_svalue(&THIS->data);
+    }
+
+    PIKEFUN string _sprintf(int type, mapping params) {
+	pop_n_elems(args);
+	push_text("%O(%O)");
+	ref_push_program(pdf_object_program);
+	push_svalue(&THIS->data);
+	f_sprintf(3);
+    }
+}
+
+/*! Class representing a PDF @expr{name@} object. This is used where ever a @expr{name@} could
+ *! be mistaken for a @expr{string@}. That is everywhere except as keys of dictionaries.
  */
 PIKECLASS name {
     PIKEVAR string name;
@@ -61,7 +76,7 @@ PIKECLASS name {
 }
 
 static struct object * create_reference(const unsigned char * start, const unsigned char * end) {
-    struct object * o = low_clone(Reference_program);
+    struct object * o = low_clone(reference_program);
     struct pike_string * ref = make_shared_binary_string((const char*)start, end-start);
 
     OBJ2_REFERENCE(o)->ref = ref;
@@ -70,7 +85,7 @@ static struct object * create_reference(const unsigned char * start, const unsig
 }
 
 static struct object * create_name(const unsigned char * start, const unsigned char * end) {
-    struct object * o = low_clone(name_program);
+    struct object * o = low_clone(pdf_object_program);
     struct pike_string * name = make_shared_binary_string((const char*)start, end-start);
 
     OBJ2_NAME(o)->name = name;
@@ -78,6 +93,7 @@ static struct object * create_name(const unsigned char * start, const unsigned c
     return o;
 }
 
+#include "rl/pdf.c"
 
 PIKECLASS Reader {
     CVAR struct parse_context c;
@@ -90,14 +106,16 @@ PIKECLASS Reader {
 	// free the parse stack
     }
 
-    PIKEFUN int feed(string data) {
+    PIKEFUN mixed feed(string data) {
 	int ret = parse_object(&THIS->c, data);
 
-	if (!ret) {
-	    push_svalue(stack_top(&THIS->c.stack)+1);
+	if (ret) {
+	    struct svalue * sp = stack_top(&THIS->c.stack);
+	    push_svalue(sp);
+	    free_svalue(sp);
 	    return;
 	}
 
-	push_int(ret);
+	push_int(0);
     }
 }

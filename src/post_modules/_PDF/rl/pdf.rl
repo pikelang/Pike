@@ -9,7 +9,7 @@
 #include "mapping.h"
 #include "array.h"
 
-#define PDF_DEBUG
+//#define PDF_DEBUG
 
 %%{
     machine PDF;
@@ -19,7 +19,6 @@
     prepush {
 	prepush(&c->stack);
     }
-#getkey ((int)INDEX_PCHARP(str, fpc))
     
     action mark {
 	mark = fpc;
@@ -44,12 +43,6 @@
 	if (fpc - mark > 0) {
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
 	}
-    }
-
-    action save_state {
-	c->pos = STR0(s) - fpc;
-	if (mark) c->mark = STR0(s) - mark;
-	c->state = fcurs;
     }
 
     whitespace = [\0\t\n\r \f];
@@ -79,7 +72,7 @@
 
     action append_quoted {
 	do {
-	    int ch;
+	    int ch = 0;
 	    switch (fc) {
 	    case 'n':
 		ch = '\n';
@@ -281,6 +274,7 @@
 	    struct svalue key;
 	    SET_SVAL(key, PIKE_T_STRING, 0, string, c->key);
 	    low_mapping_insert(SP[0].u.mapping, &key, SP+1, 2);
+	    free_svalue(SP+1);
 #ifdef PDF_DEBUG
 	    fprintf(stderr, "storing entry at '%c'\n", fc);
 #endif
@@ -319,25 +313,71 @@
 #endif
     }
 
+    action create_object {
+	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, low_clone(pdf_object_program));
+    }
+
+    action add_objid {
+	{
+	    PCHARP end = MKPCHARP(fpc, 0);
+	    long int id = STRTOL_PCHARP(MKPCHARP(mark, 0), &end, 10);
+	    OBJ2_PDF_OBJECT(SP[0].u.object)->id = (INT_TYPE)id;
+	}
+    }
+
+    action add_objrev {
+	{
+	    PCHARP end = MKPCHARP(fpc, 0);
+	    long int rev = STRTOL_PCHARP(MKPCHARP(mark, 0), &end, 10);
+	    OBJ2_PDF_OBJECT(SP[0].u.object)->rev = (INT_TYPE)rev;
+	}
+    }
+
+    action add_objdata {
+	{
+	    move_svalue(&OBJ2_PDF_OBJECT(SP[0].u.object)->data, SP+1);
+	}
+    }
 
     array := ( my_space* . object %array_add . my_space*)* >start_array . ']' @finish_array @return;
+    
+    direct_object = digit+ >mark >create_object %add_objid . my_space+ .
+		    digit+ >mark %add_objrev . my_space+ .
+		    'obj' . my_space+ . object . my_space* . 'endobj' @add_objdata;
 
-    main := my_space* . object . my_space*;
+    main := my_space* . direct_object @{ fbreak;};
 }%%
 
 #define SP (stack_top(&c->stack))
 
+static void parse_context_init(struct parse_context * c) {
+    stack_init(&c->stack);
+    c->state = %%{ write start; }%% ;
+    c->mark = 0;
+    c->pos = 0;
+    c->key = NULL;
+    c->pc = 0;
+}
+
 static int parse_object(struct parse_context * c, struct pike_string * s) {
-    const unsigned char * mark = NULL;
+    const unsigned char * mark = STR0(s) + c->mark;
     const unsigned char * p = STR0(s) + c->pos;
     const unsigned char * pe = STR0(s) + s->len;
     const unsigned char * eof = pe;
-    int cs;
+
+    int cs = c->state;
 
     %% write data;
 
-    if (c->mark != -1) {
-	mark = STR0(s) + c->mark;
+#ifdef PDF_DEBUG
+    fprintf(stderr, "starting parsing at '%4s..'\n", p);
+#endif
+
+    if (mark > p) {
+	Pike_error("mark > p! \n");
+    }
+    if (p >= pe) {
+	Pike_error("p >= pe! \n");
     }
 
     cs = %%{ write start; }%% ;
@@ -349,12 +389,17 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
 #ifdef PDF_DEBUG
     fprintf(stderr, "cs: %d\n", cs);
     fprintf(stderr, "at %p pe: %p\n", p, pe);
-    fprintf(stderr, "at: '[..%c]%s'\n", p[-1], p);
+    fprintf(stderr, "at: '[..%c]%4s'\n\n\n", p[-1], p);
 #endif
+    
+    c->mark = mark - STR0(s);
+    c->pos = p - STR0(s);
 
-    if (cs >= %%{ write first_final; }%% ) {
-	return 0;
-    } else {
+    if (cs >= %%{ write first_final; }%% && !c->stack.top) {
+	c->state = %%{ write start; }%% ;
 	return 1;
+    } else {
+	c->state = cs;
+	return 0;
     }
 }

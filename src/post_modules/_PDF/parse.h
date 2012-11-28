@@ -18,6 +18,7 @@ struct parse_context {
     struct pike_string * key;
     /* paranthesis count for literal strings */
     unsigned int pc;
+    int state;
 };
 
 static INLINE void stack_init(struct parse_stack * s) {
@@ -25,14 +26,6 @@ static INLINE void stack_init(struct parse_stack * s) {
     s->size = 64;
     s->sv = (struct svalue*)xalloc(64 * sizeof(struct svalue));
     s->stack = (int*)xalloc(64 * sizeof(int));
-}
-
-static INLINE void parse_context_init(struct parse_context * c) {
-    stack_init(&c->stack);
-    c->mark = -1;
-    c->pos = 0;
-    c->key = NULL;
-    c->pc = 0;
 }
 
 static INLINE void prepush(struct parse_stack * s) {
