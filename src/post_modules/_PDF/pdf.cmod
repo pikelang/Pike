@@ -27,6 +27,14 @@ PIKECLASS reference {
 
 	RETURN is_eq(&sv, o);
     }
+
+    PIKEFUN string _sprintf(int type, mapping params) {
+	pop_n_elems(args);
+	push_text("%O(%s)");
+	ref_push_program(reference_program);
+	ref_push_string(THIS->ref);
+	f_sprintf(3);
+    }
 }
 
 PIKECLASS pdf_object {
@@ -41,10 +49,12 @@ PIKECLASS pdf_object {
 
     PIKEFUN string _sprintf(int type, mapping params) {
 	pop_n_elems(args);
-	push_text("%O(%O)");
+	push_text("%O(%d %d, %O)");
 	ref_push_program(pdf_object_program);
+	push_int(THIS->id);
+	push_int(THIS->rev);
 	push_svalue(&THIS->data);
-	f_sprintf(3);
+	f_sprintf(5);
     }
 }
 
@@ -97,8 +107,10 @@ static struct object * create_name(const unsigned char * start, const unsigned c
 
 PIKECLASS Reader {
     CVAR struct parse_context c;
+    CVAR struct string_builder buf;
 
     INIT {
+	init_string_builder(&THIS->buf, 0);
 	parse_context_init(&THIS->c);
     }
 
@@ -106,8 +118,32 @@ PIKECLASS Reader {
 	// free the parse stack
     }
 
-    PIKEFUN mixed feed(string data) {
-	int ret = parse_object(&THIS->c, data);
+    PIKEFUN void feed(string data) {
+
+	if (data->size_shift) Pike_error("expects non-unicode data\n");
+
+	/*
+	 * remove buffered data only if it helps
+	 */
+	if (data->len + THIS->buf.s->len + 1 >= THIS->buf.malloced) {
+	    ptrdiff_t waste = THIS->c.mark;
+	    if (waste > 0) {
+		memmove(STR0(THIS->buf.s), STR0(THIS->buf.s)+waste, THIS->buf.s->len - waste);
+		THIS->buf.s->len -= waste;
+		THIS->c.mark = 0;
+		THIS->c.pos -= waste;
+		STR0(THIS->buf.s)[THIS->buf.s->len] = 0;
+	    }
+	}
+
+	string_builder_binary_strcat0(&THIS->buf, STR0(data), data->len);
+	pop_n_elems(args);
+    }
+
+    PIKEFUN mixed parse() {
+	int ret;
+
+	ret = parse_object(&THIS->c, THIS->buf.s);
 
 	if (ret) {
 	    struct svalue * sp = stack_top(&THIS->c.stack);

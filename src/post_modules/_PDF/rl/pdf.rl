@@ -54,9 +54,6 @@
     my_space = (whitespace | ( '%' . [^\n]* . '\n' ));
 #my_space = whitespace*;
 
-    true = 'true';
-    false = 'false';
-
     action append_octal {
 	do {
 	    int ch = 0;
@@ -282,10 +279,25 @@
 
     }
 
+    action finish_null {
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_null());
+    }
+
+    action finish_true {
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_true());
+    }
+
+    action finish_false {
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_false());
+    }
+
     object = '<<' @call_dictionary |
 	     '(' @call_lstring |
 	     '/' @call_name |
 	     '[' @call_array |
+	     'null' @finish_null |
+	     'false' @finish_false |
+	     'true' @finish_true |
 	     (digit|[+\-]) >call_number;
 
     dictionary := (
