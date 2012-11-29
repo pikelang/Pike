@@ -407,6 +407,7 @@ mapping get_module_action_data(string name, string|void version)
 string get_file(mapping version_info, string|void path, int|void from_source)
 {
   array rq;
+  int have_path;
 
   if(from_source == SOURCE_CONTROL && version_info->source_control_url && sizeof( version_info->source_control_type))
   {
@@ -415,15 +416,33 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     string lpath = version_info->name + "-source";
     if(path) lpath = Stdio.append_path(path, lpath);
     if(file_stat(lpath))
-      throw(Error.Generic(sprintf("get_file: repository path %s already exists.\n", lpath)));
+	{
+	  have_path = 1;
+	}
+	if(have_path && !use_force)
+	{
+      throw(Error.Generic(sprintf("get_file: repository path %s already exists, use --force to override.\n", lpath)));
+	}
+	
     if(!Process.search_path(bin))
       throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
     mapping res;
-    
+    string subcmd;
+    string oldcwd = getcwd();
+
     switch(bin)
     {
       case "svn":
-        res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
+        if(have_path)
+        {  
+          cd(lpath);
+          res = Process.run(({"svn", "update"}));
+          cd(oldcwd);
+        }
+        else
+        {
+          res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
@@ -431,7 +450,16 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         }
         break;
       case "hg":
-        res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
+        if(have_path)
+        {
+          cd(lpath);
+          res = Process.run(({"hg", "pull", "-u", version_info->source_control_url}));
+          cd(oldcwd);
+        }
+        else
+        {
+          res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
@@ -439,7 +467,16 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         }
         break;
       case "git":
-        res = Process.run(({"git", "clone", version_info->source_control_url, lpath}));
+        if(have_path)
+        {
+          cd(lpath);
+          res = Process.run(({"git", "pull", version_info->source_control_type, lpath}));
+          cd(oldcwd);
+        }
+        else
+        {
+          res = Process.run(({"git", "clone", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
@@ -588,14 +625,29 @@ void do_install(string name, string|void version)
 
       if(res)
         exit(1, "install error: uncompress failed.\n");
-  
       fn = (fn)[0.. sizeof(fn)-4];
-    }
+ 	}
     else fn = vi->filename;
 
     created->file += ({ fn });
 
     werror("working with tar file " + fn + "\n");
+
+	string workingdir = fn[0..sizeof(fn)-5];
+	
+    if(file_stat(workingdir))
+    {
+       if(use_force)
+       {
+         write("Deleting existing build directory %s in 5 seconds.\n", workingdir);
+         sleep(5);
+         Stdio.recursive_rm(workingdir);
+       }
+       else
+       {
+         exit(1, sprintf("Build directory exists and is likely a previous failed build. Use --force to delete.\n", workingdir));
+       }
+    }
 
     if(!Process.search_path("tar"))
       exit(1, "install error: no tar found in PATH.\n");
@@ -605,11 +657,11 @@ void do_install(string name, string|void version)
     if(res)
       exit(1, "install error: untar failed.\n");
     else
-      created->dirs += ({fn[0..sizeof(fn)-5]});  
+      created->dirs += ({workingdir});  
 
 
     // change directory to the module
-    cd(combine_path(builddir, fn[0..sizeof(fn)-5]));
+    cd(combine_path(builddir, workingdir));
   }
   else
   {
