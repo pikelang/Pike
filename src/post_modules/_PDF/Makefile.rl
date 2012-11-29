@@ -6,5 +6,7 @@ rl/%.dot: rl/%.rl
 	$(RAGEL) -p -V -o $@ $<
 rl/%.png: rl/%.dot
 	dot -Tpng -o $@ $<
+rl/%.svg: rl/%.dot
+	dot -Tsvg -o $@ $<
 
 source: rl/pdf.c
