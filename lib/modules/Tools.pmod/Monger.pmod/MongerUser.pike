@@ -409,6 +409,10 @@ string get_file(mapping version_info, string|void path, int|void from_source)
   array rq;
   int have_path;
 
+  // NOTE: if we are re-using an existing source control clone or checkout, we 
+  // need to do some more work here, as it's probably not good to just do a 
+  // build from a directory that might have outdated build by-products left in
+  // it. We should do a git clean or equivalent.
   if(from_source == SOURCE_CONTROL && version_info->source_control_url && sizeof( version_info->source_control_type))
   {
     write("fetching source from source control (%s)...\n", version_info->source_control_type);
@@ -416,7 +420,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     string lpath = version_info->name + "-source";
     if(path) lpath = Stdio.append_path(path, lpath);
     if(file_stat(lpath))
-	{
+    {
 	  have_path = 1;
 	}
 	if(have_path && !use_force)
