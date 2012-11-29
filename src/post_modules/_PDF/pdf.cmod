@@ -59,6 +59,19 @@ PIKECLASS pdf_object {
     }
 }
 
+PIKECLASS stream {
+    PIKEVAR mapping param;
+    PIKEVAR string data;
+
+}
+
+static void generate_stream(struct svalue * s, const unsigned char * start, const unsigned char * end) {
+    struct object * o = low_clone(stream_program);
+    OBJ2_STREAM(o)->data = make_shared_binary_string((const char*)start, end-start);
+    OBJ2_STREAM(o)->param = s->u.mapping;
+    SET_SVAL(*s, PIKE_T_OBJECT, 0, object, o);
+}
+
 /*! Class representing a PDF @expr{name@} object. This is used where ever a @expr{name@} could
  *! be mistaken for a @expr{string@}. That is everywhere except as keys of dictionaries.
  */
@@ -111,7 +124,7 @@ PIKECLASS Reader {
     CVAR struct string_builder buf;
 
     INIT {
-	init_string_builder(&THIS->buf, 0);
+	init_string_builder_alloc(&THIS->buf, 4096, 0);
 	parse_context_init(&THIS->c);
     }
 

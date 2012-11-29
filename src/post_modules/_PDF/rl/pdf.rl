@@ -9,7 +9,7 @@
 #include "mapping.h"
 #include "array.h"
 
-//#define PDF_TRACE
+#define PDF_TRACE
 
 
 %%{
@@ -107,7 +107,7 @@
     action finish_string {
 	if (fpc - mark > 0) {
 #ifdef PDF_TRACE
-	    fprintf(stderr, "appending %ld characters from %p (%s)\n", fpc-mark, mark, mark);
+	    fprintf(stderr, "appending %ld characters from %p (%.4s..)\n", fpc-mark, mark, mark);
 #endif
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
 	}
@@ -165,26 +165,30 @@
 
     action finish_integer {
 #ifdef PDF_TRACE
-	fprintf(stderr, "parsing integer in %ld characters from %p (%s)\n", fpc-mark, mark, mark);
+	fprintf(stderr, "parsing integer in %ld characters from %p (%.4s...)\n", fpc-mark, mark, mark);
 #endif
 	pcharp_to_svalue_inumber(SP, MKPCHARP(mark, 0), NULL, 10, fpc-mark);
     }
 
     integer = ([\-+]? . digit+) >mark %finish_integer;
+    signed_integer = ([\-+] . digit+) >mark %finish_integer;
 
     # reference
 
     action finish_reference {
+#ifdef PDF_TRACE
+	fprintf(stderr, "generating reference for '%.6s'", mark);
+#endif
 	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, create_reference(mark, fpc));	
     }
 
-    reference = digit+ >mark . ' ' . digit+ . ' R' %finish_reference;
+    reference = digit+ >mark . ' ' . digit+ . ' R' @finish_reference;
     
     # real
 
     action finish_real {
 #ifdef PDF_TRACE
-	fprintf(stderr, "parsing real in %ld characters from %p (%s)\n", fpc-mark, mark, mark);
+	fprintf(stderr, "parsing real in %ld characters from %p (%.4s...)\n", fpc-mark, mark, mark);
 #endif
 	SET_SVAL(SP[0], PIKE_T_FLOAT, 0, float_number,
 		 (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(mark, 0), NULL));
@@ -192,7 +196,19 @@
 
     real = ([\-+]? . (digit* . '.' . digit+)|(digit+ . '.' . digit*) ) >mark %finish_real;
 
-    number := (reference | integer | real) <: any >{ fhold; } >return ;
+    number := (integer | real) <: any >{ fhold;} >return;
+
+    action recover_int {
+#ifdef PDF_TRACE
+	fprintf(stderr, "recovering to int at (%.4s..). parsing int from (%.4s..) \n", fpc, mark);
+#endif
+	fexec mark;
+	fgoto number;
+    }
+    
+    num_type := (signed_integer | real | digit+ >mark . ( ' ' . digit+ . ' R')
+							@finish_reference $^recover_int )
+		      <: any >{ fhold; } >return;
 
     # name
 
@@ -213,7 +229,7 @@
     action finish_name {
 	if (fpc - mark > 0) {
 #ifdef PDF_TRACE
-	    fprintf(stderr, "appending %ld characters from %p (%s)\n", fpc-mark, mark, mark);
+	    fprintf(stderr, "appending %ld characters from %p (%.4s..)\n", fpc-mark, mark, mark);
 #endif
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
 	}
@@ -279,6 +295,14 @@
 	fcall literal_string;
     }
 
+    action call_num_type {
+	fhold;
+#ifdef PDF_TRACE
+	fprintf(stderr, "calling num_type\n");
+#endif
+	fcall num_type;
+    }
+
     action call_number {
 	fhold;
 #ifdef PDF_TRACE
@@ -290,7 +314,7 @@
     action call_hexstring {
 	fhold;
 #ifdef PDF_TRACE
-	fprintf(stderr, "calling number\n");
+	fprintf(stderr, "calling hexstring\n");
 #endif
 	fcall hex_string;
     }
@@ -298,12 +322,13 @@
     action store_entry {
 	{
 	    struct svalue key;
+#ifdef PDF_TRACE
+	    fprintf(stderr, "storing entry at pos %p from SP[1] %p at '%p'\n", p, SP+1, SP[0].u.mapping);
+#endif
 	    SET_SVAL(key, PIKE_T_STRING, 0, string, c->key);
 	    low_mapping_insert(SP[0].u.mapping, &key, SP+1, 2);
 	    free_svalue(SP+1);
-#ifdef PDF_TRACE
-	    fprintf(stderr, "storing entry at '%c'\n", fc);
-#endif
+	    c->key = NULL;
 	}
 
     }
@@ -328,12 +353,28 @@
 	     'null' @finish_null |
 	     'false' @finish_false |
 	     'true' @finish_true |
-	     (digit|[+\-]) >call_number;
+	     (digit|[+\-]) @call_num_type;
 
-    dictionary := (
-		   (my_space* . '/' @call_name %store_key . my_space* . object . my_space*) %store_entry
+    action finish_stream {
+	generate_stream(SP+1, mark, fpc - 9);
+    }
+
+    object_or_stream
+	  = '<<' @call_dictionary .
+		(my_space+ . 'stream' . '\r'? . '\n' . any* >mark :>> 'endstream' @finish_stream )? |
+	     '<' . xdigit >call_hexstring |
+	     '(' @call_lstring |
+	     '/' @call_name |
+	     '[' @call_array |
+	     'null' @finish_null |
+	     'false' @finish_false |
+	     'true' @finish_true |
+	     (digit|[+\-]) @call_number;
+
+    dictionary := ( my_space* .
+		   ('/' @call_name %store_key . my_space* . object . my_space+ >store_entry)
 		  )* >start_dict
-		  . '>>' @finish_dict <: any @return;
+		  . '>>' @finish_dict @return;
 
     action start_array {
 #ifdef PDF_TRACE
@@ -385,7 +426,7 @@
     
     direct_object = digit+ >mark >create_object %add_objid . my_space+ .
 		    digit+ >mark %add_objrev . my_space+ .
-		    'obj' . my_space* . object . my_space* . 'endobj' @add_objdata;
+		    'obj' . my_space* . object_or_stream . my_space* . 'endobj' @add_objdata;
 
     main := my_space* . direct_object @{ fbreak;};
 }%%
@@ -414,7 +455,7 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
     %% write data;
 
 #ifdef PDF_TRACE
-    fprintf(stderr, "starting parsing at '%4s..' in state %d at SP[%u]\n", p, cs, c->stack.top);
+    fprintf(stderr, "starting parsing at '%.4s..' in state %d at SP[%u]\n", p, cs, c->stack.top);
 #endif
 
     if (mark > p) {
@@ -428,7 +469,7 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
     %% write exec;
 
 #ifdef PDF_TRACE
-    fprintf(stderr, "finishing parsing at '%4s..' in state %d at SP[%u]\n\n", p, cs, c->stack.top);
+    fprintf(stderr, "finishing parsing at '%.4s..' in state %d at SP[%u]\n\n", p, cs, c->stack.top);
 #endif
     
     c->mark = mark - STR0(s);
