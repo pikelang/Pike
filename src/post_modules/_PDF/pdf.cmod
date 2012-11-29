@@ -3,6 +3,7 @@
 #include "global.h"
 #include "interpret.h"
 #include "parse.h"
+#include "builtin_functions.h"
 #include "module.h"
 
 #define DEFAULT_CMOD_STORAGE static
@@ -118,6 +119,19 @@ PIKECLASS Reader {
 	// free the parse stack
     }
 
+    PIKEFUN string buffer() {
+	push_string(debug_make_shared_binary_string(THIS->buf.s->str, THIS->buf.s->len));
+    }
+
+    PIKEFUN int _sizeof() {
+	push_int(THIS->buf.s->len - THIS->c.pos);
+    }
+
+    PIKEFUN string rest() {
+	push_string(debug_make_shared_binary_string(THIS->buf.s->str+THIS->c.pos,
+						    THIS->buf.s->len-THIS->c.pos));
+    }
+
     PIKEFUN void feed(string data) {
 
 	if (data->size_shift) Pike_error("expects non-unicode data\n");
@@ -127,6 +141,9 @@ PIKECLASS Reader {
 	 */
 	if (data->len + THIS->buf.s->len + 1 >= THIS->buf.malloced) {
 	    ptrdiff_t waste = THIS->c.mark;
+#ifdef PDF_TRACE
+	    fprintf(stderr, "shrinking by %ld bytes \n", waste);
+#endif
 	    if (waste > 0) {
 		memmove(STR0(THIS->buf.s), STR0(THIS->buf.s)+waste, THIS->buf.s->len - waste);
 		THIS->buf.s->len -= waste;
@@ -142,8 +159,13 @@ PIKECLASS Reader {
 
     PIKEFUN mixed parse() {
 	int ret;
+	ptrdiff_t opos = THIS->c.pos;
 
 	ret = parse_object(&THIS->c, THIS->buf.s);
+
+#ifdef PDF_TRACE
+	fprintf(stderr, "processed %ld in state %d\n", THIS->c.pos - opos, THIS->c.state);
+#endif
 
 	if (ret) {
 	    struct svalue * sp = stack_top(&THIS->c.stack);
@@ -152,6 +174,18 @@ PIKECLASS Reader {
 	    return;
 	}
 
+	if (THIS->c.state == PDF_error_state) {
+	    push_text("foo");
+	    push_int(THIS->c.pos);
+	    apply (Pike_fp->current_object, "parse_error", 2);
+	    /* lets guarantee the parse error throws */
+	    Pike_error("error parsing pdf at %d\n", THIS->c.pos);
+	}
+
 	push_int(0);
+    }
+
+    PIKEFUN void parse_error(string msg, int pos) {
+	Pike_error("error parsing pdf at %d\n", pos);
     }
 }

@@ -5,4 +5,30 @@ constant this_program_does_not_exist = 1;
 #else
 inherit @module@;
 
+class ParseError {
+    inherit Error.Generic;
+
+    constant error_type = "pdf_parse";
+
+    string data;
+    int pos;
+
+    protected void create(string data, int pos, string reason, array bt) {
+	this_program::data = data;
+	this_program::pos = pos;
+
+	::create(sprintf("Error parsing PDF at %O '%c' %O.\n",
+			 data[max(0, pos-10)..pos-1],
+			 data[pos], data[pos+1..pos+11]), bt);
+    }
+}
+
+class Reader {
+    inherit _PDF::Reader;
+
+    void parse_error(string reason, int pos) {
+	throw(ParseError(buffer(), pos, reason, backtrace()[..<1]));
+    }
+}
+
 #endif

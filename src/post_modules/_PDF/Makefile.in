@@ -22,7 +22,7 @@ RAGEL_TARGETS=rl/pdf.c
 $(SRCDIR)/rl/%.c: rl/%.rl
 	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
 	  echo "cd $(SRCDIR) && $(RAGEL) -o rl/$*.c rl/$*.rl"; \
-	  cd "$(SRCDIR)" && $(RAGEL) -o rl/$*.c rl/$*.rl; \
+	  cd "$(SRCDIR)" && $(RAGEL) -L -o rl/$*.c rl/$*.rl; \
 	elif [ -f $@ ]; then \
 	  echo "touch $@"; \
 	  touch $@; \

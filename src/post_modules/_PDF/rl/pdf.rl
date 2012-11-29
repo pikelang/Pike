@@ -9,7 +9,8 @@
 #include "mapping.h"
 #include "array.h"
 
-//#define PDF_DEBUG
+//#define PDF_TRACE
+
 
 %%{
     machine PDF;
@@ -22,7 +23,7 @@
     
     action mark {
 	mark = fpc;
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "marking %p '%c'\n", fpc, fc);
 #endif
     }
@@ -32,8 +33,8 @@
     }
 
     action return {
-#ifdef PDF_DEBUG
-	fprintf(stderr, "returning from state %d at pos %p (%c)\n", cs, fpc, fc);
+#ifdef PDF_TRACE
+	fprintf(stderr, "returning SP[%d] from state %u at pos %p (%c)\n", c->stack.top, cs, fpc, fc);
 #endif
 	fret;
     }
@@ -97,7 +98,7 @@
     }
 
     action start_string {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "start string\n");
 #endif
 	init_string_builder(&c->b, 0);
@@ -105,26 +106,26 @@
 
     action finish_string {
 	if (fpc - mark > 0) {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	    fprintf(stderr, "appending %ld characters from %p (%s)\n", fpc-mark, mark, mark);
 #endif
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
 	}
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "finishing string\n");
 #endif
 	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
     }
 
     action paren_incr {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "increase paren at %c from %u\n", fc, c->pc);
 #endif
 	c->pc++;
     }
 
     action paren_decr {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "decrease paren at %c from %u\n", fc, c->pc);
 #endif
 	c->pc--;
@@ -140,10 +141,30 @@
     literal_string := (literal_chars >mark | literal_quote >string_append )**
 			    >start_string %finish_string <: ')' @return;
 
+    # hex string
+
+    action finish_hex_string {
+	init_string_builder_alloc(&c->b, (p - mark + 3)/2, 0);
+
+	p--;
+	while (mark < p) {
+	    int ch = hex2char(mark++)<<8;
+	    ch |= hex2char(mark++);
+	    string_builder_putchar(&c->b, ch);
+	}
+
+	if (mark == p) {
+	    string_builder_putchar(&c->b, hex2char(mark)<<8);
+	}
+	p++;
+	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
+    }
+    
+    hex_string := xdigit* >mark . '>' @finish_hex_string @return;
     # integer
 
     action finish_integer {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "parsing integer in %ld characters from %p (%s)\n", fpc-mark, mark, mark);
 #endif
 	pcharp_to_svalue_inumber(SP, MKPCHARP(mark, 0), NULL, 10, fpc-mark);
@@ -162,7 +183,7 @@
     # real
 
     action finish_real {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "parsing real in %ld characters from %p (%s)\n", fpc-mark, mark, mark);
 #endif
 	SET_SVAL(SP[0], PIKE_T_FLOAT, 0, float_number,
@@ -176,7 +197,7 @@
     # name
 
     action start_name {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "start name\n");
 #endif
 	init_string_builder(&c->b, 0);
@@ -184,19 +205,19 @@
 
     action add_name_enc {
 	string_builder_putchar(&c->b, hex2char(fpc) | hex2char(fpc-1)<<4);
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "%c %c\n", *(fpc-1), *fpc);
 #endif
     }
 
     action finish_name {
 	if (fpc - mark > 0) {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	    fprintf(stderr, "appending %ld characters from %p (%s)\n", fpc-mark, mark, mark);
 #endif
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
 	}
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "finishing name\n");
 #endif
 	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
@@ -208,14 +229,14 @@
 		  >start_name %finish_name %{ fhold; } %return <: any;
 
     action start_dict {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "starting dictionary\n");
 #endif
 	SET_SVAL(SP[0], PIKE_T_MAPPING, 0, mapping, allocate_mapping(16));
     }
 
     action finish_dict {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "finishing dict\n");
 #endif
     }
@@ -223,7 +244,7 @@
     action store_key {
 	{
 	    struct pike_string *key = (SP+1)->u.string;
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	    fprintf(stderr, "storing name: %s\n", key->str);
 #endif
 	}
@@ -231,28 +252,28 @@
     }
 
     action call_dictionary {
-#ifdef PDF_DEBUG
-	fprintf(stderr, "calling dictionary\n");
+#ifdef PDF_TRACE
+	fprintf(stderr, "calling dictionary from SP[%d]\n", c->stack.top);
 #endif
 	fcall dictionary;
     }
 
     action call_array {
-#ifdef PDF_DEBUG
-	fprintf(stderr, "calling array\n");
+#ifdef PDF_TRACE
+	fprintf(stderr, "calling array from SP[%d]\n", c->stack.top);
 #endif
 	fcall array;
     }
 
     action call_name {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "calling name\n");
 #endif
 	fcall name;
     }
 
     action call_lstring {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "calling literal_string\n");
 #endif
 	fcall literal_string;
@@ -260,10 +281,18 @@
 
     action call_number {
 	fhold;
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "calling number\n");
 #endif
 	fcall number;
+    }
+
+    action call_hexstring {
+	fhold;
+#ifdef PDF_TRACE
+	fprintf(stderr, "calling number\n");
+#endif
+	fcall hex_string;
     }
     
     action store_entry {
@@ -272,7 +301,7 @@
 	    SET_SVAL(key, PIKE_T_STRING, 0, string, c->key);
 	    low_mapping_insert(SP[0].u.mapping, &key, SP+1, 2);
 	    free_svalue(SP+1);
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	    fprintf(stderr, "storing entry at '%c'\n", fc);
 #endif
 	}
@@ -292,6 +321,7 @@
     }
 
     object = '<<' @call_dictionary |
+	     '<' . xdigit >call_hexstring |
 	     '(' @call_lstring |
 	     '/' @call_name |
 	     '[' @call_array |
@@ -306,7 +336,7 @@
 		  . '>>' @finish_dict <: any @return;
 
     action start_array {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "starting array\n");
 #endif
 	SET_SVAL(SP[0], PIKE_T_ARRAY, 0, array, low_allocate_array(0, 8));
@@ -320,7 +350,7 @@
     }
 
     action finish_array {
-#ifdef PDF_DEBUG
+#ifdef PDF_TRACE
 	fprintf(stderr, "finishing array\n");
 #endif
     }
@@ -355,7 +385,7 @@
     
     direct_object = digit+ >mark >create_object %add_objid . my_space+ .
 		    digit+ >mark %add_objrev . my_space+ .
-		    'obj' . my_space+ . object . my_space* . 'endobj' @add_objdata;
+		    'obj' . my_space* . object . my_space* . 'endobj' @add_objdata;
 
     main := my_space* . direct_object @{ fbreak;};
 }%%
@@ -371,6 +401,8 @@ static void parse_context_init(struct parse_context * c) {
     c->pc = 0;
 }
 
+static const int PDF_error_state = %%{ write error; }%%;
+
 static int parse_object(struct parse_context * c, struct pike_string * s) {
     const unsigned char * mark = STR0(s) + c->mark;
     const unsigned char * p = STR0(s) + c->pos;
@@ -381,8 +413,8 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
 
     %% write data;
 
-#ifdef PDF_DEBUG
-    fprintf(stderr, "starting parsing at '%4s..'\n", p);
+#ifdef PDF_TRACE
+    fprintf(stderr, "starting parsing at '%4s..' in state %d at SP[%u]\n", p, cs, c->stack.top);
 #endif
 
     if (mark > p) {
@@ -392,16 +424,11 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
 	Pike_error("p >= pe! \n");
     }
 
-    cs = %%{ write start; }%% ;
-
-    %% write init nocs;
 
     %% write exec;
 
-#ifdef PDF_DEBUG
-    fprintf(stderr, "cs: %d\n", cs);
-    fprintf(stderr, "at %p pe: %p\n", p, pe);
-    fprintf(stderr, "at: '[..%c]%4s'\n\n\n", p[-1], p);
+#ifdef PDF_TRACE
+    fprintf(stderr, "finishing parsing at '%4s..' in state %d at SP[%u]\n\n", p, cs, c->stack.top);
 #endif
     
     c->mark = mark - STR0(s);
