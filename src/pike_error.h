@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 
+/* coverity[+kill] */
 static inline void Pike_fatal (const char *fmt, ...)
 {
   va_list args;
