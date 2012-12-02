@@ -404,7 +404,7 @@ static void bind_unix(INT32 args)
     do {
       tmp = fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
 			  (char *)&o, sizeof(int));
-    } while ((tmp < 0) && (errno = EINTR));
+    } while ((tmp < 0) && (errno == EINTR));
   }
 #endif
 
