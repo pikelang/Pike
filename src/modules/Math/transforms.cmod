@@ -285,7 +285,7 @@ PIKECLASS FFT
 	rfftw_destroy_plan(THIS->r_rc_plan);
       if (THIS->r_out!=NULL)
 	free(THIS->r_out);
-      if (THIS->r_out!=NULL)
+      if (THIS->r_in!=NULL)
 	free(THIS->r_in);
     }
 }
