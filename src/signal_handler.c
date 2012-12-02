@@ -1076,7 +1076,7 @@ void forkd(int fd)
     do {
       j = close(i);
     } while ((j < 0) && (errno == EINTR));
-    if ((j < 0) && (errno = EBADF)) num_fail++;
+    if ((j < 0) && (errno == EBADF)) num_fail++;
   }
 
   while (1) {
@@ -1088,7 +1088,7 @@ void forkd(int fd)
     iov.iov_len = 1;
     do {
       i = recvmsg(fd, &msg, 0);
-    } while ((i < 0) && (errno = EINTR));
+    } while ((i < 0) && (errno == EINTR));
     if (!i) _exit(0);	/* Connection closed, shutdown forkd. */
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
       int ctrl_fd = NULL;
@@ -1101,7 +1101,7 @@ void forkd(int fd)
       num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
       do {
 	i = fork();
-      } while ((i < 0) && (errno = EINTR));
+      } while ((i < 0) && (errno == EINTR));
       if (i < 0) {
 	/* Fork failure. */
       } else if (i) {
