@@ -306,6 +306,7 @@ PMOD_EXPORT void make_error (const char *fmt, ...)
   va_end (args);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
 {
   va_list args;
@@ -535,6 +536,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   do_abort();
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
 {
   va_list args;
