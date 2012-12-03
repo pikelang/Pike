@@ -860,7 +860,7 @@ class server
 
   }
 
-  static void destory()
+  static void destroy()
   {
     if(sizeof(ports))
     {
