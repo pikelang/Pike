@@ -44,6 +44,10 @@ PIKECLASS pdf_object {
     PIKEVAR mixed data;
     PIKEVAR string raw;
 
+    INIT {
+	THIS->data = svalue_undefined;
+    }
+
     PIKEFUN mixed `()() {
 	push_svalue(&THIS->data);
     }
@@ -63,6 +67,13 @@ PIKECLASS stream {
     PIKEVAR mapping param;
     PIKEVAR string data;
 
+    PIKEFUN string _sprintf(int type, mapping params) {
+	pop_n_elems(args);
+	push_text("%O(%d bytes)");
+	ref_push_program(stream_program);
+	push_int(THIS->data->len);
+	f_sprintf(3);
+    }
 }
 
 static void generate_stream(struct svalue * s, const unsigned char * start, const unsigned char * end) {

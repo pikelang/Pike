@@ -9,8 +9,7 @@
 #include "mapping.h"
 #include "array.h"
 
-#define PDF_TRACE
-
+//#define PDF_TRACE
 
 %%{
     machine PDF;
@@ -148,13 +147,13 @@
 
 	p--;
 	while (mark < p) {
-	    int ch = hex2char(mark++)<<8;
+	    int ch = hex2char(mark++)<<4;
 	    ch |= hex2char(mark++);
 	    string_builder_putchar(&c->b, ch);
 	}
 
 	if (mark == p) {
-	    string_builder_putchar(&c->b, hex2char(mark)<<8);
+	    string_builder_putchar(&c->b, hex2char(mark)<<4);
 	}
 	p++;
 	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
@@ -179,7 +178,7 @@
 #ifdef PDF_TRACE
 	fprintf(stderr, "generating reference for '%.6s'", mark);
 #endif
-	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, create_reference(mark, fpc));	
+	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, create_reference(mark, fpc+1));	
     }
 
     reference = digit+ >mark . ' ' . digit+ . ' R' @finish_reference;
@@ -241,8 +240,8 @@
 
     name_enc = '#' . xdigit{2};
     name_reg = (regular - '#')+;
-    name := ( name_enc >string_append @add_name_enc | name_reg >mark )**
-		  >start_name %finish_name %{ fhold; } %return <: any;
+    name_internal = ( name_enc >string_append @add_name_enc | name_reg >mark )**;
+    name := name_internal >start_name <: any >finish_name >{ fhold; } >return;
 
     action start_dict {
 #ifdef PDF_TRACE
@@ -321,14 +320,12 @@
     
     action store_entry {
 	{
-	    struct svalue key;
 #ifdef PDF_TRACE
 	    fprintf(stderr, "storing entry at pos %p from SP[1] %p at '%p'\n", p, SP+1, SP[0].u.mapping);
 #endif
-	    SET_SVAL(key, PIKE_T_STRING, 0, string, c->key);
-	    low_mapping_insert(SP[0].u.mapping, &key, SP+1, 2);
+	    low_mapping_insert(SP[0].u.mapping, SP+1, SP+2, 2);
 	    free_svalue(SP+1);
-	    c->key = NULL;
+	    free_svalue(SP+2);
 	}
 
     }
@@ -371,8 +368,17 @@
 	     'true' @finish_true |
 	     (digit|[+\-]) @call_number;
 
+    dict_name := name_internal >start_name %finish_name . my_space* . object . any >{fhold;} >return;
+
+    action call_dict_name {
+#ifdef PDF_TRACE
+	fprintf(stderr, "calling dict name\n");
+#endif
+	fcall dict_name;
+    }
+
     dictionary := ( my_space* .
-		   ('/' @call_name %store_key . my_space* . object . my_space+ >store_entry)
+		   ('/' @call_dict_name %store_entry . my_space*)
 		  )* >start_dict
 		  . '>>' @finish_dict @return;
 
@@ -386,6 +392,9 @@
     action array_add {
 	{
 	    struct array * a = SP[0].u.array;
+	    if (a->size == a->malloced_size) {
+		SP[0].u.array = a = resize_array(a, a->size * 2);
+	    }
 	    move_svalue(ITEM(a) + a->size++, SP+1);
 	}
     }
@@ -397,7 +406,7 @@
     }
 
     action create_object {
-	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, low_clone(pdf_object_program));
+	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, clone_object(pdf_object_program, 0));
     }
 
     action add_objid {
@@ -448,7 +457,7 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
     const unsigned char * mark = STR0(s) + c->mark;
     const unsigned char * p = STR0(s) + c->pos;
     const unsigned char * pe = STR0(s) + s->len;
-    const unsigned char * eof = pe;
+    const unsigned char * eof = NULL;
 
     int cs = c->state;
 
@@ -461,8 +470,9 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
     if (mark > p) {
 	Pike_error("mark > p! \n");
     }
-    if (p >= pe) {
-	Pike_error("p >= pe! \n");
+    if (p == pe) return 0;
+    if (p > pe) {
+	Pike_error("p > pe! \n");
     }
 
 
