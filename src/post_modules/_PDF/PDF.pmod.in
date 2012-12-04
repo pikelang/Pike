@@ -3,7 +3,7 @@
 #if !constant(@module@)
 constant this_program_does_not_exist = 1;
 #else
-inherit @module@;
+inherit @module@ : _PDF;
 
 class ParseError {
     inherit Error.Generic;
@@ -17,10 +17,14 @@ class ParseError {
 	this_program::data = data;
 	this_program::pos = pos;
 
-	::create(sprintf("Error parsing PDF at %O '%c' %O.\n",
+	::create(sprintf("Error parsing PDF at %O '%c' %O: %s\n",
 			 data[max(0, pos-10)..pos-1],
-			 data[pos], data[pos+1..pos+11]), bt);
+			 data[pos], data[pos+1..pos+11], reason), bt);
     }
+}
+
+void parse_error(string buf, string reason, int pos) {
+    throw(ParseError(buf, pos, reason, backtrace()[..<1]));
 }
 
 class Reader {
@@ -29,6 +33,89 @@ class Reader {
     void parse_error(string reason, int pos) {
 	throw(ParseError(buffer(), pos, reason, backtrace()[..<1]));
     }
+}
+
+class File {
+    object reader = Reader();
+    Stdio.Stat stat;
+    Stdio.File file;
+
+    mapping objects = ([]);
+
+    void parse_xref_table(int pos) {
+	string type;
+	int id, num;
+
+	file->seek(pos);
+
+	string data = file->read(512);
+
+	if (sscanf(data, "xref%*[\n\r]%s", data) != 2)
+	    parse_error(data, "Could not find cross reference table.", 0);
+
+	while (sscanf(data, "%d %d%*[\n\r]%s", id, num, data) == 4) {
+	    int gen;
+	    int offset;
+	    int i = 0;
+
+	    if (sizeof(data) < 20*num) {
+		data += file->read(20*num + 512);
+	    }
+
+	    while (num && sscanf(data, "%*"+i+"s%10d %5d %1[nf]%*2[ \n\r]", offset, gen, type) == 5) {
+		i += 20;
+		num --;
+		objects[id++] = ({ offset, gen, type });
+	    }
+
+	    data = data[i..];
+
+	    if (num) error("failed to parse object location for %d through %d\n", id, id+num);
+	}
+
+	if (!has_prefix(data, "trailer"))
+	    parse_error(data, "Could not find trailer.", 0);
+
+	while (-1 == (pos = search(data, "startxref"))) {
+	    string extra = file->read(512);
+	    data += extra;
+	    if (sizeof(extra) < 512) break;
+	}
+
+	reader->feed("1 0 obj"+data[7..pos-1]+"endobj");
+
+	mapping trailer = reader->parse()->data;
+
+	werror("trailer: %O\nobjects: %O\n", trailer, sizeof(objects));
+
+	if (trailer->Prev) {
+	    parse_xref_table(trailer->Prev);
+	}
+    }
+
+    void create(Stdio.File file) {
+	this_program::file = file;
+	stat = file->stat();
+	file->seek(stat->size - 48);
+	string trailer = file->read();
+	int pos = search(trailer, "startxref");
+
+	if (pos == -1) parse_error(trailer, "No xref position found.", 0);
+
+	int tail = 48-pos;
+
+	pos += sizeof("startxref");
+
+	int xref_pos;
+
+	if (sscanf(trailer[pos..], "%*[\r\n ]%d%*[\n\r ]%%%%EOF", xref_pos) != 3) {
+	    parse_error(trailer, "Could not parse xref position.", pos);
+	}
+
+	parse_xref_table(xref_pos);
+    }
+
+
 }
 
 #endif
