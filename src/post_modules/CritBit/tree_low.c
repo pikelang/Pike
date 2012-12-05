@@ -321,7 +321,7 @@ PARENT:
 	    case 0:
 		cb_zap_node(tree, tree->root);
 		tree->root = NULL;
-		break;
+		return;
 	    }
 	}
 
