@@ -2733,7 +2733,7 @@ static void image_gif_lzw_decode(INT32 args)
 	    q=(q<<8)|(*s),bit+=8,s++,len--;
       else
 	 while (bit<bits && len) 
-	    q|=((*s)<<bit),bit+=8,s++,len--;
+	    q|=((long)(*s)<<bit),bit+=8,s++,len--;
    }
    free(c);
 

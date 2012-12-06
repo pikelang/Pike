@@ -685,7 +685,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 	   /* NOTE: The ntohs macro may evaluate it's argument more
 	    * than once. */
 	    unsigned short t = translate[*(s++)];
-	    b=ntohs(t)<<(32-vbpp); 
+	    b=(unsigned long)ntohs(t)<<(32-vbpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
@@ -704,7 +704,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=(*(s++))<<(32-bpp); 
+	    b=(unsigned long)(*(s++))<<(32-bpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {

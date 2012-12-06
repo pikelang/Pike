@@ -71,7 +71,7 @@ void image_x_decode_pseudocolor(INT32 args);
 
 static INLINE unsigned long int_from_32bit(unsigned char *data)
 {
-   return (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
+   return ((unsigned long)data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
 }
 
 static INLINE unsigned long int_from_16bit(unsigned char *data)
