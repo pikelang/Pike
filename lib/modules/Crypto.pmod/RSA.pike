@@ -303,15 +303,28 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
   if (bits < 128)
     error( "Ridiculously small key.\n" );
 
+  /* NB: When multiplying two n-bit integers,
+   *     you're most likely to get an (2n - 1)-bit result.
+   *     We therefore add an extra bit to s2.
+   *
+   * cf [bug 6620].
+   */
+
   int s1 = bits / 2; /* Size of the first prime */
-  int s2 = bits - s1;
+  int s2 = 1 + bits - s1;
   
   string msg = "This is a valid RSA key pair\n";
 
   do
   {
-    Gmp.mpz p = get_prime(s1, r);
-    Gmp.mpz q = get_prime(s2, r);
+    Gmp.mpz p;
+    Gmp.mpz q;
+    Gmp.mpz mod;
+    do {
+      p = get_prime(s1, r);
+      q = get_prime(s2, r);
+      mod = [object(Gmp.mpz)](p * q);
+    } while (mod->size() != bits);
     Gmp.mpz phi = [object(Gmp.mpz)](Gmp.mpz([object(Gmp.mpz)](p-1))*
 				    Gmp.mpz([object(Gmp.mpz)](q-1)));
 
@@ -328,7 +341,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
     if (gs[1] < 0)
       gs[1] += phi;
     
-    set_public_key( [object(Gmp.mpz)](p * q), pub);
+    set_public_key(mod, pub);
     set_private_key(gs[1], ({ p, q }));
 
   } while (!sha_verify(msg, sha_sign(msg, r)));
