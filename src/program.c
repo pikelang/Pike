@@ -7676,7 +7676,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   free_svalue(&thrown);
 }
 
-extern void yyparse(void);
+extern int yyparse(void);
 
 #ifdef PIKE_DEBUG
 #define do_yyparse() do {				\
