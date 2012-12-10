@@ -89,6 +89,11 @@ static void generate_stream(struct svalue * s, const unsigned char * start, cons
 PIKECLASS name {
     PIKEVAR string name;
 
+    PIKEFUN void create(string name) {
+	fprintf(stderr, "creating name: %s\n", name->str);
+	THIS->name = name;
+    }
+
     PIKEFUN int __hash() {
 	struct svalue sv;
 
@@ -107,6 +112,14 @@ PIKECLASS name {
 
     PIKEFUN string cast(string type) {
 	ref_push_string(THIS->name);
+    }
+
+    PIKEFUN string _sprintf(int type, mapping params) {
+	pop_n_elems(args);
+	push_text("%O(%O)");
+	ref_push_program(name_program);
+	ref_push_string(THIS->name);
+	f_sprintf(3);
     }
 }
 

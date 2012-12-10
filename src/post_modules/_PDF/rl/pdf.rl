@@ -226,22 +226,15 @@
     }
 
     action finish_name {
-	if (fpc - mark > 0) {
-#ifdef PDF_TRACE
-	    fprintf(stderr, "appending %ld characters from %p (%.4s..)\n", fpc-mark, mark, mark);
-#endif
-	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
-	}
-#ifdef PDF_TRACE
-	fprintf(stderr, "finishing name\n");
-#endif
-	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
+	/* finish name ~ finish_string + create_name */
+	push_svalue(SP);
+	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, clone_object(name_program, 1));
     }
 
     name_enc = '#' . xdigit{2};
     name_reg = (regular - '#')+;
     name_internal = ( name_enc >string_append @add_name_enc | name_reg >mark )**;
-    name := name_internal >start_name <: any >finish_name >{ fhold; } >return;
+    name := name_internal >start_name <: any >finish_string >finish_name >{ fhold; } >return;
 
     action start_dict {
 #ifdef PDF_TRACE
@@ -368,7 +361,7 @@
 	     'true' @finish_true |
 	     (digit|[+\-]) @call_number;
 
-    dict_name := name_internal >start_name %finish_name . my_space* . object . any >{fhold;} >return;
+    dict_name := name_internal >start_name %finish_string . my_space* . object . any >{fhold;} >return;
 
     action call_dict_name {
 #ifdef PDF_TRACE
@@ -441,6 +434,14 @@
 }%%
 
 #define SP (stack_top(&c->stack))
+
+static void parse_context_reset(struct parse_context * c) {
+    c->state = %%{ write start; }%% ;
+    c->mark = 0;
+    c->pos = 0;
+    c->key = NULL;
+    c->pc = 0;
+}
 
 static void parse_context_init(struct parse_context * c) {
     stack_init(&c->stack);
