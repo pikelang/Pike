@@ -89,7 +89,7 @@ static void generate_stream(struct svalue * s, const unsigned char * start, cons
 }
 
 /*! Class representing a PDF @expr{name@} object. This is used where ever a @expr{name@} could
- *! be mistaken for a @expr{string@}. That is everywhere except as keys of dictionaries.
+ *! be mistaken for a @expr{string@}. That is, everywhere except for keys in dictionaries.
  */
 PIKECLASS name {
     PIKEVAR string name;
@@ -240,5 +240,106 @@ PIKECLASS Reader {
 
     PIKEFUN void parse_error(string msg, int pos) {
 	Pike_error("error parsing pdf at %d\n", pos);
+    }
+}
+
+struct encode_context {
+    struct string_builder buf;
+};
+
+static INLINE int pdf_is_whitespace(char c) {
+    switch (c) {
+    case '\0':
+    case '\n':
+    case '\r':
+    case ' ':
+    case '\t':
+    case '\f':
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static INLINE int pdf_is_delimiter(char c) {
+    switch (c) {
+    case '#':
+    case '{':
+    case '}':
+    case '[':
+    case ']':
+    case '(':
+    case ')':
+    case '/':
+    case '%':
+    case '<':
+    case '>':
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static int pdf_is_regular(char c) {
+    return !pdf_is_whitespace(c) && !pdf_is_delimiter(c);
+}
+
+static void pdf_encode_string(struct string_builder *buf, const struct pike_string * val) {
+    ptrdiff_t mark, i;
+    const p_wchar0 * s;
+
+    if (val->size_shift >= 0) {
+	Pike_error("PDF Strings are 8-bit.\n");
+    }
+
+    s = STR0(val);
+
+    for (mark = 0, i = 0; i < val->len; i++) {
+	switch (s[i]) {
+	case '\\':
+	case '(':
+	case ')':
+	    if (mark < i) {
+		string_builder_binary_strcat0(buf, s+mark, i - mark);
+	    }
+	    string_builder_putchar(buf, '\\');
+	    string_builder_putchar(buf, s[i]);
+	    mark = i + 1;
+	    break;
+	}
+    }
+
+    if (mark < i) {
+	string_builder_binary_strcat0(buf, s + mark, i - mark);
+    }
+}
+
+static char hex_chars[] = "0123456789abcdef";
+
+static void pdf_encode_name(struct string_builder *buf, const struct pike_string * val) {
+    ptrdiff_t mark, i;
+    const p_wchar0 * s;
+
+    if (val->size_shift >= 0) {
+	Pike_error("PDF Strings are 8-bit.\n");
+    }
+
+    s = STR0(val);
+
+    for (mark = 0, i = 0; i < val->len; i++) {
+	p_wchar0 c = s[i];
+	if (!pdf_is_regular(c)) {
+	    if (mark < i) {
+		string_builder_binary_strcat0(buf, s+mark, i - mark);
+	    }
+	    string_builder_putchar(buf, '#');
+	    string_builder_putchar(buf, hex_chars[c&15]);
+	    string_builder_putchar(buf, hex_chars[c>>4]);
+	    mark = i + 1;
+	}
+    }
+
+    if (mark < i) {
+	string_builder_binary_strcat0(buf, s + mark, i - mark);
     }
 }
