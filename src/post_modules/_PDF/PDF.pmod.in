@@ -30,8 +30,20 @@ void parse_error(string buf, string reason, int pos) {
 class Reader {
     inherit _PDF::Reader;
 
+    mapping refs = ([]);
+
     void parse_error(string reason, int pos) {
 	throw(ParseError(buffer(), pos, reason, backtrace()[..<1]));
+    }
+
+    object get_reference(string ref) {
+	object o;
+
+	if (!(o = refs[ref])) {
+	    refs[ref] = o = ::get_reference(ref);
+	}
+
+	return o;
     }
 }
 
@@ -47,6 +59,8 @@ class File {
 	string type;
 	int id, num;
 
+	// we use -1 as a special marker here. objects may end at an
+	// xref table
 	geometry[pos] = -1;
 	file->seek(pos);
 
@@ -67,8 +81,10 @@ class File {
 	    while (num && sscanf(data, "%*"+i+"s%10d %5d %1[nf]%*2[ \n\r]", offset, gen, type) == 5) {
 		i += 20;
 		num --;
-		objects[id] = ({ offset, gen, type });
-		geometry[offset] = id;
+		if (id && (!objects[id] || objects[id][1] < gen)) {
+		    objects[id] = ({ offset, gen, type });
+		    geometry[offset] = id;
+		}
 		id++;
 	    }
 
@@ -131,10 +147,39 @@ class File {
 	int pos = geometry->next(info[0]);
 
 	string raw = file->read(pos-info[0]);
-	werror("feeding: \n%s\n", raw);
-	reader->feed("\n");
 	reader->feed(raw);
-	return reader->parse();
+	return reader->parse() || reader->parse_error("Cross-reference table seems wrong. Could not find object.", 0);
+    }
+
+    class _get_iterator {
+	object it = get_iterator(geometry);
+
+	void create() {
+	    while (!!it && it->value() == -1) {
+		it->next();
+	    }
+	}
+
+	int next() {
+	    int ret = it->next();
+	    while (it->value() == -1) {
+		ret = it->next();
+	    }
+	    return ret;
+	}
+
+	int(0..1) `!() {
+	    int ret = !it;
+	    return ret;
+	}
+
+	mixed index() {
+	    return it->value();
+	}
+
+	mixed value() {
+	    return it ? get_object(it->value()) : UNDEFINED;
+	}
     }
 }
 
