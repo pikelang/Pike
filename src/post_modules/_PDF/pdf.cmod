@@ -169,6 +169,11 @@ PIKECLASS Reader {
 						    THIS->buf.s->len-THIS->c.pos));
     }
 
+    PIKEFUN void reset() {
+	THIS->buf.s->len = 0;
+	parse_context_reset(&THIS->c);
+    }
+
     PIKEFUN void feed(string data) {
 
 	if (data->size_shift) Pike_error("expects non-unicode data\n");

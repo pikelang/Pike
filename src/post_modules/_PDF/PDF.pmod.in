@@ -37,6 +37,7 @@ class Reader {
 
 class File {
     object reader = Reader();
+    ADT.CritBit.IntTree geometry = ADT.CritBit.IntTree();
     Stdio.Stat stat;
     Stdio.File file;
 
@@ -46,6 +47,7 @@ class File {
 	string type;
 	int id, num;
 
+	geometry[pos] = -1;
 	file->seek(pos);
 
 	string data = file->read(512);
@@ -65,7 +67,9 @@ class File {
 	    while (num && sscanf(data, "%*"+i+"s%10d %5d %1[nf]%*2[ \n\r]", offset, gen, type) == 5) {
 		i += 20;
 		num --;
-		objects[id++] = ({ offset, gen, type });
+		objects[id] = ({ offset, gen, type });
+		geometry[offset] = id;
+		id++;
 	    }
 
 	    data = data[i..];
@@ -115,7 +119,23 @@ class File {
 	parse_xref_table(xref_pos);
     }
 
+    object get_object(int id) {
+	array info = objects[id];
 
+	if (geometry[info[0]] != id) {
+	    error("object location is wrong.\n");
+	}
+
+	reader->reset();
+	file->seek(info[0]);
+	int pos = geometry->next(info[0]);
+
+	string raw = file->read(pos-info[0]);
+	werror("feeding: \n%s\n", raw);
+	reader->feed("\n");
+	reader->feed(raw);
+	return reader->parse();
+    }
 }
 
 #endif
