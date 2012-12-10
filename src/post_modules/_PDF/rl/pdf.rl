@@ -46,7 +46,7 @@
     }
 
     whitespace = [\0\t\n\r \f];
-    delimiter = [()<>\[\]{}\/%];
+    delimiter = [#()<>\[\]{}\/%];
     regular = any - (whitespace|delimiter);
 
     stop = delimiter | whitespace;
