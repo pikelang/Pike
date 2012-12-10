@@ -13,6 +13,11 @@ DECLARATIONS
 PIKECLASS reference {
     PIKEVAR string ref;
 
+    PIKEFUN void create(string ref) {
+	add_ref(ref);
+	THIS->ref = ref;
+    }
+
     PIKEFUN int __hash() {
 	struct svalue sv;
 
@@ -90,7 +95,7 @@ PIKECLASS name {
     PIKEVAR string name;
 
     PIKEFUN void create(string name) {
-	fprintf(stderr, "creating name: %s\n", name->str);
+	add_ref(name);
 	THIS->name = name;
     }
 
@@ -124,19 +129,20 @@ PIKECLASS name {
 }
 
 static struct object * create_reference(const unsigned char * start, const unsigned char * end) {
-    struct object * o = low_clone(reference_program);
+    struct object *o;
     struct pike_string * ref = make_shared_binary_string((const char*)start, end-start);
 
-    OBJ2_REFERENCE(o)->ref = ref;
+    push_string(ref);
+    apply(Pike_fp->current_object, "get_reference", 1);
 
-    return o;
-}
+    if (TYPEOF(*(Pike_sp-1)) != PIKE_T_OBJECT) {
+	Pike_error("Bad return value of get_reference().\n");
+    }
 
-static struct object * create_name(const unsigned char * start, const unsigned char * end) {
-    struct object * o = low_clone(pdf_object_program);
-    struct pike_string * name = make_shared_binary_string((const char*)start, end-start);
+    o = (Pike_sp-1)->u.object;
 
-    OBJ2_NAME(o)->name = name;
+    add_ref(o);
+    pop_stack();
 
     return o;
 }
@@ -154,6 +160,11 @@ PIKECLASS Reader {
 
     EXIT {
 	// free the parse stack
+    }
+
+    PIKEFUN object get_reference(string ref) {
+	struct object * o = clone_object(reference_program, 1);
+	push_object(o);
     }
 
     PIKEFUN string buffer() {
