@@ -484,9 +484,9 @@ int main(int argc, char **argv)
 
 	    case 'c':
 	      p++;
-#if defined(YYDEBUG) || defined(PIKE_DEBUG)
+#if (defined(YYDEBUG) && (YYDEBUG==1)) && defined(PIKE_DEBUG)
 	      yydebug++;
-#endif /* YYDEBUG || PIKE_DEBUG */
+#endif /* YYDEBUG && PIKE_DEBUG */
 	      break;
 
 	    case 's':
