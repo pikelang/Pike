@@ -427,6 +427,12 @@ static void pdf_encode_recur(struct string_builder *buf, const struct svalue * v
 		string_builder_append(buf, MKPCHARP_STR(str), str->len);
 		break;
 	    } else if (o->prog == stream_program) {
+		ref_push_mapping(OBJ2_STREAM(o)->param);
+		pdf_encode_recur(buf, Pike_sp-1);
+		pop_stack();
+		string_builder_strcat(buf, "\nstream\n");
+		string_builder_shared_strcat(buf, OBJ2_STREAM(o)->data);
+		string_builder_strcat(buf, "\nendstream");
 		break;
 	    } else if (o == get_val_null()) {
 		string_builder_strcat(buf, "null");
@@ -450,7 +456,15 @@ static void pdf_encode_recur(struct string_builder *buf, const struct svalue * v
 	    Pike_error("Cannot PDF encode object %O.\n", val);
 	}
     case PIKE_T_FLOAT:
-	string_builder_sprintf(buf, "%f", (double)val->u.float_number);
+	string_builder_sprintf(buf, "%.10f", (double)val->u.float_number);
+	{
+	    /* strip trailing zeroes */
+	    ptrdiff_t pos = buf->s->len-1;
+	    const p_wchar0 * s = STR0(buf->s);
+	    while (s[pos] == '0') pos--;
+	    if (s[pos] == '.') pos++;
+	    buf->s->len = pos+1;
+        }
 	break;
     default:
 	Pike_error("Cannot PDF encode %O.\n", val);
