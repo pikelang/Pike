@@ -138,7 +138,7 @@
     literal_chars = ((any - [()\\]) | literal_parenthesis )+;
     literal_quote = '\\' . ([0-7]{1,3} >mark %append_octal | [nrtbf()\\] >append_quoted );
     literal_string := (literal_chars >mark | literal_quote >string_append )**
-			    >start_string %finish_string <: ')' @return;
+			    >mark >start_string %finish_string <: ')' @return;
 
     # hex string
 
@@ -176,7 +176,7 @@
 
     action finish_reference {
 #ifdef PDF_TRACE
-	fprintf(stderr, "generating reference for '%.6s'", mark);
+	fprintf(stderr, "generating reference for '%.6s'\n", mark);
 #endif
 	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, create_reference(mark, fpc+1));	
     }
@@ -386,7 +386,9 @@
 	{
 	    struct array * a = SP[0].u.array;
 	    if (a->size == a->malloced_size) {
+		INT32 size = a->size;
 		SP[0].u.array = a = resize_array(a, a->size * 2);
+		a->size = size;
 	    }
 	    move_svalue(ITEM(a) + a->size++, SP+1);
 	}
