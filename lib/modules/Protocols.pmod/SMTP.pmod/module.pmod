@@ -167,7 +167,7 @@ class Client
       tokens[i] = token;
     }
 
-    return MIME.encode_words_text_remapped(tokens);
+    return MIME.quote(tokens);
   }
   
   //! Sends a mail message from @[from] to the mail addresses
