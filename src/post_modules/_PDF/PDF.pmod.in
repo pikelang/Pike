@@ -52,6 +52,7 @@ class File {
     ADT.CritBit.IntTree geometry = ADT.CritBit.IntTree();
     Stdio.Stat stat;
     Stdio.File file;
+    mapping trailer;
 
     mapping objects = ([]);
 
@@ -106,7 +107,8 @@ class File {
 
 	mapping trailer = reader->parse()->data;
 
-	werror("trailer: %O\nobjects: %O\n", trailer, sizeof(objects));
+	if (!this_program::trailer)
+	    this_program::trailer = trailer;
 
 	if (trailer->Prev) {
 	    parse_xref_table(trailer->Prev);
@@ -180,6 +182,114 @@ class File {
 	mixed value() {
 	    return it ? get_object(it->value()) : UNDEFINED;
 	}
+    }
+}
+
+#define ID2KEY(x,y) ((x)<<16|(y))
+#define KEY2ID(x) ((x)>>16)
+#define KEY2REV(x) ((x)&0xffff)
+#define OBJ2KEY(o) ID2KEY((o)->id, (o)->rev)
+
+class Writer {
+    // TODO: share geometry representation etc with the File. In fact,
+    // rename the reader to decoder and make the reader and writer both inherit the File.
+    // object 0 is special and free
+    ADT.CritBit.IntTree objects = ADT.CritBit.IntTree(([ ID2KEY(0,65535) : 0 ]));
+    function(string:void) to;
+    int seek = 0;
+    mapping trailer = ([]);
+    int lastxref = 0;
+
+    void create(function(string:void) to) {
+	this_program::to = to;
+    }
+
+    pdf_object get_object() {
+	int last = objects->last();
+	pdf_object o = pdf_object();
+	o->id = ++last;
+	o->rev = 0;
+	objects[ID2KEY(last,0)] = o;
+    }
+
+    void write(object o) {
+
+	if (!Program.inherits(o, pdf_object))
+	    error("can only write pdf_object()s\n");
+
+	int key = OBJ2KEY(o);
+
+
+	if (has_index(objects, key)) {
+	    mixed v = objects[key];
+
+	    if (intp(v)) {
+		error("Object already written to offset %d bytes.\n");
+	    }
+
+	    if (objectp(v) && v != o)
+		error("Object id and revision already used by %O\n", v);
+	}
+
+	string raw = sprintf("%d %d obj\n%s\nendobj\n", o->id, o->rev, encode(o->data));
+
+	if (!seek) {
+	    raw = "%PDF-1.4\n" + raw;
+	}
+
+	objects[key] = seek;
+	seek += sizeof(raw);
+	to(raw);
+    }
+
+    void collect() {
+	foreach (objects; int key; mixed o) {
+	    if (objectp(o)) write(o);
+	}
+    }
+
+    void finish() {
+	String.Buffer buf = String.Buffer();
+	String.Buffer t = String.Buffer();
+	int start;
+	int last = -2;
+
+	collect();
+
+	// print xref table
+	buf->add("xref\n");
+	foreach (objects; int key; int offset) {
+	    int id = KEY2ID(key);
+	    int rev = KEY2REV(key);
+
+	    // have to start a new section
+	    if (last < id-1) {
+		if (sizeof(t)) {
+		    buf->add(sprintf("%d %d\n%s", start, last-start+1, t->get()));
+		}
+		start = id;
+	    }
+	    last = id;
+	    t->add(sprintf("%010d %05d n \n", offset, rev));
+	}
+
+	if (sizeof(t)) {
+	    buf->add(sprintf("%d %d\n%s", start, last-start+1, t->get()));
+	}
+
+	// print trailer
+	mapping m = trailer + ([
+	    "Size" : sizeof(objects),
+	]);
+
+	if (lastxref) {
+	    m->Prev = lastxref;
+	}
+
+	buf->add(sprintf("trailer\n%s\nstartxref\n%d\n%%%%EOF", encode(m), seek));
+	lastxref = seek;
+	seek += sizeof(buf);
+	to(buf->get());
     }
 }
 
