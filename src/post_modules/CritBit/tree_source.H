@@ -11,7 +11,7 @@
 	}
 
 	if (find_identifier("`[]=", TREE_CLASSIFY(_program)) == THIS->insert_fun) {
-	    THIS->copy_fun = -1;
+	    THIS->insert_fun = -1;
 	}
     }
 static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
@@ -41,7 +41,7 @@ TREE_CLASSIFY(_clone_object)(const struct object *o) {
     struct object * t = NULL;
     if (THIS->copy_fun != -1) {
 	apply_low(o, THIS->copy_fun, 0);
-	if (!Pike_sp[-1].type != PIKE_T_OBJECT)
+	if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
 	    Pike_error("clone() is supposed to return an object.\n");
 	t = Pike_sp[-1].u.object;
 	add_ref(t);

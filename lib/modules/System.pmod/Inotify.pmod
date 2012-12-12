@@ -17,11 +17,11 @@ inherit System._Inotify;
 string describe_mask(int mask) {
     array(string) list = ({});
 
-    foreach (indices(this_program);; string name) {
+    foreach (sort(indices(this_program));; string name) {
 	if (has_prefix(name, "IN_")) {
 	    int value = `[](this_program, name);
 
-	    if (value & mask) list += ({ name });
+	    if (value == (value & mask)) list += ({ name });
 	}
     }
 

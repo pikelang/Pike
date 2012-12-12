@@ -2325,7 +2325,7 @@ static void file_send_fd(INT32 args)
 
   do {
     other_fd = dup(f->box.fd);
-  } while((other_fd < 0) && (errno = EINTR));
+  } while((other_fd < 0) && (errno == EINTR));
 
   if (other_fd < 0) {
     Pike_error("Out of file descriptors.\n");

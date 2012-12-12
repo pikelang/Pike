@@ -4110,7 +4110,6 @@ static int* ordered_calculate_errors(int dxs,int dys)
 	 case 9: errs=errors3x3; break;
 	 default:
 	   Pike_fatal("impossible case in colortable ordered dither generator.\n");
-	   return NULL; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
       }
       
       sz=sxs*sys;
