@@ -23,18 +23,52 @@ class ParseError {
     }
 }
 
-void parse_error(string buf, string reason, int pos) {
+void low_parse_error(string buf, string reason, int pos) {
     throw(ParseError(buf, pos, reason, backtrace()[..<1]));
 }
 
-class Reader {
-    inherit _PDF::Reader;
-
-    mapping refs = ([]);
+class Parser {
+    inherit _PDF::Parser;
 
     void parse_error(string reason, int pos) {
 	throw(ParseError(buffer(), pos, reason, backtrace()[..<1]));
     }
+}
+
+#define ID2KEY(x,y) ((x)<<16|(y))
+#define KEY2ID(x) ((x)>>16)
+#define KEY2REV(x) ((x)&0xffff)
+#define OBJ2KEY(o) ID2KEY((o)->id, (o)->rev)
+
+class File {
+    ADT.CritBit.IntTree geometry = ADT.CritBit.IntTree();
+    ADT.CritBit.IntTree objects = ADT.CritBit.IntTree(([ ID2KEY(0,65535) : -1 ]));
+    mapping trailer;
+
+    pdf_object new_object() {
+	int last = objects->last();
+	pdf_object o = pdf_object();
+	o->id = ++last;
+	o->rev = 0;
+	objects[ID2KEY(last,0)] = o;
+    }
+
+    pdf_object|int get_object(int id, int|void rev) {
+	return objects[ID2KEY(id, rev)];
+    }
+
+    void set_object(pdf_object o, void|mixed v) {
+	objects[OBJ2KEY(o)] = undefinedp(v) ? o : v;
+    }
+}
+
+class Reader {
+    inherit Parser;
+    inherit File;
+    Stdio.Stat stat;
+    Stdio.File file;
+
+    mapping refs = ([]);
 
     object get_reference(string ref) {
 	object o;
@@ -45,16 +79,6 @@ class Reader {
 
 	return o;
     }
-}
-
-class File {
-    object reader = Reader();
-    ADT.CritBit.IntTree geometry = ADT.CritBit.IntTree();
-    Stdio.Stat stat;
-    Stdio.File file;
-    mapping trailer;
-
-    mapping objects = ([]);
 
     void parse_xref_table(int pos) {
 	string type;
@@ -68,7 +92,7 @@ class File {
 	string data = file->read(512);
 
 	if (sscanf(data, "xref%*[\n\r]%s", data) != 2)
-	    parse_error(data, "Could not find cross reference table.", 0);
+	    low_parse_error(data, "Could not find cross reference table.", 0);
 
 	while (sscanf(data, "%d %d%*[\n\r]%s", id, num, data) == 4) {
 	    int gen;
@@ -80,11 +104,16 @@ class File {
 	    }
 
 	    while (num && sscanf(data, "%*"+i+"s%10d %5d %1[nf]%*2[ \n\r]", offset, gen, type) == 5) {
+		int key = ID2KEY(id,gen);
 		i += 20;
 		num --;
-		if (id && (!objects[id] || objects[id][1] < gen)) {
-		    objects[id] = ({ offset, gen, type });
-		    geometry[offset] = id;
+		if (objects[id])
+		    low_parse_error(data, "same object encountered twice.", i);
+		if (type == "n") {
+		    objects[key] = offset;
+		    geometry[offset] = key;
+		} else {
+		    objects[key] = -1;
 		}
 		id++;
 	    }
@@ -95,7 +124,7 @@ class File {
 	}
 
 	if (!has_prefix(data, "trailer"))
-	    parse_error(data, "Could not find trailer.", 0);
+	    low_parse_error(data, "Could not find trailer.", 0);
 
 	while (-1 == (pos = search(data, "startxref"))) {
 	    string extra = file->read(512);
@@ -103,9 +132,9 @@ class File {
 	    if (sizeof(extra) < 512) break;
 	}
 
-	reader->feed("1 0 obj"+data[7..pos-1]+"endobj");
+	feed("1 0 obj"+data[7..pos-1]+"endobj");
 
-	mapping trailer = reader->parse()->data;
+	mapping trailer = parse()->data;
 
 	if (!this_program::trailer)
 	    this_program::trailer = trailer;
@@ -122,7 +151,7 @@ class File {
 	string trailer = file->read();
 	int pos = search(trailer, "startxref");
 
-	if (pos == -1) parse_error(trailer, "No xref position found.", 0);
+	if (pos == -1) low_parse_error(trailer, "No xref position found.", 0);
 
 	int tail = 48-pos;
 
@@ -131,26 +160,34 @@ class File {
 	int xref_pos;
 
 	if (sscanf(trailer[pos..], "%*[\r\n ]%d%*[\n\r ]%%%%EOF", xref_pos) != 3) {
-	    parse_error(trailer, "Could not parse xref position.", pos);
+	    low_parse_error(trailer, "Could not parse xref position.", pos);
 	}
 
 	parse_xref_table(xref_pos);
     }
 
-    object get_object(int id) {
-	array info = objects[id];
+    object get_object(int id, int|void rev) {
+	mixed ret = ::get_object(id, rev);
 
-	if (geometry[info[0]] != id) {
-	    error("object location is wrong.\n");
+	if (intp(ret)) {
+	    if (geometry[ret] != ID2KEY(id, rev)) {
+		error("object location is wrong.\n");
+	    }
+	    reset();
+	    file->seek(ret);
+	    int pos = geometry->next(ret);
+
+	    // this is a hack to allow reading from unfinished files.
+	    if (!pos) pos = stat->size;
+
+	    string raw = file->read(pos-ret);
+	    feed(raw);
+	    ret = parse();
+	    if (!ret) 
+		parse_error("Cross-reference table seems wrong. Could not find object.", 0);
 	}
 
-	reader->reset();
-	file->seek(info[0]);
-	int pos = geometry->next(info[0]);
-
-	string raw = file->read(pos-info[0]);
-	reader->feed(raw);
-	return reader->parse() || reader->parse_error("Cross-reference table seems wrong. Could not find object.", 0);
+	return ret;
     }
 
     class _get_iterator {
@@ -176,25 +213,24 @@ class File {
 	}
 
 	mixed index() {
-	    return it->value();
+	    return KEY2ID(it->value());
 	}
 
 	mixed value() {
-	    return it ? get_object(it->value()) : UNDEFINED;
+	    if (it) {
+		int key = it->value();
+		return get_object(KEY2ID(key), KEY2REV(key));
+	    }
+	    return UNDEFINED;
 	}
     }
 }
 
-#define ID2KEY(x,y) ((x)<<16|(y))
-#define KEY2ID(x) ((x)>>16)
-#define KEY2REV(x) ((x)&0xffff)
-#define OBJ2KEY(o) ID2KEY((o)->id, (o)->rev)
-
 class Writer {
+    inherit File;
     // TODO: share geometry representation etc with the File. In fact,
     // rename the reader to decoder and make the reader and writer both inherit the File.
     // object 0 is special and free
-    ADT.CritBit.IntTree objects = ADT.CritBit.IntTree(([ ID2KEY(0,65535) : 0 ]));
     function(string:void) to;
     int seek = 0;
     mapping trailer = ([]);
@@ -202,14 +238,6 @@ class Writer {
 
     void create(function(string:void) to) {
 	this_program::to = to;
-    }
-
-    pdf_object get_object() {
-	int last = objects->last();
-	pdf_object o = pdf_object();
-	o->id = ++last;
-	o->rev = 0;
-	objects[ID2KEY(last,0)] = o;
     }
 
     void write(object o) {
@@ -234,6 +262,7 @@ class Writer {
 	string raw = sprintf("%d %d obj\n%s\nendobj\n", o->id, o->rev, encode(o->data));
 
 	if (!seek) {
+	    seek = 9;
 	    raw = "%PDF-1.4\n" + raw;
 	}
 
@@ -270,7 +299,11 @@ class Writer {
 		start = id;
 	    }
 	    last = id;
-	    t->add(sprintf("%010d %05d n \n", offset, rev));
+	    if (offset == -1) {
+		t->add(sprintf("%010d %05d f \n", 0, rev));
+	    } else {
+		t->add(sprintf("%010d %05d n \n", offset, rev));
+	    }
 	}
 
 	if (sizeof(t)) {

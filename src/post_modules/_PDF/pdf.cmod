@@ -149,7 +149,7 @@ static struct object * create_reference(const unsigned char * start, const unsig
 
 #include "rl/pdf.c"
 
-PIKECLASS Reader {
+PIKECLASS Parser {
     CVAR struct parse_context c;
     CVAR struct string_builder buf;
 
