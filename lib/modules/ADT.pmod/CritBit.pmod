@@ -605,6 +605,7 @@ class MultiIterator {
     array oit, it;
 
     void create(object ... it) {
+	while (sizeof(it) && !it[0]) it = it[1..];
 	this_program::oit = it;
 	this_program::it = it + ({ });
     }
@@ -614,8 +615,7 @@ class MultiIterator {
     }
 
     int(0..1) next() {
-	if (sizeof(it) && !it[0]->next()) it = it[1..];
-	while (sizeof(it) && !it[0]) it = it[1..];
+	while (sizeof(it) && !it[0]->next()) it = it[1..];
 	return !!sizeof(it);
     }
 
