@@ -351,7 +351,7 @@
 
     object_or_stream
 	  = '<<' @call_dictionary .
-		(my_space+ . 'stream' . '\r'? . '\n' . any* >mark :>> 'endstream' @finish_stream )? |
+		(my_space* . 'stream' . '\r'? . '\n' . any* >mark :>> 'endstream' @finish_stream )? |
 	     '<' . xdigit >call_hexstring |
 	     '(' @call_lstring |
 	     '/' @call_name |
