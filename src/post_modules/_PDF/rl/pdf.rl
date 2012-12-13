@@ -489,6 +489,10 @@ static int parse_object(struct parse_context * c, struct pike_string * s) {
 
     if (cs >= %%{ write first_final; }%% && !c->stack.top) {
 	c->state = %%{ write start; }%% ;
+	if (p == pe) {
+	    c->pos = 0;
+	    c->mark = 0;
+	}
 	return 1;
     } else {
 	c->state = cs;
