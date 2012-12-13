@@ -16,10 +16,13 @@ class ParseError {
     protected void create(string data, int pos, string reason, array bt) {
 	this_program::data = data;
 	this_program::pos = pos;
+#define R(x)	replace(sprintf("%O", x), "\"\n\"", "")
+#define NEXTRA	20
 
-	::create(sprintf("Error parsing PDF at %O '%c' %O: %s\n",
-			 data[max(0, pos-10)..pos-1],
-			 data[pos], data[pos+1..pos+11], reason), bt);
+	::create(sprintf("Error parsing PDF at %s '%s' %s: %s\n",
+			 R(data[max(0, pos-NEXTRA)..pos-1]),
+			 sprintf("%O", data[pos..pos])[1..<1],
+			 R(data[pos+1..pos+NEXTRA+1]), reason), bt);
     }
 }
 
@@ -80,9 +83,13 @@ class Reader {
 	return o;
     }
 
+#define _SCAN(fmt, x...) (sscanf(data, "%*"+i+"s"+fmt+"%n", x) - 2)
+#define SCAN(x...) _SCAN(x, i)
+
     void parse_xref_table(int pos) {
 	string type;
 	int id, num;
+	int i = 0;
 
 	// we use -1 as a special marker here. objects may end at an
 	// xref table
@@ -91,21 +98,21 @@ class Reader {
 
 	string data = file->read(512);
 
-	if (sscanf(data, "xref%*[\n\r]%s", data) != 2)
+	if (SCAN("xref%*[ \n\r]") != 1)
 	    low_parse_error(data, "Could not find cross reference table.", 0);
 
-	while (sscanf(data, "%d %d%*[\n\r]%s", id, num, data) == 4) {
-	    int gen;
-	    int offset;
-	    int i = 0;
+	while (SCAN("%d %d%*[ \n\r]", id, num) == 3) {
+	    int|string gen, offset;
 
 	    if (sizeof(data) < 20*num) {
 		data += file->read(20*num + 512);
 	    }
 
-	    while (num && sscanf(data, "%*"+i+"s%10d %5d %1[nf]%*2[ \n\r]", offset, gen, type) == 5) {
+	    // pikes sscanf does not seem to take length specifiers for integers very seriously
+	    while (num && SCAN("%10[0-9] %5[0-9] %1[nf]%*2[ \n\r]", offset, gen, type) == 4) {
+		offset = (int)offset;
+		gen = (int)gen;
 		int key = ID2KEY(id,gen);
-		i += 20;
 		num --;
 		if (objects[id])
 		    low_parse_error(data, "same object encountered twice.", i);
@@ -118,10 +125,11 @@ class Reader {
 		id++;
 	    }
 
-	    data = data[i..];
+	    if (num) low_parse_error(data, sprintf("failed to parse object location for %d through %d\n", id, id+num), i);
 
-	    if (num) error("failed to parse object location for %d through %d\n", id, id+num);
 	}
+
+	data = data[i..];
 
 	if (!has_prefix(data, "trailer"))
 	    low_parse_error(data, "Could not find trailer.", 0);
@@ -248,7 +256,7 @@ class Writer {
 	int key = OBJ2KEY(o);
 
 
-	if (has_index(objects, key)) {
+	if (!undefinedp(objects[key])) {
 	    mixed v = objects[key];
 
 	    if (intp(v)) {
