@@ -136,7 +136,7 @@
 
     literal_parenthesis = '(' $paren_incr | ')' when paren_test $paren_decr;
     literal_chars = ((any - [()\\]) | literal_parenthesis )+;
-    literal_quote = '\\' . ([0-7]{1,3} >mark %append_octal | [nrtbf()\\] >append_quoted );
+    literal_quote = '\\' . ( [0-7]{1,3} >mark %append_octal | [nrtbf()\\] >append_quoted | [\n\r] );
     literal_string := (literal_chars >mark | literal_quote >string_append )**
 			    >mark >start_string %finish_string <: ')' @return;
 
@@ -370,10 +370,9 @@
 	fcall dict_name;
     }
 
-    dictionary := ( my_space* .
-		   ('/' @call_dict_name %store_entry . my_space*)
-		  )* >start_dict
-		  . '>>' @finish_dict @return;
+    dictionary := my_space* .
+		    ('/' @call_dict_name %store_entry . my_space*)* >start_dict
+		    . '>>' @finish_dict @return;
 
     action start_array {
 #ifdef PDF_TRACE
