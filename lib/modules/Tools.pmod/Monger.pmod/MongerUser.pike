@@ -466,6 +466,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
           write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
           res = Process.run(({"hg", "pull", "-u", version_info->source_control_url}));
+          res = Process.run(({"hg", "purge"}));
           cd(oldcwd);
         }
         else
@@ -484,7 +485,8 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         {
           write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
-          res = Process.run(({"git", "pull", version_info->source_control_type, lpath}));
+          res = Process.run(({"git", "pull", version_info->source_control_type}));
+          res = Process.run(({"git", "clean", "-d"}));
           cd(oldcwd);
         }
         else
