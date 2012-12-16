@@ -457,6 +457,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
         break; 
@@ -477,6 +478,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
         break;
@@ -497,6 +499,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));        
         }
         break;
