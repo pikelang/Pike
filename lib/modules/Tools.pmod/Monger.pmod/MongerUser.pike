@@ -431,7 +431,6 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     if(!Process.search_path(bin))
       throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
     mapping res;
-    string subcmd;
     string oldcwd = getcwd();
 
     switch(bin)
@@ -649,7 +648,7 @@ void do_install(string name, string|void version)
        }
        else
        {
-         exit(1, sprintf("Build directory exists and is likely a previous failed build. Use --force to delete.\n", workingdir));
+         exit(1, sprintf("Build directory %s exists and is likely a previous failed build. Use --force to delete.\n", workingdir));
        }
     }
 
