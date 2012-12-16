@@ -161,6 +161,11 @@ int main(int argc, array(string) argv)
     }
   }
 
+  if(!my_command)
+  { 
+    werror("argument error: no command specified.\n");
+  }
+
  return 0;
 }
 
@@ -421,12 +426,12 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     if(path) lpath = Stdio.append_path(path, lpath);
     if(file_stat(lpath))
     {
-	  have_path = 1;
-	}
-	if(have_path && !use_force)
-	{
+      have_path = 1;
+    }
+    if(have_path && !use_force)
+    {
       throw(Error.Generic(sprintf("get_file: repository path %s already exists, use --force to override.\n", lpath)));
-	}
+    }
 	
     if(!Process.search_path(bin))
       throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
@@ -438,12 +443,14 @@ string get_file(mapping version_info, string|void path, int|void from_source)
       case "svn":
         if(have_path)
         {  
+          write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
           res = Process.run(({"svn", "update"}));
           cd(oldcwd);
         }
         else
         {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
           res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
         }
         if(res->exitcode)
@@ -451,16 +458,18 @@ string get_file(mapping version_info, string|void path, int|void from_source)
           werror(res->stderr);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
-        break;
+        break; 
       case "hg":
         if(have_path)
         {
+          write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
           res = Process.run(({"hg", "pull", "-u", version_info->source_control_url}));
           cd(oldcwd);
         }
         else
         {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
           res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
         }
         if(res->exitcode)
@@ -472,12 +481,14 @@ string get_file(mapping version_info, string|void path, int|void from_source)
       case "git":
         if(have_path)
         {
+          write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
           res = Process.run(({"git", "pull", version_info->source_control_type, lpath}));
           cd(oldcwd);
         }
         else
         {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
           res = Process.run(({"git", "clone", version_info->source_control_url, lpath}));
         }
         if(res->exitcode)
@@ -490,7 +501,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         throw(Error.Generic("Invalid source control type " + bin + ".\n"));
     }
 
-    write("cloned %s repository to %s.", bin, lpath);
+    write("%s repository in %s is now up to date.\n", bin, lpath);
     return lpath;
   }
   else if(from_source == SOURCE_CONTROL && !version_info->source_control_url)
