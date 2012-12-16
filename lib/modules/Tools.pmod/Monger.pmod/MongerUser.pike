@@ -188,8 +188,9 @@ Usage: pike -x monger [options] modulename
                        the $HOME/.monger
 --force              force the performance of an action that might 
                        otherwise generate a warning
---source             use source control url to obtain module source
---pmar               attempt to use pmar (pre-built archive)
+--source             use source control url to obtain module source, 
+                       if available.
+--pmar               attempt to use pmar (pre-built archive), if available.
 --short              when querying a module, don't show info about the 
                        selected version.
 --local              perform installation in a user's local rather than 
