@@ -678,9 +678,12 @@ int decode_datetime (string timestr)
     }									\
 									\
     else {  /* utf8_mode & UTF8_UNICODE_ENCODE_MODE */			\
-      if (_can_send_as_latin1 (query))					\
-	new_send_charset = "latin1";					\
-      else {								\
+      /* NB: The send_charset may only be upgraded from			\
+       * "latin1" to "utf8", not the other way around.			\
+       * This is to avoid extraneous charset changes			\
+       * where the charset is changed from query to query.		\
+       */								\
+      if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {	\
 	CH_DEBUG ("Converting query to utf8.\n");			\
 	query = utf8_encode_query (query, string_to_utf8);		\
 	new_send_charset = "utf8";					\
