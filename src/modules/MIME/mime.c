@@ -186,7 +186,7 @@ static void f_decode_base64( INT32 args )
     SIGNED char *src;
     ptrdiff_t cnt;
     INT32 d = 1;
-    int pads = 0;
+    int pads = 3;
 
     init_string_builder( &buf, 0 );
 
@@ -202,14 +202,26 @@ static void f_decode_base64( INT32 args )
 	  d=1;
 	}
       } else if (*src=='=') {
-	/* A pad character has been encountered.
-	   Increase pad count, and remove unused bits from d. */
-	pads++;
-	d>>=2;
+	/* A pad character has been encountered. */
       }
 
     /* If data size not an even multiple of 3 bytes, output remaining data */
+    if (d & 0x3f000000) {
+      /* NOT_REACHED, but here for symmetry. */
+      pads = 0;
+    } else if (d & 0xfc0000) {
+      pads = 1;
+      /* Remove unused bits from d. */
+      d >>= 2;
+    } else if (d & 0x3f000) {
+      pads = 2;
+      /* Remove unused bits from d. */
+      d >>= 4;
+    }
     switch(pads) {
+    case 0:
+      /* NOT_REACHED, but here for symmetry. */
+      string_builder_putchar( &buf, (d>>16)&0xff );
     case 1:
       string_builder_putchar( &buf, (d>>8)&0xff );
     case 2:
