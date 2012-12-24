@@ -11,18 +11,25 @@
 #pike __REAL_VERSION__
 
 // documentation taken from RFC 2136
+
 //! No error condition.
 final constant NOERROR=0;
+
 //! The name server was unable to interpret the request due to a format error.
 final constant FORMERR=1;
+
 //!The name server encountered an internal failure while processing this request, for example an operating system error or a forwarding timeout.
 final constant SERVFAIL=2;
+
 //! Some name that ought to exist, does not exist.
 final constant NXDOMAIN=3;
+
 //! The name server does not support the specified Opcode.
 final constant NOTIMPL=4;
+
 //! The name server refuses to perform the specified operation for policy or security reasons.
 final constant REFUSED=5;
+
 //! Some RRset that ought to exist, does not exist.
 final constant NXRRSET=8;
 
