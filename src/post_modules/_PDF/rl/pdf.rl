@@ -106,9 +106,13 @@
     action finish_string {
 	if (fpc - mark > 0) {
 #ifdef PDF_TRACE
-	    fprintf(stderr, "appending %ld characters from %p (%.4s..)\n", fpc-mark, mark, mark);
+	    fprintf(stderr, "at finish: appending %ld characters from %p (%.4s..)\n", fpc-mark, mark, mark);
 #endif
 	    string_builder_binary_strcat0(&c->b, mark, fpc - mark);
+	} else {
+#ifdef PDF_TRACE
+	    fprintf(stderr, "nothing to append\n");
+#endif
 	}
 #ifdef PDF_TRACE
 	fprintf(stderr, "finishing string\n");
@@ -227,6 +231,9 @@
 
     action finish_name {
 	/* finish name ~ finish_string + create_name */
+#ifdef PDF_TRACE
+	fprintf(stderr, "finish name\n");
+#endif
 	push_svalue(SP);
 	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, clone_object(name_program, 1));
     }
@@ -317,10 +324,6 @@
 	    fprintf(stderr, "storing entry at pos %p from SP[1] %p at '%p'\n", p, SP+1, SP[0].u.mapping);
 #endif
 	    low_mapping_insert(SP[0].u.mapping, SP+1, SP+2, 2);
-	    /*
-	    free_svalue(SP+1);
-	    free_svalue(SP+2);
-	    */
 	}
 
     }
@@ -363,7 +366,8 @@
 	     'true' @finish_true |
 	     (digit|[+\-]) @call_number;
 
-    dict_name := name_internal >start_name %finish_string . my_space* . object . any >{fhold;} >return;
+    dict_name := name_internal >start_name <: any >finish_string >{fhold;}
+		. my_space* . object . any >{fhold;} >return;
 
     action call_dict_name {
 #ifdef PDF_TRACE
