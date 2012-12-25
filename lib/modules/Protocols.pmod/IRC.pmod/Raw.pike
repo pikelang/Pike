@@ -13,19 +13,23 @@ function(:void) close_callback;
 // command_callback(string cmd,string ... parameters)
 // notify_callback(string from,string type,string from,string message)
 
-void create(string server,int port,
+void create(string|object server,int port,
 	    function(string,string ...:void) _command_callback,
 	    void|function(string,string...:void) _notify_callback,
 	    void|function(:void) _close_callback)
 {
-   array aserver=gethostbyname(server);
-   if (!aserver || !sizeof(aserver[1]))
-      Error.connection("Failed to lookup host %O",server);
-   server=aserver[1][random(sizeof(aserver[1]))];
+   if (objectp(server))
+      con = server;
+   else {
+       array aserver=gethostbyname(server);
+       if (!aserver || !sizeof(aserver[1]))
+	  Error.connection("Failed to lookup host %O",server);
+       server=aserver[1][random(sizeof(aserver[1]))];
 
-   con=Stdio.File();
-   if (!con->connect(server,port))
-      Error.connection("Failed to connect",con->errno());
+       con=Stdio.File();
+       if (!con->connect(server,port))
+	  Error.connection("Failed to connect",con->errno());
+   }
 
    con->set_nonblocking(con_read,0,con_close);
 

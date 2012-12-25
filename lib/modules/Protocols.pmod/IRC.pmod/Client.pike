@@ -12,9 +12,12 @@ mapping options;
 
 mapping channels=([]);
 
-//! @decl void create(string server, void|mapping(string:mixed) options)
+//! @decl void create(string|object server, void|mapping(string:mixed) options)
 //! @param server
 //!   The IRC server to connect to.
+//!   If server is an object, it is assumed to be a newly established
+//!   connection to the IRC server to be used. Pass @[SSL.sslfile]
+//!   connections here to connect to SSL secured IRC networks.
 //! @param options
 //!   An optional mapping with additional IRC client options.
 //!   @mapping
@@ -64,7 +67,7 @@ mapping channels=([]);
 //!     @member function(Person,string) "nick_notify"
 //!       The arguments are originator and to.
 //!   @endmapping
-void create(string _server,void|mapping(string:mixed) _options)
+void create(string|object _server,void|mapping(string:mixed) _options)
 {
    options=
       ([
@@ -102,7 +105,14 @@ void create(string _server,void|mapping(string:mixed) _options)
 
    cmd->pass(options->pass||pass); 
    cmd->nick(options->nick);
-   cmd->user(options->user,options->host,options->server,options->realname);
+   // If a connection object was passed as 'server' parameter to the
+   // constructor, we just pretend to the other server that we reached it
+   // by connecting to "localhost".
+   // There could be a special config mapping entry for it, but I doubt
+   // that this information really is used much anywhere anyway.
+   cmd->user(options->user,options->host,
+	     stringp(options->server) ? options->server : "localhost",
+	     options->realname);
 
    call_out(da_ping,options->ping_interval || 60);
 }
