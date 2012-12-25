@@ -13,6 +13,10 @@ DECLARATIONS
 PIKECLASS reference {
     PIKEVAR string ref;
 
+    INIT {
+	THIS->ref = NULL;
+    }
+
     PIKEFUN void create(string ref) {
 	add_ref(ref);
 	THIS->ref = ref;
@@ -51,6 +55,7 @@ PIKECLASS pdf_object {
 
     INIT {
 	THIS->data = svalue_undefined;
+	THIS->raw = NULL;
     }
 
     PIKEFUN mixed `()() {
@@ -93,6 +98,10 @@ static void generate_stream(struct svalue * s, const unsigned char * start, cons
  */
 PIKECLASS name {
     PIKEVAR string name;
+
+    INIT {
+	THIS->name = NULL;
+    }
 
     PIKEFUN void create(string name) {
 	add_ref(name);
@@ -160,6 +169,7 @@ PIKECLASS Parser {
 
     EXIT {
 	// free the parse stack
+	free_string_builder(&THIS->buf);
     }
 
     PIKEFUN object get_reference(string ref) {
