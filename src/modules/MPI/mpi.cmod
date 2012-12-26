@@ -528,7 +528,6 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
 {
     unsigned int shift, length;
     MPI_Status int_status;
-    void *_buf;
     struct svalue sval;
     struct string_builder buf;
     int r;
@@ -595,29 +594,42 @@ static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 		     OBJ2_INTARRAY(buf)->i.type, root, comm);
 }
 
-static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
+static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm, MUTEX_T *m)
 {
     unsigned int shift, length;
-    void *_buf;
     int r, rank;
 
     INVALIDATE_CURRENT_TIME();
 
     MPI_Comm_rank(comm, &rank);
 
-
     if (rank != root) {
 	struct string_builder buf;
 
+	THREADS_ALLOW();
+	mt_lock(m);
+
+	fprintf(stderr, "rank %d receiving shift\n", rank);
 	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	fprintf(stderr, "rank %d received shift %d\n", rank, shift);
 	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+	fprintf(stderr, "rank %d received length %d\n", rank, length);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
 
 	if (shift > 2)
 	    Pike_error("Cannot receive shift %u as a string.\n", shift);
 
 	init_string_builder_alloc(&buf, length >> shift, shift);
 
+	THREADS_ALLOW();
+	mt_lock(m);
+
 	r = MPI_Bcast(buf.s->str, length, MPI_CHAR, root, comm);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
 
 	buf.s->len = length >> shift;
 
@@ -626,10 +638,19 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 	shift = (*ps)->size_shift;
 	length = (*ps)->len << ((*ps)->size_shift);
 
+	THREADS_ALLOW();
+	mt_lock(m);
+
+	fprintf(stderr, "rank %d sending shift %d\n", rank, shift);
 	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	fprintf(stderr, "rank %d sending length %d\n", rank, length);
 	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+	fprintf(stderr, "rank %d sent length.\n", rank);
 
 	r = MPI_Bcast((*ps)->str, length, MPI_CHAR, root, comm);
+
+	mt_unlock(m);
+	THREADS_DISALLOW();
     }
 
     return r;
@@ -926,7 +947,7 @@ PIKECLASS Pointer
 PIKECLASS Comm
 {
     CVAR MPI_Comm comm;
-    CVAR MUTEX_T im;
+    CVAR MUTEX_T sm, bm;
 
     /*! @decl void Send(string buf, int dest, int|void tag)
      *! @decl void Send(MPI.IntArray buf, int dest, int|void tag)
@@ -941,11 +962,13 @@ PIKECLASS Comm
      */
 
     INIT {
-	mt_init(&THIS->im);
+	mt_init(&THIS->sm);
+	mt_init(&THIS->bm);
     }
 
     EXIT {
-	mt_destroy(&THIS->im);
+	mt_destroy(&THIS->sm);
+	mt_destroy(&THIS->bm);
     }
 
     PIKEFUN void Send(string buf, int dest, int|void tag)
@@ -953,7 +976,7 @@ PIKECLASS Comm
 	unsigned int shift = buf->size_shift,
 		     length = buf->len << shift;
 	MPI_Comm comm = THIS->comm;
-	MUTEX_T *im = &THIS->im;
+	MUTEX_T *im = &THIS->sm;
 
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
@@ -979,7 +1002,7 @@ PIKECLASS Comm
 
     PIKEFUN void Send(object buf, int dest, int|void tag)
     {
-	MUTEX_T *im = &THIS->im;
+	MUTEX_T *im = &THIS->sm;
 
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
@@ -1075,7 +1098,7 @@ PIKECLASS Comm
 	if (rank != root)
 	    Pike_error("Bcast cannot receive into strings.\n");
 
-	mpi_string_Bcast(&buf, root, THIS->comm);
+	mpi_string_Bcast(&buf, root, THIS->comm, &THIS->bm);
 	pop_n_elems(args);
     }
 
@@ -1093,7 +1116,7 @@ PIKECLASS Comm
 	    if (-1 == low_get_storage(buf->prog, Pointer_program))
 		FAIL_SENTINEL_OR_PTR("Bcast", 1);
 
-	    mpi_string_Bcast(&ps, root, THIS->comm);
+	    mpi_string_Bcast(&ps, root, THIS->comm, &THIS->bm);
 	    //stack_pop_keep_top();
 	    pop_n_elems(args-1);
 	    push_string(ps);
