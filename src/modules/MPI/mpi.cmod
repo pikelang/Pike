@@ -540,21 +540,27 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
 
     INVALIDATE_CURRENT_TIME();
 
+    THREADS_ALLOW();
+
     x1=MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &int_status);
     x2=MPI_Recv(&length, 1, MPI_INT, int_status.MPI_SOURCE, int_status.MPI_TAG, comm,
 	     NULL);
 
+    THREADS_DISALLOW();
 
     if (shift > 2)
 	Pike_error("Cannot receive shift %u as a string. (x1, x2: %d, %d)\n", shift, x1, x2);
 
     init_string_builder_alloc(&buf, length >> shift, shift);
 
+    THREADS_ALLOW();
+
     r = MPI_Recv(buf.s->str, length, MPI_CHAR, int_status.MPI_SOURCE, int_status.MPI_TAG,
 		 comm, NULL);
 
     buf.s->len = length >> shift;
 
+    THREADS_DISALLOW();
 
     if (status) *status = int_status;
 
@@ -946,29 +952,42 @@ PIKECLASS Comm
     {
 	unsigned int shift = buf->size_shift,
 		     length = buf->len << shift;
+	MPI_Comm comm = THIS->comm;
+	MUTEX_T *im = &THIS->im;
 
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
 
 	INVALIDATE_CURRENT_TIME();
 
-	MPI_Send(&shift, 1, MPI_INT, dest, tag ? tag->u.integer : 0,
-		 THIS->comm);
-	MPI_Send(&length, 1, MPI_INT, dest, tag ? tag->u.integer : 0,
-		 THIS->comm);
-	MPI_Send(buf->str, length, MPI_CHAR, dest, tag ? tag->u.integer : 0,
-		 THIS->comm);
+	if (shift > 2) {
+	    Pike_fatal("Sending broken shift %d.\n", shift);
+	}
+
+	THREADS_ALLOW();
+	mt_lock(im);
+
+	MPI_Send(&shift, 1, MPI_INT, dest, tag ? tag->u.integer : 0, comm);
+	MPI_Send(&length, 1, MPI_INT, dest, tag ? tag->u.integer : 0, comm);
+	MPI_Send(buf->str, length, MPI_CHAR, dest, tag ? tag->u.integer : 0, comm);
+
+	mt_unlock(im);
+	THREADS_DISALLOW();
 
 	pop_n_elems(args);
     }
 
     PIKEFUN void Send(object buf, int dest, int|void tag)
     {
+	MUTEX_T *im = &THIS->im;
+
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
 
 	ENSURE_SENTINEL(buf, "Send", 1);
+	mt_lock(im);
 	mpi_Send(buf, dest, tag ? tag->u.integer : 0, THIS->comm);
+	mt_unlock(im);
 	pop_n_elems(args);
     }
 
