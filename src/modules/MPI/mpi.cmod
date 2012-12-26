@@ -603,20 +603,19 @@ static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 
 static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm)
 {
-    unsigned int shift = (*ps)->size_shift,
-		 length = (*ps)->len << ((*ps)->size_shift);
+    unsigned int shift, length;
     void *_buf;
     int r, rank;
 
     INVALIDATE_CURRENT_TIME();
 
-    MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-    MPI_Bcast(&length, 1, MPI_INT, root, comm);
-
     MPI_Comm_rank(comm, &rank);
 
 
     if (rank != root) {
+	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
 	switch (shift) {
 	case 0:
 	case 1:
@@ -643,8 +642,15 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 	}
 
 	free(_buf);
-    } else
+    } else {
+	shift = (*ps)->size_shift;
+	length = (*ps)->len << ((*ps)->size_shift);
+
+	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
+	MPI_Bcast(&length, 1, MPI_INT, root, comm);
+
 	r = MPI_Bcast((*ps)->str, length, MPI_CHAR, root, comm);
+    }
 
     return r;
 }
@@ -1057,8 +1063,15 @@ PIKECLASS Comm
 
     PIKEFUN void Bcast(string buf, int root)
     {
+	int rank;
+
 	if (mpi_status != mpi_INITIALIZED)
 	    Pike_error("Bcast is not to be called before MPI.Init() or after MPI.Finalize().\n");
+
+	MPI_Comm_rank(THIS->comm, &rank);
+
+	if (rank != root)
+	    Pike_error("Bcast cannot receive into strings.\n");
 
 	mpi_string_Bcast(&buf, root, THIS->comm);
 	pop_n_elems(args);
