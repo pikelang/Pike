@@ -526,11 +526,12 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
 				  struct pike_string **ps, MPI_Status *status)
 {
     unsigned int shift, length;
-    MPI_Datatype type;
     MPI_Status int_status;
     void *_buf;
     struct svalue sval;
+    struct string_builder buf;
     int r;
+    int x1, x2;
 
     if (!status) status = &int_status;
 
@@ -538,39 +539,25 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
 
     INVALIDATE_CURRENT_TIME();
 
-    MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, status);
-    MPI_Recv(&length, 1, MPI_INT, status->MPI_SOURCE, status->MPI_TAG, comm,
+    x1=MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, &int_status);
+    x2=MPI_Recv(&length, 1, MPI_INT, int_status.MPI_SOURCE, int_status.MPI_TAG, comm,
 	     NULL);
 
 
-    switch (shift) {
-    case 0:
-    case 1:
-    case 2:
-	type = MPI_CHAR;
-	_buf = xalloc(length+1);
-	((char*)_buf)[length] = 0;
-	break;
-    default:
-	Pike_error("Cannot receive shift %u as a string.\n", shift);
-    }
+    if (shift > 2)
+	Pike_error("Cannot receive shift %u as a string. (x1, x2: %d, %d)\n", shift, x1, x2);
 
-    r = MPI_Recv(_buf, length, type, status->MPI_SOURCE, status->MPI_TAG,
+    init_string_builder_alloc(&buf, length >> shift, shift);
+
+    r = MPI_Recv(buf.s->str, length, MPI_CHAR, int_status.MPI_SOURCE, int_status.MPI_TAG,
 		 comm, NULL);
 
-    switch (shift) {
-    case 0:
-	*ps = make_shared_binary_string(_buf, length);
-	break;
-    case 1:
-	*ps = make_shared_binary_string1((p_wchar1*)_buf, length >> shift);
-	break;
-    case 2:
-	*ps = make_shared_binary_string2((p_wchar2*)_buf, length >> shift);
-	break;
-    }
+    buf.s->len = length >> shift;
 
-    free(_buf);
+
+    if (status) *status = int_status;
+
+    *ps = finish_string_builder(&buf);
 
     return r;
 }
@@ -613,35 +600,21 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 
 
     if (rank != root) {
+	struct string_builder buf;
+
 	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
 	MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
-	switch (shift) {
-	case 0:
-	case 1:
-	case 2:
-	    _buf = xalloc(length+1);
-	    ((char*)_buf)[length] = 0;
-	    break;
-	default:
+	if (shift > 2)
 	    Pike_error("Cannot receive shift %u as a string.\n", shift);
-	}
 
-	r = MPI_Bcast(_buf, length, MPI_CHAR, root, comm);
+	init_string_builder_alloc(&buf, length >> shift, shift);
 
-	switch (shift) {
-	case 0:
-	    *ps = make_shared_binary_string(_buf, length);
-	    break;
-	case 1:
-	    *ps = make_shared_binary_string1((p_wchar1*)_buf, length >> shift);
-	    break;
-	case 2:
-	    *ps = make_shared_binary_string2((p_wchar2*)_buf, length >> shift);
-	    break;
-	}
+	r = MPI_Bcast(buf.s->str, length, MPI_CHAR, root, comm);
 
-	free(_buf);
+	buf.s->len = length >> shift;
+
+	*ps = finish_string_builder(&buf);
     } else {
 	shift = (*ps)->size_shift;
 	length = (*ps)->len << ((*ps)->size_shift);
