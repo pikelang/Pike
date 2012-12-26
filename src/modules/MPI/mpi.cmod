@@ -11,6 +11,7 @@
 #include "array.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
+#include "threads.h"
 
 #include <mpi.h>
 
@@ -919,6 +920,7 @@ PIKECLASS Pointer
 PIKECLASS Comm
 {
     CVAR MPI_Comm comm;
+    CVAR MUTEX_T im;
 
     /*! @decl void Send(string buf, int dest, int|void tag)
      *! @decl void Send(MPI.IntArray buf, int dest, int|void tag)
@@ -931,6 +933,14 @@ PIKECLASS Comm
      *! @seealso
      *! 	@[MPI.Comm()->Recv()], @[MPI.Comm()->Bcast()], MPI_Send(3).
      */
+
+    INIT {
+	mt_init(&THIS->im);
+    }
+
+    EXIT {
+	mt_destroy(&THIS->im);
+    }
 
     PIKEFUN void Send(string buf, int dest, int|void tag)
     {
@@ -1273,9 +1283,15 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
  */
 PIKEFUN void Init()
 {
+    int provided;
+
     if (mpi_status)
 	Pike_error("MPI: MPI.Init() cannot be called twice.\n");
     mpi_status = mpi_INITIALIZED;
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+    if (provided != MPI_THREAD_MULTIPLE)
+	Pike_fatal("MPI cannot deliver: %d vs %d.\n", MPI_THREAD_MULTIPLE, provided);
+    return;
     MPI_Init(NULL, NULL); /* MPI Specification does not use &argc, &argv
 			     for anything, nor operate on it in any other
 			     way. AFAIK this holds for all implementations,
