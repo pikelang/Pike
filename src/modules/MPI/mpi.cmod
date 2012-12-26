@@ -609,11 +609,8 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 	THREADS_ALLOW();
 	mt_lock(m);
 
-	fprintf(stderr, "rank %d receiving shift\n", rank);
 	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-	fprintf(stderr, "rank %d received shift %d\n", rank, shift);
 	MPI_Bcast(&length, 1, MPI_INT, root, comm);
-	fprintf(stderr, "rank %d received length %d\n", rank, length);
 
 	mt_unlock(m);
 	THREADS_DISALLOW();
@@ -641,11 +638,8 @@ static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm c
 	THREADS_ALLOW();
 	mt_lock(m);
 
-	fprintf(stderr, "rank %d sending shift %d\n", rank, shift);
 	MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-	fprintf(stderr, "rank %d sending length %d\n", rank, length);
 	MPI_Bcast(&length, 1, MPI_INT, root, comm);
-	fprintf(stderr, "rank %d sent length.\n", rank);
 
 	r = MPI_Bcast((*ps)->str, length, MPI_CHAR, root, comm);
 
