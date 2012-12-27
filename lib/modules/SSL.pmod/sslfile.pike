@@ -1615,8 +1615,8 @@ protected void update_internal_state (void|int assume_real_backend)
     }
 
     if (!got_extra_read_call_out && sizeof (read_buffer) && read_callback)
-      // Got buffered read data, so schedule a call to
-      // ssl_read_callback to handle it.
+      // Got buffered read data and there's someone ready to receive it,
+      // so schedule a call to ssl_read_callback to handle it.
       got_extra_read_call_out = -1;
 
     // If got_extra_read_call_out is set here then we wait with all
