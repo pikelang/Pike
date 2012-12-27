@@ -235,6 +235,7 @@
 	fprintf(stderr, "finish name\n");
 #endif
 	push_svalue(SP);
+	free_svalue(SP);
 	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, clone_object(name_program, 1));
     }
 
