@@ -1301,7 +1301,12 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
     PIKEFUN object dup() {
 	MPI_Comm comm;
-	struct object *o = clone_object(Comm_program, 0);
+	struct object *o;
+
+	if (mpi_status != mpi_INITIALIZED)
+	    Pike_error("->size is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
+
+	o = clone_object(Comm_program, 0);
 
 	MPI_Comm_dup(THIS->comm, &comm);
 
