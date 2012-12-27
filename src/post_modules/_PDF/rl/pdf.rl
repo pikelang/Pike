@@ -324,6 +324,8 @@
 	    fprintf(stderr, "storing entry at pos %p from SP[1] %p at '%p'\n", p, SP+1, SP[0].u.mapping);
 #endif
 	    low_mapping_insert(SP[0].u.mapping, SP+1, SP+2, 2);
+	    free_svalue(SP+1);
+	    free_svalue(SP+2);
 	}
 
     }
