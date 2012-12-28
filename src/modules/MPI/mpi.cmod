@@ -44,6 +44,10 @@ DECLARATIONS
 
 /*! @module MPI */
 
+#define USING_MPI(name)	do {						\
+    if (mpi_status != mpi_INITIALIZED)					\
+	Pike_error(name " is not to be used before MPI.Init() or after MPI.Finalize().\n");\
+} while (0)
 #define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
 					      IntArray_program)		\
 			|| -1 != low_get_storage((x)->prog,		\
@@ -977,8 +981,7 @@ PIKECLASS Comm
 	MPI_Comm comm = THIS->comm;
 	MUTEX_T *im = &THIS->sm;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Send");
 
 	INVALIDATE_CURRENT_TIME();
 
@@ -1003,8 +1006,7 @@ PIKECLASS Comm
     {
 	MUTEX_T *im = &THIS->sm;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Send is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Send");
 
 	ENSURE_SENTINEL(buf, "Send", 1);
 	mt_lock(im);
@@ -1062,8 +1064,7 @@ PIKECLASS Comm
     {
 	struct pike_string *ps = NULL;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Recv is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Recv");
 
 	if (status && -1 == low_get_storage(status->prog, Status_program)) {
 	    SIMPLE_BAD_ARG_ERROR("Recv", 4, "inherits(MPI.Status)");
@@ -1089,8 +1090,7 @@ PIKECLASS Comm
     {
 	int rank;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Bcast is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Bcast");
 
 	MPI_Comm_rank(THIS->comm, &rank);
 
@@ -1103,8 +1103,7 @@ PIKECLASS Comm
 
     PIKEFUN void Bcast(object buf, int root)
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Bcast is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Bcast");
 
 	if (IS_SENTINEL(buf)) {
 	    mpi_Bcast(buf, root, THIS->comm);
@@ -1127,8 +1126,7 @@ PIKECLASS Comm
 
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Reduce is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Reduce");
 
 	if (-1 == low_get_storage(op->prog, Op_program))
 	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
@@ -1168,8 +1166,7 @@ PIKECLASS Comm
 #cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
 					     object recvbuf, object op)	\
     {									\
-	if (mpi_status != mpi_INITIALIZED)				\
-	    Pike_error(#_name_ " is not to be called before MPI.Init() or after MPI.Finalize().\n"); \
+	USING_MPI(#_name_);						\
 	if (-1 == low_get_storage(op->prog, Op_program))		\
 	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
@@ -1215,8 +1212,7 @@ PIKEFUN void _name_(object SCATTER(|void) sendbuf,			\
 		    object GATHER(|void) recvbuf, 			\
 		    int root)						\
     {									\
-	if (mpi_status != mpi_INITIALIZED)				\
-	    Pike_error(#_name_ " is not to be called before MPI.Init() or after MPI.Finalize().\n"); \
+	USING_MPI(#_name_);						\
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,SCATTER(##_OR_NULL))(sendbuf, #_name_, 1); \
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 									\
@@ -1234,8 +1230,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
 			  object|void displ, object recvbuf, int root)
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Scatterv is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Scatterv");
 
 	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
@@ -1252,9 +1247,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 			 object|void counts, object|void displ,
 			 int root)
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Gatherv is not to be called before MPI.Init() or after MPI.Finalize().\n");
-
+	USING_MPI("Gatherv");
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
 	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
@@ -1268,16 +1261,14 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
     PIKEFUN void Abort(int errorcode)
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Abort is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Abort");
 	MPI_Abort(THIS->comm, errorcode);
 	pop_n_elems(args);
     }
 
     PIKEFUN void Barrier()
     {
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("Barrier is not to be called before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("Barrier");
 	INVALIDATE_CURRENT_TIME();
 	MPI_Barrier(THIS->comm);
     }
@@ -1286,8 +1277,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     {
 	int rank;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("rank is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("->rank");
 
 	MPI_Comm_rank(THIS->comm, &rank);
 	push_int(rank);
@@ -1297,8 +1287,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     {
 	int size;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("->size is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("->size");
 
 	MPI_Comm_size(THIS->comm, &size);
 	push_int(size);
@@ -1308,8 +1297,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	MPI_Comm comm;
 	struct object *o;
 
-	if (mpi_status != mpi_INITIALIZED)
-	    Pike_error("->size is not to be accessed before MPI.Init() or after MPI.Finalize().\n");
+	USING_MPI("dup");
 
 	o = clone_object(Comm_program, 0);
 
