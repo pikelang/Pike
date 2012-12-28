@@ -20,6 +20,7 @@ PIKECLASS reference {
     PIKEFUN void create(string ref) {
 	add_ref(ref);
 	THIS->ref = ref;
+	pop_stack();
     }
 
     PIKEFUN int __hash() {
@@ -156,6 +157,80 @@ static struct object * create_reference(const unsigned char * start, const unsig
     return o;
 }
 
+static struct object * val_null, * val_true, * val_false;
+
+static INLINE int pdf_is_whitespace(char c) {
+    switch (c) {
+    case '\0':
+    case '\n':
+    case '\r':
+    case ' ':
+    case '\t':
+    case '\f':
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static INLINE int pdf_is_delimiter(char c) {
+    switch (c) {
+    case '#':
+    case '{':
+    case '}':
+    case '[':
+    case ']':
+    case '(':
+    case ')':
+    case '/':
+    case '%':
+    case '<':
+    case '>':
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+static int pdf_is_regular(char c) {
+    return !pdf_is_whitespace(c) && !pdf_is_delimiter(c);
+}
+
+static void pdf_encode_string(struct string_builder *buf, const struct pike_string * val) {
+    ptrdiff_t mark, i;
+    const p_wchar0 * s;
+
+    if (val->size_shift > 0) {
+	Pike_error("PDF Strings are 8-bit.\n");
+    }
+
+    string_builder_putchar(buf, '(');
+
+    s = STR0(val);
+
+    for (mark = 0, i = 0; i < val->len; i++) {
+	switch (s[i]) {
+	case '\\':
+	case '(':
+	case ')':
+	    if (mark < i) {
+		string_builder_binary_strcat0(buf, s+mark, i - mark);
+	    }
+	    string_builder_putchar(buf, '\\');
+	    string_builder_putchar(buf, s[i]);
+	    mark = i + 1;
+	    break;
+	}
+    }
+
+    if (mark < i) {
+	string_builder_binary_strcat0(buf, s + mark, i - mark);
+    }
+
+    string_builder_putchar(buf, ')');
+}
+
+
 #include "rl/pdf.c"
 
 PIKECLASS Parser {
@@ -256,77 +331,6 @@ PIKECLASS Parser {
 struct encode_context {
     struct string_builder buf;
 };
-
-static INLINE int pdf_is_whitespace(char c) {
-    switch (c) {
-    case '\0':
-    case '\n':
-    case '\r':
-    case ' ':
-    case '\t':
-    case '\f':
-	return 1;
-    default:
-	return 0;
-    }
-}
-
-static INLINE int pdf_is_delimiter(char c) {
-    switch (c) {
-    case '#':
-    case '{':
-    case '}':
-    case '[':
-    case ']':
-    case '(':
-    case ')':
-    case '/':
-    case '%':
-    case '<':
-    case '>':
-	return 1;
-    default:
-	return 0;
-    }
-}
-
-static int pdf_is_regular(char c) {
-    return !pdf_is_whitespace(c) && !pdf_is_delimiter(c);
-}
-
-static void pdf_encode_string(struct string_builder *buf, const struct pike_string * val) {
-    ptrdiff_t mark, i;
-    const p_wchar0 * s;
-
-    if (val->size_shift > 0) {
-	Pike_error("PDF Strings are 8-bit.\n");
-    }
-
-    string_builder_putchar(buf, '(');
-
-    s = STR0(val);
-
-    for (mark = 0, i = 0; i < val->len; i++) {
-	switch (s[i]) {
-	case '\\':
-	case '(':
-	case ')':
-	    if (mark < i) {
-		string_builder_binary_strcat0(buf, s+mark, i - mark);
-	    }
-	    string_builder_putchar(buf, '\\');
-	    string_builder_putchar(buf, s[i]);
-	    mark = i + 1;
-	    break;
-	}
-    }
-
-    if (mark < i) {
-	string_builder_binary_strcat0(buf, s + mark, i - mark);
-    }
-
-    string_builder_putchar(buf, ')');
-}
 
 static char hex_chars[] = "0123456789abcdef";
 
@@ -444,13 +448,13 @@ static void pdf_encode_recur(struct string_builder *buf, const struct svalue * v
 		string_builder_shared_strcat(buf, OBJ2_STREAM(o)->data);
 		string_builder_strcat(buf, "\nendstream");
 		break;
-	    } else if (o == get_val_null()) {
+	    } else if (o == val_null) {
 		string_builder_strcat(buf, "null");
 		break;
-	    } else if (o == get_val_true()) {
+	    } else if (o == val_true) {
 		string_builder_strcat(buf, "true");
 		break;
-	    } else if (o == get_val_false()) {
+	    } else if (o == val_false) {
 		string_builder_strcat(buf, "false");
 		break;
 	    } else if (o->prog) {
@@ -500,3 +504,21 @@ PIKEFUN string encode(mixed val) {
     pop_stack();
     push_string(finish_string_builder(&buf));
 }
+
+PIKE_MODULE_INIT {
+    val_null = get_val_null();
+    val_true = get_val_true();
+    val_false = get_val_false();
+
+    INIT;
+}
+
+PIKE_MODULE_EXIT {
+    EXIT;
+
+    free_object(val_null);
+    free_object(val_true);
+    free_object(val_false);
+}
+
+

@@ -151,19 +151,24 @@
 
 	p--;
 	while (mark < p) {
-	    int ch = hex2char(mark++)<<4;
+	    int ch;
+	    if (pdf_is_whitespace(*mark)) {
+		mark++;
+		continue;
+	    }
+	    ch = hex2char(mark++)<<4;
 	    ch |= hex2char(mark++);
 	    string_builder_putchar(&c->b, ch);
 	}
 
-	if (mark == p) {
+	if (mark == p && !pdf_is_whitespace(*mark)) {
 	    string_builder_putchar(&c->b, hex2char(mark)<<4);
 	}
 	p++;
 	SET_SVAL(SP[0], PIKE_T_STRING, 0, string, finish_string_builder(&c->b));
     }
     
-    hex_string := xdigit* >mark . '>' @finish_hex_string @return;
+    hex_string := (my_space|xdigit)* >mark . '>' @finish_hex_string @return;
     # integer
 
     action finish_integer {
@@ -332,19 +337,22 @@
     }
 
     action finish_null {
-	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_null());
+	add_ref(val_null);
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, val_null);
     }
 
     action finish_true {
-	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_true());
+	add_ref(val_true);
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, val_true);
     }
 
     action finish_false {
-	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, get_val_false());
+	add_ref(val_false);
+	SET_SVAL(SP[1], PIKE_T_OBJECT, 0, object, val_false);
     }
 
     object = '<<' @call_dictionary |
-	     '<' . xdigit >call_hexstring |
+	     '<' . (xdigit|'>') >call_hexstring |
 	     '(' @call_lstring |
 	     '/' @call_name |
 	     '[' @call_array |
@@ -410,6 +418,7 @@
 
     action create_object {
 	SET_SVAL(SP[0], PIKE_T_OBJECT, 0, object, clone_object(pdf_object_program, 0));
+	SP[1] = svalue_undefined;
     }
 
     action add_objid {
@@ -430,15 +439,20 @@
 
     action add_objdata {
 	{
-	    move_svalue(&OBJ2_PDF_OBJECT(SP[0].u.object)->data, SP+1);
+	    if (IS_UNDEFINED(SP+1)) {
+		add_ref(val_null);
+		SET_SVAL(OBJ2_PDF_OBJECT(SP[0].u.object)->data, PIKE_T_OBJECT, 0, object, val_null);
+	    } else {
+		move_svalue(&OBJ2_PDF_OBJECT(SP[0].u.object)->data, SP+1);
+	    }
 	}
     }
 
-    array := ( my_space* . object %array_add . my_space*)* >start_array . ']' @finish_array @return;
+    array := ( my_space* . ( object %array_add . my_space*)* ) >start_array . ']' @finish_array @return;
     
     direct_object = digit+ >mark >create_object %add_objid . my_space+ .
 		    digit+ >mark %add_objrev . my_space+ .
-		    'obj' . my_space* . object_or_stream . my_space* . 'endobj' @add_objdata;
+		    'obj' . my_space* . object_or_stream? . my_space* . 'endobj' @add_objdata;
 
     main := my_space* . direct_object @{ fbreak;};
 }%%
