@@ -104,7 +104,7 @@ class Reader {
 	while (SCAN("%d %d%*[ \n\r]", id, num) == 3) {
 	    int|string gen, offset;
 
-	    if (sizeof(data) < 20*num) {
+	    if (sizeof(data) < 20*num + i) {
 		data += file->read(20*num + 512);
 	    }
 
@@ -131,6 +131,9 @@ class Reader {
 
 	data = data[i..];
 
+	if (sizeof(data) < 7)
+	    data += file->read(512);
+
 	if (!has_prefix(data, "trailer"))
 	    low_parse_error(data, "Could not find trailer.", 0);
 
@@ -153,15 +156,20 @@ class Reader {
     }
 
     void create(Stdio.File file) {
+	int start, pos;
+	string trailer;
 	this_program::file = file;
 	stat = file->stat();
-	file->seek(stat->size - 48);
-	string trailer = file->read();
-	int pos = search(trailer, "startxref");
+	start = stat->size;
+
+	do {
+	    start = max(0, start - 64);
+	    file->seek(start);
+	    trailer = file->read(128);
+	    pos = search(trailer, "startxref");
+	} while (pos == -1 && start);
 
 	if (pos == -1) low_parse_error(trailer, "No xref position found.", 0);
-
-	int tail = 48-pos;
 
 	pos += sizeof("startxref");
 
@@ -260,7 +268,8 @@ class Writer {
 	    mixed v = objects[key];
 
 	    if (intp(v)) {
-		error("Object already written to offset %d bytes.\n");
+		werror("Object already written to offset %d bytes.\n");
+		return;
 	    }
 
 	    if (objectp(v) && v != o)
