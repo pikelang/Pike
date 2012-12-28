@@ -89,7 +89,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   else
     det=0;
   id=g_signal_connect_closure_by_id(G_OBJECT(THIS->obj),b->signal_id,det,
-				gc,1);
+				gc,0);
   pgtk2_pop_n_elems(args);
   push_int(id);
 }
