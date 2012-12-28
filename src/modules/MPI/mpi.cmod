@@ -963,6 +963,11 @@ PIKECLASS Comm
     EXIT {
 	mt_destroy(&THIS->sm);
 	mt_destroy(&THIS->bm);
+	if (mpi_status == mpi_INITIALIZED
+		&& THIS->comm != MPI_COMM_WORLD
+		&& THIS->comm != MPI_COMM_NULL) {
+	    MPI_Comm_free(&THIS->comm);
+	}
     }
 
     PIKEFUN void Send(string buf, int dest, int|void tag)
