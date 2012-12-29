@@ -2126,7 +2126,7 @@ void simple_describe_type(struct pike_type *s)
       case PIKE_T_RING:
 	fprintf(stderr, "ring(");
 	simple_describe_type(s->car);
-	fprintf(stderr, "°");
+	fprintf(stderr, "\260");
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;

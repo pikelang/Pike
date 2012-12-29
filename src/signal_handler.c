@@ -4193,7 +4193,7 @@ void f_create_process(INT32 args)
 #endif /* PROC_DEBUG */
 
 	/* NB: A return value is not defined for this ptrace request! */
-	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	ptrace(PTRACE_TRACEME, 0, NULL, 0);
       }
 #endif /* HAVE_PTRACE */
 	

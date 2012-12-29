@@ -1427,7 +1427,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 	/* Note: The >>-operator performs an implicit % (sizeof(tmp)*8)
 	 *       on the shift operand on some architectures. */
-        if( (l < sizeof(tmp)) && (tmp>>(l*8)))
+        if( (l < (ptrdiff_t) sizeof(tmp)) && (tmp>>(l*8)))
 	  sprintf_error(fs, "Length of string to %%%"PRINTPTRDIFFT"dH "
 			"too large.\n", l);
 
