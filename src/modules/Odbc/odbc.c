@@ -132,7 +132,7 @@ void odbc_error(const char *fun, const char *msg,
   unsigned char errmsg[SQL_MAX_MESSAGE_LENGTH];
 #endif
   SWORD errmsg_len = 0;
-  SDWORD native_error;
+  SQLINTEGER native_error;
   HDBC hdbc = odbc->hdbc;
 
   ODBC_ALLOW();

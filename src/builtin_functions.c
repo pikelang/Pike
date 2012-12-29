@@ -7775,7 +7775,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
 
   push_constant_text ("is_pike_master");
   args++;
-  object_set_index (new_master, 0, Pike_sp - 1, &svalue_int_one);
+  object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
 
   free_object(master_object);
   master_object=new_master;

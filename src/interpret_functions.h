@@ -2564,7 +2564,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   addr += ENTRY_PROLOGUE_SIZE;						   \
 									\
   if (Pike_interpreter.trace_level > 3) {				\
-    fprintf(stderr, "-    Addr = 0x%+lx\n", addr);			\
+    fprintf(stderr, "-    Addr = 0x%lx\n", (unsigned long) addr);	\
   }									\
 									   \
   new_frame->args = args;						\
