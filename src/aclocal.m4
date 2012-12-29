@@ -1243,6 +1243,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
         #
         # cc: Warning: -xarch=generic64 is deprecated, use -m64 to create 64-bit programs
         pike_cv_option_$2=no
+      elif grep -i 'argument unused' <conftezt.out.2 >/dev/null; then
+        # clang says the following for -ggdb3:
+        #
+	# clang: warning: argument unused during compilation: '-ggdb3'
+        pike_cv_option_$2=no
       else :; fi
       if test -f conftezt.out.2; then
         cat conftezt.out.2 >&AC_FD_CC

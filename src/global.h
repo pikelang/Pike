@@ -559,6 +559,10 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
+# elif defined(__clang__) && defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+/* According to Clang source the protected behavior is ELF-specific and not
+   applicable to OS X. */
+#  define PMOD_EXPORT    __attribute__ ((visibility("default")))
 # elif __GNUC__ >= 4
 #  ifdef DYNAMIC_MODULE
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
