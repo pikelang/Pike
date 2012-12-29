@@ -822,7 +822,7 @@ class PikeType
 	      return "tStr";
 	    }
 	    return sprintf("tNStr(%s)",
-			   stringify(sprintf("%4c%4c", low, high)));
+			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
