@@ -122,7 +122,7 @@ static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s)
 }
 
 static INLINE int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
-    return t1 & t2 || (t1|t2) & BIT_OBJECT;
+    return (!t1 && !t2) || t1 & t2 || (t1|t2) & BIT_OBJECT;
 }
 
 #ifdef PIKE_DEBUG
