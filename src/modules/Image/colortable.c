@@ -175,12 +175,12 @@ static void colortable_init_stuff(struct neo_colortable *nct)
    nct->dither_type=NCTD_NONE;
 }
 
-static void init_colortable_struct(struct object *obj)
+static void init_colortable_struct(struct object *UNUSED(obj))
 {
    colortable_init_stuff(THIS);
 }
 
-static void exit_colortable_struct(struct object *obj)
+static void exit_colortable_struct(struct object *UNUSED(obj))
 {
    free_colortable_struct(THIS);
 }
@@ -770,7 +770,7 @@ static INLINE rgb_group get_mask_of_level(int level)
 }
 
 static struct nct_flat _img_get_flat_from_image(struct image *img,
-						unsigned long maxcols)
+						unsigned long UNUSED(maxcols))
 {
    struct color_hash_entry *hash;
    unsigned long hashsize=DEFAULT_COLOR_HASH_SIZE;
@@ -1826,7 +1826,7 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1841,7 +1841,7 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1858,13 +1858,13 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 }
 
 static void dither_ordered_newline(struct nct_dither *dith,
-				   int *rowpos,
-				   rgb_group **s,
-				   rgb_group **drgb,
-				   unsigned char **d8bit,
-				   unsigned short **d16bit,
-				   unsigned INT32 **d32bit,
-				   int *cd)
+				   int *UNUSED(rowpos),
+				   rgb_group **UNUSED(s),
+				   rgb_group **UNUSED(drgb),
+				   unsigned char **UNUSED(d8bit),
+				   unsigned short **UNUSED(d16bit),
+				   unsigned INT32 **UNUSED(d32bit),
+				   int *UNUSED(cd))
 {
    dith->u.ordered.row++;
 }
@@ -2704,7 +2704,7 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
    push_string(end_shared_string(str));
 }
 
-static void image_colortable__encode( INT32 args )
+static void image_colortable__encode( INT32 UNUSED(args) )
 {
     image_colortable_cast_to_string( THIS );
 }
@@ -3175,7 +3175,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 }
 
 static INLINE void _cub_add_cs(struct neo_colortable *nct,
-			       struct nctlu_cubicle *cub,
+			       struct nctlu_cubicle *UNUSED(cub),
 			       int **pp,int *i,int *p,
 			       int ri,int gi,int bi,
 			       int red,int green,int blue,

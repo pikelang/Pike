@@ -105,13 +105,13 @@ static INLINE void odbc_check_error(const char *fun, const char *msg,
  * State maintenance
  */
  
-static void init_res_struct(struct object *o)
+static void init_res_struct(struct object *UNUSED(o))
 {
   memset(PIKE_ODBC_RES, 0, sizeof(struct precompiled_odbc_result));
   PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
 }
  
-static void exit_res_struct(struct object *o)
+static void exit_res_struct(struct object *UNUSED(o))
 {
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
     SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
@@ -801,13 +801,13 @@ static void f_fetch_row(INT32 args)
 }
  
 /* int eof() */
-static void f_eof(INT32 args)
+static void f_eof(INT32 UNUSED(args))
 {
   Pike_error("odbc->eof(): Not implemented yet!\n");
 }
 
 /* void seek() */
-static void f_seek(INT32 args)
+static void f_seek(INT32 UNUSED(args))
 {
   Pike_error("odbc->seek(): Not implemented yet!\n");
 }

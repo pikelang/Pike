@@ -669,7 +669,7 @@ static int really_optimize_p(struct layer *l)
 
 /*** layer object : init and exit *************************/
 
-static void init_layer(struct object *dummy)
+static void init_layer(struct object *UNUSED(dummy))
 {
    THIS->xsize=0;
    THIS->ysize=0;
@@ -692,7 +692,7 @@ static void init_layer(struct object *dummy)
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 }
 
-static void free_layer(struct layer *l)
+static void free_layer(struct layer *UNUSED(l))
 {
    if (THIS->image) free_object(THIS->image);
    if (THIS->alpha) free_object(THIS->alpha);
@@ -703,7 +703,7 @@ static void free_layer(struct layer *l)
    THIS->alp=NULL;
 }
 
-static void exit_layer(struct object *dummy)
+static void exit_layer(struct object *UNUSED(dummy))
 {
    free_layer(THIS);
 }

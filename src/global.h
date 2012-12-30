@@ -548,6 +548,24 @@ typedef struct p_wchar_p
 #endif
 #endif
 
+/* Suppress compiler warnings for unused parameters if possible. The mangling of
+   argument name is required to catch when an unused argument later is used without
+   removing the annotation. */
+#ifndef UNUSED
+# ifdef __GNUC__
+#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED) __attribute__((unused))
+# else
+#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
+# endif
+#endif
+#ifndef DEBUGUSED
+# ifdef PIKE_DEBUG
+#  define DEBUGUSED(x) x
+# else
+#  define DEBUGUSED(x) UNUSED(x)
+# endif
+#endif
+
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
 # if defined (__NT__) && defined (USE_DLL)

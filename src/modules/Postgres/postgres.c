@@ -67,7 +67,7 @@ PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #ifdef PGDEBUG
 #define pgdebug printf
 #else
-static void pgdebug (char * a, ...) {}
+static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
 struct program * postgres_program;
@@ -81,7 +81,7 @@ static void set_error (char * newerror)
 	return;
 }
 
-static void pgres_create (struct object * o) {
+static void pgres_create (struct object * UNUSED(o)) {
 	pgdebug ("pgres_create().\n");
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
@@ -96,7 +96,7 @@ static void pgres_create (struct object * o) {
 
 }
 
-static void pgres_destroy (struct object * o)
+static void pgres_destroy (struct object * UNUSED(o))
 {
 	PGconn * conn;
 	PQ_FETCH();

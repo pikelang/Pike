@@ -271,13 +271,13 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-static void do_pop_mark(void *ignored)
+static void do_pop_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_MARK);
 }
 
-static void do_pop_to_mark(void *ignored)
+static void do_pop_to_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_TO_MARK);

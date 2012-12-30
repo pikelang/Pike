@@ -59,7 +59,7 @@ static void remove_callbacks( struct source *src )
 }
 
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t UNUSED(len) )
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
@@ -93,7 +93,7 @@ static void free_source( struct source *src )
   free_object(((struct fd_source *)src)->obj);
 }
 
-static void read_callback( int fd, struct fd_source *s )
+static void read_callback( int UNUSED(fd), struct fd_source *s )
 {
   int l;
   remove_callbacks( (struct source *)s );

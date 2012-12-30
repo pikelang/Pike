@@ -710,9 +710,8 @@ void process_done(pid_t pid, const char *from)
 
 #else
 
-#define process_started(PID)
-#define process_done(PID,FROM)
-#define dump_process_history(PID)
+void process_started(pid_t UNUSED(pid)) { }
+void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 
 #endif /* PIKE_DEBUG */
 
@@ -794,9 +793,9 @@ void my_signal(int sig, sigfunctype fun)
 
 static int signalling=0;
 
-static void unset_signalling(void *notused) { signalling=0; }
+static void unset_signalling(void *UNUSED(notused)) { signalling=0; }
 
-PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
+PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG
@@ -1228,7 +1227,7 @@ struct pid_status
 
 static struct program *pid_status_program=0;
 
-static void init_pid_status(struct object *o)
+static void init_pid_status(struct object *UNUSED(o))
 {
   THIS->pid=-1;
 #ifdef __NT__
@@ -1242,7 +1241,7 @@ static void init_pid_status(struct object *o)
 #endif
 }
 
-static void exit_pid_status(struct object *o)
+static void exit_pid_status(struct object *UNUSED(o))
 {
 #ifdef USE_PID_MAPPING
   if(pid_mapping)
@@ -1259,7 +1258,7 @@ static void exit_pid_status(struct object *o)
 }
 
 #ifdef USE_PID_MAPPING
-static void call_pid_status_callback(struct callback *cb, void *pid, void *arg)
+static void call_pid_status_callback(struct callback *cb, void *pid, void *UNUSED(arg))
 {
   struct object *o = pid;
   struct pid_status *p;
@@ -1389,7 +1388,7 @@ static void do_bi_do_da_lock(void)
   mt_unlock(&wait_thread_mutex);
 }
 
-static TH_RETURN_TYPE wait_thread(void *data)
+static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 {
   if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
   {
@@ -1828,12 +1827,12 @@ static void f_pid_status_set_priority(INT32 args)
  *     pid_status_program is inherited first.
  */
 
-static void init_trace_process(struct object *o)
+static void init_trace_process(struct object *UNUSED(o))
 {
   THIS->flags |= PROCESS_FLAG_TRACED;
 }
 
-static void exit_trace_process(struct object *o)
+static void exit_trace_process(struct object *UNUSED(o))
 {
   /* FIXME: Detach the process? */
 }
@@ -2453,7 +2452,7 @@ void f_set_priority( INT32 args )
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage, 
-                                char *limit_name,
+                                char *UNUSED(limit_name),
                                 int limit_resource,
                                 struct svalue *limit_value )
 {
@@ -4767,7 +4766,7 @@ static RETSIGTYPE fatal_signal(int signum)
 
 static struct array *atexit_functions;
 
-static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
+static void run_atexit_functions(struct callback *UNUSED(cb), void *UNUSED(arg),void *UNUSED(arg2))
 {
   if(atexit_functions)
   {

@@ -159,7 +159,7 @@ PMOD_EXPORT void add_efun(const char *name, c_fun fun, const char *type, int fla
 
 PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
                                 c_fun fun,
-                                const char *type, ptrdiff_t type_length,
+                                const char *type, ptrdiff_t UNUSED(type_length),
                                 int flags,
                                 optimize_fun optimize,
                                 docode_fun docode)

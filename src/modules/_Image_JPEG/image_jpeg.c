@@ -118,7 +118,7 @@ static const int reverse_quality[101]=
  *!	Independent JPEG Group.
  */
 
-static void my_output_message(struct jpeg_common_struct *cinfo)
+static void my_output_message(struct jpeg_common_struct *UNUSED(cinfo))
 {
    /* no message */
    /* (this should not be called) */
@@ -133,7 +133,7 @@ static void my_error_exit(struct jpeg_common_struct *cinfo)
    Pike_error("Image.JPEG: fatal error in libjpeg; %s\n",buffer);
 }
 
-static void my_emit_message(struct jpeg_common_struct *cinfo,int msg_level)
+static void my_emit_message(struct jpeg_common_struct *UNUSED(cinfo), int UNUSED(msg_level))
 {
    /* no trace */
 }
@@ -253,7 +253,7 @@ static boolean my_empty_output_buffer(struct jpeg_compress_struct *cinfo)
    return TRUE;
 }
 
-static void my_term_destination(struct jpeg_compress_struct *cinfo)
+static void my_term_destination(struct jpeg_compress_struct *UNUSED(cinfo))
 {
    /* don't do anything */
 }
@@ -493,7 +493,7 @@ static void my_skip_input_data(struct jpeg_decompress_struct *cinfo,
    sm->pub.bytes_in_buffer -= (size_t) num_bytes;
 }
 
-static void my_term_source(struct jpeg_decompress_struct *cinfo)
+static void my_term_source(struct jpeg_decompress_struct *UNUSED(cinfo))
 {
    /* nop */
 }

@@ -262,7 +262,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
   }
 }
 
-PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS)
+PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 UNUSED(type_hint) DMALLOC_LINE_ARGS)
 {
   while(num--)
   {

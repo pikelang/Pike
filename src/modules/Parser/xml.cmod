@@ -1087,7 +1087,7 @@ PIKECLASS Simple
 #endif /* PIKE_DEBUG */
 
 
-static inline int xmlread(int z, int line)
+static inline int xmlread(int z, int UNUSED(line))
 {
   int popped=0;
   THIS->input->pos += z;

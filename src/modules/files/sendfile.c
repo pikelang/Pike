@@ -157,7 +157,7 @@ static struct program *pike_sendfile_prog = NULL;
  * Struct init code.
  */
 
-static void init_pike_sendfile(struct object *o)
+static void init_pike_sendfile(struct object *UNUSED(o))
 {
   MEMSET(THIS, 0, sizeof(struct pike_sendfile));
 
@@ -168,7 +168,7 @@ static void init_pike_sendfile(struct object *o)
   SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
 }
 
-static void exit_pike_sendfile(struct object *o)
+static void exit_pike_sendfile(struct object *UNUSED(o))
 {
   SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
 
@@ -268,7 +268,7 @@ static void sf_call_callback(struct pike_sendfile *this)
   }
 }
 
-static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
+static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSED(arg))
 {
   struct pike_sendfile *this = this_;
 

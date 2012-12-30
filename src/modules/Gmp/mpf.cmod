@@ -111,7 +111,7 @@ PIKECLASS mpf
 {
   CVAR MP_FLT n;
 
-  static void get_mpf_from_digits(MP_FLT *tmp,
+  static void get_mpf_from_digits(MP_FLT *UNUSED(tmp),
 				  struct pike_string *digits,
 				  int base)
     {

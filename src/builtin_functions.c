@@ -3218,7 +3218,7 @@ PMOD_EXPORT void f_indices(INT32 args)
 /* FIXME: This function messes around with the implementation of pike_type,
  * and should probably be in pike_types.h instead.
  */
-static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int deftypelen)
+static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNUSED(deftypelen))
 {
   node **first_arg;
   struct pike_type *t, *t2;

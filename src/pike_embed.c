@@ -430,7 +430,7 @@ void init_pike_runtime(void (*exit_cb)(int))
 /* FIXME: Thread specific limit? */
 static unsigned long instructions_left = 0;
 
-static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+static void time_to_exit(struct callback *UNUSED(cb), void *UNUSED(tmp), void *UNUSED(ignored))
 {
   if(!(instructions_left--))
   {

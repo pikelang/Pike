@@ -2403,7 +2403,7 @@ void check_all_mappings(void)
 #endif
 
 static void visit_mapping_data (struct mapping_data *md, int action,
-				struct mapping *m)
+				struct mapping *UNUSED(m))
 {
   switch (action) {
 #ifdef PIKE_DEBUG

@@ -185,7 +185,7 @@ static MUTEX_T stupid_port_lock;
  * State maintenance
  */
 
-static void init_mysql_struct(struct object *o)
+static void init_mysql_struct(struct object *UNUSED(o))
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
   INIT_MYSQL_LOCK();
@@ -194,7 +194,7 @@ static void init_mysql_struct(struct object *o)
     Pike_error ("Out of memory when initializing mysql connection.\n");
 }
 
-static void exit_mysql_struct(struct object *o)
+static void exit_mysql_struct(struct object *UNUSED(o))
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
 

@@ -5657,14 +5657,14 @@ static void f_string_assignment_assign_index(INT32 args)
 }
 
 
-static void init_string_assignment_storage(struct object *o)
+static void init_string_assignment_storage(struct object *UNUSED(o))
 {
   SET_SVAL(THIS->lval[0], T_INT, PIKE_T_FREE, integer, 0);
   SET_SVAL(THIS->lval[1], T_INT, PIKE_T_FREE, integer, 0);
   THIS->s = NULL;
 }
 
-static void exit_string_assignment_storage(struct object *o)
+static void exit_string_assignment_storage(struct object *UNUSED(o))
 {
   free_svalues(THIS->lval, 2, BIT_MIXED);
   if(THIS->s)

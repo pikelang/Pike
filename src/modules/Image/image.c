@@ -175,7 +175,7 @@ static void chrono(char *x)
 
 /***************** init & exit *********************************/
 
-static void init_image_struct(struct object *obj)
+static void init_image_struct(struct object *UNUSED(obj))
 {
   THIS->img=NULL;
   THIS->rgb.r=0;
@@ -186,7 +186,7 @@ static void init_image_struct(struct object *obj)
 /*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
 
-static void exit_image_struct(struct object *obj)
+static void exit_image_struct(struct object *UNUSED(obj))
 {
   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 /*
@@ -4826,7 +4826,7 @@ void image_tobitmap(INT32 args)
 
 /***************** Serialization methods ***********************/
 
-void image__encode( INT32 args )
+void image__encode( INT32 UNUSED(args) )
 {
     push_int( THIS->xsize );
     push_int( THIS->ysize );

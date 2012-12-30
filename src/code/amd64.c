@@ -906,7 +906,7 @@ void amd64_start_function(int store_lines )
 }
 
 /* Called when the current function is done */
-void amd64_end_function(int no_pc)
+void amd64_end_function(int UNUSED(no_pc))
 {
   branch_check_threads_update_etc = 0;
 }

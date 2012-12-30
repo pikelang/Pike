@@ -84,7 +84,7 @@ struct port
 #undef THIS
 #define THIS ((struct port *)(Pike_fp->current_storage))
 
-static int got_port_event (struct fd_callback_box *box, int event)
+static int got_port_event (struct fd_callback_box *box, int DEBUGUSED(event))
 {
   struct port *p = (struct port *) box;
 #ifdef PIKE_DEBUG
@@ -705,7 +705,7 @@ static void init_port_struct(struct object *o)
   /* map_variable takes care of id and accept_callback. */
 }
 
-static void exit_port_struct(struct object *o)
+static void exit_port_struct(struct object *UNUSED(o))
 {
   do_close(THIS);
   unhook_fd_callback_box (&THIS->box);

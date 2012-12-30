@@ -332,7 +332,7 @@ PIKECLASS CipherState
 static void
 pike_aes_set_encrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   if (length == 16 || length == 24 || length == 32)
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
@@ -343,7 +343,7 @@ pike_aes_set_encrypt_key(void *ctx,
 static void
 pike_aes_set_decrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   if (length == 16 || length == 24 || length == 32)
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
@@ -360,7 +360,7 @@ pike_aes_set_decrypt_key(void *ctx,
 static void
 pike_arcfour_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < ARCFOUR_MIN_KEY_SIZE || length > ARCFOUR_MAX_KEY_SIZE)
     Pike_error("ARCFOUR_Info: Bad keysize for ARCFOUR.\n");
@@ -384,7 +384,7 @@ pike_arcfour_set_key(void *ctx,
 static void
 pike_blowfish_set_key(void *ctx,
 		      ptrdiff_t length, const char *key,
-		      int force)
+		      int UNUSED(force))
 {
   if (length < BLOWFISH_MIN_KEY_SIZE || length > BLOWFISH_MAX_KEY_SIZE)
     Pike_error("BLOWFISH_Info: Bad keysize for BLOWFISH.\n");
@@ -407,7 +407,7 @@ pike_blowfish_set_key(void *ctx,
 static void
 pike_camellia_set_encrypt_key(void *ctx,
 			      ptrdiff_t length, const char *key,
-			      int force)
+			      int UNUSED(force))
 {
   if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
     Pike_error("CAMELLIA_Info: Bad keysize for CAMELLIA.\n");
@@ -438,7 +438,7 @@ pike_camellia_set_decrypt_key(void *ctx,
 static void
 pike_cast128_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < CAST128_MIN_KEY_SIZE || length > CAST128_MAX_KEY_SIZE)
     Pike_error("CAST128_info: Bad keysize for CAST128.\n");
@@ -780,7 +780,7 @@ PIKECLASS DES3_State
 static void
 pike_serpent_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < SERPENT_MIN_KEY_SIZE || length > SERPENT_MAX_KEY_SIZE)
     Pike_error("SERPENT_Info: Bad keysize for SERPENT.\n");
@@ -801,7 +801,7 @@ pike_serpent_set_key(void *ctx,
 static void
 pike_twofish_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < TWOFISH_MIN_KEY_SIZE || length > TWOFISH_MAX_KEY_SIZE)
     Pike_error("TWOFISH_Info: Bad keysize for TWOFISH.\n");
@@ -825,7 +825,7 @@ pike_twofish_set_key(void *ctx,
 static void
 pike_idea_set_encrypt_key(void *ctx_v,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   struct idea_ctx *ctx = ctx_v;
   if (length == IDEA_KEY_SIZE)
@@ -837,7 +837,7 @@ pike_idea_set_encrypt_key(void *ctx_v,
 static void
 pike_idea_set_decrypt_key(void *ctx_v,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   struct idea_ctx *ctx = ctx_v;
   if (length == IDEA_KEY_SIZE) {

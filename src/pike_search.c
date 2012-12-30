@@ -33,9 +33,9 @@ static struct mapping *memsearch_cache;
 static struct program *pike_search_program;
 
 
-static void *nil_search(void *no_data,
+static void *nil_search(void *UNUSED(no_data),
 			void *haystack,
-			ptrdiff_t haystacklen)
+			ptrdiff_t UNUSED(haystacklen))
 {
   return haystack;
 }
@@ -43,9 +43,9 @@ static void *nil_search(void *no_data,
 /* Needed on architectures where struct returns have
  * incompatible calling conventions (sparc v8).
  */
-static PCHARP nil_searchN(void *no_data,
+static PCHARP nil_searchN(void *UNUSED(no_data),
 			  PCHARP haystack,
-			  ptrdiff_t haystacklen)
+			  ptrdiff_t UNUSED(haystacklen))
 {
   return haystack;
 }

@@ -5181,7 +5181,7 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,
 		       const char *type,
-		       int type_length,
+		       int UNUSED(type_length),
 		       INT32 run_time_type,
 		       INT32 flags)
 {
@@ -6490,7 +6490,7 @@ int store_prog_string(struct pike_string *str)
 /* NOTE: O(n²)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
-		   struct pike_string *constant_name)
+		   struct pike_string *UNUSED(constant_name))
 {
   struct program_constant tmp;
   volatile unsigned int e;
@@ -9724,7 +9724,7 @@ PMOD_EXPORT void exit_compiler(void)
 
 #define THIS_PROGRAM_STATE  ((struct program_state *)(Pike_fp->current_storage))
 
-static void program_state_event_handler(int event)
+static void program_state_event_handler(int UNUSED(event))
 {
 #if 0
   struct program_state *c = THIS_PROGRAM_STATE;
@@ -10152,7 +10152,7 @@ PMOD_EXPORT int quick_add_function(const char *name,
 				   int name_length,
 				   void (*cfun)(INT32),
 				   const char *type,
-				   int type_length,
+				   int UNUSED(type_length),
 				   unsigned flags,
 				   unsigned opt_flags)
 {
@@ -10218,7 +10218,7 @@ void check_all_programs(void)
 #define THIS ((struct pike_trampoline *)(CURRENT_STORAGE))
 struct program *pike_trampoline_program=0;
 
-static void apply_trampoline(INT32 args)
+static void apply_trampoline(INT32 UNUSED(args))
 {
   Pike_error("Internal error: Trampoline magic failed!\n");
 }
@@ -10256,12 +10256,12 @@ static void sprintf_trampoline (INT32 args)
   free (str.str);
 }
 
-static void init_trampoline(struct object *o)
+static void init_trampoline(struct object *UNUSED(o))
 {
   THIS->frame=0;
 }
 
-static void exit_trampoline(struct object *o)
+static void exit_trampoline(struct object *UNUSED(o))
 {
   if(THIS->frame)
   {
@@ -10284,7 +10284,7 @@ static void gc_check_frame(struct pike_frame *f)
   }
 }
 
-static void gc_check_trampoline(struct object *o)
+static void gc_check_trampoline(struct object *UNUSED(o))
 {
   if (THIS->frame &&
       !debug_gc_check (THIS->frame, " as trampoline frame"))
@@ -10300,7 +10300,7 @@ static void gc_recurse_frame(struct pike_frame *f)
   if(f->scope)          gc_recurse_frame(f->scope);
 }
 
-static void gc_recurse_trampoline(struct object *o)
+static void gc_recurse_trampoline(struct object *UNUSED(o))
 {
   if (THIS->frame) gc_recurse_frame(THIS->frame);
 }

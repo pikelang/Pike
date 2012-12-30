@@ -210,7 +210,7 @@ static int compare_wordarrays( const void *_a, const void *_b )
  *! the blobs struct once. Also, once you have called @[read] or @[read_all_sorted],
  *! @[add_words] will no longer work as expected.
  */
-static void f_blobs_read_all_sorted( INT32 args )
+static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 {
   struct array *g = allocate_array( THIS->nwords );
   int i;

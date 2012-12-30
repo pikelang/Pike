@@ -110,7 +110,7 @@ void f_aap_log_as_array(INT32 args)
   }
 }
 
-void f_aap_log_exists(INT32 args)
+void f_aap_log_exists(INT32 UNUSED(args))
 {
   if(LTHIS->log->log_head) 
     push_int(1);
@@ -118,7 +118,7 @@ void f_aap_log_exists(INT32 args)
     push_int(0);
 }
 
-void f_aap_log_size(INT32 args)
+void f_aap_log_size(INT32 UNUSED(args))
 {
   int n=1;
   struct log *l = LTHIS->log;

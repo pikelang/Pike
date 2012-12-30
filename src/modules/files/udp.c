@@ -144,7 +144,7 @@ struct udp_storage {
 
 void zero_udp(struct object *ignored);
 int low_exit_udp(void);
-void exit_udp(struct object *ignored) {
+void exit_udp(struct object *UNUSED(ignored)) {
   low_exit_udp();
 }
 
@@ -811,7 +811,7 @@ void udp_sendto(INT32 args)
 }
 
 
-static int got_udp_event (struct fd_callback_box *box, int event)
+static int got_udp_event (struct fd_callback_box *box, int DEBUGUSED(event))
 {
   struct udp_storage *u = (struct udp_storage *) box;
 #ifdef PIKE_DEBUG

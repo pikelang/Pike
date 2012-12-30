@@ -515,7 +515,7 @@ static struct pike_string *low_read_file(const char *file)
   return 0;
 }
 
-static void get_master_cleanup (void *dummy)
+static void get_master_cleanup (void *UNUSED(dummy))
 {
   if (master_object) {
     free_object (master_object);

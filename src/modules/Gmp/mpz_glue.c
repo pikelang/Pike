@@ -2218,7 +2218,7 @@ static void gmp_fac(INT32 args)
   PUSH_REDUCED(res);
 }
 
-static void init_mpz_glue(struct object *o)
+static void init_mpz_glue(struct object * UNUSED(o))
 {
 #ifdef PIKE_DEBUG
   if(!fp) Pike_fatal("ZERO FP\n");
@@ -2227,7 +2227,7 @@ static void init_mpz_glue(struct object *o)
   mpz_init(THIS);
 }
 
-static void exit_mpz_glue(struct object *o)
+static void exit_mpz_glue(struct object *UNUSED(o))
 {
 #ifdef PIKE_DEBUG
   if(!fp) Pike_fatal("ZERO FP\n");
@@ -2306,7 +2306,7 @@ static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
   return ret;
 }
 
-static void pike_mp_free (void *ptr, size_t size)
+static void pike_mp_free (void *ptr, size_t UNUSED(size))
 {
   free (ptr);
 }

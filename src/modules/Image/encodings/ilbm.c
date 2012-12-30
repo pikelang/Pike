@@ -691,7 +691,7 @@ static void chunky2planar(INT32 *src, int w,
 }
 
 static struct pike_string *make_body(struct BMHD *bmhd,
-				     struct image *img, struct image *alpha,
+				     struct image *img, struct image *UNUSED(alpha),
 				     struct neo_colortable *ctable)
 {
   unsigned int x, y;

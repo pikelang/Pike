@@ -38,13 +38,13 @@ struct matrixX(_storage)
 
 static void matrixX(_mult)( INT32 args );
 
-static void Xmatrix(init_)(struct object *o)
+static void Xmatrix(init_)(struct object *UNUSED(o))
 {
    THIS->xsize=THIS->ysize=0;
    THIS->m=NULL;
 }
 
-static void Xmatrix(exit_)(struct object *o)
+static void Xmatrix(exit_)(struct object *UNUSED(o))
 {
    if (THIS->m) free(THIS->m);
 }
