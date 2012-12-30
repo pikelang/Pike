@@ -362,7 +362,7 @@ PIKECLASS Backend
     return b->backend_obj;
   }
 
-  static int wakeup_callback(struct fd_callback_box *box, int event)
+  static int wakeup_callback(struct fd_callback_box *box, int UNUSED(event))
   {
     char buffer[1024];
     fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
@@ -826,9 +826,9 @@ PIKECLASS Backend
 
   }
 
-  static void count_memory_in_call_outs(struct callback *foo,
-					void *bar,
-					void *gazonk)
+  static void count_memory_in_call_outs(struct callback *UNUSED(foo),
+					void *UNUSED(bar),
+					void *UNUSED(gazonk))
   {
     backend_count_memory_in_call_outs(default_backend);
   }
@@ -3124,7 +3124,7 @@ PIKECLASS PollDeviceBackend
   }
 
 #if defined(BACKEND_USES_CFRUNLOOP)
-static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info) {
+static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackTypes), void *info) {
     struct kevent kev;
     struct timespec tv;
     struct PollDeviceBackend_struct * this_backend;
@@ -3177,7 +3177,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
   }
 
   /* Called in the child after fork(). */
-  static void reopen_all_pdb_backends(struct callback *cb, void *a, void *b)
+  static void reopen_all_pdb_backends(struct callback *UNUSED(cb), void *UNUSED(a), void *UNUSED(b))
   {
     int i;
     for (i=0; i < num_pdb_backends; i++) {

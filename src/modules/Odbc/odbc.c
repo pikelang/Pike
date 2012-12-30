@@ -238,7 +238,7 @@ static void clean_last_error(void)
  *!   @[Sql.odbc], @[Sql.dsn]
  */
 
-static void init_odbc_struct(struct object *o)
+static void init_odbc_struct(struct object *UNUSED(o))
 {
   HDBC hdbc = SQL_NULL_HDBC;
   RETCODE code;
@@ -256,7 +256,7 @@ static void init_odbc_struct(struct object *o)
 		   code, NULL, NULL);
 }
 
-static void exit_odbc_struct(struct object *o)
+static void exit_odbc_struct(struct object *UNUSED(o))
 {
   SQLHDBC hdbc = PIKE_ODBC->hdbc;
 
@@ -446,7 +446,7 @@ static void f_affected_rows(INT32 args)
   push_int64(PIKE_ODBC->affected_rows);
 }
 
-static void f_select_db(INT32 args)
+static void f_select_db(INT32 UNUSED(args))
 {
   /**********************************************/
 }
@@ -582,22 +582,22 @@ static void f_list_tables(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
-static void f_create_db(INT32 args)
+static void f_create_db(INT32 UNUSED(args))
 {
   /**************************************************/
 }
 
-static void f_drop_db(INT32 args)
+static void f_drop_db(INT32 UNUSED(args))
 {
   /**************************************************/
 }
 
-static void f_shutdown(INT32 args)
+static void f_shutdown(INT32 UNUSED(args))
 {
   /**************************************************/
 }
 
-static void f_reload(INT32 args)
+static void f_reload(INT32 UNUSED(args))
 {
   /**************************************************/
 }

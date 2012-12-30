@@ -1001,7 +1001,7 @@ static void describe_marker(struct marker *m)
 
 #endif /* PIKE_DEBUG */
 
-static void debug_gc_fatal_va (void *a, int type, int flags,
+static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBUGUSED(flags),
 			       const char *fmt, va_list args)
 {
   int orig_gc_pass = Pike_in_gc;
@@ -3426,7 +3426,7 @@ static void warn_bad_cycles(void)
   CALL_AND_UNSET_ONERROR(tmp);
 }
 
-size_t do_gc(void *ignored, int explicit_call)
+size_t do_gc(void *UNUSED(ignored), int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -5142,8 +5142,8 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     MC_DEBUG_MSG (ref_to, "not enqueued");
 }
 
-static void pass_mark_external_visit_ref (void *thing, int ref_type,
-					  visit_thing_fn *visit_fn, void *extra)
+static void pass_mark_external_visit_ref (void *thing, int UNUSED(ref_type),
+					  visit_thing_fn *UNUSED(visit_fn), void *UNUSED(extra))
 {
   struct mc_marker *ref_to = find_mc_marker (thing);
 

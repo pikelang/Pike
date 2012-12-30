@@ -519,7 +519,7 @@ static void low_accept_loop(struct args *arg)
 }
 
 
-static void finished_p(struct callback *foo, void *b, void *c)
+static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUSED(c))
 {
   extern void f_low_aap_reqo__init( struct c_request_object * );
 

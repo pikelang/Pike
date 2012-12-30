@@ -194,12 +194,12 @@ static INLINE void free_font_struct(struct font *font)
    }
 }
 
-static void init_font_struct(struct object *o)
+static void init_font_struct(struct object *UNUSED(o))
 {
   THIS=NULL;
 }
 
-static void exit_font_struct(struct object *obj)
+static void exit_font_struct(struct object *UNUSED(obj))
 {
    free_font_struct(THIS);
    THIS=NULL;

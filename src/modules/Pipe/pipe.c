@@ -1253,7 +1253,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    /* p->done=0; */
 }
 
-static void init_pipe_struct(struct object *o)
+static void init_pipe_struct(struct object *UNUSED(o))
 {
    debug_malloc_touch(o);
 
@@ -1273,12 +1273,12 @@ static void init_pipe_struct(struct object *o)
    THIS->sent=0;
 }
 
-static void exit_pipe_struct(struct object *o)
+static void exit_pipe_struct(struct object *UNUSED(o))
 {
   close_and_free_everything(NULL,THIS);
 }
 
-static void exit_output_struct(struct object *obj)
+static void exit_output_struct(struct object *UNUSED(obj))
 {
   struct output *o;
   
@@ -1310,7 +1310,7 @@ static void exit_output_struct(struct object *obj)
   }
 }
 
-static void init_output_struct(struct object *ob)
+static void init_output_struct(struct object *UNUSED(ob))
 {
   struct output *o;
   debug_malloc_touch(ob);

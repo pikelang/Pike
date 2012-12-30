@@ -304,7 +304,7 @@ static void add_vertices(struct line_list **first,
 
 static void sub_vertices(struct line_list **first,
 			 struct vertex *below,
-			 double yp)
+			 double UNUSED(yp))
 {
    struct line_list **ins,*c;
 

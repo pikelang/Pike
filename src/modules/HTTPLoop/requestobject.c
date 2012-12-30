@@ -252,7 +252,7 @@ void f_aap_scan_for_query(INT32 args)
 
 
 static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
-			       char *dec, char *rest_query, char **rp)
+			       char *dec, char *UNUSED(rest_query), char **rp)
 {
   ptrdiff_t pos = 0, lamp = 0, leq=0, dl;
 
@@ -645,12 +645,12 @@ void f_aap_index_op(INT32 args)
   
 /* } */
 
-void f_aap_end(INT32 args)
+void f_aap_end(INT32 UNUSED(args))
 {
   /* end connection. */
 }
 
-void f_aap_output(INT32 args)
+void f_aap_output(INT32 UNUSED(args))
 {
   if(TYPEOF(sp[-1]) != T_STRING) Pike_error("Bad argument 1 to output\n");
   WRITE(THIS->request->fd, sp[-1].u.string->str, sp[-1].u.string->len);
@@ -1072,12 +1072,12 @@ void f_low_aap_reqo__init(struct c_request_object *o)
 	  o->request->res.url, o->request->res.url_len);
 }
 
-void aap_init_request_object(struct object *o)
+void aap_init_request_object(struct object *UNUSED(o))
 {
   MEMSET(THIS, 0, sizeof(*THIS));
 }
 
-void aap_exit_request_object(struct object *o)
+void aap_exit_request_object(struct object *UNUSED(o))
 {
   if(THIS->request)
     free_args( THIS->request );

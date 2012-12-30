@@ -118,13 +118,13 @@ static void raise_error(char *msg, DNSServiceErrorType err)
 }
 
 
-static void start_service_callback(DNSServiceRef ref,
-				   DNSServiceFlags flags,
-				   DNSServiceErrorType error,
-				   const char *name,
-				   const char *regtype,
-				   const char *domain,
-				   void *context)
+static void start_service_callback(DNSServiceRef UNUSED(ref),
+				   DNSServiceFlags UNUSED(flags),
+				   DNSServiceErrorType UNUSED(error),
+				   const char *UNUSED(name),
+				   const char *UNUSED(regtype),
+				   const char *UNUSED(domain),
+				   void *UNUSED(context))
 {
 }
 
@@ -370,13 +370,13 @@ static void f_create(INT32 args)
 }
 
 
-static void init_service_struct(struct object *o)
+static void init_service_struct(struct object *UNUSED(o))
 {
   THIS->service_ref = 0;
 }
 
 
-static void exit_service_struct(struct object *o)
+static void exit_service_struct(struct object *UNUSED(o))
 {
   /* Stop an existing service */
   stop_service(THIS);

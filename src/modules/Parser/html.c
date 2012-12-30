@@ -717,7 +717,7 @@ static INLINE struct calc_chars *select_variant (int flags)
 }
 #endif
 
-static void init_html_struct(struct object *o)
+static void init_html_struct(struct object *UNUSED(o))
 {
 #ifdef HTML_DEBUG
    THIS->flags=0;
@@ -779,7 +779,7 @@ static void init_html_struct(struct object *o)
    recalculate_argq(THIS);
 }
 
-static void exit_html_struct(struct object *o)
+static void exit_html_struct(struct object *UNUSED(o))
 {
    DEBUG((stderr,"exit_html_struct %p\n",THIS));
 
@@ -1794,7 +1794,7 @@ found:
    return 1;
 }
 
-static int scan_for_string (struct parser_html_storage *this,
+static int scan_for_string (struct parser_html_storage *UNUSED(this),
 			    struct piece *feed,
 			    ptrdiff_t c,
 			    struct piece **destp,

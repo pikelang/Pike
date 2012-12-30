@@ -386,7 +386,7 @@ static void f_clear(INT32 args)
   push_object(this_object());
 }
 
-static void init_stor(struct object *o)
+static void init_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -396,7 +396,7 @@ static void init_stor(struct object *o)
   init_string_builder(&s->strbuild,0);
 }
 
-static void exit_stor(struct object *o)
+static void exit_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -756,7 +756,7 @@ static void f_clear_utf7(INT32 args)
   u7->datbit = 0;
 }
 
-static void utf7_init_stor(struct object *o)
+static void utf7_init_stor(struct object *UNUSED(o))
 {
   struct utf7_stor *u7 =
     (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
@@ -2243,7 +2243,7 @@ static void f_drain_utf7e(INT32 args)
   f_drain(args);
 }
 
-static void std_8bite_init_stor(struct object *o)
+static void std_8bite_init_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2255,7 +2255,7 @@ static void std_8bite_init_stor(struct object *o)
   s8->zero_char = 0xfffd;
 }
 
-static void std_8bite_exit_stor(struct object *o)
+static void std_8bite_exit_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2339,7 +2339,7 @@ static void f_feed_std8e(INT32 args)
   push_object(this_object());
 }
 
-static void std_16bite_init_stor(struct object *o)
+static void std_16bite_init_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
@@ -2351,7 +2351,7 @@ static void std_16bite_init_stor(struct object *o)
   s16->sshift = 0;
 }
 
-static void std_16bite_exit_stor(struct object *o)
+static void std_16bite_exit_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);

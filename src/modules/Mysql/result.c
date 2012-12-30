@@ -120,12 +120,12 @@ static struct svalue mpq_program = SVALUE_INIT_FREE;
  * State maintenance
  */
 
-static void init_res_struct(struct object *o)
+static void init_res_struct(struct object *UNUSED(o))
 {
   memset(PIKE_MYSQL_RES, 0, sizeof(struct precompiled_mysql_result));
 }
 
-static void exit_res_struct(struct object *o)
+static void exit_res_struct(struct object *UNUSED(o))
 {
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);

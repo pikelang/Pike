@@ -841,7 +841,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!   @[#if], @[#ifdef], @[constant()]
  */
 static void check_defined(struct cpp *this,
-			  struct define *def,
+			  struct define *UNUSED(def),
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
@@ -2048,8 +2048,8 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
  *! integer, in the source file.
  */
 static void insert_current_line(struct cpp *this,
-				struct define *def,
-				struct define_argument *args,
+				struct define *UNUSED(def),
+				struct define_argument *UNUSED(args),
 				struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
@@ -2060,8 +2060,8 @@ static void insert_current_line(struct cpp *this,
  *! This define contains the file path and name of the source file.
  */
 static void insert_current_file_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
@@ -2073,8 +2073,8 @@ static void insert_current_file_as_string(struct cpp *this,
  *! This define contains the directory path of the source file.
  */
 static void insert_current_dir_as_string(struct cpp *this,
-                                         struct define *def,
-                                         struct define_argument *args,
+                                         struct define *UNUSED(def),
+                                         struct define_argument *UNUSED(args),
                                          struct string_builder *tmp)
 {
   ref_push_string(this->current_file);
@@ -2090,9 +2090,9 @@ static void insert_current_dir_as_string(struct cpp *this,
  *! This define contains the current time at the time of compilation,
  *! e.g. "12:20:51".
  */
-static void insert_current_time_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+static void insert_current_time_as_string(struct cpp *UNUSED(this),
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2109,9 +2109,9 @@ static void insert_current_time_as_string(struct cpp *this,
  *! This define contains the current date at the time of compilation,
  *! e.g. "Jul 28 2001".
  */
-static void insert_current_date_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+static void insert_current_date_as_string(struct cpp *UNUSED(this),
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2134,8 +2134,8 @@ static void insert_current_date_as_string(struct cpp *this,
  *!   @[__REAL_VERSION__]
  */
 static void insert_current_version(struct cpp *this,
-				   struct define *def,
-				   struct define_argument *args,
+				   struct define *UNUSED(def),
+				   struct define_argument *UNUSED(args),
 				   struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d.%d ", this->compat_major,
@@ -2152,8 +2152,8 @@ static void insert_current_version(struct cpp *this,
  *!   @[__REAL_MINOR__]
  */
 static void insert_current_minor(struct cpp *this,
-				 struct define *def,
-				 struct define_argument *args,
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
@@ -2169,8 +2169,8 @@ static void insert_current_minor(struct cpp *this,
  *!   @[__REAL_MAJOR__]
  */
 static void insert_current_major(struct cpp *this,
-				 struct define *def,
-				 struct define_argument *args,
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_major);
@@ -2189,7 +2189,7 @@ static void insert_current_major(struct cpp *this,
  *!   @[#pragma]
  */
 static void insert_pragma(struct cpp *this,
-			  struct define *def,
+			  struct define *UNUSED(def),
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
@@ -2267,7 +2267,7 @@ static void insert_callback_define(struct cpp *this,
 
 static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
-                                           struct define_argument *args,
+                                           struct define_argument *UNUSED(args),
                                            struct string_builder *tmp)
 {
   struct svalue *save_sp = Pike_sp;

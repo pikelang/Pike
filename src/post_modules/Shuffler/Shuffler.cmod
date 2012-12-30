@@ -144,7 +144,7 @@ PIKECLASS Shuffle
     }
   }
 
-  static int got_shuffler_event(struct fd_callback_box*box, int event) {
+  static int got_shuffler_event(struct fd_callback_box*box, int DEBUGUSED(event)) {
 #ifdef PIKE_DEBUG
     if (event != PIKE_FD_WRITE)
       Pike_fatal ("Got unexpected event %d.\n", event);

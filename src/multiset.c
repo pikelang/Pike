@@ -4339,7 +4339,7 @@ PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n)
 #define GC_MSD_GOT_NODE_REFS GC_USER_3
 
 static void visit_multiset_data (struct multiset_data *msd, int action,
-				 struct multiset *l)
+				 struct multiset *UNUSED(l))
 {
   switch (action) {
 #ifdef PIKE_DEBUG

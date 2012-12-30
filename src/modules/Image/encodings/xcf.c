@@ -119,7 +119,7 @@ static void f_substring__sprintf( INT32 args )
   }
 }
 
-static void f_substring_get_int( INT32 args )
+static void f_substring_get_int( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   int res;
@@ -134,7 +134,7 @@ static void f_substring_get_int( INT32 args )
 }
 
 
-static void f_substring_get_uint( INT32 args )
+static void f_substring_get_uint( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned int res;
@@ -148,7 +148,7 @@ static void f_substring_get_uint( INT32 args )
   push_int64( res );
 }
 
-static void f_substring_get_ushort( INT32 args )
+static void f_substring_get_ushort( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned short res;
@@ -162,7 +162,7 @@ static void f_substring_get_ushort( INT32 args )
   push_int( res );
 }
 
-static void f_substring_get_short( INT32 args )
+static void f_substring_get_short( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   short res;
@@ -189,7 +189,7 @@ static void push_substring( struct pike_string *s,
   push_object( o );
 }
 
-static void free_substring(struct object *o)
+static void free_substring(struct object *UNUSED(o))
 {
   if( SS(fp->current_object)->s )
   {

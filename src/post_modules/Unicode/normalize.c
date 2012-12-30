@@ -253,7 +253,7 @@ struct buffer *unicode_decompose_buffer( struct buffer *source,	int how )
   return res;
 }
 
-struct buffer *unicode_compose_buffer( struct buffer *source, int how )
+struct buffer *unicode_compose_buffer( struct buffer *source, int UNUSED(how) )
 {
   int startch = source->data[0];
   int lastclass = get_canonical_class( startch )?256:0;

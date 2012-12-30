@@ -5225,7 +5225,7 @@ struct timer_oflo
   int yes;
 };
 
-static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
+static void check_evaluation_time(struct callback *UNUSED(cb), void *tmp, void *UNUSED(ignored))
 {
   struct timer_oflo *foo=(struct timer_oflo *)tmp;
   if(foo->counter-- < 0)

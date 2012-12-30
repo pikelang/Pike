@@ -382,7 +382,7 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
-static void cleanup_compilation(void *ignored)
+static void cleanup_compilation(void *UNUSED(ignored))
 {
   struct program *p = end_program();
   if (p) {

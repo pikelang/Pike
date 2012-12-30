@@ -2538,7 +2538,7 @@ static int init_placeholder(struct object *placeholder);
   (X)=pop_unfinished_type();			\
 } while(0)
 
-static void cleanup_new_program_decode (void *ignored)
+static void cleanup_new_program_decode (void *UNUSED(ignored))
 {
   debug_malloc_touch(Pike_compiler->new_program);
   debug_malloc_touch(Pike_compiler->new_program->parent);
@@ -4848,7 +4848,7 @@ static int init_placeholder(struct object *placeholder)
 static struct decode_data *current_decode = NULL;
 
 static void free_decode_data (struct decode_data *data, int delay,
-			      int free_after_error)
+			      int DEBUGUSED(free_after_error))
 {
 #ifdef PIKE_DEBUG
   int e;

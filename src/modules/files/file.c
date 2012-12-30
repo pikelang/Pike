@@ -1230,7 +1230,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 
 #endif /* HAVE_PIKE_SEND_FD */
 
-static struct pike_string *do_read_oob(int fd,
+static struct pike_string *do_read_oob(int UNUSED(fd),
 				       INT32 r,
 				       int all,
 				       int *err)
@@ -4331,7 +4331,7 @@ static void file_handle_events(int event)
 }
 
 
-static void low_dup(struct object *toob,
+static void low_dup(struct object *UNUSED(toob),
 		    struct my_file *to,
 		    struct my_file *from)
 {
@@ -5314,7 +5314,7 @@ static void file_trylock(INT32 args)
 #endif
 
 #define THIS_KEY ((struct file_lock_key_storage *)(Pike_fp->current_storage))
-static void init_file_lock_key(struct object *o)
+static void init_file_lock_key(struct object *UNUSED(o))
 {
   THIS_KEY->f=0;
 #ifdef _REENTRANT
@@ -5323,7 +5323,7 @@ static void init_file_lock_key(struct object *o)
 #endif
 }
 
-static void exit_file_lock_key(struct object *o)
+static void exit_file_lock_key(struct object *DEBUGUSED(o))
 {
   if(THIS_KEY->f)
   {
@@ -5693,7 +5693,7 @@ PIKE_MODULE_EXIT
 
 #include "file_functions.h"
 
-static void file___init_ref(struct object *o)
+static void file___init_ref(struct object *UNUSED(o))
 {
   SET_SVAL(REF, PIKE_T_OBJECT, 0, object, file_make_object_from_fd(-1, 0, 0));
 }

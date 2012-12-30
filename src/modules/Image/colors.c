@@ -331,13 +331,13 @@ static void make_colors(void)
 #define THIS ((struct color_struct*)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-static void init_color_struct(struct object *dummy)
+static void init_color_struct(struct object *UNUSED(dummy))
 {
    THIS->rgb.r=THIS->rgb.g=THIS->rgb.b=0;
    THIS->name=NULL;
 }
 
-static void exit_color_struct(struct object *dummy)
+static void exit_color_struct(struct object *UNUSED(dummy))
 {
    if (THIS->name) 
    {
@@ -1514,7 +1514,7 @@ static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
    RGBL_TO_RGB(cs->rgb,cs->rgbl);
 }
 
-static void image_color__encode( INT32 args )
+static void image_color__encode( INT32 UNUSED(args) )
 {
     push_int( THIS->rgbl.r );
     push_int( THIS->rgbl.g );
@@ -1522,7 +1522,7 @@ static void image_color__encode( INT32 args )
     f_aggregate( 3 );
 }
 
-static void image_color__decode( INT32 args )
+static void image_color__decode( INT32 UNUSED(args) )
 {
     struct svalue *a;
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3 )
