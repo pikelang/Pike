@@ -13,18 +13,24 @@
 
 #define INT_TYPE_SIGN(x)             ((x) < 0)
 
-#define UNSIGNED_INT_TYPE_MUL_OVERFLOW(a, b) ((b) && ((a)*(b))/(b) != (a))
-
-#ifdef HAVE_NICE_FPU_DIVISION
-#define INT_TYPE_MUL_OVERFLOW(a, b) UNSIGNED_INT_TYPE_MUL_OVERFLOW(a, b)
-#else
-#define INT_TYPE_MUL_OVERFLOW(a, b)                                        \
-        ((b) && (INT_TYPE_DIV_OVERFLOW(a, b) || ((a)*(b))/(b) != (a)))
-#endif
 
 #define INT_TYPE_DIV_OVERFLOW(a, b)  (INT_TYPE_NEG_OVERFLOW(a) && (b) == -1)
 
 #define INT_TYPE_NEG_OVERFLOW(x)     ((x) && (x) == -(x))
+
+inline int UNSIGNED_INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
+{
+  volatile INT_TYPE _a = a;
+  volatile INT_TYPE _b = b;
+  return b && (_a * _b) / _b != _a;
+}
+
+inline int INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
+{
+  volatile INT_TYPE _a = a;
+  volatile INT_TYPE _b = b;
+  return b && (INT_TYPE_DIV_OVERFLOW(a, b) || (_a * _b) / _b != _a);
+}
 
 #define INT_TYPE_ADD_OVERFLOW(a, b)		\
   ((((a)^(b)) >= 0) && (((a)^((a)+(b))) < 0))
