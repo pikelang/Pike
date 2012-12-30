@@ -18,14 +18,14 @@
 
 #define INT_TYPE_NEG_OVERFLOW(x)     ((x) && (x) == -(x))
 
-inline int UNSIGNED_INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
+static inline int UNSIGNED_INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
 {
   volatile INT_TYPE _a = a;
   volatile INT_TYPE _b = b;
   return b && (_a * _b) / _b != _a;
 }
 
-inline int INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
+static inline int INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
 {
   volatile INT_TYPE _a = a;
   volatile INT_TYPE _b = b;
