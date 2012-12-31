@@ -5,6 +5,7 @@
 */
 
 #include "global.h"
+#include "pike_int_types.h"
 
 #ifndef BIGNUM_H
 #define BIGNUM_H
@@ -18,23 +19,144 @@
 
 #define INT_TYPE_NEG_OVERFLOW(x)     ((x) && (x) == -(x))
 
-static inline int UNSIGNED_INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
-{
-  volatile INT_TYPE _a = a;
-  volatile INT_TYPE _b = b;
-  return b && (_a * _b) / _b != _a;
+#define _GEN_OF2(type, type2, size)						    \
+static INLINE type DO_ ## type ## _ADD_OVERFLOW(type a, type b, int * of) {	    \
+    type2 res;									    \
+    res = (type2)a + (type2)b;							    \
+    if (res < MIN_ ## type || res > MAX_ ## type)				    \
+	*of = 1;								    \
+    return (type)res;								    \
+}										    \
+static INLINE type DO_ ## type ## _MUL_OVERFLOW(type a, type b, int * of) {	    \
+    type2 res;									    \
+    res = (type2)a * (type2)b;							    \
+    if (res < MIN_ ## type || res > MAX_ ## type)				    \
+	*of = 1;								    \
+    return (type)res;								    \
+}										    \
+static INLINE type DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,  \
+						   int * of) {			    \
+    unsigned type2 res;								    \
+    res = (unsigned type2)a + (unsigned type2)b;				    \
+    if (res > MAX_U ## type)							    \
+	*of = 1;								    \
+    return (unsigned type)res;							    \
+}										    \
+static INLINE type DO_U ## type ## _MUL_OVERFLOW(unsigned type a,		    \
+						    unsigned type b, int * of) {    \
+    unsigned type2 res;								    \
+    res = (unsigned type2)a * (unsigned type2)b;				    \
+    if (res > MAX_U ## type)							    \
+	*of = 1;								    \
+    return (unsigned type)res;							    \
 }
 
-static inline int INT_TYPE_MUL_OVERFLOW(INT_TYPE a, INT_TYPE b)
-{
-  volatile INT_TYPE _a = a;
-  volatile INT_TYPE _b = b;
-  return b && (INT_TYPE_DIV_OVERFLOW(a, b) || (_a * _b) / _b != _a);
+#define _GEN_OF1(type, size)							    \
+static INLINE type DO_ ## type ## _ADD_OVERFLOW(type a, type b, int * of) {	    \
+    if ((b > 0 && a < MIN_ ## type + b) ||					    \
+	(b < 0 && a > MAX_ ## type + b))					    \
+	*of = 1;								    \
+    return a + b;								    \
+}										    \
+static INLINE type DO_## type ## _MUL_OVERFLOW(type a, type b, int * of) {	    \
+    if (a > 0) {								    \
+      if (b > 0) {								    \
+	if (a > (MAX_ ## type / b)) {						    \
+	  *of = 1;								    \
+	}									    \
+      } else {									    \
+	if (b < (MIN_ ## type / a)) {						    \
+	  *of = 1;								    \
+	}									    \
+      }										    \
+    } else {									    \
+      if (b > 0) {								    \
+	if (a < (MAX_ ## type / b)) {						    \
+	  *of = 1;								    \
+	}									    \
+      } else {									    \
+	if ( (a != 0) && (b < (MAX_ ## type / a))) {				    \
+	  *of = 1;								    \
+	}									    \
+      }										    \
+    }										    \
+    return a*b;									    \
+}										    \
+static INLINE type DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,  \
+						 int * of) {			    \
+    if (a > MAX_U ## type - b)							    \
+	*of = 1;								    \
+    return a + b;								    \
+}										    \
+static INLINE type DO_U ## type ## _MUL_OVERFLOW(unsigned type a,		    \
+						    unsigned type b, int * of) {    \
+    unsigned type res = 0;							    \
+    const unsigned type bits = size * 8;					    \
+    const unsigned type low_mask = ~((1 << (1 + bits/2))-1);			    \
+    unsigned type a1 = a & ~low_mask >> bits/2;					    \
+    unsigned type b1 = b & ~low_mask >> bits/2;					    \
+    a &= low_mask;								    \
+    b &= low_mask;								    \
+    res = a1 * b1;								    \
+    a1 *= b;									    \
+    b1 *= a;									    \
+    if (res || (a1|b1) & ~low_mask) *of = 1;					    \
+    res = DO_U ## type ## _ADD_OVERFLOW(res, a1<<bits/2, of);			    \
+    res = DO_U ## type ## _ADD_OVERFLOW(res, b1<<bits/2, of);			    \
+    res = DO_U ## type ## _ADD_OVERFLOW(res, a*b, of);				    \
+    return res;									    \
+}										    \
+
+#define _GEN_OF_CHECK(type)							    \
+static INLINE int U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b) {    \
+    int of = 0;									    \
+    DO_U ## type ## _MUL_OVERFLOW(a, b, &of);					    \
+    return of;									    \
+}										    \
+static INLINE int U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b) {    \
+    int of = 0;									    \
+    DO_U ## type ## _ADD_OVERFLOW(a, b, &of);					    \
+    return of;									    \
+}										    \
+static INLINE int type ## _MUL_OVERFLOW(type a, type b) {			    \
+    int of = 0;									    \
+    DO_ ## type ## _MUL_OVERFLOW(a, b, &of);					    \
+    return of;									    \
+}										    \
+static INLINE int type ## _ADD_OVERFLOW(type a, type b) {			    \
+    int of = 0;									    \
+    DO_ ## type ## _ADD_OVERFLOW(a, b, &of);					    \
+    return of;									    \
 }
 
-#define INT_TYPE_ADD_OVERFLOW(a, b)		\
-  ((((a)^(b)) >= 0) && (((a)^((a)+(b))) < 0))
 
+#define GEN_OF1(size) _GEN_OF1(INT ## size, size)\
+		      _GEN_OF_CHECK(INT ## size)
+#define GEN_OF2(s1, s2) _GEN_OF2(INT ## s1, INT ## s2, s1)\
+			_GEN_OF_CHECK(INT ## s1)
+
+#ifdef INT128
+GEN_OF2(64, 128)
+GEN_OF2(32, 64)
+#elif defined(INT64)
+GEN_OF1(64)
+GEN_OF2(32, 64)
+#else
+GEN_OF1(32)
+#endif
+
+#if (INT64 == INT_TYPE)
+#define INT_TYPE_MUL_OVERFLOW INT64_MUL_OVERFLOW
+#define INT_TYPE_ADD_OVERFLOW INT64_ADD_OVERFLOW
+#define DO_INT_TYPE_MUL_OVERFLOW DO_INT64_MUL_OVERFLOW
+#define DO_INT_TYPE_ADD_OVERFLOW DO_INT64_ADD_OVERFLOW
+#elif (INT32 == INT_TYPE)
+#define INT_TYPE_MUL_OVERFLOW INT32_MUL_OVERFLOW
+#define INT_TYPE_ADD_OVERFLOW INT32_ADD_OVERFLOW
+#define DO_INT_TYPE_MUL_OVERFLOW DO_INT32_MUL_OVERFLOW
+#define DO_INT_TYPE_ADD_OVERFLOW DO_INT32_ADD_OVERFLOW
+#endif
+     
 #define INT_TYPE_SUB_OVERFLOW(a, b)                                        \
   ((((a)^(b)) < 0) && (((a)^((a)-(b))) < 0))
 
