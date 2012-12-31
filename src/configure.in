@@ -3552,6 +3552,8 @@ AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(long long, 0)
 AC_CHECK_SIZEOF(__int64, 0)
 AC_CHECK_SIZEOF(time_t, 4)
+AC_CHECK_SIZEOF(__int128)
+AC_CHECK_SIZEOF(__int128_t)
 
 AC_MY_CHECK_TYPE(size_t,unsigned long)
 AC_MY_CHECK_TYPE(ptrdiff_t,long)
