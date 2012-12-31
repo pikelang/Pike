@@ -1717,20 +1717,19 @@ PMOD_EXPORT void f_add(INT32 args)
   }
 
   case BIT_INT:
+  {
 #ifdef AUTO_BIGNUM
+    int of = 0;
     size = 0;
     for(e = -args; e < 0; e++)
     {
-      if(INT_TYPE_ADD_OVERFLOW(sp[e].u.integer, size))
-      {
-	convert_svalue_to_bignum(sp-args);
-	f_add(args);
-	return;
-      }
-      else
-      {
-	size += sp[e].u.integer;
-      }
+      size = DO_INT_TYPE_ADD_OVERFLOW(size, sp[e].u.integer, &of);
+    }
+    if(of)
+    {
+      convert_svalue_to_bignum(sp-args);
+      f_add(args);
+      return;
     }
     sp-=args;
     push_int(size);
@@ -1742,6 +1741,7 @@ PMOD_EXPORT void f_add(INT32 args)
 #endif /* AUTO_BIGNUM */
     break;
 
+  }
   case BIT_FLOAT:
     if (args > 2) {
       /* Attempt to minimize the accumulated summation error
@@ -3739,18 +3739,25 @@ PMOD_EXPORT void o_multiply(void)
     return;
 
   case TWO_TYPES(T_INT,T_INT):
-#ifdef AUTO_BIGNUM
-    if(INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  {
+    INT_TYPE res;
+#ifndef AUTO_BIGNUM
+    res = sp[-2].u.integer * sp[-1].u.integer;
+#else
+    int of = 0;
+
+    res = DO_INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer, &of);
+
+    if(of)
     {
       convert_stack_top_to_bignum();
       goto do_lfun_multiply;
     }
 #endif /* AUTO_BIGNUM */
     sp--;
-    SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
-	     sp[-1].u.integer * sp[0].u.integer);
+    SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
     return;
-
+  }
   default:
   do_lfun_multiply:
     if(call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
