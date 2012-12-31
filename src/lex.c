@@ -15,10 +15,6 @@
 
 #define LEXDEBUG 0
 
-/* Must do like this since at least gcc is a little too keen on
- * optimizing INT_TYPE_MUL_OVERFLOW otherwise. */
-static unsigned INT32 eight = 8, sixteen = 16, ten = 10;
-
 /* Make lexers for shifts 0, 1 and 2. */
 
 #define SHIFT	0
