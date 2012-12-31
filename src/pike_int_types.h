@@ -75,6 +75,24 @@
 # endif
 #endif
 
+/* Check for __int128 here
+ *  There is no way to express 128 bit integer constants, so we have to
+ *  put them together
+ */
+#ifndef INT128
+# if SIZEOF___INT128 - 0 >= 16
+#  define INT128 __int128
+# elif SIZEOF___INT128_T - 0 >= 16
+#  define INT128 __int128_t
+# endif
+# ifdef INT128
+#  define MAX_INT128	(((INT128)MAX_INT64 << 64) | (INT128)MAX_UINT64)
+#  define MIN_INT128	(-MAX_INT128 - (INT128)1)
+#  define MAX_UINT128	(((unsigned INT128)MAX_UINT64 << 64) | (unsigned INT128)MAX_UINT64)
+# endif
+#endif
+
+
 /* Then INT32 */
 #ifndef INT32
 # if SIZEOF_SHORT >= 4
