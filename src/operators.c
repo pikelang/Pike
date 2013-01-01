@@ -5918,9 +5918,9 @@ multiset & mapping -> mapping
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
 		 tFunc(tPrg(tObj), tType(tMix))),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
-  /* function(string|multiset|array|mapping|object:int) */
+  /* function(string|multiset|array|mapping|object:int(0..)) */
   ADD_EFUN2("sizeof", f_sizeof,
-	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tInt),
+	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tIntPos),
 	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   /* function(mixed,mixed ...:mixed) */
