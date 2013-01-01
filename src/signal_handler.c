@@ -1710,8 +1710,8 @@ static void f_pid_status_wait(INT32 args)
       /* This should not happen! */
       Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
     }
-    check_threads_etc();
 #endif
+    check_threads_etc();
   }
 
   pop_n_elems(args);
