@@ -3823,6 +3823,10 @@ void f_create_process(INT32 args)
     }else{
       /*
        * The child process
+       *
+       * NB: Avoid calling any functions in libc here, since
+       *     internal mutexes may be held by other nonforked
+       *     threads.
        */
 #ifdef DECLARE_ENVIRON
       extern char **environ;
@@ -3831,6 +3835,18 @@ void f_create_process(INT32 args)
       extern void do_set_close_on_exec(void);
 
 #ifdef PROC_DEBUG
+      char debug_prefix[] = {
+	'[',
+	'0' + (getpid()/100000)%10,
+	'0' + (getpid()/10000)%10,
+	'0' + (getpid()/1000)%10,
+	'0' + (getpid()/100)%10,
+	'0' + (getpid()/10)%10,
+	'0' + getpid()%10,
+	']',
+	' ',
+      };
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child\n", 6);
 #endif /* PROC_DEBUG */
 
@@ -3844,9 +3860,24 @@ void f_create_process(INT32 args)
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
 	;
 
-      /* FIXME: What to do if e < 0 ? */
-
 #ifdef PROC_DEBUG
+      if (e < 0) {
+	char buf[5] = {
+	  '0' + (errno/1000)%10,
+	  '0' + (errno/100)%10,
+	  '0' + (errno/10)%10,
+	  '0' + errno%10,
+	  '\n'
+	};
+
+	write(2, debug_prefix, sizeof(debug_prefix));
+	write(2, "Child: Control pipe read failed with errno: ", 44);
+	write(2, buf, 5);
+      } else if (!e) {
+	write(2, debug_prefix, sizeof(debug_prefix));
+	write(2, "Child: No data from control pipe.\n", 34);
+      }
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Woken up.\n", 17);
 #endif /* PROC_DEBUG */
 
@@ -3895,6 +3926,7 @@ void f_create_process(INT32 args)
       {
 	if( chroot( mchroot ) )
         {
+	  /* FIXME: Is this fprintf safe? */
 	  PROC_FPRINTF((stderr,
 			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
 			getpid(), chroot, errno));
@@ -3906,6 +3938,7 @@ void f_create_process(INT32 args)
       {
         if( chdir( tmp_cwd ) )
         {
+	  /* FIXME: Is this fprintf safe? */
 	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
 			getpid(), tmp_cwd, errno));
           PROCERROR(PROCE_CHDIR, 0);
@@ -4192,6 +4225,7 @@ void f_create_process(INT32 args)
 #ifdef HAVE_PTRACE
       if (do_trace) {
 #ifdef PROC_DEBUG
+	write(2, debug_prefix, sizeof(debug_prefix));
 	write(2, "Child: Calling ptrace()...\n", 27);
 #endif /* PROC_DEBUG */
 
@@ -4201,6 +4235,7 @@ void f_create_process(INT32 args)
 #endif /* HAVE_PTRACE */
 	
 #ifdef PROC_DEBUG
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Calling exec()...\n", 25);
 #endif /* PROC_DEBUG */
 
@@ -4889,7 +4924,7 @@ PMOD_EXPORT void low_init_signals(void)
   }
 #endif
 
-  /* Restore aby custom signals if needed. */
+  /* Restore any custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
     
     if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
