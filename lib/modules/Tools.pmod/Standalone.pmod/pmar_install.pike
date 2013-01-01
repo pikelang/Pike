@@ -481,7 +481,7 @@ int untar(object source, string path, void|string cwd) {
     // Get the actual filename
     fname = ((fname / "/") - ({""}))[-1];
     object stat = t->cd(cwd)->stat(fname);
-    if (stat->isdir()) {
+    if (stat->isdir) {
       string dir = Stdio.append_path(path, fname);
       c++;
       cc++;
@@ -490,7 +490,7 @@ int untar(object source, string path, void|string cwd) {
       mkdir(dir);
       c += untar(source, dir, Stdio.append_path(cwd, fname));
     }
-    else if (stat->isreg()) {
+    else if (stat->isreg) {
       string file = Stdio.append_path(path, fname);
       if (mixed err = catch{
         if (DEBUG)
