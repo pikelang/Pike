@@ -23,7 +23,7 @@
  *  https://www.securecoding.cert.org/confluence/display/seccode/INT32-C.+Ensure+that+operations+on+signed+integers+do+not+result+in+overflow
  */
 
-#define _GEN_OF2(type, type2, size)						    \
+#define _GEN_OF2(type, type2, utype2, size)					    \
 static INLINE type DO_ ## type ## _ADD_OVERFLOW(type a, type b, int * of) {	    \
     type2 res;									    \
     res = (type2)a + (type2)b;							    \
@@ -47,22 +47,22 @@ static INLINE type DO_ ## type ## _MUL_OVERFLOW(type a, type b, int * of) {	    
 }										    \
 static INLINE type DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,  \
 						 int * of) {			    \
-    unsigned type2 res;								    \
-    res = (unsigned type2)a + (unsigned type2)b;				    \
+    utype2 res;									    \
+    res = (utype2)a + (utype2)b;						    \
     *of |= !!(res >> size);							    \
     return (unsigned type)res;							    \
 }										    \
 static INLINE type DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b,  \
 						 int * of) {			    \
-    unsigned type2 res;								    \
-    res = (unsigned type2)a - (unsigned type2)b;				    \
+    utype2 res;									    \
+    res = (utype2)a - (utype2)b;						    \
     *of |= !!(res >> size);							    \
     return (unsigned type)res;							    \
 }										    \
 static INLINE type DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,  \
 						 int * of) {			    \
-    unsigned type2 res;								    \
-    res = (unsigned type2)a * (unsigned type2)b;				    \
+    utype2 res;									    \
+    res = (utype2)a * (utype2)b;						    \
     *of |= !!(res >> size);							    \
     return (unsigned type)res;							    \
 }
@@ -171,15 +171,17 @@ static INLINE int type ## _SUB_OVERFLOW(type a, type b) {			    \
 }
 
 
-#define GEN_OF1(size) _GEN_OF1(INT ## size, size)\
-		      _GEN_OF_CHECK(INT ## size)
-#define GEN_OF2(s1, s2) _GEN_OF2(INT ## s1, INT ## s2, s1)\
-			_GEN_OF_CHECK(INT ## s1)
+#define GEN_OF1(size)					\
+  _GEN_OF1(INT ## size, size)				\
+  _GEN_OF_CHECK(INT ## size)
+#define GEN_OF2(s1, s2)					\
+  _GEN_OF2(INT ## s1, INT ## s2, UINT ## s2, s1)	\
+  _GEN_OF_CHECK(INT ## s1)
 
-#ifdef INT128
+#if defined(INT128) && defined(UINT128)
 GEN_OF2(64, 128)
 GEN_OF2(32, 64)
-#elif defined(INT64)
+#elif defined(INT64) && defined(UINT64)
 GEN_OF1(64)
 GEN_OF2(32, 64)
 #else

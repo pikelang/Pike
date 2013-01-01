@@ -22,10 +22,13 @@
 #ifndef INT64
 # if SIZEOF_LONG >= 8
 #  define INT64 long
+#  define UINT64 unsigned long
 # elif SIZEOF_LONG_LONG - 0 >= 8
 #  define INT64 long long
+#  define UINT64 unsigned long long
 # elif SIZEOF___INT64 - 0 >= 8
 #  define INT64 __int64
+#  define UINT64 unsigned __int64
 # endif
 #endif /* !INT64 */
 
@@ -75,7 +78,7 @@
 # endif
 #endif
 
-/* Check for __int128 here
+/* Check for __int128 here (and its unsigned companion)
  *  There is no way to express 128 bit integer constants, so we have to
  *  put them together
  */
@@ -88,7 +91,18 @@
 # ifdef INT128
 #  define MAX_INT128	(((INT128)MAX_INT64 << 64) | (INT128)MAX_UINT64)
 #  define MIN_INT128	(-MAX_INT128 - (INT128)1)
-#  define MAX_UINT128	(((unsigned INT128)MAX_UINT64 << 64) | (unsigned INT128)MAX_UINT64)
+# endif
+#endif
+#ifndef UINT128
+# if SIZEOF_UNSIGNED___INT128 - 0 >= 16
+#  define UINT128 unsigned __int128
+# elif SIZEOF_UNSIGNED___INT128_T - 0 >= 16
+#  define UINT128 unsigned __int128_t
+# elif SIZEOF___UINT128_T - 0 >= 16
+#  define UINT128 __uint128_t
+# endif
+# ifdef UINT128
+#  define MAX_UINT128	(((UINT128)MAX_UINT64 << 64) | (UINT128)MAX_UINT64)
 # endif
 #endif
 
