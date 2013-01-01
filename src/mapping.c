@@ -323,10 +323,15 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
     if (md->flags & MAPPING_WEAK) {
 
       switch(md->flags & MAPPING_WEAK) {
@@ -360,12 +365,6 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
       free_svalue(&from->ind);
       free_svalue(&from->val);
 
-      /* Reverse */
-      prev = from->next;
-      from->next = next;
-      next = from;
-      from = prev;
-
       continue;
     }
   keep_keypair:
@@ -394,12 +393,6 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
@@ -420,10 +413,15 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
     if (md->flags & MAPPING_WEAK) {
 
       switch(md->flags & MAPPING_WEAK) {
@@ -458,12 +456,6 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
        *     or similar.
        */
 
-      /* Reverse */
-      prev = from->next;
-      from->next = next;
-      next = from;
-      from = prev;
-
       continue;
     }
   keep_keypair:
@@ -494,12 +486,6 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
