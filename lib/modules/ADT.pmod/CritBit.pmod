@@ -509,7 +509,7 @@ class MultiTree {
 
     mixed _random() {
 	int n = random(sizeof(this));
-	return this[nth(n)];
+	return nth(n);
     }
 
     int first() {

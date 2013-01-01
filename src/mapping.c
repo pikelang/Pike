@@ -306,6 +306,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m)
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
  */
+/* Evil: Steal the svalues from the old md. */
 static void mapping_rehash_backwards_evil(struct mapping_data *md,
 					  struct keypair *from)
 {
@@ -322,10 +323,55 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
+    if (md->flags & MAPPING_WEAK) {
+
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Instable mapping data flags.\n");
+      case MAPPING_WEAK_INDICES:
+	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
+	    (*from->ind.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if ((TYPEOF(from->val) <= MAX_REF_TYPE) &&
+	    (*from->val.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	     (*from->ind.u.refs > 1)) &&
+	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	     (*from->val.u.refs > 1))) {
+	  goto keep_keypair;
+	}
+	break;
+      }
+
+      /* Free.
+       * Note that we don't need to free or unlink the keypair,
+       * since that will be done by the caller anyway. */
+      free_svalue(&from->ind);
+      free_svalue(&from->val);
+
+      continue;
+    }
+  keep_keypair:
+
     /* unlink */
     k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
@@ -350,15 +396,10 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
+/* Good: Copy the svalues from the old md. */
 static void mapping_rehash_backwards_good(struct mapping_data *md,
 					  struct keypair *from)
 {
@@ -375,10 +416,56 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
+    if (md->flags & MAPPING_WEAK) {
+
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Instable mapping data flags.\n");
+      case MAPPING_WEAK_INDICES:
+	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
+	    (*from->ind.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if ((TYPEOF(from->val) <= MAX_REF_TYPE) &&
+	    (*from->val.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	     (*from->ind.u.refs > 1)) &&
+	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	     (*from->val.u.refs > 1))) {
+	  goto keep_keypair;
+	}
+	break;
+      }
+
+      /* Skip copying of this keypair.
+       *
+       * NB: We can't mess with the original md here,
+       *     since it might be in use by an iterator
+       *     or similar.
+       */
+
+      continue;
+    }
+  keep_keypair:
+
     /* unlink */
     k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
@@ -405,12 +492,6 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
@@ -452,12 +533,19 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(md->refs>1)
   {
     /* good */
+    /* More than one reference to the md ==> We need to
+     * keep it afterwards.
+     */
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_good(new_md, md->hash[e]);
 
     unlink_mapping_data(md);
   }else{
     /* evil */
+    /* We have the only reference to the md,
+     * so we can just copy the svalues without
+     * bothering about type checking.
+     */
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
