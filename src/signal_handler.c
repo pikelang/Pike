@@ -1161,6 +1161,13 @@ static RETSIGTYPE receive_sigchild(int signum)
 
   PROC_FPRINTF((stderr, "[%d] receive_sigchild\n", getpid()));
 
+#ifdef SIGNAL_ONESHOT
+  /* Reregister the signal early, so that we don't
+   * miss any children.
+   */
+  my_signal(signum, receive_sigchild);
+#endif
+
   SAFE_FIFO_DEBUG_BEGIN();
 
  try_reap_again:
@@ -1184,14 +1191,11 @@ static RETSIGTYPE receive_sigchild(int signum)
     END_FIFO_PUSH(wait,wait_data);
     goto try_reap_again;
   }
+  PROC_FPRINTF((stderr, "[%d] receive_sigchild: No more dead children.\n",
+		getpid()));
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(signum, receive_sigchild);
-#endif
-
 }
 #endif
 
