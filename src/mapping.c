@@ -350,10 +350,13 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 	}
 	break;
       case MAPPING_WEAK:
-	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
-	    (*from->ind.u.refs > 1) &&
-	    (TYPEOF(from->val) <= MAX_REF_TYPE) &&
-	    (*from->val.u.refs > 1)) {
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	     (*from->ind.u.refs > 1)) &&
+	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	     (*from->val.u.refs > 1))) {
 	  goto keep_keypair;
 	}
 	break;
@@ -440,10 +443,13 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
 	}
 	break;
       case MAPPING_WEAK:
-	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
-	    (*from->ind.u.refs > 1) &&
-	    (TYPEOF(from->val) <= MAX_REF_TYPE) &&
-	    (*from->val.u.refs > 1)) {
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	     (*from->ind.u.refs > 1)) &&
+	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	     (*from->val.u.refs > 1))) {
 	  goto keep_keypair;
 	}
 	break;
