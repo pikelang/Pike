@@ -41,12 +41,13 @@ G.Object signal_block( int signal_id );
 //!
 
 int signal_connect( string signal, function callback, mixed|void callback_arg, string|void detail );
-//! int signal_connect(string signal, function callback, mixed ... args)
 //! Connect a signal to a pike function.  The function will be called with
-//! the last argument to this function as it's first argument (defaults to 0),
-//! the second argument is always the widget, and any other arguments are the
-//! ones supplied by GTK.
-//! 
+//! the last argument to this function as its last argument (defaults to 0);
+//! the first argument is always the widget, and any other arguments are the
+//! ones supplied by GTK. If connect_before is nonzero, the callback will be
+//! called prior to the normal handling of the signal (and can return true
+//! to suppress that handling), otherwise it will be called after.
+//!
 //! The return value of this function can be used to remove a signal with
 //! signal_disconnect(), and block and unblock the signal with signal_block()
 //! and signal_unblock().
