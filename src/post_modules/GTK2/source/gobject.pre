@@ -43,12 +43,13 @@ mixed get_property(string property)
 
 
 int signal_connect(string signal, function callback, mixed|void callback_arg,
-		   string|void detail)
-//! int signal_connect(string signal, function callback, mixed ... args)
+		   string|void detail,int|void connect_before)
 //! Connect a signal to a pike function.  The function will be called with
-//! the last argument to this function as it's first argument (defaults to 0),
-//! the second argument is always the widget, and any other arguments are the
-//! ones supplied by GTK.
+//! the last argument to this function as its last argument (defaults to 0);
+//! the first argument is always the widget, and any other arguments are the
+//! ones supplied by GTK. If connect_before is nonzero, the callback will be
+//! called prior to the normal handling of the signal (and can return true
+//! to suppress that handling), otherwise it will be called after.
 //! <p>
 //! The return value of this function can be used to remove a signal with
 //! signal_disconnect(), and block and unblock the signal with signal_block()
@@ -61,12 +62,13 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   GClosure *gc;
   GQuark det;
   char *detail=NULL;
+  int connect_before=0;
 
   if (args==2) {
     push_int(0);
     args++;
   }
-  get_all_args("signal_connect",args,"%s%*%*.%s",&a,&tmp1,&tmp2,&detail);
+  get_all_args("signal_connect",args,"%s%*%*.%s%d",&a,&tmp1,&tmp2,&detail,&connect_before);
 
   b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
   if (b==NULL)
@@ -89,7 +91,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   else
     det=0;
   id=g_signal_connect_closure_by_id(G_OBJECT(THIS->obj),b->signal_id,det,
-				gc,0);
+				gc,!connect_before);
   pgtk2_pop_n_elems(args);
   push_int(id);
 }
