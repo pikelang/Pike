@@ -2465,7 +2465,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     return;
   case F_NEG_NUMBER:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
-    amd64_push_int(-b, 0);
+    amd64_push_int(-(INT64)b, 0);
     return;
   case F_STRING:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
