@@ -44,10 +44,32 @@ DECLARATIONS
 
 /*! @module MPI */
 
-#define USING_MPI(name)	do {						\
-    if (mpi_status != mpi_INITIALIZED)					\
-	Pike_error(name " is not to be used before MPI.Init() or after MPI.Finalize().\n");\
-} while (0)
+#define mpi_INITIALIZED	1
+#define mpi_FINALIZED	2
+static unsigned char mpi_status = 0;
+
+static void initialize_mpi(const char * name) {
+    if (mpi_status != mpi_FINALIZED) {
+	int provided;
+
+	mpi_status = mpi_INITIALIZED;
+	/* MPI specification expects &argc, &argv as first arguments,
+	 * but does not operate them in any way. The implmenentations
+	 * that I have encountered operate fine with NULL, NULL. */
+	MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+	if (provided != MPI_THREAD_MULTIPLE)
+	    Pike_fatal("MPI cannot deliver: %d vs %d.\n",
+		       MPI_THREAD_MULTIPLE, provided);
+    } else
+	Pike_error("%s: Operation not possible because MPI has already been finalized.\n",
+		   name);
+}
+
+static INLINE void using_mpi(const char *name) {
+    if (mpi_status != mpi_INITIALIZED)
+	initialize_mpi(name);
+}
+
 #define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
 					      IntArray_program)		\
 			|| -1 != low_get_storage((x)->prog,		\
@@ -81,10 +103,6 @@ DECLARATIONS
     if (!(IS_SENTINEL_OR_PTR(x)))					\
 	FAIL_SENTINEL_OR_PTR(fun, argnum);				\
 } while (0)
-
-#define mpi_INITIALIZED	1
-#define mpi_FINALIZED	2
-static unsigned char mpi_status = 0;
 
 /*! @class IntArray
  *! This class implements an array of 32 bit integers.
@@ -981,7 +999,7 @@ PIKECLASS Comm
 	MPI_Comm comm = THIS->comm;
 	MUTEX_T *im = &THIS->sm;
 
-	USING_MPI("Send");
+	using_mpi("Send");
 
 	INVALIDATE_CURRENT_TIME();
 
@@ -1006,7 +1024,7 @@ PIKECLASS Comm
     {
 	MUTEX_T *im = &THIS->sm;
 
-	USING_MPI("Send");
+	using_mpi("Send");
 
 	ENSURE_SENTINEL(buf, "Send", 1);
 	mt_lock(im);
@@ -1064,7 +1082,7 @@ PIKECLASS Comm
     {
 	struct pike_string *ps = NULL;
 
-	USING_MPI("Recv");
+	using_mpi("Recv");
 
 	if (status && -1 == low_get_storage(status->prog, Status_program)) {
 	    SIMPLE_BAD_ARG_ERROR("Recv", 4, "inherits(MPI.Status)");
@@ -1090,7 +1108,7 @@ PIKECLASS Comm
     {
 	int rank;
 
-	USING_MPI("Bcast");
+	using_mpi("Bcast");
 
 	MPI_Comm_rank(THIS->comm, &rank);
 
@@ -1103,7 +1121,7 @@ PIKECLASS Comm
 
     PIKEFUN void Bcast(object buf, int root)
     {
-	USING_MPI("Bcast");
+	using_mpi("Bcast");
 
 	if (IS_SENTINEL(buf)) {
 	    mpi_Bcast(buf, root, THIS->comm);
@@ -1126,7 +1144,7 @@ PIKECLASS Comm
 
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
-	USING_MPI("Reduce");
+	using_mpi("Reduce");
 
 	if (-1 == low_get_storage(op->prog, Op_program))
 	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
@@ -1166,7 +1184,7 @@ PIKECLASS Comm
 #cmod_define GEN(_name_) PIKEFUN void _name_(object sendbuf,		\
 					     object recvbuf, object op)	\
     {									\
-	USING_MPI(#_name_);						\
+	using_mpi(#_name_);						\
 	if (-1 == low_get_storage(op->prog, Op_program))		\
 	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
@@ -1212,7 +1230,7 @@ PIKEFUN void _name_(object SCATTER(|void) sendbuf,			\
 		    object GATHER(|void) recvbuf, 			\
 		    int root)						\
     {									\
-	USING_MPI(#_name_);						\
+	using_mpi(#_name_);						\
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,SCATTER(##_OR_NULL))(sendbuf, #_name_, 1); \
 cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 									\
@@ -1230,7 +1248,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
 			  object|void displ, object recvbuf, int root)
     {
-	USING_MPI("Scatterv");
+	using_mpi("Scatterv");
 
 	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
@@ -1247,7 +1265,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 			 object|void counts, object|void displ,
 			 int root)
     {
-	USING_MPI("Gatherv");
+	using_mpi("Gatherv");
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
 	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
 	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
@@ -1261,14 +1279,14 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
     PIKEFUN void Abort(int errorcode)
     {
-	USING_MPI("Abort");
+	using_mpi("Abort");
 	MPI_Abort(THIS->comm, errorcode);
 	pop_n_elems(args);
     }
 
     PIKEFUN void Barrier()
     {
-	USING_MPI("Barrier");
+	using_mpi("Barrier");
 	INVALIDATE_CURRENT_TIME();
 	MPI_Barrier(THIS->comm);
     }
@@ -1277,7 +1295,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     {
 	int rank;
 
-	USING_MPI("->rank");
+	using_mpi("->rank");
 
 	MPI_Comm_rank(THIS->comm, &rank);
 	push_int(rank);
@@ -1287,7 +1305,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
     {
 	int size;
 
-	USING_MPI("->size");
+	using_mpi("->size");
 
 	MPI_Comm_size(THIS->comm, &size);
 	push_int(size);
@@ -1297,7 +1315,7 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	MPI_Comm comm;
 	struct object *o;
 
-	USING_MPI("dup");
+	using_mpi("dup");
 
 	o = clone_object(Comm_program, 0);
 
@@ -1330,17 +1348,19 @@ PIKEFUN void Init()
 {
     int provided;
 
-    if (mpi_status)
-	Pike_error("MPI: MPI.Init() cannot be called twice.\n");
+    if (mpi_status == mpi_FINALIZED)
+	Pike_error("Cannot initialize MPI after MPI.Finalize()\n");
+    else if (mpi_status)
+	return;
+
     mpi_status = mpi_INITIALIZED;
+    /* MPI Specification does not use &argc, &argv for anything, nor
+     * operate on it in any other way. AFAIK this holds for all
+     * implementations, but at least does for OpenMPI. */
     MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
     if (provided != MPI_THREAD_MULTIPLE)
 	Pike_fatal("MPI cannot deliver: %d vs %d.\n", MPI_THREAD_MULTIPLE, provided);
     return;
-    MPI_Init(NULL, NULL); /* MPI Specification does not use &argc, &argv
-			     for anything, nor operate on it in any other
-			     way. AFAIK this holds for all implementations,
-			     but at least does for OpenMPI. */
 }
 
 
@@ -1354,7 +1374,7 @@ PIKEFUN void Init()
 PIKEFUN void Finalize()
 {
     if (mpi_status == mpi_FINALIZED)
-	Pike_error("MPI: MPI.Finalize() has been called before.\n");
+	return;
     mpi_status = mpi_FINALIZED;
     MPI_Finalize();
 }
@@ -1467,6 +1487,11 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
     EXIT;
+
+    if (mpi_status == mpi_INITIALIZED) {
+	mpi_status = mpi_FINALIZED;
+	MPI_Finalize();
+    }
 } 
 
 /*! @endmodule */
