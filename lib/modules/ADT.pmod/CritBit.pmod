@@ -574,8 +574,8 @@ class MultiTree {
 	return 1;
     }
 
-    object _get_iterator(void|int(-1..-1)|int(1..1) step) {
-	return MultiIterator(@trees->_get_iterator(step||1));
+    object _get_iterator(void|int(-1..-1)|int(1..1) step, mixed ... args) {
+	return MultiIterator(step, @args);
     }
 
     mixed cast(string type) {
@@ -599,38 +599,52 @@ class MultiTree {
 	}
 	return ret;
     }
-}
 	
-class MultiIterator {
-    array oit, it;
+    class MultiIterator {
+	array oit, it;
 
-    void create(object ... it) {
-	while (sizeof(it) && !it[0]) it = it[1..];
-	this_program::oit = it;
-	this_program::it = it + ({ });
-    }
+	void create(int step, mixed|void start, mixed|void stop) {
+	    int i = zero_type(start) ? 0 : itree(start);
+	    int j = zero_type(stop) ? sizeof(trees)-1 : itree(stop);
 
-    int(0..1) `!() {
-	return !sizeof(it) || !it[0];
-    }
+	    array t = trees[i..j];
+	    j = sizeof(t);
 
-    int(0..1) next() {
-	while (sizeof(it) && !it[0]->next()) it = it[1..];
-	return !!sizeof(it);
-    }
+	    if (j == 1) {
+		t[0] = t[0]->_get_iterator(step, start, stop);
+	    } else {
+		t[0] = t[0]->_get_iterator(step, start);
+		for (i = 1; i < j-1; i++)
+		    t[i] = t[i]->_get_iterator(step);
+		t[-1] = t[-1]->_get_iterator(step, start);
+	    }
 
-    mixed value() {
-	if (!sizeof(it)) return UNDEFINED;
-	return it[0]->value();
-    }
+	    this_program::oit = t;
+	    this_program::it = t + ({ });
+	}
 
-    mixed index() {
-	if (!sizeof(it)) return UNDEFINED;
-	return it[0]->index();
-    }
+	int(0..1) `!() {
+	    return !sizeof(it) || !it[0];
+	}
 
-    object _get_iterator() {
-	return this;
+	int(0..1) next() {
+	    while (sizeof(it) && !it[0]->next()) it = it[1..];
+	    return !!sizeof(it);
+	}
+
+	mixed value() {
+	    if (!sizeof(it)) return UNDEFINED;
+	    return it[0]->value();
+	}
+
+	mixed index() {
+	    if (!sizeof(it)) return UNDEFINED;
+	    return it[0]->index();
+	}
+
+	object _get_iterator() {
+	    return this;
+	}
     }
 }
 
