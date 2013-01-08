@@ -8372,6 +8372,9 @@ test_eq(1 ? "a" : 1 ? "b" : 1, "a")
 test_eq(0 ? "a" : 1 ? "b" : 1 ? "c" : 1, "b")
 test_eq(0 ? "a" : 0 ? "b" : 1 ? "c" : 1, "c")
 
+// testing overflow checks
+test_eq(-1 - 0x7fffffff, -0x80000000)
+
 // testing indexing
 test_eq("foo"[0],'f')
 test_eq("foo"[1],'o')
