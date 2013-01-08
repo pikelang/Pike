@@ -1330,8 +1330,11 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
 /* TODO: guard against multiple calls */
 /*! @decl void Init()
- *! Initializes MPI. Has to be called before any other MPI Operation is
- *! accessed, including @[MPI.world->size] and @[MPI.world->rank].
+ *! Initializes @[MPI]. @[MPI] in Pike will auto-initialize once the
+ *! first @[MPI]-operation is called. You can call this function to
+ *! initialize the parallel @[MPI] at a specific time, since
+ *! initialization is a collective operation and will block the process
+ *! until all member processes of the parallel program are present.
  *!
  *! @example
  *!int main() {
@@ -1364,9 +1367,11 @@ PIKEFUN void Init()
 }
 
 
-/* TODO: guard against finalizing what has not been inited. */
 /*! @decl void Finalize()
- *! Cleans up the MPI stack. Has to be called before program termination.
+ *! Cleans up the @[MPI] stack. Will be called automatically upon
+ *! termination of the Pike program, but can be called explicitly
+ *! when it is required that some of the parallel processes continue
+ *! running and some terminate.
  *!
  *! @seealso
  *!	@[Init()], MPI_Finalize(3)
