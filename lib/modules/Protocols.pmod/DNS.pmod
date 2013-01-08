@@ -490,6 +490,15 @@ class protocol
   //!         @value T_TXT
   //!           @mapping
   //!             @member string "txt"
+  //!               Note: For historical reasons, when receiving decoded
+  //!               DNS entries from a client, this will be the first string
+  //!               in the TXT record only.
+  //!             @member string "txta"
+  //!               When receiving decoded DNS data from a client, txta is
+  //!               the array of all strings in the record. When sending
+  //!               multiple strings in a TXT record in a server, please
+  //!               supply an array as "txt" containing the strings, txta
+  //!               will be ignored.
   //!           @endmapping
   //!         @value T_SPF
   //!           @mapping
@@ -593,7 +602,16 @@ class protocol
         m->replacement = decode_domain (s, next);
         break;
       case T_TXT:
-	m->txt = decode_string(s, next);
+	{
+	    int tlen;
+
+	    m->txta = ({ });
+	    while (tlen < m->len) {
+		m->txta += ({ decode_string(s, next) });
+		tlen += sizeof(m->txta[-1]) + 1;
+	    }
+	    m->txt = m->txta[0];
+	}
 	break;
       case T_SPF:
 	m->spf = decode_string(s, next);
