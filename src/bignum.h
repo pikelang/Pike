@@ -168,6 +168,16 @@ static INLINE int type ## _SUB_OVERFLOW(type a, type b) {			    \
     int of = 0;									    \
     DO_ ## type ## _SUB_OVERFLOW(a, b, &of);					    \
     return of;									    \
+}										    \
+static INLINE int type ## _MOD_OVERFLOW(type a, type b) {			    \
+    return type ## _DIV_OVERFLOW(a, b);						    \
+}										    \
+static INLINE type DO_ ## type ## _MOD_OVERFLOW(type a, type b, int * of) {	    \
+    if (type ## _MOD_OVERFLOW(a, b)) {						    \
+	*of = 1;								    \
+	return 0;								    \
+    }										    \
+    return a % b;								    \
 }
 
 

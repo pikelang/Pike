@@ -4108,6 +4108,9 @@ PMOD_EXPORT void o_mod(void)
 {
   if(sp[-2].type != sp[-1].type && !float_promote())
   {
+#ifdef AUTO_BIGNUM
+do_lfun_modulo:
+#endif
     if(call_lfun(LFUN_MOD, LFUN_RMOD))
       return;
 
@@ -4182,28 +4185,49 @@ PMOD_EXPORT void o_mod(void)
     return;
   }
   case T_INT:
-    if (sp[-1].u.integer == 0)
+  {
+    int of = 0;
+    INT_TYPE a = sp[-2].u.integer,
+	     b = sp[-1].u.integer;
+    INT_TYPE res;
+    if (b == 0)
       OP_MODULO_BY_ZERO_ERROR("`%");
-    sp--;
-    if(sp[-1].u.integer>=0)
+    if(a>=0)
     {
-      if(sp[0].u.integer>=0)
+      if(b>=0)
       {
-	sp[-1].u.integer %= sp[0].u.integer;
+	res = a % b;
       }else{
-	sp[-1].u.integer=((sp[-1].u.integer+~sp[0].u.integer)%-sp[0].u.integer)-~sp[0].u.integer;
+	/* res = ((a+~b)%-b)-~b */
+	res = DO_INT_TYPE_ADD_OVERFLOW(a, ~b, &of);
+	res = DO_INT_TYPE_MOD_OVERFLOW(res, b, &of);
+	res = DO_INT_TYPE_SUB_OVERFLOW(res, ~b, &of);
       }
     }else{
-      if(sp[0].u.integer>=0)
+      if(b>=0)
       {
-	sp[-1].u.integer=sp[0].u.integer+~((~sp[-1].u.integer) % sp[0].u.integer);
+	/* res = b+~((~a) % b) */
+	res = DO_INT_TYPE_MOD_OVERFLOW(~a, b, &of);
+	res = DO_INT_TYPE_ADD_OVERFLOW(b, ~res, &of);
       }else{
-	sp[-1].u.integer=-(-sp[-1].u.integer % -sp[0].u.integer);
+	/* a % b and a % -b are equivalent, if overflow does not
+	 * happen
+	 * res = -(-a % -b) = a % b; */
+	res = DO_INT_TYPE_MOD_OVERFLOW(a, b, &of);
       }
     }
-    sp[-1].subtype = NUMBER_NUMBER;
+#ifdef AUTO_BIGNUM
+    if (of) {
+      stack_swap();
+      convert_stack_top_to_bignum();
+      stack_swap();
+      goto do_lfun_modulo;
+    }
+#endif
+    sp--;
+    SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
     return;
-
+  }
   default:
     PIKE_ERROR("`%", "Bad argument 1.\n", sp, 2);
   }
