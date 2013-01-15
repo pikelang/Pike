@@ -1,0 +1,104 @@
+// -*- pike -*-
+#pike __REAL_VERSION__
+
+#if constant(@module@)
+
+inherit @module@;
+
+static object exif_flip_jpeg(object img, mapping exif)
+{
+    if (!exif)
+	return img;
+
+    //Stdio.stderr->write("JPEG/EXIF: Orientation %O\n", exif->Orientation);
+    switch (exif->Orientation)
+    {
+    case "1": /* default orientation */
+	break;
+
+    case "2": /* flipped left-right */
+	img = img->mirrorx();
+	break;
+
+    case "3": /* rotated 180 */
+	img = img->rotate_cw()->rotate_cw();
+	break;
+
+    case "4": /* flipped up-down */
+	img = img->mirrory();
+	break;
+
+    case "5": /* rotated 90 clockwise, flipped left-right */
+	img = img->mirrorx()->rotate_ccw();
+	break;
+
+    case "6": /* rotated 270 clockwise */
+	img = img->rotate_cw();
+	break;
+
+    case "7": /* rotated 270 clockwise, flipped left-right */
+	img = img->mirrorx()->rotate_cw();
+	break;
+
+    case "8": /* rotated 90 clockwise */
+	img = img->rotate_ccw();
+	break;
+
+    default:
+	break;
+    }
+
+    return img;
+}
+
+object decode(string data, mapping|void options)
+{
+    //Stdio.stderr->write("Image.JPEG overloaded decode.\r\n\n");
+    object img = ::decode(data, options || ([ ]) );
+
+    if (!img) // early exit if error
+	return img;
+
+    mapping exif = Standards.EXIF.get_properties(Stdio.FakeFile(data));
+
+    return exif_flip_jpeg(img, exif);
+}
+
+mapping _decode(string data, mapping|void options)
+{
+    //Stdio.stderr->write("Image.JPEG overloaded _decode.\r\n\n");
+    mapping m = ::_decode(data, options || ([ ]) );
+
+    if (!m) // early exit if error
+	return m;
+
+    mapping exif = Standards.EXIF.get_properties(Stdio.FakeFile(data));
+
+    m->image = exif_flip_jpeg(m->image, exif);
+    if ((< "5", "6", "7", "8" >)[exif->Orientation])
+    {
+		/* If the image was flipped 90 or 270 degrees, we need to
+		 * exchange the x/y metadata information.
+		 */
+		m->xsize = m->image->xsize;
+		m->ysize = m->image->ysize;
+		int tmp = m->x_density;
+		m->x_density = m->y_density;
+		m->y_density = tmp;
+    }
+
+    return m;
+}
+
+mapping raw_decode(string data, mapping|void options)
+{
+    // Compatibility function to bypass the overloading of _decode.
+
+    //Stdio.stderr->write("Image.JPEG overloaded _decode.\r\n\n");
+    return ::_decode(data, options || ([ ]) );
+}
+
+
+#else
+constant this_program_does_not_exist = 1;
+#endif // constant(@module@)
