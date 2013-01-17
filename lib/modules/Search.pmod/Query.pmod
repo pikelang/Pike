@@ -305,8 +305,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      ordinaryWordGlobs -= ({ "*" });
 	    }
 	    
-	    foreach(Array.uniq(plusWordGlobs || ({}) | 
-			       ordinaryWordGlobs || ({})), string w)
+	    foreach (Array.uniq(plusWordGlobs | ordinaryWordGlobs), string w)
 	      glob_words += ({ ([ q->field : w]) });
 	    
             if(hasPlus)
