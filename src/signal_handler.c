@@ -1588,7 +1588,7 @@ static void f_pid_status_wait(INT32 args)
   }
 #else
   {
-    int wait_for_stopped;
+    int wait_for_stopped, alreadydied = 0;
   if (THIS->pid == getpid())
     Pike_error("Waiting for self.\n");
 
@@ -1645,8 +1645,9 @@ static void f_pid_status_wait(INT32 args)
 	if ((THIS->state == PROCESS_RUNNING) ||
 	    (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
 	  struct pid_status *this = THIS;
+	  int killret, killerr;
 	  THREADS_ALLOW();
-	  while ((!kill(pid, 0)) &&
+	  while ((!(killret = kill(pid, 0), killerr = errno, killret)) &&
 		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
 	    PROC_FPRINTF((stderr, "[%d] wait(%d): Sleeping...\n",
 			  getpid(), pid));
@@ -1668,6 +1669,11 @@ static void f_pid_status_wait(INT32 args)
 #endif /* HAVE_POLL */
 	  }
 	  THREADS_DISALLOW();
+	  if (killret && killerr == ESRCH) { 
+	    if (alreadydied)
+	      goto lostchild;	/* But if we already looped, punt */
+	    alreadydied = 1;	/* We try looping once, to cover for races */
+	  }
 	}
 	/* The process has died. */
 	PROC_FPRINTF((stderr, "[%d] wait(%d): Process dead.\n",
@@ -1702,6 +1708,7 @@ static void f_pid_status_wait(INT32 args)
 #endif /* _REENTRANT || USE_SIGCHILD */
 
       default:
+lostchild:
 	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",
 		   THIS->pid, err);
 	break;
