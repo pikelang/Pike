@@ -268,7 +268,7 @@ class Writer {
 	    mixed v = objects[key];
 
 	    if (intp(v)) {
-		werror("Object already written to offset %d bytes.\n");
+		werror("Object already written to offset %d bytes.\n", v);
 		return;
 	    }
 
