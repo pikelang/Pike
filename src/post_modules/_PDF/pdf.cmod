@@ -89,7 +89,13 @@ PIKECLASS stream {
 
 static void generate_stream(struct svalue * s, const unsigned char * start, const unsigned char * end) {
     struct object * o = low_clone(stream_program);
-    OBJ2_STREAM(o)->data = make_shared_binary_string((const char*)start, end-start);
+
+    if (end <= start) {
+	add_ref(empty_pike_string);
+	OBJ2_STREAM(o)->data = empty_pike_string;
+    } else {
+	OBJ2_STREAM(o)->data = make_shared_binary_string((const char*)start, end-start);
+    }
     OBJ2_STREAM(o)->param = s->u.mapping;
     SET_SVAL(*s, PIKE_T_OBJECT, 0, object, o);
 }

@@ -98,7 +98,9 @@ class Reader {
 
 	string data = file->read(512);
 
-	if (SCAN("xref%*[ \n\r]") != 1)
+	// we are a little bit fuzzy here, to allow for misplaced
+	// cross reference tables if there is only whitespace before
+	if (SCAN("%*[\0\t \n\r]xref%*[ \n\r]") != 2)
 	    low_parse_error(data, "Could not find cross reference table.", 0);
 
 	while (SCAN("%d %d%*[ \n\r]", id, num) == 3) {
