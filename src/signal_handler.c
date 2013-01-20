@@ -1316,6 +1316,8 @@ static void report_child(int pid,
       if(TYPEOF(*s) == T_OBJECT)
       {
 	struct object *o;
+	PROC_FPRINTF((stderr, "[%d] Found pid object for pid %d: %p\n",
+		      getpid(), (int)pid, s->u.object));
 	if((p=(struct pid_status *)get_storage((o = s->u.object),
 					       pid_status_program)))
 	{
@@ -1353,6 +1355,8 @@ static void report_child(int pid,
 	      p->result=-1;
 	    }
 	    p->state = PROCESS_EXITED;
+	    PROC_FPRINTF((stderr, "[%d] Pid %d has exited\n",
+			  getpid(), (int)pid));
 	  }
 	}
       }
@@ -1703,8 +1707,8 @@ static void f_pid_status_wait(INT32 args)
 	   * doesn't work, let the main loop complain.
 	   */
 	  PROC_FPRINTF((stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"wait(%d): Sleeping some more...\n",
-			getpid(), pid, pid));
+			"[%d] wait(%d): Sleeping some more...\n",
+			getpid(), pid, getpid(), pid));
 	  THREADS_ALLOW();
 #ifdef HAVE_POLL
 	  poll(NULL, 0, 100);
