@@ -798,6 +798,7 @@ static void unset_signalling(void *UNUSED(notused)) { signalling=0; }
 PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
   ONERROR ebuf;
+  int num_callbacks = 0;
 #ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug();
@@ -838,14 +839,30 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 	default_signals[FIFO_DATA(sig, unsigned char)]
 	  (FIFO_DATA(sig, unsigned char));
     }else{
+      push_svalue(signal_callbacks + FIFO_DATA(sig, unsigned char));
       push_int(FIFO_DATA(sig, unsigned char));
-      apply_svalue(signal_callbacks + FIFO_DATA(sig, unsigned char), 1);
-      pop_stack();
+      num_callbacks++;
     }
 
     END_FIFO_LOOP(sig, unsigned char);
     UNSET_ONERROR(ebuf);
     signalling=0;
+
+    /* Call the Pike-level callbacks in
+     * a context where signals are allowed.
+     */
+    while(num_callbacks--) {
+      JMP_BUF recovery;
+      free_svalue(&throw_value);
+      mark_free_svalue(&throw_value);
+      if (SETJMP_SP(recovery, 2)) {
+	call_handle_error();
+      } else {
+	f_call_function(2);
+	pop_stack();
+      }
+      UNSETJMP(recovery);
+    }
   }
 }
 
