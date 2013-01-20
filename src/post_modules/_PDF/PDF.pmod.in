@@ -33,7 +33,8 @@ void low_parse_error(string buf, string reason, int pos) {
 class Parser {
     inherit _PDF::Parser;
 
-    void parse_error(string reason, int pos) {
+    void parse_error(string reason, void|int pos) {
+	if (undefinedp(pos)) pos = ::current_position();
 	throw(ParseError(buffer(), pos, reason, backtrace()[..<1]));
     }
 }
@@ -189,7 +190,7 @@ class Reader {
 
 	if (intp(ret)) {
 	    if (geometry[ret] != ID2KEY(id, rev)) {
-		error("object location is wrong.\n");
+		error("object location is wrong (%d vs %d).\n", geometry[ret], ID2KEY(id, rev));
 	    }
 	    reset();
 	    file->seek(ret);
@@ -202,7 +203,7 @@ class Reader {
 	    feed(raw);
 	    ret = parse();
 	    if (!ret) 
-		parse_error("Cross-reference table seems wrong. Could not find object.", 0);
+		parse_error("Cross-reference table seems wrong. Could not find object.");
 	}
 
 	return ret;

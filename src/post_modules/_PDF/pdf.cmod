@@ -253,6 +253,10 @@ PIKECLASS Parser {
 	free_string_builder(&THIS->buf);
     }
 
+    PIKEFUN int current_position() {
+	RETURN THIS->c.pos;
+    }
+
     PIKEFUN object get_reference(string ref) {
 	struct object * o = clone_object(reference_program, 1);
 	push_object(o);
