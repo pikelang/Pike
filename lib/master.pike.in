@@ -4144,11 +4144,43 @@ void _main(array(string) orig_argv)
 #if constant(thread_local)
 object inhibit_compile_errors = thread_local();
 
-void set_inhibit_compile_errors(mixed f)
+//! Set the compile error, warning and exception behaviour.
+//!
+//! @param behaviour
+//!   The desired behaviour. One of:
+//!   @mixed
+//!     @type int(0..0)
+//!       Output compilation errors and warnings to @tt{stderr@}.
+//!       This is the default behaviour.
+//!     @type int(1..1)
+//!       Inhibit output of compilator diagnostics.
+//!     @type function(string, int, string:void)
+//!       Function to call for compilation errors. Compilation
+//!       warnings and exceptions are inhibited.
+//!
+//!       The function will be called with the same arguments
+//!       as those passed to @[compile_error()].
+//!     @type CompilationHandler
+//!       Compilation handler to use for diagnostics.
+//!   @endmixed
+//!
+//! @note
+//!   Note that the behaviour is thread local, and is not copied
+//!   to new threads when they are created.
+//!
+//! @seealso
+//!   @[get_inhibit_compile_errors()]
+void set_inhibit_compile_errors(mixed behaviour)
 {
-  inhibit_compile_errors->set(f);
+  inhibit_compile_errors->set(behaviour);
 }
 
+//! Get the current compile error, warning and exception behaviour.
+//!
+//! See @[set_inhibit_compile_errors()] for details.
+//!
+//! @seealso
+//!   @[set_inhibit_compile_errors()]
 mixed get_inhibit_compile_errors()
 {
   return inhibit_compile_errors->get();
@@ -4202,6 +4234,10 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
 //! This function is called whenever a compile error occurs. @[line]
 //! is zero for errors that aren't associated with any specific line.
 //! @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_warning()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_error(string file,int line,string err)
 {
   mixed val;
@@ -4226,6 +4262,10 @@ void compile_error(string file,int line,string err)
 //! This function is called whenever a compile warning occurs. @[line]
 //! is zero for warnings that aren't associated with any specific
 //! line. @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_warning(string file,int line,string err)
 {
   mixed val;
@@ -4246,6 +4286,10 @@ void compile_warning(string file,int line,string err)
 //! This function is called when an exception is caught during
 //! compilation. Its message is also reported to @[compile_error] if
 //! this function returns zero.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_warning()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 int compile_exception (array|object trace)
 {
   if (objectp (trace) && ([object]trace)->is_cpp_or_compilation_error)
