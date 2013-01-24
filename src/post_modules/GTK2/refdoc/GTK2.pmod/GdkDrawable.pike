@@ -102,7 +102,7 @@ GDK2.Drawable draw_rectangle( GTK2.GdkGC gc, int filledp, int x1, int y1, int x2
 //!
 //!
 
-GDK2.Drawable draw_text( GTK2.GdkGC gc, int x, int y, string text );
+GDK2.Drawable draw_text( GTK2.GdkGC gc, int x, int y, string|PangoLayout text );
 //! y is used as the baseline for the text.
 //!
 //!
@@ -118,11 +118,6 @@ mapping get_geometry( );
 GDK2.Drawable set_background( GTK2.GdkColor to );
 //! Set the background color or image.
 //! The argument is either a GDK2.Pixmap or a GDK2.Color object.
-//!
-//!
-
-int xid( );
-//! Return the xwindow id.
 //!
 //!
 

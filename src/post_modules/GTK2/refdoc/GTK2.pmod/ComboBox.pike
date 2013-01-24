@@ -10,6 +10,8 @@
 //! 
 //! Style properties:
 //! int appears-as-list
+//! int arrow-size
+//! int shadow-type
 //!
 //!
 //!  Signals:
@@ -29,7 +31,7 @@ GTK2.ComboBox append_text( string text );
 //!
 //!
 
-static GTK2.ComboBox create( GTK2.TreeModel model_or_props );
+protected GTK2.ComboBox create( GTK2.TreeModel model_or_props );
 //! Create a new ComboBox, either empty or with a model.  If a string is passed
 //! int instead, it will create a new W(ComboBox) with only text strings.
 //! If you do so, you should only manipulate it with the following functions:

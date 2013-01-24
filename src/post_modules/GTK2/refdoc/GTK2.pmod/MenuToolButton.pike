@@ -8,7 +8,7 @@
 
 inherit GTK2.ToolButton;
 
-static GTK2.MenuToolButton create( GTK2.Widget icon, string|void label );
+protected GTK2.MenuToolButton create( GTK2.Widget icon, string|void label );
 //! Create a new GTK2.MenuToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be igrnored.  The result will be a button from

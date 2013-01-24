@@ -38,7 +38,7 @@ GTK2.Calendar clear_marks( );
 //!
 //!
 
-static GTK2.Calendar create( mapping|void props );
+protected GTK2.Calendar create( mapping|void props );
 //! Create a new calendar widget
 //!
 //!

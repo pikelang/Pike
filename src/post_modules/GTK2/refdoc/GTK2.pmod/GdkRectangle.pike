@@ -7,7 +7,7 @@ mixed cast( string type );
 //!
 //!
 
-static GDK2.Rectangle create( int x, int y, int width, int height );
+protected GDK2.Rectangle create( int x, int y, int width, int height );
 //! Create a new rectangle
 //!
 //! NOIMG

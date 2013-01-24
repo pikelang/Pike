@@ -30,7 +30,7 @@ Gnome2.DruidPageStandard append_item( string question, GTK2.Widget item, string 
 //!
 //!
 
-static Gnome2.DruidPageStandard create( string|void title, GTK2.GdkPixbuf logo, GTK2.GdkPixbuf top_watermark );
+protected Gnome2.DruidPageStandard create( string|void title, GTK2.GdkPixbuf logo, GTK2.GdkPixbuf top_watermark );
 //! Construct a new Gnome2.DruidPageStandard.
 //!
 //!

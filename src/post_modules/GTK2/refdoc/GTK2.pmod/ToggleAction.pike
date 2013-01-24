@@ -8,7 +8,7 @@
 
 inherit GTK2.Action;
 
-static GTK2.ToggleAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
+protected GTK2.ToggleAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
 //! Creates a new GTK2.ToggleAction object.
 //!
 //!

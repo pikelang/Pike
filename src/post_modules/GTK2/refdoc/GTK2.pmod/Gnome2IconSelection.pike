@@ -19,7 +19,7 @@ Gnome2.IconSelection clear( int|void not_shown );
 //!
 //!
 
-static Gnome2.IconSelection create( );
+protected Gnome2.IconSelection create( );
 //! Creates a new icon selection widget, it uses a W(GnomeIconList) for
 //! the listing of icons
 //!

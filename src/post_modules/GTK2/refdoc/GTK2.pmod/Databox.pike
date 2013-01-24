@@ -27,7 +27,7 @@
 
 inherit GTK2.Vbox;
 
-static GTK2.Databox create( );
+protected GTK2.Databox create( );
 //! Create a new databox widget
 //!
 //!

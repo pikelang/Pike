@@ -12,7 +12,7 @@
 
 inherit GTK2.ToolItem;
 
-static GTK2.ToolButton create( GTK2.Widget icon, string|void label );
+protected GTK2.ToolButton create( GTK2.Widget icon, string|void label );
 //! Create a new GTK2.ToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be ignored.  The result will be a button from

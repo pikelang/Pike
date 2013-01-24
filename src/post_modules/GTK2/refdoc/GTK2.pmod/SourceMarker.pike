@@ -1,5 +1,7 @@
 //!
 
+inherit GTK2.TextMark;
+
 GTK2.SourceBuffer get_buffer( );
 //! Gets the buffer associated with this marker.
 //!

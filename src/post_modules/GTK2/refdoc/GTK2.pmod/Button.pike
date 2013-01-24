@@ -54,12 +54,14 @@
 
 inherit GTK2.Bin;
 
+inherit GTK2.Activatable;
+
 GTK2.Button clicked( );
 //! Emulate a 'clicked' event (press followed by release).
 //!
 //!
 
-static GTK2.Button create( string|mapping label_or_props );
+protected GTK2.Button create( string|mapping label_or_props );
 //! If a string is supplied, a W(Label) is created and added to the button.
 //!
 //!

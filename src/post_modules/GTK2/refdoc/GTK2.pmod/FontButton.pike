@@ -13,7 +13,7 @@
 
 inherit GTK2.Button;
 
-static GTK2.FontButton create( string|mapping font_or_props );
+protected GTK2.FontButton create( string|mapping font_or_props );
 //! Create a new font picker widget.  If font is specified, it will be
 //! displayed in the font selection dialog.
 //!

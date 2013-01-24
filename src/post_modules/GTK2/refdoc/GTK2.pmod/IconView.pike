@@ -45,7 +45,7 @@
 
 inherit GTK2.Container;
 
-static GTK2.IconView create( GTK2.TreeModel model_or_props );
+protected GTK2.IconView create( GTK2.TreeModel model_or_props );
 //! Creates a new GTK2.IconView widget
 //! Not implemented yet.
 //!

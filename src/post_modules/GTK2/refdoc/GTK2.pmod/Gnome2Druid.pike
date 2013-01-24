@@ -54,7 +54,7 @@ Gnome2.Druid append_page( GTK2.Gnome2DruidPage page );
 //!
 //!
 
-static Gnome2.Druid create( );
+protected Gnome2.Druid create( );
 //! Create a new druid
 //!
 //!

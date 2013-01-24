@@ -2,6 +2,8 @@
 //!
 //!
 
+inherit G.Object;
+
 Pango.Layout context_changed( );
 //! Forces recomputation of any state in the layout that might depend on the
 //! layout's context.  This function should be called if you make changes
@@ -14,7 +16,7 @@ GTK2.Pango.Layout copy( GTK2.Pango.Layout src );
 //!
 //!
 
-static Pango.Layout create( GTK2.Pango.Context context );
+protected Pango.Layout create( GTK2.Pango.Context context );
 //! Create a new layout with attributes initialized to default values for
 //! a particular Pango.Context
 //!
@@ -219,7 +221,7 @@ Pango.Layout set_tabs( GTK2.Pango.TabArray tabs );
 //!
 //!
 
-Pango.Layout set_text( string text, int length );
+Pango.Layout set_text( sprintf_format text, sprintf_args... fmt );
 //! Sets the text of the layout.
 //!
 //!

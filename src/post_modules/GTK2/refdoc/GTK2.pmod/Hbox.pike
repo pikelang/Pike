@@ -19,7 +19,7 @@
 
 inherit GTK2.Box;
 
-static GTK2.Hbox create( int|mapping uniformp_or_props, int hpadding );
+protected GTK2.Hbox create( int|mapping uniformp_or_props, int|void hpadding );
 //! Create a new horizontal box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! hpadding is added to the left and right of the children.
