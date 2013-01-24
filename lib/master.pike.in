@@ -91,6 +91,8 @@ int is_pike_master = 0;
 // makes the Encoder class encode references to the master and all
 // ex-masters as references to the current master object.
 
+mapping(string:object) fs_map = ([]);
+object root_fs;
 // ---  Functions begin here.
 
 // Have to access some stuff without going through the resolver.
@@ -1191,6 +1193,19 @@ program compile_string(string source, void|string filename,
 //!
 string master_read_file(string file)
 {
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+          
+    if(h = h->open(fakeroot(file),"r") )
+    {
+      string q = ([function(void : string)]h->read)();
+      return q;
+    }
+  }
+  
   object o=Files()->Fd();
   if( ([function(string, string : int)]o->open)(fakeroot(file),"r") )
     return ([function(void : string)]o->read)();
@@ -1216,6 +1231,8 @@ string combine_path_with_cwd(string ... paths)
   return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths);
 }
 
+constant high_master_get_dir = predef::get_dir;
+
 #ifdef FILE_STAT_CACHE
 
 #define FILE_STAT_CACHE_TIME 20
@@ -1226,11 +1243,20 @@ mapping(string:multiset(string)) dir_cache = ([]);
 
 array(string) master_get_dir(string|void x)
 {
-  return get_dir(x);
+  string y = find_handler_for_path(file);      
+  if(y)
+  {
+    object h = fs_map[y];
+    x = x[sizeof(y)+1..];
+    return h->get_dir(x);
+  }
+  else return predef::get_dir(x);
 }
 
 Stat master_file_stat(string x)
 {
+  object y = find_handler_for_path(file);
+
   string dir = combine_path_with_cwd(x);
   string file = BASENAME(dir);
   dir = dirname(dir);
@@ -1261,13 +1287,83 @@ Stat master_file_stat(string x)
 #endif
   if(d && !d[file]) return 0;
 
-  return predef::file_stat(x);
+
+  if(y)
+  {
+    object h = fs_map[y];
+    x = x[sizeof(y)+1..];
+    return h->stat(x);
+  }
+  else return predef::file_stat(x);
 }
 #else
-constant master_file_stat = predef::file_stat;
-constant master_get_dir = predef::get_dir;
+//constant master_file_stat = predef::file_stat;
+//constant master_get_dir = predef::get_dir;
+
+Stat master_file_stat(string file)
+{
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+     
+    return h->stat(file);
+  }
+  else return predef::file_stat(file);
+}
+
+array master_get_dir(string file)
+{
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+  
+    return h->get_dir(file);      
+  }
+  else return predef::get_dir(file);
+}
+
 #endif // FILE_STAT_CACHE
 
+//! mount a filesystem handler to be used by the resolver. on its own does noting,
+//! but may be used with @[add_module_path] and friends to enable modules to be loaded
+//! from Filesystem objects.
+//!
+//! @param mountpoint
+//!  the location in the filesystem to mount the handler
+//!
+//! @param filesystem
+//!  a filesystem object that will handle requests for the given mountpoint.
+//!
+//! @example
+//!  master()->add_filesystem_handler("/foo/bar.zip", Filesystem.Zip("/foo/bar.zip"));
+//!  master()->add_module_path("/foo/bar.zip/lib");
+//!
+mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ filesystem)
+{
+  mixed rv = fs_map[mountpoint];
+  fs_map[mountpoint] = filesystem;
+  return rv;
+}
+
+string find_handler_for_path(string file)
+{
+// TODO: maybe some caching would be worthwhile here. maybe.
+
+  foreach(reverse(sort(indices(fs_map))); int x; string path)
+  {
+    string p = path;
+    if(p[-1] != '/') p+="/";
+    if(file[-1] != '/') file+="/";
+    if(has_prefix(file, p))
+      return path;
+  }
+  
+  return 0;
+}
 
 protected mapping(string:string) environment;
 
@@ -2208,7 +2304,7 @@ protected void create()
   // To make it possible to overload get_dir and file_stat later on.
   // It's not possible to replace efuns with normal functions in .o-files
 
-  add_constant("get_dir", master_get_dir );
+  add_constant("get_dir", high_master_get_dir );
   add_constant("file_stat", lambda( string f, int|void d ) { return file_stat(f,d);} );
 
 #define CO(X)  add_constant(#X,Builtin.__backend->X)
@@ -3144,12 +3240,23 @@ class CompatResolver
   //!
   //! This is the same as the command line option @tt{-M@}.
   //!
+  //! @param tmp
+  //!   a string containing a path to search for Pike modules. May be a 
+  //!   directory, or a ZIP archive.
+  //!
   //! @seealso
   //! @[remove_module_path()]
   //!
   void add_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
+      object s = file_stat(tmp);
+      if(s && s->isreg)
+      {
+        object fs;
+        catch(fs = resolv("Filesystem.Zip")(tmp));
+        if(fs) add_filesystem_handler(tmp, fs);
+      }
       root_module->add_path(tmp);
       pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
     }
