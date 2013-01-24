@@ -14,7 +14,7 @@ GTK2.Pango.FontDescription copy( );
 //!
 //!
 
-static Pango.FontDescription create( string|void desc );
+protected Pango.FontDescription create( string|void desc );
 //! Create a new font description.  If desc is present, creates a new font
 //! description from a string representation in the form
 //! "[FAMILY-LIST] [STYLE-OPTIONS] [SIZE]", where FAMILY-LIST is a comma

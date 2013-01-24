@@ -2,7 +2,7 @@
 
 inherit GTK2.Object;
 
-static Gnome2.Client create( );
+protected Gnome2.Client create( );
 //! Gets the master session management client.
 //!
 //!

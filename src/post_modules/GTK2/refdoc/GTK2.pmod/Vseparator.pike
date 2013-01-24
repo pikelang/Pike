@@ -7,7 +7,7 @@
 
 inherit GTK2.Separator;
 
-static GTK2.Vseparator create( mapping|void props );
+protected GTK2.Vseparator create( mapping|void props );
 //! Used to create a new vseparator widget.
 //!
 //!

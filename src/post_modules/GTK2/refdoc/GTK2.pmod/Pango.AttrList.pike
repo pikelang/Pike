@@ -7,7 +7,7 @@ GTK2.Pango.AttrList copy( );
 //!
 //!
 
-static Pango.AttrList create( );
+protected Pango.AttrList create( );
 //! Create a new empty attribute list.
 //!
 //!

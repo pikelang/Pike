@@ -18,7 +18,7 @@
 
 inherit GTK2.MenuShell;
 
-static GTK2.MenuBar create( mapping|void props );
+protected GTK2.MenuBar create( mapping|void props );
 //! Create a new menu bar.
 //!
 //!

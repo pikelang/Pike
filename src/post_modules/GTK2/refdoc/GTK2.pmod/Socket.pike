@@ -33,7 +33,7 @@ GTK2.Socket add_id( int wid );
 //!
 //!
 
-static GTK2.Socket create( mapping|void props );
+protected GTK2.Socket create( mapping|void props );
 //! Create a new GTK2.Socket.
 //!
 //!

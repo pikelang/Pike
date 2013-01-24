@@ -44,7 +44,7 @@
 
 inherit GTK2.Container;
 
-static GTK2.Toolbar create( mapping|void props );
+protected GTK2.Toolbar create( mapping|void props );
 //! Creates a new toolbar.
 //!
 //!

@@ -34,7 +34,7 @@ GTK2.TreePath convert_path_to_child_path( GTK2.TreePath sorted_path );
 //!
 //!
 
-static GTK2.TreeModelFilter create( GTK2.TreeModel model, GTK2.TreePath root );
+protected GTK2.TreeModelFilter create( GTK2.TreeModel model, GTK2.TreePath root );
 //! Create a new GTK2.TreeModel, with model as the child model.
 //!
 //!

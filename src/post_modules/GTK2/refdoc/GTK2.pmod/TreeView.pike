@@ -82,7 +82,7 @@ GTK2.TreeView columns_autosize( );
 //!
 //!
 
-static GTK2.TreeView create( GTK2.TreeModel model_or_props );
+protected GTK2.TreeView create( GTK2.TreeModel model_or_props );
 //! Create a new W(TreeView), with or without a default model.
 //!
 //!

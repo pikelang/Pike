@@ -16,7 +16,7 @@ GTK2.SourceTagTable add_tags( array tags );
 //!
 //!
 
-static GTK2.SourceTagTable create( );
+protected GTK2.SourceTagTable create( );
 //! Creates a new table.  The table contains no tags be default.
 //!
 //!

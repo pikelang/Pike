@@ -24,7 +24,7 @@ GTK2.TreeStore clear( );
 //!
 //!
 
-static GTK2.TreeStore create( array types );
+protected GTK2.TreeStore create( array types );
 //! Create a new tree store with as many columns as there are items in the
 //! array. A type is either a string representing a type name, such as "int" or
 //! "float", or an actual widget.  If it is a widget, the column in question

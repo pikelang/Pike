@@ -19,7 +19,7 @@
 
 inherit GTK2.Box;
 
-static GTK2.Vbox create( int|mapping uniformp_or_props, int|void padding );
+protected GTK2.Vbox create( int|mapping uniformp_or_props, int|void padding );
 //! Create a new vertical box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! padding is added to the top and bottom of the children.

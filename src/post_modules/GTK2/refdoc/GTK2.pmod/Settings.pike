@@ -36,7 +36,7 @@
 
 inherit G.Object;
 
-static GTK2.Settings create( );
+protected GTK2.Settings create( );
 //! Get the default GTK2.Settings object
 //!
 //!

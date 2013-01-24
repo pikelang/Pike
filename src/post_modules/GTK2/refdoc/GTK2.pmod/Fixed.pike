@@ -14,7 +14,7 @@
 
 inherit GTK2.Container;
 
-static GTK2.Fixed create( mapping|void props );
+protected GTK2.Fixed create( mapping|void props );
 //! Create a new fixed widget
 //!
 //!

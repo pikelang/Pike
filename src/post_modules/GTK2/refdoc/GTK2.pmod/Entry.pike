@@ -47,7 +47,7 @@ inherit GTK2.CellEditable;
 
 inherit GTK2.Editable;
 
-static GTK2.Entry create( int|mapping maxlen_or_props );
+protected GTK2.Entry create( int|mapping maxlen_or_props );
 //! Create a new W(Entry) widget.
 //!
 //!
@@ -178,7 +178,7 @@ GTK2.Entry set_max_length( int maxlen );
 //!
 //!
 
-GTK2.Entry set_text( string text );
+GTK2.Entry set_text( sprintf_format text, sprintf_args... fmt );
 //! Set the text to the specified string, replacing the current contents.
 //!
 //!

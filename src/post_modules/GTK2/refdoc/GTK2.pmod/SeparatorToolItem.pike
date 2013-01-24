@@ -5,7 +5,7 @@
 
 inherit GTK2.ToolItem;
 
-static GTK2.SeparatorToolItem create( mapping|void props );
+protected GTK2.SeparatorToolItem create( mapping|void props );
 //! Create a new GTK2.SeparatorToolItem.
 //!
 //!

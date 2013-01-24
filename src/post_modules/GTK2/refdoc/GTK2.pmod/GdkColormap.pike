@@ -17,7 +17,7 @@ int alloc_colors( array colors, int writeable, int best_match );
 //!
 //!
 
-static GDK2.Colormap create( GTK2.GdkVisual visual, int|void allocate, int|void system );
+protected GDK2.Colormap create( GTK2.GdkVisual visual, int|void allocate, int|void system );
 //! Creates a new colormap.
 //!
 //!

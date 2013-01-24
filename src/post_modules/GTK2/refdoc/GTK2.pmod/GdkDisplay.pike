@@ -18,7 +18,7 @@ GDK2.Display close( );
 //!
 //!
 
-static GDK2.Display create( );
+protected GDK2.Display create( );
 //! Get the default display.
 //!
 //!

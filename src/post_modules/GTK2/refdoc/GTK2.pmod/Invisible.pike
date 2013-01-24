@@ -6,7 +6,7 @@
 
 inherit GTK2.Widget;
 
-static GTK2.Invisible create( mapping|void props );
+protected GTK2.Invisible create( mapping|void props );
 //! Create a new invisible widget
 //!
 //!

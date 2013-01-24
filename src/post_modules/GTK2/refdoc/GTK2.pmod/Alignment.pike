@@ -28,7 +28,7 @@
 
 inherit GTK2.Bin;
 
-static GTK2.Alignment create( float|mapping xalign_or_props, float|void yalign, float|void xscale, float|void yscale );
+protected GTK2.Alignment create( float|mapping xalign_or_props, float|void yalign, float|void xscale, float|void yscale );
 //! @xml{<matrix>@}
 //! @xml{<r>@}@xml{<c>@}xalign :@xml{</c>@}
 //! @xml{<c>@}the horizontal alignment of the child widget, from 0 (left) to 1 (right).@xml{</c>@}@xml{</r>@}

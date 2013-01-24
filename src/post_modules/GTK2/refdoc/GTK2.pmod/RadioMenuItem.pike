@@ -13,7 +13,7 @@
 
 inherit GTK2.CheckMenuItem;
 
-static GTK2.RadioMenuItem create( string|mapping title, GTK2.RadioMenuItem groupmember );
+protected GTK2.RadioMenuItem create( string|mapping title, GTK2.RadioMenuItem groupmember );
 //! object GTK2.RadioMenuItem(string title) - First button (with label)
 //! object GTK2.RadioMenuItem()->add(widget) - First button (with widget)
 //! object GTK2.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)

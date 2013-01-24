@@ -4,7 +4,7 @@
 
 inherit GTK2.Dialog;
 
-static GTK2.ColorSelectionDialog create( string|mapping title_or_props );
+protected GTK2.ColorSelectionDialog create( string|mapping title_or_props );
 //! Create a new Color Selection Dialog
 //!
 //!

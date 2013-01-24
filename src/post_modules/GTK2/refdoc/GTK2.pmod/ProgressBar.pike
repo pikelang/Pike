@@ -24,7 +24,7 @@
 
 inherit GTK2.Progress;
 
-static GTK2.ProgressBar create( mapping|void props );
+protected GTK2.ProgressBar create( mapping|void props );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0
@@ -90,7 +90,7 @@ GTK2.ProgressBar set_pulse_step( float fraction );
 //!
 //!
 
-GTK2.ProgressBar set_text( string text );
+GTK2.ProgressBar set_text( sprintf_format text, sprintf_args... fmt );
 //! Causes the given text to appear superimposed on the progress bar.
 //!
 //!

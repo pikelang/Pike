@@ -9,7 +9,7 @@
 
 inherit GTK2.Scrollbar;
 
-static GTK2.HScrollbar create( GTK2.Adjustment adjustment_or_props );
+protected GTK2.HScrollbar create( GTK2.Adjustment adjustment_or_props );
 //! Used to create a new hscrollbar widget.
 //!
 //!

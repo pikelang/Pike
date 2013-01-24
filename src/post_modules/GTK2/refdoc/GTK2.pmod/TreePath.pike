@@ -20,7 +20,7 @@ GTK2.TreePath copy( );
 //!
 //!
 
-static GTK2.TreePath create( string|void path );
+protected GTK2.TreePath create( string|void path );
 //! Creates a new GTK2.TreePath.
 //!
 //!

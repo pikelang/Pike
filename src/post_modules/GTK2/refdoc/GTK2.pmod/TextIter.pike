@@ -356,11 +356,6 @@ int forward_word_ends( int count );
 //!
 //!
 
-GTK2.TextIter free( );
-//! Free an iterator.
-//!
-//!
-
 GTK2.TextBuffer get_buffer( );
 //! Returns the W(TextBuffer) this iterator is associated with.
 //!
@@ -430,13 +425,12 @@ GTK2.GdkPixbuf get_pixbuf( );
 
 string get_slice( GTK2.TextIter end );
 //! Returns the text in the given range.  A "slice" is an array of
-//! characters encoded in UTF-8 foramt, including the Unicode "unknown"
-//! character 0xFFFC for iterable non-character elements in the buffer,
-//! such as images.  Because images are encoded in the slice, byte and
-//! character offsets in the returned array will correspond to bytes
-//! offsets in the text buffer.  Note that 0xFFFC can occur in normal
-//! text as well, so it is not a reliable indicator that a pixbuf or
-//! widget is in the buffer.
+//! characters including the Unicode "unknown" character 0xFFFC for
+//! iterable non-character elements in the buffer, such as images.
+//! Because images are encoded in the slice, byte and character offsets
+//! in the returned array will correspond to bytes offsets in the text
+//! buffer.  Note that 0xFFFC can occur in normal text as well, so it
+//! is not a reliable indicator that a pixbuf or widget is in the buffer.
 //!
 //!
 

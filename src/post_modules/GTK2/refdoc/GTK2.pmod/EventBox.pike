@@ -30,7 +30,7 @@
 
 inherit GTK2.Bin;
 
-static GTK2.EventBox create( mapping|void props );
+protected GTK2.EventBox create( mapping|void props );
 //! Create a new event box widget
 //!
 //!

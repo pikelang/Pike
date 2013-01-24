@@ -95,7 +95,7 @@ GTK2.ActionGroup add_toggle_actions( array entries );
 //!
 //!
 
-static GTK2.ActionGroup create( string|mapping name_or_props );
+protected GTK2.ActionGroup create( string|mapping name_or_props );
 //! Creates a new GTK2.ActionGroup object.  The name of the action group is
 //! used when associating keybindings with the actions.
 //!

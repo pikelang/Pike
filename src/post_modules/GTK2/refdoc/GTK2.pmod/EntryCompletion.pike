@@ -26,7 +26,7 @@ GTK2.EntryCompletion complete( );
 //!
 //!
 
-static GTK2.EntryCompletion create( mapping|void props );
+protected GTK2.EntryCompletion create( mapping|void props );
 //! Creates a new widget.
 //!
 //!
@@ -100,6 +100,12 @@ GTK2.EntryCompletion insert_prefix( );
 GTK2.EntryCompletion set_inline_completion( int inline_completion );
 //! Sets whether the common prefix of the possible completions should be
 //! automatically inserted in the entry.
+//!
+//!
+
+GTK2.EntryCompletion set_match_func( function cb );
+//! Sets the function to be called to decide if a specific row should
+//! be displayed.
 //!
 //!
 

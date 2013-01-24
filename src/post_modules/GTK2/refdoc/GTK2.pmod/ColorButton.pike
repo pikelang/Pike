@@ -13,7 +13,7 @@
 
 inherit GTK2.Button;
 
-static GTK2.ColorButton create( GTK2.GdkColor red_or_props, int|void green, int|void blue );
+protected GTK2.ColorButton create( GTK2.GdkColor red_or_props, int|void green, int|void blue );
 //! Create a new W(ColorButton).
 //!
 //!

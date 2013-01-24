@@ -7,13 +7,12 @@ GTK2.Pango.TabArray copy( );
 //!
 //!
 
-static Pango.TabArray create( int initial_size, int position_in_pixels );
+protected Pango.TabArray create( int initial_size, int position_in_pixels );
 //! Creates an array of initial_size tab stops.  Tab stops are specified in
 //! pixel units if positions_in_pixels is true, otherwise in Pango units. All
 //! stops are initially at position 0.
 //!
 //!
-
 
 int get_positions_in_pixels( );
 //! Returns true if the tab positions are in pixels, false if they are in

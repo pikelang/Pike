@@ -48,7 +48,7 @@ GTK2.Adjustment clamp_page( float lower, float upper );
 //!
 //!
 
-static GTK2.Adjustment create( float|mapping value_or_props, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
+protected GTK2.Adjustment create( float|mapping value_or_props, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
 //! The value argument is the initial value you want to give to the
 //! adjustment, usually corresponding to the topmost or leftmost
 //! position of an adjustable widget. The lower argument specifies the

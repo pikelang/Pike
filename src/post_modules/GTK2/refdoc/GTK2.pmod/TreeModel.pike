@@ -78,7 +78,7 @@ int iter_n_children( GTK2.TreeIter iter );
 //!
 //!
 
-GTK2.TreeIter iter_next( GTK2.TreeIter iter );
+int iter_next( GTK2.TreeIter iter );
 //! Go to next node.
 //!
 //!

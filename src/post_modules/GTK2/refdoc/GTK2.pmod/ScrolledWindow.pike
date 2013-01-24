@@ -26,6 +26,7 @@
 //! 
 //! Style properties:
 //! int scrollbar-spacing
+//! int scrollbars-within-bevel
 //!
 //!
 //!  Signals:
@@ -49,7 +50,7 @@ GTK2.ScrolledWindow add( GTK2.Widget victim );
 //!
 //!
 
-static GTK2.ScrolledWindow create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustments );
+protected GTK2.ScrolledWindow create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustments );
 //! The two adjustments are most commonly set to 0.
 //!
 //!

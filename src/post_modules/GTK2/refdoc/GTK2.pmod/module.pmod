@@ -2170,6 +2170,10 @@ constant JUSTIFY_RIGHT;
 //!
 
 
+constant MAJOR_VERSION;
+//!
+
+
 constant MAPPED;
 //!
 
@@ -2203,6 +2207,14 @@ constant MESSAGE_QUESTION;
 
 
 constant MESSAGE_WARNING;
+//!
+
+
+constant MICRO_VERSION;
+//!
+
+
+constant MINOR_VERSION;
 //!
 
 

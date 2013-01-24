@@ -29,7 +29,7 @@ inherit GTK2.Dialog;
 
 inherit GTK2.FileChooser;
 
-static GTK2.FileChooserDialog create( string title, GTK2.Window parent, int mode, array buttons );
+protected GTK2.FileChooserDialog create( string title, GTK2.Window parent, int mode, array buttons );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename

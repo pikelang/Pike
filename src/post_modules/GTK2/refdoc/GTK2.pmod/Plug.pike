@@ -5,6 +5,7 @@
 //! which then creates a GTK2.Plug window with that XID. Any widgets
 //! contained in the GTK2.Plug then will appear inside the first
 //! applications window.
+//! Properties
 //!
 //!
 //!  Signals:
@@ -13,7 +14,7 @@
 
 inherit GTK2.Window;
 
-static GTK2.Plug create( int|mapping socket_id_or_props );
+protected GTK2.Plug create( int|mapping socket_id_or_props );
 //! Create a new plug, the socket_id is the window into which this plug
 //! will be plugged.
 //!

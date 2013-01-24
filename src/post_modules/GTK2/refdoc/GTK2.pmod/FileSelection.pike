@@ -40,7 +40,7 @@ GTK2.FileSelection complete( string pattern );
 //!
 //!
 
-static GTK2.FileSelection create( string|mapping title_or_props );
+protected GTK2.FileSelection create( string|mapping title_or_props );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename

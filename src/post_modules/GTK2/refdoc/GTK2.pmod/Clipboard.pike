@@ -30,8 +30,9 @@ GTK2.Clipboard set_image( GTK2.GdkPixbuf pixbuf );
 //!
 //!
 
-GTK2.Clipboard set_text( string text, int len );
-//! Sets the contents of the clipboard to the given UTF-8 string.
+GTK2.Clipboard set_text( sprintf_format text, sprintf_args... fmt );
+//! Sets the contents of the clipboard to the given string.
+//! If multiple arguments are supplied, sprintf() is called implicitly.
 //!
 //!
 
@@ -42,8 +43,7 @@ GTK2.GdkPixbuf wait_for_image( );
 //!
 
 string wait_for_text( );
-//! Requests the contents of the clipboard as text and converts the result
-//! to UTF-8 if necessary.
+//! Requests the contents of the clipboard as text
 //!
 //!
 

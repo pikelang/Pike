@@ -20,7 +20,7 @@
 
 inherit GTK2.Misc;
 
-static GTK2.Arrow create( int|mapping arrow_type_or_props, int|void shadow_type );
+protected GTK2.Arrow create( int|mapping arrow_type_or_props, int|void shadow_type );
 //! First argument is one of @[ARROW_DOWN], @[ARROW_LEFT], @[ARROW_RIGHT] and @[ARROW_UP], second one of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT].
 //!
 //!

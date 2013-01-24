@@ -44,7 +44,7 @@ GTK2.Action connect_proxy( GTK2.Widget proxy );
 //!
 //!
 
-static GTK2.Action create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
+protected GTK2.Action create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
 //! Creates a new object.
 //!
 //!

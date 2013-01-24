@@ -46,7 +46,7 @@ GTK2.SizeGroup add_widget( GTK2.Widget widget );
 //!
 //!
 
-static GTK2.SizeGroup create( int|mapping mode_or_props );
+protected GTK2.SizeGroup create( int|mapping mode_or_props );
 //! Create a new group.
 //!
 //!

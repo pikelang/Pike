@@ -2,7 +2,7 @@
 //!
 //!
 
-static GTK2.IconSource create( );
+protected GTK2.IconSource create( );
 //! Creates a new GTK2.IconSource.  A GTK2.IconSource contains a GDK2.Pixbuf (or
 //! image filename) that serves as the base image for one or more of the icons
 //! in a GTK2.IconSet, along with a specification for which icons in the icon
