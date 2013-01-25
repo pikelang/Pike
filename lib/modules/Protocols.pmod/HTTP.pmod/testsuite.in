@@ -1,0 +1,179 @@
+
+START_MARKER
+
+test_do(add_constant("H",Protocols.HTTP))
+
+test_eq(H.HTTP_OK, 200)
+test_eq(H.response_codes[200], "200 OK")
+
+test_do([[
+class A {
+  inherit H.Query;
+
+  string _server;
+  int _port;
+  string _query;
+  mapping|string _headers;
+  string _data;
+
+  this_program sync_request(string server, int port, string query, void|mapping|string headers, void|string data) {
+
+    _server = server;
+    _port = port;
+    _query = query;
+    _headers = headers;
+    _data = data;
+    ok = 1;
+    return this;
+  }
+
+  array params() { return ({ _server, _port, _query, _headers, _data }); }
+};
+add_constant("CON",A);
+]])
+
+dnl do_proxied_method
+
+
+test_any([[
+  object o = H.do_method("GET","http://x",0,0,CON());
+  if( o->_server != "x" ) return 1;
+  if( o->_port != 80 ) return 2;
+  if( o->_query != "GET / HTTP/1.0" ) return 3;
+  mapping h = o->_headers;
+  if( !h || sizeof(h) != 2 ) return 4;
+  if( h->host != "x" ) return 5;
+  if( !has_prefix(h["user-agent"], "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client) Pike/") ) return 6;
+  if( o->_data != 0 ) return 7;
+  return 0;
+]], 0)
+test_any([[
+  object o = H.do_method("GET","https://x",0,0,CON());
+  if( o->_server != "x" ) return 1;
+  if( o->_port != 443 ) return 2;
+  if( o->https != 1 ) return 3;
+  return 0;
+]], 0)
+test_any([[
+  object o = H.do_method("GET","http://x:81",0,0,CON());
+  if( o->_port != 81 ) return 1;
+  return 0;
+]], 0)
+test_any([[
+  object o = H.do_method("GET","https://x:80",0,0,CON());
+  if( o->_port != 80 ) return 2;
+  if( o->https != 1 ) return 3;
+  return 0;
+]], 0)
+
+test_any([[
+  object o = H.do_method("GET","http://a@x",0,0,CON());
+  return o->_headers->authorization;
+]], "Basic YTo=")
+test_any([[
+  object o = H.do_method("GET","http://a:b@x",0,0,CON());
+  return o->_headers->authorization;
+]], "Basic YTpi")
+test_any([[
+  object o = H.do_method("GET","http://:b@x",0,0,CON());
+  return o->_headers->authorization;
+]], "Basic OmI=")
+
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,([]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":"x"]))
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,(["host":"y"]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":"y"]))
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,(["user-agent":"a"]),CON());
+  mapping h = o->_headers;
+  return h;
+]], (["host":"x","user-agent":"a"]))
+test_any_equal([[
+  object o = H.do_method("GET","http://a:b@x",0,(["authorization":"z"]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":"x","authorization":"z"]))
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,(["a":"b"]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":"x","a":"b"]))
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,(["Host":0]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":0]))
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,(["a":({"1","2"})]),CON());
+  mapping h = o->_headers;
+  m_delete(h, "user-agent");
+  return h;
+]], (["host":"x","a":({"1","2"})]))
+
+
+dnl do_async_method
+dnl do_async_proxied_method
+dnl get_url
+dnl put_url
+dnl delete_url
+dnl get_url_nice
+dnl get_url_data
+dnl post_url
+dnl post_url_nice
+dnl post_url_data
+
+dnl http_encode_query
+test_any([[
+  string s = H.http_encode_query((["a":"b","c":"d"]));
+  return (< "a=b&c=d", "c=d&a=b" >)[s];
+]], 1)
+test_any([[
+  string s = H.http_encode_query((["a":"b","a":"d"]));
+  return (< "a=b", "a=d" >)[s];
+]], 1)
+test_any([[
+  string s = H.http_encode_query((["a":0,"c":"d"]));
+  return (< "a&c=d", "c=d&a" >)[s];
+]], 1)
+test_any([[
+  string s = H.http_encode_query((["a":({"b","c"})]));
+  return (< "a=b&a=c", "a=c&a=b" >)[s];
+]], 1)
+test_eq(H.http_encode_query((["&amp;":"?"])), "%26amp%3B=%3F")
+test_eq([[H.http_encode_query((["'=\"":"\0\0\0"]))]], "%27%3D%22=%00%00%00")
+
+test_eq(H.percent_encode("AZaz09-._~"), "AZaz09-._~")
+test_eq(H.percent_encode(":!\1 \x80\xff"), "%3A%21%01%20%80%FF")
+test_eq(H.percent_encode("a\u0100a"), "a\u0100a")
+
+test_eq(H.percent_decode("%00x%3bbbb%3B"), "\0x;bbb;")
+test_eq(H.percent_decode(""), "")
+test_eq(H.percent_decode("%"), "\0") dnl Change?
+test_eq(H.percent_decode("%1"), "\0") dnl Change?
+
+test_eq(H.uri_encode(":/a\u0100a+"), "%3A%2Fa%C4%80a%2B")
+test_eq(H.uri_encode_invalids(":/a\u0100a+"), ":/a%C4%80a+")
+
+test_eq(H.uri_decode("%3A%2Fa%C4%80a%2B"), ":/a\u0100a+")
+
+test_eq(H.iri_encode(":+<\00\x80\u0100"), "%3A%2B%3C%00\x80\u0100")
+
+dnl quoted_string_encode
+dnl quoted_string_decode
+
+
+test_do(add_constant("H"))
+test_do(add_constant("CON"))
+
+END_MARKER
