@@ -65,13 +65,13 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
    else
    {
 #ifdef GIF_DEBUG
-      fprintf(stderr,"codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       lzw->lastout=(lzw->lastout<<lzw->codebits)|codeno;
       lzw->outbit+=lzw->codebits;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"-> codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"-> codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       while (lzw->outbit>8)
@@ -80,7 +80,8 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 	    (unsigned char)(lzw->lastout>>(lzw->outbit-8));
 	 lzw->outbit-=8;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"(shiftout) codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,
+              "(shiftout) codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       }
