@@ -83,10 +83,10 @@ constant kladdkaka_help =
   4 eggs
   5 dl sugar
   2 pinches salt
-  6 msk cocoa
+  6 tbs/90 ml cocoa
   200 g melted butter
   3 dl wheat-flour
-  2 tsk vanilla sugar
+  2 tsp/10 ml vanilla sugar
 
 1. Mix everything together
 2. Pour into a greased circular form.
