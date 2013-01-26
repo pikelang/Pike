@@ -290,71 +290,65 @@
 #define SAFE_FIFO_DEBUG_END() inside=0; }while(0)
 #endif /* DEBUG */
 
-#define DECLARE_FIFO(pre,TYPE) \
-  static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER]; \
-  static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0
-
-#define BEGIN_FIFO_PUSH(pre,TYPE) do { \
-  int PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_first) + 1; \
-  if(PIKE_CONCAT(pre,_tmp_) >= SIGNAL_BUFFER) PIKE_CONCAT(pre,_tmp_)=0
-
-#define FIFO_DATA(pre,TYPE) ( PIKE_CONCAT(pre,buf)[PIKE_CONCAT(pre,_tmp_)] )
-
-#define END_FIFO_PUSH(pre,TYPE) PIKE_CONCAT(pre,_first)=PIKE_CONCAT(pre,_tmp_); } while(0)
+#define DECLARE_FIFO(pre,TYPE)						  \
+  static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER];		  \
+  static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0; \
+  static inline TYPE PIKE_CONCAT(pre,_pop)(void) {			  \
+    int tmp2 = PIKE_CONCAT(pre,_first);					  \
+    if(PIKE_CONCAT(pre,_last) != tmp2))	{				  \
+      int tmp;								  \
+      if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)			  \
+	PIKE_CONCAT(pre,_last)=0;					  \
+      tmp = PIKE_CONCAT(pre,_last);					  \
+      return PIKE_CONCAT(pre,buf)[tmp];					  \
+    }									  \
+    return NULL;							  \
+  }									  \
+									  \
+  static inline void PIKE_CONCAT(pre,_push)(TYPE val) {			  \
+    int tmp = PIKE_CONCAT(pre, _first) + 1;				  \
+    if (tmp >= SIGNAL_BUFFER) tmp = 0;					  \
+    PIKE_CONCAT(pre, buf)[tmp] = val;					  \
+    PIKE_CONCAT(pre, _first) = tmp;					  \
+  }
 
 
 #define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
 
-#define BEGIN_FIFO_LOOP(pre,TYPE) do {				\
-   int PIKE_CONCAT(pre,_tmp2_)=PIKE_CONCAT(pre,_first);		\
-   while(PIKE_CONCAT(pre,_last) != PIKE_CONCAT(pre,_tmp2_))	\
-   {								\
-     int PIKE_CONCAT(pre,_tmp_);				\
-     if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)		\
-       PIKE_CONCAT(pre,_last)=0;				\
-     PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_last)
-
-#define END_FIFO_LOOP(pre,TYPE) } }while(0)
-     
 #define INIT_FIFO(pre,TYPE)
 
 #else /* NEED_SIGNAL_SAFE_FIFO */
 
-#define DECLARE_FIFO(pre,TYPE) \
-  static int PIKE_CONCAT(pre,_fd)[2]; \
-  static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available)
-
-#define BEGIN_FIFO_PUSH(pre,TYPE) do {		\
-    TYPE PIKE_CONCAT(pre,_tmp_) ;		\
-    int PIKE_CONCAT(pre,_tmp3_) ;		\
-    int PIKE_CONCAT(pre,_errno_save)=errno
-
-#define FIFO_DATA(pre,TYPE) PIKE_CONCAT(pre,_tmp_)
-
-#define END_FIFO_PUSH(pre,TYPE)					\
-  while( (PIKE_CONCAT(pre,_tmp3_) =				\
-	  write(PIKE_CONCAT(pre,_fd)[1],			\
-		(char *)&PIKE_CONCAT(pre,_tmp_),		\
-		sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 &&		\
-	 errno==EINTR)						\
-    ;								\
-  DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) !=			\
-		  sizeof( PIKE_CONCAT(pre,_tmp_)))		\
-		Pike_fatal("Atomic pipe write failed!!\n"); )	\
-    errno=PIKE_CONCAT(pre,_errno_save);				\
-  PIKE_CONCAT(pre,_data_available)=1;				\
-  } while(0)
+#define DECLARE_FIFO(pre,TYPE)					 \
+  static int PIKE_CONCAT(pre,_fd)[2];				 \
+  static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available); \
+  static inline int PIKE_CONCAT(pre, _pop)(TYPE *val) {		 \
+    PIKE_CONCAT(pre,_data_available) = 0;			 \
+    if (read(PIKE_CONCAT(pre,_fd)[0], val, sizeof(*val))	 \
+	== sizeof(*val)) {					 \
+      /* NB: We must reset and set data_available here		 \
+       *     to avoid races. */					 \
+      PIKE_CONCAT(pre,_data_available) = 1;			 \
+      return 1;							 \
+    }								 \
+    return 0;							 \
+  }								 \
+								 \
+  static inline void PIKE_CONCAT(pre, _push)(TYPE val) {	 \
+    int sz;							 \
+    int errno_save = errno;					 \
+    while( (sz = write(PIKE_CONCAT(pre,_fd)[1], (char *)&val,	 \
+			 sizeof(val))) < 0 &&			 \
+	   errno==EINTR)					 \
+      ;								 \
+    DO_IF_DEBUG(if (sz != sizeof(val))				 \
+		  Pike_fatal("Atomic pipe write failed!!\n"); )	 \
+    errno = errno_save;					 	 \
+    PIKE_CONCAT(pre,_data_available)=1;				 \
+  }
 
 
 #define QUICK_CHECK_FIFO(pre,TYPE) PIKE_CONCAT(pre,_data_available)
-
-#define BEGIN_FIFO_LOOP(pre,TYPE) do {			      \
-   TYPE PIKE_CONCAT(pre,_tmp_);				      \
-   PIKE_CONCAT(pre,_data_available)=0;			      \
-   while(read(PIKE_CONCAT(pre,_fd)[0],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))==sizeof(PIKE_CONCAT(pre,_tmp_))) \
-   {
-
-#define END_FIFO_LOOP(pre,TYPE) }}while(0)
 
 #define INIT_FIFO(pre,TYPE) do {			\
   if(pike_make_pipe(PIKE_CONCAT(pre,_fd)) <0)		\
@@ -718,9 +712,7 @@ void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 
 static void register_signal(int signum)
 {
-  BEGIN_FIFO_PUSH(sig, unsigned char);
-  FIFO_DATA(sig, unsigned char)=signum;
-  END_FIFO_PUSH(sig, unsigned char);
+  sig_push(signum);
   wake_up_backend();
 }
 
@@ -807,46 +799,42 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 
   if(QUICK_CHECK_FIFO(sig, unsigned char) && !signalling)
   {
+    unsigned char sig = ~0;
     signalling=1;
 
     SET_ONERROR(ebuf,unset_signalling,0);
 
-    BEGIN_FIFO_LOOP(sig, unsigned char);
+    while (sig_pop(&sig)) {
 
 #ifdef USE_SIGCHILD
-    if(FIFO_DATA(sig, unsigned char)==SIGCHLD)
-    {
-      BEGIN_FIFO_LOOP(wait,wait_data);
+      if(sig == SIGCHLD)
+      {
+	wait_data wd;
 
-      if(!FIFO_DATA(wait,wait_data).pid)
-	  Pike_fatal("FIFO_DATA(wait,wait_data).pid=0 NEED_SIGNAL_SAFE_FIFO is "
+	while (wait_pop(&wd)) {
+
+	  if(!wd.pid)
+	    Pike_fatal("wd.pid=0 NEED_SIGNAL_SAFE_FIFO is "
 #ifndef NEED_SIGNAL_SAFE_FIFO
-		"not "
+		       "not "
 #endif
-		"defined.\n");
-	
-      report_child(FIFO_DATA(wait,wait_data).pid,
-		   FIFO_DATA(wait,wait_data).status,
-		   "check_signals");
-      
-      END_FIFO_LOOP(wait,wait_data);
-    }
+		       "defined.\n");
+
+	  report_child(wd.pid, wd.status, "check_signals");
+	}
+      }
 #endif
 
-    if(SAFE_IS_ZERO(signal_callbacks + FIFO_DATA(sig, unsigned char)))
+    if(SAFE_IS_ZERO(signal_callbacks + sig))
     {
-      if(default_signals[FIFO_DATA(sig, unsigned char)])
-	default_signals[FIFO_DATA(sig, unsigned char)]
-	  (FIFO_DATA(sig, unsigned char));
+      if(default_signals[sig])
+	default_signals[sig](sig);
     }else{
-      push_svalue(signal_callbacks + FIFO_DATA(sig, unsigned char));
-      push_int(FIFO_DATA(sig, unsigned char));
+      push_svalue(signal_callbacks + sig);
+      push_int(sig);
       num_callbacks++;
     }
-
-    END_FIFO_LOOP(sig, unsigned char);
-    UNSET_ONERROR(ebuf);
-    signalling=0;
+    CALL_AND_UNSET_ONERROR(ebuf);
 
     /* Call the Pike-level callbacks in
      * a context where signals are allowed.
@@ -1193,19 +1181,19 @@ static RETSIGTYPE receive_sigchild(int signum)
   
   if(pid>0)
   {
-    BEGIN_FIFO_PUSH(wait,wait_data);
+    wait_data wd;
 
 #ifdef __CHECKER__
     /* Clear potential padding. */
-    MEMSET(&FIFO_DATA(wait,wait_data), 0, sizeof(FIFO_DATA(wait,wait_data)));
+    MEMSET(&wd, 0, sizeof(wd));
 #endif
 
     PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
 		  getpid(), pid));
 
-    FIFO_DATA(wait,wait_data).pid=pid;
-    FIFO_DATA(wait,wait_data).status=status;
-    END_FIFO_PUSH(wait,wait_data);
+    wd.pid=pid;
+    wd.status=status;
+    wait_push(wd);
     goto try_reap_again;
   }
   PROC_FPRINTF((stderr, "[%d] receive_sigchild: No more dead children.\n",
