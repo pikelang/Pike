@@ -825,15 +825,17 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
       }
 #endif
 
-    if(SAFE_IS_ZERO(signal_callbacks + sig))
-    {
-      if(default_signals[sig])
-	default_signals[sig](sig);
-    }else{
-      push_svalue(signal_callbacks + sig);
-      push_int(sig);
-      num_callbacks++;
+      if(SAFE_IS_ZERO(signal_callbacks + sig))
+      {
+	if(default_signals[sig])
+	  default_signals[sig](sig);
+      }else{
+	push_svalue(signal_callbacks + sig);
+	push_int(sig);
+	num_callbacks++;
+      }
     }
+
     CALL_AND_UNSET_ONERROR(ebuf);
 
     /* Call the Pike-level callbacks in
