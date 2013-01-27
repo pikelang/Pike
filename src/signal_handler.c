@@ -372,6 +372,7 @@ static int set_priority( int pid, char *to );
 
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
+static sig_atomic_t signal_masks[MAX_SIGNALS];
 static void (*default_signals[MAX_SIGNALS])(INT32);
 static struct callback *signal_evaluator_callback =0;
 
@@ -783,26 +784,16 @@ void my_signal(int sig, sigfunctype fun)
 
 
 
-static int signalling=0;
-
-static void unset_signalling(void *UNUSED(notused)) { signalling=0; }
-
 PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
-  ONERROR ebuf;
-  int num_callbacks = 0;
 #ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug();
 #endif
 
-
-  if(QUICK_CHECK_FIFO(sig, unsigned char) && !signalling)
+  if (QUICK_CHECK_FIFO(sig, unsigned char))
   {
     unsigned char sig = ~0;
-    signalling=1;
-
-    SET_ONERROR(ebuf,unset_signalling,0);
 
     while (sig_pop(&sig)) {
 
@@ -825,33 +816,38 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
       }
 #endif
 
-      if(SAFE_IS_ZERO(signal_callbacks + sig))
-      {
-	if(default_signals[sig])
-	  default_signals[sig](sig);
-      }else{
-	push_svalue(signal_callbacks + sig);
-	push_int(sig);
-	num_callbacks++;
-      }
-    }
+      if (!signal_masks[sig]) {
+	signal_masks[sig] = 1;
 
-    CALL_AND_UNSET_ONERROR(ebuf);
-
-    /* Call the Pike-level callbacks in
-     * a context where signals are allowed.
-     */
-    while(num_callbacks--) {
-      JMP_BUF recovery;
-      free_svalue(&throw_value);
-      mark_free_svalue(&throw_value);
-      if (SETJMP_SP(recovery, 2)) {
-	call_handle_error();
+	do {
+	  /* NB: We check this every loop in case the
+	   *     Pike-level signal handler has been
+	   *     disabled during the call. */
+	  if(SAFE_IS_ZERO(signal_callbacks + sig))
+	  {
+	    if(default_signals[sig])
+	      default_signals[sig](sig);
+	  } else {
+	    JMP_BUF recovery;
+	    free_svalue(&throw_value);
+	    mark_free_svalue(&throw_value);
+	    if (SETJMP_SP(recovery, 0)) {
+	      call_handle_error();
+	    } else {
+	      push_svalue(signal_callbacks + sig);
+	      push_int(sig);
+	      f_call_function(2);
+	      pop_stack();
+	    }
+	    UNSETJMP(recovery);
+	  }
+	} while (--signal_masks[sig]);
       } else {
-	f_call_function(2);
-	pop_stack();
+	/* Signal handler is being called somewhere else.
+	 * Make it repeat when finished.
+	 */
+	signal_masks[sig] = 2;
       }
-      UNSETJMP(recovery);
     }
   }
 }
