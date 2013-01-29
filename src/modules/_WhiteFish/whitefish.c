@@ -387,7 +387,7 @@ end:
 static void f_do_query_phrase( INT32 args )
 /*! @decl ResultSet do_query_phrase( array(string) words,          @
  *!                          array(int) field_coefficients,       @
- *!                          function(int:string) blobfeeder)   
+ *!                          function(string,int,int:string) blobfeeder)
  *! @param words
  *!       
  *! Arrays of word ids. Note that the order is significant for the
@@ -408,7 +408,7 @@ static void f_do_query_phrase( INT32 args )
  *! @param blobfeeder
  *!     
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -453,7 +453,7 @@ static void f_do_query_and( INT32 args )
 /*! @decl ResultSet do_query_and( array(string) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          array(int) proximity_coefficients,   @
- *!                          function(int:string) blobfeeder)   
+ *!                          function(string,int,int:string) blobfeeder)
  *! @param words
  *!       
  *! Arrays of word ids. Note that the order is significant for the
@@ -499,7 +499,7 @@ static void f_do_query_and( INT32 args )
  *! @param blobfeeder
  *!     
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -553,7 +553,7 @@ static void f_do_query_or( INT32 args )
 /*! @decl ResultSet do_query_or( array(string) words,          @
  *!                              array(int) field_coefficients,       @
  *!                              array(int) proximity_coefficients,   @
- *!                              function(int:string) blobfeeder)   
+ *!                              function(string,int,int:string) blobfeeder)
  *! @param words
  *!       
  *! Arrays of word ids. Note that the order is significant for the
@@ -599,7 +599,7 @@ static void f_do_query_or( INT32 args )
  *! @param blobfeeder
  *!     
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -661,17 +661,17 @@ PIKE_MODULE_INIT
 
   add_function( "do_query_or", f_do_query_or,
 		"function(array(string),array(int),array(int),int"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 
   add_function( "do_query_and", f_do_query_and,
 		"function(array(string),array(int),array(int),int"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 
   add_function( "do_query_phrase", f_do_query_phrase,
 		"function(array(string),array(int)"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 }
 

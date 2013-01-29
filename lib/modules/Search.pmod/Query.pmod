@@ -1,13 +1,36 @@
 #pike __REAL_VERSION__
 
-static function(string,int:string) blobfeeder(Search.Database.Base db,
-                                              array words)
+
+static string debug_blob(string b)
 {
-  mapping state = mkmapping(words,allocate(sizeof(words)));
+  if (!b)
+    return "Blob(empty)";
+  string res = "Blob(";
+  while (sizeof(b) >= 5) {
+    array hits = ({ });
+    sscanf(b, "%4c%c%s", int docid, int nhits, b);
+    int iter = nhits;
+    while (iter-- && sizeof(b) >= 2) {
+      sscanf(b, "%2c%s", int hit, b);
+      hits += ({ (string) hit });
+    }
+    res += sprintf("[docid:%O hits:%s]", docid, hits * ",");
+  }
+  res += ")";
+  return res;
+}
+
+
+static function(string,int,int:string) blobfeeder(Search.Database.Base db,
+						  array words)
+{
+  //  Create state per word and stream so multiple occurrences of the same
+  //  word are kept apart.
+  mapping state = mkmapping(words, allocate(sizeof(words), ([ ]) ));
   mapping(string:mapping(int:string)) blobcache = ([ ]);
-  return lambda( string word, int foo )
+  return lambda( string word, int foo, int blob_stream_id )
          {
-           return db->get_blob(word, state[word]++, blobcache);
+           return db->get_blob(word, state[word][blob_stream_id]++, blobcache);
          };
 }
  
