@@ -554,8 +554,10 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   }
 
 #ifdef PIKE_DEBUG
-  if(m->data->size != tmp)
-    Pike_fatal("Rehash failed, size not same any more.\n");
+  if((m->data->size != tmp) &&
+     ((m->data->size > tmp) || !(m->data->flags & MAPPING_WEAK)))
+    Pike_fatal("Rehash failed, size not same any more (%ld != %ld).\n",
+	       (long)m->data->size, (long)tmp);
 #endif
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = m->data->size;
