@@ -2339,7 +2339,7 @@ PIKECLASS Buffer
   PIKEFUN void create( int|void size )
   {
     struct Buffer_struct *str = THIS;
-    if( args )
+    if( size )
       str->initial = MAXIMUM( size->u.integer, 512 );
     else
       str->initial = 256;
