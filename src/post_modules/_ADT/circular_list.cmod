@@ -365,7 +365,7 @@ PIKECLASS CircularList
   {
     int s;
     int retval;
-    if(args == 2)
+    if(start)
     {
       if (TYPEOF(*start) != PIKE_T_INT)
       {
@@ -901,7 +901,7 @@ PIKECLASS CircularList
       {
 	THIS->list = OBJ2_CIRCULARLIST(list);
 	add_ref(THIS->obj = list);
-	if (args == 2) // if there was an start index supplied
+	if (start) // if there was an start index supplied
 	{
 	  THIS->pos=start->u.integer;
 	  if (THIS->list->a && ((THIS->pos > THIS->list->size) 
@@ -1053,7 +1053,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->list && 
 		(THIS->pos + 1) <= THIS->list->size);
@@ -1076,7 +1076,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->list && 
 		(THIS->pos) > 0);
@@ -1278,7 +1278,7 @@ PIKECLASS CircularList
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
-    if (args > 0)
+    if (ind)
     {
       push_svalue(ind);
     }
