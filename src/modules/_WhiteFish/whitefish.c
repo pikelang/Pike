@@ -211,7 +211,7 @@ static void handle_phrase_hit( Blob **blobs,
   unsigned char *first = nhits+nblobs;
   int matrix[65];
   double accum = 0.0;
-  int base_hit = 0;
+  int base_hit = -1;
   
   MEMSET(matrix, 0, sizeof(matrix) );
 
@@ -254,7 +254,7 @@ static void handle_phrase_hit( Blob **blobs,
   }
 
   /* Determine which blobs to step forward */
-  if (base_hit > 0) {
+  if (base_hit >= 0) {
     int did_next = 0;
     for (i = 0; i < nblobs; i++)
       if (nhits[i]) {
@@ -265,9 +265,9 @@ static void handle_phrase_hit( Blob **blobs,
 	}
       }
     if (!did_next)
-      base_hit = 0;
+      base_hit = -1;
   }
-  if (!base_hit) {
+  if (base_hit < 0) {
     for (i = 0; i < nblobs; i++)
       wf_blob_next(blobs[i]);
   }
