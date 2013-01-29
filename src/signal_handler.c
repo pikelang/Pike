@@ -2516,7 +2516,7 @@ static void internal_add_limit( struct perishables *storage,
     if(TYPEOF(limit_value->u.array->item[1]) == PIKE_T_INT)
       l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
     else
-      l->rlp.rlim_max = ol.rlim_cur;
+      l->rlp.rlim_cur = ol.rlim_cur;
   } else if(TYPEOF(*limit_value) == T_STRING) {
     l = malloc(sizeof(struct pike_limit));
     l->rlp.rlim_max = RLIM_INFINITY;
