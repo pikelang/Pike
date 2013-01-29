@@ -293,16 +293,17 @@
 #define DECLARE_FIFO(pre,TYPE)						  \
   static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER];		  \
   static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0; \
-  static inline TYPE PIKE_CONCAT(pre,_pop)(void) {			  \
+  static inline int PIKE_CONCAT(pre,_pop)(TYPE *val) {			  \
     int tmp2 = PIKE_CONCAT(pre,_first);					  \
-    if(PIKE_CONCAT(pre,_last) != tmp2))	{				  \
+    if(PIKE_CONCAT(pre,_last) != tmp2) {				  \
       int tmp;								  \
       if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)			  \
 	PIKE_CONCAT(pre,_last)=0;					  \
       tmp = PIKE_CONCAT(pre,_last);					  \
-      return PIKE_CONCAT(pre,buf)[tmp];					  \
+      *val = PIKE_CONCAT(pre,buf)[tmp];					  \
+      return 1;								  \
     }									  \
-    return NULL;							  \
+    return 0;								  \
   }									  \
 									  \
   static inline void PIKE_CONCAT(pre,_push)(TYPE val) {			  \
