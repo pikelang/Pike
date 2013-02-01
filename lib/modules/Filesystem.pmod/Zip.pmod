@@ -147,7 +147,7 @@ class CentralRecord
   LocalFileRecord open()
   {
     if( !local_record )
-      local_record = LocalFileRecord( local_offset );
+      local_record = LocalFileRecord( local_offset, this );
     return local_record;
   }
 
@@ -247,9 +247,9 @@ class LocalFileRecord
     return "LocalFileRecord(" + filename + ")";
   }  
 
-  void create(int | mapping entry)
+  void create(int | mapping entry, object|void central_record)
   {
-    decode(entry);
+    decode(entry, central_record);
   }
 
   int get_data_length()
@@ -258,7 +258,7 @@ class LocalFileRecord
   }
 
 
-  void decode( int offset )
+  void decode( int offset, object|void central_record )
   {
     fd->seek( offset );
     sscanf( fd->read( this_size ),
@@ -276,6 +276,14 @@ class LocalFileRecord
       error("Truncated ZIP\n");
 
     data_offset = fd->tell();
+
+    if(general_flags & 0x08) 
+    {
+      // lengths were not available at header creation. use central record.
+      crc32 = central_record->crc32;
+      uncomp_size = central_record->uncomp_size;
+      comp_size = central_record->comp_size;
+    }
   }
 
   string read()
