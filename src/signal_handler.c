@@ -2601,6 +2601,9 @@ int fd_cleanup_cb(void *data, int fd)
  *! @member string "chroot"
  *!   Chroot to this directory before executing the command.
  *!
+ *!   Note that the current directory will be changed to @expr{"/"@} in
+ *!   the chroot environment, unless @expr{"cwd"@} above has been set.
+ *!
  *! @member Stdio.File "stdin"
  *! @member Stdio.File "stdout"
  *! @member Stdio.File "stderr"
@@ -2733,13 +2736,15 @@ int fd_cleanup_cb(void *data, int fd)
  *!   performance is an issue, please use integers.
  *!
  *! @note
- *!   The modifiers @expr{"callback"@}, @expr{"fds"@},
- *!   @expr{"uid"@}, @expr{"gid"@},
- *!   @expr{"nice"@}, @expr{"noinitgroups"@}, @expr{"setgroups"@},
- *!   @expr{"keep_signals"@} and @expr{"rlimit"@} only exist on unix.
+ *!   On NT the only supported modifiers are: @expr{"cwd"@},
+ *!   @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@} and
+ *!   @expr{"env"@}. All other modifiers are silently ignored.
  *!
  *! @note
  *!   Support for @expr{"callback"@} was added in Pike 7.7.
+ *!
+ *! @note
+ *!   Chroot changing directory to @expr{"/"@} was added in Pike 7.9.
  */
 
 /*! @endclass */
@@ -3743,6 +3748,10 @@ void f_create_process(INT32 args)
 	/* Something went wrong in the child. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
+	  if (buf[2]) {
+	    Pike_error("Process.create_process(): chdir(\"/\") in chroot failed. errno:%d\n",
+		       buf[1]);
+	  }
 	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
 		     buf[1]);
 	  break;
@@ -3947,6 +3956,13 @@ void f_create_process(INT32 args)
 			getpid(), chroot, errno));
           PROCERROR(PROCE_CHROOT, 0);
         }
+	if (chdir("/"))
+	{
+	  PROC_FPRINTF((stderr,
+			"[%d] child: chdir(\"/\") failed, errno=%d\n",
+			getpid(), errno));
+	  PROCERROR(PROCE_CHDIR, 1);
+	}
       }
 
       if(tmp_cwd)
