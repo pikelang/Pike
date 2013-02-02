@@ -1999,14 +1999,15 @@ void image_gif__decode(INT32 args)
 			"(no data string of block array in position %d)\n",i);
 	       switch (b->item[1].u.integer)
 	       {
-		  case 0xf9: /* gce */
-		     if (b->item[2].u.string->len>=4)
-		     s=(unsigned char *)b->item[2].u.string->str;
-		     transparency=s[0]&1;
-		     user_input=!!(s[0]&2);
-		     disposal=(s[0]>>2)&7;
-		     delay=s[1]+(s[2]<<8);
-		     transparency_index=s[3];
+		  case 0xf9: /* GCE (Graphic Control Extension). */
+		     if (b->item[2].u.string->len>=4) {
+		        s=(unsigned char *)b->item[2].u.string->str;
+			transparency=s[0]&1;
+			user_input=!!(s[0]&2);
+			disposal=(s[0]>>2)&7;
+			delay=s[1]+(s[2]<<8);
+			transparency_index=s[3];
+		     }
 		     break;
 		  default: /* unknown */
 		     push_svalue(a->item+i);
