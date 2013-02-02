@@ -2008,6 +2008,9 @@ void image_gif__decode(INT32 args)
 			transparency_index=s[3];
 		     }
 		     break;
+	          case 0x01: /* Plain Text Extension. */
+	          case 0xfe: /* Comment Extension. */
+	          case 0xff: /* Application Extension. */
 		  default: /* unknown */
 		     push_svalue(a->item+i);
 		     n++;
