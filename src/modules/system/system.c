@@ -1433,6 +1433,13 @@ f_get(f_getppid, getppid)
  *!
  *!   The second variant only works on systems that also have
  *!   the fchroot(2) system call.
+ *!
+ *! @note
+ *!   On success the current working directory will be changed to
+ *!   the new @expr{"/"@}. This behavior was added in Pike 7.9.
+ *!
+ *! @note
+ *!   This function could be interrupted by signals prior to Pike 7.9.
  */
 void f_chroot(INT32 args)
 {
@@ -1454,26 +1461,33 @@ void f_chroot(INT32 args)
   if(TYPEOF(sp[-args]) == T_STRING)
   {
 #endif /* HAVE_FCHROOT */
-    res = chroot((char *)sp[-args].u.string->str);
+    while (((res = chroot((char *)sp[-args].u.string->str)) == -1) &&
+	   (errno == EINTR))
+      ;
+    if (!res) {
+      while ((chdir("/") == -1) && (errno == EINTR))
+	;
+    }
     pop_n_elems(args);
     push_int(!res);
     return;
 #ifdef HAVE_FCHROOT
-  } else
-#if 0 
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-#endif /* 0 */
-      {
-	int fd;
+  } else {
+    int fd;
 
-	apply(sp[-args].u.object, "query_fd", 0);
-	fd=sp[-1].u.integer;
-	pop_stack();
-	res=fchroot(fd);
-	pop_n_elems(args);
-	push_int(!res);
-	return;
-      }
+    apply(sp[-args].u.object, "query_fd", 0);
+    fd=sp[-1].u.integer;
+    pop_stack();
+    while (((res = fchroot(fd)) == -1) && (errno == EINTR))
+      ;
+    if (!res) {
+      while ((fchdir(fd) == -1) && (errno == EINTR))
+	;
+    }
+    pop_n_elems(args);
+    push_int(!res);
+    return;
+  }
 #endif /* HAVE_FCHROOT */
 }
 #endif /* HAVE_CHROOT */
