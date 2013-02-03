@@ -360,10 +360,14 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	       sum.b += src[i].color.b*mul;
 	       tot += mul;
 	    }
-	    
-	    dest->color.r = sum.r/tot;
-	    dest->color.g = sum.g/tot;
-	    dest->color.b = sum.b/tot;
+	    if (tot) {
+	      dest->color.r = sum.r/tot;
+	      dest->color.g = sum.g/tot;
+	      dest->color.b = sum.b/tot;
+	    } else {
+	      /* Unlikely to actually happen, but... */
+	      dest->color.r = dest->color.g = dest->color.b = 0;
+	    }
 	    dest->weight = tot;
 	    dest->no = -1;
 
