@@ -5133,7 +5133,7 @@ int low_define_variable(struct pike_string *name,
 
   if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
 
-  if (flags & ID_PRIVATE) flags |= ID_INLINE;
+  if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5571,7 +5571,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   }
 #endif
 
-  if (flags & ID_PRIVATE) flags |= ID_INLINE;
+  if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -6052,7 +6052,7 @@ INT32 define_function(struct pike_string *name,
       debug_add_to_identifiers(fun);
     }
 
-    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+    if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
@@ -6130,7 +6130,7 @@ INT32 define_function(struct pike_string *name,
 
     debug_add_to_identifiers(fun);
 
-    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+    if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
     ref.id_flags = flags;
     ref.identifier_offset = i;
