@@ -2242,30 +2242,35 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       /* scan for (possible) end(s) of this argument quote */
 
       for (i=0; i < NARGQ (this); i++)
-	 if (ch == ARGQ_START (this)[i]) break;
+	if (ch == ARGQ_START (this)[i]) {
 
-      do {
-	res=scan_forward(*destp,d_p[0]+1,destp,d_p,
-			 LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
-	if (!res) {
-	  if (!finished) 
-	  {
-	    DEBUG((stderr,"scan for end of tag: "
-		   "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
-	    return 0; /* not found - no end of tag, yet */
+	  do {
+	    res = scan_forward(*destp, d_p[0]+1, destp, d_p,
+			       LOOK_FOR_END (this)[i],
+			       NUM_LOOK_FOR_END (this)[i]);
+	    if (!res) {
+	      if (!finished) 
+	      {
+		DEBUG((stderr,"scan for end of tag: "
+		       "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
+		return 0; /* not found - no end of tag, yet */
+	      }
+	      else
+	      {
+		DEBUG((stderr,"scan for end of tag: "
+		       "forced end at %p:%"PRINTPTRDIFFT"d\n", feed,c));
+		return 1; /* end of tag, sure... */
+	      }
+	    }
 	  }
-	  else
-	  {
-	    DEBUG((stderr,"scan for end of tag: "
-		   "forced end at %p:%"PRINTPTRDIFFT"d\n", feed,c));
-	    return 1; /* end of tag, sure... */
-	  }
+	  while (index_shared_string(destp[0]->s, *d_p) == ENTITY_START (this));
+
+	  feed=*destp;
+	  c=d_p[0]+1;
+
+	  break;
 	}
-      }
-      while (index_shared_string(destp[0]->s, *d_p) == ENTITY_START (this));
 
-      feed=*destp;
-      c=d_p[0]+1;
    }
 }
 
