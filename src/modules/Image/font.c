@@ -9,7 +9,7 @@
 #define SPACE_CHAR 'i'
 
 extern const unsigned char image_default_font[];
-#define IMAGE_DEFAULT_FONT_SIZE 30596
+#define IMAGE_DEFAULT_FONT_SIZE 30560
 
 
 /*! @module Image
