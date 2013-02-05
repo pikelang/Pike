@@ -235,7 +235,7 @@ static void handle_phrase_hit( Blob **blobs,
       for( k = first[j]; k<nhits[j]; k++ )
       {
 	int h2 = wf_blob_hit_raw( blobs[j], k );
-	if( h2 > h )
+	if( h2 >= h + j )
 	{
 	  first[j]=k;
 	  if( h2-j == h )
