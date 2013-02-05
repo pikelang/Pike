@@ -140,7 +140,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   struct log_entry *le;
   struct log *l = LTHIS->log;
   int n = 0;
-  int mfd, ot=0;
+  int mfd, ot = INT_MIN;
   struct object *f;
   struct tm tm;
   FILE *foo;
@@ -169,10 +169,11 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 
+  MEMSET(&tm, 0, sizeof(tm));
+
   while(le)
   {
     int i;
-    struct tm *tm_p;
     struct log_entry *l = le->next;
     /* remotehost rfc931 authuser [date] "request" status bytes */
     if(le->t != ot)
@@ -181,6 +182,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 #ifdef HAVE_GMTIME_R
       gmtime_r( &t, &tm );
 #else
+      struct tm *tm_p;
 #ifdef HAVE_GMTIME
       tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
