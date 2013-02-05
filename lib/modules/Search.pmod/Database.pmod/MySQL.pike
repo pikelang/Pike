@@ -763,6 +763,12 @@ static void store_to_db( void|string mergedfilename )
       if(!word)
 	break;
       word = string_to_utf8(word);
+      
+      //  Blob hits are grouped by docid but not sorted internally. We need
+      //  to store in sorted form since the hit analysis depend on it. The
+      //  data() method in Blob performs sorting so instantiate a temp blob
+      //  just to access this.
+      blob = _WhiteFish.Blob(blob)->data();
     }
 
     q++;
@@ -787,6 +793,11 @@ static void store_to_db( void|string mergedfilename )
 		    "(word,first_doc_id,hits) "
 		    "VALUES (%s,%d,%s)", word, @blob_pair);
       }
+
+      //  Concatenation is strictly speaking not correct in the general case
+      //  since we may have the same docid repeated. In practice the only
+      //  code path that adds words also invalidates the old docid and gets
+      //  a fresh one.
       db->query("UPDATE word_hit SET hits=CONCAT(hits,%s) "+
 		"WHERE word=%s and first_doc_id=%d", blob, word, last_doc_id);
     }
