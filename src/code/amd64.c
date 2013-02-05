@@ -2076,6 +2076,9 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
          -1: counter
       */
       amd64_load_sp_reg();
+      mov_mem8_reg( sp_reg, -4*sizeof(struct svalue), REG_RBX );
+      cmp_reg32_imm( REG_RBX, PIKE_T_ARRAY );
+      jne(&label_D);
       mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, REG_RAX );
       mov_mem_reg( sp_reg, -4*sizeof(struct svalue)+8, REG_RBX );
       mov_mem32_reg( REG_RBX, OFFSETOF(array,size), REG_RCX );
@@ -2119,6 +2122,11 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       mov_reg_reg( REG_RBX, ARG2_REG );
       amd64_call_c_function( assign_lvalue );
       jmp(&label_B);
+
+     LABEL_D;
+      /* Bad arg 1. Let the C opcode throw the error. */
+      amd64_call_c_opcode(instrs[off].address, flags);
+      /* NOT_REACHED */
 
      LABEL_A;
       mov_imm_reg( 0, REG_RBX );
