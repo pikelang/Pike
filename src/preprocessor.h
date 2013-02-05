@@ -129,7 +129,10 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 {
   struct pike_string *s = MAKE_BINARY_STRING(str, len);
 
-  if (s->refs == 1) {
+  if (s->refs <= 1) {
+    /* NB: Actually refs is always at least 1.
+     *     The above test is to help code analyzers.
+     */
     free_string(s);
     return NULL;
   }
