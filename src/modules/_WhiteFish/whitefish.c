@@ -211,7 +211,6 @@ static void handle_phrase_hit( Blob **blobs,
   unsigned char *first = nhits+nblobs;
   int matrix[65];
   double accum = 0.0;
-  int base_hit = -1;
   
   MEMSET(matrix, 0, sizeof(matrix) );
 
@@ -231,8 +230,6 @@ static void handle_phrase_hit( Blob **blobs,
     int h = m.raw;
     if( (add = (*field_c)[ MOFF(m) ]) == 0.0 )
       continue;
-    if (h > base_hit)
-      base_hit = h;
 
     for( j = 1; j<nblobs; j++)
       for( k = first[j]; k<nhits[j]; k++ )
@@ -243,8 +240,6 @@ static void handle_phrase_hit( Blob **blobs,
 	  first[j]=k;
 	  if( h2-j == h )
 	    hit++;
-	  if (h2 - j > base_hit)
-	    base_hit = h2 - j;
 	  break;
 	}
       }
@@ -253,25 +248,6 @@ static void handle_phrase_hit( Blob **blobs,
       accum += add/mc;
   }
 
-  /* Determine which blobs to step forward */
-  if (base_hit >= 0) {
-    int did_next = 0;
-    for (i = 0; i < nblobs; i++)
-      if (nhits[i]) {
-	int max_hit = wf_blob_hit_raw(blobs[i], nhits[i] - 1);
-	if (max_hit < base_hit + i) {
-	  wf_blob_next(blobs[i]);
-	  did_next = 1;
-	}
-      }
-    if (!did_next)
-      base_hit = -1;
-  }
-  if (base_hit < 0) {
-    for (i = 0; i < nblobs; i++)
-      wf_blob_next(blobs[i]);
-  }
-  
   free( nhits );  
 
   if( accum > 0.0 )
@@ -307,7 +283,6 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-      int test_phrase = 1;
     
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
@@ -319,19 +294,15 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	goto end;
 
       for( j = 0, i = 0; i < nblobs; i++ )
-	if( blobs[i]->docid != min ) {
-	  test_phrase = 0;
-	  break;
-	}
+	if( blobs[i]->docid != min )
+	  goto next;
 
-      if (test_phrase) {
-	/* Test if hit is valid and advance in some or all blobs */
-	handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
-      } else {
-	for( i = 0; i<nblobs; i++ )
-	  if( blobs[i]->docid == min )
-	    wf_blob_next( blobs[i] );
-      }
+      handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
+    
+    next:
+      for( i = 0; i<nblobs; i++ )
+	if( blobs[i]->docid == min )
+	  wf_blob_next( blobs[i] );
     }
   }
 end:
