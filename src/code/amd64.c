@@ -2117,16 +2117,16 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
       jmp( &label_B );
 
+     LABEL_D;
+      /* Bad arg 1. Let the C opcode throw the error. */
+      amd64_call_c_opcode(instrs[off].address, flags);
+      /* NOT_REACHED */
+
      LABEL_C;
       add_reg_imm_reg( sp_reg, -3*sizeof(struct svalue), ARG1_REG );
       mov_reg_reg( REG_RBX, ARG2_REG );
       amd64_call_c_function( assign_lvalue );
       jmp(&label_B);
-
-     LABEL_D;
-      /* Bad arg 1. Let the C opcode throw the error. */
-      amd64_call_c_opcode(instrs[off].address, flags);
-      /* NOT_REACHED */
 
      LABEL_A;
       mov_imm_reg( 0, REG_RBX );
