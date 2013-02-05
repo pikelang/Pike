@@ -102,9 +102,9 @@ static void f_blobs_add_words( INT32 args )
  *! Add all the words in the 'words' array to the blobs
  */ 
 {
-  INT_TYPE docid;
+  int docid;
   struct array *words;
-  INT_TYPE field_id;
+  int field_id;
 
   int i;
   struct blobs *blbl = THIS;
