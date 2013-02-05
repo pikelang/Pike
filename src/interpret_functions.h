@@ -371,8 +371,7 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, 
 
     loc.o=Pike_fp->current_object;
     loc.parent_identifier=Pike_fp->fun;
-    if (loc.o->prog)
-      loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+    loc.inherit=Pike_fp->context;
     find_external_context(&loc, arg2);
 
     DO_IF_DEBUG({
@@ -400,8 +399,7 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", I_UPDATE_SP, {
 
   loc.o=Pike_fp->current_object;
   loc.parent_identifier=Pike_fp->fun;
-  if (loc.o->prog)
-    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+  loc.inherit=Pike_fp->context;
   find_external_context(&loc, arg2);
 
   if (!loc.o->prog)
@@ -2757,8 +2755,7 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 
     loc.o = Pike_fp->current_object;
     loc.parent_identifier = Pike_fp->fun;
-    if (loc.o->prog)
-      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+    loc.inherit = Pike_fp->context;
     find_external_context(&loc, arg1);
 
     DO_IF_DEBUG({
