@@ -1294,6 +1294,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  
 		case ',':
 		  if(d->varargs && arg+1 == d->args) continue;
+		  /* FALL_THROUGH */
 
 		case ')': 
 		  pos--;
@@ -1326,8 +1327,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      WCHAR *a;
 	      ptrdiff_t l;
 	      
-	      if((d->parts[e].argument & DEF_ARG_MASK) < 0 || 
-		 (d->parts[e].argument & DEF_ARG_MASK) >= arg)
+	      if((d->parts[e].argument & DEF_ARG_MASK) >= arg)
 	      {
 		cpp_error(this, "Macro not expanded correctly.");
 		continue;
