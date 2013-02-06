@@ -14,15 +14,6 @@
 //! If specified, this should be an open file descriptor. This object
 //! could e.g. be a @[Stdio.File] or similar object.
 
-//! A class for reading and writing ZIP files.
-//! 
-//! Note that this class does not support the full ZIP format 
-//! specification, but rather only the most common features.
-//!
-//! Storing, Deflating and Bzip2 are supported storage methods.
-//!
-//! Notably, large files, encryption and passwords are not 
-//! supported.
 
 #if constant(Gz.deflate)
 
@@ -36,6 +27,95 @@ constant L_COMP_BZIP2 = 12;
 typedef int short;
 typedef int long;
 
+string password;
+
+// traditional Zip encryption is CRC32 based, and rather insecure.
+// support here exists to ease transition and to work with legacy files.
+class Decrypt
+{
+  private array key = ({305419896, 591751049, 878082192});
+  private array tab = allocate(256);
+  
+  protected void create(string pw)
+  {   
+    gentab();
+    foreach((array)pw;; int ch)
+    {
+      update_keys(ch);
+    }
+  }
+
+  // populate the crc table
+  private void gentab()
+  {
+    int poly = 0xedb88320;
+    foreach(tab;int i; int b)
+    {
+      int crc = i;
+      for(int j = 0; j < 8; j++)
+      {
+        if(crc & 1)
+          crc = ((crc >> 1) & 0x7fffffff) ^ poly;
+        else
+          crc = ((crc >> 1) & 0x7fffffff);
+      }
+      tab[i] = crc;
+    }  
+  } 
+   
+  // single byte crc
+  int crc32(int c, int crc)
+  {
+    return ((crc >> 8) & 0xffffff) ^ tab[(crc ^ c) & 0xff];
+  }
+    
+  void update_keys(int ch)
+  {
+    key[0] = crc32(ch, key[0]);
+    key[1] = (key[1] + (key[0] & 255)) & 0xffffffff;
+    key[1] = ((key[1] * 134775813) + 1) & 0xffffffff;
+    key[2] = crc32((key[1] >> 24) & 255, key[2]);
+  }
+  
+  string decrypt_char(string x)
+  {
+    int c, k;
+    string o;
+    
+    sscanf(x, "%1c", c);
+    
+    k = key[2] | 2;
+    c = c ^ (((k * (k^1)) >> 8) & 255);
+    o = sprintf("%c", c);
+    update_keys(c);
+    
+    return o;
+  }
+  
+  string decrypt(string x)
+  {
+    String.Buffer buf = String.Buffer();
+    
+    foreach(x/"";; string c)
+      buf->add(decrypt_char(c));
+      
+    return buf->get();
+  }
+  
+}
+
+//! A class for reading and writing ZIP files.
+//! 
+//! Note that this class does not support the full ZIP format 
+//! specification, but rather only the most common features.
+//!
+//! Storing, Deflating and Bzip2 are supported storage methods.
+//!
+//! This class is able to extract data from traditional ZIP password 
+//! encrypted archives.
+//!
+//! Notably, large files, encryption (beyond reading traditional password 
+//! protected archives) are not supported.
 class _Zip
 {
   object fd;
@@ -309,6 +389,35 @@ class LocalFileRecord
     fd->seek( data_offset );
     string data = fd->read( comp_size );
 
+    if(general_flags & 0x1)
+    {
+      if(!password)
+        throw(Error.Generic("File encrypted, but no password supplied.\n"));
+        
+      object d = Decrypt(password);
+      string head;
+      
+      sscanf(data, "%12s%s", head, data);
+      
+      head = d->decrypt(head);
+      
+      if(general_flags & 0x08) // if streaming, use high byte of date
+      {
+        check = (date >> 8) & 0xff;
+      }
+      else
+      {
+        check = (crc32 >> 24) & 0xff;
+      }
+
+      if(check != head[-1])
+      {
+         throw(Error.Generic("Invalid password supplied.\n"));       
+      }
+      
+      data = d->decrypt(data);
+    }
+    
     switch( comp_method )
     {
       case L_COMP_STORE:
@@ -445,6 +554,7 @@ void create(object fd, string filename, object parent)
    EndRecord(); 
 }
 
+//!
 void unzip(string todir)
 {
   string start = "";
@@ -621,6 +731,12 @@ class _ZipFS
 
     sscanf(_root, "%*[/]%s", root);
     parent = _parent;
+  }
+  
+  //!
+  void set_password(string pw)
+  {
+    password = pw;
   }
 
   string _sprintf(int t)
