@@ -817,6 +817,10 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
       }
 #endif
 
+#if MAX_SIGNALS < 256
+      if (sig >= MAX_SIGNALS) continue;
+#endif
+
       if (!signal_masks[sig]) {
 	signal_masks[sig] = 1;
 
