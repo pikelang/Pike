@@ -33,6 +33,15 @@ void create(string db_url, void|mapping _options)
       rm(fn);
 }
 
+#ifdef SEARCH_DEBUG
+void destroy()
+{
+  if (blobs_dirty)
+    werror("Search.Database.MySQL: WARNING: Forgot to sync before "
+	   "abandoning db object?\n");
+}
+#endif
+
 string _sprintf()
 {
   return sprintf("Search.Database.MySQL(%O,%O)", host, mergefile_path);
@@ -202,11 +211,16 @@ void remove_uri_prefix(string|Standards.URI uri)
   db->query("delete from uri where uri like '" + db->quote(uri_string) + "%%'");
 }
 
-static int docs; // DEBUG
+#ifdef SEARCH_DEBUG
+static int docs;
+static int blobs_dirty;
+#endif
 
 void remove_document(string|Standards.URI uri, void|string language)
 {
-  docs++; // DEBUG
+#ifdef SEARCH_DEBUG
+  docs++;
+#endif
 
   int uri_id=get_uri_id((string)uri, 1);
 
@@ -248,7 +262,9 @@ void remove_document_prefix(string|Standards.URI uri)
     return;
 
   array ids = a->id;
-  docs += sizeof(ids); // DEBUG
+#ifdef SEARCH_DEBUG
+  docs += sizeof(ids);
+#endif
   db->query("DELETE FROM document "
 	    " WHERE id IN (" + (ids * ",") + ")");
   db->query("INSERT DELAYED INTO deleted_document "
@@ -400,6 +416,9 @@ void insert_words(Standards.URI|string uri, void|string language,
   int field_id = get_field_id(field);
   
   blobs->add_words( doc_id, words, field_id );
+#ifdef SEARCH_DEBUG
+  blobs_dirty = 1;
+#endif
   
   if(blobs->memsize() > MAXMEM)
     if(options->mergefiles)
@@ -847,6 +866,10 @@ static void store_to_db( void|string mergedfilename )
 #ifdef SEARCH_DEBUG
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 #endif
+  
+#ifdef SEARCH_DEBUG
+  blobs_dirty = 0;
+#endif
 }
 
 static string get_mergefilename()
@@ -928,7 +951,9 @@ void sync()
     store_to_db();
     blobs = _WhiteFish.Blobs();
   }
+#ifdef SEARCH_DEBUG
   docs = 0;
+#endif
 }
 
 #ifdef SEARCH_DEBUG
