@@ -19,9 +19,9 @@
 //! Note that this class does not support the full ZIP format 
 //! specification, but rather only the most common features.
 //!
-//! Storing and Deflating are supported storage methods.
+//! Storing, Deflating and Bzip2 are supported storage methods.
 //!
-//! Notably, UTF8 filenames, large files, encryption and passwords are not 
+//! Notably, large files, encryption and passwords are not 
 //! supported.
 
 #if constant(Gz.deflate)
@@ -31,6 +31,7 @@ Stdio.File fd;
 // Structures.
 constant L_COMP_STORE  = 0;
 constant L_COMP_DEFLATE = 8;
+constant L_COMP_BZIP2 = 12;
 
 typedef int short;
 typedef int long;
@@ -288,17 +289,39 @@ class LocalFileRecord
 
   string read()
   {
+    int check;
+    string data;
+
+    data = low_read();
+    check = (Gz.crc32(data) & 0xffffffff);
+  
+    if(check != crc32)
+    {
+      throw(Error.Generic(sprintf("Bad CRC for file %O: expected %x, got %x.\n", filename, crc32, check)));
+    }
+
+    return data;
+  }
+
+  string low_read()
+  {
+    int check;
     fd->seek( data_offset );
     string data = fd->read( comp_size );
+
     switch( comp_method )
     {
       case L_COMP_STORE:
         return data;
+#if constant(Bz2.Inflate)
+      case L_COMP_BZIP2:
+        return Bz2.Inflate()->inflate(data);
+#endif
       case L_COMP_DEFLATE:
         return Gz.inflate()->inflate( sprintf("%1c%1c", 8, ((310-8)<<8)%31) +
                                       data );
       default:
-        error("Unsupported compression method\n");
+        error(sprintf("Unsupported compression method: %d\n", comp_method));
     }
   }
 }
