@@ -82,6 +82,7 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
        /* in[os..i-1] == the header */
        if(i-os == hl)
        {
+	 /* Inlined strncasecmp(header, in + os, hl). */
 	 ptrdiff_t j;
 	 for(j=0;j<hl; j++)
 	   if((in[os+j]&95) != (header[j]&95))
@@ -107,6 +108,8 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
 	   }
 	 }
        }
+       break;
+
      case '\r':
      case '\n':
        os = i+1;
