@@ -988,6 +988,29 @@ PIKEFUN string string_trim_all_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
+/*! @decl status(int verbose)
+ *! @belongs String
+ *!
+ *!   Get string table statistics.
+ *!
+ *! @returns
+ *!   Returns a string with an ASCII table containing
+ *!   the current string table statistics.
+ *!
+ *! @note
+ *!   Currently returns the empty string (@expr{""@})
+ *!   if @[verbose] is zero.
+ *!
+ *! @note
+ *!   The formatting and contents of the result
+ *!   may vary between different versions of Pike.
+ */
+PIKEFUN string string_status(int verbose)
+  errname String.status;
+{
+  RETURN add_string_status(verbose);
+}
+
 /*! @decl int implements(program prog, program api)
  *! @belongs Program
  *!
