@@ -2745,9 +2745,11 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     if (len < precision) len = precision;
 
     /* Perform padding. */
-    if ((len < min_width) && !(flags & APPEND_LEFT)) {
-      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
-			  4, 0);
+    if (!(flags & APPEND_LEFT)) {
+      if (len < min_width) {
+	string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+			    4, 0);
+      }
       min_width = 0;
     }
 
