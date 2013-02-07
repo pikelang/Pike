@@ -175,7 +175,7 @@ class CentralRecord
 
       extra = fd->read( extra_len );      
       parse_extra(extra);
-
+      
       object fds;
       if(fd) 
         fds = fd->stat();
@@ -243,6 +243,7 @@ void parse_extra(string extra)
        sscanf(extra, "%" + len + "s%s", val, extra);
      string rest;
      int ver;
+     write("extra: %x\n", id);
      
      switch(id)
      {
@@ -259,16 +260,16 @@ void parse_extra(string extra)
           
           case 0x7075: // UTF8 Name extension
             int crc;
-            sscanf(rest, "%-1c%-4c%s", ver, crc, rest);
+            sscanf(val, "%-1c%-4c%s", ver, crc, rest);
             filename = utf8_to_string(rest);
 
           case 0x7875: // New UNIX extension
             // unix
             int l;
-            sscanf(val, "%-1c%-1c%s", ver, l, rest);
+            sscanf(val, "%-1c%-1c%s", ver, l, val);
             if(ver != 1) break;
-            sscanf(rest, "%-" +l + "c%-1c%s", uid, l, rest);
-            sscanf(rest, "%-" +l + "c%-1c%s", gid, l, rest);
+            sscanf(val, "%-" +l + "c%-1c%s", uid, l, val);
+            sscanf(val, "%-" +l + "c%-1c%s", gid, l, val);
             break;     
 
      }
@@ -320,7 +321,7 @@ class LocalFileRecord
   string comment;
 
   long data_offset;
-  string data;
+ // string data;
   object _fd;
 
   string _sprintf(mixed t)
@@ -330,9 +331,125 @@ class LocalFileRecord
 
   void create(int | mapping entry, object|void central_record)
   {
-    decode(entry, central_record);
+    if(mappingp(entry))
+      populate(entry);
+    else
+      decode(entry, central_record);
   }
 
+
+  void populate(mapping entry)
+  {
+    signature = 0x04034b50;
+    ver_2_extract = 2;
+    general_flags = 0;
+    comp_method = (entry->no_compress?0:8); // deflate
+
+    if(!entry->stat && objectp(entry->data))
+      entry->stat = entry->data->stat();
+      
+    if(entry->stat)
+      attach_statobject(entry->stat);
+    // it appears that files are stored in utc without tz info
+
+    filename = entry->filename;
+    if(!entry->data) ;
+    else if(objectp(entry->data))
+      _fd = entry->data;
+    else
+      _fd = Stdio.FakeFile(entry->data);
+
+    if(entry->stamp) mtime = entry->stamp;
+
+    [time, date] = date_unix2dos(mtime - Calendar.Second(mtime)->utc_offset());    
+  }
+
+  string encode_central_record(int offset)
+   {
+    //werror("size: %d, compressed: %d\n", uncomp_size, comp_size);
+       return sprintf(
+             "%-4c" + "%-2c"*6 + "%-4c"*3 +  "%-2c"*5 + "%-4c"*2,
+             0x02014b50, 3 /* UNIX */, ver_2_extract, general_flags,
+             comp_method, time, date, crc32, comp_size, uncomp_size,
+             filename?sizeof(filename):0, extra?sizeof(extra):0, 
+             comment?sizeof(comment):0, 0/*start_disk*/, 
+             0/*int_file_attr*/,
+             0/*ext_file_attr*/, offset) + (filename?filename:"") + 
+             (extra?extra:"") + (comment?comment:"");
+   }
+
+   string encode()
+   {
+     string cdata;
+     string ucdata;
+
+     if(_fd)
+     {
+       ucdata = _fd->read(0x7fffffff);
+       uncomp_size += sizeof(ucdata);
+       crc32 = Gz.crc32(ucdata, crc32);
+       cdata = write(ucdata);
+       comp_size = sizeof(cdata);
+     }
+
+     encode_extra();
+
+     string ret = sprintf(
+             "%-4c" + "%-2c"*5 + "%-4c"*3 + "%-2c"*2,
+             signature, ver_2_extract, general_flags,
+             comp_method, time, date, crc32, comp_size,
+             uncomp_size, filename?sizeof(filename):0, 
+             extra?sizeof(extra):0 );
+
+     if(filename)
+       ret += ( filename );
+     if(extra)
+       ret += ( extra );
+
+     data_offset = sizeof(ret);
+
+     return ret + cdata;
+   }
+
+
+  void encode_extra()
+  {
+    string field;
+    extra  = "";
+//    0x7075 UTF-8 filename
+    field = string_to_utf8(filename);
+    field = sprintf("%-1c%-4c%s", 1, Gz.crc32(field), field);
+    extra += sprintf("%-2c%-2c%s", 0x7075, sizeof(field), field);
+
+// 0x000d UNIX
+      string unixdata = "";
+      unixdata = sprintf(("%-4c" * 2) + ("%-2c" * 2),
+                          atime, mtime, uid, gid); 
+      extra += sprintf("%-2c%-2c%s", 0x000d, sizeof(unixdata), unixdata);
+
+// 0x7875 New UNIX
+      unixdata = sprintf("%-1c%-1c%-" + get_int_size(uid) + "c%-1c%-" + get_int_size(gid) + "c", 
+        1, 
+        get_int_size(uid), uid,
+        get_int_size(gid), gid);
+      extra += sprintf("%-2c%-2c%s", 0x7875, sizeof(unixdata), unixdata);
+   
+// 0x5455 extended timestamp
+      unixdata = sprintf("%-1c%-4c", 0, mtime);
+      extra += sprintf("%-2c%-2c%s", 0x5455, sizeof(unixdata), unixdata);
+  }
+
+  int get_int_size(int val)
+  {
+    if (val < 0xffff) {
+        if (val < 0xff) return 1; // 8 bit
+        else return 2;// 16 bit
+    } else {
+        if (val < 0xffffffff) return 4;// 32 bit
+        else return 8;// 64 bit
+    }
+  }
+  
   int get_data_length()
   {
     return data_offset + comp_size;
@@ -353,6 +470,8 @@ class LocalFileRecord
       set_type("dir");
     extra = fd->read( extra_len );
 
+    parse_extra(extra);
+
     if( offset+filename_len+extra_len+this_size != fd->tell() )
       error("Truncated ZIP\n");
 
@@ -365,7 +484,74 @@ class LocalFileRecord
       uncomp_size = central_record->uncomp_size;
       comp_size = central_record->comp_size;
     }
+    if(general_flags >> 0 & 0x01)
+    {
+      //werror("encrypted!\n");
+    }
+
+    if(general_flags >> 11 & 0x01)
+    {
+      //werror("utf8 encoded filename!\n");
+    }
   }
+  
+  void parse_extra(string extra)
+  {
+     int id, len;
+     string val;
+     while(sizeof(extra))
+     {
+       sscanf(extra, "%-2c%-2c%s", id, len, extra);
+       if(len)
+         sscanf(extra, "%" + len + "s%s", val, extra);
+       string rest;
+       int ver;
+
+       switch(id)
+       {
+
+          case 0x000d: // UNIX extension
+            // unix
+            sscanf(val, "%-4c%-4c%-2c%-2c", atime, mtime, uid, gid);
+            break;     
+
+            case 0x5455: // Extended Timestamp extension
+              int info;
+              sscanf(val, "%-1c%-4c", info, mtime);
+              break;
+
+            case 0x7075: // UTF8 Name extension
+              int crc;
+              sscanf(rest, "%-1c%-4c%s", ver, crc, rest);
+              filename = utf8_to_string(rest);
+
+            case 0x7875: // New UNIX extension
+              // unix
+              int l;
+              sscanf(val, "%-1c%-1c%s", ver, l, rest);
+              if(ver != 1) break;
+              sscanf(rest, "%-" +l + "c%-1c%s", uid, l, rest);
+              sscanf(rest, "%-" +l + "c%-1c%s", gid, l, rest);
+              break;     
+
+       }
+     }
+  }
+  
+  string write(string data)
+    {
+       switch(comp_method)
+       {
+          case L_COMP_STORE:
+            return data;
+#if constant(Bz2.Inflate)
+          case L_COMP_BZIP2:
+            return Bz2.Deflate()->deflate(data);
+#endif
+          case L_COMP_DEFLATE:
+            return  Gz.deflate(0-compression_value)->deflate(data);
+       }
+    }
 
   string read()
   {
@@ -545,12 +731,14 @@ array(string) get_dir( string base )
 }
 
 //!
-void create(object fd, string filename, object parent)
+void create(object|void fd, string|void filename, object|void parent)
 {
-  Gmp.bignum;
   this_program::filename = filename;
   this_program::fd = fd;
-  int pos = 0; // fd is at position 0 here
+  
+   if(!fd) return;
+   
+   // trigger parsing of the zip file
    EndRecord(); 
 }
 
@@ -593,6 +781,7 @@ string generate()
 
   foreach(entries;; object entry)
   {
+    write("entry: %O\n", entry->filename);
     buf += entry->encode();
   }
 
@@ -610,6 +799,7 @@ string generate()
   return buf->get();
 }
 
+
 string encode_end_record(int central_size, int central_start_offset, string|void comment)
 {
   return sprintf (("%-4c" + "%-2c"*4 + "%-4c"*2 + "%-2c"),
@@ -622,21 +812,23 @@ string encode_end_record(int central_size, int central_start_offset, string|void
 void add_dir(string path, int recurse, string|void archiveroot)
 {
   object i=Filesystem.System(path);
-
+  object stat = file_stat(path);
   if(!archiveroot) archiveroot = "";
 
-  low_add_dir(i, archiveroot, recurse);
+  low_add_dir(i, archiveroot, recurse, stat);
 
 }
 
-void low_add_dir(object i, string current_dir, int recurse)
+void low_add_dir(object i, string current_dir, int recurse, object stat)
 {
+  add_file(current_dir + "/", 0, stat);
+
   foreach(i->get_dir();; string fn)
   {
-    if(fn == "CVS") continue; // never add CVS data
-    if(i->stat(fn)->isdir())
+//    if(fn == "CVS") continue; // never add CVS data
+    if(i->stat(fn)->isdir)
     {
-      if(recurse) low_add_dir(i->cd(fn), current_dir + "/" + fn, recurse);
+      if(recurse) low_add_dir(i->cd(fn), current_dir + "/" + fn, recurse, i->stat(fn));
     }
     else
     {
@@ -646,13 +838,16 @@ void low_add_dir(object i, string current_dir, int recurse)
 }
 
 //!
-void add_file(string filename, string|Stdio.File data, int|void stamp, int|void no_compress)
+void add_file(string filename, string|Stdio.File data, int|object|void stamp, int|void no_compress)
 {
   mapping entry = ([]);
 
   entry->filename = filename;
   entry->data = data;
-  entry->stamp = stamp;
+  if(objectp(stamp))
+    entry->stat = stamp;
+  else
+    entry->stamp = stamp;
   entry->no_compress = no_compress;
 
   entries += ({LocalFileRecord(entry)});
