@@ -1144,18 +1144,16 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s)
  */
 struct pike_string *add_string_status(int verbose)
 {
-  dynamic_buffer save_buf;
-  char b[200];
-
-  init_buf(&save_buf);
+  struct string_builder s;
+  init_string_builder(&s, 0);
 
   if (verbose)
   {
-    int allocd_strings=0;
-    int allocd_bytes=0;
-    int num_distinct_strings=0;
-    int bytes_distinct_strings=0;
-    ptrdiff_t overhead_bytes = 0;
+    long alloced_strings[8] = {0,0,0,0,0,0,0,0};
+    long alloced_bytes[8] = {0,0,0,0,0,0,0,0};
+    long num_distinct_strings[8] = {0,0,0,0,0,0,0,0};
+    long bytes_distinct_strings[8] = {0,0,0,0,0,0,0,0};
+    long overhead_bytes[8] = {0,0,0,0,0,0,0,0};
     unsigned INT32 e;
     struct pike_string *p;
     for(e=0;e<htable_size;e++)
@@ -1163,36 +1161,95 @@ struct pike_string *add_string_status(int verbose)
       LOCK_BUCKET(e);
       for(p=base_table[e];p;p=p->next)
       {
-	num_distinct_strings++;
-	bytes_distinct_strings+=DO_ALIGN(p->len,sizeof(void *));
-	allocd_strings+=p->refs;
-	allocd_bytes+=p->refs*DO_ALIGN(p->len+3,sizeof(void *));
+	int is_short = (p->len <= SHORT_STRING_THRESHOLD);
+	int key = (is_short?0:4) | p->size_shift;
+	num_distinct_strings[key]++;
+	if (is_short) {
+	  bytes_distinct_strings[key] +=
+	    DO_ALIGN(SHORT_STRING_THRESHOLD << p->size_shift, sizeof(void *));
+	} else {
+	  bytes_distinct_strings[key] +=
+	    DO_ALIGN(p->len << p->size_shift, sizeof(void *));
+	}
+	alloced_strings[key] += p->refs;
+	alloced_bytes[key] +=
+	  p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
       }
       UNLOCK_BUCKET(e);
     }
-    overhead_bytes=sizeof(struct pike_string_hdr)*num_distinct_strings;
-    my_strcat("\nShared string hash table:\n");
-    my_strcat("-------------------------\t Strings    Bytes\n");
+    string_builder_sprintf(&s,
+			   "\nShared string hash table:\n"
+			   "-------------------------\n"
+			   "\n"
+			   "Type          Count Distinct    Bytes   Actual Overhead    %%\n"
+			   "------------------------------------------------------------\n");
+    for(e = 0; e < 8; e++) {
+      int shift = e & 3;
+      ptrdiff_t overhead;
+      if (!num_distinct_strings[e]) continue;
+      if (shift != 3) {
+	if (e < 4) {
+	  string_builder_sprintf(&s, "Short/%-2d   ", 8<<shift);
+	} else {
+	  string_builder_sprintf(&s, "Long/%-2d    ", 8<<shift);
+	}
 
-    sprintf(b,"Total asked for\t\t\t%8ld %8ld\n",
-	    (long)allocd_strings, (long)allocd_bytes);
-    my_strcat(b);
-    sprintf(b,"Strings malloced\t\t%8ld %8ld + %ld overhead\n",
-	    (long)num_distinct_strings,
-	    (long)bytes_distinct_strings,
-	    DO_NOT_WARN((long)overhead_bytes));
-    my_strcat(b);
-    sprintf(b, "Space actually required/total string bytes %ld%%\n",
-	    DO_NOT_WARN((long)((bytes_distinct_strings + overhead_bytes)*100 /
-			       allocd_bytes)));
-    my_strcat(b);
+	overhead_bytes[e] =
+	  DO_NOT_WARN((long)sizeof(struct pike_string_hdr) *
+		      num_distinct_strings[e]);
+
+	alloced_strings[e|3] += alloced_strings[e];
+	alloced_bytes[e|3] += alloced_bytes[e];
+	num_distinct_strings[e|3] += num_distinct_strings[e];
+	bytes_distinct_strings[e|3] += bytes_distinct_strings[e];
+	overhead_bytes[e|3] += overhead_bytes[e];
+      } else {
+	if (e < 4) {
+	  string_builder_sprintf(&s, "Total short");
+	} else {
+	  string_builder_sprintf(&s, "Total long ");
+	}
+      }
+      string_builder_sprintf(&s,
+			     "%8ld %8ld %8ld %8ld %8ld ",
+			     alloced_strings[e], num_distinct_strings[e],
+			     alloced_bytes[e], bytes_distinct_strings[e],
+			     overhead_bytes[e]);
+      if (alloced_bytes[e]) {
+	string_builder_sprintf(&s, "%4d\n",
+			       (bytes_distinct_strings[e] +
+				overhead_bytes[e]) * 100 /
+			       alloced_bytes[e]);
+      } else {
+	string_builder_strcat(&s, "   -\n");
+      }
+    }
+    alloced_strings[7] += alloced_strings[3];
+    alloced_bytes[7] += alloced_bytes[3];
+    num_distinct_strings[7] += num_distinct_strings[3];
+    bytes_distinct_strings[7] += bytes_distinct_strings[3];
+    overhead_bytes[7] += overhead_bytes[3];
+    string_builder_sprintf(&s,
+			   "------------------------------------------------------------\n"
+			   "Total      %8ld %8ld %8ld %8ld %8ld ",
+			   alloced_strings[7], num_distinct_strings[7],
+			   alloced_bytes[7], bytes_distinct_strings[7],
+			   overhead_bytes[7]);
+    if (alloced_bytes[7]) {
+      string_builder_sprintf(&s, "%4d\n",
+			     (bytes_distinct_strings[7] +
+			      overhead_bytes[7]) * 100 /
+			     alloced_bytes[7]);
+    } else {
+      string_builder_strcat(&s, "   -\n");
+    }
   }
 /*
   sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
       (long)num_str_searches, (double)search_len / num_str_searches);
   my_strcat(b);
 */
-  return free_buf(&save_buf);
+  return finish_string_builder(&s);
 }
 
 /*** PIKE_DEBUG ***/
