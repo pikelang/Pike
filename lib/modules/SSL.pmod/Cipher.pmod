@@ -29,6 +29,8 @@ class CipherAlgorithm {
 //! Message Authentication Code interface.
 class MACAlgorithm {
   string hash(object, Gmp.mpz);
+  string hash_raw(string);
+  constant hash_header_size = 13;
 }
 
 //! Cipher specification.
@@ -62,6 +64,9 @@ class MACsha
 
   protected Crypto.Hash algorithm = Crypto.SHA1;
   protected string secret;
+
+  //! The length of the header prefixed by @[hash()].
+  constant hash_header_size = 11;
 
   //!
   string hash_raw(string data)
@@ -123,6 +128,15 @@ class MAChmac_sha {
 
   protected string secret;
   protected Crypto.HMAC hmac;
+
+  //! The length of the header prefixed by @[hash()].
+  constant hash_header_size = 13;
+
+  //!
+  string hash_raw(string data)
+  {
+    return hmac(secret)(data);
+  }
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
