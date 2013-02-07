@@ -2675,6 +2675,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 
   tmp = val;
   if (base & (base - 1)) {
+    size_t cnt;
     /* Calculate the output length.
      * Use do-while to ensure that zero isn't output as an empty string.
      */
@@ -2696,33 +2697,35 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
       min_width = 0;
     }
 
+    cnt = len;
+
     tmp = val;
     switch(s->s->size_shift) {
     case 0:
       {
 	p_wchar0 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     case 1:
       {
 	p_wchar1 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     case 2:
       {
 	p_wchar2 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     }
