@@ -328,7 +328,8 @@ static INLINE int append_buffer(struct pike_string *s)
      char *data = s->str;
      ptrdiff_t bytes;
 
-     fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+     while ((fd_lseek(THIS->fd, THIS->pos, SEEK_SET) < 0) && (errno == EINTR))
+       ;
      while (len > 0) {
        do {
 	 bytes = fd_write(THIS->fd, data, len);
@@ -491,7 +492,8 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
       if (sz <= 0) return NULL; /* no data */
       if (sz > READ_BUFFER_SIZE) sz = READ_BUFFER_SIZE;
       THREADS_ALLOW();
-      fd_lseek(this->fd, pos, SEEK_SET);
+      while ((fd_lseek(this->fd, pos, SEEK_SET) < 0) && (errno == EINTR))
+	;
       THREADS_DISALLOW();
       do {
 	THREADS_ALLOW();
@@ -901,7 +903,9 @@ static void pipe_output(INT32 args)
 	char *data;
 	b=THIS->firstbuffer;
 	THIS->firstbuffer=b->next;
-	fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+	while ((fd_lseek(THIS->fd, THIS->pos, SEEK_SET) < 0) &&
+	       (errno == EINTR))
+	  ;
 
 	len = b->s->len;
 	data = b->s->str;
