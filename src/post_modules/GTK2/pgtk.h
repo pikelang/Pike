@@ -330,4 +330,4 @@ int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
 				       GtkTreeIter *iter,
 				       struct signal_data *d);
 
-struct svalue *pgtk2_get_doc(GObject *o, int pushv);
+void pgtk2_get_doc(GObject *o, struct svalue *dest);

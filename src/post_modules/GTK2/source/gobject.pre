@@ -293,11 +293,7 @@ endrequire;
 string get_docs()
 //! Get documentation on object
 {
-  struct svalue *sv;
-
-  sv=pgtk2_get_doc(G_OBJECT(THIS->obj),0);
-  push_svalue(sv);
-  free_svalue(sv);
+  pgtk2_get_doc(G_OBJECT(THIS->obj), NULL);
 }
 
 %{
