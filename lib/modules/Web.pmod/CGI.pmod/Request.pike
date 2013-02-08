@@ -76,7 +76,8 @@ protected void decode_query() {
       else
 	rest_query = http_decode_string( v );
   }
-  rest_query=replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
+  rest_query =
+    rest_query && replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
 }
 
 protected void decode_cookies(string data)
