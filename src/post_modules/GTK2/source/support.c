@@ -1443,16 +1443,15 @@ void add_signal_docs(GType type, GString *str) {
     g_type_class_unref(class);
 }
 
-struct svalue *pgtk2_get_doc(GObject *o, int pushv) {
+void pgtk2_get_doc(GObject *o, struct svalue *dest) {
   GType type=0;
   GString *str;
-  struct svalue *sv;
 
 /*
   if (o)
     type=G_OBJECT_TYPE(G_OBJECT(o)->obj);
   else
-    return NULL;
+    return;
 */
   type=G_OBJECT_TYPE(o);
   str=g_string_new_len(NULL,512);
@@ -1488,11 +1487,8 @@ struct svalue *pgtk2_get_doc(GObject *o, int pushv) {
   }
   push_string(make_shared_binary_string(str->str,str->len));
   g_string_free(str,TRUE);
-  if (!pushv) {
-    sv=g_new0(struct svalue,1);
-    assign_svalue_no_free(sv,&Pike_sp[-1]);
+  if (dest) {
+    assign_svalue_no_free(dest, Pike_sp - 1);
     pop_stack();
-    return sv;
   }
-  return sv;
 }
