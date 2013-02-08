@@ -120,6 +120,8 @@ class _Zip
 {
   object fd;
   string filename;
+  int use_zip64;
+  int use_bzip2;
 
   array entries = ({});
 
@@ -222,6 +224,7 @@ class CentralRecord
       size = uncomp_size;
       
       central_records[(filename)] = this;
+      
   }
 
   LocalFileRecord local_record;
@@ -243,10 +246,12 @@ void parse_extra(string extra)
        sscanf(extra, "%" + len + "s%s", val, extra);
      string rest;
      int ver;
-     write("extra: %x\n", id);
      
      switch(id)
      {
+        case 0x0001: // ZIP64
+        sscanf(val, "%-8c%-8c%-8c%-4c", uncomp_size, comp_size, local_offset, start_disk);
+        break;
         
         case 0x000d: // UNIX extension
           // unix
@@ -335,23 +340,35 @@ class LocalFileRecord
       populate(entry);
     else
       decode(entry, central_record);
+      
   }
 
-
+//
+// entry keys
+//  no_compress
+//  bzip
+//  data
+//  stat
+//  filename
+//  stamp
   void populate(mapping entry)
   {
     signature = 0x04034b50;
-    ver_2_extract = 2;
     general_flags = 0;
-    comp_method = (entry->no_compress?0:8); // deflate
-
+    comp_method = ((!entry->data||entry->no_compress)?L_COMP_STORE:(entry->bzip2?L_COMP_BZIP2:L_COMP_DEFLATE)); // deflate
+    
+    if(entry->bzip2) use_bzip2 = 1;
+    
     if(!entry->stat && objectp(entry->data))
       entry->stat = entry->data->stat();
       
     if(entry->stat)
       attach_statobject(entry->stat);
     // it appears that files are stored in utc without tz info
-
+ 
+    if(size > 0xffffffff)
+      use_zip64 = 1;
+      
     filename = entry->filename;
     if(!entry->data) ;
     else if(objectp(entry->data))
@@ -362,19 +379,38 @@ class LocalFileRecord
     if(entry->stamp) mtime = entry->stamp;
 
     [time, date] = date_unix2dos(mtime - Calendar.Second(mtime)->utc_offset());    
+    
+    if(comp_method == L_COMP_BZIP2)
+      ver_2_extract = 46;
+    else if(use_zip64)
+      ver_2_extract = 45;
+    else
+      ver_2_extract = 2;
+
+    
   }
 
   string encode_central_record(int offset)
    {
+     // we assume (perhaps dangerously) that encode() will have been
+     // called before encode_central_record(), thus generating the content
+     // of the extra field and other computed values.
+     
+     encode_extra(offset);
+
+    //werror("entry: %O, offset: %O\n", filename, offset);     
     //werror("size: %d, compressed: %d\n", uncomp_size, comp_size);
        return sprintf(
-             "%-4c" + "%-2c"*6 + "%-4c"*3 +  "%-2c"*5 + "%-4c"*2,
-             0x02014b50, 3 /* UNIX */, ver_2_extract, general_flags,
-             comp_method, time, date, crc32, comp_size, uncomp_size,
+             "%-4c" + "%-c%-c"+ "%-2c"*5 + "%-4c"*3 +  "%-2c"*5 + "%-4c"*2,
+             0x02014b50, 3 /* UNIX */, ver_2_extract, ver_2_extract, general_flags,
+             comp_method, time, date, crc32, 
+             (use_zip64?0xffffffff:comp_size), 
+             (use_zip64?0xffffffff:uncomp_size),
              filename?sizeof(filename):0, extra?sizeof(extra):0, 
              comment?sizeof(comment):0, 0/*start_disk*/, 
              0/*int_file_attr*/,
-             0/*ext_file_attr*/, offset) + (filename?filename:"") + 
+             0/*ext_file_attr*/, 
+             (use_zip64?0xffffffff:offset)) + (filename?filename:"") + 
              (extra?extra:"") + (comment?comment:"");
    }
 
@@ -386,19 +422,22 @@ class LocalFileRecord
      if(_fd)
      {
        ucdata = _fd->read(0x7fffffff);
-       uncomp_size += sizeof(ucdata);
+       uncomp_size += sizeof(ucdata||"");
        crc32 = Gz.crc32(ucdata, crc32);
-       cdata = write(ucdata);
-       comp_size = sizeof(cdata);
+       if(ucdata)
+         cdata = write(ucdata);
+       comp_size = sizeof(cdata||"");
      }
 
-     encode_extra();
+     encode_extra(-1);
 
      string ret = sprintf(
              "%-4c" + "%-2c"*5 + "%-4c"*3 + "%-2c"*2,
              signature, ver_2_extract, general_flags,
-             comp_method, time, date, crc32, comp_size,
-             uncomp_size, filename?sizeof(filename):0, 
+             comp_method, time, date, crc32, 
+         comp_size, uncomp_size,  //  (use_zip64?0xffffffff:comp_size),
+          //   (use_zip64?0xffffffff:uncomp_size), 
+            filename?sizeof(filename):0, 
              extra?sizeof(extra):0 );
 
      if(filename)
@@ -408,11 +447,11 @@ class LocalFileRecord
 
      data_offset = sizeof(ret);
 
-     return ret + cdata;
+     return ret + (cdata||"");
    }
 
 
-  void encode_extra()
+  void encode_extra(int|void offset)
   {
     string field;
     extra  = "";
@@ -437,6 +476,11 @@ class LocalFileRecord
 // 0x5455 extended timestamp
       unixdata = sprintf("%-1c%-4c", 0, mtime);
       extra += sprintf("%-2c%-2c%s", 0x5455, sizeof(unixdata), unixdata);
+      if(use_zip64 && offset != -1)
+      {
+        unixdata = sprintf("%-8c%-8c%-8c%-4c", uncomp_size, comp_size, offset, 0 /* disk start */);
+        extra += sprintf("%-2c%-2c%s", 0x0001, sizeof(unixdata), unixdata);
+      }
   }
 
   int get_int_size(int val)
@@ -509,7 +553,6 @@ class LocalFileRecord
 
        switch(id)
        {
-
           case 0x000d: // UNIX extension
             // unix
             sscanf(val, "%-4c%-4c%-2c%-2c", atime, mtime, uid, gid);
@@ -621,6 +664,137 @@ class LocalFileRecord
   }
 }
 
+class EndRecord64
+{
+/*
+ Zip64 end of central directory record
+
+        zip64 end of central dir 
+        signature                       4 bytes  (0x06064b50)
+        size of zip64 end of central
+        directory record                8 bytes
+        version made by                 2 bytes
+        version needed to extract       2 bytes
+        number of this disk             4 bytes
+        number of the disk with the 
+        start of the central directory  4 bytes
+        total number of entries in the
+        central directory on this disk  8 bytes
+        total number of entries in the
+        central directory               8 bytes
+        size of the central directory   8 bytes
+        offset of start of central
+        directory with respect to
+        the starting disk number        8 bytes
+        zip64 extensible data sector    (variable size)
+
+*/
+ 
+ constant this_size = 12; // the size of the header only.
+ 
+  int signature;
+  int version_made_by;
+  int version_2_ext;
+  int this_disk;
+  int central_start_disk;
+  int entries_here;
+  int file_count;
+  int central_size;
+  int central_start_offset;
+  string extra;
+  
+ void create(int offset)
+ {
+   int full_size;
+   int i;
+   fd->seek( offset );
+   string data = fd->read( 4 );
+   sscanf(data, "%-4c", signature );
+     
+   if( signature != 0x06064b50 )
+     error("Could not find Zip64 EndDirectory record\n");
+
+   fd->seek( offset );
+   sscanf( fd->read(this_size), ("%-4c%-8c"), signature, full_size);
+   
+   sscanf(fd->read(full_size), "%-2c"*2 + "%-4c"*2 + ("%-8c"*4) + "%s",
+           version_made_by, version_2_ext, this_disk, central_start_disk, entries_here,
+           file_count, central_size, central_start_offset,
+           extra );
+
+   if( (this_disk != central_start_disk) )
+     error("Could not find Zip-file index\n");
+   
+   fd->seek( central_start_offset );
+   
+   for( i = 0; i<file_count; i++ )
+   {
+     CentralRecord( );
+    }     
+  }
+ 
+}
+// EndRecord64 end;
+
+
+class EndRecordLocator64
+{
+/*
+ Zip64 end of central directory locator
+
+      zip64 end of central dir locator 
+      signature                       4 bytes  (0x07064b50)
+      number of the disk with the
+      start of the zip64 end of 
+      central directory               4 bytes
+      relative offset of the zip64
+      end of central directory record 8 bytes
+      total number of disks           4 bytes
+*/
+ 
+ constant this_size = 20; // the size of the header only.
+
+ int signature;
+ int central_end_disk;
+ int central_end_offset;
+ int disk_count;
+  
+ void create(int from)
+ {
+   int i;
+   
+   for( i = from-this_size; i > from-50; i-- )
+   {
+     fd->seek( i );
+     string data = fd->read( 4 );
+     sscanf( data, "%-4c", signature );
+     
+     if( signature == 0x07064b50 )
+     {
+       use_zip64 = 1;
+       break;
+     }
+   }
+
+   if(!use_zip64)
+     return;
+
+   
+   use_zip64 = 1;
+   fd->seek( i );
+   sscanf( fd->read(this_size), ("%-4c%-4c%-8c%-4c"), signature, central_end_disk,
+     central_end_offset, disk_count);
+   
+//   if( (this_disk != central_end_disk) )
+//     error("Could not find Zip-file index\n");
+   
+   EndRecord64(central_end_offset);
+ }
+}
+
+ 
+// EndRecordLocator64 end;
+
 /*
  End of central directory record
 
@@ -656,7 +830,7 @@ class EndRecord
   void create( )
   {
     int i;
-    for( i = -10; i>-60000; i-- )
+    for( i = -10; i>-(0xffff+23); i-- )
     {
       fd->seek( i );
       string data = fd->read( 4 );
@@ -677,9 +851,14 @@ class EndRecord
     if( (this_disk != central_start_disk) )
       error("Could not find Zip-file index\n");
     
-    fd->seek( central_start_offset );
-    for( i = 0; i<file_count; i++ )
-      CentralRecord( );
+    EndRecordLocator64(i);
+    
+    if(!use_zip64)
+    {
+      fd->seek( central_start_offset );
+      for( i = 0; i<file_count; i++ )
+        CentralRecord();
+    }
   }
 }
 
@@ -779,9 +958,12 @@ string generate()
   int cdlength;
   String.Buffer buf = String.Buffer();
 
+
+  if(sizeof(entries) > 65535)
+    use_zip64 = 1;
+    
   foreach(entries;; object entry)
   {
-    write("entry: %O\n", entry->filename);
     buf += entry->encode();
   }
 
@@ -794,11 +976,35 @@ string generate()
   }
 
   cdlength = sizeof(buf) - cdstart;
+
+  if(use_zip64)
+  {
+    int record_start = sizeof(buf);
+    buf += encode_end_record64(cdlength, cdstart);
+    buf += encode_end_record_locator64(record_start);
+  }
+  cdlength = sizeof(buf) - cdstart;
+  
   buf += encode_end_record(cdlength, cdstart);
 
   return buf->get();
 }
 
+string encode_end_record_locator64(int start)
+{
+  return sprintf("%-4c%-4c%-8c%-4c", 0x07064b50,
+    0, start, 0);  
+}
+
+string encode_end_record64(int cdlength, int cdstart)
+{
+  string data = sprintf( "%-c%-c%-2c" + "%-4c"*2 + "%-8c"*4, 
+      45, 3, (use_bzip2?46:(use_zip64?45:2)), 0, 0, // NB this might be wrong
+      sizeof(entries), sizeof(entries), cdlength, cdstart
+    );
+  return sprintf("%-4c%-8c%s", 0x06064b50, sizeof(data), data);
+  
+}
 
 string encode_end_record(int central_size, int central_start_offset, string|void comment)
 {
