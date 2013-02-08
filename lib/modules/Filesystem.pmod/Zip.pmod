@@ -27,8 +27,6 @@ constant L_COMP_BZIP2 = 12;
 typedef int short;
 typedef int long;
 
-string password;
-
 // traditional Zip encryption is CRC32 based, and rather insecure.
 // support here exists to ease transition and to work with legacy files.
 class Decrypt
@@ -107,21 +105,23 @@ class Decrypt
 //! A class for reading and writing ZIP files.
 //! 
 //! Note that this class does not support the full ZIP format 
-//! specification, but rather only the most common features.
+//! specification, but does support the most common features.
 //!
-//! Storing, Deflating and Bzip2 are supported storage methods.
+//! Storing, Deflating and Bzip2 (if the Bz2 module is available) are 
+//! supported storage methods.
 //!
 //! This class is able to extract data from traditional ZIP password 
 //! encrypted archives.
 //!
-//! Notably, large files, encryption (beyond reading traditional password 
-//! protected archives) are not supported.
+//! Notably, advanced PKware encryption (beyond reading traditional password 
+//! protected archives) and multi-part archives are not currently supported.
 class _Zip
 {
   object fd;
   string filename;
   int use_zip64;
   int use_bzip2;
+  string password;
 
   array entries = ({});
 
@@ -131,6 +131,24 @@ class _Zip
 void set_compression_value(int(0..9) v)
 {
   compression_value = v;
+}
+
+//!
+void set_password(string pw)
+{
+  password = pw;
+}
+
+//!
+void set_zip64(int flag)
+{
+  use_zip64 = flag;
+}
+
+//!
+int is_zip64()
+{
+  return use_zip64;
 }
 
 class CentralRecord
@@ -1137,7 +1155,7 @@ class _ZipFS
   //!
   void set_password(string pw)
   {
-    password = pw;
+    zip->set_password(pw);
   }
 
   string _sprintf(int t)
