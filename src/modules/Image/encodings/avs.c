@@ -39,7 +39,7 @@ extern struct program *image_program;
 /*
 **! method object decode(string data)
 **! method mapping _decode(string data)
-**! method string encode(object image)
+**! method string encode(object image, object|void alpha)
 **!
 **! Handle encoding and decoding of AVS-X images.
 **! AVS is rather trivial, and not really useful, but:
@@ -112,11 +112,18 @@ void image_avs_f_encode(INT32 args )
   int x,y;
   unsigned int *q;
   rgb_group apix = {255, 255, 255};
-  get_all_args( "encode", args, "%o", &io);
+  get_all_args( "encode", args, "%o.%o", &io, &ao);
   
   if(!(i = (struct image *)get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.AVS.encode\n");
-  
+
+  if(ao) {
+    if (!(a = (struct image *)get_storage( ao, image_program)))
+      Pike_error("Wrong argument 2 to Image.AVS.encode\n");
+    if ((a->xsize != i->xsize) || (a->ysize != i->ysize))
+      Pike_error("Bad size for alpha channel to Image.AVS.encode.\n");
+  }
+
   s = begin_shared_string( i->xsize*i->ysize*4+8 );
   MEMSET(s->str, 0, s->len );
 
@@ -144,7 +151,8 @@ void init_image_avs()
 {
   ADD_FUNCTION( "decode",  image_avs_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_avs_f__decode, tFunc(tStr,tMapping), 0);
-  ADD_FUNCTION( "encode",  image_avs_f_encode,  tFunc(tObj,tStr), 0);
+  ADD_FUNCTION( "encode",  image_avs_f_encode,
+		tFunc(tObj tOr(tObj,tVoid),tStr), 0);
 }
 
 void exit_image_avs()
