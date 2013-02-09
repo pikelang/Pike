@@ -2879,7 +2879,6 @@ void image_yuv_to_rgb(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   char *err = NULL;
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
@@ -2919,10 +2918,6 @@ void image_yuv_to_rgb(INT32 args)
 exit_loop:
    ;	/* Needed to keep some compilers happy. */
    THREADS_DISALLOW();
-
-   if (err) {
-     Pike_error("%s\n", err);
-   }
 
    pop_n_elems(args);
    push_object(o);
