@@ -49,7 +49,7 @@ array get_group()
   pgtk2_pop_n_elems(args);
   {
     GSList *gl,*g2;
-    int num;
+    int num=0;
     gl=g2=gtk_radio_tool_button_get_group(
 		GTK_RADIO_TOOL_BUTTON(THIS->obj));
     while (g2) {
