@@ -19,7 +19,7 @@
 
 Stdio.File fd;
 
-// Structures.
+// Compression mechanisms
 constant L_COMP_STORE  = 0;
 constant L_COMP_DEFLATE = 8;
 constant L_COMP_BZIP2 = 12;
@@ -27,8 +27,8 @@ constant L_COMP_BZIP2 = 12;
 typedef int short;
 typedef int long;
 
-// traditional Zip encryption is CRC32 based, and rather insecure.
-// support here exists to ease transition and to work with legacy files.
+//! traditional Zip encryption is CRC32 based, and rather insecure.
+//! support here exists to ease transition and to work with legacy files.
 class Decrypt
 {
   private array key = ({305419896, 591751049, 878082192});
@@ -44,7 +44,7 @@ class Decrypt
   }
 
   // populate the crc table
-  private void gentab()
+  protected void gentab()
   {
     int poly = 0xedb88320;
     foreach(tab;int i; int b)
@@ -62,7 +62,7 @@ class Decrypt
   } 
    
   // single byte crc
-  int crc32(int c, int crc)
+  protected int crc32(int c, int crc)
   {
     return ((crc >> 8) & 0xffffff) ^ tab[(crc ^ c) & 0xff];
   }
@@ -75,7 +75,7 @@ class Decrypt
     key[2] = crc32((key[1] >> 24) & 255, key[2]);
   }
   
-  string decrypt_char(string x)
+  protected string decrypt_char(string x)
   {
     int c, k;
     string o;
@@ -90,6 +90,10 @@ class Decrypt
     return o;
   }
   
+  //! decrypt a string
+  //!
+  //! @param x
+  //!   encrypted string to decrypt
   string decrypt(string x)
   {
     String.Buffer buf = String.Buffer();
@@ -99,7 +103,6 @@ class Decrypt
       
     return buf->get();
   }
-  
 }
 
 //! A class for reading and writing ZIP files.
@@ -121,7 +124,8 @@ class _Zip
   string filename;
   int use_zip64;
   int use_bzip2;
-  string password;
+
+  protected string password;
 
   array entries = ({});
 
@@ -133,19 +137,25 @@ void set_compression_value(int(0..9) v)
   compression_value = v;
 }
 
-//!
+//! sets the password to be used for files encrypted using traditional 
+//! PKZip encryption.
 void set_password(string pw)
 {
   password = pw;
 }
 
+//! enable zip64 extensions (large files) for this archive
 //!
+//! @note
+//! This setting may be used to force zip64 for files that do not otherwise require
+//! its use. If a file whose properties requires the use of zip65 is added to an 
+//! archive, zip64 extensions will be enabled automatically.
 void set_zip64(int flag)
 {
   use_zip64 = flag;
 }
 
-//!
+//! is this archive using zip64 extensions?
 int is_zip64()
 {
   return use_zip64;
@@ -253,20 +263,20 @@ class CentralRecord
     return local_record;
   }
 
-void parse_extra(string extra)
-{
-   int id, len;
-   string val;
-   while(sizeof(extra))
-   {
-     sscanf(extra, "%-2c%-2c%s", id, len, extra);
-     if(len)
-       sscanf(extra, "%" + len + "s%s", val, extra);
-     string rest;
-     int ver;
+  void parse_extra(string extra)
+  {
+    int id, len;
+    string val;
+    while(sizeof(extra))
+    {
+      sscanf(extra, "%-2c%-2c%s", id, len, extra);
+      if(len)
+        sscanf(extra, "%" + len + "s%s", val, extra);
+      string rest;
+      int ver;
      
-     switch(id)
-     {
+      switch(id)
+      {
         case 0x0001: // ZIP64
         sscanf(val, "%-8c%-8c%-8c%-4c", uncomp_size, comp_size, local_offset, start_disk);
         break;
@@ -276,30 +286,28 @@ void parse_extra(string extra)
           sscanf(val, "%-4c%-4c%-2c%-2c", atime, mtime, uid, gid);
           break;     
 
-          case 0x5455: // Extended Timestamp extension
-            int info;
-            sscanf(val, "%-1c%-4c", info, mtime);
-            break;
+        case 0x5455: // Extended Timestamp extension
+          int info;
+          sscanf(val, "%-1c%-4c", info, mtime);
+          break;
           
-          case 0x7075: // UTF8 Name extension
-            int crc;
-            sscanf(val, "%-1c%-4c%s", ver, crc, rest);
-            filename = utf8_to_string(rest);
+        case 0x7075: // UTF8 Name extension
+          int crc;
+          sscanf(val, "%-1c%-4c%s", ver, crc, rest);
+          filename = utf8_to_string(rest);
 
-          case 0x7875: // New UNIX extension
-            // unix
-            int l;
-            sscanf(val, "%-1c%-1c%s", ver, l, val);
-            if(ver != 1) break;
-            sscanf(val, "%-" +l + "c%-1c%s", uid, l, val);
-            sscanf(val, "%-" +l + "c%-1c%s", gid, l, val);
-            break;     
-
-     }
-   }
-}
-
-}
+        case 0x7875: // New UNIX extension
+          // unix
+          int l;
+          sscanf(val, "%-1c%-1c%s", ver, l, val);
+          if(ver != 1) break;
+          sscanf(val, "%-" +l + "c%-1c%s", uid, l, val);
+          sscanf(val, "%-" +l + "c%-1c%s", gid, l, val);
+          break;     
+      }
+    }
+  }
+} // end central record
 /*
 
         local file header signature     4 bytes  (0x04034b50)
@@ -344,7 +352,6 @@ class LocalFileRecord
   string comment;
 
   long data_offset;
- // string data;
   object _fd;
 
   string _sprintf(mixed t)
@@ -357,8 +364,7 @@ class LocalFileRecord
     if(mappingp(entry))
       populate(entry);
     else
-      decode(entry, central_record);
-      
+      decode(entry, central_record);  
   }
 
 //
@@ -403,22 +409,14 @@ class LocalFileRecord
     else if(use_zip64)
       ver_2_extract = 45;
     else
-      ver_2_extract = 2;
-
-    
+      ver_2_extract = 2; 
   }
 
   string encode_central_record(int offset)
-   {
-     // we assume (perhaps dangerously) that encode() will have been
-     // called before encode_central_record(), thus generating the content
-     // of the extra field and other computed values.
-     
+   {     
      encode_extra(offset);
 
-    //werror("entry: %O, offset: %O\n", filename, offset);     
-    //werror("size: %d, compressed: %d\n", uncomp_size, comp_size);
-       return sprintf(
+     return sprintf(
              "%-4c" + "%-c%-c"+ "%-2c"*5 + "%-4c"*3 +  "%-2c"*5 + "%-4c"*2,
              0x02014b50, 3 /* UNIX */, ver_2_extract, ver_2_extract, general_flags,
              comp_method, time, date, crc32, 
@@ -453,9 +451,9 @@ class LocalFileRecord
              "%-4c" + "%-2c"*5 + "%-4c"*3 + "%-2c"*2,
              signature, ver_2_extract, general_flags,
              comp_method, time, date, crc32, 
-         comp_size, uncomp_size,  //  (use_zip64?0xffffffff:comp_size),
-          //   (use_zip64?0xffffffff:uncomp_size), 
-            filename?sizeof(filename):0, 
+             comp_size, uncomp_size,  (use_zip64?0xffffffff:comp_size),
+             (use_zip64?0xffffffff:uncomp_size), 
+             filename?sizeof(filename):0, 
              extra?sizeof(extra):0 );
 
      if(filename)
@@ -467,7 +465,6 @@ class LocalFileRecord
 
      return ret + (cdata||"");
    }
-
 
   void encode_extra(int|void offset)
   {
@@ -517,7 +514,6 @@ class LocalFileRecord
     return data_offset + comp_size;
   }
 
-
   void decode( int offset, object|void central_record )
   {
     fd->seek( offset );
@@ -546,14 +542,10 @@ class LocalFileRecord
       uncomp_size = central_record->uncomp_size;
       comp_size = central_record->comp_size;
     }
-    if(general_flags >> 0 & 0x01)
-    {
-      //werror("encrypted!\n");
-    }
-
     if(general_flags >> 11 & 0x01)
     {
-      //werror("utf8 encoded filename!\n");
+      // utf-8 encoded filename.
+      filename = utf8_to_string(filename);
     }
   }
   
@@ -576,43 +568,44 @@ class LocalFileRecord
             sscanf(val, "%-4c%-4c%-2c%-2c", atime, mtime, uid, gid);
             break;     
 
-            case 0x5455: // Extended Timestamp extension
-              int info;
-              sscanf(val, "%-1c%-4c", info, mtime);
-              break;
+          case 0x5455: // Extended Timestamp extension
+            int info;
+            sscanf(val, "%-1c%-4c", info, mtime);
+            break;
 
-            case 0x7075: // UTF8 Name extension
-              int crc;
-              sscanf(rest, "%-1c%-4c%s", ver, crc, rest);
-              filename = utf8_to_string(rest);
+          case 0x7075: // UTF8 Name extension
+            int crc;
+            sscanf(rest, "%-1c%-4c%s", ver, crc, rest);
+            filename = utf8_to_string(rest);
 
-            case 0x7875: // New UNIX extension
-              // unix
-              int l;
-              sscanf(val, "%-1c%-1c%s", ver, l, rest);
-              if(ver != 1) break;
-              sscanf(rest, "%-" +l + "c%-1c%s", uid, l, rest);
-              sscanf(rest, "%-" +l + "c%-1c%s", gid, l, rest);
-              break;     
-
-       }
+          case 0x7875: // New UNIX extension
+            // unix
+            int l;
+            sscanf(val, "%-1c%-1c%s", ver, l, rest);
+            if(ver != 1) break;
+            sscanf(rest, "%-" +l + "c%-1c%s", uid, l, rest);
+            sscanf(rest, "%-" +l + "c%-1c%s", gid, l, rest);
+            break;     
+        }
      }
   }
   
   string write(string data)
-    {
-       switch(comp_method)
-       {
-          case L_COMP_STORE:
-            return data;
+  {
+     switch(comp_method)
+     {
+        case L_COMP_STORE:
+          return data;
 #if constant(Bz2.Inflate)
-          case L_COMP_BZIP2:
-            return Bz2.Deflate()->deflate(data);
+        case L_COMP_BZIP2:
+          return Bz2.Deflate()->deflate(data);
 #endif
-          case L_COMP_DEFLATE:
-            return  Gz.deflate(0-compression_value)->deflate(data);
-       }
-    }
+        case L_COMP_DEFLATE:
+          return Gz.deflate(0-compression_value)->deflate(data);
+        default:
+          throw(Error.Generic("Unknown compression type " + comp_method + ".\n"));
+     }
+  }
 
   string read()
   {
@@ -947,7 +940,7 @@ void unzip(string todir)
   low_unzip(start, todir);
 }
 
-void low_unzip(string start, string todir)
+protected void low_unzip(string start, string todir)
 {
   foreach(get_dir(start);; string fn)
   {
@@ -968,7 +961,7 @@ void low_unzip(string start, string todir)
 }
 
 
-//!
+//! generate the zip archive
 string generate()
 {
   int offset = 0;
@@ -1008,13 +1001,13 @@ string generate()
   return buf->get();
 }
 
-string encode_end_record_locator64(int start)
+protected string encode_end_record_locator64(int start)
 {
   return sprintf("%-4c%-4c%-8c%-4c", 0x07064b50,
     0, start, 0);  
 }
 
-string encode_end_record64(int cdlength, int cdstart)
+protected string encode_end_record64(int cdlength, int cdstart)
 {
   string data = sprintf( "%-c%-c%-2c" + "%-4c"*2 + "%-8c"*4, 
       45, 3, (use_bzip2?46:(use_zip64?45:2)), 0, 0, // NB this might be wrong
@@ -1024,7 +1017,7 @@ string encode_end_record64(int cdlength, int cdstart)
   
 }
 
-string encode_end_record(int central_size, int central_start_offset, string|void comment)
+protected string encode_end_record(int central_size, int central_start_offset, string|void comment)
 {
   return sprintf (("%-4c" + "%-2c"*4 + "%-4c"*2 + "%-2c"),
             0x06054b50, 0, 0, sizeof(entries),
@@ -1043,7 +1036,7 @@ void add_dir(string path, int recurse, string|void archiveroot)
 
 }
 
-void low_add_dir(object i, string current_dir, int recurse, object stat)
+protected void low_add_dir(object i, string current_dir, int recurse, object stat)
 {
   add_file(current_dir + "/", 0, stat);
 
@@ -1061,6 +1054,7 @@ void low_add_dir(object i, string current_dir, int recurse, object stat)
   }
 }
 
+//! add a file to an archive.
 //!
 void add_file(string filename, string|Stdio.File data, int|object|void stamp, int|void no_compress)
 {
@@ -1086,6 +1080,7 @@ array day_n = ({ 0,31,59,90,120,151,181,212,243,273,304,334,0,0,0,0 });
 		  /* JanFebMarApr May Jun Jul Aug Sep Oct Nov Dec */
 
 
+//! Convert MS-DOS time/date pair to a linear UNIX date. 
 int date_dos2unix(int time,int date)
 {
 	int month,year,secs;
@@ -1100,7 +1095,7 @@ int date_dos2unix(int time,int date)
 }
 
 
-/* Convert linear UNIX date to a MS-DOS time/date pair. */
+//! Convert linear UNIX date to a MS-DOS time/date pair. 
 //! @returns 
 //!  an array containing ({time, date})
 array date_unix2dos(int unix_date)
