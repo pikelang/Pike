@@ -297,7 +297,7 @@ string get_docs()
 }
 
 %{
-int pgtk2_object_destroy_data(gpointer data) {
+void pgtk2_object_destroy_data(gpointer data) {
   struct svalue *sv=(struct svalue *)data;
   free_svalue(sv);
   g_free(sv);
@@ -315,7 +315,8 @@ object set_data(string name, mixed arg)
     get_all_args("set_data",args,"%s%*",&name,&sv);
     sv1=(struct svalue *)g_malloc(sizeof(struct svalue));
     assign_svalue_no_free(sv1,sv);
-    g_object_set_data_full(G_OBJECT(THIS->obj),name,(void *)sv1,(GDestroyNotify)pgtk2_object_destroy_data);
+    g_object_set_data_full(G_OBJECT(THIS->obj), name, (void *)sv1,
+			   pgtk2_object_destroy_data);
   }
   RETURN_THIS();
 }
