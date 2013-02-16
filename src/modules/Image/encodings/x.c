@@ -768,7 +768,7 @@ void image_x_encode_pseudocolor(INT32 args)
 	 translate=sp[5-args].u.string->str;
    } 
    if ( vbpp==8 && bpp==8 && !((bpp*img->xsize)%alignbits) )
-      image_x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
+      image_x_encode_pseudocolor_1byte_exact(args,img,nct,bpp,vbpp,alignbits,
 					     (unsigned char*)translate);
    else if (vbpp<=8) 
       image_x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
