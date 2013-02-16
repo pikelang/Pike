@@ -1691,8 +1691,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  break;
 
-		default:;
 #ifdef PIKE_DEBUG
+		default:
 		  Pike_fatal ("Unknown identifier type: 0x%04x for symbol \"%s\".\n",
 			      id->identifier_flags & IDENTIFIER_TYPE_MASK,
 			      id->name->str);
@@ -3754,6 +3754,7 @@ static void decode_value2(struct decode_data *data)
 		  /* Let the codec do it's job... */
 		  apply_low(decoder_codec (data), decode_fun, 2);
 		  if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) &&
+		      o->prog &&
 		      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
 		    /* Call lfun::create(@args). */
 		    INT32 args;
