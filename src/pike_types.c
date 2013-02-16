@@ -4837,6 +4837,8 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
       }
     }
   }
+  /* FALL_THROUGH */
+
   default:
     add_ref(mixed_type_string);
     return mixed_type_string;
@@ -5341,7 +5343,7 @@ static int low_check_indexing(struct pike_type *type,
     {
       int i = -1;
       /* Check against the LFUN types. */
-      if(n->token == F_ARROW)
+      if(n && (n->token == F_ARROW))
       {
 	(i = FIND_LFUN(p,LFUN_ARROW))!=-1 ||
 	  (i = FIND_LFUN(p,LFUN_ASSIGN_ARROW));
@@ -6747,6 +6749,8 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
 	push_type(arg_type->type);
 	return pop_unfinished_type();
       }
+      /* FALL_THROUGH */
+
     case T_ARRAY:
     case T_MULTISET:
       /* Keep void! */
