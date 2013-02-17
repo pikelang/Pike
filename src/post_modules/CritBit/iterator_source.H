@@ -148,7 +148,7 @@
 	    encode_fun = cmod_OBJ2_TREE(tree)->encode_fun;
 
 	    if (THIS->tree) {
-		if (args == 0 || IS_UNDEFINED(step)) {
+		if (!step || IS_UNDEFINED(step)) {
 		    THIS->step = 1;
 		} else {
 		    THIS->step = step->u.integer;
@@ -170,6 +170,7 @@
 			THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
 			CB_ADD_KEY_REF(THIS->stop);
 		    }
+		    /* FALL_THROUGH */
 		case 2:
 		    if (!IS_UNDEFINED(start)) {
 			cb_key s;
@@ -201,6 +202,7 @@
 			    }
 			}
 		    }
+		    /* FALL_THROUGH */
 		case 1:
 		case 0:
 		    if (!t) t = (THIS->step < 0)
