@@ -34,6 +34,11 @@ constant BINARY_UUID = 0x03;
 constant BINARY_MD5 = 0x05;
 constant BINARY_USER = 0x80;
 
+function toDocument = to_document;
+function fromDocument = from_document;
+function toDocumentArray = to_document_array;
+function fromDocumentArray = from_document_array;
+
 int getCounter()
 {
   return ++counter;
@@ -44,7 +49,7 @@ int getCounter()
 //! @param query_mode
 //!  if set to true, encoding will allow "$" and "." in key names, which
 //!   would normally be disallowed.
-string toDocument(mapping m, int|void query_mode)
+string to_document(mapping m, int|void query_mode)
 {
   String.Buffer buf = String.Buffer();
   encode(m, buf, query_mode);
@@ -176,7 +181,7 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
 }
 
 //! Decode a BSON formatted document string into a native Pike data structure.
-mixed fromDocument(string bson)
+mixed from_document(string bson)
 {
   int len;
   string slist;
@@ -198,7 +203,7 @@ mixed fromDocument(string bson)
 }
 
 //! Encode an array of data structures as a BSON formatted string
-string toDocumentArray(array(mapping) documents)
+string to_document_array(array(mapping) documents)
 {
 	String.Buffer buf = String.Buffer();
 	
@@ -211,7 +216,7 @@ string toDocumentArray(array(mapping) documents)
 }
 
 //! Decode a BSON formatted string containing multiple data structures
-array fromDocumentArray(string bsonarray)
+array from_document_array(string bsonarray)
 {
   array a = ({});
 
