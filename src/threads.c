@@ -533,9 +533,10 @@ PMOD_EXPORT INLINE int pike_timedwait_interpreter (COND_T *cond,
 						   long sec, long nsec
 						   COMMA_DLOC_DECL)
 {
+  int owner = threads_disabled;
   int res = pike_low_timedwait_interpreter (cond, sec, nsec
 					    COMMA_DLOC_ARGS_OPT);
-  if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
   return res;
 }
 
