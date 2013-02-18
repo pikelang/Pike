@@ -610,12 +610,14 @@ static INLINE int threads_disabled_wait(void)
     _do_mt_unlock_interpreter();					\
   } while (0)
 #define co_wait_interpreter(COND) do {					\
+    int owner = threads_disabled;					\
     low_co_wait_interpreter(COND);					\
-    if (threads_disabled) threads_disabled_wait();			\
+    if (!owner && threads_disabled) threads_disabled_wait();		\
   } while (0)
 #define co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+    int owner = threads_disabled;					\
     low_co_wait_interpreter_timeout(COND, SECS, NANOS);			\
-    if (threads_disabled) threads_disabled_wait();			\
+    if (!owner && threads_disabled) threads_disabled_wait();		\
   } while (0)
 
 #ifdef INTERNAL_PROFILING
