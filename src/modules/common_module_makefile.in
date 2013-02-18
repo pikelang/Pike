@@ -160,6 +160,8 @@ config.status: $(SRCDIR)/configure propagated_variables
 
 module.pmod: Makefile $(MODULE_PMOD_IN)
 	@if [ "x$(MODULE_PMOD_IN)" != "x" ]; then \
+	  LC_TYPE=C; \
+	  export LC_CTYPE; \
 	  echo "Making module.pmod" ; \
 	  if [ -f "$(MODULE_PMOD_IN)" ]; then \
 	    sed -e "s#@module@#$(MODULE_PROGRAM)#" \
