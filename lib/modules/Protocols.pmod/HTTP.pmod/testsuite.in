@@ -16,6 +16,8 @@ class A {
   mapping|string _headers;
   string _data;
 
+  int ok = 1;
+
   this_program sync_request(string server, int port, string query, void|mapping|string headers, void|string data) {
 
     _server = server;
@@ -23,7 +25,6 @@ class A {
     _query = query;
     _headers = headers;
     _data = data;
-    ok = 1;
     return this;
   }
 
@@ -120,6 +121,32 @@ test_any_equal([[
   m_delete(h, "user-agent");
   return h;
 ]], (["host":"x","a":({"1","2"})]))
+
+test_any_equal([[
+  object o = H.do_method("GET","http://x/?a=b&c=d",0,0,CON());
+  return o->_query;
+]], "GET /?a=b&c=d HTTP/1.0")
+test_any_equal([[
+  object o = H.do_method("GET","http://x/?a=b&c=d",(["x":"y"]),0,CON());
+  return o->_query;
+]], "GET /?a=b&c=d&x=y HTTP/1.0")
+test_any_equal([[
+  object o = H.do_method("GET","http://x/",(["x":"y"]),0,CON());
+  return o->_query;
+]], "GET /?x=y HTTP/1.0")
+
+test_any_equal([[
+  object o = H.do_method("GET","http://x",0,0,CON());
+  return o->_query;
+]], "GET / HTTP/1.0")
+
+test_eval_error([[
+  CON c = CON();
+  c->ok = 0;
+  c->errno = 1;
+  object o = H.do_method("GET","http://x/",(["x":"y"]),0,c);
+]])
+
 
 
 dnl do_async_method
