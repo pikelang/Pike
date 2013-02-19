@@ -11440,6 +11440,134 @@ void yyexplain_not_implements(int severity_level,
   END_CYCLIC();
 }
 
+/* FIXME: Code duplication of yyexplain_not_compatible() above! */
+/* Explains why a is not compatible with b */
+void string_builder_explain_not_compatible(struct string_builder *s,
+					   struct program *a,
+					   struct program *b)
+{
+  int e;
+  struct pike_string *init_string = findstring("__INIT");
+  int res = 1;
+  DECLARE_CYCLIC();
+
+  /* Optimize the loop somewhat */
+  if (a->num_identifier_references < b->num_identifier_references) {
+    struct program *tmp = a;
+    a = b;
+    b = tmp;
+  }
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+      continue;		/* Skip protected & hidden */
+
+    /* FIXME: What if they aren't protected & hidden in a? */
+
+    bid = ID_FROM_INT(b,e);
+    if(init_string == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      continue;		/* It's ok... */
+    }
+
+    /* Note: Uses weaker check for constant integers. */
+    if(((bid->run_time_type != PIKE_T_INT) ||
+	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
+       !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+      ref_push_program(a);
+      ref_push_program(b);
+      ref_push_type_value(ID_FROM_INT(a, i)->type);
+      ref_push_type_value(bid->type);
+      string_builder_sprintf(s,
+			     "Identifier %S in %O is incompatible with "
+			     "the same in %O.\n"
+			     "Expected: %O\n"
+			     "Got     : %O\n",
+			     bid->name, Pike_sp-4,
+			     Pike_sp-3,
+			     Pike_sp-2,
+			     Pike_sp-1);
+      pop_n_elems(4);
+    }
+  }
+  END_CYCLIC();
+  return;
+}
+
+/* FIXME: code duplication of yyexplain_not_implements() above! */
+/* Explains why a does not implement b */
+void string_builder_explain_not_implements(struct string_builder *s,
+					   struct program *a,
+					   struct program *b)
+{
+  int e;
+  struct pike_string *init_string = findstring("__INIT");
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+      continue;		/* Skip protected & hidden */
+    bid = ID_FROM_INT(b,e);
+    if(init_string == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
+	continue;		/* It's ok... */
+      ref_push_type_value(bid->type);
+      string_builder_sprintf(s,
+			     "Missing identifier %S.\n"
+			     "Expected: %O.\n",
+			     bid->name, Pike_sp-1);
+      pop_stack();
+      continue;
+    }
+
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+      ref_push_type_value(bid->type);
+      ref_push_type_value(ID_FROM_INT(a, i)->type);
+      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+	string_builder_sprintf(s,
+			       "Type of identifier %S does not match.\n"
+			       "Expected: %O.\n"
+			       "Got     : %O.\n",
+			       bid->name,
+			       Pike_sp-2,
+			       Pike_sp-1);
+      } else {
+	string_builder_sprintf(s,
+			       "Type of identifier %S is not strictly compatible.",
+			       "Expected: %O.\n"
+			       "Got     : %O.\n",
+			       bid->name,
+			       Pike_sp-2,
+			       Pike_sp-1);
+      }
+      pop_n_elems(2);
+      continue;
+    }
+  }
+  END_CYCLIC();
+}
+
 PMOD_EXPORT void *parent_storage(int depth)
 {
   struct external_variable_context loc;

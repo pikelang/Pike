@@ -7,8 +7,8 @@
 #include "global.h"
 #include <ctype.h>
 #include "svalue.h"
-#include "pike_types.h"
 #include "stralloc.h"
+#include "pike_types.h"
 #include "stuff.h"
 #include "array.h"
 #include "program.h"
@@ -7679,6 +7679,50 @@ void yyexplain_nonmatching_types(int severity_level,
   END_CYCLIC();
 }
 
+/* FIXME: Code duplication! */
+void string_builder_explain_nonmatching_types(struct string_builder *s,
+					      struct pike_type *type_a,
+					      struct pike_type *type_b)
+{
+  DECLARE_CYCLIC();
+
+  implements_a=0;
+  implements_b=0;
+  implements_mode=0;
+
+  /* Note the argument order. */
+  pike_types_le(type_b, type_a);
+
+#if 0
+  if(!(implements_a && implements_b &&
+       type_a->str[0]==T_OBJECT &&
+       type_b->str[0]==T_OBJECT))
+#endif /* 0 */
+  {
+    ref_push_type_value(type_a);
+    ref_push_type_value(type_b);
+    string_builder_sprintf(s,
+			   "Expected: %O.\n"
+			   "Got     : %O.\n",
+			   Pike_sp-2, Pike_sp-1);
+  }
+
+  /* Protect against circularities. */
+  if (BEGIN_CYCLIC(type_a, type_b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
+  if(implements_a && implements_b) {
+    if (implements_mode) {
+      string_builder_explain_not_implements(s, implements_a, implements_b);
+    } else {
+      string_builder_explain_not_compatible(s, implements_a, implements_b);
+    }
+  }
+  END_CYCLIC();
+}
 
 /******/
 

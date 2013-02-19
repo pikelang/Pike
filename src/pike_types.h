@@ -304,6 +304,9 @@ void yyexplain_nonmatching_types(int severity_level,
 				 struct pike_string *b_file,
 				 INT32 b_line,
 				 struct pike_type *type_b);
+void string_builder_explain_nonmatching_types(struct string_builder *s,
+					      struct pike_type *type_a,
+					      struct pike_type *type_b);
 struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);

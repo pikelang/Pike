@@ -1080,10 +1080,16 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
      */
     struct pike_type *sval_type = get_type_of_svalue(s);
     struct pike_string *t1;
-    struct pike_string *t2;
+    struct string_builder s;
     char *fname = "__soft-cast";
+    ONERROR tmp0;
     ONERROR tmp1;
-    ONERROR tmp2;
+
+    init_string_builder(&s, 0);
+
+    SET_ONERROR(tmp0, free_string_builder, &s);
+
+    string_builder_explain_nonmatching_types(&s, type, sval_type);
 
     if (Pike_fp->current_program) {
       /* Look up the function-name */
@@ -1096,19 +1102,14 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
     t1 = describe_type(type);
     SET_ONERROR(tmp1, do_free_string, t1);
 	  
-    t2 = describe_type(sval_type);
-    SET_ONERROR(tmp2, do_free_string, t2);
-	  
     free_type(sval_type);
 
     bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
-		  "%s(): Soft cast failed. Expected %s, got %s\n",
-		  fname, t1->str, t2->str);
+		  "%s(): Soft cast failed.\n%S",
+		  fname, s.s);
     /* NOT_REACHED */
-    UNSET_ONERROR(tmp2);
-    UNSET_ONERROR(tmp1);
-    free_string(t2);
-    free_string(t1);
+    CALL_AND_UNSET_ONERROR(tmp1);
+    CALL_AND_UNSET_ONERROR(tmp0);
   }
 }
 
