@@ -1346,8 +1346,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 	ref_push_type_value(n->type);
 	ref_push_type_value(type);
 	yytype_report(REPORT_ERROR,
-		      NULL, 0, NULL,
-		      NULL, 0, NULL,
+		      NULL, 0, type,
+		      NULL, 0, n->type,
 		      2, "Soft cast of %O to %O isn't a valid cast.");
       } else if (result_type == n->type) {
 	ref_push_type_value(n->type);
