@@ -1026,14 +1026,12 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		local_node = mklocalnode(e, 0);
+		local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
 		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
-
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
 			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
@@ -2927,12 +2925,12 @@ class: TOK_CLASS line_number_info optional_identifier
 		   mixed_type_string)) {
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
-		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
+		local_node = mkcastnode(mixed_type_string, local_node);
 
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
+		 */
 		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 					    variable[e].type, local_node);
 	      }

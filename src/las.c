@@ -387,9 +387,11 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
     if (CAR(p) == n) {
-      (_CAR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CAR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else if (CDR(p) == n) {
-      (_CDR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CDR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else {
       yywarning("Failed to find place to insert soft cast.");
     }
@@ -3416,7 +3418,8 @@ void fix_type_field(node *n)
 	    free_string(t1);
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
-	    _CAR(n) = mksoftcastnode(CDR(n)->type, CAR(n));
+	    _CAR(n) = mksoftcastnode(CDR(n)->type,
+				     mkcastnode(mixed_type_string, CAR(n)));
 	  }
 	}
       }
