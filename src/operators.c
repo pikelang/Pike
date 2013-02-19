@@ -980,7 +980,8 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
   }
   if ((TYPEOF(*s) == PIKE_T_INT) && !s->u.integer) return 1;
   if (TYPEOF(*s) == type->type) {
-    if (type->type == PIKE_T_INT) {
+    switch(type->type) {
+    case PIKE_T_INT:
       if (((((INT32)CAR_TO_INT(type)) != MIN_INT32) &&
 	   (s->u.integer < (INT32)CAR_TO_INT(type))) ||
 	  ((((INT32)CDR_TO_INT(type)) != MAX_INT32) &&
@@ -988,15 +989,13 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
 	return 0;
       }
       return 1;
-    }
-    if (type->type == PIKE_T_FLOAT) return 1;
-    if (type->type == PIKE_T_STRING) {
+    case PIKE_T_FLOAT:
+      return 1;
+    case PIKE_T_STRING:
       if ((8<<s->u.string->size_shift) > CAR_TO_INT(type)) {
 	return 0;
       }
       return 1;
-    }
-    switch(type->type) {
     case PIKE_T_OBJECT:
       {
 	struct program *p;
