@@ -11534,9 +11534,8 @@ void string_builder_explain_not_implements(struct string_builder *s,
 	continue;		/* It's ok... */
       ref_push_type_value(bid->type);
       string_builder_sprintf(s,
-			     "Missing identifier %S.\n"
-			     "Expected: %O.\n",
-			     bid->name, Pike_sp-1);
+			     "Missing identifier %O %S.\n",
+			     Pike_sp-1, bid->name);
       pop_stack();
       continue;
     }
