@@ -964,6 +964,7 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
     return 0;
   case T_ASSIGN:
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     type = type->cdr;
     goto loop;
   case T_AND:
