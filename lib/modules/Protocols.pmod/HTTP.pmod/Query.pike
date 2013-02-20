@@ -25,13 +25,15 @@
 //!    return -1;
 //! }
 
-// FIXME: Uses hardcoded errnos from Linux/i386.
-
 /****** variables **************************************************/
 
 // open
 
-//!	Errno copied from the connection.
+//!	Errno copied from the connection or simulated for async operations.
+//!	@note
+//!		In Pike 7.8 and earlier hardcoded Linux values were used in
+//!		async operations, 110 instead of @expr{System.ETIMEDOUT} and 
+//!		113 instead of @expr{System.EHOSTUNREACH}.
 int errno;
 
 //!	Tells if the connection is successfull.
@@ -320,7 +322,11 @@ protected void low_async_failed(int errno)
 
 protected void async_failed()
 {
+#if constant(System.EHOSTUNREACH)
+  low_async_failed(con?con->errno():System.EHOSTUNREACH);
+#else
   low_async_failed(con?con->errno():113);	// EHOSTUNREACH/Linux-i386
+#endif
 }
 
 protected void async_timeout()
@@ -329,7 +335,11 @@ protected void async_timeout()
    werror("** TIMEOUT\n");
 #endif
    close_connection();
+#if constant(System.ETIMEDOUT)
+   low_async_failed(System.ETIMEDOUT);
+#else
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
+#endif
 }
 
 void async_got_host(string server,int port)
