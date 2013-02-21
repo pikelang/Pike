@@ -114,8 +114,12 @@ protected int ponder_answer( int|void start_position )
       }
       if (s=="") {
 	if (sizeof (buf) <= start_position) {
-	  // FIXME: Try to fake some kind of errno here, or HTTP
-	  // error?
+          // Fake a connection reset by peer errno.
+#if constant(System.ECONNRESET)
+          errno = System.ECONNRESET;
+#else
+          errno = 104;
+#endif
 #ifdef HTTP_QUERY_DEBUG
 	  werror ("<- (premature EOF)\n");
 #endif
@@ -314,7 +318,8 @@ protected void low_async_failed(int errno)
 #ifdef HTTP_QUERY_DEBUG
    werror("** calling failed cb %O\n", request_fail);
 #endif
-   this_program::errno = errno;
+   if (errno)
+     this_program::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
@@ -521,7 +526,7 @@ void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
 #ifdef HTTP_QUERY_DEBUG
-  werror("dns_lookup_callback %s = %s\n", name, ip);
+  werror("dns_lookup_callback %s = %s\n", name, ip||"NULL");
 #endif
    hostname_cache[name]=ip;
    if (functionp(callback))
