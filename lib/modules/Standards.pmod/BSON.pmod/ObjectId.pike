@@ -47,3 +47,11 @@ string _sprintf(mixed t)
 {
 	return "ObjectId(" + String.string2hex(id) + ")";
 }
+
+static mixed cast(string t)
+{
+  if(t == "string")
+    return String.string2hex(id);
+  else
+    throw(Error.Generic("invalid cast of ObjectId to " + t + "\n"));
+}
