@@ -107,7 +107,8 @@ class Instance {
 
     void create() {
 	instance = _Instance();
-	file = Stdio.File(instance->get_fd(), "r");
+	file = Stdio.File();
+	file->assign(instance->fd());
 	file->set_nonblocking();
 	file->set_read_callback(parse_fun(watches));
     }
@@ -168,8 +169,13 @@ class Instance {
     }
 
     void destroy() {
-	destruct(file);
-	destruct(instance);
+	file->set_read_callback(0);
+	/*
+	 * closing the last copy of an inotify fd currently takes a long time (~100ms).
+	 * make sure to close the file first, to allow releasing the interpreter lock
+	 * during the last close call in the instance EXIT handler.
+	 */
+	file->close();
     }
 }
 #endif
