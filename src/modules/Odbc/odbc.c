@@ -133,7 +133,7 @@ void odbc_error(const char *fun, const char *msg,
 #endif
   SWORD errmsg_len = 0;
   SQLINTEGER native_error;
-  HDBC hdbc = odbc->hdbc;
+  HDBC hdbc = odbc?odbc->hdbc:SQL_NULL_HDBC;
 
   ODBC_ALLOW();
   _code =
