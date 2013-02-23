@@ -780,7 +780,8 @@ protected void create(int|void max_dir_check_interval,
   eventstream->callback_func = eventstream_callback;
 #elseif HAVE_INOTIFY
   instance = Inotify._Instance();
-  file = Stdio.File(instance->get_fd(), "r");
+  file = Stdio.File();
+  file->assign(instance->fd());
   file->set_nonblocking();
   file->set_read_callback(inotify_parse);
 #endif

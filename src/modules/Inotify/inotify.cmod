@@ -25,11 +25,16 @@
 #include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+#include "fdlib.h"
+#include "pike_threadlib.h"
+
+#include "modules/files/file.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 
 #include <sys/inotify.h>
 #include <errno.h>
+#include <unistd.h>
 
 DECLARATIONS
 
@@ -147,6 +152,7 @@ PIKEFUN array(string|int) parse_event(string data) {
  */
 PIKECLASS _Instance {
     CVAR int fd;
+    CVAR struct object * fd_object;
 
     /*! @decl int add_watch(string file, int mask)
      *! Add a watch for a certain file or directory and specific events.
@@ -187,13 +193,24 @@ PIKECLASS _Instance {
 	    RETURN err;
     }
 
-    /*! @decl int get_fd()
+
+    /*! @decl object get_fd()
      *! @returns
-     *!	    Returns the file descriptor that is associated to the inotify
-     *!	    instance.
+     *!	    Returns the file descriptor associated with this inotify instance.
+     *! @note
+     *!	    Use @[fd()] instead.
      */
     PIKEFUN int get_fd() {
-	RETURN THIS->fd;
+	push_int(THIS->fd);
+    }
+
+    /*! @decl object fd()
+     *! @returns
+     *!	    Returns a instance of @[Stdio.Fd] corresponding to the inotify instance. This can passed to
+     *!	    @[Stdio.File()->assign()].
+     */
+    PIKEFUN object fd() {
+	ref_push_object(THIS->fd_object);
     }
 
     /*! @decl int rm_watch(int wd)
@@ -218,19 +235,39 @@ PIKECLASS _Instance {
     }
 
     INIT {
+	struct object * o;
 	THIS->fd = inotify_init();
+	THIS->fd_object = NULL;
 
 	if (THIS->fd == -1) switch (errno) {
 	case EMFILE:
 	    Pike_error("User limit on inotify instances reached.\n");
 	case ENFILE:
 	    Pike_error("User limit on file descriptors reached.\n");
-	case ENOMEM: Pike_error("No free kernel memory available.\n");
+	case ENOMEM:
+	    Pike_error("No free kernel memory available.\n");
 	}
+
+	o = file_make_object_from_fd(THIS->fd, FILE_READ, fd_CAN_NONBLOCK);
+	/* We will close the inotify fd on EXIT */
+	((struct my_file *)(o->storage + o->prog->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+	THIS->fd_object = o;
     }
 
     EXIT {
-	close(THIS->fd);
+	if (THIS->fd_object) {
+	    free_object(THIS->fd_object);
+	    THIS->fd_object = NULL;
+	}
+	if (THIS->fd != -1) {
+	    int fd = THIS->fd;
+	    /*
+	     * currently (linux 3.4.9) closing an inotify fd takes in the order of 100 ms
+	     */
+	    THREADS_ALLOW();
+	    close(fd);
+	    THREADS_DISALLOW();
+	}
     }
 }
 
