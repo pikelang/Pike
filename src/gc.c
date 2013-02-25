@@ -546,9 +546,9 @@ PMOD_EXPORT struct marker *pmod_find_marker (void *p)
 }
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
-void *gc_found_in = NULL;
-int gc_found_in_type = PIKE_T_UNKNOWN;
-const char *gc_found_place = NULL;
+PMOD_EXPORT void *gc_found_in = NULL;
+PMOD_EXPORT int gc_found_in_type = PIKE_T_UNKNOWN;
+PMOD_EXPORT const char *gc_found_place = NULL;
 #endif
 
 #ifdef DO_PIKE_CLEANUP

@@ -3246,7 +3246,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
 
 #ifdef PIKE_DEBUG
 
-void dump_program_tables (const struct program *p, int indent)
+PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 {
   int d;
 
