@@ -2296,8 +2296,9 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
  */
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 {
-  a=resize_array(a,a->size+1);
-  array_set_index(a, a->size-1, s);
+  INT32 size = a->size;
+  a=resize_array(a, size+1);
+  array_set_index(a, size, s);
   return a;
 }
 
