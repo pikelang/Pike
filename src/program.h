@@ -651,7 +651,7 @@ struct program
 #endif
 };
 
-void dump_program_tables (const struct program *p, int indent);
+PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 #ifdef PIKE_DEBUG
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {

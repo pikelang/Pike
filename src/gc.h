@@ -394,9 +394,9 @@ extern struct pike_queue gc_mark_queue;
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
 
-extern void *gc_found_in;
-extern int gc_found_in_type;
-extern const char *gc_found_place;
+PMOD_EXPORT extern void *gc_found_in;
+PMOD_EXPORT extern int gc_found_in_type;
+PMOD_EXPORT extern const char *gc_found_place;
 
 #define GC_ENTER(THING, TYPE)						\
   do {									\
