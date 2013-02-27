@@ -1855,6 +1855,25 @@ static void f__can_send_as_latin1 (INT32 args)
 /*! @endclass
  */
 
+/*! @decl string client_info()
+ *!
+ *! Get some information about the Mysql-server client library.
+ *!
+ *! @seealso
+ *!   @[mysql()->statistics()], @[mysql()->server_info()],
+ *!   @[mysql()->protocol_info()], @[mysql()->info()]
+ */
+static void f_client_info(INT32 args)
+{
+  pop_n_elems(args);
+
+#ifndef MYSQL_COMPILATION_COMMENT
+#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#endif
+
+  push_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+}
+
 /*! @endmodule
  */
 
@@ -1959,6 +1978,9 @@ PIKE_MODULE_INIT
 
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
+
+  /* function(void:string) */
+  ADD_FUNCTION("client_info", f_client_info,tFunc(tVoid,tStr), ID_PUBLIC);
 
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_INIT();
