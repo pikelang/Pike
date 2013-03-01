@@ -30,6 +30,8 @@ void low_parse_error(string buf, string reason, int pos) {
     throw(ParseError(buf, pos, reason, backtrace()[..<1]));
 }
 
+#define ASSERT(x)   do { if (!(x)) error(#x " failed\n"); } while(0)
+
 class Parser {
     inherit _PDF::Parser;
 
@@ -46,6 +48,7 @@ class Parser {
 
 class File {
     ADT.CritBit.IntTree geometry = ADT.CritBit.IntTree();
+    // object 0 is special and free
     ADT.CritBit.IntTree objects = ADT.CritBit.IntTree(([ ID2KEY(0,65535) : -1 ]));
     mapping trailer;
 
@@ -185,7 +188,13 @@ class Reader {
 	parse_xref_table(xref_pos);
     }
 
-    object get_object(int id, int|void rev) {
+    object get_object(object|int id, int|void rev) {
+
+	if (objectp(id)) {
+	    rev = id->rev;
+	    id = id->id;
+	}
+
 	mixed ret = ::get_object(id, rev);
 
 	if (intp(ret)) {
@@ -205,6 +214,8 @@ class Reader {
 	    if (!ret) 
 		parse_error("Cross-reference table seems wrong. Could not find object.");
 	}
+
+	ret->ref = get_reference(sprintf("%d %d R", id, rev));
 
 	return ret;
     }
@@ -247,15 +258,12 @@ class Reader {
 
 class Writer {
     inherit File;
-    // TODO: share geometry representation etc with the File. In fact,
-    // rename the reader to decoder and make the reader and writer both inherit the File.
-    // object 0 is special and free
     function(string:void) to;
     int seek = 0;
-    mapping trailer = ([]);
     int lastxref = 0;
 
     void create(function(string:void) to) {
+	trailer = ([]);
 	this_program::to = to;
     }
 
@@ -343,6 +351,115 @@ class Writer {
 	lastxref = seek;
 	seek += sizeof(buf);
 	to(buf->get());
+    }
+}
+
+class Document {
+    object file;
+    object catalog;
+    object pages;
+
+    void create(object file) {
+	this_program::file = file;
+
+	catalog = file->get_object(file->trailer->Root);
+
+	ASSERT(catalog->data->Type == "Catalog");
+	pages = PageNode(file->get_object(catalog->data->Pages));
+    }
+
+    object _get_iterator() {
+	return get_iterator(pages);
+    }
+
+    class PageNode {
+	object o;
+	object parent;
+
+	void create(object o, void|object parent) {
+	    this_program::o = o;
+	    if (parent) this_program::parent = parent;
+	    ASSERT(o->data->Type == "Pages");
+	}
+
+	class _get_iterator {
+	    object it;
+
+	    void create() {
+		it = get_iterator(o->data->Kids);
+	    }
+
+	    int next() {
+		return it->next();
+	    }
+
+	    int(0..1) `!() {
+		return !it;
+	    }
+
+	    mixed index() {
+		return it->index();
+	    }
+
+	    mixed value() {
+		return Page(file->get_object(it->value()), this);
+	    }
+	}
+
+    /* this should really work without concatenation and gcc cpp also handles it properly,
+     * but the pike cpp seems "different"
+     */
+#define PDF_INHERIT(name)						\
+	mixed `-> ## name () {						\
+	    return o->data-> ## name || (parent && parent-> ## name);	\
+	}
+
+	PDF_INHERIT(CropBox)
+	PDF_INHERIT(MediaBox)
+	PDF_INHERIT(Resources)
+
+	int `->Rotate() {
+	    if (has_index(o->data, "Rotate")) {
+		return o->data->Rotate;
+	    }
+
+	    if (parent)
+		return parent->Rotate;
+	    else return 0;
+	}
+    }
+
+    class Page {
+	object o;
+	object parent;
+
+	void create(object o, object parent) {
+	    this_program::o = o;
+	    ASSERT(o->data->Type == "Page");
+	    this_program::parent = parent;
+	}
+
+	string _sprintf(int type) {
+	    return sprintf("Page(%O)", o->data);
+	}
+
+#undef PDF_INHERIT
+#define PDF_INHERIT(name)					\
+	mixed `-> ## name() {					\
+	    return o->data-> ## name || parent-> ## name;	\
+	}
+
+	PDF_INHERIT(CropBox);
+	PDF_INHERIT(MediaBox);
+	PDF_INHERIT(Resources);
+
+	int `->Rotate() {
+	    if (has_index(o->data, "Rotate")) {
+		return o->data->Rotate;
+	    }
+
+	    return parent->Rotate;
+	}
     }
 }
 
