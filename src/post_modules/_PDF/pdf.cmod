@@ -68,6 +68,7 @@ PIKECLASS pdf_object {
     PIKEVAR int rev;
     PIKEVAR mixed data;
     PIKEVAR string raw;
+    PIKEVAR object ref;
 
     INIT {
 	THIS->data = svalue_undefined;
