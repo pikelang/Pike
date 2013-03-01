@@ -12,6 +12,8 @@ DECLARATIONS
 
 PIKECLASS reference {
     PIKEVAR string ref;
+    CVAR unsigned INT32 id;
+    CVAR unsigned short rev;
 
     INIT {
 	THIS->ref = NULL;
@@ -20,6 +22,11 @@ PIKECLASS reference {
     PIKEFUN void create(string ref) {
 	add_ref(ref);
 	THIS->ref = ref;
+
+	if (sscanf(ref->str, "%u %hu R", &THIS->id, &THIS->rev) != 2) {
+	    Pike_error("Malformed reference.");
+	}
+
 	pop_stack();
     }
 
@@ -45,6 +52,14 @@ PIKECLASS reference {
 	ref_push_program(reference_program);
 	ref_push_string(THIS->ref);
 	f_sprintf(3);
+    }
+
+    PIKEFUN int `->id() {
+	RETURN (INT_TYPE)(THIS->id);
+    }
+
+    PIKEFUN int `->rev() {
+	RETURN (INT_TYPE)(THIS->rev);
     }
 }
 
