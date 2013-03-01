@@ -202,8 +202,9 @@ class Compound
     return this;
   }
 
-  protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%s %O)", this_program, type_name, elements);
+  protected string _sprintf(int t,mapping(string:int)|void params) {
+    if (params) ++params->indent; else params=([]);
+    return t=='O' && sprintf("%O(%s %*O)", this_program, type_name, params, elements);
   }
 
 #ifdef COMPATIBILITY
