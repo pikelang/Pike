@@ -690,7 +690,7 @@ void image_operator_lesser(INT32 args)
    if (s2)
       while (i--)
       {
-	 if (s1->r>=s1->r || s1->g>=s1->g || s1->b>=s1->b) { res=0; break; }
+	 if (s1->r>=s2->r || s1->g>=s2->g || s1->b>=s2->b) { res=0; break; }
 	 s1++; s2++;
       }
    else
@@ -762,7 +762,7 @@ void image_operator_greater(INT32 args)
    if (s2)
       while (i--)
       {
-	 if (s1->r<=s1->r || s1->g<=s1->g || s1->b<=s1->b) { res=0; break; }
+	 if (s1->r<=s2->r || s1->g<=s2->g || s1->b<=s2->b) { res=0; break; }
 	 s1++; s2++;
       }
    else
