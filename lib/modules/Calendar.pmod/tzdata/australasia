@@ -321,15 +321,23 @@ Zone	Indian/Cocos	6:27:40	-	LMT	1900
 # The commencement of daylight saving will remain unchanged and start
 # on the  23rd of October, 2011.
 
+# From the Fiji Government Online Portal (2012-08-21) via Steffen Thorsen:
+# The Minister for Labour, Industrial Relations and Employment Mr Jone Usamate
+# today confirmed that Fiji will start daylight savings at 2 am on Sunday 21st
+# October 2012 and end at 3 am on Sunday 20th January 2013.
+# http://www.fiji.gov.fj/index.php?option=com_content&view=article&id=6702&catid=71&Itemid=155
+#
+# From Paul Eggert (2012-08-31):
+# For now, guess a pattern of the penultimate Sundays in October and January.
+
 # Rule	NAME	FROM	TO	TYPE	IN	ON	AT	SAVE	LETTER/S
 Rule	Fiji	1998	1999	-	Nov	Sun>=1	2:00	1:00	S
 Rule	Fiji	1999	2000	-	Feb	lastSun	3:00	0	-
 Rule	Fiji	2009	only	-	Nov	29	2:00	1:00	S
 Rule	Fiji	2010	only	-	Mar	lastSun	3:00	0	-
-Rule	Fiji	2010	only	-	Oct	24	2:00	1:00	S
+Rule	Fiji	2010	max	-	Oct	Sun>=18	2:00	1:00	S
 Rule	Fiji	2011	only	-	Mar	Sun>=1	3:00	0	-
-Rule	Fiji	2011	only	-	Oct	23	2:00	1:00	S
-Rule	Fiji	2012	only	-	Jan	22	3:00	0	-
+Rule	Fiji	2012	max	-	Jan	Sun>=18	3:00	0	-
 # Zone	NAME		GMTOFF	RULES	FORMAT	[UNTIL]
 Zone	Pacific/Fiji	11:53:40 -	LMT	1915 Oct 26	# Suva
 			12:00	Fiji	FJ%sT	# Fiji Time
@@ -640,25 +648,25 @@ Zone Pacific/Guadalcanal 10:39:48 -	LMT	1912 Oct	# Honiara
 #
 # From Gwillim Law (2011-12-29)
 # A correspondent informed me that Tokelau, like Samoa, will be skipping
-# December 31 this year, thereby changing its time zone from UTC-10 to
-# UTC+14. When I tried to verify this statement, I found a confirming
-# article in Time magazine online
-# <a href="http://www.time.com/time/world/article/0,8599,2103243,00.html">
-# (http://www.time.com/time/world/article/0,8599,2103243,00.html).
-# </a>
+# December 31 this year ...
 #
-# From Jonathan Leffler (2011-12-29)
-# Information from the BBC to the same effect:
-# <a href="http://www.bbc.co.uk/news/world-asia-16351377">
-# http://www.bbc.co.uk/news/world-asia-16351377
-# </a>
+# From Steffen Thorsen (2012-07-25)
+# ... we double checked by calling hotels and offices based in Tokelau asking
+# about the time there, and they all told a time that agrees with UTC+13....
+# Shanks says UTC-10 from 1901 [but] ... there is a good chance the change
+# actually was to UTC-11 back then.
 #
-# Patch supplied by Tim Parenti (2011-12-29)
+# From Paul Eggert (2012-07-25)
+# A Google Books snippet of Appendix to the Journals of the House of
+# Representatives of New Zealand, Session 1948,
+# <http://books.google.com/books?id=ZaVCAQAAIAAJ>, page 65, says Tokelau
+# was "11 hours slow on G.M.T."  Go with Thorsen and assume Shanks & Pottenger
+# are off by an hour starting in 1901.
 
 # Zone	NAME		GMTOFF	RULES	FORMAT	[UNTIL]
 Zone	Pacific/Fakaofo	-11:24:56 -	LMT	1901
-			-10:00	-	TKT 2011 Dec 30	# Tokelau Time
-			14:00	-	TKT
+			-11:00	-	TKT 2011 Dec 30	# Tokelau Time
+			13:00	-	TKT
 
 # Tonga
 # Rule	NAME	FROM	TO	TYPE	IN	ON	AT	SAVE	LETTER/S
