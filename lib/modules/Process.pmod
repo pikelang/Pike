@@ -6,6 +6,12 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
+#if defined(__NT__) || defined(__amigaos__)
+constant path_separator = ";";
+#else
+constant path_separator = ":";
+#endif
+
 #if constant(Stdio.__HAVE_SEND_FD__)
 protected Stdio.File forkd_pipe;
 protected create_process forkd_pid;
@@ -414,14 +420,6 @@ string locate_binary(array(string) path, string name)
 
   foreach(path, string dir)
   {
-#ifdef __NT__
-    // Windows doesn't seem to strip quotation marks from PATH
-    // components that contain them so we need to do that here,
-    // otherwise we'll end up with a bogus path to stat on.
-    if(sizeof(dir) && dir[0] == '"' && dir[-1] == '"')
-         dir = dir[1..<1];
-#endif /* __NT__ */
-    
     string fname = combine_path(dir, name);
     Stdio.Stat info = file_stat(fname);
     if (info && (info->mode & 0111))
@@ -476,13 +474,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 	&& !has_value(res[0], "\\")
 #endif /* __NT__ */
 	)
-      res[0] = locate_binary(getenv("PATH")/
-#if defined(__NT__) || defined(__amigaos__)
-			     ";"
-#else
-			     ":"
-#endif
-			     ,res[0]);
+      res[0] = search_path(res[0]);
     runpike = res;
   }
   return Process(runpike + argv, options);
@@ -647,25 +639,43 @@ int exec(string file,string ... foo)
 }
 #endif
 
+protected string search_path_raw;
 protected array(string) search_path_entries=0;
 
+//! Search for the path to an executable.
 //!
+//! @param command
+//!   Executable to search for.
+//!
+//! Searches for @[command] in the directories listed in the
+//! environment variable @tt{$PATH@}.
+//!
+//! @returns
+//!   Returns the path to @[command] if found, and
+//!   @expr{0@} (zero) on failure.
+//!
+//! @note
+//!   This function is NOT thread safe if the environment
+//!   variable @tt{$PATH@} is being changed concurrently.
+//!
+//! @note
+//!   In Pike 7.8.752 and earlier the environment
+//!   variable @tt{$PATH@} was only read once.
 string search_path(string command)
 {
    if (command=="" || command[0]=='/') return command;
 
-   if (!search_path_entries) 
+   string path = getenv("PATH")||"";
+   if ((path != search_path_raw) || !search_path_entries)
    {
+      string raw_path = path;
 #ifdef __NT__
-      array(string) e=replace(getenv("PATH")||"", "\\", "/")/";"-({""});
-#elif defined(__amigaos__)
-      array(string) e=(getenv("PATH")||"")/";"-({""});
-#else
-      array(string) e=(getenv("PATH")||"")/":"-({""});
+      path = replace(path, "\\", "/");
 #endif
+      array(string) e = path/path_separator - ({""});
 
       multiset(string) filter=(<>);
-      search_path_entries=({});
+      array(string) entries=({});
       foreach (e,string s)
       {
 	 string t;
@@ -677,21 +687,25 @@ string search_path(string command)
 	    {
 	       // expand user?
 	    }
+#ifdef __NT__
+	 } else if (sizeof(s) && (s[0] == '"') && s[-1] == '"') {
+	   // Windows doesn't seem to strip quotation marks from PATH
+	   // components that contain them so we need to do that here,
+	   // otherwise we'll end up with a bogus path to stat on.
+	   s = s[1..<1];
+#endif /* __NT__ */
 	 }
-	 if (!filter[s] /* && directory exist */ ) 
+	 if (!filter[s] /* && directory exist */ )
 	 {
-	    search_path_entries+=({s}); 
+	    entries += ({s});
 	    filter[s]=1;
 	 }
       }
+      // FIXME: This is NOT thread safe!
+      search_path_entries = entries;
+      search_path_raw = raw_path;
    }
-   foreach (search_path_entries, string path)
-   {
-      string p=combine_path(path,command);
-      Stdio.Stat s=file_stat(p);
-      if (s && s->mode&0111) return p;
-   }
-   return 0;
+   return locate_binary(search_path_entries, command);
 }
 
 //!
