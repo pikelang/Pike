@@ -1013,15 +1013,14 @@ static void img_jpeg_decode(INT32 args,int mode)
    
    init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
-   /* we can only handle RGB or GRAYSCALE */
-
-/* don't know about this code; the jpeg library handles 
-   RGB destination for GRAYSCALE / Mirar 2001-05-19 */
-/*     if (mds.cinfo.jpeg_color_space==JCS_GRAYSCALE) */
-/*        mds.cinfo.out_color_space=JCS_GRAYSCALE; */
-/*     else */
-
-   mds.cinfo.out_color_space=JCS_RGB; 
+   if (mds.cinfo.jpeg_color_space == JCS_CMYK ||
+       mds.cinfo.jpeg_color_space == JCS_YCCK) {
+     /* CMYK and YCCK will be decoded as CMYK, i.e. 4 bytes/pixel */
+     mds.cinfo.out_color_space = JCS_CMYK;
+   } else {
+     /* Grayscale and RGB will be decoded as RGB, i.e. 3 bytes/pixel */
+     mds.cinfo.out_color_space = JCS_RGB;
+   }
 
    /* check configuration */
 
@@ -1151,12 +1150,15 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    if (mode!=IMG_DECODE_HEADER)
    {
+      int bytes_per_pixel;
+
       jpeg_start_decompress(&mds.cinfo);
+      bytes_per_pixel = mds.cinfo.output_components;
 
       o=clone_object(image_program,0);
       img=(struct image*)get_storage(o,image_program);
       if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
-      img->img=malloc(sizeof(rgb_group)*
+      img->img=malloc(bytes_per_pixel *
 		      mds.cinfo.output_width*mds.cinfo.output_height);
       if (!img->img)
       {
@@ -1167,7 +1169,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       img->xsize=mds.cinfo.output_width;
       img->ysize=mds.cinfo.output_height;
 
-      tmp=malloc(8*mds.cinfo.output_width*mds.cinfo.output_components);
+      tmp=malloc(8 * mds.cinfo.output_width * bytes_per_pixel);
       if (!tmp)
       {
 	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
@@ -1185,28 +1187,37 @@ static void img_jpeg_decode(INT32 args,int mode)
 
 	 if (y<8) n=y; else n=8;
 
-	 row_pointer[0]=tmp;
-	 row_pointer[1]=tmp+img->xsize*3;
-	 row_pointer[2]=tmp+img->xsize*3*2;
-	 row_pointer[3]=tmp+img->xsize*3*3;
-	 row_pointer[4]=tmp+img->xsize*3*4;
-	 row_pointer[5]=tmp+img->xsize*3*5;
-	 row_pointer[6]=tmp+img->xsize*3*6;
-	 row_pointer[7]=tmp+img->xsize*3*7;
+	 row_pointer[0]= tmp;
+	 row_pointer[1]= tmp + img->xsize * bytes_per_pixel;
+	 row_pointer[2]= tmp + img->xsize * bytes_per_pixel * 2;
+	 row_pointer[3]= tmp + img->xsize * bytes_per_pixel * 3;
+	 row_pointer[4]= tmp + img->xsize * bytes_per_pixel * 4;
+	 row_pointer[5]= tmp + img->xsize * bytes_per_pixel * 5;
+	 row_pointer[6]= tmp + img->xsize * bytes_per_pixel * 6;
+	 row_pointer[7]= tmp + img->xsize * bytes_per_pixel * 7;
 
 	 n=jpeg_read_scanlines(&mds.cinfo, row_pointer, n);
 	 /* read 8 rows */
 
 	 s=tmp;
 	 m=img->xsize*n;
-	 if (mds.cinfo.out_color_space==JCS_RGB)
+	 if (mds.cinfo.out_color_space == JCS_RGB) {
 	    while (m--)
-	       d->r=*(s++),
-		  d->g=*(s++),
-		  d->b=*(s++),d++;
-	 else
+	      d->r=*(s++),
+	      d->g=*(s++),
+	      d->b=*(s++),d++;
+	 } else if (mds.cinfo.out_color_space == JCS_CMYK) {
+	    while (m--) {
+	      d->r = (s[0] * s[3]) / 255;
+	      d->g = (s[1] * s[3]) / 255;
+	      d->b = (s[2] * s[3]) / 255;
+	      s += 4;
+	      d++;
+	    }
+	 } else {
 	    while (m--)
-	       d->r=d->g=d->b=*(s++),d++;
+	      d->r = d->g = d->b = *(s++), d++;
+	 }
 	 y-=n;
       }
       THREADS_DISALLOW();
