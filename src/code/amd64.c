@@ -2353,7 +2353,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem32_reg( REG_RDX, OFFSETOF(array,size), REG_RCX );
       mov_imm_reg( b, REG_RBX);
       cmp_reg_reg( REG_RCX, REG_RBX );
-      jg( &label_A ); /* b > RBX, index outside array */
+      jge( &label_A ); /* b >= RBX, index outside array */
       shl_reg_imm( REG_RBX, 4 );
       add_reg_mem( REG_RBX, REG_RDX, OFFSETOF(array,item) );
 
@@ -2404,7 +2404,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
       LABEL_D;
       cmp_reg32_imm( REG_RBX, 0 ); jl( &label_B ); // <0
-      cmp_reg_reg( REG_RBX, REG_RCX); jge( &label_B ); // >size
+      cmp_reg_reg( REG_RBX, REG_RCX); jge( &label_B ); // >=size
 
       /* array, index inside array. push item, swap, pop, done */
       mov_mem_reg( REG_RCX, OFFSETOF(array,item), REG_RCX );
