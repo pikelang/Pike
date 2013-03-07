@@ -1,5 +1,5 @@
 
-string id;
+protected string id;
 int timestamp;
 int host;
 int pid;
@@ -35,23 +35,27 @@ static int make_counter()
 
 static void populate()
 {
-  sscanf(id, "%4c%3c%2c%3c", timestamp, host, pid, counter);
+  if(sizeof(id) == 24)
+    sscanf(id, "%8x%6x%4x%6x", timestamp, host, pid, counter);
+  else if(sizeof(id) == 12)
+    sscanf(id, "%4c%3c%2c%3c", timestamp, host, pid, counter);
+  else throw(Error.Generic("Invalid ObjectId format.\n"));
 }
 
 string get_id()
 { 
-  return id;
+  return sprintf("%4c%3c%2c%3c", timestamp, host, pid, counter);
 }
 
 string _sprintf(mixed t)
 {
-	return "ObjectId(" + String.string2hex(id) + ")";
+	return "ObjectId(" + String.string2hex(get_id()) + ")";
 }
 
 static mixed cast(string t)
 {
   if(t == "string")
-    return String.string2hex(id);
+    return String.string2hex(get_id());
   else
     throw(Error.Generic("invalid cast of ObjectId to " + t + "\n"));
 }
