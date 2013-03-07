@@ -247,6 +247,212 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
+  /* NOTE: This is NOT the MIME base64 table! */
+  static const char b64tab[64] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+  static inline void b64enc(char *dest, int a, int b, int c, int sz)
+  {
+    unsigned int bitbuf = a | (b << 8) | (c << 16);
+    while (sz--) {
+      *(dest++) = b64tab[bitbuf & 63];
+      bitbuf >>= 6;
+    }
+  }
+
+  /*! @decl string crypt_hash(string password, string salt, int rounds)
+   *!
+   *!   Password hashing function in @[crypt_md5()]-style.
+   *!
+   *!   Implements the algorithm described in
+   *!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
+   *!
+   *!   This is the algorithm used by @tt{crypt(2)@} in
+   *!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
+   *!
+   *! @seealso
+   *!   @[crypt_md5()]
+   */
+  PIKEFUN string crypt_hash(string password, string salt, int rounds)
+  {
+    struct pike_string *res;
+    const struct nettle_hash *meta = THIS->meta;
+    void *ctx;
+    uint8_t *abcbuf;
+    uint8_t *dpbuf;
+    uint8_t *dsbuf;
+
+    char *p;
+    char *s;
+    int plen;
+    int slen;
+    int dsz = meta->digest_size;
+
+    int i;
+    int r;
+
+    int a, b, c;
+
+    if (!rounds) rounds = 5000;
+    if (rounds < 1000) rounds = 1000;
+    if (rounds > 999999999) rounds = 999999999;
+
+    NO_WIDE_STRING(password);
+    NO_WIDE_STRING(salt);
+
+    ctx = (void *)alloca(meta->context_size);
+    if (!ctx)
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->context_size);
+
+    abcbuf = (uint8_t *)alloca(meta->digest_size * 3);
+    if (!abcbuf)
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->digest_size * 3);
+
+    dpbuf = abcbuf + meta->digest_size;
+    dsbuf = dpbuf + meta->digest_size;
+
+    /* NB: We use these to allow the compiler to
+     *     avoid dereferencing at every step.
+     */
+    p = password->str;
+    plen = password->len;
+    s = salt->str;
+    slen = salt->len;
+    if (slen > 16) slen = 16;
+    dsz = meta->digest_size;
+
+    /* NB: We allocate the result here to avoid throwing away all the work
+     *     on out of memory at the end.
+     */
+    if (dsz == 32) {
+      /* 4 * (30/3) + 3 */
+      res = begin_shared_string(43);
+    } else if (dsz == 64) {
+      /* 4 * (63/3) + 2 */
+      res = begin_shared_string(86);
+    } else {
+      Pike_error("crypt_hash() not supported for this digest size yet (%d).\n",
+		 dsz);
+    }
+
+    THREADS_ALLOW();
+
+    /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
+    meta->init(ctx);						/* 4 */
+    meta->update(ctx, plen, p);					/* 5 */
+    meta->update(ctx, slen, s);					/* 6 */
+    meta->update(ctx, plen, p);					/* 7 */
+    meta->digest(ctx, dsz, abcbuf);				/* 8 */
+
+    meta->init(ctx);						/* 1 */
+    meta->update(ctx, plen, p);					/* 2 */
+    meta->update(ctx, slen, s);					/* 3 */
+
+    for (i = 0; i + dsz < plen; i += dsz) {			/* 9 */
+      meta->update(ctx, dsz, abcbuf);
+    }
+
+    meta->update(ctx, plen - i, abcbuf);			/* 10 */
+
+    for (i = 1; i < plen; i <<= 1) {				/* 11 */
+      if (plen & i) {
+	meta->update(ctx, dsz, abcbuf);
+      } else {
+	meta->update(ctx, plen, p);
+      }
+    }
+
+    meta->digest(ctx, dsz, abcbuf);				/* 12 */
+
+    meta->init(ctx);						/* 13 */
+    for (i = 0; i < plen; i++) {				/* 14 */
+      meta->update(ctx, plen, p);
+    }
+    meta->digest(ctx, dsz, dpbuf);				/* 15 */
+
+    /* Sequence P is implicit. */				/* 16 */
+
+    meta->init(ctx);						/* 17 */
+    for(i = 0; i < 16 + abcbuf[0]; i++) {			/* 18 */
+      meta->update(ctx, slen, s);
+    }
+    meta->digest(ctx, dsz, dsbuf);				/* 19 */
+
+    /* Sequence S is implicit. */				/* 20 */
+
+    for (r = 0; r < rounds; r++) {				/* 21 */
+      meta->init(ctx);						/* a */
+      if (r & 1) {						/* b */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      } else {
+	meta->update(ctx, dsz, abcbuf);				/* c */
+      }
+      if (r % 3) {						/* d */
+	for (i = 0; i + dsz < slen; i += dsz) {
+	  meta->update(ctx, dsz, dsbuf);
+	}
+	meta->update(ctx, slen - i, dsbuf);
+      }
+      if (r % 7) {						/* e */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      }
+      if (r & 1) {						/* f */
+	meta->update(ctx, dsz, abcbuf);
+      } else {							/* g */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      }
+      meta->digest(ctx, dsz, abcbuf);				/* h */
+    }
+    THREADS_DISALLOW();
+
+    /* And now time for some pointless shuffling of the result.
+     * Note that the shuffling is slightly different between
+     * the two cases.
+     *
+     * This is followed by a custom base64-style encoding.
+     */
+    c = 0;
+    b = dsz/3;
+    a = 2*b;
+    if (dsz == 32) {
+      for (i = 0, r = 0; i + 3 < dsz; i+=3, r+=4) {
+	int t;
+	b64enc(res->str + r, abcbuf[a], abcbuf[b], abcbuf[c], 4);
+
+	t = a+1;
+	a = b+1;
+	b = c+1;
+	c = t;
+      }
+      b64enc(res->str + r, abcbuf[30], abcbuf[31], 0, 3);
+    } else {
+      for (i = 0, r = 0; i + 3 < dsz; i+=3, r+=4) {
+	int t;
+	b64enc(res->str + r, abcbuf[a], abcbuf[b], abcbuf[c], 4);
+
+	t = a+1;
+	a = c+1;
+	c = b+1;
+	b = t;
+      }
+      b64enc(res->str + r, abcbuf[63], 0, 0, 2);
+    }
+
+    push_string(end_shared_string(res));		/* 22e */
+
+    /* Clean intermediate values. */
+    MEMSET(ctx, 0, meta->context_size);
+    MEMSET(abcbuf, 0, 3*dsz);
+  }
+
   INIT
     {
       werror("HashInfo->INIT\n");
