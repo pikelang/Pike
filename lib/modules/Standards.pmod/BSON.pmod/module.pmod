@@ -193,11 +193,12 @@ mixed from_document(string bson)
   //werror("bson length %d\n", len);
   mapping list = ([]);
   
-  do
+  while(sizeof(slist))
   {
+    if(slist == "") break;
     slist = decode_next_value(slist, list);
-    //werror("read item: %O, left: %O", list, slist);
-  } while(sizeof(slist));
+    //werror("read item: %O, left: %O\n", list, slist);
+  } 
   
   return list;	
 }
@@ -243,13 +244,12 @@ static string decode_next_value(string slist, mapping list)
   
   string document;
   int doclen;
-  
+
   if(sscanf(slist, "%c%s\0%s", type, key, slist)!=3)
     throw(Error.Generic("Unable to read key and type from BSON stream.\n")); 
 
   key = utf8_to_string(key);
-
-  // werror("key: %s type: %d\n", key, type);
+  //werror("key: %s type: %d\n", key, type);
   switch(type)
   {
      int len, subtype;
