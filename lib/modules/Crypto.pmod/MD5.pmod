@@ -16,6 +16,21 @@ inherit .Hash;
 // urn:oid:1.2.840.113549.2.5
 string asn1_id() { return "*\206H\206\367\r\2\5"; }
 
+//! This is a convenience alias for @[Nettle.crypt_md5()],
+//! that uses the same API as the other hashes.
+//!
+//! @note
+//!   The @[rounds] parameter is currently ignored.
+//!   For forward compatibility, either leave out,
+//!   or specify as @expr{1000@}.
+//!
+//! @seealso
+//!   @[Nettle.HashInfo()->crypt_hash()], @[crypt_md5()]
+string crypt_hash(string password, string salt, int|void rounds)
+{
+  return Nettle.crypt_md5(password, salt);
+}
+
 #else
 constant this_program_does_not_exist=1;
 #endif
