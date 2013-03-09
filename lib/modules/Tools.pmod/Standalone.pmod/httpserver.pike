@@ -49,7 +49,7 @@ string dirlist( string dir )
 	"<th align='right'>Type</th>"
 	"<th align='right'>Size</th></tr>\n";
 
-    foreach( get_dir( dir ); int i; string fn )
+    foreach( sort( get_dir( dir ) ); int i; string fn )
     {
         Stdio.Stat s = file_stat( combine_path(dir, fn) );
         if( !s ) 
