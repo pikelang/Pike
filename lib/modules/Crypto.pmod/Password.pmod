@@ -13,99 +13,99 @@
 //! of the following formats.
 //!
 //! LDAP-style (RFC2307) hashes:
-//! @dl
-//! @item "{SHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-//!   The @expr{XXX@} string is taken to be a @[MIME.encode_base64] @[SHA1]
-//!   hash of the password. Source: OpenLDAP FAQ
-//!   @url{http://www.openldap.org/faq/data/cache/347.html@}.
+//! @string
+//!   @value "{SHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
+//!     @[SHA1] hash of the password. Source: OpenLDAP FAQ
+//!     @url{http://www.openldap.org/faq/data/cache/347.html@}.
 //!
-//! @item "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-//!   The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
-//!   string in which the first 20 chars are an @[SHA1] hash and the
-//!   remaining chars the salt. The input for the hash is the password
-//!   concatenated with the salt. Source: OpenLDAP FAQ
-//!   @url{http://www.openldap.org/faq/data/cache/347.html@}.
+//!   @value "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
+//!     string in which the first 20 chars are an @[SHA1] hash and the
+//!     remaining chars the salt. The input for the hash is the password
+//!     concatenated with the salt. Source: OpenLDAP FAQ
+//!     @url{http://www.openldap.org/faq/data/cache/347.html@}.
 //!
-//! @item "{MD5}XXXXXXXXXXXXXXXXXXXXXXXX"
-//!   The @expr{XXX@} string is taken to be a @[MIME.encode_base64] @[MD5]
-//!   hash of the password. Source: OpenLDAP FAQ
-//!   @url{http://www.openldap.org/faq/data/cache/418.html@}.
+//!   @value "{MD5}XXXXXXXXXXXXXXXXXXXXXXXX"
+//!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64] @[MD5]
+//!     hash of the password. Source: OpenLDAP FAQ
+//!     @url{http://www.openldap.org/faq/data/cache/418.html@}.
 //!
-//! @item "{SMD5}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-//!   The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
-//!   string in which the first 16 chars are an @[MD5] hash and the
-//!   remaining chars the salt. The input for the hash is the password
-//!   concatenated with the salt. Source: OpenLDAP FAQ
-//!   @url{http://www.openldap.org/faq/data/cache/418.html@}.
+//!   @value "{SMD5}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64]
+//!     string in which the first 16 chars are an @[MD5] hash and the
+//!     remaining chars the salt. The input for the hash is the password
+//!     concatenated with the salt. Source: OpenLDAP FAQ
+//!     @url{http://www.openldap.org/faq/data/cache/418.html@}.
 //!
-//! @item "{CRYPT}XXXXXXXXXXXXX"
-//!   The @expr{XX@} string is taken to be a crypt(3C)-style hash.
-//!   This is the same thing as passing the @expr{XXX@} string without
-//!   any preceding method name within @expr{{...}@}. I.e. it's
-//!   interpreted according to the crypt-style hashes below.
-//! @enddl
+//!   @value "{CRYPT}XXXXXXXXXXXXX"
+//!     The @expr{XX@} string is taken to be a crypt(3C)-style hash.
+//!     This is the same thing as passing the @expr{XXX@} string without
+//!     any preceding method name within @expr{{...}@}. I.e. it's
+//!     interpreted according to the crypt-style hashes below.
+//! @endstring
 //!
 //! Crypt-style hashes:
-//! @dl
-//! @item "$6$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
-//!   The string is interpreted according to the
-//!   "Unix crypt using SHA-256 and SHA-512" standard
-//!   Version 0.4 2008-4-3, where @expr{SSSSSSSSSSSSSSSS@}
-//!   is up to 16 characters of salt, and the string @expr{XXX@}
-//!   the result of @[SHA512()->hash_password()] with @expr{5000@}
-//!   rounds. Source: Unix crypt using SHA-256 and SHA-512
-//!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
+//! @string
+//!   @value "$6$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted according to the
+//!     "Unix crypt using SHA-256 and SHA-512" standard
+//!     Version 0.4 2008-4-3, where @expr{SSSSSSSSSSSSSSSS@}
+//!     is up to 16 characters of salt, and the string @expr{XXX@}
+//!     the result of @[SHA512.crypt_hash()] with @expr{5000@}
+//!     rounds. Source: Unix crypt using SHA-256 and SHA-512
+//!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
-//! @item "$6$rounds=RR$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
-//!   This is the same algorithm as the one above, but with the
-//!   number of rounds specified by @expr{RR@} in decimal. Note
-//!   that the number of rounds is clamped to be within
-//!   @expr{1000@} and @expr{999999999@} (inclusive).
-//!   Source: Unix crypt using SHA-256 and SHA-512
-//!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
+//!   @value "$6$rounds=RR$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     This is the same algorithm as the one above, but with the
+//!     number of rounds specified by @expr{RR@} in decimal. Note
+//!     that the number of rounds is clamped to be within
+//!     @expr{1000@} and @expr{999999999@} (inclusive).
+//!     Source: Unix crypt using SHA-256 and SHA-512
+//!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
-//! @item "$5$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
-//!   The string is interpreted according to the
-//!   "Unix crypt using SHA-256 and SHA-512" standard
-//!   Version 0.4 2008-4-3, where @expr{SSSSSSSSSSSSSSSS@}
-//!   is up to 16 characters of salt, and the string @expr{XXX@}
-//!   the result of @[SHA256()->hash_password()] with @expr{5000@}
-//!   rounds. Source: Unix crypt using SHA-256 and SHA-512
-//!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
+//!   @value "$5$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted according to the
+//!     "Unix crypt using SHA-256 and SHA-512" standard
+//!     Version 0.4 2008-4-3, where @expr{SSSSSSSSSSSSSSSS@}
+//!     is up to 16 characters of salt, and the string @expr{XXX@}
+//!     the result of @[SHA256.crypt_hash()] with @expr{5000@}
+//!     rounds. Source: Unix crypt using SHA-256 and SHA-512
+//!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
-//! @item "$5$rounds=RR$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
-//!   This is the same algorithm as the one above, but with the
-//!   number of rounds specified by @expr{RR@} in decimal. Note
-//!   that the number of rounds is clamped to be within
-//!   @expr{1000@} and @expr{999999999@} (inclusive).
-//!   Source: Unix crypt using SHA-256 and SHA-512
-//!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
+//!   @value "$5$rounds=RR$SSSSSSSSSSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     This is the same algorithm as the one above, but with the
+//!     number of rounds specified by @expr{RR@} in decimal. Note
+//!     that the number of rounds is clamped to be within
+//!     @expr{1000@} and @expr{999999999@} (inclusive).
+//!     Source: Unix crypt using SHA-256 and SHA-512
+//!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
-//! @item "$1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
-//!   The string is interpreted according to the GNU libc2 extension
-//!   of @expr{crypt(3C)@} where @expr{SSSSSSSS@} is up to 8 chars of
-//!   salt and the @expr{XXX@} string is an @[MD5]-based hash created
-//!   from the password and the salt. Source: GNU libc
-//!   @url{http://www.gnu.org/software/libtool/manual/libc/crypt.html@}.
+//!   @value "$1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted according to the GNU libc2 extension
+//!     of @expr{crypt(3C)@} where @expr{SSSSSSSS@} is up to 8 chars of
+//!     salt and the @expr{XXX@} string is an @[MD5]-based hash created
+//!     from the password and the salt. Source: GNU libc
+//!     @url{http://www.gnu.org/software/libtool/manual/libc/crypt.html@}.
 //!
-//! @item "XXXXXXXXXXXXX"
-//!   The @expr{XXX@} string (which doesn't begin with @expr{"{"@}) is
-//!   taken to be a password hashed using the classic unix
-//!   @expr{crypt(3C)@} function. If the string contains only chars
-//!   from the set @expr{[a-zA-Z0-9./]@} it uses DES and the first two
-//!   characters as salt, but other alternatives might be possible
-//!   depending on the @expr{crypt(3C)@} implementation in the
-//!   operating system.
+//!   @value "XXXXXXXXXXXXX"
+//!     The @expr{XXX@} string (which doesn't begin with @expr{"{"@}) is
+//!     taken to be a password hashed using the classic unix
+//!     @expr{crypt(3C)@} function. If the string contains only chars
+//!     from the set @expr{[a-zA-Z0-9./]@} it uses DES and the first two
+//!     characters as salt, but other alternatives might be possible
+//!     depending on the @expr{crypt(3C)@} implementation in the
+//!     operating system.
 //!
-//! @item ""
-//!   The empty password hash matches all passwords.
-//! @enddl
+//!   @value ""
+//!     The empty password hash matches all passwords.
+//! @endstring
 //!
 //! @returns
 //!   Returns @expr{1@} on success, and @expr{0@} (zero) otherwise.
 //!
 //! @note
-//!   This function was added in Pike 7.9.
+//!   This function was added in Pike 7.8.755.
 //!
 //! @seealso
 //!   @[hash()], @[predef::crypt()]
@@ -181,7 +181,7 @@ int verify(string password, string hash)
   return 0;
 }
 
-//! Generate a hash of @[password] suitable for @[verify_password()].
+//! Generate a hash of @[password] suitable for @[verify()].
 //!
 //! @param password
 //!   Password to hash.
@@ -193,39 +193,68 @@ int verify(string password, string hash)
 //!   If an unsupported scheme is specified an error will be thrown.
 //!
 //!   Supported schemes are:
-//!   @dl
-//!     @item "6"
-//!     @item "$6$"
+//!
+//!   Crypt(3C)-style:
+//!   @string
+//!     @value UNDEFINED
+//!     @value "crypt"
+//!     @value "{crypt}"
+//!       Use the strongest crypt(3C)-style hash that is supported.
+//!
+//!     @value "6"
+//!     @value "$6$"
 //!       @[SHA512.crypt_hash()] with 96 bits of salt and a default
 //!       of @expr{5000@} rounds.
 //!
-//!     @item "5"
-//!     @item "$5$"
+//!     @value "5"
+//!     @value "$5$"
 //!       @[SHA256.crypt_hash()] with 96 bits of salt and a default
 //!       of @expr{5000@} rounds.
 //!
-//!     @item "1"
-//!     @item "$1$"
+//!     @value "1"
+//!     @value "$1$"
 //!       @[MD5.crypt_hash()] with 48 bits of salt and @expr{1000@} rounds.
 //!
-//!     @item ""
+//!     @value ""
 //!       @[predef::crypt()] with 12 bits of salt.
 //!
-//!   @enddl
+//!   @endstring
+//!
+//!   LDAP (RFC2307)-style. Don't use these if you can avoid it,
+//!   since they are suspectible to attacks. In particular avoid
+//!   the unsalted variants at all costs:
+//!   @string
+//!     @value "ssha":
+//!     @value "{ssha}":
+//!       @[SHA1.hash()] with 96 bits of salt appended to the password.
+//!
+//!     @value "smd5":
+//!     @value "{smd5}":
+//!       @[MD5.hash()] with 96 bits of salt appended to the password.
+//!
+//!     @value "sha":
+//!     @value "{sha}":
+//!       @[SHA1.hash()] without any salt.
+//!
+//!     @value "md5":
+//!     @value "{md5}":
+//!       @[MD5.hash()] without any salt.
+//!   @endstring
 //!
 //! @param rounds
 //!   The number of rounds to use in parameterized schemes. If not
 //!   specified the scheme specific default will be used.
 //!
 //! @returns
-//!   Returns a string suitable for @[verify_password()].
+//!   Returns a string suitable for @[verify()]. This means that
+//!   the hashes will be prepended with the suitable markers.
 //!
 //! @note
 //!   Note that the availability of @[SHA512] depends on the version
 //!   of @[Nettle] that Pike has been compiled with.
 //!
 //! @note
-//!   This function was added in Pike 7.9.
+//!   This function was added in Pike 7.8.755.
 //!
 //! @seealso
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
