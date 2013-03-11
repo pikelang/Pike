@@ -224,20 +224,20 @@ int verify(string password, string hash)
 //!   since they are suspectible to attacks. In particular avoid
 //!   the unsalted variants at all costs:
 //!   @string
-//!     @value "ssha":
-//!     @value "{ssha}":
+//!     @value "ssha"
+//!     @value "{ssha}"
 //!       @[SHA1.hash()] with 96 bits of salt appended to the password.
 //!
-//!     @value "smd5":
-//!     @value "{smd5}":
+//!     @value "smd5"
+//!     @value "{smd5}"
 //!       @[MD5.hash()] with 96 bits of salt appended to the password.
 //!
-//!     @value "sha":
-//!     @value "{sha}":
+//!     @value "sha"
+//!     @value "{sha}"
 //!       @[SHA1.hash()] without any salt.
 //!
-//!     @value "md5":
-//!     @value "{md5}":
+//!     @value "md5"
+//!     @value "{md5}"
 //!       @[MD5.hash()] without any salt.
 //!   @endstring
 //!
