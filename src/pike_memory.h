@@ -131,6 +131,15 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
+/*
+ * The purpose of this function is to avoid dead store elimination in cases when
+ * sensitive data has to be cleared from memory.
+ */
+static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
+    volatile char * _p = p;
+    while (n--) *_p++ = c;
+    return p;
+}
 
 #include "pike_search.h"
 

@@ -8,6 +8,7 @@
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
+#include "pike_memory.h"
 
 #include "nettle_config.h"
 
@@ -399,7 +400,7 @@ PIKECLASS CBC
       free_object(THIS->object);
     }
     if(THIS->iv) {
-      MEMSET(THIS->iv, 0, THIS->block_size);
+      guaranteed_memset(THIS->iv, 0, THIS->block_size);
       free(THIS->iv);
     }
   }
@@ -479,7 +480,7 @@ PIKECLASS CBC
       Pike_error("Bad block size %d.\n", THIS->block_size);
 
     if(THIS->iv) {
-      MEMSET(THIS->iv, 0, old_block_size);
+      guaranteed_memset(THIS->iv, 0, old_block_size);
       free(THIS->iv);
     }
     THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
@@ -594,7 +595,7 @@ PIKECLASS CBC
 
     pop_n_elems(args);
     push_string(make_shared_binary_string((INT8 *)result, offset));
-    MEMSET(result, 0, offset);
+    guaranteed_memset(result, 0, offset);
 
     CALL_AND_UNSET_ONERROR (uwp);
   }
@@ -625,7 +626,7 @@ PIKECLASS Proxy {
     gc_trivial;
   {
     if(THIS->backlog) {
-      MEMSET(THIS->backlog, 0, THIS->block_size);
+      guaranteed_memset(THIS->backlog, 0, THIS->block_size);
       free(THIS->backlog);
       THIS->backlog = NULL;
     }
@@ -810,7 +811,7 @@ PIKECLASS Proxy {
     pop_n_elems(args);
 
     push_string(make_shared_binary_string((char *)result, roffset + len));
-    MEMSET(result, 0, roffset + len);
+    guaranteed_memset(result, 0, roffset + len);
     CALL_AND_UNSET_ONERROR (uwp);
   }
 

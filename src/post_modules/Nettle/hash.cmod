@@ -12,6 +12,7 @@
 /* For this_object() */
 #include "object.h"
 #include "module_support.h"
+#include "pike_memory.h"
 
 #include "nettle_config.h"
 
