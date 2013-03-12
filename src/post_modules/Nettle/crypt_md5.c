@@ -25,6 +25,7 @@
 #include <string.h>
 #include <nettle/md5.h>
 
+#include "pike_memory.h"
 #include "nettle.h"
 
 static const unsigned char itoa64[] =	/* 0 ... 63 => ascii - 64 */
@@ -112,7 +113,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
   *p = '\0';
 
   /* Clear some memory */
-  memset(final, 0, sizeof(final) );
+  guaranteed_memset(final, 0, sizeof(final) );
 
   return passwd;
 }
