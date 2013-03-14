@@ -1,7 +1,18 @@
 inherit .Base;
 
-Sql.Sql db;
 string url, table;
+
+protected Thread.Local _db = Thread.Local();
+Sql.Sql `db()
+{
+  // NB: We need to have a thread local connection,
+  //     since the status functions may get called
+  //     from some other thread while we're busy
+  //     performing sql queries elsewhere.
+  Sql.Sql ret = _db->get();
+  if (ret && !ret->ping()) return ret;
+  return _db->set(Sql.Sql( url ));
+}
 
 Web.Crawler.Stats stats;
 Web.Crawler.Policy policy;
@@ -27,8 +38,8 @@ void create( Web.Crawler.Stats _stats,
   stats = _stats;   policy = _policy;
   allow=_allow;     deny=_deny;
   table = _table;
+  url = _url;
 
-  db = Sql.Sql( _url );
   perhaps_create_table(  );
 }
 
