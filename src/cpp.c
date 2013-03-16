@@ -2373,6 +2373,11 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! This define is defined when the Pike is running on Amiga OS.
  */
 
+/*! @decl constant __OS2__
+ *!
+ *! This define is defined when the Pike is running on IBM OS/2.
+ */
+
 /*! @endnamespace */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
@@ -2680,6 +2685,9 @@ void f_cpp(INT32 args)
 #endif
 #ifdef __amigaos__
     simple_add_define(&this, "__amigaos__", " 1 ");
+#endif
+#ifdef __OS2__
+    simple_add_define(&this, "__OS2__", " 1 ");
 #endif
 #ifdef __APPLE__
     simple_add_define(&this, "__APPLE__", " 1 ");
