@@ -487,16 +487,11 @@ PIKECLASS CircularList
     INT32 endpos = THIS->a->size - THIS->pos; //distanse of pos from the end
     if (elements <= 0)
     {
-      Pike_error("Allocate expects an value bigger than zero\n");
+      Pike_error("Allocate expects a value larger than zero.\n");
     }
     if(THIS->a->refs <= 1 && THIS->a->malloced_size >= size)
     {
-      for(;THIS->a->size < size; THIS->a->size++)
-      {
-	SET_SVAL(ITEM(THIS->a)[THIS->a->size], T_INT, NUMBER_NUMBER,
-		 integer, 0);
-      }
-      THIS->a->type_field |= BIT_INT;
+      THIS->a->size = size;
       if (THIS->size > 0)
       {
 	MEMMOVE((char *)(ITEM(THIS->a)+(size-endpos)),
@@ -504,6 +499,12 @@ PIKECLASS CircularList
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;
       }
+      while(elements) {
+	SET_SVAL(ITEM(THIS->a)[THIS->pos - elements], T_INT, NUMBER_NUMBER,
+		 integer, 0);
+	elements--;
+      }
+      THIS->a->type_field |= BIT_INT;
     }
     else
     {
