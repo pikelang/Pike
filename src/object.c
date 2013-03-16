@@ -480,7 +480,7 @@ static struct pike_string *low_read_file(const char *file)
     check_threads_etc();
   if(f >= 0)
   {
-    ptrdiff_t tmp, pos = 0;
+    PIKE_OFF_T tmp, pos = 0;
 
     len = fd_lseek(f, 0, SEEK_END);
     fd_lseek(f, 0, SEEK_SET);
