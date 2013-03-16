@@ -30,6 +30,7 @@ private protected string locate_binary(array path, string name)
 
 // internal to find/make pike exec arguments
 
+// FIXME: Why not use Process.spawn_pike()?
 protected array runpike=
 lambda()
 {
@@ -43,13 +44,7 @@ lambda()
        && !has_value(res[0], "\\")
 #endif /* __NT__ */
        )
-      res[0] = locate_binary(getenv("PATH")/
-#if defined(__NT__) || defined(__amigaos__)
-			   ";"
-#else
-			   ":"
-#endif
-			   ,res[0]);
+      res[0] = locate_binary(getenv("PATH")/Process.path_separator, res[0]);
    return res;
 }();
 
