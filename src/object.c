@@ -479,7 +479,7 @@ static struct pike_string *low_read_file(const char *file)
   PIKE_OFF_T len;
   FD f;
 
-  while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR)
+  while((f = fd_open(file,fd_RDONLY|fd_BINARY,0666)) <0 && errno==EINTR)
     check_threads_etc();
   if(f >= 0)
   {
