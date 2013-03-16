@@ -101,7 +101,7 @@ if test -f conftest_VPATH.in; then :; else
   AC_MSG_CHECKING([whether ${MAKE-make} supports VPATH])
   AC_CACHE_VAL(pike_cv_make_supports_VPATH, [
     cat > conftestmake <<EOF
-VPATH=.:$srcdir
+VPATH=.$PATH_SEPARATOR$srcdir
 .SUFFIXES: .in .out
 .in.out:
 	cat "\$<" >"\$@"
