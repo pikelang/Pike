@@ -421,18 +421,18 @@ gcov:
 
 # purify
 pure: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 # purecov
 cover: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 # quantify
 quant: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 splint:
 	splint $(PREFLAGS) -warnposix +charintliteral -realcompare -boolops -predboolint $(FILE)
@@ -1166,7 +1166,7 @@ depend: $(SRC_TARGETS)
 
 post_modules_depend:
 	@if [ "x$(RUNPIKE)" != "x$(DEFAULT_RUNPIKE)" -o -x $(TMP_BUILDDIR)/pike ]; then :; \
-	else $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike; fi
+	else $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike@EXEEXT@; fi
 	@( cd post_modules && { \
 	  rm -f remake; \
 	  $(MAKE) $(MAKE_FLAGS) depend || \
