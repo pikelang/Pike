@@ -351,11 +351,11 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o modules/linker_options
 	-@rm -f tpike tpike.exe
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
-	  $(LIBS) -o tpike
+	  $(LIBS) -o tpike@EXEEXT@
 
 # Only want tpike to exist for use with $(RUNPIKE) in the modules. We
 # don't want to require it actually being up-to-date.
-tpike: master-stamp
+tpike@EXEEXT@: master-stamp
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 # If we build without dynamic modules then tpike is built first with
@@ -374,18 +374,18 @@ tpike: master-stamp
 #
 # @LDSHARED_BASE_REQS@ expands to pike.lib if dynamic DLL modules are
 # used on NT.
-pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
+pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-#	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
+#	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike@EXEXT@
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
-	  $(LIBS) @PIKE_ICON_RES@ -o pike
+	  $(LIBS) @PIKE_ICON_RES@ -o pike@EXEEXT@
 	@MT_FIX_PIKE_EXE@
 # The dumped modules are removed whenever Pike is relinked since some
-# of the bytecode methods (e.g. ia32) stores absolute addresses to
+# of the bytecode methods (e.g. ia32) store absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
 # modules aren't link order dependent.
 	@if [ -f dumpversion ]; then \
@@ -788,8 +788,8 @@ dynloadtest.sh: $(SRCDIR)/test_dynamic_loading.in
 
 dynloadtest.c: dynamic_load.c
 
-dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
-	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
+dynloadtest@EXEEXT@: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
+	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o $@
 
 
 tinstall: master-stamp
