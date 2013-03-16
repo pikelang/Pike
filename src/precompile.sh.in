@@ -95,13 +95,14 @@ test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
 # method QQQQQQQ below requires a path without repeats.
 UNIQPATH=""
 ifs_save="${IFS- 	}"
-IFS=" :"
+IFS=" @PATH_SEPARATOR@"
 for dir in $PATH; do
-  if echo ":$UNIQPATH:" | grep ":$dir:" >/dev/null; then :; else
+  if echo "@PATH_SEPARATOR@UNIQPATH@PATH_SEPARATOR@" | \
+     grep "@PATH_SEPARATOR@dir@PATH_SEPARATOR@" >/dev/null; then :; else
     if [ ":$UNIQPATH:" = "::" ]; then
       UNIQPATH="$dir"
     else
-      UNIQPATH="$UNIQPATH:$dir"
+      UNIQPATH="$UNIQPATH@PATH_SEPARATOR@$dir"
     fi
   fi
 done
