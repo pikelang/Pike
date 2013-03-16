@@ -6,7 +6,7 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
-#if defined(__NT__) || defined(__amigaos__)
+#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
 constant path_separator = ";";
 #else
 constant path_separator = ":";

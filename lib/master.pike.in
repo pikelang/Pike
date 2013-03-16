@@ -55,7 +55,7 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //        or at least some functions that use them should be.
 //        cf Tools.Shoot.runpike.
 //	/grubba 2004-04-11
-#if defined(__NT__) || defined(__amigaos__)
+#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
@@ -1018,7 +1018,7 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
   return IS_ABSOLUTE_PATH(p);
 #else
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
@@ -1030,7 +1030,7 @@ int is_absolute_path(string p)
 #endif
 }
 
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
 #define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
 #else
 #define EXPLODE_PATH(X) ((X)/"/")

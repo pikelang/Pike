@@ -9540,7 +9540,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
 #ifdef __amigaos__
