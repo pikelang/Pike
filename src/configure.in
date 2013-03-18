@@ -7451,6 +7451,7 @@ int main(int argc, char **argv)
 
     for(e=0;e<2;e++)
     {
+      if(pollset[e].revents & POLLERR) exit(1);
       if(pollset[e].revents & POLLRDBAND) pong(e);
       if(pollset[e].revents & POLLWRBAND) ping(e);
       if(pollset[e].revents & POLLIN) pang(e);
