@@ -1148,6 +1148,79 @@ static void udp_get_type(INT32 args)
    f_aggregate(2);
 }
 
+/*! @decl void set_buffer(int bufsize, string mode)
+ *! @decl void set_buffer(int bufsize)
+ *!
+ *! Set internal socket buffer.
+ *!
+ *! This function sets the internal buffer size of a socket or stream.
+ *!
+ *! The second argument allows you to set the read or write buffer by
+ *! specifying @expr{"r"@} or @expr{"w"@}.
+ *!
+ *! @note
+ *!   It is not guaranteed that this function actually does anything,
+ *!   but it certainly helps to increase data transfer speed when it does.
+ *!
+ *! @seealso
+ *!   @[open_socket()], @[accept()]
+ */
+static void udp_set_buffer(INT32 args)
+{
+  INT32 bufsize;
+  int flags;
+
+  if(FD==-1)
+    Pike_error("Stdio.UDP->set_buffer() on closed file.\n");
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->set_buffer", 1);
+  if(Pike_sp[-args].type!=PIKE_T_INT)
+    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->set_buffer", 1, "int");
+
+  bufsize=Pike_sp[-args].u.integer;
+  if(bufsize < 0)
+    Pike_error("Bufsize must be larger than zero.\n");
+
+  if(args>1)
+  {
+    if(Pike_sp[1-args].type != PIKE_T_STRING)
+      SIMPLE_BAD_ARG_ERROR("Stdio.UDP->set_buffer", 2, "string");
+    char *c = Pike_sp[1-args].u.string->str;
+    do
+    {
+        switch( *c )
+        {
+            case 'w': flags |= FILE_WRITE; break;
+            case 'r': flags |= FILE_READ;  break;
+        }
+    } while( *c++ );
+  }else{
+    flags=FILE_READ | FILE_WRITE;
+  }
+  pop_n_elems(args);
+
+#ifdef SOCKET_BUFFER_MAX
+#if SOCKET_BUFFER_MAX
+  if(bufsize>SOCKET_BUFFER_MAX) bufsize=SOCKET_BUFFER_MAX;
+#endif
+#ifdef SO_RCVBUF
+  if(flags & FILE_READ)
+  {
+    int tmp=bufsize;
+    fd_setsockopt(FD,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
+  }
+#endif /* SO_RCVBUF */
+
+#ifdef SO_SNDBUF
+  if(flags & FILE_WRITE)
+  {
+    int tmp=bufsize;
+    fd_setsockopt(FD,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
+  }
+#endif /* SO_SNDBUF */
+#endif
+}
+
 /*! @decl constant MSG_OOB
  *! @fixme
  *! Document this constant.
@@ -1226,6 +1299,8 @@ void init_udp(void)
   ADD_FUNCTION ("query_backend", udp_query_backend, tFunc(tVoid,tObj), 0);
 
   ADD_FUNCTION("errno",udp_errno,tFunc(tNone,tInt),0);
+
+  ADD_FUNCTION("set_buffer", udp_set_buffer, tFunc(tInt tOr(tStr,tVoid),tVoid), 0);
 
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
