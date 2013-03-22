@@ -104,14 +104,16 @@ array(int) get_indices()
 //! of integers, each representing a node in a tree.
 {
   int n=0;
+  gint depth=gtk_tree_path_get_depth((GtkTreePath *)THIS->obj);
   gint *arr=gtk_tree_path_get_indices((GtkTreePath *)THIS->obj);
   pgtk2_pop_n_elems(args);
-  while (arr[n])
-    PGTK_PUSH_INT(arr[n++]);
-  if (!n)
-    ref_push_array(&empty_array);
+  if (!depth) ref_push_array(&empty_array);
   else
+  {
+    while (n<depth)
+      PGTK_PUSH_INT(arr[n++]);
     f_aggregate(n);
+  }
 }
 
 void destroy()
