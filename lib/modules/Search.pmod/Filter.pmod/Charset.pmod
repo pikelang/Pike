@@ -3,7 +3,7 @@
 
 constant contenttypes = ({});
 
-string decode_charset( string data, string charset )
+string low_decode_charset( string data, string charset )
 {
   switch( replace(lower_case( charset ),"-","_")-"_" )
   {
@@ -38,6 +38,16 @@ string decode_charset( string data, string charset )
       werror("\n****** Warning: Unknown charset: '"+charset+"'\n");
       return data;
   }
+}
+
+string decode_charset( string data, string charset )
+{
+  mixed err = catch {
+    return low_decode_charset(data, charset);
+  };
+  werror("\n****** Warning: Invalid character encoding: %s",
+	 describe_error(err));
+  return data;
 }
 
 string decode_http( string data, mapping headers,
