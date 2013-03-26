@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
   constant BSONJavascript = 1;
 
   static string data;

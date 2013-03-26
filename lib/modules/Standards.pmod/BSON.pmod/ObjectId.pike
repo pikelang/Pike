@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 
 protected string id;
 int timestamp;

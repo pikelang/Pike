@@ -1,4 +1,6 @@
-//! A module for working with the BSON data format. For more information, 
+#pike __REAL_VERSION__
+
+//! A module for working with the BSON data format. For more information,
 //! see http://bsonspec.org.
 //!
 

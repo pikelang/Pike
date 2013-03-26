@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 //! Password handling.
 //!
 //! This module handles generation and verification of

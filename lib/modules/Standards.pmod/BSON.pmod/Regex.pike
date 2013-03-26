@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
   constant BSONRegex = 1;
 
   string regex;

@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 
 string git_binary = "git";
 
