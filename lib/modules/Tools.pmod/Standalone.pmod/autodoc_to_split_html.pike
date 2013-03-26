@@ -1,5 +1,4 @@
-/*
- */
+#pike __REAL_VERSION__
 
 inherit .autodoc_to_html;
 

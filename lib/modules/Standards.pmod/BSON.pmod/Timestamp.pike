@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
   constant BSONTimestamp = 1;
 
   static int timestamp;

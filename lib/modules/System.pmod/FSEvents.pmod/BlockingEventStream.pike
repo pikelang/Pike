@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! A variation of @[EventStream] that provides a blocking interface.
 //!
 //! @note
