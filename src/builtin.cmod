@@ -988,7 +988,7 @@ PIKEFUN string string_trim_all_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
-/*! @decl status(int verbose)
+/*! @decl string status(int verbose)
  *! @belongs String
  *!
  *!   Get string table statistics.

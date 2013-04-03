@@ -32,8 +32,8 @@
 //!	Errno copied from the connection or simulated for async operations.
 //!	@note
 //!		In Pike 7.8 and earlier hardcoded Linux values were used in
-//!		async operations, 110 instead of @expr{System.ETIMEDOUT} and 
-//!		113 instead of @expr{System.EHOSTUNREACH}.
+//!		async operations, 110 instead of @expr{System.ETIMEDOUT@} and
+//!		113 instead of @expr{System.EHOSTUNREACH@}.
 int errno;
 
 //!	Tells if the connection is successfull.

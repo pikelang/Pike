@@ -42,6 +42,7 @@ class Hash
 
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
+//!
 //! @seealso
 //!   @[verify_crypt_md5]
 string make_crypt_md5(string password, void|string salt) {
