@@ -1080,15 +1080,21 @@ PIKEFUN string program_defined(program p)
  *!
  *! Returns the width of a string.
  *!
- *! Three return values are possible:
- *! @int
- *!   @value 8
- *!     The string @[s] only contains characters <= 255.
- *!   @value 16
- *!     The string @[s] only contains characters <= 65535.
- *!   @value 32
- *!     The string @[s] contains characters >= 65536.
- *! @endint
+ *! @returns
+ *!   Three return values are currently possible:
+ *!   @int
+ *!     @value 8
+ *!       The string @[s] only contains characters <= 255.
+ *!     @value 16
+ *!       The string @[s] only contains characters <= 65535.
+ *!     @value 32
+ *!       The string @[s] contains characters >= 65536.
+ *!   @endint
+ *!
+ *! @note
+ *!   It is possible that a future version of Pike may return
+ *!   further values. In particular the width @expr{7@} seems
+ *!   like it could be useful.
  */
 PMOD_EXPORT
 PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
