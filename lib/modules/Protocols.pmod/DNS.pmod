@@ -718,22 +718,15 @@ protected void create()
   };
 }
 
-//! Base class for implementing a Domain Name Service (DNS) server.
-//!
-//! This class is typically used by inheriting it,
-//! and overloading @[reply_query()] and @[handle_response()].
-class server
+//! Base class for @[server], @[tcp_server].
+class server_base
 {
-  //!
   inherit protocol;
 
-  //inherit Stdio.UDP : udp;
+  array(Stdio.UDP|object) ports = ({ });
 
-  array(Stdio.UDP) ports = ({});
-
-  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp)
+  protected string low_send_reply(mapping r, mapping q, mapping m)
   {
-    // FIXME: Needs to handle truncation somehow.
     if(!r)
       r = (["rcode":4]);
     r->id = q->id;
@@ -742,7 +735,7 @@ class server
     r->rd = q->rd;
     r->qd = r->qd || q->qd;
     string s = mkquery(r);
-    udp->send(m->ip, m->port, s);
+    return s;
   }
 
   //! Reply to a query (stub).
@@ -751,7 +744,10 @@ class server
   //!   Parsed query.
   //!
   //! @param udp_data
-  //!   Raw UDP data.
+  //!   Raw UDP data. If the server operates in TCP mode (@[tcp_server]),
+  //!   it will contain an additional tcp_con entry. In that case,
+  //!   @expr{udp_data->tcp_con->con@} will contain the TCP connection the
+  //!   request was received on as @[Stdio.File] object.
   //!
   //! @param cb
   //!   Callback you can call with the result instead of returning it.
@@ -814,7 +810,7 @@ class server
   //!
   //! This function calls @[reply_query()],
   //! and dispatches the result to @[send_reply()].
-  protected void handle_query(mapping q, mapping m, Stdio.UDP udp)
+  protected void handle_query(mapping q, mapping m, Stdio.UDP|object udp)
   {
     int(0..1) result_available = 0;
     void _cb(mapping r) {
@@ -835,7 +831,7 @@ class server
   //! Handle a query response (stub).
   //!
   //! Overload this function to handle responses to possible recursive queries.
-  protected void handle_response(mapping r, mapping m, Stdio.UDP udp)
+  protected void handle_response(mapping r, mapping m, Stdio.UDP|object udp)
   {
     // This is a stub intended to simplify servers which allow recursion
   }
@@ -843,16 +839,17 @@ class server
   //! Low-level DNS-data receiver.
   //!
   //! This function receives the raw DNS-data from the @[Stdio.UDP] socket
-  //! @[udp], decodes it, and dispatches the decoded DNS request to
-  //! @[handle_query()] and @[handle_response()].
-  protected private void rec_data(mapping m, Stdio.UDP udp)
+  //! or TCP connection object @[udp], decodes it, and dispatches the decoded
+  //! DNS request to @[handle_query()] and @[handle_response()].
+  protected void rec_data(mapping m, Stdio.UDP|object udp)
   {
     mixed err;
     mapping q;
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror("DNS: Failed to read UDP packet.\n%s\n",
+      werror("DNS: Failed to read %s packet.\n%s\n",
+	     udp->tcp_connection ? "TCP" : "UDP",
 	     describe_backtrace(err));
       if(m && m->data && sizeof(m->data)>=2)
 	send_reply((["rcode":1]),
@@ -862,6 +859,35 @@ class server
       handle_response(q, m, udp);
     else
       handle_query(q, m, udp);
+  }
+
+  protected void send_reply(mapping r, mapping q, mapping m,
+			    Stdio.UDP|object con);
+
+  protected void destroy()
+  {
+    if(sizeof(ports))
+    {
+      foreach(ports;; object port)
+        destruct(port);
+    }
+  }
+}
+
+//! Base class for implementing a Domain Name Service (DNS) server operating
+//! over UDP.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
+class server
+{
+  //!
+  inherit server_base;
+
+  //inherit Stdio.UDP : udp;
+
+  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp) {
+    udp->send(m->ip, m->port, low_send_reply(r, q, m));
   }
 
   //! @decl void create()
@@ -914,16 +940,167 @@ class server
     }
 
   }
+}
 
-  protected void destroy()
-  {
-    if(sizeof(ports))
-    {
-      foreach(ports;; Stdio.UDP port)
-        destruct(port);
+
+//! Base class for implementing a Domain Name Service (DNS) server operating
+//! over TCP.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
+class tcp_server
+{
+  inherit server_base;
+
+  mapping(Connection:int(1..1)) connections = ([ ]);
+
+  protected class Connection {
+    constant tcp_connection = 1;
+
+    protected int(0..1) write_ready;
+    protected string read_buffer = "", out_buffer = "";
+    protected array c_id;
+    Stdio.File con;
+
+    protected void create(Stdio.File con) {
+      this_program::con = con;
+      con->set_nonblocking(rcb, wcb, ccb);
+      c_id = call_out(destruct, 120, this);
+    }
+
+    protected void ccb(mixed id) {
+      destruct(con);
+      m_delete(connections, this);
+    }
+
+    protected void wcb(mixed id) {
+      if (sizeof(out_buffer)) {
+	int written = con->write(out_buffer);
+	out_buffer = out_buffer[written..];
+      } else
+	write_ready = 1;
+    }
+
+    protected void rcb(mixed id, string data) {
+      int len;
+
+      read_buffer += data;
+      if (sscanf(read_buffer, "%2c", len)) {
+	if (sizeof(read_buffer) > len - 2) {
+	  string data = read_buffer[2..len+1];
+	  string ip, port;
+	  mapping m;
+
+	  read_buffer = read_buffer[len+2..];
+
+	  remove_call_out(c_id);
+	  c_id = call_out(destruct, 120, this);
+
+	  [ip, port] = con->query_address() / " ";
+	  m = ([ "data" : data,
+	         "ip" : ip,
+		 "port" : (int)port,
+		 "tcp_con" : this ]);
+
+
+	  rec_data(m, this);
+	}
+      }
+    }
+
+    void send(string s) {
+      if (sizeof(s) > 65535)
+	error("DNS: Cannot send packets > 65535 bytes (%d here).\n", sizeof(s));
+      out_buffer += sprintf("%2c%s", sizeof(s), s);
+
+      if (write_ready) {
+	int written = con->write(out_buffer);
+	out_buffer = out_buffer[written..];
+	write_ready = 0;
+      }
+
+      remove_call_out(c_id);
+      c_id = call_out(destruct, 120, this);
+    }
+
+    void destroy() {
+      if (con) con->close();
+      destruct(con);
+      m_delete(connections, this);
     }
   }
 
+  protected int accept(Stdio.Port port) {
+    connections[Connection(port->accept())] = 1;
+  }
+
+  protected void send_reply(mapping r, mapping q, mapping m, Connection con) {
+    con->send(low_send_reply(r, q, m));
+  }
+
+  //! @decl void create()
+  //! @decl void create(int port)
+  //! @decl void create(string ip)
+  //! @decl void create(string ip, int port)
+  //! @decl void create(string ip, int port, string|int ... more)
+  //!
+  //! Open one or more new DNS server ports.
+  //!
+  //! @param ip
+  //!   The IP to bind to. Defaults to @expr{"::"@} or @expr{0@} (ie ANY)
+  //!   depending on whether IPv6 support is present or not.
+  //!
+  //! @param port
+  //!   The port number to bind to. Defaults to @expr{53@}.
+  //!
+  //! @param more
+  //!   Optional further DNS server ports to open.
+  //!   Must be a set of @[ip], @[port] argument pairs.
+  protected void create(int|string|void arg1, string|int ... args)
+  {
+    if(!arg1 && !sizeof(args))
+      arg1 = 53;
+    if(!sizeof(args))
+    {
+      if(stringp(arg1))
+       args = ({ arg1, 53 });
+      else
+       args = ({ ANY, arg1 });
+    }
+    else
+      args = ({ arg1 }) + args;
+    if(sizeof(args)&1)
+      error("DNS: if you specify more than one argument, the number of "
+           "arguments needs to be even (server(ip1, port1, ip2, port2, "
+           "...)).\n");
+    for(int i;i<sizeof(args);i+=2) {
+      Stdio.Port port;
+
+      if(args[i]) {
+	port = Stdio.Port(args[i+1], accept, args[i]);
+      } else {
+	port = Stdio.Port(args[i+1], accept);
+      }
+
+      port->set_id(port);
+      // port objects are stored for destruction when the server object is destroyed.
+      ports += ({ port });
+    }
+  }
+
+  protected void destroy()
+  {
+    foreach (connections; Connection con;) {
+      destruct(con);
+    }
+
+    ::destroy();
+  }
+
+  protected void destroy()
+  {
+    ::destroy();
+  }
 }
 
 
