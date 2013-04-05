@@ -17,11 +17,11 @@
 //
 // some necessary setup activities for systems that provide filesystem event monitoring
 //
-#if constant(Public.System.FSEvents.EventStream)
+#if constant(System.FSEvents.EventStream)
 #define HAVE_EVENTSTREAM 1
 #endif
 
-#if constant(Public.System.___Inotify)
+#if constant(System.Inotify)
 #define HAVE_INOTIFY 1
 #endif
 
