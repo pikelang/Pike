@@ -879,6 +879,9 @@ class server_base
 //!
 //! This class is typically used by inheriting it,
 //! and overloading @[reply_query()] and @[handle_response()].
+//!
+//! @seealso
+//!   @[dual_server]
 class server
 {
   //!
@@ -1095,6 +1098,33 @@ class tcp_server
     }
 
     ::destroy();
+  }
+}
+
+//! This is both a @[server] and @[tcp_server].
+class dual_server {
+  inherit server : UDP;
+  inherit tcp_server : TCP;
+
+  protected void send_reply(mapping r, mapping q, mapping m,
+			    Connection|Stdio.UDP con) {
+    string rpl = low_send_reply(r, q, m);
+
+    if (!con->tcp_connection) {
+      if (sizeof(rpl) > 512) {
+	rpl = sprintf("%s%8c", rpl[..3], 0); // truncate after header and
+					     // send empty response
+					     // ("dnscache strategy")
+	rpl[2] |= 2; // set TC bit
+      }
+      con->send(m->ip, m->port, rpl);
+    } else
+      con->send(rpl);
+  }
+
+  protected void create(int|string|void arg1, string|int ... args)
+  {
+    ::create(arg1, @args);
   }
 
   protected void destroy()
