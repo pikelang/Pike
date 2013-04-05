@@ -14,7 +14,11 @@
 //! higher.
 
 // if necessary, inherit the C language module here.
+#if constant(System._FSEvents)
 inherit System._FSEvents;
+#else
+constant this_program_does_not_exist = 1;
+#endif
 
 //!  describe the event flags associated with an event.
 //!
