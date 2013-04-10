@@ -1557,7 +1557,7 @@ static void f_list_tables(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_tables(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_tables(): Cannot list tables: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1698,7 +1698,7 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_fields(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_fields(): Cannot list fields: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1746,7 +1746,7 @@ static void f_list_processes(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_processes(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_processes(): Cannot list processes: %s\n", err);
   }
 
   {
