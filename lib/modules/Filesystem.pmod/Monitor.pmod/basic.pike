@@ -265,12 +265,12 @@ protected class Monitor(string path,
     eventstream->start();
 #elseif HAVE_INOTIFY
   wd = instance->add_watch(path,
-		Inotify.IN_MOVED_FROM | Inotify.IN_UNMOUNT | 
-                Inotify.IN_MOVED_TO | Inotify.IN_MASK_ADD | 
-                Inotify.IN_MOVE_SELF | Inotify.IN_DELETE | 
-		Inotify.IN_MOVE | Inotify.IN_MODIFY | 
-                Inotify.IN_ATTRIB | Inotify.IN_DELETE_SELF | 
-                Inotify.IN_CREATE);
+		System.Inotify.IN_MOVED_FROM | System.Inotify.IN_UNMOUNT |
+                System.Inotify.IN_MOVED_TO | System.Inotify.IN_MASK_ADD |
+                System.Inotify.IN_MOVE_SELF | System.Inotify.IN_DELETE |
+		System.Inotify.IN_MOVE | System.Inotify.IN_MODIFY |
+                System.Inotify.IN_ATTRIB | System.Inotify.IN_DELETE_SELF |
+                System.Inotify.IN_CREATE);
 #endif
   }
 
@@ -779,7 +779,7 @@ protected void create(int|void max_dir_check_interval,
 #if HAVE_EVENTSTREAM
   eventstream->callback_func = eventstream_callback;
 #elseif HAVE_INOTIFY
-  instance = Inotify._Instance();
+  instance = System.Inotify._Instance();
   file = Stdio.File();
   file->assign(instance->fd());
   file->set_nonblocking();
