@@ -2409,13 +2409,14 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 PMOD_EXPORT struct pike_string *implode(struct array *a,
                                         struct pike_string *del)
 {
-  INT32 len, e;
+  INT32 len, e, delims;
   PCHARP r;
   struct pike_string *ret;
   struct svalue *ae;
   int max_shift = del->size_shift;
 
   len=0;
+  delims = 0;
 
   for(e=a->size, ae=a->item; e--; ae++)
     switch(TYPEOF(*ae))
@@ -2427,43 +2428,39 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
       default:
 	Pike_error("Array element %d is not a string\n", ae-a->item);
       case T_STRING:
+	delims++;
         len+=ae->u.string->len + del->len;
         if(ae->u.string->size_shift > max_shift)
 	  max_shift=ae->u.string->size_shift;
 	break;
     }
-  if(len) len-=del->len;
+
+  if(delims)
+  {
+    len-=del->len;
+    delims--;
+  }
   
   ret=begin_wide_shared_string(len,max_shift);
   r=MKPCHARP_STR(ret);
   len = del->len;
   if((e = a->size))
-    for(ae=a->item;;ae++)
+    for(ae=a->item;e--;ae++)
     {
-      switch(TYPEOF(*ae))
+      if (TYPEOF(*ae) == T_STRING)
       {
-        case T_STRING:
-        {
-          struct pike_string *tmp = ae->u.string;
-          pike_string_cpy(r,tmp);
-          INC_PCHARP(r,tmp->len);
-          break;
-        }
-        default:
-        case T_INT:
-          if(!--e)
-	    goto ret;
-          continue;
-      }
-      if(!--e)
-        break;
-      if(len)
-      {
-        pike_string_cpy(r,del);
-        INC_PCHARP(r,len);
+	struct pike_string *tmp = ae->u.string;
+	pike_string_cpy(r,tmp);
+	INC_PCHARP(r,tmp->len);
+	if(len && delims)
+	{
+	  delims--;
+	  pike_string_cpy(r,del);
+	  INC_PCHARP(r,len);
+	}
       }
     }
-ret:
+
   return low_end_shared_string(ret);
 }
 
