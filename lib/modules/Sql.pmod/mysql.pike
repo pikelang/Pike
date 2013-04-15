@@ -665,7 +665,7 @@ int decode_datetime (string timestr)
   }									\
 									\
   else if (send_charset) {						\
-    string new_send_charset;						\
+    string new_send_charset = send_charset;				\
 									\
     if (utf8_mode & LATIN1_UNICODE_ENCODE_MODE) {			\
       if (String.width (query) == 8)					\
