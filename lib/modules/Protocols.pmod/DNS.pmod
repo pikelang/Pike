@@ -627,14 +627,15 @@ class protocol
   mapping decode_res(string s)
   {
     mapping m=([]);
-    sscanf(s,"%2c%c%c%2c%2c%2c%2c",
-	   m->id,
-	   m->c1,
-	   m->c2,
-	   m->qdcount,
-	   m->ancount,
-	   m->nscount,
-	   m->arcount);
+    if (sscanf(s,"%2c%c%c%2c%2c%2c%2c",
+               m->id,
+               m->c1,
+               m->c2,
+               m->qdcount,
+               m->ancount,
+               m->nscount,
+               m->arcount) != 7)
+      error("Bad DNS request, failed to parse header\n");
     m->rd=m->c1&1;
     m->tc=(m->c1>>1)&1;
     m->aa=(m->c1>>2)&1;
