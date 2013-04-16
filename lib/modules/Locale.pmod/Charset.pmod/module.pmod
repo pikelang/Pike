@@ -281,7 +281,11 @@ private class ISO6937dec {
     }
     if (!swapped) return res;
     // Recombine the characters.
+#if constant(Unicode)
     return Unicode.normalize((string)chars, "NFC");
+#else
+    return (string)chars;
+#endif
   }
   this_program feed(string s)
   {
@@ -708,7 +712,9 @@ private class ISO6937enc {
   }
   this_program feed(string s)
   {
+#if constant(Unicode)
     s = Unicode.normalize(s, "NFD");
+#endif
     if (String.width(s) > 8) {
       // Swap any combiners with the preceeding character.
       array(int) chars = (array(int)) s;
