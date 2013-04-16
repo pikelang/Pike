@@ -104,15 +104,18 @@ int send_timeout_delay=180;
 int connection_timeout_delay=180;
 
 function(this_program:void) request_callback;
+function(this_program,array:void) error_callback;
 
 void attach_fd(Stdio.File _fd, Port server,
 	       function(this_program:void) _request_callback,
-	       void|string already_data)
+	       void|string already_data,
+	       void|function(this_program,array:void) _error_callback)
 {
    my_fd=_fd;
    server_port=server;
    headerparser = .HeaderParser();
    request_callback=_request_callback;
+   error_callback = _error_callback;
 
    my_fd->set_nonblocking(read_cb,0,close_cb);
 
@@ -430,14 +433,18 @@ protected void finalize()
 {
   my_fd->set_blocking();
   flatten_headers();
-  parse_post();
-
-  if (request_headers->cookie)
-    foreach (request_headers->cookie/";";;string cookie)
-      if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
-        cookies[a]=b;
-
-  request_callback(this);
+  if (array err = catch {parse_post();})
+  {
+    if (error_callback) error_callback(this, err);
+  }
+  else
+  {
+    if (request_headers->cookie)
+      foreach (request_headers->cookie/";";;string cookie)
+        if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
+          cookies[a]=b;
+    request_callback(this);
+  }
 }
 
 // Adds incoming data to raw and buf. Once content-length or
@@ -742,7 +749,7 @@ void finish(int clean)
    // create new request
 
    this_program r=this_program();
-   r->attach_fd(my_fd,server_port,request_callback,buf);
+   r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
 
    my_fd=0; // and drop this object
 }
