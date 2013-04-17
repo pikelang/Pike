@@ -328,7 +328,7 @@ static void f_create (INT32 args)
 
 static void f_select_db (INT32 args)
 {
-	char *host, *port, *options, *tty, *db;
+	char *host, *port, *options, *db;
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
@@ -352,7 +352,7 @@ static void f_select_db (INT32 args)
 	host=PQhost(conn);
 	port=PQport(conn);
 	options=PQoptions(conn);
-	tty=PQtty(conn);
+
 	/* This could be really done calling f_create, but it's more efficient this
 	 * way */
 	/* using newconn is necessary or otherwise the datastructures I use
@@ -360,7 +360,7 @@ static void f_select_db (INT32 args)
 	 * situations (i.e. if the temporary use of _one_ more filedescriptor
 	 * is not possible.
 	 */
-	newconn=PQsetdb(host,port,options,tty,db);
+	newconn=PQsetdb(host,port,options,NULL,db);
 	PQfinish(conn);
 	conn=newconn;
 	PQ_UNLOCK();
