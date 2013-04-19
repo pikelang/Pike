@@ -136,9 +136,9 @@ struct mem_searcher
  * sensitive data has to be cleared from memory.
  */
 static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
-    volatile char * _p = p;
+    volatile char * _p = (char *)p;
     while (n--) *_p++ = c;
-    return p;
+    return (void *)p;
 }
 
 #include "pike_search.h"
@@ -159,10 +159,11 @@ PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
+PMOD_EXPORT
 #ifdef __i386__
 __attribute__((fastcall)) 
 #endif
-  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+ size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
