@@ -436,6 +436,7 @@ protected void finalize()
   if (array err = catch {parse_post();})
   {
     if (error_callback) error_callback(this, err);
+    else throw(err);
   }
   else
   {
