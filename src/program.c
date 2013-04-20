@@ -4769,6 +4769,18 @@ PMOD_EXPORT void low_inherit(struct program *p,
     fun.id_flags |= ID_INHERITED;
     add_to_identifier_references(fun);
   }
+
+  if (parent_offset) {
+    if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT)) {
+      /* We'll need the parent pointer as well... */
+      struct program_state *state = Pike_compiler;
+
+      while (state && parent_offset--) {
+	state->new_program->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+	state = state->previous;
+      }
+    }
+  }
 }
 
 PMOD_EXPORT void do_inherit(struct svalue *s,
@@ -4841,18 +4853,6 @@ void compiler_do_inherit(node *n,
 		      offset+42,
 		      flags,
 		      name);
-	}
-	if (n->token == F_EXTERNAL) {
-	  struct program *p=program_from_svalue(s);
-	  if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_NEEDS_PARENT)) {
-	    /* We'll need the parent pointer as well... */
-	    struct program_state *state = Pike_compiler;
-
-	    while (state && (state->new_program->id != n->u.integer.a)) {
-	      state->new_program->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
-	      state = state->previous;
-	    }
-	  }
 	}
       }else{
 	yyerror("Inherit identifier is not a constant program");
