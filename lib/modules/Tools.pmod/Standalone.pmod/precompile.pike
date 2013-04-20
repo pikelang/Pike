@@ -13,7 +13,7 @@
 #define DEFINETOSTR(X) TOSTR(X)
 
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
-constant precompile_api_version = "4";
+constant precompile_api_version = "5";
 #else
 constant precompile_api_version = "3";
 #endif
@@ -46,6 +46,9 @@ string usage = #"[options] <from> > <to>
   attributes;
  {
    INHERIT bar
+     attributes;
+
+   INHERIT \"__builtin.foo\"
      attributes;
 
    CVAR int foo;
@@ -1737,12 +1740,25 @@ class ParseBlock
 	    mixed name=x[e+1];
 	    string define=make_unique_name("inherit",name,base,"defined");
 	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    string p;
+	    if (((string)name)[0] == '\"') {
+	      if (api >= 5) {
+		p = sprintf("resolve_program(%s)",
+			    allocate_string((string)name));
+	      } else {
+		warn("%s:%d: API level 5 (or higher) is required "
+		     "for inherit of strings.\n",
+		     name->file, name->line);
+		p = mkname((string)name, "program");
+	      }
+	    } else {
+	      p = mkname((string)name, "program");
+	    }
 	    addfuncs +=
 	      IFDEF(define,
 		    ({
 		      PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-				       mkname((string)name, "program"),
-				       attributes->flags || "0"),
+				       p, attributes->flags || "0"),
 			       x[e]->line),
 		    }));
 	    ret += DEFINE(define);
