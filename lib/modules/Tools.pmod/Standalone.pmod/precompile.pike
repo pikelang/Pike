@@ -1745,29 +1745,27 @@ class ParseBlock
 	    array pre = ({});
 	    array post = ({});
 	    if (((string)name)[0] == '\"') {
-	      if (api >= 5) {
-		pre = ({
-		  PC.Token("  do {\n"),
-		  PC.Token("    struct program *p = resolve_program(" +
-			   allocate_string((string)name) +
-			   ");\n",
-			   name->line),
-		  PC.Token("    if (p) {\n"),
-		});
-		indent = "      ";
-		p = "p";
-		post = ({
-		  PC.Token("      free_program(p);\n"
-			   "    } else {\n", name->line),
-		  PC.Token("      yyerror(\"Inherit failed.\");\n"
-			   "    }\n"
-			   "  } while(0);", x[e]->line),
-		});
-	      } else {
+	      pre = ({
+		PC.Token("  do {\n"),
+		PC.Token("    struct program *p = resolve_program(" +
+			 allocate_string((string)name) +
+			 ");\n",
+			 name->line),
+		PC.Token("    if (p) {\n"),
+	      });
+	      indent = "      ";
+	      p = "p";
+	      post = ({
+		PC.Token("      free_program(p);\n"
+			 "    } else {\n", name->line),
+		PC.Token("      yyerror(\"Inherit failed.\");\n"
+			 "    }\n"
+			 "  } while(0);", x[e]->line),
+	      });
+	      if (api < 5) {
 		warn("%s:%d: API level 5 (or higher) is required "
 		     "for inherit of strings.\n",
 		     name->file, name->line);
-		p = mkname((string)name, "program");
 	      }
 	    } else {
 	      p = mkname((string)name, "program");
