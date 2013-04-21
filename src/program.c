@@ -1850,6 +1850,30 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   return ret;
 }
 
+/* This function is intended to simplify resolving of
+ * program symbols during compile-time for C-modules.
+ *
+ * A typical use-case is for a C-module inheriting
+ * code written in Pike.
+ */
+PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
+{
+  struct program *ret = NULL;
+  struct node_s *n = resolve_identifier(ident);
+  if (n) {
+    if ((n->token == F_CONSTANT) && (TYPEOF(n->u.sval) == T_PROGRAM) &&
+	(ret = n->u.sval.u.program)) {
+      add_ref(ret);
+    } else {
+      my_yyerror("Invalid program identifier '%S'.", ident);
+    }
+    free_node(n);
+  } else {
+    my_yyerror("Unknown program identifier '%S'.", ident);
+  }
+  return ret;
+}
+
 /*! @decl constant this
  *!
  *! Builtin read only variable that evaluates to the current object.
