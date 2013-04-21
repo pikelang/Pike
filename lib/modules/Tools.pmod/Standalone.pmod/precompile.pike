@@ -309,7 +309,8 @@ string allocate_string(string orig_str)
 	    str_id,
 	    orig_str, orig_str),
   });
-  str_sym = strings[str] = sprintf("module_strings[%d]", str_id);
+  str_sym = strings[str] = sprintf("module_strings[%d] /* %s */",
+				   str_id, orig_str);
   return str_sym;
 }
 
