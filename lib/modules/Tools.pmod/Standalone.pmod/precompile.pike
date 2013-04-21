@@ -1741,10 +1741,28 @@ class ParseBlock
 	    string define=make_unique_name("inherit",name,base,"defined");
 	    mapping attributes = parse_attributes(x[e+2..pos]);
 	    string p;
+	    string indent = "  ";
+	    array pre = ({});
+	    array post = ({});
 	    if (((string)name)[0] == '\"') {
 	      if (api >= 5) {
-		p = sprintf("resolve_program(%s)",
-			    allocate_string((string)name));
+		pre = ({
+		  PC.Token("  do {\n"),
+		  PC.Token("    struct program *p = resolve_program(" +
+			   allocate_string((string)name) +
+			   ");\n",
+			   name->line),
+		  PC.Token("    if (p) {\n"),
+		});
+		indent = "      ";
+		p = "p";
+		post = ({
+		  PC.Token("      free_program(p);\n"
+			   "    } else {\n", name->line),
+		  PC.Token("      yyerror(\"Inherit failed.\");\n"
+			   "    }\n"
+			   "  } while(0);", x[e]->line),
+		});
 	      } else {
 		warn("%s:%d: API level 5 (or higher) is required "
 		     "for inherit of strings.\n",
@@ -1756,11 +1774,11 @@ class ParseBlock
 	    }
 	    addfuncs +=
 	      IFDEF(define,
-		    ({
-		      PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-				       p, attributes->flags || "0"),
+		    pre + ({
+		      PC.Token(sprintf("%slow_inherit(%s, NULL, -1, 0, %s, NULL);\n",
+				       indent, p, attributes->flags || "0"),
 			       x[e]->line),
-		    }));
+		    }) + post);
 	    ret += DEFINE(define);
 	    e = pos;
 	    break;
