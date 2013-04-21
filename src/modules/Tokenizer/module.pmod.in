@@ -1,0 +1,1878 @@
+//
+// $Id$
+//
+// Interface to pike code tokenizer.
+//
+// Henrik Grubbström 2002-07-17
+//
+
+//! @ignore
+inherit @module@ : Tokenizer;
+//! @endignore
+
+// typedef function(string, mapping(string:int|string), CompilerContext: Token) TokenHandler;
+
+//! List of Tokens and Groups
+class TokenList
+{
+  inherit ADT.List;
+}
+
+
+//!
+class PikeCompiler
+{
+  inherit Tokenizer::PikeCompiler;
+
+#define SYNTAX_ERROR(MSG)						\
+    report(ERROR, token && token->context, "parser",			\
+	   sprintf("%s Detected when looking at %s.", MSG, token||"EOS"))
+
+  class Modifiers
+  {
+    array(Modifier) modifiers;
+
+    Modifiers `+(mixed ... modifier_list) {
+      return Modifiers(modifiers + [array(Modifier)]modifier_list);
+    }
+
+    Modifiers `+=(mixed ... modifier_list) {
+      modifiers += [array(Modifier)]modifier_list;
+      return this;
+    }
+
+    static void create(array(Modifier)|void modifiers)
+    {
+      Modifiers::modifiers = modifiers || ({});
+    }
+
+    static string _sprintf()
+    {
+      return sprintf("Modifiers(%{%s %})", modifiers);
+    }
+  }
+
+#if 0
+  class Modifier
+  {
+    inherit IdentifierToken;
+
+    // Called at
+    //   modifier ·
+    void parse_modifier(Iterator tokens_left) {}
+  }
+#endif
+
+  //!
+  class VariableDecl(Token name, Expression type, Modifiers modifiers)
+  {
+  }
+
+  class Expression
+  {
+  }
+
+  //!
+  class LiteralExpression(Token value)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("%s", value);
+    }
+  }
+
+  //!
+  class FunCallExpression(Expression func, ArgList|void args)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("(%s)->`()(%s)", func, args||"");
+    }
+  }
+
+  //!
+  class PrefixExpression(Token operator, Expression operand)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("%s(%s)", operator, operand);
+    }
+  }
+
+  //!
+  class SuffixExpression(Token operator, Expression operand)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("(%s)%s", operand, operator);
+    }
+  }
+
+  //!
+  class BinaryExpression(Token operator, Expression operand1,
+			 Expression operand2)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("(%s)%s(%s)", operand1||"", operator, operand2||"");
+    }
+  }
+
+  //!
+  class TrinaryExpression(Token operator1, Expression operand1,
+			  Token operator2, Expression operand2,
+			  Expression operand3)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("(%s)%s(%s)%s(%s)",
+		     operand1, operator1, operand2,
+		     operator2, operand3);
+    }
+  }
+
+  //!
+  class ArgList(Expression arg, ArgList|void next)
+  {
+    static string _sprintf()
+    {
+      if (next) {
+	return sprintf("%s, %s", arg, next);
+      } else {
+	return sprintf("%s", arg);
+      }
+    }
+  }
+
+  Expression predef_call(string fun, ArgList arguments)
+  {
+    return
+      FunCallExpression(BinaryExpression(OperatorToken("::",0),
+					 LiteralExpression(IdentifierToken("predef",
+									   0)),
+					 LiteralExpression(IdentifierToken(fun,
+									   0))),
+			arguments);
+  }
+
+  // Simpler interface...
+  Expression predef_call_exprs(string fun, Expression ... args)
+  {
+    ArgList arg_list;
+    foreach(reverse(args), Expression expr) {
+      arg_list = ArgList(expr, arg_list);
+    }
+    return predef_call(fun, arg_list);
+  }
+
+#define UNARY_SUFFIX(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while(tokens_left &&						\
+	    SYMS[(token = tokens_left->value())->symbol]) {		\
+	expr = SuffixExpression(token, expr);				\
+        tokens_left->next();						\
+      }									\
+      return expr;							\
+    }
+#define UNARY_PREFIX(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Token token;							\
+      if (tokens_left &&						\
+	  SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->next();						\
+	return								\
+	  PrefixExpression(token,					\
+			   parse_ ## NAME ## _expression(tokens_left));	\
+      } else {								\
+        return parse_ ## BASE ## _expression(tokens_left);		\
+      }									\
+    }
+#define RIGHT_ASSOC(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      if (tokens_left &&						\
+	  SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->next();						\
+	expr =								\
+	  BinaryExpression(token, expr,					\
+			   parse_ ## NAME ## _expression(tokens_left));	\
+      }									\
+      return expr;							\
+    }
+#define LEFT_ASSOC(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while (tokens_left &&						\
+	     SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->next();						\
+	expr =								\
+	  BinaryExpression(token, expr,					\
+			   parse_ ## BASE ## _expression(tokens_left));	\
+      }									\
+      return expr;							\
+    }
+#define LEFT_ASSOC_FUNCALL(NAME, BASE, SYMS)				\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while (tokens_left &&						\
+	     SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->next();						\
+	expr =								\
+	  predef_call_exprs("`"+token->symbol, expr,			\
+			    parse_ ## BASE ## _expression(tokens_left));\
+      }									\
+      return expr;							\
+    }
+#define OPTIONAL_ARGS(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Token token;							\
+      Expression expr;							\
+      werror("parse_" #NAME "_expression(%O)...\n", tokens_left);	\
+      if (!tokens_left ||						\
+	  !SYMS[(token = tokens_left->value())->symbol]) {		\
+        expr = parse_ ## BASE ## _expression(tokens_left);		\
+        werror("1 tokens_left: %O\n", tokens_left);			\
+	if (!tokens_left ||						\
+	    !SYMS[(token = tokens_left->value())->symbol]) {		\
+	  return expr;							\
+	}								\
+      }									\
+      tokens_left->next();						\
+      werror("2 tokens_left: %O\n", tokens_left);			\
+      if (!tokens_left || (tokens_left->value()->symbol == ",")) {	\
+	return BinaryExpression(token, expr, 0);			\
+      }									\
+      return								\
+	BinaryExpression(token, expr,					\
+			 parse_ ## BASE ## _expression(tokens_left));	\
+    }
+
+  ArgList parse_argument_list(array(Token) tokens)
+  {
+    ArgList arg_list;
+    ArgList current_arg;
+
+    for(Iterator tokens_left = get_iterator(tokens); tokens_left;
+	tokens_left->next()) {
+      ArgList next_arg = ArgList(parse_splice_expression(tokens_left));
+      if (arg_list) {
+	current_arg->next = next_arg;
+      } else {
+	arg_list = next_arg;
+      }
+      current_arg = next_arg;
+
+      werror("parse argument list: tokens_left: %O\n", tokens_left);
+
+      if (tokens_left) {
+	Token token = tokens_left->value();
+	if (token->symbol != ",") {
+	  SYNTAX_ERROR("Expected , in argument list.");
+	  error("Expected , in argument list.");
+	  return arg_list;
+	}
+      }
+    }
+    return arg_list;
+  }
+
+  ArgList parse_mapping_list(array(Token) tokens)
+  {
+    ArgList raw_args = parse_argument_list(tokens);
+
+    ArgList args = raw_args;
+    while (args) {
+      // FIXME: Verify that all arguments are pairs,
+      //        and convert to a normal argument list.
+      break;
+    }
+    return args;
+  }
+
+  Expression parse_multiset_expression(array(Token) tokens)
+  {
+    Token token = tokens[-1];
+    if (token->symbol != ">") {
+      SYNTAX_ERROR("Missing end marker in literal multiset.");
+      tokens = tokens[1..];
+    } else {
+      // Removed the start and end markers.
+      tokens = tokens[1..sizeof(tokens)-2];
+    }
+    return predef_call("aggregate_multiset", parse_argument_list(tokens));
+  }
+
+  Expression parse_identifier_expression(Iterator tokens_left)
+  {
+    Token token;
+    Expression expr;
+
+    if (!(<".","::">)[(token = tokens_left->value())->symbol]) {
+      expr = LiteralExpression(token);
+      tokens_left->next();
+      if (token->parse_meta_function) {
+	werror("Parsing meta function for token %O...\n", token);
+	token->parse_meta_function(tokens_left);
+      }
+      if (!tokens_left ||
+	  !(<".","::">)[(token = tokens_left->value())->symbol]) {
+	return expr;
+      }
+    }
+    if (token->symbol == "::") {
+      Token oper = token;
+      tokens_left->next();
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->is_identifier) {
+	SYNTAX_ERROR("Strange inherit specifier.");
+	return expr;
+      }
+      expr = BinaryExpression(oper, expr, LiteralExpression(token));
+      tokens_left->next();
+    }
+    while (tokens_left && (token = tokens_left->value())->symbol == ".") {
+      tokens_left->next();
+      Token oper = token;
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->is_identifier) {
+	SYNTAX_ERROR("Strange .-operation");
+	return expr;
+      }
+      expr = BinaryExpression(oper, expr, LiteralExpression(token));
+      tokens_left->next();
+    }
+    return expr;
+  }
+
+  Expression parse_basic_expression(Iterator tokens_left)
+  {
+    Token token;
+    werror("Parsing basic expression from %O...\n", tokens_left);
+    if (!tokens_left) {
+      // FIXME: Linenumber!
+      SYNTAX_ERROR("Expected expression.");
+      return 0;
+    }
+    token = tokens_left->value();
+    if (token->is_group) {
+      if (token->symbol == "(") {
+	tokens_left->next();
+	do {
+	  Token sub_token;
+	  if ((sizeof(token->get_contents()) == 1) &&
+	      ((sub_token = token->get_contents()->head())->is_group)) {
+	    werror("sub_token: %O\n"
+		   "symbol: %O\n", sub_token, sub_token->symbol);
+	    switch (sub_token->symbol) {
+	    case "(":
+	      token = sub_token;
+	      continue;
+	    case "{":
+	      return predef_call("aggregate",
+				 parse_argument_list(sub_token->get_contents()));
+	    case "[":
+	      return predef_call("aggregate_mapping",
+				 parse_mapping_list(sub_token->get_contents()));
+	    default:
+	      // Shouldn't be reached, but...
+	      token = sub_token;
+	      SYNTAX_ERROR("Unrecognized grouping.");
+	      return 0;
+	    }
+	  }
+	  break;
+	} while(1);
+	werror("Checking for multiset in %O...\n", tokens_left);
+	werror("Current token: %s\n", token);
+	werror("token->contents: %O\n", token->get_contents());
+	if (sizeof(token->get_contents()) &&
+	    (token->get_contents()->head()->symbol == "<")) {
+	  return parse_multiset_expression(token->get_contents());
+	}
+	tokens_left = get_iterator(token->get_contents());
+	Expression expr = parse_expression(tokens_left);
+	if (tokens_left) {
+	  // FIXME:
+	  // return parse_var_decl(expr, tokens_left);
+	}
+	return expr;
+      } else if (token->symbol == "[") {
+	// Probable soft cast.
+	tokens_left->next();
+	return parse_expression(get_iterator(token->get_contents()));	
+      }
+      SYNTAX_ERROR("Unexpected grouping.");
+      tokens_left->next();
+      return 0;
+    } else {
+      switch(token->token) {
+      case "::":
+      case ".":
+      case "identifier":
+	return parse_identifier_expression(tokens_left);
+      case "string_constant":
+	Token res = token;
+	do {
+	  // Perform adjacent string concat.
+	  tokens_left->next();
+	  if (!tokens_left ||
+	      (token = tokens_left->value())->token != "string_constant")
+	    break;
+	  res->value += token->value;
+	} while (1);
+	return LiteralExpression(token);
+      case "int_constant":
+      case "float_constant":
+	tokens_left->next();
+	return LiteralExpression(token);
+      default:
+	werror("token: %O\n"
+	       "token->token: %O\n",
+	       token, token->token);
+	SYNTAX_ERROR("Unsupported basic expression.");
+	tokens_left->next();
+	return 0;
+      }
+    }
+  }
+
+  Expression parse_funcall_expression(Iterator tokens_left)
+  {
+    Token token = tokens_left && tokens_left->value();
+    int potential_cast = token && token->is_group &&
+      (<"(", "[">)[token->symbol];
+    int is_fun_call;
+    Expression expr = parse_basic_expression(tokens_left);
+    werror("parse_funcall_expression(%O)\n", tokens_left);
+    while (tokens_left && 
+	   (((token = tokens_left->value())->symbol == "->") ||
+	    (token->is_group && (<"(", "[">)[token->symbol]))) {
+      is_fun_call = 0;
+      if (token->is_group) {
+	if (token->symbol == "(") {
+	  expr = FunCallExpression(expr, parse_argument_list(token->get_contents()));
+	  is_fun_call = 1;
+	} else {
+	  expr =
+	    predef_call("`[]",
+			ArgList(expr,
+				ArgList(parse_expression(get_iterator(token->get_contents())))));
+	}
+	tokens_left->next();
+      } else {
+	tokens_left->next();
+	if (!tokens_left ||
+	    (<"int_constant", "float_constant", "string_constant", 0>)
+	    [(token = tokens_left->value())->token]) {
+	  SYNTAX_ERROR("Bad -> operand.");
+	} else {
+	  tokens_left->next();
+	  expr = predef_call("`->()",
+			     ArgList(expr,
+				     ArgList(LiteralExpression(token))));
+	}
+      }
+    }
+    if (tokens_left) {
+      werror("Left overs:%O\n", tokens_left);
+      if ((token = tokens_left->value())->is_group) {
+	if (is_fun_call && (token->symbol == "{")) {
+	  // Implicit lambda.
+	  Lambda implicit_lambda = Lambda("lambda", token->pos);
+	  implicit_lambda->parse_lambda_body(tokens_left);
+	  if (expr->args) {
+	    ArgList last_arg = expr->args;
+	    while (last_arg->next) last_arg = last_arg->next;
+	    last_arg->next =
+	      ArgList(LiteralExpression(implicit_lambda));
+	  } else {
+	    expr->args = 
+	      ArgList(LiteralExpression(implicit_lambda));
+	  }
+	  // FIXME: Ought to register the new lambda somewhere...
+	}
+      } else if (potential_cast &&
+		 (<"identifier", "int_constant", "float_constant",
+		   "string_constant">)[token->token]) {
+	// Probable cast.
+	expr =
+	  predef_call("cast",
+		      ArgList(expr,
+			      ArgList(parse_basic_expression(tokens_left))));
+      }
+    }
+    return expr;
+  }
+
+  //! @ignore
+
+  UNARY_SUFFIX(postfix, funcall, (<"++", "--">));
+  UNARY_PREFIX(prefix, postfix, (<"!", "~", "-", "++", "--">));
+  LEFT_ASSOC_FUNCALL(product, prefix, (<"*", "%", "/">));
+  LEFT_ASSOC_FUNCALL(sum, product, (<"+", "-">));
+  LEFT_ASSOC_FUNCALL(shift, sum, (<"<<", ">>">));
+  LEFT_ASSOC_FUNCALL(rel, shift, (<">", ">=", "<", "<=">));
+  LEFT_ASSOC_FUNCALL(eq, rel, (<"==", "!=">));
+  LEFT_ASSOC_FUNCALL(and, eq, (<"&">));
+  LEFT_ASSOC_FUNCALL(xor, and, (<"^">));
+  LEFT_ASSOC_FUNCALL(or, xor, (<"|">));
+  LEFT_ASSOC(land, or, (<"&&">));
+  LEFT_ASSOC(lor, land, (<"||">));
+
+  UNARY_SUFFIX(many, lor, (<"...">));
+
+  //! @endignore
+
+  Expression parse_cond_expression(Iterator tokens_left)
+  {
+    Expression expr = parse_many_expression(tokens_left);
+    Token token;
+    if (tokens_left &&
+	(token = tokens_left->value())->symbol == "?") {
+      tokens_left->next();
+      Expression true = parse_cond_expression(tokens_left);
+      Token token2;
+      if (!tokens_left ||
+	  (token2 = tokens_left->value())->symbol != ":") {
+	token = token2 || token;
+	SYNTAX_ERROR("?-operator missing :-section.");
+      } else {
+	tokens_left->next();
+      }
+      return TrinaryExpression(token, expr, token2, true,
+			       parse_cond_expression(tokens_left));
+    }
+    return expr;
+  }
+
+  //! @ignore
+
+  RIGHT_ASSOC(assign, cond, (<"=", "+=", "-=", "*=", "/=">));
+
+  //LEFT_ASSOC(pair, assign, (<":", "..">));
+  OPTIONAL_ARGS(pair, assign, (<":", "..">));
+
+  UNARY_PREFIX(splice, pair, (<"@">));
+
+  LEFT_ASSOC(comma, splice, (<",">));
+
+  //! @endignore
+
+  Expression parse_expression(Iterator tokens_left)
+  {
+    return parse_comma_expression(tokens_left);
+  }
+
+  // Called when the expression may contain a variable declaration.
+  // eg if and while.
+  // FIXME: What about multi-assign?
+  Expression parse_decl_comma_expr(Scope current_scope, Iterator tokens_left)
+  {
+    Expression type = parse_comma_expression(tokens_left);
+    Token token;
+
+    if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
+      return parse_decl(current_scope, tokens_left, type);
+    }
+    return type;
+  }
+
+  // Called for parsing of lvalues in eg foreach and sscanf.
+  // FIXME: What about multi-assign?
+  Expression parse_lvalue(Scope current_scope, Iterator tokens_left)
+  {
+    Expression type = parse_assign_expression(tokens_left);
+    Token token;
+
+    if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
+      current_scope->add_identifier(0, token, VariableDecl(token, type, 0));
+      tokens_left->next();
+      return LiteralExpression(token);
+    }
+    return type;
+  }
+
+  // Called at
+  //   modifiers type · identifier_list ';'
+  //   modifiers type · identifier '(' arguments ')' block_or_semi
+  //
+  // Adds symbols as needed to the scope.
+  //
+  // Returns the corresponding expression.
+  Expression parse_decl(Scope current_scope, Iterator tokens_left,
+			Expression type, Modifiers|void current_modifiers)
+  {
+    Expression result;
+    while(1) {
+      Expression sub_expression;
+      Token token;
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->is_identifier) {
+	SYNTAX_ERROR("Expected an identifier.");
+	return result;
+      }
+      Token name = token;
+      tokens_left->next();
+      if (tokens_left && (token = tokens_left->value())->is_group) {
+	// Function prototype/definition.
+	if (token->symbol == "[") {
+	  SYNTAX_ERROR("Unexpected index operation.");
+	  tokens_left->next();
+	} else {
+	  Lambda func = Lambda("lambda", name->pos);
+	  current_scope->add_identifier(current_modifiers, name, func);
+	  current_scope->add_meta_object(func);
+	  func->return_type = type;
+	  func->name = name;
+	  func->parse_meta_function(tokens_left);
+	  tokens_left = 0;	// Force loop to stop.
+	}
+      } else {
+	current_scope->add_identifier(current_modifiers, name,
+				      VariableDecl(name, type,
+						   current_modifiers));
+      }
+      sub_expression = LiteralExpression(name);
+      if (tokens_left && (token = tokens_left->value())->symbol == "=") {
+	// Initializer.
+	tokens_left->next();
+	sub_expression =
+	  BinaryExpression(token, sub_expression,
+			   parse_pair_expression(tokens_left));
+      }
+      if (!result) {
+	result = sub_expression;
+      } else {
+	result = BinaryExpression(OperatorToken(",", name->pos),
+				  result, sub_expression);
+      }
+      if (!tokens_left || tokens_left->value()->symbol != ",") {
+	return result;
+      }
+      tokens_left->next();
+    }
+  }
+
+  void parse_statement(Scope scope, Iterator tokens_left,
+		       Modifiers current_modifiers)
+  {
+    Token token;
+    if (!tokens_left) return 0;
+    if ((token = tokens_left->value())->parse_meta_program) {
+      tokens_left->next();
+      werror("Parsing meta program for token %O...\n", token);
+      token->parse_meta_program(scope, tokens_left, current_modifiers);
+      return;
+    }
+    if (token->is_group && token->symbol == "{") {
+      tokens_left->next();
+      BlockStatement block = BlockStatement();
+      block->parse_meta_program(scope, get_iterator(token->get_contents()),
+				current_modifiers);
+      scope->add_meta_object(block);
+      return;
+    }
+    if (token->symbol == ";") {
+      tokens_left->next();
+      return;
+    }
+    Expression expr = parse_expression(tokens_left);
+    if (tokens_left &&
+	(token = tokens_left->value())->symbol != ";") {
+      expr = parse_decl(scope, tokens_left, expr, current_modifiers);
+    }
+    scope->add_meta_object(ExpressionStatement(expr));
+    if (tokens_left && tokens_left->value()->symbol == ";") {
+      tokens_left->next();
+    }
+  }
+
+  class Scope
+  {
+    array(Token) meta_objects = ({});
+    mapping(string:Definition) identifiers = ([]);
+
+    void add_identifier(Modifiers modifiers, Token name, Token meta)
+    {
+      string identifier = name->symbol;
+      werror("Defining %O\n"
+	     "modifiers: %O\n"
+	     "meta: %O\n", identifier, modifiers, meta);
+      Definition def;
+      if (!(def = identifiers[identifier])) {
+	identifiers[identifier] = Definition(modifiers, name, meta);
+      } else {
+	def->redefine(modifiers, meta);
+      }
+    }
+
+    void add_meta_object(Token token)
+    {
+      werror("%s->add_meta_object(%O)\n", this_object(), token);
+      meta_objects += ({ token });
+    }
+  }
+
+  // Start of meta symbols:
+
+  class ColonColon
+  {
+    inherit Token;
+    constant token = "::";
+  }
+
+  class Dot
+  {
+    inherit Token;
+    constant token = ".";
+  }
+
+  // Start of meta functions:
+
+  // First the types.
+  class LiteralType
+  {
+    inherit IdentifierToken;
+
+    void parse_meta_function(Iterator tokens_left)
+    {
+    }
+  }
+
+  class VoidType
+  {
+    inherit LiteralType;
+  }
+
+  class MixedType
+  {
+    inherit LiteralType;
+  }
+
+  class StringType
+  {
+    inherit LiteralType;
+  }
+
+  class FloatType
+  {
+    inherit LiteralType;
+  }
+
+  class OptionalArgType
+  {
+    inherit LiteralType;
+
+    // Called when parameters are missing.
+    Group default_args();
+
+    // Called at
+    //   type_literal · '(' arguments ')'
+    //   type_literal ·
+    void parse_meta_function(Iterator tokens_left)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !(token = tokens_left->value())->is_group ||
+	  (token->symbol != "(")) {
+	tokens_left->insert(default_args());
+	werror("Hooked in default arguments: %O\n"
+	       "%s\n", tokens_left, describe_backtrace(backtrace()));
+      }
+    }
+  }
+
+  class ArrayType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class FunctionType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' '|' 'void' '...' ':' 'mixed' '|' 'void' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken("|", context));
+      group->append(VoidType("void", context));
+      group->append(OperatorToken("...", context));
+      group->append(OperatorToken(":", context));
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken("|", context));
+      group->append(VoidType("void", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class IntType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' '..' ')'.
+      Group group = ParenGroup("(",context);
+      group->append(OperatorToken("..", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class MappingType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ':' 'mixed' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(OperatorToken(":", context));
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class MultisetType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class ObjectType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'mixed' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(MixedType("mixed", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  class ProgramType
+  {
+    inherit OptionalArgType;
+
+    Group default_args()
+    {
+      // The group '(' 'object' ')'.
+      Group group = ParenGroup("(", context);
+      group->append(ObjectType("object", context));
+      group->append(EndGroup(")", context));
+      return group;
+    }
+  }
+
+  // Then other meta functions:
+
+  class Lambda
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression return_type;
+    array(Expression) parameter_types = ({});
+    array(Token) parameter_names = ({});
+    BlockStatement function_body;
+    Token name;
+
+    void add_parameter(Expression type, Token name)
+    {
+      // FIXME!
+      // Should modify the function type by adding one parameter at a time.
+      parameter_types += ({ type });
+      parameter_names += ({ name });
+      add_identifier(0, name, VariableDecl(0, name, type));
+    }
+
+    // Parse list of parameters.
+    static void parse_param_list(TokenList tokens)
+    {
+      werror("parse_param_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+
+      while(tokens_left) {
+	Expression type = parse_expression(tokens_left);
+	Token token;
+	if (!tokens_left ||
+	    !(token = tokens_left->value())->is_identifier) {
+	  SYNTAX_ERROR("Expected an identifier.");
+	  return;
+	}
+	tokens_left->next();
+	add_parameter(type, token);
+	if (tokens_left) {
+	  if ((token = tokens_left->value())->symbol != ",") {
+	    SYNTAX_ERROR("Expected a ','.");
+	    return;
+	  }
+	  tokens_left->next();
+	}
+      }
+    }
+
+    // Called at
+    //   lambda '(' arguments ')' · '{' function_body '}'
+    //   type name '(' arguments ')' · '{' function_body '}'
+    //   implicit_lambda_call · '{' function_body '}'
+    void parse_lambda_body(Iterator tokens_left)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
+	SYNTAX_ERROR("Expected function body.");
+	return;
+      }
+      function_body = BlockStatement();
+      function_body->parse_meta_program(this, get_iterator(token->get_contents()),
+					0);
+      tokens_left->next();
+    }
+
+    // Called at
+    //   lambda · '(' arguments ')' '{' function_body '}'
+    //   type name · '(' arguments ')' '{' function_body '}'
+    //   lambda · '(' arguments ')' ';'
+    //   type name · '(' arguments ')' ';'
+    void parse_meta_function(Iterator tokens_left)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
+	SYNTAX_ERROR("Expected list of parameters.");
+	return;
+      }
+      parse_param_list(token->get_contents());
+      tokens_left->next();
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
+	return;
+      }
+      parse_lambda_body(tokens_left);
+    }
+  }
+
+  class Sscanf
+  {
+    inherit IdentifierToken;
+
+    // Called at
+    //   sscanf · '(' expr ',' expr ',' lvalue_list ')'
+    void parse_meta_function(Iterator tokens_left)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
+	SYNTAX_ERROR("Expected list of parameters.");
+	return;
+      }
+#if 0
+      // FIXME:
+      parse_param_list(token->get_contents());
+      tokens_left->next();
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
+	return;
+      }
+      parse_lambda_body(tokens_left);
+#endif /* 0 */
+    }
+  }
+
+  // Start of meta programs:
+
+  class NameSpace
+  {
+    inherit IdentifierToken;
+
+    Expression source;
+    mixed value;
+    Token rename;
+
+    // Called at
+    //   namespace · { string | symbol } [ ':' name ] ';'
+    void parse_meta_program(Class current_class, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      current_class->add_meta_object(this_object());
+
+      source = parse_basic_expression(tokens_left);
+
+      Token token;
+      if (tokens_left &&
+	  (token = tokens_left->value())->symbol == ":") {
+	// Rename.
+	tokens_left->next();
+	if (!tokens_left ||
+	    (token = tokens_left->value())->token != "identifier") {
+	  SYNTAX_ERROR("Expected renaming symbol.");
+	} else {
+	  rename = token;
+	  tokens_left->next();
+	  if (tokens_left) {
+	    token = tokens_left->value();
+	  }
+	}
+      }
+      if (!tokens_left ||
+	  token->symbol != ";") {
+	SYNTAX_ERROR("Expected ';'.");
+	return;
+      }
+      tokens_left->next();
+    }
+
+    void resolv_namespace(Scope current_scope)
+    {
+      //evaluate_expression(current_scope, source);	//***************
+    }
+  }
+
+  //!
+  class Definition(Modifiers modifiers, Token name, Token meta)
+  {
+    // FIXME!
+    static string _sprintf()
+    {
+      return "Definition";
+    }
+
+    static void redefinition_error(Token old, Token new, string msg)
+    {
+      report(ERROR, new->name->context, "parser", msg);
+      report(ERROR, old->name->context, "parser", "Previously defined here.");
+    }
+
+    void redefine(Modifiers new_modifiers, Token new_meta)
+    {
+      if (new_modifiers != modifiers) {
+	redefinition_error(modifiers, new_modifiers, 
+			   sprintf("Modifier mismatch for identifier %s.",
+				   name));
+      }
+      if (new_meta) {
+	if (meta) {
+	  if (!meta->redefine) {
+	    redefinition_error(meta, new_meta,
+			       sprintf("Redefinition of identifier %s.",
+				       name));
+	  } else {
+	    meta->redefine(new_meta);
+	  }
+	} else {
+	  meta = new_meta;
+	}
+      }
+    }
+  }
+
+  class Statement
+  {
+    // FIXME!
+  }
+
+  class BlockStatement
+  {
+    inherit Scope;
+
+    // Called at
+    //   '{' · statements '}'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      while(tokens_left) {
+	parse_statement(this, tokens_left, current_modifiers);
+      }
+    }
+
+    string _sprintf(int c)
+    {
+      return "BlockStatement";
+    }
+  }
+
+  //!
+  class ExpressionStatement(Expression expr)
+  {
+  }
+
+  class Else
+  {
+    inherit IdentifierToken;
+
+    // Called at
+    //   else · statement
+    // if it hasn't been eaten by an if.
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token = tokens_left->value();
+      SYNTAX_ERROR("else without a corresponding if.");
+    }
+  }
+
+  class For
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression init_expression;
+    Expression loop_expression;
+    Expression cont_expression;
+
+    // Called with
+    //   '(' · expr ';' expr ';' expr ')'
+    //   '(' · ';' expr ';' expr ')'
+    //   '(' · expr ';' ';' expr ')'
+    //   '(' · ';' ';' expr ')'
+    //   '(' · expr ';' expr ';' ')'
+    //   '(' · ';' expr ';' ')'
+    //   '(' · expr ';' expr ';' ')'
+    //   '(' · ';' ';' ')'
+    void parse_for_list(TokenList tokens)
+    {
+      werror("parse_foreach_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+      Token token;
+
+      if (tokens_left && (token = tokens_left->value())->symbol != ";") {
+	init_expression = parse_decl_comma_expr(this, tokens_left);
+	token = tokens_left && tokens_left->value();
+      }
+
+      if (!tokens_left ||
+	  (token = tokens_left->value())->symbol != ";") {
+	SYNTAX_ERROR("Expected ';' in for statement.");
+	return;
+      }
+      tokens_left->next();
+      if (tokens_left && (token = tokens_left->value())->symbol != ";") {
+	loop_expression = parse_assign_expression(tokens_left);
+	token = tokens_left && tokens_left->value();
+      }
+      if (!tokens_left ||
+	  (token = tokens_left->value())->symbol != ";") {
+	SYNTAX_ERROR("Expected ';' in for statement.");
+	return;
+      }
+      tokens_left->next();
+      if (tokens_left) {
+	cont_expression = parse_assign_expression(tokens_left);
+      }
+      if (tokens_left) {
+	SYNTAX_ERROR("Unexpected symbol at end of for statement.");
+      }
+    }
+
+    // Called at
+    //   for · '(' expr ';' expr ';' expr ')' statement
+    //   for · '(' ';' expr ';' expr ')' statement
+    //   for · '(' expr ';' ';' expr ')' statement
+    //   for · '(' ';' ';' expr ')' statement
+    //   for · '(' expr ';' expr ';' ')' statement
+    //   for · '(' ';' expr ';' ')' statement
+    //   for · '(' expr ';' expr ';' ')' statement
+    //   for · '(' ';' ';' ')' statement
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
+	SYNTAX_ERROR("Expected parameters to for().");
+	return;
+      }
+      parse_for_list(token->get_contents());
+      tokens_left->next();
+      parse_statement(this_object(), tokens_left, current_modifiers);
+    }
+  }
+
+  class Foreach
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression loop_expression;
+    Expression index_lvalue;
+    Expression value_lvalue;
+
+    // Called with
+    //   '(' · expr ',' lvalue ')'
+    //   '(' · expr ';' lvalue ';' lvalue ')'
+    //   '(' · expr ';' ';' lvalue ')'
+    //   '(' · expr ';' lvalue ';' ')'
+    //   '(' · expr ';' ';' ')'
+    void parse_foreach_list(TokenList tokens)
+    {
+      werror("parse_foreach_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+      Token token;
+
+      loop_expression = parse_assign_expression(tokens_left);
+      if (!tokens_left ||
+	  !(<",", ";">)[(token = tokens_left->value())->symbol]) {
+	SYNTAX_ERROR("Expected ',' or ';' in foreach statement.");
+	return;
+      }
+      tokens_left->next();
+      if (token->symbol == ";") {
+	if (tokens_left && (token = tokens_left->value())->symbol != ";") {
+	  index_lvalue = parse_lvalue(this_object(), tokens_left);
+	  if (!tokens_left ||
+	      !(<",", ";">)[(token = tokens_left->value())->symbol]) {
+	    SYNTAX_ERROR("Expected a second ';' in foreach statement.");
+	    return;
+	  }
+	  tokens_left->next();
+	}
+	if (!tokens_left) return;
+      }
+      value_lvalue = parse_lvalue(this_object(), tokens_left);
+    }
+
+    // Called at
+    //   foreach · '(' expr ',' lvalue ')' statement
+    //   foreach · '(' expr ';' lvalue ';' lvalue ')' statement
+    //   foreach · '(' expr ';' ';' lvalue ')' statement
+    //   foreach · '(' expr ';' lvalue ';' ')' statement
+    //   foreach · '(' expr ';' ';' ')' statement
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
+	SYNTAX_ERROR("Expected parameters to foreach().");
+	return;
+      }
+      parse_foreach_list(token->get_contents());
+      tokens_left->next();
+      parse_statement(this_object(), tokens_left, current_modifiers);
+    }
+
+    static void create(mixed ... args)
+    {
+      werror("Foreach(%O)\n", args);
+      ::create(@args);
+    }
+  }
+
+  class If
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression expr;
+    Statement true_branch;
+    Statement false_branch;
+
+    void add_meta_object(Statement statement)
+    {
+      if (true_branch) {
+	false_branch = statement;
+      } else {
+	true_branch = statement;
+      }
+    }
+
+    void parse_if_expr(TokenList tokens)
+    {
+      werror("parse_param_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+
+      expr = parse_decl_comma_expr(this_object(), tokens_left);
+
+      if (tokens_left) {
+	Token token = tokens_left->value();
+	SYNTAX_ERROR("Junk left at end of if expression.");
+	return;
+      }
+    }
+
+    // Called at
+    //   if · '(' expr ')' statement
+    //   if · '(' expr ')' statement else statement
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
+	SYNTAX_ERROR("Expected expression to if().");
+	return;
+      }
+      parse_if_expr(token->get_contents());
+      tokens_left->next();
+      parse_statement(this_object(), tokens_left, current_modifiers);
+      if (!tokens_left ||
+	  token->symbol != "else") {
+	return;
+      }
+      tokens_left->next();
+      parse_statement(this_object(), tokens_left, current_modifiers);      
+    }
+  }
+
+  class Return
+  {
+    inherit IdentifierToken;
+
+    Expression expr;
+
+    // Called at
+    //   return · ';'
+    //   return · expr ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (tokens_left &&
+	  ((token = tokens_left->value())->symbol != ";")) {
+	werror("Parsing return expression: %O\n", tokens_left);
+	expr = parse_expression(tokens_left);
+	token = tokens_left->value();
+	werror("Got return expression: %O\n"
+	       "Termination token: %O\n"
+	       "Tokens left: %O\n", expr, token, tokens_left);
+      }
+      if (!tokens_left ||
+	  token->symbol != ";") {
+	SYNTAX_ERROR("Expected semicolon after return.");
+	return;
+      }
+      tokens_left->next();
+    }
+  }
+
+#if 0
+  class Break
+  {
+    inherit IdentifierToken;
+    Token label;
+
+    // Called at
+    //   break · ';'
+    //   break · label ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (tokens_left &&
+	  ((token = tokens_left->value())->token == "identifier")) {
+	label = token;
+	tokens_left->next();
+	if (tokens_left) {
+	  token = tokens_left->value();
+	}
+      }
+      if (!tokens_left ||
+	  token->symbol != ";") {
+	SYNTAX_ERROR("Expected semicolon after break.");
+	return;
+      }
+      tokens_left->next();
+    }
+  }
+
+  // Compat for 7.0 and earlier.
+  class BreakNoLabel
+  {
+    inherit Break;
+
+    // Called at
+    //   break · ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (!tokens_left ||
+	  ((token = tokens_left->value())->symbol != ";")) {
+	SYNTAX_ERROR("Expected semicolon after break.");
+	return;
+      }
+      tokens_left->next();
+    }
+  }
+#endif /* 0 */
+
+  class Case
+  {
+    inherit IdentifierToken;
+
+    Expression from;
+    Expression to;
+
+    // Called at
+    //   case · lor_expression ':'
+    //   case · lor_expression '..' lor_expression ':'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      from = parse_lor_expression(tokens_left);
+      Token token;
+      if (tokens_left &&
+	  (token = tokens_left->value())->symbol == "..") {
+	tokens_left->next();
+	to = parse_lor_expression(tokens_left);
+	if (tokens_left) {
+	  token = tokens_left->value();
+	}
+      }
+      if (!tokens_left || token->symbol != ":") {
+	SYNTAX_ERROR("case label missing ':'.");
+	return;
+      }
+      tokens_left->next();
+    }
+  }
+
+  class Class
+  {
+    //FIXME: This should also be a meta function!
+
+    inherit IdentifierToken;
+    inherit Scope;
+
+    // Called at
+    //   class name '{' · class_body '}'
+    // and at the top-level.
+    void parse_class_body(TokenList tokens, Modifiers|void default_modifiers)
+    {
+      if (!tokens) return;
+
+      default_modifiers = default_modifiers || Modifiers();
+
+      Iterator tokens_left = get_iterator(tokens);
+
+      while(tokens_left) {
+	Modifiers current_modifiers = default_modifiers;
+	object(Token)|Group token;
+	while((token = tokens_left->value()) && token->parse_modifier) {
+	  tokens_left->next();
+	  token->parse_modifier(tokens_left);
+	  current_modifiers += token;
+	  if (!tokens_left) {
+	    report(ERROR, token->context, "parser",
+		   "Modifiers without declaration.");
+	    return;
+	  }
+	}
+	werror("Parse_class_body(): Token: %O\n", token);
+	if (token->is_group) {
+	  if (token->symbol == "{") {
+	    // Modifier scope.
+	    parse_class_body(token->get_contents(), current_modifiers);
+	  } else {
+	    report(ERROR, token->context, "parser",
+		   "Unexpected grouped expression in class body %s.",
+		   token);
+	  }
+	  tokens_left->next();
+	} else {
+	  if (token->symbol == ";") {
+	    tokens_left->next();
+	  } else if (token->parse_meta_program) {
+	    // inherit, class, constant, typedef, enum, etc.
+	    tokens_left->next();
+	    werror("Parsing meta program for token %O...\n", token);
+	    token->parse_meta_program(this, tokens_left, current_modifiers);
+	  } else {
+	    // FIXME: variable, function, etc.
+	    werror("var func etc, token:%O\n", token);
+	    Expression type = parse_expression(tokens_left);
+	    parse_decl(this, tokens_left, type, current_modifiers);
+	  }
+	}
+      }
+    }
+
+    // Parse list of parameters.
+    static void parse_create_args(Lambda create_fun, TokenList tokens)
+    {
+      Iterator tokens_left = get_iterator(tokens);
+
+      while(tokens_left) {
+	Modifiers modifiers = Modifiers();
+	Token token;
+	while((token = tokens_left->value()) && token->parse_modifier) {
+	  tokens_left->next();
+	  token->parse_modifier(tokens_left);
+	  modifiers += token;
+	  if (!tokens_left) {
+	    SYNTAX_ERROR("Expected type and identifier after modifier list.");
+	    return;
+	  }
+	}
+	Expression type = parse_expression(tokens_left);
+	if (!tokens_left ||
+	    !(token = tokens_left->value())->is_identifier) {
+	  SYNTAX_ERROR("Expected an identifier.");
+	  return;
+	}
+	tokens_left->next();
+	create_fun->add_parameter(type, token);
+	add_identifier(modifiers, token, VariableDecl(modifiers, token, type));
+	// FIXME: Generate code for create()...
+	if (tokens_left) {
+	  if ((token = tokens_left->value())->symbol != ",") {
+	    SYNTAX_ERROR("Expected a ','.");
+	    return;
+	  }
+	  tokens_left->next();
+	}
+      }
+    }
+
+    // Called at
+    //   class · [name] [ '(' create_args ')' ] '{' class_body '}'
+    void parse_meta_program(Class current_class, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      current_class->add_meta_object(this);
+      if (!tokens_left) {
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Lone class keyword.");
+	return;
+      }
+      Token token = tokens_left->value();
+      if (!token->is_group) {
+	current_class->add_identifier(current_modifiers, token, this);
+	tokens_left->next();
+	token = tokens_left->value();
+      }
+      if (!token->is_group) {
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Expected class definition.");
+	return;
+      }
+      if (token->symbol == "(") {
+	Lambda create_fun = Lambda("lambda", token->context);
+	create_fun->return_type =
+	  LiteralExpression(VoidType("void", token->context));
+	create_fun->name = IdentifierToken("create", token->context);
+	this->add_meta_object(create_fun);
+	this->add_identifier(Modifiers(({Modifier("static", token->context)})),
+			     create_fun->name, create_fun);
+	parse_create_args(create_fun, token->get_contents());
+	tokens_left->next();
+	token = tokens_left->value();
+      }
+      if (!token->is_group || token->symbol != "{") {
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Expected class body.");
+	return;
+      }
+      parse_class_body(token->get_contents());
+      tokens_left->next();
+    }
+
+    // Notes about resolving:
+    //
+    //   First symbols that are used expand the resolution
+    //   space are resolved. ie symbols refered to from
+    //   inherit and import. Note that the order of inherits
+    //   is significant.
+    //
+    //   After the first pass all symbols that are available
+    //   in the local scope are known, and the remaining
+    //   symbols can be resolved.
+
+    static int(-1..1) resolved;
+    void resolv_namespaces()
+    {
+      if (resolved) {
+	if (resolved > 0) return;
+	// FIXME: Resolution loop. Error?
+	return;
+      }
+      resolved = -1;
+      foreach(meta_objects, Token meta_object) {
+	if (meta_object->resolv_namespace) {
+	  meta_object->resolv_namespace(this);
+	}
+      }
+      resolved = 1;
+    }
+
+#if 0
+    void resolv_symbols(Scope parent_scope)
+    {
+      foreach(namespaces, Namespace namespace) {
+	namespace->resolv(parent_scope);
+      }
+    }
+#endif /* 0 */
+
+    CodeBlock current_block;
+
+    // Generate code for the contants of the class.
+    void compile_statement(Class current_class)
+    {
+      
+    }
+
+    // Should emit code to current_class that assigns this class
+    // to a temporary, and returns the temporary.
+    Temporary compile_expression(Class current_class)
+    {
+      
+    }
+
+    static string _sprintf()
+    {
+      array(string) s = map(indices(identifiers),
+			    lambda(string id) {
+			      return sprintf("  %s:%s", id, identifiers[id]);
+			    });
+      return "class {\n"+(s*"\n")+"\n}";
+    }
+  }
+
+  //!
+  Class parse_program(TokenList tokens)
+  {
+    Class prog = Class("class", 0);
+    prog->parse_class_body(tokens);
+
+    prog->resolv_namespaces();
+
+    return prog;
+  }
+
+  class pike_tokenizer
+  {
+    inherit PikeCompiler::pike_tokenizer;
+
+    // Note: Pike prior to 0.6 used a K&R-style cpp.
+
+    static {
+      // Symbol ==> TokenClass
+      mapping(string:program(Token)) Pike_0_1_Tokens = ([
+	"!":Token,
+	"%":Token,
+	"&":Token,
+	"&&":Token,
+	"(":ParenGroup,
+	")":EndGroup,
+	"*":Token,
+	"+":Token,
+	",":Token,
+	"-":Token,
+	".":Dot,
+	"/":Token,
+	":":Token,
+	"::":ColonColon,
+	";":Token,
+	"<":Token,
+	"<<":Token,
+	"<=":Token,
+	"=":Token,
+	"==":Token,
+	">":Token,
+	">=":Token,
+	">>":Token,
+	"?":Token,
+	"[":BracketGroup,
+	"]":EndGroup,
+	"^":Token,
+	"{":BraceGroup,
+	"|":Token,
+	"||":Token,
+	"}":EndGroup,
+	"~":Token,
+	"array":ArrayType,
+	"break":BreakNoLabel,
+	"case":Case,
+	//"catch":Catch,
+	"class":Class,
+	//"continue":Continue,
+	//"default":Default,
+	//"do":Do,
+	//"predef":Predef,
+	"else":Else,
+	"float":FloatType,
+	"for":For,
+	"foreach":Foreach,
+	"function":FunctionType,
+	//"gauge":Gauge,
+	"if":If,
+	"inherit":NameSpace,
+	"inline":Modifier,
+	"int":IntType,
+	"lambda":Lambda,
+	"mapping":MappingType,
+	"multiset":MultisetType,
+	"mixed":MixedType,
+	"nomask":Modifier,
+	"object":ObjectType,
+	"private":Modifier,
+	"program":ProgramType,
+	"protected":Modifier,
+	"public":Modifier,
+	"return":Return,
+	"sscanf":Sscanf,
+	"static":Modifier,
+	"string":StringType,
+	//"switch":Switch,
+	//"typeof":Typeof,
+	"varargs":Modifier,
+	"void":VoidType,
+	//"while":While,
+      ]);
+
+      mapping(string:program(Token)) Pike_0_3_Tokens = Pike_0_1_Tokens + ([
+	//"constant":Constant,	// 0.3
+      ]);
+
+      mapping(string:program(Token)) Pike_0_4_Tokens = Pike_0_3_Tokens + ([
+	"import":NameSpace,	// 0.4.8
+      ]);
+
+      mapping(string:program(Token)) Pike_0_6_Tokens = Pike_0_4_Tokens + ([
+	"final":Modifier,	// 0.6.36
+	"local":Modifier,	// 0.6.36
+      ]) - ([
+	"varargs":Modifier,	// Obsoleted in 0.6.2
+      ]);
+
+      mapping(string:program(Token)) Pike_0_7_Tokens = Pike_0_6_Tokens + ([
+	"extern":Modifier,	// 0.7.85
+	"optional":Modifier,	// 0.7.85
+      ]);
+
+      mapping(string:program(Token)) Pike_7_1_Tokens = Pike_0_7_Tokens + ([
+	"variant":Modifier,	// 7.1.3
+	"break":Break,		// 7.1.34
+      ]);
+
+      mapping(string:program(Token)) Pike_7_2_Tokens = Pike_7_1_Tokens + ([
+	//"enum":Enum,		// 7.2.27, 7.3.6
+	//"typedef":Typedef,	// 7.2.27, 7.3.6
+      ]);
+
+      mapping(string:program(Token)) Pike_7_3_Tokens = Pike_7_2_Tokens + ([
+	"global":Modifier,	// 7.3.42
+      ]);
+
+      array(array(int|mapping(string:program(Token)))) compat_lookup = ({
+	({ 7, 3, Pike_7_3_Tokens, }),
+	({ 7, 2, Pike_7_2_Tokens, }),
+	({ 7, 1, Pike_7_1_Tokens, }),
+	({ 0, 7, Pike_0_7_Tokens, }),
+	({ 0, 6, Pike_0_6_Tokens, }),
+	({ 0, 4, Pike_0_4_Tokens, }),
+	({ 0, 3, Pike_0_3_Tokens, }),
+	({ 0, 0, Pike_0_1_Tokens, }),
+      });
+
+      mapping(string:program(Token)) get_lookup_for_pike_version(int major, int minor)
+      {
+	if (major < 0) major = 0;
+	if (minor < 0) minor = 0;
+	foreach(compat_lookup,
+		[int maj, int min, mapping(string:program(Token)) tokens]) {
+	  if ((maj < major) || (maj == major && (min <= minor))) {
+	    return tokens;
+	  }
+	}
+	// NOT REACHED.
+	return 0;
+      }
+
+      void create(string data/*, mapping(string:string|int)|void context */)
+      {
+	::create(data/*, context*/);
+      }
+    }
+  }
+}
+
+class Temporary
+{
+}
+
+class Instruction
+{
+}
+
+class CodeBlock
+{
+  array(Instruction) instructions = ({});
+  int next_label;
+  int next_reg;
+  mapping(int:int) label_lookup = ([]);
+
+  void emit(Instruction instruction)
+  {
+    if(instruction->is_label) {
+      label_lookup[instruction->label_no] = sizeof(instructions);
+    }
+    instructions += ({ instruction });
+  }
+}

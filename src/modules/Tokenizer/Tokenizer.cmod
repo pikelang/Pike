@@ -1,0 +1,2303 @@
+/*
+ * $Id$
+ *
+ * Interface to pike code tokenizer.
+ *
+ * Henrik Grubbström 2002-07-11
+ */
+
+#include "global.h"
+
+#include "config.h"
+
+#include "svalue.h"
+#include "object.h"
+#include "mapping.h"
+#include "constants.h"
+#include "interpret.h"
+#include "operators.h"
+#include "builtin_functions.h"
+#include "pike_types.h"
+#include "stralloc.h"
+#include "sscanf.h"
+#include "module.h"
+#include "version.h"
+
+DECLARATIONS
+
+#define yyerror(X)	tokenizer_yyerror(context, X)
+
+extern struct program *List_program;
+static int f_List_append_fun_num;
+
+/*! @module Tokenizer
+ */
+
+/*! @decl enum SeverityLevel
+ *!   Message severity level.
+ *! { NOTICE, WARNING, ERROR, FATAL }
+ *!
+ *! @constant NOTICE
+ *! @constant WARNING
+ *! @constant ERROR
+ *! @constant FATAL
+ *!
+ *! @seealso
+ *!   @[compiler()->report()]
+ */
+
+#define SL_NOTICE 0
+#define SL_WARNING 1
+#define SL_ERROR 2
+#define SL_FATAL 3
+
+/*! @class Compiler
+ */
+PIKECLASS compiler
+  flags ID_STATIC;
+{
+  /*! @decl void report(SeverityLevel severity, @
+   *!			mapping(string:int|string) context, @
+   *!                   string subsystem, string msg, mixed ... extra_args)
+   *!   Function called to report messages.
+   *!
+   *! @param severity
+   *!   Message severity.
+   *!
+   *! @param context
+   *!   Context where the message occurred.
+   *!
+   *! @param subsystem
+   *!   Subsystem where the message was generated. Currently one of
+   *!   @string
+   *!     @value "preprocessor"
+   *!     @value "scanner"
+   *!     @value "grouping"
+   *!     @value "parser"
+   *!   @endstring
+   *!
+   *! @param msg
+   *!   Message. This is taken to be a @[sprintf()] format string
+   *!   if @[extra_args] are specified.
+   *!
+   *! @param extra_args
+   *!   Parameters to @[sprintf()] @[msg].
+   *!
+   *!   The default implementation reports to stderr.
+   *!
+   *! @note
+   *!   The default implementation currently does no parsing of @[context].
+   *!
+   *! @note
+   *!   Overload this function to change the report formatting,
+   *!   or to redirect the output.
+   *!
+   *! @seealso
+   *!   @[SeverityLevel]
+   */
+  PIKEFUN void report(int(0..3) severity,
+		      mapping(string:int|string)|void context,
+		      string subsystem, string msg, mixed ... extra_args)
+  {
+    fprintf(stderr, "report(%d, %p, %s, %s, %p)\n",
+	    severity, context, subsystem->str, msg->str, extra_args);
+    if (args > 4) {
+      f_sprintf(args-3);
+      args = 4;
+    }
+    switch(severity) {
+    case SL_NOTICE:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "NOTICE:%O:%O:%O\n");
+      break;
+    case SL_WARNING:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "WARNING:%O:%O:%O\n");
+      break;
+    case SL_ERROR:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "ERROR:%O:%O:%O\n");
+      break;
+    case SL_FATAL:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "FATAL:%O:%O:%O\n");
+      break;
+
+    default:
+      Pike_error("Unknown severity level: %"PRINTPIKEINT"d\n", severity);
+      break;
+    }
+    Pike_sp[-args].type = PIKE_T_STRING;
+    Pike_sp[-args].subtype = 0;
+    apply_svalue(simple_mapping_string_lookup(get_builtin_constants(),
+					      "werror"), args);
+    args = 1;
+  }
+
+  /*! @class basic_tokenizer
+   */
+  PIKECLASS basic_tokenizer
+    program_flags PROGRAM_USES_PARENT;
+  {
+    // String being converted.
+    CVAR struct pike_string *data;
+
+    // Position in string.
+    CVAR int pos;
+
+    // Token number in stream.
+    PIKEVAR int(0..) token_num;
+
+    /*! @decl mapping(string:int|string) context
+     *!
+     *!   Current context.
+     *!
+     *!   The following contextual information is available:
+     *!   @mapping
+     *!     @member int(1..) "line"
+     *!       Current line number.
+     *!   @endmapping
+     *!
+     *! @note
+     *!   Do NOT perform destructive operations on the mapping,
+     *!   since it may be shared with other data structures.
+     */
+    PIKEVAR mapping(string:int|string) context;
+
+    /*! @decl string current_symbol
+     *!
+     *!   Current symbol.
+     *!
+     *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
+     *!
+     *! @seealso
+     *!   @[scan()]
+     */
+    PIKEVAR string current_symbol;
+
+    // Current scanner.
+    CVAR void (*scanner)(struct compiler_basic_tokenizer_struct *);
+
+    /*! @decl void report(SeverityLevel severity, @
+     *!			  mapping(string:int|string) context, @
+     *!                   string subsystem, string msg, mixed ... extra_args)
+     *!   Function called to report messages.
+     *!
+     *!   This function acts as a relay to @[Tokenizer.compiler()->report()],
+     *!   and exists for overloading purposes.
+     *!
+     *! @seealso
+     *!   @[Tokenizer.compiler()->report()]
+     */
+    PIKEFUN void report(int(0..3) severity,
+			mapping(string:int|string)|int context,
+			string subsystem, string msg, mixed ... extra_args)
+    {
+      if (context->type == PIKE_T_INT) {
+	add_ref(context->u.mapping = THIS->context);
+	context->type = T_MAPPING;
+      }
+      apply_external(1, f_compiler_report_fun_num, args);
+    }
+
+    /* Helper function for the most common case. */
+    static void report_error(const char *msg)
+    {
+      push_int(2);
+      ref_push_mapping(THIS->context);
+      ref_push_string(MK_STRING("scanner"));
+      push_text(msg);
+      apply_current(f_compiler_basic_tokenizer_report_fun_num, 4);
+      pop_stack();
+    }
+
+#define gobble(C)	(((this->pos < this->data->len) && \
+			  (str[this->pos] == (C)))?(this->pos++,1):0)
+
+    static inline void detach_context(struct compiler_basic_tokenizer_struct *this)
+    {
+      if (this->context->refs > 1) {
+	/* Detach the mapping from other users. */
+	struct mapping *m = copy_mapping(this->context);
+	free_mapping(this->context);
+	this->context = m;
+      }
+    }
+
+    static void inc_line_no(struct compiler_basic_tokenizer_struct *this,
+			    int increment)
+    {
+      struct mapping *m;
+      struct svalue *old;
+      if (!increment) return;
+      detach_context(this);
+      m = this->context;
+      ref_push_string(MK_STRING("line"));
+      old = low_mapping_lookup(m, Pike_sp-1);
+      if (old && (old->type == T_INT)) {
+	/* FIXME: Bignums? */
+	push_int(old->u.integer + increment);
+      } else {
+	push_int(increment);
+      }
+      low_mapping_insert(m, Pike_sp-2, Pike_sp-1, 1);
+      pop_n_elems(2);
+    }
+
+    /*! @decl void set_context(string property, int|string value)
+     *!
+     *!   Set @[property] in @[context] to @[value], and
+     *!   perform any needed detaching.
+     */
+    PIKEFUN void set_context(string property, int|string value)
+    {
+      detach_context(THIS);
+
+      low_mapping_insert(THIS->context, Pike_sp-2, Pike_sp-1, 1);
+    }
+
+    /*! @decl int|string get_context(string property)
+     *! @decl mapping(string:int|string) get_context()
+     *!
+     *!   Either get a single @[property] from @[context],
+     *!   or return the entire mapping @[context].
+     *!
+     *!   Equvivalent to:
+     *!   @code
+     *!     @[context][@[property]]
+     *!       // or
+     *!     @[context]
+     *!   @endcode
+     *!
+     *!   Provided to simplify C code.
+     */
+    PIKEFUN int|string|mapping(string:int|string) get_context(string|void property)
+      type function(string:int|string)|function(:mapping(string:int|string));
+    {
+      struct svalue *val;
+      if (!property) {
+	pop_n_elems(args);
+	ref_push_mapping(THIS->context);
+	return;
+      }
+      val = low_mapping_lookup(THIS->context, Pike_sp-1);
+      pop_stack();
+      if (val) {
+	push_svalue(val);
+      } else {
+	push_undefined();
+      }
+    }
+
+#define MAKE_SCANNER(SHIFT)						\
+    static void PIKE_CONCAT(scan, SHIFT)				\
+		     (struct compiler_basic_tokenizer_struct *this)	\
+    {									\
+      PIKE_CONCAT(p_wchar, SHIFT) *str = 				\
+	PIKE_CONCAT(STR, SHIFT)(this->data);				\
+      while (this->pos < this->data->len) {				\
+	int start = this->pos;						\
+	int c = str[this->pos++];					\
+	switch(c) {							\
+	case '\n':							\
+	  inc_line_no(this, 1);						\
+	  /* FALL_THROUGH */						\
+	case ' ': case '\t': case '\r':					\
+	  /* Plain whitespace. */					\
+	  continue;							\
+									\
+	case '\033':	/* ESC */					\
+	case '\233':	/* CSI */					\
+	  /* Assume ANSI/DEC escape sequence.				\
+	   * Format supported:						\
+	   *	    <ESC>[\040-\077]+[\100-\177]			\
+	   * or								\
+	   *	    <CSI>[\040-\077]*[\100-\177]			\
+	   */								\
+	  while ((this->pos < this->data->len) &&			\
+		 (((c = str[this->pos++]) & ~0x1f) == 0x20))		\
+	    ;								\
+	  if ((c & ~0x3f) != 0x40) {					\
+	    /* FIXME: Warning here? */					\
+	    this->pos--;						\
+	  }								\
+	  continue;							\
+									\
+	case '#':							\
+	  /* Preprocessor-style directive (#line, pragma, etc). */	\
+	  while (this->pos < this->data->len) {				\
+	    if (((c = str[this->pos++]) == '\n') || (c == '\r')) {	\
+	      this->pos--;						\
+	      break;							\
+	    }								\
+	  }								\
+	  break;							\
+									\
+	case '0':							\
+	  /* Octal, binary, hexadecimal or float number */		\
+	  gobble('b')||gobble('B')||gobble('x')||gobble('X');		\
+	  /* FALL_THROUGH */						\
+	case '1':							\
+	case '2':							\
+	case '3':							\
+	case '4':							\
+	case '5':							\
+	case '6':							\
+	case '7':							\
+	case '8':							\
+	case '9':							\
+	  /* Number. */							\
+									\
+	  /* Note: Exponent handling is included in			\
+	   * the hexadecimal range.					\
+	   */								\
+	  while(this->pos < this->data->len) {				\
+	    c = str[this->pos];						\
+	    if ((c < '0') || ((c > '9') && (c < 'A')) ||		\
+		((c > 'F') && (c < 'a')) || (c > 'f')) {		\
+	      break;							\
+	    }								\
+	    this->pos++;						\
+	  }								\
+	  break;							\
+									\
+	case '\'':							\
+	case '\"':							\
+	  {								\
+	    /* String or character constant. */				\
+	    int d;							\
+	    while ((this->pos < this->data->len) &&			\
+		   ((d = str[this->pos]) != '\n') &&			\
+		   (d != '\r') && (this->pos++, (d != c))) {		\
+	      if (d == '\\') {						\
+	        if (this->pos < this->data->len) {			\
+		  d = str[this->pos];					\
+		  if ((d == '\r') || (d == '\n')) {			\
+		    break;						\
+		  }							\
+		  this->pos++;						\
+	        }							\
+	      }								\
+	    }								\
+	  }								\
+	  break;							\
+									\
+	  /* Operators. */						\
+	case ':':							\
+	  gobble(':');							\
+	  break;							\
+									\
+	case '.':							\
+	  gobble('.') && gobble('.');					\
+	  break;							\
+									\
+	case '-':							\
+	  if (gobble('>')) break;					\
+	  /* FALL_THROUGH */						\
+	case '+':							\
+	case '&':							\
+	case '|':							\
+	  if (gobble(c)) break;						\
+	  /* FALL_THROUGH */						\
+	case '^':							\
+	case '*':							\
+	case '%':							\
+	case '=':							\
+	case '!':							\
+	  gobble('=');							\
+	  break;							\
+									\
+	case '/':							\
+	  if (gobble('*')) {						\
+	    int no = 0;							\
+	    do {							\
+	      if (gobble('*') && gobble('/')) {				\
+		break;							\
+	      }								\
+	      if (gobble('\n')) {					\
+		no++;							\
+	      } else {							\
+		this->pos++;						\
+	      }								\
+	    } while (this->pos < this->data->len);			\
+	    if (this->pos >= this->data->len) {				\
+	      report_error("Unterminated comment.");			\
+	    }								\
+	    inc_line_no(this, no);					\
+	  } else if (gobble('/')) {					\
+	    while ((this->pos < this->data->len) &&			\
+		   (str[this->pos] != '\n')){				\
+	      this->pos++;						\
+	    }								\
+	    if (this->pos >= this->data->len) {				\
+	      report_error("Unterminated comment.");			\
+	    }								\
+	  } else {							\
+	    gobble('=');						\
+	  }								\
+	  break;							\
+									\
+	case '>':							\
+	  if (gobble(')')) break;					\
+	  /* FALL_THROUGH */						\
+	case '<':							\
+	  gobble(c);							\
+	  gobble('=');							\
+	  break;							\
+									\
+	case '(':							\
+	  gobble('<');							\
+	  break;							\
+									\
+	case ']':							\
+	case '?':							\
+	case ',':							\
+	case '~':							\
+	case '@':							\
+	case ')':							\
+	case '[':							\
+	case '{':							\
+	case ';':							\
+	case '}':							\
+	  break;							\
+									\
+	case '`':							\
+	  gobble('`');							\
+	  gobble('`');							\
+									\
+	  if (this->pos < this->data->len) {				\
+	    switch(c = str[this->pos++]) {				\
+	    case '/':							\
+	    case '%':							\
+	    case '*':							\
+	    case '&':							\
+	    case '|':							\
+	    case '^':							\
+	    case '~':							\
+	      break;							\
+									\
+	    case '<':							\
+	    case '>':							\
+	      if (gobble(c)) break;					\
+	      /* FALL_THROUGH */					\
+	    case '+':							\
+	    case '!':							\
+	    case '=':							\
+	      gobble('=');						\
+	      break;							\
+									\
+	    case '(':							\
+	      if (!gobble(')')) {					\
+		report_error("Illegal ` identifier. Expected `().");	\
+		push_string(string_slice(this->data,			\
+					 start, this->pos - start));	\
+		push_constant_text(")");				\
+		f_add(2);						\
+	        this->current_symbol = Pike_sp[-1].u.string;		\
+		Pike_sp--;						\
+		return;							\
+	      }								\
+	      break;							\
+									\
+	    case '-':							\
+	      if (gobble('>')) {					\
+		gobble('=');						\
+	      }								\
+	      break;							\
+									\
+	    case '[':							\
+	      if (!gobble(']')) {					\
+		report_error("Illegal ` identifier. Expected `[].");	\
+		push_string(string_slice(this->data,			\
+					 start, this->pos - start));	\
+		if (gobble('=')) {					\
+		  push_constant_text("]=");				\
+		} else {						\
+		  push_constant_text("]");				\
+		}							\
+		f_add(2);						\
+	        this->current_symbol = Pike_sp[-1].u.string;		\
+		Pike_sp--;						\
+		return;							\
+	      }								\
+	      gobble('=');						\
+	      break;							\
+									\
+	    default:							\
+	      report_error("Illegal ` identifier.");			\
+	      this->pos--;						\
+	      break;							\
+	    }								\
+	  } else {							\
+	    report_error("Illegal ` identifier at end of file.");	\
+	  }								\
+	  break;							\
+									\
+	default:							\
+	  if ((c >= 256) || isidchar(c)) {				\
+	    /* Identifier. */						\
+	    while(this->pos < this->data->len) {			\
+	      if ((!((c = str[this->pos]) & ~0xff)) && !isidchar(c)) {	\
+	        break;							\
+	      }								\
+	      this->pos++;						\
+	    }								\
+	    break;							\
+	  }								\
+									\
+	  /* Error. */							\
+	  push_int(2);							\
+	  ref_push_mapping(THIS->context);				\
+	  push_constant_text("scanner");				\
+	  push_constant_text("Illegal character (hex %02x) '%c'");	\
+	  push_int(c);							\
+	  push_int(c);							\
+	  apply_current(f_compiler_basic_tokenizer_report_fun_num, 6);	\
+	  pop_stack();							\
+	  continue;							\
+	}								\
+	this->current_symbol = string_slice(this->data,			\
+					   start, this->pos - start);	\
+	return;								\
+      }									\
+    }
+
+    MAKE_SCANNER(0)
+    MAKE_SCANNER(1)
+    MAKE_SCANNER(2)
+
+    /*! @decl int(0..1) next()
+     *!
+     *!   Called to advance one token in the stream.
+     *!
+     *!   The new token is stored in @[current_symbol].
+     */
+    PIKEFUN int(0..1) next()
+    {
+      if (THIS->current_symbol) {
+	free_string(THIS->current_symbol);
+	THIS->current_symbol = NULL;
+      }
+
+      if (!THIS->scanner) {
+	if (THIS->data) {
+	  if (!THIS->data->size_shift) {
+	    THIS->scanner = scan0;
+	  } else if (THIS->data->size_shift == 1) {
+	    THIS->scanner = scan1;
+	  } else {
+	    THIS->scanner = scan2;
+	  }
+	} else {
+	  /* No data. */
+	  pop_n_elems(args);
+	  push_int(0);
+	  return;
+	}
+      }
+      THIS->scanner(THIS);
+      pop_n_elems(args);
+      if (THIS->current_symbol) {
+	THIS->token_num++;
+	push_int(1);
+      } else {
+	push_int(0);
+      }
+    }
+
+    /*! @decl void create(string data)
+     *!
+     *! Initialize the basic tokenizer.
+     *!
+     *! @param data
+     *!   String to tokenize.
+     */
+    PIKEFUN void create(string data)
+      flags ID_STATIC;
+    {
+      if (THIS->data) {
+	free_string(THIS->data);
+      }
+      copy_shared_string(THIS->data, data);
+
+      THIS->pos = 0;
+      THIS->token_num = 0;
+
+      detach_context(THIS);
+      ref_push_string(MK_STRING("line"));
+      push_int(1);
+      low_mapping_insert(THIS->context, Pike_sp-2, Pike_sp-1, 1);
+      pop_n_elems(2);
+
+      if (THIS->current_symbol) {
+	free_string(THIS->current_symbol);
+	THIS->current_symbol = NULL;
+      }
+
+      THIS->scanner = NULL;
+
+      pop_n_elems(args);
+      apply_current(f_compiler_basic_tokenizer_next_fun_num, 0);
+    }
+
+    /*! @decl int(0..1) `!()
+     *!
+     *! Check for end of stream.
+     *!
+     *! @returns
+     *!   Returns 1 at end of stream.
+     */
+    PIKEFUN int(0..1) `!()
+      flags ID_STATIC;
+    {
+      RETURN !THIS->current_symbol;
+    }
+
+    PIKEFUN object `+=(int n)
+      flags ID_STATIC;
+    {
+      while (n-- > 0) {
+	apply_current(f_compiler_basic_tokenizer_next_fun_num, 0);
+	pop_stack();
+      }
+      pop_n_elems(args);
+      f_this_object(0);
+    }
+
+    PIKEFUN int index()
+    {
+      RETURN THIS->token_num;
+    }
+
+    PIKEFUN string value()
+    {
+      add_ref(THIS->current_symbol);
+      RETURN THIS->current_symbol;
+    }
+
+    INIT
+    {
+      THIS->data = NULL;
+      THIS->scanner = NULL;
+      THIS->pos = 0;
+      THIS->token_num = 0;
+      THIS->current_symbol = NULL;
+      THIS->context = allocate_mapping(8);
+    }
+
+    EXIT
+    {
+      if (THIS->data) {
+	free_string(THIS->data);
+	THIS->data = NULL;
+      }
+      THIS->scanner = NULL;
+    }
+  } 
+
+  /*! @endclass
+   */
+}
+/*! @endclass
+ */
+
+/*! @class Token
+ */
+PIKECLASS Token
+{
+  /*! @decl string symbol
+   *!
+   *! Raw symbol as found in the source code.
+   */
+  PIKEVAR string symbol;
+
+  /*! @decl mapping(string:string|int) context
+   *!
+   *!   Context information.
+   *!
+   *! @seealso
+   *!   @[Tokenizer.Context]
+   */
+  PIKEVAR mapping(string:string|int) context;
+
+  INIT
+  {
+    THIS->context = allocate_mapping(10);
+  }
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("token"), 0);
+  }
+
+  PIKEFUN void create(string symbol, mapping(string:string|int)|void context)
+    flags ID_STATIC;
+  {
+    if (THIS->symbol) {
+      free_string(THIS->symbol);
+      THIS->symbol = NULL;
+    }
+    copy_shared_string(THIS->symbol, symbol);
+#ifdef PIKE_DEBUG
+    if (!THIS->context) {
+      Pike_fatal("create: old context is NULL.\n");
+    }
+#endif /* PIKE_DEBUG */
+    free_mapping(THIS->context);
+    if (context) {
+      add_ref(THIS->context = context);
+    } else {
+      THIS->context = allocate_mapping(5);
+    }
+  }
+
+  PIKEFUN string _sprintf(int format, mapping(string:string|int)|void options)
+    flags ID_STATIC;
+  {
+    ref_push_string(MK_STRING("Tokenizer.Token(%O)"));
+    if (THIS->symbol) {
+      ref_push_string(THIS->symbol);
+    } else {
+      ref_push_string(MK_STRING("NONE"));
+    }
+    f_sprintf(2);
+    stack_pop_n_elems_keep_top(args);
+    return;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class IdentifierToken
+ */
+PIKECLASS IdentifierToken
+{
+  INHERIT Token;
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("identifier"), 0);
+    add_integer_constant("is_identifier", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class OperatorToken
+ */
+PIKECLASS OperatorToken
+{
+  INHERIT Token;
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("operator"), 0);
+    add_integer_constant("is_operator", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class LiteralToken
+ */
+PIKECLASS LiteralToken
+{
+  INHERIT Token;
+
+  PIKEVAR mixed value;
+
+  static int literal_token_inherited_create;
+
+  INIT
+  {
+    THIS->value.type = PIKE_T_INT;
+    THIS->value.subtype = NUMBER_UNDEFINED;
+    THIS->value.u.integer = 0;
+  }
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("literal"), 0);
+    add_integer_constant("is_literal", 1, 0);
+    /* We want to access the inherited create(). */
+    literal_token_inherited_create =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_create_fun_num);
+  }
+
+  PIKEFUN void create(string token, mapping(string:string|int) pos,
+		      mixed value)
+    flags ID_STATIC;
+  {
+    assign_svalue(&THIS->value, value);
+    pop_stack();
+    apply_current(literal_token_inherited_create, 2);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class StringToken
+ */
+PIKECLASS StringToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("string_constant"), 0);
+    add_integer_constant("is_string", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "string", 0);
+    /* FIXME: Do the same for create()? */
+  }
+}
+/*! @endclass
+ */
+
+/*! @class IntegerToken
+ */
+PIKECLASS IntegerToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("int_constant"), 0);
+    add_integer_constant("is_int", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "int", 0);
+    /* FIXME: Do the same for create()? */
+  }
+}
+/*! @endclass
+ */
+
+/*! @class FloatToken
+ */
+PIKECLASS FloatToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("float_constant"), 0);
+    add_integer_constant("is_float", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "float", 0);
+    /* FIXME: Do the same for create()? */
+  }
+}
+/*! @endclass
+ */
+
+/*! @class TokenizingCompiler
+ */
+PIKECLASS TokenizingCompiler
+{
+  /*! @decl inherit Compiler
+   */
+  INHERIT compiler;
+
+  /*! @class pike_tokenizer
+   *!
+   *!   Pike tokenizer.
+   */
+  PIKECLASS pike_tokenizer
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
+  {
+    static int tc_pt_inh_report = -1;
+    static int tc_pt_inh_next = -1;
+    static int tc_pt_inh_current_symbol = -1;
+    static int tc_pt_inh_set_context = -1;
+    static int tc_pt_inh_get_context = -1;
+
+    EXTRA
+    {
+      /* Perform an inherit of the "basic_tokenizer" that our parent
+       * contains through its inherit of "compiler".
+       */
+      /* FIXME: We may want to extend precompile.pike to handle
+       *        this automatically.
+       */
+      /*! @decl inherit basic_tokenizer
+       */
+      low_inherit(compiler_basic_tokenizer_program,
+		  0,
+		  compiler_basic_tokenizer_program_fun_num +
+		  Pike_compiler->previous->new_program->inherits[1].identifier_level,
+		  1 + 42,
+		  0,
+		  NULL);
+      tc_pt_inh_report =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_report_fun_num);
+      tc_pt_inh_next =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_next_fun_num);
+      /* FIXME: Ought to save the identifier numbers for variables too. */
+      tc_pt_inh_current_symbol =
+	low_reference_inherited_identifier(NULL, 1,
+					   MK_STRING("current_symbol"),
+					   SEE_STATIC);
+      tc_pt_inh_set_context =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_set_context_fun_num);
+      tc_pt_inh_get_context =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_get_context_fun_num);
+    }
+
+    /*! @decl mapping(string:int|string) context
+     *!   Context information (inherited from @[basic_tokenizer]).
+     *!
+     *!   The context information provided by @[basic_tokenizer]
+     *!   is further extended with the following:
+     *!   @mapping
+     *!     @member string "file"
+     *!       Filename where the token was found.
+     *!
+     *!     @member int(0..) "pike_major"
+     *!     @member int(0..) "pike_minor"
+     *!       Major and minor version of Pike to be emulated.
+     *!
+     *!     @member string "pragma_*"
+     *!       State of pragma @tt{*@}. Only present if a corresponding
+     *!       @tt{#pragma@} statement is active.
+     *!   @endmapping
+     *!
+     *! @note
+     *!   As noted before: Do NOT perform destructive changes on this
+     *!   mapping.
+     *!
+     *! @seealso
+     *!   @[get_context()], @[set_context()]
+     */
+
+    PIKEFUN void yyerror(string msg, mixed ... extras)
+      flags ID_STATIC;
+    {
+      if (extras) {
+	f_sprintf(args);
+      }
+      push_int(0);
+      ref_push_string(MK_STRING("scanner"));
+      Pike_sp[0] = Pike_sp[-3];
+      Pike_sp[-3].type = PIKE_T_INT;
+      Pike_sp[-3].subtype = 0;
+      Pike_sp[-3].u.integer = SL_ERROR;
+      Pike_sp++;
+
+      apply_current(tc_pt_inh_report, 4);
+    }
+
+    PIKEVAR object(Token) current_token;
+
+    PIKEVAR mapping(string:program(Token)) token_lookup;
+
+    PIKEFUN void set_token_lookup(mapping(string:program(Token)) token_lookup)
+    {
+      if (THIS->token_lookup) free_mapping(THIS->token_lookup);
+      if ((THIS->token_lookup = token_lookup)) {
+	add_ref(THIS->token_lookup);
+      }
+    }
+
+    PIKEFUN void handle_pragma(string pragma, string rest)
+      flags ID_STATIC;
+    {
+      /* Store pragmas in context prefixed with "pragma_" */
+      ref_push_string(MK_STRING("pragma_"));
+      ref_push_string(pragma);
+      f_add(2);
+      ref_push_string(rest);
+      apply_current(tc_pt_inh_set_context, 2);
+      pop_n_elems(2);	/* Keep one element on the stack. */
+    }
+
+    PIKEFUN string parse_string(string raw)
+      flags ID_STATIC;
+    {
+      struct string_builder buf;
+      ONERROR err;
+
+      if (raw->len == 0) {
+	ref_push_string(MK_STRING("Empty string passed to parse_string()."));
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 1);
+	pop_stack();
+	return;	/* Return the empty string */
+      }
+      if ((raw->len < 2) ||
+	  (index_shared_string(raw, 0) !=
+	   index_shared_string(raw, raw->len-1))) {
+	ref_push_string(raw);
+	ref_push_string(MK_STRING("Unterminated string or character constant %s."));
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+	pop_stack();
+      }
+
+      /* The result will be at least as wide as the raw string. */
+      init_string_builder(&buf, raw->size_shift);
+      SET_ONERROR(err, free_string_builder, &buf);
+
+      switch(raw->size_shift)
+      {
+#define PS_CASE(SHIFT)							\
+      case SHIFT:							\
+	{								\
+	  PIKE_CONCAT(p_wchar, SHIFT) *raw_str;				\
+	  ptrdiff_t off;						\
+	  raw_str = PIKE_CONCAT(STR,SHIFT)(raw);			\
+	  for (off = 1; off < raw->len-1; off++) {			\
+	    ptrdiff_t end = off;					\
+	    while ((end < raw->len-1) && (raw_str[end] != '\\')) {	\
+	      end++;							\
+	    }								\
+	    if (off != end) {						\
+	      string_builder_append(&buf, MKPCHARP(raw_str+off, 0),	\
+				    end - off);				\
+	      off = end;						\
+	    }								\
+	    if (off+1 < raw->len-1) {					\
+	      p_wchar2 code;						\
+	      switch(code = raw_str[++off]) {				\
+	      case 'a':	/* Alert (BEL), 7 */				\
+		string_builder_putchar(&buf, 7);			\
+		break;							\
+	      case 'b':	/* Backspace (BS), 8 */				\
+		string_builder_putchar(&buf, 8);			\
+		break;							\
+	      case 't':	/* Tab (HT), 9 */				\
+		string_builder_putchar(&buf, 9);			\
+		break;							\
+	      case 'n':	/* Newline (LF), 10 */				\
+		string_builder_putchar(&buf, 10);			\
+		break;							\
+	      case 'v':	/* Vertical tab (VT), 11 */			\
+		string_builder_putchar(&buf, 11);			\
+		break;							\
+	      case 'f':	/* Form-feed (FF), 12 */			\
+		string_builder_putchar(&buf, 12);			\
+		break;							\
+	      case 'r':	/* Return (CR), 13 */				\
+		string_builder_putchar(&buf, 13);			\
+		break;							\
+	      case 'e':	/* Escape (ESC), 27 */				\
+		string_builder_putchar(&buf, 27);			\
+		break;							\
+									\
+	      case '0':							\
+	      case '1':							\
+	      case '2':							\
+	      case '3':							\
+	      case '4':							\
+	      case '5':							\
+	      case '6':							\
+	      case '7':	/* Octal escape. */				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  while ((off < raw->len) &&				\
+			 ((c = raw_str[off]) <= '7') &&			\
+			 (c >= '0')) {					\
+		    val = val*8 + (c - '0');				\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      case 'd':	/* Decimal escape. */				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  off++;						\
+		  while ((off < raw->len) &&				\
+			 ((c = raw_str[off]) <= '9') &&			\
+			 (c >= '0')) {					\
+		    val = val*10 + (c - '0');				\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      case 'U':	/* Length 8 unicode escape. */			\
+		if (off+8 < (end = raw->len)) {				\
+		  end = off+9;						\
+		}							\
+		goto PIKE_CONCAT(do_read_hex, SHIFT);			\
+	      case 'u':	/* Length 4 unicode escape. */			\
+		if (off+4 < (end = raw->len)) {				\
+		  end = off+5;						\
+		}							\
+		goto PIKE_CONCAT(do_read_hex, SHIFT);			\
+	      case 'x':	/* Hexadecimal escape. */			\
+		end = raw->len;						\
+	      PIKE_CONCAT(do_read_hex, SHIFT):				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  off++;						\
+		  while ((off < end) &&					\
+			 ((c = raw_str[off]) <= 'f') &&			\
+			 (c >= '0') &&					\
+			 ((c <= '9') || (c >= 'a') ||			\
+			  ((c >= 'A') && (c <= 'F')))) {		\
+		    val *= 16;						\
+		    if (c >= 'A') {					\
+		      val += (c+(10-'A')) & 15;				\
+		    } else {						\
+		      val += c - '0';					\
+		    }							\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+									\
+		  if ((code != 'x') && (off != end)) {			\
+		    /* Short Unicode escape. */				\
+		  }							\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      default:							\
+		/* FIXME: Warn? */					\
+	      case '\\':						\
+	      case '\"':						\
+	      case '\'':						\
+		string_builder_putchar(&buf, code);			\
+		break;							\
+	      }								\
+	    }								\
+	  }								\
+	}								\
+	break
+	PS_CASE(0);
+	PS_CASE(1);
+	PS_CASE(2);
+#undef PS_CASE
+      default:
+	push_int(raw->size_shift);
+	ref_push_string(raw);
+	ref_push_string(MK_STRING("Unsupported string shift %d on string %O."));
+	apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 3);
+	pop_stack();
+	break;
+      }
+      UNSET_ONERROR(err);
+      push_string(finish_string_builder(&buf));
+      stack_pop_n_elems_keep_top(args);
+    }
+
+    PIKEFUN void change_compiler_compatibility(int major, int minor)
+      flags ID_STATIC;
+    {
+      ref_push_string(MK_STRING("pike_major"));
+      push_int(major);
+      apply_current(tc_pt_inh_set_context, 2);
+      ref_push_string(MK_STRING("pike_minor"));
+      push_int(minor);
+      apply_current(tc_pt_inh_set_context, 2);
+      pop_n_elems(4-1);	/* Keep one element on the stack. */
+    }
+
+    PIKEFUN void preprocess(string cmd, string extras)
+      flags ID_STATIC;
+    {
+      struct pike_string *pragma_str;
+      struct pike_string *error_str;
+      struct pike_string *warning_str;
+      struct pike_string *line_str;
+      struct pike_string *pike_str;
+#define MKSTR(SYM) \
+    MAKE_CONST_STRING(PIKE_CONCAT(SYM, _str), #SYM)
+      MKSTR(pragma);
+      MKSTR(error);
+      MKSTR(warning);
+      MKSTR(line);
+      MKSTR(pike);
+#undef MKSTR
+      if (cmd == pragma_str) {
+	struct pike_string *format_str;
+	MAKE_CONST_STRING(format_str, "%[^ \t]%*[ \t]%s");
+	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_pragma_fun_num,
+		      low_sscanf(extras, format_str, 0));
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == error_str) {
+	push_int(SL_ERROR);
+	push_int(0);
+	ref_push_string(MK_STRING("preprocessor"));
+	ref_push_string(MK_STRING("#error: %s"));
+	ref_push_string(extras);
+	apply_current(tc_pt_inh_report, 4);
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == warning_str) {
+	push_int(SL_WARNING);
+	push_int(0);
+	ref_push_string(MK_STRING("preprocessor"));
+	ref_push_string(MK_STRING("#warning: %s"));
+	ref_push_string(extras);
+	apply_current(tc_pt_inh_report, 4);
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == pike_str) {
+	/* FIXME: Use more paranoid parsing of version? */
+	apply_current(f_TokenizingCompiler_pike_tokenizer_change_compiler_compatibility_fun_num,
+		      low_sscanf(extras, MK_STRING("%d.%d"), 0));
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == line_str) {
+	struct pike_string *format_string;
+	int res;
+	MAKE_CONST_STRING(format_string, "%[^ \t]%*[ \t]%s");
+	res = low_sscanf(extras, format_string, 0);
+	if (!res) {
+	  push_int(SL_ERROR);
+	  push_int(0);
+	  ref_push_string(MK_STRING("preprocessor"));
+	  ref_push_string(MK_STRING("Bad directive: #line %s"));
+	  ref_push_string(extras);
+	  apply_current(tc_pt_inh_report, 4);
+	  pop_n_elems(args);
+	  /* NOTE: We keep one argument on the stack. */
+	  return;
+	}
+	if (res == 1) {
+	  push_constant_text("");
+	}
+	cmd = Pike_sp[-2].u.string;
+	extras = Pike_sp[-1].u.string;
+	args += 2;
+      }
+      /* Old-style line directive. */
+      {
+	int res;
+	ref_push_string(MK_STRING("line"));
+	if (!(res = low_sscanf(cmd, MK_STRING("%d"), 0)) ||
+	    (Pike_sp[-1].type != PIKE_T_INT)) {
+	  push_int(SL_ERROR);
+	  push_int(0);
+	  ref_push_string(MK_STRING("preprocessor"));
+	  ref_push_string(MK_STRING("Bad directive: #line %s %s"));
+	  ref_push_string(cmd);
+	  ref_push_string(extras);
+	  apply_current(tc_pt_inh_report, 4);
+	  pop_n_elems(args + res + 1);
+	  /* NOTE: We keep one argument on the stack. */
+	  return;
+	}
+	/* Set line_no. */
+	apply_current(tc_pt_inh_set_context, 2);
+	pop_stack();
+	if (extras->len) {
+	  /* NOTE: extras is always at the top of the stack here. */
+	  apply_current(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num,
+		     1);
+	  Pike_sp[0] = Pike_sp[-1];
+	  copy_shared_string(Pike_sp[-1].u.string, MK_STRING("file"));
+	  Pike_sp++;
+	  apply_current(tc_pt_inh_set_context, 2);
+	}
+	pop_n_elems(args-1);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      }
+    }
+
+    /*! @decl Token handle(string symbol)
+     *!
+     *! Token factory.
+     *!
+     *! @seealso
+     *!   @[token_lookup]
+     */
+    PIKEFUN Token handle(string symbol)
+      flags ID_STATIC;
+    {
+      /* Make place for the token program. */
+      Pike_sp[0] = Pike_sp[-1];
+      Pike_sp[-1].type = PIKE_T_INT;
+      Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      Pike_sp[-1].u.integer = 0;
+      Pike_sp++;
+
+      apply_current(tc_pt_inh_get_context, 0);
+
+      /* Stack is now:
+       *
+       * Pike_sp[-3]	UNDEFINED.
+       * Pike_sp[-2]	symbol.
+       * Pike_sp[-1]	context.
+       */
+
+      args = 3;
+
+      if (THIS->token_lookup) {
+	mapping_index_no_free(Pike_sp-3, THIS->token_lookup, Pike_sp+1-args);
+	if (UNSAFE_IS_ZERO(Pike_sp-3)) {
+	  goto examine_symbol;
+	}
+      } else {
+	/* Try looking closer at the symbol. */
+      examine_symbol:
+	if (symbol->len) {
+	  struct pike_string *format_str;
+	  switch(index_shared_string(symbol, 0)) {
+	  case '\"':
+	  case '\'':
+	    /* String or character constant. */
+	    ref_push_string(symbol);
+	    apply_current(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num, 1);
+	    if (index_shared_string(symbol, 0) == '\'') {
+	      if (!Pike_sp[-1].u.string->len) {
+		ref_push_string(MK_STRING("Zero-length character constant: %s"));
+		ref_push_string(Pike_sp[-2].u.string);
+		apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		pop_stack();
+		push_int(0);
+	      } else {
+		INT32 val;
+		if (Pike_sp[-1].u.string->len > 1) {
+		  ref_push_string(MK_STRING("Long character constant: %s"));
+		  ref_push_string(Pike_sp[-2].u.string);
+		  apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		  pop_stack();
+		}
+		val = index_shared_string(Pike_sp[-1].u.string, 0);
+		pop_stack();
+		push_int(val);
+	      }
+	      args=4;
+	      add_ref(Pike_sp[-4].u.program = IntegerToken_program);
+	      Pike_sp[-4].type = T_PROGRAM;
+	    } else {
+	      args=4;
+	      add_ref(Pike_sp[-4].u.program = StringToken_program);
+	      Pike_sp[-4].type = T_PROGRAM;
+	    }
+	    break;
+
+	  case '0':
+	    /* Binary, hexadecimal, octal or floating point number. */
+	    if (symbol->len == 1) {
+	      push_int(0);
+	    } else if (!low_sscanf(symbol, MK_STRING("0%*[xX]%x"), 0) &&
+		       !low_sscanf(symbol, MK_STRING("0%*[bB]%b"), 0)) {
+	      /* NOTE: This sscanf will always succeed. */
+	      low_sscanf(symbol, MK_STRING("%o%s"), 0);
+	      goto sscanned_int;
+	    }
+	    goto got_int;
+	  case '1': case '2': case '3':
+	  case '4': case '5': case '6':
+	  case '7': case '8': case '9':
+	    /* Decimal or floating point number. */
+	    /* NOTE: This sscanf will always succeed. */
+	    low_sscanf(symbol, MK_STRING("%d%s"), 0);
+	  sscanned_int:
+	    if (Pike_sp[-1].u.string->len) {
+	      /* Possibly a float. */
+	      /* NOTE: This sscanf will always succeed. */
+	      low_sscanf(symbol, MK_STRING("%f%s"), 0);
+	      if (Pike_sp[-1].u.string->len) {
+		ref_push_string(MK_STRING("Strange numeric constant: %s"));
+		ref_push_string(symbol);
+		apply_current(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num,
+			   2);
+		pop_stack();
+	      }
+	      if (Pike_sp[-1].u.string->len > Pike_sp[-3].u.string->len) {
+		/* We've got a float. */
+		assign_svalue(Pike_sp-4, Pike_sp-2);
+		pop_n_elems(3);
+		args=4;
+		add_ref(Pike_sp[-4].u.program = FloatToken_program);
+		Pike_sp[-4].type = T_PROGRAM;
+		break;
+	      }
+	      /* Get rid of the float and the strings. */
+	      pop_n_elems(3);
+	    } else {
+	      /* Get rid of the empty string. */
+	      pop_stack();
+	    }
+	  got_int:
+	    args=4;
+	    add_ref(Pike_sp[-4].u.program = IntegerToken_program);
+	    Pike_sp[-4].type = T_PROGRAM;
+	    break;
+
+	  case '#':
+	    /* Preprocessor directive.
+	     */
+	    {
+	      struct svalue *save_sp = Pike_sp;
+	      MAKE_CONST_STRING(format_str, "#%*[ \t]%[^ \t]%*[ \t]%s");
+	      low_sscanf(symbol, format_str, 0);
+	      apply_current(f_TokenizingCompiler_pike_tokenizer_preprocess_fun_num,
+			    Pike_sp - save_sp);
+	      pop_stack();
+	    }
+	    /* FALL_THROUGH */
+
+	  case '/':
+	    if (symbol->len > 1) {
+	      /* Comment, since all other cases should be handled though
+	       * the mapping token_lookup.
+	       */
+	      pop_n_elems(args);
+	      push_int(0);
+	      return;
+	    }
+	  }
+	}
+	if (UNSAFE_IS_ZERO(Pike_sp - args)) {
+	  free_svalue(Pike_sp-args);
+	  add_ref(Pike_sp[-args].u.program = IdentifierToken_program);
+	  Pike_sp[-args].type = T_PROGRAM;
+	}
+      }
+      f_call_function(args);
+    }
+
+    PIKEFUN int(0..1) next()
+    {
+      if (THIS->current_token) {
+	free_object(THIS->current_token);
+	THIS->current_token = NULL;
+      }
+      while (1) {
+	apply_current(tc_pt_inh_next, 0);
+	if (UNSAFE_IS_ZERO(Pike_sp-1)) return;
+	pop_stack();
+	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
+				 Pike_fp->context->identifier_level +
+				 tc_pt_inh_current_symbol);
+	Pike_sp++;
+	if (SAFE_IS_ZERO(Pike_sp-1)) {
+	  return;
+	}
+
+	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_fun_num, 1);
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  add_ref(THIS->current_token = Pike_sp[-1].u.object);
+	  pop_stack();
+	  push_int(1);
+	  return;
+	}
+	pop_stack();
+      }
+    }
+
+    PIKEFUN Token value()
+    {
+      if (THIS->current_token) {
+	ref_push_object(THIS->current_token);
+      } else {
+	push_undefined();
+      }
+    }
+  }
+  /*! @endclass
+   */
+}
+/*! @endclass
+ */
+
+/*! @class Group
+ *!
+ *! Used to detect the start of a group. Also contains
+ *! the contents of the group.
+ *!
+ *! Currently one of @expr{"("@}, @expr{"["@} or @expr{"{"@}.
+ *!
+ *! @seealso
+ *!   @[EndGroup]
+ */
+PIKECLASS Group
+{
+  INHERIT Token;
+
+  static int group_token_inherited_create;
+  static int group_token_inherited__sprintf;
+  static int group_terminator_fun_num;
+
+  CVAR struct object *contents;		/* ADT.List of tokens. */
+  CVAR struct object *end_token;	/* Token */
+
+  INIT
+  {
+    THIS->contents = clone_object(List_program, 0);
+    THIS->end_token = NULL;
+  }
+
+  EXIT
+  {
+    if (THIS->end_token) {
+      free_object(THIS->end_token);
+      THIS->end_token = NULL;
+    }
+    if (THIS->contents) {
+      free_object(THIS->contents);
+      THIS->contents = NULL;
+    }
+  }
+
+  EXTRA
+  {
+    /* @decl constant token = "group"
+     */
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("group"), 0);
+    /* @decl constant is_group = 1
+     */
+    add_integer_constant("is_group", 1, 0);
+    /* @decl constant terminator = ""
+     *
+     * Terminator symbol.
+     *
+     * Overloaded with the actual terminator symbol.
+     */
+    group_terminator_fun_num =
+      add_constant(MK_STRING("terminator"), MK_STRING_SVALUE(""), 0);
+
+    /* We want to access the inherited create() and _sprintf(). */
+    group_token_inherited_create =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_create_fun_num);
+    group_token_inherited__sprintf =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_cq__sprintf_fun_num);
+  }
+
+  PIKEFUN void set_end_token(object(Token) token)
+  {
+    if (THIS->end_token) {
+      free_object(THIS->end_token);
+    }
+    add_ref(THIS->end_token = token);
+  }
+
+  PIKEFUN Token get_end_token()
+  {
+    pop_n_elems(args);
+    if (THIS->end_token) {
+      ref_push_object(THIS->end_token);
+    } else {
+      push_undefined();
+    }
+  }
+
+  /*! @decl List get_contents()
+   *!
+   *! @returns
+   *!   Returns the @[ADT.List] of tokens contained in the group.
+   */
+  PIKEFUN List get_contents()
+  {
+    pop_n_elems(args);
+    ref_push_object(THIS->contents);    
+  }
+
+  /*! @decl Group append(Token token)
+   *!
+   *!   Add @[token] to the group as appropriate.
+   *!
+   *! @returns
+   *!   Returns @[UNDEFINED] if @[token] was the @[EndGroup] token
+   *!   corresponding to this group.
+   *!
+   *!   Returns @[token] if @[token] is a @[Group].
+   *!
+   *!   Returns @expr{0@} (zero) otherwise.
+   */
+  PIKEFUN void append(object(Token) token)
+  {
+    /* FIXME: Object subtype? */
+    /* FIXME: Should check the value of the constants,
+     *        and not just the existence.
+     */
+    if (find_shared_string_identifier(MK_STRING("is_end_group"),
+				      token->prog) != -1) {
+      /* Group end marker. */
+      object_index_no_free(Pike_sp, token, 0, MK_STRING_SVALUE("symbol"));
+      Pike_sp++;
+      low_index_current_object_no_free(Pike_sp, group_terminator_fun_num);
+      Pike_sp++;
+      if (is_eq(Pike_sp-2, Pike_sp-1)) {
+	/* Group completed. */
+	if (THIS->end_token) {
+	  free_object(THIS->end_token);
+	}
+	add_ref(THIS->end_token = token);
+	pop_n_elems(args + 2);
+	push_undefined();
+      } else {
+	/* End of group with missing start. */
+#if 0
+	/* FIXME: Where can we find report()? */
+	push_int(2);
+	object_index_no_free(Pike_sp, token, 0, MK_STRING_SVALUE("context"));
+	Pike_sp++;
+	ref_push_string(MK_STRING("grouping"));
+	ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
+	push_svalue(Pike_sp-6);
+	push_svalue(Pike_sp-6);
+	apply_current(groupingcompiler_inh_report, 6);
+
+	pop_n_elems(args + 3);	/* Token + sym + terminator + returnval */
+#else /* !0 */
+	pop_n_elems(args + 2);	/* Token + sym + terminator */
+#endif /* 0 */
+
+	push_int(0);		/* Ignore the token. */
+      }
+    } else if (find_shared_string_identifier(MK_STRING("is_group"),
+					     token->prog) != -1) {
+      /* Contained group. */
+      ref_push_object(token);
+      apply_low(THIS->contents, f_List_append_fun_num, 1);
+      pop_stack();
+      /* Leave the group token on the stack. */
+    } else {
+      /* Default */
+      apply_low(THIS->contents, f_List_append_fun_num, 1);
+      pop_stack();
+      push_int(0);
+    }
+  }
+
+  /*! @decl void create(string symbol, mapping(string:string|int)|void context)
+   *!
+   *!   Create a group grouped with the start symbol @[symbol].
+   *!
+   *! @note
+   *!   Will be called without arguments for the file level group.
+   */
+  PIKEFUN void create(string|void symbol,
+		      mapping(string:string|int)|void context)
+    flags ID_STATIC;
+  {
+    if (symbol) {
+      apply_current(group_token_inherited_create, args);
+    }
+  }
+
+  /*! @decl string _sprintf(int c, mapping(string:mixed)|void attr)
+   *!
+   *!   Describe a token group.
+   */
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void attr)
+    flags ID_STATIC;
+  {
+    int cnt = 0;
+    push_constant_text("Tokenizer.Group(/* ");
+    if (!THIS->end_token) {
+      push_constant_text("End token %O not found yet. ");
+      low_index_current_object_no_free(Pike_sp, group_terminator_fun_num);
+      Pike_sp++;
+      f_sprintf(2);
+      cnt++;
+    } else {
+      push_constant_text("End token found. ");
+      cnt++;
+    }
+    push_constant_text("*/\n");
+    push_int(c);
+    apply_current(group_token_inherited__sprintf, 1);
+    if (c == 'O') {
+      push_constant_text(", %O, %O");
+    } else {
+      push_constant_text(", %s, %s");
+    }
+    ref_push_object(THIS->contents);
+    if (THIS->end_token) {
+      ref_push_object(THIS->end_token);
+    } else {
+      push_int(0);
+    }
+    f_sprintf(3);
+    push_constant_text(")");
+    f_add(cnt+5);
+    stack_pop_n_elems_keep_top(args);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class ParenGroup
+ */
+PIKECLASS ParenGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = ")"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE(")"), 0);
+  }
+}
+/*! @endclass
+ */
+
+PIKECLASS BracketGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = "]"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("]"), 0);
+  }
+}
+
+PIKECLASS BraceGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = "}"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("}"), 0);
+  }
+}
+
+/*! @class EndGroup
+ *!
+ *! Used to detect the end of a group.
+ *!
+ *! Currently one of @expr{"}"@}, @expr{"]"@} or @expr{")"@}.
+ *!
+ *! @seealso
+ *!   @[Group]
+ */
+PIKECLASS EndGroup
+{
+  INHERIT Token;
+  EXTRA
+  {
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("end_group"), 0);
+    add_integer_constant("is_end_group", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class GroupingCompiler
+ */
+PIKECLASS GroupingCompiler
+{
+  /* @decl inherit TokenizingCompiler
+   */
+  INHERIT TokenizingCompiler;
+
+  static int groupingcompiler_inh_report = -1;
+
+  EXTRA
+  {
+    groupingcompiler_inh_report =
+      really_low_reference_inherited_identifier(NULL, 2,
+						f_compiler_report_fun_num);
+  }
+
+  PIKEFUN List group(TokenizingCompiler.pike_tokenizer tokenizer)
+  {
+    int not_first = 0;
+    struct svalue *orig_sp;
+    struct object *root_group = clone_object(Group_program, 0);
+    int append_fun_num = -1;
+
+    /* fprintf(stderr, "GroupingCompiler()->group(): Start.\n"); */
+    ref_push_object(OBJ2_GROUP(root_group)->contents);
+    push_object(root_group);
+    orig_sp = Pike_sp;
+    while (1) {
+      push_int(0);	/* Target svalue. */
+      push_int(0);	/* index lvalue. */
+      push_int(0);	/* Pad. */
+      Pike_sp[0].type = T_SVALUE_PTR;
+      Pike_sp[0].u.lval = Pike_sp - 3;	/* Point at target. */
+      Pike_sp[1].type = T_VOID;
+      Pike_sp += 2;
+      if (!foreach_iterate(tokenizer, not_first)) {
+	/* Done.
+	 *
+	 * Clean up the stack.
+	 */
+	/* fprintf(stderr, "GroupingCompiler()->group(): Done.\n"); */
+	pop_n_elems(5);
+	break;
+      }
+      not_first = 1;
+      pop_n_elems(4);	/* Get rid of the lvalues. */
+
+      /* Stack is now:
+       *
+       *   pike_tokenizer()		tokenizer
+       *   List()			root_group->contents
+       *   Group()			root_group
+       *   FooGroup(token)	<- orig_sp
+       *   ...
+       *   BarGroup(token)
+       *   Token
+       */
+
+      /* Append the token to the group.
+       *
+       * There are three cases:
+       *
+       *   o The new token was a group. It will then be left on the stack.
+       *
+       *   o The new token was an end marker. UNDEFINED will then be on
+       *     the stack.
+       *
+       *   o The new token was successfully appended. A plain 0 (zero) will
+       *     then be on the stack.
+       */
+
+      /* fprintf(stderr, "  Examining svalue: "); */
+      /* print_svalue(stderr, Pike_sp-1); */
+      /* fprintf(stderr, "... "); */
+      /* Look up the append function if needed. */
+      if ((append_fun_num == -1) &&
+	  ((append_fun_num =
+	    find_shared_string_identifier(MK_STRING("append"),
+					  Pike_sp[-2].u.object->prog)) == -1))
+	Pike_error("Group without append(): %O\n", Pike_sp-2);
+      apply_low(Pike_sp[-2].u.object, append_fun_num, 1);
+
+      if (Pike_sp[-1].type == PIKE_T_OBJECT) {
+	/* New group.
+	 *
+	 * Basically: Don't do a thing.
+	 */
+	if (Pike_sp[-1].u.object->prog != Pike_sp[-2].u.object->prog) {
+	  /* We need to look up append() again. */
+	  append_fun_num = -1;
+	}
+	/* fprintf(stderr, "new group.\n"); */
+	continue;
+      }
+      if ((Pike_sp[-1].type != T_INT) || (Pike_sp[-1].u.integer)) {
+	Pike_error("Unexpected return value from Group()->append(): %O.\n",
+		   Pike_sp-1);
+      }
+      if (Pike_sp[-1].subtype) {
+	/* UNDEFINED. End marker.
+	 *
+	 * Pop the UNDEFINED, and the group we've just completed.
+	 */
+	if (Pike_sp[-2].u.object->prog != Pike_sp[-3].u.object->prog) {
+	  /* We need to look up append() again. */
+	  append_fun_num = -1;
+	}
+	/* fprintf(stderr, "end marker.\n"); */
+	pop_n_elems(2);
+	continue;
+      }
+      /* 0: Token successfully added.
+       *
+       * Pop the zero.
+       */
+      /* fprintf(stderr, "member.\n"); */
+      pop_stack();
+    }
+    while (Pike_sp != orig_sp) {
+      push_int(2);
+      push_undefined();
+      ref_push_string(MK_STRING("grouping"));
+      ref_push_string(MK_STRING("Missing %O at end of file."));
+      object_index_no_free(Pike_sp, Pike_sp[-5].u.object, Pike_sp[-5].subtype,
+			   MK_STRING_SVALUE("terminator"));
+      Pike_sp++;
+      apply_current(groupingcompiler_inh_report, 5);
+      pop_n_elems(2);
+    }
+
+#ifdef PIKE_DEBUG
+    if (Pike_sp[-1].u.object != root_group) {
+      Pike_fatal("GroupingCompiler()->group(): Unexpected value on stack.\n");
+    }
+#endif /* PIKE_DEBUG */
+
+    /* Drop the root group */
+    pop_stack();
+
+    /* Left on the stack now is root_group->contents,
+     * and our arguments.
+     */
+
+    /* Done for real. */
+    stack_pop_n_elems_keep_top(args);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class PikeCompiler
+ */
+PIKECLASS PikeCompiler
+{
+  INHERIT GroupingCompiler;
+
+  /* Helper functions
+   *
+   * NOTE: These are to be called from child classes to PikeCompiler!
+   */
+
+  static void report(int severity, struct pike_string *msg)
+  {
+    push_int(severity);
+    push_svalue(Pike_sp-2);
+    ref_push_string(MK_STRING("parser"));
+    ref_push_string(msg);
+    /* compiler is three inherits away in our parent program. */
+    apply_external(1,
+		   f_compiler_report_fun_num +
+		   PikeCompiler_program->inherits[3].identifier_level,
+		   4);
+    pop_stack();
+  }
+
+  /* Pushes a quadruple < Token, token, symbol, context >. */
+  static int push_current_token(struct object *tokens_left)
+  {
+    if (tokens_left && tokens_left->prog) {
+      apply_lfun(tokens_left, LFUN_NOT, 0);
+      if ((Pike_sp[-1].type == T_INT) && !Pike_sp[-1].u.integer) {
+	pop_stack();
+	apply_shared(tokens_left, MK_STRING("value"), 0);
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
+			       Pike_sp[-1].subtype, MK_STRING_SVALUE("token"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_STRING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  object_index_no_free(Pike_sp, Pike_sp[-2].u.object, 
+			       Pike_sp[-2].subtype, MK_STRING_SVALUE("symbol"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_STRING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  object_index_no_free(Pike_sp, Pike_sp[-3].u.object,
+			       Pike_sp[-3].subtype,
+			       MK_STRING_SVALUE("context"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_MAPPING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  return 1;
+	}
+	report(SL_WARNING, MK_STRING("Bad value returned from scanner."));
+      }
+      /* Note: Either pops a 1, or a bad value. */
+      pop_stack();
+    }
+    push_undefined();
+    push_undefined();
+    push_undefined();
+    push_undefined();
+    return 0;
+  }
+
+  static void pop_current_token()
+  {
+    pop_n_elems(4);
+  }
+
+  static void advance(struct object *tokens_left)
+  {
+    apply_shared(tokens_left, MK_STRING("next"), 0);
+    pop_stack();
+  }
+
+#define GET_TOKEN()	(Pike_sp[-4].u.object)
+#define IS_SYMBOL(SYM)	(Pike_sp[-2].u.string == (SYM))
+#define IS_TOKEN(TOK)	(Pike_sp[-3].u.string == (TOK))
+
+  /* Meta programs here */
+
+  /*! @class Modifier
+   */
+  PIKECLASS Modifier
+    program_flags PROGRAM_USES_PARENT;
+  {
+    INHERIT IdentifierToken;
+
+    /*! @decl void parse_modifier(Iterator tokens_left)
+     *!
+     *! Called at
+     *!   modifier ·
+     */
+    PIKEFUN void parse_modifier(object(Iterator) tokens_left)
+    {
+    }
+  }
+  /*! @endclass
+   */
+
+  PIKECLASS Break
+    program_flags PROGRAM_USES_PARENT;
+  {
+    INHERIT IdentifierToken;
+    PIKEVAR object(Token) label;
+
+#define tObjImpl_SCOPE	tObj
+#define tObjImpl_MODIFIERS	tObj
+
+    /*! @decl void parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                               Modifiers current_modifiers)
+     *! Called at
+     *!   break · ';'
+     *!   break · label ';'
+     */
+    PIKEFUN void parse_meta_program(Scope scope, Iterator tokens_left,
+				    Modifiers|void current_modifiers)
+    {
+      if (THIS->label) {
+	free_object(THIS->label);
+	THIS->label = NULL;
+      }
+
+      f_this_object(0);
+      apply_shared(scope, MK_STRING("add_meta_object"), 1);
+      pop_stack();
+
+      push_current_token(tokens_left);
+
+      if (IS_TOKEN(MK_STRING("identifier"))) {
+
+	report(SL_NOTICE, MK_STRING("Got break with label."));
+
+	add_ref(THIS->label = GET_TOKEN());
+	pop_current_token();
+
+	advance(tokens_left);
+	push_current_token(tokens_left);
+      }
+      if (IS_SYMBOL(MK_STRING(";"))) {
+	report(SL_NOTICE, MK_STRING("Got semicolon after break."));
+
+	pop_current_token();
+	advance(tokens_left);
+	pop_n_elems(args);
+	return;
+      }
+
+      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
+      pop_current_token();
+      pop_n_elems(args);
+    }
+  }
+
+  PIKECLASS BreakNoLabel
+    program_flags PROGRAM_USES_PARENT;
+  {
+    INHERIT PikeCompiler_Break;
+
+    /*! @decl void parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                               Modifiers current_modifiers)
+     *! Called at
+     *!   break · ';'
+     */
+    PIKEFUN void parse_meta_program(Scope scope, Iterator tokens_left,
+				    Modifiers|void current_modifiers)
+    {
+      if (THIS->label) {
+	free_object(THIS->label);
+	THIS->label = NULL;
+      }
+
+      f_this_object(0);
+      apply_shared(scope, MK_STRING("add_meta_object"), 1);
+      pop_stack();
+
+      push_current_token(tokens_left);
+
+      if (IS_SYMBOL(MK_STRING(";"))) {
+	report(SL_NOTICE, MK_STRING("Got semicolon after break."));
+
+	pop_current_token();
+	advance(tokens_left);
+	pop_n_elems(args);
+	return;
+      }
+
+      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
+      pop_current_token();
+      pop_n_elems(args);
+    }
+  }
+
+  PIKECLASS pike_tokenizer
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
+  {
+    static int pc_pt_inh_create = -1;
+
+    EXTRA {
+      /* @decl inherit GroupingCompiler::pike_tokenizer
+       */
+      /* Note: TokenizingCompiler is the first inherit in GroupingCompiler,
+       *       and thus inherit #2 in our parent.
+       */
+      low_inherit(TokenizingCompiler_pike_tokenizer_program,
+		  0,
+		  TokenizingCompiler_pike_tokenizer_program_fun_num +
+		  Pike_compiler->previous->new_program->inherits[2].identifier_level,
+		  1 + 42,	/* One parent level up. */
+		  0,
+		  NULL);
+      /* Note: basic_tokenizer is the first inherit in the pike_tokenizer
+       *       inherited above, and is thus inherit #2 in us.
+       */
+      pc_pt_inh_create =
+	really_low_reference_inherited_identifier(NULL, 2,
+						  f_compiler_basic_tokenizer_create_fun_num);
+    }
+
+    PIKEFUN mapping(string:program(Token))
+      get_lookup_for_pike_version(int major, int minor)
+      prototype;
+    {}
+
+    PIKEFUN void change_compiler_compatibility(int major, int minor)
+    {
+      apply_current(f_PikeCompiler_pike_tokenizer_get_lookup_for_pike_version_fun_num, 2);
+      apply_current(f_TokenizingCompiler_pike_tokenizer_set_token_lookup_fun_num +
+		    PikeCompiler_pike_tokenizer_program->inherits[2].identifier_level,
+		    1);
+    }
+
+    PIKEFUN void create(string data)
+    {
+      push_int(PIKE_MAJOR_VERSION);
+      push_int(PIKE_MINOR_VERSION);
+      apply_current(f_PikeCompiler_pike_tokenizer_change_compiler_compatibility_fun_num,
+		    2);
+      pop_stack();
+      apply_current(pc_pt_inh_create, args);
+    }
+  }
+}
+/*! @endclass
+ */
+
+#if 0
+PIKEFUN object Compile(object tokenizer, object|void handler)
+{
+  struct compiler_context context;
+  int res;
+
+  if (!tokenizer->prog) {
+    SIMPLE_BAD_ARG_ERROR("Compile", 1, "Tokenizer.pike_tokenizer");
+  }
+  add_ref(context.lexer = tokenizer);
+  context.lex_value = find_identifier("value", tokenizer->prog);
+  context.lex_next = FIND_LFUN(tokenizer->prog, LFUN_ADD_EQ);
+  if (handler && (handler->type == PIKE_T_OBJECT) &&
+      handler->u.object->prog) {
+    add_ref(context.handler = handler->u.object);
+    context.handle_report_msg =
+      find_identifier("report_msg", handler->u.object->prog);
+  } else {
+    context.handler = NULL;
+    context.handle_report_msg = -1;
+  }
+
+  context.result.type = T_INT;
+  context.result.subtype = NUMBER_NUMBER;
+  context.result.u.integer = 0;
+
+  context.free_sval_list = NULL;
+  context.sval_block_list = NULL;
+
+  switch (tokenizer_yyparse(&context)) {
+  case 0:	/* Success. */
+    break;
+  case 1:	/* Abort. */
+  case 2:	/* Overflow. */
+  default:	/* Unknown. */
+    fprintf(stderr, "Compilation failed.\n");
+    break;
+  }
+
+  pop_n_elems(args);
+  push_svalue(&context.result);
+  free_context(&context);
+
+  return;
+}
+#endif /* 0 */
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+
+  f_List_append_fun_num =
+    really_low_find_shared_string_identifier(MK_STRING("append"),
+					     List_program, 0);
+
+  {
+    struct pike_string *type_name;
+    struct svalue type_value;
+
+    /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
+    type_value.type = PIKE_T_TYPE;
+    type_value.subtype = 0;
+    type_value.u.type = CONSTTYPE(tName("SeverityLevel", tInt03));
+    add_constant(MK_STRING("SeverityLevel"), &type_value, 0);
+    free_svalue(&type_value);
+
+    add_integer_constant("NOTICE",  SL_NOTICE, 0);
+    add_integer_constant("WARNING", SL_WARNING, 0);
+    add_integer_constant("ERROR",   SL_ERROR, 0);
+    add_integer_constant("FATAL",   SL_FATAL, 0);
+  }
+
+#if 0
+  fprintf(stderr, "\nGroupingCompiler:\n");
+  dump_program_tables(GroupingCompiler_program, 2);
+  fprintf(stderr, "\nTokenizingCompiler::pike_tokenizer:\n");
+  dump_program_tables(TokenizingCompiler_pike_tokenizer_program, 2);
+  fprintf(stderr, "\n");
+
+  init_tokenizer_yyparse();
+#endif /* 0 */
+
+  parsetree_module_init();
+}
+
+PIKE_MODULE_EXIT
+{
+  parsetree_module_exit();
+
+  EXIT
+}
