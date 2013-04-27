@@ -2241,6 +2241,23 @@ test_any([[
   return B()->f() == A;
 ]], 1)
 
+test_any([[
+  class A {
+    class Nested {
+      constant nested = 1;
+    }
+  };
+  class B {
+    inherit A;
+    class Nested {
+      inherit ::this_program;
+      constant other = 2;
+    }
+  };
+  object n = B()->Nested();
+  return n->nested + n->other;
+]], 3)
+
 dnl test_compile_error(0())
 test_compile_error(1())
 test_compile_error(""())
