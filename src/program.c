@@ -4580,15 +4580,12 @@ void check_for_facet_inherit(struct program *p)
 #endif
 
 
-/*
- * make this program inherit another program
- */
-PMOD_EXPORT void low_inherit(struct program *p,
-			     struct object *parent,
-			     int parent_identifier,
-			     int parent_offset,
-			     INT32 flags,
-			     struct pike_string *name)
+static void lower_inherit(struct program *p,
+			  struct object *parent,
+			  int parent_identifier,
+			  int parent_offset,
+			  INT32 flags,
+			  struct pike_string *name)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;
@@ -4857,13 +4854,29 @@ PMOD_EXPORT void low_inherit(struct program *p,
     fun.id_flags |= ID_INHERITED;
     add_to_identifier_references(fun);
   }
+}
+
+/*
+ * make this program inherit another program
+ */
+PMOD_EXPORT void low_inherit(struct program *p,
+			     struct object *parent,
+			     int parent_identifier,
+			     int parent_offset,
+			     INT32 flags,
+			     struct pike_string *name)
+{
+  lower_inherit(p, parent, parent_identifier, parent_offset, flags, name);
 
   if (parent_offset) {
     if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT)) {
       /* We'll need the parent pointer as well... */
       struct program_state *state = Pike_compiler;
 
-      while (state && parent_offset--) {
+      /* parent offset was increased by 42 by the caller... */
+      parent_offset -= 42;
+
+      while (state && state->new_program && parent_offset--) {
 	state->new_program->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
 	state = state->previous;
       }
