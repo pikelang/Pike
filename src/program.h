@@ -826,8 +826,9 @@ int low_reference_inherited_identifier(struct program_state *q,
 				       struct pike_string *name,
 				       int flags);
 int find_inherit(struct program *p, struct pike_string *name);
-node *reference_inherited_identifier(struct pike_string *super_name,
-				     struct pike_string *function_name);
+PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
+					       struct pike_string *inherit,
+					       struct pike_string *name);
 void rename_last_inherit(struct pike_string *n);
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,

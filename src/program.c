@@ -1978,13 +1978,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	}
 
 	/* Find ::name in the parent. */
-	i = -1;
-	for (e = parent->num_inherits; e--;) {
-	  if (parent->inherits[e].inherit_level != 1) continue;
-	  i = low_reference_inherited_identifier(state->previous, e,
-						 name, SEE_PROTECTED);
-	  if (i != -1) break;
-	}
+	i = reference_inherited_identifier(state->previous, NULL, name);
 	if (i == -1) {
 	  my_yyerror("Failed to find previous inherited definition of %S "
 		     "in parent.", name);
@@ -4334,120 +4328,43 @@ int find_inherit(struct program *p, struct pike_string *name)
   return 0;
 }
 
-/* Reference the symbol super_name::function_name */
-node *reference_inherited_identifier(struct pike_string *super_name,
-				     struct pike_string *function_name)
+/* Reference the symbol inherit::name in the lexical context
+ * specified by state.
+ *
+ * Returns the reference in state->new_program if found.
+ */
+PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
+					       struct pike_string *inherit,
+					       struct pike_string *name)
 {
-  int n,e,id;
-  struct compilation *c = THIS_COMPILATION;
-  struct program_state *state=Pike_compiler->previous;
-
+  int e, id;
   struct program *p;
 
-
 #ifdef PIKE_DEBUG
-  if(function_name!=debug_findstring(function_name))
-    Pike_fatal("reference_inherited_function on nonshared string.\n");
+  if (name != debug_findstring(name))
+    Pike_fatal("reference_inherited_identifier on nonshared string.\n");
 #endif
 
-  p=Pike_compiler->new_program;
+  if (!state) state = Pike_compiler;
+
+  p = Pike_compiler->new_program;
 
   /* FIXME: This loop could be optimized by advancing by the number
    *        of inherits in the inherit. But in that case the loop
    *        would have to go the other way.
    */
-  for(e=p->num_inherits-1;e>0;e--)
-  {
-    if(p->inherits[e].inherit_level!=1) continue;
-    if(!p->inherits[e].name) continue;
+  for (e = p->num_inherits; e--;) {
+    if (p->inherits[e].inherit_level != 1) continue;
+    if (!p->inherits[e].name) continue;
 
-    if(super_name)
-      if(super_name != p->inherits[e].name)
-	continue;
+    if (inherit && (inherit != p->inherits[e].name)) continue;
 
-    id=low_reference_inherited_identifier(0,
-					  e,
-					  function_name,
-					  SEE_PROTECTED);
+    id = low_reference_inherited_identifier(state, e, name, SEE_PROTECTED);
 
-    if(id!=-1)
-      return mkidentifiernode(id);
-
-    if(ISCONSTSTR(function_name,"`->") ||
-       ISCONSTSTR(function_name,"`[]"))
-    {
-      return mknode(F_MAGIC_INDEX,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"`->=") ||
-       ISCONSTSTR(function_name,"`[]="))
-    {
-      return mknode(F_MAGIC_SET_INDEX,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"_indices"))
-    {
-      return mknode(F_MAGIC_INDICES,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"_values"))
-    {
-      return mknode(F_MAGIC_VALUES,mknewintnode(e),mknewintnode(0));
-    }
+    if (id != -1) return id;
   }
 
-
-  for(n=0;n<c->compilation_depth;n++,state=state->previous)
-  {
-    struct program *p=state->new_program;
-
-    /* FIXME: This loop could be optimized by advancing by the number
-     *        of inherits in the inherit. But in that case the loop
-     *        would have to go the other way.
-     */
-    for(e=p->num_inherits-1;e>0;e--)
-    {
-      if(p->inherits[e].inherit_level!=1) continue;
-      if(!p->inherits[e].name) continue;
-
-      if(super_name)
-	if(super_name != p->inherits[e].name)
-	  continue;
-
-      id=low_reference_inherited_identifier(state,e,function_name,SEE_PROTECTED);
-
-      if(id!=-1)
-	return mkexternalnode(p, id);
-
-      if(ISCONSTSTR(function_name,"`->") ||
-	 ISCONSTSTR(function_name,"`[]"))
-      {
-	return mknode(F_MAGIC_INDEX,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"`->=") ||
-	 ISCONSTSTR(function_name,"`[]="))
-      {
-	return mknode(F_MAGIC_SET_INDEX,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"_indices"))
-      {
-	return mknode(F_MAGIC_INDICES,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"_values"))
-      {
-	return mknode(F_MAGIC_VALUES,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-    }
-  }
-
-  return 0;
+  return -1;
 }
 
 /* FIXME: This function probably doesn't do what it is intended to do
