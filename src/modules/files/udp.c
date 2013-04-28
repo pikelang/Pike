@@ -1167,35 +1167,29 @@ static void udp_get_type(INT32 args)
  */
 static void udp_set_buffer(INT32 args)
 {
-  INT32 bufsize;
-  int flags;
+  INT_TYPE bufsize;
+  int flags = FILE_READ | FILE_WRITE;
+  char *c = NULL;
 
   if(FD==-1)
     Pike_error("Stdio.UDP->set_buffer() on closed file.\n");
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->set_buffer", 1);
-  if(Pike_sp[-args].type!=PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->set_buffer", 1, "int");
 
-  bufsize=Pike_sp[-args].u.integer;
+  get_all_args("Stdio.UDP->set_buffer", args, "%+.%s", &bufsize, &c);
+
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");
 
-  if(args>1)
+  if(c)
   {
-    if(Pike_sp[1-args].type != PIKE_T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Stdio.UDP->set_buffer", 2, "string");
-    char *c = Pike_sp[1-args].u.string->str;
+    flags = 0;
     do
     {
-        switch( *c )
-        {
-            case 'w': flags |= FILE_WRITE; break;
-            case 'r': flags |= FILE_READ;  break;
-        }
+      switch( *c )
+      {
+      case 'w': flags |= FILE_WRITE; break;
+      case 'r': flags |= FILE_READ;  break;
+      }
     } while( *c++ );
-  }else{
-    flags=FILE_READ | FILE_WRITE;
   }
   pop_n_elems(args);
 
