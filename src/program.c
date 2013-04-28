@@ -4347,7 +4347,7 @@ PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 
   if (!state) state = Pike_compiler;
 
-  p = Pike_compiler->new_program;
+  p = state->new_program;
 
   /* FIXME: This loop could be optimized by advancing by the number
    *        of inherits in the inherit. But in that case the loop
@@ -4355,8 +4355,6 @@ PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
    */
   for (e = p->num_inherits; e--;) {
     if (p->inherits[e].inherit_level != 1) continue;
-    if (!p->inherits[e].name) continue;
-
     if (inherit && (inherit != p->inherits[e].name)) continue;
 
     id = low_reference_inherited_identifier(state, e, name, SEE_PROTECTED);
