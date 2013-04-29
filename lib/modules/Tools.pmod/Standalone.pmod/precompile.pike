@@ -1738,13 +1738,66 @@ class ParseBlock
 	case "INHERIT":
 	  {
 	    int pos=search(x,PC.Token(";",0),e);
-	    mixed name=x[e+1];
-	    string define=make_unique_name("inherit",name,base,"defined");
-	    mapping attributes = parse_attributes(x[e+2..pos]);
+
 	    string p;
+	    string numid = "-1";
+	    string offset = "0";
 	    string indent = "  ";
 	    array pre = ({});
 	    array post = ({});
+
+	    mixed name=x[e+1];
+	    string define=make_unique_name("inherit",name,base,"defined");
+	    if ((string)name == "::") {
+	      e++;
+	      name = x[e+1];
+	      if ((name == "this_program") &&
+		  has_suffix(base, "_" + class_name)) {
+		define=make_unique_name("inherit",name,base,"defined");
+		name = UNDEFINED;
+		pre = ({
+		  PC.Token(
+sprintf("  do {\n"
+	"    int i__ =\n"
+	"      reference_inherited_identifier(Pike_compiler->previous, NULL,\n"
+	"                                     %s);\n"
+	"    if (i__ != -1) {\n"
+	"      struct program *p = Pike_compiler->previous->new_program;\n"
+	"      struct identifier *id__ = ID_FROM_INT(p, i__);\n"
+	"      if (IDENTIFIER_IS_CONSTANT(id__->identifier_flags) &&\n"
+	"          (id__->func.const_info.offset != -1)) {\n"
+	"        struct svalue *s = &PROG_FROM_INT(p, i__)->\n"
+	"          constants[id__->func.const_info.offset].sval;\n"
+	"        if (TYPEOF(*s) == T_PROGRAM) {\n"
+	"          p = s->u.program;\n",
+	allocate_string(sprintf("%q", class_name))),
+			   x[e]->line),
+		});
+		indent = "          ";
+		p = "p";
+		numid = "i__";
+		offset = "1 + 42";
+		post = ({
+		  PC.Token(
+sprintf("        } else {\n"
+	"          yyerror(\"Previous definition of %s is not a program.\");\n"
+	"        }\n"
+	"      } else {\n"
+	"        yyerror(\"Previous definition of %s is not constant.\");\n"
+	"      }\n"
+	"    } else {\n"
+	"      yyerror(\"Failed to find previous definition of %s.\");\n"
+	"    }\n"
+	"  } while(0);\n",
+	class_name, class_name, class_name),
+			   x[e]->line),
+		});
+	      } else {
+		error("Unsupported INHERIT syntax.\n");
+	      }
+	    }
+
+	    mapping attributes = parse_attributes(x[e+2..pos]);
 	    if (((string)name)[0] == '\"') {
 	      pre = ({
 		PC.Token("  do {\n"),
@@ -1768,14 +1821,16 @@ class ParseBlock
 		     "for inherit of strings.\n",
 		     name->file, name->line);
 	      }
-	    } else {
+	    } else if (name) {
 	      p = mkname((string)name, "program");
 	    }
 	    addfuncs +=
 	      IFDEF(define,
 		    pre + ({
-		      PC.Token(sprintf("%slow_inherit(%s, NULL, -1, 0, %s, NULL);\n",
-				       indent, p, attributes->flags || "0"),
+		      PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+				       "%s, %s, NULL);\n",
+				       indent, p, numid, offset,
+				       attributes->flags || "0"),
 			       x[e]->line),
 		    }) + post);
 	    ret += DEFINE(define);
