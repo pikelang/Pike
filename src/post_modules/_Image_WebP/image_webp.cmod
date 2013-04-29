@@ -84,11 +84,12 @@ static inline void free_yuv( struct yuv *x )
 static struct yuv *allocate_yuv( int w, int h )
 {
     struct yuv *res;
+    int halfpic, sz, halfrow;
 
     if( w & 1 ) w++;
     if( h & 1 ) h++;
 
-    int halfpic, sz, halfrow = w/2;
+    halfrow = w/2;
 
     // if( halfrow & 1 ) 
     //     halfrow++;
@@ -237,7 +238,7 @@ static struct object *convert_to_rgb( struct yuv *yuv )
 PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
 {
     int quality = 80, sharpness = 0, denoise = 0, profile = 0, 
-        threads=1, quantize=-1, maxtime;
+        threads=1, quantize=-1, maxtime = 0;
     int err;
     struct pike_string *res = NULL;
     struct image *img = (struct image *)x->storage;
