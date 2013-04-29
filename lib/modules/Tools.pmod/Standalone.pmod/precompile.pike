@@ -1701,7 +1701,7 @@ class ParseBlock
   array exitfuncs=({});
   array declarations=({});
 
-  void create(array(array|PC.Token) x, string base)
+  void create(array(array|PC.Token) x, string base, string class_name)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1729,7 +1729,7 @@ class ParseBlock
 	  if ((e+2 < sizeof(x)) && (((string)x[e+1])[0] == '\"') &&
 	      arrayp(x[e+2])) {
 	    // C++ syntax support...
-	    create(x[e+2], base);
+	    create(x[e+2], base, class_name);
 	    ret += ({ x[e+1], code });
 	    code = ({});
 	    e += 2;
@@ -1805,7 +1805,7 @@ class ParseBlock
 	    mapping attributes=parse_attributes(proto[1..]);
 
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					     mkname(base, name));
+					     mkname(base, name), name);
 	    string program_var = mkname(base, name, "program");
 
 	    string define = make_unique_name("class", base, name, "defined");
@@ -2821,7 +2821,7 @@ int main(int argc, array(string) argv)
 
   x = recursive(allocate_strings, x);
 
-  ParseBlock tmp=ParseBlock(x,"");
+  ParseBlock tmp=ParseBlock(x,"","");
 
   tmp->declarations += ({
     "\n\n"
