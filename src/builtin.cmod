@@ -3945,6 +3945,45 @@ PIKECLASS Null
 /*! @endclass
  */
 
+PMOD_EXPORT
+PIKEFUN int levenshtein_distance(string a, string b)
+{
+  int i, j, n, *lev_i, *lev_p;
+
+  /* Simple cases: strings are equal or one of them is empty: */
+  if (a == b) RETURN 0;
+  if (a->len == 0) RETURN b->len;
+  if (b->len == 0) RETURN a->len;
+
+  /* Return -1 if any of the strings is wider than 8 bits: */
+  if (a->size_shift || b->size_shift) RETURN -1;
+
+  /* Allocate two rows on the stack: */
+  n = b->len+1;
+  lev_i = alloca(n*sizeof(int));
+  lev_p = alloca(n*sizeof(int));
+  if (!lev_i || !lev_p) RETURN -1;
+
+  /* Initialise the first row */
+  for (j = 0; j < n; j++) lev_i[j] = j;
+
+  for (i = 0; i < a->len; i++)
+  {
+    /* lev_p = row for i, lev_i = row for i+1: */
+    memcpy(lev_p, lev_i, n*sizeof(int));
+    lev_i[0] = i + 1;
+    for (j = 0; j < b->len; j++)
+    {
+      int cost = (a->str[i] == b->str[j]) ? 0 : 1;
+      int test, min_val = lev_i[j]+1;
+      if ((test = lev_p[j+1]+1) < min_val) min_val = test;
+      if ((test = lev_p[j]+cost) < min_val) min_val = test;
+      lev_i[j+1] = min_val;
+    }
+  }
+  RETURN lev_i[b->len];
+}
+
 /*! @endmodule
  */
 
