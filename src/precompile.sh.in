@@ -2,10 +2,10 @@
 
 #set -x
 if [ x"$1" = x--cache ]; then
-  CACHE_OUTPUT=yes
+#  CACHE_OUTPUT=yes
   shift 1
-else
-  CACHE_OUTPUT=no
+#else
+#  CACHE_OUTPUT=no
 fi
 
 exec 5>&1 1>&2
@@ -39,13 +39,13 @@ if test "@CROSS@" = "yes"; then
   retries="....."
 else :; fi
 
-test -d "$PREDIR" || mkdir "$PREDIR"
+#test -d "$PREDIR" || mkdir "$PREDIR"
 
-if test -f "$PREDIR/method" ; then
-  . "$PREDIR/method"
-else
-  :
-fi
+#if test -f "$PREDIR/method" ; then
+#  . "$PREDIR/method"
+#else
+#  :
+#fi
 
 old_method="${method-}"
 
@@ -73,24 +73,24 @@ case "$SCRIPT" in
   ;;
 esac
 
-if [ $CACHE_OUTPUT = yes ]; then
-  for arg
-  do
-    INPUT="$arg"
-  done
-  TMPOUTPUT="${INPUT}.compiled"
+#if [ $CACHE_OUTPUT = yes ]; then
+#  for arg
+#  do
+#    INPUT="$arg"
+#  done
+#  TMPOUTPUT="${INPUT}.compiled"
 
-  if [ -f "$TMPOUTPUT" ]; then
-    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -n 1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
-      cat "$TMPOUTPUT" >&5
-      exit 0
-    fi
-  fi
-else
-  TMPOUTPUT=x
-fi
+#  if [ -f "$TMPOUTPUT" ]; then
+#    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -n 1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
+#      cat "$TMPOUTPUT" >&5
+#      exit 0
+#    fi
+#  fi
+#else
+#  TMPOUTPUT=x
+#fi
 
-test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
+#test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
 
 # method QQQQQQQ below requires a path without repeats.
 UNIQPATH=""
@@ -175,25 +175,25 @@ esac
 if test "x${RUNPIKE-}" != x ; then
   echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-  if [ $CACHE_OUTPUT = yes ]; then
-    $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
-  else
+#  if [ $CACHE_OUTPUT = yes ]; then
+#    $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
+#  else
     $RUNPIKE $SCRIPT "$@" >&5
-  fi
+#  fi
 
   if [ $? = 0 ]; then
 
-    cat > "$PREDIR/method.$$" <<EOF && \
-      mv "$PREDIR/method.$$" "$PREDIR/method"
-LAST_PIKE="$LAST_PIKE"
-method="$method"
-#retries="$retries"
-EOF
+#    cat > "$PREDIR/method.$$" <<EOF && \
+#      mv "$PREDIR/method.$$" "$PREDIR/method"
+#LAST_PIKE="$LAST_PIKE"
+#method="$method"
+##retries="$retries"
+#EOF
 
-    test $CACHE_OUTPUT = yes && cat "$TMPOUTPUT" >&5
+#    test $CACHE_OUTPUT = yes && cat "$TMPOUTPUT" >&5
     exit 0
   else
-    test $CACHE_OUTPUT = yes && rm "$TMPOUTPUT"
+#    test $CACHE_OUTPUT = yes && rm "$TMPOUTPUT"
   fi
 fi
 
