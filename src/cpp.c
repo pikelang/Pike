@@ -2345,7 +2345,7 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   are supported.
  *!
  *! @seealso
- *!   @[_Static_assert()]
+ *!   @[predef::_Static_assert()]
  */
 
 /*! @decl constant __PIKE__
