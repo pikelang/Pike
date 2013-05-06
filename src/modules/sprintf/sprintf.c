@@ -1914,7 +1914,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
   fs = ALLOC_STRUCT (format_stack);
   fs->fsp = fs->format_info_stack-1;
 
-  SET_ONERROR(uwp, free_f_sprintf_data, &fs);
+  SET_ONERROR(uwp, free_f_sprintf_data, fs);
   low_pike_sprintf(fs,
 		   r,
 		   MKPCHARP_STR(argp->u.string),
