@@ -1096,10 +1096,10 @@ protected class VirtualNode {
       data->add("<!DOCTYPE ", n->get_short_name());
       mapping attrs = n->get_attributes();
       if (attrs->PUBLIC) {
-	data->add(sprintf(" PUBLIC %O %O",
-			  attrs->PUBLIC, attrs->SYSTEM || ""));
+	data->sprintf(" PUBLIC %O %O",
+                      attrs->PUBLIC, attrs->SYSTEM || "");
       } else if (attrs->SYSTEM) {
-	data->add(sprintf(" SYSTEM %O", attrs->SYSTEM));
+	data->sprintf(" SYSTEM %O", attrs->SYSTEM);
       }
       if (n->count_children()) {
 	// Use the raw internal subset if available.
