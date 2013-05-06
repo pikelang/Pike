@@ -2355,6 +2355,8 @@ PIKECLASS Buffer
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
 
+  typedef void (_low_f_sprintf)(INT32, int, struct string_builder *);
+  static _low_f_sprintf *low_f_sprintf;
 
   /*! @decl void create(int initial_size)
    *!
@@ -2624,6 +2626,19 @@ PIKECLASS Buffer
     string_builder_putchar(&str->str, c);
   }
 
+  /*! @decl int sprintf(mixed ... arguments)
+   *! Appends the output from @[sprintf] at the end of the string.
+   */
+  PIKEFUN int sprintf(mixed ... arguments)
+  {
+    // FIXME: Reset length on exception?
+    struct Buffer_struct *str = THIS;
+    if(!str->str.s)
+      init_string_builder_alloc(&str->str, str->initial, 0);
+    low_f_sprintf(args, 0, &str->str);
+    RETURN str->str.s->len;
+  }
+
   /*! @decl string get_copy()
    *!
    *!   Get the data from the buffer. Significantly slower than @[get],
@@ -2692,6 +2707,7 @@ PIKECLASS Buffer
     {
       struct Buffer_struct *str = THIS;
       MEMSET( str, 0, sizeof( *str ) );
+      low_f_sprintf = PIKE_MODULE_IMPORT(sprintf, low_f_sprintf);
     }
 
   EXIT
