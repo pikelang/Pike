@@ -1066,8 +1066,8 @@ protected class XML {
 
     String.Buffer ret = String.Buffer();
     ret->add("<?xml version='1.0'?>\n"
-	     "<rdf:RDF\nxmlns='" + common_ns +"'\n"
-	     "xmlns:rdf='" +rdf_ns + "'\n");
+	     "<rdf:RDF\nxmlns='", common_ns, "'\n"
+	     "xmlns:rdf='", rdf_ns, "'\n");
     foreach(ns; string url; string name) {
       if(url==common_ns) continue;
       ret->add("xmlns:", name, "='", url, "'\n");
