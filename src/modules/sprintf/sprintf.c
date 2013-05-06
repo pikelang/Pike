@@ -344,6 +344,7 @@
 #include "module.h"
 #include "pike_float.h"
 #include <ctype.h>
+#include "module_support.h"
 
 #include "config.h"
 
@@ -1876,26 +1877,19 @@ static void low_pike_sprintf(struct format_stack *fs,
   }
 }
 
-struct f_sprintf_data
+static void free_f_sprintf_data (struct format_stack *fs)
 {
-  struct string_builder r;
-  struct format_stack *fs;
-};
-
-static void free_f_sprintf_data (struct f_sprintf_data *d)
-{
-  free_string_builder (&d->r);
-  free_sprintf_strings (d->fs);
-  free (d->fs);
+  free_sprintf_strings (fs);
+  free (fs);
 }
 
 /* The efun */
-void low_f_sprintf(INT32 args, int compat_mode)
+void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
 {
   ONERROR uwp;
   struct pike_string *ret;
   struct svalue *argp;
-  struct f_sprintf_data d;
+  struct format_stack *fs;
 
   argp=Pike_sp-args;
 
@@ -1917,29 +1911,31 @@ void low_f_sprintf(INT32 args, int compat_mode)
     }
   }
 
-  d.fs = ALLOC_STRUCT (format_stack);
-  d.fs->fsp = d.fs->format_info_stack-1;
+  fs = ALLOC_STRUCT (format_stack);
+  fs->fsp = fs->format_info_stack-1;
 
-  init_string_builder(&d.r,0);
-  SET_ONERROR(uwp, free_f_sprintf_data, &d);
-  low_pike_sprintf(d.fs,
-		   &d.r,
+  SET_ONERROR(uwp, free_f_sprintf_data, &fs);
+  low_pike_sprintf(fs,
+		   r,
 		   MKPCHARP_STR(argp->u.string),
 		   argp->u.string->len,
 		   argp+1,
 		   args-1,
 		   0, compat_mode);
   UNSET_ONERROR(uwp);
-  ret=finish_string_builder(&d.r);
-  free (d.fs);
-
-  pop_n_elems(args);
-  push_string(ret);
+  free (fs);
 }
 
 void f_sprintf(INT32 args)
 {
-  low_f_sprintf(args, 0);
+  ONERROR uwp;
+  struct string_builder r;
+  SET_ONERROR(uwp, free_string_builder, &r);
+  init_string_builder(&r,0);
+  low_f_sprintf(args, 0, &r);
+  UNSET_ONERROR(uwp);
+  pop_n_elems(args);
+  push_string(finish_string_builder(&r));
 }
 
 /* Compatibility notes regarding %O:
@@ -1956,7 +1952,14 @@ void f_sprintf(INT32 args)
 
 void f_sprintf_76(INT32 args)
 {
-  low_f_sprintf(args, 76);
+  ONERROR uwp;
+  struct string_builder r;
+  SET_ONERROR(uwp, free_string_builder, &r);
+  init_string_builder(&r,0);
+  low_f_sprintf(args, 76, &r);
+  UNSET_ONERROR(uwp);
+  pop_n_elems(args);
+  push_string(finish_string_builder(&r));
 }
 
 /* Push the types corresponding to the %-directives in the format string.
@@ -2686,6 +2689,8 @@ PIKE_MODULE_INIT
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
+
+  PIKE_MODULE_EXPORT(sprintf, low_f_sprintf);
 }
 
 PIKE_MODULE_EXIT
