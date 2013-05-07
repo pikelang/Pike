@@ -2626,10 +2626,14 @@ PIKECLASS Buffer
     string_builder_putchar(&str->str, c);
   }
 
-  /*! @decl int sprintf(mixed ... arguments)
+  /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
    *! Appends the output from @[sprintf] at the end of the string.
+   *! Returns the resulting size of the String.Buffer.
    */
   PIKEFUN int sprintf(mixed ... arguments)
+    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
+		   tAttr("sprintf_args", tMix), tStr);
+
   {
     // FIXME: Reset length on exception?
     struct Buffer_struct *str = THIS;
