@@ -213,7 +213,14 @@ int levenshtein_distance(string a, string b)
     // You need |bj| = j edit operations (deleting each character from bj) to
     // get from bj to a0.
     // Thus lev_0[j] = j for j=0..|b|:
-    array(int) lev_i = enumerate(strlen(b)+1);
+    int(0..2147483647) len = strlen(b);
+
+    if( len == 2147483647 ) 
+        error("Too large string.\n");
+
+    ++len;
+
+    array(int) lev_i = enumerate(len);
     for (int i = 0; i < strlen(a); i++)
     {
         // To calculate the next row (i+1): copy lev_i:
