@@ -1987,6 +1987,36 @@ if test "$cflags_is_set" = "no"; then
       ])
     ])
    ;;
+   sun4v)
+    AC_SYS_COMPILER_FLAG(-mcpu=niagara,mcpu_niagara,CFLAGS,[
+      AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,CFLAGS)
+    ],[],[
+      # Some versions of gcc define __sparcv9 but aren't LP64.
+      # Definition of __sparcv9 causes <sys/isa_defs.h> to define _LP64,
+      # which is not a good thing for ILP32 systems...
+      # Some versions of gcc define __sparc_v9__, which causes the
+      # fix-included <limits.h> to think the same...
+      AC_TRY_CPP([#include <limits.h>
+#include <sys/types.h>
+#if defined(_LP64) || (LONG_MAX != 2147483647L)
+#error "We might have a problem."
+#endif
+      ],[],[
+        # We might have a problem...
+        # Check that we indeed have a LP64 system.
+        AC_MSG_RESULT([yes, but LP64])
+        AC_CHECK_SIZEOF(long, 4)
+	# Note: the result for the following message is provided
+	# by SYS_COMPILER_FLAG
+	AC_MSG_CHECKING([are we really an LP64 system])
+	if test "x$ac_cv_sizeof_long" = "x8"; then
+	  :; #OK, we have an LP64 system!
+	else
+	  pike_cv_option_mcpu_niagara=no
+	fi
+      ])
+    ])
+   ;;
    i586)
     AC_SYS_COMPILER_FLAG(-mtune=pentium,mtune_pentium,CFLAGS,[
 	AC_SYS_COMPILER_FLAG(-mcpu=pentium,mcpu_pentium,CFLAGS,[
