@@ -312,7 +312,7 @@ fi
 # AC_PROG_CC won't modify CFLAGS if it's already set from the icc
 # workaround test above, so we make sure it's always set and then
 # modify CFLAGS ourselves afterwards.
-${CFLAGS:=}
+: ${CFLAGS:=}
 
 AC_PROG_CC
 AC_PROG_CXX
