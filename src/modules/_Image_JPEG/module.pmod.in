@@ -1,7 +1,7 @@
 // -*- pike -*-
 #pike __REAL_VERSION__
 
-#if constant(@module@)
+#if constant(@module@.Marker)
 
 inherit @module@;
 
