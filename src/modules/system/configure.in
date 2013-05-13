@@ -99,7 +99,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
         getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo \
-	getloadavg)
+	getloadavg daemon)
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
