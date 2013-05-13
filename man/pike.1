@@ -95,10 +95,29 @@ Use
 .I master_program
 instead of the ordinary master program.
 .TP
+.B \-p
+Increase the level of profiling with 1 (debug).
+.TP
+.BI \-p num
+Set the level of profiling to
+.I num
+(debug).
+.TP
+.BI \-ps
+Enable stack profiling (debug).
+.TP
 .BI \-q num
 End execution after executing
 .I num
 Pike instructions.
+.TP
+.B \-rt
+Turn on runtime checking of arguments to function calls, and soft casts.
+.TP
+.B \-rT
+Turn on
+.B #pragma strict_types
+for all files.
 .TP
 .BI \-s num
 Set Pike stack size to
@@ -121,25 +140,6 @@ Set the level of runtime trace to
 .TP
 .B \-tg
 Log the gc runs to stderr.
-.TP
-.B \-p
-Increase the level of profiling with 1 (debug).
-.TP
-.BI \-p num
-Set the level of profiling to
-.I num
-(debug).
-.TP
-.BI \-ps
-Enable stack profiling (debug).
-.TP
-.B \-rt
-Turn on runtime checking of arguments to function calls, and soft casts.
-.TP
-.B \-rT
-Turn on
-.B #pragma strict_types
-for all files.
 .LP
 The following options are supported by the default master program:
 .TP
