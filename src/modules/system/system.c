@@ -3271,6 +3271,18 @@ static void f_getrusage(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
+#ifdef HAVE_DAEMON
+/*! @decl void daemon(int nochdir, int noclose)
+ *! Low level system daemon() function, see also @[Process.daemon()]
+ */
+void f_daemon(INT32 args)
+{
+   INT_TYPE a, b;
+   get_all_args("daemon", args, "%i%i", &a, &b);
+   push_int( daemon( a, b) );
+}
+#endif /* HAVE_DAEMON */
+
 /*! @endmodule
  */
 
@@ -3623,6 +3635,10 @@ PIKE_MODULE_INIT
 				      cleanup_after_fork, 0, 0));
 #endif
 
+#ifdef HAVE_DAEMON
+  ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
+                0, OPT_SIDE_EFFECT);
+#endif /* HAVE_DAEMON */
 
 #ifdef __NT__
   {

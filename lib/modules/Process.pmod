@@ -1099,3 +1099,109 @@ class Spawn
 }
 #endif
 #endif
+
+private void low_daemon(int nochdir, int noclose)
+{
+#if System.daemon
+    return System.daemon(nochdir, noclose);
+#else
+    if (fork())
+        exit(0);
+
+#if System.setsid
+        System.setsid();
+#endif /* System.setsid */
+
+    if (!nochdir)
+        cd("/");
+
+    Stdio.File fd;
+    if (!noclose && (fd = Stdio.File("/dev/null", "rw")))
+    {
+        fd->dup2(Stdio.stdin);
+        fd->dup2(Stdio.stdout);
+        fd->dup2(Stdio.stderr);
+        if (fd->query_fd() > 2)
+            fd->close();
+    }
+#endif /* !System.daemon */
+}
+
+void daemon(int nochdir, int noclose,
+            void|mapping(string:string|Stdio.File) modifiers)
+//! A function to run current program in the background.
+//!
+//! @param nochdir
+//!   If 0 the process will continue to run in / or the directory
+//!   dictadet by modifiers.
+//! @param noclose
+//!  If this is not 0 the process will keep current file descriptors
+//!  open.
+//! @param modifiers
+//!   Optional extra arguments. The parameters passed in this mapping
+//!   will override the arguments nochdir and noclose.
+//!   @mapping
+//!     @member string "cwd"
+//!       Change current working directory to this directory.
+//!     @member string|Stdio.File "stdin"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard input to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard input.
+//!     @member string|Stdio.File "stdout"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard output to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard output.
+//!     @member string|Stdio.File "stderr"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard error to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard error.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[System.daemon]
+//!
+//! @note
+//!   This function only works on UNIX-like operating systems.
+//!
+//! @example
+//!    /* close all fd:s and cd to '/' */
+//!   Process.daemon(0, 0);
+//!
+//!   /* Do not change working directory. Write stdout to a file called
+//!      access.log and stderr to error.log. */
+//!   Process.daemon(1, 0, ([ "stdout": "access.log", "stderr": "error.log" ]) );
+{
+    array(Stdio.File) opened = ({});
+    Stdio.File getfd(string|object f)
+    {
+        if (stringp(f))
+        {
+            Stdio.File ret = Stdio.File(f, "crw");
+            opened += ({ ret });
+            return ret;
+        }
+        else
+            return f;
+    };
+
+    low_daemon(nochdir, noclose);
+    if (undefinedp(modifiers))
+        return;
+
+    if (modifiers["cwd"])
+        cd(modifiers["cwd"]);
+
+    if (modifiers["stdin"])
+        getfd(modifiers["stdin"])->dup2(Stdio.stdin);
+
+    if (modifiers["stdout"])
+        getfd(modifiers["stdout"])->dup2(Stdio.stdout);
+
+    if (modifiers["stderr"])
+        getfd(modifiers["stderr"])->dup2(Stdio.stderr);
+
+    opened->close();
+}
