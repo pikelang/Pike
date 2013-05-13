@@ -103,7 +103,13 @@ Pike instructions.
 .BI \-s num
 Set Pike stack size to
 .I num
-(minimum is 256).
+(minimum is 256). Note that this only affects the main
+(aka backend) thread. To alter the value for other threads
+see below.
+.TP
+.BI \-ss num
+Set Pike thread stack size to
+.I num.
 .TP
 .B \-t
 Increase the level of runtime trace with 1 (debug).
@@ -123,6 +129,9 @@ Increase the level of profiling with 1 (debug).
 Set the level of profiling to
 .I num
 (debug).
+.TP
+.BI \-ps
+Enable stack profiling (debug).
 .TP
 .B \-rt
 Turn on runtime checking of arguments to function calls, and soft casts.
