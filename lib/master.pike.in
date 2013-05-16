@@ -133,8 +133,8 @@ protected int _msg_depth;
 #ifdef RESOLV_DEBUG
 
 #define GET_RESOLV_MSG_DEPTH GET_MSG_DEPTH
-#define INC_RESOLV_MSG_DEPTH INC_MSG_DEPTH
-#define DEC_RESOLV_MSG_DEPTH DEC_MSG_DEPTH
+#define INC_RESOLV_MSG_DEPTH() INC_MSG_DEPTH()
+#define DEC_RESOLV_MSG_DEPTH() DEC_MSG_DEPTH()
 
 void resolv_debug (sprintf_format fmt, sprintf_args... args)
 {
