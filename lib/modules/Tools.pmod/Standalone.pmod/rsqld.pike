@@ -276,14 +276,29 @@ class Connection
   protected void commandset_1()
   {
     commandset_0();
-    commandset |= ([ 'D': cmd_selectdb, 'E': cmd_error,
-		     'C': cmd_create, 'X': cmd_drop, 'I': cmd_srvinfo,
-		     'i': cmd_hostinfo, 's': cmd_shutdown, 'r': cmd_reload, 
-		     'l': cmd_listdbs, 't': cmd_listtables, 'f': cmd_listflds,
-		     'Q': cmd_bigquery, 'Z': cmd_zapquery,
-		     'R': cmd_fetchrow, 'F': cmd_fetchfields,
-		     'N': cmd_numrows, 'n': cmd_numfields, 'e': cmd_eof,
-		     'S': cmd_seek, '@': cmd_query, 'q': cmd_quote]);
+    commandset |= ([
+      '@': cmd_query,
+      'C': cmd_create,
+      'D': cmd_selectdb,
+      'E': cmd_error,
+      'F': cmd_fetchfields,
+      'I': cmd_srvinfo,
+      'N': cmd_numrows,
+      'Q': cmd_bigquery,
+      'R': cmd_fetchrow,
+      'S': cmd_seek,
+      'X': cmd_drop,
+      'Z': cmd_zapquery,
+      'e': cmd_eof,
+      'f': cmd_listflds,
+      'i': cmd_hostinfo,
+      'l': cmd_listdbs,
+      'n': cmd_numfields,
+      'q': cmd_quote,
+      'r': cmd_reload,
+      's': cmd_shutdown,
+      't': cmd_listtables,
+    ]);
   }
 
   protected void client_ident(string s)
