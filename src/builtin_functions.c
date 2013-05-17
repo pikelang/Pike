@@ -1949,13 +1949,14 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   struct pike_string *out;
   ptrdiff_t i,j;
   INT_TYPE extended = 0;
+  PCHARP src;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
   len = in->len;
 
-  for(i=0; i < in->len; i++) {
-    unsigned INT32 c = index_shared_string(in, i);
+  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+    unsigned INT32 c = EXTRACT_PCHARP(src);
     if (c & ~0x7f) {
       /* 8bit or more. */
       len++;
@@ -2001,8 +2002,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   }
   out = begin_shared_string(len);
 
-  for(i=j=0; i < in->len; i++) {
-    unsigned INT32 c = index_shared_string(in, i);
+  for(i=j=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+    unsigned INT32 c = EXTRACT_PCHARP(src);
     if (!(c & ~0x7f)) {
       /* 7bit */
       out->str[j++] = c;
