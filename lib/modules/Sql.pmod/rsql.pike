@@ -72,6 +72,7 @@ protected void low_connect(string the_host, int the_port, string the_user,
 protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
 {
   LOCK;
+  noreconnect = noreconnect || !options || !options->reconnect;
   if(!sock)
     if(noreconnect) {
       UNLOCK;
