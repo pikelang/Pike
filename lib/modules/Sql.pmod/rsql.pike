@@ -150,6 +150,17 @@ void shutdown()
   do_request('s');
 }
 
+int ping()
+{
+  catch {
+    return do_request('p', UNDEFINED, 1);
+  };
+  catch {
+    if (do_request('p') >= 0) return 1;
+  };
+  return -1;
+}
+
 void reload()
 {
   do_request('r');
