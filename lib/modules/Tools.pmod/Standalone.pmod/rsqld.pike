@@ -233,6 +233,11 @@ class Connection
     return sqlobj->query(@args);
   }
 
+  protected int cmd_insert_id()
+  {
+    return sqlobj->master_sql->insert_id();
+  }
+
   protected int|array(string|int) cmd_fetchrow(string qid)
   {
     return get_query(qid)->fetch_row();
@@ -277,6 +282,7 @@ class Connection
   {
     commandset_0();
     commandset |= ([
+      '#': cmd_insert_id,
       '@': cmd_query,
       'C': cmd_create,
       'D': cmd_selectdb,
