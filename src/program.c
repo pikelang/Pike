@@ -4783,7 +4783,10 @@ PMOD_EXPORT void low_inherit(struct program *p,
 {
   lower_inherit(p, parent, parent_identifier, parent_offset, flags, name);
 
-  if (parent_offset) {
+  /* Don't do this for OBJECT_PARENT or INHERIT_PARENT inherits.
+   * They may show up here from decode_value().
+   */
+  if (parent_offset >= 42) {
     if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT)) {
       /* We'll need the parent pointer as well... */
       struct program_state *state = Pike_compiler;
