@@ -227,6 +227,11 @@ array(mapping(string:mixed)) query(mixed ... args)
   return do_request('@', args);
 }
 
+int insert_id()
+{
+  return do_request('#');
+}
+
 void create(string|void host, string|void db, string|void user,
 	    string|void _pw, mapping|void options)
 {
