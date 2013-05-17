@@ -178,6 +178,11 @@ class Connection
     sqlobj->shutdown();
   }
 
+  protected int cmd_ping()
+  {
+    return sqlobj->ping();
+  }
+
   protected void cmd_reload()
   {
     sqlobj->reload();
@@ -300,6 +305,7 @@ class Connection
       'i': cmd_hostinfo,
       'l': cmd_listdbs,
       'n': cmd_numfields,
+      'p': cmd_ping,
       'q': cmd_quote,
       'r': cmd_reload,
       's': cmd_shutdown,
