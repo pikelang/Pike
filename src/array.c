@@ -646,6 +646,25 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   }
 }
 
+static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t start )
+{
+  ptrdiff_t e;
+  /* Why search for something that is not there?
+   * however, we must explicitly check for searches
+   * for destructed objects/functions
+   */
+  if((v->type_field & (1 << TYPEOF(*s)))  ||
+     (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
+     ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
+  {
+    struct svalue *ip = ITEM(v);
+    for(e=start;e<v->size;e++)
+      if(is_eq(ip+e,s))
+        return e;
+  }
+  return -1;
+}
+
 /**
  * Search for in svalue in an array.
  * @param v the array to search
@@ -656,41 +675,15 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 				   ptrdiff_t start)
 {
-  ptrdiff_t e;
-
 #ifdef PIKE_DEBUG
   if(start<0)
     Pike_fatal("Start of find_index is less than zero.\n");
 #endif
-
-  check_destructed(s);
-
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
-  /* Why search for something that is not there? 
-   * however, we must explicitly check for searches
-   * for destructed objects/functions
-   */
-  if((v->type_field & (1 << TYPEOF(*s)))  ||
-     (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
-     ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
-  {
-    if(start)
-    {
-      for(e=start;e<v->size;e++)
-	if(is_eq(ITEM(v)+e,s)) return e;
-    }else{
-      TYPE_FIELD t=0;
-      for(e=0;e<v->size;e++)
-      {
-	if(is_eq(ITEM(v)+e,s)) return e;
-	t |= 1<<TYPEOF(ITEM(v)[e]);
-      }
-      v->type_field=t;
-    }
-  }
-  return -1;
+  check_destructed(s);
+  return fast_array_search( v, s, start );
 }
 
 /**
@@ -2626,8 +2619,8 @@ void array_replace(struct array *a,
 		   struct svalue *to)
 {
   ptrdiff_t i = -1;
-
-  while((i=array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
+  check_array_for_destruct(a);
+  while((i=fast_array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }
 
 #ifdef PIKE_DEBUG
