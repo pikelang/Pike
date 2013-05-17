@@ -23,6 +23,8 @@ protected private string host, user, pw;
 protected private int port;
 protected private mapping options;
 
+protected private string db;
+
 protected void low_reconnect()
 {
   object losock = Stdio.File();
@@ -74,8 +76,13 @@ protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
     if(noreconnect) {
       UNLOCK;
       ERROR("No connection\n");
-    } else
+    } else {
+      UNLOCK;
       low_reconnect();
+      select_db(db);
+      LOCK;
+      noreconnect = 1;
+    }
   arg = (arg? encode_value(arg) : "");
   sock->write("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg);
   string res;
@@ -89,7 +96,7 @@ protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
       UNLOCK;
       if(noreconnect)
 	ERROR("RSQL Phase error, disconnected\n");
-      else return do_request(cmd, arg, 1);
+      else return do_request(cmd, arg);
     }
     UNLOCK;
     rdat = (sizeof(rdat)? decode_value(rdat):0);
@@ -102,14 +109,15 @@ protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
     destruct(sock);
     UNLOCK;
     if(noreconnect)
-      ERROR("RSQL Phase error, disconnected\n");
-    else return do_request(cmd, arg, 1);
+      ERROR("RSQL connection closed\n");
+    else return do_request(cmd, arg);
   }
 }
 
-void select_db(string db)
+void select_db(string the_db)
 {
-  do_request('D', db);
+  do_request('D', the_db);
+  db = the_db;
 }
 
 int|string error()
