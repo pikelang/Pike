@@ -649,19 +649,10 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t start )
 {
   ptrdiff_t e;
-  /* Why search for something that is not there?
-   * however, we must explicitly check for searches
-   * for destructed objects/functions
-   */
-  if((v->type_field & (1 << TYPEOF(*s)))  ||
-     (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
-     ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
-  {
-    struct svalue *ip = ITEM(v);
-    for(e=start;e<v->size;e++)
-      if(is_eq(ip+e,s))
-        return e;
-  }
+  struct svalue *ip = ITEM(v);
+  for(e=start;e<v->size;e++)
+    if(is_eq(ip+e,s))
+      return e;
   return -1;
 }
 
@@ -683,7 +674,16 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
   if(d_flag > 1)  array_check_type_field(v);
 #endif
   check_destructed(s);
-  return fast_array_search( v, s, start );
+
+  /* Why search for something that is not there?
+   * however, we must explicitly check for searches
+   * for destructed objects/functions
+   */
+  if((v->type_field & (1 << TYPEOF(*s)))  ||
+     (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
+     ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
+    return fast_array_search( v, s, start );
+  return -1;
 }
 
 /**
@@ -2034,6 +2034,99 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 #endif
 }
 
+/** Remove all instances of an svalue from an array
+*/
+static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
+{
+  size_t size = a->size;
+  size_t from=0, to=0;
+  TYPE_FIELD to_type = 1<<TYPEOF(*b);
+  TYPE_FIELD type_field = 0;
+  ONERROR ouch;
+  struct svalue *ip=ITEM(a), *dp=ip;
+  int destructive = 1;
+
+  if( size == 0 )
+    return copy_array(a);
+
+  if( a->refs > 1 )
+  {
+    /* We only need to do anything if the value exists in the array. */
+    ssize_t off  = fast_array_search( a, b, 0 );
+
+    if( off == -1 )
+      /* We still need to return a new array. */
+      return copy_array(a);
+
+    /* In this case we generate a new array and modify that one. */
+    destructive = 0;
+    from = (size_t)off;
+    a = allocate_array_no_init(size-1,0);
+    SET_ONERROR( ouch, do_free_array, a );
+    dp = ITEM(a);
+
+    /* Copy the part of the array that is not modified first.. */
+    for( to=0; to<from; to++, ip++, dp++)
+    {
+      assign_svalue_no_free(dp, ip);
+      type_field |= 1<<TYPEOF(*dp);
+    }
+    a->size = from;
+  }
+
+#define MATCH_COPY(X)  do {                                                 \
+    if( X )                                                                 \
+    {  /* include entry */                                                  \
+      type_field|=1<<TYPEOF(*ip);                                           \
+      if(!destructive)                                                      \
+        assign_svalue_no_free(dp,ip);                                       \
+      else if(ip!=dp)                                                       \
+        *dp=*ip;                                                            \
+      dp++;                                                                 \
+      if( !destructive ) a->size++;                                         \
+    }                                                                       \
+    else if( destructive )                                                  \
+      free_svalue( ip );                                                    \
+  } while(0)
+
+
+  if( UNSAFE_IS_ZERO( b ) )
+  {
+    /* Remove 0-valued elements.
+       Rather common, so a special case is motivated.
+
+       This saves time becase there is no need to check if 'b' is zero
+       for each loop.
+    */
+    for( ;from<size; from++, ip++ )
+      MATCH_COPY( !UNSAFE_IS_ZERO(ip) );
+  }
+  else if((a->type_field & to_type) || ((a->type_field | to_type) & BIT_OBJECT))
+  {
+    for( ; from<size; from++, ip++ )
+      MATCH_COPY( !is_eq(ip,b) );
+  }
+  else /* b does not exist in the array. */
+  {
+    a->refs++;
+    return a;
+  }
+#undef MATCH_COPY
+
+  if( dp != ip )
+  {
+    a->type_field = type_field;
+    a->size = dp-ITEM(a);
+  }
+
+  if( !destructive )
+    UNSET_ONERROR( ouch );
+  else
+    a->refs++;
+
+  return a;
+}
+
 /** Subtract an array from another.
 */
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
@@ -2044,10 +2137,12 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
     array_check_type_field(b);
   }
 #endif
-  check_array_for_destruct(a);
+  if( b->size == 1 )
+    return subtract_array_svalue( a, ITEM(b) );
 
-  if((a->type_field & b->type_field) ||
-     ((a->type_field | b->type_field) & BIT_OBJECT))
+  if(b->size && 
+     ((a->type_field & b->type_field) ||
+      ((a->type_field | b->type_field) & BIT_OBJECT)))
   {
     return merge_array_with_order(a, b, PIKE_ARRAY_OP_SUB);
   }else{
@@ -2056,9 +2151,10 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
       add_ref(a);
       return a;
     }
-    return slice_array(a,0,a->size);
+    return copy_array(a);
   }
 }
+
 
 /** And two arrays together.
  */
