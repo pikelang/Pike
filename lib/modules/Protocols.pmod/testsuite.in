@@ -20,6 +20,24 @@ test_equal( P.low_low_mkquery((["an":(["type":Protocols.DNS.T_SPF,"spf":"hej"])]
  "\0\0\0\0\0\0\0\1\0\0\0\0\0\0c\0\0\0\0\0\0\0\4\3hej" )
 test_equal( P.low_mkquery(2,"a",3,4), "\0\2\1\0\0\1\0\0\0\0\0\0\1a\0\0\4\0\3" )
 
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_string("\0\3hej\0",a), a[0]);
+]], "\"hej\" 5" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_byte("\0\3hej\0",a), a[0]);
+]], "3 2" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_short("\0\3hej\0",a), a[0]);
+]], "872 3" )
+test_any([[
+  array a = ({1});
+  return sprintf("%O %O", P.decode_int("\0\3hej\0",a), a[0]);
+]], "57173354 5" )
+
+
 test_do( add_constant("P"); )
 
 END_MARKER
