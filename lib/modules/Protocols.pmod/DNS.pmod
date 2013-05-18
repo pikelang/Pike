@@ -352,9 +352,10 @@ class protocol
 
   string decode_string(string s, array(int) next)
   {
-    int len=s[next[0]];
+    int pos = next[0];
+    int len=s[pos];
     next[0]+=len+1;
-    return s[next[0]-len..next[0]-1];
+    return s[pos+1..pos+len];
   }
 
   int decode_byte(string s, array(int) next)
@@ -364,16 +365,14 @@ class protocol
 
   int decode_short(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+1],"%2c",int ret);
-    next[0]+=2;
-    return ret;
+    return s[next[0]++]<<8 | s[next[0]++];
   }
 
   int decode_int(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+3],"%4c",int ret);
-    next[0]+=4;
-    return ret;
+    int pos = next[0];
+    next[0] += 4;
+    return s[pos++]<<24 | s[pos++]<<16 | s[pos++]<<8 | s[pos++];
   }
 
   //! Decode a set of entries from an answer.
