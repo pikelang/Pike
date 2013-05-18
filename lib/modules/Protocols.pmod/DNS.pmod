@@ -146,7 +146,7 @@ class protocol
   {
     if(sizeof(s)>63)
       error("Too long component in domain name.\n");
-    return sprintf("%c%s",sizeof(s),s);
+    return sprintf("%1H",s);
   }
 
   protected private string mkname(string|array(string) labels, int pos,
@@ -195,8 +195,7 @@ class protocol
      case T_MX:
        return sprintf("%2c", entry->preference)+mkname(entry->mx, pos+2, c);
      case T_HINFO:
-       return sprintf("%1c%s%1c%s", sizeof(entry->cpu||""), entry->cpu||"",
-		      sizeof(entry->os||""), entry->os||"");
+       return sprintf("%1H%1H", entry->cpu||"", entry->os||"");
      case T_MINFO:
        string rmailbx = mkname(entry->rmailbx, pos, c);
        return rmailbx + mkname(entry->emailbx, pos+sizeof(rmailbx), c);
@@ -221,22 +220,22 @@ class protocol
 		 entry->retry, entry->expire, entry->minimum);
      case T_NAPTR:
        string rnaptr = sprintf("%2c%2c", entry->order, entry->preference);
-       rnaptr += sprintf("%1c%s%1c%s%1c%s%s",
-			 sizeof(entry->flags || ""), entry->flags || "",
-			 sizeof(entry->service || ""), entry->service || "",
-			 sizeof(entry->regexp || ""), entry->regexp || "",
+       rnaptr += sprintf("%1H%1H%1H%s",
+			 entry->flags || "",
+			 entry->service || "",
+			 entry->regexp || "",
 			 mkname(entry->replacement, pos, c));
        return rnaptr;
 
      case T_TXT:
        return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
 			lambda(string t) {
-			  return sprintf("%1c%s", sizeof(t), t);
+			  return sprintf("%1H", t);
 			})*"";
      case T_SPF:
        return Array.map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
 			lambda(string t) {
-			  return sprintf("%1c%s", sizeof(t), t);
+			  return sprintf("%1H", t);
 			})*"";
      case T_LOC:
        // FIXME: Not implemented yet.
@@ -254,7 +253,7 @@ class protocol
 	sprintf("%2c%2c%4c", entry->type, entry->cl, entry->ttl);
       pos += sizeof(e)+2;
       string rd = entry->rdata || mkrdata(entry, pos, comp);
-      res += e + sprintf("%2c", sizeof(rd)) + rd;
+      res += e + sprintf("%2H", rd);
       pos += sizeof(rd);
     }
     return res;
@@ -1015,7 +1014,7 @@ class tcp_server
     void send(string s) {
       if (sizeof(s) > 65535)
 	error("DNS: Cannot send packets > 65535 bytes (%d here).\n", sizeof(s));
-      out_buffer += sprintf("%2c%s", sizeof(s), s);
+      out_buffer += sprintf("%2H", s);
 
       if (write_ready) {
 	int written = con->write(out_buffer);
