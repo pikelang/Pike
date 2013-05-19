@@ -9,11 +9,10 @@
   static void create(string _data, int|void _subtype)
   {
      subtype = _subtype;
-     int len;
      if(subtype == .BINARY_OLD)
      {
-       sscanf(data, "%-4c%s", len, data);
-       if(sizeof(data) != len) throw(Error.Generic("old binary data length does not match actual data length.\n"));
+       if( !sscanf(data, "%-4H", data) )
+         throw(Error.Generic("old binary data length does not match actual data length.\n"));
      }
      else
        data = _data;
@@ -28,6 +27,7 @@
   {
     subtype = _subtype;
   }
+
   static int _sizeof()
   { 
     if(subtype == .BINARY_OLD)
@@ -40,9 +40,10 @@
   {
     if(type == "string")
     {
-    	    // the docs are a little sketchy about this, do we need to NULL terminate?
+      // the docs are a little sketchy about this, do we need to NULL
+      // terminate?
        if(subtype == .BINARY_OLD)
-         return sprintf("%-4c%s", sizeof(data), data);
+         return sprintf("%-4H", data);
        else return data;
     }
   }
