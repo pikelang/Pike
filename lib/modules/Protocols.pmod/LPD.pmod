@@ -12,7 +12,7 @@
 class client {
   string host;
   int port;
-  private object conn;
+  private Stdio.File conn;
   int jobnum;
   string jobtype;
   string jobname;
@@ -29,12 +29,12 @@ class client {
     return conn->connect(host, port);
   }
 
-static void send(string s)
+  static void send(string s, mixed ... args)
 {
 #ifdef LPD_DEBUG
   werror("LPD: sending %O\n", s);
 #endif
-  conn->write(s);
+  conn->write(s, @args);
 }
 
 //! @decl int set_job_type(string type)
@@ -84,7 +84,7 @@ static void send(string s)
     if(!connect(host, port))
       return 0;
 
-    send(sprintf("%c%s\n", 01, queue));
+    send("%c%s\n", 01, queue);
     string resp= conn->read();
     conn->close();
     int res;
@@ -94,26 +94,27 @@ static void send(string s)
 
 static string make_control(int jn)
 {
-  string control="";
-  control+="H"+gethostname()+"\n";
+  String.Buffer control = String.Buffer();
+
+  control->add("H", gethostname(), "\n");
 #if constant(getuid) && constant(getpwuid)
-  control+="P"+(getpwuid(getuid())[0]||"nobody")+"\n";
+  control->add("P", getpwuid(getuid())[0]||"nobody", "\n");
 #else
-  control+="P-1\n";
+  control->add("P-1\n");
 #endif
-  control+=sprintf("%1sdfA%03d%s\n", (jobtype||"l"), jn, gethostname());
+  control->sprintf("%sdfA%03d%s\n", (jobtype||"l"), jn, gethostname());
   if(jobname)
   {
-    control+="J" + jobname + "\n";
-    control+="N" + jobname + "\n";
+    control->add("J", jobname, "\n",
+                 "N", jobname, "\n");
   }
   else
   { 
-    control+="JPike LPD Client Job " + jn + "\n";
-    control+="NPike LPD Client Job " + jn + "\n";
+    control->add("JPike LPD Client Job ", (string)jn, "\n",
+                 "NPike LPD Client Job ", (string)jn, "\n");
   }
 
-  return control;
+  return (string)control;
 }
 
 //! @decl string|int send_job(string queue, string job)
@@ -130,7 +131,7 @@ static string make_control(int jn)
     if(!connect(host, port))
       return 0;
 
-    send(sprintf("\2%s\n",queue));
+    send("\2%s\n",queue);
 
     resp=conn->read(1);
 
@@ -144,8 +145,8 @@ static string make_control(int jn)
     
     werror("job file:\n\n" + control  + "\n\n");
 
-    send(sprintf("%c%s cfA%03d%s\n", 2, (string)sizeof(control),
-			jn, gethostname()));
+    send("%c%d cfA%03d%s\n", 2, sizeof(control),
+         jn, gethostname());
 
     resp=conn->read(1);
     if(resp[0] !='\0')
@@ -154,7 +155,7 @@ static string make_control(int jn)
       return 0;
     }
 
-    send(sprintf("%s%c", control, 0));
+    send("%s%c", control, 0);
 
     resp=conn->read(1);
     if(resp[0] !='\0')
@@ -163,8 +164,8 @@ static string make_control(int jn)
       return 0;
     }
 
-    send(sprintf("%c%s dfA%03d%s\n", 3, (string)sizeof(job), jn,
-			gethostname()));
+    send("%c%d dfA%03d%s\n", 3, sizeof(job), jn,
+         gethostname());
 
     resp=conn->read(1);
     if(resp[0] !='\0')
@@ -173,7 +174,7 @@ static string make_control(int jn)
       return 0;
     }
 
-    send(sprintf("%s%c", job, 0));
+    send("%s%c", job, 0);
 
     resp=conn->read(1);
     if(resp[0] != '\0')
@@ -204,9 +205,9 @@ static string make_control(int jn)
 #endif
 
     if(job)
-      send(sprintf("%c%s %s %d\n", 05, queue, agent, job));
+      send("%c%s %s %d\n", 5, queue, agent, job);
     else
-      send(sprintf("%c%s %s\n", 05, queue, agent));
+      send("%c%s %s\n", 5, queue, agent);
     string resp= conn->read();
     conn->close();
     int res;
@@ -226,7 +227,7 @@ static string make_control(int jn)
     if(!connect(host, port))
       return 0;
 
-    send(sprintf("%c%s\n", 04, queue));
+    send("%c%s\n", 4, queue);
     string resp= conn->read();
     conn->close();
     return resp;
