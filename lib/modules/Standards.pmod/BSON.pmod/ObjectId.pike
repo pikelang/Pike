@@ -26,7 +26,7 @@ static void generate_id()
 
 static string make_host_hash()
 {
-  return Crypto.MD5()->update(System.gethostname())->digest(3);
+  return Crypto.MD5.hash(System.gethostname())[..2];
 }
 
 static int make_counter()

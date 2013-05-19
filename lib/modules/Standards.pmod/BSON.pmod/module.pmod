@@ -60,7 +60,7 @@ string to_document(mapping m, int|void query_mode)
 
 static string toCString(string str)
 {
-	if(search(str, "\0") != -1) throw(Error.Generic("String cannot contain null bytes.\n"));
+	if(has_value(str, "\0")) throw(Error.Generic("String cannot contain null bytes.\n"));
 	else return string_to_utf8(str) + "\0";
 }
 
@@ -69,7 +69,7 @@ static void encode(mixed m, String.Buffer buf, int|void allow_specials)
   foreach(m; mixed key; mixed val)
   {
     if(!stringp(key)) throw(Error.Generic("BSON Keys must be strings.\n"));
-    if(search(key, "\0") != -1) throw(Error.Generic("BSON Keys may not contain NULL characters.\n"));   
+    if(has_value(key, "\0")) throw(Error.Generic("BSON Keys may not contain NULL characters.\n"));
     if(!allow_specials && ((key - "$") - ".") != key)
       throw(Error.Generic("BSON keys may not contain '$' or '.' characters unless in query-mode.\n"));
     key = string_to_utf8(key);
@@ -81,21 +81,21 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
 {
    if(floatp(value))
    { 
-     buf->add(sprintf("%c%s%c%-8F", TYPE_FLOAT, key, 0, value));
+     buf->sprintf("%c%s%c%-8F", TYPE_FLOAT, key, 0, value);
    }
    else if(stringp(value))
    {
      string v = string_to_utf8(value);
-     buf->add(sprintf("%c%s%c%-4c%s%c", TYPE_STRING, key, 0, sizeof(v)+1, v, 0));
+     buf->sprintf("%c%s%c%-4c%s%c", TYPE_STRING, key, 0, sizeof(v)+1, v, 0);
    }
    else if(mappingp(value))
    {
-     buf->add(sprintf("%c%s%c%s", TYPE_DOCUMENT, key, 0, toDocument(value, allow_specials)));
+     buf->sprintf("%c%s%c%s", TYPE_DOCUMENT, key, 0, toDocument(value, allow_specials));
    }
    else if(arrayp(value))
    {
      int qi = 0; 
-     buf->add(sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, toDocument(mkmapping(map(value, lambda(mixed e){return (string)qi++;}), value), allow_specials)));
+     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, toDocument(mkmapping(map(value, lambda(mixed e){return (string)qi++;}), value), allow_specials));
    }
    else if(intp(value))
    {
@@ -104,80 +104,80 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
      if(value <= 2147383647 && value >= -2148483648) // we fit in a 32 bit space.
      {
      	     // werror("32bit\n");
-       buf->add(sprintf("%c%s%c%-4c", TYPE_INT32, key, 0, value));       
+       buf->sprintf("%c%s%c%-4c", TYPE_INT32, key, 0, value);
      }
      else
      {
      	     // werror("64bit\n");
-       buf->add(sprintf("%c%s%c%-8c", TYPE_INT64, key, 0, value));       
+       buf->sprintf("%c%s%c%-8c", TYPE_INT64, key, 0, value);
      }
    }
    // Calendar instance
    else if(objectp(value) && value->unix_time && value->utc_offset) // a date object
    {
-     buf->add(sprintf("%c%s%c%-8c", TYPE_DATETIME, key, 0, (value->unix_time() /* + value->utc_offset() */ * 1000)));
+     buf->sprintf("%c%s%c%-8c", TYPE_DATETIME, key, 0, (value->unix_time() /* + value->utc_offset() */ * 1000));
    }
    // BSON.ObjectId instance
    else if(objectp(value) && Program.inherits(object_program(value), .ObjectId))
    {
-     buf->add(sprintf("%c%s%c%12s", TYPE_OBJECTID, key, 0, value->get_id()));
+     buf->sprintf("%c%s%c%12s", TYPE_OBJECTID, key, 0, value->get_id());
    }
    // BSON.Timestamp instance
    else if(objectp(value) && Program.inherits(object_program(value), .Timestamp))
    {
-     buf->add(sprintf("%c%s%c%-8s", TYPE_TIMESTAMP, key, 0, value->get_timestamp()));
+     buf->sprintf("%c%s%c%-8s", TYPE_TIMESTAMP, key, 0, value->get_timestamp());
    }
 
    // BSON.Binary instance
    else if(objectp(value) && Program.inherits(object_program(value), .Binary))
    {
-     buf->add(sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value)+1, value->subtype, (string)value));
+     buf->sprintf("%c%s%c%-4c%c%s", TYPE_BINARY, key, 0, sizeof(value)+1, value->subtype, (string)value);
    }
    // BSON.Symbol instance
    else if(objectp(value) && Program.inherits(object_program(value), .Symbol))
    {
      string v = (string)value;
      v = string_to_utf8(v);
-     buf->add(sprintf("%c%s%c%-4c%s%c", TYPE_SYMBOL, key, 0, sizeof(v)+1, v, 0));
+     buf->sprintf("%c%s%c%-4c%s%c", TYPE_SYMBOL, key, 0, sizeof(v)+1, v, 0);
    } 
    // BSON.Javascript instance
    else if(objectp(value) && Program.inherits(object_program(value), .Javascript))
    {
      string v = (string)value;
      v = string_to_utf8(v);
-     buf->add(sprintf("%c%s%c%-4c%s%c", TYPE_JAVASCRIPT, key, 0, sizeof(v)+1, v, 0));
+     buf->sprintf("%c%s%c%-4c%s%c", TYPE_JAVASCRIPT, key, 0, sizeof(v)+1, v, 0);
    } 
    // BSON.Regex instance
    else if(objectp(value) && Program.inherits(object_program(value), .Regex))
    {
      string v = (string)value;
      v = string_to_utf8(v);
-     buf->add(sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options)));
+     buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
    } 
    // BSON.Null
    else if(objectp(value) && value == Null)
    {
-     buf->add(sprintf("%c%s%c", TYPE_NULL, key, 0));
+     buf->sprintf("%c%s%c", TYPE_NULL, key, 0);
    }
    // BSON.True
    else if(objectp(value) && value == True)
    {
-     buf->add(sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 1));
+     buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 1);
    }
    // BSON.False
    else if(objectp(value) && value == False)
    {
-     buf->add(sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0));
+     buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0);
    }
    // BSON.MinKey
    else if(objectp(value) && value->BSONMaxKey)
    {
-     buf->add(sprintf("%c%s%c", TYPE_MIN_KEY, key, 0));
+     buf->sprintf("%c%s%c", TYPE_MIN_KEY, key, 0);
    }
    // BSON.MaxKey
    else if(objectp(value) && value->BSONMaxKey)
    {
-     buf->add(sprintf("%c%s%c", TYPE_MAX_KEY, key, 0));
+     buf->sprintf("%c%s%c", TYPE_MAX_KEY, key, 0);
    }
    //werror("bufsize: %O\n", sizeof(buf));
 }
@@ -191,7 +191,7 @@ mixed from_document(string bson)
     throw(Error.Generic("Unable to read length from BSON stream.\n"));
   if(sizeof(bson) < (len -4))
     throw(Error.Generic(sprintf("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1)));
-  slist = bson[0..<1  ];
+  slist = bson[0..<1];
   //werror("bson length %d\n", len);
   mapping list = ([]);
   
