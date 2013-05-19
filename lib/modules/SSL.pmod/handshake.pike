@@ -133,7 +133,7 @@ Packet handshake_packet(int type, string data)
   /* Perhaps one need to split large packages? */
   Packet packet = Packet();
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%c%3c%s", type, sizeof(data), data);
+  packet->fragment = sprintf("%c%3H", type, [string(0..255)]data);
   handshake_messages += packet->fragment;
   return packet;
 }
@@ -350,7 +350,7 @@ Packet client_key_exchange_packet()
     data = (temp_key || session->rsa)->encrypt(premaster_secret);
 
     if(version[1] >= PROTOCOL_TLS_1_0)
-      data=sprintf("%2c",sizeof(data))+data;
+      data=sprintf("%2H", [string(0..255)]data);
       
     break;
   case KE_dhe_dss:
