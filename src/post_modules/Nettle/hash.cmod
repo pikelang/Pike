@@ -62,11 +62,11 @@ PIKECLASS HashInfo
 {
   CVAR const struct nettle_hash *meta;
 
-  /*! @decl string name(void)
+  /*! @decl string(0..255) name(void)
    *!
    *! Returns a human readable name for the algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -75,11 +75,11 @@ PIKECLASS HashInfo
       push_text(THIS->meta->name);
     }
 
-  /*! @decl string digest_size(void)
+  /*! @decl int(0..) digest_size(void)
    *!
    *! Returns the size of a hash digests.
    */
-  PIKEFUN int digest_size()
+    PIKEFUN int(0..) digest_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -88,11 +88,11 @@ PIKECLASS HashInfo
       push_int(THIS->meta->digest_size);
     }
 
-  /*! @decl string block_size(void)
+  /*! @decl int(0..) block_size(void)
    *!
    *! Returns the internal block size of the hash algorithm.
    */
-  PIKEFUN int block_size()
+    PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -102,7 +102,7 @@ PIKECLASS HashInfo
     }
 
 
-  /*! @decl string hash(string data)
+  /*! @decl string(0..255) hash(string data)
    *!
    *!  Works as a (faster) shortcut for
    *!  @expr{HashState()->update(data)->digest()@}, where HashState is
@@ -111,7 +111,7 @@ PIKECLASS HashInfo
    *! @seealso
    *!   @[HashState()->update()] and @[HashState()->digest()].
    */
-  PIKEFUN string hash(string in)
+    PIKEFUN string(0..255) hash(string in)
     optflags OPT_TRY_OPTIMIZE;
   {
     void *ctx;
@@ -146,7 +146,7 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
-  /*! @decl string hash(Stdio.File file, void|int bytes)
+  /*! @decl string(0..255) hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
    *!  @expr{HashState()->update(Stdio.read_file(file))->digest()@},
@@ -162,7 +162,7 @@ PIKECLASS HashInfo
    *!   @[Stdio.File], @[HashState()->update()] and
    *!   @[HashState()->digest()].
    */
-  PIKEFUN string hash(object in, void|int bytes)
+  PIKEFUN string(0..255) hash(object in, void|int bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
@@ -260,7 +260,7 @@ PIKECLASS HashInfo
     }
   }
 
-  /*! @decl string crypt_hash(string password, string salt, int rounds)
+  /*! @decl string(0..255) crypt_hash(string password, string salt, rounds)
    *!
    *!   Password hashing function in @[crypt_md5()]-style.
    *!
@@ -273,7 +273,7 @@ PIKECLASS HashInfo
    *! @seealso
    *!   @[crypt_md5()]
    */
-  PIKEFUN string crypt_hash(string password, string salt, int rounds)
+  PIKEFUN string(0..255) crypt_hash(string password, string salt, int rounds)
   {
     struct pike_string *res;
     const struct nettle_hash *meta = THIS->meta;
@@ -282,8 +282,8 @@ PIKECLASS HashInfo
     uint8_t *dpbuf;
     uint8_t *dsbuf;
 
-    char *p;
-    char *s;
+    unsigned char *p;
+    unsigned char *s;
     int plen;
     int slen;
     int dsz = meta->digest_size;
@@ -314,9 +314,9 @@ PIKECLASS HashInfo
     /* NB: We use these to allow the compiler to
      *     avoid dereferencing at every step.
      */
-    p = password->str;
+    p = (unsigned char*)password->str;
     plen = password->len;
-    s = salt->str;
+    s = (unsigned char*)salt->str;
     slen = salt->len;
     if (slen > 16) slen = 16;
     dsz = meta->digest_size;
@@ -509,7 +509,7 @@ PIKECLASS HashState
       push_object(this_object());
     }
 
-  /*! @decl string digest(int|void length)
+  /*! @decl string(0..255) digest(int|void length)
    *!
    *! Generates a digests, and resets the hashing contents.
    *!
@@ -520,7 +520,7 @@ PIKECLASS HashState
    *! @returns
    *!   The digest.
    */
-  PIKEFUN string digest(int|void arg)
+    PIKEFUN string(0..255) digest(int|void arg)
     {
       const struct nettle_hash *meta;
       struct pike_string *digest;
