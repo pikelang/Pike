@@ -36,7 +36,18 @@ test_any([[
   array a = ({1});
   return sprintf("%O %O", P.decode_int("\0\3hej\0",a), a[0]);
 ]], "57173354 5" )
-
+test_any_equal([[
+  array a = ({0});
+  array ret = P.decode_entries("\3hej\0\0\1\0\2\0\0\0\3\0\4ABCD",1,a);
+  return ret + a;
+]], ({ ([ "a":"65.66.67.68", "cl":2, "len":4, "name":"hej", "ttl":3,
+  "type":1 ]), 19 }))
+test_any_equal([[
+  array a = ({0});
+  array ret = P.decode_entries("\3hej\0\0\34\0\2\0\0\0\3\0\20ABCDEFGHIJKLMNOP",1,a);
+  return ret + a;
+]], ({ ([ "aaaa":"4142:4344:4546:4748:494A:4B4C:4D4E:4F50", "cl":2,
+  "len":16, "name":"hej", "ttl":3, "type":28 ]), 31 }))
 
 test_do( add_constant("P"); )
 
