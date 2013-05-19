@@ -320,8 +320,6 @@ class protocol
 
   string decode_domain(string msg, array(int) n)
   {
-    array(string) domains=({});
-    
     int pos=n[0];
     int next=-1;
     array(string) ret=({});
@@ -560,11 +558,11 @@ class protocol
 	m->name=x[2..]*".";
         break;
       case T_A:
-	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
+	m->a=(array(string))values(s[next[0]..next[0]+m->len-1])*".";
 	break;
       case T_AAAA:
-	m->aaaa=sprintf("%{:%02X%02X%}",
-		     values(s[next[0]..next[0]+m->len-1])/2)[1..];
+	m->aaaa=sprintf("%{%02X%}",
+                        (values(s[next[0]..next[0]+m->len-1])/2)[*])*":";
 	break;
       case T_LOC:
 	m->version = decode_byte(s,next);
@@ -646,8 +644,6 @@ class protocol
     m->ra=(m->c2>>7)&1;
     
     m->length=sizeof(s);
-    
-    array(string) tmp=({});
     
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
