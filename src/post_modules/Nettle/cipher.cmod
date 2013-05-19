@@ -111,12 +111,12 @@ PIKECLASS CipherInfo
 {
   CVAR const struct pike_cipher *meta;
   
-  /*! @decl string name(void)
+  /*! @decl string(0..255) name(void)
    *!
    *! @returns
    *!   A human readable name for the algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -125,12 +125,12 @@ PIKECLASS CipherInfo
       push_text(THIS->meta->name);
     }
 
-  /*! @decl string key_size(void)
+  /*! @decl int(0..) key_size(void)
    *!
    *! @returns
    *!   The recommended key size for the cipher.
    */
-  PIKEFUN int key_size()
+    PIKEFUN int(0..) key_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -139,12 +139,12 @@ PIKECLASS CipherInfo
       push_int(THIS->meta->key_size);
     }
   
-  /*! @decl string block_size(void)
+  /*! @decl int(0..) block_size(void)
    *!
    *! @returns
    *!   The block size of the cipher (1 for stream ciphers).
    */
-  PIKEFUN int block_size()
+    PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
@@ -241,7 +241,7 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
-  /*! @decl string make_key()
+  /*! @decl string(0..255) make_key()
    *!
    *! Generate a key by calling @[Crypto.Random.random_string] and
    *! initialize this object for encryption with that key.
@@ -252,7 +252,7 @@ PIKECLASS CipherState
    *! @seealso
    *!   @[set_encrypt_key]
    */
-  PIKEFUN string make_key()
+    PIKEFUN string(0..255) make_key()
     optflags OPT_EXTERNAL_DEPEND;
   {
     struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
@@ -266,7 +266,7 @@ PIKECLASS CipherState
     pop_stack();
   }
 
-  /*! @decl string crypt(string data)
+  /*! @decl string(0..255) crypt(string data)
    *!
    *! Encrypts or decrypts data, using the current key.
    *!
@@ -276,7 +276,7 @@ PIKECLASS CipherState
    *! @returns
    *!   The encrypted or decrypted data.
    */
-  PIKEFUN string crypt (string data)
+  PIKEFUN string(0..255) crypt (string data)
     optflags OPT_EXTERNAL_DEPEND;
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
@@ -297,12 +297,12 @@ PIKECLASS CipherState
       push_string(end_shared_string(s));
     }
 
-  /*! @decl string key_size(void)
+  /*! @decl int(0..) key_size(void)
    *!
    *! @returns
    *!   The actual key size for this cipher.
    */
-  PIKEFUN int key_size()
+    PIKEFUN int(0..) key_size()
     optflags OPT_EXTERNAL_DEPEND;
     {
       RETURN THIS->key_size;
@@ -517,9 +517,12 @@ PIKECLASS DES_Info
    *! bytes. If a key longer than eight characters is used, it will
    *! be truncated to eight characters.
    */
-  PIKEFUN string fix_parity(string key)
+  PIKEFUN string(0..255) fix_parity(string key)
   {
     uint8_t buf[8];
+
+    NO_WIDE_STRING(key);
+
     if(key->len < 7)
       Pike_error("Key must be at least 7 characters.\n");
 
@@ -700,10 +703,12 @@ PIKECLASS DES3_Info
    *! bytes. If a key longer than 24 characters is used, it will
    *! be truncated to 24 characters.
    */
-  PIKEFUN string fix_parity(string key)
+  PIKEFUN string(0..255) fix_parity(string key)
   {
     INT32 i;
     struct array *arr;
+
+    NO_WIDE_STRING(key);
 
     if(key->len < 24 && key->len != 21)
       Pike_error("Key must be 21 or >=24 characters.\n");

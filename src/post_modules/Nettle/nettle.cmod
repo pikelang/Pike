@@ -147,7 +147,7 @@ PIKECLASS Yarrow
    *! @seealso
    *!   @[seed()], @[random_string()]
    */
-  PIKEFUN string get_seed()
+  PIKEFUN string(0..255) get_seed()
     optflags OPT_EXTERNAL_DEPEND;
     rawtype tDeprecated(tFunc(tNone, tStr8));
   {
@@ -240,10 +240,10 @@ PIKECLASS Yarrow
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string random_string(int length)
+  /*! @decl string(0..255) random_string(int length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string random_string(int length)
+  PIKEFUN string(0..255) random_string(int length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -279,7 +279,7 @@ PIKECLASS Yarrow
  *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
  *! It is assumed that @[salt] does not contain "$".
  */
-PIKEFUN string crypt_md5(string pw, string salt, void|string magic)
+PIKEFUN string(0..255) crypt_md5(string pw, string salt, void|string magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;
@@ -487,11 +487,11 @@ PIKECLASS CBC
     MEMSET(THIS->iv, 0, THIS->block_size);
   }
 
-  /*! @decl string name()
+  /*! @decl string(0..255) name()
    *! Returns the string @expr{"CBC(x)"@} where x is the
    *! encapsulated algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
   {
     push_constant_text("CBC(");
@@ -500,19 +500,19 @@ PIKECLASS CBC
     f_add(3);
   }
 
-  /*! @decl int block_size()
+  /*! @decl int(0..) block_size()
    *! Reurns the block size of the encapsulated cipher.
    */
-  PIKEFUN int block_size()
+  PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN THIS->block_size;
   }
 
-  /*! @decl int key_size()
+  /*! @decl int(0..) key_size()
    *! Returns the key size of the encapsulated cipher.
    */
-  PIKEFUN int key_size()
+  PIKEFUN int(0..) key_size()
     optflags OPT_EXTERNAL_DEPEND;
   {
     safe_apply(THIS->object, "key_size", args);
@@ -560,11 +560,11 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
-  /*! @decl string crypt(string data)
+  /*! @decl string(0..255) crypt(string data)
    *! Encrypt/decrypt @[data] and return the result. @[data] must
    *! be an integral number of blocks.
    */
-  PIKEFUN string crypt(string data) {
+  PIKEFUN string(0..255) crypt(string data) {
     unsigned INT8 *result;
     INT32 offset = 0;
     ONERROR uwp;
@@ -665,11 +665,11 @@ PIKECLASS Proxy {
     MEMSET(THIS->backlog, 0, THIS->block_size);
   }
 
-  /*! @decl string name()
+  /*! @decl string(0..255) name()
    *! Returns the string @expr{"Proxy(x)"@} where x is the
    *! encapsulated algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
   {
     push_constant_text("Proxy(");
@@ -678,21 +678,21 @@ PIKECLASS Proxy {
     f_add(3);
   }
 
-  /*! @decl int block_size()
+  /*! @decl int(0..) block_size()
    *!
    *! Get the block size of the contained block crypto.
    */
-  PIKEFUN int block_size()
+  PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN THIS->block_size;
   }
 
-  /*! @decl int key_size()
+  /*! @decl int(0..) key_size()
    *!
    *! Get the key size of the contained block crypto.
    */
-  PIKEFUN int key_size()
+  PIKEFUN int(0..) key_size()
     optflags OPT_EXTERNAL_DEPEND;
   {
     safe_apply(THIS->object, "key_size", args);
@@ -732,7 +732,7 @@ PIKECLASS Proxy {
     RETURN this_object();
   }
 
-  /*! @decl string crypt(string data)
+  /*! @decl string(0..255) crypt(string data)
    *!
    *! Encrypt some data.
    *!
@@ -740,7 +740,7 @@ PIKECLASS Proxy {
    *! data to en/decrypt a block, that will be done, and the result
    *! returned. Any uncrypted data will be left in the buffer.
    */
-  PIKEFUN string crypt(string data) {
+  PIKEFUN string(0..255) crypt(string data) {
     unsigned char *result;
     ptrdiff_t roffset = 0;
     ptrdiff_t soffset = 0;
@@ -815,7 +815,7 @@ PIKECLASS Proxy {
     CALL_AND_UNSET_ONERROR (uwp);
   }
 
-  /*! @decl string pad(void|int method)
+  /*! @decl string(0..255) pad(void|int method)
    *!
    *! Pad and encrypt any data left in the buffer.
    *!
@@ -833,7 +833,7 @@ PIKECLASS Proxy {
    *! @seealso
    *!   @[unpad()]
    */
-  PIKEFUN string pad(void|int method) {
+  PIKEFUN string(0..255) pad(void|int method) {
     ptrdiff_t i;
     int m = 0;
     int size = THIS->block_size - THIS->backlog_len;
@@ -894,7 +894,7 @@ PIKECLASS Proxy {
     safe_apply(THIS->object, "crypt", 1);
   }
 
-  /*! @decl string unpad(string data, void|int method)
+  /*! @decl string(0..255) unpad(string data, void|int method)
    *!
    *! Decrypt and unpad a block of data.
    *!
@@ -914,7 +914,7 @@ PIKECLASS Proxy {
    *! @seealso
    *!   @[pad()]
    */
-  PIKEFUN string unpad(string str, void|int method) {
+  PIKEFUN string(0..255) unpad(string str, void|int method) {
     ptrdiff_t len;
     int m = 0;
 
