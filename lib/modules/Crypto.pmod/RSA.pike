@@ -239,8 +239,7 @@ int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
 //!   Document this function.
 string sha_sign(string message, mixed|void r)
 {
-  string s = Crypto.SHA1->hash(message);
-  s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
   return cooked_sign(s);r;
 }
   
@@ -248,8 +247,7 @@ string sha_sign(string message, mixed|void r)
 //!   Document this function.
 int sha_verify(string message, string signature)
 {
-  string s = Crypto.SHA1->hash(message);
-  s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 

@@ -208,10 +208,10 @@ mapping(string:string|mapping) decode(string s) {
 string encode(int type, string data) {
   type <<= 2;
   if(sizeof(data)>65535)
-    return sprintf("%c%4c%s", type+2, sizeof(data), data);
+    return sprintf("%c%4H", type+2, data);
   if(sizeof(data)>255)
-    return sprintf("%c%2c%s", type+1, sizeof(data), data);
-  return sprintf("%c%c%s", type, sizeof(data), data);
+    return sprintf("%c%2H", type+1, data);
+  return sprintf("%c%1H", type, data);
 }
 
 protected int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
