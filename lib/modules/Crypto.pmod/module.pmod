@@ -64,7 +64,7 @@ int(0..1) verify_crypt_md5(string password, string hash) {
   string salt;
   if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
     error("Error in hash.\n");
-  return Nettle.crypt_md5(password, salt)==hash;
+  return Nettle.crypt_md5(password, salt)==[string(0..255)]hash;
 }
 
 class CipherState {
