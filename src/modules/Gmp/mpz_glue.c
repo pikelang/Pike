@@ -2374,15 +2374,15 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt01),         \
                ID_PROTECTED);                                           \
   									\
-  ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
+  ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr8), 0);\
   ADD_FUNCTION("encode_json", mpzmod_get_string,			\
-	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr), 0);		\
+	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr7), 0);	\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
-  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);	\
+  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr7),0);\
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
