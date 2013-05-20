@@ -799,4 +799,57 @@ test_any([[
 
 test_do( add_constant( "H" ) )
 test_do( add_constant( "S" ) )
+
+test_do([[
+  int pwtest(string p, void|string s) {
+    return Crypto.Password.verify( p, Crypto.Password.hash(p, s) );
+  };
+  add_constant( "P", pwtest );
+]])
+test_true( P("hej") )
+test_true( P("hej",0) )
+test_true( P("hej","crypt") )
+test_true( P("hej","{crypt}") )
+cond_resolv(Crypto.SHA512, [[
+  test_true( P("hej","6") )
+  test_true( has_prefix(Crypto.Password.hash("hej","6"), "$6$") )
+  test_true( P("hej","$6$") )
+  test_true( has_prefix(Crypto.Password.hash("hej","$6$"), "$6$") )
+]])
+test_true( P("hej","5") )
+test_true( has_prefix(Crypto.Password.hash("hej","5"), "$5$") )
+test_true( P("hej","$5$") )
+test_true( has_prefix(Crypto.Password.hash("hej","$5$"), "$5$") )
+test_true( P("hej","1") )
+test_true( has_prefix(Crypto.Password.hash("hej","1"), "$1$") )
+test_true( P("hej","$1$") )
+test_true( has_prefix(Crypto.Password.hash("hej","$1$"), "$1$") )
+test_true( P("hej","sha") )
+test_true( has_prefix(Crypto.Password.hash("hej","sha"), "{SHA}") )
+test_true( P("hej","{sha}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{sha}"), "{SHA}") )
+test_true( P("hej","ssha") )
+test_true( has_prefix(Crypto.Password.hash("hej","ssha"), "{SSHA}") )
+test_true( P("hej","{ssha}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{ssha}"), "{SSHA}") )
+test_true( P("hej","md5") )
+test_true( has_prefix(Crypto.Password.hash("hej","md5"), "{MD5}") )
+test_true( P("hej","{md5}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{md5}"), "{MD5}") )
+test_true( P("hej","smd5") )
+test_true( has_prefix(Crypto.Password.hash("hej","smd5"), "{SMD5}") )
+test_true( P("hej","{smd5}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{smd5}"), "{SMD5}") )
+test_eval_error( Crypto.Password.hash("hej","hej") )
+test_false( Crypto.Password.verify("hej","{}") )
+test_false( Crypto.Password.verify("hej","{x}") )
+test_false( Crypto.Password.verify("hej","{md5}") )
+test_false( Crypto.Password.verify("hej","{sha}") )
+dnl test_false( Crypto.Password.verify("hej","{crypt}") )
+Crypto.Password.verify("hej","$x$");
+Crypto.Password.verify("hej","$1$$");
+Crypto.Password.verify("hej","$5$$");
+Crypto.Password.verify("hej","$6$$");
+test_do( add_constant( "P" ) )
+
 END_MARKER
