@@ -845,7 +845,7 @@ test_false( Crypto.Password.verify("hej","{}") )
 test_false( Crypto.Password.verify("hej","{x}") )
 test_false( Crypto.Password.verify("hej","{md5}") )
 test_false( Crypto.Password.verify("hej","{sha}") )
-dnl test_false( Crypto.Password.verify("hej","{crypt}") )
+test_true( Crypto.Password.verify("hej","{crypt}") )
 Crypto.Password.verify("hej","$x$");
 Crypto.Password.verify("hej","$1$$");
 Crypto.Password.verify("hej","$5$$");
