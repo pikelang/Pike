@@ -128,7 +128,7 @@ int verify(string password, string hash)
     hash = MIME.decode_base64(hash);
     password += hash[16..];
     hash = hash[..15];
-    return Crypto.MD5.hash(password) == hash;
+    return Crypto.MD5.hash(password) == [string(0..255)]hash;
 
   case "sha":	// RFC 2307
   case "ssha":
@@ -136,7 +136,7 @@ int verify(string password, string hash)
     hash = MIME.decode_base64(hash);
     password += hash[20..];
     hash = hash[..19];
-    return Crypto.SHA1.hash(password) == hash;
+    return Crypto.SHA1.hash(password) == [string(0..255)]hash;
 
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
@@ -158,7 +158,7 @@ int verify(string password, string hash)
     }
     switch(scheme) {
     case "1":	// crypt_md5
-      return Nettle.crypt_md5(password, salt) == hash;
+      return Nettle.crypt_md5(password, salt) == [string(0..255)]hash;
 
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
@@ -172,11 +172,13 @@ int verify(string password, string hash)
 #if constant(Nettle.SHA256_Info)
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
-      return Crypto.SHA256.crypt_hash(password, salt, rounds) == hash;
+      return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
+        [string(0..255)]hash;
 #endif
 #if constant(Nettle.SHA512_Info)
     case "6":	// SHA-512
-      return Crypto.SHA512.crypt_hash(password, salt, rounds) == hash;
+      return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
+        [string(0..255)]hash;
 #endif
     }
     break;
