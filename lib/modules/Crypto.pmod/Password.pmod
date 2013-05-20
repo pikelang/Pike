@@ -151,6 +151,7 @@ int verify(string password, string hash)
 
     // Then try our implementations.
     sscanf(hash, "$%s$%s$%s", scheme, string salt, string hash);
+    if( !salt || !hash ) return 0;
     int rounds = UNDEFINED;
     if (has_prefix(salt, "rounds=")) {
       sscanf(salt, "rounds=%d", rounds);
@@ -169,12 +170,10 @@ int verify(string password, string hash)
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
       break;
 
-#if constant(Nettle.SHA256_Info)
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
       return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
         [string(0..255)]hash;
-#endif
 #if constant(Nettle.SHA512_Info)
     case "6":	// SHA-512
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
@@ -301,13 +300,11 @@ string hash(string password, string|void scheme, int|void rounds)
     scheme = "6";
     break;
 #endif
-#if constant(Nettle.SHA256_Info)
   case "5":
   case "$5$":
     crypt_hash = Crypto.SHA256.crypt_hash;
     scheme = "5";
     break;
-#endif
   case "1":
   case "$1$":
     crypt_hash = Crypto.MD5.crypt_hash;
