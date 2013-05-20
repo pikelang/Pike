@@ -1571,7 +1571,13 @@ PMOD_EXPORT void f_add(INT32 args)
       pop_n_elems(args-1);
       return;
     }
-    
+    else if(args == 2 && (size == sp[-1].u.string->len))
+    {
+      stack_swap();
+      pop_stack();
+      return;
+    }
+
     tmp=sp[-args].u.string->len;
     r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
     mark_free_svalue (sp - args);
