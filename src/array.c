@@ -2427,7 +2427,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     s=str->str;
     end=s+(str->len << str->size_shift);
 
-    ret=allocate_array(10);
+    ret=allocate_array(2);
     ret->size=0;
 
     mojt=compile_memsearcher(MKPCHARP_STR(del),
@@ -2507,6 +2507,8 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
   len=0;
   delims = 0;
 
+
+
   for(e=a->size, ae=a->item; e--; ae++)
     switch(TYPEOF(*ae))
     {
@@ -2529,7 +2531,14 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
     len-=del->len;
     delims--;
   }
-  
+
+  if( a->size == 1 && TYPEOF(*ITEM(a)) == PIKE_T_STRING )
+  {
+      struct pike_string * res = ITEM(a)->u.string;
+      res->refs++;
+      return res;
+  }
+
   ret=begin_wide_shared_string(len,max_shift);
   r=MKPCHARP_STR(ret);
   len = del->len;
