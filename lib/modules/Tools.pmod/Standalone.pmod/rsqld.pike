@@ -273,6 +273,16 @@ class Connection
     get_query(args[0])->seek(args[1]);
   }
 
+  protected string cmd_get_charset()
+  {
+    return sqlobj->get_charset();
+  }
+
+  protected void cmd_set_charset(string s)
+  {
+    sqlobj->set_charset(s);
+  }
+
   protected string cmd_quote(string s)
   {
     return sqlobj->quote(s);
@@ -293,6 +303,7 @@ class Connection
       'D': cmd_selectdb,
       'E': cmd_error,
       'F': cmd_fetchfields,
+      'H': cmd_set_charset,
       'I': cmd_srvinfo,
       'N': cmd_numrows,
       'Q': cmd_bigquery,
@@ -302,6 +313,7 @@ class Connection
       'Z': cmd_zapquery,
       'e': cmd_eof,
       'f': cmd_listflds,
+      'h': cmd_get_charset,
       'i': cmd_hostinfo,
       'l': cmd_listdbs,
       'n': cmd_numfields,

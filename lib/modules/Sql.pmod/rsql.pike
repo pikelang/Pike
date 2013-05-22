@@ -252,6 +252,16 @@ int insert_id()
   return do_request('#');
 }
 
+string get_charset()
+{
+  return do_request('h');
+}
+
+void set_charset(string charset)
+{
+  do_request('H', charset);
+}
+
 void create(string|void host, string|void db, string|void user,
 	    string|void _pw, mapping|void options)
 {
