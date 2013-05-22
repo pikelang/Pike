@@ -187,59 +187,82 @@ string quote(string s)
   return do_request('q');
 }
 
+protected class RemoteResult(protected function(int,mixed:mixed) do_request,
+			     protected mixed qid)
+{
+  void destroy()
+  {
+    do_request('Z', qid);
+  }
+
+  int|array(string|int) fetch_row()
+  {
+    return do_request('R', qid);
+  }
+
+  array(mapping(string:mixed)) fetch_fields()
+  {
+    return do_request('F', qid);
+  }
+
+  int num_rows()
+  {
+    return do_request('N', qid);
+  }
+
+  int num_fields()
+  {
+    return do_request('n', qid);
+  }
+
+  int eof()
+  {
+    return do_request('e', qid);
+  }
+
+  void seek(int skip)
+  {
+    do_request('S', ({qid,skip}));
+  }
+}
+
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   if(bindings)
     q=.sql_util.emulate_bindings(q,bindings,this);
 
   mixed qid = do_request('Q', q);
-  return qid && class {
+  return qid && RemoteResult(do_request, qid);
+}
 
-    protected function(int,mixed:mixed) do_request;
-    protected mixed qid;
+int|object big_typed_query(object|string q,
+			   mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    void destroy()
-    {
-      do_request('Z', qid);
-    }
+  mixed qid = do_request('Q', ({ "big_typed_query", q }));
+  return qid && RemoteResult(do_request, qid);
+}
 
-    int|array(string|int) fetch_row()
-    {
-      return do_request('R', qid);
-    }
+int|object streaming_query(object|string q,
+			   mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    array(mapping(string:mixed)) fetch_fields()
-    {
-      return do_request('F', qid);
-    }
+  mixed qid = do_request('Q', ({ "streaming_query", q }));
+  return qid && RemoteResult(do_request, qid);
+}
 
-    int num_rows()
-    {
-      return do_request('N', qid);
-    }
+int|object streaming_typed_query(object|string q,
+				 mapping(string|int:mixed)|void bindings)
+{
+  if(bindings)
+    q=.sql_util.emulate_bindings(q,bindings,this);
 
-    int num_fields()
-    {
-      return do_request('n', qid);
-    }
-
-    int eof()
-    {
-      return do_request('e', qid);
-    }
-
-    void seek(int skip)
-    {
-      do_request('S', ({qid,skip}));
-    }
-
-    void create(function(int,mixed:mixed) d_r, mixed i)
-    {
-      do_request = d_r;
-      qid = i;
-    }
-
-  }(do_request, qid);
+  mixed qid = do_request('Q', ({ "streaming_typed_query", q }));
+  return qid && RemoteResult(do_request, qid);
 }
 
 array(mapping(string:mixed)) query(mixed ... args)

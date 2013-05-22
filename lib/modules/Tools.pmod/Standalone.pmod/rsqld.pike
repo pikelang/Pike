@@ -212,9 +212,14 @@ class Connection
     return sprintf("%4c%4c", qbase, qid++);
   }
 
-  protected string cmd_bigquery(string q)
+  protected string cmd_bigquery(string|array(string) q)
   {
-    object res = sqlobj->big_query(q);
+    object res;
+    if (arrayp(q)) {
+      res = predef::`->(sqlobj, q[0])(@q[1..]);
+    } else {
+      res = sqlobj->big_query(q);
+    }
     if(!res)
       return 0;
     string qid = make_id();
