@@ -115,6 +115,11 @@ protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
   }
 }
 
+protected mixed do_proxy(string cmd, array(mixed) args)
+{
+  return do_request('P', ({ cmd, args }));
+}
+
 void select_db(string the_db)
 {
   do_request('D', the_db);
@@ -283,6 +288,14 @@ string get_charset()
 void set_charset(string charset)
 {
   do_request('H', charset);
+}
+
+protected function|mixed `->(string cmd)
+{
+  return ::`->(cmd) ||
+    lambda(mixed ... args) {
+      return do_proxy(cmd, args);
+    };
 }
 
 void create(string|void host, string|void db, string|void user,
