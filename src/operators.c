@@ -5785,8 +5785,8 @@ void init_operators(void)
 		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
 		 tIfnot(tFuncV(tNone, tNot(tStr), tMix),
-			tFuncV(tOr3(tStr,tInt,tFlt),
-			       tOr3(tStr,tInt,tFlt),tStr)),
+			tFuncV(tOr3(tSetvar(0, tStr),tInt,tFlt),
+			       tOr3(tSetvar(1, tStr),tInt,tFlt),tOr(tVar(0),tVar(1)))),
 		 tFuncV(tSetvar(0,tArray),tSetvar(1,tArray),
 			tOr(tVar(0),tVar(1))),
 		 tFuncV(tSetvar(0,tMapping),tSetvar(1,tMapping),
@@ -5806,7 +5806,7 @@ void init_operators(void)
 			tOr3(tMapping,tArray,tMultiset),
 			tMap(tVar(1),tVar(2))),
 		 tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),
-		 tFuncV(tStr,tStr,tStr)),
+		 tFuncV(tSetvar(0,tStr),tStr,tVar(0))),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
 /*
