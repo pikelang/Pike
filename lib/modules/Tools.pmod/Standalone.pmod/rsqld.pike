@@ -278,6 +278,11 @@ class Connection
     get_query(args[0])->seek(args[1]);
   }
 
+  protected mixed cmd_proxy(array(string|mixed) cmd_args)
+  {
+    return predef::`->(sqlobj, cmd_args[0])(@cmd_args[1]);
+  }
+
   protected string cmd_get_charset()
   {
     return sqlobj->get_charset();
@@ -311,6 +316,7 @@ class Connection
       'H': cmd_set_charset,
       'I': cmd_srvinfo,
       'N': cmd_numrows,
+      'P': cmd_proxy,
       'Q': cmd_bigquery,
       'R': cmd_fetchrow,
       'S': cmd_seek,
