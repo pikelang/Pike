@@ -4612,6 +4612,7 @@ AC_CHECK_FUNCS( \
  gmtime \
  gmtime_r \
  gmtime_s \
+ strptime \
  mallinfo \
  mallopt \
  memchr \

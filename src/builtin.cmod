@@ -38,6 +38,516 @@
 
 DECLARATIONS
 
+
+/*! @module System
+ */
+
+#if defined(HAVE_MKTIME) && defined(HAVE_GMTIME) && defined(HAVE_LOCALTIME)
+PIKECLASS TM
+/*! @class TM
+ *! A wrapper for the system struct tm time keeping structure.
+ *! This can be used as a (very) lightweight alternative to Calendar.
+ */
+{
+    CVAR struct tm t;
+    CVAR time_t unix_time;
+    CVAR int modified;
+    CVAR struct pike_string *set_zone;
+
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+#define tm_zone __tm_zone
+#define tm_gmtoff __tm_gmtoff
+#endif
+
+#if 0
+/* This is supposed to make any timezone work.
+ * However: It does not really work. And makes things even slower than
+ * the calendar module.
+ */
+#ifndef HAVE_EXTERNAL_TIMEZONE
+#define timezone 0
+#endif
+#define WITH_ZONE(RETURNTYPE, FUNCTION, ARGUMENTS, CALL )             \
+    static RETURNTYPE FUNCTION##_zone ARGUMENTS                       \
+    {                                                                 \
+        RETURNTYPE res;                                               \
+        int reset = 0;                                                \
+        char *old_zone = NULL;                                        \
+        if( x->tm_zone )                                              \
+        {                                                             \
+            reset = 1;                                                \
+            old_zone = getenv("TZ");                                  \
+            setenv("TZ", x->tm_zone, 1 );                             \
+            tzset();                                                  \
+            x->tm_gmtoff = timezone;                                  \
+        }                                                             \
+                                                                      \
+        res = FUNCTION CALL;                                          \
+                                                                      \
+        if( reset )                                                   \
+        {                                                             \
+            if( old_zone )                                            \
+                setenv("TZ", old_zone, 1 );                           \
+            else                                                      \
+                unsetenv( "TZ" );                                     \
+            tzset();                                                  \
+        }                                                             \
+        return res;                                                   \
+    }
+
+    WITH_ZONE(time_t,mktime,( struct tm *x ),(x));
+    WITH_ZONE(struct tm*,localtime,( time_t *t, struct tm *x ),(t));
+    WITH_ZONE(char *,asctime,( struct tm *x ),(x));
+    WITH_ZONE(int,strftime,( char *buffer, size_t max_len, char *format, struct tm *x ),(buffer,max_len,format,x));
+#ifdef HAVE_STRPTIME
+    WITH_ZONE(char *,strptime,( const char *str, const char *format, struct tm *x ),(str,format,x));
+#endif
+#else
+#define strftime_zone strftime
+#define mktime_zone mktime
+#define strptime_zone strptime
+#define asctime_zone asctime
+#define localtime_zone(X,Y) localtime(X)
+#endif
+#ifndef HAVE_EXTERNAL_TIMEZONE
+#undef timezone
+#endif
+
+#define MODIFY(X) do{ THIS->modified = 1;THIS->t.X; }while(0)
+#define FIX_THIS() do {                                               \
+        if(THIS->modified){                                           \
+            THIS->unix_time = mktime_zone( &THIS->t );                \
+            THIS->modified = 0;                                       \
+        }                                                             \
+    }  while(0)
+
+    /*
+     *! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
+     *!
+     *! Parse the given @[data] using the format in @[format] as a date.
+     *!
+     *! %%     The % character.
+     *!
+     *! %a or %A
+     *!  The weekday name according to the C locale, in abbreviated
+     *!  form or the full name.
+     *!
+     *! %b or %B or %h
+     *!  The month name according to the C locale, in abbreviated form
+     *!  or the full name.
+     *!
+     *! %c     The date and time representation for the C locale.
+     *!
+     *! %C     The century number (0-99).
+     *!
+     *! %d or %e
+     *!        The day of month (1-31).
+     *!
+     *! %D     Equivalent to %m/%d/%y.
+     *!
+     *! %H     The hour (0-23).
+     *!
+     *! %I     The hour on a 12-hour clock (1-12).
+     *!
+     *! %j     The day number in the year (1-366).
+     *!
+     *! %m     The month number (1-12).
+     *!
+     *! %M     The minute (0-59).
+     *!
+     *! %n     Arbitrary whitespace.
+     *!
+     *! %p     The C locale's equivalent of AM or PM.
+     *!
+     *! %R     Equivalent to %H:%M.
+     *!
+     *! %S     The second (0-60; 60 may occur for leap seconds; earlier also 61 was allowed).
+     *!
+     *! %t     Arbitrary whitespace.
+     *!
+     *! %T     Equivalent to %H:%M:%S.
+     *!
+     *! %U     The week number with Sunday the first day of the week (0-53).
+     *!
+     *! %w     The weekday number (0-6) with Sunday = 0.
+     *!
+     *! %W     The week number with Monday the first day of the week (0-53).
+     *!
+     *! %x     The date, using the C locale's date format.
+     *!
+     *! %X     The time, using the C locale's time format.
+     *!
+     *! %y
+     *!  The year within century (0-99).  When a century is not
+     *!  otherwise specified, values in the range 69-99 refer to years
+     *!  in the twentieth century (1969-1999); values in the range
+     *!  00-68 refer to years in the twenty-first century (2000-2068).
+     *!
+     *! %Y     The year, including century (for example, 1991).
+     *!
+     */
+    PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
+    {
+        if( format->size_shift || data->size_shift )
+            Pike_error("Only 8bit strings are supported\n");
+        THIS->modified = 1;
+        if( strptime_zone( data->str, format->str, &THIS->t ) == NULL )
+            RETURN 0;
+        RETURN 1;
+    }
+#endif
+/*! @decl string(1..255) strftime( string(1..255) format )
+ *! See also @[Gettext.setlocale]
+ *!
+ *! Convert the structure to a string. 
+ *!
+ *! %a     The abbreviated weekday name according to the current locale
+ *!
+ *! %A     The full weekday name according to the current locale.
+ *!
+ *! %b     The abbreviated month name according to the current locale.
+ *!
+ *! %B     The full month name according to the current locale.
+ *!
+ *! %c     The preferred date and time representation for the current locale.
+ *!
+ *! %C     The century number (year/100) as a 2-digit integer.
+ *!
+ *! %d     The day of the month as a decimal number (range 01 to 31).
+ *!
+ *! %D     Equivalent  to %m/%d/%y.  (for Americans only.  Americans should note that in other countries %d/%m/%y is rather common.  This means that in international context this format is ambiguous and should not be used.)
+
+ *! %e     Like %d, the day of the month as a decimal number, but a leading zero is replaced by a space.
+ *!
+ *! %E     Modifier: use alternative format, see below.
+ *!
+ *! %F     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!
+ *! %G     The ISO 8601 week-based year (see NOTES) with century as a decimal number.  The 4-digit year corresponding to the ISO week number (see %V).  This has the same format and value as %Y, except that if the ISO week number belongs to the previous or next year, that year is used instead.
+ *!
+ *! %g     Like %G, but without century, that is, with a 2-digit year (00-99). (TZ)
+ *!
+ *! %h     Equivalent to %b.
+ *!
+ *! %H     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!
+ *! %I     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!
+ *! %j     The day of the year as a decimal number (range 001 to 366).
+ *!
+ *! %k     The hour (24-hour clock) as a decimal number (range 0 to 23); single digits are preceded by a blank.  (See also %H.)
+ *!
+ *! %l     The hour (12-hour clock) as a decimal number (range 1 to 12); single digits are preceded by a blank.  (See also %I.)
+ *!
+ *! %m     The month as a decimal number (range 01 to 12).
+ *!
+ *! %M     The minute as a decimal number (range 00 to 59).
+ *!
+ *! %n     A newline character. (SU)
+ *!
+ *! %O     Modifier: use alternative format, see below. (SU)
+ *!
+ *! %p     Either  "AM" or "PM" according to the given time value, or the corresponding strings for the current locale.  Noon is treated as "PM" and midnight as "AM".
+ *!
+ *! %P     Like %p but in lowercase: "am" or "pm" or a corresponding string for the current locale.
+ *!
+ *! %r     The time in a.m. or p.m. notation.  In the POSIX locale this is equivalent to %I:%M:%S %p.
+ *!
+ *! %R     The time in 24-hour notation (%H:%M). (SU) For a version including the seconds, see %T below.
+ *!
+ *! %s     The number of seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!
+ *! %S     The second as a decimal number (range 00 to 60).  (The range is up to 60 to allow for occasional leap seconds.)
+ *!
+ *! %t     A tab character. (SU)
+ *!
+ *! %T     The time in 24-hour notation (%H:%M:%S). (SU)
+ *!
+ *! %u     The day of the week as a decimal, range 1 to 7, Monday being 1.  See also %w.  (SU)
+ *!
+ *! %U     The week number of the current year as a decimal number, range 00 to 53, starting with the first Sunday as the first day of week 01.  See also  %V and %W.
+ *!
+ *! %V     The  ISO 8601  week number of the current year as a decimal number, range 01 to 53, where week 1 is the first week that has at least 4 days in the new year.  See also %U and %W.
+ *!
+ *! %w     The day of the week as a decimal, range 0 to 6, Sunday being 0.  See also %u.
+ */
+    PIKEFUN string strftime(string(1..255) format)
+    {
+        char *buffer = xalloc( 8192 );
+        buffer[0] = 0;
+        strftime_zone( buffer, 8192, format->str, &THIS->t );
+        push_text( buffer );
+    }
+
+    /*
+     *! @decl int(0..60) sec;
+     *! @decl int(0..59) min;
+     *! @decl int(0..59) hour;
+     *! @decl int(1..31) mday;
+     *! @decl int(0..11) mon;
+     *! @decl int year;
+     *!
+     *! The various fields in the structure. Note that setting these
+     *! might cause other fields to be recalculated, as an example,
+     *! adding 1000 to the hour field would advance the 'mday', 'mon'
+     *! and possibly 'year' fields.
+     *!
+     *! When read the fields are always normalized.
+     *!
+     *! Unlike the system struct tm the 'year' field is not year-1900,
+     *! instead it is the actual year.
+     */
+    PIKEFUN int(0..60) `sec()       { FIX_THIS();RETURN THIS->t.tm_sec;  }
+    PIKEFUN int(0..59) `min()       { FIX_THIS();RETURN THIS->t.tm_min;  }
+    PIKEFUN int(0..23) `hour()      { FIX_THIS();RETURN THIS->t.tm_hour; }
+    PIKEFUN int(1..31) `mday()      { FIX_THIS();RETURN THIS->t.tm_mday; }
+    PIKEFUN int(0..11) `mon()       { FIX_THIS();RETURN THIS->t.tm_mon; }
+    PIKEFUN int `year()             { FIX_THIS();RETURN THIS->t.tm_year+1900; }
+
+    PIKEFUN int `sec=(int a) { MODIFY(tm_sec=a); }
+    PIKEFUN int `min=(int a) { MODIFY(tm_min=a); }
+    PIKEFUN int `hour=(int a){ MODIFY(tm_hour=a); }
+    PIKEFUN int `mday=(int a){ MODIFY(tm_mday=a); }
+    PIKEFUN int `year=(int a){ MODIFY(tm_year=a-1900); }
+    PIKEFUN int `mon=(int a){ MODIFY(tm_mon=a); }
+
+    /*! @decl int isdst
+     *!
+     *! True if daylight savings are in effect.  If this field is -1
+     *! (the default) it (and the timezone info) will be updated
+     *! automatically using the timezone rules.
+     */
+    PIKEFUN int(-1..1) `isdst()  {
+        FIX_THIS();
+        RETURN THIS->t.tm_isdst;
+    }
+
+    /*! @decl int wday
+     *! The day of the week, sunday is 0, saturday is 6.
+     *! This is calculated from the other fields and can not be changed directly.
+     */
+    PIKEFUN int(0..6) `wday()      { FIX_THIS(); RETURN THIS->t.tm_wday; }
+
+    /*! @decl int yday
+     *! The day of the year, from 0 (the first day) to 365
+     *! This is calculated from the other fields and can not be changed directly.
+     */
+    PIKEFUN int(0..365) `yday()      { FIX_THIS(); RETURN THIS->t.tm_yday; }
+
+    /*! @decl int unix_time()
+     *! Return the unix time corresponding to this time_t. If no time
+     *! can be parsed from the structure -1 is returned.
+     */
+    PIKEFUN int unix_time()
+    {
+        FIX_THIS();
+        RETURN THIS->unix_time;
+    }
+
+    /*! @decl string asctime()
+     *! Return a string representing the time. Mostly useful for debug
+     *! purposes, the exact format is very locale (see
+     *! @[Gettext.setlocale]) and OS dependent.
+     */
+    PIKEFUN string asctime()
+    {
+        FIX_THIS();
+        {
+            char *tval = asctime_zone( &THIS->t );
+            if( tval )
+                push_text( tval );
+            else
+                push_text( 0 );
+        }
+    }
+
+    PIKEFUN void _sprintf( int flag, mapping options )
+    {
+        int post_sum = 1;
+        switch( flag )
+        {
+          case 'O':
+            push_text("System.TM(");
+            post_sum = 1;
+            /* fallthrough */
+          case 's':
+            f_TM_asctime(0);
+            push_text("\n");
+            if( THIS->t.tm_zone  )
+            {
+                push_text(" ");
+                push_text( THIS->t.tm_zone );
+                f_add( 2 );
+            }
+            else
+                push_text("");
+            f_replace( 3 );
+            break;
+          case 'd':
+            f_TM_unix_time(0);
+            break;
+        default:
+            Pike_error("Can not format as %c", flag );
+        }
+        if( post_sum )
+        {
+            push_text(")");
+            f_add(3);
+        }
+
+    }
+
+    PIKEFUN mixed cast( string to )
+    {
+        struct pike_string *s_string, *s_int;
+        MAKE_CONST_STRING(s_int, "int");
+        MAKE_CONST_STRING(s_string, "string");
+        if( to == s_int )
+        {
+            f_TM_unix_time(0);
+            return;
+        }
+        if( to == s_string )
+        {
+            f_TM_asctime(0);
+            return;
+       }
+       Pike_error("Does not know how to cast to %s\n", to->str );
+    }
+
+    /*! @decl string zone
+     *!
+     *! The timezone of this structure
+     */
+    PIKEFUN string `zone() {
+        FIX_THIS();
+        if( THIS->t.tm_zone )
+            push_text( THIS->t.tm_zone );
+        else
+            push_undefined();
+    }
+
+    /*! @decl int gmtoff
+     *! The offset from GMT for the time in this tm-struct
+     */
+    PIKEFUN int `gmtoff() {
+        FIX_THIS();
+        push_int( THIS->t.tm_gmtoff );
+    }
+
+    /* Setting the zone does not work, so.. */
+
+    /* PIKEFUN string `zone=(string x) { */
+    /*     if( THIS->set_zone ) */
+    /*         free_string( THIS->set_zone ); */
+    /*     THIS->set_zone = x; */
+    /*     MODIFY( tm_zone = x->str ); */
+    /*     x->refs++; */
+    /* } */
+
+    /*! @decl int(0..1) localtime( int time )
+     *! Initialize the struct tm to the local time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) localtime( int _t )
+    {
+        time_t t = _t;
+        struct tm *res = localtime_zone( &t, &THIS->t );
+
+        /* These are supposedly correctly by localtime_zone. */
+        res->tm_gmtoff = THIS->t.tm_gmtoff;
+        res->tm_zone = THIS->t.tm_zone;
+
+        if( !res )
+            RETURN 0;
+        THIS->t = *res;
+        THIS->modified = 1;
+        RETURN 1;
+    }
+
+
+    /*! @decl int(0..1) gmtime( int time )
+     *! Initialize the struct tm to the UTC time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) gmtime( int _t )
+    {
+        time_t t = _t;
+        struct tm *res = gmtime( &t );
+
+        if( !res )
+            RETURN 0;
+
+        THIS->t = *res;
+        THIS->modified = 1;
+        RETURN 1;
+    }
+
+    /*! Create a new @[TM] initialized from a unix time_t.
+     *! The timezone will always be UTC when using this function.
+     */
+    PIKEFUN void create( int _t )
+    {
+        f_TM_gmtime( 1 );
+        if( Pike_sp[-1].u.integer == 0 )
+            Pike_error("time out of range\n");
+    }
+
+    /*! Construct a new TM, all fields will be set to 0. */
+    PIKEFUN void create( )
+    {
+        memset( &THIS->t, 0, sizeof( struct tm ) );
+        THIS->t.tm_isdst = -1;
+        THIS->unix_time = 0;
+        THIS->modified = 1;
+    }
+
+    /*! Construct a new time using the given values.
+     *! Slightly faster than setting them individually.
+     */
+    PIKEFUN void create( int year, int(0..11) mon, int(1..31) mday,
+                         int(0..24) hour, int(0..59) min, int(0..59) sec,
+                         string|void timezone )
+    {
+        struct tm *t = &THIS->t;
+        t->tm_isdst = -1;
+        t->tm_year = year;
+        t->tm_mon = mon;
+        t->tm_mday = mday;
+        t->tm_hour = hour;
+        t->tm_min = min;
+        t->tm_sec = sec;
+        if( !timezone ) /* gmtime. */
+            t->tm_zone = "UTC";
+        else
+        {
+            timezone->refs++;
+            THIS->set_zone = timezone;
+            t->tm_zone = timezone->str;
+        }
+        THIS->unix_time = mktime_zone( t );
+    }
+
+    INIT {
+        THIS->set_zone = 0;
+        THIS->modified = 0;
+    }
+
+    EXIT {
+        if( THIS->set_zone )
+            free_string( THIS->set_zone );
+    }
+}
+#undef FIX_THIS
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+#undef tm_zone
+#endif
+/*! @endmodule
+ */
+
+/*! @module Pike
+ */
+
 /*! @decl array(array(int|string|type)) describe_program(program p)
  *! @belongs Debug
  *!
