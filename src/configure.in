@@ -2441,6 +2441,8 @@ if test "$cflags_is_set" = "no"; then
   	dynamic_crt_flag=-MD
   	static_crt_flag=-MT
         fi
+	# We want the full 32-bit address space (not the default 31-bit).
+	AC_SYS_COMPILER_FLAG(-LARGEADDRESSAWARE,LARGEADDRESSAWARE,LDFLAGS)
         ;;
       esac
 
