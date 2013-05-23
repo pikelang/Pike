@@ -138,6 +138,7 @@ struct encode_context {
   struct string_builder buf;
   int flags;
   int indent;
+  struct svalue *callback;
 };
 
 static void json_encode_recur (struct encode_context *ctx, struct svalue *val);
@@ -335,7 +336,23 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       struct object *o = val->u.object;
       if (o->prog) {
 	int fun = find_identifier ("encode_json", o->prog);
-	if (fun >= 0) {
+	if (fun < 0) {
+	  int args = 2;
+	  if (!ctx->callback)
+	    Pike_error ("Cannot json encode object %O "
+			"without encode_json function.\n", val);
+	  if (TYPEOF(*ctx->callback) == PIKE_T_STRING) {
+	    string_builder_shared_strcat (&ctx->buf, ctx->callback->u.string);
+	    break;
+	  }
+	  push_svalue(val);
+	  push_int(ctx->flags);
+	  if (ctx->indent >= 0) {
+	    args++;
+	    push_int(ctx->indent);
+	  }
+	  apply_svalue(ctx->callback, args);
+	} else {
 	  int args = 1;
 	  push_int (ctx->flags);
 	  if (ctx->indent >= 0) {
@@ -343,16 +360,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	    args++;
 	  }
 	  apply_low (o, fun, args);
-	  if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-	    Pike_error ("Expected string from %O->encode_json(), got %s.\n",
-			val, get_name_of_type (TYPEOF(Pike_sp[-1])));
-	  string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
-	  free_string ((--Pike_sp)->u.string);
-	  break;
 	}
+	if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
+	  Pike_error ("Expected string from %O->encode_json(), got %s.\n",
+		      val, get_name_of_type (TYPEOF(Pike_sp[-1])));
+	string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
+	free_string ((--Pike_sp)->u.string);
+	break;
       }
-      Pike_error ("Cannot json encode object %O "
-		  "without encode_json function.\n", val);
     }
 
     default:
@@ -402,7 +417,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  */
 
 /*! @decl string encode (int|float|string|array|mapping|object val, @
- *!                      void|int flags)
+ *!                      void|int flags, void|function|object|program|string callback)
  *!
  *! Encodes a value to a JSON string.
  *!
@@ -411,11 +426,19 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   special numbers NaN and infinity), strings, arrays, mappings
  *!   with string indices, and the special object values @[null],
  *!   @[true] and @[false] defined in this module (or really any
- *!   object that implements an @expr{encode_json@} callback).
+ *!   object that implements an @expr{encode_json@} callback or
+ *!   is handled by the supplied callback argument).
  *!
  *! @param flags
  *!   Flag bit field to control formatting. See @[ASCII_ONLY],
  *!   @[HUMAN_READABLE] and @[PIKE_CANONICAL] for further details.
+ *!
+ *! @param callback
+ *!   A function that will be called for types that can not be encoded
+ *!   otherwise.  It will be called with the value to be encoded as the first
+ *!   argument, and optionally with flags and indent arguments. If a string is
+ *!   supplied, it will be used to replace the value verbatim.
+ *!   The callback must return a string or throw an error.
  *!
  *! @note
  *! 8-bit and wider characters in input strings are neither escaped
@@ -428,13 +451,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *! @[escape_string]
  */
 PIKEFUN string encode (int|float|string|array|mapping|object val,
-		       void|int flags)
+		       void|int flags, void|function|object|program|string callback)
   optflags OPT_TRY_OPTIMIZE;
 {
   struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
   ctx.indent = (ctx.flags & HUMAN_READABLE ? 0 : -1);
+  ctx.callback = callback;
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
   json_encode_recur (&ctx, val);
