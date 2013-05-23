@@ -352,6 +352,8 @@ test_equal(parse("{\"x\":[]}"),(["x":({})]))
 test_equal(parse("{\"x\":true}"),(["x":Val.true]))
 test_equal(parse("{\"x\":false}"),(["x":Val.false]))
 test_equal(parse("{\"x\":null}"),(["x":Val.null]))
+test_eq(Standards.JSON.encode(class foo{}(), 0, "foo"),"foo")
+test_eq(Standards.JSON.encode(class foo{}(), 0, lambda(mixed ... a) { return "bar"; }),"bar")
 test_do(add_constant("parse"))
 
 END_MARKER
