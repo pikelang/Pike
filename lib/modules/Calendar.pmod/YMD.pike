@@ -3284,6 +3284,8 @@ TimeofDay http_time(string what, void|TimeRange cx)
   constant time = "%h:%m:%s"; // 2+1+2+1+2=8
 
   // 3+2+ 11 +1+ 8 +4 = 29
+  // RFC 1123 (and RFC 822 which it bases its timestamp format on)
+  // supports more variations than we support here.
   constant rfc1123_date = "%e, "+date1+" "+time+" %z";
 
   // 6+2+ 9 +1+ 8 +4 = 33
