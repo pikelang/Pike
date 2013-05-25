@@ -216,7 +216,7 @@ PIKECLASS TM
  *! %d     The day of the month as a decimal number (range 01 to 31).
  *!
  *! %D     Equivalent  to %m/%d/%y.  (for Americans only.  Americans should note that in other countries %d/%m/%y is rather common.  This means that in international context this format is ambiguous and should not be used.)
-
+ *!
  *! %e     Like %d, the day of the month as a decimal number, but a leading zero is replaced by a space.
  *!
  *! %E     Modifier: use alternative format, see below.
