@@ -889,62 +889,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       struct pike_type *s=compiler_pop_type();
       int i = isidentifier($6->u.sval.u.string);
 
-      if (Pike_compiler->compiler_pass == 1) {
-	if ($1 & ID_VARIANT) {
-	  /* FIXME: Lookup the type of any existing variant */
-	  /* Or the types. */
-	  fprintf(stderr, "Pass %d: Identifier %s:\n",
-		  Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	  if (i >= 0) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    if (id) {
-	      struct pike_type *new_type;
-	      fprintf(stderr, "Defined, type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(id->type);
-#endif
-
-	      new_type = or_pike_types(s, id->type, 1);
-	      free_type(s);
-	      s = new_type;
-
-	      fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(s);
-#endif
-	    } else {
-	      my_yyerror("Lost identifier %S (%d).",
-			 $6->u.sval.u.string, i);
-	    }
-	  } else {
-	    fprintf(stderr, "Not defined.\n");
-	  }
-	  fprintf(stderr, "New type:\n");
-#ifdef PIKE_DEBUG
-	  simple_describe_type(s);
-#endif
-	}
-      } else {
-	/* FIXME: Second pass reuses the type from the end of
-	 * the first pass if this is a variant function.
-	 */
-	if (i >= 0) {
-	  if (Pike_compiler->new_program->identifier_references[i].id_flags &
-	      ID_VARIANT) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    fprintf(stderr, "Pass %d: Identifier %s:\n",
-		    Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	    free_type(s);
-	    copy_pike_type(s, id->type);
-
-	    fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	    simple_describe_type(s);
-#endif
-	  }
-	} else {
+      if (Pike_compiler->compiler_pass != 1) {
+	if (i < 0) {
 	  my_yyerror("Identifier %S lost after first pass.",
 		     $6->u.sval.u.string);
 	}
@@ -970,11 +916,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 			$4);
 
       Pike_compiler->varargs=0;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n",
-		Pike_compiler->compiler_frame->current_function_number);
-      }
     }
   }
   block_or_semi
@@ -1005,19 +946,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	  my_yyerror("Missing name for argument %d.", e - $<number>9);
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
-	    if ($1 & ID_VARIANT) {
-	      struct pike_type *arg_type =
-		Pike_compiler->compiler_frame->variable[e].type;
-
-	      /* FIXME: Generate code that checks the arguments. */
-	      /* If there is a bad argument, call the fallback, and return. */
-	      if (! pike_types_le(void_type_string, arg_type)) {
-		/* Argument my not be void.
-		 * ie it's required.
-		 */
-		num_required_args++;
-	      }
-	    } else {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
@@ -1037,28 +965,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
 					local_node));
 	      }
-	    }
 	  }
 	}
-      }
-
-      if ($1 & ID_VARIANT) {
-	struct pike_string *bad_arg_str;
-	MAKE_CONST_STRING(bad_arg_str,
-			  "Bad number of arguments!\n");
-
-	fprintf(stderr, "Required args: %d\n", num_required_args);
-
-	check_args =
-	  mknode('?',
-		 mkopernode("`<",
-			    mkefuncallnode("query_num_arg", NULL),
-			    mkintnode(num_required_args)),
-		 mknode(':',
-			mkefuncallnode("throw",
-				       mkefuncallnode("aggregate",
-						      mkstrnode(bad_arg_str))),
-			NULL));
       }
 
       if ($<number>9) {
@@ -1087,10 +995,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n", f);
-      }
 
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.recoveries &&
