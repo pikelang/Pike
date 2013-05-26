@@ -3789,6 +3789,8 @@ void check_program(struct program *p)
 }
 #endif
 
+static void f_dispatch_variant(INT32 args);
+
 /* Note: This function is misnamed, since it's run after both passes. /mast */
 /* finish-states:
  *
@@ -3800,8 +3802,82 @@ struct program *end_first_pass(int finish)
 {
   struct compilation *c = THIS_COMPILATION;
   int e;
-  struct program *prog;
+  struct program *prog = Pike_compiler->new_program;
   struct pike_string *s;
+  int num_refs = prog->num_identifier_references;
+  union idptr dispatch_fun;
+
+  dispatch_fun.c_fun = f_dispatch_variant;
+
+  /* Collect variant functions that have been defined in this program,
+   * and add the corresponding dispatchers.
+   */
+  for (e = 0; e < num_refs; e++) {
+    struct identifier *id;
+    struct pike_string *name;
+    struct pike_type *type;
+    int id_flags;
+    int j;
+    if (prog->identifier_references[e].inherit_offset) continue;
+    if (!((id_flags = prog->identifier_references[e].id_flags) & ID_VARIANT)) {
+      /* Not a variant function. */
+      continue;
+    }
+    id = ID_FROM_INT(prog, e);
+    name = id->name;
+    type = id->type;
+
+    CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
+
+    /* Check whether we've added a dispatcher for this function already. */
+    j = isidentifier(name);
+    if ((j >= 0) && (!prog->identifier_references[j].inherit_offset)) {
+      /* Already handled. */
+      CDFPRINTF((stderr, "Dispatcher present!\n"));
+      goto next_ref;
+    }
+
+#ifdef COMPILER_DEBUG
+    fprintf(stderr, "type: ");
+    simple_describe_type(type);
+    fprintf(stderr, "\n");
+#endif
+
+    /* Collect the other variants of the function. */
+    for (j = e+1; j < num_refs; j++) {
+      if (prog->identifier_references[j].inherit_offset) continue;
+      if (!(prog->identifier_references[j].id_flags & ID_VARIANT)) continue;
+      id = ID_FROM_INT(prog, j);
+      if (name != id->name) continue;
+      id_flags |= prog->identifier_references[j].id_flags;
+      type = or_pike_types(type, id->type, 1);
+#ifdef COMPILER_DEBUG
+      fprintf(stderr, "type: ");
+      simple_describe_type(id->type);
+      fprintf(stderr, "\n");
+#endif
+    }
+    /* Include the directly inherited variants as well. */
+    for (j = 1; j < prog->num_inherits; j++) {
+      struct inherit *inh = &prog->inherits[j];
+      if (inh->inherit_level != 1) continue;
+      e = really_low_find_shared_string_identifier(name, inh->prog,
+						   SEE_PROTECTED);
+      if (e == -1) continue;
+      id = ID_FROM_INT(inh->prog, e);
+      id_flags |= inh->prog->identifier_references[e].id_flags;
+      type = or_pike_types(type, id->type, 1);
+    }
+#ifdef COMPILER_DEBUG
+    fprintf(stderr, "Dispatcher type: ");
+    simple_describe_type(type);
+    fprintf(stderr, "\n");
+#endif
+    define_function(name, type, id_flags & ~ID_VARIANT,
+		    IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
+  next_ref:
+    ;
+  }
 
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -6471,6 +6547,50 @@ int really_low_find_variant_identifier(struct pike_string *name,
   }
   CDFPRINTF((stderr, "Found %d\n", id));
   return id;
+}
+
+/**
+ * This is the dispatcher function for variant functions.
+ *
+ * cf end_first_pass().
+ */
+static void f_dispatch_variant(INT32 args)
+{
+  struct pike_frame *fp = Pike_fp;
+  int fun_num = fp->fun;
+  struct program *prog = fp->context->prog;
+  struct identifier *id = ID_FROM_INT(prog, fun_num);
+  struct pike_string *name = id->name;
+  while (fun_num--) {
+    int i;
+    struct pike_type *t;
+    struct pike_type *ret;
+
+    if (!(prog->identifier_references[fun_num].id_flags & ID_VARIANT)) {
+      continue;
+    }
+    id = ID_FROM_INT(prog, fun_num);
+    if (id->name != name) continue;
+
+    add_ref(t = id->type);
+
+    /* Check whether the type is compatible with our arguments. */
+    for (i = 0; i < args; i++) {
+      struct pike_type *cont = check_call_svalue(t, 0, Pike_sp+i - args);
+      free_type(t);
+      if (!(t = cont)) break;
+    }
+    if (!t) continue;
+    ret = new_get_return_type(t, 0);
+    free_type(t);
+    if (!ret) continue;
+    free_type(ret);
+
+    /* Found a function to call! */
+    apply_current(fun_num, args);
+    return;
+  }
+  Pike_error("Invalid arguments to %S()!\n", name);
 }
 
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
