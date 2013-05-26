@@ -845,6 +845,9 @@ void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
+int isidentifier_variant(struct pike_string *name,
+			 unsigned id_flags,
+			 struct pike_type *type);
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
@@ -915,6 +918,11 @@ INT32 define_function(struct pike_string *name,
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
+int really_low_find_variant_identifier(struct pike_string *name,
+				       struct program *prog,
+				       struct pike_type *type,
+				       int start_pos,
+				       int flags);
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
