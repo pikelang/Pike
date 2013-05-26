@@ -5994,12 +5994,10 @@ INT32 define_function(struct pike_string *name,
 	/* match types against earlier prototype or vice versa */
 	if(!match_types(type, funp->type))
 	{
-	  if (!(flags & ID_VARIANT)) {
-	    yytype_report(REPORT_ERROR, NULL, 0,
-			  funp->type,
-			  NULL, 0, type, 0,
-			 "Prototype doesn't match for function %S.", name);
-	  }
+	  yytype_report(REPORT_ERROR, NULL, 0,
+			funp->type,
+			NULL, 0, type, 0,
+			"Prototype doesn't match for function %S.", name);
 	}
       }
 
