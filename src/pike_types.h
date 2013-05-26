@@ -267,6 +267,9 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no);
 struct pike_type *soft_cast(struct pike_type *soft_type,
 			    struct pike_type *orig_type,
 			    int flags);
+struct pike_type *check_call_svalue(struct pike_type *fun_type,
+				    INT32 flags,
+				    struct svalue *sval);
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
 				     INT32 flags,
