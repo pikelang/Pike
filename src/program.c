@@ -2330,6 +2330,8 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
     /* Do not zapp hidden identifiers */
     if(ref->id_flags & ID_HIDDEN) continue;
 
+    if(ref->id_flags & ID_VARIANT) continue;
+
     /* Do not zapp functions with the wrong name... */
     if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
       continue;
@@ -2453,6 +2455,7 @@ void fixate_program(void)
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
     if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->id_flags & ID_VARIANT) continue;
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
   }
@@ -2464,6 +2467,7 @@ void fixate_program(void)
     struct identifier *fun;
     funp=p->identifier_references+i;
     if(funp->id_flags & ID_HIDDEN) continue;
+    if(funp->id_flags & ID_VARIANT) continue;
     fun=ID_FROM_PTR(p, funp);
     if(funp->id_flags & ID_INHERITED)
     {
@@ -2483,6 +2487,7 @@ void fixate_program(void)
 
 	funpb=p->identifier_references+t;
 	if (funpb->id_flags & ID_HIDDEN) continue;
+	if (funpb->id_flags & ID_VARIANT) continue;
 	funb=ID_FROM_PTR(p,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
 
@@ -2583,6 +2588,7 @@ void fixate_program(void)
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
     if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->id_flags & ID_VARIANT) continue;
     if (ref->inherit_offset != 0) continue;
 
     if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
@@ -6309,6 +6315,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   {
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
+    if(funp->id_flags & ID_VARIANT) continue;
     if(funp->id_flags & ID_PROTECTED)
       if(!(flags & SEE_PROTECTED))
 	continue;
@@ -6572,7 +6579,7 @@ struct array *program_indices(struct program *p)
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -6611,7 +6618,7 @@ struct array *program_values(struct program *p)
   for(e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -6650,7 +6657,7 @@ struct array *program_types(struct program *p)
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -11145,7 +11152,7 @@ static int low_implements(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -11226,7 +11233,7 @@ static int low_is_compatible(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -11348,7 +11355,7 @@ void yyexplain_not_compatible(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -11410,7 +11417,7 @@ void yyexplain_not_implements(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -11485,7 +11492,7 @@ void string_builder_explain_not_compatible(struct string_builder *s,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -11541,7 +11548,7 @@ void string_builder_explain_not_implements(struct string_builder *s,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(init_string == bid->name) continue;	/* Skip __INIT */
