@@ -4946,6 +4946,29 @@ int isidentifier(struct pike_string *s)
 						  SEE_PROTECTED|SEE_PRIVATE);
 }
 
+/**
+ * Return the index of the identifier if found, otherwise -1.
+ *
+ * If id_flags indicates a variant function, the index for a
+ * variant function with the same type and name is returned
+ * if found, otherwise -1.
+ */
+int isidentifier_variant(struct pike_string *name,
+			 unsigned id_flags,
+			 struct pike_type *type)
+{
+  if (id_flags & ID_VARIANT) {
+    return really_low_find_variant_identifier(name,
+					      Pike_compiler->new_program,
+					      type,
+					      Pike_compiler->new_program->
+					      num_identifier_references,
+					      SEE_PROTECTED|SEE_PRIVATE);
+  } else {
+    return isidentifier(name);
+  }
+}
+
 /*
  * Definition of identifiers.
  *
@@ -5955,7 +5978,7 @@ INT32 define_function(struct pike_string *name,
     run_time_type = T_MIXED;
   }
 
-  i=isidentifier(name);
+  i = isidentifier_variant(name, flags, type);
 
   if(i >= 0)
   {
@@ -6079,7 +6102,14 @@ INT32 define_function(struct pike_string *name,
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
-    if ((overridden = override_identifier (&ref, name)) >= 0) {
+    if (flags & ID_VARIANT) {
+      ref.id_flags |= ID_USED;
+      Pike_compiler->new_program->identifier_references[i] = ref;
+      overridden = i;
+    } else {
+      overridden = override_identifier(&ref, name);
+    }
+    if (overridden >= 0) {
 #ifdef PIKE_DEBUG
       struct reference *oref =
 	Pike_compiler->new_program->identifier_references+overridden;
@@ -6353,6 +6383,93 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
       return i;
     }
   }
+  return id;
+}
+
+int really_low_find_variant_identifier(struct pike_string *name,
+				       struct program *prog,
+				       struct pike_type *type,
+				       int start_pos,
+				       int flags)
+{
+  struct reference *funp;
+  struct identifier *fun;
+  int id, i, depth, last_inh;
+
+#if 1
+#ifdef COMPILER_DEBUG
+  fprintf(stderr,"th(%ld) %p Trying to find variant \"%s\" start=%d flags=%d\n"
+	  "  type: ",
+	  (long)th_self(), prog, name->str, start_pos, flags);
+  simple_describe_type(type);
+  fprintf(stderr, "\n");
+#endif
+#endif
+
+#ifdef PIKE_DEBUG
+  if (!prog) {
+    Pike_fatal("really_low_find_variant_identifier(\"%s\", NULL, %p, %d, %d)\n"
+	       "prog is NULL!\n", name->str, type, start_pos, flags);
+  }
+#endif /* PIKE_DEBUG */
+
+  id = -1;
+  depth = 0;
+  last_inh = prog->num_inherits;
+  i = start_pos;
+#ifdef PIKE_DEBUG
+  if (i > (int)prog->num_identifier_references) {
+    Pike_fatal("really_low_find_variant_identifier(\"%s\", %p, %p, %d, %d):\n"
+	       "Start position is past max: %d\n",
+	       name->str, prog, type, start_pos, flags,
+	       prog->num_identifier_references);
+  }
+#endif /* PIKE_DEBUG */
+  while(i--)
+  {
+    funp = prog->identifier_references + i;
+    if(funp->id_flags & ID_HIDDEN) continue;
+    if(!(funp->id_flags & ID_VARIANT)) continue;
+    if(funp->id_flags & ID_PROTECTED)
+      if(!(flags & SEE_PROTECTED))
+	continue;
+    fun = ID_FROM_PTR(prog, funp);
+    /* if(fun->func.offset == -1) continue; * Prototype */
+    if(!is_same_string(fun->name,name)) continue;
+    if(type && (fun->type != type)) continue;
+    if(funp->id_flags & ID_INHERITED)
+    {
+      struct inherit *inh = INHERIT_FROM_PTR(prog, funp);
+      if ((funp->id_flags & ID_PRIVATE) && !(flags & SEE_PRIVATE)) continue;
+      if (!depth || (depth > inh->inherit_level)) {
+	if (id != -1) {
+	  int j;
+	  int min_level = depth;
+	  for (j=last_inh-1; j > funp->inherit_offset; j--) {
+	    struct inherit *inh2 = prog->inherits + j;
+	    if (inh2->inherit_level >= min_level) {
+	      /* Got deeper in the inherit graph */
+	      continue;
+	    }
+	    min_level = inh2->inherit_level;
+	  }
+	  if (!(inh->inherit_level < min_level)) {
+	    continue;
+	  }
+	  /* Found new identifier on the path from the old identifier to
+	   * the root.
+	   */
+	}
+	last_inh = funp->inherit_offset;
+	depth = inh->inherit_level;
+	id = i;
+      }
+    } else {
+      CDFPRINTF((stderr, "Found %d\n", i));
+      return i;
+    }
+  }
+  CDFPRINTF((stderr, "Found %d\n", id));
   return id;
 }
 
