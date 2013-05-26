@@ -5994,6 +5994,256 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
   return res;
 }
 
+/**
+ * Check whether sval is a valid value for a variable of
+ * type type.
+ *
+ * Returns 1 if ok, and 0 (zero) otherwise.
+ */
+static int match_type_svalue(struct pike_type *type,
+			     int flags,
+			     struct svalue *sval)
+{
+  int res = 0;
+ loop:
+  switch(type->type) {
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+    type = type->cdr;
+    goto loop;
+  case T_OR:
+    res = match_type_svalue(type->car, 0, sval) ||
+      match_type_svalue(type->cdr, 0, sval);
+    break;
+  case T_AND:
+    res = match_type_svalue(type->car, 0, sval) ||
+      match_type_svalue(type->cdr, 0, sval);
+  case T_NOT:
+    flags ^= CALL_INVERTED_TYPES;
+    type = type->car;
+    goto loop;
+  case PIKE_T_TYPE:
+    res = 1;
+    break;
+  case PIKE_T_PROGRAM:
+  case PIKE_T_FUNCTION:
+  case T_MANY:
+    /* FIXME: Identify if sval is callable. */
+    res = 1;
+    break;
+  case PIKE_T_MIXED:
+    res = 1;
+    break;
+  case PIKE_T_OBJECT:
+    /* FIXME: Check that the object types are compatible. */
+    res = 1;
+    break;
+
+  default:
+    res = (type->type == TYPEOF(*sval));
+    break;
+  }
+  if (flags & CALL_INVERTED_TYPES) return !res;
+  return res;
+}
+
+/**
+ * Check whether sval is a valid first argument to fun_type.
+ *
+ * Returns NULL on failure.
+ *
+ * Returns continuation function type on success.
+ */
+struct pike_type *check_call_svalue(struct pike_type *fun_type,
+				    INT32 flags,
+				    struct svalue *sval)
+{
+  struct pike_type *res = NULL;
+  struct pike_type *tmp;
+  struct pike_type *tmp2;
+  INT32 array_cnt = 0;
+  int indent = 2;
+
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "%*scheck_call_svalue(", indent*2, "");
+    simple_describe_type(fun_type);
+    fprintf(stderr, ", 0x%08x, %p)...\n", flags, sval);
+  }
+#endif /* PIKE_DEBUG */
+
+ loop:
+  /* Count the number of array levels. */
+  while(fun_type->type == PIKE_T_ARRAY) {
+    array_cnt++;
+    fun_type = fun_type->car;
+  }
+
+  switch(fun_type->type) {
+  case T_SCOPE:
+    /* FIXME: Save and restore the corresponding marker set. */
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    fun_type = fun_type->cdr;
+    goto loop;
+
+  case PIKE_T_ATTRIBUTE:
+    fun_type = fun_type->cdr;
+    goto loop;
+
+  case T_OR:
+    res = check_call_svalue(fun_type->car, flags, sval);
+    if (!res) {
+      fun_type = fun_type->cdr;
+      goto loop;
+    }
+    tmp = check_call_svalue(fun_type->cdr, flags, sval);
+    if (!tmp) break;
+    res = or_pike_types(tmp2 = res, tmp, 1);
+    free_type(tmp);
+    free_type(tmp2);
+    break;
+
+  case T_AND:
+    res = check_call_svalue(fun_type->car, flags, sval);
+    if (!res) break;
+    tmp = check_call_svalue(fun_type->cdr, flags, sval);
+    if (!tmp) {
+      free_type(res);
+      res = NULL;
+      break;
+    }
+    if (res == tmp) {
+      /* Common case. */
+      free_type(tmp);
+      break;
+    }
+    /* and_pike_types() doesn't handle and of functions
+     * in the way we want here.
+     */
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(res);
+    push_type(T_AND);
+    free_type(tmp);
+    free_type(res);
+    res = pop_unfinished_type();
+    break;
+
+  case T_NOT:
+    fun_type = fun_type->car;
+    flags ^= CALL_INVERTED_TYPES;
+    goto loop;
+
+  case PIKE_T_TYPE:
+    /* FIXME: Check that the cast is valid. */
+    type_stack_mark();
+    push_finished_type(fun_type->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    res = pop_unfinished_type();
+    break;
+
+  case PIKE_T_PROGRAM:
+    tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
+    if (!tmp) {
+      /* No create() -- No arguments. */
+      /* FIXME: Multiple cases:
+       *          Untyped object.		function(mixed|void...:obj)
+       *          Failed to lookup program id.	function(mixed|void...:obj)
+       *          Program does not have a create().	function(:obj)
+       *
+       * We simply ignore the args.
+       */
+
+      type_stack_mark();
+      push_finished_type(fun_type->car);
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_MANY);
+      fun_type = pop_unfinished_type();
+    } else {
+      fun_type = zzap_function_return(tmp, fun_type->car);
+    }
+    res = check_call_svalue(fun_type, flags, sval);
+    free_type(fun_type);
+    break;
+
+  case PIKE_T_OBJECT:
+    fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
+    if (fun_type) goto loop;
+    
+    /* FIXME: Multiple cases:
+     *          Untyped object.				mixed
+     *          Failed to lookup program id.		mixed
+     *          Program does not have the lfun `()().	NULL
+     */
+
+    /* FALL_THROUGH */
+  case PIKE_T_MIXED:
+    copy_pike_type(res, mixed_type_string);
+    break;
+
+  case PIKE_T_FUNCTION:
+    /* Note: Use the low variants of pike_types_le and match_types,
+     *       so that markers get set and kept. */
+    if (match_type_svalue(fun_type->car, flags, sval)) {
+      add_ref(res = fun_type->cdr);
+      break;
+    }
+    res = NULL;
+    break;
+  case T_MANY:
+    /* Note: Use the low variants of pike_types_le and match_types,
+     *       so that markers get set and kept. */
+    if (match_type_svalue(fun_type->car, flags, sval)) {
+      add_ref(res = fun_type);
+      break;
+    }
+    res = NULL;
+    break;
+  default:
+    /* Not a callable. */
+    break;
+  }
+
+  if (!array_cnt || !res) {
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      if (res) {
+	fprintf(stderr, "%*s==> ", indent*2, "");
+	simple_describe_type(res);
+      } else {
+	fprintf(stderr, "%*s==> NULL", indent*2, "");
+      }
+      fprintf(stderr, "\n");
+    }
+#endif /* PIKE_DEBUG */
+    return res;
+  }
+
+  type_stack_mark();
+  push_finished_type(res);
+  free_type(res);
+  while(array_cnt--) {
+    push_type(PIKE_T_ARRAY);
+  }
+  res = pop_type();
+
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "%*s==> ", indent*2, "");
+    simple_describe_type(res);
+    fprintf(stderr, "\n");
+  }
+#endif /* PIKE_DEBUG */
+
+  return res;
+}
+
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
