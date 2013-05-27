@@ -497,5 +497,8 @@ static INLINE void string_builder_binary_strcat(struct string_builder *s,
 
 PMOD_EXPORT void f_sprintf(INT32 num_arg);
 void f___handle_sprintf_format(INT32 args);
+void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r);
+void init_sprintf();
+void exit_sprintf();
 
 #endif /* STRALLOC_H */
