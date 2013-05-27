@@ -4,8 +4,6 @@
 || for more information.
 */
 
-/* TODO: use ONERROR to cleanup fsp */
-
 /*
   Pike Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
   Should be reasonably compatible and somewhat faster than v1.05+ of Lynscar's
@@ -1464,15 +1462,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	break;
       }
 
-
-      /*
-	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-	WARNING                                                 WARNING
-	WARNING   This routine is not very well tested, so it   WARNING
-	WARNING   may give errouneous results.   /Noring        WARNING
-	WARNING                                                 WARNING
-	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-       */
       case 'b':
       case 'o':
       case 'd':
