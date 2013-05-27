@@ -2867,9 +2867,6 @@ PIKECLASS Buffer
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
 
-  typedef void (_low_f_sprintf)(INT32, int, struct string_builder *);
-  static _low_f_sprintf *low_f_sprintf;
-
   /*! @decl void create(int initial_size)
    *!
    *!   Initializes a new buffer.
@@ -3223,7 +3220,6 @@ PIKECLASS Buffer
     {
       struct Buffer_struct *str = THIS;
       MEMSET( str, 0, sizeof( *str ) );
-      low_f_sprintf = PIKE_MODULE_IMPORT(sprintf, low_f_sprintf);
     }
 
   EXIT

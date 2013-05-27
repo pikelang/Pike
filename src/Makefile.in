@@ -175,6 +175,7 @@ CORE_OBJ= \
  program.o \
  rbtree.o \
  rusage.o \
+ sprintf.o \
  sscanf.o \
  stralloc.o \
  stuff.o \

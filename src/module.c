@@ -124,6 +124,10 @@ static void init_builtin_modules(void)
 
   init_facetgroup();
 #endif
+
+  TRACE((stderr, "Init sprintf...\n"));
+
+  init_sprintf();
 }
 
 static void exit_builtin_modules(void)
@@ -136,6 +140,7 @@ static void exit_builtin_modules(void)
 
   /* Clear various global references. */
 
+  exit_sprintf();
 #ifdef AUTO_BIGNUM
   exit_auto_bignum();
 #endif
