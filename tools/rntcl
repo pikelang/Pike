@@ -334,6 +334,11 @@ int main(int argc, array(string) argv)
 	  break;
 
         case "ldpath":
+	  if (option[1] == "ARGEADDRESSAWARE") {
+	    // Special case. 32-bit address space.
+	    ldopts += ({ "-LARGEADDRESSAWARE" });
+	    break;
+	  }
 	  ldopts+=({"-LIBPATH:"+fixpath(option[1])});
 	  break;
 	  
