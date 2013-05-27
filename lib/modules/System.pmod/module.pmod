@@ -7,8 +7,9 @@ inherit _system;
 
 constant Timer = __builtin.Timer;
 constant Time  = __builtin.Time;
+#if constant(__builtin.TM)
 constant TM    = __builtin.TM;
-
+#endif
 //! Get the username of the user that started the process.
 //!
 //! @returns
