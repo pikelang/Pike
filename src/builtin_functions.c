@@ -3003,7 +3003,7 @@ PMOD_EXPORT void f_time(INT32 args)
   push_int(ret.tv_sec);
 }
 
-/*! @decl string crypt(string password)
+/*! @decl string(0..127) crypt(string password)
  *! @decl int(0..1) crypt(string typed_password, string crypted_password)
  *!
  *!   This function crypts and verifies a short string (only the first
@@ -9560,7 +9560,7 @@ void init_builtin_efuns(void)
   
 /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
-	   tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
+	   tOr(tFunc(tStr,tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
   
 /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);

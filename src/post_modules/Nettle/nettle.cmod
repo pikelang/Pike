@@ -275,11 +275,12 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string crypt_md5(string password, string salt, void|string magic)
+/*! @decl string(0..127) crypt_md5(string password, string salt,
+ *!                                void|string magic)
  *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
  *! It is assumed that @[salt] does not contain "$".
  */
-PIKEFUN string(0..255) crypt_md5(string pw, string salt, void|string magic)
+PIKEFUN string(0..127) crypt_md5(string pw, string salt, void|string magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;

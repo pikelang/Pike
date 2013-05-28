@@ -159,7 +159,7 @@ int verify(string password, string hash)
     }
     switch(scheme) {
     case "1":	// crypt_md5
-      return Nettle.crypt_md5(password, salt) == [string(0..255)]hash;
+      return Nettle.crypt_md5(password, salt) == [string(0..127)]hash;
 
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
@@ -173,11 +173,11 @@ int verify(string password, string hash)
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
       return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
-        [string(0..255)]hash;
+        [string(0..127)]hash;
 #if constant(Nettle.SHA512_Info)
     case "6":	// SHA-512
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
-        [string(0..255)]hash;
+        [string(0..127)]hash;
 #endif
     }
     break;
@@ -265,28 +265,34 @@ int verify(string password, string hash)
 //!   @[Nettle.HashInfo()->crypt_hash()]
 string hash(string password, string|void scheme, int|void rounds)
 {
-  function(string, string, int:string) crypt_hash;
+  function(string, string, int:string(0..255)) crypt_hash;
   int salt_size = 16;
   int default_rounds = 5000;
 
-  string render_crypt_hash(string scheme, string salt,
-			   string hash, int rounds)
+  // FIXME: salt is string(0..255) since constant strings aren't set
+  // to the correct type.
+
+  string(0..127) render_crypt_hash(string(0..127) scheme, string(0..255) salt,
+                                   string(0..255) hash, int rounds)
   {
     if (rounds != default_rounds) {
       salt = "rounds=" + rounds + "$" + salt;
     }
 
-    return sprintf("$%s$%s$%s", scheme, salt, hash);
+    // We claim this to be a string(0..127) string, even though we add
+    // the string(0..256). It will however only be called with the
+    // already base64 encoded hashes.
+    return [string(0..127)]sprintf("$%s$%s$%s", scheme, salt, hash);
   };
 
-  string render_ldap_hash(string scheme, string salt,
-			  string hash, int rounds)
+  string(0..127) render_ldap_hash(string(0..255) scheme, string(0..255) salt,
+                                  string(0..255) hash, int rounds)
   {
     if (scheme[0] != '{') scheme = "{" + scheme + "}";
-    return upper_case(scheme) + MIME.encode_base64(hash + salt);
+    return [string(0..127)]upper_case(scheme) + MIME.encode_base64(hash + salt);
   };
 
-  function(string, string, string, int:string) render_hash = render_crypt_hash;
+  function(string(0..127), string(0..255), string(0..255), int:string(0..127)) render_hash = render_crypt_hash;
 
   switch(lower_case(scheme)) {
   case "crypt":
@@ -347,11 +353,11 @@ string hash(string password, string|void scheme, int|void rounds)
   if (!rounds) rounds = default_rounds;
 
   // NB: The salt must be printable.
-  string salt =
+  string(0..127) salt =
     MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1];
 
-  string hash = crypt_hash(password, salt, rounds);
+  string(0..255) hash = crypt_hash(password, salt, rounds);
 
-  return render_hash(scheme, salt, hash, rounds);
+  return render_hash([string(0..127)]scheme, salt, hash, rounds);
 }
 
