@@ -569,7 +569,7 @@ static void img_ras_encode(INT32 args)
     }
       
     if(pklen<rs.ras_length) {
-      free((char *)res2);
+      do_free_unlinked_pike_string(res2);
       res2 = make_shared_binary_string((char *)pkdata, pklen);
       rs.ras_length = DO_NOT_WARN((INT32)pklen);
       rs.ras_type = RT_BYTE_ENCODED;
