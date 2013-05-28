@@ -1420,10 +1420,14 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
   {
     LABEL_A;
     /* Use C-stack for counter. We have padding added in entry */
+#ifndef USE_VALGRIND
     add_mem8_imm( REG_RSP, 0, 1 );
     jno( &label_B );
+#endif
     call_rel_imm32( branch_check_threads_update_etc );
-    LABEL_B;
+#ifndef USE_VALGRIND
+   LABEL_B;
+#endif
   }
 }
 
