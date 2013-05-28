@@ -484,7 +484,8 @@ PIKECLASS TM
         RETURN 1;
     }
 
-    /*! Create a new @[TM] initialized from a unix time_t.
+    /*! @decl void create(int t)
+     *! Create a new @[TM] initialized from a unix time_t.
      *! The timezone will always be UTC when using this function.
      */
     PIKEFUN void create( int _t )
@@ -494,7 +495,9 @@ PIKECLASS TM
             Pike_error("time out of range\n");
     }
 
-    /*! Construct a new TM, all fields will be set to 0. */
+    /*! @decl void create()
+     *! Construct a new TM, all fields will be set to 0.
+     */
     PIKEFUN void create( )
     {
         memset( &THIS->t, 0, sizeof( struct tm ) );
@@ -503,7 +506,10 @@ PIKECLASS TM
         THIS->modified = 1;
     }
 
-    /*! Construct a new time using the given values.
+    /*! @decl void create( int year, int(0..11) mon, int(1..31) mday, @
+     *!                    int(0..24) hour, int(0..59) min, int(0..59) sec, @
+     *!                    string|void timezone )
+     *! Construct a new time using the given values.
      *! Slightly faster than setting them individually.
      */
     PIKEFUN void create( int year, int(0..11) mon, int(1..31) mday,
@@ -512,17 +518,21 @@ PIKECLASS TM
     {
         struct tm *t = &THIS->t;
         t->tm_isdst = -1;
-        t->tm_year = year;
+        t->tm_year = year - 1900;
         t->tm_mon = mon;
         t->tm_mday = mday;
         t->tm_hour = hour;
         t->tm_min = min;
         t->tm_sec = sec;
+	if (THIS->set_zone) {
+	    free_string(THIS->set_zone);
+	    THIS->set_zone = NULL;
+	}
         if( !timezone ) /* gmtime. */
             t->tm_zone = "UTC";
         else
         {
-            timezone->refs++;
+	    add_ref(timezone);
             THIS->set_zone = timezone;
             t->tm_zone = timezone->str;
         }
