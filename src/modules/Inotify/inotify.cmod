@@ -120,7 +120,6 @@ PIKEFUN array(string|int) parse_event(string data) {
 	Pike_error("Malformed data.\n");
 
     event = (struct inotify_event *)data->str;
-    pop_n_elems(args);
 
     if (event->len > data->len - sizeof(struct inotify_event))
 	Pike_error("Data missing.\n");
@@ -137,6 +136,8 @@ PIKEFUN array(string|int) parse_event(string data) {
     push_int((int)(event->len + sizeof(struct inotify_event)));
 
     f_aggregate(5);
+    stack_swap();
+    pop_stack();
 }
 
 /*! @class _Instance
