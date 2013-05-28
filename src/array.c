@@ -2053,6 +2053,7 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
   {
     /* We only need to do anything if the value exists in the array. */
     ssize_t off  = fast_array_search( a, b, 0 );
+    TYPE_FIELD tmp;
 
     if( off == -1 )
       /* We still need to return a new array. */
@@ -2061,7 +2062,9 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
     /* In this case we generate a new array and modify that one. */
     destructive = 0;
     from = (size_t)off;
+    tmp = a->type_field;
     a = allocate_array_no_init(size-1,0);
+    a->type_field = tmp;
     SET_ONERROR( ouch, do_free_array, a );
     dp = ITEM(a);
 
@@ -2108,7 +2111,7 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
   }
   else /* b does not exist in the array. */
   {
-    a->refs++;
+    add_ref(a);
     return a;
   }
 #undef MATCH_COPY
@@ -2122,9 +2125,14 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
   if( !destructive )
     UNSET_ONERROR( ouch );
   else
-    a->refs++;
+    add_ref(a);
 
-  return a;
+  if( a->size )
+    return a;
+
+  free_array(a);
+  add_ref(&empty_array);
+  return &empty_array;
 }
 
 /** Subtract an array from another.
