@@ -485,12 +485,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
 	case TWO_CHAR('a','u'):
-	  if(ISWORD("auto")) {
-	    if (Pike_compiler->compiler_pass == 1) {
-	      yywarning("auto will soon be a reserved keyword.");
-	    }
-	    break;
-	  }
+	  if(ISWORD("auto")) return TOK_AUTO_ID;
 	  break;
 	case TWO_CHAR('b','r'):
 	  if(ISWORD("break")) return TOK_BREAK;

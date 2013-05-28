@@ -195,6 +195,7 @@ struct svalue
 #define PIKE_T_STRING 14
 #define PIKE_T_TYPE 15
 
+
 /* The types above are valid types in svalues.
  * The following are only used by the internal systems.
  */
@@ -217,6 +218,11 @@ struct svalue
 #define T_MANY       17
 
 #define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
+
+
+#define PIKE_T_GET_SET 32	/* Getter setter.
+				 * Only valid in struct identifier */
+
 
 /* Type to put in freed svalues. Only the type field in such svalues
  * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
@@ -242,6 +248,7 @@ struct svalue
 #define T_OBJ_INDEX 21
 #define T_ARRAY_LVALUE 22
 
+
 /* No types above this value should appear on the stack. */
 #define PIKE_T_STACK_MAX	T_ARRAY_LVALUE
 
@@ -252,6 +259,7 @@ struct svalue
 
 #define PIKE_T_GET_SET 32	/* Getter setter.
 				 * Only valid in struct identifier */
+/* should only be used while compiling */
 
 #define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
 #define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
@@ -262,6 +270,8 @@ struct svalue
 #define T_ASSIGN 245
 #define T_DELETED 246
 #define PIKE_T_UNKNOWN 247
+#define PIKE_T_AUTO 248
+
 
 #define PIKE_T_MIXED 251
 #define T_NOT 253
