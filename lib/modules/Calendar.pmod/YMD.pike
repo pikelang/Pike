@@ -2814,49 +2814,45 @@ protected TimeRange dwim_zone(TimeRange origin,string zonename,
 {
    if (zonename=="") return 0;
 
+   if (zonename[0]=='"') sscanf(zonename,"\"%s\"",zonename);
+   sscanf(zonename,"%*[ \t]%s",zonename);
+
+   if(sizeof(zonename)==4 && zonename[2]=='S')
+     zonename = zonename[0..1] + zonename[3..3];
+   else if(sizeof(zonename)>4 && has_suffix(zonename, "DST"))
+     zonename = zonename[..<3];
+
+   if (origin->rules->abbr2zone[zonename])
+         zonename=origin->rules->abbr2zone[zonename];
+
    Calendar.Rule.Timezone zone = Calendar.Timezone[zonename];
 
-   if( !zone )
+   if (!zone)
    {
-       if (zonename[0]=='"') sscanf(zonename,"\"%s\"",zonename);
-       sscanf(zonename,"%*[ \t]%s",zonename);
+     if (sscanf(zonename,"%[^+-]%s",string a,string b)==2 && a!="" && b!="")
+     {
+       TimeRange tr=dwim_zone(origin,a,whut,@args);
+       if (!tr) return 0;
 
-       if(sizeof(zonename)==4 && zonename[2]=='S')
-           zonename = zonename[0..1] + zonename[3..3];
-       else if(sizeof(zonename)>4 && has_suffix(zonename, "DST"))
-           zonename = zonename[..<3];
-
-       if (origin->rules->abbr2zone[zonename])
-           zonename=origin->rules->abbr2zone[zonename];
-
-       zone=Calendar.Timezone[zonename];
-
-       if (!zone)
-       {
-           if (sscanf(zonename,"%[^+-]%s",string a,string b)==2 && a!="" && b!="")
-           {
-               TimeRange tr=dwim_zone(origin,a,whut,@args);
-               if (!tr) return 0;
-
-               return 
-                   dwim_tod(origin->set_timezone(
+       return
+         dwim_tod(origin->set_timezone(
                                 Calendar.Timezone.make_new_timezone(
                                     tr->timezone(),
                                     Calendar.Timezone.decode_timeskew(b))),
                             whut,@args);
-           }
-           if(!abbr2zones)
-               abbr2zones = master()->resolv("Calendar")["TZnames"]["abbr2zones"];
-           array pz=abbr2zones[zonename];
-           if (!pz) return 0;
-           foreach (pz,string zn)
-           {
-               TimeRange try=dwim_zone(origin,zn,whut,@args);
-               if (try && try->tzname()==zonename) return try;
-           }
-           return 0;
-       }
+     }
+     if(!abbr2zones)
+       abbr2zones = master()->resolv("Calendar")["TZnames"]["abbr2zones"];
+     array pz=abbr2zones[zonename];
+     if (!pz) return 0;
+     foreach (pz,string zn)
+     {
+       TimeRange try=dwim_zone(origin,zn,whut,@args);
+       if (try && try->tzname()==zonename) return try;
+     }
+     return 0;
    }
+
    return dwim_tod(origin->set_timezone(zone),whut,@args);
 }
 
