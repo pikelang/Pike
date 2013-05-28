@@ -26,7 +26,7 @@ string asn1_id() { return "*\206H\206\367\r\2\5"; }
 //!
 //! @seealso
 //!   @[Nettle.HashInfo()->crypt_hash()], @[crypt_md5()]
-string crypt_hash(string password, string salt, int|void rounds)
+string(0..127) crypt_hash(string password, string salt, int|void rounds)
 {
   return Nettle.crypt_md5(password, salt);
 }

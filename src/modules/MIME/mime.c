@@ -122,17 +122,21 @@ PIKE_MODULE_INIT
   /* Add global functions */
   add_function_constant( "decode_base64", f_decode_base64,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_base64", f_encode_base64,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_base64", f_encode_base64,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_qp", f_encode_qp,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_qp", f_encode_qp,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_uue", f_encode_uue,
-			 "function(string,void|string:string)",
-			 OPT_TRY_OPTIMIZE);
+
+  ADD_FUNCTION2( "encode_uue", f_encode_uue,
+                 tFunc(tStr tOr(tVoid,tStr),tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
 

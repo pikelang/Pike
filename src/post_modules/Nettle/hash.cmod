@@ -260,7 +260,7 @@ PIKECLASS HashInfo
     }
   }
 
-  /*! @decl string(0..255) crypt_hash(string password, string salt, rounds)
+  /*! @decl string(0..127) crypt_hash(string password, string salt, rounds)
    *!
    *!   Password hashing function in @[crypt_md5()]-style.
    *!
@@ -273,7 +273,7 @@ PIKECLASS HashInfo
    *! @seealso
    *!   @[crypt_md5()]
    */
-  PIKEFUN string(0..255) crypt_hash(string password, string salt, int rounds)
+  PIKEFUN string(0..127) crypt_hash(string password, string salt, int rounds)
   {
     struct pike_string *res;
     const struct nettle_hash *meta = THIS->meta;
