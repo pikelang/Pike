@@ -99,6 +99,7 @@
 %token TOK_OPTIONAL
 %token TOK_SAFE_INDEX
 %token TOK_SAFE_START_INDEX
+%token TOK_AUTO_ID
 
 
 %right '='
@@ -247,6 +248,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_SSCANF
 %type <number> TOK_STATIC
 %type <number> TOK_STRING_ID
+%type <number> TOK_AUTO_ID
 %type <number> TOK_SWITCH
 %type <number> TOK_VOID_ID
 %type <number> TOK_WHILE
@@ -996,6 +998,40 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
+      if (Pike_compiler->compiler_pass == 2)
+      {
+          struct pike_type *t = Pike_compiler->compiler_frame->current_return_type;
+          if( t->type == PIKE_T_AUTO )
+          {
+              if( !t->car )
+                  yyerror("'auto' without return statement is not allowed\n");
+              else
+              {
+                  int e;
+                  struct pike_string *a = describe_type( t->car )->str;
+                  fprintf( stderr, "AUTO: -->%s\n", a);
+                  free_string( a );
+                  /* push_finished_type( t->car );/\* return type.. *\/ */
+
+                  /* for(; e>=0; e--) */
+                  /* { */
+                  /*     push_finished_type(Pike_compiler->compiler_frame->variable[e].type); */
+                  /*     push_type(T_FUNCTION); */
+                  /* } */
+
+                  /* if ($2) { */
+                  /*     node *n = $2; */
+                  /*     while (n) { */
+                  /*         push_type_attribute(CDR(n)->u.sval.u.string); */
+                  /*         n = CAR(n); */
+                  /*     } */
+                  /* } */
+                  /* free_type( i->type ); */
+                  /* i->type = compiler_pop_type(); */
+              }
+          }
+      }
+
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.recoveries &&
 	 ((Pike_sp - Pike_interpreter.evaluator_stack) <
@@ -1019,6 +1055,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
 	Pike_compiler->compiler_frame->variable[e].flags |= LOCAL_VAR_IS_USED;
       }
+      if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
+          yyerror("'auto' return type not allowed for prototypes\n");
     }
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $7) {
@@ -1221,6 +1259,7 @@ magic_identifiers2:
   | TOK_INT_ID        { $$ = "int"; }
   | TOK_ENUM	      { $$ = "enum"; }
   | TOK_TYPEDEF       { $$ = "typedef"; }
+  /* | TOK_AUTO_ID       { $$ = "auto"; } */
   ;
 
 magic_identifiers3:
@@ -1403,6 +1442,7 @@ basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
   | TOK_VOID_ID                       { push_type(T_VOID); }
   | TOK_MIXED_ID                      { push_type(T_MIXED); }
+  | TOK_AUTO_ID                       { push_type(PIKE_T_AUTO); }
   | TOK_STRING_ID   opt_string_width  {}
   | TOK_INT_ID      opt_int_range     {}
   | TOK_MAPPING_ID  opt_mapping_type  {}
@@ -1778,6 +1818,11 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
+    if( Pike_compiler->compiler_pass == 2 && is_auto_variable_type( $<number>4 ) )
+    {
+      fix_type_field( $5 );
+      fix_auto_variable_type( $<number>4, $5->type );
+    }
     Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
 		     mkcastnode(void_type_string,
 				mknode(F_ASSIGN,$5,
@@ -1820,12 +1865,20 @@ new_local_name: optional_stars TOK_IDENTIFIER
   | optional_stars TOK_IDENTIFIER '=' expr0
   {
     int id;
+    struct pike_type *type;
     push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
-    id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
+    type = compiler_pop_type();
+    if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
+    {
+        free_type( type );
+        fix_type_field( $4 );
+        copy_pike_type( type, $4->type );
+    }
+    id = add_local_name($2->u.sval.u.string, type,0);
     if (id >= 0) {
       if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */

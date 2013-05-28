@@ -852,11 +852,13 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
 			     int flags, int depth, int refno);
+int is_auto_variable_type( int variable );
 int low_define_variable(struct pike_string *name,
 			struct pike_type *type,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type);
+void fix_auto_variable_type( int id, struct pike_type *type );
 PMOD_EXPORT int map_variable(const char *name,
 		 const char *type,
 		 INT32 flags,

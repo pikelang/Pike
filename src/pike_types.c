@@ -505,7 +505,10 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	/* Free car */
 	free_type((struct pike_type *)debug_malloc_pass(car));
 	break;
-	
+     case PIKE_T_AUTO:
+      if( car )
+         free_type((struct pike_type *)debug_malloc_pass(car));
+      break;
       case T_SCOPE:
       case T_ASSIGN:
 	/* Free cdr */
@@ -639,6 +642,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   case T_INT:
   case T_OBJECT:
     break;
+  case PIKE_T_AUTO:
+      break;
 
   default:
     Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
@@ -746,6 +751,17 @@ void debug_push_object_type(int flag, INT32 id)
 void debug_push_object_type_backwards(int flag, INT32 id)
 {
   push_object_type(flag, id);
+}
+
+/* used while compiling to get the actual type of the auto type. */
+void debug_push_auto_typed_type( struct pike_type *aggregate )
+{
+    copy_pike_type( *++Pike_compiler->type_stackp,
+                    mk_type(PIKE_T_AUTO,
+                            (void *)(ptrdiff_t)aggregate,
+                            NULL, 
+                            0 ) );
+
 }
 
 void debug_push_scope_type(int level)
@@ -939,6 +955,7 @@ void debug_push_type(unsigned int type)
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
+  case PIKE_T_AUTO:
   case PIKE_T_UNKNOWN:
     /* Leaf type. */
     *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL, 0);
@@ -2493,6 +2510,9 @@ static void low_describe_type(struct pike_type *t)
 	my_strcat(")");
       }
       break;
+   case PIKE_T_AUTO:
+       my_strcat("auto");
+       break;
     default:
       {
 	char buf[20];

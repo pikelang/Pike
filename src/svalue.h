@@ -127,6 +127,7 @@ struct svalue
 #define PIKE_T_INT 8
 #define PIKE_T_FLOAT 9
 
+
 /* The types above are valid types in svalues.
  * The following are only used by the internal systems.
  */
@@ -143,6 +144,8 @@ struct svalue
 #define T_MANY       17
 
 #define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
+
+#define PIKE_T_AUTO 19
 
 #define PIKE_T_GET_SET 32	/* Getter setter.
 				 * Only valid in struct identifier */

@@ -3377,8 +3377,15 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CAR(n)->type);
     } else {
       /* Ensure that the type-fields are up to date. */
+      struct pike_type *t;
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
+      if( CDR(n)->type == PIKE_T_AUTO )
+      {
+          /* Update to actual type. */
+          free_type( CDR(n)->type );
+          copy_pike_type( CDR(n)->type, CAR(n)->type );
+      }
 #if 0
       /* This test isn't sufficient, see below. */
       check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
@@ -3944,15 +3951,32 @@ void fix_type_field(node *n)
 	copy_pike_type(n->type, CDAR(n)->type);
       }
       break;
-    } else if(Pike_compiler->compiler_frame &&
-	      Pike_compiler->compiler_frame->current_return_type) {
+    }
+    else if(Pike_compiler->compiler_frame &&
+            Pike_compiler->compiler_frame->current_return_type)
+    {
       if ((Pike_compiler->compiler_frame->current_return_type !=
-	   void_type_string) ||
-	  (CAR(n)->token != F_CONSTANT) ||
-	  !SAFE_IS_ZERO(& CAR(n)->u.sval)) {
-	check_node_type(CAR(n),
-			Pike_compiler->compiler_frame->current_return_type,
-			"Wrong return type.");
+	   void_type_string)) {
+          struct pike_type *t = Pike_compiler->compiler_frame->current_return_type;
+
+          if( t->type == PIKE_T_AUTO )
+          {
+              if( t->car )
+              {
+                  /* Not the first one.. */
+                  push_auto_typed_type( or_pike_types( t->car, CAR(n)->type, 0 ) );
+              }
+              else
+              {
+                  /* first one.. */
+                  push_auto_typed_type(  CAR(n)->type );
+              }
+              free_type( t );
+              t = pop_type();
+              Pike_compiler->compiler_frame->current_return_type = t;
+          }
+          else if(CAR(n)->token != F_CONSTANT || !SAFE_IS_ZERO(&CAR(n)->u.sval))
+              check_node_type(CAR(n), t, "Wrong return type.");
       }
     }
     copy_pike_type(n->type, void_type_string);

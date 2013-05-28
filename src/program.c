@@ -5335,6 +5335,28 @@ PMOD_EXPORT int quick_map_variable(const char *name,
   return ret;
 }
 
+int is_auto_variable_type( int variable )
+{
+    struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,variable);
+    if( id && id->type->type == PIKE_T_AUTO )
+        return 1;
+    return 0;
+}
+
+void fix_auto_variable_type( int variable, struct pike_type *type )
+{
+    /* Update the type of a program variable (basically, if it's
+     * marked 'auto', set it to the given type)
+     */
+    struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,variable);
+    if( id && id->type->type == PIKE_T_AUTO )
+    {
+      free_type(id->type);
+      copy_pike_type(id->type, type);
+    }
+    return;
+}
+
 /* argument must be a shared string */
 int define_variable(struct pike_string *name,
 		    struct pike_type *type,
