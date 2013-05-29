@@ -2335,6 +2335,75 @@ static void file_send_fd(INT32 args)
 
 #endif
 
+#ifdef SO_LINGER
+/*! @decl int(0..1) linger(int(-1..65535)|void seconds)
+ *!
+ *! Set the socket linger behaviour on @[close()].
+ *!
+ *! @param seconds
+ *!   @int
+ *!     @value -1
+ *!       Reset to default behaviour. This typically means that
+ *!       @[close()] will return immediately, but any buffered
+ *!       data will still be sent if possible.
+ *!     @value 0
+ *!       Terminate the connection immediately on @[close()],
+ *!       and discard any buffered data.
+ *!     @value 1..65535
+ *!       Have @[close()] wait for at most @[seconds] seconds
+ *!       for any buffered data to be sent after which the
+ *!       connection is terminated.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success, and @expr{0@} (zero) on failure.
+ *!
+ *! @note
+ *!   This operation is only valid on sockets.
+ *!
+ *! @note
+ *!   This function was not available in Pike 7.8.775 and earlier.
+ *!
+ *! @seealso
+ *!   @[close()]
+ */
+static void file_linger(INT32 args)
+{
+  int fd = FD;
+  int linger = -1;
+  struct linger li;
+
+  if(fd < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args("Stdio.File->linger", args, ".%d", &linger);
+
+  if ((linger < -1) || (linger > 0xffff)) {
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->linger()", 1, "int(-1..65535)");
+  }
+
+  if (linger == -1) {
+    li.l_onoff = 0;
+    li.l_linger = 15;
+  } else {
+    li.l_onoff = 1;
+    li.l_linger = linger;
+  }
+
+  while ((fd_setsockopt(fd, SOL_SOCKET, SO_LINGER,
+			(char *)&li, sizeof(li)) < 0) &&
+	 (errno == EINTR)) {
+    errno = 0;
+  }
+  if (errno) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif
+
 static int do_close(int flags)
 {
   struct my_file *f = THIS;
@@ -2468,13 +2537,16 @@ static void file_grantpt( INT32 args )
  *! @throws
  *! An exception is thrown if an I/O error occurs.
  *!
+ *! The default behaviour for sockets is typically to flush buffered
+ *! data in the background, but this can be changed with @[linger()].
+ *!
  *! @note
  *! @[close()] has no effect if this file object has been associated
  *! with an already opened file, i.e. if @[open()] was given an
  *! integer as the first argument.
  *!
  *! @seealso
- *!   @[open()], @[open_socket()]
+ *!   @[linger()], @[open()], @[open_socket()]
  */
 static void file_close(INT32 args)
 {
