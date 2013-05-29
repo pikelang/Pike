@@ -38,6 +38,12 @@ FILE_FUNC("write_oob",file_write_oob,
 FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tInt01))
 #endif
 
+#ifdef SO_LINGER
+/* function(int(-1..65535)|void:int(0..1)) */
+FILE_FUNC("linger", file_linger,
+	  tFunc(tOr3(tInt_10, tWord, tVoid), tInt01))
+#endif
+
 #ifdef HAVE_FSYNC
 /*  function(:int) */
 FILE_FUNC("sync", file_sync, tFunc(tNone,tInt))
