@@ -74,6 +74,9 @@ protected Stdio.File stream;
 // close_state >= NORMAL_CLOSE. The stream is closed by the callbacks
 // as soon the close packets are done, or if an error occurs.
 
+protected int(-1..65535) linger_time = -1;
+// The linger behaviour set by linger().
+
 protected SSL.connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
@@ -524,6 +527,20 @@ array get_peer_certificates()
   return conn->session->peer_certificate_chain;
 }
 
+//! Set the linger time on @[close()].
+int(0..1) linger(int(-1..65535)|void seconds)
+{
+  if (!stream) return 0;
+  if (zero_type(seconds)) seconds = -1;
+  if (seconds == linger_time) {
+    // Noop.
+    return 1;
+  }
+  if (stream->linger && !stream->linger(seconds)) return 0;
+  linger_time = seconds;
+  return 1;
+}
+
 int close (void|string how, void|int clean_close, void|int dont_throw)
 //! Close the connection. Both the read and write ends are always
 //! closed - the argument @[how] is only for @[Stdio.File]
@@ -700,6 +717,7 @@ Stdio.File shutdown()
 	RETURN (stream);
       default:
 	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
+	if (stream->linger) stream->linger(0);
 	stream->close();
 	RETURN (0);
     }
@@ -1898,8 +1916,12 @@ protected int ssl_write_callback (int called_from_real_backend)
 	// Ensure that the close is sent separately in case we should
 	// ignore the error from it.
 	if (close_packet_send_state == CLOSE_PACKET_SCHEDULED) {
-	  SSL3_DEBUG_MSG ("ssl_write_callback: Queuing close packet\n");
-	  conn->send_close();
+	  if (linger_time) {
+	    SSL3_DEBUG_MSG ("ssl_write_callback: Queuing close packet\n");
+	    conn->send_close();
+	  } else {
+	    SSL3_DEBUG_MSG ("ssl_write_callback: Skipping close packet\n");
+	  }
 	  close_packet_send_state = CLOSE_PACKET_QUEUED_OR_DONE;
 	}
 
