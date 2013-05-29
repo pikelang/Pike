@@ -3826,6 +3826,10 @@ struct program *end_first_pass(int finish)
     id = ID_FROM_INT(prog, e);
     name = id->name;
     type = id->type;
+    /* NB: The dispatcher needs the variant references to not
+     *     get overloaded for the ::-operator to work.
+     */
+    prog->identifier_references[e].id_flags |= ID_LOCAL;
 
     CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
 
@@ -3850,6 +3854,7 @@ struct program *end_first_pass(int finish)
       id = ID_FROM_INT(prog, j);
       if (name != id->name) continue;
       id_flags |= prog->identifier_references[j].id_flags;
+      prog->identifier_references[j].id_flags |= ID_LOCAL;
       type = or_pike_types(type, id->type, 1);
 #ifdef COMPILER_DEBUG
       fprintf(stderr, "type: ");
@@ -6557,21 +6562,31 @@ int really_low_find_variant_identifier(struct pike_string *name,
 static void f_dispatch_variant(INT32 args)
 {
   struct pike_frame *fp = Pike_fp;
-  int fun_num = fp->fun;
   struct program *prog = fp->context->prog;
-  struct identifier *id = ID_FROM_INT(prog, fun_num);
+  struct reference *funp = PTR_FROM_INT(fp->current_program, fp->fun);
+  struct identifier *id = ID_FROM_PTR(fp->current_program, funp);
   struct pike_string *name = id->name;
-  while (fun_num--) {
+  int fun_num = prog->num_identifier_references;
+  int flags = 0;
+
+  /* NB: The following is mostly to support a potential future
+   *     case where a mixed set of protections would cause
+   *     multiple dispatchers with the same name to be added
+   *     (but different protection (and types)).
+   */
+  if (funp->id_flags & ID_PRIVATE) {
+    flags = SEE_PRIVATE|SEE_PROTECTED;
+  } else if (funp->id_flags & ID_PROTECTED) {
+    flags = SEE_PROTECTED;
+  }
+
+  while ((fun_num = really_low_find_variant_identifier(name, prog, NULL,
+						       fun_num, flags)) != -1) {
     int i;
     struct pike_type *t;
     struct pike_type *ret;
 
-    if (!(prog->identifier_references[fun_num].id_flags & ID_VARIANT)) {
-      continue;
-    }
     id = ID_FROM_INT(prog, fun_num);
-    if (id->name != name) continue;
-
     add_ref(t = id->type);
 
     /* Check whether the type is compatible with our arguments. */
