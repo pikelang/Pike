@@ -794,11 +794,16 @@ static void store_to_db( void|string mergedfilename )
 
     db->query("UNLOCK TABLES");
     db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
-
+    
+    //  We only care about the most recent blob for the given word so look
+    //  for the highest document ID.
     int first_doc_id;
-    array old=db->query("SELECT first_doc_id,length(hits) as l "+
-			"FROM word_hit WHERE word=%s ORDER BY first_doc_id",
-			word );
+    array old =
+      db->query("  SELECT first_doc_id, LENGTH(hits) AS l "
+		"    FROM word_hit "
+		"   WHERE word=%s "
+		"ORDER BY first_doc_id DESC "
+		"   LIMIT 1", word);
     if( sizeof( old ) )
     {
       int blob_size = (int)old[-1]->l;
