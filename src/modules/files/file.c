@@ -4181,16 +4181,27 @@ retry_connect:
   retry_accept:
     retries++;
     {
+#ifdef HAVE_AND_USE_POLL
+      struct pollfd fds;
+      int timeout = 1;
+	  
+      fds.fd = socketpair_fd;
+      fds.events = POLLIN;
+      fds.revents = 0;
+
+      poll(&fds, 1, timeout);
+#else
       fd_set fds;
 
       struct timeval tv;
-      tv.tv_usec=25;
+      tv.tv_usec=5;
       tv.tv_sec=0;
 
       fd_FD_ZERO(&fds);
       fd_FD_SET(socketpair_fd, &fds);
 
       fd_select(socketpair_fd + 1, &fds, 0, 0, &tv);
+#endif
     }
     
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
