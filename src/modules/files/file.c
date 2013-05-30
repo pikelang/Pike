@@ -4180,6 +4180,19 @@ retry_connect:
     len3=sizeof(addr);
   retry_accept:
     retries++;
+    {
+      fd_set fds;
+
+      struct timeval tv;
+      tv.tv_usec=25;
+      tv.tv_sec=0;
+
+      fd_FD_ZERO(&fds);
+      fd_FD_SET(socketpair_fd, &fds);
+
+      fd_select(socketpair_fd + 1, &fds, 0, 0, &tv);
+    }
+    
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
