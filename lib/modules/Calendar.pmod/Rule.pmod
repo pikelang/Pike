@@ -11,15 +11,14 @@ class Timezone
   // timezone name
   string name;
 
-  //! @decl void create(int offset, string name)
   //! @param offset
   //!   Offset to UTC, not counting DST.
   //! @param name
   //!   The name of the time zone.
-  protected void create(int offset, string _name)
+  protected void create(int offset, string name)
   {
     offset_to_utc=offset;
-    name=_name;
+    this_program::name=name;
   }
 
    // seconds to UTC, counting DST
@@ -38,7 +37,10 @@ class Timezone
     return ({offset_to_utc,name});
   }
 
-  string _sprintf(int t) { return (t=='O')?"Timezone("+name+")":0; }
+  protected string _sprintf(int t)
+  {
+    return t=='O' && "Timezone("+name+")";
+  }
 
   //! Returns the offset to UTC, not counting DST.
   int raw_utc_offset() { return offset_to_utc; }

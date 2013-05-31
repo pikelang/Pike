@@ -1188,7 +1188,7 @@ class YMD
 // ----------------------------------------
 
    string nice_print();
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1236,7 +1236,7 @@ class cYear
 //!	and also, for more practical use, from the year number.
 //!
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1318,7 +1318,7 @@ class cYear
    
 // ----------------
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1547,7 +1547,7 @@ class cMonth
    int nd; // number of days
    int nw; // number of weeks
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1625,7 +1625,7 @@ class cMonth
       }
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    { 
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
@@ -1849,7 +1849,7 @@ class cWeek
 //!	number.
 //!
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1932,7 +1932,7 @@ class cWeek
       }
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    { 
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
@@ -2189,7 +2189,7 @@ class cDay
 //!	from year and day of year, and from julian day
 //!	without extra fuzz.
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -2309,7 +2309,7 @@ class cDay
       }	 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {

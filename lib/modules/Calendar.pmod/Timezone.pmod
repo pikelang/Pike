@@ -298,7 +298,10 @@ class localtime
 #endif
    }
 
-   string _sprintf(int t) { return (t=='O')?"Timezone.localtime()":0; }
+   protected string _sprintf(int t)
+   {
+      return t=='O' && "Timezone.localtime()";
+   }
 
    int raw_utc_offset(); // N/A but needed for interface
 }
@@ -337,9 +340,9 @@ class Timezone_Encapsule
       return ({z[0]+extra_offset,z[1]+extra_name});
    }
 
-   string _sprintf(int t) 
+   protected string _sprintf(int t)
    { 
-      return (t=='O')?sprintf("%O%s",what,extra_name || ""):0;
+      return t=='O' && sprintf("%O%s",what,extra_name || "");
    }
 
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
@@ -524,7 +527,7 @@ class Runtime_timezone_compiler
       string s;
       string comment;
 
-      void create(array a)
+      protected void create(array a)
       {
 	 switch (sizeof(a))
 	 {
@@ -551,13 +554,12 @@ class Runtime_timezone_compiler
 	 }
       }
 
-      string _sprintf(int t) 
+      protected string _sprintf(int t)
       { 
-	 return (t=='O')?
+	 return t=='O' &&
 	    sprintf("Shift(%s,%d%s,%+d,%O)",
 		    dayrule || "<unset>", time,
-		    timetype || "<unset>", offset, s):
-	    0;
+		    timetype || "<unset>", offset, s);
       }
 
       int `==(Shift other)
@@ -728,17 +730,13 @@ class Runtime_timezone_compiler
 
   }();
 
-   class Rule
+  class Rule (string id)
    {
-      string id;
-
       mapping rules=([]);
 
       array(string) lines = ({});
 
       int amt=0;
-
-      void create(string _id) { id=_id; }
 
       void add_line(string line)
       {
@@ -987,7 +985,7 @@ class Runtime_timezone_compiler
 
       array(string) aliases = ({});
 
-      void create(string _id) {
+      protected void create(string _id) {
 	id=_id;
 	aliases = ({ id });
       }
@@ -1172,8 +1170,8 @@ class Runtime_timezone_compiler
 	    res+=({a[5]+","});
 	 res+=({"});\n",
 		sprintf(
-		   "string _sprintf(int t) { return (t=='O')?"
-		   "%O:0; }\n"
+		   "protected string _sprintf(int t) { return t=='O' &&"
+		   "%O; }\n"
 		   "string zoneid=%O;\n","Rule.Timezone("+id+")",id)});
 
 	 return res*"";
@@ -1447,10 +1445,10 @@ class Runtime_timezone_compiler
 	    return sprintf(name,s);
       }
 
-      protected void create(int offset,string _name) 
+      protected void create(int offset,string name)
       { 
 	 offset_to_utc=offset; 
-	 name=_name;
+	 this_program::name=name;
 	 if (has_value(name, "/"))
 	 {
 	    names=name/"/";
@@ -1497,7 +1495,10 @@ class Runtime_timezone_compiler
 	 return ({offset_to_utc-a[i][2],tzformat(a[i][3])});
       }
 
-      string _sprintf(int t) { return (t=='O')?"Rule.Timezone("+name+")":0; }
+      protected string _sprintf(int t)
+      {
+        return t=='O' && "Rule.Timezone("+name+")";
+      }
 
       int raw_utc_offset() { return offset_to_utc; }
    }
