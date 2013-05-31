@@ -151,10 +151,8 @@ PIKECLASS Shuffle
 #endif
     _send_more((struct Shuffle_struct*)
      ((char*)box-offsetof(struct Shuffle_struct,box)));
-    /* FIXME: Is this the correct return value?
-     *        /grubba 2004-09-02
-     */
-    return 0;
+
+    return 0; // Everything OK.
   }
   
   PIKEFUN void set_throttler( object t )
