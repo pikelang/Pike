@@ -1,5 +1,5 @@
 
-//! PGP stuff. See RFC 2440.
+//! PGP stuff. See RFC 4880.
 
 #pike __REAL_VERSION__
 
