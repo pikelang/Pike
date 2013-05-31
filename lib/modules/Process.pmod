@@ -1100,7 +1100,7 @@ class Spawn
 #endif
 #endif
 
-private void low_daemon(int nochdir, int noclose)
+private int low_daemon(int nochdir, int noclose)
 {
 #if System.daemon
     return System.daemon(nochdir, noclose);
@@ -1124,6 +1124,7 @@ private void low_daemon(int nochdir, int noclose)
         if (fd->query_fd() > 2)
             fd->close();
     }
+    return 0;
 #endif /* !System.daemon */
 }
 
@@ -1183,12 +1184,15 @@ void daemon(int nochdir, int noclose,
             opened += ({ ret });
             return ret;
         }
-        else
+        else if (objectp(f))
             return f;
+	else
+	  return 0;
     };
 
-    low_daemon(nochdir, noclose);
-    if (undefinedp(modifiers))
+    if (low_daemon(nochdir, noclose) == -1)
+      error("Failed to daemonize: " + strerror(errno())+"\n");
+    if (!modifiers)
         return;
 
     if (modifiers["cwd"])

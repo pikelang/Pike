@@ -3272,7 +3272,7 @@ static void f_getrusage(INT32 args)
 }
 
 #ifdef HAVE_DAEMON
-/*! @decl void daemon(int nochdir, int noclose)
+/*! @decl int daemon(int nochdir, int noclose)
  *! Low level system daemon() function, see also @[Process.daemon()]
  */
 void f_daemon(INT32 args)
@@ -3637,7 +3637,7 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_DAEMON
   ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
-                0, OPT_SIDE_EFFECT);
+                0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_DAEMON */
 
 #ifdef __NT__
