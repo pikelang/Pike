@@ -107,6 +107,137 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 #define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
+/* Returns true if str could contain n. */
+PMOD_EXPORT int string_range_contains( struct pike_string *str, int n )
+{
+  INT32 min, max;
+  check_string_range( str, 1, &min, &max );
+  if( n >= min && n <= max )
+    return 1;
+  return 0;
+}
+
+/* Returns true if str2 could be in str1. */
+PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
+                                              struct pike_string *str2 )
+{
+  INT32 max1, min1;
+  INT32 max2, min2;
+  check_string_range( str1, 1, &min1, &max1 );
+  check_string_range( str2, 1, &min2, &max2 );
+  if( (min2 < min1) || (max2 > max1) )
+  {
+    if( (str1->flags & STRING_CONTENT_CHECKED) ==
+        (str2->flags & STRING_CONTENT_CHECKED) )
+      return 0;
+    /* fallback to simple size-shift check.  */
+    return str1->size_shift >= str2->size_shift;
+  }
+  if( (min2 < min1) || (max2 > max1) ) 
+    return 0;
+  return 1;
+}
+
+PMOD_EXPORT void check_string_range( struct pike_string *str,
+                                     int loose,
+                                     INT32 *min, INT32 *max )
+{
+  INT32 s_min = MAX_INT32;
+  INT32 s_max = MIN_INT32;
+  ssize_t i;
+
+  if( loose || ((str->flags & STRING_CONTENT_CHECKED ) && (!str->size_shift || !max)) )
+  {
+    if( str->flags & STRING_CONTENT_CHECKED )
+    {
+      s_min = str->min;
+      s_max = str->max;
+
+      if( str->size_shift )
+      {
+        s_min <<= 8 * str->size_shift;
+        s_max <<= 8 * str->size_shift;
+        if( s_min )
+          s_min -= (1<<(8*str->size_shift))-1;
+        s_max += str->size_shift == 1 ? 255 : 65535;
+      }
+    }
+    else
+    {
+      switch( str->size_shift )
+      {
+        case 2: s_min = MIN_INT32; s_max=MAX_INT32; break;
+        case 1: s_min = 0; s_max = 65535; break;
+        case 0: s_min = 0; s_max = 255; break;
+      }
+    }
+  }
+  else
+  {
+    str->flags |= STRING_CONTENT_CHECKED;
+
+    switch( str->size_shift )
+    {
+      case 0:
+       {
+         p_wchar0 *p = (p_wchar0*)str->str;
+         int upper = 0, lower = 0;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           /* For 7-bit strings it's easy to check for
+            * lower/uppercase, so do that here as well.
+            */
+           if( *p >= 'A' && *p <= 'Z') upper++;
+           if( *p >= 'a' && *p <= 'z') lower++;
+
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+
+         if( s_max < 128 )
+         {
+           if( upper && !lower )
+             str->flags |= STRING_IS_UPPERCASE;
+           if( lower && !upper )
+             str->flags |= STRING_IS_LOWERCASE;
+           if( !lower && !upper )
+             str->flags |= STRING_IS_LOWERCASE|STRING_IS_UPPERCASE;
+         }
+       }
+       str->min = s_min;
+       str->max = s_max;
+       break;
+
+      case 1:
+       {
+         p_wchar1 *p = (p_wchar1*)str->str;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+       }
+       str->min = (s_min+255) >> 8;
+       str->max = (s_max+255) >> 8;
+       break;
+
+      case 2:
+       {
+         p_wchar2 *p = (p_wchar2*)str->str;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+       }
+       str->min = (s_min+65535) >> 16;
+       str->max = (s_max+65535) >> 16;
+       break;
+    }
+  }
+  if( min ) *min = s_min;
+  if( max ) *max = s_max;
+}
 
 static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
 {
@@ -628,6 +759,7 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   add_ref(t);	/* For DMALLOC */
   t->str[len]=0;
   t->len=len;
+/*  t->min = t->max = 0; */
   t->size_shift=0;
   DO_IF_DEBUG(t->next = NULL);
   return t;
@@ -776,6 +908,8 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 PMOD_EXPORT void hash_string(struct pike_string *s)
 {
   if (!(s->flags & STRING_NOT_HASHED)) return;
+  /* if( s->len < HASH_PREFIX ) */
+  /*   check_string_range( s, 0, 0, 0 ); */
   s->hval=do_hash(s);
   s->flags &= ~STRING_NOT_HASHED;
 }
@@ -872,7 +1006,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 	  /* Fall though */
       }
       break;
-      
+
     case 1:
       if(!find_magnitude1(STR1(s),s->len))
       {
@@ -1295,7 +1429,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
       locate_problem(wrong_hash);
       Pike_fatal("Hash value changed?\n");
     }
-    
+
     if(debug_findstring(s) !=s)
       Pike_fatal("Shared string not shared.\n");
 
@@ -1728,6 +1862,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
   if(a->refs==1)
   {
     unlink_pike_string(a);
+    CLEAR_STRING_CHECKED(a);
     return realloc_unlinked_string(a, size);
   }else{
     r=begin_wide_shared_string(size,a->size_shift);
@@ -1875,6 +2010,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 
     unlink_pike_string(a);
     low_set_index(a, index, c);
+    CLEAR_STRING_CHECKED(a);
     if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
     {
       struct pike_string *old;
@@ -1906,9 +2042,63 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   }
 }
 
+PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
+                                    unsigned char aflags,
+                                    unsigned char amin,
+                                    unsigned char amax,
+                                    struct pike_string *b)
+{
+  if( !b->len ) {
+    ret->flags |= aflags & ~15;
+    ret->min = amin;
+    ret->max = amax;
+    return;
+  }
+  if( (aflags & STRING_CONTENT_CHECKED) && (b->flags & STRING_CONTENT_CHECKED) )
+  {
+    ret->min = MIN( amin, b->min );
+    ret->max = MAX( amax, b->max );
+    ret->flags |= STRING_CONTENT_CHECKED;
+  }
+  else
+    ret->flags &= ~STRING_CONTENT_CHECKED;
+
+  if( (aflags & STRING_IS_LOWERCASE) && (b->flags & STRING_IS_LOWERCASE) )
+    ret->flags |= STRING_IS_LOWERCASE;
+  else
+    ret->flags &= ~STRING_IS_LOWERCASE;
+
+  if( (aflags & STRING_IS_UPPERCASE) && (b->flags & STRING_IS_UPPERCASE) )
+    ret->flags |= STRING_IS_UPPERCASE;
+  else
+    ret->flags &= ~STRING_IS_UPPERCASE;
+}
+
+PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b)
+{
+  if( !b->len ) return;
+  if( a->flags & STRING_CONTENT_CHECKED )
+  {
+    if(b->flags & STRING_CONTENT_CHECKED)
+    {
+      if( b->min < a->min ) a->min = b->min;
+      if( b->max > a->max ) a->max = b->max;
+    }
+    else
+      a->flags &= ~STRING_CONTENT_CHECKED;
+  }
+
+  if( (a->flags & STRING_IS_LOWERCASE) && !(b->flags & STRING_IS_LOWERCASE) )
+    a->flags &= ~STRING_IS_LOWERCASE;
+
+  if( (a->flags & STRING_IS_UPPERCASE) && !(b->flags & STRING_IS_UPPERCASE) )
+    a->flags &= ~STRING_IS_UPPERCASE;
+
+}
+
 /*** Add strings ***/
 PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
-					 struct pike_string *b)
+                                                   struct pike_string *b)
 {
   struct pike_string *ret;
   PCHARP tmp;
@@ -1919,16 +2109,21 @@ PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
   pike_string_cpy(tmp,a);
   INC_PCHARP(tmp,a->len);
   pike_string_cpy(tmp,b);
+  set_flags_for_add( ret, a->flags, a->min, a->max, b );
   return low_end_shared_string(ret);
 }
 
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
-						struct pike_string *b)
+                                                            struct pike_string *b)
 {
   ptrdiff_t alen = a->len;
   if(a->size_shift == b->size_shift)
   {
-    a = realloc_shared_string(a,alen + b->len);
+    unsigned char aflags = a->flags;
+    unsigned char amin = a->min;
+    unsigned char amax = a->max;
+    a = realloc_shared_string(a, alen + b->len);
+    set_flags_for_add( a, aflags, amin, amax, b );
     MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     a->flags |= STRING_NOT_HASHED;
@@ -1949,8 +2144,10 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   SearchMojt mojt;
   char *r;
 
-  if(needle->size_shift > haystack->size_shift ||
-     start + needle->len > haystack->len)
+  if( !string_range_contains_string( haystack, needle ) )
+    return -1;
+
+  if(start + needle->len > haystack->len)
     return -1;
 
   if(!needle->len) return start;
@@ -2147,6 +2344,8 @@ void init_shared_string_table(void)
   }
 #endif
   empty_pike_string = make_shared_string("");
+  empty_pike_string->flags |= STRING_CONTENT_CHECKED | STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
+  empty_pike_string->min = empty_pike_string->max = 0;
 }
 
 #ifdef DO_PIKE_CLEANUP
@@ -2357,6 +2556,7 @@ PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
   if (str->refs == 1 && str->len > SHORT_STRING_THRESHOLD) {
     /* Unlink the string and use it as buffer directly. */
     unlink_pike_string (str);
+    str->flags = 0;
     s->s = str;
     s->malloced = str->len;
     s->known_shift = str->size_shift;

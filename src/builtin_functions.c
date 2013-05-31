@@ -668,8 +668,12 @@ PMOD_EXPORT void f_lower_case(INT32 args)
     pop_n_elems(args-1);
     return;
   }
-  
+
   orig = Pike_sp[-args].u.string;
+
+  if( orig->flags & STRING_IS_LOWERCASE )
+      return;
+
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
@@ -700,8 +704,10 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 #endif
   }
 
+  ret = end_shared_string(ret);
+  ret->flags |= STRING_IS_LOWERCASE;
   pop_n_elems(args);
-  push_string(end_shared_string(ret));
+  push_string(ret);
 }
 
 /*! @decl string upper_case(string s)
@@ -738,8 +744,13 @@ PMOD_EXPORT void f_upper_case(INT32 args)
     pop_n_elems(args-1);
     return;
   }
-  
+
   orig = Pike_sp[-args].u.string;
+  if( orig->flags & STRING_IS_UPPERCASE )
+  {
+      return;
+  }
+
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
 
@@ -800,7 +811,9 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   }
 
   pop_n_elems(args);
-  push_string(end_shared_string(ret));
+  ret = end_shared_string(ret);
+  ret->flags |= STRING_IS_UPPERCASE;
+  push_string(ret);
 }
 
 /*! @decl string random_string(int len)
@@ -954,7 +967,13 @@ PMOD_EXPORT void f_search(INT32 args)
       } else {
 	val = index_shared_string(Pike_sp[1-args].u.string, 0);
       }
-      
+
+      if( !string_range_contains( haystack, val )  )
+      {
+          pop_n_elems(args);
+          push_int( -1 );
+          return;
+      }
       switch(Pike_sp[-args].u.string->size_shift) {
       case 0:
 	{
