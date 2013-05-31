@@ -121,12 +121,11 @@ class Shift
       }
    }
 
-   string _sprintf(int t) 
+   protected string _sprintf(int t)
    { 
-      return (t=='O')?
+      return t=='O' &&
 	 sprintf("Shift(%s,%d%s,%+d,%O)",
-		 dayrule,time,timetype,offset,s):
-	 0;
+		 dayrule,time,timetype,offset,s);
    }
 
    int `==(Shift other)
@@ -277,18 +276,14 @@ class Shift
    }
 }
 
-class MyRule
+class MyRule (string id)
 {
-   string id;
-
    mapping rules=([]);
 
    multiset(string) symbols = (<>);
 
    int amt=0;
 
-   void create(string _id) { id=_id; }
-   
    void add(string line)
    {
       array a= array_sscanf(line, replace("%s %s %s %s %s %s %s %[^\t ]",
@@ -469,13 +464,9 @@ class MyRule
    }
 }
 
-class Zone
+class Zone (string id)
 {
-   string id;
-
    array rules=({});
-
-   void create(string _id) { id=_id; }
 
    void add(string line)
    {
@@ -1022,7 +1013,10 @@ class TZRules
       return ({offset_to_utc-a[i][2],tzformat(a[i][3])});
    }
 
-   string _sprintf(int t) { return (t=='O')?\"Timezone(\"+name+\")\":0; }
+   protected string _sprintf(int t)
+  {
+    return t=='O' && \"Timezone(\"+name+\")\";
+  }
 
    int raw_utc_offset() { return offset_to_utc; }
 }

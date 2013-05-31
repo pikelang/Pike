@@ -515,7 +515,7 @@ class cISO
    constant week_day_names=
    ({"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -616,7 +616,7 @@ class cSWEDISH
 //	"Valborgsmässoafton"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -657,7 +657,7 @@ class cAUSTRIAN
       ({"montag","dienstag","mittwoch","donnerstag",
         "freitag","samstag","sonntag"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -689,7 +689,7 @@ class cWELSH
       return week_day_number_from_name(name);
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -736,7 +736,7 @@ class cSPANISH
       "Corpus Christi":"Corpus Christi"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -795,7 +795,7 @@ class cPORTUGESE
       "Christmas":"Natal"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -834,7 +834,7 @@ class cHUNGARIAN
       "Christmas":"Christmas",
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -878,7 +878,7 @@ class cLATIN
       return sprintf("anno ab Incarnatione Domini %s",roman_number(y));
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -955,7 +955,7 @@ class cGREENLANDIC
       "sabaat",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -994,7 +994,7 @@ class cICELANDIC
       "Sunnudagur",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1033,7 +1033,7 @@ class cPERSIAN
       "ykzsnbh",           // <yf><kf><zwnj><sn><n+><b+><h+>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1072,7 +1072,7 @@ class cAFRIKAANS
       "Sondag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1121,7 +1121,7 @@ class cIRISH
       "Lua","Mai","Céa","Déa","Aoi","Sat", "Dom",
    });
 
-   void create() { SETUPSTUFF2; }
+   protected void create() { SETUPSTUFF2; }
 }
 
 
@@ -1160,7 +1160,7 @@ class cBASQUE
       "igandea",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1199,7 +1199,7 @@ class cNORWEGIAN
       "søndag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1240,7 +1240,7 @@ class cDUTCH
       "zondag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1279,7 +1279,7 @@ class cPOLISH
       "niedziela",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cPOLISH_UNICODE
@@ -1313,7 +1313,7 @@ class cPOLISH_UNICODE
       "niedziela",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1352,7 +1352,7 @@ class cTURKISH
       "Pazar",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cTR_UNICODE=cTURKISH_UNICODE; // Turkish
@@ -1388,7 +1388,7 @@ class cTURKISH_UNICODE
       "Pazar",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 // source: anonymous unix locale file
@@ -1428,7 +1428,7 @@ class cGERMAN
       "Sonntag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1467,7 +1467,7 @@ class cLATVIAN
       "svetdiena",         // <s><v><e-><t><d><i><e><n><a>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cLV_UNICODE=cLATVIAN_UNICODE;
@@ -1503,7 +1503,7 @@ class cLATVIAN_UNICODE
       "sv\x0113""tdiena",         // <s><v><e-><t><d><i><e><n><a>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1542,7 +1542,7 @@ class cFINNISH
       "sunnuntai",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1581,7 +1581,7 @@ class cLITHUANIAN
       "Sekmadienis",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cLITHUANIAN_UNICODE
@@ -1615,7 +1615,7 @@ class cLITHUANIAN_UNICODE
       "Sekmadienis",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1654,7 +1654,7 @@ class cESTONIAN
       "pühapäev",          // <p><u:><h><a><p><a:><e><v>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cGL=cGALICIAN; // Galician (Spain)
@@ -1690,7 +1690,7 @@ class cGALICIAN
       "Domingo",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cID=cINDONESIAN; 
@@ -1725,7 +1725,7 @@ class cINDONESIAN
       "Minggu",   
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cFR=cFRENCH; // French
@@ -1761,7 +1761,7 @@ class cFRENCH
       "dimanche",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cIT=cITALIAN; // Italian
@@ -1797,7 +1797,7 @@ class cITALIAN
       "domenica",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cCA=cCATALAN; // Catalan (Catalonia)
@@ -1833,7 +1833,7 @@ class cCATALAN
       "diumenge",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cSL=cSLOVENIAN; // Slovenian
@@ -1869,7 +1869,7 @@ class cSLOVENIAN
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cSLOVENIAN_UNICODE
@@ -1887,7 +1887,7 @@ class cSLOVENIAN_UNICODE
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cFO=cFAROESE; // Faroese 
@@ -1923,7 +1923,7 @@ class cFAROESE
       "sunnudagur",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cRO=cROMANIAN; // Romanian
@@ -1959,7 +1959,7 @@ class cROMANIAN
       "Duminica",          // <D><U><M><I><N><I><C><A(>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cROMANIAN_UNICODE
@@ -1977,7 +1977,7 @@ class cROMANIAN_UNICODE
       "Duminic\x0103",          // <D><U><M><I><N><I><C><A(>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cHR=cCROATIAN; // Croatian
@@ -2013,7 +2013,7 @@ class cCROATIAN
       "Nedjelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cCROATIAN_UNICODE
@@ -2047,7 +2047,7 @@ class cCROATIAN_UNICODE
       "Nedjelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cDA=cDANISH; // Danish 
@@ -2108,7 +2108,7 @@ class cDANISH
       "Epiphany Eve" 			    :"Hellig trekongers aften",
    ]);
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cSR=cSERBIAN; // Serbian (Yugoslavia)
@@ -2144,7 +2144,7 @@ class cSERBIAN
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -2163,7 +2163,7 @@ class cSERBIAN_UNICODE
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -2200,7 +2200,7 @@ class cGREEK_UNICODE
      "\u039a\u03c5\u03c1\u03b9\u03b1\u03ba\u03ae",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
