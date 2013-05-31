@@ -6009,6 +6009,7 @@ static int match_type_svalue(struct pike_type *type,
 			     struct svalue *sval)
 {
   int res = 0;
+  struct pike_type *sub;
  loop:
   switch(type->type) {
   case T_SCOPE:
@@ -6035,20 +6036,134 @@ static int match_type_svalue(struct pike_type *type,
   case PIKE_T_FUNCTION:
   case T_MANY:
     /* FIXME: Identify if sval is callable. */
+    /* FIXME: Check arguments */
+    /* FIXME: Check return type */
     res = 1;
     break;
   case PIKE_T_MIXED:
     res = 1;
     break;
   case PIKE_T_OBJECT:
-    /* FIXME: Check that the object types are compatible. */
-    res = 1;
+    if( TYPEOF( *sval ) == PIKE_T_OBJECT )
+    {
+      struct object *o = sval->u.object;
+      if( o->prog )
+      {
+        if( !type->cdr )
+        {
+          res = 1;
+        }
+        else
+        {
+          struct program *mark = id_to_program( CDR_TO_INT( type ) );
+          if( mark == o->prog )
+            res = 1;
+          else if( type->car )
+            res = is_compatible( mark, o->prog );
+          else
+            res = implements( mark, o->prog );
+        }
+      }
+    }
     break;
+  case PIKE_T_STRING:
+    if( TYPEOF( *sval ) == PIKE_T_STRING )
+    {
+      sub = type->car;
+      if (sub->type == T_ZERO)
+      {
+        res = sval->u.string->len == 0;
+      }
+      else if( sub->type == PIKE_T_INT )
+      {
+        struct pike_string *s = sval->u.string;
+        INT32 min = CAR_TO_INT( sub ), max = CDR_TO_INT( sub );
+        INT32 string_min, string_max;
+        int checked;
 
+        check_string_range( s, 1, &string_min, &string_max );
+
+        if( min != MIN_INT32 )
+        {
+          if( string_min < min )
+          {
+            if( s->size_shift )
+              check_string_range( s, 0, &string_min, &string_max );
+            if( string_min < min )
+              goto do_return;
+            checked = 1;
+          }
+        }
+
+        if( max != MIN_INT32 )
+        {
+          if( string_max > max )
+          {
+            if( s->size_shift && !checked )
+              check_string_range( s, 0, NULL, &string_max );
+
+            if( string_max > max )
+              goto do_return;
+          }
+        }
+      }
+      res = 1;
+    }
+    break;
+  case PIKE_T_INT:
+    if( TYPEOF( *sval ) == PIKE_T_INT )
+    {
+      INT_TYPE current = sval->u.integer;
+      INT32 min, max;
+      min = CAR_TO_INT( type );
+      max = CDR_TO_INT( type );
+      if( min != MIN_INT32 )
+      {
+        if( current < min )
+          break;
+      }
+      if( max != MAX_INT32 )
+      {
+        if( current > max )
+          break;
+      }
+      res = 1;
+    }
+#ifdef AUTO_BIGNUM
+    /* FIXME: Objects that emulate integers? */
+    else if( TYPEOF(*sval) == PIKE_T_OBJECT )
+    {
+      if( is_bignum_object(sval->u.object) )
+      {
+        INT32 min = CAR_TO_INT( type );
+        INT32 max = CDR_TO_INT( type );
+        if( min != MIN_INT32 && max != MAX_INT32 )
+        {
+          struct svalue tmp;
+          TYPEOF(tmp)=PIKE_T_INT;
+          if( min != MIN_INT32 )
+          {
+            tmp.u.integer = min;
+            if( is_lt( sval, &tmp ) )
+              break;
+          }
+          if( max != MAX_INT32 )
+          {
+            tmp.u.integer = max;
+            if( is_gt( sval, &tmp ) )
+              break;
+          }
+        }
+        res = 1;
+      }
+    }
+#endif
+    break;
   default:
     res = (type->type == TYPEOF(*sval));
     break;
   }
+ do_return:
   if (flags & CALL_INVERTED_TYPES) return !res;
   return res;
 }
@@ -6179,7 +6294,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   case PIKE_T_OBJECT:
     fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
     if (fun_type) goto loop;
-    
+
     /* FIXME: Multiple cases:
      *          Untyped object.				mixed
      *          Failed to lookup program id.		mixed
@@ -7632,7 +7747,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }
     }
     return ret;
-       
+
   case T_ARRAY:
     {
       struct array *a = s->u.array;
@@ -7696,7 +7811,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
 #ifdef AUTO_BIGNUM
       if(is_bignum_object(s->u.object))
       {
-	push_int_type(MIN_INT32, MAX_INT32);
+          push_int_type(MIN_INT32, MAX_INT32);
       }
       else
 #endif
