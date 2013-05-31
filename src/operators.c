@@ -1555,7 +1555,7 @@ PMOD_EXPORT void f_add(INT32 args)
     PCHARP buf;
     ptrdiff_t tmp;
     int max_shift=0;
-
+    unsigned char tmp_flags, tmp_min, tmp_max;
     if(args==1) return;
 
     size=0;
@@ -1579,16 +1579,32 @@ PMOD_EXPORT void f_add(INT32 args)
     }
 
     tmp=sp[-args].u.string->len;
+    tmp_flags = sp[-args].u.string->flags;
+    tmp_min = sp[-args].u.string->min;
+    tmp_max = sp[-args].u.string->max;
+
     r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
+
+    r->flags |= tmp_flags & ~15;
+    r->min = tmp_min;
+    r->max = tmp_max;
+
     mark_free_svalue (sp - args);
     buf=MKPCHARP_STR_OFF(r,tmp);
     for(e=-args+1;e<0;e++)
     {
-      pike_string_cpy(buf,sp[e].u.string);
-      INC_PCHARP(buf,sp[e].u.string->len);
+      if( sp[e].u.string->len )
+      {
+        update_flags_for_add( r, sp[e].u.string );
+        pike_string_cpy(buf,sp[e].u.string);
+        INC_PCHARP(buf,sp[e].u.string->len);
+      }
     }
     SET_SVAL(sp[-args], T_STRING, 0, string, low_end_shared_string(r));
-    for(e=-args+1;e<0;e++) free_string(sp[e].u.string);
+
+    for(e=-args+1;e<0;e++)
+      free_string(sp[e].u.string);
+
     sp-=args-1;
 
     break;
