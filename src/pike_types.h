@@ -289,6 +289,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 				 node *args, INT32 *argno, INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
+struct pike_type *get_lax_type_of_svalue( const struct svalue *s );
 struct pike_type *get_type_of_svalue(const struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);

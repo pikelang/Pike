@@ -7581,6 +7581,24 @@ struct pike_type *zzap_function_return(struct pike_type *a,
   return NULL;
 }
 
+struct pike_type *get_lax_type_of_svalue( const struct svalue *c )
+{
+  struct pike_type *res;
+  if (TYPEOF(*c) == T_INT)
+  {
+    if (c->u.integer)
+      copy_pike_type(res, int_type_string);
+    else
+      copy_pike_type(res, zero_type_string);
+  }
+  else if (TYPEOF(*c) == T_STRING )
+    copy_pike_type(res, string_type_string);
+  else
+    return get_type_of_svalue(c);
+
+  return res;
+}
+
 struct pike_type *get_type_of_svalue(const struct svalue *s)
 {
   struct pike_type *ret;
