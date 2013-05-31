@@ -5638,15 +5638,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	id->func.const_info.offset = store_constant(c, 0, 0);
       }
       free_type(id->type);
-      if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
-	if (c->u.integer) {
-	  copy_pike_type(id->type, int_type_string);
-	} else {
-	  copy_pike_type(id->type, zero_type_string);
-	}
-      } else {
-	id->type = get_type_of_svalue(c);
-      }
+      if( !(flags & ID_INLINE) )
+          id->type = get_lax_type_of_svalue( c );
+      else
+          id->type = get_type_of_svalue( c );
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%.*sstored constant #%d at %d\n",
 	       cc->compilation_depth, "",
@@ -5676,15 +5671,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   if (c) {
 #endif
-    if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
-      if (c->u.integer) {
-	copy_pike_type(dummy.type, int_type_string);
-      } else {
-	copy_pike_type(dummy.type, zero_type_string);
-      }
-    } else {
-      dummy.type = get_type_of_svalue(c);
-    }
+   if( !(flags & ID_INLINE) )
+      dummy.type = get_lax_type_of_svalue( c );
+    else
+      dummy.type = get_type_of_svalue( c );
     dummy.run_time_type = (unsigned char) TYPEOF(*c);
     dummy.func.const_info.offset = store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
