@@ -7784,12 +7784,9 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
   case T_STRING:
     type_stack_mark();
     if (s->u.string->len) {
-      /* FIXME: Could be extended to detect 7-bit strings, etc. */
-      if (s->u.string->size_shift == 2) {
-	push_int_type(MIN_INT32, MAX_INT32);
-      } else {
-	push_int_type(0, (1<<(8 << s->u.string->size_shift)) - 1);
-      }
+      INT32 min, max;
+      check_string_range( s->u.string, 0, &min, &max );
+      push_int_type(min, max);
     } else {
       push_type(T_ZERO);
     }
