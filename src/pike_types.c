@@ -76,7 +76,7 @@
 #define PT_IS_MARKER	4	/* The node is a marker. */
 
 /* Number of entries in the struct pike_type hash-table. */
-#define PIKE_TYPE_HASH_SIZE	32768
+#define PIKE_TYPE_HASH_SIZE	65535
 
 
 #ifdef PIKE_TYPE_DEBUG
@@ -292,18 +292,18 @@ void debug_free_type(struct pike_type *t)
 #endif /* DEBUG_MALLOC */
  loop:
   if (!sub_ref(t)) {
-    unsigned INT32 hash = t->hash % pike_type_hash_size;
+    unsigned INT32 hash = t->hash & pike_type_hash_size;
     struct pike_type **t2 = pike_type_hash + hash;
     struct pike_type *car, *cdr;
     unsigned INT32 type;
-
+#ifdef PIKE_DEBUG
     /* PIKE_DEBUG code */
-    if (hash >= pike_type_hash_size) {
+    if (hash > pike_type_hash_size) {
       Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
 		 t->hash, hash, pike_type_hash_size);
     }
     /* End PIKE_DEBUG code */
-
+#endif
     while (*t2) {
       if (*t2 == t) {
 	*t2 = t->next;
@@ -394,16 +394,21 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   /* FIXME: The hash ought to be based on the tree contents, regardless
    *        of what the adresses of the type nodes are.
    */
-  unsigned INT32 hash = DO_NOT_WARN((unsigned INT32)
-				    ((ptrdiff_t)type*0x10204081)^
-				    (0x8003*PTR_TO_INT(car))^
-				    ~(0x10001*PTR_TO_INT(cdr)));
-  unsigned INT32 index = hash % pike_type_hash_size;
   struct pike_type *t;
+  unsigned INT32 index, 
+    hash = DO_NOT_WARN((unsigned INT32)
+                       ((ptrdiff_t)type*0x10204081)^
+                       (0x8003*PTR_TO_INT(car))^
+                       ~(0x10001*PTR_TO_INT(cdr)));
+
+  hash ^= (hash >> 20) ^ (hash >> 12);
+  hash ^= (hash >> 7) ^ (hash >> 4);
+
+  index = hash & pike_type_hash_size;
 #ifdef PIKE_EXTRA_DEBUG
   static unsigned INT32 extra_debug_index = (unsigned INT32)~0;
 #endif /* PIKE_EXTRA_DEBUG */
-
+#ifdef PIKE_DEBUG
   /* PIKE_DEBUG code */
   if (type & ~255) {
     /* The bad type node on OSF/1 seems to be:
@@ -419,13 +424,13 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	       type, get_name_of_type(type),
 	       car, cdr);
   }
-  if (index >= pike_type_hash_size) {
+  if (index > pike_type_hash_size) {
     Pike_fatal("Modulo operation failed for hash:%u, index:%u, "
 	       "size:%"PRINTSIZET"d.\n",
 	       hash, index, pike_type_hash_size);
   }
   /* End PIKE_DEBUG code */
-
+#endif
 #ifdef PIKE_EXTRA_DEBUG
   if ((!~extra_debug_index) &&
       (type == T_FUNCTION) &&
@@ -517,7 +522,6 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	free_string((struct pike_string *)debug_malloc_pass(car));
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
 	break;
-
 #ifdef PIKE_DEBUG
       case '0':
       case '1':
@@ -8420,8 +8424,8 @@ void init_types(void)
 {
   /* Initialize hashtable here. */
   pike_type_hash = (struct pike_type **)xalloc(sizeof(struct pike_type *) *
-					       PIKE_TYPE_HASH_SIZE);
-  MEMSET(pike_type_hash, 0, sizeof(struct pike_type *) * PIKE_TYPE_HASH_SIZE);
+                                               (PIKE_TYPE_HASH_SIZE+1));
+  MEMSET(pike_type_hash, 0, sizeof(struct pike_type *) * (PIKE_TYPE_HASH_SIZE+1));
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
   init_pike_type_blocks();
 
