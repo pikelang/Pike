@@ -369,6 +369,22 @@ class Watchdog
   }
 }
 
+string find_test(string ts)
+{
+  if(Stdio.is_file(ts))
+    return ts;
+  if(Stdio.is_dir(ts))
+     return combine_path(ts, "testsuite");
+
+  // Let's DWIM
+  string try;
+  if(Stdio.is_file(try="tlib/modules/"+replace(ts, ".", ".pmod/")+".pmod/testsuite"))
+    return try;
+  if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return try;
+  if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return try;
+  return ts;
+}
+
 //
 // Main program
 //
@@ -653,8 +669,7 @@ int main(int argc, array(string) argv)
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   foreach(testsuites; int pos; string ts) {
-    if(Stdio.is_dir(ts))
-      testsuites[pos] = ts = combine_path(ts, "testsuite");
+    testsuites[pos] = ts = find_test(ts);
     if(!file_stat(ts))
       exit(EXIT_TEST_NOT_FOUND, "Could not find test %O.\n", ts);
   }
