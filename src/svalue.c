@@ -513,10 +513,6 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     }
     break;
   }
-#if 0
-  q+=q % 997;
-  q+=((q + TYPEOF(*s)) * 9248339);
-#endif
 
   /*
    * This simple mixing function comes from the java HashMap implementation.
