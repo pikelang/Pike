@@ -137,8 +137,9 @@ protected class CommandSet {
   }
 
   protected class Intwriter (string type, function fallback) {
-    void `()(function(string, mixed ... : int) w, string sres, int num,
-	     mixed res, int last_compile_time, int last_eval_time) {
+    protected void `()(function(string, mixed ... : int) w, string sres,
+                       int num, mixed res, int last_compile_time,
+                       int last_eval_time) {
       if(res && intp(res)) {
 	if(type=="b") {
 	  string s = sprintf("%b", res);
@@ -618,11 +619,7 @@ protected class CommandNew {
 
 protected class CommandStartStop {
   inherit Command;
-  SubSystems subsystems;
-
-  void create() {
-    subsystems=SubSystems();
-  }
+  SubSystems subsystems = SubSystems();
 
   string help(string what) {
     switch(what){
@@ -665,10 +662,6 @@ protected class SubSysBackend {
   "\twill end at first exception. Can be restarted with \"start backend\".\n";
 
   constant stopdoc = "backend\n\tstop the backend thread.\n";
-
-  void create(){
-    is_running=0;
-  }
 
   void start(Evaluator e, array(string) words){
     int(0..1) once = (sizeof(words)>=2 && words[1]=="once");
@@ -714,25 +707,21 @@ protected class SubSysLogger {
   constant stopdoc = "logging\n\tTurns off logging to file.\n";
   int(0..1) running;
 
-  protected class Logger {
-
-    Stdio.File logfile;
-    Evaluator e;
+  protected class Logger (Evaluator e, Stdio.File logfile)
+  {
     constant is_logger = 1;
 
-    void create(Evaluator _e, Stdio.File _logfile) {
-      e = _e;
-      logfile = _logfile;
+    protected void create() {
       e->add_input_hook(this);
       running = 1;
     }
 
-    void destroy() {
+    protected void destroy() {
       e && e->remove_input_hook(this);
       running = 0;
     }
 
-    int(0..0) `() (string in) {
+    protected int(0..0) `() (string in) {
       if(!running) return 0;
       if(catch( logfile->write(in) )) {
 	e->remove_writer(this);
@@ -829,7 +818,7 @@ protected class SubSysPhish {
 protected class SubSystems {
   mapping(string:object) subsystems;
 
-  void create (){
+  protected void create () {
     // Register the subsystems here.
     subsystems = ([
 #if constant(thread_create)
@@ -968,7 +957,7 @@ class Expression {
 
   //! @param t
   //!   An array of Pike tokens.
-  void create(array(string) t) {
+  protected void create(array(string) t) {
     positions = ([]);
     depths = allocate(sizeof(t));
     sscanf_depths = (<>);
@@ -1422,7 +1411,7 @@ protected class HilfeHistory {
   }
 
   // Give better names in backtraces.
-  mixed `[](int i) {
+  protected mixed `[](int i) {
     mixed ret;
     array err = catch( ret = ::`[](i) );
     if(err)
@@ -1431,7 +1420,7 @@ protected class HilfeHistory {
   }
 
   // Give the object a better name.
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%d)", this_program,
 			     _sizeof(), get_maxsize() );
   }
@@ -1537,9 +1526,7 @@ class Evaluator {
     input_hooks -= ({ old });
   }
 
-
-  //!
-  void create()
+  protected void create()
   {
     print_version();
     commands->set = CommandSet();
@@ -2154,11 +2141,9 @@ class Evaluator {
 
   protected string hch_errors = "";
   protected string hch_warnings = "";
-  protected class HilfeCompileHandler {
+  protected class HilfeCompileHandler (int stack_level) {
 
-    int stack_level;
-    void create(int _stack_level) {
-      stack_level = _stack_level;
+    protected void create() {
       hch_errors = "";
       hch_warnings = "";
     }
@@ -2516,7 +2501,7 @@ class StdinHilfe
 
   //! Any hilfe statements given in the init array will be executed
   //! once .hilferc has been executed.
-  void create(void|array(string) init)
+  protected void create(void|array(string) init)
   {
     readline = Stdio.Readline();
     write = readline->write;
@@ -2963,7 +2948,7 @@ class GenericHilfe
   inherit Evaluator;
 
   //!
-  void create(Stdio.FILE in, Stdio.File out)
+  protected void create(Stdio.FILE in, Stdio.File out)
   {
     write=out->write;
     ::create();
@@ -2982,10 +2967,9 @@ class GenericHilfe
 }
 
 //!
-class GenericAsyncHilfe
+class GenericAsyncHilfe (Stdio.File infile, Stdio.File outfile)
 {
   inherit Evaluator;
-  Stdio.File infile, outfile;
 
   string outbuffer="";
 
@@ -3018,16 +3002,13 @@ class GenericAsyncHilfe
     write("Terminal closed.\n");
     destruct(this);
     destruct(infile);
-    if(outfile) destruct(outfile);
+    destruct(outfile);
   }
 
-  //!
-  void create(Stdio.File in, Stdio.File out)
+  protected void create()
   {
-    infile=in;
-    outfile=out;
-    in->set_nonblocking(read_callback, 0, close_callback);
-    out->set_write_callback(write_callback);
+    infile->set_nonblocking(read_callback, 0, close_callback);
+    outfile->set_write_callback(write_callback);
 
     write=send_output;
     ::create();

@@ -69,7 +69,7 @@ class Resource {
     if(t=='O') return "RDF."+c+"(" + get_n_triple_name() + ")";
   }
 
-  string _sprintf(int t) { return __sprintf("Resource", t); }
+  protected string _sprintf(int t) { return __sprintf("Resource", t); }
 
   protected int __hash() { return number; }
 }
@@ -109,12 +109,12 @@ class LiteralResource {
     return id;
   }
 
-  int(0..1) _equal(mixed r) {
+  protected int(0..1) _equal(mixed r) {
     if(!objectp(r) || !r->is_literal_resource) return 0;
     return r->id==id;
   }
 
-  string _sprintf(int t) { return __sprintf("LiteralResource", t); }
+  protected string _sprintf(int t) { return __sprintf("LiteralResource", t); }
 }
 
 //! Resource identified by URI.
@@ -164,12 +164,12 @@ class URIResource {
     return "[" + id + "]";
   }
 
-  int(0..1) _equal(mixed r) {
+  protected int(0..1) _equal(mixed r) {
     if(!objectp(r) || !r->is_uri_resource) return 0;
     return r->id==id;
   }
 
-  string _sprintf(int t) { return __sprintf("URIResource", t); }
+  protected string _sprintf(int t) { return __sprintf("URIResource", t); }
 }
 
 //! Resource used for RDF-technical reasons like reification.
@@ -515,7 +515,9 @@ int parse_n_triples(string in) {
 
   class Temp(string id) {
     constant type = "";
-    string _sprintf(int t) { return t=='O' && sprintf("%s(%O)", type, id); }
+    protected string _sprintf(int t) {
+      return t=='O' && sprintf("%s(%O)", type, id);
+    }
   };
   class TempURI {
     inherit Temp;
