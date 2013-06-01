@@ -6129,6 +6129,29 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Illegal to redefine 'final' function %S.", name);
       }
 
+      if (!(flags & ID_VARIANT) && (Pike_compiler->compiler_pass == 1) &&
+	  (funp->func.c_fun == f_dispatch_variant) &&
+	  (!func || (func->c_fun != f_dispatch_variant) ||
+	   !IDENTIFIER_IS_C_FUNCTION(function_flags)) &&
+	  IDENTIFIER_IS_C_FUNCTION(funp->identifier_flags)) {
+	/* Overriding a variant function dispatcher with
+	 * a non-variant function in pass 1.
+	 *
+	 * Hide the corresponding variant functions.
+	 */
+	int j = prog->num_identifier_references;
+	while ((j = really_low_find_variant_identifier(name, prog, NULL, j,
+						       SEE_PROTECTED|SEE_PRIVATE)) != -1) {
+	  if (!prog->identifier_references[j].inherit_offset) {
+	    /* FIXME: This doesn't catch all cases, and should probably
+	     *        be moved to a place where it does.
+	     */
+	    my_yyerror("Overloading variant function %S with non-variant in same class.",
+		       name);
+	  }
+	  prog->identifier_references[j].id_flags |= ID_HIDDEN;
+	}
+      }
 
       if(ref.id_flags & ID_INLINE)
       {
