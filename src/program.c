@@ -5900,6 +5900,7 @@ INT32 define_function(struct pike_string *name,
 		      unsigned opt_flags)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct program *prog = Pike_compiler->new_program;
   struct identifier *funp,fun;
   struct reference ref;
   struct svalue *lfun_type;
@@ -5995,10 +5996,9 @@ INT32 define_function(struct pike_string *name,
       }
       i = isidentifier(symbol);
       if ((i >= 0) && 
-	  !((ref = PTR_FROM_INT(Pike_compiler->new_program, i))->
-	    id_flags & ID_INHERITED)) {
+	  !((ref = PTR_FROM_INT(prog, i))->id_flags & ID_INHERITED)) {
 	/* Not an inherited symbol. */
-	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+	struct identifier *id = ID_FROM_INT(prog, i);
 	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
 	  my_yyerror("Illegal to redefine function %S with variable.", symbol);
 	} else if (id->run_time_type != PIKE_T_GET_SET) {
@@ -6017,7 +6017,7 @@ INT32 define_function(struct pike_string *name,
 	struct identifier *id;
 	i = low_define_variable(symbol, symbol_type, flags,
 				~0, PIKE_T_GET_SET);
-	id = ID_FROM_INT(Pike_compiler->new_program, i);
+	id = ID_FROM_INT(prog, i);
 
 	/* Paranoia. */
 	id->func.gs_info.getter = -1;
@@ -6038,7 +6038,7 @@ INT32 define_function(struct pike_string *name,
   }
 
   if(IDENTIFIER_IS_C_FUNCTION(function_flags))
-    Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
+    prog->flags |= PROGRAM_HAS_C_METHODS;
 
   if (Pike_compiler->compiler_pass == 1) {
     /* Mark the type as tentative by setting the runtime-type
@@ -6062,8 +6062,8 @@ INT32 define_function(struct pike_string *name,
 	  c->compilation_depth, "", i);
 #endif
 
-    funp=ID_FROM_INT(Pike_compiler->new_program, i);
-    ref=Pike_compiler->new_program->identifier_references[i];
+    funp = ID_FROM_INT(prog, i);
+    ref = prog->identifier_references[i];
 
     if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
       /* Keep this flag. */
@@ -6078,8 +6078,7 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Identifier %S defined twice.", name);
 
 	if (getter_setter != -1) {
-	  struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					      getter_setter);
+	  struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	  (&id->func.gs_info.getter)[is_setter] = i;
 	}
 	return i;
@@ -6138,8 +6137,7 @@ INT32 define_function(struct pike_string *name,
 		c->compilation_depth, "");
 #endif
 	/* Hide the previous definition, and make a new definition. */
-	Pike_compiler->new_program->identifier_references[i].id_flags |=
-	  ID_PROTECTED;
+	prog->identifier_references[i].id_flags |= ID_PROTECTED;
 	goto make_a_new_def;
       }
 
@@ -6165,7 +6163,7 @@ INT32 define_function(struct pike_string *name,
 
       fun.opt_flags = opt_flags;
 
-      ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
+      ref.identifier_offset = prog->num_identifiers;
       debug_add_to_identifiers(fun);
     }
 
@@ -6175,15 +6173,14 @@ INT32 define_function(struct pike_string *name,
     ref.id_flags = flags;
     if (flags & ID_VARIANT) {
       ref.id_flags |= ID_USED;
-      Pike_compiler->new_program->identifier_references[i] = ref;
+      prog->identifier_references[i] = ref;
       overridden = i;
     } else {
       overridden = override_identifier(&ref, name);
     }
     if (overridden >= 0) {
 #ifdef PIKE_DEBUG
-      struct reference *oref =
-	Pike_compiler->new_program->identifier_references+overridden;
+      struct reference *oref = prog->identifier_references+overridden;
       if((oref->inherit_offset != ref.inherit_offset) ||
 	 (oref->identifier_offset != ref.identifier_offset) ||
 	 ((oref->id_flags | ID_USED) != (ref.id_flags | ID_USED))) {
@@ -6201,8 +6198,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 
       if (getter_setter != -1) {
-	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					    getter_setter);
+	struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	INT32 old_i = (&id->func.gs_info.getter)[is_setter];
 	if ((old_i >= 0) && (old_i != overridden)) {
 	  my_yyerror("Multiple definitions for %S.", name);
@@ -6244,13 +6240,13 @@ INT32 define_function(struct pike_string *name,
       fprintf(stderr, 
 	      "Adding new function #%d: '%s'\n"
 	      "  identifier_flags:0x%02x opt_flags:0x%04x\n",
-	      Pike_compiler->new_program->num_identifiers,
+	      prog->num_identifiers,
 	      fun.name->str,
 	      fun.identifier_flags, fun.opt_flags);
     }
 #endif /* PIKE_DEBUG */
 
-    i=Pike_compiler->new_program->num_identifiers;
+    i = prog->num_identifiers;
 
     debug_add_to_identifiers(fun);
 
@@ -6265,7 +6261,7 @@ INT32 define_function(struct pike_string *name,
 
   /* Add the reference. */
 
-  i=Pike_compiler->new_program->num_identifier_references;
+  i = prog->num_identifier_references;
   add_to_identifier_references(ref);
 
 #ifdef PROGRAM_BUILD_DEBUG
@@ -6274,8 +6270,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 
   if (getter_setter != -1) {
-    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					getter_setter);
+    struct identifier *id = ID_FROM_INT(prog, getter_setter);
     INT32 old_i = (&id->func.gs_info.getter)[is_setter];
     if (old_i >= 0) {
       my_yyerror("Multiple definitions for %S.", name);
