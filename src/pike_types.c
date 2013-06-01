@@ -6029,6 +6029,13 @@ static int match_type_svalue(struct pike_type *type,
     flags ^= CALL_INVERTED_TYPES;
     type = type->car;
     goto loop;
+  case T_VOID:
+    /* Allow UNDEFINED for voidable arguments. */
+    res = (TYPEOF(*sval) == T_INT) && !sval->u.integer && SUBTYPEOF(*sval);
+    break;
+  case T_ZERO:
+    res = SAFE_IS_ZERO(sval);
+    break;
   case PIKE_T_TYPE:
     res = 1;
     break;
