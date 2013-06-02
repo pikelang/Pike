@@ -263,16 +263,13 @@ int verify(string password, string hash)
 //! @seealso
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
 //!   @[Nettle.HashInfo()->crypt_hash()]
-string hash(string password, string|void scheme, int|void rounds)
+string(0..127) hash(string password, string|void scheme, int|void rounds)
 {
   function(string, string, int:string(0..255)) crypt_hash;
   int salt_size = 16;
   int default_rounds = 5000;
 
-  // FIXME: salt is string(0..255) since constant strings aren't set
-  // to the correct type.
-
-  string(0..127) render_crypt_hash(string(0..127) scheme, string(0..255) salt,
+  string(0..127) render_crypt_hash(string(0..127) scheme, string(0..127) salt,
                                    string(0..255) hash, int rounds)
   {
     if (rounds != default_rounds) {
@@ -285,14 +282,14 @@ string hash(string password, string|void scheme, int|void rounds)
     return [string(0..127)]sprintf("$%s$%s$%s", scheme, salt, hash);
   };
 
-  string(0..127) render_ldap_hash(string(0..255) scheme, string(0..255) salt,
+  string(0..127) render_ldap_hash(string(0..255) scheme, string(0..127) salt,
                                   string(0..255) hash, int rounds)
   {
     if (scheme[0] != '{') scheme = "{" + scheme + "}";
     return [string(0..127)]upper_case(scheme) + MIME.encode_base64(hash + salt);
   };
 
-  function(string(0..127), string(0..255), string(0..255), int:string(0..127)) render_hash = render_crypt_hash;
+  function(string(0..127), string(0..127), string(0..255), int:string(0..127)) render_hash = render_crypt_hash;
 
   switch(lower_case(scheme)) {
   case "crypt":
