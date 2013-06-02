@@ -2054,7 +2054,7 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
     ret->max = amax;
     return;
   }
-  if( (aflags & STRING_CONTENT_CHECKED) && (b->flags & STRING_CONTENT_CHECKED) )
+  if( aflags & b->flags & STRING_CONTENT_CHECKED )
   {
     ret->min = MIN( amin, b->min );
     ret->max = MAX( amax, b->max );
@@ -2063,7 +2063,7 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
   else
     ret->flags &= ~STRING_CONTENT_CHECKED;
 
-  ret->flags = ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE) |
+  ret->flags = (ret->flags & ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE)) |
     (aflags & b->flags);
 }
 
