@@ -845,9 +845,6 @@ void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
-int isidentifier_variant(struct pike_string *name,
-			 unsigned id_flags,
-			 struct pike_type *type);
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno);
 PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,

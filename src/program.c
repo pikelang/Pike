@@ -3791,6 +3791,27 @@ void check_program(struct program *p)
 
 static void f_dispatch_variant(INT32 args);
 
+static int is_variant_dispatcher(struct program *prog, int fun)
+{
+  struct reference *ref;
+  struct identifier *id;
+  if (fun < 0) return 0;
+  ref = PTR_FROM_INT(prog, fun);
+  id = ID_FROM_PTR(prog, ref);
+  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+	  (id->func.c_fun == f_dispatch_variant));
+}
+
+static int add_variant_dispatcher(struct pike_string *name,
+				  struct pike_type *type,
+				  int id_flags)
+{
+  union idptr dispatch_fun;
+  dispatch_fun.c_fun = f_dispatch_variant;
+  return define_function(name, type, id_flags & ~(ID_VARIANT|ID_LOCAL),
+			 IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
+}
+
 /* Note: This function is misnamed, since it's run after both passes. /mast */
 /* finish-states:
  *
@@ -3819,41 +3840,26 @@ struct program *end_first_pass(int finish)
     int id_flags;
     int j;
     if (prog->identifier_references[e].inherit_offset) continue;
-    if (!((id_flags = prog->identifier_references[e].id_flags) & ID_VARIANT)) {
-      /* Not a variant function. */
-      continue;
-    }
+    if (!is_variant_dispatcher(prog, e)) continue;
+    /* Found a dispatcher. */
+
     id = ID_FROM_INT(prog, e);
     name = id->name;
-    type = id->type;
-    /* NB: The dispatcher needs the variant references to not
-     *     get overloaded for the ::-operator to work.
-     */
-    prog->identifier_references[e].id_flags |= ID_LOCAL;
+    type = NULL;
+    id_flags = 0;
 
     CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
 
-    /* Check whether we've added a dispatcher for this function already. */
-    j = isidentifier(name);
-    if ((j >= 0) && (!prog->identifier_references[j].inherit_offset)) {
-      /* Already handled. */
-      CDFPRINTF((stderr, "Dispatcher present!\n"));
-      goto next_ref;
-    }
-
-#ifdef COMPILER_DEBUG
-    fprintf(stderr, "type: ");
-    simple_describe_type(type);
-    fprintf(stderr, "\n");
-#endif
-
-    /* Collect the other variants of the function. */
-    for (j = e+1; j < num_refs; j++) {
-      if (prog->identifier_references[j].inherit_offset) continue;
-      if (!(prog->identifier_references[j].id_flags & ID_VARIANT)) continue;
+    /* Collect the variants of the function. */
+    j = prog->num_identifier_references;
+    while ((j = really_low_find_variant_identifier(name, prog, NULL, j,
+						   SEE_PROTECTED|SEE_PRIVATE)) >= 0) {
+      struct reference *ref = prog->identifier_references + j;
       id = ID_FROM_INT(prog, j);
-      if (name != id->name) continue;
-      id_flags |= prog->identifier_references[j].id_flags;
+      id_flags |= ref->id_flags;
+      /* NB: The dispatcher needs the variant references to
+       *     not get overloaded for the ::-operator to work.
+       */
       prog->identifier_references[j].id_flags |= ID_LOCAL;
       type = or_pike_types(type, id->type, 1);
 #ifdef COMPILER_DEBUG
@@ -3862,24 +3868,16 @@ struct program *end_first_pass(int finish)
       fprintf(stderr, "\n");
 #endif
     }
-    /* Include the directly inherited variants as well. */
-    for (j = 1; j < prog->num_inherits; j++) {
-      struct inherit *inh = &prog->inherits[j];
-      if (inh->inherit_level != 1) continue;
-      e = really_low_find_shared_string_identifier(name, inh->prog,
-						   SEE_PROTECTED);
-      if (e == -1) continue;
-      id = ID_FROM_INT(inh->prog, e);
-      id_flags |= inh->prog->identifier_references[e].id_flags;
-      type = or_pike_types(type, id->type, 1);
-    }
 #ifdef COMPILER_DEBUG
     fprintf(stderr, "Dispatcher type: ");
     simple_describe_type(type);
     fprintf(stderr, "\n");
 #endif
-    define_function(name, type, id_flags & ~ID_VARIANT,
-		    IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
+    /* Update the type of the dispatcher. */
+    id = ID_FROM_INT(prog, e);
+    free_type(id->type);
+    id->type = type;
+    prog->identifier_references->id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
   next_ref:
     ;
   }
@@ -5027,29 +5025,6 @@ int isidentifier(struct pike_string *s)
 						  SEE_PROTECTED|SEE_PRIVATE);
 }
 
-/**
- * Return the index of the identifier if found, otherwise -1.
- *
- * If id_flags indicates a variant function, the index for a
- * variant function with the same type and name is returned
- * if found, otherwise -1.
- */
-int isidentifier_variant(struct pike_string *name,
-			 unsigned id_flags,
-			 struct pike_type *type)
-{
-  if (id_flags & ID_VARIANT) {
-    return really_low_find_variant_identifier(name,
-					      Pike_compiler->new_program,
-					      type,
-					      Pike_compiler->new_program->
-					      num_identifier_references,
-					      SEE_PROTECTED|SEE_PRIVATE);
-  } else {
-    return isidentifier(name);
-  }
-}
-
 /*
  * Definition of identifiers.
  *
@@ -5994,6 +5969,10 @@ INT32 define_function(struct pike_string *name,
 		      NULL, 0, type, 0,
 		       "Type mismatch for callback function %S:", name);
       }
+      if (flags & ID_VARIANT) {
+	yyerror("Variants not supported for getter/setters: %S", name);
+	flags &= ~ID_VARIANT;
+      }
       i = isidentifier(symbol);
       if ((i >= 0) && 
 	  !((ref = PTR_FROM_INT(prog, i))->id_flags & ID_INHERITED)) {
@@ -6049,7 +6028,73 @@ INT32 define_function(struct pike_string *name,
     run_time_type = T_MIXED;
   }
 
-  i = isidentifier_variant(name, flags, type);
+  i = isidentifier(name);
+  if (Pike_compiler->compiler_pass == 1) {
+    if (flags & ID_VARIANT) {
+      if (i >= 0) {
+	if (!is_variant_dispatcher(prog, i)) {
+	  /* This function will be the termination function for
+	   * our variant dispatcher.
+	   */
+	  struct reference ref = prog->identifier_references[i];
+	  if (ref.id_flags & ID_LOCAL) {
+	    /* Mark it as a variant. */
+	    prog->identifier_references[i].id_flags |= ID_VARIANT;
+	    add_variant_dispatcher(name, type, flags);
+	  } else {
+	    /* Our dispatcher needs to occupy this ref, since
+	     * it is not local.
+	     *
+	     * Add our variant dispatcher in its place and
+	     * copy it as a variant.
+	     */
+	    add_variant_dispatcher(name, type, flags);
+	    ref.id_flags |= ID_VARIANT;
+	    add_to_identifier_references(ref);
+	  }
+	} else if (prog->identifier_references[i].inherit_offset) {
+	  /* NB: If we are overriding an inherited dispatcher, there's
+	   *     no need to go via it, since our new dispatcher can
+	   *     just continue on with the old ones variant functions.
+	   */
+	  add_variant_dispatcher(name, type, flags);
+	}
+      } else {
+	add_variant_dispatcher(name, type, flags);
+      }
+      i = really_low_find_variant_identifier(name, prog, type,
+					     prog->num_identifier_references,
+					     SEE_PROTECTED|SEE_PRIVATE);
+    } else if (is_variant_dispatcher(prog, i) &&
+	       !prog->identifier_references[i].inherit_offset) {
+      if (!func || (func->c_fun != f_dispatch_variant) ||
+	  !IDENTIFIER_IS_C_FUNCTION(function_flags)) {
+	/* FIXME: What about the case
+	 *
+	 *  non-variant prototype;
+	 *
+	 *  variant;
+	 *
+	 *  non-variant definition.
+	 */
+	my_yyerror("Overriding variant function %S() with "
+		   "non-variant in the same class.",
+		   name);
+      }
+    }
+  } else if (i >= 0) {
+    /* Pass 2 */
+    if (is_variant_dispatcher(prog, i)) {
+      if (!func || (func->c_fun != f_dispatch_variant) ||
+	  !IDENTIFIER_IS_C_FUNCTION(function_flags)) {
+	/* Variant or variant termination function in second pass. */
+	flags |= ID_VARIANT;
+	i = really_low_find_variant_identifier(name, prog, type,
+					       prog->num_identifier_references,
+					       SEE_PROTECTED|SEE_PRIVATE);
+      }
+    }
+  }
 
   if(i >= 0)
   {
