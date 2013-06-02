@@ -17,10 +17,6 @@ fake_dynamic_load.pike
 fixdepends.sh
   Used by make depend to generate dependencies.
 
-hilfe
-  Alias for pike without arguments, which starts Hilfe,
-  the incremental Pike frontend.
-
 install_module
   Installs a Pike module into a pike module directory.
 
@@ -78,9 +74,6 @@ pike.in
 
 precompile.pike
   Creates .c files from .cmod files during Pike build.
-
-rsif
-  The extremly handy "replace string in file" utility.
 
 smartlink
   [FIXME: What does this do?]

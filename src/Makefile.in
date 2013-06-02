@@ -222,7 +222,7 @@ SRC_TARGETS= \
 #
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
-all: module_objects post_module_objects pike-complete-stamp tools
+all: module_objects post_module_objects pike-complete-stamp
 	@if [ -f dumpversion ]; then \
 	  echo "$(MAKE) $(MAKE_FLAGS) dump_modules"; \
 	  $(MAKE) $(MAKE_FLAGS) dump_modules; \
@@ -450,18 +450,6 @@ pixie: pike-complete-stamp
 	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
-tools: hilfe rsif
-
-hilfe: $(TMP_BINDIR)/hilfe Makefile
-	@echo "Creating hilfe..."; \
-	( sed -e 's!/usr/bin/env pike!$(bindir)/pike!' \
-	  <$(TMP_BINDIR)/hilfe >./hilfe && chmod 755 ./hilfe) || exit 1 ;
-
-rsif: $(TMP_BINDIR)/rsif Makefile
-	@echo "Creating rsif..."; \
-	( sed -e 's!pike!$(bindir)/pike!' <$(TMP_BINDIR)/rsif \
-	  >./rsif && chmod 755 ./rsif) || exit 1 ;
-
 dump_modules: pike-complete-stamp master-stamp
 	-rm dumpmodule.log
 	args="$(DUMPARGS)"; \
@@ -663,7 +651,7 @@ pike_icon.res: pike.ico
 	$(RCEXE) /fo $@ pike_icon.rc
 
 # install
-install: pike-complete-stamp tools
+install: pike-complete-stamp
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	include_prefix="$(include_prefix)" \
@@ -675,7 +663,7 @@ install: pike-complete-stamp tools
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
 	$(INSTALLARGS)
 
-install_interactive: pike-complete-stamp tools
+install_interactive: pike-complete-stamp
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(bindir)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -701,7 +689,7 @@ clean_here: tidy doc_clean
 	-rm -f confdefs.h
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
-	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
+	-rm -f master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
