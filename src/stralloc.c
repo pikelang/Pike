@@ -2063,19 +2063,13 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
   else
     ret->flags &= ~STRING_CONTENT_CHECKED;
 
-  if( (aflags & STRING_IS_LOWERCASE) && (b->flags & STRING_IS_LOWERCASE) )
-    ret->flags |= STRING_IS_LOWERCASE;
-  else
-    ret->flags &= ~STRING_IS_LOWERCASE;
-
-  if( (aflags & STRING_IS_UPPERCASE) && (b->flags & STRING_IS_UPPERCASE) )
-    ret->flags |= STRING_IS_UPPERCASE;
-  else
-    ret->flags &= ~STRING_IS_UPPERCASE;
+  ret->flags = ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE) |
+    (aflags & b->flags);
 }
 
 PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b)
 {
+  int foo=0;
   if( !b->len ) return;
   if( a->flags & STRING_CONTENT_CHECKED )
   {
@@ -2088,12 +2082,7 @@ PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string
       a->flags &= ~STRING_CONTENT_CHECKED;
   }
 
-  if( (a->flags & STRING_IS_LOWERCASE) && !(b->flags & STRING_IS_LOWERCASE) )
-    a->flags &= ~STRING_IS_LOWERCASE;
-
-  if( (a->flags & STRING_IS_UPPERCASE) && !(b->flags & STRING_IS_UPPERCASE) )
-    a->flags &= ~STRING_IS_UPPERCASE;
-
+  a->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE) | b->flags;
 }
 
 /*** Add strings ***/
