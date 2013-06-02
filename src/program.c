@@ -5970,7 +5970,7 @@ INT32 define_function(struct pike_string *name,
 		       "Type mismatch for callback function %S:", name);
       }
       if (flags & ID_VARIANT) {
-	yyerror("Variants not supported for getter/setters: %S", name);
+	my_yyerror("Variants not supported for getter/setters: %S", name);
 	flags &= ~ID_VARIANT;
       }
       i = isidentifier(symbol);
