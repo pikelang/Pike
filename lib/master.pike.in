@@ -2509,7 +2509,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   class module_checker
   {
-    int `!()
+    protected int `!()
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
 
@@ -2541,14 +2541,14 @@ class dirnode (string dirname, object|void compilation_handler,
       }
     }
 
-    mixed `[](string index)
+    protected mixed `[](string index)
       {
 	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
 		      dirname, index, module && module[index]);
 	return module && module[index];
       }
-    array(string) _indices() { if(module) return indices(module); }
-    array _values() { if(module) return values(module); }
+    protected array(string) _indices() { if(module) return indices(module); }
+    protected array _values() { if(module) return values(module); }
   }
 
   protected mixed low_ind(string index, int(0..1)|void set_module)
@@ -2676,7 +2676,7 @@ class dirnode (string dirname, object|void compilation_handler,
     return low_ind(index);
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
 #ifdef MODULE_TRACE
@@ -2756,7 +2756,7 @@ class dirnode (string dirname, object|void compilation_handler,
 		  _cache_full?"full":"partially filled");
   }
 
-  protected array(string) _indices()
+  protected protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2766,7 +2766,7 @@ class dirnode (string dirname, object|void compilation_handler,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  protected array(mixed) _values()
+  protected protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2904,7 +2904,7 @@ class joinnode (array(object|mapping) joined_modules,
     return fallback_module[index];
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
     if (!zero_type(ret = cache[index])) {
@@ -2951,7 +2951,7 @@ class joinnode (array(object|mapping) joined_modules,
     _cache_full = 1;
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2961,7 +2961,7 @@ class joinnode (array(object|mapping) joined_modules,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2984,7 +2984,7 @@ class joinnode (array(object|mapping) joined_modules,
     }
   }
 
-  int `== (mixed other)
+  protected int `== (mixed other)
   {
     return objectp (other) && (other->is_resolv_joinnode == 1) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
@@ -3573,7 +3573,7 @@ class CompatResolver
       compile_cb_rethrow (err);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("CompatResolver(%O)",ver);
   }
@@ -5902,12 +5902,12 @@ class Version
 
   //! Methods define so that version objects
   //! can be compared and ordered.
-  int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
-  int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
-  int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
-  int __hash() { return major * 4711 + minor ; }
+  protected int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
+  protected int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
+  protected int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
+  protected int __hash() { return major * 4711 + minor ; }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     switch(t) {
     case 's': return sprintf("%d.%d",major,minor);
     case 'O': return sprintf("%O(%s)", this_program, this);
@@ -5915,7 +5915,7 @@ class Version
   }
 
   //! The version object can be casted into a string.
-  mixed cast(string type)
+  protected mixed cast(string type)
     {
       switch(type)
       {
