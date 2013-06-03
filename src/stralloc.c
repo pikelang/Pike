@@ -2069,7 +2069,6 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
 
 PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b)
 {
-  int foo=0;
   if( !b->len ) return;
   if( a->flags & STRING_CONTENT_CHECKED )
   {
