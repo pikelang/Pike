@@ -102,7 +102,7 @@ string low_bump_version(int|void bump_minor)
     minor++;
     s = pre + " PIKE_MINOR_VERSION " + minor + post;
   }
-  sscanf(s, "%s PIKE_BULD_VERSION %d%s", string pre, int rel, string post);
+  sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
   if (bump_minor) {
     rel = 0;
   } else {
@@ -201,12 +201,12 @@ string svn_get_repos()
     get_elements("repository")[0]->get_elements("root")[0]->value_of_node();
 }
 
-mapping git_cmd(string ... args)
+string git_cmd(string ... args)
 {
-  mapping res =
-    Process.run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
-  if (res->exitcode) exit(res->exitcode);
-  return res;
+  mapping r = Process.run( ({ "git" }) + args );
+  if( r->exitcode )
+    exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
+  return r->stdout||"";
 }
 
 void git_bump_version(int|void is_release)
@@ -216,13 +216,13 @@ void git_bump_version(int|void is_release)
   int bump_minor = 0;
 
   string branch =
-    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD")->stdout);
+    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD"));
 
   if (has_prefix(branch, "refs/heads/")) {
     branch = branch[sizeof("refs/heads/")..];
     string upstream_branch =
       String.trim_all_whites(git_cmd("config", "--get",
-				     "branch."+branch+".merge")->stdout);
+				     "branch."+branch+".merge"));
     if (has_prefix(upstream_branch, "refs/heads/")) {
       upstream_branch = upstream_branch[sizeof("refs/heads/")..];
 
@@ -369,7 +369,6 @@ int main(int argc, array(string) argv)
       }
     }
 
-
   argv -= ({ 0 });
   except_modules = (multiset)argv[1..];
   if(!srcdir || !export_list || !filename) {
@@ -415,13 +414,13 @@ int main(int argc, array(string) argv)
 	    };
     } else if (file_stat(pike_base_name + "/.git")) {
       main_branch =
-	String.trim_all_whites(git_cmd("symbolic-ref", "-q", "HEAD")->stdout);
+	String.trim_all_whites(git_cmd("symbolic-ref", "-q", "HEAD"));
       if (!has_prefix(main_branch, "refs/heads/")) {
 	werror("Unexpected HEAD: %O\n", main_branch);
 	exit(1);
       }
       main_branch = main_branch[sizeof("refs/heads/")..];
-      string remote = String.trim_all_whites(git_cmd("remote")->stdout);
+      string remote = String.trim_all_whites(git_cmd("remote"));
       if (!sizeof(remote)) remote = UNDEFINED;
       git = cleanup_git;	/* Restore state when we're done. */
 
