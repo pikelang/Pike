@@ -275,7 +275,7 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string(0..127) crypt_md5(string password, string salt,
+/*! @decl string(0..127) crypt_md5(string password, string salt,@
  *!                                void|string magic)
  *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
  *! It is assumed that @[salt] does not contain "$".
