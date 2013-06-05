@@ -922,7 +922,10 @@ int low_install_file(string from,
   }
   mkdirhier(dirname(to));
   if(!mode) {
-    int src_mode = file_stat(from)->mode;
+    Stdio.Stat st = file_stat(from);
+    if(!st)
+      exit(1, "Could not find file %O\n", from);
+    int src_mode = st->mode;
     if (src_mode & 0111) {
       // Executable.
       mode = 0755;
@@ -2812,12 +2815,6 @@ the PRIVATE_CRT stuff in install.pike.\n");
 		   combine_path(exec_prefix, "pike.pdb"));
 #endif
 
-#ifndef __NT__
-    install_file(combine_path(vars->TMP_BUILDDIR,"rsif"),
-		 combine_path(exec_prefix,"rsif"));
-    install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),
-		 combine_path(exec_prefix,"hilfe"));
-#endif
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
 		 pike+".syms");
     
