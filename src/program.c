@@ -2369,10 +2369,15 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
       /* Find the inherit one level away. */
       while (inh->inherit_level > 1) inh--;
 
+#if 0
 #ifdef PIKE_DEBUG
       if (!inh->inherit_level) {
+	/* FIXME: This is valid for references that are about to be
+	 *        overridden by the variant dispatcher.
+	 */
 	Pike_fatal("Inherit without intermediate levels.\n");
       }
+#endif
 #endif
 
       sub_ref = PTR_FROM_INT(inh->prog, cur_id - inh->identifier_level);
@@ -6037,20 +6042,21 @@ INT32 define_function(struct pike_string *name,
 	   * our variant dispatcher.
 	   */
 	  struct reference ref = prog->identifier_references[i];
-	  if (ref.id_flags & ID_LOCAL) {
-	    /* Mark it as a variant. */
-	    prog->identifier_references[i].id_flags |= ID_VARIANT;
-	    add_variant_dispatcher(name, type, flags);
-	  } else {
-	    /* Our dispatcher needs to occupy this ref, since
-	     * it is not local.
-	     *
-	     * Add our variant dispatcher in its place and
-	     * copy it as a variant.
+	  /* Make sure to not get complaints about multiple
+	   * definitions when adding the variant dispatcher.
+	   */
+	  prog->identifier_references[i].id_flags |= ID_INHERITED;
+	  add_variant_dispatcher(name, type, flags);
+	  /* Restore the termination function as a variant. */
+	  ref.id_flags |= ID_VARIANT;
+	  if (is_variant_dispatcher(prog, i)) {
+	    /* The termination function got replaced with
+	     * the variant dispatcher.
 	     */
-	    add_variant_dispatcher(name, type, flags);
-	    ref.id_flags |= ID_VARIANT;
 	    add_to_identifier_references(ref);
+	  } else {
+	    /* The termination function is still in the same place. */
+	    prog->identifier_references[i].id_flags = ref.id_flags;
 	  }
 	} else if (prog->identifier_references[i].inherit_offset) {
 	  /* NB: If we are overriding an inherited dispatcher, there's
