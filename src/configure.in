@@ -1675,6 +1675,9 @@ MY_DESCR([],[supporting atomic changes (EXPERIMENTAL)]),
 	       ])
 AC_ARG_WITH(security, MY_DESCR([--with-security],
 			       [enable internal pike security system]),
+	    [AC_MSG_ERROR([Pike security is deprecated. Use --with-deprecated-security to enable.])])
+AC_ARG_WITH(deprecated-security, MY_DESCR([--with-deprecated-security],
+			       [enable internal pike security system]),
 	    [AC_DEFINE(PIKE_SECURITY)])
 AC_ARG_WITH(bignums, MY_DESCR([--without-bignums],
 			      [disable internal conversion to bignums (not recommended)]),
