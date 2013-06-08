@@ -80,7 +80,7 @@ static PIKE_MUTEX_T *bucket_locks;
 #else
 #define LOCK_BUCKET(HVAL)
 #define UNLOCK_BUCKET(HVAL)
-#endif
+#endif /* PIKE_RUN_UNLOCKED */
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 2
@@ -481,7 +481,7 @@ static int improper_zero_termination(struct pike_string *s)
 }
 #else
 #define locate_problem(X)
-#endif
+#endif /* PIKE_DEBUG */
 
 /* Find a string in the shared string table.
  * This assumes that the string is minimized!!!! 
@@ -865,7 +865,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
 #endif
   }
-#endif
+#endif /* !HASH_PREFIX */
 }
 
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)
@@ -1567,7 +1567,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
       UNLOCK_BUCKET(e);
     }
   }
-#endif
+#endif /* 0 */
   return tmp;
 }
 
@@ -1626,7 +1626,7 @@ void dump_stralloc_strings(void)
   }
 }
 
-#endif
+#endif /* PIKE_DEBUG */
 
 
 /*** String compare functions ***/
