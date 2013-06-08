@@ -184,7 +184,6 @@ CORE_OBJ= \
  queue.o \
  builtin.o \
  iterators.o \
- facetgroup.o \
  svalue.o \
  las.o \
  builtin_functions.o \
@@ -1285,8 +1284,6 @@ builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
 iterators.o: $(SRCDIR)/iterators.c
 
-facetgroup.o: $(SRCDIR)/facetgroup.c
-
 backend.o: $(SRCDIR)/backend.c
 
 libpike.o: $(SRCDIR)/libpike.c
@@ -1454,7 +1451,6 @@ HFILES=						\
   version.protos                                    \
   builtin.protos					\
   iterators.protos				\
-  facetgroup.protos				\
   rbtree.protos
 
 $(HFILES): precompile.sh-stamp

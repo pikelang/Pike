@@ -53,9 +53,6 @@
 static void init_builtin_modules(void)
 {
   void init_iterators(void);
-#ifdef WITH_FACETS
-  void init_facetgroup(void);
-#endif
 
 #ifdef DEBUG_MALLOC
   /* Make some statically allocated structs known to dmalloc. These
@@ -118,12 +115,6 @@ static void init_builtin_modules(void)
   TRACE((stderr, "Init dynamic loading...\n"));
 
   init_dynamic_load();
-#ifdef WITH_FACETS
-
-  TRACE((stderr, "Init facets...\n"));
-
-  init_facetgroup();
-#endif
 
   TRACE((stderr, "Init sprintf...\n"));
 
@@ -134,9 +125,6 @@ static void exit_builtin_modules(void)
 {
 #ifdef DO_PIKE_CLEANUP
   void exit_iterators(void);
-#ifdef WITH_FACETS
-  void exit_facetgroup(void);
-#endif
 
   /* Clear various global references. */
 
@@ -155,9 +143,6 @@ static void exit_builtin_modules(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
-#ifdef WITH_FACETS
-  exit_facetgroup();
-#endif
   cleanup_program();
   cleanup_compiler();
   cleanup_error();

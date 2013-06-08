@@ -2748,13 +2748,6 @@ void low_start_new_program(struct program *p,
 
   CHECK_COMPILER();
 
-#ifdef WITH_FACETS
-  if(Pike_compiler->compiler_pass == 1 && p) {
-    p->facet_index = -1;
-    p->facet_group = NULL;
-  }
-#endif
-
   /* We don't want to change thread, but we don't want to
    * wait for the other threads to complete either.
    */
@@ -3123,13 +3116,6 @@ static void exit_program_struct(struct program *p)
     }
 
   DOUBLEUNLINK(first_program, p);
-
-#ifdef WITH_FACETS
-  if(p->facet_group)
-  {
-    free_object(p->facet_group);
-  }
-#endif
 
   if(p->flags & PROGRAM_OPTIMIZED)
   {
@@ -4536,55 +4522,6 @@ static int find_depth(struct program_state *state,
 }
 #endif
 
-#ifdef WITH_FACETS
-void check_for_facet_inherit(struct program *p)
-{
-  /* If the inherit statement comes before the facet keyword in the
-   * class declaration the class will be temporarily marked as a
-   * product-class, but this will be taken care of when the facet
-   * keyword is found. */
-  if (!p) return;
-  if (Pike_compiler->new_program->facet_group &&
-      p->facet_group != Pike_compiler->new_program->facet_group)
-    yyerror("A class can not belong to two facet-groups.");
-  if (p->flags & PROGRAM_IS_FACET) {
-    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-      if(Pike_compiler->new_program->facet_index != p->facet_index)
-	yyerror("Facet class can't inherit from class in different facet.");
-    }
-    /* Otherwise this is a product class */
-    else {
-      if( !Pike_compiler->new_program->facet_group ) {
-	Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
-	add_ref(p->facet_group);
-	Pike_compiler->new_program->facet_group = p->facet_group;
-      }
-      push_int(Pike_compiler->new_program->id);
-      push_int(p->facet_index);
-      push_int(p->id);
-      safe_apply(p->facet_group, "add_product_class", 3);
-      pop_stack();
-    }
-  }
-  /* The inherited class is not a facet class */
-  else if (p->flags & PROGRAM_IS_PRODUCT) {
-    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-      yyerror("Facet class can't inherit from product class.");
-    }
-    else if(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT){
-      yyerror("Product class can't inherit from other product class.");
-    }
-    /* A class that inherits from a product class is also a product class */
-    else {
-      Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
-      add_ref(p->facet_group);
-      Pike_compiler->new_program->facet_group = p->facet_group;
-    }
-  }
-}
-#endif
-
-
 static void lower_inherit(struct program *p,
 			  struct object *parent,
 			  int parent_identifier,
@@ -4671,11 +4608,6 @@ static void lower_inherit(struct program *p,
 	     "compiler cannot handle.)");
     return;
   }
-
-#ifdef WITH_FACETS
-  /* Check if inherit is a facet inherit. */
-  check_for_facet_inherit(p);
-#endif
 
   if (p == placeholder_program) {
     yyerror("Trying to inherit placeholder program (resolver problem).");

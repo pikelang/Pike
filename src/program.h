@@ -565,10 +565,6 @@ struct pike_trampoline
  * module. */
 #define PROGRAM_LIVE_OBJ 0x2000
 
-/* Indicates that the class is a facet or product_class. */
-#define PROGRAM_IS_FACET 0x4000
-#define PROGRAM_IS_PRODUCT 0x8000
-
 /* Using define instead of enum allows for ifdefs - Hubbe */
 #define PROG_EVENT_INIT 0
 #define PROG_EVENT_EXIT 1
@@ -643,12 +639,6 @@ struct program
 #include "program_areas.h"
   
   INT16 lfuns[NUM_LFUNS];
-
-#ifdef WITH_FACETS
-  /* Facet related stuff */
-  INT32 facet_index;   /* Index to the facet this facet class belongs to */
-  struct object *facet_group;
-#endif
 };
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
