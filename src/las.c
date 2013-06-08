@@ -4273,7 +4273,8 @@ void fix_type_field(node *n)
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
     /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tFuncV(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tMix));
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt))
+				      tOr(tVoid,tInt), tMix));
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
