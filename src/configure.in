@@ -1748,10 +1748,6 @@ MY_AC_ARG_WITH(lock,
 	  [enable experimental code for multicpu machines (EXPERIMENTAL).]),
 		[],[AC_DEFINE(PIKE_RUN_UNLOCKED)])
 
-AC_ARG_WITH(facets, MY_DESCR([--with-facets],
-			       [enable experimental facet support (EXPERIMENTAL).]),
-	    [AC_DEFINE(WITH_FACETS)])
-
 AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
 				[disable struct pike_type (IGNORED).]))
 

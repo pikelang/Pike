@@ -73,9 +73,6 @@
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY
 
-/* Define this to enable experimental facets support */
-#undef WITH_FACETS
-
 /* Define this to enable the internal bignum conversion */
 #undef AUTO_BIGNUM
 

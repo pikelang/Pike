@@ -497,12 +497,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('e','x'):
 	  if(ISWORD("extern")) return TOK_EXTERN;
 	  break;
-#ifdef WITH_FACETS
-#warning "facet" keyword needs compat if enabled by default
-	case TWO_CHAR('f','a'):
-	  if(ISWORD("facet")) return TOK_FACET;
-	  break;
-#endif
 	case TWO_CHAR('f','i'):
 	  if(ISWORD("final")) return TOK_FINAL_ID;
 	  break;

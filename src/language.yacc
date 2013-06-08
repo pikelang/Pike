@@ -62,7 +62,6 @@
 %token TOK_IF
 %token TOK_IMPORT
 %token TOK_INHERIT
-%token TOK_FACET
 %token TOK_INLINE
 %token TOK_LOCAL_ID
 %token TOK_FINAL_ID
@@ -221,7 +220,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_DEFAULT
 %type <number> TOK_DO
 %type <number> TOK_ELSE
-%type <number> TOK_FACET
 %type <number> TOK_FLOAT_ID
 %type <number> TOK_FOR
 %type <number> TOK_FOREACH
@@ -465,47 +463,6 @@ program_ref: low_program_ref
   }
   ;
 
-facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
-  {
-#ifdef WITH_FACETS
-    struct object *o;
-    if (Pike_compiler->compiler_pass == 1) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-	yyerror("A class can only belong to one facet.");
-      }
-      else {
-	resolv_constant($4);
-	if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	  /* FIXME: Object subtypes! */
-	  o = Pike_sp[-1].u.object;
-	  ref_push_string($2->u.sval.u.string);
-	  push_int(Pike_compiler->new_program->id);
-	  push_int(!!(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT));
-	  safe_apply(o, "add_facet_class", 3);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer >= 0) {
-	    Pike_compiler->new_program->flags &= ~PROGRAM_IS_PRODUCT;
-	    Pike_compiler->new_program->flags |= PROGRAM_IS_FACET;
-	    Pike_compiler->new_program->facet_index = Pike_sp[-1].u.integer;
-	    add_ref(Pike_compiler->new_program->facet_group = o);
-	  }
-	  else
-	    yyerror("Could not add facet class to system.");
-	  pop_stack();
-	}
-	else
-	  yyerror("Invalid facet group specifier.");
-	pop_stack();
-      }
-    }
-    free_node($2);
-    free_node($4);
-#else
-    yyerror("No support for facets.");
-#endif
-  }
-  ;
-
 inherit_ref:
   {
     SET_FORCE_RESOLVE($<number>$);
@@ -528,28 +485,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
       if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
-
-#ifdef WITH_FACETS
-    /* If this is a product class, check that all product classes in its
-     * facet-group inherit from all facets */
-    if($3 && Pike_compiler->compiler_pass == 2) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT) {
-	if (!Pike_compiler->new_program->facet_group)
-	  yyerror("Product class without facet group.");
-	else {
-	  safe_apply(Pike_compiler->new_program->facet_group,
-		     "product_classes_checked", 0);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer == 0) {
-	    pop_stack();
-	    safe_apply(Pike_compiler->new_program->facet_group,
-		       "check_product_classes", 0);
-	  }
-	  pop_stack();
-	}
-      }
-    }
-#endif
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -1068,7 +1003,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     }
   }
   | inheritance {}
-  | facet {}
   | import {}
   | constant {}
   | modifiers class { free_node($2); }
@@ -1238,7 +1172,6 @@ magic_identifiers3:
   | TOK_CONSTANT   { $$ = "constant"; }
   | TOK_CONTINUE   { $$ = "continue"; }
   | TOK_DEFAULT    { $$ = "default"; }
-  | TOK_FACET      { $$ = "facet"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
@@ -4570,8 +4503,6 @@ bad_expr_ident:
   { yyerror_reserved("return"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
-  | TOK_FACET
-  { yyerror_reserved("facet"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
   | TOK_CATCH
