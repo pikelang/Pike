@@ -116,7 +116,4 @@ touch-mirardoc:
 # Cleanup
 
 clean:
-	true
-
-spotless:
-	-test -f .cvsignore && rm -rf `cat .cvsignore`
+	-rm modref onepage traditional_manual pelix_modref autodoc.xml
