@@ -179,12 +179,10 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
 
          if( s_max < 128 )
          {
-           if( upper && !lower )
+           if( !lower )
              str->flags |= STRING_IS_UPPERCASE;
-           if( lower && !upper )
+           if( !upper )
              str->flags |= STRING_IS_LOWERCASE;
-           if( !lower && !upper )
-             str->flags |= STRING_IS_LOWERCASE|STRING_IS_UPPERCASE;
          }
        }
        str->min = s_min;
