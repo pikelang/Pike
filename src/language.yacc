@@ -3876,7 +3876,7 @@ idents2: idents
 	$$ = 0;
       }
       else {
-	if (!(ref->id_flags & ID_HIDDEN)) {
+	if (!(ref->id_flags & ID_LOCAL)) {
 	  /* We need to generate a new reference. */
 	  int d;
 	  struct reference funp = *ref;
@@ -3886,9 +3886,10 @@ idents2: idents
 	    struct reference *refp;
 	    refp = Pike_compiler->new_program->identifier_references + d;
 
+	    if (!(refp->id_flags & ID_LOCAL)) continue;
+
 	    if((refp->inherit_offset == funp.inherit_offset) &&
-	       (refp->identifier_offset == funp.identifier_offset) &&
-	       ((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
+	       (refp->identifier_offset == funp.identifier_offset)) {
 	      i = d;
 	      break;
 	    }
