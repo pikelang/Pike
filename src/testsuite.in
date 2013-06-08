@@ -2926,6 +2926,25 @@ class b {
 ]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
 
+dnl variant
+test_any([[
+  class A {
+    variant string a() { return "A:a()"; }
+    variant string a(string s) { return sprintf("A:a(%q)", s); }
+  };
+  class B {
+    inherit A;
+    variant string a(int i) { return local::a() + ":" + local::a((string)i) + ":" + ::a((string)i); }
+    variant string a(string s) { return sprintf("B:a(%q)", s); }
+  };
+  class C {
+    inherit B;
+    string a() { return "C:a()"; }
+    variant string a(string s) { return ::a(sizeof(s)) + "|" + ::a(s) + "|" + a(); }
+  };
+  return C()->a("foo");
+]], "A:a():B:a(\"3\"):A:a(\"3\")|B:a(\"foo\")|C:a()")
+
 test_any([[
   // Test symbol lookup for inherit in multi-pass.
   // LysLysKOM 16472935
