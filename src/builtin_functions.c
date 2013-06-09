@@ -1969,10 +1969,19 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   ptrdiff_t i,j;
   INT_TYPE extended = 0;
   PCHARP src;
+  INT32 min, max;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
   len = in->len;
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args - 1);
+    return;
+  }
 
   for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
     unsigned INT32 c = EXTRACT_PCHARP(src);
@@ -2115,8 +2124,17 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   int shift = 0;
   ptrdiff_t i,j=0;
   INT_TYPE extended = 0;
+  INT32 min, max;
 
   get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args - 1);
+    return;
+  }
 
   for(i=0; i < in->len; i++) {
     unsigned int c = STR0(in)[i];
