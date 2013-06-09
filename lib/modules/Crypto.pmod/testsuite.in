@@ -196,7 +196,7 @@ cond_resolv( Nettle.MD5_Info, [[
 	  "acbd18db4cc2f85cedef654fccc4a4d8")
 
   test_eval_error(Crypto.MD5.hash(Image.Image(5,5)))
-  dnl test_eval_error(Crypto.MD5.hash(Stdio.File()))
+  test_eval_error(Crypto.MD5.hash(Stdio.File()))
   test_eval_error(Crypto.MD5.hash(Stdio.File("/dev/null")))
 ]])
 
