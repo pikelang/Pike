@@ -188,7 +188,7 @@ PIKECLASS HashInfo
     if (!is_stdio_file(in))
       Pike_error("Object not Fd or Fd_ref, or subclass.\n");
 
-    safe_apply(in, "query_fd", 0);
+    apply(in, "query_fd", 0);
     fd = Pike_sp[-1].u.integer;
     pop_stack();
 
