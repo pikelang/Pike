@@ -48,9 +48,6 @@ werror(const char *format, ...)
 #define werror(x)
 #endif
 
-static struct program *Fd_ref_program = NULL;
-static struct program *Fd_program = NULL;
-
 /*! @module Nettle */
 
 /*! @class HashInfo
@@ -146,6 +143,19 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
+  int is_stdio_file(struct object *o)
+  {
+    struct program *p = o->prog;
+    INT32 i = p->num_inherits;
+    while( i-- )
+    {
+      if( p->inherits[i].prog->id == PROG_STDIO_FD_ID ||
+          p->inherits[i].prog->id == PROG_STDIO_FD_REF_ID )
+        return 1;
+    }
+    return 0;
+  }
+
   /*! @decl string(0..255) hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
@@ -175,35 +185,8 @@ PIKECLASS HashInfo
     if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
 
-    /* Verify that the input is a Stdio.Fd or Stdio.Fd_ref */
-    if (!Fd_program)
-      {
-	push_text("files.Fd");
-	SAFE_APPLY_MASTER("resolv",1);
-	Fd_program = program_from_svalue(Pike_sp-1);
-	if (!Fd_program) {
-	  pop_stack();
-	  Pike_error("Unable to resolv files.Fd.\n");
-	}
-	add_ref(Fd_program);
-	pop_stack( );
-      }
-
-    if (!Fd_ref_program)
-      {
-	push_text("files.Fd_ref");
-	SAFE_APPLY_MASTER("resolv",1);
-	Fd_ref_program = program_from_svalue(Pike_sp-1);
-	if (!Fd_ref_program) {
-	  pop_stack();
-	  Pike_error("Unable to resolv files.Fd_ref.\n");
-	}
-	add_ref(Fd_ref_program);
-	pop_stack( );
-      }
-
-    if (!get_storage(in, Fd_program) && !get_storage(in, Fd_ref_program) )
-      Pike_error("Object not Fd or Fd_ref or subclass.\n");
+    if (!is_stdio_file(in))
+      Pike_error("Object not Fd or Fd_ref, or subclass.\n");
 
     safe_apply(in, "query_fd", 0);
     fd = Pike_sp[-1].u.integer;
@@ -642,12 +625,6 @@ void
 hash_exit(void)
 {
   werror("Nettle, hash exit\n");
-  if (Fd_program) {
-    free_program( Fd_program );
-  }
-  if (Fd_ref_program) {
-    free_program( Fd_ref_program );
-  }
   EXIT;
 }
 
