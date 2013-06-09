@@ -2063,8 +2063,8 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
   else
     ret->flags &= ~STRING_CONTENT_CHECKED;
 
-  ret->flags = (ret->flags & ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE)) |
-    (aflags & b->flags);
+  ret->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE);
+  ret->flags |= (aflags & b->flags & (STRING_IS_LOWERCASE | STRING_IS_UPPERCASE));
 }
 
 PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b)
