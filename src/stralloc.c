@@ -2216,10 +2216,10 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   ONERROR mojt_uwp;
   replace_searchfunc f = (replace_searchfunc)0;
 
-  if(!str->len)
+  if(!str->len || !string_range_contains_string(str, del))
   {
-    add_ref(empty_pike_string);
-    return empty_pike_string;
+    add_ref(str);
+    return str;
   }
 
   shift=MAXIMUM(str->size_shift,to->size_shift);
