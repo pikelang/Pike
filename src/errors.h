@@ -114,6 +114,9 @@ DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)
   ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PROTECTED)
   ERR_FUNC("`[]",f_error_index,tFunc(tInt01,tMixed),ID_PROTECTED)
+  ERR_FUNC("_sizeof",f_error__sizeof,tFunc(tNone,tInt2),ID_PROTECTED)
+  ERR_FUNC("_indices",f_error__indices,tFunc(tNone,tArr(tInt01)),ID_PROTECTED)
+  ERR_FUNC("_values",f_error__values,tFunc(tNone,tArr(tOr(tStr,tArr(tMixed)))),ID_PROTECTED)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
   ERR_FUNC_SAVE_ID (generic_err_message_fun, "message", f_error_message,
 		    tFunc(tVoid,tString), 0)
