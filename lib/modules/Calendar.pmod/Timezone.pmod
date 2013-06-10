@@ -1186,6 +1186,7 @@ class Runtime_timezone_compiler
        float t1=time(t);
 #endif
 
+       rules = ({});
        foreach(lines, string line) add(line);
 
        string c=dump();
@@ -1206,7 +1207,7 @@ class Runtime_timezone_compiler
        {
 	 int i=0; 
 	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
-	 error(err);
+	 throw(err);
        }
        object zo=p();
        if (zo->thezone) zo=zo->thezone;
