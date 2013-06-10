@@ -673,6 +673,28 @@ static void f_error_index(INT32 args)
   }
 }
 
+static void f_error__sizeof(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(2);
+}
+
+static void f_error__indices(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(0);
+  push_int(1);
+  f_aggregate(2);
+}
+
+static void f_error__values(INT32 args)
+{
+  pop_n_elems(args);
+  apply_current(generic_err_message_fun, 0);
+  apply_current(generic_err_backtrace_fun, 0);
+  f_aggregate(2);
+}
+
 /*! @decl string describe()
  *!
  *! Return a readable error report that includes the backtrace.
