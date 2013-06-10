@@ -1197,7 +1197,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   a = Pike_sp[-args].u.string;
 
   /* First handle some common special cases. */
-  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)
+      || !string_range_contains_string(a, b)) {
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1269,7 +1270,8 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   b = Pike_sp[1-args].u.string;
 
   /* First handle some common special cases. */
-  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)
+      || !string_range_contains_string(a, b)) {
     pop_n_elems(args);
     push_int(0);
     return;
