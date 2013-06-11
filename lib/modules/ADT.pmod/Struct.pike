@@ -49,7 +49,7 @@ int id = ADT.get_item_id();
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
   foreach(::_indices(2), string index) {
-    mixed val = ::`[](index, 2);
+    mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }
   items = values(names);
@@ -89,7 +89,7 @@ string encode() {
 
 protected mixed `[](string id) {
   if(names[id]) return names[id]->get();
-  return ::`[](id, 2);
+  return ::`[](id, this, 0);
 }
 
 this_program get() { return this; }

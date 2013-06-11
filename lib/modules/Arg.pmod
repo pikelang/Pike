@@ -366,7 +366,7 @@ class LowOptions
     // Make a list of all the arguments we can parse.
     foreach(::_indices(2), string index)
     {
-      mixed val = ::`[](index, 2);
+      mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
     }
 
@@ -468,7 +468,7 @@ class Options
 
   protected string index(string i)
   {
-    string s = ::`[](i, 2);
+    string s = ::`[](i, this, 0);
     if( !s ) return 0;
     if( !stringp(s) ) error("%O is not a string.\n", i);
     if( sizeof(s) )
