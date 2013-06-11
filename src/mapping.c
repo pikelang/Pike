@@ -338,13 +338,13 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
       default:
 	Pike_fatal("Instable mapping data flags.\n");
       case MAPPING_WEAK_INDICES:
-	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
+	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
 	    (*from->ind.u.refs > 1)) {
 	  goto keep_keypair;
 	}
 	break;
       case MAPPING_WEAK_VALUES:
-	if ((TYPEOF(from->val) <= MAX_REF_TYPE) &&
+	if (REFCOUNTED_TYPE(TYPEOF(from->val)) &&
 	    (*from->val.u.refs > 1)) {
 	  goto keep_keypair;
 	}
@@ -353,9 +353,9 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 	/* NB: Compat: Unreference counted values are counted
 	 *             as multi-referenced here.
 	 */
-	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	if ((!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
 	     (*from->ind.u.refs > 1)) &&
-	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	    (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
 	     (*from->val.u.refs > 1))) {
 	  goto keep_keypair;
 	}
@@ -431,13 +431,13 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
       default:
 	Pike_fatal("Instable mapping data flags.\n");
       case MAPPING_WEAK_INDICES:
-	if ((TYPEOF(from->ind) <= MAX_REF_TYPE) &&
+	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
 	    (*from->ind.u.refs > 1)) {
 	  goto keep_keypair;
 	}
 	break;
       case MAPPING_WEAK_VALUES:
-	if ((TYPEOF(from->val) <= MAX_REF_TYPE) &&
+	if (REFCOUNTED_TYPE(TYPEOF(from->val)) &&
 	    (*from->val.u.refs > 1)) {
 	  goto keep_keypair;
 	}
@@ -446,9 +446,9 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
 	/* NB: Compat: Unreference counted values are counted
 	 *             as multi-referenced here.
 	 */
-	if (((TYPEOF(from->ind) > MAX_REF_TYPE) ||
+	if ((!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
 	     (*from->ind.u.refs > 1)) &&
-	    ((TYPEOF(from->val) > MAX_REF_TYPE) ||
+	    (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
 	     (*from->val.u.refs > 1))) {
 	  goto keep_keypair;
 	}

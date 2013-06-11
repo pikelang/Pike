@@ -113,7 +113,7 @@ extern struct program *bignum_program;
 
 #ifdef DEBUG_MALLOC
 #define get_mpz(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
-  ((S)->type <= MAX_REF_TYPE ? debug_malloc_touch((S)->u.object) : 0,	\
+  (REFCOUNTED_TYPE(TYPEOF(*(S))) ? debug_malloc_touch((S)->u.object) : 0, \
    debug_get_mpz((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
 #else
 #define get_mpz debug_get_mpz 

@@ -254,7 +254,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
     while(num--)
       {
 #ifdef DEBUG_MALLOC
-	if(TYPEOF(*s) <= MAX_REF_TYPE)
+	if(REFCOUNTED_TYPE(TYPEOF(*s)))
 	  debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
 	free_svalue(s++);
@@ -267,7 +267,7 @@ PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 UN
   while(num--)
   {
 #ifdef DEBUG_MALLOC
-    if(TYPEOF(*s) <= MAX_REF_TYPE)
+    if(REFCOUNTED_TYPE(TYPEOF(*s)))
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
     free_svalue(s++);
@@ -300,7 +300,7 @@ PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
   type_hint = 0;
   while(num--) {
     type_hint |= 1 << TYPEOF(*from);
-    if (TYPEOF(*from) <= MAX_REF_TYPE) {
+    if (REFCOUNTED_TYPE(TYPEOF(*from))) {
       add_ref(from->u.dummy);
     }
     from++;
@@ -336,7 +336,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 	u->refs = s->u.refs;
 	add_ref(u->dummy);
     }
-  }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
+  }else if(REFCOUNTED_TYPE(type) && UNSAFE_IS_ZERO(s)){
     if(u->refs && !sub_ref(u->dummy)) really_free_short_svalue(u,type);
     u->refs=0;
   }else{
@@ -363,7 +363,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 	u->refs = s->u.refs;
 	add_ref(u->dummy);
     }
-  }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
+  }else if(REFCOUNTED_TYPE(type) && UNSAFE_IS_ZERO(s)){
     u->refs=0;
   }else{
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
@@ -1806,7 +1806,7 @@ PMOD_EXPORT void safe_print_svalue (FILE *out, const struct svalue *s)
 
 PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T type)
 {
-  if (type <= MAX_REF_TYPE && !a->dummy)
+  if (REFCOUNTED_TYPE(type) && !a->dummy)
     fputc ('0', out);
   else {
     struct svalue sval;
@@ -1861,7 +1861,7 @@ PMOD_EXPORT void safe_print_svalue_compact (FILE *out, const struct svalue *s)
 
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type)
 {
-  if (type <= MAX_REF_TYPE && !a->dummy)
+  if (REFCOUNTED_TYPE(type) && !a->dummy)
     fputs ("0", out);
   else {
     struct svalue sval;
@@ -1926,7 +1926,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
       /* Recursive data */
       if (m && (tmp = low_mapping_lookup(m, from))) {
 	*to = *tmp;
-	if (TYPEOF(*tmp) <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
+	if (REFCOUNTED_TYPE(TYPEOF(*tmp))) add_ref(tmp->u.dummy);
       } else {
 #define ALLOC_DUPL_MAPPING(type_hint)				\
 	do if (!m && (type_hint) & BIT_COMPLEX) {		\
@@ -1953,7 +1953,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
       }
     } else {
       *to = *from;
-      if (from_type <= MAX_REF_TYPE) add_ref(from->u.array);
+      if (REFCOUNTED_TYPE(from_type)) add_ref(from->u.array);
     }
     
     to++;
@@ -2023,7 +2023,7 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type)
 static void low_check_short_svalue(const union anything *u, TYPE_T type)
 {
   check_type(type);
-  if ((type > MAX_REF_TYPE)||(!u->refs)) return;
+  if (!REFCOUNTED_TYPE(type) || (!u->refs)) return;
 
   switch(type)
   {
@@ -2041,7 +2041,7 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
 
 void check_short_svalue(const union anything *u, TYPE_T type)
 {
-  if(type<=MAX_REF_TYPE &&
+  if(REFCOUNTED_TYPE(type) &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(u->refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
 
@@ -2068,7 +2068,7 @@ PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s)
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
 {
   check_svalue_type (s);
-  if(TYPEOF(*s) <= MAX_REF_TYPE &&
+  if(REFCOUNTED_TYPE(TYPEOF(*s)) &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p, align: %d\n",
 	       TYPEOF(*s), s->u.refs, PIKE_POINTER_ALIGNMENT);
@@ -2118,7 +2118,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
     
     gc_svalue_location=(void *)s;
 
-    if(TYPEOF(*s) <= MAX_REF_TYPE)
+    if(REFCOUNTED_TYPE(TYPEOF(*s)))
       gc_mark_external (s->u.refs, place);
   }
   gc_svalue_location=0;

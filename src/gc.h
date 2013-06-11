@@ -669,7 +669,7 @@ static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
 					   int ref_type)
 {
   check_short_svalue (u, t);
-  if (t <= MAX_REF_TYPE)
+  if (REFCOUNTED_TYPE(t))
     visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
   return 0;
 }
@@ -690,7 +690,7 @@ static INLINE void dmalloc_visit_svalue (struct svalue *s,
   int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
-  if (t <= MAX_REF_TYPE) {
+  if (REFCOUNTED_TYPE(t)) {
     if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
     else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
   }
@@ -703,7 +703,7 @@ static INLINE void visit_svalue (struct svalue *s, int ref_type)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
-  if (t <= MAX_REF_TYPE) {
+  if (REFCOUNTED_TYPE(t)) {
     if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
     else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
   }

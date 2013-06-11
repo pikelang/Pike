@@ -2493,7 +2493,7 @@ PIKE_MODULE_INIT
     
     /* Magic hook in... */
 #ifdef PIKE_DEBUG
-    if (TYPEOF(auto_bignum_program) <= MAX_REF_TYPE) {
+    if (REFCOUNTED_TYPE(TYPEOF(auto_bignum_program))) {
       Pike_fatal("Strange initial value for auto_bignum_program\n");
     }
 #endif /* PIKE_DEBUG */

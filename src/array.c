@@ -417,7 +417,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
       int e = v->size;
       struct svalue *s = ITEM(ret);
       while (e--) {
-	if (TYPEOF(*s) <= MAX_REF_TYPE) add_ref(s->u.dummy);
+	if (REFCOUNTED_TYPE(TYPEOF(*s))) add_ref(s->u.dummy);
 	s++;
       }
     }

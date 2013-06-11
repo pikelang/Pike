@@ -203,7 +203,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
-  if(TYPEOF(throw_value) <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(throw_value)))
   {
     debug_malloc_update_location(throw_value.u.refs,
 				 Pike_interpreter.recoveries->file);

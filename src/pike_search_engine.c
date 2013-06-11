@@ -334,7 +334,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 	struct keypair **prev;
 	for(prev = md->hash + e; (k = *prev);) {
 	  count++;
-	  if ((TYPEOF(k->val) <= MAX_REF_TYPE) &&
+	  if (REFCOUNTED_TYPE(TYPEOF(k->val)) &&
 	      (*k->val.u.refs == 1)) {
 	    /* map_delete(memsearch_cache, &k->ind); */
 	    *prev = k->next;

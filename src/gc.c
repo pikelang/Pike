@@ -5557,7 +5557,7 @@ void f_count_memory (INT32 args)
       if (TYPEOF(*s) == T_INT)
 	continue;
 
-      else if (TYPEOF(*s) > MAX_REF_TYPE) {
+      else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
 	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
