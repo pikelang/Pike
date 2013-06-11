@@ -5735,17 +5735,13 @@ void file_set_notify(INT32 args) {
  *!   In Pike 7.5 and later OOB operations are always present.
  */
 
-void exit_files_stat(void);
-void exit_files_efuns(void);
-void exit_sendfile(void);
-void port_exit_program(void);
-
 PIKE_MODULE_EXIT
 {
-  exit_files_efuns();
-  exit_files_stat();
+  exit_stdio_efuns();
+  exit_stdio_stat();
 
-  exit_sendfile();
+  exit_stdio_udp();
+  exit_stdio_sendfile();
 
   if(file_program)
   {
@@ -5764,7 +5760,7 @@ PIKE_MODULE_EXIT
     socketpair_fd = -1;
   }
 #endif
-  port_exit_program();
+  exit_stdio_port();
 }
 
 #define REF (*((struct svalue *)(Pike_fp->current_storage)))
@@ -5830,12 +5826,6 @@ void file_tcflush(INT32 args);
 /* void file_tcgetpgrp(INT32 args); */
 /* void file_tcsetpgrp(INT32 args); */
 #endif
-
-void init_files_efuns(void);
-void init_files_stat(void);
-void port_setup_program(void);
-void init_sendfile(void);
-void init_udp(void);
 
 /*! @decl string _sprintf(int type, void|mapping flags)
  */
@@ -5958,10 +5948,10 @@ PIKE_MODULE_INIT
 {
   struct object *o;
 
-  Pike_compiler->new_program->id = PROG_MODULE_FILES_ID;
+  Pike_compiler->new_program->id = PROG_MODULE_STDIO_ID;
 
-  init_files_efuns();
-  init_files_stat();
+  init_stdio_efuns();
+  init_stdio_stat();
 
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
@@ -6039,9 +6029,9 @@ PIKE_MODULE_INIT
   file_ref_program=end_program();
   add_program_constant("Fd_ref",file_ref_program,0);
 
-  port_setup_program();
-  init_sendfile();
-  init_udp();
+  init_stdio_port();
+  init_stdio_sendfile();
+  init_stdio_udp();
 
 #if defined(HAVE_FSETXATTR)
   /*! @decl constant XATTR_CREATE

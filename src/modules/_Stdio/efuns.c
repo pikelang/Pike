@@ -1950,7 +1950,7 @@ void f_errno(INT32 args)
   push_int(errno);
 }
 
-void init_files_efuns(void)
+void init_stdio_efuns(void)
 {
   set_close_on_exec(0,1);
   set_close_on_exec(1,1);
@@ -2033,7 +2033,7 @@ void init_files_efuns(void)
   ADD_EFUN("strerror",f_strerror,tFunc(tInt,tStr),0);
 }
 
-void exit_files_efuns(void)
+void exit_stdio_efuns(void)
 {
 #ifdef __NT__
   if (kernel32lib) {
