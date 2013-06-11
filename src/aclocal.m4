@@ -1110,64 +1110,6 @@ EOF
 
 #############################################################################
 
-dnl PIKE_LOW_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_fail)
-dnl Checks if bundle_name is available, and if it is enables it and
-dnl invalidates the cache variables specified in invalidate_set.
-dnl Otherwise if opt_fail has been specified executes it.
-define(PIKE_LOW_ENABLE_BUNDLE, [
-  test -f [$1].bundle && rm -f [$1].bundle
-  if test "$pike_bundle_dir" = ""; then
-    # Bundles not available.
-    echo "Bundles not available." >&2
-    [$3]
-  elif test -f "$pike_bundle_prefix/installed/[$1]"; then
-    # Bundle already installed.
-    echo "Bundle [$1] already installed. Disabled?" >&2
-    [$3]
-  else
-    # Note: OSF/1 /bin/sh does not support glob expansion of
-    #       expressions like "$pike_bundle_dir/[$1]"*.tar.gz.
-    for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.gz` no; do
-      if test -f "$pike_bundle_dir/$f"; then
-        # Notify toplevel that we want the bundle.
-	# Note that invalidation of the cache variables can't be done
-	# until the bundle actually has been built.
-	PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
-        echo "[$2]" >"[$1].bundle"
-	break
-      fi
-    done
-    if test "$f" = "no"; then
-      # Try bzip2-ed tars as well.
-      for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.bz2` no; do
-        if test -f "$pike_bundle_dir/$f"; then
-          # Notify toplevel that we want the bundle.
-	  # Note that invalidation of the cache variables can't be done
-	  # until the bundle actually has been built.
-	  PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
-          echo "[$2]" >"[$1].bundle"
-	  break
-        fi
-      done
-      if test "$f" = "no"; then
-        # Bundle not available.
-        echo "Bundle [$1] not available in $pike_bundle_dir." >&2
-        [$3]
-      fi
-    fi
-  fi
-])
-
-dnl PIKE_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_error_msg)
-dnl Checks if bundle_name is available, and if it is enables it and
-dnl invalidates the cache variables specified in invalidate_set.
-dnl Otherwise if opt_error_msg has been specified performs an error exit.
-define(PIKE_ENABLE_BUNDLE, [
-  PIKE_LOW_ENABLE_BUNDLE([$1], [$2], ifelse([$3], , , [AC_MSG_ERROR([[$3]])]))
-])
-
-#############################################################################
-
 # option, cache_name, variable, do_if_failed, do_if_ok, paranoia_test
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [

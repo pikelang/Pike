@@ -82,7 +82,6 @@ CFARGS=$(CFARGSEXTRA) \
        --disable-rpath \
        --disable-smartlink_binary \
        --with-relocatable-dumped-modules \
-       --without-bundles \
        --with-cflags="$(CFLAGS_EXTRA)" \
        --with-cppflags="$(CPPFLAGS_EXTRA)" \
        --with-bignums \
@@ -145,7 +144,7 @@ build-indep-stamp:
 	# It's ok not to do anything here, if you don't need to build
 	#  anything for this package.
 	#/usr/bin/docbook-to-man debian/$(PIKE).sgml > $(PIKE).1
-	
+
 	touch build-indep-stamp
 
 build: build-arch
