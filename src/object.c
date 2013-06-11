@@ -327,7 +327,7 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,0);
-    pop_stack();
+    Pike_sp--;
   }
   STACK_LEVEL_CHECK(args);
   fun=FIND_LFUN(p, LFUN_CREATE);
@@ -794,13 +794,17 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #endif
 }
 
+static int object_has_destroy( struct object *o )
+{
+    return QUICK_FIND_LFUN( o->prog, LFUN_DESTROY ) != -1;
+}
 
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
 {
   int e;
   struct program *p;
   struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
+  int frame_pushed = 0, destroy_called = 0;
 
 #ifdef PIKE_DEBUG
   ONERROR uwp;
@@ -827,26 +831,29 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     else fputs(", is destructed\n", stderr);
   }
 #endif
+  if( !(p = o->prog) )
+      return;
   add_ref( o );
-  call_destroy(o, reason);
-
-  /* destructed in destroy() */
-  if(!(p=o->prog))
+  if( object_has_destroy( o ) )
   {
-    free_object(o);
+      call_destroy(o, reason);
+      destroy_called = 1;
+      /* destructed in destroy() */
+      if(!(p=o->prog))
+      {
+          free_object(o);
 #ifdef PIKE_DEBUG
-    UNSET_ONERROR(uwp);
+          UNSET_ONERROR(uwp);
 #endif
-    return;
+          return;
+      }
+      get_destroy_called_mark(o)->p=p;
   }
-  get_destroy_called_mark(o)->p=p;
-
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   debug_malloc_touch(p);
   o->prog=0;
 
-  
 #ifdef GC_VERBOSE
   if (Pike_in_gc > GC_PASS_PREPARE)
     fprintf(stderr, "|   Zapping references in %p with %d refs.\n", o, o->refs);
@@ -858,7 +865,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     int q;
     struct program *prog = p->inherits[e].prog;
     char *storage = o->storage+p->inherits[e].storage_offset;
-    
+
     if(prog->event_handler)
     {
       if( !frame_pushed )
@@ -935,8 +942,8 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 
   free_object( o );
   free_program(p);
-
-  remove_destroy_called_mark(o);
+  if( destroy_called )
+      remove_destroy_called_mark(o);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(uwp);
@@ -1127,6 +1134,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       assign_svalue_no_free(to, s);
       break;
     }
+
   case T_OBJ_INDEX:
     {
       SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(func.offset), object, o);
@@ -1153,7 +1161,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       }
       break;
     }
-    
+
   case T_MIXED:
   case PIKE_T_NO_REF_MIXED:
     {
