@@ -15,7 +15,6 @@ fi
 
 # Paths starting with $1 ==> $(SRCDIR)
 # Paths starting with $2 ==> $(PIKE_SRC_DIR)
-# Paths starting with $3/bundles/ ==> removed
 # Paths starting with $3 ==> $(BUILD_BASE)
 # Paths starting with `pwd` ==> empty
 # Rules for object files are duplicated for protos files (if needed).
@@ -31,7 +30,6 @@ d3="`echo \"$3\" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
 if grep .protos $1/Makefile.in >/dev/null 2>&1; then
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
       -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
-      -e "s@\([ 	]\)$d3/bundles/[^ 	]*@\1@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
       -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1./\2@" \
       -e 's/^\([-a-zA-Z0-9.,_]*\)\.o: /\1.o \1.protos: /g' \
@@ -40,7 +38,6 @@ if grep .protos $1/Makefile.in >/dev/null 2>&1; then
 else
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
       -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
-      -e "s@\([ 	]\)$d3/bundles/[^ 	]*@\1@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
       -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1./\2@" \
       -e 's@\([ 	]\)/[^ 	]*@\1@g' \

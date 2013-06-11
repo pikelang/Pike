@@ -373,17 +373,9 @@ int main()
     AC_DEFINE(MPZ_SET_SI_WORKS)
   fi
   else
-    PIKE_ENABLE_BUNDLE(gmp, [
-      ac_cv_header_gmp2_gmp_h
-      ac_cv_header_gmp_h
-      pike_cv_working_gmp
-      pike_cv_working_gmp2
-    ], [Cannot compile --with-bignums without the GMP library
-It is highly recommended that you install a working GMP
-library on your system as that will add features to Pike
-required by many applications.  (Such as Roxen) However,
-if you know that you do not need GMP, you may re-run configure
-with the options --without-bignums and --without-gmp instead.
+    AC_MSG_ERROR([Cannot compile bignums without the GMP library. To
+compile Pike you are required to install a working GMP
+library on your system.
     ])
   fi
 

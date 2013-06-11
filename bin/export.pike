@@ -36,10 +36,6 @@ array(string) get_files(string path)
     if( path==vpath+"/bin" && except_modules[fn] )
       continue;
 
-    //Don't include uncompressed bundle archives
-    if( path==vpath+"/bundles" && file_stat(path+"/"+fn+".tar.gz") )      
-      continue;
-
     if( has_prefix(path, vpath+"/lib/modules") &&
 	(except_modules[fn] || except_modules[fn - ".pmod"]))
       continue;

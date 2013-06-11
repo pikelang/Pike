@@ -241,35 +241,29 @@ documentation: onepage.xml traditional.xml modref.xml
 	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" \
 	  BUILDDIR="$(TMP_BUILDDIR)" $(DOCTARGET)
 
-# Creation of bundles/include/pike/.
+# Creation of include/.
 
-headerfiles-stamp: bundles/include/pike machine.h global.h $(SRC_TARGETS) force
+headerfiles-stamp: include machine.h global.h $(SRC_TARGETS) force
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="machine.h" HEADERSOURCE="`pwd`"
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="`cd $(SRCDIR) && echo *.h`" HEADERSOURCE="$(SRCDIR)"
 	@test -f headerfiles-stamp || echo foo > headerfiles-stamp
 
 headerfiles_low: force
 	@for f in $(HEADERS); do \
-	  if [ -h "bundles/include/pike/$$f" ]; then continue; fi; \
-	  if cmp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" >/dev/null 2>&1 ; then continue; fi; \
-	  rm -f bundles/include/pike/$$f 2>/dev/null; \
-	  echo "Creating bundles/include/pike/$$f"; \
-	  if ln -s "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" && \
-	     ls -L "bundles/include/pike/$$f" >/dev/null 2>&1; then :; else \
+	  if [ -h "include/$$f" ]; then continue; fi; \
+	  if cmp "$(HEADERSOURCE)/$$f" "include/$$f" >/dev/null 2>&1 ; then continue; fi; \
+	  rm -f include/$$f 2>/dev/null; \
+	  echo "Creating include/$$f"; \
+	  if ln -s "$(HEADERSOURCE)/$$f" "include/$$f" && \
+	     ls -L "include/$$f" >/dev/null 2>&1; then :; else \
 	    echo "Symlink failed."; \
-	    cp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" || exit 1; \
+	    cp "$(HEADERSOURCE)/$$f" "include/$$f" || exit 1; \
 	  fi; \
 	  echo foo > headerfiles-stamp; \
 	done
 
-bundles/include/pike: bundles/include
-	test -d bundles/include/pike/. || mkdir bundles/include/pike
-
-bundles/include: bundles
-	test -d bundles/include/. || mkdir bundles/include
-
-bundles:
-	test -d bundles/. || mkdir bundles
+include: include
+	test -d include/. || mkdir include
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
@@ -936,7 +930,7 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	LC_ALL=C; export LC_ALL; \
 	cmd="sed -e 's!#lib_prefix#!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
 	  -e 's!#share_prefix#!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
-	  -e 's!#include_prefix#!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
+	  -e 's!#include_prefix#!`echo '$(TMP_BUILDDIR)/include' | ./posix_to_native.sh`!' \
 	  -e '$$u'"; \
 	echo "$$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike"; \
 	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike || { rm "master.pike"; exit 1; }
