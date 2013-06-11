@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-inherit files;
+inherit _Stdio;
 
 #ifdef SENDFILE_DEBUG
 #define SF_WERR(X) werror("Stdio.sendfile(): %s\n", X)
@@ -259,7 +259,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_OPENPT__)
+#if constant(_Stdio.__HAVE_OPENPT__)
   //! @decl int openpt(string mode)
   //!
   //! Open the master end of a pseudo-terminal pair.  The parameter
@@ -399,7 +399,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_CONNECT_UNIX__)
+#if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
   //! 
@@ -620,7 +620,7 @@ class File
     }
   }
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl File openat(string filename, string mode)
   //! @decl File openat(string filename, string mode, int mask)
   //!
@@ -650,7 +650,7 @@ class File
   }
 #endif
 
-#if constant(files.__HAVE_SEND_FD__)
+#if constant(_Stdio.__HAVE_SEND_FD__)
   //!
   int(0..1) send_fd(File|Fd file)
   {
@@ -1968,7 +1968,7 @@ class FILE
 
   //! @endignore
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
@@ -3397,12 +3397,12 @@ object sendfile(array(string) headers,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
-#if !defined(DISABLE_FILES_SENDFILE) && constant(files.sendfile)
+#if !defined(DISABLE_FILES_SENDFILE) && constant(_Stdio.sendfile)
   // Try using files.sendfile().
   
   mixed err = catch {
-    return files.sendfile(headers, from, offset, len,
-			  trailers, to, cb, @args);
+    return _Stdio.sendfile(headers, from, offset, len,
+                           trailers, to, cb, @args);
   };
 
 #ifdef SENDFILE_DEBUG
@@ -3418,7 +3418,7 @@ object sendfile(array(string) headers,
 //! UDP (User Datagram Protocol) handling.
 class UDP
 {
-  inherit files.UDP;
+  inherit _Stdio.UDP;
 
   private array extra=0;
   private function(mapping,mixed...:void) callback=0;

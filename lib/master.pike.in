@@ -97,7 +97,7 @@ object root_fs;
 
 // Have to access some stuff without going through the resolver.
 private object(_static_modules.Builtin) Builtin = _static_modules.Builtin();
-private constant Files = _static_modules.files;
+private constant Files = _static_modules._Stdio;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
