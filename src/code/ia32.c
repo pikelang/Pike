@@ -539,7 +539,7 @@ static void ia32_call_c_function(void *addr)
 static void ia32_push_constant(struct svalue *tmp)
 {
   int e;
-  if(tmp->type <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(*tmp)))
     ADD_VAL_TO_ABSADDR (1, tmp->u.refs);
 
   load_pi_reg (0);
@@ -1045,7 +1045,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        *
        * /grubba 2003-12-11
        */
-      if((Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE) &&
+      if(!REFCOUNTED_TYPE(TYPEOF(Pike_compiler->new_program->constants[b].sval)) &&
 	 !Pike_compiler->new_program->constants[b].sval.subtype)
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);

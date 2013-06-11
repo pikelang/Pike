@@ -907,7 +907,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
+	if (REFCOUNTED_TYPE(rtt)) {debug_malloc_touch(u->refs);}
 #endif
 	if (rtt != T_OBJECT || u->object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
@@ -1515,7 +1515,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       dmalloc_touch_svalue (to);
       if ((TYPEOF(*to) != T_OBJECT && TYPEOF(*to) != T_FUNCTION) ||
 	  (to->u.object != o)) {
-	if(TYPEOF(*to) <= MAX_REF_TYPE) {
+	if(REFCOUNTED_TYPE(TYPEOF(*to))) {
 	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 	  add_ref(to->u.dummy);
 #ifdef DEBUG_MALLOC
@@ -2114,7 +2114,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 	var = inh_storage + id->func.offset;
 	u = (union anything *) var;
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE)
+	if (REFCOUNTED_TYPE(rtt))
 	  debug_malloc_touch (u->ptr);
 #endif
 
@@ -2268,7 +2268,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      union anything *u;
 	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	      if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	      if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	      if (rtt != T_OBJECT || u->object != o ||
 		  !(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2334,7 +2334,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2408,7 +2408,7 @@ static void gc_check_object(struct object *o)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))

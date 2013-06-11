@@ -7728,7 +7728,7 @@ PMOD_EXPORT void f__refs(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_refs", 1);
 
-  if(TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("refs", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
@@ -7749,7 +7749,7 @@ PMOD_EXPORT void f__leak(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
 
-  if(TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("_leak", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
@@ -8436,7 +8436,7 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
 
   if (args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
-  if (TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if (!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
   gc_watch(Pike_sp[-args].u.refs);
   pop_n_elems(args);
