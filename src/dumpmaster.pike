@@ -8,7 +8,7 @@ string fr;
 
 array encoded=({});
 
-private function werror = _static_modules.files()->_stderr->write;
+private function werror = _static_modules._Stdio()->_stderr->write;
 
 mapping get_default_module()
 {
@@ -41,7 +41,7 @@ string fakeroot(string s)
 
 string read_file(string s)
 {
-  return _static_modules.files()->Fd(fakeroot(s),"r")->read();
+  return _static_modules._Stdio()->Fd(fakeroot(s),"r")->read();
 }
 
 program compile_file(string file)
@@ -64,7 +64,7 @@ class Codec
     switch(x)
     {
 #define CONST(X) case X: return #X
-      CONST(_static_modules.files.Stat);
+      CONST(_static_modules._Stdio.Stat);
       CONST(_static_modules.Builtin.__backend);
     }
     encoded+=({x});
@@ -79,7 +79,7 @@ void _main(array(string) argv, array(string) env)
     
   program p=compile_file(argv[-1]);
   string s=encode_value(p, Codec());
-  _static_modules.files()->Fd(fakeroot(argv[-1]) + ".o","wct")->write(s);
+  _static_modules._Stdio()->Fd(fakeroot(argv[-1]) + ".o","wct")->write(s);
   exit(0);
 }
 
