@@ -117,6 +117,21 @@ void low_do_sendfile(struct pike_sendfile *);
 void my_set_close_on_exec(int fd, int to);
 void do_set_close_on_exec(void);
 
+void init_stdio_efuns(void);
+void exit_stdio_efuns(void);
+
+void init_stdio_stat(void);
+void exit_stdio_stat(void);
+
+void init_stdio_port(void);
+void exit_stdio_port(void);
+
+void init_stdio_sendfile(void);
+void exit_stdio_sendfile(void);
+
+void init_stdio_udp(void);
+void exit_stdio_udp(void);
+
 #define CBFUNCS(X) \
 static void PIKE_CONCAT(file_set_,X) (INT32 args); \
 static void PIKE_CONCAT(file_query_,X) (INT32 args);

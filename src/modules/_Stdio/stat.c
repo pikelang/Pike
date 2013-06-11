@@ -928,7 +928,7 @@ void push_stat(PIKE_STAT_T *s)
 
 /* ---------------------------------------------------------------- */
 
-void init_files_stat()
+void init_stdio_stat()
 {
    INT_TYPE n=0;
 
@@ -1013,7 +1013,7 @@ void init_files_stat()
    add_program_constant("Stat",stat_program,0);
 }
 
-void exit_files_stat()
+void exit_stdio_stat()
 {
    size_t i;
 

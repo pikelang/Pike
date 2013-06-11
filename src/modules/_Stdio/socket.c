@@ -720,12 +720,12 @@ static void exit_port_struct(struct object *UNUSED(o))
 
 PMOD_EXPORT struct program *port_program = NULL;
 
-void port_exit_program(void)
+void exit_stdio_port(void)
 {
   free_program( port_program );
 }
 
-void port_setup_program(void)
+void init_stdio_port(void)
 {
   ptrdiff_t offset;
   START_NEW_PROGRAM_ID (STDIO_PORT);

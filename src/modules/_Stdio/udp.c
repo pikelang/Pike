@@ -1231,7 +1231,7 @@ static void udp_set_buffer(INT32 args)
 /*! @endmodule
  */
 
-void init_udp(void)
+void init_stdio_udp(void)
 {
   START_NEW_PROGRAM_ID (STDIO_UDP);
 
@@ -1358,5 +1358,8 @@ void init_udp(void)
    f_call_function(1);
    simple_add_constant("IPPROTO",Pike_sp-1,0);
    pop_stack();
+}
 
+void exit_stdio_udp(void)
+{
 }

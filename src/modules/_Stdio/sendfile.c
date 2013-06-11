@@ -1211,7 +1211,7 @@ static void sf_create(INT32 args)
 /*
  * Module init code
  */
-void init_sendfile(void)
+void init_stdio_sendfile(void)
 {
 #ifdef _REENTRANT
   START_NEW_PROGRAM_ID (STDIO_SENDFILE);
@@ -1234,7 +1234,7 @@ void init_sendfile(void)
 #endif /* _REENTRANT */
 }
 
-void exit_sendfile(void)
+void exit_stdio_sendfile(void)
 {
 #ifdef _REENTRANT
   if (pike_sendfile_prog) {
