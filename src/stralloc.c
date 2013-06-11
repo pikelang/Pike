@@ -123,6 +123,7 @@ PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
 {
   INT32 max1, min1;
   INT32 max2, min2;
+  if( !str2->len ) return 1; /* Empty string is part of every string */
   check_string_range( str1, 1, &min1, &max1 );
   check_string_range( str2, 1, &min2, &max2 );
   if( (min2 < min1) || (max2 > max1) )
@@ -133,8 +134,6 @@ PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
     /* fallback to simple size-shift check.  */
     return str1->size_shift >= str2->size_shift;
   }
-  if( (min2 < min1) || (max2 > max1) ) 
-    return 0;
   return 1;
 }
 
