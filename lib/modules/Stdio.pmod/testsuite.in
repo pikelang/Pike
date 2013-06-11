@@ -165,6 +165,11 @@ lambda()
 
 test_true(rm("testsuite.tmp"))
 
+test_any([[
+#pike 7.8
+  return !!files.Fd;
+]], 1)
+
 
 // Stdio.FakeFile
 
