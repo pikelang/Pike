@@ -238,42 +238,14 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   /* NOTE: This function is only called for objects straight after
    *       low_clone(), or after an explicit xcalloc(), which implies
    *       that the storage (if any) has been zeroed.
+   *
+   * NOTE: Zeroed memory means that the globals have been cleared.
    */
 
-  /* clear globals and call C initializers */
-  for(e=p->num_inherits-1; e>=0; e--)
+  /* Call C initializers */
+  for(e = p->num_inherits; e--;)
   {
     struct program *prog = p->inherits[e].prog;
-    int n=(int)prog->num_variable_index;
-    if( n )
-    {
-      char *storage = o->storage+p->inherits[e].storage_offset;
-      int q;
-      for(q=0;q<n;q++)
-      {
-	int d=prog->variable_index[q];
-
-	if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
-	  continue;
-
-	if(prog->identifiers[d].run_time_type == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
-	  SET_SVAL_TYPE(*s, T_INT);
-#ifdef NEED_CUSTOM_IEEE
-	} else if (prog->identifiers[d].run_time_type == T_FLOAT) {
-	  /* Note: In IEEE representations the value 0.0 is represented as all
-	   *       zeros, and the default initialization is thus sufficient.
-	   */
-	  union anything *u;
-	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
-	  u->float_number=0.0;
-#endif /* NEED_CUSTOM_IEEE */
-	}
-	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
-      }
-    }
     if(prog->event_handler)
     {
       if( !frame_pushed )
