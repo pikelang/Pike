@@ -32,8 +32,6 @@
 #include "pike_types.h"
 #include "pikecode.h"
 
-#include "block_alloc.h"
-
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
@@ -1099,31 +1097,80 @@ void dump_backlog(void)
 
 #endif	/* !PIKE_DEBUG */
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT prev
 
-BLOCK_ALLOC_FILL_PAGES (catch_context, 1)
-
-#define POP_CATCH_CONTEXT do {						\
-    struct catch_context *cc = Pike_interpreter.catch_ctx;		\
-    DO_IF_DEBUG (							\
-      TRACE((3,"-   Popping catch context %p ==> %p\n",			\
-	     cc, cc ? cc->prev : NULL));				\
-      if (!Pike_interpreter.catching_eval_jmpbuf)			\
-	Pike_fatal ("Not in catching eval.\n");				\
-      if (!cc)								\
-	Pike_fatal ("Catch context dropoff.\n");			\
-      if (cc->frame != Pike_fp)						\
-	Pike_fatal ("Catch context doesn't belong to this frame.\n");	\
+#define POP_CATCH_CONTEXT do {                                         \
+    struct catch_context *cc = Pike_interpreter.catch_ctx;             \
+    DO_IF_DEBUG (                                                      \
+      TRACE((3,"-   Popping catch context %p ==> %p\n",                        \
+            cc, cc ? cc->prev : NULL));                                \
+      if (!Pike_interpreter.catching_eval_jmpbuf)                      \
+       Pike_fatal ("Not in catching eval.\n");                         \
+      if (!cc)                                                         \
+       Pike_fatal ("Catch context dropoff.\n");                        \
+      if (cc->frame != Pike_fp)                                                \
+       Pike_fatal ("Catch context doesn't belong to this frame.\n");   \
       if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
-	Pike_fatal ("Mark sp diff in catch context pop.\n");		\
-    );									\
-    debug_malloc_touch (cc);						\
-    UNSETJMP (cc->recovery);						\
-    Pike_fp->expendible = cc->save_expendible;				\
-    Pike_interpreter.catch_ctx = cc->prev;				\
-    really_free_catch_context (cc);					\
+       Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+    );                                                                 \
+    debug_malloc_touch (cc);                                           \
+    UNSETJMP (cc->recovery);                                           \
+    Pike_fp->expendible = cc->save_expendible;                         \
+    Pike_interpreter.catch_ctx = cc->prev;                             \
+    really_free_catch_context (cc);                                    \
   } while (0)
+
+static struct catch_context *free_catch_context;
+static int num_catch_ctx, num_free_catch_ctx;
+
+PMOD_EXPORT void really_free_catch_context( struct catch_context *data )
+{
+    if( num_free_catch_ctx > 100 && free_catch_context )
+    {
+      num_catch_ctx--;
+      free( data );
+    }
+    else
+    {
+      data->prev = free_catch_context;
+      num_free_catch_ctx++;
+      free_catch_context = data;
+    }
+}
+
+struct catch_context *alloc_catch_context(void)
+{
+    struct catch_context *res;
+    if( free_catch_context )
+    {
+        num_free_catch_ctx--;
+        res = free_catch_context;
+        free_catch_context = res->prev;
+    }
+    else
+    {
+        num_catch_ctx++;
+        res = xalloc( sizeof( struct catch_context ) );
+    }
+    return res;
+}
+
+void count_memory_in_catch_contexts(size_t *num, size_t *size )
+{
+  *num = (num_catch_ctx-num_free_catch_ctx);
+  *size = num_catch_ctx * (sizeof(struct catch_context)+8); /* assumes 8 bytes overhead. */
+}
+
+static void free_all_catch_context_blocks(void)
+{
+    struct catch_context *x = free_catch_context, *n;
+    while( x )
+    {
+        n = x->prev;
+        free( x );
+        x = n;
+    }
+    free_catch_context = NULL;
+}
 
 static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 
@@ -1884,49 +1931,105 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   free(s);
 }
 
+static struct pike_frame *free_pike_frame;
+static struct pike_frame_chunk {
+  struct pike_frame_chunk *next;
+} *pike_frame_chunks;
+static int num_pike_frame_chunks;
+static int num_pike_frames;
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT next
+PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
+{
+    free_object(X->current_object);
+    if(X->current_program)
+        free_program(X->current_program);
+    if(X->scope)
+        free_pike_scope(X->scope);
+    DO_IF_SECURITY( if(X->current_creds) free_object(X->current_creds) );
+    DO_IF_DEBUG(
+        if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)
+            Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));
+  DO_IF_DMALLOC(
+    X->current_program=0;
+    X->context=0;
+    X->scope=0;
+    X->current_object=0;
+    X->flags=0;
+    X->expendible=0;
+    X->locals=0;
+    DO_IF_SECURITY( X->current_creds=0; )
+  );
+  X->next = free_pike_frame;
+  free_pike_frame = X;
+}
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {			\
-  X->refs=0;					\
-  add_ref(X);	/* For DMALLOC... */		\
-  X->flags=0; 					\
-  X->scope=0;					\
-  DO_IF_SECURITY( if(CURRENT_CREDS) {		\
-    add_ref(X->current_creds=CURRENT_CREDS);	\
-  } else {					\
-    X->current_creds = 0;			\
-  })						\
-}while(0)
+struct pike_frame *alloc_pike_frame(void)
+{
+    struct pike_frame *res;
+    if( free_pike_frame )
+    {
+      res = free_pike_frame;
+      free_pike_frame = res->next;
+      res->refs=0;
+      add_ref(res);	/* For DMALLOC... */
+      res->flags=0;
+      res->next=0;
+      res->scope=0;
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do {						\
-  free_object(X->current_object);					\
-  if(X->current_program) free_program(X->current_program);		\
-  if(X->scope) free_pike_scope(X->scope);				\
-  DO_IF_SECURITY( if(X->current_creds) {				\
-    free_object(X->current_creds);					\
-  })									\
-  DO_IF_DEBUG(								\
-  if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)				\
-  Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
-									\
-  DO_IF_DMALLOC(							\
-    X->current_program=0;						\
-    X->context=0;							\
-    X->scope=0;								\
-    X->current_object=0;						\
-    X->flags=0;								\
-    X->expendible=0;							\
-    X->locals=0;							\
-    DO_IF_SECURITY( X->current_creds=0; )				\
- )									\
-}while(0)
+      DO_IF_SECURITY(
+        if(CURRENT_CREDS) {
+          add_ref(res->current_creds=CURRENT_CREDS);
+        } else {
+          res->current_creds = 0;
+        });
 
-BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
+      return res;
+    }
 
+    /* Need to allocate more. */
+    {
+      unsigned int i;
+#define FRAMES_PER_CHUNK ((4096*4-8-sizeof(struct pike_frame_chunk))/sizeof(struct catch_context))
+#define FRAME_CHUNK_SIZE (FRAMES_PER_CHUNK*sizeof(struct catch_context))+sizeof(struct pike_frame_chunk)
+
+      void *p = xalloc( FRAME_CHUNK_SIZE );
+      num_pike_frame_chunks++;
+      ((struct pike_frame_chunk*)p)->next = pike_frame_chunks;
+      pike_frame_chunks = p;
+      free_pike_frame = res = (struct pike_frame*)((char*)p+sizeof(struct pike_frame_chunk));
+      for( i=1; i<FRAMES_PER_CHUNK; i++ )
+      {
+        res->next = &free_pike_frame[i];
+        res = res->next;
+      }
+      res->next = NULL;
+      num_pike_frames+=FRAMES_PER_CHUNK;
+    }
+    return alloc_pike_frame();
+}
+
+void count_memory_in_pike_frames(size_t *num, size_t *size )
+{
+  *num = num_pike_frames;
+  *size = num_pike_frame_chunks * (FRAME_CHUNK_SIZE*8);
+}
+#undef FRAMES_PER_CHUNK
+#undef FRAME_CHUNK_SIZE
+
+static void free_all_pike_frame_blocks(void)
+{
+  struct pike_frame_chunk *x = pike_frame_chunks, *n;
+  while( x )
+  {
+    n = x->next;
+    free(x);
+    x = n;
+  }
+  free_pike_frame = NULL;
+  pike_frame_chunks = NULL;
+  num_pike_frames=0;
+  num_pike_frame_chunks=0;
+}
 
 void really_free_pike_scope(struct pike_frame *scope)
 {
@@ -2021,7 +2124,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     default:
       Pike_error("Call to non-function value type:%s.\n",
 		 get_name_of_type(TYPEOF(*s)));
-      
+
     case T_FUNCTION:
       if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
       {
