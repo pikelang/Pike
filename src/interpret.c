@@ -2114,7 +2114,9 @@ int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           function->num_calls++;
           function->recur_depth++;
 #endif
+#ifdef PIKE_USE_MACHINE_CODE
           call_check_threads_etc();
+#endif
 
           if( !constant )
           {
