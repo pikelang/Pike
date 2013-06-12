@@ -98,6 +98,21 @@
 			   DO_IF_DMALLOC( + sizeof(INT32)))
 #endif
 
+#define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE)	do {		\
+    struct PIKE_CONCAT(DATA,_block) * p;				\
+    for(p=PIKE_CONCAT(DATA,_blocks);p;p=p->next) {			\
+	int n = p->used;						\
+	int i;								\
+	for (i = 0; n && i < (sizeof(p->x)/sizeof(struct DATA)); i++) {	\
+	    BLOCK = &p->x[i];						\
+	    if (FCOND) {						\
+		do CODE while(0);					\
+		--n;							\
+	    }								\
+	}								\
+    }									\
+} while(0)
+
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 									\
 struct PIKE_CONCAT(DATA,_block)						\
@@ -513,19 +528,16 @@ static INLINE struct DATA *						     \
  PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(void *ptr,		     \
 					       PIKE_HASH_T hval)	     \
 {									     \
-  struct DATA *p,**pp;							     \
+  struct DATA *p;							     \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
   if(!p || p->PTR_HASH_ALLOC_DATA == ptr)				     \
   {                                                                          \
     return p;                                                                \
   }                                                                          \
-  while((p=*(pp=&p->BLOCK_ALLOC_NEXT)))                                      \
+  while((p=p->BLOCK_ALLOC_NEXT))					     \
   {									     \
     if(p->PTR_HASH_ALLOC_DATA==ptr)					     \
     {									     \
-      *pp=p->BLOCK_ALLOC_NEXT;						     \
-      p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
-      PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
       return p;								     \
     }									     \
   }									     \
@@ -622,18 +634,22 @@ int PIKE_CONCAT3(check_,DATA,_semaphore)(void *ptr)			     \
 									     \
 void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr)		     \
 {									     \
+  struct DATA **pp, *p;							     \
   PIKE_HASH_T hval =							     \
     (PIKE_HASH_T)PTR_TO_INT(block->PTR_HASH_ALLOC_DATA);		     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		     \
   hval %= (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size);		     \
-  if (!PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(			     \
-	block->PTR_HASH_ALLOC_DATA, hval))				     \
-    Pike_fatal("The block to move wasn't found.\n");			     \
-  DO_IF_DEBUG(								     \
-    if (PIKE_CONCAT(DATA,_hash_table)[hval] != block)			     \
-      Pike_fatal("Expected the block to be at the top of the hash chain.\n"); \
-  );									     \
-  PIKE_CONCAT(DATA,_hash_table)[hval] = block->BLOCK_ALLOC_NEXT;	     \
+  pp=PIKE_CONCAT(DATA,_hash_table) + hval;                                   \
+  while((p = *pp))							     \
+  {									     \
+    if(p == block)							     \
+    {									     \
+      *pp = p->BLOCK_ALLOC_NEXT;					     \
+      break;								     \
+    }									     \
+    pp = &p->BLOCK_ALLOC_NEXT;						     \
+  }									     \
+  if (!p) Pike_fatal("The block to move wasn't found.\n");		     \
   block->PTR_HASH_ALLOC_DATA = new_ptr;					     \
   hval = (PIKE_HASH_T)PTR_TO_INT(new_ptr) %				     \
     (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size);			     \
@@ -644,7 +660,7 @@ void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr)		     \
 									     \
 int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
 {									     \
-  struct DATA *p;							     \
+  struct DATA **pp, *p;							     \
   PIKE_HASH_T hval = (PIKE_HASH_T)PTR_TO_INT(ptr);			     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
   if(!PIKE_CONCAT(DATA,_hash_table))                                         \
@@ -653,15 +669,18 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
     return 0;				                                     \
   }                                                                          \
   hval %= (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size);		     \
-  if((p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval)))	     \
+  pp=PIKE_CONCAT(DATA,_hash_table) + hval;                                   \
+  while((p = *pp))							     \
   {									     \
-    PIKE_CONCAT(num_,DATA)--;						     \
-    DO_IF_DEBUG( if(PIKE_CONCAT(DATA,_hash_table)[hval]!=p)                  \
-                    Pike_fatal("GAOssdf\n"); );                       	     \
-    PIKE_CONCAT(DATA,_hash_table)[hval]=p->BLOCK_ALLOC_NEXT;		     \
-    BA_UL(PIKE_CONCAT(really_free_,DATA))(p);				     \
-    DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
-    return 1;								     \
+    if(p->PTR_HASH_ALLOC_DATA==ptr)					     \
+    {									     \
+      *pp = p->BLOCK_ALLOC_NEXT;					     \
+      PIKE_CONCAT(num_,DATA)--;						     \
+      BA_UL(PIKE_CONCAT(really_free_,DATA))(p);				     \
+      DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));              \
+      return 1;								     \
+    }									     \
+    pp = &p->BLOCK_ALLOC_NEXT;						     \
   }									     \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return 0;								     \

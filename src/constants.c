@@ -68,11 +68,6 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   low_add_constant(name, p?&s:NULL);
 }
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {						\
-    DO_IF_DEBUG (DOUBLELINK (first_callable, X));			\
-  } while (0)
-
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {		\
   DO_IF_DEBUG (DOUBLEUNLINK (first_callable, X)); \
@@ -82,7 +77,20 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
 
-BLOCK_ALLOC_FILL_PAGES(callable,2)
+#include "block_allocator.h"
+static struct block_allocator callable_allocator
+    = BA_INIT_PAGES(sizeof(struct callable), 2);
+
+void really_free_callable(struct callable * c) {
+    EXIT_BLOCK(c);
+    ba_free(&callable_allocator, c);
+}
+void count_memory_in_callables(size_t * num, size_t * size) {
+    ba_count_all(&callable_allocator, num, size);
+}
+void free_all_callable_blocks() {
+    ba_destroy(&callable_allocator);
+}
 
 int global_callable_flags=0;
 
@@ -94,7 +102,10 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       optimize_fun optimize,
 					       docode_fun docode)
 {
-  struct callable *f=alloc_callable();
+  struct callable *f=(struct callable*)ba_alloc(&callable_allocator);
+#ifdef PIKE_DEBUG
+  DOUBLELINK(first_callable, f);
+#endif
   INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
   f->function=fun;
   f->name=name;
@@ -213,17 +224,9 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action)
 #ifdef PIKE_DEBUG
 void present_constant_profiling(void)
 {
-  struct callable_block *b;
-  size_t e;
-  for(b=callable_blocks;b;b=b->next)
-  {
-    for(e=0;e<NELEM(b->x);e++)
-    {
-      if(b->x[e].name)
-      {
-	fprintf(stderr,"%010ld @E@: %s\n",b->x[e].runs, b->x[e].name->str);
-      }
-    }
+  struct callable *c;
+  for (c = first_callable; c; c = c->next) {
+    fprintf(stderr,"%010ld @E@: %s\n",c->runs, c->name->str);
   }
 }
 #endif

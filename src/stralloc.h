@@ -9,7 +9,6 @@
 #include "global.h"
 
 #include "pike_macros.h"
-#include "block_alloc_h.h"
 
 #define STRINGS_ARE_SHARED
 
@@ -276,10 +275,6 @@ struct pike_string *findstring(const char *foo);
 struct short_pike_string0;
 struct short_pike_string1;
 struct short_pike_string2;
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK);
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK);
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK);
-
 
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len) ATTRIBUTE((malloc));
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)  ATTRIBUTE((malloc));

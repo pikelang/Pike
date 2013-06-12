@@ -1,7 +1,7 @@
 #ifndef BITVECTOR_H
 #define BITVECTOR_H
 
-#include "critbit_config.h"
+#include "machine.h"
 #define MOD_PRIME
 
 #include "pike_int_types.h"

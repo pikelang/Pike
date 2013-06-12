@@ -31,8 +31,7 @@
 #include "bignum.h"
 #include "pike_types.h"
 #include "pikecode.h"
-
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -1099,10 +1098,20 @@ void dump_backlog(void)
 
 #endif	/* !PIKE_DEBUG */
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT prev
+static struct block_allocator catch_context_allocator = BA_INIT_PAGES(sizeof(struct catch_context), 1);
 
-BLOCK_ALLOC_FILL_PAGES (catch_context, 1)
+void really_free_catch_context(struct catch_context * c) {
+    ba_free(&catch_context_allocator, c);
+}
+
+ATTRIBUTE((malloc))
+struct catch_context * alloc_catch_context() {
+    return ba_alloc(&catch_context_allocator);
+}
+
+void count_memory_in_catch_contexts(size_t *n, size_t *size) {
+    ba_count_all(&catch_context_allocator, n, size);
+}
 
 #define POP_CATCH_CONTEXT do {						\
     struct catch_context *cc = Pike_interpreter.catch_ctx;		\
@@ -1884,48 +1893,44 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   free(s);
 }
 
+struct block_allocator pike_frame_allocator = BA_INIT_PAGES(sizeof(struct pike_frame), 4);
+ATTRIBUTE((malloc))
+INLINE struct pike_frame * alloc_pike_frame() {
+    struct pike_frame * f = (struct pike_frame *)ba_alloc(&pike_frame_allocator);
+    f->refs=0;
+    /* For DMALLOC... */
+    add_ref(f);
+    f->flags=0;
+    f->scope=0;
+    return f;
+}
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT next
+void really_free_pike_frame(struct pike_frame * f) {
+    free_object(f->current_object);
+    if(f->current_program) free_program(f->current_program);
+    if(f->scope) free_pike_scope(f->scope);
+#if PIKE_DEBUG
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+	Pike_fatal("Pike frame is not supposed to have malloced locals here!\n");
+#endif
+#if DEBUG_MALLOC
+    f->current_program=0;
+    f->context=0;
+    f->scope=0;
+    f->current_object=0;
+    f->flags=0;
+    f->expendible=0;
+    f->locals=0;
+#endif
+    ba_free(&pike_frame_allocator, f);
+}
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {			\
-  X->refs=0;					\
-  add_ref(X);	/* For DMALLOC... */		\
-  X->flags=0; 					\
-  X->scope=0;					\
-  DO_IF_SECURITY( if(CURRENT_CREDS) {		\
-    add_ref(X->current_creds=CURRENT_CREDS);	\
-  } else {					\
-    X->current_creds = 0;			\
-  })						\
-}while(0)
-
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do {						\
-  free_object(X->current_object);					\
-  if(X->current_program) free_program(X->current_program);		\
-  if(X->scope) free_pike_scope(X->scope);				\
-  DO_IF_SECURITY( if(X->current_creds) {				\
-    free_object(X->current_creds);					\
-  })									\
-  DO_IF_DEBUG(								\
-  if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)				\
-  Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
-									\
-  DO_IF_DMALLOC(							\
-    X->current_program=0;						\
-    X->context=0;							\
-    X->scope=0;								\
-    X->current_object=0;						\
-    X->flags=0;								\
-    X->expendible=0;							\
-    X->locals=0;							\
-    DO_IF_SECURITY( X->current_creds=0; )				\
- )									\
-}while(0)
-
-BLOCK_ALLOC_FILL_PAGES(pike_frame, 4)
+void count_memory_in_pike_frames(size_t * num, size_t * size) {
+    ba_count_all(&pike_frame_allocator, num, size);
+}
+void free_all_pike_frame_blocks() {
+    ba_destroy(&pike_frame_allocator);
+}
 
 
 void really_free_pike_scope(struct pike_frame *scope)

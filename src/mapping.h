@@ -9,7 +9,6 @@
 
 #include "svalue.h"
 #include "dmalloc.h"
-#include "block_alloc_h.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MAPPING_WEAK_INDICES	2
@@ -133,8 +132,8 @@ PMOD_EXPORT void really_free_mapping(struct mapping *md);
 }while(0)
 
 /* Prototypes begin here */
-BLOCK_ALLOC_FILL_PAGES(mapping, 2);
-
+void really_free_mapping(struct mapping * m);
+void count_memory_in_mappings(size_t * num, size_t * size);
 
 
 
