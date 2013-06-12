@@ -2044,6 +2044,158 @@ void really_free_pike_scope(struct pike_frame *scope)
   really_free_pike_frame(scope);
 }
 
+int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
+{
+  struct program *p;
+  check_stack(256);
+  check_mark_stack(256);
+
+  if( (p = o->prog) )
+  {
+    struct svalue *save_sp = Pike_sp - args;
+    struct reference *ref = p->identifier_references + fun;
+    struct inherit *context = p->inherits + ref->inherit_offset;
+    struct identifier *function = context->prog->identifiers + ref->identifier_offset;
+    struct svalue *constant = NULL;
+    struct pike_frame *new_frame = NULL;
+
+    int type = (function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS));
+    if( o->prog != pike_trampoline_program && function->func.offset != -1 )
+    {
+      switch( type )
+      {
+        case IDENTIFIER_CONSTANT:
+          constant = &context->prog->constants[function->func.const_info.offset].sval;
+          if( TYPEOF(*constant) != PIKE_T_PROGRAM )
+            break;
+        case IDENTIFIER_C_FUNCTION:
+        case IDENTIFIER_PIKE_FUNCTION:
+          if( !new_frame )
+          {
+            new_frame=alloc_pike_frame();
+            debug_malloc_touch(new_frame);
+          }
+#ifdef PROFILING
+          new_frame->children_base = Pike_interpreter.accounted_time;
+          new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+
+          /* This is mostly for profiling, but
+           * could also be used to find out the name of a function
+           * in a destructed object. -hubbe
+           *
+           * Since it not used for anything but profiling yet, I will
+           * put it here until someone needs it. -Hubbe
+           */
+          new_frame->ident = ref->identifier_offset;
+          DO_IF_PROFILING_DEBUG({
+              fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME
+                      " %" PRINT_CPU_TIME "\n",
+                      Pike_interpreter.thread_state, new_frame->start_time,
+                      new_frame->children_base);
+            });
+#endif
+          new_frame->next = Pike_fp;
+          add_ref(new_frame->current_object = o);
+          add_ref(new_frame->current_program = p);
+          new_frame->context = context;
+          new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
+          new_frame->expendible = new_frame->locals = save_sp;
+          new_frame->args = args;
+          new_frame->save_sp = save_sp;
+
+#ifdef PIKE_DEBUG
+          if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
+            Pike_fatal("Pike code called within gc.\n");
+#endif
+
+          Pike_fp = new_frame;
+          debug_malloc_touch(Pike_fp);
+#ifdef PROFILING
+          function->num_calls++;
+          function->recur_depth++;
+#endif
+          call_check_threads_etc();
+
+          if( !constant )
+          {
+            if (PIKE_FN_START_ENABLED())
+            {
+              /* DTrace enter probe
+                 arg0: function name
+                 arg1: object
+              */
+              dynamic_buffer save_buf;
+              dynbuf_string obj_name;
+              struct svalue obj_sval;
+              SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
+              init_buf(&save_buf);
+              safe_describe_svalue(&obj_sval, 0, NULL);
+              obj_name = complex_free_buf(&save_buf);
+              PIKE_FN_START(function->name->size_shift == 0 ?
+                            function->name->str : "[widestring fn name]",
+                            obj_name.str);
+            }
+            if(UNLIKELY(Pike_interpreter.trace_level))
+            {
+              dynamic_buffer save_buf;
+              char buf[50];
+
+              init_buf(&save_buf);
+              sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+              my_strcat(buf);
+              if (function->name->size_shift)
+                my_strcat ("[widestring function name]");
+              else
+                my_strcat(function->name->str);
+              do_trace_call(args, &save_buf);
+            }
+            if( type == IDENTIFIER_C_FUNCTION )
+            {
+              new_frame->num_args = args;
+              new_frame->num_locals = args;
+              new_frame->current_storage = o->storage+context->storage_offset;
+              new_frame->pc = 0;
+              (*function->func.c_fun)(args);
+
+              /* .. and below follows what is basically a copy of the
+               * low_return function...
+               */
+              if(save_sp+1 > Pike_sp)
+              {
+                push_int(0);
+              } else if(save_sp+1 < Pike_sp) {
+                stack_pop_n_elems_keep_top( Pike_sp-save_sp-1 );
+              }
+              if(UNLIKELY(Pike_interpreter.trace_level>1))
+                do_trace_func_return (1, o, fun);
+              goto pop;
+            }
+            new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
+            new_frame->pc = new_frame->context->prog->program + function->func.offset
+#ifdef ENTRY_PROLOGUE_SIZE
+              + ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+              ;
+            return 1;
+          }
+          else
+          {
+            struct object *tmp;
+            tmp=parent_clone_object(constant->u.program,
+                                    o,
+                                    fun,
+                                    args);
+            push_object(tmp);
+          pop:
+            POP_PIKE_FRAME();
+            return 0;
+          }
+      }
+    }
+  }
+  return low_mega_apply( APPLY_LOW, args, o, (void*)fun );
+}
+
 /* Apply a function.
  *
  * Application types:
@@ -2183,16 +2335,15 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       }else{
 	type=APPLY_SVALUE;
 	o=s->u.object;
+        fun = SUBTYPEOF(*s);
 	if(o->prog == pike_trampoline_program &&
-	   SUBTYPEOF(*s) == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
+	   fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
 	{
 	  fun=((struct pike_trampoline *)(o->storage))->func;
 	  scope=((struct pike_trampoline *)(o->storage))->frame;
 	  o=scope->current_object;
-	  goto apply_low_with_scope;
 	}
-	fun = SUBTYPEOF(*s);
-	goto apply_low;
+        goto apply_low;
       }
       break;
 
@@ -2253,7 +2404,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	fun=((struct pike_trampoline *)(o->storage))->func;
 	scope=((struct pike_trampoline *)(o->storage))->frame;
 	o=scope->current_object;
-	goto apply_low_with_scope;
+	goto apply_low;
       }
       fun=LFUN_CALL;
       type=APPLY_SVALUE;
@@ -2286,16 +2437,9 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fun=((struct pike_trampoline *)(o->storage))->func;
       scope=((struct pike_trampoline *)(o->storage))->frame;
       o=scope->current_object;
-      goto apply_low_with_scope;
     }
 
   apply_low:
-#undef SCOPE
-#include "apply_low.h"
-    break;
-
-  apply_low_with_scope:
-#define SCOPE scope
 #include "apply_low.h"
     break;
   }
@@ -2316,7 +2460,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       assign_svalue(save_sp,Pike_sp-1);
       pop_n_elems(Pike_sp-save_sp-1);
       low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
-      
     }
     if(Pike_interpreter.trace_level>1)
       do_trace_func_return (1, o, fun);
@@ -2574,8 +2717,34 @@ PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *
    * practically zero. */
   check_c_stack(Pike_interpreter.c_stack_margin ?
 		Pike_interpreter.c_stack_margin : 100);
+  if( low_mega_apply(type, args, arg1, arg2) )
+  {
+    eval_instruction(Pike_fp->pc
+#ifdef ENTRY_PROLOGUE_SIZE
+		     - ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+		     );
+    low_return();
+  }
+  CALL_AND_UNSET_ONERROR(uwp);
+}
 
-  if(low_mega_apply(type, args, arg1, arg2))
+PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
+{
+  /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
+   * following eval_instruction will install a LOW_JMP_BUF of its
+   * own to handle catches. */
+  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+  ONERROR uwp;
+  Pike_interpreter.catching_eval_jmpbuf = NULL;
+  SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
+
+  /* The C stack margin is normally 8 kb, but if we get here during a
+   * lowered margin then don't fail just because of that, unless it's
+   * practically zero. */
+  check_c_stack(Pike_interpreter.c_stack_margin ?
+		Pike_interpreter.c_stack_margin : 100);
+  if( lower_mega_apply( args, arg1, arg2 ) )
   {
     eval_instruction(Pike_fp->pc
 #ifdef ENTRY_PROLOGUE_SIZE
@@ -2710,7 +2879,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
-  int use_dummy_reference = 1;
+  volatile int use_dummy_reference = 1;
   struct program *prog = o->prog;
   int p_flags = prog->flags;
   LOW_JMP_BUF *saved_jmpbuf;

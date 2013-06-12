@@ -146,25 +146,19 @@
       new_frame->expendible = new_frame->locals = Pike_sp - args;
       new_frame->args = args;
       new_frame->pc = 0;
-#ifdef SCOPE
       new_frame->scope=scope;
 #ifdef PIKE_DEBUG
-      if(new_frame->fun == scope->fun)
+      if(scope && new_frame->fun == scope->fun)
       {
 	Pike_fatal("Que? A function cannot be parented by itself!\n");
       }
 #endif
-#else
-      new_frame->scope=0;
-#endif
       new_frame->save_sp=save_sp;
-      
+
       add_ref(new_frame->current_object);
       add_ref(new_frame->current_program);
-#ifdef SCOPE
       if(new_frame->scope) add_ref(new_frame->scope);
-#endif
-#ifdef PIKE_DEBUG      
+#ifdef PIKE_DEBUG
       if (Pike_fp) {
 
 	if (new_frame->locals < Pike_fp->locals) {
@@ -228,7 +222,7 @@
       }
       
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
-      {       
+      {
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
 	Pike_fp->num_args=args;

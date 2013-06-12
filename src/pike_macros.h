@@ -60,6 +60,17 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
   free_item(p);					\
 }while(0)
 
+#if __GNUC__ > 2
+/* FIXME: Add real test for this.
+
+   It has been around since 1999 in gcc, but also exists in many other
+   compilers.
+ */
+#define UNLIKELY(X) __builtin_expect( (X), 0 )
+#else
+#define UNLIKELY(X) X
+#endif
+
 /* This variant never leaves p pointing at a deallocated block, as the
  * one above can do. I.e. it frees a ref to the item p points at, and
  * sets p to the same or next item with references, or sets it to
