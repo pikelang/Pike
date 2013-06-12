@@ -1463,7 +1463,6 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
-  int is_zero = UNSAFE_IS_ZERO(from);
   do {
     void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
     union anything *u = (union anything *)ptr;
@@ -1547,21 +1546,24 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     case PIKE_T_NO_REF_OBJECT:
-      /* Don't count references to ourselves to help the gc. */
-      if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
-      debug_malloc_touch(u->object);
-      if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
-	debug_malloc_touch(o);
-	really_free_short_svalue(u,rtt);
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        /* Don't count references to ourselves to help the gc. */
+        if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
+        debug_malloc_touch(u->object);
+        if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
+          debug_malloc_touch(o);
+          really_free_short_svalue(u,rtt);
 #ifdef DEBUG_MALLOC
-      } else {
-	debug_malloc_touch(o);
+        } else {
+          debug_malloc_touch(o);
 #endif /* DEBUG_MALLOC */
-      }
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+        }
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          continue;
+        }
       }
       u->refs = from->u.refs;
       debug_malloc_touch(u->refs);
@@ -1576,21 +1578,23 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     default:
-      rtt &= ~PIKE_T_NO_REF_FLAG;
-      if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
-      debug_malloc_touch(u->refs);
-      if(u->refs && !sub_ref(u->dummy))
-	really_free_short_svalue(u, rtt);
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        rtt &= ~PIKE_T_NO_REF_FLAG;
+        if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
+        debug_malloc_touch(u->refs);
+        if(u->refs && !sub_ref(u->dummy))
+          really_free_short_svalue(u, rtt);
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          continue;
+        }
+        u->refs = from->u.refs;
+        add_ref(u->dummy);
+        continue;
       }
-      u->refs = from->u.refs;
-      add_ref(u->dummy);
-      continue;
     }
-
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
 	       get_name_of_type(TYPEOF(*from)));
