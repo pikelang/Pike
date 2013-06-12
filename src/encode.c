@@ -74,21 +74,27 @@
 
 
 /* Tags used by encode value.
- * Currently they only differ from the PIKE_T variants by
- *   TAG_FLOAT == PIKE_T_TYPE == 7
+ *
+ * Currently they differ from the old PIKE_T variants by
+ *   TAG_FLOAT == OLD_PIKE_T_TYPE == 7
  * and
- *   TAG_TYPE == PIKE_T_FLOAT == 9
+ *   TAG_TYPE == OLD_PIKE_T_FLOAT == 9
+ *
+ * The old PIKE_T variants in turn differ from the current for values
+ * less than 16 (aka MAX_TYPE) by bit 3 (mask 0x0008 (aka MIN_REF_TYPE))
+ * being inverted.
+ *
  * These are NOT to be renumbered unless the file-format version is changed!
  */
 /* Current encoding: ¶ke0
  *
  * +---+-+-+-------+
- * |s z|s|n|t y p e|
+ * |s z|s|n| t a g |
  * +---+-+-+-------+
  *  	sz	size/small int
  *  	s	small int indicator
  *  	n	negative (or rather inverted)
- *  	type	TAG_type
+ *  	tag	TAG_type (4 bits)
  */
 #define TAG_ARRAY 0
 #define TAG_MAPPING 1
@@ -235,9 +241,16 @@ static int type_to_tag(int type)
 {
   if (type == T_FLOAT) return TAG_FLOAT;
   if (type == T_TYPE) return TAG_TYPE;
+  if (type <= MAX_TYPE) return type ^ MIN_REF_TYPE;
   return type;
 }
-static int (*tag_to_type)(int) = type_to_tag;
+static int tag_to_type(int tag)
+{
+  if (tag == TAG_FLOAT) return T_FLOAT;
+  if (tag == TAG_TYPE) return T_TYPE;
+  if (tag <= MAX_TYPE) return tag ^ MIN_REF_TYPE;
+  return tag;
+}
 
 /* Let's cram those bits... */
 static void code_entry(int tag, INT64 num, struct encode_data *data)
@@ -313,17 +326,19 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 {
  one_more_type:
   if (t->type == T_MANY) {
-    addchar(T_FUNCTION);
+    addchar(T_FUNCTION ^ MIN_REF_TYPE);
     addchar(T_MANY);
   } else if (t->type == T_STRING) {
     if (t->car == int_type_string) {
-      addchar(T_STRING);
+      addchar(T_STRING ^ MIN_REF_TYPE);
     } else {
       /* Narrow string */
       addchar(PIKE_T_NSTRING);
       encode_type(t->car, data);
     }
     return;
+  } else if (t->type <= MAX_TYPE) {
+    addchar(t->type ^ MIN_REF_TYPE);
   } else {
     addchar(t->type);
   }
@@ -2323,6 +2338,7 @@ static void low_decode_type(struct decode_data *data)
   SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
   tmp = GETC();
+  if (tmp <= MAX_TYPE) tmp ^= MIN_REF_TYPE;
   switch(tmp)
   {
     default:

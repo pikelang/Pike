@@ -8137,9 +8137,16 @@ static void low_make_function_type(unsigned char *type_string,
 static void low_make_pike_type(unsigned char *type_string,
 			       unsigned char **cont)
 {
-  unsigned INT32 type;
+  unsigned INT32 type = *type_string;
 
-  switch(type = *type_string) {
+  if (type <= MAX_TYPE) {
+    /* Remap from old type enumeration to
+     * keep compat with output from __parse_pike_type().
+     */
+    type ^= MIN_REF_TYPE;
+  }
+
+  switch(type) {
 #ifdef PIKE_DEBUG
   case T_SCOPE:
     Pike_fatal("Not supported yet.\n");
@@ -8410,22 +8417,35 @@ static void low_type_to_string(struct pike_type *t)
   case T_ARRAY:
   case T_MULTISET:
   case T_TYPE:
-  case T_NOT:
   case T_PROGRAM:
-    my_putchar(t->type);
-    /* FALL_THROUGH */
+    my_putchar(t->type ^ MIN_REF_TYPE);
     t = t->car;
+    goto recurse;
+
+  case T_NOT:
+    my_putchar(t->type);
+    t = t->car;
+    goto recurse;
+
+  case T_MAPPING:
+    my_putchar(t->type ^ MIN_REF_TYPE);
+    low_type_to_string(t->car);
+    t = t->cdr;
     goto recurse;
 
   case PIKE_T_RING:
   case T_TUPLE:
-  case T_MAPPING:
   case T_OR:
   case T_AND:
     my_putchar(t->type);
     low_type_to_string(t->car);
     t = t->cdr;
     goto recurse;
+
+  case T_FLOAT:
+  case T_ZERO:
+    my_putchar(t->type ^ MIN_REF_TYPE);
+    break;
 
   case '0':
   case '1':
@@ -8437,8 +8457,6 @@ static void low_type_to_string(struct pike_type *t)
   case '7':
   case '8':
   case '9':
-  case T_FLOAT:
-  case T_ZERO:
   case T_VOID:
   case T_MIXED:
     my_putchar(t->type);
@@ -8447,7 +8465,7 @@ static void low_type_to_string(struct pike_type *t)
   case T_OBJECT:
     {
       INT32 i;
-      my_putchar(T_OBJECT);
+      my_putchar(T_OBJECT ^ MIN_REF_TYPE);
       i = (INT32)CAR_TO_INT(t);
       my_putchar( i );
       i = (INT32)CDR_TO_INT(t);
@@ -8464,7 +8482,7 @@ static void low_type_to_string(struct pike_type *t)
   case T_STRING:
     {
       if (t->car == int_type_string) {
-	my_putchar(T_STRING);
+	my_putchar(T_STRING ^ MIN_REF_TYPE);
       } else {
 	my_putchar(PIKE_T_NSTRING);
 	low_type_to_string(t->car);
@@ -8475,7 +8493,7 @@ static void low_type_to_string(struct pike_type *t)
   case T_INT:
     {
       INT32 i;
-      my_putchar(T_INT);
+      my_putchar(T_INT ^ MIN_REF_TYPE);
       i = (INT32)CAR_TO_INT(t);
       my_putchar((i >> 24) & 0xff);
       my_putchar((i >> 16) & 0xff);
@@ -8491,7 +8509,7 @@ static void low_type_to_string(struct pike_type *t)
 
   case T_FUNCTION:
   case T_MANY:
-    my_putchar(T_FUNCTION);
+    my_putchar(T_FUNCTION ^ MIN_REF_TYPE);
     while(t->type == T_FUNCTION) {
       low_type_to_string(t->car);
       t = t->cdr;

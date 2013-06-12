@@ -1034,8 +1034,8 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   mov_reg_mem(REG_RAX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, type));
   and_reg_imm(REG_RAX, 0x1f);
   mov_reg_mem(REG_RCX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
-  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
-  jg(&label_A);
+  cmp_reg32_imm(REG_RAX, MIN_REF_TYPE);
+  jl(&label_A);
   add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
  LABEL_A;
 }
@@ -1096,9 +1096,9 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* load type -> RAX */
   mov_sval_type( src, REG_RAX );
 
-  /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg32_imm( REG_RAX,MAX_REF_TYPE);
-  jg( &label_A );
+  /* if RAX < MIN_REF_TYPE+1 */
+  cmp_reg32_imm( REG_RAX,MIN_REF_TYPE);
+  jl( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1121,12 +1121,12 @@ static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
                                    int guaranteed_ref )
 {
   LABELS();
-  /* if type > MAX_REF_TYPE+1 */
+  /* if type < MIN_REF_TYPE+1 */
   if( src == REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
 
-  cmp_reg32_imm(type,MAX_REF_TYPE);
-  jg( &label_A );
+  cmp_reg32_imm(type,MIN_REF_TYPE);
+  jl( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1153,9 +1153,9 @@ void amd64_ref_svalue( enum amd64_reg src, int already_have_type )
   else
       and_reg_imm( REG_RAX, 0x1f );
 
-  /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE );
-  jg( &label_A );
+  /* if RAX > MIN_REF_TYPE+1 */
+  cmp_reg32_imm(REG_RAX, MIN_REF_TYPE );
+  jl( &label_A );
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
    /* *RAX++ */
@@ -2121,8 +2121,8 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
       /* inc refs? */
       and_reg_imm( REG_RAX, 0x1f );
-      cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
-      jg( &label_B );
+      cmp_reg32_imm(REG_RAX, MIN_REF_TYPE);
+      jl( &label_B );
       add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
       jmp( &label_B );
 
@@ -2206,8 +2206,8 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
       /* Optimization: The types are equal, pop_stack can be greatly
        * simplified if they are <= max_ref_type */
-      cmp_reg32_imm( REG_RCX,MAX_REF_TYPE+1);
-      jl( &label_B );
+      cmp_reg32_imm( REG_RCX,MIN_REF_TYPE);
+      jge( &label_B );
       /* cheap pop. We know that both are > max_ref_type */
       amd64_add_sp( -2 );
       jmp( &label_D );
