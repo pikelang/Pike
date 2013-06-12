@@ -831,8 +831,12 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     else fputs(", is destructed\n", stderr);
   }
 #endif
-  if( !(p = o->prog) )
+  if( !(p = o->prog) ) {
+#ifdef PIKE_DEBUG
+      UNSET_ONERROR(uwp);
+#endif
       return;
+  }
   add_ref( o );
   if( object_has_destroy( o ) )
   {
