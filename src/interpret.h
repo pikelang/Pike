@@ -534,6 +534,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     Pike_sp=s_;					\
 }while(0)
 
+
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_frame(f_); }while(0)
 
 /* A scope is any frame which may have malloced locals */
@@ -791,6 +792,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
+int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
@@ -799,6 +801,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int safe_apply_low(struct object *o,int fun,int args);
@@ -840,7 +843,7 @@ void really_clean_up_interpret(void);
 #ifdef __ECL
 static INLINE void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 {
-  mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
+  mega_apply_low(args, (void*)o, fun);
 }
 
 static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
@@ -849,7 +852,7 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 }
 #else /* !__ECL */
 #define apply_low(O,FUN,ARGS) \
-  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(ptrdiff_t)(FUN))
+  mega_apply_low((ARGS), (void*)(O),(FUN))
 
 #define strict_apply_svalue(SVAL,ARGS) \
   mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
