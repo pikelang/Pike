@@ -2190,7 +2190,7 @@ OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
         }else{
             DO_DUMB_RETURN;
         }
-  })
+  });
 
 OPCODE1_JUMP(F_MARK_CALL_LFUN, "mark, call lfun" , I_UPDATE_ALL, {
     JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
