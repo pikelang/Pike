@@ -4355,7 +4355,15 @@ PMOD_EXPORT visit_ref_cb *visit_ref = NULL;
 /* Be careful if extending this with internal types like
  * T_MAPPING_DATA and T_MULTISET_DATA; there's code that assumes
  * type_from_visit_fn only returns types that fit in a TYPE_FIELD. */
-PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1] = {
+PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1] = {
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
   (visit_thing_fn *) &visit_array,
   (visit_thing_fn *) &visit_mapping,
   (visit_thing_fn *) &visit_multiset,

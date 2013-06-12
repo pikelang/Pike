@@ -659,7 +659,7 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
  * VISIT_COMPLEX_ONLY. */
 
 /* Map between type and visit function for the standard ref types. */
-PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
+PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,

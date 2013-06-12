@@ -116,25 +116,33 @@ struct svalue
 */
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
-#define PIKE_T_ARRAY 0
-#define PIKE_T_MAPPING 1
-#define PIKE_T_MULTISET 2
-#define PIKE_T_OBJECT 3
-#define PIKE_T_FUNCTION 4
-#define PIKE_T_PROGRAM 5
-#define PIKE_T_STRING 6
-#define PIKE_T_TYPE 7
-#define PIKE_T_INT 8
-#define PIKE_T_FLOAT 9
+/* The native types.
+ *
+ * Note that PIKE_T_INT is zero so that cleared memory
+ * is filled with zeroes.
+ */
+#define PIKE_T_INT 0
+#define PIKE_T_FLOAT 1
+
+/* NB: The reference counted types all have bit 4 set. */
+#define PIKE_T_ARRAY 8
+#define PIKE_T_MAPPING 9
+#define PIKE_T_MULTISET 10
+#define PIKE_T_OBJECT 11
+#define PIKE_T_FUNCTION 12
+#define PIKE_T_PROGRAM 13
+#define PIKE_T_STRING 14
+#define PIKE_T_TYPE 15
 
 /* The types above are valid types in svalues.
  * The following are only used by the internal systems.
  */
 
-#define PIKE_T_ZERO  14	/**< Can return 0, but nothing else */
+/* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
+#define PIKE_T_ZERO  6	/**< Can return 0, but nothing else */
 
 
-#define T_UNFINISHED 15
+#define T_UNFINISHED 7
 
 #define T_VOID       16 /**< Can't return any value. Also used on stack to fill out the second
  * svalue on an lvalue when it isn't used. */
@@ -200,6 +208,10 @@ struct svalue
 #define T_MULTISET_DATA 10003
 #define T_STRUCT_CALLABLE 10004
 
+/* NOTE: The t* macros below currently use the old type encoding
+ *       to be compatible with __parse_pike_type() in older
+ *       versions of Pike.
+ */
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
 #define tMap(IND,VAL) "\001" IND VAL
@@ -325,7 +337,7 @@ struct svalue
 #define BIT_VOID (1 << T_VOID)
 
 /** This is used in typechecking to signify that the rest of the
- * arguments has to be of this type.
+ * arguments have to be of this type.
  */
 #define BIT_MANY (1 << T_MANY)
 
@@ -338,12 +350,12 @@ struct svalue
 
 /* Max type which contains svalues */
 #define MAX_COMPLEX PIKE_T_PROGRAM
-/* Max type with ref count */
-#define MAX_REF_TYPE PIKE_T_TYPE
+/* Min type with ref count */
+#define MIN_REF_TYPE PIKE_T_ARRAY
 /* Max type handled by svalue primitives */
-#define MAX_TYPE PIKE_T_FLOAT
+#define MAX_TYPE PIKE_T_TYPE
 
-#define REFCOUNTED_TYPE(T)	((T) <= MAX_REF_TYPE)
+#define REFCOUNTED_TYPE(T)	(((T) & ~(MIN_REF_TYPE - 1)) == MIN_REF_TYPE)
 
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
