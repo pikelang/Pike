@@ -96,7 +96,7 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 #define FIND_FUNCTION_HASHSIZE 16384
 
 /* Programs with less methods will not use the cache for method lookups.. */
-#define FIND_FUNCTION_HASH_TRESHOLD 9
+#define FIND_FUNCTION_HASH_TRESHOLD 0
 
 
 #define DECLARE
