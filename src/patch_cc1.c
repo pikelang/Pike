@@ -31,11 +31,6 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  if (!strcmp(argv[1], "-v")) {
-    fprintf(stdout, "$Id$\n");
-    exit(0);
-  }
-
   if ((fd = open(argv[1], O_RDONLY)) < 0) {
     fprintf(stderr, "Failed to open \"%s\" for reading.\n", argv[1]);
     exit(1);

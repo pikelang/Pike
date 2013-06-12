@@ -493,7 +493,7 @@ void main()
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $" + "Id:$\n*/\n\n/* AutoDoc generated from OpenGL man pages */"
+*/\n\n/* AutoDoc generated from OpenGL man pages */"
     "\n\n" + first_page() + "\n\n" + doc +
     "\n/*! @endmodule\n */\n\n";
 

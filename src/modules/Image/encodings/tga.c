@@ -10,7 +10,6 @@
  *  The information below is from the original TGA module.
  *
  *
- * Id: tga.c,v 1.6 1999/01/15 17:34:47 unammx Exp
  * TrueVision Targa loading and saving file filter for the Gimp.
  * Targa code Copyright (C) 1997 Raphael FRANCOIS and Gordon Matzigkeit
  *

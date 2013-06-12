@@ -134,8 +134,7 @@ int main(int argc, array(string) argv)
 
   outfile->
     write("/*\n"
-          " * Created by\n"
-          " * $Id$\n"
+          " * Created by make_ci.pike\n"
           " * on %s"
           " *\n"
           " * Table used for looking up the case of\n"

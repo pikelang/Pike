@@ -693,7 +693,6 @@ int(0..1) main(int num, array(string) args)
 
   int T = time();
   foreach(Getopt.find_all_options(args, ({
-     ({ "version",    Getopt.NO_ARG,  "-V,--version"/"," }),
      ({ "pikever",    Getopt.HAS_ARG, "--pike-version"/"," }),
      ({ "timestamp",  Getopt.HAS_ARG, "--timestamp,--time-stamp"/"," }),
      ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
@@ -705,8 +704,6 @@ int(0..1) main(int num, array(string) args)
      ({ "keep-going", Getopt.NO_ARG,  "--keep-going" }),
 				  })), array(string) opt) {
     switch(opt[0]) {
-    case "version":
-      exit(0, "$Id$\n");
     case "pikever":
       pike_version = opt[1];
       break;

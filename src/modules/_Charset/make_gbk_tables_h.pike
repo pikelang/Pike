@@ -93,7 +93,6 @@ int main(int argc, array(string) argv)
   }
   int tab_no = 0x81;
   string code = sprintf("/* Generated automatically by\n"
-			" * %s\n"
 			" * Do not edit.\n"
 			" */\n"
 			"\n"
@@ -105,7 +104,6 @@ int main(int argc, array(string) argv)
 			"%{%s\n%}"
 			"};\n"
 			"\n",
-			"$Id$",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			map(dec_table,
