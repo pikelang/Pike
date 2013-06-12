@@ -41,9 +41,6 @@ extern size_t pike_type_hash_size;
 #define CAR_TO_INT(TYPE) ((char *) (TYPE)->car - (char *) 0)
 #define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)
 
-#include "block_alloc_h.h"
-BLOCK_ALLOC(pike_type, n/a);
-
 /*
  * pike_type flags:
  */
@@ -210,6 +207,9 @@ void debug_push_reverse_type(unsigned int type);
 } while(0)
 
 /* Prototypes begin here */
+PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
+PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type();
+PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
 void debug_check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);

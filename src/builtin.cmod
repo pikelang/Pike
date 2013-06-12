@@ -28,7 +28,7 @@
 #include "fsort.h"
 #include "port.h"
 #include "gc.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include "pikecode.h"
 #include "opcodes.h"
 
@@ -4142,31 +4142,36 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
 
 /* Linked list stuff.
  */
-#undef INIT_BLOCK
-#define INIT_BLOCK(NODE) do {				\
-    (NODE)->next = (NODE)->prev = NULL;			\
-    (NODE)->refs = 1;					\
-    SET_SVAL((NODE)->val, T_INT, NUMBER_UNDEFINED,	\
-	     integer, 0);				\
-  } while(0) 
+static struct block_allocator pike_list_node_allocator = BA_INIT_PAGES(sizeof(struct pike_list_node), 4);
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(NODE) do {				\
-    if ((NODE)->prev) {					\
-      free_list_node((NODE)->prev);			\
-    }							\
-    if ((NODE)->next) {					\
-      free_list_node((NODE)->next);			\
-    }							\
-    free_svalue(&(NODE)->val);				\
-  } while(0)
+ATTRIBUTE((malloc))
+static struct pike_list_node * alloc_pike_list_node() {
+    struct pike_list_node * node = ba_alloc(&pike_list_node_allocator);
+    node->next = node->prev = NULL;
+    node->refs = 1;
+    SET_SVAL(node->val, T_INT, NUMBER_UNDEFINED, integer, 0);
+    return node;
+}
 
-BLOCK_ALLOC_FILL_PAGES(pike_list_node, 4);
+void count_memory_in_pike_list_nodes(size_t * n, size_t * s) {
+    ba_count_all(&pike_list_node_allocator, n, s);
+}
+
+void free_all_pike_list_node_blocks() {
+    ba_destroy(&pike_list_node_allocator);
+}
 
 PMOD_EXPORT void free_list_node(struct pike_list_node *node)
 {
   if (!sub_ref(node)) {
-    really_free_pike_list_node(node);
+    if (node->prev) {
+      free_list_node(node->prev);
+    }
+    if (node->next) {
+      free_list_node(node->next);
+    }
+    free_svalue(&node->val);
+    ba_free(&pike_list_node_allocator, node);
   }
 }
 
@@ -5760,7 +5765,6 @@ PIKECLASS __Backtrace_Tester__
 
 void init_builtin(void)
 {
-  init_pike_list_node_blocks();
   INIT
 }
 
@@ -5773,7 +5777,7 @@ void exit_builtin(void)
    * in this case, so that the pike_list_node's are valid at cleanup
    * time, thus avoiding "got invalid pointer" fatals at exit.
    */
-  free_all_pike_list_node_blocks();
+  ba_destroy(&pike_list_node_allocator);
 #endif
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);

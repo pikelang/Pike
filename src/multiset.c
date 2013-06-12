@@ -29,7 +29,7 @@
 #include "mapping.h"
 #endif
 
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -252,37 +252,43 @@ void free_multiset_data (struct multiset_data *msd);
   } while (0)
 #endif
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(L) do {						\
-    FREE_PROT (L);							\
-    DO_IF_DEBUG (							\
-      if (L->refs) {							\
-	DO_IF_DMALLOC(describe_something (L, T_MULTISET, 0,2,0, NULL));	\
-	Pike_fatal ("Too few refs %d to multiset.\n", L->refs);		\
-      }									\
-      if (L->node_refs) {						\
-	DO_IF_DMALLOC(describe_something (L, T_MULTISET, 0,2,0, NULL));	\
-	Pike_fatal ("Freeing multiset with %d node refs.\n", L->node_refs); \
-      }									\
-    );									\
-    if (!sub_ref (L->msd)) free_multiset_data (L->msd);			\
-    DOUBLEUNLINK (first_multiset, L);					\
-    GC_FREE (L);							\
-  } while (0)
+static struct block_allocator multiset_allocator = BA_INIT_PAGES(sizeof(struct multiset), 2);
 
-#undef COUNT_OTHER
-#define COUNT_OTHER() do {						\
-    struct multiset *l;							\
-    double datasize = 0.0;						\
-    for (l = first_multiset; l; l = l->next)				\
-      datasize += (l->msd->flags & MULTISET_INDVAL ?			\
-		   NODE_OFFSET (msnode_indval, l->msd->allocsize) :	\
-		   NODE_OFFSET (msnode_ind, l->msd->allocsize)) /	\
-	(double) l->msd->refs;						\
-    size += (size_t) datasize;						\
-  } while (0)
+PMOD_EXPORT void really_free_multiset (struct multiset *l) {
+    FREE_PROT (l);
+#ifdef PIKE_DEBUG
+    if (l->refs) {
+# if DEBUG_MALLOC
+	describe_something (l, T_MULTISET, 0,2,0, NULL);
+# endif
+	Pike_fatal ("Too few refs %d to multiset.n", l->refs);
+    }
+    if (l->node_refs) {
+# if DEBUG_MALLOC
+	describe_something (l, T_MULTISET, 0,2,0, NULL);
+# endif
+	Pike_fatal ("Freeing multiset with %d node refs.n", l->node_refs);
+    }
+#endif
+    if (!sub_ref (l->msd)) free_multiset_data (l->msd);
+    DOUBLEUNLINK (first_multiset, l);
+    GC_FREE (l);
+    ba_free(&multiset_allocator, l);
+}
 
-BLOCK_ALLOC_FILL_PAGES (multiset, 2)
+PMOD_EXPORT void count_memory_in_multisets (size_t * n, size_t * s) {
+    struct multiset *l;
+    double datasize = 0.0;
+
+    ba_count_all(&multiset_allocator, n, s);
+
+    for (l = first_multiset; l; l = l->next)
+      datasize += (l->msd->flags & MULTISET_INDVAL ?
+		   NODE_OFFSET (msnode_indval, l->msd->allocsize) :
+		   NODE_OFFSET (msnode_ind, l->msd->allocsize)) /
+	(double) l->msd->refs;
+    *s += (size_t) datasize;
+}
 
 /* Note: The returned block has no refs. */
 #ifdef PIKE_DEBUG
@@ -872,7 +878,7 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
 						     int flags,
 						     struct svalue *cmp_less)
 {
-  struct multiset *l = alloc_multiset();
+  struct multiset *l = ba_alloc(&multiset_allocator);
 
   /* FIXME: There's currently little use in making "inflated"
    * multisets with allocsize, since prepare_for_add shrinks them. */
@@ -1285,7 +1291,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
     fix_free_list (new.msd, indices->size);
   }
 
-  l = alloc_multiset();
+  l = ba_alloc(&multiset_allocator);
   l->msd = new.msd;
   add_ref (new.msd);
   INIT_MULTISET (l);
@@ -3389,7 +3395,7 @@ PMOD_EXPORT struct multiset *copy_multiset (struct multiset *l)
   struct multiset_data *msd = l->msd;
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
-  l = alloc_multiset();
+  l = ba_alloc(&multiset_allocator);
   INIT_MULTISET (l);
   add_ref (l->msd = msd);
   return l;
@@ -4890,13 +4896,11 @@ void init_multiset()
   dmalloc_accept_leak (&empty_indval_msd);
 #endif
 
-  init_multiset_blocks();
 }
 
 /* Pike might exit without calling this. */
 void exit_multiset()
 {
-  free_all_multiset_blocks();
 }
 
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)

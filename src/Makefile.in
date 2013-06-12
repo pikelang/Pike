@@ -164,6 +164,7 @@ CORE_OBJ= \
  pike_types.o \
  pike_embed.o \
  mapping.o \
+ block_allocator.o \
  pike_memory.o \
  module_support.o \
  pikecode.o \
@@ -1431,6 +1432,7 @@ HFILES=						\
   main.protos					\
   stralloc.protos					\
   mapping.protos					\
+  block_allocator.protos					\
   stuff.protos					\
   dynamic_buffer.protos				\
   svalue.protos					\

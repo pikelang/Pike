@@ -37,6 +37,7 @@
 #include "svalue.h"
 #include "gc.h"
 #include "module_support.h"
+#include "block_allocator.h"
 
 /*
  * Things to do
@@ -132,8 +133,8 @@
 
 /* Declarations for the legacy backend interface stuff. */
 
-#include "block_alloc_h.h"
-BLOCK_ALLOC (compat_cb_box, N/A);
+static struct compat_cb_box * alloc_compat_cb_box();
+static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
 /* CALL OUT STUFF */
@@ -5116,18 +5117,29 @@ struct compat_cb_box
   int flags; /* fs event flags */
 };
 
-#include "block_alloc.h"
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT read_data
-
 #undef DMALLOC_DESCRIBE_BLOCK
 #define DMALLOC_DESCRIBE_BLOCK(X) do {					\
     fprintf (stderr, "  backend: %p, fd: %d, events: 0x%x\n",		\
 	     X->box.backend, X->box.fd, X->box.events);			\
   } while (0)
 
-BLOCK_ALLOC_FILL_PAGES (compat_cb_box, 1)
+static struct block_allocator compat_cb_allocator = BA_INIT_PAGES(sizeof(struct compat_cb_box), 1);
+
+static struct compat_cb_box * alloc_compat_cb_box() {
+    return ba_alloc(&compat_cb_allocator);
+}
+
+static void really_free_compat_cb_box(struct compat_cb_box * b) {
+    ba_free(&compat_cb_allocator, b);
+}
+
+void count_memory_in_compat_cb_boxs(size_t * n, size_t * s) {
+    ba_count_all(&compat_cb_allocator, n, s);
+}
+
+void free_all_compat_cb_box_blocks() {
+    ba_destroy(&compat_cb_allocator);
+}
 
 static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 {
@@ -5404,7 +5416,6 @@ static struct callback *mem_callback;
 void init_backend(void)
 {
   IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
-  init_compat_cb_box_blocks();
   IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
   INIT;
   IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));

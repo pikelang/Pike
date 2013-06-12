@@ -160,27 +160,8 @@ void init_pike(char **argv, const char *file)
   
   fd_init();
   {
-    extern void init_mapping_blocks(void);
-    extern void init_callable_blocks(void);
-    extern void init_gc_rec_frame_blocks(void);
-    extern void init_ba_mixed_frame_blocks(void);
-    extern void init_pike_frame_blocks(void);
     extern void init_node_s_blocks(void);
-    extern void init_object_blocks(void);
-    extern void init_callback_blocks(void);
-
-    init_mapping_blocks();
-    init_callable_blocks();
-    init_gc_rec_frame_blocks();
-    init_ba_mixed_frame_blocks();
-    /* init_catch_context_blocks(); */
-    /* init_pike_frame_blocks(); */
     init_node_s_blocks();
-    init_object_blocks();
-#if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)
-    /* This has already been done by initialize_dmalloc(). */
-    init_callback_blocks();
-#endif /* !DEBUG_MALLOC */
     init_multiset();
     init_builtin_constants();
   }

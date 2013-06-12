@@ -15,7 +15,6 @@
 #include "time_stuff.h"
 #include "program_id.h"
 #include "pike_rusage.h"
-#include "block_alloc_h.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
@@ -691,7 +690,11 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TY
   }while(0)
 #endif
 
-BLOCK_ALLOC_FILL_PAGES(program, n/a);
+ATTRIBUTE((malloc))
+PMOD_EXPORT struct program * alloc_program();
+PMOD_EXPORT void really_free_program(struct program * p);
+PMOD_EXPORT void count_memory_in_programs(size_t *num, size_t *_size);
+void free_all_program_blocks();
 
 
 extern struct program *first_program;

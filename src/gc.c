@@ -27,6 +27,7 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_threadlib.h"
 #include "gc.h"
 #include "main.h"
+#include "block_allocator.h"
 
 #include <math.h>
 
@@ -420,25 +421,25 @@ static unsigned rec_frames, link_frames, free_extra_frames;
 static unsigned max_rec_frames, max_link_frames;
 static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_extra_frames = 0;
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(f) do {						\
-    if (++rec_frames > max_rec_frames)					\
-      max_rec_frames = rec_frames;					\
-  } while (0)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f) do {						\
-    DO_IF_DEBUG ({							\
-	if (f->rf_flags & GC_FRAME_FREED)				\
-	  gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");	\
-	f->rf_flags |= GC_FRAME_FREED;					\
-	f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;		\
-	f->prev = f->next = f->cycle_id = f->cycle_piece =		\
-	  (struct gc_rec_frame *) (ptrdiff_t) -1;			\
-      });								\
-    rec_frames--;							\
-  } while (0)
+struct block_allocator gc_rec_frame_allocator =
+    BA_INIT_PAGES(sizeof(struct gc_rec_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
+static void really_free_gc_rec_frame(struct gc_rec_frame * f) {
+#ifdef PIKE_DEBUG
+  if (f->rf_flags & GC_FRAME_FREED)
+    gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");
+  f->rf_flags |= GC_FRAME_FREED;
+  f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;
+  f->prev = f->next = f->cycle_id = f->cycle_piece =
+    (struct gc_rec_frame *) (ptrdiff_t) -1;
+#endif
+  rec_frames--;
+  ba_free(&gc_rec_frame_allocator, f);
+}
+
+void count_memory_in_gc_rec_frames(size_t *num, size_t * size) {
+  ba_count_all(&gc_rec_frame_allocator, num, size);
+}
 
 /* Link and free_extra frames are approximately the same size, so let
  * them share block_alloc area. */
@@ -451,18 +452,16 @@ struct ba_mixed_frame
   } u;
 };
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT u.next
-#undef INIT_BLOCK
-#define INIT_BLOCK(f)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f)
+static struct block_allocator ba_mixed_frame_allocator
+    = BA_INIT_PAGES(sizeof(struct ba_mixed_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (ba_mixed_frame, 2)
+void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
+  ba_count_all(&ba_mixed_frame_allocator, num, size);
+}
 
 static INLINE struct link_frame *alloc_link_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
     max_link_frames = link_frames;
   return (struct link_frame *) f;
@@ -470,7 +469,7 @@ static INLINE struct link_frame *alloc_link_frame()
 
 static INLINE struct free_extra_frame *alloc_free_extra_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
   return (struct free_extra_frame *) f;
 }
@@ -478,13 +477,13 @@ static INLINE struct free_extra_frame *alloc_free_extra_frame()
 static INLINE void really_free_link_frame (struct link_frame *f)
 {
   link_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
 {
   free_extra_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 /* These are only collected for the sake of gc_status. */
@@ -522,6 +521,8 @@ static void gc_cycle_pop();
   (X)->flags=(X)->refs=(X)->weak_refs=0;		\
   (X)->frame = 0;
 #endif
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(f)
 
 #undef get_marker
 #define get_marker debug_get_marker
@@ -574,7 +575,7 @@ static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
 				struct gc_rec_frame *p3, const char *p3_name)
 {
   struct gc_rec_frame *l, *cp;
-  size_t longest;
+  size_t longest = 0;
 
   if (p1) longest = strlen (p1_name);
   if (p2) {size_t l = strlen (p2_name); if (l > longest) longest = l;}
@@ -2039,8 +2040,8 @@ void exit_gc(void)
   if (!gc_keep_markers)
     cleanup_markers();
 
-  free_all_gc_rec_frame_blocks();
-  free_all_ba_mixed_frame_blocks();
+  ba_destroy(&gc_rec_frame_allocator);
+  ba_destroy(&ba_mixed_frame_allocator);
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
@@ -2347,7 +2348,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
   /* This debug check is disabled during the final cleanup since this
    * is O(n^2) on the stack size, and the stack gets a lot larger then. */
   if (gc_debug && !gc_destruct_everything) {
-    struct gc_rec_frame *l, *last_cycle_id;
+    struct gc_rec_frame *l, *last_cycle_id = NULL;
     for (l = &sentinel_frame; l != stack_top;) {
       l = l->next;
       check_rec_stack_frame (l, p1, p1n, p2, p2n, file, line);
@@ -2636,7 +2637,9 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 
 static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
 {
-  struct gc_rec_frame *r = alloc_gc_rec_frame();
+  struct gc_rec_frame *r =
+    (struct gc_rec_frame*)ba_alloc(&gc_rec_frame_allocator);
+  if (++rec_frames > max_rec_frames) max_rec_frames = rec_frames;
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
     gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");

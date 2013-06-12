@@ -18,6 +18,7 @@
 #include "block_alloc.h"
 #include "operators.h"
 #include "pike_float.h"
+#include "block_allocator.h"
 #include "port.h"
 
 #include <errno.h>
@@ -667,26 +668,6 @@ struct pike_string_hdr {
 
 /* Allocate some fixed string sizes with BLOCK_ALLOC. */
 
-/* Use the BLOCK_ALLOC() stuff for short strings */
-
-#undef INIT_BLOCK
-#ifdef ATOMIC_SVALUE
-#define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->ref_type = T_STRING;				\
-    (NEW_STR)->refs = 0;					\
-    add_ref((NEW_STR));						\
-    (NEW_STR)->flags =						\
-      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
-  } while(0)
-#else /* !ATOMIC_SVALUE */
-#define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->refs = 0;					\
-    add_ref((NEW_STR));						\
-    (NEW_STR)->flags =						\
-      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
-  } while(0)
-#endif
-
 #define SHORT_STRING_BLOCK	256
 #define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
 
@@ -705,25 +686,30 @@ struct short_pike_string2 {
   p_wchar2 str[SHORT_STRING_THRESHOLD+1];
 };
 
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+static struct block_allocator string_allocator[] = {
+    BA_INIT(sizeof(struct short_pike_string0), SHORT_STRING_BLOCK),
+    BA_INIT(sizeof(struct short_pike_string1), SHORT_STRING_BLOCK),
+    BA_INIT(sizeof(struct short_pike_string2), SHORT_STRING_BLOCK)
+};
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(x)
+static struct pike_string * alloc_short_pike_string(unsigned int shift) {
+    struct pike_string * s = (struct pike_string *)ba_alloc(string_allocator+shift);
 
-#define really_free_short_pike_string(s) do { \
-     if (!s->size_shift) { \
-       really_free_short_pike_string0((struct short_pike_string0 *)s); \
-     } else if (s->size_shift == 1) { \
-       really_free_short_pike_string1((struct short_pike_string1 *)s); \
-     DO_IF_DEBUG( \
-     } else if (s->size_shift != 2) { \
-       Pike_fatal("Unsupported string shift: %d\n", s->size_shift); \
-     ) \
-     } else { \
-       really_free_short_pike_string2((struct short_pike_string2 *)s); \
-     } \
+#ifdef ATOMIC_SVALUE
+    s->ref_type = T_STRING;
+#endif
+    s->refs = 0;
+    add_ref(s);	/* For DMALLOC */
+    s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;
+    return s;
+}
+
+#define really_free_short_pike_string(s) do {				\
+    DO_IF_DEBUG(							\
+     if (s->size_shift > 2)						\
+       Pike_fatal("Unsupported string shift: %d\n", s->size_shift);	\
+     )									\
+     ba_free(string_allocator + s->size_shift, s);			\
    } while(0)
 
 #define free_unlinked_pike_string(s) do { \
@@ -746,7 +732,8 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     verify_shared_strings_tables();
 #endif
   if (len <= SHORT_STRING_THRESHOLD) {
-    t=(struct pike_string *)alloc_short_pike_string0();
+    t=(struct pike_string *)ba_alloc(string_allocator);
+    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED | STRING_IS_SHORT;
   } else {
     t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
@@ -876,17 +863,12 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
     verify_shared_strings_tables();
 #endif
   if (len <= SHORT_STRING_THRESHOLD) {
-    if (!shift) {
-      t = (struct pike_string *)alloc_short_pike_string0();
-    } else if (shift == 1) {
-      t = (struct pike_string *)alloc_short_pike_string1();
 #ifdef PIKE_DEBUG
-    } else if (shift != 2) {
+    if (shift > 2)
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
-    } else {
-      t = (struct pike_string *)alloc_short_pike_string2();
-    }
+    t=(struct pike_string *)ba_alloc(string_allocator+shift);
+    t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;
   } else {
     t=(struct pike_string *)xalloc(((len + 1)<<shift) +
 				   sizeof(struct pike_string_hdr));
@@ -1246,7 +1228,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
     if(((ptrdiff_t)s->next) & 1)
       Pike_fatal("Freeing shared string again, memory corrupt or other bug!\n");
   }
-  if ((s->size_shift < 0) || (s->size_shift > 2)) {
+  if (s->size_shift > 2) {
     Pike_fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",
 	  s->size_shift);
   }
@@ -2316,9 +2298,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  init_short_pike_string0_blocks();
-  init_short_pike_string1_blocks();
-  init_short_pike_string2_blocks();
   for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
   SET_HSIZE(hashprimes_entry);
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
@@ -2394,9 +2373,9 @@ void cleanup_shared_string_table(void)
   num_strings=0;
 
 #ifdef DO_PIKE_CLEANUP
-  free_all_short_pike_string0_blocks();
-  free_all_short_pike_string1_blocks();
-  free_all_short_pike_string2_blocks();
+  ba_destroy(string_allocator+0);
+  ba_destroy(string_allocator+1);
+  ba_destroy(string_allocator+2);
 #endif /* DO_PIKE_CLEANUP */
 }
 
@@ -2415,11 +2394,11 @@ static INLINE size_t memory_in_string (struct pike_string *s)
 void count_memory_in_short_pike_strings(size_t *num, size_t *size)
 {
   size_t num_=0, size_=0;
-  count_memory_in_short_pike_string0s(num, size);
-  count_memory_in_short_pike_string1s(&num_, &size_);
+  ba_count_all(string_allocator, num, size);
+  ba_count_all(string_allocator+1, &num_, &size_);
   *num += num_;
   *size += size_;
-  count_memory_in_short_pike_string2s(&num_, &size_);
+  ba_count_all(string_allocator+2, &num_, &size_);
   *num += num_;
   *size += size_;
 }

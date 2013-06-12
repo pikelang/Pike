@@ -88,12 +88,21 @@ struct piece
    struct piece *next;
 };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->next = NULL;
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p) free_string (p->s);
+#include "block_allocator.h"
 
-BLOCK_ALLOC_FILL_PAGES (piece, 2);
+static struct block_allocator piece_allocator
+    = BA_INIT_PAGES(sizeof(struct piece), 2);
+
+static INLINE struct piece * alloc_piece() {
+    struct piece * p = ba_alloc(&piece_allocator);
+    p->next = NULL;
+    return p;
+}
+
+static INLINE void really_free_piece(struct piece * p) {
+    free_string(p->s);
+    ba_free(&piece_allocator, p);
+}
 
 struct out_piece
 {
@@ -101,12 +110,18 @@ struct out_piece
    struct out_piece *next;
 };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->next = NULL
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p) free_svalue (&p->v)
+static struct block_allocator out_piece_allocator
+    = BA_INIT_PAGES(sizeof(struct out_piece), 2);
 
-BLOCK_ALLOC_FILL_PAGES (out_piece, 2);
+static INLINE struct out_piece * alloc_out_piece() {
+    struct out_piece * p = ba_alloc(&out_piece_allocator);
+    p->next = NULL;
+    return p;
+}
+static INLINE void really_free_out_piece(struct out_piece * p) {
+    free_svalue(&p->v);
+    ba_free(&out_piece_allocator, p);
+}
 
 struct feed_stack
 {
@@ -128,20 +143,21 @@ struct feed_stack
    struct location pos;
 };
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT prev
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->local_feed = NULL;
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p)							\
-  while (p->local_feed)							\
-  {									\
-    struct piece *f=p->local_feed;					\
-    p->local_feed=f->next;						\
-    really_free_piece (f);						\
-  }
-
-BLOCK_ALLOC (feed_stack, 1);
+static struct block_allocator feed_stack_allocator
+    = BA_INIT_PAGES(sizeof(struct feed_stack), 1);
+static INLINE struct feed_stack * alloc_feed_stack() {
+    struct feed_stack * p = ba_alloc(&feed_stack_allocator);
+    p->local_feed = NULL;
+    return p;
+}
+static INLINE void really_free_feed_stack(struct feed_stack * p) {
+    while (p->local_feed) {
+	struct piece *f=p->local_feed;
+	p->local_feed=f->next;
+	really_free_piece (f);
+    }
+    ba_free(&feed_stack_allocator, p);
+}
 
 enum types {
   TYPE_TAG,			/* empty tag callback */
@@ -5310,9 +5326,6 @@ static void html_ignore_comments(INT32 args)
 void init_parser_html(void)
 {
    size_t offset;
-   init_piece_blocks();
-   init_out_piece_blocks();
-   init_feed_stack_blocks();
 
    offset = ADD_STORAGE(struct parser_html_storage);
 
@@ -5491,9 +5504,9 @@ void init_parser_html(void)
 
 void exit_parser_html()
 {
-   free_all_piece_blocks();
-   free_all_out_piece_blocks();
-   free_all_feed_stack_blocks();
+   ba_destroy(&piece_allocator);
+   ba_destroy(&out_piece_allocator);
+   ba_destroy(&feed_stack_allocator);
    exit_calc_chars();
 }
 

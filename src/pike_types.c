@@ -27,7 +27,7 @@
 #include "cyclic.h"
 #include "gc.h"
 #include "pike_compiler.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -277,8 +277,20 @@ static void internal_parse_type(const char **s);
  * a many argument just have a MANY node, and no FUNCTION node.
  *
  */
-#define PIKE_TYPE_CHUNK	128
-BLOCK_ALLOC(pike_type, PIKE_TYPE_CHUNK)
+static struct block_allocator type_allocator = BA_INIT(sizeof(struct pike_type), 128);
+
+PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
+    ba_free(&type_allocator, t);
+}
+
+ATTRIBUTE((malloc))
+PMOD_EXPORT struct pike_type * alloc_pike_type() {
+    return ba_alloc(&type_allocator);
+}
+
+PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s) {
+    ba_count_all(&type_allocator, n, s);
+}
 
 struct pike_type **pike_type_hash = NULL;
 size_t pike_type_hash_size = 0;
@@ -316,7 +328,7 @@ void debug_free_type(struct pike_type *t)
     cdr = t->cdr;
     type = t->type;
 
-    really_free_pike_type((struct pike_type *)debug_malloc_pass(t));
+    really_free_pike_type((struct pike_type*)debug_malloc_pass(t));
 
     /* FIXME: Recursion: Should we use a stack? */
     switch(type) {
@@ -558,7 +570,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   }
 #endif
       
-  debug_malloc_pass(t = alloc_pike_type());
+  debug_malloc_pass(t = ba_alloc(&type_allocator));
 
 #ifdef ATOMIC_SVALUE
   t->ref_type = PIKE_T_TYPE;
@@ -8564,7 +8576,6 @@ void init_types(void)
                                                (PIKE_TYPE_HASH_SIZE+1));
   MEMSET(pike_type_hash, 0, sizeof(struct pike_type *) * (PIKE_TYPE_HASH_SIZE+1));
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
-  init_pike_type_blocks();
 
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string! */
   string0_type_string = CONSTTYPE(tStr0);
@@ -8664,7 +8675,7 @@ void cleanup_pike_type_table(void)
   pike_type_hash_size = 0;
 
 #ifdef DO_PIKE_CLEANUP
-  free_all_pike_type_blocks();
+  ba_destroy(&type_allocator);
 #endif /* DO_PIKE_CLEANUP */
 }
 

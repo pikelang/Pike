@@ -20,7 +20,7 @@
 #include "gc.h"
 #include "stralloc.h"
 #include "pike_security.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include "opcodes.h"
 #include "stuff.h"
 
@@ -42,39 +42,41 @@ static struct mapping *gc_mark_mapping_pos = 0;
 #define MAPPING_DATA_SIZE(HSIZE, KEYPAIRS) \
    PTR_TO_INT(MD_KEYPAIRS(0, HSIZE) + KEYPAIRS)
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(m)	do{						\
-DO_IF_DEBUG(								\
-  if(m->refs) {								\
-    DO_IF_DMALLOC(describe_something(m, T_MAPPING, 0,2,0, NULL));	\
-    Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs); \
-  }									\
-)									\
-									\
-  FREE_PROT(m);								\
-									\
-  unlink_mapping_data(m->data);						\
-									\
-  DOUBLEUNLINK(first_mapping, m);					\
-									\
-  GC_FREE(m);                                                           \
-}while(0)
+static struct block_allocator mapping_allocator = BA_INIT_PAGES(sizeof(struct mapping), 2);
+void count_memory_in_mappings(size_t * num, size_t * size) {
+    struct mapping *m;
+    double datasize = 0.0;
+    ba_count_all(&mapping_allocator, num, size);
+    for(m=first_mapping;m;m=m->next) {
+	datasize+=MAPPING_DATA_SIZE(m->data->hashsize, m->data->num_keypairs) / (double) m->data->refs;
+    }
+    *size += (size_t) datasize;
+}
 
+void really_free_mapping(struct mapping * m) {
+#ifdef PIKE_DEBUG
+  if (m->refs) {
+# ifdef DEBUG_MALLOC
+    describe_something(m, T_MAPPING, 0,2,0, NULL);
+# endif
+    Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs);
+  }
+#endif
+  FREE_PROT(m);
+  unlink_mapping_data(m->data);
+  DOUBLEUNLINK(first_mapping, m);
+  GC_FREE(m);
+  ba_free(&mapping_allocator, m);
+}
 
-#undef COUNT_OTHER
+ATTRIBUTE((malloc))
+static struct mapping * alloc_mapping() {
+    return ba_alloc(&mapping_allocator);
+}
 
-#define COUNT_OTHER() do{				\
-  struct mapping *m;					\
-  double datasize = 0.0;				\
-  for(m=first_mapping;m;m=m->next)			\
-  {							\
-    datasize+=MAPPING_DATA_SIZE(m->data->hashsize, m->data->num_keypairs) / \
-      (double) m->data->refs;						\
-  }							\
-  size += (size_t) datasize;				\
-}while(0)
-
-BLOCK_ALLOC_FILL_PAGES(mapping, 2)
+void free_all_mapping_blocks() {
+    ba_destroy(&mapping_allocator);
+}
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define IF_ELSE_KEYPAIR_LOOP(X, Y)	Y
