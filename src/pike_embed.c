@@ -173,8 +173,8 @@ void init_pike(char **argv, const char *file)
     init_callable_blocks();
     init_gc_rec_frame_blocks();
     init_ba_mixed_frame_blocks();
-    init_catch_context_blocks();
-    init_pike_frame_blocks();
+    /* init_catch_context_blocks(); */
+    /* init_pike_frame_blocks(); */
     init_node_s_blocks();
     init_object_blocks();
 #if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)

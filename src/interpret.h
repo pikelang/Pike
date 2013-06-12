@@ -748,7 +748,6 @@ extern int fast_check_threads_counter;
  * ordinary code. */
 #define FAST_CHECK_THREADS_ON_BRANCH() fast_check_threads_etc (8)
 
-#include "block_alloc_h.h"
 /* Prototypes begin here */
 void push_sp_mark(void);
 ptrdiff_t pop_sp_mark(void);
@@ -763,8 +762,14 @@ void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
-BLOCK_ALLOC (catch_context, 0);
-BLOCK_ALLOC(pike_frame,128);
+struct catch_context *alloc_catch_context(void);
+PMOD_EXPORT void really_free_catch_context( struct catch_context *data );
+PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X );
+void count_memory_in_catch_contexts(size_t*, size_t*);
+void count_memory_in_pike_frames(size_t*, size_t*);
+
+/*BLOCK_ALLOC (catch_context, 0);*/
+/*BLOCK_ALLOC(pike_frame,128);*/
 
 #ifdef PIKE_USE_MACHINE_CODE
 void call_check_threads_etc();
@@ -784,6 +789,7 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
+struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
