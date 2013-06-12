@@ -2497,23 +2497,15 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 void low_return(void)
 {
-  struct svalue *save_sp = Pike_fp->save_sp;
-  int trace_level = Pike_interpreter.trace_level;
-  struct object *o;		/* Got bogus gcc warning here. */
-  int fun;			/* Got bogus gcc warning here. */
-
-  if (trace_level > 1) {
-    o = Pike_fp->current_object;
-    fun = Pike_fp->fun;
-  }
+  struct svalue *save_sp = Pike_fp->save_sp+1;
+  struct object *o = Pike_fp->current_object;
+  int fun = Pike_fp->fun;
 
   if (PIKE_FN_DONE_ENABLED()) {
     /* DTrace leave probe
        arg0: function name
     */
     char *fn = "(unknown)";
-    o = Pike_fp->current_object;
-    fun = Pike_fp->fun;
     if (o && o->prog) {
       struct identifier *id = ID_FROM_INT(o->prog, fun);
       fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
@@ -2529,25 +2521,24 @@ void low_return(void)
    * stick around for a little while more to handle the returned
    * address. We therefore add a ref to the current object so that
    * it'll live through this function. */
-  o = Pike_fp->current_object;
   add_ref (o);
 #endif
 
+  stack_pop_n_elems_keep_top (Pike_sp - save_sp);
   basic_low_return (save_sp);
-  if(save_sp+1 > Pike_sp)
+  /* consider using a flag for immediate destruct instead... */
   {
-    push_int(0);
-  }else{
-    if(save_sp+1 < Pike_sp)
-    {
-      stack_pop_n_elems_keep_top (Pike_sp - save_sp - 1);
-
-      /* consider using a flag for immediate destruct instead... */
-      destruct_objects_to_destruct();
-    }
+      extern struct object *objects_to_destruct;
+      if( objects_to_destruct )
+          destruct_objects_to_destruct();
   }
 
-  if(trace_level>1)
+#ifdef PIKE_DEBUG
+  if(save_sp > Pike_sp)
+      Pike_fatal("Pike function did not leave an return value\n");
+#endif
+
+  if(UNLIKELY(Pike_interpreter.trace_level>1))
     do_trace_func_return (1, o, fun);
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
@@ -2619,7 +2610,7 @@ void unlink_previous_frame(void)
    */
   current->save_sp=prev->save_sp;
   current->save_mark_sp=prev->save_mark_sp;
-  current->flags=prev->flags;
+  current->flags = prev->flags;
 
   /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
@@ -2662,39 +2653,6 @@ void unlink_previous_frame(void)
   current->children_base = Pike_interpreter.accounted_time;
   current->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
 #endif /* PROFILING */
-
-#if 0
-  /* FIXME: This code is questionable, and the Pike_sp
-   *        adjustment ought to modify the mark stack.
-   */
-  {
-    int freespace;
-    /* Move svalues down */
-    freespace=current->locals - current->save_sp;
-    if(freespace > ((Pike_sp - current->locals)<<2) + 32)
-    {
-      assign_svalues(current->save_sp,
-		     current->locals,
-		     Pike_sp - current->locals,
-		     BIT_MIXED);
-
-      current->locals-=freespace;
-      current->expendible-=freespace;
-      pop_n_elems(freespace);
-    }
-
-    /* Move pointers down */
-    freespace=current->mark_sp_base - current->save_mark_sp;
-    if(freespace > ((Pike_mark_sp - current->mark_sp_base)<<2)+32)
-    {
-      MEMMOVE(current->save_mark_sp,
-	      current->mark_sp_base,
-	      sizeof(struct svalue **)*(Pike_mark_sp - current->mark_sp_base));
-      current->mark_sp_base-=freespace;
-      Pike_mark_sp-=freespace;
-    }
-  }
-#endif /* 0 */
 }
 
 static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
