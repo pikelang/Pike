@@ -17,7 +17,6 @@
 #include "svalue.h"
 #include "dmalloc.h"
 #include "rbtree.h"
-#include "block_alloc_h.h"
 
 /* Keep this defined so that code can test which multiset API is in use. */
 #define PIKE_NEW_MULTISETS
@@ -231,6 +230,7 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #else
 
 PMOD_EXPORT void really_free_multiset (struct multiset *l);
+PMOD_EXPORT void count_memory_in_multisets (size_t * n, size_t * s);
 
 #define free_multiset(L) do {						\
     struct multiset *_ms_ = (L);					\
@@ -260,8 +260,6 @@ PMOD_EXPORT union msnode *debug_check_msnode (
 #define access_msnode(L, NODEPOS) OFF2MSNODE ((L)->msd, (NODEPOS))
 
 #endif
-
-BLOCK_ALLOC_FILL_PAGES (multiset, 2);
 
 /* See rbtree.h for a description of the operations.
  *

@@ -2474,6 +2474,67 @@ if test "x$pike_cv_sys_have_crc_intrinsics" = "xyes" ; then
   AC_DEFINE(HAVE_CRC32_INTRINSICS,[], [True if crc32 intrinsics are available])
 fi
 
+# test for several buildins
+
+define(TEST_BUILTIN, [
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_RUN([
+$3
+unsigned long lint;
+int main(int argc, char **argv) {
+	static volatile int foo = 0;
+	foo = (int)$1($2);
+	return 0;
+}
+	],
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    ,
+    AC_MSG_RESULT(no)
+    )
+])
+
+# GCC builtins
+TEST_BUILTIN(__builtin_clz, 23)
+TEST_BUILTIN(__builtin_clzl, 23)
+TEST_BUILTIN(__builtin_clzll, 23)
+TEST_BUILTIN(__builtin_ctz, 23)
+TEST_BUILTIN(__builtin_ctzl, 23)
+TEST_BUILTIN(__builtin_ctzll, 23)
+TEST_BUILTIN(__builtin_bswap32, 23)
+TEST_BUILTIN(__builtin_bswap64, 23)
+TEST_BUILTIN(__builtin_expect, [argc,0])
+# ICC builtins
+TEST_BUILTIN(_bswap, 23)
+TEST_BUILTIN(_bswap64, 23)
+TEST_BUILTIN(_bit_scan_reverse, 23)
+TEST_BUILTIN(_bit_scan_forward, 23)
+# Visual Studio builtins
+TEST_BUILTIN(_BitScanForward, [&lint, 23], [
+    #include <intrin.h>
+])
+TEST_BUILTIN(_BitScanForward64, [&lint, 23], [
+    #include <intrin.h>
+])
+TEST_BUILTIN(_BitScanReverse, [&lint, 23], [
+    #include <intrin.h>
+])
+TEST_BUILTIN(_BitScanReverse64, [&lint, 23], [
+    #include <intrin.h>
+])
+TEST_BUILTIN(_byteswap_ulong, 23, [
+    #include <stdlib.h>
+])
+TEST_BUILTIN(_byteswap_uint64, 23, [
+    #include <stdlib.h>
+])
+# IBM C builtins
+TEST_BUILTIN(__cntlz4, 23)
+TEST_BUILTIN(__cntlz8, 23)
+TEST_BUILTIN(__cnttz4, 23)
+TEST_BUILTIN(__cnttz8, 23)
+
+
 #############################################################################
 
 # Script to translate from POSIX paths to native paths.

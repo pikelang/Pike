@@ -32,6 +32,7 @@
 #include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
+#include "block_allocator.h"
 #include "block_alloc.h"
 #include "pikecode.h"
 #include "pike_compiler.h"
@@ -51,20 +52,30 @@ static size_t add_xstorage(size_t size,
 			   size_t alignment,
 			   ptrdiff_t modulo_orig);
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(P) exit_program_struct( (P) )
+static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct program), 4);
 
-#undef COUNT_OTHER
-#define COUNT_OTHER() do{			\
-  struct program *p;				\
-  for(p=first_program;p;p=p->next)		\
-  {						\
-    size+=p->total_size - sizeof (struct program); \
-  }						\
-}while(0)
+ATTRIBUTE((malloc))
+struct program * alloc_program() {
+    return ba_alloc(&program_allocator);
+}
 
-BLOCK_ALLOC_FILL_PAGES(program, 4)
+void really_free_program(struct program * p) {
+    exit_program_struct(p);
+    ba_free(&program_allocator, p);
+}
 
+void count_memory_in_programs(size_t *num, size_t *_size) {
+    size_t size;
+    struct program *p;
+    ba_count_all(&program_allocator, num, &size);
+    for(p=first_program;p;p=p->next) {
+	size+=p->total_size - sizeof (struct program);
+    }
+}
+
+void free_all_program_blocks() {
+    ba_destroy(&program_allocator);
+}
 
 /* #define COMPILER_DEBUG */
 /* #define PROGRAM_BUILD_DEBUG */
@@ -7970,11 +7981,6 @@ struct supporter_marker
   int level, verified;
 };
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(P)
-#undef COUNT_OTHER
-#define COUNT_OTHER()
-
 #undef INIT_BLOCK
 #define INIT_BLOCK(X) do { (X)->level = (X)->verified = 0; }while(0)
 PTR_HASH_ALLOC(supporter_marker, 128);
@@ -10607,7 +10613,6 @@ void init_program(void)
   struct svalue key;
   struct svalue val;
   struct svalue id;
-  init_program_blocks();
 
   MAKE_CONST_STRING(this_function_string,"this_function");
   MAKE_CONST_STRING(this_program_string,"this_program");

@@ -2998,16 +2998,6 @@ static void initialize_dmalloc(void)
     mt_init(&debug_malloc_mutex);
 #endif
 
-    /* NOTE: th_atfork() may be a simulated function, which
-     *       utilizes callbacks. We thus need to initialize
-     *       the callback blocks before we perform the call
-     *       to th_atfork().
-     */
-    {
-      extern void init_callback_blocks(void);
-      init_callback_blocks();
-    }
-
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
 #ifdef DMALLOC_USING_DLOPEN

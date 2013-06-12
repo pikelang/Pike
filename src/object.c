@@ -33,6 +33,7 @@
 #include "operators.h"
 
 #include "block_alloc.h"
+#include "block_allocator.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -83,22 +84,35 @@ PMOD_EXPORT struct object *first_object;
 struct object *gc_internal_object = 0;
 static struct object *gc_mark_object_pos = 0;
 
-#undef COUNT_OTHER
+static struct block_allocator object_allocator = BA_INIT_PAGES(sizeof(struct object), 2);
 
-#define COUNT_OTHER() do{			\
-  struct object *o;                             \
-  for(o=first_object;o;o=o->next)		\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-						\
-  for(o=objects_to_destruct;o;o=o->next)	\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-}while(0)
-BLOCK_ALLOC_FILL_PAGES(object, 2)
+void count_memory_in_objects(size_t *_num, size_t *_size) {
+    size_t size;
+    struct object *o;
 
-#undef COUNT_OTHER
-#define COUNT_OTHER()
+    ba_count_all(&object_allocator, _num, &size);
+
+    for(o=first_object;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    for(o=objects_to_destruct;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    *_size = size;
+}
+
+void really_free_object(struct object * o) {
+    ba_free(&object_allocator, o);
+}
+
+ATTRIBUTE((malloc))
+struct object * alloc_object() {
+    return ba_alloc(&object_allocator);
+}
+
+void free_all_object_blocks() {
+    ba_destroy(&object_allocator);
+}
 
 PMOD_EXPORT struct object *low_clone(struct program *p)
 {

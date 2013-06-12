@@ -22,7 +22,7 @@
 #include "operators.h"
 #include "pike_error.h"
 #include "bignum.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 
 #define sp Pike_sp
@@ -660,15 +660,20 @@ PIKECLASS Simple
     struct pike_string *entity;
   };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {			\
-    (X)->next = NULL;				\
-    (X)->callbackinfo = NULL;			\
-    (X)->to_free = NULL;			\
-    (X)->entity = NULL;				\
-  } while(0)
+  static struct block_allocator xmlinput_allocator = BA_INIT(sizeof(struct xmlinput), 64);
 
-  BLOCK_ALLOC(xmlinput, 64)
+  static struct xmlinput * alloc_xmlinput() {
+    struct xmlinput * i = ba_alloc(&xmlinput_allocator);
+    i->next = NULL;
+    i->callbackinfo = NULL;
+    i->to_free = NULL;
+    i->entity = NULL;
+    return i;
+  }
+
+  static void really_free_xmlinput(struct xmlinput * i) {
+    ba_free(&xmlinput_allocator, i);
+  }
 
   struct xmlinput *new_string_xmlinput(struct pike_string *s)
   {
@@ -3482,7 +3487,6 @@ PIKEFUN string autoconvert(string s)
 
 void init_parser_xml(void)
 {
-  init_xmlinput_blocks();
   push_text("location");
   location_string_svalue=sp[-1];
   sp--;
@@ -3506,6 +3510,6 @@ void exit_parser_xml(void)
 {
   EXIT;
 
-  free_all_xmlinput_blocks();
+  ba_destroy(&xmlinput_allocator);
   free_svalue(&location_string_svalue);
 }
