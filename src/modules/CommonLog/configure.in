@@ -2,7 +2,6 @@
 # configure.in for CommonLog.
 #
 
-AC_REVISION("$Id$")
 AC_INIT(clf.c)
 AC_CONFIG_HEADER(clf_machine.h)
 
