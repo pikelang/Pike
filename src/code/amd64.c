@@ -1933,21 +1933,26 @@ void ins_f_byte(unsigned int b)
     /* Actually return */
     flush_dirty_regs();
     amd64_return_from_function();
-
+    /* */
     LABEL_A;
-    amd64_call_c_opcode(addr,flags);
-#if 0
-    /* Can this happen?
+    /* We should jump to the given address. */
+    mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), REG_RAX );
+    and_reg_imm( REG_RAX, PIKE_FRAME_RETURN_POP );
+    jnz( &label_C );
+    amd64_call_c_function( low_return );
+    jmp( &label_D );
 
-       It seems to work without it, and from the code it looks like it
-       should never happen, so..
-    */
-    cmp_reg_imm(REG_RAX, -1);
-    je(&label_B);
-#endif
-    jmp_reg(REG_RAX);
+    LABEL_C;
+    amd64_call_c_function( low_return_pop );
+
+    LABEL_D;
+    fp_reg = -1;
+    amd64_load_fp_reg();
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, return_addr), REG_RAX );
+    jmp_reg( REG_RAX );
     }
     return;
+
   case F_CLEAR_STRING_SUBTYPE:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
@@ -3024,6 +3029,19 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     amd64_free_svalue(ARG1_REG, 0);
     mov_imm_mem(c, REG_RBX, OFFSETOF(svalue, u.integer));
     mov_imm_mem32(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
+    return;
+
+  case F_LOCAL_2_GLOBAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG3_REG );
+    add_reg_imm( ARG3_REG, c*sizeof(struct svalue) );
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),    ARG1_REG);
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame,context),            ARG2_REG);
+    mov_mem16_reg(ARG2_REG, OFFSETOF(inherit, identifier_level), ARG2_REG);
+    add_reg_imm( ARG2_REG, b );
+    amd64_call_c_function( object_low_set_index );
     return;
 
   case F_LOCAL_2_LOCAL:
