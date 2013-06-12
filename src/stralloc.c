@@ -2543,7 +2543,7 @@ PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
   if (str->refs == 1 && str->len > SHORT_STRING_THRESHOLD) {
     /* Unlink the string and use it as buffer directly. */
     unlink_pike_string (str);
-    str->flags = 0;
+    str->flags = STRING_NOT_SHARED;
     s->s = str;
     s->malloced = str->len;
     s->known_shift = str->size_shift;
