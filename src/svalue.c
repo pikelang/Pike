@@ -523,18 +523,10 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   return q ^ (q >> 7) ^ (q >> 4);
 }
 
-PMOD_EXPORT int svalue_is_true(const struct svalue *s)
+int complex_svalue_is_true( const struct svalue *s )
 {
-  check_svalue_type (s);
-  check_refs(s);
-
-  switch(TYPEOF(*s))
+  if(TYPEOF(*s) == T_FUNCTION)
   {
-  case T_INT:
-    if(s->u.integer) return 1;
-    return 0;
-
-  case T_FUNCTION:
     if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
@@ -558,33 +550,45 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 #endif
     }
     return 1;
-
-  case T_OBJECT:
-    {
+  }
+  {
       struct program *p;
       int fun;
 
       if(!(p = s->u.object->prog)) return 0;
 
-      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) != -1)
+      if((fun = FIND_LFUN(p, LFUN_NOT)) == -1)
+          return 1;
+
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) == -1)
+          return 1;
+
+      apply_low(s->u.object,
+                fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
+      if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
       {
-	apply_low(s->u.object,
-		  fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
-	if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
-	{
 	  pop_stack();
 	  return 1;
-	} else {
+      } else {
 	  pop_stack();
 	  return 0;
-	}
       }
-    }
-    /* FALL_THROUGH */
-  default:
-    return 1;
   }
-    
+  return 1;
+}
+
+PMOD_EXPORT int svalue_is_true(const struct svalue *s)
+{
+  check_svalue_type (s);
+  check_refs(s);
+  switch(TYPEOF(*s))
+  {
+  case T_FUNCTION:
+  case T_OBJECT:
+      return complex_svalue_is_true( s );
+  case T_INT: if(!s->u.integer) return 0;
+  }
+  return 1;
 }
 
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
@@ -970,6 +974,8 @@ PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b)
   return low_is_equal(a,b,0);
 }
 
+static int complex_is_lt( const struct svalue *a, const struct svalue *b );
+
 PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 {
   check_type(TYPEOF(*a));
@@ -984,7 +990,11 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
      */
     return a->u.integer < b->u.integer;
   }
+  return complex_is_lt( a, b );
+}
 
+static int complex_is_lt( const struct svalue *a, const struct svalue *b )
+{
   safe_check_destructed(a);
   safe_check_destructed(b);
 

@@ -360,7 +360,7 @@ extern PMOD_EXPORT const  struct svalue svalue_undefined,
 /* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
  * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
  * `! functions will be propagated correctly then. */
-#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
 #define SAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
 #define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
@@ -774,6 +774,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 const union anything *from,
 			 TYPE_T type);
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
+PMOD_EXPORT int complex_svalue_is_true(const struct svalue *s); /* only handles object + function */
 PMOD_EXPORT int svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);
