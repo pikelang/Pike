@@ -2526,10 +2526,11 @@ void low_return(void)
   add_ref (o);
 #endif
 
-  stack_pop_n_elems_keep_top (Pike_sp - save_sp);
   basic_low_return (save_sp);
-  /* consider using a flag for immediate destruct instead... */
+
+  stack_pop_n_elems_keep_top (Pike_sp - save_sp);
   {
+      /* consider using a flag for immediate destruct instead... */
       extern struct object *objects_to_destruct;
       if( objects_to_destruct )
           destruct_objects_to_destruct();
@@ -2573,12 +2574,9 @@ void low_return_pop(void)
 
   basic_low_return (save_sp);
 
-  if(save_sp < Pike_sp)
-  {
-    pop_n_elems(Pike_sp-save_sp);
-    /* consider using a flag for immediate destruct instead... */
-    destruct_objects_to_destruct();
-  }
+  pop_n_elems(Pike_sp-save_sp);
+  /* consider using a flag for immediate destruct instead... */
+  destruct_objects_to_destruct();
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   free_object (o);
