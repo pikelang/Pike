@@ -4452,7 +4452,7 @@ void image_colortable_image(INT32 args)
    {
       dest->r=flat.entries[i].color.r;
       dest->g=flat.entries[i].color.g;
-      dest->g=flat.entries[i].color.b;
+      dest->b=flat.entries[i].color.b;
       dest++;
    }
 
