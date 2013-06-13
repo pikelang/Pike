@@ -1770,10 +1770,15 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
   dynamic_buffer save_buf;
   dynbuf_string str;
+  SIZE_T off = 0;
   init_buf(&save_buf);
   describe_svalue (s, 0, NULL);
   str = complex_free_buf(&save_buf);
-  fwrite (str.str, str.len, 1, out);
+  while (off < str.len) {
+    SIZE_T num = fwrite (str.str + off, 1, str.len - off, out);
+    if (num) off += num;
+    else break;
+  }
   free (str.str);
 }
 
