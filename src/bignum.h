@@ -5,11 +5,11 @@
 || $Id$
 */
 
-#include "global.h"
-#include "pike_int_types.h"
-
 #ifndef BIGNUM_H
 #define BIGNUM_H
+
+#include "global.h"
+#include "pike_int_types.h"
 
 /* Note: These functions assume some properties of the CPU. */
 
