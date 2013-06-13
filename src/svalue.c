@@ -525,11 +525,13 @@ int complex_svalue_is_true( const struct svalue *s )
 
       if(!(p = s->u.object->prog)) return 0;
 
-      if((fun = FIND_LFUN(p, LFUN_NOT)) == -1)
-          return 1;
-
-      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) == -1)
-          return 1;
+      if (SUBTYPEOF(*s)) {
+	if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) == -1)
+	  return 1;
+      } else {
+	if((fun = FIND_LFUN(p, LFUN_NOT)) == -1)
+	  return 1;
+      }
 
       apply_low(s->u.object,
                 fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
