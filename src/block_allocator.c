@@ -89,9 +89,13 @@ PMOD_EXPORT size_t ba_count(const struct block_allocator * a) {
 }
 
 PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, size_t * size) {
-    size_t n = (a->l.blocks << (a->size-1)) - a->l.blocks;
-    *num = n;
-    *size = a->l.block_size * n;
+    if (a->size) {
+	size_t n = (a->l.blocks << (a->size-1)) - a->l.blocks;
+	*num = n;
+	*size = a->l.block_size * n;
+    } else {
+	*num = *size = 0;
+    }
 }
 
 static void ba_low_alloc(struct block_allocator * a) {
