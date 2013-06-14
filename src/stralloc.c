@@ -26,21 +26,10 @@
 #include <ctype.h>
 #include <math.h>
 
-/* #define STRALLOC_USE_PRIMES */
-
-#ifdef STRALLOC_USE_PRIMES 
-
-#define SET_HSIZE(X) htable_size=hashprimes[(X)]
-#define HMODULO(X) ((X) % htable_size)
-
-#else
-
 #define SET_HSIZE(X) htable_mask=(htable_size=(1<<(X)))-1
 #define HMODULO(X) ((X) & (htable_mask))
 
 static unsigned INT32 htable_mask;
-
-#endif
 
 #if (SIZEOF_LONG == 4) && defined(_LP64)
 /* Kludge for gcc and the system header files not using the same model... */
@@ -83,8 +72,7 @@ static PIKE_MUTEX_T *bucket_locks;
 #define UNLOCK_BUCKET(HVAL)
 #endif /* PIKE_RUN_UNLOCKED */
 
-#define BEGIN_HASH_SIZE 997
-#define MAX_AVG_LINK_LENGTH 2
+#define BEGIN_HASH_SIZE 1024
 
 /* Experimental dynamic hash length */
 #ifndef HASH_PREFIX
@@ -324,17 +312,14 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
   if(pos == s->len && value)
     Pike_fatal("string zero termination foul!\n");
 #endif
-  switch(s->size_shift)
-  {
-    case 0: STR0(s)[pos]=value; break;
-    case 1: STR1(s)[pos]=value; break;
-    case 2: STR2(s)[pos]=value; break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size!\n");
-#endif
-  }
   s->flags |= STRING_NOT_HASHED;
+
+  if(!s->size_shift)
+    STR0(s)[pos]=value;
+  else if(s->size_shift == 1)
+    STR1(s)[pos]=value;
+  else 
+    STR2(s)[pos]=value;
 }
 
 #ifdef PIKE_DEBUG
@@ -486,12 +471,13 @@ static int improper_zero_termination(struct pike_string *s)
 /* Find a string in the shared string table.
  * This assumes that the string is minimized!!!! 
  */
-static INLINE struct pike_string *internal_findstring(const char *s,
+static struct pike_string *internal_findstring(const char *s,
 						      ptrdiff_t len,
 						      int size_shift,
 						      size_t hval)
 {
-  struct pike_string *curr,**prev, **base;
+  struct pike_string *curr;
+//,**prev, **base;
   unsigned int depth=0;
 #ifndef HASH_PREFIX
   unsigned int prefix_depth=0;
@@ -499,7 +485,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
   size_t h;
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
-  for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
+  for(curr = base_table[h]; curr; curr = curr->next)
   {
 #ifdef PIKE_DEBUG
     if(curr->refs<1)
@@ -511,15 +497,15 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #endif
     debug_malloc_touch(curr);
 
-    if (hval == curr->hval &&
-	len==curr->len &&
-	size_shift==curr->size_shift &&
-	( curr->str == s ||
-	  !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
+    if ( len == curr->len &&
+        size_shift == curr->size_shift &&
+         hval == curr->hval &&
+        ( curr->str == s ||
+          !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
     {
-      *prev = curr->next;
-      curr->next = *base;
-      *base = curr;
+      /* *prev = curr->next; */
+      /* curr->next = *base; */
+      /* *base = curr; */
       UNLOCK_BUCKET(hval);
       return curr;		/* pointer to string */
     }
@@ -669,52 +655,19 @@ struct pike_string_hdr {
 /* Allocate some fixed string sizes with BLOCK_ALLOC. */
 
 #define SHORT_STRING_BLOCK	256
-#define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
+
+#define SHORT_STRING_THRESHOLD 15
 
 struct short_pike_string0 {
   PIKE_STRING_CONTENTS;
   p_wchar0 str[SHORT_STRING_THRESHOLD+1];
 };
 
-struct short_pike_string1 {
-  PIKE_STRING_CONTENTS;
-  p_wchar1 str[SHORT_STRING_THRESHOLD+1];
-};
-
-struct short_pike_string2 {
-  PIKE_STRING_CONTENTS;
-  p_wchar2 str[SHORT_STRING_THRESHOLD+1];
-};
-
-static struct block_allocator string_allocator[] = {
-    BA_INIT(sizeof(struct short_pike_string0), SHORT_STRING_BLOCK),
-    BA_INIT(sizeof(struct short_pike_string1), SHORT_STRING_BLOCK),
-    BA_INIT(sizeof(struct short_pike_string2), SHORT_STRING_BLOCK)
-};
-
-static struct pike_string * alloc_short_pike_string(unsigned int shift) {
-    struct pike_string * s = (struct pike_string *)ba_alloc(string_allocator+shift);
-
-#ifdef ATOMIC_SVALUE
-    s->ref_type = T_STRING;
-#endif
-    s->refs = 0;
-    add_ref(s);	/* For DMALLOC */
-    s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;
-    return s;
-}
-
-#define really_free_short_pike_string(s) do {				\
-    DO_IF_DEBUG(							\
-     if (s->size_shift > 2)						\
-       Pike_fatal("Unsupported string shift: %d\n", s->size_shift);	\
-     )									\
-     ba_free(string_allocator + s->size_shift, s);			\
-   } while(0)
+static struct block_allocator string_allocator = BA_INIT(sizeof(struct short_pike_string0), SHORT_STRING_BLOCK);
 
 #define free_unlinked_pike_string(s) do { \
-    if (s->len <= SHORT_STRING_THRESHOLD) { \
-      really_free_short_pike_string(s); \
+    if (s->flags & STRING_IS_SHORT) { \
+      ba_free(&string_allocator, s);  \
     } else { \
       debug_free((char *)s, DMALLOC_LOCATION(), 1); \
     } \
@@ -731,10 +684,12 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  if (len <= SHORT_STRING_THRESHOLD) {
-    t=(struct pike_string *)ba_alloc(string_allocator);
+  if (len <= SHORT_STRING_THRESHOLD)
+  {
+    t=(struct pike_string *)ba_alloc(&string_allocator);
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED | STRING_IS_SHORT;
-  } else {
+  } else
+  {
     t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
@@ -774,26 +729,26 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   num_strings++;
   UNLOCK_BUCKET(hval);
 
-  if(num_strings > MAX_AVG_LINK_LENGTH * htable_size) {
+  if(num_strings > htable_size) {
     stralloc_rehash();
   }
 
 #ifndef HASH_PREFIX
   /* These heuristics might require tuning! /Hubbe */
-  if((need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4) ||
-     (need_new_hashkey_depth > MAX_AVG_LINK_LENGTH * 128))
+  if((need_more_hash_prefix_depth > 4) ||
+     (need_new_hashkey_depth > 128))
   {
     /* Changed heuristic 2005-01-17:
      *
      *   Increase HASH_PREFIX if there's some bucket containing
-     *   more than MAX_AVG_LINK_LENGTH * 4 strings that are longer
+     *   more than 4 strings that are longer
      *   than HASH_PREFIX.
      * /grubba
      *
      * Changed heuristic 2011-12-30:
      *
      *   Generate a new hash key if there's some bucket containing
-     *   more than MAX_AVG_LINK_LENGTH * 16 strings. This ought to
+     *   more than  16 strings. This ought to
      *   suffice to alleviate the #hashdos vulnerability.
      *
      * /grubba
@@ -805,7 +760,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 
 #ifdef PIKE_RUN_UNLOCKED
     mt_lock(bucket_locks);
-    if(need_more_hash_prefix_depth <= MAX_AVG_LINK_DEPTH * 4)
+    if(need_more_hash_prefix_depth <= 4)
     {
       /* Someone got here before us */
       mt_lock(bucket_locks);
@@ -817,7 +772,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     /* A simple mixing function. */
     hashkey ^= (hashkey << 5) | (current_time.tv_sec ^ current_time.tv_usec);
 
-    if (need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4) {
+    if (need_more_hash_prefix_depth > 4) {
       HASH_PREFIX=HASH_PREFIX*2;
 #if 0
       fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
@@ -862,12 +817,12 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  if (len <= SHORT_STRING_THRESHOLD) {
+  if ((len<<shift) <= SHORT_STRING_THRESHOLD) {
 #ifdef PIKE_DEBUG
     if (shift > 2)
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
-    t=(struct pike_string *)ba_alloc(string_allocator+shift);
+    t=(struct pike_string *)ba_alloc(&string_allocator);
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;
   } else {
     t=(struct pike_string *)xalloc(((len + 1)<<shift) +
@@ -1806,22 +1761,26 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
 {
   struct pike_string *r = NULL;
 
-  if (a->len <= SHORT_STRING_THRESHOLD) {
-    if (size <= SHORT_STRING_THRESHOLD) {
+  if (a->flags & STRING_IS_SHORT )
+  {
+    if (size <= SHORT_STRING_THRESHOLD/(1<<a->size_shift)) {
       /* There's already space enough. */
       a->len = size;
       low_set_index(a, size, 0);
       return a;
     }
-  } else if (size > SHORT_STRING_THRESHOLD) {
+  } else {
     r=(struct pike_string *)realloc((char *)a,
 				    sizeof(struct pike_string_hdr)+
 				    ((size+1)<<a->size_shift));
   }
-	
+
   if(!r)
   {
     r=begin_wide_shared_string(size, a->size_shift);
+    r->flags |= a->flags & ~15;
+    r->min = a->min;
+    r->max = a->max;
     if (a->len <= size) {
       MEMCPY(r->str, a->str, a->len<<a->size_shift);
     } else {
@@ -1843,11 +1802,13 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
   if(a->refs==1)
   {
     unlink_pike_string(a);
-    CLEAR_STRING_CHECKED(a);
     return realloc_unlinked_string(a, size);
   }else{
     r=begin_wide_shared_string(size,a->size_shift);
     MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    r->flags |= a->flags & ~15;
+    r->min = a->min;
+    r->max = a->max;
     free_string(a);
     return r;
   }
@@ -1860,6 +1821,9 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 
   r=begin_wide_shared_string(size,shift);
   pike_string_cpy(MKPCHARP_STR(r),a);
+  r->flags |= (a->flags & ~15);
+  r->min = a->min;
+  r->max = a->max;
   free_string(a);
   return r;
 }
@@ -2088,11 +2052,8 @@ PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *
   ptrdiff_t alen = a->len;
   if(a->size_shift == b->size_shift)
   {
-    unsigned char aflags = a->flags;
-    unsigned char amin = a->min;
-    unsigned char amax = a->max;
     a = realloc_shared_string(a, alen + b->len);
-    set_flags_for_add( a, aflags, amin, amax, b );
+    update_flags_for_add( a, b );
     MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     a->flags |= STRING_NOT_HASHED;
@@ -2381,26 +2342,15 @@ void cleanup_shared_string_table(void)
 
 static INLINE size_t memory_in_string (struct pike_string *s)
 {
-  if (s->len <= SHORT_STRING_THRESHOLD)
-    switch (s->size_shift) {
-      case 0: return sizeof (struct short_pike_string0);
-      case 1: return sizeof (struct short_pike_string1);
-      default: return sizeof (struct short_pike_string2);
-    }
+  if (s->flags & STRING_IS_SHORT )
+    return sizeof (struct short_pike_string0);
   else
     return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
 }
 
 void count_memory_in_short_pike_strings(size_t *num, size_t *size)
 {
-  size_t num_=0, size_=0;
-  ba_count_all(string_allocator, num, size);
-  ba_count_all(string_allocator+1, &num_, &size_);
-  *num += num_;
-  *size += size_;
-  ba_count_all(string_allocator+2, &num_, &size_);
-  *num += num_;
-  *size += size_;
+  ba_count_all(&string_allocator, num, size);
 }
 
 void count_memory_in_strings(size_t *num, size_t *size)
