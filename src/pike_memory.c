@@ -366,9 +366,8 @@ __attribute__((target("sse4,arch=core2")))
 
         /* .. all full integers .. */
         while( p<e ) {
-	    CRC32SI(h, p++ );
-	    h ^= key;
-	}
+            CRC32SI(h, p++ );
+        }
 
         len &= 3;
 
@@ -387,7 +386,7 @@ __attribute__((target("sse4,arch=core2")))
            Specifically, it will not read enough (up to 3 bytes too
            little) in the first loop.
 
-           Also, if nbytes < 8 the end CRC32SI will read too much.
+           Also, if nbytes < 32 the unroll assumptions do not hold
 
            This could easily be fixed, but all calls to hashmem tends
            to use either power-of-two values or the length of the
@@ -395,14 +394,40 @@ __attribute__((target("sse4,arch=core2")))
         */
         if( nbytes & 3 )
             Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
-        if( nbytes < 8 )
-            Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
+        if( nbytes < 32 )
+            Pike_fatal("do_hash_ia32_crc32: nbytes is less than 32.\n");
 #endif
+        while( p+7 < e )
+        {
+            CRC32SI(h,&p[0]);
+            CRC32SI(h,&p[1]);
+            CRC32SI(h,&p[2]);
+            CRC32SI(h,&p[3]);
+            CRC32SI(h,&p[4]);
+            CRC32SI(h,&p[5]);
+            CRC32SI(h,&p[6]);
+            CRC32SI(h,&p[7]);
+            p+=8;
+        }
+#if 0
+        while( p+3 < e )
+        {
+            CRC32SI(h,&p[0]);
+            CRC32SI(h,&p[1]);
+            CRC32SI(h,&p[2]);
+            CRC32SI(h,&p[3]);
+            p+=4;
+        }
+        while( p+1 < e )
+        {
+            CRC32SI(h,&p[0]);
+            CRC32SI(h,&p[1]);
+            p+=2;
+        }
         while( p<e ) {
             CRC32SI(h,p++);
-	    h ^= key;
-	}
-
+        }
+#endif
         /* include 8 bytes from the end. Note that this might be a
          * duplicate of the previous bytes.
          *
