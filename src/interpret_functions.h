@@ -509,24 +509,44 @@ OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
   SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 });
 
-OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,{
+OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
+{
   struct svalue *dst = Pike_fp->locals+arg1;
   struct svalue *src = Pike_fp->locals+arg2;
-  if( dst->type == PIKE_T_INT
-      && src->type == PIKE_T_INT
+  if( (dst->type|src->type) == PIKE_T_INT
       DO_IF_BIGNUM(
         &&(!INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer))))
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
     dst->u.integer += src->u.integer;
   }
+  else if( dst->type == src->type && dst->type == PIKE_T_STRING )
+  {
+      struct pike_string *srcs = src->u.string;
+      struct pike_string *dsts = dst->u.string;
+      if( dsts->len && srcs->len )
+      {
+          size_t tmp = dsts->len;
+          dsts = new_realloc_shared_string( dsts, tmp+srcs->len, MAX(srcs->size_shift,dsts->size_shift) );
+          update_flags_for_add( dsts, srcs );
+          pike_string_cpy(MKPCHARP_STR_OFF(dsts,tmp), srcs);
+          dst->u.string = low_end_shared_string( dsts );
+      }
+      else if( !dsts->len )
+      {
+          free_string( dsts );
+          dst->u.string = srcs;
+          srcs->refs++;
+          return;
+      }
+  }
   else
   {
-    push_svalue( dst );
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_svalue( src );
     f_add(2);
-    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
-    pop_stack();
+    *dst = *--Pike_sp;
   }
 });
 
@@ -541,11 +561,11 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   }
   else
   {
-    push_svalue( dst );
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int( arg2 );
     f_add(2);
-    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
-    pop_stack();
+    *dst = *--Pike_sp;
   }
 });
 
@@ -561,80 +581,87 @@ OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
   }
   else
   {
-    push_svalue( dst );
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int( arg2 );
     f_add(2);
-    assign_svalue( Pike_fp->locals+arg1,Pike_sp-1);
+    *dst = *--Pike_sp;
   }
 });
 
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
       DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
       )
       )
   {
-    push_int(++(Pike_fp->locals[arg1].u.integer));
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    push_int(++dst->u.integer);
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals+arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     f_add(2);
-    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
+    assign_svalue(dst, Pike_sp-1);
   }
 });
 
 OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
-  push_svalue( Pike_fp->locals + arg1);
-
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
       DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
       )
       )
   {
-    Pike_fp->locals[arg1].u.integer++;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    push_int( dst->u.integer++ );
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals + arg1);
+    push_svalue( dst );
+    push_svalue( dst );
     push_int(1);
     f_add(2);
-    stack_pop_to(Pike_fp->locals + arg1);
+    stack_pop_to(dst);
   }
 });
 
 OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
       DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
       )
       )
   {
-    Pike_fp->locals[arg1].u.integer++;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    dst->u.integer++;
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue( Pike_fp->locals + arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     f_add(2);
-    stack_pop_to(Pike_fp->locals + arg1);
+    *dst = *--Pike_sp;
   }
 });
 
 OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
       DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+      && (!INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1))
       )
       )
   {
-    push_int(--(Pike_fp->locals[arg1].u.integer));
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    push_int(--(dst->u.integer));
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals+arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     o_subtract();
-    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
+    assign_svalue(dst,Pike_sp-1);
   }
 });
 
@@ -658,19 +685,21 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
 });
 
 OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
       DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+      && (!INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1))
       )
       )
   {
-    Pike_fp->locals[arg1].u.integer--;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    --dst->u.integer;
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals + arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     o_subtract();
-    stack_pop_to(Pike_fp->locals + arg1);
+    *dst = *--Pike_sp;
   }
 });
 
