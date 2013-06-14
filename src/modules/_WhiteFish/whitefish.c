@@ -451,9 +451,10 @@ static void f_do_query_phrase( INT32 args )
 
 static void f_do_query_and( INT32 args )
 /*! @decl ResultSet do_query_and( array(string) words,          @
- *!                          array(int) field_coefficients,       @
- *!                          array(int) proximity_coefficients,   @
- *!                          function(string,int,int:string) blobfeeder)
+ *!                               array(int) field_coefficients,       @
+ *!                               array(int) proximity_coefficients,   @
+ *!                               int cutoff,			       @
+ *!                               function(string,int,int:string) blobfeeder)
  *! @param words
  *!       
  *! Arrays of word ids. Note that the order is significant for the
@@ -553,6 +554,7 @@ static void f_do_query_or( INT32 args )
 /*! @decl ResultSet do_query_or( array(string) words,          @
  *!                              array(int) field_coefficients,       @
  *!                              array(int) proximity_coefficients,   @
+ *!                              int cutoff,			      @
  *!                              function(string,int,int:string) blobfeeder)
  *! @param words
  *!       
