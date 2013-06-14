@@ -733,6 +733,7 @@ static array(array(int|string)) split_blobs(int blob_size, string blob,
     +-----------+----------+---------+---------+---------+
   */
   
+  sscanf(blob, "%4c", int first_doc_id);
   int ptr = blob_size;
   int start = 0, end=0;
   array blobs = ({});
@@ -746,10 +747,9 @@ static array(array(int|string)) split_blobs(int blob_size, string blob,
       blob_size += l;
     }
     string me = blob[start..end-1];
-    if( sizeof( blobs ) )
-      blobs += ({ ({array_sscanf(me,"%4c")[0],me}) });
-    else
-      blobs += ({ ({0,me}) });
+    if (sizeof(me))
+      sscanf(me, "%4c", first_doc_id);
+    blobs += ({ ({ first_doc_id, me }) });
     start = end;
     blob_size=0;
   }
