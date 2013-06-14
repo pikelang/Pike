@@ -160,10 +160,22 @@ struct program *file_ref_program;
  *! @[Fd].
  *!
  *! Used by @[Stdio.File].
+ *!
+ *! @note
+ *!   This is not the class you want. Use @[Stdio.File] and friends instead.
+ *!
+ *! @seealso
+ *!   @[Stdio.File], @[Stdio.FILE], @[_Stdio.Fd]
  */
 
 /*! @decl Fd _fd
  *!  Object to which called functions are relayed.
+ */
+
+/*! @decl inherit Fd
+ *!
+ *! Fake inherit to propagate the documentation
+ *! from @[_Stdio.Fd].
  */
 
 /*! @endclass
@@ -171,7 +183,13 @@ struct program *file_ref_program;
 
 /*! @class Fd
  *!
- *! Low level I/O operations. Use @[Stdio.File] instead.
+ *! Low level I/O operations.
+ *!
+ *! @note
+ *!   This is not the class you want. Use @[Stdio.File] and friends instead.
+ *!
+ *! @seealso
+ *!   @[Stdio.File], @[Stdio.FILE], @[_Stdio.Fd_ref]
  */
 
 /*! @decl Fd fd_factory()
@@ -220,7 +238,7 @@ static void fd_backtick__fd(INT32 args)
  * only are documented in Fd then the doc has to be duplicated in at
  * least Fd_ref. /mast */
 
-/*! @class File
+/*! @class Fd
  */
 
 static struct my_file *get_file_storage(struct object *o)
