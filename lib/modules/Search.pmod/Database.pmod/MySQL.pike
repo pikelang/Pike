@@ -801,8 +801,11 @@ static void store_to_db( void|string mergedfilename )
 
     q++;
 
-    db->query("UNLOCK TABLES");
-    db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
+    //  Don't unlock and lock every word to reduce overhead
+    if (q % 32 == 0) {
+      db->query("UNLOCK TABLES");
+      db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
+    }
     
     //  We only care about the most recent blob for the given word so look
     //  for the highest document ID.
