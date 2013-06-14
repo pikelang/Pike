@@ -34,7 +34,9 @@ string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
 
 void perform()
 {
+    Pike.gc_parameters( (["enabled":0]) );
     Tree longlived = Tree( 0,0,k );
-    n -= Tree(0,0,k)->check() * 2->pow(k);
+    for( int i=0; i<3; i++ )
+        n -= Tree(0,0,k)->check() * 2->pow(k);
     n -= longlived->check() * 2->pow(k);
 }
