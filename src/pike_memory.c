@@ -356,7 +356,7 @@ __attribute__((target("sse4,arch=core2")))
   static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					       size_t nbytes, size_t key )
 {
-    unsigned int h = len;
+    unsigned int h = len ^ key;
     const unsigned int *p = s;
     if( nbytes >= len )
     {
@@ -388,7 +388,7 @@ __attribute__((target("sse4,arch=core2")))
 
            Also, if nbytes < 32 the unroll assumptions do not hold
 
-           This could easily be fixed, but all calls to hashmem tends
+           This could easily be fixed, but all calls to hashmem tend
            to use either power-of-two values or the length of the
            whole memory area.
         */
