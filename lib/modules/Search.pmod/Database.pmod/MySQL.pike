@@ -713,7 +713,16 @@ void set_sync_callback( function f )
   sync_callback = f;
 }
 
-int max_blob_size = 512*1024;
+//  The maximum blob size on disk must be at least big enough to hold as
+//  many entries that can be found in a single document. This is needed so
+//  a split blob doesn't get the same docid in separate records.
+//
+//  We can get at most 255 occurrences of the same word from each document,
+//  and if all of those are the same word AND the update takes place
+//  incrementally we'll write [ docid | nhits | hit ] for every occurrence,
+//  i.e. 7 bytes every time. Minimum blob size is therefore 1785 bytes.
+constant max_blob_size = 512 * 1024;
+
 
 static array(array(int|string)) split_blobs(int blob_size, string blob,
 					    int max_blob_size)
