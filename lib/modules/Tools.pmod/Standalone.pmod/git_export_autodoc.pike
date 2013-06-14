@@ -386,6 +386,9 @@ string get_version()
     if (Stdio.exist("lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike")) {
       return "pike_modules/Filesystem.Monitor";
     }
+    if (Stdio.exist("src/modules/Tokenizer/Tokenizer.cmod")) {
+      return "pike-modules/Tokenizer";
+    }
     if (Stdio.exist("1x1/01-baseline-preview.jpg")) {
       return "extra-tests";
     }
