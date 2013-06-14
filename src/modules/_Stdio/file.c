@@ -211,6 +211,7 @@ static void fd_backtick__fd(INT32 args)
 }
 
 /*! @endclass
+ */
 
 /* The class below is not accurate, but it's the lowest exposed API
  * interface, which make the functions appear where users actually
