@@ -69,7 +69,7 @@ protected GDK2.Pixbuf create( string|mapping options );
 //! Create a GDK2.Pixbuf object.
 //!
 //! @param options
-//!   @options is either a filename or a mapping of options.
+//!   @[options] is either a filename or a mapping of options.
 //!
 //!   If it is a mapping, it may contain:
 //!   @mapping
