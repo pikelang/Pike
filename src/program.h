@@ -823,6 +823,12 @@ PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
 					       struct pike_string *name);
 void rename_last_inherit(struct pike_string *n);
+void lower_inherit(struct program *p,
+		   struct object *parent,
+		   int parent_identifier,
+		   int parent_offset,
+		   INT32 flags,
+		   struct pike_string *name);
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,
 			     int parent_identifier,

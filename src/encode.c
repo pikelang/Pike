@@ -4635,7 +4635,7 @@ static void decode_value2(struct decode_data *data)
 
 		EDB(5,
 		    fprintf(stderr,
-			    "%*slow_inherit(..., \"%s\")\n",
+			    "%*slower_inherit(..., \"%s\")\n",
 			    data->depth, "",
 			    name?name->str:"NULL"));
 
@@ -4643,8 +4643,8 @@ static void decode_value2(struct decode_data *data)
 		 *
 		 * storage, inherits and identifier_references
 		 */
-		low_inherit(prog, parent, parent_identifier,
-			    parent_offset + 42, id_flags, name);
+		lower_inherit(prog, parent, parent_identifier,
+			      parent_offset + 42, id_flags, name);
 
 		pop_n_elems(3);
 	      }
