@@ -73,7 +73,7 @@ DOCEND()
 #undef CB_CHECK_KEY
 #define CB_CHECK_KEY(svalue, fun, num)	do {			\
     CB_TRANSFORM_KEY(svalue);					\
-    if (!((svalue)->type &  T_KEY))   				\
+    if (!((svalue)->type == T_KEY))   				\
 	SIMPLE_BAD_ARG_ERROR(fun, (num), STRFY(key_ptype));	\
 } while(0)
 #undef CB_PUSH_TRANSFORM_KEY
@@ -91,12 +91,12 @@ TREE_CLASSIFY(_transform_svalue_to_key)(const struct svalue * s) {
     if (THIS->encode_fun >= 0) {
 	push_svalue(s);
 	apply_low(Pike_fp->current_object, THIS->encode_fun, 1);
-	if (!(Pike_sp[-1].type & T_KEY))
+	if (!(Pike_sp[-1].type == T_KEY))
 	    Pike_error("encode_key() is expected to return type " cmod_STRFY_EVAL(key_ptype) ".\n");
 	key = CB_LOW_KEY_FROM_SVALUE(Pike_sp-1);
 	pop_stack();
     } else {
-	if (!(s->type & T_KEY)) Pike_error("Expected type " cmod_STRFY_EVAL(key_ptype) ".\n");
+	if (!(s->type == T_KEY)) Pike_error("Expected type " cmod_STRFY_EVAL(key_ptype) ".\n");
 	key = CB_LOW_KEY_FROM_SVALUE(s);
     }
     return key;
