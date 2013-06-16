@@ -1376,20 +1376,21 @@ protected void set_lc_env (mapping(string:string) env)
 }
 #endif
 
-//! @decl string getenv (string varname, void|int force_update)
 //! @decl mapping(string:string) getenv (void|int force_update)
 //!
-//! Queries the environment variables. The first variant returns the
-//! value of a specific variable or zero if it doesn't exist in the
-//! environment. The second variant returns the whole environment as a
-//! mapping. Destructive operations on the mapping will not affect the
-//! internal environment representation.
+//! Queries the environment variables.
 //!
-//! A cached copy of the real environment is kept to make this
-//! function quicker. If the optional flag @[force_update] is nonzero
-//! then the real environment is queried and the cache is updated from
-//! it. That can be necessary if the environment changes through other
-//! means than @[putenv], typically from a C-level library.
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the whole environment as a mapping. Destructive
+//!   operations on the mapping will not affect the internal
+//!   environment representation.
 //!
 //! Variable names and values cannot be wide strings nor contain
 //! @expr{'\0'@} characters. Variable names also cannot contain
@@ -1400,80 +1401,102 @@ protected void set_lc_env (mapping(string:string) env)
 //!
 //! @seealso
 //!   @[putenv()]
-string|mapping(string:string) getenv (void|int|string varname,
-				      void|int force_update)
+mapping(string:string) getenv (void|int force_update)
 {
-  // Variants doesn't seem to work well yet.
-  if (stringp (varname)) {
-    if (!environment || force_update) {
+  mapping(string:string) res;
+
+  if (force_update) {
+    res = Builtin._getenv();
 #ifdef __NT__
-      set_lc_env (Builtin._getenv());
+    set_lc_env (res);
 #else
-      environment = Builtin._getenv();
+    environment = res + ([]);
 #endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-#ifdef __NT__
-    varname = lower_case(varname);
-#endif
-
-    if (compat_environment) {
-      array(string) res;
-      if (!equal(res = compat_environment[varname],
-		 compat_environment_copy[varname])) {
-	// Something has messed with the compat environment mapping.
-	putenv(varname, res && res[1]);
-      }
-    }
-
-    return environment[varname];
+    // Kill the compat environment if forced.
+    compat_environment = compat_environment_copy = 0;
   }
 
   else {
-    force_update = varname;
-
-    mapping(string:string) res;
-
-    if (force_update) {
-      res = Builtin._getenv();
-#ifdef __NT__
-      set_lc_env (res);
-#else
-      environment = res + ([]);
-#endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-    else {
-      if (compat_environment &&
-	  !equal(compat_environment, compat_environment_copy)) {
-	foreach(compat_environment; varname; array(string) pair) {
-	  if (!equal(pair, compat_environment_copy[varname])) {
-	    putenv(pair[0], pair[1]);
-	  }
-	}
-	foreach(compat_environment_copy; varname; array(string) pair) {
-	  if (!compat_environment[varname]) {
-	    putenv(pair[0]);
-	  }
+    if (compat_environment &&
+	!equal(compat_environment, compat_environment_copy)) {
+      foreach(compat_environment; string varname; array(string) pair) {
+	if (!equal(pair, compat_environment_copy[varname])) {
+	  putenv(pair[0], pair[1]);
 	}
       }
-#ifdef __NT__
-      // Can't use the cached environment since variable names have been
-      // lowercased there.
-      res = Builtin._getenv();
-      if (!environment) set_lc_env (res);
-#else
-      if (!environment) environment = Builtin._getenv();
-      res = environment + ([]);
-#endif
+      foreach(compat_environment_copy; string varname; array(string) pair) {
+	if (!compat_environment[varname]) {
+	  putenv(pair[0]);
+	}
+      }
     }
-
-    return res;
+#ifdef __NT__
+    // Can't use the cached environment since variable names have been
+    // lowercased there.
+    res = Builtin._getenv();
+    if (!environment) set_lc_env (res);
+#else
+    if (!environment) environment = Builtin._getenv();
+    res = environment + ([]);
+#endif
   }
+
+  return res;
+}
+
+//! @decl string getenv (string varname, void|int force_update)
+//!
+//! Query the value of a specific environment variable.
+//!
+//! @param varname
+//!   Environment variable to query.
+//!
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the value of the environment variable @[varname]
+//!   if it exists, and @expr{0@} (zero) otherwise.
+//!
+//! Variable names and values cannot be wide strings nor contain
+//! @expr{'\0'@} characters. Variable names also cannot contain
+//! @expr{'='@} characters.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
+//!
+//! @seealso
+//!   @[putenv()]
+variant string getenv (string varname, void|int force_update)
+{
+  if (!environment || force_update) {
+#ifdef __NT__
+    set_lc_env (Builtin._getenv());
+#else
+    environment = Builtin._getenv();
+#endif
+    // Kill the compat environment if forced.
+    compat_environment = compat_environment_copy = 0;
+  }
+
+#ifdef __NT__
+  varname = lower_case(varname);
+#endif
+
+  if (compat_environment) {
+    array(string) res;
+    if (!equal(res = compat_environment[varname],
+	       compat_environment_copy[varname])) {
+      // Something has messed with the compat environment mapping.
+      putenv(varname, res && res[1]);
+    }
+  }
+
+  return environment[varname];
 }
 
 void putenv (string varname, void|string value)
