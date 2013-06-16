@@ -50,6 +50,9 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     p->h.first = BA_BLOCKN(a->l, p, 0);
     p->h.first->next = BA_ONE;
     p->h.used = 0;
+#ifdef HAVE_VALGRIND_MACROS
+    VALGRIND_MAKE_MEM_NOACCESS(p+1, n - sizeof(struct ba_page));
+#endif
     return p;
 }
 
@@ -63,6 +66,9 @@ PMOD_EXPORT void ba_init(struct block_allocator * a, unsigned INT32 block_size, 
     a->l.offset = block_size * (blocks-1);
     memset(a->pages, 0, sizeof(a->pages));
     a->pages[0] = ba_alloc_page(a, 0);
+#ifdef HAVE_VALGRIND_MACROS
+    VALGRIND_CREATE_MEMPOOL(a, 0, 0);
+#endif
 }
 
 PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
@@ -121,6 +127,11 @@ static void ba_low_alloc(struct block_allocator * a) {
     }
 }
 
+#ifndef VALGRIND_MEMPOOL_ALLOC
+# define VALGRIND_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MAKE_MEM_UNDEFINED((p), (l))
+# define VALGRIND_MEMPOOL_FREE(a, p)	    VALGRIND_MAKE_MEM_NOACCESS((p), (a)->l.block_size)
+#endif
+
 ATTRIBUTE((malloc))
 PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     struct ba_page * p = a->pages[a->alloc];
@@ -132,16 +143,29 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     }
 
     ptr = p->h.first;
+#ifdef HAVE_VALGRIND_MACROS
+    VALGRIND_MEMPOOL_ALLOC(a, ptr, a->l.block_size);
+    VALGRIND_MAKE_MEM_DEFINED(ptr, sizeof(void*));
+#endif
 
     p->h.used++;
 
     if (ptr->next == BA_ONE) {
 	struct ba_layout l = ba_get_layout(a, a->alloc);
 	p->h.first = (struct ba_block_header*)((char*)ptr + a->l.block_size);
+#ifdef HAVE_VALGRIND_MACROS
+	VALGRIND_MEMPOOL_ALLOC(a, p->h.first, a->l.block_size);
+#endif
 	p->h.first->next = (struct ba_block_header*)(ptrdiff_t)!(p->h.first == BA_LASTBLOCK(l, p));
+#ifdef HAVE_VALGRIND_MACROS
+	VALGRIND_MEMPOOL_FREE(a, p->h.first);
+#endif
     } else {
 	p->h.first = ptr->next;
     }
+#ifdef HAVE_VALGRIND_MACROS
+    VALGRIND_MAKE_MEM_UNDEFINED(ptr, sizeof(void*));
+#endif
 
     return ptr;
 }
@@ -200,5 +224,8 @@ ERR:
 	}
 	Pike_fatal("ptr %p not in any page.\n", ptr);
     }
+#endif
+#ifdef HAVE_VALGRIND_MACROS
+    VALGRIND_MEMPOOL_FREE(a, ptr);
 #endif
 }
