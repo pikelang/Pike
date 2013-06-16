@@ -1082,8 +1082,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    ref_push_program(p);
 	    f_function_name(1);
+#if 0
 	    if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
 	      Pike_error("Cannot encode C programs.\n");
+#endif
 	    encode_value2(Pike_sp-1, data, 0);
 
 	    pop_n_elems(2);
@@ -1094,7 +1096,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  }
 	  if( p->event_handler )
 	    Pike_error("Cannot encode programs with event handlers.\n");
+#if 0
 	  Pike_error("Cannot encode C programs.\n");
+#endif
 	}
 
 #ifdef OLD_PIKE_ENCODE_PROGRAM
@@ -1414,7 +1418,27 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      struct identifier *id = ID_FROM_PTR(p, ref);
 
 	      /* Skip identifiers that haven't been overloaded. */
-	      if (ref->id_flags & ID_INHERITED) continue;
+	      if (ref->id_flags & ID_INHERITED) {
+		if ((ref->id_flags & (ID_VARIANT|ID_HIDDEN)) == ID_VARIANT) {
+		  /* Find the dispatcher. */
+		  int i = really_low_find_shared_string_identifier(id->name, p,
+						SEE_PROTECTED|SEE_PRIVATE);
+		  /* NB: We use the id_dumped flag for the
+		   *     dispatcher to mark whether we have
+		   *     dumped the first variant of this
+		   *     name in this program.
+		   */
+		  if ((i >= 0) && !is_variant_dispatcher(p, i) &&
+		      !PTR_FROM_INT(p, i)->inherit_offset) {
+		    /* Overloaded in this program.
+		     *
+		     * Make sure later variants don't clear this one.
+		     */
+		    id_dumped[PTR_FROM_INT(p, i)->identifier_offset] = 1;
+		  }
+		}
+		continue;
+	      }
 
 	      /* Skip getter/setter variables; they get pulled in
 	       * by their respective functions.
@@ -1528,6 +1552,30 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		      gs_flags = PTR_FROM_INT(p, i)->id_flags;
 		    }
 		    free_string(symbol);
+		  }
+		} else if (ref->id_flags & ID_VARIANT) {
+		  /* Find the dispatcher. */
+		  int i = really_low_find_shared_string_identifier(id->name, p,
+						SEE_PROTECTED|SEE_PRIVATE);
+		  /* NB: We use the id_dumped flag for the
+		   *     dispatcher to mark whether we have
+		   *     dumped the first variant of this
+		   *     name in this program.
+		   */
+		  if ((i < 0) || !is_variant_dispatcher(p, i)) {
+		    Pike_error("Failed to find dispatcher for inherited "
+			       "variant function: %S\n", id->name);
+		  }
+		  if (PTR_FROM_INT(p, i)->inherit_offset) {
+		    Pike_error("Dispatcher for variant function %S "
+			       "is inherited.\n", id->name);
+		  }
+		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
+		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
+		    gs_flags |= ID_VARIANT;
+		  } else {
+		    /* First variant. */
+		    id_dumped[PTR_FROM_INT(p, i)->identifier_offset] = 1;
 		  }
 		}
 
@@ -1662,6 +1710,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  break;
 
 		case IDENTIFIER_C_FUNCTION:
+		  if (is_variant_dispatcher(p, d)) {
+		    /* This is handled by end_first_pass() et all. */
+		    /* NB: This can be reached even though id_dumped
+		     *     for it gets set by the variant functions,
+		     *     if it is overriding an old definition.
+		     *
+		     * We thus need to make sure id_dumped stays cleared.
+		     */
+		    id_dumped[ref->identifier_offset] = 0;
+		    continue;
+		  }
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
 			     "(identifier=\"%S\").\n",
