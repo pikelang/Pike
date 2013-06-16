@@ -21,7 +21,7 @@ PIKECLASS FloatTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class FloatTree
 #cmod_define cmod_OBJ2_TREE OBJ2_FLOATTREE
-#cmod_define T_KEY (PIKE_T_FLOAT|PIKE_T_INT)
+#cmod_define T_KEY (BIT_FLOAT|BIT_INT)
 #cmod_define key_ptype float|int
 #cmod_define sample_key 12.0
 #cmod_define sample_keys ({ 80.4, 99.9, 14.2 })

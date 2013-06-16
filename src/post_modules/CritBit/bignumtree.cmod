@@ -37,7 +37,7 @@ PIKECLASS BigNumTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class BigNumTree
 #cmod_define cmod_OBJ2_TREE OBJ2_BIGNUMTREE
-#cmod_define T_KEY PIKE_T_OBJECT
+#cmod_define T_KEY BIT_OBJECT
 #cmod_define key_ptype bignum
 #cmod_define sval_type object
 /*
