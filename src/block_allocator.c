@@ -43,6 +43,15 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
+#ifdef HAVE_VALGRIND_MACROS
+# ifndef VALGRIND_CREATE_MEMPOOL
+#  define VALGRIND_CREATE_MEMPOOL(a, b, c)
+#  define VALGRIND_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MAKE_MEM_UNDEFINED((p), (l))
+#  define VALGRIND_MEMPOOL_FREE(a, p)	    VALGRIND_MAKE_MEM_NOACCESS((p), (a)->l.block_size)
+# endif
+#endif
+
+
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + sizeof(struct ba_page);
@@ -126,11 +135,6 @@ static void ba_low_alloc(struct block_allocator * a) {
 	ba_init(a, a->l.block_size, a->l.blocks);
     }
 }
-
-#ifndef VALGRIND_MEMPOOL_ALLOC
-# define VALGRIND_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MAKE_MEM_UNDEFINED((p), (l))
-# define VALGRIND_MEMPOOL_FREE(a, p)	    VALGRIND_MAKE_MEM_NOACCESS((p), (a)->l.block_size)
-#endif
 
 ATTRIBUTE((malloc))
 PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
