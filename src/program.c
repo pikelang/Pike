@@ -3793,7 +3793,7 @@ void check_program(struct program *p)
 
 static void f_dispatch_variant(INT32 args);
 
-static int is_variant_dispatcher(struct program *prog, int fun)
+int is_variant_dispatcher(struct program *prog, int fun)
 {
   struct reference *ref;
   struct identifier *id;
