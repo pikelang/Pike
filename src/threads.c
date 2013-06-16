@@ -1206,6 +1206,9 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     thread_obj = NULL;
     num_threads--;
     mt_unlock_interpreter();
+#ifdef PIKE_DEBUG
+    Pike_interpreter_pointer = NULL;
+#endif
   }
 }
 
