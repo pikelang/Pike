@@ -2334,9 +2334,7 @@ void cleanup_shared_string_table(void)
   num_strings=0;
 
 #ifdef DO_PIKE_CLEANUP
-  ba_destroy(string_allocator+0);
-  ba_destroy(string_allocator+1);
-  ba_destroy(string_allocator+2);
+  ba_destroy(&string_allocator);
 #endif /* DO_PIKE_CLEANUP */
 }
 
