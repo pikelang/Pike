@@ -187,11 +187,10 @@ static struct object *convert_to_rgb( struct yuv *yuv )
 
         for( xp = 0; xp<yuv->xsize; xp++, row++, pos++ )
         {
-            if( xp & 1 ) hpos++;
-
             row->r = yuv->V[ hpos ];
             row->g = yuv->Y[ pos ];
             row->b = yuv->U[ hpos ];
+            if( xp & 1 ) hpos++;
         }
     }
     apply( Pike_sp[-1].u.object, "yuv_to_rgb", 0 );
