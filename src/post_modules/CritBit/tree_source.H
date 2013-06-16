@@ -279,7 +279,7 @@ DOCEND()
      */
     PIKEFUN mixed `[](mixed key) {
 	CB_TRANSFORM_KEY(key);
-	if (key->type == T_KEY) {
+	if ((1<<key->type) & T_KEY) {
 	    cb_node_t n;
 	    cb_key k = CB_LOW_KEY_FROM_SVALUE(key);
 	    pop_stack();

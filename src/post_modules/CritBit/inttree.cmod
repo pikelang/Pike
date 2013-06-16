@@ -27,7 +27,7 @@ PIKECLASS IntTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class IntTree
 #cmod_define cmod_OBJ2_TREE OBJ2_INTTREE
-#cmod_define T_KEY PIKE_T_INT
+#cmod_define T_KEY BIT_INT
 #cmod_define key_ptype int
 #cmod_define sval_type integer
 #cmod_define sample_key 12
@@ -97,7 +97,7 @@ PIKECLASS IPv4Tree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class IPv4Tree
 #cmod_define cmod_OBJ2_TREE OBJ2_IPV4TREE
-#cmod_define T_KEY PIKE_T_STRING
+#cmod_define T_KEY BIT_STRING
 #cmod_define key_ptype string
 #cmod_define sval_type string
 #cmod_define sample_key "127.0.0.0/8"
