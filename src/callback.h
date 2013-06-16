@@ -30,6 +30,7 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 PMOD_EXPORT void *remove_callback(struct callback *l);
 void free_callback_list(struct callback_list *lst);
 void cleanup_callbacks(void);
+void count_memory_in_callbacks(size_t * num, size_t * size);
 /* Prototypes end here */
 
 #define add_to_callback(LST,CALL,ARG,FF) \
