@@ -2001,8 +2001,8 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
   }
   if( aflags & b->flags & STRING_CONTENT_CHECKED )
   {
-    ret->min = MIN( amin, b->min );
-    ret->max = MAX( amax, b->max );
+    ret->min = MINIMUM( amin, b->min );
+    ret->max = MAXIMUM( amax, b->max );
     ret->flags |= STRING_CONTENT_CHECKED;
   }
   else

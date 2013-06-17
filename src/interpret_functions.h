@@ -533,7 +533,7 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
            *  pike_string_cpy(MKPCHARP_STR_OFF(dsts,tmp), srcs);
            * does bad stuff
            */
-          dsts = new_realloc_shared_string( dsts, tmp+srcs->len, MAX(srcs->size_shift,dsts->size_shift) );
+          dsts = new_realloc_shared_string( dsts, tmp+srcs->len, MAXIMUM(srcs->size_shift,dsts->size_shift) );
           update_flags_for_add( dsts, srcs );
           generic_memcpy(MKPCHARP_STR_OFF(dsts,tmp), MKPCHARP_STR(srcs), tmp2);
           dst->u.string = low_end_shared_string( dsts );
