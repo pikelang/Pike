@@ -529,8 +529,7 @@ Decoder decoder(string name)
   if(o)
     return o;
 
-  if ((o = Locale.Charset.Tables[name]) &&
-      (p = o->decoder)) {
+  if ((o = .Tables[name]) && (p = o->decoder)) {
     return p();
   }
 
@@ -882,8 +881,7 @@ Encoder encoder(string name, string|void replacement,
   if(o)
     return o;
 
-  if ((o = Locale.Charset.Tables[name]) &&
-      (p = o->encoder)) {
+  if ((o = .Tables[name]) && (p = o->encoder)) {
     return p(replacement, repcb);
   }
 

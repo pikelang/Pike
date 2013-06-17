@@ -49,8 +49,8 @@ class encoder
 	else if(r)
 	  add(r);
 	else
-	  Locale.Charset.encode_error (s, i, charset,
-				       "Character unsupported by encoding.\n");
+	  Charset.encode_error (s, i, charset,
+                                "Character unsupported by encoding.\n");
       }
     }
     if (l < sizeof (s))
