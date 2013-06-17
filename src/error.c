@@ -370,7 +370,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
     push_int(0);
 
   for (i=-args; i; i++) {
-    if (TYPEOF(oldsp[i]) <= PIKE_T_FLOAT) {
+    if (TYPEOF(oldsp[i]) <= MAX_TYPE) {
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
