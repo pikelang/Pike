@@ -150,7 +150,7 @@
 struct program *file_program;
 struct program *file_ref_program;
 
-/*! @module _Stdio
+/*! @module Stdio
  */
 
 /*! @class Fd_ref
@@ -233,12 +233,9 @@ static void fd_backtick__fd(INT32 args)
 
 /* The class below is not accurate, but it's the lowest exposed API
  * interface, which make the functions appear where users actually
- * look for them. One could perhaps put them in Fd_ref and fix the doc
- * generator to show inherited functions in a better way, but if they
- * only are documented in Fd then the doc has to be duplicated in at
- * least Fd_ref. /mast */
+ * look for them. /mast */
 
-/*! @class Fd
+/*! @class File
  */
 
 static struct my_file *get_file_storage(struct object *o)
@@ -5830,8 +5827,6 @@ void file_tcflush(INT32 args);
 /* void file_tcsetpgrp(INT32 args); */
 #endif
 
-/*! @decl string _sprintf(int type, void|mapping flags)
- */
 static void fd__sprintf(INT32 args)
 {
   INT_TYPE type;
@@ -5987,7 +5982,7 @@ PIKE_MODULE_INIT
 
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",fd__sprintf,
-	       tFunc(tInt tOr(tVoid,tMapping),tString),0);
+	       tFunc(tInt tOr(tVoid,tMapping),tString),ID_PROTECTED);
 
   init_file_locking();
   pike_set_prog_event_callback(file_handle_events);
