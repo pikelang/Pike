@@ -3920,10 +3920,7 @@ void _main(array(string) orig_argv)
 	exit(0, format_paths());
 
       case "execute":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
 	random_seed((time() ^ (getpid()<<8)));
 	argv = tmp->get_args(argv,1);
 
@@ -3991,9 +3988,7 @@ void _main(array(string) orig_argv)
 	exit(ret);
 
       case "preprocess":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
@@ -4023,10 +4018,7 @@ void _main(array(string) orig_argv)
 	exit(0);
   }
 
-#ifdef __AUTO_BIGNUM__
   main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
   random_seed(time() ^ (getpid()<<8));
 
   if(sizeof(argv)==1)

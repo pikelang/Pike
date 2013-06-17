@@ -74,7 +74,7 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
 
 cond_end // Gmp.mpz
 
-cond([[ master()->resolv("Gmp")->mpz && sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+cond([[ master()->resolv("Gmp")->mpz ]],
 [[
   test_eq(Gmp.mpz(1) + 0x100000000, 0x100000001)
 ]])
@@ -180,7 +180,7 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
 
 cond_end // Gmp.mpq
 
-  cond([[ master()->resolv("Gmp")->mpq && sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+  cond([[ master()->resolv("Gmp")->mpq ]],
   [[
     test_eq(Gmp.mpq(234,99)*Gmp.mpz(1000000000000000000000),Gmp.mpq(26000000000000000000000,11))
     test_eq(Gmp.mpz(1000000000000000000000)*Gmp.mpq(234,99),Gmp.mpz(2000000000000000000000))

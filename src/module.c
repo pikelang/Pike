@@ -129,9 +129,7 @@ static void exit_builtin_modules(void)
   /* Clear various global references. */
 
   exit_sprintf();
-#ifdef AUTO_BIGNUM
   exit_auto_bignum();
-#endif
   exit_pike_searching();
   exit_object();
   exit_signals();

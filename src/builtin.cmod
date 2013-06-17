@@ -1958,7 +1958,7 @@ PMOD_EXPORT
 PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
-#if defined (AUTO_BIGNUM) && SIZEOF_INT_TYPE > 4
+#if SIZEOF_INT_TYPE > 4
   if(i >> 31) {
     unsigned INT_TYPE a = my_rand();
     unsigned INT_TYPE b = my_rand();
@@ -2687,13 +2687,9 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(sizeof(INT_TYPE) * 8);
   push_constant_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
-#ifdef AUTO_BIGNUM
   push_constant_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(6*2);
-#else
-  f_aggregate_mapping(5*2);
-#endif
 }
 
 /*! @endmodule
@@ -3923,16 +3919,12 @@ PIKECLASS Time
     else
       INACCURATE_GETTIMEOFDAY( &now );
 
-#ifdef AUTO_BIGNUM
     push_int( now.tv_sec );
     push_int( 1000000 );
     f_multiply( 2 );
     push_int( now.tv_usec );
     f_add( 2 );
     return;
-#else
-    RETURN (now.tv_sec * 1000000 + now.tv_usec);
-#endif
   }
 
   /*! @decl protected void create( int fast );

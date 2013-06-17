@@ -11,18 +11,10 @@
 #include "global.h"
 
 #undef CJUMP
-#undef AUTO_BIGNUM_LOOP_TEST
 #undef LOOP
 #undef COMPARISON
 #undef MKAPPLY
 #undef DO_CALL_BUILTIN
-
-#undef DO_IF_BIGNUM
-#ifdef AUTO_BIGNUM
-#define DO_IF_BIGNUM(CODE)	CODE
-#else /* !AUTO_BIGNUM */
-#define DO_IF_BIGNUM(CODE)
-#endif /* AUTO_BIGNUM */
 
 #undef DO_IF_ELSE_COMPUTED_GOTO
 #ifdef HAVE_COMPUTED_GOTO
@@ -514,8 +506,7 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
   struct svalue *dst = Pike_fp->locals+arg1;
   struct svalue *src = Pike_fp->locals+arg2;
   if( (dst->type|src->type) == PIKE_T_INT
-      DO_IF_BIGNUM(
-        &&(!INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer))))
+      && !INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
     dst->u.integer += src->u.integer;
@@ -559,8 +550,7 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
 OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   struct svalue *dst = Pike_fp->locals+arg1;
   if( dst->type == PIKE_T_INT
-      DO_IF_BIGNUM(
-        &&(!INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2))))
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
     dst->u.integer += arg2;
@@ -578,8 +568,7 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
 OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
   struct svalue *dst = Pike_fp->locals+arg1;
   if( dst->type == PIKE_T_INT
-      DO_IF_BIGNUM(
-        &&(!INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2))))
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
     dst->u.integer += arg2;
@@ -598,10 +587,7 @@ OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
-      )
-      )
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
   {
     push_int(++dst->u.integer);
     SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -617,10 +603,7 @@ OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
 OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
-      )
-      )
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
   {
     push_int( dst->u.integer++ );
     SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -636,10 +619,7 @@ OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
 OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1))
-      )
-      )
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
   {
     dst->u.integer++;
     SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -655,10 +635,7 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
 OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1))
-      )
-      )
+      && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
   {
     push_int(--(dst->u.integer));
     SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -675,10 +652,7 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
   push_svalue( Pike_fp->locals + arg1);
 
   if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+      && !INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1) )
   {
     Pike_fp->locals[arg1].u.integer--;
     SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -693,10 +667,7 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
 OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1))
-      )
-      )
+      && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
   {
     --dst->u.integer;
     SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -826,9 +797,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
       TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
-    DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-    )
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
@@ -893,9 +862,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
       TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
-    DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-    )
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
@@ -955,11 +922,7 @@ OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP, {
 
 OPCODE0(F_INC, "++x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = ++u->integer;
     pop_2_elems();
@@ -975,11 +938,7 @@ OPCODE0(F_INC, "++x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-     )
+  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = --u->integer;
     pop_2_elems();
@@ -995,11 +954,7 @@ OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-)
+  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     --u->integer;
     pop_2_elems();
@@ -1014,11 +969,7 @@ OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
 
 OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     ++u->integer;
     pop_2_elems();
@@ -1033,11 +984,7 @@ OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
 
 OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer++;
     pop_2_elems();
@@ -1056,11 +1003,7 @@ OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
 
 OPCODE0(F_POST_DEC, "x--", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-     )
+  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer--;
     pop_2_elems();
@@ -1579,18 +1522,11 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
 });
 
 
-#ifdef AUTO_BIGNUM
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) INT_TYPE_ADD_OVERFLOW(X,Y)
-#else
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) 0
-#endif
-
-      /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       /* LOOP(OPCODE, INCREMENT, OPERATOR, IS_OPERATOR) */
 #define LOOP(ID, DESC, INC, OP2, OP4)					\
   OPCODE0_BRANCH(ID, DESC, 0, {						\
     union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
-    if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC) &&			\
+    if(i && !INT_TYPE_ADD_OVERFLOW(i->integer,INC) &&			\
        TYPEOF(Pike_sp[-3]) == T_INT)					\
     {									\
       i->integer += INC;						\
@@ -1748,14 +1684,12 @@ OPCODE0_RETURN(F_DUMB_RETURN,"dumb return", I_UPDATE_FP, {
 OPCODE0(F_NEGATE, "unary minus", 0, {
   if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
   {
-    DO_IF_BIGNUM(
-      if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
-      {
-	convert_stack_top_to_bignum();
-	o_negate();
-      }
-      else
-    )
+    if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
+    {
+      convert_stack_top_to_bignum();
+      o_negate();
+    }
+    else
     {
       Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
       SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1823,10 +1757,7 @@ OPCODE0(F_ADD, "+", I_UPDATE_SP, {
 /* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
   if(TYPEOF(Pike_sp[-1]) == T_INT && TYPEOF(Pike_sp[-2]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-      )
-    )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
     SET_SVAL_SUBTYPE(Pike_sp[-2], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1860,10 +1791,7 @@ OPCODE0_ALIAS(F_MOD, "%", I_UPDATE_SP, o_mod);
 
 OPCODE1(F_ADD_INT, "add integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
-      )
-     )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
   {
     Pike_sp[-1].u.integer+=arg1;
     SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1875,10 +1803,7 @@ OPCODE1(F_ADD_INT, "add integer", 0, {
 
 OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
-      )
-     )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
   {
     Pike_sp[-1].u.integer-=arg1;
     SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */

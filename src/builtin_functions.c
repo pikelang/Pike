@@ -841,7 +841,6 @@ PMOD_EXPORT void f_random_string(INT32 args)
 PMOD_EXPORT void f_random_seed(INT32 args)
 {
   INT_TYPE i;
-#ifdef AUTO_BIGNUM
   check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
   if(TYPEOF(Pike_sp[-args]) == T_INT)
   {
@@ -849,9 +848,6 @@ PMOD_EXPORT void f_random_seed(INT32 args)
   }else{
     i=hash_svalue(Pike_sp-args);
   }
-#else
-  get_all_args("random_seed",args,"%i",&i);
-#endif
   my_srand(i);
   pop_n_elems(args);
 }
@@ -4637,10 +4633,7 @@ PMOD_EXPORT void f_objectp(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT || !Pike_sp[-args].u.object->prog
-#ifdef AUTO_BIGNUM
-     || is_bignum_object(Pike_sp[-args].u.object)
-#endif
-     )
+     || is_bignum_object(Pike_sp[-args].u.object))
   {
     pop_n_elems(args);
     push_int(0);
@@ -9204,7 +9197,6 @@ void f_enumerate(INT32 args)
       for (i=0; i<n; i++)
       {
 	 ITEM(d)[i].u.integer=start;
-#ifdef AUTO_BIGNUM
 	 if ((step>0 && start+step<start) ||
 	     (step<0 && start+step>start)) /* overflow */
 	 {
@@ -9217,7 +9209,6 @@ void f_enumerate(INT32 args)
 	    f_enumerate(3);
 	    return;
 	 }
-#endif
 	 start+=step;
       }
       d->type_field = BIT_INT;

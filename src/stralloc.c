@@ -3597,7 +3597,6 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     *ptr = str;
 
   if (overflow) {
-#ifdef AUTO_BIGNUM
     push_string(make_shared_binary_pcharp(str_start,
 					  SUBTRACT_PCHARP(str,str_start)));
     /* Note that this can conceivably throw errors()
@@ -3613,9 +3612,6 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     
     *r = *--Pike_sp;
     dmalloc_touch_svalue (r);
-#else  /* !AUTO_BIGNUM */
-    r->u.integer = neg ? MIN_INT_TYPE : MAX_INT_TYPE;
-#endif
   }
   else {
     if (neg)

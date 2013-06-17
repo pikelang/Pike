@@ -499,7 +499,7 @@ void f_file_truncate(INT32 args)
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
 
-#if defined (INT64) && defined (AUTO_BIGNUM)
+#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[1-args])) {
     if (!int64_from_bignum(&len, Pike_sp[1-args].u.object))

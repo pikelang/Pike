@@ -5402,9 +5402,7 @@ int define_variable(struct pike_string *name,
 
     switch(run_time_type)
     {
-#ifdef AUTO_BIGNUM
     case T_INT:
-#endif
     case T_OBJECT:
       /* Make place for the object subtype. */
     case T_FUNCTION:

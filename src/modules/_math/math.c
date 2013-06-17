@@ -471,44 +471,7 @@ void f_pow(INT32 args)
   switch(TYPEOF(Pike_sp[-2]) * 16 + TYPEOF(Pike_sp[-1]))
   {
     case T_INT * 16 + T_OBJECT:
-#ifndef AUTO_BIGNUM
-      o_cast_to_int();
-      if (TYPEOF(Pike_sp[-1]) != T_INT) {
-	math_error("pow", Pike_sp-2, 2, 0,
-		   "Failed to cast exponent to int.\n");
-      }
-      /* FALL_THROUGH */
-#endif /* !AUTO_BIGNUM */
     case T_INT * 17:
-#ifndef AUTO_BIGNUM
-      {
-	INT_TYPE res = 1;
-	INT_TYPE square = Pike_sp[-2].u.integer;
-	INT_TYPE exponent = Pike_sp[-1].u.integer;
-
-	if (exponent < 0) {
-	  /* Negative exponent. */
-	  if (square) {
-	    if ((square == 1) || (square == -1)) {
-	      res = square;
-	    } else {
-	      res = 0;
-	    }
-	  } else {
-	    math_error("pow", Pike_sp-2, 1, 0, "Division by zero.\n");
-	  }
-	} else {
-	  while (exponent) {
-	    if (exponent & 1) res *= square;
-	    exponent >>= 1;
-	    square *= square;
-	  }
-	}
-	pop_n_elems(2);
-	push_int(res);
-	return;
-      }
-#endif /* !AUTO_BIGNUM */
     case T_OBJECT * 17:
     case T_OBJECT * 16 + T_INT:
     case T_OBJECT * 16 + T_FLOAT:

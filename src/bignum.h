@@ -235,8 +235,6 @@ GEN_OF1(32)
 #define INT_TYPE_RSH_OVERFLOW(a, b)                                        \
         (((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b) && (a))
 
-#ifdef AUTO_BIGNUM
-
 /* Prototypes begin here */
 PMOD_EXPORT extern struct svalue auto_bignum_program;
 PMOD_EXPORT struct program *get_auto_bignum_program(void);
@@ -276,15 +274,6 @@ PMOD_EXPORT void hook_in_gmp_funcs (
   void (*push_ulongest_val) (unsigned LONGEST),
   int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *));
 /* Prototypes end here */
-
-#else
-
-#define push_int64(i) push_int((INT_TYPE)(i))
-#define push_ulongest(i) push_int((INT_TYPE)(i))
-#define int64_from_bignum(I,BIGNUM)	0
-#define ulongest_from_bignum(I,BIGNUM)	0
-
-#endif /* AUTO_BIGNUM */
 
 /* Less confusing name, considering that push_int64 pushes a 32 bit
  * int if INT64 isn't available. */
