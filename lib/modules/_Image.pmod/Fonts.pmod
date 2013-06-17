@@ -270,7 +270,7 @@ class Font( protected string file,
 	    ->add_container( "encoding", 
 			     lambda(Parser.HTML p,
 				    mapping m, string enc) {
-			       codec=Locale.Charset.encoder(enc,"");
+			       codec=Charset.encoder(enc,"");
 			     } )
 	    ->feed( Stdio.read_file( file+".properties" ) )
 	    ->read();

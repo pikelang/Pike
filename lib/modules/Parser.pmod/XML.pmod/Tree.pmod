@@ -1313,7 +1313,7 @@ protected class VirtualNode {
     else
       low_render_xml(data, this, text_quote, attribute_quote,
 		     namespace_lookup);
-    return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
+    return Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
   //! Creates an XML representation for the node sub tree and streams
@@ -1326,7 +1326,7 @@ protected class VirtualNode {
 	encoder->feed(args[*]);
 	f->write(encoder->drain());
       }
-    } (f, Locale.Charset.encoder(get_encoding()));
+    } (f, Charset.encoder(get_encoding()));
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,

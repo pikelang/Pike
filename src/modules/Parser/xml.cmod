@@ -3455,7 +3455,7 @@ PIKEFUN string autoconvert(string s)
 	  }
 	  /* <?xml version = "1.0" encoding = "encname." */
 
-	  push_constant_text("Locale.Charset.decoder");
+	  push_constant_text("Charset.decoder");
 	  APPLY_MASTER("resolv",1);
 	  push_string(make_shared_binary_string0(STR0(s)+encstart,
 						 pos-encstart));

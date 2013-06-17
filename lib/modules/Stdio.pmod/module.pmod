@@ -1807,8 +1807,8 @@ class FILE
     if( charset != "iso-8859-1" &&
 	charset != "ascii")
     {
-      object in =  master()->resolv("Locale.Charset.decoder")( charset );
-      object out = master()->resolv("Locale.Charset.encoder")( charset );
+      object in =  master()->resolv("Charset.decoder")( charset );
+      object out = master()->resolv("Charset.encoder")( charset );
 
       input_conversion =
 	[function(string:string)]lambda( string s ) {

@@ -166,10 +166,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   if (encode) {
     if (TYPEOF(encode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.EncodeError");
+      push_text ("Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.EncodeError "
+	Pike_error ("Failed to resolve Charset.EncodeError "
 		    "to a program - unable to throw an encode error.\n");
       move_svalue (&encode_err_prog, --sp);
     }
@@ -178,10 +178,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   else {
     if (TYPEOF(decode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.DecodeError");
+      push_text ("Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.DecodeError "
+	Pike_error ("Failed to resolve Charset.DecodeError "
 		    "to a program - unable to throw an decode error.\n");
       move_svalue (&decode_err_prog, --sp);
     }

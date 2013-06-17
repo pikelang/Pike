@@ -21,18 +21,16 @@ string low_decode_charset( string data, string charset )
     case "eucjp":
     case "eucjapan":
     case "japanese":
-      return Locale.Charset.decoder( "euc-jp" )->feed( data )->drain();
+      return Charset.decoder( "euc-jp" )->feed( data )->drain();
 
     case "xsjis":
     case "shiftjis":
     case "jis":
-      return Locale.Charset.decoder("Shift_JIS")->feed(data)->drain();
+      return Charset.decoder("Shift_JIS")->feed(data)->drain();
       
     default:
       catch {
-	return Locale.Charset.decoder( charset )
-	  ->feed( data )
-	  ->drain();
+	return Charset.decoder( charset )->feed( data )->drain();
       };
       werror("\n****** Warning: Unknown charset: '"+charset+"'\n");
       return data;
@@ -96,7 +94,7 @@ string decode_http( string data, mapping headers,
 
   // 3.2: iso-2022, probably
   if( sizeof(data[..100]/"\33$") > 1 )
-    return Locale.Charset.decoder( "iso-2022-jp")->feed( data )->drain();
+    return Charset.decoder( "iso-2022-jp")->feed( data )->drain();
 
   return default_charset ? decode_charset( data, default_charset ) : data;
 }

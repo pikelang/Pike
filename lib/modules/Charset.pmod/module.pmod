@@ -107,7 +107,7 @@ protected private inherit _Charset;
 //! @example
 //!   string win1252_to_string( string data )
 //!   {
-//!     return Locale.Charset.decoder("windows-1252")->feed( data )->drain();
+//!     return Charset.decoder("windows-1252")->feed( data )->drain();
 //!   }
 class Decoder
 {
@@ -133,7 +133,7 @@ class Decoder
   // FIXME: There ought to be a finish(string s) function. Now it's
   // possible that certain kinds of coding errors are simply ignored
   // if they occur last in a string. E.g.
-  // Locale.Charset.decoder("utf8")->feed("\345")->drain() returns ""
+  // Charset.decoder("utf8")->feed("\345")->drain() returns ""
   // instead of throwing an error about the incomplete UTF8 sequence,
   // and there's no good way to get this error.
 
@@ -1192,15 +1192,15 @@ class DecodeError
 
   string charset;
   //! The decoding charset, typically as known to
-  //! @[Locale.Charset.decoder].
+  //! @[Charset.decoder].
   //!
   //! @note
   //! Other code may produce errors of this type. In that case this
-  //! name is something that @[Locale.Charset.decoder] does not accept
+  //! name is something that @[Charset.decoder] does not accept
   //! (unless it implements exactly the same charset), and it should
-  //! be reasonably certain that @[Locale.Charset.decoder] never
-  //! accepts that name in the future (unless it is extended to
-  //! implement exactly the same charset).
+  //! be reasonably certain that @[Charset.decoder] never accepts that
+  //! name in the future (unless it is extended to implement exactly
+  //! the same charset).
 
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
@@ -1245,15 +1245,15 @@ class EncodeError
 
   string charset;
   //! The encoding charset, typically as known to
-  //! @[Locale.Charset.encoder].
+  //! @[Charset.encoder].
   //!
   //! @note
   //! Other code may produce errors of this type. In that case this
-  //! name is something that @[Locale.Charset.encoder] does not accept
+  //! name is something that @[Charset.encoder] does not accept
   //! (unless it implements exactly the same charset), and it should
-  //! be reasonably certain that @[Locale.Charset.encoder] never
-  //! accepts that name in the future (unless it is extended to
-  //! implement exactly the same charset).
+  //! be reasonably certain that @[Charset.encoder] never accepts that
+  //! name in the future (unless it is extended to implement exactly
+  //! the same charset).
 
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)

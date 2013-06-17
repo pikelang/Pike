@@ -22,7 +22,7 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-#define PRGM_NAME "Locale.Charset.ISO2022"
+#define PRGM_NAME "Charset.ISO2022"
 
 
 static struct program *iso2022dec_program = NULL;

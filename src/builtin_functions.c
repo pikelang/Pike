@@ -645,14 +645,14 @@ static struct case_info *find_ci_shift0(INT32 c)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
- *!   can do the initial conversion for you.
+ *!   ISO-10646 (aka Unicode). If they are not, @[Charset.decoder] can
+ *!   do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[upper_case()], @[Locale.Charset.decoder]
+ *!   @[upper_case()], @[Charset.decoder]
  */
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
@@ -722,14 +722,14 @@ PMOD_EXPORT void f_lower_case(INT32 args)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
- *!   can do the initial conversion for you.
+ *!   ISO-10646 (aka Unicode). If they are not, @[Charset.decoder] can
+ *!   do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[lower_case()], @[Locale.Charset.decoder]
+ *!   @[lower_case()], @[Charset.decoder]
  */
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
@@ -1658,7 +1658,7 @@ static int generate_zero_type(node *n)
  *!   Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
  *!
  *! @seealso
- *!   @[Locale.Charset.decoder()], @[string_to_utf8()], @[unicode_to_string()],
+ *!   @[Charset.decoder()], @[string_to_utf8()], @[unicode_to_string()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_unicode(INT32 args)
@@ -1794,7 +1794,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
  *!   This function did not decode surrogates in Pike 7.2 and earlier.
  *!
  *! @seealso
- *!   @[Locale.Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_unicode_to_string(INT32 args)
@@ -1960,7 +1960,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *!   characters are however not UTF-8 compliant.
  *!
  *! @seealso
- *!   @[Locale.Charset.encoder()], @[string_to_unicode()],
+ *!   @[Charset.encoder()], @[string_to_unicode()],
  *!   @[unicode_to_string()], @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_utf8(INT32 args)
@@ -2115,7 +2115,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!   non-shortest forms are not decoded. An error is thrown instead.
  *!
  *! @seealso
- *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[unicode_to_string()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)

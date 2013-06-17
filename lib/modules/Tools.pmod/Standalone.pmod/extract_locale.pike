@@ -116,7 +116,7 @@ function get_encoder(string encoding) {
 
     default:
       object enc;
-      if(catch( enc = Locale.Charset.encoder( encoding ) )) {
+      if(catch( enc = Charset.encoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
@@ -150,7 +150,7 @@ function get_decoder(string encoding) {
 
     default:
       object dec;
-      if(catch( dec = Locale.Charset.decoder( encoding ) )) {
+      if(catch( dec = Charset.decoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }

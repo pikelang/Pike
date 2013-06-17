@@ -4366,11 +4366,9 @@ protected object Charset;
 string decode_charset(string data, string charset)
 {
   if (!Charset) {
-    object mod = [object]resolv("Locale");
-
-    Charset = [object](mod && mod["Charset"]);
+    Charset = [object]resolv("Charset");
     if (!Charset)
-      compile_cb_error("Cannot handle charset - no Locale.Charset module found.");
+      compile_cb_error("Cannot handle charset - no Charset module found.");
   }
 
   if (mixed err = catch {
