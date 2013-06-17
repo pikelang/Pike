@@ -652,9 +652,9 @@ class File
 
 #if constant(_Stdio.__HAVE_SEND_FD__)
   //!
-  int(0..1) send_fd(File|Fd file)
+  void send_fd(File|Fd file)
   {
-    return ::send_fd(file->_fd);
+    ::send_fd(file->_fd);
   }
 #endif
 
