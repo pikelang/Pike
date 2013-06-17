@@ -1,7 +1,6 @@
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
-AC_ARG_WITH(bignums, [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
 
