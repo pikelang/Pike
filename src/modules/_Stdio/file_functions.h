@@ -35,7 +35,7 @@ FILE_FUNC("write_oob",file_write_oob,
 /* TODO kqueue: we should add an read_fs_event() for when not using callback mode. */
 
 #ifdef HAVE_PIKE_SEND_FD
-FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tInt01))
+FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tVoid))
 #endif
 
 #ifdef SO_LINGER
