@@ -3863,7 +3863,11 @@ struct program *end_first_pass(int finish)
        *     not get overloaded for the ::-operator to work.
        */
       prog->identifier_references[j].id_flags |= ID_LOCAL;
-      type = or_pike_types(type, id->type, 1);
+      {
+	  struct pike_type * temp = type;
+	  type = or_pike_types(type, id->type, 1);
+	  if (temp) free_type(temp);
+      }
 #ifdef COMPILER_DEBUG
       fprintf(stderr, "type: ");
       simple_describe_type(id->type);
