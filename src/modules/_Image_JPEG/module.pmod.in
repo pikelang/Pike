@@ -48,6 +48,7 @@ protected Image.Image exif_flip_jpeg(Image.Image img, mapping exif)
     return img;
 }
 
+//! @belongs Image.JPEG
 //! Decodes the image as @[_decode] would and then proceeds to decode
 //! any EXIF information in the image. If it contain any Orientation
 //! information the image will be flipped/rotated according to it. The
