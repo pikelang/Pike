@@ -3424,8 +3424,8 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
       else if(next_timeout->tv_sec > (INT_MAX/1002)) /* about 24 days.*/
 	poll_timeout = INT_MAX/1002;
       else
-        poll_timeout = MAX((next_timeout->tv_sec*1000) +
-                           next_timeout->tv_usec/1000,2);
+        poll_timeout = MAXIMUM((next_timeout->tv_sec*1000) +
+			       next_timeout->tv_usec/1000,2);
 #elif defined(TIMEOUT_IS_TIMEVAL)
       poll_timeout = *next_timeout;
 #elif defined(TIMEOUT_IS_TIMESPEC)
