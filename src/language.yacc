@@ -1515,28 +1515,24 @@ opt_int_range: /* Empty */
     if($4->token == F_CONSTANT) {
       if (TYPEOF($4->u.sval) == T_INT) {
 	max = $4->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
 	push_int(0);
 	if (is_lt(&$4->u.sval, Pike_sp-1)) {
 	  max = MIN_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 
     if($2->token == F_CONSTANT) {
       if (TYPEOF($2->u.sval) == T_INT) {
 	min = $2->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
 	push_int(0);
 	if (is_lt(Pike_sp-1, &$2->u.sval)) {
 	  min = MAX_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 

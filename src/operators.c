@@ -117,7 +117,6 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     if (program_index_no_free(to, what, ind)) break;
     goto index_error;
 
-#ifdef AUTO_BIGNUM
   case T_INT:
     if (TYPEOF(*ind) == T_STRING && !IS_UNDEFINED (what)) {
       INT_TYPE val = what->u.integer;
@@ -138,7 +137,6 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     }
 
     /* FALL_THROUGH */
-#endif /* AUTO_BIGNUM */    
 
   default:
   index_error:
@@ -279,7 +277,6 @@ PMOD_EXPORT void o_cast_to_int(void)
       Pike_error("Can't cast infinites or NaN to int.\n");
     } else {
       int i=DO_NOT_WARN((int)(sp[-1].u.float_number));
-#ifdef AUTO_BIGNUM
       if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
       {
 	/* Note: This includes the case when i = 0x80000000, i.e.
@@ -292,7 +289,6 @@ PMOD_EXPORT void o_cast_to_int(void)
 	 */
       }
       else
-#endif /* AUTO_BIGNUM */
       {
 	SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, i);
       }
@@ -300,17 +296,12 @@ PMOD_EXPORT void o_cast_to_int(void)
     break;
       
   case T_STRING:
-    /* This can be here independently of AUTO_BIGNUM. Besides,
-       we really want to reduce the number of number parsers
-       around here. :) /Noring */
-#ifdef AUTO_BIGNUM
     /* The generic function is rather slow, so I added this
      * code for benchmark purposes. :-) /per
      */
     if( (sp[-1].u.string->len >= 10) || sp[-1].u.string->size_shift )
       convert_stack_top_string_to_inumber(10);
     else
-#endif /* AUTO_BIGNUM */
     {
       INT_TYPE i = STRTOL(sp[-1].u.string->str, 0, 10);
       free_string(sp[-1].u.string);
@@ -1731,7 +1722,6 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_INT:
   {
-#ifdef AUTO_BIGNUM
     int of = 0;
     size = 0;
     for(e = -args; e < 0; e++)
@@ -1746,12 +1736,6 @@ PMOD_EXPORT void f_add(INT32 args)
     }
     sp-=args;
     push_int(size);
-#else
-    size=0;
-    for(e=-args; e<0; e++) size+=sp[e].u.integer;
-    sp-=args-1;
-    SET_SVAL(sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer, size);
-#endif /* AUTO_BIGNUM */
     break;
 
   }
@@ -2253,7 +2237,6 @@ static int float_promote(void)
     return 1;
   }
 
-#ifdef AUTO_BIGNUM
   if(is_bignum_object_in_svalue(sp-2) && TYPEOF(sp[-1]) == T_FLOAT)
   {
     stack_swap();
@@ -2270,7 +2253,7 @@ static int float_promote(void)
     f_cast();
     return 1;
   }
-#endif
+
   return 0;
 }
 
@@ -2409,14 +2392,12 @@ PMOD_EXPORT void o_subtract(void)
     return;
 
   case T_INT:
-#ifdef AUTO_BIGNUM
     if(INT_TYPE_SUB_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
       f_minus(2);
       return;
     }
-#endif /* AUTO_BIGNUM */
     sp--;
     SET_SVAL(sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer,
 	     sp[-1].u.integer - sp[0].u.integer);
@@ -3430,12 +3411,10 @@ static int generate_xor(node *n)
 
 PMOD_EXPORT void o_lsh(void)
 {
-#ifdef AUTO_BIGNUM
   if ((TYPEOF(sp[-1]) == T_INT) && (TYPEOF(sp[-2]) == T_INT) &&
       INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
-#endif /* AUTO_BIGNUM */
-  
+
   if(TYPEOF(sp[-1]) != T_INT || TYPEOF(sp[-2]) != T_INT)
   {
     int args = 2;
@@ -3446,13 +3425,7 @@ PMOD_EXPORT void o_lsh(void)
       SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|object");
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
   }
-#ifndef AUTO_BIGNUM
-  if (sp[-1].u.integer > 31) {
-    sp--;
-    SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, 0);
-    return;
-  }
-#endif /* !AUTO_BIGNUM */
+
   if (sp[-1].u.integer < 0) {
     int args = 2;
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
@@ -3522,13 +3495,7 @@ PMOD_EXPORT void o_rsh(void)
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
   }
 
-  if(
-#ifdef AUTO_BIGNUM
-     (INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
-#else /* !AUTO_BIGNUM */
-     (sp[-1].u.integer > 31)
-#endif /* AUTO_BIGNUM */
-     )
+  if( INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer) )
   {
     sp--;
     if (sp[-1].u.integer < 0) {
@@ -3754,9 +3721,6 @@ PMOD_EXPORT void o_multiply(void)
   case TWO_TYPES(T_INT,T_INT):
   {
     INT_TYPE res;
-#ifndef AUTO_BIGNUM
-    res = sp[-2].u.integer * sp[-1].u.integer;
-#else
     int of = 0;
 
     res = DO_INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer, &of);
@@ -3766,7 +3730,7 @@ PMOD_EXPORT void o_multiply(void)
       convert_stack_top_to_bignum();
       goto do_lfun_multiply;
     }
-#endif /* AUTO_BIGNUM */
+
     sp--;
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
     return;
@@ -4107,16 +4071,10 @@ PMOD_EXPORT void o_divide(void)
 
     if(INT_TYPE_DIV_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     {
-#ifdef AUTO_BIGNUM
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
       goto do_lfun_division;
-#else
-      /* It's not possible to do MININT/-1 (it gives FPU exception on
-	 some CPU:s), thus we return what MININT*-1 returns: MININT. */
-      tmp = sp[-2].u.integer;
-#endif /* AUTO_BIGNUM */
     }
     else
       tmp = sp[-2].u.integer/sp[-1].u.integer;
@@ -4244,9 +4202,7 @@ PMOD_EXPORT void o_mod(void)
 {
   if(TYPEOF(sp[-2]) != TYPEOF(sp[-1]) && !float_promote())
   {
-#ifdef AUTO_BIGNUM
 do_lfun_modulo:
-#endif
     if(call_lfun(LFUN_MOD, LFUN_RMOD))
       return;
 
@@ -4352,14 +4308,12 @@ do_lfun_modulo:
 	res = DO_INT_TYPE_MOD_OVERFLOW(a, b, &of);
       }
     }
-#ifdef AUTO_BIGNUM
     if (of) {
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
       goto do_lfun_modulo;
     }
-#endif
     sp--;
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
     return;
@@ -4658,13 +4612,11 @@ PMOD_EXPORT void o_negate(void)
     return;
     
   case T_INT:
-#ifdef AUTO_BIGNUM
     if(INT_TYPE_NEG_OVERFLOW(sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
       goto do_lfun_negate;
     }
-#endif /* AUTO_BIGNUM */
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, -sp[-1].u.integer);
     return;
 

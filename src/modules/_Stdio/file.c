@@ -3063,7 +3063,7 @@ static void file_seek(INT32 args)
   if( args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->seek", 1);
 
-#if defined (SEEK64) && defined (AUTO_BIGNUM)
+#if defined (SEEK64)
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
     if (!int64_from_bignum(&to, Pike_sp[-args].u.object))
       Pike_error ("Bad argument 1 to Stdio.File->seek(). Offset too large.\n");
@@ -3164,7 +3164,7 @@ static void file_truncate(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->truncate", 1);
 
-#if defined (INT64) && defined (AUTO_BIGNUM)
+#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
     if (!int64_from_bignum(&len, Pike_sp[-args].u.object))

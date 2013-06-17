@@ -598,7 +598,6 @@ static void f_fetch_row(INT32 args)
 	  switch (field->type) {
 	    /* Integer types */
           case FIELD_TYPE_LONGLONG:
-#ifdef AUTO_BIGNUM
 	    if (
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 		row_lengths[i]
@@ -610,7 +609,7 @@ static void f_fetch_row(INT32 args)
 	      convert_stack_top_string_to_inumber(10);
 	      break;
 	    }
-#endif
+
 	    /* FALL_THROUGH */
 	  case FIELD_TYPE_TINY:
 	  case FIELD_TYPE_SHORT:
@@ -619,7 +618,7 @@ static void f_fetch_row(INT32 args)
 	    push_int(STRTOL(row[i], 0, 10));
 	    break;
 
-#if defined (HAVE_MYSQL_FETCH_LENGTHS) && defined (AUTO_BIGNUM)
+#if defined (HAVE_MYSQL_FETCH_LENGTHS)
 	  case FIELD_TYPE_BIT:
 	    if (row_lengths[i] <= SIZEOF_LONGEST) {
 	      unsigned LONGEST val = 0;
@@ -646,7 +645,6 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_DECIMAL:
 	  case FIELD_TYPE_NEWDECIMAL:
 	    if (!field->decimals) {
-#ifdef AUTO_BIGNUM
 	      if (
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 		row_lengths[i]
@@ -663,7 +661,6 @@ static void f_fetch_row(INT32 args)
 		convert_stack_top_string_to_inumber(10);
 		break;
 	      }
-#endif
 	      push_int(STRTOL(row[i], 0, 10));
 	      break;
 	    }

@@ -293,12 +293,10 @@ PIKECLASS mpq
 	/* or int num / den */
 	
 	if (TYPEOF(sp[1-args]) != T_INT)
-#ifdef AUTO_BIGNUM
 	  if(TYPEOF(sp[1-args]) != T_OBJECT ||
 	     sp[1-args].u.object->prog != bignum_program ||
 	     TYPEOF(sp[-args]) == T_STRING)
-#endif
-	  SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
+            SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
 
 	switch(TYPEOF(sp[-args]))
 	{
@@ -306,10 +304,9 @@ PIKECLASS mpq
 	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
 	    break;
 
-#ifdef AUTO_BIGNUM
 	  case T_OBJECT:
 	    if(sp[-args].u.object->prog != bignum_program)
-#endif
+
 	  default:
 	      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
 
@@ -336,12 +333,7 @@ PIKECLASS mpq
       struct object *res = fast_clone_object(mpzmod_program);
       mpz_tdiv_q(OBTOMPZ(res), mpq_numref(THISMPQ), mpq_denref(THISMPQ));
       /* FIXME */
-#ifdef AUTO_BIGNUM
       mpzmod_reduce(res);
-#else
-      free_object(res);
-      push_int(mpz_get_si(OBTOMPZ(res)));
-#endif /* AUTO_BIGNUM */
     }
 
   /*! @decl static int __hash()
@@ -759,10 +751,9 @@ PIKECLASS mpq
 	{
 	  if(sp[e-args].u.object->prog == mpzmod_program)
 	    continue;
-#ifdef AUTO_BIGNUM
+
 	  if(sp[e-args].u.object->prog == bignum_program)
 	    continue;
-#endif
 	}
 	
 	if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)

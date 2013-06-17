@@ -1554,7 +1554,6 @@ static void push_inout_value(struct inout *inout,
       {
 	push_int64(integer);
       }else{
-#ifdef AUTO_BIGNUM
 	unsigned char buffer[80];
 	ub4 buf_size=sizeof(buffer)-1;
 #define FMT "FM99999999999999999999999999999999999999"
@@ -1575,8 +1574,8 @@ static void push_inout_value(struct inout *inout,
 	{
 	  push_string(make_shared_binary_string(buffer,buf_size));
 	  convert_stack_top_to_bignum();
-	}else
-#endif
+	}
+        else
 	  ora_error_handler(dbcon->error_handle, ret, "OCINumberToInt");
       }
     }

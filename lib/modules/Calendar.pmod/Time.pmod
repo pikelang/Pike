@@ -26,12 +26,6 @@ inherit Calendar.TimeRanges:TimeRanges;
 
 function(mixed...:TimeRange) Day;
 
-// sanity check
-
-#ifndef __AUTO_BIGNUM__
-#error Calendar.Time needs bignums (Gmp.mpz)
-#endif
-
 Calendar.Rule.Timezone Timezone_UTC=
   Calendar.Rule.Timezone(0,"UTC"); // needed for dumping
 

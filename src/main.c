@@ -35,10 +35,7 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
-
-#ifdef AUTO_BIGNUM
 #include "bignum.h"
-#endif
 
 #include "pike_embed.h"
 

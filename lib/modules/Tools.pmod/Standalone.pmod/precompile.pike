@@ -2443,13 +2443,10 @@ static struct %s *%s_gdb_dummy_ptr;
 		    sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT",
 			     argnum, check_argbase),
 		    arg->line()),
-		  "\n#ifdef AUTO_BIGNUM\n",
 		  PC.Token (
-		    sprintf ("  && !is_bignum_object_in_svalue (Pike_sp%+d%s)",
+		    sprintf ("  && !is_bignum_object_in_svalue (Pike_sp%+d%s))",
 			     argnum, check_argbase),
 		    arg->line()),
-		  "\n#endif\n",
-		  PC.Token (")", arg->line()),
 		});
 		break;
 
@@ -2511,7 +2508,6 @@ static struct %s *%s_gdb_dummy_ptr;
 
 		case "LONGEST":
 		  ret += ({
-		    "\n#ifdef AUTO_BIGNUM\n",
 		    PC.Token (
 		      sprintf ("if (TYPEOF(Pike_sp[%d%s]) == PIKE_T_INT)\n",
 			       argnum, argbase),
@@ -2534,12 +2530,6 @@ static struct %s *%s_gdb_dummy_ptr;
 			       attributes->errname || attributes->name || name,
 			       argnum+1),
 		      arg->line()),
-		    "\n#else\n",
-		    PC.Token (
-		      sprintf ("%s = Pike_sp[%d%s].u.integer;\n",
-			       arg->name(), argnum, argbase),
-		      arg->line()),
-		    "\n#endif\n",
 		  });
 		  break;
 

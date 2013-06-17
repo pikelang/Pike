@@ -368,13 +368,11 @@ static void stat_create (INT32 args)
 	INT64 val;
 	if (TYPEOF(ITEM(a)[i]) == T_INT)
 	  val = ITEM(a)[i].u.integer;
-#ifdef AUTO_BIGNUM
 	else if (TYPEOF(ITEM(a)[i]) == T_OBJECT &&
 		 is_bignum_object (ITEM(a)[i].u.object)) {
 	  if (!int64_from_bignum (&val, ITEM(a)[i].u.object))
 	    Pike_error ("Stat create: Too big integer in stat array.\n");
 	}
-#endif /* AUTO_BINUM */
 	else
 	  SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "array(int)");
 	stat_compat_set (i, val);
@@ -583,7 +581,6 @@ static void stat_index(INT32 args)
 	args = 2;
       }
 
-#if AUTO_BIGNUM
       if (TYPEOF(sp[-2]) != T_INT &&
 	  !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
@@ -591,7 +588,6 @@ static void stat_index(INT32 args)
       if (TYPEOF(sp[-1]) != T_INT &&
 	  !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
-#endif
 
       /* make in range 0..6 */
       push_int(6);
@@ -630,15 +626,14 @@ static void stat_index_set (INT32 args)
 
   if (TYPEOF(sp[-1]) == T_INT)
     int_val = sp[-1].u.integer, got_int_val = 1;
-
-#if AUTO_BIGNUM
-  else if (TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)) {
+  else if (TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object))
+  {
     if (!int64_from_bignum (&int_val, sp[-1].u.object))
       Pike_error ("Stat `[]=: Too big integer as value.\n");
     else
       got_int_val = 1;
   }
-#endif
+
   /* shouldn't there be an else clause here ? */
   /* No, the second argument is checked further below depending on
    * what the first is. /mast */

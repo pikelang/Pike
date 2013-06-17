@@ -107,9 +107,7 @@ static inline mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;
 extern struct program *mpf_program;
-#ifdef AUTO_BIGNUM
 extern struct program *bignum_program;
-#endif
 
 #ifdef DEBUG_MALLOC
 #define get_mpz(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
@@ -125,11 +123,7 @@ extern struct program *bignum_program;
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
 #define OBTOMPF(o) ((MP_FLT *)(o->storage))
 
-#ifdef AUTO_BIGNUM
 #define IS_MPZ_OBJ(O) ((O)->prog == bignum_program || (O)->prog == mpzmod_program)
-#else
-#define IS_MPZ_OBJ(O) ((O)->prog == mpzmod_program)
-#endif
 
 #ifndef GMP_NUMB_BITS
 #define GMP_NUMB_BITS (SIZEOF_MP_LIMB_T * CHAR_BIT)

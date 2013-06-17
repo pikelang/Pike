@@ -37,12 +37,8 @@
 #include "opcodes.h"
 #include "pike_memory.h"
 #include "pike_cpulib.h"
-
 #include "pike_embed.h"
-
-#ifdef AUTO_BIGNUM
 #include "bignum.h"
-#endif
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>

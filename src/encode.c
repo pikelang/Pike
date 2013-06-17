@@ -616,7 +616,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       INT_TYPE i=val->u.integer;
       if (i != (INT32)i)
       {
-#ifdef AUTO_BIGNUM
 	 /* Reuse the id. */
 	 data->counter.u.integer--;
 	 /* Make sure we don't find ourselves again below... */
@@ -630,10 +629,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	 /* Restore the entry we removed above. */
 	 mapping_insert(data->encoded, val, &entry_id);
-#else
-	 Pike_error ("Cannot encode integers with more than 32 bits "
-		     "without bignum support.\n");
-#endif
 	 goto encode_done;
       }
       else
@@ -895,7 +890,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_OBJECT:
       check_stack(1);
 
-#ifdef AUTO_BIGNUM
       /* This could be implemented a lot more generic,
        * but that will have to wait until next time. /Hubbe
        */
@@ -913,7 +907,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	pop_stack();
 	break;
       }
-#endif
 
       if (data->canonic)
 	Pike_error("Canonical encoding of objects not supported.\n");
@@ -3079,12 +3072,6 @@ static void decode_value2(struct decode_data *data)
 
 	  break;
 
-#ifdef AUTO_BIGNUM
-	  /* It is possible that we should do this even without
-	   * AUTO_BIGNUM /Hubbe
-	   * However, that requires that some of the bignum functions
-	   * are always available...
-	   */
 	case 2:
 	{
 	  check_stack(2);
@@ -3099,7 +3086,6 @@ static void decode_value2(struct decode_data *data)
 	  break;
 	}
 
-#endif
 	case 3:
 	  pop_stack();
 	  decode_value2(data);

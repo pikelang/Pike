@@ -843,14 +843,12 @@ LONGEST pgtk_get_int( struct svalue *s )
 {
   if( TYPEOF(*s) == PIKE_T_INT )
     return s->u.integer;
-#ifdef AUTO_BIGNUM
   if( is_bignum_object_in_svalue( s ) )
   {
     LONGEST res;
     int64_from_bignum( &res, s->u.object );
     return res;
   }
-#endif
   if( TYPEOF(*s) == PIKE_T_FLOAT )
     return (LONGEST)s->u.float_number;
   return 0;
@@ -859,11 +857,8 @@ LONGEST pgtk_get_int( struct svalue *s )
 int pgtk_is_int( struct svalue *s )
 {
   return ((TYPEOF(*s) ==PIKE_T_INT) ||
-          (TYPEOF(*s) ==PIKE_T_FLOAT)
-#ifdef AUTO_BIGNUM
-          || is_bignum_object_in_svalue( s )
-#endif
-         );
+          (TYPEOF(*s) ==PIKE_T_FLOAT) ||
+          is_bignum_object_in_svalue( s ));
 }
 
 /* double should be enough */
@@ -873,7 +868,6 @@ double pgtk_get_float( struct svalue *s )
     return s->u.float_number;
   if( TYPEOF(*s) == PIKE_T_INT )
     return (double)s->u.integer;
-#ifdef AUTO_BIGNUM
   if( is_bignum_object_in_svalue( s ) )
   {
     FLOAT_TYPE f;
@@ -883,7 +877,6 @@ double pgtk_get_float( struct svalue *s )
     pop_stack();
     return (double)f;
   }
-#endif
   return 0.0;
 }
 
@@ -895,9 +888,6 @@ void pgtk_free_object(struct object *o)
 int pgtk_is_float( struct svalue *s )
 {
   return ((TYPEOF(*s) ==PIKE_T_FLOAT) ||
-          (TYPEOF(*s) ==PIKE_T_INT)
-#ifdef AUTO_BIGNUM
-          ||is_bignum_object_in_svalue( s )
-#endif
-         );
+          (TYPEOF(*s) ==PIKE_T_INT) ||
+          is_bignum_object_in_svalue( s ));
 }

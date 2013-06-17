@@ -3,7 +3,6 @@
 #include "machine.h"
 
 #define DEBUG_CHECKS
-#ifdef AUTO_BIGNUM
 
 #include "common.h"
 
@@ -76,4 +75,3 @@ void pike_init_bignumtree_module(void) {
 void pike_exit_bignumtree_module(void) {
     EXIT
 }
-#endif

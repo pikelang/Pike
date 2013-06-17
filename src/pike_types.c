@@ -4867,14 +4867,13 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     return mixed_type_string;    
 
     case T_INT:
-#ifdef AUTO_BIGNUM
       /* Don't force Gmp.mpz to be loaded here since this function
        * is called long before the master object is compiled...
        * /Hubbe
        */
       p=get_auto_bignum_program_or_zero();
       goto comefrom_int_index;
-#endif
+
     case T_ZERO:
     case T_TYPE:
     case PIKE_T_RING:
@@ -5390,9 +5389,7 @@ static int low_check_indexing(struct pike_type *type,
      */
     return low_match_types(type->car, index_type, 0) ? 1 : -1;
 
-#ifdef AUTO_BIGNUM
     case T_INT:
-#endif
     case T_PROGRAM:
       return !!low_match_types(string_type_string, index_type, 0);
 
@@ -6148,7 +6145,6 @@ static int match_type_svalue(struct pike_type *type,
       }
       res = 1;
     }
-#ifdef AUTO_BIGNUM
     /* FIXME: Objects that emulate integers? */
     else if( TYPEOF(*sval) == PIKE_T_OBJECT )
     {
@@ -6176,7 +6172,6 @@ static int match_type_svalue(struct pike_type *type,
         res = 1;
       }
     }
-#endif
     break;
   default:
     res = (type->type == TYPEOF(*sval));
@@ -7827,13 +7822,11 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     type_stack_mark();
     if(s->u.object->prog)
     {
-#ifdef AUTO_BIGNUM
       if(is_bignum_object(s->u.object))
       {
           push_int_type(MIN_INT32, MAX_INT32);
       }
       else
-#endif
       {
 	push_object_type(1, s->u.object->prog->id);
       }

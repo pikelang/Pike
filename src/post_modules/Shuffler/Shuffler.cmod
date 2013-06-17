@@ -703,23 +703,17 @@ PIKECLASS Shuffle
 
     if( args > 1 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
-      else
-#endif
-	if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
-	  rstart = start->u.integer;
+      else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
+        rstart = start->u.integer;
     }
     if( args > 2 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
-      else
-#endif
-	if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
-	  rlength = length->u.integer;
+      else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
+        rlength = length->u.integer;
     }
     if( rlength == 0 )
     {

@@ -6,8 +6,6 @@
 
 #include "global.h"
 
-#ifdef AUTO_BIGNUM
-
 #include "interpret.h"
 #include "program.h"
 #include "object.h"
@@ -146,5 +144,3 @@ PMOD_EXPORT void hook_in_gmp_funcs (
   push_ulongest = push_ulongest_val;
   ulongest_from_bignum = ulongest_from_bignum_val;
 }
-
-#endif /* AUTO_BIGNUM */
