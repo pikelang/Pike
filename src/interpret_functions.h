@@ -527,9 +527,15 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
       if( dsts->len && srcs->len )
       {
           size_t tmp = dsts->len;
+          size_t tmp2 = srcs->len;
+          /*
+           * in case srcs==dsts
+           *  pike_string_cpy(MKPCHARP_STR_OFF(dsts,tmp), srcs);
+           * does bad stuff
+           */
           dsts = new_realloc_shared_string( dsts, tmp+srcs->len, MAX(srcs->size_shift,dsts->size_shift) );
           update_flags_for_add( dsts, srcs );
-          pike_string_cpy(MKPCHARP_STR_OFF(dsts,tmp), srcs);
+          generic_memcpy(MKPCHARP_STR_OFF(dsts,tmp), MKPCHARP_STR(srcs), tmp2);
           dst->u.string = low_end_shared_string( dsts );
       }
       else if( !dsts->len )
