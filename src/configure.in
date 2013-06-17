@@ -1600,9 +1600,6 @@ AC_ARG_WITH(security, MY_DESCR([--with-security],
 AC_ARG_WITH(deprecated-security, MY_DESCR([--with-deprecated-security],
 			       [enable internal pike security system]),
 	    [AC_DEFINE(PIKE_SECURITY)])
-AC_ARG_WITH(bignums, MY_DESCR([--without-bignums],
-			      [disable internal conversion to bignums (not recommended)]),
-	    [],[with_bignums=yes])
 dnl Shared nodes has been disabled in an ugly way. To enable it you
 dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
 dnl top of freeze_node in src/las.c. /mast
@@ -1679,20 +1676,9 @@ if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
 fi
 
-if test "x$with_bignums" = xyes; then
-  AC_DEFINE(AUTO_BIGNUM)
-  if test "x$with_gmp" = xno; then
-    AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
-It is highly recommended that you install a working GMP
-library on your system as that will add features to Pike
-required by many applications (such as Roxen).  However,
-if you know that you do not need GMP, you may re-run configure
-with the option --without-bignums instead.])
-  else :; fi
-else
-  PIKE_MSG_WARN([****** Compiling without bignum support. This is discouraged. Many
-****** Pike applications might not work correctly.])
- sleep 10
+AC_DEFINE(AUTO_BIGNUM)
+if test "x$with_gmp" = xno; then
+  AC_MSG_ERROR([The GMP library is required to compile Pike.])
 fi
 
 dnl Pike currently breaks miserably if SHARED_NODES is not defined.
