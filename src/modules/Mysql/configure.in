@@ -13,6 +13,12 @@
 #   libmysql.a				libmysqllib.a
 #   libstrings.a			libmystrings.a
 #
+#   MariaDB-Client 1.0.0
+#   -------------------------------------------------------------------
+#   /usr/local/lib
+#   /usr/local/mariadbclient/include
+#   libmariadbclient.a
+#
 
 
 AC_INIT(mysql.c)
@@ -35,6 +41,9 @@ if test x$with_mysql = xno; then
   :
 else
   PIKE_FEATURE_NODEP(Mysql)
+
+  AC_PATH_PROG(MARIADB_CONFIG,${ac_tool_prefix}mariadb_config,no)
+  if test "x${MARIADB_CONFIG}" = "xno"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
   AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
@@ -108,6 +117,38 @@ else
       CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
     fi
   fi
+  else
+      echo "MariaDB found. Attempting to use."
+      # MariaDB
+      # NB: mariadb_config doens't distinguish between
+      #     LDFLAGS and LIBS
+      MARIADB_LIBS=""
+      set ignored `${MARIADB_CONFIG} --libs_r`
+      while test "$#" -gt 1; do
+        case "$2" in
+          -L*)
+	    echo "Adding `echo $2 | sed -e 's/^-L//'` to the library search path."
+	    LDFLAGS="${LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
+	    ;;
+          -R*)
+	    echo "Adding `echo $2 | sed -e 's/^-R//'` to the library runtime search path."
+	    LDFLAGS="${LDFLAGS} $2"
+	    ;;
+	  -lmaria*)
+	    # We handle the client library itself later.
+	    ;;
+	  *)
+	    # NB: We need to buffer libs to get them in the correct order.
+	    echo "Adding $2 to LIBS."
+	    MARIADB_LIBS="${MARIADB_LIBS} $2"
+	    ;;
+	esac
+	shift
+      done
+      echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
+      CPPFLAGS="${CPPFLAGS} `${MARIADB_CONFIG} --include`"
+  fi
+
 
   # Header file
 
@@ -200,11 +241,18 @@ dnl   fi
     ])
   ])
 
+  # Needed for libmariadbclient.a 1.0.0.
+  AC_SEARCH_LIBS(OPENSSL_config, crypto)
+
   AC_SEARCH_LIBS(_db_doprnt_, dbug)
   AC_SEARCH_LIBS(my_init, mysys)
 
   # mysql 3.23.x libmysqlclient requires zlib...
   AC_SEARCH_LIBS(compress, z)
+
+  if test "x${MARIADB_CONFIG}" = "x"; then :; else
+      LIBS="${MARIADB_LIBS} ${LIBS}"
+  fi
 
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
@@ -283,6 +331,7 @@ else
 fi
 ])
 
+  if test "x${MARIADB_CONFIG}" = "xno"; then
   # libmysql.lib is the name for the libmysql.dll wrapper in the
   # windows releases. There's also a mysqlclient.lib which contain the
   # static version. We prefer the dynamic one so check libmysql first.
@@ -304,6 +353,18 @@ fi
       ])
     ])
   ])
+  else
+      AC_CHECK_SQLLIB(mariadbclient, [
+	LIBS="-lmariadbclient $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mariadb, [
+	  LIBS="-lmariadb $LIBS"
+	], [
+	  PIKE_FEATURE_NODEP(Mysql)
+	  pike_cv_mysql="no"
+	])
+      ])
+  fi
 
   if test x$pike_cv_mysql = xno; then :; else
     # Check version match
