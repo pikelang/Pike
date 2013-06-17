@@ -311,7 +311,7 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
  *!   @[raw] decoded to UNICODE, or @expr{0@} (zero) if the decoding failed.
  *!
  *! @seealso
- *!   @[Locale.Charset]
+ *!   @[Charset]
  */
 
 /*! @endclass
@@ -525,9 +525,9 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
 
 /*! @directive #charset
  *!
- *!   Inform the preprocessor about which charset the file is encoded with.
- *!   The Locale.Charset module is called with this string to decode the
- *!   remainder of the file.
+ *!   Inform the preprocessor about which charset the file is encoded
+ *!   with. The Charset module is called with this string to decode
+ *!   the remainder of the file.
  */
 
 /*! @directive #if

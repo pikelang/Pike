@@ -38,10 +38,10 @@ mapping(string:int) cond_cache=([]);
 
 void print_code(string test)
 {
-  array lines = Locale.Charset.encoder("iso-8859-1", 0,
-				       lambda(string s) {
-					 return sprintf("\\%o", s[0]);
-				       })->feed(test)->drain()/"\n";
+  array lines = Charset.encoder("iso-8859-1", 0,
+                                lambda(string s) {
+                                  return sprintf("\\%o", s[0]);
+                                })->feed(test)->drain()/"\n";
   foreach(lines; int r; string line) {
     log_msg("%3d: %s\n", r+1, line);
   }

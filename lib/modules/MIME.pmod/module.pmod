@@ -349,7 +349,7 @@ string encode_word( string|array(string) word, string encoding )
 protected string remap(array(string) item)
 {
   if (sizeof(item)>1 && item[1])
-    return Locale.Charset.decoder(item[1])->feed(item[0])->drain();
+    return Charset.decoder(item[1])->feed(item[0])->drain();
   else
     return item[0];
 }
@@ -361,7 +361,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
     return ({ word,0 });
   string s = stringp(selector)? selector : selector(word);
   return s?
-    ({ Locale.Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
+    ({ Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
 }
 
@@ -563,9 +563,9 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!   Either the name of a character set to use, or a function returning
 //!   a character set to use given a text fragment as input.
 //! @param replacement
-//!   The @[replacement] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[replacement] argument to use when calling @[Charset.encoder]
 //! @param repcb
-//!   The @[repcb] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[repcb] argument to use when calling @[Charset.encoder]
 //!
 //! @seealso
 //! @[MIME.encode_words_tokenized_remapped]

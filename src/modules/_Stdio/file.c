@@ -1847,7 +1847,7 @@ static void file__disable_callbacks(INT32 args)
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
  *!   data somehow, e.g. with @[string_to_utf8] or with one of the
- *!   charsets supported by @[Locale.Charset.encoder].
+ *!   charsets supported by @[Charset.encoder].
  *!
  *! @seealso
  *!   @[read()], @[write_oob()], @[send_fd()]

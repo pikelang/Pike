@@ -601,7 +601,7 @@ test_eq([[
   // Test case from Robert J. Budzynski <Robert.Budzynski@fuw.edu.pl>.
   // When broken the return type will be mixed.
   sprintf("%O", typeof(lambda(string s){
-    return Locale.Charset.decoder("utf-8")->feed(s)->drain();
+    return Charset.decoder("utf-8")->feed(s)->drain();
   }))
 ]], [[ "function(string : string)" ]])
 
@@ -2307,7 +2307,7 @@ test_any([[
 define(test_backtrace_line_charset, [[
 test_any([[
   program p=compile_string(
-Locale.Charset.encoder("]]$1[[")->feed(
+Charset.encoder("]]$1[[")->feed(
 "#charset ]]$1[[\n"
 "int foo()\n"
 "{\n"
@@ -9339,7 +9339,7 @@ test_equal([[
 test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
   "#line 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
 test_equal([[
-  compile_string(Locale.Charset.encoder("ebcdic-us")->
+  compile_string(Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")

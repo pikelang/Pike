@@ -309,9 +309,9 @@ void set_charset (string charset)
 //!   control chars in ISO-8859-1). For instance, the euro currency
 //!   sign is @expr{0x80@}.
 //!
-//!   You can use the @expr{mysql-latin1@} encoding in the
-//!   @[Locale.Charset] module to do conversions, or just use the
-//!   special @expr{"unicode"@} charset instead.
+//!   You can use the @expr{mysql-latin1@} encoding in the @[Charset]
+//!   module to do conversions, or just use the special
+//!   @expr{"unicode"@} charset instead.
 //!
 //! @seealso
 //!   @[get_charset], @[set_unicode_encode_mode], @[set_unicode_decode_mode]

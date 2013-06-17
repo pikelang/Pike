@@ -711,7 +711,7 @@ int(0..1) asn1_teletex_valid (string s)
 //!   (control characters).
 //!
 //! @seealso
-//!   @[Locale.Charset]
+//!   @[Charset]
 class TeletexString
 {
   inherit String;

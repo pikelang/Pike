@@ -184,12 +184,12 @@ protected {
     predef::error(last_error = msg);
   }
 
-  protected object utf16enc = Locale.Charset.encoder("UTF16LE");
+  protected object utf16enc = Charset.encoder("UTF16LE");
   protected string string_to_utf16(string s)
   {
     return utf16enc->feed(s)->drain();
   }
-  protected object utf16dec = Locale.Charset.decoder("UTF16LE");
+  protected object utf16dec = Charset.decoder("UTF16LE");
   protected string utf16_to_string(string s)
   {
     return utf16dec->feed(s)->drain();
