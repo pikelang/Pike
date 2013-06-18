@@ -534,7 +534,6 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
           free_string( dsts );
           dst->u.string = srcs;
           srcs->refs++;
-          return;
       }
   }
   else
