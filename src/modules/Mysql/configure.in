@@ -36,13 +36,18 @@ OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(mariadb,[  --without-mariadb     disable use of MariaDB-client library],[],[with_mariadb=yes])
 
 if test x$with_mysql = xno; then
   :
 else
   PIKE_FEATURE_NODEP(Mysql)
 
-  AC_PATH_PROG(MARIADB_CONFIG,${ac_tool_prefix}mariadb_config,no)
+  if test "x$with_mariadb" = "xno"; then
+      MARIADB_CONFIG=no
+  else
+      AC_PATH_PROG(MARIADB_CONFIG,${ac_tool_prefix}mariadb_config,no)
+  fi
   if test "x${MARIADB_CONFIG}" = "xno"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
