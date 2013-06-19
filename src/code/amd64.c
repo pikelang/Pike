@@ -652,9 +652,9 @@ static void cmp_reg32_imm( enum amd64_reg reg, int imm32 )
 
 static void cmp_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
 {
-  rex(1, reg1, 0, reg2);
+  rex(1, reg2, 0, reg1);
   opcode( 0x39 );
-  modrm( 3, reg1, reg2 );
+  modrm( 3, reg2, reg1 );
 }
 
 static int jmp_rel_imm32( int addr )
@@ -3094,7 +3094,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       amd64_push_int(0, c);
       LABEL_A;
       cmp_reg_reg(sp_reg, ARG1_REG);
-      jg(&label_B);
+      jl(&label_B);
     }
     return;
 
