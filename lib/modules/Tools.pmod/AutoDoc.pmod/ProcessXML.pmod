@@ -971,6 +971,7 @@ protected class ScopeStack {
       scopes[namespace] += ({ Scope(type, name) });
     }
   }
+
   void leave() {
     if (sizeof(scopes[namespace]||({}))) {
       if (sizeof(scopes[namespace][-1]->failures)) {
@@ -1421,11 +1422,13 @@ class NScope
       }
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
+
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
     int(1..1)|NScope scope =
@@ -1484,6 +1487,7 @@ class NScopeStack
     if (zero_type(flags)) flags = .FLAG_NORMAL;
     this_program::flags = flags;
   }
+
   protected void destroy()
   {
     if (sizeof(failures)) {
@@ -1512,20 +1516,24 @@ class NScopeStack
       f->close();
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScopeStack(num_scopes: %d, top: %O)",
 		   sizeof(stack), top);
   }
+
   void addImplicitInherits()
   {
     scopes->addImplicitInherits();
   }
+
   void reset()
   {
     top = scopes;
     stack = ({});
   }
+
   void enter(string symbol)
   {
     int(1..1)|NScope scope = top->symbols[symbol];
@@ -1541,6 +1549,7 @@ class NScopeStack
     stack += ({ top });
     top = scope;
   }
+
   void leave()
   {
     if (!top) {
@@ -1553,6 +1562,7 @@ class NScopeStack
       top = 0;
     }
   }
+
   NScope|int(1..1) lookup(string ref)
   {
     array(string) path = splitRef(ref);
@@ -1566,6 +1576,7 @@ class NScopeStack
     }
     return val;
   }
+
   string resolve(array(string) ref)
   {
     if (!sizeof(ref)) {
@@ -1660,6 +1671,7 @@ class NScopeStack
     }
     return 0;
   }
+
   void resolveInherits()
   {
     int removed_self;
@@ -1860,6 +1872,7 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
       if ((child->get_any_name() == "classname") &&
 	  (!(m = child->get_attributes())->resolved)) {
 	string ref = child->value_of_node();
+        int debug = has_value(ref, "JPEG");
 	NScope ns;
 	if (ns = (scopestack->top->inherits[ref])) {
 	  string resolution = scopestack->resolve(splitRef(ns->name));
