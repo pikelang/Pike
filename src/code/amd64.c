@@ -1096,9 +1096,11 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* load type -> RAX */
   mov_sval_type( src, REG_RAX );
 
-  /* if RAX < MIN_REF_TYPE+1 */
+  and_reg_imm(REG_RAX, ~(MIN_REF_TYPE - 1));
+
+  /* if RAX != MIN_REF_TYPE */
   cmp_reg32_imm( REG_RAX,MIN_REF_TYPE);
-  jl( &label_A );
+  jne( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1116,7 +1118,7 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
   LABEL_A;
 }
 
-/* Type already in RAX */
+/* Type already in register. Note: Clobbers the type register. */
 static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
                                    int guaranteed_ref )
 {
@@ -1125,8 +1127,10 @@ static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
   if( src == REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
 
+  and_reg_imm(type, ~(MIN_REF_TYPE - 1));
+
   cmp_reg32_imm(type,MIN_REF_TYPE);
-  jl( &label_A );
+  jne( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);

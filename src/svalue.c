@@ -204,7 +204,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 
 #undef DOTYPE
   default:
-    if (type_hint & (BIT_FLOAT | BIT_INT)) {
+    if (type_hint & (BIT_FLOAT | BIT_INT | BIT_UNFINISHED)) {
       while(num--)
       {
 #ifdef DEBUG_MALLOC
