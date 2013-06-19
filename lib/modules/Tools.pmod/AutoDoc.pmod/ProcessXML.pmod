@@ -1872,7 +1872,6 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
       if ((child->get_any_name() == "classname") &&
 	  (!(m = child->get_attributes())->resolved)) {
 	string ref = child->value_of_node();
-        int debug = has_value(ref, "JPEG");
 	NScope ns;
 	if (ns = (scopestack->top->inherits[ref])) {
 	  string resolution = scopestack->resolve(splitRef(ns->name));
