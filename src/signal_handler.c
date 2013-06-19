@@ -4996,10 +4996,6 @@ void init_signals(void)
 
 #ifdef USE_PID_MAPPING
   pid_mapping=allocate_mapping(2);
-
-#ifndef USE_WAIT_THREAD
-  mapping_set_flags(pid_mapping, MAPPING_WEAK_VALUES);
-#endif
 #endif
 
 #ifdef USE_WAIT_THREAD
