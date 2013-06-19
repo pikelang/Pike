@@ -2364,10 +2364,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg( sp_reg,  -1*sizeof(struct svalue)+8, REG_RDX ); /* u.array */
       /* -> arr[sizeof(arr)-b] */
       mov_mem32_reg( REG_RDX, OFFSETOF(array,size), REG_RCX );
-      mov_imm_reg( b, REG_RBX);
-      cmp_reg_reg( REG_RCX, REG_RBX );
-      jge( &label_A ); /* b >= RBX, index outside array */
-      shl_reg_imm( REG_RBX, 4 );
+      cmp_reg32_imm( REG_RCX, b );
+      jle( &label_A ); /* RCX <= b, index outside array */
+      mov_imm_reg( b * sizeof(struct svalue), REG_RBX);
       add_reg_mem( REG_RBX, REG_RDX, OFFSETOF(array,item) );
 
       /* This overwrites the array. */
