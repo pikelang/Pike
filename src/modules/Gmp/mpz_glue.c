@@ -2022,18 +2022,21 @@ static void mpzmod_powm(INT32 args)
 static void mpzmod_pow(INT32 args)
 {
   struct object *res = NULL;
-  INT32 i;
+  INT_TYPE i;
   MP_INT *mi;
+  INT_TYPE size = (INT_TYPE)mpz_size(THIS);
   
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->pow", 1);
   if (TYPEOF(sp[-1]) == T_INT) {
-    if (sp[-1].u.integer < 0)
+    INT_TYPE e = sp[-1].u.integer;
+    if (e < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
     /* Cut off at 1 MB. */
-    if ((mpz_size(THIS)*sp[-1].u.integer>(0x100000/sizeof(mp_limb_t))))
+    if (INT_TYPE_MUL_OVERFLOW(e, size) || size * e > (0x100000/sizeof(mp_limb_t))) {
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 goto too_large;
+    }
     res = fast_clone_object(THIS_PROGRAM);
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
@@ -2043,8 +2046,7 @@ too_large:
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
     i=mpz_get_si(mi);
     /* Cut off at 1 MB. */
-    if(mpz_cmp_si(mi, i) ||
-       (mpz_size(THIS)*i>(0x100000/sizeof(mp_limb_t))))
+    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(0x100000/sizeof(mp_limb_t))))
     {
        if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Exponent too large.");
