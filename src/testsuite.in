@@ -12401,6 +12401,23 @@ test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
 test_true([[zero_type (lambda () {return ([])[0];}())]])
 
 test_any([[
+  class A {
+    int j = 0;
+    int k = UNDEFINED;
+    int l;
+  };
+  A a = A();
+  return "" + zero_type(a->j) + zero_type(a->k) + zero_type(a->l) + zero_type(a->m) + " " + has_index(a, "j") + has_index(a, "k") + has_index(a, "l") + has_index(a, "m");
+]], "0101 1110")
+test_any([[
+  mapping m = ([
+    "x" : 0,
+    "y" : UNDEFINED,
+  ]);
+  return "" + zero_type(m->x) + zero_type(m->y) + zero_type(m->z) + " " + has_index(m, "x") + has_index(m, "y") + has_index(m, "z");
+]], "001 110")
+
+test_any([[
   int i = lambda() {return UNDEFINED;}();
   lambda (int x) {} (i += 17);
   return zero_type (i);
