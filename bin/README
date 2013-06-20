@@ -57,10 +57,6 @@ nobinary_dummy
   A simple script that fakes success for all configure
   tests when --disable-binary is set.
 
-parse_install_log
-  [FIXME: What does this do? Doesn't appear to be called
-   from any Makefile.]
-
 pike
   This file is generated from the file pike.in when make
   all is built from the top level make file. This script
