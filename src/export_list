@@ -2,7 +2,7 @@
 # added to source dists. Used by bin/export.pike.
 
 /README
-/README-CVS
+/README-GIT
 /ANNOUNCE
 /CHANGES
 /COMMITTERS
