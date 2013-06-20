@@ -730,7 +730,7 @@ int main(int ac,array(string) am)
       files = get_dir(combine_path(__FILE__, "../tzdata"));
       files = map(sort(files),
 		  lambda(string fname) {
-		    if ((< "CVS", "factory", "leapseconds", >)[fname] ||
+		    if ((< "factory", "leapseconds", >)[fname] ||
 			has_prefix(fname, "solar") ||
 			has_suffix(fname, ".sh") ||
 			has_suffix(fname, ".tab")) return 0;
