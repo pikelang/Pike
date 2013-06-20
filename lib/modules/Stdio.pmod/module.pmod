@@ -2602,7 +2602,7 @@ void perror(string s)
 //! Check if a @[path] is a file.
 //!
 //! @returns
-//! Returns true if the given path is a file, otherwise false.
+//! Returns true if the given path is a regular file, otherwise false.
 //!
 //! @seealso
 //! @[exist()], @[is_dir()], @[is_link()], @[file_stat()]
