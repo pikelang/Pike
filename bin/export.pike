@@ -17,18 +17,15 @@ string dirname(string dir)
 array(string) get_files(string path)
 {
   array(string) files = get_dir(path);
-
-  if(!getenv("PIKE_EXPORT_CVS_DIRS"))
-    files -= ({ "CVS", "RCS", ".git", ".svn", ".cvsignore", ".gitignore",
-		".gitattributes", });
+  files -= ({ ".git", ".gitignore", ".gitattributes", });
 
   array(string) ret = ({});
   foreach(files, string fn)
   {
     if( fn=="core" ) continue;
     if( fn[-1]=='~' ) continue;
-    if( fn[0]=='#' && fn[-1]=='#' ) continue;
-    if( fn[0]=='.' && fn[1]=='#' ) continue;
+    if( sizeof(fn)>2 && fn[0]=='#' && fn[-1]=='#' ) continue;
+    if( sizeof(fn)>2 && fn[0]=='.' && fn[1]=='#' ) continue;
 
     if( path==vpath+"/src/modules" && except_modules[fn] )
       continue;
@@ -42,12 +39,34 @@ array(string) get_files(string path)
 
     fn = path+"/"+fn;
 
-    if( Stdio.file_size(fn)==-2 )
+    if( Stdio.is_dir(fn) )
       ret += get_files(fn);
     else
       ret += ({ fn });
   }
   return ret;
+}
+
+void run( string cmd, mixed ... args )
+{
+  function fail;
+  if( functionp(args[-1]) )
+  {
+    fail = args[-1];
+    args = args[..<1];
+  }
+  mapping mods;
+  if( mappingp(args[-1]) )
+  {
+    mods = args[-1];
+    args = args[..<1];
+  }
+
+  mapping r = Process.run( ({ cmd }) + args, mods );
+  if( r->exitcode && fail )
+  {
+    fail(r);
+  }
 }
 
 void fix_configure(string dir)
@@ -60,8 +79,7 @@ void fix_configure(string dir)
     if(!config || config_in->mtime > config->mtime)
     {
       werror("Fixing configure in "+dir+".\n");
-      Process.create_process( ({"autoconf"}),
-			      (["cwd":dir]) )->wait();
+      run( "autoconf", ([ "cwd":dir ]) );
     }
   }
 }
@@ -109,116 +127,26 @@ string low_bump_version(int|void bump_minor)
   return ((array(string))getversion())*".";
 }
 
-void cvs_bump_version(int|void is_release)
-{
-  werror("Bumping release number.\n");
-  Process.create_process( ({ "cvs", "update", "version.h" }),
-			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
-
-  string rel = low_bump_version();
-
-  Process.create_process( ({ "cvs", "commit", "-m",
-			     "release number bumped to "+rel+" by export.pike",
-			     "version.h" }),
-			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
-
-#if 0
-  // This causes a lot of noise in the Debian changelog for all test
-  // builds. It should only be done for a real release build. Besides,
-  // the maintainer address is out of date. /mast
-  s = Stdio.read_file(pike_base_name+"/packaging/debian/changelog");
-  if (s) {
-    werror("Bumping Debian changelog.\n");
-    array(int) version = getversion();
-    s = sprintf("pike%d.%d (%d.%d.%d-1) experimental; urgency=low\n"
-		"\n" +
-		"  * %s\n"
-		"\n"
-		" -- Marek Habersack <grendel@debian.org>  %s\n"
-		"\n"
-		"%s",
-		version[0], version[1],
-		version[0], version[1], version[2],
-		is_release?
-		"Release number bumped by export.pike.":
-		"The latest cvs snapshot",
-		Calendar.Second()->format_smtp(),
-		s);
-    Stdio.write_file(pike_base_name+"/packaging/debian/changelog", s);
-    Process.create_process( ({ "cvs", "commit", "-m",
-			       "release number bumped to "+rel+" by export.pike",
-			       "changelog" }),
-			     ([ "cwd":pike_base_name+"/packaging/debian" ])
-			     )->wait();
-
-  }
-#endif
-}
-
-string svn_cmd(string ... args)
-{
-  mapping r =
-    Process.run( ({ "svn", "--non-interactive" }) + args,
-		 ([ "cwd":pike_base_name ]) );
-  if (r->exitcode) {
-    werror(r->stderr||"");
-    exit(r->exitcode);
-  }
-  return r->stdout;
-}
-
-int svn_bump_version(int|void is_release)
-{
-  werror("Bumping release number.\n");
-
-  string rel = low_bump_version();
-
-  string s = svn_cmd("commit", "-m",
-		     "release number bumped to "+rel+" by export.pike",
-		     "src/version.h");
-
-  return array_sscanf(s, "%*sCommitted revision %d.")[0];
-}
-
-Parser.XML.Tree.SimpleRootNode svn_get_info()
-{
-  return Parser.XML.Tree.simple_parse_input(svn_cmd("info", "--xml"));
-}
-
-string svn_get_url()
-{
-  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
-    get_elements("url")[0]->value_of_node();
-}
-
-string svn_get_repos()
-{
-  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
-    get_elements("repository")[0]->get_elements("root")[0]->value_of_node();
-}
-
 string git_cmd(string ... args)
 {
   mapping r = Process.run( ({ "git" }) + args );
   if( r->exitcode )
     exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
-  return r->stdout||"";
+  return String.trim_all_whites(r->stdout||"");
 }
 
-void git_bump_version(int|void is_release)
+void git_bump_version()
 {
   werror("Bumping release number.\n");
 
   int bump_minor = 0;
 
-  string branch =
-    String.trim_all_whites(git_cmd("symbolic-ref", "HEAD"));
+  string branch = git_cmd("symbolic-ref", "HEAD");
 
   if (has_prefix(branch, "refs/heads/")) {
     branch = branch[sizeof("refs/heads/")..];
     string upstream_branch =
-      String.trim_all_whites(git_cmd("config", "--get",
-				     "branch."+branch+".merge"));
+      git_cmd("config", "--get", "branch."+branch+".merge");
     if (has_prefix(upstream_branch, "refs/heads/")) {
       upstream_branch = upstream_branch[sizeof("refs/heads/")..];
 
@@ -245,7 +173,7 @@ void git_bump_version(int|void is_release)
   git_cmd("commit", "-m", "release number bumped to "+rel+" by export.pike");
 }
 
-array(string) build_file_list(string vpath, string list_file)
+array(string) build_file_list(string list_file)
 {
   if(!file_stat(list_file)) {
     werror("Could not find %s\n", list_file);
@@ -291,26 +219,30 @@ second:%s
 
 string pike_base_name;
 string srcdir;
-int(0..1) rebuild, ignore_missing;
+int(0..1) ignore_missing;
 
-
-void cleanup_git()
+void clean_exit(int err, mixed ... msg)
 {
+  rm("buildid.txt");
+
+  if( vpath )
+    Stdio.recursive_rm(vpath);
+
   /* Roll forward to a useable state. */
-  git_cmd("checkout", main_branch);
+  if(main_branch)
+    git_cmd("checkout", main_branch);
+
+  exit(err, @msg);
 }
 
 int main(int argc, array(string) argv)
 {
   array(string) files;
   string export_list, filename;
-  function(:void) git, svn;
-  object cvs;
   int tag, snapshot, t;
 
   foreach(Getopt.find_all_options(argv, ({
     ({ "srcdir",    Getopt.HAS_ARG, "--srcdir"     }),
-    ({ "rebuild",   Getopt.NO_ARG,  "--rebuild"    }),
     ({ "tag",       Getopt.NO_ARG,  "--tag"        }),
     ({ "help",      Getopt.NO_ARG,  "--help"       }),
     ({ "exportlist",Getopt.HAS_ARG, "--exportlist" }),
@@ -339,10 +271,6 @@ int main(int argc, array(string) argv)
 	  filename=opt[1];
 	  break;
 
-	case "rebuild":
-	  rebuild=1;
-	  break;
-	
         case "force":
 	  ignore_missing=1;
 	  break;
@@ -352,8 +280,7 @@ int main(int argc, array(string) argv)
 	  break;
 	
         case "help":
-	  write(documentation);
-	  return 0;
+	  exit(0, documentation);
 
         case "timestamp":
 	  t=(int)opt[1];
@@ -367,103 +294,51 @@ int main(int argc, array(string) argv)
 
   argv -= ({ 0 });
   except_modules = (multiset)argv[1..];
-  if(!srcdir || !export_list || !filename) {
-    werror(documentation);
-    return 1;
-  }
-
-  if(rebuild)
-  {
-    werror("Not yet finished!\n");
-    exit(1);
-    object autoconfig=Process.create_process(({"./run_autoconfig"}),
-					     (["cwd":pike_base_name]));
-    /* make depend... */
-    /* And other things... */
-  }
+  if(!srcdir || !export_list || !filename)
+    exit(1, documentation);
 
   if (tag) {
-    if (file_stat(pike_base_name + "/.svn")) {
-      /* Tagging in svn is fast, so there's no need to
-       * do it asynchronously. We also want to perform
-       * the version bumps back-to-back, to avoid
-       * ambiguities regarding the stable version. */
+    main_branch = git_cmd("symbolic-ref", "-q", "HEAD");
+    if (!has_prefix(main_branch, "refs/heads/"))
+      exit(1, "Unexpected HEAD: %O\n", main_branch);
 
-      int r = svn_bump_version(1);
-      array(int) version = getversion();
-      vpath = sprintf("Pike-v%d.%d.%d", @version);
-      string tag = sprintf("v%d_%d_%d", @version);
+    main_branch = main_branch[sizeof("refs/heads/")..];
+    string remote = git_cmd("remote");
+    if (!sizeof(remote)) remote = 0;
+    if (remote) git_cmd("pull", "--rebase", remote);
 
-      svn_bump_version();
+    /* Tagging in git is fast, so there's no need to
+     * do it asynchronously. We also want to perform
+     * the version bumps back-to-back, to avoid
+     * ambiguities regarding the stable version.
+     *
+     * Note that the tagging is performed in a
+     * second push in case the paranoia rebase
+     * below actually has any effect.
+     */
 
-      string old_url, new_url;
-      svn_cmd("cp", "-r"+r, "-m",
-	      "This commit was manufactured by export.pike "
-	      "to create tag '"+tag+"'.", (old_url = svn_get_url()),
-	      (new_url = svn_get_repos()+"/tags/"+tag));
+    git_bump_version();
+    array(int) version = getversion();
+    vpath = sprintf("Pike-v%d.%d.%d", @version);
+    string tag = sprintf("v%d.%d.%d", @version);
 
-      /* Use the tagged version to build the dist from */
-      svn_cmd("switch", new_url);
-      svn = lambda() {
-	      /* Switch back when we are done */
-	      svn_cmd("switch", old_url);
-	    };
-    } else if (file_stat(pike_base_name + "/.git")) {
-      main_branch =
-	String.trim_all_whites(git_cmd("symbolic-ref", "-q", "HEAD"));
-      if (!has_prefix(main_branch, "refs/heads/")) {
-	werror("Unexpected HEAD: %O\n", main_branch);
-	exit(1);
-      }
-      main_branch = main_branch[sizeof("refs/heads/")..];
-      string remote = String.trim_all_whites(git_cmd("remote"));
-      if (!sizeof(remote)) remote = UNDEFINED;
-      git = cleanup_git;	/* Restore state when we're done. */
+    git_bump_version();
 
-      if (remote) git_cmd("pull", "--rebase", remote);
-
-      /* Tagging in git is fast, so there's no need to
-       * do it asynchronously. We also want to perform
-       * the version bumps back-to-back, to avoid
-       * ambiguities regarding the stable version.
-       *
-       * Note that the tagging is performed in a
-       * second push in case the paranoia rebase
-       * below actually has any effect.
-       */
-
-      git_bump_version(1);
-      array(int) version = getversion();
-      vpath = sprintf("Pike-v%d.%d.%d", @version);
-      string tag = sprintf("v%d.%d.%d", @version);
-
-      git_bump_version();
-
-      if (remote) {
-	/* Push the result. */
-	git_cmd("pull", "--rebase", remote);	/* Paranoia... */
-	git_cmd("push", remote);
-      }
-
-      /* Now it's time for the tags. */
-      git_cmd("tag", tag, "HEAD^");
-      if (remote) {
-	git_cmd("push", remote, "refs/tags/" + tag + ":refs/tags/" + tag);
-      }
-
-      /* Bumping is done, now go back to the stable version,
-       * so that we can create the dist files. */
-      git_cmd("checkout", tag);
-    } else if(file_stat(pike_base_name+"/CVS")) {
-      cvs_bump_version(1);
-
-      array(int) version = getversion();
-      vpath = sprintf("Pike-v%d.%d.%d", @version);
-      string tag = sprintf("v%d_%d_%d", @version);
-
-      werror("Creating tag "+tag+" in the background.\n");
-      cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
+    if (remote) {
+      /* Push the result. */
+      git_cmd("pull", "--rebase", remote);	/* Paranoia... */
+      git_cmd("push", remote);
     }
+
+    /* Now it's time for the tags. */
+    git_cmd("tag", tag, "HEAD^");
+    if (remote) {
+      git_cmd("push", remote, "refs/tags/" + tag + ":refs/tags/" + tag);
+    }
+
+    /* Bumping is done, now go back to the stable version,
+     * so that we can create the dist files. */
+    git_cmd("checkout", tag);
   }
 
   t = t||time();
@@ -482,26 +357,23 @@ int main(int argc, array(string) argv)
     "%t":(string)t,
   ]);
 
-  filename = replace(filename,symbols);
+  vpath = filename = replace(filename,symbols);
 
-  if (snapshot) {
+  if (snapshot)
     vpath = sprintf("Pike-v%d.%d-snapshot", @version);
-  } else {
-    vpath = filename;
-  }
 
   fix_configure(pike_base_name+"/src");
 
-  foreach(get_dir(pike_base_name+"/src/modules") - ({"CVS","RCS"}), string fn)
-    if(Stdio.file_size(pike_base_name+"/src/modules/"+fn) == -2)
+  foreach(get_dir(pike_base_name+"/src/modules"), string fn)
+    if(Stdio.is_dir(pike_base_name+"/src/modules/"+fn))
       fix_configure("modules/"+fn);
 
   rm(vpath);
   symlink(".", vpath);
 
-  files = build_file_list(vpath,export_list);
-  if(!files) // Unable to build file list.
-    return 1;
+  files = build_file_list(export_list);
+  if(!files)
+    clean_exit(1, "Unable to build file list.\n");
 
   Stdio.write_file("buildid.txt", replace(stamp, symbols));
   files += ({ vpath+"/buildid.txt" });
@@ -510,21 +382,13 @@ int main(int argc, array(string) argv)
 
   int first = 1;
   foreach(files/25.0, files)
+  {
+    run( "tar", first?"cf":"rf", pike_base_name+"/"+filename+".tar", @files )
     {
-      if(Process.create_process
-	 ( ({"tar",
-	     first?"cf":"rf",
-	     pike_base_name+"/"+filename+".tar" }) +
-	   files)->wait())
-      {
-	werror("Tar file creation failed!\n");
-	if (git) git();
-	else if(cvs) cvs->wait();
-	rm(vpath);
-	exit(1);
-      }
-      first = 0;
-    }
+      clean_exit(1, "Tar file creation failed!\n");
+    };
+    first = 0;
+  }
 
   rm(vpath);
   string build = sprintf("%s-%s-%s", uname()->sysname, uname()->release,
@@ -535,54 +399,30 @@ int main(int argc, array(string) argv)
     mkdir(vpath);
     mkdir(vpath+"/refdoc");
     Stdio.cp(build+"/autodoc.xml", vpath+"/refdoc/autodoc.xml");
-    Process.create_process( ({ "cp", "-R", build+"/doc_build/images",
-			       vpath+"/refdoc/images" }) )->wait();
-    if(Process.create_process
-       ( ({"tar", "rf", pike_base_name+"/"+filename+".tar",
-	   vpath+"/refdoc/autodoc.xml", vpath+"/refdoc/images" }) )->wait())
-      {
-	werror("Tar file creation failed!\n");
-	if (git) git();
-	else if (cvs) cvs->wait();
-	Stdio.recursive_rm(vpath);
-	exit(1);
-      }
+    run( "cp", "-R", build+"/doc_build/images", vpath+"/refdoc/images" );
+    run( "tar", "rf", pike_base_name+"/"+filename+".tar",
+         vpath+"/refdoc/autodoc.xml", vpath+"/refdoc/images" )
+    {
+      clean_exit(1, "Tar file creation failed!\n");
+    };
     Stdio.recursive_rm(vpath);
   }
 
-  if(Process.create_process
-     ( ({"gzip",
-	 "-9",
-	 pike_base_name+"/"+filename+".tar"
-     }) )->wait())
-    {
-      werror("Gzip failed!\n");
-      if (git) git();
-      else if (cvs) cvs->wait();
-      exit(1);
-    }
+  run( "gzip", "-9", pike_base_name+"/"+filename+".tar" )
+  {
+    clean_exit(1, "Gzip failed!\n");
+  };
 
-  rm("buildid.txt");
-  werror("Done.\n");
-
-  if (svn) {
-    // NB: In the svn case, we have already bumped the version.
-    svn();
-  } else if (git) {
-    // NB: In the git case, we have already bumped the version.
-    git();
-  } else if(cvs) {
-    cvs->wait();
-    cvs_bump_version();
-  }
-
-  return 0;
+  clean_exit(0, "Done.\n");
 }
 
 constant documentation = #"
 Usage: export.pike <arguments> <except modules>
 
-Creates a pike distribution. Needs one tar and one gzip binary in the path.
+Creates a pike distribution. Needs one tar and one gzip binary in the
+path. The modules listed in <except modules> will not be included in
+the exported Pike.
+
 Mandatory arguments:
 
 --name=<name>
@@ -597,9 +437,7 @@ Optional arguments:
 
 --timestamp=<int>
         The timestamp of the build, if other than the real one.
---rebuild
-	Not implemented.
---tag	Bump the Pike build version and tag the CVS tree.
+--tag	Bump the Pike build version and tag git.
 --force
 	Force export, ignore missing files.
 --snapshot
