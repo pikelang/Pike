@@ -170,7 +170,7 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0);
    }
    // BSON.MinKey
-   else if(objectp(value) && value->BSONMaxKey)
+   else if(objectp(value) && value->BSONMinKey)
    {
      buf->sprintf("%c%s%c", TYPE_MIN_KEY, key, 0);
    }
@@ -198,7 +198,7 @@ mixed from_document(string bson)
   while(sizeof(slist))
   {
     if(slist == "") break;
-    slist = decode_next_value(slist, list);
+    slist = module.decode_next_value(slist, list);
     //werror("read item: %O, left: %O\n", list, slist);
   } 
   
