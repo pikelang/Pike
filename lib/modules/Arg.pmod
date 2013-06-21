@@ -18,11 +18,13 @@ class OptLibrary
     //! Should return 1 for set options or a string containing the
     //! value of the option. Returning 0 means the option was not set
     //! (or matched). To properly chain arguments parsers, return
-    //! @expr{::get_value(argv, env)@} instead of @expr{0@}, unless
-    //! you want to explicitly stop the chain and not set this option.
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    //! @expr{::get_value(argv, env, previous)@} instead of @expr{0@},
+    //! unless you want to explicitly stop the chain and not set this
+    //! option.
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                         int|string previous)
     {
-      if(next) return next->get_value(argv, env);
+      if(next) return next->get_value(argv, env, previous);
       return 0;
     }
 
@@ -88,18 +90,18 @@ class OptLibrary
       opt = _opt;
     }
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
         if( argv[0]==opt )
         {
           argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
@@ -110,11 +112,11 @@ class OptLibrary
           parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     array(string) get_opts()
@@ -143,10 +145,10 @@ class OptLibrary
       name = _name;
     }
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
       if( env[name] ) return env[name];
-      return ::get_value(argv, env);
+      return ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -169,7 +171,7 @@ class OptLibrary
       value = _value;
     }
 
-    string get_value(array(string) argv, mapping(string:string) env)
+    string get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
       return value;
     }
@@ -191,9 +193,9 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
@@ -201,17 +203,18 @@ class OptLibrary
         if( argv[0]==opt )
         {
           argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
 
         // --foo=bar
         if( sscanf(argv[0], opt+"=%s", string ret)==1 )
         {
           argv[0] = 0;
+          // FIXME: Make an array if previous is set?
           return ret;
         }
 
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       // -x
@@ -227,7 +230,7 @@ class OptLibrary
           parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
         else if( sizeof(parts)>1 && parts[0][-1]==opt[1] )
         {
@@ -240,10 +243,10 @@ class OptLibrary
           return parts[1..]*"=";
         }
 
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -261,9 +264,9 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
@@ -286,7 +289,7 @@ class OptLibrary
           argv[0] = 0;
           return ret;
         }
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
@@ -310,7 +313,7 @@ class OptLibrary
             }
 
             // Fail. "-y" without any more elements in argv.
-            return ::get_value(argv, env);
+            return previous || ::get_value(argv, env, previous);
           }
           else
           {
@@ -325,7 +328,7 @@ class OptLibrary
         }
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -363,7 +366,7 @@ class LowOptions
     // Make a list of all the arguments we can parse.
     foreach(::_indices(2), string index)
     {
-      mixed val = ::`[](index, 2);
+      mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
     }
 
@@ -371,30 +374,27 @@ class LowOptions
     argv = _argv[1..];
     mapping(string:Opt) unset = opts+([]);
 
-    while(1)
+    while(sizeof(argv))
     {
-      if(!sizeof(argv)) break;
-
-      int(0..1)|string value;
-      foreach(unset; string index; Opt arg)
+      array(string) pre = argv+({});
+      foreach(opts; string index; Opt arg)
       {
-        value = arg->get_value(argv, env);
+        int(0..1)|string value = arg->get_value(argv, env, values[index]);
         if(value)
         {
           m_delete(unset, index);
           values[index] = value;
-          break;
+          argv -= ({ 0 });
         }
       }
+      argv -= ({ 0 });
 
-      if(!value)
-        value = unhandled_argument(argv, env);
-
-      if(!value)
-        break;
-      else
-        while( sizeof(argv) && argv[0] == 0 )
-          argv = argv[1..];
+      if(equal(pre, argv))
+      {
+        unhandled_argument(argv, env);
+        if(equal(pre, argv))
+          break;
+      }
     }
 
     if( sizeof(unset) )
@@ -402,12 +402,9 @@ class LowOptions
       int(0..1)|string value;
       foreach(unset; string index; Opt arg)
       {
-        value = arg->get_value(({}), env);
+        value = arg->get_value(({}), env, values[index]);
         if(value)
-        {
-          m_delete(unset, index);
           values[index] = value;
-        }
       }
     }
 
@@ -471,7 +468,7 @@ class Options
 
   protected string index(string i)
   {
-    string s = ::`[](i, 2);
+    string s = ::`[](i, this, 0);
     if( !s ) return 0;
     if( !stringp(s) ) error("%O is not a string.\n", i);
     if( sizeof(s) )
@@ -502,7 +499,10 @@ class SimpleOptions
     {
       sscanf( arg, "--%s=%s", name, value ) || sscanf( arg, "--%s", name );
       if(!name) return 0; // arg == "--"
-      values[name] = value||1;
+      if( value )
+        values[name] = value;
+      else
+        values[name]++;
       argv[0]=0;
       return 1;
     }
@@ -510,10 +510,12 @@ class SimpleOptions
     sscanf( arg, "-%s=%s", name, value ) || sscanf( arg, "-%s", name );
     if( !name || !sizeof(name) ) return 0;
     foreach( name/1; int pos; string c )
-      if( pos == sizeof(name)-1 )
-        values[c] = value||1;
+    {
+      if( value && pos == sizeof(name)-1 )
+        values[c] = value;
       else
-        values[c] = 1;
+        values[c]++;
+    }
     argv[0]=0;
     return 1;
   }
@@ -525,8 +527,10 @@ class SimpleOptions
 // -bar          ->  "b":1,"a":1,"r":1
 // -bar=foo      ->  "b":1,"a":1,"r":"foo" (?)
 // --foo --bar   ->  "foo":1,"bar":1
-// --foo - --bar -> "foo":1
-// --foo x --bar -> "foo":1 (?)
+// --foo - --bar ->  "foo":1
+// --foo x --bar ->  "foo":1 (?)
+// -foo          ->  "f":1,"o":2
+// -x -x -x      ->  "x":3
 //
 // void main(int n, array argv)
 // {

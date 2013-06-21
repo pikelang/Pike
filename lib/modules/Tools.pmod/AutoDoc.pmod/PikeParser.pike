@@ -518,6 +518,7 @@ AttributeType parseAttributeType()
   string s = peekToken();
   if (sizeof(s) >= 2 && s[0] == '"') {
     t->attribute = s;
+    eat(s);
   } else parseError("expected attribute name");
   if (peekToken() == ",") {
     readToken();

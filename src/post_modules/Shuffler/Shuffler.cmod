@@ -144,17 +144,15 @@ PIKECLASS Shuffle
     }
   }
 
-  static int got_shuffler_event(struct fd_callback_box*box, int event) {
+  static int got_shuffler_event(struct fd_callback_box*box, int DEBUGUSED(event)) {
 #ifdef PIKE_DEBUG
     if (event != PIKE_FD_WRITE)
       Pike_fatal ("Got unexpected event %d.\n", event);
 #endif
     _send_more((struct Shuffle_struct*)
      ((char*)box-offsetof(struct Shuffle_struct,box)));
-    /* FIXME: Is this the correct return value?
-     *        /grubba 2004-09-02
-     */
-    return 0;
+
+    return 0; // Everything OK.
   }
   
   PIKEFUN void set_throttler( object t )
@@ -705,23 +703,17 @@ PIKECLASS Shuffle
 
     if( args > 1 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
-      else
-#endif
-	if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
-	  rstart = start->u.integer;
+      else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
+        rstart = start->u.integer;
     }
     if( args > 2 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
-      else
-#endif
-	if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
-	  rlength = length->u.integer;
+      else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
+        rlength = length->u.integer;
     }
     if( rlength == 0 )
     {

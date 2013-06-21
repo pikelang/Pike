@@ -7,7 +7,7 @@
 
 inherit G.Object;
 
-static GDK2.Visual create( int|void best, int|void depth, int|void type );
+protected GDK2.Visual create( int|void best, int|void depth, int|void type );
 //! @param best
 //!   If best is false the systems default GDK screen is returned,
 //!   otherwise the screen that best fulfills the given depth and
@@ -42,7 +42,6 @@ static GDK2.Visual create( int|void best, int|void depth, int|void type );
 //!       converted directly.
 //!   @endint
 //
-
 
 GTK2.GdkScreen get_screen( );
 //! Gets the screen to which this visual belongs.

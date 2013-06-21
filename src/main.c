@@ -35,10 +35,7 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
-
-#ifdef AUTO_BIGNUM
 #include "bignum.h"
-#endif
 
 #include "pike_embed.h"
 
@@ -484,9 +481,9 @@ int main(int argc, char **argv)
 
 	    case 'c':
 	      p++;
-#if defined(YYDEBUG) || defined(PIKE_DEBUG)
+#if (defined(YYDEBUG) && (YYDEBUG==1)) && defined(PIKE_DEBUG)
 	      yydebug++;
-#endif /* YYDEBUG || PIKE_DEBUG */
+#endif /* YYDEBUG && PIKE_DEBUG */
 	      break;
 
 	    case 's':

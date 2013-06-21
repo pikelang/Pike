@@ -9,7 +9,7 @@
 
 inherit GTK2.ToggleAction;
 
-static GTK2.RadioAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id, int|void value );
+protected GTK2.RadioAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id, int|void value );
 //! Creates a new GTK2.ToggleAction object.
 //!
 //!

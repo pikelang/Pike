@@ -319,7 +319,13 @@ typedef off_t PIKE_OFF_T;
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
+
+#ifdef O_BINARY
+#define fd_BINARY O_BINARY
+#else
 #define fd_BINARY 0
+#endif
+
 #ifdef O_LARGEFILE
 #define fd_LARGEFILE O_LARGEFILE
 #else /* !O_LARGEFILE */

@@ -23,7 +23,7 @@
 
 inherit GTK2.ButtonBox;
 
-static GTK2.HbuttonBox create( mapping|void props );
+protected GTK2.HbuttonBox create( mapping|void props );
 //! Create a new horizontal button box
 //!
 //!

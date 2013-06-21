@@ -599,7 +599,7 @@ static void gz_deflate(INT32 args)
 }
 
 
-static void init_gz_deflate(struct object *o)
+static void init_gz_deflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
@@ -611,7 +611,7 @@ static void init_gz_deflate(struct object *o)
   THIS->epilogue = NULL;
 }
 
-static void exit_gz_deflate(struct object *o)
+static void exit_gz_deflate(struct object *UNUSED(o))
 {
 /*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
@@ -1014,7 +1014,7 @@ static void gz_end_of_stream(INT32 args)
     push_int(0);
 }
 
-static void init_gz_inflate(struct object *o)
+static void init_gz_inflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
@@ -1026,7 +1026,7 @@ static void init_gz_inflate(struct object *o)
   THIS->epilogue = NULL;
 }
 
-static void exit_gz_inflate(struct object *o)
+static void exit_gz_inflate(struct object *UNUSED(o))
 {
 /*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);

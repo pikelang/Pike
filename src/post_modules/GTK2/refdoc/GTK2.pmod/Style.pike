@@ -22,7 +22,7 @@ GTK2.Style copy( );
 //!
 //!
 
-static GTK2.Style create( );
+protected GTK2.Style create( );
 //! Creates a new style.
 //!
 //!

@@ -12,7 +12,7 @@ GTK2.IconTheme append_search_path( string path );
 //!
 //!
 
-static GTK2.IconTheme create( );
+protected GTK2.IconTheme create( );
 //! Creates a new icon theme object.  Icon theme objects are used to lookup
 //! an icon by name in a particular icon theme.  Usually you'll want to use
 //! get_default() rather than creating a new icon theme object from scratch.

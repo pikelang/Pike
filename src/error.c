@@ -203,7 +203,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
-  if(TYPEOF(throw_value) <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(throw_value)))
   {
     debug_malloc_update_location(throw_value.u.refs,
 				 Pike_interpreter.recoveries->file);
@@ -370,7 +370,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
     push_int(0);
 
   for (i=-args; i; i++) {
-    if (TYPEOF(oldsp[i]) <= PIKE_T_FLOAT) {
+    if (TYPEOF(oldsp[i]) <= MAX_TYPE) {
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
@@ -671,6 +671,28 @@ static void f_error_index(INT32 args)
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }
+}
+
+static void f_error__sizeof(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(2);
+}
+
+static void f_error__indices(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(0);
+  push_int(1);
+  f_aggregate(2);
+}
+
+static void f_error__values(INT32 args)
+{
+  pop_n_elems(args);
+  apply_current(generic_err_message_fun, 0);
+  apply_current(generic_err_backtrace_fun, 0);
+  f_aggregate(2);
 }
 
 /*! @decl string describe()

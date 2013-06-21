@@ -387,9 +387,11 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
     if (CAR(p) == n) {
-      (_CAR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CAR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else if (CDR(p) == n) {
-      (_CDR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CDR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else {
       yywarning("Failed to find place to insert soft cast.");
     }
@@ -402,12 +404,10 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 
 #undef PRE_INIT_BLOCK
 #define PRE_INIT_BLOCK(NODE) do {					\
-    NODE->token = USHRT_MAX;						\
+    (NODE)->token = USHRT_MAX;						\
   } while (0)
 
 BLOCK_ALLOC_FILL_PAGES(node_s, 2)
-
-#define NODES (sizeof (((struct node_s_block *) NULL)->x) / sizeof (struct node_s))
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
@@ -417,32 +417,15 @@ void free_all_nodes(void)
   if(!Pike_compiler->previous)
   {
     node *tmp;
-    struct node_s_block *tmp2;
-    size_t e=0;
 
 #ifndef PIKE_DEBUG
-    if(cumulative_parse_error)
-    {
+    if(cumulative_parse_error) {
+#else
+      size_t e=0, s=0;
+      count_memory_in_node_ss(&e, &s);
+      if(e) {
 #endif
-      
-      for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=tmp2->used;
-      if(e)
-      {
-        size_t e2=e;
-	struct node_s_block *nextblk;
-	for(tmp2=node_s_blocks;tmp2;tmp2=nextblk)
-	{
-	  int n = tmp2->used;
-	  nextblk = tmp2->next;
-	  /* We want to be able to access the token field of all
-	   * the blocks...
-	   */
-	  PIKE_MEM_RW(tmp2->x);
-	  for(e=0;n && e<NODES;e++)
-	  {
-	    if (tmp2->x[e].token != USHRT_MAX)
-	    {
-	      tmp=tmp2->x+e;
+	WALK_NONFREE_BLOCKS(node_s, tmp, tmp->token != USHRT_MAX, {
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
@@ -473,17 +456,13 @@ void free_all_nodes(void)
 		tmp->refs = 1;
 		debug_malloc_touch(tmp->type);
 		free_node(tmp);
-		--n;
 	      }
-	    }
-	  }
-	}
+	});
 #ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e2);
-#endif
+	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
       }
-#ifndef PIKE_DEBUG
+#else
     }
 #endif
     free_all_node_s_blocks();
@@ -1344,8 +1323,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 	ref_push_type_value(n->type);
 	ref_push_type_value(type);
 	yytype_report(REPORT_ERROR,
-		      NULL, 0, NULL,
-		      NULL, 0, NULL,
+		      NULL, 0, type,
+		      NULL, 0, n->type,
 		      2, "Soft cast of %O to %O isn't a valid cast.");
       } else if (result_type == n->type) {
 	ref_push_type_value(n->type);
@@ -3416,7 +3395,8 @@ void fix_type_field(node *n)
 	    free_string(t1);
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
-	    _CAR(n) = mksoftcastnode(CDR(n)->type, CAR(n));
+	    _CAR(n) = mksoftcastnode(CDR(n)->type,
+				     mkcastnode(mixed_type_string, CAR(n)));
 	  }
 	}
       }
@@ -4270,7 +4250,8 @@ void fix_type_field(node *n)
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
     /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tMix tOr(tVoid,tInt),tMix));
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt))
+				      tOr(tVoid,tInt), tMix));
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
@@ -5225,7 +5206,7 @@ struct timer_oflo
   int yes;
 };
 
-static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
+static void check_evaluation_time(struct callback *UNUSED(cb), void *tmp, void *UNUSED(ignored))
 {
   struct timer_oflo *foo=(struct timer_oflo *)tmp;
   if(foo->counter-- < 0)

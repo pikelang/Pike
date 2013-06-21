@@ -339,7 +339,9 @@ PIKECLASS Configuration {
 		      ZX_FREE(THIS->conf.ctx, THIS->conf.path);
 		    }
 		    THIS->conf.path = strdup(s->u.string->str);
+		    THIS->conf.path_len = s->u.string->len;
 		  } while(0));
+
     CHECK_ARG_INT(MK_STRING("PDP_ENA"), THIS->conf.pdp_ena);
     CHECK_ARG_STRING(MK_STRING("PDP_URL"), THIS->conf.pdp_url);
     CHECK_ARG_STRING(MK_STRING("PDP_CALL_URL"), THIS->conf.pdp_call_url);

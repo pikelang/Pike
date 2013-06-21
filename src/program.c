@@ -32,6 +32,7 @@
 #include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
+#include "block_allocator.h"
 #include "block_alloc.h"
 #include "pikecode.h"
 #include "pike_compiler.h"
@@ -51,20 +52,30 @@ static size_t add_xstorage(size_t size,
 			   size_t alignment,
 			   ptrdiff_t modulo_orig);
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(P) exit_program_struct( (P) )
+static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct program), 4);
 
-#undef COUNT_OTHER
-#define COUNT_OTHER() do{			\
-  struct program *p;				\
-  for(p=first_program;p;p=p->next)		\
-  {						\
-    size+=p->total_size - sizeof (struct program); \
-  }						\
-}while(0)
+ATTRIBUTE((malloc))
+struct program * alloc_program() {
+    return ba_alloc(&program_allocator);
+}
 
-BLOCK_ALLOC_FILL_PAGES(program, 4)
+void really_free_program(struct program * p) {
+    exit_program_struct(p);
+    ba_free(&program_allocator, p);
+}
 
+void count_memory_in_programs(size_t *num, size_t *_size) {
+    size_t size;
+    struct program *p;
+    ba_count_all(&program_allocator, num, &size);
+    for(p=first_program;p;p=p->next) {
+	size+=p->total_size - sizeof (struct program);
+    }
+}
+
+void free_all_program_blocks() {
+    ba_destroy(&program_allocator);
+}
 
 /* #define COMPILER_DEBUG */
 /* #define PROGRAM_BUILD_DEBUG */
@@ -96,7 +107,7 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 #define FIND_FUNCTION_HASHSIZE 16384
 
 /* Programs with less methods will not use the cache for method lookups.. */
-#define FIND_FUNCTION_HASH_TRESHOLD 9
+#define FIND_FUNCTION_HASH_TRESHOLD 0
 
 
 #define DECLARE
@@ -1850,6 +1861,30 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   return ret;
 }
 
+/* This function is intended to simplify resolving of
+ * program symbols during compile-time for C-modules.
+ *
+ * A typical use-case is for a C-module inheriting
+ * code written in Pike.
+ */
+PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
+{
+  struct program *ret = NULL;
+  struct node_s *n = resolve_identifier(ident);
+  if (n) {
+    if ((n->token == F_CONSTANT) && (TYPEOF(n->u.sval) == T_PROGRAM) &&
+	(ret = n->u.sval.u.program)) {
+      add_ref(ret);
+    } else {
+      my_yyerror("Invalid program identifier '%S'.", ident);
+    }
+    free_node(n);
+  } else {
+    my_yyerror("Unknown program identifier '%S'.", ident);
+  }
+  return ret;
+}
+
 /*! @decl constant this
  *!
  *! Builtin read only variable that evaluates to the current object.
@@ -1905,8 +1940,66 @@ struct node_s *program_magic_identifier (struct program_state *state,
 
     /* Handle this_program */
     if (ident == this_program_string) {
-      node *n = mkefuncallnode("object_program",
-			       mkthisnode(state->new_program, inherit_num));
+      node *n;
+      if (!state_depth && (inherit_num == -1) && colon_colon_ref &&
+	  !TEST_COMPAT(7,8) &&
+	  state->previous && state->previous->new_program) {
+	/* ::this_program
+	 *
+	 * This refers to the previous definition of the current class
+	 * in its parent, and is typically used with inherit like:
+	 *
+	 *   inherit Foo;
+	 *
+	 *   // Override the Bar inherited from Foo.
+	 *   class Bar {
+	 *     // Bar is based on the implementation from Foo.
+	 *     inherit ::this_program;
+	 *
+	 *     // ...
+	 *   }
+	 */
+	struct program *parent;
+	struct pike_string *name = NULL;
+	int e;
+	int i;
+
+	/* Find the name of the current class. */
+	parent = state->previous->new_program;
+	for (e = parent->num_identifier_references; e--;) {
+	  struct identifier *id = ID_FROM_INT(parent, e);
+	  struct svalue *s;
+	  if (!IDENTIFIER_IS_CONSTANT(id->identifier_flags) ||
+	      (id->func.const_info.offset < 0)) {
+	    continue;
+	  }
+	  s = &PROG_FROM_INT(parent, e)->
+	    constants[id->func.const_info.offset].sval;
+	  if ((TYPEOF(*s) != T_PROGRAM) ||
+	      (s->u.program != state->new_program)) {
+	    continue;
+	  }
+	  /* Found! */
+	  name = id->name;
+	  break;
+	}
+	if (!name) {
+	  yyerror("Failed to find current class in its parent.");
+	  return NULL;
+	}
+
+	/* Find ::name in the parent. */
+	i = reference_inherited_identifier(state->previous, NULL, name);
+	if (i == -1) {
+	  my_yyerror("Failed to find previous inherited definition of %S "
+		     "in parent.", name);
+	  return NULL;
+	}
+	n = mkexternalnode(parent, i);
+      } else {
+	n = mkefuncallnode("object_program",
+			   mkthisnode(state->new_program, inherit_num));
+      }
       /* We know this expression is constant. */
       n->node_info &= ~OPT_NOT_CONST;
       n->tree_info &= ~OPT_NOT_CONST;
@@ -2248,6 +2341,8 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
     /* Do not zapp hidden identifiers */
     if(ref->id_flags & ID_HIDDEN) continue;
 
+    if(ref->id_flags & ID_VARIANT) continue;
+
     /* Do not zapp functions with the wrong name... */
     if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
       continue;
@@ -2285,10 +2380,15 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
       /* Find the inherit one level away. */
       while (inh->inherit_level > 1) inh--;
 
+#if 0
 #ifdef PIKE_DEBUG
       if (!inh->inherit_level) {
+	/* FIXME: This is valid for references that are about to be
+	 *        overridden by the variant dispatcher.
+	 */
 	Pike_fatal("Inherit without intermediate levels.\n");
       }
+#endif
 #endif
 
       sub_ref = PTR_FROM_INT(inh->prog, cur_id - inh->identifier_level);
@@ -2371,6 +2471,7 @@ void fixate_program(void)
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
     if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->id_flags & ID_VARIANT) continue;
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
   }
@@ -2382,6 +2483,7 @@ void fixate_program(void)
     struct identifier *fun;
     funp=p->identifier_references+i;
     if(funp->id_flags & ID_HIDDEN) continue;
+    if(funp->id_flags & ID_VARIANT) continue;
     fun=ID_FROM_PTR(p, funp);
     if(funp->id_flags & ID_INHERITED)
     {
@@ -2401,6 +2503,7 @@ void fixate_program(void)
 
 	funpb=p->identifier_references+t;
 	if (funpb->id_flags & ID_HIDDEN) continue;
+	if (funpb->id_flags & ID_VARIANT) continue;
 	funb=ID_FROM_PTR(p,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
 
@@ -2501,6 +2604,7 @@ void fixate_program(void)
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
     if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->id_flags & ID_VARIANT) continue;
     if (ref->inherit_offset != 0) continue;
 
     if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
@@ -2654,13 +2758,6 @@ void low_start_new_program(struct program *p,
   struct svalue tmp;
 
   CHECK_COMPILER();
-
-#ifdef WITH_FACETS
-  if(Pike_compiler->compiler_pass == 1 && p) {
-    p->facet_index = -1;
-    p->facet_group = NULL;
-  }
-#endif
 
   /* We don't want to change thread, but we don't want to
    * wait for the other threads to complete either.
@@ -3031,13 +3128,6 @@ static void exit_program_struct(struct program *p)
 
   DOUBLEUNLINK(first_program, p);
 
-#ifdef WITH_FACETS
-  if(p->facet_group)
-  {
-    free_object(p->facet_group);
-  }
-#endif
-
   if(p->flags & PROGRAM_OPTIMIZED)
   {
 #ifdef PIKE_USE_MACHINE_CODE
@@ -3246,7 +3336,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
 
 #ifdef PIKE_DEBUG
 
-void dump_program_tables (const struct program *p, int indent)
+PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 {
   int d;
 
@@ -3701,6 +3791,29 @@ void check_program(struct program *p)
 }
 #endif
 
+static void f_dispatch_variant(INT32 args);
+
+int is_variant_dispatcher(struct program *prog, int fun)
+{
+  struct reference *ref;
+  struct identifier *id;
+  if (fun < 0) return 0;
+  ref = PTR_FROM_INT(prog, fun);
+  id = ID_FROM_PTR(prog, ref);
+  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+	  (id->func.c_fun == f_dispatch_variant));
+}
+
+static int add_variant_dispatcher(struct pike_string *name,
+				  struct pike_type *type,
+				  int id_flags)
+{
+  union idptr dispatch_fun;
+  dispatch_fun.c_fun = f_dispatch_variant;
+  return define_function(name, type, id_flags & ~(ID_VARIANT|ID_LOCAL),
+			 IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
+}
+
 /* Note: This function is misnamed, since it's run after both passes. /mast */
 /* finish-states:
  *
@@ -3712,8 +3825,68 @@ struct program *end_first_pass(int finish)
 {
   struct compilation *c = THIS_COMPILATION;
   int e;
-  struct program *prog;
+  struct program *prog = Pike_compiler->new_program;
   struct pike_string *s;
+  int num_refs = prog->num_identifier_references;
+  union idptr dispatch_fun;
+
+  dispatch_fun.c_fun = f_dispatch_variant;
+
+  /* Collect variant functions that have been defined in this program,
+   * and add the corresponding dispatchers.
+   */
+  for (e = 0; e < num_refs; e++) {
+    struct identifier *id;
+    struct pike_string *name;
+    struct pike_type *type;
+    int id_flags;
+    int j;
+    if (prog->identifier_references[e].inherit_offset) continue;
+    if (!is_variant_dispatcher(prog, e)) continue;
+    /* Found a dispatcher. */
+
+    id = ID_FROM_INT(prog, e);
+    name = id->name;
+    type = NULL;
+    id_flags = 0;
+
+    CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
+
+    /* Collect the variants of the function. */
+    j = prog->num_identifier_references;
+    while ((j = really_low_find_variant_identifier(name, prog, NULL, j,
+						   SEE_PROTECTED|SEE_PRIVATE)) >= 0) {
+      struct reference *ref = prog->identifier_references + j;
+      id = ID_FROM_INT(prog, j);
+      id_flags |= ref->id_flags;
+      /* NB: The dispatcher needs the variant references to
+       *     not get overloaded for the ::-operator to work.
+       */
+      prog->identifier_references[j].id_flags |= ID_LOCAL;
+      {
+	  struct pike_type * temp = type;
+	  type = or_pike_types(type, id->type, 1);
+	  if (temp) free_type(temp);
+      }
+#ifdef COMPILER_DEBUG
+      fprintf(stderr, "type: ");
+      simple_describe_type(id->type);
+      fprintf(stderr, "\n");
+#endif
+    }
+#ifdef COMPILER_DEBUG
+    fprintf(stderr, "Dispatcher type: ");
+    simple_describe_type(type);
+    fprintf(stderr, "\n");
+#endif
+    /* Update the type of the dispatcher. */
+    id = ID_FROM_INT(prog, e);
+    free_type(id->type);
+    id->type = type;
+    prog->identifier_references->id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
+  next_ref:
+    ;
+  }
 
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -4246,120 +4419,41 @@ int find_inherit(struct program *p, struct pike_string *name)
   return 0;
 }
 
-/* Reference the symbol super_name::function_name */
-node *reference_inherited_identifier(struct pike_string *super_name,
-				     struct pike_string *function_name)
+/* Reference the symbol inherit::name in the lexical context
+ * specified by state.
+ *
+ * Returns the reference in state->new_program if found.
+ */
+PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
+					       struct pike_string *inherit,
+					       struct pike_string *name)
 {
-  int n,e,id;
-  struct compilation *c = THIS_COMPILATION;
-  struct program_state *state=Pike_compiler->previous;
-
+  int e, id;
   struct program *p;
 
-
 #ifdef PIKE_DEBUG
-  if(function_name!=debug_findstring(function_name))
-    Pike_fatal("reference_inherited_function on nonshared string.\n");
+  if (name != debug_findstring(name))
+    Pike_fatal("reference_inherited_identifier on nonshared string.\n");
 #endif
 
-  p=Pike_compiler->new_program;
+  if (!state) state = Pike_compiler;
+
+  p = state->new_program;
 
   /* FIXME: This loop could be optimized by advancing by the number
    *        of inherits in the inherit. But in that case the loop
    *        would have to go the other way.
    */
-  for(e=p->num_inherits-1;e>0;e--)
-  {
-    if(p->inherits[e].inherit_level!=1) continue;
-    if(!p->inherits[e].name) continue;
+  for (e = p->num_inherits; e--;) {
+    if (p->inherits[e].inherit_level != 1) continue;
+    if (inherit && (inherit != p->inherits[e].name)) continue;
 
-    if(super_name)
-      if(super_name != p->inherits[e].name)
-	continue;
+    id = low_reference_inherited_identifier(state, e, name, SEE_PROTECTED);
 
-    id=low_reference_inherited_identifier(0,
-					  e,
-					  function_name,
-					  SEE_PROTECTED);
-
-    if(id!=-1)
-      return mkidentifiernode(id);
-
-    if(ISCONSTSTR(function_name,"`->") ||
-       ISCONSTSTR(function_name,"`[]"))
-    {
-      return mknode(F_MAGIC_INDEX,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"`->=") ||
-       ISCONSTSTR(function_name,"`[]="))
-    {
-      return mknode(F_MAGIC_SET_INDEX,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"_indices"))
-    {
-      return mknode(F_MAGIC_INDICES,mknewintnode(e),mknewintnode(0));
-    }
-
-    if(ISCONSTSTR(function_name,"_values"))
-    {
-      return mknode(F_MAGIC_VALUES,mknewintnode(e),mknewintnode(0));
-    }
+    if (id != -1) return id;
   }
 
-
-  for(n=0;n<c->compilation_depth;n++,state=state->previous)
-  {
-    struct program *p=state->new_program;
-
-    /* FIXME: This loop could be optimized by advancing by the number
-     *        of inherits in the inherit. But in that case the loop
-     *        would have to go the other way.
-     */
-    for(e=p->num_inherits-1;e>0;e--)
-    {
-      if(p->inherits[e].inherit_level!=1) continue;
-      if(!p->inherits[e].name) continue;
-
-      if(super_name)
-	if(super_name != p->inherits[e].name)
-	  continue;
-
-      id=low_reference_inherited_identifier(state,e,function_name,SEE_PROTECTED);
-
-      if(id!=-1)
-	return mkexternalnode(p, id);
-
-      if(ISCONSTSTR(function_name,"`->") ||
-	 ISCONSTSTR(function_name,"`[]"))
-      {
-	return mknode(F_MAGIC_INDEX,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"`->=") ||
-	 ISCONSTSTR(function_name,"`[]="))
-      {
-	return mknode(F_MAGIC_SET_INDEX,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"_indices"))
-      {
-	return mknode(F_MAGIC_INDICES,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-
-      if(ISCONSTSTR(function_name,"_values"))
-      {
-	return mknode(F_MAGIC_VALUES,
-		      mknewintnode(e),mknewintnode(n+1));
-      }
-    }
-  }
-
-  return 0;
+  return -1;
 }
 
 /* FIXME: This function probably doesn't do what it is intended to do
@@ -4443,64 +4537,12 @@ static int find_depth(struct program_state *state,
 }
 #endif
 
-#ifdef WITH_FACETS
-void check_for_facet_inherit(struct program *p)
-{
-  /* If the inherit statement comes before the facet keyword in the
-   * class declaration the class will be temporarily marked as a
-   * product-class, but this will be taken care of when the facet
-   * keyword is found. */
-  if (!p) return;
-  if (Pike_compiler->new_program->facet_group &&
-      p->facet_group != Pike_compiler->new_program->facet_group)
-    yyerror("A class can not belong to two facet-groups.");
-  if (p->flags & PROGRAM_IS_FACET) {
-    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-      if(Pike_compiler->new_program->facet_index != p->facet_index)
-	yyerror("Facet class can't inherit from class in different facet.");
-    }
-    /* Otherwise this is a product class */
-    else {
-      if( !Pike_compiler->new_program->facet_group ) {
-	Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
-	add_ref(p->facet_group);
-	Pike_compiler->new_program->facet_group = p->facet_group;
-      }
-      push_int(Pike_compiler->new_program->id);
-      push_int(p->facet_index);
-      push_int(p->id);
-      safe_apply(p->facet_group, "add_product_class", 3);
-      pop_stack();
-    }
-  }
-  /* The inherited class is not a facet class */
-  else if (p->flags & PROGRAM_IS_PRODUCT) {
-    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-      yyerror("Facet class can't inherit from product class.");
-    }
-    else if(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT){
-      yyerror("Product class can't inherit from other product class.");
-    }
-    /* A class that inherits from a product class is also a product class */
-    else {
-      Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
-      add_ref(p->facet_group);
-      Pike_compiler->new_program->facet_group = p->facet_group;
-    }
-  }
-}
-#endif
-
-
-/*
- * make this program inherit another program
- */
-PMOD_EXPORT void low_inherit(struct program *p,
-			     struct object *parent,
-			     int parent_identifier,
-			     int parent_offset,
-			     INT32 flags,
-			     struct pike_string *name)
+void lower_inherit(struct program *p,
+		   struct object *parent,
+		   int parent_identifier,
+		   int parent_offset,
+		   INT32 flags,
+		   struct pike_string *name)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;
@@ -4581,11 +4623,6 @@ PMOD_EXPORT void low_inherit(struct program *p,
 	     "compiler cannot handle.)");
     return;
   }
-
-#ifdef WITH_FACETS
-  /* Check if inherit is a facet inherit. */
-  check_for_facet_inherit(p);
-#endif
 
   if (p == placeholder_program) {
     yyerror("Trying to inherit placeholder program (resolver problem).");
@@ -4771,6 +4808,37 @@ PMOD_EXPORT void low_inherit(struct program *p,
   }
 }
 
+/*
+ * make this program inherit another program
+ */
+PMOD_EXPORT void low_inherit(struct program *p,
+			     struct object *parent,
+			     int parent_identifier,
+			     int parent_offset,
+			     INT32 flags,
+			     struct pike_string *name)
+{
+  lower_inherit(p, parent, parent_identifier, parent_offset, flags, name);
+
+  /* Don't do this for OBJECT_PARENT or INHERIT_PARENT inherits.
+   * They may show up here from decode_value().
+   */
+  if (parent_offset >= 42) {
+    if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT)) {
+      /* We'll need the parent pointer as well... */
+      struct program_state *state = Pike_compiler;
+
+      /* parent offset was increased by 42 by the caller... */
+      parent_offset -= 42;
+
+      while (state && state->new_program && parent_offset--) {
+	state->new_program->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+	state = state->previous;
+      }
+    }
+  }
+}
+
 PMOD_EXPORT void do_inherit(struct svalue *s,
 			    INT32 flags,
 			    struct pike_string *name)
@@ -4841,18 +4909,6 @@ void compiler_do_inherit(node *n,
 		      offset+42,
 		      flags,
 		      name);
-	}
-	if (n->token == F_EXTERNAL) {
-	  struct program *p=program_from_svalue(s);
-	  if (p->flags & (PROGRAM_NEEDS_PARENT|PROGRAM_NEEDS_PARENT)) {
-	    /* We'll need the parent pointer as well... */
-	    struct program_state *state = Pike_compiler;
-
-	    while (state && (state->new_program->id != n->u.integer.a)) {
-	      state->new_program->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
-	      state = state->previous;
-	    }
-	  }
 	}
       }else{
 	yyerror("Inherit identifier is not a constant program");
@@ -5133,7 +5189,7 @@ int low_define_variable(struct pike_string *name,
 
   if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
 
-  if (flags & ID_PRIVATE) flags |= ID_INLINE;
+  if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5181,7 +5237,7 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,
 		       const char *type,
-		       int type_length,
+		       int UNUSED(type_length),
 		       INT32 run_time_type,
 		       INT32 flags)
 {
@@ -5346,9 +5402,7 @@ int define_variable(struct pike_string *name,
 
     switch(run_time_type)
     {
-#ifdef AUTO_BIGNUM
     case T_INT:
-#endif
     case T_OBJECT:
       /* Make place for the object subtype. */
     case T_FUNCTION:
@@ -5509,15 +5563,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	id->func.const_info.offset = store_constant(c, 0, 0);
       }
       free_type(id->type);
-      if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
-	if (c->u.integer) {
-	  copy_pike_type(id->type, int_type_string);
-	} else {
-	  copy_pike_type(id->type, zero_type_string);
-	}
-      } else {
-	id->type = get_type_of_svalue(c);
-      }
+      if( !(flags & ID_INLINE) )
+          id->type = get_lax_type_of_svalue( c );
+      else
+          id->type = get_type_of_svalue( c );
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%.*sstored constant #%d at %d\n",
 	       cc->compilation_depth, "",
@@ -5547,15 +5596,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   if (c) {
 #endif
-    if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
-      if (c->u.integer) {
-	copy_pike_type(dummy.type, int_type_string);
-      } else {
-	copy_pike_type(dummy.type, zero_type_string);
-      }
-    } else {
-      dummy.type = get_type_of_svalue(c);
-    }
+   if( !(flags & ID_INLINE) )
+      dummy.type = get_lax_type_of_svalue( c );
+    else
+      dummy.type = get_type_of_svalue( c );
     dummy.run_time_type = (unsigned char) TYPEOF(*c);
     dummy.func.const_info.offset = store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
@@ -5571,7 +5615,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   }
 #endif
 
-  if (flags & ID_PRIVATE) flags |= ID_INLINE;
+  if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5781,6 +5825,7 @@ INT32 define_function(struct pike_string *name,
 		      unsigned opt_flags)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct program *prog = Pike_compiler->new_program;
   struct identifier *funp,fun;
   struct reference ref;
   struct svalue *lfun_type;
@@ -5874,12 +5919,15 @@ INT32 define_function(struct pike_string *name,
 		      NULL, 0, type, 0,
 		       "Type mismatch for callback function %S:", name);
       }
+      if (flags & ID_VARIANT) {
+	my_yyerror("Variants not supported for getter/setters: %S", name);
+	flags &= ~ID_VARIANT;
+      }
       i = isidentifier(symbol);
       if ((i >= 0) && 
-	  !((ref = PTR_FROM_INT(Pike_compiler->new_program, i))->
-	    id_flags & ID_INHERITED)) {
+	  !((ref = PTR_FROM_INT(prog, i))->id_flags & ID_INHERITED)) {
 	/* Not an inherited symbol. */
-	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+	struct identifier *id = ID_FROM_INT(prog, i);
 	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
 	  my_yyerror("Illegal to redefine function %S with variable.", symbol);
 	} else if (id->run_time_type != PIKE_T_GET_SET) {
@@ -5898,7 +5946,7 @@ INT32 define_function(struct pike_string *name,
 	struct identifier *id;
 	i = low_define_variable(symbol, symbol_type, flags,
 				~0, PIKE_T_GET_SET);
-	id = ID_FROM_INT(Pike_compiler->new_program, i);
+	id = ID_FROM_INT(prog, i);
 
 	/* Paranoia. */
 	id->func.gs_info.getter = -1;
@@ -5919,7 +5967,7 @@ INT32 define_function(struct pike_string *name,
   }
 
   if(IDENTIFIER_IS_C_FUNCTION(function_flags))
-    Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
+    prog->flags |= PROGRAM_HAS_C_METHODS;
 
   if (Pike_compiler->compiler_pass == 1) {
     /* Mark the type as tentative by setting the runtime-type
@@ -5930,7 +5978,74 @@ INT32 define_function(struct pike_string *name,
     run_time_type = T_MIXED;
   }
 
-  i=isidentifier(name);
+  i = isidentifier(name);
+  if (Pike_compiler->compiler_pass == 1) {
+    if (flags & ID_VARIANT) {
+      if (i >= 0) {
+	if (!is_variant_dispatcher(prog, i)) {
+	  /* This function will be the termination function for
+	   * our variant dispatcher.
+	   */
+	  struct reference ref = prog->identifier_references[i];
+	  /* Make sure to not get complaints about multiple
+	   * definitions when adding the variant dispatcher.
+	   */
+	  prog->identifier_references[i].id_flags |= ID_INHERITED;
+	  add_variant_dispatcher(name, type, flags);
+	  /* Restore the termination function as a variant. */
+	  ref.id_flags |= ID_VARIANT;
+	  if (is_variant_dispatcher(prog, i)) {
+	    /* The termination function got replaced with
+	     * the variant dispatcher.
+	     */
+	    add_to_identifier_references(ref);
+	  } else {
+	    /* The termination function is still in the same place. */
+	    prog->identifier_references[i].id_flags = ref.id_flags;
+	  }
+	} else if (prog->identifier_references[i].inherit_offset) {
+	  /* NB: If we are overriding an inherited dispatcher, there's
+	   *     no need to go via it, since our new dispatcher can
+	   *     just continue on with the old ones variant functions.
+	   */
+	  add_variant_dispatcher(name, type, flags);
+	}
+      } else {
+	add_variant_dispatcher(name, type, flags);
+      }
+      i = really_low_find_variant_identifier(name, prog, type,
+					     prog->num_identifier_references,
+					     SEE_PROTECTED|SEE_PRIVATE);
+    } else if (is_variant_dispatcher(prog, i) &&
+	       !prog->identifier_references[i].inherit_offset) {
+      if (!func || (func->c_fun != f_dispatch_variant) ||
+	  !IDENTIFIER_IS_C_FUNCTION(function_flags)) {
+	/* FIXME: What about the case
+	 *
+	 *  non-variant prototype;
+	 *
+	 *  variant;
+	 *
+	 *  non-variant definition.
+	 */
+	my_yyerror("Overriding variant function %S() with "
+		   "non-variant in the same class.",
+		   name);
+      }
+    }
+  } else if (i >= 0) {
+    /* Pass 2 */
+    if (is_variant_dispatcher(prog, i)) {
+      if (!func || (func->c_fun != f_dispatch_variant) ||
+	  !IDENTIFIER_IS_C_FUNCTION(function_flags)) {
+	/* Variant or variant termination function in second pass. */
+	flags |= ID_VARIANT;
+	i = really_low_find_variant_identifier(name, prog, type,
+					       prog->num_identifier_references,
+					       SEE_PROTECTED|SEE_PRIVATE);
+      }
+    }
+  }
 
   if(i >= 0)
   {
@@ -5943,8 +6058,8 @@ INT32 define_function(struct pike_string *name,
 	  c->compilation_depth, "", i);
 #endif
 
-    funp=ID_FROM_INT(Pike_compiler->new_program, i);
-    ref=Pike_compiler->new_program->identifier_references[i];
+    funp = ID_FROM_INT(prog, i);
+    ref = prog->identifier_references[i];
 
     if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
       /* Keep this flag. */
@@ -5959,8 +6074,7 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Identifier %S defined twice.", name);
 
 	if (getter_setter != -1) {
-	  struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					      getter_setter);
+	  struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	  (&id->func.gs_info.getter)[is_setter] = i;
 	}
 	return i;
@@ -5975,12 +6089,10 @@ INT32 define_function(struct pike_string *name,
 	/* match types against earlier prototype or vice versa */
 	if(!match_types(type, funp->type))
 	{
-	  if (!(flags & ID_VARIANT)) {
-	    yytype_report(REPORT_ERROR, NULL, 0,
-			  funp->type,
-			  NULL, 0, type, 0,
-			 "Prototype doesn't match for function %S.", name);
-	  }
+	  yytype_report(REPORT_ERROR, NULL, 0,
+			funp->type,
+			NULL, 0, type, 0,
+			"Prototype doesn't match for function %S.", name);
 	}
       }
 
@@ -6013,6 +6125,29 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Illegal to redefine 'final' function %S.", name);
       }
 
+      if (!(flags & ID_VARIANT) && (Pike_compiler->compiler_pass == 1) &&
+	  (funp->func.c_fun == f_dispatch_variant) &&
+	  (!func || (func->c_fun != f_dispatch_variant) ||
+	   !IDENTIFIER_IS_C_FUNCTION(function_flags)) &&
+	  IDENTIFIER_IS_C_FUNCTION(funp->identifier_flags)) {
+	/* Overriding a variant function dispatcher with
+	 * a non-variant function in pass 1.
+	 *
+	 * Hide the corresponding variant functions.
+	 */
+	int j = prog->num_identifier_references;
+	while ((j = really_low_find_variant_identifier(name, prog, NULL, j,
+						       SEE_PROTECTED|SEE_PRIVATE)) != -1) {
+	  if (!prog->identifier_references[j].inherit_offset) {
+	    /* FIXME: This doesn't catch all cases, and should probably
+	     *        be moved to a place where it does.
+	     */
+	    my_yyerror("Overloading variant function %S with non-variant in same class.",
+		       name);
+	  }
+	  prog->identifier_references[j].id_flags |= ID_HIDDEN;
+	}
+      }
 
       if(ref.id_flags & ID_INLINE)
       {
@@ -6021,8 +6156,7 @@ INT32 define_function(struct pike_string *name,
 		c->compilation_depth, "");
 #endif
 	/* Hide the previous definition, and make a new definition. */
-	Pike_compiler->new_program->identifier_references[i].id_flags |=
-	  ID_PROTECTED;
+	prog->identifier_references[i].id_flags |= ID_PROTECTED;
 	goto make_a_new_def;
       }
 
@@ -6048,18 +6182,24 @@ INT32 define_function(struct pike_string *name,
 
       fun.opt_flags = opt_flags;
 
-      ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
+      ref.identifier_offset = prog->num_identifiers;
       debug_add_to_identifiers(fun);
     }
 
-    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+    if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
-    if ((overridden = override_identifier (&ref, name)) >= 0) {
+    if (flags & ID_VARIANT) {
+      ref.id_flags |= ID_USED;
+      prog->identifier_references[i] = ref;
+      overridden = i;
+    } else {
+      overridden = override_identifier(&ref, name);
+    }
+    if (overridden >= 0) {
 #ifdef PIKE_DEBUG
-      struct reference *oref =
-	Pike_compiler->new_program->identifier_references+overridden;
+      struct reference *oref = prog->identifier_references+overridden;
       if((oref->inherit_offset != ref.inherit_offset) ||
 	 (oref->identifier_offset != ref.identifier_offset) ||
 	 ((oref->id_flags | ID_USED) != (ref.id_flags | ID_USED))) {
@@ -6077,8 +6217,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 
       if (getter_setter != -1) {
-	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					    getter_setter);
+	struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	INT32 old_i = (&id->func.gs_info.getter)[is_setter];
 	if ((old_i >= 0) && (old_i != overridden)) {
 	  my_yyerror("Multiple definitions for %S.", name);
@@ -6120,17 +6259,17 @@ INT32 define_function(struct pike_string *name,
       fprintf(stderr, 
 	      "Adding new function #%d: '%s'\n"
 	      "  identifier_flags:0x%02x opt_flags:0x%04x\n",
-	      Pike_compiler->new_program->num_identifiers,
+	      prog->num_identifiers,
 	      fun.name->str,
 	      fun.identifier_flags, fun.opt_flags);
     }
 #endif /* PIKE_DEBUG */
 
-    i=Pike_compiler->new_program->num_identifiers;
+    i = prog->num_identifiers;
 
     debug_add_to_identifiers(fun);
 
-    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+    if (flags & ID_PRIVATE) flags |= ID_LOCAL|ID_PROTECTED;
 
     ref.id_flags = flags;
     ref.identifier_offset = i;
@@ -6141,7 +6280,7 @@ INT32 define_function(struct pike_string *name,
 
   /* Add the reference. */
 
-  i=Pike_compiler->new_program->num_identifier_references;
+  i = prog->num_identifier_references;
   add_to_identifier_references(ref);
 
 #ifdef PROGRAM_BUILD_DEBUG
@@ -6150,8 +6289,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 
   if (getter_setter != -1) {
-    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
-					getter_setter);
+    struct identifier *id = ID_FROM_INT(prog, getter_setter);
     INT32 old_i = (&id->func.gs_info.getter)[is_setter];
     if (old_i >= 0) {
       my_yyerror("Multiple definitions for %S.", name);
@@ -6292,6 +6430,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   {
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
+    if(funp->id_flags & ID_VARIANT) continue;
     if(funp->id_flags & ID_PROTECTED)
       if(!(flags & SEE_PROTECTED))
 	continue;
@@ -6330,6 +6469,147 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
     }
   }
   return id;
+}
+
+int really_low_find_variant_identifier(struct pike_string *name,
+				       struct program *prog,
+				       struct pike_type *type,
+				       int start_pos,
+				       int flags)
+{
+  struct reference *funp;
+  struct identifier *fun;
+  int id, i, depth, last_inh;
+
+#if 1
+#ifdef COMPILER_DEBUG
+  fprintf(stderr,"th(%ld) %p Trying to find variant \"%s\" start=%d flags=%d\n"
+	  "  type: ",
+	  (long)th_self(), prog, name->str, start_pos, flags);
+  simple_describe_type(type);
+  fprintf(stderr, "\n");
+#endif
+#endif
+
+#ifdef PIKE_DEBUG
+  if (!prog) {
+    Pike_fatal("really_low_find_variant_identifier(\"%s\", NULL, %p, %d, %d)\n"
+	       "prog is NULL!\n", name->str, type, start_pos, flags);
+  }
+#endif /* PIKE_DEBUG */
+
+  id = -1;
+  depth = 0;
+  last_inh = prog->num_inherits;
+  i = start_pos;
+#ifdef PIKE_DEBUG
+  if (i > (int)prog->num_identifier_references) {
+    Pike_fatal("really_low_find_variant_identifier(\"%s\", %p, %p, %d, %d):\n"
+	       "Start position is past max: %d\n",
+	       name->str, prog, type, start_pos, flags,
+	       prog->num_identifier_references);
+  }
+#endif /* PIKE_DEBUG */
+  while(i--)
+  {
+    funp = prog->identifier_references + i;
+    if(funp->id_flags & ID_HIDDEN) continue;
+    if(!(funp->id_flags & ID_VARIANT)) continue;
+    if(funp->id_flags & ID_PROTECTED)
+      if(!(flags & SEE_PROTECTED))
+	continue;
+    fun = ID_FROM_PTR(prog, funp);
+    /* if(fun->func.offset == -1) continue; * Prototype */
+    if(!is_same_string(fun->name,name)) continue;
+    if(type && (fun->type != type)) continue;
+    if(funp->id_flags & ID_INHERITED)
+    {
+      struct inherit *inh = INHERIT_FROM_PTR(prog, funp);
+      if ((funp->id_flags & ID_PRIVATE) && !(flags & SEE_PRIVATE)) continue;
+      if (!depth || (depth > inh->inherit_level)) {
+	if (id != -1) {
+	  int j;
+	  int min_level = depth;
+	  for (j=last_inh-1; j > funp->inherit_offset; j--) {
+	    struct inherit *inh2 = prog->inherits + j;
+	    if (inh2->inherit_level >= min_level) {
+	      /* Got deeper in the inherit graph */
+	      continue;
+	    }
+	    min_level = inh2->inherit_level;
+	  }
+	  if (!(inh->inherit_level < min_level)) {
+	    continue;
+	  }
+	  /* Found new identifier on the path from the old identifier to
+	   * the root.
+	   */
+	}
+	last_inh = funp->inherit_offset;
+	depth = inh->inherit_level;
+	id = i;
+      }
+    } else {
+      CDFPRINTF((stderr, "Found %d\n", i));
+      return i;
+    }
+  }
+  CDFPRINTF((stderr, "Found %d\n", id));
+  return id;
+}
+
+/**
+ * This is the dispatcher function for variant functions.
+ *
+ * cf end_first_pass().
+ */
+static void f_dispatch_variant(INT32 args)
+{
+  struct pike_frame *fp = Pike_fp;
+  struct program *prog = fp->context->prog;
+  struct reference *funp = PTR_FROM_INT(fp->current_program, fp->fun);
+  struct identifier *id = ID_FROM_PTR(fp->current_program, funp);
+  struct pike_string *name = id->name;
+  int fun_num = prog->num_identifier_references;
+  int flags = 0;
+
+  /* NB: The following is mostly to support a potential future
+   *     case where a mixed set of protections would cause
+   *     multiple dispatchers with the same name to be added
+   *     (but different protection (and types)).
+   */
+  if (funp->id_flags & ID_PRIVATE) {
+    flags = SEE_PRIVATE|SEE_PROTECTED;
+  } else if (funp->id_flags & ID_PROTECTED) {
+    flags = SEE_PROTECTED;
+  }
+
+  while ((fun_num = really_low_find_variant_identifier(name, prog, NULL,
+						       fun_num, flags)) != -1) {
+    int i;
+    struct pike_type *t;
+    struct pike_type *ret;
+
+    id = ID_FROM_INT(prog, fun_num);
+    add_ref(t = id->type);
+
+    /* Check whether the type is compatible with our arguments. */
+    for (i = 0; i < args; i++) {
+      struct pike_type *cont = check_call_svalue(t, 0, Pike_sp+i - args);
+      free_type(t);
+      if (!(t = cont)) break;
+    }
+    if (!t) continue;
+    ret = new_get_return_type(t, 0);
+    free_type(t);
+    if (!ret) continue;
+    free_type(ret);
+
+    /* Found a function to call! */
+    apply_current(fun_num, args);
+    return;
+  }
+  Pike_error("Invalid arguments to %S()!\n", name);
 }
 
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
@@ -6490,7 +6770,7 @@ int store_prog_string(struct pike_string *str)
 /* NOTE: O(n²)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
-		   struct pike_string *constant_name)
+		   struct pike_string *UNUSED(constant_name))
 {
   struct program_constant tmp;
   volatile unsigned int e;
@@ -6555,7 +6835,7 @@ struct array *program_indices(struct program *p)
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -6594,7 +6874,7 @@ struct array *program_values(struct program *p)
   for(e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -6633,7 +6913,7 @@ struct array *program_types(struct program *p)
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -7676,7 +7956,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   free_svalue(&thrown);
 }
 
-extern void yyparse(void);
+extern int yyparse(void);
 
 #ifdef PIKE_DEBUG
 #define do_yyparse() do {				\
@@ -7702,11 +7982,6 @@ struct supporter_marker
   void *data;
   int level, verified;
 };
-
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(P)
-#undef COUNT_OTHER
-#define COUNT_OTHER()
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(X) do { (X)->level = (X)->verified = 0; }while(0)
@@ -9724,7 +9999,7 @@ PMOD_EXPORT void exit_compiler(void)
 
 #define THIS_PROGRAM_STATE  ((struct program_state *)(Pike_fp->current_storage))
 
-static void program_state_event_handler(int event)
+static void program_state_event_handler(int UNUSED(event))
 {
 #if 0
   struct program_state *c = THIS_PROGRAM_STATE;
@@ -10152,7 +10427,7 @@ PMOD_EXPORT int quick_add_function(const char *name,
 				   int name_length,
 				   void (*cfun)(INT32),
 				   const char *type,
-				   int type_length,
+				   int UNUSED(type_length),
 				   unsigned flags,
 				   unsigned opt_flags)
 {
@@ -10218,7 +10493,7 @@ void check_all_programs(void)
 #define THIS ((struct pike_trampoline *)(CURRENT_STORAGE))
 struct program *pike_trampoline_program=0;
 
-static void apply_trampoline(INT32 args)
+static void apply_trampoline(INT32 UNUSED(args))
 {
   Pike_error("Internal error: Trampoline magic failed!\n");
 }
@@ -10256,12 +10531,12 @@ static void sprintf_trampoline (INT32 args)
   free (str.str);
 }
 
-static void init_trampoline(struct object *o)
+static void init_trampoline(struct object *UNUSED(o))
 {
   THIS->frame=0;
 }
 
-static void exit_trampoline(struct object *o)
+static void exit_trampoline(struct object *UNUSED(o))
 {
   if(THIS->frame)
   {
@@ -10284,7 +10559,7 @@ static void gc_check_frame(struct pike_frame *f)
   }
 }
 
-static void gc_check_trampoline(struct object *o)
+static void gc_check_trampoline(struct object *UNUSED(o))
 {
   if (THIS->frame &&
       !debug_gc_check (THIS->frame, " as trampoline frame"))
@@ -10300,7 +10575,7 @@ static void gc_recurse_frame(struct pike_frame *f)
   if(f->scope)          gc_recurse_frame(f->scope);
 }
 
-static void gc_recurse_trampoline(struct object *o)
+static void gc_recurse_trampoline(struct object *UNUSED(o))
 {
   if (THIS->frame) gc_recurse_frame(THIS->frame);
 }
@@ -10340,7 +10615,6 @@ void init_program(void)
   struct svalue key;
   struct svalue val;
   struct svalue id;
-  init_program_blocks();
 
   MAKE_CONST_STRING(this_function_string,"this_function");
   MAKE_CONST_STRING(this_program_string,"this_program");
@@ -11128,7 +11402,7 @@ static int low_implements(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -11209,7 +11483,7 @@ static int low_is_compatible(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -11331,7 +11605,7 @@ void yyexplain_not_compatible(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -11393,7 +11667,7 @@ void yyexplain_not_implements(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -11437,6 +11711,133 @@ void yyexplain_not_implements(int severity_level,
   }
   free_string(b_file);
   free_string(a_file);
+  END_CYCLIC();
+}
+
+/* FIXME: Code duplication of yyexplain_not_compatible() above! */
+/* Explains why a is not compatible with b */
+void string_builder_explain_not_compatible(struct string_builder *s,
+					   struct program *a,
+					   struct program *b)
+{
+  int e;
+  struct pike_string *init_string = findstring("__INIT");
+  int res = 1;
+  DECLARE_CYCLIC();
+
+  /* Optimize the loop somewhat */
+  if (a->num_identifier_references < b->num_identifier_references) {
+    struct program *tmp = a;
+    a = b;
+    b = tmp;
+  }
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
+      continue;		/* Skip protected & hidden */
+
+    /* FIXME: What if they aren't protected & hidden in a? */
+
+    bid = ID_FROM_INT(b,e);
+    if(init_string == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      continue;		/* It's ok... */
+    }
+
+    /* Note: Uses weaker check for constant integers. */
+    if(((bid->run_time_type != PIKE_T_INT) ||
+	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
+       !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+      ref_push_program(a);
+      ref_push_program(b);
+      ref_push_type_value(ID_FROM_INT(a, i)->type);
+      ref_push_type_value(bid->type);
+      string_builder_sprintf(s,
+			     "Identifier %S in %O is incompatible with "
+			     "the same in %O.\n"
+			     "Expected: %O\n"
+			     "Got     : %O\n",
+			     bid->name, Pike_sp-4,
+			     Pike_sp-3,
+			     Pike_sp-2,
+			     Pike_sp-1);
+      pop_n_elems(4);
+    }
+  }
+  END_CYCLIC();
+  return;
+}
+
+/* FIXME: code duplication of yyexplain_not_implements() above! */
+/* Explains why a does not implement b */
+void string_builder_explain_not_implements(struct string_builder *s,
+					   struct program *a,
+					   struct program *b)
+{
+  int e;
+  struct pike_string *init_string = findstring("__INIT");
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
+      continue;		/* Skip protected & hidden */
+    bid = ID_FROM_INT(b,e);
+    if(init_string == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
+	continue;		/* It's ok... */
+      ref_push_type_value(bid->type);
+      string_builder_sprintf(s,
+			     "Missing identifier %O %S.\n",
+			     Pike_sp-1, bid->name);
+      pop_stack();
+      continue;
+    }
+
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+      ref_push_type_value(bid->type);
+      ref_push_type_value(ID_FROM_INT(a, i)->type);
+      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+	string_builder_sprintf(s,
+			       "Type of identifier %S does not match.\n"
+			       "Expected: %O.\n"
+			       "Got     : %O.\n",
+			       bid->name,
+			       Pike_sp-2,
+			       Pike_sp-1);
+      } else {
+	string_builder_sprintf(s,
+			       "Type of identifier %S is not strictly compatible.",
+			       "Expected: %O.\n"
+			       "Got     : %O.\n",
+			       bid->name,
+			       Pike_sp-2,
+			       Pike_sp-1);
+      }
+      pop_n_elems(2);
+      continue;
+    }
+  }
   END_CYCLIC();
 }
 

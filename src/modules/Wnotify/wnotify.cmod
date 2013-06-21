@@ -54,7 +54,7 @@ PIKECLASS NotificationHandle
   PIKEVAR int filter;
   PIKEVAR int triggered;
 
-/*! @decl create(string path, int watch_subtree, int filter)
+/*! @decl void create(string path, int watch_subtree, int filter)
  */
   PIKEFUN void create(string path, int watch_subtree, int filter)
   {
@@ -125,6 +125,8 @@ PIKECLASS NotificationHandle
     if(THIS->handle) FindCloseChangeNotification(THIS->handle);
   }
 }
+
+/*! @endclass */
 
 /*! @class EventPoller
  */
@@ -245,6 +247,8 @@ PIKECLASS EventPoller
   }
 }
 
+/*! @endclass */
+
 #endif /* HAVE_FINDFIRSTCHANGENOTIFICATION */
 
 PIKE_MODULE_INIT
@@ -283,9 +287,6 @@ PIKE_MODULE_EXIT
 {
   EXIT;
 }
-
-/*! @endclass
- */
 
 /*! @endmodule
  */

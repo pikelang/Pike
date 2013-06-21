@@ -42,6 +42,7 @@ class Hash
 
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
+//!
 //! @seealso
 //!   @[verify_crypt_md5]
 string make_crypt_md5(string password, void|string salt) {
@@ -63,7 +64,7 @@ int(0..1) verify_crypt_md5(string password, string hash) {
   string salt;
   if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
     error("Error in hash.\n");
-  return Nettle.crypt_md5(password, salt)==hash;
+  return Nettle.crypt_md5(password, salt)==[string(0..127)]hash;
 }
 
 class CipherState {

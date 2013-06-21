@@ -162,7 +162,7 @@ static volatile int aap_time_to_die = 0;
 
 static COND_T aap_timeout_thread_is_dead;
 
-static void *handle_timeouts(void *ignored)
+static void *handle_timeouts(void *UNUSED(ignored))
 {
   while(1)
   {

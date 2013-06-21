@@ -14,7 +14,7 @@
 
 inherit GTK2.Dialog;
 
-static GTK2.MessageDialog create( mapping|int flags, int|void type, int|void buttons, string|void message, GTK2.Window parent );
+protected GTK2.MessageDialog create( mapping|int flags, int|void type, int|void buttons, string|void message, GTK2.Window parent );
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is

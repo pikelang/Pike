@@ -365,7 +365,7 @@ PIKECLASS CircularList
   {
     int s;
     int retval;
-    if(args == 2)
+    if(start)
     {
       if (TYPEOF(*start) != PIKE_T_INT)
       {
@@ -487,16 +487,11 @@ PIKECLASS CircularList
     INT32 endpos = THIS->a->size - THIS->pos; //distanse of pos from the end
     if (elements <= 0)
     {
-      Pike_error("Allocate expects an value bigger than zero\n");
+      Pike_error("Allocate expects a value larger than zero.\n");
     }
     if(THIS->a->refs <= 1 && THIS->a->malloced_size >= size)
     {
-      for(;THIS->a->size < size; THIS->a->size++)
-      {
-	SET_SVAL(ITEM(THIS->a)[THIS->a->size], T_INT, NUMBER_NUMBER,
-		 integer, 0);
-      }
-      THIS->a->type_field |= BIT_INT;
+      THIS->a->size = size;
       if (THIS->size > 0)
       {
 	MEMMOVE((char *)(ITEM(THIS->a)+(size-endpos)),
@@ -504,6 +499,12 @@ PIKECLASS CircularList
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;
       }
+      while(elements) {
+	SET_SVAL(ITEM(THIS->a)[THIS->pos - elements], T_INT, NUMBER_NUMBER,
+		 integer, 0);
+	elements--;
+      }
+      THIS->a->type_field |= BIT_INT;
     }
     else
     {
@@ -901,7 +902,7 @@ PIKECLASS CircularList
       {
 	THIS->list = OBJ2_CIRCULARLIST(list);
 	add_ref(THIS->obj = list);
-	if (args == 2) // if there was an start index supplied
+	if (start) // if there was an start index supplied
 	{
 	  THIS->pos=start->u.integer;
 	  if (THIS->list->a && ((THIS->pos > THIS->list->size) 
@@ -1053,7 +1054,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->list && 
 		(THIS->pos + 1) <= THIS->list->size);
@@ -1076,7 +1077,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->list && 
 		(THIS->pos) > 0);
@@ -1278,7 +1279,7 @@ PIKECLASS CircularList
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
-    if (args > 0)
+    if (ind)
     {
       push_svalue(ind);
     }

@@ -109,7 +109,7 @@
 
 /* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
-#define     PROG_MODULE_FILES_ID				   0101
+#define     PROG_MODULE_STDIO_ID				   0101
 
 #define	    PROG_BASIC_TOKENIZER_ID				   0110
 #define	    PROG_TOKEN_ID					   0111

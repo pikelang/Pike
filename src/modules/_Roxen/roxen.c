@@ -55,7 +55,7 @@ struct  header_buf
   int mode;
 };
 
-static void f_hp_init( struct object *o )
+static void f_hp_init( struct object *UNUSED(o) )
 {
   THP->headers = NULL;
   THP->pnt = NULL;
@@ -65,7 +65,7 @@ static void f_hp_init( struct object *o )
   THP->mode = 0;
 }
 
-static void f_hp_exit( struct object *o )
+static void f_hp_exit( struct object *UNUSED(o) )
 {
   if( THP->headers )
     free( THP->headers );

@@ -185,7 +185,7 @@ static MUTEX_T stupid_port_lock;
  * State maintenance
  */
 
-static void init_mysql_struct(struct object *o)
+static void init_mysql_struct(struct object *UNUSED(o))
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
   INIT_MYSQL_LOCK();
@@ -194,7 +194,7 @@ static void init_mysql_struct(struct object *o)
     Pike_error ("Out of memory when initializing mysql connection.\n");
 }
 
-static void exit_mysql_struct(struct object *o)
+static void exit_mysql_struct(struct object *UNUSED(o))
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
 
@@ -482,13 +482,13 @@ static void pike_mysql_reconnect (int reconnect)
 
   MYSQL_ALLOW();
 
+#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
+  STUPID_PORT_LOCK();
+#endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
 #ifdef HAVE_MYSQL_REAL_CONNECT
   socket = mysql_real_connect(mysql, host, user, password,
                               NULL, port, portptr, options);
 #else
-#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
-  STUPID_PORT_LOCK();
-#endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
 
 #ifdef HAVE_MYSQL_PORT
   if (port) {
@@ -516,10 +516,10 @@ static void pike_mysql_reconnect (int reconnect)
   }
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
+#endif /* HAVE_MYSQL_REAL_CONNECT */
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
   STUPID_PORT_UNLOCK();
 #endif /* HAVE_MYSQL_PORT || MAVE_MYSQL_UNIX_PORT*/
-#endif /* HAVE_MYSQL_REAL_CONNECT */
 
   MYSQL_DISALLOW();
 
@@ -1557,7 +1557,7 @@ static void f_list_tables(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_tables(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_tables(): Cannot list tables: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1698,7 +1698,7 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_fields(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_fields(): Cannot list fields: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1746,7 +1746,7 @@ static void f_list_processes(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_processes(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_processes(): Cannot list processes: %s\n", err);
   }
 
   {
@@ -1855,6 +1855,25 @@ static void f__can_send_as_latin1 (INT32 args)
 /*! @endclass
  */
 
+/*! @decl string client_info()
+ *!
+ *! Get some information about the Mysql-server client library.
+ *!
+ *! @seealso
+ *!   @[mysql()->statistics()], @[mysql()->server_info()],
+ *!   @[mysql()->protocol_info()], @[mysql()->info()]
+ */
+static void f_client_info(INT32 args)
+{
+  pop_n_elems(args);
+
+#ifndef MYSQL_COMPILATION_COMMENT
+#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#endif
+
+  push_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+}
+
 /*! @endmodule
  */
 
@@ -1959,6 +1978,9 @@ PIKE_MODULE_INIT
 
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
+
+  /* function(void:string) */
+  ADD_FUNCTION("client_info", f_client_info,tFunc(tVoid,tStr), ID_PUBLIC);
 
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_INIT();

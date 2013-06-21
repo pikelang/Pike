@@ -652,9 +652,9 @@ static void cmp_reg32_imm( enum amd64_reg reg, int imm32 )
 
 static void cmp_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
 {
-  rex(1, reg1, 0, reg2);
+  rex(1, reg2, 0, reg1);
   opcode( 0x39 );
-  modrm( 3, reg1, reg2 );
+  modrm( 3, reg2, reg1 );
 }
 
 static int jmp_rel_imm32( int addr )
@@ -906,7 +906,7 @@ void amd64_start_function(int store_lines )
 }
 
 /* Called when the current function is done */
-void amd64_end_function(int no_pc)
+void amd64_end_function(int UNUSED(no_pc))
 {
   branch_check_threads_update_etc = 0;
 }
@@ -1034,8 +1034,8 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   mov_reg_mem(REG_RAX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, type));
   and_reg_imm(REG_RAX, 0x1f);
   mov_reg_mem(REG_RCX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
-  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
-  jg(&label_A);
+  cmp_reg32_imm(REG_RAX, MIN_REF_TYPE);
+  jl(&label_A);
   add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
  LABEL_A;
 }
@@ -1096,9 +1096,11 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* load type -> RAX */
   mov_sval_type( src, REG_RAX );
 
-  /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg32_imm( REG_RAX,MAX_REF_TYPE);
-  jg( &label_A );
+  and_reg_imm(REG_RAX, ~(MIN_REF_TYPE - 1));
+
+  /* if RAX != MIN_REF_TYPE */
+  cmp_reg32_imm( REG_RAX,MIN_REF_TYPE);
+  jne( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1116,17 +1118,19 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
   LABEL_A;
 }
 
-/* Type already in RAX */
+/* Type already in register. Note: Clobbers the type register. */
 static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
                                    int guaranteed_ref )
 {
   LABELS();
-  /* if type > MAX_REF_TYPE+1 */
+  /* if type < MIN_REF_TYPE+1 */
   if( src == REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
 
-  cmp_reg32_imm(type,MAX_REF_TYPE);
-  jg( &label_A );
+  and_reg_imm(type, ~(MIN_REF_TYPE - 1));
+
+  cmp_reg32_imm(type,MIN_REF_TYPE);
+  jne( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
@@ -1153,9 +1157,9 @@ void amd64_ref_svalue( enum amd64_reg src, int already_have_type )
   else
       and_reg_imm( REG_RAX, 0x1f );
 
-  /* if RAX > MAX_REF_TYPE+1 */
-  cmp_reg32_imm(REG_RAX, MAX_REF_TYPE );
-  jg( &label_A );
+  /* if RAX > MIN_REF_TYPE+1 */
+  cmp_reg32_imm(REG_RAX, MIN_REF_TYPE );
+  jl( &label_A );
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), REG_RAX);
    /* *RAX++ */
@@ -1420,10 +1424,14 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
   {
     LABEL_A;
     /* Use C-stack for counter. We have padding added in entry */
+#ifndef USE_VALGRIND
     add_mem8_imm( REG_RSP, 0, 1 );
     jno( &label_B );
+#endif
     call_rel_imm32( branch_check_threads_update_etc );
-    LABEL_B;
+#ifndef USE_VALGRIND
+   LABEL_B;
+#endif
   }
 }
 
@@ -1929,21 +1937,26 @@ void ins_f_byte(unsigned int b)
     /* Actually return */
     flush_dirty_regs();
     amd64_return_from_function();
-
+    /* */
     LABEL_A;
-    amd64_call_c_opcode(addr,flags);
-#if 0
-    /* Can this happen?
+    /* We should jump to the given address. */
+    mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), REG_RAX );
+    and_reg_imm( REG_RAX, PIKE_FRAME_RETURN_POP );
+    jnz( &label_C );
+    amd64_call_c_function( low_return );
+    jmp( &label_D );
 
-       It seems to work without it, and from the code it looks like it
-       should never happen, so..
-    */
-    cmp_reg_imm(REG_RAX, -1);
-    je(&label_B);
-#endif
-    jmp_reg(REG_RAX);
+    LABEL_C;
+    amd64_call_c_function( low_return_pop );
+
+    LABEL_D;
+    fp_reg = -1;
+    amd64_load_fp_reg();
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, return_addr), REG_RAX );
+    jmp_reg( REG_RAX );
     }
     return;
+
   case F_CLEAR_STRING_SUBTYPE:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
@@ -2076,6 +2089,9 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
          -1: counter
       */
       amd64_load_sp_reg();
+      mov_mem8_reg( sp_reg, -4*sizeof(struct svalue), REG_RBX );
+      cmp_reg32_imm( REG_RBX, PIKE_T_ARRAY );
+      jne(&label_D);
       mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, REG_RAX );
       mov_mem_reg( sp_reg, -4*sizeof(struct svalue)+8, REG_RBX );
       mov_mem32_reg( REG_RBX, OFFSETOF(array,size), REG_RCX );
@@ -2109,10 +2125,15 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
       /* inc refs? */
       and_reg_imm( REG_RAX, 0x1f );
-      cmp_reg32_imm(REG_RAX, MAX_REF_TYPE);
-      jg( &label_B );
+      cmp_reg32_imm(REG_RAX, MIN_REF_TYPE);
+      jl( &label_B );
       add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
       jmp( &label_B );
+
+     LABEL_D;
+      /* Bad arg 1. Let the C opcode throw the error. */
+      amd64_call_c_opcode(instrs[off].address, flags);
+      /* NOT_REACHED */
 
      LABEL_C;
       add_reg_imm_reg( sp_reg, -3*sizeof(struct svalue), ARG1_REG );
@@ -2189,8 +2210,8 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
       /* Optimization: The types are equal, pop_stack can be greatly
        * simplified if they are <= max_ref_type */
-      cmp_reg32_imm( REG_RCX,MAX_REF_TYPE+1);
-      jl( &label_B );
+      cmp_reg32_imm( REG_RCX,MIN_REF_TYPE);
+      jge( &label_B );
       /* cheap pop. We know that both are > max_ref_type */
       amd64_add_sp( -2 );
       jmp( &label_D );
@@ -2343,10 +2364,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg( sp_reg,  -1*sizeof(struct svalue)+8, REG_RDX ); /* u.array */
       /* -> arr[sizeof(arr)-b] */
       mov_mem32_reg( REG_RDX, OFFSETOF(array,size), REG_RCX );
-      mov_imm_reg( b, REG_RBX);
-      cmp_reg_reg( REG_RCX, REG_RBX );
-      jg( &label_A ); /* b > RBX, index outside array */
-      shl_reg_imm( REG_RBX, 4 );
+      cmp_reg32_imm( REG_RCX, b );
+      jle( &label_A ); /* RCX <= b, index outside array */
+      mov_imm_reg( b * sizeof(struct svalue), REG_RBX);
       add_reg_mem( REG_RBX, REG_RDX, OFFSETOF(array,item) );
 
       /* This overwrites the array. */
@@ -2396,7 +2416,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
       LABEL_D;
       cmp_reg32_imm( REG_RBX, 0 ); jl( &label_B ); // <0
-      cmp_reg_reg( REG_RBX, REG_RCX); jge( &label_B ); // >size
+      cmp_reg_reg( REG_RBX, REG_RCX); jge( &label_B ); // >=size
 
       /* array, index inside array. push item, swap, pop, done */
       mov_mem_reg( REG_RCX, OFFSETOF(array,item), REG_RCX );
@@ -3014,6 +3034,19 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     mov_imm_mem32(PIKE_T_INT, REG_RBX, OFFSETOF(svalue, type));
     return;
 
+  case F_LOCAL_2_GLOBAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG3_REG );
+    add_reg_imm( ARG3_REG, c*sizeof(struct svalue) );
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),    ARG1_REG);
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame,context),            ARG2_REG);
+    mov_mem16_reg(ARG2_REG, OFFSETOF(inherit, identifier_level), ARG2_REG);
+    add_reg_imm( ARG2_REG, b );
+    amd64_call_c_function( object_low_set_index );
+    return;
+
   case F_LOCAL_2_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     if( b != c )
@@ -3061,7 +3094,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       amd64_push_int(0, c);
       LABEL_A;
       cmp_reg_reg(sp_reg, ARG1_REG);
-      jg(&label_B);
+      jl(&label_B);
     }
     return;
 

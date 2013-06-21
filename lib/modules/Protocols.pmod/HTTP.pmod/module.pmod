@@ -280,19 +280,23 @@ constant response_codes =
 	  url->scheme);
 #endif
 
-  if(!request_headers)
-    request_headers = ([]);
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
     "host" : url->host + 
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
-  if(url->user || url->passwd)
+  if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
 							(url->password || ""));
-  request_headers = default_headers | request_headers;
+
+  if(!request_headers)
+    request_headers = default_headers;
+  else
+    request_headers = default_headers |
+      mkmapping(lower_case(indices(request_headers)[*]),
+                values(request_headers));
 
   string query=url->query;
   if(query_variables && sizeof(query_variables))

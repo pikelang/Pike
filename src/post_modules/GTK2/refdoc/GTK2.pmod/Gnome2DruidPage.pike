@@ -26,7 +26,7 @@ int cancel( );
 //!
 //!
 
-static Gnome2.DruidPage create( );
+protected Gnome2.DruidPage create( );
 //! Creates a new Gnome2.DruidPage.
 //!
 //!

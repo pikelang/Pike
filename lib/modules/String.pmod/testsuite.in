@@ -63,7 +63,27 @@ test_any([[
   b->add("x");
   return (string)b;
 ]], "abc\400\500\400x")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("x");
+  b->sprintf("%x",1178);
+  b->add("y");
+  return (string)b;
+]], "x49ay")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->sprintf("%x", 10);
+  b->sprintf("%x", 11);
+  return (string)b;
+]], "ab")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->sprintf("");
+  return (string)b;
+]], "")
 
+test_compile_error([[ String.Buffer()->sprintf("%d"); ]])
+test_eval_error([[ function f=String.Buffer()->sprintf; f("%d"); ]])
 test_eval_error([[ String.Buffer()->add("x",0); ]])
 
 test_do([[

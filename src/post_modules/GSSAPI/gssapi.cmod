@@ -952,7 +952,7 @@ static DECLSPEC(noreturn) void throw_gssapi_error (
 }
 
 static DECLSPEC(noreturn) void handle_error (
-  int line, const char *gss_func,
+  int DEBUGUSED(line), const char *DEBUGUSED(gss_func),
   OM_uint32 major, OM_uint32 minor, const gss_OID mech
 )
 /* Assumed to be called only if GSS_ERROR (maj) is true. */

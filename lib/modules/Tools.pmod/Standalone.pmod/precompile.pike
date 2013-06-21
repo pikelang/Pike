@@ -13,7 +13,7 @@
 #define DEFINETOSTR(X) TOSTR(X)
 
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
-constant precompile_api_version = "4";
+constant precompile_api_version = "5";
 #else
 constant precompile_api_version = "3";
 #endif
@@ -46,6 +46,9 @@ string usage = #"[options] <from> > <to>
   attributes;
  {
    INHERIT bar
+     attributes;
+
+   INHERIT \"__builtin.foo\"
      attributes;
 
    CVAR int foo;
@@ -306,7 +309,8 @@ string allocate_string(string orig_str)
 	    str_id,
 	    orig_str, orig_str),
   });
-  str_sym = strings[str] = sprintf("module_strings[%d]", str_id);
+  str_sym = strings[str] = sprintf("module_strings[%d] /* %s */",
+				   str_id, orig_str);
   return str_sym;
 }
 
@@ -822,7 +826,7 @@ class PikeType
 	      return "tStr";
 	    }
 	    return sprintf("tNStr(%s)",
-			   stringify(sprintf("%4c%4c", low, high)));
+			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
@@ -1697,7 +1701,7 @@ class ParseBlock
   array exitfuncs=({});
   array declarations=({});
 
-  void create(array(array|PC.Token) x, string base)
+  void create(array(array|PC.Token) x, string base, string class_name)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1725,7 +1729,7 @@ class ParseBlock
 	  if ((e+2 < sizeof(x)) && (((string)x[e+1])[0] == '\"') &&
 	      arrayp(x[e+2])) {
 	    // C++ syntax support...
-	    create(x[e+2], base);
+	    create(x[e+2], base, class_name);
 	    ret += ({ x[e+1], code });
 	    code = ({});
 	    e += 2;
@@ -1734,17 +1738,101 @@ class ParseBlock
 	case "INHERIT":
 	  {
 	    int pos=search(x,PC.Token(";",0),e);
+
+	    string p;
+	    string numid = "-1";
+	    string offset = "0";
+	    string indent = "  ";
+	    array pre = ({});
+	    array post = ({});
+
 	    mixed name=x[e+1];
 	    string define=make_unique_name("inherit",name,base,"defined");
+	    if ((string)name == "::") {
+	      e++;
+	      name = x[e+1];
+	      if ((name == "this_program") &&
+		  has_suffix(base, "_" + class_name)) {
+		define=make_unique_name("inherit",name,base,"defined");
+		name = UNDEFINED;
+		pre = ({
+		  PC.Token(
+sprintf("  do {\n"
+	"    int i__ =\n"
+	"      reference_inherited_identifier(Pike_compiler->previous, NULL,\n"
+	"                                     %s);\n"
+	"    if (i__ != -1) {\n"
+	"      struct program *p = Pike_compiler->previous->new_program;\n"
+	"      struct identifier *id__ = ID_FROM_INT(p, i__);\n"
+	"      if (IDENTIFIER_IS_CONSTANT(id__->identifier_flags) &&\n"
+	"          (id__->func.const_info.offset != -1)) {\n"
+	"        struct svalue *s = &PROG_FROM_INT(p, i__)->\n"
+	"          constants[id__->func.const_info.offset].sval;\n"
+	"        if (TYPEOF(*s) == T_PROGRAM) {\n"
+	"          p = s->u.program;\n",
+	allocate_string(sprintf("%q", class_name))),
+			   x[e]->line),
+		});
+		indent = "          ";
+		p = "p";
+		numid = "i__";
+		offset = "1 + 42";
+		post = ({
+		  PC.Token(
+sprintf("        } else {\n"
+	"          yyerror(\"Previous definition of %s is not a program.\");\n"
+	"        }\n"
+	"      } else {\n"
+	"        yyerror(\"Previous definition of %s is not constant.\");\n"
+	"      }\n"
+	"    } else {\n"
+	"      yyerror(\"Failed to find previous definition of %s.\");\n"
+	"    }\n"
+	"  } while(0);\n",
+	class_name, class_name, class_name),
+			   x[e]->line),
+		});
+	      } else {
+		error("Unsupported INHERIT syntax.\n");
+	      }
+	    }
+
 	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    if (((string)name)[0] == '\"') {
+	      pre = ({
+		PC.Token("  do {\n"),
+		PC.Token("    struct program *p = resolve_program(" +
+			 allocate_string((string)name) +
+			 ");\n",
+			 name->line),
+		PC.Token("    if (p) {\n"),
+	      });
+	      indent = "      ";
+	      p = "p";
+	      post = ({
+		PC.Token("      free_program(p);\n"
+			 "    } else {\n", name->line),
+		PC.Token("      yyerror(\"Inherit failed.\");\n"
+			 "    }\n"
+			 "  } while(0);", x[e]->line),
+	      });
+	      if (api < 5) {
+		warn("%s:%d: API level 5 (or higher) is required "
+		     "for inherit of strings.\n",
+		     name->file, name->line);
+	      }
+	    } else if (name) {
+	      p = mkname((string)name, "program");
+	    }
 	    addfuncs +=
 	      IFDEF(define,
-		    ({
-		      PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-				       mkname((string)name, "program"),
+		    pre + ({
+		      PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+				       "%s, %s, NULL);\n",
+				       indent, p, numid, offset,
 				       attributes->flags || "0"),
 			       x[e]->line),
-		    }));
+		    }) + post);
 	    ret += DEFINE(define);
 	    e = pos;
 	    break;
@@ -1772,7 +1860,7 @@ class ParseBlock
 	    mapping attributes=parse_attributes(proto[1..]);
 
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					     mkname(base, name));
+					     mkname(base, name), name);
 	    string program_var = mkname(base, name, "program");
 
 	    string define = make_unique_name("class", base, name, "defined");
@@ -2355,13 +2443,10 @@ static struct %s *%s_gdb_dummy_ptr;
 		    sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT",
 			     argnum, check_argbase),
 		    arg->line()),
-		  "\n#ifdef AUTO_BIGNUM\n",
 		  PC.Token (
-		    sprintf ("  && !is_bignum_object_in_svalue (Pike_sp%+d%s)",
+		    sprintf ("  && !is_bignum_object_in_svalue (Pike_sp%+d%s))",
 			     argnum, check_argbase),
 		    arg->line()),
-		  "\n#endif\n",
-		  PC.Token (")", arg->line()),
 		});
 		break;
 
@@ -2423,7 +2508,6 @@ static struct %s *%s_gdb_dummy_ptr;
 
 		case "LONGEST":
 		  ret += ({
-		    "\n#ifdef AUTO_BIGNUM\n",
 		    PC.Token (
 		      sprintf ("if (TYPEOF(Pike_sp[%d%s]) == PIKE_T_INT)\n",
 			       argnum, argbase),
@@ -2446,12 +2530,6 @@ static struct %s *%s_gdb_dummy_ptr;
 			       attributes->errname || attributes->name || name,
 			       argnum+1),
 		      arg->line()),
-		    "\n#else\n",
-		    PC.Token (
-		      sprintf ("%s = Pike_sp[%d%s].u.integer;\n",
-			       arg->name(), argnum, argbase),
-		      arg->line()),
-		    "\n#endif\n",
 		  });
 		  break;
 
@@ -2788,7 +2866,7 @@ int main(int argc, array(string) argv)
 
   x = recursive(allocate_strings, x);
 
-  ParseBlock tmp=ParseBlock(x,"");
+  ParseBlock tmp=ParseBlock(x,"","");
 
   tmp->declarations += ({
     "\n\n"

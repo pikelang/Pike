@@ -68,7 +68,7 @@ typedef mapping(HeaderIdentifier:string|int|array) Headers;
 string encode_headers(Headers h)
 {
   string r0 = "", r = "";
-  object e = Locale.Charset.encoder("utf16-be");
+  object e = Charset.encoder("utf16-be");
   foreach(h; HeaderIdentifier hi; string|int|array va)
     foreach(arrayp(va)? va:({va}), string|int v) {
       string vv;
@@ -98,7 +98,7 @@ string encode_headers(Headers h)
 Headers decode_headers(string h)
 {
   Headers r = ([]);
-  object d = Locale.Charset.decoder("utf16-be");
+  object d = Charset.decoder("utf16-be");
   while(sizeof(h)) {
     HeaderIdentifier hi = h[0];
     string|int v = 0;

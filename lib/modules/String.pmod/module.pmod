@@ -18,6 +18,7 @@ constant int2hex = int2hex;
 constant string2hex = __builtin.string2hex;
 constant hex2string = __builtin.hex2string;
 constant secure = __builtin.string_secure;
+constant status = __builtin.string_status;
 
 constant __HAVE_SPRINTF_STAR_MAPPING__ = 1;
 constant __HAVE_SPRINTF_NEGATIVE_F__ = 1;
@@ -164,6 +165,83 @@ int(0..100) fuzzymatch(string a, string b)
   fuzz = fuzz*100/(sizeof(a)+sizeof(b));
 
   return [int(0..100)]fuzz;
+}
+
+//! This function calculates the Levenshtein distance between two strings a
+//! and b. The Levenshtein distance describes the minimal number of character
+//! additions, removals or substitutions to apply to convert a to b.
+//!
+//! Mathematically, the Levenshtein distance between two strings a, b is given
+//! by lev_a,b(|a|,|b|) where
+//!
+//! lev_a,b(i, j) == max(i, j), if min(i, j) == 0
+//! lev_a,b(i, j) == min( lev_a,b(i, j-1)+1,
+//!                       lev_a,b(i-1, j)+1,
+//!                       lev_a,b(i-1, j-1) + a_i!=b_j ), else
+//!
+//! Note that the first element in the minimum corresponds to inserting a
+//! character to a (or deleting a character from b), the second to deleting a
+//! character from a and the third to match or mismatch, depending on whether
+//! the respective characters are equal.
+//!
+//! Example: For example, the Levenshtein distance between "pike" and
+//! "bikes" is 2, since the following two edits change one into the other,
+//! and there is no way to do it with fewer than two edits:
+//! - "pike" -> "bike" (substitute "p" with "b")
+//! - "bike" -> "bikes" (add "s" at the end)
+//!
+//! Note that the cost to compute the Levenshtein distance is roughly
+//! proportional to the product of the two string lengths. So this function
+//! is usually used to aid in fuzzy string matching, when at least one of the
+//! strings is short.
+int levenshtein_distance(string a, string b)
+{
+    // The __builtin implementation takes care about a==b, a==0, b==0 and the
+    // algorithm if both strings are 8bit wide.
+    int res;
+    if ((res = __builtin.levenshtein_distance(a, b)) != -1)
+        return res;
+
+    // Let ai be a sub-string of a with length i and bj be a sub-string of b
+    // with length j. Then let lev_i the row
+    //     lev_i = ( lev_ai,bj(|ai|,j) for j=0..|b| ).
+    // Then we can calculate the next row
+    //     lev_i+1 = ( lev_ai+1,bj(|ai|+1,j) for j=0..|b| )
+    // from the above formula.
+
+    // Initialize lev_i for the empty string a0, i.e., |a0| = 0.
+    // You need |bj| = j edit operations (deleting each character from bj) to
+    // get from bj to a0.
+    // Thus lev_0[j] = j for j=0..|b|:
+    int(0..2147483647) len = strlen(b);
+
+    if( len == 2147483647 ) 
+        error("Too large string.\n");
+
+    ++len;
+
+    array(int) lev_i = enumerate(len);
+    for (int i = 0; i < strlen(a); i++)
+    {
+        // To calculate the next row (i+1): copy lev_i:
+        array(int) lev_p = copy_value(lev_i);
+
+        // First element of lev_i+1 is lev_ai+1,bj(|ai|+1,0):
+        // the edit distance is deleting (i+1) chars from a to match empty b:
+        lev_i[0] = i + 1;
+
+        // Use the mathematical formula to fill in the rest of the row:
+        for (int j = 0; j < strlen(b); j++)
+        {
+            int cost = (a[i] == b[j]) ? 0 : 1;
+            lev_i[j + 1] = min(lev_i[j] + 1,
+                               lev_p[j + 1] + 1,
+                               lev_p[j] + cost);
+        }
+    }
+
+    // Now the Levenshtein distance is the last element in the last row:
+    return lev_i[strlen(b)];
 }
 
 //! Returns the soundex value of @[word] according to

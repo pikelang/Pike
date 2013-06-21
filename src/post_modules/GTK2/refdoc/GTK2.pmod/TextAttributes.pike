@@ -12,7 +12,7 @@ GTK2.TextAttributes copy_values( GTK2.TextAttributes dest );
 //!
 //!
 
-static GTK2.TextAttributes create( );
+protected GTK2.TextAttributes create( );
 //! Create a W(TextAttributes) widget.
 //!
 //!

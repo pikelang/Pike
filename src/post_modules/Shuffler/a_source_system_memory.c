@@ -23,7 +23,7 @@ struct sm_source
 
   struct object *obj;
   struct {
-    unsigned char *data;
+    char *data;
     size_t len;
   } *mem;
 

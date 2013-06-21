@@ -62,8 +62,8 @@ string http_date(int time)
 //!	zero (UNDEFINED) if the given string isn't a HTTP date
 int http_decode_date(string data)
 {
-   Calendar.ISO_UTC.Second s=
-      Calendar.ISO_UTC.parse("%e, %D %M %Y %h:%m:%s GMT",data);
+
+   Calendar.ISO_UTC.Second s=Calendar.ISO_UTC.http_time(data);
    if (!s) return UNDEFINED;
    return s->unix_time();
 }

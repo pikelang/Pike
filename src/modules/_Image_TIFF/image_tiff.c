@@ -942,9 +942,9 @@ static void image_tiff_encode( INT32 args )
 
 
 /* Complies with the TIFFErrorHandler API */
-void my_tiff_warning_handler(const char *module, const char *fmt, va_list x){}
+void my_tiff_warning_handler(const char *UNUSED(module), const char *UNUSED(fmt), va_list UNUSED(x)){}
 /* Complies with the TIFFErrorHandler API */
-void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
+void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list x)
 {
 #ifdef HAVE_VSNPRINTF
   vsnprintf(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);

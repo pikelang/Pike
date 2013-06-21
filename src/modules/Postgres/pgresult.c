@@ -121,16 +121,16 @@ extern PIKE_MUTEX_T pike_postgres_mutex;
 #ifdef PGRESDEBUG
 #define pgdebug printf
 #else
-static void pgdebug (char * a, ...) {}
+static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
-void result_create (struct object * o) {
+void result_create (struct object * UNUSED(o)) {
 	pgdebug("result_create().\n");
 	THIS->result=NULL;
 	THIS->cursor=0;
 }
 
-void result_destroy (struct object * o) {
+void result_destroy (struct object * UNUSED(o)) {
 	pgdebug("result_destroy().\n");
 	if(THIS->pgod->docommit) {
 	  PGconn * conn = THIS->pgod->dblink;

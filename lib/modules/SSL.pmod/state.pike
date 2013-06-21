@@ -41,20 +41,46 @@ string tls_pad(string data, int blocksize) {
   return data + sprintf("%c",plen)*plen+sprintf("%c",plen);
 }
 
-string tls_unpad(string data) {
+string tls_unpad(string data)
+{
   int(0..255) plen=[int(0..255)]data[-1];
 
   string padding=reverse(data)[..plen];
 
-  /* Check that the padding is correctly done. Required by TLS 1.1. */
-  foreach(values(padding), int tmp)
-    {
-      if(tmp!=plen) {
-	return UNDEFINED;	// Invalid padding.
-      }
-    }
+  string ret = data[..<plen+1];
 
-  return data[..<plen+1];
+  /* NOTE: Perform some extra MAC operations, to avoid timing
+   *       attacks on the length of the padding.
+   *
+   *       This is to alleviate the "Lucky Thirteen" attack:
+   *       http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
+   *
+   * NOTE: The digest quanta size is 64 bytes for all
+   *       MAC-algorithms currently in use.
+   */
+  string junk = padding;
+  if (!((sizeof(ret) +
+	 mac->hash_header_size - session->cipher_spec->hash_size) & 63) ||
+      !(sizeof(junk) & 63)) {
+    // We're at the edge of a MAC block, so we need to
+    // pad junk with an extra MAC block of data.
+    //
+    // NB: data will have at least 64 bytes if it's not empty.
+    junk += data[<64..];
+  }
+  junk = mac && mac->hash_raw(junk);
+
+  /* Check that the padding is correctly done. Required by TLS 1.1.
+   *
+   * Attempt to do it in a manner that takes constant time regardless
+   * of the size of the padding.
+   */
+  for (int i = 0, j = 0; i < 255; i++,j++) {
+    if (j >= sizeof (padding)) j = 0;
+    if (padding[j] != plen) ret = UNDEFINED;	// Invalid padding.
+  }
+
+  return ret;
 }
 
 //! Destructively decrypts a packet (including inflating and MAC-verification,
@@ -63,6 +89,17 @@ string tls_unpad(string data) {
 //! at the is_alert attribute of the returned packet.
 Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 {
+  /* NOTE: TLS 1.1 recommends performing the hash check before
+   *       sending the alerts to protect against timing attacks.
+   *
+   *       This is also needed to alleviate the "Lucky Thirteen" attack.
+   *
+   *       We thus delay sending of any alerts to the end of the
+   *       function, and attempt to make the same amount of work
+   *       even if we have already detected a failure.
+   */
+  object(Alert) alert;
+
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
 	 version, packet->content_type, packet->fragment);
@@ -77,30 +114,28 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #endif
 
     string msg = packet->fragment;
-    if (! msg)
-      return Alert(ALERT_fatal, ALERT_unexpected_message, version);
-
-    if (session->cipher_spec->cipher_type == CIPHER_block) {
+    if (!msg) {
+      packet->fragment = #string "alert.pike";	// Some junk data.
+      alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
+    } else if (session->cipher_spec->cipher_type == CIPHER_block) {
       if(version == PROTOCOL_SSL_3_0) {
 	// crypt->unpad() performs decrypt.
 	if (catch { msg = crypt->unpad(msg); })
-	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	  alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
       } else if (version >= PROTOCOL_TLS_1_0) {
 	msg = crypt->crypt(msg);
 
-	// FIXME: TLS 1.1 recommends performing the hash check before
-	//        sending the alerts to protect against timing attacks.
-
 	if (catch { msg = tls_unpad(msg); })
-	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
-	if (!msg) {
+	  alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	else if (!msg) {
 	  // TLS 1.1 requires a bad_record_mac alert on invalid padding.
-	  return Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	  alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
 	}
       }
     } else {
       msg = crypt->crypt(msg);
     }
+    if (!msg) msg = packet->fragment;
     packet->fragment = msg;
   }
 
@@ -137,7 +172,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	       "Seqence number: %O\n",
 	       digest, mac->hash(packet, seq_num), seq_num);
 #endif
-	return Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
       }
     seq_num += 1;
   }
@@ -149,9 +184,11 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #endif
     string msg = [string]compress(packet->fragment);
     if (!msg)
-      return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+      alert = alert || Alert(ALERT_fatal, ALERT_unexpected_message, version);
     packet->fragment = msg;
   }
+
+  if (alert) return alert;
 
   return [object(Alert)]packet->check_size(version) || packet;
 }

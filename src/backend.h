@@ -83,6 +83,7 @@ extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
 
 void count_memory_in_compat_cb_boxs(size_t *num, size_t *size);
+void free_all_compat_cb_box_blocks();
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1
@@ -187,6 +188,8 @@ PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events
 PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
 					 struct Backend_struct *new_be);
 PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
+
+PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd (struct Backend_struct *me, int fd);
 
 /* Old style callback interface. This only accesses the default backend. It
  * can't be mixed with the new style interface above for the same fd. */

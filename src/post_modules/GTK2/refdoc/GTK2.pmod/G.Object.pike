@@ -12,6 +12,24 @@ G.Object accel_groups_activate( int accel_key, int accel_mods );
 //!
 //!
 
+G.Object destroy( );
+//! Destroy this object. This is the normal way to (eg) close a window.
+//!
+//!
+
+object get_data( string name );
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association. 
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
+//!
+//!
+
+string get_docs( );
+//! Get documentation on object
+//!
+//!
 
 mixed get_property( string property );
 //! Get a property.
@@ -28,6 +46,11 @@ G.Object notify( string property );
 //!
 //!
 
+object set_data( string name, mixed arg );
+//! Gets a named field from the object.
+//!
+//!
+
 G.Object set_property( string property, mixed value );
 //! Set a property on a G.Object (and any derived types) to value.
 //!
@@ -40,12 +63,13 @@ G.Object signal_block( int signal_id );
 //!
 //!
 
-int signal_connect( string signal, function callback, mixed|void callback_arg, string|void detail );
-//! int signal_connect(string signal, function callback, mixed ... args)
+int signal_connect( string signal, function callback, mixed|void callback_arg, string|void detail, int|void connect_before );
 //! Connect a signal to a pike function.  The function will be called with
-//! the last argument to this function as it's first argument (defaults to 0),
-//! the second argument is always the widget, and any other arguments are the
-//! ones supplied by GTK.
+//! the last argument to this function as its last argument (defaults to 0);
+//! the first argument is always the widget, and any other arguments are the
+//! ones supplied by GTK. If connect_before is nonzero, the callback will be
+//! called prior to the normal handling of the signal (and can return true
+//! to suppress that handling), otherwise it will be called after.
 //! 
 //! The return value of this function can be used to remove a signal with
 //! signal_disconnect(), and block and unblock the signal with signal_block()

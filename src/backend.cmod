@@ -37,6 +37,7 @@
 #include "svalue.h"
 #include "gc.h"
 #include "module_support.h"
+#include "block_allocator.h"
 
 /*
  * Things to do
@@ -132,8 +133,8 @@
 
 /* Declarations for the legacy backend interface stuff. */
 
-#include "block_alloc_h.h"
-BLOCK_ALLOC (compat_cb_box, N/A);
+static struct compat_cb_box * alloc_compat_cb_box();
+static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
 /* CALL OUT STUFF */
@@ -362,7 +363,7 @@ PIKECLASS Backend
     return b->backend_obj;
   }
 
-  static int wakeup_callback(struct fd_callback_box *box, int event)
+  static int wakeup_callback(struct fd_callback_box *box, int UNUSED(event))
   {
     char buffer[1024];
     fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
@@ -826,9 +827,9 @@ PIKECLASS Backend
 
   }
 
-  static void count_memory_in_call_outs(struct callback *foo,
-					void *bar,
-					void *gazonk)
+  static void count_memory_in_call_outs(struct callback *UNUSED(foo),
+					void *UNUSED(bar),
+					void *UNUSED(gazonk))
   {
     backend_count_memory_in_call_outs(default_backend);
   }
@@ -1281,6 +1282,7 @@ PIKECLASS Backend
     (FD) < (ME)->fd_boxes_start + (ME)->fd_boxes_size ?			\
     GET_ACTIVE_BOX (ME, FD) : NULL)
 
+
    static struct fd_callback_box *safe_get_box (struct Backend_struct *me, int fd)
    {
      if (fd < 0) {
@@ -1299,6 +1301,11 @@ PIKECLASS Backend
 	 return me->fd_boxes[fd];
      }
      return NULL;
+   }
+
+   PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd( struct Backend_struct *me, int fd )
+   {
+       return safe_get_box( me, fd );
    }
 
 /* NOTE: Some versions of AIX seem to have a
@@ -3124,7 +3131,7 @@ PIKECLASS PollDeviceBackend
   }
 
 #if defined(BACKEND_USES_CFRUNLOOP)
-static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info) {
+static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackTypes), void *info) {
     struct kevent kev;
     struct timespec tv;
     struct PollDeviceBackend_struct * this_backend;
@@ -3177,7 +3184,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
   }
 
   /* Called in the child after fork(). */
-  static void reopen_all_pdb_backends(struct callback *cb, void *a, void *b)
+  static void reopen_all_pdb_backends(struct callback *UNUSED(cb), void *UNUSED(a), void *UNUSED(b))
   {
     int i;
     for (i=0; i < num_pdb_backends; i++) {
@@ -3414,11 +3421,11 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
 	poll_timeout = -1;
       else if(next_timeout->tv_sec < 0)
 	poll_timeout = 0;
-      else if(next_timeout->tv_sec > (INT_MAX/1002))
-	poll_timeout = INT_MAX;
+      else if(next_timeout->tv_sec > (INT_MAX/1002)) /* about 24 days.*/
+	poll_timeout = INT_MAX/1002;
       else
-	poll_timeout = (next_timeout->tv_sec*1000) +
-	  next_timeout->tv_usec/1000;
+        poll_timeout = MAXIMUM((next_timeout->tv_sec*1000) +
+			       next_timeout->tv_usec/1000,2);
 #elif defined(TIMEOUT_IS_TIMEVAL)
       poll_timeout = *next_timeout;
 #elif defined(TIMEOUT_IS_TIMESPEC)
@@ -3482,6 +3489,7 @@ else
       done_something = 1;
 
 
+#if 0
       /* First clear revents for all the fds.
        *
        * FIXME: This is done for paranoia reasons. If all code that
@@ -3508,6 +3516,7 @@ else
           box->rflags = 0;
 	}
       }
+#endif
 
       /* Then flag the active events.
        */
@@ -5108,18 +5117,29 @@ struct compat_cb_box
   int flags; /* fs event flags */
 };
 
-#include "block_alloc.h"
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT read_data
-
 #undef DMALLOC_DESCRIBE_BLOCK
 #define DMALLOC_DESCRIBE_BLOCK(X) do {					\
     fprintf (stderr, "  backend: %p, fd: %d, events: 0x%x\n",		\
 	     X->box.backend, X->box.fd, X->box.events);			\
   } while (0)
 
-BLOCK_ALLOC_FILL_PAGES (compat_cb_box, 1)
+static struct block_allocator compat_cb_allocator = BA_INIT_PAGES(sizeof(struct compat_cb_box), 1);
+
+static struct compat_cb_box * alloc_compat_cb_box() {
+    return ba_alloc(&compat_cb_allocator);
+}
+
+static void really_free_compat_cb_box(struct compat_cb_box * b) {
+    ba_free(&compat_cb_allocator, b);
+}
+
+void count_memory_in_compat_cb_boxs(size_t * n, size_t * s) {
+    ba_count_all(&compat_cb_allocator, n, s);
+}
+
+void free_all_compat_cb_box_blocks() {
+    ba_destroy(&compat_cb_allocator);
+}
 
 static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 {
@@ -5396,7 +5416,6 @@ static struct callback *mem_callback;
 void init_backend(void)
 {
   IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
-  init_compat_cb_box_blocks();
   IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
   INIT;
   IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));

@@ -548,6 +548,24 @@ typedef struct p_wchar_p
 #endif
 #endif
 
+/* Suppress compiler warnings for unused parameters if possible. The mangling of
+   argument name is required to catch when an unused argument later is used without
+   removing the annotation. */
+#ifndef UNUSED
+# ifdef __GNUC__
+#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED) __attribute__((unused))
+# else
+#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
+# endif
+#endif
+#ifndef DEBUGUSED
+# ifdef PIKE_DEBUG
+#  define DEBUGUSED(x) x
+# else
+#  define DEBUGUSED(x) UNUSED(x)
+# endif
+#endif
+
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
 # if defined (__NT__) && defined (USE_DLL)
@@ -559,6 +577,10 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
+# elif defined(__clang__) && defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+/* According to Clang source the protected behavior is ELF-specific and not
+   applicable to OS X. */
+#  define PMOD_EXPORT    __attribute__ ((visibility("default")))
 # elif __GNUC__ >= 4
 #  ifdef DYNAMIC_MODULE
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))

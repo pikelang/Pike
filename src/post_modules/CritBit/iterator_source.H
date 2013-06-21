@@ -148,7 +148,7 @@
 	    encode_fun = cmod_OBJ2_TREE(tree)->encode_fun;
 
 	    if (THIS->tree) {
-		if (args == 0 || IS_UNDEFINED(step)) {
+		if (!step || IS_UNDEFINED(step)) {
 		    THIS->step = 1;
 		} else {
 		    THIS->step = step->u.integer;
@@ -164,12 +164,13 @@
 			    apply_low(tree, encode_fun, 1);
 			    assign_svalue(stop, Pike_sp-1);
 			    pop_stack();
-			    if (!(stop->type & T_KEY))
+			    if (!((1<<stop->type) & T_KEY))
 				SIMPLE_BAD_ARG_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
 			}
 			THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
 			CB_ADD_KEY_REF(THIS->stop);
 		    }
+		    /* FALL_THROUGH */
 		case 2:
 		    if (!IS_UNDEFINED(start)) {
 			cb_key s;
@@ -178,7 +179,7 @@
 			    apply_low(tree, encode_fun, 1);
 			    assign_svalue(start, Pike_sp-1);
 			    pop_stack();
-			    if (!(start->type & T_KEY))
+			    if (!((1<<start->type) & T_KEY))
 				SIMPLE_BAD_ARG_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
 			}
 			s = CB_LOW_KEY_FROM_SVALUE(start);
@@ -201,6 +202,7 @@
 			    }
 			}
 		    }
+		    /* FALL_THROUGH */
 		case 1:
 		case 0:
 		    if (!t) t = (THIS->step < 0)

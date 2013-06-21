@@ -56,8 +56,9 @@ static struct data get_data( struct source *src, off_t len )
     if( st->len < s->skip )
       s->skip -= st->len;
     else {
-      res.data = malloc(st->len -= s->skip);
-      memcpy(res.data, st->str+s->skip, res.len = st->len);
+      res.len = st->len - s->skip;
+      res.data = xalloc(res.len);
+      memcpy(res.data, st->str+s->skip, res.len);
       res.do_free = 1;
       s->skip = 0;
     }

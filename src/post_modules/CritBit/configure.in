@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(glue.c)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(critbit_config.h)

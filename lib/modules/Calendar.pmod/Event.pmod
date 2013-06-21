@@ -82,7 +82,7 @@ class Event
    }
    SuperEvent ``|(Event with) { return `|(with); }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       return (t!='O')?0:sprintf("Event(%s:%O)",id,name);
    }
@@ -220,7 +220,7 @@ class Nameday
       else return sjd>=jd?jd:NODAY;
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       return t=='O'?sprintf("Nameday(%s:%O)",id,name):0;
    }
@@ -382,7 +382,7 @@ class Namedays
       return _find(from,including,-1);
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       return t=='O'?sprintf("Namedays(%s:%O)",id,name):0;
    }
@@ -411,25 +411,16 @@ class Namedays
    }
 }
 
-//! Container for merged @[Namedays] objects.
-class SuperNamedays
+//! Container for merged @[Namedays] objects. Presumes non-overlapping
+//! namedays
+class SuperNamedays (array(Nameday) namedayss, string id)
 {
    inherit Event;
    constant is_namedays_wrapper=1;
 
-// presumed non-overlapping namedays
-   array(Nameday) namedayss;
-   string id;
-   
-   void create(array(Nameday) _namedays,string _id)
+   protected string _sprintf(int t)
    {
-      name=id=_id;
-      namedayss=_namedays;
-   }
-
-   string _sprintf(int t)
-   {
-      return t=='O'?sprintf("SuperNamedays(%s [%d])",id,sizeof(namedayss)):0;
+      return t=='O' && sprintf("SuperNamedays(%s [%d])",id,sizeof(namedayss));
    }
 
    string describe()
@@ -573,16 +564,17 @@ class Gregorian_Fixed
 
   //! @decl void create(string id, string name, int(1..31) month_day,@
   //!                   int(1..12) month, int extra)
-   void create(string _id,string _name,
-	       int(1..31) _md,int(1..12) _mn,int ... _n)
+   protected void create(string id, string name,
+                         int(1..31) month_day, int(1..12) month,
+                         int ... extra)
    {
-      id=_id;
-      name=_name;
-      md=_md;
-      mn=_mn;
+     this_program::id=id;
+     this_program::name=name;
+     md=month_day;
+     mn=month;
 
       yd=M_YD[mn]+md;
-      if (sizeof(_n)) nd=_n[0];
+      if (sizeof(extra)) nd=extra[0];
    }
 
    int scan_jd(Calendar.Calendar realm,int jd,int(-1..1) direction)
@@ -671,9 +663,9 @@ class Date
   //! @decl void create(int(1..31) month_day, int(1..12) month)
   //! The event is created by a given month day and a month number
   //! (1=January, 12=December).
-   void create(int _md,int _mn)
+   protected void create(int _md,int _mn)
    {
-      md=_md;
+     md=_md;
       mn=_mn;
       name=M_NAME[mn]+" "+md;
 
@@ -727,7 +719,7 @@ class Date_Weekday
   //! The week day numbers used are the same as the day of week in
   //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
   //! 7=Saturday.
-   void create(int _md,int _mn,int wd)
+   protected void create(int _md,int _mn,int wd)
    {
       md=_md;
       mn=_mn;
@@ -783,7 +775,7 @@ class Monthday_Weekday
   //! The week day numbers used are the same as the day of week in
   //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
   //! 7=Saturday.
-   void create(int _md,int wd)
+   protected void create(int _md,int wd)
    {
       md=_md;
       name=md+","+WD_NAME[wd];
@@ -844,7 +836,7 @@ class Weekday
   //! The week day numbers used are the same as the day of week in
   //! the @[ISO] calendar - the @[Gregorian] calendar has 1=Sunday,
   //! 7=Saturday.
-   void create(int wd,void|string _id)
+   protected void create(int wd,void|string _id)
    {
       jd_wd=(wd+6)%7; // convert to julian day numbering
       name=WD_NAME[wd];
@@ -1077,7 +1069,7 @@ class Easter
   //! @decl void create(void|int shift)
   //! @[shift] is the year to shift from old to new style easter
   //! calculation. Default is 1582.
-   void create(void|int _shift)
+   protected void create(void|int _shift)
    {
       if (_shift) shift=_shift;
    }
@@ -1175,7 +1167,7 @@ class Easter_Relative
    int offset;
 
   //! @decl void create(string id, string name, int offset)
-   void create(string _id,string _name,void|int _offset)
+   protected void create(string _id,string _name,void|int _offset)
    {
       id=_id;
       name=_name;
@@ -1205,7 +1197,7 @@ class Orthodox_Easter_Relative
    int offset;
 
   //! @decl void create(string id, string name, int offset)
-   void create(string _id,string _name,void|int _offset)
+   protected void create(string _id,string _name,void|int _offset)
    {
       ::create(_id,_name,_offset);
       shift=9999999;
@@ -1228,7 +1220,7 @@ class Monthday_Weekday_Relative
    int n,inclusive;
 
   //!
-   void create(string id,string name,int(1..31) md,int(1..12) mn,
+   protected void create(string id,string name,int(1..31) md,int(1..12) mn,
 	       int(1..7) _wd,int _n,void|int(0..1) _inclusive)
    {
       ::create(id,name,md,mn);
@@ -1420,7 +1412,7 @@ class SuperEvent
 	 error("Can't cast to %O\n",to);
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       return (t!='O')?0:
 	 (sizeof(events)>5 
@@ -1464,7 +1456,7 @@ class TZShift_Event
 
    Calendar.Rule.Timezone timezone;
 
-   void create(void|Calendar.Rule.Timezone _tz)
+   protected void create(void|Calendar.Rule.Timezone _tz)
    {
       timezone=_tz;
    }

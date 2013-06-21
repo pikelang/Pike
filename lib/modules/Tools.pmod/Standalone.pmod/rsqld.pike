@@ -178,6 +178,11 @@ class Connection
     sqlobj->shutdown();
   }
 
+  protected int cmd_ping()
+  {
+    return sqlobj->ping();
+  }
+
   protected void cmd_reload()
   {
     sqlobj->reload();
@@ -207,9 +212,14 @@ class Connection
     return sprintf("%4c%4c", qbase, qid++);
   }
 
-  protected string cmd_bigquery(string q)
+  protected string cmd_bigquery(string|array(string) q)
   {
-    object res = sqlobj->big_query(q);
+    object res;
+    if (arrayp(q)) {
+      res = predef::`->(sqlobj, q[0])(@q[1..]);
+    } else {
+      res = sqlobj->big_query(q);
+    }
     if(!res)
       return 0;
     string qid = make_id();
@@ -231,6 +241,11 @@ class Connection
   protected array(mapping(string:mixed)) cmd_query(array args)
   {
     return sqlobj->query(@args);
+  }
+
+  protected int cmd_insert_id()
+  {
+    return sqlobj->master_sql->insert_id();
   }
 
   protected int|array(string|int) cmd_fetchrow(string qid)
@@ -263,6 +278,21 @@ class Connection
     get_query(args[0])->seek(args[1]);
   }
 
+  protected mixed cmd_proxy(array(string|mixed) cmd_args)
+  {
+    return predef::`->(sqlobj, cmd_args[0])(@cmd_args[1]);
+  }
+
+  protected string cmd_get_charset()
+  {
+    return sqlobj->get_charset();
+  }
+
+  protected void cmd_set_charset(string s)
+  {
+    sqlobj->set_charset(s);
+  }
+
   protected string cmd_quote(string s)
   {
     return sqlobj->quote(s);
@@ -276,14 +306,34 @@ class Connection
   protected void commandset_1()
   {
     commandset_0();
-    commandset |= ([ 'D': cmd_selectdb, 'E': cmd_error,
-		     'C': cmd_create, 'X': cmd_drop, 'I': cmd_srvinfo,
-		     'i': cmd_hostinfo, 's': cmd_shutdown, 'r': cmd_reload, 
-		     'l': cmd_listdbs, 't': cmd_listtables, 'f': cmd_listflds,
-		     'Q': cmd_bigquery, 'Z': cmd_zapquery,
-		     'R': cmd_fetchrow, 'F': cmd_fetchfields,
-		     'N': cmd_numrows, 'n': cmd_numfields, 'e': cmd_eof,
-		     'S': cmd_seek, '@': cmd_query, 'q': cmd_quote]);
+    commandset |= ([
+      '#': cmd_insert_id,
+      '@': cmd_query,
+      'C': cmd_create,
+      'D': cmd_selectdb,
+      'E': cmd_error,
+      'F': cmd_fetchfields,
+      'H': cmd_set_charset,
+      'I': cmd_srvinfo,
+      'N': cmd_numrows,
+      'P': cmd_proxy,
+      'Q': cmd_bigquery,
+      'R': cmd_fetchrow,
+      'S': cmd_seek,
+      'X': cmd_drop,
+      'Z': cmd_zapquery,
+      'e': cmd_eof,
+      'f': cmd_listflds,
+      'h': cmd_get_charset,
+      'i': cmd_hostinfo,
+      'l': cmd_listdbs,
+      'n': cmd_numfields,
+      'p': cmd_ping,
+      'q': cmd_quote,
+      'r': cmd_reload,
+      's': cmd_shutdown,
+      't': cmd_listtables,
+    ]);
   }
 
   protected void client_ident(string s)

@@ -41,7 +41,7 @@ class cTick
   //! @endcode
 
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       switch (sizeof(args))
       {
@@ -234,7 +234,7 @@ class cTick
       return Tick("stardate",r,t,len);
    }
 
-   string _sprintf(int t, mapping m)
+   protected string _sprintf(int t, mapping m)
    {
       switch (t)
       {

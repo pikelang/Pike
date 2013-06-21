@@ -1433,6 +1433,13 @@ f_get(f_getppid, getppid)
  *!
  *!   The second variant only works on systems that also have
  *!   the fchroot(2) system call.
+ *!
+ *! @note
+ *!   On success the current working directory will be changed to
+ *!   the new @expr{"/"@}. This behavior was added in Pike 7.9.
+ *!
+ *! @note
+ *!   This function could be interrupted by signals prior to Pike 7.9.
  */
 void f_chroot(INT32 args)
 {
@@ -1454,26 +1461,33 @@ void f_chroot(INT32 args)
   if(TYPEOF(sp[-args]) == T_STRING)
   {
 #endif /* HAVE_FCHROOT */
-    res = chroot((char *)sp[-args].u.string->str);
+    while (((res = chroot((char *)sp[-args].u.string->str)) == -1) &&
+	   (errno == EINTR))
+      ;
+    if (!res) {
+      while ((chdir("/") == -1) && (errno == EINTR))
+	;
+    }
     pop_n_elems(args);
     push_int(!res);
     return;
 #ifdef HAVE_FCHROOT
-  } else
-#if 0 
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-#endif /* 0 */
-      {
-	int fd;
+  } else {
+    int fd;
 
-	apply(sp[-args].u.object, "query_fd", 0);
-	fd=sp[-1].u.integer;
-	pop_stack();
-	res=fchroot(fd);
-	pop_n_elems(args);
-	push_int(!res);
-	return;
-      }
+    apply(sp[-args].u.object, "query_fd", 0);
+    fd=sp[-1].u.integer;
+    pop_stack();
+    while (((res = fchroot(fd)) == -1) && (errno == EINTR))
+      ;
+    if (!res) {
+      while ((fchdir(fd) == -1) && (errno == EINTR))
+	;
+    }
+    pop_n_elems(args);
+    push_int(!res);
+    return;
+  }
 #endif /* HAVE_FCHROOT */
 }
 #endif /* HAVE_CHROOT */
@@ -3257,6 +3271,18 @@ static void f_getrusage(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
+#ifdef HAVE_DAEMON
+/*! @decl int daemon(int nochdir, int noclose)
+ *! Low level system daemon() function, see also @[Process.daemon()]
+ */
+void f_daemon(INT32 args)
+{
+   INT_TYPE a, b;
+   get_all_args("daemon", args, "%i%i", &a, &b);
+   push_int( daemon( a, b) );
+}
+#endif /* HAVE_DAEMON */
+
 /*! @endmodule
  */
 
@@ -3609,6 +3635,10 @@ PIKE_MODULE_INIT
 				      cleanup_after_fork, 0, 0));
 #endif
 
+#ifdef HAVE_DAEMON
+  ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
+                0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_DAEMON */
 
 #ifdef __NT__
   {

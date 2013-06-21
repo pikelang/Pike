@@ -25,13 +25,15 @@
 //!    return -1;
 //! }
 
-// FIXME: Uses hardcoded errnos from Linux/i386.
-
 /****** variables **************************************************/
 
 // open
 
-//!	Errno copied from the connection.
+//!	Errno copied from the connection or simulated for async operations.
+//!	@note
+//!		In Pike 7.8 and earlier hardcoded Linux values were used in
+//!		async operations, 110 instead of @expr{System.ETIMEDOUT@} and
+//!		113 instead of @expr{System.EHOSTUNREACH@}.
 int errno;
 
 //!	Tells if the connection is successfull.
@@ -112,8 +114,12 @@ protected int ponder_answer( int|void start_position )
       }
       if (s=="") {
 	if (sizeof (buf) <= start_position) {
-	  // FIXME: Try to fake some kind of errno here, or HTTP
-	  // error?
+          // Fake a connection reset by peer errno.
+#if constant(System.ECONNRESET)
+          errno = System.ECONNRESET;
+#else
+          errno = 104;
+#endif
 #ifdef HTTP_QUERY_DEBUG
 	  werror ("<- (premature EOF)\n");
 #endif
@@ -312,7 +318,8 @@ protected void low_async_failed(int errno)
 #ifdef HTTP_QUERY_DEBUG
    werror("** calling failed cb %O\n", request_fail);
 #endif
-   this_program::errno = errno;
+   if (errno)
+     this_program::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
@@ -320,7 +327,11 @@ protected void low_async_failed(int errno)
 
 protected void async_failed()
 {
+#if constant(System.EHOSTUNREACH)
+  low_async_failed(con?con->errno():System.EHOSTUNREACH);
+#else
   low_async_failed(con?con->errno():113);	// EHOSTUNREACH/Linux-i386
+#endif
 }
 
 protected void async_timeout()
@@ -329,7 +340,11 @@ protected void async_timeout()
    werror("** TIMEOUT\n");
 #endif
    close_connection();
+#if constant(System.ETIMEDOUT)
+   low_async_failed(System.ETIMEDOUT);
+#else
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
+#endif
 }
 
 void async_got_host(string server,int port)
@@ -511,7 +526,7 @@ void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
 #ifdef HTTP_QUERY_DEBUG
-  werror("dns_lookup_callback %s = %s\n", name, ip);
+  werror("dns_lookup_callback %s = %s\n", name, ip||"NULL");
 #endif
    hostname_cache[name]=ip;
    if (functionp(callback))
@@ -1041,7 +1056,7 @@ string data(int|void max_length)
    return buf[datapos..datapos+len-1];
 }
 
-protected Locale.Charset.Decoder charset_decoder;
+protected Charset.Decoder charset_decoder;
 
 //! Gives back data, but decoded according to the content-type
 //! character set.
@@ -1053,9 +1068,9 @@ string unicode_data() {
     if(headers["content-type"])
       sscanf(headers["content-type"], "%*scharset=%s", charset);
     if(!charset)
-      charset_decoder = Locale.Charset.decoder("ascii");
+      charset_decoder = Charset.decoder("ascii");
     else
-      charset_decoder = Locale.Charset.decoder(charset);
+      charset_decoder = Charset.decoder(charset);
   }
   return charset_decoder->feed(data())->drain();
 }

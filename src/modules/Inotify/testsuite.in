@@ -43,7 +43,8 @@ test_any([[ // stole this from pikes Stdio.File testsuite.
 ]], 1)
 test_any([[
 	object i = System.Inotify._Instance();
-	object file = Stdio.File(i->get_fd(), "r");
+	object file = Stdio.File();
+	file->assign(i->fd());
 	i->add_watch(testdir, System.Inotify.IN_CREATE);
 	Stdio.write_file(testfile, "test");
 	array a = System.Inotify.parse_event(file->read(4096, 1));

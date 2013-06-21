@@ -288,18 +288,6 @@ export:
 	  echo 'No documentation source built.'; \
 	  EXPORT_PREREQ=FAIL ; \
 	fi ; \
-	if ls bundles/gmp-*.tar.gz > /dev/null 2>&1; then : ; else \
-	  echo 'Missing GMP bundle.'; \
-	  EXPORT_PREREQ=FAIL ; \
-	fi ; \
-	if ls bundles/nettle-*.tar.gz > /dev/null 2>&1; then : ; else \
-	  echo 'Missing Nettle bundle.'; \
-	  EXPORT_PREREQ=FAIL ; \
-	fi ; \
-	if ls bundles/libffi-*.tar.gz > /dev/null 2>&1; then : ; else \
-	  echo 'Missing libffi bundle.'; \
-	  EXPORT_PREREQ=FAIL ; \
-	fi ; \
 	if [ "$$EXPORT_PREREQ" = "FAIL" ]; then : \
 	  echo 'Fix the above error(s) and rerun "make export", or'; \
 	  echo '"make export_forced" to bypass these checks.';\
@@ -326,12 +314,6 @@ snapshot: snapshot_export
 xenofarm_export:
 	@echo Begin export
 	@rm -f export_result.txt
-	@echo "Adding bundles from $$HOME/pike_bundles/..." >>export_result.txt
-	@for f in "$$HOME/pike_bundles/"* no; do \
-	  if test -f "$$f"; then \
-	    echo "  Bundling" `echo "$$f"|sed -e 's/.*\///g'`; \
-	    cp -f "$$f" bundles/; \
-	  fi; \
 	done >>export_result.txt
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \

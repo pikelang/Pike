@@ -75,7 +75,7 @@
 
 inherit G.Object;
 
-static GTK2.TextTag create( string|mapping name_or_props );
+protected GTK2.TextTag create( string|mapping name_or_props );
 //! Creates a new text tag.
 //!
 //!

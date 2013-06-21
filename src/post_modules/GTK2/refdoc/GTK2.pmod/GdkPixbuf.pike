@@ -65,28 +65,52 @@ GTK2.GdkPixbuf copy_area( GTK2.GdkPixbuf dest, int src_x, int src_y, int widt, i
 //!
 //!
 
-static GDK2.Pixbuf create( string|mapping options );
-//! Create a GDK2.Pixbuf object.  options is either a filename or a mapping
-//! of options.  options can be:
-//! @xml{<matrix>@}
-//! @xml{<r>@}@xml{<c>@}filename@xml{</c>@}@xml{<c>@}name of file to load@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}bits@xml{</c>@}@xml{<c>@}number of bits per sample@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}width@xml{</c>@}@xml{<c>@}width of image@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}height@xml{</c>@}@xml{<c>@}height of image@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}alpha@xml{</c>@}@xml{<c>@}true if alpha channel@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}scale@xml{</c>@}@xml{<c>@}true if use width and height as scale@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}preserve@xml{</c>@}@xml{<c>@}true if preserve aspect ratio@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}xpm@xml{</c>@}@xml{<c>@}if this key exists, then value is xpm data to create from@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}data@xml{</c>@}@xml{<c>@}if this key exists, then value is pixel data
-//! The following is a list of valid keys if key data exists:
-//! @xml{<matrix>@}
-//! @xml{<r>@}@xml{<c>@}colorspace@xml{</c>@}@xml{<c>@}colorspace, default GDK2.COLORSPACE_RGB, currently ignored@xml{</c>@}@xml{</r>@}
-//! @xml{<r>@}@xml{<c>@}rowstride@xml{</c>@}@xml{<c>@}distance in bytes between row starts@xml{</c>@}@xml{</r>@}
-//! @xml{</matrix>@}
-//! @xml{</c>@}@xml{</r>@}
-//! @xml{</matrix>@}
+protected GDK2.Pixbuf create( string|mapping options );
+//! Create a GDK2.Pixbuf object.
 //!
+//! @param options
+//!   @[options] is either a filename or a mapping of options.
 //!
+//!   If it is a mapping, it may contain:
+//!   @mapping
+//!     @member string "filename"
+//!       Name of file to load.
+//!   
+//!     @member string "xpm"
+//!       If this key exists, then value is xpm data to create from.
+//!   
+//!     @member string "data"
+//!       If this key exists, then value is pixel data.
+//!
+//!     @member int "bits"
+//!       Number of bits per sample.
+//!   
+//!     @member int "width"
+//!       Width of image.
+//!   
+//!     @member int "height"
+//!       Height of image.
+//!   
+//!     @member int "alpha"
+//!       True if alpha channel.
+//!   
+//!     @member int "scale"
+//!       True if use width and height as scale.
+//!   
+//!     @member int "preserve"
+//!       True if preserve aspect ratio.
+//!   @endmapping
+//!   
+//!   The following is additional keys may exist if the member
+//!   @expr{"data"@} exists:
+//!   @mapping
+//!     @member int "colorspace"
+//!       Colorspace, default @[GDK2.COLORSPACE_RGB], currently ignored.
+//!   
+//!     @member int "rowstride"
+//!        Distance in bytes between row starts.
+//!   @endmapping
+//
 
 GTK2.GdkPixbuf flip( int horizontal );
 //! Flips a pixbuf horizontally or vertically and returns the result in

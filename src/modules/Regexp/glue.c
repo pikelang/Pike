@@ -213,12 +213,12 @@ static void regexp_split(INT32 args)
   }
 }
 
-static void init_regexp_glue(struct object *o)
+static void init_regexp_glue(struct object *UNUSED(o))
 {
   THIS->regexp=0;
 }
 
-static void exit_regexp_glue(struct object *o)
+static void exit_regexp_glue(struct object *UNUSED(o))
 {
   do_free();
 }

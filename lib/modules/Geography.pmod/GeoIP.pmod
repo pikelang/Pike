@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 void sanitize(array(string) f) {
     for (int i = 0; i < sizeof(f); i++) {
         if (f[i][0] == '"' && f[i][-1] == '"') {

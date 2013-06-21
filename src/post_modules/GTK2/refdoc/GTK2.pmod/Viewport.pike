@@ -24,7 +24,7 @@
 
 inherit GTK2.Bin;
 
-static GTK2.Viewport create( GTK2.Adjustment xscroll_or_props, GTK2.Adjustment yscroll );
+protected GTK2.Viewport create( GTK2.Adjustment xscroll_or_props, GTK2.Adjustment yscroll );
 //! Create a new viewport.  The adjustments are used to select what
 //! part of the viewport to view to the user. They are normally
 //! connected to a scrollbar or something similar.

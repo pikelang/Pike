@@ -60,7 +60,7 @@ Gnome2.App add_toolbar( GTK2.Toolbar toolbar, string name, int behavior, int pla
 //!
 //!
 
-static Gnome2.App create( string appname, string|void title );
+protected Gnome2.App create( string appname, string|void title );
 //! Create a new (empty) application window. You must specify the
 //! application's name (used internally as an identifier). title can be
 //! left as 0, in which case the window's title will not be set.

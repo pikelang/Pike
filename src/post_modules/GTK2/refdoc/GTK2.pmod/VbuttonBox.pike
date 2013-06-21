@@ -23,7 +23,7 @@
 
 inherit GTK2.ButtonBox;
 
-static GTK2.VbuttonBox create( mapping|void props );
+protected GTK2.VbuttonBox create( mapping|void props );
 //! Create a new vertical button box
 //!
 //!

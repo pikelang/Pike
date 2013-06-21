@@ -280,7 +280,7 @@ PIKECLASS Deflate
   }
   
   void do_deflate(struct pike_string *data, dynamic_buffer *retbuf,
-		  int mode, INT32 args){
+		  int mode, INT32 UNUSED(args)){
     char *tmp = NULL;
     int retval;
     int total_out_old = 0;

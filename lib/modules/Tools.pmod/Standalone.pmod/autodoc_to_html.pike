@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! AutoDoc XML to HTML converter.
 //!
 //! @seealso

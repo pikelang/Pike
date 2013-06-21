@@ -195,7 +195,7 @@ class cMonth
 {
    inherit Gregorian::cMonth;
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       ::create(@args);
       if (yjd+yd-1!=jd) error("yjd=%O yday=%O jd=%O != %O\n",

@@ -726,7 +726,7 @@ void image_pvr_f_encode(INT32 args)
 }
 
 static void pvr_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
-			    INT32 stride, unsigned int h, unsigned int w)
+			    INT32 UNUSED(stride), unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&0xff) {
@@ -908,7 +908,7 @@ static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
 }
 
 static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
-				  rgb_group *dst, INT32 stride,
+				  rgb_group *dst, INT32 UNUSED(stride),
 				  unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;

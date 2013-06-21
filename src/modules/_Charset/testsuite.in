@@ -1,112 +1,112 @@
 START_MARKER
 
-// Locale.Charset.decoder
-test_true([[objectp(Locale.Charset)]])
-test_true([[functionp(Locale.Charset.decoder)]])
-test_true([[objectp(Locale.Charset.decoder("latin1"))]])
-test_true([[functionp(Locale.Charset.decoder("latin1")->feed)]])
-test_eq([[Locale.Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
+// Charset.decoder
+test_true([[objectp(Charset)]])
+test_true([[functionp(Charset.decoder)]])
+test_true([[objectp(Charset.decoder("latin1"))]])
+test_true([[functionp(Charset.decoder("latin1")->feed)]])
+test_eq([[Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
 
 // 7-bit ASCII
-test_eq([[Locale.Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("räksmörgås")->drain()]],"r&#228;ksm&#246;rg&#229;s")
+test_eq([[Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("räksmörgås")->drain()]],"r&#228;ksm&#246;rg&#229;s")
 
-// Locale.Charset.rfc1345
-test_eq([[Locale.Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
-test_eq([[Locale.Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
+// Charset.rfc1345
+test_eq([[Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
+test_eq([[Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
 	"abc\x3b5\x3b4\x3c6")
 
-// Locale.Charset.ISO2022
-test_eq([[Locale.Charset.decoder("iso-2022")->
+// Charset.ISO2022
+test_eq([[Charset.decoder("iso-2022")->
 	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
 	"eävåäv\x65e5\x672c""foo")
 // Verify that characters mapping to multiple UTF-16 characters work.
 // ISO-IR 233 aka JIS X0213.
-test_eq([[Locale.Charset.decoder("iso-2022")->
+test_eq([[Charset.decoder("iso-2022")->
 	feed("\e$(Q$w%wy)")->drain()]],
 	"\u304b\u309a\u30ab\u309a\U0002550e")
 
 // 2022 variants
-test_eq([[Locale.Charset.encoder("iso-2022-jp")->
+test_eq([[Charset.encoder("iso-2022-jp")->
 	feed("\x30ce\x30f4\x30f8\x30ce")->drain()]],
 	[["\33$B%N%t\33$@%t%N"]])
-test_eq([[Locale.Charset.encoder("iso-2022-cn")->
+test_eq([[Charset.encoder("iso-2022-cn")->
 	feed("\x5143\x6c14")->drain()]], [["\33$AT*Fx"]])
-test_eq([[Locale.Charset.encoder("iso-2022-jp")->
+test_eq([[Charset.encoder("iso-2022-jp")->
 	feed("\x5143\x6c17")->drain()]], [["\33$B855$"]])
-test_eq([[Locale.Charset.encoder("iso-2022-kr")->
+test_eq([[Charset.encoder("iso-2022-kr")->
 	feed("\x5143\x6c23")->drain()]], [["\33$(Cj*Q("]])
-test_eq([[Locale.Charset.encoder("iso-2022-jp2")->
+test_eq([[Charset.encoder("iso-2022-jp2")->
 	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
 	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\"]])
-test_eq([[Locale.Charset.encoder("iso-2022")->
+test_eq([[Charset.encoder("iso-2022")->
 	feed("\x9ed8\x9ed5\x9ec9\x9ec3\xff76\xff85")->drain()]],
 	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\\33(I6E"]])
-test_eval_error([[Locale.Charset.encoder("iso-2022-jp")->
+test_eval_error([[Charset.encoder("iso-2022-jp")->
 		feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]])
-test_eval_error([[Locale.Charset.encoder("iso-2022-jp")->
+test_eval_error([[Charset.encoder("iso-2022-jp")->
 		feed("\xff76\xff85")->drain()]])
-test_eval_error([[Locale.Charset.encoder("iso-2022-jp2")->
+test_eval_error([[Charset.encoder("iso-2022-jp2")->
 		feed("\xff76\xff85")->drain()]])
 test_any([[
   // Test encoding (and decoding) of characters from various
   // different character sets.
   string vector = "\x1b7\x1f5\x2bf\x2c7\x2c9\x391\x402\x5d0";
-  return Locale.Charset.decoder("iso-2022")->
-	feed(Locale.Charset.encoder("iso-2022")->feed(vector)->drain())->drain() ==
+  return Charset.decoder("iso-2022")->
+	feed(Charset.encoder("iso-2022")->feed(vector)->drain())->drain() ==
 	vector;
 ]], 1)
 
-// Locale.Charset.UTF7
-test_eq([[Locale.Charset.decoder("utf-7")->
+// Charset.UTF7
+test_eq([[Charset.decoder("utf-7")->
 	feed("foobar+-xy-+--z+AOUA5AD2!+ZeVnLA-X")->drain()]],
 	"foobar+xy-+-zåäö!\x65e5\x672cX")
 
-// Locale.Charset.UTF8
-test_eq([[Locale.Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
+// Charset.UTF8
+test_eq([[Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
 
-test_eq(Locale.Charset.encoder ("utf-8")->feed ("\ud7ff")->drain(), "\u00ed\u009f\u00bf")
-test_eval_error(return Locale.Charset.encoder ("utf-8")->feed ("\ud800")->drain())
-test_eval_error(return Locale.Charset.encoder ("utf-8")->feed ("\udfff")->drain())
-test_eq(Locale.Charset.encoder ("utf-8")->feed ("\ue000")->drain(), "\u00ee\u0080\u0080")
-test_eq(Locale.Charset.encoder ("utf-8")->feed ("\U0010ffff")->drain(), "\u00f4\u008f\u00bf\u00bf")
-test_eval_error(return Locale.Charset.encoder ("utf-8")->feed ("\U00110000")->drain())
+test_eq(Charset.encoder ("utf-8")->feed ("\ud7ff")->drain(), "\u00ed\u009f\u00bf")
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\ud800")->drain())
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\udfff")->drain())
+test_eq(Charset.encoder ("utf-8")->feed ("\ue000")->drain(), "\u00ee\u0080\u0080")
+test_eq(Charset.encoder ("utf-8")->feed ("\U0010ffff")->drain(), "\u00f4\u008f\u00bf\u00bf")
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\U00110000")->drain())
 
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\u00ed\u009f\u00bf")->drain(), "\ud7ff")
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\u00ed\u00a0\u0080")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\u00ed\u00bf\u00bf")->drain())
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\u00ee\u0080\u0080")->drain(), "\ue000")
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\u00f4\u008f\u00bf\u00bf")->drain(), "\U0010ffff")
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\u00f4\u0090\u0080\u0080")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\u00ed\u009f\u00bf")->drain(), "\ud7ff")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00ed\u00a0\u0080")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00ed\u00bf\u00bf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\u00ee\u0080\u0080")->drain(), "\ue000")
+test_eq(Charset.decoder ("utf-8")->feed ("\u00f4\u008f\u00bf\u00bf")->drain(), "\U0010ffff")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00f4\u0090\u0080\u0080")->drain())
 
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xc0\x80")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xc1\xbf")->drain())
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\xc2\x80")->drain(), "\x80")
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xe0\x80\x80")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xe0\x9f\xbf")->drain())
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\xe0\xa0\x80")->drain(), "\x800"))
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xf0\x80\x80\x80")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xf0\x8f\xbf\xbf")->drain())
-test_eq(Locale.Charset.decoder ("utf-8")->feed ("\xf0\x90\x80\x80")->drain(), "\x10000")
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xf8")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xfc")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xfe")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xff")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\x80")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xcf\x3f")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xcf\x7f")->drain())
-test_eval_error(return Locale.Charset.decoder ("utf-8")->feed ("\xcf\xff")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xc0\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xc1\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xc2\x80")->drain(), "\x80")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xe0\x80\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xe0\x9f\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xe0\xa0\x80")->drain(), "\x800"))
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf0\x80\x80\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf0\x8f\xbf\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xf0\x90\x80\x80")->drain(), "\x10000")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf8")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xfc")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xfe")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xff")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\x3f")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\x7f")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\xff")->drain())
 
-// Locale.Charset.UTF16
-test_eq([[Locale.Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
-test_eq([[Locale.Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")
-test_eq([[Locale.Charset.decoder("utf-16BE")->feed("\0h\0e\0j")->drain()]],"hej")
-test_eq([[Locale.Charset.encoder("utf-16BE")->feed("hej")->drain()]],"\0h\0e\0j")
-test_eq([[Locale.Charset.decoder("utf-16LE")->feed("h\0e\0j\0")->drain()]],"hej")
-test_eq([[Locale.Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
+// Charset.UTF16
+test_eq([[Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[Charset.decoder("utf-16BE")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16BE")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[Charset.decoder("utf-16LE")->feed("h\0e\0j\0")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
 
 // Multichar
-test_eq([[Locale.Charset.decoder("gbk")->feed("hej\x81\x40")->drain()]],"hej\x4e02")
-test_eq([[Locale.Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
+test_eq([[Charset.decoder("gbk")->feed("hej\x81\x40")->drain()]],"hej\x4e02")
+test_eq([[Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
 
 // GB18030
 test_any([[
@@ -149,7 +149,7 @@ test_any([[
   // is reset between characters.
   string ucode = ucodes * ucodes[0];
   string bcode = bcodes * bcodes[0];
-  string dcode = Locale.Charset.decoder("GB18030")->feed(bcode)->drain();
+  string dcode = Charset.decoder("GB18030")->feed(bcode)->drain();
   if (dcode != ucode) {
     string pref = String.common_prefix(({ucode, dcode}));
     return sprintf("Failure for character U+%06x "
@@ -193,7 +193,7 @@ test_any([[
   // is reset between characters.
   string ucode = ucodes * ucodes[0];
   string bcode = bcodes * bcodes[0];
-  string dcode = Locale.Charset.decoder("GB18030")->feed(bcode)->drain();
+  string dcode = Charset.decoder("GB18030")->feed(bcode)->drain();
   if (dcode != ucode) {
     string pref = String.common_prefix(({ucode, dcode}));
     return sprintf("Failure for character U+%06x (%02x %02x), got U+%06x\n",
@@ -243,7 +243,7 @@ test_any([[
   // is reset between characters.
   string ucode = ucodes * ucodes[0];
   string bcode = bcodes * bcodes[0];
-  string ecode = Locale.Charset.encoder("GB18030")->feed(ucode)->drain();
+  string ecode = Charset.encoder("GB18030")->feed(ucode)->drain();
   if (ecode != bcode) {
     string pref = String.common_prefix(({ecode, bcode}));
     int off = sizeof(pref) & ~3;
@@ -288,7 +288,7 @@ test_any([[
   // is reset between characters.
   string ucode = ucodes * ucodes[0];
   string bcode = bcodes * bcodes[0];
-  string ecode = Locale.Charset.encoder("GB18030")->feed(ucode)->drain();
+  string ecode = Charset.encoder("GB18030")->feed(ucode)->drain();
   if (ecode != bcode) {
     string pref = String.common_prefix(({ecode, bcode}));
     int off = sizeof(pref) & ~1;
@@ -301,13 +301,13 @@ test_any([[
 ]], 0)
 
 // EUC-JP
-test_eq([[Locale.Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
-test_eq([[Locale.Charset.encoder("euc-jp")->feed("\x300e\x4e04\x4e05\x300f\xff76\xff85")->drain()]],"\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")
+test_eq([[Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
+test_eq([[Charset.encoder("euc-jp")->feed("\x300e\x4e04\x4e05\x300f\xff76\xff85")->drain()]],"\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")
 
 // Find codecs for all IANA names
 define(test_codec,[[
-  test_true(objectp(Locale.Charset.encoder("$1")))
-  test_true(objectp(Locale.Charset.decoder("$1")))
+  test_true(objectp(Charset.encoder("$1")))
+  test_true(objectp(Charset.decoder("$1")))
   dnl When we can compare codecs with equal we could add a test to
   dnl ensure that we at least have the same codecs in every class.
   ifelse($#,1,,[[test_codec(shift($*))]])

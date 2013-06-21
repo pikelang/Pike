@@ -197,8 +197,7 @@ int main(int argc, array(string) argv)
 			       return res;
 			     }) * ({});
   //werror("enc_bytes: %O\n", enc_bytes);
-  string code = sprintf("/* Generated automatically by\n"
-			" * %s\n"
+  string code = sprintf("/* Generated automatically.\n"
 			" * Do not edit.\n"
 			" */\n"
 			"\n"
@@ -343,7 +342,6 @@ int main(int argc, array(string) argv)
 			"  return gb18030e_info + last_j;\n"
 			"}\n"
 			"\n",
-			"$Id$",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,

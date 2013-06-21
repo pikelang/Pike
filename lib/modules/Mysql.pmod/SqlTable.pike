@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! This class provides some abstractions on top of an SQL table.
 //!
 //! At the core it is generic for any SQL database, but the current

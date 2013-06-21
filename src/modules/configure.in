@@ -19,11 +19,6 @@ do
   	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
 	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
   	  module_names="$module_names $a"
-	  if test "x$RECONFIGURE_BUNDLES" = "xyes"; then
-	    if test "x`find $a -name '*.bundle' -print -exec rm \{\} \; 2>/dev/null`" = x; then
-	      continue;
-	    fi
-	  fi
   	  dirs="$dirs $a"
   	fi
       fi

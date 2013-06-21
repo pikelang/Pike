@@ -166,7 +166,7 @@ void draw_pixbuf(GDK2.GC gc, GDK2.Pixbuf pixbuf, int xsrc, int ysrc,
   INT_TYPE xs,ys,xd,yd,w,h;
   get_all_args("draw_pixbuf",args,"%o%o%+%+%+%+%i%i",
 		&g,&p,&xs,&ys,&xd,&yd,&w,&h);
-  if (w>0 && h>0)
+  if ((w>0 && h>0) || (w==-1 && h==-1))
       gdk_draw_pixbuf(TWIN,GC(g),GDK_PIXBUF(get_gobject(p)),xs,ys,xd,yd,w,h,
 		    GDK_RGB_DITHER_NONE,0,0);
   RETURN_THIS();

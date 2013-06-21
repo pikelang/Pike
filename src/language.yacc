@@ -62,7 +62,6 @@
 %token TOK_IF
 %token TOK_IMPORT
 %token TOK_INHERIT
-%token TOK_FACET
 %token TOK_INLINE
 %token TOK_LOCAL_ID
 %token TOK_FINAL_ID
@@ -221,7 +220,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_DEFAULT
 %type <number> TOK_DO
 %type <number> TOK_ELSE
-%type <number> TOK_FACET
 %type <number> TOK_FLOAT_ID
 %type <number> TOK_FOR
 %type <number> TOK_FOREACH
@@ -465,47 +463,6 @@ program_ref: low_program_ref
   }
   ;
 
-facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
-  {
-#ifdef WITH_FACETS
-    struct object *o;
-    if (Pike_compiler->compiler_pass == 1) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-	yyerror("A class can only belong to one facet.");
-      }
-      else {
-	resolv_constant($4);
-	if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	  /* FIXME: Object subtypes! */
-	  o = Pike_sp[-1].u.object;
-	  ref_push_string($2->u.sval.u.string);
-	  push_int(Pike_compiler->new_program->id);
-	  push_int(!!(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT));
-	  safe_apply(o, "add_facet_class", 3);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer >= 0) {
-	    Pike_compiler->new_program->flags &= ~PROGRAM_IS_PRODUCT;
-	    Pike_compiler->new_program->flags |= PROGRAM_IS_FACET;
-	    Pike_compiler->new_program->facet_index = Pike_sp[-1].u.integer;
-	    add_ref(Pike_compiler->new_program->facet_group = o);
-	  }
-	  else
-	    yyerror("Could not add facet class to system.");
-	  pop_stack();
-	}
-	else
-	  yyerror("Invalid facet group specifier.");
-	pop_stack();
-      }
-    }
-    free_node($2);
-    free_node($4);
-#else
-    yyerror("No support for facets.");
-#endif
-  }
-  ;
-
 inherit_ref:
   {
     SET_FORCE_RESOLVE($<number>$);
@@ -528,28 +485,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
       if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
-
-#ifdef WITH_FACETS
-    /* If this is a product class, check that all product classes in its
-     * facet-group inherit from all facets */
-    if($3 && Pike_compiler->compiler_pass == 2) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT) {
-	if (!Pike_compiler->new_program->facet_group)
-	  yyerror("Product class without facet group.");
-	else {
-	  safe_apply(Pike_compiler->new_program->facet_group,
-		     "product_classes_checked", 0);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer == 0) {
-	    pop_stack();
-	    safe_apply(Pike_compiler->new_program->facet_group,
-		       "check_product_classes", 0);
-	  }
-	  pop_stack();
-	}
-      }
-    }
-#endif
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -889,62 +824,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       struct pike_type *s=compiler_pop_type();
       int i = isidentifier($6->u.sval.u.string);
 
-      if (Pike_compiler->compiler_pass == 1) {
-	if ($1 & ID_VARIANT) {
-	  /* FIXME: Lookup the type of any existing variant */
-	  /* Or the types. */
-	  fprintf(stderr, "Pass %d: Identifier %s:\n",
-		  Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	  if (i >= 0) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    if (id) {
-	      struct pike_type *new_type;
-	      fprintf(stderr, "Defined, type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(id->type);
-#endif
-
-	      new_type = or_pike_types(s, id->type, 1);
-	      free_type(s);
-	      s = new_type;
-
-	      fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(s);
-#endif
-	    } else {
-	      my_yyerror("Lost identifier %S (%d).",
-			 $6->u.sval.u.string, i);
-	    }
-	  } else {
-	    fprintf(stderr, "Not defined.\n");
-	  }
-	  fprintf(stderr, "New type:\n");
-#ifdef PIKE_DEBUG
-	  simple_describe_type(s);
-#endif
-	}
-      } else {
-	/* FIXME: Second pass reuses the type from the end of
-	 * the first pass if this is a variant function.
-	 */
-	if (i >= 0) {
-	  if (Pike_compiler->new_program->identifier_references[i].id_flags &
-	      ID_VARIANT) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    fprintf(stderr, "Pass %d: Identifier %s:\n",
-		    Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	    free_type(s);
-	    copy_pike_type(s, id->type);
-
-	    fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	    simple_describe_type(s);
-#endif
-	  }
-	} else {
+      if (Pike_compiler->compiler_pass != 1) {
+	if (i < 0) {
 	  my_yyerror("Identifier %S lost after first pass.",
 		     $6->u.sval.u.string);
 	}
@@ -970,11 +851,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 			$4);
 
       Pike_compiler->varargs=0;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n",
-		Pike_compiler->compiler_frame->current_function_number);
-      }
     }
   }
   block_or_semi
@@ -1005,19 +881,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	  my_yyerror("Missing name for argument %d.", e - $<number>9);
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
-	    if ($1 & ID_VARIANT) {
-	      struct pike_type *arg_type =
-		Pike_compiler->compiler_frame->variable[e].type;
-
-	      /* FIXME: Generate code that checks the arguments. */
-	      /* If there is a bad argument, call the fallback, and return. */
-	      if (! pike_types_le(void_type_string, arg_type)) {
-		/* Argument my not be void.
-		 * ie it's required.
-		 */
-		num_required_args++;
-	      }
-	    } else {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
@@ -1026,41 +889,19 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		local_node = mklocalnode(e, 0);
+		local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
 		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
-
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
 			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
 					local_node));
 	      }
-	    }
 	  }
 	}
-      }
-
-      if ($1 & ID_VARIANT) {
-	struct pike_string *bad_arg_str;
-	MAKE_CONST_STRING(bad_arg_str,
-			  "Bad number of arguments!\n");
-
-	fprintf(stderr, "Required args: %d\n", num_required_args);
-
-	check_args =
-	  mknode('?',
-		 mkopernode("`<",
-			    mkefuncallnode("query_num_arg", NULL),
-			    mkintnode(num_required_args)),
-		 mknode(':',
-			mkefuncallnode("throw",
-				       mkefuncallnode("aggregate",
-						      mkstrnode(bad_arg_str))),
-			NULL));
       }
 
       if ($<number>9) {
@@ -1089,10 +930,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n", f);
-      }
 
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.recoveries &&
@@ -1166,7 +1003,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     }
   }
   | inheritance {}
-  | facet {}
   | import {}
   | constant {}
   | modifiers class { free_node($2); }
@@ -1336,7 +1172,6 @@ magic_identifiers3:
   | TOK_CONSTANT   { $$ = "constant"; }
   | TOK_CONTINUE   { $$ = "continue"; }
   | TOK_DEFAULT    { $$ = "default"; }
-  | TOK_FACET      { $$ = "facet"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
@@ -1680,28 +1515,24 @@ opt_int_range: /* Empty */
     if($4->token == F_CONSTANT) {
       if (TYPEOF($4->u.sval) == T_INT) {
 	max = $4->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
 	push_int(0);
 	if (is_lt(&$4->u.sval, Pike_sp-1)) {
 	  max = MIN_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 
     if($2->token == F_CONSTANT) {
       if (TYPEOF($2->u.sval) == T_INT) {
 	min = $2->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
 	push_int(0);
 	if (is_lt(Pike_sp-1, &$2->u.sval)) {
 	  min = MAX_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 
@@ -2927,12 +2758,12 @@ class: TOK_CLASS line_number_info optional_identifier
 		   mixed_type_string)) {
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
-		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
+		local_node = mkcastnode(mixed_type_string, local_node);
 
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
+		 */
 		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 					    variable[e].type, local_node);
 	      }
@@ -3974,7 +3805,7 @@ idents2: idents
 	$$ = 0;
       }
       else {
-	if (!(ref->id_flags & ID_HIDDEN)) {
+	if (!(ref->id_flags & ID_LOCAL)) {
 	  /* We need to generate a new reference. */
 	  int d;
 	  struct reference funp = *ref;
@@ -3984,9 +3815,10 @@ idents2: idents
 	    struct reference *refp;
 	    refp = Pike_compiler->new_program->identifier_references + d;
 
+	    if (!(refp->id_flags & ID_LOCAL)) continue;
+
 	    if((refp->inherit_offset == funp.inherit_offset) &&
-	       (refp->identifier_offset == funp.identifier_offset) &&
-	       ((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
+	       (refp->identifier_offset == funp.identifier_offset)) {
 	      i = d;
 	      break;
 	    }
@@ -4667,8 +4499,6 @@ bad_expr_ident:
   { yyerror_reserved("return"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
-  | TOK_FACET
-  { yyerror_reserved("facet"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
   | TOK_CATCH

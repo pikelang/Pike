@@ -539,7 +539,7 @@ static void ia32_call_c_function(void *addr)
 static void ia32_push_constant(struct svalue *tmp)
 {
   int e;
-  if(tmp->type <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(*tmp)))
     ADD_VAL_TO_ABSADDR (1, tmp->u.refs);
 
   load_pi_reg (0);
@@ -584,10 +584,10 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
   add_to_program(0x66);		/* Switch to 16 bit operand mode. */
   add_to_program(0x83);		/* cmp $xx,svalue_ptr_reg */
   add_to_program(0xf8 | svalue_ptr_reg);
-  add_to_program(MAX_REF_TYPE);
+  add_to_program(MIN_REF_TYPE);
   DEALLOC_REG (svalue_ptr_reg);
 
-  add_to_program(0x77); /* ja bork */
+  add_to_program(0x7c); /* jl bork */
   add_to_program(0x02);
 
   CHECK_VALID_REG (tmp_reg);
@@ -1045,7 +1045,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        *
        * /grubba 2003-12-11
        */
-      if((Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE) &&
+      if(!REFCOUNTED_TYPE(TYPEOF(Pike_compiler->new_program->constants[b].sval)) &&
 	 !Pike_compiler->new_program->constants[b].sval.subtype)
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);

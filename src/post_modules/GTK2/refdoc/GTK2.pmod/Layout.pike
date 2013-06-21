@@ -15,7 +15,7 @@
 
 inherit GTK2.Container;
 
-static GTK2.Layout create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustment );
+protected GTK2.Layout create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustment );
 //! Creates a new GTK2.Layout.
 //!
 //!

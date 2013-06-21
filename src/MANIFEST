@@ -379,6 +379,9 @@ Core runtime support
   sscanf.h
     Implement the sscanf special function.
 
+  sprintf.c
+    Implement the sprintf function.
+
   svalue.c
   svalue.h
     Handling of normal and short svalues, e.g. functions to free,

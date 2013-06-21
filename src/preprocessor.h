@@ -129,7 +129,10 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 {
   struct pike_string *s = MAKE_BINARY_STRING(str, len);
 
-  if (s->refs == 1) {
+  if (s->refs <= 1) {
+    /* NB: Actually refs is always at least 1.
+     *     The above test is to help code analyzers.
+     */
     free_string(s);
     return NULL;
   }
@@ -1074,11 +1077,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
   
   for(pos=0; pos<len;)
   {
-      ptrdiff_t old_pos = pos;
+    ptrdiff_t old_pos = pos;
+    int c;
 /*    fprintf(stderr,"%c",data[pos]);
     fflush(stderr); */
 
-    switch(data[pos++])
+    switch(c = data[pos++])
     {
     case '\n':
       if(flags & CPP_END_AT_NEWLINE) return pos-1;
@@ -1120,20 +1124,26 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       break;
 
       /* Minor optimization */
-      case '<':
-	if(data[pos]=='<'  &&
-	   data[pos+1]=='<'  &&
-	   data[pos+2]=='<'  &&
-	   data[pos+3]=='<'  &&
-	   data[pos+4]=='<'  &&
-	   data[pos+5]=='<')
+      case '<': case '=': case '>':
+	if(data[pos]==c  &&
+	   data[pos+1]==c  &&
+	   data[pos+2]==c  &&
+	   data[pos+3]==c  &&
+	   data[pos+4]==c  &&
+	   data[pos+5]==c) {
 	  cpp_error(this, "Merge conflict detected.");
-	
+	  PUTC(c);
+	  do {
+	    PUTC(c);
+	  } while (data[++pos] == c);
+	  continue;
+	}
+	/* FALL_THROUGH */
+
       case '!': case '@': case '$': case '%': case '^': case '&':
-      case '*': case '(': case ')': case '-': case '=': case '+':
+      case '*': case '(': case ')': case '-': case '+':
       case '{': case '}': case ':': case '?': case '`': case ';':
-      case '>': case ',': case '.': case '~': case '[':
-      case ']': case '|':
+      case ',': case '.': case '~': case '[': case ']': case '|':
 	PUTC(data[pos-1]);
       break;
 
@@ -1294,6 +1304,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  
 		case ',':
 		  if(d->varargs && arg+1 == d->args) continue;
+		  /* FALL_THROUGH */
 
 		case ')': 
 		  pos--;
@@ -1326,8 +1337,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      WCHAR *a;
 	      ptrdiff_t l;
 	      
-	      if((d->parts[e].argument & DEF_ARG_MASK) < 0 || 
-		 (d->parts[e].argument & DEF_ARG_MASK) >= arg)
+	      if((d->parts[e].argument & DEF_ARG_MASK) >= arg)
 	      {
 		cpp_error(this, "Macro not expanded correctly.");
 		continue;

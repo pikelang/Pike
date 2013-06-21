@@ -328,7 +328,8 @@ static INLINE int append_buffer(struct pike_string *s)
      char *data = s->str;
      ptrdiff_t bytes;
 
-     fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+     while ((fd_lseek(THIS->fd, THIS->pos, SEEK_SET) < 0) && (errno == EINTR))
+       ;
      while (len > 0) {
        do {
 	 bytes = fd_write(THIS->fd, data, len);
@@ -491,7 +492,8 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
       if (sz <= 0) return NULL; /* no data */
       if (sz > READ_BUFFER_SIZE) sz = READ_BUFFER_SIZE;
       THREADS_ALLOW();
-      fd_lseek(this->fd, pos, SEEK_SET);
+      while ((fd_lseek(this->fd, pos, SEEK_SET) < 0) && (errno == EINTR))
+	;
       THREADS_DISALLOW();
       do {
 	THREADS_ALLOW();
@@ -901,7 +903,9 @@ static void pipe_output(INT32 args)
 	char *data;
 	b=THIS->firstbuffer;
 	THIS->firstbuffer=b->next;
-	fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+	while ((fd_lseek(THIS->fd, THIS->pos, SEEK_SET) < 0) &&
+	       (errno == EINTR))
+	  ;
 
 	len = b->s->len;
 	data = b->s->str;
@@ -1253,7 +1257,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    /* p->done=0; */
 }
 
-static void init_pipe_struct(struct object *o)
+static void init_pipe_struct(struct object *DEBUGUSED(o))
 {
    debug_malloc_touch(o);
 
@@ -1273,12 +1277,12 @@ static void init_pipe_struct(struct object *o)
    THIS->sent=0;
 }
 
-static void exit_pipe_struct(struct object *o)
+static void exit_pipe_struct(struct object *UNUSED(o))
 {
   close_and_free_everything(NULL,THIS);
 }
 
-static void exit_output_struct(struct object *obj)
+static void exit_output_struct(struct object *DEBUGUSED(obj))
 {
   struct output *o;
   
@@ -1310,7 +1314,7 @@ static void exit_output_struct(struct object *obj)
   }
 }
 
-static void init_output_struct(struct object *ob)
+static void init_output_struct(struct object *DEBUGUSED(ob))
 {
   struct output *o;
   debug_malloc_touch(ob);

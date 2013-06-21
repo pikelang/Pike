@@ -105,7 +105,6 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id$\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);

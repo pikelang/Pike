@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-inherit files;
+inherit _Stdio;
 
 #ifdef SENDFILE_DEBUG
 #define SF_WERR(X) werror("Stdio.sendfile(): %s\n", X)
@@ -259,7 +259,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_OPENPT__)
+#if constant(_Stdio.__HAVE_OPENPT__)
   //! @decl int openpt(string mode)
   //!
   //! Open the master end of a pseudo-terminal pair.  The parameter
@@ -399,7 +399,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_CONNECT_UNIX__)
+#if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
   //! 
@@ -620,7 +620,7 @@ class File
     }
   }
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl File openat(string filename, string mode)
   //! @decl File openat(string filename, string mode, int mask)
   //!
@@ -650,11 +650,11 @@ class File
   }
 #endif
 
-#if constant(files.__HAVE_SEND_FD__)
+#if constant(_Stdio.__HAVE_SEND_FD__)
   //!
-  int(0..1) send_fd(File|Fd file)
+  void send_fd(File|Fd file)
   {
-    return ::send_fd(file->_fd);
+    ::send_fd(file->_fd);
   }
 #endif
 
@@ -1807,8 +1807,8 @@ class FILE
     if( charset != "iso-8859-1" &&
 	charset != "ascii")
     {
-      object in =  master()->resolv("Locale.Charset.decoder")( charset );
-      object out = master()->resolv("Locale.Charset.encoder")( charset );
+      object in =  master()->resolv("Charset.decoder")( charset );
+      object out = master()->resolv("Charset.encoder")( charset );
 
       input_conversion =
 	[function(string:string)]lambda( string s ) {
@@ -1968,7 +1968,7 @@ class FILE
 
   //! @endignore
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
@@ -2602,7 +2602,7 @@ void perror(string s)
 //! Check if a @[path] is a file.
 //!
 //! @returns
-//! Returns true if the given path is a file, otherwise false.
+//! Returns true if the given path is a regular file, otherwise false.
 //!
 //! @seealso
 //! @[exist()], @[is_dir()], @[is_link()], @[file_stat()]
@@ -3397,12 +3397,12 @@ object sendfile(array(string) headers,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
-#if !defined(DISABLE_FILES_SENDFILE) && constant(files.sendfile)
+#if !defined(DISABLE_FILES_SENDFILE) && constant(_Stdio.sendfile)
   // Try using files.sendfile().
   
   mixed err = catch {
-    return files.sendfile(headers, from, offset, len,
-			  trailers, to, cb, @args);
+    return _Stdio.sendfile(headers, from, offset, len,
+                           trailers, to, cb, @args);
   };
 
 #ifdef SENDFILE_DEBUG
@@ -3418,7 +3418,7 @@ object sendfile(array(string) headers,
 //! UDP (User Datagram Protocol) handling.
 class UDP
 {
-  inherit files.UDP;
+  inherit _Stdio.UDP;
 
   private array extra=0;
   private function(mapping,mixed...:void) callback=0;
