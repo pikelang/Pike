@@ -624,7 +624,8 @@ class MultiTree {
 	}
 
 	int(0..1) `!() {
-	    return !sizeof(it) || !it[0];
+	    while (sizeof(it) && !it[0]) it = it[1..];
+	    return !sizeof(it);
 	}
 
 	int(0..1) next() {
