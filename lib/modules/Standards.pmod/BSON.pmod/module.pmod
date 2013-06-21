@@ -125,7 +125,7 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
    // BSON.Timestamp instance
    else if(objectp(value) && Program.inherits(object_program(value), .Timestamp))
    {
-     buf->sprintf("%c%s%c%-8s", TYPE_TIMESTAMP, key, 0, value->get_timestamp());
+     buf->sprintf("%c%s%c%-8c", TYPE_TIMESTAMP, key, 0, value->get_timestamp());
    }
 
    // BSON.Binary instance
@@ -315,7 +315,7 @@ static string decode_next_value(string slist, mapping list)
  	     value = .ObjectId(value);
        break;
      case TYPE_TIMESTAMP:
-       if(sscanf(slist, "%-12c%s", value, slist) != 2)
+       if(sscanf(slist, "%-8c%s", value, slist) != 2)
          throw(Error.Generic("Unable to read timestamp from BSON stream.\n")); 
  	     value = .Timestamp(value);
        break;  
