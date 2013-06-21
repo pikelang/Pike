@@ -150,8 +150,6 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
    // BSON.Regex instance
    else if(objectp(value) && Program.inherits(object_program(value), .Regex))
    {
-     string v = (string)value;
-     v = string_to_utf8(v);
      buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
    } 
    // BSON.Null
