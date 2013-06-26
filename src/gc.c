@@ -46,6 +46,23 @@ double gc_min_time_ratio = 1.0/10000.0; /* Martys constant. */
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
 double gc_average_slowness = 0.9;
 
+/* High-level callbacks.
+ * NB: These are initialized from builtin.cmod.
+ */
+/* Callback called when gc() starts. */
+struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+struct svalue gc_done_cb;
+
 /* The gc will free all things with no external nonweak references
  * that isn't referenced by live objects. An object is considered
  * "live" if it contains code that must be executed when it is
@@ -3470,6 +3487,12 @@ size_t do_gc(void *ignored, int explicit_call)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
+
+  if (!SAFE_IS_ZERO(&gc_pre_cb)) {
+    safe_apply_svalue(&gc_pre_cb, 0, 1);
+    pop_stack();
+  }
+
   gc_start_time = get_cpu_time();
   gc_start_real_time = get_real_time();
 #ifdef GC_DEBUG
@@ -3785,6 +3808,11 @@ size_t do_gc(void *ignored, int explicit_call)
   destroy_count = 0;
 #endif
 
+  if (!SAFE_IS_ZERO(&gc_post_cb)) {
+    safe_apply_svalue(&gc_post_cb, 0, 1);
+    pop_stack();
+  }
+
   {
     enum object_destruct_reason reason =
 #ifdef DO_PIKE_CLEANUP
@@ -3841,6 +3869,11 @@ size_t do_gc(void *ignored, int explicit_call)
 	}
 	else fputs(", is destructed\n", stderr);
       );
+      if (!SAFE_IS_ZERO(&gc_destruct_cb)) {
+	ref_push_object(o);
+	safe_apply_svalue(&gc_destruct_cb, 1, 1);
+	pop_stack();
+      }
 
       destruct_object (o, reason);
       free_object(o);
@@ -4118,6 +4151,13 @@ size_t do_gc(void *ignored, int explicit_call)
   if (gc_destruct_everything)
     return destroy_count;
 #endif
+
+  if (!SAFE_IS_ZERO(&gc_done_cb)) {
+    push_int(unreferenced);
+    safe_apply_svalue(&gc_done_cb, 1, 1);
+    pop_stack();
+  }
+
   return unreferenced;
 }
 
