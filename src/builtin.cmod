@@ -1078,6 +1078,17 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
  *!   with this slowness factor. It should be a value between 0.0 and
  *!   1.0 that specifies the weight to give to the old average value.
  *!   The remaining weight up to 1.0 is given to the last reading.
+ *! @member function(:void) "pre_cb"
+ *!   This function is called when the gc starts.
+ *! @member function(:void) "post_cb"
+ *!   This function is called when the mark and sweep pass of the gc
+ *!   is done.
+ *! @member function(object:void) "destruct_cb"
+ *!   This function is called once for each object that is part of
+ *!   a cycle just before the gc will destruct it.
+ *! @member function(int:void) "done_cb"
+ *!   This function is called when the gc is done and about to exit.
+ *!   The argument is the same value as will be returned by gc().
  *! @endmapping
  *!
  *! @seealso
@@ -1147,6 +1158,27 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   HANDLE_FLOAT_FACTOR ("garbage_ratio_high", gc_garbage_ratio_high);
   HANDLE_FLOAT_FACTOR ("min_gc_time_ratio", gc_min_time_ratio);
   HANDLE_FLOAT_FACTOR ("average_slowness", gc_average_slowness);
+
+  HANDLE_PARAM("pre_cb", {
+      assign_svalue(&gc_pre_cb, set);
+    }, {
+      assign_svalue(&get, &gc_pre_cb);
+    });
+  HANDLE_PARAM("post_cb", {
+      assign_svalue(&gc_post_cb, set);
+    }, {
+      assign_svalue(&get, &gc_post_cb);
+    });
+  HANDLE_PARAM("destruct_cb", {
+      assign_svalue(&gc_destruct_cb, set);
+    }, {
+      assign_svalue(&get, &gc_destruct_cb);
+    });
+  HANDLE_PARAM("done_cb", {
+      assign_svalue(&gc_done_cb, set);
+    }, {
+      assign_svalue(&get, &gc_done_cb);
+    });
 
 #undef HANDLE_PARAM
 #undef HANDLE_FLOAT_FACTOR
@@ -5754,13 +5786,23 @@ PIKECLASS __Backtrace_Tester__
 
 void init_builtin(void)
 {
+  SET_SVAL(gc_pre_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_post_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_destruct_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_done_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   INIT
 }
 
 void exit_builtin(void)
 {
+  struct svalue zero;
   if (val_module) free_object (val_module);
   EXIT
+  SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  assign_svalue(&gc_pre_cb, &zero);
+  assign_svalue(&gc_post_cb, &zero);
+  assign_svalue(&gc_destruct_cb, &zero);
+  assign_svalue(&gc_done_cb, &zero);
 #ifndef DO_PIKE_CLEANUP
   /* This is performed by exit_builtin_modules() at a later point
    * in this case, so that the pike_list_node's are valid at cleanup

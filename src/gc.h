@@ -56,6 +56,20 @@ extern double gc_average_slowness;
  * threshold if it takes a while until the gc can run. */
 #define GC_MAX_ALLOC_THRESHOLD (ALLOC_COUNT_TYPE_MAX - 10000000)
 
+/* Callback called when gc() starts. */
+extern struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+extern struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+extern struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+extern struct svalue gc_done_cb;
+
 /* #define GC_MARK_DEBUG */
 
 /* If we only have 32 bits we need to make good use of them for the
