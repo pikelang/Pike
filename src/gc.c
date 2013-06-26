@@ -3482,11 +3482,6 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     return 0;
   }
 
-  if (!SAFE_IS_ZERO(&gc_pre_cb)) {
-    safe_apply_svalue(&gc_pre_cb, 0, 1);
-    pop_stack();
-  }
-
 #ifdef DEBUG_MALLOC
   if(debug_options & GC_RESET_DMALLOC)
     reset_debug_malloc();
@@ -3494,6 +3489,12 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
+
+  if (!SAFE_IS_ZERO(&gc_pre_cb)) {
+    safe_apply_svalue(&gc_pre_cb, 0, 1);
+    pop_stack();
+  }
+
   gc_start_time = get_cpu_time();
   gc_start_real_time = get_real_time();
 #ifdef GC_DEBUG
