@@ -370,7 +370,7 @@ int get_request(array(string) varlist, string|void rem_addr,
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	      ({Standards.ASN1.Types.asn1_identifier(
 		@(array(int))(varname/".")),
-		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
+		Standards.ASN1.Types.Null()})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(0,
@@ -524,7 +524,7 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	      ({Standards.ASN1.Types.asn1_identifier(
 		 @(array(int))(varname/".")),
-		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
+		Standards.ASN1.Types.Null()})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(1,
