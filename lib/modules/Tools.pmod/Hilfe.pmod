@@ -1496,6 +1496,17 @@ class Evaluator {
       if(arrayp(in)) in *= "";
       if(sizeof(args))
 	in = sprintf(in, @args);
+      if (String.width(in) > 8) {
+	// Variable and function names may contain wide characters...
+	// Perform Unicode escaping.
+	in = map(in/"",
+		 lambda(string s) {
+		   if (String.width(s) <= 8) return s;
+		   int c = s[0] & 0xffffffff;
+		   if (c <= 0xffff) return sprintf("\\u%04x", c);
+		   return sprintf("\\U%08x", c);
+		 }) * "";
+      }
       int ret = write(in);
       if(!ret && sizeof(in)) return sizeof(in);
       return ret;

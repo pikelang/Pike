@@ -2210,6 +2210,19 @@ program cast_to_program(string pname,
 }
 
 
+protected string narrowify_string(string s)
+{
+  if (Builtin.string_width(s) <= 8) return s;
+  // Perform Unicode escaping.
+  return map(s/"",
+	     lambda(string s) {
+	       if (Builtin.string_width(s) <= 8) return s;
+	       int c = s[0] & 0xffffffff;
+	       if (c <= 0xffff) return sprintf("\\u%04x", c);
+	       return sprintf("\\U%08x", c);
+	     }) * "";
+}
+
 //! This function is called when an error occurs that is not caught
 //! with catch().
 void handle_error(array|object trace)
@@ -2230,14 +2243,14 @@ void handle_error(array|object trace)
 	if (catch {
 	  string msg = [string]x[0];
 	  array bt = [array]x[1];
-	  werror("%s", msg);
-	  werror("%O\n", bt);
+	  werror("%s", narrowify_string(msg));
+	  werror(narrowify_string(sprintf("%O\n", bt)));
 	}) {
-	  werror("%O\n", x);
+	  werror(narrowify_string(sprintf("%O\n", x)));
 	}
       };
-      werror("Original error:\n"
-	     "%O\n", trace);
+      werror(narrowify_string(sprintf("Original error:\n"
+				      "%O\n", trace)));
     }) {
       werror("sprintf() failed to write error.\n");
     }
@@ -4259,7 +4272,7 @@ void compile_error(string file,int line,string err)
   if(! (val = get_inhibit_compile_errors() ))
   {
     werror( "%s:%s:%s\n",trim_file_name(file),
-	    line?(string)line:"-",err );
+	    line?(string)line:"-",narrowify_string(err) );
   }
   else if(objectp(val) ||
 	  programp(val) ||
@@ -4289,7 +4302,7 @@ void compile_warning(string file,int line,string err)
   {
     if(want_warnings)
       werror( "%s:%s: Warning: %s\n",trim_file_name(file),
-	      line?(string)line:"-",err );
+	      line?(string)line:"-",narrowify_string(err) );
   }
   else if (objectp(val) && val->compile_warning) {
     ([function(string,int,string:void)]([object]val)
@@ -4496,6 +4509,9 @@ class Describer
       }
       break;
     }
+    // Objects may have _sprintfs that output wide characters,
+    // and function names may be wide, etc...
+    res = narrowify_string(res);
     if (stringp(ident[m]))
       return ident[m] + "=" + res;
     return res;
@@ -5198,7 +5214,7 @@ array get_backtrace (object|array err)
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
 	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
@@ -5212,7 +5228,7 @@ array get_backtrace (object|array err)
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
 	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
