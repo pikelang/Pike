@@ -410,27 +410,49 @@ void udp_add_membership(INT32 args)
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
-  /* FIXME: Implement support for IPv6! */
+#ifdef AF_INET6
+  if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
+    struct ipv6_mreq sock;
+
+    if (address)
+      Pike_error("Interface address is not supported for IPv6.\n");
+
+    /* NB: This sets imr_interface to IN6ADDR_ANY,
+     *     and clears imr_ifindex if it exists.
+     */
+    MEMSET(&sock, 0, sizeof(sock));
+
+    if(SOCKADDR_FAMILY(addr) != AF_INET6)
+      Pike_error("Mixing IPv6 and other multicast is not supported.\n");
+
+    sock.ipv6mr_multiaddr = addr.ipv6.sin6_addr;
+
+    pop_n_elems(args);
+    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+			    (char *)&sock, sizeof(sock)) );
+    return;
+  }
+#endif /* AF_INET6 */
+
+  /* NB: This sets imr_interface to INADDR_ANY,
+   *     and clears imr_ifindex if it exists.
+   */
+  MEMSET(&sock, 0, sizeof(sock));
+
   if(SOCKADDR_FAMILY(addr) != AF_INET)
-    Pike_error("Multicast only supported for IPv4.\n");
+    Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");
 
   sock.imr_multiaddr = addr.ipv4.sin_addr;
 
-  if( !address )
-    sock.imr_interface.s_addr = htonl( INADDR_ANY );
-  else {
+  if (address) {
     get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
-    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
-      Pike_error("Multicast only supported for IPv4.\n");
+      Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");
 
     sock.imr_interface = addr.ipv4.sin_addr;
   }
-#if 0
-  sock.imr_ifindex = face;
-#endif
 
   pop_n_elems(args);
   push_int( fd_setsockopt(FD, IPPROTO_IP, IP_ADD_MEMBERSHIP,
@@ -455,27 +477,49 @@ void udp_drop_membership(INT32 args)
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
-  /* FIXME: Implement support for IPv6! */
+#ifdef AF_INET6
+  if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
+    struct ipv6_mreq sock;
+
+    if (address)
+      Pike_error("Interface address is not supported for IPv6.\n");
+
+    /* NB: This sets imr_interface to IN6ADDR_ANY,
+     *     and clears imr_ifindex if it exists.
+     */
+    MEMSET(&sock, 0, sizeof(sock));
+
+    if(SOCKADDR_FAMILY(addr) != AF_INET6)
+      Pike_error("Mixing IPv6 and other multicast is not supported.\n");
+
+    sock.ipv6mr_multiaddr = addr.ipv6.sin6_addr;
+
+    pop_n_elems(args);
+    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP,
+			    (char *)&sock, sizeof(sock)) );
+    return;
+  }
+#endif /* AF_INET6 */
+
+  /* NB: This sets imr_interface to INADDR_ANY,
+   *     and clears imr_ifindex if it exists.
+   */
+  MEMSET(&sock, 0, sizeof(sock));
+
   if(SOCKADDR_FAMILY(addr) != AF_INET)
-    Pike_error("Multicast only supported for IPv4.\n");
+    Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");
 
   sock.imr_multiaddr = addr.ipv4.sin_addr;
 
-  if( !address )
-    sock.imr_interface.s_addr = htonl( INADDR_ANY );
-  else {
+  if (address) {
     get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
-    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
-      Pike_error("Multicast only supported for IPv4.\n");
+      Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");
 
     sock.imr_interface = addr.ipv4.sin_addr;
   }
-#if 0
-  sock.imr_ifindex = face;
-#endif
 
   pop_n_elems(args);
   push_int( fd_setsockopt(FD, IPPROTO_IP, IP_DROP_MEMBERSHIP,
