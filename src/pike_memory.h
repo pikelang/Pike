@@ -189,6 +189,11 @@ PMOD_EXPORT void mexec_free(void *ptr);
 void init_pike_memory (void);
 void exit_pike_memory (void);
 
+#ifdef DEBUG_MALLOC
+PMOD_EXPORT void * system_malloc(size_t) MALLOC_FUNCTION;
+PMOD_EXPORT void system_free(void *);
+#endif
+
 #undef BLOCK_ALLOC
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
