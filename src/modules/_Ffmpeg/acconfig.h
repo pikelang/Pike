@@ -40,4 +40,7 @@
 /* Define if AVCodecContext contains the field frame_rate. */
 #undef HAVE_AVCODECCONTEXT_FRAME_RATE
 
+/* Define if AVCodec contains the field encode2. */
+#undef HAVE_AVCODEC_ENCODE2
+
 #endif

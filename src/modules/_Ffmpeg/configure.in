@@ -203,6 +203,35 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     if test "x$pike_cv_AVCodecContext_has_frame_rate" = "xyes"; then
       AC_DEFINE(HAVE_AVCODECCONTEXT_FRAME_RATE)
     fi
+
+    AC_MSG_CHECKING(if AVCodec has encode2)
+    AC_CACHE_VAL(pike_cv_AVCodec_has_encode2, [
+      AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+#endif
+#endif
+      ], [
+        AVCodec codec;
+	codec.encode2 = 0;
+      ], pike_cv_AVCodec_has_encode2=yes,
+      pike_cv_AVCodec_has_encode2=no)
+    ])
+    AC_MSG_RESULT($pike_cv_AVCodec_has_encode2)
+    if test "x$pike_cv_AVCodec_has_encode2" = "xyes"; then
+      AC_DEFINE(HAVE_AVCODEC_ENCODE2)
+    fi
   fi
 fi
 
