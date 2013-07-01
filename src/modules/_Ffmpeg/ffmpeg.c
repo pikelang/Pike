@@ -115,7 +115,13 @@ typedef struct {
 int encoder_flg(AVCodec *codec) {
   int flg = -1;
 
-  if( codec->encode )
+  if( codec->
+#ifdef HAVE_AVCODEC_ENCODE2
+      encode2
+#else
+      encode
+#endif
+      )
     flg = 1;
   else if( codec->decode )
     flg = 0;
