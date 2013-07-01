@@ -1707,10 +1707,29 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
-    Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
-		     mkcastnode(void_type_string,
-				mknode(F_ASSIGN,$5,
-				       mkidentifiernode($<number>4))));
+    if (!TEST_COMPAT(7, 8) && is_const($5) && !Pike_compiler->num_parse_error) {
+      /* Attempt to evaluate it to see if it is zero,
+       * in which case we can throw it away.
+       *
+       * NB: The compat test is due to that this changes the semantics
+       *     of calling __INIT() by hand.
+       */
+      ptrdiff_t tmp = eval_low($5, 0);
+      if (tmp >= 1) {
+	free_node($5);
+	$5 = NULL;
+	if (!SAFE_IS_ZERO(Pike_sp - tmp)) {
+	  $5 = mkconstantsvaluenode(Pike_sp - tmp);
+	}
+	pop_n_elems(tmp);
+      }
+    }
+    if ($5) {
+      Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
+		       mkcastnode(void_type_string,
+				  mknode(F_ASSIGN,$5,
+					 mkidentifiernode($<number>4))));
+    }
     free_node($2);
   }
   | optional_stars TOK_IDENTIFIER '=' error
