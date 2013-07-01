@@ -11,6 +11,7 @@
 #include "gc.h"
 #include "fd_control.h"
 #include "dmalloc.h"
+#include "block_allocator.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -1501,13 +1502,6 @@ void *fake_calloc(size_t x, size_t y)
 static struct memhdr *my_find_memhdr(void *, int);
 static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
-#include "block_alloc_h.h"
-
-BLOCK_ALLOC_FILL_PAGES(memloc, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a);
-
-#include "block_alloc.h"
 
 int verbose_debug_malloc = 0;
 int debug_malloc_check_all = 0;
@@ -1579,7 +1573,19 @@ struct memloc
 #define MEM_TRACE			64
 #define MEM_SCANNED			128
 
-BLOCK_ALLOC_FILL_PAGES(memloc, 64)
+static struct block_allocator memloc_allocator = BA_INIT_PAGES(sizeof(struct memloc), 64);
+
+static struct memloc * alloc_memloc() {
+    return ba_alloc(&memloc_allocator);
+}
+
+static void really_free_memloc(struct memloc * ml) {
+    ba_free(&memloc_allocator, ml);
+}
+
+void count_memory_in_memlocs(size_t * n, size_t * s) {
+    ba_count_all(&memloc_allocator, n, s);
+}
 
 struct memhdr
 {
@@ -1776,6 +1782,8 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
   return l;
 }
 
+#include "block_alloc.h"
+
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
 
@@ -1829,6 +1837,7 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #define BLOCK_ALLOC_HSIZE_SHIFT 1
+
 PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
 
 #undef INIT_BLOCK
@@ -2216,6 +2225,15 @@ static void flush_blocks_to_free(void)
       real_free( ((char *)p) - DEBUG_MALLOC_PAD );
     }
   }
+}
+
+MALLOC_FUNCTION
+PMOD_EXPORT void * system_malloc(size_t n) {
+    return real_malloc(n);
+}
+
+PMOD_EXPORT void system_free(void * p) {
+    real_free(p);
 }
 
 PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
@@ -3003,9 +3021,6 @@ static void initialize_dmalloc(void)
 #ifdef DMALLOC_REMEMBER_LAST_LOCATION
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
-    init_memloc_blocks();
-    init_memory_map_blocks();
-    init_memory_map_entry_blocks();
     init_memhdr_hash();
     MEMSET(mlhash, 0, sizeof(mlhash));
 
@@ -3357,8 +3372,34 @@ struct memory_map_entry
   struct memory_map *recur;
 };
 
-BLOCK_ALLOC_FILL_PAGES(memory_map, 8)
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, 16)
+static struct block_allocator memory_map_allocator = BA_INIT_PAGES(sizeof(struct memory_map), 8);
+
+static struct memory_map * alloc_memory_map() {
+    return ba_alloc(&memory_map_allocator);
+}
+
+static void really_free_memory_map(struct memory_map * m) {
+    ba_free(&memory_map_allocator, m);
+}
+
+void count_memory_in_memory_maps(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_allocator, n, s);
+}
+
+static struct block_allocator memory_map_entry_allocator
+    = BA_INIT_PAGES(sizeof(struct memory_map_entry), 16);
+
+static struct memory_map_entry * alloc_memory_map_entry() {
+    return ba_alloc(&memory_map_entry_allocator);
+}
+
+static void really_free_memory_map_entry(struct memory_map_entry * m) {
+    ba_free(&memory_map_entry_allocator, m);
+}
+
+void count_memory_in_memory_map_entrys(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_entry_allocator, n, s);
+}
 
 void dmalloc_set_mmap(void *ptr, struct memory_map *m)
 {
@@ -3505,10 +3546,9 @@ static void cleanup_debug_malloc(void)
 {
   size_t i;
 
-  free_all_memloc_blocks();
+  ba_destroy(&memloc_allocator);
+  ba_destroy(&memory_map_allocator);
   exit_memhdr_hash();
-  free_all_memory_map_blocks();
-  free_all_memory_map_entry_blocks();
 
   for (i = 0; i < DSTRHSIZE; i++) {
     struct dmalloc_string *str = dstrhash[i], *next;

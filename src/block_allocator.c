@@ -55,7 +55,19 @@ struct ba_block_header {
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + sizeof(struct ba_page);
-    struct ba_page * p = (struct ba_page*)xalloc(n);
+    struct ba_page * p;
+#ifdef DEBUG_MALLOC
+    /* In debug malloc mode, calling xalloc from the block alloc may result
+     * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
+     */
+    p = (struct ba_page*)system_malloc(n);
+    if (!p) {
+	fprintf(stderr, "Fatal: Out of memory.\n");
+	exit(17);
+    }
+#else
+    p = (struct ba_page*)xalloc(n);
+#endif
     p->h.first = BA_BLOCKN(a->l, p, 0);
     p->h.first->next = BA_ONE;
     p->h.used = 0;
@@ -84,7 +96,11 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
     int i;
     for (i = 0; i < a->size; i++) {
 	if (a->pages[i]) {
+#ifdef DEBUG_MALLOC
+	    system_free(a->pages[i]);
+#else
 	    free(a->pages[i]);
+#endif
 	    a->pages[i] = NULL;
 	}
     }
@@ -207,7 +223,11 @@ found:
 #endif
 	if (!(--p->h.used) && i+1 == a->size) {
 	    while (i >= 0 && !(p->h.used)) {
+#ifdef DEBUG_MALLOC
+		system_free(p);
+#else
 		free(p);
+#endif
 		a->pages[i] = NULL;
 
 		p = a->pages[--i];
