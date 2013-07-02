@@ -99,10 +99,12 @@
 #endif
 
 #define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE)	do {		\
-    struct PIKE_CONCAT(DATA,_block) * p;				\
-    for(p=PIKE_CONCAT(DATA,_blocks);p;p=p->next) {			\
+    struct PIKE_CONCAT(DATA,_block) * p, * np;				\
+    p = PIKE_CONCAT(DATA,_blocks);					\
+    while (p) {								\
 	int n = p->used;						\
 	int i;								\
+	np = p->next;							\
 	for (i = 0; n && i < (sizeof(p->x)/sizeof(struct DATA)); i++) {	\
 	    BLOCK = &p->x[i];						\
 	    if (FCOND) {						\
@@ -110,6 +112,7 @@
 		--n;							\
 	    }								\
 	}								\
+	p = np;								\
     }									\
 } while(0)
 
