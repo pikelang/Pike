@@ -5236,6 +5236,8 @@ ptrdiff_t eval_low(node *n,int print_error)
   }
 #endif
 
+  fix_type_field(n);
+
   if(Pike_compiler->num_parse_error) {
     return -1;
   }
