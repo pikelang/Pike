@@ -580,6 +580,37 @@ string _sprintf(int how, mapping|void args)
       return look;
 }
 
+// Master codec API function. Allows for serialization with
+// encode_value.
+mapping(string:string|int|this_program) _encode()
+{
+#define P(X) #X:X
+    return ([
+        P(scheme),
+        P(authority),
+        P(path),
+        P(query),
+        P(fragment),
+        P(host),
+        P(user),
+        P(password),
+        P(port),
+        P(base_uri),
+        P(raw_uri),
+        // variables is only a cache
+    ]);
+#undef P
+}
+
+// Master codec API function. Allows for deserialization with
+// decode_value.
+void _decode(mapping m)
+{
+    foreach(m; mixed index; mixed value)
+        this[index] = value;
+}
+
+#if 0
 // Not used yet.
 string quote(string s)
 {
@@ -604,3 +635,4 @@ string quote(string s)
 		    "%98", "%99", "%9A", "%9B", "%9C", "%9D", "%9E", "%9F",
 		    "%20", "%25", "%27", "%22"}));
 }
+#endif
