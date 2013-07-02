@@ -75,6 +75,29 @@ test_eq(Standards.URI("http://user:??@host?query")->query, "query")
 test_eq(Standards.URI("http://user:??@host?query")->password, "??")
 test_eq(Standards.URI("http://user:??@host?query")->path, "")
 test_eq(Standards.URI("HTTP://WWW.COM/")->scheme, "http")
+// test `==
+test_true(Standards.URI("a://b:c@d:1/e?f=g&h")==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_true(Standards.URI("A://b:c@D:01/e?f=g&h")==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("x://b:c@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://x:c@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:x@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@x:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:2/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/x?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/e?x=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+// codec
+test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h")))==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+
 
 test_eval_error(Standards.URI(""))
 test_eval_error(Standards.URI("#foo"))
