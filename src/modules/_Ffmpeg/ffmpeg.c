@@ -479,7 +479,6 @@ static void f_list_codecs(INT32 args) {
   int cnt = 0;
   AVCodec *codec;
 
-  avcodec_init();
   avcodec_register_all();
 
   pop_n_elems(args);
@@ -568,7 +567,6 @@ static void init_ffmpeg_data(struct object *obj) {
   THIS->outbuf = NULL;
   THIS->encoder = 0;
 
-  avcodec_init();
   avcodec_register_all(); /* FIXME: register only "interesting" codec ? */
 }
 
