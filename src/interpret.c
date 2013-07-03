@@ -2183,6 +2183,8 @@ int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           else
           {
             struct object *tmp;
+            new_frame->pc = 0;
+            new_frame->num_args = 0;
             tmp=parent_clone_object(constant->u.program,
                                     o,
                                     fun,
