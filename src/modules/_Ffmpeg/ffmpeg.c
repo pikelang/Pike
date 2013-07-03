@@ -197,6 +197,7 @@ static void f_create(INT32 args)
       }
 
       memset(&THIS->codec_context, 0, sizeof(THIS->codec_context));
+      /* FIXME: Use avcodec_open2() if available. */
       if (avcodec_open(&THIS->codec_context, codec) < 0)
         Pike_error("Could not open codec.\n");
       THIS->codec = codec;
@@ -357,6 +358,9 @@ static void f_get_codec_status(INT32 args) {
 #ifndef HAVE_AVCODEC_DECODE_AUDIO2
 #define avcodec_decode_audio2 avcodec_decode_audio3
 #define USE_AVPACKET_FOR_DECODE
+#ifndef HAVE_AVCODEC_DECODE_AUDIO3
+  /* FIXME: Support avcodec_decode_audio4(). */
+#endif
 #endif
 #endif
 

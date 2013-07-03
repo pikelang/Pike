@@ -105,7 +105,10 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
       AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
       dnl PIKE_FEATURE(FFmpeg)
 
-      AC_CHECK_FUNCS(avcodec_decode_audio avcodec_decode_audio2 av_codec_next)
+      AC_CHECK_FUNCS([avcodec_decode_audio avcodec_decode_audio2 \
+	              avcodec_decode_audio3 avcodec_decode_audio4 \
+		      av_codec_next avcodec_open avcodec_open2
+		    ])
     else 
       PIKE_FEATURE(FFmpeg,[no (not working)])
     fi
