@@ -344,8 +344,16 @@ void udp_enable_broadcast(INT32 args)
 }
 
 /*! @decl int(0..1) enable_multicast(string reply_address)
- *! Set the local device for a multicast socket. See also the Unix man
- *! page for setsocketopt IPPROTO_IP IP_MULTICAST_IF.
+ *!   Set the local device for a multicast socket.
+ *!
+ *! @param reply_address
+ *!   Local address that should appear in the multicast packets.
+ *!
+ *! See also the Unix man page for setsocketopt IPPROTO_IP IP_MULTICAST_IF
+ *! and IPPROTO_IPV6 IPV6_MULTICAST_IF.
+ *!
+ *! @note
+ *!   This function did not support IPv6 in Pike 7.8.
  */
 void udp_enable_multicast(INT32 args)
 {
@@ -358,7 +366,19 @@ void udp_enable_multicast(INT32 args)
   get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
-  /* FIXME: Implement support for IPv6! */
+#ifdef AF_INET6
+  if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
+    if(SOCKADDR_FAMILY(reply) != AF_INET6)
+      Pike_error("Multicast only supported for IPv6.\n");
+
+    result = fd_setsockopt(FD, IPPROTO_IPV6, IPV6_MULTICAST_IF,
+			   (char *)&reply.ipv6.sin6_addr,
+			   sizeof(reply.ipv6.sin6_addr));
+    pop_n_elems(args);
+    push_int(result);
+    return;
+  }
+#endif
   if(SOCKADDR_FAMILY(reply) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -370,32 +390,67 @@ void udp_enable_multicast(INT32 args)
 }
 
 /*! @decl int set_multicast_ttl(int ttl)
- *! Set the time-to-live value of outgoing multicast packets for this
- *! socket. It is very important for multicast packets to set the
- *! smallest TTL possible. The default is 1 which means that multicast
- *! packets don't leacl the local network unless the user program
- *! explicitly request it. See also the Unix man page for setsocketopt
- *! IPPROTO_IP IP_MULTICAST_TTL.
+ *!   Set the time-to-live value of outgoing multicast packets
+ *!   for this socket.
+ *!
+ *! @param ttl
+ *!   The number of router hops sent multicast packets should
+ *!   survive.
+ *!
+ *!   It is very important for multicast packets to set the
+ *!   smallest TTL possible. The default before calling this
+ *!   function is 1 which means that multicast packets don't
+ *!   leak from the local network unless the user program
+ *!   explicitly requests it.
+ *!
+ *! See also the Unix man page for setsocketopt IPPROTO_IP IP_MULTICAST_TTL
+ *! and IPPROTO_IPV6 IPV6_MULTICAST_HOPS.
+ *!
+ *! @note
+ *!   This function did not support IPv6 in Pike 7.8 and earlier.
+ *!
+ *! @seealso
+ *!   @[add_membership()]
  */
 void udp_set_multicast_ttl(INT32 args)
 {
   int ttl;
   get_all_args("set_multicast_ttl", args, "%d", &ttl);
   pop_n_elems(args);
+#ifdef AF_INET6
+  if (THIS->inet_flags & PIKE_INET_FLAG_IPV6) {
+    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,
+			    (char *)&ttl, sizeof(int)) );
+    return;
+  }
+#endif
   push_int( fd_setsockopt(FD, IPPROTO_IP, IP_MULTICAST_TTL,
 			  (char *)&ttl, sizeof(int)) );
 }
 
 /*! @decl int add_membership(string group, void|string address)
- *! Join a multicast group. @[group] contains the address of the
- *! multicast group the application wants to join or leave. It must be
- *! a valid multicast address. @[address] is the address of the local
- *! interface with wich the system should join to the multicast group.
- *! If not provided the system will select an appropriate interface.
- *! See also the Unix man page for setsocketopt IPPROTO_IP
- *! ADD_MEMBERSHIP.
+ *!   Join a multicast group.
+ *!
+ *! @param group
+ *!   @[group] contains the address of the multicast group the
+ *!   application wants to join. It must be a valid multicast address.
+ *!
+ *! @param address
+ *!   @[address] is the address of the local interface with which
+ *!   the system should join to the multicast group. If not provided
+ *!   the system will select an appropriate interface.
+ *!
+ *! See also the Unix man page for setsocketopt IPPROTO_IP IP_ADD_MEMBERSHIP
+ *! and IPPROTO_IPV6 IPV6_ADD_MEMBERSHIP.
+ *!
+ *! @note
+ *!   The @[address] parameter is currently not supported for IPv6.
+ *!
+ *! @note
+ *!   This function did not support IPv6 in Pike 7.8 and earlier.
+ *!
  *! @seealso
- *!   @[drop_membership]
+ *!   @[drop_membership()]
  */
 void udp_add_membership(INT32 args)
 {
@@ -460,9 +515,28 @@ void udp_add_membership(INT32 args)
 }
 
 /*! @decl int drop_membership(string group, void|string address)
- *! Leave a multicast group.
+ *!   Leave a multicast group.
+ *!
+ *! @param group
+ *!   @[group] contains the address of the multicast group the
+ *!   application wants to join. It must be a valid multicast address.
+ *!
+ *! @param address
+ *!   @[address] is the address of the local interface with which
+ *!   the system should join to the multicast group. If not provided
+ *!   the system will select an appropriate interface.
+ *!
+ *! See also the Unix man page for setsocketopt IPPROTO_IP IP_DROP_MEMBERSHIP
+ *! and IPPROTO_IPV6 IPV6_DROP_MEMBERSHIP.
+ *!
+ *! @note
+ *!   The @[address] parameter is currently not supported for IPv6.
+ *!
+ *! @note
+ *!   This function did not support IPv6 in Pike 7.8 and earlier.
+ *!
  *! @seealso
- *!   @[add_membership]
+ *!   @[add_membership()]
  */
 void udp_drop_membership(INT32 args)
 {
