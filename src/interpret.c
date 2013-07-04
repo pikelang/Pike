@@ -1132,7 +1132,9 @@ PMOD_EXPORT void really_free_catch_context( struct catch_context *data )
     else
     {
       data->prev = free_catch_context;
+
       num_free_catch_ctx++;
+      PIKE_MEM_NA(*data);
       free_catch_context = data;
     }
 }
@@ -1144,7 +1146,9 @@ struct catch_context *alloc_catch_context(void)
     {
         num_free_catch_ctx--;
         res = free_catch_context;
+        PIKE_MEM_RW(res->prev);
         free_catch_context = res->prev;
+        PIKE_MEM_WO(*res);
     }
     else
     {
@@ -1165,6 +1169,7 @@ static void free_all_catch_context_blocks(void)
     struct catch_context *x = free_catch_context, *n;
     while( x )
     {
+        PIKE_MEM_RW(x->prev);
         n = x->prev;
         free( x );
         x = n;
@@ -1960,6 +1965,7 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     DO_IF_SECURITY( X->current_creds=0; )
   );
   X->next = free_pike_frame;
+  PIKE_MEM_NA(*X);
   free_pike_frame = X;
 }
 
@@ -1969,7 +1975,9 @@ struct pike_frame *alloc_pike_frame(void)
     if( free_pike_frame )
     {
       res = free_pike_frame;
+      PIKE_MEM_RW(res->next);
       free_pike_frame = res->next;
+      PIKE_MEM_WO(*res);
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
       res->flags=0;
