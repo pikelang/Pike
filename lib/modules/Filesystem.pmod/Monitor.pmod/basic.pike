@@ -725,7 +725,8 @@ protected class Monitor(string path,
       last_change = 0x7fffffff;
       stable_data_change(path, st);
       return 1;
-    } else if (st->isdir && status_change(old_st, st, orig_flags, flags)) {
+    } else if (last_change != 0x7fffffff &&
+	       st->isdir && status_change(old_st, st, orig_flags, flags)) {
       // Directory not stable yet.
       last_change = time(1);
       return 1;
