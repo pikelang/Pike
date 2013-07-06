@@ -441,7 +441,7 @@ void udp_set_multicast_ttl(INT32 args)
  *!   the system will select an appropriate interface.
  *!
  *! See also the Unix man page for setsocketopt IPPROTO_IP IP_ADD_MEMBERSHIP
- *! and IPPROTO_IPV6 IPV6_ADD_MEMBERSHIP.
+ *! and IPPROTO_IPV6 IPV6_JOIN_GROUP.
  *!
  *! @note
  *!   The @[address] parameter is currently not supported for IPv6.
@@ -483,7 +483,7 @@ void udp_add_membership(INT32 args)
     sock.ipv6mr_multiaddr = addr.ipv6.sin6_addr;
 
     pop_n_elems(args);
-    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_JOIN_GROUP,
 			    (char *)&sock, sizeof(sock)) );
     return;
   }
@@ -527,7 +527,7 @@ void udp_add_membership(INT32 args)
  *!   the system will select an appropriate interface.
  *!
  *! See also the Unix man page for setsocketopt IPPROTO_IP IP_DROP_MEMBERSHIP
- *! and IPPROTO_IPV6 IPV6_DROP_MEMBERSHIP.
+ *! and IPPROTO_IPV6 IPV6_LEAVE_GROUP.
  *!
  *! @note
  *!   The @[address] parameter is currently not supported for IPv6.
@@ -569,7 +569,7 @@ void udp_drop_membership(INT32 args)
     sock.ipv6mr_multiaddr = addr.ipv6.sin6_addr;
 
     pop_n_elems(args);
-    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP,
+    push_int( fd_setsockopt(FD, IPPROTO_IPV6, IPV6_LEAVE_GROUP,
 			    (char *)&sock, sizeof(sock)) );
     return;
   }
