@@ -1,8 +1,17 @@
 #pike __REAL_VERSION__
 
-//! A module for working with the BSON data format. For more information,
-//! see http://bsonspec.org.
+//! @ignore
+#if !constant (Standards._BSON)
+#define BSON_PIKE_ONLY 1
+#else
+inherit Standards._BSON;
+#endif
+//! @endignore
+
+//! @appears Standards.BSON module
 //!
+//! Tools for handling the BSON structured data format. See
+//! @url{http://www.bsonspec.org/@}.
 
 private int counter;
 
@@ -36,11 +45,6 @@ constant BINARY_UUID = 0x03;
 constant BINARY_MD5 = 0x05;
 constant BINARY_USER = 0x80;
 
-function toDocument = to_document;
-function fromDocument = from_document;
-function toDocumentArray = to_document_array;
-function fromDocumentArray = from_document_array;
-
 int getCounter()
 {
   return ++counter;
@@ -51,10 +55,10 @@ int getCounter()
 //! @param query_mode
 //!  if set to true, encoding will allow "$" and "." in key names, which
 //!   would normally be disallowed.
-string to_document(mapping m, int|void query_mode)
+string encode(mapping m, int|void query_mode)
 {
   String.Buffer buf = String.Buffer();
-  encode(m, buf, query_mode);
+  low_encode(m, buf, query_mode);
   return sprintf("%-4c%s%c", sizeof(buf)+5, buf->get(), 0);
 } 
 
@@ -64,7 +68,7 @@ static string toCString(string str)
 	else return string_to_utf8(str) + "\0";
 }
 
-static void encode(mixed m, String.Buffer buf, int|void allow_specials)
+static void low_encode(mixed m, String.Buffer buf, int|void allow_specials)
 {
   foreach(m; mixed key; mixed val)
   {
@@ -90,25 +94,22 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
    }
    else if(mappingp(value))
    {
-     buf->sprintf("%c%s%c%s", TYPE_DOCUMENT, key, 0, toDocument(value, allow_specials));
+     buf->sprintf("%c%s%c%s", TYPE_DOCUMENT, key, 0, encode(value, allow_specials));
    }
    else if(arrayp(value))
    {
      int qi = 0; 
-     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, toDocument(mkmapping(map(value, lambda(mixed e){return (string)qi++;}), value), allow_specials));
+     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, encode(mkmapping(map(value, lambda(mixed e){return (string)qi++;}), value), allow_specials));
    }
    else if(intp(value))
    {
-   	   // werror("have int\n");
      // 32 bit or 64 bit?
      if(value <= 2147383647 && value >= -2148483648) // we fit in a 32 bit space.
      {
-     	     // werror("32bit\n");
        buf->sprintf("%c%s%c%-4c", TYPE_INT32, key, 0, value);
      }
      else
      {
-     	     // werror("64bit\n");
        buf->sprintf("%c%s%c%-8c", TYPE_INT64, key, 0, value);
      }
    }
@@ -152,18 +153,18 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
    {
      buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
    } 
-   // BSON.Null
-   else if(objectp(value) && value == Null)
+   // Val.Null
+   else if(objectp(value) && value == Val.Null)
    {
      buf->sprintf("%c%s%c", TYPE_NULL, key, 0);
    }
-   // BSON.True
-   else if(objectp(value) && value == True)
+   // Val.True
+   else if(objectp(value) && value == Val.True)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 1);
    }
-   // BSON.False
-   else if(objectp(value) && value == False)
+   // Val.False
+   else if(objectp(value) && value == Val.False)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0);
    }
@@ -177,11 +178,25 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
    {
      buf->sprintf("%c%s%c", TYPE_MAX_KEY, key, 0);
    }
-   //werror("bufsize: %O\n", sizeof(buf));
 }
 
+//! Encode an array of data structures as a BSON formatted string
+string encode_array(array(mapping) documents)
+{
+	String.Buffer buf = String.Buffer();
+	
+	foreach(documents;;mixed document)
+	{
+		buf->add(encode(document));
+	}
+	
+	return buf->get();
+}
+
+#ifdef BSON_PIKE_ONLY
+
 //! Decode a BSON formatted document string into a native Pike data structure.
-mixed from_document(string bson)
+mixed decode(string bson)
 {
   int len;
   string slist;
@@ -190,49 +205,15 @@ mixed from_document(string bson)
   if(sizeof(bson) < (len -4))
     throw(Error.Generic(sprintf("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1)));
   slist = bson[0..<1];
-  //werror("bson length %d\n", len);
   mapping list = ([]);
   
   while(sizeof(slist))
   {
     if(slist == "") break;
-    slist = module.decode_next_value(slist, list);
-    //werror("read item: %O, left: %O\n", list, slist);
+    slist = decode_next_value(slist, list);
   } 
   
   return list;	
-}
-
-//! Encode an array of data structures as a BSON formatted string
-string to_document_array(array(mapping) documents)
-{
-	String.Buffer buf = String.Buffer();
-	
-	foreach(documents;;mixed document)
-	{
-		buf->add(toDocument(document));
-	}
-	
-	return buf->get();
-}
-
-//! Decode a BSON formatted string containing multiple data structures
-array from_document_array(string bsonarray)
-{
-  array a = ({});
-
-  while(sizeof(bsonarray))
-  {
-	  string bson;
-	  int len;
-	
- 	  if(sscanf(bsonarray, "%-4c", len)!=1)
-	    throw(Error.Generic("Unable to read length from BSON stream.\n"));
- 	  if(sscanf(bsonarray, "%" + len + "s%s", bson, bsonarray) != 2)
-	    throw(Error.Generic("Unable to read full data from BSON stream.\n"));
-	  a+=({fromDocument(bson)});
-  }
-  return a;
 }
 
 static string decode_next_value(string slist, mapping list)
@@ -249,7 +230,6 @@ static string decode_next_value(string slist, mapping list)
     throw(Error.Generic("Unable to read key and type from BSON stream.\n")); 
 
   key = utf8_to_string(key);
-  //werror("key: %s type: %d\n", key, type);
   switch(type)
   {
      int len, subtype;
@@ -322,11 +302,11 @@ static string decode_next_value(string slist, mapping list)
      case TYPE_BOOLEAN:
        if(sscanf(slist, "%c%s", value, slist) != 2)
          throw(Error.Generic("Unable to read boolean from BSON stream.\n")); 
-       if(value) value = True;
-       else value = False;
+       if(value) value = Val.True;
+       else value = Val.False;
        break;
      case TYPE_NULL:
-       value = Null;
+       value = Val.Null;
        break;
      case TYPE_MIN_KEY:
        value = MinKey;
@@ -345,14 +325,14 @@ static string decode_next_value(string slist, mapping list)
        	 throw(Error.Generic("Unable to read embedded document length\n"));
        if(!sscanf(slist, "%" + (doclen) + "s%s", document, slist))
        	 throw(Error.Generic("Unable to read specified length for embedded document.\n"));
-       value = fromDocument(document);
+       value = decode(document);
        break;
      case TYPE_ARRAY:
        if(sscanf(slist, "%-4c", doclen) != 1)
        	 throw(Error.Generic("Unable to read embedded document length\n"));
        if(sscanf(slist, "%" + (doclen) + "s%s", document, slist) !=2)
        	 throw(Error.Generic("Unable to read specified length for embedded document.\n"));
-       value = fromDocument(document);
+       value = decode(document);
        int asize = sizeof(value);
        array bval = allocate(asize);
        for(int i = 0; i < asize; i++)
@@ -360,57 +340,42 @@ static string decode_next_value(string slist, mapping list)
        	 bval[i] = value[(string)i];
        }
        value=bval;
-//       value=predef::values(value);
        break;
      default:
        throw(Error.Generic("Unknown BSON type " + type + ".\n"));     
   }
   
   list[key] = value;
-  // werror("type: %d key %s\n", type, key);
   return slist;
 }
 
-//!
-object Null = null();
 
-//!
-object True = true_object();
+#endif /* BSON_PIKE_ONLY */
 
-//!
-object False = false_object();
+//! Decode a BSON formatted string containing multiple data structures
+array decode_array(string bsonarray)
+{
+  array a = ({});
+
+  while(sizeof(bsonarray))
+  {
+    string bson;
+    int len;
+	
+    if(sscanf(bsonarray, "%-4c", len)!=1)
+      throw(Error.Generic("Unable to read length from BSON stream.\n"));
+    if(sscanf(bsonarray, "%" + len + "s%s", bson, bsonarray) != 2)
+      throw(Error.Generic("Unable to read full data from BSON stream.\n"));
+    a+=({decode(bson)});
+  }
+  return a;
+}
 
 //!
 object MinKey = minkey_object();
 
 //!
 object MaxKey = maxkey_object();
-
-class false_object
-{
-  constant BSONFalse = 1;
-
-  static mixed cast(string type)
-  {
-    if(type == "string")
-      return "false";
-    if(type == "int")
-      return 0;
-  }
-}
-
-class true_object
-{
-  constant BSONTrue = 1;
-
-  static mixed cast(string type)
-  {
-    if(type == "string")
-      return "true";
-    if(type == "int")
-      return 1;
-  }
-}
 
 class maxkey_object
 {
@@ -431,17 +396,6 @@ class minkey_object
   {
     if(type == "string")
       return "MinKey";
-  }
-}
-
-class null
-{
-  constant BSONNull = 1;
-
-  static string cast(string type)
-  {
-    if(type == "string")
-      return "null";
   }
 }
 
