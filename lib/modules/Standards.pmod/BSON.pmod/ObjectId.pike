@@ -5,6 +5,7 @@ int timestamp;
 int host;
 int pid;
 int counter;
+private function getCounter;
 
 //!
 static void create(string|void _id)
@@ -31,7 +32,8 @@ static string make_host_hash()
 
 static int make_counter()
 {
-  return .getCounter();
+  if(!getCounter) getCounter = master()->resolv("Standards.BSON.getCounter");
+  return getCounter();
 }
 
 static void populate()
