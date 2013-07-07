@@ -1,0 +1,17 @@
+define(test_dec,[[
+  test_equal(Standards.BSON.decode([[$1]]),
+          [[$2]])
+]])
+
+test_true(Val.true)
+
+test_false(Val.false)
+
+test_false(Val.null)
+
+test_dec("\5\0\0\0\0", ([]))
+
+test_dec("\21\0\0\0\2foo\0\4\0\0\0bar\0\0", (["foo": "bar"]))
+
+test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\20" +"2\0\302\a\0\0\0\0",
+  (["BSON": ({"awesome", 5.05, 1986})]))
