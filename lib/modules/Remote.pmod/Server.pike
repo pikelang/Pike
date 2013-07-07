@@ -2,6 +2,8 @@
 #include "remote.h"
 import ".";
 
+//! Remote RPC server.
+
 int portno;
 
 //! @decl Stdio.Port port
