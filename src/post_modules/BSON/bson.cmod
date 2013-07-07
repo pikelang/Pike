@@ -41,8 +41,6 @@
 
 /*
 Types left to implement
-|	"\x03" e_name document	Embedded document
-|	"\x04" e_name document	Array
 |	"\x0F" e_name code_w_s	JavaScript code w/ scope
 */
 /*! @class Sample
@@ -420,8 +418,15 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct pike_string * d;
       struct mapping * doc;
       struct array * arr;
+      INT_TYPE asize;
       int32_t len;
+      /* used by NEW_MAPPING_LOOP */
+      const struct keypair *k=0;
+      const struct mapping_data *md;
+      INT32 e;
+
       int32_t left = pike_slist->len - (n - slist);
+
       if(left < 4)
       {
         Pike_error("invalid BSON. not enough data 11.\n");      
@@ -438,16 +443,26 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       d = make_shared_binary_string(n, len);
       doc = decode_document(d);
       free_string(d);
-      ref_push_mapping(doc);
-      f_indices(1);
-      push_mapping(doc);
-      f_values(1);
-      arr = Pike_sp[-1].u.array;
-      add_ref(arr);
-      pop_stack();
-      ref_push_array(arr);
-      f_sort(2);
-      pop_stack();
+
+      // arrays are encoded as mappings with indices containing 
+      // string representations of the index number.
+
+      asize = m_sizeof(doc);
+      arr = allocate_array(asize);
+      md = doc->data;
+
+      NEW_MAPPING_LOOP(md)
+      {
+        INT_TYPE i;
+        push_svalue(&k->ind);
+        o_cast_to_int();
+        i = Pike_sp[-1].u.integer;
+        pop_stack();
+        ITEM(arr)[i] = k->val;
+      }
+
+      free_mapping(doc);
+
       push_array(arr);
       n += (len);
       break;
