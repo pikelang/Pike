@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
-//! eXperimental Computing Facility (aka GIMP native) format.
 //! @appears Image.XCF
+//! eXperimental Computing Facility (aka GIMP native) format.
 
 inherit Image._XCF;
 
