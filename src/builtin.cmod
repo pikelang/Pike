@@ -57,6 +57,20 @@ PIKECLASS TM
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
 #define tm_zone __tm_zone
 #define tm_gmtoff __tm_gmtoff
+#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
+#define GET_ZONE(TM)	((TM)->tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
+#define GET_ZONE(TM)	((TM)->tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
+#else
+#define GET_GMTOFF(TM)	0
+#define GET_ZONE(TM)	((char*)NULL)
+#define SET_GMTOFF(TM, VAL)	(VAL)
+#define SET_ZONE(TM, VAL)	(VAL)
 #endif
 
 #if 0
@@ -73,13 +87,13 @@ PIKECLASS TM
         RETURNTYPE res;                                               \
         int reset = 0;                                                \
         char *old_zone = NULL;                                        \
-        if( x->tm_zone )                                              \
+        if( GET_ZONE(x) )					      \
         {                                                             \
             reset = 1;                                                \
             old_zone = getenv("TZ");                                  \
-            setenv("TZ", x->tm_zone, 1 );                             \
+            setenv("TZ", GET_ZONE(x), 1 );			      \
             tzset();                                                  \
-            x->tm_gmtoff = timezone;                                  \
+            SET_GMTOFF(x, timezone);				      \
         }                                                             \
                                                                       \
         res = FUNCTION CALL;                                          \
@@ -374,10 +388,10 @@ PIKECLASS TM
           case 's':
             f_TM_asctime(0);
             push_text("\n");
-            if( THIS->t.tm_zone  )
+            if( GET_ZONE(&(THIS->t)) )
             {
                 push_text(" ");
-                push_text( THIS->t.tm_zone );
+                push_text( GET_ZONE(&(THIS->t)) );
                 f_add( 2 );
             }
             else
@@ -422,8 +436,8 @@ PIKECLASS TM
      */
     PIKEFUN string `zone() {
         FIX_THIS();
-        if( THIS->t.tm_zone )
-            push_text( THIS->t.tm_zone );
+        if( GET_ZONE(&(THIS->t)) )
+            push_text( GET_ZONE(&(THIS->t)) );
         else
             push_undefined();
     }
@@ -433,7 +447,7 @@ PIKECLASS TM
      */
     PIKEFUN int `gmtoff() {
         FIX_THIS();
-        push_int( THIS->t.tm_gmtoff );
+        push_int( GET_GMTOFF(&(THIS->t)) );
     }
 
     /* Setting the zone does not work, so.. */
@@ -456,8 +470,8 @@ PIKECLASS TM
         struct tm *res = localtime_zone( &t, &THIS->t );
 
         /* These are supposedly correctly by localtime_zone. */
-        res->tm_gmtoff = THIS->t.tm_gmtoff;
-        res->tm_zone = THIS->t.tm_zone;
+        SET_GMTOFF(res, GET_GMTOFF(&(THIS->t)));
+        SET_ZONE(res, GET_ZONE(&(THIS->t)));
 
         if( !res )
             RETURN 0;
@@ -529,12 +543,12 @@ PIKECLASS TM
 	    THIS->set_zone = NULL;
 	}
         if( !timezone ) /* gmtime. */
-            t->tm_zone = "UTC";
+	    SET_ZONE(t, "UTC");
         else
         {
 	    add_ref(timezone);
             THIS->set_zone = timezone;
-            t->tm_zone = timezone->str;
+            SET_ZONE(t, timezone->str);
         }
         THIS->unix_time = mktime_zone( t );
     }
@@ -552,6 +566,7 @@ PIKECLASS TM
 #undef FIX_THIS
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
 #undef tm_zone
+#undef tm_gmtoff
 #endif
 #endif
 /*! @endmodule
