@@ -1,5 +1,8 @@
 #pike __REAL_VERSION__
 
+//! eXperimental Computing Facility (aka GIMP native) format.
+//! @appears Image.XCF
+
 inherit Image._XCF;
 
 #define SIGNED(X) if(X>=(1<<31)) X=-((1<<32)-X)
@@ -145,6 +148,7 @@ class LayerMask
   inherit Channel;
 }
 
+//!
 class Layer
 {
   string name;
@@ -207,6 +211,7 @@ class Layer
   }
 }
 
+//!
 class GimpImage
 {
   int width;
@@ -355,13 +360,14 @@ class GimpImage
 }
 
 
-
+//!
 GimpImage __decode( string|mapping what )
 {
   if(stringp(what)) what = ___decode( what );
   return GimpImage(what);
 }
 
+//!
 mapping decode_header( string|mapping|object(GimpImage) data )
 {
   if( !objectp(data) )
@@ -403,6 +409,7 @@ string translate_mode( int mode )
   }
 }
 
+//!
 array decode_layers( string|object|mapping what, mapping|void opts, 
                      int|void concat )
 {
@@ -481,6 +488,7 @@ array decode_layers( string|object|mapping what, mapping|void opts,
   return layers;
 }
 
+//!
 mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
 {
   if(!opts) opts = ([]);
@@ -601,7 +609,7 @@ mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
   ]);
 }
 
-
+//! @decl Image.Image decode(string bytes, mapping|void options)
 object decode( string what,mapping|void opts )
 {
   return _decode( what,opts )->image;
