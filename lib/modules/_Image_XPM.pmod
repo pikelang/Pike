@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
-//! X PixMap
 //! @appears Image.XPM
+//! X PixMap image format.
 
 inherit Image._XPM;
 #if 0
