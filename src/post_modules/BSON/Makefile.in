@@ -9,3 +9,7 @@ MODULE_WRAPPER_PREFIX=_
 OBJS=bson.o
 
 @dynamic_module_makefile@
+
+bson.o: $(SRCDIR)/bson.c
+
+@dependencies@
