@@ -2,22 +2,26 @@
 
 //! @appears Image.Fonts
 //! Abstracted Font-handling support. Should be used instead of
-//! accessing the FreeType, TTF and Image.Font modules directly.
+//! accessing the @[FreeType], @[TTF] and @[Image.Font] modules directly.
 
 constant ITALIC = 1;
-//! The font is/should be italic
+//! The font is/should be italic.
 
 constant BOLD   = 2;
-//! The font is/should be bold
+//! The font is/should be bold.
 
-constant BLACK  = 6; // Also enables BOLD..
-
+constant BLACK  = 6;
+//! The font is/should be black.
+//!
+//! @note
+//!   This also implies @[BOLD].
 
 constant NO_FAKE  = 256; 
 //! Used in @[open_font]() to specify that no fake bold or italic
 //! should be attempted.
 
 #if constant(Image.FreeType.Face)
+//! FreeType 2.x font.
 class FTFont
 {
   constant driver = "FreeType 2";
@@ -160,6 +164,7 @@ class FTFont
 #endif
 
 #if constant(Image.TTF)
+//! FreeType 1.x font.
 class TTFont
 {
   constant driver = "FreeType 1";
@@ -485,7 +490,7 @@ void set_font_dirs( array(string) directories )
 }
 
 
-void create()
+protected void create()
 {
 #ifdef __NT__
   string root = getenv("SystemRoot");

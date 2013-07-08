@@ -5,6 +5,7 @@
    use to the casual Pike programmer, so it might be a good idea, but
    I'm not sure. /Zino */
 
+//! PhotoShop Document
 //! @appears Image.PSD
 
 //! @ignore

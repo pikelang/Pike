@@ -1,3 +1,4 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
 //   Imagedimensionreadermodule for Pike.
