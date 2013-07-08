@@ -495,6 +495,21 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     error("mergeTrees() MUST be called with element nodes.\n");
   }
 
+  // Transfer any attributes (like eg appears).
+  mapping(string:string) dest_attrs = dest->get_attributes();
+  foreach(source->get_attributes(); string attr; string val) {
+    if ((dest_attrs[attr] || val) != val) {
+      processWarning("Attribute '" + attr +
+		     "' ('" + dest_attrs[attr] + "') for node " +
+		     getName(dest) +
+		     "differs from the same for node " +
+		     getName(source) +
+		     " ('" + val + "').");
+    } else {
+      dest_attrs[attr] = val;
+    }
+  }
+
   foreach(dest->get_children(), SimpleNode node) {
     string name = getName(node);
     if (name) {
