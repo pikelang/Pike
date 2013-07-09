@@ -1164,45 +1164,54 @@ array|mapping|string cast(string to)
    error("HTTP.Query: can't cast to "+to+"\n");
 }
 
+//! Minimal simulation of a @[Stdio.File] object.
+//!
+//! Objects of this class are returned by @[file()] and @[datafile()].
+//!
+//! @note
+//!   Do not attempt further queries using this @[Query] object
+//!   before having read all data.
 class PseudoFile
 {
    string buf;
-   object con;
    int len;
-   int p=0;
 
-   void create(object _con,string _buf,int _len)
+   protected void create(string _buf, int _len)
    {
-      con=_con;
       buf=_buf;
       len=_len;
-      if (!con) len=sizeof(buf);
    }
 
-   string read(int n)
+   //!
+   string read(int n, int(0..1)|void not_all)
    {
       string s;
 
-      if (len && p+n>len) n=len-p;
+      if (!len) return "";
+      if (n > len) n = len;
 
-      // FIXME? A real file object returns as much data as it has,
-      // not 0.
       if (sizeof(buf)<n && con)
       {
-	 string s=con->read(n-sizeof(buf));
-	 if (!s) return 0;
-	 buf+=s;
+	 if (!not_all || !sizeof(buf)) {
+	    string s = con->read(n-sizeof(buf), not_all);
+	    if (s) {
+	       buf += s;
+	    }
+	 }
       }
 
       s=buf[..n-1];
       buf=buf[n..];
-      p+=sizeof(s);
+      if (len != 0x7fffffff) {
+	len -= sizeof(s);
+      }
       return s;
    }
 
+   //!
    void close()
    {
-      con=0; // forget
+      destruct();
    }
 }
 
@@ -1232,20 +1241,19 @@ object file(void|mapping newheader,void|mapping removeheader)
       h=(h|(newheader||([])))-(removeheader||([]));
       string hbuf=headers_encode(h);
       if (hbuf=="") hbuf="\r\n";
+      hbuf = protocol + " " + status + " " + status_desc + "\r\n" +
+	hbuf + "\r\n";
       if (zero_type(headers["content-length"]))
 	 len=0x7fffffff;
       else
-	 len=sizeof(protocol+" "+status+" "+status_desc)+2+
-	    sizeof(hbuf)+2+(int)headers["content-length"];
-      return PseudoFile(con,
-			protocol+" "+status+" "+status_desc+"\r\n"+
-			hbuf+"\r\n"+buf[datapos..],len);
+	 len = sizeof(hbuf)+(int)headers["content-length"];
+      return PseudoFile(hbuf + buf[datapos..],len);
    }
    if (zero_type(headers["content-length"]))
       len=0x7fffffff;
    else
       len=sizeof(headerbuf)+4+(int)h["content-length"];
-   return PseudoFile(con,buf,len);
+   return PseudoFile(headerbuf + "\r\n\r\n" + buf[datapos..], len);
 }
 
 //! @decl Protocols.HTTP.Query.PseudoFile datafile();
@@ -1264,7 +1272,7 @@ object datafile()
 #if constant(thread_create)
    `()();
 #endif
-   return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
+   return PseudoFile(buf[datapos..], (int)headers["content-length"]);
 }
 
 protected void destroy()
