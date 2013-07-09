@@ -5857,11 +5857,14 @@ INT32 define_function(struct pike_string *name,
 
   /* If this is an lfun, match against the predefined type. */
   if ((lfun_type = low_mapping_string_lookup(lfun_types, name))) {
+    int orig_pragmas = c->lex.pragmas;
 #ifdef PIKE_DEBUG
     if (TYPEOF(*lfun_type) != T_TYPE) {
       Pike_fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
+    /* Inhibit deprecation warnings during the comparison. */
+    c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
     if (!pike_types_le(type, lfun_type->u.type)) {
       int level = REPORT_NOTICE;
       if (!match_types(type, lfun_type->u.type)) {
@@ -5875,6 +5878,7 @@ INT32 define_function(struct pike_string *name,
 		      "Type mismatch for callback function %S:", name);
       }
     }
+    c->lex.pragmas = orig_pragmas;
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
 	      (index_shared_string(name, 1) == '-') &&
@@ -5908,6 +5912,9 @@ INT32 define_function(struct pike_string *name,
     if (symbol) {
       /* We got a getter or a setter. */
       struct reference *ref;
+      int orig_pragmas = c->lex.pragmas;
+      /* Inhibit deprecation warnings during the comparison. */
+      c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
       if (!pike_types_le(type, gs_type)) {
 	int level = REPORT_NOTICE;
 	if (!match_types(type, gs_type)) {
@@ -5919,6 +5926,7 @@ INT32 define_function(struct pike_string *name,
 		      NULL, 0, type, 0,
 		       "Type mismatch for callback function %S:", name);
       }
+      c->lex.pragmas = orig_pragmas;
       if (flags & ID_VARIANT) {
 	my_yyerror("Variants not supported for getter/setters: %S", name);
 	flags &= ~ID_VARIANT;
