@@ -1,24 +1,37 @@
 #pike __REAL_VERSION__
 
-constant EXTRACT_SKIP_MODE = 1;
-constant EXTRACT_SKIP_EXT_MODE = 2;
-constant EXTRACT_SKIP_MTIME = 4;
-constant EXTRACT_CHOWN = 8;
-constant EXTRACT_ERR_ON_UNKNOWN = 16;
-
-//! @decl void create(string filename, void|Filesystem.Base parent,@
-//!                   void|object file)
 //! Filesystem which can be used to mount a Tar file.
 //!
-//! @param filename
-//! The tar file to mount.
-//! @param parent
-//! The parent filesystem. If non is given, the normal system
-//! filesystem is assumed. This allows mounting a TAR-file within
-//! a tarfile.
-//! @param file
-//! If specified, this should be an open file descriptor. This object
-//! could e.g. be a @[Stdio.File], @[Gz.File] or @[Bz2.File] object.
+//! Two kinds of extended tar file records are supported:
+//! @string
+//!   @value "ustar\0""00"
+//!	POSIX ustar (Version 0?).
+//!   @value "ustar  \0"
+//!     GNU tar (POSIX draft)
+//! @endstring
+//!
+//! @note
+//!   For a quick start, you probably want to use @[`()()].
+//!
+//! @seealso
+//!   @[`()()]
+
+constant EXTRACT_SKIP_MODE = 1;
+//! Don't set any permission bits from the tar records.
+
+constant EXTRACT_SKIP_EXT_MODE = 2;
+//! Don't set set-user-ID, set-group-ID, or sticky bits from
+//! the tar records.
+
+constant EXTRACT_SKIP_MTIME = 4;
+//! Don't set mtime from the tar records.
+
+constant EXTRACT_CHOWN = 8;
+//! Set owning user and group from the tar records.
+
+constant EXTRACT_ERR_ON_UNKNOWN = 16;
+//! Throw an error if an entry of an unsupported type is
+//! encountered. This is ignored otherwise.
 
 //! Low-level Tar Filesystem.
 class _Tar
@@ -508,21 +521,23 @@ class _Tar
     }
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("_Tar(/* filename=%O */)", filename);
   }
 }
 
+//!
 class _TarFS
 {
   inherit Filesystem.System;
 
   _Tar tar;
 
-  void create(_Tar _tar,
-	      string _wd, string _root,
-	      Filesystem.Base _parent)
+  //!
+  protected void create(_Tar _tar,
+			string _wd, string _root,
+			Filesystem.Base _parent)
   {
     tar = _tar;
 
@@ -535,7 +550,7 @@ class _TarFS
     parent = _parent;
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return  t=='O' && sprintf("_TarFS(/* root=%O, wd=%O */)", root, wd);
   }
@@ -580,14 +595,20 @@ class _TarFS
     return 1; // sure
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   int rm(string filename)
   {
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   void chmod(string filename, int|string mode)
   {
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   void chown(string filename, int|object owner, int|object group)
   {
   }
@@ -597,22 +618,32 @@ class `()
 {
   inherit _TarFS;
 
-  void create(string|object filename, void|Filesystem.Base parent,
-	      void|object f)
+  //! @decl void create(string filename, void|Filesystem.Base parent,@
+  //!                   void|object file)
+  //!
+  //! @param filename
+  //!   The tar file to mount.
+  //!
+  //! @param parent
+  //!   The parent filesystem. If none is given, the normal system
+  //!   filesystem is assumed. This allows mounting a TAR-file within
+  //!   a tarfile.
+  //!
+  //! @param file
+  //!   If specified, this should be an open file descriptor. This object
+  //!   could e.g. be a @[Stdio.File], @[Gz.File] or @[Bz2.File] object.
+  protected void create(string|object filename, void|Filesystem.Base parent,
+			void|object file)
   {
     if(!parent) parent = Filesystem.System();
 
-    object fd;
+    if(!file)
+      file = parent->open(filename, "r");
 
-    if(f)
-      fd = f;
-    else 
-      fd = parent->open(filename, "r");
-
-    if(!fd)
+    if(!file)
       error("Not a Tar file\n");
 
-    _Tar tar = _Tar(fd, filename, this);
+    _Tar tar = _Tar(file, filename, this);
 
     _TarFS::create(tar, "/", "", parent);
   }
