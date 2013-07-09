@@ -4,7 +4,7 @@
 //!
 //! Two kinds of extended tar file records are supported:
 //! @string
-//!   @value "ustar\0""00"
+//!   @value "ustar\0\60\60"
 //!	POSIX ustar (Version 0?).
 //!   @value "ustar  \0"
 //!     GNU tar (POSIX draft)
