@@ -722,6 +722,7 @@ protected class Monitor(string path,
 	  }
 	}
       }
+      update(st);
       return 1;
     } else {
       return 0;
@@ -733,6 +734,7 @@ protected class Monitor(string path,
 	/* (st->ctime != old_st->ctime) || */
 	(st->size != old_st->size)) {
       last_change = time(1);
+      update(st);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
     } else if (last_change < time(1) - (stable_time || global::stable_time)) {
       last_change = 0x7fffffff;
@@ -742,6 +744,7 @@ protected class Monitor(string path,
 	       st->isdir && status_change(old_st, st, orig_flags, flags)) {
       // Directory not stable yet.
       last_change = time(1);
+      update(st);
       return 1;
     }
     return 0;
