@@ -410,11 +410,24 @@ protected class Monitor(string path,
 
   //! Bump the monitor to an earlier scan time.
   //!
+  //! @param flags
+  //!   @int
+  //!     @value 0
+  //!       Don't recurse.
+  //!     @value 1
+  //!       Check all monitors for the entire subtree.
+  //!   @endint
+  //!
   //! @param seconds
-  //!   Number of seconds to bump. Defaults to @expr{30@}.
-  void bump(int|void flags, int|void seconds)
+  //!   Number of seconds from now to run next scan. Defaults to
+  //!   half of the remaining interval.
+  void bump(MonitorFlags|void flags, int|void seconds)
   {
-    next_poll -= seconds || 30;
+    int now = time(1);
+    if (seconds)
+      next_poll = now + seconds;
+    else if (next_poll > now)
+      next_poll -= (next_poll - now) / 2;
     monitor_queue->adjust(this);
 
     if ((flags & MF_RECURSE) && st->isdir && files) {
