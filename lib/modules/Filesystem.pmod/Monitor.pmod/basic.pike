@@ -453,18 +453,14 @@ protected class Monitor(string path,
   {
     int delta = max_dir_check_interval || global::max_dir_check_interval;
     this_program::st = st;
-    if (!st || !st->isdir) {
-      delta *= file_interval_factor || global::file_interval_factor;
-    }
-    if (!next_poll) {
-      // Attempt to distribute polls evenly at startup.
-      delta = 1 + random(delta);
-    }
+    
     if (st) {
-      int d = 1 + ((time(1) - st->mtime)>>8);
-      if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
-      if (d < delta) delta = d;
-      d = 1 + ((time(1) - st->ctime)>>8);
+      //  Start with a delta proportional to the time since mtime/ctime,
+      //  but bound this to the max setting. A stat in the future will be
+      //  adjusted to the max interval.
+      int d =
+	(stable_time || global::stable_time) +
+	((time(1) - max(st->mtime, st->ctime)) >> 2);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
     }
@@ -474,7 +470,15 @@ protected class Monitor(string path,
       d >>= 1;
       if (d < 0) d = 1;
       if (d < delta) delta = d;
+    } else if (!st || !st->isdir) {
+      delta *= file_interval_factor || global::file_interval_factor;
     }
+    
+    if (!next_poll) {
+      // Attempt to distribute polls evenly at startup.
+      delta = 1 + random(delta);
+    }
+    
     next_poll = time(1) + (delta || 1);
     monitor_queue->adjust(this);
   }
