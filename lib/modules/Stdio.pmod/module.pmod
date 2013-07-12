@@ -2885,18 +2885,28 @@ int mkdirhier (string pathname, void|int mode)
   if (pathname[1..2] == ":/" && `<=("A", upper_case(pathname[..0]), "Z"))
     path = pathname[..2], pathname = pathname[3..];
 #endif
-  while (pathname[..0] == "/") pathname = pathname[1..], path += "/";
-  foreach (pathname / "/", string name) {
-    path += name;
-    if (!file_stat(path)) {
-      if (!mkdir(path, mode)) {
-	if (errno() != System.EEXIST)
-	  return 0;
-      }
-    }
+  array(string) segments = pathname/"/";
+  if (segments[0] == "") {
     path += "/";
+    pathname = pathname[1..];
+    segments = segments[1..];
   }
-  return is_dir (path);
+  // FIXME: An alternative could be a binary search,
+  //        but since it is usually only the last few
+  //        segments of the path that are missing, we
+  //        just do a linear search from the end.
+  int i = sizeof(segments);
+  while (i--) {
+    if (file_stat(path + segments[..i]*"/")) break;
+  }
+  i++;
+  while (i < sizeof(segments)) {
+    if (!mkdir(path + segments[..i++] * "/", mode)) {
+      if (errno() != System.EEXIST)
+	return 0;
+    }
+  }
+  return is_dir(path + pathname);
 }
 
 //! Remove a file or a directory tree.
