@@ -1707,7 +1707,9 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
-    if (!TEST_COMPAT(7, 8) && is_const($5) && !Pike_compiler->num_parse_error) {
+    if (!TEST_COMPAT(7, 8) && ($5) && is_const($5) &&
+	!($5->tree_info & OPT_EXTERNAL_DEPEND) &&
+	!Pike_compiler->num_parse_error) {
       /* Attempt to evaluate it to see if it is zero,
        * in which case we can throw it away.
        *
