@@ -1776,9 +1776,9 @@ static struct pike_string *delambda(struct pike_string *str)
   return make_shared_binary_pcharp(pcharp, len);
 }
 
-/*! @decl string function_name(function f)
+/*! @decl string function_name(function|program f)
  *!
- *! Return the name of the function @[f].
+ *! Return the name of the function or program @[f].
  *!
  *! If @[f] is a global function defined in the runtime @expr{0@}
  *! (zero) will be returned.
