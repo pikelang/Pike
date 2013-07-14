@@ -1718,16 +1718,26 @@ new_name: optional_stars TOK_IDENTIFIER
        */
       ptrdiff_t tmp = eval_low($5, 0);
       if (tmp >= 1) {
-	free_node($5);
-	$5 = NULL;
-	if (!SAFE_IS_ZERO(Pike_sp - tmp) ||
-	    IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
-					    $<number>4)->identifier_flags)) {
-	  /* NB: Inherited variables get converted into aliases by
-	   *     define_variable, and we need to support clearing
-	   *     of inherited variables.
+	if ((TYPEOF(Pike_sp[-tmp]) != PIKE_T_PROGRAM) ||
+	    ((Pike_sp[-tmp].u.program->flags &
+	      (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_FINISHED)) ==
+	     PROGRAM_FINISHED)) {
+	  /* NB: We cannot perform constant folding on programs that
+	   *     need their parent here, since the parent will be lost.
+	   *     Note also that the PROGRAM_{NEEDS,USES}_PARENT flags
+	   *     don't get set until pass 2.
 	   */
-	  $5 = mkconstantsvaluenode(Pike_sp - tmp);
+	  free_node($5);
+	  $5 = NULL;
+	  if (!SAFE_IS_ZERO(Pike_sp - tmp) ||
+	      IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
+					      $<number>4)->identifier_flags)) {
+	    /* NB: Inherited variables get converted into aliases by
+	     *     define_variable, and we need to support clearing
+	     *     of inherited variables.
+	     */
+	    $5 = mkconstantsvaluenode(Pike_sp - tmp);
+	  }
 	}
 	pop_n_elems(tmp);
       }
