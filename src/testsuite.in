@@ -4008,12 +4008,24 @@ test_program([[
 
 // Testing __INIT
 test_any([[
-  class X { int x = 1; };
+  class X { int x = 1; int zz = 1;};
   class Y { int y = 2; };
-  class Z { inherit X; inherit Y; int z = 4; };
+  class Z { inherit X; inherit Y; int z = 4; int zz = 0; };
   object zz = Z();
-  return zz->x + zz->y + zz->z;
+  return zz->x + zz->y + zz->z + zz->zz;
 ]], 7)
+
+test_any([[
+  // Test __INIT with forward references to programs needing their parents.
+  class X {
+    program y = Y;
+    local class Y {
+      program z = y;
+    };
+  };
+  object x = X();
+  return x->y == x->Y;
+]], 1)
 
 // Testing getter/setters
 test_any([[
