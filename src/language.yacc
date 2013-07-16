@@ -1707,39 +1707,23 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
-    if (!TEST_COMPAT(7, 8) && ($5) && is_const($5) &&
-	!($5->tree_info & OPT_EXTERNAL_DEPEND) &&
+    if ((Pike_compiler->compiler_pass == 2) &&
+	!TEST_COMPAT(7, 8) && ($5) && ($5->token == F_CONSTANT) &&
 	!Pike_compiler->num_parse_error) {
-      /* Attempt to evaluate it to see if it is zero,
-       * in which case we can throw it away.
+      /* Check if it is zero, in which case we can throw it away.
        *
        * NB: The compat test is due to that this changes the semantics
        *     of calling __INIT() by hand.
        */
-      ptrdiff_t tmp = eval_low($5, 0);
-      if (tmp >= 1) {
-	if ((TYPEOF(Pike_sp[-tmp]) != PIKE_T_PROGRAM) ||
-	    ((Pike_sp[-tmp].u.program->flags &
-	      (PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_FINISHED)) ==
-	     PROGRAM_FINISHED)) {
-	  /* NB: We cannot perform constant folding on programs that
-	   *     need their parent here, since the parent will be lost.
-	   *     Note also that the PROGRAM_{NEEDS,USES}_PARENT flags
-	   *     don't get set until pass 2.
-	   */
-	  free_node($5);
-	  $5 = NULL;
-	  if (!SAFE_IS_ZERO(Pike_sp - tmp) ||
-	      IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
-					      $<number>4)->identifier_flags)) {
-	    /* NB: Inherited variables get converted into aliases by
-	     *     define_variable, and we need to support clearing
-	     *     of inherited variables.
-	     */
-	    $5 = mkconstantsvaluenode(Pike_sp - tmp);
-	  }
-	}
-	pop_n_elems(tmp);
+      if (SAFE_IS_ZERO(&$5->u.sval) &&
+	  !IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
+					   $<number>4)->identifier_flags)) {
+	/* NB: Inherited variables get converted into aliases by
+	 *     define_variable, and we need to support clearing
+	 *     of inherited variables.
+	 */
+	free_node($5);
+	$5 = NULL;
       }
     }
     if ($5) {
