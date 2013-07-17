@@ -3930,7 +3930,8 @@ struct program *end_first_pass(int finish)
   } else if (finish == 2) {
     /* Called from decode_value(). */
     e = low_find_lfun(Pike_compiler->new_program, LFUN___INIT);
-    if ((e != -1) && !ID_FROM_INT(Pike_compiler->new_program, e)->func.offset) {
+    if ((e != -1) &&
+	(ID_FROM_INT(Pike_compiler->new_program, e)->func.offset == -1)) {
       /* Just a prototype. Make sure not to call it. */
       e = -1;
     }
