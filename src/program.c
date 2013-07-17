@@ -3900,7 +3900,8 @@ struct program *end_first_pass(int finish)
     {
       int id;
       if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-      id=low_reference_inherited_identifier(0, e, s, SEE_PROTECTED);
+      id = Pike_compiler->new_program->inherits[e].prog->lfuns[LFUN___INIT];
+      id = really_low_reference_inherited_identifier(0, e, id);
       if(id!=-1)
       {
 	Pike_compiler->init_node=mknode(F_COMMA_EXPR,
@@ -3929,7 +3930,15 @@ struct program *end_first_pass(int finish)
   } else if (finish == 2) {
     /* Called from decode_value(). */
     e = low_find_lfun(Pike_compiler->new_program, LFUN___INIT);
+    if ((e != -1) && !ID_FROM_INT(Pike_compiler->new_program, e)->func.offset) {
+      /* Just a prototype. Make sure not to call it. */
+      e = -1;
+    }
   }else{
+    /* Note that we may zap an __INIT that existed in pass 1 here.
+     * This is intentional to avoid having to keep track of whether
+     * __INIT() is just a prototype or not.
+     */
     e=-1;
   }
   Pike_compiler->new_program->lfuns[LFUN___INIT]=e;
