@@ -1716,6 +1716,7 @@ new_name: optional_stars TOK_IDENTIFIER
        *     of calling __INIT() by hand.
        */
       if (SAFE_IS_ZERO(&$5->u.sval) &&
+	  !SUBTYPEOF($5->u.sval) &&
 	  !IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
 					   $<number>4)->identifier_flags)) {
 	/* NB: Inherited variables get converted into aliases by
