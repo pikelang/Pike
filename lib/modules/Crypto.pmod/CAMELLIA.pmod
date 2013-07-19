@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+//! The Camellia 128-bit block cipher.
+
 #if constant(Nettle) && constant(Nettle.CAMELLIA_Info)
 
 // NOTE: Depends on the order of INIT invocations.
