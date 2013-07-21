@@ -3357,7 +3357,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
-		 mach/mach.h mach/thread_act.h mach/clock.h,,,[
+		 mach/mach.h mach/thread_act.h mach/clock.h urcu.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -3750,6 +3750,8 @@ if test x"$pike_cv_sys_os" = xWindows_NT ; then
     LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
   fi
 fi
+
+AC_CHECK_LIB(urcu, rcu_init_mb)
 
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(rt, nanosleep)
