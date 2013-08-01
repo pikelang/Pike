@@ -28,8 +28,19 @@ class CipherAlgorithm {
 
 //! Message Authentication Code interface.
 class MACAlgorithm {
-  string hash(object, Gmp.mpz);
-  string hash_raw(string);
+  //! @param packet
+  //!   @[Packet] to generate a MAC hash for.
+  //! @param seq_num
+  //!   Sequence number for the packet in the stream.
+  //! @returns
+  //!   Returns the MAC hash for the @[packet].
+  string hash(object packet, Gmp.mpz seq_num);
+
+  //! Hashes the data with the hash algorithm and retuns it as a raw
+  //! binary string.
+  string hash_raw(string data);
+
+  //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 }
 
@@ -68,19 +79,9 @@ class MACsha
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 11;
 
-  //!
   string hash_raw(string data)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.cipher: hash_raw(%O)\n", data);
-#endif
-
-    string res = algorithm->hash(data);
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.cipher: hash_raw->%O\n",res);
-#endif
-    
-    return res;
+    return algorithm->hash(data);
   }
 
   //!
@@ -90,9 +91,6 @@ class MACsha
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type, sizeof(packet->fragment),
 		       packet->fragment);
-#ifdef SSL3_DEBUG_CRYPT
-//    werror("SSL.cipher: hashing %O\n", s);
-#endif
     return hash_raw(secret + pad_2 +
 		    hash_raw(secret + pad_1 + s));
   }
@@ -132,7 +130,6 @@ class MAChmac_sha {
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 
-  //!
   string hash_raw(string data)
   {
     return hmac(secret)(data);
@@ -261,12 +258,7 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
       
   object s = context->rsa->raw_sign(digest);
-#ifdef SSL3_DEBUG_CRYPT
-  werror("  Digest: %O\n"
-	 "  Signature: %O\n",
-	 digest, s->digits(256));
-#endif
-  
+
   struct->put_bignum(s);
   return struct;
 }

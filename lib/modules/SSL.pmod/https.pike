@@ -11,6 +11,12 @@
 #define PORT 25678
 #endif
 
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
+
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 import Stdio;
@@ -64,9 +70,7 @@ class conn {
   
   void read_callback(mixed id, string data)
   {
-#ifdef SSL3_DEBUG
-    werror("Received: '" + data + "'\n");
-#endif
+    SSL3_DEBUG_MSG("Received: '" + data + "'\n");
     sslfile->set_write_callback(write_callback);
   }
 
@@ -118,16 +122,11 @@ void my_accept_callback(object f)
 
 int main()
 {
-#ifdef SSL3_DEBUG
-  werror("Cert: '%s'\n", String.string2hex(my_certificate));
-  werror("Key:  '%s'\n", String.string2hex(my_key));
-//  werror("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1());
-#endif
+  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
 #if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-#ifdef SSL3_DEBUG
-  werror("Decoded key: %O\n", key);
-#endif
+  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
   object n = key[1][1];
   object e = key[2][1];
   object d = key[3][1];
@@ -158,9 +157,7 @@ int main()
 
 protected void create()
 {
-#ifdef SSL3_DEBUG
-  werror("https->create\n");
-#endif
+  SSL3_DEBUG_MSG("https->create\n");
   sslport::create();
 }
 
