@@ -5,11 +5,14 @@
 #include "block_allocator.h"
 #include "bitvector.h"
 
-#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)(((char*)((p)+1)) + (n)*((l).block_size)))
-#define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)((p)+1) + (l).offset))
-#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)((p)+1)) <= (l).offset)
+#include <stdlib.h>
+
+#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + (l).doffset + (n)*((l).block_size)))
+#define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + (l).doffset + (l).offset))
+#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + (l).doffset)
 
 #define BA_ONE	((struct ba_block_header *)1)
+static void print_allocator(const struct block_allocator * a);
 
 static INLINE void ba_dec_layout(struct ba_layout * l, int i) {
     l->blocks >>= i;
@@ -54,37 +57,54 @@ struct ba_block_header {
 
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
-    size_t n = l.offset + l.block_size + sizeof(struct ba_page);
+    size_t n = l.offset + l.block_size + l.doffset;
     struct ba_page * p;
+    if (l.alignment) {
+	p = (struct ba_page*)aligned_alloc(n, l.alignment);
+    } else {
 #ifdef DEBUG_MALLOC
-    /* In debug malloc mode, calling xalloc from the block alloc may result
-     * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
-     */
-    p = (struct ba_page*)system_malloc(n);
-    if (!p) {
-	fprintf(stderr, "Fatal: Out of memory.\n");
-	exit(17);
-    }
+	/* In debug malloc mode, calling xalloc from the block alloc may result
+	 * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
+	 */
+	p = (struct ba_page*)system_malloc(n);
+	if (!p) {
+	    fprintf(stderr, "Fatal: Out of memory.\n");
+	    exit(17);
+	}
 #else
-    p = (struct ba_page*)xalloc(n);
+	p = (struct ba_page*)xalloc(n);
 #endif
+    }
     p->h.first = BA_BLOCKN(a->l, p, 0);
     p->h.first->next = BA_ONE;
     p->h.used = 0;
 #ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MAKE_MEM_NOACCESS(p+1, n - sizeof(struct ba_page));
+    VALGRIND_MAKE_MEM_NOACCESS((char*)p + l.doffset, n - l.doffset);
 #endif
     return p;
 }
 
-PMOD_EXPORT void ba_init(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks) {
+
+PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size,
+				 unsigned INT32 blocks, unsigned INT32 alignment) {
     block_size = MAXIMUM(block_size, sizeof(struct ba_block_header));
+    if (alignment) {
+	if (alignment & (alignment - 1))
+	    Pike_fatal("Block allocator alignment is not a power of 2.\n");
+	if (block_size & (alignment-1))
+	    Pike_fatal("Block allocator block size is not aligned.\n");
+	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), alignment);
+    } else {
+	a->l.doffset = sizeof(struct ba_page);
+    }
+
     blocks = round_up32(blocks);
     a->alloc = a->last_free = 0;
     a->size = 1;
     a->l.block_size = block_size;
     a->l.blocks = blocks;
     a->l.offset = block_size * (blocks-1);
+    a->l.alignment = alignment;
     memset(a->pages, 0, sizeof(a->pages));
     a->pages[0] = ba_alloc_page(a, 0);
 #ifdef HAVE_VALGRIND_MACROS
@@ -148,7 +168,7 @@ static void ba_low_alloc(struct block_allocator * a) {
 	a->alloc = a->size;
 	a->size++;
     } else {
-	ba_init(a, a->l.block_size, a->l.blocks);
+	ba_init_aligned(a, a->l.block_size, a->l.blocks, a->l.alignment);
     }
 }
 
@@ -165,10 +185,20 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     ptr = p->h.first;
 #ifdef HAVE_VALGRIND_MACROS
     VALGRIND_MEMPOOL_ALLOC(a, ptr, a->l.block_size);
-    VALGRIND_MAKE_MEM_DEFINED(ptr, sizeof(void*));
+    VALGRIND_MAKE_MEM_DEFINED(ptr, sizeof(struct ba_block_header));
 #endif
 
     p->h.used++;
+
+#ifdef PIKE_DEBUG
+    {
+	struct ba_layout l = ba_get_layout(a, a->alloc);
+	if (!BA_CHECK_PTR(l, p, ptr)) {
+	    print_allocator(a);
+	    Pike_fatal("about to return pointer from hell: %p\n", ptr);
+	}
+    }
+#endif
 
     if (ptr->next == BA_ONE) {
 	struct ba_layout l = ba_get_layout(a, a->alloc);
@@ -184,7 +214,14 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
 	p->h.first = ptr->next;
     }
 #ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MAKE_MEM_UNDEFINED(ptr, sizeof(void*));
+    VALGRIND_MAKE_MEM_UNDEFINED(ptr, sizeof(struct ba_block_header));
+#endif
+
+#if PIKE_DEBUG
+    if (a->l.alignment && (size_t)ptr & (a->l.alignment - 1)) {
+	print_allocator(a);
+	Pike_fatal("Returning unaligned pointer.\n");
+    }
 #endif
 
     return ptr;
@@ -195,9 +232,18 @@ PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr) {
     struct ba_page * p = a->pages[i];
     struct ba_layout l = ba_get_layout(a, i);
 
+#if PIKE_DEBUG
+    if (a->l.alignment && (size_t)ptr & (a->l.alignment - 1)) {
+	print_allocator(a);
+	Pike_fatal("Returning unaligned pointer.\n");
+    }
+#endif
+
     if (BA_CHECK_PTR(l, p, ptr)) goto found;
 
+#ifdef PIKE_DEBUG
     p = NULL;
+#endif
 
     for (i = a->size-1, l = ba_get_layout(a, i); i >= 0; i--, ba_half_layout(&l)) {
 	if (BA_CHECK_PTR(l, a->pages[i], ptr)) {
@@ -217,8 +263,8 @@ found:
 	p->h.first = b;
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
-	    fprintf(stderr, "freeing from empty page %p\n", p);
-	    goto ERR;
+	    print_allocator(a);
+	    Pike_fatal("freeing from empty page %p\n", p);
 	}
 #endif
 	if (!(--p->h.used) && i+1 == a->size) {
@@ -238,18 +284,23 @@ found:
     }
 #ifdef PIKE_DEBUG
     } else {
-	int i;
-ERR:
-	for (i = a->size-1, l = ba_get_layout(a, i); i >= 0; ba_half_layout(&l), i--) {
-	    p = a->pages[i];
-	    fprintf(stderr, "page: %p used: %u/%u last: %p p+offset: %p\n", a->pages[i],
-		    p->h.used, l.blocks,
-		    BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
-	}
+	print_allocator(a);
 	Pike_fatal("ptr %p not in any page.\n", ptr);
     }
 #endif
 #ifdef HAVE_VALGRIND_MACROS
     VALGRIND_MEMPOOL_FREE(a, ptr);
 #endif
+}
+
+static void print_allocator(const struct block_allocator * a) {
+    int i;
+    struct ba_layout l;
+
+    for (i = a->size-1, l = ba_get_layout(a, i); i >= 0; ba_half_layout(&l), i--) {
+	struct ba_page * p = a->pages[i];
+	fprintf(stderr, "page: %p used: %u/%u last: %p p+offset: %p\n", a->pages[i],
+		p->h.used, l.blocks,
+		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
+    }
 }
