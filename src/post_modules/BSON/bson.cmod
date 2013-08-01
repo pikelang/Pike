@@ -458,7 +458,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         o_cast_to_int();
         i = Pike_sp[-1].u.integer;
         pop_stack();
-        ITEM(arr)[i] = k->val;
+	assign_svalue(ITEM(arr) + i, &k->val);
       }
 
       free_mapping(doc);
