@@ -1,7 +1,7 @@
 START_MARKER
 
 dnl Note: This module has some tests with an external test script in
-dnl src/modules/files.
+dnl src/modules/_Stdio
 
 test_any([[
 #pike 7.4
