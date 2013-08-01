@@ -3560,12 +3560,12 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
    */
   if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
-  
-  if((base==16 || base == 2) && c == '0' &&
-     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
-     isxdigit(INDEX_PCHARP(str,2)) &&
+
+  if(c == '0' &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
-      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))))
+      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
+     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
+     isxdigit(INDEX_PCHARP(str,2)))
   {
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
