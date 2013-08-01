@@ -2807,7 +2807,12 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 
       if(of && of->locals) {
 	/* f->num_args can be too large, so this is necessary for some
-	 * reason. I don't know why. /mast */
+	 * reason. I don't know why. /mast
+	 *
+	 * possibly because f->num_args was uninitialized for c_initializers
+	 *  /arne
+	 * */
+
 	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
       }
 
