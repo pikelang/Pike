@@ -148,9 +148,7 @@ Packet server_hello_packet()
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
   struct->put_uint(version[0],1); struct->put_uint(version[1],1); /* version */
-#ifdef SSL3_DEBUG
-  werror("Writing server hello, with version: %d.%d\n", @version);
-#endif
+  SSL3_DEBUG_MSG("Writing server hello, with version: %d.%d\n", @version);
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
@@ -183,9 +181,7 @@ Packet server_hello_packet()
       struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Server hello: %O\n", data);
-#endif
+  SSL3_DEBUG_MSG("SSL.handshake: Server hello: %O\n", data);
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
@@ -250,10 +246,7 @@ Packet client_hello()
       }
     }
 
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Adding Server Name extension.\n");
-#endif
-
+    SSL3_DEBUG_MSG("SSL.handshake: Adding Server Name extension.\n");
     extensions->put_uint(EXTENSION_server_name, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   } 
@@ -263,10 +256,7 @@ Packet client_hello()
 
   string data = struct->pop_data();
 
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Client hello: %O\n", data);
-#endif
-
+  SSL3_DEBUG_MSG("SSL.handshake: Client hello: %O\n", data);
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
@@ -283,10 +273,8 @@ Packet server_key_exchange_packet()
     {
       /* Send a ServerKeyExchange message. */
       
-#ifdef SSL3_DEBUG
-      werror("Sending a server key exchange-message, "
-	     "with a %d-bits key.\n", temp_key->rsa_size());
-#endif
+      SSL3_DEBUG_MSG("Sending a server key exchange-message, "
+                     "with a %d-bits key.\n", temp_key->rsa_size());
       struct = ADT.struct();
       struct->put_bignum(temp_key->get_n());
       struct->put_bignum(temp_key->get_e());
@@ -350,9 +338,7 @@ Packet client_key_exchange_packet()
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
-#ifdef SSL3_DEBUG
-    werror("FIXME: Not handled yet\n");
-#endif
+    SSL3_DEBUG_MSG("FIXME: Not handled yet\n");
     anonymous = 1;
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
@@ -420,16 +406,11 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
    */
 
   array(string) certs;
-#ifdef SSL3_DEBUG
-  werror("Selecting server key.\n");
-#endif
+  SSL3_DEBUG_MSG("Selecting server key.\n");
 
   // populate the key to be used for the session.
   object key = select_server_key();
-
-#ifdef SSL3_DEBUG
-  werror("Selected server key: %O\n", key);
-#endif
+  SSL3_DEBUG_MSG("Selected server key: %O\n", key);
 
   if(Program.implements(object_program(key), Crypto.DSA))
   { 
@@ -440,16 +421,11 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     session->rsa = [object(Crypto.RSA)]key;
   }
 
-#ifdef SSL3_DEBUG
-  werror("Checking for Certificate.\n");
-#endif
+  SSL3_DEBUG_MSG("Checking for Certificate.\n");
 
   if (certs = select_server_certificate())
   {
-#ifdef SSL3_DEBUG
-  werror("Sending Certificate.\n");
-#endif
-
+    SSL3_DEBUG_MSG("Sending Certificate.\n");
     send_packet(certificate_packet(certs));
   }
   else if (session->cipher_spec->sign != .Cipher.anon_sign)
@@ -496,9 +472,7 @@ string hash_messages(string sender)
 
 Packet finished_packet(string sender)
 {
-#ifdef SSL3_DEBUG
-  werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
-#endif
+  SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
   string verify_data = hash_messages(sender);
   if (handshake_state >= STATE_client_min) {
     // We're the client.
@@ -538,9 +512,7 @@ Packet certificate_packet(array(string) certificates)
 
   if(certificates && sizeof(certificates))
     len = `+( @ Array.map(certificates, sizeof));
-#ifdef SSL3_DEBUG
-  //    werror("SSL.handshake: certificate_message size %d\n", len);
-#endif
+  //  SSL3_DEBUG_MSG("SSL.handshake: certificate_message size %d\n", len);
   struct->put_uint(len + 3 * sizeof(certificates), 3);
   foreach(certificates, string cert)
     struct->put_var_string(cert, 3);
@@ -553,9 +525,8 @@ string server_derive_master_secret(string data)
 {
   string premaster_secret;
   
-#ifdef SSL3_DEBUG
-  werror("server_derive_master_secret: ke_method %d\n", session->ke_method);
-#endif
+  SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+                 session->ke_method);
   switch(session->ke_method)
   {
   default:
@@ -572,10 +543,8 @@ string server_derive_master_secret(string data)
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
        * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-#ifdef SSL3_DEBUG
-      werror("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
 	     "               Hanging up.\n");
-#endif
       send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown, version[1]));
       return 0;
     }
@@ -605,9 +574,7 @@ string server_derive_master_secret(string data)
   case KE_rsa:
    {
      /* Decrypt the premaster_secret */
-#ifdef SSL3_DEBUG
-     werror("encrypted premaster_secret: %O\n", data);
-#endif
+     SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
      if(version[1] >= PROTOCOL_TLS_1_0) {
        if(sizeof(data)-2 == data[0]*256+data[1]) {
 	 premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
@@ -615,9 +582,7 @@ string server_derive_master_secret(string data)
      } else {
        premaster_secret = (temp_key || session->rsa)->decrypt(data);
      }
-#ifdef SSL3_DEBUG
-     werror("premaster_secret: %O\n", premaster_secret);
-#endif
+     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
      if (!premaster_secret
 	 || (sizeof(premaster_secret) != 48)
 	 || (premaster_secret[0] != 3)
@@ -666,9 +631,7 @@ string server_derive_master_secret(string data)
 		    client_random+server_random,48);
   }
   
-#ifdef SSL3_DEBUG
-  werror("master: %O\n", res);
-#endif
+  SSL3_DEBUG_MSG("master: %O\n", res);
   return res;
 }
 
@@ -679,9 +642,7 @@ string client_derive_master_secret(string premaster_secret)
   .Cipher.MACsha sha = .Cipher.MACsha();
   .Cipher.MACmd5 md5 = .Cipher.MACmd5();
 
-#ifdef SSL3_DEBUG
-  werror("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
-#endif
+  SSL3_DEBUG_MSG("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
 
   if(version[1] == PROTOCOL_SSL_3_0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
@@ -693,9 +654,7 @@ string client_derive_master_secret(string premaster_secret)
     res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
-#ifdef SSL3_DEBUG
-  werror("bahmaster: %O\n", res);
-#endif
+  SSL3_DEBUG_MSG("bahmaster: %O\n", res);
   return res;
 }
 
@@ -1015,9 +974,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	session = sizeof(id) && context->lookup_session(id);
 	if (session)
 	  {
-#ifdef SSL3_DEBUG
-	    werror("SSL.handshake: Reusing session %O\n", id);
-#endif
+            SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
 	    /* Reuse session */
 	  reuse = 1;
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
@@ -1057,10 +1014,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      case HANDSHAKE_hello_v2:
       {
 	SSL3_DEBUG_MSG("SSL.session: CLIENT_HELLO_V2\n");
+        SSL3_DEBUG_MSG("SSL.handshake: SSL2 hello message received\n");
 
-#ifdef SSL3_DEBUG
-	werror("SSL.handshake: SSL2 hello message received\n");
-#endif
 	int ci_len;	// Cipher specs length
 	int id_len;	// Session id length
 	int ch_len;	// Challenge length
@@ -1072,10 +1027,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16))
 	{
-#ifdef SSL3_DEBUG
-	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
-		 "%s\n", err?describe_backtrace(err):"");
-#endif /* SSL3_DEBUG */
+          SSL3_DEBUG_MSG("SSL.handshake: Error decoding SSL2 handshake:\n"
+                         "%s\n", err?describe_backtrace(err):"");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -1249,9 +1202,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_client_key_exchange:
       SSL3_DEBUG_MSG("SSL.session: CLIENT_KEY_EXCHANGE\n");
 
-#ifdef SSL3_DEBUG
-      werror("client_key_exchange\n");
-#endif
       if (certificate_state == CERT_requested)
       { /* Certificate must be sent before key exchange message */
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1271,9 +1221,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
-#ifdef SSL3_DEBUG
-	werror("certificate_state: %d\n", certificate_state);
-#endif
+        SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       }
       // TODO: we need to determine whether the certificate has signing abilities.
       if (certificate_state == CERT_received)
@@ -1291,9 +1239,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      {
        SSL3_DEBUG_MSG("SSL.session: CLIENT_CERTIFICATE\n");
 
-#ifdef SSL3_DEBUG
-      werror("client_certificate\n");
-#endif
        if (certificate_state != CERT_requested)
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1591,9 +1536,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	else
 	  {
-#ifdef SSL3_DEBUG
-	    werror("Other certificates than RSA not supported!\n");
-#endif
+            SSL3_DEBUG_MSG("Other certificates than RSA not supported!\n");
 	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			      "SSL.session->handle_handshake: Unsupported certificate type\n",
 			      backtrace()));
@@ -1603,9 +1546,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if(error)
 	{
-#ifdef SSL3_DEBUG
-	  werror("Failed to decode certificate!\n");
-#endif
+          SSL3_DEBUG_MSG("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: Failed to decode certificate\n",
 			    backtrace()));
@@ -1646,10 +1587,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_request:
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_REQUEST\n");
 
-#ifdef SSL3_DEBUG
-	werror("Certificate request received.\n");
-#endif
-        // it is a fatal handshake_failure alert for an anonymous server to 
+        // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
         if(anonymous)
         {
@@ -1678,9 +1616,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
             Standards.ASN1.Types.Sequence seq = [object(Standards.ASN1.Types.Sequence)]asn;
             client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string( 
                                             seq ) }); 
-#ifdef SSL3_DEBUG
-            werror("got an authorized issuer: %O\n", client_cert_distinguished_names[-1]);
-#endif
+            SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
+                           client_cert_distinguished_names[-1]);
            }
         }
 
@@ -1737,9 +1674,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 	      break;
 	  }
 
-#ifdef SSL3_DEBUG
-	  werror ("Certificate message required from server.\n");
-#endif
+          SSL3_DEBUG_MSG("Certificate message required from server.\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: Certificate message missing\n",
 			    backtrace()));
@@ -1807,9 +1742,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
     }
     }
   }
-#ifdef SSL3_DEBUG
-//  werror("SSL.handshake: messages = %O\n", handshake_messages);
-#endif
+  //  SSL3_DEBUG_MSG("SSL.handshake: messages = %O\n", handshake_messages);
   return 0;
 }
 

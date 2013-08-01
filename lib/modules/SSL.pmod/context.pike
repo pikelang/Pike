@@ -6,6 +6,12 @@
 //! certificate, the server's private key(s), etc. It also includes the
 //! session cache.
 
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
+
 #if constant(Gmp.mpz) && constant(Crypto.Hash)
 
 import .Constants;
@@ -220,9 +226,7 @@ void filter_weak_suites(int min_keylength)
 //!   @[dhe_dss_mode()], @[filter_weak_suites()]
 void rsa_mode(int|void min_keylength)
 {
-#ifdef SSL3_DEBUG
-  werror("SSL.context: rsa_mode()\n");
-#endif
+  SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
   preferred_suites = preferred_rsa_suites;
   filter_weak_suites(min_keylength);
 }
@@ -236,9 +240,7 @@ void rsa_mode(int|void min_keylength)
 //!   @[rsa_mode()], @[filter_weak_suites()]
 void dhe_dss_mode(int|void min_keylength)
 {
-#ifdef SSL3_DEBUG
-  werror("SSL.context: dhe_dss_mode()\n");
-#endif
+  SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
   preferred_suites = preferred_dhe_dss_suites;
   filter_weak_suites(min_keylength);
 }
@@ -272,10 +274,9 @@ void forget_old_sessions()
   array pair;
   while ( (pair = [array]active_sessions->peek())
 	  && (pair[0] < t)) {
-#ifdef SSL3_DEBUG
-    werror ("SSL.context->forget_old_sessions: "
-	    "garbing session %O due to session_lifetime limit\n", pair[1]);
-#endif
+    SSL3_DEBUG_MSG("SSL.context->forget_old_sessions: "
+                   "garbing session %O due to session_lifetime limit\n",
+                   pair[1]);
     m_delete (session_cache, [string]([array]active_sessions->get())[1]);
   }
 }
@@ -309,16 +310,13 @@ void record_session(.session s)
   {
     while (sizeof (active_sessions) >= max_sessions) {
       array pair = [array] active_sessions->get();
-#ifdef SSL3_DEBUG
-      werror ("SSL.context->record_session: "
-	      "garbing session %O due to max_sessions limit\n", pair[1]);
-#endif
+      SSL3_DEBUG_MSG("SSL.context->record_session: "
+                     "garbing session %O due to max_sessions limit\n", pair[1]);
       m_delete (session_cache, [string]pair[1]);
     }
     forget_old_sessions();
-#ifdef SSL3_DEBUG
-    werror ("SSL.context->record_session: caching session %O\n", s->identity);
-#endif
+    SSL3_DEBUG_MSG("SSL.context->record_session: caching session %O\n",
+                   s->identity);
     active_sessions->put( ({ time(), s->identity }) );
     session_cache[s->identity] = s;
   }
@@ -327,9 +325,7 @@ void record_session(.session s)
 //! Remove a session from the cache.
 void purge_session(.session s)
 {
-#ifdef SSL3_DEBUG
-  werror("SSL.context->purge_session: %O\n", s->identity || "");
-#endif
+  SSL3_DEBUG_MSG("SSL.context->purge_session: %O\n", s->identity || "");
   if (s->identity)
     m_delete (session_cache, s->identity);
   /* There's no need to remove the id from the active_sessions queue */
@@ -337,9 +333,7 @@ void purge_session(.session s)
 
 void create()
 {
-#ifdef SSL3_DEBUG
-  werror("SSL.context->create\n");
-#endif
+  SSL3_DEBUG_MSG("SSL.context->create\n");
   active_sessions = ADT.Queue();
   session_cache = ([ ]);
   /* Backwards compatibility */
