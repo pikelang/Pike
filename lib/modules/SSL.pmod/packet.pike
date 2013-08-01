@@ -65,10 +65,6 @@ object|string recv(string data, ProtocolVersion version)
   buffer += data;
   while (sizeof(buffer) >= needed_chars)
   {
-#ifdef SSL3_DEBUG
-//    werror("SSL.packet->recv: needed = %d, avail = %d\n",
-//	     needed_chars, sizeof(buffer));
-#endif
     if (needed_chars == HEADER_SIZE)
     {
       content_type = buffer[0];
@@ -87,9 +83,6 @@ object|string recv(string data, ProtocolVersion version)
 	    return Alert(ALERT_fatal, ALERT_unexpected_message, version);
 	  length = ((buffer[0] & 0x7f) << 8 | buffer[1]
 		    - 3);
-#ifdef SSL3_DEBUG
-//	  werror("SSL2 length = %d\n", length);
-#endif
 	  protocol_version = values(buffer[3..4]);
 	}
 	else
