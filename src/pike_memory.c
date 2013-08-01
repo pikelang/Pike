@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #endif
 
+#include <stdlib.h>
+
 #include <errno.h>
 
 int page_size;
@@ -532,6 +534,16 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 
   Pike_error(msg_out_of_mem_2, n*s);
   return 0;
+}
+
+PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) {
+    void * ret;
+
+    if (posix_memalign(&ret, alignment, size)) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+
+    return ret;
 }
 
 PMOD_EXPORT char *debug_xstrdup(const char *src)
