@@ -9967,6 +9967,7 @@ static void low_enter_compiler(struct object *ce, int inherit)
   new_frame->save_mark_sp = Pike_mark_sp;
   new_frame->mark_sp_base = Pike_mark_sp;
   new_frame->args = 0;
+  new_frame->num_args = 0;
   new_frame->num_locals = 0;
   new_frame->pc = 0;
   new_frame->return_addr = 0;

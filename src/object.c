@@ -265,6 +265,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
       if( !frame_pushed )
       {
 	PUSH_FRAME2(o, p);
+	Pike_fp->num_args = 0;
 	frame_pushed = 1;
       }
       SET_FRAME_CONTEXT(p->inherits + e);
