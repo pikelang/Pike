@@ -205,10 +205,10 @@ void filter_weak_suites(int min_keylength)
   if (!preferred_suites || !min_keylength) return;
   preferred_suites =
     filter(preferred_suites,
-	   lambda(int suite, int min_keylength) {
+	   lambda(int suite) {
 	     array(int) def = [array(int)]CIPHER_SUITES[suite];
 	     return def && (CIPHER_algorithms[def[1]] >= min_keylength);
-	   }, min_keylength);
+	   });
 }
 
 //! Set @[preferred_suites] to RSA based methods.
@@ -343,7 +343,7 @@ void create()
   active_sessions = ADT.Queue();
   session_cache = ([ ]);
   /* Backwards compatibility */
-  rsa_mode();
+  rsa_mode(128);
 }
 
 // update the cached decoded authorities list
