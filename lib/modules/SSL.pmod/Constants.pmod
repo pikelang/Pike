@@ -59,7 +59,6 @@ constant CIPHER_null     = 0;
 constant CIPHER_rc4_40   = 2;
 constant CIPHER_rc2      = 3;
 constant CIPHER_des40    = 6;
-#ifndef WEAK_CRYPTO_40BIT
 constant CIPHER_rc4      = 1;
 constant CIPHER_des      = 4;
 constant CIPHER_3des     = 5;
@@ -67,7 +66,6 @@ constant CIPHER_fortezza = 7;
 constant CIPHER_idea	 = 8;
 constant CIPHER_aes	 = 9;
 constant CIPHER_aes256	 = 10;
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_algorithms = ([
@@ -75,7 +73,6 @@ constant CIPHER_algorithms = ([
   CIPHER_rc4_40:	40,
   CIPHER_rc2:		40,
   CIPHER_des40:		40,
-#ifndef WEAK_CRYPTO_40BIT
   CIPHER_rc4:		128,
   CIPHER_des:		56,
   CIPHER_3des:		168,
@@ -83,7 +80,6 @@ constant CIPHER_algorithms = ([
   CIPHER_idea:		128,
   CIPHER_aes:		128,
   CIPHER_aes256:	256,
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
 /* Hash algorithms as per RFC 5246 7.4.1.4.1. */
@@ -204,7 +200,6 @@ constant TLS_krb5_with_rc4_40_sha               = 0x0028;
 constant TLS_krb5_with_des_cbc_40_md5           = 0x0029;
 constant TLS_krb5_with_rc2_cbc_40_md5           = 0x002a;
 constant TLS_krb5_with_rc4_40_md5               = 0x002b;
-#ifndef WEAK_CRYPTO_40BIT
 constant SSL_rsa_with_rc4_128_md5		= 0x0004;
 constant SSL_rsa_with_rc4_128_sha		= 0x0005;
 constant SSL_rsa_with_idea_cbc_sha		= 0x0007;
@@ -384,7 +379,6 @@ constant TLS_ecdhe_psk_with_aes_256_cbc_sha384  = 0xc038;
 constant TLS_ecdhe_psk_with_null_sha            = 0xc039;
 constant TLS_ecdhe_psk_with_null_sha256         = 0xc03a;
 constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #if 0
 /* Methods for signing any server_key_exchange message (RFC 5246 7.4.1.4.1) */
@@ -403,7 +397,6 @@ constant CIPHER_SUITES =
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
    SSL_dhe_dss_export_with_des40_cbc_sha :
       ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
-#ifndef WEAK_CRYPTO_40BIT
    SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
@@ -415,11 +408,9 @@ constant CIPHER_SUITES =
    TLS_dhe_dss_with_aes_128_cbc_sha :	({ KE_dhe_dss, CIPHER_aes, HASH_sha }),
    TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
 constant preferred_rsa_suites = ({
-#ifndef WEAK_CRYPTO_40BIT
   TLS_rsa_with_aes_256_cbc_sha,
   TLS_rsa_with_aes_128_cbc_sha,		// Mandatory in RFC 5246 (TLS 1.2).
   SSL_rsa_with_idea_cbc_sha,
@@ -427,19 +418,16 @@ constant preferred_rsa_suites = ({
   SSL_rsa_with_rc4_128_md5,
   SSL_rsa_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
   SSL_rsa_with_des_cbc_sha,
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   SSL_rsa_export_with_rc4_40_md5,
   SSL_rsa_with_null_sha,
   SSL_rsa_with_null_md5,
 });
 
 constant preferred_dhe_dss_suites = ({
-#ifndef WEAK_CRYPTO_40BIT
   TLS_dhe_dss_with_aes_256_cbc_sha,
   TLS_dhe_dss_with_aes_128_cbc_sha,
   SSL_dhe_dss_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
   SSL_dhe_dss_with_des_cbc_sha,
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   SSL_dhe_dss_export_with_des40_cbc_sha,
 });
 

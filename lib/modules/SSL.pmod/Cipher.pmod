@@ -50,10 +50,6 @@ class CipherSpec {
   //! The Message Authentication Code to use for the packets.
   program(MACAlgorithm) mac_algorithm;
 
-  //! Indication whether the combination uses strong or weak
-  //! (aka exportable) crypto.
-  int is_exportable;
-
   //! The number of bytes in the MAC hashes.
   int hash_size;
 
@@ -477,7 +473,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_rc4_40:
     res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
     res->cipher_type = CIPHER_stream;
-    res->is_exportable = 1;
     res->key_material = 16;
     res->iv_size = 0;
     res->key_bits = 40;
@@ -485,7 +480,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_des40:
     res->bulk_cipher_algorithm = DES;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 1;
     res->key_material = 8;
     res->iv_size = 8;
     res->key_bits = 40;
@@ -493,16 +487,13 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_null:
     res->bulk_cipher_algorithm = 0;
     res->cipher_type = CIPHER_stream;
-    res->is_exportable = 1;
     res->key_material = 0;
     res->iv_size = 0;
     res->key_bits = 0;
     break;
-#ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
     res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
     res->cipher_type = CIPHER_stream;
-    res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 0;
     res->key_bits = 128;
@@ -510,7 +501,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_des:
     res->bulk_cipher_algorithm = DES;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 0;
     res->key_material = 8;
     res->iv_size = 8;
     res->key_bits = 56;
@@ -518,7 +508,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_3des:
     res->bulk_cipher_algorithm = DES3;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 0;
     res->key_material = 24;
     res->iv_size = 8;
     res->key_bits = 168;
@@ -526,7 +515,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_idea:
     res->bulk_cipher_algorithm = IDEA;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 8;
     res->key_bits = 128;
@@ -534,7 +522,6 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_aes:
     res->bulk_cipher_algorithm = AES;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 16;
     res->key_bits = 128;
@@ -542,12 +529,10 @@ array lookup(int suite, ProtocolVersion|int version)
   case CIPHER_aes256:
     res->bulk_cipher_algorithm = AES;
     res->cipher_type = CIPHER_block;
-    res->is_exportable = 0;
     res->key_material = 32;
     res->iv_size = 16;
     res->key_bits = 256;
     break;
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:
     return 0;
   }
