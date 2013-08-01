@@ -81,17 +81,9 @@ void set_compression_method(int compr)
 protected string generate_key_block(string client_random, string server_random,
 			  array(int) version)
 {
-  int required = 2 * (
-#ifndef WEAK_CRYPTO_40BIT
-    cipher_spec->is_exportable ?
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-    (5 + cipher_spec->hash_size)
-#ifndef WEAK_CRYPTO_40BIT
-    : ( cipher_spec->key_material +
-	cipher_spec->hash_size +
-	cipher_spec->iv_size)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-  );
+  int required = 2 * ( cipher_spec->key_material +
+                       cipher_spec->hash_size +
+                       cipher_spec->iv_size );
   string key = "";
 
   if(version[1] == PROTOCOL_SSL_3_0) {
@@ -171,66 +163,13 @@ array(string) generate_keys(string client_random, string server_random,
   // server_write_MAC_secret
   keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
-#ifndef WEAK_CRYPTO_40BIT
-  if (cipher_spec->is_exportable)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+  keys[2] = key_data->get_fix_string(cipher_spec->key_material);
+  keys[3] = key_data->get_fix_string(cipher_spec->key_material);
+  if (cipher_spec->iv_size)
   {
-    // Exportable (ie weak) crypto.
-    if(version[1] == PROTOCOL_SSL_3_0) {
-      // SSL 3.0
-      function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
-      
-      keys[2] = md5(key_data->get_fix_string(5) +
-		    client_random + server_random)
-	[..cipher_spec->key_material-1];
-      keys[3] = md5(key_data->get_fix_string(5) +
-		    server_random + client_random)
-	[..cipher_spec->key_material-1];
-      if (cipher_spec->iv_size)
-	{
-	  keys[4] = md5(client_random +
-			server_random)[..cipher_spec->iv_size-1];
-	  keys[5] = md5(server_random +
-			client_random)[..cipher_spec->iv_size-1];
-	}
-
-    } else if(version[1] >= PROTOCOL_TLS_1_0) {
-      // TLS 1.0 or later.
-      string client_wkey = key_data->get_fix_string(5);
-      string server_wkey = key_data->get_fix_string(5);
-      keys[2] = .Cipher.prf(client_wkey, "client write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
-      keys[3] = .Cipher.prf(server_wkey, "server write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
-      if(cipher_spec->iv_size) {
-	string iv_block = .Cipher.prf("", "IV block",
-				      client_random+server_random,
-				      2*cipher_spec->iv_size);
-	keys[4]=iv_block[..cipher_spec->iv_size-1];
-	keys[5]=iv_block[cipher_spec->iv_size..];
-#ifdef SSL3_DEBUG
-	werror("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
-	       sizeof([string]keys[4]), sizeof([string]keys[4]));
-#endif
-      }
-
-    }
-    
+    keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
+    keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
   }
-  
-#ifndef WEAK_CRYPTO_40BIT
-  else {
-    keys[2] = key_data->get_fix_string(cipher_spec->key_material);
-    keys[3] = key_data->get_fix_string(cipher_spec->key_material);
-    if (cipher_spec->iv_size)
-      {
-	keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
-	keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
-      }
-  }
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #ifdef SSL3_DEBUG
   printKey( "client_write_MAC_secret",keys[0]);
