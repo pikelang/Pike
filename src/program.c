@@ -3801,6 +3801,7 @@ int is_variant_dispatcher(struct program *prog, int fun)
   ref = PTR_FROM_INT(prog, fun);
   id = ID_FROM_PTR(prog, ref);
   return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+	  !IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
 	  (id->func.c_fun == f_dispatch_variant));
 }
 
