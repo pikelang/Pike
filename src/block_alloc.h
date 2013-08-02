@@ -107,9 +107,12 @@
 	np = p->next;							\
 	for (i = 0; n && i < (sizeof(p->x)/sizeof(struct DATA)); i++) {	\
 	    BLOCK = &p->x[i];						\
+	    PIKE_MEM_RW(*BLOCK);					\
 	    if (FCOND) {						\
 		do CODE while(0);					\
 		--n;							\
+	    } else {							\
+		PIKE_MEM_NA(*BLOCK);					\
 	    }								\
 	}								\
 	p = np;								\
