@@ -1010,7 +1010,6 @@ PIKECLASS Backend
      {
        size_t hval, fun_hval;
        struct Backend_CallOut_struct *c;
-       struct svalue *save_sp;
        
        if(!me->num_pending_calls) return -1;
        
@@ -1031,11 +1030,11 @@ PIKECLASS Backend
 	 }
        }
        /* Note: is_eq() may call Pike code (which we want),
-	*       but Pike code may change the hash tables...
+	*       however, it cannot modify the hash_table since
+	*       we are protected by PROTECT_CALL_OUTS.
 	*/
        fun_hval=hash_svalue(fun);
        hval = fun_hval % me->hash_size;
-       save_sp = Pike_sp;
        for(c=me->call_hash[hval].fun;c;c=c->next_fun)
        {
 	 if(c->fun_hval == fun_hval)
@@ -1044,25 +1043,12 @@ PIKECLASS Backend
 	   if(CALL(c->pos) != c)
 	     Pike_fatal("Call_out->pos not correct!\n");
 #endif
-	   push_int(c->pos);
-	   push_svalue(ITEM(c->args));
+	   if (is_eq(fun, ITEM(c->args))) {
+	       return c->pos;
+	   }
 	 }
        }
 
-       /* Check if any of the potential hits we found is a match. */
-       while (Pike_sp > save_sp) {
-	 if (is_eq(fun, Pike_sp-1)) {
-	   INT_TYPE pos;
-#ifdef PIKE_DEBUG
-	   if (TYPEOF(Pike_sp[-2]) != T_INT)
-	     Pike_fatal("Call_out->pos out of sync!\n");
-#endif
-	   pos = Pike_sp[-2].u.integer;
-	   pop_n_elems(Pike_sp - save_sp);
-	   return pos;
-	 }
-	 pop_n_elems(2);
-       }
        return -1;
      }
 
