@@ -298,13 +298,11 @@ use_malloc:
   return 0;	/* OK. */
 }
 
-static struct pike_frame *free_pike_frame = NULL;
+static struct pike_frame *free_pike_frame;
 
 PMOD_EXPORT void init_interpreter(void)
 {
-#ifdef HAVE_VALGRIND_MACROS
-  VALGRIND_CREATE_MEMPOOL(&free_pike_frame, 0, 0);
-#endif
+  PIKE_MEMPOOL_CREATE(&free_pike_frame);
   if (low_init_interpreter(Pike_interpreter_pointer)) {
     Pike_fatal("Out of memory initializing the interpreter stack.\n");
   }
@@ -1969,9 +1967,7 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     DO_IF_SECURITY( X->current_creds=0; )
   );
   X->next = free_pike_frame;
-#ifdef HAVE_VALGRIND_MACROS
-  VALGRIND_MEMPOOL_FREE(&free_pike_frame, X);
-#endif
+  PIKE_MEMPOOL_FREE(&free_pike_frame, X, sizeof(struct pike_frame));
   free_pike_frame = X;
 }
 
@@ -1981,14 +1977,10 @@ struct pike_frame *alloc_pike_frame(void)
     if( free_pike_frame )
     {
       res = free_pike_frame;
-#ifdef HAVE_VALGRIND_MACROS
-      VALGRIND_MEMPOOL_ALLOC(&free_pike_frame, res, sizeof(struct pike_frame));
-      VALGRIND_MAKE_MEM_DEFINED(&res->next, sizeof(void*));
-#endif
+      PIKE_MEMPOOL_ALLOC(&free_pike_frame, res, sizeof(struct pike_frame));
+      PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
       free_pike_frame = res->next;
-#ifdef HAVE_VALGRIND_MACROS
-      VALGRIND_MAKE_MEM_UNDEFINED(&res->next, sizeof(void*));
-#endif
+      PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
       res->flags=0;

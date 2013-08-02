@@ -46,15 +46,6 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
-#ifdef HAVE_VALGRIND_MACROS
-# ifndef VALGRIND_CREATE_MEMPOOL
-#  define VALGRIND_CREATE_MEMPOOL(a, b, c)
-#  define VALGRIND_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MAKE_MEM_UNDEFINED((p), (l))
-#  define VALGRIND_MEMPOOL_FREE(a, p)	    VALGRIND_MAKE_MEM_NOACCESS((p), (a)->l.block_size)
-# endif
-#endif
-
-
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + l.doffset;
@@ -78,9 +69,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     p->h.first = BA_BLOCKN(a->l, p, 0);
     p->h.first->next = BA_ONE;
     p->h.used = 0;
-#ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MAKE_MEM_NOACCESS((char*)p + l.doffset, n - l.doffset);
-#endif
+    PIKE_MEM_NA_RANGE((char*)p + l.doffset, n - l.doffset);
     return p;
 }
 
@@ -107,9 +96,7 @@ PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 bloc
     a->l.alignment = alignment;
     memset(a->pages, 0, sizeof(a->pages));
     a->pages[0] = ba_alloc_page(a, 0);
-#ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_CREATE_MEMPOOL(a, 0, 0);
-#endif
+    PIKE_MEMPOOL_CREATE(a);
 }
 
 PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
@@ -183,10 +170,8 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     }
 
     ptr = p->h.first;
-#ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MEMPOOL_ALLOC(a, ptr, a->l.block_size);
-    VALGRIND_MAKE_MEM_DEFINED(ptr, sizeof(struct ba_block_header));
-#endif
+    PIKE_MEMPOOL_ALLOC(a, ptr, a->l.block_size);
+    PIKE_MEM_RW_RANGE(ptr, sizeof(struct ba_block_header));
 
     p->h.used++;
 
@@ -203,19 +188,13 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     if (ptr->next == BA_ONE) {
 	struct ba_layout l = ba_get_layout(a, a->alloc);
 	p->h.first = (struct ba_block_header*)((char*)ptr + a->l.block_size);
-#ifdef HAVE_VALGRIND_MACROS
-	VALGRIND_MEMPOOL_ALLOC(a, p->h.first, a->l.block_size);
-#endif
+	PIKE_MEMPOOL_ALLOC(a, p->h.first, a->l.block_size);
 	p->h.first->next = (struct ba_block_header*)(ptrdiff_t)!(p->h.first == BA_LASTBLOCK(l, p));
-#ifdef HAVE_VALGRIND_MACROS
-	VALGRIND_MEMPOOL_FREE(a, p->h.first);
-#endif
+	PIKE_MEMPOOL_FREE(a, p->h.first, a->l.block_size);
     } else {
 	p->h.first = ptr->next;
     }
-#ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MAKE_MEM_UNDEFINED(ptr, sizeof(struct ba_block_header));
-#endif
+    PIKE_MEM_WO_RANGE(ptr, sizeof(struct ba_block_header));
 
 #if PIKE_DEBUG
     if (a->l.alignment && (size_t)ptr & (a->l.alignment - 1)) {
@@ -288,9 +267,7 @@ found:
 	Pike_fatal("ptr %p not in any page.\n", ptr);
     }
 #endif
-#ifdef HAVE_VALGRIND_MACROS
-    VALGRIND_MEMPOOL_FREE(a, ptr);
-#endif
+    PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
 
 static void print_allocator(const struct block_allocator * a) {
