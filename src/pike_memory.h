@@ -85,6 +85,17 @@
 #define PIKE_MEM_NOT_DEF_RANGE(addr, bytes)				\
   VALGRIND_CHECK_MEM_IS_DEFINED(addr, bytes)
 
+#ifdef VALGRIND_CREATE_MEMPOOL
+# define PIKE_MEMPOOL_CREATE(a)		VALGRIND_CREATE_MEMPOOL(a, 0, 0)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)	VALGRIND_MEMPOOL_ALLOC(a, p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)	VALGRIND_MEMPOOL_FREE(a, p)
+#else
+/* somewhat functional alternatives to mempool macros */
+# define PIKE_MEMPOOL_CREATE(a)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)    PIKE_MEM_WO_RANGE(p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)	PIKE_MEM_NA_RANGE(p, l)
+#endif
+
 #else  /* !HAVE_VALGRIND_MACROS */
 
 #define PIKE_MEM_NA(lvalue)		do {} while (0)
@@ -100,6 +111,9 @@
 #define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes) 0
 #define PIKE_MEM_NOT_DEF(lvalue)	0
 #define PIKE_MEM_NOT_DEF_RANGE(addr, bytes) 0
+#define PIKE_MEMPOOL_CREATE(a)
+#define PIKE_MEMPOOL_ALLOC(a, p, l)
+#define PIKE_MEMPOOL_FREE(a, p, l)
 
 #endif	/* !HAVE_VALGRIND_MACROS */
 
