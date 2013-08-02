@@ -2000,8 +2000,8 @@ struct pike_frame *alloc_pike_frame(void)
     /* Need to allocate more. */
     {
       unsigned int i;
-#define FRAMES_PER_CHUNK ((4096*4-8-sizeof(struct pike_frame_chunk))/sizeof(struct catch_context))
-#define FRAME_CHUNK_SIZE (FRAMES_PER_CHUNK*sizeof(struct catch_context))+sizeof(struct pike_frame_chunk)
+#define FRAMES_PER_CHUNK ((4096*4-8-sizeof(struct pike_frame_chunk))/sizeof(struct pike_frame))
+#define FRAME_CHUNK_SIZE (FRAMES_PER_CHUNK*sizeof(struct pike_frame))+sizeof(struct pike_frame_chunk)
 
       void *p = xalloc( FRAME_CHUNK_SIZE );
       num_pike_frame_chunks++;
