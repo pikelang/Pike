@@ -340,13 +340,13 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
       default:
 	Pike_fatal("Instable mapping data flags.\n");
       case MAPPING_WEAK_INDICES:
-	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
+	if (!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
 	    (*from->ind.u.refs > 1)) {
 	  goto keep_keypair;
 	}
 	break;
       case MAPPING_WEAK_VALUES:
-	if (REFCOUNTED_TYPE(TYPEOF(from->val)) &&
+	if (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
 	    (*from->val.u.refs > 1)) {
 	  goto keep_keypair;
 	}
