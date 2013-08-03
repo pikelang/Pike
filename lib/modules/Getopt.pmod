@@ -213,7 +213,7 @@ constant MAY_HAVE_ARG=3;
 
 //!   This function does the job of several calls to @[find_option()].
 //!   The main advantage of this is that it allows it to handle the
-//!   @tt{@b{POSIX_ME_HARDER@}@} environment variable better. When the either
+//!   @tt{@b{POSIX_ME_HARDER@}@} environment variable better. When either
 //!   the argument @[posix_me_harder] or the environment variable
 //!   @tt{@b{POSIX_ME_HARDER@}@} is true, no arguments will be parsed after
 //!   the first non-option on the command line.
