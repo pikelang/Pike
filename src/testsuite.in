@@ -6400,7 +6400,7 @@ test_do(add_constant("blatinka");)
     return !sizeof (a) && !sizeof (b);
   }]], 1);
   test_any([[{
-    mapping a = ([17:({17})]);
+    mapping a = ([17:17]);
     set_weak_flag (a, 1);
     for (int i = 0; i < 10; i++) a[class{}()] = i;
     mapping b = a + ([]);
