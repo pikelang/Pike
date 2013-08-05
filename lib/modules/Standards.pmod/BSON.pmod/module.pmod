@@ -8,6 +8,8 @@ inherit Standards._BSON;
 #endif
 //! @endignore
 
+#define ERROR(X ...) throw(Error.Generic(sprintf(X)))
+
 //! @appears Standards.BSON module
 //!
 //! Tools for handling the BSON structured data format. See
@@ -64,18 +66,18 @@ string encode(mapping m, int|void query_mode)
 
 static string toCString(string str)
 {
-	if(has_value(str, "\0")) throw(Error.Generic("String cannot contain null bytes.\n"));
+	if(has_value(str, "\0")) ERROR("String cannot contain null bytes.\n");
 	else return string_to_utf8(str) + "\0";
 }
 
-static void low_encode(mixed m, String.Buffer buf, int|void allow_specials)
+static void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
 {
   foreach(m; mixed key; mixed val)
   {
-    if(!stringp(key)) throw(Error.Generic("BSON Keys must be strings.\n"));
-    if(has_value(key, "\0")) throw(Error.Generic("BSON Keys may not contain NULL characters.\n"));
+    if(!stringp(key)) ERROR("BSON Keys must be strings.\n");
+    if(has_value(key, "\0")) ERROR("BSON Keys may not contain NULL characters.\n");
     if(!allow_specials && ((key - "$") - ".") != key)
-      throw(Error.Generic("BSON keys may not contain '$' or '.' characters unless in query-mode.\n"));
+      ERROR("BSON keys may not contain '$' or '.' characters unless in query-mode.\n");
     key = string_to_utf8(key);
     encode_value(key, val, buf, allow_specials);
   }	
@@ -201,9 +203,9 @@ mixed decode(string bson)
   int len;
   string slist;
   if(sscanf(bson, "%-4c%s", len, bson)!=2)
-    throw(Error.Generic("Unable to read length from BSON stream.\n"));
+    ERROR("Unable to read length from BSON stream.\n");
   if(sizeof(bson) < (len -4))
-    throw(Error.Generic(sprintf("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1)));
+    ERROR("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1);
   slist = bson[0..<1];
   mapping list = ([]);
   
@@ -227,7 +229,7 @@ static string decode_next_value(string slist, mapping list)
   int doclen;
 
   if(sscanf(slist, "%c%s\0%s", type, key, slist)!=3)
-    throw(Error.Generic("Unable to read key and type from BSON stream.\n")); 
+    ERROR("Unable to read key and type from BSON stream.\n");
 
   key = utf8_to_string(key);
   switch(type)
@@ -235,73 +237,73 @@ static string decode_next_value(string slist, mapping list)
      int len, subtype;
      case TYPE_FLOAT:
        if(sscanf(slist, "%-8s%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read float from BSON stream.\n")); 
+         ERROR("Unable to read float from BSON stream.\n");
        if(sscanf(reverse(value), "%8F", value) != 1 )
-         throw(Error.Generic("Unable to read float from BSON stream.\n")); 
+         ERROR("Unable to read float from BSON stream.\n");
       
        break;
      case TYPE_STRING:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
-         throw(Error.Generic("Unable to read string length from BSON stream.\n")); 
- 	     if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read string from BSON stream.\n")); 
- 	     value = utf8_to_string(value);
+         ERROR("Unable to read string length from BSON stream.\n");
+       if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
+         ERROR("Unable to read string from BSON stream.\n");
+       value = utf8_to_string(value);
        break;
      case TYPE_BINARY:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
-         throw(Error.Generic("Unable to read binary length from BSON stream.\n")); 
- 	     if(sscanf(slist, "%c%" + (len-1) + "s\0%s", subtype, value, slist) != 2)
-         throw(Error.Generic("Unable to read binary from BSON stream.\n")); 
- 	     value = .Binary(value, subtype);
+         ERROR("Unable to read binary length from BSON stream.\n");
+       if(sscanf(slist, "%c%" + (len-1) + "s\0%s", subtype, value, slist) != 2)
+         ERROR("Unable to read binary from BSON stream.\n");
+       value = .Binary(value, subtype);
        break;
      case TYPE_JAVASCRIPT:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
-         throw(Error.Generic("Unable to read javascript length from BSON stream.\n")); 
- 	     if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read javascript from BSON stream.\n")); 
- 	     value = .Javascript(utf8_to_string(value));
+         ERROR("Unable to read javascript length from BSON stream.\n");
+       if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
+         ERROR("Unable to read javascript from BSON stream.\n");
+       value = .Javascript(utf8_to_string(value));
        break;
      case TYPE_SYMBOL:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
-         throw(Error.Generic("Unable to read symbol length from BSON stream.\n")); 
- 	     if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read symbol from BSON stream.\n")); 
- 	     value = .Symbol(utf8_to_string(value));
+         ERROR("Unable to read symbol length from BSON stream.\n");
+       if(sscanf(slist, "%" + (len-1) + "s\0%s", value, slist) != 2)
+         ERROR("Unable to read symbol from BSON stream.\n");
+       value = .Symbol(utf8_to_string(value));
        break;
      case TYPE_REGEX:
        string regex, options;
        
        if(sscanf(slist, "%s\0%s", regex, slist)!=2)
-         throw(Error.Generic("Unable to read regex from BSON stream.\n")); 
+         ERROR("Unable to read regex from BSON stream.\n");
        regex = utf8_to_string(regex);
        
        if(sscanf(slist, "%s\0%s", options, slist)!=2)
-         throw(Error.Generic("Unable to read regex options from BSON stream.\n"));        
+         ERROR("Unable to read regex options from BSON stream.\n");
        options = utf8_to_string(options);
        value = .Regex(regex, options);
        break;     
        
      case TYPE_INT32:     
        if(sscanf(slist, "%-4c%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read int32 from BSON stream.\n")); 
+         ERROR("Unable to read int32 from BSON stream.\n");
        break;
      case TYPE_INT64:
        if(sscanf(slist, "%-8c%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read int64 from BSON stream.\n")); 
+         ERROR("Unable to read int64 from BSON stream.\n");
        break;
      case TYPE_OBJECTID:
        if(sscanf(slist, "%12s%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read object id from BSON stream.\n")); 
- 	     value = .ObjectId(value);
+         ERROR("Unable to read object id from BSON stream.\n");
+       value = .ObjectId(value);
        break;
      case TYPE_TIMESTAMP:
        if(sscanf(slist, "%-8c%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read timestamp from BSON stream.\n")); 
- 	     value = .Timestamp(value);
+         ERROR("Unable to read timestamp from BSON stream.\n");
+       value = .Timestamp(value);
        break;  
      case TYPE_BOOLEAN:
        if(sscanf(slist, "%c%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read boolean from BSON stream.\n")); 
+         ERROR("Unable to read boolean from BSON stream.\n");
        if(value) value = Val.True;
        else value = Val.False;
        break;
@@ -316,22 +318,22 @@ static string decode_next_value(string slist, mapping list)
        break;
      case TYPE_DATETIME:
        if(sscanf(slist, "%-8c%s", value, slist) != 2)
-         throw(Error.Generic("Unable to read datetime from BSON stream.\n"));      
+         ERROR("Unable to read datetime from BSON stream.\n");
          value/=1000;
          value = Calendar.Second("unix", value);
        break;
      case TYPE_DOCUMENT:
        if(sscanf(slist, "%-4c", doclen) != 1)
-       	 throw(Error.Generic("Unable to read embedded document length\n"));
+       	 ERROR("Unable to read embedded document length\n");
        if(!sscanf(slist, "%" + (doclen) + "s%s", document, slist))
-       	 throw(Error.Generic("Unable to read specified length for embedded document.\n"));
+       	 ERROR("Unable to read specified length for embedded document.\n");
        value = decode(document);
        break;
      case TYPE_ARRAY:
        if(sscanf(slist, "%-4c", doclen) != 1)
-       	 throw(Error.Generic("Unable to read embedded document length\n"));
+       	 ERROR("Unable to read embedded document length\n");
        if(sscanf(slist, "%" + (doclen) + "s%s", document, slist) !=2)
-       	 throw(Error.Generic("Unable to read specified length for embedded document.\n"));
+       	 ERROR("Unable to read specified length for embedded document.\n");
        value = decode(document);
        int asize = sizeof(value);
        array bval = allocate(asize);
@@ -342,7 +344,7 @@ static string decode_next_value(string slist, mapping list)
        value=bval;
        break;
      default:
-       throw(Error.Generic("Unknown BSON type " + type + ".\n"));     
+       ERROR("Unknown BSON type " + type + ".\n");
   }
   
   list[key] = value;
@@ -363,9 +365,9 @@ array decode_array(string bsonarray)
     int len;
 	
     if(sscanf(bsonarray, "%-4c", len)!=1)
-      throw(Error.Generic("Unable to read length from BSON stream.\n"));
+      ERROR("Unable to read length from BSON stream.\n");
     if(sscanf(bsonarray, "%" + len + "s%s", bson, bsonarray) != 2)
-      throw(Error.Generic("Unable to read full data from BSON stream.\n"));
+      ERROR("Unable to read full data from BSON stream.\n");
     a+=({decode(bson)});
   }
   return a;
@@ -398,4 +400,3 @@ class minkey_object
       return "MinKey";
   }
 }
-
