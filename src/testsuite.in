@@ -4008,12 +4008,12 @@ test_program([[
 
 // Testing __INIT
 test_any([[
-  class X { int x = 1; int zz = 1;};
-  class Y { int y = 2; };
-  class Z { inherit X; inherit Y; int z = 4; int zz = 0; };
+  class X { int x = 1; int zz = 1; int zzz=8; int xx=8; };
+  class Y { int y = 2; int xx; };
+  class Z { inherit X; inherit Y; int z = 4; int zz = 0; int zzz; };
   object zz = Z();
-  return zz->x + zz->y + zz->z + zz->zz;
-]], 7)
+  return zz->x + zz->y + zz->z + zz->zz + zz->zzz + zz->xx;
+]], 15)
 
 test_any([[
   // Test __INIT with forward references to programs needing their parents.
