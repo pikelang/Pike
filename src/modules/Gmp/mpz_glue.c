@@ -1797,6 +1797,9 @@ static void mpzmod_next_prime(INT32 args)
 }
 
 /*! @decl int sgn()
+ *!
+ *! Return the sign of the integer, i.e. @expr{1@} for positive
+ *! numbers and @expr{-1@} for negative numbers.
  */
 static void mpzmod_sgn(INT32 args)
 {
