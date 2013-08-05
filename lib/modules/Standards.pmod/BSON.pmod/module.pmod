@@ -374,29 +374,27 @@ array decode_array(string bsonarray)
 }
 
 //!
-object MinKey = minkey_object();
+object MinKey = class
+  {
+    constant BSONMinKey = 1;
+
+    static mixed cast(string type)
+    {
+      if(type == "string")
+        return "MinKey";
+    }
+  }();
+
 
 //!
-object MaxKey = maxkey_object();
-
-class maxkey_object
-{
-  constant BSONMaxKey = 1;
-
-  static mixed cast(string type)
+object MaxKey = class
   {
-    if(type == "string")
-      return "MinKey";
-  }
-}
+    constant BSONMaxKey = 1;
 
-class minkey_object
-{
-  constant BSONMinKey = 1;
+    static mixed cast(string type)
+    {
+      if(type == "string")
+        return "MinKey";
+    }
+  }();
 
-  static mixed cast(string type)
-  {
-    if(type == "string")
-      return "MinKey";
-  }
-}
