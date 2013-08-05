@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 
 #include <stdint.h>
+#include <arpa/inet.h>
+
 /* Standard Pike include files. */
 #include "bignum.h"
 #include "array.h"
@@ -575,9 +577,33 @@ PIKE_MODULE_INIT
 {
   INIT;
 
+  // We could initialize these to their real values for some minimal
+  // runtime performance gain.
+  True = NULL;
+  False = NULL;
+  Null = NULL;
+  MinKey = NULL;
+  MaxKey = NULL;
+  Javascript = NULL;
+  Second = NULL;
+  ObjectId = NULL;
+  Symbol = NULL;
+  Regex = NULL;
+  Timestamp = NULL;
 }
 
 PIKE_MODULE_EXIT 
 {
+  if( True ) free_object(True);
+  if( False ) free_object(False);
+  if( Null ) free_object(Null);
+  if( MinKey ) free_object(MinKey);
+  if( MaxKey ) free_object(MaxKey);
+  if( Javascript ) free_program(Javascript);
+  if( Second ) free_svalue(Second);
+  if( ObjectId ) free_program(ObjectId);
+  if( Symbol ) free_program(Symbol);
+  if( Regex ) free_program(Regex);
+  if( Timestamp ) free_program(Timestamp);
   EXIT;
 }
