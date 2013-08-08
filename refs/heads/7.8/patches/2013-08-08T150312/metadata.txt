@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Rsql, sslfile linger, search engine, SNMP, mkdirhier etc
 from: 88ecef5e8499543cb8bd407e12066a1b6e759bf8
 to: cb765a0af476021b3e53744ef6c6c6b79a13e064
 originator: wellhardh@roxen.com
@@ -7,8 +7,6 @@ depends: 2013-08-08T143649
 restart: true
 
 Multiple fixes:
-
-  * release number bumped to 773 by export.pike
 
   * Tool.Standalone.rsqld: Minor cleanup.
 
@@ -40,19 +38,6 @@ Multiple fixes:
 
   * Sql.rsql: Implemented generic proxy of functions.
 
-  * Configure: Enable the full address space on NT.
-    
-    The default address space on NT is just 31 bits. Attempt to
-    get the linker to enable the full addressspace.
-
-  * release number bumped to 774 by export.pike
-
-  * release number bumped to 775 by export.pike
-
-  * Stdio.File: Added linger().
-    
-    Implemented support to change the linger time on sockets.
-
   * SSL.sslfile: Added linger().
     
     Implemented linger() API. The linger time is propagated to the raw
@@ -62,24 +47,6 @@ Multiple fixes:
   * Optimize query for word_hit blob length when there are several blobs for a
     given word.
 
-  * Call fd_select() before fd_accept() in my_socketpair() to make sure it's ready.
-
-  * Added support for poll() to the fd_accept() check in my_socketpair() and lowered the select() timeout.
-
-  * release number bumped to 776 by export.pike
-
-  * release number bumped to 777 by export.pike
-
-  * release number bumped to 778 by export.pike
-
-  * release number bumped to 779 by export.pike
-
-  * Errors: Improved emulation or arrays in object errors.
-    
-    Implement _sizeof(), _indices() and _values() in the generic error class.
-    
-    Fixes "Index 2 is out of range 0..1." from describe_backtrace().
-
   * Calendar.Timezone: Make compile() reentrant.
     
     Each time compile() was called an additional set of rules
@@ -87,12 +54,6 @@ Multiple fixes:
     compilation errors.
     
     Also fixes issue with throwing broken errors from compile().
-
-  * release number bumped to 780 by export.pike
-
-  * release number bumped to 781 by export.pike
-
-  * Small doc fixes to match reality.
 
   * Add comment on restrictions on maximum blob size constant.
 
@@ -127,15 +88,6 @@ Multiple fixes:
     format is not backwards compatible since old blob readers will fail to skip
     the padding, and old clients will write records with incorrect padding
     counters.
-
-  * Pike.gc_parameters(): Added some gc callbacks.
-    
-    Adds callbacks that are called from the gc to simplify
-    debugging of memory leaks and similar.
-
-  * release number bumped to 782 by export.pike
-
-  * release number bumped to 783 by export.pike
 
   * Runtime: Improve robustness against outputting wide strings.
     
