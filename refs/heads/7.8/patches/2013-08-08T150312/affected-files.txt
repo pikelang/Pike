@@ -1,0 +1,11 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/ADT.pmod/Struct.pike
+  pike/lib/modules/Calendar.pmod/Timezone.pmod
+  pike/lib/modules/Protocols.pmod/SNMP.pmod/protocol.pike
+  pike/lib/modules/SSL.pmod/sslfile.pike
+  pike/lib/modules/Search.pmod/Database.pmod/MySQL.pike
+  pike/lib/modules/Sql.pmod/rsql.pike
+  pike/lib/modules/Stdio.pmod/module.pmod
+  pike/lib/modules/Tools.pmod/Hilfe.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/rsqld.pike
