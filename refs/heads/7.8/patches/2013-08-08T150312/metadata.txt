@@ -1,0 +1,163 @@
+subject: Pike 7.8: Multiple fixes:
+from: 88ecef5e8499543cb8bd407e12066a1b6e759bf8
+to: cb765a0af476021b3e53744ef6c6c6b79a13e064
+originator: wellhardh@roxen.com
+depends: pike/7.8.772
+depends: 2013-08-08T143649
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 773 by export.pike
+
+  * Tool.Standalone.rsqld: Minor cleanup.
+
+  * Sql.rsql: Implemented insert_id().
+    
+    Proxying of insert_id() was missing in the rsqld protocol.
+
+  * Sql.rsql: Fix reconnect code.
+    
+    The state-machine on the client side when the rsqld server
+    died was broken in several ways. It now seems to work.
+
+  * Sql.rsql: Implement ping() API.
+    
+    ping() now signals if any part of the connection was reconnected (1),
+    or has been broken (-1).
+
+  * Sql.rsql: Default to not reconnect on broken connection.
+    
+    This behaviour is in line with the other SQL modules,
+    and is necessary to avoid corruption due to lost state.
+
+  * Sql.rsql: Implement {get,set}_charset().
+
+  * Sql.rsql: Implemented support for all big_query() variants.
+    
+    This implements support for big_typed_query(), streaming_query()
+    and streaming_typed_query().
+
+  * Sql.rsql: Implemented generic proxy of functions.
+
+  * Configure: Enable the full address space on NT.
+    
+    The default address space on NT is just 31 bits. Attempt to
+    get the linker to enable the full addressspace.
+
+  * release number bumped to 774 by export.pike
+
+  * release number bumped to 775 by export.pike
+
+  * Stdio.File: Added linger().
+    
+    Implemented support to change the linger time on sockets.
+
+  * SSL.sslfile: Added linger().
+    
+    Implemented linger() API. The linger time is propagated to the raw
+    socket, and additionally a linger time of zero inhibits sending of
+    the close packet.
+
+  * Optimize query for word_hit blob length when there are several blobs for a
+    given word.
+
+  * Call fd_select() before fd_accept() in my_socketpair() to make sure it's ready.
+
+  * Added support for poll() to the fd_accept() check in my_socketpair() and lowered the select() timeout.
+
+  * release number bumped to 776 by export.pike
+
+  * release number bumped to 777 by export.pike
+
+  * release number bumped to 778 by export.pike
+
+  * release number bumped to 779 by export.pike
+
+  * Errors: Improved emulation or arrays in object errors.
+    
+    Implement _sizeof(), _indices() and _values() in the generic error class.
+    
+    Fixes "Index 2 is out of range 0..1." from describe_backtrace().
+
+  * Calendar.Timezone: Make compile() reentrant.
+    
+    Each time compile() was called an additional set of rules
+    was appended. This could be triggered when a zone had
+    compilation errors.
+    
+    Also fixes issue with throwing broken errors from compile().
+
+  * release number bumped to 780 by export.pike
+
+  * release number bumped to 781 by export.pike
+
+  * Small doc fixes to match reality.
+
+  * Add comment on restrictions on maximum blob size constant.
+
+  * The split_blobs() return value used a 0 for doc ID in the first tuple
+    which one of the call sites didn't expect (splitting blobs for words
+    not present in the database). We now always return a valid doc ID.
+
+  * Don't unlock and lock word_hit table every single iteration when syncing blobs.
+
+  * Introduce support for padded blobs. This is done to counter the performance
+    degradation seen when incrementally growing blobs which causes crazy record
+    fragmentation in MySQL's word_hit.MYD file.
+    
+    The strategy is to grow blobs 25% when full, and otherwise write in place
+    and adjust counters to handle book-keeping of the padding. As a test case
+    I had a document containing ~1100 words (50% unique words) and indexed it
+    repeatedly to a database with 620.000 records; the old implementation
+    deteriorated from 270 ms -> 1100 ms per pass after 200 passes (although
+    OPTIMIZE TABLE would bring it back down again), while the new one is more
+    or less stable at 270-300 ms per pass throughout the whole test.
+    
+    Padded blobs are not enabled by default unless higher layers of the
+    application indicates that it is ok. This is tested by resolving the
+    Search.Process.Compactor class since that code depdends on the blob format
+    and if an older compactor is present we cannot make the switch. (This would
+    preferably be solved by moving the compactor to this pmod.) If no compactor
+    is present the behavior (as well as the word_hit table definition) is
+    unchanged from earlier versions.
+    
+    Note that if padding is activated in a multi-server setup with a shared
+    database all clients must be upgraded to the same implementation. The record
+    format is not backwards compatible since old blob readers will fail to skip
+    the padding, and old clients will write records with incorrect padding
+    counters.
+
+  * Pike.gc_parameters(): Added some gc callbacks.
+    
+    Adds callbacks that are called from the gc to simplify
+    debugging of memory leaks and similar.
+
+  * release number bumped to 782 by export.pike
+
+  * release number bumped to 783 by export.pike
+
+  * Runtime: Improve robustness against outputting wide strings.
+    
+    master()->handle_error() now survives if eg an object has
+    an _sprintf() that returns a wide string.
+    
+    master()->compile_{error,warning}() now survive messages about
+    wide symbols.
+    
+    Made a similar fix in Hilfe to survive compiler warnings and
+    errors about wide symbols.
+    
+    Fixes [bug 6805].
+
+  * SNMP: Fixed error in GetRequest variable bindings.
+    
+    The variable value should be ASN1 "Null" rather than a bogus integer.
+    C.f. RFC 1905 section #3.
+
+  * Stdio: Reduce number of system calls in mkdirhier().
+    
+    This reduces the number of stats to the number of missing
+    path segments.
+
+  * ADT.Struct: working int32 / SWord
