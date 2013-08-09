@@ -70,6 +70,7 @@ PIKECLASS Yarrow
       free_string(THIS->seed_file);
     }
     THIS->seed_file = end_shared_string(seed_file);
+    THIS->seed_file->flags |= STRING_CLEAR_ON_EXIT;
   }
 #else
 #define pike_generate_seed_file()
@@ -123,6 +124,7 @@ PIKECLASS Yarrow
 		 YARROW256_SEED_FILE_SIZE);
 
     NO_WIDE_STRING(data);
+    data->flags |= STRING_CLEAR_ON_EXIT;
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
     pike_generate_seed_file();
     RETURN this_object();
@@ -151,18 +153,31 @@ PIKECLASS Yarrow
     optflags OPT_EXTERNAL_DEPEND;
     rawtype tDeprecated(tFunc(tNone, tStr8));
   {
+    struct pike_string * ret;
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
 
 #ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-    RETURN make_shared_binary_string(THIS->ctx.seed_file,
+    ret = make_shared_binary_string(THIS->ctx.seed_file,
                                      YARROW256_SEED_FILE_SIZE);
+    ret->flags |= STRING_CLEAR_ON_EXIT;
+    RETURN ret;
 #else
     if (THIS->seed_file) {
       REF_RETURN THIS->seed_file;
     } else {
+      /*
+       * It seems somewhat unreasonable to use uninitialized memory here.
+       * Instead, I think the user should be warned. It really isnt a very
+       * good source of entropy and may lead to undefined behavior in C.
+       * Why not simply return 0 in that case?
+       *  /arne
+       */
       struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      RETURN end_shared_string(s);
+      PIKE_MEM_RW_RANGE(s->str, YARROW256_SEED_FILE_SIZE);
+      s = end_shared_string(s);
+      s->flags |= STRING_CLEAR_ON_EXIT;
+      RETURN s;
     }
 #endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
   }
@@ -214,6 +229,7 @@ PIKECLASS Yarrow
     int ret;
     /* FIXME: Wide strings could actually be supported here */
     NO_WIDE_STRING(data);
+    data->flags |= STRING_CLEAR_ON_EXIT;
     if( !THIS->sources )
       Pike_error("This random generator has no sources.\n");
     if( source<0 || (unsigned)source>=THIS->ctx.nsources )
@@ -253,7 +269,9 @@ PIKECLASS Yarrow
       Pike_error("Random generator not seeded.\n");
     rnd = begin_shared_string(length);
     yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
-    RETURN end_shared_string(rnd);
+    rnd = end_shared_string(rnd);
+    rnd->flags |= STRING_CLEAR_ON_EXIT;
+    RETURN rnd;
   }
 
   INIT
@@ -286,6 +304,9 @@ PIKEFUN string(0..127) crypt_md5(string pw, string salt, void|string magic)
   char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
+
+  pw->flags |= STRING_CLEAR_ON_EXIT;
+
   if(!magic)
   {
     hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
@@ -569,8 +590,11 @@ PIKECLASS CBC
     unsigned INT8 *result;
     INT32 offset = 0;
     ONERROR uwp;
+    struct pike_string * res;
 
     NO_WIDE_STRING(data);
+
+    data->flags |= STRING_CLEAR_ON_EXIT;
 
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
@@ -595,7 +619,9 @@ PIKECLASS CBC
     }
 
     pop_n_elems(args);
-    push_string(make_shared_binary_string((INT8 *)result, offset));
+    res = make_shared_binary_string((INT8 *)result, offset);
+    res->flags |= STRING_CLEAR_ON_EXIT;
+    push_string(res);
     guaranteed_memset(result, 0, offset);
 
     CALL_AND_UNSET_ONERROR (uwp);
@@ -747,6 +773,7 @@ PIKECLASS Proxy {
     ptrdiff_t soffset = 0;
     ptrdiff_t len;
     ONERROR uwp;
+    struct pike_string * res;
 
     if (!(result = malloc(data->len + THIS->block_size)))
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
@@ -811,7 +838,9 @@ PIKECLASS Proxy {
 
     pop_n_elems(args);
 
-    push_string(make_shared_binary_string((char *)result, roffset + len));
+    res = make_shared_binary_string((char *)result, roffset + len);
+    res->flags |= STRING_CLEAR_ON_EXIT;
+    push_string(res);
     guaranteed_memset(result, 0, roffset + len);
     CALL_AND_UNSET_ONERROR (uwp);
   }
@@ -838,6 +867,7 @@ PIKECLASS Proxy {
     ptrdiff_t i;
     int m = 0;
     int size = THIS->block_size - THIS->backlog_len;
+    struct pike_string * backlog;
 
     if(method)
     {
@@ -885,9 +915,9 @@ PIKECLASS Proxy {
 
   
     THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
-
-    push_string(make_shared_binary_string((const char *)THIS->backlog,
-					  THIS->block_size));
+    backlog = make_shared_binary_string((const char *)THIS->backlog, THIS->block_size);
+    backlog->flags |= STRING_CLEAR_ON_EXIT;
+    push_string(backlog);
 
     MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
@@ -918,6 +948,7 @@ PIKECLASS Proxy {
   PIKEFUN string(0..255) unpad(string str, void|int method) {
     ptrdiff_t len;
     int m = 0;
+    struct pike_string * ret;
 
     len = str->len;
     if( len % THIS->block_size)
@@ -972,7 +1003,9 @@ PIKECLASS Proxy {
   
     add_ref(str);
     pop_stack();
-    push_string(make_shared_binary_string(str->str, len));
+    ret = make_shared_binary_string(str->str, len);
+    ret->flags |= STRING_CLEAR_ON_EXIT;
+    push_string(ret);
     free_string(str);
   }
 
