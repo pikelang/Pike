@@ -706,6 +706,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
   ret = end_shared_string(ret);
   ret->flags |= STRING_IS_LOWERCASE;
+  ret->flags |= orig->flags & STRING_CLEAR_ON_EXIT;
   pop_n_elems(args);
   push_string(ret);
 }
@@ -813,6 +814,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   pop_n_elems(args);
   ret = end_shared_string(ret);
   ret->flags |= STRING_IS_UPPERCASE;
+  ret->flags |= orig->flags & STRING_CLEAR_ON_EXIT;
   push_string(ret);
 }
 
@@ -1779,6 +1781,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 #endif
   }
   pop_n_elems(args);
+  out->flags |= in->flags & STRING_CLEAR_ON_EXIT;
   push_string(out);
 }
 
@@ -1938,6 +1941,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   }
   out = end_shared_string(out);
   pop_n_elems(args);
+  out->flags |= in->flags & STRING_CLEAR_ON_EXIT;
   push_string(out);
 }
 
@@ -2082,6 +2086,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 #endif /* PIKE_DEBUG */
   out = end_shared_string(out);
   pop_n_elems(args);
+  out->flags |= in->flags & STRING_CLEAR_ON_EXIT;
   push_string(out);
 }
 
@@ -2435,6 +2440,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   check_string (out);
 #endif
   pop_n_elems(args);
+  out->flags |= in->flags & STRING_CLEAR_ON_EXIT;
   push_string(out);
 }
 
