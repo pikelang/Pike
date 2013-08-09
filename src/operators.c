@@ -2741,28 +2741,31 @@ PMOD_EXPORT void o_and(void)
 #define STRING_BITOP(OP,STROP)						  \
   case T_STRING:							  \
   {									  \
-    struct pike_string *s;						  \
+    struct pike_string *s, *a, *b;					  \
     ptrdiff_t len, i;							  \
-									  \
-    len = sp[-2].u.string->len;						  \
-    if (len != sp[-1].u.string->len)					  \
+    a = sp[-2].u.string;                                                  \
+    b = sp[-1].u.string;                                                  \
+    len = a->len;						          \
+    if (len != b->len)					                  \
       PIKE_ERROR("`" #OP, "Bitwise "STROP				  \
 		 " on strings of different lengths.\n", sp, 2);		  \
-    if(!sp[-2].u.string->size_shift && !sp[-1].u.string->size_shift)	  \
+    if(!a->size_shift && !b->size_shift)	                          \
     {									  \
       s = begin_shared_string(len);					  \
       for (i=0; i<len; i++)						  \
-	s->str[i] = sp[-2].u.string->str[i] OP sp[-1].u.string->str[i];	  \
+	s->str[i] = a->str[i] OP b->str[i];	                          \
     }else{								  \
       s = begin_wide_shared_string(len,					  \
-				   MAXIMUM(sp[-2].u.string->size_shift,	  \
-					   sp[-1].u.string->size_shift)); \
+				   MAXIMUM(a->size_shift,	          \
+					   b->size_shift));               \
       for (i=0; i<len; i++)						  \
-	low_set_index(s,i,index_shared_string(sp[-2].u.string,i) OP 	  \
-		      index_shared_string(sp[-1].u.string,i));		  \
+	low_set_index(s,i,index_shared_string(a,i) OP 	                  \
+		      index_shared_string(b,i));		          \
     }									  \
+    s = end_shared_string(s);                                             \
+    s->flags |= (a->flags | b->flags) & STRING_CLEAR_ON_EXIT;             \
     pop_n_elems(2);							  \
-    push_string(end_shared_string(s));					  \
+    push_string(s);                                                       \
     return;								  \
   }
 
