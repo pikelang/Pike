@@ -326,8 +326,12 @@ class protocol
     int pos=n[0];
     int next=-1;
     array(string) ret=({});
+    int labels = 0;
     while(pos < sizeof(msg))
     {
+      labels++;
+      if (labels > 255)
+        error("Bad domain name. Too many labels.\n");
       switch(int len=msg[pos])
       {
 	case 0:
