@@ -283,6 +283,8 @@ PIKECLASS HashInfo
     NO_WIDE_STRING(password);
     NO_WIDE_STRING(salt);
 
+    password->flags |= STRING_CLEAR_ON_EXIT;
+
     ctx = (void *)alloca(meta->context_size);
     if (!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->context_size);

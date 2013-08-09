@@ -207,6 +207,7 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str,
 				  force ? force->u.integer : 0);
 
@@ -233,6 +234,7 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str,
 				  force ? force->u.integer : 0);
       THIS->crypt = info->meta->decrypt;
@@ -287,6 +289,7 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
+      data->flags |= STRING_CLEAR_ON_EXIT;
 
       if (data->len % info->meta->block_size)
 	Pike_error("Data must be an integral number of blocks.\n");
@@ -294,7 +297,9 @@ PIKECLASS CipherState
       s = begin_shared_string(data->len);
       THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
                   (const uint8_t *)data->str);
-      push_string(end_shared_string(s));
+      s = end_shared_string(s);
+      s->flags |= STRING_CLEAR_ON_EXIT;
+      push_string(s);
     }
 
   /*! @decl int(0..) key_size(void)
