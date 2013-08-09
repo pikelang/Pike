@@ -122,6 +122,9 @@ enum EntryType
 
   //! Type - SPF - Sender Policy Framework (RFC 4408)
   T_SPF=99,
+
+  //! Type - ANY - A request for all records
+  T_ANY=255,
 };
 
 int safe_bind(Stdio.UDP udp, mixed ... args)
