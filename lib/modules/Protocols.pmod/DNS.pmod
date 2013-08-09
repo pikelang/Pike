@@ -648,6 +648,8 @@ class protocol
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
     for(int i=0; i<m->qdcount; i++) {
+      if (next[0] > sizeof(s))
+        error("Bad DNS request, not enough data\n");
       m->qd[i]=(["name":decode_domain(s,next)]);
       sscanf(s[next[0]..next[0]+3],"%2c%2c",m->qd[i]->type, m->qd[i]->cl);
       next[0]+=4;
