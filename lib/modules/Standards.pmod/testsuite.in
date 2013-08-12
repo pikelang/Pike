@@ -17,6 +17,42 @@ class A {
 }(); )
     
 
+// - Standards.PEM
+test_any_equal([[
+string pem = #"-----BEGIN PRIVACY-ENHANCED MESSAGE-----
+Proc-Type: 4,ENCRYPTED
+Content-Domain: RFC822
+DEK-Info: DES-CBC,F8143EDE5960C597
+Originator-ID-Symmetric: linn@zendia.enet.dec.com,,
+Recipient-ID-Symmetric: linn@zendia.enet.dec.com,ptf-kmc,3
+Key-Info: DES-ECB,RSA-MD2,9FD3AAD2F2691B9A,
+          B70665BB9BF7CBCDA60195DB94F727D3
+Recipient-ID-Symmetric: pem-dev@tis.com,ptf-kmc,4
+Key-Info: DES-ECB,RSA-MD2,161A3F75DC82EF26,
+          E2EF532C65CBCFF79F83A2658132DB47
+
+LLrHB0eJzyhP+/fSStdW8okeEnv47jxe7SJ/iN72ohNcUk2jHEUSoH1nvNSIWL9M
+8tEjmF/zxB+bATMtPjCUWbz8Lr9wloXIkjHUlBLpvXR0UrUzYbkNpk0agV2IzUpk
+J6UiRRGcDSvzrsoK+oNvqu6z7Xs5Xfz5rDqUcMlK1Z6720dcBWGGsDLpTpSCnpot
+dXd/H5LMDWnonNvPCwQUHt==
+-----END PRIVACY-ENHANCED MESSAGE-----";
+object o = Standards.PEM.Message(pem);
+return 0;
+return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
+]],[[ ([ /* 9 elements */
+  "body": ",\272\307\aG\211\317(O\373\367\322J\327V\362\211\36\22{\370\356<^\355\"\177\210\336\366\242\23\\RM\243\34E\22\240}g\274\324\210X\277L\362\321#\230_\363\304\37\233\1""3->0\224Y\274\374.\277p\226\205\310\222""1\324\224\22\351\275ttR\265""3a\271\r\246M\32\201]\210\315Jd'\245\"E\21\234\r+\363\256\312\n"
+    "\372\203o\252\356\263\355{9]\374\371\254:\224p\311J\325\236\273\333G\\\5a\206\260""2\351N\224\202\236\232-uw\177\37\222\314\ri\350\234\333\317\v\4\24\36",
+  "content-domain": "RFC822",
+  "dek-info": "DES-CBC,F8143EDE5960C597",
+  "key-info": "DES-ECB,RSA-MD2,9FD3AAD2F2691B9A,          B70665BB9BF7CBCDA60195DB94F727D3\0DES-ECB,RSA-MD2,161A3F75DC82EF26,          E2EF532C65CBCFF79F83A2658132DB47",
+  "originator-id-symmetric": "linn@zendia.enet.dec.com,,",
+  "post": "PRIVACY-ENHANCED MESSAGE",
+  "pre": "PRIVACY-ENHANCED MESSAGE",
+  "proc-type": "4,ENCRYPTED",
+  "recipient-id-symmetric": "linn@zendia.enet.dec.com,ptf-kmc,3\0pem-dev@tis.com,ptf-kmc,4"
+]) ]])
+
+
 // - Standards.URI
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
 test_equal((string)Standards.URI("g",             "http://a/b/c/d;p?q"), "http://a/b/c/g")
