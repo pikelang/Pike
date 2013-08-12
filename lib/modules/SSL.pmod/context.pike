@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-//! Keeps the state that is shared by all SSL-connections for
-//! one server (or one port). It includes policy configuration, a server
-//! certificate, the server's private key(s), etc. It also includes the
-//! session cache.
+//! Keeps the state that is shared by all SSL-connections for one
+//! server (or one port). It includes policy configuration, a server
+//! certificate, the server's private key(s), etc. It also includes
+//! the session cache.
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -19,88 +19,92 @@ import .Constants;
 //! The server's default private key
 //! 
 //! @note
-//!   If SNI (Server Name Indication) is used and multiple keys
-//!   are available, this key will not be used, instead the appropriate
+//!   If SNI (Server Name Indication) is used and multiple keys are
+//!   available, this key will not be used, instead the appropriate
 //!   SNI key will be used (the default implementation stores these in
 //!   @[sni_keys].
 Crypto.RSA rsa;
 
 //! Should an SSL client include the Server Name extension?
 //!
-//! If so, then client_server_names should specify the values to
-//! send.
+//! If so, then client_server_names should specify the values to send.
 int client_use_sni = 0;
 
-//! Host names to send to the server when using the Server Name extension.
+//! Host names to send to the server when using the Server Name
+//! extension.
 array(string) client_server_names = ({});
 
 /* For client authentication */
 
-//! The client's private key (used with client certificate authentication)
+//! The client's private key (used with client certificate
+//! authentication)
 Crypto.RSA client_rsa;
 
 //! An array of certificate chains a client may present to a server
 //! when client certificate authentication is requested.
 array(array(string)) client_certificates = ({});
 
-//! A function which will select an acceptable client certificate for 
-//! presentation to a remote server. This function will receive
-//! the SSL context, an array of acceptable certificate types,
-//! and a list of DNs of acceptable certificate authorities. This function
-//! should return an array of strings containing a certificate chain,
-//! with the client certificate first, (and the root certificate last, if
-//! applicable.) 
+//! A function which will select an acceptable client certificate for
+//! presentation to a remote server. This function will receive the
+//! SSL context, an array of acceptable certificate types, and a list
+//! of DNs of acceptable certificate authorities. This function should
+//! return an array of strings containing a certificate chain, with
+//! the client certificate first, (and the root certificate last, if
+//! applicable.)
 function (.context,array(int),array(string):array(string))client_certificate_selector
   = internal_select_client_certificate;
 
-//! A function which will select an acceptable server certificate for 
-//! presentation to a client. This function will receive
-//! the SSL context, and an array of server names, if provided by the 
-//! client. This function should return an array of strings containing a 
-//! certificate chain, with the client certificate first, (and the root 
-//! certificate last, if applicable.) 
+//! A function which will select an acceptable server certificate for
+//! presentation to a client. This function will receive the SSL
+//! context, and an array of server names, if provided by the client.
+//! This function should return an array of strings containing a
+//! certificate chain, with the client certificate first, (and the
+//! root certificate last, if applicable.)
 //!
-//! The default implementation will select a certificate chain for a given server
-//! based on values contained in @[sni_certificates].
+//! The default implementation will select a certificate chain for a
+//! given server based on values contained in @[sni_certificates].
 function (.context,array(string):array(string)) select_server_certificate_func 
   = internal_select_server_certificate;
 
-//! A function which will select an acceptable server key for 
-//! presentation to a client. This function will receive
-//! the SSL context, and an array of server names, if provided by the 
-//! client. This function should return an object matching the certificate
-//! for the server hostname.
+//! A function which will select an acceptable server key for
+//! presentation to a client. This function will receive the SSL
+//! context, and an array of server names, if provided by the client.
+//! This function should return an object matching the certificate for
+//! the server hostname.
 //!
 //! The default implementation will select the key for a given server
 //! based on values contained in @[sni_keys].
 function (.context,array(string):object) select_server_key_func 
   = internal_select_server_key;
 
-//! Policy for client authentication. One of @[SSL.Constants.AUTHLEVEL_none],
-//! @[SSL.Constants.AUTHLEVEL_ask] and @[SSL.Constants.AUTHLEVEL_require].
+//! Policy for client authentication. One of
+//! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
+//! and @[SSL.Constants.AUTHLEVEL_require].
 int auth_level;
 
 //! Array of authorities that are accepted for client certificates.
-//! The server will only accept connections from clients whose certificate
-//! is signed by one of these authorities. The string is a DER-encoded certificate,
-//! which typically must be decoded using @[MIME.decode_base64] or 
-//! @[Tools.PEM.Msg] first.
-//! 
-//! Note that it is presumed that the issuer will also be trusted by the server. See 
-//! @[trusted_issuers] for details on specifying trusted issuers.
-//! 
-//! If empty, the server will accept any client certificate whose issuer is trusted by the 
-//! server.
+//! The server will only accept connections from clients whose
+//! certificate is signed by one of these authorities. The string is a
+//! DER-encoded certificate, which typically must be decoded using
+//! @[MIME.decode_base64] or @[Standards.PEM.Msg] first.
+//!
+//! Note that it is presumed that the issuer will also be trusted by
+//! the server. See @[trusted_issuers] for details on specifying
+//! trusted issuers.
+//!
+//! If empty, the server will accept any client certificate whose
+//! issuer is trusted by the server.
 void set_authorities(array(string) a)
 {
   authorities = a;
   update_authorities();
 }
 
-//! When set, require the chain to be known, even if the root is self signed.
+//! When set, require the chain to be known, even if the root is self
+//! signed.
 //! 
-//! Note that if set, and certificates are set to be verified, trusted issuers must be
-//! provided, or no connections will be accepted.
+//! Note that if set, and certificates are set to be verified, trusted
+//! issuers must be provided, or no connections will be accepted.
 int require_trust=0;
 
 //! Get the list of allowed authorities. See @[set_authorities]. 
@@ -116,14 +120,16 @@ array(Tools.X509.TBSCertificate) authorities_cache = ({});
 //!
 //! @param a
 //!
-//! An array of certificate chains whose root is self signed (ie a root issuer), and whose
-//! final certificate is an issuer that we trust. The root of the certificate should be 
-//! first certificate in the chain. The string is a DER-encoded 
-//! certificate, which typically must be decoded using 
-//! @[MIME.decode_base64] or @[Tools.PEM.Msg] first.
+//! An array of certificate chains whose root is self signed (ie a
+//! root issuer), and whose final certificate is an issuer that we
+//! trust. The root of the certificate should be first certificate in
+//! the chain. The string is a DER-encoded certificate, which
+//! typically must be decoded using @[MIME.decode_base64] or
+//! @[Standards.PEM.Msg] first.
 //! 
-//! If this array is left empty, and the context is set to verify certificates,
-//! a certificate chain must have a root that is self signed.
+//! If this array is left empty, and the context is set to verify
+//! certificates, a certificate chain must have a root that is self
+//! signed.
 void set_trusted_issuers(array(array(string))  i)
 {
   trusted_issuers = i;
@@ -139,8 +145,8 @@ array(array(string)) get_trusted_issuers()
 protected array(array(string)) trusted_issuers = ({});
 array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
 
-//! Determines whether certificates presented by the peer are verified, or 
-//! just accepted as being valid.
+//! Determines whether certificates presented by the peer are
+//! verified, or just accepted as being valid.
 int verify_certificates = 0;
 
 //! Temporary, non-certified, private keys, used with a
@@ -155,8 +161,8 @@ Crypto.RSA short_rsa;
 //! Servers default dsa key.
 //!
 //! @note
-//!   If SNI (Server Name Indication) is used and multiple keys
-//!   are available, this key will not be used, instead the appropriate
+//!   If SNI (Server Name Indication) is used and multiple keys are
+//!   available, this key will not be used, instead the appropriate
 //!   SNI key will be used (the default implementation stores these in
 //!   @[sni_keys].
 Crypto.DSA dsa;
@@ -169,18 +175,20 @@ Crypto.DSA dsa;
 //! number generator is not used for generating the master_secret.
 function(int:string) random;
 
-//! The server's certificate, or a chain of X509.v3 certificates, with the
-//! server's certificate first and root certificate last.
+//! The server's certificate, or a chain of X509.v3 certificates, with
+//! the server's certificate first and root certificate last.
 array(string) certificates;
 
-//! A mapping containing certificate chains for use by SNI (Server Name
-//! Indication). Each entry should consist of a key indicating the server
-//! hostname and the value containing the certificate chain for that hostname.
+//! A mapping containing certificate chains for use by SNI (Server
+//! Name Indication). Each entry should consist of a key indicating
+//! the server hostname and the value containing the certificate chain
+//! for that hostname.
 mapping(string:array(string)) sni_certificates = ([]);
 
 //! A mapping containing private keys for use by SNI (Server Name
-//! Indication). Each entry should consist of a key indicating the server
-//! hostname and the value containing the private key object for that hostname.
+//! Indication). Each entry should consist of a key indicating the
+//! server hostname and the value containing the private key object
+//! for that hostname.
 //!
 //! @note
 //!  keys objects may be generated from a decoded key string using
@@ -192,10 +200,12 @@ mapping(string:object) sni_keys = ([]);
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });
 
-//! Cipher suites we want to support, in order of preference, best first.
+//! Cipher suites we want to support, in order of preference, best
+//! first.
 array(int) preferred_suites;
 
-//! List of advertised protocols using using TLS next protocol negotiation.
+//! List of advertised protocols using using TLS next protocol
+//! negotiation.
 array(string) advertised_protocols;
 
 //! Protocols to advertise during handshake using the next protocol
@@ -204,8 +214,8 @@ void advertise_protocols(string ... protos) {
     advertised_protocols = protos;
 }
 
-//! Filter cipher suites from @[preferred_suites] that don't have
-//! a key with an effective length of at least @[min_keylength] bits.
+//! Filter cipher suites from @[preferred_suites] that don't have a
+//! key with an effective length of at least @[min_keylength] bits.
 void filter_weak_suites(int min_keylength)
 {
   if (!preferred_suites || !min_keylength) return;
@@ -261,11 +271,12 @@ int session_lifetime = 600;
 int max_sessions = 300;
 
 /* Session cache */
-ADT.Queue active_sessions;  /* Queue of pairs (time, id), in cronological order */
+ADT.Queue active_sessions;  /* Queue of pairs (time, id), in
+                               cronological order */
 mapping(string:.session) session_cache;
 
-int session_number; /* Incremented for each session, and used when constructing the
-		     * session id */
+int session_number; /* Incremented for each session, and used when
+		     * constructing the session id */
 
 // Remove sessions older than @[session_lifetime] from the session cache.
 void forget_old_sessions()
