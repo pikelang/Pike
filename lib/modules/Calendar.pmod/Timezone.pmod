@@ -728,23 +728,22 @@ class Runtime_timezone_compiler
 
   }();
 
-   class Rule
+   class Rule(string id)
    {
-      string id;
-
-      mapping rules=([]);
-
       array(string) lines = ({});
-
-      int amt=0;
-
-      void create(string _id) { id=_id; }
 
       void add_line(string line)
       {
 	 lines += ({ line });
       }
-   
+   };
+
+   class RuleCompiler(string id, array(string) lines)
+   {
+      mapping rules=([]);
+
+      int amt=0;
+
       void add(string line)
       {
 	 array a= array_sscanf(line, replace("%s %s %s %s %s %s %s %[^\t ]",
@@ -946,6 +945,9 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_TIMING
        float t1=time(t);
 #endif
+#ifdef RTTZC_DEBUG
+       werror("Compiling rule %s\n", id);
+#endif
 
        foreach(lines, string line) add(line);
 
@@ -981,8 +983,6 @@ class Runtime_timezone_compiler
    {
       string id;
 
-      array rules=({});
-
       array(string) lines = ({});
 
       array(string) aliases = ({});
@@ -1001,6 +1001,11 @@ class Runtime_timezone_compiler
       {
 	 lines += ({ line });
       }
+   };
+
+   class ZoneCompiler(string id, array(string) lines, array(string) aliases)
+   {
+      array rules=({});
 
       void add(string line)
       {
@@ -1187,6 +1192,9 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_TIMING
        float t1=time(t);
 #endif
+#ifdef RTTZC_DEBUG
+       werror("Compiling zone %s\n", zone_name);
+#endif
 
        rules = ({});
        foreach(lines, string line) add(line);
@@ -1271,8 +1279,8 @@ class Runtime_timezone_compiler
       float t1=time(t);
 #endif
 
-      rule_cache = ([]);
-      zone_cache = ([]);
+      mapping(string:Zone) new_zones = ([]);
+      mapping(string:Rule) new_rules = ([]);
 
       mapping(string:string) zone_aliases = ([]);
 
@@ -1287,9 +1295,9 @@ class Runtime_timezone_compiler
 	  string rule_name, interval;
 	  if (sscanf(line, "Rule%*[ \t]%[^ \t]%*[ \t]%s",
 		     rule_name, interval) == 4) {
-	    Rule r = rules[rule_name];
+	    Rule r = new_rules[rule_name];
 	    if (!r) {
-	      r = rules[rule_name] = Rule(rule_name);
+	      r = new_rules[rule_name] = Rule(rule_name);
 	    }
 	    r->add_line(interval);
 	  } else {
@@ -1300,7 +1308,7 @@ class Runtime_timezone_compiler
 	  if (sscanf(line, "Zone%*[ \t]%[^ \t]%*[ \t]%s",
 		     zone_name, zone_info) == 4) {
 	    // werror("Creating zone %O.\n", zone_name);
-	    Zone z = current_zone = zones[zone_name] = Zone(zone_name);
+	    Zone z = current_zone = new_zones[zone_name] = Zone(zone_name);
 	    z->add_line(zone_info);
 	  } else {
 	    werror("Failed to parse directive %O.\n", line);
@@ -1312,9 +1320,7 @@ class Runtime_timezone_compiler
 	    Zone z = zones[zone_name];
 	    if (z) {
 	      z->add_alias(zone_alias);
-	      zones[zone_alias] = z;
-	    } else if (zone_cache[zone_name]) {
-	      zone_cache[zone_alias] = zone_cache[zone_name];
+	      new_zones[zone_alias] = z;
 	    } else {
 	      // werror("Deferred alias: %O ==> %O.\n", zone_alias, zone_name);
 	      zone_aliases[zone_alias] = zone_name;
@@ -1340,14 +1346,20 @@ class Runtime_timezone_compiler
       // Fixup the zone aliases.
       foreach(zone_aliases; string zone_alias; string zone_name) {
 	Zone z;
-	if ((z = zones[zone_name])) {
+	if ((z = new_zones[zone_name])) {
 	  z->add_alias(zone_alias);
-	  zones[zone_alias] = z;
-	} else if (!(zone_cache[zone_alias] = zone_cache[zone_name])) {
+	  new_zones[zone_alias] = z;
+	} else {
 	  werror("Zone %O is a link to a nonexistant zone %O.\n",
 		 zone_alias, zone_name);
 	}
       }
+
+      zones = new_zones;
+      rules = new_rules;
+
+      rule_cache = ([]);
+      zone_cache = ([]);
    }
 
    object find_zone(string s)
@@ -1368,7 +1380,7 @@ class Runtime_timezone_compiler
 	  return zone_cache[s] = find_zone(a[0]);
 	return UNDEFINED;
       }
-      ret = z->compile();
+      ret = ZoneCompiler(z->id, z->lines, z->aliases)->compile();
       foreach(z->aliases, string zone_alias) {
 	zone_cache[zone_alias] = ret;
 	m_delete(zones, zone_alias);
@@ -1385,7 +1397,7 @@ class Runtime_timezone_compiler
       if (ret) return ret;
       Rule r;
       if (!(r = rules[s])) return UNDEFINED;
-      ret = rule_cache[s] = r->compile();
+      ret = rule_cache[s] = RuleCompiler(s, r->lines)->compile();
       m_delete(rules, s);
       return ret;
    }
