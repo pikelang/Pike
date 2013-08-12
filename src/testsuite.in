@@ -4008,7 +4008,7 @@ test_program([[
 
 // Testing __INIT
 test_any([[
-  class X { int x = 1; int zz = 1; int zzz=8; int xx=8; };
+  class X { int x = 1; int zz = 1; int zzz=8; int xx=16; };
   class Y { int y = 2; int xx; };
   class Z { inherit X; inherit Y; int z = 4; int zz = 0; int zzz; };
   object zz = Z();
