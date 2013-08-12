@@ -19,12 +19,12 @@ test_do([[
 
   object rsa = Crypto.RSA();
   rsa->generate_key( 1024, random_string );
-  string _key = Standards.PEM.simple_build_pem("RSA PRIVATE KEY",
+  string _key = Standards.PEM.build("RSA PRIVATE KEY",
     Standards.PKCS.RSA.private_key(rsa));
 
-  object msg = Standards.PEM.Msg(_key);
+  object msg = Standards.PEM.Messages(_key);
   object part = msg->parts["RSA PRIVATE KEY"];
-  object rsa_again=Standards.PKCS.RSA.parse_private_key(part->decoded_body());
+  object rsa_again=Standards.PKCS.RSA.parse_private_key(part->body);
 
   ASSERT(rsa->public_key_equal(rsa_again));
 
@@ -33,7 +33,7 @@ test_do([[
     (["commonName":Standards.ASN1.Types.PrintableString("*")]),
   });
 
-  string _cert = Standards.PEM.simple_build_pem("CERTIFICATE",
+  string _cert = Standards.PEM.build("CERTIFICATE",
     Tools.X509.make_selfsigned_rsa_certificate(rsa_again, 3600*24, attrs));
 
   add_constant("pem_key", _key);
@@ -51,14 +51,14 @@ class Server {
     ctx = SSL.context();
     ctx->random = random_string;
 
-    object msg = Standards.PEM.Msg( pem_cert );
+    object msg = Standards.PEM.Messages( pem_cert );
     object part = msg->parts["CERTIFICATE"];
-    string cert = part->decoded_body();
+    string cert = part->body;
     ASSERT(cert);
 
-    msg = Standards.PEM.Msg( pem_key );
+    msg = Standards.PEM.Messages( pem_key );
     part = msg->parts["RSA PRIVATE KEY"];
-    string key = part->decoded_body();
+    string key = part->body;
     ASSERT(key);
 
     object rsa = Standards.PKCS.RSA.parse_private_key(key);

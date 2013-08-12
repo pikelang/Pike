@@ -86,7 +86,7 @@ int auth_level;
 //! The server will only accept connections from clients whose
 //! certificate is signed by one of these authorities. The string is a
 //! DER-encoded certificate, which typically must be decoded using
-//! @[MIME.decode_base64] or @[Standards.PEM.Msg] first.
+//! @[MIME.decode_base64] or @[Standards.PEM.Messages] first.
 //!
 //! Note that it is presumed that the issuer will also be trusted by
 //! the server. See @[trusted_issuers] for details on specifying
@@ -125,7 +125,7 @@ array(Tools.X509.TBSCertificate) authorities_cache = ({});
 //! trust. The root of the certificate should be first certificate in
 //! the chain. The string is a DER-encoded certificate, which
 //! typically must be decoded using @[MIME.decode_base64] or
-//! @[Standards.PEM.Msg] first.
+//! @[Standards.PEM.Messages] first.
 //! 
 //! If this array is left empty, and the context is set to verify
 //! certificates, a certificate chain must have a root that is self
