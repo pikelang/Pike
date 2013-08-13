@@ -852,11 +852,24 @@ PIKECLASS Proxy {
    *! @param method
    *! The type of padding to apply to the buffer.
    *! @int
-   *!   @value Crypto.PAD_SSL
    *!   @value Crypto.PAD_ISO_10126
+   *!     Pads according to ISO 10126, which means filling all extra
+   *!     space with random data and putting the size of the
+   *!     non-payload data last.
+   *!   @value Crypto.PAD_SSL
+   *!     As ISO 10126, but with the size of the random data last.
    *!   @value Crypto.PAD_ANSI_X923
+   *!     Pads according to ANSI X.923, which means filling all extra
+   *!     space with zero and putting the size of the non-payload data
+   *!     last.
    *!   @value Crypto.PAD_PKCS7
+   *!     Pads according to PKCS7 / RFC 3852, which means filling all
+   *!     extra space with hte size of the extra space.
    *!   @value Crypto.PAD_ZERO
+   *!     Fills the extra space with null bytes. To correctly remove
+   *!     the padding the clear text data must not end with a null
+   *!     byte. In that case the data would have to be manually
+   *!     padded/unpadded before/after calling @[crypt()].
    *! @endint
    *! Defaults to Crypto.PAD_SSL for compatibility reasons.
    *!
