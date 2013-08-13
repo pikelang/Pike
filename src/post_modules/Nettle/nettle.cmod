@@ -797,7 +797,7 @@ PIKECLASS Proxy {
 	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
 	roffset = THIS->block_size;
 	pop_stack();
-	MEMSET(THIS->backlog, 0, THIS->block_size);
+        MEMSET(THIS->backlog, 0, THIS->block_size);
       } else {
 	MEMCPY(THIS->backlog + THIS->backlog_len,
 	       data->str, data->len);
@@ -950,9 +950,9 @@ PIKECLASS Proxy {
     int m = 0;
     struct pike_string * ret;
 
-    len = str->len;
+    len = str->len + THIS->backlog_len;
     if( len % THIS->block_size)
-      Pike_error("String must be integral numbers of blocks.\n");
+      Pike_error("Total data size must be integral numbers of blocks.\n");
 
     if( method!=NULL )
     {
@@ -961,7 +961,7 @@ PIKECLASS Proxy {
       args--;
     }
 
-    safe_apply(THIS->object, "crypt", 1);
+    f_Proxy_crypt(1);
     if (TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("crypt() did not return string.\n");
     if (Pike_sp[-1].u.string->len != len)
