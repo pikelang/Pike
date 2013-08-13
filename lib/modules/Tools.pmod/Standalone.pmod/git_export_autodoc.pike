@@ -395,6 +395,9 @@ string get_version()
     if (Stdio.exist("tools/sprshd")) {
       return "nt-tools";
     }
+    if (Stdio.is_dir("refs")) {
+      return "rxnpatch";
+    }
   }
 
   error("Unable to determine version of Pike!\n");
