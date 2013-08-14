@@ -878,8 +878,10 @@ static int low_fd_query_properties(int fd)
   switch(st.st_mode & S_IFMT) {
   default:
     return open_mode | FILE_CAPABILITIES;
+#ifdef PIPE_CAPABILITIES
   case S_IFIFO:
     return open_mode | PIPE_CAPABILITIES;
+#endif
   case S_IFSOCK:
     break;
   }
