@@ -114,23 +114,23 @@ void ppc64_push_svalue(int reg, INT32 offs, int force_reftype)
   STD(0, PPC_REG_PIKE_SP, 0);
   if(!force_reftype) {
 #if PIKE_BYTEORDER == 1234
-    /* rldicl r0,r0,0,48 */
-    RLDICL(0, 0, 0, 48);
+    /* rldicl r0,r0,61,51 */
+    RLDICL(0, 0, 61, 51);
 #else
-    /* rldicl r0,r0,16,48 */
-    RLDICL(0, 0, 16, 48);
+    /* rldicl r0,r0,13,51 */
+    RLDICL(0, 0, 13, 51);
 #endif
   }
   /* std r11,refs(pike_sp) */
   STD(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
   if(!force_reftype) {
-    /* cmplwi r0,MAX_REF_TYPE */
-    CMPLI(0, 0, MAX_REF_TYPE);
+    /* cmplwi r0,MIN_REF_TYPE>>3 */
+    CMPLI(0, 0, MIN_REF_TYPE>>3);
   }
   INCR_SP_REG(sizeof(struct svalue));
   if(!force_reftype) {
-    /* bgt bork */
-    BC(12, 1, 4);
+    /* bne bork */
+    BC(4, 2, 4);
   }
   /* lwz r0,0(r11) */
   LWZ(0, 11, 0);
