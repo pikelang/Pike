@@ -6,7 +6,7 @@
 
 #include "critbit/int2svalue.h"
 #define CB_PRINT_KEY(buf, key)		do \
-    { string_builder_sprintf((buf), "%d", CB_UINT2INT((key).str)); } while(0)
+    { string_builder_sprintf((buf), "%"PRINTPIKEINT"d", CB_UINT2INT((key).str)); } while(0)
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
     struct svalue * __ = (s);						\
     SET_SVAL(*__, PIKE_T_INT, 0, integer, CB_UINT2INT((key).str));	\
@@ -49,7 +49,7 @@ PIKECLASS IntTree {
 
 cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
     cb_key key;
-    unsigned INT32 a, b, c, d, e;
+    unsigned int a, b, c, d, e;
 
     key.len.chars = 1;
     key.len.bits = 0;
@@ -82,12 +82,14 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
 
     if (key.len.bits || !key.len.chars) {
 	ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
-	len = snprintf(buf, 19, "%u.%u.%u.%u/%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff, (unsigned INT32)(key.len.bits
-							 - WASTED_BITS));
+	len = snprintf(buf, 19, "%u.%u.%u.%u/%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff),
+		       (unsigned int)(key.len.bits - WASTED_BITS));
     } else {
-	len = snprintf(buf, 19, "%u.%u.%u.%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff);
+	len = snprintf(buf, 19, "%u.%u.%u.%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff));
     }
 
     return make_shared_binary_string(buf, MINIMUM(19, len));
