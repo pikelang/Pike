@@ -515,7 +515,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
      * evaluator stuff while we let the master describe the backtrace
      * below. Doing it the naughty way without going through
      * init_threads_disable etc to avoid hanging on runaway locks. */
+#ifdef PIKE_THREADS
     threads_disabled++;
+#endif
     MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
@@ -527,7 +529,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     }
     UNSETJMP (jmp);
+#ifdef PIKE_THREADS
     threads_disabled--;
+#endif
     evaluator_callbacks = saved_eval_cbs;
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
