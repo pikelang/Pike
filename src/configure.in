@@ -2464,8 +2464,9 @@ fi
 
 define(TEST_BUILTIN, [
     AC_MSG_CHECKING(for $1)
-    AC_TRY_RUN([
+    AC_TRY_LINK([
 $3
+],[
 unsigned long lint;
 int main(int argc, char **argv) {
 	static volatile int foo = 0;
