@@ -33,7 +33,9 @@ struct compilation
 
   int compilation_depth;		/* Current class nesting depth. */
 
+#ifdef PIKE_THREADS
   int saved_threads_disabled;
+#endif
   struct mapping *resolve_cache;
 };
 

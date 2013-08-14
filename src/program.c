@@ -82,6 +82,10 @@ void free_all_program_blocks() {
 
 #ifdef COMPILER_DEBUG
 #define CDFPRINTF(X)	fprintf X
+#ifndef PIKE_THREADS
+/* The CDFPRINTF lines wants to print threads_disabled, so fake on of those */
+static const int threads_disabled = 1;
+#endif
 #else /* !COMPILER_DEBUG */
 #define CDFPRINTF(X)
 #endif /* COMPILER_DEBUG */
@@ -8926,10 +8930,12 @@ static void run_cleanup(struct compilation *c, int delayed)
   debug_malloc_touch(c);
   debug_malloc_touch(c->placeholder);
 #if 0 /* FIXME */
+#ifdef PIKE_THREADS
   if (threads_disabled != c->saved_threads_disabled) {
     Pike_fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, c->saved_threads_disabled);
   }
+#endif
 #endif /* PIKE_DEBUG */
 
   exit_threads_disable(NULL);
@@ -9390,7 +9396,9 @@ static void f_compilation_compile(INT32 args)
   c->flags |= COMPILER_BUSY;
 
   low_init_threads_disable();
+#ifdef PIKE_THREADS
   c->saved_threads_disabled = threads_disabled;
+#endif
 
   init_supporter(& c->supporter,
 		 (supporter_callback *) call_delayed_pass2,
@@ -10348,7 +10356,9 @@ struct program *compile(struct pike_string *aprog,
 #endif
 
   low_init_threads_disable();
+#ifdef PIKE_THREADS
   c->saved_threads_disabled = threads_disabled;
+#endif
 
   init_supporter(& c->supporter,
 		 (supporter_callback *) call_delayed_pass2,
