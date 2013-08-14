@@ -7925,11 +7925,12 @@ else
         return 0;
       }],
       pike_cv_putenv_always_requires_equal=no,
-      pike_cv_putenv_always_requires_equal=yes
+      pike_cv_putenv_always_requires_equal=yes,
+      pike_cv_putenv_always_requires_equal=cross-compiling
     )
   ])
   AC_MSG_RESULT($pike_cv_putenv_always_requires_equal)
-  if test "x$pike_cv_putenv_always_requires_equal" = "xyes"; then
+  if test "x$pike_cv_putenv_always_requires_equal" != "xno"; then
     AC_DEFINE(PUTENV_ALWAYS_REQUIRES_EQUAL, [],
   	    [Defined if putenv() always requires a '='])
   fi
