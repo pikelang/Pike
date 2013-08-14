@@ -4666,6 +4666,7 @@ AC_CHECK_FUNCS( \
  SetErrorMode \
  thread_info \
  host_get_clock_service \
+ posix_memalign \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.

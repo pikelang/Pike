@@ -539,9 +539,17 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) {
     void * ret;
 
+    if (!size) return 0;
+
+#ifdef HAVE_POSIX_MEMALIGN
     if (posix_memalign(&ret, alignment, size)) {
 	Pike_error(msg_out_of_mem_2, size);
     }
+#else
+    if ((ret = memalign(alignment, size)) == NULL) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+#endif
 
     return ret;
 }
