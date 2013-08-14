@@ -21,6 +21,8 @@
 #include "operators.h"
 #include "sscanf.h"
 
+#define DEFAULT_CMOD_STORAGE static
+
 #define TYPE_BSON_DOUBLE 0x01
 #define TYPE_BSON_STRING 0x02
 #define TYPE_BSON_ARRAY 0x04

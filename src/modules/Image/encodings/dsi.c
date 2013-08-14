@@ -28,7 +28,7 @@
 
 extern struct program *image_program;
 
-void f__decode( INT32 args )
+static void f__decode( INT32 args )
 {
   int xs, ys, x, y;
   unsigned char *data, *dp;
@@ -91,7 +91,7 @@ void f__decode( INT32 args )
   f_aggregate_mapping( 4 );
 }
 
-void f_decode( INT32 args )
+static void f_decode( INT32 args )
 {
   f__decode( args );
   push_constant_text( "image" );
