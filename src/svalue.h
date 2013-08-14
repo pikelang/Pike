@@ -363,8 +363,14 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
-extern PMOD_EXPORT const  struct svalue svalue_undefined,
-  svalue_int_zero, svalue_int_one;
+extern PMOD_EXPORT const  struct svalue svalue_undefined, svalue_int_zero;
+#ifdef HAVE_UNION_INIT
+extern PMOD_EXPORT const  struct svalue svalue_int_one;
+#else
+/* If union initializers are unavailable,
+   svalue_int_one needs to be assignable. */
+extern PMOD_EXPORT struct svalue svalue_int_one;
+#endif
 
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
