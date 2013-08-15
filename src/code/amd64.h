@@ -22,11 +22,7 @@
 
 #define CALL_MACHINE_CODE(pc)						\
   do {									\
-    /* The test is needed to get the labels to work... */		\
-    if (pc) {								\
-      ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
-      goto inter_return_label;						\
-    }									\
+    ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
   } while(0)
 
 
