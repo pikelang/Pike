@@ -70,7 +70,6 @@ PIKECLASS Yarrow
       free_string(THIS->seed_file);
     }
     THIS->seed_file = end_shared_string(seed_file);
-    THIS->seed_file->flags |= STRING_CLEAR_ON_EXIT;
   }
 #else
 #define pike_generate_seed_file()
@@ -106,11 +105,12 @@ PIKECLASS Yarrow
   }
 
   /*! @decl Yarrow seed(string data)
-   *! The random generator needs to be seeded before
-   *! it can be used. The seed must be at least 32
-   *! characters long. The seed could be stored from
-   *! a previous run by inserting the value returned
-   *! from @[get_seed].
+   *!
+   *! The random generator needs to be seeded before it can be used.
+   *! The seed must be at least 32 characters long. The seed could be
+   *! stored from a previous run by inserting the value returned from
+   *! @[get_seed].
+   *!
    *! @returns
    *!   Returns the called object.
    *! @seealso
@@ -124,7 +124,6 @@ PIKECLASS Yarrow
 		 YARROW256_SEED_FILE_SIZE);
 
     NO_WIDE_STRING(data);
-    data->flags |= STRING_CLEAR_ON_EXIT;
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
     pike_generate_seed_file();
     RETURN this_object();
@@ -153,15 +152,12 @@ PIKECLASS Yarrow
     optflags OPT_EXTERNAL_DEPEND;
     rawtype tDeprecated(tFunc(tNone, tStr8));
   {
-    struct pike_string * ret;
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
 
 #ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-    ret = make_shared_binary_string(THIS->ctx.seed_file,
+    RETURN make_shared_binary_string(THIS->ctx.seed_file,
                                      YARROW256_SEED_FILE_SIZE);
-    ret->flags |= STRING_CLEAR_ON_EXIT;
-    RETURN ret;
 #else
     if (THIS->seed_file) {
       REF_RETURN THIS->seed_file;
@@ -176,7 +172,6 @@ PIKECLASS Yarrow
       struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
       PIKE_MEM_RW_RANGE(s->str, YARROW256_SEED_FILE_SIZE);
       s = end_shared_string(s);
-      s->flags |= STRING_CLEAR_ON_EXIT;
       RETURN s;
     }
 #endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
@@ -229,7 +224,6 @@ PIKECLASS Yarrow
     int ret;
     /* FIXME: Wide strings could actually be supported here */
     NO_WIDE_STRING(data);
-    data->flags |= STRING_CLEAR_ON_EXIT;
     if( !THIS->sources )
       Pike_error("This random generator has no sources.\n");
     if( source<0 || (unsigned)source>=THIS->ctx.nsources )
@@ -269,9 +263,7 @@ PIKECLASS Yarrow
       Pike_error("Random generator not seeded.\n");
     rnd = begin_shared_string(length);
     yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
-    rnd = end_shared_string(rnd);
-    rnd->flags |= STRING_CLEAR_ON_EXIT;
-    RETURN rnd;
+    RETURN end_shared_string(rnd);
   }
 
   INIT
@@ -295,8 +287,10 @@ PIKECLASS Yarrow
 
 /*! @decl string(0..127) crypt_md5(string password, string salt,@
  *!                                void|string magic)
- *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
- *! It is assumed that @[salt] does not contain "$".
+ *! Does the crypt_md5 abrakadabra (MD5 + snakeoil). It is assumed
+ *! that @[salt] does not contain "$".
+ *!
+ *! The @[password] memory will be cleared before released.
  */
 PIKEFUN string(0..127) crypt_md5(string pw, string salt, void|string magic)
      optflags OPT_TRY_OPTIMIZE;
@@ -476,11 +470,13 @@ PIKECLASS CBC
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
+   *!
    *! Initialize the CBC wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
+   *! program, an object will be instantiated with @[args] as
+   *! arguments. If it is an object that doesn't conform to the cipher
+   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+   *! a function, that function will be called with @[args] as
+   *! arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
@@ -541,40 +537,47 @@ PIKECLASS CBC
   }
 
   /*! @decl this_program set_encrypt_key(string key)
-   *! Prepare the cipher and the wrapper for encrypting
-   *! with the given @[key].
+   *!
+   *! Prepare the cipher and the wrapper for encrypting with the given
+   *! @[key]. The @[key] memory will be cleared before released.
    */
   PIKEFUN object set_encrypt_key(string key)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
     THIS->mode = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
     RETURN this_object();
   }
 
   /*! @decl this_program set_decrypt_key(string key)
-   *! Prepare the cipher and the wrapper for decrypting
-   *! with the given @[key].
+   *!
+   *! Prepare the cipher and the wrapper for decrypting with the given
+   *! @[key]. The @[key] memory will be cleared before released.
    */
   PIKEFUN object set_decrypt_key(string key)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
     THIS->mode = 1;
+    key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_decrypt_key", args);
     pop_stack();
     RETURN this_object();
   }
 
   /*! @decl this_program set_iv(string iv)
-   *! Set the initialization vector to @[iv].
+   *!
+   *! Set the initialization vector to @[iv]. The @[iv] memory will be
+   *! cleared before released.
    */
   PIKEFUN object set_iv(string iv)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->iv);
+    iv->flags |= STRING_CLEAR_ON_EXIT;
     NO_WIDE_STRING(iv);
     if(iv->len != THIS->block_size)
       Pike_error("Argument incompatible with cipher block size.\n");
@@ -583,18 +586,19 @@ PIKECLASS CBC
   }
 
   /*! @decl string(0..255) crypt(string data)
+   *!
    *! Encrypt/decrypt @[data] and return the result. @[data] must
    *! be an integral number of blocks.
+   *!
+   *! Neither the input or output data is not automatically memory
+   *! scrubbed, unless @[String.secure] has been called on the data.
    */
   PIKEFUN string(0..255) crypt(string data) {
     unsigned INT8 *result;
     INT32 offset = 0;
     ONERROR uwp;
-    struct pike_string * res;
 
     NO_WIDE_STRING(data);
-
-    data->flags |= STRING_CLEAR_ON_EXIT;
 
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
@@ -619,11 +623,8 @@ PIKECLASS CBC
     }
 
     pop_n_elems(args);
-    res = make_shared_binary_string((INT8 *)result, offset);
-    res->flags |= STRING_CLEAR_ON_EXIT;
-    push_string(res);
+    push_string(make_shared_binary_string((INT8 *)result, offset));
     guaranteed_memset(result, 0, offset);
-
     CALL_AND_UNSET_ONERROR (uwp);
   }
 }
@@ -686,11 +687,13 @@ PIKECLASS Proxy {
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
+   *!
    *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
+   *! program, an object will be instantiated with @[args] as
+   *! arguments. If it is an object that doesn't conform to the cipher
+   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+   *! a function, that function will be called with @[args] as
+   *! arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
@@ -749,7 +752,8 @@ PIKECLASS Proxy {
 
   /*! @decl this_program set_encrypt_key(string key)
    *!
-   *! Set the encryption key.
+   *! Set the encryption key. The @[key] memory will be cleared before
+   *! released.
    *!
    *! @note
    *!   As a side-effect any buffered data will be cleared.
@@ -757,8 +761,8 @@ PIKECLASS Proxy {
   PIKEFUN object set_encrypt_key(string key)
     optflags OPT_SIDE_EFFECT;
   {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
     RETURN this_object();
@@ -766,7 +770,8 @@ PIKECLASS Proxy {
 
   /*! @decl this_program set_decrypt_key(string key)
    *!
-   *! Set the decryption key.
+   *! Set the decryption key. The @[key] memory will be cleared before
+   *! released.
    *!
    *! @note
    *!   As a side-effect any buffered data will be cleared.
@@ -774,8 +779,8 @@ PIKECLASS Proxy {
   PIKEFUN object set_decrypt_key(string key)
     optflags OPT_SIDE_EFFECT;
   {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_decrypt_key", args);
     pop_stack();
     RETURN this_object();
@@ -788,6 +793,9 @@ PIKECLASS Proxy {
    *! Adds data to be en/decrypted to the buffer. If there's enough
    *! data to en/decrypt a block, that will be done, and the result
    *! returned. Any unprocessed data will be left in the buffer.
+   *!
+   *! Neither the input or output data is not automatically memory
+   *! scrubbed, unless @[String.secure] has been called on the data.
    */
   PIKEFUN string(0..255) crypt(string data) {
     unsigned char *result;
@@ -795,7 +803,6 @@ PIKECLASS Proxy {
     ptrdiff_t soffset = 0;
     ptrdiff_t len;
     ONERROR uwp;
-    struct pike_string * res;
 
     if (!(result = malloc(data->len + THIS->block_size)))
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
@@ -819,7 +826,6 @@ PIKECLASS Proxy {
 	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
 	roffset = THIS->block_size;
 	pop_stack();
-        MEMSET(THIS->backlog, 0, THIS->block_size);
       } else {
 	MEMCPY(THIS->backlog + THIS->backlog_len,
 	       data->str, data->len);
@@ -860,16 +866,16 @@ PIKECLASS Proxy {
 
     pop_n_elems(args);
 
-    res = make_shared_binary_string((char *)result, roffset + len);
-    res->flags |= STRING_CLEAR_ON_EXIT;
-    push_string(res);
+    push_string(make_shared_binary_string((char *)result, roffset + len));
     guaranteed_memset(result, 0, roffset + len);
     CALL_AND_UNSET_ONERROR (uwp);
   }
 
   /*! @decl string(0..255) pad(void|int method)
    *!
-   *! Pad and encrypt any data left in the buffer.
+   *! Pad and encrypt any data left in the buffer. The output data is
+   *! not automatically memory scrubbed, unless @[String.secure] is
+   *! called on the data.
    *!
    *! @param method
    *! The type of padding to apply to the buffer.
@@ -902,7 +908,6 @@ PIKECLASS Proxy {
     ptrdiff_t i;
     int m = 0;
     int size = THIS->block_size - THIS->backlog_len;
-    struct pike_string * backlog;
 
     if(method)
     {
@@ -950,11 +955,8 @@ PIKECLASS Proxy {
 
   
     THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
-    backlog = make_shared_binary_string((const char *)THIS->backlog, THIS->block_size);
-    backlog->flags |= STRING_CLEAR_ON_EXIT;
-    push_string(backlog);
+    push_string(make_shared_binary_string((const char *)THIS->backlog, THIS->block_size));
 
-    MEMSET(THIS->backlog, 0, THIS->block_size);
     THIS->backlog_len = 0;
 
     safe_apply(THIS->object, "crypt", 1);
@@ -962,7 +964,9 @@ PIKECLASS Proxy {
 
   /*! @decl string(0..255) unpad(string data, void|int method)
    *!
-   *! Decrypt and unpad a block of data.
+   *! Decrypt and unpad a block of data. Neither the input or output
+   *! data is not automatically memory scrubbed, unless
+   *! @[String.secure] has been called on the data.
    *!
    *! This performs the reverse operation of @[pad()].
    *!
@@ -983,7 +987,6 @@ PIKECLASS Proxy {
   PIKEFUN string(0..255) unpad(string str, void|int method) {
     ptrdiff_t len;
     int m = 0;
-    struct pike_string * ret;
 
     len = str->len + THIS->backlog_len;
     if( len % THIS->block_size)
@@ -1038,9 +1041,7 @@ PIKECLASS Proxy {
   
     add_ref(str);
     pop_stack();
-    ret = make_shared_binary_string(str->str, len);
-    ret->flags |= STRING_CLEAR_ON_EXIT;
-    push_string(ret);
+    push_string(make_shared_binary_string(str->str, len));
     free_string(str);
   }
 

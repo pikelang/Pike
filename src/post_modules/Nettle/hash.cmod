@@ -253,6 +253,8 @@ PIKECLASS HashInfo
    *!   This is the algorithm used by @tt{crypt(2)@} in
    *!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
    *!
+   *!   The @[password] memory will be cleared before released.
+   *!
    *! @seealso
    *!   @[crypt_md5()]
    */

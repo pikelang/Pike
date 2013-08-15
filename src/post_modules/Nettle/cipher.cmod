@@ -192,7 +192,8 @@ PIKECLASS CipherState
 
   /*! @decl CipherState set_encrypt_key(string key, void|int force)
    *!
-   *! Initializes the object for encryption.
+   *! Initializes the object for encryption. The @[key] memory will be
+   *! cleared before released.
    *!
    *! @seealso
    *!   @[set_decrypt_key], @[crypt]
@@ -219,7 +220,8 @@ PIKECLASS CipherState
 
   /*! @decl CipherState set_decrypt_key(string key, void|int force)
    *!
-   *! Initializes the object for decryption.
+   *! Initializes the object for decryption. The @[key] memory will be
+   *! cleared before released.
    *!
    *! @seealso
    *!   @[set_encrypt_key], @[crypt]
@@ -249,7 +251,8 @@ PIKECLASS CipherState
    *! initialize this object for encryption with that key.
    *!
    *! @returns
-   *!   The generated key.
+   *!   The generated key. The key memory will be cleared before
+   *!   released.
    *!
    *! @seealso
    *!   @[set_encrypt_key]
@@ -264,13 +267,16 @@ PIKECLASS CipherState
 
     /* FIXME: There should be a check for weak keys so this never throws. */
     stack_dup();
+    Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
     f_CipherState_set_encrypt_key(1);
     pop_stack();
   }
 
   /*! @decl string(0..255) crypt(string data)
    *!
-   *! Encrypts or decrypts data, using the current key.
+   *! Encrypts or decrypts data, using the current key. Neither the
+   *! input or output data is not automatically memory scrubbed,
+   *! unless @[String.secure] has been called on the data.
    *!
    *! @param data
    *!   For block ciphers, data must be an integral number of blocks.
@@ -279,7 +285,7 @@ PIKECLASS CipherState
    *!   The encrypted or decrypted data.
    */
   PIKEFUN string(0..255) crypt (string data)
-    optflags OPT_EXTERNAL_DEPEND;
+    optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
       struct pike_string *s;
@@ -289,7 +295,6 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
-      data->flags |= STRING_CLEAR_ON_EXIT;
 
       if (data->len % info->meta->block_size)
 	Pike_error("Data must be an integral number of blocks.\n");
@@ -298,7 +303,6 @@ PIKECLASS CipherState
       THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
                   (const uint8_t *)data->str);
       s = end_shared_string(s);
-      s->flags |= STRING_CLEAR_ON_EXIT;
       push_string(s);
     }
 
@@ -308,7 +312,7 @@ PIKECLASS CipherState
    *!   The actual key size for this cipher.
    */
     PIKEFUN int(0..) key_size()
-    optflags OPT_EXTERNAL_DEPEND;
+    optflags OPT_TRY_OPTIMIZE;
     {
       RETURN THIS->key_size;
     }
