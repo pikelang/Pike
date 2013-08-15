@@ -2234,7 +2234,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
-
+    LOCAL_VAR(void *p);
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
 
@@ -2243,10 +2243,10 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if(p = low_mega_apply(APPLY_STACK, args, 0, 0))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-      DO_JUMP_TO(Pike_fp->pc);
+      DO_JUMP_TO(p);
     }
     else {
       DO_JUMP_TO_NEXT;
@@ -2293,6 +2293,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
+    LOCAL_VAR(void *p);
 
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
@@ -2302,10 +2303,10 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if(p = low_mega_apply(APPLY_STACK, args, 0, 0))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-      DO_JUMP_TO(Pike_fp->pc);
+      DO_JUMP_TO(p);
     }
     else {
       pop_stack();
@@ -2352,7 +2353,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
-
+    LOCAL_VAR(void *p);
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
 
@@ -2361,12 +2362,11 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if(p = low_mega_apply(APPLY_STACK, args, 0, 0))
     {
-      PIKE_OPCODE_T *addr = Pike_fp->pc;
       DO_IF_DEBUG(Pike_fp->next->pc=0);
       unlink_previous_frame();
-      DO_JUMP_TO(addr);
+      DO_JUMP_TO(p);
     }
     DO_DUMB_RETURN;
   }
