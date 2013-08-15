@@ -322,7 +322,9 @@ PMOD_EXPORT void init_interpreter(void)
     static int tables_need_init=1;
     if(tables_need_init) {
       /* Initialize the fcode_to_opcode table / jump labels. */
+#if !defined(OPCODE_INLINE_RETURN)
       eval_instruction(NULL);
+#endif
 #if defined(PIKE_USE_MACHINE_CODE) && !defined(PIKE_DEBUG)
       /* Simple operator opcodes... */
 #define SET_INSTR_ADDRESS(X, Y)	(instrs[(X)-F_OFFSET].address = (void *)Y)
@@ -1665,9 +1667,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #endif /* PIKE_DEBUG */
 {
-  if(pc == NULL) {
-
 #ifndef OPCODE_INLINE_RETURN
+  if(pc == NULL) {
     if(do_inter_return_label != NULL)
       Pike_fatal("eval_instruction called with NULL (twice).\n");
 
@@ -1699,15 +1700,16 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
     /* Trick optimizer */
     if(!dummy_label)
       return 0;
-#endif /* !OPCODE_INLINE_RETURN */
   }
 
   /* This else is important to avoid an overoptimization bug in (at
    * least) gcc 4.0.2 20050808 which caused the address stored in
    * do_inter_return_label to be at the CALL_MACHINE_CODE below. */
   else {
+#endif /* !OPCODE_INLINE_RETURN */
     CALL_MACHINE_CODE(pc);
 
+#ifndef OPCODE_INLINE_RETURN
     /* This code is never reached, but will
      * prevent gcc from optimizing the labels below too much
      */
@@ -1717,25 +1719,16 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #endif
   }
 
-#ifndef OPCODE_INLINE_RETURN
 #ifdef __GNUC__
   goto *dummy_label;
 #endif
 
-#if 0
-  if (dummy_label) {
-  inter_escape_catch_label:
-    EXIT_MACHINE_CODE();
-    return -2;
-  }
-#endif
-
-#endif /* !OPCODE_INLINE_RETURN */
  inter_return_label:
-  EXIT_MACHINE_CODE();
+#endif /*!OPCODE_INLINE_RETURUN */
 #ifdef PIKE_DEBUG
   pike_trace(3, "-    Inter return\n");
 #endif
+  EXIT_MACHINE_CODE();
   return -1;
 }
 
