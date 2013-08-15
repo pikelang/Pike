@@ -3203,6 +3203,14 @@ cDay dwim_day(string day,void|TimeRange context)
    error("Failed to dwim day from %O\n",day);
 }
 
+//! method Day dwim_time(string date_time)
+//! method Day dwim_time(string date_time, TimeRange context)
+//!	Tries a number of different formats on the given date_time.
+//!
+//! note:
+//!	Casts exception if it fails to dwim out a time.
+//!	"dwim" means do-what-i-mean.
+
 TimeofDay dwim_time(string what,void|TimeRange cx)
 {
    TimeofDay t;
