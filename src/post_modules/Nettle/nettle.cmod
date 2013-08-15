@@ -635,6 +635,28 @@ PIKECLASS CBC
  *! @belongs Crypto
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that don't correspond to cipher block sizes.
+ *!
+ *! @example
+ *!   class Encrypter
+ *!   {
+ *!     protected Crypto.Buffer buffer;
+ *!
+ *!     void create(string key)
+ *!     {
+ *!       buffer = Crypto.Buffer(Crypto.CBC(Crypto.AES));
+ *!       buffer->set_encrypt_key(key);
+ *!     }
+ *!
+ *!     string feed(string data)
+ *!     {
+ *!       return buffer->crypt(data);
+ *!     }
+ *!
+ *!     string drain()
+ *!     {
+ *!       return buffer->pad(Crypto.PAD_PKCS7);
+ *!     }
+ *!   }
  */
 PIKECLASS Proxy {
   CVAR struct object *object;
@@ -761,11 +783,11 @@ PIKECLASS Proxy {
 
   /*! @decl string(0..255) crypt(string data)
    *!
-   *! Encrypt some data.
+   *! Encrypt or decrypt some data.
    *!
-   *! Adds data to be encrypted to the buffer. If there's enough
+   *! Adds data to be en/decrypted to the buffer. If there's enough
    *! data to en/decrypt a block, that will be done, and the result
-   *! returned. Any uncrypted data will be left in the buffer.
+   *! returned. Any unprocessed data will be left in the buffer.
    */
   PIKEFUN string(0..255) crypt(string data) {
     unsigned char *result;
@@ -864,7 +886,7 @@ PIKECLASS Proxy {
    *!     last.
    *!   @value Crypto.PAD_PKCS7
    *!     Pads according to PKCS7 / RFC 3852, which means filling all
-   *!     extra space with hte size of the extra space.
+   *!     extra space with the size of the extra space.
    *!   @value Crypto.PAD_ZERO
    *!     Fills the extra space with null bytes. To correctly remove
    *!     the padding the clear text data must not end with a null
