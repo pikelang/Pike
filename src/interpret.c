@@ -962,13 +962,15 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
        (actually, they will always be incorrect before running FILL_STACK,
        but at least currently that is the first opcode run).
     */
-    if( instr+F_OFFSET != F_FILL_STACK )
-    {
-        if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
-           Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-            Pike_fatal("Stack error (stupid! %p %p+%x).\n",Pike_sp,
-                       Pike_fp->locals, Pike_fp->num_locals*sizeof(struct svalue));
-    }
+
+    /* as it turns out, this is no longer true.. */
+    /* if( instr+F_OFFSET != F_FILL_STACK ) */
+    /* { */
+    /*     if(/\* Pike_fp->fun>=0 && *\/ Pike_fp->current_object->prog && */
+    /*        Pike_fp->locals+Pike_fp->num_locals > Pike_sp) */
+    /*         Pike_fatal("Stack error (stupid! %p %p+%x).\n",Pike_sp, */
+    /*                    Pike_fp->locals, Pike_fp->num_locals*sizeof(struct svalue)); */
+    /* } */
 
     if(Pike_interpreter.recoveries &&
        (Pike_sp-Pike_interpreter.evaluator_stack <
@@ -2055,7 +2057,7 @@ void really_free_pike_scope(struct pike_frame *scope)
   really_free_pike_frame(scope);
 }
 
-int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
+void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
 {
   struct program *p;
   check_stack(256);
@@ -2189,7 +2191,7 @@ int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               + ENTRY_PROLOGUE_SIZE
 #endif /* ENTRY_PROLOGUE_SIZE */
               ;
-            return 1;
+            return new_frame->pc;
           }
           else
           {
@@ -2234,7 +2236,7 @@ int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
  *   eval_instruction() is done the frame needs to be removed by a call
  *   to low_return() or low_return_pop().
  */
-int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o = NULL;
   struct pike_frame *scope=0;

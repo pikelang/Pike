@@ -322,7 +322,7 @@
 #endif /* ENTRY_PROLOGUE_SIZE */
 	  ;
 
-	return 1;
+	return new_frame->pc;
       }
 
       default:

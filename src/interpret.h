@@ -792,8 +792,8 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
-int lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
-int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
+void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
