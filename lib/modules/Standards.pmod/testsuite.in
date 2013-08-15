@@ -37,7 +37,6 @@ J6UiRRGcDSvzrsoK+oNvqu6z7Xs5Xfz5rDqUcMlK1Z6720dcBWGGsDLpTpSCnpot
 dXd/H5LMDWnonNvPCwQUHt==
 -----END PRIVACY-ENHANCED MESSAGE-----";
 object o = Standards.PEM.Message(pem);
-return 0;
 return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
 ]],[[ ([ /* 9 elements */
   "body": ",\272\307\aG\211\317(O\373\367\322J\327V\362\211\36\22{\370\356<^\355\"\177\210\336\366\242\23\\RM\243\34E\22\240}g\274\324\210X\277L\362\321#\230_\363\304\37\233\1""3->0\224Y\274\374.\277p\226\205\310\222""1\324\224\22\351\275ttR\265""3a\271\r\246M\32\201]\210\315Jd'\245\"E\21\234\r+\363\256\312\n"
