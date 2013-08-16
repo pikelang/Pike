@@ -244,7 +244,19 @@ int main(int num, array(string) args) {
 
   write("\nMysql\n");
   M(Mysql.mysql);
-  object mysql_obj = master()->resolv("Mysql.mysql");
+  object mysql_obj = master()->resolv("Mysql");
+  // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
+  // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
+  // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+  string license = "Unknown";
+  string version = "Unknown";
+  string client_info = mysql_obj && mysql_obj["client_info"]();
+  if (client_info) {
+    sscanf(client_info, "%*s(%s)%*s/%s", license, version);
+  }
+  item("Version: " + version, !!client_info);
+  item("License: " + license, !!client_info);
+  mysql_obj = master()->resolv("Mysql.mysql");
   int mysql_db_fun = mysql_obj && mysql_obj->MYSQL_NO_ADD_DROP_DB;
   item("Mysql.mysql->create_db", mysql_db_fun);
   item("Mysql.mysql->drop_db", mysql_db_fun);
