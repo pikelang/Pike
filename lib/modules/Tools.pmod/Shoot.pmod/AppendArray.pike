@@ -3,11 +3,10 @@ inherit Tools.Shoot.Test;
 
 constant name="Append array";
 
-int k = 5; /* variable to tune the time of the test */
+int k = 80; /* variable to tune the time of the test */
 int m = 100000; /* the target size of the array */
-int n = m*k; // for reporting
 
-void perform()
+int perform()
 {
    for (int i=0; i<k; i++)
    {
@@ -15,9 +14,5 @@ void perform()
       for (int j=0; j<m; j++)
 	 v+=({42});
    }
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+   return m*k;
 }

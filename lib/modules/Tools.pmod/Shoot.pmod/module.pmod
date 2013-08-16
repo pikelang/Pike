@@ -1,6 +1,6 @@
 /* 
  *    Shootouts
- *        or 
+ *        or
  * Pike speed tests
  *
  */
@@ -9,193 +9,86 @@
 
 import ".";
 
-protected int procfs=-1;
-protected Gmp.mpz dummy; // load the Gmp module
 
-// internal to find a pike binary
-
-private protected string locate_binary(array path, string name)
+string format_big_number(int i)
 {
-   string dir;
-   object info;
-   foreach(path, dir)
-   {
-      string fname = dir + "/" + name;
-      if ((info = file_stat(fname))
-	  && (info[0] & 0111))
-	 return fname;
-   }
-   return 0;
+    if( i > 10000000000 )
+        return i/1000000000+"G";
+    if( i > 10000000 )
+        return i/1000000+"M";
+    if( i > 10000 )
+        return i/1000+"k";
+
+    return (string)i;
 }
 
-// internal to find/make pike exec arguments
-
-// FIXME: Why not use Process.spawn_pike()?
-protected array runpike=
-lambda()
+// This function runs the actual test, it is started in a sub-process from run.
+void run_sub( Test test, int maximum_seconds, float overhead)
 {
-   array res=({master()->_pike_file_name});
-   if (master()->_master_file_name)
-      res+=({"-m"+master()->_master_file_name});
-   foreach (master()->pike_module_path;;string path)
-      res+=({"-M"+path});
-   if (sizeof(res) && !has_value(res[0],"/")
-#ifdef __NT__
-       && !has_value(res[0], "\\")
-#endif /* __NT__ */
-       )
-      res[0] = locate_binary(getenv("PATH")/Process.path_separator, res[0]);
-   return res;
-}();
+    float tg=0.0;
+    int testntot=0;
+    int nloops = 0;
+    int norm;
+    for (;;nloops++)
+    {
+        int start_cpu = gethrvtime();
+        testntot += test->perform();
+        tg += (gethrvtime()-start_cpu) / 1000000.0;
+        if (tg >= maximum_seconds) break;
+    }
 
-//! The test call/result class.
-//! Instantiated with a test id and the test object itself.
-class ExecTest(string id,Test test)
+    tg -= overhead  * nloops;
+    norm = (int)(testntot/tg);
+
+    string res = (test->present_n ?
+                  test->present_n(testntot,nloops,tg,tg,1) :
+                  format_big_number(norm)+"/s");
+
+
+    write( Standards.JSON.encode( ([ "time":tg,"loops":nloops,"n":testntot,"readable":res,"n_over_time":norm ]) )+"\n" );
+}
+
+private mapping(string:Test) _tests;
+private mapping(Test:string) rtests;
+
+mapping(string:Test) tests()
 {
-   float useconds;
-   float tseconds;
-   int nruns;
-   int memusage;
-
-   //! This function runs the actual test, by spawning off
-   //! a new pike and call it until at least one of these conditions:
-   //! maximum_seconds has passed, or
-   //! the number of runs is at least maximum_runs.
-   int(0..1) run(int maximum_seconds,
-	    int maximum_runs,
-	    void|int silent)
-   {
-      int t0=time();
-      float tz=time(t0),truns;
-      nruns=0;
-      string status;
-      float tg=0.0;
-      int testntot=0;
-      int loops = 1;
-      int nloops = 0;
-
-      if (!silent) 
-	 write(test->name+"..........................."[sizeof(test->name)..]);
-
-      for (;;)
+  if( !_tests )
+  {
+    _tests = ([]);
+    rtests = ([]);
+    foreach (indices(Tools.Shoot), string test)
+    {
+      program p;
+      Test t;
+      if ((programp(p=Tools.Shoot[test])) &&  (t=p())->perform)
       {
-	 nruns++;
-	 nloops += loops;
-	 Stdio.File pipe=Stdio.File();
-#if 0
-	 werror("%O %s\n",
-	       runpike+
-	       ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }),
-		(runpike+
-		 ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }))*" ");
-#endif
-		
-	 object p=
-	    Process.create_process( 
-	       runpike+
-	       ({ "-e","Tools.Shoot._shoot(\""+id+"\","+loops+")" }),
-	       (["stdout":pipe->pipe(Stdio.PROP_IPC)]) );
-	 int err = errno();
-	 status=pipe->read();
-	 int ret = p->wait();
-
-	 if (status=="")
-	 {
-	    if (ret < 0) {
-	      err = p->last_signal();
-	      write("Spawned pike died by signal: %d (%s)\n",
-		    err, signame(err) || "UNKNOWN");
-	      return 1;
-	    }
-	    write("Failed to spawn pike or run test (code:%d, errno:%d)\n",
-		  ret, err);
-	    return 1;
-	 }
-
-	 array v=status/"\n";
-	 memusage=(int)v[0];
-	 tg+=(float)v[1];
-	 if (v[2]!="no")
-	    testntot+=(int)v[2];
-
-	 truns=time(t0)-tz;
-	 if (truns >= maximum_seconds || 
-	     nruns>=maximum_runs) break;
-	 if (id != "Overhead") loops <<= 1;
+        if( !t->name )
+          exit(1,"The test %O does not have a name\n", t );
+        if( _tests[t->name] )
+          exit(1,"The tests %O and %O have the same name\n", t, _tests[t->name] );
+        _tests[t->name]=t;
+        rtests[t] = test;
       }
-
-      useconds=tg/nloops;
-      tseconds=truns/nloops;
-
-      if (silent) return 0;
-
-      write("%6.3fs %6.3fs %s %5s (%s)\n",
-	    tseconds,
-	    useconds,
-	    memusage>0 ? sprintf("%5dkb", memusage/1024) : "   ?   ",
-	    "(" + nruns + ")",
-	    (tg == 0.0)?"no time?":
-	    test->present_n?test->present_n(testntot,nruns,truns,tg,memusage):
-	    sprintf("%d%s/s", (int)((testntot || nloops)/tg),
-		    testntot?"":" runs"));
-      return 0;
-   }
+    }
+  }
+  return _tests;
 }
 
-//! This function is called in the spawned pike,
-//! to perform the test but also to write some important 
-//! data to stdout.
-//!
-//! @param id
-//!   @[id] is the current test.
-//!
-//! @param loops
-//!   The number of times to run the test.
-void _shoot(string id, int|void loops)
+mapping(string:int|float) run(Test test, int maximum_seconds, float overhead)
 {
-   object test;
-   int n = UNDEFINED;
-   float tg = gauge {
-       int i = loops || 1;
-       while (i--) {
-	 (test=Tools.Shoot[id]())->perform();
-	 if (test->present_n) n += test->n;
-       }
-     };
+    Stdio.File fd = Stdio.File();
+    string test_name;
+    if( !rtests )
+      tests();
 
-   if (Stdio.is_dir("/proc/"+getpid()+"/.")) {
-     string s;
-     if ((s=Stdio.read_bytes("/proc/"+getpid()+"/statm")))
-       write("%d\n",((int)s)*4096);
-     else {
-       int offset = 44;
-       int bytes = 4;
-       if (Pike.get_runtime_info()->abi == 64) {
-	 // Adjust for pr_addr being 8 bytes.
-	 offset += 4;
-	 // pr_size is also 8 bytes.
-	 bytes *= 2;
-       }
-       // We're only interested in pr_size.
-       if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/psinfo", offset, bytes)) &&
-	    (sizeof(s) == bytes)) {
-	 sscanf(s, (Pike.get_runtime_info()->abi == 64)?
-		(Pike.get_runtime_info()->native_byteorder == 4321)?
-		"%8c":"%-8c":
-		(Pike.get_runtime_info()->native_byteorder == 4321)?
-		"%4c":"%-4c",
-		int pr_size);
-	 write("%d\n", pr_size * 1024);
-       } else 
-	 write("-1\n");
-     }
-   } else
-     write("-1\n");
+    if( !(test_name = rtests[ test ]) )
+      error("Test %O is not a test\n", test);
 
-   write("%.6f\n",tg);
 
-   if (test->present_n)
-     write("%d\n", n);
-   else
-     write("no\n");
+    Process.spawn_pike( ({"-e", sprintf("Tools.Shoot.run_sub( Tools.Shoot[%q](), %d, %f )",
+                                test_name, maximum_seconds, overhead ) }),
+                        (["stdout":fd->pipe()]));
+    return Standards.JSON.decode( fd->read() );
 }
+

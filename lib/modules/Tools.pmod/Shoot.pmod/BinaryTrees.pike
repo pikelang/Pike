@@ -25,18 +25,14 @@ private class Tree
 }
 
 int k = 18;
-int n;
 
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
+int perform()
 {
-   return sprintf("%.0f/s",ntot/useconds);
-}
-
-void perform()
-{
+    int n;
     Pike.gc_parameters( (["enabled":0]) );
     Tree longlived = Tree( 0,0,k );
     for( int i=0; i<3; i++ )
         n -= Tree(0,0,k)->check() * 2->pow(k);
     n -= longlived->check() * 2->pow(k);
+    return n;
 }
