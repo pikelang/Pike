@@ -73,12 +73,28 @@ array(string) features()
   {
     catch
     {
-      if(sizeof(indices(master()->resolv(modname) || ({})) -
+      object tmp;
+      if(sizeof(indices((tmp = master()->resolv(modname)) || ({})) -
 		({ "dont_dump_module" })))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
 	m += ({ (["Java.machine":"Java"])[modname] || modname });
+
+	if (modname == "Mysql") {
+	  // Check taste of Mysql client library.
+	  //
+	  // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
+	  // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
+	  // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+	  string client_ver = tmp["client_info"] && tmp["client_info"]();
+	  string license = "Unknown";
+	  string version = "Unknown";
+	  sscanf(client_ver, "%*s(%s)/%s", license, version);
+	  if ((license == "Copyright Abandoned") && (version > "5")) {
+	    m += ({ "MariaDB" });
+	  }
+	}
       }
     };
   }
