@@ -117,20 +117,21 @@ int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
   return 0;
 }
 
+protected {
+  MetaExplicit extension_sequence = MetaExplicit(2, 3);
+  MetaExplicit version_integer = MetaExplicit(2, 0);
 
-MetaExplicit extension_sequence = MetaExplicit(2, 3);
-MetaExplicit version_integer = MetaExplicit(2, 0);
+  Sequence rsa_public_key = Sequence( ({ Identifiers.rsa_id, Null() }));
 
-Sequence rsa_public_key = Sequence( ({ Identifiers.rsa_id, Null() }));
+  Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
 
-Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
+  Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
 
-Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
+  Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
+                                             Null() }) );
 
-Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
-					   Null() }) );
-
-Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
+  Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
+}
 
 //! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
 //! 4.1) to be signed (TBS) by the CA. version is explicitly set to
@@ -296,8 +297,7 @@ class Verifier {
   optional Crypto.RSA rsa; // Ugly
 }
 
-//!
-class rsa_verifier
+protected class rsa_verifier
 {
   inherit Verifier;
   Crypto.RSA rsa;
@@ -334,7 +334,7 @@ class rsa_verifier
 #if 0
 /* FIXME: This is a little more difficult, as the dsa-parameters are
  * sometimes taken from the CA, and not present in the keyinfo. */
-class dsa_verifier
+protected class dsa_verifier
 {
   inherit Verifier;
   object dsa;
@@ -347,8 +347,7 @@ class dsa_verifier
 }
 #endif
 
-//!
-Verifier make_verifier(Object _keyinfo)
+protected Verifier make_verifier(Object _keyinfo)
 {
   if( _keyinfo->type_name != "SEQUENCE" )
     return 0;
@@ -456,12 +455,11 @@ class TBSCertificate
       a = a[1..];
     } else
       version = 1;
-
     DBG("TBSCertificate: version = %d\n", version);
+
     if (a[0]->type_name != "INTEGER")
       return 0;
     serial = a[0]->value;
-
     DBG("TBSCertificate: serial = %s\n", (string) serial);
       
     if ((a[1]->type_name != "SEQUENCE")
@@ -470,31 +468,26 @@ class TBSCertificate
       return 0;
 
     algorithm = a[1];
-
     DBG("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
 
     if (a[2]->type_name != "SEQUENCE")
       return 0;
     issuer = a[2];
-
     DBG("TBSCertificate: issuer = %s\n", issuer->debug_string());
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]->elements) != 2))
       return 0;
-
     array validity = a[3]->elements;
 
     not_before = parse_time(validity[0]);
     if (!not_before)
       return 0;
-      
     DBG("TBSCertificate: not_before = %O\n", not_before);
 
     not_after = parse_time(validity[1]);
     if (!not_after)
       return 0;
-
     DBG("TBSCertificate: not_after = %O\n", not_after);
 
     if (a[4]->type_name != "SEQUENCE")
@@ -502,7 +495,6 @@ class TBSCertificate
     subject = a[4];
 
     DBG("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
-      
     public_key = make_verifier(a[5]);
 
     if (!public_key)
