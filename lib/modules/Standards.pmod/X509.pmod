@@ -1,23 +1,20 @@
 #pike __REAL_VERSION__
 //#pragma strict_types
 
-/* 
- * Some random functions for creating RFC-2459 style X.509 certificates.
- *
- */
+//! Functions to generate and validate RFC2459 style X.509 v3
+//! certificates.
 
 constant dont_dump_module = 1;
 
-#if constant(Standards.ASN1.Types.Sequence) && constant(Crypto.Hash)
+#if constant(Crypto.Hash)
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
 
-// Note: Redump this module if you change X509_DEBUG
 #ifdef X509_DEBUG
-#define X509_WERR werror
+#define DBG(X ...) werror(X)
 #else
-#define X509_WERR
+#define DBG(X ...)
 #endif
 
 //!
@@ -59,7 +56,9 @@ UTC make_time(int t)
 		     second->second_no()));
 }
 
-//! Returns a mapping similar to that returned by gmtime
+//! Returns a mapping similar to that returned by gmtime. Returns
+//! @expr{0@} on invalid dates.
+//!
 //! @returns
 //!   @mapping
 //!     @member int "year"
@@ -79,8 +78,6 @@ mapping(string:int) parse_time(UTC asn1)
   if ( (sizeof(s) != 12) && (c != 'Z') )
     return 0;
 
-  /* NOTE: This relies on pike-0.7 not interpreting leading zeros as
-   * an octal prefix. */
   mapping(string:int) m = mkmapping( ({ "year", "mon", "mday",
 					"hour", "min", "sec" }),
 				     (array(int)) (s/2));
@@ -135,11 +132,15 @@ Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
 
 Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
 
-//!
-Sequence make_tbs(object issuer, object algorithm,
-		object subject, object keyinfo,
-		object serial, int ttl,
-		array extensions)
+//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
+//! v3, validity is calculated based on time and @[ttl], and
+//! @[extensions] is optionally added to the sequence. issuerUniqueID
+//! and subjectUniqueID are not supported.
+Sequence make_tbs(Sequence issuer, Sequence algorithm,
+                  Sequence subject, Sequence keyinfo,
+                  Integer serial, int ttl,
+                  array extensions)
 {
   int now = time();
   Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
@@ -380,7 +381,7 @@ Verifier make_verifier(Object _keyinfo)
   }
 }
 
-//!
+//! Represents a TBSCertificate.
 class TBSCertificate
 {
   //!
@@ -424,7 +425,10 @@ class TBSCertificate
   //! optional
   object extensions;
 
-  //!
+  //! Populates the object from a certificate decoded into an ASN.1
+  //! Object. Returns the object on success, otherwise @expr{0@}. You
+  //! probably want to call @[decode_certificate] or even
+  //! @[verify_certificate].
   this_program init(Object asn1)
   {
     der = asn1->get_der();
@@ -432,7 +436,7 @@ class TBSCertificate
       return 0;
 
     array(Object) a = ([object(Sequence)]asn1)->elements;
-    X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+    DBG("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
     if (sizeof(a) < 6)
       return 0;
@@ -453,12 +457,12 @@ class TBSCertificate
     } else
       version = 1;
 
-    X509_WERR("TBSCertificate: version = %d\n", version);
+    DBG("TBSCertificate: version = %d\n", version);
     if (a[0]->type_name != "INTEGER")
       return 0;
     serial = a[0]->value;
 
-    X509_WERR("TBSCertificate: serial = %s\n", (string) serial);
+    DBG("TBSCertificate: serial = %s\n", (string) serial);
       
     if ((a[1]->type_name != "SEQUENCE")
 	|| !sizeof(a[1]->elements )
@@ -467,13 +471,13 @@ class TBSCertificate
 
     algorithm = a[1];
 
-    X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+    DBG("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
 
     if (a[2]->type_name != "SEQUENCE")
       return 0;
     issuer = a[2];
 
-    X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
+    DBG("TBSCertificate: issuer = %s\n", issuer->debug_string());
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]->elements) != 2))
@@ -485,27 +489,27 @@ class TBSCertificate
     if (!not_before)
       return 0;
       
-    X509_WERR("TBSCertificate: not_before = %O\n", not_before);
+    DBG("TBSCertificate: not_before = %O\n", not_before);
 
     not_after = parse_time(validity[1]);
     if (!not_after)
       return 0;
 
-    X509_WERR("TBSCertificate: not_after = %O\n", not_after);
+    DBG("TBSCertificate: not_after = %O\n", not_after);
 
     if (a[4]->type_name != "SEQUENCE")
       return 0;
     subject = a[4];
 
-    X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+    DBG("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
       
     public_key = make_verifier(a[5]);
 
     if (!public_key)
       return 0;
 
-    X509_WERR("TBSCertificate: parsed public key. type = %s\n",
-	      public_key->type);
+    DBG("TBSCertificate: parsed public key. type = %s\n",
+        public_key->type);
 
     int i = 6;
     if (i == sizeof(a))
@@ -543,7 +547,8 @@ class TBSCertificate
   }
 }
 
-//!
+//! Decodes a certificate and verifies that it is structually sound.
+//! Returns a @[TBSCertificate] object if ok, otherwise @expr{0@}.
 TBSCertificate decode_certificate(string|object cert)
 {
   if (stringp (cert)) cert = Standards.ASN1.Decode.simple_der_decode(cert);
@@ -587,7 +592,7 @@ TBSCertificate verify_certificate(string s, mapping authorities)
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     /* A self signed certificate */
-    X509_WERR("Self signed certificate\n");
+    DBG("Self signed certificate\n");
     v = tbs->public_key;
   }
   else
@@ -699,7 +704,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         
         if(! caok)
         {
-          X509_WERR("a CA certificate does not have the CA basic constraint.\n");
+          DBG("a CA certificate does not have the CA basic constraint.\n");
           m->error_code = CERT_UNAUTHORIZED_CA;
           m->error_cert = idx;
           return m;
@@ -715,7 +720,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // require trust, we're done.
       if(!v && require_trust)
       {
-         X509_WERR("we require trust, but haven't got it.\n");
+         DBG("we require trust, but haven't got it.\n");
         m->error_code = CERT_ROOT_UNTRUSTED;
         m->error_cert = idx;
         return m;
@@ -726,7 +731,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       {
         /* A self signed certificate */
         m->self_signed = 1;
-        X509_WERR("Self signed certificate\n");
+        DBG("Self signed certificate\n");
 
         // always trust our own authority first, even if it is self signed.
         if(!v) 
@@ -761,7 +766,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
       {
-        X509_WERR("issuer chain is broken!\n");
+        DBG("issuer chain is broken!\n");
         m->verified = 0;
         m->error_code = CERT_CHAIN_BROKEN;
         m->error_cert = idx;
@@ -779,7 +784,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
                     chain_cert[idx]->elements[2]->value)
           && tbs)
       {
-        X509_WERR("signature is verified..\n");
+        DBG("signature is verified..\n");
         m->verified = 1;
 
         // if we're the root of the chain and we've verified, this is
@@ -791,7 +796,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       }
       else
       {
-        X509_WERR("signature _not_ verified...\n");
+        DBG("signature _not_ verified...\n");
         m->error_code = CERT_BAD_SIGNATURE;
         m->error_cert = idx;
         m->verified = 0;
