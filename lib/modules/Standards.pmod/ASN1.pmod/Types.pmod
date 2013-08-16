@@ -1199,9 +1199,12 @@ class BMPString
 }
 
 //! Meta-instances handle a particular explicit tag and set of types.
+//! Once cloned this object works as a factory for Compound objects
+//! with the cls and tag that the meta object was initialized with.
 //!
-//! @fixme
-//!  document me!
+//! @example
+//!   MetaExplicit m = MetaExplicit(1,2);
+//!   Compound c = m(Integer(3));
 class MetaExplicit
 {
   int real_tag;
@@ -1261,6 +1264,7 @@ class MetaExplicit
 #endif
   }
 
+  //!
   void create(int cls, int tag, mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
