@@ -5,7 +5,7 @@ constant name="Loops Nested (local,var)";
 
 int n=0;
 
-void perform()
+int perform()
 {
   int iter = 40;
   int x=0;
@@ -18,10 +18,5 @@ void perform()
 /* This is here to avoid the strength-reduce in the optimizer.. */
                  for (int f=0; f<1; f++)
                     x++;
-   n=x;
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f iters/s",ntot/useconds);
+   return x;
 }

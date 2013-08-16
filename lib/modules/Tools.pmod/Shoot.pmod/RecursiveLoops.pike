@@ -15,12 +15,9 @@ void recur(int d)
       n++;
 }
 
-void perform()
+int perform()
 {
+   n = 0;
    recur(d);
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f iters/s",ntot/useconds);
+   return n;
 }

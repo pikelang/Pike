@@ -10,8 +10,9 @@ class Foo {
 
 array(Foo) test_array = allocate (10000, Foo) ();
 
-void perform()
+int perform()
 {
   for (int i = 0; i < 10; i++)
     sort (test_array + ({}));
+  return sizeof(test_array)*10;
 }

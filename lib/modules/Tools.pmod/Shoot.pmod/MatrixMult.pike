@@ -1,9 +1,9 @@
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 
-constant name="Matrix multiplication";
+constant size = 100;
+constant name="Matrix multiplication ("+size+"x"+size+")";
 
-int size = 100;
 
 array(array(float)) mkmatrix(int rows, int cols) 
 {
@@ -16,15 +16,25 @@ array(array(float)) mkmatrix(int rows, int cols)
 	      }, (float)rows*cols)/cols;
 }
 
+Math.Matrix gm1 = Math.Matrix(mkmatrix(size, size));
+Math.Matrix gm2 = Math.Matrix(mkmatrix(size, size));
+
 void test(int n)
 {
-    Math.Matrix m1 = Math.Matrix(mkmatrix(size, size));
-    Math.Matrix m2 = Math.Matrix(mkmatrix(size, size));
+    Math.Matrix m1 = gm1;
+    Math.Matrix m2 = gm2;
+
     while (n--) m1=m1*m2;
-    array q = (array(array(int)))(array)m1;
+    //   array q = (array(array(int)))(array)m1;
 }
 
-void perform()
+int perform()
 {
    test(100);
+   return 200 * 100 * 100 * 100;
+}
+
+string present_n( int ntot, int nruns, float real, float user )
+{
+    return sprintf("%.2f GF/s", (ntot/real/1000000000));
 }

@@ -18,7 +18,8 @@ constant data=
    "abc6<def6>ghi6<jkl6>mno6<prq6>stu6<vwx6>yzå6"
    "ABC6<DEF6>GHI6<JKL6>MNO6<PRQ6>STU6<VWX6>YZÅ6"
    *100;
-int n=20;
+
+constant tags = String.count(data,"<");
 
 string tagremove(string line)
 {
@@ -29,14 +30,13 @@ string tagremove(string line)
    return out;
 }
 
-void perform()
+int perform()
 {
    string out;
+   int n= 200;
    for (int i=0; i<n; i++)
       out=tagremove(data);
+   // the string is processed 'n' times.
+   return n * tags;
 }
 
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f tags/s",ntot*(4*1400)/useconds);
-}

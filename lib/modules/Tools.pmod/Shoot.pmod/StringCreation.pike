@@ -4,13 +4,12 @@ inherit Tools.Shoot.Test;
 constant name="String Creation";
 
 int k = 1000; /* variable to tune the time of the test */
-int n;
 string file = random_string(255*1024*10);
 
 // Tests the string_magnitude, internal_findstring and memhash
 // functions most (and malloc/free/memcpy).
 //
-void perform()
+int perform()
 {
     int q;
     int z = 1000;
@@ -23,10 +22,5 @@ void perform()
         q+=sizeof(ss);
         ss = ({});
     }
-    n = q;
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+    return q;
 }

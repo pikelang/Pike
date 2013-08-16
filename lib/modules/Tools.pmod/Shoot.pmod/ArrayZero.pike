@@ -3,10 +3,11 @@ inherit Tools.Shoot.Test;
 
 constant name = "Array Zero";
 
-void perform()
+int perform()
 {
   for (int i = 0; i < 10000; i++)
     arrayzero();
+  return 10000;
 }
 
 void arrayzero()
