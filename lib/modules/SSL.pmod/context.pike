@@ -114,7 +114,7 @@ array(string) get_authorities()
 }
 
 protected array(string) authorities = ({});
-array(Tools.X509.TBSCertificate) authorities_cache = ({});
+array(Standards.X509.TBSCertificate) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers. 
 //!
@@ -143,7 +143,7 @@ array(array(string)) get_trusted_issuers()
 }
 
 protected array(array(string)) trusted_issuers = ({});
-array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
+array(array(Standards.X509.TBSCertificate)) trusted_issuers_cache = ({});
 
 //! Determines whether certificates presented by the peer are
 //! verified, or just accepted as being valid.
@@ -357,7 +357,7 @@ private void update_authorities()
   authorities_cache=({});
   foreach(authorities, string a)
   {
-    authorities_cache += ({ Tools.X509.decode_certificate(a)});
+    authorities_cache += ({ Standards.X509.decode_certificate(a)});
   }
 
 }
@@ -410,7 +410,8 @@ private array(string) internal_select_client_certificate(.context context,
   {
     if(!sizeof(chain)) { i++; continue; }
 
-    c += ({ (["cert":Tools.X509.decode_certificate(chain[0]), "chain":i ]) });
+    c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
+              "chain":i ]) });
     i++;
   }
 
@@ -439,14 +440,14 @@ private void update_trusted_issuers()
   {
     array(array) chain = ({});
     // make sure the chain is valid and intact.
-    mapping result = Tools.X509.verify_certificate_chain(i, ([]), 0);
+    mapping result = Standards.X509.verify_certificate_chain(i, ([]), 0);
 
     if(!result->verified)
       error("Broken trusted issuer chain!\n");
 
     foreach(i, string chain_element)
     {
-      chain += ({ Tools.X509.decode_certificate(chain_element) });
+      chain += ({ Standards.X509.decode_certificate(chain_element) });
     }
     trusted_issuers_cache += ({ chain });
   }
