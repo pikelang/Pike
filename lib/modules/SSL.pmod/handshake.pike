@@ -495,11 +495,11 @@ Packet certificate_request_packet(SSL.context context)
     // an empty certificate request is allowed.
     if(context->authorities_cache && sizeof(context->authorities_cache))
       len = `+(@ Array.map(context->authorities_cache,
-			     lambda(Tools.X509.TBSCertificate s)
+			     lambda(Standards.X509.TBSCertificate s)
        { return sizeof(s->subject->get_der());} ));
 
     struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
-    foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
+    foreach(context->authorities_cache, Standards.X509.TBSCertificate auth)
       struct->put_var_string(auth->subject->get_der(), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
@@ -715,7 +715,7 @@ int verify_certificate_chain(array(string) certs)
   // connections???
   if(sizeof(context->authorities_cache))
   {
-    foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
+    foreach(context->authorities_cache, Standards.X509.TBSCertificate c)
     {
       if((r == (c->subject->get_der()))) // we have a trusted issuer
       {
@@ -737,13 +737,13 @@ int verify_certificate_chain(array(string) certs)
 
   mapping auth=([]);
 
-  foreach(context->trusted_issuers_cache, array(Tools.X509.TBSCertificate) i)
+  foreach(context->trusted_issuers_cache, array(Standards.X509.TBSCertificate) i)
   {
     // we want the first item, the top level
     auth[i[-1]->subject->get_der()] = i[-1]->public_key;
   }
 
-  mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
+  mapping result = Standards.X509.verify_certificate_chain(certs, auth, context->require_trust);
 
   if(result->verified)
   {
@@ -1524,7 +1524,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       
       mixed error=catch
       {
-	Tools.X509.Verifier public_key = Tools.X509.decode_certificate(
+	Standards.X509.Verifier public_key = Standards.X509.decode_certificate(
                 session->peer_certificate_chain[0])->public_key;
 
 	if(public_key->type == "rsa")
@@ -1647,7 +1647,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 #ifdef SSL3_DEBUG
         foreach(certs, string c)
         {
-werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.X509.decode_certificate(c)->subject) + "\n");
+werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
         }
 #endif
 

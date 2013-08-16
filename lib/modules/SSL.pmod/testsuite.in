@@ -34,7 +34,7 @@ test_do([[
   });
 
   string _cert = Standards.PEM.build("CERTIFICATE",
-    Tools.X509.make_selfsigned_rsa_certificate(rsa_again, 3600*24, attrs));
+    Standards.X509.make_selfsigned_rsa_certificate(rsa_again, 3600*24, attrs));
 
   add_constant("pem_key", _key);
   add_constant("pem_cert", _cert);
@@ -67,7 +67,7 @@ class Server {
     ctx->short_rsa = Crypto.RSA()->generate_key(512, ctx->random);
     ctx->rsa_mode();
 
-    object tbs = Tools.X509.decode_certificate(cert);
+    object tbs = Standards.X509.decode_certificate(cert);
     ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
     ctx->certificates = ({ cert });
 
