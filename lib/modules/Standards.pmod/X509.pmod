@@ -42,7 +42,7 @@ constant CERT_UNAUTHORIZED_CA = 7;
 //! time @[t].
 UTC make_time(int t)
 {
-  object /*Calendar.Second*/ second = Calendar["Second"](t)->set_timezone("UTC");
+  Calendar.ISO.Second second = Calendar.ISO.Second(t)->set_timezone("UTC");
 
   if (second->year_no() >= 2050)
     error( "Times later than 2049 not supported yet\n" );
@@ -88,7 +88,7 @@ mapping(string:int) parse_time(UTC asn1)
     return 0;
   m->mon--;
   
-  if ( (m->mday <= 0) || (m->mday > Calendar["ISO"]["Year"](m->year + 1900)
+  if ( (m->mday <= 0) || (m->mday > Calendar.ISO.Year(m->year + 1900)
 			  ->month(m->mon + 1)->number_of_days()))
     return 0;
 
@@ -352,6 +352,7 @@ protected Verifier make_verifier(Object _keyinfo)
   if( _keyinfo->type_name != "SEQUENCE" )
     return 0;
   Sequence keyinfo = [object(Sequence)]_keyinfo;
+
   if ( (keyinfo->type_name != "SEQUENCE")
        || (sizeof(keyinfo->elements) != 2)
        || (keyinfo->elements[0]->type_name != "SEQUENCE")
@@ -359,21 +360,19 @@ protected Verifier make_verifier(Object _keyinfo)
        || (keyinfo->elements[1]->type_name != "BIT STRING")
        || keyinfo->elements[1]->unused)
     return 0;
+  Sequence seq = [object(Sequence)]keyinfo->elements[0];
+  String str = [object(String)]keyinfo->elements[1];
   
-  if (([object(Sequence)]keyinfo->elements[0])->elements[0]->get_der()
-      == Identifiers.rsa_id->get_der())
+  if (seq->elements[0]->get_der() == Identifiers.rsa_id->get_der())
   {
-    if ( (sizeof(([object(Sequence)]keyinfo->elements[0])->elements) != 2)
-	 || (([object(Sequence)]keyinfo->elements[0])->elements[1]->get_der()
-	     != Null()->get_der()))
+    if ( (sizeof(seq->elements) != 2)
+	 || (seq->elements[1]->get_der() != Null()->get_der()) )
       return 0;
     
-    return rsa_verifier()->init(([object(Sequence)]keyinfo->elements[1])
-				->value);
+    return rsa_verifier()->init(str->value);
   }
 
-  if(([object(Sequence)]keyinfo->elements[0])->elements[0]->get_der()
-      == Identifiers.dsa_sha_id->get_der())
+  if(seq->elements[0]->get_der() == Identifiers.dsa_sha_id->get_der())
   {
     /* FIXME: Not implemented */
     return 0;
