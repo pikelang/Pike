@@ -248,6 +248,7 @@ dnl   fi
 
   # Needed for libmariadbclient.a 1.0.0.
   AC_SEARCH_LIBS(OPENSSL_config, crypto)
+  AC_SEARCH_LIBS(SSL_library_init, ssl)
 
   AC_SEARCH_LIBS(_db_doprnt_, dbug)
   AC_SEARCH_LIBS(my_init, mysys)
