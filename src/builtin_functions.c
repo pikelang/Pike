@@ -9287,6 +9287,89 @@ void f_enumerate(INT32 args)
 /*! @module Program
  */
 
+
+/*! @decl string defined(program x, string identifier)
+ *!
+ *!   Returns a string with filename and linenumber where @[idenfifier]
+ *!   in @[x] was defined.
+ *!
+ *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
+ *!   builtin functions.
+ *!
+ *!   If @[idenfier] can not be found in @[x] this function returns
+ *!   where the program is defined.
+ */
+PMOD_EXPORT void f_program_identifier_defined(INT32 args)
+{
+  struct program *p;
+  struct pike_string *ident;
+  struct program *id_prog, *p2;
+  struct identifier *id;
+  INT_TYPE line;
+  INT_TYPE offset;
+  struct pike_string *file = NULL;
+
+  if( !(p = program_from_svalue(Pike_sp-args)) )
+      Pike_error("Illegal argument 1 to defined(program,string)\n");
+
+  if( Pike_sp[-args+1].type != PIKE_T_STRING )
+      Pike_error("Illegal argument 2 to defined(program,string)\n");
+  else
+      ident = Pike_sp[-args+1].u.string;
+
+  if( (offset = find_shared_string_identifier( ident, p )) == -1 )
+  {
+      INT_TYPE line;
+      struct pike_string *tmp = low_get_program_line(p, &line);
+
+      pop_n_elems(args);
+
+      if (tmp) 
+      {
+          push_string(tmp);
+          if(line >= 1)
+          {
+              push_constant_text(":");
+              push_int(line);
+              f_add(3);
+          }
+      }
+      else
+          push_int(0);
+      return;
+  }
+
+  id = ID_FROM_INT(p, offset);
+  id_prog = PROG_FROM_INT (p, offset);
+
+  if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
+     id->func.offset != -1)
+      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
+           id->func.const_info.offset >= 0 &&
+           (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
+      file = low_get_program_line (p2, &line);
+  else
+      /* The program line is better than nothing for C functions. */
+      file = low_get_program_line (p, &line);
+
+  if (file)
+  {
+      pop_n_elems(args);
+      if (line) {
+          push_string(file);
+          push_constant_text(":");
+          push_int(line);
+          f_add(3);
+      }
+      else
+          push_string (file);
+      return;
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
 /*! @decl array(program) inherit_list(program p)
  *!
  *!   Returns an array with the programs that @[p] has inherited.
@@ -10097,6 +10180,8 @@ void init_builtin_efuns(void)
 		
   ADD_FUNCTION2("inherit_list", f_inherit_list,
 		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0, OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,
+               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0, OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
