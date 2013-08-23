@@ -218,13 +218,9 @@ void check_tree(node *n, int depth)
 }
 #endif
 
-/* FIXME: Ought to use parent pointer to avoid recursion. */
-INT32 count_args(node *n)
+static int low_count_args(node *n)
 {
   int a,b;
-  check_tree(n,0);
-
-  fatal_check_c_stack(16384);
 
   if(!n) return 0;
   switch(n->token)
@@ -241,8 +237,7 @@ INT32 count_args(node *n)
   case F_CAST:
     if(n->type == void_type_string)
       return 0;
-    else
-      return count_args(CAR(n));
+    return count_args(CAR(n));
 
   case F_SOFT_CAST:
     return count_args(CAR(n));
@@ -267,7 +262,6 @@ INT32 count_args(node *n)
     int tmp1,tmp2;
     tmp1=count_args(CADR(n));
     tmp2=count_args(CDDR(n));
-    if(tmp1==-1 || tmp2==-1) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
   }
@@ -293,6 +287,68 @@ INT32 count_args(node *n)
     if(n->type == void_type_string) return 0;
     return 1;
   }
+  /* NOT_REACHED */
+}
+
+INT32 count_args(node *n)
+{
+  int total = 0;
+  int a,b;
+  node *orig = n;
+  node *orig_parent;
+  node *prev = NULL;
+  check_tree(n,0);
+
+  fatal_check_c_stack(16384);
+
+  if(!n) return 0;
+
+  orig_parent = n->parent;
+  n->parent = NULL;
+
+  while(1) {
+    int val;
+    while ((n->token == F_COMMA_EXPR) ||
+	   (n->token == F_VAL_LVAL) ||
+	   (n->token == F_ARG_LIST)) {
+      if (CAR(n)) {
+	CAR(n)->parent = n;
+	n = CAR(n);
+      } else if (CDR(n)) {
+	CDR(n)->parent = n;
+	n = CDR(n);
+      } else {
+	/* Unlikely, but... */
+	goto backtrack;
+      }
+    }
+
+    /* Leaf. */
+    val = low_count_args(n);
+    if (val == -1) {
+      total = -1;
+      break;
+    }
+    if (n->parent && (CAR(n->parent) == CDR(n->parent))) {
+      /* Same node in both CDR and CAR ==> count twice. */
+      val *= 2;
+    }
+    total += val;
+
+  backtrack:
+    while (n->parent &&
+	   (!CDR(n->parent) || (n == CDR(n->parent)))) {
+      n = n->parent;
+    }
+    if (!(n = n->parent)) break;
+    /* Found a parent where we haven't visited CDR. */
+    CDR(n)->parent = n;
+    n = CDR(n);
+  }
+
+  orig->parent = orig_parent;
+
+  return total;
 }
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
