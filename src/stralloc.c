@@ -1778,8 +1778,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
   if(!r)
   {
     r=begin_wide_shared_string(size, a->size_shift);
-    /* we keep both content information and the clear flags */
-    r->flags |= a->flags & (STRING_CONTENT_MASK|STRING_CLEAR_ON_EXIT);
+    r->flags |= a->flags & ~15;
     r->min = a->min;
     r->max = a->max;
     if (a->len <= size) {
@@ -1807,8 +1806,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
   }else{
     r=begin_wide_shared_string(size,a->size_shift);
     MEMCPY(r->str, a->str, a->len<<a->size_shift);
-    /* we keep both content information and the clear flags */
-    r->flags |= a->flags & (STRING_CONTENT_MASK|STRING_CLEAR_ON_EXIT);
+    r->flags |= a->flags & ~15;
     r->min = a->min;
     r->max = a->max;
     free_string(a);
@@ -1823,7 +1821,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 
   r=begin_wide_shared_string(size,shift);
   pike_string_cpy(MKPCHARP_STR(r),a);
-  r->flags |= (a->flags & (STRING_CONTENT_MASK|STRING_CLEAR_ON_EXIT));
+  r->flags |= (a->flags & ~15);
   r->min = a->min;
   r->max = a->max;
   free_string(a);
@@ -1996,7 +1994,7 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
                                     struct pike_string *b)
 {
   if( !b->len ) {
-    ret->flags |= aflags & (STRING_CONTENT_MASK|STRING_CLEAR_ON_EXIT);
+    ret->flags |= aflags & ~15;
     ret->min = amin;
     ret->max = amax;
     return;
@@ -2012,7 +2010,6 @@ PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
 
   ret->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE);
   ret->flags |= (aflags & b->flags & (STRING_IS_LOWERCASE | STRING_IS_UPPERCASE));
-  ret->flags |= (aflags | b->flags) & STRING_CLEAR_ON_EXIT;
 }
 
 PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b)
@@ -2030,7 +2027,6 @@ PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string
   }
 
   a->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE) | b->flags;
-  a->flags |= b->flags & STRING_CLEAR_ON_EXIT;
 }
 
 /*** Add strings ***/
