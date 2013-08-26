@@ -327,55 +327,34 @@ protected int crc24(string data) {
 //! Encode PGP data with ASCII armour.
 string encode_radix64(string data, string type,
 		      void|mapping(string:string) extra) {
-  string ret = "-----BEGIN " + type + "-----\n";
   if(!extra) extra = ([]);
   if(!extra->Version)
     extra->Version = "Pike " + __REAL_MAJOR__ + "." +
       __REAL_MINOR__ + "." + __REAL_BUILD__;
-  foreach(extra; string key; string value)
-    ret += key + ": " + value + "\n";
-  ret += "\n";
-  ret += (MIME.encode_base64(data,1)/64.0)*"\n" + "\n";
-  ret += "=" + MIME.encode_base64(sprintf("%3c",crc24(data))) + "\n";
-  ret += "-----END " + type + "-----\n";
-  return ret;
+
+  return Standards.PEM.build(type, data, extra, sprintf("%3c",crc24(data)));
 }
 
 //! Decode ASCII armour.
 mapping(string:mixed) decode_radix64(string data) {
-  mapping ret = ([]);
-  string tmp;
-  if(sscanf(data, "%*s-----BEGIN %s-----", tmp)!=2)
-    error("String does not contain \"-----BEGIN\".\n");
-  ret->armor_header = tmp;
-  if(!has_value(data, "-----END "+tmp+"-----"))
-    error("String is imcomplete; no armor tail found.\n");
-  sscanf(data, "%*s-----BEGIN "+tmp+"-----\n%s-----END "+tmp+"-----", data);
 
-  array lines = String.trim_all_whites(data)/"\n";
-  while(String.trim_all_whites(lines[0])!="") {
-    string key,value;
-    if(sscanf(lines[0], "%s:%s", key, value)!=2)
-      error("Error in key-value pairs.\n");
-    switch(key) {
-    case "Comment":
-      ret->Comment = utf8_to_string(value);
-      break;
-    case "Hash":
-      ret->Hash = value/",";
-      break;
-    default:
-      ret[key]=value;
-    }
-    lines = lines[1..];
-  }
+  Standards.PEM.Message m = Standards.PEM.Message(data);
+  if( m->pre != m->post )
+    error("Illegal format. Begin token %O doesn't match end token %O.\n",
+          m->pre, m->post);
 
-  if(lines[-1][0]=='=') {
-    ret->checksum = (int)Gmp.mpz(MIME.decode_base64(lines[-1][1..]),256);
-    lines = lines[..<1];
-  }
 
-  ret->data = MIME.decode_base64(lines*"\n");
+  mapping ret = m->headers || ([]);
+  if( ret->comment )
+    ret->comment = utf8_to_string(ret->comment);
+  if( ret->hash )
+    ret->hash = ret->hash/",";
+
+  if( m->trailer )
+    ret->checksum = (int)Gmp.mpz(m->trailer,256);
+
+  ret->armor_header = m->pre;
+  ret->data = m->body;
   ret->actual_checksum = crc24(ret->data);
   return ret;
 }

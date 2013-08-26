@@ -21,6 +21,9 @@ class Message
   //! The decode message body.
   string body;
 
+  //! Message trailer, like RFC4880 checksum.
+  string trailer;
+
   protected void create(string|array(string) data)
   {
     array(string) lines;
@@ -40,6 +43,12 @@ class Message
     {
       lines = lines[..<1];
       // if(pre!=post) error("Encapsulation boundary mismatch.\n");
+    }
+
+    if( sizeof(lines[-1]) && lines[-1][0]=='=' )
+    {
+      trailer = MIME.decode_base64(lines[-1][1..]);
+      lines = lines[..<1];
     }
 
     array res = MIME.parse_headers(lines*"\n");
@@ -101,9 +110,14 @@ class Messages
       return ({ lines*"\n" });
     return ({ Message(lines) });
   }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("Standards.PEM.Message%O", parts);
+  }
 }
 
-//! Creates a PEM message.
+//! Creates a PEM message, wrapped to 64 character lines.
 //!
 //! @param tag
 //!   The encapsulation boundary string.
@@ -114,8 +128,12 @@ class Messages
 //! @param headers
 //!   Optional mapping containing encapsulated headers as name value
 //!   pairs.
+//!
+//! @param checksum
+//!   Optional checksum string, added as per RFC4880.
 string build(string tag, string data,
-             void|mapping(string:string) headers)
+             void|mapping(string:string) headers,
+             void|string checksum)
 {
   String.Buffer out = String.Buffer();
   out->add("-----BEGIN ", tag, "-----\n");
@@ -123,8 +141,13 @@ string build(string tag, string data,
   {
     foreach(headers; string name; string value)
       out->add(name, ": ", value, "\n");
-    out->add("\n");
   }
-  out->add(MIME.encode_base64(data), "\n-----END ", tag, "-----\n");
+
+  foreach(MIME.encode_base64(data,1)/64.0, string line)
+    out->add("\n", line);
+
+  if( checksum )
+    out->add("\n=", MIME.encode_base64(checksum, 1));
+  out->add("\n-----END ", tag, "-----\n");
   return (string)out;
 }
