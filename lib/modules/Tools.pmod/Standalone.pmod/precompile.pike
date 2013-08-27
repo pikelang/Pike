@@ -7,8 +7,6 @@
 
 #pike __REAL_VERSION__
 
-#define FUNC_OVERLOAD
-
 #define TOSTR(X) #X
 #define DEFINETOSTR(X) TOSTR(X)
 
@@ -29,14 +27,9 @@ string usage = #"[options] <from> > <to>
 
  Supported options are:
 
-   --api=<n>	 Require a minimum API version.
-
    -h,--help	 Display this help text.
 
    -v,--version	 Display the API version.
-
-   -w,--warnings Generate warnings instead of errors for
-                 recoverable errors.
 
  The input can look something like this:
 
@@ -186,23 +179,7 @@ string usage = #"[options] <from> > <to>
 ";
 
 #define PC Parser.Pike
-
-#if 0 && !constant(Parser._parser._Pike.tokenize)
-class parser_pike
-{
-  inherit PC;
-  static void create()
-  {
-    // Kludge for `fun.
-    backquoteops["f"] = 1;
-  }
-}
-static parser_pike PP = parser_pike();
-
-#define split PP->split
-#else
 #define split PC.split
-#endif
 
 int api;	// Requested API level.
 
@@ -1289,9 +1266,6 @@ array fix_return(array body, PikeType rettype, mixed args)
 }
 
 
-// Workaround for bug in F_RECUR in some sub-versions of Pike7.1.34.
-function(mixed,array,mixed ...:array) low_recursive = recursive;
-
 array recursive(mixed func, array data, mixed ... args)
 {
   array ret=({});
@@ -1300,7 +1274,7 @@ array recursive(mixed func, array data, mixed ... args)
     {
       if(arrayp(foo))
       {
-	ret+=({ low_recursive(func, foo, @args) });
+	ret+=({ recursive(func, foo, @args) });
       }else{
 	ret+=({ foo });
       }
@@ -1432,7 +1406,6 @@ array DEFINE(string define, void|string as)
 }
 
 
-#ifdef FUNC_OVERLOAD
 class FuncData
 {
   string name;
@@ -1687,10 +1660,6 @@ array generate_overload_func_for(array(FuncData) d,
   }
   return out;
 }
-
-
-
-#endif
 
 // Parses a block of cmod code, separating it into declarations,
 // functions to add, exit functions and other code.
@@ -2107,7 +2076,6 @@ static struct %s *%s_gdb_dummy_ptr;
       x=ret/({"PIKEFUN"});
       ret=x[0];
 
-#ifdef FUNC_OVERLOAD
       mapping(string:array(FuncData)) name_data=([]);
       mapping(string:int) name_occurances=([]);
 
@@ -2130,7 +2098,6 @@ static struct %s *%s_gdb_dummy_ptr;
 	string name=(string)proto[p];
 	name_occurances[name]++;
       }
-#endif
 
       for(int f=1;f<sizeof(x);f++)
       {
@@ -2173,13 +2140,11 @@ static struct %s *%s_gdb_dummy_ptr;
 	array args_tmp=proto[p+1];
 
 	mapping attributes=parse_attributes(proto[p+2..],location);
-#ifdef FUNC_OVERLOAD
 	string common_name=name;
 	if(!attributes->errname)
 	  attributes->errname=name;
 	if(name_occurances[common_name]>1)
 	  name+="_"+(++name_occurances[common_name+".cnt"]);
-#endif
 
 	args_tmp=args_tmp[1..sizeof(args_tmp)-2];
 	if(sizeof(args_tmp))
@@ -2581,7 +2546,6 @@ static struct %s *%s_gdb_dummy_ptr;
 	    ret+=({body});
 	  ret+=({ "}\n" });
 
-#ifdef FUNC_OVERLOAD
 	  if(name_occurances[common_name] > 1)
 	  {
 	    FuncData d=FuncData();
@@ -2636,7 +2600,6 @@ static struct %s *%s_gdb_dummy_ptr;
 	    }));
 	  
 	  }
-#endif
 	}
 	ret+=rest;
 	
@@ -2748,6 +2711,9 @@ int main(int argc, array(string) argv)
 {
   mixed x;
 
+  warnings = 1;
+  api = (int)precompile_api_version;
+
   string outpath;
   if( has_suffix( lower_case(dirname( argv[0] )), "standalone.pmod" ) )
     usage = "pike -x " + basename( argv[0] )-".pike" + " " + usage;
@@ -2765,7 +2731,37 @@ int main(int argc, array(string) argv)
     case "help":
       write( usage );
       return 0;
+
     case "api":
+
+        /* If we want to be able to compile old versions of pike with
+         * new precompile.pike, and new versions of pike with old
+         * precompile.pike we have to ignore the api version.
+         *
+         * Since none of the API changes really change how previously
+         * valid code is interpreted the whole API system only adds
+         * incompatibility.
+         *
+         * As an example, backend.cmod in pike 7.8 can not be
+         * precompiled if you only have a pike 7.9 installed, which
+         * makes it impossible to build a pike 7.8 if you have pike
+         * 7.9+ installed (specifically, the object(Thread.Thread)
+         * will break, since newer precompile added actual support for
+         * it, while the backend.cmod depends on the old non-support,
+         * but both version works just fine if the check is removed).
+         *
+         * Adding the --api argument to the 7.8 makefiles is not
+         * really an option, because that will not work for older
+         * releases, and will make it impossible to precompile pike
+         * 7.8 .cmod-files with pikes older than 7.9 (which is sort of
+         * non-optimal).
+         *
+         * Similar issues occured when compiling pike 7.9 with an
+         * installed pike 7.8.
+         *
+         * Simply removing the api check makes all issues just go away.
+         */
+#if 0
       if (lower_case(opt[1]) == "max") {
 	// This is used by eg the autodoc extractor, to ensure
 	// that all files are precompilable.
@@ -2783,12 +2779,10 @@ int main(int argc, array(string) argv)
 	       "must not be specified with the --api option.\n");
 	return 1;
       }
+#endif
       break;
     case "output":
       outpath = opt[1];
-      break;
-    case "warnings":
-      warnings = 1;
       break;
     }
   }
@@ -2839,8 +2833,9 @@ int main(int argc, array(string) argv)
 	  ]));
   } else
 #endif
-    if (has_value(x, "cmod_include")) {
-      werror("Warning: It looks like %O might require API level 4.\n", file);
+    if (has_value(x, "cmod_include") || has_value(x, "cmod_define") ){
+      werror("%[0]s:1: Warning: It looks like %[0]O might features not present in\n"
+             "%[0]s:1: Warning: the pike used to run the precompiler\n", file);
     }
   x=split(x);
   x=PC.tokenize(x,file);
