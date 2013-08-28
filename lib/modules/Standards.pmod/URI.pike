@@ -54,8 +54,9 @@ string raw_uri;
 // NOTE: Censors the userinfo from the @[authority] variable.
 protected void parse_authority()
 {
+  string host_port = authority;
   // authority   = [ userinfo "@" ] host [ ":" port ]
-  if(sscanf(authority, "%[^@]@%s", string userinfo, authority) == 2)
+  if(sscanf(authority, "%[^@]@%s", string userinfo, host_port) == 2)
   {
     // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
     sscanf(userinfo, "%[^:]:%s", user, password); // user info present
@@ -64,14 +65,14 @@ protected void parse_authority()
   if(scheme)
     port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
   // host        = IP-literal / IPv4address / reg-name
-  if (has_prefix(authority, "[")) {
+  if (has_prefix(host_port, "[")) {
     // IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
     // IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
-    sscanf(authority, "[%s]%*[:]%d", host, port);
+    sscanf(host_port, "[%s]%*[:]%d", host, port);
   } else {
     // IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
     // reg-name    = *( unreserved / pct-encoded / sub-delims )
-    sscanf(authority, "%[^:]%*[:]%d", host, port);
+    sscanf(host_port, "%[^:]%*[:]%d", host, port);
   }
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
 }
