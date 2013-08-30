@@ -183,7 +183,7 @@ Sequence decode_pem_certificate(string cert)
 //!  Distinguished Name (DN).
 Sequence get_certificate_issuer(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
+  return Standards.ASN1.Decode.simple_der_decode(cert)[0][3];
 }
 
 //! Converts an RDN (relative distinguished name) Seqeunce object to a
@@ -212,8 +212,8 @@ string get_dn_string(Sequence dnsequence)
     foreach(att->elements, Sequence val)
     {
       array value = ({});
-      string t = short_name_ids[val->elements[0]];
-      string v = val->elements[1]->value;
+      string t = short_name_ids[val[0]];
+      string v = val[1]->value;
 
       // we must escape characters now.
       v = replace(v, 
@@ -249,7 +249,7 @@ string get_dn_string(Sequence dnsequence)
 //!  Distinguished Name (DN).
 Sequence get_certificate_subject(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[5];
+  return Standards.ASN1.Decode.simple_der_decode(cert)[0][5];
 }
 
 class Attribute

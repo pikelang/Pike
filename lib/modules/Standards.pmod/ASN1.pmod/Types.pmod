@@ -202,6 +202,18 @@ class Compound
     return this;
   }
 
+  protected mixed `[](mixed index)
+  {
+    if( intp(index) )
+      return elements[index];
+    return ::`[]([string]index);
+  }
+
+  protected int _sizeof()
+  {
+    return sizeof(elements);
+  }
+
   protected string _sprintf(int t,mapping(string:int)|void params) {
     if (params) ++params->indent; else params=([]);
     return t=='O' && sprintf("%O(%s %*O)", this_program, type_name, params, elements);
