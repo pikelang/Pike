@@ -354,25 +354,25 @@ protected Verifier make_verifier(Object _keyinfo)
   Sequence keyinfo = [object(Sequence)]_keyinfo;
 
   if ( (keyinfo->type_name != "SEQUENCE")
-       || (sizeof(keyinfo->elements) != 2)
-       || (keyinfo->elements[0]->type_name != "SEQUENCE")
-       || !sizeof(([object(Sequence)]keyinfo->elements[0])->elements)
-       || (keyinfo->elements[1]->type_name != "BIT STRING")
-       || keyinfo->elements[1]->unused)
+       || (sizeof(keyinfo) != 2)
+       || (keyinfo[0]->type_name != "SEQUENCE")
+       || !sizeof( [object(Sequence)]keyinfo[0] )
+       || (keyinfo[1]->type_name != "BIT STRING")
+       || keyinfo[1]->unused)
     return 0;
-  Sequence seq = [object(Sequence)]keyinfo->elements[0];
-  String str = [object(String)]keyinfo->elements[1];
+  Sequence seq = [object(Sequence)]keyinfo[0];
+  String str = [object(String)]keyinfo[1];
   
-  if (seq->elements[0]->get_der() == Identifiers.rsa_id->get_der())
+  if (seq[0]->get_der() == Identifiers.rsa_id->get_der())
   {
-    if ( (sizeof(seq->elements) != 2)
-	 || (seq->elements[1]->get_der() != Null()->get_der()) )
+    if ( (sizeof(seq) != 2)
+	 || (seq[1]->get_der() != Null()->get_der()) )
       return 0;
     
     return rsa_verifier()->init(str->value);
   }
 
-  if(seq->elements[0]->get_der() == Identifiers.dsa_sha_id->get_der())
+  if(seq[0]->get_der() == Identifiers.dsa_sha_id->get_der())
   {
     /* FIXME: Not implemented */
     return 0;
@@ -444,11 +444,11 @@ class TBSCertificate
       /* The optional version field must be present */
       if (!a[0]->constructed
 	  || (a[0]->get_combined_tag() != make_combined_tag(2, 0))
-	  || (sizeof(a[0]->elements) != 1)
-	  || (a[0]->elements[0]->type_name != "INTEGER"))
+	  || (sizeof(a[0]) != 1)
+	  || (a[0][0]->type_name != "INTEGER"))
 	return 0;
 
-      version = (int) a[0]->elements[0]->value + 1;
+      version = (int) a[0][0]->value + 1;
       if ( (version < 2) || (version > 3))
 	return 0;
       a = a[1..];
@@ -462,8 +462,8 @@ class TBSCertificate
     DBG("TBSCertificate: serial = %s\n", (string) serial);
       
     if ((a[1]->type_name != "SEQUENCE")
-	|| !sizeof(a[1]->elements )
-	|| (a[1]->elements[0]->type_name != "OBJECT IDENTIFIER"))
+	|| !sizeof(a[1])
+	|| (a[1][0]->type_name != "OBJECT IDENTIFIER"))
       return 0;
 
     algorithm = a[1];
@@ -475,7 +475,7 @@ class TBSCertificate
     DBG("TBSCertificate: issuer = %O\n", issuer);
 
     if ((a[3]->type_name != "SEQUENCE")
-	|| (sizeof(a[3]->elements) != 2))
+	|| (sizeof(a[3]) != 2))
       return 0;
     array validity = a[3]->elements;
 
@@ -546,18 +546,18 @@ TBSCertificate decode_certificate(string|object cert)
 
   if (!cert
       || (cert->type_name != "SEQUENCE")
-      || (sizeof(cert->elements) != 3)
-      || (cert->elements[0]->type_name != "SEQUENCE")
-      || (cert->elements[1]->type_name != "SEQUENCE")
-      || (!sizeof(cert->elements[1]->elements))
-      || (cert->elements[1]->elements[0]->type_name != "OBJECT IDENTIFIER")
-      || (cert->elements[2]->type_name != "BIT STRING")
-      || cert->elements[2]->unused)
+      || (sizeof(cert) != 3)
+      || (cert[0]->type_name != "SEQUENCE")
+      || (cert[1]->type_name != "SEQUENCE")
+      || (!sizeof(cert[1]))
+      || (cert[1][0]->type_name != "OBJECT IDENTIFIER")
+      || (cert[2]->type_name != "BIT STRING")
+      || cert[2]->unused)
     return 0;
 
-  TBSCertificate tbs = TBSCertificate()->init(cert->elements[0]);
+  TBSCertificate tbs = TBSCertificate()->init(cert[0]);
 
-  if (!tbs || (cert->elements[1]->get_der() != tbs->algorithm->get_der()))
+  if (!tbs || (cert[1]->get_der() != tbs->algorithm->get_der()))
     return 0;
 
   return tbs;
@@ -589,9 +589,9 @@ TBSCertificate verify_certificate(string s, mapping authorities)
   else
     v = authorities[tbs->issuer->get_der()];
 
-  return v && v->verify(cert->elements[1],
-			cert->elements[0]->get_der(),
-			cert->elements[2]->value)
+  return v && v->verify(cert[1],
+			cert[0]->get_der(),
+			cert[2]->value)
     && tbs;
 }
 
@@ -677,10 +677,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
         if(tbs->extensions && sizeof(tbs->extensions))
         {
             werror("have extensions.\n");
-            foreach(tbs->extensions->elements[0]->elements, Sequence c)        
+            foreach(tbs->extensions[0]->elements, Sequence c)
             {
                werror("checking each element...\n");
-               if(c->elements[0] == Identifiers.ce_id->append(19))
+               if(c[0] == Identifiers.ce_id->append(19))
                {
                  werror("have a basic constraints element.\n");
                  foreach(c->elements[1..], Sequence v)
@@ -770,9 +770,9 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
     if (v)
     {
-      if( v->verify(chain_cert[idx]->elements[1],
-                    chain_cert[idx]->elements[0]->get_der(),
-                    chain_cert[idx]->elements[2]->value)
+      if( v->verify(chain_cert[idx][1],
+                    chain_cert[idx][0]->get_der(),
+                    chain_cert[idx][2]->value)
           && tbs)
       {
         DBG("signature is verified..\n");
