@@ -211,4 +211,52 @@ test_eq(Standards.UUID.make_null()->str(),
 test_equal(Standards.TLD.cc.se, "Sweden")
 test_true(Standards.TLD.generic.com)
 
+// - X509
+
+test_any_equal([[
+  string pem = #"-----BEGIN CERTIFICATE-----
+MIICPDCCAaUCED9pHoGc8JpK83P/uUii5N0wDQYJKoZIhvcNAQEFBQAwXzELMAkG
+A1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFz
+cyAxIFB1YmxpYyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTk2
+MDEyOTAwMDAwMFoXDTI4MDgwMjIzNTk1OVowXzELMAkGA1UEBhMCVVMxFzAVBgNV
+BAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFzcyAxIFB1YmxpYyBQcmlt
+YXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MIGfMA0GCSqGSIb3DQEBAQUAA4GN
+ADCBiQKBgQDlGb9to1ZhLZlIcfZn3rmN67eehoAKkQ76OCWvRoiC5XOooJskXQ0f
+zGVuDLDQVoQYh5oGmxChc9+0WDlrbsH2FdWoqD+qEgaNMax/sDTXjzRniAnNFBHi
+TkVWaR94AoDa3EeRKbs2yWNcxeDXLYd7obcysHswuiovMaruo2fa2wIDAQABMA0G
+CSqGSIb3DQEBBQUAA4GBAFgVKTk8d6PaXCUDfGD67gmZPCcQcMgMCeazh88K4hiW
+NWLMv5sneYlfycQJ9M61Hd8qveXbhpxoJeUwfLaJFf5n0a3hUKw8fGJLj7qE1xIV
+Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
+-----END CERTIFICATE-----";
+  object o = Standards.PEM.Message(pem);
+  object t = Standards.X509.decode_certificate(o->body);
+  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm->elements[0]->debug_string(), "issuer":t->issuer->elements[2]->elements[0]->elements[1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject->elements[2]->elements[0]->elements[1]->value, "issuer_id":t->extensions])
+]],[[
+([ /* 9 elements */
+  "algorithm": "IDENTIFIER 1.2.840.113549.1.1.5",
+  "der": 1,
+  "issuer": "Class 1 Public Primary Certification Authority",
+  "issuer_id": 0,
+  "not_after": ([ /* 6 elements */
+      "hour": 23,
+      "mday": 2,
+      "min": 59,
+      "mon": 7,
+      "sec": 59,
+      "year": 128
+    ]),
+  "not_before": ([ /* 6 elements */
+      "hour": 0,
+      "mday": 29,
+      "min": 0,
+      "mon": 0,
+      "sec": 0,
+      "year": 96
+    ]),
+  "serial": "3f691e819cf09a4af373ffb948a2e4dd",
+  "subject": "Class 1 Public Primary Certification Authority",
+  "version": 1
+])
+]])
+
 END_MARKER
