@@ -608,7 +608,7 @@ mapping(string:string|int|this_program) _encode()
 void _decode(mapping m)
 {
     foreach(m; mixed index; mixed value)
-        this[index] = value;
+      ::`[]=(index, value);
 }
 
 #if 0
