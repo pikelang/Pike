@@ -47,6 +47,7 @@
 
 #define     PROG_BACKTRACE_FRAME_ID				    013
 #define     PROG_BUFFER_ID					    014
+#define   tObjIs_BUFFER			      "\003\001\000\000\000\014"
 #define     PROG_MULTI_STRING_REPLACE_ID			    015
 #define     PROG_BACKEND_ID					    016
 #define tObjImpl_BACKEND		      "\003\000\000\000\000\016"

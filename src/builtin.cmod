@@ -3022,9 +3022,10 @@ PIKECLASS Buffer
     Pike_error("Cannot cast to %S\n", type);
   }
   
-  /*! @decl String.Buffer `+( string what )
+  /*! @decl String.Buffer `+( string|String.Buffer what )
    */
-  PIKEFUN object `+( string what )
+  PIKEFUN object `+( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     struct Buffer_struct *str = THIS, *str2;
     struct object *res = fast_clone_object( Buffer_program );
@@ -3036,25 +3037,31 @@ PIKECLASS Buffer
     RETURN res;
   }
 
-  /*! @decl String.Buffer `+=( string what )
+  /*! @decl String.Buffer `+=( string|String.Buffer what )
    */
-  PIKEFUN object `+=( string what )
+  PIKEFUN object `+=( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     f_Buffer_add( 1 );
     REF_RETURN Pike_fp->current_object;
   }
 
-  /*! @decl int add(string ... data)
+  /*! @decl int add(string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.
    *!
    *! @returns
    *!   Returns the size of the buffer.
    *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
+   *!
    *! @seealso
    *!   @[addat()]
    */
-  PIKEFUN int add( string ... arg1 )
+  PIKEFUN int add( string|Buffer ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
     int init_from_arg0 = 0, j;
@@ -3063,7 +3070,16 @@ PIKECLASS Buffer
       ptrdiff_t sum = 0;
       int shift = 0;
       for (j=0; j < args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	  SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	sum += a->len;
 	shift |= a->size_shift;
       }
@@ -3073,7 +3089,8 @@ PIKECLASS Buffer
 	sum <<= 1;
       shift = shift & ~(shift >> 1);
 
-      if (shift == Pike_sp[-args].u.string->size_shift &&
+      if ((TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) &&
+	  (shift == Pike_sp[-args].u.string->size_shift) &&
 	  init_string_builder_with_string (&str->str, Pike_sp[-args].u.string)) {
 	mark_free_svalue (Pike_sp - args);
 	if (sum > str->str.s->len)
@@ -3089,7 +3106,13 @@ PIKECLASS Buffer
 
     for( j = init_from_arg0; j<args; j++ )
     {
-      struct pike_string *a = Pike_sp[j-args].u.string;
+      struct pike_string *a;
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	a = Pike_sp[j-args].u.string;
+      } else {
+	a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	if (!a) continue;
+      }
       string_builder_shared_strcat( &str->str, a );
     }
 
@@ -3100,7 +3123,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl int addat(int(0..) pos, string ... data)
+  /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
    *!
@@ -3108,13 +3131,18 @@ PIKECLASS Buffer
    *!   Returns the size of the buffer.
    *!
    *! @note
-   *!   If the buffer isn't of the required size, it is padded
+   *!   If the buffer isn't of the required size, it will be padded
    *!   with NUL-characters.
+   *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
    *!
    *! @seealso
    *!   @[add()]
    */
   PIKEFUN int addat(int(0..) pos, string ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
 
@@ -3126,7 +3154,16 @@ PIKECLASS Buffer
       ptrdiff_t sum = 0;
       int shift = 0;
       for (j=1; j < args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	sum += a->len;
 	shift |= a->size_shift;
       }
@@ -3161,7 +3198,13 @@ PIKECLASS Buffer
       }
 
       for(j = 1; j<args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, pos), a);
 	pos += a->len;
       }
@@ -3211,6 +3254,9 @@ PIKECLASS Buffer
    *!
    *!   Get the data from the buffer. Significantly slower than @[get],
    *!   but does not clear the buffer.
+   *!
+   *! @seealso
+   *!   @[get()]
    */
   PIKEFUN string get_copy()
   {
@@ -3245,6 +3291,9 @@ PIKECLASS Buffer
    *!
    *! @note
    *!   This will clear the data in the buffer
+   *!
+   *! @seealso
+   *!   @[get_copy()], @[clear()]
    */
   PIKEFUN string get( )
   {
@@ -3259,6 +3308,29 @@ PIKECLASS Buffer
     pop_n_elems(args);
     push_empty_string();
     return;
+  }
+
+  /*! @decl void clear()
+   *!
+   *!   Empty the buffer, and don't care about the old content.
+   *!
+   *! @note
+   *!   This function was not available in Pike 7.8 and earlier.
+   *!
+   *! @seealso
+   *!   @[get()]
+   */
+  PIKEFUN void clear()
+  {
+    /* FIXME: Support resetting the initial size? */
+    struct Buffer_struct *str = THIS;
+    if (str->str.s) {
+      /* FIXME: There's also the alternative of using
+       *        reset_string_builder() here.
+       */
+      free_string_builder(&str->str);
+      str->str.s = NULL;
+    }
   }
 
   /*! @decl int _sizeof()
