@@ -230,10 +230,10 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
 -----END CERTIFICATE-----";
   object o = Standards.PEM.Message(pem);
   object t = Standards.X509.decode_certificate(o->body);
-  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm->elements[0]->debug_string(), "issuer":t->issuer->elements[2]->elements[0]->elements[1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject->elements[2]->elements[0]->elements[1]->value, "issuer_id":t->extensions])
+  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm->elements[0]), "issuer":t->issuer->elements[2]->elements[0]->elements[1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject->elements[2]->elements[0]->elements[1]->value, "issuer_id":t->extensions])
 ]],[[
 ([ /* 9 elements */
-  "algorithm": "IDENTIFIER 1.2.840.113549.1.1.5",
+  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.5)",
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
   "issuer_id": 0,

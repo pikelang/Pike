@@ -208,7 +208,7 @@ class Compound
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
 	   type_name, elements);
     return _sprintf('O');
@@ -248,7 +248,7 @@ class String
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
     return _sprintf('O');
   }
@@ -294,7 +294,7 @@ class Boolean
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return value ? "TRUE" : "FALSE";
   }
 #endif
@@ -354,7 +354,7 @@ class Integer
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("INTEGER (%d) %s", value->size(), value->digits());
   }
 #endif
@@ -438,7 +438,7 @@ class BitString
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value) * 8 - unused,
 		   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
@@ -474,7 +474,7 @@ class Null
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() { return "NULL"; }
+  __deprecated__ string debug_string() { return "NULL"; }
 #endif
 }
 
@@ -539,7 +539,7 @@ class Identifier
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return "IDENTIFIER " + (array(string)) id * ".";
   }
 #endif
@@ -1258,7 +1258,7 @@ class MetaExplicit
     }
 
 #ifdef COMPATIBILITY
-    string debug_string() {
+    __deprecated__ string debug_string() {
       return type_name + "[" + (int) real_tag + "]";
     }
 #endif

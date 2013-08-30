@@ -470,13 +470,13 @@ class TBSCertificate
 
     algorithm = a[1];
 
-    X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+    X509_WERR("TBSCertificate: algorithm = %O\n", algorithm);
 
     if (a[2]->type_name != "SEQUENCE")
       return 0;
     issuer = a[2];
 
-    X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
+    X509_WERR("TBSCertificate: issuer = %O\n", issuer);
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]->elements) != 2))
@@ -500,7 +500,7 @@ class TBSCertificate
       return 0;
     subject = a[4];
 
-    X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+    X509_WERR("TBSCertificate: keyinfo = %O\n", a[5]);
       
     public_key = make_verifier(a[5]);
 

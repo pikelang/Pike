@@ -467,12 +467,12 @@ class TBSCertificate
       return 0;
 
     algorithm = a[1];
-    DBG("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+    DBG("TBSCertificate: algorithm = %O\n", algorithm);
 
     if (a[2]->type_name != "SEQUENCE")
       return 0;
     issuer = a[2];
-    DBG("TBSCertificate: issuer = %s\n", issuer->debug_string());
+    DBG("TBSCertificate: issuer = %O\n", issuer);
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]->elements) != 2))
@@ -493,7 +493,7 @@ class TBSCertificate
       return 0;
     subject = a[4];
 
-    DBG("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+    DBG("TBSCertificate: keyinfo = %O\n", a[5]);
     public_key = make_verifier(a[5]);
 
     if (!public_key)

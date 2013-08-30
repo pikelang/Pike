@@ -37,7 +37,7 @@ class Primitive
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("primitive(%d)", combined_tag);
   }
 #endif
