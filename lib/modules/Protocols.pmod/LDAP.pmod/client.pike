@@ -91,7 +91,6 @@ import ".";
 #define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value->cast_to_int())
 #define ASN1_RESULTSTRING(X)		((X)->elements[1]->elements[2]->value)
 #define ASN1_RESULTREFS(X)		((X)->elements[1]->elements[3]->elements)
-#define ASN1_RAWDEBUG(X)		((X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented

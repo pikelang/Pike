@@ -64,11 +64,6 @@ class asn1_boolean
     value = ( contents != "\0" );
     return this;
   }
-
-  string debug_string() {
-    return value ? "TRUE" : "FALSE";
-  }
-
 }
 
 class asn1_application_sequence
