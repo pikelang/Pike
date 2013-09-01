@@ -82,6 +82,9 @@ function parse_fun(mapping watches) {
 	    object watch;
 
 	    if (watch = watches[a[0]]) {
+		if (a[1] == IN_IGNORED) {
+		    m_delete(watches, a[0]);
+		}
 		watch->handle_event(a[0], a[1], a[2], a[3]);
 	    }
 
