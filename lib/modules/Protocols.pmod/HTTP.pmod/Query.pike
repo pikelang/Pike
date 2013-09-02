@@ -178,22 +178,29 @@ protected void close_connection()
   con->close();
 }
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+SSL.context context;
+#endif
+
 void start_tls(int|void blocking, int|void async)
 {
 #ifdef HTTP_QUERY_DEBUG
   werror("start_tls(%d)\n", blocking);
 #endif
 #if constant(SSL.Cipher.CipherAlgorithm)
-  // Create a context
-  SSL.context context = SSL.context();
-  // Allow only strong crypto
-  context->preferred_suites -= ({
-    //Weaker ciphersuites.
-    SSL_rsa_export_with_rc4_40_md5,
-    SSL_rsa_export_with_rc2_cbc_40_md5,
-    SSL_rsa_export_with_des40_cbc_sha,
-  });
-  context->random = Crypto.Random.random_string;
+  if( !context )
+  {
+    // Create a context
+    context = SSL.context();
+    // Allow only strong crypto
+    context->preferred_suites -= ({
+      //Weaker ciphersuites.
+      SSL_rsa_export_with_rc4_40_md5,
+      SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL_rsa_export_with_des40_cbc_sha,
+    });
+    context->random = Crypto.Random.random_string;
+  }
 
   if(real_host)
   {
@@ -205,7 +212,7 @@ void start_tls(int|void blocking, int|void async)
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context, 1,blocking);
+  SSL.sslfile ssl = SSL.sslfile(con, context, 1, blocking);
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);
