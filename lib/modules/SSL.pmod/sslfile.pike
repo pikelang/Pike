@@ -2292,8 +2292,8 @@ protected int ssl_close_callback (int called_from_real_backend)
   return -1;
 }
 
-//! The next protocol chosen by the client during next protocol
-//! negotiation.
+//! The next protocol chosen by the client during application layer
+//! protocol negotiation (ALPN) or next protocol negotiation (NPN).
 string `->next_protocol() {
     return conn->next_protocol;
 }

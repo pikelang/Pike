@@ -17,6 +17,8 @@
  *   Renegotiation Extension	RFC 5746
  *   Authorization Extensions	RFC 5878
  *
+ *   Next Protocol Negotiation  Google technical note: nextprotoneg
+ *   Application Layer Protocol Negotiation  draft-ietf-tls-applayerprotoneg
  */
 
 //! Protocol constants
@@ -145,6 +147,7 @@ constant ALERT_unrecognized_name		= 112;	// RFC 3546
 constant ALERT_bad_certificate_status_response	= 113;	// RFC 3546
 constant ALERT_bad_certificate_hash_value	= 114;	// RFC 3546
 constant ALERT_unknown_psk_identity		= 115;
+constant ALERT_no_application_protocol          = 120;  // draft-ietf-tls-applayerprotoneg
 constant ALERT_descriptions = ([
   ALERT_close_notify: "Connection closed.",
   ALERT_unexpected_message: "An inappropriate message was received.",
@@ -175,6 +178,8 @@ constant ALERT_descriptions = ([
   ALERT_unrecognized_name: "Unrecognized host name.",
   ALERT_bad_certificate_status_response: "Bad certificate status response.",
   ALERT_bad_certificate_hash_value: "Invalid certificate signature.",
+  // ALERT_unknown_psk_identity
+  ALERT_no_application_protocol : "No compatible application layer protocol.",
 ]);
  			      
 constant CONNECTION_client 	= 0;
@@ -474,5 +479,6 @@ constant EXTENSION_status_request		= 5;		// RFC 4366.
 constant EXTENSION_client_authz			= 7;		// RFC 5878.
 constant EXTENSION_server_authz			= 8;		// RFC 5878.
 constant EXTENSION_signature_algorithms		= 13;		// RFC 5246.
+constant EXTENSION_application_layer_protocol_negotiation = 16; // draft-ietf-tls-applayerprotoneg
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746.
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
