@@ -46,17 +46,13 @@ class Primitive
 //! Constructed type
 class Constructed
 {
-  //! @decl inherit Types.Object
-  inherit .Types.Object;
+  //! @decl inherit Types.Compound
+  inherit .Types.Compound;
 
-  constant constructed = 1;
   int combined_tag;
 
   //! raw encoded  contents
   string raw;
-
-  //! elements of object
-  array elements;
 
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
@@ -67,14 +63,10 @@ class Constructed
   //! get class
   int get_cls() { return .Types.extract_cls(combined_tag); }
 
-  void create(int t, string r, array e) {
+  void create(int t, string r, array(.Types.Object) e) {
     combined_tag = t;
     raw = r;
     elements = e;
-  }
-
-  protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
   }
 }
 
