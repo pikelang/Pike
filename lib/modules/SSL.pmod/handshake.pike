@@ -87,7 +87,7 @@ constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
 int has_next_protocol_negotiation;
-
+int has_application_layer_protocol_negotiation;
 string next_protocol;
 
 #ifdef SSL3_PROFILING
@@ -168,7 +168,9 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
-  if (has_next_protocol_negotiation && context->advertised_protocols) {
+  if (has_next_protocol_negotiation &&
+      !has_application_layer_protocol_negotiation &&
+      context->advertised_protocols) {
     extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
     ADT.struct extension = ADT.struct();
     foreach (context->advertised_protocols;; string proto) {
@@ -250,6 +252,21 @@ Packet client_hello()
     extensions->put_uint(EXTENSION_server_name, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   } 
+
+  if (context->advertised_protocols)
+  {
+    have_extensions++;
+    array(string) prots = context->advertised_protocols;
+    extension = ADT.struct();
+    extension->put_uint( [int]Array.sum(Array.map(prots, sizeof)) +
+                         sizeof(prots), 2);
+    foreach(context->advertised_protocols;; string proto)
+      extension->put_var_string(proto, 1);
+
+    SSL3_DEBUG_MSG("SSL.handshake: Adding ALPN extension.\n");
+    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
 
   if(have_extensions)
     struct->put_var_string(extensions->pop_data(), 2);
@@ -919,9 +936,53 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
 	      break;
+
 	    case EXTENSION_next_protocol_negotiation:
 	      has_next_protocol_negotiation = 1;
 	      break;
+
+            case EXTENSION_application_layer_protocol_negotiation:
+              {
+                has_application_layer_protocol_negotiation = 1;
+                if( !context->advertised_protocols )
+                  break;
+                array(string) protocols = ({});
+                while (!extension_data->is_empty()) {
+                  string server_name = extension_data->get_var_string(1);
+                  if( sizeof(server_name)==0 )
+                  {
+                    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+                                      version[1],
+                                      "SSL.session->handle_handshake: "
+                                      "Empty protocol in ALPN.\n",
+                                      backtrace()));
+                    return -1;
+                  }
+                  protocols += ({ server_name });
+                }
+
+                if( !sizeof(protocols) )
+                {
+                  // FIXME: What does an empty list mean? Ignore, no
+                  // protocol failure or handshake failure?
+                }
+
+                // Although the protocol list is sent in client
+                // preference order, it is the server preference that
+                // wins.
+                next_protocol = 0;
+                foreach(context->advertised_protocols;; string prot)
+                  if( has_value(protocols, prot) )
+                    next_protocol = prot;
+                if( !next_protocol )
+                  send_packet(Alert(ALERT_fatal, ALERT_no_application_protocol,
+                                    version[1],
+                                    "SSL.session->handler_handshake: "
+                                    "No compatible ALPN protocol.\n",
+                                    backtrace()));
+              }
+              break;
+
 	    default:
 	      break;
 	    }
@@ -1549,7 +1610,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
           SSL3_DEBUG_MSG("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: Failed to decode certificate\n",
-			    backtrace()));
+			    error));
 	  return -1;
 	}
       
