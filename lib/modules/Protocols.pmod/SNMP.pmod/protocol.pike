@@ -214,7 +214,7 @@ void create(int|void rem_port, string|void rem_addr, int|void loc_port,
   if(stringp(rem_addr) && sizeof(rem_addr)) remote_host = rem_addr;
   if(rem_port) remote_port = rem_port;
 
-  if (!snmp::bind(lport, local_host)) {
+  if (!snmp::bind(lport, local_host, 1)) {
     //# error ...
     DWRITE("protocol.create: can't bind to the socket.\n");
     ok = 0;
