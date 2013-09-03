@@ -127,10 +127,10 @@ enum EntryType
   T_ANY=255,
 };
 
-int safe_bind(Stdio.UDP udp, mixed ... args)
+int safe_bind(Stdio.UDP udp, string|int port, string|void device)
 {
   mixed err = catch {
-      udp->bind(@args);
+      udp->bind(port, device, 1);
       return 1;
     };
 #if constant(System.EADDRINUSE)

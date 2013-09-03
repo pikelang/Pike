@@ -344,7 +344,7 @@ protected .Query do_udp_method(string method, Standards.URI url,
   int port = 10000 + random(1000);
   int i;
   while(1) {
-    if( !catch( udp->bind(port++) ) ) break;
+    if( !catch( udp->bind(port++, 0, 1) ) ) break;
     if( i++ > 1000 ) error("Could not open a UDP port.\n");
   }
   if(url->method=="httpmu") {
