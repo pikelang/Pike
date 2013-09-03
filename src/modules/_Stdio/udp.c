@@ -174,10 +174,23 @@ static void udp_close(INT32 args)
   push_int( ret==0 );
 }
 
-/*! @decl UDP bind(int|string port)
- *! @decl UDP bind(int|string port, string address)
+/*! @decl UDP bind(int|string port, string|void address,@
+ *!string|int(0..1) no_reuseaddr)
  *!
  *! Binds a port for receiving or transmitting UDP.
+ *!
+ *! @param no_reuseaddr
+ *! 	If set to @expr{1@}, Pike will not set the @expr{SO_REUSEADDR@} option
+ *! 	on the UDP port.
+ *!
+ *! @note
+ *! 	@expr{SO_REUSEADDR@} is never applied when binding a random port
+ *!	(@expr{bind(0)@}).
+ *!
+ *! 	In general, @expr{SO_REUSEADDR@} is not desirable on UDP ports.
+ *! 	Unless used for receiving multicast, be sure to never bind a
+ *! 	non-random port without setting @expr{no_reuseaddr@} to @expr{1@}.
+ *!
  *! @throws
  *!   Throws error when unable to bind port.
  */
@@ -198,6 +211,9 @@ static void udp_bind(INT32 args)
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
+
+  if(args > 2 && TYPEOF(Pike_sp[2-args]) != PIKE_T_INT)
+    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 3, "int(0..1)");
 
 #if 0
   f_backtrace(0);
@@ -245,8 +261,9 @@ static void udp_bind(INT32 args)
   /* linux kernel commit f24d43c07e208372aa3d3bff419afbf43ba87698 introduces
    * a behaviour change where you can get used random ports if bound with
    * SO_REUSEADDR. */
-  if(addr.ipv4.sin_port && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
-					 (char *)&o, sizeof(int)) < 0)
+  if(addr.ipv4.sin_port && (args > 2 ? !Pike_sp[2-args].u.integer : 1)
+     && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
+		      (char *)&o, sizeof(int)) < 0)
   {
     fd_close(fd);
     THIS->my_errno=errno;
@@ -1366,7 +1383,7 @@ void init_stdio_udp(void)
   ADD_FUNCTION("close", udp_close, tFunc(tNone, tInt01), 0);
 
   ADD_FUNCTION("bind",udp_bind,
-	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr),tObj),0);
+	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tObj),0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
