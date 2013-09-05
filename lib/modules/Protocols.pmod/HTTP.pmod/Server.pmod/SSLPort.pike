@@ -9,10 +9,11 @@ int portno;
 string|int(0..0) interface;
 function(Request:void) callback;
 
-program request_program=Request;
+//!
+object|function|program request_program=Request;
 
 //! The simplest SSL server possible. Binds a port and calls
-//! a callback with @[Request] objects.
+//! a callback with @[request_program] objects.
 
 //! Create a HTTPS (HTTP over SSL) server.
 //!

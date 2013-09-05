@@ -5,10 +5,11 @@ int portno;
 string|int(0..0) interface;
 function(.Request:void) callback;
 
-program request_program=.Request;
+//!
+object|function|program request_program=.Request;
 
 //! The simplest server possible. Binds a port and calls
-//! a callback with @[Server.Request] objects.
+//! a callback with @[request_program] objects.
 
 //! @decl void create(function(.Request:void) callback)
 //! @decl void create(function(.Request:void) callback,@
