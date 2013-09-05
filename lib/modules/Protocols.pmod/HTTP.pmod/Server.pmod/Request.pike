@@ -749,7 +749,7 @@ void finish(int clean)
 
    // create new request
 
-   this_program r=this_program();
+   this_program r=server_port->request_program();
    r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
 
    my_fd=0; // and drop this object
