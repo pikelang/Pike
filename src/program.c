@@ -7397,9 +7397,13 @@ PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
   return NULL;
 }
 
-static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
+static char *make_plain_file (struct pike_string *filename, int malloced)
 {
   static char buf[1000];
+  char *file = filename->str;
+  size_t len = filename->len;
+  INT32 shift = filename->size_shift;
+
   if(shift)
   {
     size_t bufsize;
@@ -7408,7 +7412,7 @@ static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
     size_t ptr=0;
 
     if (malloced) {
-      bufsize = len + 1;
+      bufsize = len + 21;
       buffer = malloc (bufsize);
     }
     else {
@@ -7478,7 +7482,7 @@ PMOD_EXPORT char *low_get_program_line_plain(struct program *prog,
     struct pike_string *file;
     FIND_PROGRAM_LINE (prog, file, (*linep));
     if (file)
-      return make_plain_file(file->str, file->len, file->size_shift, malloced);
+      return make_plain_file(file, malloced);
   }
 
   return NULL;
@@ -7595,7 +7599,7 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
       linep[0]=line;
 
       if (file)
-	return make_plain_file(file->str, file->len, file->size_shift, malloced);
+	return make_plain_file(file, malloced);
     }
   }
 
