@@ -1185,7 +1185,7 @@ protected class ParserState {
       pipeline += ({ token });
 
       // If we start a block at the uppermost level, what kind of block is it?
-      if(!pstack->ptr)
+      if(!sizeof(pstack))
         switch(token)
         {
         case "{":
@@ -1224,7 +1224,7 @@ protected class ParserState {
       // Do we end any kind of parenthesis level?
       if(token==")" || token=="}" || token=="]" ||
 	 token==">)" || token=="})" || token=="])" ) {
-	if(!pstack->ptr)
+	if(!sizeof(pstack))
 	   throw(sprintf("%O end parenthesis without start parenthesis.",
 			 token));
 	if(pstack->top()!=starts[token])
@@ -1235,7 +1235,7 @@ protected class ParserState {
       }
 
       // expressions
-      if(token==";" && !pstack->ptr) {
+      if(token==";" && !sizeof(pstack)) {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
@@ -1244,7 +1244,7 @@ protected class ParserState {
 
       // If we end a block at the uppermost level, and it doesn't need a ";",
       // then we can move out that block of the pipeline.
-      if(token=="}" && !pstack->ptr && !termblock[block]) {
+      if(token=="}" && !sizeof(pstack) && !termblock[block]) {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
@@ -1254,7 +1254,7 @@ protected class ParserState {
       // Preprocessor
       if( token[0]=='#' ) {
 	string tmp = token-" ";
-	if( has_prefix(tmp, "#error") && !pstack->ptr) {
+	if( has_prefix(tmp, "#error") && !sizeof(pstack)) {
 	  ready += ({ Expression( pipeline ) });
 	  pipeline = ({});
 	  block = 0;
@@ -1358,7 +1358,7 @@ protected class ParserState {
   //! Are we in the middle of an expression. Used e.g. for changing the
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
-    if(pstack->ptr) return 0;
+    if(sizeof(pstack)) return 0;
     if(low_state->in_token) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
@@ -1381,7 +1381,7 @@ protected class ParserState {
   //! Returns the current parser state. Used by "dump state".
   string status() {
     string ret = "Current parser state\n";
-    ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
+    ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..sizeof(pstack)]*" ");
     ret += sprintf("Current pipeline: %O\n", pipeline);
     ret += sprintf("Last token: %O\n", last);
     ret += sprintf("Current block: %O\n", block);
