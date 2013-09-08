@@ -171,7 +171,7 @@ Packet server_hello_packet()
   if (has_application_layer_protocol_negotiation &&
       next_protocol)
   {
-    extensions->put_uint(EXTENSTION_application_layer_protocol_negotiation,2);
+    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation,2);
     extensions->put_uint(sizeof(next_protocol)+3, 2);
     extensions->put_uint(sizeof(next_protocol)+1, 2);
     extensions->put_var_string(next_protocol, 1);
