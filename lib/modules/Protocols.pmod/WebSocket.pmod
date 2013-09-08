@@ -1,10 +1,12 @@
+#pike __REAL_VERSION__
+
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 //! This module implements the WebSocket protocol as described in RFC 6455.
 
 //! Parses WebSocket frames.
 class Parser {
-    string buf = "";
+    protected string buf = "";
 
     //! Add more data to the internal parsing buffer.
     void feed(string data) {
@@ -58,7 +60,7 @@ class Parser {
     }
 }
 
-string MASK(string data, string mask) {
+protected string MASK(string data, string mask) {
     return data ^ (mask * (sizeof(data)/(float)sizeof(mask)));
 }
 
@@ -144,7 +146,7 @@ class Frame {
     //! @decl void create(FRAME_CLOSE, CLOSE_STATUS reason)
     //! @decl void create(FRAME_PING, string(0..255) data)
     //! @decl void create(FRAME_PONG, string(0..255) data)
-    void create(FRAME opcode, void|string|CLOSE_STATUS data) {
+    protected void create(FRAME opcode, void|string|CLOSE_STATUS data) {
         this_program::opcode = opcode;
         if (data) switch (opcode) {
         case FRAME_TEXT:
@@ -165,8 +167,8 @@ class Frame {
         }
     }
 
-    string _sprintf(int type) {
-        return sprintf("%O(%s, fin: %d, %d bytes)", this_program,
+    protected string _sprintf(int type) {
+      return type=='O' && sprintf("%O(%s, fin: %d, %d bytes)", this_program,
                        describe_opcode(opcode), fin, sizeof(data));
     }
 
@@ -226,7 +228,7 @@ class Frame {
         return b->get();
     }
 
-    string cast(string to) {
+    protected string cast(string to) {
         if (to == "string") {
             return encode();
         }
@@ -252,7 +254,7 @@ class Request {
     }
 
     //!
-    void create(function(array(string), Request:void) cb) {
+    protected void create(function(array(string), Request:void) cb) {
 	this_program::cb = cb;
     }
 
@@ -428,6 +430,7 @@ class Request {
     }
 
     protected string _sprintf(int type) {
+        if (type!='O') return UNDEFINED;
         if (!stream) return ::_sprintf(type);
         return sprintf("%O(%O)", this_program, stream);
     }
