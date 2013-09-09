@@ -162,7 +162,9 @@ class Frame {
             this_program::data = data;
             break;
         case FRAME_CLOSE:
-            this_program::data = sprintf("%2c", CLOSE_NORMAL);
+            if (!intp(data))
+                error("Bad argument. Expected CLOSE_STATUS.\n");
+            this_program::data = sprintf("%2c", data);
             break;
         }
     }
