@@ -4,62 +4,6 @@ constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 //! This module implements the WebSocket protocol as described in RFC 6455.
 
-//! Parses WebSocket frames.
-class Parser {
-    protected string buf = "";
-
-    //! Add more data to the internal parsing buffer.
-    void feed(string data) {
-	buf += data;
-    }
-
-    //! Parses and returns one WebSocket frame from the internal buffer. If
-    //! the buffer does not contain a full frame, @expr{0@} is returned.
-    object parse() {
-	if (sizeof(buf) < 2) return 0;
-
-	int opcode, len, hlen = 2;
-	int(0..1) masked;
-	string mask, data;
-
-	sscanf(buf, "%c%c", opcode, len);
-
-	masked = len >> 7;
-	len &= 127;
-
-	if (len == 126) {
-	    if (2 != sscanf(buf, "%2*s%2c", len)) return 0;
-            hlen = 4;
-	}  else if (len == 127) {
-	    if (2 != sscanf(buf, "%2*s%8c", len)) return 0;
-            hlen = 10;
-	}
-
-	if (masked) {
-            hlen += 4;
-            if (sizeof(buf) < hlen) return 0;
-	    mask = buf[hlen-4..hlen-1];
-	}
-
-        if (sizeof(buf) < len+hlen) return 0;
-
-        object f = Frame(opcode & 15);
-        f->fin = opcode >> 7;
-        f->mask = mask;
-
-        data = buf[hlen..hlen+len-1];
-        buf = buf[hlen+len..];
-
-        if (masked) {
-            data = MASK(data, mask);
-        }
-
-        f->data = data;
-
-        return f;
-    }
-}
-
 protected string MASK(string data, string mask) {
     return data ^ (mask * (sizeof(data)/(float)sizeof(mask)));
 }
@@ -127,6 +71,62 @@ string describe_opcode(FRAME op) {
     return sprintf("0x%x", op);
 }
 
+//! Parses WebSocket frames.
+class Parser {
+    protected string buf = "";
+
+    //! Add more data to the internal parsing buffer.
+    void feed(string data) {
+	buf += data;
+    }
+
+    //! Parses and returns one WebSocket frame from the internal buffer. If
+    //! the buffer does not contain a full frame, @expr{0@} is returned.
+    object parse() {
+	if (sizeof(buf) < 2) return 0;
+
+	int opcode, len, hlen = 2;
+	int(0..1) masked;
+	string mask, data;
+
+	sscanf(buf, "%c%c", opcode, len);
+
+	masked = len >> 7;
+	len &= 127;
+
+	if (len == 126) {
+	    if (2 != sscanf(buf, "%2*s%2c", len)) return 0;
+            hlen = 4;
+	}  else if (len == 127) {
+	    if (2 != sscanf(buf, "%2*s%8c", len)) return 0;
+            hlen = 10;
+	}
+
+	if (masked) {
+            hlen += 4;
+            if (sizeof(buf) < hlen) return 0;
+	    mask = buf[hlen-4..hlen-1];
+	}
+
+        if (sizeof(buf) < len+hlen) return 0;
+
+        object f = Frame(opcode & 15);
+        f->fin = opcode >> 7;
+        f->mask = mask;
+
+        data = buf[hlen..hlen+len-1];
+        buf = buf[hlen+len..];
+
+        if (masked) {
+            data = MASK(data, mask);
+        }
+
+        f->data = data;
+
+        return f;
+    }
+}
+
 class Frame {
     //!
     FRAME opcode;
@@ -137,7 +137,8 @@ class Frame {
 
     string mask;
 
-    //! Data part of the frame. Valid for frames of type @[FRAME_BINARY].
+    //! Data part of the frame. Valid for frames of type @[FRAME_BINARY],
+    //! @[FRAME_PING] and @[FRAME_PONG].
     string data = "";
 
     //! @decl void create(FRAME opcode, void|string|CLOSE_STATUS)
@@ -240,47 +241,67 @@ class Frame {
 }
 
 //!
-class Request {
-    inherit Protocols.HTTP.Server.Request;
+class Connection {
+    protected object parser;
 
-    object parser;
+    protected Stdio.File stream;
+    protected array(string) stream_buf = ({ });
+    protected int(0..1) will_write = 1;
+    protected mixed id;
 
-    function(array(string), Request:void) cb;
-    function(Frame, mixed:void) msg_cb;
-    function(Frame, mixed:void) ws_close_cb;
+    //! If true, all outgoing frames are masked.
+    int(0..1) masking;
 
-    mixed id;
+    //!
+    enum STATE {
 
+        //!
+        CONNECTING = 0x0,
+
+        //!
+        OPEN,
+
+        //!
+        CLOSING,
+
+        //!
+        CLOSED,
+    };
+
+    //!
+    STATE state = CONNECTING;
+
+    protected CLOSE_STATUS close_reason;
+
+    //! Set the @expr{id@}. It will be passed as last argument to all
+    //! callbacks.
     void set_id(mixed id) {
         this_program::id = id;
     }
 
+    protected void create(Stdio.File f) {
+        parser = Parser();
+        stream = f;
+        f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+        state = OPEN;
+        if (onopen) onopen(id || this);
+    }
+
+    // Sorry guys...
+
     //!
-    protected void create(function(array(string), Request:void) cb) {
-	this_program::cb = cb;
-    }
+    function(mixed:void) onopen;
 
-    protected void parse_request() {
-	if (!has_index(request_headers, "sec-websocket-key")) {
-	    ::parse_request();
-	    return;
-	} else {
-	    string proto = request_headers["sec-websocket-protocol"];
-	    array(string) protocols =  proto ? proto / ", " : ({});
-	    cb(protocols, this);
-	}
-    }
+    //!
+    function(Frame, mixed:void) onmessage;
 
-    protected int parse_variables() {
-	if (has_index(request_headers, "sec-websocket-key"))
-	    return 0;
-	return ::parse_variables();
-    }
-
-    Stdio.File stream;
-    array(string) stream_buf = ({ });
-    int(0..1) will_write = 1;
-    int(0..1) closing = 0;
+    //! This callback will be called once the WebSocket has been closed.
+    //! No more frames can be sent or will be received after the close
+    //! event has been triggered.
+    //! This happens either when receiving a frame initiating the close
+    //! handshake or after the TCP connection has been closed. Note that
+    //! this is a deviation from the WebSocket API specification.
+    function(CLOSE_STATUS, mixed:void) onclose;
 
     //! @decl int bufferedAmount
     //! Number of bytes in the send buffer.
@@ -289,7 +310,11 @@ class Request {
         return `+(@map(stream_buf, sizeof));
     }
 
-    void websocket_write() {
+    void send_raw(string s) {
+        stream_buf += ({ s });
+    }
+
+    protected void websocket_write() {
         if (sizeof(stream_buf)) {
             int n = stream->write(stream_buf);
             int i;
@@ -320,56 +345,130 @@ class Request {
         }
     }
 
-    void websocket_in(mixed id, string data) {
+    protected void websocket_in(mixed id, string data) {
+
+        // it would be nicer to set the read callback to zero
+        // once a close handshake has been received. however,
+        // without a read callback pike does not trigger the
+        // close event.
+        if (state == CLOSED) return;
+
         parser->feed(data);
 
         while (object frame = parser->parse()) {
             switch (frame->opcode) {
             case FRAME_PING:
-                websocket_send(Frame(FRAME_PONG, frame->data));
-                break;
+                send(Frame(FRAME_PONG, frame->data));
+                continue;
             case FRAME_CLOSE:
-                if (!closing) {
-                    websocket_close(frame->reason);
-                } else {
-                    finish(0);
+                if (state == OPEN) {
+                    close(frame->reason);
+                    // we call close_event here early to allow applications to stop
+                    // sending packets. i think this makes more sense than what the
+                    // websocket api specification proposes.
+                    close_event(frame->reason);
+                    break;
+                } else if (state == CLOSING) {
+                    stream->set_nonblocking(0,0,0);
+                    catch { stream->close(); };
+                    stream = 0;
+                    // we dont use frame->reason here, since that is not guaranteed
+                    // to be the same as the one used to start the close handshake
+                    close_event(close_reason);
+                    break;
                 }
-                if (ws_close_cb) ws_close_cb(frame, id || this);
-                return;
             }
 
-            if (msg_cb) msg_cb(frame, id || this);
-            else werror("received: %O\n", frame);
+            if (onmessage) onmessage(frame, id || this);
         }
     }
 
-    void finish(int clean) {
-        if (stream) {
-            // we force shutdown here, if this was a websocket connection
-            cb = 0;
-            ws_close_cb = 0;
-            msg_cb = 0;
-            stream->set_nonblocking(0, 0, 0);
-            catch { stream->close(); };
-            stream = 0;
-            ::finish(0);
-        } else {
-            if (!clean) cb = 0;
-            ::finish(clean);
+    protected void close_event(CLOSE_STATUS reason) {
+        state = CLOSED;
+        if (onclose) {
+            onclose(reason, id || this);
+            onclose = 0;
         }
+    }
+
+    protected void websocket_closed() {
+        stream->set_nonblocking(0,0,0);
+        stream = 0;
+        // if this is the end of a proper close handshake, this wont do anything
+        close_event(0);
+    }
+
+    //! Send a WebSocket ping frame.
+    void ping(void|string s) {
+        send(Frame(FRAME_PING, s));
+    }
+
+    //! Send a WebSocket connection close frame. The close callback will be
+    //! called when the close handshake has been completed. No more frames
+    //! can be sent after initiating the close handshake.
+    void close(void|CLOSE_STATUS reason) {
+        send(Frame(FRAME_CLOSE, reason||CLOSE_NORMAL));
+    }
+
+    //! Send a WebSocket frame.
+    void send(Frame frame) {
+        if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
+        if (masking && sizeof(frame->data))
+            frame->mask = Crypto.Random.random_string(4);
+        stream_buf += ({ (string) frame });
+        if (frame->opcode == FRAME_CLOSE) {
+            state = CLOSING;
+            close_reason = frame->reason;
+            // TODO: time out the connection
+        }
+        if (!will_write) websocket_write();
+    }
+
+    //! Send a WebSocket text frame.
+    void send_text(string s) {
+        send(Frame(FRAME_TEXT, s));
+    }
+
+    //! Send a WebSocket binary frame.
+    void send_binary(string(0..255) s) {
+        send(Frame(FRAME_BINARY, s));
+    }
+
+}
+
+//!
+class Request {
+    inherit Protocols.HTTP.Server.Request;
+
+    function(array(string), Request:void) cb;
+
+    //!
+    protected void create(function(array(string), Request:void) cb) {
+	this_program::cb = cb;
+    }
+
+    protected void parse_request() {
+	if (!has_index(request_headers, "sec-websocket-key")) {
+	    ::parse_request();
+	    return;
+	} else {
+	    string proto = request_headers["sec-websocket-protocol"];
+	    array(string) protocols =  proto ? proto / ", " : ({});
+	    cb(protocols, this);
+	}
+    }
+
+    protected int parse_variables() {
+	if (has_index(request_headers, "sec-websocket-key"))
+	    return 0;
+	return ::parse_variables();
     }
 
     //! Calling @[websocket_accept] completes the WebSocket connection
     //! handshake. The protocol should be either @expr{0@} or a protocol
-    //! advertised by the client when initiating the WebSocket conneciton.
-    //! @expr{msg_cb@} will be called subsequently for each incoming WebSocket
-    //! frame.
-    //! @expr{close_cb@} will be called once the WebSocket connection has been
-    //! closed by a proper close handshake. If the connection is terminated
-    //! without a proper handshake, the first argument to @expr{close_cb@} will
-    //! be @expr{0@}.
-    void websocket_accept(string protocol, function(Frame,this_program:void) msg_cb,
-                          function(int|Frame,this_program:void) close_cb) {
+    //! advertised by the client when initiating the WebSocket connection.
+    //! The returned connection object is in state @[Connection.OPEN].
+    Connection websocket_accept(string protocol) {
 	string s = request_headers["sec-websocket-key"] + websocket_id;
 	mapping heads = ([
 	    "Upgrade" : "websocket",
@@ -379,62 +478,18 @@ class Request {
 	]);
 	if (protocol) heads["sec-websocket-protocol"] = protocol;
 
-        this_program::msg_cb = msg_cb;
-        ws_close_cb = close_cb;
+        Connection ws = Connection(my_fd);
+        my_fd = 0;
 
-	stream = my_fd;
-
-        stream_buf += ({ make_response_header(([
+        ws->send_raw(make_response_header(([
 	    "error" : 101,
 	    "type" : "application/octet-stream",
 	    "extra_heads" : heads,
-	])) });
-        stream->set_nonblocking(websocket_in, websocket_write,
-                                websocket_closed);
-        parser = Parser();
-    }
+	])));
 
-    void websocket_closed() {
-        if (!closing && ws_close_cb) ws_close_cb(0, this || id);
         finish(0);
-    }
 
-    //! Send a WebSocket ping frame.
-    void websocket_ping(void|string s) {
-        websocket_send(Frame(FRAME_PING, s));
-    }
-
-    //! Send a WebSocket connection close frame. The close callback will be
-    //! called when the close handshake has been completed. No more frames
-    //! can be sent after initiating the close handshake.
-    void websocket_close(void|CLOSE_STATUS reason) {
-        websocket_send(Frame(FRAME_CLOSE, reason||CLOSE_NORMAL));
-    }
-
-    //! Send a WebSocket frame.
-    void websocket_send(Frame frame) {
-        if (closing) error("Cannot send frames after close.\n");
-        if (!stream) error("%O is not a websocket frame.\n", this);
-        stream_buf += ({ (string) frame });
-        if (frame->opcode == FRAME_CLOSE)
-            closing = 1;
-        if (!will_write) websocket_write();
-    }
-
-    //! Send a WebSocket text frame.
-    void send_text(string s) {
-        websocket_send(Frame(FRAME_TEXT, s));
-    }
-
-    //! Send a WebSocket binary frame.
-    void send_binary(string(0..255) s) {
-        websocket_send(Frame(FRAME_BINARY, s));
-    }
-
-    protected string _sprintf(int type) {
-        if (type!='O') return UNDEFINED;
-        if (!stream) return ::_sprintf(type);
-        return sprintf("%O(%O)", this_program, stream);
+        return ws;
     }
 }
 
