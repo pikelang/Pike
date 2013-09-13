@@ -51,7 +51,7 @@ void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
 void clear();
 
 //! Reset all URIs at the specified stage to stage @expr{0@} (zero).
-void clear_stage( int ... stages );b
+void clear_stage( int ... stages );
 
 //! Remove all URIs at the specified stage.
 void remove_stage (int stage);
