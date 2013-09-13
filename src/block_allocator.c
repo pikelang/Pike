@@ -127,13 +127,16 @@ PMOD_EXPORT size_t ba_count(const struct block_allocator * a) {
 }
 
 PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, size_t * size) {
-    if (a->size) {
-	size_t n = (a->l.blocks << (a->size-1)) - a->l.blocks;
-	*num = n;
-	*size = a->l.block_size * n;
-    } else {
-	*num = *size = 0;
+    size_t n = 0, b = sizeof( struct block_allocator );
+    unsigned int i;
+    for( i=0; i<a->size; i++ )
+    {
+        struct ba_layout l = ba_get_layout( a, i );
+        b += l.offset + l.block_size + l.doffset;
+        n += a->pages[i]->h.used;
     }
+    *num = n;
+    *size = b;
 }
 
 static void ba_low_alloc(struct block_allocator * a) {
