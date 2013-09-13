@@ -4,6 +4,17 @@ inherit Web.Crawler.Queue;
 
 //! Virtual base class for the @[Search] crawler state.
 
+//! The queue stage levels.
+enum Stage {
+  STAGE_WAITING = 0,
+  STAGE_FETCHING,
+  STAGE_FETCHED,
+  STAGE_FILTERED,
+  STAGE_INDEXED,
+  STAGE_COMPLETED,
+  STAGE_ERROR,
+};
+
 //! Add an URI to be crawled.
 void add_uri( Standards.URI uri, int recurse, string template, void|int force );
 
