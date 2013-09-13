@@ -7609,6 +7609,132 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }
 
+/* estimate the size of an svalue, not including objects.
+   this is used from size_object
+*/
+static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
+{
+    unsigned int res = 0;
+    int i;
+    ptrdiff_t node_ref;
+    INT32 e;
+    struct keypair *k;
+
+    switch( s->type )
+    {
+        case PIKE_T_STRING:
+            /* FIXME: This makes assumptions about the threshold for short strings. */
+            if( s->u.string->flags & STRING_IS_SHORT )
+                return 16 / s->u.string->refs;
+            return ((s->u.string->len << s->u.string->size_shift) +
+                    sizeof(struct pike_string)) / s->u.string->refs;
+        case PIKE_T_INT:
+        case PIKE_T_OBJECT:
+        case PIKE_T_FLOAT:
+        case PIKE_T_FUNCTION:
+        case PIKE_T_TYPE:
+            return 0;
+    }
+
+    if( !*m )
+        *m = allocate_mapping( 10 );
+    else if( low_mapping_lookup( *m, s ) )
+        return 0; // already counted.
+
+    low_mapping_insert( *m, s, &svalue_int_one, 0 );
+    switch( s->type )
+    {
+        case PIKE_T_ARRAY:
+            res = sizeof( struct array );
+            for( i=0; i<s->u.array->size; i++ )
+                res += sizeof(struct svalue) + rec_size_svalue( s->u.array->item+i, m );
+            break;
+
+        case PIKE_T_MULTISET:
+            res = sizeof(struct multiset);
+            node_ref = multiset_last( s->u.multiset );
+            while( node_ref != -1 )
+            {
+                res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
+                    + sizeof(struct svalue);
+                node_ref = multiset_prev( s->u.multiset, node_ref );
+            }
+            break;
+
+        case PIKE_T_MAPPING:
+            res = sizeof(struct mapping) + sizeof(struct mapping_data);
+            NEW_MAPPING_LOOP( s->u.mapping->data  )
+            {
+                res += rec_size_svalue( &k->ind, m );
+                res += rec_size_svalue( &k->val, m );
+                res += sizeof( struct keypair );
+            }
+            break;
+    }
+    return res / *s->u.refs;
+}
+
+/*! @decl int size_object(object o)
+ *! @belongs Debug
+ *!
+ *!  Return the aproximate size of the object, in bytes.
+ *!  This might not work very well for native objects
+ *!
+ *!
+ *! The function tries to estimate the memory usage of variables
+ *! belonging to the object.
+ *!
+ *! It will not, however, include the size of objects assigned to
+ *! variables in the object.
+ */
+static void f__size_object( INT32 args )
+{
+    size_t sum;
+    unsigned int i;
+    struct object *o;
+    struct program *p;
+    struct mapping *map = NULL;
+    if( Pike_sp[-1].type != PIKE_T_OBJECT )
+        Pike_error("Expected an object as argument\n");
+    o = Pike_sp[-1].u.object;
+
+    if( !(p=o->prog) )
+    {
+        pop_stack();
+        push_int(0);
+        return;
+    }
+    sum = sizeof(struct object);
+    sum += p->storage_needed;
+
+    Pike_sp++;
+    for (i = 0; i < p->num_identifier_references; i++)
+    {
+        struct reference *ref = PTR_FROM_INT(p, i);
+        struct identifier *id =  ID_FROM_PTR(p, ref);
+        struct inherit *inh = p->inherits;
+        if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+            id->run_time_type == PIKE_T_GET_SET)
+        {
+            continue;
+        }
+
+        /* NOTE: makes the assumption that a variable saved in an
+         * object has at least one reference.
+         */
+        low_object_index_no_free(Pike_sp-1, o, i + inh->identifier_level);
+        if (REFCOUNTED_TYPE(TYPEOF(Pike_sp[-1])))
+            sub_ref( Pike_sp[-1].u.dummy );
+        sum += rec_size_svalue(Pike_sp-1, &map);
+    }
+    Pike_sp--;
+    if( map ) free_mapping(map);
+
+    pop_stack();
+    push_int(sum);
+}
+
+
 /*! @decl mixed _next(mixed x)
  *!
  *!   Find the next object/array/mapping/multiset/program or string.
@@ -10028,6 +10154,9 @@ void init_builtin_efuns(void)
 /* function(:mapping(string:int)) */
   ADD_EFUN("_memory_usage",f__memory_usage,
 	   tFunc(tNone,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("_size_object",f__size_object,
+	   tFunc(tObj,tInt),OPT_EXTERNAL_DEPEND);
 
   
 /* function(:int) */
