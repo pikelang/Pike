@@ -22,8 +22,6 @@ Web.Crawler.Stats stats;
 Web.Crawler.Policy policy;
 Web.Crawler.RuleSet allow, deny;
 
-inherit Web.Crawler.Queue;
-
 static string to_md5(string url)
 {
   Crypto.MD5 md5 = Crypto.MD5();
