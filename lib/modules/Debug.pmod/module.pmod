@@ -47,6 +47,54 @@ private string mi2sz( int i )
     return sprintf("%.1f%s",x,un[u]);
 }
 
+//! Returns a pretty printed version of the output from
+//! @[count_objects] (with added estimated RAM usage)
+string pp_object_usage() {
+    mapping tmp = ([]);
+    object start = next_object();
+    while(start)
+    {
+        program q = object_program( start );
+        string nam = sprintf("%O",(program)q);
+        int memsize = size_object(start);
+        sscanf( nam, "object_program(%s)", nam );
+
+        if( !tmp[nam] )
+        {
+            tmp[nam] = ({1,memsize,Program.defined(q)});
+        }
+        else
+        {
+            tmp[nam][0]++;
+            tmp[nam][1]+=memsize;
+        }
+        start=next_object(start);
+    }
+
+
+    array by_size = ({});
+    foreach( tmp; string obj; array(int) cnt )
+    {
+        /* some heuristics: Do not show singletons unless it is using a noticeable amount of RAM. */
+        if( cnt[1] * cnt[0] < 2048 )
+            continue;
+        by_size += ({ ({ cnt[1], obj, cnt[0], cnt[2] }) });
+    }
+
+    sort( by_size );
+    string res = "";
+    res += sprintf("-"*(33+6+9+1+21)+"\n"+
+                   "%-33s %6s %8s %20s\n"+
+                   "-"*(33+6+9+1+21)+"\n",
+                   "Object", "Clones","Memory", "Loc");
+
+    foreach( reverse(by_size), [int size, string obj, int cnt, string p] )
+        res += sprintf( "%-33s %6d %8s %20s\n", obj[<32..], cnt, mi2sz(size), basename(p||"-"));
+
+    res += ("-"*(33+6+9+1+21)+"\n\n");
+    return res;
+}
+
 //! Returns a pretty printed version of the
 //! output from @[memory_usage].
 string pp_memory_usage() {
