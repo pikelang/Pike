@@ -109,6 +109,7 @@ extern struct pike_string *type_check_system_string;
 #define LFUN__TYPES 46
 #define LFUN__SERIALIZE 47
 #define LFUN__DESERIALIZE 48
+#define LFUN__SIZE_OBJECT 49
 
 extern const char *const lfun_names[];
 

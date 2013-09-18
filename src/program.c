@@ -176,6 +176,7 @@ const char *const lfun_names[]  = {
   "_types",
   "_serialize",
   "_deserialize",
+  "_size_object",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -236,6 +237,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tArray),	/* "_types", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
+  tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
 };
 
 /* These two are not true LFUNs! */

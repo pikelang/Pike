@@ -113,6 +113,11 @@ static void init_memory(struct object *UNUSED(o))
    THIS->flags=0;
 }
 
+static void memory__size_object( INT32 args )
+{
+    push_int(THIS->size);
+}
+
 static void MEMORY_FREE( struct memory_storage *storage )
 {
   if( storage->flags & MEM_FREE_FREE )
@@ -945,6 +950,9 @@ void init_system_memory(void)
 
    ADD_FUNCTION("allocate",memory_allocate,
 		tFunc(tIntPos tOr(tByte,tVoid),tVoid),0);
+
+   ADD_FUNCTION("_size_object",memory__size_object,
+                tFunc(tVoid,tInt),0);
    
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 
