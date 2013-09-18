@@ -1784,6 +1784,7 @@ class async_client
     call_out(retry,RETRY_DELAY,r,nsno+1);
   }
 
+  //!
   void do_query(string domain, int cl, int type,
 		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
