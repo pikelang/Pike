@@ -6,7 +6,7 @@
 //!
 //! RFC 1034, RFC 1035 and RFC 2308
 
-  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
+protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
 
@@ -15,10 +15,13 @@
 //! No error condition.
 final constant NOERROR=0;
 
-//! The name server was unable to interpret the request due to a format error.
+//! The name server was unable to interpret the request due to a
+//! format error.
 final constant FORMERR=1;
 
-//!The name server encountered an internal failure while processing this request, for example an operating system error or a forwarding timeout.
+//! The name server encountered an internal failure while processing
+//! this request, for example an operating system error or a
+//! forwarding timeout.
 final constant SERVFAIL=2;
 
 //! Some name that ought to exist, does not exist.
@@ -27,7 +30,8 @@ final constant NXDOMAIN=3;
 //! The name server does not support the specified Opcode.
 final constant NOTIMPL=4;
 
-//! The name server refuses to perform the specified operation for policy or security reasons.
+//! The name server refuses to perform the specified operation for
+//! policy or security reasons.
 final constant REFUSED=5;
 
 //! Some RRset that ought to exist, does not exist.
@@ -231,15 +235,15 @@ class protocol
        return rnaptr;
 
      case T_TXT:
-       return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
-			lambda(string t) {
-			  return sprintf("%1H", t);
-			})*"";
+       return map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
+                  lambda(string t) {
+                    return sprintf("%1H", t);
+                  })*"";
      case T_SPF:
-       return Array.map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
-			lambda(string t) {
-			  return sprintf("%1H", t);
-			})*"";
+       return map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
+                  lambda(string t) {
+                    return sprintf("%1H", t);
+                  })*"";
      case T_LOC:
        // FIXME: Not implemented yet.
      default:
@@ -298,21 +302,21 @@ class protocol
 			     "qd":(["name":dname, "cl":cl, "type":type])]));
   }
 
-//! create a DNS query PDU
-//! 
-//! @param dnameorquery
-//! @param cl
-//!   record class such as Protocols.DNS.C_IN
-//! @param type
-//!  query type such Protocols.DNS.T_A
-//!
-//! @returns
-//!  data suitable for use with 
-//!  @[Protocols.DNS.client.do_sync_query]
-//!
-//! @example
-//! // generate a query PDU for a address lookup on the hostname pike.lysator.liu.se
-//! string q=Protocols.DNS.protocol()->mkquery("pike.lysator.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
+  //! create a DNS query PDU
+  //!
+  //! @param dnameorquery
+  //! @param cl
+  //!   record class such as Protocols.DNS.C_IN
+  //! @param type
+  //!   query type such Protocols.DNS.T_A
+  //!
+  //! @returns
+  //!  data suitable for use with
+  //!  @[Protocols.DNS.client.do_sync_query]
+  //!
+  //! @example
+  //! // generate a query PDU for a address lookup on the hostname pike.lysator.liu.se
+  //! string q=Protocols.DNS.protocol()->mkquery("pike.lysator.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
   string mkquery(string|mapping dnameorquery, int|void cl, int|void type)
   {
     if(mappingp(dnameorquery))
@@ -1090,7 +1094,8 @@ class tcp_server
       }
 
       port->set_id(port);
-      // port objects are stored for destruction when the server object is destroyed.
+      // Port objects are stored for destruction when the server
+      // object is destroyed.
       ports += ({ port });
     }
   }
@@ -1116,10 +1121,10 @@ class dual_server {
 
     if (!con->tcp_connection) {
       if (sizeof(rpl) > 512) {
-	rpl = sprintf("%s%8c", rpl[..3], 0); // truncate after header and
+	rpl = sprintf("%s%8c", rpl[..3], 0); // Truncate after header and
 					     // send empty response
 					     // ("dnscache strategy")
-	rpl[2] |= 2; // set TC bit
+	rpl[2] |= 2; // Set TC bit
       }
       con->send(m->ip, m->port, rpl);
     } else
@@ -1141,7 +1146,7 @@ class dual_server {
 #define RETRIES 12
 #define RETRY_DELAY 5
 
-//! 	Synchronous DNS client.
+//! Synchronous DNS client.
 class client 
 {
   inherit protocol;
@@ -1373,12 +1378,12 @@ class client
 	nameservers = ({ "127.0.0.1" });
       }
       domains -= ({ "" });
-      domains = Array.map(domains, lambda(string d) {
-				     if (d[-1] == '.') {
-				       return d[..<1];
-				     }
-				     return d;
-				   });
+      domains = map(domains, lambda(string d) {
+                               if (d[-1] == '.') {
+                                 return d[..<1];
+                               }
+                               return d;
+                             });
     } 
     else 
     {
@@ -1395,19 +1400,19 @@ class client
     }
   }
 
-//! Perform a synchronous DNS query.
-//! 
-//! @param s
-//!   Result of @[Protocols.DNS.protocol.mkquery]
-//! @returns
-//!  mapping containing query result or 0 on failure/timeout
-//!
-//! @example
-//!   @code
-//!     // Perform a hostname lookup, results stored in r->an
-//!     object d=Protocols.DNS.client();
-//!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
-//!   @endcode
+  //! Perform a synchronous DNS query.
+  //!
+  //! @param s
+  //!   Result of @[Protocols.DNS.protocol.mkquery]
+  //! @returns
+  //!   mapping containing query result or 0 on failure/timeout
+  //!
+  //! @example
+  //!   @code
+  //!     // Perform a hostname lookup, results stored in r->an
+  //!     object d=Protocols.DNS.client();
+  //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
+  //!   @endcode
   mapping do_sync_query(string s)
   {
     int i;
@@ -1594,7 +1599,6 @@ class client
     }
     
     array res=({});
-
     foreach(m->an, mapping x)
     {
        res+=({({x->priority, x->weight, x->port, x->target})});
