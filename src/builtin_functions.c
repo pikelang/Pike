@@ -7686,11 +7686,18 @@ static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
  *!
  *! It will not, however, include the size of objects assigned to
  *! variables in the object.
+ *!
+ *!
+ *! If the object has a the lfun _size_object it will be called
+ *! without arguments, and the return value will be added to the final
+ *! size. It is primarily intended to be used by C-objects that
+ *! allocate memory that is not normally visible to pike.
  */
 static void f__size_object( INT32 args )
 {
     size_t sum;
     unsigned int i;
+    ptrdiff_t fun;
     struct object *o;
     struct program *p;
     struct mapping *map = NULL;
@@ -7706,6 +7713,14 @@ static void f__size_object( INT32 args )
     }
     sum = sizeof(struct object);
     sum += p->storage_needed;
+
+    if( (fun = low_find_lfun( p, LFUN__SIZE_OBJECT)) != -1 )
+    {
+        apply_low( o, fun, 0 );
+        if( Pike_sp[-1].type == PIKE_T_INT )
+            sum += Pike_sp[-1].u.integer;
+        pop_stack();
+    }
 
     Pike_sp++;
     for (i = 0; i < p->num_identifier_references; i++)

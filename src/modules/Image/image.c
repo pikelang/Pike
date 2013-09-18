@@ -4860,6 +4860,14 @@ void image__decode( INT32 args )
     pop_stack();
 }
 
+static void image__size_object(INT32 args)
+{
+    INT_TYPE sz = 0;
+    if( THIS->img )
+        sz = THIS->xsize*THIS->ysize*sizeof(rgb_group)+RGB_VEC_PAD;
+    push_int(sz);
+}
+
 /***************** global init etc *****************************/
 
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
@@ -4875,7 +4883,7 @@ void init_image_image(void)
    ADD_STORAGE(struct image);
    
    ADD_FUNCTION("_sprintf", image__sprintf, tFunc(tInt , tString), 0 );
-
+   ADD_FUNCTION("_size_object", image__size_object, tFunc(tVoid,tInt), 0);
 
    ADD_FUNCTION("_encode", image__encode, tFunc(tVoid,tArray), 0 );
    ADD_FUNCTION("_decode", image__decode, tFunc(tArray,tVoid), 0 );
