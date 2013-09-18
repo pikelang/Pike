@@ -1966,6 +1966,146 @@ class async_client
 };
 
 
+// FIXME: Reuse sockets where possible?
+//! Synchronous DNS client using TCP
+//! Can handle larger responses than @[client] can.
+class tcp_client
+{
+  inherit client;
+
+  //! Perform a synchronous DNS query.
+  //!
+  //! @param s
+  //!   Result of @[Protocols.DNS.protocol.mkquery]
+  //! @returns
+  //!  mapping containing query result or 0 on failure/timeout
+  //!
+  //! @example
+  //!   @code
+  //!     // Perform a hostname lookup, results stored in r->an
+  //!     object d=Protocols.DNS.tcp_client();
+  //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
+  //!   @endcode
+  mapping do_sync_query(string s)
+  {
+    for (int i=0; i < RETRIES; i++) {
+      object tcp = Stdio.File();
+      if (tcp->connect(nameservers[i % sizeof(nameservers)], 53))
+      {
+        tcp->write("%2H",s);
+	sscanf(tcp->read(2),"%2c",int len);
+	return decode_res(tcp->read(len));
+      }
+    }
+    // Failure.
+    return 0;
+  }
+}
+
+// FIXME: Reuse sockets? Acknowledge RETRIES?
+//! Asynchronous DNS client using TCP
+class async_tcp_client
+{
+  inherit client;
+
+  class Request(string domain, string req,
+		function(string,mapping,mixed...:void) callback,
+		array(mixed) args)
+  {
+    Stdio.File sock;
+    string writebuf="",readbuf="";
+
+    void create()
+    {
+      sock=Stdio.File();
+      sock->async_connect(nameservers[0], 53, connectedcb);
+    }
+
+    void connectedcb(int ok)
+    {
+      if (!ok) {callback(domain, 0, @args); return;}
+      sock->set_nonblocking(readcb, writecb, closecb);
+      writebuf=sprintf("%2H",req);
+      writecb();
+    }
+
+    void readcb(mixed id,string data)
+    {
+      readbuf+=data;
+      if (sscanf(readbuf,"%2H",string ret))
+      {
+        if (callback) callback(domain, decode_res(ret), @args);
+        callback=0;
+        sock->close();
+      }
+    }
+
+    void writecb()
+    {
+      if (writebuf!="") writebuf=writebuf[sock->write(writebuf)..];
+    }
+
+    void closecb()
+    {
+      sock->close();
+      if (callback) callback(domain, 0, @args);
+      callback=0;
+    }
+  }
+
+  //!
+  void do_query(string domain, int cl, int type,
+		function(string,mapping,mixed...:void) callback,
+		mixed ... args)
+  {
+    string req=low_mkquery(random(65536),domain,cl,type);
+    Request(domain, req, callback, args);
+  }
+}
+
+//! Both a @[client] and a @[tcp_client].
+class dual_client
+{
+  inherit client : UDP;
+  inherit tcp_client : TCP;
+
+  //!
+  mapping do_sync_query(string s)
+  {
+    mapping ret = UDP::do_sync_query(s);
+    if (!ret->tc) return ret;
+    return TCP::do_sync_query(s);
+  }
+
+  void create(mixed ... args) {::create(@args);}
+}
+
+//! Both an @[async_client] and an @[async_tcp_client].
+class async_dual_client
+{
+  inherit async_client : UDP;
+  inherit async_tcp_client : TCP;
+
+  void check_truncation(string domain, mapping result, int cl, int type,
+			function(string,mapping,mixed...:void) callback,
+			mixed ... args)
+  {
+    if (!result || !result->tc) callback(domain,result,@args);
+    else TCP::do_query(domain,cl,type,callback,@args);
+  }
+
+  //!
+  void do_query(string domain, int cl, int type,
+		function(string,mapping,mixed...:void) callback,
+		mixed ... args)
+  {
+    UDP::do_query(domain,cl,type,check_truncation,cl,type,callback,@args);
+  }
+
+  void create(mixed ... args) {::create(@args);}
+}
+
+
 async_client global_async_client;
 
 #define GAC(X)								\
