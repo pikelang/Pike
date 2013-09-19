@@ -169,6 +169,7 @@ CORE_OBJ= \
  module_support.o \
  pikecode.o \
  object.o \
+ stack_allocator.o \
  opcodes.o \
  operators.o \
  pike_float.o \
