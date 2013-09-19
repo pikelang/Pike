@@ -344,6 +344,7 @@
 #include "cyclic.h"
 #include "module.h"
 #include "pike_float.h"
+#include "stack_allocator.h"
 #include <ctype.h>
 
 #include "config.h"
@@ -378,6 +379,7 @@ struct format_info
 
 struct format_stack
 {
+  struct stack_allocator a;
   struct format_info *fsp;
   struct format_info format_info_stack[FORMAT_INFO_STACK_SIZE];
 };
@@ -1365,7 +1367,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	if(fs->fsp->width == SPRINTF_UNDECIDED)
 	{
 	  GET_INT(tmp);
-	  x=(char *)alloca(4);
+          x=(char *)sa_alloc(&fs->a, 4);
 	  if(tmp<256) fs->fsp->b=MKPCHARP(x,0);
 	  else if(tmp<65536) fs->fsp->b=MKPCHARP(x,1);
 	  else  fs->fsp->b=MKPCHARP(x,2);
@@ -1376,7 +1378,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	{
 	  l=1;
 	  if(fs->fsp->width > 0) l=fs->fsp->width;
-	  x=(char *)alloca(l);
+          x=(char *)sa_alloc(&fs->a, l);
 	  fs->fsp->b=MKPCHARP(x,0);
 	  fs->fsp->len=l;
 	  GET_INT(tmp);
@@ -1391,7 +1393,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	{
 	  l=1;
 	  if(fs->fsp->width > 0) l=fs->fsp->width;
-	  x=(char *)alloca(l);
+	  x=(char *)sa_alloc(&fs->a, l);
 	  fs->fsp->b=MKPCHARP(x,0);
 	  fs->fsp->len=l;
 	  GET_INT(tmp);
@@ -1433,7 +1435,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			"too large.\n", l);
 
 
-        x=(char *)alloca(l);
+        x=(char *)sa_alloc(&fs->a, l);
         fs->fsp->b=MKPCHARP(x,0);
         fs->fsp->len=l;
 
@@ -1494,7 +1496,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  mask_size = fs->fsp->precision;
 	
 	mode=EXTRACT_PCHARP(a);
-	x=(char *)alloca(sizeof(val)*CHAR_BIT + 4 + mask_size);
+	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
 	fs->fsp->b=MKPCHARP(x,0);
 	
 	switch(mode)
@@ -1630,7 +1632,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	if(l != 4 && l != 8)
 	  sprintf_error(fs, "Invalid IEEE width %ld.\n",
 			PTRDIFF_T_TO_LONG(l));
-	x=(char *)alloca(l);
+	x=(char *)sa_alloc(&fs->a, l);
 	fs->fsp->b=MKPCHARP(x,0);
 	fs->fsp->len=l;
 	GET_FLOAT(tf);
@@ -1887,6 +1889,7 @@ static void free_f_sprintf_data (struct f_sprintf_data *d)
 {
   free_string_builder (&d->r);
   free_sprintf_strings (d->fs);
+  stack_alloc_destroy(&d->fs->a);
   free (d->fs);
 }
 
@@ -1920,6 +1923,7 @@ void low_f_sprintf(INT32 args, int compat_mode)
 
   d.fs = ALLOC_STRUCT (format_stack);
   d.fs->fsp = d.fs->format_info_stack-1;
+  stack_alloc_init(&d.fs->a, 128);
 
   init_string_builder(&d.r,0);
   SET_ONERROR(uwp, free_f_sprintf_data, &d);
@@ -1932,6 +1936,7 @@ void low_f_sprintf(INT32 args, int compat_mode)
 		   0, compat_mode);
   UNSET_ONERROR(uwp);
   ret=finish_string_builder(&d.r);
+  stack_alloc_destroy(&d.fs->a);
   free (d.fs);
 
   pop_n_elems(args);
