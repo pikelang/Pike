@@ -2917,7 +2917,14 @@ PIKECLASS Buffer
 {
   CVAR struct string_builder str;
   CVAR int initial;
-  
+
+  PIKEFUN int _size_object()
+  {
+      if( THIS->str.s )
+          RETURN THIS->str.malloced;
+      RETURN 0;
+  }
+
   void f_Buffer_get_copy( INT32 args );
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
@@ -3383,6 +3390,20 @@ PIKECLASS multi_string_replace
   /* NOTE: from and to are only kept for _encode()'s use. */
   PIKEVAR array from flags ID_PROTECTED;
   PIKEVAR array to flags ID_PROTECTED;
+
+  PIKEFUN int _size_object()
+  {
+      int res = 0, i;
+      if( THIS->ctx.v )
+      {
+          for( i=0; i<THIS->ctx.num; i++ )
+              res += sizeof(struct replace_many_tupel) +
+                  rec_size_svalue(THIS->ctx.v[i].ind,NULL) +
+                  rec_size_svalue(THIS->ctx.v[i].val,NULL);
+      }
+
+      RETURN res;
+  }
 
   /*! @decl void create(array(string)|mapping(string:string)|void from, @
    *!                   array(string)|string|void to)
@@ -4998,6 +5019,22 @@ PIKECLASS List
    *   o Initialization from array.
    *   o Support for Pike.count_memory.
    */
+
+
+  PIKEFUN int _size_object()
+  {
+      int q = THIS->num_elems;
+      int res = q * sizeof(struct pike_list_node);
+      struct mapping *m = NULL;
+      struct pike_list_node *n = THIS->head;
+      while( q-- )
+      {
+          res += rec_size_svalue( &n->val, &m );
+          n = n->next;
+      }
+      if( m ) free_mapping( m );
+      RETURN res;
+  }
 
   INIT
   {
