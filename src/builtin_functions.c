@@ -7609,15 +7609,31 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }
 
-/* estimate the size of an svalue, not including objects.
-   this is used from size_object
+/* Estimate the size of an svalue, not including objects.
+   this is used from size_object.
+
+   It should not include the size of the svalue itself, so the basic
+   types count as 0 bytes.
+
+   This is an estimate mainly because it is very hard to know to whom
+   a certain array/mapping/multiset or string "belongs".
+
+   The returned size will be the memory usage of the svalue divided by
+   the number of references to it.
 */
-static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
+
+struct string_header
+{
+    PIKE_STRING_CONTENTS;
+};
+
+unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
 {
     unsigned int res = 0;
     int i;
     ptrdiff_t node_ref;
     INT32 e;
+    struct svalue *x;
     struct keypair *k;
 
     switch( s->type )
@@ -7625,9 +7641,9 @@ static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
         case PIKE_T_STRING:
             /* FIXME: This makes assumptions about the threshold for short strings. */
             if( s->u.string->flags & STRING_IS_SHORT )
-                return 16 / s->u.string->refs;
+                return (16+sizeof(struct string_header)) / s->u.string->refs;
             return ((s->u.string->len << s->u.string->size_shift) +
-                    sizeof(struct pike_string)) / s->u.string->refs;
+                    sizeof(struct string_header)) / s->u.string->refs;
         case PIKE_T_INT:
         case PIKE_T_OBJECT:
         case PIKE_T_FLOAT:
@@ -7635,11 +7651,15 @@ static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
         case PIKE_T_TYPE:
             return 0;
     }
+    if( !m ) return 0;
 
     if( !*m )
         *m = allocate_mapping( 10 );
-    else if( low_mapping_lookup( *m, s ) )
-        return 0; // already counted.
+    else if( (x = low_mapping_lookup( *m, s )) )
+    {
+        /* Already counted. Use the old size. */
+        return x->u.integer;
+    }
 
     low_mapping_insert( *m, s, &svalue_int_one, 0 );
     switch( s->type )
@@ -7651,27 +7671,42 @@ static unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
             break;
 
         case PIKE_T_MULTISET:
-            res = sizeof(struct multiset);
+            res = sizeof(struct multiset) + sizeof(struct multiset_data);
             node_ref = multiset_last( s->u.multiset );
             while( node_ref != -1 )
             {
                 res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
-                    + sizeof(struct svalue);
+                    /* each node has the index and left/right node pointers. */
+                    + sizeof(struct svalue) + (sizeof(void*)*2);
                 node_ref = multiset_prev( s->u.multiset, node_ref );
             }
             break;
 
         case PIKE_T_MAPPING:
-            res = sizeof(struct mapping) + sizeof(struct mapping_data);
-            NEW_MAPPING_LOOP( s->u.mapping->data  )
+            res = sizeof(struct mapping);
             {
-                res += rec_size_svalue( &k->ind, m );
-                res += rec_size_svalue( &k->val, m );
-                res += sizeof( struct keypair );
+                struct mapping_data *d = s->u.mapping->data;
+                struct keypair *f = d->free_list;
+                int data_size = sizeof( struct mapping_data );
+                data_size += d->hashsize * sizeof(struct keypair *) - sizeof(struct keypair *);
+                while( f )
+                {
+                    data_size += sizeof(struct keypair);
+                    f = f->next;
+                }
+                NEW_MAPPING_LOOP( s->u.mapping->data  )
+                {
+                    data_size += rec_size_svalue( &k->ind, m );
+                    data_size += rec_size_svalue( &k->val, m );
+                    data_size += sizeof( struct keypair );
+                }
+                res += data_size / (d->hardlinks+1);
             }
             break;
     }
-    return res / *s->u.refs;
+    res /= *s->u.refs;
+    low_mapping_lookup(*m,s)->u.integer = res;
+    return res;
 }
 
 /*! @decl int size_object(object o)
