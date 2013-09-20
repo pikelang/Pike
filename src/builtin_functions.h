@@ -164,6 +164,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args);
 PMOD_EXPORT void f_function_defined(INT32 args);
 void init_builtin_efuns(void);
 void exit_builtin_efuns(void);
+unsigned int rec_size_svalue( struct svalue *s, struct mapping **m );
 
 /* From iterators.cmod. */
 PMOD_EXPORT void f_get_iterator(INT32 args);
