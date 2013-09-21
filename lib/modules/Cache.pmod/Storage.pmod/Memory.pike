@@ -1,16 +1,17 @@
-/*
- * A RAM-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * This storage manager provides the means to save data to memory.
- * In this manager I'll add reference documentation as comments to
- * interfaces. It will be organized later in a more comprehensive format
- *
- * Settings will be added later.
- */
+//! A RAM-based storage manager.
+//!
+//! This storage manager provides the means to save data to memory.
+//! In this manager I'll add reference documentation as comments to
+//! interfaces. It will be organized later in a more comprehensive format
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
+//!
 class Data {
 
   inherit Cache.Data;
@@ -93,8 +94,8 @@ void set(string key, mixed value,
   data[key]=Data(value,absolute_expire,preciousness,dependants);
 }
 
-// fetches some data from the cache. If notouch is set, don't touch the
-// data from the cache (meant to be used by the storage manager only)
+//! Fetches some data from the cache. If notouch is set, don't touch the
+//! data from the cache (meant to be used by the storage manager only)
 int(0..0)|Cache.Data get(string key, void|int notouch) {
   mixed tmp;
   tmp=data[key];

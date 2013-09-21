@@ -1,14 +1,14 @@
-/*
- * A GBM-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * This storage manager provides the means to save data to memory.
- * In this manager I'll add reference documentation as comments to
- * interfaces. It will be organized later in a more comprehensive format
- *
- * Settings will be added later.
- * TODO: verify dependants' implementation.
- */
+//! A GBM-based storage manager.
+//!
+//! This storage manager provides the means to save data to memory.
+//! In this manager I'll add reference documentation as comments to
+//! interfaces. It will be organized later in a more comprehensive format
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@roxen.com> for the contribution.
+
 
 #pike __REAL_VERSION__
 
@@ -20,6 +20,7 @@ Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
 
+//!
 class Data {
   inherit Cache.Data;
 
@@ -170,7 +171,7 @@ void delete(string key, void|int(0..1) hard) {
   }
 }
 
-//A GDBM storage-manager must be hooked to a GDBM Database.
+//! A GDBM storage-manager must be hooked to a GDBM Database.
 void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
