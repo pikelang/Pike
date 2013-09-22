@@ -552,8 +552,12 @@ typedef struct p_wchar_p
 #define PMOD_PROTO
 #endif
 
+#if defined(USE_VALGRIND) && !defined(__CHECKER__)
+#define __CHECKER__
+#endif
+
 #ifndef DO_PIKE_CLEANUP
-#if defined(PURIFY) || defined(__CHECKER__) || defined(DEBUG_MALLOC)
+#if defined(PURIFY) || defined(__CHECKER__) || defined(DEBUG_MALLOC) || defined(USE_VALGRIND)
 #define DO_PIKE_CLEANUP
 #endif
 #endif
