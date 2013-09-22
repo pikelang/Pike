@@ -4449,6 +4449,7 @@ static void get_val_module()
     struct svalue index, res;						\
     if (!val_module) get_val_module();					\
     index.type = T_STRING;						\
+    index.subtype = 0;                                                  \
     MAKE_CONST_STRING (index.u.string, TOSTR (NAME));			\
     object_index_no_free (&res, val_module, 0, &index);			\
     if (res.type != T_OBJECT)						\

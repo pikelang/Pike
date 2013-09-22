@@ -2518,6 +2518,7 @@ void low_start_new_program(struct program *p,
   }
 
   tmp.type=T_PROGRAM;
+  tmp.subtype=0;
   if(!p)
   {
     p=low_allocate_program();
@@ -10013,10 +10014,12 @@ void init_program(void)
     id.subtype = NUMBER_NUMBER;
     id.u.integer = i;
     key.type = T_STRING;
+    key.subtype = 0;
     key.u.string = lfun_strings[i];
     mapping_insert(lfun_ids, &key, &id);
 
     val.type = T_TYPE;
+    val.subtype = 0;
     val.u.type = make_pike_type(raw_lfun_types[i]);
     mapping_insert(lfun_types, &key, &val);
     free_type(val.u.type);
@@ -10059,6 +10062,7 @@ void init_program(void)
     debug_start_new_program(0, "__null_program");
     null_program=end_program();
     s.type=T_PROGRAM;
+    s.subtype = 0;
     s.u.program=null_program;
     low_add_constant("__null_program",&s);
     debug_malloc_touch(null_program);

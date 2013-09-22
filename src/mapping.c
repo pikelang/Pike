@@ -1135,6 +1135,7 @@ PMOD_EXPORT void mapping_string_insert(struct mapping *m,
 {
   struct svalue tmp;
   tmp.type=T_STRING;
+  tmp.subtype=0;
   tmp.u.string=p;
   mapping_insert(m, &tmp, val);
 }

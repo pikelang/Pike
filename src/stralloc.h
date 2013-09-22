@@ -87,7 +87,11 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 #define is_same_string(X,Y) ((X)==(Y))
 
 /* NB: This intentionally only works for narrow strings. */
-#define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)
+#ifdef USE_VALGRIND
+# define string_has_null(X) (strnlen((X)->str, (size_t)(X)->len)!=(size_t)(X)->len)
+#else
+# define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)
+#endif
 
 #ifdef PIKE_DEBUG
 #define STR0(X) ((p_wchar0 *)debug_check_size_shift((X),0)->str)
