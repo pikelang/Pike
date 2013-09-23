@@ -1077,6 +1077,36 @@ static void gz_crc32(INT32 args)
 
 PIKE_MODULE_EXIT {}
 
+static void gz_deflate_size( INT32 args )
+{
+#define L_CODES (256 + 29 + 1)
+#define HEAP_SIZE (2*L_CODES+1)
+
+    pop_n_elems(args);
+    /* estimation, from reading deflate.h. We could get a rather exact
+     * value if we saved memlevel + windowbits somewhere.
+     */
+    push_int(
+        /* internal_state structure, estimating alignment */
+        (47 * 4) + sizeof(void*)*16 + (4*HEAP_SIZE) + (4*121) + (4*(2*19+1)) + 16*2 + 
+        (2*L_CODES+1)*5 +
+        /* d_buf <memlevel+6>, l_buf<memlevel+6>, window<windowbits>, hash<memlevel+7> */
+        16384*2 + 16384*2 + 65536*2 + 32768*2);
+}
+
+static void gz_inflate_size( INT32 args )
+{
+    pop_n_elems(args);
+    /* low-order estimation, from reading inflate.h */
+    push_int(
+        /* inflate_state structure. */
+        ((28 * sizeof(void*)) + (320 * 2) + (288 * 2)) +
+        /* codes[] */
+        (2048 * 4) +
+        /* window, really 1<<wbits, max wbits is 16. */
+        65536);
+}
+
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_ZLIB_H
@@ -1091,6 +1121,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
   /* function(string,int|void:string) */
   ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
+  ADD_FUNCTION("_size_object", gz_deflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
@@ -1130,6 +1161,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
   /* function(:string) */
   ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("_size_object", gz_inflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
