@@ -3396,10 +3396,16 @@ PIKECLASS multi_string_replace
       int res = 0, i;
       if( THIS->ctx.v )
       {
+          struct svalue tmp;
+          tmp.type = PIKE_T_STRING;
           for( i=0; i<THIS->ctx.num; i++ )
-              res += sizeof(struct replace_many_tupel) +
-                  rec_size_svalue(THIS->ctx.v[i].ind,NULL) +
-                  rec_size_svalue(THIS->ctx.v[i].val,NULL);
+          {
+              res += sizeof(struct replace_many_tupel);
+              tmp.u.string = THIS->ctx.v[i].ind;
+              res += rec_size_svalue( &tmp, NULL );
+              tmp.u.string = THIS->ctx.v[i].val;
+              res += rec_size_svalue( &tmp, NULL );
+          }
       }
 
       RETURN res;
