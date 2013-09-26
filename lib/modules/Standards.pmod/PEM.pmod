@@ -199,8 +199,15 @@ string build(string tag, string data,
   out->add("-----BEGIN ", tag, "-----\n");
   if(headers)
   {
-    foreach(headers; string name; string value)
-      out->add(name, ": ", value, "\n");
+    if (headers["proc-type"]) {
+      // The Proc-Type header MUST come first.
+      // RFC 1421 4.6.1.1.
+      out->add("Proc-Type: ", headers["proc-type"], "\n");
+    }
+    foreach(sort(indices([mapping(string:string)]headers)), string name) {
+      if (name == "proc-type") continue;
+      out->add(name, ": ", headers[name], "\n");
+    }
   }
 
   foreach(MIME.encode_base64(data,1)/64.0, string line)
