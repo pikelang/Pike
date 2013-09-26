@@ -269,9 +269,9 @@ static void image_png___decode(INT32 args)
 		   int_from_32bit(data+x) );
       else
 	 push_int(0);
-      if (x+4>len) break;
       f_aggregate(3);
       n++;
+      if (x+4>len) break;
       len-=x+4;
       data+=x+4;
    }
