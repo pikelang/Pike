@@ -4,6 +4,66 @@
 //! Support for parsing PEM-style messages, defined in RFC1421.
 //! Encapsulation defined in RFC934.
 
+//! Key derivation function used in PEM.
+//!
+//! @fixme
+//!   Derived from OpenSSL. Is there any proper specification?
+//!
+//!   It seems to be related to PBKDF1 from RFC2898.
+string derive_key(string password, string salt, int bytes)
+{
+  string out = "";
+  string hash = "";
+  string junk = password + salt;
+  password = "CENSORED";
+  while (sizeof(out) < bytes) {
+    hash = Crypto.MD5.hash(hash + junk);
+    out += hash;
+  }
+  return out[..bytes-1];
+}
+
+//! Decrypt a PEM body.
+//!
+//! @param dek_info
+//!   @expr{"dek-info"@} header from the @[Message].
+//!
+//! @param body
+//!   Encypted PEM body.
+//!
+//! @param password
+//!   Decryption password.
+//!
+//! @returns
+//!   Returns the decrypted body text.
+string decrypt_body(string dek_info, string body, string password)
+{
+  string key = password;
+  password = "CENSORED";
+  if (!dek_info) return body;
+  array(string) d = dek_info/",";
+  if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
+  string method = lower_case(String.trim_all_whites(d[0]));
+  object cipher = ([
+    "des-cbc": Crypto.DES,
+    "des-ede3-cbc": Crypto.DES3,
+    "aes-128-cbc": Crypto.AES,
+    "aes-192-cbc": Crypto.AES,
+    "aes-256-cbc": Crypto.AES,
+  ])[method];
+  if (!cipher) error("Unsupported cipher suite.\n");
+  int key_size = ([
+    "des-cbc": 8,
+    "aes-128-cbc": 16,
+    "aes-256-cbc": 32,
+  ])[method] || 24;
+  string iv = String.hex2string(String.trim_all_whites(d[1]));
+  key = derive_key(key, iv[..7], key_size);
+  Crypto.Buffer decoder = Crypto.Buffer(Crypto.CBC(cipher));
+  decoder->set_decrypt_key(key);
+  return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
+}
+
 //! Represents a PEM-style message.
 class Message
 {
