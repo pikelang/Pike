@@ -44,21 +44,24 @@
 #define WIN32	100	/* WinNT 1.0 */
 #endif
 
-/* We want WinNT 5.0 API's if available. */
-#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x500)
+/* We want WinNT 5.0+ API's if available.
+ *
+ * We avoid the WinNT 6.0+ API's for now.
+ */
+#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x5ff)
 #undef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0500
+#define _WIN32_WINDOWS 0x05ff
 #endif
 
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x500)
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x5ff)
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500
+#define _WIN32_WINNT 0x05ff
 #endif
 
 /* In later versions of the WIN32 SDKs, we also need to define this one. */
-#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05000000)
+#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05ffffff)
 #undef NTDDI_VERSION
-#define NTDDI_VERSION 0x05000000
+#define NTDDI_VERSION 0x05ffffff
 #endif
 
 #endif /* __NT__ */
