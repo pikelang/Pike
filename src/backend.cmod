@@ -2908,7 +2908,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 #define PDB_CHECK_ERROR_EVENT(EVENT, MASK)	PDB_CHECK_EVENT(EVENT, MASK)
 #endif /* PB_CHECK_ERROR_EVENT */
 
-#ifdef RBBAND_IS_SPECIAL
+#ifdef RDBAND_IS_SPECIAL
 #  define pb_MY_FD_CLR_RDBAND(SET, FD) pb_MY_FD_CLR (SET, FD, MY_POLLRDBAND)
 #else
 #  define pb_MY_FD_CLR_RDBAND(SET, FD)
