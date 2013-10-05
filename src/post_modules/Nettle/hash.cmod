@@ -458,6 +458,8 @@ PIKECLASS Hash
   PIKECLASS State
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
   {
+    DOCSTART() @decl inherit Hash::State
+    DOCEND()
 
     EXTRA
     {
