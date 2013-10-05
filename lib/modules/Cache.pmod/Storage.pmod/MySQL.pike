@@ -13,7 +13,7 @@
 //!   of this driver to create the database tables itself.
 //!
 //! @thanks
-//!   Thanks to Francesco Chemolli <kinkie@roxen.com> for the contribution.
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
