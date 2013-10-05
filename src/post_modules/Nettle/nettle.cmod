@@ -35,7 +35,7 @@ DECLARATIONS
  *! Yarrow is a family of pseudo-randomness generators, designed for
  *! cryptographic use, by John Kelsey, Bruce Schneier and Niels Ferguson.
  *! Yarrow-160 is described in a paper at
- *! @url{http://www.counterpane.com/yarrow.html@}, and it uses SHA1 and
+ *! @url{http://www.schneier.com/paper-yarrow.html@}, and it uses SHA1 and
  *! triple-DES, and has a 160-bit internal state. Nettle implements
  *! Yarrow-256, which is similar, but uses SHA256 and AES to get an
  *! internal state of 256 bits.
