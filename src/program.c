@@ -4642,6 +4642,10 @@ void lower_inherit(struct program *p,
     return;
   }
 
+  if (p->flags & PROGRAM_HAS_C_METHODS) {
+    Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
+  }
+
  /* parent offset was increased by 42 for above test.. */
   if(parent_offset)
     parent_offset-=42;
