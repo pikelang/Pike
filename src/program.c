@@ -6427,9 +6427,9 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  *   |
  *   +-E---foo		Pike 7.7.34 ---
  */
-int really_low_find_shared_string_identifier(struct pike_string *name,
-					     struct program *prog,
-					     int flags)
+PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+							 struct program *prog,
+							 int flags)
 {
   struct reference *funp;
   struct identifier *fun;
@@ -11270,7 +11270,7 @@ PMOD_EXPORT char *get_storage(struct object *o, struct program *p)
   return o->storage + offset;
 }
 
-struct program *low_program_from_function(struct object *o, INT32 i)
+PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i)
 {
   struct svalue *f;
   struct program *p;
