@@ -57,6 +57,10 @@ werror(const char *format, ...)
  */
 PIKECLASS HashInfo
 {
+  /*! @decl inherit __builtin.Nettle.Hash
+   */
+  INHERIT "__builtin.Nettle.Hash";
+
   CVAR const struct nettle_hash *meta;
 
   /*! @decl string(0..255) name(void)
