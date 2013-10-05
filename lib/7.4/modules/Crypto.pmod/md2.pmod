@@ -1,0 +1,16 @@
+#pike 7.5
+
+//! @deprecated Crypto.MD2
+
+#if constant(Nettle.MD2)
+inherit Nettle.MD2;
+
+constant _module_value = class {
+    inherit MD2::State;
+
+    string identifier() { return "*\206H\206\367\r\2\2"; }
+    string asn1_id() { return identifier(); }
+    string hash(string m) { return update(m)->digest(); }
+    string name() { return "MD2"; }
+  };
+#endif
