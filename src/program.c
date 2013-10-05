@@ -7376,7 +7376,7 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
 	int strno;							\
 	pos++;								\
 	strno = get_small_number(&pos);					\
-	CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);		\
+	CHECK_FILE_ENTRY (prog, strno);					\
 	file = prog->strings[strno];					\
       }									\
       get_small_number(&pos);	/* Ignore the offset */			\
