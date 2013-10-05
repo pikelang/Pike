@@ -839,6 +839,13 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
           return;
       }
       get_destroy_called_mark(o)->p=p;
+  } else if ((p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) ==
+	     (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) {
+    /* We might have event handlers that need
+     * the program to reach the parent.
+     */
+    get_destroy_called_mark(o)->p=p;
+    destroy_called = 1;
   }
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
