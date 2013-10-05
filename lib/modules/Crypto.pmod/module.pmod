@@ -23,22 +23,13 @@
 //!   This module is only available if Pike has been compiled with
 //!   @[Nettle] enabled (this is the default).
 
-#if constant(Nettle.HashState)
+#if constant(Nettle.Hash)
 
-class HashState {
-  inherit Nettle.HashState;
-  this_program update(string); // Better return type
-}
+constant HashState = Nettle.Hash.State;
 
 //! Abstract class for hash algorithms. Contains some tools useful
 //! for all hashes.
-class Hash
-{
-  inherit Nettle.HashInfo;
-
-  //! Calling `() will return a @[Nettle.HashState] object.
-  HashState `()();
-}
+constant Hash = Nettle.Hash;
 
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
@@ -117,4 +108,4 @@ constant PAD_ZERO = 4;
 
 #else
 constant this_program_does_not_exist=1;
-#endif /* constant(Nettle.HashState) */
+#endif /* constant(Nettle.Hash) */

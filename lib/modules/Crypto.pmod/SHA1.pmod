@@ -5,13 +5,9 @@
 //! Institute for Standards and Technology). It outputs hash values of
 //! 160 bits, or 20 octets.
 
-#if constant(Nettle) && constant(Nettle.SHA1_Info)
+#if constant(Nettle) && constant(Nettle.SHA1)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.SHA1_Info;
-inherit .Hash;
-
-.HashState `()() { return Nettle.SHA1_State(); }
+inherit Nettle.SHA1;
 
 // RFC 4055:
 // id-sha1    OBJECT IDENTIFIER ::= {
