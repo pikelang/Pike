@@ -42,6 +42,9 @@ PIKECLASS PIKE_NAME
   PIKECLASS State
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
+    DOCSTART() @decl inherit Hash::State
+    DOCEND()
+
     EXTRA
     {
       /* Perform an inherit of the HashState class that our parent
