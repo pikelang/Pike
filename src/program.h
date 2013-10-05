@@ -913,9 +913,9 @@ INT32 define_function(struct pike_string *name,
 		      unsigned function_flags,
 		      union idptr *func,
 		      unsigned opt_flags);
-int really_low_find_shared_string_identifier(struct pike_string *name,
-					     struct program *prog,
-					     int flags);
+PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+							 struct program *prog,
+							 int flags);
 int really_low_find_variant_identifier(struct pike_string *name,
 				       struct program *prog,
 				       struct pike_type *type,
@@ -1037,7 +1037,7 @@ void pop_local_variables(int level);
 void pop_compiler_frame(void);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
-struct program *low_program_from_function(struct object *o, INT32 i);
+PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
