@@ -5,13 +5,9 @@
 //! replacement for @[SHA1], generating larger digests. It outputs hash
 //! values of 384 bits, or 48 octets.
 
-#if constant(Nettle) && constant(Nettle.SHA384_Info)
+#if constant(Nettle) && constant(Nettle.SHA384)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.SHA384_Info;
-inherit .Hash;
-
-.HashState `()() { return Nettle.SHA384_State(); }
+inherit Nettle.SHA384;
 
 // id-sha384
 //   FROM RFC 4055 {

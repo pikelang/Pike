@@ -50,12 +50,12 @@ werror(const char *format, ...)
 
 /*! @module Nettle */
 
-/*! @class HashInfo
+/*! @class Hash
  *!
  *! Represents information about a hash algorithm, such as
  *! name, digest size, and internal block size.
  */
-PIKECLASS HashInfo
+PIKECLASS Hash
 {
   /*! @decl inherit __builtin.Nettle.Hash
    */
@@ -71,7 +71,7 @@ PIKECLASS HashInfo
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_text(THIS->meta->name);
     }
@@ -84,7 +84,7 @@ PIKECLASS HashInfo
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_int(THIS->meta->digest_size);
     }
@@ -97,7 +97,7 @@ PIKECLASS HashInfo
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_int(THIS->meta->block_size);
     }
@@ -106,11 +106,11 @@ PIKECLASS HashInfo
   /*! @decl string(0..255) hash(string data)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{HashState()->update(data)->digest()@}, where HashState is
-   *!  the hash state class corresponding to this HashInfo.
+   *!  @expr{State()->update(data)->digest()@}, where State is
+   *!  the hash state class corresponding to this Hash.
    *!
    *! @seealso
-   *!   @[HashState()->update()] and @[HashState()->digest()].
+   *!   @[State()->update()] and @[State()->digest()].
    */
     PIKEFUN string(0..255) hash(string in)
     optflags OPT_TRY_OPTIMIZE;
@@ -121,7 +121,7 @@ PIKECLASS HashInfo
     const struct nettle_hash *meta = THIS->meta;
 
     if (!meta)
-      Pike_error("HashInfo not properly initialized.\n");
+      Pike_error("Hash not properly initialized.\n");
     NO_WIDE_STRING(in);
 
     ctx = (void *)alloca(meta->context_size);
@@ -163,9 +163,9 @@ PIKECLASS HashInfo
   /*! @decl string(0..255) hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{HashState()->update(Stdio.read_file(file))->digest()@},
-   *!  where HashState is the hash state class corresponding to this
-   *!  HashInfo.
+   *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
+   *!  where State is the hash state class corresponding to this
+   *!  Hash.
    *!
    *! @param bytes
    *!   The number of bytes of the file object @[file] that should be
@@ -173,8 +173,8 @@ PIKECLASS HashInfo
    *!   hashed.
    *!
    *! @seealso
-   *!   @[Stdio.File], @[HashState()->update()] and
-   *!   @[HashState()->digest()].
+   *!   @[Stdio.File], @[State()->update()] and
+   *!   @[State()->digest()].
    */
   PIKEFUN string(0..255) hash(object in, void|int bytes)
     optflags OPT_EXTERNAL_DEPEND;
@@ -447,44 +447,73 @@ PIKECLASS HashInfo
 
   INIT
     {
-      werror("HashInfo->INIT\n");
+      werror("Hash->INIT\n");
       THIS->meta = NULL;
     }
-}
 
-/*! @endclass HashInfo */
-
-#define GET_META(o) \
-( ((struct HashInfo_struct *) get_storage((o), HashInfo_program)) \
-  ->meta)
-
-/* The algorithm objects have to be implemented in pike. */
-
-/*! @class HashState
- *!
- *! Base class for hashing contexts.
- */
-PIKECLASS HashState
-{
-  INHERIT HashInfo;
-  CVAR void *ctx;
-
-  /* FIXME: Create should copy state from the other object, if
-   * provided. */
-
-  /*! @decl HashState update(string data)
+  /*! @class State
    *!
-   *! Hashes more data.
+   *! Base class for hashing contexts.
    */
-  PIKEFUN object update(string data)
-    optflags OPT_SIDE_EFFECT;
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.Hash.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  /*! @decl inherit Hash::State
+	   *!
+	   *! Inherits @[__builtin.Nettle.Hash.State] via
+	   *! the inherit of @[__builtin.Nettle.Hash] in our
+	   *! parent (@[Hash]).
+	   */
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+#define GET_META(o)						\
+    ( ((struct Hash_struct *)parent_storage(1))->meta )
+
+    CVAR void *ctx;
+
+    /* FIXME: Create should copy state from the other object, if
+     * provided. */
+
+    /*! @decl State update(string(0..255) data)
+     *!
+     *! Hashes more data.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object update(string(0..255) data)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_HASH_STATE_ID);
     {
       void *ctx = THIS->ctx;
       const struct nettle_hash *meta =
 	GET_META(Pike_fp->current_object);
 
       if (!ctx || !meta)
-	Pike_error("HashState not properly initialized.\n");
+	Pike_error("State not properly initialized.\n");
 
       NO_WIDE_STRING(data);
       
@@ -500,29 +529,28 @@ PIKECLASS HashState
       push_object(this_object());
     }
 
-  /*! @decl string(0..255) digest(int|void length)
-   *!
-   *! Generates a digests, and resets the hashing contents.
-   *!
-   *! @param length
-   *!   If the length argument is provided, the digest is truncated
-   *!   to the given length.
-   *!
-   *! @returns
-   *!   The digest.
-   */
+    /*! @decl string(0..255) digest(int|void length)
+     *!
+     *! Generates a digest, and resets the hashing contents.
+     *!
+     *! @param length
+     *!   If the length argument is provided, the digest is truncated
+     *!   to the given length.
+     *!
+     *! @returns
+     *!   The digest.
+     */
     PIKEFUN string(0..255) digest(int|void arg)
     {
       const struct nettle_hash *meta;
       struct pike_string *digest;
       unsigned length;
 
-      if (! THIS->ctx)
-	Pike_error("HashState not properly initialized.\n");
-
       meta = GET_META(Pike_fp->current_object);
-      assert(meta);
-      
+
+      if (!THIS->ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
       if (!arg)
 	length = meta->digest_size;
       else
@@ -542,27 +570,33 @@ PIKECLASS HashState
       push_string(end_shared_string(digest));
     }
 
-  INIT
+    INIT
     {
-      werror("HashState->INIT\n");
+      werror("State->INIT\n");
       THIS->ctx = NULL;
     }
 
-  EXIT
-    gc_trivial;
+    EXIT
     {
-      werror("HashState->EXIT\n");
-      if (THIS->ctx && Pike_fp->current_object->prog)
+      werror("State->EXIT\n");
+      if (THIS->ctx)
       {
 	const struct nettle_hash *meta =
 	  GET_META(Pike_fp->current_object);
-	assert(meta);
-	memset(THIS->ctx, 0, meta->context_size);
+	if (meta) {
+	  memset(THIS->ctx, 0, meta->context_size);
+	}
       }
     }
+  }
+
+  /*! @endclass State */
+
 }
 
-/*! @endclass HashState */
+/*! @endclass Hash */
+
+/* The algorithm objects can be overloaded in pike. */
 
 #cmod_define TOSTR(DEF)	#DEF
 

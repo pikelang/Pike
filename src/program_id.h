@@ -147,6 +147,11 @@
 #define tObjImpl_IMAGE_COLOR_COLOR_ID "\003\000\000\000\000\310"
 #define   tObjIs_IMAGE_COLOR_COLOR_ID "\003\001\000\000\000\310"
 
+/* 300 - 399 reserved for Nettle */
+#define     PROG_HASH_ID				0454 /* 300 */
+#define     PROG_HASH_STATE_ID				0455 /* 301 */
+#define tObjImpl_HASH_STATE_ID	   "\003\000\000\000\001\055"
+
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */
 
