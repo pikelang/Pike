@@ -1818,7 +1818,7 @@ class async_client
      * requests 'in the air'. /Hubbe
      */
     if(!next_client)
-      next_client=async_client(nameservers,domains);
+      next_client=this_program(nameservers,domains);
     
     next_client->do_query(domain, cl, type, callback, @args);
   }
