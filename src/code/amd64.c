@@ -1032,10 +1032,10 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   mov_mem_reg(reg, OFFSETOF(svalue, type), REG_RAX);
   mov_mem_reg(reg, OFFSETOF(svalue, u.refs), REG_RCX);
   mov_reg_mem(REG_RAX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, type));
-  and_reg_imm(REG_RAX, 0x1f);
+  and_reg_imm(REG_RAX, ~(MIN_REF_TYPE - 1) & 0x1f);
   mov_reg_mem(REG_RCX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
   cmp_reg32_imm(REG_RAX, MIN_REF_TYPE);
-  jl(&label_A);
+  jne(&label_A);
   add_imm_mem( 1, REG_RCX, OFFSETOF(pike_string, refs));
  LABEL_A;
 }
