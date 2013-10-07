@@ -29,7 +29,9 @@ constant HashState = Nettle.Hash.State;
 
 //! Abstract class for hash algorithms. Contains some tools useful
 //! for all hashes.
-constant Hash = Nettle.Hash;
+class Hash {
+  inherit Nettle.Hash;
+}
 
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
