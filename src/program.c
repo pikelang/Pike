@@ -7270,6 +7270,7 @@ void ext_store_program_line (struct program *prog, INT_TYPE line, struct pike_st
 #endif
 
   add_ref((prog->strings = xalloc(sizeof(struct pike_string *)))[0] = file);
+  prog->num_strings = 1;
 
   ptr = prog->linenumbers = xalloc (1 + 1 + 1 + 11);
   *ptr++ = 127;							/* 1 */
