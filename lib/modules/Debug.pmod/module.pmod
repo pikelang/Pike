@@ -1,4 +1,3 @@
-
 #pike __REAL_VERSION__
 
 constant verify_internals = _verify_internals;
@@ -6,6 +5,7 @@ constant memory_usage = _memory_usage;
 constant gc_status = _gc_status;
 constant describe_program = _describe_program;
 constant size_object = _size_object;
+constant map_all_objects = _map_all_objects;
 
 #if constant(_debug)
 // These functions require --with-rtldebug.
@@ -49,28 +49,28 @@ private string mi2sz( int i )
 
 //! Returns a pretty printed version of the output from
 //! @[count_objects] (with added estimated RAM usage)
-string pp_object_usage() {
+string pp_object_usage()
+{
     mapping tmp = ([]);
-    object start = next_object();
-    while(start)
-    {
-        program q = object_program( start );
-        string nam = sprintf("%O",(program)q);
-        int memsize = size_object(start);
-        sscanf( nam, "object_program(%s)", nam );
+    int num;
+    int total = map_all_objects( lambda( object start )
+       {
+           num++;
+           program q = object_program( start );
+           string nam = sprintf("%O",(program)q);
+           int memsize = size_object(start);
+           sscanf( nam, "object_program(%s)", nam );
 
-        if( !tmp[nam] )
-        {
-            tmp[nam] = ({1,memsize,Program.defined(q)});
-        }
-        else
-        {
-            tmp[nam][0]++;
-            tmp[nam][1]+=memsize;
-        }
-        start=next_object(start);
-    }
-
+           if( !tmp[nam] )
+           {
+               tmp[nam] = ({1,memsize,Program.defined(q)});
+           }
+           else
+           {
+               tmp[nam][0]++;
+               tmp[nam][1]+=memsize;
+           }
+       });
 
     array by_size = ({});
     foreach( tmp; string obj; array(int) cnt )
@@ -80,6 +80,7 @@ string pp_object_usage() {
             continue;
         by_size += ({ ({ cnt[1], obj, cnt[0], cnt[2] }) });
     }
+    by_size += ({ ({ (total-num)*32, "destructed", (total-num), "-" }) });
 
     sort( by_size );
     string res = "";
@@ -157,22 +158,15 @@ string pp_memory_usage() {
 //! Returns the number of objects of every kind in memory.
 mapping(string:int) count_objects()
 {
-  int orig_enabled = Pike.gc_parameters()->enabled;
-  Pike.gc_parameters( (["enabled":0]) );
-
   mapping(string:int) ret = ([]);
-
-  object obj = next_object();
-
-  while(1) {
-    object next_obj;
-    if(catch(next_obj=_next(obj))) break;
+  int num, total;
+  total = map_all_objects(lambda(object obj ) {
     string p = sprintf("%O",object_program(obj));
     sscanf(p, "object_program(%s)", p);
     ret[p]++;
-    obj = next_obj;
-  }
-
-  Pike.gc_parameters( (["enabled":orig_enabled]) );
+    num++;
+  });
+  if( total > num )
+      ret["destructed"] = total-num;
   return ret;
 }
