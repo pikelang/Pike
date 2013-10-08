@@ -1,6 +1,7 @@
-Changes since Pike 7.8 (scratch area for future release notes)
+Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
 ----------------------------------------------------------------------
 
+___ TOTALLY UNORGANIZED AND TOO SHORT CHANGELOG FOLOWS __
 o decode_value now throws the error object Error.DecodeError. Useful
   to catch format errors in the decode string.
 o Added ADT.CritBit module
@@ -8,9 +9,204 @@ o Added ADT.CritBit module
   (ADT.CritBit.Tree, ADT.CritBit.IntTree, ADT.CritBit.FloatTree). Implemented
   in C.
 o Added module Geography.GeoIP
+o Debug.pp_memory() Debug.pp_object_usage()
+  debug information functions, useful to get debug information from
+  running pike applications.
+o Debug.program_defined( prog, x );
+o Removed bundles
+o files was renamed to _Stdio
+o Several OS/2 and windows compilation fixes
+o New significantly faster block allocator
+o Protocols.WebSocket
+o Mysql - Support more modern client libraries (incl. MariaDB)
+o AMD64/x86_64 machinecode compilation backend
+o svalue type renumbering
+o Standards.PEM: Added some support for encrypted PEM files
+o new _object_size lfun / global function correct ram-usage debug for C
+  objects allocating memory.
+o Nettle.Hash refactored
+o String.Buffer
+  + Added buffer->add(buffer) support
+  + Added buffer->sprintf()
+  + Added adat()
+o Tools.PEM and Tools.X409 deprecated (use the corresponding modules in Standards.)
+o pike -x benchmark output format changed
+o Standards.BSON
+  A new module for working with BSON serialized data.
+  See http://bsonspec.org/
+o Protocols.DNS
+  + Prevent endless loops in maliciously crafted domain names.
+  + Add QTYPE T_ANY to DNS enum EntryType in DNS.pmod.
+  + Handle truncated labels
+  + TCP client and server support
+o Crypto.CAMELLIA
+o System.TM
+    Low-level wrapper for struct tm.
 
-  
+    This can be used to do (very) simple calendar operations. It is,
+    as it stands, not 100% correct unless the local time is set to
+    GMT, and does mirror functionality already available in gmtime()
+    and localtime() and friends, but in a (perhaps) easier to use API.
+o Thread no longer inherits Thread.Thread (aka thread_create)
+o Thread.Farm nwo might work
+o Stdio.UDP
+  + added ipv6 multicast support
+  + added set_buffer
+o Bignums are now required, it is no longer possible to build a pike without them
+o Locale.Charset -> Charset
+o Image.WebP.
+o serveral optimizations to execution speed
+o sprintf("%H") and sscanf("%H") (new) sscanf("%n") (now documented, existed before (%!<X> modifier, used by optimizer))
+o string(x..y) (constant) types
+    | > typeof("foo");
+    | (1) Result: string(102..111)
+   also used to optimize lower_case/upper_case search and string_has_null etc.
+o The built in sandbox is now deprecated.
+o Image.JPEG.exif_decode
+o Removed facets
+o local::
+o variant
+    | class Test1 { int b(); }
+    | class Test2 { int a(); }
+    |
+    | class Foo
+    | {
+    |     variant string foo( object q ){ return "Genericfoo"; }
+    |     variant string foo( Test1 x ) { return "Test 1"; }
+    |     variant string foo( Test2 x ) { return "Test 2"; }
+    |
+    |     variant string bar( int(0..0) s ) { return "0"; }
+    |     variant float bar( int(1..1) s ) { return 1.0; }
+    |     variant int bar( int(2..2) s ) { return 2; }
+    | }
+o Process.daemon
+    The daemon() function is for programs wishing to detach themselves
+    from the controlling terminal and run in the background as system
+    daemons.
+o Crypto.PGP - support more hash functions.
+o String.levenshtein_distance()
+     That function calculates the Levenshtein distance between two
+    strings.  The Levenshtein distance describes the minimum number of
+    edit operations insert, delete or substitue a character to get
+    from one string to the other.
 
+    The algorithm can be used in approximate string matching to find
+    matches for a short string in many longer texts, when a small
+    number of differences is expected.
+o Serializer.Encodable (automatic _encode/_decode)
+o Serializer
+o Unicode databases updated to 6.2.0
+o Timezone databases updated to tzdata2013d
+o inherit ::this_program
+    This syntax refers to the previous definition of the current class
+    in its parent, and is typically used with inherit like:
+
+      inherit Foo;
+
+      // Override the Bar inherited from Foo.
+      class Bar {
+        // Bar is based on the implementation of Bar in Foo.
+        inherit ::this_program;
+        // ...
+      }
+o precompile
+  + inherit "identifier"
+    -- inherit the program returned by calling master()->resolve() on
+       the specified identifier. Useful to inherit code written in pike.
+  + cpp prefix feature  #cmod_define #cmod_if etc
+o System.sync()
+o System.getloadavg()
+o Filesystem.Monitor (System.Inotify, System.FSEvents)
+o Stdio.File()->send/receive[_fd]
+o The Search module has seen several fixes
+o Standalone tools added:
+  autodoc_to_html       AutoDoc XML to HTML converter.
+  autodoc_to_split_html AutoDoc XML to splitted HTML converter.
+  forkd                 Light-weight daemon for spawning new processes.
+  git_export_autodoc    Exports a stream of autodoc.xml suitable for git-fast-import.
+  pv                    Pike image viewer (diet).
+
+o Renamed GTK to GTK1, added a GTK.pmod that is either GTK2 (if
+  available) or GTK1 (if there is no GTK2, but GTK1 is available).
+o Lots of GTK2 fixes
+o Crypto.crypt_hash()
+o Image.JPEG.decode now has basic CMYK/YCCK support
+o visibility=hidden default (PMOD_EXPORT now also needed on unix)
+o Fixed units in pike --help=kladdkaka
+o clang compilation fixes (bignum overflow checks, misc)
+o Various coverity fixes
+
+o safe index
+  + X[?10]  --  index X with  10, or if X is null, evaulates to 0.
+  + X?->foo --  index X with foo, or if X is null, evaluates to 0.
+
+o Added the '?:' operator for compatibility with other C-like languages.
+  It is identical to '||' in pike.
+
+o  Mysql.SqlTable
+
+o SNI client extension support for SSL (Server Name Indicator)
+o System.get_home + System.get_user
+   (mostly) Cross-platform ways to get username and home directory
+o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
+o Process - forkd
+o dynamic macros (master()->add_predefine("MACRO()", callback) etc)
+    |   > master()->add_predefine("RND()", lambda( string arg1 ) { return random((int)arg1); });
+    |   > RND(10);
+    |   (2) Result: 9
+    |   > cpp("RND(123)")
+    |   (3) Result: "19"
+    |
+    |   It can also be used to override the default builtin macros. If you
+    |   want "fun" debug information (not used for backtraces, but code using
+    |   __LINE__ will be confused):
+    |
+    |   > master()->add_predefine("__LINE__", lambda() { return random(4711); });
+    |   > __LINE__;
+    |   (6) Result: 2593
+    |   > __LINE__;
+    |   (7) Result: 1780
+
+o X::this
+o Parser.CSV
+o generic ipv6 fixes, ipv6 mapped ipv4 addresses
+o Async Protocols.SNMP client
+o MacOSX CoreFoundation support in the backend
+o ZXID
+o Bz2 Bz2.File("path"), line_iterator
+o Git module
+o new typechecker
+o lots of autodoc fixes
+o Some Parser.SGML fixes
+o Readline tries to set the charset to the terminal charset
+o && changed, when doing A && B, and A is false, keep A instead of pushing 0.
+o Fixes to Process.run, Process.spawn_pike and friends.
+o Val.{true,false,null}
+o glob( array, X )
+o AES support added to SSL
+o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
+o SDL.Music
+o predef::types (seems somewhat broken, or is it intended at types(({1,2,3})) returns ({ mixed,mixed,mixed})?)
+o Builtin._get_setter / Builtin.Setter
+o Parser.XML.Tree fixes
+o power-of-two hashtables are now used for most hashtables
+o Doing + and - on a lot of floats is now more accurate.
+o New charsets
+   A lot of ISO-IR charsets added:
+
+   9-1, 9-2, 31, 232, 234, 231 (aka ANSI/NISO Z39.46, aka ANSEL) 230
+   (aka TDS 565) 225 (SR 14111:1998), 197/209 (sami) 208 (IS 434:1997)
+   207 (IS 433:1996), 204,205 and 206 (aka 8859-1, 8859-4 and 8859-13
+   with euro) 201, 200, 138 (ECMA-121) 198 (ISO 8859-8:1999) 182, 181,
+   189 (TCVN 5712:1993, aka VSCII) 167, 166 (aka TIS 620-2533 (1990)),
+   164, 160, 151 (NC 99-10:81), 68 (APL), 59 (CODAR-U), 202 (KPS
+   9566-97).
+   Fixed CSA_Z242.4
+o Fixes to the HTTP client in Protocols.HTTP.
+o dtrace support (on macosX at least?)
+o Blowfish and Serpent support fixed in Nettle
+o Allow '.' to be used as an index operator in the few places id did not work before.
+o support for ", ##__VA_ARGS__" cpp feature.
 
 Changes since Pike 7.8.352 (third 7.8 release):
 ----------------------------------------------------------------------
