@@ -5219,6 +5219,45 @@ PMOD_EXPORT void f_rows(INT32 args)
   push_array(a);
 }
 
+
+/*! @decl int map_all_objects(function(object:void) cb)
+ *! @belongs Debug
+ *!
+ *! Call cb for all objects that currently exist. The callback will
+ *! not be called with destructed objects as it's argument.
+ *!
+ *! Objects might be missed if @[cb] creates new objects or destroys
+ *! old ones.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of objects
+ *!
+ *! @seealso
+ *!   @[next_object()]
+ */
+static void f_map_all_objects( INT32 args )
+{
+    struct object *o = first_object;
+    INT32 total = 0;
+    ASSERT_SECURITY_ROOT("_map_all_objects");
+    while( o )
+    {
+        struct object *next = o->next;
+        if( o->prog )
+        {
+            ref_push_object( o );
+            safe_apply_svalue( Pike_sp-2, 1, 1 );
+            pop_stack();
+        }
+        total++;
+        o = next;
+    }
+    pop_stack();
+    push_int(total);
+}
+
 /*! @decl void verify_internals()
  *! @belongs Debug
  *!
@@ -9929,6 +9968,9 @@ void init_builtin_efuns(void)
 /* function(void|object:object) */
   ADD_EFUN("next_object",f_next_object,
 	   tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("_map_all_objects",f_map_all_objects,
+           tFunc(tFunction,tIntPos),OPT_EXTERNAL_DEPEND);
   
 /* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
   ADD_EFUN("_next",f__next,
