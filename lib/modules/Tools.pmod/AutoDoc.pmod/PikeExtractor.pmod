@@ -629,6 +629,13 @@ Module extractModule(string s, void|string filename, void|string moduleName,
   // if there was no documentation in the file whatsoever
   if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
     return 0;
+
+  // If there's a _module_value it replaces the module itself.
+  PikeObject module_value = m->findChild("_module_value");
+  if (module_value) {
+    module_value->name = m->name;
+    m = module_value;
+  }
   return m;
 }
 
