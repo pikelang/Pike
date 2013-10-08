@@ -1498,14 +1498,12 @@ class client
   array gethostbyname(string s)
   {
     mapping a_records    = low_gethostbyname(s, T_A);
-    mapping a6_records   = low_gethostbyname(s, T_A6);
     mapping aaaa_records = low_gethostbyname(s, T_AAAA);
 
 #if 0
     werror("a_records: %O\n"
-	   "a6_records: %O\n"
 	   "aaaa_records: %O\n",
-	   a_records, a6_records, aaaa_records);
+	   a_records, aaaa_records);
 #endif /* 0 */
 
     array(string) names=({});
@@ -1519,16 +1517,6 @@ class client
 	  ips+=({x->a});
       }
     }
-    // Prefer a6 to aaaa.
-    if (a6_records) {
-      foreach(a6_records->an, mapping x)
-      {
-	if(x->name)
-	  names+=({x->name});
-	if(x->a6)
-	  ips+=({x->a6});
-      }
-    }
     if (aaaa_records) {
       foreach(aaaa_records->an, mapping x)
       {
@@ -1538,7 +1526,7 @@ class client
 	  ips+=({x->aaaa});
       }
     }
-    
+
     return ({
       sizeof(names)?names[0]:0,
       ips,
