@@ -60,6 +60,7 @@ PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 bloc
 ATTRIBUTE((malloc)) PMOD_EXPORT void * ba_alloc(struct block_allocator * a);
 PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr);
 PMOD_EXPORT void ba_destroy(struct block_allocator * a);
+PMOD_EXPORT void ba_free_all(struct block_allocator * a);
 PMOD_EXPORT size_t ba_count(const struct block_allocator * a);
 PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, size_t * size);
 
