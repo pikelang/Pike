@@ -19,6 +19,7 @@ struct ba_layout {
 struct ba_page_header {
     struct ba_block_header * first;
     unsigned INT32 used;
+    unsigned INT32 flags;
 };
 
 struct ba_page {
@@ -42,6 +43,27 @@ struct block_allocator {
      */
     struct ba_page * pages[24];
 };
+
+struct ba_iterator {
+    void * cur;
+    void * end;
+    struct ba_layout l;
+};
+
+typedef void (*ba_walk_callback)(struct ba_iterator *,void*);
+
+PMOD_EXPORT
+void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data);
+
+static INLINE int ba_it_step(struct ba_iterator * it) {
+    it->cur = (char*)it->cur + it->l.block_size;
+
+    return (char*)it->cur < (char*)it->end;
+}
+
+static INLINE void * ba_it_val(struct ba_iterator * it) {
+    return it->cur;
+}
 
 #define BA_INIT_ALIGNED(block_size, blocks, alignment) {    \
     BA_LAYOUT_INIT(block_size, blocks, alignment),	    \
