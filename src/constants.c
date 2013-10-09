@@ -16,8 +16,7 @@
 #include "pike_error.h"
 #include "pike_security.h"
 #include "gc.h"
-
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 struct mapping *builtin_constants = 0;
 
@@ -68,23 +67,20 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   low_add_constant(name, p?&s:NULL);
 }
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do {		\
-  DO_IF_DEBUG (DOUBLEUNLINK (first_callable, X)); \
-  free_type(X->type);			\
-  free_string(X->name);			\
-  X->name=0;				\
-  EXIT_PIKE_MEMOBJ(X);                  \
-}while(0)
-
-#include "block_allocator.h"
 static struct block_allocator callable_allocator
     = BA_INIT_PAGES(sizeof(struct callable), 2);
 
 void really_free_callable(struct callable * c) {
-    EXIT_BLOCK(c);
+#ifdef PIKE_DEBUG
+    DOUBLEUNLINK (first_callable, c);
+#endif
+    free_type(c->type);
+    free_string(c->name);
+    c->name=0;
+    EXIT_PIKE_MEMOBJ(c);
     ba_free(&callable_allocator, c);
 }
+
 void count_memory_in_callables(size_t * num, size_t * size) {
     ba_count_all(&callable_allocator, num, size);
 }

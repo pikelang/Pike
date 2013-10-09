@@ -8,7 +8,7 @@
 #include "pike_macros.h"
 #include "callback.h"
 #include "pike_error.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 struct callback_list fork_child_callback;
 
@@ -36,7 +36,6 @@ struct callback
 #endif
 #endif
 
-#include "block_allocator.h"
 static struct block_allocator callback_allocator
     = BA_INIT(sizeof(struct callback), CALLBACK_CHUNK);
 
