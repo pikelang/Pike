@@ -21,7 +21,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -87,8 +87,6 @@ struct piece
    struct pike_string *s;
    struct piece *next;
 };
-
-#include "block_allocator.h"
 
 static struct block_allocator piece_allocator
     = BA_INIT_PAGES(sizeof(struct piece), 2);

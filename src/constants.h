@@ -10,7 +10,6 @@
 #include "svalue.h"
 #include "hashtable.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
-#include "block_alloc_h.h"
 
 typedef int (*docode_fun)(node *n);
 typedef node *(*optimize_fun)(node *n);

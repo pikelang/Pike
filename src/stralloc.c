@@ -15,7 +15,6 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "interpret.h"
-#include "block_alloc.h"
 #include "operators.h"
 #include "pike_float.h"
 #include "block_allocator.h"

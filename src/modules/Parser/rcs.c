@@ -14,7 +14,6 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
-#include "block_alloc.h"
 #include <ctype.h>
 
 #include "parser.h"
