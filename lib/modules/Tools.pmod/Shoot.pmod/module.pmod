@@ -37,7 +37,6 @@ void run_sub( Test test, int maximum_seconds, float overhead)
         if (tg >= maximum_seconds) break;
     }
 
-    tg -= overhead  * nloops;
     norm = (int)(testntot/tg);
 
     string res = (test->present_n ?
