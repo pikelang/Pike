@@ -302,7 +302,16 @@ static struct pike_frame *free_pike_frame;
 
 PMOD_EXPORT void init_interpreter(void)
 {
-  PIKE_MEMPOOL_CREATE(&free_pike_frame);
+#ifdef USE_VALGRIND
+  {
+    static int create_mempool = 1;
+
+    if (create_mempool) {
+      PIKE_MEMPOOL_CREATE(&free_pike_frame);
+      create_mempool = 0;
+    }
+  }
+#endif
   if (low_init_interpreter(Pike_interpreter_pointer)) {
     Pike_fatal("Out of memory initializing the interpreter stack.\n");
   }
