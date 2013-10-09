@@ -2095,7 +2095,7 @@ void locate_references(void *a)
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
   int i=0;
-  if(!marker_blocks)
+  if(!marker_hash_table)
   {
     i=1;
     init_gc();
