@@ -1142,6 +1142,7 @@ PMOD_EXPORT void really_free_catch_context( struct catch_context *data )
 
       num_free_catch_ctx++;
       PIKE_MEM_NA(*data);
+      PIKE_MEM_RW(data->prev);
       free_catch_context = data;
     }
 }
