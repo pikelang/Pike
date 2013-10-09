@@ -21,11 +21,8 @@
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
-void PIKE_CONCAT3(new_,DATA,_context)(void);				\
 PMOD_EXPORT void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);			\
-void PIKE_CONCAT3(free_all_,DATA,_blocks)(void);			\
-void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num, size_t *size);	\
-void PIKE_CONCAT3(init_,DATA,_blocks)(void)
+void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num, size_t *size);
 
 
 #define PTR_HASH_ALLOC(DATA,BSIZE)				\
@@ -42,7 +39,7 @@ void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr); \
 int PIKE_CONCAT(remove_,DATA)(void *ptr);			\
 void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t);		\
 void PIKE_CONCAT3(init_,DATA,_hash)(void);			\
-void PIKE_CONCAT3(exit_,DATA,_hash)(void)
+void PIKE_CONCAT3(exit_,DATA,_hash)(void);
 
 #define PTR_HASH_ALLOC_FIXED(DATA,BSIZE)			\
 PTR_HASH_ALLOC(DATA,BSIZE)
