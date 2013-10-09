@@ -12,7 +12,14 @@
 #define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + (l).doffset)
 
 #define BA_ONE	((struct ba_block_header *)1)
+#define BA_FLAG_SORTED 1u
+
 static void print_allocator(const struct block_allocator * a);
+
+static INLINE unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
+                                             const void * ptr) {
+    return ((char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
+}
 
 static INLINE void ba_dec_layout(struct ba_layout * l, int i) {
     l->blocks >>= i;
@@ -289,6 +296,7 @@ found:
 	struct ba_block_header * b = (struct ba_block_header*)ptr;
 	b->next = p->h.first;
 	p->h.first = b;
+        p->h.flags = 0;
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
 	    print_allocator(a);
@@ -322,4 +330,256 @@ static void print_allocator(const struct block_allocator * a) {
 		p->h.used, l.blocks,
 		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
     }
+}
+
+#if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
+#define BV_LENGTH   64
+#define BV_ONE	    ((unsigned INT64)1)
+#define BV_NIL	    ((unsigned INT64)0)
+#define BV_CLZ	    clz64
+#define BV_CTZ	    ctz64
+typedef unsigned INT64 bv_int_t;
+#else
+#define BV_LENGTH   32
+#define BV_ONE	    ((unsigned INT32)1)
+#define BV_NIL	    ((unsigned INT32)0)
+#define BV_CLZ	    clz32
+#define BV_CTZ	    ctz32
+typedef unsigned INT32 bv_int_t;
+#endif
+
+#define BV_WIDTH    (BV_LENGTH/8)
+
+struct bitvector {
+    size_t length;
+    bv_int_t * v;
+};
+#ifdef BA_DEBUG
+static INLINE void bv_print(struct bitvector * bv) {
+    size_t i;
+    for (i = 0; i < bv->length; i++) {
+	fprintf(stderr, "%d", bv_get(bv, i));
+    }
+    fprintf(stderr, "\n");
+}
+#endif
+
+static INLINE void bv_set_vector(struct bitvector * bv, void * p) {
+    bv->v = (bv_int_t*)p;
+}
+
+static INLINE size_t bv_byte_length(struct bitvector * bv) {
+    size_t bytes = (bv->length >> 3) + !!(bv->length & 7);
+    if (bytes & (BV_LENGTH-1)) {
+	bytes += (BV_LENGTH - (bytes & (BV_LENGTH-1)));
+    }
+    return bytes;
+}
+
+static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
+    const size_t bit = n&(BV_LENGTH-1);
+    const size_t c = n / BV_LENGTH;
+    bv_int_t * _v = bv->v + c;
+    if (value) *_v |= BV_ONE << bit;
+    else *_v &= ~(BV_ONE << bit);
+}
+
+static INLINE int bv_get(struct bitvector * bv, size_t n) {
+    const size_t bit = n&(BV_LENGTH-1);
+    const size_t c = n / BV_LENGTH;
+    return !!(bv->v[c] & (BV_ONE << bit));
+}
+
+static INLINE size_t bv_ctz(struct bitvector * bv, size_t n) {
+    size_t bit = n&(BV_LENGTH-1);
+    size_t c = n / BV_LENGTH;
+    bv_int_t * _v = bv->v + c;
+    bv_int_t V = *_v & (~BV_NIL << bit);
+
+#ifdef BA_DEBUG
+    //bv_print(bv);
+#endif
+
+    bit = c * BV_LENGTH;
+    while (!(V)) {
+	if (bit >= bv->length) {
+	    bit = (size_t)-1;
+	    goto RET;
+	}
+	V = *(++_v);
+	bit += (BV_WIDTH*8);
+    }
+    bit += BV_CTZ(V);
+    if (bit >= bv->length) bit = (size_t)-1;
+
+RET:
+    return bit;
+}
+
+struct ba_block_header * ba_sort_list(const struct ba_page * p,
+				      struct ba_block_header * b,
+				      const struct ba_layout * l) {
+    struct bitvector v;
+    size_t i, j;
+    struct ba_block_header ** t = &b;
+
+#ifdef BA_DEBUG
+    fprintf(stderr, "sorting max %llu blocks\n",
+	    (unsigned long long)l->blocks);
+#endif
+    v.length = l->blocks;
+    i = bv_byte_length(&v);
+    /* we should probably reuse an area for this.
+     */
+    bv_set_vector(&v, alloca(i));
+    memset(v.v, 0, i);
+
+    /*
+     * store the position of all blocks in a bitmask
+     */
+    while (b) {
+	unsigned INT32 n = ba_block_number(l, p, b);
+#ifdef BA_DEBUG
+	//fprintf(stderr, "block %llu is free\n", (long long unsigned)n);
+#endif
+	bv_set(&v, n, 1);
+	if (b->next == BA_ONE) {
+	    v.length = n+1;
+	    break;
+	} else b = b->next;
+    }
+
+#ifdef BA_DEBUG
+    //bv_print(&v);
+#endif
+
+    /*
+     * Handle consecutive free blocks in the end, those
+     * we dont need anyway.
+     */
+    if (v.length) {
+	i = v.length-1;
+	while (i && bv_get(&v, i)) { i--; }
+	v.length = i+1;
+    }
+
+#ifdef BA_DEBUG
+    //bv_print(&v);
+#endif
+
+    j = 0;
+
+    /*
+     * We now rechain all blocks.
+     */
+    while ((i = bv_ctz(&v, j)) != (size_t)-1) {
+	*t = BA_BLOCKN(*l, p, i);
+	t = &((*t)->next);
+	j = i+1;
+    }
+
+    /*
+     * The last one
+     */
+
+    if (v.length < l->blocks) {
+	*t = BA_BLOCKN(*l, p, v.length);
+	(*t)->next = BA_ONE;
+    } else *t = NULL;
+
+    return b;
+}
+
+static INLINE void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
+    while (b && b != BA_ONE) {
+        PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
+        PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
+        b = b->next;
+    }
+}
+
+static INLINE void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
+    while (b && b != BA_ONE) {
+        struct ba_block_header * next = b->next;
+        PIKE_MEMPOOL_FREE(a, b, a->l.block_size);
+        b = next;
+    }
+}
+
+/*
+ * This function allows iteration over all allocated blocks. Some things are not allowed:
+ *  - throwing from within the callback
+ *  - allocating blocks during iteration
+ *  - nested iteration
+ *
+ *  - freeing is OK, however some nodes will _still_ beiterated over, when they are freed during the
+ *    iteration.
+ *
+ *  TODO: if needed, allocation can be fixed. For that to work, the free list of the currently
+ *  iterated page has to be removed and restored after iteration. that would guarantee allocation
+ *  from a different page
+ *
+ *  NOTE
+ *    the callback will be called multiple times. for a usage example, see las.c
+ */
+PMOD_EXPORT
+void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
+    struct ba_iterator it;
+    unsigned INT32 i;
+
+    if (!a->size) return;
+
+    for (i = 0; i < a->size; i++) {
+        struct ba_page * p = a->pages[i];
+        if (p && p->h.used) {
+            struct ba_block_header * free_list = p->h.first;
+            struct ba_block_header * free_block = free_list;
+            ba_list_defined(a, p->h.first);
+
+            /* we fake an allocation to prevent the page from being freed during iteration */
+            p->h.used ++;
+
+            if (!(p->h.flags & BA_FLAG_SORTED)) {
+                it.l = ba_get_layout(a, i);
+                p->h.first = ba_sort_list(p, p->h.first, &it.l);
+                p->h.flags |= BA_FLAG_SORTED;
+            }
+
+            it.cur = BA_BLOCKN(it.l, p, 0);
+
+            while(1) {
+                if (free_block == NULL) {
+                    it.end = ((char*)BA_LASTBLOCK(it.l, p) + it.l.block_size);
+                    if ((char*)it.end != (char*)it.cur)
+                        cb(&it, data);
+                    break;
+                } else if (free_block == BA_ONE) {
+                    /* all consecutive blocks are free, so we are dont */
+                    break;
+                }
+
+                it.end = free_block;
+#ifdef PIKE_DEBUG
+                if (free_block >= free_block->next)
+                    Pike_fatal("Free list not sorted in ba_walk.\n");
+#endif
+                free_block = free_block->next;
+
+                if ((char*)it.end != (char*)it.cur)
+                    cb(&it, data);
+
+                it.cur = (char*)it.end + it.l.block_size;
+            }
+
+            /* if the callback throws, this will never happen */
+            ba_list_undefined(a, free_list);
+            p->h.used--;
+        }
+        ba_double_layout(&it.l);
+    }
+
+    /* during the iteration blocks might have been freed. The pages will still be there, so we might have
+     * to do some cleanup. */
+    if (!a->pages[a->size-1]->h.used)
+        ba_free_empty_pages(a);
 }
