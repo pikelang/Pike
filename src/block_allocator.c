@@ -46,6 +46,15 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
+static INLINE void ba_clear_page(struct block_allocator * a, struct ba_page * p, struct ba_layout * l) {
+    p->h.used = 0;
+    p->h.flags = BA_FLAG_SORTED;
+    p->h.first = BA_BLOCKN(*l, p, 0);
+    PIKE_MEMPOOL_ALLOC(a, p->h.first, l->block_size);
+    p->h.first->next = BA_ONE;
+    PIKE_MEMPOOL_FREE(a, p->h.first, l->block_size);
+}
+
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + l.doffset;
@@ -66,16 +75,32 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 	p = (struct ba_page*)xalloc(n);
 #endif
     }
-    p->h.first = BA_BLOCKN(a->l, p, 0);
-    p->h.first->next = BA_ONE;
-    p->h.used = 0;
+    ba_clear_page(a, p, &a->l);
     PIKE_MEM_NA_RANGE((char*)p + l.doffset, n - l.doffset);
     return p;
 }
 
+static void ba_free_empty_pages(struct block_allocator * a) {
+    int i = a->size - 1;
+
+    for (i = a->size - 1; i >= 0; i--) {
+        struct ba_page * p = a->pages[i];
+        if (p->h.used) break;
+#ifdef DEBUG_MALLOC
+        system_free(p);
+#else
+        free(p);
+#endif
+        a->pages[i] = NULL;
+    }
+
+    a->size = i+1;
+    a->alloc = a->last_free = MAXIMUM(0, i);
+}
 
 PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size,
 				 unsigned INT32 blocks, unsigned INT32 alignment) {
+    PIKE_MEMPOOL_CREATE(a);
     block_size = MAXIMUM(block_size, sizeof(struct ba_block_header));
     if (alignment) {
 	if (alignment & (alignment - 1))
@@ -96,11 +121,13 @@ PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 bloc
     a->l.alignment = alignment;
     memset(a->pages, 0, sizeof(a->pages));
     a->pages[0] = ba_alloc_page(a, 0);
-    PIKE_MEMPOOL_CREATE(a);
 }
 
 PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
     int i;
+
+    if (!a->l.offset) return;
+
     for (i = 0; i < a->size; i++) {
 	if (a->pages[i]) {
 #ifdef DEBUG_MALLOC
@@ -112,6 +139,25 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
 	}
     }
     a->size = 0;
+    a->alloc = 0;
+    a->last_free = 0;
+    PIKE_MEMPOOL_DESTROY(a);
+}
+
+PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
+    int i;
+    struct ba_layout l;
+
+    if (!a->l.offset) return;
+    if (!a->size) return;
+
+    l = ba_get_layout(a, 0);
+
+    for (i = 0; i < a->size; i++) {
+        struct ba_page * page = a->pages[i];
+        ba_clear_page(a, page, &l);
+        ba_double_layout(&l);
+    }
     a->alloc = 0;
     a->last_free = 0;
 }
@@ -249,19 +295,12 @@ found:
 	    Pike_fatal("freeing from empty page %p\n", p);
 	}
 #endif
-	if (!(--p->h.used) && i+1 == a->size) {
-	    while (i >= 0 && !(p->h.used)) {
-#ifdef DEBUG_MALLOC
-		system_free(p);
-#else
-		free(p);
-#endif
-		a->pages[i] = NULL;
-
-		p = a->pages[--i];
-	    }
-	    a->size = i+1;
-	    a->alloc = a->last_free = MAXIMUM(0, i);
+	if (!(--p->h.used)) {
+            if (i+1 == a->size) {
+                ba_free_empty_pages(a);
+            } else {
+                ba_clear_page(a, p, &l);
+            }
 	}
     }
 #ifdef PIKE_DEBUG

@@ -2057,8 +2057,8 @@ void exit_gc(void)
   if (!gc_keep_markers)
     cleanup_markers();
 
-  ba_destroy(&gc_rec_frame_allocator);
-  ba_destroy(&ba_mixed_frame_allocator);
+  ba_free_all(&gc_rec_frame_allocator);
+  ba_free_all(&ba_mixed_frame_allocator);
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
