@@ -10,7 +10,7 @@
 #include "global.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
-#include "block_alloc_h.h"
+#include "block_allocator.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
@@ -154,7 +154,7 @@ struct node_s
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
 
-BLOCK_ALLOC_FILL_PAGES(node_s, 2);
+void count_memory_in_node_ss(size_t *num, size_t *size);
 
 /* Prototypes begin here */
 int car_is_node(node *n);

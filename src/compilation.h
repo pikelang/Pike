@@ -175,6 +175,7 @@
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
   ZMEMBER(int, flags, 0)
   ZMEMBER(struct compilation *,compiler,0)
+  ZMEMBER(struct block_allocator, node_allocator, BA_INIT_PAGES(sizeof(struct node_s), 2))
   SEND
 
 #undef PCODE

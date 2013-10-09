@@ -30,7 +30,7 @@
 #include "pikecode.h"
 #include "gc.h"
 #include "pike_compiler.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 /* Define this if you want the optimizer to be paranoid about aliasing
  * effects to to indexing.
@@ -455,75 +455,91 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   return 1;
 }
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT u.node.a
+void init_node_s_blocks() { }
 
-#undef PRE_INIT_BLOCK
-#define PRE_INIT_BLOCK(NODE) do {					\
-    (NODE)->token = USHRT_MAX;						\
-  } while (0)
+void really_free_node_s(node * n) {
+    ba_free(&Pike_compiler->node_allocator, n);
+}
 
-BLOCK_ALLOC_FILL_PAGES(node_s, 2)
+MALLOC_FUNCTION
+node * alloc_node_s() {
+    return (node*)ba_alloc(&Pike_compiler->node_allocator);
+}
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT next
+void count_memory_in_node_ss(size_t * num, size_t * size) {
+    struct program_state * state = Pike_compiler;
+
+    *num = 0;
+    *size = 0;
+
+    while (state) {
+        size_t _num, _size;
+        ba_count_all(&state->node_allocator, &_num, &_size);
+        *num += _num;
+        *size += _size;
+        state = state->previous;
+    }
+}
+
+void node_walker(struct ba_iterator * it, void * data) {
+  do {
+    node * tmp = ba_it_val(it);
+
+    /*
+     * since we free nodes from here, we might iterate over them again.
+     * to avoid that we check for the free mark.
+     */
+    if (tmp->token == USHRT_MAX) continue;
+
+#ifdef PIKE_DEBUG
+    if(!cumulative_parse_error)
+    {
+      fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
+              (void *)tmp,
+              tmp->current_file->str, (long)tmp->line_number,
+              tmp->token);
+
+      debug_malloc_dump_references(tmp,0,2,0);
+
+      if(tmp->token==F_CONSTANT)
+        print_tree(tmp);
+    }
+    /* else */
+#endif
+    {
+      /* Free the node and be happy */
+      /* Make sure we don't free any nodes twice */
+      if(car_is_node(tmp)) _CAR(tmp)=0;
+      if(cdr_is_node(tmp)) _CDR(tmp)=0;
+#ifdef PIKE_DEBUG
+      if (l_flag > 3) {
+        fprintf(stderr, "Freeing node that had %d refs.\n",
+                tmp->refs);
+      }
+#endif /* PIKE_DEBUG */
+      /* Force the node to be freed. */
+      tmp->refs = 1;
+      debug_malloc_touch(tmp->type);
+      free_node(tmp);
+    }
+  } while (ba_it_step(it));
+}
 
 void free_all_nodes(void)
 {
-  if(!Pike_compiler->previous)
-  {
-    node *tmp;
+  node *tmp;
 
 #ifndef PIKE_DEBUG
-    if(cumulative_parse_error) {
+  if(cumulative_parse_error) {
+#endif
+      ba_walk(&Pike_compiler->node_allocator, &node_walker, NULL);
+#ifdef PIKE_DEBUG
+      if(!cumulative_parse_error)
+        Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
 #else
-      size_t e=0, s=0;
-      count_memory_in_node_ss(&e, &s);
-      if(e) {
-#endif
-	WALK_NONFREE_BLOCKS(node_s, tmp, tmp->token != USHRT_MAX, {
-#ifdef PIKE_DEBUG
-	      if(!cumulative_parse_error)
-	      {
-		fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
-			(void *)tmp,
-			tmp->current_file->str, (long)tmp->line_number,
-			tmp->token);
-
-		debug_malloc_dump_references(tmp,0,2,0);
-
-		if(tmp->token==F_CONSTANT)
-		  print_tree(tmp);
-	      }
-	      /* else */
-#endif
-	      {
-		/* Free the node and be happy */
-		/* Make sure we don't free any nodes twice */
-		if(car_is_node(tmp)) _CAR(tmp)=0;
-		if(cdr_is_node(tmp)) _CDR(tmp)=0;
-#ifdef PIKE_DEBUG
-		if (l_flag > 3) {
-		  fprintf(stderr, "Freeing node that had %d refs.\n",
-			  tmp->refs);
-		}
-#endif /* PIKE_DEBUG */
-		/* Force the node to be freed. */
-		tmp->refs = 1;
-		debug_malloc_touch(tmp->type);
-		free_node(tmp);
-	      }
-	});
-#ifdef PIKE_DEBUG
-	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
-      }
-#else
-    }
-#endif
-    free_all_node_s_blocks();
-    cumulative_parse_error=0;
   }
+#endif
+  cumulative_parse_error=0;
 }
 
 void debug_free_node(node *n)

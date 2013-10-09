@@ -2771,10 +2771,6 @@ void low_start_new_program(struct program *p,
 
   c->compilation_depth++;
 
-  if (!Pike_compiler->compiler_frame) {
-    new_node_s_context();
-  }
-
   SET_SVAL_TYPE(tmp, T_PROGRAM);
   if(!p)
   {
@@ -2825,6 +2821,8 @@ void low_start_new_program(struct program *p,
 
 #define PUSH
 #include "compilation.h"
+
+  ba_init(&Pike_compiler->node_allocator, sizeof(struct node_s), 512);
 
   Pike_compiler->parent_identifier=id;
   Pike_compiler->compiler_pass = pass;
@@ -3315,6 +3313,10 @@ static void toss_compilation_resources(void)
   }
 
   unuse_modules(Pike_compiler->num_used_modules);
+
+  free_all_nodes();
+
+  ba_destroy(&Pike_compiler->node_allocator);
 }
 
 int sizeof_variable(int run_time_type)
@@ -4025,7 +4027,6 @@ struct program *end_first_pass(int finish)
 
   exit_type_stack();
 
-  free_all_nodes();
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p end_first_pass(%d): "
