@@ -354,15 +354,6 @@ struct bitvector {
     size_t length;
     bv_int_t * v;
 };
-#ifdef BA_DEBUG
-static INLINE void bv_print(struct bitvector * bv) {
-    size_t i;
-    for (i = 0; i < bv->length; i++) {
-	fprintf(stderr, "%d", bv_get(bv, i));
-    }
-    fprintf(stderr, "\n");
-}
-#endif
 
 static INLINE void bv_set_vector(struct bitvector * bv, void * p) {
     bv->v = (bv_int_t*)p;
@@ -396,10 +387,6 @@ static INLINE size_t bv_ctz(struct bitvector * bv, size_t n) {
     bv_int_t * _v = bv->v + c;
     bv_int_t V = *_v & (~BV_NIL << bit);
 
-#ifdef BA_DEBUG
-    //bv_print(bv);
-#endif
-
     bit = c * BV_LENGTH;
     while (!(V)) {
 	if (bit >= bv->length) {
@@ -416,6 +403,16 @@ RET:
     return bit;
 }
 
+#ifdef BA_DEBUG
+static INLINE void bv_print(struct bitvector * bv) {
+    size_t i;
+    for (i = 0; i < bv->length; i++) {
+	fprintf(stderr, "%d", bv_get(bv, i));
+    }
+    fprintf(stderr, "\n");
+}
+#endif
+
 struct ba_block_header * ba_sort_list(const struct ba_page * p,
 				      struct ba_block_header * b,
 				      const struct ba_layout * l) {
@@ -423,10 +420,6 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
     size_t i, j;
     struct ba_block_header ** t = &b;
 
-#ifdef BA_DEBUG
-    fprintf(stderr, "sorting max %llu blocks\n",
-	    (unsigned long long)l->blocks);
-#endif
     v.length = l->blocks;
     i = bv_byte_length(&v);
     /* we should probably reuse an area for this.
@@ -439,19 +432,12 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     while (b) {
 	unsigned INT32 n = ba_block_number(l, p, b);
-#ifdef BA_DEBUG
-	//fprintf(stderr, "block %llu is free\n", (long long unsigned)n);
-#endif
 	bv_set(&v, n, 1);
 	if (b->next == BA_ONE) {
 	    v.length = n+1;
 	    break;
 	} else b = b->next;
     }
-
-#ifdef BA_DEBUG
-    //bv_print(&v);
-#endif
 
     /*
      * Handle consecutive free blocks in the end, those
@@ -462,10 +448,6 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
 	while (i && bv_get(&v, i)) { i--; }
 	v.length = i+1;
     }
-
-#ifdef BA_DEBUG
-    //bv_print(&v);
-#endif
 
     j = 0;
 
@@ -527,31 +509,35 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
     struct ba_iterator it;
     unsigned INT32 i;
 
+    it.l = ba_get_layout(a, 0);
+
     if (!a->size) return;
 
     for (i = 0; i < a->size; i++) {
         struct ba_page * p = a->pages[i];
         if (p && p->h.used) {
-            struct ba_block_header * free_list = p->h.first;
-            struct ba_block_header * free_block = free_list;
+            struct ba_block_header * free_list, * free_block;
+
             ba_list_defined(a, p->h.first);
 
-            /* we fake an allocation to prevent the page from being freed during iteration */
-            p->h.used ++;
-
             if (!(p->h.flags & BA_FLAG_SORTED)) {
-                it.l = ba_get_layout(a, i);
                 p->h.first = ba_sort_list(p, p->h.first, &it.l);
                 p->h.flags |= BA_FLAG_SORTED;
             }
+            /* we fake an allocation to prevent the page from being freed during iteration */
+            p->h.used ++;
+
+            free_list = p->h.first;
+            free_block = free_list;
 
             it.cur = BA_BLOCKN(it.l, p, 0);
 
             while(1) {
                 if (free_block == NULL) {
                     it.end = ((char*)BA_LASTBLOCK(it.l, p) + it.l.block_size);
-                    if ((char*)it.end != (char*)it.cur)
+                    if ((char*)it.end != (char*)it.cur) {
                         cb(&it, data);
+                    }
                     break;
                 } else if (free_block == BA_ONE) {
                     /* all consecutive blocks are free, so we are dont */
