@@ -1035,6 +1035,7 @@ PIKECLASS Backend
 	     if(CALL(c->pos) != c)
 	       Pike_fatal("Call_out->pos not correct!\n");
 #endif
+	     UNPROTECT_CALL_OUTS();
 	     add_ref(c->args);
 	     return c->args;
 	   }
@@ -1068,7 +1069,7 @@ PIKECLASS Backend
 	 /* FIXME: Use CYCLIC! */
 	 if (is_eq(fun, ITEM(res))) {
 	   add_ref(res);
-	   pop_n_elems(save_sp - Pike_sp);
+	   pop_n_elems(Pike_sp - save_sp);
 	   return res;
 	 }
 	 pop_stack();
