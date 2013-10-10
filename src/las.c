@@ -534,8 +534,12 @@ void free_all_nodes(void)
 #endif
       ba_walk(&Pike_compiler->node_allocator, &node_walker, NULL);
 #ifdef PIKE_DEBUG
-      if(!cumulative_parse_error)
-        Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
+      if(!cumulative_parse_error) {
+        size_t n, s;
+        ba_count_all(&Pike_compiler->node_allocator, &n, &s);
+        if (n)
+            Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
+      }
 #else
   }
 #endif

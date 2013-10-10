@@ -535,6 +535,10 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
             while(1) {
                 if (free_block == NULL) {
                     it.end = ((char*)BA_LASTBLOCK(it.l, p) + it.l.block_size);
+#ifdef PIKE_DEBUG
+                    if ((char*)it.end < (char*)it.cur)
+                        Pike_fatal("Free list not sorted in ba_walk.\n");
+#endif
                     if ((char*)it.end != (char*)it.cur) {
                         cb(&it, data);
                     }
@@ -545,12 +549,12 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
                 }
 
                 it.end = free_block;
-#ifdef PIKE_DEBUG
-                if (free_block >= free_block->next)
-                    Pike_fatal("Free list not sorted in ba_walk.\n");
-#endif
                 free_block = free_block->next;
 
+#ifdef PIKE_DEBUG
+                if ((char*)it.end < (char*)it.cur)
+                    Pike_fatal("Free list not sorted in ba_walk.\n");
+#endif
                 if ((char*)it.end != (char*)it.cur)
                     cb(&it, data);
 
