@@ -152,9 +152,15 @@ int verify_certificates = 0;
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:
 //!
-//! If the long_rsa is not zero its public part will be sent. If it is
-//! zero and short_rsa is set, its public part will be sent instead.
-//! If they are both zero, no server_key_exchange message is sent.
+//! If the negotiated cipher_suite has the "exportable" property, and
+//! short_rsa is not zero, send a server_key_exchange message with the
+//! (public part of) the short_rsa key.
+//!
+//! If the negotiated cipher_suite does not have the exportable
+//! property, and long_rsa is not zero, send a server_key_exchange
+//! message with the (public part of) the long_rsa key.
+//!
+//! Otherwise, dont send any server_key_exchange message.
 Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
 
