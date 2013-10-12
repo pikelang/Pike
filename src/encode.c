@@ -3225,6 +3225,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 	  }
 
+	  if ((p->flags & PROGRAM_NEEDS_PARENT)) {
+	    EDB(2, fprintf(stderr, "%*sKeeping %s to keep parent pointer.\n",
+			   data->depth, "",
+			   get_name_of_type(TYPEOF(Pike_sp[-1]))));
+	    break;
+	  }
+
 	  add_ref(p);
 	  pop_stack();
 	  push_program(p);
