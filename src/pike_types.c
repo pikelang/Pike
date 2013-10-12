@@ -8958,7 +8958,7 @@ void gc_check_type (struct pike_type *t)
 void gc_check_all_types (void)
 {
   unsigned INT32 e;
-  for(e=0;e<pike_type_hash_size;e++)
+  for(e=0;e<=pike_type_hash_size;e++)
   {
     struct pike_type *t;
     for(t = pike_type_hash[e]; t; t=t->next) gc_check_type (t);
