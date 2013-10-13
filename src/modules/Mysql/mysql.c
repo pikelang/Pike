@@ -957,6 +957,30 @@ static void f_error(INT32 args)
   }
 }
 
+/*! @decl int errno()
+ *!
+ *! Returns an error code describing the last error from the Mysql-server.
+ *!
+ *! Returns @expr{0@} (zero) if there was no error.
+ */
+static void f_errno(INT32 args)
+{
+  MYSQL *mysql;
+  unsigned int errnum;
+
+  mysql = PIKE_MYSQL->mysql;
+
+  MYSQL_ALLOW();
+
+  errnum = mysql_errno(mysql);
+
+  MYSQL_DISALLOW();
+
+  pop_n_elems(args);
+
+  push_int(errnum);
+}
+
 /*! @decl void select_db(string database)
  *!
  *! Select database.
@@ -1892,6 +1916,8 @@ PIKE_MODULE_INIT
 
   /* function(void:int|string) */
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("errno", f_errno,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tMapping, tVoid),tVoid), ID_PUBLIC);
   /* function(int, void|mapping:string) */
@@ -1978,6 +2004,30 @@ PIKE_MODULE_INIT
 
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
+
+#ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
+  {
+    struct mysqld_ername {
+      const char * msg;
+      unsigned int code;
+    };
+    unsigned int i;
+    struct program * errprog;
+    static const struct mysqld_ername list[] = {
+#include <mysql/mysqld_ername.h>
+    };
+    const unsigned int n = sizeof(list)/sizeof(list[0]);
+
+    start_new_program();
+
+    for (i = 0; i < n; i++) {
+      add_integer_constant(list[i].msg, list[i].code, 0);
+    }
+
+    errprog = end_program();
+    add_program_constant("error", errprog, 0);
+  }
+#endif
 
   /* function(void:string) */
   ADD_FUNCTION("client_info", f_client_info,tFunc(tVoid,tStr), ID_PUBLIC);

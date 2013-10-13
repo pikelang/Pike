@@ -164,6 +164,25 @@ else
 #include <winsock.h>
 #endif
   ])
+  AC_MSG_CHECKING(for mysql/mysqld_ername.h)
+  AC_CACHE_VAL(ac_cv_mysqld_ername, [
+  AC_TRY_COMPILE([],[
+struct foo {
+    const char * a;
+    int b;
+};
+const static struct foo[] = {
+#include <mysql/mysqld_ername.h>
+};
+    ],ac_cv_mysqld_ername=yes,ac_cv_mysqld_ername=yes)
+  ])
+  if test x$ac_cv_mysqld_ername = xyes; then
+      AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
+      AC_MSG_RESULT(yes)
+  else
+      AC_MSG_RESULT(no)
+  fi
+AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
 
   if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
     # Required headerfile missing.
