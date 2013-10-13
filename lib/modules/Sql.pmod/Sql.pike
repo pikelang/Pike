@@ -472,6 +472,16 @@ int|string error()
   return "Unknown error";
 }
 
+//! Return last SQLSTATE.
+//!
+//! The SQLSTATE error codes are specified in ANSI SQL.
+string sqlstate() {
+    if (master_sql && functionp(master_sql->sqlstate)) {
+        return master_sql->sqlstate();
+    }
+    return "IM001"; // "driver does not support this function"
+}
+
 //! Select database to access.
 void select_db(string db)
 {
