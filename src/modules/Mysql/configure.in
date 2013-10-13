@@ -478,6 +478,7 @@ int main(int argc, char *argv[])
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
     PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
     PIKE_CHECK_MYSQL_FUNC(mysql_ssl_set)
+    PIKE_CHECK_MYSQL_FUNC(mysql_sqlstate)
 
     # This function should exist even in ancient versions, but it
     # appear to exist only in header files sometimes.

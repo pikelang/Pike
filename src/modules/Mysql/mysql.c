@@ -981,6 +981,33 @@ static void f_errno(INT32 args)
   push_int(errnum);
 }
 
+/*! @decl string sqlstate()
+ *!
+ *! Returns the SQLSTATE error code describing the last error.
+ *!
+ *! The value @expr{"000000"@} means 'no error'. The SQLSTATE error codes are
+ *! described in ANSI SQL.
+ */
+#ifdef HAVE_MYSQL_SQLSTATE
+static void f_sqlstate(INT32 args)
+{
+  MYSQL *mysql;
+  const char *error_msg;
+
+  mysql = PIKE_MYSQL->mysql;
+
+  MYSQL_ALLOW();
+
+  error_msg = mysql_sqlstate(mysql);
+
+  MYSQL_DISALLOW();
+
+  pop_n_elems(args);
+
+  push_text(error_msg);
+}
+#endif
+
 /*! @decl void select_db(string database)
  *!
  *! Select database.
@@ -1918,6 +1945,10 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("errno", f_errno,tFunc(tVoid,tInt), ID_PUBLIC);
+#ifdef HAVE_MYSQL_SQLSTATE
+  /* function(void:string) */
+  ADD_FUNCTION("sqlstate", f_sqlstate,tFunc(tVoid,tStr), ID_PUBLIC);
+#endif
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tMapping, tVoid),tVoid), ID_PUBLIC);
   /* function(int, void|mapping:string) */
