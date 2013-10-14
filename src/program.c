@@ -7597,7 +7597,7 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 	  int strno;
 	  cnt++;
 	  strno = get_small_number(&cnt);
-	  CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);
+	  CHECK_FILE_ENTRY (prog, strno);
 	  file = prog->strings[strno];
 	}
 	off+=get_small_number(&cnt);
