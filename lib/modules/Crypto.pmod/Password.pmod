@@ -174,7 +174,7 @@ int verify(string password, string hash)
     case "5":	// SHA-256
       return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
         [string(0..127)]hash;
-#if constant(Nettle.SHA512_Info)
+#if constant(Crypto.SHA512)
     case "6":	// SHA-512
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
         [string(0..127)]hash;
@@ -296,7 +296,7 @@ string(0..127) hash(string password, string|void scheme, int|void rounds)
   case "{crypt}":
   case UNDEFINED:
     // FALL_THROUGH
-#if constant(Nettle.SHA512_Info)
+#if constant(Crypto.SHA512)
   case "6":
   case "$6$":
     crypt_hash = Crypto.SHA512.crypt_hash;
