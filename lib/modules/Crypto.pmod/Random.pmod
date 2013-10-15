@@ -48,11 +48,10 @@ class Source {
   }
 
   string read(int bytes) {
-    bytes *= factor;
-    if(f) return f->read(bytes);
+    if(f) return f->read(bytes * factor);
     bytes *= 4;
     while(sizeof(data)<bytes)
-      data += get_data();
+      get_data();
     string ret = data[..bytes-1];
     data = data[bytes..];
     return ret;
@@ -93,7 +92,7 @@ class Source {
     }
     child_pipe->close();
     destruct(child_pipe);
-    data = f->read();
+    data += f->read();
     f->close();
   }
 }
