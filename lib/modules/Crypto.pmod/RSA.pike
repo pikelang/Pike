@@ -17,6 +17,17 @@ protected int size;
 protected Gmp.mpz p;
 protected Gmp.mpz q;
 
+//! Can be initialized with a mapping with the elements n, e, d, p and
+//! q.
+protected void create(mapping(string:Gmp.mpz|int)|void params)
+{
+  if(!params) return;
+  if( params->n && params->e )
+    set_public_key(params->n, params->e);
+  if( params->d )
+    set_private_key(params->d, ({ params->p, params->q, params->n }));
+}
+
 //! Returns the RSA modulo (n).
 Gmp.mpz get_n()
 {
