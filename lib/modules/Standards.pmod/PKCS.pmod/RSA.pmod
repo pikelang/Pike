@@ -4,12 +4,6 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if 0
-#define WERROR werror
-#else
-#define WERROR(x)
-#endif
-
 #if constant(Standards.ASN1.Decode) && constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
@@ -21,8 +15,8 @@ import Standards.ASN1.Types;
 //!   ASN1 coded RSAPublicKey structure
 string public_key(Crypto.RSA rsa)
 {
-  return Sequence(map( ({ rsa->get_n(), rsa->get_e() }),
-		       Integer))->get_der();
+  return Sequence(({ Integer(rsa->get_n()), Integer(rsa->get_e()) }))
+    ->get_der();
 }
 
 //! Create a DER-coded RSAPrivateKey structure
@@ -74,10 +68,8 @@ Crypto.RSA parse_public_key(string key)
 //!   @[Crypto.RSA] object
 Crypto.RSA parse_private_key(string key)
 {
-  WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
   
-  WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
       || (a->type_name != "SEQUENCE")
       || (sizeof(a->elements) != 9)
@@ -91,13 +83,12 @@ Crypto.RSA parse_private_key(string key)
   return rsa;
 }
 
-Sequence build_rsa_public_key(object rsa)
+Sequence build_rsa_public_key(Crypto.RSA rsa)
 {
-  return Sequence( ({
-    Sequence(
-      ({ .Identifiers.rsa_id, Null() }) ),
-    BitString(Sequence(
-      ({ Integer(rsa->get_n()), Integer(rsa->get_e()) }) )->get_der()) }) );
+  return Sequence(({
+                    Sequence(({ .Identifiers.rsa_id, Null() })),
+                    BitString( public_key(rsa) ),
+                  }));
 }
 
 #else
