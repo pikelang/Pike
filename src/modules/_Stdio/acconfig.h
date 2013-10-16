@@ -13,6 +13,9 @@
 /* Define this if your <sys/sendfile.h> is broken. */
 #undef HAVE_BROKEN_SYS_SENDFILE_H
 
+/* Define this if you have IPPROTO_IPV6. */
+#undef HAVE_IPPROTO_IPV6
+
 /* Define this if you have ZFS_PROP_UTF8ONLY. */
 #undef HAVE_ZFS_PROP_UTF8ONLY
 
