@@ -69,6 +69,41 @@ AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
  fdopendir pathconf fpathconf dirfd fstatat openat unlinkat kqueue)
 
+AC_MSG_CHECKING([whether IPPROTO_IPV6 exists])
+AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
+  AC_TRY_COMPILE([
+// The WIN32 SDK hides the symbol if the API level is not at least 5.2.
+#define WIN32 100
+#define _WIN32_WINDOWS 0x05ff
+#define _WIN32_WINNT 0x05ff
+#define NTDDI_VERSION 0x05ffffff
+#define WIN32_LEAN_AND_MEAN
+
+#define _GNU_SOURCE
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+  ], [
+    int val = IPPROTO_IPV6;
+  ], [
+    pike_cv_have_IPPROTO_IPV6=yes
+  ], [
+    pike_cv_have_IPPROTO_IPV6=no
+  ])
+])
+if test "x$pike_cv_have_IPPROTO_IPV6" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_IPPROTO_IPV6)
+else
+  AC_MSG_RESULT(no)
+fi
+
 dnl AC_HAVE_FUNCS(libzfs_init zfs_path_to_zhandle)
 
 define(PIKE_CHECK_ZFS_ENUM, [

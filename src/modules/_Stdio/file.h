@@ -27,6 +27,11 @@
 #include "pike_netlib.h"
 #include "backend.h"
 
+#if defined(HAVE_IPPROTO_IPv6) && !defined(IPPROTO_IPV6)
+// Hidden in an enum.
+#define IPPROTO_IPV6 IPPROTO_IPV6
+#endif
+
 struct my_file
 {
   struct fd_callback_box box;	/* Must be first. */
