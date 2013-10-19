@@ -476,12 +476,6 @@ PIKECLASS Hash
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
-	  /*! @decl inherit Hash::State
-	   *!
-	   *! Inherits @[__builtin.Nettle.Hash.State] via
-	   *! the inherit of @[__builtin.Nettle.Hash] in our
-	   *! parent (@[Hash]).
-	   */
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num +
 		      parent_prog->inherits[1].identifier_level,
