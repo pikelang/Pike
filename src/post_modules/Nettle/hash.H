@@ -16,12 +16,11 @@ PIKECLASS PIKE_NAME
 
   INIT
     {
-      /* FIXME: Ought to traverse the inherit graph for
-       *        the current program.
-       */
-      struct Hash_struct *Hash
-	= (struct Hash_struct *) get_storage(Pike_fp->current_object,
-					     Hash_program);
+      struct Hash_struct *Hash = (struct Hash_struct *)
+	get_inherit_storage(Pike_fp->current_object,
+			    1 +
+			    (Pike_fp->context -
+			     Pike_fp->current_program->inherits));
 
       werror(cmod_STRFY_EVAL(PIKE_NAME) "->INIT\n");
 
@@ -47,8 +46,8 @@ PIKECLASS PIKE_NAME
 
     EXTRA
     {
-      /* Perform an inherit of the HashState class that our parent
-       * contains via its inherit of HashInfo.
+      /* Perform an inherit of the Hash.State class that our parent
+       * contains via its inherit of Hash.
        */
       struct program *parent_prog = Pike_compiler->previous->new_program;
       struct object *parent_obj = Pike_compiler->previous->fake_object;
@@ -60,12 +59,6 @@ PIKECLASS PIKE_NAME
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
-	  DOCSTART() @decl inherit Hash::State
-	   *!
-	   *! Inherits @[Nettle.Hash.State] via
-	   *! the inherit of @[Nettle.Hash] in our
-	   *! parent (@[Hash]).
-	  DOCEND()
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num +
 		      parent_prog->inherits[1].identifier_level,
@@ -81,9 +74,11 @@ PIKECLASS PIKE_NAME
       /* FIXME: Ought to traverse the inherit graph for
        *        the current program.
        */
-      struct Hash_State_struct *instance
-	= (struct Hash_State_struct *)
-	get_storage(Pike_fp->current_object, Hash_State_program);
+      struct Hash_State_struct *instance = (struct Hash_State_struct *)
+	get_inherit_storage(Pike_fp->current_object,
+			    1 +
+			    (Pike_fp->context -
+			     Pike_fp->current_program->inherits));
       werror(cmod_STRFY_EVAL(PIKE_NAME) ".State->INIT\n");
 
       assert(instance);
