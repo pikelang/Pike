@@ -1036,6 +1036,7 @@ void push_compiler_frame(int lexical_scope);
 void low_pop_local_variables(int level);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
+PMOD_EXPORT char *get_inherit_storage(struct object *o, int inherit);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);

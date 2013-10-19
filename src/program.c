@@ -11213,6 +11213,17 @@ void pop_compiler_frame(void)
 }
 
 
+PMOD_EXPORT char *get_inherit_storage(struct object *o, int inherit)
+{
+  if (!o || !o->prog) return NULL;
+#ifdef PIKE_DEBUG
+  if ((inherit < 0) || (inherit >= o->prog->num_inherits))
+    Pike_fatal("Inherit #%d out of range [0..%d]\n",
+	       inherit, o->prog->num_inherits-1);
+#endif
+  return o->storage + o->prog->inherits[inherit].storage_offset;
+}
+
 #define GET_STORAGE_CACHE_SIZE 1024
 static struct get_storage_cache
 {
