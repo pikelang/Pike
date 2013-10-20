@@ -16,21 +16,12 @@ PIKECLASS PIKE_NAME
 
   INIT
     {
-      struct Hash_struct *Hash = (struct Hash_struct *)
-	get_inherit_storage(Pike_fp->current_object,
-			    1 +
-			    (Pike_fp->context -
-			     Pike_fp->current_program->inherits));
+      struct Hash_struct *hash;
+      ASSIGN_CURRENT_STORAGE(hash, struct Hash_struct, 1, Hash_program);
 
       werror(cmod_STRFY_EVAL(PIKE_NAME) "->INIT\n");
 
-      if (Hash && !Hash->meta)
-	Hash->meta = &cmod_CONCAT_EVAL(nettle_, NETTLE_NAME);
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror(cmod_STRFY_EVAL(PIKE_NAME) "->INIT failed\n");
-      }
+      hash->meta = &cmod_CONCAT_EVAL(nettle_, NETTLE_NAME);
     }
 
   DOCSTART() @class State
@@ -71,17 +62,11 @@ PIKECLASS PIKE_NAME
 
   INIT
     {
-      /* FIXME: Ought to traverse the inherit graph for
-       *        the current program.
-       */
-      struct Hash_State_struct *instance = (struct Hash_State_struct *)
-	get_inherit_storage(Pike_fp->current_object,
-			    1 +
-			    (Pike_fp->context -
-			     Pike_fp->current_program->inherits));
-      werror(cmod_STRFY_EVAL(PIKE_NAME) ".State->INIT\n");
+      struct Hash_State_struct *instance;
+      ASSIGN_CURRENT_STORAGE(instance, struct Hash_State_struct, 1,
+			     Hash_State_program);
 
-      assert(instance);
+      werror(cmod_STRFY_EVAL(PIKE_NAME) ".State->INIT\n");
 
       cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&THIS->NETTLE_NAME);      
       instance->ctx = &THIS->NETTLE_NAME;
