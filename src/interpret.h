@@ -634,6 +634,23 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   LOW_POP_PIKE_FRAME (_fp_);						\
  }while(0)
 
+#define ASSIGN_CURRENT_STORAGE(VAR, TYPE, INH, EXPECTED_PROGRAM)	\
+  do {									\
+    int inh__ = (INH);							\
+    DO_IF_DEBUG(							\
+      struct program *prog__ = (EXPECTED_PROGRAM);			\
+      if ((inh__ < 0) ||						\
+	  (inh__ >= Pike_fp->context->prog->num_inherits))		\
+	Pike_fatal("Inherit #%d out of range [0..%d]\n",		\
+		   inh__, Pike_fp->context->prog->num_inherits-1);	\
+      if (prog__ && (Pike_fp->context[inh__].prog != prog__))		\
+	Pike_fatal("Inherit #%d has wrong program %p != %p.\n",		\
+		   Pike_fp->context[inh__].prog, prog__);		\
+    );									\
+    VAR = ((TYPE *)(Pike_fp->current_object->storage +			\
+		    Pike_fp->context[inh__].storage_offset));		\
+  } while(0)
+
 
 enum apply_type
 {
