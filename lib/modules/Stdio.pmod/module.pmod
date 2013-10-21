@@ -302,7 +302,8 @@ class File
   //!   bound to this port locally before connecting anywhere. This is
   //!   only useful for some silly protocols like @b{FTP@}. The port can
   //!   also be specified as a string, giving the name of the service
-  //!   associated with the port.
+  //!   associated with the port. Pass -1 to not specify a port (eg to
+  //!   bind only to an address).
   //!
   //! @param address
   //!   You may specify an address to bind to if your machine has many IP
