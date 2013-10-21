@@ -1,5 +1,8 @@
 #pike 7.5
 
+//! This is the Pike 7.4 compatibility implementation of
+//! cipher buffering.
+//!
 //! @deprecated Crypto.Buffer
 
 #if constant(Nettle.Proxy)

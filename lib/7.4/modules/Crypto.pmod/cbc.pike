@@ -1,5 +1,8 @@
 #pike 7.5
 
+//! This is the Pike 7.4 compatibility implementation of
+//! the Cipher Block Chaining method.
+//!
 //! @deprecated Crypto.CBC
 
 #if constant(Nettle.CBC)

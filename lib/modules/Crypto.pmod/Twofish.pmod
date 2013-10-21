@@ -4,13 +4,9 @@
 //! Another @[AES] finalist, this one designed by Bruce Schneier and
 //! others.
 
-#if constant(Nettle) && constant(Nettle.Twofish_Info)
+#if constant(Nettle) && constant(Nettle.Twofish)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.Twofish_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.Twofish_State(); }
+inherit Nettle.Twofish;
 
 #else
 constant this_program_does_not_exist=1;

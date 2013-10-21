@@ -30,13 +30,9 @@
 //! secure, i.e. there are no known attacks significantly better than
 //! brute force.
 
-#if constant(Nettle) && constant(Nettle.DES3_Info)
+#if constant(Nettle) && constant(Nettle.DES3)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.DES3_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.DES3_State(); }
+inherit Nettle.DES3;
 
 #else
 constant this_program_does_not_exist=1;

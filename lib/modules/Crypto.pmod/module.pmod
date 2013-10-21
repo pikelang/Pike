@@ -60,39 +60,46 @@ int(0..1) verify_crypt_md5(string password, string hash) {
   return Nettle.crypt_md5(password, salt)==[string(0..127)]hash;
 }
 
-class CipherState {
-  inherit Nettle.CipherState;
-  this_program set_encrypt_key(string, int|void force); // Better return type
-  this_program set_decrypt_key(string, int|void force); // Better return type
-}
+constant CipherState = Nettle.Cipher.State;
 
 //! Abstract class for crypto algorithms. Contains some tools useful
 //! for all ciphers.
 class Cipher
 {
-  inherit Nettle.CipherInfo;
-
-  //! Calling `() will return a @[Nettle.CipherState] object.
-  CipherState `()();
-
-  //! Works as a shortcut for @expr{obj->set_encrypt_key(key)->crypt(data)@}
-  string encrypt(string key, string data) {
-    return `()()->set_encrypt_key(key)->crypt(data);
-  }
-
-  //! Works as a shortcut for @expr{obj->set_decrypt_key(key)->crypt(data)@}
-  string decrypt(string key, string data) {
-    return `()()->set_decrypt_key(key)->crypt(data);
-  }
+  inherit Nettle.Cipher;
 }
 
+//! Implementation of the cipher block chaining mode (CBC). Works as
+//! a wrapper for the cipher algorithm put in create.
 class CBC {
-  inherit Cipher;
   inherit Nettle.CBC;
 }
 
+//! Acts as a buffer so that data can be fed to a cipher in blocks
+//! that don't correspond to cipher block sizes.
+//!
+//! @example
+//!   class Encrypter
+//!   {
+//!     protected Crypto.Buffer buffer;
+//!
+//!     void create(string key)
+//!     {
+//!       buffer = Crypto.Buffer(Crypto.CBC(Crypto.AES));
+//!       buffer->set_encrypt_key(key);
+//!     }
+//!
+//!     string feed(string data)
+//!     {
+//!       return buffer->crypt(data);
+//!     }
+//!
+//!     string drain()
+//!     {
+//!       return buffer->pad(Crypto.PAD_PKCS7);
+//!     }
+//!   }
 class Buffer {
-  inherit Cipher;
   inherit Nettle.Proxy;
 }
 
