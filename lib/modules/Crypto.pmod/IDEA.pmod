@@ -8,13 +8,9 @@
 //! Ascom-Tech AG. There is no license fee required for noncommercial
 //! use.
 
-#if constant(Nettle) && constant(Nettle.IDEA_Info)
+#if constant(Nettle) && constant(Nettle.IDEA)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.IDEA_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.IDEA_State(); }
+inherit Nettle.IDEA;
 
 #else
 constant this_program_does_not_exist=1;

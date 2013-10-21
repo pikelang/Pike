@@ -262,7 +262,7 @@ int verify(string password, string hash)
 //!
 //! @seealso
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
-//!   @[Nettle.HashInfo()->crypt_hash()]
+//!   @[Nettle.Hash()->crypt_hash()]
 string(0..127) hash(string password, string|void scheme, int|void rounds)
 {
   function(string, string, int:string(0..255)) crypt_hash;

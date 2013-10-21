@@ -297,7 +297,7 @@ cond_resolv( Nettle.SHA256, [[
 test_do([[ rm("hash_me") ]])
 
 // Crypto.DES
-cond_resolv( Nettle.DES_Info, [[
+cond_resolv( Nettle.DES, [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("\xff"*9), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
@@ -308,7 +308,7 @@ cond_resolv( Nettle.DES_Info, [[
 
 
 // Crypto.DES3
-cond_resolv( Nettle.DES3_Info, [[
+cond_resolv( Nettle.DES3, [[
   test_eq( Crypto.DES3.fix_parity("\xff"*8*3), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("\xff"*(8*3+1)), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("12345678"*3), "12244778"*3 )

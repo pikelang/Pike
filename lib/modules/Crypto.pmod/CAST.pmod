@@ -5,13 +5,9 @@
 //! bit (8 octets) block size, and a variable key size of up to 128
 //! bits.
 
-#if constant(Nettle) && constant(Nettle.CAST128_Info)
+#if constant(Nettle) && constant(Nettle.CAST128)
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.CAST128_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.CAST128_State(); }
+inherit Nettle.CAST128;
 
 #else
 constant this_program_does_not_exist=1;

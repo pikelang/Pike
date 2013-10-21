@@ -73,9 +73,9 @@ array(int) key_size() {
   return ciphers->key_size();
 }
 
-this_program set_encrypt_key(array(string)|string ... keys) {
+this_program set_encrypt_key(array(string(0..255))|string(0..255) ... keys) {
   if(arrayp(keys[0]))
-    keys = [array(string)]keys[0];
+    keys = [array(string(0..255))]keys[0];
   if(sizeof(keys)!=sizeof(ciphers))
     error("Wrong number of keys.\n");
   if(reversed) {
@@ -83,13 +83,13 @@ this_program set_encrypt_key(array(string)|string ... keys) {
     reversed = 0;
   }
   foreach(ciphers; int num; .CipherState c)
-    c->set_encrypt_key( [string]keys[num] );
+    c->set_encrypt_key( [string(0..255)]keys[num] );
   return this;
 }
 
-this_program set_decrypt_key(array(string)|string ... keys) {
+this_program set_decrypt_key(array(string(0..255))|string(0..255) ... keys) {
   if(arrayp(keys[0]))
-    keys = [array(string)]keys[0];
+    keys = [array(string(0..255))]keys[0];
   if(sizeof(keys)!=sizeof(ciphers))
     error("Wrong number of keys.\n");
   if(!reversed) {
@@ -98,11 +98,11 @@ this_program set_decrypt_key(array(string)|string ... keys) {
   }
   keys = reverse(keys);
   foreach(ciphers; int num; .CipherState c)
-    c->set_decrypt_key( [string]keys[num] );
+    c->set_decrypt_key( [string(0..255)]keys[num] );
   return this;
 }
 
-string crypt(string data) {
+string(0..255) crypt(string(0..255) data) {
   if(sizeof(data)%_block_size)
     error("Data size not integral number of blocks.\n");
   foreach(ciphers, .CipherState c)
