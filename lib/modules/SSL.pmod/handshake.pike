@@ -148,7 +148,8 @@ Packet server_hello_packet()
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
   struct->put_uint(version[0],1); struct->put_uint(version[1],1); /* version */
-  SSL3_DEBUG_MSG("Writing server hello, with version: %d.%d\n", @version);
+  SSL3_DEBUG_MSG("Writing server hello, with version: %d.%d\n",
+                 version[0], version[1]);
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
@@ -402,27 +403,22 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 {
   reuse = 0;
   session = context->new_session();
-  multiset(int) common_suites;
 
   SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
 		 fmt_cipher_suites(context->preferred_suites),
                  fmt_cipher_suites(cipher_suites));
-  common_suites = mkmultiset(cipher_suites & context->preferred_suites);
+  cipher_suites = context->preferred_suites & cipher_suites;
   SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 fmt_cipher_suites((array(int))common_suites));
+                 fmt_cipher_suites((array(int))cipher_suites));
 
-  if (sizeof(common_suites))
-  {
-    int suite;
-    foreach(context->preferred_suites, suite)
-      if (common_suites[suite]) break;
-    session->set_cipher_suite(suite,version[1]);
-  } else {
+  if (sizeof(cipher_suites))
+    session->set_cipher_suite(cipher_suites[0],version[1]);
+  else {
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
   
-  compression_methods &= context->preferred_compressors;
+  compression_methods = context->preferred_compressors & compression_methods;
   if (sizeof(compression_methods))
     session->set_compression_method(compression_methods[0]);
   else
@@ -877,7 +873,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if ((client_version[0] != PROTOCOL_major) ||
 	    (client_version[1] < min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 @client_version);
+			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Unsupported version.\n",
 			    backtrace()));
@@ -1019,7 +1015,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
 	    default:
 #ifdef SSL3_DEBUG
-              foreach(indices(.Constants), string id)
+              foreach([array(string)]indices(.Constants), string id)
                 if(has_prefix(id, "EXTENSION_") &&
                    .Constants[id]==extension_type)
                 {
@@ -1143,7 +1139,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if ((client_version[0] != PROTOCOL_major) ||
 	    (client_version[1] < min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 @client_version);
+			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Unsupported version.\n",
 			    backtrace()));
@@ -1469,7 +1465,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if ((version[0] != PROTOCOL_major) || (version[1] < min_version)) {
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-		       @version);
+		       version[0], version[1]);
 	version = client_version + ({});
 	send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			  "SSL.session->handle_handshake: Unsupported version.\n",
