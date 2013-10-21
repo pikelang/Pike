@@ -48,6 +48,7 @@ class Constructed
 {
   //! @decl inherit Types.Compound
   inherit .Types.Compound;
+  constant type_name = "CONSTRUCTED";
 
   int combined_tag;
 
