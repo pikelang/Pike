@@ -192,7 +192,7 @@ dnl  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
 test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
 
 // Crypto.MD5
-cond_resolv( Nettle.MD5_Info, [[
+cond_resolv( Nettle.MD5, [[
   test_eq(S(Crypto.MD5()->update("")->digest()),
           "d41d8cd98f00b204e9800998ecf8427e")
   test_eq(S(Crypto.MD5()->update("a")->digest()),
@@ -223,7 +223,7 @@ cond_resolv( Nettle.MD5_Info, [[
 
 
 // Crypto.MD4
-cond_resolv( Nettle.MD4_Info, [[
+cond_resolv( Nettle.MD4, [[
   test_eq(S(Crypto.MD4()->update("")->digest()),
           "31d6cfe0d16ae931b73c59d7e0c089c0")
   test_eq(S(Crypto.MD4()->update("a")->digest()),
@@ -250,7 +250,7 @@ cond_resolv( Nettle.MD4_Info, [[
 
 
 // Crypto.SHA1
-cond_resolv( Nettle.SHA1_Info, [[
+cond_resolv( Nettle.SHA1, [[
   test_eq(S(Crypto.SHA1()->update("")->digest()),
           "da39a3ee5e6b4b0d3255bfef95601890afd80709")
   test_eq(S(Crypto.SHA1()->update("abc")->digest()),
@@ -273,7 +273,7 @@ cond_resolv( Nettle.SHA1_Info, [[
 
 
 // Crypto.SHA256
-cond_resolv( Nettle.SHA256_Info, [[
+cond_resolv( Nettle.SHA256, [[
   test_eq(S(Crypto.SHA256()->update("")->digest()),
           "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
   test_eq(S(Crypto.SHA256()->update("abc")->digest()),
@@ -393,10 +393,10 @@ test_do( RSB->set_private_key(RSA->get_d(),
 test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
-cond_resolv( Nettle.MD2_Info, [[
+cond_resolv( Nettle.MD2, [[
   test_true([[ RSA->verify("hej", Crypto.MD2, RSB->sign("hej", Crypto.MD2)) ]])
 ]])
-cond_resolv( Nettle.MD4_Info, [[
+cond_resolv( Nettle.MD4, [[
   test_true([[ RSA->verify("hej", Crypto.MD4, RSB->sign("hej", Crypto.MD4)) ]])
 ]])
 test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
