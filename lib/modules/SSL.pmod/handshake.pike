@@ -404,10 +404,12 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   session = context->new_session();
   multiset(int) common_suites;
 
-  SSL3_DEBUG_MSG("ciphers: me: %O, client: %O\n",
-		 context->preferred_suites, cipher_suites);
+  SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
+		 fmt_cipher_suites(context->preferred_suites),
+                 fmt_cipher_suites(cipher_suites));
   common_suites = mkmultiset(cipher_suites & context->preferred_suites);
-  SSL3_DEBUG_MSG("intersection: %O\n", common_suites);
+  SSL3_DEBUG_MSG("intersection:\n%s\n",
+                 fmt_cipher_suites((array(int))common_suites));
 
   if (sizeof(common_suites))
   {
@@ -784,6 +786,18 @@ int verify_certificate_chain(array(string) certs)
  return 0;
 }
 
+protected string fmt_cipher_suites(array(int) s)
+{
+  String.Buffer b = String.Buffer();
+  mapping(int:string) ciphers = ([]);
+  foreach([array(string)]indices(.Constants), string id)
+    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") )
+      ciphers[.Constants[id]] = id;
+  foreach(s, int c)
+    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
+  return (string)b;
+}
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
@@ -846,10 +860,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: received hello\n"
 			 "version = %d.%d\n"
 			 "id=%O\n"
-			 "cipher suites: %O\n"
+			 "cipher suites:\n%s\n"
 			 "compression methods: %O\n",
 			 client_version[0], client_version[1],
-			 id, cipher_suites, compression_methods);
+			 id, fmt_cipher_suites(cipher_suites),
+                         compression_methods);
 
 	}
 	  || (cipher_len & 1))
@@ -906,6 +921,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   extension_type,
 			   extension_data->buffer,
 			   sizeof(extension_data->buffer));
+          extensions:
 	    switch(extension_type) {
 	    case EXTENSION_server_name:
 	      // RFC 4366 3.1 "Server Name Indication"
@@ -923,7 +939,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		  break;
 		}
 	      }
+              SSL3_DEBUG_MSG("SNI extension: %O\n", server_names);
 	      break;
+
 	    case EXTENSION_renegotiation_info:
 	      string renegotiated_connection =
 		extension_data->get_var_string(1);
@@ -948,10 +966,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      }
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
+              SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
 	      break;
 
 	    case EXTENSION_next_protocol_negotiation:
 	      has_next_protocol_negotiation = 1;
+              SSL3_DEBUG_MSG("NPN extension\n");
 	      break;
 
             case EXTENSION_application_layer_protocol_negotiation:
@@ -993,10 +1013,21 @@ int(-1..1) handle_handshake(int type, string data, string raw)
                                     "SSL.session->handler_handshake: "
                                     "No compatible ALPN protocol.\n",
                                     backtrace()));
+                SSL3_DEBUG_MSG("ALPN extension: %O %O\n", protocols, next_protocol);
               }
               break;
 
 	    default:
+#ifdef SSL3_DEBUG
+              foreach(indices(.Constants), string id)
+                if(has_prefix(id, "EXTENSION_") &&
+                   .Constants[id]==extension_type)
+                {
+                  werror("Unhandled extension %s\n", id);
+                  break extensions;
+                }
+              werror("Unknown extension %O\n", extension_type);
+#endif
 	      break;
 	    }
 	  }
