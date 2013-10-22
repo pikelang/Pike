@@ -693,6 +693,7 @@ PIKECLASS DES
     {
       apply_external(1, f_DES_fix_parity_fun_num, args);
     }
+  }
   /*! @endclass State */
 
 }
