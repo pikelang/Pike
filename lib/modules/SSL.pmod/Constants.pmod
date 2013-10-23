@@ -6,16 +6,50 @@
  *   SSL 3.0			draft-freier-ssl-version3-02.txt
  *
  *   SSL 3.1/TLS 1.0		RFC 2246
+ *   Kerberos for TLS 1.0	RFC 2712
  *   AES Ciphers for TLS 1.0	RFC 3268
  *   Extensions for TLS 1.0	RFC 3546
+ *   LZS Compression for TLS	RFC 3943
+ *   Camellia Cipher for TLS	RFC 4132
+ *   SEED Cipher for TLS 1.0	RFC 4162
+ *   Pre-Shared Keys for TLS	RFC 4279
  *
  *   SSL 3.2/TLS 1.1		RFC 4346
  *   Extensions for TLS 1.1	RFC 4366
  *   ECC Ciphers for TLS 1.1	RFC 4492
+ *   Session Resumption		RFC 4507
+ *   TLS Handshake Message	RFC 4680
+ *   User Mapping Extension	RFC 4681
+ *   PSK with NULL for TLS 1.1	RFC 4785
+ *   SRP with TLS 1.1		RFC 5054
+ *   Session Resumption		RFC 5077
+ *   OpenPGP Authentication	RFC 5081
+ *   Authenticated Encryption	RFC 5116
+ *
+ *   DTLS over DCCP		RFC 5238
  *
  *   SSL 3.3/TLS 1.2		RFC 5246
+ *   AES GCM Cipher for TLS	RFC 5288
+ *   ECC with SHA256/384 & GCM	RFC 5289
+ *   Suite B Profile for TLS	RFC 5430
+ *   DES and IDEA for TLS	RFC 5469
+ *   Pre-Shared Keys with GCM	RFC 5487
+ *   ECDHA_PSK Cipher for TLS	RFC 5489
  *   Renegotiation Extension	RFC 5746
  *   Authorization Extensions	RFC 5878
+ *   Camellia Cipher for TLS	RFC 5932
+ *   KeyNote Auth for TLS	RFC 6042
+ *   TLS Extension Defintions	RFC 6066
+ *   OpenPGP Authentication	RFC 6091
+ *   ARIA Cipher for TLS	RFC 6209
+ *   Additional Master Secrets	RFC 6358
+ *   Camellia Cipher for TLS	RFC 6367
+ *   Suite B Profile for TLS	RFC 6460
+ *   Heartbeat Extension	RFC 6520
+ *   AES-CCM Cipher for TLS	RFC 6655
+ *   Multiple Certificates	RFC 6961
+ *   Certificate Transparency	RFC 6962
+ *   ECC Brainpool Curves	RFC 7027
  *
  *   Next Protocol Negotiation  Google technical note: nextprotoneg
  *   Application Layer Protocol Negotiation  draft-ietf-tls-applayerprotoneg
@@ -191,204 +225,324 @@ constant CONNECTION_server 	= 1;
 constant CONNECTION_client_auth = 2;
 
 /* Cipher suites */
-constant SSL_null_with_null_null 		= 0x0000;
-constant SSL_rsa_with_null_md5			= 0x0001;
-constant SSL_rsa_with_null_sha			= 0x0002;
-constant SSL_rsa_export_with_rc4_40_md5		= 0x0003;
-constant SSL_rsa_export_with_rc2_cbc_40_md5	= 0x0006;
-constant SSL_rsa_export_with_des40_cbc_sha	= 0x0008;
-constant SSL_dh_dss_export_with_des40_cbc_sha	= 0x000b;
-constant SSL_dh_rsa_export_with_des40_cbc_sha	= 0x000e;
-constant SSL_dhe_dss_export_with_des40_cbc_sha	= 0x0011;
-constant SSL_dhe_rsa_export_with_des40_cbc_sha	= 0x0014;
-constant SSL_dh_anon_export_with_rc4_40_md5	= 0x0017;
-constant SSL_dh_anon_export_with_des40_cbc_sha	= 0x0019;
-constant TLS_krb5_with_des_cbc_40_sha           = 0x0026;
-constant TLS_krb5_with_rc2_cbc_40_sha           = 0x0027;
-constant TLS_krb5_with_rc4_40_sha               = 0x0028;
-constant TLS_krb5_with_des_cbc_40_md5           = 0x0029;
-constant TLS_krb5_with_rc2_cbc_40_md5           = 0x002a;
-constant TLS_krb5_with_rc4_40_md5               = 0x002b;
+constant SSL_null_with_null_null 		= 0x0000;	// SSL 3.0
+constant SSL_rsa_with_null_md5			= 0x0001;	// SSL 3.0
+constant SSL_rsa_with_null_sha			= 0x0002;	// SSL 3.0
+constant SSL_rsa_export_with_rc4_40_md5		= 0x0003;	// SSL 3.0
+constant SSL_rsa_export_with_rc2_cbc_40_md5	= 0x0006;	// SSL 3.0
+constant SSL_rsa_export_with_des40_cbc_sha	= 0x0008;	// SSL 3.0
+constant SSL_dh_dss_export_with_des40_cbc_sha	= 0x000b;	// SSL 3.0
+constant SSL_dh_rsa_export_with_des40_cbc_sha	= 0x000e;	// SSL 3.0
+constant SSL_dhe_dss_export_with_des40_cbc_sha	= 0x0011;	// SSL 3.0
+constant SSL_dhe_rsa_export_with_des40_cbc_sha	= 0x0014;	// SSL 3.0
+constant SSL_dh_anon_export_with_rc4_40_md5	= 0x0017;	// SSL 3.0
+constant SSL_dh_anon_export_with_des40_cbc_sha	= 0x0019;	// SSL 3.0
+constant TLS_krb5_with_des_cbc_40_sha           = 0x0026;	// RFC 2712
+constant TLS_krb5_with_rc2_cbc_40_sha           = 0x0027;	// RFC 2712
+constant TLS_krb5_with_rc4_40_sha               = 0x0028;	// RFC 2712
+constant TLS_krb5_with_des_cbc_40_md5           = 0x0029;	// RFC 2712
+constant TLS_krb5_with_rc2_cbc_40_md5           = 0x002a;	// RFC 2712
+constant TLS_krb5_with_rc4_40_md5               = 0x002b;	// RFC 2712
+constant TLS_psk_with_null_sha                  = 0x002c;	// RFC 4785
+constant TLS_dhe_psk_with_null_sha              = 0x002d;	// RFC 4785
+constant TLS_rsa_psk_with_null_sha              = 0x002e;	// RFC 4785
+constant TLS_rsa_with_null_sha256               = 0x003b;	// TLS 1.2
 #ifndef WEAK_CRYPTO_40BIT
-constant SSL_rsa_with_rc4_128_md5		= 0x0004;
-constant SSL_rsa_with_rc4_128_sha		= 0x0005;
-constant SSL_rsa_with_idea_cbc_sha		= 0x0007;
-constant SSL_rsa_with_des_cbc_sha		= 0x0009;
-constant SSL_rsa_with_3des_ede_cbc_sha		= 0x000a; 
-constant SSL_dh_dss_with_des_cbc_sha		= 0x000c;
-constant SSL_dh_dss_with_3des_ede_cbc_sha	= 0x000d;
-constant SSL_dh_rsa_with_des_cbc_sha		= 0x000f;
-constant SSL_dh_rsa_with_3des_ede_cbc_sha	= 0x0010;
-constant SSL_dhe_dss_with_des_cbc_sha		= 0x0012;
-constant SSL_dhe_dss_with_3des_ede_cbc_sha	= 0x0013;
-constant SSL_dhe_rsa_with_des_cbc_sha		= 0x0015;
-constant SSL_dhe_rsa_with_3des_ede_cbc_sha	= 0x0016; 
-constant SSL_dh_anon_with_rc4_128_md5		= 0x0018;
-constant SSL_dh_anon_with_des_cbc_sha		= 0x001a;
-constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b; 
+constant SSL_rsa_with_rc4_128_md5		= 0x0004;	// SSL 3.0
+constant SSL_rsa_with_rc4_128_sha		= 0x0005;	// SSL 3.0
+constant SSL_rsa_with_idea_cbc_sha		= 0x0007;	// SSL 3.0
+constant SSL_rsa_with_des_cbc_sha		= 0x0009;	// SSL 3.0
+constant SSL_rsa_with_3des_ede_cbc_sha		= 0x000a;	// SSL 3.0
+constant SSL_dh_dss_with_des_cbc_sha		= 0x000c;	// SSL 3.0
+constant SSL_dh_dss_with_3des_ede_cbc_sha	= 0x000d;	// SSL 3.0
+constant SSL_dh_rsa_with_des_cbc_sha		= 0x000f;	// SSL 3.0
+constant SSL_dh_rsa_with_3des_ede_cbc_sha	= 0x0010;	// SSL 3.0
+constant SSL_dhe_dss_with_des_cbc_sha		= 0x0012;	// SSL 3.0
+constant SSL_dhe_dss_with_3des_ede_cbc_sha	= 0x0013;	// SSL 3.0
+constant SSL_dhe_rsa_with_des_cbc_sha		= 0x0015;	// SSL 3.0
+constant SSL_dhe_rsa_with_3des_ede_cbc_sha	= 0x0016;	// SSL 3.0
+constant SSL_dh_anon_with_rc4_128_md5		= 0x0018;	// SSL 3.0
+constant SSL_dh_anon_with_des_cbc_sha		= 0x001a;	// SSL 3.0
+constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b;	// SSL 3.0
 
 /* SSLv3/TLS conflict */
 /* constant SSL_fortezza_dms_with_null_sha		= 0x001c; */
 /* constant SSL_fortezza_dms_with_fortezza_cbc_sha	= 0x001d; */
 /* constant SSL_fortezza_dms_with_rc4_128_sha	= 0x001e; */
 
-constant TLS_krb5_with_des_cbc_sha              = 0x001e;
-constant TLS_krb5_with_3des_ede_cbc_sha         = 0x001f;
-constant TLS_krb5_with_rc4_128_sha              = 0x0020;
-constant TLS_krb5_with_idea_cbc_sha             = 0x0021;
-constant TLS_krb5_with_des_cbc_md5              = 0x0022;
-constant TLS_krb5_with_3des_ede_cbc_md5         = 0x0023;
-constant TLS_krb5_with_rc4_128_md5              = 0x0024;
-constant TLS_krb5_with_idea_cbc_md5             = 0x0025;
-constant TLS_psk_with_null_sha                  = 0x002c;
-constant TLS_dhe_psk_with_null_sha              = 0x002d;
-constant TLS_rsa_psk_with_null_sha              = 0x002e;
-constant TLS_rsa_with_aes_128_cbc_sha           = 0x002f;
-constant TLS_dh_dss_with_aes_128_cbc_sha        = 0x0030;
-constant TLS_dh_rsa_with_aes_128_cbc_sha        = 0x0031;
-constant TLS_dhe_dss_with_aes_128_cbc_sha       = 0x0032;
-constant TLS_dhe_rsa_with_aes_128_cbc_sha       = 0x0033;
-constant TLS_dh_anon_with_aes_128_cbc_sha       = 0x0034;
-constant TLS_rsa_with_aes_256_cbc_sha           = 0x0035;
-constant TLS_dh_dss_with_aes_256_cbc_sha        = 0x0036;
-constant TLS_dh_rsa_with_aes_256_cbc_sha        = 0x0037;
-constant TLS_dhe_dss_with_aes_256_cbc_sha       = 0x0038;
-constant TLS_dhe_rsa_with_aes_256_cbc_sha       = 0x0039;
-constant TLS_dh_anon_with_aes_256_cbc_sha       = 0x003a;
-constant TLS_rsa_with_null_sha256               = 0x003b;
-constant TLS_rsa_with_aes_128_cbc_sha256        = 0x003c;
-constant TLS_rsa_with_aes_256_cbc_sha256        = 0x003d;
-constant TLS_dh_dss_with_aes_128_cbc_sha256     = 0x003e;
-constant TLS_dh_rsa_with_aes_128_cbc_sha256     = 0x003f;
-constant TLS_dhe_dss_with_aes_128_cbc_sha256    = 0x0040;
-constant TLS_rsa_with_camellia_128_cbc_sha      = 0x0041;
-constant TLS_dh_dss_with_camellia_128_cbc_sha   = 0x0042;
-constant TLS_dh_rsa_with_camellia_128_cbc_sha   = 0x0043;
-constant TLS_dhe_dss_with_camellia_128_cbc_sha  = 0x0044;
-constant TLS_dhe_rsa_with_camellia_128_cbc_sha  = 0x0045;
-constant TLS_dh_anon_with_camellia_128_cbc_sha  = 0x0046;
+constant TLS_krb5_with_des_cbc_sha              = 0x001e;	// RFC 2712
+constant TLS_krb5_with_3des_ede_cbc_sha         = 0x001f;	// RFC 2712
+constant TLS_krb5_with_rc4_128_sha              = 0x0020;	// RFC 2712
+constant TLS_krb5_with_idea_cbc_sha             = 0x0021;	// RFC 2712
+constant TLS_krb5_with_des_cbc_md5              = 0x0022;	// RFC 2712
+constant TLS_krb5_with_3des_ede_cbc_md5         = 0x0023;	// RFC 2712
+constant TLS_krb5_with_rc4_128_md5              = 0x0024;	// RFC 2712
+constant TLS_krb5_with_idea_cbc_md5             = 0x0025;	// RFC 2712
+constant TLS_rsa_with_aes_128_cbc_sha           = 0x002f;	// RFC 3268
+constant TLS_dh_dss_with_aes_128_cbc_sha        = 0x0030;	// RFC 3268
+constant TLS_dh_rsa_with_aes_128_cbc_sha        = 0x0031;	// RFC 3268
+constant TLS_dhe_dss_with_aes_128_cbc_sha       = 0x0032;	// RFC 3268
+constant TLS_dhe_rsa_with_aes_128_cbc_sha       = 0x0033;	// RFC 3268
+constant TLS_dh_anon_with_aes_128_cbc_sha       = 0x0034;	// RFC 3268
+constant TLS_rsa_with_aes_256_cbc_sha           = 0x0035;	// RFC 3268
+constant TLS_dh_dss_with_aes_256_cbc_sha        = 0x0036;	// RFC 3268
+constant TLS_dh_rsa_with_aes_256_cbc_sha        = 0x0037;	// RFC 3268
+constant TLS_dhe_dss_with_aes_256_cbc_sha       = 0x0038;	// RFC 3268
+constant TLS_dhe_rsa_with_aes_256_cbc_sha       = 0x0039;	// RFC 3268
+constant TLS_dh_anon_with_aes_256_cbc_sha       = 0x003a;	// RFC 3268
+constant TLS_rsa_with_aes_128_cbc_sha256        = 0x003c;	// TLS 1.2
+constant TLS_rsa_with_aes_256_cbc_sha256        = 0x003d;	// TLS 1.2
+constant TLS_dh_dss_with_aes_128_cbc_sha256     = 0x003e;	// TLS 1.2
+constant TLS_dh_rsa_with_aes_128_cbc_sha256     = 0x003f;	// TLS 1.2
+constant TLS_dhe_dss_with_aes_128_cbc_sha256    = 0x0040;	// TLS 1.2
+constant TLS_rsa_with_camellia_128_cbc_sha      = 0x0041;	// RFC 4132
+constant TLS_dh_dss_with_camellia_128_cbc_sha   = 0x0042;	// RFC 4132
+constant TLS_dh_rsa_with_camellia_128_cbc_sha   = 0x0043;	// RFC 4132
+constant TLS_dhe_dss_with_camellia_128_cbc_sha  = 0x0044;	// RFC 4132
+constant TLS_dhe_rsa_with_camellia_128_cbc_sha  = 0x0045;	// RFC 4132
+constant TLS_dh_anon_with_camellia_128_cbc_sha  = 0x0046;	// RFC 4132
 
-constant TLS_dhe_rsa_with_aes_128_cbc_sha256    = 0x0067;
-constant TLS_dh_dss_with_aes_256_cbc_sha256     = 0x0068;
-constant TLS_dh_rsa_with_aes_256_cbc_sha256     = 0x0069;
-constant TLS_dhe_dss_with_aes_256_cbc_sha256    = 0x006a;
-constant TLS_dhe_rsa_with_aes_256_cbc_sha256    = 0x006b;
-constant TLS_dh_anon_with_aes_128_cbc_sha256    = 0x006c;
-constant TLS_dh_anon_with_aes_256_cbc_sha256    = 0x006d;
-constant TLS_rsa_with_camellia_256_cbc_sha      = 0x0084;
-constant TLS_dh_dss_with_camellia_256_cbc_sha   = 0x0085;
-constant TLS_dh_rsa_with_camellia_256_cbc_sha   = 0x0086;
-constant TLS_dhe_dss_with_camellia_256_cbc_sha  = 0x0087;
-constant TLS_dhe_rsa_with_camellia_256_cbc_sha  = 0x0088;
-constant TLS_dh_anon_with_camellia_256_cbc_sha  = 0x0089;
-constant TLS_psk_with_rc4_128_sha               = 0x008a;
-constant TLS_psk_with_3des_ede_cbc_sha          = 0x008b;
-constant TLS_psk_with_aes_128_cbc_sha           = 0x008c;
-constant TLS_psk_with_aes_256_cbc_sha           = 0x008d;
-constant TLS_dhe_psk_with_rc4_128_sha           = 0x008e;
-constant TLS_dhe_psk_with_3des_ede_cbc_sha      = 0x008f;
-constant TLS_dhe_psk_with_aes_128_cbc_sha       = 0x0090;
-constant TLS_dhe_psk_with_aes_256_cbc_sha       = 0x0091;
-constant TLS_rsa_psk_with_rc4_128_sha           = 0x0092;
-constant TLS_rsa_psk_with_3des_ede_cbc_sha      = 0x0093;
-constant TLS_rsa_psk_with_aes_128_cbc_sha       = 0x0094;
-constant TLS_rsa_psk_with_aes_256_cbc_sha       = 0x0095;
-constant TLS_rsa_with_seed_cbc_sha              = 0x0096;
-constant TLS_dh_dss_with_seed_cbc_sha           = 0x0097;
-constant TLS_dh_rsa_with_seed_cbc_sha           = 0x0098;
-constant TLS_dhe_dss_with_seed_cbc_sha          = 0x0099;
-constant TLS_dhe_rsa_with_seed_cbc_sha          = 0x009a;
-constant TLS_dh_anon_with_seed_cbc_sha          = 0x009b;
-constant TLS_rsa_with_aes_128_gcm_sha256        = 0x009c;
-constant TLS_rsa_with_aes_256_gcm_sha384        = 0x009d;
-constant TLS_dhe_rsa_with_aes_128_gcm_sha256    = 0x009e;
-constant TLS_dhe_rsa_with_aes_256_gcm_sha384    = 0x009f;
-constant TLS_dh_rsa_with_aes_128_gcm_sha256     = 0x00a0;
-constant TLS_dh_rsa_with_aes_256_gcm_sha384     = 0x00a1;
-constant TLS_dhe_dss_with_aes_128_gcm_sha256    = 0x00a2;
-constant TLS_dhe_dss_with_aes_256_gcm_sha384    = 0x00a3;
-constant TLS_dh_dss_with_aes_128_gcm_sha256     = 0x00a4;
-constant TLS_dh_dss_with_aes_256_gcm_sha384     = 0x00a5;
-constant TLS_dh_anon_with_aes_128_gcm_sha256    = 0x00a6;
-constant TLS_dh_anon_with_aes_256_gcm_sha384    = 0x00a7;
-constant TLS_psk_with_aes_128_gcm_sha256        = 0x00a8;
-constant TLS_psk_with_aes_256_gcm_sha384        = 0x00a9;
-constant TLS_dhe_psk_with_aes_128_gcm_sha256    = 0x00aa;
-constant TLS_dhe_psk_with_aes_256_gcm_sha384    = 0x00ab;
-constant TLS_rsa_psk_with_aes_128_gcm_sha256    = 0x00ac;
-constant TLS_rsa_psk_with_aes_256_gcm_sha384    = 0x00ad;
-constant TLS_psk_with_aes_128_cbc_sha256        = 0x00ae;
-constant TLS_psk_with_aes_256_cbc_sha384        = 0x00af;
-constant TLS_psk_with_null_sha256               = 0x00b0;
-constant TLS_psk_with_null_sha384               = 0x00b1;
-constant TLS_dhe_psk_with_aes_128_cbc_sha256    = 0x00b2;
-constant TLS_dhe_psk_with_aes_256_cbc_sha384    = 0x00b3;
-constant TLS_dhe_psk_with_null_sha256           = 0x00b4;
-constant TLS_dhe_psk_with_null_sha384           = 0x00b5;
-constant TLS_rsa_psk_with_aes_128_cbc_sha256    = 0x00b6;
-constant TLS_rsa_psk_with_aes_256_cbc_sha384    = 0x00b7;
-constant TLS_rsa_psk_with_null_sha256           = 0x00b8;
-constant TLS_rsa_psk_with_null_sha384           = 0x00b9;
+constant TLS_dhe_rsa_with_aes_128_cbc_sha256    = 0x0067;	// TLS 1.2
+constant TLS_dh_dss_with_aes_256_cbc_sha256     = 0x0068;	// TLS 1.2
+constant TLS_dh_rsa_with_aes_256_cbc_sha256     = 0x0069;	// TLS 1.2
+constant TLS_dhe_dss_with_aes_256_cbc_sha256    = 0x006a;	// TLS 1.2
+constant TLS_dhe_rsa_with_aes_256_cbc_sha256    = 0x006b;	// TLS 1.2
+constant TLS_dh_anon_with_aes_128_cbc_sha256    = 0x006c;	// TLS 1.2
+constant TLS_dh_anon_with_aes_256_cbc_sha256    = 0x006d;	// TLS 1.2
+
+constant TLS_rsa_with_camellia_256_cbc_sha      = 0x0084;	// RFC 4132
+constant TLS_dh_dss_with_camellia_256_cbc_sha   = 0x0085;	// RFC 4132
+constant TLS_dh_rsa_with_camellia_256_cbc_sha   = 0x0086;	// RFC 4132
+constant TLS_dhe_dss_with_camellia_256_cbc_sha  = 0x0087;	// RFC 4132
+constant TLS_dhe_rsa_with_camellia_256_cbc_sha  = 0x0088;	// RFC 4132
+constant TLS_dh_anon_with_camellia_256_cbc_sha  = 0x0089;	// RFC 4132
+constant TLS_psk_with_rc4_128_sha               = 0x008a;	// RFC 4279
+constant TLS_psk_with_3des_ede_cbc_sha          = 0x008b;	// RFC 4279
+constant TLS_psk_with_aes_128_cbc_sha           = 0x008c;	// RFC 4279
+constant TLS_psk_with_aes_256_cbc_sha           = 0x008d;	// RFC 4279
+constant TLS_dhe_psk_with_rc4_128_sha           = 0x008e;	// RFC 4279
+constant TLS_dhe_psk_with_3des_ede_cbc_sha      = 0x008f;	// RFC 4279
+constant TLS_dhe_psk_with_aes_128_cbc_sha       = 0x0090;	// RFC 4279
+constant TLS_dhe_psk_with_aes_256_cbc_sha       = 0x0091;	// RFC 4279
+constant TLS_rsa_psk_with_rc4_128_sha           = 0x0092;	// RFC 4279
+constant TLS_rsa_psk_with_3des_ede_cbc_sha      = 0x0093;	// RFC 4279
+constant TLS_rsa_psk_with_aes_128_cbc_sha       = 0x0094;	// RFC 4279
+constant TLS_rsa_psk_with_aes_256_cbc_sha       = 0x0095;	// RFC 4279
+constant TLS_rsa_with_seed_cbc_sha              = 0x0096;	// RFC 4162
+constant TLS_dh_dss_with_seed_cbc_sha           = 0x0097;	// RFC 4162
+constant TLS_dh_rsa_with_seed_cbc_sha           = 0x0098;	// RFC 4162
+constant TLS_dhe_dss_with_seed_cbc_sha          = 0x0099;	// RFC 4162
+constant TLS_dhe_rsa_with_seed_cbc_sha          = 0x009a;	// RFC 4162
+constant TLS_dh_anon_with_seed_cbc_sha          = 0x009b;	// RFC 4162
+constant TLS_rsa_with_aes_128_gcm_sha256        = 0x009c;	// RFC 5288
+constant TLS_rsa_with_aes_256_gcm_sha384        = 0x009d;	// RFC 5288
+constant TLS_dhe_rsa_with_aes_128_gcm_sha256    = 0x009e;	// RFC 5288
+constant TLS_dhe_rsa_with_aes_256_gcm_sha384    = 0x009f;	// RFC 5288
+constant TLS_dh_rsa_with_aes_128_gcm_sha256     = 0x00a0;	// RFC 5288
+constant TLS_dh_rsa_with_aes_256_gcm_sha384     = 0x00a1;	// RFC 5288
+constant TLS_dhe_dss_with_aes_128_gcm_sha256    = 0x00a2;	// RFC 5288
+constant TLS_dhe_dss_with_aes_256_gcm_sha384    = 0x00a3;	// RFC 5288
+constant TLS_dh_dss_with_aes_128_gcm_sha256     = 0x00a4;	// RFC 5288
+constant TLS_dh_dss_with_aes_256_gcm_sha384     = 0x00a5;	// RFC 5288
+constant TLS_dh_anon_with_aes_128_gcm_sha256    = 0x00a6;	// RFC 5288
+constant TLS_dh_anon_with_aes_256_gcm_sha384    = 0x00a7;	// RFC 5288
+constant TLS_psk_with_aes_128_gcm_sha256        = 0x00a8;	// RFC 5487
+constant TLS_psk_with_aes_256_gcm_sha384        = 0x00a9;	// RFC 5487
+constant TLS_dhe_psk_with_aes_128_gcm_sha256    = 0x00aa;	// RFC 5487
+constant TLS_dhe_psk_with_aes_256_gcm_sha384    = 0x00ab;	// RFC 5487
+constant TLS_rsa_psk_with_aes_128_gcm_sha256    = 0x00ac;	// RFC 5487
+constant TLS_rsa_psk_with_aes_256_gcm_sha384    = 0x00ad;	// RFC 5487
+constant TLS_psk_with_aes_128_cbc_sha256        = 0x00ae;	// RFC 5487
+constant TLS_psk_with_aes_256_cbc_sha384        = 0x00af;	// RFC 5487
+constant TLS_psk_with_null_sha256               = 0x00b0;	// RFC 5487
+constant TLS_psk_with_null_sha384               = 0x00b1;	// RFC 5487
+constant TLS_dhe_psk_with_aes_128_cbc_sha256    = 0x00b2;	// RFC 5487
+constant TLS_dhe_psk_with_aes_256_cbc_sha384    = 0x00b3;	// RFC 5487
+constant TLS_dhe_psk_with_null_sha256           = 0x00b4;	// RFC 5487
+constant TLS_dhe_psk_with_null_sha384           = 0x00b5;	// RFC 5487
+constant TLS_rsa_psk_with_aes_128_cbc_sha256    = 0x00b6;	// RFC 5487
+constant TLS_rsa_psk_with_aes_256_cbc_sha384    = 0x00b7;	// RFC 5487
+constant TLS_rsa_psk_with_null_sha256           = 0x00b8;	// RFC 5487
+constant TLS_rsa_psk_with_null_sha384           = 0x00b9;	// RFC 5487
+constant TLS_rsa_with_camellia_128_cbc_sha256   = 0x00ba;	// RFC 5932
+constant TLS_dh_dss_with_camellia_128_cbc_sha256= 0x00bb;	// RFC 5932
+constant TLS_dh_rsa_with_camellia_128_cbc_sha256= 0x00bc;	// RFC 5932
+constant TLS_dhe_dss_with_camellia_128_cbc_sha256= 0x00bd;	// RFC 5932
+constant TLS_dhe_rsa_with_camellia_128_cbc_sha256= 0x00be;	// RFC 5932
+constant TLS_dh_anon_with_camellia_128_cbc_sha256= 0x00bf;	// RFC 5932
+constant TLS_rsa_with_camellia_256_cbc_sha256   = 0x00c0;	// RFC 5932
+constant TLS_dh_dss_with_camellia_256_cbc_sha256= 0x00c1;	// RFC 5932
+constant TLS_dh_rsa_with_camellia_256_cbc_sha256= 0x00c2;	// RFC 5932
+constant TLS_dhe_dss_with_camellia_256_cbc_sha256= 0x00c3;	// RFC 5932
+constant TLS_dhe_rsa_with_camellia_256_cbc_sha256= 0x00c4;	// RFC 5932
+constant TLS_dh_anon_with_camellia_256_cbc_sha256= 0x00c5;	// RFC 5932
+
 constant TLS_empty_renegotiation_info_scsv	= 0x00ff;	// RFC 5746
-constant TLS_ecdh_ecdsa_with_null_sha           = 0xc001;
-constant TLS_ecdh_ecdsa_with_rc4_128_sha        = 0xc002;
-constant TLS_ecdh_ecdsa_with_3des_ede_cbc_sha   = 0xc003;
-constant TLS_ecdh_ecdsa_with_aes_128_cbc_sha    = 0xc004;
-constant TLS_ecdh_ecdsa_with_aes_256_cbc_sha    = 0xc005;
-constant TLS_ecdhe_ecdsa_with_null_sha          = 0xc006;
-constant TLS_ecdhe_ecdsa_with_rc4_128_sha       = 0xc007;
-constant TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha  = 0xc008;
-constant TLS_ecdhe_ecdsa_with_aes_128_cbc_sha   = 0xc009;
-constant TLS_ecdhe_ecdsa_with_aes_256_cbc_sha   = 0xc00a;
-constant TLS_ecdh_rsa_with_null_sha             = 0xc00b;
-constant TLS_ecdh_rsa_with_rc4_128_sha          = 0xc00c;
-constant TLS_ecdh_rsa_with_3des_ede_cbc_sha     = 0xc00d;
-constant TLS_ecdh_rsa_with_aes_128_cbc_sha      = 0xc00e;
-constant TLS_ecdh_rsa_with_aes_256_cbc_sha      = 0xc00f;
-constant TLS_ecdhe_rsa_with_null_sha            = 0xc010;
-constant TLS_ecdhe_rsa_with_rc4_128_sha         = 0xc011;
-constant TLS_ecdhe_rsa_with_3des_ede_cbc_sha    = 0xc012;
-constant TLS_ecdhe_rsa_with_aes_128_cbc_sha     = 0xc013;
-constant TLS_ecdhe_rsa_with_aes_256_cbc_sha     = 0xc014;
-constant TLS_ecdh_anon_with_null_sha            = 0xc015;
-constant TLS_ecdh_anon_with_rc4_128_sha         = 0xc016;
-constant TLS_ecdh_anon_with_3des_ede_cbc_sha    = 0xc017;
-constant TLS_ecdh_anon_with_aes_128_cbc_sha     = 0xc018;
-constant TLS_ecdh_anon_with_aes_256_cbc_sha     = 0xc019;
-constant TLS_srp_sha_with_3des_ede_cbc_sha      = 0xc01a;
-constant TLS_srp_sha_rsa_with_3des_ede_cbc_sha  = 0xc01b;
-constant TLS_srp_sha_dss_with_3des_ede_cbc_sha  = 0xc01c;
-constant TLS_srp_sha_with_aes_128_cbc_sha       = 0xc01d;
-constant TLS_srp_sha_rsa_with_aes_128_cbc_sha   = 0xc01e;
-constant TLS_srp_sha_dss_with_aes_128_cbc_sha   = 0xc01f;
-constant TLS_srp_sha_with_aes_256_cbc_sha       = 0xc020;
-constant TLS_srp_sha_rsa_with_aes_256_cbc_sha   = 0xc021;
-constant TLS_srp_sha_dss_with_aes_256_cbc_sha   = 0xc022;
-constant TLS_ecdhe_ecdsa_with_aes_128_cbc_sha256= 0xc023;
-constant TLS_ecdhe_ecdsa_with_aes_256_cbc_sha384= 0xc024;
-constant TLS_ecdh_ecdsa_with_aes_128_cbc_sha256 = 0xc025;
-constant TLS_ecdh_ecdsa_with_aes_256_cbc_sha384 = 0xc026;
-constant TLS_ecdhe_rsa_with_aes_128_cbc_sha256  = 0xc027;
-constant TLS_ecdhe_rsa_with_aes_256_cbc_sha384  = 0xc028;
-constant TLS_ecdh_rsa_with_aes_128_cbc_sha256   = 0xc029;
-constant TLS_ecdh_rsa_with_aes_256_cbc_sha384   = 0xc02a;
-constant TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256= 0xc02b;
-constant TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384= 0xc02c;
-constant TLS_ecdh_ecdsa_with_aes_128_gcm_sha256 = 0xc02d;
-constant TLS_ecdh_ecdsa_with_aes_256_gcm_sha384 = 0xc02e;
-constant TLS_ecdhe_rsa_with_aes_128_gcm_sha256  = 0xc02f;
-constant TLS_ecdhe_rsa_with_aes_256_gcm_sha384  = 0xc030;
-constant TLS_ecdh_rsa_with_aes_128_gcm_sha256   = 0xc031;
-constant TLS_ecdh_rsa_with_aes_256_gcm_sha384   = 0xc032;
-constant TLS_ecdhe_psk_with_rc4_128_sha         = 0xc033;
-constant TLS_ecdhe_psk_with_3des_ede_cbc_sha    = 0xc034;
-constant TLS_ecdhe_psk_with_aes_128_cbc_sha     = 0xc035;
-constant TLS_ecdhe_psk_with_aes_256_cbc_sha     = 0xc036;
-constant TLS_ecdhe_psk_with_aes_128_cbc_sha256  = 0xc037;
-constant TLS_ecdhe_psk_with_aes_256_cbc_sha384  = 0xc038;
-constant TLS_ecdhe_psk_with_null_sha            = 0xc039;
-constant TLS_ecdhe_psk_with_null_sha256         = 0xc03a;
-constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;
+
+constant TLS_ecdh_ecdsa_with_null_sha           = 0xc001;	// RFC 4492
+constant TLS_ecdh_ecdsa_with_rc4_128_sha        = 0xc002;	// RFC 4492
+constant TLS_ecdh_ecdsa_with_3des_ede_cbc_sha   = 0xc003;	// RFC 4492
+constant TLS_ecdh_ecdsa_with_aes_128_cbc_sha    = 0xc004;	// RFC 4492
+constant TLS_ecdh_ecdsa_with_aes_256_cbc_sha    = 0xc005;	// RFC 4492
+constant TLS_ecdhe_ecdsa_with_null_sha          = 0xc006;	// RFC 4492
+constant TLS_ecdhe_ecdsa_with_rc4_128_sha       = 0xc007;	// RFC 4492
+constant TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha  = 0xc008;	// RFC 4492
+constant TLS_ecdhe_ecdsa_with_aes_128_cbc_sha   = 0xc009;	// RFC 4492
+constant TLS_ecdhe_ecdsa_with_aes_256_cbc_sha   = 0xc00a;	// RFC 4492
+constant TLS_ecdh_rsa_with_null_sha             = 0xc00b;	// RFC 4492
+constant TLS_ecdh_rsa_with_rc4_128_sha          = 0xc00c;	// RFC 4492
+constant TLS_ecdh_rsa_with_3des_ede_cbc_sha     = 0xc00d;	// RFC 4492
+constant TLS_ecdh_rsa_with_aes_128_cbc_sha      = 0xc00e;	// RFC 4492
+constant TLS_ecdh_rsa_with_aes_256_cbc_sha      = 0xc00f;	// RFC 4492
+constant TLS_ecdhe_rsa_with_null_sha            = 0xc010;	// RFC 4492
+constant TLS_ecdhe_rsa_with_rc4_128_sha         = 0xc011;	// RFC 4492
+constant TLS_ecdhe_rsa_with_3des_ede_cbc_sha    = 0xc012;	// RFC 4492
+constant TLS_ecdhe_rsa_with_aes_128_cbc_sha     = 0xc013;	// RFC 4492
+constant TLS_ecdhe_rsa_with_aes_256_cbc_sha     = 0xc014;	// RFC 4492
+constant TLS_ecdh_anon_with_null_sha            = 0xc015;	// RFC 4492
+constant TLS_ecdh_anon_with_rc4_128_sha         = 0xc016;	// RFC 4492
+constant TLS_ecdh_anon_with_3des_ede_cbc_sha    = 0xc017;	// RFC 4492
+constant TLS_ecdh_anon_with_aes_128_cbc_sha     = 0xc018;	// RFC 4492
+constant TLS_ecdh_anon_with_aes_256_cbc_sha     = 0xc019;	// RFC 4492
+constant TLS_srp_sha_with_3des_ede_cbc_sha      = 0xc01a;	// RFC 5054
+constant TLS_srp_sha_rsa_with_3des_ede_cbc_sha  = 0xc01b;	// RFC 5054
+constant TLS_srp_sha_dss_with_3des_ede_cbc_sha  = 0xc01c;	// RFC 5054
+constant TLS_srp_sha_with_aes_128_cbc_sha       = 0xc01d;	// RFC 5054
+constant TLS_srp_sha_rsa_with_aes_128_cbc_sha   = 0xc01e;	// RFC 5054
+constant TLS_srp_sha_dss_with_aes_128_cbc_sha   = 0xc01f;	// RFC 5054
+constant TLS_srp_sha_with_aes_256_cbc_sha       = 0xc020;	// RFC 5054
+constant TLS_srp_sha_rsa_with_aes_256_cbc_sha   = 0xc021;	// RFC 5054
+constant TLS_srp_sha_dss_with_aes_256_cbc_sha   = 0xc022;	// RFC 5054
+constant TLS_ecdhe_ecdsa_with_aes_128_cbc_sha256= 0xc023;	// RFC 5289
+constant TLS_ecdhe_ecdsa_with_aes_256_cbc_sha384= 0xc024;	// RFC 5289
+constant TLS_ecdh_ecdsa_with_aes_128_cbc_sha256 = 0xc025;	// RFC 5289
+constant TLS_ecdh_ecdsa_with_aes_256_cbc_sha384 = 0xc026;	// RFC 5289
+constant TLS_ecdhe_rsa_with_aes_128_cbc_sha256  = 0xc027;	// RFC 5289
+constant TLS_ecdhe_rsa_with_aes_256_cbc_sha384  = 0xc028;	// RFC 5289
+constant TLS_ecdh_rsa_with_aes_128_cbc_sha256   = 0xc029;	// RFC 5289
+constant TLS_ecdh_rsa_with_aes_256_cbc_sha384   = 0xc02a;	// RFC 5289
+constant TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256= 0xc02b;	// RFC 5289
+constant TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384= 0xc02c;	// RFC 5289
+constant TLS_ecdh_ecdsa_with_aes_128_gcm_sha256 = 0xc02d;	// RFC 5289
+constant TLS_ecdh_ecdsa_with_aes_256_gcm_sha384 = 0xc02e;	// RFC 5289
+constant TLS_ecdhe_rsa_with_aes_128_gcm_sha256  = 0xc02f;	// RFC 5289
+constant TLS_ecdhe_rsa_with_aes_256_gcm_sha384  = 0xc030;	// RFC 5289
+constant TLS_ecdh_rsa_with_aes_128_gcm_sha256   = 0xc031;	// RFC 5289
+constant TLS_ecdh_rsa_with_aes_256_gcm_sha384   = 0xc032;	// RFC 5289
+constant TLS_ecdhe_psk_with_rc4_128_sha         = 0xc033;	// RFC 5489
+constant TLS_ecdhe_psk_with_3des_ede_cbc_sha    = 0xc034;	// RFC 5489
+constant TLS_ecdhe_psk_with_aes_128_cbc_sha     = 0xc035;	// RFC 5489
+constant TLS_ecdhe_psk_with_aes_256_cbc_sha     = 0xc036;	// RFC 5489
+constant TLS_ecdhe_psk_with_aes_128_cbc_sha256  = 0xc037;	// RFC 5489
+constant TLS_ecdhe_psk_with_aes_256_cbc_sha384  = 0xc038;	// RFC 5489
+constant TLS_ecdhe_psk_with_null_sha            = 0xc039;	// RFC 5489
+constant TLS_ecdhe_psk_with_null_sha256         = 0xc03a;	// RFC 5489
+constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;	// RFC 5489
+constant TLS_rsa_with_aria_128_cbc_sha256       = 0xc03c;	// RFC 6209
+constant TLS_rsa_with_aria_256_cbc_sha384       = 0xc03d;	// RFC 6209
+constant TLS_dh_dss_with_aria_128_cbc_sha256    = 0xc03e;	// RFC 6209
+constant TLS_dh_dss_with_aria_256_cbc_sha384    = 0xc03f;	// RFC 6209
+constant TLS_dh_rsa_with_aria_128_cbc_sha256    = 0xc040;	// RFC 6209
+constant TLS_dh_rsa_with_aria_256_cbc_sha384    = 0xc041;	// RFC 6209
+constant TLS_dhe_dss_with_aria_128_cbc_sha256   = 0xc042;	// RFC 6209
+constant TLS_dhe_dss_with_aria_256_cbc_sha384   = 0xc043;	// RFC 6209
+constant TLS_dhe_rsa_with_aria_128_cbc_sha256   = 0xc044;	// RFC 6209
+constant TLS_dhe_rsa_with_aria_256_cbc_sha384   = 0xc045;	// RFC 6209
+constant TLS_dh_anon_with_aria_128_cbc_sha256   = 0xc046;	// RFC 6209
+constant TLS_dh_anon_with_aria_256_cbc_sha384   = 0xc047;	// RFC 6209
+constant TLS_ecdhe_ecdsa_with_aria_128_cbc_sha256= 0xc048;	// RFC 6209
+constant TLS_ecdhe_ecdsa_with_aria_256_cbc_sha384= 0xc049;	// RFC 6209
+constant TLS_ecdh_ecdsa_with_aria_128_cbc_sha256= 0xc04a;	// RFC 6209
+constant TLS_ecdh_ecdsa_with_aria_256_cbc_sha384= 0xc04b;	// RFC 6209
+constant TLS_ecdhe_rsa_with_aria_128_cbc_sha256 = 0xc04c;	// RFC 6209
+constant TLS_ecdhe_rsa_with_aria_256_cbc_sha384 = 0xc04d;	// RFC 6209
+constant TLS_ecdh_rsa_with_aria_128_cbc_sha256  = 0xc04e;	// RFC 6209
+constant TLS_ecdh_rsa_with_aria_256_cbc_sha384  = 0xc04f;	// RFC 6209
+constant TLS_rsa_with_aria_128_gcm_sha256       = 0xc050;	// RFC 6209
+constant TLS_rsa_with_aria_256_gcm_sha384       = 0xc051;	// RFC 6209
+constant TLS_dhe_rsa_with_aria_128_gcm_sha256   = 0xc052;	// RFC 6209
+constant TLS_dhe_rsa_with_aria_256_gcm_sha384   = 0xc053;	// RFC 6209
+constant TLS_dh_rsa_with_aria_128_gcm_sha256    = 0xc054;	// RFC 6209
+constant TLS_dh_rsa_with_aria_256_gcm_sha384    = 0xc055;	// RFC 6209
+constant TLS_dhe_dss_with_aria_128_gcm_sha256   = 0xc056;	// RFC 6209
+constant TLS_dhe_dss_with_aria_256_gcm_sha384   = 0xc057;	// RFC 6209
+constant TLS_dh_dss_with_aria_128_gcm_sha256    = 0xc058;	// RFC 6209
+constant TLS_dh_dss_with_aria_256_gcm_sha384    = 0xc059;	// RFC 6209
+constant TLS_dh_anon_with_aria_128_gcm_sha256   = 0xc05a;	// RFC 6209
+constant TLS_dh_anon_with_aria_256_gcm_sha384   = 0xc05b;	// RFC 6209
+constant TLS_ecdhe_ecdsa_with_aria_128_gcm_sha256= 0xc05c;	// RFC 6209
+constant TLS_ecdhe_ecdsa_with_aria_256_gcm_sha384= 0xc05d;	// RFC 6209
+constant TLS_ecdh_ecdsa_with_aria_128_gcm_sha256= 0xc05e;	// RFC 6209
+constant TLS_ecdh_ecdsa_with_aria_256_gcm_sha384= 0xc05f;	// RFC 6209
+constant TLS_ecdhe_rsa_with_aria_128_gcm_sha256 = 0xc060;	// RFC 6209
+constant TLS_ecdhe_rsa_with_aria_256_gcm_sha384 = 0xc061;	// RFC 6209
+constant TLS_ecdh_rsa_with_aria_128_gcm_sha256  = 0xc062;	// RFC 6209
+constant TLS_ecdh_rsa_with_aria_256_gcm_sha384  = 0xc063;	// RFC 6209
+constant TLS_psk_with_aria_128_cbc_sha256       = 0xc064;	// RFC 6209
+constant TLS_psk_with_aria_256_cbc_sha384       = 0xc065;	// RFC 6209
+constant TLS_dhe_psk_with_aria_128_cbc_sha256   = 0xc066;	// RFC 6209
+constant TLS_dhe_psk_with_aria_256_cbc_sha384   = 0xc067;	// RFC 6209
+constant TLS_rsa_psk_with_aria_128_cbc_sha256   = 0xc068;	// RFC 6209
+constant TLS_rsa_psk_with_aria_256_cbc_sha384   = 0xc069;	// RFC 6209
+constant TLS_psk_with_aria_128_gcm_sha256       = 0xc06a;	// RFC 6209
+constant TLS_psk_with_aria_256_gcm_sha384       = 0xc06b;	// RFC 6209
+constant TLS_dhe_psk_with_aria_128_gcm_sha256   = 0xc06c;	// RFC 6209
+constant TLS_dhe_psk_with_aria_256_gcm_sha384   = 0xc06d;	// RFC 6209
+constant TLS_rsa_psk_with_aria_128_gcm_sha256   = 0xc06e;	// RFC 6209
+constant TLS_rsa_psk_with_aria_256_gcm_sha384   = 0xc06f;	// RFC 6209
+constant TLS_ecdhe_psk_with_aria_128_cbc_sha256 = 0xc070;	// RFC 6209
+constant TLS_ecdhe_psk_with_aria_256_cbc_sha384 = 0xc071;	// RFC 6209
+constant TLS_ecdhe_ecdsa_with_camellia_128_cbc_sha256= 0xc072;	// RFC 6367
+constant TLS_ecdhe_ecdsa_with_camellia_256_cbc_sha384= 0xc073;	// RFC 6367
+constant TLS_ecdh_ecdsa_with_camellia_128_cbc_sha256 = 0xc074;	// RFC 6367
+constant TLS_ecdh_ecdsa_with_camellia_256_cbc_sha384 = 0xc075;	// RFC 6367
+constant TLS_ecdhe_rsa_with_camellia_128_cbc_sha256  = 0xc076;	// RFC 6367
+constant TLS_ecdhe_rsa_with_camellia_256_cbc_sha384  = 0xc077;	// RFC 6367
+constant TLS_ecdh_rsa_with_camellia_128_cbc_sha256   = 0xc078;	// RFC 6367
+constant TLS_ecdh_rsa_with_camellia_256_cbc_sha384   = 0xc079;	// RFC 6367
+constant TLS_rsa_with_camellia_128_gcm_sha256        = 0xc07a;	// RFC 6367
+constant TLS_rsa_with_camellia_256_gcm_sha384        = 0xc07b;	// RFC 6367
+constant TLS_dhe_rsa_with_camellia_128_gcm_sha256    = 0xc07c;	// RFC 6367
+constant TLS_dhe_rsa_with_camellia_256_gcm_sha384    = 0xc07d;	// RFC 6367
+constant TLS_dh_rsa_with_camellia_128_gcm_sha256     = 0xc07e;	// RFC 6367
+constant TLS_dh_rsa_with_camellia_256_gcm_sha384     = 0xc07f;	// RFC 6367
+constant TLS_dhe_dss_with_camellia_128_gcm_sha256    = 0xc080;	// RFC 6367
+constant TLS_dhe_dss_with_camellia_256_gcm_sha384    = 0xc081;	// RFC 6367
+constant TLS_dh_dss_with_camellia_128_gcm_sha256     = 0xc082;	// RFC 6367
+constant TLS_dh_dss_with_camellia_256_gcm_sha384     = 0xc083;	// RFC 6367
+constant TLS_dh_anon_with_camellia_128_gcm_sha256    = 0xc084;	// RFC 6367
+constant TLS_dh_anon_with_camellia_256_gcm_sha384    = 0xc085;	// RFC 6367
+constant TLS_ecdhe_ecdsa_with_camellia_128_gcm_sha256= 0xc086;	// RFC 6367
+constant TLS_ecdhe_ecdsa_with_camellia_256_gcm_sha384= 0xc087;	// RFC 6367
+constant TLS_ecdh_ecdsa_with_camellia_128_gcm_sha256 = 0xc088;	// RFC 6367
+constant TLS_ecdh_ecdsa_with_camellia_256_gcm_sha384 = 0xc089;	// RFC 6367
+constant TLS_ecdhe_rsa_with_camellia_128_gcm_sha256  = 0xc08a;	// RFC 6367
+constant TLS_ecdhe_rsa_with_camellia_256_gcm_sha384  = 0xc08b;	// RFC 6367
+constant TLS_ecdh_rsa_with_camellia_128_gcm_sha256   = 0xc08c;	// RFC 6367
+constant TLS_ecdh_rsa_with_camellia_256_gcm_sha384   = 0xc08d;	// RFC 6367
+constant TLS_psk_with_camellia_128_gcm_sha256        = 0xc08d;	// RFC 6367
+constant TLS_psk_with_camellia_256_gcm_sha384        = 0xc08f;	// RFC 6367
+constant TLS_dhe_psk_with_camellia_128_gcm_sha256    = 0xc090;	// RFC 6367
+constant TLS_dhe_psk_with_camellia_256_gcm_sha384    = 0xc091;	// RFC 6367
+constant TLS_rsa_psk_with_camellia_128_gcm_sha256    = 0xc092;	// RFC 6367
+constant TLS_rsa_psk_with_camellia_256_gcm_sha384    = 0xc093;	// RFC 6367
+constant TLS_psk_with_camellia_128_cbc_sha256        = 0xc094;	// RFC 6367
+constant TLS_psk_with_camellia_256_cbc_sha384        = 0xc095;	// RFC 6367
+constant TLS_dhe_psk_with_camellia_128_cbc_sha256    = 0xc096;	// RFC 6367
+constant TLS_dhe_psk_with_camellia_256_cbc_sha384    = 0xc097;	// RFC 6367
+constant TLS_rsa_psk_with_camellia_128_cbc_sha256    = 0xc098;	// RFC 6367
+constant TLS_rsa_psk_with_camellia_256_cbc_sha384    = 0xc099;	// RFC 6367
+constant TLS_ecdhe_psk_with_camellia_128_cbc_sha256  = 0xc09a;	// RFC 6367
+constant TLS_ecdhe_psk_with_camellia_256_cbc_sha384  = 0xc09b;	// RFC 6367
+constant TLS_rsa_with_aes_128_ccm		= 0xc09c;	// RFC 6655
+constant TLS_rsa_with_aes_256_ccm		= 0xc09d;	// RFC 6655
+constant TLS_dhe_rsa_with_aes_128_ccm		= 0xc09e;	// RFC 6655
+constant TLS_dhe_rsa_with_aes_256_ccm		= 0xc09f;	// RFC 6655
+constant TLS_rsa_with_aes_128_ccm_8		= 0xc0a0;	// RFC 6655
+constant TLS_rsa_with_aes_256_ccm_8		= 0xc0a1;	// RFC 6655
+constant TLS_dhe_rsa_with_aes_128_ccm_8		= 0xc0a2;	// RFC 6655
+constant TLS_dhe_rsa_with_aes_256_ccm_8		= 0xc0a3;	// RFC 6655
+
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #if 0
@@ -471,12 +625,13 @@ constant AUTHLEVEL_ask		= 2;
 constant AUTHLEVEL_require	= 3;
 
 /* FIXME: CERT_* would be better names for these constants */
-constant AUTH_rsa_sign		= 1;
-constant AUTH_dss_sign		= 2;
-constant AUTH_rsa_fixed_dh	= 3;
-constant AUTH_dss_fixed_dh	= 4;
-constant AUTH_rsa_ephemeral_dh	= 5;
-constant AUTH_dss_ephemeral_dh	= 6;
+constant AUTH_rsa_sign		= 1;	// SSL 3.0
+constant AUTH_dss_sign		= 2;	// SSL 3.0
+constant AUTH_rsa_fixed_dh	= 3;	// SSL 3.0
+constant AUTH_dss_fixed_dh	= 4;	// SSL 3.0
+constant AUTH_rsa_ephemeral_dh	= 5;	// SSL 3.0
+constant AUTH_dss_ephemeral_dh	= 6;	// SSL 3.0
+constant AUTH_fortezza_kea	= 20;	// SSL 3.0
 constant AUTH_fortezza_dms	= 20;
 constant AUTH_ecdsa_sign        = 64;
 constant AUTH_rsa_fixed_ecdh    = 65;
