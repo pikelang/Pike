@@ -106,15 +106,15 @@ constant CIPHER_aes256	 = 10;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 //! Mapping from cipher algorithm to effective key length.
-constant CIPHER_algorithms = ([
+constant CIPHER_effective_keylengths = ([
   CIPHER_null:		0, 
   CIPHER_rc4_40:	40,
   CIPHER_rc2:		40,
   CIPHER_des40:		40,
 #ifndef WEAK_CRYPTO_40BIT
   CIPHER_rc4:		128,
-  CIPHER_des:		56,
-  CIPHER_3des:		168,
+  CIPHER_des:		40,
+  CIPHER_3des:		112,
   CIPHER_fortezza:	96,
   CIPHER_idea:		128,
   CIPHER_aes:		128,

@@ -229,7 +229,8 @@ void filter_weak_suites(int min_keylength)
     filter(preferred_suites,
 	   lambda(int suite) {
 	     array(int) def = [array(int)]CIPHER_SUITES[suite];
-	     return def && (CIPHER_algorithms[def[1]] >= min_keylength);
+	     return def &&
+	       (CIPHER_effective_keylengths[def[1]] >= min_keylength);
 	   });
 }
 
