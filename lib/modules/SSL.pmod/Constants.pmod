@@ -122,15 +122,16 @@ constant CIPHER_effective_keylengths = ([
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
-/* Hash algorithms as per RFC 5246 7.4.1.4.1. */
-constant HASH_none     = 0;
-constant HASH_md5      = 1;
-constant HASH_sha      = 2;
-constant HASH_sha224   = 3;
-constant HASH_sha256   = 4;
-constant HASH_sha384   = 5;
-constant HASH_sha512   = 6;
-constant HASH_hashes = (< HASH_md5, HASH_sha >);
+//! Hash algorithms as per RFC 5246 7.4.1.4.1.
+enum HashAlgorithm {
+  HASH_none	= 0,
+  HASH_md5	= 1,
+  HASH_sha	= 2,
+  HASH_sha224	= 3,
+  HASH_sha256	= 4,
+  HASH_sha384	= 5,
+  HASH_sha512	= 6,
+}
 
 //! Key exchange methods.
 enum KeyExchangeType {
