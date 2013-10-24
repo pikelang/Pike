@@ -4,6 +4,7 @@
 || for more information.
 */
 
+#define HSIZE 10007
 #define COMPAT_BIT   1
 #define COMPOSE_BIT  2
 

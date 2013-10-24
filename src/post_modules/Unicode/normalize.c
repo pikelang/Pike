@@ -57,7 +57,6 @@ struct canonical_cl
   const int cl;
 }; /* 8 bytes/entry */
 
-#include "hsize.h"
 /* generated from .txt */
 #include "decompositions.h"
 #include "canonicals.h"
