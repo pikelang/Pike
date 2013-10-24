@@ -25,7 +25,7 @@ $(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_wordbits.pike 		\
                     < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
 
-$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATA)
+$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATARM)
 	 $(RUNPIKE) $(SRCDIR)/make_uversion.pike		\
                     $(SRCDIR)/$(UNICODEDATARM) > "$@" || { rm "$@"; exit 1; }
 
