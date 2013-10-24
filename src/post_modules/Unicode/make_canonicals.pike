@@ -19,7 +19,6 @@ void main()
 
   write( "static const struct canonical_cl _ca[] = {\n" );
   mapping top=([]);
-  int i;
   foreach( reverse(sort( indices( classes ) )), int c )
     write( "{%d,%d},\n", c, classes[c]);
   write( "};\n" );
