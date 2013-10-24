@@ -457,7 +457,7 @@ array lookup(int suite, ProtocolVersion|int version)
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
-    res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
+    res->bulk_cipher_algorithm = Nettle.ARCFOUR.State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 16;
@@ -482,7 +482,7 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
-    res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
+    res->bulk_cipher_algorithm = Nettle.ARCFOUR.State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 0;
     res->key_material = 16;
