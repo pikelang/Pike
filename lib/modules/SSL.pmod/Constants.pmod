@@ -568,10 +568,17 @@ constant CIPHER_SUITES =
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
    SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha }),
-   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
    SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
+
+   // Required by TLS 1.0 9.
    SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha }),
+
+   // Required by TLS 1.1 9.
+   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
+
+   // Required by TLS 1.2 9.
    TLS_rsa_with_aes_128_cbc_sha :	({ KE_rsa, CIPHER_aes, HASH_sha }),
+
    TLS_dhe_dss_with_aes_128_cbc_sha :	({ KE_dhe_dss, CIPHER_aes, HASH_sha }),
    TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
@@ -585,7 +592,7 @@ constant preferred_rsa_suites = ({
   SSL_rsa_with_idea_cbc_sha,
   SSL_rsa_with_rc4_128_sha,
   SSL_rsa_with_rc4_128_md5,
-  SSL_rsa_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
+  SSL_rsa_with_3des_ede_cbc_sha,	// Mandatory in RFC 4346 (TLS 1.1).
   SSL_rsa_with_des_cbc_sha,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   SSL_rsa_export_with_rc4_40_md5,
