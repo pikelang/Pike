@@ -1,4 +1,3 @@
-#include "hsize.h"
 
 int parse_type( string s )
 {
