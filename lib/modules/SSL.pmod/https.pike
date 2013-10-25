@@ -119,8 +119,8 @@ void my_accept_callback(object f)
 
 int main()
 {
-  SSL3_DEBUG_MSG("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
-  SSL3_DEBUG_MSG("Key:  '%s'\n", Crypto.string_to_hex(my_key));
+  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
 #if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
   SSL3_DEBUG_MSG("Decoded key: %O\n", key);
