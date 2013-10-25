@@ -391,7 +391,8 @@ class DHKeyExchange
     parameters = p;
   }
 
-  this_program new_secret(function random) {
+  this_program new_secret(function random)
+  {
     secret = Gmp.mpz(random( (parameters->order->size() + 10 / 8)), 256)
       % (parameters->order - 1) + 1;
 

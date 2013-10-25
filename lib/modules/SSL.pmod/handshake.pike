@@ -313,9 +313,11 @@ Packet server_key_exchange_packet()
     else
       return 0;
     break;
-  case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
+    context->dh_params = .Cipher.DHParameters();
+    // FALL_THROUGH
+  case KE_dhe_dss:
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
     struct = ADT.struct();
@@ -586,7 +588,7 @@ string server_derive_master_secret(string data)
 
     if (catch
 	{
-	  dh_state->set_other(struct->get_bignum);
+	  dh_state->set_other(struct->get_bignum());
 	} || !struct->is_empty())
       {
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -595,7 +597,7 @@ string server_derive_master_secret(string data)
 	return 0;
       }
 
-    premaster_secret = (string)dh_state->get_shared();
+    premaster_secret = dh_state->get_shared()->digits(256);
     dh_state = 0;
     break;
   }
