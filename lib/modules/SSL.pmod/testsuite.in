@@ -85,23 +85,57 @@ test_do([[
   add_constant("client_msg", Crypto.Random.random_string(65536));
 ]])
 
+test_do([[
+  add_constant("fmt_cipher_suite",
+	       lambda(int s)
+	       {
+		 foreach(indices(SSL.Constants), string id)
+		   if ((has_prefix(id, "SSL_") || has_prefix(id, "TLS_")) &&
+		       (SSL.Constants[id] == s)) return id;
+		 return sprintf("0x%04x", s);
+	       });
+]])
+test_do([[
+  add_constant("log_ssl_failure",
+	       lambda(int cmin, int cmax, int smin, int smax,
+		      string expected,
+		      int suite, int state, string got)
+	       {
+		 log_msg("SSL 3.%d..3.%d client with SSL 3.%d..3.%d server failed.\n",
+			 cmin, cmax, smin, smax);
+		 log_msg("Cipher_suite: %s\n", fmt_cipher_suite(suite));
+		 if (state != 3) {
+		   log_msg("Unexpected exit state: %d.\n", state);
+		 } else {
+		   log_msg("Unexpected result:\n"
+			   "Got:      %O\n"
+			   "Expected: %O\n",
+			   got, expected);
+		 }
+	       });
+]])
+
 ]])
 dnl Avoid too large strings to cond...
 cond_resolv(Crypto.Hash, [[
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
-  test_any([[
+  test_tests([[array(int) a() {
     log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 server...");
 
+    int successes;
+    int failures;
+    foreach(SSL.Constants.preferred_rsa_suites, int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
-                                     0, $3, $4);
+				     0, $3, $4);
 
     SSL.context client_ctx = SSL.context();
     client_ctx->random = Crypto.Random.random_string;
+    client_ctx->preferred_suites = ({ suite });
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0, $1, $2);
 
     int state;
@@ -115,11 +149,11 @@ define(test_ssl, [[
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
       if (!sizeof(server_buf)) {
-        server->set_write_callback(UNDEFINED);
-        if (state) {
-          server->close();
-          state = 2;
-        }
+	server->set_write_callback(UNDEFINED);
+	if (state) {
+	  server->close();
+	  state = 2;
+	}
       }
     };
     void server_got_data(mixed ignored, string data)
@@ -151,8 +185,8 @@ define(test_ssl, [[
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
-        client->set_write_callback(UNDEFINED);
-        state = 1;
+	client->set_write_callback(UNDEFINED);
+	state = 1;
       }
     };
     void client_got_close()
@@ -170,16 +204,23 @@ define(test_ssl, [[
     server->set_nonblocking(server_got_data, 0, server_got_close);
     server->set_alert_callback(server_alert);
     client->set_nonblocking(client_got_data, client_send_data,
-                            client_got_close);
+			    client_got_close);
     client->set_alert_callback(client_alert);
 
     // We loop the backend while something happens...
     while (trigged--) {
-      Pike.DefaultBackend(0.1);
+      Pike.DefaultBackend(0.005);
     }
-
-    return (state == 3) ? client_recv_buf : state;
-  ]], $5)
+    if (!$5 || ((state == 3) && (client_recv_buf == $5))) {
+      // log_status("OK: %s\n", fmt_cipher_suite(suite));
+      successes++;
+    } else {
+      log_ssl_failure($1,$2,$3,$4,$5,suite,state,client_recv_buf);
+      failures++;
+    }
+    }
+    return ({ successes, failures });
+  }]])
 ]])
 
   test_ssl(0,0,0,0,client_msg)
@@ -222,6 +263,8 @@ define(test_ssl, [[
   test_ssl(2,2,2,2,client_msg)
 
   test_do([[
+    add_constant("log_ssl_failure");
+    add_constant("fmt_cipher_suite");
     add_constant("client_msg");
     add_constant("server_ctx");
     add_constant("pem_cert");
