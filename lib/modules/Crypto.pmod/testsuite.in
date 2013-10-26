@@ -358,6 +358,7 @@ cond_resolv( Crypto.$1.name,[[
 test_cipher(AES,aes)
 test_cipher(Arcfour,arcfour)
 test_cipher(Blowfish,blowfish)
+test_cipher(CAMELLIA,camellia)
 test_cipher(CAST,cast128)
 test_cipher(DES,des)
 test_cipher(DES3,des3)
