@@ -283,6 +283,13 @@ class AES
   protected void create() { ::create(Crypto.AES()); }
 }
 
+//!
+class CAMELLIA
+{
+  inherit Crypto.CBC;
+  protected void create() { ::create(Crypto.CAMELLIA()); }
+}
+
 //! Signing using RSA.
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
@@ -458,7 +465,7 @@ array lookup(int suite, ProtocolVersion|int version)
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
-    res->bulk_cipher_algorithm = Nettle.ARCFOUR.State;
+    res->bulk_cipher_algorithm = Crypto.Arcfour.State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 16;
@@ -483,7 +490,7 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
-    res->bulk_cipher_algorithm = Nettle.ARCFOUR.State;
+    res->bulk_cipher_algorithm = Crypto.Arcfour.State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -524,6 +531,22 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
   case CIPHER_aes256:
     res->bulk_cipher_algorithm = AES;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 32;
+    res->iv_size = 16;
+    res->key_bits = 256;
+    break;
+  case CIPHER_camellia128:
+    res->bulk_cipher_algorithm = CAMELLIA;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 16;
+    res->iv_size = 16;
+    res->key_bits = 128;
+    break;
+  case CIPHER_camellia256:
+    res->bulk_cipher_algorithm = CAMELLIA;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
