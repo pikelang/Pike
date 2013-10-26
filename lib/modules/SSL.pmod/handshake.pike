@@ -1679,7 +1679,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  temp_struct->put_bignum(e);
 	  Crypto.RSA rsa = Crypto.RSA();
 	  rsa->set_public_key(n, e);
-	  session->rsa = rsa;
+	  context->long_rsa = session->rsa;
+	  context->short_rsa = rsa;
+	  if (session->cipher_spec->is_exportable) {
+	    temp_key = rsa;
+	  }
 	  break;
 	case KE_dhe_dss:
 	case KE_dhe_rsa:
