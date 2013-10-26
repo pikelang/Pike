@@ -207,6 +207,7 @@ Packet server_key_exchange_packet()
   switch (session->ke_method)
   {
   case KE_rsa:
+    SSL3_DEBUG_MSG("KE_RSA\n");
 #ifdef WEAK_CRYPTO_40BIT
     temp_key = context->short_rsa;
 #endif /* WEAK_CRYPTO_40BIT (magic comment) */
@@ -228,21 +229,19 @@ Packet server_key_exchange_packet()
     else
       return 0;
     break;
+  case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
-    context->dh_params = .Cipher.DHParameters();
-    // FALL_THROUGH
-  case KE_dhe_dss:
+    SSL3_DEBUG_MSG("KE_DHE\n");
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
     struct = ADT.struct();
 
-    /* werror("dh_params = %O\n", context->dh_params); */
-    dh_state = .Cipher.DHKeyExchange(context->dh_params);
+    dh_state = context->dh_ke = .Cipher.DHKeyExchange(.Cipher.DHParameters());
     dh_state->new_secret(context->random);
     
-    struct->put_bignum(context->dh_params->p);
-    struct->put_bignum(context->dh_params->g);
+    struct->put_bignum(dh_state->parameters->p);
+    struct->put_bignum(dh_state->parameters->g);
     struct->put_bignum(dh_state->our);
     break;
   default:
@@ -258,10 +257,12 @@ Packet client_key_exchange_packet()
 {
   ADT.struct struct = ADT.struct();
   string data;
+  string premaster_secret;
 
   switch (session->ke_method)
   {
   case KE_rsa:
+    SSL3_DEBUG_MSG("KE_RSA\n");
     // NOTE: To protect against version roll-back attacks,
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
@@ -269,33 +270,35 @@ Packet client_key_exchange_packet()
     struct->put_uint(client_version[1], 1);
     string random = context->random(46);
     struct->put_fix_string(random);
-    string premaster_secret = struct->pop_data();
-    session->master_secret = client_derive_master_secret(premaster_secret);
-
-    array(.state) res = session->new_client_states(client_random,
-						   server_random,version);
-    pending_read_state = res[0];
-    pending_write_state = res[1];
+    premaster_secret = struct->pop_data();
 
     data = (temp_key || context->rsa)->encrypt(premaster_secret);
 
     if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff))
       data=sprintf("%2c",sizeof(data))+data;
-      
     break;
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
-    SSL3_DEBUG_MSG("FIXME: Not handled yet\n");
+    SSL3_DEBUG_MSG("KE_DHE\n");
     anonymous = 1;
+    context->dh_ke->new_secret(context->random);
+    struct->put_bignum(context->dh_ke->our);
+    data = struct->pop_data();
+    premaster_secret = context->dh_ke->get_shared()->digits(256);
+    break;
+  default:
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
     return 0;
-    break;
-  default:
-    return 0;
   }
+  session->master_secret = client_derive_master_secret(premaster_secret);
+
+  array(.state) res = session->new_client_states(client_random,
+						 server_random,version);
+  pending_read_state = res[0];
+  pending_write_state = res[1];
 
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
@@ -476,6 +479,7 @@ string server_derive_master_secret(string data)
     /* Fall through */
   case KE_dh_anon:
   {
+    SSL3_DEBUG_MSG("KE_DHE\n");
     anonymous = 1;
 
     /* Explicit encoding */
@@ -498,6 +502,7 @@ string server_derive_master_secret(string data)
   }
   case KE_rsa:
    {
+     SSL3_DEBUG_MSG("KE_RSA\n");
      /* Decrypt the premaster_secret */
      SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
      if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
@@ -1509,12 +1514,33 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
 	SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
 
-	Gmp.mpz n = input->get_bignum();
-	Gmp.mpz e = input->get_bignum();
-	Gmp.mpz signature = input->get_bignum();
 	ADT.struct temp_struct = ADT.struct();
-	temp_struct->put_bignum(n);
-	temp_struct->put_bignum(e);
+	switch(session->ke_method) {
+	case KE_rsa:
+	  SSL3_DEBUG_MSG("KE_RSA\n");
+	  Gmp.mpz n = input->get_bignum();
+	  Gmp.mpz e = input->get_bignum();
+	  temp_struct->put_bignum(n);
+	  temp_struct->put_bignum(e);
+	  Crypto.RSA rsa = Crypto.RSA();
+	  rsa->set_public_key(n, e);
+	  session->rsa = rsa;
+	  break;
+	case KE_dhe_dss:
+	case KE_dhe_rsa:
+	case KE_dh_anon:
+	  SSL3_DEBUG_MSG("KE_DHE\n");
+	  Gmp.mpz p = input->get_bignum();
+	  Gmp.mpz g = input->get_bignum();
+	  temp_struct->put_bignum(p);
+	  temp_struct->put_bignum(g);
+	  context->dh_ke =
+	    .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, [object]((p-1)/2)));
+	  context->dh_ke->set_other(input->get_bignum());
+	  temp_struct->put_bignum(context->dh_ke->other);
+	  break;
+	}
+	Gmp.mpz signature = input->get_bignum();
 	int verification_ok;
 	if( catch{ verification_ok = session->cipher_spec->verify(
 	  context, client_random + server_random, temp_struct, signature); }
@@ -1526,9 +1552,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			    backtrace()));
 	  return -1;
 	}
-	Crypto.RSA rsa = Crypto.RSA();
-	rsa->set_public_key(n, e);
-	context->rsa = rsa;
 	break;
       }
 
