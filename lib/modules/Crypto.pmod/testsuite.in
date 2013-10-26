@@ -331,13 +331,19 @@ cond_resolv( Crypto.$1.name,[[
   test_eq( sizeof(Crypto.$1()->make_key()), Crypto.$1->key_size() )
   test_any([[
     object c=Crypto.$1();
-    return sizeof(c->make_key())==c->key_size();
-  ]], 1)
-  test_any([[
-    object c=Crypto.$1();
     c->make_key();
     return sizeof(c->crypt("A"*c->block_size()));
   ]], Crypto.$1->block_size() )
+  test_any([[
+    object o=Crypto.$1();
+    string k=o->make_key();
+    o=Crypto.$1();
+    o->set_encrypt_key(k);
+    string c = o->crypt("A"*o->block_size());
+    o=Crypto.$1();
+    o->set_decrypt_key(k);
+    return o->crypt(c) == "A"*o->block_size();
+  ]], 1 )
   test_eval_error([[
     object c=Crypto.$1();
     if(c->block_size()==1) throw(1);
@@ -349,8 +355,9 @@ cond_resolv( Crypto.$1.name,[[
     c->make_key();
     c->crypt("\500"*c->block_size());
   ]])
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_encrypt_key("")))
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_decrypt_key("")))
+  test_eval_error(Crypto.$1()->set_encrypt_key("")))
+  test_eval_error(Crypto.$1()->set_decrypt_key("")))
+  test_eval_error((<"Arcfour","Blowfish">)["$1"]?throw(1):Crypto.$1()->set_decrypt_key("A"*(Crypto.$1->key_size()+1)))
   test_eval_error(Crypto.$1()->set_decrypt_key("\500"*Crypto.$1->key_size()))
   test_eval_error(Crypto.$1()->crypt();)
 ]])]])
