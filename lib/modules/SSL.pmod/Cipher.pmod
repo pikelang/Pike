@@ -250,6 +250,13 @@ class AES
 }
 
 //!
+class CAMELLIA
+{
+  inherit Crypto.CBC;
+  protected void create() { ::create(Crypto.CAMELLIA()); }
+}
+
+//! Signing using RSA.
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* Exactly how is the signature process defined? */
@@ -484,6 +491,22 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
   case CIPHER_aes256:
     res->bulk_cipher_algorithm = AES;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 32;
+    res->iv_size = 16;
+    res->key_bits = 256;
+    break;
+  case CIPHER_camellia128:
+    res->bulk_cipher_algorithm = CAMELLIA;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 16;
+    res->iv_size = 16;
+    res->key_bits = 128;
+    break;
+  case CIPHER_camellia256:
+    res->bulk_cipher_algorithm = CAMELLIA;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
