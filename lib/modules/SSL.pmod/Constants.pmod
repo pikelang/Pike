@@ -103,6 +103,8 @@ constant CIPHER_fortezza = 7;
 constant CIPHER_idea	 = 8;
 constant CIPHER_aes	 = 9;
 constant CIPHER_aes256	 = 10;
+constant CIPHER_camellia128 = 11;
+constant CIPHER_camellia256 = 12;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 //! Mapping from cipher algorithm to effective key length.
@@ -119,6 +121,8 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_idea:		128,
   CIPHER_aes:		128,
   CIPHER_aes256:	256,
+  CIPHER_camellia128:	128,
+  CIPHER_camellia256:	256,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
@@ -589,14 +593,28 @@ constant CIPHER_SUITES =
    TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
    TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
+
+   TLS_rsa_with_camellia_128_cbc_sha:	({ KE_rsa, CIPHER_camellia128, HASH_sha }),
+   TLS_dhe_dss_with_camellia_128_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha }),
+   TLS_dhe_rsa_with_camellia_128_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha }),
+   TLS_rsa_with_camellia_256_cbc_sha:	({ KE_rsa, CIPHER_camellia256, HASH_sha }),
+   TLS_dhe_dss_with_camellia_256_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha }),
+   TLS_dhe_rsa_with_camellia_256_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha }),
+
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
 constant preferred_rsa_suites = ({
 #ifndef WEAK_CRYPTO_40BIT
+  // TLS_rsa_with_aes_256_cbc_sha256,
+  TLS_dhe_rsa_with_camellia_256_cbc_sha,
   TLS_dhe_rsa_with_aes_256_cbc_sha,
+  TLS_rsa_with_camellia_256_cbc_sha,
   TLS_rsa_with_aes_256_cbc_sha,
+  // TLS_rsa_with_aes_128_cbc_sha256,
+  TLS_dhe_rsa_with_camellia_128_cbc_sha,
   TLS_dhe_rsa_with_aes_128_cbc_sha,
+  TLS_rsa_with_camellia_128_cbc_sha,
   TLS_rsa_with_aes_128_cbc_sha,		// Mandatory in RFC 5246 (TLS 1.2).
   SSL_rsa_with_idea_cbc_sha,
   SSL_rsa_with_rc4_128_sha,
@@ -613,7 +631,9 @@ constant preferred_rsa_suites = ({
 
 constant preferred_dhe_dss_suites = ({
 #ifndef WEAK_CRYPTO_40BIT
+  TLS_dhe_dss_with_camellia_256_cbc_sha,
   TLS_dhe_dss_with_aes_256_cbc_sha,
+  TLS_dhe_dss_with_camellia_128_cbc_sha,
   TLS_dhe_dss_with_aes_128_cbc_sha,
   SSL_dhe_dss_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
   SSL_dhe_dss_with_des_cbc_sha,
