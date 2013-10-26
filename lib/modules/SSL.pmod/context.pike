@@ -174,7 +174,7 @@ Crypto.RSA short_rsa;
 Crypto.DSA dsa;
 
 //! Parameters for dh keyexchange.
-.Cipher.DHParameters dh_params;
+.Cipher.DHKeyExchange dh_ke;
 
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
