@@ -3,72 +3,72 @@ START_MARKER
 test_true([[objectp(Nettle)]])
 
 // MD2
-cond_resolv( Nettle.MD2_State, [[
+cond_resolv( Nettle.MD2, [[
 
-  test_true([[objectp(Nettle.MD2_State())]])
-  test_eq([[Nettle.MD2_State()->update("")->digest()]],
+  test_true([[objectp(Nettle.MD2()())]])
+  test_eq([[Nettle.MD2()()->update("")->digest()]],
   	  [[String.hex2string("8350e5a3e24c153df2275c9f80692773")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy dog")->digest()]],
+  test_eq([[Nettle.MD2()()->update("The quick brown fox jumps over the lazy dog")->digest()]],
   	  [[String.hex2string("03d85a0d629d2c442e987525319fc471")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy cog")->digest()]],
+  test_eq([[Nettle.MD2()()->update("The quick brown fox jumps over the lazy cog")->digest()]],
   	  [[String.hex2string("6b890c9292668cdbbfda00a4ebf31f05")]])
 ]])
 
 // MD4
-cond_resolv( Nettle.MD4_State, [[
+cond_resolv( Nettle.MD4, [[
 
-  test_true([[objectp(Nettle.MD4_State())]])
-  test_eq([[Nettle.MD4_State()->update("")->digest()]],
+  test_true([[objectp(Nettle.MD4()())]])
+  test_eq([[Nettle.MD4()()->update("")->digest()]],
   	  [[String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
-  test_eq([[Nettle.MD4_State()->update("a")->digest()]],
+  test_eq([[Nettle.MD4()()->update("a")->digest()]],
   	  [[String.hex2string("bde52cb31de33e46245e05fbdbd6fb24")]])
-  test_eq([[Nettle.MD4_State()->update("abc")->digest()]],
+  test_eq([[Nettle.MD4()()->update("abc")->digest()]],
   	  [[String.hex2string("a448017aaf21d8525fc10ae87aa6729d")]])
-  test_eq([[Nettle.MD4_State()->update("message digest")->digest()]],
+  test_eq([[Nettle.MD4()()->update("message digest")->digest()]],
   	  [[String.hex2string("d9130a8164549fe818874806e1c7014b")]])
-  test_eq([[Nettle.MD4_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+  test_eq([[Nettle.MD4()()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
   	  [[String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9")]])
-  test_eq([[Nettle.MD4_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  test_eq([[Nettle.MD4()()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[String.hex2string("043f8582f241db351ce627e153e7f0e4")]])
-  test_eq([[Nettle.MD4_State()->update("1234567890123456789012345678901234567890"
+  test_eq([[Nettle.MD4()()->update("1234567890123456789012345678901234567890"
 		"1234567890123456789012345678901234567890")->digest()]],
 	  [[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
 ]])
 
 // MD5
-cond_resolv( Nettle.MD5_State, [[
+cond_resolv( Nettle.MD5, [[
 
-  test_true([[objectp(Nettle.MD5_State())]])
-  test_eq([[Nettle.MD5_State()->update("")->digest()]],
+  test_true([[objectp(Nettle.MD5()())]])
+  test_eq([[Nettle.MD5()()->update("")->digest()]],
   	  [[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
-  test_eq([[Nettle.MD5_State()->update("a")->digest()]],
+  test_eq([[Nettle.MD5()()->update("a")->digest()]],
   	  [[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
-  test_eq([[Nettle.MD5_State()->update("abc")->digest()]],
+  test_eq([[Nettle.MD5()()->update("abc")->digest()]],
   	  [[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
-  test_eq([[Nettle.MD5_State()->update("message digest")->digest()]],
+  test_eq([[Nettle.MD5()()->update("message digest")->digest()]],
   	  [[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
-  test_eq([[Nettle.MD5_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+  test_eq([[Nettle.MD5()()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
   	  [[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
-  test_eq([[Nettle.MD5_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  test_eq([[Nettle.MD5()()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-  test_eq([[Nettle.MD5_State()->update("1234567890123456789012345678901234567890"
+  test_eq([[Nettle.MD5()()->update("1234567890123456789012345678901234567890"
 		"1234567890123456789012345678901234567890")->digest()]],
 	  [[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
 ]])
 
 // SHA1
-cond_resolv( Nettle.SHA1_State, [[
+cond_resolv( Nettle.SHA1, [[
 
-  test_true([[objectp(Nettle.SHA1_State())]])
-  test_eq([[Nettle.SHA1_State()->update("")->digest()]],
+  test_true([[objectp(Nettle.SHA1()())]])
+  test_eq([[Nettle.SHA1()()->update("")->digest()]],
    	[[String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
-  test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
+  test_eq([[Nettle.SHA1()()->update("abc")->digest()]],
    	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
 ]])
 
-cond_resolv( Nettle.SHA1_State, [[
+cond_resolv( Nettle.SHA1, [[
 test_tests(
   array(int) a() {
     return Tools.Testsuite.run_script ("]]SRCDIR[[/sha1test.pike");
@@ -77,15 +77,15 @@ test_tests(
 ]])
 
 // AES
-cond_resolv( Nettle.AES_State, [[
-  test_true([[objectp(Nettle.AES_State())]])
-  test_eq([[Nettle.AES_State()
+cond_resolv( Nettle.AES, [[
+  test_true([[objectp(Nettle.AES()())]])
+  test_eq([[Nettle.AES()()
   	    ->set_encrypt_key(String.hex2string(
   		  "00010203050607080A0B0C0D0F101112"))
   	    ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
   	  [[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
   
-  test_eq([[Nettle.AES_State()
+  test_eq([[Nettle.AES()()
   	    ->set_decrypt_key(String.hex2string(
   		  "14151617191A1B1C1E1F202123242526"))
   	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
