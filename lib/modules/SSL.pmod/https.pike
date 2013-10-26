@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 
 /*
- * dummy https server
+ * dummy https server/client
  */
 
-//! Dummy HTTPS server
+//! Dummy HTTPS server/client
 
 #define PORT 25678
 
@@ -18,7 +18,21 @@
 
 import Stdio;
 
+#ifndef HTTPS_CLIENT
 inherit SSL.sslport;
+
+protected void create()
+{
+  SSL3_DEBUG_MSG("https->create\n");
+  sslport::create();
+}
+
+void my_accept_callback(object f)
+{
+  werror("Accept!\n");
+  conn(accept());
+}
+#endif
 
 string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
@@ -111,14 +125,59 @@ Version ::= INTEGER
 
 */
 
-void my_accept_callback(object f)
+class client
 {
-  werror("Accept!\n");
-  conn(accept());
+  constant request =
+    "HEAD / HTTP/1.0\r\n"
+    "Host: localhost:" + PORT + "\r\n"
+    "\r\n";
+
+  SSL.sslfile ssl;
+  int sent;
+  void write_cb()
+  {
+    int bytes = ssl->write(request[sent..]);
+    if (bytes > 0) {
+      sent += bytes;
+    } else if (sent < 0) {
+      werror("Failed to write data: %s\n", strerror(ssl->errno()));
+      exit(17);
+    }
+    if (sent == sizeof(request)) {
+      ssl->set_write_callback(UNDEFINED);
+    }
+  }
+  void got_data(mixed ignored, string data)
+  {
+    werror("Data: %O\n", data);
+  }
+  void con_closed()
+  {
+    werror("Connection closed.\n");
+    exit(0);
+  }
+
+  protected void create(Stdio.File con)
+  {
+    SSL.context ctx = SSL.context();
+    ctx->random = no_random()->read;
+    werror("Starting\n");
+    ssl = SSL.sslfile(con, ctx, 1);
+    ssl->set_nonblocking(got_data, write_cb, con_closed);
+  }
 }
 
 int main()
 {
+#ifdef HTTPS_CLIENT
+  Stdio.File con = Stdio.File();
+  if (!con->connect("127.0.0.1", PORT)) {
+    werror("Failed to connect to server: %s\n", strerror(con->errno()));
+    return 17;
+  }
+  client(con);
+  return -17;
+#else
   SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
   SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
 #if 0
@@ -150,12 +209,7 @@ int main()
   }
   else
     return -17;
-}
-
-protected void create()
-{
-  SSL3_DEBUG_MSG("https->create\n");
-  sslport::create();
+#endif
 }
 
 #else // constant(SSL.Cipher.CipherAlgorithm)
