@@ -76,6 +76,14 @@ test_tests(
 )
 ]])
 
+
+define(test_cipher,[[
+  test_eq([[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "))
+          ->crypt(String.hex2string($3-" "))]],[[String.hex2string($4-" ")]])
+  test_eq([[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "))
+          ->crypt(String.hex2string($4-" "))]],[[String.hex2string($3-" ")]])
+]])
+
 // AES
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
@@ -90,6 +98,26 @@ cond_resolv( Nettle.AES, [[
   		  "14151617191A1B1C1E1F202123242526"))
   	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
   	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
+]])
+
+// CAMELLIA
+// Test vectors from RFC 3713. 128, 192 and 256 bits.
+cond_resolv( Nettle.CAMELLIA, [[
+  test_true([[objectp(Nettle.CAMELLIA()())]])
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "67 67 31 38 54 96 69 73 08 57 06 56 48 ea be 43")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "b4 99 34 01 b3 e9 96 f8 4e e5 ce e7 d7 9b 09 b9")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
 ]])
 
 cond_resolv( Nettle.CBC, [[
