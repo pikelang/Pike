@@ -1687,10 +1687,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  SSL3_DEBUG_MSG("KE_DHE\n");
 	  Gmp.mpz p = input->get_bignum();
 	  Gmp.mpz g = input->get_bignum();
+	  Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
 	  temp_struct->put_bignum(p);
 	  temp_struct->put_bignum(g);
 	  context->dh_ke =
-	     .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, (p-1)/2));
+	    .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
 	  context->dh_ke->set_other(input->get_bignum());
 	  temp_struct->put_bignum(context->dh_ke->other);
 	  break;
