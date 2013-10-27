@@ -805,7 +805,7 @@ protected string fmt_cipher_suites(array(int) s)
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
 //!
-//! This function returns 0 if hadshake is in progress, 1 if handshake
+//! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
 int(-1..1) handle_handshake(int type, string data, string raw)
