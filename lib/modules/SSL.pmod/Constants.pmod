@@ -558,13 +558,13 @@ constant TLS_dhe_rsa_with_aes_256_ccm_8		= 0xc0a3;	// RFC 6655
 // Constants from SSL 2.0.
 // These may appear in HANDSHAKE_hello_v2 and
 // are here for informational purposes.
-constant SSL2_ck_rc4_128_with_md5		= 0x010080
-constant SSL2_ck_rc4_128_export40_with_md5	= 0x020080
-constant SSL2_ck_rc2_128_cbc_with_md5		= 0x030080
-constant SSL2_ck_rc2_128_cbc_export40_with_md5	= 0x040080
-constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080
-constant SSL2_ck_des_64_cbc_with_md5		= 0x060040
-constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0
+constant SSL2_ck_rc4_128_with_md5		= 0x010080;
+constant SSL2_ck_rc4_128_export40_with_md5	= 0x020080;
+constant SSL2_ck_rc2_128_cbc_with_md5		= 0x030080;
+constant SSL2_ck_rc2_128_cbc_export40_with_md5	= 0x040080;
+constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080;
+constant SSL2_ck_des_64_cbc_with_md5		= 0x060040;
+constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0;
 
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
