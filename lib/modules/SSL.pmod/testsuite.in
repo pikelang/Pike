@@ -82,7 +82,7 @@ int a() {
 ]])
 
 test_do([[
-  add_constant("client_msg", Crypto.Random.random_string(65536));
+  add_constant("client_msg", random_string(65536));
 ]])
 
 test_do([[
@@ -134,7 +134,7 @@ define(test_ssl, [[
 				     0, $3, $4);
 
     SSL.context client_ctx = SSL.context();
-    client_ctx->random = Crypto.Random.random_string;
+    client_ctx->random = random_string;
     client_ctx->preferred_suites = ({ suite });
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0, $1, $2);
 
