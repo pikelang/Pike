@@ -794,7 +794,8 @@ protected string fmt_cipher_suites(array(int) s)
   String.Buffer b = String.Buffer();
   mapping(int:string) ciphers = ([]);
   foreach([array(string)]indices(.Constants), string id)
-    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") )
+    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
+	has_prefix(id, "SSL2_") )
       ciphers[.Constants[id]] = id;
   foreach(s, int c)
     b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");

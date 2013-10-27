@@ -4,6 +4,7 @@
  * The SSL3 Protocol is specified in the following RFCs and drafts:
  *
  *   SSL 3.0			draft-freier-ssl-version3-02.txt
+ *   SSL 3.0			RFC 6101
  *
  *   SSL 3.1/TLS 1.0		RFC 2246
  *   Kerberos for TLS 1.0	RFC 2712
@@ -53,6 +54,10 @@
  *
  *   Next Protocol Negotiation  Google technical note: nextprotoneg
  *   Application Layer Protocol Negotiation  draft-ietf-tls-applayerprotoneg
+ *
+ * The SSL 2.0 protocol was specified in the following document:
+ *
+ *   SSL 2.0			draft-hickman-netscape-ssl-00.txt
  */
 
 //! Protocol constants
@@ -71,6 +76,8 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_0	= 1,	//! TLS 1.0 - The RFC 2246 version of TLS.
   PROTOCOL_SSL_3_2	= 2,	//! SSL 3.2 - The RFC 4346 version of SSL.
   PROTOCOL_TLS_1_1	= 2,	//! TLS 1.1 - The RFC 4346 version of TLS.
+  PROTOCOL_SSL_3_3	= 3,	//! SSL 3.3 - The RFC 5246 version of SSL.
+  PROTOCOL_TLS_1_2	= 3,	//! TLS 1.2 - The RFC 5246 version of TLS.
 }
 
 /* Packet types */
@@ -547,6 +554,17 @@ constant TLS_rsa_with_aes_128_ccm_8		= 0xc0a0;	// RFC 6655
 constant TLS_rsa_with_aes_256_ccm_8		= 0xc0a1;	// RFC 6655
 constant TLS_dhe_rsa_with_aes_128_ccm_8		= 0xc0a2;	// RFC 6655
 constant TLS_dhe_rsa_with_aes_256_ccm_8		= 0xc0a3;	// RFC 6655
+
+// Constants from SSL 2.0.
+// These may appear in HANDSHAKE_hello_v2 and
+// are here for informational purposes.
+constant SSL2_ck_rc4_128_with_md5		= 0x010080
+constant SSL2_ck_rc4_128_export40_with_md5	= 0x020080
+constant SSL2_ck_rc2_128_cbc_with_md5		= 0x030080
+constant SSL2_ck_rc2_128_cbc_export40_with_md5	= 0x040080
+constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080
+constant SSL2_ck_des_64_cbc_with_md5		= 0x060040
+constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0
 
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
