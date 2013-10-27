@@ -178,8 +178,9 @@ Crypto.DSA dsa;
 
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
-//! number generator is not used for generating the master_secret.
-function(int:string) random;
+//! number generator is not used for generating the master_secret. By
+//! default set to @[Crypto.Random.random_string].
+function(int:string) random = Crypto.Random.random_string;
 
 //! The server's certificate, or a chain of X509.v3 certificates, with
 //! the server's certificate first and root certificate last.
