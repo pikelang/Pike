@@ -1,6 +1,418 @@
 
 START_MARKER
 
+dnl - NetUtils
+
+test_equal( NetUtils.string_to_ip( "0.0.0.0" ), 0 );
+test_equal( NetUtils.string_to_ip( "255.0.0.0" ), 0xff000000 );
+test_equal( NetUtils.string_to_ip( "0.255.0.0" ), 0x00ff0000 );
+test_equal( NetUtils.string_to_ip( "255.255.255.255" ), 0xffffffff );
+
+test_equal( NetUtils.string_to_ip( "65535.255.255" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "20.255.255" ), -1 );
+test_equal( NetUtils.string_to_ip( "20...10" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "4.3.2.300" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "::255.0.0.0" ), 0xff000000);
+
+test_equal( NetUtils.string_to_ip( "1::255.0.0.0" ), 5192296858534827628530500607410176);
+
+test_equal( NetUtils.string_to_ip("2001:4c28:a030:30:219:99ff:fe6d:2eb4"),
+                 42542032843807851754427830279823240884);
+
+test_equal( NetUtils.string_to_ip("10293::"),-1);
+test_equal( NetUtils.string_to_ip("fel::"),-1);
+test_equal( NetUtils.ip_to_string( -1 ), 0 );
+
+test_equal( NetUtils.ip_to_string( 0 ), "0.0.0.0" );
+test_equal( NetUtils.ip_to_string( 0xff000000 ), "255.0.0.0" );
+test_equal( NetUtils.ip_to_string( 0x00ff0000 ), "0.255.0.0" );
+test_equal( NetUtils.ip_to_string( 0xffffffff ), "255.255.255.255" );
+
+test_equal( NetUtils.ip_to_string( 4294967296 ), "::1:0:0" );
+
+test_equal(NetUtils.ip_to_string( 0xffffeeeeaaaa99998888777766665555 ),
+                "ffff:eeee:aaaa:9999:8888:7777:6666:5555");
+
+test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ), 
+                "ffff::5555");
+
+test_equal(NetUtils.ip_to_string( 0x00010000000000000000000000000000 ),
+                "1::");
+
+test_equal( NetUtils.string_to_ip("10293::"),-1);
+test_equal( NetUtils.string_to_ip("fel::"),-1);
+test_equal( NetUtils.cidr_to_netmask( "0.0.0.0/0" ), ({ 0,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "255.0.0.0/0" ), ({ 0,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "ff::/0" ), ({ 0,0 }) );
+
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/32" ),
+                 ({ 0xffffffff,NetUtils.IPV6_FULL_MASK }) );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ), 
+                 ({ 0xffff0000,NetUtils.IPV6_FULL_MASK^0xffff }) );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ), 
+                 ({ 0x00000000,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "::/0"  ), 
+                 ({ 0x00000000,0 }) );
+test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ), 
+                 ({ 0x0a1e0000,NetUtils.IPV6_FULL_MASK^0x7fff }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"),
+                 ({ 0x0001000200030004<<64,
+                    0xffffffffffffffff<<64,
+                 }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/96"),
+                 ({ 0x000100020003000400050006<<32,
+                    0xffffffffffffffffffffffff<<32,
+                 }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/32"), ({0x00010002<<96,0xffffffff<<96}) );
+
+test_equal( NetUtils.cidr_to_netmask( "10.30/3"            ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255"    ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "255"                ), 0 );
+
+// comma instead of first dot
+test_equal( NetUtils.cidr_to_netmask( "255,255.255.255/32" ), 0 );
+
+test_equal( NetUtils.cidr_to_netmask( "20...10/1"          ), 0 );
+test_equal( NetUtils.cidr_to_netmask( 0                    ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "4.3.2.300/16"       ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "4.3.2.1/38"         ), 0 );
+// binary IPs
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, 0xffffffff ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, 0xffff0102 ), true );
+test_equal( NetUtils.ip_in_block( 0x00000000, 0x00000000, 0x01020304 ), true );
+test_equal( NetUtils.ip_in_block( 0x0a1e0000, 0xffff8000, 0x0a1e0145 ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, 0x01020304 ), false );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, 0x01020102 ), false );
+
+// string IPs
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, "255.255.255.255" ), true );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, "255.255.1.2"     ), true );
+test_equal( NetUtils.ip_in_block( 0x00000000, 0x00000000, "1.2.3.4"         ), true );
+test_equal( NetUtils.ip_in_block( 0x0a1e0000, 0xffff8000, "10.30.1.69"      ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, "1.2.3.4"         ), false );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, "1.2.1.2"         ), false );
+test_equal( NetUtils.ip_in_block( 0x01020000, 0xffff0000, "1.1.1.2"         ), false );
+
+// error handling
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "65535.255.255"   ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "20.255.255"      ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "20...10"         ));
+test_eval_error( NetUtils.ip_in_block( -1,         0x00000000, "255.255.255.255" ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, -1,         "255.255.255.255" ));
+
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4:5:6:7:8"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4::"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4:ffff:123:0:0"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:9:ffff:123:0:0"), false )
+
+
+
+test_equal( NetUtils.NetMask("1.2.3.4/24")->ip_in("1.2.3.1"), true );
+test_equal( NetUtils.NetMask("1.2.3.4/24")->ip_in("1.2.2.1"), false );
+test_equal( NetUtils.NetMask("1.2.3.4/32")->ip_in("1.2.3.4"), true );
+test_equal( NetUtils.NetMask("1.2.3.4/32")->ip_in("1.2.3.3"), false );
+test_equal( NetUtils.NetMask("1.2.3.4")->ip_in("1.2.3.4"), true );
+test_equal( NetUtils.NetMask("1.2.3.4")->ip_in("1.2.3.3"), false );
+test_eval_error( NetUtils.NetMask("1.2.3.4/38") );
+test_eval_error( NetUtils.NetMask("1.2.3.foo") );
+test_eval_error( NetUtils.NetMask("foo") );
+test_eval_error(NetUtils.IpRangeLookup(0));
+test_equal(NetUtils.IpRangeLookup( ([ ]) )->lookup("1.2.3.4"), 0);
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "good": ({ "1.2.3.4", "4.5.6.0/24" }),
+        "bad": ({ "foo" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "bad": ({ "4.3.2.300" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "bad": ({ "4.3.2.1/38" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "good": ({ "1.2.3.4", "4.5.6.0/24" }),
+        "ok": ({ "127.0.0.0/8" }),
+        "bad": ({ "192.168.1.0/24", "4.3.2.1/38" }),
+    ]) ));
+
+
+test_any([[
+
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([ "single": ({ "1.2.3.4" }) ]) );
+    if(irl->lookup("1.2.3.4")!= "single") return 0;
+    if(irl->lookup("4.3.2.1")!= 0) return 0;
+    return 1;
+]],1)
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24" }),
+        "info2": ({ "88.192.0.0/10" }),
+    ]) );
+    if(irl->lookup("1.2.3.4")!= "info1") return 0;
+    if(irl->lookup("88.201.123.44")!= "info2") return 0;
+    if(irl->lookup("222.123.45.6")!= 0) return 0;
+    return 1;
+]],1);
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24", "88.192.0.0/10" }),
+        "info2": ({ "192.168.1.14", "192.168.1.23", "153.154.155.156" }),
+        "info3": ({ "127.0.0.0/8" }),
+    ]) );
+    if(irl->lookup("1.2.3.4")!= "info1") return 0;
+    if(irl->lookup("88.201.123.44")!= "info1") return 0;
+    if(irl->lookup("192.168.1.23")!= "info2") return 0;
+    if(irl->lookup("192.168.1.55")!= 0) return 0;
+    if(irl->lookup("127.0.0.1")!= "info3") return 0;
+    return 1;
+]],1)
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24", "127.0.0.1" }),
+        "info2": ({ "1.2.3.0/28", "127.0.0.0/16" }),
+        "info3": ({ "127.0.0.0/8" }),
+    ]) );
+    if(irl->lookup("127.0.0.1")!= "info1") return 0;
+    if(irl->lookup("127.0.0.2")!= "info2") return 0;
+    if(irl->lookup("127.0.42.1")!= "info2") return 0;
+    if(irl->lookup("127.88.44.22")!= "info3") return 0;
+    if(irl->lookup("126.0.0.1")!= 0) return 0;
+
+    if(irl->lookup("1.2.3.127")!= "info1") return 0;
+    if(irl->lookup("1.2.3.15")!= "info2") return 0;
+    return 1;
+]],1)
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup
+        (([
+            "test2":({"::/0"}),
+            "test":({"0.0.0.0/0"}),
+        ]));
+    if( irl->lookup("1.2.3.4")!= "test" ) return 0;
+    if( irl->lookup("1.2.3.4")!= "test" ) return 0;
+    if( irl->lookup("1::")!="test2" ) return 0;
+    if( irl->lookup("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!= "test2" ) return 0;
+    return 1;
+]],1)
+
+
+test_any([[
+    array victims = ({
+        "127.0.0.1",
+        "::1",
+        "2001::feed",
+        "224.0.0.1",
+        "2002::beef",
+        "3001:10::",
+        "32.2.0.1",
+    });
+
+    array(string)
+        nothing=({}),
+        v6only = "localhostv6,localv6,globalv6,multicastv6,teredo,6to4,privatev6"/",",
+        v4only = "localhost,local,global,multicast,private"/",",
+        teredo = "localhostv6,localv6,teredo,globalv6,multicastv6,6to4,privatev6"/",",
+        v6to4  = "localhostv6,localv6,6to4,globalv6,multicastv6,teredo,privatev6"/",",
+        dual6to4 = "localhostv6,localhost,localv6,local,6to4,globalv6,global,multicastv6,"
+                   "multicast,teredo,privatev6,private"/",",
+        dualdual = "localhostv6,localhost,localv6,local,teredo,6to4,globalv6,global,multicastv6,"
+                  "multicast,privatev6,private"/",";
+
+     add_constant( "victims", victims );
+     add_constant( "nothing", nothing );
+     add_constant( "v6only", v6only );
+     add_constant( "v4only", v4only );
+     add_constant( "teredo", teredo );
+     add_constant( "v6to4", v6to4 );
+     add_constant( "dual6to4", dual6to4 );
+     add_constant( "dualdual", dualdual );
+     return 1;
+]],1);
+
+test_equal( NetUtils._connectable_network_types( false, false, false, false ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, false, true ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, true, false ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, true, true ), nothing );
+
+test_equal( NetUtils._connectable_network_types( true, false, false, false ),v6only );
+test_equal( NetUtils._connectable_network_types( false, true, false, false ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, true, false ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, false, true ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, true, true ), v4only );
+test_equal( NetUtils._connectable_network_types( true, false, true, false ), teredo );
+test_equal( NetUtils._connectable_network_types( true, false, false, true ), v6to4 );
+test_equal( NetUtils._connectable_network_types( true, true, false, true ), dual6to4 );
+test_equal( NetUtils._connectable_network_types( true, true, true, true ), dualdual );
+
+
+test_equal( NetUtils._sort_addresses( victims, 0, false, nothing ), ({}) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v6only ), ({
+                     "::1",
+                     "3001:10::",
+                     "2001::feed",
+                     "2002::beef",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v4only ), ({
+                     "127.0.0.1",
+                     "32.2.0.1",
+                     "224.0.0.1",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, teredo ), ({
+                     "::1",
+                     "2001::feed",
+                     "3001:10::",
+                     "2002::beef",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v6to4 ), ({
+                     "::1",
+                     "2002::beef",
+                     "3001:10::",
+                     "2001::feed",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, dualdual ), ({
+                     "::1",
+                     "127.0.0.1",
+                     "2001::feed",
+                     "2002::beef",
+                     "3001:10::",
+                     "32.2.0.1",
+                     "224.0.0.1",
+                 }) );
+
+
+test_equal(NetUtils.get_network_type("::1"), NetUtils.LOCALHOST);
+test_equal(NetUtils.get_network_type("127.0.0.1"), NetUtils.LOCALHOST);
+test_equal(NetUtils.get_network_type("::ffff:127.0.0.1"), NetUtils.LOCALHOST);
+
+test_equal(NetUtils.get_network_type("2001::feed"), NetUtils.TEREDO);
+test_equal(NetUtils.get_network_type("2001:0:ffff:1234::4321"), NetUtils.TEREDO);
+
+test_equal(NetUtils.get_network_type("10.0.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("::FFFF:10.0.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("172.16.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("::FFFF:172.16.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("192.168.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("::FFFF:192.168.0.1"), NetUtils.PRIVATE);
+test_equal(NetUtils.get_network_type("fc00::1"), NetUtils.PRIVATE);
+
+test_equal(NetUtils.get_network_type("224.0.0.1"), NetUtils.MULTICAST);
+test_equal(NetUtils.get_network_type("ff00:1:2:3::1"), NetUtils.MULTICAST);
+
+test_equal(NetUtils.get_network_type("2002::beef"), NetUtils.V6TO4);
+test_equal(NetUtils.get_network_type("2002:ffff:1234::beef"), NetUtils.V6TO4);
+
+test_equal(NetUtils.get_network_type("2001:1::feed"), NetUtils.GLOBAL);
+test_equal(NetUtils.get_network_type("2001:ffff:1234::4321"), NetUtils.GLOBAL);
+test_equal(NetUtils.get_network_type("2003::beef"), NetUtils.GLOBAL);
+test_equal(NetUtils.get_network_type("3002:ffff::1234:beef"), NetUtils.GLOBAL);
+
+test_equal(NetUtils.get_network_type("2001:1::feed",true), NetUtils.GLOBALV6);
+test_equal(NetUtils.get_network_type("2001:ffff:1234::4321",true), NetUtils.GLOBALV6);
+
+    // Could be mistaken for 2002::/16
+test_equal(NetUtils.get_network_type("32.2.0.1"), NetUtils.GLOBAL);
+test_equal(NetUtils.get_network_type("32.2.0.1",true), NetUtils.GLOBAL);
+
+    // Could be mistaken for 2001:0::/32
+test_equal(NetUtils.get_network_type("32.1.0.0"), NetUtils.GLOBAL);
+test_equal(NetUtils.get_network_type("32.1.0.0",true), NetUtils.GLOBAL);
+
+
+test_do([[
+     add_constant("victims");
+     add_constant("nothing");
+     add_constant("v6only");
+     add_constant("v4only");
+     add_constant("teredo");
+     add_constant("v6to4");
+     add_constant("dual6to4");
+     add_constant("dualdual");
+]])
+
+test_any([[
+    class TestRemoteAddressObject(string local_ip, string remote_ip)
+    {
+        inherit NetUtils.RemoteAddressObject;
+
+        string query_address(int|void l)
+        {
+            if (l)
+                return local_ip;
+            return remote_ip;
+        }
+    };
+
+    string def_ip = "192.168.0.1";
+    string def_port = "1111";
+    string local_ip = "123.123.123.123";
+    string local_port = "1234";
+    string remote_ip = "234.234.234.234";
+    string remote_port = "5678";
+
+     add_constant("TestRemoteAddressObject",TestRemoteAddressObject);
+     add_constant("def_ip", def_ip );
+     add_constant("def_port", def_port );
+     add_constant("local_ip", local_ip );
+     add_constant("local_port", local_port );
+     add_constant("remote_ip", local_ip );
+     add_constant("remote_port", local_port );
+
+    return 1;
+]],1);
+
+
+test_equal(NetUtils.ip_of(0, false, def_ip), def_ip);
+test_equal(NetUtils.ip_of(0, true, def_ip), def_ip);
+test_equal(NetUtils.ip_of(remote_ip, false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(local_ip, true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(remote_ip + " " + remote_port, false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(local_ip + " " + local_port, true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip, remote_ip), false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip, remote_ip), true, def_ip), local_ip);
+
+test_equal(NetUtils.port_of(0, false, def_port), def_port);
+test_equal(NetUtils.port_of(0, true, def_port), def_port);
+test_equal(NetUtils.port_of(remote_ip, false, def_port), def_port);
+test_equal(NetUtils.port_of(local_ip, true, def_port), def_port);
+test_equal(NetUtils.port_of(remote_ip + " " + remote_port, false, def_port), remote_port);
+test_equal(NetUtils.port_of(local_ip + " " + local_port, true, def_port), local_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false, def_port), remote_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " +remote_port), true, def_port), local_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip, remote_ip), false, def_port), def_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip, remote_ip), true, def_port), def_port);
+
+test_equal(NetUtils.ip_and_port_of(0, false), 0);
+test_equal(NetUtils.ip_and_port_of(0, true), 0);
+test_equal(NetUtils.ip_and_port_of(remote_ip, false), ({ remote_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(local_ip, true), ({ local_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(remote_ip + " " + remote_port, false), ({ remote_ip, remote_port }) );
+test_equal(NetUtils.ip_and_port_of(local_ip + " " + local_port, true), ({ local_ip, local_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false), ({ remote_ip, remote_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " +remote_port), true), ({ local_ip, local_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip, remote_ip), false), ({ remote_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip, remote_ip), true), ({ local_ip, 0 }) );
+test_do([[
+     add_constant("TestRemoteAddressObject");
+     add_constant("def_ip" );
+     add_constant("def_port" );
+     add_constant("local_ip" );
+     add_constant("local_port" );
+     add_constant("remote_ip" );
+     add_constant("remote_port" );
+]]);
 dnl - Arg
 
 test_equal( Arg.parse("aa --hopp --haha=ho -bar=foo x y"/" "),
