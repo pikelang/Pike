@@ -23,8 +23,19 @@ test_any([[
     r->get_d() == R->get_d();
 ]], 1)
 
-test_eq( Standards.PKCS.RSA.build_rsa_public_key(R)->get_der(),
+test_eq( Standards.PKCS.RSA.build_public_key(R)->get_der(),
 "0\201\237""0\r\6\t*\206H\206\367\r\1\1\1\5\0\3\201\215\0""0\201\211\2\201\201\0\365\330g\315mu-\376\347>$1\20\231\363\240\326\245\342\6\255\314\363\2\332\357\355E\0W\262\343\222\300\372a\6\bsTK\263\31\341\346\322\323\241\226\265""2@%\303\216\215\33""6g\215\326|\211\324\346Q\345C\274\212 X3\333+\4/\0s\276h\324\260\253\251VV\215J\22\341\247\354V\262k\6\205\27\243\223\24\23\262x\240\263\312\273\376\222\25\361Z\374Z\301\\\215;PT\2\312\322\300]'\2\3\1\0\1" )
+
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.MD2)->get_der(),
+	 "0\r\6\t*\206H\206\367\r\1\1\2\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.MD5)->get_der(),
+         "0\r\6\t*\206H\206\367\r\1\1\4\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.SHA1)->get_der(),
+         "0\r\6\t*\206H\206\367\r\1\1\5\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.MD4), 0 )
+test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.SHA1)->get_der(),
+	 "0\t\6\a*\206H\316""8\4\3" )
+test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.MD4), 0 )
 
 test_do( add_constant("R"); )
 END_MARKER
