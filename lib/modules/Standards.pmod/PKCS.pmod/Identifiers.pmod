@@ -79,8 +79,12 @@ Identifier rsa_id = pkcs_1_id->append(1);
 
 /* Signature algorithms */
 Identifier rsa_md2_id = pkcs_1_id->append(2);
+// Identifier rsa_md4_id = pkcs_1_id->append(3);
 Identifier rsa_md5_id = pkcs_1_id->append(4);
 Identifier rsa_sha1_id = pkcs_1_id->append(5);
+Identifier rsa_sha256_id = pkcs_1_id->append(11);
+Identifier rsa_sha384_id = pkcs_1_id->append(12);
+Identifier rsa_sha512_id = pkcs_1_id->append(13);
 
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
@@ -98,6 +102,9 @@ Identifier dsa_sha_id = Identifier(1, 2, 840, 10040, 4, 3);
 Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
 Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
 Identifier sha1_id = Identifier(1, 3, 14, 3, 2, 26);
+Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
+Identifier sha384_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 2);
+Identifier sha512_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 3);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
