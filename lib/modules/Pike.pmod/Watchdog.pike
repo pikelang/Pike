@@ -75,7 +75,7 @@ void print_debug()
     Stdio.stderr.write(Debug.pp_object_usage()+"\n");
 
 #if constant(get_profiling_info)
-    .Profiling.display();
+    Debug.Profiling.display();
 #endif
 
     foreach( debug_funcs, function f )
