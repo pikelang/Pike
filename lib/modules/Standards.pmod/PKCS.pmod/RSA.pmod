@@ -91,6 +91,26 @@ Sequence build_rsa_public_key(Crypto.RSA rsa)
                   }));
 }
 
+//! Returns the PKCS-1 algorithm identifier for RSA and the provided
+//! hash algorithm. One of @[MD2], @[MD5] or @[SHA1].
+Sequence signature_algorithm_id(Crypto.Hash hash)
+{
+  switch(hash)
+  {
+  case Crypto.MD2:
+    return Sequence( ({ .Identifiers.rsa_md2_id, Null() }) );
+    break;
+  case Crypto.MD5:
+    return Sequence( ({ .Identifiers.rsa_md5_id, Null() }) );
+    break;
+  case Crypto.SHA1:
+    return Sequence( ({ .Identifiers.rsa_sha1_id, Null() }) );
+    break;
+  }
+  return 0;
+}
+
+
 #else
 constant this_program_does_not_exist=1;
 #endif
