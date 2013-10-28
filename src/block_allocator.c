@@ -16,6 +16,11 @@
 
 static void print_allocator(const struct block_allocator * a);
 
+#ifdef PIKE_DEBUG
+static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header *loc,
+                         int ln);
+#endif
+
 static INLINE unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
                                              const void * ptr) {
     return ((char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
@@ -232,13 +237,7 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     p->h.used++;
 
 #ifdef PIKE_DEBUG
-    {
-	struct ba_layout l = ba_get_layout(a, a->alloc);
-	if (!BA_CHECK_PTR(l, p, ptr)) {
-	    print_allocator(a);
-	    Pike_fatal("about to return pointer from hell: %p\n", ptr);
-	}
-    }
+    ba_check_ptr(a, a->alloc, ptr, NULL, __LINE__);
 #endif
 
     if (ptr->next == BA_ONE) {
@@ -248,6 +247,10 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
 	p->h.first->next = (struct ba_block_header*)(ptrdiff_t)!(p->h.first == BA_LASTBLOCK(l, p));
 	PIKE_MEMPOOL_FREE(a, p->h.first, a->l.block_size);
     } else {
+#ifdef PIKE_DEBUG
+        if (ptr->next)
+            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__);
+#endif
 	p->h.first = ptr->next;
     }
     PIKE_MEM_WO_RANGE(ptr, sizeof(struct ba_block_header));
@@ -294,15 +297,16 @@ found:
 #endif
     {
 	struct ba_block_header * b = (struct ba_block_header*)ptr;
-	b->next = p->h.first;
-	p->h.first = b;
-        p->h.flags = 0;
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
 	    print_allocator(a);
 	    Pike_fatal("freeing from empty page %p\n", p);
 	}
+        ba_check_ptr(a, a->last_free, ptr, NULL, __LINE__);
 #endif
+        b->next = p->h.first;
+        p->h.first = b;
+        p->h.flags = 0;
 	if (!(--p->h.used)) {
             if (i+1 == a->size) {
                 ba_free_empty_pages(a);
@@ -331,6 +335,32 @@ static void print_allocator(const struct block_allocator * a) {
 		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
     }
 }
+
+#ifdef PIKE_DEBUG
+
+#define Pike_nfatal(n) \
+    (fprintf(stderr,msg_fatal_error,__FILE__,(long)(n)),debug_fatal)
+
+static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header * loc,
+                         int ln) {
+    struct ba_layout l = ba_get_layout(a, page);
+    struct ba_page * p = a->pages[page];
+
+    if (BA_BLOCKN(l, p, ba_block_number(&l, p, ptr)) != ptr) {
+        char * block = (char*)BA_BLOCKN(l, p, ba_block_number(&l, p, ptr));
+        print_allocator(a);
+        if (loc) fprintf(stderr, "In block %p:\n", loc);
+        Pike_nfatal(ln)("Free-List corruption. List pointer %p is inside block [%p , %p)\n",
+                        ptr, block, block + l.block_size);
+    }
+
+    if (!BA_CHECK_PTR(l, p, ptr)) {
+        print_allocator(a);
+        if (loc) fprintf(stderr, "In block %p:\n", loc);
+        Pike_nfatal(ln)("Free-List corruption. Block %p does not belong to page %p\n", ptr, p);
+    }
+}
+#endif
 
 #if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
 #define BV_LENGTH   64
