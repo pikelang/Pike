@@ -66,8 +66,6 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-#if constant(Standards.ASN1.Types)
-
 import Standards.ASN1.Types;
 
 Identifier pkcs_id = Identifier(1, 2, 840, 113549, 1);
@@ -226,7 +224,3 @@ Identifier ad_id = pkix_id->append(48);
 
 mapping(string:Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
-
-#else
-constant this_program_does_not_exist=1;
-#endif

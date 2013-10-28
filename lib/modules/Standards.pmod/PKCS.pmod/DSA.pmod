@@ -6,7 +6,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Crypto.DSA) && constant(Standards.ASN1.Types)
+#if constant(Crypto.DSA)
 
 import Standards.ASN1.Types;
 

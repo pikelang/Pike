@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Standards.ASN1.Types) && constant(Crypto.RSA)
+#if constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 
