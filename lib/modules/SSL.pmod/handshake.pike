@@ -214,6 +214,7 @@ Packet client_hello()
     // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
   }
+  SSL3_DEBUG_MSG("Client ciphers:\n%s", fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
   int cipher_len = sizeof(cipher_suites)*2;
