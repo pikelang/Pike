@@ -130,7 +130,7 @@ class asyncprotocol
 	if(max(i1, i2, i3, i4) <= 255 && min(i1, i2, i3, i4) >= 0)
 	   return 1;
 
-     return 0;
+     return arrayp(Protocols.IPv6.parse_addr(iporhost));
   }
 
   int async_connect(string to, int port, function cb, mixed ... extra)
