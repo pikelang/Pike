@@ -304,7 +304,7 @@ int(0..) key_size() { return [int(0..)](size*8); }
 Gmp.mpz rsa_pad(string message, int(1..2) type,
 		function(int:string)|void random)
 {
-  string cookie;
+  string cookie = "";
   int len;
 
   len = size - 3 - sizeof(message);
@@ -318,7 +318,9 @@ Gmp.mpz rsa_pad(string message, int(1..2) type,
     break;
   case 2:
     if( !random ) random = this_program::random;
-    cookie = replace( random(len), "\0", "\1");
+    do {
+      cookie += random(len-sizeof(cookie)) - "\0";
+    }  while( sizeof(cookie)<len );
     break;
   default:
     error( "Unknown type.\n" );
