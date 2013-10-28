@@ -19,8 +19,6 @@
 //			 - added core for async operation
 //
 
-#if constant(Standards.ASN1.Types)
-
 import Protocols.LDAP;
 
 #include "ldap_globals.h"
@@ -336,7 +334,3 @@ int get_last_io_time() {return last_io_time;}
     last_io_time = time();
     return msgnum;
   }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

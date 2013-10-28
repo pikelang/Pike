@@ -123,8 +123,6 @@ Version ::= INTEGER
 
 */
 
-#if constant(Standards.ASN1.Types)
-
 import Standards.ASN1.Types;
 import .Identifiers;
 
@@ -277,7 +275,3 @@ class Attributes
 		 }, m, types));
   }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
