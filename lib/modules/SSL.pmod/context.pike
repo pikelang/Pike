@@ -12,7 +12,7 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
-#if constant(Gmp.mpz) && constant(Crypto.Hash)
+#if constant(Crypto.Hash)
 
 import .Constants;
 
@@ -461,6 +461,6 @@ private void update_trusted_issuers()
   }
 }
 
-#else // constant(Gmp.mpz) && constant(Crypto.Hash)
+#else // constant(Crypto.Hash)
 constant this_program_does_not_exist = 1;
 #endif

@@ -2,7 +2,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(.CipherState) && constant(Gmp) && constant(Gmp.mpz)
+#if constant(.CipherState)
 
 //! A wrapper class that connects several cipher algorithms into one
 //! algorithm. E.g. triple DES can be emulated with

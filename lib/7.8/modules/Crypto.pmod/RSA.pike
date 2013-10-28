@@ -5,7 +5,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Hash)
+#if constant(Crypto.Hash)
 
 protected Gmp.mpz n;  /* modulo */
 protected Gmp.mpz e;  /* public exponent */
