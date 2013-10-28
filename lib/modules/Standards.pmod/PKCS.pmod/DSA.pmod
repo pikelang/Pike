@@ -21,7 +21,7 @@ Sequence algorithm_identifier(Crypto.DSA|void dsa)
     : Sequence( ({ .Identifiers.dsa_id }) );
 }
 
-//!
+//! Generates the DSAPublicKey value, as specified in RFC2459.
 string public_key(Crypto.DSA dsa)
 {
   return Integer(dsa->get_y())->get_der();
@@ -52,6 +52,19 @@ Crypto.DSA parse_private_key(string key)
   dsa->set_private_key(a->elements[4]->value);
 
   return dsa;
+}
+
+//! Returns the PKCS-1 algorithm identifier for DSA and the provided
+//! hash algorithm. Only @[SHA1] supported.
+Sequence signature_algorithm_id(Crypto.Hash hash)
+{
+  switch(hash)
+  {
+  case Crypto.SHA1:
+    return Sequence( ({ .Identifiers.dsa_sha_id }) );
+    break;
+  }
+  return 0;
 }
 
 #else
