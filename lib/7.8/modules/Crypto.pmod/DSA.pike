@@ -4,7 +4,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Random)
+#if constant(Crypto.Random)
 
 protected Gmp.mpz p; // Modulo
 protected Gmp.mpz q; // Group order

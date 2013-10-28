@@ -76,7 +76,6 @@ class struct {
     add_data(s);
   }
 
-#if constant(Gmp.mpz)
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
@@ -86,7 +85,6 @@ class struct {
       error("Negative argument.\n");
     put_var_string(i->digits(256), len_width || 2);
   }
-#endif
 
   //! Appends the fix sized string @[s] to the buffer.
   void put_fix_string(string s)
@@ -139,13 +137,11 @@ class struct {
     return get_fix_string(get_uint(len));
   }
 
-#if constant(Gmp.mpz)
   //! Reads a bignum written by @[put_bignum] from the buffer.
   Gmp.mpz get_bignum(int|void len)
   {
     return Gmp.mpz(get_var_string(len || 2), 256);
   }
-#endif
 
   //! Get the remaining data from the buffer and clears the buffer.
   string get_rest()

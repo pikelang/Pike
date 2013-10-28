@@ -4,8 +4,6 @@
 
 //! Decodes a DER object.
 
-#if constant(Gmp.mpz)
-
 //! Primitive unconstructed ASN1 data type.
 class Primitive
 {
@@ -205,8 +203,4 @@ mapping(int:program(.Types.Object)) universal_types =
 #ifdef COMPATIBILITY
 constant primitive = Primitive;
 constant constructed = Constructed;
-#endif
-
-#else
-constant this_program_does_not_exist=1;
 #endif
