@@ -3610,7 +3610,7 @@ expr4: string
     /* A?[X] to ((tmp=A) && tmp[X]) */
     if( $1->token == F_LOCAL )
     {
-      $$=mknode(F_LAND, $1, mknode(F_INDEX,  $1, $4));
+      $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
     }
     else
     {
@@ -3642,7 +3642,7 @@ expr4: string
     node *range = mknode(':',$4,$6);
     if( $1->token == F_LOCAL )
     {
-      $$ = mknode( F_LAND, $1, mknode(F_RANGE, $1, range) );
+      $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
     }
     else
     {
@@ -3664,10 +3664,6 @@ expr4: string
         yyerror("Indexing unexpected value.");
       }
     }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-
-
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
@@ -3760,7 +3756,7 @@ expr4: string
     int temporary;
     if( $1->token == F_LOCAL )
     {
-      $$=mknode(F_LAND, $1, mknode(F_ARROW,  $1, $4));
+      $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
     }
     else
     {
