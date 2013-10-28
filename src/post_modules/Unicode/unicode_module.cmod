@@ -210,7 +210,8 @@ static int is_rtl_char( int c )
   return 0;
 }
 
-/*! Returns @expr{1@} if the character is a RTL character or
+/*! @decl int is_rtlchar( int c )
+ *! Returns @expr{1@} if the character is a RTL character or
  *! indicator, otherwise @expr{0@}.
  */
 PIKEFUN int is_rtlchar( int c )
@@ -219,7 +220,8 @@ PIKEFUN int is_rtlchar( int c )
   RETURN is_rtl_char(c);
 }
 
-/*! Returns @expr{1@} if the string contains RTL characters or
+/*! @decl int is_rtlstring( string s )
+ *! Returns @expr{1@} if the string contains RTL characters or
  *! RTL indicators, otherwise @expr{0@}.
  */
 PIKEFUN int is_rtlstring( string s )
