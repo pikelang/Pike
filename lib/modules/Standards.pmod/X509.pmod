@@ -206,10 +206,10 @@ string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
 
 //!
 string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
-				       array|void extensions)
+				       array|void extensions, void|int serial)
 {
-  int serial =
-    (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
+  if(!serial)
+    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
 
   Sequence dn = Certificate.build_distinguished_name(@name);
 
@@ -237,12 +237,15 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 //!
 //! @param issuer
 //!   Distinguished name for the issuer.
+//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param rsa
 //!   RSA parameters for the issuer.
+//!   See @[Crypto.RSA].
 //!
 //! @param subject
 //!   Distinguished name for the issuer.
+//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param public_key
 //!   DER-encoded RSAPublicKey structure.
@@ -278,10 +281,10 @@ string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
 
 //!
 string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
-				       array|void extensions)
+				       array|void extensions, void|int serial)
 {
-  int serial =
-    (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
+  if(!serial)
+    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
 
   Sequence dn = Certificate.build_distinguished_name(@name);
 
