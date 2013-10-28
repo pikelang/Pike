@@ -24,6 +24,7 @@ DECLARATIONS
 #include "nettle.h"
 
 #include <nettle/aes.h>
+#include <nettle/arctwo.h>
 #include <nettle/arcfour.h>
 #ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
@@ -427,6 +428,162 @@ pike_aes_set_decrypt_key(void *ctx,
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
+
+/* NB: Requires Nettle 1.11 or later, which should be fine by now. */
+static void pike_arctwo_set_key(void *ctx,
+				ptrdiff_t length, const char *key,
+				int ekb)
+{
+  if (length < ARCTWO_MIN_KEY_SIZE || length > ARCTWO_MAX_KEY_SIZE)
+    Pike_error("ARCTWO: Bad keysize for ARCTWO.\n");
+
+  arctwo_set_key_ekb(ctx, length, (const uint8_t *)key, ekb);
+}
+
+#define pike_arctwo_set_encrypt_key pike_arctwo_set_key
+#define pike_arctwo_set_decrypt_key pike_arctwo_set_key
+
+/*! @class ARCTWO
+ *!
+ *! Implementation of the ARCTWO cipher.
+ *!
+ */
+PIKECLASS ARCTWO
+{
+  /*! @decl inherit Cipher
+   */
+  INHERIT Cipher;
+
+  INIT
+    {
+      static const struct pike_cipher pike_arctwo =
+	_PIKE_CIPHER(arctwo, ARCTWO);
+      struct Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
+			     Cipher_program);
+      cipher->meta = &pike_arctwo;
+    }
+
+  /*! @class State
+   *!
+   *! State for PIKE_NAME encyption.
+   *!
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit Cipher::State
+     */
+
+    EXTRA
+    {
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    CVAR struct arctwo_ctx arctwo;
+
+    INIT
+    {
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
+      state->ctx = &THIS->arctwo;
+    }
+
+    /*! @decl State set_encrypt_key(string key, int|void ekb)
+     *!
+     *! Initializes the object for encryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @param ekb
+     *!   The effective number of bits in the key.
+     *!   @int
+     *!     @value UNDEFINED
+     *!       Derive from the key size (ie @expr{8 * sizeof(key)@}).
+     *!     @value 0
+     *!       Convenience alias for max (ie @expr{1024@}).
+     *!     @value 1..1024
+     *!       Reduce the effective key size to the specified number of bits.
+     *!   @endint
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key], @[crypt]
+     */
+    PIKEFUN object set_encrypt_key(string key, void|int(0..1024) ekb)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+    {
+      NO_WIDE_STRING(key);
+      if (!ekb) {
+	if (args > 1) pop_n_elems(args - 1);
+	push_int(key->len * 8);
+	args = 2;
+      }
+      apply_low(Pike_fp->current_object,
+		Pike_fp->context[1].identifier_level +
+		f_Cipher_State_set_encrypt_key_fun_num, args);
+    }
+
+    /*! @decl State set_decrypt_key(string key, void|int ekb)
+     *!
+     *! Initializes the object for decryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @param ekb
+     *!   The effective number of bits in the key.
+     *!   @int
+     *!     @value UNDEFINED
+     *!       Derive from the key size (ie @expr{8 * sizeof(key)@}).
+     *!     @value 0
+     *!       Convenience alias for max (ie @expr{1024@}).
+     *!     @value 1..1024
+     *!       Reduce the effective key size to the specified number of bits.
+     *!   @endint
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key], @[crypt]
+     */
+    PIKEFUN object set_decrypt_key(string key, void|int ekb)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+    {
+      NO_WIDE_STRING(key);
+      if (!ekb) {
+	if (args > 1) pop_n_elems(args - 1);
+	push_int(key->len * 8);
+	args = 2;
+      }
+      apply_low(Pike_fp->current_object,
+		Pike_fp->context[1].identifier_level +
+		f_Cipher_State_set_decrypt_key_fun_num, args);
+    }
+
+
+  }
+  /*! @endclass State
+   */
+}
+
+/*! @endclass ARCTWO
+ */
 
 static void
 pike_arcfour_set_key(void *ctx,
