@@ -5,7 +5,11 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Hash)
+#if constant(Gmp.mpz) && constant(Crypto.Hash)
+
+//
+// --- Variables and accessors
+//
 
 protected Gmp.mpz n;  /* modulo */
 protected Gmp.mpz e;  /* public exponent */
@@ -17,6 +21,32 @@ protected int size;
 protected Gmp.mpz p;
 protected Gmp.mpz q;
 
+protected function(int:string) random = .Random.random_string;
+
+Gmp.mpz get_n() { return n; } //! Returns the RSA modulo (n).
+Gmp.mpz get_e() { return e; } //! Returns the RSA public exponent (e).
+
+//! Returns the RSA private exponent (d), if known.
+Gmp.mpz get_d() { return d; }
+
+Gmp.mpz get_p() { return p; } //! Returns the first RSA prime (p), if known.
+Gmp.mpz get_q() { return q; } //! Returns the second RSA prime (q), if known.
+
+//! Sets the random function, used to generate keys and parameters, to
+//! the function @[r]. Default is @[Crypto.Random.random_string].
+this_program set_random(function(int:string) r)
+{
+  random = r;
+  return this;
+}
+
+//! Returns the string @expr{"RSA"@}.
+string name() { return "RSA"; }
+
+//
+// --- Key methods
+//
+
 //! Can be initialized with a mapping with the elements n, e, d, p and
 //! q.
 protected void create(mapping(string:Gmp.mpz|int)|void params)
@@ -26,66 +56,6 @@ protected void create(mapping(string:Gmp.mpz|int)|void params)
     set_public_key(params->n, params->e);
   if( params->d )
     set_private_key(params->d, ({ params->p, params->q, params->n }));
-}
-
-//! Returns the RSA modulo (n).
-Gmp.mpz get_n()
-{
-  return n;
-}
-
-//! Returns the RSA public exponent (e).
-Gmp.mpz get_e()
-{
-  return e;
-}
-
-//! Returns the RSA private exponent (d), if known.
-Gmp.mpz get_d()
-{
-  return d;
-}
-
-//! Returns the first RSA prime (p), if known.
-Gmp.mpz get_p()
-{
-  return p;
-}
-
-//! Returns the second RSA prime (q), if known.
-Gmp.mpz get_q()
-{
-  return q;
-}
-
-//! Returns the RSA modulo (n) as a binary string.
-string cooked_get_n()
-{
-  return n->digits(256);
-}
-
-//! Returns the RSA public exponent (e) as a binary string.
-string cooked_get_e()
-{
-  return e->digits(256);
-}
-
-//! Returns the RSA private exponent (d) as a binary string, if known.
-string cooked_get_d()
-{
-  return d->digits(256);
-}
-
-//! Returns the first RSA prime (p) as a binary string, if known.
-string cooked_get_p()
-{
-  return p->digits(256);
-}
-
-//! Returns the second RSA prime (q) as a binary string, if known.
-string cooked_get_q()
-{
-  return q->digits(256);
 }
 
 //! Sets the public key.
@@ -101,6 +71,13 @@ this_program set_public_key(Gmp.mpz|int modulo, Gmp.mpz|int pub)
   if (size < 12)
     error( "Too small modulo.\n" );
   return this;
+}
+
+//! Compares the public key of this RSA object with another RSA
+//! object.
+int(0..1) public_key_equal(this_program rsa)
+{
+  return n == rsa->get_n() && e == rsa->get_e();
 }
 
 //! Sets the private key.
@@ -126,165 +103,13 @@ this_program set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
   return this;
 }
 
-//! Returns the crypto block size, or zero if not yet set.
-int query_blocksize() {
-  if(!size) return 0;
-  return size - 3;
-}
+//
+// --- Key generation
+//
 
-//! Pads the @[message] to the current block size with method @[type]
-//! and returns the result as an integer. This is equvivalent to
-//! OS2IP(EME-PKCS1-V1_5-ENCODE(message)) in PKCS-1.
-//! @param type
-//!   @int
-//!     @value 1
-//!       The message is padded with @expr{0xff@} bytes.
-//!     @value 2
-//!       The message is padded with random data, using the @[random]
-//!       function if provided. Otherwise
-//!       @[Crypto.Random.random_string] will be used.
-//!   @endint
-Gmp.mpz rsa_pad(string message, int(1..2) type,
-		function(int:string)|void random)
-{
-  string cookie;
-  int len;
-
-  len = size - 3 - sizeof(message);
-  if (len < 8)
-    error( "Block too large. (%d,%d)\n", sizeof(message), size-3 );
-
-  switch(type)
-  {
-  case 1:
-    cookie = sprintf("%@c", allocate(len, 0xff));
-    break;
-  case 2:
-    if (random)
-      cookie = replace(random(len), "\0", "\1");
-    else
-      cookie = replace(.Random.random_string(len), "\0", "\1");
-    break;
-  default:
-    error( "Unknown type.\n" );
-  }
-  return Gmp.mpz(sprintf("%c", type) + cookie + "\0" + message, 256);
-}
-
-//! Reverse the effect of @[rsa_pad].
-string rsa_unpad(Gmp.mpz block, int type)
-{
-  string s = block->digits(256);
-  int i = search(s, "\0");
-
-  if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
-    return 0;
-  return s[i+1..];
-}
-
-//! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
-Gmp.mpz raw_sign(string digest)
-{
-  return rsa_pad(digest, 1, 0)->powm(d, n);
-}
-
-//! Signs @[digest] as @[raw_sign] and returns the signature as a byte
-//! string.
-string cooked_sign(string digest)
-{
-  return raw_sign(digest)->digits(256);
-}
-
-//! Verifies the @[digest] against the signature @[s], assuming pad
-//! type 1.
-//! @seealso
-//!   @[rsa_pad], @[raw_sign]
-int(0..1) raw_verify(string digest, Gmp.mpz s)
-{
-  return s->powm(e, n) == rsa_pad(digest, 1, 0);
-}
-
-//! Pads the message @[s] with @[rsa_pad] type 2, signs it and returns
-//! the signature as a byte string.
-//! @param r
-//!   Optional random function to be passed down to @[rsa_pad].
-string encrypt(string s, function(int:string)|void r)
-{
-  return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
-}
-
-//! Decrypt a message encrypted with @[encrypt].
-string decrypt(string s)
-{
-  return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
-}
-
-//! Returns the size of the key in terms of number of bits.
-int(0..) rsa_size() { return [int(0..)](size*8); }
-
-//! Compares the public key of this RSA object with another RSA
-//! object.
-int(0..1) public_key_equal(this_program rsa)
-{
-  return n == rsa->get_n() && e == rsa->get_e();
-}
-
-// end of _rsa
-
-//! Signs the @[message] with a PKCS-1 signature using hash algorithm
-//! @[h].
-Gmp.mpz sign(string message, .Hash h)
-{
-  return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
-}
-
-//! Verify PKCS-1 signature @[sign] of message @[msg] using hash
-//! algorithm @[h].
-int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
-{
-  string s = Standards.PKCS.Signature.build_digestinfo(msg, h);
-  return raw_verify(s, sign);
-}
-
-//! @fixme
-//!   Document this function.
-string sha_sign(string message, mixed|void r)
-{
-  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
-  return cooked_sign(s);r;
-}
-  
-//! @fixme
-//!   Document this function.
-int sha_verify(string message, string signature)
-{
-  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
-  return raw_verify(s, Gmp.mpz(signature, 256));
-}
-
-// Broken implementation of RSA/MD5 SIG RFC 2537. The 0x00 01 FF* 00
-// prefix is missing.
-
-// (RSA/SHA-1 SIG is in RFC 3110)
-
-string md5_sign(string message, mixed|void r)
-{
-  string s = Crypto.MD5->hash(message);
-  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
-  return cooked_sign(s);r;
-}
-
-int md5_verify(string message, string signature)
-{
-  string s = Crypto.MD5->hash(message);
-  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
-  return raw_verify(s, Gmp.mpz(signature, 256));
-}
-
-
-//! Generate a prime with @[bits] number of bits using random function
-//! @[r].
-Gmp.mpz get_prime(int bits, function(int:string) r)
+// Generate a prime with @[bits] number of bits using random function
+// @[r].
+protected Gmp.mpz get_prime(int bits, function(int:string) r)
 {
   int len = (bits + 7) / 8;
   int bit_to_set = 1 << ( (bits - 1) % 8);
@@ -302,13 +127,12 @@ Gmp.mpz get_prime(int bits, function(int:string) r)
 }
 
 //! Generate a valid RSA key pair with the size @[bits]. A random
-//! function may be provided as arguemnt @[r], otherwise
-//! @[Crypto.Random.random_string] will be used. Keys must be at least
-//! 128 bits.
+//! function may be provided as arguemnt @[r], otherwise the default
+//! random function set in the object will be used. Keys must be at
+//! least 128 bits.
 this_program generate_key(int(128..) bits, function(int:string)|void r)
 {
-  if (!r)
-    r = Crypto.Random.random_string;
+  if (!r) r = random;
   if (bits < 128)
     error( "Ridiculously small key.\n" );
 
@@ -353,13 +177,69 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
     set_public_key(mod, pub);
     set_private_key(gs[1], ({ p, q }));
 
-  } while (!sha_verify(msg, sha_sign(msg, r)));
+  } while (!raw_verify(msg, raw_sign(msg)));
   return this;
 }
 
-/*
- * Block cipher compatibility.
- */
+//
+// --- PKCS methods
+//
+
+#define Sequence Standards.ASN1.Types.Sequence
+
+//! Calls @[Standards.PKCS.RSA.signatue_algorithm_id] with the
+//! provided @[hash].
+Sequence pkcs_algorithm_id(.Hash hash)
+{
+  return [object(Sequence)]Standards.PKCS.RSA->signature_algorithm_id(hash);
+}
+
+//! Calls @[Standards.PKCS.RSA.build_public_key] with this object as
+//! argument.
+Sequence pkcs_public_key()
+{
+  return [object(Sequence)]Standards.PKCS.RSA->build_public_key(this);
+}
+
+#undef Sequence
+
+//! Signs the @[message] with a PKCS-1 signature using hash algorithm
+//! @[h].
+Gmp.mpz sign(string message, .Hash h)
+{
+  return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
+}
+
+//! Verify PKCS-1 signature @[sign] of message @[message] using hash
+//! algorithm @[h].
+int(0..1) verify(string message, .Hash h, Gmp.mpz sign)
+{
+  string s = Standards.PKCS.Signature.build_digestinfo(message, h);
+  return raw_verify(s, sign);
+}
+
+//
+// --- Encryption/decryption
+//
+
+//! Pads the message @[s] with @[rsa_pad] type 2, signs it and returns
+//! the signature as a byte string.
+//! @param r
+//!   Optional random function to be passed down to @[rsa_pad].
+string encrypt(string s, function(int:string)|void r)
+{
+  return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
+}
+
+//! Decrypt a message encrypted with @[encrypt].
+string decrypt(string s)
+{
+  return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
+}
+
+//
+// --- Block cipher compatibility.
+//
 
 protected int encrypt_mode; // For block cipher compatible functions
 
@@ -392,9 +272,163 @@ string crypt(string s)
   return (encrypt_mode ? encrypt(s) : decrypt(s));
 }
 
-//! Returns the string @expr{"RSA"@}.
-string name() {
-  return "RSA";
+//! Returns the crypto block size, or zero if not yet set.
+int block_size()
+{
+  if(!size) return 0;
+  // FIXME: This can be both zero and negative...
+  return size - 3;
+}
+
+//! Returns the size of the key in terms of number of bits.
+int(0..) key_size() { return [int(0..)](size*8); }
+
+
+//
+//  --- Below are methods for RSA applied in other standards.
+//
+
+
+//! Pads the @[message] to the current block size with method @[type]
+//! and returns the result as an integer. This is equvivalent to
+//! OS2IP(EME-PKCS1-V1_5-ENCODE(message)) in PKCS-1.
+//! @param type
+//!   @int
+//!     @value 1
+//!       The message is padded with @expr{0xff@} bytes.
+//!     @value 2
+//!       The message is padded with random data, using the @[random]
+//!       function if provided. Otherwise the default random function
+//!       set in the object will be used.
+//!   @endint
+Gmp.mpz rsa_pad(string message, int(1..2) type,
+		function(int:string)|void random)
+{
+  string cookie;
+  int len;
+
+  len = size - 3 - sizeof(message);
+  if (len < 8)
+    error( "Block too large. (%d,%d)\n", sizeof(message), size-3 );
+
+  switch(type)
+  {
+  case 1:
+    cookie = sprintf("%@c", allocate(len, 0xff));
+    break;
+  case 2:
+    if( !random ) random = this_program::random;
+    cookie = replace( random(len), "\0", "\1");
+    break;
+  default:
+    error( "Unknown type.\n" );
+  }
+  return Gmp.mpz(sprintf("%c", type) + cookie + "\0" + message, 256);
+}
+
+//! Reverse the effect of @[rsa_pad].
+string rsa_unpad(Gmp.mpz block, int type)
+{
+  string s = block->digits(256);
+  int i = search(s, "\0");
+
+  if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
+    return 0;
+  return s[i+1..];
+}
+
+//! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
+Gmp.mpz raw_sign(string digest)
+{
+  return rsa_pad(digest, 1, 0)->powm(d, n);
+}
+
+//! Verifies the @[digest] against the signature @[s], assuming pad
+//! type 1.
+//! @seealso
+//!   @[rsa_pad], @[raw_sign]
+int(0..1) raw_verify(string digest, Gmp.mpz s)
+{
+  return s->powm(e, n) == rsa_pad(digest, 1, 0);
+}
+
+//
+// --- Deprecated stuff
+//
+
+//! Returns the RSA modulo (n) as a binary string.
+__deprecated__ string cooked_get_n()
+{
+  return n->digits(256);
+}
+
+//! Returns the RSA public exponent (e) as a binary string.
+__deprecated__ string cooked_get_e()
+{
+  return e->digits(256);
+}
+
+//! Returns the RSA private exponent (d) as a binary string, if known.
+__deprecated__ string cooked_get_d()
+{
+  return d->digits(256);
+}
+
+//! Returns the first RSA prime (p) as a binary string, if known.
+__deprecated__ string cooked_get_p()
+{
+  return p->digits(256);
+}
+
+//! Returns the second RSA prime (q) as a binary string, if known.
+__deprecated__ string cooked_get_q()
+{
+  return q->digits(256);
+}
+
+//! Signs @[digest] as @[raw_sign] and returns the signature as a byte
+//! string.
+__deprecated__ string cooked_sign(string digest)
+{
+  return raw_sign(digest)->digits(256);
+}
+
+__deprecated__ int query_blocksize() {
+  return block_size();
+}
+
+__deprecated__ int(0..) rsa_size() { return [int(0..)](size*8); }
+
+
+// Broken implementation of RSA/MD5 SIG RFC 2537. The 0x00 01 FF* 00
+// prefix is missing.
+
+// (RSA/SHA-1 SIG is in RFC 3110)
+
+__deprecated__ string md5_sign(string message, mixed|void r)
+{
+  string s = Crypto.MD5->hash(message);
+  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
+  return raw_sign(s)->digits(256);r;
+}
+
+__deprecated__ int md5_verify(string message, string signature)
+{
+  string s = Crypto.MD5->hash(message);
+  s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
+  return raw_verify(s, Gmp.mpz(signature, 256));
+}
+
+__deprecated__ string sha_sign(string message, mixed|void r)
+{
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
+  return raw_sign(s)->digits(256);r;
+}
+
+__deprecated__ int sha_verify(string message, string signature)
+{
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
+  return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
 #else

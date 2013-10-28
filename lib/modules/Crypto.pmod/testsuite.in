@@ -375,6 +375,24 @@ test_cipher(Twofish,twofish)
 
 
 // Crypto.RSA
+
+test_do([[
+#pike 7.8
+add_constant("RSA", Crypto.RSA()) ]])
+test_do( RSA->generate_key(1024) )
+test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
+test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
+test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
+test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
+test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
+test_true( RSA->sha_verify("hej", RSA->sha_sign("hej")) )
+test_false( RSA->sha_verify("hoj", RSA->sha_sign("hej")) )
+test_true( RSA->md5_verify("hej", RSA->md5_sign("hej")) )
+test_false( RSA->md5_verify("hoj", RSA->md5_sign("hej")) )
+test_eq( RSA->query_blocksize(), 125 )
+test_eq( RSA->rsa_size(), 1024 )
+test_do( add_constant("RSA") )
+
 cond_resolv(Crypto.MD5.name, [[
 test_do( add_constant("RSA", Crypto.RSA()) )
 test_do( RSA->generate_key(1024) )
@@ -390,11 +408,6 @@ test_equal( RSA->get_p(), RSA->get_p() )
 test_true( functionp(RSA->get_p()->gcdext2) )
 test_equal( RSA->get_q(), RSA->get_q() )
 test_true( functionp(RSA->get_q()->gcdext2) )
-test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
-test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
-test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
-test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
-test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
 test_do( add_constant("RSB", Crypto.RSA()) )
 test_do( RSB->set_private_key(RSA->get_d(),
          ({ RSA->get_p(), RSA->get_q() }) ) )
@@ -411,10 +424,6 @@ test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
 test_true([[ RSA->verify("hej", Crypto.SHA1, RSB->sign("hej", Crypto.SHA1)) ]])
 test_true([[ RSA->verify("hej", Crypto.SHA256, RSB->sign("hej", Crypto.SHA256)) ]])
 test_false([[ RSA->verify("hoj", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
-test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
-test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
-test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
-test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
 
@@ -426,11 +435,11 @@ test_true( RSA->set_private_key(
   0x3f8a1cafe3cd1841ea9a45ac80faa172937921094a587b68ba0d38e2ded6d79ef1a5b8d9605278ddc61616f12fbb9dc6dbdea50f9dc4a51f6a8ed30ada7c9301,
   ({ 0xae01268cb370af44cb05e9618ea6681dae1186bd746d3aa6122b8bf6c2290619,
      0xc1884f35667fb5ea3e8e7cfa052bb34894c2970b3da6a0650182fe514b23c835 })) )
-test_eq( RSA->query_blocksize(), 61 )
-test_true( RSA->raw_verify("flärpzprutt",RSA->raw_sign("flärpzprutt")) )
-test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
+test_eq( RSA->block_size(), 61 )
+test_true( RSA->raw_verify("fl\0rpzprutt",RSA->raw_sign("fl\0rpzprutt")) )
+test_false( RSA->raw_verify("fl\0rpzputt",RSA->raw_sign("fl\0rpzprutt")) )
 test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
-test_eq( RSA->rsa_size(), 512 )
+test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
 test_do( add_constant("RSA") )
@@ -463,7 +472,7 @@ test_equal( DSA->raw_sign(DSA->hash("abc"),
          ({ "8bac1ab66410435cb7181f95b16ab97c92b341c0",
             "41e2345f1f56df2458f426d155b4ba2db6dcd8c8" }) )
 test_true(DSA->raw_verify(DSA->hash("abc"), @DSA->raw_sign(DSA->hash("abc"))))
-test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
+dnl test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
 test_true( DSA->verify_ssl("abc", DSA->sign_ssl("abc")) )
 test_do( add_constant("DSB", Crypto.DSA()) )
 test_do( DSB->set_public_key( DSA->get_p(), DSA->get_q(),

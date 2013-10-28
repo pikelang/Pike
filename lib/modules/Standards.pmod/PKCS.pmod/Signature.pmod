@@ -17,7 +17,7 @@
 //! @param hash
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 //! @seealso
-//!   Crypto.RSA()->sign, Crypto.RSA()->cooked_sign
+//!   @[Crypto.RSA()->sign]
 string build_digestinfo(string msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
