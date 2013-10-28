@@ -4334,9 +4334,9 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
   Pike_compiler->new_program->optimize = opt;
 }
 
-int really_low_reference_inherited_identifier(struct program_state *q,
-					      int e,
-					      int i)
+PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
+							  int e,
+							  int i)
 {
   struct program *np=(q?q:Pike_compiler)->new_program;
   struct reference funp;
@@ -4382,10 +4382,10 @@ int really_low_reference_inherited_identifier(struct program_state *q,
   return num_id_refs; /* aka np->num_identifier_references - 1 */
 }
 
-int low_reference_inherited_identifier(struct program_state *q,
-				       int e,
-				       struct pike_string *name,
-				       int flags)
+PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
+						   int e,
+						   struct pike_string *name,
+						   int flags)
 {
   struct program *np=(q?q:Pike_compiler)->new_program;
   struct program *p;

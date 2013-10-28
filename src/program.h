@@ -814,13 +814,13 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int));
 PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *));
-int really_low_reference_inherited_identifier(struct program_state *q,
-					      int e,
-					      int i);
-int low_reference_inherited_identifier(struct program_state *q,
-				       int e,
-				       struct pike_string *name,
-				       int flags);
+PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
+							  int e,
+							  int i);
+PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
+						   int e,
+						   struct pike_string *name,
+						   int flags);
 int find_inherit(struct program *p, struct pike_string *name);
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
