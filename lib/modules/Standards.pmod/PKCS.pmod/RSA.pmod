@@ -4,7 +4,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Standards.ASN1.Decode) && constant(Crypto.RSA)
+#if constant(Standards.ASN1.Types) && constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 
@@ -83,7 +83,7 @@ Crypto.RSA parse_private_key(string key)
   return rsa;
 }
 
-Sequence build_rsa_public_key(Crypto.RSA rsa)
+Sequence build_public_key(Crypto.RSA rsa)
 {
   return Sequence(({
                     Sequence(({ .Identifiers.rsa_id, Null() })),
