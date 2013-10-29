@@ -446,7 +446,7 @@ protected private class Extractor {
       if (sizeof(docDecls)) {
         if (sizeof(decls)) {
           if (sizeof(decls) != 1)
-            extractorError("only one pike declaration can be combined with @decl");
+            extractorError("only one pike declaration can be combined with @decl %O", decls->position);
           foreach(docDecls, PikeObject d)
             if (decls[0]->objtype != d->objtype)
               extractorError("@decl of %s mismatches %s in pike code",
