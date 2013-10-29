@@ -13,7 +13,7 @@ protected Gmp.mpz g; // Generator
 protected Gmp.mpz y; // Public key
 protected Gmp.mpz x; // Private key
 
-function(int:string) random = .Random.random_string;
+function(int:string) random = Crypto.Random.random_string;
 
 
 // Accessors
