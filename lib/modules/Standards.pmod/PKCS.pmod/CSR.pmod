@@ -19,7 +19,7 @@ Sequence build_csr(Crypto.RSA rsa, object name,
 		   mapping(string:array(object)) attributes)
 {
   Sequence info = Sequence( ({ Integer(0), name,
-			       .RSA.build_rsa_public_key(rsa),
+			       .RSA.build_public_key(rsa),
 			       CSR_Attributes(.Identifiers.attribute_ids,
 					      attributes) }) );
   return Sequence( ({ info,
