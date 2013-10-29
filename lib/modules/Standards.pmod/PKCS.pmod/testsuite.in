@@ -38,4 +38,13 @@ test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.SHA1)->get_der(),
 test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.MD4), 0 )
 
 test_do( add_constant("R"); )
+
+test_true( Standards.PKCS.CSR )
+test_true( Standards.PKCS.Certificate )
+test_true( Standards.PKCS.DSA )
+test_true( Standards.PKCS.Identifiers )
+test_true( Standards.PKCS.PFX )
+test_true( Standards.PKCS.RSA )
+test_true( Standards.PKCS.Signature )
+
 END_MARKER
