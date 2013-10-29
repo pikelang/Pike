@@ -7,3 +7,11 @@
 /nettle_config.h.in
 /nt.c
 /stamp-h.in
+/Makefile
+/config.log
+/config.status
+/make_variables
+/nettle_config.h
+/pike_Nettle.feature
+/propagated_variables
+/stamp-h
