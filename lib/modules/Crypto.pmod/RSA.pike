@@ -162,14 +162,19 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
 				    Gmp.mpz([object(Gmp.mpz)](q-1)));
 
     array(Gmp.mpz) gs; /* gcd(pub, phi), and pub^-1 mod phi */
-    Gmp.mpz pub = Gmp.mpz(
-#ifdef SSL3_32BIT_PUBLIC_EXPONENT
-			 random(1 << 30) |
-#endif /* SSL3_32BIT_PUBLIC_EXPONENT */
-			 0x10001);
 
-    while ((gs = pub->gcdext2(phi))[0] != 1)
-      pub += 1;
+    // For a while it was thought that small exponents were a security
+    // problem, but turned out was a padding problem. The exponent
+    // 0x10001 has however become common practice, although a smaller
+    // value would be more efficient.
+    Gmp.mpz pub = Gmp.mpz(0x10001);
+
+    // For security reason we need to ensure no common denominator
+    // between n and phi. We could create a different exponent, but
+    // some Crypto packages are hard coded for 0x10001, so instead
+    // we'll just start over.
+    if ((gs = pub->gcdext2(phi))[0] != 1)
+      continue;
 
     if (gs[1] < 0)
       gs[1] += phi;
