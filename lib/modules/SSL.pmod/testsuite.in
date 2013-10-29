@@ -34,7 +34,7 @@ test_do([[
   });
 
   string _cert = Standards.PEM.build("CERTIFICATE",
-    Standards.X509.make_selfsigned_rsa_certificate(rsa_again, 3600*24, attrs));
+    Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs));
 
   add_constant("pem_key", _key);
   add_constant("pem_cert", _cert);

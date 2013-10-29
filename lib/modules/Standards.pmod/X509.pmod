@@ -121,8 +121,6 @@ protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
   MetaExplicit version_integer = MetaExplicit(2, 0);
 
-  Sequence rsa_public_key = Sequence( ({ Identifiers.rsa_id, Null() }));
-
   Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
 
   Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
@@ -164,60 +162,6 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 }
 
 //!
-//! @param issuer
-//!   Distinguished name for the issuer.
-//!
-//! @param rsa
-//!   RSA parameters for the issuer.
-//!
-//! @param subject
-//!   Distinguished name for the subject.
-//!
-//! @param public_key
-//!   DER-encoded integer.
-//!   See @[Standards.PKCS.DSA.public_key()].
-//!
-//! @param serial
-//!   Serial number for this key and issuer.
-//!
-//! @param ttl
-//!   Validity time in seconds for this signature to be valid.
-//!
-//! @param extensions
-//!   Set of extensions.
-//!
-//! @returns
-//!   Returns a DER-encoded certificate.
-string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
-		    Sequence subject, string public_key,
-		    int serial, int ttl, array|void extensions)
-{
-  Sequence tbs = make_tbs(issuer, dsa_sha1_algorithm,
-			  subject,
-			  Sequence(({ DSA.algorithm_identifier(dsa),
-				      BitString(public_key) }) ),
-			  Integer(serial), ttl, extensions);
-
-  string digest = tbs->get_der();
-  return Sequence(({ tbs, dsa_sha1_algorithm,
-		     BitString(dsa->sign_ssl(digest))
-		  }))->get_der();
-}
-
-//!
-string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
-				       array|void extensions, void|int serial)
-{
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
-  Sequence dn = Certificate.build_distinguished_name(@name);
-
-  return dsa_sign_key(dn, dsa, dn, DSA.public_key(dsa),
-		      serial, ttl, extensions);
-}
-
-//!
 string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
 {
   Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
@@ -239,9 +183,9 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 //!   Distinguished name for the issuer.
 //!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
-//! @param rsa
-//!   RSA parameters for the issuer.
-//!   See @[Crypto.RSA].
+//! @param c
+//!   RSA or DSA parameters for the issuer.
+//!   See @[Crypto.RSA] and @[Crypto.DSA].
 //!
 //! @param subject
 //!   Distinguished name for the issuer.
@@ -262,34 +206,65 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
-string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
-		    Sequence subject, string public_key,
-		    int serial, int ttl, array|void extensions)
+string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
+                int serial, int ttl, array|void extensions)
 {
-  Sequence tbs = make_tbs(issuer, rsa_sha1_algorithm,
-			  subject,
-			  Sequence(({ rsa_public_key,
-				      BitString(public_key) }) ),
-			  Integer(serial), ttl, extensions);
+  function(string:string) sign;
+  if( object_program(c) == Crypto.RSA )
+  {
+    sign = lambda(string d) {
+             return rsa_sign_digest(c, Identifiers.sha1_id, d);
+           };
+  }
+  else if( object_program(c) == Crypto.DSA )
+  {
+    sign = c->sign_ssl;
+  }
+  else
+    error("Unhandled cipher %O. Use RSA or DSA.\n", c);
 
+  Sequence tbs = make_tbs(issuer, c->pkcs_algorithm_id(Crypto.SHA1),
+                          subject, c->pkcs_public_key(),
+                          Integer(serial), ttl, extensions);
   string digest = Crypto.SHA1.hash(tbs->get_der());
-  return Sequence(({ tbs, rsa_sha1_algorithm,
-		     BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
-					       digest))
-		  }))->get_der();
+
+  return Sequence(({ tbs, c->pkcs_algorithm_id(Crypto.SHA1),
+                     BitString(sign(digest)) }))->get_der();
 }
 
+//! Creates a selfsigned certificate, i.e. where issuer and subject
+//! are the same entity. This entity is derived from the list of pairs
+//! in @[name], which is encoded into an distinguished_name by
+//! @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
-string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
-				       array|void extensions, void|int serial)
+//! @param c
+//!   The public key cipher used for the certificate, @[Crypto.RSA] or
+//!   @[Crypto.DSA]. The object should be initialized with (at least)
+//!   public keys.
+//!
+//! @param ttl
+//!   The validity of the certificate, in seconds, starting from
+//!   creation date.
+//!
+//! @param name
+//!   List of properties to create distinghuised name from.
+//!
+//! @param extensions
+//!   List of extensions as ASN.1 structures.
+//!
+//! @param serial
+//!   Serial number of the certificate. Defaults to generating a UUID
+//!   version1 value with random node. Some browsers will refuse
+//!   different certificates from the same signer with the same serial
+//!   number.
+string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
+                                   array name, array|void extensions,
+                                   void|int serial)
 {
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = Certificate.build_distinguished_name(@name);
-
-  return rsa_sign_key(dn, rsa, dn, RSA.public_key(rsa),
-		      serial, ttl, extensions);
+  return sign_key(dn, c, dn, serial, ttl, extensions);
 }
 
 class Verifier {
@@ -425,6 +400,28 @@ class TBSCertificate
   //! @note
   //! optional
   object extensions;
+
+  protected mixed cast(string to)
+  {
+    switch(to)
+    {
+    case "mapping":
+      return ([ "version" : version,
+                "algorithm" : algorithm,
+                "issuer" : issuer,
+                "subject" : subject,
+      ]);
+      break;
+    default:
+      error("Can't case %O to %O\n", this_program, to);
+      break;
+    }
+  }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, cast("mapping"));
+  }
 
   //! Populates the object from a certificate decoded into an ASN.1
   //! Object. Returns the object on success, otherwise @expr{0@}. You
