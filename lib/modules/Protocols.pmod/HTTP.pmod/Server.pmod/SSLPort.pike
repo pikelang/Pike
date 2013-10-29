@@ -88,7 +88,7 @@ class MySSLPort
     });
 
     certificates = ({
-      Standards.X509.make_selfsigned_rsa_certificate(rsa, 3600*24*365, attrs)
+      Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs)
     });
   }
 

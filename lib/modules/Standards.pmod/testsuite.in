@@ -267,7 +267,7 @@ test_any_equal([[
     ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
   });
 
-  string c = Standards.X509.make_selfsigned_rsa_certificate(rsa, 3600*24*365, attrs, 0, 5);
+  string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 5);
 
   object t = Standards.X509.decode_certificate(c);
   return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":t->extensions, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
