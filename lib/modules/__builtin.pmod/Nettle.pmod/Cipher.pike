@@ -27,13 +27,13 @@ class State
   //!
   //! @seealso
   //!   @[set_decrypt_key], @[crypt]
-  this_program set_encrypt_key(string(0..255) key, void|int(0..1) force);
+  this_program set_encrypt_key(string(0..255) key, void|int force);
 
   //! Initializes the object for decryption.
   //!
   //! @seealso
   //!   @[set_encrypt_key], @[crypt]
-  this_program set_decrypt_key(string(0..255) key, void|int(0..1) force);
+  this_program set_decrypt_key(string(0..255) key, void|int force);
 
   protected function(int:string(0..255)) random_string;
 
