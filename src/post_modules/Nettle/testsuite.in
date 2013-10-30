@@ -77,11 +77,20 @@ test_tests(
 ]])
 
 
+dnl Crypto, key, plain, cipher, force/ekb
 define(test_cipher,[[
-  test_eq([[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "))
-          ->crypt(String.hex2string($3-" "))]],[[String.hex2string($4-" ")]])
-  test_eq([[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "))
-          ->crypt(String.hex2string($4-" "))]],[[String.hex2string($3-" ")]])
+  test_eq(ifelse([[$5]],,
+                 [[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($3-" "))]],
+		 [[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "), $5)
+		   ->crypt(String.hex2string($3-" "))]]),
+	  [[String.hex2string($4-" ")]])
+  test_eq(ifelse([[$5]],,
+		 [[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($4-" "))]],
+		 [[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "), $5)
+		   ->crypt(String.hex2string($4-" "))]]),
+	  [[String.hex2string($3-" ")]])
 ]])
 
 // AES
