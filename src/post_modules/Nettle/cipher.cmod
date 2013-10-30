@@ -228,7 +228,7 @@ PIKECLASS Cipher
      */
     PIKEFUN object set_encrypt_key(string key, void|int force)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
       struct Cipher_struct *info = GET_INFO();
       assert(info);
@@ -257,7 +257,7 @@ PIKECLASS Cipher
      */
     PIKEFUN object set_decrypt_key(string key, void|int force)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
       struct Cipher_struct *info = GET_INFO();
       assert(info);
@@ -540,7 +540,7 @@ PIKECLASS ARCTWO
      */
     PIKEFUN object set_encrypt_key(string key, void|int(0..1024) ekb)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
       NO_WIDE_STRING(key);
       if (!ekb) {
@@ -572,7 +572,7 @@ PIKECLASS ARCTWO
      */
     PIKEFUN object set_decrypt_key(string key, void|int ekb)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt01, tVoid), tObjImpl_CIPHER_STATE_ID);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
       NO_WIDE_STRING(key);
       if (!ekb) {
