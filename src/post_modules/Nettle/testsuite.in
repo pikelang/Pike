@@ -106,6 +106,53 @@ cond_resolv( Nettle.AES, [[
 	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
 ]])
 
+// ARCTWO
+// Test vectors from RFC 2268.
+cond_resolv( Nettle.ARCTWO, [[
+  test_true([[objectp(Crypto.Arctwo.State())]])
+  test_cipher(ARCTWO,
+	      "0000000000000000",
+	      "0000000000000000",
+	      "ebb773f993278eff",
+	      63)
+  test_cipher(ARCTWO,
+	      "ffffffffffffffff",
+	      "ffffffffffffffff",
+	      "278b27e42e2f0d49",
+	      64)
+  test_cipher(ARCTWO,
+	      "3000000000000000",
+	      "1000000000000001",
+	      "30649edf9be7d2c2",
+	      64)
+  test_cipher(ARCTWO,
+	      "88",
+	      "0000000000000000",
+	      "61a8a244adacccf0",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a",
+	      "0000000000000000",
+	      "6ccf4308974c267f",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384",
+	      "0000000000000000",
+	      "1a807d272bbe5db1",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384",
+	      "0000000000000000",
+	      "2269552ab0f85ca6",
+	      128)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f 0f79c384627bafb2"
+	      "16f80a6f85920584 c42fceb0be255daf 1e",
+	      "0000000000000000",
+	      "5b78d3a43dfff1f1",
+	      129)
+]])
+
 // CAMELLIA
 // Test vectors from RFC 3713. 128, 192 and 256 bits.
 cond_resolv( Nettle.CAMELLIA, [[
