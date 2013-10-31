@@ -37,7 +37,8 @@ $(SRCDIR)/rtl.h: $(SRCDIR)/make_rtl.pike $(SRCDIR)/$(UNICODEDATA)
 unicode_module.o: $(SRCDIR)/unicode_module.c $(SRCDIR)/wordbits.h         \
 		  $(SRCDIR)/canonicals.h     			\
 		  $(SRCDIR)/decompositions.h			\
-		  $(SRCDIR)/uversion.h
+		  $(SRCDIR)/uversion.h				\
+		  $(SRCDIR)/rtl.h
 
 split.o: $(SRCDIR)/wordbits.h
 
