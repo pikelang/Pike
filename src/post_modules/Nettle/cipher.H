@@ -14,10 +14,11 @@ PIKECLASS PIKE_NAME
   DOCEND()
   INHERIT Cipher;
 
+  static const struct pike_cipher cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
+    _PIKE_CIPHER(NETTLE_NAME, PIKE_NAME);
+
   INIT
     {
-      static const struct pike_cipher cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
-	_PIKE_CIPHER(NETTLE_NAME, PIKE_NAME);
       struct Cipher_struct *cipher;
       ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
 			     Cipher_program);
