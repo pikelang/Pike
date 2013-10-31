@@ -28,10 +28,7 @@ struct ba_page {
 
 struct block_allocator {
     struct ba_layout l;
-    unsigned char size;
-    unsigned char last_free;
-    unsigned char alloc;
-    unsigned char __align;
+    char size, last_free, alloc;
     /*
      * This places an upper limit on the number of blocks
      * and should be adjusted as needed.
@@ -67,7 +64,7 @@ static INLINE void * ba_it_val(struct ba_iterator * it) {
 
 #define BA_INIT_ALIGNED(block_size, blocks, alignment) {    \
     BA_LAYOUT_INIT(block_size, blocks, alignment),	    \
-    0, 0, 0, 0,						    \
+    0, 0, 0,						    \
     { NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,		    \
       NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,		    \
       NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL }		    \
