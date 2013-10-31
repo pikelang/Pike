@@ -298,7 +298,7 @@ PIKECLASS Cipher
       /* FIXME: There should be a check for weak keys so this never throws. */
       stack_dup();
       Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
-      f_Cipher_State_set_encrypt_key(1);
+      apply_current(f_Cipher_State_set_encrypt_key_fun_num, 1);
       pop_stack();
     }
 
@@ -454,10 +454,11 @@ PIKECLASS ARCTWO
    */
   INHERIT Cipher;
 
+  static const struct pike_cipher pike_arctwo =
+    _PIKE_CIPHER(arctwo, ARCTWO);
+
   INIT
     {
-      static const struct pike_cipher pike_arctwo =
-	_PIKE_CIPHER(arctwo, ARCTWO);
       struct Cipher_struct *cipher;
       ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
 			     Cipher_program);
@@ -475,8 +476,8 @@ PIKECLASS ARCTWO
     /*! @decl inherit Cipher::State
      */
 
-    static int f_Arctwo_State_inherited_set_encrypt_key_fun_num = -1;
-    static int f_Arctwo_State_inherited_set_decrypt_key_fun_num = -1;
+    static int f_ARCTWO_State_inherited_set_encrypt_key_fun_num = -1;
+    static int f_ARCTWO_State_inherited_set_decrypt_key_fun_num = -1;
 
     EXTRA
     {
@@ -497,14 +498,12 @@ PIKECLASS ARCTWO
 		      parent_State_fun_num +
 		      parent_prog->inherits[1].identifier_level,
 		      1 + 42, 0, NULL);
-	  f_Arctwo_State_inherited_set_encrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL,
-						      f_Cipher_State_set_encrypt_key_fun_num,
-						      1);
-	  f_Arctwo_State_inherited_set_decrypt_key_fun_num =
-	    really_low_reference_inherited_identifier(NULL,
-						      f_Cipher_State_set_decrypt_key_fun_num,
-						      1);
+	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
+						      f_Cipher_State_set_encrypt_key_fun_num);
+	  f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
+						      f_Cipher_State_set_decrypt_key_fun_num);
 	}
       }
     }
@@ -548,7 +547,7 @@ PIKECLASS ARCTWO
 	push_int(key->len * 8);
 	args = 2;
       }
-      apply_current(f_Arctwo_State_inherited_set_encrypt_key_fun_num, args);
+      apply_current(f_ARCTWO_State_inherited_set_encrypt_key_fun_num, args);
     }
 
     /*! @decl State set_decrypt_key(string key, void|int ekb)
@@ -580,7 +579,7 @@ PIKECLASS ARCTWO
 	push_int(key->len * 8);
 	args = 2;
       }
-      apply_current(f_Arctwo_State_inherited_set_decrypt_key_fun_num, args);
+      apply_current(f_ARCTWO_State_inherited_set_decrypt_key_fun_num, args);
     }
   }
   /*! @endclass State
