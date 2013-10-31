@@ -4335,20 +4335,20 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
 }
 
 PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
-							  int e,
-							  int i)
+							  int i,
+							  int f)
 {
   struct program *np=(q?q:Pike_compiler)->new_program;
   struct reference funp;
   struct program *p;
   int d, num_id_refs;
 
-  if(i==-1) return -1;
+  if(f==-1) return -1;
 
-  p = np->inherits[e].prog;
+  p = np->inherits[i].prog;
 
-  funp = p->identifier_references[i];
-  funp.inherit_offset += e;
+  funp = p->identifier_references[f];
+  funp.inherit_offset += i;
   funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
 
   num_id_refs = np->num_identifier_references;
@@ -4360,8 +4360,9 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 
     if ((refp->inherit_offset == funp.inherit_offset) &&
 	(refp->identifier_offset == funp.identifier_offset) &&
-	((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED)))
+	((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
       return d;
+    }
   }
 
   funp.run_time_type = PIKE_T_UNKNOWN;
@@ -4379,6 +4380,7 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 	  num_id_refs, np->num_identifier_references-1);
   }
 #endif /* PIKE_DEBUG */
+
   return num_id_refs; /* aka np->num_identifier_references - 1 */
 }
 
