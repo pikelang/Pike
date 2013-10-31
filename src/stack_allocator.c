@@ -8,14 +8,14 @@ static struct chunk * alloc_chunk(size_t size) {
     return c;
 }
 
-void stack_alloc_init(struct stack_allocator * a, size_t initial) {
-    a->cur = alloc_chunk(initial);
-}
-
 void stack_alloc_enlarge(struct stack_allocator * a, size_t len) {
     struct chunk * c = a->cur;
-    if (len <= c->size * 2) {
-        len = c->size * 2;
+    size_t size;
+
+    size = c ? c->size * 2 : a->initial;
+
+    if (len <= size) {
+        len = size;
     } else if (len & (len-1)) {
         len |= len >> 1;
         len |= len >> 2;
@@ -39,4 +39,16 @@ void stack_alloc_destroy(struct stack_allocator * a) {
     }
 
     a->cur = NULL;
+}
+
+size_t stack_alloc_count(struct stack_allocator * a) {
+    struct chunk * c = a->cur;
+    size_t size = 0;
+
+    while (c) {
+        size += c->size;
+        c = c->prev;
+    }
+
+    return size;
 }
