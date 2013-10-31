@@ -815,8 +815,8 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int));
 PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *));
 PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
-							  int e,
-							  int i);
+							  int i,
+							  int f);
 PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 						   int e,
 						   struct pike_string *name,
