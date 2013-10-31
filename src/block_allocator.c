@@ -110,29 +110,34 @@ static void ba_free_empty_pages(struct block_allocator * a) {
     a->alloc = a->last_free = MAXIMUM(0, i);
 }
 
-PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size,
-				 unsigned INT32 blocks, unsigned INT32 alignment) {
+PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
+    unsigned INT32 block_size = MAXIMUM(a->l.block_size, sizeof(struct ba_block_header));
+
     PIKE_MEMPOOL_CREATE(a);
-    block_size = MAXIMUM(block_size, sizeof(struct ba_block_header));
-    if (alignment) {
-	if (alignment & (alignment - 1))
-	    Pike_fatal("Block allocator alignment is not a power of 2.\n");
-	if (block_size & (alignment-1))
+
+    if (a->l.alignment) {
+	if (a->l.alignment & (a->l.alignment - 1))
+	    Pike_fatal("Block allocator a->l.alignment is not a power of 2.\n");
+	if (block_size & (a->l.alignment-1))
 	    Pike_fatal("Block allocator block size is not aligned.\n");
-	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), alignment);
+	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), a->l.alignment);
     } else {
 	a->l.doffset = sizeof(struct ba_page);
     }
 
-    blocks = round_up32(blocks);
-    a->alloc = a->last_free = 0;
-    a->size = 1;
+    a->l.blocks = round_up32(a->l.blocks);
     a->l.block_size = block_size;
+    a->l.offset = block_size * (a->l.blocks-1);
+}
+
+PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size,
+				 unsigned INT32 blocks, unsigned INT32 alignment) {
     a->l.blocks = blocks;
-    a->l.offset = block_size * (blocks-1);
+    a->l.block_size = block_size;
     a->l.alignment = alignment;
+    ba_low_init_aligned(a);
+    a->alloc = a->last_free = a->size = 0;
     memset(a->pages, 0, sizeof(a->pages));
-    a->pages[0] = ba_alloc_page(a, 0);
 }
 
 PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
@@ -150,9 +155,7 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
 	    a->pages[i] = NULL;
 	}
     }
-    a->size = 0;
-    a->alloc = 0;
-    a->last_free = 0;
+    a->alloc = a->last_free = a->size = 0;
     PIKE_MEMPOOL_DESTROY(a);
 }
 
@@ -198,26 +201,30 @@ PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, si
 }
 
 static void ba_low_alloc(struct block_allocator * a) {
-    if (a->l.offset) {
-	unsigned int i;
+    int i;
 
-	for (i = 1; i <= a->size; i++) {
-	    struct ba_page * p = a->pages[a->size - i];
-
-	    if (p->h.first) {
-		a->alloc = a->size - i;
-		return;
-	    }
-	}
-	if (a->size == (sizeof(a->pages)/sizeof(a->pages[0]))) {
-	    Pike_error("Out of memory.");
-	}
-	a->pages[a->size] = ba_alloc_page(a, a->size);
-	a->alloc = a->size;
-	a->size++;
-    } else {
-	ba_init_aligned(a, a->l.block_size, a->l.blocks, a->l.alignment);
+    if (!a->l.offset) {
+        ba_low_init_aligned(a);
     }
+
+    /*
+     * The biggest page is full, lets try to find some space in the previous ones
+     */
+    for (i = a->size - 1; i >= 0; i--) {
+        struct ba_page * p = a->pages[i];
+
+        if (p->h.first) {
+            a->alloc = i;
+            return;
+        }
+    }
+
+    if (a->size == (sizeof(a->pages)/sizeof(a->pages[0]))) {
+        Pike_error("Out of memory.");
+    }
+    a->pages[a->size] = ba_alloc_page(a, a->size);
+    a->alloc = a->size;
+    a->size++;
 }
 
 ATTRIBUTE((malloc))
