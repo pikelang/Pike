@@ -347,7 +347,7 @@
 
 #include <math.h>
 
-#define FORMAT_INFO_STACK_SIZE 200
+#define FORMAT_INFO_STACK_SIZE 16
 #define RETURN_SHARED_STRING
 
 #define SPRINTF_UNDECIDED -1027
@@ -369,15 +369,12 @@ struct format_info
   ptrdiff_t column_modulo;
 };
 
-/* FIXME:
- * re-allocate the format stack if it's too small /Hubbe
- */
-
 struct format_stack
 {
   struct stack_allocator a;
   struct format_info *fsp;
-  struct format_info format_info_stack[FORMAT_INFO_STACK_SIZE];
+  struct format_info *format_info_stack;
+  size_t size;
 };
 
 #define FIELD_LEFT	(1<<0)
@@ -1042,7 +1039,8 @@ static void low_pike_sprintf(struct format_stack *fs,
   int argument=0;
   int tmp,setwhat,d,e,indent;
   char buffer[140];
-  struct format_info *f,*start;
+  ptrdiff_t start;
+  struct format_info *f;
   double tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
@@ -1052,14 +1050,21 @@ static void low_pike_sprintf(struct format_stack *fs,
 
   check_c_stack(500);
 
-  start=fs->fsp;
+  start=fs->fsp - fs->format_info_stack;
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
     int num_snurkel;
 
-    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE - 1)
-      sprintf_error(fs, "Sprintf stack overflow.\n");
-    fs->fsp++;
+    if(fs->fsp + 1 == fs->format_info_stack + fs->size) {
+      struct format_info * new;
+      ptrdiff_t diff;
+      fs->size *= 2;
+      new = realloc(fs->format_info_stack, fs->size * sizeof(struct format_info));
+      if (!new) sprintf_error(fs, "Cannot allocate more sprintf stack.\n");
+      diff = new - fs->format_info_stack;
+      fs->fsp = new + fs->size/2;
+      fs->format_info_stack = new;
+    } else fs->fsp++;
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
       Pike_fatal("sprintf: fs->fsp out of bounds.\n");
@@ -1786,7 +1791,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     }
   }
 
-  for(f=fs->fsp;f>start;f--)
+  for(f=fs->fsp;f>fs->format_info_stack + start;f--)
   {
     if(f->flags & WIDTH_OF_DATA)
       f->width=f->len;
@@ -1822,7 +1827,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   }
 
   /* Here we do some DWIM */
-  for(f=fs->fsp-1;f>start;f--)
+  for(f=fs->fsp-1;f>fs->format_info_stack + start;f--)
   {
     if((f[1].flags & MULTILINE) &&
        !(f[0].flags & (MULTILINE|MULTI_LINE_BREAK)))
@@ -1831,7 +1836,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     }
   }
   
-  for(f=start+1;f<=fs->fsp;)
+  for(f=fs->format_info_stack + start+1;f<=fs->fsp;)
   {
     for(;f<=fs->fsp && !(f->flags&MULTILINE);f++)
       do_one(fs, r, f);
@@ -1847,7 +1852,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     for(;f<=fs->fsp && (f->flags&MULTILINE); f++);
   }
 
-  while(fs->fsp>start)
+  while(fs->fsp>fs->format_info_stack + start)
   {
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
@@ -1870,7 +1875,7 @@ static void free_f_sprintf_data (struct format_stack *fs)
 {
   free_sprintf_strings (fs);
   stack_alloc_destroy(&fs->a);
-  free (fs);
+  free (fs->format_info_stack);
 }
 
 /* The efun */
@@ -1879,7 +1884,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
   ONERROR uwp;
   struct pike_string *ret;
   struct svalue *argp;
-  struct format_stack *fs;
+  struct format_stack fs;
 
   argp=Pike_sp-args;
 
@@ -1901,12 +1906,13 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
     }
   }
 
-  fs = ALLOC_STRUCT (format_stack);
-  fs->fsp = fs->format_info_stack-1;
-  stack_alloc_init(&fs->a, 128);
+  stack_alloc_init(&fs.a, 128);
+  fs.format_info_stack = xalloc(FORMAT_INFO_STACK_SIZE*sizeof(struct format_info));
+  fs.size = FORMAT_INFO_STACK_SIZE;
+  fs.fsp = fs.format_info_stack - 1;
 
-  SET_ONERROR(uwp, free_f_sprintf_data, fs);
-  low_pike_sprintf(fs,
+  SET_ONERROR(uwp, free_f_sprintf_data, &fs);
+  low_pike_sprintf(&fs,
 		   r,
 		   MKPCHARP_STR(argp->u.string),
 		   argp->u.string->len,
@@ -1914,8 +1920,8 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
 		   args-1,
 		   0, compat_mode);
   UNSET_ONERROR(uwp);
-  stack_alloc_destroy(&fs->a);
-  free (fs);
+  stack_alloc_destroy(&fs.a);
+  free (fs.format_info_stack);
 }
 
 void f_sprintf(INT32 args)
