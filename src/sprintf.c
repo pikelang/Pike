@@ -344,10 +344,10 @@
 #include "stack_allocator.h"
 #include <ctype.h>
 #include "module_support.h"
+#include "bitvector.h"
 
 #include <math.h>
 
-#define FORMAT_INFO_STACK_SIZE 16
 #define RETURN_SHARED_STRING
 
 #define SPRINTF_UNDECIDED -1027
@@ -1906,9 +1906,9 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
     }
   }
 
-  stack_alloc_init(&fs.a, 128);
-  fs.format_info_stack = xalloc(FORMAT_INFO_STACK_SIZE*sizeof(struct format_info));
-  fs.size = FORMAT_INFO_STACK_SIZE;
+  fs.size = round_up32(args*2);
+  stack_alloc_init(&fs.a, 128); // this should scale with fs.size
+  fs.format_info_stack = xalloc(fs.size*sizeof(struct format_info));
   fs.fsp = fs.format_info_stack - 1;
 
   SET_ONERROR(uwp, free_f_sprintf_data, &fs);
