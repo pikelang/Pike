@@ -1614,7 +1614,8 @@ class NScopeStack
       case "::":
 	while(pos) {
 	  if (current->inherits) {
-	    foreach(current->inherits; ; NScope scope) {
+	    foreach(current->inherits; ; string|NScope scope) {
+	      if (stringp(scope)) scope = lookup(scope);
 	      if (objectp(scope)) {
 		string res = scope->lookup(ref[1..]);
 		if (res) return res;
@@ -1639,9 +1640,13 @@ class NScopeStack
 	  "7.9":"predef",
 	])[inh] || inh;
 	while(pos) {
-	  if (current->inherits && current->inherits[inh]) {
-	    string res = current->inherits[inh]->lookup(ref[1..]);
-	    if (res) return res;
+	  string|NScope scope;
+	  if (current->inherits && (scope = current->inherits[inh])) {
+	    if (stringp(scope)) scope = lookup(scope);
+	    if (objectp(scope)) {
+	      string res = scope->lookup(ref[1..]);
+	      if (res) return res;
+	    }
 	  }
 	  pos--;
 	  current = stack[pos];
