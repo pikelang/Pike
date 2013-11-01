@@ -1907,7 +1907,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
   }
 
   fs.size = round_up32(args*2);
-  stack_alloc_init(&fs.a, 128); // this should scale with fs.size
+  stack_alloc_init(&fs.a, 128); /* this should scale with fs.size */
   fs.format_info_stack = xalloc(fs.size*sizeof(struct format_info));
   fs.fsp = fs.format_info_stack - 1;
 
