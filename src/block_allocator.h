@@ -28,7 +28,7 @@ struct ba_page {
 
 struct block_allocator {
     struct ba_layout l;
-    char size, last_free, alloc;
+    unsigned char size, last_free, alloc;
     /*
      * This places an upper limit on the number of blocks
      * and should be adjusted as needed.
