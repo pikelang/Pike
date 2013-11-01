@@ -250,7 +250,7 @@ int main(int num, array(string) args) {
   // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
   string license = "Unknown";
   string version = "Unknown";
-  string client_info = mysql_obj && mysql_obj["client_info"]();
+  string client_info = mysql_obj?->client_info && mysql_obj->client_info();
   if (client_info) {
     sscanf(client_info, "%*s(%s)%*s/%s", license, version);
   }
