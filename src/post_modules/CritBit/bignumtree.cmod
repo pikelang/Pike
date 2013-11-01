@@ -28,9 +28,8 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
 
 DECLARATIONS
 
-/*! @ignore */
-/*! @module ADT */
-/*! @module CritBit */
+#cmod_undef DOCSTART
+#cmod_define DOCSTART() cmod___SLASH__*
 
 PIKECLASS BigNumTree {
 #cmod_define iterator_class Iterator
@@ -63,10 +62,6 @@ PIKEFUN int(0..1) is_bignum(bignum i) {
 	RETURN 1;
     }
 }
-
-/*! @endmodule */
-/*! @endmodule */
-/*! @endignore */
 
 void pike_init_bignumtree_module(void) {
     INIT
