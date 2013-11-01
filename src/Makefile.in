@@ -87,9 +87,6 @@ DEFINES=@CPPFLAGS@ -DPIKE_CORE
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
 
-# interpret.o can't have -fomit-frame-pointer
-INTERPRET_DEOPTIMIZE=@INTERPRET_DEOPTIMIZE@
-
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective.
 MAKE_PARALLEL=
@@ -484,11 +481,9 @@ undump_modules: delete_dumped_modules
 # First try compiling with optimization and if that doesn't work, without.
 # GCC dumps core on some files @ OSF1
 # This kluge should work around that...
-# Extra kludge added: interpret.o gets special flags (deoptimization)
 .c.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
@@ -510,7 +505,6 @@ undump_modules: delete_dumped_modules
 .m.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
