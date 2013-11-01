@@ -72,7 +72,7 @@ o Several other optimizations to execution speed has been done
 --- removed stuff
 o Removed bundles
 o Removed facets
-o The built in sandbox is now deprecated.
+o The built in sandbox is now deprecated
 o Bignums are now a required language feature, it is no longer
   possible to build a pike without them
 o Tools.PEM and Tools.X409 deprecated (use the corresponding modules in Standards.)
@@ -86,35 +86,96 @@ o Added ADT.CritBit module
   Mapping-like key-sorted data structures for string, int and float-keys
   (ADT.CritBit.Tree, ADT.CritBit.IntTree, ADT.CritBit.FloatTree). Implemented
   in C.
+
 o Standards.BSON
   A new module for working with BSON serialized data.
   See http://bsonspec.org/
-o Crypto.CAMELLIA
-o System.TM
-    Low-level wrapper for struct tm.
 
-    This can be used to do (very) simple calendar operations. It is,
-    as it stands, not 100% correct unless the local time is set to
-    GMT, and does mirror functionality already available in gmtime()
-    and localtime() and friends, but in a (perhaps) easier to use API.
-
-o Added module Geography.GeoIP
+o Geography.GeoIP
+  Does geolocation of IPv4-numbers using databases from maxmind.com or
+  software77.net
 
 o Protocols.WebSocket
-  An implementation of the WebSocket (RFC 6455) standard.
-o Image.WebP.
-o Serializer.Encodable (automatic _encode/_decode)
-o Serializer
-o Filesystem.Monitor (System.Inotify, System.FSEvents)
-o Mysql.SqlTable
-o Parser.CSV
-o ZXID
-o Bz2 Bz2.File("path"), line_iterator
-o Git module
-o Val.{true,false,null}
-o SDL.Music
+  An implementation of the WebSocket (RFC 6455) standard, both server
+  and client
 
+o Image.WebP
+  Encoder and decoder for the WEBP image format.
+  More information about the format can be found on 
+  https://developers.google.com/speed/webp/
+
+o Serializer
+  APIs useful to simplify serialization and deserialization of objects
+  +  Serializer.Encodable
+      A class that can be inherit to make an object easily serializable
+      using encode_value.
+
+o Filesystem.Monitor (System.Inotify, System.FSEvents)
+   Basic filesystem monitor.
+  
+   This module is intended to be used for incremental scanning of a
+   filesystem.
+  
+   Supports FSEvents on MacOS X and Inotify on Linux to provide low
+   overhead monitoring; other systems currently use a less efficient
+   polling approach.
+
+o Mysql.SqlTable
+    This class provides some abstractions on top of an SQL table.
+    
+    At the core it is generic for any SQL database, but the current
+    implementation is MySQL specific on some points, notably the
+    semantics of AUTO_INCREMENT, the quoting method, knowledge about
+    column types, and some conversion functions. Hence the location in
+    the Mysql module.
+    
+    Among other things, this class handles some convenient conversions
+    between SQL and pike data types
+
+o Parser.CSV
+    This is a parser for line oriented data that is either comma,
+    semi-colon or tab separated.  It extends the functionality
+    of the Parser.Tabular with some specific functionality related
+    to a header and record oriented parsing of huge datasets.
+
+o ZXID
+   ZXID is a library that implements SAML 2.0, Liberty ID-WSF 2.0
+   and XACML 2.0.
+  
+   This module implements a wrapper for ZXID. The interface is similar
+   to the C one, but using generally accepted Pike syntax.
+
+o Git 
+   A module for interacting with the Git distributed version control system.
+
+o Val
+   This module contains special values used by various modules, e.g.
+   a Val.null value used both by Sql and Standards.JSON.
+
+   In many ways these values should be considered constant, but it is
+   possible for a program to replace them with extended versions,
+   provided they don't break the behavior of the base classes defined
+   here. Since there is no good mechanism to handle such extending in
+   several steps, pike libraries should preferably ensure that the
+   base classes defined here provide required functionality directly.
+  
 -- UNSORTED
+
+o SDL.Music added to SDL.
+  Allows the playback of audio/music files.
+  Requires the SDL_mixed library.
+
+o Bz2.File("path"), line_iterator
+
+o Crypto.CAMELLIA
+
+o System.TM
+   Low-level wrapper for struct tm.
+
+   This can be used to do (very) simple calendar operations. It is,
+   as it stands, not 100% correct unless the local time is set to
+   GMT, and does mirror functionality already available in gmtime()
+   and localtime() and friends, but in a (perhaps) easier to use API.
 
 o decode_value now throws the error object Error.DecodeError.
   Useful to catch format errors in the decode string.
@@ -125,7 +186,6 @@ o Debug.pp_object_usage()
 
   Uses the new _object_size lfun, if present in objects, to account
   for RAM-usage in C-objects that allocate their own memory.
-
 
 o Several OS/2 and windows compilation fixes
 
