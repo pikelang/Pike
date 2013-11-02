@@ -927,11 +927,12 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //! @seealso
 //!   @[system], @[spawn]
 
-Stdio.FILE|string popen(string s, string|void mode) {
-  if(mode)
-    return fpopen(s,mode);
-  else
-    return fpopen(s)->read();
+variant string popen(string s) {
+   return fpopen(s)->read();
+}
+
+variant Stdio.FILE popen(string s, string mode) {
+  return fpopen(s,mode);
 }
 
 protected Stdio.FILE fpopen(string s, string|void mode)
