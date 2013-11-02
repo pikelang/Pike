@@ -166,12 +166,12 @@ o Dynamic macros
 --- optimizations
 
 o New significantly faster block allocator
-  The free in the old one was O(n), which means that as an example
+  The free in the old one was O(n^2), which means that as an example
   creating a lot of objects and then free:ing them mainly used CPU in
   the block allocator.
 
   This fix changed the ordo of one of the tests that did that very
-  thing (binarytrees) from O(n) to O(n), and as such is more than a
+  thing (binarytrees) from O(n^2) to O(n), and as such is more than a
   simple percentual speedup.
 
 o Power-of-two hashtables are now used for most hashtables
