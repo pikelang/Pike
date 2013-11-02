@@ -17,7 +17,7 @@ inherit _Stdio;
 
 // STDIO_DIRECT_FD is a work in progress to get rid of Stdio.Fd_ref, where
 // Stdio.File et al instead inherit Stdio.Fd directly.
-// #define STDIO_DIRECT_FD
+#define STDIO_DIRECT_FD
 
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
 // currently opened from (see report_file_open_places). It's used
