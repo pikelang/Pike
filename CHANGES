@@ -236,6 +236,8 @@ o Several other optimizations to execution speed has been done
     pop_stack etc.
 
 o Faster hash-function for strings
+  + Also siphash24 was added and is used in case the string hash table
+    becomes inefficient
 
 Removed features and modules
 ============================
