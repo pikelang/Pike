@@ -7335,9 +7335,6 @@ test_false([[ objectp((int)"2147483648" / 2) ]])
 test_eq("13934998268672547360069539025",
         [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
-// sprintf (and the describe stuff in the master)
-test_do([[sprintf ("%O", 10->pow);]])
-
 // - sscanf.
 test_eq("12345678901234567890",
 	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
@@ -13210,7 +13207,7 @@ test_any_equal([[
 ]],[[ ({}) ]])
 
 
-// - sprintf module
+// sprintf
 
 dnl This really belongs to sscanf, but...
 test_eq([[ array_sscanf(sprintf("%1c", -1), "%1c")[0] ]], 255)
@@ -13498,6 +13495,27 @@ test_do(sprintf("%9H", "x"*300););
 test_eval_error(return sprintf("%H", "\x100");)
 test_do(return sprintf("%1H", "x"*255);)
 test_eval_error(return sprintf("%1H", "x"*256);)
+
+test_do(add_constant("OBJ",class { string _sprintf(int t) { return sprintf("%c",t); } }() ))
+test_eq(sprintf("%t", OBJ),"t")
+test_eq(sprintf("%c", OBJ),"c")
+test_eq(sprintf("%H", OBJ),"H")
+test_eq(sprintf("%b", OBJ),"b")
+test_eq(sprintf("%o", OBJ),"o")
+test_eq(sprintf("%d", OBJ),"d")
+test_eq(sprintf("%u", OBJ),"u")
+test_eq(sprintf("%x", OBJ),"x")
+test_eq(sprintf("%X", OBJ),"X")
+test_eq(sprintf("%e", OBJ),"e")
+test_eq(sprintf("%f", OBJ),"f")
+test_eq(sprintf("%g", OBJ),"g")
+test_eq(sprintf("%E", OBJ),"E")
+test_eq(sprintf("%G", OBJ),"G")
+test_eq(sprintf("%F", OBJ),"F")
+test_eq(sprintf("%O", OBJ),"O")
+test_eq(sprintf("%s", OBJ),"s")
+test_eq(sprintf("%q", OBJ),"q")
+test_do(add_constant("OBJ"))
 
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
