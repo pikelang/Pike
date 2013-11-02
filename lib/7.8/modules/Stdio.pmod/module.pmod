@@ -13,8 +13,6 @@
 inherit Stdio.module;
 //! @endignore
 
-constant FOO = "FOO";
-
 //#define BACKEND_DEBUG
 #ifdef BACKEND_DEBUG
 #define BE_WERR(X) werror("FD %O: %s\n", _fd, X)
