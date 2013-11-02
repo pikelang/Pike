@@ -64,7 +64,7 @@ static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, s
   unsigned INT64 v3 = 0x7465646279746573ULL;
   unsigned INT64 b;
   unsigned INT64 k0 = (unsigned INT64)key;
-  unsigned INT64 k1 = (unsigned INT64)(key + 8);
+  unsigned INT64 k1 = (unsigned INT64)key;
   unsigned INT64 m;
   const unsigned char *end = in + inlen - ( inlen % sizeof( unsigned INT64 ) );
   const int left = inlen & 7;
