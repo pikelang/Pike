@@ -8,7 +8,6 @@ MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
 AUTODOC_SRC_IN=$(SRCDIR)/stringtree.c $(SRCDIR)/floattree.c $(SRCDIR)/inttree.c $(SRCDIR)/bignumtree.c
 OBJS=glue.o inttree.o stringtree.o floattree.o bignumtree.o
-CONFIG_HEADERS=@CONFIG_HEADERS@
 CMOD_HEADERS=redefine.H tree_header.H iterator_source.H tree_source.H prefix.H
 COMMON_HEADERS=$(SRCDIR)/tree_high.c $(SRCDIR)/tree_low.h $(SRCDIR)/tree_low.c $(SRCDIR)/critbit/critbit.h $(SRCDIR)/common.h $(SRCDIR)/critbit/value_svalue.h
 
