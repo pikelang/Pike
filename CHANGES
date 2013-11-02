@@ -235,6 +235,8 @@ o Several other optimizations to execution speed has been done
     x86-64 opcodes, there is no need to check the types, do a real
     pop_stack etc.
 
+o Faster hash-function for strings
+
 Removed features and modules
 ============================
 
