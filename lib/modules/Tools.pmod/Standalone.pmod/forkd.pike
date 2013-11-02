@@ -18,14 +18,14 @@ constant this_program_does_not_exist = 1;
 
 constant description = "Light-weight daemon for spawning new processes.";
 
-//! This is a process unique @[Stdio.Fd] that is
-//! used to receive remote file descriptors and
-//! arguments to @[Process.create_process], as
-//! well as signalling back status changes and
-//! errors.
-class ForkFd
+//! This class maps 1 to 1 to Process.RemoteProcess,
+//! and implements the daemon side of the RPC protocol.
+//!
+//! It contains an array (@[fds]) with the file descriptors
+//! that have been received so far from the remote.
+class ForkStream
 {
-  inherit Stdio.Fd;
+  inherit Stdio.File;
 
   //! The remote file descriptors received so far in order.
   array(Stdio.Fd) fds = ({});
@@ -38,18 +38,6 @@ class ForkFd
   void receive_fd(Stdio.Fd fd)
   {
     fds += ({ fd });
-  }
-}
-
-//! This class maps 1 to 1 to Process.RemoteProcess,
-//! and implements the daemon side of the RPC protocol.
-class ForkStream
-{
-  inherit Stdio.File;
-
-  protected void create(ForkFd fd)
-  {
-    _fd = fd;
   }
 
   void do_close(mixed|void ignored)
@@ -129,12 +117,10 @@ class ForkStream
     sscanf(recv_buf, "%04c", len);
     if (sizeof(recv_buf) < len + 4) return;
     mixed err = catch {
-	ForkFd ffd = function_object(_fd->read);
 	[array(string) command_args,
 	 mapping(string:mixed) modifiers] =
-	  decode_value(recv_buf[4..len+3],
-		       Process.ForkdDecoder(ffd->fds));
-	ffd->fds = ({});
+	  decode_value(recv_buf[4..len+3], Process.ForkdDecoder(fds));
+	fds = ({});
 
 	// Adjust the modifiers.
 	if (modifiers->uid == geteuid()) m_delete(modifiers, "uid");
@@ -174,17 +160,17 @@ class ForkStream
 //! The sent fd will become a @[ForkFd] inside a @[ForkStream].
 class FdStream
 {
-  inherit Stdio.Fd;
+  inherit Stdio.File;
 
   Stdio.Fd fd_factory()
   {
-    ForkFd fd = ForkFd();
-    return fd->_fd;
+    ForkStream f = ForkStream();
+    return f->_fd;
   }
 
   void receive_fd(Stdio.Fd fd)
   {
-    ForkStream f = ForkStream((object)fd);
+    ForkStream f = function_object(fd->read);
     f->start();
   }
 }
@@ -195,9 +181,7 @@ void terminate() { exit(0); }
 
 int main(int argc, array(string) argv)
 {
-  Stdio.File fork_file = Stdio.File();
-  FdStream fd = FdStream(3, "");
-  fork_file->_fd = fd->_fd;
+  Stdio.File fork_file = FdStream(3, "");
 
   // Inform the dispatcher that we're up and running.
   fork_file->write("\0");
