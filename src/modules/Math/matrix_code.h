@@ -1015,18 +1015,11 @@ void Xmatrix(init_math_)(void)
    ADD_FUNCTION("``*",matrixX(_mult),
 		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
 
-   ADD_FUNCTION("`·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-   ADD_FUNCTION("``·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-
    ADD_FUNCTION("dot_product",matrixX(_dot), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("convolve",matrixX(_convolve), tFunc(tObj, tObj), 0);
    
    ADD_FUNCTION("cross",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("`×",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("``×",matrixX(_cross), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("xsize", matrixX(_xsize), tFunc(tNone, tInt), 0);
    ADD_FUNCTION("ysize", matrixX(_ysize), tFunc(tNone, tInt), 0);
