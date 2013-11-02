@@ -164,8 +164,9 @@ o Dynamic macros
    |    }
    | }
 
+
 Optimizations
-=============
+-------------
 
 o New significantly faster block allocator
   The free in the old one was O(n^2), which means that as an example
@@ -239,8 +240,9 @@ o Faster hash-function for strings
   + Also siphash24 was added and is used in case the string hash table
     becomes inefficient
 
-Removed features and modules
-============================
+
+Deprecated features and modules
+-------------------------------
 
 o Removed facets
    The optional (and not enabled by default) support for facet classes
@@ -253,10 +255,6 @@ o It is no longer possible to compile pike without libgmp.
 o The old low-level 'files' module has been renamed to _Stdio
 
 o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
-
-
-Deprecations
-------------
 
 o Locale.Charset
    The charset module is now available on the toplevel as 'Charset'
@@ -378,6 +376,7 @@ o Val
    several steps, pike libraries should preferably ensure that the
    base classes defined here provide required functionality directly.
 
+
 Extensions and new functions
 ----------------------------
 
@@ -413,10 +412,6 @@ o String.Buffer
   The new method addat() allows for writing into the buffer at any
   position.
 
-o SDL.Music added to SDL.
-  Allows the playback of audio/music files.
-  Requires the SDL_mixed library.
-
 o System.TM
    Low-level wrapper for struct tm.
 
@@ -424,6 +419,13 @@ o System.TM
    as it stands, not 100% correct unless the local time is set to
    GMT, and does mirror functionality already available in gmtime()
    and localtime() and friends, but in a (perhaps) easier to use API.
+
+
+--- UNSORTED
+
+o SDL.Music added to SDL.
+  Allows the playback of audio/music files.
+  Requires the SDL_mixed library.
 
 o decode_value now throws the error object Error.DecodeError.
   Useful to catch format errors in the decode string.
