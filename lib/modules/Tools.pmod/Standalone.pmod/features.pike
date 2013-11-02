@@ -132,7 +132,9 @@ int main(int num, array(string) args) {
   M(COM.com);
 
   write("\nCrypto\n");
+  F(Crypto.CAMELLIA);
   F(Crypto.IDEA);
+  F(Crypto.MD4);
 
   write("\nDebug\n");
   F(Debug.assembler_debug);
