@@ -93,8 +93,9 @@ o "Safe" index
    | request_id && request_id->user && request_id->user->misc
    |  && request_id->user->misc->x
 
-o Added the '?:' operator for compatibility with other C-like languages.
-  It is identical to '||' in pike, and this is not /really/ needed.
+o Added the '?:' operator for compatibility with other C-like
+  languages. It is identical to '||' in pike, and this is not /really/
+  needed.
 
 o The && operator changed, when doing A && B, and A is false, keep A
   instead of pushing 0.
@@ -145,7 +146,8 @@ o Dynamic macros
 
    This one expands something along the lines of
 
-   | METRIC("requests", Summarize, PerSecond, floating_average_diff(requests));
+   | METRIC("requests", Summarize, PerSecond,
+   |        floating_average_diff(requests));
 
    into
 
@@ -163,7 +165,8 @@ o Dynamic macros
    | }
 
 
---- optimizations
+Optimizations
+-------------
 
 o New significantly faster block allocator
   The free in the old one was O(n^2), which means that as an example
@@ -216,8 +219,8 @@ o string(x..y) (constant) types
 o Several other optimizations to execution speed has been done
   + object indexing (cache, generic speedups)
   + lower_apply, changes to apply in general
-   Taken together these individuallt small optimizations speeds up at
-   least pike -x benchmark more than 5%.
+    Taken together these individuallt small optimizations speeds up at
+    least pike -x benchmark more than 5%.
 
   + A lot of opcodes implemented in machinecode for x86-64
     This speed up the loop benchmarks close to a factor of 3. But then
@@ -229,11 +232,13 @@ o Several other optimizations to execution speed has been done
     always return 1 or 0.
 
     So, two new opcodes, fast_branch_if_zero and
-    fast_branch_if_non_zero were added that map directly to three x86-64
-    opcodes, there is no need to check the types, do a real pop_stack
-    etc.
+    fast_branch_if_non_zero were added that map directly to three
+    x86-64 opcodes, there is no need to check the types, do a real
+    pop_stack etc.
 
---- removed stuff
+
+Removed stuff
+-------------
 
 o Removed facets
    The optional (and not enabled by default) support for facet classes
@@ -247,7 +252,9 @@ o The old 'files' module has been renamed to _Stdio
 
 o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
---- deprecated stuff
+
+Deprecations
+------------
 
 o Locale.Charset
    The charset module is now available on the toplevel as 'Charset'
@@ -260,7 +267,9 @@ o The built in sandbox is now deprecated
    up to date the security system will be removed in the next stable
    release.
 
--- new modules
+
+New modules
+-----------
 
 o Pike.Watchdog
   A Watchdog that ensures that the process is not hung for an extended
@@ -296,8 +305,8 @@ o Standards.BSON
    See http://bsonspec.org/
 
 o Geography.GeoIP
-   Does geolocation of IPv4-numbers using databases from maxmind.com or
-   software77.net
+   Does geolocation of IPv4-numbers using databases from maxmind.com
+   or software77.net
 
 o Protocols.WebSocket
    An implementation of the WebSocket (RFC 6455) standard, both server
@@ -309,9 +318,9 @@ o Image.WebP
    https://developers.google.com/speed/webp/
 
 o Serializer
-   APIs useful to simplify serialization and deserialization of objects
-   Mainly it allows you to easily iterate over the object variables,
-   including the private ones.
+   APIs useful to simplify serialization and deserialization of
+   objects Mainly it allows you to easily iterate over the object
+   variables, including the private ones.
 
    + Serializer.Encodable
      A class that can be inherit to make an object easily serializable
@@ -352,8 +361,9 @@ o ZXID
    This module implements a wrapper for ZXID. The interface is similar
    to the C one, but using generally accepted Pike syntax.
 
-o Git 
-   A module for interacting with the Git distributed version control system.
+o Git
+   A module for interacting with the Git distributed version control
+   system.
 
 o Val
    This module contains special values used by various modules, e.g.
@@ -442,7 +452,7 @@ o Crypto.PGP - support more hash functions.
 
 o String.levenshtein_distance()
     That function calculates the Levenshtein distance between two
-    strings.  The Levenshtein distance describes the minimum number of
+    strings. The Levenshtein distance describes the minimum number of
     edit operations insert, delete or substitue a character to get
     from one string to the other.
 
@@ -513,8 +523,8 @@ o clang compilation fixes (bignum overflow checks, misc)
   It is now possible to compile pike using a modern clang compiler.
 
 o Removed bundles
-   Pike no longer comes with copies of some libraries, and the support
-   for that in the makefile has been removed.
+  Pike no longer comes with copies of some libraries, and the support
+  for that in the makefile has been removed.
 
 o Several OS/2 and windows compilation fixes
 
@@ -539,19 +549,20 @@ o Protocols.HTTP.Session will no longer override an existing
 
 o Protocols.HTTP
 
-  Allow directly specifying the body of a POST request (needed for the Google
-  Apps API).
+  Allow directly specifying the body of a POST request (needed for the
+  Google Apps API).
 
 o Updated timezone data to tzdata2010o.
 
 o String.normalize_space
 
-  New and efficient C implementation; sanitises whitespace, even in wide
-  strings.
+  New and efficient C implementation; sanitises whitespace, even in
+  wide strings.
 
 o String.trim_all_whites
 
-  Extended to the entire range of Unicode white spaces. (And is faster.)
+  Extended to the entire range of Unicode white spaces. (And is
+  faster.)
 
 o Tools.PV and pike -x pv now work with GTK2 as well as GTK.
 
