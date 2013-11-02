@@ -2418,11 +2418,6 @@ dnl ----------------------------------------------------------------
 dnl scopes and stuff
 dnl ----------------------------------------------------------------
 
-dnl
-dnl Undocumented but important behaviour...
-dnl
-test_eq([[Stdio._stdin]],[[Stdio.stdin->_fd]])
-
 test_program([[
   class A {
     string f() {return "A";}
