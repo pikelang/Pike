@@ -243,6 +243,17 @@ o Faster hash-function for strings
   + Also siphash24 was added and is used in case the string hash table
     becomes inefficient
 
+Deprecated features and modules
+-------------------------------
+
+o Tools.PEM and Tools.X409 deprecated 
+   Use the corresponding modules in Standards.
+
+o The built in sandbox is now deprecated
+   Unless somebody wants to take ownership of the feature and keep it
+   up to date the security system will be removed in the next stable
+   release.
+
 Removed features and modules
 ----------------------------
 
@@ -260,15 +271,6 @@ o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
 o Locale.Charset
    The charset module is now available on the toplevel as 'Charset'
-
-o Tools.PEM and Tools.X409 deprecated 
-   Use the corresponding modules in Standards.
-
-o The built in sandbox is now deprecated
-   Unless somebody wants to take ownership of the feature and keep it
-   up to date the security system will be removed in the next stable
-   release.
-
 
 New modules
 -----------
