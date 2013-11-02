@@ -375,16 +375,45 @@ o Val
    here. Since there is no good mechanism to handle such extending in
    several steps, pike libraries should preferably ensure that the
    base classes defined here provide required functionality directly.
-  
--- UNSORTED
+
+Extensions and new functions
+----------------------------
+
+o Bz2.File
+
+  Bz2.File now supports the same iterator API as Stdio.File, allowing
+  for convenient line iterations over BZ2 compressed files.
+
+  foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
+
+o Crypto.CAMELLIA
+
+  The 128/256 bit cipher CAMELLIA is now availble as block cipher in
+  Crypto. In addition the following cipher suites have been added to
+  SSL.
+
+    TLS_rsa_with_camellia_128_cbc_sha
+    TLS_dhe_dss_with_camellia_128_cbc_sha
+    TLS_dhe_rsa_with_camellia_128_cbc_sha
+    TLS_rsa_with_camellia_256_cbc_sha
+    TLS_dhe_dss_with_camellia_256_cbc_sha
+    TLS_dhe_rsa_with_camellia_256_cbc_sha
+
+o String.Buffer
+
+  String.Buffer can now add the storage from a different String.Buffer
+  object with the add() method.
+
+  It is possible to add sprintf-formatted data to a String.Buffer
+  object by claling the sprintf() method. This function works just as
+  the normal sprintf(), but writes to the buffer instead.
+
+  The new method addat() allows for writing into the buffer at any
+  position.
 
 o SDL.Music added to SDL.
   Allows the playback of audio/music files.
   Requires the SDL_mixed library.
-
-o Bz2.File("path"), line_iterator
-
-o Crypto.CAMELLIA
 
 o System.TM
    Low-level wrapper for struct tm.
@@ -409,11 +438,6 @@ o Mysql - Support more modern client libraries (incl. MariaDB)
 o Standards.PEM: Added some support for encrypted PEM files
 
 o Nettle refactored
-
-o String.Buffer
-  + Added buffer->add(buffer) support
-  + Added buffer->sprintf()
-  + Added adat()
 
 o pike -x benchmark output format changed
    Also added support for JSON output.
