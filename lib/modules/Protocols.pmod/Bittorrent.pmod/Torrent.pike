@@ -407,7 +407,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
 			      lambda(int i) { return !file_got[i]; });
 
    all_pieces_bits=bits2string(replace(copy_value(file_got),0,1));
-   no_pieces_bits="\0"*strlen(file_got);
+   no_pieces_bits="\0"*sizeof(file_got);
 
    return search(targets->created,0)==-1 ? 2 : 1;
 }
