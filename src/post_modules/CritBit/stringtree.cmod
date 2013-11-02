@@ -73,8 +73,6 @@ void pike_exit_tree_module(void) {
 }
 
 #else
-void pike_init_tree_module(void) {
-    add_integer_constant("this_program_does_not_exist", 1, 0);
-}
+void pike_init_tree_module(void) {}
 void pike_exit_tree_module(void) {}
 #endif

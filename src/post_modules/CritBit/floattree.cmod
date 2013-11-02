@@ -69,8 +69,6 @@ void pike_exit_floattree_module(void) {
     EXIT
 }
 #else
-void pike_exit_floattree_module(void) {
-    add_integer_constant("this_program_does_not_exist", 1, 0);
-}
-void pike_init_floattree_module(void) {}
+void pike_exit_floattree_module(void) { }
+void pike_init_floattree_module(void) { }
 #endif
