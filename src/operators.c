@@ -5919,6 +5919,10 @@ multiset & mapping -> mapping
 	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tIntPos),
 	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
+  ADD_EFUN2("strlen", f_sizeof,
+            tFunc(tStr,tIntPos), OPT_TRY_OPTIMIZE, optimize_sizeof,
+            generate_sizeof);
+
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("`()",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
 
