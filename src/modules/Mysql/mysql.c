@@ -124,6 +124,7 @@
  *!   @[Mysql.mysql_result], @[Sql.Sql]
  */
 
+struct program * mysql_error_program = NULL;
 struct program *mysql_program = NULL;
 
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
@@ -2043,7 +2044,6 @@ PIKE_MODULE_INIT
       unsigned int code;
     };
     unsigned int i;
-    struct program * errprog;
     static const struct mysqld_ername list[] = {
 #include <mysql/mysqld_ername.h>
     };
@@ -2055,8 +2055,8 @@ PIKE_MODULE_INIT
       add_integer_constant(list[i].msg, list[i].code, 0);
     }
 
-    errprog = end_program();
-    add_program_constant("error", errprog, 0);
+    mysql_error_program = end_program();
+    add_program_constant("error", mysql_error_program, 0);
   }
 #endif
 
@@ -2087,5 +2087,12 @@ PIKE_MODULE_EXIT
     free_program(mysql_program);
     mysql_program = NULL;
   }
+
+#ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
+  if (mysql_error_program) {
+    free_program(mysql_error_program);
+    mysql_error_program = NULL;
+  }
+#endif
 #endif /* HAVE_MYSQL */
 }
