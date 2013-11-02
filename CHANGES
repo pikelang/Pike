@@ -39,7 +39,10 @@ o Added a way to easily inherit the implementation of a subclass in an
     |    // ...
     | }
 
-o Actually implemented the variant keyword.
+o Implemented the variant keyword.
+
+  The keyward was present before, but did not actually do anything
+  useful.
 
   This is used to do function overloading based on the argument types.
 
@@ -98,7 +101,7 @@ o Added the '?:' operator for compatibility with other C-like
   needed.
 
 o The && operator changed, when doing A && B, and A is false, keep A
-  instead of pushing 0.
+  instead of returning 0.
   
   This is especially useful then A is not actually 0, but an object
   that evaluates to false, or UNDEFINED.
@@ -124,20 +127,20 @@ o Dynamic macros
    Mini source code:
 
    | add_predefine( "METRIC()",
-   |     lambda( string name, string ... code )                          
+   |     lambda( string name, string ... code )
    |     {
    |         string type = type_of( code );
    |         string aggregate = aggregate_of( code );
    |         string format = format_of( code );
    |         code -= ({ 0 });
-   |         return replace( base_metric_class,             
+   |         return replace( base_metric_class,
    |                     (["ID":(string)next_metric_id++,
    |                       "NAME":stringify(name),
    |                       "TYPE":type,
-   | 			 "AGGREGATE":aggregate,
-   | 			 "FORMAT":format,
+   | 			   "AGGREGATE":aggregate,
+   | 			   "FORMAT":format,
    |                       "CODE":make_value_function(code),
-   |                      ]));
+   |                    ]));
    |      });
 
 
@@ -175,7 +178,8 @@ o New significantly faster block allocator
 
   This fix changed the ordo of one of the tests that did that very
   thing (binarytrees) from O(n^2) to O(n), and as such is more than a
-  simple percentual speedup.
+  simple percentual speedup in some cases, but it always improves the
+  performance some since the base speed is also faster.
 
 o Power-of-two hashtables are now used for most hashtables
 
@@ -204,13 +208,16 @@ o Svalue type renumbering
   The same thing happens when clearing values on the stack.
 
 o string(x..y) (constant) types
-    | > typeof("foo");
-    | (1) Result: string(102..111)
-   also used to optimize lower_case/upper_case search and
-   string_has_null etc.
 
    The strings now keep track of the min/max values in addition to two
    new flags: all-uppercase and all-lowercase.
+
+    | > typeof("foo");
+    | (1) Result: string(102..111)
+
+   This is used to optimize certain operations,
+   lower_case, upper_case, search and string_has_null for now.
+   It could be added to other places in the future as well.
 
    The fairly common case where you are doing lower_case or upper_case
    on an already lower or uppercase strings is now significantly
@@ -221,18 +228,14 @@ o Several other optimizations to execution speed has been done
   + lower_apply, changes to apply in general
     Taken together these individuallt small optimizations speeds up at
     least pike -x benchmark more than 5%.
-
   + A lot of opcodes implemented in machinecode for x86-64
     This speed up the loop benchmarks close to a factor of 3. But then
     again, most real code is nothing like that benchmark.
-
   + Several new opcodes added
     As an example an observation was that most branch_if_zero is
     followed by an is_eq, is_lt or is_gt or similar. Those opcodes
-    always return 1 or 0.
-
-    So, two new opcodes, fast_branch_if_zero and
-    fast_branch_if_non_zero were added that map directly to three
+    always return 1 or 0. So, two new opcodes, quick_branch_if_zero
+    and quick_branch_if_non_zero were added that map directly to three
     x86-64 opcodes, there is no need to check the types, do a real
     pop_stack etc.
 
@@ -240,9 +243,8 @@ o Faster hash-function for strings
   + Also siphash24 was added and is used in case the string hash table
     becomes inefficient
 
-
-Deprecated features and modules
--------------------------------
+Removed features and modules
+----------------------------
 
 o Removed facets
    The optional (and not enabled by default) support for facet classes
@@ -412,7 +414,13 @@ o String.Buffer
   The new method addat() allows for writing into the buffer at any
   position.
 
+o SDL.Music added to SDL.
+
+  Allows the playback of audio/music files.
+  Requires the SDL_mixed library.
+
 o System.TM
+
    Low-level wrapper for struct tm.
 
    This can be used to do (very) simple calendar operations. It is,
@@ -420,18 +428,19 @@ o System.TM
    GMT, and does mirror functionality already available in gmtime()
    and localtime() and friends, but in a (perhaps) easier to use API.
 
-
---- UNSORTED
-
-o SDL.Music added to SDL.
-  Allows the playback of audio/music files.
-  Requires the SDL_mixed library.
-
 o decode_value now throws the error object Error.DecodeError.
+
   Useful to catch format errors in the decode string.
 
+o Process.daemon
+
+   The daemon() function is for programs wishing to detach themselves
+   from the controlling terminal and run in the background as system
+   daemons.
+
 o Debug.pp_object_usage()
-  Pretty print debug information, useful to get debug information
+
+  Pretty-print debug information, useful to get debug information
   about object counts and memory usage in pike applications.
 
   Uses the new _object_size lfun, if present in objects, to account
@@ -467,16 +476,11 @@ o Cmod precompiler.
     -- inherit the program returned by calling master()->resolve() on
        the specified identifier. Useful to inherit code written in pike.
 
-o sprintf("%H") and sscanf("%H") (new) sscanf("%n") (now documented, existed before (%!<X> modifier, used by optimizer))
-
 o Image.JPEG.exif_decode
 
-o Process.daemon
-   The daemon() function is for programs wishing to detach themselves
-   from the controlling terminal and run in the background as system
-   daemons.
-
-o Crypto.PGP - support more hash functions.
+o Crypto.PGP
+   Added support for SHA256, SHA384 and SHA512 as hash functions.
+   Expose the used hash and key types in the out data
 
 o String.levenshtein_distance()
     That function calculates the Levenshtein distance between two
@@ -488,12 +492,16 @@ o String.levenshtein_distance()
     matches for a short string in many longer texts, when a small
     number of differences is expected.
 
-o Unicode databases updated to 6.2.0
+o System.sync()
+    Synchronizes the filesystem on systems where this is possible 
+    (currently windows and unix-like systems).
 
+o System.getloadavg()
+    Return the current load average.
+
+o Unicode databases updated to 6.2.0
 o Timezone databases updated to tzdata2013d
 
-o System.sync()
-o System.getloadavg()
 o Stdio.File()->send/receive[_fd]
 o The Search module has seen several fixes
 o Standalone tools added:
