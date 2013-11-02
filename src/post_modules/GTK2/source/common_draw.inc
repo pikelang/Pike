@@ -125,8 +125,8 @@ void draw_text(GDK2.GC gc, int x, int y, string|Pango.Layout text)
     f_string_to_utf8(1);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
 		CGSTR0(Pike_sp[-1].u.string));
-  } else {
-    pl=(PangoLayout *)(get_gobject(sv->u.object));
+  } else if (TYPEOF(*sv) != PIKE_T_OBJECT || !(pl = (PangoLayout *)(get_gobject(sv->u.object)))) {
+    SIMPLE_ARG_TYPE_ERROR("draw_text", 4, "string|Pango.Layout");
   }
 /*
   ref_push_string(text);
