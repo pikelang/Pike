@@ -3,14 +3,13 @@ AC_INIT(image_webp.cmod)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(config.h)
 
-
 PIKE_FEATURE_NODEP(Image.WebP)
 
-AC_CHECK_HEADERS(vpx/vpx_decoder.h vpx/vpx_encoder.h)
-if test $ac_cv_header_vpx_vpx_decoder_h = yes ; then
-  AC_DEFINE(HAVE_LIBVPX,[],[Define when the -lvpx library is available])
-  AC_CHECK_LIB([vpx], [vpx_codec_encode], [
-    LIBS="${LIBS-} -lvpx"
+AC_CHECK_HEADERS(webp/encode.h)
+if test $ac_cv_header_webp_encode_h = yes ; then
+  AC_DEFINE(HAVE_LIBWEBP,[],[Define when the -lwebp library is available])
+  AC_CHECK_LIB([webpdecoder], [WebPDecodeRGBA], [
+    LIBS="${LIBS-} -lwebp -lwebpmux -lwebpdecoder -lwebpdemux"
     PIKE_FEATURE_OK(Image.WebP)
   ])
 fi
