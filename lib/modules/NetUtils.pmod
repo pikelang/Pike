@@ -96,6 +96,12 @@ int string_to_ip(string ips)
 //!   http://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing#CIDR_notation
 int netmask_to_cidr( string mask )
 {
+    if( has_prefix( mask, "0x" ) )
+    {
+        int i;
+        if( sscanf( mask, "0x%x", i ) == 1 )
+            return i->popcount();
+    }
     return string_to_ip( mask )->popcount();
 }
 
@@ -604,7 +610,7 @@ string ifconfig( string command )
 
                 default:
                  {
-                     string data = ifconfig + " -a | grep -v '\t'";
+                     string data = Process.popen(_ifconfig + " -a | grep -v '\t'");
                      array res = ({});
                      foreach( data/"\n", string x )
                      {
