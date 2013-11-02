@@ -1,12 +1,11 @@
 START_MARKER
 
-cond_begin([[ master()->resolv("Gmp")->mpz ]])
-
   test_true(programp(Gmp.mpz))
   test_false(Gmp.mpz())
   test_false(!Gmp.mpz(1))
   test_do(destruct(Gmp.mpz()))
 
+  // Creation
   test_eq(Gmp.mpz(10),10)
   test_eq(Gmp.mpz("10"),10)
   test_eq(Gmp.mpz(10.0),10)
@@ -33,7 +32,132 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
   test_eq(Gmp.mpz("-0",256),11568)
   test_eval_error(Gmp.mpz("1\u1234"))
   test_eval_error(Gmp.mpz("1\U12345678"))
+  test_eval_error(Gmp.mpz("abcd", 47))
 
+  // digits
+  test_eval_error(Gmp.mpz(-17)->digits(256))
+  test_eq(Gmp.mpz(0)->digits(256), "\0");
+  test_eval_error(Gmp.mpz(17)->digits(0))
+  test_eval_error(Gmp.mpz(17)->digits(1))
+  test_eq(Gmp.mpz(17)->digits(2), "10001");
+  test_eq(Gmp.mpz(17)->digits(3), "122");
+  test_eq(Gmp.mpz(17)->digits(10), "17");
+  test_eq(Gmp.mpz(17)->digits(36), "h");
+  test_eval_error(Gmp.mpz(17)->digits(37))
+  test_eq(Gmp.mpz(17)->digits(256), "\021");
+
+  // _random
+  test_do(random(Gmp.mpz(17)))
+
+  // _encode / _decode
+  test_eq(decode_value(encode_value(Gmp.mpz(-1))), Gmp.mpz(-1))
+
+  // encode_json
+  test_eq(Gmp.mpz(1)->encode_json(), "1")
+  test_eq(Gmp.mpz(-1)->encode_json(), "-1")
+
+  // size
+  test_eq(Gmp.mpz(4711)->size(2), 13)
+
+  // cast_to_int
+  test_eq(Gmp.mpz(9)->cast_to_int(), 9)
+  test_eq((int)Gmp.mpz(17),17)
+
+  // cast_to_string
+  test_eq(Gmp.mpz(7)->cast_to_string(), "7")
+  test_eq((string)Gmp.mpz(17),"17")
+
+  // cast_to_float
+  test_eq(Gmp.mpz(8)->cast_to_float(), 8.0)
+  test_eq((float)Gmp.mpz(17),17.0)
+
+  // small_factor
+  test_eq(Gmp.mpz(0)->small_factor(),0)
+  test_eq(Gmp.mpz(1)->small_factor(),0)
+  test_eq(Gmp.mpz(2)->small_factor(),0)
+  test_eq(Gmp.mpz(10)->small_factor(),2)
+  test_eq(Gmp.mpz(15)->small_factor(),3)
+  test_eq(Gmp.mpz(10403)->small_factor(),101)
+
+  // next_prime
+  test_eq(Gmp.mpz("100000000000000000")->next_prime(), 100000000000000003);
+
+  // gcd
+  test_any([[
+    // In old gmp gcdext() returned ({ 1, 3, -2 }).
+    // In gmp 4.3.1 and later it returns ({ 1, -16, 11 }).
+    // Verify against the definition to allow both cases.
+    int a = 13;
+    int b = 19;
+    [int|object g, int|object s, int|object t] = Gmp.mpz(a)->gcdext(b);
+    if (!intp(g) || !intp(s) || !intp(t)) return ({ g, s, t });
+    if ((abs(s) > b) || (abs(t) > a)) return ({ g, s, t });
+    if (s*a + t*b != g) return ({ g, s, t });
+    if (!g || (a%g) || (b%g)) return ({ g, s, t });
+    return 0;
+  ]], 0)
+
+  // gcdext
+  test_equal(907->gcdext(17),({1,3,-160}))
+
+  // gcdext2
+  test_equal(907->gcdext2(17),({1,3}))
+
+  // invert
+  test_eq(Gmp.mpz(17)->invert(4711), 2217)
+  test_eval_error(Gmp.mpz(4711)->invert(0))
+  test_eval_error(Gmp.mpz(7)->invert(4711))
+
+  // fac
+  test_eq(10->fac(),3628800)
+
+  // bin
+  test_eq(10->bin(2),45)
+
+  // sgn
+  test_eq(sgn(-2),-1)
+  test_eq(sgn(0),0)
+  test_eq(sgn(2),1)
+
+  // sqrt  / _sqrt
+  test_eq(Gmp.mpz(64)->sqrt(), 8)
+  test_eq(sqrt(Gmp.mpz(64)), 8)
+  test_eq(sqrt(Gmp.mpz(2)->pow(34)), 131072)
+
+  // sqrtrem
+  test_equal(Gmp.mpz(3)->pow(35)->sqrtrem(), ({223677323,274553378}) )
+
+  // pow
+  test_eq(Gmp.mpz(0)->pow(0), 1)
+  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000000000")), 0)
+  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000000000")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000000")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000001")), -1)
+  test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000000000")))
+
+  // powm
+  test_eq(Gmp.mpz(17)->powm(12,4711),85)
+  test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
+  test_eval_error(Gmp.mpz(2)->powm(47, 0))
+
+  // popcpunt
+  test_eq(Gmp.mpz(0)->popcount(), 0)
+  test_eq(Gmp.mpz(17)->popcount(), 2)
+  test_eq(Gmp.mpz(4711)->popcount(), 7)
+  test_eq(Gmp.mpz(17)->pow(17)->popcount(), 31)
+  test_eq(Gmp.mpz(-1)->popcount(), -1)
+  test_eq(Gmp.mpz(-4711)->popcount(), -1)
+
+  // probably_prime_p
+  test_false(Gmp.mpz(0)->probably_prime_p())
+  test_false(Gmp.mpz(1)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(2)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(3)->probably_prime_p(), 0)
+  test_false(Gmp.mpz(4)->probably_prime_p(), 0)
+  test_false(Gmp.mpz("100000000000000000")->probably_prime_p(), 0)
+
+
+  // binops
   test_eq(Gmp.mpz("17") == "foo", 0)
   test_eq(Gmp.mpz("17") != "foo", 1)
   test_eq(Gmp.mpz("17") == 17, 1)
@@ -44,7 +168,6 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
     test_eq(Gmp.mpz($1) $2 $3.0, $4)
     test_eq(Gmp.mpz($1) $2 Gmp.mpz($3), $4)
     test_eq($1 $2 Gmp.mpz($3), $4)
-    test_eq($1.0 $2 Gmp.mpz($3), $4)
     test_eq($1.0 $2 Gmp.mpz($3), $4)
     test_eq($1 $2 $3,Gmp.mpz($4))
   ]])
@@ -60,24 +183,31 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
   test_binop(17,|,7,23)
   test_binop(17,&,18,16)
   test_binop(17,^,15,30)
+  test_binop(103,%,18,13)
+
+  test_eval_error(Gmp.mpz(17) + 18 + "19")
+  test_eval_error(Gmp.mpz(17) - 18 - "19")
+  test_eval_error(Gmp.mpz(17) / 0)
+  test_eval_error(Gmp.mpz(49) % 0)
+  test_eval_error(1<<Gmp.mpz("100000000000000000000"))
+  test_eval_error(-1<<Gmp.mpz("100000000000000000000"))
+  test_eq(0<<Gmp.mpz("100000000000000000000"), 0)
 
   test_eq([[`+(1,1,1,Gmp.mpz(1),1,1)]],6)
+
+  // uniop
   test_eq(-Gmp.mpz(17),-17)
   test_eq((~Gmp.mpz(17)) & 255,238)
-  test_true(stringp((string)Gmp.mpz(17)))
-  test_eq((string)Gmp.mpz(17),"17")
-  test_eq((int)Gmp.mpz(17),17)
   test_false(Gmp.mpz(0))
   test_true(Gmp.mpz(1))
-  test_eq(Gmp.mpz(17)->powm(12,4711),85)
-  test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
 
-cond_end // Gmp.mpz
-
-cond([[ master()->resolv("Gmp")->mpz ]],
-[[
-  test_eq(Gmp.mpz(1) + 0x100000000, 0x100000001)
-]])
+  test_any([[object o=Gmp.mpz(1); o++; return o;]],2)
+  test_any([[object o=Gmp.mpz(1); return o++;]],1)
+  test_any([[object o=Gmp.mpz(1); return ++o;]],2)
+  test_any([[object o=Gmp.mpz(1); o++;o++;o++;o++;o++;o++;o++;o++;o++; return o]],10)
+  test_any([[object o=Gmp.mpz(2); o--; return o;]],1)
+  test_any([[object o=Gmp.mpz(2); return --o;]],1)
+  test_any([[object o=Gmp.mpz(2); return o--;]],2)
 
 cond_begin([[ master()->resolv("Gmp")->mpq ]])
 
@@ -262,101 +392,5 @@ dnl    mpx_test($1,$2,$3,Gmp.mpf)
 
   mpx_mega_test(1,2,3)
   mpx_mega_test(-2,-1,4)
-
-cond_begin([[ master()->resolv("Gmp")->mpz ]])
-
-  test_eval_error(Gmp.mpz("abcd", 47))
-  test_eval_error(Gmp.mpz(-17)->digits(256))
-  test_eq(Gmp.mpz(0)->digits(256), "\0");
-  test_eval_error(Gmp.mpz(17)->digits(0))
-  test_eval_error(Gmp.mpz(17)->digits(1))
-  test_eq(Gmp.mpz(17)->digits(2), "10001");
-  test_eq(Gmp.mpz(17)->digits(3), "122");
-  test_eq(Gmp.mpz(17)->digits(10), "17");
-  test_eq(Gmp.mpz(17)->digits(36), "h");
-  test_eval_error(Gmp.mpz(17)->digits(37))
-  test_eq(Gmp.mpz(17)->digits(256), "\021");
-  test_eq(Gmp.mpz(4711)->size(2), 13)
-  test_eval_error(Gmp.mpz(17) + 18 + "19")
-  test_eval_error(Gmp.mpz(17) - 18 - "19")
-  test_eval_error(Gmp.mpz(17) / 0)
-  test_eval_error(Gmp.mpz(49) % 0)
-  test_eq(Gmp.mpz(0)->pow(0), 1)
-  test_any([[
-    // In old gmp gcdext() returned ({ 1, 3, -2 }).
-    // In gmp 4.3.1 and later it returns ({ 1, -16, 11 }).
-    // Verify against the definition to allow both cases.
-    int a = 13;
-    int b = 19;
-    [int|object g, int|object s, int|object t] = Gmp.mpz(a)->gcdext(b);
-    if (!intp(g) || !intp(s) || !intp(t)) return ({ g, s, t });
-    if ((abs(s) > b) || (abs(t) > a)) return ({ g, s, t });
-    if (s*a + t*b != g) return ({ g, s, t });
-    if (!g || (a%g) || (b%g)) return ({ g, s, t });
-    return 0;
-  ]], 0)
-  test_eq(Gmp.mpz(17)->invert(4711), 2217)
-  test_eval_error(Gmp.mpz(4711)->invert(0))
-  test_eval_error(Gmp.mpz(7)->invert(4711))
-  test_eval_error(Gmp.mpz(2)->powm(47, 0))
-  test_any([[object o=Gmp.mpz(1); o++; return o;]],2)
-  test_any([[object o=Gmp.mpz(1); return o++;]],1)
-  test_any([[object o=Gmp.mpz(1); return ++o;]],2)
-  test_any([[object o=Gmp.mpz(1); o++;o++;o++;o++;o++;o++;o++;o++;o++; return o]],10)
-  test_any([[object o=Gmp.mpz(2); o--; return o;]],1)
-  test_any([[object o=Gmp.mpz(2); return --o;]],1)
-  test_any([[object o=Gmp.mpz(2); return o--;]],2)
-  test_eq(Gmp.mpz(0)->popcount(), 0)
-  test_eq(Gmp.mpz(17)->popcount(), 2)
-  test_eq(Gmp.mpz(4711)->popcount(), 7)
-  test_eq(Gmp.mpz(17)->pow(17)->popcount(), 31)
-  test_eq(Gmp.mpz(-1)->popcount(), -1)
-  test_eq(Gmp.mpz(-4711)->popcount(), -1)
-
-  test_eq(1>>Gmp.mpz("100000000000000000000"), 0)
-  test_eq(-1>>Gmp.mpz("100000000000000000000"), -1)
-  test_eq(0>>Gmp.mpz("100000000000000000000"), 0)
-  test_eval_error(1<<Gmp.mpz("100000000000000000000"))
-  test_eval_error(-1<<Gmp.mpz("100000000000000000000"))
-  test_eq(0<<Gmp.mpz("100000000000000000000"), 0)
-
-  test_eq(Gmp.mpz("100000000000000000000")>>Gmp.mpz("100000000000000000000"), 0)
-  test_eq(Gmp.mpz("-100000000000000000000")>>Gmp.mpz("100000000000000000000"), -1)
-  test_eq(Gmp.mpz(0)>>Gmp.mpz("100000000000000000000"), 0)
-  test_eval_error(Gmp.mpz("100000000000000000000")<<Gmp.mpz("100000000000000000000"))
-  test_eval_error(Gmp.mpz("-100000000000000000000")<<Gmp.mpz("100000000000000000000"))
-  test_eq(Gmp.mpz(0)<<Gmp.mpz("100000000000000000000"), 0)
-
-  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000000000")), 0)
-  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000000001")), 0)
-  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000000000")), 1)
-  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000000001")), 1)
-  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000000")), 1)
-  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000001")), -1)
-  test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000000000")))
-
-  test_do(random(Gmp.mpz(17)))
-  test_eq(Gmp.mpz(64)->sqrt(), 8)
-  test_eq(sqrt(Gmp.mpz(64)), 8)
-  test_eq(sqrt(Gmp.mpz(2)->pow(34)), 131072)
-  test_equal(Gmp.mpz(3)->pow(35)->sqrtrem(), ({223677323,274553378}) )
-  test_eq(Gmp.mpz(9)->cast_to_int(), 9)
-  test_eq(Gmp.mpz(8)->cast_to_float(), 8.0)
-  test_eq(Gmp.mpz(7)->cast_to_string(), "7")
-  test_false(Gmp.mpz(0)->probably_prime_p())
-  test_false(Gmp.mpz(1)->probably_prime_p(), 0)
-  test_true(Gmp.mpz(2)->probably_prime_p(), 0)
-  test_true(Gmp.mpz(3)->probably_prime_p(), 0)
-  test_false(Gmp.mpz(4)->probably_prime_p(), 0)
-  test_false(Gmp.mpz("100000000000000000")->probably_prime_p(), 0)
-  test_eq((string)Gmp.mpz("100000000000000000")->next_prime(), "100000000000000003");
-  test_eq(Gmp.mpz(0)->small_factor(),0)
-  test_eq(Gmp.mpz(1)->small_factor(),0)
-  test_eq(Gmp.mpz(2)->small_factor(),0)
-  test_eq(Gmp.mpz(10)->small_factor(),2)
-  test_eq(Gmp.mpz(15)->small_factor(),3)
-  test_eq(Gmp.mpz(10403)->small_factor(),101)
-
-cond_end // Gmp.mpz
 
 END_MARKER
