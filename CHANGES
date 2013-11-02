@@ -104,11 +104,11 @@ o The && operator changed, when doing A && B, and A is false, keep A
   that evaluates to false, or UNDEFINED.
 
 o Added new syntax that can be used to return an object as if it was a
-  class you are inheriting, X::this where X is the inheriting class.
+  class you are inheriting, X::this where X is the inherited class.
 
 o Support for ", ##__VA_ARGS__" cpp feature.
 
-o The preprocessor can now be run wiht a cpp prefix feature.
+o The preprocessor can now be run with a cpp prefix feature.
 
   This is currently used by the precompiler to avoid two levels of
   preprocessing, one using "#cmod_" as the prefix and the other "#".
@@ -246,7 +246,7 @@ o Removed facets
 o It is no longer possible to compile pike without libgmp.
   Bignums are now a required language feature
 
-o The old 'files' module has been renamed to _Stdio
+o The old low-level 'files' module has been renamed to _Stdio
 
 o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
