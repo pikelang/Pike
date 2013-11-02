@@ -294,14 +294,9 @@ Packet server_key_exchange_packet()
   {
   case KE_rsa:
     SSL3_DEBUG_MSG("KE_RSA\n");
-#ifdef WEAK_CRYPTO_40BIT
-    temp_key = context->short_rsa;
-#endif /* WEAK_CRYPTO_40BIT (magic comment) */
-#ifndef WEAK_CRYPTO_40BIT
     temp_key = (session->cipher_spec->is_exportable
 		? context->short_rsa
 		: context->long_rsa);
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
     if (temp_key)
     {
       /* Send a ServerKeyExchange message. */

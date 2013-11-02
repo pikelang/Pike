@@ -82,15 +82,11 @@ protected string generate_key_block(string client_random, string server_random,
 			  array(int) version)
 {
   int required = 2 * (
-#ifndef WEAK_CRYPTO_40BIT
     cipher_spec->is_exportable ?
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
     (5 + cipher_spec->hash_size)
-#ifndef WEAK_CRYPTO_40BIT
     : ( cipher_spec->key_material +
 	cipher_spec->hash_size +
 	cipher_spec->iv_size)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   );
   string key = "";
 
@@ -171,9 +167,7 @@ array(string) generate_keys(string client_random, string server_random,
   // server_write_MAC_secret
   keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
-#ifndef WEAK_CRYPTO_40BIT
   if (cipher_spec->is_exportable)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
     // Exportable (ie weak) crypto.
     if(version[1] == PROTOCOL_SSL_3_0) {
@@ -219,8 +213,6 @@ array(string) generate_keys(string client_random, string server_random,
     }
     
   }
-  
-#ifndef WEAK_CRYPTO_40BIT
   else {
     keys[2] = key_data->get_fix_string(cipher_spec->key_material);
     keys[3] = key_data->get_fix_string(cipher_spec->key_material);
@@ -230,7 +222,6 @@ array(string) generate_keys(string client_random, string server_random,
 	keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
       }
   }
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #ifdef SSL3_DEBUG
   printKey( "client_write_MAC_secret",keys[0]);
