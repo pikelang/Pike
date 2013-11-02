@@ -1,0 +1,173 @@
+
+START_MARKER
+
+// Peek is missing on windows. When it exists, turn on peek-dependent
+// code in module.pmod
+test_true( !7.8::Stdio.File()->peek || functionp(7.8::Stdio.File()->peek) )
+
+dnl
+dnl Undocumented but important behaviour...
+dnl
+test_eq([[7.8::Stdio._stdin]],[[7.8::Stdio.stdin->_fd]])
+
+// 7.8::Stdio.FILE gets/ngets tests
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_any_equal([[
+  7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hopp","gazonk"}))
+
+test_any_equal([[
+  7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp\nhurra");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hurra","hopp","gazonk"}))
+
+test_any_equal([[
+  7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("hipp");
+  v+=({r->gets()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hipp","hej","hopp","gazonk"}))
+
+test_any_equal([[
+  7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("h\nh\nhi");
+  v+=({r->getchar(),r->getchar(),r->getchar()});
+  v+=({r->gets()});
+  r->ungets("oj\noj");
+  v+=({r->getchar()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({'h','\n','h',"",'o',"j","oj","hi","hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp",        // 59 is a prime number:
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp",
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp", "\n"*400);
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","\n"*400);
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   7.8::Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   7.8::Stdio.FILE r=7.8::Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_true(rm("testsuite.tmp"))
+
+test_any([[
+#pike 7.8
+  return !!files.Fd;
+]], 1)
+
+
+END_MARKER
