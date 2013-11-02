@@ -164,9 +164,8 @@ o Dynamic macros
    |    }
    | }
 
-
 Optimizations
--------------
+=============
 
 o New significantly faster block allocator
   The free in the old one was O(n^2), which means that as an example
@@ -236,9 +235,8 @@ o Several other optimizations to execution speed has been done
     x86-64 opcodes, there is no need to check the types, do a real
     pop_stack etc.
 
-
-Removed stuff
--------------
+Removed features and modules
+============================
 
 o Removed facets
    The optional (and not enabled by default) support for facet classes
