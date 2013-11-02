@@ -218,6 +218,8 @@ define(test_ssl, [[
       log_ssl_failure($1,$2,$3,$4,$5,suite,state,client_recv_buf);
       failures++;
     }
+    client->close();
+    server->close();
     }
     return ({ successes, failures });
   }]])
