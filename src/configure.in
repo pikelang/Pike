@@ -5,18 +5,7 @@ AC_CONFIG_HEADER(machine.h)
 
 rm -f config.warnings 2>/dev/null
 
-if_autoconf(2,50,[
-  if test "x$cache_file" = "x/dev/null"; then
-    cache_file=./config.cache
-    if test -r "$cache_file"; then
-      echo "loading cache $cache_file"
-      . $cache_file
-    else
-      echo "creating cache $cache_file"
-      > $cache_file
-    fi
-  fi
-], [
+if_autoconf(2,50,, [
   PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
 ])
 
