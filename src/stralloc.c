@@ -81,7 +81,7 @@ static unsigned int need_more_hash_prefix_depth=0;
 
 /* Force a new hashkey to be generated early during init. */
 static unsigned int need_new_hashkey_depth=0xffff;
-static size_t hashkey = 0xa55aa55a;
+static size_t hashkey = 0;
 
 static unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;

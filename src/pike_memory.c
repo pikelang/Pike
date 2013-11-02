@@ -346,6 +346,19 @@ __attribute__((const)) static inline int supports_sse42( )
 #ifdef __i386__
 __attribute__((fastcall))
 #endif
+__attribute__((hot))
+  static size_t low_hashmem_generic(const void *a, size_t len_,
+				    size_t mlen_, size_t key_)
+{
+    const unsigned char*a_ = a;
+    size_t ret_;
+    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
+    return ret_;
+}
+
+#ifdef __i386__
+__attribute__((fastcall))
+#endif
 #ifdef HAVE_CRC32_INTRINSICS
 /*
 The intrinsics are only available if -msse4 is specified.
@@ -359,7 +372,10 @@ __attribute__((target("sse4,arch=core2")))
   static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					       size_t nbytes, size_t key )
 {
-    unsigned int h = len ^ key;
+  if( key )
+      return low_hashmem_generic(s,len,nbytes,key);
+
+  unsigned int h = len;
     const unsigned int *p = s;
     if( nbytes >= len )
     {
@@ -377,7 +393,7 @@ __attribute__((target("sse4,arch=core2")))
         /* any remaining bytes. */
         while( len-- )
             CRC32SQ( h, c++ );
-        return h ^ key;
+        return h;
     }
     else
     {
@@ -441,7 +457,6 @@ __attribute__((target("sse4,arch=core2")))
         CRC32SI(h,e++);
         CRC32SI(h,e);
     }
-    h ^= key;
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
@@ -449,19 +464,6 @@ __attribute__((target("sse4,arch=core2")))
     return (((size_t)h)<<32) | h;
 #endif
     return h;
-}
-
-#ifdef __i386__
-__attribute__((fastcall))
-#endif
-__attribute__((hot))
-  static size_t low_hashmem_generic(const void *a, size_t len_,
-				    size_t mlen_, size_t key_)
-{
-    const unsigned char*a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
-    return ret_;
 }
 
 #ifdef __i386__
