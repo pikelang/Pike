@@ -2455,12 +2455,10 @@ define(TEST_BUILTIN, [
 $3
 ],[
 unsigned long lint;
-int main(int argc, char **argv) {
-	static volatile int foo = 0;
-	foo = (int)$1($2);
-	return 0;
-}
-	],
+volatile int foo = 0;
+foo = (int)$1($2);
+return 0;
+],
     AC_MSG_RESULT(yes)
     AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
     ,
@@ -2477,7 +2475,7 @@ TEST_BUILTIN(__builtin_ctzl, 23)
 TEST_BUILTIN(__builtin_ctzll, 23)
 TEST_BUILTIN(__builtin_bswap32, 23)
 TEST_BUILTIN(__builtin_bswap64, 23)
-TEST_BUILTIN(__builtin_expect, [argc,0])
+TEST_BUILTIN(__builtin_expect, [foo,0])
 # ICC builtins
 TEST_BUILTIN(_bswap, 23)
 TEST_BUILTIN(_bswap64, 23)
