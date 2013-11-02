@@ -3607,7 +3607,7 @@ expr4: string
   }
   | expr4 TOK_SAFE_START_INDEX line_number_info expr0 ']'
   {
-    /* A?[X] to ((tmp=A) && tmp[X]) */
+    /* A[?X] to ((tmp=A) && tmp[X]) */
     if( $1->token == F_LOCAL )
     {
       $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
@@ -3638,7 +3638,7 @@ expr4: string
   | expr4 TOK_SAFE_START_INDEX  line_number_info
     range_bound expected_dot_dot range_bound ']'
   {
-    /* A?[X..Y] to ((tmp=A) && tmp[X..Y]) */
+    /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
     node *range = mknode(':',$4,$6);
     if( $1->token == F_LOCAL )
     {
