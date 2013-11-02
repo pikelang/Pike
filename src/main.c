@@ -42,9 +42,6 @@
 #ifdef LIBPIKE
 #if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
-#elif !defined(USE_DLL) && defined(USE_MY_WIN32_DLOPEN)
-#include "pike_dlfcn.h"
-#else
 #undef LIBPIKE
 #endif
 #endif

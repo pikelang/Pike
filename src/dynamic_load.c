@@ -63,12 +63,6 @@
 #define USE_DYLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else /* !HAVE_MACH_O_DYLD_H */
-#if !defined (USE_DLL) && defined (USE_MY_WIN32_DLOPEN)
-#include "pike_dlfcn.h"
-#define HAVE_SOME_DLOPEN
-#define HAVE_DLOPEN
-#endif
 #endif /* HAVE_MACH_O_DYLD_H */
 
 #endif
