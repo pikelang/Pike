@@ -2334,7 +2334,6 @@ protected void create()
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
 
-  add_constant("strlen", sizeof);
   add_constant("write", write);
   add_constant("werror", werror);
   // To make it possible to overload get_dir and file_stat later on.
