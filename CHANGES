@@ -282,6 +282,10 @@ o Debug.Profiling
    Tools useful for collecting and format for output the profiling
    information generated when pike is compiled --with-profiling.
 
+o NetUtils
+   This module contains a lot of functions useful for the storage and
+   processing of network addresses, it supports IPv4 and IPv6.
+
 o Added ADT.CritBit module
    Mapping-like key-sorted data structures for string, int and
    float-keys (ADT.CritBit.Tree, ADT.CritBit.IntTree,
