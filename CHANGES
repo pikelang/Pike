@@ -1,10 +1,49 @@
 Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
 ----------------------------------------------------------------------
--- New language features
 
-o local::
+New language features
+---------------------
 
-o variant
+o Added a way to access the local, and not the overloaded,
+  implementation of a symbol.
+
+   As an example, given the classes:
+   | class Test
+   | {
+   |     int a( ) { return 1; }
+   |     int b( ) { return local::a(); }
+   | }
+   | 
+   | class Test2
+   | {
+   |    int a() { return 42; }
+   | }
+
+   Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
+   will return 42.
+
+o Added a way to easily inherit the implementation of a subclass in an
+  inheriting class.
+
+    | inherit ::this_program
+
+   The syntax refers to the previous definition of the current class
+   in the inherited class, and is typically used with inherit like:
+
+    | inherit Foo;
+    |
+    | // Override the Bar inherited from Foo.
+    | class Bar {
+    |    // Bar is based on the implementation of Bar in Foo.
+    |    inherit ::this_program;
+    |    // ...
+    | }
+
+o Actually implemented the variant keyword.
+
+  This is used to do function overloading based on the argument types.
+
+  As an example:
     | class Test1 { int b(); }
     | class Test2 { int a(); }
     |
@@ -19,9 +58,22 @@ o variant
     |     variant int bar( int(2..2) s ) { return 2; }
     | }
 
-o New typechecker
+   A common usecase is functions that return different types depending
+   on the arguments, such as getenv:
 
-o Support for ", ##__VA_ARGS__" cpp feature.
+   |  string|mapping(string:string) getenv( string|void variable );
+   
+   can now be rewritten as 
+
+   |  variant string getenv( string variable );
+   |  variant mapping(string:string) getenv( );
+
+   which gives siginificantly better typechecking.
+
+o The typechecker has been rewritten.
+
+  Mainly it is now much better at finding type errors, and most error
+  messages are more readable.
 
 o Allow '.' to be used as an index operator in the few places id did
   not work before.
@@ -52,6 +104,13 @@ o The && operator changed, when doing A && B, and A is false, keep A
 
 o Added new syntax that can be used to return an object as if it was a
   class you are inheriting, X::this where X is the inheriting class.
+
+o Support for ", ##__VA_ARGS__" cpp feature.
+
+o The preprocessor can now be run wiht a cpp prefix feature.
+
+  This is currently used by the precompiler to avoid two levels of
+  preprocessing, one using "#cmod_" as the prefix and the other "#".
 
 o Dynamic macros
    You can now add programatic macros. There is currently no syntax
@@ -176,51 +235,86 @@ o Several other optimizations to execution speed has been done
 
 --- removed stuff
 
-o Removed bundles
 o Removed facets
+   The optional (and not enabled by default) support for facet classes
+   has been removed, since it was only partially done and not really
+   used.
+
+o It is no longer possible to compile pike without libgmp.
+  Bignums are now a required language feature
+
+o The old 'files' module has been renamed to _Stdio
+
+o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
+
+--- deprecated stuff
+
+o Locale.Charset
+   The charset module is now available on the toplevel as 'Charset'
+
+o Tools.PEM and Tools.X409 deprecated 
+   Use the corresponding modules in Standards.
+
 o The built in sandbox is now deprecated
-o Bignums are now a required language feature, it is no longer
-  possible to build a pike without them
-o Tools.PEM and Tools.X409 deprecated (use the corresponding modules in Standards.)
-o The old 'files' module was renamed to _Stdio
-o Locale.Charset -> Charset
-o Renamed GTK to GTK1, added a GTK.pmod that is either GTK2 (if
-  available) or GTK1 (if there is no GTK2, but GTK1 is available).
+   Unless somebody wants to take ownership of the feature and keep it
+   up to date the security system will be removed in the next stable
+   release.
 
 -- new modules
+
+o Pike.Watchdog
+  A Watchdog that ensures that the process is not hung for an extended
+  period of time. The definition of 'hung' is: Has not used the
+  default backend.
+  
+  To use it simply keep an instance of the watchdog around in your
+  application:
+  
+  | Pike.Watchdog x = Pike.Watchdog( 5 ); // max 5s blocking
+  
+  An important and useful side-effect of this class is that the
+  process will start to respond to kill -QUIT by printing a lot of
+  debug information to stderr, including memory usage, and if pike is
+  compiled with profiling, the CPU used since the last time kill -QUIT
+  was called.
+
+o Debug.Profiling
+   Tools useful for collecting and format for output the profiling
+   information generated when pike is compiled --with-profiling.
+
 o Added ADT.CritBit module
-  Mapping-like key-sorted data structures for string, int and float-keys
-  (ADT.CritBit.Tree, ADT.CritBit.IntTree, ADT.CritBit.FloatTree). Implemented
-  in C.
+   Mapping-like key-sorted data structures for string, int and
+   float-keys (ADT.CritBit.Tree, ADT.CritBit.IntTree,
+   ADT.CritBit.FloatTree). Implemented in C.
 
 o Standards.BSON
-  A new module for working with BSON serialized data.
-  See http://bsonspec.org/
+   A new module for working with BSON serialized data.
+   See http://bsonspec.org/
 
 o Geography.GeoIP
-  Does geolocation of IPv4-numbers using databases from maxmind.com or
-  software77.net
+   Does geolocation of IPv4-numbers using databases from maxmind.com or
+   software77.net
 
 o Protocols.WebSocket
-  An implementation of the WebSocket (RFC 6455) standard, both server
-  and client
+   An implementation of the WebSocket (RFC 6455) standard, both server
+   and client
 
 o Image.WebP
-  Encoder and decoder for the WEBP image format.
-  More information about the format can be found on 
-  https://developers.google.com/speed/webp/
+   Encoder and decoder for the WEBP image format.
+   More information about the format can be found on 
+   https://developers.google.com/speed/webp/
 
 o Serializer
-  APIs useful to simplify serialization and deserialization of objects
-  Mainly it allows you to easily iterate over the object variables,
-  including the private ones.
+   APIs useful to simplify serialization and deserialization of objects
+   Mainly it allows you to easily iterate over the object variables,
+   including the private ones.
 
-  + Serializer.Encodable
+   + Serializer.Encodable
      A class that can be inherit to make an object easily serializable
      using encode_value.
 
 o Filesystem.Monitor and the lowlevel System.Inotify + System.FSEvents
-   Basic filesystem monitor.
+   Basic filesystem monitoring.
 
    This module is intended to be used for incremental scanning of a
    filesystem.
@@ -270,7 +364,6 @@ o Val
   
 -- UNSORTED
 
-o clang compatibility
 o SDL.Music added to SDL.
   Allows the playback of audio/music files.
   Requires the SDL_mixed library.
@@ -297,35 +390,50 @@ o Debug.pp_object_usage()
   Uses the new _object_size lfun, if present in objects, to account
   for RAM-usage in C-objects that allocate their own memory.
 
-o Several OS/2 and windows compilation fixes
-
 o Mysql - Support more modern client libraries (incl. MariaDB)
 
 o Standards.PEM: Added some support for encrypted PEM files
 
 o Nettle refactored
+
 o String.Buffer
   + Added buffer->add(buffer) support
   + Added buffer->sprintf()
   + Added adat()
+
 o pike -x benchmark output format changed
+   Also added support for JSON output.
+   There has also been attempts to get the timing more predicable.
+   Added options to allow comparison with a previous run
+
 o Protocols.DNS
   + Prevent endless loops in maliciously crafted domain names.
   + Add QTYPE T_ANY to DNS enum EntryType in DNS.pmod.
   + Handle truncated labels
   + TCP client and server support
+
 o Thread no longer inherits Thread.Thread (aka thread_create)
+
 o Thread.Farm now might work
+
 o Stdio.UDP
   + added ipv6 multicast support
   + added set_buffer
 
+o Cmod precompiler.
+  + inherit "identifier"
+    -- inherit the program returned by calling master()->resolve() on
+       the specified identifier. Useful to inherit code written in pike.
+
 o sprintf("%H") and sscanf("%H") (new) sscanf("%n") (now documented, existed before (%!<X> modifier, used by optimizer))
+
 o Image.JPEG.exif_decode
+
 o Process.daemon
-    The daemon() function is for programs wishing to detach themselves
-    from the controlling terminal and run in the background as system
-    daemons.
+   The daemon() function is for programs wishing to detach themselves
+   from the controlling terminal and run in the background as system
+   daemons.
+
 o Crypto.PGP - support more hash functions.
 
 o String.levenshtein_distance()
@@ -342,24 +450,6 @@ o Unicode databases updated to 6.2.0
 
 o Timezone databases updated to tzdata2013d
 
-o inherit ::this_program
-    This syntax refers to the previous definition of the current class
-    in its parent, and is typically used with inherit like:
-
-      inherit Foo;
-
-      // Override the Bar inherited from Foo.
-      class Bar {
-        // Bar is based on the implementation of Bar in Foo.
-        inherit ::this_program;
-        // ...
-      }
-
-o precompile
-  + inherit "identifier"
-    -- inherit the program returned by calling master()->resolve() on
-       the specified identifier. Useful to inherit code written in pike.
-  + cpp prefix feature  #cmod_define #cmod_if etc
 o System.sync()
 o System.getloadavg()
 o Stdio.File()->send/receive[_fd]
@@ -373,19 +463,14 @@ o Standalone tools added:
 o Lots of GTK2 fixes
 o Crypto.crypt_hash()
 o Image.JPEG.decode now has basic CMYK/YCCK support
-o visibility=hidden default (PMOD_EXPORT now also needed on unix)
 o Fixed units in pike --help=kladdkaka
-o clang compilation fixes (bignum overflow checks, misc)
 o Various coverity fixes
-
 
 o SNI client extension support for SSL (Server Name Indicator)
 o System.get_home + System.get_user
    (mostly) Cross-platform ways to get username and home directory
 o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
 o Process - forkd
-
-
 o generic ipv6 fixes, ipv6 mapped ipv4 addresses
 o Async Protocols.SNMP client
 o MacOSX CoreFoundation support in the backend
@@ -401,7 +486,6 @@ o Builtin._get_setter / Builtin.Setter
 o Parser.XML.Tree fixes
 o New charsets
    A lot of ISO-IR charsets added:
-
    9-1, 9-2, 31, 232, 234, 231 (aka ANSI/NISO Z39.46, aka ANSEL) 230
    (aka TDS 565) 225 (SR 14111:1998), 197/209 (sami) 208 (IS 434:1997)
    207 (IS 433:1996), 204,205 and 206 (aka 8859-1, 8859-4 and 8859-13
@@ -412,6 +496,24 @@ o New charsets
 o Fixes to the HTTP client in Protocols.HTTP.
 o dtrace support (on macosX at least?)
 o Blowfish and Serpent support fixed in Nettle
+
+Building and installing
+-----------------------
+
+o -fvisibility=hidden is now the default
+  This means that PMOD_EXPORT is now actually needed on systems like
+  Linux and MacOSX. It also means that the binary is slightly smaller
+  and faster.
+
+o clang compilation fixes (bignum overflow checks, misc)
+  It is now possible to compile pike using a modern clang compiler.
+
+o Removed bundles
+   Pike no longer comes with copies of some libraries, and the support
+   for that in the makefile has been removed.
+
+o Several OS/2 and windows compilation fixes
+
 
 Changes since Pike 7.8.352 (third 7.8 release):
 ----------------------------------------------------------------------
