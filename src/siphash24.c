@@ -1,7 +1,8 @@
 /*
- * The following is the reference implementation if siphash as of november 2013. All tests have been
- * removed from the file and the signature has been changed to match the one used by pike. It also uses
- * the pike int types instead of stdint.h.
+ * The following is the reference implementation if siphash as of
+ * november 2013. All tests have been removed from the file and the
+ * signature has been changed to match the one used by pike. It also
+ * uses the pike int types instead of stdint.h.
  */
 
 /*
