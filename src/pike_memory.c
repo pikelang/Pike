@@ -187,96 +187,6 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-
-/* MLEN is the length of the longest prefix of A to use for hashing.
- * (If A is longer then additionally some bytes at the end are
- * included.)
- *
- * KEY is a value that is mixed into the hash to avoid it being
- * precomputable (cf the #hashdos vulnerability of December 2011).
- */
-/* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN, KEY)		\
-  do {							\
-    const unsigned char *a = A;				\
-    size_t len = LEN;					\
-    size_t mlen = MLEN;					\
-    size_t ret;						\
-    size_t key = KEY;					\
-  							\
-    ret = 9248339*len;					\
-    if(len<=mlen)					\
-      mlen=len;						\
-    else						\
-    {							\
-      switch(len-mlen)					\
-      {							\
-  	default: ret^=(ret<<6) + a[len-7];		\
-  	case 7:						\
-  	case 6: ret^=(ret<<7) + a[len-5];		\
-  	case 5:						\
-  	case 4: ret^=(ret<<4) + a[len-4];		\
-  	case 3: ret^=(ret<<3) + a[len-3];		\
-  	case 2: ret^=(ret<<3) + a[len-2];		\
-  	case 1: ret^=(ret<<3) + a[len-1];		\
-      }							\
-    }							\
-    ret ^= key;						\
-    a += mlen & 7;					\
-    switch(mlen&7)					\
-    {							\
-      case 7: ret^=a[-7];				\
-      case 6: ret^=(ret<<4)+a[-6];			\
-      case 5: ret^=(ret<<7)+a[-5];			\
-      case 4: ret^=(ret<<6)+a[-4];			\
-      case 3: ret^=(ret<<3)+a[-3];			\
-      case 2: ret^=(ret<<7)+a[-2];			\
-      case 1: ret^=(ret<<5)+a[-1];			\
-    }							\
-  							\
-    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
-      {							\
-  	size_t *b;					\
-  	b=(size_t *)a;					\
-    							\
-  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
-  	{						\
-  	  ret^=(ret<<7)+*(b++);				\
-  	  ret^=(ret>>6)+*(b++);				\
-	  ret^=key;					\
-  	}						\
-      }							\
-    ,							\
-      for(mlen >>= 3; mlen--;)				\
-      {							\
-  	register size_t t1;				\
-  	register size_t t2;				\
-  	t1= a[0];					\
-  	t2= a[1];					\
-  	t1=(t1<<5) + a[2];				\
-  	t2=(t2<<4) + a[3];				\
-  	t1=(t1<<7) + a[4];				\
-  	t2=(t2<<5) + a[5];				\
-  	t1=(t1<<3) + a[6];				\
-  	t2=(t2<<4) + a[7];				\
-  	a += 8;						\
-  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
-	ret^=key;					\
-      }							\
-    )							\
-  							\
-    RET = ret;						\
-  } while(0)
-
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
  * This would look much better using the compiler intrinsics, or even the
@@ -343,18 +253,7 @@ __attribute__((const)) static inline int supports_sse42( )
     return cpuid_ecx & bit_SSE4_2;
 }
 
-#ifdef __i386__
-__attribute__((fastcall))
-#endif
-__attribute__((hot))
-  static size_t low_hashmem_generic(const void *a, size_t len_,
-				    size_t mlen_, size_t key_)
-{
-    const unsigned char*a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
-    return ret_;
-}
+#include "siphash24.c"
 
 #ifdef __i386__
 __attribute__((fastcall))
@@ -376,7 +275,7 @@ __attribute__((target("sse4,arch=core2")))
   const unsigned int *p = s;
 
   if( key )
-      return low_hashmem_generic(s,len,nbytes,key);
+      return low_hashmem_siphash24(s,len,nbytes,key);
 
   if( nbytes >= len )
   {
@@ -477,7 +376,7 @@ static void init_hashmem()
   if( supports_sse42() )
     low_hashmem = low_hashmem_ia32_crc32;
   else
-    low_hashmem = low_hashmem_generic;
+    low_hashmem = low_hashmem_siphash24;
 }
 #else
 static void init_hashmem(){}
@@ -485,10 +384,7 @@ static void init_hashmem(){}
 ATTRIBUTE((hot))
   size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
 {
-    const unsigned char *a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
-    return ret_;
+    return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
 #endif
 
