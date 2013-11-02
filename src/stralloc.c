@@ -73,11 +73,8 @@ static PIKE_MUTEX_T *bucket_locks;
 
 #define BEGIN_HASH_SIZE 1024
 
-/* Experimental dynamic hash length */
-#ifndef HASH_PREFIX
-static unsigned int HASH_PREFIX=64;
+static unsigned int hash_prefix_len=64;
 static unsigned int need_more_hash_prefix_depth=0;
-#endif
 
 /* Force a new hashkey to be generated early during init. */
 static unsigned int need_new_hashkey_depth=0xffff;
@@ -92,7 +89,7 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 /*** Main string hash function ***/
 
 #define StrHash(s,len) low_do_hash(s,len,0)
-#define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT), hashkey )
+#define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), hash_prefix_len<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
 /* Returns true if str could contain n. */
@@ -478,9 +475,8 @@ static struct pike_string *internal_findstring(const char *s,
   struct pike_string *curr;
 //,**prev, **base;
   unsigned int depth=0;
-#ifndef HASH_PREFIX
   unsigned int prefix_depth=0;
-#endif
+
   size_t h;
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
@@ -509,29 +505,25 @@ static struct pike_string *internal_findstring(const char *s,
       return curr;		/* pointer to string */
     }
     depth++;
-#ifndef HASH_PREFIX
-    if (curr->len > (ptrdiff_t)HASH_PREFIX)
+    if (curr->len > (ptrdiff_t)hash_prefix_len)
       prefix_depth++;
-#endif
   }
   if (depth > need_new_hashkey_depth) {
     /* Keep track of whether the hashtable is getting unbalanced. */
     need_new_hashkey_depth = depth;
   }
-#ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
   if (prefix_depth > need_more_hash_prefix_depth)
   {
 #if 0
     fprintf(stderr,
 	    "prefix_depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
-	    "  HASH_PREFIX=%d\n",
+	    "  hash_prefix_len=%d\n",
 	    prefix_depth, num_strings, need_more_hash_prefix_depth,
-	    HASH_PREFIX);
+	    hash_prefix_len);
 #endif /* 0 */
     need_more_hash_prefix_depth = prefix_depth;
   }
-#endif /* !HASH_PREFIX */
   UNLOCK_BUCKET(hval);
   return 0; /* not found */
 }
@@ -732,16 +724,15 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     stralloc_rehash();
   }
 
-#ifndef HASH_PREFIX
   /* These heuristics might require tuning! /Hubbe */
   if((need_more_hash_prefix_depth > 4) ||
      (need_new_hashkey_depth > 128))
   {
     /* Changed heuristic 2005-01-17:
      *
-     *   Increase HASH_PREFIX if there's some bucket containing
+     *   Increase hash_prefix_len if there's some bucket containing
      *   more than 4 strings that are longer
-     *   than HASH_PREFIX.
+     *   than hash_prefix_len.
      * /grubba
      *
      * Changed heuristic 2011-12-30:
@@ -769,13 +760,14 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 #endif
 
     /* A simple mixing function. */
-    hashkey ^= (hashkey << 5) | (current_time.tv_sec ^ current_time.tv_usec);
+    hashkey ^= (hashkey << 5) ^ (current_time.tv_sec ^ current_time.tv_usec);
 
-    if (need_more_hash_prefix_depth > 4) {
-      HASH_PREFIX=HASH_PREFIX*2;
+    if (need_more_hash_prefix_depth > 4) 
+    {
+      hash_prefix_len=hash_prefix_len*2;
 #if 0
-      fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
-	      HASH_PREFIX);
+      fprintf(stderr, "Doubling hash_prefix_len to %d and rehashing\n",
+	      hash_prefix_len);
 #endif /* 0 */
     }
     /* NOTE: No need to update to the correct values, since that will
@@ -805,7 +797,6 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
 #endif
   }
-#endif /* !HASH_PREFIX */
 }
 
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)
@@ -843,7 +834,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 PMOD_EXPORT void hash_string(struct pike_string *s)
 {
   if (!(s->flags & STRING_NOT_HASHED)) return;
-  /* if( s->len < HASH_PREFIX ) */
+  /* if( s->len < hash_prefix_len ) */
   /*   check_string_range( s, 0, 0, 0 ); */
   s->hval=do_hash(s);
   s->flags &= ~STRING_NOT_HASHED;
@@ -1955,15 +1946,15 @@ struct pike_string *modify_shared_string(struct pike_string *a,
     unlink_pike_string(a);
     low_set_index(a, index, c);
     CLEAR_STRING_CHECKED(a);
-    if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
+    if((((unsigned int)index) >= hash_prefix_len) && (index < a->len-8))
     {
       struct pike_string *old;
+      /* Doesn't change hash value - sneak it in there */
 #ifdef PIKE_DEBUG
       if (wrong_hash(a)) {
 	Pike_fatal("Broken hash optimization.\n");
       }
 #endif
-      /* Doesn't change hash value - sneak it in there */
       old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
       if (old) {
 	/* The new string is equal to some old string. */
