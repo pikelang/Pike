@@ -1619,6 +1619,7 @@ static void low_pike_sprintf(struct format_stack *fs,
         ptrdiff_t l;
 	char *x;
         DO_OP();
+        CHECK_OBJECT_SPRINTF();
         l=4;
         if(fs->fsp->width > 0) l=fs->fsp->width;
 	if(l != 4 && l != 8)
@@ -2234,18 +2235,12 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 'f':
       case 'g':
       case 'E':
+      case 'F':
       case 'G':
       {
 	push_object_type(0, 0);
 	push_type(PIKE_T_FLOAT);
 	push_type(T_OR);
-	break;
-      }
-
-      case 'F':
-      {
-	push_type(PIKE_T_FLOAT);
-	/* FIXME: Check field width. */
 	break;
       }
 
