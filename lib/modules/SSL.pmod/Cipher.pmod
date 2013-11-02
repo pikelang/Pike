@@ -488,7 +488,6 @@ array lookup(int suite, ProtocolVersion|int version)
     res->iv_size = 0;
     res->key_bits = 0;
     break;
-#ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
     res->bulk_cipher_algorithm = Crypto.Arcfour.State;
     res->cipher_type = CIPHER_stream;
@@ -553,7 +552,6 @@ array lookup(int suite, ProtocolVersion|int version)
     res->iv_size = 16;
     res->key_bits = 256;
     break;
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:
     return 0;
   }
