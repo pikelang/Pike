@@ -891,12 +891,12 @@ string normalize_address( string a )
     if( !a ) return 0;
 
     array(string) seg = a/" ";
-    int ip = NetUtils.string_to_ip( seg[0] );
+    int ip = string_to_ip( seg[0] );
 
     if( ip == -1 )
         return 0;
 
-    seg[0] = NetUtils.ip_to_string(ip);
+    seg[0] = ip_to_string(ip);
     return seg * " ";
 }
 
@@ -1056,7 +1056,7 @@ array(string) _sort_addresses(array(string) addresses,
     array(string) res = ({});
 
     foreach( addresses, string ip )
-        tmp[NetUtils.get_network_type(ip,true)] += ({ ip });
+        tmp[get_network_type(ip,true)] += ({ ip });
 
     //2: Delete ignored types
     if( exclude_types )
