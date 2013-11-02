@@ -9,9 +9,6 @@ System interface glue
   crypt.c
     Implementation of BSD style crypt(3) if it doesn't exist.
 
-  dlopen.c
-    dlopen(3) implementation for NT.
-
   fd_control.c
   fd_control.h
     Support for setting fd modes (blocking, nonblocking, close-on-exec).
@@ -24,9 +21,6 @@ System interface glue
   pike_cpulib.h
     CPU specific code for implementing atomic locks. Used only when
     running without the interpreter lock.
-
-  pike_dlfcn.h
-    dlfcn.h replacement for the dlopen(3) implementation in dlopen.c.
 
   pike_float.h
     Support stuff for dealing with floats on different systems.

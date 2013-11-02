@@ -186,7 +186,7 @@ CORE_OBJ= \
  svalue.o \
  las.o \
  builtin_functions.o \
- peep.o @DLOPEN_O@ @EXTRA_OBJS@
+ peep.o @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@
 
@@ -372,7 +372,6 @@ pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_optio
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-#	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike@EXEXT@
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) @PIKE_ICON_RES@ -o pike@EXEEXT@
