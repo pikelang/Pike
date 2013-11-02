@@ -122,6 +122,10 @@ Tools
   rbtree_low.h
     Red/black tree implementation. Used to implement the multisets.
 
+  siphash24.c
+    Fast, secure hash function used to prevent hash table DoS
+    collision attacks.
+
   stuff.c
   stuff.h
     Miscellaneous smaller utility functions, primarily numerical.
