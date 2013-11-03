@@ -2052,7 +2052,7 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
   if( a->refs > 1 )
   {
     /* We only need to do anything if the value exists in the array. */
-    ssize_t off  = fast_array_search( a, b, 0 );
+    ptrdiff_t off  = fast_array_search( a, b, 0 );
     TYPE_FIELD tmp;
 
     if( off == -1 )

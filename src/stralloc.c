@@ -128,7 +128,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
 {
   INT32 s_min = MAX_INT32;
   INT32 s_max = MIN_INT32;
-  ssize_t i;
+  ptrdiff_t i;
 
   if( loose || ((str->flags & STRING_CONTENT_CHECKED ) && (!str->size_shift || !max)) )
   {
