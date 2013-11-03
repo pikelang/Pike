@@ -463,8 +463,8 @@ o Debug.pp_object_usage()
 
 o Mysql
   + Added support more modern client libraries (incl. MariaDB)
-  + The errors thrown are now objects that will allow easy access to
-    more information about the error.
+  + Mysql.mysql now has methods to query the id or SQLSTATE of the
+    last error.
 
 o Protocols.DNS
   + Prevent endless loops in maliciously crafted domain names.
