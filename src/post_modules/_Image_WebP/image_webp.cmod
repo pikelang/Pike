@@ -54,24 +54,27 @@ static object *allocate_image(int w, int h )
 
 static inline int image_width( object *img )
 {
+  char *x;
   if( !img ) return 0;
-  char *x = get_storage( img, image_program() );
+  x = get_storage( img, image_program() );
   if( !x ) return 0;
   return ((struct image *)x)->xsize;
 }
 
 static inline int image_height( object *img )
 {
+  char *x;
   if( !img ) return 0;
-  char *x = get_storage( img, image_program() );
+  x = get_storage( img, image_program() );
   if( !x ) return 0;
   return ((struct image *)x)->ysize;
 }
 
 static inline unsigned char *image_ptr( object *img )
 {
+  char *x;
   if( !img ) return 0;
-  char *x = get_storage( img, image_program() );
+  x = get_storage( img, image_program() );
   if( !x ) return 0;
   return (unsigned char *)(((struct image  *)x)->img);
 }
@@ -150,7 +153,8 @@ PIKEFUN object decode( string data )
 
 PIKEFUN mapping(string:object) _decode( string data )
 {
-  int width, height;
+  int width, height, npix;
+  uint8_t *ip, *rp, *ap;
   object *i = NULL, *a = NULL;
   WebPBitstreamFeatures features;
   uint8_t *res = WebPDecodeRGBA( (uint8_t*)data->str, data->len,
@@ -160,8 +164,9 @@ PIKEFUN mapping(string:object) _decode( string data )
   if( !res )
     Pike_error("Failed to decode image\n");
 
-  uint8_t *ip = NULL, *rp = res, *ap = NULL;
-  int npix = width * height;
+  ip = ap = NULL;
+  rp = res;
+  npix = width * height;
 
   if( features.has_alpha )
   {
