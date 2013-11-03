@@ -2317,7 +2317,8 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line)
 }
 #endif
 
-int override_identifier (struct reference *new_ref, struct pike_string *name)
+int override_identifier (struct reference *new_ref, struct pike_string *name,
+			 int required_flags)
 {
   struct compilation *c = THIS_COMPILATION;
   int id = -1, cur_id = 0, is_used = 0;
@@ -2347,6 +2348,8 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
     if(ref->id_flags & ID_HIDDEN) continue;
 
     if(ref->id_flags & ID_VARIANT) continue;
+
+    if ((ref->id_flags & required_flags) != required_flags) continue;
 
     /* Do not zapp functions with the wrong name... */
     if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
@@ -2478,7 +2481,7 @@ void fixate_program(void)
     if (ref->id_flags & ID_HIDDEN) continue;
     if (ref->id_flags & ID_VARIANT) continue;
     if (ref->inherit_offset != 0) continue;
-    override_identifier (ref, ID_FROM_PTR (p, ref)->name);
+    override_identifier (ref, ID_FROM_PTR (p, ref)->name, 0);
   }
 
   /* Ok, sort for binsearch */
@@ -3984,6 +3987,18 @@ struct program *end_first_pass(int finish)
       }else{
 	optimize_program(Pike_compiler->new_program);
 	Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
+      }
+    } else {
+      /* All references in prog are now known.
+       * Fixup identifier overrides or external symbols,
+       * so that inherit is safe.
+       */
+      for (e = 0; e < prog->num_identifier_references; e++) {
+	struct reference *ref = prog->identifier_references + e;
+	if (ref->id_flags & ID_HIDDEN) continue;
+	if (ref->inherit_offset != 0) continue;
+	override_identifier (ref, ID_FROM_PTR (prog, ref)->name,
+			     ID_EXTERN);
       }
     }
 
@@ -5673,7 +5688,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
 
     /* override */
-    if ((overridden = override_identifier (&ref, name)) >= 0) {
+    if ((overridden = override_identifier (&ref, name, 0)) >= 0) {
 #ifdef PIKE_DEBUG
       struct reference *oref =
 	Pike_compiler->new_program->identifier_references+overridden;
@@ -6223,7 +6238,7 @@ INT32 define_function(struct pike_string *name,
       prog->identifier_references[i] = ref;
       overridden = i;
     } else {
-      overridden = override_identifier(&ref, name);
+      overridden = override_identifier(&ref, name, 0);
     }
     if (overridden >= 0) {
 #ifdef PIKE_DEBUG

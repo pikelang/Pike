@@ -791,7 +791,8 @@ void fsort_program_identifier_index(unsigned short *start,
 				    unsigned short *end,
 				    struct program *p);
 struct pike_string *find_program_name(struct program *p, INT_TYPE *line);
-int override_identifier (struct reference *ref, struct pike_string *name);
+int override_identifier (struct reference *ref, struct pike_string *name,
+			 int required_flags);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
