@@ -263,7 +263,7 @@ void f__xpm_write_rows( INT32 args )
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
-    Pike_error("Sluta pilla på interna saker..\n");
+    Pike_error("Expected images as arguments\n");
 
   if (pixels->size < iimg->ysize + colors->size) {
     SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
