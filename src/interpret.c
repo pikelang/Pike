@@ -2173,6 +2173,9 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               new_frame->num_locals = args;
               new_frame->current_storage = o->storage+context->storage_offset;
               new_frame->pc = 0;
+#ifndef PIKE_USE_MACHINE_CODE
+              FAST_CHECK_THREADS_ON_CALL();
+#endif
               (*function->func.c_fun)(args);
 
               /* .. and below follows what is basically a copy of the
