@@ -2896,7 +2896,7 @@ int pdb_MY_FD_SET2(int *pfd, int fd, int filter, int fflags)
  else
    EV_SET(ev, fd, filter, EV_ADD|EV_ENABLE, fflags, 0, 0);
   
-  return kevent(*pfd, ev, 2, NULL, 0, NULL);
+  return kevent(*pfd, ev, 1, NULL, 0, NULL);
 }
 
 #define pdb_MY_FD_CLR_RDBAND(SET, FD)
@@ -3090,7 +3090,7 @@ PIKECLASS PollDeviceBackend
 #elif defined(BACKEND_USES_KQUEUE)
 
     /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
-    struct kevent ev[2];
+    struct kevent ev[3];
     int nev = 0;
     if (wanted_events & PIKE_BIT_FD_READ ||
 	wanted_events & PIKE_BIT_FD_READ_OOB) {
@@ -3099,12 +3099,12 @@ PIKECLASS PollDeviceBackend
     }
     if (wanted_events & PIKE_BIT_FD_WRITE ||
 	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
-      EV_SET(ev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
+      EV_SET(ev+nev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_FS_EVENT) {
 // kqueue TODO generate fflags from the high bits of the wanted_events argument.
-      EV_SET(ev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
+      EV_SET(ev+nev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
       nev++;
     }
     if (nev)
