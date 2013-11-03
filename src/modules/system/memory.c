@@ -113,7 +113,7 @@ static void init_memory(struct object *UNUSED(o))
    THIS->flags=0;
 }
 
-static void memory__size_object( INT32 args )
+static void memory__size_object( INT32 UNUSED(args) )
 {
     push_int(THIS->size);
 }
