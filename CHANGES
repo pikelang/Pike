@@ -403,6 +403,12 @@ o Val
    several steps, pike libraries should preferably ensure that the
    base classes defined here provide required functionality directly.
 
+o __builtin
+   The __builtin module is now a directory module, so that it can provide
+   a suitable namespace for code written in Pike intended for being
+   inherited from modules written in C (cf precompile).
+
+
 
 Extensions and new functions
 ----------------------------
@@ -700,6 +706,12 @@ o Crypto.PGP
 
    Added support for SHA256, SHA384 and SHA512 as hash functions.
    Expose the used hash and key types in the out data
+
+o Crypto.ARCTWO
+
+  The 1-128 bit cipher ARCTWO is now provided as a block cipher in
+  Crypto. This cipher is only intended for compatibility with OLD
+  third party code, and should NOT be used for new development.
 
 o Crypto.CAMELLIA
 
