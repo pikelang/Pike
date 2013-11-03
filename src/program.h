@@ -695,7 +695,7 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TY
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct program * alloc_program();
 PMOD_EXPORT void really_free_program(struct program * p);
-PMOD_EXPORT void count_memory_in_programs(size_t *num, size_t *_size);
+void count_memory_in_programs(size_t *num, size_t *_size);
 void free_all_program_blocks();
 
 
@@ -1065,8 +1065,6 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
-
-void count_memory_in_programs(size_t *, size_t *);
 
 #ifndef PIKE_USE_MACHINE_CODE
 #define make_program_executable(X)
