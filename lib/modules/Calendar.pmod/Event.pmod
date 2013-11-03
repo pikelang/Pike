@@ -1028,7 +1028,7 @@ class Solar(int|void event_type)
 
     // Convert into an UTC timestamp.
     int utc = (new_jd - 2440588)*86400 + (int)(offset * 86400.0);
-    return utc - (int)round(Calendar.ISO.deltat(utc));
+    return utc - (int)round(.ISO.deltat(utc));
   }
 
   Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
