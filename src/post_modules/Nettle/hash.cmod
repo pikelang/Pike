@@ -247,7 +247,7 @@ PIKECLASS Hash
     }
   }
 
-  /*! @decl string(0..127) crypt_hash(string password, string salt, rounds)
+  /*! @decl string(0..127) crypt_hash(string password, string salt, int rounds)
    *!
    *!   Password hashing function in @[crypt_md5()]-style.
    *!
