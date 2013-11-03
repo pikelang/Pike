@@ -389,34 +389,34 @@ o Val
 
 Extensions and new functions
 ----------------------------
+o Bz2.File added
+   It implements a Stdio.File like API, including support for the same
+   iterator API that Stdio.File has, allowing for convenient line
+   iterations over BZ2 compressed files.
+   | foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
 
-o Bz2.File
+o Image.JPEG.decode 
+   Now supports basic CMYK/YCCK support
 
-  Bz2.File now supports the same iterator API as Stdio.File, allowing
-  for convenient line iterations over BZ2 compressed files.
-
-  foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
-
+o Image.JPEG.exif_decode
+   Will rotate the image according to exif information
 
 o String.Buffer
+   String.Buffer can now add the storage from a different String.Buffer
+   object with the add() method.
 
-  String.Buffer can now add the storage from a different String.Buffer
-  object with the add() method.
+   It is possible to add sprintf-formatted data to a String.Buffer
+   object by claling the sprintf() method. This function works just as
+   the normal sprintf(), but writes to the buffer instead.
 
-  It is possible to add sprintf-formatted data to a String.Buffer
-  object by claling the sprintf() method. This function works just as
-  the normal sprintf(), but writes to the buffer instead.
-
-  The new method addat() allows for writing into the buffer at any
-  position.
+   The new method addat() allows for writing into the buffer at any
+   position.
 
 o SDL.Music added to SDL.
-
-  Allows the playback of audio/music files.
-  Requires the SDL_mixed library.
+   Allows the playback of audio/music files.
+   Requires the SDL_mixed library.
 
 o System.TM
-
    Low-level wrapper for struct tm.
 
    This can be used to do (very) simple calendar operations. It is,
@@ -425,29 +425,24 @@ o System.TM
    and localtime() and friends, but in a (perhaps) easier to use API.
 
 o decode_value now throws the error object Error.DecodeError.
-
-  Useful to catch format errors in the decode string.
+   Useful to catch format errors in the decode string.
 
 o Process.daemon
-
    The daemon() function is for programs wishing to detach themselves
    from the controlling terminal and run in the background as system
    daemons.
 
 o Debug.pp_object_usage()
+   Pretty-print debug information, useful to get debug information
+   about object counts and memory usage in pike applications.
 
-  Pretty-print debug information, useful to get debug information
-  about object counts and memory usage in pike applications.
+   Uses the new _object_size lfun, if present in objects, to account
+   for RAM-usage in C-objects that allocate their own memory.
 
-  Uses the new _object_size lfun, if present in objects, to account
-  for RAM-usage in C-objects that allocate their own memory.
-
-o Mysql - Support more modern client libraries (incl. MariaDB)
-
-o pike -x benchmark output format changed
-   Also added support for JSON output.
-   There has also been attempts to get the timing more predicable.
-   Added options to allow comparison with a previous run
+o Mysql 
+  + Added support more modern client libraries (incl. MariaDB)
+  + The errors thrown are now objects that will allow easy access to
+    more information about the error.
 
 o Protocols.DNS
   + Prevent endless loops in maliciously crafted domain names.
@@ -463,8 +458,6 @@ o Cmod precompiler.
   + inherit "identifier"
     -- inherit the program returned by calling master()->resolve() on
        the specified identifier. Useful to inherit code written in pike.
-
-o Image.JPEG.exif_decode
 
 o String.levenshtein_distance()
     That function calculates the Levenshtein distance between two
@@ -505,8 +498,7 @@ o Stdio.File():
 
     _fd is still available for compatibility, but internally it is gone.
 
-o Unicode databases updated to 6.2.0
-o Timezone databases updated to tzdata2013d
+o Unicode databases updated to 6.2.0 from 5.1.0
 
 o The Search search engine module has seen several fixes
   + Added support for padded blobs. This improves performance when
@@ -523,11 +515,14 @@ o The Search search engine module has seen several fixes
   + Fixes for queries where the same world occur multiple times
     ('foo and bar and foo')
 
-o Standalone tools added:
-  + pv 
-     Pike image viewer (diet). This can be used to quickly view one
-     or more images. It requires GTK1 or GTK2 support.
-     | pike -x pv image.foo
+o pike -x benchmark 
+  + Output format changed
+  + Also added support for JSON output.
+  + The results should be more consistent.
+  + Added options to allow comparison with a previous run.
+
+o New standalone tools added to make it possible to build
+  documentation without the pike build tree
   + autodoc_to_html
      AutoDoc XML to HTML converter.
   + autodoc_to_split_html
@@ -536,10 +531,29 @@ o Standalone tools added:
      Exports a stream of autodoc.xml suitable for git-fast-import.
      Used on pike-librarian.
 
-o Lots of GTK2 fixes
-o Image.JPEG.decode now has basic CMYK/YCCK support
+o Readline tries to set the charset to the terminal charset
+   This makes it possible to write non-7bit characters on a terminal
+   if the terminal supports it.
+
 o Fixed units in pike --help=kladdkaka
-o Various coverity fixes
+
+o Several changes has been done to the GTK2 module
+  + GTK2.DrawingArea no longer crash in draw_text if you pass odd parameters.
+  + draw_pixbuf can now be passed width and height -1, which makes it
+    take the size from the passed image.
+  + GDKEvent no longer crash when you extract strings from them
+  + accelerators now work
+  + Fixed RadioToolButton
+  + signal_connect can now connect a signal in front of the list
+  + Several fixes to Tree related objects
+  + GTK2.SourceView added
+  + GTK2.Spinner added
+
+o A few issues were fixed that were found by coverity
+  + Fixed memory leak in Math.Transform
+  + Fixed two compares that were written as assignments (errno
+    checks for EINTR for sockets)
+
 
 o SNI client extension support for SSL (Server Name Indicator)
 o System.get_home + System.get_user
@@ -551,7 +565,6 @@ o Async Protocols.SNMP client
 o MacOSX CoreFoundation support in the backend
 o lots of autodoc fixes
 o Some Parser.SGML fixes
-o Readline tries to set the charset to the terminal charset
 o Fixes to Process.run, Process.spawn_pike and friends.
 o predef::types (seems somewhat broken, or is it intended at types(({1,2,3})) returns ({ mixed,mixed,mixed})?)
 
@@ -585,7 +598,6 @@ o Standards.PEM
 o Nettle refactored
 
 o AES support added to the SSL module
-
   This adds support for the following cipher suites:
     TLS_rsa_with_aes_128_cbc_sha
     TLS_dhe_dss_with_aes_128_cbc_sha
@@ -633,6 +645,11 @@ o Removed bundles
   for that in the makefile has been removed.
 
 o Several OS/2 and windows compilation fixes
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- > snip - > snip - > snip - > snip - > snip - > snip - > snip - > snip - > s
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 Changes since Pike 7.8.352 (third 7.8 release):
