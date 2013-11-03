@@ -448,7 +448,7 @@ ptrdiff_t push_parsed_tag(char *s, ptrdiff_t len)
   return i;
 }
 
-INLINE int tagsequal(char *s, char *t, ptrdiff_t len, char *end)
+static INLINE int tagsequal(char *s, char *t, ptrdiff_t len, char *end)
 {
   if(s+len >= end)  return 0;
 
