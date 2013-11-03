@@ -4339,7 +4339,7 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLFSEVENT)) {
+	  if (PDB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
 			  THR_NO, me->id, fd));
 	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
@@ -4563,8 +4563,7 @@ PIKECLASS PollBackend
 /*! @endclass
  */
 
-#endif /* HAVE_POLL */
-
+#else /* HAVE_POLL */
 /*! @class SelectBackend
  *! @inherit __Backend
  *!
@@ -5058,6 +5057,7 @@ PIKECLASS SelectBackend
 
 /*! @endclass
  */
+#endif
 
 /*! @module DefaultBackend
  *!   This is the @[Backend] object that files and call_outs are
