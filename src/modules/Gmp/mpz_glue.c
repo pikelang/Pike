@@ -2036,7 +2036,7 @@ static void mpzmod_pow(INT32 args)
     if (e < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
     /* Cut off at 1 MB. */
-    if (INT_TYPE_MUL_OVERFLOW(e, size) || size * e > (0x100000/sizeof(mp_limb_t))) {
+    if (INT_TYPE_MUL_OVERFLOW(e, size) || size * e > (INT_TYPE)(0x100000/sizeof(mp_limb_t))) {
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 goto too_large;
     }
@@ -2049,7 +2049,7 @@ too_large:
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
     i=mpz_get_si(mi);
     /* Cut off at 1 MB. */
-    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(0x100000/sizeof(mp_limb_t))))
+    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(INT_TYPE)(0x100000/sizeof(mp_limb_t))))
     {
        if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Exponent too large.");
