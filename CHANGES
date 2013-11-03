@@ -291,6 +291,12 @@ o Pike.Watchdog
   compiled with profiling, the CPU used since the last time kill -QUIT
   was called.
 
+o Crypto.Password
+   A module that can be used to verify and create passwd/ldap style
+   password hashes.
+
+   It tries to support most common password hashing schemes.
+
 o Debug.Profiling
    Tools useful for collecting and format for output the profiling
    information generated when pike is compiled --with-profiling.
@@ -391,18 +397,6 @@ o Bz2.File
 
   foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
 
-o Crypto.CAMELLIA
-
-  The 128/256 bit cipher CAMELLIA is now availble as block cipher in
-  Crypto. In addition the following cipher suites have been added to
-  SSL.
-
-    TLS_rsa_with_camellia_128_cbc_sha
-    TLS_dhe_dss_with_camellia_128_cbc_sha
-    TLS_dhe_rsa_with_camellia_128_cbc_sha
-    TLS_rsa_with_camellia_256_cbc_sha
-    TLS_dhe_dss_with_camellia_256_cbc_sha
-    TLS_dhe_rsa_with_camellia_256_cbc_sha
 
 o String.Buffer
 
@@ -450,10 +444,6 @@ o Debug.pp_object_usage()
 
 o Mysql - Support more modern client libraries (incl. MariaDB)
 
-o Standards.PEM: Added some support for encrypted PEM files
-
-o Nettle refactored
-
 o pike -x benchmark output format changed
    Also added support for JSON output.
    There has also been attempts to get the timing more predicable.
@@ -469,20 +459,12 @@ o Thread no longer inherits Thread.Thread (aka thread_create)
 
 o Thread.Farm now might work
 
-o Stdio.UDP
-  + added ipv6 multicast support
-  + added set_buffer
-
 o Cmod precompiler.
   + inherit "identifier"
     -- inherit the program returned by calling master()->resolve() on
        the specified identifier. Useful to inherit code written in pike.
 
 o Image.JPEG.exif_decode
-
-o Crypto.PGP
-   Added support for SHA256, SHA384 and SHA512 as hash functions.
-   Expose the used hash and key types in the out data
 
 o String.levenshtein_distance()
     That function calculates the Levenshtein distance between two
@@ -501,19 +483,60 @@ o System.sync()
 o System.getloadavg()
     Return the current load average.
 
+o The glob function has been extended to accept an array of globs as
+  the first (glob pattern) argument.
+
+  If any of the given patterns match the function will return true.
+      
+o Stdio.UDP():
+  + added ipv6 multicast support
+  + added set_buffer
+
+o Stdio.File():
+  + send_fd and receive_fd
+     These functions can be used to send and receive an open
+     filedescriptor over another filedescriptor. The functions are
+     only available on some systems, and they generally only work
+     when the file the descriptors are sent over is a unix domain
+     socket or a pipe.
+ + Changed internally to remove one level of indirection.
+    The Stdio.File object no longer has a _Stdio.Fd_ref in _fd. They
+    are instead directly inheriting _Stdio.FD.
+
+    _fd is still available for compatibility, but internally it is gone.
+
 o Unicode databases updated to 6.2.0
 o Timezone databases updated to tzdata2013d
 
-o Stdio.File()->send/receive[_fd]
-o The Search module has seen several fixes
+o The Search search engine module has seen several fixes
+  + Added support for padded blobs. This improves performance when
+    incrementally growing blobs. This feature is only enabled if
+    Search.Process.Compactor says this is OK, see the documentation
+    for more information.
+
+  + Several locking optimizations, specifically, avoid locking and
+    unlocking for every single iteration when merging and syncing
+    blobs.
+
+  + Charset conversion fixes
+
+  + Fixes for queries where the same world occur multiple times
+    ('foo and bar and foo')
+
 o Standalone tools added:
-  autodoc_to_html       AutoDoc XML to HTML converter.
-  autodoc_to_split_html AutoDoc XML to splitted HTML converter.
-  git_export_autodoc    Exports a stream of autodoc.xml suitable for git-fast-import.
-  pv                    Pike image viewer (diet).
+  + pv 
+     Pike image viewer (diet). This can be used to quickly view one
+     or more images. It requires GTK1 or GTK2 support.
+     | pike -x pv image.foo
+  + autodoc_to_html
+     AutoDoc XML to HTML converter.
+  + autodoc_to_split_html
+     AutoDoc XML to splitted HTML converter.
+  + git_export_autodoc
+     Exports a stream of autodoc.xml suitable for git-fast-import.
+     Used on pike-librarian.
 
 o Lots of GTK2 fixes
-o Crypto.crypt_hash()
 o Image.JPEG.decode now has basic CMYK/YCCK support
 o Fixed units in pike --help=kladdkaka
 o Various coverity fixes
@@ -530,12 +553,16 @@ o lots of autodoc fixes
 o Some Parser.SGML fixes
 o Readline tries to set the charset to the terminal charset
 o Fixes to Process.run, Process.spawn_pike and friends.
-o glob( array, X )
-o AES support added to SSL
-o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
 o predef::types (seems somewhat broken, or is it intended at types(({1,2,3})) returns ({ mixed,mixed,mixed})?)
-o Builtin._get_setter / Builtin.Setter
+
+o Builtin._get_setter
+   This function returns a setter for a variable in an object.
+   The setter, when called, will set the variable value to the passed
+   argument.
+
 o Parser.XML.Tree fixes
+  + Several namespace improvement and handling fixes 
+
 o New charsets
    A lot of ISO-IR charsets added:
    9-1, 9-2, 31, 232, 234, 231 (aka ANSI/NISO Z39.46, aka ANSEL) 230
@@ -547,7 +574,48 @@ o New charsets
    9566-97). Fixed CSA_Z242.4
 o Fixes to the HTTP client in Protocols.HTTP.
 o dtrace support (on macosX at least?)
+
+
+Crypto and SSL
+--------------
+
+o Standards.PEM
+  + Added some support for encrypted PEM files
+
+o Nettle refactored
+
+o AES support added to the SSL module
+
+  This adds support for the following cipher suites:
+    TLS_rsa_with_aes_128_cbc_sha
+    TLS_dhe_dss_with_aes_128_cbc_sha
+    TLS_dhe_rsa_with_aes_128_cbc_sha
+    TLS_rsa_with_aes_256_cbc_sha
+    TLS_dhe_dss_with_aes_256_cbc_sha
+    TLS_dhe_rsa_with_aes_256_cbc_sha
+   
+o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
+
 o Blowfish and Serpent support fixed in Nettle
+
+o Crypto.PGP
+
+   Added support for SHA256, SHA384 and SHA512 as hash functions.
+   Expose the used hash and key types in the out data
+
+o Crypto.CAMELLIA
+
+  The 128/256 bit cipher CAMELLIA is now availble as block cipher in
+  Crypto. In addition the following cipher suites have been added to
+  SSL:
+
+    TLS_rsa_with_camellia_128_cbc_sha
+    TLS_dhe_dss_with_camellia_128_cbc_sha
+    TLS_dhe_rsa_with_camellia_128_cbc_sha
+    TLS_rsa_with_camellia_256_cbc_sha
+    TLS_dhe_dss_with_camellia_256_cbc_sha
+    TLS_dhe_rsa_with_camellia_256_cbc_sha
+
 
 Building and installing
 -----------------------
