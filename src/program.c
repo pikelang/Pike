@@ -3369,6 +3369,7 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
   for (d=0; d < p->num_identifier_references; d++) {
     struct reference *ref = p->identifier_references + d;
     struct identifier *id = ID_FROM_PTR(p, ref);
+    struct program *inh_p = INHERIT_FROM_PTR(p, ref)->prog;
 
     fprintf(stderr,
 	    "%*s  %4d: %5x %7d %10d  %s\n"
@@ -3378,7 +3379,7 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    ref->identifier_offset,
 	    id->name->size_shift ? "(wide)" : id->name->str,
 	    indent, "",
-	    p->num_strings?p->strings[id->filename_strno]->str:"-",
+	    inh_p->num_strings?inh_p->strings[id->filename_strno]->str:"-",
 	    (long)id->linenumber);
     if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
       fprintf (stderr, "%*s                                  Alias for %d:%d\n",
@@ -3391,7 +3392,6 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	       indent, "", (long)id->func.offset);
     } else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
       INT_TYPE line;
-      struct program *inh_p = INHERIT_FROM_PTR(p,ref)->prog;
       struct pike_string *file =
 	get_line (ID_FROM_PTR(p,ref)->func.offset + inh_p->program, inh_p, &line);
       if (!file->size_shift)
