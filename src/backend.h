@@ -15,8 +15,6 @@
  * POLL/SELECT selection
  */
 
-#if defined(HAVE_POLL) && defined(HAVE_AND_USE_POLL)
-/* We have poll(2), and it isn't simulated. */
 #if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 /*
  * Backend using /dev/poll-style poll device.
@@ -37,14 +35,6 @@
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVEPOLL
-#else /* !BACKEND_USES_POLL_DEVICE */
-/*
- * Backend using poll(2).
- *
- * This is used on most older SVR4- or POSIX-style systems.
- */
-#define BACKEND_USES_POLL
-#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
 #elif defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE) /* && !HAVE_POLL */
 /*
  * Backend using kqueue-style poll device.
@@ -67,14 +57,22 @@
 #define BACKEND_USES_CFRUNLOOP
 #endif /* HAVE_CFRUNLOOPRUNINMODE */
 
-#else  /* !HAVE_POLL && !HAVE_KQUEUE */
+#elif defined(HAVE_POLL) && defined(HAVE_AND_USE_POLL)
+/* We have poll(2), and it isn't simulated. */
+/*
+ * Backend using poll(2).
+ *
+ * This is used on most older SVR4- or POSIX-style systems.
+ */
+#define BACKEND_USES_POLL
+#else /* !HAVE_POLL */
 /*
  * Backend using select(2)
  *
  * This is used on most older BSD-style systems, and WIN32.
  */
 #define BACKEND_USES_SELECT
-#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
+#endif /* HAVE_SYS_DEVPOLL_H && PIKE_POLL_DEVICE */
 
 struct Backend_struct;
 
