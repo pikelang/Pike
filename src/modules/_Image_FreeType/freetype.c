@@ -309,7 +309,7 @@ static void image_ft_face_info( INT32 args )
     for(i = 0; i < sfnt_count; ++i)
     {
       FT_SfntName name;
-      int len;
+      unsigned int len;
 
       if (FT_Get_Sfnt_Name(TFACE, i, &name) != 0)
         continue; /* skip if getting name failed */
