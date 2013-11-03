@@ -33,7 +33,7 @@ else
   fi
 
 
-  if test "x$ac_cv_header_windef_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnonono"; then
+  if test "x$ac_cv_header_windef_h$ac_cv_header_OpenGL_gl_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
     # Solaris 7 comes with libGL, but without the headerfiles by default.
     :
   else
@@ -91,6 +91,8 @@ else
       ], [glOrtho(0.0,0.0,0.0,0.0,0.0,0.0); ], [ pike_cv_framework_OpenGL=yes ], [ pike_cv_framework_OpenGL=no ])
     ])
     if test x"$pike_cv_framework_OpenGL" = xyes; then
+      AC_DEFINE(HAVE_GL)
+      PIKE_FEATURE_OK(GL)
       AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no)
