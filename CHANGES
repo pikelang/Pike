@@ -51,7 +51,7 @@ o Added a way to easily inherit the implementation of a subclass in an
 
 o Implemented the variant keyword.
 
-  The keyward was present before, but did not actually do anything
+  The keyword was present before, but did not actually do anything
   useful.
 
   This is used to do function overloading based on the argument types.
@@ -71,7 +71,7 @@ o Implemented the variant keyword.
     |     variant int bar( int(2..2) s ) { return 2; }
     | }
 
-   A common usecase is functions that return different types depending
+   A common use-case is functions that return different types depending
    on the arguments, such as getenv:
 
    |  string|mapping(string:string) getenv( string|void variable );
@@ -81,9 +81,9 @@ o Implemented the variant keyword.
    |  variant string getenv( string variable );
    |  variant mapping(string:string) getenv( );
 
-   which gives siginificantly better typechecking.
+   which gives significantly better type-checking.
 
-o The typechecker has been rewritten.
+o The type-checker has been rewritten.
 
   Mainly it is now much better at finding type errors, and most error
   messages are more readable.
@@ -136,7 +136,7 @@ o The preprocessor can now be run with a cpp prefix feature.
 o Dynamic macros
    You can now add programatic macros. There is currently no syntax
    that can be used to define these while compiling code, but you can
-   add them from one program before compiling plugins/modules.
+   add them from one program before compiling plug-ins/modules.
 
    The main use is macros like DEBUG(...) and IFDEBUG() that would
    expand to something if a debug setting is enabled in the module but
@@ -204,7 +204,7 @@ o Power-of-two hashtables are now used for most hashtables
   simplifies the code.
 
 o Significantly changed x86-32 and an entirely new AMD64/x86-64
-  machinecode compilation backend
+  machine-code compilation backend
 
    The main feature with the x86-32 edition is that it is now using
    normal function call mechanics, which means that it now works with
@@ -243,9 +243,9 @@ o string(x..y) (constant) types
 o Several other optimizations to execution speed has been done
   + object indexing (cache, generic speedups)
   + lower_apply, changes to apply in general
-    Taken together these individuallt small optimizations speeds up at
+    Taken together these individually small optimizations speeds up at
     least pike -x benchmark more than 5%.
-  + A lot of opcodes implemented in machinecode for x86-64
+  + A lot of opcodes implemented in machine-code for x86-64
     This speed up the loop benchmarks close to a factor of 3. But then
     again, most real code is nothing like that benchmark.
   + Several new opcodes added
@@ -287,7 +287,7 @@ o The old low-level 'files' module has been renamed to _Stdio
 o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
 o Locale.Charset
-   The charset module is now available on the toplevel as 'Charset'
+   The charset module is now available on the top level as 'Charset'
 
 New modules
 -----------
@@ -353,7 +353,7 @@ o Serializer
      A class that can be inherit to make an object easily serializable
      using encode_value.
 
-o Filesystem.Monitor and the lowlevel System.Inotify + System.FSEvents
+o Filesystem.Monitor and the low level System.Inotify + System.FSEvents
    Basic filesystem monitoring.
 
    This module is intended to be used for incremental scanning of a
@@ -422,7 +422,7 @@ o String.Buffer
    object with the add() method.
 
    It is possible to add sprintf-formatted data to a String.Buffer
-   object by claling the sprintf() method. This function works just as
+   object by calling the sprintf() method. This function works just as
    the normal sprintf(), but writes to the buffer instead.
 
    The new method addat() allows for writing into the buffer at any
@@ -478,7 +478,7 @@ o Cmod precompiler.
 o String.levenshtein_distance()
     The function calculates the Levenshtein distance between two
     strings. The Levenshtein distance describes the minimum number of
-    edit operations (insert, delete or substitue a character) to get
+    edit operations (insert, delete or substitute a character) to get
     from one string to the other.
 
     This can be used in approximate string matching to find matches
@@ -487,7 +487,7 @@ o String.levenshtein_distance()
 
 o System.sync()
     Synchronizes the filesystem on systems where this is possible
-    (currently windows and unix-like systems).
+    (currently windows and UNIX-like systems).
 
 o System.getloadavg()
     Return the current 1, 5 and 15 minute system load averages as an array.
@@ -501,15 +501,15 @@ o glob()
    entries that match any glob in the first array.
 
 o Stdio.UDP():
-  + added ipv6 multicast support
+  + added IPv6 multicast support
   + added set_buffer
 
 o Stdio.File():
   + send_fd and receive_fd
      These functions can be used to send and receive an open
-     filedescriptor over another filedescriptor. The functions are
+     file-descriptor over another file-descriptor. The functions are
      only available on some systems, and they generally only work
-     when the file the descriptors are sent over is a unix domain
+     when the file the descriptors are sent over is a UNIX domain
      socket or a pipe.
 
  + Changed internally to remove one level of indirection.
@@ -542,7 +542,7 @@ o pike -x benchmark
   + The results should be more consistent.
   + Added options to allow comparison with a previous run.
 
-o New standalone tools added to make it possible to build
+o New stand-alone tools added to make it possible to build
   documentation without the pike build tree
   + autodoc_to_html
      AutoDoc XML to HTML converter.
@@ -570,13 +570,13 @@ o Several changes has been done to the GTK2 module
   + GTK2.SourceView added
   + GTK2.Spinner added
 
-o A few issues were fixed that were found by coverity
+o A few issues were fixed that were found by Coverity
   + Fixed memory leak in Math.Transform
   + Fixed two compares that were written as assignments (errno
     checks for EINTR for sockets)
 
 o System.get_home + System.get_user
-   (mostly) Cross-platform ways to get the username and home directory.
+   (mostly) Cross-platform ways to get the user name and home directory.
 
 o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
    These are useful to create or close the console window that is
@@ -647,7 +647,7 @@ o New charsets
 o Several fixes to Protocols.HTTP
    + Improved Protocols.HTTP.Query.PseudoFile
      (significantly better Stdio.Stream simulation)
-   + Do not use hardcoded Linux errno:s
+   + Do not use hard coded Linux errno:s
    + Case insensitive handling of header overrides in do_method
    + Fixed broken check for URL passwords when querying
    + Add more descriptive HTTP responses along with a mostly complete
@@ -668,7 +668,7 @@ o Several fixes to Protocols.HTTP
      - Support if-none-match (etag:s)
      - Ignore errors in close when destroying the object
 
-o dtrace support (on macosX)
+o dtrace support (on MacOSX)
    Pike now supports dtrace events on function enter and leaving (and
    when stack frames are notionally popped, for functions doing
    tailrecursion).
@@ -703,7 +703,7 @@ o Crypto.PGP
 
 o Crypto.CAMELLIA
 
-  The 128/256 bit cipher CAMELLIA is now availble as block cipher in
+  The 128/256 bit cipher CAMELLIA is now available as block cipher in
   Crypto. In addition the following cipher suites have been added to
   SSL:
 
