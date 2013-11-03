@@ -267,9 +267,8 @@ pointless, since gcc will use other sse4 instructions when suitable.
 __attribute__((target("sse4")))
 #endif
 __attribute__((hot))
-__attribute__((target("sse4,arch=core2")))
-  static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
-					       size_t nbytes, size_t key )
+static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
+					     size_t nbytes, size_t key )
 {
   unsigned int h = len;
   const unsigned int *p = s;
