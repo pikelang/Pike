@@ -69,11 +69,14 @@ sed <"$1/dependencies" -e '/^[ 	]*\\$/d' | sed \
   mv "$1/dependencies.tmp" "$1/dependencies"
 
 if test -f "$1/acconfig.h"; then
-# Add suitable dependencies for regenerating $(CONFIG_HEADERS).
+    # Add suitable dependencies for regenerating $(CONFIG_HEADERS).
+    # Note that we have to have a rule for an acconfig.h in case
+    # it has gone away to avoid make(1) complaining.
     cat <<EOF
 # Regenerate \$(CONFIG_HEADERS) from \$(SRCDIR)/acconfig.h
 \$(CONFIG_HEADERS): \$(SRCDIR)/\$(CONFIG_HEADERS).in
 \$(SRCDIR)/\$(CONFIG_HEADERS).in \$(SRCDIR)/configure: \$(SRCDIR)/acconfig.h
+\$(SRCDIR)/acconfig.h:
 EOF
 fi >>$1/dependencies
 
