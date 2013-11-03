@@ -71,6 +71,7 @@ void count_memory_in_programs(size_t *num, size_t *_size) {
     for(p=first_program;p;p=p->next) {
 	size+=p->total_size - sizeof (struct program);
     }
+    *_size = size;
 }
 
 void free_all_program_blocks() {
