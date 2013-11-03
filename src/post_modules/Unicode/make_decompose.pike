@@ -1,6 +1,7 @@
 
-void main()
+void main(int argc, array(string) argv)
 {
+  function write = Stdio.File(argv[2], "wct")->write;
 
   multiset dont = (<
     /* Script Specifics */
@@ -42,7 +43,7 @@ void main()
     return c;
   };
 
-  foreach( Stdio.stdin.read()/"\n", string line )
+  foreach( Stdio.read_file(argv[1])/"\n", string line )
   {
     sscanf( line, "%s#", line );
     if( !sizeof( line ) )
