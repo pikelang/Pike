@@ -460,26 +460,29 @@ o Cmod precompiler.
        the specified identifier. Useful to inherit code written in pike.
 
 o String.levenshtein_distance()
-    That function calculates the Levenshtein distance between two
+    The function calculates the Levenshtein distance between two
     strings. The Levenshtein distance describes the minimum number of
-    edit operations insert, delete or substitue a character to get
+    edit operations (insert, delete or substitue a character) to get
     from one string to the other.
 
-    The algorithm can be used in approximate string matching to find
-    matches for a short string in many longer texts, when a small
-    number of differences is expected.
+    This can be used in approximate string matching to find matches
+    for a short string in many longer texts, when a small number of
+    differences is expected.
 
 o System.sync()
     Synchronizes the filesystem on systems where this is possible 
     (currently windows and unix-like systems).
 
 o System.getloadavg()
-    Return the current load average.
+    Return the current 1,5 and 15m load average as an array.
 
-o The glob function has been extended to accept an array of globs as
-  the first (glob pattern) argument.
+o glob()
+   The glob function has been extended to accept an array of globs as
+   the first (glob pattern) argument.
 
-  If any of the given patterns match the function will return true.
+   In this case, if any of the given patterns match the function will
+   return true, or, if the second argument is also an array, all
+   entries that match any glob in the first array.
       
 o Stdio.UDP():
   + added ipv6 multicast support
@@ -498,7 +501,8 @@ o Stdio.File():
 
     _fd is still available for compatibility, but internally it is gone.
 
-o Unicode databases updated to 6.2.0 from 5.1.0
+o Unicode databases updated to 6.3.0 from 5.1.0
+   This is the latest released Unicode database from unicode.org.
 
 o The Search search engine module has seen several fixes
   + Added support for padded blobs. This improves performance when
@@ -554,12 +558,25 @@ o A few issues were fixed that were found by coverity
   + Fixed two compares that were written as assignments (errno
     checks for EINTR for sockets)
 
-
-o SNI client extension support for SSL (Server Name Indicator)
 o System.get_home + System.get_user
-   (mostly) Cross-platform ways to get username and home directory
+   (mostly) Cross-platform ways to get the username and home directory.
+
 o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
+   These are useful to create or close the console window that is
+   shown for pike programs.
+
 o Process - forkd
+   Forkd can be used to more cheaply create new processes on UNIX like
+   systems.
+
+   This is done by first starting a sub-process that is then used to
+   create new processes.
+
+   If your main process is large, this is significantly faster than
+   using the normal create_process, and does not risk running out of
+   memory for the forked (temporary) copy of the main process that is
+   created.
+
 o generic ipv6 fixes, ipv6 mapped ipv4 addresses
 o Async Protocols.SNMP client
 o MacOSX CoreFoundation support in the backend
@@ -591,6 +608,8 @@ o dtrace support (on macosX at least?)
 
 Crypto and SSL
 --------------
+
+o SNI client extension support for SSL (Server Name Indicator)
 
 o Standards.PEM
   + Added some support for encrypted PEM files
