@@ -1492,7 +1492,7 @@ variant string getenv (string varname, void|int force_update)
     if (!equal(res = compat_environment[varname],
 	       compat_environment_copy[varname])) {
       // Something has messed with the compat environment mapping.
-      putenv(varname, res && res[1]);
+      putenv(varname, res[?1]);
     }
   }
 
@@ -1724,7 +1724,7 @@ protected void call_compile_warning (object handler, string file,
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim_all_whites (msg);
-  if (handler && handler->compile_warning)
+  if (handler?->compile_warning)
     handler->compile_warning (file, 0, msg);
   else if (master()->compile_warning)
     master()->compile_warning (file, 0, msg);
@@ -1964,11 +1964,11 @@ protected program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      decoded = decode_value(read_precompiled (oname),
-				     (handler && handler->get_codec ||
+				     (handler?->get_codec ||
 				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      if (decoded && decoded->this_program_does_not_exist) {
+	      if (decoded?->this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
 		return programs[fname] = 0;
@@ -2061,7 +2061,7 @@ protected program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-    if (ret && ret->this_program_does_not_exist) {
+    if (ret?->this_program_does_not_exist) {
       resolv_debug ("low_findprog %s: program says it doesn't exist\n", fname);
       return programs[fname] = 0;
     }
@@ -2579,8 +2579,8 @@ class dirnode (string dirname, object|void compilation_handler,
     protected mixed `[](string index)
       {
 	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
-		      dirname, index, module && module[index]);
-	return module && module[index];
+		      dirname, index, module[?index]);
+	return module[?index];
       }
     protected array(string) _indices() { if(module) return indices(module); }
     protected array _values() { if(module) return values(module); }

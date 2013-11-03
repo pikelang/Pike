@@ -346,7 +346,7 @@ by pressing F1.";
       docs = module;
 
     object child;
-    if (docs && docs->documentation)
+    if (docs?->documentation)
     {
       if (docs->objects && sizeof(docs->objects))
         e->safe_write("\n%{%s\n%}\n", docs->objects->print());
@@ -2163,7 +2163,7 @@ class Evaluator {
 
     mapping(string:mixed) get_default_module() {
       object compat = get_active_compilation_handler();
-      if (compat && compat->get_default_module) {
+      if (compat?->get_default_module) {
 	// Support things like @expr{7.4::rusage}.
 	return compat->get_default_module() + hilfe_symbols;
       }
@@ -2756,12 +2756,12 @@ class StdinHilfe
     {
       foreach(completions; int count; string item)
       {
-        object stat = file_stat(dir+"/"+item);
-        if (objectp(stat))
+        Stdio.Stat stat = file_stat(dir+"/"+item);
+        if (stat)
           completions[count] += filetypes[stat->type]||"";
 
         stat = file_stat(dir+"/"+item, 1);
-        if (objectp(stat) && stat->type == "lnk")
+        if (stat?->type == "lnk")
           completions[count] += filetypes["lnk"];
       }
       return completions;
