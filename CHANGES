@@ -198,14 +198,14 @@ o Significantly changed x86-32 and an entirely new AMD64/x86-64
 
 o Svalue type renumbering
 
-  PIKE_T_INT is now type #0, which makes certain things significantly
-  faster.
+   PIKE_T_INT is now type #0, which makes certain things significantly
+   faster.
 
-  As an example, clearing of object variables is now done
-  automatically when the object is created since all object memory is
-  set to 0.
+   As an example, clearing of object variables is now done
+   automatically when the object is created since all object memory is
+   set to 0.
 
-  The same thing happens when clearing values on the stack.
+   The same thing happens when clearing values on the stack.
 
 o string(x..y) (constant) types
 
@@ -474,7 +474,7 @@ o System.sync()
     (currently windows and unix-like systems).
 
 o System.getloadavg()
-    Return the current 1,5 and 15m load average as an array.
+    Return the current 1, 5 and 15 minute system load averages as an array.
 
 o glob()
    The glob function has been extended to accept an array of globs as
@@ -577,12 +577,29 @@ o Process - forkd
    memory for the forked (temporary) copy of the main process that is
    created.
 
-o generic ipv6 fixes, ipv6 mapped ipv4 addresses
-o Async Protocols.SNMP client
-o MacOSX CoreFoundation support in the backend
-o lots of autodoc fixes
-o Some Parser.SGML fixes
+o MacOSX CoreFoundation support in the backend 
+   This makes it somewhat more likely that native libraries can work
+   with pike.
+
+o Better IPv6 support.
+   This includes detection of IPV6 mapped IPV4 addresses
+   (::FFFF:i.p.v.4) and full support for IPv6 in the UDP
+   code.
+
+o Asynchronous Protocols.SNMP client
+
 o Fixes to Process.run, Process.spawn_pike and friends.
+   + Support OS/2 path conventions
+   + Fixed multiple issues with search_path()/locate_binary()
+      - locate_binary() is now more reliable on Windows
+      - Now invalidates the cached path is PATH is changed
+      - Uses locate_binary to scan the path
+      - spawn_pike() now uses search_path()
+   + You can now optionally have System.spawn_pike pass predefines,
+     program and include path to the spawned pike, in addition to the
+     module path.
+
+o lots of autodoc fixes
 o predef::types (seems somewhat broken, or is it intended at types(({1,2,3})) returns ({ mixed,mixed,mixed})?)
 
 o Builtin._get_setter
