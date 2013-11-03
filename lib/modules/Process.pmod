@@ -456,7 +456,10 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     if(options && options->add_predefines)
     {
       foreach (master()->predefines; string key; string value)
-        res+=({"-D" + key + "=" + value});
+	if( stringp( value ) )
+	  res+=({"-D" + key + "=" + value});
+	else if( intp( value ) )
+	  res+=({"-D" + key });
     }
     if(options && options->add_program_path)
     {
