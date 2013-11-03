@@ -915,7 +915,7 @@ unknown_directive:
     {
       char *p1, *p2;
       double f;
-      long l = 0;		/* GCC thinks l is unitialized here. Hmm..? */
+      long l;
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
@@ -975,8 +975,7 @@ unknown_directive:
 #endif /* 0 */
 	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_FLOAT;
@@ -987,8 +986,7 @@ unknown_directive:
 	debug_malloc_touch(yylval->n);
 	lex->pos=p2;
 	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_NUMBER;
