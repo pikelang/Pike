@@ -1,7 +1,5 @@
 /* vim:syntax=c
  */
-#include "machine.h"
-
 #define DEBUG_CHECKS
 
 #include "common.h"
