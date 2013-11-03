@@ -128,7 +128,7 @@ static void f_blobs_add_words( INT32 args )
 	wf_buffer_wbyte( x->buffer, 0 );
 	x->word_data_offset = x->buffer->size-1;
       }
-      if( x->buffer->data[x->word_data_offset] < 255 )
+      if( (unsigned char)x->buffer->data[x->word_data_offset] < 255 )
       {
 	unsigned short s;
 	x->buffer->data[x->word_data_offset]++;
