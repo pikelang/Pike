@@ -11932,7 +11932,7 @@ test_eq(utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1), "\U800
 // Tested in foop
 
 // - strlen
-test_eq(strlen, sizeof)
+test_compile_error(strlen( ({}) ))
 
 // - symlink
 // - syslog
@@ -13519,7 +13519,5 @@ test_do(add_constant("OBJ"))
 
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
-
-test_eq(sprintf("%O", class { string _sprintf(int type) { return "\t"; } }()), "\t")
 
 END_MARKER
