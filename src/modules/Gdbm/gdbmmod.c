@@ -497,12 +497,12 @@ static void gdbmmod_close(INT32 args)
   push_int(0);
 }
 
-static void init_gdbm_glue(struct object *o)
+static void init_gdbm_glue(struct object *UNUSED(o))
 {
   THIS->dbf=0;
 }
 
-static void exit_gdbm_glue(struct object *o)
+static void exit_gdbm_glue(struct object *UNUSED(o))
 {
   do_free();
 }

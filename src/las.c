@@ -481,7 +481,7 @@ void count_memory_in_node_ss(size_t * num, size_t * size) {
     }
 }
 
-void node_walker(struct ba_iterator * it, void * data) {
+void node_walker(struct ba_iterator * it, void * UNUSED(data)) {
   do {
     node * tmp = ba_it_val(it);
 
