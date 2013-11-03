@@ -313,9 +313,11 @@ run_sub_test(({"SRCDIR/socktest.pike"}))
 
 run_sub_test(({"-DIPV6", "SRCDIR/socktest.pike"}))
 
+cond_begin([[ Pike["SelectBackend"] ]])
 run_sub_test(({"-DBACKEND=SelectBackend", "SRCDIR/socktest.pike"}))
 
 run_sub_test(({"-DBACKEND=SelectBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
+cond_end
 
 cond_begin([[ Pike["PollBackend"] ]])
   run_sub_test(({"-DBACKEND=PollBackend", "SRCDIR/socktest.pike"}))
