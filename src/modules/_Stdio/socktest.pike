@@ -374,36 +374,52 @@ void create() {
 int portno1;
 int portno2;
 
+int protocol_supported;
+
 array(object(Socket)) stdtest()
 {
   object sock,sock2;
   int warned = 0;
 
   sock=Socket();
-  do
+  int attempt;
+  while(1)
   {
     got_callback();
     DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
     if (sock->connect(LOOPBACK, portno2)) {
+      protocol_supported = 1;
       break;
     }
-#ifdef IPV6
-#if constant(System.ENETUNREACH)
-    if (sock->errno() == System.ENETUNREACH) {
-      /* No IPv6 support on this machine (Solaris). */
-      log_msg("Connect failed: Network unreachable.\n"
-	      "IPv6 not configured?\n");
-      exit_test(0);
-    }
-#endif /* ENETUNREACH */
 #if constant(System.EADDRNOTAVAIL)
     if (sock->errno() == System.EADDRNOTAVAIL) {
-      /* No IPv6 support on this machine (OSF/1). */
-      log_msg("Connect failed: Address not available.\n"
-	      "IPv6 not configured?\n");
-      exit_test(0);
+      if (attempt++ < 10) {
+	// connect(2) on Linux intermittently fails with EADDRNOTAVAIL.
+	// A retry usually solves the problem.
+	// werror("Connect failure: %s\n", strerror(sock->errno()));
+	continue;
+      }
     }
+#endif /* System.EADDRNOTAVAIL */
+#ifdef IPV6
+    if (!protocol_supported) {
+#if constant(System.ENETUNREACH)
+      if (sock->errno() == System.ENETUNREACH) {
+	/* No IPv6 support on this machine (Solaris). */
+	log_msg("Connect failed: Network unreachable.\n"
+		"IPv6 not configured?\n");
+	exit_test(0);
+      }
 #endif /* ENETUNREACH */
+#if constant(System.EADDRNOTAVAIL)
+      if (sock->errno() == System.EADDRNOTAVAIL) {
+	/* No IPv6 support on this machine (OSF/1). */
+	log_msg("Connect failed: Address not available.\n"
+		"IPv6 not configured?\n");
+	exit_test(0);
+      }
+#endif /* ENETUNREACH */
+    }
 #endif /* IPV6 */
     if (sock->errno() == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
@@ -418,7 +434,6 @@ array(object(Socket)) stdtest()
     fd_fail("Connect failed: (%d, %O)\n",
 	    sock->errno(), strerror(sock->errno()));
   }
-  while(0);
   got_callback();
   DEBUG_WERR("Accepting...\n");
   sock2=port2::accept();
