@@ -851,7 +851,7 @@ test_compile_error([[
 ]]);
 
 test_compile_any([[
-  #pragma strict_types
+  // #pragma strict_types
   void x (void|mapping(string:string) args)
   {
     if (args)
