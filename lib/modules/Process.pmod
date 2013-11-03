@@ -1101,15 +1101,16 @@ class Spawn
 #endif
 #endif
 
+#if constant(fork) || constant(System.daemon)
 private int low_daemon(int nochdir, int noclose)
 {
-#if System.daemon
+#if constant(System.daemon)
     return System.daemon(nochdir, noclose);
 #else
     if (fork())
         exit(0);
 
-#if System.setsid
+#if constant(System.setsid)
         System.setsid();
 #endif /* System.setsid */
 
@@ -1210,3 +1211,4 @@ void daemon(int nochdir, int noclose,
 
     opened->close();
 }
+#endif
