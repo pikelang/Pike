@@ -1,4 +1,7 @@
 #pike __REAL_VERSION__
+#if !constant (___Mysql)
+constant this_program_does_not_exist = 1;
+#else  // !___Mysql
 
 //! This class provides some abstractions on top of an SQL table.
 //!
@@ -1760,3 +1763,4 @@ protected string make_set_clause (mapping(string:mixed) rec,
 
   return buf->get();
 }
+#endif
