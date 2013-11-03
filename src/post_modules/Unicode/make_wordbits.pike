@@ -15,14 +15,15 @@ int parse_type( string s )
   }
 }
 
-void main()
+void main(int argc, array(string) argv)
 {
   int last_was,c,last_c;
+  function write = Stdio.File(argv[2], "cwt")->write;
 
   write( "static const struct {\n"
 	 "  int start; int end;\n"
 	 "} ranges[] = {\n" );
-  foreach( Stdio.stdin.read()/"\n", string line )
+  foreach( Stdio.read_file(argv[1])/"\n", string line )
   {
     sscanf( line, "%s#", line );
     if( !sizeof( line ) )

@@ -1,9 +1,10 @@
 
-void main()
+void main(int argc, array(string) argv)
 {
+  function write = Stdio.File(argv[2], "cwt")->write;
   write("static const int _rtl[] = {\n");
   int last_mode;
-  foreach( Stdio.stdin.read()/"\n", string line )
+  foreach( Stdio.read_file(argv[1])/"\n", string line )
   {
     sscanf( line, "%s#", line );
     if( !sizeof( line ) )
