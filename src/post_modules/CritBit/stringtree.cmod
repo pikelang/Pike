@@ -1,7 +1,5 @@
 /* vim:syntax=c
  */
-#ifdef cmod___CMOD__
-
 #include "common.h"
 
 #include "critbit/string2svalue.h"
@@ -71,8 +69,3 @@ void pike_init_tree_module(void) {
 void pike_exit_tree_module(void) {
     EXIT
 }
-
-#else
-void pike_init_tree_module(void) {}
-void pike_exit_tree_module(void) {}
-#endif
