@@ -1,7 +1,5 @@
 /* vim:syntax=c
  */
-#ifdef cmod___CMOD__
-
 #include "common.h"
 
 #include "critbit/int2svalue.h"
@@ -170,7 +168,3 @@ void pike_init_inttree_module(void) {
 void pike_exit_inttree_module(void) {
     EXIT
 }
-#else
-void pike_init_inttree_module(void) {}
-void pike_exit_inttree_module(void) {}
-#endif

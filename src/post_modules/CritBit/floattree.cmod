@@ -1,7 +1,5 @@
 /* vim:syntax=c
  */
-#ifdef cmod___CMOD__
-
 #include "common.h"
 
 #include "critbit/float2svalue.h"
@@ -68,7 +66,3 @@ void pike_init_floattree_module(void) {
 void pike_exit_floattree_module(void) {
     EXIT
 }
-#else
-void pike_exit_floattree_module(void) { }
-void pike_init_floattree_module(void) { }
-#endif
