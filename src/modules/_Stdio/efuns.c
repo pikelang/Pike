@@ -2002,10 +2002,10 @@ static void f_errno(INT32 args)
  *!         @value EROFS
  *!           The filesystem is read only and write access was requested.
  *!       @endint
- *!   @endint
  *!
- *!  Other errors can occur, but are not directly related to the
- *!  requested path, such as @expr{ENOMEM@}, etc.
+ *!       Other errors can occur, but are not directly related to the
+ *!       requested path, such as @expr{ENOMEM@}, etc.
+ *!    @endint
  *!
  *! @seealso
  *!    @[errno()], @[Stdio.File]
