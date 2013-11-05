@@ -1954,15 +1954,16 @@ static void f_errno(INT32 args)
 #if defined(HAVE_ACCESS)
 /*! @decl int access( string path, string|void mode )
  *!
- *! access() checks it the calling process can access the file
+ *! access() checks if the calling process can access the file
  *! @[path]. Symbolic links are dereferenced.
  *!
- *! The @[mode] specifies the accessibility checks to be performed, and
- *! is either not specified or empty, in which case access() just tests if the
- *! file exists, or one or more of the characters "rwx".
+ *! @param mode
+ *!   The @[mode] specifies the accessibility checks to be performed, and
+ *!   is either not specified or empty, in which case access() just tests
+ *!   if the file exists, or one or more of the characters @expr{"rwx"@}.
  *!
- *! r, w, and x test whether the file exists and grants read, write,
- *! and execute permissions, respectively.
+ *!   r, w, and x test whether the file exists and grants read, write,
+ *!   and execute permissions, respectively.
  *!
  *! The check is done using the calling process's real UID and GID,
  *! rather than the effective IDs as is done when actually attempting
@@ -1974,27 +1975,40 @@ static void f_errno(INT32 args)
  *! permission is enabled for any of the file owner, group, or other.
  *!
  *! @returns
- *!   1 if the file is accessible using the given permissions
- *!   0 if the file is not accessible, in which case errno is set
- *!   to one of the following values:
+ *!   @int
+ *!     @value 1
+ *!       When the file is accessible using the given permissions.
  *!
- *!   EACCESS: Access denied
+ *!     @value 0
+ *!       When the file is not accessible, in which case @[errno] is set
+ *!       to one of the following values:
  *!
- *!   ELOOP: Too many symbolic links
+ *!       @int
+ *!         @value EACCESS
+ *!           Access denied.
  *!
- *!   ENAMETOOLONG: The path is too long
+ *!         @value ELOOP
+ *!           Too many symbolic links.
  *!
- *!   ENOENT:  The file does not exist
+ *!         @value ENAMETOOLONG
+ *!           The path is too long.
  *!
- *!   ENOTDIR: One of the directories used in @[path] is not, in fact, a directory
+ *!         @value ENOENT
+ *!           The file does not exist.
  *!
- *!   EROFS:  The filesystem is read only and write access was requested
+ *!         @value ENOTDIR
+ *!           One of the directories used in @[path] is not, in fact, a directory.
+ *!
+ *!         @value EROFS
+ *!           The filesystem is read only and write access was requested.
+ *!       @endint
+ *!   @endint
  *!
  *!  Other errors can occur, but are not directly related to the
- *!  requested path, such as ENOMEM etc.
+ *!  requested path, such as @expr{ENOMEM@}, etc.
  *!
  *! @seealso
- *!    @[errno()]
+ *!    @[errno()], @[Stdio.File]
  */
 static void f_access( INT32 args )
 {
