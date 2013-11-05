@@ -15,7 +15,6 @@
 #include "config.h"
 
 #ifdef HAVE_LIBWEBP
-
 DECLARATIONS
 
 /* #define DEFAULT_CMOD_STORAGE static*/
@@ -24,6 +23,58 @@ DECLARATIONS
 
 #include <webp/encode.h>
 #include <webp/decode.h>
+
+#if WEBP_ENCODER_ABI_VERSION < 0x0201
+typedef struct WebPMemoryWriter
+{
+  uint8_t* mem;       // final buffer (of size 'max_size', larger than 'size').
+  size_t   size;      // final size
+  size_t   max_size;  // total capacity
+  uint32_t pad[1];    // padding for later use
+} WebPMemoryWriter;
+
+/* This is from LIBWEBP 0.3.1+ */
+void WebPMemoryWriterInit(WebPMemoryWriter* writer)
+{
+    writer->mem = NULL;
+    writer->size = 0;
+    writer->max_size = 0;
+}
+
+int WebPMemoryWrite(const uint8_t* data, size_t data_size,
+                    const WebPPicture* picture)
+{
+    WebPMemoryWriter* const w = (WebPMemoryWriter*)picture->custom_ptr;
+    uint64_t next_size;
+    if (w == NULL)
+    {
+        return 1;
+    }
+
+    next_size = (uint64_t)w->size + data_size;
+
+    if (next_size > w->max_size)
+    {
+        uint8_t* new_mem;
+        uint64_t next_max_size = 2ULL * w->max_size;
+        if (next_max_size < next_size) next_max_size = next_size;
+        if (next_max_size < 8192ULL) next_max_size = 8192ULL;
+        new_mem = (uint8_t*)xalloc(next_max_size);
+        if (w->size > 0) {
+            memcpy(new_mem, w->mem, w->size);
+        }
+        free(w->mem);
+        w->mem = new_mem;
+        // down-cast is ok, thanks to WebPSafeMalloc
+        w->max_size = (size_t)next_max_size;
+    }
+    if (data_size > 0) {
+        memcpy(w->mem + w->size, data, data_size);
+        w->size += data_size;
+    }
+    return 1;
+}
+#endif
 
 
 typedef int (*Importer)(WebPPicture* const, const uint8_t* const, int);
@@ -90,7 +141,9 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
  if( !WebPPictureInit(&pic) )
    return 0;
 
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
  pic.use_argb = !!config->lossless;
+#endif
  pic.width = width;
  pic.height = height;
  pic.writer = WebPMemoryWrite;
@@ -130,9 +183,11 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
    case VP8_ENC_ERROR_FILE_TOO_BIG:
      *output = (uint8_t*)"File too big, >4G\n";
      break;
+#ifdef VP8_ENC_ERROR_USER_ABORT
    case VP8_ENC_ERROR_USER_ABORT:
      *output = (uint8_t*)"User aborted\n";
      break;
+#endif
    default:
      *output = (uint8_t*)"Unknown error\n";
      break;
@@ -249,7 +304,6 @@ PIKEFUN string encode( object i,
     Importer importer = WebPPictureImportRGB;
     WebPConfig config;
     WebPPreset preset;
-
     if( !iptr || !width || !height )
     {
         Pike_error("Image argument is not a valid image.");
@@ -275,10 +329,17 @@ PIKEFUN string encode( object i,
 #define GET_FLT(X) (config.X = parameter_float( options, #X, config.X ));
 #define GET_BOL(X) (config.X = !!parameter_int( options, #X, config.X ));
 
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
         GET_BOL(lossless);
+#else
+        if( parameter_int( options, "lossless", 0 ) )
+            Pike_error("Your libwebp is too old to support lossless encoding.\n");
+#endif
         GET_FLT(quality);
         GET_INT(method);
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
         GET_ENUM(WebPImageHint,image_hint);
+#endif
         GET_INT(target_size);
         GET_FLT(target_PSNR);
         GET_INT(segments);
@@ -288,29 +349,33 @@ PIKEFUN string encode( object i,
         GET_INT(filter_type);
         GET_INT(autofilter);
 
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
         GET_INT(alpha_compression);
         GET_INT(alpha_filtering);
         GET_INT(alpha_quality);
-
+#endif
         GET_INT(pass);
         GET_INT(show_compressed);
         GET_INT(preprocessing);
         GET_INT(partitions);
         GET_INT(partition_limit);
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
         GET_BOL(emulate_jpeg_size);
         GET_BOL(thread_level);
         GET_BOL(low_memory);
-
+#endif
 #undef GET_BOL
 #undef GET_FLT
 #undef GET_INT
 #undef GET_ENUM
 
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
         if( config.quality >= 100 )
         {
             config.quality = 70;
             config.lossless = true;
         }
+#endif
     }
     else
     {
@@ -327,7 +392,10 @@ PIKEFUN string encode( object i,
 
         if( !aptr )
             Pike_error("Alpha channels is not an image object\n");
-
+#if WEBP_ENCODER_ABI_VERSION < 0x0201
+        else 
+            Pike_error("Alpha channels are not supported by your libwebp.\n");
+#endif
         if( image_width( a ) != width || image_height( a ) != height )
             Pike_error("The alpha channel does not have the same size as the image\n");
 
@@ -365,10 +433,12 @@ EXTRA {
     CONST(PRESET_ICON);
     CONST(PRESET_TEXT);
 
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
     CONST(HINT_DEFAULT);
     CONST(HINT_PICTURE);
     CONST(HINT_PHOTO);
     CONST(HINT_GRAPH);
+#endif
 #undef CONST
 }
 #endif /* HAVE_LIBVPX */
