@@ -1944,10 +1944,93 @@ void f_strerror(INT32 args)
  *! @seealso
  *!   @[Stdio.File->errno()], @[strerror()]
  */
-void f_errno(INT32 args)
+static void f_errno(INT32 args)
 {
   pop_n_elems(args);
   push_int(errno);
+}
+
+
+/*! @decl int access( string path, string|void mode )
+ *!
+ *! access() checks it the calling process can access the file
+ *! @[path]. Symbolic links are dereferenced.
+ *!
+ *! The @[mode] specifies the accessibility checks to be performed, and
+ *! is either not specified or empty, in which case access() just tests if the
+ *! file exists, or one or more of the characters "rwx".
+ *!
+ *! r, w, and x test whether the file exists and grants read, write,
+ *! and execute permissions, respectively.
+ *!
+ *! The check is done using the calling process's real UID and GID,
+ *! rather than the effective IDs as is done when actually attempting
+ *! an operation (e.g., open(2)) on the file. This allows set-user-ID
+ *! programs to easily determine the invoking user's authority.
+ *!
+ *! If the calling process is privileged (i.e., its real UID is zero),
+ *! then an X_OK check is successful for a regular file if execute
+ *! permission is enabled for any of the file owner, group, or other.
+ *!
+ *! @returns
+ *!   1 if the file is accessible using the given permissions
+ *!   0 if the file is not accessible, in which case errno is set
+ *!   to one of the following values:
+ *!
+ *!   EACCESS: Access denied
+ *!
+ *!   ELOOP: Too many symbolic links
+ *!
+ *!   ENAMETOOLONG: The path is too long
+ *!
+ *!   ENOENT:  The file does not exist
+ *!
+ *!   ENOTDIR: One of the directories used in @[path] is not, in fact, a directory
+ *!
+ *!   EROFS:  The filesystem is read only and write access was requested
+ *!
+ *!  Other errors can occur, but are not directly related to the
+ *!  requested path, such as ENOMEM etc.
+ *!
+ *! @seealso
+ *!    @[errno()]
+ */
+static void f_file_access( INT32 args )
+{
+    const char *path;
+    int flags, res;
+    if( args == 2 )
+    {
+        char *how;
+        int i;
+        get_all_args( "access", args, "%s%s", &path, &how );
+        flags = 0;
+        for( i=0; how[i]; i++ )
+        {
+            switch( how[i] )
+            {
+                case 'r': flags |= R_OK; break;
+                case 'w': flags |= W_OK; break;
+                case 'x': flags |= X_OK; break;
+            }
+        }
+        if( !flags )
+            flags = F_OK;
+    }
+    else
+    {
+        get_all_args( "access", args, "%s", &path );
+        flags = F_OK;
+    }
+
+    THREADS_ALLOW_UID();
+    do {
+        res = access( path, flags );
+    } while( (res == -1) && (errno == EINTR) )
+    THREADS_DISALLOW_UID();
+
+    pop_n_elems(args);
+    push_int( !res );
 }
 
 void init_stdio_efuns(void)
@@ -1989,7 +2072,9 @@ void init_stdio_efuns(void)
 
   /* function(string,int:int(0..1)) */
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-
+#if defined(HAVE_ACCESS)
+  ADD_EFUN("access", f_file_access, tFunc(tStr tOr(tVoid,tStr),tInt),OPT_EXTERNAL_DEPEND);
+#endif
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
   ADD_EFUN( "listxattr", f_listxattr, tFunc(tStr tOr(tVoid,tInt),tArr(tStr)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
   ADD_EFUN( "setxattr", f_setxattr, tFunc(tStr tStr tStr tInt tOr(tVoid,tInt),tInt), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
