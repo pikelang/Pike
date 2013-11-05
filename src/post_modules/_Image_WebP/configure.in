@@ -8,10 +8,13 @@ PIKE_FEATURE_NODEP(Image.WebP)
 AC_CHECK_HEADERS(webp/encode.h)
 if test $ac_cv_header_webp_encode_h = yes ; then
   AC_DEFINE(HAVE_LIBWEBP,[],[Define when the -lwebp library is available])
-  AC_CHECK_LIB([webpdecoder], [WebPDecodeRGBA], [
-    LIBS="${LIBS-} -lwebp -lwebpmux -lwebpdecoder -lwebpdemux"
-    PIKE_FEATURE_OK(Image.WebP)
+  AC_CHECK_LIB([webp], [WebPDecodeRGB], [
+    LIBS="${LIBS-} -lwebp"
   ])
+  AC_CHECK_LIB([webpdecoder], [WebPDecodeRGBA], [
+    LIBS="${LIBS-} -lwebpmux -lwebpdecoder -lwebpdemux"
+  ])
+  PIKE_FEATURE_OK(Image.WebP)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
