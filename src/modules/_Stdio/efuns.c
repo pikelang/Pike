@@ -1951,6 +1951,7 @@ static void f_errno(INT32 args)
 }
 
 
+#if defined(HAVE_ACCESS)
 /*! @decl int access( string path, string|void mode )
  *!
  *! access() checks it the calling process can access the file
@@ -1995,7 +1996,7 @@ static void f_errno(INT32 args)
  *! @seealso
  *!    @[errno()]
  */
-static void f_file_access( INT32 args )
+static void f_access( INT32 args )
 {
     const char *path;
     int flags, res;
@@ -2032,6 +2033,7 @@ static void f_file_access( INT32 args )
     pop_n_elems(args);
     push_int( !res );
 }
+#endif
 
 void init_stdio_efuns(void)
 {
@@ -2073,7 +2075,7 @@ void init_stdio_efuns(void)
   /* function(string,int:int(0..1)) */
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #if defined(HAVE_ACCESS)
-  ADD_EFUN("access", f_file_access, tFunc(tStr tOr(tVoid,tStr),tInt),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("access", f_access, tFunc(tStr tOr(tVoid,tStr),tInt),OPT_EXTERNAL_DEPEND);
 #endif
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
   ADD_EFUN( "listxattr", f_listxattr, tFunc(tStr tOr(tVoid,tInt),tArr(tStr)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
