@@ -56,7 +56,7 @@ int WebPMemoryWrite(const uint8_t* data, size_t data_size,
     if (next_size > w->max_size)
     {
         uint8_t* new_mem;
-        uint64_t next_max_size = 2ULL * w->max_size;
+        size_t next_max_size = 2ULL * w->max_size;
         if (next_max_size < next_size) next_max_size = next_size;
         if (next_max_size < 8192ULL) next_max_size = 8192ULL;
         new_mem = (uint8_t*)xalloc(next_max_size);
@@ -65,7 +65,6 @@ int WebPMemoryWrite(const uint8_t* data, size_t data_size,
         }
         free(w->mem);
         w->mem = new_mem;
-        // down-cast is ok, thanks to WebPSafeMalloc
         w->max_size = (size_t)next_max_size;
     }
     if (data_size > 0) {
@@ -291,7 +290,7 @@ static object *parameter_obj(struct mapping *map, const char *what )
    return NULL;
 }
 
-PIKEFUN string encode( object i, 
+PIKEFUN string encode( object i,
 		       mapping(string:int|float|object)|void options )
 {
     unsigned char *result = NULL;
