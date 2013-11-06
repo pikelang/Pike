@@ -579,7 +579,7 @@ private System find_system() {
 #if defined(__NT__)
     return NT;
 #else
-    if( Process.popen("uname") == "Linux" ||
+    if( uname()->sysname == "Linux" ||
         String.count(Process.popen(_ifconfig+" -s 2>/dev/null"),"\n") > 1 )
         return Linux;
     return _ifconfig ? Other : Unsupported;
