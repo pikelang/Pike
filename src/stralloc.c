@@ -76,8 +76,7 @@ static PIKE_MUTEX_T *bucket_locks;
 static unsigned int hash_prefix_len=64;
 static unsigned int need_more_hash_prefix_depth=0;
 
-/* Force a new hashkey to be generated early during init. */
-static unsigned int need_new_hashkey_depth=0xffff;
+static unsigned int need_new_hashkey_depth=0;
 static size_t hashkey = 0;
 
 static unsigned INT32 htable_size=0;
@@ -748,6 +747,12 @@ static void link_pike_string(struct pike_string *s, size_t hval)
      * /Hubbe
      */
 
+    if (need_new_hashkey_depth > 128) {
+      /* A simple mixing function. */
+      hashkey ^= (hashkey << 5) ^ (current_time.tv_sec ^ current_time.tv_usec);
+      need_new_hashkey_depth = 0;
+    }
+
 #ifdef PIKE_RUN_UNLOCKED
     mt_lock(bucket_locks);
     if(need_more_hash_prefix_depth <= 4)
@@ -758,9 +763,6 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     }
     for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
 #endif
-
-    /* A simple mixing function. */
-    hashkey ^= (hashkey << 5) ^ (current_time.tv_sec ^ current_time.tv_usec);
 
     if (need_more_hash_prefix_depth > 4) 
     {
@@ -773,7 +775,6 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     /* NOTE: No need to update to the correct values, since that will
      *       be done on demand.
      */
-    need_new_hashkey_depth = 0;
     need_more_hash_prefix_depth=0;
 
     for(h=0;h<htable_size;h++)
