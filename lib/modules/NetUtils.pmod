@@ -97,11 +97,11 @@ int string_to_ip(string ips)
 int netmask_to_cidr( string mask )
 {
     if( has_prefix( mask, "0x" ) )
-    {
-        int i;
-        if( sscanf( mask, "0x%x", i ) == 1 )
-            return i->popcount();
-    }
+        mask = mask[2..];
+    int i;
+    string s;
+    if( sscanf( mask, "%x%s", i, s ) == 2 && s == "")
+        return i->popcount();
     return string_to_ip( mask )->popcount();
 }
 
