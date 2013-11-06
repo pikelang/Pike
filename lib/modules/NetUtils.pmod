@@ -646,9 +646,10 @@ mapping(string:array(string)) local_interfaces()
     foreach( ifconfig("list if" )/"\n", string iface )
     {
         array ips = ({});
-        string i,m;
-        foreach( ifconfig(iface)/"\n", string q )
+        foreach( (ifconfig(iface) + ifconfig(iface + " inet6"))/"\n",
+                 string q )
         {
+            string i,m;
             q = String.trim_whites(q);
             if( (sscanf( q, "inet addr:%[^ ]%*sMask:%s", i, m )==3) ||
                 (sscanf( q, "inet %[^ ] mask %[^ ]", i, m )==2) ||
