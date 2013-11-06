@@ -5343,7 +5343,13 @@ class Encoder
 	  break compare;
 	}
 
-	if (resolved->is_resolv_dirnode)
+	if ((resolved->is_resolv_joinnode) &&
+	    (sizeof(resolved->joined_modules) == 1)) {
+	  ENC_MSG("  compare_resolved: %O is a single element joinnode.\n",
+		  resolved);
+	  resolved = resolved->joined_modules[0];
+	}
+	if (resolved->is_resolv_dirnode) {
 	  if (resolved->module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
@@ -5359,7 +5365,7 @@ class Encoder
 	  else
 	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
 		     what, resolved->module);
-
+	}
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
 	// and we don't know that.
@@ -5374,6 +5380,8 @@ class Encoder
 	    }
 	}
 #endif
+      } else {
+	ENC_MSG("  compare_resolved: %O is not an object.\n", resolved);
       }
 
       ENC_MSG ("  compare_resolved: %O is different from %O\n", what, resolved);
