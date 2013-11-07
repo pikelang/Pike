@@ -4484,11 +4484,12 @@ static void decode_value2(struct decode_data *data)
 				    Pike_sp[-1].u.type,
 				    id_flags, func_flags,
 				    &func, opt_flags);
-		if (no >= p->num_identifier_references || no != n &&
-		    (p->identifier_references[no].id_flags != id_flags ||
-		     p->identifier_references[no].identifier_offset !=
-		     p->identifier_references[n].identifier_offset ||
-		     p->identifier_references[no].inherit_offset != 0)) {
+		if (no >= p->num_identifier_references ||
+		    (no != n &&
+		     (p->identifier_references[no].id_flags != id_flags ||
+		      p->identifier_references[no].identifier_offset !=
+		      p->identifier_references[n].identifier_offset ||
+		      p->identifier_references[no].inherit_offset != 0))) {
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
 			       "Bad function identifier offset: %d\n", no);
