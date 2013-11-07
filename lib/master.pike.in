@@ -5578,7 +5578,7 @@ class Encoder
 
 	array parent_object = ({0});
 	string|array parent_name = nameof (parent, parent_object);
-	if (!parent_name) {
+	if (!parent_name || (parent_name == "o")) {
 	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	  return UNDEFINED;
 	}

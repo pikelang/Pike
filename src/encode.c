@@ -1063,35 +1063,51 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	pop_stack();
 	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
 	{
-	  if(p->parent)
-	  {
-	    /* We have to remove ourselves from the cache for now */
-	    struct svalue tmp = entry_id;
-	    map_delete(data->encoded, val);
-
-	    code_entry(TAG_PROGRAM, 2, data);
-	    ref_push_program(p->parent);
-	    encode_value2(Pike_sp-1, data, 0);
-
-	    ref_push_program(p);
-	    f_function_name(1);
-#if 0
-	    if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
-	      Pike_error("Cannot encode C programs.\n");
-#endif
-	    encode_value2(Pike_sp-1, data, 0);
-
-	    pop_n_elems(2);
-
-	    /* Put value back in cache */
-	    mapping_insert(data->encoded, val, &tmp);
-	    goto encode_done;
+	  int has_local_c_methods = 0;
+	  for (d = 0; d < p->num_identifiers; d++) {
+	    if (IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
+	      has_local_c_methods = 1;
+	      break;
+	    }
 	  }
-	  if( p->event_handler )
-	    Pike_error("Cannot encode programs with event handlers.\n");
+	  if (has_local_c_methods) {
+	    if(p->parent)
+	    {
+	      /* We have to remove ourselves from the cache for now */
+	      struct svalue tmp = entry_id;
+	      EDB(1, fprintf(stderr,
+			     "%*sencode: encoding C program via parent.\n",
+			     data->depth, ""));
+	      map_delete(data->encoded, val);
+
+	      code_entry(TAG_PROGRAM, 2, data);
+	      ref_push_program(p->parent);
+	      encode_value2(Pike_sp-1, data, 0);
+
+	      ref_push_program(p);
+	      f_function_name(1);
 #if 0
-	  Pike_error("Cannot encode C programs.\n");
+	      if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
+		Pike_error("Cannot encode C programs.\n");
 #endif
+	      encode_value2(Pike_sp-1, data, 0);
+
+	      pop_n_elems(2);
+
+	      /* Put value back in cache */
+	      mapping_insert(data->encoded, val, &tmp);
+	      goto encode_done;
+	    }
+	    if( p->event_handler )
+	      Pike_error("Cannot encode programs with event handlers.\n");
+#if 0
+	    Pike_error("Cannot encode C programs.\n");
+#endif
+	  } else {
+	    EDB(1, fprintf(stderr,
+			   "%*sencode: encoding program overloading a C program.\n",
+			   data->depth, ""));
+	  }
 	}
 
 #ifdef OLD_PIKE_ENCODE_PROGRAM
@@ -1888,9 +1904,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  struct svalue str_sval;
 	  SET_SVAL(str_sval, T_STRING, 0, string, NULL);
 
+	  EDB(2,
+	      fprintf(stderr, "%*sencode: encoding constants\n",
+		      data->depth, ""));
+
 	  /* constants */
 	  for(d=0;d<p->num_constants;d++)
 	  {
+	    EDB(5,
+		fprintf(stderr, "%*sencode: encoding constant #%d\n",
+			data->depth, "", d));
+
 #ifdef PIKE_PORTABLE_BYTECODE
 	    if (((TYPEOF(p->constants[d].sval) == T_FUNCTION) &&
 		 (SUBTYPEOF(p->constants[d].sval) == FUNCTION_BUILTIN)) ||
