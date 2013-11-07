@@ -4660,13 +4660,12 @@ static void decode_value2(struct decode_data *data)
 
 		/* prog */
 		decode_value2(data);
-		if (TYPEOF(Pike_sp[-1]) != T_PROGRAM) {
+		if (!(prog = program_from_svalue(Pike_sp-1))) {
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
 			       "Bad inherit: Expected program, got: %O\n",
 			       Pike_sp - 2);
 		}
-		prog = Pike_sp[-1].u.program;
 		if (prog == placeholder_program) {
 		  ref_push_program (p);
 		  decode_error (data, Pike_sp - 1,
