@@ -99,6 +99,7 @@ PMOD_EXPORT struct pike_type *type_type_string;
 PMOD_EXPORT struct pike_type *mixed_type_string;
 PMOD_EXPORT struct pike_type *void_type_string;
 PMOD_EXPORT struct pike_type *zero_type_string;
+PMOD_EXPORT struct pike_type *enumerable_type_string;
 PMOD_EXPORT struct pike_type *any_type_string;
 PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
 struct pike_type *sscanf_type_string;
@@ -8584,6 +8585,7 @@ void init_types(void)
   type_type_string = CONSTTYPE(tType(tMix));
   void_type_string = CONSTTYPE(tVoid);
   zero_type_string = CONSTTYPE(tZero);
+  enumerable_type_string = CONSTTYPE(tOr3(tString,tInt,tFloat));
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
@@ -8637,6 +8639,8 @@ void cleanup_pike_types(void)
   void_type_string = NULL;
   free_type(zero_type_string);
   zero_type_string = NULL;
+  free_type(enumerable_type_string);
+  enumerable_type_string = NULL;
   free_type(any_type_string);
   any_type_string = NULL;
   free_type(weak_type_string);
@@ -8880,6 +8884,8 @@ static void gc_mark_external_types(struct callback *cb, void *a, void *b)
     gc_mark_external(void_type_string, " as void_type_string");
   if (zero_type_string)
     gc_mark_external(zero_type_string, " as zero_type_string");
+  if (enumerable_type_string)
+    gc_mark_external(enumerable_type_string, " as enumerable_type_string");
   if (any_type_string)
     gc_mark_external(any_type_string, " as any_type_string");
   if (weak_type_string)
