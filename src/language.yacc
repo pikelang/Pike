@@ -282,7 +282,10 @@ int yylex(YYSTYPE *yylval);
 %type <n> simple_type
 %type <n> simple_type2
 %type <n> simple_identifier_type
+%type <n> real_string_constant
+%type <n> real_string_or_identifier
 %type <n> string_constant
+%type <n> string_or_identifier
 %type <n> string_segment
 %type <n> string
 %type <n> TOK_STRING
@@ -387,21 +390,11 @@ program: program def
   |  /* empty */
   ;
 
-string_constant: string
-  | string_constant '+' string
-  {
-    struct pike_string *a,*b;
-    copy_shared_string(a,$1->u.sval.u.string);
-    copy_shared_string(b,$3->u.sval.u.string);
-    free_node($1);
-    free_node($3);
-    a=add_and_free_shared_strings(a,b);
-    $$=mkstrnode(a);
-    free_string(a);
-  }
+real_string_or_identifier: TOK_IDENTIFIER
+  | real_string_constant
   ;
 
-optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
+optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
   | ':' bad_identifier { $$=0; }
   | ':' error { $$=0; }
   | { $$=0; }
@@ -3880,7 +3873,11 @@ idents: low_idents
   | idents '.' error {}
   ;
 
-inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
+string_or_identifier: TOK_IDENTIFIER
+  | string
+  ;
+
+inherit_specifier: string_or_identifier TOK_COLON_COLON
   {
     struct compilation *c = THIS_COMPILATION;
     int e = -1;
@@ -4434,6 +4431,47 @@ string: string_segment
     free_string(a);
   }
   ;
+
+string_constant: string
+  | string_constant '+' string
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$3->u.sval.u.string);
+    free_node($1);
+    free_node($3);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  ;
+
+/* Same as string_constant above, but without TOK_FUNCTION_NAME. */
+real_string_constant: TOK_STRING
+  | real_string_constant TOK_STRING
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$2->u.sval.u.string);
+    free_node($1);
+    free_node($2);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  | real_string_constant '+' TOK_STRING
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$3->u.sval.u.string);
+    free_node($1);
+    free_node($3);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  ;
+
 
 /*
  * Some error-handling
