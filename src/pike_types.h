@@ -134,6 +134,7 @@ PMOD_EXPORT extern struct pike_type *type_type_string;
 PMOD_EXPORT extern struct pike_type *mixed_type_string;
 PMOD_EXPORT extern struct pike_type *void_type_string;
 PMOD_EXPORT extern struct pike_type *zero_type_string;
+PMOD_EXPORT extern struct pike_type *enumerable_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;

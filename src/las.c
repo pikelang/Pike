@@ -4013,6 +4013,8 @@ void fix_type_field(node *n)
 
   case F_CASE_RANGE:
     if (CDR(n) && CAR(n) && !TEST_COMPAT(0,6)) {
+      fix_type_field(CAR(n));
+      fix_type_field(CDR(n));
       /* case 1 .. 2: */
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
 	if (!match_types(CAR(n)->type, int_type_string) ||
@@ -4045,8 +4047,27 @@ void fix_type_field(node *n)
 	}
       }
     }
+    if (CDR(n) && (Pike_compiler->compiler_pass == 2)) {
+      fix_type_field(CDR(n));
+      if (!match_types(CDR(n)->type, enumerable_type_string)) {
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, enumerable_type_string,
+		      NULL, 0, CDR(n)->type,
+		      0, "Case value is not an enumerable type.");
+      }
+    }
     /* FALL_THROUGH */
   case F_CASE:
+    if (CAR(n) && (Pike_compiler->compiler_pass == 2)) {
+      fix_type_field(CAR(n));
+      if (!match_types(CAR(n)->type, enumerable_type_string)) {
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, enumerable_type_string,
+		      NULL, 0, CAR(n)->type,
+		      0, "Case value is not an enumerable type.");
+      }
+    }
+    /* FALL_THROUGH */
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
