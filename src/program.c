@@ -2166,8 +2166,10 @@ struct program *id_to_program(INT32 id)
       module = "___MIME";
       break;
     default:
-      if ((id >= 100) && (id <= 300)) {
+      if ((id >= 100) && (id < 300)) {
 	module = "Image";
+      } else if ((id >= 300) && (id < 400)) {
+	module = "Nettle";
       } else if ((id >= 1000) && (id < 2000)) {
 	module = "___GTK";
       } else if ((id >= 2000) && (id < 3000)) {

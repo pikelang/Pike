@@ -117,7 +117,7 @@
 #define tObjImpl_TOKEN			      "\003\000\000\000\000\111"
 
 /* NOTE: 0144 == 100. */
-/* 100 - 300 reserverd for Image.Image */
+/* 100 - 299 reserverd for Image.Image */
 
 
 /* 100-119: Classes */
@@ -142,7 +142,7 @@
 /* 160 - : Submagic */
 #define PROG_IMAGE_SUBMAGIC_START       160
 
-/* 200 - 300: Submodule programs */
+/* 200 - 299: Submodule programs */
 #define     PROG_IMAGE_COLOR_COLOR_ID                      0310 /* 200 */
 #define tObjImpl_IMAGE_COLOR_COLOR_ID "\003\000\000\000\000\310"
 #define   tObjIs_IMAGE_COLOR_COLOR_ID "\003\001\000\000\000\310"
