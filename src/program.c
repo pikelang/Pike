@@ -4430,25 +4430,28 @@ PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
 int find_inherit(struct program *p, struct pike_string *name)
 {
   int e;
+  int level = p->num_inherits;	/* Larger than any inherit_level. */
+  int res = 0;
 
 #if 0
   fprintf(stderr, "find_inherit(0x%08lx, \"%s\")...\n",
 	  (unsigned long)p, name->str);
 #endif /* 0 */
-  /* FIXME: This loop could be optimized by advancing by the number
-   *        of inherits in the inherit. But in that case the loop
-   *        would have to go the other way.
-   */
+
   for(e = p->num_inherits-1; e>0; e--) {
 #if 0
     fprintf(stderr, "  %04d: %04d %s\n",
 	    e, p->inherits[e].inherit_level,
 	    p->inherits[e].name?p->inherits[e].name->str:"NULL");
 #endif /* 0 */
-    if (p->inherits[e].inherit_level > 1) continue;
-    if (name == p->inherits[e].name) return e;
+    if (p->inherits[e].inherit_level >= level) continue;
+    if (name == p->inherits[e].name) {
+      res = e;
+      level = p->inherits[e].inherit_level;
+      if (level == 1) break;
+    }
   }
-  return 0;
+  return res;
 }
 
 /* Reference the symbol inherit::name in the lexical context
