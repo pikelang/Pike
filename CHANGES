@@ -7,20 +7,21 @@ New language features
 o Added a way to access the local, and not the overloaded,
   implementation of a symbol.
 
-   As an example, given the classes:
-   | class Test
-   | {
-   |     int a( ) { return 1; }
-   |     int b( ) { return local::a(); }
-   | }
-   |
-   | class Test2
-   | {
-   |    int a() { return 42; }
-   | }
+  As an example, given the classes:
+    | class Test
+    | {
+    |     int a( ) { return 1; }
+    |     int b( ) { return local::a(); }	// New
+    |     int c( ) { return a(); }
+    | }
+    |
+    | class Test2
+    | {
+    |    int a() { return 42; }
+    | }
 
-   Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
-   will return 42.
+  Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
+  and Test2()->c() will return 42.
 
 
 o Added new syntax that can be used to return the current object as if
@@ -37,17 +38,37 @@ o Added a way to easily inherit the implementation of a subclass in an
 
     | inherit ::this_program
 
-   The syntax refers to the previous definition of the current class
-   in the inherited class, and is typically used with inherit like:
+  The syntax refers to the previous definition of the current class
+  in the inherited class, and is typically used with inherit like:
 
     | inherit Foo;
     |
     | // Override the Bar inherited from Foo.
     | class Bar {
-    |    // Bar is based on the implementation of Bar in Foo.
+    |    // The new Bar is based on the implementation of Bar in Foo.
     |    inherit ::this_program;
     |    // ...
     | }
+
+o Added new syntax for referring to and naming inherits.
+
+    | inherit "foo.pike";
+    | inherit "foo/bar/baz.pike" : "foo/bar";
+    | // ...
+    |   "foo.pike"::foo();
+    |   "foo/bar"::baz();
+
+o Lookup of named inherits now also looks in indirect inherits.
+
+    | class A { int fun() {} }
+    | class B { inherit A; }
+    | class C {
+    |   inherit B;
+    |   // ...
+    |     // The function fun may here be referred to as any of:
+    |     B::A::fun();
+    |     B::fun();
+    |     A::fun();	// New.
 
 o Implemented the variant keyword.
 
@@ -71,17 +92,17 @@ o Implemented the variant keyword.
     |     variant int bar( int(2..2) s ) { return 2; }
     | }
 
-   A common use-case is functions that return different types depending
-   on the arguments, such as getenv:
+  A common use-case is functions that return different types depending
+  on the arguments, such as getenv:
 
-   |  string|mapping(string:string) getenv( string|void variable );
+    |  string|mapping(string:string) getenv( string|void variable );
 
-   can now be rewritten as
+  can now be rewritten as
 
-   |  variant string getenv( string variable );
-   |  variant mapping(string:string) getenv( );
+    |  variant string getenv( string variable );
+    |  variant mapping(string:string) getenv( );
 
-   which gives significantly better type-checking.
+  which gives significantly better type-checking.
 
 o The type-checker has been rewritten.
 
