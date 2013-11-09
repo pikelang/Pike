@@ -22,20 +22,18 @@ enum size_shift {
     thirtytwobit=2,
 };
 
-#define PIKE_STRING_CONTENTS			    \
-  INT32 refs;					    \
-  unsigned char  flags;					  \
-  enum size_shift  size_shift:8;					\
-  unsigned char  min;							\
-  unsigned char  max;							\
-  ptrdiff_t len; /* Not counting terminating NUL. */			\
-  size_t hval;								\
-  struct pike_string *next
 
 struct pike_string
 {
-  PIKE_STRING_CONTENTS;
-  char str[1];			/* NUL terminated. */
+  INT32 refs;
+  unsigned char flags;
+  enum size_shift  size_shift:8;
+  unsigned char  min;
+  unsigned char  max;
+  ptrdiff_t len; /* Not counting terminating NUL. */
+  size_t hval;
+  struct pike_string *next;
+  char * str;			/* NUL terminated. */
 };
 
 struct string_builder
@@ -362,7 +360,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *to);
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
-void count_memory_in_short_pike_strings(size_t *num, size_t *size);
 void count_memory_in_strings(size_t *num, size_t *size);
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);

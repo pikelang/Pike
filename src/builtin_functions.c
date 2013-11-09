@@ -7545,7 +7545,6 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   COUNT(pike_list_node);
   COUNT(pike_type);
   COUNT(program);
-  COUNT(short_pike_string);
   COUNT(string);
 #ifdef PIKE_DEBUG
   COUNT(supporter_marker);
@@ -7583,11 +7582,6 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    the number of references to it.
 */
 
-struct string_header
-{
-    PIKE_STRING_CONTENTS;
-};
-
 unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
 {
     unsigned int res = 0;
@@ -7600,11 +7594,10 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     switch( TYPEOF(*s) )
     {
         case PIKE_T_STRING:
-            /* FIXME: This makes assumptions about the threshold for short strings. */
             if( s->u.string->flags & STRING_IS_SHORT )
-                return (16+sizeof(struct string_header)) / s->u.string->refs;
-            return ((s->u.string->len << s->u.string->size_shift) +
-                    sizeof(struct string_header)) / s->u.string->refs;
+                return (2*sizeof(struct pike_string)) / s->u.string->refs;
+            return (((s->u.string->len+1) << s->u.string->size_shift) +
+                    sizeof(struct pike_string)) / s->u.string->refs;
         case PIKE_T_INT:
         case PIKE_T_OBJECT:
         case PIKE_T_FLOAT:
