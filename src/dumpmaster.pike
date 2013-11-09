@@ -61,12 +61,9 @@ class Codec
   string nameof(mixed x)
   {
     if(mixed tmp=search(all_constants(),x))  return tmp;
-    switch(x)
-    {
-#define CONST(X) case X: return #X
-      CONST(_static_modules._Stdio.Stat);
-      CONST(_static_modules.Builtin.__backend);
-    }
+#define CONST(X) if (x == X) return #X
+    CONST(_static_modules._Stdio.Stat);
+    CONST(_static_modules.Builtin.__backend);
     encoded+=({x});
     return UNDEFINED;
   } 
