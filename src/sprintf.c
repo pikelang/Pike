@@ -1118,7 +1118,7 @@ static void low_pike_sprintf(struct format_stack *fs,
           }
           fsp->b=MKPCHARP_STR(_b.s);
           fsp->len=_b.s->len;
-          fsp->fi_free_string=(char *)_b.s;
+          fsp->to_free_string=_b.s;
           fsp->pad_string=MKPCHARP(" ",0);
           fsp->pad_length=1;
           fsp->column_width=0;
@@ -1383,7 +1383,7 @@ cont_2:
 #endif
 	  fsp->b=MKPCHARP_STR(b.s);
 	  fsp->len=b.s->len;
-	  fsp->fi_free_string=(char *)b.s;
+	  fsp->to_free_string=b.s;
 	  UNSET_ONERROR(err);
 	}
 
