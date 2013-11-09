@@ -1546,9 +1546,11 @@ MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX|Darwin)
+    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX)
 #    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
 # Nothing to warn about, really...
+# NOTE: Darwin (OSX/iOS) have poll, but it's layered on kqueue, so there's no 
+#   real benefit to supporting it separately there.
       with_poll=yes
     ;;
     AIX)
