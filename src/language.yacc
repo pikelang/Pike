@@ -3877,32 +3877,81 @@ string_or_identifier: TOK_IDENTIFIER
   | string
   ;
 
+/* Note that the result of this rule is passed both with
+ * the node value (inherit number) and with two global
+ * variables (inherit_state and inherit_depth).
+ *
+ * Note also that inherit number -1 indicates any inherit.
+ */
 inherit_specifier: string_or_identifier TOK_COLON_COLON
   {
     struct compilation *c = THIS_COMPILATION;
+    struct program_state *state = Pike_compiler;
+    int depth;
     int e = -1;
 
-    inherit_state = Pike_compiler;
+    inherit_state = NULL;
+    inherit_depth = 0;
 
-    for (inherit_depth = 0;; inherit_depth++, inherit_state = inherit_state->previous) {
-      int inh = find_inherit(inherit_state->new_program, $1->u.sval.u.string);
-      if (inh) {
+    /* NB: The heuristics here are a bit strange
+     *     (all to make it as backward compatible as possible).
+     *
+     *     The priority order is as follows:
+     *
+     *     1: Direct inherits in the current class.
+     *
+     *     2: The name of the current class.
+     *
+     *     3: 1 & 2 recursively for surrounding parent classes.
+     *
+     *     4: Indirect inherits in the current class.
+     *
+     *     5: 4 recursively for surrounding parent classes.
+     *
+     *     6: this_program.
+     *
+     * Note that a deep inherit in the current class trumphs
+     * a not so deep inherit in a parent class (but not a
+     * direct inherit in a parent class). To select the deep
+     * inherit in the parent class in this case, prefix it
+     * with the name of the parent class.
+     */
+    for (depth = 0;; depth++, state = state->previous) {
+      int inh = find_inherit(state->new_program, $1->u.sval.u.string);
+      if (inh &&
+	  (!inherit_state ||
+	   (state->new_program->inherits[inh].inherit_level == 1))) {
+	/* Found, and we've either not found anything earlier,
+	 * or this is a direct inherit (and the previous
+	 * wasn't since we didn't break out of the loop).
+	 */
 	e = inh;
-	break;
+	inherit_state = state;
+	inherit_depth = depth;
+	if (state->new_program->inherits[inh].inherit_level == 1) {
+	  /* Name of direct inherit ==> Done. */
+	  break;
+	}
       }
-      if (inherit_depth == c->compilation_depth) break;
+      /* The top-level class does not have a name, so break here. */
+      if (depth == c->compilation_depth) break;
       if (!TEST_COMPAT (7, 2) &&
-	  ID_FROM_INT (inherit_state->previous->new_program,
-		       inherit_state->parent_identifier)->name ==
+	  ID_FROM_INT (state->previous->new_program,
+		       state->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
+	/* Name of surrounding class ==> Done. */
 	e = 0;
+	inherit_state = state;
+	inherit_depth = depth;
 	break;
       }
     }
     if (e == -1) {
-      if (TEST_COMPAT (7, 2))
+      inherit_state = state;
+      inherit_depth = depth;
+      if (TEST_COMPAT (7, 2)) {
 	my_yyerror("No such inherit %S.", $1->u.sval.u.string);
-      else {
+      } else {
 	if ($1->u.sval.u.string == this_program_string) {
 	  inherit_state = Pike_compiler;
 	  inherit_depth = 0;
