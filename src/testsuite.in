@@ -12129,6 +12129,87 @@ test_program([[
   int a() {return A()->B()->f();}
 ]])
 
+// Names of inherits
+test_program_eq([[
+  // 1: Direct inherit in the current class.
+  class A { local constant foo = 1; };
+  inherit A;
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B:A; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[2]])
+test_program_eq([[
+  // 2: The name of the current class.
+  class A { local constant foo = 1; };
+  inherit A:C;
+  class B { inherit A:C; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return C::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[4]])
+test_program_eq([[
+  // 3.1: Direct inherit in a surrounding parent class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  inherit B:A;
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[2]])
+test_program_eq([[
+  // 3.2: The name of a surrounding parent class.
+  class D {
+    class A { local constant foo = 1; };
+    inherit A;
+    class B { inherit A; local constant foo = 2; };
+    class C { inherit B; local constant foo = 4;
+      int get_foo() {
+        return D::foo;
+      }
+    };
+    int get_foo() {
+      return C()->get_foo();
+    }
+  };
+  int a() { return D()->get_foo(); }
+]],[[1]])
+test_program_eq([[
+  // 4: Indirect inherit in the current class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[1]])
+test_program_eq([[
+  // 5: Indirect inherit in a surrounding parent class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    class D {
+      local constant foo = 8;
+      int get_foo() {
+        return A::foo;
+      }
+    }
+    int get_foo() { return D()->get_foo(); }
+  };
+  int a() { return C()->get_foo(); }
+]],[[1]])
+
 test_program_eq([[
   object ao = compile_string(#"
     string id() {return \"A\";}
