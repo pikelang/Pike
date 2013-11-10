@@ -4800,17 +4800,7 @@ void lower_inherit(struct program *p,
       }
       else if(inherit.name)
       {
-	/* FIXME: Wide string handling. */
-	struct pike_string *s;
-	s=begin_shared_string(inherit.name->len + name->len + 2);
-	MEMCPY(s->str,name->str,name->len);
-	MEMCPY(s->str+name->len,"::",2);
-	MEMCPY(s->str+name->len+2,inherit.name->str,inherit.name->len);
-	inherit.name=end_shared_string(s);
-      }
-      else
-      {
-	inherit.name=0;
+	add_ref(inherit.name);
       }
     }else{
       inherit.name=0;
