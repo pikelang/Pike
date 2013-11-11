@@ -116,8 +116,8 @@ test_do([[
 ]])
 
 ]])
-dnl Avoid too large strings to cond...
-cond_resolv(Crypto.Hash, [[
+
+cond_begin( Crypto.Hash )
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
   test_tests([[array(int) a() {
@@ -264,6 +264,8 @@ define(test_ssl, [[
   test_ssl(2,2,1,2,client_msg)
   test_ssl(2,2,2,2,client_msg)
 
+cond_end
+
   test_do([[
     add_constant("log_ssl_failure");
     add_constant("fmt_cipher_suite");
@@ -272,8 +274,6 @@ define(test_ssl, [[
     add_constant("pem_cert");
     add_constant("pem_key");
   ]])
-
-]])
 
 dnl   test_do([[
 dnl     object p = Process.Process(RUNPIKE + " \"]]SRCDIR[[/https.pike\"");
