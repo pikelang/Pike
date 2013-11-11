@@ -99,6 +99,11 @@ protected Pike.Backend local_backend;
 
 protected int nonblocking_mode;
 
+protected int packet_max_size;
+// The max amount of data to send in each packet (so fragment_max_size
+// would be a better name). Is initialized from the context when the
+// object is created.
+
 protected enum CloseState {
   ABRUPT_CLOSE = -1,
   STREAM_OPEN = 0,
@@ -517,8 +522,7 @@ protected void create (Stdio.File stream, SSL.context ctx,
     stream->set_close_callback (0);
     stream->set_id (1);
 
-    if(!ctx->random)
-      ctx->random = Crypto.Random.random_string;
+    packet_max_size = limit(1, ctx->packet_max_size, SSL.Constants.PACKET_MAX_SIZE);
     conn = SSL.connection (!is_client, ctx, min_version, max_version);
 
     if(is_blocking) {
@@ -937,12 +941,12 @@ int write (string|array(string) data, mixed... args)
 	     // bottleneck is in the encryption.
 	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
 	int size = sizeof (data[idx]) - pos;
-	if (size > SSL.Constants.PACKET_MAX_SIZE) {
-	  // send_streaming_data will pick the first PACKET_MAX_SIZE
+	if (size > packet_max_size) {
+	  // send_streaming_data will pick the first packet_max_size
 	  // bytes of the string, so do that right away in the same
 	  // range operation.
 	  int n = conn->send_streaming_data (
-	    data[idx][pos..pos + SSL.Constants.PACKET_MAX_SIZE - 1]);
+	    data[idx][pos..pos + packet_max_size - 1]);
 	  SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d][%d..%d]\n",
 			  idx, pos, pos + n - 1);
 	  written += n;
@@ -954,13 +958,13 @@ int write (string|array(string) data, mixed... args)
 	  int end;
 	  for (end = idx + 1; end < sizeof (data); end++) {
 	    int newsize = size + sizeof (data[end]);
-	    if (newsize > SSL.Constants.PACKET_MAX_SIZE) break;
+	    if (newsize > packet_max_size) break;
 	    size = newsize;
 	  }
 
 	  if (conn->send_streaming_data (
 		`+ (data[idx][pos..], @data[idx+1..end-1])) < size)
-	    error ("Unexpected PACKET_MAX_SIZE discrepancy wrt send_streaming_data.\n");
+	    error ("Unexpected packet_max_size discrepancy wrt send_streaming_data.\n");
 
 	  SSL3_DEBUG_MSG ("SSL.sslfile->write: "
 			  "Queued data[%d][%d..%d] + data[%d..%d]\n",
@@ -980,7 +984,7 @@ int write (string|array(string) data, mixed... args)
 	     // same reason as above.
 	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
 	int n = conn->send_streaming_data (
-	  data[written..written + SSL.Constants.PACKET_MAX_SIZE - 1]);
+	  data[written..written + packet_max_size - 1]);
 	SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d..%d]\n",
 			written, written + n - 1);
 	written += n;

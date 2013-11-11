@@ -221,6 +221,11 @@ void advertise_protocols(string ... protos) {
     advertised_protocols = protos;
 }
 
+//! The maximum amount of data that is sent in each SSL packet by
+//! @[sslfile]. A value between 1 and
+//! @[SSL.Constants.PACKET_MAX_SIZE].
+int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
+
 //! Filter cipher suites from @[preferred_suites] that don't have a
 //! key with an effective length of at least @[min_keylength] bits.
 void filter_weak_suites(int min_keylength)
