@@ -12,10 +12,10 @@ inherit ADT._CritBit : C;
 //! an instance of @[ADT.CritBit.StringTree] is returned. Supported types are @expr{"string"@},
 //! @expr{"int"@}, @expr{"float"@}, @expr{"ipv4"@} and @expr{Calendar.TimeRange@}.
 object Tree(void|string|program|mapping type) {
+    if (type==Calendar.TimeRange)
+      return DateTree();
     switch (type) {
-    case Calendar.TimeRange:
-	return DateTree();
-    case "int": 
+    case "int":
 	return IntTree();
     case "ipv4":
 	return IPv4Tree();
@@ -40,7 +40,7 @@ string iptosortable(string ip) {
     case 4:
 	e = 32;
     case 5:
-	e = max(0, min(32, e));
+        e = limit(0, e, 32);
 	s = sprintf("%c%c%c%c", a, b, c, d);
 	sscanf(s, "%4c", i);
 	i &= ~(0xffffffff >> e);
@@ -91,7 +91,7 @@ string get_ipv4(int ip, void|int prefix) {
     string ret;
 
     if (undefinedp(prefix)) prefix = 32;
-    prefix = min(32, max(prefix, 0));
+    prefix = limit(0, prefix, 32);
     ip &= ~(0xffffffff >> prefix);
     ret = sprintf("%d.%d.%d.%d",
 		  (ip & 0xff000000) >> 24,
