@@ -58,9 +58,9 @@ Crypto.DSA parse_private_key(string key)
 //! hash algorithm. Only @[SHA1] supported.
 Sequence signature_algorithm_id(Crypto.Hash hash)
 {
-  switch(hash)
+  switch(hash->name())
   {
-  case Crypto.SHA1:
+  case "sha1":
     return Sequence( ({ .Identifiers.dsa_sha_id }) );
     break;
   }
