@@ -55,6 +55,16 @@ Crypto.RSA rsa;
 //! The server's dsa private key
 Crypto.DSA dsa;
 
+//! Indicates if this session has the required server certificate keys
+//! set. No means that no or the wrong type of certificate was sent
+//! from the server.
+int(0..1) has_required_certificates()
+{
+  if( cipher_spec->sign == .Cipher.rsa_sign && rsa ) return 1;
+  if( cipher_spec->sign == .Cipher.dsa_sign && dsa ) return 1;
+  return 0;
+}
+
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
 void set_cipher_suite(int suite, ProtocolVersion|int version)
