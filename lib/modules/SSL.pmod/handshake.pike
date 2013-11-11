@@ -1790,24 +1790,14 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standa
       }
 
 
+      if( !session->has_required_certificates() )
       {
-
-      check_serv_cert: {
-	  switch (session->cipher_spec->sign) {
-	    case .Cipher.rsa_sign:
-	      if (session->rsa) break check_serv_cert;
-	      break;
-	    case .Cipher.dsa_sign:
-	      if (session->dsa) break check_serv_cert;
-	      break;
-	  }
-
-          SSL3_DEBUG_MSG("Certificate message required from server.\n");
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-			    "SSL.session->handle_handshake: Certificate message missing\n",
-			    backtrace()));
-	  return -1;
-	}
+        SSL3_DEBUG_MSG("Certificate message required from server.\n");
+        send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+                          "SSL.session->handle_handshake: Certificate message missing\n",
+                          backtrace()));
+        return -1;
+      }
 
       Packet key_exchange = client_key_exchange_packet();
 
@@ -1816,7 +1806,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standa
 
       // FIXME: Certificate verify; we should redo this so it makes more sense
       if(certificate_state == CERT_received
-          && sizeof(context->client_certificates) && context->client_rsa) 
+         && sizeof(context->client_certificates) && context->client_rsa)
          // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
@@ -1828,11 +1818,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standa
 	send_packet(finished_packet("CLNT"));
       else if(version[1] >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
-      
-      }
-	handshake_state = STATE_client_wait_for_finish;
-	expect_change_cipher = 1;
-	break;
+
+      handshake_state = STATE_client_wait_for_finish;
+      expect_change_cipher = 1;
+      break;
     }
     break;
 
