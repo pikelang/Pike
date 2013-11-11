@@ -95,15 +95,15 @@ Sequence build_public_key(Crypto.RSA rsa)
 //! hash algorithm. One of @[MD2], @[MD5] or @[SHA1].
 Sequence signature_algorithm_id(Crypto.Hash hash)
 {
-  switch(hash)
+  switch(hash->name())
   {
-  case Crypto.MD2:
+  case "md2":
     return Sequence( ({ .Identifiers.rsa_md2_id, Null() }) );
     break;
-  case Crypto.MD5:
+  case "md5":
     return Sequence( ({ .Identifiers.rsa_md5_id, Null() }) );
     break;
-  case Crypto.SHA1:
+  case "sha1":
     return Sequence( ({ .Identifiers.rsa_sha1_id, Null() }) );
     break;
   }
