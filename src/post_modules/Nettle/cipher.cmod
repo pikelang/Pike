@@ -1092,7 +1092,7 @@ pike_salsa20_set_key(void *ctx,
                      ptrdiff_t length, const char *key,
                      int UNUSED(force))
 {
-  if (length<SALSA20_MIN_KEY_SIZE || length>SALSA20_MAX_KEY_SIZE)
+  if ((length != SALSA20_MIN_KEY_SIZE) && (length != SALSA20_MAX_KEY_SIZE))
     Pike_error("SALSA20: Bad keysize for SALSA20.\n");
 
   salsa20_set_key(ctx, length, (const uint8_t *)key);
@@ -1103,14 +1103,14 @@ pike_salsa20_set_key(void *ctx,
 #define salsa20_encrypt salsa20_crypt
 #define salsa20_decrypt salsa20_crypt
 
-/* @class SALSA20
+/*! @class SALSA20
  *!
  *! Implementation of the SALSA20 cipher.
  *!
  */
 PIKECLASS SALSA20
 {
-  /* @decl inherit Cipher
+  /*! @decl inherit Cipher
    */
   INHERIT Cipher;
 
@@ -1125,15 +1125,15 @@ PIKECLASS SALSA20
       cipher->meta = &pike_salsa20;
     }
 
-  /* @class State
+  /*! @class State
    *!
-   *! State for PIKE_NAME encyption.
+   *! State for SALSA20 encyption.
    *!
    */
   PIKECLASS State
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    /* @decl inherit Cipher::State
+    /*! @decl inherit Cipher::State
      */
 
     EXTRA
@@ -1161,12 +1161,28 @@ PIKECLASS SALSA20
 
     CVAR struct salsa20_ctx salsa20;
 
+    /*! @decl object set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector (aka nonce) and reset
+     *! the block counter to zero.
+     *!
+     *! @param iv
+     *!   An 8-byte long string which is only to be used
+     *!   once for every key.
+     *!
+     *! @note
+     *!   This function MUST be called in addition to
+     *!   @[set_encrypt_key()] or @[set_decrypt_key()].
+     *!
+     *! @note
+     *!   The same @[iv] should NEVER be reused with the same key!
+     */
     PIKEFUN object set_iv(string(0..255) iv)
       rawtype tFunc(tStr8, tObjImpl_CIPHER_STATE_ID);
     {
       NO_WIDE_STRING(iv);
-      if (iv->len!=8)
-        Pike_error("SALSA20 IV needs to be 8 bytes.\n");
+      if (iv->len != SALSA20_IV_SIZE)
+        Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_IV_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
       salsa20_set_iv(&THIS->salsa20, iv->str);
       push_object(this_object());
@@ -1180,12 +1196,12 @@ PIKECLASS SALSA20
       state->ctx = &THIS->salsa20;
     }
   }
-  /* @endclass State
+  /*! @endclass State
    */
 
 }
 
-/* @endclass SALSA20
+/*! @endclass SALSA20
  */
 
 #endif /* HAVE_NETTLE_SALSA20_CRYPT */
