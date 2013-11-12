@@ -397,29 +397,27 @@ static INLINE void bv_set_vector(struct bitvector * bv, void * p) {
 }
 
 static INLINE size_t bv_byte_length(struct bitvector * bv) {
-    size_t bytes = (bv->length >> 3) + !!(bv->length & 7);
-    if (bytes & (BV_LENGTH-1)) {
-	bytes += (BV_LENGTH - (bytes & (BV_LENGTH-1)));
-    }
-    return bytes;
+    size_t bytes = ((bv->length + 7) / 8);
+
+    return PIKE_ALIGNTO(bytes, BV_WIDTH);
 }
 
 static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
-    const size_t bit = n&(BV_LENGTH-1);
-    const size_t c = n / BV_LENGTH;
+    size_t bit = n % BV_LENGTH;
+    size_t c = n / BV_LENGTH;
     bv_int_t * _v = bv->v + c;
     if (value) *_v |= BV_ONE << bit;
     else *_v &= ~(BV_ONE << bit);
 }
 
 static INLINE int bv_get(struct bitvector * bv, size_t n) {
-    const size_t bit = n&(BV_LENGTH-1);
-    const size_t c = n / BV_LENGTH;
+    size_t bit = n % BV_LENGTH;
+    size_t c = n / BV_LENGTH;
     return !!(bv->v[c] & (BV_ONE << bit));
 }
 
 static INLINE size_t bv_ctz(struct bitvector * bv, size_t n) {
-    size_t bit = n&(BV_LENGTH-1);
+    size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     bv_int_t * _v = bv->v + c;
     bv_int_t V = *_v & (~BV_NIL << bit);
