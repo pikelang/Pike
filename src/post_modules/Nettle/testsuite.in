@@ -173,6 +173,39 @@ cond_resolv( Nettle.CAMELLIA, [[
               "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
 ]])
 
+
+dnl From the official ECRYPT project site SVN.
+dnl 128 bit key, 64 bit IV
+dnl set 1, vector #0
+dnl cond_resolv( Nettle.SALSA20 [[
+  test_any([[
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"));
+    o->set_iv(String.hex2string("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return upper_case(String.string2hex(res));
+  ]], [[ #"
+ 4DFA5E481DA23EA09A31022050859936
+ DA52FCEE218005164F267CB65F5CFD7F
+ 2B4F97E0FF16924A52DF269515110A07
+ F9E460BC65EF95DA58F740B7D1DBB0AA
+ DA9C1581F429E0A00F7D67E23B730676
+ 783B262E8EB43A25F55FB90B3E753AEF
+ 8C6713EC66C51881111593CCB3E8CB8F
+ 8DE124080501EEEB389C4BCB6977CF95
+ 7D5789631EB4554400E1E025935DFA7B
+ 3E9039D61BDC58A8697D36815BF1985C
+ EFDF7AE112E5BB81E37ECF0616CE7147
+ FC08A93A367E08631F23C03B00A8DA2F
+ B375703739DACED4DD4059FD71C3C47F
+ C2F9939670FAD4A46066ADCC6A564578
+ 3308B90FFB72BE04A6B147CBE38CC0C3
+ B9267C296A92A7C69873F9F263BE9703"-"\n"-" "; ]])
+dnl ]])
+
 cond_resolv( Nettle.CBC, [[
   test_eval_error( Nettle.CBC( class{} ) )
   test_eval_error( object o=class{}(); Nettle.CBC(o); )

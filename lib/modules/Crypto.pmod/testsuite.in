@@ -370,6 +370,7 @@ test_cipher(CAST,cast128)
 test_cipher(DES,des)
 test_cipher(DES3,des3)
 test_cipher(IDEA,idea)
+test_cipher(SALSA20,salsa20)
 test_cipher(Serpent,serpent)
 test_cipher(Twofish,twofish)
 
