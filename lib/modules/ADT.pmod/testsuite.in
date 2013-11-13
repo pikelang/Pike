@@ -420,4 +420,12 @@ test_eval_error([[
   s->get_rest();
   s->get_fix_string(1);
 ]])
+
+test_any([[
+  object s=ADT.struct("hej");
+  string r = "x" + sizeof(s);
+  s->get_uint(3);
+  return r + ":" + sizeof(s);
+]], "x3:0")
+
 END_MARKER
