@@ -2465,6 +2465,9 @@ static int do_close(int flags)
  *!  filename of the associated pts-file. This function should only be
  *!  called once.
  *!
+ *! @returns
+ *!   Returns the filename of the corresponding pts.
+ *!
  *!  @note
  *!    This function is only available on some platforms.
  */
@@ -2512,8 +2515,13 @@ static void file_grantpt( INT32 args )
   }
   pop_n_elems(3);
 #else /* HAVE_GRANTPT */
+  /* Make sure the fd doesn't get closed when it gets sent
+   * to the subprocess (aka /usr/lib/pt_chmod).
+   */
+  set_close_on_exec(FD, 0);
   if( grantpt( FD ) )
     Pike_error("grantpt failed: %s\n", strerror(errno));
+  set_close_on_exec(FD, 1);
 #endif /* USE_PT_CHMOD || USE_CHGPT */
   push_text( ptsname( FD ) );
 #ifdef HAVE_UNLOCKPT
