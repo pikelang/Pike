@@ -4350,6 +4350,10 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; t
           pike_cv_initial_stack_size="$x";
 	fi
       done <confdefs.out.2
+      if test "$pike_cv_initial_stack_size" = "32768"; then
+	# Some sort of unsupported failure.
+	pike_cv_initial_stack_size=''
+      fi
     ], [pike_cv_initial_stack_size=''])
     ulimit -c $old_core_limit
     unset old_core_limit
