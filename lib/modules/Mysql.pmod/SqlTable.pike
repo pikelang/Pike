@@ -1284,6 +1284,8 @@ class Result
 	select_clause =
 	  "`" + tbl_qual + (real_col_names * ("`,`" + tbl_qual)) + "`";
       }
+    } else {
+      real_col_names = ({});
     }
 
     if (sizeof (real_cols) < sizeof (fields)) {
