@@ -173,4 +173,14 @@ class struct {
   {
     return (index == sizeof(buffer));
   }
+
+  protected int(0..) _sizeof()
+  {
+    return [int(0..)](sizeof(buffer)-index);
+  }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, _sizeof());
+  }
 }
