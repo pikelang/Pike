@@ -743,7 +743,7 @@ void finish(int clean)
        || !my_fd
        || !keep_alive)
    {
-      if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
+      if (my_fd) { catch(my_fd->close()); destruct(my_fd); my_fd=0; }
       return;
    }
 
