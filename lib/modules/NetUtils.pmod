@@ -669,8 +669,14 @@ mapping(string:array(string)) local_interfaces()
                         i += "/" + bits;
                     }
                 }
-                if( !has_prefix( i, "fe80::" ) )
+                int ip = string_to_ip(i);
+                int bits = -1;
+                sscanf(i, "%*s/%d", bits);
+                if( !has_prefix( i, "fe80::" ) &&
+                    ((ip > 0xffffffff) || (bits > 96)) ) {
+                    // Skip the link-local and global IPv4 compat networks.
                     ips += ({ i });
+                }
                 next__broadcast_addresses[iface] += ({ "ff02::1" });
             }
             if( (sscanf( q, "%*sBcast:%[^ ]", i ) == 2) ||
