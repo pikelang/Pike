@@ -703,3 +703,4 @@ constant EXTENSION_signed_certificate_timestamp = 18;           // RFC 6962
 constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
+constant EXTENSION_padding                      = 35655;        // Same as Firefox / Chromium NSS

@@ -202,7 +202,16 @@ Packet client_hello()
   client_version = version + ({});
   struct->put_uint(client_version[0], 1); /* version */
   struct->put_uint(client_version[1], 1);
-  client_random = sprintf("%4c%s", time(), context->random(28));
+
+  // The first four bytes of the client_random is specified to be the
+  // timestamp on the client side. This is to guard against bad random
+  // generators, where a client could produce the same random numbers
+  // if the seed is reused. This argument is flawed, since a broken
+  // random generator will make the connection insecure anyways. No
+  // one appears to rely on these bytes to be a time stamp, so sending
+  // random data instead is safer and reduces client fingerprinting.
+  client_random = context->random(32);
+
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
 
@@ -275,6 +284,21 @@ Packet client_hello()
     SSL3_DEBUG_MSG("SSL.handshake: Adding ALPN extension.\n");
     extensions->put_uint(EXTENSION_application_layer_protocol_negotiation, 2);
     extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  // When the client HELLO packet data is in the range 256-511 bytes
+  // f5 SSL terminators will intepret it as SSL2 requiring an
+  // additional 8k of data, which will cause the connection to hang.
+  // The solution is to pad the package to more than 511 bytes using a
+  // dummy exentsion.
+  int packet_size = sizeof(struct)+sizeof(extensions)+2;
+  if(packet_size>255 && packet_size<512)
+  {
+    have_extensions++;
+    SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
+                   512-packet_size-4);
+    extensions->put_uint(EXTENSION_padding, 2);
+    extensions->put_var_string("\0"*(512-packet_size-4), 2);
   }
 
   if(have_extensions)
