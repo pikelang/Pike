@@ -169,8 +169,10 @@ array(string) generate_keys(string client_random, string server_random,
   array(string) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
-  werror("client_random: %O\nserver_random: %O\nversion: %d.%d\n",
-	 client_random, server_random, version[0], version[1]);
+  werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
+	 client_random?String.string2hex(client_random):"NULL",
+         server_random?String.string2hex(server_random):"NULL",
+         version[0], version[1]);
 #endif
   // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);

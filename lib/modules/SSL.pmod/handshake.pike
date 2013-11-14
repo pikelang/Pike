@@ -326,7 +326,7 @@ Packet server_key_exchange_packet()
       /* Send a ServerKeyExchange message. */
       
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
-                     "with a %d-bits key.\n", temp_key->rsa_size());
+                     "with a %d-bits key.\n", temp_key->key_size());
       struct = ADT.struct();
       struct->put_bignum(temp_key->get_n());
       struct->put_bignum(temp_key->get_e());
@@ -686,7 +686,7 @@ string server_derive_master_secret(string data)
 		    client_random+server_random,48);
   }
   
-  SSL3_DEBUG_MSG("master: %O\n", res);
+  SSL3_DEBUG_MSG("master: %s\n", String.string2hex(res));
   return res;
 }
 
@@ -855,6 +855,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      temp_key = 0;
      
      handshake_messages = raw;
+
+     // FIXME: Should we remove timestamp here as well. See
+     // client_random generation for more discussion.
      server_random = sprintf("%4c%s", time(), context->random(28));
 
      switch(type)
