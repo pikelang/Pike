@@ -28,6 +28,9 @@ DECLARATIONS
 #include <nettle/md2.h>
 #endif
 #include <nettle/sha.h>
+#ifdef HAVE_NETTLE_SHA3_H
+#include <nettle/sha3.h>
+#endif
 #include <nettle/nettle-meta.h>
 
 #include <stdio.h>
@@ -649,6 +652,34 @@ PIKECLASS Hash
 #cmod_undef NETTLE_NAME
 
 #endif /* SHA512_DIGEST_SIZE */
+
+#ifdef HAVE_NETTLE_SHA3_H
+
+#cmod_define PIKE_NAME SHA3_224
+#cmod_define NETTLE_NAME sha3_224
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_256
+#cmod_define NETTLE_NAME sha3_256
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_384
+#cmod_define NETTLE_NAME sha3_384
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_512
+#cmod_define NETTLE_NAME sha3_512
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* HAVE_NETTLE_SHA3_H */
 
 /*! @endmodule Nettle */
 
