@@ -207,7 +207,7 @@ test_any([[
 ]],1)
 
 
-test_any([[
+test_do([[
     array victims = ({
         "127.0.0.1",
         "::1",
@@ -237,8 +237,7 @@ test_any([[
      add_constant( "v6to4", v6to4 );
      add_constant( "dual6to4", dual6to4 );
      add_constant( "dualdual", dualdual );
-     return 1;
-]],1);
+]]);
 
 test_equal( NetUtils._connectable_network_types( false, false, false, false ), nothing );
 test_equal( NetUtils._connectable_network_types( false, false, false, true ), nothing );
@@ -291,42 +290,69 @@ test_equal( NetUtils._sort_addresses( victims, 0, false, dualdual ), ({
                  }) );
 
 
-test_equal(NetUtils.get_network_type("::1"), NetUtils.LOCALHOST);
-test_equal(NetUtils.get_network_type("127.0.0.1"), NetUtils.LOCALHOST);
-test_equal(NetUtils.get_network_type("::ffff:127.0.0.1"), NetUtils.LOCALHOST);
+dnl network-addr, network-type, opt-separate-v6
+define(test_network_type, [[
+  test_true([[(< $2 >)
+              [NetUtils.get_network_type($1, $3)]
+            ]])
+]])
 
-test_equal(NetUtils.get_network_type("2001::feed"), NetUtils.TEREDO);
-test_equal(NetUtils.get_network_type("2001:0:ffff:1234::4321"), NetUtils.TEREDO);
+dnl network-addr, network-type, opt-separate-v6
+define(test_local_network_type, [[
+  // Test a network that might be a local network.
+  // The localhost variants are there just in case
+  // the local machine actually has the IP.
+  test_network_type([[$1]],
+                    [[ NetUtils.LOCAL, NetUtils.LOCALV6,
+                       NetUtils.LOCALHOST, NetUtils.LOCALHOSTv6, $2 ]],
+                    [[$3]])
+]])
 
-test_equal(NetUtils.get_network_type("10.0.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("::FFFF:10.0.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("172.16.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("::FFFF:172.16.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("192.168.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("::FFFF:192.168.0.1"), NetUtils.PRIVATE);
-test_equal(NetUtils.get_network_type("fc00::1"), NetUtils.PRIVATE);
+test_network_type("::1", NetUtils.LOCALHOST)
+test_network_type("::1", NetUtils.LOCALHOSTV6, true)
+test_network_type("127.0.0.1", NetUtils.LOCALHOST)
+test_network_type("::ffff:127.0.0.1", NetUtils.LOCALHOST)
+test_network_type("::ffff:127.0.0.1", NetUtils.LOCALHOST, true)
 
-test_equal(NetUtils.get_network_type("224.0.0.1"), NetUtils.MULTICAST);
-test_equal(NetUtils.get_network_type("ff00:1:2:3::1"), NetUtils.MULTICAST);
+// NB: No machines will have these as local address,
+//     since the corresponding IPv4 addresses are reserved.
+//     (Correspond to 0.0.0.0 and 255.255.18.52).
+test_network_type("2001::feed", NetUtils.TEREDO)
+test_network_type("2001:0:ffff:1234::4321", NetUtils.TEREDO)
 
-test_equal(NetUtils.get_network_type("2002::beef"), NetUtils.V6TO4);
-test_equal(NetUtils.get_network_type("2002:ffff:1234::beef"), NetUtils.V6TO4);
+test_local_network_type("10.0.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:10.0.0.1", NetUtils.PRIVATE)
+test_local_network_type("172.16.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:172.16.0.1", NetUtils.PRIVATE)
+test_local_network_type("192.168.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:192.168.0.1", NetUtils.PRIVATE)
+test_local_network_type("fc00::1", NetUtils.PRIVATE)
 
-test_equal(NetUtils.get_network_type("2001:1::feed"), NetUtils.GLOBAL);
-test_equal(NetUtils.get_network_type("2001:ffff:1234::4321"), NetUtils.GLOBAL);
-test_equal(NetUtils.get_network_type("2003::beef"), NetUtils.GLOBAL);
-test_equal(NetUtils.get_network_type("3002:ffff::1234:beef"), NetUtils.GLOBAL);
+// NB: Multicast addresses are not valid as local addresses.
+test_network_type("224.0.0.1", NetUtils.MULTICAST)
+test_network_type("ff00:1:2:3::1", NetUtils.MULTICAST)
 
-test_equal(NetUtils.get_network_type("2001:1::feed",true), NetUtils.GLOBALV6);
-test_equal(NetUtils.get_network_type("2001:ffff:1234::4321",true), NetUtils.GLOBALV6);
+// NB: No machines will have these as local address,
+//     since the corresponding IPv4 addresses are reserved.
+//     (Correspond to 0.0.0.0 and 255.255.18.52).
+test_network_type("2002::beef", NetUtils.V6TO4)
+test_network_type("2002:ffff:1234::beef", NetUtils.V6TO4)
+
+test_local_network_type("2001:1::feed", NetUtils.GLOBAL)
+test_local_network_type("2001:ffff:1234::4321", NetUtils.GLOBAL)
+test_local_network_type("2003::beef", NetUtils.GLOBAL)
+test_local_network_type("3002:ffff::1234:beef", NetUtils.GLOBAL)
+
+test_local_network_type("2001:1::feed", NetUtils.GLOBALV6, true)
+test_local_network_type("2001:ffff:1234::4321", NetUtils.GLOBALV6, true)
 
     // Could be mistaken for 2002::/16
-test_equal(NetUtils.get_network_type("32.2.0.1"), NetUtils.GLOBAL);
-test_equal(NetUtils.get_network_type("32.2.0.1",true), NetUtils.GLOBAL);
+test_local_network_type("32.2.0.1", NetUtils.GLOBAL)
+test_local_network_type("32.2.0.1", NetUtils.GLOBAL, true)
 
     // Could be mistaken for 2001:0::/32
-test_equal(NetUtils.get_network_type("32.1.0.0"), NetUtils.GLOBAL);
-test_equal(NetUtils.get_network_type("32.1.0.0",true), NetUtils.GLOBAL);
+test_local_network_type("32.1.0.0", NetUtils.GLOBAL)
+test_local_network_type("32.1.0.0", NetUtils.GLOBAL, true)
 
 
 test_do([[
