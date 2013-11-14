@@ -658,9 +658,17 @@ mapping(string:array(string)) local_interfaces()
                 ips += ({i+"/"+netmask_to_cidr(m)});
                 ips += ({ "::ffff:"+i+"/"+(96+netmask_to_cidr(m)) });
             }
-            else if( (sscanf( q, "inet6 addr: %[^ ]", i ) ) ||
-                     (sscanf( q, "inet6 %[^ ] ", i )) )
+            else if( (sscanf( q, "inet6 addr: %[^ ] %s", i, m ) ) ||
+                     (sscanf( q, "inet6 %[^ ] %s", i, m )) )
             {
+                if (!has_value(i, "/")) {
+                    int bits = -1;
+                    // ifconfig(1) from Linux net-tools reports
+                    // the prefix length separately.
+                    if (sscanf(m, "%*sprefixlen %d", bits) && (bits > 0)) {
+                        i += "/" + bits;
+                    }
+                }
                 if( !has_prefix( i, "fe80::" ) )
                     ips += ({ i });
                 next__broadcast_addresses[iface] += ({ "ff02::1" });
