@@ -175,6 +175,7 @@ cond_resolv( Nettle.CAMELLIA, [[
 
 
 dnl From the official ECRYPT project site SVN.
+dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
 dnl set 1, vector #0
 dnl cond_resolv( Nettle.SALSA20 [[
@@ -204,6 +205,38 @@ dnl cond_resolv( Nettle.SALSA20 [[
  C2F9939670FAD4A46066ADCC6A564578
  3308B90FFB72BE04A6B147CBE38CC0C3
  B9267C296A92A7C69873F9F263BE9703"-"\n"-" "; ]])
+dnl ]])
+
+dnl 256 bit key, 64 bit IV
+dnl set 1, vector #0
+dnl cond_resolv( Nettle.SALSA20 [[
+  test_any([[
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"
+                               "00000000000000000000000000000000"));
+    o->set_iv(String.hex2string("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return upper_case(String.string2hex(res));
+  ]], [[ #"
+ E3BE8FDD8BECA2E3EA8EF9475B29A6E7
+ 003951E1097A5C38D23B7A5FAD9F6844
+ B22C97559E2723C7CBBD3FE4FC8D9A07
+ 44652A83E72A9C461876AF4D7EF1A117
+ 57BE81F47B17D9AE7C4FF15429A73E10
+ ACF250ED3A90A93C711308A74C6216A9
+ ED84CD126DA7F28E8ABF8BB63517E1CA
+ 98E712F4FB2E1A6AED9FDC73291FAA17
+ 958211C4BA2EBD5838C635EDB81F513A
+ 91A294E194F1C039AEEC657DCE40AA7E
+ 7C0AF57CACEFA40C9F14B71A4B3456A6
+ 3E162EC7D8D10B8FFB1810D71001B618
+ 696AFCFD0CDDCC83C7E77F11A649D79A
+ CDC3354E9635FF137E929933A0BD6F53
+ 77EFA105A3A4266B7C0D089D08F1E855
+ CC32B15B93784A36E56A76CC64BC8477"-"\n"-" "; ]])
 dnl ]])
 
 cond_resolv( Nettle.CBC, [[
