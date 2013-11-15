@@ -1204,7 +1204,43 @@ PIKECLASS SALSA20
 /*! @endclass SALSA20
  */
 
-#endif /* HAVE_NETTLE_SALSA20_CRYPT */
+#define pike_salsa20r12_set_encrypt_key pike_salsa20_set_encrypt_key
+#define pike_salsa20r12_set_decrypt_key pike_salsa20_set_decrypt_key
+#define salsa20r12_encrypt salsa20r12_crypt
+#define salsa20r12_decrypt salsa20r12_crypt
+#define salsa20r12_ctx salsa20_ctx
+
+#define SALSA20R12_BLOCK_SIZE	SALSA20_BLOCK_SIZE
+#define SALSA20R12_KEY_SIZE	SALSA20_KEY_SIZE
+
+/*! @class SALSA20R12
+ *!
+ *! Implementation of the @[SALSA20] cipher reduced to 12 rounds.
+ *!
+ */
+PIKECLASS SALSA20R12
+{
+  /*! @decl inherit SALSA20
+   */
+  INHERIT SALSA20;
+
+  static const struct pike_cipher pike_salsa20r12 =
+    _PIKE_CIPHER(salsa20r12, SALSA20R12);
+
+  INIT
+    {
+      struct Cipher_struct *cipher;
+      /* NB: We know that Cipher is the first inherit of SALSA20. */
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 2,
+			     Cipher_program);
+      cipher->meta = &pike_salsa20r12;
+    }
+}
+
+/*! @endclass SALSA20R12
+ */
+
+#endif	/* HAVE_NETTLE_SALSA20_CRYPT */
 
 #ifdef HAVE_NETTLE_SERPENT_DECRYPT
 
