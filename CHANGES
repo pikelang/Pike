@@ -137,6 +137,8 @@ o The && operator changed, when doing A && B, and A is false, keep A
   This is especially useful then A is not actually 0, but an object
   that evaluates to false, or UNDEFINED.
 
+o Fixed symbol resolution with deep inherits and mixins.
+
 
 New preprocessor features
 -------------------------
@@ -306,6 +308,10 @@ o The built in sandbox is now deprecated
   up to date the security system will be removed in the next stable
   release.
 
+o The compiler now warns about switch statements where the cases
+  aren't enumerable, since these will generate random failures
+  if the code is read from a dump.
+
 
 Removed features and modules
 ----------------------------
@@ -327,10 +333,6 @@ o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 o Locale.Charset
 
   The charset module is now available on the top level as 'Charset'
-
-o The compiler now warns about switch statements where the cases
-  aren't enumerable, since these will generate random failures
-  if the code is read from a dump.
 
 
 New modules
@@ -472,6 +474,7 @@ o __builtin
 
 Extensions and new functions
 ----------------------------
+
 o Bz2.File added
 
   It implements a Stdio.File like API, including support for the same
@@ -1001,8 +1004,6 @@ o Signal handlers in GTK2 do no longer get their arguments in the
 
 Bug fixes
 ---------
-
-o Fixed symbol resolution with deep inherits and mixins.
 
 o Fixed backtraces when Protocols.HTTP.Query objects where garbage
   collected. [bug 5730]
