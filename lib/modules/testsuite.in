@@ -304,7 +304,7 @@ define(test_local_network_type, [[
   // the local machine actually has the IP.
   test_network_type([[$1]],
                     [[ NetUtils.LOCAL, NetUtils.LOCALV6,
-                       NetUtils.LOCALHOST, NetUtils.LOCALHOSTv6, $2 ]],
+                       NetUtils.LOCALHOST, NetUtils.LOCALHOSTV6, $2 ]],
                     [[$3]])
 ]])
 
