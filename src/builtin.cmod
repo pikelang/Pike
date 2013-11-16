@@ -4763,7 +4763,16 @@ PIKECLASS Serializable
    *!   in the inheriting class.
    *!
    *! This function calls @[_serialize_variable()] once
-   *! for every variable in the inheriting class.
+   *! for every variable in the inheriting class, which
+   *! in turn will call @[serializer] with the arguments:
+   *! @dl
+   *!   @item Argument 1
+   *!     The value of the variable.
+   *!   @item Argument 2
+   *!     The name of the variable.
+   *!   @item Argument 3
+   *!     The declared type of the variable.
+   *! @enddl
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -4771,6 +4780,10 @@ PIKECLASS Serializable
    *!
    *! @note
    *!   This function is typically called via @[Serializer.serialize()].
+   *!
+   *! @seealso
+   *!   @[Serializer.serialize()], @[_serialize_variable()],
+   *!   @[_deserialize()]
    */
   PIKEFUN void _serialize(object o,
 			  function(mixed, string, type:void) serializer)
@@ -4854,7 +4867,7 @@ PIKECLASS Serializable
    *!   These issues can all be solved by overloading this function.
    *!
    *! @seealso
-   *!   @[_deserialize()], @[_serialize_variable()]
+   *!   @[_deserialize()], @[_serialize_variable()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize_variable(function(function(mixed:void),
 					      string, type: void)
@@ -4896,7 +4909,16 @@ PIKECLASS Serializable
    *!   in the inheriting class.
    *!
    *! This function calls @[_deserialize_variable()] once
-   *! for every variable in the inheriting class.
+   *! for every variable in the inheriting class, which
+   *! in turn will call @[deserializer] with the arguments:
+   *! @dl
+   *!   @item Argument 1
+   *!     The setter for the variable.
+   *!   @item Argument 2
+   *!     The name of the variable.
+   *!   @item Argument 3
+   *!     The declared type of the variable.
+   *! @enddl
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -4904,6 +4926,10 @@ PIKECLASS Serializable
    *!
    *! @note
    *!   This function is typically called via @[Serializer.deserialize()].
+   *!
+   *! @seealso
+   *!   @[Serializer.deserialize()], @[_deserialize_variable()],
+   *!   @[_serialize()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize(object o,
 			    function(function(mixed:void),
