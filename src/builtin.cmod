@@ -4434,12 +4434,24 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
 /*! @class Setter
  *!
  *! Internal class for implementing setters.
+ *!
+ *! This class is used by @[_get_setter()].
+ *!
+ *! @seealso
+ *!   @[_get_setter()]
  */
 PIKECLASS Setter
 {
   PIKEVAR object o
     flags ID_PROTECTED|ID_PRIVATE|ID_LOCAL;
   CVAR int f;
+
+  /*! @decl void `()(mixed val)
+   *!
+   *! Set the variable for the setter to @[val].
+   *!
+   *! This is the function returned by @[_get_setter()].
+   */
   PIKEFUN void `()(mixed val)
     flags ID_PROTECTED;
   {
@@ -4468,6 +4480,9 @@ PIKECLASS Setter
   }
 }
 
+/*! @endclass
+ */
+
 PMOD_EXPORT struct object *get_setter(struct object *o, int f)
 {
   struct object *res = clone_object(Setter_program, 0);
@@ -4477,9 +4492,13 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void) _get_setter(object o, string s)
+/*! @decl function(mixed_void) _get_setter(object o, string varname)
  *!
- *! Get a setter for the variable named @[s] in object @[o].
+ *! Get a setter for the variable named @[varname] in object @[o].
+ *!
+ *! @returns
+ *!   Returns a @[Setter()->`()()] for the variable if it exists,
+ *!   and @expr{UNDEFINED@} otherwise.
  *!
  *! @seealso
  *!   @[object_variablep()]
@@ -4504,9 +4523,6 @@ PIKEFUN function(mixed:void) _get_setter(object o, string s)
   }
   stack_pop_n_elems_keep_top(args);
 }
-
-/*! @endclass
- */
 
 /*! @class Null
  *!
