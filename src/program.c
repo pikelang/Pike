@@ -899,9 +899,32 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`[]=()], @[lfun::`->=()]
  */
 
-/*! @decl mixed lfun::`->(string arg, object|void context, int|void access)
+/*! @decl mixed lfun::`->(string index, object|void context, int|void access)
  *!
  *!   Arrow index callback.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to access.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   is to be be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns the value at @[index] if it exists, and
+ *!   @expr{UNDEFINED@} otherwise.
  *!
  *! @note
  *!   It's assumed that this function is side-effect free.
@@ -910,10 +933,38 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`->()], @[::`->()]
  */
 
-/*! @decl mixed lfun::`->=(string arg, zero value, @
+/*! @decl mixed lfun::`->=(string index, zero value, @
  *!                        object|void context, int|void access)
  *!
  *!   Arrow index assignment callback.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to change the value of.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   is to be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! This function is to index the current object with the string @[index],
+ *! and set it to @[value].
+ *!
+ *! @returns
+ *!   Returns the set @[value].
  *!
  *! @seealso
  *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()]
