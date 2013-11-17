@@ -806,7 +806,7 @@ static int _png_write_rgb(rgb_group *w1,
 			i-=4;
 			if (x)
 			{
-			   int m=((*s)>>i)&3;
+			   int m=((*s)>>i)&15;
 			   x--;
 			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
 			   if (m>=trns->len)
