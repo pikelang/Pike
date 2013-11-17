@@ -521,14 +521,23 @@ static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *U
     };
     struct thread_state *state;
 
-    if((state = thread_state_for_id(th_self()))==NULL) 
+    if((state = thread_state_for_id(th_self()))==NULL)
     {
 	struct object *thread_obj;
-	fprintf( stderr, "Creating a new pike-thread\n");
+/*	fprintf( stderr, "Creating a new pike-thread\n");*/
 
 	mt_lock_interpreter();
+        /* Note: LEAKS. Better than a crash.
+
+           Since we never stop the threads anyway, currently, this is
+           less important than it might seem.
+        */
+        Pike_interpreter_pointer = malloc( sizeof( struct Pike_interpreter_struct ) );
 	init_interpreter();
-	Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+#ifdef PROFILING
+        Pike_interpreter.stack_bottom=((char *)&x);
+#endif
+	Pike_interpreter.stack_top=((char *)&state) + (thread_stack_size-16384) * STACK_DIRECTION;
 	Pike_interpreter.recoveries = NULL;
 	thread_obj = fast_clone_object(thread_id_prog);
 	INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
