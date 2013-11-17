@@ -124,7 +124,7 @@ string low_parse_chapter(Node n, int chapter) {
       break;
 
     case "example":
-      ret += "<p><pre>" + c->value_of_node() + "</pre></p>\n";
+      ret += "<p><pre>" + quote(c->value_of_node()) + "</pre></p>\n";
       break;
 
     case "ul":
@@ -483,7 +483,7 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
 string parse_text(Node n, void|String.Buffer ret) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
-      ret->add(quote(n->get_test()));
+      ret->add(quote(n->get_text()));
     else
       return quote(n->get_text());
   }
