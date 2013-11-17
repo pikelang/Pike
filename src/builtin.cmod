@@ -136,8 +136,7 @@ PIKECLASS TM
     }  while(0)
 
 #ifdef HAVE_STRPTIME
-    /*
-     *! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
+    /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
      *!
      *! Parse the given @[data] using the format in @[format] as a date.
      *!
@@ -294,8 +293,7 @@ PIKECLASS TM
         push_text( buffer );
     }
 
-    /*
-     *! @decl int(0..60) sec;
+    /*! @decl int(0..60) sec;
      *! @decl int(0..59) min;
      *! @decl int(0..59) hour;
      *! @decl int(1..31) mday;
