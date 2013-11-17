@@ -561,6 +561,8 @@ PIKECLASS TM
             free_string( THIS->set_zone );
     }
 }
+/*! @endclass
+ */
 #undef FIX_THIS
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
 #undef tm_zone
