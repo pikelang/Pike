@@ -43,11 +43,11 @@ DECLARATIONS
  */
 
 #if defined(HAVE_MKTIME) && defined(HAVE_GMTIME) && defined(HAVE_LOCALTIME)
-PIKECLASS TM
 /*! @class TM
  *! A wrapper for the system struct tm time keeping structure.
  *! This can be used as a (very) lightweight alternative to Calendar.
  */
+PIKECLASS TM
 {
     CVAR struct tm t;
     CVAR time_t unix_time;
