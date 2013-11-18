@@ -10,7 +10,9 @@
 
 import Standards.ASN1.Types;
 
-//!
+//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! 4.1.1.2. Optionally the DSA parameters are included, if a DSA
+//! object is given as argument.
 Sequence algorithm_identifier(Crypto.DSA|void dsa)
 {
   return
@@ -18,7 +20,7 @@ Sequence algorithm_identifier(Crypto.DSA|void dsa)
 		       Sequence( ({ Integer(dsa->get_p()),
 				    Integer(dsa->get_q()),
 				    Integer(dsa->get_g()) }) ) }) )
-    : Sequence( ({ .Identifiers.dsa_id }) );
+    : Sequence( ({ .Identifiers.dsa_id }) ); // FIXME: Shouldn't there be a Null() here?
 }
 
 //! Generates the DSAPublicKey value, as specified in RFC2459.
@@ -52,6 +54,16 @@ Crypto.DSA parse_private_key(string key)
   dsa->set_private_key(a->elements[4]->value);
 
   return dsa;
+}
+
+//! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[dsa]
+//! object. See RFC 5280 section 4.1.2.7.
+Sequence build_public_key(Crypto.DSA dsa)
+{
+  return Sequence(({
+                    algorithm_identifier(),
+                    BitString(public_key(dsa)),
+                  }));
 }
 
 //! Returns the PKCS-1 algorithm identifier for DSA and the provided
