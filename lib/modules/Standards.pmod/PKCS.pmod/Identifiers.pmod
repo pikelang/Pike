@@ -84,6 +84,11 @@ Identifier rsa_sha256_id = pkcs_1_id->append(11);
 Identifier rsa_sha384_id = pkcs_1_id->append(12);
 Identifier rsa_sha512_id = pkcs_1_id->append(13);
 
+Identifier ecdsa_sha224_id = Identifier(1, 2, 840, 10045, 4, 3, 1);
+Identifier ecdsa_sha256_id = Identifier(1, 2, 840, 10045, 4, 3, 2);
+Identifier ecdsa_sha384_id = Identifier(1, 2, 840, 10045, 4, 3, 3);
+Identifier ecdsa_sha512_id = Identifier(1, 2, 840, 10045, 4, 3, 4);
+
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
@@ -96,6 +101,8 @@ Identifier dsa_id = Identifier(1, 2, 840, 10040, 4, 1);
                    x9cm(4) 3 }
 */
 Identifier dsa_sha_id = Identifier(1, 2, 840, 10040, 4, 3);
+Identifier dsa_sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 1);
+Identifier dsa_sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 2);
 
 Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
 Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
