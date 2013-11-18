@@ -7762,10 +7762,13 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
  *! variables in the object.
  *!
  *!
- *! If the object has a the lfun _size_object it will be called
+ *! If the object has a @[lfun::_size_object()] it will be called
  *! without arguments, and the return value will be added to the final
  *! size. It is primarily intended to be used by C-objects that
  *! allocate memory that is not normally visible to pike.
+ *!
+ *! @seealso
+ *!   @[lfun::_size_object()], @[sizeof()]
  */
 static void f__size_object( INT32 args )
 {
