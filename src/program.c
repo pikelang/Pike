@@ -178,6 +178,7 @@ const char *const lfun_names[]  = {
   "_serialize",
   "_deserialize",
   "_size_object",
+  "_random",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -239,6 +240,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
   tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
+  tFuncV(tNone, tVoid, tMix),	/* "_random", */
 };
 
 /* These two are not true LFUNs! */
@@ -1283,6 +1285,15 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @seealso
  *!   @[lfun::_serialize()], @[Serializer.deserialize()],
  *!   @[Serializer.Serializable()->_deserialize()]
+ */
+
+/*! @decl mixed lfun::_random()
+ *!   Called by @[random()]. Typical use is when the object implements
+ *!   a ADT, when a call to this lfun should return a random member of
+ *!   the ADT or range implied by the ADT.
+ *!
+ *! @seealso
+ *!   @[predef::random()]
  */
 
 /*! @decl mixed lfun::`symbol()
