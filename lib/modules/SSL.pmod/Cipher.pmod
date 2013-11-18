@@ -249,12 +249,14 @@ class AES
   protected void create() { ::create(Crypto.AES()); }
 }
 
+#if constant(Crypto.CAMELLIA)
 //!
 class CAMELLIA
 {
   inherit Crypto.CBC;
   protected void create() { ::create(Crypto.CAMELLIA()); }
 }
+#endif
 
 //! Signing using RSA.
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
@@ -497,6 +499,7 @@ array lookup(int suite, ProtocolVersion|int version)
     res->iv_size = 16;
     res->key_bits = 256;
     break;
+#if constant(Crypto.CAMELLIA)
   case CIPHER_camellia128:
     res->bulk_cipher_algorithm = CAMELLIA;
     res->cipher_type = CIPHER_block;
@@ -513,6 +516,7 @@ array lookup(int suite, ProtocolVersion|int version)
     res->iv_size = 16;
     res->key_bits = 256;
     break;
+#endif
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:
     return 0;
