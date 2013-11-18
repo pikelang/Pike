@@ -2055,16 +2055,9 @@ PIKEFUN program function_program(program|function func)
 /*! @decl mixed random(object o)
  *!   If random is called with an object, @[lfun::random] will be
  *!   called in the object.
+ *!
  *! @seealso
- *!  @[lfun::_random]
- */
-
-/*! @decl mixed lfun::_random()
- *!   Called by @[random]. Typical uses is when the object implements
- *!   a ADT, then a call to this lfun should return a random member of
- *!   the ADT or range implied by the ADT.
- *! @seealso
- *!   @[predef::random()]
+ *!  @[lfun::_random()]
  */
 
 PMOD_EXPORT
@@ -2072,7 +2065,11 @@ PIKEFUN mixed random(object o)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
-  apply(o,"_random",0);
+  int f = low_find_lfun(o->prog, LFUN__RANDOM);
+  if (f < 0) {
+    Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
+  }
+  apply_low(o, f, 0);
   stack_swap();
   pop_stack();
 }
