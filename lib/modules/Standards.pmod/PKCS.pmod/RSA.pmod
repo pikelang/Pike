@@ -8,6 +8,14 @@
 
 import Standards.ASN1.Types;
 
+//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! 4.1.1.2. Optionally the DSA parameters are included, if a DSA
+//! object is given as argument.
+Sequence algorithm_identifier()
+{
+  return Sequence( ({ .Identifiers.rsa_id, Null() }) );
+}
+
 //! Create a DER-coded RSAPublicKey structure
 //! @param rsa
 //!   @[Crypto.RSA] object
@@ -83,10 +91,12 @@ Crypto.RSA parse_private_key(string key)
   return rsa;
 }
 
+//! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[rsa]
+//! object. See RFC 5280 section 4.1.2.7.
 Sequence build_public_key(Crypto.RSA rsa)
 {
   return Sequence(({
-                    Sequence(({ .Identifiers.rsa_id, Null() })),
+                    algorithm_identifier(),
                     BitString( public_key(rsa) ),
                   }));
 }
