@@ -1184,7 +1184,7 @@ PIKECLASS SALSA20
       if (iv->len != SALSA20_IV_SIZE)
         Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_IV_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
-      salsa20_set_iv(&THIS->salsa20, iv->str);
+      salsa20_set_iv(&THIS->salsa20, (uint8_t *)iv->str);
       push_object(this_object());
     }
 
@@ -1203,6 +1203,8 @@ PIKECLASS SALSA20
 
 /*! @endclass SALSA20
  */
+
+#ifdef salsa20r12_crypt
 
 #define pike_salsa20r12_set_encrypt_key pike_salsa20_set_encrypt_key
 #define pike_salsa20r12_set_decrypt_key pike_salsa20_set_decrypt_key
@@ -1239,6 +1241,8 @@ PIKECLASS SALSA20R12
 
 /*! @endclass SALSA20R12
  */
+
+#endif /* salsa20r12_crypt */
 
 #endif	/* HAVE_NETTLE_SALSA20_CRYPT */
 
