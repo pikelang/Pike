@@ -604,25 +604,35 @@ constant CIPHER_SUITES =
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
    TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
 
+#if constant(Crypto.CAMELLIA)
    TLS_rsa_with_camellia_128_cbc_sha:	({ KE_rsa, CIPHER_camellia128, HASH_sha }),
    TLS_dhe_dss_with_camellia_128_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha }),
    TLS_dhe_rsa_with_camellia_128_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha }),
    TLS_rsa_with_camellia_256_cbc_sha:	({ KE_rsa, CIPHER_camellia256, HASH_sha }),
    TLS_dhe_dss_with_camellia_256_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha }),
    TLS_dhe_rsa_with_camellia_256_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha }),
+#endif
 
 ]);
 
 constant preferred_rsa_suites = ({
   // TLS_rsa_with_aes_256_cbc_sha256,
+#if constant(Crypto.CAMELLIA)
   TLS_dhe_rsa_with_camellia_256_cbc_sha,
+#endif
   TLS_dhe_rsa_with_aes_256_cbc_sha,
+#if constant(Crypto.CAMELLIA)
   TLS_rsa_with_camellia_256_cbc_sha,
+#endif
   TLS_rsa_with_aes_256_cbc_sha,
   // TLS_rsa_with_aes_128_cbc_sha256,
+#if constant(Crypto.CAMELLIA)
   TLS_dhe_rsa_with_camellia_128_cbc_sha,
+#endif
   TLS_dhe_rsa_with_aes_128_cbc_sha,
+#if constant(Crypto.CAMELLIA)
   TLS_rsa_with_camellia_128_cbc_sha,
+#endif
   TLS_rsa_with_aes_128_cbc_sha,		// Mandatory in RFC 5246 (TLS 1.2).
   SSL_rsa_with_idea_cbc_sha,
   SSL_rsa_with_rc4_128_sha,
@@ -637,9 +647,13 @@ constant preferred_rsa_suites = ({
 });
 
 constant preferred_dhe_dss_suites = ({
+#if constant(Crypto.CAMELLIA)
   TLS_dhe_dss_with_camellia_256_cbc_sha,
+#endif
   TLS_dhe_dss_with_aes_256_cbc_sha,
+#if constant(Crypto.CAMELLIA)
   TLS_dhe_dss_with_camellia_128_cbc_sha,
+#endif
   TLS_dhe_dss_with_aes_128_cbc_sha,
   SSL_dhe_dss_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
   SSL_dhe_dss_with_des_cbc_sha,

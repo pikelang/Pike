@@ -271,8 +271,12 @@ int verify_signature(string text, string sig, string pubkey)
   case 2:  hash = Crypto.SHA1();   break;
   case 3: error("RIPE-MD/160 not supported.\n"); break;
   case 8:  hash = Crypto.SHA256(); break;
+#if constant(Crypto.SHA384)
   case 9:  hash = Crypto.SHA384(); break;
+#endif
+#if constant(Crypto.SHA512)
   case 10: hash = Crypto.SHA512(); break;
+#endif
   case 11: error("SHA224 not supported.\n"); break;
   case 100..110: error("Private/experimental hash function.\n");
   default: error("Unknown hash function %O\n", signt->digest_algorithm );
