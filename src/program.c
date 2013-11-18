@@ -1287,6 +1287,17 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[Serializer.Serializable()->_deserialize()]
  */
 
+/*! @decl int lfun::_size_object()
+ *!
+ *! @[Debug.size_object()] callback.
+ *!
+ *! @returns
+ *!   Returns an approximation of the memory use in bytes for the object.
+ *!
+ *! @seealso
+ *!   @[Debug.size_object()], @[lfun::_sizeof()]
+ */
+
 /*! @decl mixed lfun::_random()
  *!   Called by @[random()]. Typical use is when the object implements
  *!   a ADT, when a call to this lfun should return a random member of
