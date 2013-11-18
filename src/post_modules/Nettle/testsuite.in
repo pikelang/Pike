@@ -3,9 +3,11 @@ START_MARKER
 test_true([[objectp(Nettle)]])
 
 define(test_hash, [[
-  test_eq(String.string2hex(Nettle.$1()->hash("")),#"$2"-" "-"\n")
-  test_eq(String.string2hex(Nettle.$1()->hash((string)enumerate(256)*2)),#"$3"-" "-"\n")
-  test_eq(String.string2hex(Nettle.$1()->hash("abc")),#"$4"-" "-"\n")
+  cond_resolv(Nettle.$1, [[
+      test_eq(String.string2hex(Nettle.$1()->hash("")),#"$2"-" "-"\n")
+      test_eq(String.string2hex(Nettle.$1()->hash((string)enumerate(256)*2)),#"$3"-" "-"\n")
+      test_eq(String.string2hex(Nettle.$1()->hash("abc")),#"$4"-" "-"\n")
+  ]])
 ]])
 
 test_hash(MD2,
@@ -165,7 +167,7 @@ dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
 dnl set 1, vector #0
-dnl cond_resolv( Nettle.SALSA20 [[
+cond_resolv( Nettle.SALSA20 [[
   test_any([[
     object o = Nettle.SALSA20()();
     o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"));
@@ -192,11 +194,11 @@ dnl cond_resolv( Nettle.SALSA20 [[
  C2F9939670FAD4A46066ADCC6A564578
  3308B90FFB72BE04A6B147CBE38CC0C3
  B9267C296A92A7C69873F9F263BE9703"-"\n"-" "; ]])
-dnl ]])
+]])
 
 dnl 256 bit key, 64 bit IV
 dnl set 1, vector #0
-dnl cond_resolv( Nettle.SALSA20 [[
+cond_resolv( Nettle.SALSA20 [[
   test_any([[
     object o = Nettle.SALSA20()();
     o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"
@@ -224,7 +226,7 @@ dnl cond_resolv( Nettle.SALSA20 [[
  CDC3354E9635FF137E929933A0BD6F53
  77EFA105A3A4266B7C0D089D08F1E855
  CC32B15B93784A36E56A76CC64BC8477"-"\n"-" "; ]])
-dnl ]])
+]])
 
 cond_resolv( Nettle.CBC, [[
   test_eval_error( Nettle.CBC( class{} ) )
