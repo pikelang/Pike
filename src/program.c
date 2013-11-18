@@ -866,18 +866,6 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  */
 
-/*! @decl mixed lfun::`[..](zero low, int low_bound_type, @
- *!                         zero high, int high_bound_type)
- *!
- *!   Subrange callback.
- *!
- *! @note
- *!   It's assumed that this function is side-effect free.
- *!
- *! @seealso
- *!   @[predef::`[..]]
- */
-
 /*! @decl mixed lfun::`[](zero arg1, zero|void arg2)
  *!
  *!   Indexing callback.
@@ -1195,6 +1183,21 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::Iterator], @[predef::get_iterator], @[predef::foreach()]
  */
 
+/*! @decl mixed lfun::`[..](zero low, int low_bound_type, @
+ *!                         zero high, int high_bound_type)
+ *!
+ *!   Subrange callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[predef::`[..]]
+ */
+
+/**** END TRUE LFUNS ****/
+/**** BEGIN FAKE LFUNS ****/
+
 /*! @decl mixed lfun::_search(mixed needle, mixed|void start)
  *!
  *!   Search callback.
@@ -1306,6 +1309,9 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @seealso
  *!   @[predef::random()]
  */
+
+/**** END FAKE LFUNS ****/
+/**** BEGIN MAGIC LFUNS ****/
 
 /*! @decl mixed lfun::`symbol()
  *! @decl mixed lfun::`->symbol()
