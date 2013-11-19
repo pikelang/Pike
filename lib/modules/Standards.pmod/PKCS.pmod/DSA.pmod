@@ -44,9 +44,9 @@ string private_key(Crypto.DSA dsa)
 //! @param p
 //!   Public parameter p, usually transmitted in the algoritm identifier.
 //! @param q
-//!   Public parameter p, usually transmitted in the algoritm identifier.
+//!   Public parameter q, usually transmitted in the algoritm identifier.
 //! @param g
-//!   Public parameter p, usually transmitted in the algoritm identifier.
+//!   Public parameter g, usually transmitted in the algoritm identifier.
 //! @returns
 //!   @[Crypto.DSA] object
 Crypto.DSA parse_public_key(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
