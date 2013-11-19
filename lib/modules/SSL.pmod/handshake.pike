@@ -232,18 +232,15 @@ Packet client_hello()
   struct->put_var_uint_array(compression_methods, 1, 1);
 
   ADT.struct extensions = ADT.struct();
-  ADT.struct extension;
-  int have_extensions = 0;
 
   if (secure_renegotiation) {
-    have_extensions++;
 
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    extension = ADT.struct();
+    ADT.struct extension = ADT.struct();
     extension->put_var_string(client_verify_data, 1);
     extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
@@ -252,8 +249,7 @@ Packet client_hello()
 
   if(context->client_use_sni)
   {
-    have_extensions++;
-    extension = ADT.struct();
+    ADT.struct extension = ADT.struct();
     if(context->client_server_names)
     {
       foreach(context->client_server_names;; string server_name)
@@ -273,9 +269,8 @@ Packet client_hello()
 
   if (context->advertised_protocols)
   {
-    have_extensions++;
     array(string) prots = context->advertised_protocols;
-    extension = ADT.struct();
+    ADT.struct extension = ADT.struct();
     extension->put_uint( [int]Array.sum(Array.map(prots, sizeof)) +
                          sizeof(prots), 2);
     foreach(context->advertised_protocols;; string proto)
@@ -294,14 +289,13 @@ Packet client_hello()
   int packet_size = sizeof(struct)+sizeof(extensions)+2;
   if(packet_size>255 && packet_size<512)
   {
-    have_extensions++;
     SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
                    512-packet_size-4);
     extensions->put_uint(EXTENSION_padding, 2);
     extensions->put_var_string("\0"*(512-packet_size-4), 2);
   }
 
-  if(have_extensions)
+  if(sizeof(extensions))
     struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
@@ -1653,7 +1647,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
         session->peer_certificate_chain = certs;
       }
-      
+
       mixed error=catch
       {
 	Standards.X509.Verifier public_key = Standards.X509.decode_certificate(
