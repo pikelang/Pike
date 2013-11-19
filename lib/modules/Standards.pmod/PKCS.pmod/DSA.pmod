@@ -38,6 +38,27 @@ string private_key(Crypto.DSA dsa)
 		       Integer))->get_der();
 }
 
+//! Decodes a DER-encoded DSAPublicKey structure.
+//! @param key
+//!   DSAPublicKey provided in ASN.1 DER-encoded format
+//! @param p
+//!   Public parameter p, usually transmitted in the algoritm identifier.
+//! @param q
+//!   Public parameter p, usually transmitted in the algoritm identifier.
+//! @param g
+//!   Public parameter p, usually transmitted in the algoritm identifier.
+//! @returns
+//!   @[Crypto.DSA] object
+Crypto.DSA parse_public_key(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
+{
+  Object a = Standards.ASN1.Decode.simple_der_decode(key);
+  if(!a || a->type_name!="INTEGER" ) return 0;
+
+  Crypto.DSA dsa = Crypto.DSA();
+  dsa->set_public_key(p, q, g, a->value);
+  return dsa;
+}
+
 //!
 Crypto.DSA parse_private_key(string key)
 {
