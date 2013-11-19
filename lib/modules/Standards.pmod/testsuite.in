@@ -281,10 +281,12 @@ test_any_equal([[
   "public_key": 1,
 ]) ]])
 
-test_any([[
-  // openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey rsa:2048 -out certfile.cer
-  return !!Standards.X509.verify_certificate(Standards.PEM.Messages(
-#"-----BEGIN CERTIFICATE-----
+define(test_cert, ([[
+  test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
+]]))
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
 MIIC+TCCAeGgAwIBAgIJANOmQYB8BiA6MA0GCSqGSIb3DQEBCwUAMBMxETAPBgNV
 BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNDQxOVoXDTE0MTExOTEzNDQxOVowEzER
 MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -301,13 +303,10 @@ MQpq+dh+QEl47TXmfPRLhP1VDrhf4imZRiOBy7VMXJ9ry3VixclN3nkntcx3SbB9
 Qo2hMzbvtyF1uleBIyZhECN4THU5O2+FDwFOX4ZQGxQK/ANCNDN1rCAb5ndcYcKk
 sMC/92tm3x5q8EHS1Yil4Q8BIiuj+2psKX9UZGAbMxB1czubQkyl9mNiV9V8PpGc
 Vue27gwE5EFxe0/5NwQmjkyH6xD6KQx71T1pRdLr8MiAD1YhPsXx61VkDgtm
------END CERTIFICATE-----")->parts->CERTIFICATE->body, ([]));
-]], 1)
+-----END CERTIFICATE-----)
 
-test_any([[
-  // openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -newkey rsa:2048 -out certfile.cer
-  return !!Standards.X509.verify_certificate(Standards.PEM.Messages(
-#"-----BEGIN CERTIFICATE-----
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
 MIIC+TCCAeGgAwIBAgIJAL7hTIcdxBC2MA0GCSqGSIb3DQEBDAUAMBMxETAPBgNV
 BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNDkyMFoXDTE0MTExOTEzNDkyMFowEzER
 MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -324,13 +323,10 @@ EocTN81NI3zQ7tCXvh99lEKXkZ0SwYdCHRFOr3C7yadoFRrXFOkjKKkv44AZptc6
 dddT4IhF0ccFNVops9yUkgdiSaZL+iWBKzPxNSP2m785ldzfpAaBfkIjtQm0LUtP
 Mc8wNpKQCO3ldK2Paq+At0aaPXlRVIUtS9/w0MYL90w/3iDzR3OtTvb85I87G3A1
 xuStSBwdb6EpBU2Ige9qw5TVaulCBjAmdOUIJRwU5UoWTktcmrsM0aqjf+/R
------END CERTIFICATE-----")->parts->CERTIFICATE->body, ([]));
-]], 1)
+-----END CERTIFICATE-----)
 
-test_any([[
-  // openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -newkey rsa:2048 -out certfile.cer
-  return !!Standards.X509.verify_certificate(Standards.PEM.Messages(
-#"-----BEGIN CERTIFICATE-----
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
 MIIC+TCCAeGgAwIBAgIJANPdhgZsaxbZMA0GCSqGSIb3DQEBDQUAMBMxETAPBgNV
 BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNTg1M1oXDTE0MTExOTEzNTg1M1owEzER
 MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -347,8 +343,26 @@ ouS5lbSm8PGjSG9XmFu1j8wcO7XhgOxEnV+7aTtD0SbRogsxAKoeV2eINcWYbJp7
 aCBpDINBOdGmnLiBxN1x9Q7EPP3pLbba1/bo2Od3ptd3GWUlmoufjuLezgSRni52
 9lj8H5z7G8tvU2OZKYHI6y3n5Q6SUh+LRUAwYnKaO54WVsjO6oA6DD0Z6HovzQfN
 AWbDAMbePGe4sM6h5f3MO/v3Wbxkv1scn2PuvHQ1xpTfp7z+yAc8kB4udUnC
------END CERTIFICATE-----
-")->parts->CERTIFICATE->body, ([]));
-]], 1)
+-----END CERTIFICATE-----)
+
+dnl openssl dsaparam -genkey -out dsaparam 1024
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -newkey dsa:dsaparam.txt -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIICszCCAnGgAwIBAgIJAOthAQ79O7mMMAkGByqGSM44BAMwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTMxMTE5MTc0MDIwWhcNMTQxMTE5MTc0MDIwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCCAbYwggErBgcqhkjOOAQBMIIBHgKBgQC6vqxjXhAMZSEV
+P4pzp0KY+qYnTjM9ieZ27myet+M5qXIjcEg2/XLwLPmPIYOGTm6OlPXADdaEZzOf
+j6RLB2PJD6GghC5NbdrewsgGMAuVM7h5uEXRswsbpwxFm2MuPqKtA699cs6fa5hZ
+pNZUQPSlrFfkb6/95s/EofMGMQgQmwIVAPUBXOFLS/MYisyLR0Yw/poPC3HlAoGA
+EqdyVSDZRLMCONHc7UXNYMecOVgpcy8W9DEg4YfTx6SMp/Ey1mXG/cvvH47NbINS
+f88QXrBuJJEzhnQir+AUh31Mj2q/Uy2WKP8IP+kJGNjtFuxyO6YZx2OAc9lHrdvb
+AtOD//jnVOjijOG6fnAfBxMkkKWKYojMcDYWsijI6nYDgYQAAoGAWocMqiSNXmuc
+wIfYetPQitrmZRDTWizuit/sIcmvIPM0OnqFcxp50QWOaiZmAuL3pEB4CiV2HpIS
+Rer5N3/Vp+zMQGgRM1zFKD2qbdmMTOMWUGc3g1AjGGFvDuTYGOIY4RmftR0gt8Y4
+E2Dqqk0XbF3CeCrVhmVfa7ej0ByVYhmjUDBOMB0GA1UdDgQWBBRjbUSrAPUt1p8i
+8PfVzFv4Dl03LjAfBgNVHSMEGDAWgBRjbUSrAPUt1p8i8PfVzFv4Dl03LjAMBgNV
+HRMEBTADAQH/MAkGByqGSM44BAMDMQAwLgIVALDFfQRihjOCqi1vFUi5rnYig/zk
+AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
+-----END CERTIFICATE-----)
 
 END_MARKER
