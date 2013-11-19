@@ -138,8 +138,10 @@ mapping(string:Identifier) name_ids =
   "countryName" : at_id->append(6),       /* printable string */
   "localityName" : at_id->append(7),      /* printable string */
   "stateOrProvinceName" : at_id->append(8), /* printable string */
+  "streetAddress" : at_id->append(9),     /* printable string */
   "organizationName" : at_id->append(10), /* printable string */
-  "organizationUnitName" : at_id->append(11)  /* printable string */
+  "organizationUnitName" : at_id->append(11),  /* printable string */
+  "postalCode" : at_id->append(17),       /* printable string */
   ]);
 
 mapping(string:Identifier) attribute_ids =
