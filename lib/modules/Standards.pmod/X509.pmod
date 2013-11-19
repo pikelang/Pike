@@ -275,7 +275,7 @@ class Verifier {
   optional Crypto.RSA rsa; // Ugly
 }
 
-protected class rsa_verifier
+protected class RSAVerifier
 {
   inherit Verifier;
   Crypto.RSA rsa;
@@ -283,9 +283,8 @@ protected class rsa_verifier
   constant type = "rsa";
 
   //!
-  this_program init(string key) {
+  protected void create(string key) {
     rsa = RSA.parse_public_key(key);
-    return rsa && this;
   }
 
   //!
@@ -347,7 +346,7 @@ protected Verifier make_verifier(Object _keyinfo)
 	 || (seq[1]->get_der() != Null()->get_der()) )
       return 0;
     
-    return rsa_verifier()->init(str->value);
+    return RSAVerifier(str->value);
   }
 
   if(seq[0]->get_der() == Identifiers.dsa_sha_id->get_der())
@@ -418,9 +417,46 @@ class TBSCertificate
     }
   }
 
+  protected string get_id(object asn)
+  {
+    foreach(.PKCS.Identifiers.name_ids; string name; object id)
+      if( asn==id ) return name;
+    return (array(string))asn->id*".";
+  }
+
+  protected array fmt_asn1(object asn)
+  {
+    array i = ({});
+    mapping m = ([]);
+
+    foreach(asn->elements;; object o)
+    {
+      o = o[0];
+      string id = get_id(o[0]);
+      i += ({ ([ id : o[1]->value]) });
+      if( m )
+      {
+        if(m[id])
+        {
+          m = 0;
+          continue;
+        }
+        m[id] = o[1]->value;
+      }
+    }
+
+    return m || i;
+  }
+
   protected string _sprintf(int t)
   {
-    return t=='O' && sprintf("%O(%O)", this_program, cast("mapping"));
+    if( t!='O' ) return UNDEFINED;
+    mapping m = cast("mapping");
+    catch {
+      m->issuer = fmt_asn1(m->issuer);
+      m->subject = fmt_asn1(m->subject);
+    };
+    return sprintf("%O(%O)", this_program, m);
   }
 
   //! Populates the object from a certificate decoded into an ASN.1
