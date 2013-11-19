@@ -114,10 +114,14 @@ protected private class Extractor {
         parseClassBody(c, root);
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;
-        if (!endmeta || endmeta->type != "end" + meta->type)
+        if (!endmeta)
           extractorErrorAt(token->currentPosition,
                            "'@%s %s' without matching '@end%s'",
                            meta->type, meta->name, meta->type);
+        if (endmeta->type != "end" + meta->type)
+          extractorErrorAt(token->currentPosition,
+                           "'@%s %s' without matching '@end%s', got '@%s'",
+                           meta->type, meta->name, meta->type, endmeta->type);
         if (endmeta->name && endmeta->name != meta->name)
           extractorErrorAt(token->currentPosition,
                            "'@end%s %s' does not match '@%s %s'",
