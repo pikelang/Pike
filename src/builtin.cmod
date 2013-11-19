@@ -4362,154 +4362,6 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
   stack_unlink(args);
 }
 
-/* Linked list stuff.
- */
-static struct block_allocator pike_list_node_allocator = BA_INIT_PAGES(sizeof(struct pike_list_node), 4);
-
-ATTRIBUTE((malloc))
-static struct pike_list_node * alloc_pike_list_node() {
-    struct pike_list_node * node = ba_alloc(&pike_list_node_allocator);
-    node->next = node->prev = NULL;
-    node->refs = 1;
-    SET_SVAL(node->val, T_INT, NUMBER_UNDEFINED, integer, 0);
-    return node;
-}
-
-void count_memory_in_pike_list_nodes(size_t * n, size_t * s) {
-    ba_count_all(&pike_list_node_allocator, n, s);
-}
-
-void free_all_pike_list_node_blocks() {
-    ba_destroy(&pike_list_node_allocator);
-}
-
-PMOD_EXPORT void free_list_node(struct pike_list_node *node)
-{
-  if (!sub_ref(node)) {
-    if (node->prev) {
-      free_list_node(node->prev);
-    }
-    if (node->next) {
-      free_list_node(node->next);
-    }
-    free_svalue(&node->val);
-    ba_free(&pike_list_node_allocator, node);
-  }
-}
-
-PMOD_EXPORT void unlink_list_node(struct pike_list_node *n)
-{
-#ifdef PIKE_DEBUG
-  if (!n) {
-    Pike_fatal("Unlinking NULL node.\n");
-  }
-  if (!n->next || !n->prev) {
-    Pike_fatal("Unlinking unlinked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  if (n->prev->next == n) {
-#ifdef PIKE_DEBUG
-    if (n->next->prev != n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    n->next = n->prev = NULL;
-
-    /* We've lost two references. */
-    free_list_node(n);
-    free_list_node(n);
-  } else {
-#ifdef PIKE_DEBUG
-    if (n->next->prev == n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    /* The node is already detached. */
-    n->next = n->prev = NULL;
-  }
-}
-
-PMOD_EXPORT void detach_list_node(struct pike_list_node *n)
-{
-#ifdef PIKE_DEBUG
-  if (!n) {
-    Pike_fatal("Detaching NULL node.\n");
-  }
-  if (!n->next || !n->prev) {
-    Pike_fatal("Detaching unlinked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  if (n->prev->next == n) {
-#ifdef PIKE_DEBUG
-    if (n->next->prev != n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    add_ref(n->next);
-    add_ref(n->prev);
-
-    /* We've lost two references. */
-    free_list_node(n);
-    free_list_node(n);
-#ifdef PIKE_DEBUG
-  } else if (n->next->prev == n) {
-    Pike_fatal("Partially detached node.\n");
-#endif /* PIKE_DEBUG */
-  }
-}
-
-PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
-				   struct pike_list_node *new_node)
-{
-#ifdef PIKE_DEBUG
-  if (!node) {
-    Pike_fatal("No node to prepend.\n");
-  }
-  if (!node->prev) {
-    Pike_fatal("Prepending unhooked node.\n");
-  }
-  if (!new_node) {
-    Pike_fatal("Prepending NULL node.\n");
-  }
-  if (new_node->next || new_node->prev) {
-    Pike_fatal("Prepending hooked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  new_node->next = node;
-  new_node->prev = node->prev;
-  new_node->prev->next = node->prev = new_node;
-  add_ref(new_node);
-  add_ref(new_node);
-}
-
-PMOD_EXPORT void append_list_node(struct pike_list_node *node,
-				  struct pike_list_node *new_node)
-{
-#ifdef PIKE_DEBUG
-  if (!node) {
-    Pike_fatal("No node to append.\n");
-  }
-  if (!node->next) {
-    Pike_fatal("Appending unhooked node.\n");
-  }
-  if (!new_node) {
-    Pike_fatal("Appending NULL node.\n");
-  }
-  if (new_node->next || new_node->prev) {
-    Pike_fatal("Appending hooked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  new_node->next = node->next;
-  new_node->prev = node;
-  new_node->next->prev = node->next = new_node;
-  add_ref(new_node);
-  add_ref(new_node);
-}
-
 /*! @module Builtin
  */
 
@@ -5108,6 +4960,154 @@ PIKEFUN void deserialize(object o,
 
 /*! @module ADT
  */
+
+/* Linked list stuff.
+ */
+static struct block_allocator pike_list_node_allocator = BA_INIT_PAGES(sizeof(struct pike_list_node), 4);
+
+ATTRIBUTE((malloc))
+static struct pike_list_node * alloc_pike_list_node() {
+    struct pike_list_node * node = ba_alloc(&pike_list_node_allocator);
+    node->next = node->prev = NULL;
+    node->refs = 1;
+    SET_SVAL(node->val, T_INT, NUMBER_UNDEFINED, integer, 0);
+    return node;
+}
+
+void count_memory_in_pike_list_nodes(size_t * n, size_t * s) {
+    ba_count_all(&pike_list_node_allocator, n, s);
+}
+
+void free_all_pike_list_node_blocks() {
+    ba_destroy(&pike_list_node_allocator);
+}
+
+PMOD_EXPORT void free_list_node(struct pike_list_node *node)
+{
+  if (!sub_ref(node)) {
+    if (node->prev) {
+      free_list_node(node->prev);
+    }
+    if (node->next) {
+      free_list_node(node->next);
+    }
+    free_svalue(&node->val);
+    ba_free(&pike_list_node_allocator, node);
+  }
+}
+
+PMOD_EXPORT void unlink_list_node(struct pike_list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Unlinking NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Unlinking unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    n->next = n->prev = NULL;
+
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+  } else {
+#ifdef PIKE_DEBUG
+    if (n->next->prev == n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    /* The node is already detached. */
+    n->next = n->prev = NULL;
+  }
+}
+
+PMOD_EXPORT void detach_list_node(struct pike_list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Detaching NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Detaching unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    add_ref(n->next);
+    add_ref(n->prev);
+
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+#ifdef PIKE_DEBUG
+  } else if (n->next->prev == n) {
+    Pike_fatal("Partially detached node.\n");
+#endif /* PIKE_DEBUG */
+  }
+}
+
+PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
+				   struct pike_list_node *new_node)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to prepend.\n");
+  }
+  if (!node->prev) {
+    Pike_fatal("Prepending unhooked node.\n");
+  }
+  if (!new_node) {
+    Pike_fatal("Prepending NULL node.\n");
+  }
+  if (new_node->next || new_node->prev) {
+    Pike_fatal("Prepending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new_node->next = node;
+  new_node->prev = node->prev;
+  new_node->prev->next = node->prev = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
+}
+
+PMOD_EXPORT void append_list_node(struct pike_list_node *node,
+				  struct pike_list_node *new_node)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to append.\n");
+  }
+  if (!node->next) {
+    Pike_fatal("Appending unhooked node.\n");
+  }
+  if (!new_node) {
+    Pike_fatal("Appending NULL node.\n");
+  }
+  if (new_node->next || new_node->prev) {
+    Pike_fatal("Appending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new_node->next = node->next;
+  new_node->prev = node;
+  new_node->next->prev = node->next = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
+}
 
 /*! @class List
  *!
