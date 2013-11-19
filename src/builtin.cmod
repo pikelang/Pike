@@ -4241,11 +4241,34 @@ PIKECLASS Timer
  */
 
 
+/*! @module Builtin
+ */
+
+/*! @class automap_marker
+ *!
+ *! This is an internal class used by @[__automap__()].
+ *!
+ *! It may show up during module dumping or in backtraces
+ *! and the like.
+ *!
+ *! It should in normal circumstances never be used directly.
+ *!
+ *! @seealso
+ *!   @[__automap__()], @[map()]
+ */
 PIKECLASS automap_marker
 {
   PIKEVAR array arg;
   PIKEVAR int depth;
 
+  /*! @decl void create(array arr, int depth)
+   *!
+   *! @param arr
+   *!   Array that @[__automap__()] is to loop over.
+   *!
+   *! @param depth
+   *!   Recursion depth of @[arr] where the loop will be.
+   */
   PIKEFUN void create(array a, int d)
     {
       if(THIS->arg) free_array(THIS->arg);
@@ -4270,6 +4293,11 @@ PIKECLASS automap_marker
     }
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 static void low_automap(int d,
 			int depth,
@@ -4301,10 +4329,8 @@ static void low_automap(int d,
     }
   }
 
-#ifdef PIKE_DEBUG
-   if(size == 0x7fffffff)
-    Pike_fatal("No automap markers found in low_automap\n");
-#endif
+  if(size == 0x7fffffff)
+    Pike_error("No automap markers found in __automap__\n");
 
   push_array(ret=allocate_array(size));
   types = 0;
@@ -4338,7 +4364,39 @@ static void low_automap(int d,
   stack_unlink(args);
 }
 
-
+/*! @decl array __automap__(function fun, mixed ... args)
+ *!
+ *! Automap execution function.
+ *!
+ *! @param fun
+ *!   Function to call for each of the mapped arguments.
+ *!
+ *! @param args
+ *!   Arguments for @[fun]. Either
+ *!   @mixed
+ *!     @type Builtin.automap_marker
+ *!       Wrapper for an array to loop over. All of the
+ *!       arrays will be looped over in parallel.
+ *!     @type mixed
+ *!       All other arguments will be held constant during
+ *!       the automap, and sent as is to @[fun].
+ *!   @endmixed
+ *!
+ *! @note
+ *!   This function is used by the compiler to implement the
+ *!   automap syntax, and should in normal circumstances never
+ *!   be used directly.
+ *!
+ *!   It may however show up during module dumping and in
+ *!   backtraces.
+ *!
+ *! @note
+ *!   It is an error not to have any @[Builtin.automap_marker]s
+ *!   in @[args].
+ *!
+ *! @seealso
+ *!   @[Builtin.automap_marker], @[map()]
+ */
 PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
   efun;
 {
