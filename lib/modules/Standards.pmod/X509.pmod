@@ -280,9 +280,6 @@ string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
 class Verifier {
   constant type = "none";
   int(0..1) verify(object,string,string);
-  this_program init(string key);
-
-  optional Crypto.RSA rsa; // Ugly
 }
 
 protected class RSAVerifier
@@ -292,7 +289,6 @@ protected class RSAVerifier
 
   constant type = "rsa";
 
-  //!
   protected void create(string key) {
     rsa = RSA.parse_public_key(key);
   }
@@ -330,21 +326,30 @@ protected class RSAVerifier
   }
 }
 
-#if 0
-/* FIXME: This is a little more difficult, as the dsa-parameters are
- * sometimes taken from the CA, and not present in the keyinfo. */
-protected class dsa_verifier
+protected class DSAVerifier
 {
   inherit Verifier;
-  object dsa;
+  Crypto.DSA dsa;
 
   constant type = "dsa";
 
-  object init(string key)
-    {
-    }
+  protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
+  {
+    dsa = DSA.parse_public_key(key, p, q, g);
+  }
+
+  //! Verifies the @[signature] of the certificate @[msg] using the
+  //! indicated hash @[algorithm]. The signature is the DER-encoded
+  //! ASN.1 sequence Dss-Sig-Value with the two integers r and s. See
+  //! RFC 3279 section 2.2.2.
+  int(0..1) verify(Sequence algorithm, string msg, string signature)
+  {
+    if (algorithm->get_der() == dsa_sha1_algorithm->get_der())
+      return dsa->verify_ssl(msg, signature);
+
+    return 0;
+  }
 }
-#endif
 
 protected Verifier make_verifier(Object _keyinfo)
 {
@@ -361,19 +366,30 @@ protected Verifier make_verifier(Object _keyinfo)
     return 0;
   Sequence seq = [object(Sequence)]keyinfo[0];
   String str = [object(String)]keyinfo[1];
-  
+
+  if(sizeof(seq)==0) return 0;
+
   if (seq[0]->get_der() == Identifiers.rsa_id->get_der())
   {
     if ( (sizeof(seq) != 2)
 	 || (seq[1]->get_der() != Null()->get_der()) )
       return 0;
-    
+
+    // FIXME: Verify that the Verifier is usable.
     return RSAVerifier(str->value);
   }
 
-  if(seq[0]->get_der() == Identifiers.dsa_sha_id->get_der())
+  if(seq[0]->get_der() == Identifiers.dsa_id->get_der())
   {
-    /* FIXME: Not implemented */
+    if( sizeof(seq)!=2 || seq[1]->type_name!="SEQUENCE" ||
+        sizeof(seq[1])!=3 || seq[1][0]->type_name!="INTEGER" ||
+        seq[1][1]->type_name!="INTEGER" || seq[1][2]->type_name!="INTEGER" )
+      return 0;
+
+    // FIXME: Verify that the Verifier is usable.
+    Sequence params = seq[1];
+    return DSAVerifier(str->value, params[0]->value,
+                       params[1]->value, params[2]->value);
     return 0;
   }
 }
