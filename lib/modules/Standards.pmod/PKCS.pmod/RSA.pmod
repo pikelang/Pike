@@ -51,7 +51,7 @@ string private_key(Crypto.RSA rsa)
 
 //! Decode a DER-coded RSAPublicKey structure
 //! @param key
-//!   RSAPublicKey provided in ASN1 encoded format
+//!   RSAPublicKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
 Crypto.RSA parse_public_key(string key)
@@ -71,7 +71,7 @@ Crypto.RSA parse_public_key(string key)
 
 //! Decode a DER-coded RSAPrivateKey structure
 //! @param key
-//!   RSAPrivateKey provided in ASN1 encoded format
+//!   RSAPrivateKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
 Crypto.RSA parse_private_key(string key)
