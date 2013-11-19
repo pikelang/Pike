@@ -121,12 +121,22 @@ protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
   MetaExplicit version_integer = MetaExplicit(2, 0);
 
+  // FIXME: These should probably move into PKCS.
   Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
 
   Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
 
   Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
                                              Null() }) );
+
+  Sequence rsa_sha256_algorithm = Sequence( ({ Identifiers.rsa_sha256_id,
+                                               Null() }) );
+
+  Sequence rsa_sha384_algorithm = Sequence( ({ Identifiers.rsa_sha384_id,
+                                               Null() }) );
+
+  Sequence rsa_sha512_algorithm = Sequence( ({ Identifiers.rsa_sha512_id,
+                                               Null() }) );
 
   Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
 }
@@ -298,6 +308,18 @@ protected class RSAVerifier
       return rsa_verify_digest(rsa, Identifiers.sha1_id,
 			       Crypto.SHA1.hash(msg),
 			       signature);
+    if (algorithm->get_der() == rsa_sha256_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.sha256_id,
+                               Crypto.SHA256.hash(msg),
+                               signature);
+    if (algorithm->get_der() == rsa_sha384_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.sha384_id,
+                               Crypto.SHA384.hash(msg),
+                               signature);
+    if (algorithm->get_der() == rsa_sha512_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.sha512_id,
+                               Crypto.SHA512.hash(msg),
+                               signature);
 #if constant(Crypto.MD2.hash)
     if (algorithm->get_der() == rsa_md2_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md2_id,
@@ -601,6 +623,7 @@ TBSCertificate decode_certificate(string|object cert)
 
 //! Decodes a certificate, checks the signature. Returns the
 //! TBSCertificate structure, or 0 if decoding or verification failes.
+//! The valid time range for the certificate is not checked.
 //!
 //! Authorities is a mapping from (DER-encoded) names to a verifiers.
 //!
