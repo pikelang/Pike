@@ -2396,16 +2396,16 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! The following members are recognized:
  *!
  *! @mapping
- *! 	@member string current_file
- *! 	@member int|string charset
- *! 	@member object handler
- *! 	@member int compat_major
- *! 	@member int compat_minor
- *! 	@member int picky_cpp
- *!	@member int keep_comments
- *! 		This option does not strip comments from the file. Useful
- *! 		in combination with the prefix feature.
- *! 	@member string prefix
+ *! 	@member string "current_file"
+ *! 	@member int|string "charset"
+ *! 	@member object "handler"
+ *! 	@member int "compat_major"
+ *! 	@member int "compat_minor"
+ *! 	@member int "picky_cpp"
+ *!	@member int "keep_comments"
+ *! 		This option causes @[cpp()] not to strip comments.
+ *!             Useful in combination with the prefix feature below.
+ *! 	@member string "prefix"
  *! 		If a prefix is given, only prefixed directives will be
  *! 		processed. For example, if the prefix is @expr{"foo"@}, then
  *! 		@expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
@@ -2758,6 +2758,11 @@ void f_cpp(INT32 args)
   }
 }
 
+/*! @module Builtin
+ */
+
+/*! @decl mapping(string:mixed) _take_over_initial_predefines()
+ */
 void f__take_over_initial_predefines (INT32 args)
 {
   pop_n_elems (args);
@@ -2777,6 +2782,9 @@ void f__take_over_initial_predefines (INT32 args)
   }
   else Pike_error ("Initial predefines already taken over.\n");
 }
+
+/*! @endmodule
+ */
 
 void init_cpp()
 {

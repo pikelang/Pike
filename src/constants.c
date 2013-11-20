@@ -24,6 +24,7 @@ struct mapping *builtin_constants = 0;
 struct callable *first_callable = NULL;
 #endif
 
+/* This is the mapping returned by all_constants(). */
 PMOD_EXPORT struct mapping *get_builtin_constants(void)
 {
   return builtin_constants;

@@ -383,6 +383,25 @@ static const struct static_module module_list[] = {
 #endif
 };
 
+/*! @decl object _static_modules
+ *!
+ *! This is an object containing the classes for all static
+ *! (ie non-dynamic) C-modules.
+ *!
+ *! In a typic Pike with support for dynamic modules the contained
+ *! module classes are:
+ *! @dl
+ *!   @item @[Builtin]
+ *!   @item @[Gmp]
+ *!   @item @[_Stdio]
+ *!   @item @[_math]
+ *!   @item @[_system]
+ *! @enddl
+ *!
+ *! If the Pike binary lacks support for dynamic modules, all C-modules
+ *! will show up here.
+ */
+
 void init_modules(void)
 {
   struct program *p = NULL;

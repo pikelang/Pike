@@ -257,7 +257,7 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash()], @[7.0::hash()]
+ *!   @[predef::hash()], @[7.0::hash()]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -325,7 +325,7 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[hash()], @[7.4::hash()]
+ *!   @[predef::hash()], @[7.4::hash()]
  */
 static void f_hash_7_0( INT32 args )
 {
