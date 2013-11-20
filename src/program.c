@@ -8526,6 +8526,11 @@ static void f_compilation_env_compile(INT32 args)
 
 /*! @decl mixed resolv(string identifier, string filename, @
  *!		       object|void handler)
+ *!
+ *!   Look up @[identifier] in the current context.
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in the master object.
  */
 static void f_compilation_env_resolv(INT32 args)
 {

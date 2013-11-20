@@ -434,6 +434,13 @@ PIKECLASS Backend
    * Call outs.
    */
 
+  /*! @class CallOut
+   *!
+   *! Represents a single call_out in the call_out list.
+   *!
+   *! @seealso
+   *!   @[call_out()]
+   */
   PIKECLASS CallOut
     program_flags PROGRAM_USES_PARENT;
     flags ID_PROTECTED|ID_PRIVATE|ID_USED;
@@ -445,6 +452,10 @@ PIKECLASS Backend
     CVAR struct Backend_CallOut_struct **prev_fun;
     CVAR struct Backend_CallOut_struct *next_arr;
     CVAR struct Backend_CallOut_struct **prev_arr;
+    /*! @decl static array args
+     *!
+     *! The array containing the function and arguments.
+     */
     PIKEVAR array args
       flags ID_STATIC;
     CVAR struct object *this;
@@ -654,7 +665,23 @@ PIKECLASS Backend
       EXIT_BLOCK(this);
     }
 
-    /* Start a new call out */
+    /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
+     *!
+     *!   Start a new call out.
+     *!
+     *!   This is the low-level implementation of @[call_out()].
+     *!
+     *!   @[call_out()] is essentially implemented as:
+     *!   @code
+     *!     array call_out(mixed fun, int|float seconds, mixed ... args)
+     *!     {
+     *!       return CallOut(seconds, fun, @@args)->args;
+     *!     }
+     *!   @endcode
+     *!
+     *! @seealso
+     *!   @[call_out()]
+     */
     PIKEFUN void create(int|float seconds, mixed fun, mixed ... extra_args)
       flags ID_PROTECTED;
     {
@@ -812,6 +839,8 @@ PIKECLASS Backend
       UNPROTECT_CALL_OUTS();
     }
   }
+  /*! @endclass
+   */
 
 #undef THIS
 #define THIS THIS_BACKEND
@@ -886,7 +915,8 @@ PIKECLASS Backend
  *!   This value can be sent to eg @[find_call_out()] or @[remove_call_out()].
  *!
  *! @seealso
- *!   @[remove_call_out()], @[find_call_out()], @[call_out_info()]
+ *!   @[remove_call_out()], @[find_call_out()], @[call_out_info()],
+ *!   @[CallOut]
  */
    PIKEFUN array call_out(mixed f, int|float t, mixed ... rest)
      {
@@ -2358,6 +2388,8 @@ PIKECLASS Backend
 #endif
   }
 
+  /*! @decl void create()
+   */
   PIKEFUN void create()
     flags ID_PROTECTED;
   {
@@ -3047,15 +3079,20 @@ PIKECLASS PollDeviceBackend
 
   DECLARE_STORAGE
 
+  /*! @decl void set_signal_event_callback(int signum, function cb)
+   *!
+   *! @note
+   *!   This function is a noop except for the @tt{kqueue@} case.
+   */
   PIKEFUN void set_signal_event_callback(int signum, function cb)
   {
-	int q;
+    int q;
 #ifdef BACKEND_USES_KQUEUE
-  struct kevent ev[2];
-  EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
-  q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
+    struct kevent ev[2];
+    EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
+    q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
 #endif
-	pop_n_elems(args);
+    pop_n_elems(args);
   }
 
   /*

@@ -542,12 +542,12 @@ PIKECLASS CBC
     safe_apply(THIS->object, "key_size", args);
   }
 
-  /*! @decl this_program set_encrypt_key(string key)
+  /*! @decl this_program set_encrypt_key(string key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for encrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
    */
-  PIKEFUN object set_encrypt_key(string key)
+  PIKEFUN object set_encrypt_key(string key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
@@ -558,12 +558,12 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
-  /*! @decl this_program set_decrypt_key(string key)
+  /*! @decl this_program set_decrypt_key(string key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for decrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
    */
-  PIKEFUN object set_decrypt_key(string key)
+  PIKEFUN object set_decrypt_key(string key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
