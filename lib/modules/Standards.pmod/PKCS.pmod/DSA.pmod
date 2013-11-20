@@ -29,7 +29,12 @@ string public_key(Crypto.DSA dsa)
   return Integer(dsa->get_y())->get_der();
 }
 
-/* I don't know if this format interoperates with anything else */
+
+// FIXME
+// Niels: I don't know if this format interoperates with anything else.
+// Nilsson: PKCS#11 v2.01 section 11.9 encodes private key as the ASN.1
+// Integers p, q and g. x is however not included. Why does that work?
+
 //!
 string private_key(Crypto.DSA dsa)
 {
