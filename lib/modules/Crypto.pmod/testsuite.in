@@ -458,6 +458,10 @@ test_true( DSA->public_key_equal(DSB) )
 test_do( add_constant("DSB", Crypto.DSA()) )
 test_true( DSB->generate_parameters(1024) )
 test_true( DSB->generate_key() )
+test_any([[
+  array(Gmp.mpz) sign = DSB->raw_sign(DSB->hash("abc"));
+  return DSB->raw_verify(DSB->hash("abc"), @sign);
+]], 1)
 test_false( DSB->public_key_equal(DSA) )
 test_false( DSA->public_key_equal(DSB) )
 test_true( DSB->get_p()->gcdext2 )
