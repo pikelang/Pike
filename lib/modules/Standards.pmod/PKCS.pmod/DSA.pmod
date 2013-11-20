@@ -82,7 +82,7 @@ Crypto.DSA parse_private_key(string key)
 Sequence build_public_key(Crypto.DSA dsa)
 {
   return Sequence(({
-                    algorithm_identifier(),
+                    algorithm_identifier(dsa),
                     BitString(public_key(dsa)),
                   }));
 }
