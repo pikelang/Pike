@@ -105,6 +105,7 @@ Identifier dsa_sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 1);
 Identifier dsa_sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 2);
 
 Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
+Identifier md4_id = Identifier(1, 2, 840, 113549, 2, 4);
 Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
 Identifier sha1_id = Identifier(1, 3, 14, 3, 2, 26);
 Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
