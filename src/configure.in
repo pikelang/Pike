@@ -8645,6 +8645,14 @@ pike_cv_prog_CC="${CC}"
 
 #############################################################################
 
+# Autoconf 2.50 and later stupidity...
+if_autoconf(2,50,[
+  # Ensure that the propagated CC (if any) is up to date.
+  # Otherwise the sub-configures will attempt to use eg
+  # -R with the raw compiler, which only works on Solaris.
+  ac_configure_args=`echo " $ac_configure_args " | sed -e "s% 'CC=$REALCC' % 'CC=$CC' %g"`
+])
+
 AC_CONFIG_SUBDIRS(modules post_modules)
 
 AC_SUBST_FILE(dependencies)
