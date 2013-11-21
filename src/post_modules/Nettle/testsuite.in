@@ -1,6 +1,9 @@
 START_MARKER
-// Nettle
-test_true([[objectp(Nettle)]])
+
+
+dnl The point of these tests are just to make a basic validation that
+dnl the cryptography works. We assume that the Nettle library itself
+dnl is good, so no need for full NIST test vectors or similar.
 
 define(test_hash, [[
   cond_resolv(Nettle.$1, [[
