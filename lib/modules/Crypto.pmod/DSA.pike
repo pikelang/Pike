@@ -257,7 +257,8 @@ int(0..1) pkcs_verify(string message, .Hash h, string sign)
 //! Makes a DSA hash of the messge @[msg].
 Gmp.mpz hash(string msg, .Hash h)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(h->hash(msg), 256) % q);
+  string digest = h->hash(msg)[..q->size()/8-1];
+  return [object(Gmp.mpz)](Gmp.mpz(digest, 256) % q);
 }
   
 protected Gmp.mpz random_number(Gmp.mpz n)
