@@ -147,8 +147,12 @@ protected {
     rsa_md5_algorithm->get_der() : Crypto.MD5,
     rsa_sha1_algorithm->get_der() : Crypto.SHA1,
     rsa_sha256_algorithm->get_der() : Crypto.SHA256,
+#if constant(Crypto.SHA384)
     rsa_sha384_algorithm->get_der() : Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
     rsa_sha512_algorithm->get_der() : Crypto.SHA512,
+#endif
   ]);
 }
 
