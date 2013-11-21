@@ -217,15 +217,47 @@ Sequence pkcs_public_key()
 
 #undef Sequence
 
+//! Signs the @[message] with a PKCS-1 signature using hash algorithm
+//! @[h].
+string pkcs_sign(string message, .Hash h)
+{
+  array sign = map(raw_sign(hash(message, h)), Standards.ASN1.Types.Integer);
+  return Standards.ASN1.Types.Sequence(sign)->get_der();
+}
+
+#define Object Standards.ASN1.Types.Object
+
+//! Verify PKCS-1 signature @[sign] of message @[message] using hash
+//! algorithm @[h].
+int(0..1) pkcs_verify(string message, .Hash h, string sign)
+{
+  Object a = Standards.ASN1.Decode.simple_der_decode(sign);
+
+  if (!a
+      || (a->type_name != "SEQUENCE")
+      || (sizeof([array]a->elements) != 2)
+      || (sizeof( ([array(object(Object))]a->elements)->type_name -
+		  ({ "INTEGER" }))))
+    return 0;
+
+  return raw_verify(hash(message, h),
+		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[0]->
+		      value,
+		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[1]->
+		      value);
+}
+
+#undef Object
+
 //
 //  --- Below are methods for RSA applied in other standards.
 //
 
 
 //! Makes a DSA hash of the messge @[msg].
-Gmp.mpz hash(string msg)
+Gmp.mpz hash(string msg, .Hash h)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(.SHA1.hash(msg), 256) % q);
+  return [object(Gmp.mpz)](Gmp.mpz(h->hash(msg), 256) % q);
 }
   
 protected Gmp.mpz random_number(Gmp.mpz n)
@@ -266,35 +298,6 @@ int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 	       y->powm( [object(Gmp.mpz)](w * r % q), p) % p) % q;
 }
 
-//! Make an SSL signatrue of message @[msg].
-string sign_ssl(string msg)
-{
-  return Standards.ASN1.Types.Sequence(
-    Array.map(raw_sign(hash(msg)),
-	      Standards.ASN1.Types.Integer))->get_der();
-}
-
-//! Verify an SSL signature @[s] of message @[msg].
-int(0..1) verify_ssl(string msg, string s)
-{
-#define Object Standards.ASN1.Types.Object
-  Object a = Standards.ASN1.Decode.simple_der_decode(s);
-
-  if (!a
-      || (a->type_name != "SEQUENCE")
-      || (sizeof([array]a->elements) != 2)
-      || (sizeof( ([array(object(Object))]a->elements)->type_name -
-		  ({ "INTEGER" }))))
-    return 0;
-
-  return raw_verify(hash(msg),
-		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[0]->
-		      value,
-		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[1]->
-		      value);
-}
-
-
 
 //
 // --- Deprecated stuff
@@ -303,7 +306,7 @@ int(0..1) verify_ssl(string msg, string s)
 //! Make a RSA ref signature of message @[msg].
 __deprecated__ string sign_rsaref(string msg)
 {
-  [Gmp.mpz r, Gmp.mpz s] = raw_sign(hash(msg));
+  [Gmp.mpz r, Gmp.mpz s] = raw_sign(hash(msg, .SHA1));
 
   return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
@@ -314,9 +317,21 @@ __deprecated__ int(0..1) verify_rsaref(string msg, string s)
   if (sizeof(s) != 40)
     return 0;
 
-  return raw_verify(hash(msg),
+  return raw_verify(hash(msg, .SHA1),
 		    Gmp.mpz(s[..19], 256),
 		    Gmp.mpz(s[20..], 256));
+}
+
+//! Make an SSL signatrue of message @[msg].
+__deprecated__ string sign_ssl(string msg)
+{
+  return pkcs_sign(msg, .SHA1);
+}
+
+//! Verify an SSL signature @[s] of message @[msg].
+__deprecated__ int(0..1) verify_ssl(string msg, string s)
+{
+  return pkcs_verify(msg, .SHA1, s);
 }
 
 #else

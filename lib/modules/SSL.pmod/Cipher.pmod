@@ -322,7 +322,7 @@ int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
 ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
-  string s = context->dsa->sign_ssl(cookie + struct->contents());
+  string s = context->dsa->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
   struct->put_var_string(s, 2); 
   return struct;
 }
