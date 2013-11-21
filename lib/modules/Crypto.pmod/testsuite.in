@@ -207,7 +207,13 @@ cond_resolv( Crypto.$1, [[
   dnl pbkdf2
   dnl asn1_id
   test_eq(sizeof(Crypto.$1.hash("foo")),Crypto.$1.digest_size())
-]])]])
+]])
+cond_resolv( Crypto.$1.asn1_id, [[
+  test_any([[
+    return Standards.PKCS.Identifiers[lower_case("$1")+"_id"];
+  ]], Crypto.$1.asn1_id())
+]])
+]])
 
 test_hash(MD2,
 8350e5a3e24c153df2275c9f80692773,
