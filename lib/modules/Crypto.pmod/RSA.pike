@@ -210,17 +210,18 @@ Sequence pkcs_public_key()
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm
 //! @[h].
-Gmp.mpz sign(string message, .Hash h)
+string pkcs_sign(string message, .Hash h)
 {
-  return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
+  string di = Standards.PKCS.Signature.build_digestinfo(message, h);
+  return raw_sign(di)->digits(256);
 }
 
 //! Verify PKCS-1 signature @[sign] of message @[message] using hash
 //! algorithm @[h].
-int(0..1) verify(string message, .Hash h, Gmp.mpz sign)
+int(0..1) pkcs_verify(string message, .Hash h, string sign)
 {
   string s = Standards.PKCS.Signature.build_digestinfo(message, h);
-  return raw_verify(s, sign);
+  return raw_verify(s, Gmp.mpz(sign, 256));
 }
 
 //
