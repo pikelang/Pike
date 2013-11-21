@@ -296,6 +296,7 @@ protected class RSAVerifier
   //!
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
+    if (!rsa) return 0;
     if (algorithm->get_der() == rsa_md5_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md5_id,
 			       Crypto.MD5.hash(msg),
@@ -344,6 +345,7 @@ protected class DSAVerifier
   //! RFC 3279 section 2.2.2.
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
+    if (!dsa) return 0;
     if (algorithm->get_der() == dsa_sha1_algorithm->get_der())
       return dsa->verify_ssl(msg, signature);
 
@@ -375,7 +377,6 @@ protected Verifier make_verifier(Object _keyinfo)
 	 || (seq[1]->get_der() != Null()->get_der()) )
       return 0;
 
-    // FIXME: Verify that the Verifier is usable.
     return RSAVerifier(str->value);
   }
 
@@ -386,11 +387,9 @@ protected Verifier make_verifier(Object _keyinfo)
         seq[1][1]->type_name!="INTEGER" || seq[1][2]->type_name!="INTEGER" )
       return 0;
 
-    // FIXME: Verify that the Verifier is usable.
     Sequence params = seq[1];
     return DSAVerifier(str->value, params[0]->value,
                        params[1]->value, params[2]->value);
-    return 0;
   }
 }
 
