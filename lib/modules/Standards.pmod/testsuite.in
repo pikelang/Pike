@@ -292,7 +292,7 @@ test_any([[
 
 test_any([[
   Crypto.RSA rsa = Crypto.RSA();
-  rsa->generate_key(4096);
+  rsa->generate_key(512);
 
   string s=Standards.X509.make_selfsigned_certificate(rsa, 3600, ([ "commonName":"*" ]));
   return Standards.X509.verify_certificate(s, ([])) && 1;
@@ -302,6 +302,26 @@ test_any([[
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
 ]]))
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJAK9S+nXAkU+DMA0GCSqGSIb3DQEBBAUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTEyMTIxMjM1MFoXDTE0MTEyMTIxMjM1MFowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDacxSu60OEhmtfBd+p9oaQ+4w13Cwp70dwRrjPb/y33sFWKN3YZ+rq/8aNXPUO
+GLOyVF6z/BlOBS8t6KBI6lNvozVFqp5cwjA6vncbwMODqB8ZZffgA/dbSTM/xtbb
+CSno4ylr4wLVk1tnwZIOS4F2mIR/po1QzwIqTAGdkMEvUkmknqEM2Ifqdb6pNjWh
+Icma7MqtYnv7/UBib8Gt8j7hk6Yrv5tj3vOHFTs2MogfIfvRnBkhSR5nMbLorLpc
+JqfVr9ZNHX66RzSKl8KHDL8/MvI96lM9eFp0utdjIUU2ApSy94U5BqhrCCzBZxHa
+dBQEvUkeX8gYHwmVudSHR5O1AgMBAAGjUDBOMB0GA1UdDgQWBBTvujHuucSU+THc
+h188CYrgV2vghjAfBgNVHSMEGDAWgBTvujHuucSU+THch188CYrgV2vghjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBBAUAA4IBAQCY8Ix17qoiAEDqV9HdyBzNRaPW
+/b7iN5bKjy7Vq1AP0RWIc9Wjcn5cKhk/4d7e7KRYT+Pq3ayLgppoYySA6dXERGj/
+fu5ocOR5ZAjNLJG48dV2HzOe3mjFEbfw+SPR8AnNRH4qm0yNhds0e0K8MhrX7uNB
+6eZ58rt6uIUVTOKTO1HHlxX7AasgQuiT5CajLReYM6DH/F2YXLF5I4iwTRa2p5Zi
+GDAm2I6N+Txm/adCVLjpFtV2b2Mu73yzqjEVm5ruknYPfT/HPnqbmNYJySi8mCd+
+Nwq6nXBlwd7hqkELVjumX7/xyRcLY2S9wW2rTwcsQ443KGFYQqJv0/pqGC2g
+-----END CERTIFICATE-----)
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey rsa:2048 -out certfile.cer
 test_cert(-----BEGIN CERTIFICATE-----
