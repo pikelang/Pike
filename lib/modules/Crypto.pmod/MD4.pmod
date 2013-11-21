@@ -9,8 +9,10 @@
 
 inherit Nettle.MD4;
 
-// urn:oid:1.2.840.113549.2.5
-string asn1_id() { return "*\206H\206\367\r\2\5"; }
+Standards.ASN1.Types.Identifier asn1_id()
+{
+  return Standards.PKCS.Identifiers.md4_id;
+}
 
 #else
 constant this_program_does_not_exist=1;

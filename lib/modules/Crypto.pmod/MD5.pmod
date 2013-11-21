@@ -9,8 +9,10 @@
 
 inherit Nettle.MD5;
 
-// urn:oid:1.2.840.113549.2.5
-string asn1_id() { return "*\206H\206\367\r\2\5"; }
+Standards.ASN1.Types.Identifier asn1_id()
+{
+  return Standards.PKCS.Identifiers.md5_id;
+}
 
 //! This is a convenience alias for @[Nettle.crypt_md5()],
 //! that uses the same API as the other hashes.
