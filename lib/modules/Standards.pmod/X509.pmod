@@ -121,44 +121,27 @@ protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
   MetaExplicit version_integer = MetaExplicit(2, 0);
 
-  // FIXME: These should probably move into PKCS.
-  Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
-
-  Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
-
-  Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
-                                             Null() }) );
-
-  Sequence rsa_sha256_algorithm = Sequence( ({ Identifiers.rsa_sha256_id,
-                                               Null() }) );
-
-  Sequence rsa_sha384_algorithm = Sequence( ({ Identifiers.rsa_sha384_id,
-                                               Null() }) );
-
-  Sequence rsa_sha512_algorithm = Sequence( ({ Identifiers.rsa_sha512_id,
-                                               Null() }) );
-
-  Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
-  Sequence dsa_sha224_algorithm = Sequence( ({ Identifiers.dsa_sha224_id }) );
-  Sequence dsa_sha256_algorithm = Sequence( ({ Identifiers.dsa_sha256_id }) );
-
   mapping algorithms = ([
 #if constant(Crypto.MD2)
-    rsa_md2_algorithm->get_der() : Crypto.MD2,
+    Identifiers.rsa_md2_id->get_der() : Crypto.MD2,
 #endif
-    rsa_md5_algorithm->get_der() : Crypto.MD5,
-    rsa_sha1_algorithm->get_der() : Crypto.SHA1,
-    rsa_sha256_algorithm->get_der() : Crypto.SHA256,
+    Identifiers.rsa_md5_id->get_der() : Crypto.MD5,
+    Identifiers.rsa_sha1_id->get_der() : Crypto.SHA1,
+    Identifiers.rsa_sha256_id->get_der() : Crypto.SHA256,
 #if constant(Crypto.SHA384)
-    rsa_sha384_algorithm->get_der() : Crypto.SHA384,
+    Identifiers.rsa_sha384_id->get_der() : Crypto.SHA384,
 #endif
 #if constant(Crypto.SHA512)
-    rsa_sha512_algorithm->get_der() : Crypto.SHA512,
+    Identifiers.rsa_sha512_id->get_der() : Crypto.SHA512,
 #endif
 
-    dsa_sha1_algorithm->get_der() : Crypto.SHA1,
-    dsa_sha224_algorithm->get_der() : Crypto.SHA224,
-    dsa_sha256_algorithm->get_der() : Crypto.SHA256,
+    Identifiers.dsa_sha_id->get_der() : Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Identifiers.dsa_sha224_id->get_der() : Crypto.SHA224,
+#endif
+#if constant(Crypto.SHA256)
+    Identifiers.dsa_sha256_id->get_der() : Crypto.SHA256,
+#endif
   ]);
 }
 
@@ -272,6 +255,19 @@ class Verifier {
   int(0..1) verify(object,string,string);
   optional Crypto.RSA rsa;
   optional Crypto.DSA dsa;
+
+  extern protected int(0..1) pkcs_verify(string, Crypto.Hash, string);
+
+  //! Verifies the @[signature] of the certificate @[msg] using the
+  //! indicated hash @[algorithm]. The signature is the DER-encoded
+  //! ASN.1 sequence Dss-Sig-Value with the two integers r and s. See
+  //! RFC 3279 section 2.2.2.
+  int(0..1) verify(Sequence algorithm, string msg, string signature)
+  {
+    Crypto.Hash hash = algorithms[algorithm[0]->get_der()];
+    if (!hash) return 0;
+    return pkcs_verify(msg, hash, signature);
+  }
 }
 
 protected class RSAVerifier
@@ -285,13 +281,9 @@ protected class RSAVerifier
     rsa = RSA.parse_public_key(key);
   }
 
-  //!
-  int(0..1) verify(Sequence algorithm, string msg, string signature)
+  protected int(0..1) pkcs_verify(string msg, Crypto.Hash h, string sign)
   {
-    if (!rsa) return 0;
-    Crypto.Hash hash = algorithms[algorithm->get_der()];
-    if (!hash) return 0;
-    return rsa->pkcs_verify(msg, hash, signature);
+    return rsa && rsa->pkcs_verify(msg, h, sign);
   }
 }
 
@@ -307,16 +299,9 @@ protected class DSAVerifier
     dsa = DSA.parse_public_key(key, p, q, g);
   }
 
-  //! Verifies the @[signature] of the certificate @[msg] using the
-  //! indicated hash @[algorithm]. The signature is the DER-encoded
-  //! ASN.1 sequence Dss-Sig-Value with the two integers r and s. See
-  //! RFC 3279 section 2.2.2.
-  int(0..1) verify(Sequence algorithm, string msg, string signature)
+  protected int(0..1) pkcs_verify(string msg, Crypto.Hash h, string sign)
   {
-    if (!dsa) return 0;
-    Crypto.Hash hash = algorithms[algorithm->get_der()];
-    if (!hash) return 0;
-    return dsa->pkcs_verify(msg, hash, signature);
+    return dsa && dsa->pkcs_verify(msg, h, sign);
   }
 }
 
