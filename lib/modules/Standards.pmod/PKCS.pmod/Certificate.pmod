@@ -154,7 +154,30 @@ class attribute_set
   }
 }
 
+//! Creates an ASN.1 @[Sequence] with the distinguished name of the
+//! list of pairs given in @[args]. Supported identifiers are
 //!
+//! @dl
+//!   @item commonName
+//!   @item surname
+//!   @item countryName
+//!   @item localityName
+//!   @item stateOrProvinceName
+//!   @item organizationName
+//!   @item organizationUnitName
+//!   @item title
+//!   @item name
+//!   @item givenName
+//!   @item initials
+//!   @item generationQualifier
+//!   @item dnQualifier
+//!   @item emailAddress
+//! @enddl
+//!
+//! @param args
+//!   Either a mapping that lists from id string to string or ASN.1
+//!   object, or an array with mappings, each containing one pair. No
+//!   type validation is performed.
 Sequence build_distinguished_name(array|mapping args)
 {
   // Turn mapping into array of pairs
