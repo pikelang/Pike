@@ -217,26 +217,13 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
                 int serial, int ttl, array|void extensions)
 {
-  function(string:string) sign;
-  if( object_program(c) == Crypto.RSA )
-  {
-    sign = lambda(string d) {
-             return c->pkcs_sign(d, Crypto.SHA1);
-           };
-  }
-  else if( object_program(c) == Crypto.DSA )
-  {
-    sign = c->sign_ssl;
-  }
-  else
-    error("Unhandled cipher %O. Use RSA or DSA.\n", c);
-
   Sequence tbs = make_tbs(issuer, c->pkcs_algorithm_id(Crypto.SHA1),
                           subject, c->pkcs_public_key(),
                           Integer(serial), ttl, extensions);
 
   return Sequence(({ tbs, c->pkcs_algorithm_id(Crypto.SHA1),
-                     BitString(sign(tbs->get_der())) }))->get_der();
+                     BitString(c->pkcs_sign(tbs->get_der(), Crypto.SHA1))
+                  }))->get_der();
 }
 
 //! Creates a selfsigned certificate, i.e. where issuer and subject
@@ -322,7 +309,7 @@ protected class DSAVerifier
   {
     if (!dsa) return 0;
     if (algorithm->get_der() == dsa_sha1_algorithm->get_der())
-      return dsa->verify_ssl(msg, signature);
+      return dsa->pkcs_verify(msg, Crypto.SHA1, signature);
 
     return 0;
   }
