@@ -281,6 +281,24 @@ test_any_equal([[
   "public_key": 1,
 ]) ]])
 
+test_any([[
+  Crypto.DSA dsa = Crypto.DSA();
+  dsa->generate_parameters(1024);
+  dsa->generate_key();
+
+  string s=Standards.X509.make_selfsigned_certificate(dsa, 3600, ([ "commonName":"*" ]));
+  return Standards.X509.verify_certificate(s, ([])) && 1;
+]], 1)
+
+test_any([[
+  Crypto.RSA rsa = Crypto.RSA();
+  rsa->generate_key(4096);
+
+  string s=Standards.X509.make_selfsigned_certificate(rsa, 3600, ([ "commonName":"*" ]));
+  return Standards.X509.verify_certificate(s, ([])) && 1;
+]], 1)
+
+
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
 ]]))
