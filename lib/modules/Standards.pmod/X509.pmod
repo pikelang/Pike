@@ -267,12 +267,12 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
 //!   different certificates from the same signer with the same serial
 //!   number.
 string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
-                                   array name, array|void extensions,
+                                   mapping|array name, array|void extensions,
                                    void|int serial)
 {
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-  Sequence dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(name);
   return sign_key(dn, c, dn, serial, ttl, extensions);
 }
 
