@@ -187,13 +187,20 @@ Sequence build_distinguished_name(array|mapping args)
     foreach(sort(indices(args)), string name)
       a += ({ ([name : args[name]]) });
     args = a;
+  } else {
+    // Avoid leaking DWIM stuff to the caller.
+    args += ({});
   }
 
   // DWIM support. Turn string values into PrintableString.
-  foreach(args, mapping m)
+  foreach(args; int i; mapping m) {
+    // Avoid leaking DWIM stuff to the caller.
+    args[i] = m = m + ([]);
+
     foreach(m; string name; mixed value)
       if( stringp(value) )
         m[name] = PrintableString(value);
+  }
 
   return Sequence(map(args, lambda(mapping rdn) {
 			      return attribute_set(
