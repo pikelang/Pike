@@ -139,6 +139,17 @@ protected {
                                                Null() }) );
 
   Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
+
+  mapping algorithms = ([
+#if constant(Crypto.MD2)
+    rsa_md2_algorithm->get_der() : Crypto.MD2,
+#endif
+    rsa_md5_algorithm->get_der() : Crypto.MD5,
+    rsa_sha1_algorithm->get_der() : Crypto.SHA1,
+    rsa_sha256_algorithm->get_der() : Crypto.SHA256,
+    rsa_sha384_algorithm->get_der() : Crypto.SHA384,
+    rsa_sha512_algorithm->get_der() : Crypto.SHA512,
+  ]);
 }
 
 //! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
@@ -180,11 +191,12 @@ string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
 }
 
 //!
-int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
-		      string digest, string s)
+int(0..1) rsa_verify_digest(Crypto.RSA rsa, Crypto.Hash hash,
+		      string msg, string s)
 {
-  Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
-					 OctetString(digest) }) );
+  Sequence digest_info = Sequence( ({ Sequence( ({ hash->asn1_id(),
+                                                   Null() }) ),
+                                      OctetString(hash->hash(msg)) }) );
   return rsa->raw_verify(digest_info->get_der(), Gmp.mpz(s, 256));
 }
 
@@ -298,33 +310,9 @@ protected class RSAVerifier
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
     if (!rsa) return 0;
-    if (algorithm->get_der() == rsa_md5_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.md5_id,
-			       Crypto.MD5.hash(msg),
-			       signature);
-    if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.sha1_id,
-			       Crypto.SHA1.hash(msg),
-			       signature);
-    if (algorithm->get_der() == rsa_sha256_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.sha256_id,
-                               Crypto.SHA256.hash(msg),
-                               signature);
-    if (algorithm->get_der() == rsa_sha384_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.sha384_id,
-                               Crypto.SHA384.hash(msg),
-                               signature);
-    if (algorithm->get_der() == rsa_sha512_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.sha512_id,
-                               Crypto.SHA512.hash(msg),
-                               signature);
-#if constant(Crypto.MD2.hash)
-    if (algorithm->get_der() == rsa_md2_algorithm->get_der())
-      return rsa_verify_digest(rsa, Identifiers.md2_id,
-			       Crypto.MD2.hash(msg),
-			       signature);
-#endif
-    return 0;
+    Crypto.Hash hash = algorithms[algorithm->get_der()];
+    if (!hash) return 0;
+    return rsa_verify_digest(rsa, hash, msg, signature);
   }
 }
 
