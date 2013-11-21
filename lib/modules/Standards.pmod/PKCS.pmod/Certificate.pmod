@@ -154,6 +154,16 @@ class attribute_set
   }
 }
 
+variant Sequence build_distinguished_name(mapping args)
+{
+  // Turn mapping into array of pairs
+  array a = ({});
+  foreach(sort(indices(args)), string name)
+    a += ({ ([name : args[name]]) });
+
+  return build_distinguished_name(a);
+}
+
 //! Creates an ASN.1 @[Sequence] with the distinguished name of the
 //! list of pairs given in @[args]. Supported identifiers are
 //!
@@ -178,28 +188,17 @@ class attribute_set
 //!   Either a mapping that lists from id string to string or ASN.1
 //!   object, or an array with mappings, each containing one pair. No
 //!   type validation is performed.
-Sequence build_distinguished_name(array|mapping args)
+variant Sequence build_distinguished_name(array args)
 {
-  // Turn mapping into array of pairs
-  if( mappingp(args) )
-  {
-    array a = ({});
-    foreach(sort(indices(args)), string name)
-      a += ({ ([name : args[name]]) });
-    args = a;
-  } else {
-    // Avoid leaking DWIM stuff to the caller.
-    args += ({});
-  }
-
+  args += ({});
   // DWIM support. Turn string values into PrintableString.
   foreach(args; int i; mapping m) {
-    // Avoid leaking DWIM stuff to the caller.
-    args[i] = m = m + ([]);
-
     foreach(m; string name; mixed value)
       if( stringp(value) )
-        m[name] = PrintableString(value);
+      {
+        args[i] = ([ name : PrintableString(value) ]);
+        break;
+      }
   }
 
   return Sequence(map(args, lambda(mapping rdn) {
