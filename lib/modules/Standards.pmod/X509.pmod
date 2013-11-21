@@ -259,9 +259,7 @@ class Verifier {
   extern protected int(0..1) pkcs_verify(string, Crypto.Hash, string);
 
   //! Verifies the @[signature] of the certificate @[msg] using the
-  //! indicated hash @[algorithm]. The signature is the DER-encoded
-  //! ASN.1 sequence Dss-Sig-Value with the two integers r and s. See
-  //! RFC 3279 section 2.2.2.
+  //! indicated hash @[algorithm].
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
     Crypto.Hash hash = algorithms[algorithm[0]->get_der()];
@@ -299,6 +297,8 @@ protected class DSAVerifier
     dsa = DSA.parse_public_key(key, p, q, g);
   }
 
+  // The signature is the DER-encoded ASN.1 sequence Dss-Sig-Value
+  // with the two integers r and s. See RFC 3279 section 2.2.2.
   protected int(0..1) pkcs_verify(string msg, Crypto.Hash h, string sign)
   {
     return dsa && dsa->pkcs_verify(msg, h, sign);
