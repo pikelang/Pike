@@ -223,7 +223,7 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
   if( object_program(c) == Crypto.RSA )
   {
     sign = lambda(string d) {
-             return rsa_sign_digest(c, Identifiers.sha1_id, d);
+             return rsa_sign_digest(c, Identifiers.sha1_id, Crypto.SHA1.hash(d));
            };
   }
   else if( object_program(c) == Crypto.DSA )
@@ -236,10 +236,9 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
   Sequence tbs = make_tbs(issuer, c->pkcs_algorithm_id(Crypto.SHA1),
                           subject, c->pkcs_public_key(),
                           Integer(serial), ttl, extensions);
-  string digest = Crypto.SHA1.hash(tbs->get_der());
 
   return Sequence(({ tbs, c->pkcs_algorithm_id(Crypto.SHA1),
-                     BitString(sign(digest)) }))->get_der();
+                     BitString(sign(tbs->get_der())) }))->get_der();
 }
 
 //! Creates a selfsigned certificate, i.e. where issuer and subject
@@ -280,6 +279,8 @@ string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
 class Verifier {
   constant type = "none";
   int(0..1) verify(object,string,string);
+  optional Crypto.RSA rsa;
+  optional Crypto.DSA dsa;
 }
 
 protected class RSAVerifier
