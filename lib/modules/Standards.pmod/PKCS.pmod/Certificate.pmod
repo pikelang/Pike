@@ -155,8 +155,23 @@ class attribute_set
 }
 
 //!
-Sequence build_distinguished_name(mapping(string:object) ... args)
+Sequence build_distinguished_name(array|mapping args)
 {
+  // Turn mapping into array of pairs
+  if( mappingp(args) )
+  {
+    array a = ({});
+    foreach(sort(indices(args)), string name)
+      a += ({ ([name : args[name]]) });
+    args = a;
+  }
+
+  // DWIM support. Turn string values into PrintableString.
+  foreach(args, mapping m)
+    foreach(m; string name; mixed value)
+      if( stringp(value) )
+        m[name] = PrintableString(value);
+
   return Sequence(map(args, lambda(mapping rdn) {
 			      return attribute_set(
 				.Identifiers.at_ids, rdn);
