@@ -187,24 +187,6 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 }
 
 //!
-string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
-{
-  Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
-				      OctetString(digest) }) );
-  return rsa->raw_sign(digest_info->get_der())->digits(256);
-}
-
-//!
-int(0..1) rsa_verify_digest(Crypto.RSA rsa, Crypto.Hash hash,
-		      string msg, string s)
-{
-  Sequence digest_info = Sequence( ({ Sequence( ({ hash->asn1_id(),
-                                                   Null() }) ),
-                                      OctetString(hash->hash(msg)) }) );
-  return rsa->raw_verify(digest_info->get_der(), Gmp.mpz(s, 256));
-}
-
-//!
 //! @param issuer
 //!   Distinguished name for the issuer.
 //!   See @[Standards.PKCS.Certificate.build_distinguished_name].
@@ -239,7 +221,7 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
   if( object_program(c) == Crypto.RSA )
   {
     sign = lambda(string d) {
-             return rsa_sign_digest(c, Identifiers.sha1_id, Crypto.SHA1.hash(d));
+             return c->pkcs_sign(d, Crypto.SHA1);
            };
   }
   else if( object_program(c) == Crypto.DSA )
@@ -316,7 +298,7 @@ protected class RSAVerifier
     if (!rsa) return 0;
     Crypto.Hash hash = algorithms[algorithm->get_der()];
     if (!hash) return 0;
-    return rsa_verify_digest(rsa, hash, msg, signature);
+    return rsa->pkcs_verify(msg, hash, signature);
   }
 }
 
