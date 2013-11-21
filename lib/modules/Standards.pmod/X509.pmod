@@ -256,7 +256,7 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
 //!   creation date.
 //!
 //! @param name
-//!   List of properties to create distinghuised name from.
+//!   List of properties to create distinguished name from.
 //!
 //! @param extensions
 //!   List of extensions as ASN.1 structures.
