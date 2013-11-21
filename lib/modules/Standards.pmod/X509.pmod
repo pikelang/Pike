@@ -139,6 +139,8 @@ protected {
                                                Null() }) );
 
   Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
+  Sequence dsa_sha224_algorithm = Sequence( ({ Identifiers.dsa_sha224_id }) );
+  Sequence dsa_sha256_algorithm = Sequence( ({ Identifiers.dsa_sha256_id }) );
 
   mapping algorithms = ([
 #if constant(Crypto.MD2)
@@ -153,6 +155,10 @@ protected {
 #if constant(Crypto.SHA512)
     rsa_sha512_algorithm->get_der() : Crypto.SHA512,
 #endif
+
+    dsa_sha1_algorithm->get_der() : Crypto.SHA1,
+    dsa_sha224_algorithm->get_der() : Crypto.SHA224,
+    dsa_sha256_algorithm->get_der() : Crypto.SHA256,
   ]);
 }
 
@@ -308,10 +314,9 @@ protected class DSAVerifier
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
     if (!dsa) return 0;
-    if (algorithm->get_der() == dsa_sha1_algorithm->get_der())
-      return dsa->pkcs_verify(msg, Crypto.SHA1, signature);
-
-    return 0;
+    Crypto.Hash hash = algorithms[algorithm->get_der()];
+    if (!hash) return 0;
+    return dsa->pkcs_verify(msg, hash, signature);
   }
 }
 
