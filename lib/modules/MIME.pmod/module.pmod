@@ -1063,7 +1063,7 @@ class Message {
     if (decoded_data && !encoded_data)
       encoded_data = encode( (string)decoded_data, transfer_encoding,
 			     get_filename() );
-    return encoded_data;
+    return (string)encoded_data;
   }
 
   //! Select a new transfer encoding for this message.
