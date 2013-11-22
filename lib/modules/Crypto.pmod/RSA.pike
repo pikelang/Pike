@@ -439,6 +439,16 @@ __deprecated__ int sha_verify(string message, string signature)
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
+__deprecated__ Gmp.mpz sign(string message, .Hash h)
+{
+  return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
+}
+
+__deprecated__ int(0..1) verify(string message, .Hash h, Gmp.mpz sign)
+{
+  return raw_verify(Standards.PKCS.Signature.build_digestinfo(message, h), sign);
+}
+
 #else
 constant this_program_does_not_exist=1;
 #endif

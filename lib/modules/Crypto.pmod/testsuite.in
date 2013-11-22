@@ -397,15 +397,15 @@ test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
 cond_resolv( Nettle.MD2, [[
-  test_true([[ RSA->verify("hej", Crypto.MD2, RSB->sign("hej", Crypto.MD2)) ]])
+  test_true([[ RSA->pkcs_verify("hej", Crypto.MD2, RSB->pkcs_sign("hej", Crypto.MD2)) ]])
 ]])
 cond_resolv( Nettle.MD4, [[
-  test_true([[ RSA->verify("hej", Crypto.MD4, RSB->sign("hej", Crypto.MD4)) ]])
+  test_true([[ RSA->pkcs_verify("hej", Crypto.MD4, RSB->pkcs_sign("hej", Crypto.MD4)) ]])
 ]])
-test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
-test_true([[ RSA->verify("hej", Crypto.SHA1, RSB->sign("hej", Crypto.SHA1)) ]])
-test_true([[ RSA->verify("hej", Crypto.SHA256, RSB->sign("hej", Crypto.SHA256)) ]])
-test_false([[ RSA->verify("hoj", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
+test_true([[ RSA->pkcs_verify("hej", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
+test_true([[ RSA->pkcs_verify("hej", Crypto.SHA1, RSB->pkcs_sign("hej", Crypto.SHA1)) ]])
+test_true([[ RSA->pkcs_verify("hej", Crypto.SHA256, RSB->pkcs_sign("hej", Crypto.SHA256)) ]])
+test_false([[ RSA->pkcs_verify("hoj", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
 
@@ -449,13 +449,13 @@ test_do( DSA->set_public_key(
 test_do( DSA->set_private_key(
   Gmp.mpz( "2070b3223dba372fde1c0ffc7b2e3b498b260614", 16 )) )
 test_do( DSA->set_random( Crypto.Random.random_string ) )
-test_equal( DSA->raw_sign(DSA->hash("abc"),
+test_equal( DSA->raw_sign(DSA->hash("abc", Crypto.SHA1),
          Gmp.mpz("358dad571462710f50e254cf1a376b2bdeaadfbf", 16))->digits(16),
          ({ "8bac1ab66410435cb7181f95b16ab97c92b341c0",
             "41e2345f1f56df2458f426d155b4ba2db6dcd8c8" }) )
-test_true(DSA->raw_verify(DSA->hash("abc"), @DSA->raw_sign(DSA->hash("abc"))))
+test_true(DSA->raw_verify(DSA->hash("abc", Crypto.SHA1), @DSA->raw_sign(DSA->hash("abc", Crypto.SHA1))))
 dnl test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
-test_true( DSA->verify_ssl("abc", DSA->sign_ssl("abc")) )
+test_true( DSA->pkcs_verify("abc", Crypto.SHA1, DSA->pkcs_sign("abc", Crypto.SHA1)) )
 test_do( add_constant("DSB", Crypto.DSA()) )
 test_do( DSB->set_public_key( DSA->get_p(), DSA->get_q(),
                               DSA->get_g(), DSA->get_y() ) )
@@ -465,8 +465,8 @@ test_do( add_constant("DSB", Crypto.DSA()) )
 test_true( DSB->generate_parameters(1024) )
 test_true( DSB->generate_key() )
 test_any([[
-  array(Gmp.mpz) sign = DSB->raw_sign(DSB->hash("abc"));
-  return DSB->raw_verify(DSB->hash("abc"), @sign);
+  array(Gmp.mpz) sign = DSB->raw_sign(DSB->hash("abc", Crypto.SHA1));
+  return DSB->raw_verify(DSB->hash("abc", Crypto.SHA1), @sign);
 ]], 1)
 test_false( DSB->public_key_equal(DSA) )
 test_false( DSA->public_key_equal(DSB) )

@@ -25,9 +25,8 @@ Sequence build_csr(Crypto.RSA rsa, object name,
   return Sequence( ({ info,
 		      Sequence(
 			       ({ .Identifiers.rsa_md5_id, Null() }) ),
-		      BitString(rsa->sign(info->get_der(),
-					  Crypto.MD5)
-				->digits(256)) }) );
+		      BitString(rsa->pkcs_sign(info->get_der(),
+                                               Crypto.MD5)) }) );
 }
 
 #if 0

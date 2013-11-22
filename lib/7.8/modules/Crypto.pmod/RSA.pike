@@ -2,7 +2,7 @@
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
-#pike __REAL_VERSION__
+#pike 7.8
 #pragma strict_types
 
 #if constant(Crypto.Hash)
