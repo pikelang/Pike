@@ -323,7 +323,7 @@ __deprecated__ int(0..1) verify_rsaref(string msg, string s)
 		    Gmp.mpz(s[20..], 256));
 }
 
-//! Make an SSL signatrue of message @[msg].
+//! Make an SSL signature of message @[msg].
 __deprecated__ string sign_ssl(string msg)
 {
   return pkcs_sign(msg, .SHA1);
