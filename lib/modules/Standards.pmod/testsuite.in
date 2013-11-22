@@ -237,22 +237,8 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
   "extensions": 0,
-  "not_after": ([ /* 6 elements */
-      "hour": 23,
-      "mday": 2,
-      "min": 59,
-      "mon": 7,
-      "sec": 59,
-      "year": 128
-    ]),
-  "not_before": ([ /* 6 elements */
-      "hour": 0,
-      "mday": 29,
-      "min": 0,
-      "mon": 0,
-      "sec": 0,
-      "year": 96
-    ]),
+  "not_after": 1848866399,
+  "not_before": 822870000,
   "serial": "3f691e819cf09a4af373ffb948a2e4dd",
   "subject": "Class 1 Public Primary Certification Authority",
   "version": 1

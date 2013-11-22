@@ -38,85 +38,6 @@ constant CERT_BAD_SIGNATURE = 6;
 //!
 constant CERT_UNAUTHORIZED_CA = 7;
 
-//! Creates a @[Standards.ASN1.Types.UTC] object from the posix
-//! time @[t].
-UTC make_time(int t)
-{
-  Calendar.ISO.Second second = Calendar.ISO.Second(t)->set_timezone("UTC");
-
-  if (second->year_no() >= 2050)
-    error( "Times later than 2049 not supported yet\n" );
-
-  return UTC(sprintf("%02d%02d%02d%02d%02d%02dZ",
-		     second->year_no() % 100,
-		     second->month_no(),
-		     second->month_day(),
-		     second->hour_no(),
-		     second->minute_no(),
-		     second->second_no()));
-}
-
-//! Returns a mapping similar to that returned by gmtime. Returns
-//! @expr{0@} on invalid dates.
-//!
-//! @returns
-//!   @mapping
-//!     @member int "year"
-//!     @member int "mon"
-//!     @member int "mday"
-//!     @member int "hour"
-//!     @member int "min"
-//!     @member int "sec"
-//!   @endmapping
-mapping(string:int) parse_time(UTC asn1)
-{
-  if ((asn1->type_name != "UTCTime")
-      || (sizeof(asn1->value) != 13))
-    return 0;
-
-  sscanf(asn1->value, "%[0-9]s%c", string s, int c);
-  if ( (sizeof(s) != 12) && (c != 'Z') )
-    return 0;
-
-  mapping(string:int) m = mkmapping( ({ "year", "mon", "mday",
-					"hour", "min", "sec" }),
-				     (array(int)) (s/2));
-
-  if (m->year < 50)
-    m->year += 100;
-  if ( (m->mon <= 0 ) || (m->mon > 12) )
-    return 0;
-  m->mon--;
-  
-  if ( (m->mday <= 0) || (m->mday > Calendar.ISO.Year(m->year + 1900)
-			  ->month(m->mon + 1)->number_of_days()))
-    return 0;
-
-  if ( (m->hour < 0) || (m->hour > 23))
-    return 0;
-
-  if ( (m->min < 0) || (m->min > 59))
-    return 0;
-
-  /* NOTE: Allows for leap seconds */
-  if ( (m->sec < 0) || (m->sec > 60))
-    return 0;
-
-  return m;
-}
-
-//! Comparision function between two "date" mappings of the
-//! kind that @[parse_time] returns.
-int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
-{
-  foreach( ({ "year", "mon", "mday", "hour", "min", "sec" }), string name)
-    if (t1[name] < t2[name])
-      return -1;
-    else if (t1[name] > t2[name])
-      return 1;
-  return 0;
-}
-
 protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
   MetaExplicit version_integer = MetaExplicit(2, 0);
@@ -154,7 +75,8 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
                   array extensions)
 {
   int now = time();
-  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
+  Sequence validity = Sequence( ({ UTC()->set_posix(now),
+                                   UTC()->set_posix(now + ttl) }) );
 
   return (extensions
 	  ? Sequence( ({ version_integer(Integer(2)), /* Version 3 */
@@ -364,10 +286,10 @@ class TBSCertificate
   Sequence issuer;
 
   //!
-  mapping not_after;
+  int not_after;
 
   //!
-  mapping not_before;
+  int not_before;
 
   //!
   Sequence subject;
@@ -504,12 +426,16 @@ class TBSCertificate
       return 0;
     array validity = a[3]->elements;
 
-    not_before = parse_time(validity[0]);
+    catch {
+      not_before = validity[0]->get_posix();
+    };
     if (!not_before)
       return 0;
     DBG("TBSCertificate: not_before = %O\n", not_before);
 
-    not_after = parse_time(validity[1]);
+    catch {
+      not_after = validity[1]->get_posix();
+    };
     if (!not_after)
       return 0;
     DBG("TBSCertificate: not_after = %O\n", not_after);
@@ -762,7 +688,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       int my_time = time();
 
       // first check not_before. we want the current time to be later.
-      if(my_time < mktime(tbs->not_before))
+      if(my_time < tbs->not_before)
       {
         m->verified = 0;
         m->error_code = CERT_TOO_NEW;
@@ -771,7 +697,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       }
 
       // first check not_after. we want the current time to be earlier.
-      if(my_time > mktime(tbs->not_after))
+      if(my_time > tbs->not_after)
       {
         m->verified = 0;
         m->error_code = CERT_TOO_OLD;
