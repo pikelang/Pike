@@ -101,6 +101,12 @@ Sequence signature_algorithm_id(Crypto.Hash hash)
   case "sha1":
     return Sequence( ({ .Identifiers.dsa_sha_id }) );
     break;
+  case "sha224":
+    return Sequence( ({ .Identifiers.dsa_sha224_id }) );
+    break;
+  case "sha256":
+    return Sequence( ({ .Identifiers.dsa_sha256_id }) );
+    break;
   }
   return 0;
 }

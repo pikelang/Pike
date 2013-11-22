@@ -139,9 +139,7 @@ protected {
 #if constant(Crypto.SHA224)
     Identifiers.dsa_sha224_id->get_der() : Crypto.SHA224,
 #endif
-#if constant(Crypto.SHA256)
     Identifiers.dsa_sha256_id->get_der() : Crypto.SHA256,
-#endif
   ]);
 }
 
@@ -203,15 +201,17 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
-string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
-                int serial, int ttl, array|void extensions)
+string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
+                Sequence subject, int serial, int ttl, array|void extensions)
 {
-  Sequence tbs = make_tbs(issuer, c->pkcs_algorithm_id(Crypto.SHA1),
+  Sequence algorithm_id = c->pkcs_algorithm_id(h);
+  if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
+  Sequence tbs = make_tbs(issuer, algorithm_id,
                           subject, c->pkcs_public_key(),
                           Integer(serial), ttl, extensions);
 
-  return Sequence(({ tbs, c->pkcs_algorithm_id(Crypto.SHA1),
-                     BitString(c->pkcs_sign(tbs->get_der(), Crypto.SHA1))
+  return Sequence(({ tbs, c->pkcs_algorithm_id(h),
+                     BitString(c->pkcs_sign(tbs->get_der(), h))
                   }))->get_der();
 }
 
@@ -242,12 +242,12 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Sequence subject,
 //!   number.
 string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
                                    mapping|array name, array|void extensions,
-                                   void|int serial)
+                                   void|Crypto.Hash h, void|int serial)
 {
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
   Sequence dn = Certificate.build_distinguished_name(name);
-  return sign_key(dn, c, dn, serial, ttl, extensions);
+  return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
 class Verifier {

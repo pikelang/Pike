@@ -267,14 +267,14 @@ test_any_equal([[
     ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
   });
 
-  string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 5);
+  string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
 
   object t = Standards.X509.decode_certificate(c);
   return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":t->extensions, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
 ]],[[ ([
   "version" : 1,
   "serial" : "5",
-  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.5)",
+  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.11)",
   "issuer" : "Test",
   "subject" : "Test",
   "extensions" : 0,
@@ -286,16 +286,43 @@ test_any([[
   dsa->generate_parameters(1024);
   dsa->generate_key();
 
-  string s=Standards.X509.make_selfsigned_certificate(dsa, 3600, ([ "commonName":"*" ]));
-  return Standards.X509.verify_certificate(s, ([])) && 1;
+  foreach( ({ 0, Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Crypto.SHA224,
+#endif
+    Crypto.SHA256 }), object h)
+  {
+    string s=Standards.X509.make_selfsigned_certificate(dsa, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
 ]], 1)
 
 test_any([[
   Crypto.RSA rsa = Crypto.RSA();
-  rsa->generate_key(512);
+  rsa->generate_key(1024);
 
-  string s=Standards.X509.make_selfsigned_certificate(rsa, 3600, ([ "commonName":"*" ]));
-  return Standards.X509.verify_certificate(s, ([])) && 1;
+  foreach( ({ 0,
+#if constant(Crypto.MD2)
+    Crypto.MD2,
+#endif
+    Crypto.MD5,
+    Crypto.SHA1,
+    Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Crypto.SHA512,
+#endif
+     }), object h)
+  {
+    string s=Standards.X509.make_selfsigned_certificate(rsa, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
 ]], 1)
 
 
