@@ -10,6 +10,8 @@
 
 #pike __REAL_VERSION__
 
+import Standards.ASN1.Types;
+
 //! @decl string build_digestinfo(string msg, Crypto.Hash hash)
 //! Construct a PKCS-1 digestinfo.
 //! @param msg
@@ -21,10 +23,8 @@
 string build_digestinfo(string msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
-  string d = hash->hash(msg);
-  string id = hash->asn1_id()->get_der();
-
-  return sprintf("%c%c%c%c%s%c%c%c%c%s",
-		 0x30, sizeof(id) + sizeof(d) + 6, 0x30, sizeof(id) + 2,
-		 id, 0x05, 0x00, 0x04, sizeof(d), d);
+  Sequence digest_info = Sequence( ({ Sequence( ({ hash->asn1_id(),
+                                                   Null() }) ),
+				      OctetString(hash->hash(msg)) }) );
+  return digest_info->get_der();
 }
