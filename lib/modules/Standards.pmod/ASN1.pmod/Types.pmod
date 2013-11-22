@@ -173,7 +173,7 @@ class Compound
     WERROR("asn1_compound[%s]->init(%O)\n", type_name, args);
     foreach(args, mixed o)
       if (!objectp(o))
-	error( "Non-object argument!\n" );
+	error( "Non-object argument %O\n", o );
     elements = [array(Object)]args;
     WERROR("asn1_compound: %O\n", elements);
     return this;
@@ -254,7 +254,7 @@ class String
   }
 
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%s, %O)", this_program, type_name, value);
+    return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 
 #ifdef COMPATIBILITY
@@ -1141,6 +1141,37 @@ class UTC
   inherit String;
   constant tag = 23;
   constant type_name = "UTCTime";
+
+  this_program set_posix(int t)
+  {
+    object second = Calendar.ISO.Second(t);
+
+    // FIXME: What is this based on?
+    if (second->year_no() >= 2050)
+      error( "Times later than 2049 not supported.\n" );
+
+    value = sprintf("%02d%02d%02d%02d%02d%02dZ",
+                    [int]second->year_no() % 100,
+                    [int]second->month_no(),
+                    [int]second->month_day(),
+                    [int]second->hour_no(),
+                    [int]second->minute_no(),
+                    [int]second->second_no());
+    return this;
+  }
+
+  int get_posix()
+  {
+    if( !value || sizeof(value)!=13 ) error("Data not UTC date string.\n");
+
+    array t = (array(int))(value[..<1]/2);
+    if(t[0]>49)
+      t[0]+=1900;
+    else
+      t[0]+=2000;
+
+    return [int]Calendar.ISO.Second(@t)->unix_time();
+  }
 }
 
 //!
