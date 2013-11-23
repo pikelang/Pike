@@ -90,7 +90,17 @@ class KeyExchange(object context, object session, array(int) client_version)
 
   int message_was_bad;
 
-  string server_key_exchange_packet(string server_random, string client_random);
+  ADT.struct server_key_params();
+
+  string server_key_exchange_packet(string server_random, string client_random)
+  {
+    ADT.struct struct = server_key_params();
+    if (!struct) return 0;
+
+    session->cipher_spec->sign(session, client_random + server_random, struct);
+    return struct->pop_data();
+  }
+
 
   //! Derive the master secret from the premaster_secret
   //! and the random seeds.
@@ -130,8 +140,24 @@ class KeyExchange(object context, object session, array(int) client_version)
 					 string client_random,
 					 array(int) version);
 
-  int server_key_exchange(ADT.struct input, string server_random,
-			  string client_random);
+  ADT.struct parse_server_key_exchange(ADT.struct input);
+
+  int server_key_exchange(ADT.struct input, string server_random, string client_random)
+  {
+    SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
+
+    ADT.struct temp_struct = parse_server_key_exchange(input);
+
+    Gmp.mpz signature = input->get_bignum();
+    int verification_ok;
+    if( catch{ verification_ok = session->cipher_spec->verify(
+          session, client_random + server_random, temp_struct, signature); }
+      || !verification_ok)
+    {
+      return -1;
+    }
+    return 0;
+  }
 }
 
 class KeyExchangeGeneric(object context, object session, array(int) client_version)
@@ -143,7 +169,7 @@ class KeyExchangeGeneric(object context, object session, array(int) client_versi
 
   .Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
 
-  string server_key_exchange_packet(string server_random, string client_random)
+  ADT.struct server_key_params()
   {
     ADT.struct struct;
   
@@ -185,9 +211,7 @@ class KeyExchangeGeneric(object context, object session, array(int) client_versi
     default:
       return 0;
     }
-
-    session->cipher_spec->sign(session, client_random + server_random, struct);
-    return struct->pop_data();
+    return struct;
   }
 
   string client_key_exchange_packet(string server_random, string client_random,
@@ -340,10 +364,8 @@ class KeyExchangeGeneric(object context, object session, array(int) client_versi
 				version);
   }
 
-  int server_key_exchange(ADT.struct input, string server_random, string client_random)
+  ADT.struct parse_server_key_exchange(ADT.struct input)
   {
-    SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
-
     ADT.struct temp_struct = ADT.struct();
     switch(session->ke_method) {
     case KE_rsa:
@@ -375,17 +397,8 @@ class KeyExchangeGeneric(object context, object session, array(int) client_versi
       temp_struct->put_bignum(context->dh_ke->other);
       break;
     }
-    Gmp.mpz signature = input->get_bignum();
-    int verification_ok;
-    if( catch{ verification_ok = session->cipher_spec->verify(
-          session, client_random + server_random, temp_struct, signature); }
-      || !verification_ok)
-    {
-      return -1;
-    }
-    return 0;
+    return temp_struct;
   }
-
 }
 
 class KeyExchangeRSA(object context, object session, array(int) client_version)
@@ -395,7 +408,7 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
   Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 			* as the server's certified key) */
 
-  string server_key_exchange_packet(string server_random, string client_random)
+  ADT.struct server_key_params()
   {
     ADT.struct struct;
   
@@ -416,8 +429,7 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
     else
       return 0;
 
-    session->cipher_spec->sign(session, client_random + server_random, struct);
-    return struct->pop_data();
+    return struct;
   }
 
   string client_key_exchange_packet(string server_random, string client_random,
@@ -512,11 +524,8 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
 				version);
   }
 
-  int server_key_exchange(ADT.struct input, string server_random,
-			  string client_random)
+  ADT.struct parse_server_key_exchange(ADT.struct input)
   {
-    SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
-
     ADT.struct temp_struct = ADT.struct();
 
     SSL3_DEBUG_MSG("KE_RSA\n");
@@ -532,15 +541,7 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
       temp_key = rsa;
     }
 
-    Gmp.mpz signature = input->get_bignum();
-    int verification_ok;
-    if( catch{ verification_ok = session->cipher_spec->verify(
-          session, client_random + server_random, temp_struct, signature); }
-      || !verification_ok)
-    {
-      return -1;
-    }
-    return 0;
+    return temp_struct;
   }
 
 }
