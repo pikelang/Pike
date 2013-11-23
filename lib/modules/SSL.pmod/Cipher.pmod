@@ -86,14 +86,62 @@ class CipherSpec {
 //! KeyExchange method.
 class KeyExchange(object context, object session, array(int) client_version)
 {
+  int anonymous;
+
+  int message_was_bad;
+
+  string server_key_exchange_packet(string server_random, string client_random);
+
+  //! Derive the master secret from the premaster_secret
+  //! and the random seeds.
+  string derive_master_secret(string premaster_secret,
+			      string client_random,
+			      string server_random,
+			      array(int) version)
+  {
+    string res = "";
+
+    .Cipher.MACsha sha = .Cipher.MACsha();
+    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
+
+    SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version[1]="+version[1]+"\n");
+
+    if(version[1] == PROTOCOL_SSL_3_0) {
+      foreach( ({ "A", "BB", "CCC" }), string cookie)
+	res += md5->hash_raw(premaster_secret
+			     + sha->hash_raw(cookie + premaster_secret 
+					     + client_random + server_random));
+    }
+    else if(version[1] >= PROTOCOL_TLS_1_0) {
+      res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
+    }
+
+    SSL3_DEBUG_MSG("master: %O\n", res);
+    return res;
+  }
+
+  string client_key_exchange_packet(string server_random, string client_random,
+				    array(int) version);
+
+  //! @returns
+  //!   Master secret or alert number.
+  string|int server_derive_master_secret(string data,
+					 string server_random,
+					 string client_random,
+					 array(int) version);
+
+  int server_key_exchange(ADT.struct input, string server_random,
+			  string client_random);
+}
+
+class KeyExchangeGeneric(object context, object session, array(int) client_version)
+{
+  inherit KeyExchange;
+
   Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 			* as the server's certified key) */
 
   .Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
-
-  int anonymous;
-
-  int message_was_bad;
 
   string server_key_exchange_packet(string server_random, string client_random)
   {
@@ -142,29 +190,6 @@ class KeyExchange(object context, object session, array(int) client_version)
     return struct->pop_data();
   }
 
-  string client_derive_master_secret(string premaster_secret, string server_random, string client_random, array(int) version)
-  {
-    string res = "";
-
-    .Cipher.MACsha sha = .Cipher.MACsha();
-    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-    SSL3_DEBUG_MSG("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
-
-    if(version[1] == PROTOCOL_SSL_3_0) {
-      foreach( ({ "A", "BB", "CCC" }), string cookie)
-	res += md5->hash_raw(premaster_secret
-			     + sha->hash_raw(cookie + premaster_secret 
-					     + client_random + server_random));
-    }
-    else if(version[1] >= PROTOCOL_TLS_1_0) {
-      res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
-    }
-
-    SSL3_DEBUG_MSG("bahmaster: %O\n", res);
-    return res;
-  }
-
   string client_key_exchange_packet(string server_random, string client_random,
 				    array(int) version)
   {
@@ -207,10 +232,10 @@ class KeyExchange(object context, object session, array(int) client_version)
     default:
       return 0;
     }
-    session->master_secret = client_derive_master_secret(premaster_secret,
-							 server_random,
-							 client_random,
-							 version);
+    session->master_secret = derive_master_secret(premaster_secret,
+						  client_random,
+						  server_random,
+						  version);
     return data;
   }
 
@@ -310,24 +335,9 @@ class KeyExchange(object context, object session, array(int) client_version)
 	break;
       }
     }
-    string res = "";
 
-    .Cipher.MACsha sha = .Cipher.MACsha();
-    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-    if(version[1] == PROTOCOL_SSL_3_0) {
-      foreach( ({ "A", "BB", "CCC" }), string cookie)
-	res += md5->hash_raw(premaster_secret
-			     + sha->hash_raw(cookie + premaster_secret 
-					     + client_random + server_random));
-    }
-    else if(version[1] >= PROTOCOL_TLS_1_0) {
-      res=.Cipher.prf(premaster_secret,"master secret",
-		      client_random+server_random,48);
-    }
-
-    SSL3_DEBUG_MSG("master: %s\n", String.string2hex(res));
-    return res;
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
   }
 
   int server_key_exchange(ADT.struct input, string server_random, string client_random)
@@ -365,6 +375,163 @@ class KeyExchange(object context, object session, array(int) client_version)
       temp_struct->put_bignum(context->dh_ke->other);
       break;
     }
+    Gmp.mpz signature = input->get_bignum();
+    int verification_ok;
+    if( catch{ verification_ok = session->cipher_spec->verify(
+          session, client_random + server_random, temp_struct, signature); }
+      || !verification_ok)
+    {
+      return -1;
+    }
+    return 0;
+  }
+
+}
+
+class KeyExchangeRSA(object context, object session, array(int) client_version)
+{
+  inherit KeyExchange;
+
+  Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
+			* as the server's certified key) */
+
+  string server_key_exchange_packet(string server_random, string client_random)
+  {
+    ADT.struct struct;
+  
+    SSL3_DEBUG_MSG("KE_RSA\n");
+    temp_key = (session->cipher_spec->is_exportable
+		? context->short_rsa
+		: context->long_rsa);
+    if (temp_key)
+    {
+      /* Send a ServerKeyExchange message. */
+
+      SSL3_DEBUG_MSG("Sending a server key exchange-message, "
+		     "with a %d-bits key.\n", temp_key->key_size());
+      struct = ADT.struct();
+      struct->put_bignum(temp_key->get_n());
+      struct->put_bignum(temp_key->get_e());
+    }
+    else
+      return 0;
+
+    session->cipher_spec->sign(session, client_random + server_random, struct);
+    return struct->pop_data();
+  }
+
+  string client_key_exchange_packet(string server_random, string client_random,
+				    array(int) version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
+		   server_random, client_random, version[0], version[1]);
+    ADT.struct struct = ADT.struct();
+    string data;
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("KE_RSA\n");
+    // NOTE: To protect against version roll-back attacks,
+    //       the version sent here MUST be the same as the
+    //       one in the initial handshake!
+    struct->put_uint(client_version[0], 1);
+    struct->put_uint(client_version[1], 1);
+    string random = context->random(46);
+    struct->put_fix_string(random);
+    premaster_secret = struct->pop_data();
+
+    SSL3_DEBUG_MSG("temp_key: %O\n"
+		   "session->rsa: %O\n", temp_key, session->rsa);
+    data = (temp_key || session->rsa)->encrypt(premaster_secret);
+
+    if(version[1] >= PROTOCOL_TLS_1_0)
+      data=sprintf("%2H", [string(0..255)]data);
+
+    session->master_secret = derive_master_secret(premaster_secret,
+						  client_random,
+						  server_random,
+						  version);
+    return data;
+  }
+
+  //! @returns
+  //!   Master secret or alert number.
+  string|int server_derive_master_secret(string data,
+					 string server_random,
+					 string client_random,
+					 array(int) version)
+  {
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_RSA\n");
+    /* Decrypt the premaster_secret */
+    SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
+    SSL3_DEBUG_MSG("temp_key: %O\n"
+		   "session->rsa: %O\n", temp_key, session->rsa);
+    if(version[1] >= PROTOCOL_TLS_1_0) {
+      if(sizeof(data)-2 == data[0]*256+data[1]) {
+	premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
+      }
+    } else {
+      premaster_secret = (temp_key || session->rsa)->decrypt(data);
+    }
+    SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
+    if (!premaster_secret
+	|| (sizeof(premaster_secret) != 48)
+	|| (premaster_secret[0] != 3)
+	|| (premaster_secret[1] != client_version[1]))
+    {
+      /* To avoid the chosen ciphertext attack discovered by Daniel
+       * Bleichenbacher, it is essential not to send any error
+       * messages back to the client until after the client's
+       * Finished-message (or some other invalid message) has been
+       * received.
+       */
+      /* Also checks for version roll-back attacks.
+       */
+#ifdef SSL3_DEBUG
+      werror("SSL.handshake: Invalid premaster_secret! "
+	     "A chosen ciphertext attack?\n");
+      if (premaster_secret && sizeof(premaster_secret) > 2) {
+	werror("SSL.handshake: Strange version (%d.%d) detected in "
+	       "key exchange message (expected %d.%d).\n",
+	       premaster_secret[0], premaster_secret[1],
+	       client_version[0], client_version[1]);
+      }
+#endif
+
+      premaster_secret = context->random(48);
+      message_was_bad = 1;
+
+    } else {
+    }
+
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
+  }
+
+  int server_key_exchange(ADT.struct input, string server_random,
+			  string client_random)
+  {
+    SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
+
+    ADT.struct temp_struct = ADT.struct();
+
+    SSL3_DEBUG_MSG("KE_RSA\n");
+    Gmp.mpz n = input->get_bignum();
+    Gmp.mpz e = input->get_bignum();
+    temp_struct->put_bignum(n);
+    temp_struct->put_bignum(e);
+    Crypto.RSA rsa = Crypto.RSA();
+    rsa->set_public_key(n, e);
+    context->long_rsa = session->rsa;
+    context->short_rsa = rsa;
+    if (session->cipher_spec->is_exportable) {
+      temp_key = rsa;
+    }
+
     Gmp.mpz signature = input->get_bignum();
     int verification_ok;
     if( catch{ verification_ok = session->cipher_spec->verify(

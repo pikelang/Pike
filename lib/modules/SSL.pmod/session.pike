@@ -75,8 +75,15 @@ void set_cipher_suite(int suite, ProtocolVersion|int version)
   array res = .Cipher.lookup(suite, version);
   cipher_suite = suite;
   ke_method = [int]res[0];
-  // FIXME: Look up a specific KeyExchange based on ke_method.
-  ke_factory = .Cipher.KeyExchange;
+  switch(ke_method) {
+  case KE_rsa:
+    ke_factory = .Cipher.KeyExchangeRSA;
+    break;
+  default:
+    // FIXME: Look up a specific KeyExchange based on ke_method.
+    ke_factory = .Cipher.KeyExchangeGeneric;
+    break;
+  }
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",
