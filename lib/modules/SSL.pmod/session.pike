@@ -34,6 +34,9 @@ int cipher_suite;
 //! Key exchange method, also derived from the cipher_suite.
 int ke_method;
 
+//! Key exchange factory, derived from @[ke_method].
+program(.Cipher.KeyExchange) ke_factory;
+
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
 string master_secret;
@@ -72,6 +75,8 @@ void set_cipher_suite(int suite, ProtocolVersion|int version)
   array res = .Cipher.lookup(suite, version);
   cipher_suite = suite;
   ke_method = [int]res[0];
+  // FIXME: Look up a specific KeyExchange based on ke_method.
+  ke_factory = .Cipher.KeyExchange;
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",

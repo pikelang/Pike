@@ -6,7 +6,7 @@
 //! buffers, a pointer to a session object (reuse or created as
 //! appropriate), and pending read and write states being negotiated.
 //!
-//! Each connection will have two sets or read and write state: The
+//! Each connection will have two sets of read and write states: The
 //! current read and write states used for encryption, and pending read
 //! and write states to be taken into use when the current keyexchange
 //! handshake is finished.
@@ -61,16 +61,12 @@ string server_verify_data = "";	//      ClientHello and the ServerHello.
 // RFC 4366 3.1
 array(string) server_names;
 
-Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
-		      * as the server's certified key) */
+//! The active @[Cipher.KeyExchange] (if any).
+.Cipher.KeyExchange ke;
 
-.Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
-
-int rsa_message_was_bad;
 ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 array(int) version;
 array(int) client_version; /* Used to check for version roll-back attacks. */
-int anonymous = 0;
 int reuse;
 
 //! A few storage variables for client certificate handling on the client side.
@@ -306,93 +302,23 @@ Packet client_hello()
 
 Packet server_key_exchange_packet()
 {
-  ADT.struct struct;
-  
-  switch (session->ke_method)
-  {
-  case KE_rsa:
-    SSL3_DEBUG_MSG("KE_RSA\n");
-    temp_key = (session->cipher_spec->is_exportable
-		? context->short_rsa
-		: context->long_rsa);
-    if (temp_key)
-    {
-      /* Send a ServerKeyExchange message. */
-      
-      SSL3_DEBUG_MSG("Sending a server key exchange-message, "
-                     "with a %d-bits key.\n", temp_key->key_size());
-      struct = ADT.struct();
-      struct->put_bignum(temp_key->get_n());
-      struct->put_bignum(temp_key->get_e());
-    }
-    else
-      return 0;
-    break;
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-  case KE_dh_anon:
-    SSL3_DEBUG_MSG("KE_DHE\n");
-    // anonymous, not used on the server, but here for completeness.
-    anonymous = 1;
-    struct = ADT.struct();
-
-    dh_state = context->dh_ke = .Cipher.DHKeyExchange(.Cipher.DHParameters());
-    dh_state->new_secret(context->random);
-    
-    struct->put_bignum(dh_state->parameters->p);
-    struct->put_bignum(dh_state->parameters->g);
-    struct->put_bignum(dh_state->our);
-    break;
-  default:
-    return 0;
-  }
-
-  session->cipher_spec->sign(session, client_random + server_random, struct);
-  return handshake_packet (HANDSHAKE_server_key_exchange,
-			  struct->pop_data());
+  if (ke) error("KE!\n");
+  ke = session->ke_factory(context, session, client_version);
+  string data = ke->server_key_exchange_packet(server_random, client_random);
+  return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
 Packet client_key_exchange_packet()
 {
-  ADT.struct struct = ADT.struct();
-  string data;
-  string premaster_secret;
-
-  switch (session->ke_method)
-  {
-  case KE_rsa:
-    SSL3_DEBUG_MSG("KE_RSA\n");
-    // NOTE: To protect against version roll-back attacks,
-    //       the version sent here MUST be the same as the
-    //       one in the initial handshake!
-    struct->put_uint(client_version[0], 1);
-    struct->put_uint(client_version[1], 1);
-    string random = context->random(46);
-    struct->put_fix_string(random);
-    premaster_secret = struct->pop_data();
-
-    data = (temp_key || session->rsa)->encrypt(premaster_secret);
-
-    if(version[1] >= PROTOCOL_TLS_1_0)
-      data=sprintf("%2H", [string(0..255)]data);
-    break;
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-  case KE_dh_anon:
-    SSL3_DEBUG_MSG("KE_DHE\n");
-    anonymous = 1;
-    context->dh_ke->new_secret(context->random);
-    struct->put_bignum(context->dh_ke->our);
-    data = struct->pop_data();
-    premaster_secret = context->dh_ke->get_shared()->digits(256);
-    break;
-  default:
+  ke = ke || session->ke_factory(context, session, client_version);
+  string data = ke->client_key_exchange_packet(server_random, client_random,
+					    version);
+  if (!data) {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
     return 0;
   }
-  session->master_secret = client_derive_master_secret(premaster_secret);
 
   array(.state) res = session->new_client_states(client_random,
 						 server_random,version);
@@ -570,141 +496,10 @@ Packet certificate_packet(array(string) certificates)
 
 string server_derive_master_secret(string data)
 {
-  string premaster_secret;
-  
-  SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
-                 session->ke_method);
-  switch(session->ke_method)
-  {
-  default:
-    error( "Internal error\n" );
-#if 0
-    /* What is this for? */
-  case 0:
-    return 0;
-#endif
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-    if (!sizeof(data))
-    {
-      /* Implicit encoding; Should never happen unless we have
-       * requested and received a client certificate of type
-       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
-	     "               Hanging up.\n");
-      send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown, version[1]));
-      return 0;
-    }
-    /* Fall through */
-  case KE_dh_anon:
-  {
-    SSL3_DEBUG_MSG("KE_DHE\n");
-    anonymous = 1;
-
-    /* Explicit encoding */
-    ADT.struct struct = ADT.struct(data);
-
-    if (catch
-	{
-	  dh_state->set_other(struct->get_bignum());
-	} || !struct->is_empty())
-      {
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-		      "SSL.session->handle_handshake: unexpected message\n",
-		      backtrace()));
-	return 0;
-      }
-
-    premaster_secret = dh_state->get_shared()->digits(256);
-    dh_state = 0;
-    break;
-  }
-  case KE_rsa:
-   {
-     SSL3_DEBUG_MSG("KE_RSA\n");
-     /* Decrypt the premaster_secret */
-     SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
-     if(version[1] >= PROTOCOL_TLS_1_0) {
-       if(sizeof(data)-2 == data[0]*256+data[1]) {
-	 premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
-       }
-     } else {
-       premaster_secret = (temp_key || session->rsa)->decrypt(data);
-     }
-     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
-     if (!premaster_secret
-	 || (sizeof(premaster_secret) != 48)
-	 || (premaster_secret[0] != 3)
-	 || (premaster_secret[1] != client_version[1]))
-     {
-       /* To avoid the chosen ciphertext attack discovered by Daniel
-	* Bleichenbacher, it is essential not to send any error
-	* messages back to the client until after the client's
-	* Finished-message (or some other invalid message) has been
-	* received.
-	*/
-       /* Also checks for version roll-back attacks.
-	*/
-#ifdef SSL3_DEBUG
-       werror("SSL.handshake: Invalid premaster_secret! "
-	      "A chosen ciphertext attack?\n");
-       if (premaster_secret && sizeof(premaster_secret) > 2) {
-	 werror("SSL.handshake: Strange version (%d.%d) detected in "
-		"key exchange message (expected %d.%d).\n",
-		premaster_secret[0], premaster_secret[1],
-		client_version[0], client_version[1]);
-       }
-#endif
-
-       premaster_secret = context->random(48);
-       rsa_message_was_bad = 1;
-
-     } else {
-     }
-     break;
-   }
-  }
-  string res = "";
-
-  .Cipher.MACsha sha = .Cipher.MACsha();
-  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    foreach( ({ "A", "BB", "CCC" }), string cookie)
-      res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
-					   + client_random + server_random));
-  }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    res=.Cipher.prf(premaster_secret,"master secret",
-		    client_random+server_random,48);
-  }
-  
-  SSL3_DEBUG_MSG("master: %s\n", String.string2hex(res));
-  return res;
-}
-
-string client_derive_master_secret(string premaster_secret)
-{
-  string res = "";
-
-  .Cipher.MACsha sha = .Cipher.MACsha();
-  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-  SSL3_DEBUG_MSG("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
-
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    foreach( ({ "A", "BB", "CCC" }), string cookie)
-      res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
-					   + client_random + server_random));
-  }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
-  }
-  
-  SSL3_DEBUG_MSG("bahmaster: %O\n", res);
-  return res;
+  string|int res = ke->server_derive_master_secret(data, server_random, client_random, version);
+  if (stringp(res)) return [string]res;
+  send_packet(Alert(ALERT_fatal, [int]res, version[1]));
+  return 0;
 }
 
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
@@ -845,8 +640,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
-     rsa_message_was_bad = 0;
-     temp_key = 0;
+     ke = 0;
      
      handshake_messages = raw;
 
@@ -1282,10 +1076,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        }
 
-       if (rsa_message_was_bad       /* Error delayed until now */
+       if ((ke->rsa_message_was_bad)	/* Error delayed until now */
 	   || (my_digest != digest))
        {
-	 if(rsa_message_was_bad)
+	 if(ke->rsa_message_was_bad)
 	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
@@ -1424,7 +1218,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_VERIFY\n");
 
-      if (!rsa_message_was_bad)
+      if (!ke->rsa_message_was_bad)
       {
 	int(0..1) verification_ok;
 	if( catch
@@ -1625,7 +1419,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	SSL3_DEBUG_MSG("SSL.session: CERTIFICATE\n");
 
       // we're anonymous, so no certificate is requred.
-      if(anonymous)
+      if(ke && ke->anonymous)
          break;
 
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
@@ -1685,45 +1479,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_server_key_exchange:
       {
-	SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
-
-	ADT.struct temp_struct = ADT.struct();
-	switch(session->ke_method) {
-	case KE_rsa:
-	  SSL3_DEBUG_MSG("KE_RSA\n");
-	  Gmp.mpz n = input->get_bignum();
-	  Gmp.mpz e = input->get_bignum();
-	  temp_struct->put_bignum(n);
-	  temp_struct->put_bignum(e);
-	  Crypto.RSA rsa = Crypto.RSA();
-	  rsa->set_public_key(n, e);
-	  context->long_rsa = session->rsa;
-	  context->short_rsa = rsa;
-	  if (session->cipher_spec->is_exportable) {
-	    temp_key = rsa;
-	  }
-	  break;
-	case KE_dhe_dss:
-	case KE_dhe_rsa:
-	case KE_dh_anon:
-	  SSL3_DEBUG_MSG("KE_DHE\n");
-	  Gmp.mpz p = input->get_bignum();
-	  Gmp.mpz g = input->get_bignum();
-	  Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
-	  temp_struct->put_bignum(p);
-	  temp_struct->put_bignum(g);
-	  context->dh_ke =
-	    .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
-	  context->dh_ke->set_other(input->get_bignum());
-	  temp_struct->put_bignum(context->dh_ke->other);
-	  break;
-	}
-	Gmp.mpz signature = input->get_bignum();
-	int verification_ok;
-	if( catch{ verification_ok = session->cipher_spec->verify(
-	  session, client_random + server_random, temp_struct, signature); }
-	    || !verification_ok)
-	{
+	if (ke) error("KE!\n");
+	ke = session->ke_factory(context, session, client_version);
+	if (ke->server_key_exchange(input, server_random, client_random) < 0) {
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
 			    " ServerKeyExchange message failed\n",
@@ -1738,7 +1496,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
         // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
-        if(anonymous)
+        if(ke->anonymous)
         {
 	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			    "SSL.session->handle_handshake: anonymous server "
