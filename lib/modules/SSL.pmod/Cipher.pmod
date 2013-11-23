@@ -543,7 +543,135 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
 
     return temp_struct;
   }
+}
 
+//! Key exchange for KE_dh_anon.
+class KeyExchangeDH(object context, object session, array(int) client_version)
+{
+  inherit KeyExchange;
+
+  .Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
+
+  ADT.struct server_key_params()
+  {
+    ADT.struct struct;
+
+    SSL3_DEBUG_MSG("KE_DH\n");
+    // anonymous, not used on the server, but here for completeness.
+    anonymous = 1;
+    struct = ADT.struct();
+
+    dh_state = context->dh_ke = .Cipher.DHKeyExchange(.Cipher.DHParameters());
+    dh_state->new_secret(context->random);
+
+    struct->put_bignum(dh_state->parameters->p);
+    struct->put_bignum(dh_state->parameters->g);
+    struct->put_bignum(dh_state->our);
+
+    return struct;
+  }
+
+  string client_key_exchange_packet(string server_random, string client_random,
+				    array(int) version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
+		   server_random, client_random, version[0], version[1]);
+    ADT.struct struct = ADT.struct();
+    string data;
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("KE_DHE\n");
+    anonymous = 1;
+    context->dh_ke->new_secret(context->random);
+    struct->put_bignum(context->dh_ke->our);
+    data = struct->pop_data();
+    premaster_secret = context->dh_ke->get_shared()->digits(256);
+
+    session->master_secret =
+      derive_master_secret(premaster_secret, client_random, server_random,
+			   version);
+    return data;
+  }
+
+  //! @returns
+  //!   Master secret or alert number.
+  string|int server_derive_master_secret(string data, string server_random, string client_random, array(int) version)
+  {
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_DH\n");
+    anonymous = 1;
+
+    /* Explicit encoding */
+    ADT.struct struct = ADT.struct(data);
+
+    if (catch
+      {
+	dh_state->set_other(struct->get_bignum());
+      } || !struct->is_empty())
+    {
+      return ALERT_unexpected_message;
+    }
+
+    premaster_secret = dh_state->get_shared()->digits(256);
+    dh_state = 0;
+
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
+  }
+
+  ADT.struct parse_server_key_exchange(ADT.struct input)
+  {
+    ADT.struct temp_struct = ADT.struct();
+
+    SSL3_DEBUG_MSG("KE_DH\n");
+    Gmp.mpz p = input->get_bignum();
+    Gmp.mpz g = input->get_bignum();
+    Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
+    temp_struct->put_bignum(p);
+    temp_struct->put_bignum(g);
+    context->dh_ke =
+      .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
+    context->dh_ke->set_other(input->get_bignum());
+    temp_struct->put_bignum(context->dh_ke->other);
+
+    return temp_struct;
+  }
+}
+
+//! KeyExchange for KE_dhe_rsa and KE_dhe_dss.
+class KeyExchangeDHE(object context, object session, array(int) client_version)
+{
+  inherit KeyExchangeDH;
+
+  //! @returns
+  //!   Master secret or alert number.
+  string|int server_derive_master_secret(string data,
+					 string server_random,
+					 string client_random,
+					 array(int) version)
+  {
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_DHE\n");
+
+    if (!sizeof(data))
+    {
+      /* Implicit encoding; Should never happen unless we have
+       * requested and received a client certificate of type
+       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+		     "               Hanging up.\n");
+      return ALERT_certificate_unknown;
+    }
+
+    return ::server_derive_master_secret(data, server_random, client_random,
+					 version);
+  }
 }
 
 #if 0
