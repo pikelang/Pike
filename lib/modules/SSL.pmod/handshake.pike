@@ -1076,11 +1076,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        }
 
-       if ((ke->rsa_message_was_bad)	/* Error delayed until now */
+       if ((ke->message_was_bad)	/* Error delayed until now */
 	   || (my_digest != digest))
        {
-	 if(ke->rsa_message_was_bad)
-	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
+	 if(ke->message_was_bad)
+	   SSL3_DEBUG_MSG("message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1218,7 +1218,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_VERIFY\n");
 
-      if (!ke->rsa_message_was_bad)
+      if (!ke->message_was_bad)
       {
 	int(0..1) verification_ok;
 	if( catch

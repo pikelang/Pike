@@ -93,7 +93,7 @@ class KeyExchange(object context, object session, array(int) client_version)
 
   int anonymous;
 
-  int rsa_message_was_bad;
+  int message_was_bad;
 
   string server_key_exchange_packet(string server_random, string client_random)
   {
@@ -303,7 +303,7 @@ class KeyExchange(object context, object session, array(int) client_version)
 #endif
 
 	  premaster_secret = context->random(48);
-	  rsa_message_was_bad = 1;
+	  message_was_bad = 1;
 
 	} else {
 	}
