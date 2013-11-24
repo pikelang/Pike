@@ -1228,7 +1228,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	int(0..1) verification_ok;
 	if( catch
 	{
-	  Gmp.mpz signature = input->get_bignum();
+	  string signature = input->get_var_string(2);
 	  ADT.struct handshake_messages_struct = ADT.struct();
 	  handshake_messages_struct->put_fix_string(handshake_messages);
 	  verification_ok = session->cipher_spec->verify(
