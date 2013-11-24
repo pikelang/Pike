@@ -436,10 +436,13 @@ string hash_messages(string sender)
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    return .Cipher.prf(session->master_secret, sender,
-		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
-		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
+  else if(version[1] <= PROTOCOL_TLS_1_1) {
+    return session->cipher_spec->prf(session->master_secret, sender,
+				     Crypto.MD5.hash(handshake_messages)+
+				     Crypto.SHA1.hash(handshake_messages), 12);
+  } else if(version[1] >= PROTOCOL_TLS_1_2) {
+    return session->cipher_spec->prf(session->master_secret, sender,
+				     Crypto.SHA256.hash(handshake_messages), 12);
   }
 }
 

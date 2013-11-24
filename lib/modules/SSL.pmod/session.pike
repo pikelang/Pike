@@ -122,28 +122,8 @@ protected string generate_key_block(string client_random, string server_random,
   );
   string key = "";
 
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    .Cipher.MACsha sha = .Cipher.MACsha();
-    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-    int i = 0;
-
-    while (sizeof(key) < required)
-      {
-	i++;
-	string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
-#ifdef SSL3_DEBUG
-	werror("cookie %O\n", cookie);
-#endif
-	key += md5->hash_raw(master_secret +
-			     sha->hash_raw(cookie + master_secret +
-					   server_random + client_random));
-      }
-  }
-  else if (version[1] >= PROTOCOL_TLS_1_0) {
-    // TLS 1.0 or later.
-    key = .Cipher.prf(master_secret, "key expansion",
-		      server_random+client_random, required);
-  }
+  key = cipher_spec->prf(master_secret, "key expansion",
+			 server_random + client_random, required);
 
 #ifdef SSL3_DEBUG
   werror("key_block: %O\n", key);
@@ -206,36 +186,35 @@ array(string) generate_keys(string client_random, string server_random,
     // Exportable (ie weak) crypto.
     if(version[1] == PROTOCOL_SSL_3_0) {
       // SSL 3.0
-      function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
-      
-      keys[2] = md5(key_data->get_fix_string(5) +
-		    client_random + server_random)
+      keys[2] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+				client_random + server_random)
 	[..cipher_spec->key_material-1];
-      keys[3] = md5(key_data->get_fix_string(5) +
-		    server_random + client_random)
+      keys[3] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+				server_random + client_random)
 	[..cipher_spec->key_material-1];
       if (cipher_spec->iv_size)
 	{
-	  keys[4] = md5(client_random +
-			server_random)[..cipher_spec->iv_size-1];
-	  keys[5] = md5(server_random +
-			client_random)[..cipher_spec->iv_size-1];
+	  keys[4] = Crypto.MD5.hash(client_random +
+				    server_random)[..cipher_spec->iv_size-1];
+	  keys[5] = Crypto.MD5.hash(server_random +
+				    client_random)[..cipher_spec->iv_size-1];
 	}
 
     } else if(version[1] >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
       string client_wkey = key_data->get_fix_string(5);
       string server_wkey = key_data->get_fix_string(5);
-      keys[2] = .Cipher.prf(client_wkey, "client write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
-      keys[3] = .Cipher.prf(server_wkey, "server write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
+      keys[2] = cipher_spec->prf(client_wkey, "client write key",
+				 client_random + server_random,
+				 cipher_spec->key_material);
+      keys[3] = cipher_spec->prf(server_wkey, "server write key",
+				 client_random + server_random,
+				 cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string iv_block = .Cipher.prf("", "IV block",
-				      client_random+server_random,
-				      2*cipher_spec->iv_size);
+	string iv_block =
+	  cipher_spec->prf("", "IV block",
+			   client_random + server_random,
+			   2 * cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
 #ifdef SSL3_DEBUG
