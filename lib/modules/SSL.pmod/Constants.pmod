@@ -142,6 +142,7 @@ enum HashAlgorithm {
 
 //! Key exchange methods.
 enum KeyExchangeType {
+  KE_null	= 0,	//! None.
   KE_rsa	= 1,	//! Rivest-Shamir-Adelman
   /* We ignore the distinction between dh_dss and dh_rsa for now. */
   KE_dh		= 2,	//! Diffie-Hellman

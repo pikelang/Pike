@@ -83,7 +83,7 @@ class CipherSpec {
   function(object,string,ADT.struct,Gmp.mpz:int(0..1)) verify;
 }
 
-//! KeyExchange method.
+//! KeyExchange method base class.
 class KeyExchange(object context, object session, array(int) client_version)
 {
   int anonymous;
@@ -160,247 +160,42 @@ class KeyExchange(object context, object session, array(int) client_version)
   }
 }
 
-class KeyExchangeGeneric(object context, object session, array(int) client_version)
+//! Key exchange for KE_null.
+class KeyExchangeNULL(object context, object session, array(int) client_version)
 {
   inherit KeyExchange;
 
-  Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
-			* as the server's certified key) */
-
-  .Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
-
   ADT.struct server_key_params()
   {
-    ADT.struct struct;
-  
-    switch (session->ke_method)
-    {
-    case KE_rsa:
-      SSL3_DEBUG_MSG("KE_RSA\n");
-      temp_key = (session->cipher_spec->is_exportable
-		  ? context->short_rsa
-		  : context->long_rsa);
-      if (temp_key)
-      {
-	/* Send a ServerKeyExchange message. */
-
-	SSL3_DEBUG_MSG("Sending a server key exchange-message, "
-		       "with a %d-bits key.\n", temp_key->key_size());
-	struct = ADT.struct();
-	struct->put_bignum(temp_key->get_n());
-	struct->put_bignum(temp_key->get_e());
-      }
-      else
-	return 0;
-      break;
-    case KE_dhe_dss:
-    case KE_dhe_rsa:
-    case KE_dh_anon:
-      SSL3_DEBUG_MSG("KE_DHE\n");
-      // anonymous, not used on the server, but here for completeness.
-      anonymous = 1;
-      struct = ADT.struct();
-
-      dh_state = context->dh_ke = .Cipher.DHKeyExchange(.Cipher.DHParameters());
-      dh_state->new_secret(context->random);
-
-      struct->put_bignum(dh_state->parameters->p);
-      struct->put_bignum(dh_state->parameters->g);
-      struct->put_bignum(dh_state->our);
-      break;
-    default:
-      return 0;
-    }
-    return struct;
+    return ADT.struct();
   }
 
   string client_key_exchange_packet(string server_random, string client_random,
 				    array(int) version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   server_random, client_random, version[0], version[1]);
-    ADT.struct struct = ADT.struct();
-    string data;
-    string premaster_secret;
-
-    switch (session->ke_method)
-    {
-    case KE_rsa:
-      SSL3_DEBUG_MSG("KE_RSA\n");
-      // NOTE: To protect against version roll-back attacks,
-      //       the version sent here MUST be the same as the
-      //       one in the initial handshake!
-      struct->put_uint(client_version[0], 1);
-      struct->put_uint(client_version[1], 1);
-      string random = context->random(46);
-      struct->put_fix_string(random);
-      premaster_secret = struct->pop_data();
-
-      SSL3_DEBUG_MSG("temp_key: %O\n"
-		     "session->rsa: %O\n", temp_key, session->rsa);
-      data = (temp_key || session->rsa)->encrypt(premaster_secret);
-
-      if(version[1] >= PROTOCOL_TLS_1_0)
-	data=sprintf("%2H", [string(0..255)]data);
-      break;
-    case KE_dhe_dss:
-    case KE_dhe_rsa:
-    case KE_dh_anon:
-      SSL3_DEBUG_MSG("KE_DHE\n");
-      anonymous = 1;
-      context->dh_ke->new_secret(context->random);
-      struct->put_bignum(context->dh_ke->our);
-      data = struct->pop_data();
-      premaster_secret = context->dh_ke->get_shared()->digits(256);
-      break;
-    default:
-      return 0;
-    }
-    session->master_secret = derive_master_secret(premaster_secret,
-						  client_random,
-						  server_random,
-						  version);
-    return data;
+    anonymous = 1;
+    session->master_secret = "";
+    return "";
   }
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data, string server_random, string client_random, array(int) version)
+  string|int server_derive_master_secret(string data,
+					 string server_random,
+					 string client_random,
+					 array(int) version)
   {
-    string premaster_secret;
-
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
-		   session->ke_method);
-    switch(session->ke_method)
-    {
-    default:
-      error( "Internal error\n" );
-#if 0
-      /* What is this for? */
-    case 0:
-      return 0;
-#endif
-    case KE_dhe_dss:
-    case KE_dhe_rsa:
-      if (!sizeof(data))
-      {
-	/* Implicit encoding; Should never happen unless we have
-	 * requested and received a client certificate of type
-	 * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-	SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
-		       "               Hanging up.\n");
-	return ALERT_certificate_unknown;
-      }
-      /* Fall through */
-    case KE_dh_anon:
-      {
-	SSL3_DEBUG_MSG("KE_DHE\n");
-	anonymous = 1;
-
-	/* Explicit encoding */
-	ADT.struct struct = ADT.struct(data);
-
-	if (catch
-	  {
-	    dh_state->set_other(struct->get_bignum());
-	  } || !struct->is_empty())
-	{
-	  return ALERT_unexpected_message;
-	}
-
-	premaster_secret = dh_state->get_shared()->digits(256);
-	dh_state = 0;
-	break;
-      }
-    case KE_rsa:
-      {
-	SSL3_DEBUG_MSG("KE_RSA\n");
-	/* Decrypt the premaster_secret */
-	SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
-	SSL3_DEBUG_MSG("temp_key: %O\n"
-		       "session->rsa: %O\n", temp_key, session->rsa);
-	if(version[1] >= PROTOCOL_TLS_1_0) {
-	  if(sizeof(data)-2 == data[0]*256+data[1]) {
-	    premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
-	  }
-	} else {
-	  premaster_secret = (temp_key || session->rsa)->decrypt(data);
-	}
-	SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
-	if (!premaster_secret
-	    || (sizeof(premaster_secret) != 48)
-	    || (premaster_secret[0] != 3)
-	    || (premaster_secret[1] != client_version[1]))
-	{
-	  /* To avoid the chosen ciphertext attack discovered by Daniel
-	   * Bleichenbacher, it is essential not to send any error
-	   * messages back to the client until after the client's
-	   * Finished-message (or some other invalid message) has been
-	   * received.
-	   */
-	  /* Also checks for version roll-back attacks.
-	   */
-#ifdef SSL3_DEBUG
-	  werror("SSL.handshake: Invalid premaster_secret! "
-		 "A chosen ciphertext attack?\n");
-	  if (premaster_secret && sizeof(premaster_secret) > 2) {
-	    werror("SSL.handshake: Strange version (%d.%d) detected in "
-		   "key exchange message (expected %d.%d).\n",
-		   premaster_secret[0], premaster_secret[1],
-		   client_version[0], client_version[1]);
-	  }
-#endif
-
-	  premaster_secret = context->random(48);
-	  message_was_bad = 1;
-
-	} else {
-	}
-	break;
-      }
-    }
-
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    anonymous = 1;
+    return "";
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  int server_key_exchange(ADT.struct input, string server_random, string client_random)
   {
-    ADT.struct temp_struct = ADT.struct();
-    switch(session->ke_method) {
-    case KE_rsa:
-      SSL3_DEBUG_MSG("KE_RSA\n");
-      Gmp.mpz n = input->get_bignum();
-      Gmp.mpz e = input->get_bignum();
-      temp_struct->put_bignum(n);
-      temp_struct->put_bignum(e);
-      Crypto.RSA rsa = Crypto.RSA();
-      rsa->set_public_key(n, e);
-      context->long_rsa = session->rsa;
-      context->short_rsa = rsa;
-      if (session->cipher_spec->is_exportable) {
-	temp_key = rsa;
-      }
-      break;
-    case KE_dhe_dss:
-    case KE_dhe_rsa:
-    case KE_dh_anon:
-      SSL3_DEBUG_MSG("KE_DHE\n");
-      Gmp.mpz p = input->get_bignum();
-      Gmp.mpz g = input->get_bignum();
-      Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
-      temp_struct->put_bignum(p);
-      temp_struct->put_bignum(g);
-      context->dh_ke =
-	.Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
-      context->dh_ke->set_other(input->get_bignum());
-      temp_struct->put_bignum(context->dh_ke->other);
-      break;
-    }
-    return temp_struct;
+    return 0;
   }
 }
 
+//! Key exchange for KE_rsa.
 class KeyExchangeRSA(object context, object session, array(int) client_version)
 {
   inherit KeyExchange;
@@ -1054,6 +849,7 @@ array lookup(int suite, ProtocolVersion|int version)
   case KE_dhe_dss:
     res->sign = dsa_sign;
     break;
+  case KE_null:
   case KE_dh_anon:
     res->sign = anon_sign;
     break;

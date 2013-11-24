@@ -65,7 +65,7 @@ int(0..1) has_required_certificates()
 {
   if( cipher_spec->sign == .Cipher.rsa_sign && rsa ) return 1;
   if( cipher_spec->sign == .Cipher.dsa_sign && dsa ) return 1;
-  return 0;
+  return cipher_spec->sign == .Cipher.anon_sign;
 }
 
 //! Sets the proper authentication method and cipher specification
@@ -76,6 +76,9 @@ void set_cipher_suite(int suite, ProtocolVersion|int version)
   cipher_suite = suite;
   ke_method = [int]res[0];
   switch(ke_method) {
+  case KE_null:
+    ke_factory = .Cipher.KeyExchangeNULL;
+    break;
   case KE_rsa:
     ke_factory = .Cipher.KeyExchangeRSA;
     break;
@@ -87,8 +90,8 @@ void set_cipher_suite(int suite, ProtocolVersion|int version)
     ke_factory = .Cipher.KeyExchangeDHE;
     break;
   default:
-    // FIXME: Look up a specific KeyExchange based on ke_method.
-    ke_factory = .Cipher.KeyExchangeGeneric;
+    error("set_cipher_suite: Unsupported key exchange method: %d\n",
+	  ke_method);
     break;
   }
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
