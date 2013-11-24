@@ -123,20 +123,17 @@ class KeyExchange(object context, object session, array(int) client_version)
   {
     string res = "";
 
-    .Cipher.MACsha sha = .Cipher.MACsha();
-    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
     SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version[1]="+version[1]+"\n");
 
     if(version[1] == PROTOCOL_SSL_3_0) {
       foreach( ({ "A", "BB", "CCC" }), string cookie)
-	res += md5->hash_raw(premaster_secret
-			     + sha->hash_raw(cookie + premaster_secret 
-					     + client_random + server_random));
+	res += Crypto.MD5.hash(premaster_secret +
+			       Crypto.SHA1.hash(cookie + premaster_secret +
+						client_random + server_random));
     }
     else if(version[1] <= PROTOCOL_TLS_1_1) {
-      res += .Cipher.prf(premaster_secret, "master secret",
-			 client_random + server_random, 48);
+      res += prf(premaster_secret, "master secret",
+		 client_random + server_random, 48);
     } else if(version[1] >= PROTOCOL_TLS_1_2) {
       res += .Cipher.P_sha256(premaster_secret, "master secret",
 			      client_random + server_random, 48);
@@ -682,6 +679,12 @@ string prf(string secret,string label,string seed,int len) {
   string b=P_hash(Crypto.SHA1,20,s2,label+seed,len);
 
   return a ^ b;
+}
+
+//! This is the PRF used for all cipher suites defined in TLS 1.2.
+string P_sha256(string secret, string label, string seed, int len)
+{
+  return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
 }
 
 //!
