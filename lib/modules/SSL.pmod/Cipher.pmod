@@ -67,12 +67,22 @@ class CipherSpec {
 //! KeyExchange method base class.
 class KeyExchange(object context, object session, array(int) client_version)
 {
+  //! Indicates whether a certificate isn't required.
   int anonymous;
 
+  //! Indicates whether the key exchange has failed due to bad MACs.
   int message_was_bad;
 
+  //! @returns
+  //!   Returns an @[ADT.struct] with the
+  //!   @[HANDSHAKE_server_key_exchange] payload.
   ADT.struct server_key_params();
 
+  //! The default implementation calls @[server_key_params()] to generate
+  //! the base payload.
+  //!
+  //! @returns
+  //!   Returns the signed payload for a @[HANDSHAKE_server_key_exchange].
   string server_key_exchange_packet(string client_random, string server_random)
   {
     ADT.struct struct = server_key_params();
@@ -82,9 +92,11 @@ class KeyExchange(object context, object session, array(int) client_version)
     return struct->pop_data();
   }
 
-
   //! Derive the master secret from the premaster_secret
   //! and the random seeds.
+  //!
+  //! @returns
+  //!   Returns the master secret.
   string derive_master_secret(string premaster_secret,
 			      string client_random,
 			      string server_random,
@@ -103,27 +115,60 @@ class KeyExchange(object context, object session, array(int) client_version)
 			     + sha->hash_raw(cookie + premaster_secret 
 					     + client_random + server_random));
     }
-    else if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
-      res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
+    else if(version[1] <= (PROTOCOL_TLS_1_1 & 0xff)) {
+      res += .Cipher.prf(premaster_secret, "master secret",
+			 client_random + server_random, 48);
+    } else if(version[1] >= (PROTOCOL_TLS_1_2 & 0xff)) {
+      res += .Cipher.P_sha256(premaster_secret, "master secret",
+			      client_random + server_random, 48);
     }
 
     SSL3_DEBUG_MSG("master: %O\n", res);
     return res;
   }
 
+  //! @returns
+  //!   Returns the payload for a @[HANDSHAKE_client_key_exchange] packet.
+  //!   May return @expr{0@} (zero) to generate an @[ALERT_unexpected_message].
   string client_key_exchange_packet(string client_random,
 				    string server_random,
 				    array(int) version);
 
+  //! @param data
+  //!   Payload from a @[HANDSHAKE_client_key_exchange].
+  //!
   //! @returns
   //!   Master secret or alert number.
+  //!
+  //! @note
+  //!   May set @[message_was_bad] and return a fake master secret.
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
 					 array(int) version);
 
+  //! @param input
+  //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
+  //!
+  //! @returns
+  //!   The key exchange information should be extracted from @[input],
+  //!   so that it is positioned at the signature.
+  //!
+  //!   Returns a new @[ADT.struct] with the unsigned payload of @[input].
   ADT.struct parse_server_key_exchange(ADT.struct input);
 
+  //! @param input
+  //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
+  //!
+  //! The default implementation calls @[parse_server_key_exchange()],
+  //! and then verifies the signature.
+  //!
+  //! @returns
+  //!   @int
+  //!     @value 0
+  //!       Returns zero on success.
+  //!     @value -1
+  //!       Returns negative on verification failure.
   int server_key_exchange(ADT.struct input,
 			  string client_random,
 			  string server_random)
@@ -144,7 +189,10 @@ class KeyExchange(object context, object session, array(int) client_version)
   }
 }
 
-//! Key exchange for KE_null.
+//! Key exchange for @[KE_null].
+//!
+//! This is the NULL @[KeyExchange], which is only used for the
+//! @[SSL_null_with_null_null] cipher suite, which is usually disabled.
 class KeyExchangeNULL(object context, object session, array(int) client_version)
 {
   inherit KeyExchange;
@@ -182,7 +230,9 @@ class KeyExchangeNULL(object context, object session, array(int) client_version)
   }
 }
 
-//! Key exchange for KE_rsa.
+//! Key exchange for @[KE_rsa].
+//!
+//! @[KeyExchange] that uses the Rivest Shamir Adelman algorithm.
 class KeyExchangeRSA(object context, object session, array(int) client_version)
 {
   inherit KeyExchange;
@@ -333,7 +383,9 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
   }
 }
 
-//! Key exchange for KE_dh_anon.
+//! Key exchange for @[KE_dh_anon].
+//!
+//! @[KeyExchange] that uses anonymous Diffie-Hellman.
 class KeyExchangeDH(object context, object session, array(int) client_version)
 {
   inherit KeyExchange;
@@ -434,7 +486,9 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
   }
 }
 
-//! KeyExchange for KE_dhe_rsa and KE_dhe_dss.
+//! KeyExchange for @[KE_dhe_rsa] and @[KE_dhe_dss].
+//!
+//! KeyExchange that uses Diffie-Hellman to generate an Ephemeral key.
 class KeyExchangeDHE(object context, object session, array(int) client_version)
 {
   inherit KeyExchangeDH;
