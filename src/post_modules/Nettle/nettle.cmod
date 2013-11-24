@@ -1137,6 +1137,9 @@ PIKE_MODULE_INIT
   free_object(nt_object);
   free_program(nt_program);
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_init();
+#endif
 }
 
 PIKE_MODULE_EXIT
@@ -1148,5 +1151,8 @@ PIKE_MODULE_EXIT
 #ifdef __NT__
   nt_exit();
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_exit();
+#endif
   EXIT;
 }
