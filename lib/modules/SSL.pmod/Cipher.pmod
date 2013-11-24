@@ -69,7 +69,9 @@ class CipherSpec {
 
   //! The function used to sign packets.
   function(object,string,ADT.struct:ADT.struct) sign;
-  function(object,string,ADT.struct,Gmp.mpz:int(0..1)) verify;
+
+  //! The function used to verify the signature for packets.
+  function(object,string,ADT.struct,string:int(0..1)) verify;
 }
 
 //! KeyExchange method base class.
@@ -171,7 +173,7 @@ class KeyExchange(object context, object session, array(int) client_version)
 
     ADT.struct temp_struct = parse_server_key_exchange(input);
 
-    Gmp.mpz signature = input->get_bignum();
+    string signature = input->get_var_string(2);
     int verification_ok;
     if( catch{ verification_ok = session->cipher_spec->verify(
           session, client_random + server_random, temp_struct, signature); }
@@ -751,14 +753,14 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 
 //!
 int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
-	       Gmp.mpz signature)
+		     string signature)
 {
   /* Exactly how is the signature process defined? */
 
   string params = cookie + struct->contents();
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
 
-  return context->rsa->raw_verify(digest, signature);
+  return context->rsa->raw_verify(digest, Gmp.mpz(signature, 256));
 }
 
 //!
