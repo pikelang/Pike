@@ -76,6 +76,12 @@ class CipherSpec {
   //! this is @expr{key_material * 7@}.
   int key_bits;
 
+  //! The Pseudo Random Function to use.
+  //!
+  //! @seealso
+  //!   @[prf_ssl_3_0()], @[prf_tls_1_0()], @[prf_tls_1_2()]
+  function(string, string, string, int:string) prf;
+
   //! The function used to sign packets.
   function(object,string,ADT.struct:ADT.struct) sign;
 
@@ -125,21 +131,8 @@ class KeyExchange(object context, object session, array(int) client_version)
 
     SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version[1]="+version[1]+"\n");
 
-    if(version[1] == PROTOCOL_SSL_3_0) {
-      foreach( ({ "A", "BB", "CCC" }), string cookie)
-	res += Crypto.MD5.hash(premaster_secret +
-			       Crypto.SHA1.hash(cookie + premaster_secret +
-						client_random + server_random));
-    }
-    else if(version[1] <= PROTOCOL_TLS_1_1) {
-      res += prf(premaster_secret, "master secret",
-		 client_random + server_random, 48);
-    } else if(version[1] >= PROTOCOL_TLS_1_2) {
-      // The PRF is really part of the cipher suite in TLS 1.2. It's
-      // just that all of them specifies SHA256 for now.
-      res += .Cipher.P_sha256(premaster_secret, "master secret",
-			      client_random + server_random, 48);
-    }
+    res = session->cipher_spec->prf(premaster_secret, "master secret",
+				    client_random + server_random, 48);
 
     SSL3_DEBUG_MSG("master: %O\n", res);
     return res;
@@ -670,9 +663,25 @@ protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
   return res[..(len-1)];
 } 
 
-//! The Pseudo Random Function used to derive the secret keys.
-string prf(string secret,string label,string seed,int len) { 
+//! This Pseudo Random Function is used to derive secret keys in SSL 3.0.
+//!
+//! @note
+//!   The argument @[label] is ignored.
+string prf_ssl_3_0(string secret, string label, string seed, int len)
+{
+  string res = "";
+  for (int i = 1; sizeof(res) < len; i++) {
+    string cookie = (string)allocate(i, i + 64);
+    res += Crypto.MD5.hash(secret +
+			   Crypto.SHA1.hash(cookie + secret + seed));
+  }
+  return res[..len-1];
+}
 
+//! This Pseudo Random Function is used to derive secret keys
+//! in TLS 1.0 and 1.1.
+string prf_tls_1_0(string secret,string label,string seed,int len)
+{
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
@@ -682,8 +691,8 @@ string prf(string secret,string label,string seed,int len) {
   return a ^ b;
 }
 
-//! This is the PRF used for all cipher suites defined in TLS 1.2.
-string P_sha256(string secret, string label, string seed, int len)
+//! This Pseudo Random Function is used to derive secret keys in TLS 1.2.
+string prf_tls_1_2(string secret, string label, string seed, int len)
 {
   return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
 }
@@ -1044,6 +1053,16 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
   default:
     return 0;
+  }
+
+  if (version == PROTOCOL_SSL_3_0) {
+    res->prf = prf_ssl_3_0;
+  } else if (version <= PROTOCOL_TLS_1_1) {
+    res->prf = prf_tls_1_0;
+  } else {
+    // The PRF is really part of the cipher suite in TLS 1.2.
+    // It's just that all of them specify SHA256 for now.
+    res->prf = prf_tls_1_2;
   }
 
   return ({ ke_method, res });
