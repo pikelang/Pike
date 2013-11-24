@@ -582,7 +582,7 @@ int verify_certificate_chain(array(string) certs)
   
   // next we must verify the chain to see if the chain is unbroken
 
-  mapping auth=([]);
+  mapping(string:Standards.X509.Verifier) auth = ([]);
 
   foreach(context->trusted_issuers_cache, array(Standards.X509.TBSCertificate) i)
   {
@@ -590,7 +590,9 @@ int verify_certificate_chain(array(string) certs)
     auth[i[-1]->subject->get_der()] = i[-1]->public_key;
   }
 
-  mapping result = Standards.X509.verify_certificate_chain(certs, auth, context->require_trust);
+  mapping result =
+    Standards.X509.verify_certificate_chain(certs, auth,
+					    context->require_trust);
 
   if(result->verified)
   {
