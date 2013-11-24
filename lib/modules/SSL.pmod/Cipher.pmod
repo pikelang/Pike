@@ -92,7 +92,7 @@ class KeyExchange(object context, object session, array(int) client_version)
 
   ADT.struct server_key_params();
 
-  string server_key_exchange_packet(string server_random, string client_random)
+  string server_key_exchange_packet(string client_random, string server_random)
   {
     ADT.struct struct = server_key_params();
     if (!struct) return 0;
@@ -130,19 +130,22 @@ class KeyExchange(object context, object session, array(int) client_version)
     return res;
   }
 
-  string client_key_exchange_packet(string server_random, string client_random,
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
 				    array(int) version);
 
   //! @returns
   //!   Master secret or alert number.
   string|int server_derive_master_secret(string data,
-					 string server_random,
 					 string client_random,
+					 string server_random,
 					 array(int) version);
 
   ADT.struct parse_server_key_exchange(ADT.struct input);
 
-  int server_key_exchange(ADT.struct input, string server_random, string client_random)
+  int server_key_exchange(ADT.struct input,
+			  string client_random,
+			  string server_random)
   {
     SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
 
@@ -170,7 +173,8 @@ class KeyExchangeNULL(object context, object session, array(int) client_version)
     return ADT.struct();
   }
 
-  string client_key_exchange_packet(string server_random, string client_random,
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
 				    array(int) version)
   {
     anonymous = 1;
@@ -181,15 +185,17 @@ class KeyExchangeNULL(object context, object session, array(int) client_version)
   //! @returns
   //!   Master secret or alert number.
   string|int server_derive_master_secret(string data,
-					 string server_random,
 					 string client_random,
+					 string server_random,
 					 array(int) version)
   {
     anonymous = 1;
     return "";
   }
 
-  int server_key_exchange(ADT.struct input, string server_random, string client_random)
+  int server_key_exchange(ADT.struct input,
+			  string client_random,
+			  string server_random)
   {
     return 0;
   }
@@ -227,11 +233,12 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
     return struct;
   }
 
-  string client_key_exchange_packet(string server_random, string client_random,
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
 				    array(int) version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   server_random, client_random, version[0], version[1]);
+		   client_random, server_random, version[0], version[1]);
     ADT.struct struct = ADT.struct();
     string data;
     string premaster_secret;
@@ -263,8 +270,8 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
   //! @returns
   //!   Master secret or alert number.
   string|int server_derive_master_secret(string data,
-					 string server_random,
 					 string client_random,
+					 string server_random,
 					 array(int) version)
   {
     string premaster_secret;
@@ -366,11 +373,12 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
     return struct;
   }
 
-  string client_key_exchange_packet(string server_random, string client_random,
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
 				    array(int) version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   server_random, client_random, version[0], version[1]);
+		   client_random, server_random, version[0], version[1]);
     ADT.struct struct = ADT.struct();
     string data;
     string premaster_secret;
@@ -390,7 +398,10 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data, string server_random, string client_random, array(int) version)
+  string|int server_derive_master_secret(string data,
+					 string client_random,
+					 string server_random,
+					 array(int) version)
   {
     string premaster_secret;
 
@@ -445,8 +456,8 @@ class KeyExchangeDHE(object context, object session, array(int) client_version)
   //! @returns
   //!   Master secret or alert number.
   string|int server_derive_master_secret(string data,
-					 string server_random,
 					 string client_random,
+					 string server_random,
 					 array(int) version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
@@ -464,7 +475,7 @@ class KeyExchangeDHE(object context, object session, array(int) client_version)
       return ALERT_certificate_unknown;
     }
 
-    return ::server_derive_master_secret(data, server_random, client_random,
+    return ::server_derive_master_secret(data, client_random, server_random,
 					 version);
   }
 }
