@@ -304,15 +304,15 @@ Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->ke_factory(context, session, client_version);
-  string data = ke->server_key_exchange_packet(server_random, client_random);
+  string data = ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
 Packet client_key_exchange_packet()
 {
   ke = ke || session->ke_factory(context, session, client_version);
-  string data = ke->client_key_exchange_packet(server_random, client_random,
-					    version);
+  string data =
+    ke->client_key_exchange_packet(client_random, server_random, version);
   if (!data) {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
@@ -320,8 +320,8 @@ Packet client_key_exchange_packet()
     return 0;
   }
 
-  array(.state) res = session->new_client_states(client_random,
-						 server_random,version);
+  array(.state) res =
+    session->new_client_states(client_random, server_random, version);
   pending_read_state = res[0];
   pending_write_state = res[1];
 
@@ -491,12 +491,12 @@ Packet certificate_packet(array(string) certificates)
     struct->put_var_string(cert, 3);
 
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
-
 }
 
 string server_derive_master_secret(string data)
 {
-  string|int res = ke->server_derive_master_secret(data, server_random, client_random, version);
+  string|int res =
+    ke->server_derive_master_secret(data, client_random, server_random, version);
   if (stringp(res)) return [string]res;
   send_packet(Alert(ALERT_fatal, [int]res, version[1]));
   return 0;
@@ -1136,8 +1136,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       } else {
 
 	// trace(1);
-	array(.state) res = session->new_server_states(client_random,
-						       server_random,version);
+	array(.state) res =
+	  session->new_server_states(client_random, server_random, version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
@@ -1481,7 +1481,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
 	if (ke) error("KE!\n");
 	ke = session->ke_factory(context, session, client_version);
-	if (ke->server_key_exchange(input, server_random, client_random) < 0) {
+	if (ke->server_key_exchange(input, client_random, server_random) < 0) {
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
 			    " ServerKeyExchange message failed\n",
