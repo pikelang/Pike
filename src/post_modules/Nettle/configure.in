@@ -32,6 +32,7 @@ else
   fi
   AC_CHECK_LIB(nettle, nettle_md5_init)
   AC_CHECK_LIB(nettle, md5_init)
+  AC_CHECK_LIB(hogweed, nettle_dsa_generate_keypair)
 
   AC_SUBST(IDEA_OBJ)
 

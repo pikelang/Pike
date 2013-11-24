@@ -3,6 +3,7 @@
 /configure
 /dependencies
 /hash.c
+/hogweed.c
 /nettle.c
 /nettle_config.h.in
 /nt.c
@@ -11,7 +12,6 @@
 /config.log
 /config.status
 /make_variables
-/nettle_config.h
 /pike_Nettle.feature
 /propagated_variables
 /stamp-h

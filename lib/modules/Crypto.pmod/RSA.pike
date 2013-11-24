@@ -107,6 +107,35 @@ this_program set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
 // --- Key generation
 //
 
+#if constant(Nettle.rsa_generate_key)
+
+this_program generate_key(int bits, void|int e)
+{
+  // While a smaller e is possible, and more efficient, using 0x10001
+  // has become standard and is the only value supported by several
+  // TLS implementations.
+  if(!e)
+    e = 0x10001;
+  else
+  {
+    if(!(e&1)) error("e needs to be odd.\n");
+    if(e<3) error("e is too small.\n");
+    if(e->size()>bits) error("e has to be smaller in size than the key.\n");
+  }
+
+  if(bits<89) error("Too small key length.\n");
+
+  array(Gmp.mpz) key = Nettle.rsa_generate_keypair(bits, e,
+                                                   random);
+  if(!key) error("Error generating key.\n");
+  [ n, d, p, q ] = key;
+  this_program::e = Gmp.mpz(e);
+  size = n->size(256);
+  return this;
+}
+
+#else
+
 // Generate a prime with @[bits] number of bits using random function
 // @[r].
 protected Gmp.mpz get_prime(int bits, function(int:string) r)
@@ -126,13 +155,12 @@ protected Gmp.mpz get_prime(int bits, function(int:string) r)
   return p;
 }
 
-//! Generate a valid RSA key pair with the size @[bits]. A random
-//! function may be provided as arguemnt @[r], otherwise the default
-//! random function set in the object will be used. Keys must be at
-//! least 128 bits.
-this_program generate_key(int(128..) bits, function(int:string)|void r)
+//! Generate a valid RSA key pair with the size @[bits] using the
+//! random function set with @[set_random()]. The public exponent @[e]
+//! will be used, which defaults to 65537. Keys must be at least 89
+//! bits.
+this_program generate_key(int(128..) bits, void|int e)
 {
-  if (!r) r = random;
   if (bits < 128)
     error( "Ridiculously small key.\n" );
 
@@ -154,8 +182,8 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
     Gmp.mpz q;
     Gmp.mpz mod;
     do {
-      p = get_prime(s1, r);
-      q = get_prime(s2, r);
+      p = get_prime(s1, random);
+      q = get_prime(s2, random);
       mod = [object(Gmp.mpz)](p * q);
     } while (mod->size() != bits);
     Gmp.mpz phi = [object(Gmp.mpz)](Gmp.mpz([object(Gmp.mpz)](p-1))*
@@ -167,7 +195,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
     // problem, but turned out was a padding problem. The exponent
     // 0x10001 has however become common practice, although a smaller
     // value would be more efficient.
-    Gmp.mpz pub = Gmp.mpz(0x10001);
+    Gmp.mpz pub = Gmp.mpz(e || 0x10001);
 
     // For security reason we need to ensure no common denominator
     // between n and phi. We could create a different exponent, but
@@ -185,6 +213,9 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
   } while (!raw_verify(msg, raw_sign(msg)));
   return this;
 }
+
+#endif
+
 
 //
 // --- PKCS methods
