@@ -107,7 +107,7 @@ this_program set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
 // --- Key generation
 //
 
-#if constant(Nettle.rsa_generate_key)
+#if constant(Nettle.rsa_generate_keypair)
 
 this_program generate_key(int bits, void|int e)
 {
