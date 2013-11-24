@@ -35,8 +35,10 @@ constant CERT_ROOT_UNTRUSTED = 5;
 //!
 constant CERT_BAD_SIGNATURE = 6;
 
-//!
+#if 0
+// A CA certificate does not have the CA basic constraint.
 constant CERT_UNAUTHORIZED_CA = 7;
+#endif
 
 protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
@@ -156,6 +158,11 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
 //!
 //! @param extensions
 //!   List of extensions as ASN.1 structures.
+//!
+//! @param h
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto. By
+//!   default @[Crypto.SHA256] is selected for both RSA and DSA.
 //!
 //! @param serial
 //!   Serial number of the certificate. Defaults to generating a UUID
@@ -523,7 +530,7 @@ TBSCertificate decode_certificate(string|object cert)
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
-TBSCertificate verify_certificate(string s, mapping authorities)
+TBSCertificate verify_certificate(string s, mapping(string:Verifier) authorities)
 {
   object cert = Standards.ASN1.Decode.simple_der_decode(s);
 
@@ -558,8 +565,8 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!   @member int "error_code"
 //!     Error describing type of verification failure, if verification failed.
 //!     May be one of the following: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
-//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID],
-//!       @[CERT_UNAUTHORIZED_CA] or @[CERT_CHAIN_BROKEN]
+//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
+//!       or @[CERT_CHAIN_BROKEN]
 //!   @member int "error_cert"
 //!     Index number of the certificate that caused the verification failure.
 //!   @member int(0..1) "self_signed"
@@ -586,10 +593,15 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
 mapping verify_certificate_chain(array(string) cert_chain,
-				 mapping authorities, int|void require_trust)
+				 mapping(string:Verifier) authorities,
+                                 int|void require_trust)
 {
-
   mapping m = ([ ]);
+#define ERROR(X) do { \
+    DBG("Error " #X "\n"); \
+    m->verified=0; m->error_code=(X); m->error_cert=idx; \
+    return m; \
+    } while(0)
 
   int len = sizeof(cert_chain);
   array chain_obj = allocate(len);
@@ -600,11 +612,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
      object cert = Standards.ASN1.Decode.simple_der_decode(c);
      TBSCertificate tbs = decode_certificate(cert);
      if(!tbs)
-     { 
-       m->error_code = CERT_INVALID;
-       m->error_cert = idx;
-       return m;
-     }
+       ERROR(CERT_INVALID);
 
      int idx = len-idx-1;
      chain_cert[idx] = cert;
@@ -613,7 +621,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   foreach(chain_obj; int idx; TBSCertificate tbs)
   {
-    object v;
+    Verifier v;
 
 #if 0
     // NOTE: disabled due to unreliable presence of cA constraint.
@@ -646,12 +654,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         }
         
         if(! caok)
-        {
-          DBG("a CA certificate does not have the CA basic constraint.\n");
-          m->error_code = CERT_UNAUTHORIZED_CA;
-          m->error_cert = idx;
-          return m;
-        }
+          ERROR(CERT_UNAUTHORIZED_CA);
     }
 #endif  /* 0 */
 
@@ -662,19 +665,13 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // if we don't know the issuer of the root certificate, and we
       // require trust, we're done.
       if(!v && require_trust)
-      {
-         DBG("we require trust, but haven't got it.\n");
-        m->error_code = CERT_ROOT_UNTRUSTED;
-        m->error_cert = idx;
-        return m;
-      }
+        ERROR(CERT_ROOT_UNTRUSTED);
 
-      // is the root self signed?
+      // Is the root self signed?
       if (tbs->issuer->get_der() == tbs->subject->get_der())
       {
-        /* A self signed certificate */
-        m->self_signed = 1;
         DBG("Self signed certificate\n");
+        m->self_signed = 1;
 
         // always trust our own authority first, even if it is self signed.
         if(!v) 
@@ -687,34 +684,19 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // is the certificate in effect (time-wise)?
       int my_time = time();
 
-      // first check not_before. we want the current time to be later.
+      // Check not_before. Ee want the current time to be later.
       if(my_time < tbs->not_before)
-      {
-        m->verified = 0;
-        m->error_code = CERT_TOO_NEW;
-        m->error_cert = idx;
-        return m;
-      }
+        ERROR(CERT_TOO_NEW);
 
-      // first check not_after. we want the current time to be earlier.
+      // Check not_after. We want the current time to be earlier.
       if(my_time > tbs->not_after)
-      {
-        m->verified = 0;
-        m->error_code = CERT_TOO_OLD;
-        m->error_cert = idx;
-        return m;
-      }
+        ERROR(CERT_TOO_OLD);
 
       // is the issuer of this certificate the subject of the previous
       // (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
-      {
-        DBG("issuer chain is broken!\n");
-        m->verified = 0;
-        m->error_code = CERT_CHAIN_BROKEN;
-        m->error_cert = idx;
-        return m;
-      }
+        ERROR(CERT_CHAIN_BROKEN);
+
       // the verifier for this certificate should be the public key of
       // the previous certificate in the chain.
       v = chain_obj[idx-1]->public_key;
@@ -738,16 +720,12 @@ mapping verify_certificate_chain(array(string) cert_chain,
         if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
       }
       else
-      {
-        DBG("signature _not_ verified...\n");
-        m->error_code = CERT_BAD_SIGNATURE;
-        m->error_cert = idx;
-        m->verified = 0;
-        return m;
-      }
+        ERROR(CERT_BAD_SIGNATURE);
     }
   }
   return m;
+
+#undef ERROR
 }
 
 #endif
