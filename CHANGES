@@ -882,6 +882,29 @@ o Crypto.SHA3_224, Crypto.SHA3_256, Crypto.SHA3_384 and Crypto.SHA3_512
 
   The SHA-3 secure hash algorithm has been added in multiple variants.
 
+o Standards.X509
+
+  X509 was moved from Tools to Standards and has been refactored and
+  bug fixed. It is now possible to extend both validation and creation
+  with new cipher and hash algorithms. A range of new algorithms are
+  supported for both RSA and DSA:
+
+    RSA MD2
+    RSA MD5
+    RSA SHA-1
+    RSA SHA-2-256
+    RSA SHA-2-384
+    RSA SHA-2-512
+    DSA SHA-1
+    DSA SHA-2-224
+    DSA SHA-2-256
+
+  Note that the API has changed compared with Tools.X509 and there is
+  now a single make_selfsigned_certificate() method for both RSA and
+  DSA, though it takes the same arguments. In addition a hash function
+  and serial number can be supplied. The hash function defaults to
+  SHA-2-256.
+
 
 Building and installing
 -----------------------
