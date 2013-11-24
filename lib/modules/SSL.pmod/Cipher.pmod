@@ -797,6 +797,15 @@ ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
+//! Verify a DSA signature.
+int(0..1) dsa_verify(object context, string cookie, ADT.struct struct,
+		     string signature)
+{
+  /* NOTE: The details are not described in the SSL 3 spec. */
+  return context->dsa->pkcs_verify(cookie + struct->contents(),
+				   Crypto.SHA1);
+}
+
 //! The NULL signing method.
 ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
 {
@@ -926,6 +935,7 @@ array lookup(int suite, ProtocolVersion|int version)
     break;
   case KE_dhe_dss:
     res->sign = dsa_sign;
+    res->verify = dsa_verify;
     break;
   case KE_null:
   case KE_dh_anon:
