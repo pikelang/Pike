@@ -135,6 +135,8 @@ class KeyExchange(object context, object session, array(int) client_version)
       res += prf(premaster_secret, "master secret",
 		 client_random + server_random, 48);
     } else if(version[1] >= PROTOCOL_TLS_1_2) {
+      // The PRF is really part of the cipher suite in TLS 1.2. It's
+      // just that all of them specifies SHA256 for now.
       res += .Cipher.P_sha256(premaster_secret, "master secret",
 			      client_random + server_random, 48);
     }
@@ -652,7 +654,6 @@ class MAChmac_md5 {
   }
 }
 
-// Hashfn is either a Crypto.MD5 or Crypto.SHA
 protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
 		     string seed, int len) {
    
