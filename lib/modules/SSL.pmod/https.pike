@@ -151,8 +151,10 @@ int main()
     perror("");
     return 17;
   }
-  else
+  else {
+    werror("Listening on port %d.\n", PORT);
     return -17;
+  }
 }
 
 protected void create()
