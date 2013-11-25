@@ -63,9 +63,13 @@ Crypto.DSA dsa;
 //! from the server.
 int(0..1) has_required_certificates()
 {
-  if( cipher_spec->sign == .Cipher.rsa_sign && rsa ) return 1;
-  if( cipher_spec->sign == .Cipher.dsa_sign && dsa ) return 1;
-  return cipher_spec->sign == .Cipher.anon_sign;
+  if( cipher_spec->sign == .Cipher.rsa_sign) return !!rsa;
+  if( cipher_spec->sign == .Cipher.dsa_sign) return !!dsa;
+  if( cipher_spec->sign == .Cipher.anon_sign) return 1;
+  object o = function_object(cipher_spec->sign);
+  if (objectp(o) && cipher_spec->sign == o->rsa_sign) return !!rsa;
+  if (objectp(o) && cipher_spec->sign == o->dsa_sign) return !!dsa;
+  return 0;
 }
 
 //! Sets the proper authentication method and cipher specification
