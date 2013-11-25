@@ -261,7 +261,7 @@ headerfiles_low: force
 	  echo foo > headerfiles-stamp; \
 	done
 
-include: include
+include:
 	test -d include/. || mkdir include
 
 compiler-warnings : clean
