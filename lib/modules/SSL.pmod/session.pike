@@ -70,9 +70,15 @@ int(0..1) has_required_certificates()
 
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
-void set_cipher_suite(int suite, ProtocolVersion|int version)
+void set_cipher_suite(int suite, ProtocolVersion|int version,
+		      array(array(int))|void signature_algorithms)
 {
-  array res = .Cipher.lookup(suite, version);
+  // FIXME: The maximum allowable hash size depends on the size of the
+  //        RSA key when RSA is in use. With a 64 byte (512 bit) key,
+  //        the block size is 61 bytes, allow for 23 bytes of overhead.
+  int max_hash_size = 61-23;
+  array res = .Cipher.lookup(suite, version, signature_algorithms,
+			     max_hash_size);
   cipher_suite = suite;
   ke_method = [int]res[0];
   switch(ke_method) {
