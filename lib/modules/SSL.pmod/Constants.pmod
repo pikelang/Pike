@@ -76,12 +76,12 @@ enum ProtocolVersion {
 }
 
 //! Max supported SSL version.
-constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_1;
-constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_1;
+constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_2;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
 
 //! Max supported SSL version.
 constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = 2;
+constant PROTOCOL_minor = 3;
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
@@ -145,6 +145,30 @@ enum HashAlgorithm {
   HASH_sha256	= 4,
   HASH_sha384	= 5,
   HASH_sha512	= 6,
+}
+
+//! Lookup from @[HashAlgorithm] to corresponding @[Crypto.Hash].
+constant HASH_lookup = ([
+#if constant(Crypto.SHA512)
+  HASH_sha512: Crypto.SHA512,
+#endif
+#if constant(Crypto.SHA384)
+  HASH_sha384: Crypto.SHA384,
+#endif
+  HASH_sha256: Crypto.SHA256,
+#if constant(Crypto.SSH224)
+  HASH_sha224: Crypto.SHA224,
+#endif
+  HASH_sha:    Crypto.SHA1,
+  HASH_md5:    Crypto.MD5,
+]);
+
+//! Signature algorithms from TLS 1.2.
+enum SignatureAlgorithm {
+  SIGNATURE_anonymous	= 0,	//! No signature.
+  SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
+  SIGNATURE_dsa		= 2,	//! DSS signature.
+  SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
 }
 
 //! Key exchange methods.
