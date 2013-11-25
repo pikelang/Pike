@@ -254,6 +254,31 @@ Packet client_hello()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
+  if (client_version[1] >= PROTOCOL_TLS_1_2) {
+    // RFC 5246 7.4.1.4.1:
+    // If the client supports only the default hash and signature algorithms
+    // (listed in this section), it MAY omit the signature_algorithms
+    // extension.  If the client does not support the default algorithms, or
+    // supports other hash and signature algorithms (and it is willing to
+    // use them for verifying messages sent by the server, i.e., server
+    // certificates and server key exchange), it MUST send the
+    // signature_algorithms extension, listing the algorithms it is willing
+    // to accept.
+
+    // We list all hashes and signature formats that we support.
+    ADT.struct extension = ADT.struct();
+    string ext = (string)(map(sort(indices(HASH_lookup)),
+			      lambda(int h) {
+				return ({
+				  h, SIGNATURE_rsa,
+				  h, SIGNATURE_dsa,
+				});
+			      })*({}));
+    extension->put_var_string(ext, 2);
+    extensions->put_uint(EXTENSION_signature_algorithms, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
   if(context->client_use_sni)
   {
     ADT.struct extension = ADT.struct();
