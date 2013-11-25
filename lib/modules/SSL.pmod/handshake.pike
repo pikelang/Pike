@@ -1081,10 +1081,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        }
 
-       if ((ke->message_was_bad)	/* Error delayed until now */
+       if ((ke && ke->message_was_bad)	/* Error delayed until now */
 	   || (my_digest != digest))
        {
-	 if(ke->message_was_bad)
+	 if(ke && ke->message_was_bad)
 	   SSL3_DEBUG_MSG("message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
