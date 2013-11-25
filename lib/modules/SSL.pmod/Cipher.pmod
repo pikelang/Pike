@@ -89,6 +89,64 @@ class CipherSpec {
   function(object,string,ADT.struct,string:int(0..1)) verify;
 }
 
+//! Class used for signing in TLS 1.2 and later.
+class TLSSigner
+{
+  //!
+  int hash_id = HASH_sha;
+
+  //! The TLS 1.2 hash used to sign packets.
+  Crypto.Hash hash = Crypto.SHA1;
+
+  ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
+  {
+    string sign = context->rsa->pkcs_sign(cookie + struct->contents(), hash);
+    struct->put_uint(hash_id, 1);
+    struct->put_uint(SIGNATURE_rsa, 1);
+    struct->put_var_string(sign, 2);
+    return struct;
+  }
+
+  ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
+  {
+    string sign = context->dsa->pkcs_sign(cookie + struct->contents(), hash);
+    struct->put_uint(hash_id, 1);
+    struct->put_uint(SIGNATURE_dsa, 1);
+    struct->put_var_string(sign, 2);
+    return struct;
+  }
+
+  int(0..1) verify(object context, string cookie, ADT.struct struct,
+		   string signature)
+  {
+    int hash_id = signature[0];
+    int sign_id = signature[1];
+    Gmp.mpz sign = Gmp.mpz(signature[2..], 256);
+
+    Crypto.Hash hash = HASH_lookup[hash_id];
+    if (!hash) return 0;
+
+    if ((sign_id == SIGNATURE_rsa) && context->rsa) {
+      return context->rsa->pkcs_verify(cookie + struct->contents(),
+				       hash, sign);
+    }
+    if ((sign_id == SIGNATURE_dsa) && context->dsa) {
+      return context->dsa->pkcs_verify(cookie + struct->contents(),
+				       hash, sign);
+    }
+    return 0;
+  }
+
+  protected void create(int hash_id)
+  {
+    hash = HASH_lookup[hash_id];
+    if (!hash) {
+      error("Unsupported hash algorithm: %d\n", hash_id);
+    }
+    this_program::hash_id = hash_id;
+  }
+}
+
 //! KeyExchange method base class.
 class KeyExchange(object context, object session, array(int) client_version)
 {
@@ -926,23 +984,65 @@ array lookup(int suite, ProtocolVersion|int version)
 
   ke_method = algorithms[0];
 
-  switch(ke_method)
-  {
-  case KE_rsa:
-  case KE_dhe_rsa:
-    res->sign = rsa_sign;
-    res->verify = rsa_verify;
-    break;
-  case KE_dhe_dss:
-    res->sign = dsa_sign;
-    res->verify = dsa_verify;
-    break;
-  case KE_null:
-  case KE_dh_anon:
-    res->sign = anon_sign;
-    break;
-  default:
-    error( "Internal error.\n" );
+  if (version < PROTOCOL_TLS_1_2) {
+    switch(ke_method)
+    {
+    case KE_rsa:
+    case KE_dhe_rsa:
+      res->sign = rsa_sign;
+      res->verify = rsa_verify;
+      break;
+    case KE_dhe_dss:
+      res->sign = dsa_sign;
+      res->verify = dsa_verify;
+      break;
+    case KE_null:
+    case KE_dh_anon:
+      res->sign = anon_sign;
+      break;
+    default:
+      error( "Internal error.\n" );
+    }
+  } else {
+    int sign_id;
+    switch(ke_method) {
+    case KE_rsa:
+    case KE_dhe_rsa:
+      sign_id = SIGNATURE_rsa;
+      break;
+    case KE_dhe_dss:
+      sign_id = SIGNATURE_dsa;
+      break;
+    case KE_null:
+    case KE_dh_anon:
+      sign_id = SIGNATURE_anonymous;
+      break;
+    default:
+      error( "Internal error.\n" );
+    }
+
+    // FIXME: Select a suitable hash.
+    //
+    // Fortunately the hash identifiers have a nice order property.
+    int hash_id = HASH_sha;
+    SSL3_DEBUG_MSG("Selected <Hash: %d, Signature: %d>\n", hash_id, sign_id);
+    TLSSigner signer = TLSSigner(hash_id);
+    res->verify = signer->verify;
+
+    switch(sign_id)
+    {
+    case SIGNATURE_rsa:
+      res->sign = signer->rsa_sign;
+      break;
+    case SIGNATURE_dsa:
+      res->sign = signer->dsa_sign;
+      break;
+    case SIGNATURE_anonymous:
+      res->sign = anon_sign;
+      break;
+    default:
+      error( "Internal error.\n" );
+    }
   }
 
   switch(algorithms[1])
