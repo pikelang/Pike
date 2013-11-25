@@ -66,7 +66,8 @@ int(0..1) has_required_certificates()
   if( cipher_spec->sign == .Cipher.rsa_sign) return !!rsa;
   if( cipher_spec->sign == .Cipher.dsa_sign) return !!dsa;
   if( cipher_spec->sign == .Cipher.anon_sign) return 1;
-  object o = function_object(cipher_spec->sign);
+  object o = function_object([function(mixed ...:void|mixed)](mixed)
+			     cipher_spec->sign);
   if (objectp(o) && cipher_spec->sign == o->rsa_sign) return !!rsa;
   if (objectp(o) && cipher_spec->sign == o->dsa_sign) return !!dsa;
   return 0;

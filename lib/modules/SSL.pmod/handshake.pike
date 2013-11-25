@@ -1281,6 +1281,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  master()->handle_error(err);
 	}
 #endif
+	err = UNDEFINED;	// Get rid of warning.
 	if (!verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
