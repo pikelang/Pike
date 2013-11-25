@@ -1245,14 +1245,18 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       if (!ke->message_was_bad)
       {
 	int(0..1) verification_ok;
-	if( catch
-	{
-	  string signature = input->get_var_string(2);
-	  ADT.struct handshake_messages_struct = ADT.struct();
-	  handshake_messages_struct->put_fix_string(handshake_messages);
-	  verification_ok = session->cipher_spec->verify(
-	    session, "", handshake_messages_struct, signature);
-	} || verification_ok)
+	mixed err = catch {
+	    ADT.struct handshake_messages_struct = ADT.struct();
+	    handshake_messages_struct->put_fix_string(handshake_messages);
+	    verification_ok = session->cipher_spec->verify(
+	      session, "", handshake_messages_struct, input);
+	  };
+#ifdef SSL3_DEBUG
+	if (err) {
+	  master()->handle_error(err);
+	}
+#endif
+	if (!verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
