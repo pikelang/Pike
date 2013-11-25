@@ -71,7 +71,7 @@ class CipherSpec {
   function(object,string,ADT.struct:ADT.struct) sign;
 
   //! The function used to verify the signature for packets.
-  function(object,string,ADT.struct,string:int(0..1)) verify;
+  function(object,string,ADT.struct,ADT.struct:int(0..1)) verify;
 }
 
 //! Class used for signing in TLS 1.2 and later.
@@ -102,11 +102,11 @@ class TLSSigner
   }
 
   int(0..1) verify(object context, string cookie, ADT.struct struct,
-		   string signature)
+		   ADT.struct input)
   {
-    int hash_id = signature[0];
-    int sign_id = signature[1];
-    Gmp.mpz sign = Gmp.mpz(signature[2..], 256);
+    int hash_id = input->get_uint(1);
+    int sign_id = input->get_uint(1);
+    string sign = input->get_var_string(2);
 
     Crypto.Hash hash = HASH_lookup[hash_id];
     if (!hash) return 0;
@@ -231,11 +231,17 @@ class KeyExchange(object context, object session, array(int) client_version)
 
     ADT.struct temp_struct = parse_server_key_exchange(input);
 
-    string signature = input->get_var_string(2);
     int verification_ok;
-    if( catch{ verification_ok = session->cipher_spec->verify(
-          session, client_random + server_random, temp_struct, signature); }
-      || !verification_ok)
+    mixed err = catch {
+	verification_ok = session->cipher_spec->verify(
+          session, client_random + server_random, temp_struct, input);
+      };
+#ifdef SSL3_DEBUG
+    if( err ) {
+      master()->handle_error(err);
+    }
+#endif
+    if (!verification_ok)
     {
       return -1;
     }
@@ -811,14 +817,16 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 
 //!
 int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
-		     string signature)
+		     ADT.struct input)
 {
   /* Exactly how is the signature process defined? */
 
   string params = cookie + struct->contents();
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
 
-  return context->rsa->raw_verify(digest, Gmp.mpz(signature, 256));
+  Gmp.mpz signature = input->get_bignum();
+
+  return context->rsa->raw_verify(digest, signature);
 }
 
 //!
@@ -832,11 +840,11 @@ ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
 
 //! Verify a DSA signature.
 int(0..1) dsa_verify(object context, string cookie, ADT.struct struct,
-		     string signature)
+		     ADT.struct input)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
   return context->dsa->pkcs_verify(cookie + struct->contents(),
-				   Crypto.SHA1);
+				   Crypto.SHA1, input->get_var_string(2));
 }
 
 //! The NULL signing method.
