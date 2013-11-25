@@ -256,6 +256,7 @@ class KeyExchange(object context, object session, array(int) client_version)
       master()->handle_error(err);
     }
 #endif
+    err = UNDEFINED;
     if (!verification_ok)
     {
       return -1;
