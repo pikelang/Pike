@@ -964,6 +964,13 @@ class DHKeyExchange
 //! @param version
 //!   Minor version of the SSL protocol to support.
 //!
+//! @param signature_algorithms
+//!   The set of <hash, signature> combinations that
+//!   are supported by the other end.
+//!
+//! @param max_hash_size
+//!   The maximum hash size supported for the signature algorithm.
+//!
 //! @returns
 //!   Returns @expr{0@} (zero) for unsupported combinations.
 //!   Otherwise returns an array with the following fields:
@@ -973,7 +980,9 @@ class DHKeyExchange
 //!     @elem CipherSpec 1
 //!       Initialized @[CipherSpec] for the @[suite].
 //!   @endarray
-array lookup(int suite, ProtocolVersion|int version)
+array lookup(int suite, ProtocolVersion|int version,
+	     array(array(int)) signature_algorithms,
+	     int max_hash_size)
 {
   CipherSpec res = CipherSpec();
   int ke_method;
@@ -1021,10 +1030,22 @@ array lookup(int suite, ProtocolVersion|int version)
       error( "Internal error.\n" );
     }
 
-    // FIXME: Select a suitable hash.
+    // Select a suitable hash.
     //
     // Fortunately the hash identifiers have a nice order property.
     int hash_id = HASH_sha;
+    SSL3_DEBUG_MSG("Signature algorithms: %O, max: %d\n",
+		   signature_algorithms, max_hash_size);
+    foreach(signature_algorithms || ({}), array(int) pair) {
+      if ((pair[1] == sign_id) && (pair[0] > hash_id) &&
+	  HASH_lookup[pair[0]]) {
+	if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
+	  // Eg RSA has a maximum block size and the digest is too large.
+	  continue;
+	}
+	hash_id = pair[0];
+      }
+    }
     SSL3_DEBUG_MSG("Selected <Hash: %d, Signature: %d>\n", hash_id, sign_id);
     TLSSigner signer = TLSSigner(hash_id);
     res->verify = signer->verify;

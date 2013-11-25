@@ -69,6 +69,17 @@ array(int) version;
 array(int) client_version; /* Used to check for version roll-back attacks. */
 int reuse;
 
+//! The set of <hash, signature> combinations supported by the other end.
+//!
+//! Only used with TLS 1.2 and later.
+//!
+//! Defaults to the settings from RFC 5246 7.4.1.4.1.
+array(array(int)) signature_algorithms = ({
+  ({ HASH_sha, SIGNATURE_rsa }),
+  ({ HASH_sha, SIGNATURE_dsa }),
+  ({ HASH_sha, SIGNATURE_ecdsa }),
+});
+
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
 array(string) client_cert_distinguished_names;
@@ -357,7 +368,8 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
                  fmt_cipher_suites((array(int))cipher_suites));
 
   if (sizeof(cipher_suites))
-    session->set_cipher_suite(cipher_suites[0],version[1]);
+    session->set_cipher_suite(cipher_suites[0], version[1],
+			      signature_algorithms);
   else {
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
@@ -743,6 +755,13 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   sizeof(extension_data->buffer));
           extensions:
 	    switch(extension_type) {
+	    case EXTENSION_signature_algorithms:
+	      // RFC 5246
+	      string bytes = extension_data->get_var_string(2);
+	      // Pairs of <hash_alg, signature_alg>.
+	      signature_algorithms = ((array(int))bytes)/2;
+	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n", signature_algorithms);
+	      break;
 	    case EXTENSION_server_name:
 	      // RFC 4366 3.1 "Server Name Indication"
 	      // Example: "\0\f\0\0\tlocalhost"
@@ -1320,7 +1339,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	version[1] = client_version[1];
       }
 
-      session->set_cipher_suite(cipher_suite,version[1]);
+      session->set_cipher_suite(cipher_suite, version[1], signature_algorithms);
       session->set_compression_method(compression_method);
       SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
 		     "version = %d.%d\n"
