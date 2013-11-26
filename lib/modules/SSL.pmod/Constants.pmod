@@ -627,9 +627,11 @@ constant CIPHER_SUITES =
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
    TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
 
-   TLS_rsa_with_aes_128_cbc_sha256 :	({ KE_rsa, CIPHER_aes, HASH_sha256 }),
+   TLS_rsa_with_aes_128_cbc_sha256 :    ({ KE_rsa, CIPHER_aes, HASH_sha256 }),
+   TLS_dhe_rsa_with_aes_128_cbc_sha256 : ({ KE_dhe_rsa, CIPHER_aes, HASH_sha256 }),
    TLS_dhe_dss_with_aes_128_cbc_sha256 : ({ KE_dhe_dss, CIPHER_aes, HASH_sha256 }),
    TLS_rsa_with_aes_256_cbc_sha256 :	({ KE_rsa, CIPHER_aes256, HASH_sha256 }),
+   TLS_dhe_rsa_with_aes_256_cbc_sha256 : ({ KE_rsa, CIPHER_aes256, HASH_sha256 }),
    TLS_dhe_dss_with_aes_256_cbc_sha256 : ({ KE_dhe_dss, CIPHER_aes256, HASH_sha256 }),
 
 #if constant(Crypto.CAMELLIA)
@@ -639,55 +641,90 @@ constant CIPHER_SUITES =
    TLS_rsa_with_camellia_256_cbc_sha:	({ KE_rsa, CIPHER_camellia256, HASH_sha }),
    TLS_dhe_dss_with_camellia_256_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha }),
    TLS_dhe_rsa_with_camellia_256_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha }),
+
+   TLS_rsa_with_camellia_128_cbc_sha256:	({ KE_rsa, CIPHER_camellia128, HASH_sha256 }),
+   TLS_dhe_dss_with_camellia_128_cbc_sha256: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha256 }),
+   TLS_dhe_rsa_with_camellia_128_cbc_sha256: ({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha256 }),
+   TLS_rsa_with_camellia_256_cbc_sha256:	({ KE_rsa, CIPHER_camellia256, HASH_sha256 }),
+   TLS_dhe_dss_with_camellia_256_cbc_sha256: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha256 }),
+   TLS_dhe_rsa_with_camellia_256_cbc_sha256: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha256 }),
 #endif
 
 ]);
 
 constant preferred_rsa_suites = ({
-  TLS_rsa_with_aes_256_cbc_sha256,
 #if constant(Crypto.CAMELLIA)
+  TLS_dhe_rsa_with_camellia_256_cbc_sha256,
   TLS_dhe_rsa_with_camellia_256_cbc_sha,
 #endif
+  TLS_dhe_rsa_with_aes_256_cbc_sha256,
   TLS_dhe_rsa_with_aes_256_cbc_sha,
 #if constant(Crypto.CAMELLIA)
+  TLS_rsa_with_camellia_256_cbc_sha256,
   TLS_rsa_with_camellia_256_cbc_sha,
 #endif
+  TLS_rsa_with_aes_256_cbc_sha256,
   TLS_rsa_with_aes_256_cbc_sha,
-  TLS_rsa_with_aes_128_cbc_sha256,
 #if constant(Crypto.CAMELLIA)
+  TLS_dhe_rsa_with_camellia_128_cbc_sha256,
   TLS_dhe_rsa_with_camellia_128_cbc_sha,
 #endif
+  TLS_dhe_rsa_with_aes_128_cbc_sha256,
   TLS_dhe_rsa_with_aes_128_cbc_sha,
 #if constant(Crypto.CAMELLIA)
+  TLS_rsa_with_camellia_128_cbc_sha256,
   TLS_rsa_with_camellia_128_cbc_sha,
 #endif
+  TLS_rsa_with_aes_128_cbc_sha256,
   TLS_rsa_with_aes_128_cbc_sha,		// Mandatory in RFC 5246 (TLS 1.2).
-  SSL_rsa_with_idea_cbc_sha,
+
   SSL_rsa_with_rc4_128_sha,
   SSL_rsa_with_rc4_128_md5,
   SSL_dhe_rsa_with_3des_ede_cbc_sha,
   SSL_rsa_with_3des_ede_cbc_sha,	// Mandatory in RFC 4346 (TLS 1.1).
+
+  // NB: The following cipher suites are obsolete in TLS 1.2 and later.
+  SSL_rsa_with_idea_cbc_sha,
   SSL_dhe_rsa_with_des_cbc_sha,
   SSL_rsa_with_des_cbc_sha,
+
+  // NB: The following cipher suites are obsolete in TLS 1.1 and later.
   SSL_rsa_export_with_rc4_40_md5,
+  SSL_rsa_export_with_rc2_cbc_40_md5,
+
+  // The following cipher suites are only intended for testing.
+#if 0
   SSL_rsa_with_null_sha,
   SSL_rsa_with_null_md5,
+  SSL_null_with_null_null,
+#endif
 });
 
 constant preferred_dhe_dss_suites = ({
   TLS_dhe_dss_with_aes_256_cbc_sha256,
 #if constant(Crypto.CAMELLIA)
+  TLS_dhe_dss_with_camellia_256_cbc_sha256,
   TLS_dhe_dss_with_camellia_256_cbc_sha,
 #endif
   TLS_dhe_dss_with_aes_256_cbc_sha,
   TLS_dhe_dss_with_aes_128_cbc_sha256,
 #if constant(Crypto.CAMELLIA)
+  TLS_dhe_dss_with_camellia_128_cbc_sha256,
   TLS_dhe_dss_with_camellia_128_cbc_sha,
 #endif
   TLS_dhe_dss_with_aes_128_cbc_sha,
   SSL_dhe_dss_with_3des_ede_cbc_sha,	// Mandatory in RFC 2246 (TLS 1.0).
+
+  // NB: The following cipher suites are obsolete in TLS 1.2 and later.
   SSL_dhe_dss_with_des_cbc_sha,
+
+  // NB: The following cipher suites are obsolete in TLS 1.1 and later.
   SSL_dhe_dss_export_with_des40_cbc_sha,
+
+  // The following cipher suites are only intended for testing.
+#if 0
+  SSL_null_with_null_null,
+#endif
 });
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
