@@ -712,8 +712,22 @@ class MAChmac_md5 {
   }
 }
 
+//! HMAC using SHA256.
+//!
+//! This is the MAC algorithm used by some cipher suites in TLS 1.2 and later.
+class MAChmac_sha256 {
+  inherit MAChmac_sha;
+
+  //!
+  protected void create(string|void s) {
+    secret = s || "";
+    hmac=Crypto.HMAC(Crypto.SHA256);
+  }
+}
+
+//! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
 protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
-		     string seed, int len) {
+			string seed, int len) {
    
   Crypto.HMAC hmac=Crypto.HMAC(hashfn);
   string temp=seed;
@@ -1173,6 +1187,10 @@ array lookup(int suite, ProtocolVersion|int version,
 
   switch(algorithms[2])
   {
+  case HASH_sha256:
+    res->mac_algorithm = MAChmac_sha256;
+    res->hash_size = 32;
+    break;
   case HASH_sha:
     if(version >= PROTOCOL_TLS_1_0)
       res->mac_algorithm = MAChmac_sha;
