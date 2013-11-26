@@ -8,7 +8,7 @@ test_any([[
 return SSL.constants && 1;
 ]], 1)
 
-cond_resolv(Crypto.Hash, [[
+cond_begin( Crypto.Hash )
 test_any([[
 #pike 7.4
 return SSL.cipher && 1;
@@ -121,17 +121,41 @@ test_do([[
 	       });
 ]])
 
+test_do([[
+  add_constant("invalid_suites", ([
+    SSL.Constants.PROTOCOL_TLS_1_1: ({
+      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_md5,
+      SSL.Constants.SSL_null_with_null_null,
+    }),
+    SSL.Constants.PROTOCOL_TLS_1_2: ({
+      SSL.Constants.SSL_rsa_with_idea_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha,
+      SSL.Constants.SSL_rsa_with_des_cbc_sha,
+      SSL.Constants.SSL_dhe_dss_with_des_cbc_sha,
+      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_md5,
+      SSL.Constants.SSL_null_with_null_null,
+    }),
+  ]));
 ]])
 
-cond_begin( Crypto.Hash )
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
   test_tests([[array(int) a() {
     log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 server...");
 
+    int expected_protocol = max($2, $4);
     int successes;
     int failures;
-    foreach(SSL.Constants.preferred_rsa_suites, int suite) {
+    foreach(SSL.Constants.preferred_rsa_suites -
+	    (invalid_suites[expected_protocol] || ({})), int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
@@ -345,6 +369,7 @@ define(test_ssl, [[
 cond_end
 
   test_do([[
+    add_constant("invalid_suites");
     add_constant("log_ssl_failure");
     add_constant("fmt_cipher_suite");
     add_constant("client_msg");
