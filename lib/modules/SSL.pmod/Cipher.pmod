@@ -1185,6 +1185,23 @@ array lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
+  if (res->is_exportable && (version >= PROTOCOL_TLS_1_1)) {
+    // RFC 4346 A.5:
+    // TLS 1.1 implementations MUST NOT negotiate
+    // these cipher suites in TLS 1.1 mode.
+    return 0;
+  }
+
+  if (version >= PROTOCOL_TLS_1_2) {
+    if ((res->bulk_cipher_algorithm == DES) ||
+	(res->bulk_cipher_algorithm == IDEA)) {
+      // RFC 5246 1.2:
+      // Removed IDEA and DES cipher suites.  They are now deprecated and
+      // will be documented in a separate document.
+      return 0;
+    }
+  }
+
   switch(algorithms[2])
   {
   case HASH_sha256:

@@ -392,10 +392,10 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   SSL3_DEBUG_MSG("intersection:\n%s\n",
                  fmt_cipher_suites((array(int))cipher_suites));
 
-  if (sizeof(cipher_suites))
-    session->set_cipher_suite(cipher_suites[0], version[1],
-			      signature_algorithms);
-  else {
+  if (!sizeof(cipher_suites) ||
+      !session->set_cipher_suite(cipher_suites[0], version[1],
+				 signature_algorithms)) {
+    // No overlapping cipher suites, or obsolete cipher suite selected.
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
@@ -1369,7 +1369,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	version[1] = client_version[1];
       }
 
-      session->set_cipher_suite(cipher_suite, version[1], signature_algorithms);
+      if (!session->set_cipher_suite(cipher_suite, version[1],
+				     signature_algorithms)) {
+	// Unsupported or obsolete cipher suite selected.
+	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
+	return -1;
+      }
       session->set_compression_method(compression_method);
       SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
 		     "version = %d.%d\n"
