@@ -149,7 +149,9 @@ constant HASH_lookup = ([
   HASH_sha384: Crypto.SHA384,
 #endif
   HASH_sha256: Crypto.SHA256,
+#if constant(Crypto.SHA224)
   HASH_sha224: Crypto.SHA224,
+#endif
   HASH_sha:    Crypto.SHA1,
   HASH_md5:    Crypto.MD5,
 ]);
