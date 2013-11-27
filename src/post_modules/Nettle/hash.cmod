@@ -627,11 +627,15 @@ PIKECLASS Hash
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+#ifdef HAVE_NETTLE_SHA224_INIT
+
 #cmod_define PIKE_NAME SHA224
 #cmod_define NETTLE_NAME sha224
 #cmod_include "hash.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
+
+#endif
 
 #cmod_define PIKE_NAME SHA256
 #cmod_define NETTLE_NAME sha256
