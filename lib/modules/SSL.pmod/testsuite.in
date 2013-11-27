@@ -151,7 +151,7 @@ define(test_ssl, [[
   test_tests([[array(int) a() {
     log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 server...");
 
-    int expected_protocol = max($2, $4);
+    int expected_protocol = min($2, $4);
     int successes;
     int failures;
     foreach(SSL.Constants.preferred_rsa_suites -
