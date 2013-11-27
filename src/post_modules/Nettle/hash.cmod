@@ -787,6 +787,61 @@ PIKECLASS SHA1_State
 }
 /*! @endclass SHA1_State */
 
+#ifdef HAVE_NETTLE_SHA224_INIT
+/*! @class SHA224_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS SHA224_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("SHA224_Info->INIT\n");
+
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_sha224;
+      else {
+	/* Can't call Pike_error here.
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("SHA224_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass SHA224_Info */
+
+/*! @class SHA224_State
+ *!
+ *! State for SHA224 hashing.
+ */
+
+PIKECLASS SHA224_State
+{
+  INHERIT SHA224_Info;
+  INHERIT HashState;
+  CVAR struct sha224_ctx sha224;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("SHA224_State->INIT\n");
+
+      assert(instance);
+
+      sha224_init(&THIS->sha224);
+      instance->ctx = &THIS->sha224;
+    }
+}
+/*! @endclass SHA224_State */
+#endif
+
 /*! @class SHA256_Info
  *!
  *! Internal mixin class, intended to be multiply inherited
@@ -839,6 +894,116 @@ PIKECLASS SHA256_State
     }
 }
 /*! @endclass SHA256_State */
+
+#ifdef HAVE_NETTLE_SHA384_INIT
+/*! @class SHA384_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS SHA384_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("SHA384_Info->INIT\n");
+
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_sha384;
+      else {
+	/* Can't call Pike_error here.
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("SHA384_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass SHA384_Info */
+
+/*! @class SHA384_State
+ *!
+ *! State for SHA384 hashing.
+ */
+
+PIKECLASS SHA384_State
+{
+  INHERIT SHA384_Info;
+  INHERIT HashState;
+  CVAR struct sha384_ctx sha384;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("SHA384_State->INIT\n");
+
+      assert(instance);
+
+      sha384_init(&THIS->sha384);
+      instance->ctx = &THIS->sha384;
+    }
+}
+/*! @endclass SHA384_State */
+#endif
+
+#ifdef HAVE_NETTLE_SHA512_INIT
+/*! @class SHA512_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS SHA512_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("SHA512_Info->INIT\n");
+
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_sha512;
+      else {
+	/* Can't call Pike_error here.
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("SHA512_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass SHA512_Info */
+
+/*! @class SHA512_State
+ *!
+ *! State for SHA512 hashing.
+ */
+
+PIKECLASS SHA512_State
+{
+  INHERIT SHA512_Info;
+  INHERIT HashState;
+  CVAR struct sha512_ctx sha512;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("SHA512_State->INIT\n");
+
+      assert(instance);
+
+      sha512_init(&THIS->sha512);
+      instance->ctx = &THIS->sha512;
+    }
+}
+/*! @endclass SHA512_State */
+#endif
 
 /*! @endmodule Nettle */
 

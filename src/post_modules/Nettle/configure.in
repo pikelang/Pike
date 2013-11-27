@@ -62,6 +62,10 @@ else
     # This is the recomended interface in Nettle 2.0.
     AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
 
+    # These weren't present in old Nettles.
+    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init \
+		   nettle_sha384_init nettle_sha512_init)
+
     AC_MSG_CHECKING([for struct yarrow256_ctx.seed_file])
     AC_CACHE_VAL(pike_cv_nettle_struct_yarrow256_ctx_seed_file, [
       pike_cv_nettle_struct_yarrow256_ctx_seed_file=no
