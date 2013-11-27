@@ -60,9 +60,17 @@ class conn {
 
   object sslfile;
 
-  string message = "<html><head><title>SSL-3 server</title></head>\n"
-  "<body><h1>This is a minimal SSL-3 http server</h1>\n"
-  "<hr><it>/nisse</it></body></html>\n";
+  string message =
+    "HTTP/1.0 200 Ok\r\n"
+    "Connection: close\r\n"
+    "Content-Length: 132\r\n"
+    "Content-Type: text/html; charset=ISO-8859-1\r\n"
+    "Date: Thu, 01 Jan 1970 00:00:01 GMT\r\n"
+    "Server: Bare-Bones\r\n"
+    "\r\n"
+    "<html><head><title>SSL-3 server</title></head>\n"
+    "<body><h1>This is a minimal SSL-3 http server</h1>\n"
+    "<hr><it>/nisse</it></body></html>\n";
   int index = 0;
 
   void write_callback()
@@ -199,6 +207,8 @@ int main()
   // FIXME: Is this correct?
   rsa = Standards.PKCS.RSA.parse_private_key(my_key);
 #endif /* 0 */
+  // Make sure all cipher suites are available.
+  rsa_mode();
   certificates = ({ my_certificate });
   random = no_random()->read;
   werror("Starting\n");
