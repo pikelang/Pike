@@ -177,6 +177,15 @@ class Messages
   }
 }
 
+//! Convenience function that decodes a PEM message containing only
+//! one part, and returns it as a string. Returns @expr{0@} for indata
+//! containing no or multiple parts.
+string simple_decode(string pem)
+{
+  Messages m = Messages(pem);
+  return sizeof(m->parts)==1 && values(m->parts)[0]->body;
+}
+
 //! Creates a PEM message, wrapped to 64 character lines.
 //!
 //! @param tag
