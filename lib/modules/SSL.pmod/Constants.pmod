@@ -606,6 +606,7 @@ constant CIPHER_SUITES =
       ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
    SSL_dhe_rsa_export_with_des40_cbc_sha :
       ({ KE_dhe_rsa, CIPHER_des40, HASH_sha }),
+   SSL_rsa_export_with_des40_cbc_sha :  ({ KE_rsa, CIPHER_des40, HASH_sha }),
    SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
@@ -692,7 +693,9 @@ constant preferred_rsa_suites = ({
   SSL_rsa_with_des_cbc_sha,
 
   // NB: The following cipher suites are obsolete in TLS 1.1 and later.
-  SSL_rsa_export_with_rc4_40_md5,
+  SSL_rsa_export_with_rc4_40_md5,	// Required for Netscape 4.05 Intl.
+  SSL_dhe_rsa_export_with_des40_cbc_sha,
+  SSL_rsa_export_with_des40_cbc_sha,
   SSL_rsa_export_with_rc2_cbc_40_md5,
 
   // The following cipher suites are only intended for testing.
