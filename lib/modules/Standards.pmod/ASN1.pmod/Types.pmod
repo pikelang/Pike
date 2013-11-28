@@ -214,7 +214,7 @@ class Compound
 
   protected string _sprintf(int t,mapping(string:int)|void params) {
     if (params) ++params->indent; else params=([]);
-    return t=='O' && sprintf("%O(%s %*O)", this_program, type_name, params, elements);
+    return t=='O' && sprintf("%O(%*O)", this_program, params, elements);
   }
 
 #ifdef COMPATIBILITY
