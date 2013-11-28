@@ -101,7 +101,7 @@
  * -Grubba 2005-08-04
  */
 
-/* #define STATIC_BUFFERS 8000 */
+#define STATIC_BUFFERS 8000
 
 /* This define causes dynamically sized data to be fetched via the polling
  * API rather than by the callback API. Using the polling API has the
