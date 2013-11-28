@@ -779,7 +779,7 @@ struct dblob
 static void init_dblob_struct(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb104711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
 #endif
 }
 
