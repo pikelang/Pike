@@ -316,7 +316,11 @@ class TBSCertificate
 
   //! @note
   //! optional
-  object extensions;
+  mapping(string:Object) extensions = ([]);
+
+  //! @note
+  //! optional
+  multiset critical = (<>);
 
   protected mixed cast(string to)
   {
@@ -471,6 +475,7 @@ class TBSCertificate
 	&& (a[i]->combined_tag == make_combined_tag(2, 1)))
     {
       issuer_id = BitString()->decode_primitive(a[i]->raw);
+      DBG("TBSCertificate: issuer_id = %O\n", issuer_id);
       i++;
       if (i == sizeof(a))
 	return this;
@@ -479,14 +484,50 @@ class TBSCertificate
 	&& (a[i]->combined_tag == make_combined_tag(2, 2)))
     {
       subject_id = BitString()->decode_primitive(a[i]->raw);
+      DBG("TBSCertificate: subject_id = %O\n", subject_id);
       i++;
       if (i == sizeof(a))
 	return this;
     }
     if (a[i]->constructed
-	&& (a[i]->combined_tag == make_combined_tag(2, 3)))
+	&& (a[i]->combined_tag == make_combined_tag(2, 3))
+        && sizeof(a[i])==1
+        && a[i][0]->type_name == "SEQUENCE")
     {
-      extensions = a[i];
+      extensions = ([]);
+      foreach(a[i][0]->elements, Object _ext)
+      {
+        if( _ext->type_name != "SEQUENCE" ||
+            sizeof(_ext)<2 || sizeof(_ext)>3 )
+        {
+          DBG("TBSCertificate: Bad extensions structure.\n");
+          return 0;
+        }
+        Sequence ext = [object(Sequence)]_ext;
+        if( ext[0]->type_name != "OBJECT IDENTIFIER" ||
+            ext[-1]->type_name != "OCTET STRING" )
+        {
+          DBG("TBSCertificate: Bad extensions structure.\n");
+          return 0;
+        }
+        DBG("TBSCertificate: extension: %O\n", ext[0]);
+        string id = ext[0]->get_der();
+
+        if( extensions[id] )
+        {
+          DBG("TBSCertificate: extension %O sent twice.\n");
+          return 0;
+        }
+
+        extensions[ id ] =
+          Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value);
+        if(sizeof(ext)==3)
+        {
+          if( ext[1]->type_name != "BOOLEAN" ) return 0;
+          if( ext[1]->value ) critical[id]=1;
+        }
+      }
+
       i++;
       if (i == sizeof(a))
 	return this;
@@ -511,12 +552,18 @@ TBSCertificate decode_certificate(string|object cert)
       || (cert[1][0]->type_name != "OBJECT IDENTIFIER")
       || (cert[2]->type_name != "BIT STRING")
       || cert[2]->unused)
+  {
+    DBG("Certificate has the wrong ASN.1 structure.\n");
     return 0;
+  }
 
   TBSCertificate tbs = TBSCertificate()->init(cert[0]);
 
   if (!tbs || (cert[1]->get_der() != tbs->algorithm->get_der()))
+  {
+    DBG("Failed to generate TBSCertificate.\n");
     return 0;
+  }
 
   return tbs;
 }
@@ -541,7 +588,6 @@ TBSCertificate verify_certificate(string s, mapping(string:Verifier) authorities
   
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
-    /* A self signed certificate */
     DBG("Self signed certificate\n");
     v = tbs->public_key;
   }
@@ -552,6 +598,66 @@ TBSCertificate verify_certificate(string s, mapping(string:Verifier) authorities
 			cert[0]->get_der(),
 			cert[2]->value)
     && tbs;
+}
+
+//! Decodes a root certificate using @[decode_certificate] and
+//! verifies that all extensions mandated for root certificates are
+//! present and valid.
+TBSCertificate verify_root_certificate(string s)
+{
+  TBSCertificate tbs = decode_certificate(s);
+  if(!tbs) return 0;
+
+  multiset crit = tbs->critical + (<>);
+
+  Object lookup(int num)
+  {
+    string id = Identifiers.ce_id->append(num)->get_der();
+    crit[id]=0;
+    return tbs->extensions[id];
+  };
+
+  // id-ce-basicConstraints is required for certificates with public
+  // key used to validate certificate signatures. RFC 3280, 4.2.1.10.
+  Object c = lookup(19);
+  if( !c || c->type_name!="SEQUENCE" || sizeof(c)<1 || sizeof(c)>2 ||
+      c[0]->type_name!="BOOLEAN" ||
+      !c[0]->value )
+  {
+    DBG("verify root: Bad or missing id-ce-basicConstraints.\n");
+    return 0;
+  }
+
+  // id-ce-authorityKeyIdentifier is required, unless self signed. RFC
+  // 3280 4.2.1.1
+  if( !lookup(35) && tbs->issuer->get_der() != tbs->subject->get_der() )
+  {
+    DBG("verify root: Missing id-ce-authorityKeyIdentifier.\n");
+    return 0;
+  }
+
+  // id-ce-subjectKeyIdentifier is required. RFC 3280 4.2.1.2
+  if( !lookup(14) )
+  {
+    DBG("verify root: Missing id-ce-subjectKeyIdentifier.\n");
+    return 0;
+  }
+
+  // id-ce-keyUsage is required. RFC 3280 4.2.1.3
+  if( !lookup(15) ) // FIXME: Look at usage bits
+  {
+    DBG("verify root: Missing id-ce-keyUsage.\n");
+    return 0;
+  }
+
+  // One or more critical extensions have not been processed.
+  if( sizeof(crit) )
+  {
+    DBG("verify root: Critical unknown extensions %O.\n", crit);
+    return 0;
+  }
+
+  return tbs;
 }
 
 //! Decodes a certificate chain, checks the signatures. Verifies that the
@@ -623,41 +729,6 @@ mapping verify_certificate_chain(array(string) cert_chain,
   {
     Verifier v;
 
-#if 0
-    // NOTE: disabled due to unreliable presence of cA constraint.
-    //
-    // if we are a CA certificate (we don't care about the end cert)
-    // make sure the CA constraint is set.
-    // 
-    // should we be considering self signed certificates?
-    if(idx != (sizeof(chain_obj)-1))
-    {
-        int caok = 0;
-
-        if(tbs->extensions && sizeof(tbs->extensions))
-        {
-            werror("have extensions.\n");
-            foreach(tbs->extensions[0]->elements, Sequence c)
-            {
-               werror("checking each element...\n");
-               if(c[0] == Identifiers.ce_id->append(19))
-               {
-                 werror("have a basic constraints element.\n");
-                 foreach(c->elements[1..], Sequence v)
-                 {
-                   werror("checking for boolean: " + v->type_name + " " + v->value + "\n");
-                   if(v->type_name == "BOOLEAN" && v->value == 1)
-                     caok = 1;
-                 }
-               }
-            }
-        }
-        
-        if(! caok)
-          ERROR(CERT_UNAUTHORIZED_CA);
-    }
-#endif  /* 0 */
-
     if(idx == 0) // The root cert
     {
       v = authorities[tbs->issuer->get_der()];
@@ -684,7 +755,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // is the certificate in effect (time-wise)?
       int my_time = time();
 
-      // Check not_before. Ee want the current time to be later.
+      // Check not_before. We want the current time to be later.
       if(my_time < tbs->not_before)
         ERROR(CERT_TOO_NEW);
 
