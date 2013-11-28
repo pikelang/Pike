@@ -819,6 +819,25 @@ class DES3
 }
 
 //!
+class RC2
+{
+  inherit Crypto.CBC;
+  protected void create() { ::create(Crypto.Arctwo()); }
+
+  this_program set_encrypt_key(string k)
+  {
+    ::set_encrypt_key(k, 128);
+    return this;
+  }
+
+  this_program set_decrypt_key(string k)
+  {
+    ::set_decrypt_key(k, 128);
+    return this;
+  }
+}
+
+//!
 class IDEA
 {
   inherit Crypto.CBC;
@@ -1091,6 +1110,14 @@ array lookup(int suite, ProtocolVersion|int version,
 
   switch(algorithms[1])
   {
+  case CIPHER_rc2_40:
+    res->bulk_cipher_algorithm = RC2;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 1;
+    res->key_material = 16;
+    res->iv_size = 8;
+    res->key_bits = 40;
+    break;
   case CIPHER_rc4_40:
     res->bulk_cipher_algorithm = Crypto.Arcfour.State;
     res->cipher_type = CIPHER_stream;
