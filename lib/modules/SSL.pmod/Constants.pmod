@@ -100,7 +100,7 @@ constant CIPHER_types = (< CIPHER_stream, CIPHER_block >);
 
 constant CIPHER_null     = 0;
 constant CIPHER_rc4_40   = 2;
-constant CIPHER_rc2      = 3;
+constant CIPHER_rc2_40   = 3;
 constant CIPHER_des40    = 6;
 constant CIPHER_rc4      = 1;
 constant CIPHER_des      = 4;
@@ -115,8 +115,8 @@ constant CIPHER_camellia256 = 12;
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_effective_keylengths = ([
   CIPHER_null:		0, 
+  CIPHER_rc2_40:	16,	// A 64bit key in RC2 has strength ~34...
   CIPHER_rc4_40:	40,
-  CIPHER_rc2:		40,
   CIPHER_des40:		40,
   CIPHER_rc4:		128,
   CIPHER_des:		40,
@@ -600,6 +600,7 @@ constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
+   SSL_rsa_export_with_rc2_cbc_40_md5 :	({ KE_rsa, CIPHER_rc2_40, HASH_md5 }),
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
    SSL_dhe_dss_export_with_des40_cbc_sha :
       ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
