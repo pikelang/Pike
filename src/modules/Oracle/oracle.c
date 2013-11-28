@@ -1299,7 +1299,7 @@ static void f_fetch_fields(INT32 args)
 			& info->data.len,
 			& info->data.rcode,
 #ifdef STATIC_BUFFERS
-			0
+			(type == SQLT_CLOB || type == SQLT_BLOB )? OCI_DYNAMIC_FETCH : 0
 #else
 			/* No need to use callbacks for fixed-length fields. */
 			data_size<0? OCI_DYNAMIC_FETCH :0
@@ -1318,6 +1318,16 @@ static void f_fetch_fields(INT32 args)
 
 #if !defined(STATIC_BUFFERS) && !defined(POLLING_FETCH)
       if (data_size < 0) {
+	rc=OCIDefineDynamic(info->define_handle,
+			    dbcon->error_handle,
+			    info,
+			    define_callback);
+	if(!IS_SUCCESS(rc))
+	  ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
+      }
+#endif
+#if defined(STATIC_BUFFERS)
+      if (type == SQLT_CLOB || type == SQLT_BLOB) {
 	rc=OCIDefineDynamic(info->define_handle,
 			    dbcon->error_handle,
 			    info,
