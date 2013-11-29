@@ -163,6 +163,12 @@ this_program generate_key(int(128..) bits, void|int e)
 {
   if (bits < 128)
     error( "Ridiculously small key.\n" );
+  if( e )
+  {
+    if(!(e&1)) error("e needs to be odd.\n");
+    if(e<3) error("e is too small.\n");
+    if(e->size()>bits) error("e has to be smaller in size than the key.\n");
+  }
 
   /* NB: When multiplying two n-bit integers,
    *     you're most likely to get an (2n - 1)-bit result.
@@ -174,7 +180,7 @@ this_program generate_key(int(128..) bits, void|int e)
   int s1 = bits / 2; /* Size of the first prime */
   int s2 = 1 + bits - s1;
   
-  string msg = "This is a valid RSA key pair\n";
+  string msg = "A" * (bits/8-3-8);
 
   do
   {
@@ -444,6 +450,8 @@ __deprecated__ int(0..) rsa_size() { return [int(0..)](size*8); }
 
 // (RSA/SHA-1 SIG is in RFC 3110)
 
+#if constant(Crypto.MD5)
+
 __deprecated__ string md5_sign(string message, mixed|void r)
 {
   string s = Crypto.MD5->hash(message);
@@ -457,6 +465,8 @@ __deprecated__ int md5_verify(string message, string signature)
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
+
+#endif
 
 __deprecated__ string sha_sign(string message, mixed|void r)
 {
