@@ -298,7 +298,6 @@ PIKECLASS Cipher
 
       low_make_key(info->meta->key_size);
 
-      /* FIXME: There should be a check for weak keys so this never throws. */
       stack_dup();
       Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
       apply_current(f_Cipher_State_set_encrypt_key_fun_num, 1);
@@ -717,8 +716,6 @@ pike_des_set_key(void *c,
       break;
       
     case DES_BAD_PARITY:
-      /* FIXME: I don't think this should be visible in the user
-       * interface, the parity bits should just be ignored. */
       Pike_error("DES_INFO: Key has bad parity.\n");
     default:
       Pike_error("DES_INFO: Unexpected error, please send a bug report.\n");
@@ -836,13 +833,21 @@ PIKECLASS DES
 			     Cipher_State_program);
       assert(info);
 
+#ifndef DES_WEAK_KEY
+      do {
+        low_make_key(info->meta->key_size);
+      } while( !des_set_key(state->ctx,
+                            (const uint8_t *)Pike_sp[-1].u.string->str) );
+      f_DES_fix_parity(1);
+#else
       low_make_key(info->meta->key_size);
       f_DES_fix_parity(1);
 
-      /* FIXME: There should be a check for weak keys so this never throws. */
       info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
 				  Pike_sp[-1].u.string->str, 0);
+#endif
 
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
       state->crypt = info->meta->encrypt;
       state->key_size = Pike_sp[-1].u.string->len;
     }
@@ -920,17 +925,16 @@ pike_des3_set_key(void *c,
     break;
   }
 
+#ifndef DES_WEAK_KEY
+  if( !des3_set_key(ctx, (const uint8_t *)key) && !force )
+    Pike_error("DES3_INFO: Key is weak.\n");
+#else
   /* The hack of resetting ctx->status to use a weak key doesn't
    * currently work with nettle's des3_set_key function. So we set the
    * individual keys by ourself. */
   for (i = 0; i<3; i++, key += DES_KEY_SIZE)
     if (!des_set_key(&ctx->des[i], (const uint8_t *)key))
     {
-#ifndef DES_WEAK_KEY
-      /* Nettle 2.1 and later. */
-      if (!force)
-	Pike_error("DES3_INFO: Key is weak.\n");
-#else
       /* Nettle 2.0 and earlier. */
       switch (ctx->des[i].status)
       {
@@ -943,14 +947,12 @@ pike_des3_set_key(void *c,
 	break;
       
       case DES_BAD_PARITY:
-	/* FIXME: I don't think this should be visible in the user
-	 * interface, the parity bits should just be ignored. */
 	Pike_error("DES3_INFO: Key has bad parity.\n");
       default:
 	Pike_error("DES3_INFO: Unexpected error, please send a bug report.\n");
       }
-#endif
     }
+#endif
 }
 #define pike_des3_set_encrypt_key pike_des3_set_key
 #define pike_des3_set_decrypt_key pike_des3_set_key
@@ -1068,13 +1070,21 @@ PIKECLASS DES3
 			     Cipher_State_program);
       assert(info);
 
+#ifndef DES_WEAK_KEY
+      do {
+        low_make_key(info->meta->key_size);
+      } while( !des3_set_key(state->ctx,
+                             (const uint8_t *)Pike_sp[-1].u.string->str) );
+      f_DES3_fix_parity(1);
+#else
       low_make_key(info->meta->key_size);
       f_DES3_fix_parity(1);
 
-      /* FIXME: There should be a check for weak keys so this never throws. */
       info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
 				  Pike_sp[-1].u.string->str, 0);
+#endif
 
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
       state->crypt = info->meta->encrypt;
       state->key_size = Pike_sp[-1].u.string->len;
     }
