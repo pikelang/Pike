@@ -955,9 +955,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array(.state) res = session->new_server_states(client_random,
-							 server_random,
-							 version);
+	  array(.state) res;
+          if( catch(res = session->new_server_states(client_random,
+                                                     server_random,
+                                                     version)) )
+          {
+            // DES/DES3 throws an exception if a weak key is used. We
+            // coul possibly send ALERT_insufficient_security instead.
+            send_packet(Alert(ALERT_fatal, ALERT_internal_error,
+                              version[1]));
+            return -1;
+          }
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
