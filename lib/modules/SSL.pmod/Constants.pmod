@@ -694,8 +694,8 @@ constant preferred_rsa_suites = ({
 
   // NB: The following cipher suites are obsolete in TLS 1.1 and later.
   SSL_rsa_export_with_rc4_40_md5,	// Required for Netscape 4.05 Intl.
-  SSL_dhe_rsa_export_with_des40_cbc_sha,
-  SSL_rsa_export_with_des40_cbc_sha,
+  //  SSL_dhe_rsa_export_with_des40_cbc_sha,
+  //  SSL_rsa_export_with_des40_cbc_sha,
   SSL_rsa_export_with_rc2_cbc_40_md5,
 
   // The following cipher suites are only intended for testing.
@@ -725,7 +725,7 @@ constant preferred_dhe_dss_suites = ({
   SSL_dhe_dss_with_des_cbc_sha,
 
   // NB: The following cipher suites are obsolete in TLS 1.1 and later.
-  SSL_dhe_dss_export_with_des40_cbc_sha,
+  //  SSL_dhe_dss_export_with_des40_cbc_sha,
 
   // The following cipher suites are only intended for testing.
 #if 0
