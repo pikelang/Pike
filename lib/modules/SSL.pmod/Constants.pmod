@@ -190,14 +190,15 @@ enum KeyExchangeType {
   KE_dhe_rsa	= 4,
   KE_dh_anon	= 5,
   KE_dms	= 6,
-};
+  KE_fortezza	= 7,
+}
 
 //! Compression methods.
 enum CompressionType {
-  COMPRESSION_null = 0,	//! No compression.
-  COMPRESSION_deflate = 1,
-  COMPRESSION_lzs = 64,
-};
+  COMPRESSION_null = 0,		//! No compression.
+  COMPRESSION_deflate = 1,	//! Deflate compression.
+  COMPRESSION_lzs = 64,		//! LZS compression. RFC 3943
+}
 
 /* Alert messages */
 constant ALERT_warning			= 1;
