@@ -375,7 +375,6 @@ test_eq( RSA->query_blocksize(), 125 )
 test_eq( RSA->rsa_size(), 1024 )
 test_do( add_constant("RSA") )
 
-cond_resolv(Crypto.MD5.name, [[
 test_do( add_constant("RSA", Crypto.RSA()) )
 test_do( RSA->generate_key(1024) )
 test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
@@ -424,9 +423,14 @@ test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
 test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
-test_do( add_constant("RSA") )
-]])
 
+test_eval_error( RSA->generate_key(88); )
+test_do( RSA->generate_key(128); )
+test_eval_error( RSA->generate_key(128, 6); )
+test_eval_error( RSA->generate_key(128, 1); )
+test_eval_error( RSA->generate_key(128, (1<<128)+1); )
+test_do( RSA->generate_key(128, 5); )
+test_do( add_constant("RSA") )
 
 // Crypto.DSA
 cond_resolv(Crypto.SHA1.name, [[
