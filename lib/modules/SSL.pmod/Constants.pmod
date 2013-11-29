@@ -174,14 +174,15 @@ enum KeyExchangeType {
   KE_dhe_rsa	= 4,	//! Diffie-Hellman RSA
   KE_dh_anon	= 5,	//! Diffie-Hellman Anonymous
   KE_dms	= 6,
-};
+  KE_fortezza	= 7,
+}
 
 //! Compression methods.
 enum CompressionType {
   COMPRESSION_null = 0,		//! No compression.
   COMPRESSION_deflate = 1,	//! Deflate compression.
-  COMPRESSION_lzs = 64,		//! LZS compression.
-};
+  COMPRESSION_lzs = 64,		//! LZS compression. RFC 3943
+}
 
 /* Alert messages */
 constant ALERT_warning			= 1;
