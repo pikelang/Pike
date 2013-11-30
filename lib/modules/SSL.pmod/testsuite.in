@@ -155,8 +155,16 @@ define(test_ssl, [[
     int expected_protocol = min($2, $4);
     int successes;
     int failures;
-    foreach(server_ctx->get_suites(SSL.Constants.SIGNATURE_rsa, 0) -
-	    (invalid_suites[expected_protocol] || ({})), int suite) {
+
+    array(int) suites = ({
+      SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
+    });
+
+    if( `==($1,$2,$3,$4) )
+      suites = server_ctx->get_suites(SSL.Constants.SIGNATURE_rsa,0) -
+  	    (invalid_suites[expected_protocol] || ({}));
+
+    foreach(suites, int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
