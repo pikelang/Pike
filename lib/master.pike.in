@@ -4034,7 +4034,13 @@ void _main(array(string) orig_argv)
       if (cur_compat_ver <= Version (7, 6))
 	ret=script->main(sizeof(argv),argv,getenv());
       else
-	ret=script->main(sizeof(argv),argv);
+      {
+        array a;
+        if( __get_first_arg_type(_typeof(script->main))<=typeof(a) )
+          ret=script->main(argv);
+        else
+          ret=script->main(sizeof(argv),argv);
+      }
     };
   // Disable tracing.
   trace = predef::trace(trace);
