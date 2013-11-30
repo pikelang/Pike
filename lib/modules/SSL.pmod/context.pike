@@ -226,6 +226,91 @@ void advertise_protocols(string ... protos) {
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 
+// Generate a sort key for a cipher suite.
+//
+// The larger the value, the stronger the cipher suite.
+protected int cipher_suite_sort_key(int suite)
+{
+  array(int) info = [array(int)] (CIPHER_SUITES[suite] || ({ 0, 0, 0 }));
+
+  int keylength = CIPHER_effective_keylengths[info[1]];
+
+  // NB: Currently the hash algorithms are allocated in a suitable order.
+  int hash = info[2];
+
+  // NB: As are the cipher ids if you disregard the keylengths.
+  int cipher = info[1];
+
+  // FIXME: I'm not quite sure about the priorities here.
+  int ke_prio = ([
+    KE_null:		0,
+    KE_dh_anon:		1,
+    KE_fortezza:	3,
+    KE_dms:		4,
+    KE_rsa:		5,
+    KE_dh:		6,
+    KE_dhe_rsa:		7,
+    KE_dhe_dss:		8,
+  ])[info[0]];
+
+  // NB: 8 bits for cipher.
+  //     8 bits for hash.
+  //     8 bits for key exchange.
+  //     rest for keylength.
+  return cipher | hash << 8 | ke_prio << 16 | keylength << 24;
+}
+
+//! Get the prioritized list of supported cipher suites
+//! that satisfy the requirements.
+//!
+//! @param sign
+//!   Signature algorithm, typically @[SIGNATURE_rsa] or
+//!   @[SIGNATURE_dsa].
+//!
+//! @param min_keylength
+//!   Minimum supported effective keylength.
+//!
+//! @note
+//!   Note that the effective keylength may differ from
+//!   the actual keylength for old ciphers where there
+//!   are known attacks.
+array(int) get_suites(int sign, int min_keylength)
+{
+  // Default to the unsigned key exchange methods.
+  multiset(int) kes = (< KE_null, KE_dh, KE_dh_anon >);
+
+  // Add the signature-dependent methods.
+  switch(sign) {
+  case SIGNATURE_rsa:
+    kes |= (< KE_rsa, KE_dhe_rsa >);
+    break;
+  case SIGNATURE_dsa:
+    kes |= (< KE_dhe_dss >);
+    break;
+  }
+
+  // Filter unsupported key exchange methods.
+  array(int) res =
+    filter(indices(CIPHER_SUITES),
+	   lambda(int suite) {
+	     return kes[CIPHER_SUITES[suite][0]];
+	   });
+
+  // Filter short effective key lengths.
+  if (min_keylength) {
+    res = filter(res,
+		 lambda(int suite, int min_keylength) {
+		   return min_keylength <=
+		     CIPHER_effective_keylengths[CIPHER_SUITES[suite][1]];
+		 }, min_keylength);
+  }
+
+  // Sort.
+  sort(map(res, cipher_suite_sort_key), res);
+
+  return reverse(res);
+}
+
 //! Filter cipher suites from @[preferred_suites] that don't have a
 //! key with an effective length of at least @[min_keylength] bits.
 void filter_weak_suites(int min_keylength)
@@ -250,8 +335,7 @@ void filter_weak_suites(int min_keylength)
 void rsa_mode(int|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
-  preferred_suites = preferred_rsa_suites;
-  filter_weak_suites(min_keylength);
+  preferred_suites = get_suites(SIGNATURE_rsa, min_keylength);
 }
 
 //! Set @[preferred_suites] to DSS based methods.
@@ -264,8 +348,7 @@ void rsa_mode(int|void min_keylength)
 void dhe_dss_mode(int|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
-  preferred_suites = preferred_dhe_dss_suites;
-  filter_weak_suites(min_keylength);
+  preferred_suites = get_suites(SIGNATURE_dsa, min_keylength);
 }
 
 //! Always ({ COMPRESSION_null })
