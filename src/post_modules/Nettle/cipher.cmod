@@ -1603,7 +1603,7 @@ PIKECLASS CBC
    */
   PIKEFUN string(0..255) crypt(string data)
   {
-    unsigned INT8 *result;
+    struct pike_string *result;
     ONERROR uwp;
 
     NO_WIDE_STRING(data);
@@ -1611,23 +1611,21 @@ PIKECLASS CBC
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
 
-    if(!(result = malloc(data->len)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
-    SET_ONERROR (uwp, free, result);
+    result = begin_shared_string(data->len);
+    SET_ONERROR (uwp, do_free_string, result);
 
     if(THIS->mode == 0) {
       cbc_encrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
-		  THIS->iv, data->len, result, STR0(data));
+		  THIS->iv, data->len, STR0(result), STR0(data));
     }
     else {
       cbc_decrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
-		  THIS->iv, data->len, result, STR0(data));
+		  THIS->iv, data->len, STR0(result), STR0(data));
     }
 
     pop_n_elems(args);
-    push_string(make_shared_binary_string((INT8 *)result, data->len));
-    guaranteed_memset(result, 0, data->len);
-    CALL_AND_UNSET_ONERROR (uwp);
+    push_string(end_shared_string(result));
+    UNSET_ONERROR(uwp);
   }
 }
 
