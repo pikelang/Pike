@@ -274,7 +274,8 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
   return res[..bytes-1];
 }
 
-//!   Password Based Key Derivation Function #2 from RFC 2898.
+//! Password Based Key Derivation Function #2 from RFC 2898, PKCS#5
+//! v2.0.
 //!
 //! @param password
 //! @param salt
