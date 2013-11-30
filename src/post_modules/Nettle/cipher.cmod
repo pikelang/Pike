@@ -1567,6 +1567,9 @@ PIKECLASS CBC
     struct object *o = THIS->object;
     struct inherit *inh;
 
+    if (!o || !o->prog) {
+      Pike_error("Lookup in destructed object.\n");
+    }
     assert(THIS->block_size);
     THIS->mode = 0;
     key->flags |= STRING_CLEAR_ON_EXIT;
@@ -1604,6 +1607,9 @@ PIKECLASS CBC
     struct object *o = THIS->object;
     struct inherit *inh;
 
+    if (!o || !o->prog) {
+      Pike_error("Lookup in destructed object.\n");
+    }
     assert(THIS->block_size);
     THIS->mode = 1;
     key->flags |= STRING_CLEAR_ON_EXIT;
@@ -1663,6 +1669,10 @@ PIKECLASS CBC
 
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
+
+    if (!THIS->object || !THIS->object->prog) {
+      Pike_error("Lookup in destructed object.\n");
+    }
 
     result = begin_shared_string(data->len);
     SET_ONERROR (uwp, do_free_string, result);
