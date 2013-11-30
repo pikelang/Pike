@@ -231,7 +231,8 @@ string crypt_hash(string password, string salt, int rounds)
 		 base64tab/"", b64tab/"");
 }
 
-//!   Password Based Key Derivation Function #1 from RFC 2898.
+//! Password Based Key Derivation Function #1 from RFC 2898. This
+//! method is compatible with the one from PKCS#5 v1.5.
 //!
 //! @param password
 //! @param salt
@@ -243,8 +244,6 @@ string crypt_hash(string password, string salt, int rounds)
 //! @param bytes
 //!   The number of bytes of output. Note that this has an upper limit
 //!   of the size of a single digest.
-//!
-//!   This method is compatible with the one from PKCS#5.
 //!
 //! @returns
 //!   Returns the derived key.
@@ -258,11 +257,15 @@ string crypt_hash(string password, string salt, int rounds)
 //!   @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
 string pbkdf1(string password, string salt, int rounds, int bytes)
 {
+  if( bytes>digest_size() )
+    error("Requested bytes %d exceeds hash digest size %d.\n",
+          bytes, digest_size());
+  if( rounds <=0 )
+    error("Rounds needs to be 1 or higher.\n");
+
   string res = password + salt;
 
   password = "CENSORED";
-
-  if (rounds <= 0) rounds = 1;
 
   while (rounds--) {
     res = hash(res);
@@ -290,21 +293,20 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
 //!   @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
 string pbkdf2(string password, string salt, int rounds, int bytes)
 {
+  if( rounds <=0 )
+    error("Rounds needs to be 1 or higher.\n");
+
   int bsz = block_size();
 
-  if (sizeof(password) > bsz) {
+  if (sizeof(password) > bsz)
     password = hash(password);
-  }
+  if (sizeof(password) < bsz)
+    password += "\0" * (bsz - sizeof(password));
 
-  string ikey = password ^ ("6" * sizeof(password));
-  if (sizeof(ikey) < bsz) {
-    ikey += "6" * (bsz - sizeof(ikey));
-  }
-  string okey = ikey ^ (("6"^"//") * sizeof(ikey));
+  string ikey = password ^ ("6" * bsz);
+  string okey = password ^ ("\\" * bsz);
 
   password = "CENSORED";
-
-  if (rounds <= 0) rounds = 1;
 
   string res = "";
   int dsz = digest_size();
@@ -312,10 +314,8 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   while (sizeof(res) < bytes) {
     string frag = "\0" * dsz;
     string buf = salt + sprintf("%4c", ++fragno);
-    int j;
-    for (j = 0; j < rounds; j++) {
+    for (int j = 0; j < rounds; j++) {
       buf = hash(okey + hash(ikey + buf));
-
       frag ^= buf;
     }
     res += frag;
