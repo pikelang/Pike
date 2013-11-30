@@ -214,9 +214,10 @@ Packet client_hello()
   // timestamp on the client side. This is to guard against bad random
   // generators, where a client could produce the same random numbers
   // if the seed is reused. This argument is flawed, since a broken
-  // random generator will make the connection insecure anyways. No
-  // one appears to rely on these bytes to be a time stamp, so sending
-  // random data instead is safer and reduces client fingerprinting.
+  // random generator will make the connection insecure anyways. The
+  // standard explicitly allows these bytes to not be correct, so
+  // sending random data instead is safer and reduces client
+  // fingerprinting.
   client_random = context->random(32);
 
   struct->put_fix_string(client_random);
@@ -686,9 +687,16 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      
      handshake_messages = raw;
 
-     // FIXME: Should we remove timestamp here as well. See
-     // client_random generation for more discussion.
-     server_random = sprintf("%4c%s", time(), context->random(28));
+
+     // The first four bytes of the client_random is specified to be
+     // the timestamp on the client side. This is to guard against bad
+     // random generators, where a client could produce the same
+     // random numbers if the seed is reused. This argument is flawed,
+     // since a broken random generator will make the connection
+     // insecure anyways. The standard explicitly allows these bytes
+     // to not be correct, so sending random data instead is safer and
+     // reduces client fingerprinting.
+     server_random = context->random(32);
 
      switch(type)
      {
