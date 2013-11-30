@@ -74,9 +74,6 @@ class Server {
     ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
     ctx->certificates = ({ cert });
 
-    // Ensure that all supported cipher suites are available.
-    //ctx->preferred_suites = SSL.Constants.preferred_rsa_suites;
-
     add_constant("server_ctx", ctx);
   }
 }
@@ -125,8 +122,10 @@ test_do([[
   add_constant("invalid_suites", ([
     SSL.Constants.PROTOCOL_TLS_1_1: ({
       SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
       SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
       SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
       SSL.Constants.SSL_null_with_null_null,
@@ -137,8 +136,10 @@ test_do([[
       SSL.Constants.SSL_rsa_with_des_cbc_sha,
       SSL.Constants.SSL_dhe_dss_with_des_cbc_sha,
       SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
       SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
       SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
       SSL.Constants.SSL_null_with_null_null,
@@ -154,7 +155,7 @@ define(test_ssl, [[
     int expected_protocol = min($2, $4);
     int successes;
     int failures;
-    foreach(SSL.Constants.preferred_rsa_suites -
+    foreach(server_ctx->get_suites(SSL.Constants.SIGNATURE_rsa, 0) -
 	    (invalid_suites[expected_protocol] || ({})), int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
