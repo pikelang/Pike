@@ -69,9 +69,6 @@ class Server {
     ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
     ctx->certificates = ({ cert });
 
-    // Ensure that all supported cipher suites are available.
-    //ctx->preferred_suites = SSL.Constants.preferred_rsa_suites;
-
     add_constant("server_ctx", ctx);
   }
 }
@@ -153,7 +150,7 @@ define(test_ssl, [[
     int expected_protocol = min($2, $4);
     int successes;
     int failures;
-    foreach(SSL.Constants.preferred_rsa_suites -
+    foreach(server_ctx->get_suites(SSL.Constants.SIGNATURE_rsa, 0) -
 	    (invalid_suites[expected_protocol + 0x300] || ({})), int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
