@@ -1,7 +1,5 @@
 START_MARKER
 
-// Nettle.Yarrow
-
 test_compile_error( H )
 test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
@@ -274,6 +272,16 @@ test_hash(SHA3_512,
 0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e,
 d102b03dea5c63be8dc7ee844c616a7326c04ec05f67c7ea42cd5f91be0bf75854d486fd58aa7ac50a07e643582f90cd92b530963c26a70a694a2bca5e366b93,
 72)
+
+test_hash(GOST94,
+ce85b99cc46752fffee35cab9a7b0278abb4c2d2055cff685af4912c49490f8d,
+777087cc7fbf49feaac18bc05289e4b75e6803c05c9f71a01708a7c225e8d636,
+32)
+
+test_hash(RIPEMD160,
+9c1185a5c5e9fc54612808977ee8f548b2258d31,
+d5c4507e4743056d4b0341fd27ffac3686b1202d,
+64)
 
 test_do([[ rm("hash_me") ]])
 

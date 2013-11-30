@@ -31,6 +31,12 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_SHA3_H
 #include <nettle/sha3.h>
 #endif
+#ifdef HAVE_NETTLE_RIPEMD160_H
+#include <nettle/ripemd160.h>
+#endif
+#ifdef HAVE_NETTLE_GOSTHASH94_H
+#include <nettle/gosthash94.h>
+#endif
 #include <nettle/nettle-meta.h>
 
 #include <stdio.h>
@@ -690,6 +696,26 @@ PIKECLASS Hash
 #cmod_undef NETTLE_NAME
 
 #endif /* HAVE_NETTLE_SHA3_H */
+
+#ifdef HAVE_NETTLE_RIPEMD160_H
+
+#cmod_define PIKE_NAME RIPEMD160
+#cmod_define NETTLE_NAME ripemd160
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
+#ifdef HAVE_NETTLE_GOSTHASH94_H
+
+#cmod_define PIKE_NAME GOST94
+#cmod_define NETTLE_NAME gosthash94
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
 
 /*! @endmodule Nettle */
 
