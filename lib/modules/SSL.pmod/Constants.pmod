@@ -131,7 +131,7 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_null:		0, 
   CIPHER_rc4_40:	40,
   CIPHER_rc2:		40,
-  CIPHER_des40:		40,
+  CIPHER_des40:		32,	// A 56bit key in DES has strength ~40...
 #ifndef WEAK_CRYPTO_40BIT
   CIPHER_rc4:		128,
   CIPHER_des:		40,
