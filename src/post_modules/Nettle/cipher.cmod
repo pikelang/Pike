@@ -44,6 +44,8 @@ DECLARATIONS
 #include "idea.h"
 #include <nettle/nettle-meta.h>
 
+#include <nettle/cbc.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -1426,24 +1428,20 @@ PIKECLASS CBC
    */
   INHERIT "__builtin.Nettle.Cipher";
 
-  CVAR struct object *object;
+  PIKEVAR object object
+    flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+  CVAR crypt_func crypt_func;
+  CVAR void *ctx;
   CVAR unsigned INT8 *iv;
   CVAR INT32 block_size;
   CVAR INT32 mode;
-
-  INIT
-  {
-    THIS->object = NULL;
-    THIS->iv = NULL;
-    THIS->block_size = 0;
-    THIS->mode = 0;
-  }
 
   EXIT
     gc_trivial;
   {
     if(THIS->object) {
       free_object(THIS->object);
+      THIS->object = NULL;
     }
     if(THIS->iv) {
       guaranteed_memset(THIS->iv, 0, THIS->block_size);
@@ -1451,52 +1449,23 @@ PIKECLASS CBC
     }
   }
 
-  INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
+  /* Generic callback function for Nettle in case the crypt()
+   * function in the object isn't a Nettle function.
+   */
+  static void pike_crypt_func(void *object, unsigned length, uint8_t *dst,
+			      const uint8_t *src)
   {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    for(i=0; i < block_size; i++)
-      THIS->iv[i] ^= source[i];
-
-    push_string(make_shared_binary_string((INT8 *)THIS->iv, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
+    int args;
+    struct pike_string *str;
+    push_string(make_shared_binary_string((const char *)src, length));
+    args = safe_apply(object, "crypt", 1);
+    get_all_args("crypt", args, "%n", &str);
+    if (str->len != length) {
       Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+		 DO_NOT_WARN((long)str->len));
     }
-    MEMCPY(THIS->iv, Pike_sp[-1].u.string->str, block_size);
-    MEMCPY(dest, Pike_sp[-1].u.string->str, block_size);
-    pop_stack();
-  }
-
-  INLINE static void cbc_decrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
-  {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    push_string(make_shared_binary_string((const INT8 *)source, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
-      Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    }
-
-    for(i=0; i < block_size; i++)
-      dest[i] = THIS->iv[i] ^ Pike_sp[-1].u.string->str[i];
-
-    pop_stack();
-    MEMCPY(THIS->iv, source, block_size);
+    MEMCPY(dst, str->str, length);
+    pop_n_elems(args);
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
@@ -1511,8 +1480,17 @@ PIKECLASS CBC
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
   {
+    struct object *o = make_cipher_object(args);
+    struct inherit *inh;
     int old_block_size = THIS->block_size;
-    THIS->object = make_cipher_object(args);
+
+    if (THIS->object) free_object(THIS->object);
+    THIS->object = THIS->ctx = o;
+    THIS->crypt_func = pike_crypt_func;
+
+    /* FIXME: If the cipher object is a Nettle cipher,
+     *        lookup the context and crypt function here.
+     */
 
     safe_apply(THIS->object, "block_size", 0);
 
@@ -1623,9 +1601,9 @@ PIKECLASS CBC
    *! Neither the input or output data is not automatically memory
    *! scrubbed, unless @[String.secure] has been called on the data.
    */
-  PIKEFUN string(0..255) crypt(string data) {
+  PIKEFUN string(0..255) crypt(string data)
+  {
     unsigned INT8 *result;
-    INT32 offset = 0;
     ONERROR uwp;
 
     NO_WIDE_STRING(data);
@@ -1638,23 +1616,17 @@ PIKECLASS CBC
     SET_ONERROR (uwp, free, result);
 
     if(THIS->mode == 0) {
-      while (offset < data->len) {
-	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
+      cbc_encrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
+		  THIS->iv, data->len, result, STR0(data));
     }
     else {
-      while (offset < data->len) {
-	cbc_decrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
+      cbc_decrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
+		  THIS->iv, data->len, result, STR0(data));
     }
 
     pop_n_elems(args);
-    push_string(make_shared_binary_string((INT8 *)result, offset));
-    guaranteed_memset(result, 0, offset);
+    push_string(make_shared_binary_string((INT8 *)result, data->len));
+    guaranteed_memset(result, 0, data->len);
     CALL_AND_UNSET_ONERROR (uwp);
   }
 }
