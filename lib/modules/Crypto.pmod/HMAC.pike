@@ -16,13 +16,12 @@ protected int B;
 //!   operations. Typical input is @[Crypto.MD5].
 //! @param b
 //!   The block size of one compression block, in octets. Defaults to
-//!   64.
-void create(.Hash h, int|void b)
+//!   block_size() of @[h].
+protected void create(.Hash h, int|void b)
 {
   H = h;
-  
-  // Block size is 64 octets for md5 and sha
-  B = b || 64;
+  B = b || H->block_size();
+
   if(H->digest_size()>B)
     error("Block size is less than hash digest size.\n");
 }
