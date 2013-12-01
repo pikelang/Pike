@@ -1430,8 +1430,7 @@ PIKECLASS CBC
 
   PIKEVAR object object
     flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-  CVAR crypt_func crypt_func;
-  CVAR void *ctx;
+  CVAR struct Cipher_State_struct *crypt_state;
   CVAR unsigned INT8 *iv;
   CVAR INT32 block_size;
   CVAR INT32 mode;
@@ -1486,8 +1485,7 @@ PIKECLASS CBC
     int f;
 
     if (THIS->object) free_object(THIS->object);
-    THIS->object = THIS->ctx = o;
-    THIS->crypt_func = pike_crypt_func;
+    THIS->object = o;
 
     f = find_identifier("crypt", o->prog);
     inh = INHERIT_FROM_INT(o->prog, f);
@@ -1495,12 +1493,8 @@ PIKECLASS CBC
       /* crypt() is from Nettle.Cipher.State.
        * Check if the context and crypt function are valid.
        */
-      struct Cipher_State_struct *state = (struct Cipher_State_struct *)
+      THIS->crypt_state = (struct Cipher_State_struct *)
 	get_inherit_storage(o, inh - o->prog->inherits);
-      if (state->crypt) {
-	THIS->ctx = state->ctx;
-	THIS->crypt_func = state->crypt;
-      }
     }
 
     safe_apply(THIS->object, "block_size", 0);
@@ -1563,35 +1557,11 @@ PIKECLASS CBC
   PIKEFUN object set_encrypt_key(string key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
-    int f;
-    struct object *o = THIS->object;
-    struct inherit *inh;
-
-    if (!o || !o->prog) {
-      Pike_error("Lookup in destructed object.\n");
-    }
     assert(THIS->block_size);
     THIS->mode = 0;
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
-
-    THIS->ctx = o;
-    THIS->crypt_func = pike_crypt_func;
-    f = find_identifier("crypt", o->prog);
-    inh = INHERIT_FROM_INT(o->prog, f);
-    if (inh->prog == Cipher_State_program) {
-      /* crypt() is from Nettle.Cipher.State.
-       * Check if the context and crypt function are valid.
-       */
-      struct Cipher_State_struct *state = (struct Cipher_State_struct *)
-	get_inherit_storage(o, inh - o->prog->inherits);
-      if (state->crypt) {
-	THIS->ctx = state->ctx;
-	THIS->crypt_func = state->crypt;
-      }
-    }
-
     RETURN this_object();
   }
 
@@ -1603,35 +1573,11 @@ PIKECLASS CBC
   PIKEFUN object set_decrypt_key(string key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
-    int f;
-    struct object *o = THIS->object;
-    struct inherit *inh;
-
-    if (!o || !o->prog) {
-      Pike_error("Lookup in destructed object.\n");
-    }
     assert(THIS->block_size);
     THIS->mode = 1;
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_decrypt_key", args);
     pop_stack();
-
-    THIS->ctx = o;
-    THIS->crypt_func = pike_crypt_func;
-    f = find_identifier("crypt", o->prog);
-    inh = INHERIT_FROM_INT(o->prog, f);
-    if (inh->prog == Cipher_State_program) {
-      /* crypt() is from Nettle.Cipher.State.
-       * Check if the context and crypt function are valid.
-       */
-      struct Cipher_State_struct *state = (struct Cipher_State_struct *)
-	get_inherit_storage(o, inh - o->prog->inherits);
-      if (state->crypt) {
-	THIS->ctx = state->ctx;
-	THIS->crypt_func = state->crypt;
-      }
-    }
-
     RETURN this_object();
   }
 
@@ -1664,6 +1610,8 @@ PIKECLASS CBC
   {
     struct pike_string *result;
     ONERROR uwp;
+    crypt_func func = pike_crypt_func;
+    void *ctx = THIS->object;
 
     NO_WIDE_STRING(data);
 
@@ -1677,12 +1625,17 @@ PIKECLASS CBC
     result = begin_shared_string(data->len);
     SET_ONERROR (uwp, do_free_string, result);
 
+    if (THIS->crypt_state && THIS->crypt_state->crypt) {
+      func = THIS->crypt_state->crypt;
+      ctx = THIS->crypt_state->ctx;
+    }
+
     if(THIS->mode == 0) {
-      cbc_encrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
+      cbc_encrypt(ctx, func, THIS->block_size,
 		  THIS->iv, data->len, STR0(result), STR0(data));
     }
     else {
-      cbc_decrypt(THIS->ctx, THIS->crypt_func, THIS->block_size,
+      cbc_decrypt(ctx, func, THIS->block_size,
 		  THIS->iv, data->len, STR0(result), STR0(data));
     }
 
