@@ -12,7 +12,7 @@
 //! @[Blowfish], @[CAST], @[DES], @[DES3], @[IDEA], @[Serpent],
 //! @[Twofish]. The @[Substitution] program is compatible with the
 //! CipherState. Also conforming to the API are the helper programs
-//! @[Buffer], @[CBC] and @[Pipe].
+//! @[Buffer], @[CBC], @[GCM] and @[Pipe].
 //!
 //! As the cryptographic services offered from this module isn't
 //! necessarily used for security applications, none of the strings
@@ -71,9 +71,36 @@ class Cipher
 
 //! Implementation of the cipher block chaining mode (CBC). Works as
 //! a wrapper for the cipher algorithm put in create.
+//!
+//! @seealso
+//!   @[GCM]
 class CBC {
   inherit Nettle.CBC;
 }
+
+#if constant(Nettle.GCM)
+//! Implementation of the Galois Counter Mode (GCM). Works as
+//! a wrapper for the cipher algorithm put in create.
+//!
+//! This is a so-called authenticated encryption with associated data
+//! (AEAD) algorithm, and in addition to encryption also provides
+//! message digests.
+//!
+//! The operation of GCM is specified in
+//! NIST Special Publication 800-38D.
+//!
+//! @note
+//!   Wrapped ciphers MUST have a block size of @expr{16@}.
+//!
+//! @note
+//!   Note that this class is not available in all versions of Nettle.
+//!
+//! @seealso
+//!   @[CBC]
+class GCM {
+  inherit Nettle.GCM;
+}
+#endif
 
 //! Acts as a buffer so that data can be fed to a cipher in blocks
 //! that don't correspond to cipher block sizes.
