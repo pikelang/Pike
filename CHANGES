@@ -854,15 +854,15 @@ o Crypto.PGP
   Added support for SHA256, SHA384 and SHA512 as hash functions.
   Expose the used hash and key types in the out data
 
-o Crypto.ARCTWO
+o Crypto.Arctwo
 
-  The 1-128 bit cipher ARCTWO is now provided as a block cipher in
+  The 1-128 bit cipher Arctwo is now provided as a block cipher in
   Crypto. This cipher is only intended for compatibility with OLD
   third party code, and should NOT be used for new development.
 
-o Crypto.CAMELLIA
+o Crypto.Camellia
 
-  The 128/256 bit cipher CAMELLIA is now available as block cipher in
+  The 128/256 bit cipher Camellia is now available as block cipher in
   Crypto. In addition the following cipher suites have been added to
   SSL:
 
@@ -882,12 +882,26 @@ o Crypto.SHA3_224, Crypto.SHA3_256, Crypto.SHA3_384 and Crypto.SHA3_512
 
   The SHA-3 secure hash algorithm has been added in multiple variants.
 
+o Crypto.GOST94 and RIPEMD160
+
+  The lesser used hash functions GOST R 34.11-94 (RFC 4357) and
+  RIPEMD160 have been added.
+
+o Crypto.RSA and Crypto.DSA
+
+  The key generation for RSA and DSA are now done by Nettle. This
+  results in faster key generation for RSA and stronger keys for DSA.
+
+o Crypto.Hash
+
+  Added support for pbkdf1 from PKCS#5v1.5 and pbkdf2 from PKCS#5v2.0.
+
 o Standards.X509
 
   X509 was moved from Tools to Standards and has been refactored and
   bug fixed. It is now possible to extend both validation and creation
-  with new cipher and hash algorithms. A range of new algorithms are
-  supported for both RSA and DSA:
+  of certificates with new cipher and hash algorithms. A range of new
+  algorithms are supported for both RSA and DSA:
 
     RSA MD2
     RSA MD5
