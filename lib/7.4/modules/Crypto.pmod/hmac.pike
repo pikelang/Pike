@@ -17,5 +17,5 @@ protected class Wrapper {
 }
 
 void create(object h, void|int b) {
-  ::create(Wrapper(h()), b);
+  ::create(Wrapper(h()), b||64);
 }
