@@ -1751,13 +1751,13 @@ PIKECLASS GCM
   }
 
   /*! @decl string(0..255) name()
-   *! Returns the string @expr{"CBC(x)"@} where x is the
+   *! Returns the string @expr{"GCM(x)"@} where x is the
    *! encapsulated algorithm.
    */
   PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
   {
-    push_constant_text("CBC(");
+    push_constant_text("GCM(");
     safe_apply(THIS->object, "name", 0);
     push_constant_text(")");
     f_add(3);
