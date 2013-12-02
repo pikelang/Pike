@@ -6,7 +6,7 @@ AC_SET_MAKE
 AC_MODULE_INIT()
 
 if test "$with_nettle" = "no"; then
-  PIKE_FEATURE_WITHOUT(nettle)
+  PIKE_FEATURE_WITHOUT(Nettle)
 else
   AC_CHECK_LIB(gmp, mpz_init)
   AC_CHECK_LIB(gmp, __mpz_init)
