@@ -236,7 +236,7 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
   "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.5)",
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
-  "extensions": 0,
+  "extensions": ([]),
   "not_after": 1848866399,
   "not_before": 822870000,
   "serial": "3f691e819cf09a4af373ffb948a2e4dd",
@@ -263,14 +263,13 @@ test_any_equal([[
   "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.11)",
   "issuer" : "Test",
   "subject" : "Test",
-  "extensions" : 0,
+  "extensions" : ([]),
   "public_key": 1,
 ]) ]])
 
 test_any([[
   Crypto.DSA dsa = Crypto.DSA();
-  dsa->generate_parameters(1024);
-  dsa->generate_key();
+  dsa->generate_key(1024,160);
 
   foreach( ({ 0, Crypto.SHA1,
 #if constant(Crypto.SHA224)
