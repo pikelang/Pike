@@ -837,12 +837,12 @@ class AES
   protected void create() { ::create(Crypto.AES()); }
 }
 
-#if constant(Crypto.CAMELLIA)
+#if constant(Crypto.Camellia)
 //!
-class CAMELLIA
+class Camellia
 {
   inherit Crypto.CBC;
-  protected void create() { ::create(Crypto.CAMELLIA()); }
+  protected void create() { ::create(Crypto.Camellia()); }
 }
 #endif
 
@@ -1163,9 +1163,9 @@ array lookup(int suite, ProtocolVersion|int version,
     res->iv_size = 16;
     res->key_bits = 256;
     break;
-#if constant(Crypto.CAMELLIA)
+#if constant(Crypto.Camellia)
   case CIPHER_camellia128:
-    res->bulk_cipher_algorithm = CAMELLIA;
+    res->bulk_cipher_algorithm = Camellia;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1173,7 +1173,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 128;
     break;
   case CIPHER_camellia256:
-    res->bulk_cipher_algorithm = CAMELLIA;
+    res->bulk_cipher_algorithm = Camellia;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
