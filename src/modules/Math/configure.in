@@ -4,8 +4,6 @@ AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_OK(Math.)
-
 AC_C_CHAR_UNSIGNED
 
 if test x$with_fftw = xyes ; then
