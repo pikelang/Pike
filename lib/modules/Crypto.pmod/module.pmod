@@ -92,11 +92,61 @@ class Cipher
   }
 }
 
+//! Implementation of the cipher block chaining mode (CBC). Works as
+//! a wrapper for the cipher algorithm put in create.
 class CBC {
   inherit Cipher;
   inherit Nettle.CBC;
 }
 
+#if constant(Nettle.GCMState)
+//! Implementation of the Galois Counter Mode (GCM). Works as
+//! a wrapper for the cipher algorithm put in create.
+//!
+//! This is a so-called authenticated encryption with associated data
+//! (AEAD) algorithm, and in addition to encryption also provides
+//! message digests.
+//!
+//! The operation of GCM is specified in
+//! NIST Special Publication 800-38D.
+//!
+//! @note
+//!   Wrapped ciphers MUST have a block size of @expr{16@}.
+//!
+//! @note
+//!   Note that this class is not available in all versions of Nettle.
+//!
+//! @seealso
+//!   @[CBC]
+class GCMState {
+  inherit Nettle.GCMState;
+}
+#endif
+
+//! Acts as a buffer so that data can be fed to a cipher in blocks
+//! that don't correspond to cipher block sizes.
+//!
+//! @example
+//!   class Encrypter
+//!   {
+//!     protected Crypto.Buffer buffer;
+//!
+//!     void create(string key)
+//!     {
+//!       buffer = Crypto.Buffer(Crypto.CBC(Crypto.AES));
+//!       buffer->set_encrypt_key(key);
+//!     }
+//!
+//!     string feed(string data)
+//!     {
+//!       return buffer->crypt(data);
+//!     }
+//!
+//!     string drain()
+//!     {
+//!       return buffer->pad(Crypto.PAD_PKCS7);
+//!     }
+//!   }
 class Buffer {
   inherit Cipher;
   inherit Nettle.Proxy;

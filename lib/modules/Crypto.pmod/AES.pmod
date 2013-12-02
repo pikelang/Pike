@@ -20,6 +20,23 @@ inherit .Cipher;
 
 .CipherState `()() { return Nettle.AES_State(); }
 
+#if constant(Nettle.AES_GCM_State)
+protected class _GCM
+{
+  inherit Nettle.AES_Info;
+  inherit .Cipher;
+
+  string name()
+  {
+    return "AES.GCM";
+  }
+
+  .GCMState `()() { return Nettle.AES_GCM_State(); }
+}
+
+object(_GCM) GCM = _GCM();
+#endif
+
 #else
 constant this_program_does_not_exist=1;
 #endif

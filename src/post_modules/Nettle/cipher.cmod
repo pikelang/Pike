@@ -328,6 +328,9 @@ PIKECLASS CipherState
 }
 /*! @endclass CipherState */
 
+#define GET_STATE(o) \
+((struct CipherState_struct *) get_storage((o), CipherState_program))
+
 static void
 pike_aes_set_encrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
@@ -1075,6 +1078,219 @@ PIKECLASS IDEA_State
     }
 }
 /*! @endclass IDEA_State */
+
+#ifdef HAVE_NETTLE_GCM_H
+#include <nettle/gcm.h>
+
+PIKECLASS GCMState
+{
+  INHERIT CipherState;
+
+  CVAR struct gcm_ctx gcm_ctx;
+  CVAR struct gcm_key gcm_key;
+  CVAR int mode;
+
+  static int gcm_inherited_set_encrypt_key_fun_num = -1;
+
+  INIT
+  {
+    THIS->mode = -1;
+  }
+
+  EXTRA
+  {
+    int fun_num =
+      really_low_find_shared_string_identifier(MK_STRING("set_encrypt_key"),
+					       Pike_compiler->new_program->
+					       inherits[1].prog,
+					       0);
+    gcm_inherited_set_encrypt_key_fun_num =
+      really_low_reference_inherited_identifier(Pike_compiler, 1, fun_num);
+  }
+
+  /*! @decl CipherState set_encrypt_key(string key, void|int force)
+   *!
+   *! Initializes the object for encryption.
+   *!
+   *! @seealso
+   *!   @[set_decrypt_key], @[crypt]
+   */
+  PIKEFUN object set_encrypt_key(string key, void|int force)
+    optflags OPT_SIDE_EFFECT;
+  {
+    struct CipherState_struct *state = GET_STATE(Pike_fp->current_object);
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    apply_current(gcm_inherited_set_encrypt_key_fun_num, args);
+    gcm_set_key(&THIS->gcm_key, state->ctx, info->meta->encrypt);
+    THIS->mode = 0;
+  }
+
+  /*! @decl CipherState set_decrypt_key(string key, void|int force)
+   *!
+   *! Initializes the object for decryption.
+   *!
+   *! @seealso
+   *!   @[set_encrypt_key], @[crypt]
+   */
+  PIKEFUN object set_decrypt_key(string key, void|int force)
+    optflags OPT_SIDE_EFFECT;
+  {
+    struct CipherState_struct *state = GET_STATE(Pike_fp->current_object);
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    /* NOTE: GCM always uses the encryption function
+     *       of the underlying cipher!
+     */
+    apply_current(gcm_inherited_set_encrypt_key_fun_num, args);
+    gcm_set_key(&THIS->gcm_key, state->ctx, info->meta->encrypt);
+    THIS->mode = 1;
+  }
+
+  /*! @decl this_program set_iv(string iv)
+   *!
+   *! Set the initialization vector to @[iv]. The @[iv] memory will be
+   *! cleared before released.
+   */
+  PIKEFUN object set_iv(string iv)
+    optflags OPT_SIDE_EFFECT;
+  {
+    NO_WIDE_STRING(iv);
+    if(THIS->mode < 0 && (iv->len != GCM_IV_SIZE))
+      Pike_error("The key must be set to use an iv of length other than %d.\n",
+		 GCM_IV_SIZE);
+    gcm_set_iv(&THIS->gcm_ctx, &THIS->gcm_key, iv->len, STR0(iv));
+    RETURN this_object();
+  }
+
+  /*! @decl void update(string public_data)
+   *!
+   *! Add @[public_data] to be authenticated.
+   *!
+   *! The length of @[public_data] MUST be a multiple of the
+   *! block size (ie @expr{16@}) for all calls except the last.
+   *!
+   *! All calls of @[update()] need to be performed before
+   *! any calls of @[crypt()].
+   */
+  PIKEFUN void update(string data)
+  {
+    NO_WIDE_STRING(data);
+
+    if (THIS->mode < 0)
+      Pike_error("Key schedule not initialized.\n");
+
+    gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
+
+    pop_n_elems(args);
+  }
+
+  /*! @decl string(0..255) crypt(string data)
+   *!
+   *! Encrypt/decrypt @[data] and return the result. @[data] must
+   *! be an integral number of blocks.
+   *!
+   *! The length of @[data] MUST be a multiple of the block size
+   *! (ie @expr{16@}) for all calls except the last.
+   *!
+   *! Neither the input or output data is not automatically memory
+   *! scrubbed, unless @[String.secure] has been called on the data.
+   *!
+   *! @seealso
+   *!   @[update()], @[digest()]
+   */
+  PIKEFUN string(0..255) crypt(string data)
+  {
+    struct CipherState_struct *state = GET_STATE(Pike_fp->current_object);
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    struct pike_string *result;
+
+    NO_WIDE_STRING(data);
+
+    if (THIS->mode < 0)
+      Pike_error("Key schedule not initialized.\n");
+
+    result = begin_shared_string(data->len);
+
+    if(THIS->mode == 0) {
+      gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, state->ctx,
+		  info->meta->encrypt, data->len, STR0(result), STR0(data));
+    }
+    else {
+      gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, state->ctx,
+		  info->meta->encrypt, data->len, STR0(result), STR0(data));
+    }
+
+    pop_n_elems(args);
+    push_string(end_shared_string(result));
+  }
+
+  /*! @decl string(0..255) digest()
+   *!
+   *! Generate a message digest for the data accumulated so far,
+   *! and reset to handle the next message.
+   *!
+   *! @seealso
+   *!   @[update()], @[digest()]
+   */
+  PIKEFUN string(0..255) digest()
+  {
+    struct CipherState_struct *state = GET_STATE(Pike_fp->current_object);
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    struct pike_string *result;
+
+    if (THIS->mode < 0)
+      Pike_error("Key schedule not initialized.\n");
+
+    result = begin_shared_string(GCM_BLOCK_SIZE);
+
+    gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, state->ctx,
+	       info->meta->encrypt, GCM_BLOCK_SIZE, STR0(result));
+
+    pop_n_elems(args);
+    push_string(end_shared_string(result));
+  }
+}
+
+/*! @class AES_GCM_State
+ *!
+ *! State for AES/GCM encryption.
+ *!
+ *! Implementation mixin of the Galois Counter Mode (GCM) with AES.
+ *!
+ *! This is a so-called authenticated encryption with associated data
+ *! (AEAD) algorithm, and in addition to encryption also provides
+ *! message digests.
+ *!
+ *! The operation of GCM is specified in
+ *! NIST Special Publication 800-38D.
+ *!
+ *! @note
+ *!   Use @[Crypto.AES.GCM] instead.
+ *!
+ *! @note
+ *!   Note that this class is not available in all versions of Nettle.
+ *!
+ *! @seealso
+ *!   @[Crypto.AES.GCM]
+ */
+PIKECLASS AES_GCM_State
+{
+  INHERIT AES_Info;
+  INHERIT GCMState;
+
+  CVAR struct aes_ctx aes;
+
+  INIT
+  {
+    struct CipherState_struct *state = GET_STATE(Pike_fp->current_object);
+    assert(state);
+    state->ctx = &THIS->aes;
+  }
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_NETTLE_GCM_H */
 
 /*! @endmodule Nettle */
 
