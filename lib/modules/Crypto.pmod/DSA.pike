@@ -80,6 +80,8 @@ this_program set_private_key(Gmp.mpz secret)
 // --- Key generation
 //
 
+#if !constant(Nettle.dsa_generate_keypair)
+
 #define SEED_LENGTH 20
 protected string nist_hash(Gmp.mpz x)
 {
@@ -159,9 +161,9 @@ protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
   return g;
 }
 
-//! Generate key parameters (p, q and g) using the NIST DSA prime pair
-//! generation algorithm. @[bits] must be multiple of 64.
-this_program generate_parameters(int bits)
+// Generate key parameters (p, q and g) using the NIST DSA prime pair
+// generation algorithm. @[bits] must be multiple of 64.
+protected void generate_parameters(int bits)
 {
   if (!bits || bits % 64)
     error( "Unsupported key size.\n" );
@@ -178,14 +180,33 @@ this_program generate_parameters(int bits)
 
   if ( (g == 1) || (g->powm(q, p) != 1))
     error( "Internal error.\n" );
+}
 
+variant this_program generate_key(int p_bits, int q_bits)
+{
+  if(q_bits!=160)
+    error("Only 1024/160 supported with Nettle version < 2.0\n");
+  generate_parameters(1024);
+  return generate_key();
+}
+
+#else // !constant(Nettle.dsa_generate_keypair)
+
+//! Generates DSA parameters (p, q, g) and key (x, y). Depending on
+//! Nettle version @[q_bits] can be 160, 224 and 256 bits. 160 works
+//! for all versions.
+variant this_program generate_key(int p_bits, int q_bits)
+{
+  [ p, q, g, y, x ] = Nettle.dsa_generate_keypair(p_bits, q_bits, random);
   return this;
 }
 
+#endif
+
 //! Generates a public/private key pair. Needs the public parameters
 //! p, q and g set, either through @[set_public_key] or
-//! @[generate_parameters].
-this_program generate_key()
+//! @[generate_key(int,int)].
+variant this_program generate_key()
 {
   /* x in { 2, 3, ... q - 1 } */
   if(!p || !q || !g) error("Public parameters not set..\n");
@@ -194,6 +215,7 @@ this_program generate_key()
 
   return this;
 }
+
 
 //
 // --- PKCS methods
