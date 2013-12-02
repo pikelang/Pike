@@ -83,8 +83,7 @@ PIKEFUN array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits,
   if( !nettle_dsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
                                    NULL, NULL, p_bits, q_bits) )
   {
-    pop_n_elems(8);
-    RETURN 0;
+    Pike_error("Illegal parameter value.\n");
   }
 
   memcpy(get_storage(p, auto_bignum_program.u.program), &pub.p, sizeof(mpz_t));
@@ -137,8 +136,7 @@ PIKEFUN array(object(Gmp.mpz))
   if( !nettle_rsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
                                    NULL, NULL, bits, 0) )
   {
-    pop_n_elems(10);
-    RETURN 0;
+    Pike_error("Illegal parameter value.\n");
   }
 
   memcpy(get_storage(n, auto_bignum_program.u.program), &pub.n, sizeof(mpz_t));

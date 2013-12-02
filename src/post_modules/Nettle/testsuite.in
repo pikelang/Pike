@@ -428,4 +428,12 @@ dnl From PHP CRYPT_MD5 crypt() example
 test_eq(Nettle.crypt_md5("rasmuslerdorf","rasmusle"), "rISCgZzpwk3UhDidwXvin0")
 dnl From Python passlib.hash.md5_crypt
 test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
+
+// hogweed
+test_eval_error(Nettle.dsa_generate_keypair(1024,1,random_string))
+test_eval_error(Nettle.dsa_generate_keypair(511,160,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,4,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,1,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(88,0x10001,random_string))
+
 END_MARKER
