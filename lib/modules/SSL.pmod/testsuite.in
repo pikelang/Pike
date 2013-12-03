@@ -38,45 +38,49 @@ test_do([[
   add_constant("pem_cert", _cert);
 ]])
 
-test_program([[
+test_do([[
 
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
-class Server {
-  SSL.context ctx;
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
 
-  void create() {
-    ctx = SSL.context();
-    ctx->random = random_string;
+  object msg = Tools.PEM.pem_msg()->init( pem_cert );
+  object part = msg->parts["CERTIFICATE"];
+  string cert = part->decoded_body();
+  ASSERT(cert);
 
-    object msg = Tools.PEM.pem_msg()->init( pem_cert );
-    object part = msg->parts["CERTIFICATE"];
-    string cert = part->decoded_body();
-    ASSERT(cert);
+  msg = Tools.PEM.pem_msg()->init( pem_key );
+  part = msg->parts["RSA PRIVATE KEY"];
+  string key = part->decoded_body();
+  ASSERT(key);
 
-    msg = Tools.PEM.pem_msg()->init( pem_key );
-    part = msg->parts["RSA PRIVATE KEY"];
-    string key = part->decoded_body();
-    ASSERT(key);
+  object rsa = Standards.PKCS.RSA.parse_private_key(key);
+  ctx->rsa = rsa;
+  ASSERT(rsa->rsa_size()>512);
+  ctx->short_rsa = Crypto.RSA()->generate_key(512, ctx->random);
+  ctx->rsa_mode();
 
-    object rsa = Standards.PKCS.RSA.parse_private_key(key);
-    ctx->rsa = rsa;
-    ASSERT(rsa->rsa_size()>512);
-    ctx->short_rsa = Crypto.RSA()->generate_key(512, ctx->random);
-    ctx->rsa_mode();
+  object tbs = Tools.X509.decode_certificate(cert);
+  ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
+  ctx->certificates = ({ cert });
 
-    object tbs = Tools.X509.decode_certificate(cert);
-    ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
-    ctx->certificates = ({ cert });
+  add_constant("server_rsa_ctx", ctx);
+]])
 
-    add_constant("server_ctx", ctx);
-  }
-}
-
-int a() {
-  object s = Server();
-  return 1;
-}
+test_do([[
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
+  ctx->dsa = Crypto.DSA()->generate_parameters(1024)->generate_key();
+  array attrs = ({
+    (["organizationName":Standards.ASN1.Types.PrintableString("Test")]),
+    (["commonName":Standards.ASN1.Types.PrintableString("*")]),
+  });
+  string cert = Tools.X509.make_selfsigned_dsa_certificate(ctx->dsa,
+    3600*24, attrs);
+  ctx->certificates = ({ cert });
+  ctx->dhe_dss_mode();
+  add_constant("server_dss_ctx", ctx);
 ]])
 
 test_do([[
@@ -145,18 +149,38 @@ test_do([[
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
   test_tests([[array(int) a() {
-    write("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 server...");
 
     int expected_protocol = min($2, $4);
     int successes;
     int failures;
 
-    array(int) suites = ({
-      SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
-    });
+    foreach( ({
+        SSL.Constants.SIGNATURE_rsa,
+//        SSL.Constants.SIGNATURE_dsa,
+      }), int mode) {
+
+    object server_ctx;
+    array(int) suites;
+
+    if( mode == SSL.Constants.SIGNATURE_rsa )
+    {
+      server_ctx = server_rsa_ctx;
+      suites = ({
+        SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
+      });
+      write("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 RSA server...");
+    }
+    else
+    {
+      server_ctx = server_dss_ctx;
+      suites = ({
+        SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha
+      });
+      write("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 DSS server...");
+    }
 
     if( `==($1,$2,$3,$4) )
-      suites = server_ctx->get_suites(SSL.Constants.SIGNATURE_rsa,0) -
+      suites = server_ctx->get_suites(mode,0) -
   	    (invalid_suites[expected_protocol + 0x300] || ({}));
 
     foreach(suites, int suite) {
@@ -266,6 +290,7 @@ define(test_ssl, [[
     }
     client->close();
     server->close();
+    }
     }
     return ({ successes, failures });
   }]])
@@ -380,7 +405,8 @@ test_do([[
   add_constant("log_ssl_failure");
   add_constant("fmt_cipher_suite");
   add_constant("client_msg");
-  add_constant("server_ctx");
+  add_constant("server_rsa_ctx");
+  add_constant("server_dss_ctx");
   add_constant("pem_cert");
   add_constant("pem_key");
 ]])

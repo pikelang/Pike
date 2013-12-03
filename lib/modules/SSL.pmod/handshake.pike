@@ -1470,13 +1470,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
                 session->peer_certificate_chain[0])->public_key;
 
 	if(public_key->type == "rsa")
-	  {
-	    Crypto.RSA rsa = Crypto.RSA();
-	    rsa->set_public_key(public_key->rsa->get_n(),
-				public_key->rsa->get_e());
-	    session->rsa = rsa;
-	  }
-	else
+          session->rsa = public_key->rsa;
+        else
 	  {
             SSL3_DEBUG_MSG("Other certificates than RSA not supported!\n");
 	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
