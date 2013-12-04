@@ -835,6 +835,12 @@ o Standards.PEM
 
 o Nettle refactored
 
+  CBC cipher mode is now twice as fast.
+
+o Crypto.GCM
+
+  GCM (Galois Counter Mode) cipher mode added.
+
 o AES support added to the SSL module
 
   This adds support for the following cipher suites:
@@ -890,7 +896,8 @@ o Crypto.GOST94 and RIPEMD160
 o Crypto.RSA and Crypto.DSA
 
   The key generation for RSA and DSA are now done by Nettle. This
-  results in faster key generation for RSA and stronger keys for DSA.
+  results in 90% faster key generation for RSA. Key generation for DSA
+  is 10 times slower, but produces better quality keys.
 
 o Crypto.Hash
 
