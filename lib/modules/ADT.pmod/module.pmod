@@ -69,11 +69,7 @@ class struct {
   //! string @[s] should be 8 bits wide.
   void put_var_string(string s, int(0..) len_width)
   {
-    if ( (len_width <= 3) &&
-	 (sizeof(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len_width] ))
-      error("Field overflow.\n");
-    put_uint(sizeof(s), len_width);
-    add_data(s);
+    add_data(sprintf("%*H", len_width, [string(0..255)]s));
   }
 
   //! Appends a bignum @[i] as a variable string preceded with an
