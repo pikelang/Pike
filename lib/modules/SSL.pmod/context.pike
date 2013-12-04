@@ -143,7 +143,7 @@ array(array(string)) get_trusted_issuers()
 }
 
 protected array(array(string)) trusted_issuers = ({});
-array(array(Standards.X509.TBSCertificate)) trusted_issuers_cache = ({});
+mapping(string:Standards.X509.Verifier) trusted_issuers_cache = ([]);
 
 //! Determines whether certificates presented by the peer are
 //! verified, or just accepted as being valid.
@@ -531,21 +531,19 @@ private array(string) internal_select_client_certificate(.context context,
 // update the cached decoded issuers list
 private void update_trusted_issuers()
 {
-  trusted_issuers_cache=({});
+  trusted_issuers_cache=([]);
   foreach(trusted_issuers, array(string) i)
   {
-    array(array) chain = ({});
     // make sure the chain is valid and intact.
     mapping result = Standards.X509.verify_certificate_chain(i, ([]), 0);
 
     if(!result->verified)
       error("Broken trusted issuer chain!\n");
 
-    foreach(i, string chain_element)
-    {
-      chain += ({ Standards.X509.decode_certificate(chain_element) });
-    }
-    trusted_issuers_cache += ({ chain });
+    Standards.X509.TBSCertificate cert =
+      Standards.X509.decode_certificate(i[-1]);
+
+    trusted_issuers_cache[cert->subject->get_der()] = cert->public_key;
   }
 }
 
