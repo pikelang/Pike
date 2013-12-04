@@ -222,6 +222,16 @@ this_program generate_key(int(128..) bits, void|int e)
 
 #endif
 
+//! Compatibility with Pike 7.8.
+variant __deprecated__ this_program generate_key(int(128..) bits,
+						 function rnd)
+{
+  function old_rnd = random;
+  random = rnd;
+  this_program res = generate_key(bits);
+  random = old_rnd;
+  return res;
+}
 
 //
 // --- PKCS methods

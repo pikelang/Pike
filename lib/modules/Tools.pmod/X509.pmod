@@ -209,7 +209,7 @@ __deprecated__ string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, a
   int serial =
     (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(name);
 
   return dsa_sign_key(dn, dsa, dn, DSA.public_key(dsa),
 		      serial, ttl, extensions);
@@ -281,7 +281,7 @@ __deprecated__ string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, a
   int serial =
     (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(name);
 
   return rsa_sign_key(dn, rsa, dn, RSA.public_key(rsa),
 		      serial, ttl, extensions);
