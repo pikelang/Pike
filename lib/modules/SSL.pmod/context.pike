@@ -114,7 +114,7 @@ array(string) get_authorities()
 }
 
 protected array(string) authorities = ({});
-array(Standards.X509.TBSCertificate) authorities_cache = ({});
+array(string(0..255)) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers. 
 //!
@@ -450,12 +450,10 @@ void create()
 // update the cached decoded authorities list
 private void update_authorities()
 {
-  authorities_cache=({});
+  authorities_cache = ({});
   foreach(authorities, string a)
-  {
-    authorities_cache += ({ Standards.X509.decode_certificate(a)});
-  }
-
+    authorities_cache += ({ Standards.X509.decode_certificate(a)->
+                            subject->get_der() });
 }
 
 private array(string) internal_select_server_certificate(.context context,

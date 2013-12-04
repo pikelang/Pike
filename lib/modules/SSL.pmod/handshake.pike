@@ -503,18 +503,7 @@ Packet certificate_request_packet(SSL.context context)
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-
-    int len; 
-
-    // an empty certificate request is allowed.
-    if(context->authorities_cache && sizeof(context->authorities_cache))
-      len = `+(@ Array.map(context->authorities_cache,
-			     lambda(Standards.X509.TBSCertificate s)
-       { return sizeof(s->subject->get_der());} ));
-
-    struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
-    foreach(context->authorities_cache, Standards.X509.TBSCertificate auth)
-      struct->put_var_string(auth->subject->get_der(), 2);
+    struct->put_var_string(sprintf("%{%2H%}",context->authorities_cache),2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
 }
@@ -588,21 +577,17 @@ int verify_certificate_chain(array(string) certs)
   if(!certs || !sizeof(certs))
     return 0;
 
-  int issuer_known = 0;
 
-  // step one: see if the issuer of the certificate is acceptable.
-  // this means the issuer of the certificate must be one of the authorities.
-  string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
-    ->get_der();
-
-  // if we've got authorities, we need to check to see that the
-  // provided cert is authorized. is this useful for server
-  // connections???
+  // See if the issuer of the certificate is acceptable. This means
+  // the issuer of the certificate must be one of the authorities.
   if(sizeof(context->authorities_cache))
   {
-    foreach(context->authorities_cache, Standards.X509.TBSCertificate c)
+    string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
+      ->get_der();
+    int issuer_known = 0;
+    foreach(context->authorities_cache, string c)
     {
-      if((r == (c->subject->get_der()))) // we have a trusted issuer
+      if(r == c) // we have a trusted issuer
       {
         issuer_known = 1;
         break;
