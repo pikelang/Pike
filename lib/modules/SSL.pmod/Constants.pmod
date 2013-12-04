@@ -688,8 +688,13 @@ constant CIPHER_SUITES =
    TLS_rsa_with_camellia_256_cbc_sha256:	({ KE_rsa, CIPHER_camellia256, HASH_sha256 }),
    TLS_dhe_dss_with_camellia_256_cbc_sha256: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha256 }),
    TLS_dhe_rsa_with_camellia_256_cbc_sha256: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha256 }),
-#endif
+#endif /* Crypto.Camellia */
 
+#if constant(Crypto.AES.GCM)
+   TLS_rsa_with_aes_128_gcm_sha256:	({ KE_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_dhe_rsa_with_aes_128_gcm_sha256:	({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_dhe_dss_with_aes_128_gcm_sha256:	({ KE_dhe_dss, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#endif /* Crypto.AES.GCM */
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
