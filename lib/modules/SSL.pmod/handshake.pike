@@ -480,7 +480,7 @@ string hash_messages(string sender)
 				     Crypto.SHA1.hash(handshake_messages), 12);
   } else if(version[1] >= PROTOCOL_TLS_1_2) {
     return session->cipher_spec->prf(session->master_secret, sender,
-				     Crypto.SHA256.hash(handshake_messages), 12);
+				     session->cipher_spec->hash->hash(handshake_messages), 12);
   }
 }
 

@@ -88,6 +88,14 @@ class CipherSpec {
   //!   @[prf_ssl_3_0()], @[prf_tls_1_0()], @[prf_tls_1_2()]
   function(string, string, string, int:string) prf;
 
+  //! The hash algorithm for signing the handshake.
+  //!
+  //! Usually the same hash as is the base for the @[prf].
+  //!
+  //! @note
+  //!   Only used in TLS 1.2 and later.
+  Crypto.Hash hash;
+
   //! The function used to sign packets.
   function(object,string,ADT.struct:ADT.struct) sign;
 
@@ -1310,6 +1318,7 @@ array lookup(int suite, ProtocolVersion|int version,
     // The PRF is really part of the cipher suite in TLS 1.2.
     // It's just that all of them specify SHA256 for now.
     res->prf = prf_tls_1_2;
+    res->hash = Crypto.SHA256;
   }
 
   if (sizeof(algorithms) > 3) {
@@ -1328,9 +1337,11 @@ array lookup(int suite, ProtocolVersion|int version,
       switch(algorithms[2]) {
       case HASH_sha256:
 	res->prf = prf_tls_1_2;
+	res->hash = Crypto.SHA256;
 	break;
       case HASH_sha384:
 	res->prf = prf_sha384;
+	res->hash = Crypto.SHA384;
 	break;
       default:
 	return 0;
