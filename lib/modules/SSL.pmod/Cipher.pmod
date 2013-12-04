@@ -812,6 +812,13 @@ string prf_tls_1_2(string secret, string label, string seed, int len)
   return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
 }
 
+//! This Pseudo Random Function is used to derive secret keys
+//! for some ciphers suites defined after TLS 1.2.
+string prf_sha384(string secret, string label, string seed, int len)
+{
+  return P_hash(Crypto.SHA384, 32, secret, label + seed, len);
+}
+
 //!
 class DES
 {
@@ -1321,6 +1328,9 @@ array lookup(int suite, ProtocolVersion|int version,
       switch(algorithms[2]) {
       case HASH_sha256:
 	res->prf = prf_tls_1_2;
+	break;
+      case HASH_sha384:
+	res->prf = prf_sha384;
 	break;
       default:
 	return 0;
