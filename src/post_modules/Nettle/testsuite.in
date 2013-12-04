@@ -5,6 +5,11 @@ dnl The point of these tests are just to make a basic validation that
 dnl the cryptography works. We assume that the Nettle library itself
 dnl is good, so no need for full NIST test vectors or similar.
 
+test_compile_error( H )
+test_compile_error( S )
+test_do( add_constant( "H", String.hex2string ) )
+test_do( add_constant( "S", String.string2hex ) )
+
 define(test_hash, [[
   cond_resolv(Nettle.$1, [[
       test_eq(String.string2hex(Nettle.$1()->hash("")),#"$2"-" "-"\n")
@@ -313,6 +318,129 @@ cond_resolv( Nettle.CBC, [[
   
 ]])
 
+dnl key, iv, auth, plaintext, crypted, hash
+define(test_gcm, [[
+  test_any([[
+    object o = Nettle.GCM(Crypto.AES);
+    o->set_encrypt_key(String.hex2string($1-"\n"));
+    o->set_iv(String.hex2string($2-"\n"));
+    o->update(String.hex2string($3-"\n"));
+    return String.string2hex(o->crypt(String.hex2string($4-"\n"))) +
+      "|"+String.string2hex(o->digest());
+    ]], $5-"\n"+"|"+$6)
+]])
+
+cond_resolv( Nettle.GCM, [[
+  test_eq( Nettle.GCM(Crypto.AES())->block_size(), 16 )
+  test_eq( Nettle.GCM(Crypto.AES)->block_size(), 16 )
+  test_eq( Nettle.GCM(Crypto.AES())->key_size(), 0 )
+  test_eq( Nettle.GCM(Crypto.AES)->key_size(), 0 )
+
+  dnl NIST GCM AES test vectors
+
+  test_any([[
+    object o = Nettle.GCM(Crypto.AES);
+    o->set_encrypt_key(H("00000000000000000000000000000000"));
+    o->set_iv(H("000000000000000000000000"));
+    return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
+
+dnl 1
+test_gcm("00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"58e2fccefa7e3061367f1d57a4e7455a")
+
+test_gcm("00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"0388dace60b6a392f328c2b971b2fe78",
+"ab6e47d42cec13bdf53a67b21257bddf")
+
+dnl 2
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b391aafd255",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091473f5985",
+"4d5c2af327cd64a62cf35abd2ba6fab4")
+
+dnl 3
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091",
+"5bc94fbc3221a5db94fae95ae7121a47")
+
+dnl 4
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"61353b4c2806934a777ff51fa22a4755
+699b2a714fcdc6f83766e5f97b6c7423
+73806900e49f24b22b097544d4896b42
+4989b5e1ebac0f07c23f4598",
+"3612d2e79e3b0785561be14aaca2fccb")
+
+dnl 5
+test_gcm("feffe9928665731c6d6a8f9467308308",
+#"9313225df88406e555909c5aff5269aa
+6a7a9538534f7da1e4c303d2a318a728
+c3c0c95156809539fcf0e2429a6b5254
+16aedbf5a0de6a57a637b39b",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"8ce24998625615b603a033aca13fb894
+be9112a5c3a211a8ba262a3cca7e2ca7
+01e4a9a4fba43c90ccdcb281d48c7c6f
+d62875d2aca417034c34aee5",
+"619cc5aefffe0bfa462af43c1699d050")
+
+dnl 7
+test_gcm(#"00000000000000000000000000000000
+0000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"98e7247c07f0fe411c267e4384b0f600",
+"2ff58d80033927ab8ef4d4587514f0fb")
+
+dnl 14
+test_gcm(#"00000000000000000000000000000000
+00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"cea7403d4d606b6e074ec5d3baf39d18",
+"d0d1c8a799996bf0265b98b5d48ab919")
+
+]])
+
 cond_resolv( Nettle.Proxy, [[
   test_eval_error( Nettle.Proxy( class{} ) )
   test_eval_error( object o=class{}(); Nettle.Proxy(o); )
@@ -435,5 +563,8 @@ test_eval_error(Nettle.dsa_generate_keypair(511,160,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(512,4,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(512,1,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(88,0x10001,random_string))
+
+test_do( add_constant( "H" ) )
+test_do( add_constant( "S" ) )
 
 END_MARKER
