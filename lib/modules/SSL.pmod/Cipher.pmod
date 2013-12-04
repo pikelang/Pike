@@ -59,6 +59,17 @@ class CipherSpec {
   int hash_size;
   int key_material;
   int iv_size;
+
+  //! The number of bytes of explicit data needed for initialization vectors.
+  //! This is used by AEAD ciphers, where there's a secret part of the iv
+  //! "salt" of length @[iv_size], and an explicit part that is sent in
+  //! the clear.
+  int explicit_iv_size;
+
+  //! The effective number of bits in @[key_material].
+  //!
+  //! This is typically @expr{key_material * 8@}, but for eg @[DES]
+  //! this is @expr{key_material * 7@}.
   int key_bits;
 
   //! The Pseudo Random Function to use.
@@ -1186,23 +1197,6 @@ array lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
-  if (res->is_exportable && (version >= PROTOCOL_TLS_1_1)) {
-    // RFC 4346 A.5:
-    // TLS 1.1 implementations MUST NOT negotiate
-    // these cipher suites in TLS 1.1 mode.
-    return 0;
-  }
-
-  if (version >= PROTOCOL_TLS_1_2) {
-    if ((res->bulk_cipher_algorithm == DES) ||
-	(res->bulk_cipher_algorithm == IDEA)) {
-      // RFC 5246 1.2:
-      // Removed IDEA and DES cipher suites.  They are now deprecated and
-      // will be documented in a separate document.
-      return 0;
-    }
-  }
-
   switch(algorithms[2])
   {
 #if constant(Crypto.SHA512)
@@ -1251,6 +1245,58 @@ array lookup(int suite, ProtocolVersion|int version,
     // The PRF is really part of the cipher suite in TLS 1.2.
     // It's just that all of them specify SHA256 for now.
     res->prf = prf_tls_1_2;
+  }
+
+  if (sizeof(algorithms) > 3) {
+    switch(algorithms[3]) {
+    case MODE_cbc:
+      break;
+#if constant(Crypto.AES.GCM)
+    case MODE_gcm:
+      if (res->bulk_cipher_algorithm != AES) return 0;
+      res->bulk_cipher_algorithm = Crypto.AES.GCM->`();
+      res->cipher_type = CIPHER_aead;
+      res->iv_size = 4;			// Length of the salt.
+      res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
+      res->hash_size = 0;		// No need for MAC keys.
+      res->mac_algorithm = 0;		// MACs are not used with AEAD.
+
+      // NB: For the GCM suites the hash field instead specifies the prf.
+      switch(algorithms[2]) {
+      case HASH_sha256:
+	res->prf = prf_tls_1_2;
+	break;
+      default:
+	return 0;
+      }
+      break;
+#endif
+    default:
+      return 0;
+    }
+  }
+
+  if (res->is_exportable && (version >= PROTOCOL_TLS_1_1)) {
+    // RFC 4346 A.5:
+    // TLS 1.1 implementations MUST NOT negotiate
+    // these cipher suites in TLS 1.1 mode.
+    return 0;
+  }
+
+  if (version >= PROTOCOL_TLS_1_2) {
+    if ((res->bulk_cipher_algorithm == DES) ||
+	(res->bulk_cipher_algorithm == IDEA)) {
+      // RFC 5246 1.2:
+      // Removed IDEA and DES cipher suites.  They are now deprecated and
+      // will be documented in a separate document.
+      return 0;
+    }
+  } else if (res->cipher_type == CIPHER_aead) {
+    // RFC 5822 4:
+    // These cipher suites make use of the authenticated encryption
+    // with additional data defined in TLS 1.2 [RFC5246]. They MUST
+    // NOT be negotiated in older versions of TLS.
+    return 0;
   }
 
   return ({ ke_method, res });
