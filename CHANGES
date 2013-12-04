@@ -1,3 +1,345 @@
+
+Changes since Pike 7.8.700 (fourth 7.8 release):
+----------------------------------------------------------------------
+
+o Core: 
+
+    - Improve robustness against outputting wide strings.
+    
+        master()->handle_error() now survives if, for example, an object has
+        an _sprintf() that returns a wide string.
+    
+        master()->compile_{error,warning}() now survive messages about
+        wide symbols.
+    
+        Made a similar fix in Hilfe to survive compiler warnings and
+        errors about wide symbols.
+    
+        Fixes [bug 6805].
+
+    - Avoid recursion on the C-stack, to avoid running out of C-stack when counting 
+        huge argument lists.
+    
+        Fixes [bug 6860].
+
+    - do not use alloca in sprintf()
+    
+        This fixes a stack corruption bug which occurs when using certain compilers
+        (e.g. msvc).
+
+    - Pike.gc_parameters(): Added some gc callbacks.
+    
+        Adds callbacks that are called from the gc to simplify
+        debugging of memory leaks and similar.
+
+    - Improvements in searches on wide strings.
+
+    - Fixed padding bug in string_builder_append_integer().
+ 
+        The support for left padding was broken, and would always
+        add the full padding string and also would add erroneous left padding
+        if the field was full.
+
+        This bug also affected sprintf().
+
+    - Fixed Coverity Scan IDs [SCAN 742690] [SCAN 742691] [SCAN 742477]
+    
+o Debug:
+
+    - activate __CHECKER__ and CLEANUP when --with-valgrind
+
+    - Get rid of some harmless valgrind warnings
+
+o Build:
+
+    - Fixed --enable-dlmalloc on systems with struct mallinfo.
+ 
+    - Improved support for building with clang.
+    
+    - New RPM definition for Pike 7.8 originally based on spec from repoforge.
+
+    - Build improvements on Windows/sprshd (avoiding I/O redirection).
+
+    - Enable the full address space on NT.
+    
+        The default address space on NT is just 31 bits. Attempt to
+        get the linker to enable the full addressspace.
+
+    - Don't execute $CFLAGS as a command
+
+    - Add -mcpu=niagara to CFLAGS on sun4v
+
+o Threads: 
+
+    - Fixed hang in co_wait_interpreter().
+    
+        co_wait_interpreter() would hang (waiting for threads to be
+        reenabled) if called in a disabled_thread context. This happens
+        on OSes using USE_WAIT_THREAD (eg Solaris) if a process is waited
+        on in a disabled_thread context.
+
+o Backend: 
+
+    - Improved thread safety in find_call_out() et al.
+
+        backend_find_call_out() called is_eq() (which may call Pike code
+        and release the interpreter lock) in a PROTECT_CALL_OUTS() context.
+        This could cause call_out operations performed in other threads to
+        either (no debug) mess with the hash table being traversed or (with
+        debug) cause the fatal "Recursive call in call_out module.".
+
+    - Fixed typo in out of band data handling.
+
+        Fixes [LysLysKOM 20481103]/[Pike mailing list 13683].
+
+
+o Bug-fixes and New Methods in Modules:
+
+ADT:
+    - Fix initialization bug in CircularList.allocate().    
+
+        Fixes LysLysKOM 20179471/Pike mailinglist 13520.
+
+    - Working int32/SWord in Struct. 
+
+Calendar:
+
+    - Improve reentrancy of Timezone.compile().
+
+        The runtime timezone compiler was not thread safe, and could            
+        fail with the compiler error "Undefined identifier forever."
+        when multiple concurrent threads compiled the same timezone.
+
+        Potentially fixes [bug 6816] #1:1.
+        
+    - Fixed bug where the month was lost with %a to Calendar.parse.
+
+Crypto:
+
+    - RSA: generate_key() now ensures that the key has the correct size.
+ 
+        Fixes [bug 6620].
+        
+    - Added module Crypto.Password, for easy handling of password hashes.
+
+    - MD5: Added crypt_hash().
+
+    - SHA: Added the crypt_hash() function from SHA-crypt.
+
+        This implements the hashing function used in modern POSIX
+        operating systems. Implemented from the reference document
+        http://www.akkadia.org/drepper/SHA-crypt.txt
+
+Database: 
+
+    - Enable Oracle 11
+
+    - Improved compatibility with newer versions of FreeTDS ODBC driver. Fetch 
+        date types as fixed length as a workaround for bugs in FreeTDS.
+    
+    - Support the MariaDB client library.
+
+        The MariaDB client library is a forward port of the LGPL
+        mysql client library from MySQL 3.23 to support modern
+        MySQL and MariaDB.
+
+    - Potential workaround for race-condition in Mysql.create().
+
+        It seems mysql_real_connect() and/or mysql_close() aren't
+        fully thread-safe. The bug has been observed as recently as in 
+        MySQL 5.5.30.
+
+Errors: Improved emulation or arrays in object errors.
+
+        Implement _sizeof(), _indices() and _values() in the generic error class.
+
+        Fixes "Index 2 is out of range 0..1." from describe_backtrace().    
+
+GTK2:
+
+    - Add connect_before option to signal_connect so you can connect the signal 
+        before or after the default hooks.
+    
+    - Fixed infinite loop in encode_truecolor_24_rgb_al32().
+
+    - Fixed various issues in get_doc() et al.
+    
+    - Change gobject signal connect to before instead of after.
+        
+Image: 
+
+    - Fonts: Add PS_NAME attribute in info mapping if possible. 
+    
+        Needed to facilitate compatibility with code relying on behaviour of 
+        older versions of FreeType.
+    
+    - JPEG: Disable the module if empty
+    
+    - Add basic CMYK/YCCK support to Image.JPEG.decode(). Fixes [bug 6163].
+      
+    - ColorTable: Fixed some memory leaks in add().
+
+    - XPM: Fixed memory zapping bug in _xpm_write_rows().
+
+    - Handle orientation information contained in JPEG EXIF information.
+    
+        Since the default processing of JPEG in Image.JPEG was changed to
+        take EXIF Orientation into account, let's update Image.Dims to also
+        take that into account, so it correctly predicts the dimensions that
+        will result from loading the image.
+
+        Added Pike-level wrappers to Image.JPEG.decode() and Image.JPEG._decode() 
+        in order to flips/rotates the decoded image based on EXIF Orientation 
+        information, if such information is present. Also added an 
+        Image.JPEG.raw_decode() to decode an image without rotating/flipping, 
+        which works much like Image.JPEG._decode() did before overloading the EXIF 
+        handling.
+
+    - Add support for native PSD files in Standards.IIM.
+
+    - Do not crash when decoding certain PNG files [TURBO2-80].
+    
+Java: 
+    
+    - Improve diagnostics on failure on NT.
+    
+    - Attempt to support loading of Java 6 and 7 on NT.
+    
+    -Use SetDllDirectory() to find required dlls. Fixes [bug 6471].
+    
+        Oracle's jvm.dll has dependencies on runtime libraries that it doesn't
+        install in the global dll path or in the same directory. This patch
+        adds the directory where they do install the required dlls to the dll
+        search path, with a fallback to using the current directory on older NT.
+    
+        The main change in this patch is to fix some calling-convention bugs in
+        earlier attempts, and to use the Unicode APIs.
+
+Parser.XML:
+
+    - Tree: Fixed several issues in namespace handling.
+
+    - Tree: Fix some regressions. Fixes InfoKOM 731715.
+
+    - Tree: Improved namespace handling in default mode.
+
+Process: 
+
+   - Fixed multiple issues with search_path().
+
+   - Unified handling of $PATH.
+
+      * Added path_separator.
+
+      * search_path() now invalidates the cached path if $PATH is changed.
+
+      * search_path() now uses locate_binary() to scan the path.
+
+      * Moved an __NT__ special case from locate_binary() to search_path().
+
+      * spawn_pike() now uses search_path().
+
+Protocols.DNS:
+    
+    - Destruction of server now results in port closure.
+    
+    - Support multiple strings per TXT record in the client, via new txta 
+        mapping entry.
+
+Protocols.HTTP:
+
+    - Don't modify the mapping sent to response_and_finish.
+    
+        Unsuspecting users that pass a constant mapping to
+        response_and_finish when a particular error occurs (or when a
+        particular URL is requested) can fail if response_and_finish
+        alters the mapping. For example, future requestes may retain a
+        416 error if one request uses the Range: header.
+
+Protocols.SMTP: send_message() now punicodes the hostname.
+
+        Potential fix for [bug 6531].
+
+Protocols.SNMP: Fixed error in GetRequest variable bindings.
+
+        The variable value should be ASN1 "Null" rather than a bogus integer.
+        C.f. RFC 1905 section #3.
+
+Sql.rsql: 
+
+    - Implemented generic proxy of functions.
+
+    - Implemented support for all big_query() variants.
+
+    - This implements support for big_typed_query(), streaming_query()
+            and streaming_typed_query().
+
+    - Implement {get,set}_charset().
+
+    - Default to not reconnect on broken connection.
+
+        This behaviour is in line with the other SQL modules,
+        and is necessary to avoid corruption due to lost state.
+
+    - Implement ping() API.
+
+        ping() now signals if any part of the connection was reconnected (1),
+        or has been broken (-1).
+
+    - Fix reconnect code.
+
+        The state-machine on the client side when the rsqld server
+        died was broken in several ways. It now seems to work.
+
+    - Implemented insert_id().
+
+SSL:
+
+    - Attempt to protect against some timing attacks.
+
+        Move around some code and attempt to get it to execute in constant time.
+        This is in an attempt to alleviate the "Lucky Thirteen" TLS attack.
+
+    - sslfile: Avoid rescheduling the ssl_read_callback on no read_callback.
+
+        This could lead to call_out loops taking 100% cpu, since no data would 
+        be read from the read_buffer.
+
+        Potential fix for [bug 6582].
+
+    - sslfile: Added linger().
+
+        Implemented linger() API. The linger time is propagated to the raw
+        socket, and additionally a linger time of zero inhibits sending of
+        the close packet.
+
+Stdio: 
+
+    - Reduce number of system calls in mkdirhier().
+
+    - Call fd_select() before fd_accept() in my_socketpair() to make sure it's ready.
+            Added support for poll() to the fd_accept() check in my_socketpair() and 
+            lowered the select() timeout.
+
+    - Added linger(), to change the linger time on sockets.
+
+    - Fixed a bug in Stdio.FakeFile::read_function() where read data wasn't returned.
+
+Standards:
+
+    - Standards.EXIF supports rationals with a zero denominator.
+
+        The denominator may be zero to indicate infinites.
+
+        Fixes [bug 6729].
+        
+ZXID: Update the zxid_conf::path_len field.
+
+        Fixes [roxen.com #16333] where assertion data was lost after the redirect.
+
+Web.CGI.Request: rest_query may be zero. Fixes [bug 6685].
+
+    
 Changes since Pike 7.8.352 (third 7.8 release):
 ----------------------------------------------------------------------
 
