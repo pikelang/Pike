@@ -302,12 +302,18 @@ array(.state) new_server_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+      if (cipher_spec->cipher_type != CIPHER_aead) {
+	if (version[1] >= PROTOCOL_TLS_1_1) {
+	  // TLS 1.1 and later have an explicit IV.
+	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+	}
+	read_state->crypt->set_iv(keys[4]);
+	write_state->crypt->set_iv(keys[5]);
+      } else {
+	read_state->tls_iv = write_state->tls_iv = 0;
+	read_state->salt = keys[4];
+	write_state->salt = keys[5];
       }
-      read_state->crypt->set_iv(keys[4]);
-      write_state->crypt->set_iv(keys[5]);
     }
   }
   return ({ read_state, write_state });
@@ -348,12 +354,18 @@ array(.state) new_client_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+      if (cipher_spec->cipher_type != CIPHER_aead) {
+	if (version[1] >= PROTOCOL_TLS_1_1) {
+	  // TLS 1.1 and later have an explicit IV.
+	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+	}
+	read_state->crypt->set_iv(keys[5]);
+	write_state->crypt->set_iv(keys[4]);
+      } else {
+	read_state->tls_iv = write_state->tls_iv = 0;
+	read_state->salt = keys[5];
+	write_state->salt = keys[4];
       }
-      read_state->crypt->set_iv(keys[5]);
-      write_state->crypt->set_iv(keys[4]);
     }
   }
   return ({ read_state, write_state });
