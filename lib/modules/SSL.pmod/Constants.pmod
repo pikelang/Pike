@@ -96,7 +96,8 @@ constant PACKET_MAX_SIZE = 0x4000;
 /* Cipher specification */
 constant CIPHER_stream   = 0;
 constant CIPHER_block    = 1;
-constant CIPHER_types = (< CIPHER_stream, CIPHER_block >);
+constant CIPHER_aead     = 2;
+constant CIPHER_types = (< CIPHER_stream, CIPHER_block, CIPHER_aead >);
 
 constant CIPHER_null     = 0;
 constant CIPHER_rc4_40   = 2;
@@ -138,6 +139,12 @@ enum HashAlgorithm {
   HASH_sha256	= 4,
   HASH_sha384	= 5,
   HASH_sha512	= 6,
+}
+
+//! Cipher operation modes.
+enum CipherModes {
+  MODE_cbc	= 0,	//! CBC - Cipher Block Chaining mode.
+  MODE_gcm	= 1,	//! GCM - Galois Cipher Mode.
 }
 
 //! Lookup from @[HashAlgorithm] to corresponding @[Crypto.Hash].

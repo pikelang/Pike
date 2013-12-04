@@ -238,6 +238,10 @@ protected int cipher_suite_sort_key(int suite)
   // NB: Currently the hash algorithms are allocated in a suitable order.
   int hash = info[2];
 
+  if (sizeof(info) > 3) {
+    hash |= info[3]<<6;
+  }
+
   // NB: As are the cipher ids if you disregard the keylengths.
   int cipher = info[1];
 
