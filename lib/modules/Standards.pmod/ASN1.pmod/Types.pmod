@@ -135,12 +135,12 @@ class Object
     return data;
   }
 
-  string record_der(string s) {
+  __deprecated__ string record_der(string s) {
     return (der = s);
   }
 
-  string record_der_contents(string s) {
-    record_der(build_der(s));
+  void record_der_contents(string s) {
+    der = build_der(s);
   }
 
 
@@ -149,7 +149,7 @@ class Object
   //! @returns
   //!   DER encoded representation of this object.
   string get_der() {
-    return der || (record_der(der_encode()));
+    return der || (der = der_encode());
   }
 
   void create(mixed ...args) {
@@ -593,7 +593,7 @@ class UTF8String
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der(contents);
+    der = contents;
     if (catch {
       value = utf8_to_string(contents);
     })
@@ -622,7 +622,7 @@ class Sequence
 					 mapping(int:program(Object)):
 					 Object) decoder,
 				mapping(int:program(Object)) types) {
-    record_der(contents);
+    der = contents;
     elements = ({});
     ADT.struct struct = ADT.struct(contents);
     while (!struct->is_empty()) {
@@ -1074,7 +1074,7 @@ class TeletexString
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der (contents);
+    der = contents;
 
     array(string) parts =
       replace (contents, [array(string)]decode_from,
@@ -1233,7 +1233,7 @@ class BMPString
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der (contents);
+    der = contents;
     value = unicode_to_string (contents);
     return this;
   }
