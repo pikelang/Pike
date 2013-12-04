@@ -181,11 +181,9 @@ string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
 
 class Verifier {
   constant type = "none";
-  int(0..1) verify(object,string,string);
+  Crypto.RSA|Crypto.DSA pkc;
   optional Crypto.RSA rsa;
   optional Crypto.DSA dsa;
-
-  extern protected int(0..1) pkcs_verify(string, Crypto.Hash, string);
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
@@ -193,45 +191,33 @@ class Verifier {
   {
     Crypto.Hash hash = algorithms[algorithm[0]->get_der()];
     if (!hash) return 0;
-    return pkcs_verify(msg, hash, signature);
+    return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
 }
 
 protected class RSAVerifier
 {
   inherit Verifier;
-  Crypto.RSA rsa;
-
   constant type = "rsa";
 
   protected void create(string key) {
-    rsa = RSA.parse_public_key(key);
+    pkc = RSA.parse_public_key(key);
   }
 
-  protected int(0..1) pkcs_verify(string msg, Crypto.Hash h, string sign)
-  {
-    return rsa && rsa->pkcs_verify(msg, h, sign);
-  }
+  Crypto.RSA `rsa() { return [object(Crypto.RSA)]pkc; }
 }
 
 protected class DSAVerifier
 {
   inherit Verifier;
-  Crypto.DSA dsa;
-
   constant type = "dsa";
 
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
   {
-    dsa = DSA.parse_public_key(key, p, q, g);
+    pkc = DSA.parse_public_key(key, p, q, g);
   }
 
-  // The signature is the DER-encoded ASN.1 sequence Dss-Sig-Value
-  // with the two integers r and s. See RFC 3279 section 2.2.2.
-  protected int(0..1) pkcs_verify(string msg, Crypto.Hash h, string sign)
-  {
-    return dsa && dsa->pkcs_verify(msg, h, sign);
-  }
+  Crypto.DSA `dsa() { return [object(Crypto.DSA)]pkc; }
 }
 
 protected Verifier make_verifier(Object _keyinfo)
