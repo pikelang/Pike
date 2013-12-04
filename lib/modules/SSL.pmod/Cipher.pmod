@@ -744,16 +744,14 @@ class MAChmac_sha512 {
 #endif
 
 //! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
-protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
-			string seed, int len) {
-   
-  Crypto.HMAC hmac=Crypto.HMAC(hashfn);
+protected string P_hash(Crypto.Hash hashfn, int bsize, string secret,
+			string seed, int len)
+{
+  Crypto.HMAC hmac=Crypto.HMAC(hashfn, bsize);
   string temp=seed;
   string res="";
   
-  int noblocks=(int)ceil((1.0*len)/hlen);
-
-  for(int i=0 ; i<noblocks ; i++) {
+  while( sizeof(res)<len ) {
     temp=hmac(secret)(temp);
     res+=hmac(secret)(temp+seed);
   }
@@ -782,8 +780,8 @@ string prf_tls_1_0(string secret,string label,string seed,int len)
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
-  string a=P_hash(Crypto.MD5,16,s1,label+seed,len);
-  string b=P_hash(Crypto.SHA1,20,s2,label+seed,len);
+  string a=P_hash(Crypto.MD5,UNDEFINED,s1,label+seed,len);
+  string b=P_hash(Crypto.SHA1,UNDEFINED,s2,label+seed,len);
 
   return a ^ b;
 }
@@ -791,8 +789,17 @@ string prf_tls_1_0(string secret,string label,string seed,int len)
 //! This Pseudo Random Function is used to derive secret keys in TLS 1.2.
 string prf_tls_1_2(string secret, string label, string seed, int len)
 {
-  return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
+  return P_hash(Crypto.SHA256, UNDEFINED, secret, label + seed, len);
 }
+
+#if constant(Crypto.SHA384)
+//! This Pseudo Random Function is used to derive secret keys
+//! for some ciphers suites defined after TLS 1.2.
+string prf_sha384(string secret, string label, string seed, int len)
+{
+  return P_hash(Crypto.SHA384, 128, secret, label + seed, len);
+}
+#endif
 
 //!
 class DES
@@ -1266,6 +1273,11 @@ array lookup(int suite, ProtocolVersion|int version,
       case HASH_sha256:
 	res->prf = prf_tls_1_2;
 	break;
+#if constant(Crypto.SHA384)
+      case HASH_sha384:
+	res->prf = prf_sha384;
+	break;
+#endif
       default:
 	return 0;
       }
