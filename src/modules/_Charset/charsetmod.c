@@ -235,7 +235,7 @@ void DECLSPEC(noreturn) transcoder_error (
     } else if(rep != NULL)						\
       func(ctx, sb, rep, NULL, NULL);					\
     else								\
-      transcoder_error (str, pos, 1, "Unsupported character.\n");	\
+      transcoder_error (str, pos, 1, "Unsupported character %d.\n",ch);	\
   } while (0)
 
 #define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
