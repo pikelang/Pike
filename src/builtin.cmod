@@ -3155,6 +3155,14 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS;
     int init_from_arg0 = 0, j;
 
+    for (j=0; j < args; j++) {
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+      } else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		 (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
+      }
+    }
+
     if (!str->str.s && args) {
       ptrdiff_t sum = 0;
       int shift = 0;
@@ -3162,9 +3170,6 @@ PIKECLASS Buffer
 	struct pike_string *a;
 	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
 	  a = Pike_sp[j-args].u.string;
-	} else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		   (Pike_sp[j-args].u.object->prog != Buffer_program)) {
-	  SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
 	} else {
 	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
 	  if (!a) continue;
