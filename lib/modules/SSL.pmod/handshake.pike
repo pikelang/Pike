@@ -620,20 +620,14 @@ int verify_certificate_chain(array(string) certs)
   
   // next we must verify the chain to see if the chain is unbroken
 
-  mapping(string:Standards.X509.Verifier) auth = ([]);
-
-  foreach(context->trusted_issuers_cache, array(Standards.X509.TBSCertificate) i)
-  {
-    // we want the first item, the top level
-    auth[i[-1]->subject->get_der()] = i[-1]->public_key;
-  }
-
   mapping result =
-    Standards.X509.verify_certificate_chain(certs, auth,
+    Standards.X509.verify_certificate_chain(certs,
+                                            context->trusted_issuers_cache,
 					    context->require_trust);
 
   if(result->verified)
   {
+    // This data isn't actually used internally.
     session->cert_data = result;
     return 1;
   }
