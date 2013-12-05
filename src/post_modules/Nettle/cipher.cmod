@@ -1768,14 +1768,27 @@ PIKECLASS GCM
     f_add(3);
   }
 
-  /*! @decl int(0..) block_size()
+  /*! @decl int(16..16) block_size()
    *! Returns the block size of the encapsulated cipher,
    *! which is always @expr{16@} for GCM.
    */
-  PIKEFUN int(0..) block_size()
+  PIKEFUN int(16..16) block_size()
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN GCM_BLOCK_SIZE;
+  }
+
+  /*! @decl int(12..12) iv_size()
+   *! Returns the recommended size for the initialization vector
+   *! (ie @expr{12@}).
+   *!
+   *! Other sizes are allowed, but will be compressed or expanded
+   *! to this size using the encapsulated cipher.
+   */
+  PIKEFUN int(12..12) iv_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN GCM_IV_SIZE;
   }
 
   /*! @decl int(0..) key_size()
@@ -1787,12 +1800,20 @@ PIKECLASS GCM
     safe_apply(THIS->object, "key_size", args);
   }
 
-  /*! @decl this_program set_encrypt_key(string key, int|void flags)
+  /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for encrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
+   *!
+   *! @note
+   *!   Note that this operation does not by itself reset the
+   *!   context sufficiently to start a new message; @[set_iv()]
+   *!   needs to be called too.
+   *!
+   *! @seealso
+   *!   @[set_decrypt_key()], @[set_iv()]
    */
-  PIKEFUN object set_encrypt_key(string key, int|void flags)
+  PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     crypt_func func = pike_crypt_func;
@@ -1811,12 +1832,20 @@ PIKECLASS GCM
     RETURN this_object();
   }
 
-  /*! @decl this_program set_decrypt_key(string key, int|void flags)
+  /*! @decl this_program set_decrypt_key(string key(0..255), int|void flags)
    *!
    *! Prepare the cipher and the wrapper for decrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
+   *!
+   *! @note
+   *!   Note that this operation does not by itself reset the
+   *!   context sufficiently to start a new message; @[set_iv()]
+   *!   needs to be called too.
+   *!
+   *! @seealso
+   *!   @[set_encrypt_key()], @[set_iv()]
    */
-  PIKEFUN object set_decrypt_key(string key, int|void flags)
+  PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     crypt_func func = pike_crypt_func;
@@ -1838,12 +1867,21 @@ PIKECLASS GCM
     RETURN this_object();
   }
 
-  /*! @decl this_program set_iv(string iv)
+  /*! @decl this_program set_iv(string(0..255) iv)
    *!
    *! Set the initialization vector to @[iv]. The @[iv] memory will be
    *! cleared before released.
+   *!
+   *! Also resets all state needed to start a new message.
+   *!
+   *! @note
+   *!   For @[iv]s of length other than @expr{12@}, an encryption or
+   *!   decryption key must have been set first.
+   *!
+   *! @seealso
+   *!   @[set_encrypt_key()], @[set_decrypt_key()].
    */
-  PIKEFUN object set_iv(string iv)
+  PIKEFUN object set_iv(string(0..255) iv)
     optflags OPT_SIDE_EFFECT;
   {
     iv->flags |= STRING_CLEAR_ON_EXIT;
@@ -1856,7 +1894,7 @@ PIKECLASS GCM
     RETURN this_object();
   }
 
-  /*! @decl void update(string public_data)
+  /*! @decl void update(string(0..255) public_data)
    *!
    *! Add @[public_data] to be authenticated.
    *!
@@ -1866,7 +1904,7 @@ PIKECLASS GCM
    *! All calls of @[update()] need to be performed before
    *! any calls of @[crypt()].
    */
-  PIKEFUN string(0..255) update(string data)
+  PIKEFUN void update(string(0..255) data)
   {
     NO_WIDE_STRING(data);
 
@@ -1888,7 +1926,7 @@ PIKECLASS GCM
     pop_n_elems(args);
   }
 
-  /*! @decl string(0..255) crypt(string data)
+  /*! @decl string(0..255) crypt(string(0..255) data)
    *!
    *! Encrypt/decrypt @[data] and return the result. @[data] must
    *! be an integral number of blocks.
@@ -1902,7 +1940,7 @@ PIKECLASS GCM
    *! @seealso
    *!   @[update()], @[digest()]
    */
-  PIKEFUN string(0..255) crypt(string data)
+  PIKEFUN string(0..255) crypt(string(0..255) data)
   {
     struct pike_string *result;
     ONERROR uwp;
@@ -1949,8 +1987,10 @@ PIKECLASS GCM
 
   /*! @decl string(0..255) digest()
    *!
-   *! Generate a message digest for the data accumulated so far,
-   *! and reset to handle the next message.
+   *! Generate a message digest for the data accumulated so far.
+   *!
+   *! @note
+   *!   @[set_iv()] needs to be called to start the next message.
    *!
    *! @seealso
    *!   @[update()], @[digest()]
