@@ -44,6 +44,12 @@ FILE_FUNC("linger", file_linger,
 	  tFunc(tOr3(tInt_10, tWord, tVoid), tInt01))
 #endif
 
+#ifdef TCP_NODELAY
+/* function(int(0..1)|void:int(0..1)) */
+FILE_FUNC("nodelay", file_nodelay,
+	  tFunc(tOr(tInt01, tVoid), tInt01))
+#endif
+
 #ifdef HAVE_FSYNC
 /*  function(:int) */
 FILE_FUNC("sync", file_sync, tFunc(tNone,tInt))
