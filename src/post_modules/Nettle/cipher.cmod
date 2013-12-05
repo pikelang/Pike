@@ -1426,7 +1426,7 @@ static void pike_crypt_func(void *object, unsigned length, uint8_t *dst,
   push_string(make_shared_binary_string((const char *)src, length));
   args = safe_apply(object, "crypt", 1);
   get_all_args("crypt", args, "%n", &str);
-  if (str->len != length) {
+  if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
 	       DO_NOT_WARN((long)str->len));
   }
@@ -1687,8 +1687,13 @@ PIKECLASS GCM
     flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
   CVAR struct Cipher_State_struct *crypt_state;
   CVAR INT32 mode;
+  CVAR INT32 dmode;
   CVAR struct gcm_key gcm_key;
   CVAR struct gcm_ctx gcm_ctx;
+
+  /* dmode flags */
+#define NO_ADATA	1	/* Disallow associated data. */
+#define NO_CDATA	2	/* Disallow crypted data. */
 
   INIT
   {
@@ -1698,7 +1703,7 @@ PIKECLASS GCM
   EXIT
     gc_trivial;
   {
-    if(THIS->object) {
+    if (THIS->object) {
       free_object(THIS->object);
       THIS->object = NULL;
     }
@@ -1739,7 +1744,7 @@ PIKECLASS GCM
 
     safe_apply(THIS->object, "block_size", 0);
 
-    if(TYPEOF(Pike_sp[-1]) != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("block_size() didn't return an int.\n");
 
     if (Pike_sp[-1].u.integer != GCM_BLOCK_SIZE)
@@ -1792,7 +1797,6 @@ PIKECLASS GCM
   {
     crypt_func func = pike_crypt_func;
     void *ctx = THIS->object;
-    THIS->mode = 0;
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
@@ -1802,6 +1806,7 @@ PIKECLASS GCM
       ctx = THIS->crypt_state->ctx;
     }
     gcm_set_key(&THIS->gcm_key, ctx, func);
+    THIS->mode = 0;
 
     RETURN this_object();
   }
@@ -1816,7 +1821,6 @@ PIKECLASS GCM
   {
     crypt_func func = pike_crypt_func;
     void *ctx = THIS->object;
-    THIS->mode = 1;
     key->flags |= STRING_CLEAR_ON_EXIT;
     /* NOTE: GCM always uses the encryption function
      *       of the underlying cipher!
@@ -1829,6 +1833,7 @@ PIKECLASS GCM
       ctx = THIS->crypt_state->ctx;
     }
     gcm_set_key(&THIS->gcm_key, ctx, func);
+    THIS->mode = 1;
 
     RETURN this_object();
   }
@@ -1843,10 +1848,11 @@ PIKECLASS GCM
   {
     iv->flags |= STRING_CLEAR_ON_EXIT;
     NO_WIDE_STRING(iv);
-    if(THIS->mode < 0 && (iv->len != GCM_IV_SIZE))
+    if ((THIS->mode < 0) && (iv->len != GCM_IV_SIZE))
       Pike_error("The key must be set to use an iv of length other than %d.\n",
 		 GCM_IV_SIZE);
     gcm_set_iv(&THIS->gcm_ctx, &THIS->gcm_key, iv->len, STR0(iv));
+    THIS->dmode = 0;
     RETURN this_object();
   }
 
@@ -1871,7 +1877,13 @@ PIKECLASS GCM
     if (THIS->mode < 0)
       Pike_error("Key schedule not initialized.\n");
 
+    if (THIS->dmode & NO_ADATA)
+      Pike_error("Public data not allowed now.\n");
+
     gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
+
+    if (data->len & (GCM_BLOCK_SIZE - 1))
+      THIS->dmode |= NO_ADATA;
 
     pop_n_elems(args);
   }
@@ -1906,6 +1918,9 @@ PIKECLASS GCM
     if (THIS->mode < 0)
       Pike_error("Key schedule not initialized.\n");
 
+    if (THIS->dmode & NO_CDATA)
+      Pike_error("More data not allowed before the iv is reset.\n");
+
     result = begin_shared_string(data->len);
     SET_ONERROR (uwp, do_free_string, result);
 
@@ -1914,14 +1929,18 @@ PIKECLASS GCM
       ctx = THIS->crypt_state->ctx;
     }
 
-    if(THIS->mode == 0) {
+    if (!THIS->mode) {
       gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
 		  data->len, STR0(result), STR0(data));
-    }
-    else {
+    } else {
       gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
 		  data->len, STR0(result), STR0(data));
     }
+
+    THIS->dmode |= NO_ADATA;
+
+    if (data->len & (GCM_BLOCK_SIZE - 1))
+      THIS->dmode |= NO_CDATA;
 
     pop_n_elems(args);
     push_string(end_shared_string(result));
@@ -1960,6 +1979,8 @@ PIKECLASS GCM
 
     gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
 	       GCM_BLOCK_SIZE, STR0(result));
+
+    THIS->dmode |= NO_ADATA | NO_CDATA;
 
     pop_n_elems(args);
     push_string(end_shared_string(result));
