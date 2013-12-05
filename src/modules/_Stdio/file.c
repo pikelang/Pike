@@ -2486,6 +2486,57 @@ static void file_linger(INT32 args)
 }
 #endif
 
+#ifdef TCP_NODELAY
+/*! @decl int(0..1) set_nodelay(int(0..1)|void state)
+ *!
+ *! Control Nagle's Algorithm (RFC 896)
+ *!
+ *! @param state
+ *!   @int
+ *!     @value 0
+ *!       Return to the normal state of using Nagle's Algorithm
+ *!     @value 1
+ *!       (default) Disable Nagling - small writes will not be queued.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success, and @expr{0@} (zero) on failure.
+ *!
+ *! @note
+ *!   This operation is only valid on sockets.
+ *!
+ *! @seealso
+ *!   setsockopt()
+ */
+static void file_nodelay(INT32 args)
+{
+  int fd = FD;
+  int state = 1;
+
+  if(fd < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args("set_nodelay", args, ".%d", &state);
+
+  if (state && state != 1) {
+    SIMPLE_BAD_ARG_ERROR("set_nodelay()", 1, "int(0..1)");
+  }
+
+  errno = 0;
+  while ((fd_setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+			&state, sizeof(state)) < 0) &&
+	 (errno == EINTR)) {
+    errno = 0;
+  }
+  if (errno) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif
+
 static int do_close(int flags)
 {
   struct my_file *f = THIS;
