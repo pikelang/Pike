@@ -334,6 +334,43 @@ static void udp_bind(INT32 args)
   ref_push_object(THISOBJ);
 }
 
+
+/*! @decl UDP set_fd(int fd)
+ *!
+ *! Use the file descriptor @[fd] for UDP.
+ *! @seealso
+ *!   @[bind]
+ */
+static void udp_set_fd(INT32 args)
+{
+  int fd;
+
+  get_all_args("set_fd", args, "%d", &fd);
+
+  if(FD != -1)
+  {
+    int curfd = FD;
+    change_fd_for_box (&THIS->box, -1);
+    fd_close(curfd);
+  }
+
+  change_fd_for_box (&THIS->box, fd);
+  pop_n_elems(args);
+  ref_push_object(THISOBJ);
+}
+
+/*! @desc int query_fd()
+ *!
+ *! Gets the file descriptor for this UDP port.
+ */
+static void udp_query_fd(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(FD);
+}
+
+
+
 /*! @decl int(0..1) enable_broadcast()
  *!
  *! Set the broadcast flag. 
@@ -1384,6 +1421,12 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("bind",udp_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tObj),0);
+
+  ADD_FUNCTION("set_fd",udp_set_fd,
+         tFunc(tInt,tObj),0);
+
+  ADD_FUNCTION("query_fd",udp_query_fd,
+         tFunc(tInt,tObj),0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
