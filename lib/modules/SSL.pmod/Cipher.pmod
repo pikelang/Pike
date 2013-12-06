@@ -911,12 +911,14 @@ class Camellia
 }
 #endif
 
+#if constant(Nettle.GCM)
 //!
 class AES_GCM
 {
   inherit Crypto.GCM;
   protected void create() { ::create(Crypto.AES()); }
 }
+#endif
 
 //! Signing using RSA.
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
@@ -1325,6 +1327,7 @@ array lookup(int suite, ProtocolVersion|int version,
     switch(algorithms[3]) {
     case MODE_cbc:
       break;
+#if constant(Nettle.GCM)
     case MODE_gcm:
       res->bulk_cipher_algorithm = AES_GCM;
       res->cipher_type = CIPHER_aead;
@@ -1347,6 +1350,7 @@ array lookup(int suite, ProtocolVersion|int version,
 	return 0;
       }
       break;
+#endif
     default:
       return 0;
     }
