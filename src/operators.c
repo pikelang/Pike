@@ -5712,25 +5712,29 @@ void init_operators(void)
 
   /* function(mixed...:int) */
   ADD_EFUN2("`==",f_eq,
-	    tOr5(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+	    tOr6(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
 		 tFuncV(tOr3(tObj,tPrg(tObj),tFunction) tMix,tMix,tInt01),
 		 tFuncV(tMix tOr3(tObj,tPrg(tObj),tFunction),tMix,tInt01),
 		 tFuncV(tType(tMix) tType(tMix),
-			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01)),
+			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01),
+		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray)),
+			tNot(tVar(0)),tInt0)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
   ADD_EFUN2("`!=",f_ne,
-	    tOr5(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+	    tOr6(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
 		 tFuncV(tOr3(tObj,tPrg(tObj),tFunction) tMix,tMix,tInt01),
 		 tFuncV(tMix tOr3(tObj,tPrg(tObj),tFunction),tMix,tInt01),
 		 tFuncV(tType(tMix) tType(tMix),
-			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01)),
+			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01),
+		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray)),
+			tNot(tVar(0)),tInt1)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
