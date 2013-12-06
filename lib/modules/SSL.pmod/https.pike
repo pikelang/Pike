@@ -6,7 +6,9 @@
 
 //! Dummy HTTPS server/client
 
+#ifndef PORT
 #define PORT 25678
+#endif
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
