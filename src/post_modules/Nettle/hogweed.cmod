@@ -39,7 +39,10 @@ void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
   memcpy(&X.Y, get_storage(Y, auto_bignum_program.u.program), sizeof(mpz_t));\
   } while(0)
 
-/*! Generates a DSA key pair with @[p_bits] number of bits (sometimes
+/*! @decl array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits, @
+ *!                                                   function(int:string) rnd)
+ *!
+ *! Generates a DSA key pair with @[p_bits] number of bits (sometimes
  *! referred to as L) for p, and @[q_bits] number of bits (sometimes
  *! referred to as N) for q, using the random function @[rnd].
  *!
@@ -54,15 +57,15 @@ void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
  *!
  *! @returns
  *!   @array
- *!     @elem 0
+ *!     @elem Gmp.mpz 0
  *!       The value p, the modulo.
- *!     @elem 1
+ *!     @elem Gmp.mpz 1
  *!       The value q, the group order.
- *!     @elem 2
+ *!     @elem Gmp.mpz 2
  *!       The value g, the generator.
- *!     @elem 3
+ *!     @elem Gmp.mpz 3
  *!       The value y, the public value.
- *!     @elem 4
+ *!     @elem Gmp.mpz 4
  *!       The value x, the private value.
  *!   @endarray
  */
@@ -96,18 +99,21 @@ PIKEFUN array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits,
   stack_pop_n_elems_keep_top(3); /* Remove p_bits, q_bits and rnd. */
 }
 
-/*! Generates an RSA key pair with a @[bits] sized modulus (n), using
+/*! @decl array(object(Gmp.mpz)) @
+ *!         rsa_generate_keypair(int bits, int e, function(int:string) rnd)
+ *!
+ *! Generates an RSA key pair with a @[bits] sized modulus (n), using
  *! the provided value for @[e] and random function @[rnd].
  *!
  *! @returns
  *!   @array
- *!     @elem 0
+ *!     @elem Gmp.mpz 0
  *!       The value n, the modulo.
- *!     @elem 1
+ *!     @elem Gmp.mpz 1
  *!       The value d, the private exponent.
- *!     @elem 2
+ *!     @elem Gmp.mpz 2
  *!       The value p, a prime.
- *!     @elem 3
+ *!     @elem Gmp.mpz 3
  *!       The value q, a prime.
  *!   @endarray
  */

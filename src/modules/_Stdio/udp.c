@@ -359,7 +359,7 @@ static void udp_set_fd(INT32 args)
   ref_push_object(THISOBJ);
 }
 
-/*! @desc int query_fd()
+/*! @decl int query_fd()
  *!
  *! Gets the file descriptor for this UDP port.
  */

@@ -1832,7 +1832,7 @@ PIKECLASS GCM
     RETURN this_object();
   }
 
-  /*! @decl this_program set_decrypt_key(string key(0..255), int|void flags)
+  /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for decrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
