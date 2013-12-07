@@ -6096,7 +6096,7 @@ static int match_type_svalue(struct pike_type *type,
         struct pike_string *s = sval->u.string;
         INT32 min = CAR_TO_INT( sub ), max = CDR_TO_INT( sub );
         INT32 string_min, string_max;
-        int checked;
+        int checked = 0;
 
         check_string_range( s, 1, &string_min, &string_max );
 
