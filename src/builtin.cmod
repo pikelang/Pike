@@ -455,7 +455,7 @@ PIKECLASS TM
             if( tval )
                 push_text( tval );
             else
-                push_text( 0 );
+                push_undefined();
         }
     }
 
