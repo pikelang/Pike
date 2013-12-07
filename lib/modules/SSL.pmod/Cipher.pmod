@@ -917,7 +917,7 @@ class Camellia
 //!
 class AES_GCM
 {
-  inherit Crypto.GCM;
+  inherit Crypto.GCM.State;
   protected void create() { ::create(Crypto.AES()); }
 }
 #endif

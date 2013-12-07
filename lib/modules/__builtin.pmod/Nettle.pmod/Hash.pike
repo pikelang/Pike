@@ -391,7 +391,7 @@ class HMAC
 
   //! @param passwd
   //!   The secret password (K).
-  this_program init(string password)
+  this_program init(string passwd)
   {
     int b = block_size();
     if (sizeof(passwd) > b)
