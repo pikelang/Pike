@@ -50,7 +50,7 @@ class State
   //!
   //! @returns
   //!   The digest.
-  string digest(int|void arg);
+  string digest(int|void length);
 }
 
 //! Calling `() will return a @[State] object.
@@ -382,12 +382,16 @@ string pkcs_digest(string s)
 //!   @[Crypto.HMAC]
 class HMAC
 {
-  string ikey; /* ipad XOR:ed with the key */
-  string okey; /* opad XOR:ed with the key */
+  inherit State;
+
+  protected string ikey; /* ipad XOR:ed with the key */
+  protected string okey; /* opad XOR:ed with the key */
+
+  protected State h;
 
   //! @param passwd
   //!   The secret password (K).
-  void create(string passwd)
+  this_program init(string password)
   {
     int b = block_size();
     if (sizeof(passwd) > b)
@@ -397,22 +401,54 @@ class HMAC
 
     ikey = passwd ^ ("6" * b);
     okey = passwd ^ ("\\" * b);
+
+    h = State();
+    h->update(ikey);	// Init with ikey.
+
+    return this;
   }
 
-  // FIXME: Ought to have the same API as a normal hash function.
+  //! @param passwd
+  //!   The secret password (K).
+  void create(string passwd)
+  {
+    init(passwd);
+  }
+
+  this_program update(string data)
+  {
+    h->update(data);
+    return this;
+  }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value.
+  //!
+  //! This is a combined @[update()] and @[digest()].
   string `()(string text)
   {
-    return hash(okey + hash(ikey + text));
+    h->update(text);
+    return digest();
+  }
+
+  string digest(int|void length)
+  {
+    string res = hash(okey + h->digest());
+    h->update(ikey);
+
+    if (length) return res[..length-1];
+    return res;
   }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value as a PKCS-1 digestinfo block.
   string digest_info(string text)
   {
-    return pkcs_digest(okey + hash(ikey + text));
+    h->update(text);
+    string d = h->digest();
+    h->update(ikey);
+
+    return pkcs_digest(okey + d);
   }
 }
 
