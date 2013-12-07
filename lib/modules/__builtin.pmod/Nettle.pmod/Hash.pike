@@ -357,3 +357,88 @@ string openssl_pbkdf(string password, string salt, int rounds, int bytes)
   return out[..bytes-1];
 }
 
+protected function(string, this_program:string) build_digestinfo;
+
+//! Make a PKCS-1 digest info block with the message @[s].
+//!
+//! @seealso
+//!   @[Standards.PKCS.build_digestinfo()]
+string pkcs_digest(string s)
+{
+  if (!build_digestinfo) {
+    // NB: We MUST NOT use other modules at compile-time,
+    //     so we load Standards.PKCS.Signature on demand.
+    build_digestinfo =
+      master()->resolve("Standards.PKCS.Signature")->build_digestinfo;
+  }
+  return build_digestinfo(s, this);
+}
+
+//! HMAC (Hashing for Message Authenticity Control) for the hash algorithm.
+//!
+//! RFC 2104.
+//!
+//! @seealso
+//!   @[Crypto.HMAC]
+class HMAC
+{
+  string ikey; /* ipad XOR:ed with the key */
+  string okey; /* opad XOR:ed with the key */
+
+  //! @param passwd
+  //!   The secret password (K).
+  void create(string passwd)
+  {
+    int b = block_size();
+    if (sizeof(passwd) > b)
+      passwd = hash(passwd);
+    if (sizeof(passwd) < b)
+      passwd = passwd + "\0" * (b - sizeof(passwd));
+
+    ikey = passwd ^ ("6" * b);
+    okey = passwd ^ ("\\" * b);
+  }
+
+  // FIXME: Ought to have the same API as a normal hash function.
+
+  //! Hashes the @[text] according to the HMAC algorithm and returns
+  //! the hash value.
+  string `()(string text)
+  {
+    return hash(okey + hash(ikey + text));
+  }
+
+  //! Hashes the @[text] according to the HMAC algorithm and returns
+  //! the hash value as a PKCS-1 digestinfo block.
+  string digest_info(string text)
+  {
+    return pkcs_digest(okey + hash(ikey + text));
+  }
+}
+
+//! This is the Password-Based Key Derivation Function used in TLS.
+//!
+//! @param password
+//!   The prf secret.
+//!
+//! @param salt
+//!   The prf seed.
+//!
+//! @param rounds
+//!   Ignored.
+//!
+//! @param bytes
+//!   The number of bytes to generate.
+string P_hash(string password, string salt, int rounds, int bytes)
+{
+  HMAC hmac = HMAC(password);
+  string temp = salt;
+  string res="";
+
+  while (sizeof(res) < bytes) {
+    temp = hmac(temp);
+    res += hmac(temp + salt);
+  }
+  return res[..(bytes-1)];
+}
+
