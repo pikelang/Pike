@@ -2083,8 +2083,8 @@ PIKECLASS GCM
       UNSET_ONERROR(uwp);
     }
   }
-  /* @endclass*/
-
+  /*! @endclass
+   */
 }
 
 /*! @endclass

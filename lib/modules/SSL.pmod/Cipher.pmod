@@ -252,6 +252,7 @@ class KeyExchange(object context, object session, array(int) client_version)
   //!       Returns zero on success.
   //!     @value -1
   //!       Returns negative on verification failure.
+  //!   @endint
   int server_key_exchange(ADT.struct input,
 			  string client_random,
 			  string server_random)
