@@ -18,7 +18,7 @@ import .Constants;
 protected constant Struct = ADT.struct;
 
 //! Identifies the session to the server
-string identity;
+string(0..255) identity;
 
 //! Always COMPRESSION_null.
 int compression_algorithm;
@@ -39,7 +39,7 @@ program(.Cipher.KeyExchange) ke_factory;
 
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
-string master_secret;
+string(0..255) master_secret;
 
 //! information about the certificate in use by the peer, such as issuing authority, and verification status.
 mapping cert_data;
@@ -123,8 +123,9 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-protected string generate_key_block(string client_random, string server_random,
-			  array(int) version)
+protected string(0..255) generate_key_block(string(0..255) client_random,
+					    string(0..255) server_random,
+					    array(int) version)
 {
   int required = 2 * (
     cipher_spec->is_exportable ?
@@ -133,7 +134,7 @@ protected string generate_key_block(string client_random, string server_random,
 	cipher_spec->hash_size +
 	cipher_spec->iv_size)
   );
-  string key = "";
+  string(0..255) key = "";
 
   key = cipher_spec->prf(master_secret, "key expansion",
 			 server_random + client_random, required);
@@ -176,12 +177,13 @@ protected void printKey(string name, string key) {
 //!     @elem string 5
 //!       Server write IV
 //!  @endarray
-array(string) generate_keys(string client_random, string server_random,
-			    array(int) version)
+array(string(0..255)) generate_keys(string(0..255) client_random,
+				    string(0..255) server_random,
+				    array(int) version)
 {
   Struct key_data = Struct(generate_key_block(client_random, server_random,
 					      version));
-  array(string) keys = allocate(6);
+  array(string(0..255)) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
   werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
@@ -215,8 +217,8 @@ array(string) generate_keys(string client_random, string server_random,
 
     } else if(version[1] >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
-      string client_wkey = key_data->get_fix_string(5);
-      string server_wkey = key_data->get_fix_string(5);
+      string(0..255) client_wkey = key_data->get_fix_string(5);
+      string(0..255) server_wkey = key_data->get_fix_string(5);
       keys[2] = cipher_spec->prf(client_wkey, "client write key",
 				 client_random + server_random,
 				 cipher_spec->key_material);
@@ -224,7 +226,7 @@ array(string) generate_keys(string client_random, string server_random,
 				 client_random + server_random,
 				 cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string iv_block =
+	string(0..255) iv_block =
 	  cipher_spec->prf("", "IV block",
 			   client_random + server_random,
 			   2 * cipher_spec->iv_size);
@@ -232,7 +234,7 @@ array(string) generate_keys(string client_random, string server_random,
 	keys[5]=iv_block[cipher_spec->iv_size..];
 #ifdef SSL3_DEBUG
 	werror("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
-	       sizeof([string]keys[4]), sizeof([string]keys[4]));
+	       sizeof(keys[4]), sizeof(keys[4]));
 #endif
       }
 
@@ -277,7 +279,8 @@ array(string) generate_keys(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(string client_random, string server_random,
+array(.state) new_server_states(string(0..255) client_random,
+				string(0..255) server_random,
 				array(int) version)
 {
   .state write_state = .state(this);
@@ -329,7 +332,8 @@ array(.state) new_server_states(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(string client_random, string server_random,
+array(.state) new_client_states(string(0..255) client_random,
+				string(0..255) server_random,
 				array(int) version)
 {
   .state write_state = .state(this);

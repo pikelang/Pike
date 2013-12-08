@@ -86,7 +86,7 @@ class CipherSpec {
   //!
   //! @seealso
   //!   @[prf_ssl_3_0()], @[prf_tls_1_0()], @[prf_tls_1_2()]
-  function(string, string, string, int:string) prf;
+  function(string(0..255), string(0..255), string(0..255), int:string(0..255)) prf;
 
   //! The hash algorithm for signing the handshake.
   //!
@@ -97,10 +97,10 @@ class CipherSpec {
   Crypto.Hash hash;
 
   //! The function used to sign packets.
-  function(object,string,ADT.struct:ADT.struct) sign;
+  function(object,string(0..255),ADT.struct:ADT.struct) sign;
 
   //! The function used to verify the signature for packets.
-  function(object,string,ADT.struct,ADT.struct:int(0..1)) verify;
+  function(object,string(0..255),ADT.struct,ADT.struct:int(0..1)) verify;
 }
 
 //! Class used for signing in TLS 1.2 and later.
@@ -225,10 +225,10 @@ class KeyExchange(object context, object session, array(int) client_version)
   //!
   //! @note
   //!   May set @[message_was_bad] and return a fake master secret.
-  string|int server_derive_master_secret(string data,
-					 string client_random,
-					 string server_random,
-					 array(int) version);
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version);
 
   //! @param input
   //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
@@ -304,10 +304,10 @@ class KeyExchangeNULL(object context, object session, array(int) client_version)
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data,
-					 string client_random,
-					 string server_random,
-					 array(int) version)
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
   {
     anonymous = 1;
     return "";
@@ -391,10 +391,10 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data,
-					 string client_random,
-					 string server_random,
-					 array(int) version)
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
   {
     string premaster_secret;
 
@@ -522,10 +522,10 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data,
-					 string client_random,
-					 string server_random,
-					 array(int) version)
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
   {
     string premaster_secret;
 
@@ -581,10 +581,10 @@ class KeyExchangeDHE(object context, object session, array(int) client_version)
 
   //! @returns
   //!   Master secret or alert number.
-  string|int server_derive_master_secret(string data,
-					 string client_random,
-					 string server_random,
-					 array(int) version)
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
 		   session->ke_method);
@@ -632,13 +632,13 @@ class MACsha
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 11;
 
-  string hash_raw(string data)
+  string(0..255) hash_raw(string(0..255) data)
   {
     return algorithm->hash(data);
   }
 
   //!
-  string hash(object packet, Gmp.mpz seq_num)
+  string(0..255) hash(object packet, Gmp.mpz seq_num)
   {
     string s = sprintf("%~8s%c%2c%s",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
@@ -649,7 +649,7 @@ class MACsha
   }
 
   //!
-  string hash_master(string data, string|void s)
+  string(0..255) hash_master(string(0..255) data, string(0..255)|void s)
   {
     s = s || secret;
     return hash_raw(s + pad_2 +
@@ -771,8 +771,9 @@ class MAChmac_sha512 {
 #endif
 
 //! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
-protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
-			string seed, int len) {
+protected string(0..255) P_hash(Crypto.Hash hashfn, int hlen,
+				string(0..255) secret,
+				string(0..255) seed, int len) {
    
   Crypto.HMAC hmac=Crypto.HMAC(hashfn);
   string temp=seed;
@@ -791,7 +792,10 @@ protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
 //!
 //! @note
 //!   The argument @[label] is ignored.
-string prf_ssl_3_0(string secret, string label, string seed, int len)
+string(0..255) prf_ssl_3_0(string(0..255) secret,
+			   string(0..255) label,
+			   string(0..255) seed,
+			   int len)
 {
   string res = "";
   for (int i = 1; sizeof(res) < len; i++) {
@@ -804,7 +808,10 @@ string prf_ssl_3_0(string secret, string label, string seed, int len)
 
 //! This Pseudo Random Function is used to derive secret keys
 //! in TLS 1.0 and 1.1.
-string prf_tls_1_0(string secret,string label,string seed,int len)
+string(0..255) prf_tls_1_0(string(0..255) secret,
+			   string(0..255) label,
+			   string(0..255) seed,
+			   int len)
 {
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
@@ -816,7 +823,10 @@ string prf_tls_1_0(string secret,string label,string seed,int len)
 }
 
 //! This Pseudo Random Function is used to derive secret keys in TLS 1.2.
-string prf_tls_1_2(string secret, string label, string seed, int len)
+string(0..255) prf_tls_1_2(string(0..255) secret,
+			   string(0..255) label,
+			   string(0..255) seed,
+			   int len)
 {
   return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
 }
@@ -824,7 +834,10 @@ string prf_tls_1_2(string secret, string label, string seed, int len)
 #if constant(Crypto.SHA384)
 //! This Pseudo Random Function is used to derive secret keys
 //! for some ciphers suites defined after TLS 1.2.
-string prf_sha384(string secret, string label, string seed, int len)
+string(0..255) prf_sha384(string(0..255) secret,
+			  string(0..255) label,
+			  string(0..255) seed,
+			  int len)
 {
   return P_hash(Crypto.SHA384, 32, secret, label + seed, len);
 }
