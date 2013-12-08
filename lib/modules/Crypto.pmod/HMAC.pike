@@ -28,7 +28,7 @@ protected void create(.Hash h, int|void b)
 
 //! Calls the hash function given to @[create] and returns the hash
 //! value of @[s].
-string raw_hash(string s)
+string(0..255) raw_hash(string(0..255) s)
 {
   return H->hash(s);
 }
@@ -36,7 +36,7 @@ string raw_hash(string s)
 //! Makes a PKCS-1 digestinfo block with the message @[s].
 //! @seealso
 //!   @[Standards.PKCS.Signature.build_digestinfo]
-string pkcs_digest(string s)
+string(0..255) pkcs_digest(string(0..255) s)
 {
   return Standards.PKCS.Signature.build_digestinfo(s, H);
 }
@@ -47,32 +47,32 @@ string pkcs_digest(string s)
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
 class `()
 {
-  string ikey; /* ipad XOR:ed with the key */
-  string okey; /* opad XOR:ed with the key */
+  string(0..255) ikey; /* ipad XOR:ed with the key */
+  string(0..255) okey; /* opad XOR:ed with the key */
 
   //! @param passwd
   //!   The secret password (K).
-  void create(string passwd)
+  void create(string(0..255) passwd)
     {
       if (sizeof(passwd) > B)
 	passwd = raw_hash(passwd);
       if (sizeof(passwd) < B)
 	passwd = passwd + "\0" * (B - sizeof(passwd));
 
-      ikey = passwd ^ ("6" * B);
-      okey = passwd ^ ("\\" * B);
+      ikey = [string(0..255)](passwd ^ ("6" * B));
+      okey = [string(0..255)](passwd ^ ("\\" * B));
     }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value.
-  string `()(string text)
+  string(0..255) `()(string(0..255) text)
     {
       return raw_hash(okey + raw_hash(ikey + text));
     }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value as a PKCS-1 digestinfo block.
-  string digest_info(string text)
+  string(0..255) digest_info(string(0..255) text)
     {
       return pkcs_digest(okey + raw_hash(ikey + text));
     }

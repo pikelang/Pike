@@ -38,11 +38,13 @@ class Hash {
 //!
 //! @seealso
 //!   @[verify_crypt_md5]
-string make_crypt_md5(string password, void|string salt) {
+string(0..255) make_crypt_md5(string(0..255) password,
+			      void|string(0..255) salt)
+{
   if(salt)
     sscanf(salt, "%s$", salt);
   else
-    salt = ([function(string:string)]MIME["encode_base64"])
+    salt = ([function(string(0..255):string(0..255))]MIME["encode_base64"])
       (.Random.random_string(6));
 
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
@@ -53,11 +55,12 @@ string make_crypt_md5(string password, void|string salt) {
 //!   May throw an exception if the hash value is bad.
 //! @seealso
 //!   @[make_crypt_md5]
-int(0..1) verify_crypt_md5(string password, string hash) {
-  string salt;
+int(0..1) verify_crypt_md5(string(0..255) password, string(0..127) hash)
+{
+  string(0..127) salt;
   if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
     error("Error in hash.\n");
-  return Nettle.crypt_md5(password, salt)==[string(0..127)]hash;
+  return Nettle.crypt_md5(password, salt) == hash;
 }
 
 constant CipherState = Nettle.Cipher.State;
@@ -106,11 +109,12 @@ class Buffer {
   inherit Nettle.Proxy;
 }
 
-//! @decl string rot13(string data)
+//! @decl string(0..255) rot13(string(0..255) data)
 //! Convenience function that accesses the crypt function of a
 //! substitution object keyed to perform standard ROT13 (de)ciphering.
 
-function(string:string) rot13 = Crypto.Substitution()->set_rot_key()->crypt;
+function(string(0..255):string(0..255)) rot13 =
+  Crypto.Substitution()->set_rot_key()->crypt;
 
 constant PAD_SSL = 0;
 constant PAD_ISO_10126 = 1;
