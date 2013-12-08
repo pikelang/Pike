@@ -89,7 +89,7 @@ class Constructed
 {
   int raw_tag = data->get_uint(1);
   int len;
-  string contents;
+  string(0..255) contents;
 
 #ifdef ASN1_DEBUG
   werror("decoding raw_tag %x\n", raw_tag);
@@ -194,7 +194,7 @@ mapping(int:program(.Types.Object)) universal_types =
 //!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.Primitive] or
 //!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
-.Types.Object simple_der_decode(string data)
+.Types.Object simple_der_decode(string(0..255) data)
 {
   return der_decode(ADT.struct(data), universal_types);
 }

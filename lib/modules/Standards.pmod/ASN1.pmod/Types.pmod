@@ -53,7 +53,7 @@ class Object
   constant constructed = 0;
 
   constant type_name = 0;
-  string der_encode();
+  string(0..255) der_encode();
 
   //! Get the class of this object.
   //!
@@ -75,7 +75,7 @@ class Object
     return make_combined_tag(get_tag(), get_cls());
   }
 
-  string der;
+  string(0..255) der;
 
   // Should be overridden by subclasses
   this_program decode_primitive(string contents,
@@ -93,7 +93,8 @@ class Object
   }
   this_program init(mixed ... args) { return this; args; }
 
-  string to_base_128(int n) {
+  string(0..255) to_base_128(int n)
+  {
     if (!n)
       return "\0";
     /* Convert tag number to base 128 */
@@ -107,39 +108,47 @@ class Object
     }
     digits[0] &= 0x7f;
 
-    return sprintf("%@c", reverse(digits));
+    return [string(0..255)]sprintf("%@c", reverse(digits));
   }
 
-  string encode_tag() {
+  string(0..255) encode_tag()
+  {
     int tag = get_tag();
     int cls = get_cls();
     if (tag < 31)
-      return sprintf("%c", (cls << 6) | (constructed << 5) | tag);
+      return [string(0..255)]sprintf("%c",
+				     (cls << 6) | (constructed << 5) | tag);
 
-    return sprintf("%c%s", (cls << 6) | (constructed << 5) | 0x1f,
-		   to_base_128(tag) );
+    return [string(0..255)]sprintf("%c%s",
+				   (cls << 6) | (constructed << 5) | 0x1f,
+				   to_base_128(tag) );
   }
 
-  string encode_length(int|object len) {
+  string(0..255) encode_length(int|object len)
+  {
     if (len < 0x80)
-      return sprintf("%c", len);
+      return [string(0..255)]sprintf("%c", len);
     string s = Gmp.mpz(len)->digits(256);
     if (sizeof(s) >= 0x80)
       error("Max length exceeded.\n" );
-    return sprintf("%c%s", sizeof(s) | 0x80, s);
+    return [string(0..255)]sprintf("%c%s", sizeof(s) | 0x80, s);
   }
 
-  string build_der(string contents) {
-    string data = encode_tag() + encode_length(sizeof(contents)) + contents;
+  string(0..255) build_der(string(0..255) contents)
+  {
+    string(0..255) data =
+      encode_tag() + encode_length(sizeof(contents)) + contents;
     WERROR("build_der: %O\n", data);
     return data;
   }
 
-  __deprecated__ string record_der(string s) {
+  __deprecated__ string(0..255) record_der(string(0..255) s)
+  {
     return (der = s);
   }
 
-  void record_der_contents(string s) {
+  void record_der_contents(string(0..255) s)
+  {
     der = build_der(s);
   }
 
@@ -148,7 +157,7 @@ class Object
   //!
   //! @returns
   //!   DER encoded representation of this object.
-  string get_der() {
+  string(0..255) get_der() {
     return der || (der = der_encode());
   }
 
@@ -179,7 +188,7 @@ class Compound
     return this;
   }
 
-  this_program begin_decode_constructed(string raw) {
+  this_program begin_decode_constructed(string(0..255) raw) {
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
     record_der_contents(raw);
     return this;
@@ -234,16 +243,16 @@ class String
   //! value of object
   string value;
 
-  this_program init(string s) {
+  this_program init(string(0..255) s) {
     value = s;
     return this;
   }
 
-  string der_encode() {
-    return build_der(value);
+  string(0..255) der_encode() {
+    return build_der([string(0..255)]value);
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -285,11 +294,11 @@ class Boolean
     return this;
   }
 
-  string der_encode() {
+  string(0..255) der_encode() {
     return build_der(value ? "\377" : "\0");
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -327,8 +336,9 @@ class Integer
     return this;
   }
 
-  string der_encode() {
-    string s;
+  string(0..255) der_encode()
+  {
+    string(0..255) s;
 
     if (value < 0)
     {
@@ -346,7 +356,7 @@ class Integer
     return build_der(s);
   }
 
-  this_object decode_primitive(string contents,
+  this_object decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -386,25 +396,28 @@ class BitString
   constant type_name = "BIT STRING";
 
   //! value of object
-  string value;
+  string(0..255) value;
 
   int unused = 0;
 
-  this_program init(string s) {
+  this_program init(string(0..255) s)
+  {
     value = s;
     return this;
   }
 
-  string der_encode() {
-    return build_der(sprintf("%c%s", unused, value));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]sprintf("%c%s", unused, value));
   }
 
   //! Set the bitstring value as a string with @expr{"1"@} and
   //! @expr{"0"@}.
-  this_program set_from_ascii(string s) {
+  this_program set_from_ascii(string(0..255) s)
+  {
     array v = array_sscanf(s, "%8b"*(sizeof(s)/8)+"%b");
     v[-1] = v[-1]<<((-sizeof(s))%8);
-    value = (string)v;
+    value = (string(0..255))v;
     set_length(sizeof(s));
     return this;
   }
@@ -415,16 +428,16 @@ class BitString
     {
       value = value[..(len + 7)/8];
       unused = (- len) % 8;
-      value = sprintf("%s%c", value[..<1], value[-1]
-		      & ({ 0xff, 0xfe, 0xfc, 0xf8,
-			   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
+      value = [string(0..255)]sprintf("%s%c", value[..<1], value[-1]
+				      & ({ 0xff, 0xfe, 0xfc, 0xf8,
+					   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
     } else {
       unused = 0;
       value = "";
     }
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -472,9 +485,9 @@ class Null
   constant tag = 5;
   constant type_name = "NULL";
 
-  string der_encode() { return build_der(""); }
+  string(0..255) der_encode() { return build_der(""); }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -516,12 +529,14 @@ class Identifier
     return this_program(@id, @args);
   }
 
-  string der_encode() {
-    return build_der(sprintf("%s%@s", to_base_128(40 * id[0] + id[1]),
-			     map(id[2..], to_base_128)));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]sprintf("%s%@s",
+					     to_base_128(40 * id[0] + id[1]),
+					     map(id[2..], to_base_128)));
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -570,7 +585,7 @@ class Identifier
 //! always the case...
 int(1..1) asn1_utf8_valid (string s)
 {
-  return 1; s;
+  return 1;
 }
 
 //! UTF8 string object
@@ -584,7 +599,8 @@ class UTF8String
   constant tag = 12;
   constant type_name = "UTF8String";
 
-  string der_encode() {
+  string(0..255) der_encode()
+  {
     return build_der(string_to_utf8(value));
   }
 
@@ -610,14 +626,15 @@ class Sequence
   constant tag = 16;
   constant type_name = "SEQUENCE";
 
-  string der_encode() {
+  string(0..255) der_encode()
+  {
     WERROR("ASN1.Sequence: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("ASN1.Sequence: der_encode(elements) = '%O\n", a);
-    return build_der(`+("", @ a));
+    return build_der([string(0..255)]`+("", @ a));
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object) decoder,
@@ -656,7 +673,8 @@ class Set
     WERROR("asn1_set->der: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("asn1_set->der: der_encode(elements) = '%O\n", a);
-    return build_der(`+("", @[array(string)]
+    return build_der([string(0..255)]
+		     `+("", @[array(string)]
 			Array.sort_array(a, compare_octet_strings)));
   }
 }
@@ -1064,12 +1082,13 @@ class TeletexString
 #undef OG
 #undef CA
 
-  string der_encode() {
-    return build_der(replace(value, [array(string)]encode_from,
-			     [array(string)]encode_to));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]replace(value, [array(string)]encode_from,
+					     [array(string(0..255))]encode_to));
   }
 
-  this_program decode_primitive (string contents,
+  this_program decode_primitive (string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
