@@ -43,7 +43,7 @@ PIKECLASS CryptContext
 {
   CVAR HCRYPTPROV handle;
 
-  /*! @decl void create(string name, string csp, int type,@
+  /*! @decl void create(string(0..255) name, string(0..255) csp, int type,@
    *!                   int flags)
    *! @param name
    *! Key container name. When flags is set to @[CRYPT_VERIFYCONTEXT]
@@ -53,7 +53,7 @@ PIKECLASS CryptContext
    *! The name of the Crypto Service Provider to use. If set to
    *! @expr{0@} the user default CSP will be used.
    */
-  PIKEFUN void create(int|string str1, int|string str2, int type, int flags)
+  PIKEFUN void create(int|string(0..255) str1, int|string(0..255) str2, int type, int flags)
     flags ID_PROTECTED;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
@@ -86,11 +86,11 @@ PIKECLASS CryptContext
     pop_n_elems(args);
   }
 
-  /*! @decl string(0..255) read(int size, string|void init)
+  /*! @decl string(0..255) read(int size, string(0..255)|void init)
    *!
    *! Retreive some random data. Calls CryptGenRandom in the NT API.
    */
-  PIKEFUN string(0..255) read(int size, string|void init)
+  PIKEFUN string(0..255) read(int size, string(0..255)|void init)
     optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *res;

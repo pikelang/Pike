@@ -104,7 +104,7 @@ PIKECLASS Yarrow
     yarrow256_init(&THIS->ctx, num, THIS->sources);
   }
 
-  /*! @decl Yarrow seed(string data)
+  /*! @decl Yarrow seed(string(0..255) data)
    *!
    *! The random generator needs to be seeded before it can be used.
    *! The seed must be at least 32 characters long. The seed could be
@@ -116,7 +116,7 @@ PIKECLASS Yarrow
    *! @seealso
    *!   @[min_seed_size], @[get_seed], @[is_seeded]
    */
-  PIKEFUN object seed(string data)
+  PIKEFUN object seed(string(0..255) data)
     optflags OPT_SIDE_EFFECT;
   {
     if(data->len < YARROW256_SEED_FILE_SIZE)
@@ -212,13 +212,13 @@ PIKECLASS Yarrow
     pike_generate_seed_file();
   }
 
-  /*! @decl int(0..1) update(string data, int source, int entropy)
+  /*! @decl int(0..1) update(string(0..255) data, int source, int entropy)
    *! Inject additional entropy into the random number generator.
    *!
    *! @seealso
    *!   @[create]
    */
-  PIKEFUN int(0..1) update(string data, int source, int entropy)
+  PIKEFUN int(0..1) update(string(0..255) data, int source, int entropy)
     optflags OPT_SIDE_EFFECT;
   {
     int ret;
@@ -285,14 +285,16 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string(0..127) crypt_md5(string password, string salt,@
- *!                                void|string magic)
+/*! @decl string(0..127) crypt_md5(string(0..255) password, @
+ *!                                string(0..255) salt,@
+ *!                                void|string(0..255) magic)
  *! Does the crypt_md5 abrakadabra (MD5 + snakeoil). It is assumed
  *! that @[salt] does not contain "$".
  *!
  *! The @[password] memory will be cleared before released.
  */
-PIKEFUN string(0..127) crypt_md5(string pw, string salt, void|string magic)
+PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
+				 void|string(0..255) magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;
@@ -308,6 +310,7 @@ PIKEFUN string(0..127) crypt_md5(string pw, string salt, void|string magic)
   }
   else
   {
+    NO_WIDE_STRING(magic);
     hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
                           magic->len, magic->str);
   }
@@ -363,7 +366,7 @@ PIKECLASS LFib
 
   /* Get a pseudorandom string of length @[len].
    */
-  PIKEFUN string get_string(int len) {
+  PIKEFUN string(0..255) get_string(int len) {
     struct pike_string *s = begin_shared_string(len);
     knuth_lfib_random(THIS->ctx, len, s->str);
     push_string(end_shared_string(s));

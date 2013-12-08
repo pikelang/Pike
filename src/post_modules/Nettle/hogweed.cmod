@@ -39,8 +39,9 @@ void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
   memcpy(&X.Y, get_storage(Y, auto_bignum_program.u.program), sizeof(mpz_t));\
   } while(0)
 
-/*! @decl array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits, @
- *!                                                   function(int:string) rnd)
+/*! @decl array(object(Gmp.mpz)) @
+ *!         dsa_generate_keypair(int p_bits, int q_bits, @
+ *!                              function(int:string(0..255)) rnd)
  *!
  *! Generates a DSA key pair with @[p_bits] number of bits (sometimes
  *! referred to as L) for p, and @[q_bits] number of bits (sometimes
@@ -69,8 +70,8 @@ void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
  *!       The value x, the private value.
  *!   @endarray
  */
-PIKEFUN array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits,
-                                                    function(int:string) rnd)
+PIKEFUN array(object(Gmp.mpz))
+  dsa_generate_keypair(int p_bits, int q_bits, function(int:string(0..255)) rnd)
 {
   struct dsa_public_key pub;
   struct object *p, *q, *g, *y;
@@ -100,7 +101,7 @@ PIKEFUN array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits,
 }
 
 /*! @decl array(object(Gmp.mpz)) @
- *!         rsa_generate_keypair(int bits, int e, function(int:string) rnd)
+ *!         rsa_generate_keypair(int bits, int e, function(int:string(0..255)) rnd)
  *!
  *! Generates an RSA key pair with a @[bits] sized modulus (n), using
  *! the provided value for @[e] and random function @[rnd].
@@ -118,7 +119,7 @@ PIKEFUN array(object(Gmp.mpz)) dsa_generate_keypair(int p_bits, int q_bits,
  *!   @endarray
  */
 PIKEFUN array(object(Gmp.mpz))
-  rsa_generate_keypair(int bits, int e, function(int:string) rnd)
+  rsa_generate_keypair(int bits, int e, function(int:string(0..255)) rnd)
 {
   struct rsa_public_key pub;
   struct object *n, *_e;
