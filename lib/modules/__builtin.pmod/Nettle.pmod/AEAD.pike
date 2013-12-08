@@ -22,7 +22,8 @@ class State
   inherit Hash::State;
 
   protected void create(__builtin.Nettle.Cipher|
-			program(__builtin.Nettle.Cipher)|function c)
+			program(__builtin.Nettle.Cipher)|function c,
+			mixed ... args)
   {
     /* Needed to block the default implementation in Hash.State. */
   }
