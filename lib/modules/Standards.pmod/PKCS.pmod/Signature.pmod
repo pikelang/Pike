@@ -20,7 +20,7 @@ import Standards.ASN1.Types;
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 //! @seealso
 //!   @[Crypto.RSA()->sign]
-string build_digestinfo(string msg, HASH hash)
+string(0..255) build_digestinfo(string(0..255) msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
   Sequence digest_info = Sequence( ({ Sequence( ({ hash->asn1_id(),
