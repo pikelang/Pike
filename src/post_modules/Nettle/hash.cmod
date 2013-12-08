@@ -112,7 +112,7 @@ PIKECLASS Hash
     }
 
 
-  /*! @decl string(0..255) hash(string data)
+  /*! @decl string(0..255) hash(string(0..255) data)
    *!
    *!  Works as a (faster) shortcut for
    *!  @expr{State()->update(data)->digest()@}, where State is
@@ -121,7 +121,7 @@ PIKECLASS Hash
    *! @seealso
    *!   @[State()->update()] and @[State()->digest()].
    */
-    PIKEFUN string(0..255) hash(string in)
+    PIKEFUN string(0..255) hash(string(0..255) in)
     optflags OPT_TRY_OPTIMIZE;
   {
     void *ctx;
@@ -245,7 +245,8 @@ PIKECLASS Hash
   }
 
   /* NOTE: This is NOT the MIME base64 table! */
-  static const char b64tab[64] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  static const char b64tab[64] =
+    "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
   static inline void b64enc(char *dest, int a, int b, int c, int sz)
   {
@@ -256,7 +257,8 @@ PIKECLASS Hash
     }
   }
 
-  /*! @decl string(0..127) crypt_hash(string password, string salt, int rounds)
+  /*! @decl string(0..127) crypt_hash(string(0..255) password, @
+   *!                                 string(0..255) salt, int rounds)
    *!
    *!   Password hashing function in @[crypt_md5()]-style.
    *!
@@ -271,7 +273,8 @@ PIKECLASS Hash
    *! @seealso
    *!   @[crypt_md5()]
    */
-  PIKEFUN string(0..127) crypt_hash(string password, string salt, int rounds)
+  PIKEFUN string(0..127) crypt_hash(string(0..255) password,
+				    string(0..255) salt, int rounds)
   {
     struct pike_string *res;
     const struct nettle_hash *meta = THIS->meta;

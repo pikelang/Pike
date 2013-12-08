@@ -121,7 +121,7 @@ PIKECLASS Cipher
 
   CVAR const struct pike_cipher *meta;
   
-  /*! @decl string(0..255) name(void)
+  /*! @decl string(0..255) name()
    *!
    *! @returns
    *!   A human readable name for the algorithm.
@@ -223,7 +223,7 @@ PIKECLASS Cipher
       pop_stack();
     }
 
-    /*! @decl State set_encrypt_key(string key, void|int force)
+    /*! @decl State set_encrypt_key(string(0..255) key, void|int force)
      *!
      *! Initializes the object for encryption. The @[key] memory will be
      *! cleared before released.
@@ -231,7 +231,7 @@ PIKECLASS Cipher
      *! @seealso
      *!   @[set_decrypt_key], @[crypt]
      */
-    PIKEFUN object set_encrypt_key(string key, void|int force)
+    PIKEFUN object set_encrypt_key(string(0..255) key, void|int force)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
@@ -252,7 +252,7 @@ PIKECLASS Cipher
       push_object(this_object());
     }
 
-    /*! @decl State set_decrypt_key(string key, void|int force)
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int force)
      *!
      *! Initializes the object for decryption. The @[key] memory will be
      *! cleared before released.
@@ -260,7 +260,7 @@ PIKECLASS Cipher
      *! @seealso
      *!   @[set_encrypt_key], @[crypt]
      */
-    PIKEFUN object set_decrypt_key(string key, void|int force)
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int force)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
@@ -306,7 +306,7 @@ PIKECLASS Cipher
       pop_stack();
     }
 
-    /*! @decl string(0..255) crypt(string data)
+    /*! @decl string(0..255) crypt(string(0..255) data)
      *!
      *! Encrypts or decrypts data, using the current key. Neither the
      *! input nor output data is automatically memory scrubbed,
@@ -318,7 +318,7 @@ PIKECLASS Cipher
      *! @returns
      *!   The encrypted or decrypted data.
      */
-    PIKEFUN string(0..255) crypt (string data)
+    PIKEFUN string(0..255) crypt (string(0..255) data)
       optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     {
       struct Cipher_struct *info = GET_INFO();
@@ -522,7 +522,7 @@ PIKECLASS ARCTWO
       state->ctx = &THIS->arctwo;
     }
 
-    /*! @decl State set_encrypt_key(string key, int|void ekb)
+    /*! @decl State set_encrypt_key(string(0..255) key, int|void ekb)
      *!
      *! Initializes the object for encryption. The @[key] memory will be
      *! cleared before released.
@@ -541,7 +541,7 @@ PIKECLASS ARCTWO
      *! @seealso
      *!   @[set_decrypt_key], @[crypt]
      */
-    PIKEFUN object set_encrypt_key(string key, void|int(0..1024) ekb)
+    PIKEFUN object set_encrypt_key(string(0..255) key, void|int(0..1024) ekb)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
@@ -554,7 +554,7 @@ PIKECLASS ARCTWO
       apply_current(f_ARCTWO_State_inherited_set_encrypt_key_fun_num, args);
     }
 
-    /*! @decl State set_decrypt_key(string key, void|int ekb)
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int ekb)
      *!
      *! Initializes the object for decryption. The @[key] memory will be
      *! cleared before released.
@@ -573,7 +573,7 @@ PIKECLASS ARCTWO
      *! @seealso
      *!   @[set_encrypt_key], @[crypt]
      */
-    PIKEFUN object set_decrypt_key(string key, void|int ekb)
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int ekb)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE_ID);
     {
@@ -752,7 +752,7 @@ PIKECLASS DES
       cipher->meta = &pike_des;
     }
 
-  /*! @decl string fix_parity(string key)
+  /*! @decl string(0..255) fix_parity(string(0..255) key)
    *! Sets the last bit in every byte in @[key] to reflect the parity.
    *! If a seven byte key is used, it will be expanded into eight
    *! bytes. If a key longer than eight characters is used, it will
@@ -854,7 +854,7 @@ PIKECLASS DES
       state->key_size = Pike_sp[-1].u.string->len;
     }
 
-    /*! @decl string fix_parity(string key)
+    /*! @decl string(0..255) fix_parity(string(0..255) key)
      *! Sets the last bit in every byte in @[key] to reflect the parity.
      *! If a seven byte key is used, it will be expanded into eight
      *! bytes. If a key longer than eight characters is used, it will
@@ -983,7 +983,7 @@ PIKECLASS DES3
       cipher->meta = &pike_des3;
     }
 
-  /*! @decl string fix_parity(string key)
+  /*! @decl string(0..255) fix_parity(string(0..255) key)
    *! Sets the last bit in every byte in @[key] to reflect the parity.
    *! If a 21 byte key is used, it will be expanded into 24
    *! bytes. If a key longer than 24 characters is used, it will
@@ -1552,12 +1552,12 @@ PIKECLASS CBC
     safe_apply(THIS->object, "key_size", args);
   }
 
-  /*! @decl this_program set_encrypt_key(string key, int|void flags)
+  /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for encrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
    */
-  PIKEFUN object set_encrypt_key(string key, int|void flags)
+  PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
@@ -1568,12 +1568,12 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
-  /*! @decl this_program set_decrypt_key(string key, int|void flags)
+  /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
    *!
    *! Prepare the cipher and the wrapper for decrypting with the given
    *! @[key]. The @[key] memory will be cleared before released.
    */
-  PIKEFUN object set_decrypt_key(string key, int|void flags)
+  PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->block_size);
@@ -1584,12 +1584,12 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
-  /*! @decl this_program set_iv(string iv)
+  /*! @decl this_program set_iv(string(0..255) iv)
    *!
    *! Set the initialization vector to @[iv]. The @[iv] memory will be
    *! cleared before released.
    */
-  PIKEFUN object set_iv(string iv)
+  PIKEFUN object set_iv(string(0..255) iv)
     optflags OPT_SIDE_EFFECT;
   {
     assert(THIS->iv);
@@ -1601,7 +1601,7 @@ PIKECLASS CBC
     RETURN this_object();
   }
 
-  /*! @decl string(0..255) crypt(string data)
+  /*! @decl string(0..255) crypt(string(0..255) data)
    *!
    *! Encrypt/decrypt @[data] and return the result. @[data] must
    *! be an integral number of blocks.
@@ -1609,7 +1609,7 @@ PIKECLASS CBC
    *! Neither the input or output data is not automatically memory
    *! scrubbed, unless @[String.secure] has been called on the data.
    */
-  PIKEFUN string(0..255) crypt(string data)
+  PIKEFUN string(0..255) crypt(string(0..255) data)
   {
     struct pike_string *result;
     ONERROR uwp;
@@ -2194,7 +2194,7 @@ PIKECLASS Proxy {
     safe_apply(THIS->object, "key_size", args);
   }
 
-  /*! @decl this_program set_encrypt_key(string key)
+  /*! @decl this_program set_encrypt_key(string(0..255) key)
    *!
    *! Set the encryption key. The @[key] memory will be cleared before
    *! released.
@@ -2202,7 +2202,7 @@ PIKECLASS Proxy {
    *! @note
    *!   As a side-effect any buffered data will be cleared.
    */
-  PIKEFUN object set_encrypt_key(string key)
+  PIKEFUN object set_encrypt_key(string(0..255) key)
     optflags OPT_SIDE_EFFECT;
   {
     THIS->backlog_len = 0;
@@ -2212,7 +2212,7 @@ PIKECLASS Proxy {
     RETURN this_object();
   }
 
-  /*! @decl this_program set_decrypt_key(string key)
+  /*! @decl this_program set_decrypt_key(string(0..255) key)
    *!
    *! Set the decryption key. The @[key] memory will be cleared before
    *! released.
@@ -2220,7 +2220,7 @@ PIKECLASS Proxy {
    *! @note
    *!   As a side-effect any buffered data will be cleared.
    */
-  PIKEFUN object set_decrypt_key(string key)
+  PIKEFUN object set_decrypt_key(string(0..255) key)
     optflags OPT_SIDE_EFFECT;
   {
     THIS->backlog_len = 0;
@@ -2230,7 +2230,7 @@ PIKECLASS Proxy {
     RETURN this_object();
   }
 
-  /*! @decl string(0..255) crypt(string data)
+  /*! @decl string(0..255) crypt(string(0..255) data)
    *!
    *! Encrypt or decrypt some data.
    *!
@@ -2241,7 +2241,7 @@ PIKECLASS Proxy {
    *! Neither the input or output data is not automatically memory
    *! scrubbed, unless @[String.secure] has been called on the data.
    */
-  PIKEFUN string(0..255) crypt(string data) {
+  PIKEFUN string(0..255) crypt(string(0..255) data) {
     unsigned char *result;
     ptrdiff_t roffset = 0;
     ptrdiff_t soffset = 0;
@@ -2406,7 +2406,7 @@ PIKECLASS Proxy {
     safe_apply(THIS->object, "crypt", 1);
   }
 
-  /*! @decl string(0..255) unpad(string data, void|int method)
+  /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
    *!
    *! Decrypt and unpad a block of data. Neither the input or output
    *! data is not automatically memory scrubbed, unless
@@ -2428,7 +2428,7 @@ PIKECLASS Proxy {
    *! @seealso
    *!   @[pad()]
    */
-  PIKEFUN string(0..255) unpad(string str, void|int method) {
+  PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
     ptrdiff_t len;
     int m = 0;
 
@@ -2489,10 +2489,10 @@ PIKECLASS Proxy {
     free_string(str);
   }
 
-  /*! @decl this_program set_iv(string iv)
+  /*! @decl this_program set_iv(string(0..255) iv)
    *! Set the initialization vector to @[iv].
    */
-  PIKEFUN object set_iv(string iv)
+  PIKEFUN object set_iv(string(0..255) iv)
     optflags OPT_SIDE_EFFECT;
   {
     apply(THIS->object, "set_iv", args);
