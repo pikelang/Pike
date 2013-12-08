@@ -32,7 +32,7 @@ int client_use_sni = 0;
 
 //! Host names to send to the server when using the Server Name
 //! extension.
-array(string) client_server_names = ({});
+array(string(0..255)) client_server_names = ({});
 
 /* For client authentication */
 
@@ -42,7 +42,7 @@ Crypto.RSA client_rsa;
 
 //! An array of certificate chains a client may present to a server
 //! when client certificate authentication is requested.
-array(array(string)) client_certificates = ({});
+array(array(string(0..255))) client_certificates = ({});
 
 //! A function which will select an acceptable client certificate for
 //! presentation to a remote server. This function will receive the
@@ -51,8 +51,8 @@ array(array(string)) client_certificates = ({});
 //! return an array of strings containing a certificate chain, with
 //! the client certificate first, (and the root certificate last, if
 //! applicable.)
-function (.context,array(int),array(string):array(string))client_certificate_selector
-  = internal_select_client_certificate;
+function(.context,array(int),array(string(0..255)):array(string(0..255)))
+  client_certificate_selector = internal_select_client_certificate;
 
 //! A function which will select an acceptable server certificate for
 //! presentation to a client. This function will receive the SSL
@@ -63,8 +63,8 @@ function (.context,array(int),array(string):array(string))client_certificate_sel
 //!
 //! The default implementation will select a certificate chain for a
 //! given server based on values contained in @[sni_certificates].
-function (.context,array(string):array(string)) select_server_certificate_func 
-  = internal_select_server_certificate;
+function (.context,array(string(0..255)):array(string(0..255)))
+  select_server_certificate_func = internal_select_server_certificate;
 
 //! A function which will select an acceptable server key for
 //! presentation to a client. This function will receive the SSL
@@ -180,17 +180,17 @@ Crypto.DSA dsa;
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
 //! default set to @[Crypto.Random.random_string].
-function(int:string) random = Crypto.Random.random_string;
+function(int:string(0..255)) random = Crypto.Random.random_string;
 
 //! The server's certificate, or a chain of X509.v3 certificates, with
 //! the server's certificate first and root certificate last.
-array(string) certificates;
+array(string(0..255)) certificates;
 
 //! A mapping containing certificate chains for use by SNI (Server
 //! Name Indication). Each entry should consist of a key indicating
 //! the server hostname and the value containing the certificate chain
 //! for that hostname.
-mapping(string:array(string)) sni_certificates = ([]);
+mapping(string:array(string(0..255))) sni_certificates = ([]);
 
 //! A mapping containing private keys for use by SNI (Server Name
 //! Indication). Each entry should consist of a key indicating the
@@ -213,11 +213,12 @@ array(int) preferred_suites;
 
 //! List of advertised protocols using using TLS next protocol
 //! negotiation.
-array(string) advertised_protocols;
+array(string(0..255)) advertised_protocols;
 
 //! Protocols to advertise during handshake using the next protocol
 //! negotiation extension. Currently only used together with spdy.
-void advertise_protocols(string ... protos) {
+void advertise_protocols(string(0..255) ... protos)
+{
     advertised_protocols = protos;
 }
 
@@ -409,8 +410,8 @@ void forget_old_sessions()
 .session new_session()
 {
   .session s = .session();
-  s->identity = (use_cache) ? sprintf("%4cPikeSSL3%4c",
-				      time(), session_number++) : "";
+  s->identity = (use_cache) ?
+    [string(0..255)]sprintf("%4cPikeSSL3%4c", time(), session_number++) : "";
   return s;
 }
 
@@ -460,14 +461,15 @@ private void update_authorities()
                             subject->get_der() });
 }
 
-private array(string) internal_select_server_certificate(.context context,
-  array(string) server_names)
+private array(string(0..255))
+  internal_select_server_certificate(.context context,
+				     array(string(0..255)) server_names)
 {
-  array(string) certs;
+  array(string(0..255)) certs;
 
   if(server_names && sizeof(server_names))
   {
-    foreach(server_names;; string sn)
+    foreach(server_names;; string(0..255) sn)
     {
       if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
         return certs;
@@ -495,8 +497,10 @@ private object internal_select_server_key(.context context,
 }
 
 // FIXME: we only really know that RSA and DSS keys will get caught here.
-private array(string) internal_select_client_certificate(.context context, 
-  array(int) acceptable_types, array(string) acceptable_authority_dns)
+private array(string(0..255))
+  internal_select_client_certificate(.context context,
+				     array(int) acceptable_types,
+				     array(string) acceptable_authority_dns)
 {
   if(!context->client_certificates|| 
          ![int]sizeof((context->client_certificates)))

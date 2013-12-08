@@ -55,11 +55,13 @@ int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 
 // RFC 5746-related fields
 int secure_renegotiation;
-string client_verify_data = "";	// 3.2: Initially of zero length for both the
-string server_verify_data = "";	//      ClientHello and the ServerHello.
+string(0..255) client_verify_data = "";
+string(0..255) server_verify_data = "";
+// 3.2: Initially of zero length for both the
+//      ClientHello and the ServerHello.
 
 // RFC 4366 3.1
-array(string) server_names;
+array(string(0..255)) server_names;
 
 //! The active @[Cipher.KeyExchange] (if any).
 .Cipher.KeyExchange ke;
@@ -82,12 +84,12 @@ array(array(int)) signature_algorithms = ({
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
-array(string) client_cert_distinguished_names;
+array(string(0..255)) client_cert_distinguished_names;
 
 
 //! Random cookies, sent and received with the hello-messages.
-string client_random;
-string server_random;
+string(0..255) client_random;
+string(0..255) server_random;
 
 constant Session = SSL.session;
 constant Packet = SSL.packet;
@@ -95,7 +97,7 @@ constant Alert = SSL.alert;
 
 int has_next_protocol_negotiation;
 int has_application_layer_protocol_negotiation;
-string next_protocol;
+string(0..255) next_protocol;
 
 #ifdef SSL3_PROFILING
 int timestamp;
@@ -104,9 +106,9 @@ void addRecord(int t,int s) {
 }
 #endif
 
-private array(string) select_server_certificate()
+private array(string(0..255)) select_server_certificate()
 {
-  array(string) certs;
+  array(string(0..255)) certs;
   if(context->select_server_certificate_func)
     certs = context->select_server_certificate_func(context, server_names);
   if(!certs)
@@ -129,7 +131,7 @@ private object select_server_key()
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
 
-string handshake_messages;
+string(0..255) handshake_messages;
 
 Packet handshake_packet(int type, string data)
 {
@@ -188,7 +190,7 @@ Packet server_hello_packet()
            context->advertised_protocols) {
     extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
     ADT.struct extension = ADT.struct();
-    foreach (context->advertised_protocols;; string proto) {
+    foreach (context->advertised_protocols;; string(0..255) proto) {
       extension->put_var_string(proto, 1);
     }
     extensions->put_var_string(extension->pop_data(), 2);
@@ -268,13 +270,14 @@ Packet client_hello()
 
     // We list all hashes and signature formats that we support.
     ADT.struct extension = ADT.struct();
-    string ext = (string)(map(sort(indices(HASH_lookup)),
-			      lambda(int h) {
-				return ({
-				  h, SIGNATURE_rsa,
-				  h, SIGNATURE_dsa,
-				});
-			      })*({}));
+    string(0..255) ext =
+      (string(0..255))(map(sort(indices(HASH_lookup)),
+			   lambda(int h) {
+			     return ({
+			       h, SIGNATURE_rsa,
+			       h, SIGNATURE_dsa,
+			     });
+			   })*({}));
     extension->put_var_string(ext, 2);
     extensions->put_uint(EXTENSION_signature_algorithms, 2);
     extensions->put_var_string(extension->pop_data(), 2);
@@ -285,7 +288,7 @@ Packet client_hello()
     ADT.struct extension = ADT.struct();
     if(context->client_server_names)
     {
-      foreach(context->client_server_names;; string server_name)
+      foreach(context->client_server_names;; string(0..255) server_name)
       {
         ADT.struct hostname = ADT.struct();
         hostname->put_uint(0, 1); // hostname
@@ -306,7 +309,7 @@ Packet client_hello()
     ADT.struct extension = ADT.struct();
     extension->put_uint( [int]Array.sum(Array.map(prots, sizeof)) +
                          sizeof(prots), 2);
-    foreach(context->advertised_protocols;; string proto)
+    foreach(context->advertised_protocols;; string(0..255) proto)
       extension->put_var_string(proto, 1);
 
     SSL3_DEBUG_MSG("SSL.handshake: Adding ALPN extension.\n");
@@ -416,7 +419,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
    * appropriate, and then ServerHelloDone.
    */
 
-  array(string) certs;
+  array(string(0..255)) certs;
   SSL3_DEBUG_MSG("Selecting server key.\n");
 
   // populate the key to be used for the session.
@@ -468,7 +471,7 @@ Packet change_cipher_packet()
   return packet;
 }
 
-string hash_messages(string sender)
+string(0..255) hash_messages(string(0..255) sender)
 {
   if(version[1] == PROTOCOL_SSL_3_0) {
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
@@ -484,10 +487,10 @@ string hash_messages(string sender)
   }
 }
 
-Packet finished_packet(string sender)
+Packet finished_packet(string(0..255) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
-  string verify_data = hash_messages(sender);
+  string(0..255) verify_data = hash_messages(sender);
   if (handshake_state >= STATE_client_min) {
     // We're the client.
     client_verify_data = verify_data;
@@ -503,12 +506,13 @@ Packet certificate_request_packet(SSL.context context)
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-    struct->put_var_string(sprintf("%{%2H%}",context->authorities_cache),2);
+    struct->put_var_string([string(0..255)]
+			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
 }
 
-Packet certificate_packet(array(string) certificates)
+Packet certificate_packet(array(string(0..255)) certificates)
 {
   ADT.struct struct = ADT.struct();
   int len = 0;
@@ -517,15 +521,15 @@ Packet certificate_packet(array(string) certificates)
     len = `+( @ Array.map(certificates, sizeof));
   //  SSL3_DEBUG_MSG("SSL.handshake: certificate_message size %d\n", len);
   struct->put_uint(len + 3 * sizeof(certificates), 3);
-  foreach(certificates, string cert)
+  foreach(certificates, string(0..255) cert)
     struct->put_var_string(cert, 3);
 
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
 }
 
-string server_derive_master_secret(string data)
+string(0..255) server_derive_master_secret(string(0..255) data)
 {
-  string|int res =
+  string(0..255)|int res =
     ke->server_derive_master_secret(data, client_random, server_random, version);
   if (stringp(res)) return [string]res;
   send_packet(Alert(ALERT_fatal, [int]res, version[1]));
@@ -640,7 +644,7 @@ protected string fmt_cipher_suites(array(int) s)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string data, string raw)
+int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 {
   ADT.struct input = ADT.struct(data);
 #ifdef SSL3_PROFILING
@@ -855,7 +859,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
                 // preference order, it is the server preference that
                 // wins.
                 next_protocol = 0;
-                foreach(context->advertised_protocols;; string prot)
+                foreach(context->advertised_protocols;; string(0..255) prot)
                   if( has_value(protocols, prot) )
                     next_protocol = prot;
                 if( !next_protocol )
@@ -1032,7 +1036,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  version[1] = client_version[1];
 	}
 
-	string challenge;
+	string(0..255) challenge;
 	if (catch{
 	    // FIXME: Support for restarting sessions?
 	  cipher_suites = input->get_fix_uint_array(3, ci_len/3);
@@ -1087,10 +1091,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      }
     case HANDSHAKE_finished:
      {
-       string my_digest;
-       string digest;
+       string(0..255) my_digest;
+       string(0..255) digest;
        
-	SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
+       SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
        if(version[1] == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
@@ -1556,7 +1560,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
           ADT.struct s = ADT.struct(input->get_fix_string(num_distinguished_names));
           while(!s->is_empty())
           {
-            object asn = Standards.ASN1.Decode.simple_der_decode((string)s->get_var_string(2));
+            object asn =
+	      Standards.ASN1.Decode.simple_der_decode(s->get_var_string(2));
             if(object_program(asn) != Standards.ASN1.Types.Sequence)
             {
                     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1588,9 +1593,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
         // we have so that we only send certificates that match what they 
         // want.
 
-        array(string) certs = context->client_certificate_selector(context, 
-                                          client_cert_types, 
-                                          client_cert_distinguished_names);
+        array(string(0..255)) certs =
+	  context->client_certificate_selector(context,
+					       client_cert_types,
+					       client_cert_distinguished_names);
         if(!certs || !sizeof(certs))
           certs = ({});
 
