@@ -670,7 +670,7 @@ constant CIPHER_SUITES =
    TLS_dhe_rsa_with_camellia_256_cbc_sha256: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha256 }),
 #endif /* Crypto.Camellia */
 
-#if constant(Nettle.GCM)
+#if constant(Crypto.GCM)
    TLS_rsa_with_aes_128_gcm_sha256:	({ KE_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dhe_rsa_with_aes_128_gcm_sha256:	({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dhe_dss_with_aes_128_gcm_sha256:	({ KE_dhe_dss, CIPHER_aes, HASH_sha256, MODE_gcm }),
@@ -678,7 +678,15 @@ constant CIPHER_SUITES =
    TLS_rsa_with_aes_256_gcm_sha384:	({ KE_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_rsa_with_aes_256_gcm_sha384:	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_dss_with_aes_256_gcm_sha384:	({ KE_dhe_dss, CIPHER_aes256, HASH_sha384, MODE_gcm }),
-#endif /* Nettle.GCM */
+#if constant(Crypto.Camellia)
+   TLS_rsa_with_camellia_128_gcm_sha256:({ KE_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_rsa_with_camellia_256_gcm_sha384:({ KE_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+   TLS_dhe_rsa_with_camellia_128_gcm_sha256:({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_dhe_rsa_with_camellia_256_gcm_sha384:({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+   TLS_dhe_dss_with_camellia_128_gcm_sha256:({ KE_dhe_dss, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_dhe_dss_with_camellia_256_gcm_sha384:({ KE_dhe_dss, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.Camellia */
+#endif /* Crypto.GCM */
 ]);
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
