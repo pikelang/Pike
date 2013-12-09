@@ -927,13 +927,22 @@ class Camellia
 }
 #endif
 
-#if constant(Nettle.GCM)
+#if constant(Crypto.GCM)
 //!
 class AES_GCM
 {
   inherit Crypto.GCM.State;
   protected void create() { ::create(Crypto.AES()); }
 }
+
+#if constant(Crypto.Camellia)
+//!
+class Camellia_GCM
+{
+  inherit Crypto.GCM.State;
+  protected void create() { ::create(Crypto.Camellia()); }
+}
+#endif
 #endif
 
 //! Signing using RSA.
@@ -1343,9 +1352,18 @@ array lookup(int suite, ProtocolVersion|int version,
     switch(algorithms[3]) {
     case MODE_cbc:
       break;
-#if constant(Nettle.GCM)
+#if constant(Crypto.GCM)
     case MODE_gcm:
-      res->bulk_cipher_algorithm = AES_GCM;
+      if (res->bulk_cipher_algorithm == AES) {
+	res->bulk_cipher_algorithm = AES_GCM;
+#if constant(Crypto.Camellia)
+      } else if (res->bulk_cipher_algorithm == Camellia) {
+	res->bulk_cipher_algorithm = Camellia_GCM;
+#endif
+      } else {
+	// Unsupported.
+	return 0;
+      }
       res->cipher_type = CIPHER_aead;
       res->iv_size = 4;			// Length of the salt.
       res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
