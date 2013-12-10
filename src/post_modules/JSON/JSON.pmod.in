@@ -192,7 +192,7 @@ class Validator
     //! @returns
     //!   1 if the specified @tt{value@} is either @[Standards.JSON.true] or
     //!   @[Standards.JSON.false].
-    private int(0..1) is_JSON_boolen(mixed value)
+    private int(0..1) is_JSON_boolean(mixed value)
     {
 	return equal(value, true) || equal(value, false);
     }
@@ -208,7 +208,7 @@ class Validator
     {
 	if (has_index(schema, property))
 	{
-	    if (!is_JSON_boolen(schema[property]))
+	    if (!is_JSON_boolean(schema[property]))
 		error("Invalid schema: Expected %s to be a boolean, got %O\n",
 		      property, schema[property]);
 	    return 1;
@@ -563,7 +563,7 @@ class Validator
 	    error("Invalid schema: Expected type for %s to be a string or an array of strings, got %O\n",
 		  key, schema->type);
 
-	if (is_JSON_boolen(value) && has_value(expected_types, "boolean"))
+	if (is_JSON_boolean(value) && has_value(expected_types, "boolean"))
 	    return 0;
 
 	else if (equal(value, null) &&
@@ -734,7 +734,7 @@ class Validator
 		if (sizeof(value_additional))
 		{
 		    if (!has_index(schema, "additionalItems") ||
-			(is_JSON_boolen(schema->additionalItems) &&
+			(is_JSON_boolean(schema->additionalItems) &&
 			 !schema->additionalItems))
 			errors += ({
 			    sprintf("JSON invalid: Array %O has more items than schema %O\n",
@@ -743,7 +743,7 @@ class Validator
 			foreach (value_additional, mixed item)
 			    errors += ({ validate_properties(
 					     key, item, schema->additionalItems) });
-		    else if (!is_JSON_boolen(schema->additionalItems))
+		    else if (!is_JSON_boolean(schema->additionalItems))
 			error("Invalid schema: Expected %O->additionalItems to be a boolean or a schema, got %O\n",
 			      key, schema->additionalItems);
 		}
@@ -853,7 +853,7 @@ class Validator
 	mapping additionalProperties;
 	if (has_index(schema, "additionalProperties"))
 	{
-	    if (is_JSON_boolen(schema->additionalProperties))
+	    if (is_JSON_boolean(schema->additionalProperties))
 		additionalProperties_allowed = schema->additionalProperties;
 	    else if (mappingp(schema->additionalProperties))
 		additionalProperties = schema->additionalProperties;
