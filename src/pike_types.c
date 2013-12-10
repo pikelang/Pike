@@ -1207,6 +1207,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     /* Keep the attribute. */
     push_finished_type_with_markers(type->cdr, markers, marker_set);
     push_type_attribute((struct pike_string *)type->car);
+    goto done;
   }
   /* FIXME: T_SCOPE */
 
@@ -1269,6 +1270,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     /* push_type has sufficient magic to recreate the type. */
     push_type(type->type);
   }
+ done:
   TYPE_STACK_DEBUG("push_finished_type_with_markers");
 }
 
