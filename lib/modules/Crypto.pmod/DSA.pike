@@ -107,9 +107,10 @@ protected array(Gmp.mpz) nist_primes(int l)
     string(0..255) seed = random(SEED_LENGTH);
     Gmp.mpz s = Gmp.mpz(seed, 256);
 
-    string(0..255) h = nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) );
+    string(0..255) h = [string(0..255)]
+      (nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) ));
 
-    h = sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
+    h = [string(0..255)]sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
 
     Gmp.mpz q = Gmp.mpz(h, 256);
 
@@ -129,7 +130,7 @@ protected array(Gmp.mpz) nist_primes(int l)
 	buffer = nist_hash( [object(Gmp.mpz)](s + j + k) ) + buffer;
 
       buffer = buffer[sizeof(buffer) - L/8 ..];
-      buffer[0] = buffer[0] | 0x80;
+      buffer[0] = [int(0..255)](buffer[0] | 0x80);
 
       Gmp.mpz p = Gmp.mpz(buffer, 256);
 
