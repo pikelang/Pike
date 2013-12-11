@@ -949,7 +949,7 @@ static const unsigned char hexdecode[256] =
 };
 
 PMOD_EXPORT
-PIKEFUN string string2hex(string s)
+    PIKEFUN string(0..255) string2hex(string s)
   errname String.string2hex;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -982,7 +982,7 @@ PIKEFUN string string2hex(string s)
  *!   @[string2hex()]
  */
 PMOD_EXPORT
-PIKEFUN string hex2string(string hex)
+PIKEFUN string(0..255) hex2string(string hex)
   errname String.hex2string;
   optflags OPT_TRY_OPTIMIZE;
 {
