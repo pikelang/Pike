@@ -10266,11 +10266,11 @@ void init_builtin_efuns(void)
 
 /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value", f_encode_value,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
   /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
 /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,

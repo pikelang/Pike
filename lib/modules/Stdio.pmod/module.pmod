@@ -2307,7 +2307,7 @@ void report_file_open_places (string file)
 //! @seealso
 //! @[read_bytes()], @[write_file()]
 //!
-string read_file(string filename,void|int start,void|int len)
+string(0..255) read_file(string filename,void|int start,void|int len)
 {
   FILE f;
   string ret;
@@ -2386,7 +2386,7 @@ string read_file(string filename,void|int start,void|int len)
 //! @seealso
 //! @[read_file], @[write_file()], @[append_file()]
 //!
-string read_bytes(string filename, void|int start,void|int len)
+string(0..255) read_bytes(string filename, void|int start,void|int len)
 {
   string ret;
   File f = File();
