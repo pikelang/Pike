@@ -242,7 +242,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       push_text("unknown");
       break;
     }
-    push_text("length"); push_int(field->length);
+    push_text("length"); push_int64(field->length);
     push_text("max_length"); push_int(field->max_length);
 
     push_text("flags");
