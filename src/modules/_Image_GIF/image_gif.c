@@ -1702,7 +1702,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       if (debug) fprintf(stderr,"code=%d 0x%02x bits=%d\n",n,n,bits);
 #endif
 
-      if (n==m) 
+      if (n==m && last!=n) 
       {
 	// Copy the last color from the previous sequence
 	 c[n].prev=last;
@@ -1769,7 +1769,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
 	 last_last_seq = myc;  // Keep for use in next iteration
 
-	 if (last!=clearcode)
+	 if (last!=clearcode && last!=m)
 	 {
 	    c[m].prev=last;
 	    c[m].len=c[last].len+1;
