@@ -812,13 +812,13 @@ static void img_skewy(struct image *src,
    if (!d) return;
    s=src->img;
 
-   THREADS_ALLOW();
-   ymod=diff/src->xsize;
-   rgb=dest->rgb;
-
    if (!src->xsize || !src->ysize) {
      return;
    }
+
+   THREADS_ALLOW();
+   ymod=diff/src->xsize;
+   rgb=dest->rgb;
 
 CHRONO("skewy begin\n");
 
