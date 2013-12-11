@@ -98,6 +98,7 @@
 %token TOK_OPTIONAL
 %token TOK_SAFE_INDEX
 %token TOK_SAFE_START_INDEX
+%token TOK_BITS
 
 
 %right '='
@@ -290,6 +291,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> string
 %type <n> TOK_STRING
 %type <n> TOK_NUMBER
+%type <n> TOK_BITS
 %type <n> optional_attributes
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
@@ -1498,6 +1500,11 @@ expected_dot_dot: TOK_DOT_DOT
 opt_int_range: /* Empty */
   {
     push_int_type(MIN_INT_TYPE, MAX_INT_TYPE);
+  }
+  | '(' TOK_BITS ')'
+  {
+      push_int_type( 0, (1<<$2->u.sval.u.integer)-1 );
+      free_node( $2 );
   }
   | '(' number_or_minint expected_dot_dot number_or_maxint ')'
   {

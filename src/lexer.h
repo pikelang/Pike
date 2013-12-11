@@ -885,7 +885,7 @@ unknown_directive:
     case '0':
     {
       int base = 0;
-      
+
       if(GOBBLE('b') || GOBBLE('B'))
       {
 	base = 2;
@@ -909,7 +909,7 @@ unknown_directive:
 	return TOK_NUMBER;
       }
     }
-  
+
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
@@ -985,7 +985,16 @@ unknown_directive:
 	free_svalue(&sval);
 	debug_malloc_touch(yylval->n);
 	lex->pos=p2;
-	if (lex_isidchar (LOOK())) {
+	if (lex_isidchar (LOOK()))
+        {
+          if( GOBBLE('b') )
+            if( GOBBLE( 'i' ) )
+              if( GOBBLE( 't' ) )
+              {
+                GOBBLE('s');
+                return TOK_BITS;
+              }
+
 	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
