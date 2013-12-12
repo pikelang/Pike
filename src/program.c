@@ -3930,6 +3930,7 @@ struct program *end_first_pass(int finish)
     struct pike_string *name;
     struct pike_type *type;
     int id_flags;
+    int opt_flags;
     int j;
     if (prog->identifier_references[e].inherit_offset) continue;
     if (!is_variant_dispatcher(prog, e)) continue;
@@ -3939,6 +3940,7 @@ struct program *end_first_pass(int finish)
     name = id->name;
     type = NULL;
     id_flags = 0;
+    opt_flags = 0;
 
     CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
 
@@ -3949,6 +3951,7 @@ struct program *end_first_pass(int finish)
       struct reference *ref = prog->identifier_references + j;
       id = ID_FROM_INT(prog, j);
       id_flags |= ref->id_flags;
+      opt_flags |= id->opt_flags;
       /* NB: The dispatcher needs the variant references to
        *     not get overloaded for the ::-operator to work.
        */
@@ -3973,6 +3976,7 @@ struct program *end_first_pass(int finish)
     id = ID_FROM_INT(prog, e);
     free_type(id->type);
     id->type = type;
+    id->opt_flags = opt_flags;
     prog->identifier_references->id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
   next_ref:
     ;
