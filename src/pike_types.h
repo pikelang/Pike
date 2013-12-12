@@ -70,6 +70,8 @@ extern size_t pike_type_hash_size;
 
 #define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
 
+#define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
+
 /*
  * new_check_call(), check_splice_call() and get_first_arg_type() flags
  */

@@ -1085,6 +1085,30 @@ void debug_push_reverse_type(unsigned int type)
   TYPE_STACK_DEBUG("push_reverse_type");
 }
 
+static int is_int_type(struct pike_type *t)
+{
+ loop:
+  switch(t->type) {
+  case T_INT:
+  case T_ZERO:
+  case T_VOID:
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    return 1;
+  case T_OR:
+  case T_AND:
+    return is_int_type(t->car) && is_int_type(t->cdr);
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+  case PIKE_T_SCOPE:
+  case T_ASSIGN:
+    t = t->cdr;
+    goto loop;
+  default:
+    return 0;
+  }
+}
+
 /* The marker_set is used as follows:
  *
  *   PT_FLAG_MARKER_n	Indicates that marker #n should be kept after
@@ -1118,7 +1142,11 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       fprintf(stderr, "\n");
     }
 #endif /* PIKE_TYPE_DEBUG */
-    push_finished_type(type);
+    if ((marker_set & PT_FLAG_INT_ONLY) && !is_int_type(type)) {
+      push_finished_type(int_type_string);
+    } else {
+      push_finished_type(type);
+    }
     return;
   }
   if ((type->type >= '0') && (type->type <= '9')) {
@@ -1139,7 +1167,8 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 #endif
       /* FIXME: We probably ought to switch to the other marker set here. */
       markers[m] = NULL;
-      push_finished_type_with_markers(type, markers, 0);
+      push_finished_type_with_markers(type, markers,
+				      marker_set & PT_FLAG_INT_ONLY);
       if (type->flags & (PT_FLAG_MARKER|PT_FLAG_ASSIGN)) {
 	push_scope_type(0);
       }
@@ -1265,6 +1294,10 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       /* In all other cases type->cdr will be a valid node if is not NULL. */
       push_finished_type_with_markers(type->cdr, markers, cdr_set);
     }
+    /* Make sure to filter invalid nodes from the marker in case
+     * it is a string type.
+     */
+    if (type->type == PIKE_T_STRING) car_set |= PT_FLAG_INT_ONLY;
     /* In all other cases type->car will be a valid node. */
     push_finished_type_with_markers(type->car, markers, car_set);
     /* push_type has sufficient magic to recreate the type. */
