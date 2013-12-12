@@ -250,7 +250,7 @@ int(0..1) verify(string msg, Crypto.Hash h, Gmp.mpz sign)
 //!   Document this function.
 string sha_sign(string message, mixed|void r)
 {
-  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash([string(8bit)]message));
   return cooked_sign(s);r;
 }
   
@@ -258,7 +258,7 @@ string sha_sign(string message, mixed|void r)
 //!   Document this function.
 int sha_verify(string message, string signature)
 {
-  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
+  string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash([string(8bit)]message));
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
@@ -269,14 +269,14 @@ int sha_verify(string message, string signature)
 
 string md5_sign(string message, mixed|void r)
 {
-  string s = Crypto.MD5->hash(message);
+  string s = Crypto.MD5->hash([string(8bit)]message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return cooked_sign(s);r;
 }
 
 int md5_verify(string message, string signature)
 {
-  string s = Crypto.MD5->hash(message);
+  string s = Crypto.MD5->hash([string(8bit)]message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
