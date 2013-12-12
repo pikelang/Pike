@@ -1961,25 +1961,41 @@ static void f_sprintf_76(INT32 args)
   push_string(finish_string_builder(&r));
 }
 
+#define PSAT_INVALID	1
+#define PSAT_MARKER	2
+
 /* Push the types corresponding to the %-directives in the format string.
  *
  *   severity is the severity level if any syntax errors
  *            are encountered in the format string.
  *
- * Returns 1 on success.
- *         0 on unhandled (ie position-dependent args).
- *        -1 on syntax error.
+ * Returns -1 on syntax error.
+ *         LSB 1 on unhandled (ie position-dependent args).
+ *         LSB 0 on success.
+ *
+ *         PSAT_MARKER is set if the marker is in use.
+ *
+ *         *min_charp is <= *max_charp if a static character range
+ *         has been detected (eg constant string segment, etc).
  */
-static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
+static int push_sprintf_argument_types(PCHARP format,
+				       ptrdiff_t format_len,
+				       int ret,
+				       int int_marker,
+				       p_wchar2 *min_charp,
+				       p_wchar2 *max_charp,
 				       int severity)
 {
   int tmp, setwhat, e;
-  int ret = 1;		/* OK */
+  int uses_marker = 0;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
 
   PCHARP a,begin;
   PCHARP format_end=ADD_PCHARP(format,format_len);
+
+  p_wchar2 min_char = *min_charp;
+  p_wchar2 max_char = *max_charp;
 
   check_c_stack(500);
 
@@ -1988,11 +2004,16 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
     int num_snurkel, column;
+    ptrdiff_t width = 0;
+    p_wchar2 c;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
-      for(e=0;INDEX_PCHARP(a,e)!='%' &&
-	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++);
+      for(e=0;(c = INDEX_PCHARP(a,e)) != '%' &&
+	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++) {
+	if (c < min_char) min_char = c;
+	if (c > max_char) max_char = c;
+      }
       INC_PCHARP(a,e-1);
       continue;
     }
@@ -2039,6 +2060,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '0':
 	if (setwhat<2) continue;
+	/* FALL_THROUGH */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -2052,8 +2074,15 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 		     0, "Illegal width %d.", tmp);
 	    ret = -1;
 	  }
+	  width = tmp;
+	  if (width) {
+	    if (' ' < min_char) min_char = ' ';
+	    if (' ' > max_char) max_char = ' ';
+	  }
+	/* FALL_THROUGH */
 	case 2: case 3: case 4: break;
 	}
+	setwhat++;
 	continue;
 
       case ';': setwhat=3; continue;
@@ -2079,10 +2108,18 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 		   0, "Can not use both the modifiers / and =.");
 	  ret = -1;
 	}
+	if ('\n' < min_char) min_char = '\n';
+	if (' ' > max_char) max_char = ' ';
         continue;
 
-      case '#': case '$': case '|': case ' ': case '+':
-      case '!': case '^': case '>': case '_':
+      case '#': case '$': case '>':
+	if ('\n' < min_char) min_char = '\n';
+	/* FALL_THROUGH */
+      case '|': case ' ': case '+':
+	if (' ' > max_char) max_char = ' ';
+	if (' ' < min_char) min_char = ' ';
+	/* FALL_THROUGH */
+      case '!': case '^': case '_':
 	continue;
 
       case '@':
@@ -2093,7 +2130,10 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	tmp=0;
 	for(INC_PCHARP(a,1);
 	    COMPARE_PCHARP(ADD_PCHARP(a, tmp),<,format_end)
-	    && INDEX_PCHARP(a,tmp)!='\'';tmp++);
+	      && (c = INDEX_PCHARP(a,tmp)) != '\'';tmp++) {
+	  if (c < min_char) min_char = c;
+	  if (c > max_char) max_char = c;
+	}
 
 	if (COMPARE_PCHARP(ADD_PCHARP(a, tmp),<,format_end)) {
 	    INC_PCHARP(a,tmp);
@@ -2109,13 +2149,17 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '~':
       {
 	push_finished_type(int_type_string);
+	if (int_marker) {
+	  push_assign_type(int_marker);
+	  uses_marker = 1;
+	}
 	push_type(T_STRING);
 	continue;
       }
 
       case '<':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	if (ret > 0) ret = 0;	/* FAILURE! */
+	ret |= PSAT_INVALID;	/* FAILURE! */
 #if 0
 	if(!lastarg) {
 	  yyreport(severity, type_check_system_string,
@@ -2128,7 +2172,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '[':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	if (ret > 0) ret = 0;	/* FAILURE! */
+	ret |= PSAT_INVALID;	/* FAILURE! */
 	INC_PCHARP(a,1);
 	if(EXTRACT_PCHARP(a)=='*') {
 	  push_int_type(0, /*num_arg*/ MAX_INT32);
@@ -2165,13 +2209,16 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 		     0, "Missing %%} in format string.");
 	    ret = -1;
 	    break;
-	  } else if(INDEX_PCHARP(a,e)=='%') {
+	  } else if((c = INDEX_PCHARP(a,e)) == '%') {
 	    switch(INDEX_PCHARP(a,e+1))
 	    {
 	    case '%': e++; break;
 	    case '}': tmp--; break;
 	    case '{': tmp++; break;
 	    }
+	  } else {
+	    if (c < min_char) min_char = c;
+	    if (c > max_char) max_char = c;
 	  }
 	}
             
@@ -2182,9 +2229,9 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	 *
 	 * ... Unless there was a syntax error...
 	 */
-	if (push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, severity) < 0) {
-	  ret = -1;
-	}
+	ret = push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, ret,
+					  int_marker, &min_char, &max_char,
+					  severity);
 	/* Join the argument types for our array. */
 	push_type(PIKE_T_ZERO);
 	for (cnt = pop_stack_mark(); cnt > 1; cnt--) {
@@ -2202,6 +2249,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '%':
 	num_snurkel = 0;
+	if ('%' < min_char) min_char = '%';
+	if ('%' > max_char) max_char = '%';
 	break;
 
       case 'n':
@@ -2214,16 +2263,44 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 't':
       {
 	push_type(T_MIXED);
+	
+	/* Lower-case ASCII */
+	if ('a' < min_char) min_char = 'a';
+	if ('z' > max_char) max_char = 'z';
 	break;
       }
 
       case 'c':
-      case 'b':
-      case 'o':
-      case 'd':
-      case 'u':
+      {
+	push_object_type(0, 0);
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_type(T_OR);
+	if (!width) {
+	  if (int_marker) {
+	    push_assign_type(int_marker);
+	    ret |= PSAT_MARKER;
+	  }
+	} else {
+	  if (min_char > 0) min_char = 0;
+	  if (max_char < 255) max_char = 255;
+	}
+	break;
+      }
+
       case 'x':
       case 'X':
+	if ('f' > max_char) max_char = 'f';
+	/* FALL_THROUGH */
+      case 'd':
+      case 'u':
+	if ('9' > max_char) max_char = '9';
+	/* FALL_THROUGH */
+      case 'o':
+	if ('7' > max_char) max_char = '7';
+	/* FALL_THROUGH */
+      case 'b':
+	if ('2' > max_char) max_char = '7';
+	if ('+' < min_char) min_char = '+';
       {
 	push_object_type(0, 0);
 	push_int_type(MIN_INT32, MAX_INT32);
@@ -2241,12 +2318,16 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	push_object_type(0, 0);
 	push_type(PIKE_T_FLOAT);
 	push_type(T_OR);
+	if ('e' > max_char) max_char = 'e';
+	if ('+' < min_char) min_char = '+';
 	break;
       }
 
       case 'O':
       {
 	push_type(T_MIXED);
+	max_char = 0x7fffffff;
+	min_char = -0x80000000;
 	break;
       }
 
@@ -2264,6 +2345,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	push_int_type(0, 255);
 	push_type(T_STRING);
 	push_type(T_OR);
+	if (min_char > 0) min_char = 0;
+	if (max_char < 255) max_char = 255;
 	break;
       }
 
@@ -2274,6 +2357,10 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	push_finished_type(int_type_string);
 	push_type(T_STRING);
 	push_type(T_OR);
+	if (int_marker) {
+	  push_assign_type(int_marker);
+	  ret |= PSAT_MARKER;
+	}
 	break;
       }
 
@@ -2282,6 +2369,9 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
     }
     while (num_snurkel--) push_type(T_ARRAY);
   }
+
+  *min_charp = min_char;
+  *max_charp = max_char;
   return ret;
 }
 
@@ -2379,6 +2469,11 @@ static node *optimize_sprintf(node *n)
  *!     if there are @expr{"sprintf_args"@}.
  *! @endstring
  *!
+ *! @returns
+ *!   Returns @[cont_type] with @expr{"sprintf_args"@} replaced by the
+ *!   arguments required by the @[fmt] formatting string, and
+ *!   @expr{"sprintf_result"@} replaced by the resulting string type.
+ *!
  *! @seealso
  *!   @[PikeCompiler()->apply_attribute_constant()], @[sprintf()]
  */
@@ -2391,6 +2486,8 @@ void f___handle_sprintf_format(INT32 args)
   int severity = REPORT_ERROR;
   int found = 0;
   int fmt_count;
+  int marker;
+  int marker_mask;
 
   if (args != 4)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 4);
@@ -2428,6 +2525,15 @@ void f___handle_sprintf_format(INT32 args)
     }
   }
 
+  /* Allocate a marker for accumulating the result type. */
+  marker = '0';
+  marker_mask = PT_FLAG_MARKER_0 | PT_FLAG_ASSIGN_0;
+  while (tmp->flags & marker_mask) {
+    marker++;
+    marker_mask <<= 1;
+  }
+  if (marker > '9') marker = 0;
+
   fmt = Pike_sp[-3].u.string;
   MAKE_CONST_STRING(attr, "sprintf_args");  
 
@@ -2456,18 +2562,48 @@ void f___handle_sprintf_format(INT32 args)
       break;
     }
     if (arg) {
+      p_wchar2 min_char = 0x7fffffff;
+      p_wchar2 max_char = -0x80000000;
+      int ret;
+
       type_stack_mark();
-      switch (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-					  fmt->len, severity)) {
-      case 1:
+      ret = push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+					fmt->len, 0, marker,
+					&min_char, &max_char, severity);
+      switch(ret) {
+      case 0:
+      case PSAT_MARKER:
 	/* Ok. */
 	if (!array_cnt) {
+	  struct pike_type *trailer;
+	  MAKE_CONST_STRING(attr, "sprintf_result");
 	  pop_stack_mark();
 	  push_type(T_VOID);	/* No more args */
 	  while (tmp->type == PIKE_T_FUNCTION) {
 	    tmp = tmp->cdr;
 	  }
-	  push_finished_type(tmp->cdr);	/* Return type */
+	  trailer = tmp->cdr;	/* Return type */
+	  while (trailer->type == PIKE_T_NAME) {
+	    trailer = trailer->cdr;
+	  }
+	  if ((trailer->type == PIKE_T_ATTRIBUTE) &&
+	      (trailer->car == (struct pike_type *)attr)) {
+	    /* Push the derived return type. */
+	    if (min_char <= max_char) {
+	      push_int_type(min_char, max_char);
+	      if (ret & PSAT_MARKER) {
+		push_type(marker);
+		push_type(T_OR);
+	      }
+	    } else if (ret & PSAT_MARKER) {
+	      push_type(marker);
+	    } else {
+	      push_type(PIKE_T_ZERO);
+	    }
+	    push_type(PIKE_T_STRING);
+	  } else {
+	    push_finished_type(tmp->cdr);	/* Return type */
+	  }
 	  push_reverse_type(T_MANY);
 	  fmt_count = pop_stack_mark();
 	  while (fmt_count > 1) {
@@ -2545,13 +2681,29 @@ void f___handle_sprintf_format(INT32 args)
 	  return;
 	}
 	/* FALL_THROUGH */
-      case 0:
+      case PSAT_INVALID:
+      case PSAT_INVALID|PSAT_MARKER:
 	/* There was a position argument or a parse error in strict mode. */
 	pop_stack_mark();
 	pop_stack_mark();
 	type_stack_pop_to_mark();
 	pop_n_elems(args);
-	push_undefined();
+	if (ret & PSAT_MARKER) {
+	  /* Error or marker that we can't trust. */
+	  push_undefined();
+	} else {
+	  /* Position argument, but we don't need to look at the marker. */
+	  type_stack_mark();
+	  if (min_char <= max_char) {
+	    push_int_type(min_char, max_char);
+	  } else {
+	    push_type(T_ZERO);
+	  }
+	  push_type(T_STRING);
+	  push_type(T_MIXED);
+	  push_type(T_MANY);
+	  push_type_value(pop_unfinished_type());
+	}
 	return;
       }
     } else {
@@ -2617,6 +2769,14 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
  */
 
+/*! @decl constant sprintf_result = __attribute__("sprintf_result")
+ *!
+ *!   Type constant used for typing the return value from @[sprintf()].
+ *!
+ *! @seealso
+ *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
+ */
+
 /*! @module String
  */
 
@@ -2667,11 +2827,16 @@ void init_sprintf()
   low_add_efun(attr, &s);
   free_type(s.u.type);
 
+  MAKE_CONST_STRING(attr, "sprintf_result");
+  s.u.type = make_pike_type(tAttr("sprintf_result", tStr));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
   /* function(string|object, mixed ... : string) */
   ADD_EFUN2("sprintf", 
 	    f_sprintf,
 	    tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
-		   tAttr("sprintf_args", tMix), tStr),
+		   tAttr("sprintf_args", tMix), tAttr("sprintf_result", tStr)),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
