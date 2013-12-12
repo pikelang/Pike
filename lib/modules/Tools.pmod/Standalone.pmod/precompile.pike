@@ -1515,7 +1515,7 @@ array generate_overload_func_for(array(FuncData) d,
 #endif /* PRECOMPILE_OVERLOAD_DEBUG */    
 
   array(mapping(string:array(FuncData))) y;
-  if(min_args)
+  if(min_args >= 0)
   {
     y=allocate(min(min_args,16), ([]));
     for(int a=0;a<sizeof(y);a++)
