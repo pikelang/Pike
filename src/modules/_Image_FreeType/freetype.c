@@ -13,12 +13,14 @@
 #ifdef HAVE_LIBFT2
 #ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
+#include <freetype/ftsnames.h>
+#include <freetype/ttnameid.h>
 #else
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_SFNT_NAMES_H
+#include FT_TRUETYPE_IDS_H
 #endif
-#include <freetype/ftsnames.h>
-#include <freetype/ttnameid.h>
 
 #include "pike_macros.h"
 #include "object.h"
