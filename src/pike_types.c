@@ -2074,6 +2074,11 @@ void simple_describe_type(struct pike_type *s)
 		s = s->cdr;
 		continue;
 	      }
+	      if ((char_type->type >= '0') && (char_type->type <= '9')) {
+		fprintf(stderr, "$%c | ", char_type->type);
+		s = s->cdr;
+		continue;
+	      }
 #ifdef PIKE_DEBUG
 	      if (char_type->type != T_INT) {
 		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
@@ -2097,6 +2102,8 @@ void simple_describe_type(struct pike_type *s)
 	    }
 	    if (s->type == T_ZERO) {
 	      fprintf(stderr, "zero");
+	    } else if ((s->type >= '0') && (s->type <= '9')) {
+	      fprintf(stderr, "$%c", s->type);
 	    } else {
 #ifdef PIKE_DEBUG
 	      if (s->type != T_INT) {
@@ -4823,11 +4830,15 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
   }
 
   while((t->type == PIKE_T_NAME) ||
-	(t->type == PIKE_T_ATTRIBUTE)) {
+	(t->type == PIKE_T_ATTRIBUTE) ||
+	(t->type == T_ASSIGN) ||
+	(t->type == T_SCOPE)) {
     t = t->cdr;
   }
   while((index_type->type == PIKE_T_NAME) ||
-        (index_type->type == PIKE_T_ATTRIBUTE)) {
+        (index_type->type == PIKE_T_ATTRIBUTE) ||
+	(index_type->type == T_ASSIGN) ||
+	(index_type->type == T_SCOPE)) {
     index_type = index_type->cdr;
   }
 
@@ -5377,6 +5388,8 @@ static int low_check_indexing(struct pike_type *type,
 
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
+  case T_ASSIGN:
+  case T_SCOPE:
     return low_check_indexing(type->cdr, index_type, n);
 
   case T_ARRAY:
@@ -5471,6 +5484,8 @@ static int low_count_arguments(struct pike_type *q)
 
     case PIKE_T_NAME:
     case PIKE_T_ATTRIBUTE:
+    case T_ASSIGN:
+    case T_SCOPE:
       return low_count_arguments(q->cdr);
 
     default: return MAX_INT32;
@@ -5516,6 +5531,8 @@ static int low_minimum_arguments(struct pike_type *q)
 
     case PIKE_T_NAME:
     case PIKE_T_ATTRIBUTE:
+    case T_ASSIGN:
+    case T_SCOPE:
       return low_minimum_arguments(q->cdr);
 
     case T_FUNCTION:
