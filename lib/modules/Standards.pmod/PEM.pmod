@@ -10,11 +10,11 @@
 //!   Derived from OpenSSL. Is there any proper specification?
 //!
 //!   It seems to be related to PBKDF1 from RFC2898.
-string derive_key(string password, string salt, int bytes)
+string(8bit) derive_key(string(8bit) password, string(8bit) salt, int bytes)
 {
-  string out = "";
-  string hash = "";
-  string junk = password + salt;
+  string(8bit) out = "";
+  string(8bit) hash = "";
+  string(8bit) junk = password + salt;
   password = "CENSORED";
   while (sizeof(out) < bytes) {
     hash = Crypto.MD5.hash(hash + junk);
@@ -36,9 +36,9 @@ string derive_key(string password, string salt, int bytes)
 //!
 //! @returns
 //!   Returns the decrypted body text.
-string decrypt_body(string dek_info, string body, string password)
+string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) password)
 {
-  string key = password;
+  string(8bit) key = password;
   password = "CENSORED";
   if (!dek_info) return body;
   array(string) d = dek_info/",";
@@ -57,7 +57,7 @@ string decrypt_body(string dek_info, string body, string password)
     "aes-128-cbc": 16,
     "aes-256-cbc": 32,
   ])[method] || 24;
-  string iv = String.hex2string(String.trim_all_whites(d[1]));
+  string(8bit) iv = String.hex2string(String.trim_all_whites(d[1]));
   key = derive_key(key, iv[..7], key_size);
   Crypto.Buffer decoder = Crypto.Buffer(Crypto.CBC(cipher));
   decoder->set_decrypt_key(key);
