@@ -4664,6 +4664,47 @@ PMOD_EXPORT void f_functionp(INT32 args)
   push_int(res);
 }
 
+static int callablep(struct svalue *s)
+{
+  switch( TYPEOF(*s) )
+  {
+    case T_FUNCTION:
+      if( SUBTYPEOF(*s) != FUNCTION_BUILTIN
+	  && !s->u.object->prog)
+	return 0;
+      return 1;
+      break;
+    case T_PROGRAM:
+      return 1;
+      break;
+    case T_OBJECT:
+      {
+	struct program *p;
+	if((p = s->u.object->prog) &&
+	   FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog,
+		     LFUN_CALL ) != -1)
+          return 1;
+      }
+      break;
+    case T_ARRAY:
+      array_fix_type_field(s->u.array);
+      if( !s->u.array->type_field) {
+        return 1;
+      }
+      if( !(s->u.array->type_field & ~(BIT_CALLABLE|BIT_INT)) ) {
+	struct array *a = s->u.array;
+	int i;
+	for(i=0; i<a->size; i++)
+	  if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
+	    return 0;
+        return 1;
+      }
+      return 0;
+      break;
+  }
+  return 0;
+}
+
 /*! @decl int callablep(mixed arg)
  *!
  *!   Returns @expr{1@} if @[arg] is a callable, @expr{0@} (zero) otherwise.
@@ -4678,46 +4719,7 @@ PMOD_EXPORT void f_callablep(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("callablep", 1);
 
-  switch( TYPEOF(Pike_sp[-args]) )
-  {
-    case T_FUNCTION:
-      if( SUBTYPEOF(Pike_sp[-args]) != FUNCTION_BUILTIN
-	  && !Pike_sp[-args].u.object->prog)
-	break;
-      res = 1;
-      break;
-    case T_PROGRAM:
-      res = 1;
-      break;
-    case T_OBJECT:
-      {
-	struct program *p;
-	if((p = Pike_sp[-args].u.object->prog) &&
-	   FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-args])].prog,
-		     LFUN_CALL ) != -1)
-	  res = 1;
-      }
-      break;
-    case T_ARRAY:
-      /* FIXME: What about the recursive case? */
-      array_fix_type_field(Pike_sp[-args].u.array);
-      if( (Pike_sp[-args].u.array->type_field==BIT_CALLABLE) ||
-	  !Pike_sp[-args].u.array->type_field) {
-	res = 1;
-      }
-      else if( !(Pike_sp[-args].u.array->type_field &
-		 ~(BIT_CALLABLE|BIT_INT)) ) {
-	struct array *a = Pike_sp[-args].u.array;
-	int i;
-	res = 1;
-	for(i=0; i<a->size; i++)
-	  if( TYPEOF(ITEM(a)[i]) == T_INT && ITEM(a)[i].u.integer ) {
-	    res = 0;
-	    break;
-	  }
-      }
-      break;
-  }
+  res = callablep(&Pike_sp[-args]);
   pop_n_elems(args);
   push_int(res);
 }
