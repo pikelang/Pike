@@ -120,8 +120,10 @@ PIKE_MODULE_INIT
     rfc822ctype[(int)"<>@,;:\\/?"[i]] = CT_SPECIAL;
 
   /* Add global functions */
-  add_function_constant( "decode_base64", f_decode_base64,
-			 "function(string:string)", OPT_TRY_OPTIMIZE );
+
+  /* Really tFunc(tStr7, tStr8), but cut down on warnings for now. */
+  ADD_FUNCTION2( "decode_base64", f_decode_base64,
+                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_base64", f_encode_base64,
                  tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
