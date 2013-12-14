@@ -6104,10 +6104,15 @@ static int match_type_svalue(struct pike_type *type,
   case PIKE_T_PROGRAM:
   case PIKE_T_FUNCTION:
   case T_MANY:
-    /* FIXME: Identify if sval is callable. */
+    /* Identify if sval is callable. */
+    res =
+      (TYPEOF(*sval) == T_FUNCTION) ||
+      (TYPEOF(*sval) == T_PROGRAM) ||
+      (TYPEOF(*sval) == T_ARRAY) ||
+      (TYPEOF(*sval) == T_OBJECT) ||
+      (TYPEOF(*sval) == T_TYPE);
     /* FIXME: Check arguments */
     /* FIXME: Check return type */
-    res = 1;
     break;
   case PIKE_T_MIXED:
     res = 1;
