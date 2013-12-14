@@ -4666,16 +4666,25 @@ PMOD_EXPORT void f_functionp(INT32 args)
 
 static int callablep(struct svalue *s)
 {
+  int ret = 0;
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(s, NULL)) {
+    END_CYCLIC();
+    return 1;
+  }
+
+  SET_CYCLIC_RET((ptrdiff_t)1);
+
   switch( TYPEOF(*s) )
   {
     case T_FUNCTION:
-      if( SUBTYPEOF(*s) != FUNCTION_BUILTIN
-	  && !s->u.object->prog)
-	return 0;
-      return 1;
+      if( SUBTYPEOF(*s) == FUNCTION_BUILTIN
+	  || s->u.object->prog)
+	ret = 1;
       break;
     case T_PROGRAM:
-      return 1;
+      ret = 1;
       break;
     case T_OBJECT:
       {
@@ -4683,26 +4692,28 @@ static int callablep(struct svalue *s)
 	if((p = s->u.object->prog) &&
 	   FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog,
 		     LFUN_CALL ) != -1)
-          return 1;
+          ret = 1;
       }
       break;
     case T_ARRAY:
       array_fix_type_field(s->u.array);
       if( !s->u.array->type_field) {
-        return 1;
+        ret = 1;
+	break;
       }
       if( !(s->u.array->type_field & ~(BIT_CALLABLE|BIT_INT)) ) {
 	struct array *a = s->u.array;
 	int i;
+	ret = 1;
 	for(i=0; i<a->size; i++)
 	  if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
-	    return 0;
-        return 1;
+	    ret = 0;
       }
-      return 0;
       break;
   }
-  return 0;
+
+  END_CYCLIC();
+  return ret;
 }
 
 /*! @decl int callablep(mixed arg)
