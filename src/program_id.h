@@ -144,8 +144,8 @@
 
 /* 200 - 299: Submodule programs */
 #define     PROG_IMAGE_COLOR_COLOR_ID                      0310 /* 200 */
-#define tObjImpl_IMAGE_COLOR_COLOR_ID "\003\000\000\000\000\310"
-#define   tObjIs_IMAGE_COLOR_COLOR_ID "\003\001\000\000\000\310"
+#define tObjImpl_IMAGE_COLOR_COLOR    "\003\000\000\000\000\310"
+#define   tObjIs_IMAGE_COLOR_COLOR    "\003\001\000\000\000\310"
 
 /* 300 - 399 reserved for Nettle */
 #define     PROG_HASH_ID				0454 /* 300 */
