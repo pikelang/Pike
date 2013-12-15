@@ -1653,6 +1653,335 @@ PIKECLASS CBC
 /*! @endclass
  */
 
+#ifdef HAVE_NETTLE_CTR_H
+#include <nettle/ctr.h>
+
+/*! @class CTR
+ *! Implementation of Counter Mode (GCM). Works as
+ *! a wrapper for the cipher algorithm put in create.
+ *!
+ *! This cipher mode works like a stream cipher with
+ *! a block size >= 1. This means that the same key
+ *! and initialization vector (aka counter) should
+ *! never be reused, since a simple xor would reveal
+ *! information about the plain text. It also means
+ *! that it should never be used without a suiteable
+ *! Message Authentication Code (MAC).
+ *!
+ *! @note
+ *!   Use @[Crypto.CTR] instead.
+ *!
+ *! @note
+ *!   Note that this class is not available in all versions of Nettle.
+ *!
+ *! @seealso
+ *!   @[Crypto.CTR], @[CBC]
+ */
+PIKECLASS CTR
+{
+  /*! @decl inherit __builtin.Nettle.Cipher
+   */
+  INHERIT "__builtin.Nettle.Cipher";
+
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"CTR"@}.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("CTR");
+  }
+
+  static int CTR_State_program_fun_num;
+
+  /*! @decl State `()(program|object|function cipher, mixed ... args)
+   *!
+   *! @returns
+   *!   Returns a new @[State] object.
+   */
+  PIKEFUN Cipher_State `()(program|object|function cipher, mixed ... extras)
+  {
+    apply_current(CTR_State_program_fun_num, args);
+  }
+
+  /*! @class State
+   *!
+   *! The state for a GCM instance.
+   */
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit Cipher::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    PIKEVAR object object
+      flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+    CVAR struct Cipher_State_struct *crypt_state;
+    CVAR unsigned INT8 *iv;
+    CVAR INT32 block_size;
+
+    EXIT
+      gc_trivial;
+    {
+      if (THIS->object) {
+	free_object(THIS->object);
+	THIS->object = NULL;
+      }
+    }
+
+    /*! @decl void create(program|object|function cipher, mixed ... args)
+     *!
+     *! Initialize the CTR wrapper with a cipher algorithm. If it is a
+     *! program, an object will be instantiated with @[args] as
+     *! arguments. If it is an object that doesn't conform to the cipher
+     *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+     *! a function, that function will be called with @[args] as
+     *! arguments.
+     *!
+     *! @note
+     *!   For correct key setup, @[set_encrypt_key()] or @[set_decrypt_key()]
+     *!   MUST be used.
+     */
+    PIKEFUN void create(program|object|function cipher, mixed ... more)
+      flags ID_PROTECTED;
+    {
+      struct object *o = make_cipher_object(args);
+      struct inherit *inh;
+      int old_block_size = THIS->block_size;
+      int f;
+
+      if (THIS->object) free_object(THIS->object);
+      THIS->object = o;
+
+      f = find_identifier("crypt", o->prog);
+      inh = INHERIT_FROM_INT(o->prog, f);
+      if (inh->prog == Cipher_State_program) {
+	/* crypt() is from Nettle.Cipher.State.
+	 * Check if the context and crypt function are valid.
+	 */
+	THIS->crypt_state = (struct Cipher_State_struct *)
+	  get_inherit_storage(o, inh - o->prog->inherits);
+      }
+
+      safe_apply(THIS->object, "block_size", 0);
+
+      if (TYPEOF(Pike_sp[-1]) != T_INT)
+	Pike_error("block_size() didn't return an int.\n");
+
+      if(THIS->iv) {
+	guaranteed_memset(THIS->iv, 0, old_block_size);
+	free(THIS->iv);
+	THIS->iv = NULL;
+      }
+
+      THIS->block_size = Pike_sp[-1].u.integer;
+
+      if ((!THIS->block_size) ||
+	  (THIS->block_size > 4096))
+	Pike_error("Bad block size %d.\n", THIS->block_size);
+
+      pop_stack();
+
+      THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
+      MEMSET(THIS->iv, 0, THIS->block_size);
+    }
+
+    /*! @decl string(0..255) name()
+     *! Returns the string @expr{"CTR(x)"@} where x is the
+     *! encapsulated algorithm.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      push_constant_text("CTR(");
+      safe_apply(THIS->object, "name", 0);
+      push_constant_text(")");
+      f_add(3);
+    }
+
+    /*! @decl int(16..16) block_size()
+     *! Returns the block size of the encapsulated cipher,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(1..) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN THIS->block_size;
+    }
+
+    /*! @decl int(12..12) iv_size()
+     *! Returns the recommended size for the initialization vector
+     *! (ie @expr{12@}).
+     *!
+     *! Other sizes are allowed, but will be compressed or expanded
+     *! to this size using the encapsulated cipher.
+     */
+    PIKEFUN int(1..) iv_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN THIS->block_size;
+    }
+
+    /*! @decl int(0..) key_size()
+     *! Returns the key size of the encapsulated cipher.
+     */
+    PIKEFUN int(0..) key_size()
+      optflags OPT_EXTERNAL_DEPEND;
+    {
+      safe_apply(THIS->object, "key_size", args);
+    }
+
+    /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for encrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for decrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      /* NOTE: CTR always uses the encryption function
+       *       of the underlying cipher!
+       */
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector to @[iv]. The @[iv] memory will be
+     *! cleared before released.
+     *!
+     *! @note
+     *!   @[iv] must have the length reported by @[iv_size()].
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_decrypt_key()].
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      optflags OPT_SIDE_EFFECT;
+    {
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(iv);
+      if(iv->len != THIS->block_size)
+	Pike_error("Argument incompatible with cipher block size.\n");
+      MEMCPY(THIS->iv, iv->str, THIS->block_size);
+      RETURN this_object();
+    }
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypt/decrypt @[data] and return the result. @[data] must
+     *! be an integral number of blocks.
+     *!
+     *! The length of @[data] MUST be a multiple of the block size
+     *! for all calls except the last.
+     *!
+     *! Neither the input or output data is not automatically memory
+     *! scrubbed, unless @[String.secure] has been called on the data.
+     *!
+     *! @seealso
+     *!   @[update()], @[digest()]
+     */
+    PIKEFUN string(0..255) crypt(string(0..255) data)
+    {
+      struct pike_string *result;
+      ONERROR uwp;
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+
+      NO_WIDE_STRING(data);
+
+      if (!THIS->object || !THIS->object->prog) {
+	Pike_error("Lookup in destructed object.\n");
+      }
+
+      result = begin_shared_string(data->len);
+      SET_ONERROR (uwp, do_free_string, result);
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+
+      ctr_crypt(ctx, func, THIS->block_size, THIS->iv,
+		data->len, STR0(result), STR0(data));
+
+      pop_n_elems(args);
+      push_string(end_shared_string(result));
+      UNSET_ONERROR(uwp);
+    }
+
+  }
+  /*! @endclass
+   */
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_NETTLE_CTR_H */
+
 #ifdef HAVE_NETTLE_GCM_H
 #include <nettle/gcm.h>
 
