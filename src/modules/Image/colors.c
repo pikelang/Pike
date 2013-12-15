@@ -1754,7 +1754,7 @@ void init_image_colors(void)
 		tFunc(tInt tMap(tStr,tMix),tStr),0);
    ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
-   ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObjImpl_IMAGE_COLOR_COLOR_ID,tInt),
+   ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObjImpl_IMAGE_COLOR_COLOR,tInt),
 					      tInt),0);
    ADD_FUNCTION("__hash",image_color___hash,tFunc(tNone,tInt),0);
 
@@ -1777,18 +1777,18 @@ void init_image_colors(void)
    /* color conversion methods */
 
    ADD_FUNCTION("grey",image_color_grey,
-		tOr(tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),
-		    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
+		tOr(tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),
+		    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR)),0);
 
-   ADD_FUNCTION("light",image_color_light,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),0);
-   ADD_FUNCTION("dark",image_color_dark,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),0);
-   ADD_FUNCTION("neon",image_color_neon,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),0);
-   ADD_FUNCTION("bright",image_color_bright,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),0);
-   ADD_FUNCTION("dull",image_color_dull,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+   ADD_FUNCTION("light",image_color_light,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("dark",image_color_dark,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("neon",image_color_neon,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("bright",image_color_bright,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("dull",image_color_dull,tFunc(tNone,tObjIs_IMAGE_COLOR_COLOR),0);
 
-   ADD_FUNCTION("`*",image_color_mult,tFunc(tFlt,tObjIs_IMAGE_COLOR_COLOR_ID),0);
-   ADD_FUNCTION("`+",image_color_add,tFunc(tObjImpl_IMAGE_COLOR_COLOR_ID,
-					   tObjIs_IMAGE_COLOR_COLOR_ID),0);
+   ADD_FUNCTION("`*",image_color_mult,tFunc(tFlt,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("`+",image_color_add,tFunc(tObjImpl_IMAGE_COLOR_COLOR,
+					   tObjIs_IMAGE_COLOR_COLOR),0);
 
    image_color_program=end_program();
    image_color_program->flags |= 
@@ -1799,32 +1799,32 @@ void init_image_colors(void)
 
    /* this is the Image.Color stuff */
    
-   ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+   ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("`()",image_make_color,
-		tOr3(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),
-                     tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
-                     tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
+		tOr3(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),
+                     tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),
+                     tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("rgb",image_make_rgb_color,
-		tOr(tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
-                    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
+		tOr(tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),
+                    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("hsv",image_make_hsv_color,
-		tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
-		    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR_ID)) ,0);
+		tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR),
+		    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt) 
 						   tOr(tInt,tFlt) 
 						   tOr(tInt,tFlt) 
 						   tOr(tInt,tFlt),
-						   tObjIs_IMAGE_COLOR_COLOR_ID), 0);
+						   tObjIs_IMAGE_COLOR_COLOR), 0);
    ADD_FUNCTION("html",image_make_html_color,
-		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("guess",image_guess_color,
-		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("greylevel",image_make_greylevel_color,
-		tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+		tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("_indices",image_colors_indices,
 		tFunc(tNone,tArr(tStr)),0);
    ADD_FUNCTION("_values",image_colors_values,
-		tFunc(tNone,tArr(tObjIs_IMAGE_COLOR_COLOR_ID)),0);
+		tFunc(tNone,tArr(tObjIs_IMAGE_COLOR_COLOR)),0);
 
    image_color_program->id = PROG_IMAGE_COLOR_COLOR_ID;
    
