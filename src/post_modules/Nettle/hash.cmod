@@ -514,7 +514,7 @@ PIKECLASS Hash
      */
     PIKEFUN object update(string(0..255) data)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8, tObjImpl_HASH_STATE_ID);
+      rawtype tFunc(tStr8, tObjImpl_HASH_STATE);
     {
       void *ctx = THIS->ctx;
       const struct nettle_hash *meta =

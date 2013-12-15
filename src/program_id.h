@@ -150,10 +150,10 @@
 /* 300 - 399 reserved for Nettle */
 #define     PROG_HASH_ID				0454 /* 300 */
 #define     PROG_HASH_STATE_ID				0455 /* 301 */
-#define tObjImpl_HASH_STATE_ID	   "\003\000\000\000\001\055"
+#define tObjImpl_HASH_STATE	   "\003\000\000\000\001\055"
 #define     PROG_CIPHER_ID				0466 /* 310 */
 #define     PROG_CIPHER_STATE_ID			0467 /* 311 */
-#define tObjImpl_CIPHER_STATE_ID   "\003\000\000\000\001\067"
+#define tObjImpl_CIPHER_STATE      "\003\000\000\000\001\067"
 
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */
