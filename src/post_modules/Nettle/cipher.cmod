@@ -2014,6 +2014,15 @@ PIKECLASS GCM
    */
   INHERIT "__builtin.Nettle.AEAD";
 
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"GCM"@}.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("GCM");
+  }
+
   /*! @decl int(16..16) block_size()
    *! Returns the block size of the encapsulated cipher,
    *! which is always @expr{16@} for GCM.
