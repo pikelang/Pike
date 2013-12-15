@@ -1505,18 +1505,20 @@ PIKECLASS CBC
     if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("block_size() didn't return an int.\n");
 
-    THIS->block_size = Pike_sp[-1].u.integer;
+    if(THIS->iv) {
+      guaranteed_memset(THIS->iv, 0, old_block_size);
+      free(THIS->iv);
+      THIS->iv = NULL;
+    }
 
-    pop_stack();
+    THIS->block_size = Pike_sp[-1].u.integer;
 
     if ((!THIS->block_size) ||
 	(THIS->block_size > 4096))
       Pike_error("Bad block size %d.\n", THIS->block_size);
 
-    if(THIS->iv) {
-      guaranteed_memset(THIS->iv, 0, old_block_size);
-      free(THIS->iv);
-    }
+    pop_stack();
+
     THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
     MEMSET(THIS->iv, 0, THIS->block_size);
   }
