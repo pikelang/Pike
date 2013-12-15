@@ -106,7 +106,7 @@
 #define     PROG_LIST_ID					    055
 #define tObjImpl_LIST			      "\003\000\000\000\000\055"
 #define     PROG_LIST__GET_ITERATOR_ID				    056
-#define tObjImpl_LIST__GET_ITERATOR_ID	      "\003\000\000\000\000\056"
+#define tObjImpl_LIST__GET_ITERATOR	      "\003\000\000\000\000\056"
 
 /* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
