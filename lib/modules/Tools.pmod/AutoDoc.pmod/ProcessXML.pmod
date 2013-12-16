@@ -1446,6 +1446,9 @@ class NScope
 
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
+    if( !sizeof(path) )
+        return 0;
+
     int(1..1)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
     if (!scope) {
