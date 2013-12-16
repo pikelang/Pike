@@ -479,6 +479,26 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
   nicebox(rows, ret);
 }
 
+// type(min..max)
+string range_type( string type, Node min, Node max )
+{
+    if( !min && !max )
+        return type;
+    if( !min )
+        return type+"(.."+parse_text(max)+")";
+    if( !max )
+        return type+"("+parse_text(min)+"..)";
+
+    int low = (int)parse_text(min);
+    int high = (int)parse_text(max);
+
+    if( low == 0 && (high+1)->popcnt() == 1 )
+    {
+        return type+"("+strlen((high+1)->digits(2))+"bit)";
+    }
+    return type+"("+low+".."+high+")";
+}
+
 //! Typically called with a <group/> node or a sub-node that is a container.
 string parse_text(Node n, void|String.Buffer ret) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
@@ -609,17 +629,11 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "int":
       build_box(c, ret, "group", "value",
 		lambda(Node n) {
-		  string tmp = "<font color='green'>";
-		  Node min = n->get_first_element("minvalue");
-		  Node max = n->get_first_element("maxvalue");
-		  if(min || max) {
-		    if(min) tmp += parse_text(min);
-		    tmp += "..";
-		    if(max) tmp += parse_text(max);
-		  }
-		  else
-		    tmp += parse_text(n);
-		  return tmp + "</font>";
+           return "<font color='green'>" +
+               range_type( parse_text(n),
+                           n->get_first_element("minvalue"),
+                           n->get_first_element("maxvalue"))+
+               "</font>";
 		} );
       break;
 
@@ -638,7 +652,11 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "string": // Not in XSLT
       build_box(c, ret, "group", "value",
 		lambda(Node n) {
-		  return "<font color='green'>" + parse_text(n) + "</font>";
+            return "<font color='green'>" +
+                range_type( parse_text(n),
+                            n->get_first_element("min"),
+                            n->get_first_element("max")) +
+                "</font>";
 		} );
       break;
 
@@ -917,21 +935,18 @@ string parse_type(Node n, void|string debug) {
 		      }), parse_type)*"|";
     break;
 
-  case "string": case "void": case "program": case "mixed": case "float":
+  case "void": case "program": case "mixed": case "float":
   case "zero":
     ret += "<font color='#202020'>" + n->get_any_name() + "</font>";
     break;
 
+  case "string":
   case "int":
-    ret += "<font color='#202020'>int</font>";
-    c = n->get_first_element("min");
-    d = n->get_first_element("max");
-    if(c && d)
-      ret += "(" + c->value_of_node() + ".." + d->value_of_node() + ")";
-    else if(c)
-      ret += "(" + c->value_of_node() + "..)";
-    else if(d)
-      ret += "(.." + d->value_of_node() + ")";
+      ret += ("<font color='#202020'>" +
+              range_type( n->get_any_name(),
+                          n->get_first_element("min"),
+                          n->get_first_element("max")) +
+              "</font>");
     break;
 
   case "attribute":
