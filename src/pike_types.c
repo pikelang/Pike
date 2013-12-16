@@ -1961,8 +1961,18 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 	  INT32 min=extract_type_int(a+e+1);
 	  INT32 max=extract_type_int(a+e+1+sizeof(INT32));
 	  fprintf(stderr, "int");
-	  if(min!=MIN_INT32 || max!=MAX_INT32)
-	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
+	  if(min!=MIN_INT32 || max!=MAX_INT32) {
+	    if (!min && max && !(max & (max+1))) {
+	      int j = 0;
+	      while (max) {
+		max >>= 1;
+		j++;
+	      }
+	      fprintf(stderr, "(%dbit)", j);
+	    } else {
+	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
+	    }
+	  }
 	  e+=sizeof(INT32)*2;
 	  break;
 	}
@@ -2050,8 +2060,18 @@ void simple_describe_type(struct pike_type *s)
 	  INT32 min = CAR_TO_INT(s);
 	  INT32 max = CDR_TO_INT(s);
 	  fprintf(stderr, "int");
-	  if(min!=MIN_INT32 || max!=MAX_INT32)
-	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
+	  if(min!=MIN_INT32 || max!=MAX_INT32) {
+	    if (!min && max && !(max & (max+1))) {
+	      int j = 0;
+	      while (max) {
+		max >>= 1;
+		j++;
+	      }
+	      fprintf(stderr, "(%dbit)", j);
+	    } else {
+	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
+	    }
+	  }
 	  break;
 	}
       case T_FLOAT: fprintf(stderr, "float"); break;
@@ -2087,12 +2107,21 @@ void simple_describe_type(struct pike_type *s)
 #endif /* PIKE_DEBUG */
 	      min = CAR_TO_INT(char_type);
 	      max = CDR_TO_INT(char_type);
-	      if (min != MIN_INT32) {
-		fprintf(stderr, "%d", min);
-	      }
-	      fprintf(stderr, "..");
-	      if (max != MAX_INT32) {
-		fprintf(stderr, "%d", max);
+	      if (!min && max && !(max & (max+1))) {
+		int j = 0;
+		while (max) {
+		  max >>= 1;
+		  j++;
+		}
+		fprintf(stderr, "%dbit", j);
+	      } else {
+		if (min != MIN_INT32) {
+		  fprintf(stderr, "%d", min);
+		}
+		fprintf(stderr, "..");
+		if (max != MAX_INT32) {
+		  fprintf(stderr, "%d", max);
+		}
 	      }
 	      fprintf(stderr, " | ");
 	      s = s->cdr;
@@ -2113,12 +2142,21 @@ void simple_describe_type(struct pike_type *s)
 #endif /* PIKE_DEBUG */
 	      min = CAR_TO_INT(s);
 	      max = CDR_TO_INT(s);
-	      if (min != MIN_INT32) {
-		fprintf(stderr, "%d", min);
-	      }
-	      fprintf(stderr, "..");
-	      if (max != MAX_INT32) {
-		fprintf(stderr, "%d", max);
+	      if (!min && max && !(max & (max+1))) {
+		int j = 0;
+		while (max) {
+		  max >>= 1;
+		  j++;
+		}
+		fprintf(stderr, "%dbit", j);
+	      } else {
+		if (min != MIN_INT32) {
+		  fprintf(stderr, "%d", min);
+		}
+		fprintf(stderr, "..");
+		if (max != MAX_INT32) {
+		  fprintf(stderr, "%d", max);
+		}
 	      }
 	    }
 	    fprintf(stderr, ")");
@@ -2275,8 +2313,15 @@ static void low_describe_type(struct pike_type *t)
       INT32 max=CDR_TO_INT(t);
       my_strcat("int");
       
-      if(min!=MIN_INT32 || max!=MAX_INT32)
-      {
+      if (!min && max && !(max & (max+1))) {
+	int j = 0;
+	while (max) {
+	  max >>= 1;
+	  j++;
+	}
+	sprintf(buffer, "(%dbit)", j);
+	my_strcat(buffer);
+      } else if(min!=MIN_INT32 || max!=MAX_INT32) {
 	sprintf(buffer,"(%ld..%ld)",(long)min,(long)max);
 	my_strcat(buffer);
       }
@@ -2349,14 +2394,24 @@ static void low_describe_type(struct pike_type *t)
 #endif /* PIKE_DEBUG */
 	    min = CAR_TO_INT(char_type);
 	    max = CDR_TO_INT(char_type);
-	    if (min != MIN_INT32) {
-	      sprintf(buffer, "%d", min);
+	    if (!min && max && !(max & (max+1))) {
+	      int j = 0;
+	      while (max) {
+		max >>= 1;
+		j++;
+	      }
+	      sprintf(buffer, "%dbit", j);
 	      my_strcat(buffer);
-	    }
-	    my_strcat("..");
-	    if (max != MAX_INT32) {
-	      sprintf(buffer, "%d", max);
-	      my_strcat(buffer);
+	    } else {
+	      if (min != MIN_INT32) {
+		sprintf(buffer, "%d", min);
+		my_strcat(buffer);
+	      }
+	      my_strcat("..");
+	      if (max != MAX_INT32) {
+		sprintf(buffer, "%d", max);
+		my_strcat(buffer);
+	      }
 	    }
 	    my_strcat(" | ");
 	    t = t->cdr;
@@ -2372,14 +2427,24 @@ static void low_describe_type(struct pike_type *t)
 #endif /* PIKE_DEBUG */
 	  min = CAR_TO_INT(t);
 	  max = CDR_TO_INT(t);
-	  if (min != MIN_INT32) {
-	    sprintf(buffer, "%d", min);
+	  if (!min && max && !(max & (max+1))) {
+	    int j = 0;
+	    while (max) {
+	      max >>= 1;
+	      j++;
+	    }
+	    sprintf(buffer, "%dbit", j);
 	    my_strcat(buffer);
-	  }
-	  my_strcat("..");
-	  if (max != MAX_INT32) {
-	    sprintf(buffer, "%d", max);
-	    my_strcat(buffer);
+	  } else {
+	    if (min != MIN_INT32) {
+	      sprintf(buffer, "%d", min);
+	      my_strcat(buffer);
+	    }
+	    my_strcat("..");
+	    if (max != MAX_INT32) {
+	      sprintf(buffer, "%d", max);
+	      my_strcat(buffer);
+	    }
 	  }
 	  my_strcat(")");
 	}
