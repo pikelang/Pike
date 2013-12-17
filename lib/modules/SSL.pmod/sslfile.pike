@@ -810,6 +810,11 @@ protected void destroy()
   // We don't know which thread this will be called in if the refcount
   // garb or the gc got here. That's not a race problem since it won't
   // be registered in a backend in that case.
+  if (stream && stream->query_backend()) {
+    // Make sure not to fail in ENTER below due to bad backend thread.
+    // [bug 6958].
+    stream->set_backend(UNDEFINED);
+  }
   ENTER (0, 0) {
     if (stream) {
       if (close_state == STREAM_OPEN &&
