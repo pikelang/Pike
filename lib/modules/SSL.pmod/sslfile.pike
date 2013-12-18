@@ -813,7 +813,7 @@ protected void destroy()
   if (stream && stream->query_backend()) {
     // Make sure not to fail in ENTER below due to bad backend thread.
     // [bug 6958].
-    stream->set_backend(Pike.DefaultBackend);
+    stream->set_callbacks(0, 0, 0);
   }
   ENTER (0, 0) {
     if (stream) {
