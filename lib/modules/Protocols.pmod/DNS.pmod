@@ -1998,7 +1998,7 @@ class tcp_client
 //! Asynchronous DNS client using TCP
 class async_tcp_client
 {
-  inherit client;
+  inherit async_client;
 
   class Request(string domain, string req,
 		function(string,mapping,mixed...:void) callback,
