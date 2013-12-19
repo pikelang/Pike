@@ -19,7 +19,7 @@ protected Gmp.mpz g; // Generator
 protected Gmp.mpz y; // Public key
 protected Gmp.mpz x; // Private key
 
-protected function(int:string(0..255)) random = .Random.random_string;
+protected function(int:string(8bit)) random = .Random.random_string;
 
 Gmp.mpz get_p() { return p; } //! Returns the DSA modulo (p).
 Gmp.mpz get_q() { return q; } //! Returns the DSA group order (q).
@@ -29,14 +29,14 @@ Gmp.mpz get_x() { return x; } //! Returns the DSA private key (x).
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string(0..255)) r)
+this_program set_random(function(int:string(8bit)) r)
 {
   random = r;
   return this;
 }
 
 //! Returns the string @expr{"DSA"@}.
-string(0..255) name() { return "DSA"; }
+string(8bit) name() { return "DSA"; }
 
 //
 // --- Key methods
@@ -83,9 +83,9 @@ this_program set_private_key(Gmp.mpz secret)
 #if !constant(Nettle.dsa_generate_keypair)
 
 #define SEED_LENGTH 20
-protected string(0..255) nist_hash(Gmp.mpz x)
+protected string(8bit) nist_hash(Gmp.mpz x)
 {
-  string(0..255) s = x->digits(256);
+  string(8bit) s = x->digits(256);
   return .SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
 }
 
@@ -104,13 +104,13 @@ protected array(Gmp.mpz) nist_primes(int l)
   for (;;)
   {
     /* Generate q */
-    string(0..255) seed = random(SEED_LENGTH);
+    string(8bit) seed = random(SEED_LENGTH);
     Gmp.mpz s = Gmp.mpz(seed, 256);
 
-    string(0..255) h = [string(0..255)]
+    string(8bit) h = [string(8bit)]
       (nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) ));
 
-    h = [string(0..255)]sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
+    h = sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
 
     Gmp.mpz q = Gmp.mpz(h, 256);
 
@@ -123,14 +123,14 @@ protected array(Gmp.mpz) nist_primes(int l)
 
     for (i = 0, j = 2; i < 4096; i++, j += n+1)
     {
-      string(0..255) buffer = "";
+      string(8bit) buffer = "";
       int k;
 
       for (k = 0; k<= n; k++)
 	buffer = nist_hash( [object(Gmp.mpz)](s + j + k) ) + buffer;
 
       buffer = buffer[sizeof(buffer) - L/8 ..];
-      buffer[0] = [int(0..255)](buffer[0] | 0x80);
+      buffer[0] = [int(8bit)](buffer[0] | 0x80);
 
       Gmp.mpz p = Gmp.mpz(buffer, 256);
 
@@ -242,7 +242,7 @@ Sequence pkcs_public_key()
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm
 //! @[h].
-string(0..255) pkcs_sign(string(0..255) message, .Hash h)
+string(8bit) pkcs_sign(string(8bit) message, .Hash h)
 {
   array sign = map(raw_sign(hash(message, h)), Standards.ASN1.Types.Integer);
   return Standards.ASN1.Types.Sequence(sign)->get_der();
@@ -252,7 +252,7 @@ string(0..255) pkcs_sign(string(0..255) message, .Hash h)
 
 //! Verify PKCS-1 signature @[sign] of message @[message] using hash
 //! algorithm @[h].
-int(0..1) pkcs_verify(string(0..255) message, .Hash h, string(0..255) sign)
+int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(sign);
 
@@ -280,9 +280,9 @@ int(0..1) pkcs_verify(string(0..255) message, .Hash h, string(0..255) sign)
 
 
 //! Makes a DSA hash of the messge @[msg].
-Gmp.mpz hash(string(0..255) msg, .Hash h)
+Gmp.mpz hash(string(8bit) msg, .Hash h)
 {
-  string(0..255) digest = h->hash(msg)[..q->size()/8-1];
+  string(8bit) digest = h->hash(msg)[..q->size()/8-1];
   return [object(Gmp.mpz)](Gmp.mpz(digest, 256) % q);
 }
   
@@ -330,16 +330,16 @@ int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 //
 
 //! Make a RSA ref signature of message @[msg].
-__deprecated__ string(0..255) sign_rsaref(string(0..255) msg)
+__deprecated__ string(8bit) sign_rsaref(string(8bit) msg)
 {
   [Gmp.mpz r, Gmp.mpz s] = raw_sign(hash(msg, .SHA1));
 
-  return [string(0..255)]sprintf("%'\0'20s%'\0'20s",
-				 r->digits(256), s->digits(256));
+  return [string(8bit)]sprintf("%'\0'20s%'\0'20s",
+                               r->digits(256), s->digits(256));
 }
 
 //! Verify a RSA ref signature @[s] of message @[msg].
-__deprecated__ int(0..1) verify_rsaref(string(0..255) msg, string(0..255) s)
+__deprecated__ int(0..1) verify_rsaref(string(8bit) msg, string(8bit) s)
 {
   if (sizeof(s) != 40)
     return 0;
@@ -350,13 +350,13 @@ __deprecated__ int(0..1) verify_rsaref(string(0..255) msg, string(0..255) s)
 }
 
 //! Make an SSL signature of message @[msg].
-__deprecated__ string(0..255) sign_ssl(string(0..255) msg)
+__deprecated__ string(8bit) sign_ssl(string(8bit) msg)
 {
   return pkcs_sign(msg, .SHA1);
 }
 
 //! Verify an SSL signature @[s] of message @[msg].
-__deprecated__ int(0..1) verify_ssl(string(0..255) msg, string(0..255) s)
+__deprecated__ int(0..1) verify_ssl(string(8bit) msg, string(8bit) s)
 {
   return pkcs_verify(msg, .SHA1, s);
 }

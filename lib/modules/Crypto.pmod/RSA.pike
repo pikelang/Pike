@@ -21,7 +21,7 @@ protected int size;
 protected Gmp.mpz p;
 protected Gmp.mpz q;
 
-protected function(int:string(0..255)) random = .Random.random_string;
+protected function(int:string(8bit)) random = .Random.random_string;
 
 Gmp.mpz get_n() { return n; } //! Returns the RSA modulo (n).
 Gmp.mpz get_e() { return e; } //! Returns the RSA public exponent (e).
@@ -34,14 +34,14 @@ Gmp.mpz get_q() { return q; } //! Returns the second RSA prime (q), if known.
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string(0..255)) r)
+this_program set_random(function(int:string(8bit)) r)
 {
   random = r;
   return this;
 }
 
 //! Returns the string @expr{"RSA"@}.
-string(0..255) name() { return "RSA"; }
+string(8bit) name() { return "RSA"; }
 
 //
 // --- Key methods
@@ -49,7 +49,7 @@ string(0..255) name() { return "RSA"; }
 
 //! Can be initialized with a mapping with the elements n, e, d, p and
 //! q.
-protected void create(mapping(string(0..255):Gmp.mpz|int)|void params)
+protected void create(mapping(string(8bit):Gmp.mpz|int)|void params)
 {
   if(!params) return;
   if( params->n && params->e )
@@ -138,7 +138,7 @@ this_program generate_key(int bits, void|int e)
 
 // Generate a prime with @[bits] number of bits using random function
 // @[r].
-protected Gmp.mpz get_prime(int bits, function(int:string(0..255)) r)
+protected Gmp.mpz get_prime(int bits, function(int:string(8bit)) r)
 {
   int len = (bits + 7) / 8;
   int bit_to_set = 1 << ( (bits - 1) % 8);
@@ -146,7 +146,7 @@ protected Gmp.mpz get_prime(int bits, function(int:string(0..255)) r)
   Gmp.mpz p;
   
   do {
-    string(0..255) s = r(len);
+    string(8bit) s = r(len);
     p = Gmp.mpz(sprintf("%c%s", (s[0] & (bit_to_set - 1))
 			      | bit_to_set, s[1..]),
 		      256)->next_prime();
@@ -180,7 +180,7 @@ this_program generate_key(int(128..) bits, void|int e)
   int s1 = bits / 2; /* Size of the first prime */
   int s2 = 1 + bits - s1;
   
-  string(0..255) msg = "A" * (bits/8-3-8);
+  string(8bit) msg = "A" * (bits/8-3-8);
 
   do
   {
@@ -224,9 +224,9 @@ this_program generate_key(int(128..) bits, void|int e)
 
 //! Compatibility with Pike 7.8.
 variant __deprecated__ this_program generate_key(int(128..) bits,
-						 function(int:string(0..255)) rnd)
+						 function(int:string(8bit)) rnd)
 {
-  function(int:string(0..255)) old_rnd = random;
+  function(int:string(8bit)) old_rnd = random;
   random = rnd;
   this_program res = generate_key(bits);
   random = old_rnd;
@@ -257,17 +257,17 @@ Sequence pkcs_public_key()
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm
 //! @[h].
-string(0..255) pkcs_sign(string(0..255) message, .Hash h)
+string(8bit) pkcs_sign(string(8bit) message, .Hash h)
 {
-  string(0..255) di = Standards.PKCS.Signature.build_digestinfo(message, h);
+  string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
   return raw_sign(di)->digits(256);
 }
 
 //! Verify PKCS-1 signature @[sign] of message @[message] using hash
 //! algorithm @[h].
-int(0..1) pkcs_verify(string(0..255) message, .Hash h, string(0..255) sign)
+int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
 {
-  string(0..255) s = Standards.PKCS.Signature.build_digestinfo(message, h);
+  string(8bit) s = Standards.PKCS.Signature.build_digestinfo(message, h);
   return raw_verify(s, Gmp.mpz(sign, 256));
 }
 
@@ -279,13 +279,13 @@ int(0..1) pkcs_verify(string(0..255) message, .Hash h, string(0..255) sign)
 //! the signature as a byte string.
 //! @param r
 //!   Optional random function to be passed down to @[rsa_pad].
-string(0..255) encrypt(string(0..255) s, function(int:string(0..255))|void r)
+string(8bit) encrypt(string(8bit) s, function(int:string(8bit))|void r)
 {
   return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
 }
 
 //! Decrypt a message encrypted with @[encrypt].
-string(0..255) decrypt(string(0..255) s)
+string(8bit) decrypt(string(8bit) s)
 {
   return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
 }
@@ -320,7 +320,7 @@ this_program set_decrypt_key(array(Gmp.mpz) key)
 //! Encrypt or decrypt depending on set mode.
 //! @seealso
 //!   @[set_encrypt_key], @[set_decrypt_key]
-string(0..255) crypt(string(0..255) s)
+string(8bit) crypt(string(8bit) s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));
 }
@@ -354,10 +354,10 @@ int(0..) key_size() { return [int(0..)](size*8); }
 //!       function if provided. Otherwise the default random function
 //!       set in the object will be used.
 //!   @endint
-Gmp.mpz rsa_pad(string(0..255) message, int(1..2) type,
-		function(int:string(0..255))|void random)
+Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
+		function(int:string(8bit))|void random)
 {
-  string(0..255) cookie = "";
+  string(8bit) cookie = "";
   int len;
 
   len = size - 3 - sizeof(message);
@@ -367,7 +367,7 @@ Gmp.mpz rsa_pad(string(0..255) message, int(1..2) type,
   switch(type)
   {
   case 1:
-    cookie = [string(0..255)]sprintf("%@c", allocate(len, 0xff));
+    cookie = sprintf("%@c", allocate(len, 0xff));
     break;
   case 2:
     if( !random ) random = this_program::random;
@@ -382,9 +382,9 @@ Gmp.mpz rsa_pad(string(0..255) message, int(1..2) type,
 }
 
 //! Reverse the effect of @[rsa_pad].
-string(0..255) rsa_unpad(Gmp.mpz block, int type)
+string(8bit) rsa_unpad(Gmp.mpz block, int type)
 {
-  string(0..255) s = block->digits(256);
+  string(8bit) s = block->digits(256);
   int i = search(s, "\0");
 
   if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
@@ -393,7 +393,7 @@ string(0..255) rsa_unpad(Gmp.mpz block, int type)
 }
 
 //! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
-Gmp.mpz raw_sign(string(0..255) digest)
+Gmp.mpz raw_sign(string(8bit) digest)
 {
   return rsa_pad(digest, 1, 0)->powm(d, n);
 }
@@ -402,7 +402,7 @@ Gmp.mpz raw_sign(string(0..255) digest)
 //! type 1.
 //! @seealso
 //!   @[rsa_pad], @[raw_sign]
-int(0..1) raw_verify(string(0..255) digest, Gmp.mpz s)
+int(0..1) raw_verify(string(8bit) digest, Gmp.mpz s)
 {
   return s->powm(e, n) == rsa_pad(digest, 1, 0);
 }
@@ -412,38 +412,38 @@ int(0..1) raw_verify(string(0..255) digest, Gmp.mpz s)
 //
 
 //! Returns the RSA modulo (n) as a binary string.
-__deprecated__ string(0..255) cooked_get_n()
+__deprecated__ string(8bit) cooked_get_n()
 {
   return n->digits(256);
 }
 
 //! Returns the RSA public exponent (e) as a binary string.
-__deprecated__ string(0..255) cooked_get_e()
+__deprecated__ string(8bit) cooked_get_e()
 {
   return e->digits(256);
 }
 
 //! Returns the RSA private exponent (d) as a binary string, if known.
-__deprecated__ string(0..255) cooked_get_d()
+__deprecated__ string(8bit) cooked_get_d()
 {
   return d->digits(256);
 }
 
 //! Returns the first RSA prime (p) as a binary string, if known.
-__deprecated__ string(0..255) cooked_get_p()
+__deprecated__ string(8bit) cooked_get_p()
 {
   return p->digits(256);
 }
 
 //! Returns the second RSA prime (q) as a binary string, if known.
-__deprecated__ string(0..255) cooked_get_q()
+__deprecated__ string(8bit) cooked_get_q()
 {
   return q->digits(256);
 }
 
 //! Signs @[digest] as @[raw_sign] and returns the signature as a byte
 //! string.
-__deprecated__ string(0..255) cooked_sign(string(0..255) digest)
+__deprecated__ string(8bit) cooked_sign(string(8bit) digest)
 {
   return raw_sign(digest)->digits(256);
 }
@@ -462,42 +462,42 @@ __deprecated__ int(0..) rsa_size() { return [int(0..)](size*8); }
 
 #if constant(Crypto.MD5)
 
-__deprecated__ string(0..255) md5_sign(string(0..255) message, mixed|void r)
+__deprecated__ string(8bit) md5_sign(string(8bit) message, mixed|void r)
 {
-  string(0..255) s = Crypto.MD5->hash(message);
+  string(8bit) s = Crypto.MD5->hash(message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return raw_sign(s)->digits(256);r;
 }
 
-__deprecated__ int md5_verify(string(0..255) message, string(0..255) signature)
+__deprecated__ int md5_verify(string(8bit) message, string(8bit) signature)
 {
-  string(0..255) s = Crypto.MD5->hash(message);
+  string(8bit) s = Crypto.MD5->hash(message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
 #endif
 
-__deprecated__ string(0..255) sha_sign(string(0..255) message, mixed|void r)
+__deprecated__ string(8bit) sha_sign(string(8bit) message, mixed|void r)
 {
-  string(0..255) s = [string(0..255)]sprintf("%c%s%1H", 4, "sha1",
-					     Crypto.SHA1->hash(message));
+  string(8bit) s = [string(8bit)]sprintf("%c%s%1H", 4, "sha1",
+                                         Crypto.SHA1->hash(message));
   return raw_sign(s)->digits(256);r;
 }
 
-__deprecated__ int sha_verify(string(0..255) message, string(0..255) signature)
+__deprecated__ int sha_verify(string(8bit) message, string(8bit) signature)
 {
-  string(0..255) s = [string(0..255)]sprintf("%c%s%1H", 4, "sha1",
-					     Crypto.SHA1->hash(message));
+  string(8bit) s = [string(8bit)]sprintf("%c%s%1H", 4, "sha1",
+                                         Crypto.SHA1->hash(message));
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
-__deprecated__ Gmp.mpz sign(string(0..255) message, .Hash h)
+__deprecated__ Gmp.mpz sign(string(8bit) message, .Hash h)
 {
   return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
 }
 
-__deprecated__ int(0..1) verify(string(0..255) message, .Hash h, Gmp.mpz sign)
+__deprecated__ int(0..1) verify(string(8bit) message, .Hash h, Gmp.mpz sign)
 {
   return raw_verify(Standards.PKCS.Signature.build_digestinfo(message, h), sign);
 }

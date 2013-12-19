@@ -46,7 +46,7 @@ class State
     iv = Gmp.mpz(0);
   }
 
-  string(0..255) name()
+  string(8bit) name()
   {
     return "CTR(" + obj->name() + ")";
   }
@@ -66,27 +66,27 @@ class State
     return obj->key_size();
   }
 
-  this_program set_encrypt_key(string(0..255) key, int|void flags)
+  this_program set_encrypt_key(string(8bit) key, int|void flags)
   {
     String.secure(key);
     obj->set_encrypt_key(key, flags);
     return this;
   }
 
-  this_program set_decrypt_key(string(0..255) key, int|void flags)
+  this_program set_decrypt_key(string(8bit) key, int|void flags)
   {
     String.secure(key);
     obj->set_encrypt_key(key, flags);
     return this;
   }
 
-  this_program set_iv(string(0..255) iv)
+  this_program set_iv(string(8bit) iv)
   {
     String.secure(iv);
     this_program::iv = Gmp.mpz(iv, 256);
   }
 
-  string(0..255) crypt(string(0..255) data)
+  string(8bit) crypt(string(8bit) data)
   {
     int len = sizeof(data);
     String.Buffer buf = String.Buffer(len);
