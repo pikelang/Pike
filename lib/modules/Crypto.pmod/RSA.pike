@@ -222,6 +222,7 @@ this_program generate_key(int(128..) bits, void|int e)
 
 #endif
 
+#if WORKING_VARIANT
 //! Compatibility with Pike 7.8.
 variant __deprecated__ this_program generate_key(int(128..) bits,
 						 function(int:string(8bit)) rnd)
@@ -232,6 +233,7 @@ variant __deprecated__ this_program generate_key(int(128..) bits,
   random = old_rnd;
   return res;
 }
+#endif
 
 //
 // --- PKCS methods
@@ -480,15 +482,13 @@ __deprecated__ int md5_verify(string(8bit) message, string(8bit) signature)
 
 __deprecated__ string(8bit) sha_sign(string(8bit) message, mixed|void r)
 {
-  string(8bit) s = [string(8bit)]sprintf("%c%s%1H", 4, "sha1",
-                                         Crypto.SHA1->hash(message));
+  string(8bit) s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
   return raw_sign(s)->digits(256);r;
 }
 
 __deprecated__ int sha_verify(string(8bit) message, string(8bit) signature)
 {
-  string(8bit) s = [string(8bit)]sprintf("%c%s%1H", 4, "sha1",
-                                         Crypto.SHA1->hash(message));
+  string(8bit) s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash(message));
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 

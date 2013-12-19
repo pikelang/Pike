@@ -263,7 +263,8 @@ int verify(string(8bit) password, string(8bit) hash)
 //! @seealso
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
 //!   @[Nettle.Hash()->crypt_hash()]
-string(7bit) hash(string(8bit) password, string|void scheme, int|void rounds)
+string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
+                  int|void rounds)
 {
   function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
   int salt_size = 16;
@@ -279,7 +280,7 @@ string(7bit) hash(string(8bit) password, string|void scheme, int|void rounds)
     // We claim this to be a string(7bit) string, even though we add
     // the string(0..256). It will however only be called with the
     // already base64 encoded hashes.
-    return [string(7bit)]sprintf("$%s$%s$%s", scheme, salt, hash);
+    return sprintf("$%s$%s$%s", scheme, salt, [string(7bit)]hash);
   };
 
   string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,

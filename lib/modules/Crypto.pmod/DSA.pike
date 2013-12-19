@@ -334,8 +334,7 @@ __deprecated__ string(8bit) sign_rsaref(string(8bit) msg)
 {
   [Gmp.mpz r, Gmp.mpz s] = raw_sign(hash(msg, .SHA1));
 
-  return [string(8bit)]sprintf("%'\0'20s%'\0'20s",
-                               r->digits(256), s->digits(256));
+  return sprintf("%'\0'20s%'\0'20s", r->digits(256), s->digits(256));
 }
 
 //! Verify a RSA ref signature @[s] of message @[msg].
