@@ -112,7 +112,7 @@
 //!
 //! @seealso
 //!   @[hash()], @[predef::crypt()]
-int verify(string password, string hash)
+int verify(string(8bit) password, string(8bit) hash)
 {
   if (hash == "") return 1;
 
@@ -128,7 +128,7 @@ int verify(string password, string hash)
     hash = MIME.decode_base64(hash);
     password += hash[16..];
     hash = hash[..15];
-    return Crypto.MD5.hash(password) == [string(0..255)]hash;
+    return Crypto.MD5.hash(password) == hash;
 
   case "sha":	// RFC 2307
   case "ssha":
@@ -136,7 +136,7 @@ int verify(string password, string hash)
     hash = MIME.decode_base64(hash);
     password += hash[20..];
     hash = hash[..19];
-    return Crypto.SHA1.hash(password) == [string(0..255)]hash;
+    return Crypto.SHA1.hash(password) == hash;
 
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
@@ -150,7 +150,7 @@ int verify(string password, string hash)
     }
 
     // Then try our implementations.
-    sscanf(hash, "$%s$%s$%s", scheme, string salt, string hash);
+    sscanf(hash, "$%s$%s$%s", scheme, string(8bit) salt, string(8bit) hash);
     if( !salt || !hash ) return 0;
     int rounds = UNDEFINED;
     if (has_prefix(salt, "rounds=")) {
@@ -325,7 +325,7 @@ string(0..127) hash(string password, string|void scheme, int|void rounds)
     // FALL_THROUGH
   case "ssha":
   case "{ssha}":
-    crypt_hash = lambda(string passwd, string salt, int rounds) {
+    crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int rounds) {
 		   return Crypto.SHA1.hash(passwd + salt);
 		 };
     render_hash = render_ldap_hash;
@@ -337,7 +337,7 @@ string(0..127) hash(string password, string|void scheme, int|void rounds)
     // FALL_THROUGH
   case "smd5":
   case "{smd5}":
-    crypt_hash = lambda(string passwd, string salt, int rounds) {
+    crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int rounds) {
 		   return Crypto.MD5.hash(passwd + salt);
 		 };
     render_hash = render_ldap_hash;
