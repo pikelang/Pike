@@ -2354,13 +2354,16 @@ static int push_sprintf_argument_types(PCHARP format,
       case 's':
       {
 	push_object_type(0, 0);
+	if (int_marker) {
+	  push_assign_type(int_marker);
+	}
 	push_finished_type(int_type_string);
-	push_type(T_STRING);
-	push_type(T_OR);
 	if (int_marker) {
 	  push_assign_type(int_marker);
 	  ret |= PSAT_MARKER;
 	}
+	push_type(T_STRING);
+	push_type(T_OR);
 	break;
       }
 
