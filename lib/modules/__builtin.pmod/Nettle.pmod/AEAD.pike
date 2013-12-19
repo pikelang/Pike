@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 //! Base class for AEAD (Authenticated Encryption with Associated Data)
 //! algorithms.
 //!
