@@ -300,16 +300,7 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
 
-  int bsz = block_size();
-
-  if (sizeof(password) > bsz)
-    password = hash(password);
-  if (sizeof(password) < bsz)
-    password += "\0" * (bsz - sizeof(password));
-
-  string ikey = password ^ ("6" * bsz);
-  string okey = password ^ ("\\" * bsz);
-
+  HMAC hmac = HMAC(password);
   password = "CENSORED";
 
   string res = "";
@@ -319,7 +310,7 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
     string frag = "\0" * dsz;
     string buf = salt + sprintf("%4c", ++fragno);
     for (int j = 0; j < rounds; j++) {
-      buf = hash(okey + hash(ikey + buf));
+      buf = hmac(buf);
       frag ^= buf;
     }
     res += frag;
@@ -394,9 +385,10 @@ class HMAC
 
   //! @param passwd
   //!   The secret password (K).
-  this_program init(string passwd)
+  protected void create (string passwd, void|int b)
   {
-    int b = block_size();
+    if (!b)
+      b = block_size();
     if (sizeof(passwd) > b)
       passwd = hash(passwd);
     if (sizeof(passwd) < b)
@@ -404,40 +396,32 @@ class HMAC
 
     ikey = passwd ^ ("6" * b);
     okey = passwd ^ ("\\" * b);
-
-    h = State();
-    h->update(ikey);	// Init with ikey.
-
-    return this;
-  }
-
-  //! @param passwd
-  //!   The secret password (K).
-  void create(string passwd)
-  {
-    init(passwd);
-  }
-
-  this_program update(string data)
-  {
-    h->update(data);
-    return this;
   }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value.
   //!
-  //! This is a combined @[update()] and @[digest()].
+  //! This works as a combined @[update()] and @[digest()].
   string `()(string text)
   {
-    h->update(text);
-    return digest();
+    return hash(okey + hash(ikey + text));
+  }
+
+  this_program update(string data)
+  {
+    if( !h )
+    {
+      h = State();
+      h->update(ikey);
+    }
+    h->update(data);
+    return this;
   }
 
   string digest(int|void length)
   {
     string res = hash(okey + h->digest());
-    h->update(ikey);
+    h = 0;
 
     if (length) return res[..length-1];
     return res;
@@ -447,11 +431,7 @@ class HMAC
   //! the hash value as a PKCS-1 digestinfo block.
   string digest_info(string text)
   {
-    h->update(text);
-    string d = h->digest();
-    h->update(ikey);
-
-    return pkcs_digest(okey + d);
+    return pkcs_digest(okey + hash(ikey + text));
   }
 }
 

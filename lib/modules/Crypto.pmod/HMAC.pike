@@ -45,37 +45,9 @@ string(8bit) pkcs_digest(string(8bit) s)
 //! can perform the actual HMAC hashing. E.g. doing a HMAC hash with
 //! MD5 and the password @expr{"bar"@} of the string @expr{"foo"@}
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
-class `()
+Crypto.Hash.HMAC `()(string(8bit) passwd)
 {
-  string(8bit) ikey; /* ipad XOR:ed with the key */
-  string(8bit) okey; /* opad XOR:ed with the key */
-
-  //! @param passwd
-  //!   The secret password (K).
-  void create(string(8bit) passwd)
-    {
-      if (sizeof(passwd) > B)
-	passwd = raw_hash(passwd);
-      if (sizeof(passwd) < B)
-	passwd = passwd + "\0" * (B - sizeof(passwd));
-
-      ikey = [string(8bit)](passwd ^ ("6" * B));
-      okey = [string(8bit)](passwd ^ ("\\" * B));
-    }
-
-  //! Hashes the @[text] according to the HMAC algorithm and returns
-  //! the hash value.
-  string(8bit) `()(string(8bit) text)
-    {
-      return raw_hash(okey + raw_hash(ikey + text));
-    }
-
-  //! Hashes the @[text] according to the HMAC algorithm and returns
-  //! the hash value as a PKCS-1 digestinfo block.
-  string(8bit) digest_info(string(8bit) text)
-    {
-      return pkcs_digest(okey + raw_hash(ikey + text));
-    }
+  return H->HMAC(passwd);
 }
 
 #else
