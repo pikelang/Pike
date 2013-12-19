@@ -112,7 +112,6 @@ test_do([[
 			 cmin, cmax, smin, smax);
 		 log_msg("Cipher_suite: %s\n", fmt_cipher_suite(suite));
 		 if (state != 3) {
-exit(1);
 		   log_msg("Unexpected exit state: %d.\n", state);
 		 } else {
 		   log_msg("Unexpected result:\n"
