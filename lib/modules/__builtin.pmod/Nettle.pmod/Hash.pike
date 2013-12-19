@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 //! Base class for hash algorithms.
 //!
 //! Implements common meta functions, such as key expansion
@@ -87,7 +90,7 @@ string hash(string|Stdio.File in, int|void bytes)
       in = in->read();
     }
   }
-  return State(in)->digest();
+  return State([string]in)->digest();
 }
 
 /* NOTE: This is NOT the MIME base64 table! */
@@ -368,8 +371,8 @@ string pkcs_digest(string s)
   if (!build_digestinfo) {
     // NB: We MUST NOT use other modules at compile-time,
     //     so we load Standards.PKCS.Signature on demand.
-    build_digestinfo =
-      master()->resolve("Standards.PKCS.Signature")->build_digestinfo;
+    object pkcs = [object]master()->resolve("Standards.PKCS.Signature");
+    build_digestinfo = [function(string,this_program:string)]pkcs->build_digestinfo;
   }
   return build_digestinfo(s, this);
 }
