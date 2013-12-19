@@ -159,7 +159,7 @@ int verify(string(8bit) password, string(8bit) hash)
     }
     switch(scheme) {
     case "1":	// crypt_md5
-      return Nettle.crypt_md5(password, salt) == [string(0..127)]hash;
+      return Nettle.crypt_md5(password, salt) == [string(7bit)]hash;
 
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
@@ -173,11 +173,11 @@ int verify(string(8bit) password, string(8bit) hash)
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
       return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
-        [string(0..127)]hash;
+        [string(7bit)]hash;
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
-        [string(0..127)]hash;
+        [string(7bit)]hash;
 #endif
     }
     break;
@@ -269,27 +269,27 @@ string(7bit) hash(string(8bit) password, string|void scheme, int|void rounds)
   int salt_size = 16;
   int default_rounds = 5000;
 
-  string(0..127) render_crypt_hash(string(0..127) scheme, string(0..127) salt,
-                                   string(0..255) hash, int rounds)
+  string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,
+                                 string(8bit) hash, int rounds)
   {
     if (rounds != default_rounds) {
       salt = "rounds=" + rounds + "$" + salt;
     }
 
-    // We claim this to be a string(0..127) string, even though we add
+    // We claim this to be a string(7bit) string, even though we add
     // the string(0..256). It will however only be called with the
     // already base64 encoded hashes.
-    return [string(0..127)]sprintf("$%s$%s$%s", scheme, salt, hash);
+    return [string(7bit)]sprintf("$%s$%s$%s", scheme, salt, hash);
   };
 
-  string(0..127) render_ldap_hash(string(0..255) scheme, string(0..127) salt,
-                                  string(0..255) hash, int rounds)
+  string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,
+                                string(8bit) hash, int rounds)
   {
     if (scheme[0] != '{') scheme = "{" + scheme + "}";
-    return [string(0..127)]upper_case(scheme) + MIME.encode_base64(hash + salt);
+    return [string(7bit)]upper_case(scheme) + MIME.encode_base64(hash + salt);
   };
 
-  function(string(0..127), string(0..127), string(0..255), int:string(0..127)) render_hash = render_crypt_hash;
+  function(string(7bit), string(7bit), string(8bit), int:string(7bit)) render_hash = render_crypt_hash;
 
   switch(lower_case(scheme)) {
   case "crypt":
@@ -350,11 +350,11 @@ string(7bit) hash(string(8bit) password, string|void scheme, int|void rounds)
   if (!rounds) rounds = default_rounds;
 
   // NB: The salt must be printable.
-  string(0..127) salt =
+  string(7bit) salt =
     MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1];
 
-  string(0..255) hash = crypt_hash(password, salt, rounds);
+  string(8bit) hash = crypt_hash(password, salt, rounds);
 
-  return render_hash([string(0..127)]scheme, salt, hash, rounds);
+  return render_hash([string(7bit)]scheme, salt, hash, rounds);
 }
 

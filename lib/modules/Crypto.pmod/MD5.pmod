@@ -24,8 +24,8 @@ Standards.ASN1.Types.Identifier asn1_id()
 //!
 //! @seealso
 //!   @[Nettle.Hash()->crypt_hash()], @[crypt_md5()]
-string(0..127) crypt_hash(string(0..255) password, string(0..127) salt,
-			  int|void rounds)
+string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
+                        int|void rounds)
 {
   return Nettle.crypt_md5(password, salt);
 }

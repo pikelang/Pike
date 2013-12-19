@@ -28,7 +28,7 @@ protected void create(.Hash h, int|void b)
 
 //! Calls the hash function given to @[create] and returns the hash
 //! value of @[s].
-string(0..255) raw_hash(string(0..255) s)
+string(8bit) raw_hash(string(8bit) s)
 {
   return H->hash(s);
 }
@@ -36,7 +36,7 @@ string(0..255) raw_hash(string(0..255) s)
 //! Makes a PKCS-1 digestinfo block with the message @[s].
 //! @seealso
 //!   @[Standards.PKCS.Signature.build_digestinfo]
-string(0..255) pkcs_digest(string(0..255) s)
+string(8bit) pkcs_digest(string(8bit) s)
 {
   return Standards.PKCS.Signature.build_digestinfo(s, H);
 }
@@ -47,32 +47,32 @@ string(0..255) pkcs_digest(string(0..255) s)
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
 class `()
 {
-  string(0..255) ikey; /* ipad XOR:ed with the key */
-  string(0..255) okey; /* opad XOR:ed with the key */
+  string(8bit) ikey; /* ipad XOR:ed with the key */
+  string(8bit) okey; /* opad XOR:ed with the key */
 
   //! @param passwd
   //!   The secret password (K).
-  void create(string(0..255) passwd)
+  void create(string(8bit) passwd)
     {
       if (sizeof(passwd) > B)
 	passwd = raw_hash(passwd);
       if (sizeof(passwd) < B)
 	passwd = passwd + "\0" * (B - sizeof(passwd));
 
-      ikey = [string(0..255)](passwd ^ ("6" * B));
-      okey = [string(0..255)](passwd ^ ("\\" * B));
+      ikey = [string(8bit)](passwd ^ ("6" * B));
+      okey = [string(8bit)](passwd ^ ("\\" * B));
     }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value.
-  string(0..255) `()(string(0..255) text)
+  string(8bit) `()(string(8bit) text)
     {
       return raw_hash(okey + raw_hash(ikey + text));
     }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
   //! the hash value as a PKCS-1 digestinfo block.
-  string(0..255) digest_info(string(0..255) text)
+  string(8bit) digest_info(string(8bit) text)
     {
       return pkcs_digest(okey + raw_hash(ikey + text));
     }
