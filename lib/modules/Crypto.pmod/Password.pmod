@@ -263,9 +263,9 @@ int verify(string(8bit) password, string(8bit) hash)
 //! @seealso
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
 //!   @[Nettle.Hash()->crypt_hash()]
-string(0..127) hash(string password, string|void scheme, int|void rounds)
+string(7bit) hash(string(8bit) password, string|void scheme, int|void rounds)
 {
-  function(string, string, int:string(0..255)) crypt_hash;
+  function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
   int salt_size = 16;
   int default_rounds = 5000;
 
@@ -325,7 +325,7 @@ string(0..127) hash(string password, string|void scheme, int|void rounds)
     // FALL_THROUGH
   case "ssha":
   case "{ssha}":
-    crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int rounds) {
+    crypt_hash = lambda(string(8bit) passwd, string(7bit) salt, int rounds) {
 		   return Crypto.SHA1.hash(passwd + salt);
 		 };
     render_hash = render_ldap_hash;
