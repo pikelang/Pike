@@ -2194,20 +2194,18 @@ protected int ssl_write_callback (int called_from_real_backend)
 	}
       }
 
-      else {
-	if (write_callback && !sizeof (write_buffer) && !SSL_HANDSHAKING
-	    && (close_state < NORMAL_CLOSE || cb_errno)) {
-	  // errno() should return the error in the write callback - need
-	  // to propagate it here.
-	  FIX_ERRNOS (
-	    SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O "
-			    "(error %s)\n", write_callback, strerror (local_errno)),
-	    SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
-			    write_callback)
-	  );
-	  RESTORE;
-	  return write_callback (callback_id);
-	}
+      if (write_callback && !SSL_HANDSHAKING
+	  && (close_state < NORMAL_CLOSE || cb_errno)) {
+	// errno() should return the error in the write callback - need
+	// to propagate it here.
+	FIX_ERRNOS (
+	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O "
+			  "(error %s)\n", write_callback, strerror (local_errno)),
+	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
+			  write_callback)
+	);
+	RESTORE;
+	return write_callback (callback_id);
       }
     }
 
