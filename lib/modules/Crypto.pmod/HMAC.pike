@@ -47,7 +47,7 @@ string(8bit) pkcs_digest(string(8bit) s)
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
 Crypto.Hash.HMAC `()(string(8bit) passwd)
 {
-  return H->HMAC(passwd);
+  return H->HMAC(passwd, B);
 }
 
 #else

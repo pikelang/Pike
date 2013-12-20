@@ -389,6 +389,8 @@ class HMAC
   {
     if (!b)
       b = block_size();
+    else if (digest_size()>b)
+      error("Block size is less than hash digest size.\n");
     if (sizeof(passwd) > b)
       passwd = hash(passwd);
     if (sizeof(passwd) < b)
