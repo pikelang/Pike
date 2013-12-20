@@ -334,6 +334,6 @@ object get_data(string name)
     get_all_args("get_data",args,"%s",&name);
     sv=(struct svalue *)g_object_get_data(G_OBJECT(THIS->obj),name);
     pop_n_elems(args);
-    push_svalue(sv);
+    if (sv) push_svalue(sv); else push_undefined();
   }
 }
