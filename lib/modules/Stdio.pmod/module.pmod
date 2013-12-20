@@ -3139,7 +3139,7 @@ protected class nb_sendfile
     if (!writer_awake) {
       writer_awake = 1;
       to->set_nonblocking(to->query_read_callback(), write_cb,
-			  to->query_write_callback());
+			  to->query_close_callback());
     }
   }
 
