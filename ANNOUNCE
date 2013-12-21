@@ -1,4 +1,4 @@
-PIKE 7.8 ANNOUNCEMENT
+PIKE 8.0 ANNOUNCEMENT
 
 Pike is an interpreted, object-oriented programming language with a
 syntax reminiscent of C and Java, and freely available and distributable
@@ -37,7 +37,7 @@ various useful purposes. Among these are:
     + Image processing with support for several graphic file
           formats (such as JPEG, GIF, PNG, Photoshop and Gimp), and
           numerous image manipulation functions
-    + Cryptographic functions, including SSL support
+    + Cryptographic functions, including SSL/TLS support
     + Database interface to several common SQL databases,
           including MySQL, ODBC and Oracle
     + Embedding interfaces for Java and Perl
