@@ -82,7 +82,7 @@ int test_charset_table(string t) {
       names += ({ name });
   }
 
-  constant path = "lib/modules/Locale.pmod/Charset.pmod/module.pmod";
+  constant path = "lib/modules/Charset.pmod/module.pmod";
   string code = Stdio.read_file(path);
   if(!code)
   {
