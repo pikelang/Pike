@@ -1,4 +1,5 @@
 /* -*- Mode: pike; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+#pike __REAL_VERSION__
 
 #if constant(get_profiling_info)
 private multiset(program) object_programs() 

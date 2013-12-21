@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! A Watchdog that ensures that the process is not hung for an
 //! extended period of time. The definition of 'hung' is: Has not used
 //! the default backend.
