@@ -594,16 +594,7 @@ constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080;
 constant SSL2_ck_des_64_cbc_with_md5		= 0x060040;
 constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0;
 
-#if 0
-/* Methods for signing any server_key_exchange message (RFC 5246 7.4.1.4.1) */
-constant SIGN_anon = 0;
-constant SIGN_rsa = 1;
-constant SIGN_dsa = 2;
-constant SIGN_ecdsa = 3;
-
 /* FIXME: Add SIGN-type element to table */
-#endif
-
 constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
