@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 #if constant(Nettle.GCM)
 //! Implementation of the Galois Counter Mode (GCM). Works as
 //! a wrapper for the cipher algorithm put in create.

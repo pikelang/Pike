@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 #if constant(Nettle.CTR)
 //! Implementation of Counter Mode (CTR). Works as
 //! a wrapper for the cipher algorithm put in create.
