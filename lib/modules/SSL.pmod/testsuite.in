@@ -185,7 +185,7 @@ define(test_ssl, [[
     }
 
     if( `==($1,$2,$3,$4) )
-      suites = server_ctx->get_suites(mode,0) -
+      suites = server_ctx->get_suites(mode, 0, $4) -
   	    (invalid_suites[expected_protocol] || ({}));
 
     foreach(suites, int suite) {
