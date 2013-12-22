@@ -279,7 +279,7 @@ protected int cipher_suite_sort_key(int suite)
 //!   Note that the effective keylength may differ from
 //!   the actual keylength for old ciphers where there
 //!   are known attacks.
-array(int) get_suites(int sign, int min_keylength)
+array(int) get_suites(int sign, int min_keylength, int|void max_version)
 {
   // Default to the unsigned key exchange methods.
   multiset(int) kes = (< KE_null, KE_dh, KE_dh_anon >);
@@ -310,6 +310,15 @@ array(int) get_suites(int sign, int min_keylength)
 		 }, min_keylength);
   }
 
+  if (!zero_type(max_version) && (max_version < PROTOCOL_TLS_1_2)) {
+    // AEAD protocols are not supported prior to TLS 1.2.
+    res = filter(res,
+		 lambda(int suite) {
+		   return (sizeof(CIPHER_SUITES[suite]) < 4) ||
+		     (CIPHER_SUITES[suite][3] != MODE_gcm);
+		 });
+  }
+
   // Sort.
   sort(map(res, cipher_suite_sort_key), res);
 
@@ -337,10 +346,10 @@ void filter_weak_suites(int min_keylength)
 //!
 //! @seealso
 //!   @[dhe_dss_mode()], @[filter_weak_suites()]
-void rsa_mode(int|void min_keylength)
+void rsa_mode(int|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
-  preferred_suites = get_suites(SIGNATURE_rsa, min_keylength);
+  preferred_suites = get_suites(SIGNATURE_rsa, min_keylength, max_version);
 }
 
 //! Set @[preferred_suites] to DSS based methods.
@@ -350,10 +359,10 @@ void rsa_mode(int|void min_keylength)
 //!
 //! @seealso
 //!   @[rsa_mode()], @[filter_weak_suites()]
-void dhe_dss_mode(int|void min_keylength)
+void dhe_dss_mode(int|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
-  preferred_suites = get_suites(SIGNATURE_dsa, min_keylength);
+  preferred_suites = get_suites(SIGNATURE_dsa, min_keylength, max_version);
 }
 
 //! Always ({ COMPRESSION_null })
