@@ -22,6 +22,8 @@
 
 #if defined(USE_GMP) || defined(USE_GMP2)
 
+#include "my_gmp.h"
+
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -37,8 +39,6 @@
 #include "bignum.h"
 #include "operators.h"
 #include "gc.h"
-
-#include "my_gmp.h"
 
 #include <limits.h>
 
@@ -64,6 +64,18 @@ struct program *mpzmod_program = NULL;
 struct program *bignum_program = NULL;
 
 static mpz_t mpz_int_type_min;
+
+static MP_INT *gmp_mpz_from_bignum(struct object *o, int inherit)
+{
+  if (!IS_MPZ_OBJ(o)) return NULL;
+  return OBTOMPZ(o);
+}
+
+static void gmp_push_bignum(MP_INT *mpz)
+{
+  push_object(fast_clone_object(bignum_program));
+  mpz_set(OBTOMPZ(Pike_sp[-1].u.object), mpz);
+}
 
 void mpzmod_reduce(struct object *o)
 {
@@ -2254,7 +2266,7 @@ PIKE_MODULE_EXIT
 #ifdef INT64
       NULL, NULL, NULL,
 #endif
-      NULL, NULL);
+      NULL, NULL, NULL, NULL);
 #endif
 }
 
@@ -2444,6 +2456,7 @@ PIKE_MODULE_INIT
   MPZ_DEFS();
 
   id=add_program_constant("bignum", bignum_program=end_program(), 0);
+  bignum_program->id = PROG_GMP_BIGNUM_ID;
   bignum_program->flags |=
     PROGRAM_NO_WEAK_FREE |
     PROGRAM_NO_EXPLICIT_DESTRUCT |
@@ -2473,7 +2486,8 @@ PIKE_MODULE_INIT
       gmp_push_int64, gmp_int64_from_bignum,
       gmp_reduce_stack_top_bignum,
 #endif
-      gmp_push_ulongest, gmp_ulongest_from_bignum);
+      gmp_push_ulongest, gmp_ulongest_from_bignum,
+      gmp_mpz_from_bignum, gmp_push_bignum);
 
 #if 0
   /* magic /Hubbe

@@ -12,6 +12,8 @@
 #include "svalue.h"
 #include "pike_error.h"
 
+#include "bignum.h"
+
 #define sp Pike_sp
 
 PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
@@ -125,6 +127,9 @@ PMOD_EXPORT void (*push_ulongest) (unsigned LONGEST) = NULL;
 PMOD_EXPORT int (*ulongest_from_bignum) (unsigned LONGEST *,
 					 struct object *) = NULL;
 
+PMOD_EXPORT MP_INT *(*mpz_from_bignum)(struct object *, int) = NULL;
+PMOD_EXPORT void (*push_bignum)(MP_INT *) = NULL;
+
 PMOD_EXPORT void hook_in_gmp_funcs (
 #ifdef INT64
   void (*push_int64_val)(INT64),
@@ -132,7 +137,9 @@ PMOD_EXPORT void hook_in_gmp_funcs (
   void (*reduce_stack_top_bignum_val) (void),
 #endif
   void (*push_ulongest_val) (unsigned LONGEST),
-  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *))
+  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *),
+  MP_INT *(*mpz_from_bignum_val)(struct object *, int),
+  void (*push_bignum_val)(MP_INT *))
 {
   /* Assigning the pointers above directly from the Gmp module doesn't
    * work in some cases, e.g. NT. */
@@ -143,4 +150,6 @@ PMOD_EXPORT void hook_in_gmp_funcs (
 #endif
   push_ulongest = push_ulongest_val;
   ulongest_from_bignum = ulongest_from_bignum_val;
+  mpz_from_bignum = mpz_from_bignum_val;
+  push_bignum = push_bignum_val;
 }

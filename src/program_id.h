@@ -94,6 +94,9 @@
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
 #define   tObjIs_GMP_MPZ                      "\003\001\000\000\000\040"
+#define     PROG_GMP_BIGNUM_ID                                      041
+#define tObjImpl_GMP_BIGNUM                   "\003\000\000\000\000\041"
+#define   tObjIs_GMP_BIGNUM                   "\003\001\000\000\000\041"
 
 /* Classes in builtin.cmod. */
 #define     PROG_SINGLE_STRING_REPLACE_ID			    050

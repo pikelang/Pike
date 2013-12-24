@@ -5,7 +5,6 @@
 */
 
 #include "global.h"
-#include "bignum.h"
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "module.h"
@@ -20,6 +19,8 @@ DECLARATIONS
 #include <nettle/dsa.h>
 #include <nettle/rsa.h>
 #include <gmp.h>
+
+#include "bignum.h"
 
 void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
 {
