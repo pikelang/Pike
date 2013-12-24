@@ -265,6 +265,13 @@ PMOD_EXPORT extern void (*reduce_stack_top_bignum) (void);
 PMOD_EXPORT extern void (*push_ulongest) (unsigned LONGEST i);
 PMOD_EXPORT extern int (*ulongest_from_bignum) (unsigned LONGEST *i,
 						struct object *bignum);
+#ifndef __MPN
+#define MP_INT void
+#endif
+
+PMOD_EXPORT extern MP_INT *(*mpz_from_bignum)(struct object *, int);
+PMOD_EXPORT extern void (*push_bignum)(MP_INT *);
+
 PMOD_EXPORT void hook_in_gmp_funcs (
 #ifdef INT64
   void (*push_int64_val)(INT64),
@@ -272,7 +279,9 @@ PMOD_EXPORT void hook_in_gmp_funcs (
   void (*reduce_stack_top_bignum_val) (void),
 #endif
   void (*push_ulongest_val) (unsigned LONGEST),
-  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *));
+  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *),
+  MP_INT *(*mpz_from_bignum_val)(struct object *, int),
+  void (*push_bignum_val)(MP_INT *));
 /* Prototypes end here */
 
 /* Less confusing name, considering that push_int64 pushes a 32 bit
