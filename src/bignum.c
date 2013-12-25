@@ -20,14 +20,14 @@ PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
 
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
-  return program_from_function(&auto_bignum_program);
+  return program_from_svalue(&auto_bignum_program);
 }
 
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
   if (TYPEOF(auto_bignum_program) == PIKE_T_FREE)
     return 0;
-  return program_from_function(&auto_bignum_program);
+  return program_from_svalue(&auto_bignum_program);
 }
 
 void exit_auto_bignum(void)
@@ -127,7 +127,7 @@ PMOD_EXPORT void (*push_ulongest) (unsigned LONGEST) = NULL;
 PMOD_EXPORT int (*ulongest_from_bignum) (unsigned LONGEST *,
 					 struct object *) = NULL;
 
-PMOD_EXPORT MP_INT *(*mpz_from_bignum)(struct object *, int) = NULL;
+PMOD_EXPORT int (*mpz_from_svalue)(MP_INT *, struct svalue *) = NULL;
 PMOD_EXPORT void (*push_bignum)(MP_INT *) = NULL;
 
 PMOD_EXPORT void hook_in_gmp_funcs (
@@ -138,7 +138,7 @@ PMOD_EXPORT void hook_in_gmp_funcs (
 #endif
   void (*push_ulongest_val) (unsigned LONGEST),
   int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *),
-  MP_INT *(*mpz_from_bignum_val)(struct object *, int),
+  int (*mpz_from_svalue_val)(MP_INT *, struct svalue *),
   void (*push_bignum_val)(MP_INT *))
 {
   /* Assigning the pointers above directly from the Gmp module doesn't
@@ -150,6 +150,6 @@ PMOD_EXPORT void hook_in_gmp_funcs (
 #endif
   push_ulongest = push_ulongest_val;
   ulongest_from_bignum = ulongest_from_bignum_val;
-  mpz_from_bignum = mpz_from_bignum_val;
+  mpz_from_svalue = mpz_from_svalue_val;
   push_bignum = push_bignum_val;
 }

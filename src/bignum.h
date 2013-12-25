@@ -269,7 +269,7 @@ PMOD_EXPORT extern int (*ulongest_from_bignum) (unsigned LONGEST *i,
 #define MP_INT void
 #endif
 
-PMOD_EXPORT extern MP_INT *(*mpz_from_bignum)(struct object *, int);
+PMOD_EXPORT extern int (*mpz_from_svalue)(MP_INT *, struct svalue *);
 PMOD_EXPORT extern void (*push_bignum)(MP_INT *);
 
 PMOD_EXPORT void hook_in_gmp_funcs (
@@ -280,7 +280,7 @@ PMOD_EXPORT void hook_in_gmp_funcs (
 #endif
   void (*push_ulongest_val) (unsigned LONGEST),
   int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *),
-  MP_INT *(*mpz_from_bignum_val)(struct object *, int),
+  int (*mpz_from_svalue_val)(MP_INT *, struct svalue *),
   void (*push_bignum_val)(MP_INT *));
 /* Prototypes end here */
 
