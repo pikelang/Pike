@@ -34,12 +34,6 @@ void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
   pop_stack();
 }
 
-#define MAKE_GMP(X,Y) do { push_int(0);   \
-  apply_svalue(&auto_bignum_program, 1); \
-  Y = Pike_sp[-1].u.object; \
-  memcpy(&X.Y, get_storage(Y, auto_bignum_program.u.program), sizeof(mpz_t));\
-  } while(0)
-
 /*! @decl array(object(Gmp.mpz)) @
  *!         dsa_generate_keypair(int p_bits, int q_bits, @
  *!                              function(int:string(0..255)) rnd)
@@ -75,30 +69,31 @@ PIKEFUN array(object(Gmp.mpz))
   dsa_generate_keypair(int p_bits, int q_bits, function(int:string(0..255)) rnd)
 {
   struct dsa_public_key pub;
-  struct object *p, *q, *g, *y;
   struct dsa_private_key key;
-  struct object *x;
 
-  MAKE_GMP(pub,p);
-  MAKE_GMP(pub,q);
-  MAKE_GMP(pub,g);
-  MAKE_GMP(pub,y);
-  MAKE_GMP(key,x);
+  dsa_public_key_init(&pub);
+  dsa_private_key_init(&key);
 
   if( !nettle_dsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
                                    NULL, NULL, p_bits, q_bits) )
   {
+    dsa_private_key_clear(&key);
+    dsa_public_key_clear(&pub);
+
     Pike_error("Illegal parameter value.\n");
   }
 
-  memcpy(get_storage(p, auto_bignum_program.u.program), &pub.p, sizeof(mpz_t));
-  memcpy(get_storage(q, auto_bignum_program.u.program), &pub.q, sizeof(mpz_t));
-  memcpy(get_storage(g, auto_bignum_program.u.program), &pub.g, sizeof(mpz_t));
-  memcpy(get_storage(y, auto_bignum_program.u.program), &pub.y, sizeof(mpz_t));
-  memcpy(get_storage(x, auto_bignum_program.u.program), &key.x, sizeof(mpz_t));
+  push_bignum((MP_INT *)&pub.p);
+  push_bignum((MP_INT *)&pub.q);
+  push_bignum((MP_INT *)&pub.g);
+  push_bignum((MP_INT *)&pub.y);
+  push_bignum((MP_INT *)&key.x);
+
+  dsa_private_key_clear(&key);
+  dsa_public_key_clear(&pub);
 
   f_aggregate(5);
-  stack_pop_n_elems_keep_top(3); /* Remove p_bits, q_bits and rnd. */
+  stack_pop_n_elems_keep_top(args); /* Remove p_bits, q_bits and rnd. */
 }
 
 /*! @decl array(object(Gmp.mpz)) @
@@ -123,41 +118,32 @@ PIKEFUN array(object(Gmp.mpz))
   rsa_generate_keypair(int bits, int e, function(int:string(0..255)) rnd)
 {
   struct rsa_public_key pub;
-  struct object *n, *_e;
   struct rsa_private_key key;
-  struct object *d, *p, *q, *a, *b, *c;
 
-  push_int(e);
-  apply_svalue(&auto_bignum_program, 1);
-  _e = Pike_sp[-1].u.object;
-  memcpy(&pub.e, get_storage(_e, auto_bignum_program.u.program),
-         sizeof(mpz_t));
+  rsa_public_key_init(&pub);
+  rsa_private_key_init(&key);
 
-  MAKE_GMP(pub,n);
-  MAKE_GMP(key,d);
-  MAKE_GMP(key,p);
-  MAKE_GMP(key,q);
-  MAKE_GMP(key,a);
-  MAKE_GMP(key,b);
-  MAKE_GMP(key,c);
+  mpz_set_ui(&pub.e, e);
 
   if( !nettle_rsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
                                    NULL, NULL, bits, 0) )
   {
+    rsa_private_key_clear(&key);
+    rsa_public_key_clear(&pub);
+
     Pike_error("Illegal parameter value.\n");
   }
 
-  memcpy(get_storage(n, auto_bignum_program.u.program), &pub.n, sizeof(mpz_t));
-  memcpy(get_storage(d, auto_bignum_program.u.program), &key.d, sizeof(mpz_t));
-  memcpy(get_storage(p, auto_bignum_program.u.program), &key.p, sizeof(mpz_t));
-  memcpy(get_storage(q, auto_bignum_program.u.program), &key.q, sizeof(mpz_t));
-  memcpy(get_storage(a, auto_bignum_program.u.program), &key.a, sizeof(mpz_t));
-  memcpy(get_storage(b, auto_bignum_program.u.program), &key.b, sizeof(mpz_t));
-  memcpy(get_storage(c, auto_bignum_program.u.program), &key.c, sizeof(mpz_t));
+  push_bignum((MP_INT *)&pub.n);
+  push_bignum((MP_INT *)&key.d);
+  push_bignum((MP_INT *)&key.p);
+  push_bignum((MP_INT *)&key.q);
 
-  pop_n_elems(3); /* We don't need a, b, c. */
+  rsa_private_key_clear(&key);
+  rsa_public_key_clear(&pub);
+
   f_aggregate(4);
-  stack_pop_n_elems_keep_top(3); /* Remove bits, e and rnd. */
+  stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
 void
