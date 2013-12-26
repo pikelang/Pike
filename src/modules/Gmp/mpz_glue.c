@@ -65,10 +65,40 @@ struct program *bignum_program = NULL;
 
 static mpz_t mpz_int_type_min;
 
-static MP_INT *gmp_mpz_from_bignum(struct object *o, int inherit)
+static int gmp_mpz_from_svalue(MP_INT *dest, struct svalue *s)
 {
-  if (!IS_MPZ_OBJ(o)) return NULL;
-  return OBTOMPZ(o);
+  if (!s) return 0;
+  if (TYPEOF(*s) == T_INT) {
+#if SIZEOF_LONG >= SIZEOF_INT64
+    PIKE_MPZ_SET_SI(dest, s->u.integer);
+#else
+    INT_TYPE i = s->u.integer;
+    int neg = i < 0;
+    unsigned INT64 bits = (unsigned INT64) (neg ? -i : i);
+
+#ifdef HAVE_MPZ_IMPORT
+    mpz_import(dest, 1, 1, SIZEOF_INT64, 0, 0, &bits);
+#else
+    size_t n =
+      ((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
+      /* The above is the position of the top unsigned long in the INT64. */
+      * ULONG_BITS;
+    mpz_set_ui(dest, (unsigned long) (bits >> n));
+    while (n) {
+      n -= ULONG_BITS;
+      mpz_mul_2exp(dest, dest, ULONG_BITS);
+      mpz_add_ui(dest, dest, (unsigned long) (bits >> n));
+    }
+#endif	/* !HAVE_MPZ_IMPORT */
+
+    if (neg) mpz_neg(dest, dest);
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
+    return 1;
+  }
+
+  if ((TYPEOF(*s) != T_OBJECT) || !IS_MPZ_OBJ(s->u.object)) return 0;
+  mpz_set(dest, OBTOMPZ(s->u.object));
+  return 1;
 }
 
 static void gmp_push_bignum(MP_INT *mpz)
@@ -2487,7 +2517,7 @@ PIKE_MODULE_INIT
       gmp_reduce_stack_top_bignum,
 #endif
       gmp_push_ulongest, gmp_ulongest_from_bignum,
-      gmp_mpz_from_bignum, gmp_push_bignum);
+      gmp_mpz_from_svalue, gmp_push_bignum);
 
 #if 0
   /* magic /Hubbe
