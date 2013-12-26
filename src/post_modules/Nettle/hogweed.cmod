@@ -123,7 +123,7 @@ PIKEFUN array(object(Gmp.mpz))
   rsa_public_key_init(&pub);
   rsa_private_key_init(&key);
 
-  mpz_set_ui(&pub.e, e);
+  mpz_set_ui((MP_INT *)&pub.e, e);
 
   if( !nettle_rsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
                                    NULL, NULL, bits, 0) )
@@ -146,10 +146,134 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
+#ifdef HAVE_NETTLE_ECDSA_H
+#include <nettle/ecc-curve.h>
+
+#include <nettle/ecc.h>
+
+/*! @class ECC_Curve
+ *!
+ *! Elliptic Curve Definition
+ */
+PIKECLASS ECC_Curve
+{
+  CVAR const struct ecc_curve *curve;
+
+  /*! @decl int size()
+   *!
+   *! @returns
+   *!   Returns the size in bits for a single coordinate on the curve.
+   */
+  PIKEFUN int size()
+  {
+    if (THIS->curve) {
+      push_int64(ecc_size(THIS->curve) * sizeof(mp_limb_t) * 8);
+    } else {
+      push_undefined();
+    }
+  }
+
+  /*! @decl Gmp.mpz new_scalar(function(int:string(8bit)) rnd)
+   *!
+   *! @param rnd
+   *!   Randomness function to use as source.
+   *!
+   *! @returns
+   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   or as an ECDH exponent.
+   */
+  PIKEFUN object(Gmp.mpz) new_scalar(function(int:string(8bit)) rnd)
+  {
+    struct ecc_scalar s;
+    struct object *ret;
+
+    ecc_scalar_init(&s, THIS->curve);
+
+    ecc_scalar_random(&s, rnd, random_func_wrapper);
+
+    push_object(ret = fast_clone_object(get_auto_bignum_program()));
+    ecc_scalar_get(&s, (mpz_ptr)ret->storage);
+
+    ecc_scalar_clear(&s);
+  }
+
+  /*! @decl array(Gmp.mpz) `*(Gmp.moz|int scalar)
+   *!
+   *! Multiply the curve by a scalar.
+   *!
+   *! @returns
+   *!   Returns a new point (x, y) on the curve.
+   */
+  PIKEFUN array(object(Gmp.mpz)) `*(object(Gmp.mpz)|int scalar)
+  {
+    struct ecc_scalar s;
+    struct ecc_point r;
+    struct object *x;
+    struct object *y;
+
+    convert_svalue_to_bignum(scalar);
+
+    ecc_scalar_init(&s, THIS->curve);
+    ecc_point_init(&r, THIS->curve);
+
+    if (!ecc_scalar_set(&s, (mpz_srcptr)scalar->u.object->storage)) {
+      ecc_scalar_clear(&s);
+      ecc_point_clear(&r);
+      SIMPLE_ARG_ERROR("`*", 1, "Invalid scalar for curve.");
+    }
+
+    ecc_point_mul_g(&r, &s);
+    push_object(x = fast_clone_object(get_auto_bignum_program()));
+    push_object(y = fast_clone_object(get_auto_bignum_program()));
+    ecc_point_get(&r, (mpz_ptr)x->storage, (mpz_ptr)y->storage);
+
+    ecc_scalar_clear(&s);
+    ecc_point_clear(&r);
+
+    f_aggregate(2);
+  }
+}
+
+/*! @endclass ECC_Curve
+ */
+
+#endif /* HAVE_NETTLE_ECDSA_H */
+
 void
 hogweed_init(void)
 {
+#ifdef HAVE_NETTLE_ECDSA_H
+  struct svalue c;
+#endif
+
   INIT;
+
+#ifdef HAVE_NETTLE_ECDSA_H
+  SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
+  OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_192r1;
+  simple_add_constant("SECP_192R1", &c, 0);
+  free_svalue(&c);
+
+  SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
+  OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_224r1;
+  simple_add_constant("SECP_224R1", &c, 0);
+  free_svalue(&c);
+
+  SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
+  OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_256r1;
+  simple_add_constant("SECP_256R1", &c, 0);
+  free_svalue(&c);
+
+  SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
+  OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_384r1;
+  simple_add_constant("SECP_384R1", &c, 0);
+  free_svalue(&c);
+
+  SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
+  OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_521r1;
+  simple_add_constant("SECP_521R1", &c, 0);
+  free_svalue(&c);
+#endif
 }
 
 void
