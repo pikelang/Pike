@@ -44,7 +44,7 @@ else
     # camellia is available in Nettle 2.1 and later.
     AC_CHECK_HEADERS(nettle/camellia.h nettle/md4.h nettle/sha3.h \
                      nettle/ripemd160.h nettle/gosthash94.h \
-	             nettle/ctr.h nettle/gcm.h)
+	             nettle/ctr.h nettle/gcm.h nettle/ecdsa.h)
     AC_CHECK_FUNCS(nettle_md4_init)
 
     AC_MSG_CHECKING([for idea.c])
