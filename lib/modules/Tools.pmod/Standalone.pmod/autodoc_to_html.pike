@@ -492,7 +492,7 @@ string range_type( string type, Node min, Node max )
     int low = (int)parse_text(min);
     int high = (int)parse_text(max);
 
-    if( low == 0 && (high+1)->popcnt() == 1 )
+    if( low == 0 && (high+1)->popcount() == 1 )
     {
         return type+"("+strlen((high+1)->digits(2))+"bit)";
     }
