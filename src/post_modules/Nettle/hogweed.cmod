@@ -187,6 +187,8 @@ PIKECLASS ECC_Curve
     struct ecc_scalar s;
     struct object *ret;
 
+    if (!THIS->curve) Pike_error("No curve defined.\n");
+
     ecc_scalar_init(&s, THIS->curve);
 
     ecc_scalar_random(&s, rnd, random_func_wrapper);
@@ -201,6 +203,8 @@ PIKECLASS ECC_Curve
    *!
    *! Multiply the curve by a scalar.
    *!
+   *! This can be used to get the public key from a private key.
+   *!
    *! @returns
    *!   Returns a new point (x, y) on the curve.
    */
@@ -210,6 +214,8 @@ PIKECLASS ECC_Curve
     struct ecc_point r;
     struct object *x;
     struct object *y;
+
+    if (!THIS->curve) Pike_error("No curve defined.\n");
 
     convert_svalue_to_bignum(scalar);
 
@@ -231,6 +237,65 @@ PIKECLASS ECC_Curve
     ecc_point_clear(&r);
 
     f_aggregate(2);
+  }
+
+  /*! @decl array(Gmp.mpz) point_mul(Gmp.mpz|int x, Gmp.mpz|int y, @
+   *!                                Gmp.mpz|int scalar)
+   *!
+   *! Multiply a point on the curve by a scalar.
+   *!
+   *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
+   *!
+   *! @returns
+   *!   Returns the new point on the curve.
+   */
+  PIKEFUN array(object(Gmp.mpz)) point_mul(object(Gmp.mpz)|int x,
+					   object(Gmp.mpz)|int y,
+					   object(Gmp.mpz)|int scalar)
+  {
+    struct ecc_point p;
+    struct ecc_scalar s;
+    struct ecc_point r;
+    struct object *rx;
+    struct object *ry;
+
+    if (!THIS->curve) Pike_error("No curve defined.\n");
+
+    convert_svalue_to_bignum(x);
+    convert_svalue_to_bignum(y);
+    convert_svalue_to_bignum(scalar);
+
+    ecc_point_init(&p, THIS->curve);
+    ecc_scalar_init(&s, THIS->curve);
+
+    if (!ecc_point_set(&p,
+		       (mpz_srcptr)x->u.object->storage,
+		       (mpz_srcptr)y->u.object->storage)) {
+      ecc_scalar_clear(&s);
+      ecc_point_clear(&p);
+      SIMPLE_ARG_ERROR("point_mul", 1, "Invalid point on curve.");
+    }
+
+    if (!ecc_scalar_set(&s, (mpz_srcptr)scalar->u.object->storage)) {
+      ecc_scalar_clear(&s);
+      ecc_point_clear(&p);
+      SIMPLE_ARG_ERROR("point_mul", 3, "Invalid scalar for curve.");
+    }
+
+    ecc_point_init(&r, THIS->curve);
+
+    ecc_point_mul(&r, &s, &p);
+
+    push_object(rx = fast_clone_object(get_auto_bignum_program()));
+    push_object(ry = fast_clone_object(get_auto_bignum_program()));
+    ecc_point_get(&r, (mpz_ptr)rx->storage, (mpz_ptr)ry->storage);
+
+    ecc_point_clear(&r);
+    ecc_scalar_clear(&s);
+    ecc_point_clear(&p);
+
+    f_aggregate(2);
+    stack_pop_n_elems_keep_top(args);
   }
 }
 
