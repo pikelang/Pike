@@ -343,14 +343,14 @@ Packet client_hello()
 Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
-  ke = session->ke_factory(context, session, client_version);
+  ke = session->ke_factory(context, session, this, client_version);
   string data = ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
 Packet client_key_exchange_packet()
 {
-  ke = ke || session->ke_factory(context, session, client_version);
+  ke = ke || session->ke_factory(context, session, this, client_version);
   string data =
     ke->client_key_exchange_packet(client_random, server_random, version);
   if (!data) {
@@ -1527,7 +1527,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     case HANDSHAKE_server_key_exchange:
       {
 	if (ke) error("KE!\n");
-	ke = session->ke_factory(context, session, client_version);
+	ke = session->ke_factory(context, session, this, client_version);
 	if (ke->server_key_exchange(input, client_random, server_random) < 0) {
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"

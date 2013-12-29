@@ -162,7 +162,8 @@ class TLSSigner
 }
 
 //! KeyExchange method base class.
-class KeyExchange(object context, object session, array(int) client_version)
+class KeyExchange(object context, object session, object connection,
+		  array(int) client_version)
 {
   //! Indicates whether a certificate isn't required.
   int anonymous;
@@ -205,6 +206,8 @@ class KeyExchange(object context, object session, array(int) client_version)
 
     res = session->cipher_spec->prf(premaster_secret, "master secret",
 				    client_random + server_random, 48);
+
+    connection->ke = UNDEFINED;
 
     SSL3_DEBUG_MSG("master: %O\n", res);
     return res;
@@ -274,6 +277,7 @@ class KeyExchange(object context, object session, array(int) client_version)
     err = UNDEFINED;
     if (!verification_ok)
     {
+      connection->ke = UNDEFINED;
       return -1;
     }
     return 0;
@@ -284,7 +288,7 @@ class KeyExchange(object context, object session, array(int) client_version)
 //!
 //! This is the NULL @[KeyExchange], which is only used for the
 //! @[SSL_null_with_null_null] cipher suite, which is usually disabled.
-class KeyExchangeNULL(object context, object session, array(int) client_version)
+class KeyExchangeNULL
 {
   inherit KeyExchange;
 
@@ -324,7 +328,7 @@ class KeyExchangeNULL(object context, object session, array(int) client_version)
 //! Key exchange for @[KE_rsa].
 //!
 //! @[KeyExchange] that uses the Rivest Shamir Adelman algorithm.
-class KeyExchangeRSA(object context, object session, array(int) client_version)
+class KeyExchangeRSA
 {
   inherit KeyExchange;
 
@@ -440,6 +444,7 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
 
       premaster_secret = context->random(48);
       message_was_bad = 1;
+      connection->ke = UNDEFINED;
 
     } else {
     }
@@ -472,7 +477,7 @@ class KeyExchangeRSA(object context, object session, array(int) client_version)
 //! Key exchange for @[KE_dh_anon].
 //!
 //! @[KeyExchange] that uses anonymous Diffie-Hellman.
-class KeyExchangeDH(object context, object session, array(int) client_version)
+class KeyExchangeDH
 {
   inherit KeyExchange;
 
@@ -543,6 +548,7 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
 	dh_state->set_other(struct->get_bignum());
       } || !struct->is_empty())
     {
+      connection->ke = UNDEFINED;
       return ALERT_unexpected_message;
     }
 
@@ -575,7 +581,7 @@ class KeyExchangeDH(object context, object session, array(int) client_version)
 //! KeyExchange for @[KE_dhe_rsa] and @[KE_dhe_dss].
 //!
 //! KeyExchange that uses Diffie-Hellman to generate an Ephemeral key.
-class KeyExchangeDHE(object context, object session, array(int) client_version)
+class KeyExchangeDHE
 {
   inherit KeyExchangeDH;
 
@@ -598,6 +604,7 @@ class KeyExchangeDHE(object context, object session, array(int) client_version)
        * rsa_fixed_dh or dss_fixed_dh. Not supported. */
       SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
 		     "               Hanging up.\n");
+      connection->ke = UNDEFINED;
       return ALERT_certificate_unknown;
     }
 
