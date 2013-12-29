@@ -177,11 +177,16 @@ enum KeyExchangeType {
   KE_rsa	= 1,	//! Rivest-Shamir-Adelman
   /* We ignore the distinction between dh_dss and dh_rsa for now. */
   KE_dh		= 2,	//! Diffie-Hellman
-  KE_dhe_dss	= 3,	//! Diffie-Hellman DSS
-  KE_dhe_rsa	= 4,	//! Diffie-Hellman RSA
+  KE_dhe_dss	= 3,	//! Diffie-Hellman Ephemeral DSS
+  KE_dhe_rsa	= 4,	//! Diffie-Hellman Ephemeral RSA
   KE_dh_anon	= 5,	//! Diffie-Hellman Anonymous
   KE_dms	= 6,
   KE_fortezza	= 7,
+  // The following four are from RFC 4492.
+  KE_ecdh_ecdsa = 8,	//! Elliptic Curve DH with ECDSA
+  KE_ecdhe_ecdsa= 9,	//! Elliptic Curve DH Ephemeral with ECDSA
+  KE_ecdh_rsa   = 10,	//! Elliptic Curve DH with RSA
+  KE_ecdhe_rsa  = 11,	//! Elliptic Curve DH Ephemeral with RSA
 }
 
 //! Compression methods.
@@ -711,9 +716,61 @@ constant AUTH_rsa_ephemeral_dh	= 5;	// SSL 3.0
 constant AUTH_dss_ephemeral_dh	= 6;	// SSL 3.0
 constant AUTH_fortezza_kea	= 20;	// SSL 3.0
 constant AUTH_fortezza_dms	= 20;
-constant AUTH_ecdsa_sign        = 64;
-constant AUTH_rsa_fixed_ecdh    = 65;
-constant AUTH_ecdsa_fixed_ecdh  = 66;
+constant AUTH_ecdsa_sign        = 64;	// RFC 4492
+constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492
+constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492
+
+/* ECC curve types from RFC 4492 5.4. */
+enum CurveType {
+  CURVETYPE_explicit_prime	= 1,
+  CURVETYPE_explicit_char2	= 2,
+  CURVETYPE_named_curve		= 3,
+}
+
+/* ECBasis types from RFC 4492 5.4 errata. */
+enum ECBasisType {
+  ECBASIS_trinomial = 1,
+  ECBASIS_pentanomial = 2,
+}
+
+/* ECC named curves from RFC 4492 5.1.1. */
+enum NamedCurve {
+  CURVE_sect163k1			= 1,
+  CURVE_sect163r1			= 2,
+  CURVE_sect163r2			= 3,
+  CURVE_sect193r1			= 4,
+  CURVE_sect193r2			= 5,
+  CURVE_sect233k1			= 6,
+  CURVE_sect233r1			= 7,
+  CURVE_sect239k1			= 8,
+  CURVE_sect283k1			= 9,
+  CURVE_sect283r1			= 10,
+  CURVE_sect409k1			= 11,
+  CURVE_sect409r1			= 12,
+  CURVE_sect571k1			= 13,
+  CURVE_sect571r1			= 14,
+  CURVE_secp160k1			= 15,
+  CURVE_secp160r1			= 16,
+  CURVE_secp160r2			= 17,
+  CURVE_secp192k1			= 18,
+  CURVE_secp192r1			= 19,
+  CURVE_secp224k1			= 20,
+  CURVE_secp224r1			= 21,
+  CURVE_secp256k1			= 22,
+  CURVE_secp256r1			= 23,
+  CURVE_secp384r1			= 24,
+  CURVE_secp521r1			= 25,
+
+  CURVE_arbitrary_explicit_prime_curves	= 0xFF01,
+  CURVE_arbitrary_explicit_char2_curves	= 0xFF02,
+}
+
+/* ECC point formats from RFC 4492 5.1.2. */
+enum PointFormat {
+  POINT_uncompressed = 0,
+  POINT_ansiX962_compressed_prime = 1,
+  POINT_ansiX962_compressed_char2 = 2,
+}
 
 constant EXTENSION_server_name			= 0;		// RFC 6066
 constant EXTENSION_max_fragment_length		= 1;		// RFC 6066
@@ -738,3 +795,13 @@ constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
 constant EXTENSION_padding                      = 35655;        // Same as Firefox / Chromium NSS
+
+constant ECC_CURVES = ([
+#if constant(Crypto.ECC.Curve)
+  CURVE_secp192r1: Crypto.ECC.SECP_192R1,
+  CURVE_secp224r1: Crypto.ECC.SECP_224R1,
+  CURVE_secp256r1: Crypto.ECC.SECP_256R1,
+  CURVE_secp384r1: Crypto.ECC.SECP_384R1,
+  CURVE_secp521r1: Crypto.ECC.SECP_521R1,
+#endif
+]);

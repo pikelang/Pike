@@ -1132,6 +1132,8 @@ array lookup(int suite, ProtocolVersion|int version,
     {
     case KE_rsa:
     case KE_dhe_rsa:
+    case KE_ecdh_rsa:
+    case KE_ecdhe_rsa:
       res->sign = rsa_sign;
       res->verify = rsa_verify;
       break;
@@ -1143,6 +1145,9 @@ array lookup(int suite, ProtocolVersion|int version,
     case KE_dh_anon:
       res->sign = anon_sign;
       break;
+    case KE_ecdh_ecdsa:
+    case KE_ecdhe_ecdsa:
+      // FIXME: Not implemented yet.
     default:
       error( "Internal error.\n" );
     }
@@ -1151,10 +1156,16 @@ array lookup(int suite, ProtocolVersion|int version,
     switch(ke_method) {
     case KE_rsa:
     case KE_dhe_rsa:
+    case KE_ecdh_rsa:
+    case KE_ecdhe_rsa:
       sign_id = SIGNATURE_rsa;
       break;
     case KE_dhe_dss:
       sign_id = SIGNATURE_dsa;
+      break;
+    case KE_ecdh_ecdsa:
+    case KE_ecdhe_ecdsa:
+      sign_id = SIGNATURE_ecdsa;
       break;
     case KE_null:
     case KE_dh_anon:
@@ -1195,6 +1206,8 @@ array lookup(int suite, ProtocolVersion|int version,
     case SIGNATURE_anonymous:
       res->sign = anon_sign;
       break;
+    case SIGNATURE_ecdsa:
+      // FIXME: Not implemented yet.
     default:
       error( "Internal error.\n" );
     }

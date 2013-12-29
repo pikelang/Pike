@@ -254,8 +254,12 @@ protected int cipher_suite_sort_key(int suite)
     KE_dms:		4,
     KE_rsa:		5,
     KE_dh:		6,
-    KE_dhe_rsa:		7,
-    KE_dhe_dss:		8,
+    KE_ecdh_rsa:	7,
+    KE_ecdh_ecdsa:	8,
+    KE_dhe_rsa:		9,
+    KE_dhe_dss:		10,
+    KE_ecdhe_rsa:	11,
+    KE_ecdhe_ecdsa:	12,
   ])[info[0]];
 
   // NB: 8 bits for cipher.
@@ -287,10 +291,13 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
   // Add the signature-dependent methods.
   switch(sign) {
   case SIGNATURE_rsa:
-    kes |= (< KE_rsa, KE_dhe_rsa >);
+    kes |= (< KE_rsa, KE_dhe_rsa, KE_ecdh_rsa, KE_ecdhe_rsa >);
     break;
   case SIGNATURE_dsa:
     kes |= (< KE_dhe_dss >);
+    break;
+  case SIGNATURE_ecdsa:
+    kes |= (< KE_ecdh_ecdsa, KE_ecdhe_ecdsa >);
     break;
   }
 
