@@ -89,6 +89,26 @@ Identifier ecdsa_sha256_id = Identifier(1, 2, 840, 10045, 4, 3, 2);
 Identifier ecdsa_sha384_id = Identifier(1, 2, 840, 10045, 4, 3, 3);
 Identifier ecdsa_sha512_id = Identifier(1, 2, 840, 10045, 4, 3, 4);
 
+/* For public key (unrestricted) from RFC 5480. */
+Identifier ec_id = Identifier(1, 2, 840, 10045, 2, 1);
+
+/* Elliptic Curves from RFC 5480 */
+Identifier ecc_secp192r1_id = Identifier(1, 2, 840, 10045, 3, 1, 1);
+Identifier ecc_sect163k1_id = Identifier(1, 3, 132, 0, 1);
+Identifier ecc_sect163r2_id = Identifier(1, 3, 132, 0, 15);
+Identifier ecc_secp224r1_id = Identifier(1, 3, 132, 0, 33);
+Identifier ecc_sect233k1_id = Identifier(1, 3, 132, 0, 26);
+Identifier ecc_sect233r1_id = Identifier(1, 3, 132, 0, 27);
+Identifier ecc_secp256r1_id = Identifier(1, 2, 840, 10045, 3, 1, 7);
+Identifier ecc_sect283k1_id = Identifier(1, 3, 132, 0, 16);
+Identifier ecc_sect283r1_id = Identifier(1, 3, 132, 0, 17);
+Identifier ecc_secp384r1_id = Identifier(1, 3, 132, 0, 34);
+Identifier ecc_sect409k1_id = Identifier(1, 3, 132, 0, 36);
+Identifier ecc_sect409r1_id = Identifier(1, 3, 132, 0, 37);
+Identifier ecc_secp521r1_id = Identifier(1, 3, 132, 0, 35);
+Identifier ecc_sect571k1_id = Identifier(1, 3, 132, 0, 38);
+Identifier ecc_sect571r1_id = Identifier(1, 3, 132, 0, 39);
+
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
