@@ -83,6 +83,16 @@ array(array(int)) signature_algorithms = ({
   ({ HASH_sha, SIGNATURE_ecdsa }),
 });
 
+//! Supported elliptical curve cipher curves in order of preference.
+array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
+
+//! The selected elliptical curve point format.
+//!
+//! @note
+//!   May be @expr{-1@} to indicate that there's no supported overlap
+//!   between the server and client.
+int ecc_point_format = POINT_uncompressed;
+
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
 array(string) client_cert_distinguished_names;
@@ -162,9 +172,9 @@ Packet server_hello_packet()
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
-  if (secure_renegotiation) {
-    ADT.struct extensions = ADT.struct();
+  ADT.struct extensions = ADT.struct();
 
+  if (secure_renegotiation) {
     // RFC 5746 3.7:
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
@@ -174,8 +184,25 @@ Packet server_hello_packet()
     extension->put_var_string(client_verify_data + server_verify_data, 1);
 
     extensions->put_var_string(extension->pop_data(), 2);
-    struct->put_var_string(extensions->pop_data(), 2);
   }
+
+  if (sizeof(ecc_curves)) {
+    // FIXME: Should only be sent when client attempts ECC.
+
+    // RFC 4492 5.2:
+    // The Supported Point Formats Extension is included in a
+    // ServerHello message in response to a ClientHello message
+    // containing the Supported Point Formats Extension when
+    // negotiating an ECC cipher suite.
+    ADT.struct extension = ADT.struct();
+    extension->put_uint(POINT_uncompressed, 1);
+    extension->put_var_string(extension->pop_data(), 1);
+    extensions->put_uint(EXTENSION_ec_point_formats, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (!extensions->is_empty())
+    struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
   SSL3_DEBUG_MSG("SSL.handshake: Server hello: %O\n", data);
@@ -222,7 +249,6 @@ Packet client_hello()
   ADT.struct extensions = ADT.struct();
 
   if (secure_renegotiation) {
-
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
@@ -232,6 +258,24 @@ Packet client_hello()
     extension->put_var_string(client_verify_data, 1);
     extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (sizeof(ecc_curves)) {
+    // RFC 4492 5.1:
+    // The extensions SHOULD be sent along with any ClientHello message
+    // that proposes ECC cipher suites.
+    ADT.struct extension = ADT.struct();
+    foreach(ecc_curves, int curve) {
+      extension->put_uint(curve, 2);
+    }
+    extension->put_var_string(extension->pop_data(), 2);
+    extensions->put_uint(EXTENSION_elliptic_curves, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+
+    extension->put_uint(POINT_uncompressed, 1);
+    extension->put_var_string(extension->pop_data(), 1);
+    extensions->put_uint(EXTENSION_ec_point_formats, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
@@ -336,7 +380,6 @@ Packet client_key_exchange_packet()
 
 Packet certificate_verify_packet()
 {
-
   ADT.struct struct = ADT.struct();
 
   .context cx = .context();
@@ -346,7 +389,13 @@ Packet certificate_verify_packet()
 
   return handshake_packet (HANDSHAKE_certificate_verify,
 			  struct->pop_data());
-  
+}
+
+int(0..1) not_ecc_suite(int cipher_suite)
+{
+  array(int) suite = [array(int)]CIPHER_SUITES[cipher_suite];
+  return suite &&
+    !(< KE_ecdh_ecdsa, KE_ecdhe_ecdsa, KE_ecdh_rsa, KE_ecdhe_rsa >)[suite[0]];
 }
 
 int(-1..0) reply_new_session(array(int) cipher_suites,
@@ -361,6 +410,13 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   cipher_suites = context->preferred_suites & cipher_suites;
   SSL3_DEBUG_MSG("intersection:\n%s\n",
                  fmt_cipher_suites((array(int))cipher_suites));
+
+  if (!sizeof(ecc_curves) || (ecc_point_format == -1)) {
+    // No overlapping support for ecc.
+    // Filter the ECC suites from the set.
+    SSL3_DEBUG_MSG("ECC not supported.\n");
+    cipher_suites = filter(cipher_suites, not_ecc_suite);
+  }
 
   if (!sizeof(cipher_suites) ||
       !session->set_cipher_suite(cipher_suites[0], version[1] + 0x300,
@@ -771,6 +827,25 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      // Pairs of <hash_alg, signature_alg>.
 	      signature_algorithms = ((array(int))bytes)/2;
 	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n", signature_algorithms);
+	      break;
+	    case EXTENSION_elliptic_curves:
+	      int sz = extension_data->get_uint(2)/2;
+	      ecc_curves =
+		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
+		       ECC_CURVES);
+	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", ecc_curves);
+	      break;
+	    case EXTENSION_ec_point_formats:
+	      array(int) ecc_point_formats =
+		extension_data->get_var_uint_array(1, 1);
+	      // NB: We only support the uncompressed point format for now.
+	      if (has_value(ecc_point_formats, POINT_uncompressed)) {
+		ecc_point_format = POINT_uncompressed;
+	      } else {
+		// Not a supported point format.
+		ecc_point_format = -1;
+	      }
+	      SSL3_DEBUG_MSG("Elliptic point format: %O\n", ecc_point_format);
 	      break;
 	    case EXTENSION_server_name:
 	      // RFC 4366 3.1 "Server Name Indication"
@@ -1391,6 +1466,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    }
 	    secure_renegotiation = 1;
 	    missing_secure_renegotiation = 0;
+	    break;
+	  case EXTENSION_ec_point_formats:
+	    array(int) ecc_point_formats =
+	      extension_data->get_var_uint_array(1, 1);
+	    // NB: We only support the uncompressed point format for now.
+	    if (has_value(ecc_point_formats, POINT_uncompressed)) {
+	      ecc_point_format = POINT_uncompressed;
+	    } else {
+	      // Not a supported point format.
+	      ecc_point_format = -1;
+	    }
 	    break;
 	  case EXTENSION_server_name:
 	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
