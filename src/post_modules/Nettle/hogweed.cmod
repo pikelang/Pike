@@ -158,6 +158,28 @@ PIKEFUN array(object(Gmp.mpz))
 PIKECLASS ECC_Curve
 {
   CVAR const struct ecc_curve *curve;
+  CVAR int field_size;
+
+  /*! @decl string(7bit) name()
+   *!
+   *! Returns the name of the curve.
+   */
+  PIKEFUN string(7bit) name()
+  {
+    if (THIS->curve == &nettle_secp_192r1) {
+      ref_push_string(MK_STRING("SECP_192R1"));
+    } else if (THIS->curve == &nettle_secp_224r1) {
+      ref_push_string(MK_STRING("SECP_224R1"));
+    } else if (THIS->curve == &nettle_secp_256r1) {
+      ref_push_string(MK_STRING("SECP_256R1"));
+    } else if (THIS->curve == &nettle_secp_384r1) {
+      ref_push_string(MK_STRING("SECP_384R1"));
+    } else if (THIS->curve == &nettle_secp_521r1) {
+      ref_push_string(MK_STRING("SECP_521R1"));
+    } else {
+      ref_push_string(MK_STRING("UNKNOWN"));
+    }
+  }
 
   /*! @decl int size()
    *!
@@ -166,11 +188,7 @@ PIKECLASS ECC_Curve
    */
   PIKEFUN int size()
   {
-    if (THIS->curve) {
-      push_int64(ecc_size(THIS->curve) * sizeof(mp_limb_t) * 8);
-    } else {
-      push_undefined();
-    }
+    push_int(THIS->field_size);
   }
 
   /*! @decl Gmp.mpz new_scalar(function(int:string(8bit)) rnd)
@@ -316,26 +334,31 @@ hogweed_init(void)
 #ifdef HAVE_NETTLE_ECDSA_H
   SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
   OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_192r1;
+  OBJ2_ECC_CURVE(c.u.object)->field_size = 192;
   simple_add_constant("SECP_192R1", &c, 0);
   free_svalue(&c);
 
   SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
   OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_224r1;
+  OBJ2_ECC_CURVE(c.u.object)->field_size = 224;
   simple_add_constant("SECP_224R1", &c, 0);
   free_svalue(&c);
 
   SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
   OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_256r1;
+  OBJ2_ECC_CURVE(c.u.object)->field_size = 256;
   simple_add_constant("SECP_256R1", &c, 0);
   free_svalue(&c);
 
   SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
   OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_384r1;
+  OBJ2_ECC_CURVE(c.u.object)->field_size = 384;
   simple_add_constant("SECP_384R1", &c, 0);
   free_svalue(&c);
 
   SET_SVAL(c, PIKE_T_OBJECT, 0, object, fast_clone_object(ECC_Curve_program));
   OBJ2_ECC_CURVE(c.u.object)->curve = &nettle_secp_521r1;
+  OBJ2_ECC_CURVE(c.u.object)->field_size = 521;
   simple_add_constant("SECP_521R1", &c, 0);
   free_svalue(&c);
 #endif
