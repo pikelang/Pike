@@ -613,6 +613,213 @@ class KeyExchangeDHE
   }
 }
 
+#if constant(Crypto.ECC.Curve)
+//! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
+//!
+//! KeyExchange that uses Elliptic Curve Diffie-Hellman to
+//! generate an Ephemeral key.
+class KeyExchangeECDHE
+{
+  inherit KeyExchange;
+
+  protected Gmp.mpz secret;
+  protected Gmp.mpz pubx;
+  protected Gmp.mpz puby;
+
+  string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
+  {
+    // ANSI x9.62 4.3.6.
+    // Format #4 is uncompressed.
+    return sprintf("%c%*c%*c",
+		   4,
+		   (session->curve->size() + 7)>>3, x,
+		   (session->curve->size() + 7)>>3, y);
+  }
+
+  array(Gmp.mpz) decode_point(string(8bit) data)
+  {
+    ADT.struct struct = ADT.struct(data);
+
+    Gmp.mpz x;
+    Gmp.mpz y;
+    switch(struct->get_uint(1)) {
+    case 4:
+      string rest = struct->get_rest();
+      if (sizeof(rest) & 1) {
+	connection->ke = UNDEFINED;
+	error("Invalid size in point format.\n");
+      }
+      [x, y] = map(rest/(sizeof(rest)/2), Gmp.mpz, 256);
+      break;
+    default:
+      // Compressed points not supported yet.
+      connection->ke = UNDEFINED;
+      error("Unsupported point format.\n");
+      break;
+    }
+    return ({ x, y });
+  }
+
+  ADT.struct server_key_params()
+  {
+    ADT.struct struct;
+
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
+    // anonymous, not used on the server, but here for completeness.
+    anonymous = 1;
+    struct = ADT.struct();
+
+    // Select a suitable curve.
+    int c = connection->ecc_curves[0];
+    session->curve = ECC_CURVES[c];
+
+    SSL3_DEBUG_MSG("Curve: %d: %O\n", c, session->curve);
+
+    secret = session->curve->new_scalar(context->random);
+    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+
+    SSL3_DEBUG_MSG("secret: %O\n", secret);
+    SSL3_DEBUG_MSG("x: %O\n", x);
+    SSL3_DEBUG_MSG("y: %O\n", y);
+
+    struct->put_uint(CURVETYPE_named_curve, 1);
+    struct->put_uint(c, 2);
+
+    struct->put_var_string(encode_point(x, y), 1);
+
+    return struct;
+  }
+
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
+				    array(int) version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
+		   client_random, server_random, version[0], version[1]);
+    ADT.struct struct = ADT.struct();
+    string data;
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
+    anonymous = 1;
+
+    secret = session->curve->new_scalar(context->random);
+    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+
+    ADT.struct point = ADT.struct();
+
+    struct->put_var_string(encode_point(x, y), 1);
+
+    data = struct->pop_data();
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+    premaster_secret =
+      sprintf("%*c",
+	      (session->curve->size() + 7)>>3,
+	      session->curve->point_mul(x, y, secret)[0]);
+
+    secret = 0;
+
+    session->master_secret =
+      derive_master_secret(premaster_secret, client_random, server_random,
+			   version);
+    return data;
+  }
+
+  //! @returns
+  //!   Master secret or alert number.
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
+  {
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
+
+    if (!sizeof(data))
+    {
+      /* Implicit encoding; Should never happen unless we have
+       * requested and received a client certificate of type
+       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+		     "               Hanging up.\n");
+      connection->ke = UNDEFINED;
+      return ALERT_certificate_unknown;
+    }
+
+    string premaster_secret;
+    anonymous = 1;
+
+    /* Explicit encoding */
+    ADT.struct struct = ADT.struct(data);
+
+    if (catch
+      {
+	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->get_var_string(1));
+	// RFC 4492 5.10:
+	// Note that this octet string (Z in IEEE 1363 terminology) as
+	// output by FE2OSP, the Field Element to Octet String
+	// Conversion Primitive, has constant length for any given
+	// field; leading zeros found in this octet string MUST NOT be
+	// truncated.
+	premaster_secret =
+	  sprintf("%*c",
+		  (session->curve->size() + 7)>>3,
+		  session->curve->point_mul(x, y, secret)[0]);
+      } || !struct->is_empty())
+    {
+      connection->ke = UNDEFINED;
+      return ALERT_unexpected_message;
+    }
+
+    secret = 0;
+
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
+  }
+
+  ADT.struct parse_server_key_exchange(ADT.struct input)
+  {
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
+
+    ADT.struct temp_struct = ADT.struct();
+
+    // First the curve.
+    switch(input->get_uint(1)) {
+    case CURVETYPE_named_curve:
+      temp_struct->put_uint(CURVETYPE_named_curve, 1);
+      int c = input->get_uint(2);
+      temp_struct->put_uint(c, 2);
+      session->curve = ECC_CURVES[c];
+      if (!session->curve) {
+	connection->ke = UNDEFINED;
+	error("Unsupported curve.\n");
+      }
+      SSL3_DEBUG_MSG("Curve: %d: %O\n", c, session->curve);
+      break;
+    default:
+      connection->ke = UNDEFINED;
+      error("Invalid curve encoding.\n");
+      break;
+    }
+
+    // Then the point.
+    string raw;
+    [ pubx, puby ] = decode_point(raw = input->get_var_string(1));
+    temp_struct->put_var_string(raw, 1);
+
+    return temp_struct;
+  }
+}
+
+#endif /* Crypto.ECC.Curve */
+
 #if 0
 class mac_none
 {
