@@ -57,6 +57,8 @@ int certificate_state;
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 			   * received */
 
+multiset(int) remote_extensions = (<>);
+
 // RFC 5746-related fields
 int secure_renegotiation;
 string client_verify_data = "";	// 3.2: Initially of zero length for both the
@@ -186,9 +188,7 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
-  if (sizeof(ecc_curves)) {
-    // FIXME: Should only be sent when client attempts ECC.
-
+  if (sizeof(ecc_curves) && remote_extensions[EXTENSION_ec_point_formats]) {
     // RFC 4492 5.2:
     // The Supported Point Formats Extension is included in a
     // ServerHello message in response to a ClientHello message
@@ -806,7 +806,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 
 	int missing_secure_renegotiation = secure_renegotiation;
-
+	ecc_curves = ({});
 	if (!input->is_empty()) {
 	  ADT.struct extensions = ADT.struct(input->get_var_string(2));
 
@@ -819,6 +819,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   extension_type,
 			   extension_data->buffer,
 			   sizeof(extension_data->buffer));
+	    remote_extensions[extension_type] = 1;
           extensions:
 	    switch(extension_type) {
 	    case EXTENSION_signature_algorithms:
