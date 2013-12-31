@@ -291,14 +291,20 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
   // Add the signature-dependent methods.
   switch(sign) {
   case SIGNATURE_rsa:
-    kes |= (< KE_rsa, KE_dhe_rsa, KE_ecdh_rsa, KE_ecdhe_rsa >);
+    kes |= (< KE_rsa, KE_dhe_rsa,
+#if constant(Crypto.ECC.Curve)
+	      KE_ecdh_rsa, KE_ecdhe_rsa,
+#endif
+    >);
     break;
   case SIGNATURE_dsa:
     kes |= (< KE_dhe_dss >);
     break;
+#if constant(Crypto.ECC.Curve)
   case SIGNATURE_ecdsa:
     kes |= (< KE_ecdh_ecdsa, KE_ecdhe_ecdsa >);
     break;
+#endif
   }
 
   // Filter unsupported key exchange methods.
@@ -319,12 +325,20 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 
   if (!zero_type(max_version) && (max_version < PROTOCOL_TLS_1_2)) {
     // AEAD protocols are not supported prior to TLS 1.2.
+    // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
     res = filter(res,
 		 lambda(int suite) {
-		   return (sizeof(CIPHER_SUITES[suite]) < 4) ||
-		     (CIPHER_SUITES[suite][3] != MODE_gcm);
+		   return (sizeof(CIPHER_SUITES[suite]) < 4);
 		 });
   }
+
+#if !constant(Crypto.SHA384)
+  // Filter suites needing SHA384 as our Nettle doesn't support it.
+  res = filter(res,
+	       lambda(int suite) {
+		 return (CIPHER_SUITES[suite][2] != HASH_sha384);
+	       });
+#endif
 
   // Sort.
   sort(map(res, cipher_suite_sort_key), res);
