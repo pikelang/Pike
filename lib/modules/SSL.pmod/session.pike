@@ -58,6 +58,11 @@ Crypto.RSA rsa;
 //! The server's dsa private key
 Crypto.DSA dsa;
 
+#if constant(Crypto.ECC.Curve)
+//! The selected ECC curve
+Crypto.ECC.Curve curve;
+#endif /* Crypto.ECC.Curve */
+
 //! Indicates if this session has the required server certificate keys
 //! set. No means that no or the wrong type of certificate was sent
 //! from the server.
@@ -100,6 +105,10 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
   case KE_dhe_rsa:
   case KE_dhe_dss:
     ke_factory = .Cipher.KeyExchangeDHE;
+    break;
+  case KE_ecdhe_rsa:
+  case KE_ecdhe_ecdsa:
+    ke_factory = .Cipher.KeyExchangeECDHE;
     break;
   default:
     error("set_cipher_suite: Unsupported key exchange method: %d\n",
