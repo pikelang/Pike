@@ -182,11 +182,12 @@ enum KeyExchangeType {
   KE_dh_anon	= 5,	//! Diffie-Hellman Anonymous
   KE_dms	= 6,
   KE_fortezza	= 7,
-  // The following four are from RFC 4492.
+  // The following five are from RFC 4492.
   KE_ecdh_ecdsa = 8,	//! Elliptic Curve DH with ECDSA
   KE_ecdhe_ecdsa= 9,	//! Elliptic Curve DH Ephemeral with ECDSA
   KE_ecdh_rsa   = 10,	//! Elliptic Curve DH with RSA
   KE_ecdhe_rsa  = 11,	//! Elliptic Curve DH Ephemeral with RSA
+  KE_ecdh_anon  = 12,	//! Elliptic Curve DH Anonymous
 }
 
 //! Compression methods.
