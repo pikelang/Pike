@@ -1057,6 +1057,18 @@ string(0..255) prf_sha384(string(0..255) secret,
 }
 #endif
 
+#if constant(Crypto.SHA512)
+//! This Pseudo Random Function could be used to derive secret keys
+//! for some ciphers suites defined after TLS 1.2.
+string(0..255) prf_sha512(string(0..255) secret,
+			  string(0..255) label,
+			  string(0..255) seed,
+			  int len)
+{
+  return P_hash(Crypto.SHA512, 32, secret, label + seed, len);
+}
+#endif
+
 //!
 class DES
 {
@@ -1570,9 +1582,35 @@ array lookup(int suite, ProtocolVersion|int version,
     res->prf = prf_tls_1_0;
   } else {
     // The PRF is really part of the cipher suite in TLS 1.2.
-    // It's just that all of them specify SHA256 for now.
-    res->prf = prf_tls_1_2;
-    res->hash = Crypto.SHA256;
+    //
+    // In all existing post TLS 1.2 cases the hash for the prf is the same
+    // as the hash for the suite.
+    switch(algorithms[2]) {
+    case HASH_none:
+      break;
+    case HASH_md5:
+    case HASH_sha:
+    case HASH_sha224:
+      // These old suites are all upgraded to using SHA256.
+    case HASH_sha256:
+      res->prf = prf_tls_1_2;
+      res->hash = Crypto.SHA256;
+      break;
+#if constant(Crypto.SHA384)
+    case HASH_sha384:
+      res->prf = prf_sha384;
+      res->hash = Crypto.SHA384;
+      break;
+#endif
+#if constant(Crypto.SHA384)
+    case HASH_sha512:
+      res->prf = prf_sha512;
+      res->hash = Crypto.SHA512;
+      break;
+#endif
+    default:
+      return 0;
+    }
   }
 
   if (sizeof(algorithms) > 3) {
@@ -1597,21 +1635,6 @@ array lookup(int suite, ProtocolVersion|int version,
       res->hash_size = 0;		// No need for MAC keys.
       res->mac_algorithm = 0;		// MACs are not used with AEAD.
 
-      // NB: For the GCM suites the hash field instead specifies the prf.
-      switch(algorithms[2]) {
-      case HASH_sha256:
-	res->prf = prf_tls_1_2;
-	res->hash = Crypto.SHA256;
-	break;
-#if constant(Crypto.SHA384)
-     case HASH_sha384:
-	res->prf = prf_sha384;
-	res->hash = Crypto.SHA384;
-	break;
-#endif
-      default:
-	return 0;
-      }
       break;
 #endif
     default:
