@@ -250,6 +250,7 @@ protected int cipher_suite_sort_key(int suite)
   int ke_prio = ([
     KE_null:		0,
     KE_dh_anon:		1,
+    KE_ecdh_anon:	2,
     KE_fortezza:	3,
     KE_dms:		4,
     KE_rsa:		5,
@@ -262,11 +263,33 @@ protected int cipher_suite_sort_key(int suite)
     KE_ecdhe_ecdsa:	12,
   ])[info[0]];
 
+  int auth_prio = ([
+    KE_null:		0,
+    KE_dh:		0,
+    KE_dh_anon:		0,
+    KE_ecdh_anon:	0,
+    KE_fortezza:	1,
+    KE_dms:		2,
+    KE_rsa:		8,
+    KE_ecdh_rsa:	8,
+    KE_dhe_rsa:		8,
+    KE_ecdhe_rsa:	8,
+    KE_dhe_dss:		8,
+    KE_ecdh_ecdsa:	8,
+    KE_ecdhe_ecdsa:	8,
+  ])[info[0]];
+
+  int not_anonymous = ke_prio >= 3;
+
+  // Klugde to test GCM.
+  // if (sizeof(info) > 3) keylength += 0x100;
+
   // NB: 8 bits for cipher.
   //     8 bits for hash.
   //     8 bits for key exchange.
-  //     rest for keylength.
-  return cipher | hash << 8 | ke_prio << 16 | keylength << 24;
+  //     12 bits for keylength.
+  //     4 bits for auth.
+  return cipher | hash << 8 | ke_prio << 16 | keylength << 24 | auth_prio << 36;
 }
 
 //! Get the prioritized list of supported cipher suites

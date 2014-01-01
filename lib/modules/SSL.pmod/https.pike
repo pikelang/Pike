@@ -44,7 +44,7 @@ protected string fmt_cipher_suites(array(int) s)
 	has_prefix(id, "SSL2_") )
       ciphers[SSL.Constants[id]] = id;
   foreach(s, int c)
-    b->sprintf("   %-6d: %09x: %s\n",
+    b->sprintf("   %-6d: %010x: %s\n",
 	       c, cipher_suite_sort_key(c), ciphers[c]||"unknown");
   return (string)b;
 }
