@@ -309,7 +309,11 @@ protected int cipher_suite_sort_key(int suite)
 array(int) get_suites(int sign, int min_keylength, int|void max_version)
 {
   // Default to the unsigned key exchange methods.
-  multiset(int) kes = (< KE_null, KE_dh, KE_dh_anon >);
+  multiset(int) kes = (< KE_null, KE_dh, KE_dh_anon,
+#if constant(Crypto.ECC.Curve)
+			 KE_ecdh_anon,
+#endif
+  >);
 
   // Add the signature-dependent methods.
   switch(sign) {

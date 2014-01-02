@@ -108,6 +108,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
     break;
   case KE_ecdhe_rsa:
   case KE_ecdhe_ecdsa:
+  case KE_ecdh_anon:
     ke_factory = .Cipher.KeyExchangeECDHE;
     break;
   default:

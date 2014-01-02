@@ -1362,6 +1362,7 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
     case KE_null:
     case KE_dh_anon:
+    case KE_ecdh_anon:
       res->sign = anon_sign;
       break;
     case KE_ecdh_ecdsa:
@@ -1388,6 +1389,7 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
     case KE_null:
     case KE_dh_anon:
+    case KE_ecdh_anon:
       sign_id = SIGNATURE_anonymous;
       break;
     default:
