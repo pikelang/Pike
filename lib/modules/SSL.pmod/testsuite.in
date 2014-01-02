@@ -14,6 +14,26 @@ test_any([[
 return SSL.cipher && 1;
 ]], 1)
 
+test_do( add_constant( "S", String.string2hex ) )
+test_eq( S(SSL.Cipher.MACsha("foo")->hash_raw("bar")),
+	 "62cdb7020ff920e5aa642c3d4066950dd1f01f4d" )
+test_eq( S(SSL.Cipher.MACsha("foo")->hash_master("bar")),
+	 "2e6eda2d36d2a2f4b5d7c28c920a0b679f17d76c" )
+test_eq( S(SSL.Cipher.MACmd5("foo")->hash_raw("bar")),
+         "37b51d194a7513e45b56f6524f2d51f2" )
+test_eq( S(SSL.Cipher.MACmd5("foo")->hash_master("bar")),
+         "c413fb96a80f160c25d0e61f5b5d8078" )
+test_eq( S(SSL.Cipher.MAChmac_sha("foo")->hash_raw("bar")),
+         "46b4ec586117154dacd49d664e5d63fdc88efb51" )
+test_eq( S(SSL.Cipher.MAChmac_md5("foo")->hash_raw("bar")),
+         "0c7a250281315ab863549f66cd8a3a53" )
+test_eq( S(SSL.Cipher.MAChmac_sha256("foo")->hash_raw("bar")),
+         "f9320baf0249169e73850cd6156ded0106e2bb6ad8cab01b7bbbebe6d1065317" )
+test_eq( S(SSL.Cipher.MAChmac_sha384("foo")->hash_raw("bar")),
+         "3d10d391bee2364df2c55cf605759373e1b5a4ca9355d8f3fe42970471eca2e422a79271a0e857a69923839015877fc6" )
+test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash_raw("bar")),
+         "114682914c5d017dfe59fdc804118b56a3a652a0b8870759cf9e792ed7426b08197076bf7d01640b1b0684df79e4b67e37485669e8ce98dbab60445f0db94fce" )
+
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
@@ -422,4 +442,7 @@ dnl       error("Failed\n");
 dnl     /* How to kill the process if running on windows? */
 dnl     p->kill(15);
 dnl   ]])
+
+test_do( add_constant("S") )
+
 END_MARKER

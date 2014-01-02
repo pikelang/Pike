@@ -836,9 +836,8 @@ class MACsha
 {
   inherit MACAlgorithm;
 
-  protected constant pad_1 =  "6666666666666666666666666666666666666666";
-  protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
-			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+  protected constant pad_1 = "6" * 40;
+  protected constant pad_2 = "\\" * 40;
 
   protected Crypto.Hash algorithm = Crypto.SHA1;
   protected string secret;
@@ -863,11 +862,10 @@ class MACsha
   }
 
   //!
-  string(0..255) hash_master(string(0..255) data, string(0..255)|void s)
+  string(0..255) hash_master(string(0..255) data)
   {
-    s = s || secret;
-    return hash_raw(s + pad_2 +
-		hash_raw(data + s + pad_1));
+    return hash_raw(secret + pad_2 +
+		hash_raw(data + secret + pad_1));
   }
 
   //!
@@ -884,10 +882,9 @@ class MACsha
 class MACmd5 {
   inherit MACsha;
 
-  protected constant pad_1 =  "666666666666666666666666666666666666666666666666";
-  protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
-			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-  
+  protected constant pad_1 = "6" * 48;
+  protected constant pad_2 = "\\" * 48;
+
   protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
@@ -897,34 +894,31 @@ class MACmd5 {
 class MAChmac_sha {
   inherit MACAlgorithm;
 
-  protected string secret;
-  protected Crypto.HMAC hmac;
+  protected Crypto.Hash.HMAC hmac;
 
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 
   string hash_raw(string data)
   {
-    return hmac(secret)(data);
+    return hmac(data);
   }
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
 
-    string s = sprintf("%~8s%c%c%c%2c%s",
+    string s = sprintf("%~8s%c%c%c%2H",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type,
 		       packet->protocol_version[0],packet->protocol_version[1],
-		       sizeof(packet->fragment),
 		       packet->fragment);
 
-    return hmac(secret)(s);
+    return hmac(s);
   }
 
   //!
   protected void create(string|void s) {
-    secret = s || "";
-    hmac=Crypto.HMAC(Crypto.SHA1);
+    hmac = Crypto.SHA1.HMAC( s||"" );
   }
 }
 
@@ -936,8 +930,7 @@ class MAChmac_md5 {
 
   //!
   protected void create(string|void s) {
-    secret = s || "";
-    hmac=Crypto.HMAC(Crypto.MD5);
+    hmac=Crypto.MD5.HMAC( s||"" );
   }
 }
 
@@ -949,8 +942,7 @@ class MAChmac_sha256 {
 
   //!
   protected void create(string|void s) {
-    secret = s || "";
-    hmac=Crypto.HMAC(Crypto.SHA256);
+    hmac=Crypto.SHA256.HMAC( s||"" );
   }
 }
 
@@ -963,8 +955,7 @@ class MAChmac_sha384 {
 
   //!
   protected void create(string|void s) {
-    secret = s || "";
-    hmac=Crypto.HMAC(Crypto.SHA384);
+    hmac=Crypto.SHA384.HMAC( s||"" );
   }
 }
 #endif
@@ -978,26 +969,24 @@ class MAChmac_sha512 {
 
   //!
   protected void create(string|void s) {
-    secret = s || "";
-    hmac=Crypto.HMAC(Crypto.SHA512);
+    hmac=Crypto.SHA512.HMAC( s||"" );
   }
 }
 #endif
 
 //! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
-protected string(0..255) P_hash(Crypto.Hash hashfn, int hlen,
+protected string(0..255) P_hash(Crypto.Hash hashfn,
 				string(0..255) secret,
 				string(0..255) seed, int len) {
    
-  Crypto.HMAC hmac=Crypto.HMAC(hashfn);
+  Crypto.Hash.HMAC hmac=hashfn->HMAC(secret);
   string temp=seed;
   string res="";
-  
-  int noblocks=(int)ceil((1.0*len)/hlen);
 
-  for(int i=0 ; i<noblocks ; i++) {
-    temp=hmac(secret)(temp);
-    res+=hmac(secret)(temp+seed);
+  while( sizeof(res)<len )
+  {
+    temp=hmac(temp);
+    res+=hmac(temp+seed);
   }
   return res[..(len-1)];
 } 
@@ -1030,8 +1019,8 @@ string(0..255) prf_tls_1_0(string(0..255) secret,
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
-  string a=P_hash(Crypto.MD5,16,s1,label+seed,len);
-  string b=P_hash(Crypto.SHA1,20,s2,label+seed,len);
+  string a=P_hash(Crypto.MD5, s1, label+seed, len);
+  string b=P_hash(Crypto.SHA1, s2, label+seed, len);
 
   return a ^ b;
 }
@@ -1042,7 +1031,7 @@ string(0..255) prf_tls_1_2(string(0..255) secret,
 			   string(0..255) seed,
 			   int len)
 {
-  return P_hash(Crypto.SHA256, 32, secret, label + seed, len);
+  return P_hash(Crypto.SHA256, secret, label + seed, len);
 }
 
 #if constant(Crypto.SHA384)
@@ -1053,7 +1042,7 @@ string(0..255) prf_sha384(string(0..255) secret,
 			  string(0..255) seed,
 			  int len)
 {
-  return P_hash(Crypto.SHA384, 32, secret, label + seed, len);
+  return P_hash(Crypto.SHA384, secret, label + seed, len);
 }
 #endif
 
@@ -1065,7 +1054,7 @@ string(0..255) prf_sha512(string(0..255) secret,
 			  string(0..255) seed,
 			  int len)
 {
-  return P_hash(Crypto.SHA512, 32, secret, label + seed, len);
+  return P_hash(Crypto.SHA512, secret, label + seed, len);
 }
 #endif
 
