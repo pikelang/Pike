@@ -457,7 +457,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
-  
+
   compression_methods = context->preferred_compressors & compression_methods;
   if (sizeof(compression_methods))
     session->set_compression_method(compression_methods[0]);
@@ -468,38 +468,41 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   }
   
   send_packet(server_hello_packet());
-  
-  /* Send Certificate, ServerKeyExchange and CertificateRequest as
-   * appropriate, and then ServerHelloDone.
-   */
 
-  array(string(0..255)) certs;
-  SSL3_DEBUG_MSG("Selecting server key.\n");
+  // Don't send any certificate in anonymous mode.
+  if (session->cipher_spec->sign != .Cipher.anon_sign) {
+    /* Send Certificate, ServerKeyExchange and CertificateRequest as
+     * appropriate, and then ServerHelloDone.
+     */
 
-  // populate the key to be used for the session.
-  object key = select_server_key();
-  SSL3_DEBUG_MSG("Selected server key: %O\n", key);
+    array(string(0..255)) certs;
+    SSL3_DEBUG_MSG("Selecting server key.\n");
 
-  if(Program.implements(object_program(key), Crypto.DSA))
-  { 
-    session->dsa = [object(Crypto.DSA)]key;
+    // populate the key to be used for the session.
+    object key = select_server_key();
+    SSL3_DEBUG_MSG("Selected server key: %O\n", key);
+
+    if(Program.implements(object_program(key), Crypto.DSA))
+    { 
+      session->dsa = [object(Crypto.DSA)]key;
+    }
+    else
+    {
+      session->rsa = [object(Crypto.RSA)]key;
+    }
+
+    SSL3_DEBUG_MSG("Checking for Certificate.\n");
+
+    if (certs = select_server_certificate())
+    {
+      SSL3_DEBUG_MSG("Sending Certificate.\n");
+      send_packet(certificate_packet(certs));
+    } else {
+      // Otherwise the server will just silently send an invalid
+      // ServerHello sequence.
+      error ("Certificate(s) missing.\n");
+    }
   }
-  else
-  {
-    session->rsa = [object(Crypto.RSA)]key;
-  }
-
-  SSL3_DEBUG_MSG("Checking for Certificate.\n");
-
-  if (certs = select_server_certificate())
-  {
-    SSL3_DEBUG_MSG("Sending Certificate.\n");
-    send_packet(certificate_packet(certs));
-  }
-  else if (session->cipher_spec->sign != .Cipher.anon_sign)
-    // Otherwise the server will just silently send an invalid
-    // ServerHello sequence.
-    error ("Certificate(s) missing.\n");
 
   Packet key_exchange = server_key_exchange_packet();
 
