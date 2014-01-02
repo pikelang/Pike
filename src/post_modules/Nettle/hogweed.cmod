@@ -22,13 +22,13 @@ DECLARATIONS
 
 #include "bignum.h"
 
-void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
+void random_func_wrapper(void *f, size_t num, uint8_t *out)
 {
   push_int(num);
   apply_svalue((struct svalue *)f, 1);
   if(TYPEOF(Pike_sp[-1])!=T_STRING)
     Pike_error("Random function did not return string value.\n");
-  if(Pike_sp[-1].u.string->len != num)
+  if(Pike_sp[-1].u.string->len != (unsigned int)num)
     Pike_error("Random function did not return correct number of bytes.\n");
   memcpy(out, Pike_sp[-1].u.string->str, num);
   pop_stack();
@@ -217,7 +217,7 @@ PIKECLASS ECC_Curve
     ecc_scalar_clear(&s);
   }
 
-  /*! @decl array(Gmp.mpz) `*(Gmp.moz|int scalar)
+  /*! @decl array(Gmp.mpz) `*(Gmp.mpz|int scalar)
    *!
    *! Multiply the curve by a scalar.
    *!
