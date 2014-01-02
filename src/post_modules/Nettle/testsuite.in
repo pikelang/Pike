@@ -321,7 +321,7 @@ cond_resolv( Nettle.CBC, [[
 dnl key, iv, auth, plaintext, crypted, hash
 define(test_gcm, [[
   test_any([[
-    object o = Nettle.GCM(Crypto.AES);
+    object o = Nettle.GCM()(Crypto.AES);
     o->set_encrypt_key(String.hex2string($1-"\n"));
     o->set_iv(String.hex2string($2-"\n"));
     o->update(String.hex2string($3-"\n"));
@@ -331,15 +331,15 @@ define(test_gcm, [[
 ]])
 
 cond_resolv( Nettle.GCM, [[
-  test_eq( Nettle.GCM(Crypto.AES())->block_size(), 16 )
-  test_eq( Nettle.GCM(Crypto.AES)->block_size(), 16 )
-  test_eq( Nettle.GCM(Crypto.AES())->key_size(), 0 )
-  test_eq( Nettle.GCM(Crypto.AES)->key_size(), 0 )
+  test_eq( Nettle.GCM()(Crypto.AES())->block_size(), 16 )
+  test_eq( Nettle.GCM()(Crypto.AES)->block_size(), 16 )
+  test_eq( Nettle.GCM()(Crypto.AES())->key_size(), 0 )
+  test_eq( Nettle.GCM()(Crypto.AES)->key_size(), 0 )
 
   dnl NIST GCM AES test vectors
 
   test_any([[
-    object o = Nettle.GCM(Crypto.AES);
+    object o = Nettle.GCM()(Crypto.AES);
     o->set_encrypt_key(H("00000000000000000000000000000000"));
     o->set_iv(H("000000000000000000000000"));
     return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
