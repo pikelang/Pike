@@ -279,7 +279,7 @@ protected int cipher_suite_sort_key(int suite)
     KE_ecdhe_ecdsa:	8,
   ])[info[0]];
 
-  int not_anonymous = ke_prio >= 3;
+  // int not_anonymous = ke_prio >= 3;
 
   // Klugde to test GCM.
   // if (sizeof(info) > 3) keylength += 0x100;
