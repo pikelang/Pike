@@ -430,7 +430,9 @@ cond_resolv( Nettle.MD4, [[
 ]])
 test_true([[ RSA->pkcs_verify("hej", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
 test_true([[ RSA->pkcs_verify("hej", Crypto.SHA1, RSB->pkcs_sign("hej", Crypto.SHA1)) ]])
-test_true([[ RSA->pkcs_verify("hej", Crypto.SHA256, RSB->pkcs_sign("hej", Crypto.SHA256)) ]])
+cond_resolv( Nettle.SHA256, [[
+  test_true([[ RSA->pkcs_verify("hej", Crypto.SHA256, RSB->pkcs_sign("hej", Crypto.SHA256)) ]])
+]])
 test_false([[ RSA->pkcs_verify("hoj", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
@@ -457,6 +459,13 @@ test_eval_error( RSA->generate_key(128, 6); )
 test_eval_error( RSA->generate_key(128, 1); )
 test_eval_error( RSA->generate_key(128, (1<<128)+1); )
 test_do( RSA->generate_key(128, 5); )
+test_do( RSA->rsa_pad("12345",1); )
+test_eval_error( RSA->rsa_pad("123456",1); )
+test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),2),
+ " 1234" )
+test_eq( RSA->rsa_unpad(Gmp.mpz(10387159156041734788858020411618100),2), 0 )
+test_eq( RSA->rsa_unpad(Gmp.mpz(3164083895848799744492667940642174005),2), 0 )
+test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),1), 0 )
 test_do( add_constant("RSA") )
 
 // Crypto.DSA

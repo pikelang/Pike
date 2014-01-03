@@ -346,7 +346,7 @@ int(0..) key_size() { return [int(0..)](size*8); }
 
 //! Pads the @[message] to the current block size with method @[type]
 //! and returns the result as an integer. This is equvivalent to
-//! OS2IP(EME-PKCS1-V1_5-ENCODE(message)) in PKCS-1.
+//! OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)) in PKCS#1 v2.2.
 //! @param type
 //!   @int
 //!     @value 1
@@ -360,11 +360,11 @@ Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
 		function(int:string(8bit))|void random)
 {
   string(8bit) cookie = "";
-  int len;
 
-  len = size - 3 - sizeof(message);
+  // Padding length. At least 8 bytes as security margin.
+  int len = size - 3 - sizeof(message);
   if (len < 8)
-    error( "Block too large. (%d,%d)\n", sizeof(message), size-3 );
+    error( "Block too large. (%d>%d)\n", sizeof(message), size-11 );
 
   switch(type)
   {
@@ -389,7 +389,8 @@ string(8bit) rsa_unpad(Gmp.mpz block, int type)
   string(8bit) s = block->digits(256);
   int i = search(s, "\0");
 
-  if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
+  // Evaluate all error conditions for timing reasons.
+  if ( `+( (i < 9), (sizeof(s) != (size - 1)), (s[0] != type) ) )
     return 0;
   return s[i+1..];
 }
