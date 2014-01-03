@@ -128,8 +128,14 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 //! supported.
 void set_compression_method(int compr)
 {
-  if (compr != COMPRESSION_null)
+  switch(compr) {
+  case COMPRESSION_null:
+    break;
+  case COMPRESSION_deflate:
+    break;
+  default:
     error( "Method not supported\n" );
+  }
   compression_algorithm = compr;
 }
 
@@ -328,6 +334,28 @@ array(.state) new_server_states(string(0..255) client_random,
 	write_state->salt = keys[5];
       }
     }
+  }
+
+  switch(compression_algorithm) {
+  case COMPRESSION_deflate:
+    // FIXME: RFC 5246 6.2.2:
+    //   If the decompression function encounters a TLSCompressed.fragment
+    //   that would decompress to a length in excess of 2^14 bytes, it MUST
+    //   report a fatal decompression failure error.
+    read_state->compress = Gz.inflate()->inflate;
+    write_state->compress =
+      class(function(string, int:string) _deflate) {
+	string deflate(string s) {
+	  // RFC 3749 2:
+	  //   All data that was submitted for compression MUST be
+	  //   included in the compressed output, with no data
+	  //   retained to be included in a later output payload.
+	  //   Flushing ensures that each compressed packet payload
+	  //   can be decompressed completely.
+	  return _deflate(s, Gz.SYNC_FLUSH);
+	}
+      }(Gz.deflate()->deflate)->deflate;
+    break;
   }
   return ({ read_state, write_state });
 }

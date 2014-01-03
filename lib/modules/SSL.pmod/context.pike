@@ -413,9 +413,13 @@ void dhe_dss_mode(int|void min_keylength, int|void max_version)
   preferred_suites = get_suites(SIGNATURE_dsa, min_keylength, max_version);
 }
 
-//! Always ({ COMPRESSION_null })
+//! Lists the supported compression algorithms in order of preference.
+//!
+//! Defaults to @expr{({ COMPRESSION_null, COMPRESSION_deflate })@}
+//! (ie avoid compression unless the client requires it) due to
+//! SSL attacks that target compression.
 array(int) preferred_compressors =
-({ COMPRESSION_null });
+  ({ COMPRESSION_null, COMPRESSION_deflate });
 
 //! Non-zero to enable cahing of sessions
 int use_cache = 1;
