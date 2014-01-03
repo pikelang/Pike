@@ -193,7 +193,7 @@ enum KeyExchangeType {
 //! Compression methods.
 enum CompressionType {
   COMPRESSION_null = 0,		//! No compression.
-  COMPRESSION_deflate = 1,	//! Deflate compression.
+  COMPRESSION_deflate = 1,	//! Deflate compression. RFC 3749
   COMPRESSION_lzs = 64,		//! LZS compression. RFC 3943
 }
 
