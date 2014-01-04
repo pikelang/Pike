@@ -6,6 +6,7 @@
 
 #include "global.h"
 #include "builtin_functions.h"
+#include "operators.h"
 #include "interpret.h"
 #include "module.h"
 
@@ -153,6 +154,8 @@ PIKEFUN array(object(Gmp.mpz))
 #include <nettle/ecc-curve.h>
 
 #include <nettle/ecc.h>
+
+#include <nettle/ecdsa.h>
 
 /*! @class ECC_Curve
  *!
@@ -362,6 +365,216 @@ PIKECLASS ECC_Curve
     f_aggregate(2);
     stack_pop_n_elems_keep_top(args);
   }
+
+  /*! @class ECDSA
+   *!
+   *! Elliptic Curve Digital Signing Algorithm
+   */
+  PIKECLASS ECDSA
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    CVAR struct ecc_scalar key;
+    CVAR struct ecc_point pub;
+
+    PIKEVAR function(int:string(0..255)) random
+      flags ID_PROTECTED;
+
+    INIT
+    {
+      const struct ecc_curve *curve =
+	(((const struct ECC_Curve_struct *)parent_storage(1))->curve);
+      if (!curve) Pike_error("No curve selected.\n");
+      ecc_point_init(&THIS->pub, curve);
+      ecc_scalar_init(&THIS->key, curve);
+    }
+
+    EXIT
+    {
+      const struct ecc_curve *curve =
+	(((const struct ECC_Curve_struct *)parent_storage(1))->curve);
+      if (!curve) return;
+      ecc_point_clear(&THIS->pub);
+      ecc_scalar_clear(&THIS->key);
+    }
+
+    /*! @decl string(7bit) name()
+     *!
+     *! Returns the string @expr{"ECDSA"@} followed by
+     *! the parenthesized name of the curve.
+     */
+    PIKEFUN string(7bit) name()
+    {
+      ref_push_string(MK_STRING("ECDSA("));
+      apply_external(1, f_ECC_Curve_name_fun_num, 0);
+      ref_push_string(MK_STRING(")"));
+      f_add(3);
+    }
+
+    /*! @decl ECC_Curve get_curve()
+     *!
+     *! Get the elliptic curve that is in use.
+     */
+    PIKEFUN object(ECC_Curve) get_curve()
+    {
+      struct external_variable_context loc;
+      loc.o = Pike_fp->current_object;
+      loc.inherit = Pike_fp->context;
+      find_external_context(&loc, 1);
+      ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
+    }
+
+    /*! @decl Gmp.mpz get_private_key()
+     *!
+     *! Get the private key.
+     */
+    PIKEFUN object(Gmp.mpz) get_private_key()
+    {
+      struct object *ret;
+      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      ecc_scalar_get(&THIS->key, (mpz_ptr)ret->storage);
+    }
+
+    /*! @decl void set_private_key(object(Gmp.mpz)|int k)
+     *!
+     *! Set the private key.
+     *!
+     *! @note
+     *!   Throws errors if the key isn't valid for the curve.
+     */
+    PIKEFUN void set_private_key(object(Gmp.mpz)|int k)
+    {
+      convert_svalue_to_bignum(k);
+      if (!ecc_scalar_set(&THIS->key, (mpz_srcptr)k->u.object->storage)) {
+	SIMPLE_ARG_ERROR("set_private_key", 1, "Invalid key for curve.");
+      }
+    }
+
+    /*! @decl object(Gmp.mpz) get_x()
+     *!
+     *! Get the x coordinate of the public key.
+     *!
+     *! @seealso
+     *!   @[get_y()]
+     */
+    PIKEFUN object(Gmp.mpz) get_x()
+    {
+      struct object *ret;
+      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      ecc_point_get(&THIS->pub, (mpz_ptr)ret->storage, NULL);
+    }
+
+    /*! @decl object(Gmp.mpz) get_y()
+     *!
+     *! Get the y coordinate of the public key.
+     *!
+     *! @seealso
+     *!   @[get_x()]
+     */
+    PIKEFUN object(Gmp.mpz) get_y()
+    {
+      struct object *ret;
+      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      ecc_point_get(&THIS->pub, NULL, (mpz_ptr)ret->storage);
+    }
+
+    /*! @decl void set_public_key(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+     *!
+     *! Change to the selected point on the curve as public key.
+     *!
+     *! @note
+     *!   Throws errors if the point isn't on the curve.
+     */
+    PIKEFUN void set_public_key(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+    {
+      convert_svalue_to_bignum(x);
+      convert_svalue_to_bignum(y);
+      if (!ecc_point_set(&THIS->pub,
+			 (mpz_srcptr)x->u.object->storage,
+			 (mpz_srcptr)y->u.object->storage)) {
+	SIMPLE_ARG_ERROR("set_point", 1, "Invalid point on curve.");
+      }
+    }
+
+    /*! @decl void set_random(function(int:string(8bit)) r)
+     *!
+     *! Set the random function, used to generate keys and parameters,
+     *! to the function @[r].
+     */
+    PIKEFUN void set_random(function(int:string(8bit)) r)
+    {
+      assign_svalue(&THIS->random, r);
+    }
+
+    /*! @decl int(0..1) raw_verify(string(8bit) digest, @
+     *!                            object(Gmp.mpz) r, @
+     *!                            object(Gmp.mpz) s)
+     *!
+     *! Verify the signature @[r], @[s] against the message digest @[digest].
+     */
+    PIKEFUN int(0..1) raw_verify(string(0..255) digest,
+				 object(Gmp.mpz)|int r,
+				 object(Gmp.mpz)|int s)
+    {
+      struct dsa_signature sig;
+      int ret;
+
+      NO_WIDE_STRING(digest);
+
+      dsa_signature_init(&sig);
+
+      if (!mpz_from_svalue((MP_INT *)&sig.r, r)) {
+	dsa_signature_clear(&sig);
+	SIMPLE_ARG_TYPE_ERROR("raw_verify", 1, "Gmp.mpz|int");
+      }
+      if (!mpz_from_svalue((MP_INT *)&sig.s, s)) {
+	dsa_signature_clear(&sig);
+	SIMPLE_ARG_TYPE_ERROR("raw_verify", 2, "Gmp.mpz|int");
+      }
+
+      ret = ecdsa_verify(&THIS->pub, digest->len, STR0(digest), &sig);
+      dsa_signature_clear(&sig);
+
+      RETURN ret;
+    }
+
+    /*! @decl array(Gmp.mpz) raw_sign(string(8bit) digest)
+     *!
+     *! Sign the message digest @[digest]. Returns the signature
+     *! as two @[Gmp.mpz] objects.
+     */
+    PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
+    {
+      struct dsa_signature sig;
+      struct object *r, *s;
+
+      NO_WIDE_STRING(digest);
+
+      dsa_signature_init(&sig);
+
+      ecdsa_sign(&THIS->key, &THIS->random, random_func_wrapper,
+		 digest->len, STR0(digest), &sig);
+
+      push_bignum((MP_INT *)&sig.r);
+      push_bignum((MP_INT *)&sig.s);
+
+      dsa_signature_clear(&sig);
+
+      f_aggregate(2);
+      stack_pop_n_elems_keep_top(args);
+    }
+
+    /*! @decl void generate_key()
+     *!
+     *! Generate a new set of private and public keys on the current curve.
+     */
+    PIKEFUN void generate_key()
+    {
+      ecdsa_generate_keypair(&THIS->pub, &THIS->key,
+			     &THIS->random, random_func_wrapper);
+    }
+  }
+  /*! @endclass ECDSA
+   */
 }
 
 /*! @endclass ECC_Curve
