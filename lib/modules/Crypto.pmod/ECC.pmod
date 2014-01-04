@@ -7,17 +7,20 @@
 #if constant(Nettle.ECC_Curve)
 
 //! The definition of an elliptic curve.
+//!
+//! Objects of this class are typically not created by the user.
+//!
+//! @seealso
+//!   @[SECP_192R1], @[SECP_224R1], @[SECP_256R1], @[SECP_384R1], @[SECP_521R1]
 class Curve {
   inherit Nettle.ECC_Curve;
 }
 
 //! The supported Elliptic Curves.
-//!
-//! These are typically used as arguments for @[ECDSA].
-constant SECP_192R1 = Nettle.SECP_192R1;
-constant SECP_224R1 = Nettle.SECP_224R1;
-constant SECP_256R1 = Nettle.SECP_256R1;
-constant SECP_384R1 = Nettle.SECP_384R1;
-constant SECP_521R1 = Nettle.SECP_521R1;
+Curve SECP_192R1 = Curve(1, 192, 1);
+Curve SECP_224R1 = Curve(1, 224, 1);
+Curve SECP_256R1 = Curve(1, 256, 1);
+Curve SECP_384R1 = Curve(1, 384, 1);
+Curve SECP_521R1 = Curve(1, 521, 1);
 
 #endif /* Nettle.ECC_Curve */
