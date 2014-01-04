@@ -2419,31 +2419,29 @@ static void low_describe_type(struct pike_type *t)
 	  while(t->type == T_ASSIGN) {
 	    t = t->cdr;
 	  }
-#ifdef PIKE_DEBUG
 	  if (t->type != T_INT) {
-	    Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-		       t->type, get_name_of_type(t->type));
-	  }
-#endif /* PIKE_DEBUG */
-	  min = CAR_TO_INT(t);
-	  max = CDR_TO_INT(t);
-	  if (!min && max && !(max & (max+1))) {
-	    int j = 0;
-	    while (max) {
-	      max >>= 1;
-	      j++;
-	    }
-	    sprintf(buffer, "%dbit", j);
-	    my_strcat(buffer);
+	    low_describe_type(t);
 	  } else {
-	    if (min != MIN_INT32) {
-	      sprintf(buffer, "%d", min);
+	    min = CAR_TO_INT(t);
+	    max = CDR_TO_INT(t);
+	    if (!min && max && !(max & (max+1))) {
+	      int j = 0;
+	      while (max) {
+		max >>= 1;
+		j++;
+	      }
+	      sprintf(buffer, "%dbit", j);
 	      my_strcat(buffer);
-	    }
-	    my_strcat("..");
-	    if (max != MAX_INT32) {
-	      sprintf(buffer, "%d", max);
-	      my_strcat(buffer);
+	    } else {
+	      if (min != MIN_INT32) {
+		sprintf(buffer, "%d", min);
+		my_strcat(buffer);
+	      }
+	      my_strcat("..");
+	      if (max != MAX_INT32) {
+		sprintf(buffer, "%d", max);
+		my_strcat(buffer);
+	      }
 	    }
 	  }
 	  my_strcat(")");
