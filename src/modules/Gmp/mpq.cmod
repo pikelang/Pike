@@ -445,7 +445,9 @@ PIKECLASS mpq
 	  mpz_tdiv_q_2exp (num, num, twos);
 	if (fives) {
 	  mpz_pow_ui (f, f, fives);
+#ifdef HAVE_MPZ_DIVISIBLE_P
 	  assert (mpz_divisible_p (num, f));
+#endif
 	  mpz_tdiv_q (num, num, f);
 	}
 	format_dec_frac (num, prec);
