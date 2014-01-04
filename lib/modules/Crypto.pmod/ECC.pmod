@@ -16,11 +16,42 @@ class Curve {
   inherit Nettle.ECC_Curve;
 }
 
-//! The supported Elliptic Curves.
+//! @module SECP_192R1
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @module SECP_224R1
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @module SECP_256R1
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @module SECP_384R1
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @module SECP_521R1
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @ignore
 Curve SECP_192R1 = Curve(1, 192, 1);
 Curve SECP_224R1 = Curve(1, 224, 1);
 Curve SECP_256R1 = Curve(1, 256, 1);
 Curve SECP_384R1 = Curve(1, 384, 1);
 Curve SECP_521R1 = Curve(1, 521, 1);
+//! @endignore
 
 #endif /* Nettle.ECC_Curve */
