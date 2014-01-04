@@ -720,7 +720,7 @@ class KeyExchangeECDHE
     premaster_secret =
       sprintf("%*c",
 	      (session->curve->size() + 7)>>3,
-	      session->curve->point_mul(x, y, secret)[0]);
+	      session->curve->point_mul(pubx, puby, secret)[0]);
 
     secret = 0;
 
@@ -1212,6 +1212,13 @@ ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
+//! The NULL verifier.
+int(0..1) anon_verify(object context, string cookie, ADT.struct struct,
+		      ADT.struct input)
+{
+  return 1;
+}
+
 //! Diffie-Hellman parameters.
 class DHParameters
 {
@@ -1353,6 +1360,7 @@ array lookup(int suite, ProtocolVersion|int version,
     case KE_dh_anon:
     case KE_ecdh_anon:
       res->sign = anon_sign;
+      res->verify = anon_verify;
       break;
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
@@ -1415,6 +1423,7 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
     case SIGNATURE_anonymous:
       res->sign = anon_sign;
+      res->verify = anon_verify;
       break;
     case SIGNATURE_ecdsa:
       // FIXME: Not implemented yet.
@@ -1637,6 +1646,7 @@ array lookup(int suite, ProtocolVersion|int version,
     // RFC 4346 A.5:
     // TLS 1.1 implementations MUST NOT negotiate
     // these cipher suites in TLS 1.1 mode.
+    SSL3_DEBUG_MSG("Suite not supported in TLS 1.1 and later.\n");
     return 0;
   }
 
@@ -1646,6 +1656,7 @@ array lookup(int suite, ProtocolVersion|int version,
       // RFC 5246 1.2:
       // Removed IDEA and DES cipher suites.  They are now deprecated and
       // will be documented in a separate document.
+      SSL3_DEBUG_MSG("Suite not supported in TLS 1.2 and later.\n");
       return 0;
     }
   } else if (res->cipher_type == CIPHER_aead) {
@@ -1653,6 +1664,7 @@ array lookup(int suite, ProtocolVersion|int version,
     // These cipher suites make use of the authenticated encryption
     // with additional data defined in TLS 1.2 [RFC5246]. They MUST
     // NOT be negotiated in older versions of TLS.
+    SSL3_DEBUG_MSG("Suite not supported prior to TLS 1.2.\n");
     return 0;
   }
 
