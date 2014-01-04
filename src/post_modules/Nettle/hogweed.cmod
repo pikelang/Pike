@@ -22,7 +22,10 @@ DECLARATIONS
 
 #include "bignum.h"
 
-void random_func_wrapper(void *f, size_t num, uint8_t *out)
+/*! @module Nettle
+ */
+
+void random_func_wrapper(void *f, unsigned num, uint8_t *out)
 {
   push_int(num);
   apply_svalue((struct svalue *)f, 1);
@@ -365,6 +368,9 @@ PIKECLASS ECC_Curve
  */
 
 #endif /* HAVE_NETTLE_ECDSA_H */
+
+/*! @endmodule Nettle
+ */
 
 void
 hogweed_init(void)
