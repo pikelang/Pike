@@ -2386,8 +2386,8 @@ static void low_describe_type(struct pike_type *t)
 	    while(char_type->type == T_ASSIGN) {
 	      char_type = char_type->cdr;
 	    }
-	    if (char_t->type != T_INT) {
-	      low_describe_type(t);
+	    if (char_type->type != T_INT) {
+	      low_describe_type(char_type);
 	    } else {
 	      min = CAR_TO_INT(char_type);
 	      max = CDR_TO_INT(char_type);
