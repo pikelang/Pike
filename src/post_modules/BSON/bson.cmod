@@ -131,23 +131,20 @@ DECLARATIONS
 /*
 ** Little endian to host, Long
 */
-static unsigned long ltohl( unsigned long v)
+static int32_t ltohl(const char *p)
 {
-    if ( htons(1) == 1) {
-	return ((v>>24)&0xff) | ((v>>8)&0xff00) | 
-               ((v<<8)&0xff0000) | ((v << 24)&0xff000000);
-    } else return v;
+    return ((int32_t)((const unsigned char *)p)[0]) |
+        (((int32_t)((const unsigned char *)p)[1])<<8) |
+        (((int32_t)((const unsigned char *)p)[2])<<16) |
+        (((int32_t)((const signed char *)p)[3])<<24);
 }
 
 /*
 ** Little endian to host, "double" i.e. long long
 */
-static unsigned long long ltohd( unsigned long long v)
+static int64_t ltohd(const char *p)
 {
-    if ( htons(1) == 1) {
-	return (unsigned long long)ltohl( v&0x00000000ffffffff) << 32 | 
-	    (unsigned long long)ltohl( (v>>32)&0x00000000ffffffff);
-    } else return v;
+    return ((uint32_t)ltohl(p)) | (((int64_t)ltohl(p+4))<<32);
 }
 
 struct mapping * decode_document(struct pike_string * pike_slist)
@@ -170,8 +167,7 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   if(left < 4)
     Pike_error("invalid BSON. not enough data.\n");
     
-  len = *(int32_t*)n;
-  len = ltohl(len);
+  len = ltohl(n);
     
   left = pike_slist->len - (n - slist);
     
@@ -250,8 +246,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct pike_string * val;
       int32_t bump;
       int32_t left;
-      bump = *(int32_t*)n;
-      bump = ltohl(bump);
+      bump = ltohl(n);
       left = pike_slist->len - (n - slist);
 
       if(!bump || bump > left)
@@ -269,9 +264,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_BINARY:
     {
       struct pike_string * val;
-      int32_t bump = *(int32_t*)n;
+      int32_t bump = ltohl(n);
       int32_t left;
-      bump = ltohl(bump);
       n+=4;
       left = pike_slist->len - (n - slist);
 
@@ -293,8 +287,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 6.\n");
       }
-      t = *(int32_t*)n;
-      t = ltohl(t);
+      t = ltohl(n);
       push_int(t);
       n+=4;
       break;
@@ -308,8 +301,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 7.\n");
       }
-      t = *(int64_t*)n;
-      t = ltohd(t);
+      t = ltohd(n);
       push_int64(t);
       n+=8;
       break;
@@ -393,8 +385,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 9.\n");
       }
-      sec = *(int64_t*)n;
-      sec = ltohd(sec);
+      sec = (uint64_t)ltohd(n);
       n+=8;
       
      if(!Timestamp)
@@ -415,8 +406,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 10.\n");
       }
-      sec = *(int64_t*)n;
-      sec = ltohd(sec);
+      sec = (uint64_t)ltohd(n);
       n+=8;
       
       if(!Second)
@@ -444,8 +434,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 11.\n");      
       }
-      len = *(int32_t*)n;
-      len = ltohl(len);
+      len = ltohl(n);
       
       left = pike_slist->len - (n - slist);
       if(left < len)
@@ -491,8 +480,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 11.\n");      
       }
-      len = *(int32_t*)n;
-      len = ltohl(len);
+      len = ltohl(n);
       
       left = pike_slist->len - (n - slist);
       if(left < len)
@@ -536,9 +524,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_JAVASCRIPT:
     {
       struct pike_string * val;
-      int32_t bump = *(int32_t*)n;
+      int32_t bump = ltohl(n);
       int32_t left;
-      bump = ltohl(bump);
       n+=4;
       left = pike_slist->len - (n - slist);
       if(!bump || bump > left)
