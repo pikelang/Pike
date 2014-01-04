@@ -187,6 +187,8 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
+#include "siphash24.c"
+
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
  * This would look much better using the compiler intrinsics, or even the
@@ -252,8 +254,6 @@ __attribute__((const)) static inline int supports_sse42( )
     __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
     return cpuid_ecx & bit_SSE4_2;
 }
-
-#include "siphash24.c"
 
 #ifdef __i386__
 __attribute__((fastcall))
