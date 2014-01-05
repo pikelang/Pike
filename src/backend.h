@@ -15,8 +15,6 @@
  * POLL/SELECT selection
  */
 
-#if defined(HAVE_POLL) && defined(HAVE_AND_USE_POLL)
-/* We have poll(2), and it isn't simulated. */
 #if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 /*
  * Backend using /dev/poll-style poll device.
@@ -37,14 +35,6 @@
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVEPOLL
-#else /* !BACKEND_USES_POLL_DEVICE */
-/*
- * Backend using poll(2).
- *
- * This is used on most older SVR4- or POSIX-style systems.
- */
-#define BACKEND_USES_POLL
-#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
 #elif defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE) /* && !HAVE_POLL */
 /*
  * Backend using kqueue-style poll device.
@@ -67,14 +57,22 @@
 #define BACKEND_USES_CFRUNLOOP
 #endif /* HAVE_CFRUNLOOPRUNINMODE */
 
-#else  /* !HAVE_POLL && !HAVE_KQUEUE */
+#elif defined(HAVE_POLL) && defined(HAVE_AND_USE_POLL)
+/* We have poll(2), and it isn't simulated. */
+/*
+ * Backend using poll(2).
+ *
+ * This is used on most older SVR4- or POSIX-style systems.
+ */
+#define BACKEND_USES_POLL
+#else /* !HAVE_POLL */
 /*
  * Backend using select(2)
  *
  * This is used on most older BSD-style systems, and WIN32.
  */
 #define BACKEND_USES_SELECT
-#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
+#endif /* HAVE_SYS_DEVPOLL_H && PIKE_POLL_DEVICE */
 
 struct Backend_struct;
 
@@ -83,6 +81,7 @@ extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
 
 void count_memory_in_compat_cb_boxs(size_t *num, size_t *size);
+void free_all_compat_cb_box_blocks();
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1
@@ -187,6 +186,8 @@ PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events
 PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
 					 struct Backend_struct *new_be);
 PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
+
+PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd (struct Backend_struct *me, int fd);
 
 /* Old style callback interface. This only accesses the default backend. It
  * can't be mixed with the new style interface above for the same fd. */

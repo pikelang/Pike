@@ -19,7 +19,7 @@
 
 inherit GTK2.Vbox;
 
-static Gnome2.IconEntry create( string history_id, string title );
+protected Gnome2.IconEntry create( string history_id, string title );
 //! Creates a new icon entry widget
 //!
 //!

@@ -8,7 +8,7 @@
 #include "pike_macros.h"
 #include "callback.h"
 #include "pike_error.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 struct callback_list fork_child_callback;
 
@@ -35,7 +35,13 @@ struct callback
 #define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
 #endif
 #endif
-BLOCK_ALLOC(callback, CALLBACK_CHUNK)
+
+static struct block_allocator callback_allocator
+    = BA_INIT(sizeof(struct callback), CALLBACK_CHUNK);
+
+void count_memory_in_callbacks(size_t * num, size_t * size) {
+    ba_count_all(&callback_allocator, num, size);
+}
 
 
 #ifdef PIKE_DEBUG
@@ -53,7 +59,7 @@ static int is_in_free_list(struct callback * c)
     if ((bar->x <= c) && ((c - bar->x) < CALLBACK_CHUNK)) {
       struct callback *foo;
       for (foo = bar->free_callbacks; foo;
-	   foo = (void *)foo->BLOCK_ALLOC_NEXT) {
+	   foo = (void *)foo->next) {
 	if (foo == c) return 1;
       }
       return 0;
@@ -191,7 +197,7 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       l->free_func=(callback_func)remove_callback;
 #endif
 #endif
-      really_free_callback(l);
+      ba_free(&callback_allocator, l);
     }else{
       ptr=& l->next;
     }
@@ -206,7 +212,7 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func free_func)
 {
   struct callback *l;
-  l=alloc_callback();
+  l=(struct callback*)ba_alloc(&callback_allocator);
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;
@@ -246,11 +252,11 @@ void free_callback_list(struct callback_list *lst)
     if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
-    really_free_callback(l);
+    ba_free(&callback_allocator, l);
   }
 }
 
 void cleanup_callbacks(void)
 {
-  free_all_callback_blocks();
+  ba_destroy(&callback_allocator);
 }

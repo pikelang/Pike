@@ -124,6 +124,7 @@
  *!   @[Mysql.mysql_result], @[Sql.Sql]
  */
 
+struct program * mysql_error_program = NULL;
 struct program *mysql_program = NULL;
 
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
@@ -185,7 +186,7 @@ static MUTEX_T stupid_port_lock;
  * State maintenance
  */
 
-static void init_mysql_struct(struct object *o)
+static void init_mysql_struct(struct object *UNUSED(o))
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
   INIT_MYSQL_LOCK();
@@ -194,7 +195,7 @@ static void init_mysql_struct(struct object *o)
     Pike_error ("Out of memory when initializing mysql connection.\n");
 }
 
-static void exit_mysql_struct(struct object *o)
+static void exit_mysql_struct(struct object *UNUSED(o))
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
 
@@ -482,13 +483,13 @@ static void pike_mysql_reconnect (int reconnect)
 
   MYSQL_ALLOW();
 
+#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
+  STUPID_PORT_LOCK();
+#endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
 #ifdef HAVE_MYSQL_REAL_CONNECT
   socket = mysql_real_connect(mysql, host, user, password,
                               NULL, port, portptr, options);
 #else
-#if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
-  STUPID_PORT_LOCK();
-#endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
 
 #ifdef HAVE_MYSQL_PORT
   if (port) {
@@ -516,10 +517,10 @@ static void pike_mysql_reconnect (int reconnect)
   }
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
+#endif /* HAVE_MYSQL_REAL_CONNECT */
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
   STUPID_PORT_UNLOCK();
 #endif /* HAVE_MYSQL_PORT || MAVE_MYSQL_UNIX_PORT*/
-#endif /* HAVE_MYSQL_REAL_CONNECT */
 
   MYSQL_DISALLOW();
 
@@ -956,6 +957,57 @@ static void f_error(INT32 args)
     push_int(0);
   }
 }
+
+/*! @decl int errno()
+ *!
+ *! Returns an error code describing the last error from the Mysql-server.
+ *!
+ *! Returns @expr{0@} (zero) if there was no error.
+ */
+static void f_errno(INT32 args)
+{
+  MYSQL *mysql;
+  unsigned int errnum;
+
+  mysql = PIKE_MYSQL->mysql;
+
+  MYSQL_ALLOW();
+
+  errnum = mysql_errno(mysql);
+
+  MYSQL_DISALLOW();
+
+  pop_n_elems(args);
+
+  push_int(errnum);
+}
+
+/*! @decl string sqlstate()
+ *!
+ *! Returns the SQLSTATE error code describing the last error.
+ *!
+ *! The value @expr{"000000"@} means 'no error'. The SQLSTATE error codes are
+ *! described in ANSI SQL.
+ */
+#ifdef HAVE_MYSQL_SQLSTATE
+static void f_sqlstate(INT32 args)
+{
+  MYSQL *mysql;
+  const char *error_msg;
+
+  mysql = PIKE_MYSQL->mysql;
+
+  MYSQL_ALLOW();
+
+  error_msg = mysql_sqlstate(mysql);
+
+  MYSQL_DISALLOW();
+
+  pop_n_elems(args);
+
+  push_text(error_msg);
+}
+#endif
 
 /*! @decl void select_db(string database)
  *!
@@ -1557,7 +1609,7 @@ static void f_list_tables(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_tables(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_tables(): Cannot list tables: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1698,7 +1750,7 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_fields(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_fields(): Cannot list fields: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1746,7 +1798,7 @@ static void f_list_processes(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("Mysql.mysql->list_processes(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_processes(): Cannot list processes: %s\n", err);
   }
 
   {
@@ -1855,6 +1907,25 @@ static void f__can_send_as_latin1 (INT32 args)
 /*! @endclass
  */
 
+/*! @decl string client_info()
+ *!
+ *! Get some information about the Mysql-server client library.
+ *!
+ *! @seealso
+ *!   @[mysql()->statistics()], @[mysql()->server_info()],
+ *!   @[mysql()->protocol_info()], @[mysql()->info()]
+ */
+static void f_client_info(INT32 args)
+{
+  pop_n_elems(args);
+
+#ifndef MYSQL_COMPILATION_COMMENT
+#define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
+#endif
+
+  push_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+}
+
 /*! @endmodule
  */
 
@@ -1873,6 +1944,12 @@ PIKE_MODULE_INIT
 
   /* function(void:int|string) */
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("errno", f_errno,tFunc(tVoid,tInt), ID_PUBLIC);
+#ifdef HAVE_MYSQL_SQLSTATE
+  /* function(void:string) */
+  ADD_FUNCTION("sqlstate", f_sqlstate,tFunc(tVoid,tStr), ID_PUBLIC);
+#endif
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tMapping, tVoid),tVoid), ID_PUBLIC);
   /* function(int, void|mapping:string) */
@@ -1960,6 +2037,32 @@ PIKE_MODULE_INIT
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
 
+#ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
+  {
+    struct mysqld_ername {
+      const char * msg;
+      unsigned int code;
+    };
+    unsigned int i;
+    static const struct mysqld_ername list[] = {
+#include <mysql/mysqld_ername.h>
+    };
+    const unsigned int n = sizeof(list)/sizeof(list[0]);
+
+    start_new_program();
+
+    for (i = 0; i < n; i++) {
+      add_integer_constant(list[i].msg, list[i].code, 0);
+    }
+
+    mysql_error_program = end_program();
+    add_program_constant("error", mysql_error_program, 0);
+  }
+#endif
+
+  /* function(void:string) */
+  ADD_FUNCTION("client_info", f_client_info,tFunc(tVoid,tStr), ID_PUBLIC);
+
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_INIT();
 #endif /* HAVE_MYSQL_PORT */
@@ -1984,5 +2087,12 @@ PIKE_MODULE_EXIT
     free_program(mysql_program);
     mysql_program = NULL;
   }
+
+#ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
+  if (mysql_error_program) {
+    free_program(mysql_error_program);
+    mysql_error_program = NULL;
+  }
+#endif
 #endif /* HAVE_MYSQL */
 }

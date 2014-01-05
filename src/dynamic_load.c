@@ -63,12 +63,6 @@
 #define USE_DYLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else /* !HAVE_MACH_O_DYLD_H */
-#if !defined (USE_DLL) && defined (USE_MY_WIN32_DLOPEN)
-#include "pike_dlfcn.h"
-#define HAVE_SOME_DLOPEN
-#define HAVE_DLOPEN
-#endif
 #endif /* HAVE_MACH_O_DYLD_H */
 
 #endif
@@ -382,7 +376,7 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
-static void cleanup_compilation(void *ignored)
+static void cleanup_compilation(void *UNUSED(ignored))
 {
   struct program *p = end_program();
   if (p) {

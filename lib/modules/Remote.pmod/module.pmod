@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 #include "remote.h"
 
+//! Remote RPC system.
+
 //! Wrapper for a remote function.
 class Call {
  constant is_remote_call = 1;
@@ -11,7 +13,19 @@ class Call {
   object ctx;
   int _async;
 
+  //! Call the wrapped function.
   //!
+  //! @param args
+  //!   Arguments to pass to the wrapped function.
+  //!
+  //! This function can operate in two modes depending
+  //! on whether asynchronous mode has been activated
+  //! or not. If it has it is equivalent to a call of
+  //! @[async()] and if not of @[sync()] with the same
+  //! arguments.
+  //!
+  //! @seealso
+  //!   @[async()], @[sync()], @[is_async()], @[set_async()]
   mixed `() (mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args,
@@ -23,34 +37,58 @@ class Call {
     return 0;
   }
 
+  //! Call the wrapped remote function synchronously.
   //!
+  //! @param args
+  //!   Arguments to send to the remote function.
+  //!
+  //! @returns
+  //!   Returns (the possibly wrapped) result from
+  //!   the remote function.
+  //!
+  //! @seealso
+  //!   @[async()], @[`()()]
   mixed sync(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_SYNC);
     return con->call_sync(data);
   }
 
+  //! Call the wrapped remote function asynchronously.
   //!
+  //! @param args
+  //!   Arguments to send to the remote function.
+  //!
+  //! @seealso
+  //!   @[sync()], @[`()()]
   void async(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_ASYNC);
     con->call_async(data);
   }
 
-  //!
+  //! Check whether the wrapped function actually
+  //! exists at the other end.
   int exists()
   {
     mixed data = ctx->encode_call(objectid, name, ({}), CTX_EXISTS);
     return con->call_sync(data);
   }
 
+  //! @returns
+  //!   Whether asynchronous mode is active or not.
   //!
+  //! @seealso
+  //!   @[set_async()]
   int is_async()
   {
     return _async;
   }
 
+  //! Change to/from asynchronous mode.
   //!
+  //! @seealso
+  //!   @[is_async()]
   void set_async(int a)
   {
     _async = a;
@@ -670,7 +708,10 @@ class Connection {
   }
 }
 
+//! Remote context tracker.
 //!
+//! This class keeps track of what local things correspond
+//! to what remote things, and the reverse.
 class Context {
   object server_context;
   object con;

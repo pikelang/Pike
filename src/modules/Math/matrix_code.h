@@ -38,13 +38,13 @@ struct matrixX(_storage)
 
 static void matrixX(_mult)( INT32 args );
 
-static void Xmatrix(init_)(struct object *o)
+static void Xmatrix(init_)(struct object *UNUSED(o))
 {
    THIS->xsize=THIS->ysize=0;
    THIS->m=NULL;
 }
 
-static void Xmatrix(exit_)(struct object *o)
+static void Xmatrix(exit_)(struct object *UNUSED(o))
 {
    if (THIS->m) free(THIS->m);
 }
@@ -108,9 +108,7 @@ static void matrixX(_create)(INT32 args)
 	      case T_OBJECT:
 		{
 		  INT64 x;
-#ifdef AUTO_BIGNUM
 		  if (a->item[j].u.object->prog != get_auto_bignum_program()) {
-#endif
 		    /* Use push_svalue() so that we support subtypes... */
 		    push_svalue(a->item+j);
 		    o_cast_to_int();
@@ -118,7 +116,6 @@ static void matrixX(_create)(INT32 args)
 		      *(m++) = (FTYPE)Pike_sp[-1].u.integer;
 		      pop_stack();
 		      break;
-#ifdef AUTO_BIGNUM
 		    } else if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
 			       (Pike_sp[-1].u.object->prog ==
 				get_auto_bignum_program()) &&
@@ -126,15 +123,12 @@ static void matrixX(_create)(INT32 args)
 		      *(m++) = (FTYPE)x;
 		      pop_stack();
 		      break;
-#endif
 		    }
 		    pop_stack();
-#ifdef AUTO_BIGNUM
 		  } else if (int64_from_bignum(&x, a->item[j].u.object)) {
 		    *(m++) = (FTYPE)x;
 		    break;
 		  }
-#endif
 		}
 		/* FALL_THROUGH */
 	      default:
@@ -1021,18 +1015,11 @@ void Xmatrix(init_math_)(void)
    ADD_FUNCTION("``*",matrixX(_mult),
 		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
 
-   ADD_FUNCTION("`·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-   ADD_FUNCTION("``·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-
    ADD_FUNCTION("dot_product",matrixX(_dot), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("convolve",matrixX(_convolve), tFunc(tObj, tObj), 0);
    
    ADD_FUNCTION("cross",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("`×",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("``×",matrixX(_cross), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("xsize", matrixX(_xsize), tFunc(tNone, tInt), 0);
    ADD_FUNCTION("ysize", matrixX(_ysize), tFunc(tNone, tInt), 0);

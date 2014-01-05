@@ -299,4 +299,61 @@ test_dec_enc_canon([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
 test_dec_enc_canon([["[\"abc\",\"\u20acuro\",\"def\"]"]],
 		   [[({"abc", "\u20acuro", "def"})]])
 
+dnl http://testsuites.opera.com/JSON/correctness/scripts/
+test_do(add_constant("parse",Standards.JSON.decode))
+dnl 001
+test_equal(parse("{ \"test\": [1,2,3],  \"test2\": \"value\", \"test3\": 5 }"),
+  ([ "test": ({ 1, 2, 3 }), "test2": "value", "test3": 5 ]) )
+dnl 003
+test_eval_error(parse("{\"test\": 011}"))
+dnl 004
+test_equal(parse("{\"test\": [0,1,2,3]}"), ([ "test": ({ 0,1,2,3 }) ]) )
+dnl 005
+test_equal(parse("{\"test\": false, \"test\": true}"), (["test":Val.true]))
+dnl 011
+dnl 013
+test_equal(parse("{\"quotes\": \"&#34; \\\\u0022  \"}"),
+  ([ "quotes" : "&#34; \\u0022  " ]))
+dnl 014
+test_equal(parse("{	\"tab-separated\"	:	\"source text\", \r\n	\"with\"	:	\"newline\"	}"),
+  ([ "tab-separated" : "source text", "with" : "newline" ]))
+dnl 015
+dnl test_any([[
+dnl array ranges = ({ 0,8,
+dnl                   14,31,
+dnl                   127,127 });
+dnl foreach(ranges/2, [int from, int to])
+dnl   foreach(enumerate(to+1-from,1,from), int c)
+dnl     if( !catch(parse( sprintf("{\"test\": \"%c\"}",c) )) )
+dnl       return c;
+dnl return -1;
+dnl ]],-1)
+dnl test_do([[
+dnl array ranges = ({ 9,13,
+dnl                   32,34,
+dnl 		  35,126 });
+dnl foreach(ranges/2, [int from, int to])
+dnl   parse("\""+(string)enumerate(to+1-from,1,from)+"\"");
+dnl ]])
+
+
+test_equal(parse("{}"),([]))
+test_equal(parse("[]"),({}))
+test_eval_error(parse("{3:3}"))
+test_eval_error(parse("{{}:3}"))
+test_eval_error(parse("{[]:3}"))
+test_eval_error(parse("{true:3}"))
+test_eval_error(parse("{false:3}"))
+test_eval_error(parse("{null:3}"))
+test_equal(parse("{\"x\":\"x\"}"),(["x":"x"]))
+test_equal(parse("{\"x\":3}"),(["x":3]))
+test_equal(parse("{\"x\":{}}"),(["x":([])]))
+test_equal(parse("{\"x\":[]}"),(["x":({})]))
+test_equal(parse("{\"x\":true}"),(["x":Val.true]))
+test_equal(parse("{\"x\":false}"),(["x":Val.false]))
+test_equal(parse("{\"x\":null}"),(["x":Val.null]))
+test_eq(Standards.JSON.encode(class foo{}(), 0, "foo"),"foo")
+test_eq(Standards.JSON.encode(class foo{}(), 0, lambda(mixed ... a) { return "bar"; }),"bar")
+test_do(add_constant("parse"))
+
 END_MARKER

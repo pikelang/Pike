@@ -30,7 +30,7 @@
 #include "pikecode.h"
 #include "gc.h"
 #include "pike_compiler.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 /* Define this if you want the optimizer to be paranoid about aliasing
  * effects to to indexing.
@@ -218,13 +218,9 @@ void check_tree(node *n, int depth)
 }
 #endif
 
-/* FIXME: Ought to use parent pointer to avoid recursion. */
-INT32 count_args(node *n)
+static int low_count_args(node *n)
 {
   int a,b;
-  check_tree(n,0);
-
-  fatal_check_c_stack(16384);
 
   if(!n) return 0;
   switch(n->token)
@@ -241,8 +237,7 @@ INT32 count_args(node *n)
   case F_CAST:
     if(n->type == void_type_string)
       return 0;
-    else
-      return count_args(CAR(n));
+    return count_args(CAR(n));
 
   case F_SOFT_CAST:
     return count_args(CAR(n));
@@ -267,7 +262,6 @@ INT32 count_args(node *n)
     int tmp1,tmp2;
     tmp1=count_args(CADR(n));
     tmp2=count_args(CDDR(n));
-    if(tmp1==-1 || tmp2==-1) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
   }
@@ -293,6 +287,68 @@ INT32 count_args(node *n)
     if(n->type == void_type_string) return 0;
     return 1;
   }
+  /* NOT_REACHED */
+}
+
+INT32 count_args(node *n)
+{
+  int total = 0;
+  int a,b;
+  node *orig = n;
+  node *orig_parent;
+  node *prev = NULL;
+  check_tree(n,0);
+
+  fatal_check_c_stack(16384);
+
+  if(!n) return 0;
+
+  orig_parent = n->parent;
+  n->parent = NULL;
+
+  while(1) {
+    int val;
+    while ((n->token == F_COMMA_EXPR) ||
+	   (n->token == F_VAL_LVAL) ||
+	   (n->token == F_ARG_LIST)) {
+      if (CAR(n)) {
+	CAR(n)->parent = n;
+	n = CAR(n);
+      } else if (CDR(n)) {
+	CDR(n)->parent = n;
+	n = CDR(n);
+      } else {
+	/* Unlikely, but... */
+	goto backtrack;
+      }
+    }
+
+    /* Leaf. */
+    val = low_count_args(n);
+    if (val == -1) {
+      total = -1;
+      break;
+    }
+    if (n->parent && (CAR(n->parent) == CDR(n->parent))) {
+      /* Same node in both CDR and CAR ==> count twice. */
+      val *= 2;
+    }
+    total += val;
+
+  backtrack:
+    while (n->parent &&
+	   (!CDR(n->parent) || (n == CDR(n->parent)))) {
+      n = n->parent;
+    }
+    if (!(n = n->parent)) break;
+    /* Found a parent where we haven't visited CDR. */
+    CDR(n)->parent = n;
+    n = CDR(n);
+  }
+
+  orig->parent = orig_parent;
+
+  return total;
 }
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
@@ -387,9 +443,11 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
     if (CAR(p) == n) {
-      (_CAR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CAR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else if (CDR(p) == n) {
-      (_CDR(p) = mksoftcastnode(t, n))->parent = p;
+      (_CDR(p) = mksoftcastnode(t, mkcastnode(mixed_type_string, n)))
+	->parent = p;
     } else {
       yywarning("Failed to find place to insert soft cast.");
     }
@@ -397,98 +455,95 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   return 1;
 }
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT u.node.a
+void init_node_s_blocks() { }
 
-#undef PRE_INIT_BLOCK
-#define PRE_INIT_BLOCK(NODE) do {					\
-    NODE->token = USHRT_MAX;						\
-  } while (0)
+void really_free_node_s(node * n) {
+    ba_free(&Pike_compiler->node_allocator, n);
+}
 
-BLOCK_ALLOC_FILL_PAGES(node_s, 2)
+MALLOC_FUNCTION
+node * alloc_node_s() {
+    return (node*)ba_alloc(&Pike_compiler->node_allocator);
+}
 
-#define NODES (sizeof (((struct node_s_block *) NULL)->x) / sizeof (struct node_s))
+void count_memory_in_node_ss(size_t * num, size_t * size) {
+    struct program_state * state = Pike_compiler;
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT next
+    *num = 0;
+    *size = 0;
+
+    while (state) {
+        size_t _num, _size;
+        ba_count_all(&state->node_allocator, &_num, &_size);
+        *num += _num;
+        *size += _size;
+        state = state->previous;
+    }
+}
+
+void node_walker(struct ba_iterator * it, void * UNUSED(data)) {
+  do {
+    node * tmp = ba_it_val(it);
+
+    /*
+     * since we free nodes from here, we might iterate over them again.
+     * to avoid that we check for the free mark.
+     */
+    if (tmp->token == USHRT_MAX) continue;
+
+#ifdef PIKE_DEBUG
+    if(!cumulative_parse_error)
+    {
+      fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
+              (void *)tmp,
+              tmp->current_file->str, (long)tmp->line_number,
+              tmp->token);
+
+      debug_malloc_dump_references(tmp,0,2,0);
+
+      if(tmp->token==F_CONSTANT)
+        print_tree(tmp);
+    }
+    /* else */
+#endif
+    {
+      /* Free the node and be happy */
+      /* Make sure we don't free any nodes twice */
+      if(car_is_node(tmp)) _CAR(tmp)=0;
+      if(cdr_is_node(tmp)) _CDR(tmp)=0;
+#ifdef PIKE_DEBUG
+      if (l_flag > 3) {
+        fprintf(stderr, "Freeing node that had %d refs.\n",
+                tmp->refs);
+      }
+#endif /* PIKE_DEBUG */
+      /* Force the node to be freed. */
+      tmp->refs = 1;
+      debug_malloc_touch(tmp->type);
+      free_node(tmp);
+    }
+  } while (ba_it_step(it));
+}
 
 void free_all_nodes(void)
 {
-  if(!Pike_compiler->previous)
-  {
-    node *tmp;
-    struct node_s_block *tmp2;
-    size_t e=0;
+  node *tmp;
 
 #ifndef PIKE_DEBUG
-    if(cumulative_parse_error)
-    {
+  if(cumulative_parse_error) {
 #endif
-      
-      for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=tmp2->used;
-      if(e)
-      {
-        size_t e2=e;
-	struct node_s_block *nextblk;
-	for(tmp2=node_s_blocks;tmp2;tmp2=nextblk)
-	{
-	  int n = tmp2->used;
-	  nextblk = tmp2->next;
-	  /* We want to be able to access the token field of all
-	   * the blocks...
-	   */
-	  PIKE_MEM_RW(tmp2->x);
-	  for(e=0;n && e<NODES;e++)
-	  {
-	    if (tmp2->x[e].token != USHRT_MAX)
-	    {
-	      tmp=tmp2->x+e;
+      ba_walk(&Pike_compiler->node_allocator, &node_walker, NULL);
 #ifdef PIKE_DEBUG
-	      if(!cumulative_parse_error)
-	      {
-		fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
-			(void *)tmp,
-			tmp->current_file->str, (long)tmp->line_number,
-			tmp->token);
-
-		debug_malloc_dump_references(tmp,0,2,0);
-
-		if(tmp->token==F_CONSTANT)
-		  print_tree(tmp);
-	      }
-	      /* else */
-#endif
-	      {
-		/* Free the node and be happy */
-		/* Make sure we don't free any nodes twice */
-		if(car_is_node(tmp)) _CAR(tmp)=0;
-		if(cdr_is_node(tmp)) _CDR(tmp)=0;
-#ifdef PIKE_DEBUG
-		if (l_flag > 3) {
-		  fprintf(stderr, "Freeing node that had %d refs.\n",
-			  tmp->refs);
-		}
-#endif /* PIKE_DEBUG */
-		/* Force the node to be freed. */
-		tmp->refs = 1;
-		debug_malloc_touch(tmp->type);
-		free_node(tmp);
-		--n;
-	      }
-	    }
-	  }
-	}
-#ifdef PIKE_DEBUG
-	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e2);
-#endif
+      if(!cumulative_parse_error) {
+        size_t n, s;
+        ba_count_all(&Pike_compiler->node_allocator, &n, &s);
+        if (n)
+            Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
       }
-#ifndef PIKE_DEBUG
-    }
-#endif
-    free_all_node_s_blocks();
-    cumulative_parse_error=0;
+#else
   }
+#endif
+  cumulative_parse_error=0;
 }
 
 void debug_free_node(node *n)
@@ -1344,8 +1399,8 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 	ref_push_type_value(n->type);
 	ref_push_type_value(type);
 	yytype_report(REPORT_ERROR,
-		      NULL, 0, NULL,
-		      NULL, 0, NULL,
+		      NULL, 0, type,
+		      NULL, 0, n->type,
 		      2, "Soft cast of %O to %O isn't a valid cast.");
       } else if (result_type == n->type) {
 	ref_push_type_value(n->type);
@@ -3416,7 +3471,8 @@ void fix_type_field(node *n)
 	    free_string(t1);
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
-	    _CAR(n) = mksoftcastnode(CDR(n)->type, CAR(n));
+	    _CAR(n) = mksoftcastnode(CDR(n)->type,
+				     mkcastnode(mixed_type_string, CAR(n)));
 	  }
 	}
       }
@@ -3957,6 +4013,8 @@ void fix_type_field(node *n)
 
   case F_CASE_RANGE:
     if (CDR(n) && CAR(n) && !TEST_COMPAT(0,6)) {
+      fix_type_field(CAR(n));
+      fix_type_field(CDR(n));
       /* case 1 .. 2: */
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
 	if (!match_types(CAR(n)->type, int_type_string) ||
@@ -3989,8 +4047,27 @@ void fix_type_field(node *n)
 	}
       }
     }
+    if (CDR(n) && (Pike_compiler->compiler_pass == 2)) {
+      fix_type_field(CDR(n));
+      if (!match_types(CDR(n)->type, enumerable_type_string)) {
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, enumerable_type_string,
+		      NULL, 0, CDR(n)->type,
+		      0, "Case value is not an enumerable type.");
+      }
+    }
     /* FALL_THROUGH */
   case F_CASE:
+    if (CAR(n) && (Pike_compiler->compiler_pass == 2)) {
+      fix_type_field(CAR(n));
+      if (!match_types(CAR(n)->type, enumerable_type_string)) {
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, enumerable_type_string,
+		      NULL, 0, CAR(n)->type,
+		      0, "Case value is not an enumerable type.");
+      }
+    }
+    /* FALL_THROUGH */
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -4270,7 +4347,8 @@ void fix_type_field(node *n)
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
     /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tFunc(tMix tOr(tVoid,tInt),tMix));
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt))
+				      tOr(tVoid,tInt), tMix));
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
@@ -5225,7 +5303,7 @@ struct timer_oflo
   int yes;
 };
 
-static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
+static void check_evaluation_time(struct callback *UNUSED(cb), void *tmp, void *UNUSED(ignored))
 {
   struct timer_oflo *foo=(struct timer_oflo *)tmp;
   if(foo->counter-- < 0)
@@ -5254,6 +5332,8 @@ ptrdiff_t eval_low(node *n,int print_error)
     print_tree(n);
   }
 #endif
+
+  fix_type_field(n);
 
   if(Pike_compiler->num_parse_error) {
     return -1;

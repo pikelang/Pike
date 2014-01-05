@@ -2,6 +2,8 @@
 
 #pike __REAL_VERSION__
 
+//! NNTP - The Network News Transfer Protocol.
+
 //! helper class for protocol implementations.
 //! @seealso
 //! 	@[protocol]
@@ -15,7 +17,7 @@ class protocolhelper
 
 }
 
-//! NNTP protocol
+//! Synchronous NNTP protocol
 class protocol
 {
   inherit Stdio.FILE : sock;
@@ -106,7 +108,7 @@ class protocol
   }
 }
 
-//! NNTP protocol
+//! Asynchronous NNTP protocol
 class asyncprotocol
 {
   inherit Stdio.File : sock;
@@ -128,7 +130,7 @@ class asyncprotocol
 	if(max(i1, i2, i3, i4) <= 255 && min(i1, i2, i3, i4) >= 0)
 	   return 1;
 
-     return 0;
+     return arrayp(Protocols.IPv6.parse_addr(iporhost));
   }
 
   int async_connect(string to, int port, function cb, mixed ... extra)
@@ -353,7 +355,10 @@ class client
     return readreturnbody();
   }
 
-  //!
+  //! @param server
+  //!   NNTP server to connect to.
+  //!   Defaults to the server specified by
+  //!   the environment variable @expr{NNTPSERVER@}.
   void create(string|void server)
   {
     if(!server)
@@ -362,7 +367,7 @@ class client
 
       if(!server)
       {
-	// Check /etc/nntpserver here
+	// FIXME: Check /etc/nntpserver here
       }
     }
 

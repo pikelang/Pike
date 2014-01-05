@@ -1,0 +1,607 @@
+#define _GNU_SOURCE
+
+#include "bson_config.h"
+
+#if HAVE_STDINT_H
+#include <stdint.h>
+#endif /* HAVE_STDINT_H */
+
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif /* HAVE_ARPA_INET_H */
+
+#if HAVE_WINSOCK2_H
+#include <Winsock2.h>
+#endif /* HAVE_WINSOCK2_H */
+
+/* Standard Pike include files. */
+#include "bignum.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "constants.h"
+#include "interpret.h"
+#include "mapping.h"
+#include "module_support.h"
+#include "object.h"
+#include "pike_macros.h"
+#include "pike_types.h"
+#include "program.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "version.h"
+#include "operators.h"
+#include "sscanf.h"
+
+#define DEFAULT_CMOD_STORAGE static
+
+#define TYPE_BSON_DOUBLE 0x01
+#define TYPE_BSON_STRING 0x02
+#define TYPE_BSON_ARRAY 0x04
+#define TYPE_BSON_BINARY 0x05
+#define TYPE_BSON_INTEGER 0x10
+#define TYPE_BSON_INTEGER64 0x12
+#define TYPE_BSON_TIMESTAMP 0x11
+#define TYPE_BSON_BOOLEAN 0x08
+#define TYPE_BSON_MINKEY 0xff
+#define TYPE_BSON_MAXKEY 0x7f
+#define TYPE_BSON_NULL 0x0a
+#define TYPE_BSON_OBJECTID 0x07
+#define TYPE_BSON_SECOND 0x09
+#define TYPE_BSON_REGEX 0x0b
+#define TYPE_BSON_JAVASCRIPT 0x0d
+#define TYPE_BSON_DOCUMENT 0x03
+
+// not supported.
+#define TYPE_BSON_UNDEFINED x06 
+
+/*
+Types left to implement
+|	"\x0F" e_name code_w_s	JavaScript code w/ scope
+*/
+
+struct object * True;
+struct object * False;
+struct object * Null;
+struct object * MinKey;
+struct object * MaxKey;
+
+struct program * Javascript;
+struct svalue * Second;
+struct program * ObjectId;
+struct program * Symbol;
+struct program * Regex;
+struct program * Timestamp;
+
+struct svalue low_Second;
+
+char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list);
+
+struct object * lookup_object(const char * obj)
+{
+  struct object * p;
+  push_text(obj);
+  SAFE_APPLY_MASTER("resolv", 1 );
+  if(Pike_sp[-1].type != T_OBJECT)
+  {
+    Pike_error("Unable to load object.\n");
+  }
+
+  p = Pike_sp[-1].u.object;
+  add_ref(p);
+  pop_stack();
+  return p;
+}
+
+struct program * lookup_program(const char * prog)
+{
+  struct program * p;
+  push_text(prog);
+  SAFE_APPLY_MASTER("resolv", 1 );
+  if(Pike_sp[-1].type != T_PROGRAM)
+  {
+    Pike_error("Unable to load class %s.\n", prog);
+  }
+
+  p = Pike_sp[-1].u.program;
+  add_ref(p);
+  pop_stack();
+  return p;
+}
+
+struct svalue * lookup_svalue(const char * prog)
+{
+  struct svalue * p;
+  push_text(prog);
+  SAFE_APPLY_MASTER("resolv", 1 );
+  if(Pike_sp[-1].type == PIKE_T_INT)
+  {
+    Pike_error("Unable to load class %s.\n", prog);
+  }
+
+  add_ref_svalue(Pike_sp-1);
+
+  move_svalue(&low_Second, Pike_sp-1);
+  p = &low_Second;
+  pop_stack();
+  return p;
+}
+
+DECLARATIONS
+
+/*
+** Little endian to host, Long
+*/
+static int32_t ltohl(const char *p)
+{
+    return ((int32_t)((const unsigned char *)p)[0]) |
+        (((int32_t)((const unsigned char *)p)[1])<<8) |
+        (((int32_t)((const unsigned char *)p)[2])<<16) |
+        (((int32_t)((const signed char *)p)[3])<<24);
+}
+
+/*
+** Little endian to host, "double" i.e. long long
+*/
+static int64_t ltohd(const char *p)
+{
+    return ((uint32_t)ltohl(p)) | (((int64_t)ltohl(p+4))<<32);
+}
+
+struct mapping * decode_document(struct pike_string * pike_slist)
+{
+  char * slist;
+  struct mapping * doc;
+  int32_t len;
+  int32_t left;
+  char * n;
+  char * end;
+  struct mapping * list;
+
+  if(pike_slist->size_shift) Pike_error("wide strings are not allowed.\n");
+
+  slist = pike_slist->str;
+  n = slist;
+  end = n + (pike_slist->len -1);
+  
+  left = pike_slist->len;
+  if(left < 4)
+    Pike_error("invalid BSON. not enough data.\n");
+    
+  len = ltohl(n);
+    
+  left = pike_slist->len - (n - slist);
+    
+  if(left < len)
+  {
+    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, left);  
+  }
+  
+  n += 4;
+  
+  if((char)*end != 0x0)
+  { 
+    char x = *end;
+    Pike_error("invalid BSON, last byte of document must be NULL.\n");
+  }
+  
+  list = allocate_mapping(2);
+  
+  while(n < end)
+  {
+    n = decode_next_value(pike_slist, n, list);
+  }
+  
+  return list;
+}
+
+char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list)
+{
+  char * slist;
+  uint8_t type;
+  char * cname;
+  struct pike_string * nstr;
+  struct pike_string * name;
+  char * x;
+  int32_t len;
+  
+  slist = pike_slist->str;
+
+  type = n[0];
+  
+  n++;
+
+  cname = n;
+
+  n +=   (strlen(cname) + 1);
+
+  switch(type)
+  {
+    case TYPE_BSON_DOUBLE:
+    {  
+      struct pike_string * fstr;
+      struct array * a;
+      char x[8];
+      int32_t left;
+      left = pike_slist->len - (n - slist);      
+      if(8 > left)
+        Pike_error("invalid BSON. not enough data.\n");
+      memcpy(x, n, 8);
+      fstr = make_shared_binary_string((char *)&x, 8);
+      push_string(fstr);
+      f_reverse(1);
+      push_text("%8F");
+      f_sscanf(2);
+      if(Pike_sp[-1].type != PIKE_T_ARRAY)
+        Pike_error("unable to parse float.\n");
+      a = Pike_sp[-1].u.array;
+      push_svalue(ITEM(a));
+      stack_swap();
+      pop_stack();
+      n+=8;
+      break;
+    }
+
+    case TYPE_BSON_STRING:
+    {
+      struct pike_string * val;
+      int32_t bump;
+      int32_t left;
+      bump = ltohl(n);
+      left = pike_slist->len - (n - slist);
+
+      if(!bump || bump > left)
+      {
+        Pike_error("invalid BSON. not enough data: need %d, have %d.\n", bump, left);
+      }
+      n+=4;
+      val = make_shared_binary_string(n, bump-1); // length includes null.
+      n += (bump);
+      push_string(val);
+      f_utf8_to_string(1);
+      break;
+    }
+
+    case TYPE_BSON_BINARY:
+    {
+      struct pike_string * val;
+      int32_t bump = ltohl(n);
+      int32_t left;
+      n+=4;
+      left = pike_slist->len - (n - slist);
+
+      if(!bump || bump > left)
+      {
+        Pike_error("invalid BSON. not enough data 5.\n");
+      }
+      val = make_shared_binary_string(n, bump-1); // length includes null.
+      n += (bump);
+      push_string(val);
+      break;
+    }
+    
+    case TYPE_BSON_INTEGER:
+    {  
+      int32_t t;
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 4)
+      {
+        Pike_error("invalid BSON. not enough data 6.\n");
+      }
+      t = ltohl(n);
+      push_int(t);
+      n+=4;
+      break;
+    }
+
+    case TYPE_BSON_INTEGER64:
+    {  
+      int64_t t;
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 8)
+      {
+        Pike_error("invalid BSON. not enough data 7.\n");
+      }
+      t = ltohd(n);
+      push_int64(t);
+      n+=8;
+      break;
+    }
+    
+    case TYPE_BSON_BOOLEAN:
+    {
+      int8_t t;
+      t = *(int8_t*)n;
+      n++;
+      if(t == 1) // true
+      {
+        if(!True)
+          True = lookup_object("Val.True");
+        push_object(True);
+      }
+      else if(t ==0) // false
+      {
+        if(!False)
+          False = lookup_object("Val.False");
+        push_object(False);
+      
+      }
+      else
+      {
+        Pike_error("Invalid value of boolean field.\n");
+      }
+      break; 
+    }
+   
+    case TYPE_BSON_MINKEY:
+    {
+      if(!MinKey)
+        MinKey = lookup_object("Standards.BSON.MinKey");
+      push_object(MinKey);
+      break;  
+    }
+    
+    case TYPE_BSON_MAXKEY:
+    {
+      if(!MaxKey)
+        MaxKey = lookup_object("Standards.BSON.MaxKey");
+      push_object(MaxKey);
+      break;  
+    }
+    
+    case TYPE_BSON_NULL:
+    {
+      if(!Null)
+        Null = lookup_object("Val.Null");
+      push_object(Null);
+      break;  
+    }
+    
+    case TYPE_BSON_OBJECTID:
+    {
+      struct pike_string * str;
+      
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 12)
+      {
+        Pike_error("invalid BSON. not enough data 8.\n");
+      }
+      str = make_shared_binary_string(n, 12);
+      n+=12;
+      if(!ObjectId)
+        ObjectId = lookup_program("Standards.BSON.ObjectId");
+      ref_push_program(ObjectId);
+      push_string(str);
+      apply_svalue( Pike_sp-2, 1 );
+      stack_swap(); 
+      pop_stack();
+      break;  
+    }
+    
+    case TYPE_BSON_TIMESTAMP:
+    {
+      uint64_t sec;
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 8)
+      {
+        Pike_error("invalid BSON. not enough data 9.\n");
+      }
+      sec = (uint64_t)ltohd(n);
+      n+=8;
+      
+     if(!Timestamp)
+      Timestamp = lookup_program("Standards.BSON.Timestamp");
+     push_program(Timestamp);
+     push_int64(sec);
+     apply_svalue( Pike_sp-2, 1);
+     stack_swap(); 
+     pop_stack();
+     break;  
+    }
+    
+    case TYPE_BSON_SECOND:
+    {
+      uint64_t sec;
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 8)
+      {
+        Pike_error("invalid BSON. not enough data 10.\n");
+      }
+      sec = (uint64_t)ltohd(n);
+      n+=8;
+      
+      if(!Second)
+        Second = lookup_svalue("Calendar.Second");
+      push_text("unix");
+      push_int64(sec/1000);
+      apply_svalue(Second, 2);
+      break;  
+    }
+    case TYPE_BSON_ARRAY:    
+    {
+      struct pike_string * d;
+      struct mapping * doc;
+      struct array * arr;
+      INT_TYPE asize;
+      int32_t len;
+      /* used by NEW_MAPPING_LOOP */
+      const struct keypair *k=0;
+      const struct mapping_data *md;
+      INT32 e;
+
+      int32_t left = pike_slist->len - (n - slist);
+
+      if(left < 4)
+      {
+        Pike_error("invalid BSON. not enough data 11.\n");      
+      }
+      len = ltohl(n);
+      
+      left = pike_slist->len - (n - slist);
+      if(left < len)
+      {
+        Pike_error("invalid BSON. not enough data left to form document.\n");      
+      }
+      
+      d = make_shared_binary_string(n, len);
+      doc = decode_document(d);
+      free_string(d);
+
+      // arrays are encoded as mappings with indices containing 
+      // string representations of the index number.
+
+      asize = m_sizeof(doc);
+      arr = allocate_array(asize);
+      md = doc->data;
+
+      NEW_MAPPING_LOOP(md)
+      {
+        INT_TYPE i;
+        push_svalue(&k->ind);
+        o_cast_to_int();
+        i = Pike_sp[-1].u.integer;
+        pop_stack();
+	assign_svalue(ITEM(arr) + i, &k->val);
+      }
+
+      free_mapping(doc);
+
+      push_array(arr);
+      n += (len);
+      break;
+    }
+
+    case TYPE_BSON_DOCUMENT:
+    {
+      struct pike_string * d;
+      struct mapping * doc;
+      int32_t len;
+      int32_t left = pike_slist->len - (n - slist);
+      if(left < 4)
+      {
+        Pike_error("invalid BSON. not enough data 11.\n");      
+      }
+      len = ltohl(n);
+      
+      left = pike_slist->len - (n - slist);
+      if(left < len)
+      {
+        Pike_error("invalid BSON. not enough data left to form document.\n");      
+      }
+      
+      d = make_shared_binary_string(n, len);
+      doc = decode_document(d);
+      free_string(d);
+      push_mapping(doc);
+      n += (len);
+      break;
+    }
+    
+    case TYPE_BSON_REGEX:
+    {
+      char * reg;
+      char * opt;
+      
+      reg = (n);
+      n += strlen(reg) + 1;
+      
+      opt = (n);
+      n += strlen(opt) + 1;
+      
+      if(!Regex)
+        Regex = lookup_program("Standards.BSON.Regex");
+        
+      push_program(Regex);
+      push_text(reg);
+      push_text(opt);
+      
+      apply_svalue( Pike_sp-3, 2);
+      stack_swap(); 
+      pop_stack();
+      
+      break;
+    }
+    
+    case TYPE_BSON_JAVASCRIPT:
+    {
+      struct pike_string * val;
+      int32_t bump = ltohl(n);
+      int32_t left;
+      n+=4;
+      left = pike_slist->len - (n - slist);
+      if(!bump || bump > left)
+        Pike_error("invalid BSON. not enough data.\n");
+      val = make_shared_binary_string(n, bump-1); // length includes null.
+      n += (bump);
+      
+      if(!Javascript)
+        Javascript = lookup_program("Standards.BSON.Javascript");
+
+      push_program(Javascript);
+      push_string(val);
+      f_utf8_to_string(1);
+
+      apply_svalue( Pike_sp-2, 1);
+      stack_swap(); 
+      pop_stack();
+
+      break;
+    }
+    
+    default:
+      Pike_error("Unknown field type %d.\n", type);
+  }
+
+  name = make_shared_binary_string(cname, strlen(cname)); // guaranteed by spec to be a null terminated string.
+
+  mapping_string_insert(list, name, Pike_sp-1);
+  pop_stack();
+
+  free_string(name);
+  
+  return n;
+}
+
+PIKEFUN mapping decode(string document)
+{
+  struct mapping * doc;
+  
+  doc = decode_document(document);
+  
+  pop_stack();
+  push_mapping(doc);
+}
+
+PIKE_MODULE_INIT
+{
+  INIT;
+
+  // We could initialize these to their real values for some minimal
+  // runtime performance gain.
+  True = NULL;
+  False = NULL;
+  Null = NULL;
+  MinKey = NULL;
+  MaxKey = NULL;
+  Javascript = NULL;
+  Second = NULL;
+  ObjectId = NULL;
+  Symbol = NULL;
+  Regex = NULL;
+  Timestamp = NULL;
+}
+
+PIKE_MODULE_EXIT 
+{
+  if( True ) free_object(True);
+  if( False ) free_object(False);
+  if( Null ) free_object(Null);
+  if( MinKey ) free_object(MinKey);
+  if( MaxKey ) free_object(MaxKey);
+  if( Javascript ) free_program(Javascript);
+  if( Second ) free_svalue(Second);
+  if( ObjectId ) free_program(ObjectId);
+  if( Symbol ) free_program(Symbol);
+  if( Regex ) free_program(Regex);
+  if( Timestamp ) free_program(Timestamp);
+  EXIT;
+}

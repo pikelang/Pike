@@ -91,7 +91,7 @@ array buffer_to_window_coords( int wintype, int buffer_x, int buffer_y );
 //!
 //!
 
-static GTK2.TextView create( GTK2.TextBuffer buffer_or_props );
+protected GTK2.TextView create( GTK2.TextBuffer buffer_or_props );
 //! Create a new W(TextView).  
 //!
 //!

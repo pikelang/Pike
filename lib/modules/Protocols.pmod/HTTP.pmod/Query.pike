@@ -25,13 +25,15 @@
 //!    return -1;
 //! }
 
-// FIXME: Uses hardcoded errnos from Linux/i386.
-
 /****** variables **************************************************/
 
 // open
 
-//!	Errno copied from the connection.
+//!	Errno copied from the connection or simulated for async operations.
+//!	@note
+//!		In Pike 7.8 and earlier hardcoded Linux values were used in
+//!		async operations, 110 instead of @expr{System.ETIMEDOUT@} and
+//!		113 instead of @expr{System.EHOSTUNREACH@}.
 int errno;
 
 //!	Tells if the connection is successfull.
@@ -112,8 +114,12 @@ protected int ponder_answer( int|void start_position )
       }
       if (s=="") {
 	if (sizeof (buf) <= start_position) {
-	  // FIXME: Try to fake some kind of errno here, or HTTP
-	  // error?
+          // Fake a connection reset by peer errno.
+#if constant(System.ECONNRESET)
+          errno = System.ECONNRESET;
+#else
+          errno = 104;
+#endif
 #ifdef HTTP_QUERY_DEBUG
 	  werror ("<- (premature EOF)\n");
 #endif
@@ -172,22 +178,29 @@ protected void close_connection()
   con->close();
 }
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+SSL.context context;
+#endif
+
 void start_tls(int|void blocking, int|void async)
 {
 #ifdef HTTP_QUERY_DEBUG
   werror("start_tls(%d)\n", blocking);
 #endif
 #if constant(SSL.Cipher.CipherAlgorithm)
-  // Create a context
-  SSL.context context = SSL.context();
-  // Allow only strong crypto
-  context->preferred_suites -= ({
-    //Weaker ciphersuites.
-    SSL_rsa_export_with_rc4_40_md5,
-    SSL_rsa_export_with_rc2_cbc_40_md5,
-    SSL_rsa_export_with_des40_cbc_sha,
-  });
-  context->random = Crypto.Random.random_string;
+  if( !context )
+  {
+    // Create a context
+    context = SSL.context();
+    // Allow only strong crypto
+    context->preferred_suites -= ({
+      //Weaker ciphersuites.
+      SSL_rsa_export_with_rc4_40_md5,
+      SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL_rsa_export_with_des40_cbc_sha,
+    });
+    context->random = Crypto.Random.random_string;
+  }
 
   if(real_host)
   {
@@ -199,7 +212,7 @@ void start_tls(int|void blocking, int|void async)
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context, 1,blocking);
+  SSL.sslfile ssl = SSL.sslfile(con, context, 1, blocking);
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);
@@ -312,7 +325,8 @@ protected void low_async_failed(int errno)
 #ifdef HTTP_QUERY_DEBUG
    werror("** calling failed cb %O\n", request_fail);
 #endif
-   this_program::errno = errno;
+   if (errno)
+     this_program::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
@@ -320,7 +334,11 @@ protected void low_async_failed(int errno)
 
 protected void async_failed()
 {
+#if constant(System.EHOSTUNREACH)
+  low_async_failed(con?con->errno():System.EHOSTUNREACH);
+#else
   low_async_failed(con?con->errno():113);	// EHOSTUNREACH/Linux-i386
+#endif
 }
 
 protected void async_timeout()
@@ -329,7 +347,11 @@ protected void async_timeout()
    werror("** TIMEOUT\n");
 #endif
    close_connection();
+#if constant(System.ETIMEDOUT)
+   low_async_failed(System.ETIMEDOUT);
+#else
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
+#endif
 }
 
 void async_got_host(string server,int port)
@@ -511,7 +533,7 @@ void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
 #ifdef HTTP_QUERY_DEBUG
-  werror("dns_lookup_callback %s = %s\n", name, ip);
+  werror("dns_lookup_callback %s = %s\n", name, ip||"NULL");
 #endif
    hostname_cache[name]=ip;
    if (functionp(callback))
@@ -1041,7 +1063,7 @@ string data(int|void max_length)
    return buf[datapos..datapos+len-1];
 }
 
-protected Locale.Charset.Decoder charset_decoder;
+protected Charset.Decoder charset_decoder;
 
 //! Gives back data, but decoded according to the content-type
 //! character set.
@@ -1053,9 +1075,9 @@ string unicode_data() {
     if(headers["content-type"])
       sscanf(headers["content-type"], "%*scharset=%s", charset);
     if(!charset)
-      charset_decoder = Locale.Charset.decoder("ascii");
+      charset_decoder = Charset.decoder("ascii");
     else
-      charset_decoder = Locale.Charset.decoder(charset);
+      charset_decoder = Charset.decoder(charset);
   }
   return charset_decoder->feed(data())->drain();
 }
@@ -1149,45 +1171,54 @@ array|mapping|string cast(string to)
    error("HTTP.Query: can't cast to "+to+"\n");
 }
 
+//! Minimal simulation of a @[Stdio.File] object.
+//!
+//! Objects of this class are returned by @[file()] and @[datafile()].
+//!
+//! @note
+//!   Do not attempt further queries using this @[Query] object
+//!   before having read all data.
 class PseudoFile
 {
    string buf;
-   object con;
    int len;
-   int p=0;
 
-   void create(object _con,string _buf,int _len)
+   protected void create(string _buf, int _len)
    {
-      con=_con;
       buf=_buf;
       len=_len;
-      if (!con) len=sizeof(buf);
    }
 
-   string read(int n)
+   //!
+   string read(int n, int(0..1)|void not_all)
    {
       string s;
 
-      if (len && p+n>len) n=len-p;
+      if (!len) return "";
+      if (n > len) n = len;
 
-      // FIXME? A real file object returns as much data as it has,
-      // not 0.
       if (sizeof(buf)<n && con)
       {
-	 string s=con->read(n-sizeof(buf));
-	 if (!s) return 0;
-	 buf+=s;
+	 if (!not_all || !sizeof(buf)) {
+	    string s = con->read(n-sizeof(buf), not_all);
+	    if (s) {
+	       buf += s;
+	    }
+	 }
       }
 
       s=buf[..n-1];
       buf=buf[n..];
-      p+=sizeof(s);
+      if (len != 0x7fffffff) {
+	len -= sizeof(s);
+      }
       return s;
    }
 
+   //!
    void close()
    {
-      con=0; // forget
+      destruct();
    }
 }
 
@@ -1217,20 +1248,19 @@ object file(void|mapping newheader,void|mapping removeheader)
       h=(h|(newheader||([])))-(removeheader||([]));
       string hbuf=headers_encode(h);
       if (hbuf=="") hbuf="\r\n";
+      hbuf = protocol + " " + status + " " + status_desc + "\r\n" +
+	hbuf + "\r\n";
       if (zero_type(headers["content-length"]))
 	 len=0x7fffffff;
       else
-	 len=sizeof(protocol+" "+status+" "+status_desc)+2+
-	    sizeof(hbuf)+2+(int)headers["content-length"];
-      return PseudoFile(con,
-			protocol+" "+status+" "+status_desc+"\r\n"+
-			hbuf+"\r\n"+buf[datapos..],len);
+	 len = sizeof(hbuf)+(int)headers["content-length"];
+      return PseudoFile(hbuf + buf[datapos..],len);
    }
    if (zero_type(headers["content-length"]))
       len=0x7fffffff;
    else
       len=sizeof(headerbuf)+4+(int)h["content-length"];
-   return PseudoFile(con,buf,len);
+   return PseudoFile(headerbuf + "\r\n\r\n" + buf[datapos..], len);
 }
 
 //! @decl Protocols.HTTP.Query.PseudoFile datafile();
@@ -1249,7 +1279,7 @@ object datafile()
 #if constant(thread_create)
    `()();
 #endif
-   return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
+   return PseudoFile(buf[datapos..], (int)headers["content-length"]);
 }
 
 protected void destroy()

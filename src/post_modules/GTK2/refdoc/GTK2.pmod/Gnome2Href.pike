@@ -19,7 +19,7 @@
 
 inherit GTK2.Button;
 
-static Gnome2.Href create( string url, string|void label );
+protected Gnome2.Href create( string url, string|void label );
 //! Created a GNOME href object, a label widget with a clickable action
 //! and an associated URL. If label is set to 0, url is used as the
 //! label.
@@ -36,7 +36,7 @@ string get_url( );
 //!
 //!
 
-Gnome2.Href set_text( string text );
+Gnome2.Href set_text( sprintf_format text, sprintf_args... fmt );
 //! Sets the internal label widget text (used to display a URL's link
 //! text) to the given value.
 //!

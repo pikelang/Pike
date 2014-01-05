@@ -10,7 +10,6 @@
 #include "svalue.h"
 #include "hashtable.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
-#include "block_alloc_h.h"
 
 typedef int (*docode_fun)(node *n);
 typedef node *(*optimize_fun)(node *n);
@@ -48,7 +47,9 @@ void low_add_efun(struct pike_string *name, struct svalue *fun);
 void low_add_constant(const char *name, struct svalue *fun);
 void add_pike_string_constant(const char *name, const char *str, int len);
 PMOD_EXPORT void add_global_program(const char *name, struct program *p);
-BLOCK_ALLOC_FILL_PAGES(callable,2);
+void really_free_callable(struct callable * c);
+void count_memory_in_callables(size_t * num, size_t * size);
+void free_all_callable_blocks();
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_type *type,

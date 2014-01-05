@@ -19,8 +19,6 @@
 //			 - added core for async operation
 //
 
-#if constant(Standards.ASN1.Types)
-
 import Protocols.LDAP;
 
 #include "ldap_globals.h"
@@ -154,7 +152,7 @@ int get_last_io_time() {return last_io_time;}
       return;
     }
     readbuf += s;
-    //DWRITE(sprintf("protocol.read_answer: %s\n", .ldap_privates.ldap_der_decode(readbuf)->debug_string()));
+    //DWRITE(sprintf("protocol.read_answer: %O\n", .ldap_privates.ldap_der_decode(readbuf)));
     DWRITE("protocol.read_answer: ok=1.\n");
     ok = 1;
 
@@ -301,7 +299,7 @@ int get_last_io_time() {return last_io_time;}
     }
     retv += s;
     last_io_time = time();
-    DWRITE(sprintf("protocol.readmsg: %s\n", .ldap_privates.ldap_der_decode(retv)->debug_string()));
+    DWRITE(sprintf("protocol.readmsg: %O\n", .ldap_privates.ldap_der_decode(retv)));
     return retv;
   }
 
@@ -336,7 +334,3 @@ int get_last_io_time() {return last_io_time;}
     last_io_time = time();
     return msgnum;
   }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

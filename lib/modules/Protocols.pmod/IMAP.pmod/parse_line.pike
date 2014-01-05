@@ -65,7 +65,7 @@ string get_atom(int|void with_options)
 	  : "%*[ \t]%[^(){ \0-\037\177%\"]%s"),
 	 atom, buffer);
 
-  werror(sprintf("=> atom: %O\n", atom));
+  werror("=> atom: %O\n", atom);
   return sizeof(atom) && atom;
 }
 
@@ -281,7 +281,7 @@ array do_parse_simple_list(int max_depth, int terminator)
 {
   array a = ({ });
 
-  werror(sprintf("do_parse_simple_list(%d, '%c')\n", max_depth, terminator));
+  werror("do_parse_simple_list(%d, '%c')\n", max_depth, terminator);
       
   buffer = buffer[1..];
 
@@ -307,7 +307,7 @@ array do_parse_simple_list(int max_depth, int terminator)
 
     mapping m = get_simple_list(max_depth);
     if (!m) {
-      werror(sprintf("get_simple_list(%d) failed\n", max_depth));
+      werror("get_simple_list(%d) failed\n", max_depth);
     } else {
       a += ({ m });
     }

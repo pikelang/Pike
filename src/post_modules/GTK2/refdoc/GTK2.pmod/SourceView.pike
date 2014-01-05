@@ -18,7 +18,7 @@
 
 inherit GTK2.TextView;
 
-static GTK2.SourceView create( GTK2.SourceBuffer buffer );
+protected GTK2.SourceView create( GTK2.SourceBuffer buffer );
 //! Create a new W(SourceView).  If a buffer isn't specified, an empty default
 //! buffer will be created.
 //!

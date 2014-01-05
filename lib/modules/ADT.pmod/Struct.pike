@@ -49,7 +49,7 @@ int id = ADT.get_item_id();
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
   foreach(::_indices(2), string index) {
-    mixed val = ::`[](index, 2);
+    mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }
   items = values(names);
@@ -89,7 +89,7 @@ string encode() {
 
 protected mixed `[](string id) {
   if(names[id]) return names[id]->get();
-  return ::`[](id, 2);
+  return ::`[](id, this, 0);
 }
 
 this_program get() { return this; }
@@ -256,14 +256,19 @@ class SWord {
     set(initial_value);
   }
 
-  void set(int(0..) in) {
-    if(in<-~(1<<size*8-1) || in>~((-1)<<size*8-1))
+  void set(int in) {
+    int negmask;
+
+    for (int i; i < size; i++) {
+      negmask = (negmask << 8) | 0xff;
+    }
+    if(in<-(~(1<<size*8-1)&negmask) || in>~((-1)<<size*8-1))
       error("Value %d out of bound (%d..%d).\n",
-	    in, -~(1<<size*8-1), ~((-1)<<size*8-1));
+	    in, -(~(1<<size*8-1)&negmask), ~((-1)<<size*8-1));
     value = in;
   }
   void decode(object f) { sscanf(f->read(size), "%+"+size+"c", value); }
-  string encode() { return sprintf("%+"+size+"c", value); }
+  string encode() { return sprintf("%"+size+"c", value); }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);

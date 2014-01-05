@@ -66,8 +66,6 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-#if constant(Standards.ASN1.Types)
-
 import Standards.ASN1.Types;
 
 Identifier pkcs_id = Identifier(1, 2, 840, 113549, 1);
@@ -79,8 +77,37 @@ Identifier rsa_id = pkcs_1_id->append(1);
 
 /* Signature algorithms */
 Identifier rsa_md2_id = pkcs_1_id->append(2);
+// Identifier rsa_md4_id = pkcs_1_id->append(3);
 Identifier rsa_md5_id = pkcs_1_id->append(4);
 Identifier rsa_sha1_id = pkcs_1_id->append(5);
+Identifier rsa_sha256_id = pkcs_1_id->append(11);
+Identifier rsa_sha384_id = pkcs_1_id->append(12);
+Identifier rsa_sha512_id = pkcs_1_id->append(13);
+
+Identifier ecdsa_sha224_id = Identifier(1, 2, 840, 10045, 4, 3, 1);
+Identifier ecdsa_sha256_id = Identifier(1, 2, 840, 10045, 4, 3, 2);
+Identifier ecdsa_sha384_id = Identifier(1, 2, 840, 10045, 4, 3, 3);
+Identifier ecdsa_sha512_id = Identifier(1, 2, 840, 10045, 4, 3, 4);
+
+/* For public key (unrestricted) from RFC 5480. */
+Identifier ec_id = Identifier(1, 2, 840, 10045, 2, 1);
+
+/* Elliptic Curves from RFC 5480 */
+Identifier ecc_secp192r1_id = Identifier(1, 2, 840, 10045, 3, 1, 1);
+Identifier ecc_sect163k1_id = Identifier(1, 3, 132, 0, 1);
+Identifier ecc_sect163r2_id = Identifier(1, 3, 132, 0, 15);
+Identifier ecc_secp224r1_id = Identifier(1, 3, 132, 0, 33);
+Identifier ecc_sect233k1_id = Identifier(1, 3, 132, 0, 26);
+Identifier ecc_sect233r1_id = Identifier(1, 3, 132, 0, 27);
+Identifier ecc_secp256r1_id = Identifier(1, 2, 840, 10045, 3, 1, 7);
+Identifier ecc_sect283k1_id = Identifier(1, 3, 132, 0, 16);
+Identifier ecc_sect283r1_id = Identifier(1, 3, 132, 0, 17);
+Identifier ecc_secp384r1_id = Identifier(1, 3, 132, 0, 34);
+Identifier ecc_sect409k1_id = Identifier(1, 3, 132, 0, 36);
+Identifier ecc_sect409r1_id = Identifier(1, 3, 132, 0, 37);
+Identifier ecc_secp521r1_id = Identifier(1, 3, 132, 0, 35);
+Identifier ecc_sect571k1_id = Identifier(1, 3, 132, 0, 38);
+Identifier ecc_sect571r1_id = Identifier(1, 3, 132, 0, 39);
 
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
@@ -94,10 +121,16 @@ Identifier dsa_id = Identifier(1, 2, 840, 10040, 4, 1);
                    x9cm(4) 3 }
 */
 Identifier dsa_sha_id = Identifier(1, 2, 840, 10040, 4, 3);
+Identifier dsa_sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 1);
+Identifier dsa_sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 2);
 
 Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
+Identifier md4_id = Identifier(1, 2, 840, 113549, 2, 4);
 Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
 Identifier sha1_id = Identifier(1, 3, 14, 3, 2, 26);
+Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
+Identifier sha384_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 2);
+Identifier sha512_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 3);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
@@ -126,8 +159,10 @@ mapping(string:Identifier) name_ids =
   "countryName" : at_id->append(6),       /* printable string */
   "localityName" : at_id->append(7),      /* printable string */
   "stateOrProvinceName" : at_id->append(8), /* printable string */
+  "streetAddress" : at_id->append(9),     /* printable string */
   "organizationName" : at_id->append(10), /* printable string */
-  "organizationUnitName" : at_id->append(11)  /* printable string */
+  "organizationUnitName" : at_id->append(11),  /* printable string */
+  "postalCode" : at_id->append(17),       /* printable string */
   ]);
 
 mapping(string:Identifier) attribute_ids =
@@ -219,7 +254,3 @@ Identifier ad_id = pkix_id->append(48);
 
 mapping(string:Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
-
-#else
-constant this_program_does_not_exist=1;
-#endif

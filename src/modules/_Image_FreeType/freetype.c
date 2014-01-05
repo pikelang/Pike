@@ -16,6 +16,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #endif
+#include <freetype/ftsnames.h>
+#include <freetype/ttnameid.h>
+
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -100,12 +103,12 @@ static void image_ft_error(const char *msg, FT_Error errcode)
  *! A FreeType font face. We recommend using the more generic font handling
  *! interfaces in @[Image.Fonts] instead.
  */
-static void image_ft_face_init( struct object *o )
+static void image_ft_face_init( struct object *UNUSED(o) )
 {
   TFACE = NULL;
 }
 
-static void image_ft_face_free( struct object *o )
+static void image_ft_face_free( struct object *UNUSED(o) )
 {
   FT_Done_Face( TFACE );
 }
@@ -281,6 +284,8 @@ static void image_ft_face_select_encoding( INT32 args )
  */
 static void image_ft_face_info( INT32 args )
 {
+  int element_count = 8;
+
   pop_n_elems( args );
   push_text( "family" );
   if( TFACE->family_name )
@@ -294,7 +299,37 @@ static void image_ft_face_info( INT32 args )
     push_text( "unknown" );
   push_text( "face_flags" );  push_int( TFACE->face_flags );
   push_text( "style_flags" );  push_int( TFACE->style_flags );
-  f_aggregate_mapping( 8 );
+
+  if (1) /* get ps_name attribute also, if possible */
+  {
+    int sfnt_count = FT_Get_Sfnt_Name_Count(TFACE);
+    char ps_name[64];
+    int i;
+
+    for(i = 0; i < sfnt_count; ++i)
+    {
+      FT_SfntName name;
+      unsigned int len;
+
+      if (FT_Get_Sfnt_Name(TFACE, i, &name) != 0)
+        continue; /* skip if getting name failed */
+      if (name.name_id != TT_NAME_ID_PS_NAME)
+        continue; /* skip if it isn't the interesting bit */
+
+      len = name.string_len;
+      if (len >= sizeof(ps_name))
+        len = sizeof(ps_name)-1;
+
+      memcpy(ps_name, name.string, len);
+      ps_name[len] = 0;
+      push_text("ps_name");
+      push_text(ps_name);
+      element_count += 2;
+      break;
+    }
+  }
+
+  f_aggregate_mapping( element_count );
 }
 
 /*! @decl void create(string font)

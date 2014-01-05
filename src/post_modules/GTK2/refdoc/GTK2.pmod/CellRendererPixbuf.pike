@@ -10,7 +10,7 @@
 
 inherit GTK2.CellRenderer;
 
-static GTK2.CellRendererPixbuf create( mapping|void props );
+protected GTK2.CellRendererPixbuf create( mapping|void props );
 //! Creates a new W(CellRendererPixbuf).  Adjust rendering parameters using
 //! object properties.  Object properties can be set globally with
 //! G.Object->set().  Also, with W(TreeViewColumn), you can bind a property

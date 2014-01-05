@@ -21,7 +21,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -88,12 +88,19 @@ struct piece
    struct piece *next;
 };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->next = NULL;
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p) free_string (p->s);
+static struct block_allocator piece_allocator
+    = BA_INIT_PAGES(sizeof(struct piece), 2);
 
-BLOCK_ALLOC_FILL_PAGES (piece, 2);
+static INLINE struct piece * alloc_piece() {
+    struct piece * p = ba_alloc(&piece_allocator);
+    p->next = NULL;
+    return p;
+}
+
+static INLINE void really_free_piece(struct piece * p) {
+    free_string(p->s);
+    ba_free(&piece_allocator, p);
+}
 
 struct out_piece
 {
@@ -101,12 +108,18 @@ struct out_piece
    struct out_piece *next;
 };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->next = NULL
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p) free_svalue (&p->v)
+static struct block_allocator out_piece_allocator
+    = BA_INIT_PAGES(sizeof(struct out_piece), 2);
 
-BLOCK_ALLOC_FILL_PAGES (out_piece, 2);
+static INLINE struct out_piece * alloc_out_piece() {
+    struct out_piece * p = ba_alloc(&out_piece_allocator);
+    p->next = NULL;
+    return p;
+}
+static INLINE void really_free_out_piece(struct out_piece * p) {
+    free_svalue(&p->v);
+    ba_free(&out_piece_allocator, p);
+}
 
 struct feed_stack
 {
@@ -128,20 +141,21 @@ struct feed_stack
    struct location pos;
 };
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT prev
-#undef INIT_BLOCK
-#define INIT_BLOCK(p) p->local_feed = NULL;
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(p)							\
-  while (p->local_feed)							\
-  {									\
-    struct piece *f=p->local_feed;					\
-    p->local_feed=f->next;						\
-    really_free_piece (f);						\
-  }
-
-BLOCK_ALLOC (feed_stack, 1);
+static struct block_allocator feed_stack_allocator
+    = BA_INIT_PAGES(sizeof(struct feed_stack), 1);
+static INLINE struct feed_stack * alloc_feed_stack() {
+    struct feed_stack * p = ba_alloc(&feed_stack_allocator);
+    p->local_feed = NULL;
+    return p;
+}
+static INLINE void really_free_feed_stack(struct feed_stack * p) {
+    while (p->local_feed) {
+	struct piece *f=p->local_feed;
+	p->local_feed=f->next;
+	really_free_piece (f);
+    }
+    ba_free(&feed_stack_allocator, p);
+}
 
 enum types {
   TYPE_TAG,			/* empty tag callback */
@@ -717,7 +731,7 @@ static INLINE struct calc_chars *select_variant (int flags)
 }
 #endif
 
-static void init_html_struct(struct object *o)
+static void init_html_struct(struct object *UNUSED(o))
 {
 #ifdef HTML_DEBUG
    THIS->flags=0;
@@ -779,7 +793,7 @@ static void init_html_struct(struct object *o)
    recalculate_argq(THIS);
 }
 
-static void exit_html_struct(struct object *o)
+static void exit_html_struct(struct object *UNUSED(o))
 {
    DEBUG((stderr,"exit_html_struct %p\n",THIS));
 
@@ -1794,7 +1808,7 @@ found:
    return 1;
 }
 
-static int scan_for_string (struct parser_html_storage *this,
+static int scan_for_string (struct parser_html_storage *UNUSED(this),
 			    struct piece *feed,
 			    ptrdiff_t c,
 			    struct piece **destp,
@@ -2242,30 +2256,35 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       /* scan for (possible) end(s) of this argument quote */
 
       for (i=0; i < NARGQ (this); i++)
-	 if (ch == ARGQ_START (this)[i]) break;
+	if (ch == ARGQ_START (this)[i]) {
 
-      do {
-	res=scan_forward(*destp,d_p[0]+1,destp,d_p,
-			 LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
-	if (!res) {
-	  if (!finished) 
-	  {
-	    DEBUG((stderr,"scan for end of tag: "
-		   "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
-	    return 0; /* not found - no end of tag, yet */
+	  do {
+	    res = scan_forward(*destp, d_p[0]+1, destp, d_p,
+			       LOOK_FOR_END (this)[i],
+			       NUM_LOOK_FOR_END (this)[i]);
+	    if (!res) {
+	      if (!finished) 
+	      {
+		DEBUG((stderr,"scan for end of tag: "
+		       "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
+		return 0; /* not found - no end of tag, yet */
+	      }
+	      else
+	      {
+		DEBUG((stderr,"scan for end of tag: "
+		       "forced end at %p:%"PRINTPTRDIFFT"d\n", feed,c));
+		return 1; /* end of tag, sure... */
+	      }
+	    }
 	  }
-	  else
-	  {
-	    DEBUG((stderr,"scan for end of tag: "
-		   "forced end at %p:%"PRINTPTRDIFFT"d\n", feed,c));
-	    return 1; /* end of tag, sure... */
-	  }
+	  while (index_shared_string(destp[0]->s, *d_p) == ENTITY_START (this));
+
+	  feed=*destp;
+	  c=d_p[0]+1;
+
+	  break;
 	}
-      }
-      while (index_shared_string(destp[0]->s, *d_p) == ENTITY_START (this));
 
-      feed=*destp;
-      c=d_p[0]+1;
    }
 }
 
@@ -5305,9 +5324,6 @@ static void html_ignore_comments(INT32 args)
 void init_parser_html(void)
 {
    size_t offset;
-   init_piece_blocks();
-   init_out_piece_blocks();
-   init_feed_stack_blocks();
 
    offset = ADD_STORAGE(struct parser_html_storage);
 
@@ -5486,9 +5502,9 @@ void init_parser_html(void)
 
 void exit_parser_html()
 {
-   free_all_piece_blocks();
-   free_all_out_piece_blocks();
-   free_all_feed_stack_blocks();
+   ba_destroy(&piece_allocator);
+   ba_destroy(&out_piece_allocator);
+   ba_destroy(&feed_stack_allocator);
    exit_calc_chars();
 }
 

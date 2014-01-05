@@ -11,7 +11,7 @@
 
 inherit G.Object;
 
-static GDK2.Screen create( );
+protected GDK2.Screen create( );
 //! Gets the default screen.
 //!
 //!

@@ -1,3 +1,10 @@
+#ifndef CB_GC_RECURSE_KEY
+# define CB_GC_RECURSE_KEY(X)
+#endif
+#ifndef CB_GC_CHECK_KEY
+# define CB_GC_CHECK_KEY(X)
+#endif
+
     INIT {
 	THIS->tree.root = NULL;
 	THIS->encode_fun = find_identifier
@@ -11,7 +18,7 @@
 	}
 
 	if (find_identifier("`[]=", TREE_CLASSIFY(_program)) == THIS->insert_fun) {
-	    THIS->copy_fun = -1;
+	    THIS->insert_fun = -1;
 	}
     }
 static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
@@ -41,7 +48,7 @@ TREE_CLASSIFY(_clone_object)(const struct object *o) {
     struct object * t = NULL;
     if (THIS->copy_fun != -1) {
 	apply_low(o, THIS->copy_fun, 0);
-	if (!Pike_sp[-1].type != PIKE_T_OBJECT)
+	if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
 	    Pike_error("clone() is supposed to return an object.\n");
 	t = Pike_sp[-1].u.object;
 	add_ref(t);
@@ -279,7 +286,7 @@ DOCEND()
      */
     PIKEFUN mixed `[](mixed key) {
 	CB_TRANSFORM_KEY(key);
-	if (key->type & T_KEY) {
+	if ((1<<key->type) & T_KEY) {
 	    cb_node_t n;
 	    cb_key k = CB_LOW_KEY_FROM_SVALUE(key);
 	    pop_stack();
@@ -668,8 +675,10 @@ range_do_clone:
     /* keys are always non-complex, so we dont have to check them with the gc */
     GC_CHECK {
 	cb_node_t node = THIS->tree.root;
+	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
+		CB_GC_CHECK_KEY(_->key);
 		debug_gc_check_svalues(&_->value, 1,  " as a CritBit node value");
 	    }
 	});
@@ -677,8 +686,10 @@ range_do_clone:
 
     GC_RECURSE {
 	cb_node_t node = THIS->tree.root;
+	if (!node) return;
 	WALK_FORWARD(node, {
 	    if (CB_HAS_VALUE(_)) {
+		CB_GC_RECURSE_KEY(_->key);
 		gc_recurse_svalues(&_->value, 1);
 	    }
 	});

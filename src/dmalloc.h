@@ -148,13 +148,13 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
 void debug_malloc_dump_fd(int fd);
 #define dmalloc_touch_svalue(X) do {		\
     const struct svalue *_tmp = (X);		\
-    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {	\
+    if (REFCOUNTED_TYPE(TYPEOF(*_tmp))) {	\
       debug_malloc_touch(_tmp->u.refs);		\
     }						\
   } while(0)
 #define dmalloc_touch_svalue_named(X,NAME) do {		\
     const struct svalue *_tmp = (X);			\
-    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {		\
+    if (REFCOUNTED_TYPE(TYPEOF(*_tmp))) {		\
       debug_malloc_touch_named(_tmp->u.refs,NAME);	\
     }							\
   } while(0)

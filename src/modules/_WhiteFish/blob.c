@@ -7,6 +7,7 @@
 #include "array.h"
 #include "module_support.h"
 #include "fsort.h"
+#include "bignum.h"
 
 #include "config.h"
 
@@ -42,7 +43,8 @@ int wf_blob_next( Blob *b )
     }
     ref_push_string( b->word );
     push_int( b->docid );
-    apply_svalue( b->feed, 2 );
+    push_longest( (LONGEST) b );
+    apply_svalue( b->feed, 3 );
     if( TYPEOF(sp[-1]) != T_STRING )
     {
       b->eof = 1;
@@ -64,7 +66,8 @@ int wf_blob_next( Blob *b )
       }
       ref_push_string( b->word );
       push_int( b->docid );
-      apply_svalue( b->feed, 2 );
+      push_longest( (LONGEST) b );
+      apply_svalue( b->feed, 3 );
       if( TYPEOF(sp[-1]) != T_STRING )
       {
 	b->eof = 1;

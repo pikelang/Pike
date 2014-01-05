@@ -8,7 +8,7 @@
 This file is incuded in search.c with the following defines set:
 
 NAME The name of the match function. This is undef:ed at end of this file
-INAME The name of the match c-function. This is nudef:ed at end of this file
+INAME The name of the match c-function. This is undef:ed at end of this file
 PIXEL_VALUE_DISTANCE The inner loop code for each pixel. 
                      undef:ed at end of this file
 NEEDLEAVRCODE If this is set, needle_average is calculated. 
@@ -40,7 +40,7 @@ void INAME(INT32 args)
   int foo=0;
   double scale = 1.0;
   int needle_average=0;
-  int needle_size=0;
+  int needle_size=1;
   
   if (!THIS->img) { Pike_error("no image\n");  return; }
   this=THIS;
@@ -147,6 +147,7 @@ THREADS_ALLOW();
       needle_size=nxs*nys;
       for(x=0; x<needle_size; x++)
 	needle_average+=needlei[x].r+needlei[x].g+needlei[x].b;
+      if (!needle_size) needle_size = 1;
       needle_average=(int)(((float)needle_average)/(3*needle_size));
 
 #define NORMCODE for(ny=0; ny<nys; ny++) \

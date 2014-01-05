@@ -5,8 +5,6 @@
 #pragma strict_types
 #define COMPATIBILITY
 
-#if constant(Gmp) && constant(Gmp.mpz)
-
 #if 0
 #define WERROR werror
 #else
@@ -55,7 +53,7 @@ class Object
   constant constructed = 0;
 
   constant type_name = 0;
-  string der_encode();
+  string(0..255) der_encode();
 
   //! Get the class of this object.
   //!
@@ -77,7 +75,7 @@ class Object
     return make_combined_tag(get_tag(), get_cls());
   }
 
-  string der;
+  string(0..255) der;
 
   // Should be overridden by subclasses
   this_program decode_primitive(string contents,
@@ -95,7 +93,8 @@ class Object
   }
   this_program init(mixed ... args) { return this; args; }
 
-  string to_base_128(int n) {
+  string(0..255) to_base_128(int n)
+  {
     if (!n)
       return "\0";
     /* Convert tag number to base 128 */
@@ -109,40 +108,48 @@ class Object
     }
     digits[0] &= 0x7f;
 
-    return sprintf("%@c", reverse(digits));
+    return [string(0..255)]sprintf("%@c", reverse(digits));
   }
 
-  string encode_tag() {
+  string(0..255) encode_tag()
+  {
     int tag = get_tag();
     int cls = get_cls();
     if (tag < 31)
-      return sprintf("%c", (cls << 6) | (constructed << 5) | tag);
+      return [string(0..255)]sprintf("%c",
+				     (cls << 6) | (constructed << 5) | tag);
 
-    return sprintf("%c%s", (cls << 6) | (constructed << 5) | 0x1f,
-		   to_base_128(tag) );
+    return [string(0..255)]sprintf("%c%s",
+				   (cls << 6) | (constructed << 5) | 0x1f,
+				   to_base_128(tag) );
   }
 
-  string encode_length(int|object len) {
+  string(0..255) encode_length(int|object len)
+  {
     if (len < 0x80)
-      return sprintf("%c", len);
+      return [string(0..255)]sprintf("%c", len);
     string s = Gmp.mpz(len)->digits(256);
     if (sizeof(s) >= 0x80)
       error("Max length exceeded.\n" );
-    return sprintf("%c%s", sizeof(s) | 0x80, s);
+    return [string(0..255)]sprintf("%c%s", sizeof(s) | 0x80, s);
   }
 
-  string build_der(string contents) {
-    string data = encode_tag() + encode_length(sizeof(contents)) + contents;
+  string(0..255) build_der(string(0..255) contents)
+  {
+    string(0..255) data =
+      encode_tag() + encode_length(sizeof(contents)) + contents;
     WERROR("build_der: %O\n", data);
     return data;
   }
 
-  string record_der(string s) {
+  __deprecated__ string(0..255) record_der(string(0..255) s)
+  {
     return (der = s);
   }
 
-  string record_der_contents(string s) {
-    record_der(build_der(s));
+  void record_der_contents(string(0..255) s)
+  {
+    der = build_der(s);
   }
 
 
@@ -150,8 +157,8 @@ class Object
   //!
   //! @returns
   //!   DER encoded representation of this object.
-  string get_der() {
-    return der || (record_der(der_encode()));
+  string(0..255) get_der() {
+    return der || (der = der_encode());
   }
 
   void create(mixed ...args) {
@@ -175,13 +182,13 @@ class Compound
     WERROR("asn1_compound[%s]->init(%O)\n", type_name, args);
     foreach(args, mixed o)
       if (!objectp(o))
-	error( "Non-object argument!\n" );
+	error( "Non-object argument %O\n", o );
     elements = [array(Object)]args;
     WERROR("asn1_compound: %O\n", elements);
     return this;
   }
 
-  this_program begin_decode_constructed(string raw) {
+  this_program begin_decode_constructed(string(0..255) raw) {
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
     record_der_contents(raw);
     return this;
@@ -202,12 +209,25 @@ class Compound
     return this;
   }
 
-  protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%s %O)", this_program, type_name, elements);
+  protected mixed `[](mixed index)
+  {
+    if( intp(index) )
+      return elements[index];
+    return ::`[]([string]index);
+  }
+
+  protected int _sizeof()
+  {
+    return sizeof(elements);
+  }
+
+  protected string _sprintf(int t,mapping(string:int)|void params) {
+    if (params) ++params->indent; else params=([]);
+    return t=='O' && sprintf("%O(%*O)", this_program, params, elements);
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
 	   type_name, elements);
     return _sprintf('O');
@@ -223,16 +243,16 @@ class String
   //! value of object
   string value;
 
-  this_program init(string s) {
+  this_program init(string(0..255) s) {
     value = s;
     return this;
   }
 
-  string der_encode() {
-    return build_der(value);
+  string(0..255) der_encode() {
+    return build_der([string(0..255)]value);
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -243,11 +263,11 @@ class String
   }
 
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%s, %O)", this_program, type_name, value);
+    return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
     return _sprintf('O');
   }
@@ -274,11 +294,11 @@ class Boolean
     return this;
   }
 
-  string der_encode() {
+  string(0..255) der_encode() {
     return build_der(value ? "\377" : "\0");
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -293,7 +313,7 @@ class Boolean
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return value ? "TRUE" : "FALSE";
   }
 #endif
@@ -316,8 +336,9 @@ class Integer
     return this;
   }
 
-  string der_encode() {
-    string s;
+  string(0..255) der_encode()
+  {
+    string(0..255) s;
 
     if (value < 0)
     {
@@ -335,7 +356,7 @@ class Integer
     return build_der(s);
   }
 
-  this_object decode_primitive(string contents,
+  this_object decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -353,7 +374,7 @@ class Integer
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("INTEGER (%d) %s", value->size(), value->digits());
   }
 #endif
@@ -375,25 +396,28 @@ class BitString
   constant type_name = "BIT STRING";
 
   //! value of object
-  string value;
+  string(0..255) value;
 
   int unused = 0;
 
-  this_program init(string s) {
+  this_program init(string(0..255) s)
+  {
     value = s;
     return this;
   }
 
-  string der_encode() {
-    return build_der(sprintf("%c%s", unused, value));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]sprintf("%c%s", unused, value));
   }
 
   //! Set the bitstring value as a string with @expr{"1"@} and
   //! @expr{"0"@}.
-  this_program set_from_ascii(string s) {
+  this_program set_from_ascii(string(0..255) s)
+  {
     array v = array_sscanf(s, "%8b"*(sizeof(s)/8)+"%b");
     v[-1] = v[-1]<<((-sizeof(s))%8);
-    value = (string)v;
+    value = (string(0..255))v;
     set_length(sizeof(s));
     return this;
   }
@@ -404,16 +428,16 @@ class BitString
     {
       value = value[..(len + 7)/8];
       unused = (- len) % 8;
-      value = sprintf("%s%c", value[..<1], value[-1]
-		      & ({ 0xff, 0xfe, 0xfc, 0xf8,
-			   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
+      value = [string(0..255)]sprintf("%s%c", value[..<1], value[-1]
+				      & ({ 0xff, 0xfe, 0xfc, 0xf8,
+					   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
     } else {
       unused = 0;
       value = "";
     }
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -437,7 +461,7 @@ class BitString
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value) * 8 - unused,
 		   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
@@ -461,9 +485,9 @@ class Null
   constant tag = 5;
   constant type_name = "NULL";
 
-  string der_encode() { return build_der(""); }
+  string(0..255) der_encode() { return build_der(""); }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -473,7 +497,7 @@ class Null
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() { return "NULL"; }
+  __deprecated__ string debug_string() { return "NULL"; }
 #endif
 }
 
@@ -505,12 +529,14 @@ class Identifier
     return this_program(@id, @args);
   }
 
-  string der_encode() {
-    return build_der(sprintf("%s%@s", to_base_128(40 * id[0] + id[1]),
-			     map(id[2..], to_base_128)));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]sprintf("%s%@s",
+					     to_base_128(40 * id[0] + id[1]),
+					     map(id[2..], to_base_128)));
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -538,7 +564,7 @@ class Identifier
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return "IDENTIFIER " + (array(string)) id * ".";
   }
 #endif
@@ -559,7 +585,7 @@ class Identifier
 //! always the case...
 int(1..1) asn1_utf8_valid (string s)
 {
-  return 1; s;
+  return 1;
 }
 
 //! UTF8 string object
@@ -573,7 +599,8 @@ class UTF8String
   constant tag = 12;
   constant type_name = "UTF8String";
 
-  string der_encode() {
+  string(0..255) der_encode()
+  {
     return build_der(string_to_utf8(value));
   }
 
@@ -582,7 +609,7 @@ class UTF8String
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der(contents);
+    der = contents;
     if (catch {
       value = utf8_to_string(contents);
     })
@@ -599,19 +626,20 @@ class Sequence
   constant tag = 16;
   constant type_name = "SEQUENCE";
 
-  string der_encode() {
+  string(0..255) der_encode()
+  {
     WERROR("ASN1.Sequence: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("ASN1.Sequence: der_encode(elements) = '%O\n", a);
-    return build_der(`+("", @ a));
+    return build_der([string(0..255)]`+("", @ a));
   }
 
-  this_program decode_primitive(string contents,
+  this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object) decoder,
 				mapping(int:program(Object)) types) {
-    record_der(contents);
+    der = contents;
     elements = ({});
     ADT.struct struct = ADT.struct(contents);
     while (!struct->is_empty()) {
@@ -645,7 +673,8 @@ class Set
     WERROR("asn1_set->der: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("asn1_set->der: der_encode(elements) = '%O\n", a);
-    return build_der(`+("", @[array(string)]
+    return build_der([string(0..255)]
+		     `+("", @[array(string)]
 			Array.sort_array(a, compare_octet_strings)));
   }
 }
@@ -710,7 +739,7 @@ int(0..1) asn1_teletex_valid (string s)
 //!   (control characters).
 //!
 //! @seealso
-//!   @[Locale.Charset]
+//!   @[Charset]
 class TeletexString
 {
   inherit String;
@@ -1053,17 +1082,18 @@ class TeletexString
 #undef OG
 #undef CA
 
-  string der_encode() {
-    return build_der(replace(value, [array(string)]encode_from,
-			     [array(string)]encode_to));
+  string(0..255) der_encode()
+  {
+    return build_der([string(0..255)]replace(value, [array(string)]encode_from,
+					     [array(string(0..255))]encode_to));
   }
 
-  this_program decode_primitive (string contents,
+  this_program decode_primitive (string(0..255) contents,
 				function(ADT.struct,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der (contents);
+    der = contents;
 
     array(string) parts =
       replace (contents, [array(string)]decode_from,
@@ -1130,6 +1160,37 @@ class UTC
   inherit String;
   constant tag = 23;
   constant type_name = "UTCTime";
+
+  this_program set_posix(int t)
+  {
+    object second = Calendar.ISO.Second(t);
+
+    // FIXME: What is this based on?
+    if (second->year_no() >= 2050)
+      error( "Times later than 2049 not supported.\n" );
+
+    value = sprintf("%02d%02d%02d%02d%02d%02dZ",
+                    [int]second->year_no() % 100,
+                    [int]second->month_no(),
+                    [int]second->month_day(),
+                    [int]second->hour_no(),
+                    [int]second->minute_no(),
+                    [int]second->second_no());
+    return this;
+  }
+
+  int get_posix()
+  {
+    if( !value || sizeof(value)!=13 ) error("Data not UTC date string.\n");
+
+    array t = (array(int))(value[..<1]/2);
+    if(t[0]>49)
+      t[0]+=1900;
+    else
+      t[0]+=2000;
+
+    return [int]Calendar.ISO.Second(@t)->unix_time();
+  }
 }
 
 //!
@@ -1191,16 +1252,19 @@ class BMPString
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der (contents);
+    der = contents;
     value = unicode_to_string (contents);
     return this;
   }
 }
 
 //! Meta-instances handle a particular explicit tag and set of types.
+//! Once cloned this object works as a factory for Compound objects
+//! with the cls and tag that the meta object was initialized with.
 //!
-//! @fixme
-//!  document me!
+//! @example
+//!   MetaExplicit m = MetaExplicit(1,2);
+//!   Compound c = m(Integer(3));
 class MetaExplicit
 {
   int real_tag;
@@ -1254,12 +1318,13 @@ class MetaExplicit
     }
 
 #ifdef COMPATIBILITY
-    string debug_string() {
+    __deprecated__ string debug_string() {
       return type_name + "[" + (int) real_tag + "]";
     }
 #endif
   }
 
+  //!
   void create(int cls, int tag, mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
@@ -1291,7 +1356,3 @@ constant asn1_utc = UTC;
 constant asn1_universal_string = UniversalString;
 constant asn1_bmp_string = BMPString;
 #endif
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* Gmp.mpz */

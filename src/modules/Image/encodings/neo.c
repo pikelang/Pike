@@ -18,6 +18,13 @@
 
 extern struct program *image_program;
 
+/* Some format references:
+ *
+ *   http://oreilly.com/www/centers/gff/formats/atari/index.htm
+ *   http://wiki.multimedia.cx/index.php?title=Neochrome
+ *   http://www.mediatel.lu/workshop/graphic/2D_fileformat/h_atari.html
+ */
+
 /*! @module Image
  */
 
@@ -76,6 +83,8 @@ void image_neo_f__decode(INT32 args)
     pal = decode_atari_palette(q+4, 16);
   else if(res==1)
     pal = decode_atari_palette(q+4, 4);
+  else if(res==2)
+    pal = decode_atari_palette(q+4, 2);
   SET_ONERROR(err, free_atari_palette, pal);
 
   push_constant_text("palette");

@@ -2,14 +2,25 @@
 
 inherit .Base;
 
-Sql.Sql db;
+//! @[Search] crawler state stored in a @[Mysql] database.
+
 string url, table;
+
+protected Thread.Local _db = Thread.Local();
+Sql.Sql `db()
+{
+  // NB: We need to have a thread local connection,
+  //     since the status functions may get called
+  //     from some other thread while we're busy
+  //     performing sql queries elsewhere.
+  Sql.Sql ret = _db->get();
+  if (ret && !ret->ping()) return ret;
+  return _db->set(Sql.Sql( url ));
+}
 
 Web.Crawler.Stats stats;
 Web.Crawler.Policy policy;
 Web.Crawler.RuleSet allow, deny;
-
-inherit Web.Crawler.Queue;
 
 static string to_md5(string url)
 {
@@ -18,6 +29,13 @@ static string to_md5(string url)
   return String.string2hex(md5->digest());
 }
 
+//! @param _url
+//!   @[Sql.Sql] URL for the database to store the queue.
+//!
+//! @param _table
+//!   @[Sql.Sql] table name to store the queue in.
+//!
+//!   If the table doesn't exist it will be created.
 void create( Web.Crawler.Stats _stats,
 	     Web.Crawler.Policy _policy,
 	     
@@ -29,8 +47,8 @@ void create( Web.Crawler.Stats _stats,
   stats = _stats;   policy = _policy;
   allow=_allow;     deny=_deny;
   table = _table;
+  url = _url;
 
-  db = Sql.Sql( _url );
   perhaps_create_table(  );
 }
 
@@ -225,6 +243,8 @@ array(Standards.URI) get_uris(void|int stage)
   return uris;
 }
 
+//! @returns
+//!   Returns an array with all URI schemes currently used in the queue.
 array(string) get_schemes()
 {
   // FIXME: Consider using SUBSTRING_INDEX().
@@ -306,6 +326,11 @@ void set_stage( Standards.URI uri,
 	     to_md5((string)uri));
 }
 
+//! @returns
+//!   Returns the current stage for the specified URI.
+//!
+//! @seealso
+//!   @[set_stage()]
 int get_stage( Standards.URI uri )
 {
   array a = db->query( "select stage from "+table+" where uri_md5=%s", to_md5((string)uri));
@@ -315,6 +340,9 @@ int get_stage( Standards.URI uri )
     return -1;
 }
 
+//! Reset the stage to @expr{0@} (zero) for all URIs with the specified
+//! @[uri_prefix]. If no @[uri_prefix] is specified reset the stage for
+//! all URIs.
 void reset_stage(string|void uri_prefix)
 {
   if (uri_prefix) {

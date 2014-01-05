@@ -137,23 +137,23 @@ void ppc32_push_svalue(int reg, INT32 offs, int force_reftype)
   STW(0, PPC_REG_PIKE_SP, 0);
   if(!force_reftype) {
 #if PIKE_BYTEORDER == 1234
-    /* rlwinm r0,r0,0,16,31 */
-    RLWINM(0, 0, 0, 16, 31);
+    /* rlwinm r0,r0,0,16,28 */
+    RLWINM(0, 0, 0, 16, 28);
 #else
-    /* rlwinm r0,r0,16,16,31 */
-    RLWINM(0, 0, 16, 16, 31);
+    /* rlwinm r0,r0,16,16,28 */
+    RLWINM(0, 0, 16, 16, 28);
 #endif
   }
   /* stw r11,refs(pike_sp) */
   STW(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
   if(!force_reftype) {
-    /* cmplwi r0,MAX_REF_TYPE */
-    CMPLI(0, 0, MAX_REF_TYPE);
+    /* cmplwi r0,MIN_REF_TYPE */
+    CMPLI(0, 0, MIN_REF_TYPE);
   }
   INCR_SP_REG(sizeof(struct svalue));
   if(!force_reftype) {
-    /* bgt bork */
-    BC(12, 1, 4);
+    /* bne bork */
+    BC(4, 2, 4);
   }
   /* lwz r0,0(r11) */
   LWZ(0, 11, 0);
@@ -173,7 +173,7 @@ void ppc32_push_constant(INT32 arg)
    * Note: The constants table may contain UNDEFINED in case of being
    *       called through decode_value() in PORTABLE_BYTECODE mode.
    */
-  if((sval->type > MAX_REF_TYPE) && !sval->subtype) {
+  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !sval->subtype) {
     int e;
     INT32 last=0;
 
@@ -209,7 +209,7 @@ void ppc32_push_constant(INT32 arg)
       offs -= 65536;
   }
 
-  ppc32_push_svalue(PPC_REG_ARG1, offs, (sval->type <= MAX_REF_TYPE));
+  ppc32_push_svalue(PPC_REG_ARG1, offs, !!REFCOUNTED_TYPE(TYPEOF(*sval)));
 }
 
 void ppc32_push_local(INT32 arg)

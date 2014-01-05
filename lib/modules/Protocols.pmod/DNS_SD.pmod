@@ -48,7 +48,7 @@ class Service {
       txt_flat = "";
       foreach(txt, string entry) {
 	entry = clip_utf8_str(entry, 255);
-	txt_flat += sprintf("%c%s", (int) strlen(entry), entry);
+	txt_flat += sprintf("%1H", entry);
       }
     }
     return txt_flat;

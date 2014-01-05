@@ -9,7 +9,7 @@
 #define SPACE_CHAR 'i'
 
 extern const unsigned char image_default_font[];
-#define IMAGE_DEFAULT_FONT_SIZE 30596
+#define IMAGE_DEFAULT_FONT_SIZE 30560
 
 
 /*! @module Image
@@ -194,12 +194,12 @@ static INLINE void free_font_struct(struct font *font)
    }
 }
 
-static void init_font_struct(struct object *o)
+static void init_font_struct(struct object *UNUSED(o))
 {
   THIS=NULL;
 }
 
-static void exit_font_struct(struct object *obj)
+static void exit_font_struct(struct object *UNUSED(obj))
 {
    free_font_struct(THIS);
    THIS=NULL;

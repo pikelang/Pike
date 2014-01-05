@@ -7,7 +7,7 @@
 
 inherit GTK2.Scrollbar;
 
-static GTK2.VScrollbar create( GTK2.Adjustment pos_or_props );
+protected GTK2.VScrollbar create( GTK2.Adjustment pos_or_props );
 //! Used to create a new vscrollbar widget.
 //!
 //!

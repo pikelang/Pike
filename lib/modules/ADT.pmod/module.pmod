@@ -17,12 +17,12 @@ int get_item_id() { return item_counter++; }
 //! as they would be formatted in structs.
 class struct {
 
-  string buffer;
+  string(0..255) buffer;
   int index;
 
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
-  void create(void|string s)
+  void create(void|string(0..255) s)
   {
     buffer = s || "";
     index = 0;
@@ -30,7 +30,7 @@ class struct {
 
   //! Trims the buffer to only contain the data after the
   //! read pointer and returns the contents of the buffer.
-  string contents()
+  string(0..255) contents()
   {
     buffer = buffer[index..];
     index = 0;
@@ -38,15 +38,15 @@ class struct {
   }
 
   //! Adds the data @[s] verbatim to the end of the buffer.
-  void add_data(string s)
+  void add_data(string(0..255) s)
   {
     buffer += s;
   }
 
   //! Return all the data in the buffer and empties it.
-  string pop_data()
+  string(0..255) pop_data()
   {
-    string res = buffer;
+    string(0..255) res = buffer;
     create();
     return res;
   }
@@ -61,22 +61,17 @@ class struct {
   {
     if (i<0)
       error("Negative argument.\n");
-    add_data(sprintf("%*c", len, i));
+    add_data([string(0..255)]sprintf("%*c", len, i));
   }
 
   //! Appends a variable string @[s] preceded with an unsigned integer
   //! of the size @[len_width] declaring the length of the string. The
   //! string @[s] should be 8 bits wide.
-  void put_var_string(string s, int(0..) len_width)
+  void put_var_string(string(0..255) s, int(0..) len_width)
   {
-    if ( (len_width <= 3) &&
-	 (sizeof(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len_width] ))
-      error("Field overflow.\n");
-    put_uint(sizeof(s), len_width);
-    add_data(s);
+    add_data([string(0..255)]sprintf("%*H", len_width, s));
   }
 
-#if constant(Gmp.mpz)
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
@@ -86,10 +81,9 @@ class struct {
       error("Negative argument.\n");
     put_var_string(i->digits(256), len_width || 2);
   }
-#endif
 
   //! Appends the fix sized string @[s] to the buffer.
-  void put_fix_string(string s)
+  void put_fix_string(string(0..255) s)
   {
     add_data(s);
   }
@@ -123,34 +117,32 @@ class struct {
   }
 
   //! Reads a fixed sized string of length @[len] from the buffer.
-  string get_fix_string(int len)
+  string(0..255) get_fix_string(int len)
   {
     if ((sizeof(buffer) - index) < len)
       error("No data\n");
 
-    string res = buffer[index .. index + len - 1];
+    string(0..255) res = buffer[index .. index + len - 1];
     index += len;
     return res;
   }
 
   //! Reads a string written by @[put_var_string] from the buffer.
-  string get_var_string(int len)
+  string(0..255) get_var_string(int len)
   {
     return get_fix_string(get_uint(len));
   }
 
-#if constant(Gmp.mpz)
   //! Reads a bignum written by @[put_bignum] from the buffer.
   Gmp.mpz get_bignum(int|void len)
   {
     return Gmp.mpz(get_var_string(len || 2), 256);
   }
-#endif
 
   //! Get the remaining data from the buffer and clears the buffer.
-  string get_rest()
+  string(0..255) get_rest()
   {
-    string s = buffer[index..];
+    string(0..255) s = buffer[index..];
     create();
     return s;
   }
@@ -176,5 +168,15 @@ class struct {
   int(0..1) is_empty()
   {
     return (index == sizeof(buffer));
+  }
+
+  protected int(0..) _sizeof()
+  {
+    return [int(0..)](sizeof(buffer)-index);
+  }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, _sizeof());
   }
 }

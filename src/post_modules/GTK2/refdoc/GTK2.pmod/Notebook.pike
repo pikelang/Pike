@@ -69,7 +69,7 @@ GTK2.Notebook append_page_menu( GTK2.Widget contents, GTK2.Widget label, GTK2.Wi
 //!
 //!
 
-static GTK2.Notebook create( mapping|void props );
+protected GTK2.Notebook create( mapping|void props );
 //! Create a W(Notebook) widget with no pages.
 //!
 //!

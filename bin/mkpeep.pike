@@ -297,7 +297,7 @@ class Switch(string test) {
   }
 
   int made_fun;
-  string get_string(int ind) {
+  string get_string(int(0..) ind) {
     if(made_fun) {
       string ret = "";
       ret += sprintf("%*nif (_asm_peep_%d())\n"
@@ -309,7 +309,7 @@ class Switch(string test) {
     return make_switch(ind);
   }
 
-  string make_switch(int ind) {
+  string make_switch(int(0..) ind) {
     string ret = "";
     ret += sprintf("%*nswitch(%s)\n", ind, test);
     ret += sprintf("%*n{\n", ind);
@@ -317,7 +317,7 @@ class Switch(string test) {
     foreach(sort(indices(cases)), string c) {
       ret += sprintf("%*ncase %s:\n", ind, c);
       foreach(cases[c], object(Switch)|object(Breakable) b)
-	  ret += b->get_string(ind+2);
+	ret += b->get_string([int(0..)](ind+2));
       ret += sprintf("%*n  break;\n"
 		     "\n",
 		     ind);
@@ -338,14 +338,14 @@ class Breakable {
       lines += ({ a });
   }
 
-  string get_string(int ind) {
+  string get_string(int(0..) ind) {
     string ret = "";
     foreach(lines, string|array(string) line)
       if(stringp(line)) {
 	if(String.trim_all_whites([string]line)=="")
 	  ret += line;
 	else
-	  ret += sprintf("%*n%s\n", ind, line);
+	  ret += sprintf("%*n%s\n", ind, [string]line);
       }
       else {
 	array(string) line = [array(string)]line;
@@ -426,7 +426,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
   if(sizeof(data))
   {
     Breakable buf = Breakable();
-    int ind;
+    int(0..) ind;
     foreach(data, Rule d)
     {
       buf->add_line(" "*ind+"/* ", d->line, " */");
@@ -442,7 +442,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 
       for(int i=0; i<sizeof(d->to); i++)
       {
-	array args=({});
+	array(string) args=({});
 	string fcode=d->to[i];
 	if(i+1<sizeof(d->to) && d->to[i+1][0]=='(')
 	{

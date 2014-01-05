@@ -509,7 +509,27 @@ test_any([[ int a=0xffffffff; return a%17 ]],
 test_any([[ int a=0xffffffff; return a>>17 ]],
 	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
 
-test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(0..255))");
+dnl Check the derived return type of sprintf().
+test_any([[return sprintf("%O", typeof(sprintf("%1H", "foo"))); ]],
+	 "string(0..255)");
+test_any([[return sprintf("%O", typeof(sprintf("foo"))); ]],
+	 "string(102..111)");
+test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
+	 "string(17..17 | 102..111)");
+test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
+	 "string(0..255)");
+test_any([[return sprintf("%O", typeof(sprintf("%c",  1023))); ]],
+	 "string(1023..1023)");
+test_any([[return sprintf("%O", typeof(sprintf("%c\n",  1023))); ]],
+	 "string(10..10 | 1023..1023)");
+test_any([[return sprintf("%O", typeof(sprintf("%c\n",  Stdio))); ]],
+	 "string");
+test_any([[return sprintf("%O", typeof(sprintf("%4[1]c", 17))); ]],
+	 "string(0..255)");
+test_any([[return sprintf("%O", typeof(sprintf("%[1]n", 17))); ]],
+	 "string(zero)");
+
+test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(102..111))");
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
@@ -601,7 +621,7 @@ test_eq([[
   // Test case from Robert J. Budzynski <Robert.Budzynski@fuw.edu.pl>.
   // When broken the return type will be mixed.
   sprintf("%O", typeof(lambda(string s){
-    return Locale.Charset.decoder("utf-8")->feed(s)->drain();
+    return Charset.decoder("utf-8")->feed(s)->drain();
   }))
 ]], [[ "function(string : string)" ]])
 
@@ -851,7 +871,7 @@ test_compile_error([[
 ]]);
 
 test_compile_any([[
-  #pragma strict_types
+  // #pragma strict_types
   void x (void|mapping(string:string) args)
   {
     if (args)
@@ -2241,6 +2261,23 @@ test_any([[
   return B()->f() == A;
 ]], 1)
 
+test_any([[
+  class A {
+    class Nested {
+      constant nested = 1;
+    }
+  };
+  class B {
+    inherit A;
+    class Nested {
+      inherit ::this_program;
+      constant other = 2;
+    }
+  };
+  object n = B()->Nested();
+  return n->nested + n->other;
+]], 3)
+
 dnl test_compile_error(0())
 test_compile_error(1())
 test_compile_error(""())
@@ -2290,7 +2327,7 @@ test_any([[
 define(test_backtrace_line_charset, [[
 test_any([[
   program p=compile_string(
-Locale.Charset.encoder("]]$1[[")->feed(
+Charset.encoder("]]$1[[")->feed(
 "#charset ]]$1[[\n"
 "int foo()\n"
 "{\n"
@@ -2400,11 +2437,6 @@ test_any([[
 dnl ----------------------------------------------------------------
 dnl scopes and stuff
 dnl ----------------------------------------------------------------
-
-dnl
-dnl Undocumented but important behaviour...
-dnl
-test_eq([[Stdio._stdin]],[[Stdio.stdin->_fd]])
 
 test_program([[
   class A {
@@ -2908,6 +2940,25 @@ class b {
 }
 ]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
+
+dnl variant
+test_any([[
+  class A {
+    variant string a() { return "A:a()"; }
+    variant string a(string s) { return sprintf("A:a(%q)", s); }
+  };
+  class B {
+    inherit A;
+    variant string a(int i) { return local::a() + ":" + local::a((string)i) + ":" + ::a((string)i); }
+    variant string a(string s) { return sprintf("B:a(%q)", s); }
+  };
+  class C {
+    inherit B;
+    string a() { return "C:a()"; }
+    variant string a(string s) { return ::a(sizeof(s)) + "|" + ::a(s) + "|" + a(); }
+  };
+  return C()->a("foo");
+]], "A:a():B:a(\"3\"):A:a(\"3\")|B:a(\"foo\")|C:a()")
 
 test_any([[
   // Test symbol lookup for inherit in multi-pass.
@@ -3972,12 +4023,24 @@ test_program([[
 
 // Testing __INIT
 test_any([[
-  class X { int x = 1; };
-  class Y { int y = 2; };
-  class Z { inherit X; inherit Y; int z = 4; };
+  class X { int x = 1; int zz = 1; int zzz=8; int xx=16; };
+  class Y { int y = 2; int xx; };
+  class Z { inherit X; inherit Y; int z = 4; int zz = 0; int zzz; };
   object zz = Z();
-  return zz->x + zz->y + zz->z;
-]], 7)
+  return zz->x + zz->y + zz->z + zz->zz + zz->zzz + zz->xx;
+]], 15)
+
+test_any([[
+  // Test __INIT with forward references to programs needing their parents.
+  class X {
+    program y = Y;
+    local class Y {
+      program z = y;
+    };
+  };
+  object x = X();
+  return x->y == x->Y;
+]], 1)
 
 // Testing getter/setters
 test_any([[
@@ -5779,6 +5842,24 @@ void create()
 
 ]])
 
+test_any([[
+    mapping m = ([ "foo" : 1 ]);
+    class A {
+	int __hash() { return hash_value("foo"); }
+	int `==(mixed o) { return o == "foo"; }
+    };
+    return m[A()];
+]], 1)
+
+test_any([[
+    mapping m = ([ "foo" : 1 ]);
+    class A {
+	int __hash() { return hash_value("foo"); }
+	int `==(mixed o) { return o == "foo"; }
+    };
+    return sizeof(m - ([ A() : 1 ]));
+]], 0)
+
 test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
 test_false( `+( ([1:2]) ) == ([1:2]) )
 test_equal([[ `+( ([1:2]), ([1:2])  )]],[[ ([1:2]) ]])
@@ -6334,7 +6415,7 @@ test_do(add_constant("blatinka");)
     return !sizeof (a) && !sizeof (b);
   }]], 1);
   test_any([[{
-    mapping a = ([17:({17})]);
+    mapping a = ([17:17]);
     set_weak_flag (a, 1);
     for (int i = 0; i < 10; i++) a[class{}()] = i;
     mapping b = a + ([]);
@@ -7070,12 +7151,10 @@ test_any([[
   Pike.count_memory (m, master());
   return m->rounds;
 ]], 2)
-cond([[has_value (cpp ("__AUTO_BIGNUM__"), "1")]], [[
-  test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
-	      Pike.count_memory (-1, 17)]])
-  test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
-	      Pike.count_memory (-1, Int.NATIVE_MAX + 1)]])
-]])
+test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
+	    Pike.count_memory (-1, 17)]])
+test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
+	    Pike.count_memory (-1, Int.NATIVE_MAX + 1)]])
 test_do([[add_constant("count_memory_stats")]])
 
 test_program([[
@@ -7111,464 +7190,450 @@ test_true([[1 >= 1.0]])
 test_true([[1.0 <= 1]])
 test_true([[1.0 >= 1]])
 
-cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+// Test the lexer.
+test_eq("2147483648", [[ (string)0x80000000 ]])
+test_eq("2147483649", [[ (string)0x80000001 ]])
+test_eq("-2147483648", [[ (string)-0x80000000 ]])
+test_eq("-2147483649", [[ (string)-0x80000001 ]])
+test_eq("2147483648", [[ (string)-(-0x80000000) ]])
+test_eq("2147483649", [[ (string)-(-0x80000001) ]])
+test_eq("9223372036854775808", [[ (string)0x8000000000000000 ]])
+test_eq("9223372036854775809", [[ (string)0x8000000000000001 ]])
+test_eq("-9223372036854775808", [[ (string)-0x8000000000000000 ]])
+test_eq("-9223372036854775809", [[ (string)-0x8000000000000001 ]])
+test_eq("9223372036854775808", [[ (string)-(-0x8000000000000000) ]])
+test_eq("9223372036854775809", [[ (string)-(-0x8000000000000001) ]])
+test_eq("123456789123456789", [[ (string)123456789123456789 ]])
+test_eq("-123456789123456789", [[ (string)-123456789123456789 ]])
+test_eq("335812727629498640265", [[ (string)0x123456789123456789 ]])
+test_eq("-335812727629498640265", [[ (string)-0x123456789123456789 ]])
+test_eq("718046312823", [[ (string)012345671234567 ]])
+test_eq("-718046312823", [[ (string)-012345671234567 ]])
+test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
+test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
+test_eq(500000000 * 10, 5000000000)
+test_eq(5000000000000000000 * 10, 50000000000000000000)
 
-  // Test the lexer.
-  test_eq("2147483648", [[ (string)0x80000000 ]])
-  test_eq("2147483649", [[ (string)0x80000001 ]])
-  test_eq("-2147483648", [[ (string)-0x80000000 ]])
-  test_eq("-2147483649", [[ (string)-0x80000001 ]])
-  test_eq("2147483648", [[ (string)-(-0x80000000) ]])
-  test_eq("2147483649", [[ (string)-(-0x80000001) ]])
-  test_eq("9223372036854775808", [[ (string)0x8000000000000000 ]])
-  test_eq("9223372036854775809", [[ (string)0x8000000000000001 ]])
-  test_eq("-9223372036854775808", [[ (string)-0x8000000000000000 ]])
-  test_eq("-9223372036854775809", [[ (string)-0x8000000000000001 ]])
-  test_eq("9223372036854775808", [[ (string)-(-0x8000000000000000) ]])
-  test_eq("9223372036854775809", [[ (string)-(-0x8000000000000001) ]])
-  test_eq("123456789123456789", [[ (string)123456789123456789 ]])
-  test_eq("-123456789123456789", [[ (string)-123456789123456789 ]])
-  test_eq("335812727629498640265", [[ (string)0x123456789123456789 ]])
-  test_eq("-335812727629498640265", [[ (string)-0x123456789123456789 ]])
-  test_eq("718046312823", [[ (string)012345671234567 ]])
-  test_eq("-718046312823", [[ (string)-012345671234567 ]])
-  test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
-  test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
-  test_eq(500000000 * 10, 5000000000)
-  test_eq(5000000000000000000 * 10, 50000000000000000000)
+// Numbers that shouldn't be native integers. Has to resort to
+// strange methods to test this since bignums behave like native
+// integers in almost every way.
+test_do([[ _next ((mixed) Int.NATIVE_MAX + 1) ]])
+test_do([[ _next ((mixed) Int.NATIVE_MIN - 1) ]])
 
-  // Numbers that shouldn't be native integers. Has to resort to
-  // strange methods to test this since bignums behave like native
-  // integers in almost every way.
-  test_do([[ _next ((mixed) Int.NATIVE_MAX + 1) ]])
-  test_do([[ _next ((mixed) Int.NATIVE_MIN - 1) ]])
+// These numbers should be native integers.
+test_eval_error([[ _next ((mixed) -0x80000000) ]])
+test_eval_error([[ _next ((mixed) -0x7fffffff) ]])
+test_eval_error([[ _next ((mixed) 0x7fffffff) ]])
+test_eval_error([[ _next ((mixed) Int.NATIVE_MAX) ]])
+test_eval_error([[ _next ((mixed) Int.NATIVE_MIN) ]])
 
-cond_end // __AUTO_BIGNUM__
-    
-  // These numbers should be native integers.
-  test_eval_error([[ _next ((mixed) -0x80000000) ]])
-  test_eval_error([[ _next ((mixed) -0x7fffffff) ]])
-  test_eval_error([[ _next ((mixed) 0x7fffffff) ]])
-  test_eval_error([[ _next ((mixed) Int.NATIVE_MAX) ]])
-  test_eval_error([[ _next ((mixed) Int.NATIVE_MIN) ]])
+// Test incrementations (FIXME: More cases?).
+test_eq("2147483648",
+ [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffff) ]])
+test_eq("2147483648",
+ [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffff) ]])
+test_eq("2147483648",
+ [[ (string)(class { int x=0x7fffffff;int f() { ++x;return x; } })()->f() ]])
+test_eq("2147483648",
+ [[ (string)(class { int x=0x7fffffff;int f() { x++;return x; } })()->f() ]])
+test_eq("2147483648",
+ [[ (string)(class { int f() { int x=0x7fffffff;++x;return x; } })()->f() ]])
+test_eq("2147483648",
+ [[ (string)(class { int f() { int x=0x7fffffff;x++;return x; } })()->f() ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffffffffffff) ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffffffffffff) ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int x=0x7fffffffffffffff;int f() { ++x;return x; } })()->f() ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int x=0x7fffffffffffffff;int f() { x++;return x; } })()->f() ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int f() { int x=0x7fffffffffffffff;++x;return x; } })()->f() ]])
+test_eq("9223372036854775808",
+ [[ (string)(class { int f() { int x=0x7fffffffffffffff;x++;return x; } })()->f() ]])
 
-cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+// Test decrementations (FIXME: More cases?).
+test_eq("-2147483649",
+ [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x80000000) ]])
+test_eq("-2147483649",
+ [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x80000000) ]])
+test_eq("-2147483649",
+ [[ (string)(class { int x=-0x80000000;int f() { --x;return x; } })()->f()]])
+test_eq("-2147483649",
+ [[ (string)(class { int x=-0x80000000;int f() { x--;return x; } })()->f()]])
+test_eq("-2147483649",
+ [[ (string)(class { int f() { int x=-0x80000000;--x;return x; } })()->f()]])
+test_eq("-2147483649",
+ [[ (string)(class { int f() { int x=-0x80000000;x--;return x; } })()->f()]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x8000000000000000) ]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x8000000000000000) ]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int x=-0x8000000000000000;int f() { --x;return x; } })()->f()]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int x=-0x8000000000000000;int f() { x--;return x; } })()->f()]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int f() { int x=-0x8000000000000000;--x;return x; } })()->f()]])
+test_eq("-9223372036854775809",
+ [[ (string)(class { int f() { int x=-0x8000000000000000;x--;return x; } })()->f()]])
 
-  // Test incrementations (FIXME: More cases?).
-  test_eq("2147483648",
-   [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffff) ]])
-  test_eq("2147483648",
-   [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffff) ]])
-  test_eq("2147483648",
-   [[ (string)(class { int x=0x7fffffff;int f() { ++x;return x; } })()->f() ]])
-  test_eq("2147483648",
-   [[ (string)(class { int x=0x7fffffff;int f() { x++;return x; } })()->f() ]])
-  test_eq("2147483648",
-   [[ (string)(class { int f() { int x=0x7fffffff;++x;return x; } })()->f() ]])
-  test_eq("2147483648",
-   [[ (string)(class { int f() { int x=0x7fffffff;x++;return x; } })()->f() ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffffffffffff) ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffffffffffff) ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int x=0x7fffffffffffffff;int f() { ++x;return x; } })()->f() ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int x=0x7fffffffffffffff;int f() { x++;return x; } })()->f() ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int f() { int x=0x7fffffffffffffff;++x;return x; } })()->f() ]])
-  test_eq("9223372036854775808",
-   [[ (string)(class { int f() { int x=0x7fffffffffffffff;x++;return x; } })()->f() ]])
-  
-  // Test decrementations (FIXME: More cases?).
-  test_eq("-2147483649",
-   [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x80000000) ]])
-  test_eq("-2147483649",
-   [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x80000000) ]])
-  test_eq("-2147483649",
-   [[ (string)(class { int x=-0x80000000;int f() { --x;return x; } })()->f()]])
-  test_eq("-2147483649",
-   [[ (string)(class { int x=-0x80000000;int f() { x--;return x; } })()->f()]])
-  test_eq("-2147483649",
-   [[ (string)(class { int f() { int x=-0x80000000;--x;return x; } })()->f()]])
-  test_eq("-2147483649",
-   [[ (string)(class { int f() { int x=-0x80000000;x--;return x; } })()->f()]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x8000000000000000) ]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x8000000000000000) ]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int x=-0x8000000000000000;int f() { --x;return x; } })()->f()]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int x=-0x8000000000000000;int f() { x--;return x; } })()->f()]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int f() { int x=-0x8000000000000000;--x;return x; } })()->f()]])
-  test_eq("-9223372036854775809",
-   [[ (string)(class { int f() { int x=-0x8000000000000000;x--;return x; } })()->f()]])
+test_encode(1<<99);
 
-  test_encode(1<<99);
+// - Left shift.
+test_eq("1073741824", [[ (string)(1<<30) ]])
+test_eq("2147483648", [[ (string)(1<<31) ]])
+test_eq("4294967296", [[ (string)(1<<32) ]])
+test_eq("8589934592", [[ (string)(1<<33) ]])
+test_eq("1267650600228229401496703205376", [[ (string)(1<<100) ]])
 
-  // - Left shift.
-  test_eq("1073741824", [[ (string)(1<<30) ]])
-  test_eq("2147483648", [[ (string)(1<<31) ]])
-  test_eq("4294967296", [[ (string)(1<<32) ]])
-  test_eq("8589934592", [[ (string)(1<<33) ]])
-  test_eq("1267650600228229401496703205376", [[ (string)(1<<100) ]])
-  
-  test_eval_error(return 1<<100000000000000000000)
-  test_eval_error(return (-1)<<100000000000000000000)
-  test_eq(0<<100000000000000000000, 0)
-  test_eval_error(return 100000000000000000000<<100000000000000000000)
-  test_eval_error(return (-100000000000000000000)<<100000000000000000000)
+test_eval_error(return 1<<100000000000000000000)
+test_eval_error(return (-1)<<100000000000000000000)
+test_eq(0<<100000000000000000000, 0)
+test_eval_error(return 100000000000000000000<<100000000000000000000)
+test_eval_error(return (-100000000000000000000)<<100000000000000000000)
 
-  // - Right shift.
-  test_eq("53265209898187398182",
+// - Right shift.
+test_eq("53265209898187398182",
 		[[ (string)((int)"54543574935743895738479">>10) ]])
-  test_false([[ objectp((int)"54543574935743895738479">>60) ]])
-  test_eq(0, [[ 25>>30 ]])
-  test_eq(0, [[ 25>>31 ]])
-  test_eq(0, [[ 25>>32 ]])
-  test_eq(0, [[ 25>>33 ]])
+test_false([[ objectp((int)"54543574935743895738479">>60) ]])
+test_eq(0, [[ 25>>30 ]])
+test_eq(0, [[ 25>>31 ]])
+test_eq(0, [[ 25>>32 ]])
+test_eq(0, [[ 25>>33 ]])
 
-  test_eq(1>>100000000000000000000, 0)
-  test_eq(-1>>100000000000000000000, -1)
-  test_eq(0>>100000000000000000000, 0)
-  test_eq(100000000000000000000>>100000000000000000000, 0)
-  test_eq((-100000000000000000000)>>100000000000000000000, -1)
+test_eq(1>>100000000000000000000, 0)
+test_eq(-1>>100000000000000000000, -1)
+test_eq(0>>100000000000000000000, 0)
+test_eq(100000000000000000000>>100000000000000000000, 0)
+test_eq((-100000000000000000000)>>100000000000000000000, -1)
 
-  // - abs.
-  test_eq("2147483648", [[ (string)abs(-0x80000000) ]])
-  test_eq("2147483648", [[ (string)abs(0x80000000) ]])
-  test_eq("2147483649", [[ (string)abs(0x80000001) ]])
-  test_eq("2147483649", [[ (string)abs(-0x80000001) ]])
-  test_eq("9223372036854775808", [[ (string)abs(-0x8000000000000000) ]])
-  test_eq("9223372036854775808", [[ (string)abs(0x8000000000000000) ]])
-  test_eq("9223372036854775809", [[ (string)abs(0x8000000000000001) ]])
-  test_eq("9223372036854775809", [[ (string)abs(-0x8000000000000001) ]])
+// - abs.
+test_eq("2147483648", [[ (string)abs(-0x80000000) ]])
+test_eq("2147483648", [[ (string)abs(0x80000000) ]])
+test_eq("2147483649", [[ (string)abs(0x80000001) ]])
+test_eq("2147483649", [[ (string)abs(-0x80000001) ]])
+test_eq("9223372036854775808", [[ (string)abs(-0x8000000000000000) ]])
+test_eq("9223372036854775808", [[ (string)abs(0x8000000000000000) ]])
+test_eq("9223372036854775809", [[ (string)abs(0x8000000000000001) ]])
+test_eq("9223372036854775809", [[ (string)abs(-0x8000000000000001) ]])
 
-  // - Add.
-  test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
-  test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
-  test_eq("-2147483648", [[ (string)((-0x80000001) + 1) ]])
-  test_eq("9223372036854775808", [[ (string)(0x7fffffffffffffff + 1) ]])
-  test_eq("9223372036854775809", [[ (string)(0x7fffffffffffffff + 2) ]])
-  test_eq("-9223372036854775808", [[ (string)((-0x8000000000000001) + 1) ]])
-  test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
-  test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
-  test_false([[ objectp((-0x80000001) + 1) ]])
+// - Add.
+test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
+test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
+test_eq("-2147483648", [[ (string)((-0x80000001) + 1) ]])
+test_eq("9223372036854775808", [[ (string)(0x7fffffffffffffff + 1) ]])
+test_eq("9223372036854775809", [[ (string)(0x7fffffffffffffff + 2) ]])
+test_eq("-9223372036854775808", [[ (string)((-0x8000000000000001) + 1) ]])
+test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
+test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
+test_false([[ objectp((-0x80000001) + 1) ]])
 
-  // - Add-eq.
-  test_eq([[lambda() { int a=0x100000000; int b = a; a += 1; return b+a; }()]],
+// - Add-eq.
+test_eq([[lambda() { int a=0x100000000; int b = a; a += 1; return b+a; }()]],
 	  [[0x200000001]])
 
-  // - Sub.
-  test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
-  test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
-  test_eq("2147483647", [[ (string)(0x80000000 - 1) ]])
-  test_eq("-9223372036854775808", [[ (string)(-0x7fffffffffffffff - 1) ]])
-  test_eq("-9223372036854775809", [[ (string)(-0x8000000000000000 - 1) ]])
-  test_eq("9223372036854775807", [[ (string)(0x8000000000000000 - 1) ]])
-  test_false([[ objectp(0x80000000 - 1) ]])
+// - Sub.
+test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
+test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
+test_eq("2147483647", [[ (string)(0x80000000 - 1) ]])
+test_eq("-9223372036854775808", [[ (string)(-0x7fffffffffffffff - 1) ]])
+test_eq("-9223372036854775809", [[ (string)(-0x8000000000000000 - 1) ]])
+test_eq("9223372036854775807", [[ (string)(0x8000000000000000 - 1) ]])
+test_false([[ objectp(0x80000000 - 1) ]])
 
-  // - Multiplication.
-  test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
-  test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
-  test_eq(-2147483648*-1,2147483648)
-  test_eq(-9223372036854775808*-1,9223372036854775808)
+// - Multiplication.
+test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
+test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
+test_eq(-2147483648*-1,2147483648)
+test_eq(-9223372036854775808*-1,9223372036854775808)
 
-  // Division.
-  test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
-  test_false([[ objectp((int)"2147483648" / 2) ]])
-  test_eq("13934998268672547360069539025",
-          [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
+// Division.
+test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
+test_false([[ objectp((int)"2147483648" / 2) ]])
+test_eq("13934998268672547360069539025",
+        [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
-  // sprintf (and the describe stuff in the master)
-  test_do([[sprintf ("%O", 10->pow);]])
-
-  // - sscanf.
-  test_eq("12345678901234567890",
+// - sscanf.
+test_eq("12345678901234567890",
 	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
-  test_eq("1375488932614371410344080",
+test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("123456789F01234567890", "%x")[0] ]])
-  test_eq("1375488932614371410344080",
+test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0x123456789F01234567890", "%x")[0] ]])
-  test_eq("1375488932614371410344080",
+test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0X123456789F01234567890", "%x")[0] ]])
-  test_eq("1375488932614371410344080",
+test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0x123456789F01234567890", "%i")[0] ]])
-  test_eq("1375488932614371410344080",
+test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0X123456789F01234567890", "%i")[0] ]])
-  test_eq("45954944846776",
+test_eq("45954944846776",
 	   [[ (string)array_sscanf("1234567012345670", "%o")[0] ]])
-  test_eq("45954944846776",
+test_eq("45954944846776",
 	   [[ (string)array_sscanf("01234567012345670", "%i")[0] ]])
-  test_eq("11", [[ (string)array_sscanf("1011", "%b")[0] ]])
-  test_eq("1125968643114208", [[ (string)array_sscanf("100000000000001000000000001000000000100010011100000", "%b")[0] ]])
-  test_eq("11", [[ (string)array_sscanf("0b1011", "%i")[0] ]])
-  test_eq("1125968643114208", [[ (string)array_sscanf("0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
-  
-  test_eq("-12345678901234567890",
+test_eq("11", [[ (string)array_sscanf("1011", "%b")[0] ]])
+test_eq("1125968643114208", [[ (string)array_sscanf("100000000000001000000000001000000000100010011100000", "%b")[0] ]])
+test_eq("11", [[ (string)array_sscanf("0b1011", "%i")[0] ]])
+test_eq("1125968643114208", [[ (string)array_sscanf("0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
+
+test_eq("-12345678901234567890",
 	   [[ (string)array_sscanf("-12345678901234567890", "%d")[0] ]])
-  test_eq("-1375488932614371410344080",
+test_eq("-1375488932614371410344080",
 	   [[ (string)array_sscanf("-123456789F01234567890", "%x")[0] ]])
-  test_eq("-1375488932614371410344080",
+test_eq("-1375488932614371410344080",
 	   [[ (string)array_sscanf("-0x123456789F01234567890","%i")[0] ]])
-  test_eq("-45954944846776",
+test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-1234567012345670", "%o")[0] ]])
-  test_eq("-45954944846776",
+test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-01234567012345670", "%i")[0] ]])
-  test_eq("-11", [[ (string)array_sscanf("-1011", "%b")[0] ]])
-  test_eq("-1125968643114208", [[ (string)array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
-  test_eq("-11", [[ (string)array_sscanf("-0b1011", "%i")[0] ]])
-  test_eq("-1125968643114208", [[ (string)array_sscanf("-0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
+test_eq("-11", [[ (string)array_sscanf("-1011", "%b")[0] ]])
+test_eq("-1125968643114208", [[ (string)array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
+test_eq("-11", [[ (string)array_sscanf("-0b1011", "%i")[0] ]])
+test_eq("-1125968643114208", [[ (string)array_sscanf("-0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
 
-  test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%4c")) ]], "0")
-  test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "1020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "01020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\5\1\2\3\4", "%8c")) ]], "501020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\6\5\1\2\3\4", "%8c")) ]], "60501020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\0\7\6\5\1\2\3\4", "%8c")) ]], "7060501020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
+test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%4c")) ]], "0")
+test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "1020304")
+test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "01020304")
+test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\5\1\2\3\4", "%8c")) ]], "501020304")
+test_eq([[ sprintf("%08x", @array_sscanf("\0\0\6\5\1\2\3\4", "%8c")) ]], "60501020304")
+test_eq([[ sprintf("%08x", @array_sscanf("\0\7\6\5\1\2\3\4", "%8c")) ]], "7060501020304")
+test_eq([[ sprintf("%08x", @array_sscanf("8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
+test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
 
-  test_equal([[ ({ 118 }) ]], [[ array_sscanf("0x76", "%x") ]])
-  test_equal([[ ({42 }) ]], [[ array_sscanf("101010", "%b") ]])
-  test_equal([[ ({42 }) ]], [[ array_sscanf("0b101010", "%b") ]])
-  test_equal([[ ({42 }) ]], [[ array_sscanf("0B101010", "%b") ]])
-  test_equal([[ ({ 557239244978618154304871 }) ]],
-             [[ array_sscanf("0x76000000000001234567", "%x") ]])
+test_equal([[ ({ 118 }) ]], [[ array_sscanf("0x76", "%x") ]])
+test_equal([[ ({42 }) ]], [[ array_sscanf("101010", "%b") ]])
+test_equal([[ ({42 }) ]], [[ array_sscanf("0b101010", "%b") ]])
+test_equal([[ ({42 }) ]], [[ array_sscanf("0B101010", "%b") ]])
+test_equal([[ ({ 557239244978618154304871 }) ]],
+           [[ array_sscanf("0x76000000000001234567", "%x") ]])
 
-  test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
+test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
 	     [[ ({"foo \12345 bar " }) ]])
 
-  test_equal(471100000000000000000000000000000000000000000000042,
-             (int)(mixed)471100000000000000000000000000000000000000000000042)
-  test_eq(6745697846498645967,
-          [[ Gmp.mpz("6745697846498645967")->cast_to_int(); ]])
+test_equal(471100000000000000000000000000000000000000000000042,
+           (int)(mixed)471100000000000000000000000000000000000000000000042)
+test_eq(6745697846498645967,
+        [[ Gmp.mpz("6745697846498645967")->cast_to_int(); ]])
 
-  test_eq(0x7fffffff, [[ decode_value(encode_value(0x7fffffff)) ]])
-  test_eq(0x7ffffffff, [[ decode_value(encode_value(0x7ffffffff)) ]])
-  test_eq(0x7fffffffff, [[ decode_value(encode_value(0x7fffffffff)) ]])
-  test_eq(0x7ffffffffff, [[ decode_value(encode_value(0x7ffffffffff)) ]])
-  test_eq(0x7fffffffffff, [[ decode_value(encode_value(0x7fffffffffff)) ]])
-  test_eq(0x7ffffffffffff, [[ decode_value(encode_value(0x7ffffffffffff)) ]])
-  test_eq(0x80000000, [[ decode_value(encode_value(0x80000000)) ]])
-  test_eq(0x800000000, [[ decode_value(encode_value(0x800000000)) ]])
-  test_eq(0x8000000000, [[ decode_value(encode_value(0x8000000000)) ]])
-  test_eq(0x80000000000, [[ decode_value(encode_value(0x80000000000)) ]])
-  test_eq(0x800000000000, [[ decode_value(encode_value(0x800000000000)) ]])
-  test_eq(0x8000000000000, [[ decode_value(encode_value(0x8000000000000)) ]])
-  test_eq(0x12345678, [[ decode_value(encode_value(0x12345678)) ]])
-  test_eq(0x123456780, [[ decode_value(encode_value(0x123456780)) ]])
-  test_eq(0x1234567801, [[ decode_value(encode_value(0x1234567801)) ]])
-  test_eq(0x12345678012, [[ decode_value(encode_value(0x12345678012)) ]])
-  test_eq(0x123456780123, [[ decode_value(encode_value(0x123456780123)) ]])
-  test_eq(0x1234567801234, [[ decode_value(encode_value(0x1234567801234)) ]])
+test_eq(0x7fffffff, [[ decode_value(encode_value(0x7fffffff)) ]])
+test_eq(0x7ffffffff, [[ decode_value(encode_value(0x7ffffffff)) ]])
+test_eq(0x7fffffffff, [[ decode_value(encode_value(0x7fffffffff)) ]])
+test_eq(0x7ffffffffff, [[ decode_value(encode_value(0x7ffffffffff)) ]])
+test_eq(0x7fffffffffff, [[ decode_value(encode_value(0x7fffffffffff)) ]])
+test_eq(0x7ffffffffffff, [[ decode_value(encode_value(0x7ffffffffffff)) ]])
+test_eq(0x80000000, [[ decode_value(encode_value(0x80000000)) ]])
+test_eq(0x800000000, [[ decode_value(encode_value(0x800000000)) ]])
+test_eq(0x8000000000, [[ decode_value(encode_value(0x8000000000)) ]])
+test_eq(0x80000000000, [[ decode_value(encode_value(0x80000000000)) ]])
+test_eq(0x800000000000, [[ decode_value(encode_value(0x800000000000)) ]])
+test_eq(0x8000000000000, [[ decode_value(encode_value(0x8000000000000)) ]])
+test_eq(0x12345678, [[ decode_value(encode_value(0x12345678)) ]])
+test_eq(0x123456780, [[ decode_value(encode_value(0x123456780)) ]])
+test_eq(0x1234567801, [[ decode_value(encode_value(0x1234567801)) ]])
+test_eq(0x12345678012, [[ decode_value(encode_value(0x12345678012)) ]])
+test_eq(0x123456780123, [[ decode_value(encode_value(0x123456780123)) ]])
+test_eq(0x1234567801234, [[ decode_value(encode_value(0x1234567801234)) ]])
 
-  test_eq(-0x7fffffff, [[ decode_value(encode_value(-0x7fffffff)) ]])
-  test_eq(-0x7ffffffff, [[ decode_value(encode_value(-0x7ffffffff)) ]])
-  test_eq(-0x7fffffffff, [[ decode_value(encode_value(-0x7fffffffff)) ]])
-  test_eq(-0x7ffffffffff, [[ decode_value(encode_value(-0x7ffffffffff)) ]])
-  test_eq(-0x7fffffffffff, [[ decode_value(encode_value(-0x7fffffffffff)) ]])
-  test_eq(-0x7ffffffffffff, [[ decode_value(encode_value(-0x7ffffffffffff))]])
-  test_eq(-0x80000000, [[ decode_value(encode_value(-0x80000000)) ]])
-  test_eq(-0x800000000, [[ decode_value(encode_value(-0x800000000)) ]])
-  test_eq(-0x8000000000, [[ decode_value(encode_value(-0x8000000000)) ]])
-  test_eq(-0x80000000000, [[ decode_value(encode_value(-0x80000000000)) ]])
-  test_eq(-0x800000000000, [[ decode_value(encode_value(-0x800000000000)) ]])
-  test_eq(-0x8000000000000, [[ decode_value(encode_value(-0x8000000000000))]])
-  test_eq(-0x12345678, [[ decode_value(encode_value(-0x12345678)) ]])
-  test_eq(-0x123456780, [[ decode_value(encode_value(-0x123456780)) ]])
-  test_eq(-0x1234567801, [[ decode_value(encode_value(-0x1234567801)) ]])
-  test_eq(-0x12345678012, [[ decode_value(encode_value(-0x12345678012)) ]])
-  test_eq(-0x123456780123, [[ decode_value(encode_value(-0x123456780123)) ]])
-  test_eq(-0x1234567801234, [[ decode_value(encode_value(-0x1234567801234))]])
+test_eq(-0x7fffffff, [[ decode_value(encode_value(-0x7fffffff)) ]])
+test_eq(-0x7ffffffff, [[ decode_value(encode_value(-0x7ffffffff)) ]])
+test_eq(-0x7fffffffff, [[ decode_value(encode_value(-0x7fffffffff)) ]])
+test_eq(-0x7ffffffffff, [[ decode_value(encode_value(-0x7ffffffffff)) ]])
+test_eq(-0x7fffffffffff, [[ decode_value(encode_value(-0x7fffffffffff)) ]])
+test_eq(-0x7ffffffffffff, [[ decode_value(encode_value(-0x7ffffffffffff))]])
+test_eq(-0x80000000, [[ decode_value(encode_value(-0x80000000)) ]])
+test_eq(-0x800000000, [[ decode_value(encode_value(-0x800000000)) ]])
+test_eq(-0x8000000000, [[ decode_value(encode_value(-0x8000000000)) ]])
+test_eq(-0x80000000000, [[ decode_value(encode_value(-0x80000000000)) ]])
+test_eq(-0x800000000000, [[ decode_value(encode_value(-0x800000000000)) ]])
+test_eq(-0x8000000000000, [[ decode_value(encode_value(-0x8000000000000))]])
+test_eq(-0x12345678, [[ decode_value(encode_value(-0x12345678)) ]])
+test_eq(-0x123456780, [[ decode_value(encode_value(-0x123456780)) ]])
+test_eq(-0x1234567801, [[ decode_value(encode_value(-0x1234567801)) ]])
+test_eq(-0x12345678012, [[ decode_value(encode_value(-0x12345678012)) ]])
+test_eq(-0x123456780123, [[ decode_value(encode_value(-0x123456780123)) ]])
+test_eq(-0x1234567801234, [[ decode_value(encode_value(-0x1234567801234))]])
 
-  test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX))) ]])
-  test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN))) ]])
-  test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX + 1))) ]])
-  test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN - 1))) ]])
-  test_eq(2147483648, -2147483648/-1)
-  test_eq(2147483648, -2147483648*-1)
+test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX))) ]])
+test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN))) ]])
+test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX + 1))) ]])
+test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN - 1))) ]])
+test_eq(2147483648, -2147483648/-1)
+test_eq(2147483648, -2147483648*-1)
 
-  test_true([[ random(0x7fffffff)+1 ]])
-  test_true([[ random(0x7ffffffff)+1 ]])
-  test_true([[   sqrt(0x7fffffff)+1 ]])
-  test_true([[   sqrt(0x7ffffffff)+1 ]])
+test_true([[ random(0x7fffffff)+1 ]])
+test_true([[ random(0x7ffffffff)+1 ]])
+test_true([[   sqrt(0x7fffffff)+1 ]])
+test_true([[   sqrt(0x7ffffffff)+1 ]])
 
-  test_true([[ catch { destruct((mixed)0x4783647824687234628462); } ]])
+test_true([[ catch { destruct((mixed)0x4783647824687234628462); } ]])
 
-  test_any_equal([[
-    array a = ({4711, 0x54325827a124*0x12348795482485425});
-    set_weak_flag (a, 1);
-    gc();
-    return set_weak_flag(a, 0);
-  ]], [[ ({4711, 0x54325827a124*0x12348795482485425}) ]])
+test_any_equal([[
+  array a = ({4711, 0x54325827a124*0x12348795482485425});
+  set_weak_flag (a, 1);
+  gc();
+  return set_weak_flag(a, 0);
+]], [[ ({4711, 0x54325827a124*0x12348795482485425}) ]])
 
-  test_any_equal([[
-    mapping m = ([
-      4711: 0x54325827a124*0x12348795482485425,
-      0x54325827124*0x1234879548a2485425: 1174,
-    ]);
-    set_weak_flag (m, 1);
-    gc();
-    return set_weak_flag(m, 0);
-  ]], [[ ([
+test_any_equal([[
+  mapping m = ([
     4711: 0x54325827a124*0x12348795482485425,
     0x54325827124*0x1234879548a2485425: 1174,
-  ]) ]])
+  ]);
+  set_weak_flag (m, 1);
+  gc();
+  return set_weak_flag(m, 0);
+]], [[ ([
+  4711: 0x54325827a124*0x12348795482485425,
+  0x54325827124*0x1234879548a2485425: 1174,
+]) ]])
 
-  test_any([[int a=2147483648; a=a+17;  return a]], 2147483665)
-  test_any([[int a=2147483648; a=a-17;  return a]], 2147483631)
-  test_any([[int a=2147483648; a=a*17;  return a]], 36507222016)
-  test_any([[int a=2147483648; a=a/17;  return a]], 126322567)
-  test_any([[int a=2147483648; a=a%17;  return a]], 9)
-  test_any([[int a=2147483648; a=a^17;  return a]], 2147483665)
-  test_any([[int a=2147483648; a=a&17;  return a]], 0)
-  test_any([[int a=2147483648; a=a|17;  return a]], 2147483665)
-  test_any([[int a=2147483648; a=a<<17; return a]], 281474976710656)
-  test_any([[int a=2147483648; a=a>>17; return a]], 16384)
+test_any([[int a=2147483648; a=a+17;  return a]], 2147483665)
+test_any([[int a=2147483648; a=a-17;  return a]], 2147483631)
+test_any([[int a=2147483648; a=a*17;  return a]], 36507222016)
+test_any([[int a=2147483648; a=a/17;  return a]], 126322567)
+test_any([[int a=2147483648; a=a%17;  return a]], 9)
+test_any([[int a=2147483648; a=a^17;  return a]], 2147483665)
+test_any([[int a=2147483648; a=a&17;  return a]], 0)
+test_any([[int a=2147483648; a=a|17;  return a]], 2147483665)
+test_any([[int a=2147483648; a=a<<17; return a]], 281474976710656)
+test_any([[int a=2147483648; a=a>>17; return a]], 16384)
 
-  test_eq([[2147483648+17 ]], 2147483665)
-  test_eq([[2147483648-17 ]], 2147483631)
-  test_eq([[2147483648*17 ]], 36507222016)
-  test_eq([[2147483648/17 ]], 126322567)
-  test_eq([[2147483648%17 ]], 9)
-  test_eq([[2147483648^17 ]], 2147483665)
-  test_eq([[2147483648&17 ]], 0)
-  test_eq([[2147483648|17 ]], 2147483665)
-  test_eq([[2147483648<<17]], 281474976710656)
-  test_eq([[2147483648>>17]], 16384)
+test_eq([[2147483648+17 ]], 2147483665)
+test_eq([[2147483648-17 ]], 2147483631)
+test_eq([[2147483648*17 ]], 36507222016)
+test_eq([[2147483648/17 ]], 126322567)
+test_eq([[2147483648%17 ]], 9)
+test_eq([[2147483648^17 ]], 2147483665)
+test_eq([[2147483648&17 ]], 0)
+test_eq([[2147483648|17 ]], 2147483665)
+test_eq([[2147483648<<17]], 281474976710656)
+test_eq([[2147483648>>17]], 16384)
 
-  test_true([[ floatp((1<<99)/3.14) ]]);
-  test_true([[ floatp((1<<99)*3.14) ]]);
-  test_true([[ floatp((1<<99)-3.14) ]]);
-  test_true([[ floatp((1<<99)+3.14) ]]);
+test_true([[ floatp((1<<99)/3.14) ]]);
+test_true([[ floatp((1<<99)*3.14) ]]);
+test_true([[ floatp((1<<99)-3.14) ]]);
+test_true([[ floatp((1<<99)+3.14) ]]);
 
-   test_eq([[(12)+(3)]],0xf);
-   test_eq([[(12)+(3*(1<<32))]],0x30000000c);
-   test_eq([[(12)+(3*(1<<64))]],0x3000000000000000c);
-   test_eq([[(12)+(3*(1<<128))]],0x30000000000000000000000000000000c);
-   test_eq([[(12*(1<<32))+(3)]],0xc00000003);
-   test_eq([[(12*(1<<32))+(3*(1<<32))]],0xf00000000);
-   test_eq([[(12*(1<<32))+(3*(1<<64))]],0x30000000c00000000);
-   test_eq([[(12*(1<<32))+(3*(1<<128))]],0x300000000000000000000000c00000000);
-   test_eq([[(12*(1<<64))+(3)]],0xc0000000000000003);
-   test_eq([[(12*(1<<64))+(3*(1<<32))]],0xc0000000300000000);
-   test_eq([[(12*(1<<64))+(3*(1<<64))]],0xf0000000000000000);
-   test_eq([[(12*(1<<64))+(3*(1<<128))]],0x3000000000000000c0000000000000000);
-   test_eq([[(12*(1<<128))+(3)]],0xc00000000000000000000000000000003);
-   test_eq([[(12*(1<<128))+(3*(1<<32))]],0xc00000000000000000000000300000000);
-   test_eq([[(12*(1<<128))+(3*(1<<64))]],0xc00000000000000030000000000000000);
-   test_eq([[(12*(1<<128))+(3*(1<<128))]],0xf00000000000000000000000000000000);
-   test_eq([[(12)-(3)]],0x9);
-   test_eq([[(12)-(3*(1<<32))]],-0x2fffffff4);
-   test_eq([[(12)-(3*(1<<64))]],-0x2fffffffffffffff4);
-   test_eq([[(12)-(3*(1<<128))]],-0x2fffffffffffffffffffffffffffffff4);
-   test_eq([[(12*(1<<32))-(3)]],0xbfffffffd);
-   test_eq([[(12*(1<<32))-(3*(1<<32))]],0x900000000);
-   test_eq([[(12*(1<<32))-(3*(1<<64))]],-0x2fffffff400000000);
-   test_eq([[(12*(1<<32))-(3*(1<<128))]],-0x2fffffffffffffffffffffff400000000);
-   test_eq([[(12*(1<<64))-(3)]],0xbfffffffffffffffd);
-   test_eq([[(12*(1<<64))-(3*(1<<32))]],0xbfffffffd00000000);
-   test_eq([[(12*(1<<64))-(3*(1<<64))]],0x90000000000000000);
-   test_eq([[(12*(1<<64))-(3*(1<<128))]],-0x2fffffffffffffff40000000000000000);
-   test_eq([[(12*(1<<128))-(3)]],0xbfffffffffffffffffffffffffffffffd);
-   test_eq([[(12*(1<<128))-(3*(1<<32))]],0xbfffffffffffffffffffffffd00000000);
-   test_eq([[(12*(1<<128))-(3*(1<<64))]],0xbfffffffffffffffd0000000000000000);
-   test_eq([[(12*(1<<128))-(3*(1<<128))]],0x900000000000000000000000000000000);
+test_eq([[(12)+(3)]],0xf);
+test_eq([[(12)+(3*(1<<32))]],0x30000000c);
+test_eq([[(12)+(3*(1<<64))]],0x3000000000000000c);
+test_eq([[(12)+(3*(1<<128))]],0x30000000000000000000000000000000c);
+test_eq([[(12*(1<<32))+(3)]],0xc00000003);
+test_eq([[(12*(1<<32))+(3*(1<<32))]],0xf00000000);
+test_eq([[(12*(1<<32))+(3*(1<<64))]],0x30000000c00000000);
+test_eq([[(12*(1<<32))+(3*(1<<128))]],0x300000000000000000000000c00000000);
+test_eq([[(12*(1<<64))+(3)]],0xc0000000000000003);
+test_eq([[(12*(1<<64))+(3*(1<<32))]],0xc0000000300000000);
+test_eq([[(12*(1<<64))+(3*(1<<64))]],0xf0000000000000000);
+test_eq([[(12*(1<<64))+(3*(1<<128))]],0x3000000000000000c0000000000000000);
+test_eq([[(12*(1<<128))+(3)]],0xc00000000000000000000000000000003);
+test_eq([[(12*(1<<128))+(3*(1<<32))]],0xc00000000000000000000000300000000);
+test_eq([[(12*(1<<128))+(3*(1<<64))]],0xc00000000000000030000000000000000);
+test_eq([[(12*(1<<128))+(3*(1<<128))]],0xf00000000000000000000000000000000);
+test_eq([[(12)-(3)]],0x9);
+test_eq([[(12)-(3*(1<<32))]],-0x2fffffff4);
+test_eq([[(12)-(3*(1<<64))]],-0x2fffffffffffffff4);
+test_eq([[(12)-(3*(1<<128))]],-0x2fffffffffffffffffffffffffffffff4);
+test_eq([[(12*(1<<32))-(3)]],0xbfffffffd);
+test_eq([[(12*(1<<32))-(3*(1<<32))]],0x900000000);
+test_eq([[(12*(1<<32))-(3*(1<<64))]],-0x2fffffff400000000);
+test_eq([[(12*(1<<32))-(3*(1<<128))]],-0x2fffffffffffffffffffffff400000000);
+test_eq([[(12*(1<<64))-(3)]],0xbfffffffffffffffd);
+test_eq([[(12*(1<<64))-(3*(1<<32))]],0xbfffffffd00000000);
+test_eq([[(12*(1<<64))-(3*(1<<64))]],0x90000000000000000);
+test_eq([[(12*(1<<64))-(3*(1<<128))]],-0x2fffffffffffffff40000000000000000);
+test_eq([[(12*(1<<128))-(3)]],0xbfffffffffffffffffffffffffffffffd);
+test_eq([[(12*(1<<128))-(3*(1<<32))]],0xbfffffffffffffffffffffffd00000000);
+test_eq([[(12*(1<<128))-(3*(1<<64))]],0xbfffffffffffffffd0000000000000000);
+test_eq([[(12*(1<<128))-(3*(1<<128))]],0x900000000000000000000000000000000);
 
-   test_eq([[(12)*(3)]],0x24);
-   test_eq([[(12)*(3*(1<<32))]],0x2400000000);
-   test_eq([[(12)*(3*(1<<64))]],0x240000000000000000);
-   test_eq([[(12)*(3*(1<<128))]],0x2400000000000000000000000000000000);
-   test_eq([[(12*(1<<32))*(3)]],0x2400000000);
-   test_eq([[(12*(1<<32))*(3*(1<<32))]],0x240000000000000000);
-   test_eq([[(12*(1<<32))*(3*(1<<64))]],0x24000000000000000000000000);
-   test_eq([[(12*(1<<32))*(3*(1<<128))]],0x240000000000000000000000000000000000000000);
-   test_eq([[(12*(1<<64))*(3)]],0x240000000000000000);
-   test_eq([[(12*(1<<64))*(3*(1<<32))]],0x24000000000000000000000000);
-   test_eq([[(12*(1<<64))*(3*(1<<64))]],0x2400000000000000000000000000000000);
-   test_eq([[(12*(1<<64))*(3*(1<<128))]],0x24000000000000000000000000000000000000000000000000);
-   test_eq([[(12*(1<<128))*(3)]],0x2400000000000000000000000000000000);
-   test_eq([[(12*(1<<128))*(3*(1<<32))]],0x240000000000000000000000000000000000000000);
-   test_eq([[(12*(1<<128))*(3*(1<<64))]],0x24000000000000000000000000000000000000000000000000);
-   test_eq([[(12*(1<<128))*(3*(1<<128))]],0x240000000000000000000000000000000000000000000000000000000000000000);
-   test_eq([[(12)/(3)]],0x4);
-   test_eq([[(12)/(3*(1<<32))]],0x0);
-   test_eq([[(12)/(3*(1<<64))]],0x0);
-   test_eq([[(12)/(3*(1<<128))]],0x0);
-   test_eq([[(12*(1<<32))/(3*(1<<32))]],0x4);
-   test_eq([[(12*(1<<32))/(3*(1<<64))]],0x0);
-   test_eq([[(12*(1<<32))/(3*(1<<128))]],0x0);
-   test_eq([[(12*(1<<64))/(3*(1<<64))]],0x4);
-   test_eq([[(12*(1<<64))/(3*(1<<128))]],0x0);
-   test_eq([[(12*(1<<128))/(3*(1<<128))]],0x4);
-   test_eq([[(17+12)%(3)]],0x2);
-   test_eq([[(17+12)%(3*(1<<32))]],0x1d);
-   test_eq([[(17+12)%(3*(1<<64))]],0x1d);
-   test_eq([[(17+12)%(3*(1<<128))]],0x1d);
-   test_eq([[(17+12*(1<<32))%(3*(1<<32))]],0x11);
-   test_eq([[(17+12*(1<<32))%(3*(1<<64))]],0xc00000011);
-   test_eq([[(17+12*(1<<32))%(3*(1<<128))]],0xc00000011);
-   test_eq([[(17+12*(1<<64))%(3*(1<<64))]],0x11);
-   test_eq([[(17+12*(1<<64))%(3*(1<<128))]],0xc0000000000000011);
-   test_eq([[(17+12*(1<<128))%(3*(1<<128))]],0x11);
+test_eq([[(12)*(3)]],0x24);
+test_eq([[(12)*(3*(1<<32))]],0x2400000000);
+test_eq([[(12)*(3*(1<<64))]],0x240000000000000000);
+test_eq([[(12)*(3*(1<<128))]],0x2400000000000000000000000000000000);
+test_eq([[(12*(1<<32))*(3)]],0x2400000000);
+test_eq([[(12*(1<<32))*(3*(1<<32))]],0x240000000000000000);
+test_eq([[(12*(1<<32))*(3*(1<<64))]],0x24000000000000000000000000);
+test_eq([[(12*(1<<32))*(3*(1<<128))]],0x240000000000000000000000000000000000000000);
+test_eq([[(12*(1<<64))*(3)]],0x240000000000000000);
+test_eq([[(12*(1<<64))*(3*(1<<32))]],0x24000000000000000000000000);
+test_eq([[(12*(1<<64))*(3*(1<<64))]],0x2400000000000000000000000000000000);
+test_eq([[(12*(1<<64))*(3*(1<<128))]],0x24000000000000000000000000000000000000000000000000);
+test_eq([[(12*(1<<128))*(3)]],0x2400000000000000000000000000000000);
+test_eq([[(12*(1<<128))*(3*(1<<32))]],0x240000000000000000000000000000000000000000);
+test_eq([[(12*(1<<128))*(3*(1<<64))]],0x24000000000000000000000000000000000000000000000000);
+test_eq([[(12*(1<<128))*(3*(1<<128))]],0x240000000000000000000000000000000000000000000000000000000000000000);
+test_eq([[(12)/(3)]],0x4);
+test_eq([[(12)/(3*(1<<32))]],0x0);
+test_eq([[(12)/(3*(1<<64))]],0x0);
+test_eq([[(12)/(3*(1<<128))]],0x0);
+test_eq([[(12*(1<<32))/(3*(1<<32))]],0x4);
+test_eq([[(12*(1<<32))/(3*(1<<64))]],0x0);
+test_eq([[(12*(1<<32))/(3*(1<<128))]],0x0);
+test_eq([[(12*(1<<64))/(3*(1<<64))]],0x4);
+test_eq([[(12*(1<<64))/(3*(1<<128))]],0x0);
+test_eq([[(12*(1<<128))/(3*(1<<128))]],0x4);
+test_eq([[(17+12)%(3)]],0x2);
+test_eq([[(17+12)%(3*(1<<32))]],0x1d);
+test_eq([[(17+12)%(3*(1<<64))]],0x1d);
+test_eq([[(17+12)%(3*(1<<128))]],0x1d);
+test_eq([[(17+12*(1<<32))%(3*(1<<32))]],0x11);
+test_eq([[(17+12*(1<<32))%(3*(1<<64))]],0xc00000011);
+test_eq([[(17+12*(1<<32))%(3*(1<<128))]],0xc00000011);
+test_eq([[(17+12*(1<<64))%(3*(1<<64))]],0x11);
+test_eq([[(17+12*(1<<64))%(3*(1<<128))]],0xc0000000000000011);
+test_eq([[(17+12*(1<<128))%(3*(1<<128))]],0x11);
 
-  cond( [[ master()->resolv("Gmp")->mpz ]],
-  [[
-    test_eq([[Gmp.mpz(68719476736)/Gmp.mpz(12884901888)]],5);
-    test_eq([[Gmp.mpz(123456789012345678901234567890)/Gmp.mpz(12884901888)]],
-	    Gmp.mpz(9581507883061474724));
-    test_eq([[Gmp.mpz(123456789012345678901234567890)/
-	      Gmp.mpz(67890123456789012345)]],1818479371);
-    test_eq([[Gmp.mpz(123456789012345678901234567890)/
-	      Gmp.mpz(67890123456789)]],Gmp.mpz(1818479371169857));
-  ]] )
+test_eq([[Gmp.mpz(68719476736)/Gmp.mpz(12884901888)]],5);
+test_eq([[Gmp.mpz(123456789012345678901234567890)/Gmp.mpz(12884901888)]],
+	  Gmp.mpz(9581507883061474724));
+test_eq([[Gmp.mpz(123456789012345678901234567890)/
+	  Gmp.mpz(67890123456789012345)]],1818479371);
+test_eq([[Gmp.mpz(123456789012345678901234567890)/
+	  Gmp.mpz(67890123456789)]],Gmp.mpz(1818479371169857));
 
-  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
-            return ([a:1])[b]]],1);
-  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
-            return (<a>)[b]]],1);
-  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
-            return sizeof( ({a})-({b}) )]],0);
-  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
-            return sizeof( ({a})&({b}) )]],1);
-  test_any([[int k=10->pow(30); 
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+          return ([a:1])[b]]],1);
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+          return (<a>)[b]]],1);
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+          return sizeof( ({a})-({b}) )]],0);
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+          return sizeof( ({a})&({b}) )]],1);
+test_any([[int k=10->pow(30); 
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
-            return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
+          return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
 
-  test_do([[
-     // This is a memleak test
-     rm("testsuite_test.pike");
-     Stdio.write_file("testsuite_test.pike",
+test_do([[
+   // This is a memleak test
+   rm("testsuite_test.pike");
+   Stdio.write_file("testsuite_test.pike",
 	"constant Q=10000000000000000;\n"
 	"int main() {}\n");
-     Process.system(RUNPIKE +" testsuite_test.pike");
-     rm("testsuite_test.pike");
-  ]])
+   Process.system(RUNPIKE +" testsuite_test.pike");
+   rm("testsuite_test.pike");
+]])
 
 // test the corresponding integer operations first
-  test_any([[int k=100; int j=k+1;
-	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
-	    array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
-            return sizeof( a&b )]],7);
-  test_any([[int k=100; int j=k+1;
-	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
-	    array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
-            return sizeof( a-b )]],0);
+test_any([[int k=100; int j=k+1;
+	   array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	   array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
+           return sizeof( a&b )]],7);
+test_any([[int k=100; int j=k+1;
+	   array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	   array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
+           return sizeof( a-b )]],0);
 
 // now the bignum ones
-  test_any([[int k=10->pow(30); int j=k+1;
-	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
-	    array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
-            return sizeof( a&b )]],7);
-  test_any([[int k=10->pow(30); int j=k+1;
-	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
-	    array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
-            return sizeof( a-b )]],0);
-
-cond_end // __AUTO_BIGNUM__
+test_any([[int k=10->pow(30); int j=k+1;
+	   array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	   array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
+           return sizeof( a&b )]],7);
+test_any([[int k=10->pow(30); int j=k+1;
+	   array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	   array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
+           return sizeof( a-b )]],0);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -8354,6 +8419,11 @@ test_eq(1 ? "a" : 1 ? "b" : 1, "a")
 test_eq(0 ? "a" : 1 ? "b" : 1 ? "c" : 1, "b")
 test_eq(0 ? "a" : 0 ? "b" : 1 ? "c" : 1, "c")
 
+// testing overflow checks
+test_eq(-1 - 0x7fffffff, -0x80000000)
+test_eq(Int.NATIVE_MIN % -1, 0)
+test_eq(Int.NATIVE_MAX % Int.NATIVE_MIN, -1)
+
 // testing indexing
 test_eq("foo"[0],'f')
 test_eq("foo"[1],'o')
@@ -8393,6 +8463,12 @@ test_eq((<'f','o','o'>)[random(0)+'b'],0)
 test_eq((<'f','o','o'>)[-1],0)
 
 test_eq([[class Z { mixed `->(mixed x) { return this_object()[x]; } int foo() { return 1; }}()->foo()]],1)
+
+// Test some indexing opcodes.
+test_eval_error([[return ({1})[1];]])
+test_eval_error([[int i = 1; return ({1})[i];]])
+test_eval_error([[array a = ({ 1 }); return a[1];]])
+test_eval_error([[array a = ({ 1 }); int i = 1; return a[i];]])
 
 // index assigning
 test_any(mixed a=({1}); a[0]=2; return equal(a,({2})),1)
@@ -9274,7 +9350,7 @@ test_equal([[
 test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
   "#line 1 \"-\"\nfoo \n#pragma strict_types \\back \"str\"\n#line 1 \"-\"\n bar")
 test_equal([[
-  compile_string(Locale.Charset.encoder("ebcdic-us")->
+  compile_string(Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
@@ -10270,15 +10346,9 @@ test_equal(`+((<1,2,3,4>),(<4,5,6>)),(<1,2,3,4,4,5,6>))
 test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 
 test_equal(17+class{mixed ``+(mixed n){return (<n>);}}(),(<17>))
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
-  test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
-]])
+test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
 
-cond( [[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 && master()->resolv("Gmp")->mpz ]],
-[[
-  test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
-]])
+test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
 
 // - `-
 // - `->
@@ -10394,15 +10464,12 @@ test_eq(1,call_function(intp,1))
 
 // - callablep
 test_true( callablep(time) )
-test_true( callablep(String.capitalize) )
-test_true( callablep(CommonLog.read) )
-test_true( callablep(ADT.Stack) )
 test_true( callablep(String.Buffer) )
 test_true( callablep( class { void `()() { } }() ) )
 test_false( callablep(String.Buffer()) )
 test_true( callablep( ({}) ) )
 test_true( callablep( ({ 0,0 }) ) )
-test_false( callablep( ({ 0,1 }) ) )
+test_true( callablep( ({ 0,1 }) ) )
 test_true( callablep( ({ time }) ) )
 test_true( callablep( ({ time, 0 }) ) )
 test_false( callablep( ({ "a", time }) ) )
@@ -10412,6 +10479,8 @@ test_false( callablep( 3.14 ) )
 test_false( callablep( (< time >) ) )
 test_false( callablep( 0 ) )
 test_false( callablep( 7 ) )
+test_true( callablep( ({ ({ 0, 1, time }) }) ) )
+test_false( callablep( ({ ({ 0, "" }) }) ) )
 
 
 // - cd
@@ -11882,7 +11951,7 @@ test_eq(utf8_to_string ("\u00fe\u0082\u0080\u0080\u0080\u0080\u0080", 1), "\U800
 // Tested in foop
 
 // - strlen
-test_eq(strlen, sizeof)
+test_compile_error(strlen( ({}) ))
 
 // - symlink
 // - syslog
@@ -12078,6 +12147,87 @@ test_program([[
   }
   int a() {return A()->B()->f();}
 ]])
+
+// Names of inherits
+test_program_eq([[
+  // 1: Direct inherit in the current class.
+  class A { local constant foo = 1; };
+  inherit A;
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B:A; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[2]])
+test_program_eq([[
+  // 2: The name of the current class.
+  class A { local constant foo = 1; };
+  inherit A:C;
+  class B { inherit A:C; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return C::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[4]])
+test_program_eq([[
+  // 3.1: Direct inherit in a surrounding parent class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  inherit B:A;
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[2]])
+test_program_eq([[
+  // 3.2: The name of a surrounding parent class.
+  class D {
+    class A { local constant foo = 1; };
+    inherit A;
+    class B { inherit A; local constant foo = 2; };
+    class C { inherit B; local constant foo = 4;
+      int get_foo() {
+        return D::foo;
+      }
+    };
+    int get_foo() {
+      return C()->get_foo();
+    }
+  };
+  int a() { return D()->get_foo(); }
+]],[[1]])
+test_program_eq([[
+  // 4: Indirect inherit in the current class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    int get_foo() {
+      return A::foo;
+    }
+  };
+  int a() { return C()->get_foo(); }
+]],[[1]])
+test_program_eq([[
+  // 5: Indirect inherit in a surrounding parent class.
+  class A { local constant foo = 1; };
+  class B { inherit A; local constant foo = 2; };
+  class C { inherit B; local constant foo = 4;
+    class D {
+      local constant foo = 8;
+      int get_foo() {
+        return A::foo;
+      }
+    }
+    int get_foo() { return D()->get_foo(); }
+  };
+  int a() { return C()->get_foo(); }
+]],[[1]])
 
 test_program_eq([[
   object ao = compile_string(#"
@@ -12353,6 +12503,23 @@ test_true([[lambda (int|void a) { return zero_type(a); }()]])
 test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
 test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
 test_true([[zero_type (lambda () {return ([])[0];}())]])
+
+test_any([[
+  class A {
+    int j = 0;
+    int k = UNDEFINED;
+    int l;
+  };
+  A a = A();
+  return "" + zero_type(a->j) + zero_type(a->k) + zero_type(a->l) + zero_type(a->m) + " " + has_index(a, "j") + has_index(a, "k") + has_index(a, "l") + has_index(a, "m");
+]], "0101 1110")
+test_any([[
+  mapping m = ([
+    "x" : 0,
+    "y" : UNDEFINED,
+  ]);
+  return "" + zero_type(m->x) + zero_type(m->y) + zero_type(m->z) + " " + has_index(m, "x") + has_index(m, "y") + has_index(m, "z");
+]], "001 110")
 
 test_any([[
   int i = lambda() {return UNDEFINED;}();
@@ -13138,4 +13305,319 @@ test_any_equal([[
   };
   return X()->test(1,2);
 ]],[[ ({}) ]])
+
+
+// sprintf
+
+dnl This really belongs to sscanf, but...
+test_eq([[ array_sscanf(sprintf("%1c", -1), "%1c")[0] ]], 255)
+test_eq([[ array_sscanf(sprintf("%2c", -1), "%2c")[0] ]], 65535)
+test_eq([[ array_sscanf(sprintf("%3c", -1), "%3c")[0] ]], 16777215)
+
+test_eq([[ sprintf("%4c",16909060) ]],"\1\2\3\4")
+test_eq([[ sprintf("%-4c",16909060) ]],"\4\3\2\1")
+test_eq([[ sprintf("%2c",16909060) ]],"\3\4")
+test_eq([[ sprintf("%-2c",16909060) ]],"\4\3")
+test_eq([[ sprintf("%4c",2147483648) ]],"\200\0\0\0")
+test_eq([[ sprintf("%-4c",2147483648) ]],"\0\0\0\200")
+test_eq([[ sprintf("%2c",2147483648) ]],"\0\0")
+test_eq([[ sprintf("%-2c",2147483648) ]],"\0\0")
+
+test_eq([[ sprintf("%1c", 0x1abcd7893) ]], "\223")
+test_eq([[ sprintf("%2c", 0x1abcd7893) ]], "x\223")
+test_eq([[ sprintf("%3c", 0x1abcd7893) ]], "\315x\223")
+test_eq([[ sprintf("%4c", 0x1abcd7893) ]], "\253\315x\223")
+test_eq([[ sprintf("%5c", 0x1abcd7893) ]], "\1\253\315x\223")
+test_eq([[ sprintf("%6c", 0x1abcd7893) ]], "\0\1\253\315x\223")
+test_eq([[ sprintf("%7c", 0x1abcd7893) ]], "\0\0\1\253\315x\223")
+
+test_eq([[ sprintf("%1c", -0x1abcd7893) ]], "m")
+test_eq([[ sprintf("%2c", -0x1abcd7893) ]], "\207m")
+test_eq([[ sprintf("%3c", -0x1abcd7893) ]], "2\207m")
+test_eq([[ sprintf("%4c", -0x1abcd7893) ]], "T2\207m")
+test_eq([[ sprintf("%5c", -0x1abcd7893) ]], "\376T2\207m")
+test_eq([[ sprintf("%6c", -0x1abcd7893) ]], "\377\376T2\207m")
+test_eq([[ sprintf("%7c", -0x1abcd7893) ]], "\377\377\376T2\207m")
+
+test_eq([[ array_sscanf(sprintf("%4c", -1), "%4c")[0] ]], 4294967295)
+test_eq([[ array_sscanf(sprintf("%5c", -1), "%5c")[0] ]], 1099511627775)
+test_eq([[ array_sscanf(sprintf("%6c", -1), "%6c")[0] ]], 281474976710655)
+test_eq([[ array_sscanf(sprintf("%7c", -1), "%7c")[0] ]], 72057594037927935)
+test_eq([[ array_sscanf(sprintf("%8c", -1), "%8c")[0] ]], 18446744073709551615)
+test_eq([[ array_sscanf(sprintf("%9c", -1), "%9c")[0] ]], 4722366482869645213695)
+test_eq([[ array_sscanf(sprintf("%10c", -1), "%10c")[0] ]], 1208925819614629174706175)
+test_eq([[ array_sscanf(sprintf("%11c", -1), "%11c")[0] ]], 309485009821345068724781055)
+
+test_eq("\25363274223", [[ sprintf("%c", 0x1abcd7893) ]])
+test_eq("\12414503555", [[ sprintf("%c", -0x1abcd7893) ]])
+
+test_eq([[ sprintf("%x", -1) ]], "-1")
+test_eq([[ sprintf("%4x", -1) ]], "  -1")
+test_eq([[ sprintf("%10x", -1) ]], "        -1")
+test_eq([[ sprintf("%10x", -15) ]], "        -f")
+test_eq([[ sprintf("%010x", -15) ]], "-00000000f")
+
+test_eq([[ sprintf("%08x", -1) ]], "-0000001")
+test_eq([[ sprintf("%016x", -15) ]], "-00000000000000f")
+test_eq([[ sprintf("%x", 65535) ]], "ffff")
+test_eq([[ sprintf("%x", -0x80000000) ]], "-80000000")
+
+test_eq("f", [[ sprintf("%.1x", -1) ]])
+test_eq("ff", [[ sprintf("%.2x", -1) ]])
+test_eq("fff", [[ sprintf("%.3x", -1) ]])
+test_eq("ffffffffffffffffffff", [[ sprintf("%.20x", -1) ]])
+test_eq("1", [[ sprintf("%.3x", 1) ]])
+test_eq("1", [[ sprintf("%0.3x", 1) ]])
+test_eq("fff", [[ sprintf("%0.3x", -1) ]])
+test_eq("1", [[ sprintf("%0.16x", 1) ]])
+test_eq("ffffffffffffffff", [[ sprintf("%0.16x", -1) ]])
+test_eq("  ff", [[ sprintf("%4.2x", -1) ]])
+test_eq("00ff", [[ sprintf("%04.2x", -1) ]])
+test_eq("0001", [[ sprintf("%04.2x", 1) ]])
+test_eq("00cc", [[ sprintf("%04.2x", -0x1234) ]])
+
+test_eq("-123456789123456789", [[ sprintf("%x", -0x123456789123456789) ]])
+test_eq("ba9877", [[ sprintf("%.6x", -0x123456789123456789) ]])
+test_eq("876edcba9877", [[ sprintf("%.12x", -0x123456789123456789) ]])
+test_eq("        876edcba9877", [[ sprintf("%20.12x",-0x123456789123456789)]])
+
+test_eq("77777777760000000000", [[ sprintf("%.20o", -0x80000000) ]])
+
+test_true(stringp(sprintf("")))
+test_true(sprintf("--real %1.20f --imaginary %1.20f --scale %1.20f\n",-0.9,-0.9,-0.9))
+test_eq(sprintf("%%"),"%")
+test_eq(sprintf("%d",1),"1")
+test_eq(sprintf("%d",-1),"-1")
+test_eq(sprintf("%o",1),"1")
+test_eq(sprintf("%u",1<<31),"2147483648")
+test_false(sprintf("%u",-1)=="-1")
+test_eq(sprintf("%o",255),"377")
+test_eq(sprintf("%o",-9),"-11")
+test_eq(sprintf("%o",012345670),"12345670")
+test_eq(sprintf("%x",255),"ff")
+test_eq(sprintf("%x",-27),"-1b")
+test_eq(sprintf("%X",255),"FF")
+test_eq(sprintf("%X",-27),"-1B")
+test_eq(sprintf("%c",255),"\377")
+test_eq(sprintf("%2c",65535),"\377\377")
+test_eq(sprintf("%3c",0xffffff),"\377\377\377")
+test_true(stringp(sprintf("%f",255.0)))
+test_true(stringp(sprintf("%g",255.0)))
+test_true(stringp(sprintf("%G",255.0)))
+test_true(stringp(sprintf("%e",255.0)))
+test_true(stringp(sprintf("%E",255.0)))
+
+test_eq(sprintf("%.1f",31415.9267),"31415.9")
+test_eq(sprintf("%.0f",31415.9267),"31416")
+test_eq(sprintf("%.-1f",31415.9267),"31420")
+test_eq(sprintf("%.-2f",31415.9267),"31400")
+test_eq(sprintf("%.-2f",-31415.9267),"-31400")
+test_eq(sprintf("%.-10f",31415.9267),"0")
+test_eq(sprintf("%20.-3f", 31415.92670),"               31000")
+
+
+dnl test for high exponent problems
+dnl (this might only effect --with-double-precision et al)
+test_true(stringp(sprintf("%f",exp(700))))
+test_true(stringp(sprintf("%g",exp(700))))
+test_true(stringp(sprintf("%G",exp(700))))
+test_true(stringp(sprintf("%e",exp(700))))
+test_true(stringp(sprintf("%E",exp(700))))
+
+dnl test for "inf" problems
+test_eq(lower_case(sprintf("%f",Math.inf)),"inf") 
+test_eq(lower_case(sprintf("%g",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%G",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%e",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%E",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%f",-Math.inf)),"-inf") 
+test_eq(lower_case(sprintf("%g",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%G",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%e",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%E",-Math.inf)),"-inf")
+
+dnl test for "nan" problems
+dnl At least the following variants exist: "nan", "Nan", "NaN", "NaNQ".
+test_eq(lower_case(sprintf("%f",Math.nan)[..2]),"nan") 
+test_eq(lower_case(sprintf("%g",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%G",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%e",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%E",Math.nan)[..2]),"nan")
+
+test_eq(sprintf("%s","foobaR"),"foobaR")
+test_eq(sprintf("%s","foo\nbar"),"foo\nbar")
+test_eq(sprintf("%8.3s","foobar"),"     foo")
+test_true(stringp(sprintf("%O",this_object())))
+test_true(stringp(sprintf("%O",({}))))
+test_eq(sprintf("%n"),"")
+test_eq(sprintf("%t",1),"int")
+test_eq(sprintf("%t",1.0),"float")
+test_eq(sprintf("%t",""),"string")
+test_eq(sprintf("%t",this_object()),"object")
+test_eq(sprintf("%t", ({"a"})), "array")
+test_any([[array(string) a = ({"a"}); return sprintf("%t", a);]], "array")
+test_eq(sprintf("%t", 0), "int")
+test_any([[array(string) a = 0; return sprintf("%t", a);]], "int")
+test_eq(sprintf("%t", (<>)), "multiset")
+test_eq(sprintf("%t", ([])), "mapping")
+test_eq(sprintf("%t", sin), "function")
+test_eq(sprintf("%t", class {}), "program")
+test_eq(sprintf("%t", typeof(3)), "type")
+
+test_eq(strlen(sprintf("%1000s","")),1000)
+test_eq(sprintf("%2d",1)," 1")
+test_eq(sprintf("%2d",1)," 1")
+test_eq(sprintf("foo_%3d",1),"foo_  1")
+test_eq(sprintf("%2d",2222),"2222")
+test_eq(sprintf("%!2d",2222),"22")
+test_eq(sprintf("%!!2d",2222),"2222")
+test_eq(sprintf("% d",2)," 2")
+test_eq(sprintf("% d",-2),"-2")
+test_eq(sprintf("%+d",2),"+2")
+test_eq(sprintf("%+d",-2),"-2")
+test_eq(sprintf("%-2d",2),"2 ")
+test_eq(sprintf("%|3d",2)," 2 ")
+test_eq(sprintf("%-=3s","f o bar gaz"),"f o\nbar\ngaz")
+dnl test_eq(sprintf("%/3s","f o bargaz"),"f o\nbar\ngaz")
+test_true(stringp(sprintf("%3#s","f\no\nbargaz\nonk")))
+test_true(stringp(sprintf("%3$s","f\no\nbargaz\nonk")))
+test_eq(sprintf("%-$79s","foo\nbar\ngazonk"),"foo    bar    gazonk ")
+test_eq(sprintf("%-$20s","foo\nbar\ngazonk"),"foo    bar    \ngazonk ")
+test_eq(sprintf("%-#79s","foo\nbar\ngazonk"),"foo    bar    gazonk ")
+test_eq(sprintf("%-#20s","foo\nbar\ngazonk"),"foo    gazonk \nbar    ")
+
+test_eq(sprintf("%.0f",17.23456),"17")
+
+test_eq(sprintf("%*d",3,3),"  3")
+test_eq(sprintf("%'FOO'10s","BAR"),"FOOFOOFBAR")
+test_eq(sprintf("%d %<d %<d",2),"2 2 2")
+test_true(stringp(sprintf("%O",({1,2,"foo"}))))
+test_true(stringp(sprintf("%O",([1:2,"foo":"bar"]))))
+test_eq(sprintf("%@4d", (array)"hi!")," 104 105  33")
+test_eq(strlen(sprintf("%@c",allocate(1000))),1000)
+
+test_eq(sprintf("test \0 \n"),"test \0 \n")
+test_eq(sprintf("test \0"),"test \0")
+test_eq(sprintf("%~*n","f",5),"fffff")
+test_eq(sprintf("%'\000'*n",5),"\000\000\000\000\000")
+
+test_eq(sprintf("%{%d\n%}",({1,2,3,4})),"1\n2\n3\n4\n")
+
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+
+test_eq([[sprintf("%{%d %d %d\n%}",({ ({1,2,3}), ({4,5,6}) }) )]],"1 2 3\n4 5 6\n")
+
+test_eq([[sprintf("%4F", 0.0)]], "\000\000\000\000")
+test_eq([[sprintf("%4F", 1.0)]], "\077\200\000\000")
+test_eq([[sprintf("%4F", 0.5)]], "\077\000\000\000")
+test_eq([[sprintf("%4F", 2.0)]], "\100\000\000\000")
+test_eq([[sprintf("%4F", 1.5)]], "\077\300\000\000")
+test_eq([[sprintf("%4F", 1048576.125)]], "\111\200\000\001")
+test_eq([[sprintf("%4F", -17.5)]], "\301\214\000\000")
+cond([[pow(2.0,-128.0)!=0.0]],
+[[
+  test_eq([[sprintf("%4F", pow(2.0,-128.0))]], "\000\040\000\000")
+]])
+test_eq([[sprintf("%4F", 0.033)]], "\075\007\053\002")
+test_eq([[sprintf("%4F", pow(2.0,128.0))]], "\177\200\000\000")
+test_eq([[sprintf("%8F", 0.0)]], "\000\000\000\000\000\000\000\000")
+test_eq([[sprintf("%8F", 1.0)]], "\077\360\000\000\000\000\000\000")
+test_eq([[sprintf("%8F", 0.5)]], "\077\340\000\000\000\000\000\000")
+test_eq([[sprintf("%8F", 2.0)]], "\100\000\000\000\000\000\000\000")
+test_eq([[sprintf("%8F", 1.5)]], "\077\370\000\000\000\000\000\000")
+test_eq([[sprintf("%8F", 1048576.125)]], "\101\060\000\000\040\000\000\000")
+test_eq([[sprintf("%8F", -17.5)]], "\300\061\200\000\000\000\000\000")
+cond([[pow(2.0,-128.0)!=0.0]],
+[[
+  test_eq([[sprintf("%8F", pow(2.0,-128.0))]], "\067\360\000\000\000\000\000\000")
+]])
+test_eq([[sprintf("%8F", 0.032999999821186065673828125)]], "\077\240\345\140\100\000\000\000")
+
+cond([[pow(2.0,1024.0)!=0.0]],
+[[
+  test_eq([[sprintf("%8F", pow(2.0,1024.0))]], "\177\360\000\000\000\000\000\000")
+]])
+
+dnl Make sure that _sprintf is called and that the argument list isn't screwed.
+test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
+        @allocate(14, (class { string _sprintf(int t)
+                                { mixed x = "not a number";
+                                  string s;
+                                  catch {
+                                    s = sprintf("%d%d%d%d", 1, 2, x, 3);
+                                  };
+                                  return sprintf("[%c%c%c]", 'a', t, 'b'); }
+                             })()), 42),
+        "4711[acb][asb][atb][aob][adb][aub][axb][aXb]"
+        "[aeb][afb][agb][aEb][aGb][aOb]42")
+
+test_eq(sprintf("%[*]s %s",2,"a","b"),"b a")
+test_eq(sprintf("%[1]s %s %[2]s %s","b","a","r"),"a b r a")
+
+test_do(catch(sprintf("%d-" *101, @allocate(101))))
+
+test_eq(sprintf("%O", "a\nb"),"\"a\\n\"\n\"b\"")
+test_eq(sprintf("%O", "a\0b"),"\"a\\0b\"")
+test_eq(sprintf("%O", "a\0""0"),"\"a\\0\"\"0\"")
+
+test_eq(sprintf_76("%O", "a\nb"),"\"a\\nb\"")
+test_eq(sprintf_76("%O", "a\0b"),"\"a\\0b\"")
+test_eq(sprintf_76("%O", "a\0""0"),"\"a\\0\"\"0\"")
+
+test_eq(sprintf("%q", "a\nb"),"\"a\\nb\"")
+test_eq(sprintf("%q", "a\0b"),"\"a\\0b\"")
+test_eq(sprintf("%q", "a\0""0"),"\"a\\u00000\"")
+test_eq(sprintf("%q", "\177\177""0"),"\"\\177\\u007f0\"")
+
+test_eq(sprintf("%H", ""),"\0")
+test_eq(sprintf("%H", "hello"),"\5hello")
+
+test_eval_error(return sprintf("%0H", ""))
+test_eval_error(return sprintf("%0H", "hello"))
+
+test_eq(sprintf("%1H", ""),"\0")
+test_eq(sprintf("%1H", "hello"),"\5hello")
+test_eq(sprintf("%-1H", ""),"\0")
+test_eq(sprintf("%-1H", "hello"),"\5hello")
+test_eq(sprintf("%2H", ""),"\0\0")
+test_eq(sprintf("%2H", "hello"),"\0\5hello")
+test_eq(sprintf("%-2H", ""),"\0\0")
+test_eq(sprintf("%-2H", "hello"),"\5\0hello")
+test_eq(sprintf("%4H", ""),"\0\0\0\0")
+test_eq(sprintf("%4H", "hello"),"\0\0\0\5hello")
+test_eq(sprintf("%-4H", ""),"\0\0\0\0")
+test_eq(sprintf("%-4H", "hello"),"\5\0\0\0hello")
+test_do(sprintf("%9H", "x"*300););
+
+test_eval_error(return sprintf("%H", "\x100");)
+test_do(return sprintf("%1H", "x"*255);)
+test_eval_error(return sprintf("%1H", "x"*256);)
+
+test_do(add_constant("OBJ",class { string _sprintf(int t) { return sprintf("%c",t); } }() ))
+test_eq(sprintf("%t", OBJ),"t")
+test_eq(sprintf("%c", OBJ),"c")
+test_eq(sprintf("%H", OBJ),"H")
+test_eq(sprintf("%b", OBJ),"b")
+test_eq(sprintf("%o", OBJ),"o")
+test_eq(sprintf("%d", OBJ),"d")
+test_eq(sprintf("%u", OBJ),"u")
+test_eq(sprintf("%x", OBJ),"x")
+test_eq(sprintf("%X", OBJ),"X")
+test_eq(sprintf("%e", OBJ),"e")
+test_eq(sprintf("%f", OBJ),"f")
+test_eq(sprintf("%g", OBJ),"g")
+test_eq(sprintf("%E", OBJ),"E")
+test_eq(sprintf("%G", OBJ),"G")
+test_eq(sprintf("%F", OBJ),"F")
+test_eq(sprintf("%O", OBJ),"O")
+test_eq(sprintf("%s", OBJ),"s")
+test_eq(sprintf("%q", OBJ),"q")
+test_do(add_constant("OBJ"))
+
+dnl / : ; ^ _ > hasn't been tested
+test_eval_error(return sprintf("%d");)
+
 END_MARKER

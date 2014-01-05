@@ -17,7 +17,7 @@ GTK2.TextTagTable add( GTK2.TextTag tag );
 //!
 //!
 
-static GTK2.TextTagTable create( );
+protected GTK2.TextTagTable create( );
 //! Creates a new W(TextTagTable).
 //!
 //!

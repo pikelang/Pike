@@ -1,12 +1,10 @@
 @make_variables@
 VPATH=@srcdir@
 
-OBJS = nettle.o hash.o cipher.o crypt_md5.o nt.o @IDEA_OBJ@
+OBJS = nettle.o hash.o cipher.o crypt_md5.o nt.o hogweed.o @IDEA_OBJ@
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
-
-PRECOMPILER_ARGS=--api=4
 
 @dynamic_module_makefile@
 
@@ -14,6 +12,7 @@ nettle.o: $(SRCDIR)/nettle.c
 hash.o: $(SRCDIR)/hash.c
 cipher.o: $(SRCDIR)/cipher.c
 nt.o: $(SRCDIR)/nt.c
+hogweed.o: $(SRCDIR)/hogweed.c
 
 $(SRCDIR)/cipher.c: cipher.H
 $(SRCDIR)/hash.c: hash.H

@@ -477,12 +477,14 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
     SPARC_STX(reg, SPARC_REG_PIKE_SP,
 	      sparc_pike_sp_bias + OFFSETOF(svalue, u.integer), 1);
   }
-  if (x != type_word) {
+  if (!type_word) {
+    reg = SPARC_REG_G0;
+  } else if (x != type_word) {
     SET_REG(SPARC_REG_I1, type_word);
+    reg = SPARC_REG_I1;
   }
-  /* This is safe since type_word is never zero. */
-  /* stw %i1, [ %pike_sp ] */
-  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
+  /* stw %reg, [ %pike_sp ] */
+  SPARC_STW(reg, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
   sparc_pike_sp_bias += sizeof(struct svalue);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }

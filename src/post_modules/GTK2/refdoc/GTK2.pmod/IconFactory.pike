@@ -26,7 +26,7 @@ GTK2.IconFactory add_default( );
 //!
 //!
 
-static GTK2.IconFactory create( );
+protected GTK2.IconFactory create( );
 //! Creates a new GTK2.IconFactory.  An icon factory manages a collection of
 //! GTK2.IconSets; a GTK2.IconSet manages a set of variants of a particular icon
 //! (i.e. a GTK2.IconSet contains variants for different sizes and widget

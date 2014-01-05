@@ -1,95 +1,253 @@
 START_MARKER
-// Nettle
-test_true([[objectp(Nettle)]])
 
-// MD2
-cond_resolv( Nettle.MD2_State, [[
 
-  test_true([[objectp(Nettle.MD2_State())]])
-  test_eq([[Nettle.MD2_State()->update("")->digest()]],
-  	  [[String.hex2string("8350e5a3e24c153df2275c9f80692773")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy dog")->digest()]],
-  	  [[String.hex2string("03d85a0d629d2c442e987525319fc471")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy cog")->digest()]],
-  	  [[String.hex2string("6b890c9292668cdbbfda00a4ebf31f05")]])
+dnl The point of these tests are just to make a basic validation that
+dnl the cryptography works. We assume that the Nettle library itself
+dnl is good, so no need for full NIST test vectors or similar.
+
+test_compile_error( H )
+test_compile_error( S )
+test_do( add_constant( "H", String.hex2string ) )
+test_do( add_constant( "S", String.string2hex ) )
+
+define(test_hash, [[
+  cond_resolv(Nettle.$1, [[
+      test_eq(String.string2hex(Nettle.$1()->hash("")),#"$2"-" "-"\n")
+      test_eq(String.string2hex(Nettle.$1()->hash((string)enumerate(256)*2)),#"$3"-" "-"\n")
+      test_eq(String.string2hex(Nettle.$1()->hash("abc")),#"$4"-" "-"\n")
+  ]])
 ]])
 
-// MD4
-cond_resolv( Nettle.MD4_State, [[
+test_hash(MD2,
+8350e5a3e24c153df2275c9f80692773,
+babf93aebc7745aa7e4569e590e6047f,
+da853b0d3f88d99b30283a69e6ded6bb)
 
-  test_true([[objectp(Nettle.MD4_State())]])
-  test_eq([[Nettle.MD4_State()->update("")->digest()]],
-  	  [[String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
-  test_eq([[Nettle.MD4_State()->update("a")->digest()]],
-  	  [[String.hex2string("bde52cb31de33e46245e05fbdbd6fb24")]])
-  test_eq([[Nettle.MD4_State()->update("abc")->digest()]],
-  	  [[String.hex2string("a448017aaf21d8525fc10ae87aa6729d")]])
-  test_eq([[Nettle.MD4_State()->update("message digest")->digest()]],
-  	  [[String.hex2string("d9130a8164549fe818874806e1c7014b")]])
-  test_eq([[Nettle.MD4_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-  	  [[String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9")]])
-  test_eq([[Nettle.MD4_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("043f8582f241db351ce627e153e7f0e4")]])
-  test_eq([[Nettle.MD4_State()->update("1234567890123456789012345678901234567890"
-		"1234567890123456789012345678901234567890")->digest()]],
-	  [[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
-]])
+test_hash(MD4,
+31d6cfe0d16ae931b73c59d7e0c089c0,
+a1d29a83b83c408e21a056e456036266,
+a448017aaf21d8525fc10ae87aa6729d)
 
-// MD5
-cond_resolv( Nettle.MD5_State, [[
+test_hash(MD5,
+d41d8cd98f00b204e9800998ecf8427e,
+f5c8e3c31c044bae0e65569560b54332,
+900150983cd24fb0d6963f7d28e17f72)
 
-  test_true([[objectp(Nettle.MD5_State())]])
-  test_eq([[Nettle.MD5_State()->update("")->digest()]],
-  	  [[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
-  test_eq([[Nettle.MD5_State()->update("a")->digest()]],
-  	  [[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
-  test_eq([[Nettle.MD5_State()->update("abc")->digest()]],
-  	  [[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
-  test_eq([[Nettle.MD5_State()->update("message digest")->digest()]],
-  	  [[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
-  test_eq([[Nettle.MD5_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-  	  [[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
-  test_eq([[Nettle.MD5_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-  test_eq([[Nettle.MD5_State()->update("1234567890123456789012345678901234567890"
-		"1234567890123456789012345678901234567890")->digest()]],
-	  [[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
-]])
+test_hash(SHA1,
+da39a3ee 5e6b4b0d 3255bfef 95601890 afd80709,
+dbe649daba340bce7a44b809016d914839b99f10,
+a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d)
 
-// SHA1
-cond_resolv( Nettle.SHA1_State, [[
+test_hash(SHA224,
+d14a028c 2a3a2bc9 476102bb 288234c4 15a2b01f 828ea62a c5b3e42f,
+b8060ccc82d40c576156f7ca0333e4389e410df027d2fb8f764fa603,
+23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7)
 
-  test_true([[objectp(Nettle.SHA1_State())]])
-  test_eq([[Nettle.SHA1_State()->update("")->digest()]],
-   	[[String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
-  test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
-   	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
-]])
+test_hash(SHA256,
+e3b0c442 98fc1c14 9afbf4c8 996fb924 27ae41e4 649b934c a495991b 7852b855,
+110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b,
+ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad)
 
-cond_resolv( Nettle.SHA1_State, [[
-test_tests(
-  array(int) a() {
-    return Tools.Testsuite.run_script ("]]SRCDIR[[/sha1test.pike");
-  }
-)
+test_hash(SHA384,
+38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b,
+4582fc82430e526886a1853411e60645fef7e8ea0c8546b7c9ba0c8416d9a98fb52ebd0c605fbb70749c4e3e5da3dbac,
+cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7)
+
+test_hash(SHA512,
+cf83e1357eefb8bd f1542850d66d8007 d620e4050b5715dc 83f4a921d36ce9ce 47d0d13c5d85f2b0 ff8318d2877eec2f 63b931bd47417a81 a538327af927da3e,
+edb9bed721aa6a5f6fbc6619d3a3c2be3d043043f05a9aebc7b1197a2aa9c49a57d5ddd4674c1785785088d9f1ff42c797a02adc9b817a139a50970da6c99524,
+ddaf35a193617aba cc417349ae204131 12e6fa4e89a97ea2 0a9eeee64b55d39a 2192992a274fc1a8 36ba3c23a3feebbd 454d4423643ce80e 2a9ac94fa54ca49f)
+
+test_hash(SHA3_224,
+f71837502ba8e108 37bdd8d365adb855 91895602fc552b48 b7390abd,
+745758db0a62b782f84ba9456749c48d78055734b0383f6c19ce419b,
+c30411768506ebe1 c2871b1ee2e87d38 df342317300a9b97 a95ec6a8)
+
+test_hash(SHA3_256,
+c5d2460186f7233c 927e7db2dcc703c0 e500b653ca82273b 7bfad8045d85a470,
+f55ba327291604f0e5be6651752398b7be2331aad65f5763ce067df95cc13be1,
+4e03657aea45a94f c7d47ba826c8d667 c0d1e6e33a64a036 ec44f58fa12d6c45)
+
+test_hash(SHA3_384,
+2c23146a63a29acf 99e73b88f8c24eaa 7dc60aa771780ccc 006afbfa8fe2479b 2dd2b21362337441 ac12b515911957ff,
+9f74dfc9c6998ba66259906d271b2a2c17195e1682b7bd43774bb7121ead7feeae0399a565b07a7a2b670436d708c960,
+f7df1165f033337b e098e7d288ad6a2f 74409d7a60b49c36 642218de161b1f99 f8c681e4afaf31a3 4db29fb763e3c28e)
+
+test_hash(SHA3_512,
+0eab42de4c3ceb92 35fc91acffe746b2 9c29a8c366b7c60e 4e67c466f36a4304 c00fa9caf9d87976 ba469bcbe06713b4 35f091ef2769fb16 0cdab33d3670680e,
+6f317fd02d2e47a9a2e0aef8ad4f18d17656e8bcc2251599a5767a19fbeda91b496fe56b286cdb26d74f42f0226f8f8da2f6c24987e55f1badb02c4b60991785,
+18587dc2ea106b9a 1563e32b3312421c a164c7f1f07bc922 a9c83d77cea3a1e5 d0c6991073902537 2dc14ac964262937 9540c17e2a65b19d 77aa511a9d00bb96)
+
+test_hash(GOST94,
+ce85b99cc46752fffee35cab9a7b0278abb4c2d2055cff685af4912c49490f8d,
+5242e01f27145a783bf3b0f931f69318ef112ac33ecfa0a3b764e47f3caef9a7,
+f3134348c44fb1b2a277729e2285ebb5cb5e0f29c975bc753b70497c06a4d51d)
+
+test_hash(RIPEMD160,
+9c1185a5c5e9fc54612808977ee8f548b2258d31,
+e18472c9792fdc6e9dc2f46d53daee9ea60a999e,
+8eb208f7e05d987a9b044a8e98c6b087f15a0bfc)
+
+dnl Crypto, key, plain, cipher, force/ekb
+define(test_cipher,[[
+  test_eq(ifelse([[$5]],,
+                 [[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($3-" "))]],
+		 [[Nettle.$1()()->set_encrypt_key(String.hex2string($2-" "), $5)
+		   ->crypt(String.hex2string($3-" "))]]),
+	  [[String.hex2string($4-" ")]])
+  test_eq(ifelse([[$5]],,
+		 [[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($4-" "))]],
+		 [[Nettle.$1()()->set_decrypt_key(String.hex2string($2-" "), $5)
+		   ->crypt(String.hex2string($4-" "))]]),
+	  [[String.hex2string($3-" ")]])
 ]])
 
 // AES
-cond_resolv( Nettle.AES_State, [[
-  test_true([[objectp(Nettle.AES_State())]])
-  test_eq([[Nettle.AES_State()
-  	    ->set_encrypt_key(String.hex2string(
-  		  "00010203050607080A0B0C0D0F101112"))
-  	    ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
-  	  [[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
-  
-  test_eq([[Nettle.AES_State()
-  	    ->set_decrypt_key(String.hex2string(
-  		  "14151617191A1B1C1E1F202123242526"))
-  	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
-  	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
+cond_resolv( Nettle.AES, [[
+  test_true([[objectp(Nettle.AES()())]])
+  test_cipher(AES,
+	      "00010203050607080A0B0C0D0F101112",
+	      "506812A45F08C889B97F5980038B8359",
+	      "D8F532538289EF7D06B506A4FD5BE9C9")
+  test_cipher(AES,
+	      "14151617191A1B1C1E1F202123242526",
+	      "5C6D71CA30DE8B8B00549984D2EC7D4B",
+	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
+]])
+
+// ARCTWO
+// Test vectors from RFC 2268.
+cond_resolv( Nettle.ARCTWO, [[
+  test_true([[objectp(Crypto.Arctwo.State())]])
+  test_cipher(ARCTWO,
+	      "0000000000000000",
+	      "0000000000000000",
+	      "ebb773f993278eff",
+	      63)
+  test_cipher(ARCTWO,
+	      "ffffffffffffffff",
+	      "ffffffffffffffff",
+	      "278b27e42e2f0d49",
+	      64)
+  test_cipher(ARCTWO,
+	      "3000000000000000",
+	      "1000000000000001",
+	      "30649edf9be7d2c2",
+	      64)
+  test_cipher(ARCTWO,
+	      "88",
+	      "0000000000000000",
+	      "61a8a244adacccf0",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a",
+	      "0000000000000000",
+	      "6ccf4308974c267f",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384627bafb2",
+	      "0000000000000000",
+	      "1a807d272bbe5db1",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384627bafb2",
+	      "0000000000000000",
+	      "2269552ab0f85ca6",
+	      128)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f 0f79c384627bafb2"
+	      "16f80a6f85920584 c42fceb0be255daf 1e",
+	      "0000000000000000",
+	      "5b78d3a43dfff1f1",
+	      129)
+]])
+
+// CAMELLIA
+// Test vectors from RFC 3713. 128, 192 and 256 bits.
+cond_resolv( Nettle.CAMELLIA, [[
+  test_true([[objectp(Nettle.CAMELLIA()())]])
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "67 67 31 38 54 96 69 73 08 57 06 56 48 ea be 43")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "b4 99 34 01 b3 e9 96 f8 4e e5 ce e7 d7 9b 09 b9")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
+]])
+
+
+dnl From the official ECRYPT project site SVN.
+dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
+dnl 128 bit key, 64 bit IV
+dnl set 1, vector #0
+cond_resolv( Nettle.SALSA20 [[
+  test_any([[
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"));
+    o->set_iv(String.hex2string("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return upper_case(String.string2hex(res));
+  ]], [[ #"
+ 4DFA5E481DA23EA09A31022050859936
+ DA52FCEE218005164F267CB65F5CFD7F
+ 2B4F97E0FF16924A52DF269515110A07
+ F9E460BC65EF95DA58F740B7D1DBB0AA
+ DA9C1581F429E0A00F7D67E23B730676
+ 783B262E8EB43A25F55FB90B3E753AEF
+ 8C6713EC66C51881111593CCB3E8CB8F
+ 8DE124080501EEEB389C4BCB6977CF95
+ 7D5789631EB4554400E1E025935DFA7B
+ 3E9039D61BDC58A8697D36815BF1985C
+ EFDF7AE112E5BB81E37ECF0616CE7147
+ FC08A93A367E08631F23C03B00A8DA2F
+ B375703739DACED4DD4059FD71C3C47F
+ C2F9939670FAD4A46066ADCC6A564578
+ 3308B90FFB72BE04A6B147CBE38CC0C3
+ B9267C296A92A7C69873F9F263BE9703"-"\n"-" "; ]])
+]])
+
+dnl 256 bit key, 64 bit IV
+dnl set 1, vector #0
+cond_resolv( Nettle.SALSA20 [[
+  test_any([[
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(String.hex2string("80000000000000000000000000000000"
+                               "00000000000000000000000000000000"));
+    o->set_iv(String.hex2string("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return upper_case(String.string2hex(res));
+  ]], [[ #"
+ E3BE8FDD8BECA2E3EA8EF9475B29A6E7
+ 003951E1097A5C38D23B7A5FAD9F6844
+ B22C97559E2723C7CBBD3FE4FC8D9A07
+ 44652A83E72A9C461876AF4D7EF1A117
+ 57BE81F47B17D9AE7C4FF15429A73E10
+ ACF250ED3A90A93C711308A74C6216A9
+ ED84CD126DA7F28E8ABF8BB63517E1CA
+ 98E712F4FB2E1A6AED9FDC73291FAA17
+ 958211C4BA2EBD5838C635EDB81F513A
+ 91A294E194F1C039AEEC657DCE40AA7E
+ 7C0AF57CACEFA40C9F14B71A4B3456A6
+ 3E162EC7D8D10B8FFB1810D71001B618
+ 696AFCFD0CDDCC83C7E77F11A649D79A
+ CDC3354E9635FF137E929933A0BD6F53
+ 77EFA105A3A4266B7C0D089D08F1E855
+ CC32B15B93784A36E56A76CC64BC8477"-"\n"-" "; ]])
 ]])
 
 cond_resolv( Nettle.CBC, [[
@@ -158,6 +316,129 @@ cond_resolv( Nettle.CBC, [[
     return String.string2hex(cbc->crypt("0123456789abcdef"));
   ]], "b71a7f6d29d66bd468294ed9cfda2af1")
   
+]])
+
+dnl key, iv, auth, plaintext, crypted, hash
+define(test_gcm, [[
+  test_any([[
+    object o = Nettle.GCM()(Crypto.AES);
+    o->set_encrypt_key(String.hex2string($1-"\n"));
+    o->set_iv(String.hex2string($2-"\n"));
+    o->update(String.hex2string($3-"\n"));
+    return String.string2hex(o->crypt(String.hex2string($4-"\n"))) +
+      "|"+String.string2hex(o->digest());
+    ]], $5-"\n"+"|"+$6)
+]])
+
+cond_resolv( Nettle.GCM, [[
+  test_eq( Nettle.GCM()(Crypto.AES())->block_size(), 16 )
+  test_eq( Nettle.GCM()(Crypto.AES)->block_size(), 16 )
+  test_eq( Nettle.GCM()(Crypto.AES())->key_size(), 0 )
+  test_eq( Nettle.GCM()(Crypto.AES)->key_size(), 0 )
+
+  dnl NIST GCM AES test vectors
+
+  test_any([[
+    object o = Nettle.GCM()(Crypto.AES);
+    o->set_encrypt_key(H("00000000000000000000000000000000"));
+    o->set_iv(H("000000000000000000000000"));
+    return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
+
+dnl 1
+test_gcm("00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"58e2fccefa7e3061367f1d57a4e7455a")
+
+test_gcm("00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"0388dace60b6a392f328c2b971b2fe78",
+"ab6e47d42cec13bdf53a67b21257bddf")
+
+dnl 2
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b391aafd255",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091473f5985",
+"4d5c2af327cd64a62cf35abd2ba6fab4")
+
+dnl 3
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091",
+"5bc94fbc3221a5db94fae95ae7121a47")
+
+dnl 4
+test_gcm("feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"61353b4c2806934a777ff51fa22a4755
+699b2a714fcdc6f83766e5f97b6c7423
+73806900e49f24b22b097544d4896b42
+4989b5e1ebac0f07c23f4598",
+"3612d2e79e3b0785561be14aaca2fccb")
+
+dnl 5
+test_gcm("feffe9928665731c6d6a8f9467308308",
+#"9313225df88406e555909c5aff5269aa
+6a7a9538534f7da1e4c303d2a318a728
+c3c0c95156809539fcf0e2429a6b5254
+16aedbf5a0de6a57a637b39b",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"8ce24998625615b603a033aca13fb894
+be9112a5c3a211a8ba262a3cca7e2ca7
+01e4a9a4fba43c90ccdcb281d48c7c6f
+d62875d2aca417034c34aee5",
+"619cc5aefffe0bfa462af43c1699d050")
+
+dnl 7
+test_gcm(#"00000000000000000000000000000000
+0000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"98e7247c07f0fe411c267e4384b0f600",
+"2ff58d80033927ab8ef4d4587514f0fb")
+
+dnl 14
+test_gcm(#"00000000000000000000000000000000
+00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"cea7403d4d606b6e074ec5d3baf39d18",
+"d0d1c8a799996bf0265b98b5d48ab919")
+
 ]])
 
 cond_resolv( Nettle.Proxy, [[
@@ -275,4 +556,15 @@ dnl From PHP CRYPT_MD5 crypt() example
 test_eq(Nettle.crypt_md5("rasmuslerdorf","rasmusle"), "rISCgZzpwk3UhDidwXvin0")
 dnl From Python passlib.hash.md5_crypt
 test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
+
+// hogweed
+test_eval_error(Nettle.dsa_generate_keypair(1024,1,random_string))
+test_eval_error(Nettle.dsa_generate_keypair(511,160,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,4,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,1,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(88,0x10001,random_string))
+
+test_do( add_constant( "H" ) )
+test_do( add_constant( "S" ) )
+
 END_MARKER

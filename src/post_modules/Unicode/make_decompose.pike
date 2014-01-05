@@ -1,7 +1,7 @@
-#include "hsize.h"
 
-void main()
+void main(int argc, array(string) argv)
 {
+  function write = Stdio.File(argv[2], "wct")->write;
 
   multiset dont = (<
     /* Script Specifics */
@@ -43,7 +43,7 @@ void main()
     return c;
   };
 
-  foreach( Stdio.stdin.read()/"\n", string line )
+  foreach( Stdio.read_file(argv[1])/"\n", string line )
   {
     sscanf( line, "%s#", line );
     if( !sizeof( line ) )
@@ -85,20 +85,8 @@ void main()
   foreach( reverse(sort( indices( decompose ) )), int c )
   {
     write( "{%d,%d,{%d,%d}},\n",  c, compat[c], decompose[c][0], decompose[c][1] );
-//     top[h] = i+1;
-//     i++;
   }
   write( "};\n" );
-
-//   write( "const struct decomp *decomp_hash[] = {\n");
-//   for( int i = 0; i<HSIZE; i++ )
-//     if( top[i] )
-//       write( "_d+"+(top[i]-1)+",\n" );
-//     else
-//       write( "0,\n" );
-//   write( "};\n" );
-
-
 
   write( "static const struct comp _c[] = {\n" );
   top=([]);
@@ -108,18 +96,7 @@ void main()
   {
     int c1 = (int)(c>>32);
     int c2 = (int)(c&0xffffffff);
-//     int h = ((int)((c1<<16)|c2)) % HSIZE;
     write( "{%d,%d,%d},\n", c1, c2, (int)compose[c]);
-//     top[h] = i+1;
-//     i++;
   }
   write( "};\n" );
-
-//   write( "const struct comp *comp_hash[] = {\n");
-//   for( int i = 0; i<HSIZE; i++ )
-//     if( top[i] )
-//       write( "_c+"+(top[i]-1)+",\n" );
-//     else
-//       write( "0,\n" );
-//   write( "};\n" );
 }

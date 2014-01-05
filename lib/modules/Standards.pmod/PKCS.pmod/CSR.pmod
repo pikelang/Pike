@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Standards.ASN1.Types) && constant(Crypto.RSA)
+#if constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 
@@ -19,15 +19,14 @@ Sequence build_csr(Crypto.RSA rsa, object name,
 		   mapping(string:array(object)) attributes)
 {
   Sequence info = Sequence( ({ Integer(0), name,
-			       .RSA.build_rsa_public_key(rsa),
+			       .RSA.build_public_key(rsa),
 			       CSR_Attributes(.Identifiers.attribute_ids,
 					      attributes) }) );
   return Sequence( ({ info,
 		      Sequence(
 			       ({ .Identifiers.rsa_md5_id, Null() }) ),
-		      BitString(rsa->sign(info->get_der(),
-					  Crypto.MD5)
-				->digits(256)) }) );
+		      BitString(rsa->pkcs_sign(info->get_der(),
+                                               Crypto.MD5)) }) );
 }
 
 #if 0

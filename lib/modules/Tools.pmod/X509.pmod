@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 //#pragma strict_types
+#pragma no_deprecation_warnings
 
-/* 
- * Some random functions for creating RFC-2459 style X.509 certificates.
- *
- */
+//! Functions to generate and validate RFC2459 style X.509 v3
+//! certificates.
+//! @deprecated Standards.X509
 
 constant dont_dump_module = 1;
 
@@ -43,7 +43,7 @@ constant CERT_UNAUTHORIZED_CA = 7;
 
 //! Creates a @[Standards.ASN1.Types.UTC] object from the posix
 //! time @[t].
-UTC make_time(int t)
+__deprecated__ UTC make_time(int t)
 {
   object /*Calendar.Second*/ second = Calendar["Second"](t)->set_timezone("UTC");
 
@@ -69,7 +69,7 @@ UTC make_time(int t)
 //!     @member int "min"
 //!     @member int "sec"
 //!   @endmapping
-mapping(string:int) parse_time(UTC asn1)
+__deprecated__ mapping(string:int) parse_time(UTC asn1)
 {
   if ((asn1->type_name != "UTCTime")
       || (sizeof(asn1->value) != 13))
@@ -110,7 +110,7 @@ mapping(string:int) parse_time(UTC asn1)
 
 //! Comparision function between two "date" mappings of the
 //! kind that @[parse_time] returns.
-int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
+__deprecated__ int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
 {
   foreach( ({ "year", "mon", "mday", "hour", "min", "sec" }), string name)
     if (t1[name] < t2[name])
@@ -136,7 +136,7 @@ Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
 Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
 
 //!
-Sequence make_tbs(object issuer, object algorithm,
+__deprecated__ Sequence make_tbs(object issuer, object algorithm,
 		object subject, object keyinfo,
 		object serial, int ttl,
 		array extensions)
@@ -186,7 +186,7 @@ Sequence make_tbs(object issuer, object algorithm,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
-string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
+__deprecated__ string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
 		    Sequence subject, string public_key,
 		    int serial, int ttl, array|void extensions)
 {
@@ -203,20 +203,20 @@ string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
 }
 
 //!
-string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
+__deprecated__ string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
 				       array|void extensions)
 {
   int serial =
     (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(name);
 
   return dsa_sign_key(dn, dsa, dn, DSA.public_key(dsa),
 		      serial, ttl, extensions);
 }
 
 //!
-string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
+__deprecated__ string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
 {
   Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
 				      OctetString(digest) }) );
@@ -224,7 +224,7 @@ string rsa_sign_digest(Crypto.RSA rsa, object digest_id, string digest)
 }
 
 //!
-int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
+__deprecated__ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 		      string digest, string s)
 {
   Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
@@ -257,7 +257,7 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
-string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
+__deprecated__ string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
 		    Sequence subject, string public_key,
 		    int serial, int ttl, array|void extensions)
 {
@@ -275,13 +275,13 @@ string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
 }
 
 //!
-string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
+__deprecated__ string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
 				       array|void extensions)
 {
   int serial =
     (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(name);
 
   return rsa_sign_key(dn, rsa, dn, RSA.public_key(rsa),
 		      serial, ttl, extensions);
@@ -291,6 +291,7 @@ class Verifier {
   constant type = "none";
   int(0..1) verify(object,string,string);
   this_program init(string key);
+  __deprecated__ void create() { }
 
   optional Crypto.RSA rsa; // Ugly
 }
@@ -347,7 +348,7 @@ class dsa_verifier
 #endif
 
 //!
-Verifier make_verifier(Object _keyinfo)
+__deprecated__ Verifier make_verifier(Object _keyinfo)
 {
   if( _keyinfo->type_name != "SEQUENCE" )
     return 0;
@@ -424,6 +425,8 @@ class TBSCertificate
   //! optional
   object extensions;
 
+  __deprecated__ void create() { }
+
   //!
   this_program init(Object asn1)
   {
@@ -467,13 +470,13 @@ class TBSCertificate
 
     algorithm = a[1];
 
-    X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+    X509_WERR("TBSCertificate: algorithm = %O\n", algorithm);
 
     if (a[2]->type_name != "SEQUENCE")
       return 0;
     issuer = a[2];
 
-    X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
+    X509_WERR("TBSCertificate: issuer = %O\n", issuer);
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]->elements) != 2))
@@ -497,7 +500,7 @@ class TBSCertificate
       return 0;
     subject = a[4];
 
-    X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+    X509_WERR("TBSCertificate: keyinfo = %O\n", a[5]);
       
     public_key = make_verifier(a[5]);
 
@@ -544,7 +547,7 @@ class TBSCertificate
 }
 
 //!
-TBSCertificate decode_certificate(string|object cert)
+__deprecated__ TBSCertificate decode_certificate(string|object cert)
 {
   if (stringp (cert)) cert = Standards.ASN1.Decode.simple_der_decode(cert);
 
@@ -575,7 +578,7 @@ TBSCertificate decode_certificate(string|object cert)
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
-TBSCertificate verify_certificate(string s, mapping authorities)
+__deprecated__ TBSCertificate verify_certificate(string s, mapping authorities)
 {
   object cert = Standards.ASN1.Decode.simple_der_decode(s);
 
@@ -637,7 +640,7 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
-mapping verify_certificate_chain(array(string) cert_chain,
+__deprecated__ mapping verify_certificate_chain(array(string) cert_chain,
 				 mapping authorities, int|void require_trust)
 {
 

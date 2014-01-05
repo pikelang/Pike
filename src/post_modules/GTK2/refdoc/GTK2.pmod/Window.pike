@@ -24,7 +24,6 @@
 //! int skip-pager-hint
 //! int skip-taskbar-hint
 //! string title
-//! GTK2.Window transient-for
 //! int type @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL]
 //! int type-hint @[GDK_WINDOW_TYPE_HINT_DESKTOP], @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_DOCK], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL], @[GDK_WINDOW_TYPE_HINT_SPLASHSCREEN], @[GDK_WINDOW_TYPE_HINT_TOOLBAR] and @[GDK_WINDOW_TYPE_HINT_UTILITY]
 //! int urgency-hint
@@ -85,7 +84,7 @@ GTK2.Window begin_resize_drag( int edge, int button, int root_x, int root_y, int
 //!
 //!
 
-static GTK2.Window create( int|mapping props );
+protected GTK2.Window create( int|mapping props );
 //! Argument is one of @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL], or a mapping of allowed properties.
 //!
 //!

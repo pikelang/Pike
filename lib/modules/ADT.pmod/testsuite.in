@@ -318,9 +318,10 @@ test_any([[
     Item c = Long(0x12345678);
     Item d = Gnol(0x12345678);
     Item e = uint64();
+    Item f = int32();
   };
   return (string)Test();
-]], "\22""44\22\22""4VxxV4\22\0\0\0\0\0\0\0\0");
+]], "\22""44\22\22""4VxxV4\22\0\0\0\0\0\0\0\0\0\0\0\0");
 test_do([[
   class Test {
     inherit ADT.Struct;
@@ -419,4 +420,12 @@ test_eval_error([[
   s->get_rest();
   s->get_fix_string(1);
 ]])
+
+test_any([[
+  object s=ADT.struct("hej");
+  string r = "x" + sizeof(s);
+  s->get_uint(3);
+  return r + ":" + sizeof(s);
+]], "x3:0")
+
 END_MARKER

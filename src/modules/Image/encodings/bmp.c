@@ -466,6 +466,9 @@ void img_bmp_encode(INT32 args)
 	 s++;
 	 if (!l--)
 	 {
+#ifdef USE_VALGRIND
+	    MEMSET(c, 0, skip);
+#endif
 	    c+=skip;
 	    l=img->xsize-1;
 	 }

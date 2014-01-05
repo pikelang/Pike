@@ -11,6 +11,7 @@
 #include "gc.h"
 #include "fd_control.h"
 #include "dmalloc.h"
+#include "block_allocator.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -23,6 +24,8 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+
+#include <stdlib.h>
 
 #include <errno.h>
 
@@ -184,95 +187,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-
-/* MLEN is the length of the longest prefix of A to use for hashing.
- * (If A is longer then additionally some bytes at the end are
- * included.)
- *
- * KEY is a value that is mixed into the hash to avoid it being
- * precomputable (cf the #hashdos vulnerability of December 2011).
- */
-/* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN, KEY)		\
-  do {							\
-    const unsigned char *a = A;				\
-    size_t len = LEN;					\
-    size_t mlen = MLEN;					\
-    size_t ret;						\
-    size_t key = KEY;					\
-  							\
-    ret = 9248339*len;					\
-    if(len<=mlen)					\
-      mlen=len;						\
-    else						\
-    {							\
-      switch(len-mlen)					\
-      {							\
-  	default: ret^=(ret<<6) + a[len-7];		\
-  	case 7:						\
-  	case 6: ret^=(ret<<7) + a[len-5];		\
-  	case 5:						\
-  	case 4: ret^=(ret<<4) + a[len-4];		\
-  	case 3: ret^=(ret<<3) + a[len-3];		\
-  	case 2: ret^=(ret<<3) + a[len-2];		\
-  	case 1: ret^=(ret<<3) + a[len-1];		\
-      }							\
-    }							\
-    ret ^= key;						\
-    a += mlen & 7;					\
-    switch(mlen&7)					\
-    {							\
-      case 7: ret^=a[-7];				\
-      case 6: ret^=(ret<<4)+a[-6];			\
-      case 5: ret^=(ret<<7)+a[-5];			\
-      case 4: ret^=(ret<<6)+a[-4];			\
-      case 3: ret^=(ret<<3)+a[-3];			\
-      case 2: ret^=(ret<<7)+a[-2];			\
-      case 1: ret^=(ret<<5)+a[-1];			\
-    }							\
-  							\
-    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
-      {							\
-  	size_t *b;					\
-  	b=(size_t *)a;					\
-    							\
-  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
-  	{						\
-  	  ret^=(ret<<7)+*(b++);				\
-  	  ret^=(ret>>6)+*(b++);				\
-	  ret^=key;					\
-  	}						\
-      }							\
-    ,							\
-      for(mlen >>= 3; mlen--;)				\
-      {							\
-  	register size_t t1;				\
-  	register size_t t2;				\
-  	t1= a[0];					\
-  	t2= a[1];					\
-  	t1=(t1<<5) + a[2];				\
-  	t2=(t2<<4) + a[3];				\
-  	t1=(t1<<7) + a[4];				\
-  	t2=(t2<<5) + a[5];				\
-  	t1=(t1<<3) + a[6];				\
-  	t2=(t2<<4) + a[7];				\
-  	a += 8;						\
-  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
-	ret^=key;					\
-      }							\
-    )							\
-  							\
-    RET = ret;						\
-  } while(0)
+#include "siphash24.c"
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
@@ -352,88 +267,102 @@ pointless, since gcc will use other sse4 instructions when suitable.
 __attribute__((target("sse4")))
 #endif
 __attribute__((hot))
-__attribute__((target("sse4,arch=core2")))
-  static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
-					       size_t nbytes, size_t key )
+static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
+					     size_t nbytes, size_t key )
 {
-    unsigned int h = len;
-    const unsigned int *p = s;
-    if( nbytes >= len )
-    {
-        /* Hash the whole memory area */
-        const unsigned int *e = p + (len>>2);
-        const unsigned char *c = (const unsigned char*)e;
+  unsigned int h = len;
+  const unsigned int *p = s;
 
-        /* .. all full integers .. */
-        while( p<e ) {
-	    CRC32SI(h, p++ );
-	    h ^= key;
-	}
+  if( key )
+      return low_hashmem_siphash24(s,len,nbytes,key);
 
-        len &= 3;
+  if( nbytes >= len )
+  {
+    /* Hash the whole memory area */
+    const unsigned int *e = p + (len>>2);
+    const unsigned char *c = (const unsigned char*)e;
 
-        /* any remaining bytes. */
-        while( len-- )
-            CRC32SQ( h, c++ );
-        return h ^ key;
+    /* .. all full integers .. */
+    while( p<e ) {
+      CRC32SI(h, p++ );
     }
-    else
-    {
-        const unsigned int *e = p+(nbytes>>2);
+
+    len &= 3;
+
+    /* any remaining bytes. */
+    while( len-- )
+      CRC32SQ( h, c++ );
+    return h;
+  }
+  else
+  {
+    const unsigned int *e = p+(nbytes>>2);
 #ifdef PIKE_DEBUG
-        /*
-           This code makes assumputions that is not true if nbytes & 3 is true.
+    /*
+      This code makes assumputions that is not true if nbytes & 3 is true.
 
-           Specifically, it will not read enough (up to 3 bytes too
-           little) in the first loop.
+      Specifically, it will not read enough (up to 3 bytes too
+      little) in the first loop.
 
-           Also, if nbytes < 8 the end CRC32SI will read too much.
+      Also, if nbytes < 32 the unroll assumptions do not hold
 
-           This could easily be fixed, but all calls to hashmem tends
-           to use either power-of-two values or the length of the
-           whole memory area.
-        */
-        if( nbytes & 3 )
-            Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
-        if( nbytes < 8 )
-            Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
+      This could easily be fixed, but all calls to hashmem tend
+      to use either power-of-two values or the length of the
+      whole memory area.
+    */
+    if( nbytes & 3 )
+      Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
+    if( nbytes < 32 )
+      Pike_fatal("do_hash_ia32_crc32: nbytes is less than 32.\n");
 #endif
-        while( p<e ) {
-            CRC32SI(h,p++);
-	    h ^= key;
-	}
-
-        /* include 8 bytes from the end. Note that this might be a
-         * duplicate of the previous bytes.
-         *
-         * Also note that this means we are rather likely to read
-         * unaligned memory.  That is OK, however.
-         */
-        e = (const unsigned int *)((const unsigned char *)s+len-8);
-        CRC32SI(h,e++);
-        CRC32SI(h,e);
+    while( p+7 < e )
+    {
+      CRC32SI(h,&p[0]);
+      CRC32SI(h,&p[1]);
+      CRC32SI(h,&p[2]);
+      CRC32SI(h,&p[3]);
+      CRC32SI(h,&p[4]);
+      CRC32SI(h,&p[5]);
+      CRC32SI(h,&p[6]);
+      CRC32SI(h,&p[7]);
+      p+=8;
     }
-    h ^= key;
+#if 0
+    while( p+3 < e )
+    {
+      CRC32SI(h,&p[0]);
+      CRC32SI(h,&p[1]);
+      CRC32SI(h,&p[2]);
+      CRC32SI(h,&p[3]);
+      p+=4;
+    }
+    while( p+1 < e )
+    {
+      CRC32SI(h,&p[0]);
+      CRC32SI(h,&p[1]);
+      p+=2;
+    }
+    while( p<e ) {
+      CRC32SI(h,p++);
+    }
+#endif
+    /* include 8 bytes from the end. Note that this might be a
+     * duplicate of the previous bytes.
+     *
+     * Also note that this means we are rather likely to read
+     * unaligned memory.  That is OK, however.
+     */
+    e = (const unsigned int *)((const unsigned char *)s+len-8);
+    CRC32SI(h,e++);
+    CRC32SI(h,e);
+  }
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
      */
-    return (((size_t)h)<<32) | h;
+  return (((size_t)h)<<32) | h;
 #endif
-    return h;
-}
-
-#ifdef __i386__
-__attribute__((fastcall))
-#endif
-__attribute__((hot))
-  static size_t low_hashmem_generic(const void *a, size_t len_,
-				    size_t mlen_, size_t key_)
-{
-    const unsigned char*a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
-    return ret_;
+  return h;
 }
 
 #ifdef __i386__
@@ -446,7 +375,7 @@ static void init_hashmem()
   if( supports_sse42() )
     low_hashmem = low_hashmem_ia32_crc32;
   else
-    low_hashmem = low_hashmem_generic;
+    low_hashmem = low_hashmem_siphash24;
 }
 #else
 static void init_hashmem(){}
@@ -454,10 +383,7 @@ static void init_hashmem(){}
 ATTRIBUTE((hot))
   size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
 {
-    const unsigned char *a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
-    return ret_;
+    return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
 #endif
 
@@ -506,6 +432,24 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 
   Pike_error(msg_out_of_mem_2, n*s);
   return 0;
+}
+
+PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) {
+    void * ret;
+
+    if (!size) return 0;
+
+#ifdef HAVE_POSIX_MEMALIGN
+    if (posix_memalign(&ret, alignment, size)) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+#else
+    if ((ret = memalign(alignment, size)) == NULL) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+#endif
+
+    return ret;
 }
 
 PMOD_EXPORT char *debug_xstrdup(const char *src)
@@ -1476,13 +1420,6 @@ void *fake_calloc(size_t x, size_t y)
 static struct memhdr *my_find_memhdr(void *, int);
 static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
-#include "block_alloc_h.h"
-
-BLOCK_ALLOC_FILL_PAGES(memloc, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a);
-
-#include "block_alloc.h"
 
 int verbose_debug_malloc = 0;
 int debug_malloc_check_all = 0;
@@ -1554,7 +1491,19 @@ struct memloc
 #define MEM_TRACE			64
 #define MEM_SCANNED			128
 
-BLOCK_ALLOC_FILL_PAGES(memloc, 64)
+static struct block_allocator memloc_allocator = BA_INIT_PAGES(sizeof(struct memloc), 64);
+
+static struct memloc * alloc_memloc() {
+    return ba_alloc(&memloc_allocator);
+}
+
+static void really_free_memloc(struct memloc * ml) {
+    ba_free(&memloc_allocator, ml);
+}
+
+void count_memory_in_memlocs(size_t * n, size_t * s) {
+    ba_count_all(&memloc_allocator, n, s);
+}
 
 struct memhdr
 {
@@ -1751,6 +1700,8 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
   return l;
 }
 
+#include "block_alloc.h"
+
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
 
@@ -1804,6 +1755,7 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #define BLOCK_ALLOC_HSIZE_SHIFT 1
+
 PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
 
 #undef INIT_BLOCK
@@ -2191,6 +2143,15 @@ static void flush_blocks_to_free(void)
       real_free( ((char *)p) - DEBUG_MALLOC_PAD );
     }
   }
+}
+
+MALLOC_FUNCTION
+PMOD_EXPORT void * system_malloc(size_t n) {
+    return real_malloc(n);
+}
+
+PMOD_EXPORT void system_free(void * p) {
+    real_free(p);
 }
 
 PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
@@ -2978,9 +2939,6 @@ static void initialize_dmalloc(void)
 #ifdef DMALLOC_REMEMBER_LAST_LOCATION
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
-    init_memloc_blocks();
-    init_memory_map_blocks();
-    init_memory_map_entry_blocks();
     init_memhdr_hash();
     MEMSET(mlhash, 0, sizeof(mlhash));
 
@@ -2997,16 +2955,6 @@ static void initialize_dmalloc(void)
 #else
     mt_init(&debug_malloc_mutex);
 #endif
-
-    /* NOTE: th_atfork() may be a simulated function, which
-     *       utilizes callbacks. We thus need to initialize
-     *       the callback blocks before we perform the call
-     *       to th_atfork().
-     */
-    {
-      extern void init_callback_blocks(void);
-      init_callback_blocks();
-    }
 
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
@@ -3342,8 +3290,34 @@ struct memory_map_entry
   struct memory_map *recur;
 };
 
-BLOCK_ALLOC_FILL_PAGES(memory_map, 8)
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, 16)
+static struct block_allocator memory_map_allocator = BA_INIT_PAGES(sizeof(struct memory_map), 8);
+
+static struct memory_map * alloc_memory_map() {
+    return ba_alloc(&memory_map_allocator);
+}
+
+static void really_free_memory_map(struct memory_map * m) {
+    ba_free(&memory_map_allocator, m);
+}
+
+void count_memory_in_memory_maps(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_allocator, n, s);
+}
+
+static struct block_allocator memory_map_entry_allocator
+    = BA_INIT_PAGES(sizeof(struct memory_map_entry), 16);
+
+static struct memory_map_entry * alloc_memory_map_entry() {
+    return ba_alloc(&memory_map_entry_allocator);
+}
+
+static void really_free_memory_map_entry(struct memory_map_entry * m) {
+    ba_free(&memory_map_entry_allocator, m);
+}
+
+void count_memory_in_memory_map_entrys(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_entry_allocator, n, s);
+}
 
 void dmalloc_set_mmap(void *ptr, struct memory_map *m)
 {
@@ -3490,10 +3464,9 @@ static void cleanup_debug_malloc(void)
 {
   size_t i;
 
-  free_all_memloc_blocks();
+  ba_destroy(&memloc_allocator);
+  ba_destroy(&memory_map_allocator);
   exit_memhdr_hash();
-  free_all_memory_map_blocks();
-  free_all_memory_map_entry_blocks();
 
   for (i = 0; i < DSTRHSIZE; i++) {
     struct dmalloc_string *str = dstrhash[i], *next;

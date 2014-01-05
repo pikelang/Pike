@@ -280,13 +280,13 @@ static void f_match(INT32 args)
   push_string(make_shared_binary_string( retval, retlen ));
 }
 
-static void init_yp_struct( struct object *o )
+static void init_yp_struct( struct object *UNUSED(o) )
 {
   this->domain = 0;
   this->last_size = 0;
 }
 
-static void exit_yp_struct( struct object *o )
+static void exit_yp_struct( struct object *UNUSED(o) )
 {
   if(this->domain)
   {

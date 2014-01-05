@@ -269,9 +269,9 @@ static void image_png___decode(INT32 args)
 		   int_from_32bit(data+x) );
       else
 	 push_int(0);
-      if (x+4>len) break;
       f_aggregate(3);
       n++;
+      if (x+4>len) break;
       len-=x+4;
       data+=x+4;
    }
@@ -806,7 +806,7 @@ static int _png_write_rgb(rgb_group *w1,
 			i-=4;
 			if (x)
 			{
-			   int m=((*s)>>i)&3;
+			   int m=((*s)>>i)&15;
 			   x--;
 			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
 			   if (m>=trns->len)

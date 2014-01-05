@@ -14,7 +14,7 @@ class Target
 int c = 2000;
 int n = 150;
 
-void perform()
+int perform()
 {
   array waster = allocate( c );
   for( int i = 0 ; i<c; i++ )
@@ -26,4 +26,6 @@ void perform()
 
   for( int i = 0; i<n; i++ )
     gc();
+
+  return n;
 }

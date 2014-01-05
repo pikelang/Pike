@@ -19,6 +19,7 @@
 //! int extension-events (@[GDK_EXTENSION_EVENTS_ALL], @[GDK_EXTENSION_EVENTS_CURSOR] and @[GDK_EXTENSION_EVENTS_NONE])
 //! int has-default
 //! int has-focus
+//! int has-tooltip
 //! int height-request
 //! int is-focus
 //! string name
@@ -27,6 +28,8 @@
 //! int receives-default
 //! int sensitive
 //! GTK2.Style style
+//! string tooltip-markup
+//! string tooltip-text
 //! int visible
 //! int width-request
 //! 
@@ -539,6 +542,9 @@ GTK2.Widget get_toplevel( );
 //! widget is a part of.  If this widget has no parent widgets, it will be
 //! returned as the topmost widget.
 //!
+//!
+
+GTK2.GdkWindow get_window( );
 //!
 
 GTK2.Widget grab_default( );

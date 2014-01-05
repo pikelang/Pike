@@ -17,11 +17,11 @@
 //
 // some necessary setup activities for systems that provide filesystem event monitoring
 //
-#if constant(Public.System.FSEvents.EventStream)
+#if constant(System.FSEvents.EventStream)
 #define HAVE_EVENTSTREAM 1
 #endif
 
-#if constant(Public.System.___Inotify)
+#if constant(System.Inotify)
 #define HAVE_INOTIFY 1
 #endif
 
@@ -265,12 +265,12 @@ protected class Monitor(string path,
     eventstream->start();
 #elseif HAVE_INOTIFY
   wd = instance->add_watch(path,
-		Inotify.IN_MOVED_FROM | Inotify.IN_UNMOUNT | 
-                Inotify.IN_MOVED_TO | Inotify.IN_MASK_ADD | 
-                Inotify.IN_MOVE_SELF | Inotify.IN_DELETE | 
-		Inotify.IN_MOVE | Inotify.IN_MODIFY | 
-                Inotify.IN_ATTRIB | Inotify.IN_DELETE_SELF | 
-                Inotify.IN_CREATE);
+		System.Inotify.IN_MOVED_FROM | System.Inotify.IN_UNMOUNT |
+                System.Inotify.IN_MOVED_TO | System.Inotify.IN_MASK_ADD |
+                System.Inotify.IN_MOVE_SELF | System.Inotify.IN_DELETE |
+		System.Inotify.IN_MOVE | System.Inotify.IN_MODIFY |
+                System.Inotify.IN_ATTRIB | System.Inotify.IN_DELETE_SELF |
+                System.Inotify.IN_CREATE);
 #endif
   }
 
@@ -410,11 +410,24 @@ protected class Monitor(string path,
 
   //! Bump the monitor to an earlier scan time.
   //!
+  //! @param flags
+  //!   @int
+  //!     @value 0
+  //!       Don't recurse.
+  //!     @value 1
+  //!       Check all monitors for the entire subtree.
+  //!   @endint
+  //!
   //! @param seconds
-  //!   Number of seconds to bump. Defaults to @expr{30@}.
-  void bump(int|void flags, int|void seconds)
+  //!   Number of seconds from now to run next scan. Defaults to
+  //!   half of the remaining interval.
+  void bump(MonitorFlags|void flags, int|void seconds)
   {
-    next_poll -= seconds || 30;
+    int now = time(1);
+    if (seconds)
+      next_poll = now + seconds;
+    else if (next_poll > now)
+      next_poll -= (next_poll - now) / 2;
     monitor_queue->adjust(this);
 
     if ((flags & MF_RECURSE) && st->isdir && files) {
@@ -440,18 +453,14 @@ protected class Monitor(string path,
   {
     int delta = max_dir_check_interval || global::max_dir_check_interval;
     this_program::st = st;
-    if (!st || !st->isdir) {
-      delta *= file_interval_factor || global::file_interval_factor;
-    }
-    if (!next_poll) {
-      // Attempt to distribute polls evenly at startup.
-      delta = 1 + random(delta);
-    }
+    
     if (st) {
-      int d = 1 + ((time(1) - st->mtime)>>8);
-      if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
-      if (d < delta) delta = d;
-      d = 1 + ((time(1) - st->ctime)>>8);
+      //  Start with a delta proportional to the time since mtime/ctime,
+      //  but bound this to the max setting. A stat in the future will be
+      //  adjusted to the max interval.
+      int d =
+	(stable_time || global::stable_time) +
+	((time(1) - max(st->mtime, st->ctime)) >> 2);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
     }
@@ -461,7 +470,15 @@ protected class Monitor(string path,
       d >>= 1;
       if (d < 0) d = 1;
       if (d < delta) delta = d;
+    } else if (!st || !st->isdir) {
+      delta *= file_interval_factor || global::file_interval_factor;
     }
+    
+    if (!next_poll) {
+      // Attempt to distribute polls evenly at startup.
+      delta = 1 + random(delta);
+    }
+    
     next_poll = time(1) + (delta || 1);
     monitor_queue->adjust(this);
   }
@@ -709,6 +726,7 @@ protected class Monitor(string path,
 	  }
 	}
       }
+      update(st);
       return 1;
     } else {
       return 0;
@@ -720,14 +738,17 @@ protected class Monitor(string path,
 	/* (st->ctime != old_st->ctime) || */
 	(st->size != old_st->size)) {
       last_change = time(1);
+      update(st);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
     } else if (last_change < time(1) - (stable_time || global::stable_time)) {
       last_change = 0x7fffffff;
       stable_data_change(path, st);
       return 1;
-    } else if (st->isdir && status_change(old_st, st, orig_flags, flags)) {
+    } else if (last_change != 0x7fffffff &&
+	       st->isdir && status_change(old_st, st, orig_flags, flags)) {
       // Directory not stable yet.
       last_change = time(1);
+      update(st);
       return 1;
     }
     return 0;
@@ -779,8 +800,9 @@ protected void create(int|void max_dir_check_interval,
 #if HAVE_EVENTSTREAM
   eventstream->callback_func = eventstream_callback;
 #elseif HAVE_INOTIFY
-  instance = Inotify._Instance();
-  file = Stdio.File(instance->get_fd(), "r");
+  instance = System.Inotify._Instance();
+  file = Stdio.File();
+  file->assign(instance->fd());
   file->set_nonblocking();
   file->set_read_callback(inotify_parse);
 #endif

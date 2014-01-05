@@ -17,86 +17,103 @@ inherit System._Inotify;
 string describe_mask(int mask) {
     array(string) list = ({});
 
-    foreach (indices(this_program);; string name) {
+    foreach (sort(indices(this_program));; string name) {
 	if (has_prefix(name, "IN_")) {
 	    int value = `[](this_program, name);
 
-	    if (value & mask) list += ({ name });
+	    if (value == (value & mask)) list += ({ name });
 	}
     }
 
     return list * "|";
 }
 
-//! More convenient interface to inotify(7). Automatically reads events
-//! from the inotify file descriptor and parses them.
-//!
-class Instance {
-    protected object instance;
-    protected Stdio.File file;
+class Watch {
+    string name;
+    function(int, int, string, mixed ...:void) callback;
+    int mask;
+    array extra;
 
-    class Watch {
-	string name;
-	function(int, int, string, mixed ...:void) callback;
-	int mask;
-	array extra;
-
-	void create(string name, int mask,
-		    function(int, int, string, mixed ...:void) callback,
-		    array extra) {
-	    this_program::name = name;
-	    this_program::mask = mask;
-	    this_program::callback = callback;
-	    this_program::extra = extra;
-	}
+    void create(string name, int mask,
+		function(int, int, string, mixed ...:void) callback,
+		array extra) {
+	this_program::name = name;
+	this_program::mask = mask;
+	this_program::callback = callback;
+	this_program::extra = extra;
     }
+}
 
-    class DirWatch {
-	inherit Watch;
+class DirWatch {
+    inherit Watch;
 
-	void handle_event(int wd, int mask, int cookie,
-			  int|string name) {
-	    if (name) {
-		name = (has_suffix(this_program::name, "/")
-			? this_program::name
-			: (this_program::name+"/")) + name;
-	    } else {
-		name = this_program::name;
-	    }
-
-	    callback(mask, cookie, name, @extra);
+    void handle_event(int wd, int mask, int cookie,
+		      int|string name) {
+	if (name) {
+	    name = (has_suffix(this_program::name, "/")
+		    ? this_program::name
+		    : (this_program::name+"/")) + name;
+	} else {
+	    name = this_program::name;
 	}
+
+	callback(mask, cookie, name, @extra);
     }
+}
 
-    class FileWatch {
-	inherit Watch;
+class FileWatch {
+    inherit Watch;
 
-	void handle_event(int wd, int mask, int cookie,
-			  int|string name) {
-	    callback(mask, cookie, this_program::name, @extra);
-	}
+    void handle_event(int wd, int mask, int cookie,
+		      int|string name) {
+	callback(mask, cookie, this_program::name, @extra);
     }
+}
 
-    mapping(int:object) watches = ([]);
-
+// The reason for this extra indirection is to remove
+// cyclic references from the Instance class to make
+// sure inotify instances are destructed when they go out of
+// external references. This would not be happening otherwise
+// since File objects still have references from the backend.
+function parse_fun(mapping watches) {
     void parse(mixed id, string data) {
 	while (sizeof(data)) {
 	    array a = parse_event(data);
 	    object watch;
 
 	    if (watch = watches[a[0]]) {
+		if (a[1] == IN_IGNORED) {
+		    m_delete(watches, a[0]);
+		}
 		watch->handle_event(a[0], a[1], a[2], a[3]);
 	    }
 
 	    data = data[a[4]..];
 	}
-    }
+    };
+    return parse;
+}
+
+//! More convenient interface to inotify(7). Automatically reads events
+//! from the inotify file descriptor and parses them.
+//!
+//! @note
+//!	Objects of this class will be destructed when they go out of external
+//!	references. As such they behave differently from other classes which use
+//!	callbacks, e.g. @[Stdio.File].
+//! @note
+//!	The number of inotify instances is limited by ulimits.
+class Instance {
+    protected object instance;
+    protected Stdio.File file;
+    protected mapping(int:object) watches = ([]);
 
     void create() {
 	instance = _Instance();
-	file = Stdio.File(instance->get_fd(), "r");
+	file = Stdio.File();
+	file->assign(instance->fd());
 	file->set_nonblocking();
-	file->set_read_callback(parse);
+	file->set_read_callback(parse_fun(watches));
     }
 
      //! Add a watch for a certain file and a set of events specified by
@@ -152,6 +169,16 @@ class Instance {
 
 	m_delete(watches, wd);
 	instance->rm_watch(wd);
+    }
+
+    void destroy() {
+	file->set_read_callback(0);
+	/*
+	 * closing the last copy of an inotify fd currently takes a long time (~100ms).
+	 * make sure to close the file first, to allow releasing the interpreter lock
+	 * during the last close call in the instance EXIT handler.
+	 */
+	file->close();
     }
 }
 #endif

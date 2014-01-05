@@ -1055,6 +1055,14 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
     {
       int long1=long_value(file->read(4), order);
       int long2=long_value(file->read(4), order);
+      if (!long2) {
+	if (long1 < 0) {
+	  tags[tag_name] = "-Inf";
+	} else {
+	  tags[tag_name] = "Inf";
+	}
+	continue;
+      }
       switch(tag_format)
       {
   	case "BIAS":

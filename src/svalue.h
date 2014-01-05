@@ -116,25 +116,33 @@ struct svalue
 */
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
-#define PIKE_T_ARRAY 0
-#define PIKE_T_MAPPING 1
-#define PIKE_T_MULTISET 2
-#define PIKE_T_OBJECT 3
-#define PIKE_T_FUNCTION 4
-#define PIKE_T_PROGRAM 5
-#define PIKE_T_STRING 6
-#define PIKE_T_TYPE 7
-#define PIKE_T_INT 8
-#define PIKE_T_FLOAT 9
+/* The native types.
+ *
+ * Note that PIKE_T_INT is zero so that cleared memory
+ * is filled with zeroes.
+ */
+#define PIKE_T_INT 0
+#define PIKE_T_FLOAT 1
+
+/* NB: The reference counted types all have bit 4 set. */
+#define PIKE_T_ARRAY 8
+#define PIKE_T_MAPPING 9
+#define PIKE_T_MULTISET 10
+#define PIKE_T_OBJECT 11
+#define PIKE_T_FUNCTION 12
+#define PIKE_T_PROGRAM 13
+#define PIKE_T_STRING 14
+#define PIKE_T_TYPE 15
 
 /* The types above are valid types in svalues.
  * The following are only used by the internal systems.
  */
 
-#define PIKE_T_ZERO  14	/**< Can return 0, but nothing else */
+/* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
+#define PIKE_T_ZERO  6	/**< Can return 0, but nothing else */
 
 
-#define T_UNFINISHED 15
+#define T_UNFINISHED 7
 
 #define T_VOID       16 /**< Can't return any value. Also used on stack to fill out the second
  * svalue on an lvalue when it isn't used. */
@@ -200,6 +208,10 @@ struct svalue
 #define T_MULTISET_DATA 10003
 #define T_STRUCT_CALLABLE 10004
 
+/* NOTE: The t* macros below currently use the old type encoding
+ *       to be compatible with __parse_pike_type() in older
+ *       versions of Pike.
+ */
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
 #define tMap(IND,VAL) "\001" IND VAL
@@ -252,6 +264,7 @@ struct svalue
 #define tInt_10 "\010\377\377\377\377\000\000\000\000"
 #define tInt_11 "\010\377\377\377\377\000\000\000\001"
 #define tByte "\010\000\000\000\000\000\000\000\377"
+#define tWord "\010\000\000\000\000\000\000\377\377"
 #define tFlt "\011"
 #define tFloat "\011"
 
@@ -324,12 +337,12 @@ struct svalue
 #define BIT_VOID (1 << T_VOID)
 
 /** This is used in typechecking to signify that the rest of the
- * arguments has to be of this type.
+ * arguments have to be of this type.
  */
 #define BIT_MANY (1 << T_MANY)
 
 #define BIT_NOTHING 0
-#define BIT_MIXED 0x7fff
+#define BIT_MIXED 0xff7f
 #define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING|BIT_TYPE)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_MULTISET|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING|BIT_FUNCTION)
 #define BIT_CALLABLE (BIT_FUNCTION|BIT_PROGRAM|BIT_ARRAY|BIT_OBJECT)
@@ -337,10 +350,12 @@ struct svalue
 
 /* Max type which contains svalues */
 #define MAX_COMPLEX PIKE_T_PROGRAM
-/* Max type with ref count */
-#define MAX_REF_TYPE PIKE_T_TYPE
+/* Min type with ref count */
+#define MIN_REF_TYPE PIKE_T_ARRAY
 /* Max type handled by svalue primitives */
-#define MAX_TYPE PIKE_T_FLOAT
+#define MAX_TYPE PIKE_T_TYPE
+
+#define REFCOUNTED_TYPE(T)	(((T) & ~(MIN_REF_TYPE - 1)) == MIN_REF_TYPE)
 
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
@@ -348,8 +363,14 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
-extern PMOD_EXPORT const  struct svalue svalue_undefined,
-  svalue_int_zero, svalue_int_one;
+extern PMOD_EXPORT const  struct svalue svalue_undefined, svalue_int_zero;
+#ifdef HAVE_UNION_INIT
+extern PMOD_EXPORT const  struct svalue svalue_int_one;
+#else
+/* If union initializers are unavailable,
+   svalue_int_one needs to be assignable. */
+extern PMOD_EXPORT struct svalue svalue_int_one;
+#endif
 
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
@@ -357,7 +378,7 @@ extern PMOD_EXPORT const  struct svalue svalue_undefined,
 /* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
  * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
  * `! functions will be propagated correctly then. */
-#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
 #define SAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
 #define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
@@ -447,14 +468,14 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
     TYPE_T typ_ = (T);							\
     check_short_svalue (anyth_, typ_);					\
     if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
-      if (typ_ <= MAX_REF_TYPE)						\
+      if (REFCOUNTED_TYPE(typ_))					\
 	low_thorough_check_short_svalue (anyth_, typ_);			\
   } while (0)
 #define thorough_check_svalue(S) do {					\
     struct svalue *sval_ = (S);						\
     check_svalue (sval_);						\
     if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
-      if (TYPEOF(*sval_) <= MAX_REF_TYPE)				\
+      if (REFCOUNTED_TYPE(TYPEOF(*sval_)))				\
 	low_thorough_check_short_svalue (&sval_->u, TYPEOF(*sval_));	\
   } while (0)
 
@@ -467,7 +488,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
- if(TYPEOF(*(S)) <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
+ if(REFCOUNTED_TYPE(TYPEOF(*(S))) && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
    fprintf (stderr, "%s", msg_sval_obj_wo_refs);			\
    describe((S)->u.refs);						\
    Pike_fatal("%s", msg_sval_obj_wo_refs);				\
@@ -475,7 +496,7 @@ PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 
 PMOD_EXPORT extern const char msg_ssval_obj_wo_refs[];
 #define check_refs2(S,T) do { \
-if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
+if(REFCOUNTED_TYPE(T) && (S)->refs && (S)->refs[0] <= 0) {\
   fprintf (stderr, "%s", msg_ssval_obj_wo_refs);	   \
   describe((S)->refs);					   \
   Pike_fatal("%s", msg_ssval_obj_wo_refs);		   \
@@ -493,7 +514,7 @@ static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
   debug_malloc_update_location(s,l);
 #endif
 #if 1
-  if(s && TYPEOF(*s) <= MAX_REF_TYPE)
+  if(s && REFCOUNTED_TYPE(TYPEOF(*s)))
     debug_malloc_update_location(s->u.refs,l);
 #endif
   return s;
@@ -511,7 +532,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   debug_malloc_update_location(u,l);
 #endif
 #if 1
-  if(u && type <= MAX_REF_TYPE)
+  if(u && REFCOUNTED_TYPE(type))
     debug_malloc_update_location(u->refs,l);
 #endif
   return u;
@@ -629,7 +650,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
       check_refs(_s);						\
     }								\
   );								\
-  if (TYPEOF(*_s) > MAX_REF_TYPE)				\
+  if (!REFCOUNTED_TYPE(TYPEOF(*_s)))				\
     assert_free_svalue (_s);					\
   else {							\
     DO_IF_DEBUG (						\
@@ -647,7 +668,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   union anything *_s=(X); TYPE_T _t=(T);				\
   check_type(_t); check_refs2(_s,_t);					\
   assert_svalue_locked(_s);						\
-  if(_t<=MAX_REF_TYPE && _s->refs) {					\
+  if(REFCOUNTED_TYPE(_t) && _s->refs) {					\
     DO_IF_DEBUG (							\
       DO_IF_PIKE_CLEANUP (						\
 	if (gc_external_refs_zapped)					\
@@ -667,7 +688,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
       check_refs(_tmp);						\
     }								\
   );								\
-  if(TYPEOF(*_tmp) <= MAX_REF_TYPE) add_ref(_tmp->u.dummy);	\
+  if(REFCOUNTED_TYPE(TYPEOF(*_tmp))) add_ref(_tmp->u.dummy);	\
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -683,7 +704,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
       Pike_fatal(msg_assign_svalue_error, _to);		\
   );							\
   *_to=*_from;						\
-  if(TYPEOF(*_to) <= MAX_REF_TYPE) add_ref(_to->u.dummy);	\
+  if(REFCOUNTED_TYPE(TYPEOF(*_to))) add_ref(_to->u.dummy); \
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -771,6 +792,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 const union anything *from,
 			 TYPE_T type);
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
+PMOD_EXPORT int complex_svalue_is_true(const struct svalue *s); /* only handles object + function */
 PMOD_EXPORT int svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);
@@ -916,7 +938,7 @@ static INLINE void free_svalue(struct svalue *s)
 #ifndef free_short_svalue
 static INLINE void free_short_svalue(union anything *s, int t)
 {
-  if(t <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(t))
   {
     INT32 tmp;
     tmp=pike_atomic_swap32((INT32 *)s, 0);

@@ -6,7 +6,7 @@
 
 inherit GTK2.Label;
 
-static GTK2.AccelLabel create( string|mapping text_or_props );
+protected GTK2.AccelLabel create( string|mapping text_or_props );
 //! Creates a new W(AccelLabel).
 //!
 //!

@@ -8,6 +8,7 @@
 #define PIKE_TYPES_H
 
 #include "svalue.h"
+#include "stralloc.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
 
@@ -40,9 +41,6 @@ extern size_t pike_type_hash_size;
 #define CAR_TO_INT(TYPE) ((char *) (TYPE)->car - (char *) 0)
 #define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)
 
-#include "block_alloc_h.h"
-BLOCK_ALLOC(pike_type, n/a);
-
 /*
  * pike_type flags:
  */
@@ -71,6 +69,8 @@ BLOCK_ALLOC(pike_type, n/a);
 #define PT_FLAG_ASSIGN		0x3ff000	/* The subtree holds assigns. */
 
 #define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
+
+#define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
 /*
  * new_check_call(), check_splice_call() and get_first_arg_type() flags
@@ -136,6 +136,7 @@ PMOD_EXPORT extern struct pike_type *type_type_string;
 PMOD_EXPORT extern struct pike_type *mixed_type_string;
 PMOD_EXPORT extern struct pike_type *void_type_string;
 PMOD_EXPORT extern struct pike_type *zero_type_string;
+PMOD_EXPORT extern struct pike_type *enumerable_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
@@ -209,6 +210,9 @@ void debug_push_reverse_type(unsigned int type);
 } while(0)
 
 /* Prototypes begin here */
+PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
+PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type();
+PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
 void debug_check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);
@@ -266,6 +270,9 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no);
 struct pike_type *soft_cast(struct pike_type *soft_type,
 			    struct pike_type *orig_type,
 			    int flags);
+struct pike_type *check_call_svalue(struct pike_type *fun_type,
+				    INT32 flags,
+				    struct svalue *sval);
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
 				     INT32 flags,
@@ -285,6 +292,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 				 node *args, INT32 *argno, INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
+struct pike_type *get_lax_type_of_svalue( const struct svalue *s );
 struct pike_type *get_type_of_svalue(const struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);
@@ -304,6 +312,9 @@ void yyexplain_nonmatching_types(int severity_level,
 				 struct pike_string *b_file,
 				 INT32 b_line,
 				 struct pike_type *type_b);
+void string_builder_explain_nonmatching_types(struct string_builder *s,
+					      struct pike_type *type_a,
+					      struct pike_type *type_b);
 struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);

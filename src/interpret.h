@@ -534,6 +534,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     Pike_sp=s_;					\
 }while(0)
 
+
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_frame(f_); }while(0)
 
 /* A scope is any frame which may have malloced locals */
@@ -632,6 +633,23 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     });									\
   LOW_POP_PIKE_FRAME (_fp_);						\
  }while(0)
+
+#define ASSIGN_CURRENT_STORAGE(VAR, TYPE, INH, EXPECTED_PROGRAM)	\
+  do {									\
+    int inh__ = (INH);							\
+    DO_IF_DEBUG(							\
+      struct program *prog__ = (EXPECTED_PROGRAM);			\
+      if ((inh__ < 0) ||						\
+	  (inh__ >= Pike_fp->context->prog->num_inherits))		\
+	Pike_fatal("Inherit #%d out of range [0..%d]\n",		\
+		   inh__, Pike_fp->context->prog->num_inherits-1);	\
+      if (prog__ && (Pike_fp->context[inh__].prog != prog__))		\
+	Pike_fatal("Inherit #%d has wrong program %p != %p.\n",		\
+		   Pike_fp->context[inh__].prog, prog__);		\
+    );									\
+    VAR = ((TYPE *)(Pike_fp->current_object->storage +			\
+		    Pike_fp->context[inh__].storage_offset));		\
+  } while(0)
 
 
 enum apply_type
@@ -748,7 +766,6 @@ extern int fast_check_threads_counter;
  * ordinary code. */
 #define FAST_CHECK_THREADS_ON_BRANCH() fast_check_threads_etc (8)
 
-#include "block_alloc_h.h"
 /* Prototypes begin here */
 void push_sp_mark(void);
 ptrdiff_t pop_sp_mark(void);
@@ -763,8 +780,14 @@ void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
-BLOCK_ALLOC (catch_context, 0);
-BLOCK_ALLOC(pike_frame,128);
+struct catch_context *alloc_catch_context(void);
+PMOD_EXPORT void really_free_catch_context( struct catch_context *data );
+PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X );
+void count_memory_in_catch_contexts(size_t*, size_t*);
+void count_memory_in_pike_frames(size_t*, size_t*);
+
+/*BLOCK_ALLOC (catch_context, 0);*/
+/*BLOCK_ALLOC(pike_frame,128);*/
 
 #ifdef PIKE_USE_MACHINE_CODE
 void call_check_threads_etc();
@@ -784,8 +807,10 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
+struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
-int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
+void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
@@ -793,6 +818,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int safe_apply_low(struct object *o,int fun,int args);
@@ -834,7 +860,7 @@ void really_clean_up_interpret(void);
 #ifdef __ECL
 static INLINE void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 {
-  mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
+  mega_apply_low(args, (void*)o, fun);
 }
 
 static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
@@ -843,7 +869,7 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 }
 #else /* !__ECL */
 #define apply_low(O,FUN,ARGS) \
-  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(ptrdiff_t)(FUN))
+  mega_apply_low((ARGS), (void*)(O),(FUN))
 
 #define strict_apply_svalue(SVAL,ARGS) \
   mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)

@@ -37,12 +37,8 @@
 #include "opcodes.h"
 #include "pike_memory.h"
 #include "pike_cpulib.h"
-
 #include "pike_embed.h"
-
-#ifdef AUTO_BIGNUM
 #include "bignum.h"
-#endif
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -160,27 +156,8 @@ void init_pike(char **argv, const char *file)
   
   fd_init();
   {
-    extern void init_mapping_blocks(void);
-    extern void init_callable_blocks(void);
-    extern void init_gc_rec_frame_blocks(void);
-    extern void init_ba_mixed_frame_blocks(void);
-    extern void init_pike_frame_blocks(void);
     extern void init_node_s_blocks(void);
-    extern void init_object_blocks(void);
-    extern void init_callback_blocks(void);
-
-    init_mapping_blocks();
-    init_callable_blocks();
-    init_gc_rec_frame_blocks();
-    init_ba_mixed_frame_blocks();
-    init_catch_context_blocks();
-    init_pike_frame_blocks();
     init_node_s_blocks();
-    init_object_blocks();
-#if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)
-    /* This has already been done by initialize_dmalloc(). */
-    init_callback_blocks();
-#endif /* !DEBUG_MALLOC */
     init_multiset();
     init_builtin_constants();
   }
@@ -430,7 +407,7 @@ void init_pike_runtime(void (*exit_cb)(int))
 /* FIXME: Thread specific limit? */
 static unsigned long instructions_left = 0;
 
-static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+static void time_to_exit(struct callback *UNUSED(cb), void *UNUSED(tmp), void *UNUSED(ignored))
 {
   if(!(instructions_left--))
   {

@@ -5,483 +5,439 @@
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
+#include "builtin_functions.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "threads.h"
+#include "operators.h"
 #include "module_support.h"
-#include "program_id.h"
-
 #include "modules/Image/image.h"
 #include "config.h"
 
-#ifdef HAVE_LIBVPX
-
+#ifdef HAVE_LIBWEBP
 DECLARATIONS
 
-#include <vpx/vpx_decoder.h>
-#include <vpx/vp8dx.h>
-#include <vpx/vpx_encoder.h>
-#include <vpx/vp8cx.h>
+/* #define DEFAULT_CMOD_STORAGE static*/
+#define true 1
+#define false 0
 
-struct yuv
-{
-    unsigned int sz;
-    unsigned int xsize, ysize;
-    unsigned int stride, uvstride;
-    unsigned char *Y;
-    unsigned char *U;
-    unsigned char *V;
-};
+#include <webp/encode.h>
+#include <webp/decode.h>
 
-// Copy every third byte of src to dest.
-static void copy_row( unsigned char*dest, 
-                      unsigned char*src,
-                      int xs )
+#if WEBP_ENCODER_ABI_VERSION < 0x0201
+typedef struct WebPMemoryWriter
 {
-    int odd = 0;
-    if( xs & 1 )
-        odd = 1;
-    while(xs--)
+  uint8_t* mem;       // final buffer (of size 'max_size', larger than 'size').
+  size_t   size;      // final size
+  size_t   max_size;  // total capacity
+  uint32_t pad[1];    // padding for later use
+} WebPMemoryWriter;
+
+/* This is from LIBWEBP 0.3.1+ */
+void WebPMemoryWriterInit(WebPMemoryWriter* writer)
+{
+    writer->mem = NULL;
+    writer->size = 0;
+    writer->max_size = 0;
+}
+
+int WebPMemoryWrite(const uint8_t* data, size_t data_size,
+                    const WebPPicture* picture)
+{
+    WebPMemoryWriter* const w = (WebPMemoryWriter*)picture->custom_ptr;
+    uint64_t next_size;
+    if (w == NULL)
     {
-        *dest++ = *src;
-        src += 3;
+        return 1;
     }
-    if( odd )
-        *dest++ = *(src-3);
-}
 
+    next_size = (uint64_t)w->size + data_size;
 
-// Copy two rows down to a single one with half the length.
-// Simple linear averaging used for the scaling.
-static void copy_row_down( unsigned char*dest, 
-                           unsigned char*src, unsigned char*src2,
-                           int xs )
-{
-    int xp;
-    for( xp = 0; xp<xs-2; xp+=2 )
+    if (next_size > w->max_size)
     {
-        *dest++ = (*src + *(src+3) + *src2 + *(src2+3))>>2;
-        src += 6;
-        src2 += 6;
-    }
-    if( xp < xs )
-        *dest++ = (*src + *src2 ) >> 1;
-    // if( xs & 1 )
-    //     *dest++ = (*src + *src2 ) >> 1;
-}
-
-static inline void free_yuv( struct yuv *x )
-{
-    free(x);
-}
-
-static struct yuv *allocate_yuv( int w, int h )
-{
-    struct yuv *res;
-
-    if( w & 1 ) w++;
-    if( h & 1 ) h++;
-
-    int halfpic, sz, halfrow = w/2;
-
-    // if( halfrow & 1 ) 
-    //     halfrow++;
-
-    halfpic = halfrow * h/2;
-
-    sz = 
-        sizeof( struct yuv ) +
-        w*h     +  /* Y */
-        halfpic +  /* U */
-        halfpic;   /* V */
-
-    res = xalloc( sz );
-
-    res->stride = w; 
-    res->uvstride = halfrow;
-    res->sz    = sz;
-    res->xsize = w;
-    res->ysize = h;
-
-    res->Y = (unsigned char*)(res + 1);
-    res->U = res->Y + w*h;
-    res->V = res->U + halfpic;
-    return res;
-}
-
-static struct yuv *convert_to_yuv( struct object *img )
-{
-    struct image *idat = (struct image *)img->storage;
-    struct yuv *res = allocate_yuv( idat->xsize, idat->ysize );
-    unsigned int yp, xp, o = 0;
-    int halfrow = res->uvstride;
-
-    apply(img, "rgb_to_yuv", 0);
-    // This creates a new image object, now on the top of the stack.
-    idat = (struct image *)Pike_sp[-1].u.object->storage;
-
-    // Sample UV to half size. Copy Y as-is.
-    for( yp=0; yp<(unsigned)idat->ysize; yp++ )
-    {
-        rgb_group  *srow = idat->img + yp*idat->xsize;
-        copy_row( res->Y + yp*res->stride,  &srow->g, res->xsize);
-
-        if( (yp & 1) == 0 )
-        {
-            copy_row_down( res->V + (yp/2)*halfrow,
-                           &srow->r,
-                           &((yp+1 < (unsigned)idat->ysize ? srow + idat->xsize : srow )->r),
-                           res->xsize );
-
-            copy_row_down( res->U + (yp/2)*halfrow,
-                           &srow->b,
-                           &((yp+1 < (unsigned)idat->ysize ? srow + idat->xsize : srow )->b),
-                           res->xsize );
+        uint8_t* new_mem;
+        size_t next_max_size = 2ULL * w->max_size;
+        if (next_max_size < next_size) next_max_size = next_size;
+        if (next_max_size < 8192ULL) next_max_size = 8192ULL;
+        new_mem = (uint8_t*)xalloc(next_max_size);
+        if (w->size > 0) {
+            memcpy(new_mem, w->mem, w->size);
         }
+        free(w->mem);
+        w->mem = new_mem;
+        w->max_size = (size_t)next_max_size;
     }
-
-    if( idat->ysize & 1 )
-    {
-        rgb_group  *srow = idat->img + (idat->ysize-1)*idat->xsize;
-        yp = ((res->ysize-1)/2)*halfrow;
-        copy_row( res->U + (res->ysize-1)*res->stride,  &(srow->g), res->xsize );
-        copy_row_down( res->V + yp,  &(srow->r),  &(srow->r),   res->xsize );
-        copy_row_down( res->U + yp,  &(srow->b),  &(srow->b),  res->xsize );
+    if (data_size > 0) {
+        memcpy(w->mem + w->size, data, data_size);
+        w->size += data_size;
     }
-
-    pop_stack(); // Free the generated temporary image-object.
-
-    return res;
+    return 1;
 }
+#endif
 
-static struct object *convert_to_rgb( struct yuv *yuv )
+
+typedef int (*Importer)(WebPPicture* const, const uint8_t* const, int);
+
+
+typedef struct object object;
+typedef struct program program;
+
+static program *image_program()
 {
-    struct object *img;
-    struct image *idat;
-    unsigned int xp, yp;
-
-    push_text( "Image.Image" );
-    APPLY_MASTER( "resolv", 1 );
-    push_int( yuv->xsize );
-    push_int( yuv->ysize );
-    apply_svalue( Pike_sp-3, 2 );
-    stack_swap();
-    pop_stack();
-
-
-
-    idat = (struct image *)Pike_sp[-1].u.object->storage;
-
-    for( yp = 0; yp<yuv->ysize; yp++ )
-    {
-        rgb_group *row = idat->img + yp*yuv->xsize;
-        int hpos = (yp>>1)*((yuv->xsize+1)>>1);
-        int pos = yp * yuv->xsize;
-
-        for( xp = 0; xp<yuv->xsize; xp++, row++, pos++ )
-        {
-            if( xp & 1 ) hpos++;
-
-            row->r = yuv->V[ hpos ];
-            row->g = yuv->Y[ pos ];
-            row->b = yuv->U[ hpos ];
-        }
-    }
-    apply( Pike_sp[-1].u.object, "yuv_to_rgb", 0 );
+  static program *ip;
+  if( !ip )
+  {
+    push_text("Image.Image");
+    SAFE_APPLY_MASTER("resolv",1);
+    ip = Pike_sp[-1].u.program;
     Pike_sp--;
-    return Pike_sp[0].u.object;
+  }
+  return ip;
+}
+
+static object *allocate_image(int w, int h )
+{
+  push_int(w);
+  push_int(h);
+  return clone_object(image_program(),2);
+}
+
+static inline int image_width( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->xsize;
+}
+
+static inline int image_height( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->ysize;
+}
+
+static inline unsigned char *image_ptr( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return (unsigned char *)(((struct image  *)x)->img);
 }
 
 
-/*! @decl string encode( Image.Image x, void|mapping(string:int) parameters )
- *!
- *! Encodes and Image.Image object to a WebP data stream.
- *!
- *! The following parameters are recognized:
- *! @mapping
- *! @member int "quality"
- *!  The overall quality of the generated image, 0 to 100.
- *!  Default is 80.
- *! @member int "sharpness"
- *!  Affects the filtering strength of the in-loop filter.
- *!  default is 0, maximum is 7.
- *! @member int "denoise"
- *!  This affect the pre-processing stage, where the source is
- *!  first denoised before encoding.
- *!  default is no denoise (0), maximum is 6.
- *! @member int "profile"
- *!  Overall control of the filtering streength.
- *!  default (0) is to do full filtering, max setting is 2 (no filtering)
- *! @member int "threads"
- *!   The maximum number of threads to use when encoding. For large
- *!   images setting this high will increase perfornance. Default is
- *!   to only use one thread.
- *! @member int "quantize"
- *!   An alternative way to specify the quality. 
- *!   If used the quality member must not be used.
- *!   0 to 63, 0 is maximum quality, 63 is lowest.
- *! @member int "maxtime"
- *!   How much time the encoder is allowed to use, in microseconds
- *!   Default is 0, which means unlimited time.
- *!   1 means to do the encoding as quickly as possible.
- *!   This is realmtime, not cpu-time, so on a multi-cpu machine increasing 
- *!   the number of threads will improve the result for non-zero times.
- *! @endmapping
- */
-PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
+static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
+                     Importer import, WebPConfig *config, uint8_t** output)
 {
-    int quality = 80, sharpness = 0, denoise = 0, profile = 0, 
-        threads=1, quantize=-1, maxtime;
-    int err;
-    struct pike_string *res = NULL;
-    struct image *img = (struct image *)x->storage;
-    vpx_codec_ctx_t enc;
-    vpx_codec_enc_cfg_t cfg;
-    vpx_image_t vpx_image;
-    struct yuv *yuv_image;
-    const int riff_header_size = 20;
+ WebPPicture pic;
+ WebPMemoryWriter wrt;
+ int ok;
+
+ if( !WebPPictureInit(&pic) )
+   return 0;
+
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+ pic.use_argb = !!config->lossless;
+#endif
+ pic.width = width;
+ pic.height = height;
+ pic.writer = WebPMemoryWrite;
+ pic.custom_ptr = &wrt;
+ WebPMemoryWriterInit(&wrt);
+
+ ok = import(&pic, rgba, stride) && WebPEncode(config, &pic);
+ WebPPictureFree(&pic);
+
+ if (!ok)
+ {
+  free(wrt.mem);
+  *output = NULL;
+  switch( pic.error_code )
+  {
+   case VP8_ENC_ERROR_OUT_OF_MEMORY:
+     *output = (uint8_t*)"Out of memory\n";
+     break;
+   case VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY:
+     *output = (uint8_t*)"Out of memory while writing\n";
+     break;
+   case VP8_ENC_ERROR_NULL_PARAMETER:
+     *output =(uint8_t*) "Pointer parameter is NULL\n";
+     break;
+   case VP8_ENC_ERROR_INVALID_CONFIGURATION:
+     *output = (uint8_t*)"Invalid parameters\n";
+     break;
+   case VP8_ENC_ERROR_BAD_DIMENSION:
+     *output = (uint8_t*)"Invalid image size\n";
+     break;
+   case VP8_ENC_ERROR_PARTITION0_OVERFLOW:
+     *output = (uint8_t*)"Invalid partition0 size\n";
+     break;
+   case VP8_ENC_ERROR_PARTITION_OVERFLOW:
+     *output = (uint8_t*)"Invalid partition size\n";
+     break;
+   case VP8_ENC_ERROR_FILE_TOO_BIG:
+     *output = (uint8_t*)"File too big, >4G\n";
+     break;
+#ifdef VP8_ENC_ERROR_USER_ABORT
+   case VP8_ENC_ERROR_USER_ABORT:
+     *output = (uint8_t*)"User aborted\n";
+     break;
+#endif
+   default:
+     *output = (uint8_t*)"Unknown error\n";
+     break;
+   }
+  return 0;
+ }
+ *output = wrt.mem;
+ return wrt.size;
+}
 
 
-    if( img->xsize < 2 || img->ysize < 2 )
-        Pike_error("Can not encode images smaller than 2x2\n");
+PIKEFUN object decode( string data )
+{
+  apply( Pike_fp->current_object, "_decode", 1 );
+  push_text( "image" );
+  f_index(2);
+}
 
-    if( img->xsize > 16383 || img->ysize > 16383 )
-        Pike_error("Can not encode images larger than 16383 in any dimension\n");
+PIKEFUN mapping(string:object) _decode( string data )
+{
+  int width, height, npix;
+  uint8_t *ip, *rp, *ap;
+  object *i = NULL, *a = NULL;
+  WebPBitstreamFeatures features;
+  uint8_t *res = WebPDecodeRGBA( (uint8_t*)data->str, data->len,
+				 &width, &height );
+  WebPGetFeatures( (uint8_t*)data->str, data->len, &features );
 
-#define PARAM(X) if( (pe = simple_mapping_string_lookup( params, #X )) ) X = pe->u.integer;
+  if( !res )
+    Pike_error("Failed to decode image\n");
 
-    if( params )
+  ip = ap = NULL;
+  rp = res;
+  npix = width * height;
+
+  if( features.has_alpha )
+  {
+    a = allocate_image( width, height );
+    ap = image_ptr( a );
+  }
+  i = allocate_image( width, height );
+  ip = image_ptr( i );
+
+  while( npix-- )
+  {
+    uint8_t av;
+    *(ip++) = *(rp++); // R
+    *(ip++) = *(rp++); // G
+    *(ip++) = *(rp++); // B
+    av = *(rp++);
+
+    if( av && ap )
     {
-        struct svalue *pe;
-        PARAM(quality);
-        PARAM(denoise);
-        PARAM(sharpness);
-        PARAM(profile);
-        PARAM(threads);
-        PARAM(quantize);
-        PARAM(maxtime);
-        if( quantize != -1 && quality != 80 )
-            Pike_error("It is not possible to specify both quality and quantize\n");
+      *(ap++) = av; // A
+      *(ap++) = av;
+      *(ap++) = av;
+    }
+  }
+  free( res );
+
+  push_text( "image" );  push_object( i );
+  push_text( "alpha" );
+  if( a ) 
+    push_object( a );
+  else 
+    push_undefined( );
+  push_text("format"); push_text("WebP");
+  push_text( "xsize" ); push_int( width );
+  push_text( "ysize" ); push_int( height );
+  f_aggregate_mapping( 10 );
+}
+
+#ifndef TYPEOF
+#define TYPEOF(X) (X).type
+#endif
+
+static int parameter_int(struct mapping *map, const char *what, int def )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if (v && TYPEOF(*v) == PIKE_T_INT) return v->u.integer;
+   return def;
+}
+
+static double parameter_float(struct mapping *map, const char *what,
+			      double def )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if (!v) return def;
+   if( TYPEOF(*v) == PIKE_T_INT )
+       return (float)v->u.integer;
+   if( TYPEOF(*v) == PIKE_T_FLOAT )
+       return (float)v->u.float_number;
+   return def;
+}
+
+static object *parameter_obj(struct mapping *map, const char *what )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if( v && TYPEOF(*v) == PIKE_T_OBJECT )
+       return v->u.object;
+   return NULL;
+}
+
+PIKEFUN string encode( object i,
+		       mapping(string:int|float|object)|void options )
+{
+    unsigned char *result = NULL;
+    size_t size;
+    object *a;
+    int width  = image_width( i );
+    int height  = image_height( i );
+    unsigned char *iptr = image_ptr( i );
+    unsigned char *rgba = NULL;
+    Importer importer = WebPPictureImportRGB;
+    WebPConfig config;
+    WebPPreset preset;
+    if( !iptr || !width || !height )
+    {
+        Pike_error("Image argument is not a valid image.");
     }
 
-    memset( &vpx_image, 0, sizeof(vpx_image));
-
-    yuv_image = convert_to_yuv( x );
-
-    if( vpx_img_wrap(&vpx_image, VPX_IMG_FMT_I420, img->xsize, img->ysize, 1, yuv_image->Y) != &vpx_image )
-        Pike_error("image wrap failed\n");
-
-    if( quality > 100 )  quality = 100;
-
-    // quantize goes from 63..0
-    if( quantize == -1 )
+    if( options )
     {
-        quantize = 63 - ((quality * 63)/100);
-    }
-
-    memset( &cfg, 0, sizeof(cfg) );
-    if( (err = vpx_codec_enc_config_default(&vpx_codec_vp8_cx_algo, &cfg, 0)) != VPX_CODEC_OK )
-        Pike_error("Vp8 codec initalization failed; %d\n", err);
-
-    cfg.g_threads = threads;
-    cfg.rc_min_quantizer = quantize;
-    cfg.rc_max_quantizer = quantize;
-    cfg.kf_mode = VPX_KF_DISABLED;
-    cfg.g_w = img->xsize;
-    cfg.g_h = img->ysize;
-    cfg.rc_resize_allowed = 0;
-    cfg.g_profile = profile;
-
-    if( (err=vpx_codec_enc_init(&enc, &vpx_codec_vp8_cx_algo, &cfg, 0)) != VPX_CODEC_OK )
-        Pike_error("Vp8 codec initalization failed (2); %d\n", err);
-
-#define VCC(X,Y) if( (err=vpx_codec_control( &enc, X, Y )) != VPX_CODEC_OK ) Pike_error("Failed to set " #X " to " #Y ": %d\n",err)
-
-    VCC(VP8E_SET_NOISE_SENSITIVITY, denoise);
-    VCC(VP8E_SET_SHARPNESS, sharpness);
-
-    if( (err=vpx_codec_encode(&enc, &vpx_image, 0, 1, VPX_EFLAG_FORCE_KF, maxtime))
-        == VPX_CODEC_OK )
-    {
-        vpx_codec_iter_t iter = NULL;
-        const vpx_codec_cx_pkt_t* pkt;
-
-        while( (pkt = vpx_codec_get_cx_data(&enc, &iter)) )
+        if( (preset = (WebPPreset)parameter_int( options, "preset", 0 )) )
         {
-            if( pkt->kind == VPX_CODEC_CX_FRAME_PKT )
-            {
-                const size_t pad = pkt->data.frame.sz & 1;
-                const size_t payload_size = pkt->data.frame.sz + pad;
-                res = begin_shared_string( riff_header_size + payload_size );
-                memcpy(res->str + riff_header_size,
-                       (const void*)(pkt->data.frame.buf),
-                       pkt->data.frame.sz);
-                if (pad)
-                    res->str[riff_header_size + pkt->data.frame.sz] = 0;
-            }
+            if( !WebPConfigPreset(&config, preset, 75.0) )
+                Pike_error("Failed to initialize config.\n");
+        }
+        else
+        {
+            if( !WebPConfigInit( &config ) )
+                Pike_error("Failed to initialize config.\n");
+        }
+
+        a = parameter_obj( options, "alpha" );
+
+#define GET_ENUM(Y,X) (config.X = (Y)parameter_int( options, #X, config.X ));
+#define GET_INT(X) (config.X = parameter_int( options, #X, config.X ));
+#define GET_FLT(X) (config.X = parameter_float( options, #X, config.X ));
+#define GET_BOL(X) (config.X = !!parameter_int( options, #X, config.X ));
+
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+        GET_BOL(lossless);
+#else
+        if( parameter_int( options, "lossless", 0 ) )
+            Pike_error("Your libwebp is too old to support lossless encoding.\n");
+#endif
+        GET_FLT(quality);
+        GET_INT(method);
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+        GET_ENUM(WebPImageHint,image_hint);
+#endif
+        GET_INT(target_size);
+        GET_FLT(target_PSNR);
+        GET_INT(segments);
+        GET_INT(sns_strength);
+        GET_INT(filter_strength);
+        GET_INT(filter_sharpness);
+        GET_INT(filter_type);
+        GET_INT(autofilter);
+
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+        GET_INT(alpha_compression);
+        GET_INT(alpha_filtering);
+        GET_INT(alpha_quality);
+#endif
+        GET_INT(pass);
+        GET_INT(show_compressed);
+        GET_INT(preprocessing);
+        GET_INT(partitions);
+        GET_INT(partition_limit);
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+        GET_BOL(emulate_jpeg_size);
+        GET_BOL(thread_level);
+        GET_BOL(low_memory);
+#endif
+#undef GET_BOL
+#undef GET_FLT
+#undef GET_INT
+#undef GET_ENUM
+
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+        if( config.quality >= 100 )
+        {
+            config.quality = 70;
+            config.lossless = true;
+        }
+#endif
+    }
+    else
+    {
+        a = 0;
+        WebPConfigInit( &config );
+    }
+
+    if( a )
+    {
+        unsigned char *aptr = image_ptr( a );
+        int num = width*height;
+        unsigned char *dst;
+        importer = WebPPictureImportRGBA;
+
+        if( !aptr )
+            Pike_error("Alpha channels is not an image object\n");
+#if WEBP_ENCODER_ABI_VERSION < 0x0201
+        else 
+            Pike_error("Alpha channels are not supported by your libwebp.\n");
+#endif
+        if( image_width( a ) != width || image_height( a ) != height )
+            Pike_error("The alpha channel does not have the same size as the image\n");
+
+        dst = rgba = (unsigned char*)xalloc( num * 4 );
+
+        while( num-- )
+        {
+            *(dst++) = *(iptr++); // r
+            *(dst++) = *(iptr++); // g
+            *(dst++) = *(iptr++); // b
+            *(dst++) = *(aptr); // a
+            aptr += 3;
         }
     }
-    else
-    {
-        vpx_codec_destroy( &enc );
-        Pike_error("Failed to encode data; %d\n", err);
-    }
-    {
-        char *p = res->str;
-        int data_len = res->len - 20;
-#define WRITE_INT( X, I ) do{(X)[0] = (((I)>>0)&255);(X)[1] = (((I)>>8)&255);(X)[2] = (((I)>>16)&255);(X)[3] = (((I)>>24)&255);}while(0)
-#define WRITE_STR( X, S ) do{strcpy(X,S);}while(0)
-        WRITE_STR(p,"RIFF");     p += 4;
-        WRITE_INT(p,res->len-8); p += 4;
-        WRITE_STR(p,"WEBP");     p += 4;
-        WRITE_STR(p,"VP8 ");     p += 4;
-        WRITE_INT(p,data_len );
-#undef WRITE_INT
-#undef WRITE_STR
-    }
-    vpx_codec_destroy( &enc );
-    push_string( end_shared_string( res ) );
 
+    size = Encode( rgba ? rgba : iptr, width, height, width*(rgba?4:3), 
+                   importer, &config, &result );
+
+    if( rgba ) free( rgba );
+
+    if( size == 0  )
+        Pike_error( (const char *)result );
+
+    push_string( make_shared_binary_string( (const char *)result, size ) );
+    free( result );
 }
 
 
-/*! @decl Image.Image decode( string data, void|mapping(string:int) parameters )
- *!
- *! Decodes a WebP datastream to an Image.Image object.
- *!
- *! The following parameters are recognized:
- *! @mapping
- *! @member int "deblock"
- *!   Strength  of the deblocking filter. Default is 4, maximum is 16.
- *!   0 means no deblocking is done.
- *! @member int "noise"
- *!   Strength  of the added noise. Default is 0, maximum is 16.
- *!   0 (the default) means that no noise is added.
- *! @endmapping
- */
-PIKEFUN object(Image.Image) decode( string data, void|mapping params )
-{
-    int deblock = 4, noise = 0;
-    
-    unsigned char *p = (unsigned char *)data->str;
-    int len;
-    struct yuv *yuv = NULL;
-    vpx_codec_ctx_t dec;
-    vp8_postproc_cfg_t ppcfg;
+EXTRA {
+#define CONST(X)  add_integer_constant( #X, WEBP_##X, 0 );
+    CONST(PRESET_DEFAULT);
+    CONST(PRESET_PICTURE);
+    CONST(PRESET_PHOTO);
+    CONST(PRESET_DRAWING);
+    CONST(PRESET_ICON);
+    CONST(PRESET_TEXT);
 
-    if( params )
-    {
-        struct svalue *pe;
-        PARAM(deblock);
-        PARAM(noise);
-    }    
-
-    if( data->len < 30 )
-        Pike_error("Not a WEBP image\n");
-
-    if( strncmp( data->str, "RIFF", 4 ) )
-        Pike_error("Not a RIFF container\n");
-    
-    if( strncmp( data->str+8, "WEBPVP8 ", 8 ) )
-        Pike_error("Not a WEBP VP8 image\n");
-    
-    len = p[16] | (p[17]<<8) | (p[18]<<16) | (p[19]<<24);
-
-    if( len < 10 || len > data->len-20 )
-        Pike_error("Invalid header\n");
-
-    p += 20;
-    // At p: len bytes WEBP VP8 data.
-    
-    if (vpx_codec_dec_init(&dec, &vpx_codec_vp8_dx_algo, NULL, 0) != VPX_CODEC_OK)
-        Pike_error("Failed to initialize VP8 decoder\n");
-
-    if( deblock == 0 && noise == 0)
-    {
-        ppcfg.post_proc_flag = VP8_NOFILTERING;
-        vpx_codec_control(&dec, VP8_SET_POSTPROC, &ppcfg);
-    }
-    else
-    {
-        ppcfg.post_proc_flag = VP8_DEBLOCK | VP8_DEMACROBLOCK;
-        if( noise > 0 )
-            ppcfg.post_proc_flag |= VP8_ADDNOISE;
-        ppcfg.deblocking_level = deblock;
-        ppcfg.noise_level = noise;
-    }
-
-    if (vpx_codec_decode(&dec, p, len, NULL, 0) != VPX_CODEC_OK) 
-    {
-        vpx_codec_destroy(&dec);
-        Pike_error("Failed to decode data\n");
-    }
-
-    {
-        unsigned int y;
-        vpx_codec_iter_t iter = NULL;
-        vpx_image_t* const img = vpx_codec_get_frame(&dec, &iter);
-        if (img)
-        {
-            unsigned int uvsize = (img->d_h+1)>>1;
-            yuv = allocate_yuv( img->d_w, img->d_h );
-
-            for (y = 0; y < yuv->ysize; ++y) 
-                memcpy(yuv->Y + y * yuv->stride,
-                       img->planes[0] + y * img->stride[0],
-                       yuv->stride);
-
-            for (y = 0; y < uvsize; ++y)
-                memcpy(yuv->U + y * yuv->uvstride,
-                       img->planes[1] + y * img->stride[1],
-                       yuv->uvstride);
-
-            for (y = 0; y < uvsize; ++y)
-                memcpy(yuv->V + y * yuv->uvstride,
-                       img->planes[2] + y * img->stride[2],
-                       yuv->uvstride);
-        }
-    }
-    vpx_codec_destroy(&dec);
-  
-    if( yuv )
-    {
-        // FIXME: We really should to some kind of filtering of the
-        // (half-scale) UV data. At least some kind of linear
-        // interpolation.
-        push_object( convert_to_rgb( yuv ) );
-    }
-    else
-        Pike_error("Failed to decode data\n");
-    free_yuv( yuv );
+#if WEBP_ENCODER_ABI_VERSION > 0x0200
+    CONST(HINT_DEFAULT);
+    CONST(HINT_PICTURE);
+    CONST(HINT_PHOTO);
+    CONST(HINT_GRAPH);
+#endif
+#undef CONST
 }
-
-
-/*
-
-Used to test the conversion routines.
-
-PIKEFUN object(Image.Image) __from_yuv( string data )
-{
-    struct yuv *yuv_data,*yptr= (struct yuv *)data->str;
-
-    yuv_data = allocate_yuv( yptr->xsize, yptr->ysize );
-    memcpy(yuv_data->Y, data->str+sizeof(struct yuv), (data->len-sizeof(struct yuv)) );
-    pop_stack();
-    push_object( convert_to_rgb(yuv_data) );
-    free_yuv( yuv_data );
-}
-
-PIKEFUN string __to_yuv( object(Image.Image) image )
-{
-    struct yuv *yuv_data = convert_to_yuv( image );
-    pop_stack();
-    yuv_data->Y = yuv_data->U = yuv_data->V = 0;
-    push_string( make_shared_binary_string( ((char *)yuv_data), yuv_data->sz ) );
-    free_yuv( yuv_data );
-}
-*/
-
-INIT {}
-EXIT {}
-
 #endif /* HAVE_LIBVPX */

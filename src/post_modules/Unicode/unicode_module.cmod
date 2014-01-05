@@ -20,6 +20,7 @@
 #include "split.h"
 #include "buffer.h"
 #include "uversion.h"
+#include "rtl.h"
 
 DECLARATIONS
 
@@ -196,6 +197,45 @@ PIKEFUN int is_wordchar( int c )
      optflags OPT_TRY_OPTIMIZE;
 {
   RETURN unicode_is_wordchar( c );
+}
+
+static int is_rtl_char( int c )
+{
+  unsigned int rtl=0, i;
+  for(i=0; i<sizeof(_rtl); i++)
+  {
+    if(c<_rtl[i]) return rtl;
+    rtl ^= 1;
+  }
+  return 0;
+}
+
+/*! @decl int is_rtlchar( int c )
+ *! Returns @expr{1@} if the character is a RTL character or
+ *! indicator, otherwise @expr{0@}.
+ */
+PIKEFUN int is_rtlchar( int c )
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN is_rtl_char(c);
+}
+
+/*! @decl int is_rtlstring( string s )
+ *! Returns @expr{1@} if the string contains RTL characters or
+ *! RTL indicators, otherwise @expr{0@}.
+ */
+PIKEFUN int is_rtlstring( string s )
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int shift, len;
+  char *str;
+  shift = s->size_shift;
+  if( shift==0 ) RETURN 0;
+  len = s->len;
+  str = s->str;
+  while( --len )
+    if( is_rtl_char(INDEX_CHARP(str,len,shift)) ) RETURN 1;
+  RETURN 0;
 }
 
 /*! @decl constant version

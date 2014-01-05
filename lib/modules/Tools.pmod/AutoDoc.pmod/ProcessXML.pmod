@@ -495,6 +495,21 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     error("mergeTrees() MUST be called with element nodes.\n");
   }
 
+  // Transfer any attributes (like eg appears).
+  mapping(string:string) dest_attrs = dest->get_attributes();
+  foreach(source->get_attributes(); string attr; string val) {
+    if ((dest_attrs[attr] || val) != val) {
+      processWarning("Attribute '" + attr +
+		     "' ('" + dest_attrs[attr] + "') for node " +
+		     getName(dest) +
+		     "differs from the same for node " +
+		     getName(source) +
+		     " ('" + val + "').");
+    } else {
+      dest_attrs[attr] = val;
+    }
+  }
+
   foreach(dest->get_children(), SimpleNode node) {
     string name = getName(node);
     if (name) {
@@ -971,6 +986,7 @@ protected class ScopeStack {
       scopes[namespace] += ({ Scope(type, name) });
     }
   }
+
   void leave() {
     if (sizeof(scopes[namespace]||({}))) {
       if (sizeof(scopes[namespace][-1]->failures)) {
@@ -1421,13 +1437,18 @@ class NScope
       }
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
+
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
+    if( !sizeof(path) )
+        return 0;
+
     int(1..1)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
     if (!scope) {
@@ -1484,6 +1505,7 @@ class NScopeStack
     if (zero_type(flags)) flags = .FLAG_NORMAL;
     this_program::flags = flags;
   }
+
   protected void destroy()
   {
     if (sizeof(failures)) {
@@ -1512,20 +1534,24 @@ class NScopeStack
       f->close();
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScopeStack(num_scopes: %d, top: %O)",
 		   sizeof(stack), top);
   }
+
   void addImplicitInherits()
   {
     scopes->addImplicitInherits();
   }
+
   void reset()
   {
     top = scopes;
     stack = ({});
   }
+
   void enter(string symbol)
   {
     int(1..1)|NScope scope = top->symbols[symbol];
@@ -1541,6 +1567,7 @@ class NScopeStack
     stack += ({ top });
     top = scope;
   }
+
   void leave()
   {
     if (!top) {
@@ -1553,6 +1580,7 @@ class NScopeStack
       top = 0;
     }
   }
+
   NScope|int(1..1) lookup(string ref)
   {
     array(string) path = splitRef(ref);
@@ -1566,6 +1594,7 @@ class NScopeStack
     }
     return val;
   }
+
   string resolve(array(string) ref)
   {
     if (!sizeof(ref)) {
@@ -1588,7 +1617,8 @@ class NScopeStack
       case "::":
 	while(pos) {
 	  if (current->inherits) {
-	    foreach(current->inherits; ; NScope scope) {
+	    foreach(current->inherits; ; string|NScope scope) {
+	      if (stringp(scope)) scope = lookup(scope);
 	      if (objectp(scope)) {
 		string res = scope->lookup(ref[1..]);
 		if (res) return res;
@@ -1613,9 +1643,13 @@ class NScopeStack
 	  "7.9":"predef",
 	])[inh] || inh;
 	while(pos) {
-	  if (current->inherits && current->inherits[inh]) {
-	    string res = current->inherits[inh]->lookup(ref[1..]);
-	    if (res) return res;
+	  string|NScope scope;
+	  if (current->inherits && (scope = current->inherits[inh])) {
+	    if (stringp(scope)) scope = lookup(scope);
+	    if (objectp(scope)) {
+	      string res = scope->lookup(ref[1..]);
+	      if (res) return res;
+	    }
 	  }
 	  pos--;
 	  current = stack[pos];
@@ -1660,6 +1694,7 @@ class NScopeStack
     }
     return 0;
   }
+
   void resolveInherits()
   {
     int removed_self;

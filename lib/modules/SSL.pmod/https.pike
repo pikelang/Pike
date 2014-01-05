@@ -1,18 +1,54 @@
 #pike __REAL_VERSION__
 
 /*
- * dummy https server
+ * dummy https server/client
  */
 
-//! Dummy HTTPS server
+//! Dummy HTTPS server/client
 
+#ifndef PORT
 #define PORT 25678
+#endif
+
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 import Stdio;
 
+#ifndef HTTPS_CLIENT
 inherit SSL.sslport;
+
+protected void create()
+{
+  SSL3_DEBUG_MSG("https->create\n");
+  sslport::create();
+}
+
+void my_accept_callback(object f)
+{
+  werror("Accept!\n");
+  conn(accept());
+}
+
+protected string fmt_cipher_suites(array(int) s)
+{
+  String.Buffer b = String.Buffer();
+  mapping(int:string) ciphers = ([]);
+  foreach([array(string)]indices(SSL.Constants), string id)
+    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
+	has_prefix(id, "SSL2_") )
+      ciphers[SSL.Constants[id]] = id;
+  foreach(s, int c)
+    b->sprintf("   %-6d: %010x: %s\n",
+	       c, cipher_suite_sort_key(c), ciphers[c]||"unknown");
+  return (string)b;
+}
+#endif
 
 string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
@@ -40,9 +76,17 @@ class conn {
 
   object sslfile;
 
-  string message = "<html><head><title>SSL-3 server</title></head>\n"
-  "<body><h1>This is a minimal SSL-3 http server</h1>\n"
-  "<hr><it>/nisse</it></body></html>\n";
+  string message =
+    "HTTP/1.0 200 Ok\r\n"
+    "Connection: close\r\n"
+    "Content-Length: 132\r\n"
+    "Content-Type: text/html; charset=ISO-8859-1\r\n"
+    "Date: Thu, 01 Jan 1970 00:00:01 GMT\r\n"
+    "Server: Bare-Bones\r\n"
+    "\r\n"
+    "<html><head><title>SSL-3 server</title></head>\n"
+    "<body><h1>This is a minimal SSL-3 http server</h1>\n"
+    "<hr><it>/nisse</it></body></html>\n";
   int index = 0;
 
   void write_callback()
@@ -61,9 +105,7 @@ class conn {
   
   void read_callback(mixed id, string data)
   {
-#ifdef SSL3_DEBUG
-    werror("Received: '" + data + "'\n");
-#endif
+    SSL3_DEBUG_MSG("Received: '" + data + "'\n");
     sslfile->set_write_callback(write_callback);
   }
 
@@ -107,24 +149,64 @@ Version ::= INTEGER
 
 */
 
-void my_accept_callback(object f)
+class client
 {
-  werror("Accept!\n");
-  conn(accept());
+  constant request =
+    "HEAD / HTTP/1.0\r\n"
+    "Host: localhost:" + PORT + "\r\n"
+    "\r\n";
+
+  SSL.sslfile ssl;
+  int sent;
+  void write_cb()
+  {
+    int bytes = ssl->write(request[sent..]);
+    if (bytes > 0) {
+      sent += bytes;
+    } else if (sent < 0) {
+      werror("Failed to write data: %s\n", strerror(ssl->errno()));
+      exit(17);
+    }
+    if (sent == sizeof(request)) {
+      ssl->set_write_callback(UNDEFINED);
+    }
+  }
+  void got_data(mixed ignored, string data)
+  {
+    werror("Data: %O\n", data);
+  }
+  void con_closed()
+  {
+    werror("Connection closed.\n");
+    exit(0);
+  }
+
+  protected void create(Stdio.File con)
+  {
+    SSL.context ctx = SSL.context();
+    ctx->random = no_random()->read;
+    werror("Starting\n");
+    ssl = SSL.sslfile(con, ctx, 1);
+    ssl->set_nonblocking(got_data, write_cb, con_closed);
+  }
 }
 
 int main()
 {
-#ifdef SSL3_DEBUG
-  werror("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
-  werror("Key:  '%s'\n", Crypto.string_to_hex(my_key));
-//  werror("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1());
-#endif
+#ifdef HTTPS_CLIENT
+  Stdio.File con = Stdio.File();
+  if (!con->connect("127.0.0.1", PORT)) {
+    werror("Failed to connect to server: %s\n", strerror(con->errno()));
+    return 17;
+  }
+  client(con);
+  return -17;
+#else
+  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
 #if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-#ifdef SSL3_DEBUG
-  werror("Decoded key: %O\n", key);
-#endif
+  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
   object n = key[1][1];
   object e = key[2][1];
   object d = key[3][1];
@@ -141,6 +223,9 @@ int main()
   // FIXME: Is this correct?
   rsa = Standards.PKCS.RSA.parse_private_key(my_key);
 #endif /* 0 */
+  // Make sure all cipher suites are available.
+  rsa_mode();
+  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
   certificates = ({ my_certificate });
   random = no_random()->read;
   werror("Starting\n");
@@ -149,16 +234,11 @@ int main()
     perror("");
     return 17;
   }
-  else
+  else {
+    werror("Listening on port %d.\n", PORT);
     return -17;
-}
-
-protected void create()
-{
-#ifdef SSL3_DEBUG
-  werror("https->create\n");
+  }
 #endif
-  sslport::create();
 }
 
 #else // constant(SSL.Cipher.CipherAlgorithm)

@@ -166,10 +166,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   if (encode) {
     if (TYPEOF(encode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.EncodeError");
+      push_text ("Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.EncodeError "
+	Pike_error ("Failed to resolve Charset.EncodeError "
 		    "to a program - unable to throw an encode error.\n");
       move_svalue (&encode_err_prog, --sp);
     }
@@ -178,10 +178,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   else {
     if (TYPEOF(decode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.DecodeError");
+      push_text ("Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.DecodeError "
+	Pike_error ("Failed to resolve Charset.DecodeError "
 		    "to a program - unable to throw an decode error.\n");
       move_svalue (&decode_err_prog, --sp);
     }
@@ -235,7 +235,7 @@ void DECLSPEC(noreturn) transcoder_error (
     } else if(rep != NULL)						\
       func(ctx, sb, rep, NULL, NULL);					\
     else								\
-      transcoder_error (str, pos, 1, "Unsupported character.\n");	\
+      transcoder_error (str, pos, 1, "Unsupported character %d.\n",ch);	\
   } while (0)
 
 #define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
@@ -386,7 +386,7 @@ static void f_clear(INT32 args)
   push_object(this_object());
 }
 
-static void init_stor(struct object *o)
+static void init_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -396,7 +396,7 @@ static void init_stor(struct object *o)
   init_string_builder(&s->strbuild,0);
 }
 
-static void exit_stor(struct object *o)
+static void exit_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -756,7 +756,7 @@ static void f_clear_utf7(INT32 args)
   u7->datbit = 0;
 }
 
-static void utf7_init_stor(struct object *o)
+static void utf7_init_stor(struct object *UNUSED(o))
 {
   struct utf7_stor *u7 =
     (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
@@ -2243,7 +2243,7 @@ static void f_drain_utf7e(INT32 args)
   f_drain(args);
 }
 
-static void std_8bite_init_stor(struct object *o)
+static void std_8bite_init_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2255,7 +2255,7 @@ static void std_8bite_init_stor(struct object *o)
   s8->zero_char = 0xfffd;
 }
 
-static void std_8bite_exit_stor(struct object *o)
+static void std_8bite_exit_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2339,7 +2339,7 @@ static void f_feed_std8e(INT32 args)
   push_object(this_object());
 }
 
-static void std_16bite_init_stor(struct object *o)
+static void std_16bite_init_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
@@ -2351,7 +2351,7 @@ static void std_16bite_init_stor(struct object *o)
   s16->sshift = 0;
 }
 
-static void std_16bite_exit_stor(struct object *o)
+static void std_16bite_exit_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);

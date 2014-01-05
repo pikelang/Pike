@@ -38,8 +38,7 @@ int pgtk2_accel_group_activate_key_callback(GtkAccelGroup *accel_group,
   push_gobject(acceleratable);
   push_int(accel_key);
   push_int(accel_mods);
-  f_aggregate(5);
-  apply_svalue(&d->cb,1);
+  apply_svalue(&d->cb,5);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -67,7 +66,7 @@ void connect(int accel_key, int accel_mods, int accel_flags,
       SIMPLE_OUT_OF_MEMORY_ERROR("connect",sizeof(struct signal_data));
     assign_svalue_no_free(&sd->cb,Pike_sp+3-args);
     assign_svalue_no_free(&sd->args,Pike_sp+4-args);
-    closure=g_cclosure_new(G_CALLBACK(pgtk2_signal_func_wrapper),
+    closure=g_cclosure_new(G_CALLBACK(pgtk2_accel_group_activate_key_callback),
 		sd,(GClosureNotify)pgtk2_free_signal_data);
     gtk_accel_group_connect(GTK_ACCEL_GROUP(THIS->obj),accel_key,
 		accel_mods,accel_flags,closure);

@@ -290,71 +290,66 @@
 #define SAFE_FIFO_DEBUG_END() inside=0; }while(0)
 #endif /* DEBUG */
 
-#define DECLARE_FIFO(pre,TYPE) \
-  static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER]; \
-  static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0
-
-#define BEGIN_FIFO_PUSH(pre,TYPE) do { \
-  int PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_first) + 1; \
-  if(PIKE_CONCAT(pre,_tmp_) >= SIGNAL_BUFFER) PIKE_CONCAT(pre,_tmp_)=0
-
-#define FIFO_DATA(pre,TYPE) ( PIKE_CONCAT(pre,buf)[PIKE_CONCAT(pre,_tmp_)] )
-
-#define END_FIFO_PUSH(pre,TYPE) PIKE_CONCAT(pre,_first)=PIKE_CONCAT(pre,_tmp_); } while(0)
+#define DECLARE_FIFO(pre,TYPE)						  \
+  static volatile TYPE PIKE_CONCAT(pre,buf) [SIGNAL_BUFFER];		  \
+  static volatile int PIKE_CONCAT(pre,_first)=0,PIKE_CONCAT(pre,_last)=0; \
+  static inline int PIKE_CONCAT(pre,_pop)(TYPE *val) {			  \
+    int tmp2 = PIKE_CONCAT(pre,_first);					  \
+    if(PIKE_CONCAT(pre,_last) != tmp2) {				  \
+      int tmp;								  \
+      if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)			  \
+	PIKE_CONCAT(pre,_last)=0;					  \
+      tmp = PIKE_CONCAT(pre,_last);					  \
+      *val = PIKE_CONCAT(pre,buf)[tmp];					  \
+      return 1;								  \
+    }									  \
+    return 0;								  \
+  }									  \
+									  \
+  static inline void PIKE_CONCAT(pre,_push)(TYPE val) {			  \
+    int tmp = PIKE_CONCAT(pre, _first) + 1;				  \
+    if (tmp >= SIGNAL_BUFFER) tmp = 0;					  \
+    PIKE_CONCAT(pre, buf)[tmp] = val;					  \
+    PIKE_CONCAT(pre, _first) = tmp;					  \
+  }
 
 
 #define QUICK_CHECK_FIFO(pre,TYPE) ( PIKE_CONCAT(pre,_first) != PIKE_CONCAT(pre,_last) )
 
-#define BEGIN_FIFO_LOOP(pre,TYPE) do {				\
-   int PIKE_CONCAT(pre,_tmp2_)=PIKE_CONCAT(pre,_first);		\
-   while(PIKE_CONCAT(pre,_last) != PIKE_CONCAT(pre,_tmp2_))	\
-   {								\
-     int PIKE_CONCAT(pre,_tmp_);				\
-     if( ++ PIKE_CONCAT(pre,_last) == SIGNAL_BUFFER)		\
-       PIKE_CONCAT(pre,_last)=0;				\
-     PIKE_CONCAT(pre,_tmp_)=PIKE_CONCAT(pre,_last)
-
-#define END_FIFO_LOOP(pre,TYPE) } }while(0)
-     
 #define INIT_FIFO(pre,TYPE)
 
 #else /* NEED_SIGNAL_SAFE_FIFO */
 
-#define DECLARE_FIFO(pre,TYPE) \
-  static int PIKE_CONCAT(pre,_fd)[2]; \
-  static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available)
-
-#define BEGIN_FIFO_PUSH(pre,TYPE) do {		\
-    TYPE PIKE_CONCAT(pre,_tmp_) ;		\
-    int PIKE_CONCAT(pre,_tmp3_) ;		\
-    int PIKE_CONCAT(pre,_errno_save)=errno
-
-#define FIFO_DATA(pre,TYPE) PIKE_CONCAT(pre,_tmp_)
-
-#define END_FIFO_PUSH(pre,TYPE)					\
-  while( (PIKE_CONCAT(pre,_tmp3_) =				\
-	  write(PIKE_CONCAT(pre,_fd)[1],			\
-		(char *)&PIKE_CONCAT(pre,_tmp_),		\
-		sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 &&		\
-	 errno==EINTR)						\
-    ;								\
-  DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) !=			\
-		  sizeof( PIKE_CONCAT(pre,_tmp_)))		\
-		Pike_fatal("Atomic pipe write failed!!\n"); )	\
-    errno=PIKE_CONCAT(pre,_errno_save);				\
-  PIKE_CONCAT(pre,_data_available)=1;				\
-  } while(0)
+#define DECLARE_FIFO(pre,TYPE)					 \
+  static int PIKE_CONCAT(pre,_fd)[2];				 \
+  static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available); \
+  static inline int PIKE_CONCAT(pre, _pop)(TYPE *val) {		 \
+    PIKE_CONCAT(pre,_data_available) = 0;			 \
+    if (read(PIKE_CONCAT(pre,_fd)[0], val, sizeof(*val))	 \
+	== sizeof(*val)) {					 \
+      /* NB: We must reset and set data_available here		 \
+       *     to avoid races. */					 \
+      PIKE_CONCAT(pre,_data_available) = 1;			 \
+      return 1;							 \
+    }								 \
+    return 0;							 \
+  }								 \
+								 \
+  static inline void PIKE_CONCAT(pre, _push)(TYPE val) {	 \
+    int sz;							 \
+    int errno_save = errno;					 \
+    while( (sz = write(PIKE_CONCAT(pre,_fd)[1], (char *)&val,	 \
+			 sizeof(val))) < 0 &&			 \
+	   errno==EINTR)					 \
+      ;								 \
+    DO_IF_DEBUG(if (sz != sizeof(val))				 \
+		  Pike_fatal("Atomic pipe write failed!!\n"); )	 \
+    errno = errno_save;					 	 \
+    PIKE_CONCAT(pre,_data_available)=1;				 \
+  }
 
 
 #define QUICK_CHECK_FIFO(pre,TYPE) PIKE_CONCAT(pre,_data_available)
-
-#define BEGIN_FIFO_LOOP(pre,TYPE) do {			      \
-   TYPE PIKE_CONCAT(pre,_tmp_);				      \
-   PIKE_CONCAT(pre,_data_available)=0;			      \
-   while(read(PIKE_CONCAT(pre,_fd)[0],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))==sizeof(PIKE_CONCAT(pre,_tmp_))) \
-   {
-
-#define END_FIFO_LOOP(pre,TYPE) }}while(0)
 
 #define INIT_FIFO(pre,TYPE) do {			\
   if(pike_make_pipe(PIKE_CONCAT(pre,_fd)) <0)		\
@@ -378,6 +373,7 @@ static int set_priority( int pid, char *to );
 
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
+static sig_atomic_t signal_masks[MAX_SIGNALS];
 static void (*default_signals[MAX_SIGNALS])(INT32);
 static struct callback *signal_evaluator_callback =0;
 
@@ -710,18 +706,15 @@ void process_done(pid_t pid, const char *from)
 
 #else
 
-#define process_started(PID)
-#define process_done(PID,FROM)
-#define dump_process_history(PID)
+void process_started(pid_t UNUSED(pid)) { }
+void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 
 #endif /* PIKE_DEBUG */
 
 
 static void register_signal(int signum)
 {
-  BEGIN_FIFO_PUSH(sig, unsigned char);
-  FIFO_DATA(sig, unsigned char)=signum;
-  END_FIFO_PUSH(sig, unsigned char);
+  sig_push(signum);
   wake_up_backend();
 }
 
@@ -792,61 +785,75 @@ void my_signal(int sig, sigfunctype fun)
 
 
 
-static int signalling=0;
-
-static void unset_signalling(void *notused) { signalling=0; }
-
-PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
+PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
-  ONERROR ebuf;
 #ifdef PIKE_DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug();
 #endif
 
-
-  if(QUICK_CHECK_FIFO(sig, unsigned char) && !signalling)
+  if (QUICK_CHECK_FIFO(sig, unsigned char))
   {
-    signalling=1;
+    unsigned char sig = ~0;
 
-    SET_ONERROR(ebuf,unset_signalling,0);
-
-    BEGIN_FIFO_LOOP(sig, unsigned char);
+    while (sig_pop(&sig)) {
 
 #ifdef USE_SIGCHILD
-    if(FIFO_DATA(sig, unsigned char)==SIGCHLD)
-    {
-      BEGIN_FIFO_LOOP(wait,wait_data);
+      if(sig == SIGCHLD)
+      {
+	wait_data wd;
 
-      if(!FIFO_DATA(wait,wait_data).pid)
-	  Pike_fatal("FIFO_DATA(wait,wait_data).pid=0 NEED_SIGNAL_SAFE_FIFO is "
+	while (wait_pop(&wd)) {
+
+	  if(!wd.pid)
+	    Pike_fatal("wd.pid=0 NEED_SIGNAL_SAFE_FIFO is "
 #ifndef NEED_SIGNAL_SAFE_FIFO
-		"not "
+		       "not "
 #endif
-		"defined.\n");
-	
-      report_child(FIFO_DATA(wait,wait_data).pid,
-		   FIFO_DATA(wait,wait_data).status,
-		   "check_signals");
-      
-      END_FIFO_LOOP(wait,wait_data);
-    }
+		       "defined.\n");
+
+	  report_child(wd.pid, wd.status, "check_signals");
+	}
+      }
 #endif
 
-    if(SAFE_IS_ZERO(signal_callbacks + FIFO_DATA(sig, unsigned char)))
-    {
-      if(default_signals[FIFO_DATA(sig, unsigned char)])
-	default_signals[FIFO_DATA(sig, unsigned char)]
-	  (FIFO_DATA(sig, unsigned char));
-    }else{
-      push_int(FIFO_DATA(sig, unsigned char));
-      apply_svalue(signal_callbacks + FIFO_DATA(sig, unsigned char), 1);
-      pop_stack();
-    }
+#if MAX_SIGNALS < 256
+      if (sig >= MAX_SIGNALS) continue;
+#endif
 
-    END_FIFO_LOOP(sig, unsigned char);
-    UNSET_ONERROR(ebuf);
-    signalling=0;
+      if (!signal_masks[sig]) {
+	signal_masks[sig] = 1;
+
+	do {
+	  /* NB: We check this every loop in case the
+	   *     Pike-level signal handler has been
+	   *     disabled during the call. */
+	  if(SAFE_IS_ZERO(signal_callbacks + sig))
+	  {
+	    if(default_signals[sig])
+	      default_signals[sig](sig);
+	  } else {
+	    JMP_BUF recovery;
+	    free_svalue(&throw_value);
+	    mark_free_svalue(&throw_value);
+	    if (SETJMP_SP(recovery, 0)) {
+	      call_handle_error();
+	    } else {
+	      push_svalue(signal_callbacks + sig);
+	      push_int(sig);
+	      f_call_function(2);
+	      pop_stack();
+	    }
+	    UNSETJMP(recovery);
+	  }
+	} while (--signal_masks[sig]);
+      } else {
+	/* Signal handler is being called somewhere else.
+	 * Make it repeat when finished.
+	 */
+	signal_masks[sig] = 2;
+      }
+    }
   }
 }
 
@@ -1076,7 +1083,7 @@ void forkd(int fd)
     do {
       j = close(i);
     } while ((j < 0) && (errno == EINTR));
-    if ((j < 0) && (errno = EBADF)) num_fail++;
+    if ((j < 0) && (errno == EBADF)) num_fail++;
   }
 
   while (1) {
@@ -1088,7 +1095,7 @@ void forkd(int fd)
     iov.iov_len = 1;
     do {
       i = recvmsg(fd, &msg, 0);
-    } while ((i < 0) && (errno = EINTR));
+    } while ((i < 0) && (errno == EINTR));
     if (!i) _exit(0);	/* Connection closed, shutdown forkd. */
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
       int ctrl_fd = NULL;
@@ -1101,7 +1108,7 @@ void forkd(int fd)
       num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
       do {
 	i = fork();
-      } while ((i < 0) && (errno = EINTR));
+      } while ((i < 0) && (errno == EINTR));
       if (i < 0) {
 	/* Fork failure. */
       } else if (i) {
@@ -1162,6 +1169,13 @@ static RETSIGTYPE receive_sigchild(int signum)
 
   PROC_FPRINTF((stderr, "[%d] receive_sigchild\n", getpid()));
 
+#ifdef SIGNAL_ONESHOT
+  /* Reregister the signal early, so that we don't
+   * miss any children.
+   */
+  my_signal(signum, receive_sigchild);
+#endif
+
   SAFE_FIFO_DEBUG_BEGIN();
 
  try_reap_again:
@@ -1170,29 +1184,26 @@ static RETSIGTYPE receive_sigchild(int signum)
   
   if(pid>0)
   {
-    BEGIN_FIFO_PUSH(wait,wait_data);
+    wait_data wd;
 
 #ifdef __CHECKER__
     /* Clear potential padding. */
-    MEMSET(&FIFO_DATA(wait,wait_data), 0, sizeof(FIFO_DATA(wait,wait_data)));
+    MEMSET(&wd, 0, sizeof(wd));
 #endif
 
     PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
 		  getpid(), pid));
 
-    FIFO_DATA(wait,wait_data).pid=pid;
-    FIFO_DATA(wait,wait_data).status=status;
-    END_FIFO_PUSH(wait,wait_data);
+    wd.pid=pid;
+    wd.status=status;
+    wait_push(wd);
     goto try_reap_again;
   }
+  PROC_FPRINTF((stderr, "[%d] receive_sigchild: No more dead children.\n",
+		getpid()));
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(signum, receive_sigchild);
-#endif
-
 }
 #endif
 
@@ -1228,7 +1239,7 @@ struct pid_status
 
 static struct program *pid_status_program=0;
 
-static void init_pid_status(struct object *o)
+static void init_pid_status(struct object *UNUSED(o))
 {
   THIS->pid=-1;
 #ifdef __NT__
@@ -1242,7 +1253,7 @@ static void init_pid_status(struct object *o)
 #endif
 }
 
-static void exit_pid_status(struct object *o)
+static void exit_pid_status(struct object *UNUSED(o))
 {
 #ifdef USE_PID_MAPPING
   if(pid_mapping)
@@ -1259,7 +1270,7 @@ static void exit_pid_status(struct object *o)
 }
 
 #ifdef USE_PID_MAPPING
-static void call_pid_status_callback(struct callback *cb, void *pid, void *arg)
+static void call_pid_status_callback(struct callback *cb, void *pid, void *UNUSED(arg))
 {
   struct object *o = pid;
   struct pid_status *p;
@@ -1296,6 +1307,8 @@ static void report_child(int pid,
       if(TYPEOF(*s) == T_OBJECT)
       {
 	struct object *o;
+	PROC_FPRINTF((stderr, "[%d] Found pid object for pid %d: %p\n",
+		      getpid(), (int)pid, s->u.object));
 	if((p=(struct pid_status *)get_storage((o = s->u.object),
 					       pid_status_program)))
 	{
@@ -1333,6 +1346,8 @@ static void report_child(int pid,
 	      p->result=-1;
 	    }
 	    p->state = PROCESS_EXITED;
+	    PROC_FPRINTF((stderr, "[%d] Pid %d has exited\n",
+			  getpid(), (int)pid));
 	  }
 	}
       }
@@ -1389,7 +1404,7 @@ static void do_bi_do_da_lock(void)
   mt_unlock(&wait_thread_mutex);
 }
 
-static TH_RETURN_TYPE wait_thread(void *data)
+static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 {
   if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
   {
@@ -1585,7 +1600,7 @@ static void f_pid_status_wait(INT32 args)
   }
 #else
   {
-    int wait_for_stopped;
+    int wait_for_stopped, alreadydied = 0;
   if (THIS->pid == getpid())
     Pike_error("Waiting for self.\n");
 
@@ -1642,8 +1657,9 @@ static void f_pid_status_wait(INT32 args)
 	if ((THIS->state == PROCESS_RUNNING) ||
 	    (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
 	  struct pid_status *this = THIS;
+	  int killret, killerr;
 	  THREADS_ALLOW();
-	  while ((!kill(pid, 0)) &&
+	  while ((!(killret = kill(pid, 0), killerr = errno, killret)) &&
 		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
 	    PROC_FPRINTF((stderr, "[%d] wait(%d): Sleeping...\n",
 			  getpid(), pid));
@@ -1665,6 +1681,11 @@ static void f_pid_status_wait(INT32 args)
 #endif /* HAVE_POLL */
 	  }
 	  THREADS_DISALLOW();
+	  if (killret && killerr == ESRCH) { 
+	    if (alreadydied)
+	      goto lostchild;	/* But if we already looped, punt */
+	    alreadydied = 1;	/* We try looping once, to cover for races */
+	  }
 	}
 	/* The process has died. */
 	PROC_FPRINTF((stderr, "[%d] wait(%d): Process dead.\n",
@@ -1677,8 +1698,8 @@ static void f_pid_status_wait(INT32 args)
 	   * doesn't work, let the main loop complain.
 	   */
 	  PROC_FPRINTF((stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"wait(%d): Sleeping some more...\n",
-			getpid(), pid, pid));
+			"[%d] wait(%d): Sleeping some more...\n",
+			getpid(), pid, getpid(), pid));
 	  THREADS_ALLOW();
 #ifdef HAVE_POLL
 	  poll(NULL, 0, 100);
@@ -1699,6 +1720,7 @@ static void f_pid_status_wait(INT32 args)
 #endif /* _REENTRANT || USE_SIGCHILD */
 
       default:
+lostchild:
 	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",
 		   THIS->pid, err);
 	break;
@@ -1707,8 +1729,8 @@ static void f_pid_status_wait(INT32 args)
       /* This should not happen! */
       Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
     }
-    check_threads_etc();
 #endif
+    check_threads_etc();
   }
 
   pop_n_elems(args);
@@ -1828,12 +1850,12 @@ static void f_pid_status_set_priority(INT32 args)
  *     pid_status_program is inherited first.
  */
 
-static void init_trace_process(struct object *o)
+static void init_trace_process(struct object *UNUSED(o))
 {
   THIS->flags |= PROCESS_FLAG_TRACED;
 }
 
-static void exit_trace_process(struct object *o)
+static void exit_trace_process(struct object *UNUSED(o))
 {
   /* FIXME: Detach the process? */
 }
@@ -2453,7 +2475,7 @@ void f_set_priority( INT32 args )
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage, 
-                                char *limit_name,
+                                char *UNUSED(limit_name),
                                 int limit_resource,
                                 struct svalue *limit_value )
 {
@@ -2499,7 +2521,7 @@ static void internal_add_limit( struct perishables *storage,
     if(TYPEOF(limit_value->u.array->item[1]) == PIKE_T_INT)
       l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
     else
-      l->rlp.rlim_max = ol.rlim_cur;
+      l->rlp.rlim_cur = ol.rlim_cur;
   } else if(TYPEOF(*limit_value) == T_STRING) {
     l = malloc(sizeof(struct pike_limit));
     l->rlp.rlim_max = RLIM_INFINITY;
@@ -2582,6 +2604,9 @@ int fd_cleanup_cb(void *data, int fd)
  *!
  *! @member string "chroot"
  *!   Chroot to this directory before executing the command.
+ *!
+ *!   Note that the current directory will be changed to @expr{"/"@} in
+ *!   the chroot environment, unless @expr{"cwd"@} above has been set.
  *!
  *! @member Stdio.File "stdin"
  *! @member Stdio.File "stdout"
@@ -2715,13 +2740,15 @@ int fd_cleanup_cb(void *data, int fd)
  *!   performance is an issue, please use integers.
  *!
  *! @note
- *!   The modifiers @expr{"callback"@}, @expr{"fds"@},
- *!   @expr{"uid"@}, @expr{"gid"@},
- *!   @expr{"nice"@}, @expr{"noinitgroups"@}, @expr{"setgroups"@},
- *!   @expr{"keep_signals"@} and @expr{"rlimit"@} only exist on unix.
+ *!   On NT the only supported modifiers are: @expr{"cwd"@},
+ *!   @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@} and
+ *!   @expr{"env"@}. All other modifiers are silently ignored.
  *!
  *! @note
  *!   Support for @expr{"callback"@} was added in Pike 7.7.
+ *!
+ *! @note
+ *!   Chroot changing directory to @expr{"/"@} was added in Pike 7.9.
  */
 
 /*! @endclass */
@@ -3725,6 +3752,10 @@ void f_create_process(INT32 args)
 	/* Something went wrong in the child. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
+	  if (buf[2]) {
+	    Pike_error("Process.create_process(): chdir(\"/\") in chroot failed. errno:%d\n",
+		       buf[1]);
+	  }
 	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
 		     buf[1]);
 	  break;
@@ -3820,6 +3851,10 @@ void f_create_process(INT32 args)
     }else{
       /*
        * The child process
+       *
+       * NB: Avoid calling any functions in libc here, since
+       *     internal mutexes may be held by other nonforked
+       *     threads.
        */
 #ifdef DECLARE_ENVIRON
       extern char **environ;
@@ -3828,6 +3863,18 @@ void f_create_process(INT32 args)
       extern void do_set_close_on_exec(void);
 
 #ifdef PROC_DEBUG
+      char debug_prefix[] = {
+	'[',
+	'0' + (getpid()/100000)%10,
+	'0' + (getpid()/10000)%10,
+	'0' + (getpid()/1000)%10,
+	'0' + (getpid()/100)%10,
+	'0' + (getpid()/10)%10,
+	'0' + getpid()%10,
+	']',
+	' ',
+      };
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child\n", 6);
 #endif /* PROC_DEBUG */
 
@@ -3841,9 +3888,24 @@ void f_create_process(INT32 args)
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
 	;
 
-      /* FIXME: What to do if e < 0 ? */
-
 #ifdef PROC_DEBUG
+      if (e < 0) {
+	char buf[5] = {
+	  '0' + (errno/1000)%10,
+	  '0' + (errno/100)%10,
+	  '0' + (errno/10)%10,
+	  '0' + errno%10,
+	  '\n'
+	};
+
+	write(2, debug_prefix, sizeof(debug_prefix));
+	write(2, "Child: Control pipe read failed with errno: ", 44);
+	write(2, buf, 5);
+      } else if (!e) {
+	write(2, debug_prefix, sizeof(debug_prefix));
+	write(2, "Child: No data from control pipe.\n", 34);
+      }
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Woken up.\n", 17);
 #endif /* PROC_DEBUG */
 
@@ -3892,17 +3954,26 @@ void f_create_process(INT32 args)
       {
 	if( chroot( mchroot ) )
         {
+	  /* FIXME: Is this fprintf safe? */
 	  PROC_FPRINTF((stderr,
 			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
 			getpid(), chroot, errno));
           PROCERROR(PROCE_CHROOT, 0);
         }
+	if (chdir("/"))
+	{
+	  PROC_FPRINTF((stderr,
+			"[%d] child: chdir(\"/\") failed, errno=%d\n",
+			getpid(), errno));
+	  PROCERROR(PROCE_CHDIR, 1);
+	}
       }
 
       if(tmp_cwd)
       {
         if( chdir( tmp_cwd ) )
         {
+	  /* FIXME: Is this fprintf safe? */
 	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
 			getpid(), tmp_cwd, errno));
           PROCERROR(PROCE_CHDIR, 0);
@@ -4189,15 +4260,17 @@ void f_create_process(INT32 args)
 #ifdef HAVE_PTRACE
       if (do_trace) {
 #ifdef PROC_DEBUG
+	write(2, debug_prefix, sizeof(debug_prefix));
 	write(2, "Child: Calling ptrace()...\n", 27);
 #endif /* PROC_DEBUG */
 
 	/* NB: A return value is not defined for this ptrace request! */
-	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	ptrace(PTRACE_TRACEME, 0, NULL, 0);
       }
 #endif /* HAVE_PTRACE */
 	
 #ifdef PROC_DEBUG
+      write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Calling exec()...\n", 25);
 #endif /* PROC_DEBUG */
 
@@ -4767,7 +4840,7 @@ static RETSIGTYPE fatal_signal(int signum)
 
 static struct array *atexit_functions;
 
-static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
+static void run_atexit_functions(struct callback *UNUSED(cb), void *UNUSED(arg),void *UNUSED(arg2))
 {
   if(atexit_functions)
   {
@@ -4886,7 +4959,7 @@ PMOD_EXPORT void low_init_signals(void)
   }
 #endif
 
-  /* Restore aby custom signals if needed. */
+  /* Restore any custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
     
     if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
@@ -4923,10 +4996,6 @@ void init_signals(void)
 
 #ifdef USE_PID_MAPPING
   pid_mapping=allocate_mapping(2);
-
-#ifndef USE_WAIT_THREAD
-  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
-#endif
 #endif
 
 #ifdef USE_WAIT_THREAD

@@ -144,17 +144,15 @@ PIKECLASS Shuffle
     }
   }
 
-  static int got_shuffler_event(struct fd_callback_box*box, int event) {
+  static int got_shuffler_event(struct fd_callback_box*box, int DEBUGUSED(event)) {
 #ifdef PIKE_DEBUG
     if (event != PIKE_FD_WRITE)
       Pike_fatal ("Got unexpected event %d.\n", event);
 #endif
     _send_more((struct Shuffle_struct*)
      ((char*)box-offsetof(struct Shuffle_struct,box)));
-    /* FIXME: Is this the correct return value?
-     *        /grubba 2004-09-02
-     */
-    return 0;
+
+    return 0; // Everything OK.
   }
   
   PIKEFUN void set_throttler( object t )
@@ -338,27 +336,6 @@ PIKECLASS Shuffle
     debug_malloc_touch( t->box.ref_obj );
     ref_push_object( t->box.ref_obj );
 
-    /* If a callback exists, we call it before destroying
-     * source and destination
-     */
-    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
-    {
-      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
-		    reason, t->done_callback.u.object);
-      push_svalue( &t->done_callback );
-
-      /* Ensure us only calling the callback once. */
-      free_svalue(&t->done_callback);
-      mark_free_svalue(&t->done_callback);
-      
-      ref_push_object( t->box.ref_obj );
-      push_int( reason );
-
-      apply_svalue( Pike_sp-3, 2 );
-      pop_stack();
-      pop_stack();
-    }
-
     /* It might have been destroyed. */
     if( t->shuffler && t->shuffler->prog )
     {
@@ -394,6 +371,30 @@ PIKECLASS Shuffle
     }
 
     t->leftovers.data = 0;
+
+    /* If a callback exists, we call it at the end, because done_callback might
+     * explicitly destruct this object. This happened in one of the testcases.
+     * Calling done_callback at the end essentially reverts commit
+     * 95865471b36a441ad345cd7f23fe7d3260578c2f.
+     *	/arne
+     */
+    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
+    {
+      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
+		    reason, t->done_callback.u.object);
+      push_svalue( &t->done_callback );
+
+      /* Ensure us only calling the callback once. */
+      free_svalue(&t->done_callback);
+      mark_free_svalue(&t->done_callback);
+
+      ref_push_object( t->box.ref_obj );
+      push_int( reason );
+
+      apply_svalue( Pike_sp-3, 2 );
+      pop_stack();
+      pop_stack();
+    }
   }
 
   PIKEFUN void set_done_callback( mixed cb )
@@ -705,23 +706,17 @@ PIKECLASS Shuffle
 
     if( args > 1 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
-      else
-#endif
-	if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
-	  rstart = start->u.integer;
+      else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
+        rstart = start->u.integer;
     }
     if( args > 2 )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
-      else
-#endif
-	if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
-	  rlength = length->u.integer;
+      else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
+        rlength = length->u.integer;
     }
     if( rlength == 0 )
     {

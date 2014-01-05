@@ -73,24 +73,6 @@ dnl see if we can find the include files in any of the standard locations
     AC_MSG_RESULT(not found.)
   fi
 
-dnl last ditch. The locator could be confused e.g. by pike include files
-dnl unluckily there is no way out of it.
-  if test x$pike_cv_pgres_include_dir$pike_try_locate = xnoyes; then
-    AC_MSG_CHECKING(whether we can locate it anyway...)
-    for pike_cv_pgres_locate_include_file in `locate libpq-fe.h`; do
-dnl check it not to be a stale entry
-      if test -f $pike_cv_pgres_locate_include_file; then
-	pike_cv_pgres_include_dir=`dirname $pike_cv_pgres_locate_include_file`
-	break
-      fi
-    done
-    if test x$pike_cv_pgres_include_dir != xno; then
-      AC_MSG_RESULT(found in $pike_cv_pgres_include_dir.)
-    else
-      AC_MSG_RESULT(not found.)
-    fi
-  fi
-
   if test x$pike_cv_pgres_include_dir != xno; then
     CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
   fi

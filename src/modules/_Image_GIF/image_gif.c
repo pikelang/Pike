@@ -1701,7 +1701,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       if (debug) fprintf(stderr,"code=%d 0x%02x bits=%d\n",n,n,bits);
 #endif
 
-      if (n==m) 
+      if (n==m && last!=n) 
       {
 	// Copy the last color from the previous sequence
 	 c[n].prev=last;
@@ -1768,7 +1768,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
 	 last_last_seq = myc;  // Keep for use in next iteration
 
-	 if (last!=clearcode)
+	 if (last!=clearcode && last!=m)
 	 {
 	    c[m].prev=last;
 	    c[m].len=c[last].len+1;
@@ -1998,15 +1998,19 @@ void image_gif__decode(INT32 args)
 			"(no data string of block array in position %d)\n",i);
 	       switch (b->item[1].u.integer)
 	       {
-		  case 0xf9: /* gce */
-		     if (b->item[2].u.string->len>=4)
-		     s=(unsigned char *)b->item[2].u.string->str;
-		     transparency=s[0]&1;
-		     user_input=!!(s[0]&2);
-		     disposal=(s[0]>>2)&7;
-		     delay=s[1]+(s[2]<<8);
-		     transparency_index=s[3];
+		  case 0xf9: /* GCE (Graphic Control Extension). */
+		     if (b->item[2].u.string->len>=4) {
+		        s=(unsigned char *)b->item[2].u.string->str;
+			transparency=s[0]&1;
+			user_input=!!(s[0]&2);
+			disposal=(s[0]>>2)&7;
+			delay=s[1]+(s[2]<<8);
+			transparency_index=s[3];
+		     }
 		     break;
+	          case 0x01: /* Plain Text Extension. */
+	          case 0xfe: /* Comment Extension. */
+	          case 0xff: /* Application Extension. */
 		  default: /* unknown */
 		     push_svalue(a->item+i);
 		     n++;
@@ -2732,7 +2736,7 @@ static void image_gif_lzw_decode(INT32 args)
 	    q=(q<<8)|(*s),bit+=8,s++,len--;
       else
 	 while (bit<bits && len) 
-	    q|=((*s)<<bit),bit+=8,s++,len--;
+	    q|=((long)(*s)<<bit),bit+=8,s++,len--;
    }
    free(c);
 

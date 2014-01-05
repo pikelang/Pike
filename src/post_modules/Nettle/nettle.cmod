@@ -8,6 +8,7 @@
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
+#include "pike_memory.h"
 
 #include "nettle_config.h"
 
@@ -34,7 +35,7 @@ DECLARATIONS
  *! Yarrow is a family of pseudo-randomness generators, designed for
  *! cryptographic use, by John Kelsey, Bruce Schneier and Niels Ferguson.
  *! Yarrow-160 is described in a paper at
- *! @url{http://www.counterpane.com/yarrow.html@}, and it uses SHA1 and
+ *! @url{http://www.schneier.com/paper-yarrow.html@}, and it uses SHA1 and
  *! triple-DES, and has a 160-bit internal state. Nettle implements
  *! Yarrow-256, which is similar, but uses SHA256 and AES to get an
  *! internal state of 256 bits.
@@ -103,18 +104,19 @@ PIKECLASS Yarrow
     yarrow256_init(&THIS->ctx, num, THIS->sources);
   }
 
-  /*! @decl Yarrow seed(string data)
-   *! The random generator needs to be seeded before
-   *! it can be used. The seed must be at least 32
-   *! characters long. The seed could be stored from
-   *! a previous run by inserting the value returned
-   *! from @[get_seed].
+  /*! @decl Yarrow seed(string(0..255) data)
+   *!
+   *! The random generator needs to be seeded before it can be used.
+   *! The seed must be at least 32 characters long. The seed could be
+   *! stored from a previous run by inserting the value returned from
+   *! @[get_seed].
+   *!
    *! @returns
    *!   Returns the called object.
    *! @seealso
    *!   @[min_seed_size], @[get_seed], @[is_seeded]
    */
-  PIKEFUN object seed(string data)
+  PIKEFUN object seed(string(0..255) data)
     optflags OPT_SIDE_EFFECT;
   {
     if(data->len < YARROW256_SEED_FILE_SIZE)
@@ -146,7 +148,7 @@ PIKECLASS Yarrow
    *! @seealso
    *!   @[seed()], @[random_string()]
    */
-  PIKEFUN string get_seed()
+  PIKEFUN string(0..255) get_seed()
     optflags OPT_EXTERNAL_DEPEND;
     rawtype tDeprecated(tFunc(tNone, tStr8));
   {
@@ -160,8 +162,17 @@ PIKECLASS Yarrow
     if (THIS->seed_file) {
       REF_RETURN THIS->seed_file;
     } else {
+      /*
+       * It seems somewhat unreasonable to use uninitialized memory here.
+       * Instead, I think the user should be warned. It really isnt a very
+       * good source of entropy and may lead to undefined behavior in C.
+       * Why not simply return 0 in that case?
+       *  /arne
+       */
       struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      RETURN end_shared_string(s);
+      PIKE_MEM_RW_RANGE(s->str, YARROW256_SEED_FILE_SIZE);
+      s = end_shared_string(s);
+      RETURN s;
     }
 #endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
   }
@@ -201,13 +212,13 @@ PIKECLASS Yarrow
     pike_generate_seed_file();
   }
 
-  /*! @decl int(0..1) update(string data, int source, int entropy)
+  /*! @decl int(0..1) update(string(0..255) data, int source, int entropy)
    *! Inject additional entropy into the random number generator.
    *!
    *! @seealso
    *!   @[create]
    */
-  PIKEFUN int(0..1) update(string data, int source, int entropy)
+  PIKEFUN int(0..1) update(string(0..255) data, int source, int entropy)
     optflags OPT_SIDE_EFFECT;
   {
     int ret;
@@ -239,10 +250,10 @@ PIKECLASS Yarrow
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string random_string(int length)
+  /*! @decl string(0..255) random_string(int length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string random_string(int length)
+  PIKEFUN string(0..255) random_string(int length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -274,16 +285,24 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string crypt_md5(string password, string salt, void|string magic)
- *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
- *! It is assumed that @[salt] does not contain "$".
+/*! @decl string(0..127) crypt_md5(string(0..255) password, @
+ *!                                string(0..255) salt,@
+ *!                                void|string(0..255) magic)
+ *! Does the crypt_md5 abrakadabra (MD5 + snakeoil). It is assumed
+ *! that @[salt] does not contain "$".
+ *!
+ *! The @[password] memory will be cleared before released.
  */
-PIKEFUN string crypt_md5(string pw, string salt, void|string magic)
+PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
+				 void|string(0..255) magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
+
+  pw->flags |= STRING_CLEAR_ON_EXIT;
+
   if(!magic)
   {
     hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
@@ -291,704 +310,13 @@ PIKEFUN string crypt_md5(string pw, string salt, void|string magic)
   }
   else
   {
+    NO_WIDE_STRING(magic);
     hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
                           magic->len, magic->str);
   }
 
   push_text(hash);
 }
-
-
-static const char *crypto_functions[] = {
-  "block_size",
-  "key_size",
-  "set_encrypt_key",
-  "set_decrypt_key",
-  "crypt",
-  0
-};
-
-static const char *assert_is_crypto_object(struct program *p,
-				    const char *const *required) {
-  while (*required) {
-    if (find_identifier( (char *) *required, p) < 0)
-      return *required;
-    required++;
-  }
-  return 0;
-}
-
-static struct object *make_cipher_object(INT32 args) {
-  ptrdiff_t fun;
-  const char *missing;
-  struct svalue *top = Pike_sp-args;
-  struct object *obj;
-
-  switch(TYPEOF(*top))
-  {
-    case T_PROGRAM:
-      obj = clone_object(top->u.program, args-1);
-      break;
-
-    case T_FUNCTION:
-      apply_svalue(Pike_sp - args, args-1);
-
-      /* Check return value */
-      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error("Returned value is not an object.\n");
-
-      add_ref(obj = Pike_sp[-1].u.object);
-      break;
-
-    case T_OBJECT:
-      fun = -1;
-      missing = assert_is_crypto_object(top->u.object->prog,
-					crypto_functions);
-      if(missing)
-	fun = FIND_LFUN(top->u.object->prog, LFUN_CALL);
-      if(fun!=-1) {
-	apply_low(top->u.object, fun, args-1);
-	stack_swap();
-	pop_stack();
-      }
-      else
-	if(args!=1) Pike_error("Too many arguments.\n");
-
-      add_ref(obj = top->u.object);
-      break;
-    default:
-      SIMPLE_BAD_ARG_ERROR("create", 1, "program|object|function");
-    }
-
-  pop_stack();
-
-  missing = assert_is_crypto_object(obj->prog, crypto_functions);
-  if(missing) {
-    free_object(obj);
-    Pike_error("Object is missing identifier \"%s\"\n", missing);
-  }
-
-  return obj;
-}
-
-
-/*! @class CBC
- *! @belongs Crypto
- *! Implementation of the cipher block chaining mode (CBC). Works as
- *! a wrapper for the cipher algorithm put in create.
- */
-PIKECLASS CBC
-{
-  CVAR struct object *object;
-  CVAR unsigned INT8 *iv;
-  CVAR INT32 block_size;
-  CVAR INT32 mode;
-
-  INIT
-  {
-    THIS->object = NULL;
-    THIS->iv = NULL;
-    THIS->block_size = 0;
-    THIS->mode = 0;
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    if(THIS->object) {
-      free_object(THIS->object);
-    }
-    if(THIS->iv) {
-      MEMSET(THIS->iv, 0, THIS->block_size);
-      free(THIS->iv);
-    }
-  }
-
-  INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
-  {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    for(i=0; i < block_size; i++)
-      THIS->iv[i] ^= source[i];
-
-    push_string(make_shared_binary_string((INT8 *)THIS->iv, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
-      Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    }
-    MEMCPY(THIS->iv, Pike_sp[-1].u.string->str, block_size);
-    MEMCPY(dest, Pike_sp[-1].u.string->str, block_size);
-    pop_stack();
-  }
-
-  INLINE static void cbc_decrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
-  {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    push_string(make_shared_binary_string((const INT8 *)source, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
-      Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    }
-
-    for(i=0; i < block_size; i++)
-      dest[i] = THIS->iv[i] ^ Pike_sp[-1].u.string->str[i];
-
-    pop_stack();
-    MEMCPY(THIS->iv, source, block_size);
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *! Initialize the CBC wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    int old_block_size = THIS->block_size;
-    THIS->object = make_cipher_object(args);
-
-    safe_apply(THIS->object, "block_size", 0);
-
-    if(TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int.\n");
-
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    pop_stack();
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %d.\n", THIS->block_size);
-
-    if(THIS->iv) {
-      MEMSET(THIS->iv, 0, old_block_size);
-      free(THIS->iv);
-    }
-    THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
-    MEMSET(THIS->iv, 0, THIS->block_size);
-  }
-
-  /*! @decl string name()
-   *! Returns the string @expr{"CBC(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("CBC(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int block_size()
-   *! Reurns the block size of the encapsulated cipher.
-   */
-  PIKEFUN int block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int key_size()
-   *! Returns the key size of the encapsulated cipher.
-   */
-  PIKEFUN int key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string key)
-   *! Prepare the cipher and the wrapper for encrypting
-   *! with the given @[key].
-   */
-  PIKEFUN object set_encrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 0;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_decrypt_key(string key)
-   *! Prepare the cipher and the wrapper for decrypting
-   *! with the given @[key].
-   */
-  PIKEFUN object set_decrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 1;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_iv(string iv)
-   *! Set the initialization vector to @[iv].
-   */
-  PIKEFUN object set_iv(string iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->iv);
-    NO_WIDE_STRING(iv);
-    if(iv->len != THIS->block_size)
-      Pike_error("Argument incompatible with cipher block size.\n");
-    MEMCPY(THIS->iv, iv->str, THIS->block_size);
-    RETURN this_object();
-  }
-
-  /*! @decl string crypt(string data)
-   *! Encrypt/decrypt @[data] and return the result. @[data] must
-   *! be an integral number of blocks.
-   */
-  PIKEFUN string crypt(string data) {
-    unsigned INT8 *result;
-    INT32 offset = 0;
-    ONERROR uwp;
-
-    NO_WIDE_STRING(data);
-
-    if(data->len % THIS->block_size)
-      Pike_error("Data length not multiple of block size.\n");
-
-    if(!(result = malloc(data->len)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
-    SET_ONERROR (uwp, free, result);
-
-    if(THIS->mode == 0) {
-      while (offset < data->len) {
-	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
-    }
-    else {
-      while (offset < data->len) {
-	cbc_decrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
-    }
-
-    pop_n_elems(args);
-    push_string(make_shared_binary_string((INT8 *)result, offset));
-    MEMSET(result, 0, offset);
-
-    CALL_AND_UNSET_ONERROR (uwp);
-  }
-}
-
-/*! @endclass
- */
-
-/*! @class Buffer
- *! @belongs Crypto
- *! Acts as a buffer so that data can be fed to a cipher in blocks
- *! that don't correspond to cipher block sizes.
- */
-PIKECLASS Proxy {
-  CVAR struct object *object;
-  CVAR int block_size;
-  CVAR unsigned char *backlog;
-  CVAR int backlog_len;
-
-  INIT {
-    THIS->object = NULL;
-    THIS->block_size = 0;
-    THIS->backlog = NULL;
-    THIS->backlog_len = 0;
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    if(THIS->backlog) {
-      MEMSET(THIS->backlog, 0, THIS->block_size);
-      free(THIS->backlog);
-      THIS->backlog = NULL;
-    }
-    if(THIS->object) {
-      free_object(THIS->object);
-      THIS->object = NULL;
-    }
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    exit_Proxy_struct();
-    THIS->object = make_cipher_object(args);
-
-    safe_apply(THIS->object, "block_size", 0);
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int\n");
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    pop_stack();
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %ld\n", DO_NOT_WARN((long)THIS->block_size));
-
-    THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
-    THIS->backlog_len = 0;
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-  }
-
-  /*! @decl string name()
-   *! Returns the string @expr{"Proxy(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("Proxy(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int block_size()
-   *!
-   *! Get the block size of the contained block crypto.
-   */
-  PIKEFUN int block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int key_size()
-   *!
-   *! Get the key size of the contained block crypto.
-   */
-  PIKEFUN int key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string key)
-   *!
-   *! Set the encryption key.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_encrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_decrypt_key(string key)
-   *!
-   *! Set the decryption key.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_decrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl string crypt(string data)
-   *!
-   *! Encrypt some data.
-   *!
-   *! Adds data to be encrypted to the buffer. If there's enough
-   *! data to en/decrypt a block, that will be done, and the result
-   *! returned. Any uncrypted data will be left in the buffer.
-   */
-  PIKEFUN string crypt(string data) {
-    unsigned char *result;
-    ptrdiff_t roffset = 0;
-    ptrdiff_t soffset = 0;
-    ptrdiff_t len;
-    ONERROR uwp;
-
-    if (!(result = malloc(data->len + THIS->block_size)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
-    SET_ONERROR (uwp, free, result);
-
-    if (THIS->backlog_len) {
-      if (data->len >= (THIS->block_size - THIS->backlog_len)) {
-	MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
-	       (THIS->block_size - THIS->backlog_len));
-	soffset += (THIS->block_size - THIS->backlog_len);
-	THIS->backlog_len = 0;
-	push_string(make_shared_binary_string((char *)THIS->backlog,
-					      THIS->block_size));
-	safe_apply(THIS->object, "crypt", 1);
-	if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	  Pike_error("crypt() did not return string\n");
-	if (Pike_sp[-1].u.string->len != THIS->block_size)
-	  Pike_error("Unexpected string length %ld\n",
-		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
-	roffset = THIS->block_size;
-	pop_stack();
-	MEMSET(THIS->backlog, 0, THIS->block_size);
-      } else {
-	MEMCPY(THIS->backlog + THIS->backlog_len,
-	       data->str, data->len);
-	THIS->backlog_len += data->len;
-	pop_n_elems(args);
-	push_empty_string();
-	CALL_AND_UNSET_ONERROR (uwp);
-	return;
-      }
-    }
-  
-    len = (Pike_sp[-1].u.string->len - soffset);
-    len -= len % THIS->block_size;
-
-    if (len) {
-      push_string(make_shared_binary_string(Pike_sp[-1].u.string->str +
-					    soffset, len));
-      soffset += len;
-
-      safe_apply(THIS->object, "crypt", 1);
-
-      if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	Pike_error("crypt() did not return string.\n");
-      if (Pike_sp[-1].u.string->len != len)
-	Pike_error("crypt() Unexpected string length %ld.\n",
-		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-      MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
-
-      pop_stack();
-    }
-
-    if (soffset < Pike_sp[-1].u.string->len) {
-      MEMCPY(THIS->backlog, Pike_sp[-1].u.string->str + soffset,
-	     Pike_sp[-1].u.string->len - soffset);
-      THIS->backlog_len = Pike_sp[-1].u.string->len - soffset;
-    }
-
-    pop_n_elems(args);
-
-    push_string(make_shared_binary_string((char *)result, roffset + len));
-    MEMSET(result, 0, roffset + len);
-    CALL_AND_UNSET_ONERROR (uwp);
-  }
-
-  /*! @decl string pad(void|int method)
-   *!
-   *! Pad and encrypt any data left in the buffer.
-   *!
-   *! @param method
-   *! The type of padding to apply to the buffer.
-   *! @int
-   *!   @value Crypto.PAD_SSL
-   *!   @value Crypto.PAD_ISO_10126
-   *!   @value Crypto.PAD_ANSI_X923
-   *!   @value Crypto.PAD_PKCS7
-   *!   @value Crypto.PAD_ZERO
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[unpad()]
-   */
-  PIKEFUN string pad(void|int method) {
-    ptrdiff_t i;
-    int m = 0;
-    int size = THIS->block_size - THIS->backlog_len;
-
-    if(method)
-    {
-      if(TYPEOF(*method) != PIKE_T_INT)
-        Pike_error("Bad argument type.\n");
-      m = method->u.integer;
-    }
-
-    switch(m)
-    {
-    case 0:
-      size--;
-      break;
-    case 4:
-      if( THIS->backlog_len>0 && 
-          THIS->backlog[THIS->backlog_len-1] == 0 )
-        Pike_error("Using zero padding on a zero terminated string.\n");
-      size = 0;
-      break;
-    }
-
-    for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
-      switch(m)
-      {
-      default:
-        Pike_error("Unknown method.\n");
-      case 0:
-      case 1:
-        /* ISO 10126 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
-        break;
-      case 2:
-        /* ANSI X.923 */
-        THIS->backlog[i] = 0;
-        break;
-      case 3:
-        /* PKCS7 / RFC 3852 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
-        break;
-      case 4:
-        /* Null only */
-        THIS->backlog[i] = 0;
-        break;
-      }
-
-  
-    THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
-
-    push_string(make_shared_binary_string((const char *)THIS->backlog,
-					  THIS->block_size));
-
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-
-    safe_apply(THIS->object, "crypt", 1);
-  }
-
-  /*! @decl string unpad(string data, void|int method)
-   *!
-   *! Decrypt and unpad a block of data.
-   *!
-   *! This performs the reverse operation of @[pad()].
-   *!
-   *! @param method
-   *! The type of padding that was applied to the original buffer.
-   *! @int
-   *!   @value Crypto.PAD_SSL
-   *!   @value Crypto.PAD_ISO_10126
-   *!   @value Crypto.PAD_ANSI_X923
-   *!   @value Crypto.PAD_PKCS7
-   *!   @value Crypto.PAD_ZERO
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[pad()]
-   */
-  PIKEFUN string unpad(string str, void|int method) {
-    ptrdiff_t len;
-    int m = 0;
-
-    len = str->len;
-    if( len % THIS->block_size)
-      Pike_error("String must be integral numbers of blocks.\n");
-
-    if( method!=NULL )
-    {
-      m = method->u.integer;
-      pop_stack();
-      args--;
-    }
-
-    safe_apply(THIS->object, "crypt", 1);
-    if (TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("crypt() did not return string.\n");
-    if (Pike_sp[-1].u.string->len != len)
-      Pike_error("crypt() Unexpected string length %ld.\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    str = Pike_sp[-1].u.string;
-
-    if( m==0 )
-    {
-      if (str->str[len - 1]+1 > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1]+1, THIS->block_size-1);
-    }
-    else
-      if (str->str[len - 1] > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1], THIS->block_size-1);
-
-
-    len -= str->str[len - 1];
-    switch( m )
-    {
-    case 0:
-      len--;
-      break;
-    case 4:
-      {
-        int c=THIS->block_size;
-        while( str->str[len-1]==0 && c>0 )
-        {
-          c--;
-          len--;
-        }
-      }
-    }
-
-    if (len < 0)
-      Pike_error("String too short to unpad\n");
-  
-    add_ref(str);
-    pop_stack();
-    push_string(make_shared_binary_string(str->str, len));
-    free_string(str);
-  }
-
-  /*! @decl this_program set_iv(string iv)
-   *! Set the initialization vector to @[iv].
-   */
-  PIKEFUN object set_iv(string iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    apply(THIS->object, "set_iv", args);
-    args = 1;
-    RETURN this_object();
-  }
-
-}
-
-/*! @endclass
- */
 
 #if 0
 
@@ -1038,7 +366,7 @@ PIKECLASS LFib
 
   /* Get a pseudorandom string of length @[len].
    */
-  PIKEFUN string get_string(int len) {
+  PIKEFUN string(0..255) get_string(int len) {
     struct pike_string *s = begin_shared_string(len);
     knuth_lfib_random(THIS->ctx, len, s->str);
     push_string(end_shared_string(s));
@@ -1076,6 +404,9 @@ PIKE_MODULE_INIT
   free_object(nt_object);
   free_program(nt_program);
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_init();
+#endif
 }
 
 PIKE_MODULE_EXIT
@@ -1087,5 +418,8 @@ PIKE_MODULE_EXIT
 #ifdef __NT__
   nt_exit();
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_exit();
+#endif
   EXIT;
 }

@@ -349,7 +349,7 @@ string encode_word( string|array(string) word, string encoding )
 protected string remap(array(string) item)
 {
   if (sizeof(item)>1 && item[1])
-    return Locale.Charset.decoder(item[1])->feed(item[0])->drain();
+    return Charset.decoder(item[1])->feed(item[0])->drain();
   else
     return item[0];
 }
@@ -361,7 +361,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
     return ({ word,0 });
   string s = stringp(selector)? selector : selector(word);
   return s?
-    ({ Locale.Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
+    ({ Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
 }
 
@@ -563,9 +563,9 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!   Either the name of a character set to use, or a function returning
 //!   a character set to use given a text fragment as input.
 //! @param replacement
-//!   The @[replacement] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[replacement] argument to use when calling @[Charset.encoder]
 //! @param repcb
-//!   The @[repcb] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[repcb] argument to use when calling @[Charset.encoder]
 //!
 //! @seealso
 //! @[MIME.encode_words_tokenized_remapped]
@@ -775,17 +775,18 @@ array(mapping(string:string|array(string))|string|StringRange)
 {
   string head, header, hname, hcontents;
   string|StringRange body;
+  int mesgsep;
   if (has_prefix(message, "\r\n") || has_prefix(message, "\n")) {
     // No headers.
     return ({ ([]), message[1 + (message[0] == '\r')..] });
   } else {
     int mesgsep1 = search(message, "\r\n\r\n");
     int mesgsep2 = search(message, "\n\n");
-    int mesgsep = (mesgsep1<0? mesgsep2 :
-		   (mesgsep2<0? mesgsep1 :
-		    (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
+    mesgsep = (mesgsep1<0? mesgsep2 :
+               (mesgsep2<0? mesgsep1 :
+                (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
     if (mesgsep<0) {
-      // No body.
+      // No body, or only body.
       head = (string)message;
       body = "";
     } else if (mesgsep) {
@@ -799,16 +800,19 @@ array(mapping(string:string|array(string))|string|StringRange)
   {
     if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
+      hname = lower_case(hname);
       if (use_multiple)
-	headers[hname=lower_case(hname)]
-	  = (headers[hname]||({}))+({hcontents});
+	headers[hname] += ({hcontents});
       else
-	if(headers[lower_case(hname)])
-	  headers[lower_case(hname)] += "\0"+hcontents;
+	if(headers[hname])
+	  headers[hname] += "\0"+hcontents;
 	else
-	  headers[lower_case(hname)] = hcontents;
+	  headers[hname] = hcontents;
     }
   }
+
+  if( mesgsep<0 && !sizeof(headers) )
+    return ({ ([]), (string)message });
   return ({ headers, body });
 }
 
@@ -1059,7 +1063,7 @@ class Message {
     if (decoded_data && !encoded_data)
       encoded_data = encode( (string)decoded_data, transfer_encoding,
 			     get_filename() );
-    return encoded_data;
+    return (string)encoded_data;
   }
 
   //! Select a new transfer encoding for this message.

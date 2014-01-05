@@ -32,8 +32,6 @@
 // This is very poor defined own ASN.1 objects (not enough time to clean it!)
 //import Standards.ASN1.Encode;
 
-#if constant(Standards.ASN1.Types)
-
 #include "ldap_globals.h"
 
 class asn1_enumerated
@@ -64,11 +62,6 @@ class asn1_boolean
     value = ( contents != "\0" );
     return this;
   }
-
-  string debug_string() {
-    return value ? "TRUE" : "FALSE";
-  }
-
 }
 
 class asn1_application_sequence
@@ -374,9 +367,5 @@ object|mapping ldap_der_decode(string data)
 {
   return der_decode(ADT.struct(data), ldap_type_proc);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
 
 // ------------- end of ASN.1 API hack -----------------------------

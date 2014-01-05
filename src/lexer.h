@@ -212,11 +212,11 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
-      unsigned of = 0;
+      int of = 0;
       unsigned INT32 n = c-'0';
       for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
-	if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, eight);
-	n = 8 * n + buf[l] - '0';
+	n = DO_UINT32_MUL_OVERFLOW(n, 8, &of);
+	n += buf[l] - '0';
       }
       if (of) {*len = l; return 4;}
       c = (p_wchar2)n;
@@ -229,22 +229,22 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       break;
       
     case 'x': {
-      unsigned of = 0;
+      int of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - '0';
+	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
+	    n += buf[l] - '0';
 	    continue;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'a' + 10;
+	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
+	    n += buf[l] - 'a' + 10;
 	    continue;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'A' + 10;
+	    n = DO_UINT32_MUL_OVERFLOW(n, 16, &of);
+	    n += buf[l] - 'A' + 10;
 	    continue;
 	}
 	break;
@@ -255,14 +255,14 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     }
 
     case 'd': {
-      unsigned of = 0;
+      int of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, ten);
-	    n = 10 * n + buf[l] - '0';
+	    n = DO_UINT32_MUL_OVERFLOW(n, 10, &of);
+	    n = DO_UINT32_ADD_OVERFLOW(n, buf[l] - '0', &of);
 	    continue;
 	}
 	break;
@@ -497,12 +497,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('e','x'):
 	  if(ISWORD("extern")) return TOK_EXTERN;
 	  break;
-#ifdef WITH_FACETS
-#warning "facet" keyword needs compat if enabled by default
-	case TWO_CHAR('f','a'):
-	  if(ISWORD("facet")) return TOK_FACET;
-	  break;
-#endif
 	case TWO_CHAR('f','i'):
 	  if(ISWORD("final")) return TOK_FINAL_ID;
 	  break;
@@ -891,7 +885,7 @@ unknown_directive:
     case '0':
     {
       int base = 0;
-      
+
       if(GOBBLE('b') || GOBBLE('B'))
       {
 	base = 2;
@@ -915,13 +909,13 @@ unknown_directive:
 	return TOK_NUMBER;
       }
     }
-  
+
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
       double f;
-      long l = 0;		/* GCC thinks l is unitialized here. Hmm..? */
+      long l;
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
@@ -981,8 +975,7 @@ unknown_directive:
 #endif /* 0 */
 	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_FLOAT;
@@ -992,9 +985,17 @@ unknown_directive:
 	free_svalue(&sval);
 	debug_malloc_touch(yylval->n);
 	lex->pos=p2;
-	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	if (lex_isidchar (LOOK()))
+        {
+          if( GOBBLE('b') )
+            if( GOBBLE( 'i' ) )
+              if( GOBBLE( 't' ) )
+              {
+                GOBBLE('s');
+                return TOK_BITS;
+              }
+
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_NUMBER;
@@ -1088,9 +1089,6 @@ unknown_directive:
          They however conflict with valid ?: syntaxes.
       */
 
-      /* if( GOBBLE('[' ) ) */
-      /*   return TOK_SAFE_START_INDEX; */
-
       /* if( GOBBLE('.' ) ) */
       /*   return TOK_SAFE_INDEX; */
 
@@ -1099,11 +1097,15 @@ unknown_directive:
     case '~':
     case '@':
     case ')':
-    case '[':
 
     case '{':
     case ';':
     case '}': return c;
+
+    case '[':
+      if( GOBBLE('?' ) )
+        return TOK_SAFE_START_INDEX;
+      return c;
 
     case '`':
     {

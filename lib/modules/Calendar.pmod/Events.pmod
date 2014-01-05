@@ -236,7 +236,7 @@ Event.Namedays find_namedays(string region)
 	    break;
 	 case "charset":
 	    sscanf(s,"%s",charset);
-	    object dec=Locale.Charset.decoder(charset);
+	    object dec=Charset.decoder(charset);
 	    decoder=lambda(string s)
 		    {
 		       return dec->feed(s)->drain();

@@ -20,7 +20,7 @@
 #include "gc.h"
 #include "stralloc.h"
 #include "pike_security.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include "opcodes.h"
 #include "stuff.h"
 
@@ -42,39 +42,41 @@ static struct mapping *gc_mark_mapping_pos = 0;
 #define MAPPING_DATA_SIZE(HSIZE, KEYPAIRS) \
    PTR_TO_INT(MD_KEYPAIRS(0, HSIZE) + KEYPAIRS)
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(m)	do{						\
-DO_IF_DEBUG(								\
-  if(m->refs) {								\
-    DO_IF_DMALLOC(describe_something(m, T_MAPPING, 0,2,0, NULL));	\
-    Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs); \
-  }									\
-)									\
-									\
-  FREE_PROT(m);								\
-									\
-  unlink_mapping_data(m->data);						\
-									\
-  DOUBLEUNLINK(first_mapping, m);					\
-									\
-  GC_FREE(m);                                                           \
-}while(0)
+static struct block_allocator mapping_allocator = BA_INIT_PAGES(sizeof(struct mapping), 2);
+void count_memory_in_mappings(size_t * num, size_t * size) {
+    struct mapping *m;
+    double datasize = 0.0;
+    ba_count_all(&mapping_allocator, num, size);
+    for(m=first_mapping;m;m=m->next) {
+	datasize+=MAPPING_DATA_SIZE(m->data->hashsize, m->data->num_keypairs) / (double) m->data->refs;
+    }
+    *size += (size_t) datasize;
+}
 
+void really_free_mapping(struct mapping * m) {
+#ifdef PIKE_DEBUG
+  if (m->refs) {
+# ifdef DEBUG_MALLOC
+    describe_something(m, T_MAPPING, 0,2,0, NULL);
+# endif
+    Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs);
+  }
+#endif
+  FREE_PROT(m);
+  unlink_mapping_data(m->data);
+  DOUBLEUNLINK(first_mapping, m);
+  GC_FREE(m);
+  ba_free(&mapping_allocator, m);
+}
 
-#undef COUNT_OTHER
+ATTRIBUTE((malloc))
+static struct mapping * alloc_mapping() {
+    return ba_alloc(&mapping_allocator);
+}
 
-#define COUNT_OTHER() do{				\
-  struct mapping *m;					\
-  double datasize = 0.0;				\
-  for(m=first_mapping;m;m=m->next)			\
-  {							\
-    datasize+=MAPPING_DATA_SIZE(m->data->hashsize, m->data->num_keypairs) / \
-      (double) m->data->refs;						\
-  }							\
-  size += (size_t) datasize;				\
-}while(0)
-
-BLOCK_ALLOC_FILL_PAGES(mapping, 2)
+void free_all_mapping_blocks() {
+    ba_destroy(&mapping_allocator);
+}
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define IF_ELSE_KEYPAIR_LOOP(X, Y)	Y
@@ -115,6 +117,14 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 void mapping_free_keypair(struct mapping_data *md, struct keypair *k)
 {
   FREE_KEYPAIR(md, k);
+}
+
+static INLINE int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
+    return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
+}
+
+static INLINE int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
+    return (!t1 && !t2) || t1 & t2 || (t1|t2) & BIT_OBJECT;
 }
 
 #ifdef PIKE_DEBUG
@@ -298,6 +308,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m)
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
  */
+/* Evil: Steal the svalues from the old md. */
 static void mapping_rehash_backwards_evil(struct mapping_data *md,
 					  struct keypair *from)
 {
@@ -314,10 +325,55 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
+    if (md->flags & MAPPING_WEAK) {
+
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Instable mapping data flags.\n");
+      case MAPPING_WEAK_INDICES:
+	if (!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
+	    (*from->ind.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
+	    (*from->val.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if ((!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
+	     (*from->ind.u.refs > 1)) &&
+	    (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
+	     (*from->val.u.refs > 1))) {
+	  goto keep_keypair;
+	}
+	break;
+      }
+
+      /* Free.
+       * Note that we don't need to free or unlink the keypair,
+       * since that will be done by the caller anyway. */
+      free_svalue(&from->ind);
+      free_svalue(&from->val);
+
+      continue;
+    }
+  keep_keypair:
+
     /* unlink */
     k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
@@ -342,15 +398,10 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
+/* Good: Copy the svalues from the old md. */
 static void mapping_rehash_backwards_good(struct mapping_data *md,
 					  struct keypair *from)
 {
@@ -367,10 +418,56 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   }
   k->next = prev;
 
-  from = k;
+  prev = k;
 
   /* Rehash and reverse the hash chain. */
-  while (from) {
+  while ((from = prev)) {
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+
+    if (md->flags & MAPPING_WEAK) {
+
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Instable mapping data flags.\n");
+      case MAPPING_WEAK_INDICES:
+	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
+	    (*from->ind.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if (REFCOUNTED_TYPE(TYPEOF(from->val)) &&
+	    (*from->val.u.refs > 1)) {
+	  goto keep_keypair;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreference counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if ((!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
+	     (*from->ind.u.refs > 1)) &&
+	    (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
+	     (*from->val.u.refs > 1))) {
+	  goto keep_keypair;
+	}
+	break;
+      }
+
+      /* Skip copying of this keypair.
+       *
+       * NB: We can't mess with the original md here,
+       *     since it might be in use by an iterator
+       *     or similar.
+       */
+
+      continue;
+    }
+  keep_keypair:
+
     /* unlink */
     k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
@@ -397,12 +494,6 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->ind_types |= 1<< (TYPEOF(k->ind));
     md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
-
-    /* Reverse */
-    prev = from->next;
-    from->next = next;
-    next = from;
-    from = prev;
   }
 }
 
@@ -444,12 +535,19 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(md->refs>1)
   {
     /* good */
+    /* More than one reference to the md ==> We need to
+     * keep it afterwards.
+     */
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_good(new_md, md->hash[e]);
 
     unlink_mapping_data(md);
   }else{
     /* evil */
+    /* We have the only reference to the md,
+     * so we can just copy the svalues without
+     * bothering about type checking.
+     */
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
@@ -458,8 +556,10 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   }
 
 #ifdef PIKE_DEBUG
-  if(m->data->size != tmp)
-    Pike_fatal("Rehash failed, size not same any more.\n");
+  if((m->data->size != tmp) &&
+     ((m->data->size > tmp) || !(m->data->flags & MAPPING_WEAK)))
+    Pike_fatal("Rehash failed, size not same any more (%ld != %ld).\n",
+	       (long)m->data->size, (long)tmp);
 #endif
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = m->data->size;
@@ -549,7 +649,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize - 1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
+    if(check_type_contains(md->ind_types, key))			\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
@@ -572,7 +672,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize-1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
+    if(check_type_contains(md->ind_types, key))			\
     {								\
       k2=omd->hash[h2 & (omd->hashsize - 1)];			        \
       prev= md->hash + h;					\
@@ -1876,6 +1976,9 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if(m_sizeof(a) != m_sizeof(b)) return 0;
 
+  if (!check_type_overlaps(a->data->ind_types, b->data->ind_types) ||
+      !check_type_overlaps(a->data->val_types, b->data->val_types)) return 0;
+
   curr.pointer_a = a;
   curr.pointer_b = b;
   curr.next = p;
@@ -2392,7 +2495,7 @@ void check_all_mappings(void)
 #endif
 
 static void visit_mapping_data (struct mapping_data *md, int action,
-				struct mapping *m)
+				struct mapping *UNUSED(m))
 {
   switch (action) {
 #ifdef PIKE_DEBUG

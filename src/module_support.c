@@ -320,11 +320,9 @@ static int va_get_args_2(struct svalue *s,
       if (TYPEOF(*s) == T_INT) {
 	*cast_arg(ptr, LONGEST *)=s->u.integer;
 	break;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(s) &&
 		 int64_from_bignum(cast_arg(ptr, LONGEST *), s->u.object) == 1) {
         break;
-#endif
       }
       /* FIXME: Error reporting for bignum objects. */
       goto type_err;

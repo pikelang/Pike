@@ -1,5 +1,4 @@
-/*
- */
+#pike __REAL_VERSION__
 
 inherit .autodoc_to_html;
 
@@ -1287,7 +1286,7 @@ class Node
         exporter->data(index_js);
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
-        Stdio.write_file(path + "/" + index, index_js);
+        Stdio.write_file(path + "/" + index, string_to_utf8(index_js));
       }
 
       string load_index_js = make_load_index_js();
@@ -1297,7 +1296,7 @@ class Node
         exporter->data(load_index_js);
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + load_index, "../"));
-        Stdio.write_file(path + "/" + load_index, load_index_js);
+        Stdio.write_file(path + "/" + load_index, string_to_utf8(load_index_js));
       }
 
       string index_html = make_index_page(1);
@@ -1329,7 +1328,7 @@ class Node
         exporter->filemodify(Git.MODE_FILE, path + "/" + index);
         exporter->data(index_html);
       } else {
-        Stdio.write_file(path + "/" + index, index_html);
+          Stdio.write_file(path + "/" + index, string_to_utf8(index_html));
       }
     }
 
@@ -1403,7 +1402,7 @@ class Node
       exporter->data(res);
     } else {
       Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
-      Stdio.write_file(path+"/"+make_filename(), res);
+      Stdio.write_file(path+"/"+make_filename(), string_to_utf8(res));
     }
   }
 }
@@ -1550,7 +1549,7 @@ class TopNode {
       exporter->data(navigation_js);
     } else {
       Stdio.mkdirhier(path);
-      Stdio.write_file(path + "/navigation.js", navigation_js);
+      Stdio.write_file(path + "/navigation.js", string_to_utf8(navigation_js));
     }
     appendix_children->make_html(template, path, exporter);
     namespace_children->make_html(template, path, exporter);

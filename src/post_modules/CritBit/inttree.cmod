@@ -1,12 +1,10 @@
 /* vim:syntax=c
  */
-#ifdef cmod___CMOD__
-
 #include "common.h"
 
 #include "critbit/int2svalue.h"
 #define CB_PRINT_KEY(buf, key)		do \
-    { string_builder_sprintf((buf), "%d", CB_UINT2INT((key).str)); } while(0)
+    { string_builder_sprintf((buf), "%"PRINTPIKEINT"d", CB_UINT2INT((key).str)); } while(0)
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
     struct svalue * __ = (s);						\
     SET_SVAL(*__, PIKE_T_INT, 0, integer, CB_UINT2INT((key).str));	\
@@ -27,7 +25,7 @@ PIKECLASS IntTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class IntTree
 #cmod_define cmod_OBJ2_TREE OBJ2_INTTREE
-#cmod_define T_KEY PIKE_T_INT
+#cmod_define T_KEY BIT_INT
 #cmod_define key_ptype int
 #cmod_define sval_type integer
 #cmod_define sample_key 12
@@ -49,7 +47,7 @@ PIKECLASS IntTree {
 
 cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
     cb_key key;
-    unsigned INT32 a, b, c, d, e;
+    unsigned int a, b, c, d, e;
 
     key.len.chars = 1;
     key.len.bits = 0;
@@ -81,13 +79,15 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
     unsigned INT32 ip = (unsigned INT32)key.str;
 
     if (key.len.bits || !key.len.chars) {
-	ip &= (~0U) << (32 - key.len.bits);
-	len = snprintf(buf, 19, "%u.%u.%u.%u/%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff, (unsigned INT32)(key.len.bits
-							 - WASTED_BITS));
+	ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
+	len = snprintf(buf, 19, "%u.%u.%u.%u/%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff),
+		       (unsigned int)(key.len.bits - WASTED_BITS));
     } else {
-	len = snprintf(buf, 19, "%u.%u.%u.%u", ip>>24, (ip>>16)&0xff,
-		       (ip>>8)&0xff, ip&0xff);
+	len = snprintf(buf, 19, "%u.%u.%u.%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff));
     }
 
     return make_shared_binary_string(buf, MINIMUM(19, len));
@@ -97,7 +97,7 @@ PIKECLASS IPv4Tree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class IPv4Tree
 #cmod_define cmod_OBJ2_TREE OBJ2_IPV4TREE
-#cmod_define T_KEY PIKE_T_STRING
+#cmod_define T_KEY BIT_STRING
 #cmod_define key_ptype string
 #cmod_define sval_type string
 #cmod_define sample_key "127.0.0.0/8"
@@ -168,9 +168,3 @@ void pike_init_inttree_module(void) {
 void pike_exit_inttree_module(void) {
     EXIT
 }
-#else
-void pike_init_inttree_module(void) {
-    add_integer_constant("this_program_does_not_exist", 1, 0);
-}
-void pike_exit_inttree_module(void) {}
-#endif

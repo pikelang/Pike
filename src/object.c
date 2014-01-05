@@ -33,6 +33,7 @@
 #include "operators.h"
 
 #include "block_alloc.h"
+#include "block_allocator.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -83,22 +84,35 @@ PMOD_EXPORT struct object *first_object;
 struct object *gc_internal_object = 0;
 static struct object *gc_mark_object_pos = 0;
 
-#undef COUNT_OTHER
+static struct block_allocator object_allocator = BA_INIT_PAGES(sizeof(struct object), 2);
 
-#define COUNT_OTHER() do{			\
-  struct object *o;                             \
-  for(o=first_object;o;o=o->next)		\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-						\
-  for(o=objects_to_destruct;o;o=o->next)	\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-}while(0)
-BLOCK_ALLOC_FILL_PAGES(object, 2)
+void count_memory_in_objects(size_t *_num, size_t *_size) {
+    size_t size;
+    struct object *o;
 
-#undef COUNT_OTHER
-#define COUNT_OTHER()
+    ba_count_all(&object_allocator, _num, &size);
+
+    for(o=first_object;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    for(o=objects_to_destruct;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    *_size = size;
+}
+
+void really_free_object(struct object * o) {
+    ba_free(&object_allocator, o);
+}
+
+ATTRIBUTE((malloc))
+struct object * alloc_object() {
+    return ba_alloc(&object_allocator);
+}
+
+void free_all_object_blocks() {
+    ba_destroy(&object_allocator);
+}
 
 PMOD_EXPORT struct object *low_clone(struct program *p)
 {
@@ -238,47 +252,20 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   /* NOTE: This function is only called for objects straight after
    *       low_clone(), or after an explicit xcalloc(), which implies
    *       that the storage (if any) has been zeroed.
+   *
+   * NOTE: Zeroed memory means that the globals have been cleared.
    */
 
-  /* clear globals and call C initializers */
-  for(e=p->num_inherits-1; e>=0; e--)
+  /* Call C initializers */
+  for(e = p->num_inherits; e--;)
   {
     struct program *prog = p->inherits[e].prog;
-    int n=(int)prog->num_variable_index;
-    if( n )
-    {
-      char *storage = o->storage+p->inherits[e].storage_offset;
-      int q;
-      for(q=0;q<n;q++)
-      {
-	int d=prog->variable_index[q];
-
-	if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
-	  continue;
-
-	if(prog->identifiers[d].run_time_type == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
-	  SET_SVAL_TYPE(*s, T_INT);
-#ifdef NEED_CUSTOM_IEEE
-	} else if (prog->identifiers[d].run_time_type == T_FLOAT) {
-	  /* Note: In IEEE representations the value 0.0 is represented as all
-	   *       zeros, and the default initialization is thus sufficient.
-	   */
-	  union anything *u;
-	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
-	  u->float_number=0.0;
-#endif /* NEED_CUSTOM_IEEE */
-	}
-	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
-      }
-    }
     if(prog->event_handler)
     {
       if( !frame_pushed )
       {
 	PUSH_FRAME2(o, p);
+	Pike_fp->num_args = 0;
 	frame_pushed = 1;
       }
       SET_FRAME_CONTEXT(p->inherits + e);
@@ -327,7 +314,7 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,0);
-    pop_stack();
+    Pike_sp--;
   }
   STACK_LEVEL_CHECK(args);
   fun=FIND_LFUN(p, LFUN_CREATE);
@@ -476,11 +463,11 @@ static struct pike_string *low_read_file(const char *file)
   PIKE_OFF_T len;
   FD f;
 
-  while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR)
+  while((f = fd_open(file,fd_RDONLY|fd_BINARY,0666)) <0 && errno==EINTR)
     check_threads_etc();
   if(f >= 0)
   {
-    ptrdiff_t tmp, pos = 0;
+    PIKE_OFF_T tmp, pos = 0;
 
     len = fd_lseek(f, 0, SEEK_END);
     fd_lseek(f, 0, SEEK_SET);
@@ -515,7 +502,7 @@ static struct pike_string *low_read_file(const char *file)
   return 0;
 }
 
-static void get_master_cleanup (void *dummy)
+static void get_master_cleanup (void *UNUSED(dummy))
 {
   if (master_object) {
     free_object (master_object);
@@ -794,13 +781,17 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #endif
 }
 
+static int object_has_destroy( struct object *o )
+{
+    return QUICK_FIND_LFUN( o->prog, LFUN_DESTROY ) != -1;
+}
 
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
 {
   int e;
   struct program *p;
   struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
+  int frame_pushed = 0, destroy_called = 0;
 
 #ifdef PIKE_DEBUG
   ONERROR uwp;
@@ -827,26 +818,40 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     else fputs(", is destructed\n", stderr);
   }
 #endif
-  add_ref( o );
-  call_destroy(o, reason);
-
-  /* destructed in destroy() */
-  if(!(p=o->prog))
-  {
-    free_object(o);
+  if( !(p = o->prog) ) {
 #ifdef PIKE_DEBUG
-    UNSET_ONERROR(uwp);
+      UNSET_ONERROR(uwp);
 #endif
-    return;
+      return;
   }
-  get_destroy_called_mark(o)->p=p;
-
+  add_ref( o );
+  if( object_has_destroy( o ) )
+  {
+      call_destroy(o, reason);
+      destroy_called = 1;
+      /* destructed in destroy() */
+      if(!(p=o->prog))
+      {
+          free_object(o);
+#ifdef PIKE_DEBUG
+          UNSET_ONERROR(uwp);
+#endif
+          return;
+      }
+      get_destroy_called_mark(o)->p=p;
+  } else if ((p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) ==
+	     (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) {
+    /* We might have event handlers that need
+     * the program to reach the parent.
+     */
+    get_destroy_called_mark(o)->p=p;
+    destroy_called = 1;
+  }
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   debug_malloc_touch(p);
   o->prog=0;
 
-  
 #ifdef GC_VERBOSE
   if (Pike_in_gc > GC_PASS_PREPARE)
     fprintf(stderr, "|   Zapping references in %p with %d refs.\n", o, o->refs);
@@ -858,7 +863,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     int q;
     struct program *prog = p->inherits[e].prog;
     char *storage = o->storage+p->inherits[e].storage_offset;
-    
+
     if(prog->event_handler)
     {
       if( !frame_pushed )
@@ -900,7 +905,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
+	if (REFCOUNTED_TYPE(rtt)) {debug_malloc_touch(u->refs);}
 #endif
 	if (rtt != T_OBJECT || u->object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
@@ -935,8 +940,8 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 
   free_object( o );
   free_program(p);
-
-  remove_destroy_called_mark(o);
+  if( destroy_called )
+      remove_destroy_called_mark(o);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(uwp);
@@ -1127,6 +1132,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       assign_svalue_no_free(to, s);
       break;
     }
+
   case T_OBJ_INDEX:
     {
       SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(func.offset), object, o);
@@ -1153,7 +1159,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       }
       break;
     }
-    
+
   case T_MIXED:
   case PIKE_T_NO_REF_MIXED:
     {
@@ -1451,7 +1457,6 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
-  int is_zero = UNSAFE_IS_ZERO(from);
   do {
     void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
     union anything *u = (union anything *)ptr;
@@ -1507,7 +1512,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       dmalloc_touch_svalue (to);
       if ((TYPEOF(*to) != T_OBJECT && TYPEOF(*to) != T_FUNCTION) ||
 	  (to->u.object != o)) {
-	if(TYPEOF(*to) <= MAX_REF_TYPE) {
+	if(REFCOUNTED_TYPE(TYPEOF(*to))) {
 	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 	  add_ref(to->u.dummy);
 #ifdef DEBUG_MALLOC
@@ -1535,21 +1540,24 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     case PIKE_T_NO_REF_OBJECT:
-      /* Don't count references to ourselves to help the gc. */
-      if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
-      debug_malloc_touch(u->object);
-      if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
-	debug_malloc_touch(o);
-	really_free_short_svalue(u,rtt);
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        /* Don't count references to ourselves to help the gc. */
+        if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
+        debug_malloc_touch(u->object);
+        if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
+          debug_malloc_touch(o);
+          really_free_short_svalue(u,rtt);
 #ifdef DEBUG_MALLOC
-      } else {
-	debug_malloc_touch(o);
+        } else {
+          debug_malloc_touch(o);
 #endif /* DEBUG_MALLOC */
-      }
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+        }
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          continue;
+        }
       }
       u->refs = from->u.refs;
       debug_malloc_touch(u->refs);
@@ -1564,21 +1572,23 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     default:
-      rtt &= ~PIKE_T_NO_REF_FLAG;
-      if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
-      debug_malloc_touch(u->refs);
-      if(u->refs && !sub_ref(u->dummy))
-	really_free_short_svalue(u, rtt);
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        rtt &= ~PIKE_T_NO_REF_FLAG;
+        if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
+        debug_malloc_touch(u->refs);
+        if(u->refs && !sub_ref(u->dummy))
+          really_free_short_svalue(u, rtt);
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          continue;
+        }
+        u->refs = from->u.refs;
+        add_ref(u->dummy);
+        continue;
       }
-      u->refs = from->u.refs;
-      add_ref(u->dummy);
-      continue;
     }
-
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
 	       get_name_of_type(TYPEOF(*from)));
@@ -2106,7 +2116,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 	var = inh_storage + id->func.offset;
 	u = (union anything *) var;
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE)
+	if (REFCOUNTED_TYPE(rtt))
 	  debug_malloc_touch (u->ptr);
 #endif
 
@@ -2260,7 +2270,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      union anything *u;
 	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	      if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	      if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	      if (rtt != T_OBJECT || u->object != o ||
 		  !(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2326,7 +2336,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2400,7 +2410,7 @@ static void gc_check_object(struct object *o)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))

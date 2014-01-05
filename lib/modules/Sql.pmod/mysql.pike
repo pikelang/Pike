@@ -309,9 +309,9 @@ void set_charset (string charset)
 //!   control chars in ISO-8859-1). For instance, the euro currency
 //!   sign is @expr{0x80@}.
 //!
-//!   You can use the @expr{mysql-latin1@} encoding in the
-//!   @[Locale.Charset] module to do conversions, or just use the
-//!   special @expr{"unicode"@} charset instead.
+//!   You can use the @expr{mysql-latin1@} encoding in the @[Charset]
+//!   module to do conversions, or just use the special
+//!   @expr{"unicode"@} charset instead.
 //!
 //! @seealso
 //!   @[get_charset], @[set_unicode_encode_mode], @[set_unicode_decode_mode]
@@ -665,7 +665,7 @@ int decode_datetime (string timestr)
   }									\
 									\
   else if (send_charset) {						\
-    string new_send_charset;						\
+    string new_send_charset = send_charset;				\
 									\
     if (utf8_mode & LATIN1_UNICODE_ENCODE_MODE) {			\
       if (String.width (query) == 8)					\
@@ -678,9 +678,12 @@ int decode_datetime (string timestr)
     }									\
 									\
     else {  /* utf8_mode & UTF8_UNICODE_ENCODE_MODE */			\
-      if (_can_send_as_latin1 (query))					\
-	new_send_charset = "latin1";					\
-      else {								\
+      /* NB: The send_charset may only be upgraded from			\
+       * "latin1" to "utf8", not the other way around.			\
+       * This is to avoid extraneous charset changes			\
+       * where the charset is changed from query to query.		\
+       */								\
+      if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {	\
 	CH_DEBUG ("Converting query to utf8.\n");			\
 	query = utf8_encode_query (query, string_to_utf8);		\
 	new_send_charset = "utf8";					\

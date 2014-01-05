@@ -620,17 +620,13 @@ class InputController
     case 1:
       if (mappingp(bindings[str[0]]))
       {
-	oldf = bindings[str[0]][str];
+	oldf = m_delete(bindings[str[0]], str);
 	if (f)
 	  bindings[str[0]][str] = f;
-	else
-	  m_delete(bindings[str[0]], str);
       } else {
-	oldf = bindings[str[0]];
+	oldf = m_delete(bindings, str[0]);
 	if (f)
 	  bindings[str[0]] = f;
-	else
-	  m_delete(bindings, str[0]);
       }
       break;
     default:

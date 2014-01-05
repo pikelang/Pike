@@ -1,3 +1,8 @@
+#pike __REAL_VERSION__
+#if !constant (___Mysql)
+constant this_program_does_not_exist = 1;
+#else  // !___Mysql
+
 //! This class provides some abstractions on top of an SQL table.
 //!
 //! At the core it is generic for any SQL database, but the current
@@ -1279,6 +1284,8 @@ class Result
 	select_clause =
 	  "`" + tbl_qual + (real_col_names * ("`,`" + tbl_qual)) + "`";
       }
+    } else {
+      real_col_names = ({});
     }
 
     if (sizeof (real_cols) < sizeof (fields)) {
@@ -1758,3 +1765,4 @@ protected string make_set_clause (mapping(string:mixed) rec,
 
   return buf->get();
 }
+#endif

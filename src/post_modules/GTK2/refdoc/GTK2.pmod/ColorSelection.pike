@@ -27,7 +27,7 @@
 
 inherit GTK2.Vbox;
 
-static GTK2.ColorSelection create( mapping|void props );
+protected GTK2.ColorSelection create( mapping|void props );
 //! Create a new color selection.
 //!
 //!

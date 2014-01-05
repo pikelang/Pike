@@ -1,4 +1,7 @@
 //! Menu items, to be added to menus.
+//! Properties
+//! GTK2.Menu submenu
+//! 
 //! Style properties:
 //! int arrow-spacing
 //! int horizontal-padding
@@ -18,12 +21,14 @@
 
 inherit GTK2.Item;
 
+inherit GTK2.Activatable;
+
 GTK2.MenuItem activate( );
 //! Emulate an activate signal
 //!
 //!
 
-static GTK2.MenuItem create( string|mapping label_or_props );
+protected GTK2.MenuItem create( string|mapping label_or_props );
 //! If a string is supplied, a W(Label) widget is created using that
 //! string and added to the item. Otherwise, you should add another
 //! widget to the list item with -&gt;add().

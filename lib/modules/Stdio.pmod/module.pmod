@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-inherit files;
+inherit _Stdio;
 
 #ifdef SENDFILE_DEBUG
 #define SF_WERR(X) werror("Stdio.sendfile(): %s\n", X)
@@ -17,7 +17,7 @@ inherit files;
 
 // STDIO_DIRECT_FD is a work in progress to get rid of Stdio.Fd_ref, where
 // Stdio.File et al instead inherit Stdio.Fd directly.
-// #define STDIO_DIRECT_FD
+#define STDIO_DIRECT_FD
 
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
 // currently opened from (see report_file_open_places). It's used
@@ -259,7 +259,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_OPENPT__)
+#if constant(_Stdio.__HAVE_OPENPT__)
   //! @decl int openpt(string mode)
   //!
   //! Open the master end of a pseudo-terminal pair.  The parameter
@@ -302,7 +302,8 @@ class File
   //!   bound to this port locally before connecting anywhere. This is
   //!   only useful for some silly protocols like @b{FTP@}. The port can
   //!   also be specified as a string, giving the name of the service
-  //!   associated with the port.
+  //!   associated with the port. Pass -1 to not specify a port (eg to
+  //!   bind only to an address).
   //!
   //! @param address
   //!   You may specify an address to bind to if your machine has many IP
@@ -399,7 +400,7 @@ class File
     return 0;
   }
 
-#if constant(files.__HAVE_CONNECT_UNIX__)
+#if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
   //! 
@@ -620,7 +621,7 @@ class File
     }
   }
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl File openat(string filename, string mode)
   //! @decl File openat(string filename, string mode, int mask)
   //!
@@ -650,11 +651,11 @@ class File
   }
 #endif
 
-#if constant(files.__HAVE_SEND_FD__)
+#if constant(_Stdio.__HAVE_SEND_FD__)
   //!
-  int(0..1) send_fd(File|Fd file)
+  void send_fd(File|Fd file)
   {
-    return ::send_fd(file->_fd);
+    ::send_fd(file->_fd);
   }
 #endif
 
@@ -1807,8 +1808,8 @@ class FILE
     if( charset != "iso-8859-1" &&
 	charset != "ascii")
     {
-      object in =  master()->resolv("Locale.Charset.decoder")( charset );
-      object out = master()->resolv("Locale.Charset.encoder")( charset );
+      object in =  master()->resolv("Charset.decoder")( charset );
+      object out = master()->resolv("Charset.encoder")( charset );
 
       input_conversion =
 	[function(string:string)]lambda( string s ) {
@@ -1968,7 +1969,7 @@ class FILE
 
   //! @endignore
 
-#if constant(files.__HAVE_OPENAT__)
+#if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
@@ -2306,7 +2307,7 @@ void report_file_open_places (string file)
 //! @seealso
 //! @[read_bytes()], @[write_file()]
 //!
-string read_file(string filename,void|int start,void|int len)
+string(0..255) read_file(string filename,void|int start,void|int len)
 {
   FILE f;
   string ret;
@@ -2385,7 +2386,7 @@ string read_file(string filename,void|int start,void|int len)
 //! @seealso
 //! @[read_file], @[write_file()], @[append_file()]
 //!
-string read_bytes(string filename, void|int start,void|int len)
+string(0..255) read_bytes(string filename, void|int start,void|int len)
 {
   string ret;
   File f = File();
@@ -2602,7 +2603,7 @@ void perror(string s)
 //! Check if a @[path] is a file.
 //!
 //! @returns
-//! Returns true if the given path is a file, otherwise false.
+//! Returns true if the given path is a regular file, otherwise false.
 //!
 //! @seealso
 //! @[exist()], @[is_dir()], @[is_link()], @[file_stat()]
@@ -2885,18 +2886,28 @@ int mkdirhier (string pathname, void|int mode)
   if (pathname[1..2] == ":/" && `<=("A", upper_case(pathname[..0]), "Z"))
     path = pathname[..2], pathname = pathname[3..];
 #endif
-  while (pathname[..0] == "/") pathname = pathname[1..], path += "/";
-  foreach (pathname / "/", string name) {
-    path += name;
-    if (!file_stat(path)) {
-      if (!mkdir(path, mode)) {
-	if (errno() != System.EEXIST)
-	  return 0;
-      }
-    }
+  array(string) segments = pathname/"/";
+  if (segments[0] == "") {
     path += "/";
+    pathname = pathname[1..];
+    segments = segments[1..];
   }
-  return is_dir (path);
+  // FIXME: An alternative could be a binary search,
+  //        but since it is usually only the last few
+  //        segments of the path that are missing, we
+  //        just do a linear search from the end.
+  int i = sizeof(segments);
+  while (i--) {
+    if (file_stat(path + segments[..i]*"/")) break;
+  }
+  i++;
+  while (i < sizeof(segments)) {
+    if (!mkdir(path + segments[..i++] * "/", mode)) {
+      if (errno() != System.EEXIST)
+	return 0;
+    }
+  }
+  return is_dir(path + pathname);
 }
 
 //! Remove a file or a directory tree.
@@ -3204,7 +3215,7 @@ protected class nb_sendfile
     if (!writer_awake) {
       writer_awake = 1;
       to->set_nonblocking(to->query_read_callback(), write_cb,
-			  to->query_write_callback());
+			  to->query_close_callback());
     }
   }
 
@@ -3397,12 +3408,12 @@ object sendfile(array(string) headers,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
-#if !defined(DISABLE_FILES_SENDFILE) && constant(files.sendfile)
+#if !defined(DISABLE_FILES_SENDFILE) && constant(_Stdio.sendfile)
   // Try using files.sendfile().
   
   mixed err = catch {
-    return files.sendfile(headers, from, offset, len,
-			  trailers, to, cb, @args);
+    return _Stdio.sendfile(headers, from, offset, len,
+                           trailers, to, cb, @args);
   };
 
 #ifdef SENDFILE_DEBUG
@@ -3418,7 +3429,7 @@ object sendfile(array(string) headers,
 //! UDP (User Datagram Protocol) handling.
 class UDP
 {
-  inherit files.UDP;
+  inherit _Stdio.UDP;
 
   private array extra=0;
   private function(mapping,mixed...:void) callback=0;

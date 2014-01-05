@@ -1,1969 +1,963 @@
-Changes since Pike 7.8 (scratch area for future release notes)
+Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
 ----------------------------------------------------------------------
 
-o decode_value now throws the error object Error.DecodeError. Useful
-  to catch format errors in the decode string.
-o Added ADT.CritBit module
-  Mapping-like key-sorted data structures for string, int and float-keys
-  (ADT.CritBit.Tree, ADT.CritBit.IntTree, ADT.CritBit.FloatTree). Implemented
-  in C.
-o Added module Geography.GeoIP
+New language features
+---------------------
 
-  
+o Added a way to access the local, and not the overloaded,
+  implementation of a symbol.
+
+  As an example, given the classes:
+    | class Test
+    | {
+    |     int a( ) { return 1; }
+    |     int b( ) { return local::a(); }	// New
+    |     int c( ) { return a(); }
+    | }
+    |
+    | class Test2
+    | {
+    |    int a() { return 42; }
+    | }
+
+  Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
+  and Test2()->c() will return 42.
 
 
-Changes since Pike 7.8.352 (third 7.8 release):
-----------------------------------------------------------------------
+o Added new syntax that can be used to return the current object as if
+  it was a class it is inheriting
 
-Extensions and New Functions
-----------------------------
+    The syntax is X::this, where X is the inherited class.
 
-o Added module Search. 
-  FIXME: Needs a couple of paragraphs of description.
+    The returned object will not include any symbols not available in
+    the class X, but your overloaded methods (and other identifiers)
+    will be the ones returned when the object is indexed.
 
-o has_prefix now works on objects.
+o Added a way to easily inherit the implementation of a subclass in an
+  inheriting class.
 
-o Standards.JSON
+    | inherit ::this_program
 
-  New module for encoding and decoding JSON data. Implemented in C.
+  The syntax refers to the previous definition of the current class
+  in the inherited class, and is typically used with inherit like:
 
-o Protocols.HTTP.Session will no longer override an existing
-  content-type header in async_do_method_url.
+    | inherit Foo;
+    |
+    | // Override the Bar inherited from Foo.
+    | class Bar {
+    |    // The new Bar is based on the implementation of Bar in Foo.
+    |    inherit ::this_program;
+    |    // ...
+    | }
 
-o Protocols.HTTP
+o Added new syntax for referring to and naming inherits.
 
-  Allow directly specifying the body of a POST request (needed for the Google
-  Apps API).
+    | inherit "foo.pike";
+    | inherit "foo/bar/baz.pike" : "foo/bar";
+    | // ...
+    |   "foo.pike"::foo();
+    |   "foo/bar"::baz();
 
-o Updated timezone data to tzdata2010o.
+o Lookup of named inherits now also looks in indirect inherits.
 
-o String.normalize_space
+    | class A { int fun() {} }
+    | class B { inherit A; }
+    | class C {
+    |   inherit B;
+    |   // ...
+    |     // The function fun may here be referred to as any of:
+    |     B::A::fun();
+    |     B::fun();
+    |     A::fun();	// New.
 
-  New and efficient C implementation; sanitises whitespace, even in wide
-  strings.
+o Implemented the variant keyword.
 
-o String.trim_all_whites
+  The keyword was present before, but did not actually do anything
+  useful.
 
-  Extended to the entire range of Unicode white spaces. (And is faster.)
+  This is used to do function overloading based on the argument types.
 
-o Tools.PV and pike -x pv now work with GTK2 as well as GTK.
+  As an example:
+    | class Test1 { int b(); }
+    | class Test2 { int a(); }
+    |
+    | class Foo
+    | {
+    |     variant string foo( object q ){ return "Genericfoo"; }
+    |     variant string foo( Test1 x ) { return "Test 1"; }
+    |     variant string foo( Test2 x ) { return "Test 2"; }
+    |
+    |     variant string bar( int(0..0) s ) { return "0"; }
+    |     variant float bar( int(1..1) s ) { return 1.0; }
+    |     variant int bar( int(2..2) s ) { return 2; }
+    | }
 
-o Integer constants exported by modules can now be used in cpp expressions.
+  A common use-case is functions that return different types depending
+  on the arguments, such as getenv:
 
-o Modules/programs that have the constant "dont_dump_program" will not
-  be dumped on installation. This is used to prevent dumping of
-  programs that check for external dependencies at compile time such
-  as the MySQL module.
+    |  string|mapping(string:string) getenv( string|void variable );
 
-o Added Thread.Queue.peek_array.
+  can now be rewritten as
 
-o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy. This is not
-  belived to have been a security issue.
+    |  variant string getenv( string variable );
+    |  variant mapping(string:string) getenv( );
 
-o Added System.getloadavg() on platforms that support the getloadavg() call.
+  which gives significantly better type-checking.
 
-o SSL
+o The type-checker has been rewritten.
 
-  Added support for AES to SSL3, and fixed bug that prevented some
-  handshake failure alerts to be sent to the client.
+  Mainly it is now much better at finding type errors, and most error
+  messages are more readable.
 
-o SSL
+o Allow '.' to be used as an index operator in the few places it did
+  not work before.
 
-  Implemented RFC 5746 "TLS Renegotiation Indication Extension".
+o "Safe" index
 
-o ADT.Heap->values and ->num_values can now be overloaded.
+  Copied from a popular extension to other C-like languages.
+
+  X[?ind] is equivalent to ((auto _ = X),(_ && _[ind]))
+  while X?->ind is equivalent to ((auto _ = X),(_ && _->ind))
+
+  The main use is 'deep indexing' where some elements can be 0:
+
+    | request_id?->user?->misc?->x
+
+  vs
+
+    | request_id && request_id->user && request_id->user->misc
+    |  && request_id->user->misc->x
+
+o Added the '?:' operator for compatibility with other C-like
+  languages. It is identical to '||' in pike.
+
+o The && operator changed, when doing A && B, and A is false, keep A
+  instead of returning 0.
+
+  This is especially useful then A is not actually 0, but an object
+  that evaluates to false, or UNDEFINED.
+
+o Fixed symbol resolution with deep inherits and mixins.
+
+
+New preprocessor features
+-------------------------
+
+o Support for the ", ##__VA_ARGS__" cpp feature.
+
+  This makes the ‘##’ token paste operator have a special meaning
+  when placed between a comma and a variable argument. If you write
+
+    | #define err(format, ...) f(debug)werror("ERROR: "+format, ##__VA_ARGS__)
+
+  and the variable argument is left out when the err macro is used,
+  then the comma before the ‘##’ will be deleted. This does not
+  happen if you pass an empty argument, nor does it happen if the
+  token preceding ‘##’ is anything other than a comma.
+
+o The preprocessor can now be run with a cpp prefix feature.
+
+  This is currently used by the precompiler to avoid two levels of
+  preprocessing, one using "#cmod_" as the prefix and the other "#".
+
+o Dynamic macros
+
+  You can now add programatic macros. There is currently no syntax
+  that can be used to define these while compiling code, but you can
+  add them from one program before compiling plug-ins/modules.
+
+  The main use is macros like DEBUG(...) and IFDEBUG() that would
+  expand to something if a debug setting is enabled in the module but
+  nothing otherwise, or, to take an actual example from the Opera
+  Mini source code:
+
+    | add_predefine( "METRIC()",
+    |     lambda( string name, string ... code )
+    |     {
+    |         string type = type_of( code );
+    |         string aggregate = aggregate_of( code );
+    |         string format = format_of( code );
+    |         code -= ({ 0 });
+    |         return replace( base_metric_class,
+    |                     (["ID":(string)next_metric_id++,
+    |                       "NAME":stringify(name),
+    |                       "TYPE":type,
+    | 			   "AGGREGATE":aggregate,
+    | 			   "FORMAT":format,
+    |                       "CODE":make_value_function(code),
+    |                    ]));
+    |      });
+
+
+  That is, a macro that needs does some calculations, and rewrite the
+  code more than is possible in normal macros..
+
+  This one expands something along the lines of
+
+    | METRIC("requests", Summarize, PerSecond,
+    |        floating_average_diff(requests));
+
+  into
+
+    | class Metric_requests_01
+    | {
+    |    inherit Server.Metric;
+    |    constant name = "transcoder:requests";
+    |    constant type = Float;
+    |    constant format = PerSecond;
+    |    constant aggregate = Summarize;
+    |
+    |    float value() {
+    |       return floating_average_diff(requests);
+    |    }
+    | }
 
 
 Optimizations
 -------------
 
-o MIME should now use 1/3 less memory when decoding big messages.
+o New significantly faster block allocator
 
-o Improved performance of Process.run.
+  The free in the old one was O(n^2), which means that as an example
+  creating a lot of objects and then free:ing them mainly used CPU in
+  the block allocator.
 
-o Nettle.hash
+  This fix changed the ordo of one of the tests that did that very
+  thing (binarytrees) from O(n^2) to O(n), and as such is more than a
+  simple percentual speedup in some cases, but it always improves the
+  performance some since the base speed is also faster.
 
-  Avoid allowing threads during hashing of small strings (current threshold
-  is 1 MB). This change improves ApacheBench numbers ~20% for a Roxen
-  benchmark on a quad-core Core i5.
+o Power-of-two hashtables are now used for most hashtables
 
+  This speeds up mappings and other hashtables a few percent, and also
+  simplifies the code.
 
-Deprecations
-------------
+o Significantly changed x86-32 and an entirely new AMD64/x86-64
+  machine-code compilation backend
 
-o The libpq based old Postgres driver is now deprecated. The new pgsql
-  driver is faster, better tested, more stable, maintained, has more
-  features, does not depend on external libraries and is less filling.
+  The main feature with the x86-32 edition is that it is now using
+  normal function call mechanics, which means that it now works with
+  modern GCC:s.
 
+  The x86-64 backends has been rewritten so that it is easier to add
+  new instructions (x86-64) and opcodes (pike) to it.
 
-Incompatible changes
---------------------
+o Svalue type renumbering
 
-o Signal handlers in GTK2 do no longer get their arguments in the
-  form of an array. The prototype for a signal handler which was
-  previously e.g.
+  PIKE_T_INT is now type #0, which makes certain things significantly
+  faster.
 
-    int query_tooltip(GTK2.Widget w, array(mixed) params, mixed callback_arg)
+  As an example, clearing of object variables is now done
+  automatically when the object is created since all object memory is
+  set to 0.
 
-  now becomes
+  The same thing happens when clearing values on the stack.
 
-    int query_tooltip(GTK2.Widget w, int x, int y, int keyboard_tooltip,
-		      GTK2.GObject tooltip, mixed callback_arg)
+o string(x..y) (constant) types
 
+  The strings now keep track of the min/max values in addition to two
+  new flags: all-uppercase and all-lowercase.
 
-Bug fixes
----------
+    | > typeof("foo");
+    | (1) Result: string(102..111)
 
-o Fixed backtraces when Protocols.HTTP.Query objects where garbage
-  collected. [bug 5730]
+  This is used to optimize certain operations,
+  lower_case, upper_case, search and string_has_null for now.
+  It could be added to other places in the future as well.
 
-o Fixed problem with Calendar.month_from_yday() when applied on week
-  53. [bug 5303]
+  The fairly common case where you are doing lower_case or upper_case
+  on an already lower or uppercase strings is now significantly
+  faster.
 
-o Fixed leak in the PNG decoder for images with tRNS chunk.
+o Several other optimizations to execution speed has been done
 
-o System.normalize_path no long fails for files with 8-bit chars in
-  their names.
+  + object indexing (cache, generic speedups)
 
-o Support undocumented OS behaviour on out-of-band data returning
-  EOPNOTSUPP and ECONNRESET when a stream is half closed.
-  The undocumented behaviour is found on (at least) 2.6.x Linux
-  and FreeBSD 7.x and 8.x.
+  + lower_apply, changes to apply in general
+    Taken together these individually small optimizations speeds up at
+    least pike -x benchmark more than 5%.
 
-o Use nanosleep() when available instead of poll or select hacks for
-  the Pike-level sleep() function.
+  + A lot of opcodes implemented in machine-code for x86-64
+    This speed up the loop benchmarks close to a factor of 3. But then
+    again, most real code is nothing like that benchmark.
 
-o Fixed dangling cache reference in prepared statements when using CREATE
-  statements via Sql.pgsql.
+  + Several new opcodes added
+    As an example an observation was that most branch_if_zero is
+    followed by an is_eq, is_lt or is_gt or similar. Those opcodes
+    always return 1 or 0. So, two new opcodes, quick_branch_if_zero
+    and quick_branch_if_non_zero were added that map directly to three
+    x86-64 opcodes, there is no need to check the types, do a real
+    pop_stack etc.
 
-o Fixed broken (auto-re-) connect logic in Sql.pgsql.
+o Faster hash-function for strings
 
-o Improved widestring support for Parser.Tabular.
-
-o Fixed segfault in combine_path_nt on windows when the first char
-  of an appended path is wide.
-
-o Fixed fatal error in the constant expression evaluator of the
-  compiler for certain code.
-
-o Fixed a problem in "pike -x module" that prevented auto tools from
-  running in the correct directory.
-
-o Fixed memory leak on out of memory in Mysql.fetch_json_result().
-
-o Fixed locking problem in Mysql.
-
-o Fixed NULL-deref for compilation errors in range expressions.
-
-o Fixed a segfault occuring if exit() is used from a thread when
-  the Pike runtime has been compiled with cleanup-on-exit enabled.
-
-o Fixed so than an existing content-type is not overriden in
-  async_do_method_url.
-
-o Fixed issue where GTK objects weren't destroyed properly.
-  http://pike.ida.liu.se/docs/tutorial/hello/window.xml now
-  works again.
-
-o Fixed several issues related to lables on the X and Y axises 
-  and the calculation of xmaxvalue for the bars/line/linear case 
-  in Graphics.Graph.
-
-o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
-  files with space in the name from being accessable.
-
-o Fixed bug that prevented the literal zero from being considered a constant.
+  + Also siphash24 was added and is used in case the string hash table
+    becomes inefficient
 
 
-Building and installing
------------------------
+Deprecated features and modules
+-------------------------------
 
-o Fixed some library searchpath issues.
+o Tools.PEM and Tools.X409 deprecated
 
-o Some potential fixes for --enable-pikelib mode on platforms had
-  problems with the final linking.
+  Use the corresponding modules in Standards.
 
-o Some issues with the support for building modules needing
-  a C++ compiler have been fixed.
+o The built in sandbox is now deprecated
 
+  Unless somebody wants to take ownership of the feature and keep it
+  up to date the security system will be removed in the next stable
+  release.
 
-Changes since Pike 7.8.316 (second 7.8 release):
-----------------------------------------------------------------------
+o The compiler now warns about switch statements where the cases
+  aren't enumerable, since these will generate random failures
+  if the code is read from a dump.
 
-General
--------
-
-o ADT.Heap
-  The compat functions top() and size() are now marked as deprecated.
+o strlen() now only accepts strings
 
 
-Extensions and New Functions
+Removed features and modules
 ----------------------------
 
-o Image.Image
+o Removed facets
 
-  Added support for sending Color objects to the color() function.
+  The optional (and not enabled by default) support for facet classes
+  has been removed, since it was only partially done and not really
+  used.
 
-o Sql.Sql
+o It is no longer possible to compile pike without libgmp.
 
-  Added support for fetching result sets as JSON-encoded strings.
+  Bignums are now a required language feature
 
-o Calendar
+o The old low-level 'files' module has been renamed to _Stdio
 
-  Updated timezone data to 2009j.
-
-o Parser.XML.Tree
-
-  Output from render_xml() is now on canonical form.
-
-o Added "pike -x httpserver" that implements a minimal HTTP-server
-  exporting the current directory.
-
-
-Optimizations
--------------
-
-o Lowered startup time by extending encode_value() and MasterCodec so
-  that master.pike can be precompiled.
-
-o Lowered startup time by reducing the number of MEMSET() calls done
-  on startup.
-
-o Allow threads while calling SDL_GL_SwapBuffers.
-
-o Added optimization of has_value() and search() for single-character strings.
-
-o Added optimization when combining two arrays where the second array
-  contains a single item.
-
-
-Bug fixes
----------
-
-o Fixed casting of floats to strings to again work more like in Pike
-  7.6 and earlier: The string will always contain either a "." or an
-  "e" to signify that it is a float, and it will no longer display so
-  many digits that the binary/decimal conversion errors become
-  visible.
-
-o Protocols.HTTP.Server.HeaderParser will now discard parts of a
-  header value if the header value contains a newline (like "Host:
-  google.com\n.hax.net\r\n") and headers without colon.
-
-o file_open_socket() now attempts to set SO_REUSEPORT on the socket.
-  Potentially fixes issues on FreeBSD 7.x where ports aren't reused.
-
-o Calendar.TimeRanges now knows that `+() and `-() can get any number
-  of arguments.
-
-o The experimental extended ZFS support is disabled since it pulled in
-  unwanted dependencies.
-
-o Fixed propagation of changed module directories for joinnodes by
-  zapping the joinnode cache.
-
-o Fixed memory leak in Image.WBF.
-
-o Fixed potential NULL-deref in Image.XWD.
-
-o Fixed potential NULL-deref in Image.PNG.
-
-
-Building and installing
------------------------
-
-o Nettle 2.0 is now supported.
-
-
-Changes since Pike 7.8.116 (initial 7.8 release):
-----------------------------------------------------------------------
-
-General
--------
-
-o Sql.pgsql:
-  - Substantial documentation improvements.
-
-o Stdio.Fd_ref is deprecated and in the process of being eliminated. 
-  You have never used it before, so don't start using it now.
-
-
-Bugfixes
---------
-
-o Fixed bug in AGGR_ARR_EPILOGUE() (aka END_AGGREGATE_ARRAY()) that
-  caused the empty array to always be returned if there were no
-  unaggregated elements on the stack at END_AGGREGATE_ARRAY.
-
-  You are encouraged to upgrade just for this fix since the bug
-  creates very rare but (seemingly) random occurances of empty arrays.
-
-o Fixed multiset_delete_node to work with destructed indices. This
-  fixes occasional bugs in various functions when there are destructed
-  objects in indices. 
-
-  You are encouraged to upgrade just for this fix since the bug creates
-  (seemingly) random crashes that are hard to reproduce and track down.
-
-o Fixed overzealous filtering of the value returned from Stdio.File()->mode().
-  This bug caused Stdio.nb_sendfile to always run in blocking mode.
-
-  You are encouraged to upgrade just for this fix since the bug can
-  cause supposedly nonblocking actions to block and hang the script.
-
-o Fixed bug in the Odbc module on WIN32 where it would fail for some
-  field-types with the error "22003:Numeric value out of range".
-
-o Sql.pgsql:
-  - Various small fixes and performance improvements.
-  - Fixed fully transparent UTF8/Unicode/wide string/character set support.
-  - Fixed formatting errors in error().
-
-o Fixed bug when seeking backwards in Gz.File.
-
-o Fixed bug in fd_stat on windows when used on a file system with a
-  long name.
-
-o Fixed off-by-one bug in Stdio.Readline that caused a space in the
-  last column to disappear instead of being converted to a linefeed 
-  when word wrapping is used.
-
-o Fix bug in FakeFile.read()
-  Replaced the broken-in-multiple-ways implementation by something that
-  actually works (hence the original enlightnening description: "fixed a bug",
-  there is really no concise way to classify this level of brokenness).
-
-o Image.TIFF: Fixed memory leak on OOM.
-
-o Fixed crash bug in yyexplain_not_implements().
-
-o LysKOM.ProtocolTypes: Bugfix of LocalToGlobalBlock
-
-o Protected Pike_fatal() against the risk of hanging on mutexes.
-
-o Added 7.6 compat versions for RegGet{Value{,s},KeyNames}().
-
-o Fixed memory leak in Image.Colortable.
-
-o Parser.SGML: Reinstated the class as Parser.SGML(). It inadvertedly
-  became Parser.SGML()->SGML() in the move to a separate file.
-  Parser.SGML.SGML is kept as a compatibility alias.
-
-o Added Pike 7.6 and earlier compat for store_constant(UNDEFINED).
-
-o Fixed race-condition causing "Lost track of child" on pikes compiled
-  --without-threads.
-
-o Regexp.PCRE: Do not match the empty string past the end of the input.
-
-o Reduced the risk of throwing out-of-stack errors while formatting an
-  out-of-stack backtrace.
-
-o Fixed bug that would cause sprintf's %nH to refuse all strings as too
-  long for some values of "n" on some architectures.
-
-o Made Process.search_path() aware if Win32 and AmigaOS specifics.
-
-o Fixed bug in Protocols.HTTP.Query that dropped the last byte of a
-  request if the server did not provide a Content-Length header.
-
-o Fixed bug in Protocols.HTTP.Query that dropped the first argument to
-  the async_fetch() callbacks (ie the query object) in some circumstances.
-
-o Fixed bug in Protocols.HTTP.AsyncClient that made all data decoding fail.
-
-o Fixed fatal "Invalid formatting method: 'p' 0x70." in COM.
-
-o low_get_function_line() now knows about prototypes.
-  Fixes [bug 4855] ("Bad offset" when generating backtrace).
-
-o Removed spurious call to the fail callback after a successful
-  Protocols.HTTP.Query()->timed_async_fetch(). Fixes [bug 4773].
-
-o Fixed issue where symbols could be hidden by a later inherit of the
-  same, but protected, symbol.
-
-o Fixed NULL dereference on failure to resolve the function return
-  type when functions are used as types.
-
-
-Optimizations
--------------
-
-o Fixed Filesystem._Tar.ReadFile to not gobble the whole tar entries
-  into memory at once.
-
-o Improve performance of get_cpu_time() on OS X by avoiding a kernel
-  trap to get the ID of the underlying system thread.
-
-o Throttle calls to task_info() on OS X since they are quite
-  expensive. This gives a significant performance boost (>10%) on
-  CPU-intensive applications.
-
-
-Extensions and New Functions
-----------------------------
-
-o Added support for specifying modifiers via a mapping to '*' in sprintf(). 
- 
-  See the documentation for details.
-
-  This support is detectable by checking for
-  String.__HAVE_SPRINTF_STAR_MAPPING__
-
-o Added support for generating little-endian floats with %F in sprintf().
-
-  This support is detectable by checking for
-  String.__HAVE_SPRINTF_NEGATIVE_F__
-
-o Sql.Sql now supports NULL values for %s-parameters.
-
-o Timeout support in win32 threads.
-
-o Made FakeFile() support getchar/gets/unread.
-
-o Added option to chown and utime that makes it possible to change the
-  symlink instead of the target of the link.
-
-o function_name() now knows how to adjust the names of named lambdas.
-
-o Changed handling of POLLHUP for poll devices, it is now signalled on
-  all of the callbacks.
-
-o Updated timezone data to tzdata2009c.
-
-o Added some support for the TIMESTAMP and INTERVAL datatypes to
-  Oracle module.
-
-
-New modules / classes / methods added
--------------------------------------
-
-o Protocols.IPv6
-
-  Helpers for IPv6 related things. This currently only contains tools
-  to parse and normalize addresses. (Not much more is necessary since
-  the usual I/O interfaces support IPv6 as-is.)
-
-o Added Filesystem._Tar.extract to be able to extract many/all files
-  in a reasonably efficient way.
-
-o Added Parser.Tabular
-  It provides a flexible yet concise record-description language to parse
-  character/column/delimiter-organised records.
-
-o Calendar.YMD.http_time() that knows how to handle dates according to
-  HTTP 1.1 (RFC 2616).
-
-o Added support for GTK2 get_window() and get_pixmap().
-
-
-Building and installing
------------------------
-
-o Use the #-character as prefix and suffix for placeholders in
-  master.pike.in instead of the currency sign, to avoid 8-bit character
-  encoding issues.
-
-o Improved support for version bumping via both Subversion and git.
-
-o A recent stable Pike (7.8.116+) is now required to do a "make
-  export".
-
-o The win32 installer now removes the generated master.pike on uninstall.
-
-
-
-Changes since Pike 7.6:
-----------------------------------------------------------------------
-
-This is a high level list of changes between Pike 7.6 and Pike 7.8.
-General bug fixes, build fixes and optimizations are not mentioned
-here. For a complete list of changes, please consult the CVS changelog
-either directly or through Code Librarian.
-
-
-New / improved language functionality
--------------------------------------
-
-o New syntax to index from the end in range operations.
-
-  A "<" can be added before an index in the [..] operator to count
-  from the end instead, beginning with 0 for the last element. This is
-  convenient to e.g. chop off the last element in an array: a[..<1].
-
-o New `[..] operator function.
-
-  Range operations have been separated from the `[] operator function
-  and are now handled by the new `[..] which provides greater control
-  for how the range bounds are specified. For compatibility, if there
-  is no `[..] then `[] is still called for range operations.
-
-  The `[..] callback will get four arguments, start value, start type,
-  end value and end type. The type arguments is any of
-  Pike.INDEX_FROM_BEG, Pike.INDEX_FROM_END or Pike.OPEN_BOUND. Here
-  are a few examples of what input arguments different calls would
-  generate.
-
-    [..]      0   OPEN_BOUND       0   OPEN_BOUND
-    [1..]     1   INDEX_FROM_BEG   0   OPEN_BOUND
-    [..2]     0   OPEN_BOUND       2   INDEX_FROM_BEG
-    [3..4]    3   INDEX_FROM_BEG   4   INDEX_FROM_BEG
-    [<5..]    5   INDEX_FROM_END   0   OPEN_BOUND
-    [6..<7]   6   INDEX_FROM_BEG   7   INDEX_FROM_END
-
-o Generalized this and this_program.
-
-  It is now possible to refer to inherits in objects. Example:
-
-    class A {
-      int a;
-      void foo() { werror("A\n"); }
-    }
-    class B {
-      inherit A;
-      int b;
-      void foo() { werror("B\n"); }
-      A::this_program get_a() { return A::this; }
-    }
-
-  In the above B()->get_a() will return an object with two symbols,
-  'a' and 'foo', but B()->get_a()->foo() will still write "B\n".
-
-o Added support for getters and setters.
-
-  It is now possible to simulate variables with functions. Example:
-
-    class A {
-      private int a;
-      int `b() { return a; }		// Getter for the symbol b.
-      void `b=(int c) { a = c; }	// Setter for the symbol b.
-      int c()
-      {
-        return b;			// Calls `b().
-      }
-    }
-
-    object a = A();
-    a->b = 17;				// Calls `b=(17).
-    werror("%d\n", a->b);		// Calls `b().
-
-o Casting to derived types.
-
-  It is now possible to call a value of type type to perform the
-  corresponding value cast. eg:
-
-    typedef string MyString;
-
-    return MyString(17);		// Casts 17 to "17".
-
-o Unicode escapes.
-
-  Pike now understands the common way to escape unicode chars, using
-  \uxxxx and \Uxxxxxxxx escapes. These escapes works both in string
-  and character literals and in the preprocessor. The latter means
-  that unicode escapes can be used in identifiers, which is useful if
-  they contain characters that can't be represented raw in the source
-  code charset.
-
-o Stricter type checker for function calls.
-
-  The type checker for function calls is now based on the concept of
-  currification. This should provide for error messages that are more
-  easily understood. It also is much better att typechecking function
-  calls utilizing the splice (@) operator. The mechanisms used by the
-  typechecker are also made available as Pike.get_first_arg_type(),
-  Pike.low_check_call() and Pike.get_return_type().
-
-o Stricter typing of strings.
-
-  The string type may now have an optional value range.
-
-    string(0..255) bytes;
-
-o Support for having multiple different active backend implementations.
-
-  In Pike 7.6 and earlier, there could only be one active backend
-  implementation at a time, which was the one selected for best
-  performance with lots of files (cf Pike.Backend below). This led
-  to problems when Pike attempted to run poll-device based backends
-  on older versions of operating systems where poll devices aren't
-  available, and with extra overhead when the backend was only used
-  with a very small set of files.
-
-  Basic backend implementations:
-
-  - Pike.PollDeviceBackend
-    This is a backend that is implemented based on keeping the state in
-    the operating system kernel and thus eliminating the need to send the
-    state in every system call. This is however not available on all
-    operating systems. Currently supported are /dev/poll (Solaris, etc),
-    epoll(2) (Linux) and kqueue(2) (FreeBSD, MacOS X).
-
-  - Pike.PollBackend
-    This is a backend that is implemented based on the poll(2) system call.
-    This is typically available on all System V or Linux based systems.
-
-  - Pike.SelectBackend
-    This is a backend that is implmented based on the BSD select(2) system
-    call. This backend is available on all operating systems supported by
-    Pike.
-
-  Derived backend implementations:
-
-  - Pike.Backend
-    This is the backend selected among the basic backend implementations,
-    which is likely to have the best performance when there are lots of
-    files in the backend.
-
-  - Pike.SmallBackend
-    This is the backend selected among the basic backend implementations,
-    which is likely to have the best performance when there are very few
-    files in the backend.
-
-  Note that there is also a default backend object:
-
-  - Pike.DefaultBackend
-    This is the Pike.Backend object that is used for file callbacks and
-    call outs if no other backend object has been specified.
-
-o cpp
-
-  The preprocessor now supports macro expansion in the #include and #string
-  directives.
-
-    #include USER_SETTINGS
-
-o Destruct reason passed to lfun::destroy.
-
-  lfun::destroy now receives an integer flag that tells why the object
-  is being destructed, e.g. if it was an explicit call to destroy(),
-  running out of references, or reaped by the garbage collector.
-
-  These integers are defined in the new Object module as
-  DESTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
-  DESTRUCT_CLEANUP.
-
-o Improved support for mixin.
-
-  The Pike compiler now supports mixin for symbols that have been
-  declared protected. Mixin is the concept of overloading symbols
-  via multiple inheritance. In previous versions of Pike the mixin
-  paradigm was only supported for public symbols. For more information
-  about mixin see eg http://en.wikipedia.org/wiki/Mixin .
-
-o Implicit and explicit create().
-
-  The compiler now supports defining classes with both an implicit
-  and an explicit create().
-
-    class A (int i)
-    {
-      protected string j;
-      protected void create(string j)
-      {
-        A::j = reverse(j);
-      }
-    }
-
-o Warnings for unused private symbols.
-
-  The compiler now checks that all symbols that have been declared
-  private actually are used.
-
-o Warnings for unused local variables.
-
-  The compiler now checks that all local variables are used.
-
-o Unicode
-
-  Case information and the Unicode module are updated to Unicode
-  5.1.0.
-
-o The keyword protected
-
-  The modifier protected is now an alias for the modifier static.
-  NOTE: In the next release static will be deprecated.
-
-o extern declared variables
-  
-  Variables can now be declared as 'extern'. This means that
-  inheriting classes must have them. They can be used like normal
-  variables in the base class.
-
-  Example: 
-    class A
-    {
-	extern int a;
-	int dummy() { return ++a; }
-    }
-
-o __attribute__ and __deprecated__
-
-  It's now possible to set custom attributes on types, so that
-  it is possible to make custom type checking. This is currently
-  used to improve the argument checking for sprintf() and related
-  functions, and for marking symbols as deprecated.
-  eg:
-
-    __deprecated__ mixed obsolete_function();
-    __deprecated__(mixed) obsolete_return_value();
-    mixed fun(__deprecated__(mixed) obsolete_arg);
-    __deprecated__(mixed) obsolete_variable;
-
-  The deprecated type flag using __deprecated__ is a convenience
-  syntax to use instead of e.g.
-
-    void f(void|__attribute__("deprecated",int) timeout)
-
-  Other uses of __attribute__ in type declarations can be seen in e.g.
-  the type for werror():
-
-    > typeof(werror);
-    (1) Result: scope(0,function(string : int) |
-        function(__attribute__("sprintf_format", string),
-                 __attribute__("sprintf_args", mixed) ... : int) |
-        function(array(string), mixed ... : int))
-
-o __func__
-
-  The symbol __func__ now evaluates to the name of the current
-  function. Note that this name currently can differ from the
-  declared name in case of local functions (i.e. lambdas). Note
-  also that __func__ behaves like a literal string, so implicit
-  string concatenation is supported. eg:
-
-    error("Error in " __func__ ".\n");
-
-o __DIR__
-
-  __DIR__ is a new preprocessor symbol that resolves to the directory
-  that the current file is placed in. Similar to how __FILE__ points
-  out the file the code is placed in.
-
-o #pragma {no_,}deprecation_warnings
-
-  Warnings for use of deprecated symbols can be turned off for a
-  segment of code with
-
-    #pragma no_deprecation_warnings
-
-  and turned on again with
-
-    #pragma deprecation_warnings
-
-o Compatibility name spaces
-
-  Older versions of a function can be reached through its version name
-  space. For example the 7.4 version of the hash function can be
-  called through 7.4::hash().
-
-o Iterator API
-
-  The iterator API method Iterator->next() is no longer optional.
-
-o IPv6
-
-  Support for IPv6 has been improved.
-
-
-Extensions and New Functions
-----------------------------
-
-o exit()
-
-  Exit now takes optional arguments to act as a werror in addition to
-  exiting the process.
-
-    exit(1, "Error while opening file %s: %s\n", path, strerror(errno()));
-
-o getenv()/putenv()
-
-  getenv() and putenv() are now accessing and modifying the real
-  environment.
-
-o get_dir()
-
-  Calling get_dir() with no arguments will now return the directory
-  listing for the current directory.
-
-o undefinedp()/destructedp()
-
-  undefinedp() and destructedp() have been added as more readable
-  alternatives to zero_type().
-
-o limit()
-
-  The new toplevel function limit(a, x, b) is a convenience function
-  that works like min(max(a,x),b).
-
-o listxattr(), getxattr(), setxattr(), removexattr()
-
-  The new xattr functions listxattr(), getxattr(), setxattr and
-  removexattr() allows extended file attributes to be modified from
-  within Pike.
-
-o sprintf() and sscanf()
-
-  - sprintf() now attempts to lookup the name of the program when
-    formatting types of objects and programs.
-
-  - The new formatting directive %H can be used to format a string as
-    a binary hollerith string.
-
-      > sprintf("%2H", "Hello");
-      (1) Result: "\0\5Hello"
-
-  - The new formatting directive %q can be used to format a atring as
-    a quoted string, quoting all control character and non-8-bit
-    characters as well as quote characters. Like %O but always on one
-    line.
-
-      > sprintf("%q", "abc \x00 \" \' \12345");
-      (1) Result: "\"abc \\0 \\\" ' \\u14e5\""
-
-  - Ranges in sscanf sets can now start with ^, even at the beginning
-    of the set specifier. Example: %[^-^] matches a set with only ^ in
-    it. To negate a set with - in it, the - character must now be the
-    last character in the set specifier.
-
-o encode/decode value and programs
-
-   --with-portable-bytecode is now the default. Pike programs that have
-   been dumped on one architecture now can be decoded on another.
-
-o gethrtime, gethrvtime, gauge
-
-  Added support for POSIX style timers using clock_gettime(3). Notably
-  this fixes nice high resolution thread local cpu time and monotonic
-  real time on reasonably modern Linux systems.
-
-  There are new constants CPU_TIME_* and REAL_TIME_* in the System
-  module to allow pike code to query various properties of the CPU and
-  real time clocks in use.
-
-o ADT.BitBuffer
- 
-  Added read() method that reads whole bytes from the buffer and
-  returns as a string.
-
-o ADT.Queue
-
-  It is now possible to use sizeof() and values() on a Queue object to
-  get the size of the queue and all elements in the queue as an array.
-
-o ADT.Stack
-
-  Stack objects can now be cast to arrays to get all elements on the
-  stack.
-
-o ADT.Struct
-
-  - New Item class SByte, SWord and SLong represents a signed byte,
-    word and longword respectively.
-
-  - The Item classes int8, uint8, int16, uint16, int32, uint32, int64
-    and uint64 are aliases for already existing Item classes.
-
-  - sizeof() now works for empty Struct objects.
-
-  - sizeof() can be used on individual Item objects.
-
-  - Struct objects can now be used as Items in other Structs.
-
-    class Pair
-    {
-      inherit ADT.Struct;
-      Item id = uint8();
-      Item val = uint64();
-    }
-
-    class File
-    {
-      inherit ADT.Struct;
-      Item magic = Chars(4);
-      Item one = Pair();
-      Item two = Pair();
-    }
-
-o Array
-
-  - New function combinations() returns all combinations of a
-    specified length with elements from a given array.
-
-  - Added push(), pop(), shift() and unshift() functions for Perl
-    weirdos.
-
-o Calendar
-
-  - Added new calendar Badi, used in the Baha'i religion.
-
-  - Fixed bugs in discordian, where the year() was off by 1166 and
-    now() was off 5 month per year.
-
-  - Time objects now handle * and / with floats. A split() method has
-    been added for more advanced splitting where the preferred time
-    quanta can be given as an argument.
-
-  - A new formatting method format_ext_time_short() has been added to
-    Time objects.
-
-  - Timezones are now read from /etc/localtime, if available.
-
-  - Cleaned up year-day (yd) handling so that it never goes below 1.
-    Instead be careful to use either year (y) or week-year (wy)
-    depending on context.
-
-  - Fixed inconsistent range handling in year() and years() that made
-    them almost but not quite zero-based. Now they are one-based just
-    like day()/days(), month()/months() etc.
-
-  - Cleaned up conversion between weeks and years: E.g. if a week has
-    days in two years then converting it to years will produce a range
-    of both years. The attempt to always map a week to a single year
-    is gone since it's inconsistent with how other overlapping time
-    ranges are handled. If the user wants to convert a week to the
-    year it "unambiguously" belongs to, (s)he can do
-    Calendar.ISO.Year(week->year_no()).
-
-  - Did away with the attempt to map leap days between February 24th
-    and 29th before and after year 2000, since doing so breaks date
-    arithmetic.
-
-  - The last four changes above are not entirely compatible.
-    Compatibility with 7.6 and older is retained with #pike 7.6.
-
-o CompilerEnvironment & CompilerEnvironment()->PikeCompiler
-
-  The Pike compiler has been refactored to be more object-oriented and
-  more transparent. It is now possible to customize the compiler by
-  overloading functions in the above two classes. The compiler object
-  used by Pike internally is available through the global constant
-  DefaultCompilerEnvironment.
-
-o Debug
-
-  The new function count_objects() will return the different kinds of
-  objects existing within the Pike process. Useful when trying to
-  pinpoint a leak of Pike objects.
-
-o Error
-
-  The new function mkerror() will normalize any thrown value into a
-  proper error object (or 0).
-
-o Filesystem
-
-  Traversion has been extended with two new create arguments. The
-  first one is a flag to supress errors and the other is a sorting
-  function which will be applied to the entries in every directory.
-  This callback can also be used to filter the directory entries.
-
-o Float
-
-  The function isnan() can be used to check if a float is Not a
-  Number.
-
-    > Float.isnan(Math.inf/Math.inf);
-    (1) Result: 1
-
-o Gdbm
-
-  Gdbm databases can be opened in synchronous mode or locking mode by
-  adding "s" or "l" respectively in the mode parameter to the create
-  method.
-
-o Geography.Position
-
-  It is now possible to encode Position objects with encode_value().
-
-o GLUE
-
-  - The default event callback will now exit both on Exit and Escape
-    events.
-
-  - The texture, list and light id generators will now be created
-    after we are sure that GL has been initialized, to prevent crashes
-    on several systems.
-
-  - BaseTexture and BaseDWIM now supports clamped textures.
-
-o Gmp
-
-  Many small changes to fix Gmp build issues on different platforms.
-  The most visible being that the Gmp module now is statically linked
-  to work around Mac OS X 10.5 linker issues.
-
-o Gz
-
-  - Added compress() and uncompress() functions as a simpler and more
-    efficient but non-streaming interface.
-
-  - Support for RLE And FIXED compression method, if supported by
-    zlib. Give Gz.RLE or Gz.FIXED to the strategy argument of
-    compress() or the deflate constructor.
-
-  - Added support for configurable compression window size. This is
-    the last argument to compress() and the constructor for
-    inflate/deflate.
-
-o Image.Colortable
-
-  - The new method greyp() can be used to query if the color in the
-    color object is grey.
-
-  - Partial support for serializing color objects. Dithering type and
-    lookup mode is not currently saved.
-
-o Image.Dims
-
-  Support for parsing out the dimensions of TIFF files has been added.
-
-o Image.FreeType
-
-  - Added support for handling monochrome (bitmap) fonts.
-
-o Image.Image
-
-  - Image object can now be serialized and deserialized with
-    encode_value() and decode_value().
-
-  - It is possible to convert the colors in an image object to and
-    from YUV (YCrCb) with the new rgb_to_yuv() and yuv_to_rgb()
-    methods.
-
-o Image.Layer
-
-  - It is now possible to get the raw bitmap data of a layer by
-    casting the layer object to a string.
-
-o Image.PNG
-
-  - Properly decode cHRM (chrome), sBIT (sbit), gAMA (gamma), pHYs
-    (physical), oFFs (offset), tIME (time) chunks.
-
-  - The compression level and strategy when compressing PNG images can
-    be controlled by passing "zlevel" and "zstrategy" options to the
-    encode() method. Available strategies are filtered, huffman, rle
-    and fixed.
-
-      Image.PNG.encode( img, ([ "zlevel":9, "zstrategy":Gz.RLE ]) );
-
-o Image.TIFF
-
-  Added support for little endian TIFF files.
-
-o Int
-
-  Int.inf is an object that can be used as an infinitly large integer.
-
-o Java
-
-  - If possible, Pike now uses libffi instead of creating our own
-    trampolines. Adding libffi as a bundle is supported.
-
-  - Added built-in support for SPARC64 trampolines.
-
-  - The method signature fuzzy-matcher now only considers Pike strings
-    to match formal parameters of type String, Object, Comparable,
-    CharSequence or java.io.Serializable.
-
-  - When the fuzzy-matcher can not decide on a single method
-    signature, all candidates are now listed in the error message.
+o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
 o Locale.Charset
 
-  - The character name normalizer now recognizes Unicode prefixes,
-    e.g. "unicode-1-1-utf-7", though the Unicode version itself is
-    ignored.
+  The charset module is now available on the top level as 'Charset'
 
-  - Added support for the following character sets
 
-    GB18030/GBK (CP936)
-    UTF-EBCDIC
-    DIN-31624 (ISO-IR-38)
-    ISO-5426:1980 (ISO-IR-53)
-    ISO-6438:1996 (ISO-IR-39, ISO-IR-216)
-    ISO-6937:2001 (ISO-IR-156)
-    GSM 03.38
-    Mysql Latin 1
+New modules
+-----------
 
-  - Added typed encode and decode error objects,
-    Locale.Charset.EncodeError and Locale.Charset.DecodeError, to make
-    it possible to catch such errors in a better way.
+o Pike.Watchdog
 
-  - ISO-IR non-spacers are now converted into combiners.
+  A Watchdog that ensures that the process is not hung for an extended
+  period of time. The definition of 'hung' is: Has not used the
+  default backend.
 
-o Math
+  To use it simply keep an instance of the watchdog around in your
+  application:
 
-  - Matrix multiplication was bugged and gave B*A instead of A*B,
-    which is now fixed.
+    | Pike.Watchdog x = Pike.Watchdog( 5 ); // max 5s blocking
 
-  - Matrix objects now have xsize() and ysize() methods to query their
-    dimensions.
+  An important and useful side-effect of this class is that the
+  process will start to respond to kill -QUIT by printing a lot of
+  debug information to stderr, including memory usage, and if pike is
+  compiled with profiling, the CPU used since the last time kill -QUIT
+  was called.
 
-  - To ease your logarithmic needs log2() and logn() have been added.
+o Crypto.Password
 
-o MIME
+  A module that can be used to verify and create passwd/ldap style
+  password hashes.
 
-  - Added remapping variants of the encode words functions with
-    encode_word_text_remapped(), encode_word_quoted(),
-    encode_words_quoted_remapped() and
-    encode_words_quoted_labled_remapped().
+  It tries to support most common password hashing schemes.
 
-  - Added workaround for a bug in Microsoft Internet Explorer where it
-    forgets to properly quote backslashes in the Content-Disposition
-    field.
+o Debug.Profiling
 
-  - Fixed a bug that could occur when casting MIME.Message objects to
-    strings.
+  Tools useful for collecting and format for output the profiling
+  information generated when pike is compiled --with-profiling.
+
+o NetUtils
+
+  This module contains a lot of functions useful for the storage and
+  processing of network addresses, it supports IPv4 and IPv6.
+
+o Added ADT.CritBit module
+
+  Mapping-like key-sorted data structures for string, int and
+  float-keys (ADT.CritBit.Tree, ADT.CritBit.IntTree,
+  ADT.CritBit.FloatTree). Implemented in C.
+
+o Standards.BSON
+
+  A new module for working with BSON serialized data.
+  See http://bsonspec.org/
+
+o Geography.GeoIP
+
+  Does geolocation of IPv4-numbers using databases from maxmind.com
+  or software77.net
+
+o Protocols.WebSocket
+
+  An implementation of the WebSocket (RFC 6455) standard, both server
+  and client
+
+o Image.WebP
+
+  Encoder and decoder for the WEBP image format.
+  More information about the format can be found on
+  https://developers.google.com/speed/webp/
+
+o Serializer
+
+  APIs useful to simplify serialization and deserialization of
+  objects Mainly it allows you to easily iterate over the object
+  variables, including the private ones.
+
+  + Serializer.Encodable
+    A class that can be inherit to make an object easily serializable
+    using encode_value.
+
+o Filesystem.Monitor and the low level System.Inotify + System.FSEvents
+
+  Basic filesystem monitoring.
+
+  This module is intended to be used for incremental scanning of a
+  filesystem.
+
+  Supports FSEvents on MacOS X and Inotify on Linux to provide low
+  overhead monitoring; other systems currently use a less efficient
+  polling approach.
+
+o Mysql.SqlTable
+
+  This class provides some abstractions on top of an SQL table.
+
+  At the core it is generic for any SQL database, but the current
+  implementation is MySQL specific on some points, notably the
+  semantics of AUTO_INCREMENT, the quoting method, knowledge about
+  column types, and some conversion functions. Hence the location in
+  the Mysql module.
+
+  Among other things, this class handles some convenient conversions
+  between SQL and pike data types
+
+o Parser.CSV
+
+  This is a parser for line oriented data that is either comma,
+  semi-colon or tab separated.  It extends the functionality
+  of the Parser.Tabular with some specific functionality related
+  to a header and record oriented parsing of huge datasets.
+
+o ZXID
+
+  ZXID is a library that implements SAML 2.0, Liberty ID-WSF 2.0
+  and XACML 2.0.
+
+  This module implements a wrapper for ZXID. The interface is similar
+  to the C one, but using generally accepted Pike syntax.
+
+o Git
+
+  A module for interacting with the Git distributed version control
+  system.
+
+o Val
+
+  This module contains special values used by various modules, e.g.
+  a Val.null value used both by Sql and Standards.JSON.
+
+  In many ways these values should be considered constant, but it is
+  possible for a program to replace them with extended versions,
+  provided they don't break the behavior of the base classes defined
+  here. Since there is no good mechanism to handle such extending in
+  several steps, pike libraries should preferably ensure that the
+  base classes defined here provide required functionality directly.
+
+o __builtin
+
+  The __builtin module is now a directory module, so that it can provide
+  a suitable namespace for code written in Pike intended for being
+  inherited from modules written in C (cf precompile).
+
+
+Extensions and new functions
+----------------------------
+
+o Bz2.File added
+
+  It implements a Stdio.File like API, including support for the same
+  iterator API that Stdio.File has, allowing for convenient line
+  iterations over BZ2 compressed files.
+
+    | foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
+
+o Image.JPEG
+
+  + decode now supports basic CMYK/YCCK support
+
+  + exif_decode is a new function that will rotate the image
+    according to exif information
+
+o String.Buffer
+
+  String.Buffer can now add the storage from a different String.Buffer
+  object with the add() method.
+
+  It is possible to add sprintf-formatted data to a String.Buffer
+  object by calling the sprintf() method. This function works just as
+  the normal sprintf(), but writes to the buffer instead.
+
+  The new method addat() allows for writing into the buffer at any
+  position.
+
+o SDL.Music added to SDL.
+
+  Allows the playback of audio/music files.
+  Requires the SDL_mixed library.
+
+o System.TM
+
+  Low-level wrapper for struct tm.
+
+  This can be used to do (very) simple calendar operations. It is,
+  as it stands, not 100% correct unless the local time is set to
+  GMT, and does mirror functionality already available in gmtime()
+  and localtime() and friends, but in a (perhaps) easier to use API.
+
+o decode_value now throws the error object Error.DecodeError.
+
+  Useful to catch format errors in the decode string.
+
+o Process.daemon
+
+  The daemon() function is for programs wishing to detach themselves
+  from the controlling terminal and run in the background as system
+  daemons.
+
+o Debug.pp_object_usage()
+
+  Pretty-print debug information, useful to get debug information
+  about object counts and memory usage in pike applications.
+
+  Uses the new _object_size lfun, if present in objects, to account
+  for RAM-usage in C-objects that allocate their own memory.
 
 o Mysql
 
-  - Two functions set_charset() and get_charset() have been added to
-    set and query the connection charset. The create() function also
-    takes a "charset" setting in the options mapping.
+  + Added support more modern client libraries (incl. MariaDB)
 
-  - Improved Unicode support. The MySQL driver now supports
-    (possibly wide) Unicode queries and text return values, handling
-    the connection charset and all encoding/decoding internally. This
-    is enabled by setting the charset to "unicode", or through the new
-    functions set_unicode_encode_mode() and set_unicode_decode_mode().
-    See their documentation for further details.
-
-o Odbc
-
-  The Odbc module has been updated to support the UnixODBC library, and
-  several issues with Unicode and FreeTDS handling have been fixed.
-
-o Oracle
-
-  - The module has been updated to work with Oracle 10.
-
-  - An approximation of the number of rows in a result object can be
-    queried from the new function num_rows().
-
-o Parser.HTML
-
-  - Allow string and array as argument to _set_*_callback(). Those
-    variants work just like a function only returning the string or
-    array.
-  
-o Parser.Pike and Parser.C
-
-  - Parser.Pike and Parser.C have been rewritten in C for increased
-    performance.
-
-  - The #string directives should be handled correctly now.
-
-o Parser.RCS
-
-  - The RCS parser has been rewritten to be more robust with regards
-    to broken RCS data.
-
-o Parser.XML.NSTree
-
-  - Added add_child_before() and add_child_after() methods to the
-    NSNode object.
-
-o Parser.XML.Simple
-
-  - The autoconvert() function, used to autodetect the character
-    encoding of an XML file and decode it, has been moved from being a
-    method of the Parser.XML.Simple object to being a function in the
-    Parser.XML module.
-
-o Parser.XML.SloppyDOM
-
-  Yet another DOM-like module aimed at quickly and conveniently parse
-  an xml snippet (or whole document) to access its parts. Nodes can be
-  selected using a subset of XPath.
-
-  Footnote: This module was previously part of Roxen WebServer.
-
-o Parser.XML.Tree
-
-  The module code has been refactored and a second "simple" interface
-  has been added. The (new) SimpleNode interface implements a node tree
-  interface similar to the (old) Node interface, with two major
-  differences:
-
-  - The SimpleNodes do not have parent pointers, this means that they
-    do not generate cyclic data structures (and thus less garbage, and
-    no need for zap_tree()), but also that it is no longer possible to
-    find the root of a tree from any node in the tree.
-
-  - Some methods in SimpleNode return different values than the
-    corresponding method in Node; notably SimpleNode()->add_child(),
-    which returns the current node rather than the argument.
-
-  The refactoring also added individual classes for all of the XML node
-  types (both for Nodes and for SimpleNodes). This allows for stricter
-  typing of code involving XML tree manipulation.
-
-  Several new functions added to manipulate and insert nodes in the
-  XML tree.
-
-  The module now also has a much better knowledge of DTDs and DOCTYPEs.
-
-o Parser.XML.Validating
-
-  - get_external_entity() now gets the callback info mapping as
-    the third argument rather than a constant zero.
-
-  - SYSTEM URIs are now normalized during parsing if possible.
-
-  - parse() and parse_dtd() now accept getting the base URI for the
-    parsed data as the second argument.
-
-  - Improved error reporting.
-
-  - Several issues with the parsing of DTDs have been fixed.
-
-o Postgres
-
-  - Extended the SQL query interface to include affected_rows() and
-    streaming_query() as well as variable bindings.
-
-  - Automatic binary or text transfer for queryarguments and resultrows.
-
-  Note: A new native Postgres driver has also been added; see
-  Sql.pgsql.
-
-o Pike
-
-  - A new function count_memory() has been added which can calculate
-    the memory consumed by arbitrary data structures. Useful when
-    implementing memory caches.
-
-  - A new function get_runtime_info() has been added which returns
-    information about current ABI, if automatic bignums are enabled,
-    what bytecode method is used, the size of native floats and
-    integers and the native byte order.
-
-  - The constants INDEX_FROM_BEG, INDEX_FROM_END and OPEN_BOUND has
-    been added for use with the `[..] operator API.
-
-  - The functions low_check_call(), get_return_type() and
-    get_first_arg_type() allows for inspection of attributes and
-    return values of functions.
-
-o Pike.Backend
-
-  Besides the new multiple backend implementations described earlier,
-  backends now support two new callbacks: before_callback and
-  after_callback are two new variables in the backend objects. They
-  can be set to functions that gets called just before and after a
-  backend is waiting for events.
-
-o Process
-
-  - The new function spawn_pike() will spawn a Pike process similar to
-    the current one, using the same binary file, master and module
-    paths.
-
-  - The new function run() is an easy interface that will run a
-    process and return a mapping with all the outputs and exit code.
-
-  - Process.popen is now able to run in nonblocking mode. If a second
-    argument is provided a file object will be opened with that mode
-    and return, enabling two way communication with the new process.
-
-  - The system() function has been extended to be able to pass stdin,
-    stdout and stderr arguments to the spawn() call it performs.
+  + Mysql.mysql now has methods to query the id or SQLSTATE of the
+    last error.
 
 o Protocols.DNS
 
-  - Added support for NAPTR (RFC 3403) and SPF (RFC 4408) records.
+  + Prevent endless loops in maliciously crafted domain names.
 
-  - The gethostbyname() function now returns IPv6 addresses too, if
-    available.
+  + Add QTYPE T_ANY to DNS enum EntryType in DNS.pmod.
 
-  - Fixed bugs in IPv6 record parsing.
+  + Handle truncated labels
 
-o Protocols.Bittorrent
+  + TCP client and server support
 
-  - Support for gzipped and compact tracker responses.
+o Thread no longer inherits Thread.Thread (aka thread_create)
 
-  - Many performance and bug fixes, such as 30% faster hashing of
-    files.
+o Thread.Farm now might work
 
-o Protocols.HTTP
+o Cmod precompiler.
 
-  - Added support for httpu and httpmu requests.
+  + inherit "identifier"
+    -- inherit the program returned by calling master()->resolve() on
+       the specified identifier. Useful to inherit code written in pike.
 
-  - Queries will now throw an exception in case of an errno condition.
+o String.levenshtein_distance()
 
-  - A new function, do_async_method(), has been added to allow access
-    to low level asynchronous HTTP calls.
+  The function calculates the Levenshtein distance between two
+  strings. The Levenshtein distance describes the minimum number of
+  edit operations (insert, delete or substitute a character) to get
+  from one string to the other.
 
-  - The http_encode_string() function now knows how to encode UCS-2
-    characters.
+  This can be used in approximate string matching to find matches
+  for a short string in many longer texts, when a small number of
+  differences is expected.
 
-o Protocols.HTTP.Server
+o System.sync()
 
-  - If accept() fails on the open port, the Port object will continue
-    trying, to support servers with high load.
+  Synchronizes the filesystem on systems where this is possible
+  (currently windows and UNIX-like systems).
 
-o Protocols.HTTP.Query
+o System.getloadavg()
 
-  - Added unicode_data() method that will return the payload decoded
-    according to the charset described in the Content-Type header.
+  Return the current 1, 5 and 15 minute system load averages as an array.
 
-  - Many fixes for bugs in asynchronous mode.
+o access()
 
-  - A query will not silently downgrade to http from https anymore if
-    there is no crypto support.
+  Check if a file exist and can also return if it is readable and or
+  writeable for the current process.
 
-  - Fixes for keep alive.
+o glob()
 
-  - IPv6 fixes in DNS handling.
+  The glob function has been extended to accept an array of globs as
+  the first (glob pattern) argument.
 
-o Protocols.LDAP
+  In this case, if any of the given patterns match the function will
+  return true, or, if the second argument is also an array, all
+  entries that match any glob in the first array.
 
-  - Enabled support for paged queries.
+o Stdio.UDP():
 
-  - Added more resilience to UTF-8 encode errors.
-    Locale.Charset.DecodeError is thrown for UTF-8 decode exceptions.
+  + added IPv6 multicast support
 
-  - Added a connection pool for connection reuse. It is used through
-    get_connection() and return_connection().
+  + added set_buffer
 
-  - Added some schema handling and use it to fix the UTF-8 conversion
-    to only affect attributes that actually are UTF-8 encoded.
+o Stdio.File():
 
-  - Added client.read(), client.read_attr(),
-    client.get_root_dse_attr(), client.get_basedn(),
-    client.get_scope(), client.get_attr_type_descr(),
-    get_constant_name(), and a bunch of constants for various object
-    oids, attributes, well-known object guids and other things.
+  + send_fd and receive_fd
+    These functions can be used to send and receive an open
+    file-descriptor over another file-descriptor. The functions are
+    only available on some systems, and they generally only work
+    when the file the descriptors are sent over is a UNIX domain
+    socket or a pipe.
 
-  - Rewrote the search filter parser to handle LDAPv3 extensible
-    matches. It now also throw errors on all syntactic errors (using a
-    new FilterError object), instead of sending a partial filter to
-    the server. It is also possible to compile filters separately
-    through make_filter(), and there is a very simple cache for
-    compiled filters through get_cached_filter().
+  + Changed internally to remove one level of indirection.
+    The Stdio.File object no longer has a _Stdio.Fd_ref in _fd. They
+    are instead directly inheriting _Stdio.FD.
 
-  - Added ldap_encode_string(), ldap_decode_string(),
-    encode_dn_value(), canonicalize_dn(), parse_ldap_url(),
-    client.get_parsed_url(), and client.get_bound_dn().
+    _fd is still available for compatibility, but internally it is gone.
 
-  - Added client.result.fetch_all().
+  + Fixed grantpt() on Solaris failing with EPERM.
 
-  - Added new flag field to client.search() to control various aspects
-    of how results are returned: SEARCH_LOWER_ATTRS lowercases all
-    attribute names. SEARCH_MULTIVAL_ARRAYS_ONLY uses arrays for
-    attribute values only for attributes that might return more than
-    one value. SEARCH_RETURN_DECODE_ERRORS may be used to avoid
-    throwing exceptions on decode errors.
+o Unicode databases updated to 6.3.0 from 5.1.0
 
-  - Added client.get_protocol_version(),
-    client.get_supported_controls(), and the possibility to specify
-    controls in client.search().
+  This is the latest released Unicode database from unicode.org.
 
-  - Made the result iterator somewhat more convenient: next() now
-    advances one step past the end so the next fetch() returns zero.
+o The Search search engine module has seen several fixes
 
-  - Added client.error_number(), client.error_string(), and
-    client.server_error_string() to make it possible to query errors
-    when no result object is returned.
+  + Added support for padded blobs. This improves performance when
+    incrementally growing blobs. This feature is only enabled if
+    Search.Process.Compactor says this is OK, see the documentation
+    for more information.
 
-o Protocols.SNMP
+  + Several locking optimizations, specifically, avoid locking and
+    unlocking for every single iteration when merging and syncing
+    blobs.
 
-  The readmsg() method in the protocol object now takes an optional
-  timout argument.
+  + Charset conversion fixes
 
-o Protocols.TELNET.Readline
+  + Fixes for queries where the same world occur multiple times
+    ('foo and bar and foo')
 
-  Several issues where callback functions could be lost have been fixed.
+o pike -x benchmark
 
-o Protocols.XMLRPC
+  + Output format changed
 
-  The new AsyncClient class implements an asynchronous XMLRPC client.
+  + Also added support for JSON output.
 
-o Regexp.PCRE.Widestring
+  + The results should be more consistent.
 
-  - Replace matches in a string, with support for backreferences, now
-    possible from replace_positional().
+  + Added options to allow comparison with a previous run.
 
-      > Regexp.PCRE.Plain("my name is ([a-zA-Z]+)")->
-      >> replace_positional("hello, my name is john.",
-      >> "%[0]s is my name");
-      (1) Result: "hello, john is my name."
+o New stand-alone tools added to make it possible to build
+  documentation without the pike build tree
 
-  - Regexp.PCRE.Widestring is now reported in the basic feature list
-    (pike --features).
+  + autodoc_to_html
+    AutoDoc XML to HTML converter.
 
-o Sql
+  + autodoc_to_split_html
+    AutoDoc XML to splitted HTML converter.
 
-  - Bugfixes in listing Postgres fields.
+  + git_export_autodoc
+    Exports a stream of autodoc.xml suitable for git-fast-import.
+    Used on pike-librarian.
 
-  - If ENABLE_SPAWN_RSQLD is defined, rsqld will be spawned when
-    needed to complete rsql queries.
+o Readline tries to set the charset to the terminal charset
 
-  - Added streaming_query() method to Sql objects which enables larger
-    result sets than available memory.
+  This makes it possible to write non-7bit characters on a terminal
+  if the terminal supports it.
 
-  - It is possible to iterate over the result object from big_query()
-    queries directly in foreach.
+o Fixed units in pike --help=kladdkaka
 
-  - Support UNDEFINED to designate NULL in emulated bindings.
+o Several changes has been done to the GTK2 module
 
-  - Support for ODBC DSN files.
+  + GTK2.DrawingArea no longer crash in draw_text if you pass odd parameters.
 
-      Sql.Sql db = Sql.Sql("dsn://user:pass@host/database");
+  + draw_pixbuf can now be passed width and height -1, which makes it
+    take the size from the passed image.
 
-  - Some native support for the TDS protocol, used by Sybase and
-    Microsoft SQL server.
+  + GDKEvent no longer crash when you extract strings from them
 
-      Sql.Sql db = Sql.Sql("tds://user:pass@host/database");
+  + accelerators now work
 
-  - Support for the SQLite database added. A raw interface is
-    available through the SQLite module.
+  + Fixed RadioToolButton
 
-      Sql.Sql db = Sql.Sql("sqlite://relative/path/to/file");
-      Sql.Sql db = Sql.Sql("sqlite:///absolute/path/to/file");
+  + signal_connect can now connect a signal in front of the list
 
-  - Sql.pgsql.  New driver for native PostgreSQL network protocol support.
-    It implements a superset of the existing Postgres driver.
-    Current features: no library dependencies (no libpq), native binding
-    support, streaming support, NOTIFY/LISTEN support (fully eventdriven,
-    no polling), binary support for integer, float and string datatypes
-    through big_typed_query(), native support for 64-bit ints and doubles,
-    COPY FROM/TO STDIN/STDOUT support, multiple simultaneous streaming
-    queries on the same connection (i.e. multiple PostgreSQL-portal-
-    support), automatic precompilation and caching of often-used
-    long-compile-time-needing queries, extended columndescriptions,
-    accurate error messages under all circumstances, SSL-support,
-    SQL-injection protection since it will ignore everything after the
-    first semicolon delimiting the first command in the query, integrated
-    statistics, _reconnect callback for sessions that use temptables.
+  + Several fixes to Tree related objects
 
-    Performance tuned, with the helperclass _PGsql.PGsql it currently
-    is around 21% faster than the old libpq based Postgres driver
-    for smaller queries; for large bytea blobs and large texts, it
-    speeds up even more.
+  + GTK2.SourceView added
 
-    This driver serves URLs of the form:
-				    pgsql:// (plain) and pgsqls:// (SSL).
-    In case the old Postgres driver is disabled, this driver takes
-    over postgres:// transparently as well.
+  + GTK2.Spinner added
 
-o SSL
+o A few issues were fixed that were found by Coverity
 
-   It is now possible to set certificates to SSL connections. Example:
+  + Fixed memory leak in Math.Transform
 
-   SSL.sslfile ssl_connection(Stdio.File conn, string my_key,
-                              string my_certificate)
-   {
-     ctx->client_rsa = Standards.PKCS.RSA.parse_private_key(my_key);
+  + Fixed two compares that were written as assignments (errno
+    checks for EINTR for sockets)
 
-     // client_certificates is an array holding arrays of certificate
-     // chains. since we've got a self-signed cert, our cert array has
-     // only 1 element.
-     ctx->client_certificates += ({ ({ my_certificate }) });
+o System.get_home + System.get_user
 
-     return SSL.sslfile(conn, ctx, 1, 1);
-   }
+  (mostly) Cross-platform ways to get the user name and home directory.
 
-o Standards.IIM
+o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
 
-  Some bugfixes in parsing Photoshop headers and DOS EPS Binary
-  Headers.
+  These are useful to create or close the console window that is
+  shown for pike programs.
 
-o Standards.ISO639_2
+o Process - forkd
 
-  Updated with the latest ISO639-2 languages.
+  Forkd can be used to more cheaply create new processes on UNIX like
+  systems.
 
-o Standards.URI
+  This is done by first starting a sub-process that is then used to
+  create new processes.
 
-  - Updated to conform to RFC 3986.
+  If your main process is large, this is significantly faster than
+  using the normal create_process, and does not risk running out of
+  memory for the forked (temporary) copy of the main process that is
+  created.
 
-  - Added methods get_query_variables(), set_query_variables(),
-    add_query_variable() and add_query_variables() to give a better
-    API to to handle query variables.
+o MacOSX CoreFoundation support in the backend
 
-  - The new method get_http_query() returns the query part and
-    get_http_path_query() returns both the path and the query, both
-    coded according to RFC 1738.
+  This makes it somewhat more likely that native libraries can work
+  with pike.
 
-o Standards.UUID
+o Better IPv6 support.
 
-  - Added support for UUID version 5; name based with SHA hash, which
-    can be generated from the make_version5 function.
+  This includes detection of IPV6 mapped IPV4 addresses
+  (::FFFF:i.p.v.4) and full support for IPv6 in the UDP
+  code.
 
-  - An UUID object can now be used as namespace in the second argument
-    to make_version3 as well as the new make_version5.
+o Asynchronous Protocols.SNMP client
 
-o Standards.XML.Wix
+o Fixes to Process.run, Process.spawn_pike and friends.
 
-  - Updated to support a more recent version of the Wix tool chain.
+  + Support OS/2 path conventions
 
-  - Improved generation of 8.3-style filenames.
+  + Fixed multiple issues with search_path()/locate_binary()
+    - locate_binary() is now more reliable on Windows
+    - Now invalidates the cached path is PATH is changed
+    - Uses locate_binary to scan the path
+    - spawn_pike() now uses search_path()
 
-  - Added support for Shortcut and IniFile-nodes.
+  + You can now optionally have System.spawn_pike pass predefines,
+    program and include path to the spawned pike, in addition to the
+    module path.
 
-  - Added support for overriding the language and installer version.
+o Lots of autodoc fixes
 
-  - Improved support for TTF-files.
+  A lot more of the previously existing, but broken, documentation is
+  now readable.
 
-o Stdio
+o predef::types
 
-  - Stdio.cp can now work recursively in a directory tree. It will
-    also keep the permissions of files it copies.
+  This is equivalent to values and indices, but instead gives the
+  types for each value.
 
-  - Added Stdio.recursive_mv which works on every OS and also when the
-    destination isn't on the same filesystem as the source.
+  Basically only useful for objects.
 
-  - Added more symbolc default termcap/terminfo bindings to
-    Stdio.Readline.
+o Builtin._get_setter
 
-  - Improved support for Stdio.Terminfo on NetBSD.
+  This function returns a setter for a variable in an object.
+  The setter, when called, will set the variable value to the passed
+  argument.
 
-  - read_file(), read_bytes(), write_file() and append_file() will may
-    now throw exceptions on uncommon errors such as when write_file is
-    unable to write all its data.
+o Parser.XML.Tree fixes
 
-  - Stdio.File->openat(), statat() and unlinkat() opens, stats and
-    removes a file or directory relative to an open directory.
+  + Several namespace improvement and handling fixes
 
-  - Stdio.FILE->unread() allows pushing back binary strings into the
-    input stream, as opposed to ungets() which pushes back lines.
+o New charsets
 
-  - Stdio.UDP has had enable_multicast(), set_multicast_ttl(),
-    add_membership() and drop_membership() added to make real
-    multicast use possible.
+  A lot of ISO-IR charsets added:
+    9-1, 9-2, 31, 232, 234, 231 (aka ANSI/NISO Z39.46, aka ANSEL) 230
+    (aka TDS 565) 225 (SR 14111:1998), 197/209 (sami) 208 (IS 434:1997)
+    207 (IS 433:1996), 204,205 and 206 (aka 8859-1, 8859-4 and 8859-13
+    with euro) 201, 200, 138 (ECMA-121) 198 (ISO 8859-8:1999) 182, 181,
+    189 (TCVN 5712:1993, aka VSCII) 167, 166 (aka TIS 620-2533 (1990)),
+    164, 160, 151 (NC 99-10:81), 68 (APL), 59 (CODAR-U), 202 (KPS
+    9566-97). Fixed CSA_Z242.4
 
-o String
+o Several fixes to Protocols.HTTP
 
-  - The function int2size has been rewritten to fixpoint as well as
-    using the more common abbreviation of "B" for byte.
+  + Improved Protocols.HTTP.Query.PseudoFile
+    (significantly better Stdio.Stream simulation)
 
-  - String.secure marks a string as "secure" which currently only
-    means that the memory is cleared before it is freed.
+  + Do not use hard coded Linux errno:s
 
-o System
+  + Case insensitive handling of header overrides in do_method
 
-  - resolvepath() is now enabled on more OSes and falls back to
-    realpath(3C) if resolvepath(2) doesn't exists.
+  + Fixed broken check for URL passwords when querying
 
-  - On systems that support it, setproctitle() can be used to set the
-    title of the running application.
+  + Add more descriptive HTTP responses along with a mostly complete
+    list of codes
 
-  - Added support for POSIX style timers using clock_gettime(3) to
-    allow for high resolution thread local cpu time and monotonic real
-    time on reasonable modern Linux systems for gethrvtime() and
-    gauge(). Added CPU_TIME_RESOLUTION, CPU_TIME_IMPLEMENTATION,
-    REAL_TIME_IS_MONOTONIC, REAL_TIME_RESOLUTION and
-    REAL_TIME_IMPLEMENTATION constants to tell the system
-    capabilities.
+  + Handle non-standards compliant relative redirects
 
-o Tools.Hilfe
+  + Cleaner handling of async DNS failures
 
-  - Added support for tab-completion on modules, global and local
-    symbols and operators.
+  + Handle chunked transfer encoding correctly when doing async
+    queries
 
-  - Added support for file/directory completion within strings
+  + Fixes for the proxy client support
 
-  - Added doc command and F1 key to print documentation on an item if
-    available (currently only works for modules and classes written in
-    pike).
+  + Several keep-alive handling fixes
 
-o Tools.Standalone
+  + Server:
+    - More forgiving MIME parsing for MSIE
+    - Fixed range header handling
+    - Fixed parsing of broken multipart/form-data data
+    - Added optional error_callback to attach_fd
+    - The response processor (response_and_finish) now treats the
+      reply mapping as read-only.
+    - Support if-none-match (etag:s)
+    - Ignore errors in close when destroying the object
 
-  - "pike -x cgrep" now tries to parse Java code.
+o dtrace support (on MacOSX)
 
-  - "pike -x features" now tests for several more features.
+  Pike now supports dtrace events on function enter and leaving (and
+  when stack frames are notionally popped, for functions doing
+  tailrecursion).
 
-o Web.Crawler
+o sizeof() now supports ADT.struct.
 
-  - Bugfix to support robots.txt created on windows.
 
-  - User Agent change to "Mozilla 4.0 (PikeCrawler)"
+Crypto and SSL
+--------------
 
-o Web.RDF
+o SNI client extension support for SSL (Server Name Indicator)
 
-  - Added add_statement() method which allows new relations to be
-    added to an RDF set.
+o Standards.PEM
 
+  + Added some support for encrypted PEM files
 
-New modules / classes / methods added
--------------------------------------
+o Nettle refactored
 
-o Fuse
+  CBC cipher mode is now twice as fast.
 
-  FUSE (Filesystem in USErspace) provides a simple interface for
-  userspace programs to export a virtual filesystem to the Linux
-  kernel (and some other OS:es). FUSE also aims to provide a secure
-  method for non privileged users to create and mount their own
-  filesystem implementations.
+o Crypto.GCM
 
-  This module implements the needed interfaces to make it possible to
-  write a FUSE filesystem in Pike.
+  GCM (Galois Counter Mode) cipher mode added.
 
-o ADT.List
+o AES support added to the SSL module
 
-  A simple doubly linked list of values.
+  This adds support for the following cipher suites:
+    TLS_rsa_with_aes_128_cbc_sha
+    TLS_dhe_dss_with_aes_128_cbc_sha
+    TLS_dhe_rsa_with_aes_128_cbc_sha
+    TLS_rsa_with_aes_256_cbc_sha
+    TLS_dhe_dss_with_aes_256_cbc_sha
+    TLS_dhe_rsa_with_aes_256_cbc_sha
 
-    ADT.List l = ADT.List(1, 2, 3);
-    l->insert(-1, 0);
-    l->append(4, 5);
-    foreach(l; int index; int value) {
-      werror("  %d: value: %d\n", index, value);
-    }
+o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
 
-o ADT.Set
+o Blowfish and Serpent support fixed in Nettle
 
-  ADT.Set implements a datatype for sets. These sets behave much
-  like multisets, except that they are restricted to containing only
-  one instance of each member value.
+o Crypto.PGP
 
-  From a performance viewpoint, it is probably more efficient for a
-  Pike program to use mappings to serve as sets, rather than using an
-  ADT.Set, so ADT.Set is mainly provided for the sake of completeness
-  and code readability.
+  Added support for SHA256, SHA384 and SHA512 as hash functions.
+  Expose the used hash and key types in the out data
 
-o Arg
+o Crypto.Arctwo
 
-  The new argument parser module allows for Getopt style argument
-  parsing, but with a much simpler and object oriented API.
+  The 1-128 bit cipher Arctwo is now provided as a block cipher in
+  Crypto. This cipher is only intended for compatibility with OLD
+  third party code, and should NOT be used for new development.
 
-    class Parser
-    {
-      inherit Arg.Options;
-      Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
-      Opt name = HasOpt("-f")|HasOpt("--file")|Default("out");
-      Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
-    }
-  
-    void main(int argc, array(string) argv)
-    {
-      Parser p = Parser(argv);
-      werror("name: %O, verbose: %O, debug: %O\n",
-             p->name, p->verbose, p->debug);
-    }
+o Crypto.Camellia
 
-  A more simplistic interface is also available for smaller hacks and
-  programs.
+  The 128/256 bit cipher Camellia is now available as block cipher in
+  Crypto. In addition the following cipher suites have been added to
+  SSL:
 
-    void main(int argc, array(string) argv)
-    {
-      mapping opts = Arg.parse(argv);
-      argv = opts[Arg.REST];
-    }
+    TLS_rsa_with_camellia_128_cbc_sha
+    TLS_dhe_dss_with_camellia_128_cbc_sha
+    TLS_dhe_rsa_with_camellia_128_cbc_sha
+    TLS_rsa_with_camellia_256_cbc_sha
+    TLS_dhe_dss_with_camellia_256_cbc_sha
+    TLS_dhe_rsa_with_camellia_256_cbc_sha
 
-o GSSAPI
+o Crypto.SALSA20 and Crypto.SALSA20R12
 
-  Implements Pike access to GSS-API v2 as specified in RFC 2743. This
-  API is used to authenticate users and servers, and optionally also
-  to encrypt communication between them. The API is generic and can be
-  used without any knowledge of the actual implementation of these
-  security services, which is typically provided by the operating
-  system.
+  The 128/256 bit cipher SALSA20 is now available as a stream cipher
+  in Crypto. SALSA20R12 is SALSA20 reduced to just 12 rounds.
 
-  The most common implementation is Kerberos, which means that the
-  main benefit of this API is to allow clients and servers to
-  authenticate each other using Kerberos, thereby making single
-  sign-on possible in a Kerberized environment.
+o Crypto.SHA3_224, Crypto.SHA3_256, Crypto.SHA3_384 and Crypto.SHA3_512
 
-o GTK2
+  The SHA-3 secure hash algorithm has been added in multiple variants.
 
-  Wrapper for the GTK2 library. Not yet 100% completed, but usable.
+o Crypto.GOST94 and RIPEMD160
 
-o Protocols.DNS_SD
+  The lesser used hash functions GOST R 34.11-94 (RFC 4357) and
+  RIPEMD160 have been added.
 
-  This module provides an interface to DNS Service Discovery. The
-  functionality of DNS-SD is described at <http://www.dns-sd.org/>.
+o Crypto.RSA and Crypto.DSA
 
-  Using the Proctocols.DNS_SD.Service class a Pike program can
-  announce services, for example a web site or a database server, to
-  computers on the local network.
+  The key generation for RSA and DSA are now done by Nettle. This
+  results in 90% faster key generation for RSA. Key generation for DSA
+  is 10 times slower, but produces better quality keys.
 
-  When registering a service you need to provide the service name.
-  service type, domain and port number. You can also optionally
-  specify a TXT record. The contents of the TXT record varies between
-  different services; for example, a web server can announce a path
-  to a web page, and a printer spooler is able to list printer
-  features such as color support or two-sided printing.
+o Crypto.Hash
 
-  The service is registered on the network for as long as the instance
-  of the Service class is valid.
+  Added support for pbkdf1 from PKCS#5v1.5 and pbkdf2 from PKCS#5v2.0.
 
-o Bittorrent.Tracker
+o Standards.X509
 
-  Bittorrent tracker with support for scraping and UDP extension.
+  X509 was moved from Tools to Standards and has been refactored and
+  bug fixed. It is now possible to extend both validation and creation
+  of certificates with new cipher and hash algorithms. A range of new
+  algorithms are supported for both RSA and DSA:
 
-o Protocols.HTTP.Server.Proxy
+    RSA MD2
+    RSA MD5
+    RSA SHA-1
+    RSA SHA-2-256
+    RSA SHA-2-384
+    RSA SHA-2-512
+    DSA SHA-1
+    DSA SHA-2-224
+    DSA SHA-2-256
 
-  A simple HTTP proxy.
-
-o Standards.TLD
-
-  Country domains and other TLDs according to IANA. Useful when
-  parsing log information or providing live information about clients
-  connecting to your server.
-
-o Tools.Shoot
-
-  Several new tests have been added to benchmark and improve on
-  various aspects of Pike. ReplaceParallel and ReplaceSerial measure
-  the times it takes to replace multiple substrings of a string in a
-  single call to replace and with subsequent calls.
-
-  TagRemoveArraySscanf, TagRemoveDivide, TagRemoveLoop,
-  TagRemoveParserHTML, TagRemovePCRE, TagRemoveSearch and
-  TagRemoveSscanf measure different methods of completing the same
-  task; to remove XML tags from a string.
-
-o Web.CGI
-
-  Provides a CGI interface on the callee side. Retrieves information
-  from environment variables and populates the variables in the
-  Request object.
-
-
-Deprecations
-------------
-
-o The keyword nomask has been deprecated. It was functionally
-  equivivalent with the keyword final.
-
-o Stdio.File->set_peek_file_before_read_callback() is deprecated.
-
-
-Incompatible changes
---------------------
-
-  These incompatible changes can be solved by adding #pike 7.6 to your
-  source file or starting Pike with -V7.6 unless otherwise noted.
-
-o main() environment
-
-  The main() method will no longer be given the environment as a
-  mapping as third argument. Use an explicit call to getenv() instead.
-
-o Array.transpose_old
-
-  This function has been removed.
-
-o Calendar
-
-  Changes made to fix inconsistensies has created som unavoidable
-  incompatibilities. See the entry for Calendar in the functional
-  changes section for details.
-
-o _Charset
-
-  The parts of this internal module that were written in Pike
-  have moved to Locale.Charset.
-
-o Crypto
-
-  The old crypto functions from Pike 7.4 have been removed. These
-  functions produced a warning when used in Pike 7.6.
-
-o Debug.describe_program
-
-  The API for this debug function has changed.
-
-o Image.Image
-
-  The functions select_colors(), map_closest(), map_fast() and
-  map_fs() has been removed. Use Image.Colortable operations instead.
-
-o Parser.XML
-
-  The XML parsers are now stricter in verifying the correctness
-  of the XML. The function compat_allow_errors can be called in the
-  create method of the Parser.XML.Simple and Parser.XML.Validating
-  (with "7.6" as argument for 7.6 compatibility). Parser.XML.Tree can
-  be created with PARSE_COMPAT_ALLOW_ERRORS_7_6 as flag.
-
-o Protocols.LDAP.client
-
-  The "dn" field wasn't properly utf-8 decoded in 7.6 and earlier. If
-  your application does it yourself, you need to use the compatibility
-  version of this class.
-
-o Protocols.TELNET
-
-  The interface functions create() and setup() are now protected symbols.
-
-o spider.XML
-
-  The spider module no longer contains the XML parser. The functions
-  isbasechar(), iscombiningchar(), isdigit(), isextender(),
-  isfirstnamechar(), ishexchar(), isidiographic(), isletter(),
-  isnamechar() and isspace() have also been moved to the Parser module.
-
-o Sql.Sql
-
-  Pike will no longer create a .column entry in SQL query responses if
-  there is no table name.
-
-o Standards.UUID
-
-  Functions new() and new_string() have been removed. Use
-  make_version1(-1)->encode() and make_version1(-1)->str() instead.
-
-o Stdio
-
-  The functions read_file(), read_bytes(), write_file() and
-  append_file() now always throw errors on error conditions,
-  to allow easier use as errno doesn't have to be checked.
-  read_file() and read_bytes() still return 0 if the file
-  does not exist.
-
-o The modules Mird, Perl and Ssleay have been removed.
-
-  Note that these modules are not available via the backwards
-  compatibility layer.
-
-
-C level module API
-------------------
-
-o Improved support for embedding.
-
-  Several declarations and definitions (most notably the debug and
-  runtime flags) have moved from main.h to pike_embed.h, in an attempt
-  to add support for embedding.
-
-o Major compiler API cleanups.
-
-  The Pike compiler is now executing in a pike function context
-  (rather than in an efun context), and it is possible to customize
-  some of its behaviour via inherit (rather than via handler objects).
-  As a consequence the compiler is now much closer to being thread-safe.
-
-o The global variable next_timeout is no more. It has been replaced by
-  a backend-specific variable. Added backend_lower_timeout() for accessing
-  the new variable. This fixes issues GTK, GTK2 and sendfile had with the
-  new backend implementation.
-
-  NOTE! C-API incompatibility!
-  NOTE! Changed the argument for backend callbacks!
-
-  The argument is now a struct Backend_struct * when called
-  at entry (was NULL).
-  The argument is now NULL when called at exit (was 1).
-
-o Pike_fp->context
-
-  Pike_fp->context is now a pointer to the current struct inherit
-  rather than a copy of it. This allows for easier access to
-  inherited symbols in C-code.
-
-o Inherit level argument added to several object handling functions.
-
-  In order to implement subtyping of objects, an extra argument
-  "inherit_level" has been added to many object indexing related
-  functions.
-
-o .cmod:
-
-  Voidable pointer types are no longer promoted to mixed.
-
-o Support for class symbols with storage in parent scope.
-  Also added support for aliased symbols.
-
-o Machine code backend for PPC64
-
-  - Machine code generation is now supported for PowerPC in
-    64-bit ABI mode.
-
-o Objectiv-C embedding framwork
-
-  - Experimental support for interfacing with Objective-C code
-    has been added.
-
-    NOTE! This API is experimental and is subject to change
-    NOTE! without notice.
-
-o Added %c and %C to get_all_args to get char * without
-  NUL characters (no 0 valued characters inside the string).
-
-  %c: char *	      Only narrow (8 bit) strings without NUL.
-      This is identical to %s.
-
-  %C: char * or NULL  Only narrow (8 bit) strings without NUL, or 0
+  Note that the API has changed compared with Tools.X509 and there is
+  now a single make_selfsigned_certificate() method for both RSA and
+  DSA, though it takes the same arguments. In addition a hash function
+  and serial number can be supplied. The hash function defaults to
+  SHA-2-256.
 
 
 Building and installing
 -----------------------
 
-o Dynamic modules now become DLLs on Windows.
+o -fvisibility=hidden is now the default
 
-  This means the homegrown module loader is no longer used, but it
-  also means some DLL limitations:
+  This means that PMOD_EXPORT is now actually needed on systems like
+  Linux and MacOSX. It also means that the binary is slightly smaller
+  and faster.
 
-  - PMOD_EXPORT is now required to allow access to an identifier in
-    the pike core.
+o clang compilation fixes (bignum overflow checks, misc)
 
-  - DLLs have to be recompiled too if pike.exe is recompiled.
+  It is now possible to compile pike using a modern clang compiler.
 
-  The primary motivation for this change is to work with the new
-  library tracking (so-called "side-by-side assemblies") in Visual C++
-  2005 and later.
+o Removed bundles
 
-o Added ABI selection.
+  Pike no longer comes with copies of some libraries, and the support
+  for that in the makefile has been removed.
 
-  It's now possible to select whether to compile in 32bit or 64bit
-  mode at configure time by using the --with-abi option.
-
-o MinGW builds.
-
-  It's now possible to build Pike in MinGW on windows computers from
-  source distributions.
-
-o Cmod precompiler.
-
-  - The cmod precompiler (pike -x precompile) now supports declaring
-    all autogenerated identifiers as static.
-
-    NOTE! C-API incompatibility!
-    NOTE! As a side effect of this change, the DECLARATIONS statement
-    NOTE! now required in cmod files.
+o Several OS/2 and windows compilation fixes
 
 
-New simplified method to write external C/C++ modules
------------------------------------------------------
+Lots of bug fixes
+-----------------
 
-  It's now suggested that you do not use the fairly complex 'pike
-  internal' style of external modules (configure.in with
-  AC_MODULE_INIT etc).
 
-  It's also no longer required that you have a configure script to use
-  pike -x module.
+o Fixed symbol resolution with deep inherits and mixins
 
-  Instead simply locate the includefiles using 'pike -x cflags', and
-  convert .cmod to .c files using 'pike -x precompile'.
+o Fixed PNG 4bpl indexed mode with alpha
 
-  An example rather minimal 'pike -x module' compatible Makefile,
-  without a configure script, using .cmod format files for a simple
-  local module:
+o The _sprintf LFUN now works with %F
 
-  | CC=gcc
-  | CFLAGS := -O9 -fweb -shared -Wall $(CFLAGS) $(shell $(PIKE) -x cflags) -g
-  | LD=$(CC) -shared -lGL
-  | 
-  | all: Spike.so
-  |
-  | install: Spike.so
-  | 	cp $< $(MODULE_INSTALL_DIR)
-  | 
-  | Spike.so: Spike.o
-  | 	$(LD) -o Spike.so Spike.o $(LDFLAGS)
-  | 
-  | Spike.o: Spike.c
-  | 
-  | Spike.c: Spike.cmod
-  | 	$(PIKE) -x precompile $< > $@
+o A lot more, see the (more or less) full changelog for more info:
 
-  It's usually OK not to use pike -x module at all, but it will pass
-  on a few extra variables to your make (and configure script):
-
-   PIKE: How to start the pike interpreter used running pike -x module
-   MODULE_INSTALL_DIR: Where modules goes
-   LOCAL_MODULE_PATH: Alternative (user local) module location
+   http://pike-librarian.lysator.liu.se/index.xml?m=pike.git&start=forever&branch=7.9&template=logonly.inc

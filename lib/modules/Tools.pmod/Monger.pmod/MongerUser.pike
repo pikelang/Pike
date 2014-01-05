@@ -161,6 +161,11 @@ int main(int argc, array(string) argv)
     }
   }
 
+  if(!my_command)
+  { 
+    werror("argument error: no command specified.\n");
+  }
+
  return 0;
 }
 
@@ -183,8 +188,9 @@ Usage: pike -x monger [options] modulename
                        the $HOME/.monger
 --force              force the performance of an action that might 
                        otherwise generate a warning
---source             use source control url to obtain module source
---pmar               attempt to use pmar (pre-built archive)
+--source             use source control url to obtain module source, 
+                       if available.
+--pmar               attempt to use pmar (pre-built archive), if available.
 --short              when querying a module, don't show info about the 
                        selected version.
 --local              perform installation in a user's local rather than 
@@ -407,7 +413,12 @@ mapping get_module_action_data(string name, string|void version)
 string get_file(mapping version_info, string|void path, int|void from_source)
 {
   array rq;
+  int have_path;
 
+  // NOTE: if we are re-using an existing source control clone or checkout, we 
+  // need to do some more work here, as it's probably not good to just do a 
+  // build from a directory that might have outdated build by-products left in
+  // it. We should do a git clean or equivalent.
   if(from_source == SOURCE_CONTROL && version_info->source_control_url && sizeof( version_info->source_control_type))
   {
     write("fetching source from source control (%s)...\n", version_info->source_control_type);
@@ -415,34 +426,80 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     string lpath = version_info->name + "-source";
     if(path) lpath = Stdio.append_path(path, lpath);
     if(file_stat(lpath))
-      throw(Error.Generic(sprintf("get_file: repository path %s already exists.\n", lpath)));
+    {
+      have_path = 1;
+    }
+    if(have_path && !use_force)
+    {
+      throw(Error.Generic(sprintf("get_file: repository path %s already exists, use --force to override.\n", lpath)));
+    }
+	
     if(!Process.search_path(bin))
       throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
     mapping res;
-    
+    string oldcwd = getcwd();
+
     switch(bin)
     {
       case "svn":
-        res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
+        if(have_path)
+        {  
+          write("updating from source control (%s)...\n", version_info->source_control_type);
+          cd(lpath);
+          res = Process.run(({"svn", "update"}));
+          cd(oldcwd);
+        }
+        else
+        {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
+          res = Process.run(({"svn", "checkout", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
-        break;
+        break; 
       case "hg":
-        res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
+        if(have_path)
+        {
+          write("updating from source control (%s)...\n", version_info->source_control_type);
+          cd(lpath);
+          res = Process.run(({"hg", "pull", "-u", version_info->source_control_url}));
+          res = Process.run(({"hg", "purge"}));
+          cd(oldcwd);
+        }
+        else
+        {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
+          res = Process.run(({"hg", "clone", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
         break;
       case "git":
-        res = Process.run(({"git", "clone", version_info->source_control_type, lpath}));
+        if(have_path)
+        {
+          write("updating from source control (%s)...\n", version_info->source_control_type);
+          cd(lpath);
+          res = Process.run(({"git", "pull", version_info->source_control_type}));
+          res = Process.run(({"git", "clean", "-d"}));
+          cd(oldcwd);
+        }
+        else
+        {
+          write("fetching source from source control (%s)...\n", version_info->source_control_type);
+          res = Process.run(({"git", "clone", version_info->source_control_url, lpath}));
+        }
         if(res->exitcode)
         {
           werror(res->stderr);
+          werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));        
         }
         break;
@@ -450,7 +507,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         throw(Error.Generic("Invalid source control type " + bin + ".\n"));
     }
 
-    write("cloned %s repository to %s.", bin, lpath);
+    write("%s repository in %s is now up to date.\n", bin, lpath);
     return lpath;
   }
   else if(from_source == SOURCE_CONTROL && !version_info->source_control_url)
@@ -588,14 +645,29 @@ void do_install(string name, string|void version)
 
       if(res)
         exit(1, "install error: uncompress failed.\n");
-  
       fn = (fn)[0.. sizeof(fn)-4];
-    }
+ 	}
     else fn = vi->filename;
 
     created->file += ({ fn });
 
     werror("working with tar file " + fn + "\n");
+
+	string workingdir = fn[0..sizeof(fn)-5];
+	
+    if(file_stat(workingdir))
+    {
+       if(use_force)
+       {
+         write("Deleting existing build directory %s in 5 seconds.\n", workingdir);
+         sleep(5);
+         Stdio.recursive_rm(workingdir);
+       }
+       else
+       {
+         exit(1, sprintf("Build directory %s exists and is likely a previous failed build. Use --force to delete.\n", workingdir));
+       }
+    }
 
     if(!Process.search_path("tar"))
       exit(1, "install error: no tar found in PATH.\n");
@@ -605,11 +677,11 @@ void do_install(string name, string|void version)
     if(res)
       exit(1, "install error: untar failed.\n");
     else
-      created->dirs += ({fn[0..sizeof(fn)-5]});  
+      created->dirs += ({workingdir});  
 
 
     // change directory to the module
-    cd(combine_path(builddir, fn[0..sizeof(fn)-5]));
+    cd(combine_path(builddir, workingdir));
   }
   else
   {

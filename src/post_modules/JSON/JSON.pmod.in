@@ -79,4 +79,831 @@ void decode_error(string err_str, int err_pos, void|string reason, void|mixed ..
     throw(DecodeError(err_str, err_pos, reason, backtrace()[..<1]));
 }
 
+//! An instance of this class can be used to validate a JSON object against a
+//! JSON schema.
+//!
+//! @example
+//!   string schema_s = "{\n" +
+//!       "  \"name\": \"SomeExample\",\n" +
+//!       "  \"type\": \"object\",\n" +
+//!       "  \"properties\": {\n" +
+//!       "      \"name\": { \"type\": \"string\" },\n" +
+//!       "      \"id\": {\n" +
+//!       "          \"type\": \"integer\",\n" +
+//!       "          \"minimum\": 0\n" +
+//!       "      }\n" +
+//!       "  }\n" +
+//!       "}";
+//!   string example_s = "{\n" +
+//!       "  \"name\": \"An Example\",\n" +
+//!       "  \"id\": 17\n" +
+//!       "}";
+//!   mixed schema = @[Standards.JSON.decode](schema_s);
+//!   mixed example = @[Standards.JSON.decode](example_s);
+//!   if (string error = @[Standards.JSON.Validator(schema).validate](example))
+//!      werror("Error: JSON string %O did not validate: %s\n", example_s, error);
+//!   else
+//!      write("JSON ok\n");
+//!
+//! @note
+//!   This class validates only a subset of the JSON schema specification.
+//!   Currently dependencies and references are not handled and regular
+//!   expressions (for pattern properties) are limited to those that can be
+//!   handled by @[Regexp.SimpleRegexp].
+//!
+//! For more information of JSON schema look at
+//! @url{http://json-schema.org/documentation.html@} "The home of JSON Schema".
+class Validator
+{
+    private mixed schema;
+
+    //! Create a JSON validator for some JSON schema.
+    //! @param _schema
+    //!   The JSON schema to use in @[validate()]. This must be a valid JSON
+    //!   object.
+    //! @throws
+    //!   Throws an error if the schema is invalid.
+    void create(mixed _schema)
+    {
+	schema = _schema;
+	if (!schema || !mappingp(schema))
+	    error("Invalid schema: Expected a schema got %O\n", _schema);
+    }
+
+    //! This function validates a JSON object against the JSON schema that was
+    //! specified in the Validator's constructor.
+    //! If the JSON object is not valid, a string with an error-message is
+    //! returned.
+    //! If the JSON object is valid, 0 is returned.
+    //!
+    //! @param json
+    //!   The JSON object to validate.
+    //! @returns
+    //!   0, if the json object is valid, and an error-message if it is not valid.
+    string validate(mixed json)
+    {
+	if (undefinedp(json) || zero_type(json))
+	    return sprintf("JSON invalid: Expected a json object got %O\n", json);
+
+	// TODO: handle schema->dependencies and references
+
+	return validate_properties(schema->name || "<unknown JSON object>",
+				   json, schema);
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is a number (integer or float).
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no number.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_number(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!intp(schema[property]) && !floatp(schema[property]))
+		error("Invalid schema: Expected %s to be a number, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is an integer.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no integer.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_integer(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!intp(schema[property]))
+		error("Invalid schema: Expected %s to be an integer, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! @returns
+    //!   1 if the specified @tt{value@} is either @[Standards.JSON.true] or
+    //!   @[Standards.JSON.false].
+    private int(0..1) is_JSON_boolean(mixed value)
+    {
+	return equal(value, true) || equal(value, false);
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is a boolean (with values @[Standards.JSON.true]
+    //! or @[Standards.JSON.false]).
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no boolean.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_boolean(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!is_JSON_boolean(schema[property]))
+		error("Invalid schema: Expected %s to be a boolean, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is a string.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no string.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_string(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!stringp(schema[property]))
+		error("Invalid schema: Expected %s to be a string, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is an array.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no array.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_array(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!arrayp(schema[property]))
+		error("Invalid schema: Expected %s to be an array, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is an @tt{array(string)@}.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no
+    //! @tt{array(string)@}.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_array_string(mapping(string:mixed) schema, string property)
+    {
+	if (has_schema_array(schema, property))
+	{   // all array entries should be strings:
+	    if (!Array.reduce(`&, map(schema[property], stringp), 1))
+		error("Invalid schema: Expected %s to be an array of strings, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is an @tt{array(mapping)@}.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no
+    //! @tt{array(mapping)@}.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_array_mapping(mapping(string:mixed) schema, string property)
+    {
+	if (has_schema_array(schema, property))
+	{   // all array items must be mappings:
+	    if (!Array.reduce(`&, map(schema[property], mappingp), 1))
+		error("Invalid schema: Expected %s to be an array of JSON schemata, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is a mapping.
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no mapping.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_mapping(mapping(string:mixed) schema, string property)
+    {
+	if (has_index(schema, property))
+	{
+	    if (!mappingp(schema[property]))
+		error("Invalid schema: Expected %s to be an object, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Test if the @tt{schema@} has the specified @tt{property@} and the value
+    //! of the @tt{property@} is a mapping(string:mapping).
+    //! @throws
+    //!   Throws an error if the value of the @tt{property@} is no
+    //! @tt{mapping(string:mapping)@}.
+    //! @returns
+    //!   1 if the @tt{schema@} has the specified @tt{property@}.
+    private int(0..1) has_schema_mapping_mapping(mapping(string:mixed) schema, string property)
+    {
+	if (has_schema_mapping(schema, property))
+	{
+	    if (// all mapping keys must be strings:
+		!Array.reduce(`&, map(indices(schema[property]), stringp), 1) ||
+		// all mapping values must be mappings:
+		!Array.reduce(`&, map(values(schema[property]), mappingp), 1))
+		error("Invalid schema: Expected %s to be an object, got %O\n",
+		      property, schema[property]);
+	    return 1;
+	}
+	else
+	    return 0;
+    }
+
+    //! Verify that the specified value is a number (integer or float) according
+    //! to the specified @tt{schema@}.
+    //! The following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item minimum
+    //!   If the @tt{schema@} has the property @tt{"minimum"@}, then the
+    //!   @tt{value@} must be greater than or equal to the specified minimum.
+    //! @item exclusiveMinimum
+    //!   If the @tt{schema@} has the properties @tt{"minimum"@} and
+    //!   @tt{"exclusiveMinimum"@} is @[Standards.JSON.true], then the
+    //!   @tt{value@} must be greater than the specified minimum.
+    //! @item maximum
+    //!   If the @tt{schema@} has the property @tt{"maximum"@}, then the
+    //!   @tt{value@} must be lower than or equal to the specified maximum.
+    //! @item exclusiveMaximum
+    //!   If the @tt{schema@} has the properties @tt{"maximum"@} and
+    //!   @tt{"exclusiveMaximum"@} is @[Standards.JSON.true], then the
+    //!   @tt{value@} must be lower than the specified minimum.
+    //! @item multipleOf
+    //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
+    //!   @tt{value@} must be an integer multiple of the specified multpleOf.
+    //! @enddl
+    private string validate_number(string key, mixed value, mapping(string:mixed) schema)
+    {
+	if (!intp(value) && !floatp(value))
+	    return sprintf("JSON invalid: Value for %O is expected to be a number, got %O\n",
+			   key, value);
+
+	array(string) errors = ({});
+
+	if (has_schema_number(schema, "minimum"))
+	{
+	    if (has_schema_boolean(schema, "exclusiveMinimum") &&
+		schema->exclusiveMinimum)
+	    {   // schema->minimum is not an allowed value
+		if (value <= schema->minimum)
+		    errors += ({
+			sprintf("JSON invalid: Number %O=%O is lower than or equal to the specified minimum %O\n",
+				key, value, schema->minimum) });
+	    }
+	    else
+	    {   // schema->minimum is an allowed value
+		if (value < schema->minimum)
+		    errors += ({
+			sprintf("JSON invalid: Number %O=%O is lower than the specified minimum %O\n",
+				key, value, schema->minimum) });
+	    }
+	}
+
+	if (has_schema_number(schema, "maximum"))
+	{
+	    if (has_schema_boolean(schema, "exclusiveMaximum") &&
+		schema->exclusiveMaximum)
+	    {   // schema->maximum is not an allowed value
+		if (value >= schema->maximum)
+		    errors += ({
+			sprintf("JSON invalid: Number %O=%O is greater than or equal to the specified maximum %O\n",
+				key, value, schema->maximum) });
+	    }
+	    else
+	    {   // schema->maximum is an allowed value
+		if (value > schema->maximum)
+		    errors += ({
+			sprintf("JSON invalid: Number %O=%O is greater than the specified maximum %O\n",
+				key, value, schema->maximum) });
+	    }
+	}
+
+	if (has_schema_number(schema, "multipleOf"))
+	{
+	    int(0..1) is_multipleOf;
+	    if (intp(value) && intp(schema->multipleOf))
+		is_multipleOf = (value % schema->multipleOf == 0);
+	    else
+	    {
+		float divisor = value / schema->multipleOf;
+		is_multipleOf = (divisor == round(divisor));
+	    }
+
+	    if (!is_multipleOf)
+		errors += ({
+		    sprintf("JSON invalid: Number %O=%O is not a multiple of %O\n",
+			    key, value, schema->multipleOf) });
+	}
+
+	errors = filter(errors, stringp); // remove all non-errors
+	if (sizeof(errors)) return errors * "";
+	else return 0;
+    }
+
+    //! Verify that the specified value is an integer according to the specified
+    //! @tt{schema@}. This is the similar to @[validate_number()], but the
+    //! @tt{value@} must be an int and not a float.
+    //! The following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item minimum
+    //!   If the @tt{schema@} has the property @tt{"minimum"@}, then the
+    //!   @tt{value@} must be greater than or equal to the specified minimum.
+    //! @item exclusiveMinimum
+    //!   If the @tt{schema@} has the properties @tt{"minimum"@} and
+    //!   @tt{"exclusiveMinimum"@} is @[Standards.JSON.true], then the
+    //!   @tt{value@} must be greater than the specified minimum.
+    //! @item maximum
+    //!   If the @tt{schema@} has the property @tt{"maximum"@}, then the
+    //!   @tt{value@} must be lower than or equal to the specified maximum.
+    //! @item exclusiveMaximum
+    //!   If the @tt{schema@} has the properties @tt{"maximum"@} and
+    //!   @tt{"exclusiveMaximum"@} is @[Standards.JSON.true], then the
+    //!   @tt{value@} must be lower than the specified minimum.
+    //! @item multipleOf
+    //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
+    //!   @tt{value@} must be an integer multiple of the specified multpleOf.
+    //! @enddl
+    private string validate_integer(string key, mixed value, mapping(string:mixed) schema)
+    {
+	if (!intp(value))
+	    return sprintf("JSON invalid: Value for %O is expected to be an integer, got %O\n",
+			   key, value);
+	return validate_number(key, value, schema);
+    }
+
+    //! Verify that the specified value is a string according to the specified
+    //! @tt{schema@}. The following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item minLength
+    //!   If @tt{schema@} has the property @tt{"minLength"@}, then the
+    //!   @tt{value@} must not be shorter than the specified length.
+    //! @item maxLength
+    //!   If @tt{schema@} has the property @tt{"maxLength"@}, then the
+    //!   @tt{value@} must not be longer than the specified length.
+    //! @item pattern
+    //!   If @tt{schema@} has the property @tt{"pattern"@}, then the
+    //!   @tt{value@} must match the specified pattern.
+    //! @enddl
+    //!
+    //! @note
+    //!   TODO: We use @[Regexp.SimpleRegexp] to handle @tt{schema->pattern@},
+    //!   but that covers only some part of the possible regular expressions.
+    private string validate_string(string key, mixed value, mapping(string:mixed) schema)
+    {
+	if (!stringp(value))
+	    return sprintf("JSON invalid: Value for %O is expected to be a string, got %O\n",
+			   key, value);
+
+	array(string) errors = ({});
+
+	if (has_schema_integer(schema, "minLength") &&
+	    strlen(value) < schema->minLength)
+	    errors += ({
+		sprintf("JSON invalid: String %O=%O is shorter than the minimum length %O\n",
+			key, value, schema->minLength) });
+
+	if (has_schema_integer(schema, "maxLength") &&
+	    strlen(value) > schema->maxLength)
+	    errors += ({
+		sprintf("JSON invalid: String %O=%O is longer than the maximum length %O\n",
+			key, value, schema->maxLength) });
+
+	if (has_schema_string(schema, "pattern"))
+	{
+	    Regexp.SimpleRegexp re = Regexp.SimpleRegexp(schema->pattern);
+	    if (!re->match(value))
+		errors += ({
+		    sprintf("JSON invalid: String %O=%O does not match the pattern %O\n",
+			    key, value, schema->pattern) });
+	}
+
+	errors = filter(errors, stringp); // remove all non-errors
+	if (sizeof(errors)) return errors * "";
+	else return 0;
+    }
+
+    //! Verify that the specified @tt{value@} has the correct type that is
+    //! defined by @tt{schema->type@}. @tt{schema->type@} can be any of
+    //! @ul
+    //! @item
+    //!   "boolean",
+    //! @item
+    //!   "integer",
+    //! @item
+    //!   "number",
+    //! @item
+    //!   "string",
+    //! @item
+    //!   "array",
+    //! @item
+    //!   "object",
+    //! @item
+    //!   "null",
+    //! @endul
+    //! or an array of these.
+    private string validate_item_type(string key, mixed value, mapping schema)
+    {
+	array(string) expected_types = Array.arrayify(schema->type);
+	if (sizeof(expected_types) == 0)
+	{   // guess the type:
+	    int(0..1) is_index_of(string i, mixed obj) { return has_index(obj, i); };
+	    if (Array.any(({ "multipleOf", "minimum", "maximum" }),
+			  is_index_of, schema))
+		expected_types = ({ "number" });
+
+	    else if (Array.any(({ "maxLength", "minLength", "pattern" }),
+			       is_index_of, schema))
+		expected_types = ({ "string" });
+
+	    else if (Array.any(({ "items", "additionalItems", "maxItems",
+				  "minItems", "uniqueItems" }),
+			       is_index_of, schema))
+		expected_types = ({ "array" });
+
+	    else if (Array.any(({ "properties", "maxProperties",
+				  "minProperties", "required",
+				  "additionalProperties",
+				  "patternProperties" }),
+			       is_index_of, schema))
+		expected_types = ({ "object" });
+
+	    else // we can't guess the type, so we can't validate it:
+		return 0;
+	}
+
+	// all expected_types entries should be strings:
+	if (!Array.reduce(`&, map(expected_types, stringp), 1))
+	    error("Invalid schema: Expected type for %s to be a string or an array of strings, got %O\n",
+		  key, schema->type);
+
+	if (is_JSON_boolean(value) && has_value(expected_types, "boolean"))
+	    return 0;
+
+	else if (equal(value, null) &&
+		 has_value(expected_types, "null"))
+	    return 0;
+
+	else if (intp(value) && has_value(expected_types, "integer"))
+	    return validate_integer(key, value, schema);
+
+	else if ((intp(value) || floatp(value)) &&
+		 has_value(expected_types, "number"))
+	    return validate_number(key, value, schema);
+
+	else if (stringp(value) && has_value(expected_types, "string"))
+	    return validate_string(key, value, schema);
+
+	else if (arrayp(value) && has_value(expected_types, "array"))
+	    return validate_array(key, value, schema);
+
+	else if (mappingp(value) && has_value(expected_types, "object"))
+	    return validate_object(key, value, schema);
+
+	else
+	    return sprintf("JSON invalid: Unexpected type for %O=%O, expected type is %O\n",
+			   key, value, expected_types * ",");
+    }
+
+    //! Verify that the specified value matches the specified @tt{schema@}. The
+    //! following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item type
+    //!   If the @tt{schema@} has a property @tt{"type"@}, then the @tt{value@}
+    //!   must match the specified type (see @[validate_item_type()]).
+    //! @item allOf
+    //!   If the @tt{schema@} has a property @tt{"allOf"@}, which is an array of
+    //!   schema objects, then the @tt{value@} must match each schema specified
+    //!   in that array (via another call to @[validate_properties()]).
+    //! @item anyOf
+    //!   If the @tt{schema@} has a property @tt{"anyOf"@}, which is an array of
+    //!   schema objects, then the @tt{value@} must match at least one schema
+    //!   specified in that array (via another call to
+    //!   @[validate_properties()]).
+    //! @item oneOf
+    //!   If the @tt{schema@} has a property @tt{"oneOf"@}, which is an array of
+    //!   schema objects, then the @tt{value@} must match exactly one schema
+    //!   specified in that array (via another call to
+    //!   @[validate_properties()]).
+    //! @item not
+    //!   If the @tt{schema@} has a property @tt{"not"@}, then the @tt{value@}
+    //!   must not match the schema specified by that property (via another
+    //!   call to @[validate_properties()]).
+    //! @item enum
+    //!   If the @tt{schema@} has a property @tt{"enum"@}, then the @tt{value@}
+    //!   must be equal to any of the values specified in the enum array.
+    //! @enddl
+    //!
+    //! @note
+    //!   If the @tt{schema@} is empty (i.e., it has none of the above specified
+    //!   properties, then the @tt{value@} is valid).
+    private string validate_properties(string key, mixed value, mapping schema)
+    {
+	array(string) errors = ({
+	    validate_item_type(key, value, schema)
+	});
+
+	if (has_schema_array_mapping(schema, "allOf"))
+	    // value must match all of the specified schema, i.e., no error
+	    // allowed:
+	    errors +=
+		map(schema->allOf,
+		    lambda(mapping s) { return validate_properties(key, value, s); });
+
+	// value must match at least one of the specified schema:
+	if (has_schema_array_mapping(schema, "anyOf") &&
+	    !Array.any(schema->anyOf,
+		       lambda(mapping s) { return validate_properties(key, value, s) == 0; }))
+	    errors += ({
+		sprintf("JSON invalid: Value for %O is expected to match any of %O, got %O\n",
+			key, schema->anyOf, value) });
+
+	// value must match exactly one of the specified schema:
+	if (has_schema_array_mapping(schema, "oneOf") &&
+	    Array.count(map(schema->oneOf,
+			    lambda(mapping s) {
+				return validate_properties(key, value, s);
+			    }), 0) != 1)
+	    errors += ({
+		sprintf("JSON invalid: Value for %O is expected to match one of %O, got %O\n",
+			key, schema->oneOf, value) });
+
+	if (has_schema_mapping(schema, "not") &&
+	    validate_properties(key, value, schema->not) == 0)
+	    errors += ({
+		sprintf("JSON invalid: Value for %O is expected not to match %O, got %O\n",
+			key, schema->not, value) });
+
+	if (has_schema_array(schema, "enum") &&
+	    !Array.any(schema->enum, Function.curry(equal)(value)))
+	    errors += ({
+		sprintf("JSON invalid: %O should be one of %O, got %O\n",
+			key, schema->enum, value) });
+
+	errors = filter(errors, stringp); // remove all non-errors
+	if (sizeof(errors)) return errors * "";
+	else return 0;
+    }
+
+    //! Verify that the specified @tt{value@} is an array according to the
+    //! specified @tt{schema@}.
+    //! The following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item minItems
+    //!   If @tt{schema@} has the property @tt{"minItems"@}, then the array must
+    //!   have at least the specified number of items.
+    //! @item maxItems
+    //!   If @tt{schema@} has the property @tt{"maxItems"@}, then the array must
+    //!   not have more than the specified number of items.
+    //! @item items
+    //!   If @tt{schema@} has the property @tt{"items"@}, which is an array of
+    //!   schema objects, then each element in the value array must be valid
+    //!   according the corresponding schema in the @tt{"items"@} array.
+    //! @enddl
+    private string validate_array(string key, mixed value, mapping(string:mixed) schema)
+    {
+	if (!arrayp(value))
+	    return sprintf("JSON invalid: Value for %O is expected to be an array, got %O\n",
+			   key, value);
+
+	array(string) errors = ({});
+
+	if (has_schema_integer(schema, "minItems") &&
+	    sizeof(value) < schema->minItems)
+	    errors += ({
+		sprintf("JSON invalid: Array %O has less than the minimum number of items: %O\n",
+			key, schema->minItems) });
+
+	if (has_schema_integer(schema, "maxItems") &&
+	    sizeof(value) > schema->maxItems)
+	    errors += ({
+		sprintf("JSON invalid: Array %O has more than the maximum number of items: %O\n",
+			key, schema->maxItems) });
+
+	if (has_index(schema, "items"))
+	{
+	    if (mappingp(schema->items))
+	    {   // schema->items is a JSON schema, so validate all items in value
+		// against it
+		errors += map(value,
+			      lambda(mixed item) {
+				  return validate_properties(
+				      key, item, schema->items);
+			      });
+	    }
+	    else if (arrayp(schema->items) &&
+		     // all entries of items must be objects
+		     Array.reduce(`&, map(schema->items, mappingp), 1))
+	    {   // validate each item in value against the corresponding JSON schema
+		// in schema->items
+		array value_items = value[..(sizeof(schema->items)-1)];
+		array value_additional = value[sizeof(schema->items)..];
+		foreach (value_items; int i; mixed item)
+		    errors += ({ validate_properties(
+				     key, item, schema->items[i]) });
+
+		// if there are more values than in schema->items, then either
+		// schema->additionalItems must be a boolean with value true,
+		// or it must be a schema and all remaining items must match it.
+		if (sizeof(value_additional))
+		{
+		    if (!has_index(schema, "additionalItems") ||
+			(is_JSON_boolean(schema->additionalItems) &&
+			 !schema->additionalItems))
+			errors += ({
+			    sprintf("JSON invalid: Array %O has more items than schema %O\n",
+				    key, schema->items) });
+		    else if (mappingp(schema->additionalItems))
+			foreach (value_additional, mixed item)
+			    errors += ({ validate_properties(
+					     key, item, schema->additionalItems) });
+		    else if (!is_JSON_boolean(schema->additionalItems))
+			error("Invalid schema: Expected %O->additionalItems to be a boolean or a schema, got %O\n",
+			      key, schema->additionalItems);
+		}
+	    }
+	    else
+		error("Invalid schema: Expected %O->schema to be an object or an array of objects, got %O\n",
+		      key, schema->items);
+	}
+
+	if (has_schema_boolean(schema, "uniqueItems") && schema->uniqueItems)
+	{   // verify that there are no duplicate items
+	    foreach (enumerate(sizeof(value)), int i)
+		foreach (enumerate(sizeof(value)-(i+1), 1, i+1), int j)
+		    if (equal(value[i], value[j]))
+			errors += ({
+			    sprintf("JSON invalid: Array %O should have unique items, but index %d and %d are equal: %O\n",
+				    key, i, j, value[i]) });
+	}
+
+	errors = filter(errors, stringp); // remove all non-errors
+	if (sizeof(errors)) return errors * "";
+	else return 0;
+    }
+
+    //! Verify that the specified @tt{value@} is an object according to the
+    //! specified @tt{schema@}.
+    //! The following properties of @tt{schema@} are verified:
+    //! @dl
+    //! @item minProperties
+    //!   If @tt{schema@} has the property @tt{"minProperties"@}, then the
+    //!   object must have at least the specified number of properties.
+    //! @item maxProperties
+    //!   If @tt{schema@} has the property @tt{"maxProperties"@}, then the
+    //!   object must not have more than the specified number of items.
+    //! @item required
+    //!   If @tt{schema@} has the property @tt{"required"@}, which is an array
+    //!   of strings, then the object must have all properties that are listed
+    //!   in the specified array.
+    //! @item properties
+    //!   If @tt{schema@} has the property @tt{"properties"@}, which is a
+    //!   mapping of property-name to a schema, then each property of the object
+    //!   that has a corresponding schema in @tt{"properties"@} must be valid
+    //!   according to that schema.
+    //! @item patternProperties
+    //!   If @tt{schema@} has the property @tt{"properties"@}, which is a
+    //!   mapping of property-name-pattern to a schema, then each property of
+    //!   the object must be valid according to all schema objects for which
+    //!   the pattern matches the property-name.
+    //! @item additionalProperties
+    //!   If @tt{schema@} has the property @tt{"additionalProperties"@}, it can
+    //!   be either a boolean value, or a schema.
+    //!   @ul
+    //!   @item
+    //!     If it is a boolean with value @[Standards.JSON.false], then all
+    //!     properties of the object must be validated either by a schema from
+    //!     @tt{"properties"@} or @tt{"patternProperties"@}.
+    //!   @item
+    //!     If it is a boolean with value @[Standards.JSON.true], then the
+    //!     object is allowed to have additional properties without validation.
+    //!   @item
+    //!     If it is a schema, then any propery of the object that is not
+    //!     validated by a schema from @tt{"properties"@} or
+    //!     @tt{"patternProperties"@} must be validated by the specified schema.
+    //!   @endul
+    //! @enddl
+    //!
+    //! @note
+    //!  TODO: We use @[Regexp.SimpleRegexp] to handle
+    //!  @tt{schema->patternProperties@}, but that covers only some part of the
+    //!  possible regular expressions.
+    private string validate_object(string key, mixed value, mapping(string:mixed) schema)
+    {
+	if (!mappingp(value))
+	    return sprintf("JSON invalid: Value for %O is expected to be a mapping, got %O\n",
+			   key, value);
+
+	array(string) errors = ({});
+	if (has_schema_integer(schema, "minProperties") &&
+	    sizeof(value) < schema->minProperties)
+	    errors += ({
+		sprintf("JSON invalid: Object %O has less than the minimum number of properties %O\n",
+			key, schema->minProperties) });
+
+	if (has_schema_integer(schema, "maxProperties") &&
+	    sizeof(value) > schema->maxProperties)
+	    errors += ({
+		sprintf("JSON invalid: Object %O has more than the maximum number of properties %O\n",
+			key, schema->maxProperties) });
+
+	if (has_schema_array_string(schema, "required"))
+	    errors += map(schema->required,
+			  lambda(string item) {
+			      if (has_index(value, item))
+				  return 0;
+			      else
+				  return sprintf("JSON invalid: Object %O has not the required item %O\n",
+						 key, item);
+			  });
+
+	// Verify that each property of the mapping value
+	// - either has a matching JSON schema in schema->properties,
+	// - or matches schema->additionalProperties,
+	// - or matches all schema from schema->patternProperites where the
+	//   pattern matches the property-key
+	// - or schema->additionalProperties is a boolean with value true
+	int(0..1) additionalProperties_allowed = 0;
+	mapping additionalProperties;
+	if (has_index(schema, "additionalProperties"))
+	{
+	    if (is_JSON_boolean(schema->additionalProperties))
+		additionalProperties_allowed = schema->additionalProperties;
+	    else if (mappingp(schema->additionalProperties))
+		additionalProperties = schema->additionalProperties;
+	    else// if additionalProperties is available it must be a boolean or
+		// a schema:
+		error("Invalid schema: Expected %O->additionalProperties to be an object or a boolean, got %O\n",
+		      key, schema->additionalProperties);
+	}
+
+	mapping patternProperties = ([]);
+	if (has_schema_mapping_mapping(schema, "patternProperties"))
+	    foreach (schema->patternProperties; string pattern; mixed props)
+		patternProperties[Regexp.SimpleRegexp(pattern)] = props;
+
+	foreach (value; mixed prop_key; mixed property)
+	{
+	    if (!stringp(prop_key))
+		errors += ({ sprintf("JSON invalid: Object %O, expected property to be a string got %O\n", key, prop_key) });
+
+	    array(mapping) prop_schema = ({});
+	    if (has_schema_mapping_mapping(schema, "properties") &&
+		has_index(schema->properties, prop_key))
+		prop_schema = ({ schema->properties[prop_key] });
+	    else
+		foreach (patternProperties;
+			 Regexp.SimpleRegexp re; mixed prop_s)
+		    if (re->match(prop_key))
+			prop_schema += ({ prop_s });
+	    if (sizeof(prop_schema) == 0 && additionalProperties)
+		// if there is no properties for prop_key and no matching
+		// patter, then fallback to additionalProperties:
+		prop_schema = ({ additionalProperties });
+
+	    if (sizeof(prop_schema))
+		errors += map(prop_schema,
+			      lambda(mixed s) {
+				  return validate_properties(
+				      prop_key, property, s); });
+	    else if (!additionalProperties_allowed)
+		// If schema->additionalProperties is a JSON boolean with value
+		// true, then we don't need to verify the items without a
+		// matching schema
+		errors += ({ sprintf("JSON invalid: Object %O has unexpected property %O\n",
+				     key, prop_key) });
+	}
+
+	errors = filter(errors, stringp); // remove all non-errors
+	if (sizeof(errors)) return errors * "";
+	else return 0;
+    }
+}
+
 #endif	// constant (@module@)

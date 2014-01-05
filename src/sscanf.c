@@ -469,12 +469,6 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 #define DO_IF_DEBUG(X)
 #endif /* PIKE_DEBUG */
 
-#ifdef AUTO_BIGNUM
-#define DO_IF_BIGNUM(X)		X
-#else /* !AUTO_BIGNUM */
-#define DO_IF_BIGNUM(X)
-#endif /* AUTO_BIGNUM */
-
 #ifdef __CHECKER__
 #define DO_IF_CHECKER(X)	X
 #else /* !__CHECKER__ */
@@ -789,7 +783,6 @@ INPUT_IS_WIDE(								 \
 	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-               DO_IF_BIGNUM(						 \
 	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
@@ -806,7 +799,6 @@ INPUT_IS_WIDE(								 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
-	       );							 \
 	       sval.u.integer<<=8;					 \
 	       sval.u.integer |= input[--pos];				 \
 	     }								 \
@@ -816,7 +808,6 @@ INPUT_IS_WIDE(								 \
 	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-               DO_IF_BIGNUM(						 \
 	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
@@ -834,7 +825,6 @@ INPUT_IS_WIDE(								 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
-	       );							 \
 	       sval.u.integer<<=8;					 \
 	       sval.u.integer |= input[eye];				 \
 	       eye++;							 \
@@ -882,7 +872,7 @@ INPUT_IS_WIDE(								 \
 	      eye++;							\
 	    }								\
 	  }								\
-	  if(len > (int)input_len-eye)                                  \
+	  if(len > (unsigned long)(input_len-eye))                      \
 	  {								\
 	    chars_matched[0]=eye-field_length;				\
 	    return matches;						\

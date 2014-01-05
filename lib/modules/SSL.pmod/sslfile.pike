@@ -71,6 +71,9 @@ protected Stdio.File stream;
 // close_state >= NORMAL_CLOSE. The stream is closed by the callbacks
 // as soon the close packets are done, or if an error occurs.
 
+protected int(-1..65535) linger_time = -1;
+// The linger behaviour set by linger().
+
 protected SSL.connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
@@ -95,6 +98,11 @@ protected Pike.Backend local_backend;
 // created on demand.
 
 protected int nonblocking_mode;
+
+protected int packet_max_size;
+// The max amount of data to send in each packet (so fragment_max_size
+// would be a better name). Is initialized from the context when the
+// object is created.
 
 protected enum CloseState {
   ABRUPT_CLOSE = -1,
@@ -514,8 +522,7 @@ protected void create (Stdio.File stream, SSL.context ctx,
     stream->set_close_callback (0);
     stream->set_id (1);
 
-    if(!ctx->random)
-      ctx->random = Crypto.Random.random_string;
+    packet_max_size = limit(1, ctx->packet_max_size, SSL.Constants.PACKET_MAX_SIZE);
     conn = SSL.connection (!is_client, ctx, min_version, max_version);
 
     if(is_blocking) {
@@ -551,6 +558,20 @@ mapping get_peer_certificate_info()
 array get_peer_certificates()
 {
   return conn->session->peer_certificate_chain;
+}
+
+//! Set the linger time on @[close()].
+int(0..1) linger(int(-1..65535)|void seconds)
+{
+  if (!stream) return 0;
+  if (zero_type(seconds)) seconds = -1;
+  if (seconds == linger_time) {
+    // Noop.
+    return 1;
+  }
+  if (stream->linger && !stream->linger(seconds)) return 0;
+  linger_time = seconds;
+  return 1;
 }
 
 int close (void|string how, void|int clean_close, void|int dont_throw)
@@ -767,6 +788,7 @@ Stdio.File shutdown()
 	RETURN (stream);
       default:
 	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
+	if (stream->linger) stream->linger(0);
 	stream->close();
 	local_errno = stream->errno();
 	RETURN (0);
@@ -788,13 +810,23 @@ protected void destroy()
   // We don't know which thread this will be called in if the refcount
   // garb or the gc got here. That's not a race problem since it won't
   // be registered in a backend in that case.
+  if (stream) {
+    // Make sure not to fail in ENTER below due to bad backend thread.
+    // [bug 6958].
+    stream->set_callbacks(0, 0, 0);
+  }
   ENTER (0, 0) {
     if (stream) {
       if (close_state == STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
 	  // an earlier operation. close() will throw an error for it.
 	  !cb_errno) {
-	set_nonblocking_keep_callbacks();
+	// We can't use our set_nonblocking() et al here, since we
+	// might be associated with a backend in a different thread,
+	// and update_internal_state() will install callbacks, which
+	// in turn might trigger the tests in CHECK_CB_MODE().
+	stream->set_nonblocking();	// Make sure not to to block.
+	nonblocking_mode = 0;	// Make sure not to install any callbacks.
 	close (0, 0, 1);
       }
       else
@@ -919,12 +951,12 @@ int write (string|array(string) data, mixed... args)
 	     // bottleneck is in the encryption.
 	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
 	int size = sizeof (data[idx]) - pos;
-	if (size > SSL.Constants.PACKET_MAX_SIZE) {
-	  // send_streaming_data will pick the first PACKET_MAX_SIZE
+	if (size > packet_max_size) {
+	  // send_streaming_data will pick the first packet_max_size
 	  // bytes of the string, so do that right away in the same
 	  // range operation.
 	  int n = conn->send_streaming_data (
-	    data[idx][pos..pos + SSL.Constants.PACKET_MAX_SIZE - 1]);
+	    data[idx][pos..pos + packet_max_size - 1]);
 	  SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d][%d..%d]\n",
 			  idx, pos, pos + n - 1);
 	  written += n;
@@ -936,13 +968,13 @@ int write (string|array(string) data, mixed... args)
 	  int end;
 	  for (end = idx + 1; end < sizeof (data); end++) {
 	    int newsize = size + sizeof (data[end]);
-	    if (newsize > SSL.Constants.PACKET_MAX_SIZE) break;
+	    if (newsize > packet_max_size) break;
 	    size = newsize;
 	  }
 
 	  if (conn->send_streaming_data (
 		`+ (data[idx][pos..], @data[idx+1..end-1])) < size)
-	    error ("Unexpected PACKET_MAX_SIZE discrepancy wrt send_streaming_data.\n");
+	    error ("Unexpected packet_max_size discrepancy wrt send_streaming_data.\n");
 
 	  SSL3_DEBUG_MSG ("SSL.sslfile->write: "
 			  "Queued data[%d][%d..%d] + data[%d..%d]\n",
@@ -962,7 +994,7 @@ int write (string|array(string) data, mixed... args)
 	     // same reason as above.
 	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
 	int n = conn->send_streaming_data (
-	  data[written..written + SSL.Constants.PACKET_MAX_SIZE - 1]);
+	  data[written..written + packet_max_size - 1]);
 	SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d..%d]\n",
 			written, written + n - 1);
 	written += n;
@@ -1615,8 +1647,8 @@ protected void update_internal_state (void|int assume_real_backend)
     }
 
     if (!got_extra_read_call_out && sizeof (read_buffer) && read_callback)
-      // Got buffered read data, so schedule a call to
-      // ssl_read_callback to handle it.
+      // Got buffered read data and there's someone ready to receive it,
+      // so schedule a call to ssl_read_callback to handle it.
       got_extra_read_call_out = -1;
 
     // If got_extra_read_call_out is set here then we wait with all
@@ -2093,8 +2125,12 @@ protected int ssl_write_callback (int called_from_real_backend)
 	// Ensure that the close is sent separately in case we should
 	// ignore the error from it.
 	if (close_packet_send_state == CLOSE_PACKET_SCHEDULED) {
-	  SSL3_DEBUG_MSG ("ssl_write_callback: Queuing close packet\n");
-	  conn->send_close();
+	  if (linger_time) {
+	    SSL3_DEBUG_MSG ("ssl_write_callback: Queuing close packet\n");
+	    conn->send_close();
+	  } else {
+	    SSL3_DEBUG_MSG ("ssl_write_callback: Skipping close packet\n");
+	  }
 	  close_packet_send_state = CLOSE_PACKET_QUEUED_OR_DONE;
 	}
 
@@ -2158,20 +2194,18 @@ protected int ssl_write_callback (int called_from_real_backend)
 	}
       }
 
-      else {
-	if (write_callback && !sizeof (write_buffer) && !SSL_HANDSHAKING
-	    && (close_state < NORMAL_CLOSE || cb_errno)) {
-	  // errno() should return the error in the write callback - need
-	  // to propagate it here.
-	  FIX_ERRNOS (
-	    SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O "
-			    "(error %s)\n", write_callback, strerror (local_errno)),
-	    SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
-			    write_callback)
-	  );
-	  RESTORE;
-	  return write_callback (callback_id);
-	}
+      if (write_callback && !SSL_HANDSHAKING
+	  && (close_state < NORMAL_CLOSE || cb_errno)) {
+	// errno() should return the error in the write callback - need
+	// to propagate it here.
+	FIX_ERRNOS (
+	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O "
+			  "(error %s)\n", write_callback, strerror (local_errno)),
+	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
+			  write_callback)
+	);
+	RESTORE;
+	return write_callback (callback_id);
       }
     }
 
@@ -2270,8 +2304,8 @@ protected int ssl_close_callback (int called_from_real_backend)
   return -1;
 }
 
-//! The next protocol chosen by the client during next protocol
-//! negotiation.
+//! The next protocol chosen by the client during application layer
+//! protocol negotiation (ALPN) or next protocol negotiation (NPN).
 string `->next_protocol() {
     return conn->next_protocol;
 }

@@ -2,30 +2,15 @@
 
 #set -x
 if [ x"$1" = x--cache ]; then
-  CACHE_OUTPUT=yes
   shift 1
-else
-  CACHE_OUTPUT=no
 fi
 
 exec 5>&1 1>&2
-
-# Disabled - we need to use precompile.pike in our own tree.
-#if [ x"$1" = xprecompile.pike ] ; then
-#  if pike -x 2>&1 | grep precompile > /dev/null 2>&1 ; then
-#    shift
-#    # FIXME: What about CACHE_OUTPUT here?
-#    echo "precompile: pike -x precompile $@"
-#    if pike -x precompile "$@" >&5; then exit 0; fi
-#    set - "precompile.pike" "$@"
-#  fi
-#fi
 
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
 LIBDIR_SRC="@LIBDIR@"
 SRCDIR="@srcdir@"
-PREDIR="$TMP_BUILDDIR/precompile"
 
 export TMP_BUILDDIR
 export LIBDIR_SRC
@@ -38,16 +23,6 @@ if test "@CROSS@" = "yes"; then
   method="QQQQQ"
   retries="....."
 else :; fi
-
-test -d "$PREDIR" || mkdir "$PREDIR"
-
-if test -f "$PREDIR/method" ; then
-  . "$PREDIR/method"
-else
-  :
-fi
-
-old_method="${method-}"
 
 OLD_RUNPIKE="$RUNPIKE"
 
@@ -72,40 +47,6 @@ case "$SCRIPT" in
     fi
   ;;
 esac
-
-if [ $CACHE_OUTPUT = yes ]; then
-  for arg
-  do
-    INPUT="$arg"
-  done
-  TMPOUTPUT="${INPUT}.compiled"
-
-  if [ -f "$TMPOUTPUT" ]; then
-    if [ "`ls -1Lt $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -n 1`" = "`ls -1Lt $TMPOUTPUT`" ]; then
-      cat "$TMPOUTPUT" >&5
-      exit 0
-    fi
-  fi
-else
-  TMPOUTPUT=x
-fi
-
-test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
-
-# method QQQQQQQ below requires a path without repeats.
-UNIQPATH=""
-ifs_save="${IFS- 	}"
-IFS=" :"
-for dir in $PATH; do
-  if echo ":$UNIQPATH:" | grep ":$dir:" >/dev/null; then :; else
-    if [ ":$UNIQPATH:" = "::" ]; then
-      UNIQPATH="$dir"
-    else
-      UNIQPATH="$UNIQPATH:$dir"
-    fi
-  fi
-done
-IFS="${ifs_save}"
 
 while test "$retries" != .............. ; do
 
@@ -139,8 +80,21 @@ case $method in
     LAST_PIKE=pike
   ;;
   QQQQQQQ)
+   if [ "x$UNIQPATH" = "x" ] ; then 
+    UNIQPATH=""
     ifs_save="${IFS- 	}"
-    IFS=" :"
+    IFS=" @PATH_SEPARATOR@"
+    for dir in $PATH; do
+     if echo "@PATH_SEPARATOR@$UNIQPATH@PATH_SEPARATOR@" | \
+        grep "@PATH_SEPARATOR@$dir@PATH_SEPARATOR@" >/dev/null; then :; else
+       if [ ":$UNIQPATH:" = "::" ]; then
+         UNIQPATH="$dir"
+       else
+         UNIQPATH="$UNIQPATH@PATH_SEPARATOR@$dir"
+       fi
+     fi
+     done
+   fi
     for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
              pike73 pike72 pike71 pike70
     do
@@ -174,25 +128,10 @@ esac
 if test "x${RUNPIKE-}" != x ; then
   echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-  if [ $CACHE_OUTPUT = yes ]; then
-    $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
-  else
     $RUNPIKE $SCRIPT "$@" >&5
-  fi
 
   if [ $? = 0 ]; then
-
-    cat > "$PREDIR/method.$$" <<EOF && \
-      mv "$PREDIR/method.$$" "$PREDIR/method"
-LAST_PIKE="$LAST_PIKE"
-method="$method"
-#retries="$retries"
-EOF
-
-    test $CACHE_OUTPUT = yes && cat "$TMPOUTPUT" >&5
     exit 0
-  else
-    test $CACHE_OUTPUT = yes && rm "$TMPOUTPUT"
   fi
 fi
 

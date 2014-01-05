@@ -23,7 +23,7 @@ GTK2.DrawingArea copy_area( GTK2.GdkGC gc, int xdest, int ydest, GTK2.Widget sou
 //!
 //!
 
-static GTK2.DrawingArea create( mapping|void props );
+protected GTK2.DrawingArea create( mapping|void props );
 //! Create a new drawing area.
 //!
 //!
@@ -98,7 +98,7 @@ GTK2.DrawingArea draw_rectangle( GTK2.GdkGC gc, int filledp, int x1, int y1, int
 //!
 //!
 
-GTK2.DrawingArea draw_text( GTK2.GdkGC gc, int x, int y, string text );
+GTK2.DrawingArea draw_text( GTK2.GdkGC gc, int x, int y, string|PangoLayout text );
 //! y is used as the baseline for the text.
 //!
 //!

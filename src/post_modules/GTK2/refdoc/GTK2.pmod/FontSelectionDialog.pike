@@ -15,7 +15,7 @@
 
 inherit GTK2.Dialog;
 
-static GTK2.FontSelectionDialog create( string title );
+protected GTK2.FontSelectionDialog create( string title );
 //! Create a new font selection dialog with the specified window title
 //!
 //!

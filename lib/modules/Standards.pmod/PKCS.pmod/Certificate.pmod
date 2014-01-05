@@ -123,8 +123,6 @@ Version ::= INTEGER
 
 */
 
-#if constant(Standards.ASN1.Types)
-
 import Standards.ASN1.Types;
 import .Identifiers;
 
@@ -156,9 +154,53 @@ class attribute_set
   }
 }
 
-//!
-Sequence build_distinguished_name(mapping(string:object) ... args)
+variant Sequence build_distinguished_name(mapping args)
 {
+  // Turn mapping into array of pairs
+  array a = ({});
+  foreach(sort(indices(args)), string name)
+    a += ({ ([name : args[name]]) });
+
+  return build_distinguished_name(a);
+}
+
+//! Creates an ASN.1 @[Sequence] with the distinguished name of the
+//! list of pairs given in @[args]. Supported identifiers are
+//!
+//! @dl
+//!   @item commonName
+//!   @item surname
+//!   @item countryName
+//!   @item localityName
+//!   @item stateOrProvinceName
+//!   @item organizationName
+//!   @item organizationUnitName
+//!   @item title
+//!   @item name
+//!   @item givenName
+//!   @item initials
+//!   @item generationQualifier
+//!   @item dnQualifier
+//!   @item emailAddress
+//! @enddl
+//!
+//! @param args
+//!   Either a mapping that lists from id string to string or ASN.1
+//!   object, or an array with mappings, each containing one pair. No
+//!   type validation is performed.
+variant Sequence build_distinguished_name(array args)
+{
+  args += ({});
+  // DWIM support. Turn string values into PrintableString.
+  foreach(args; int i; mapping m) {
+    foreach(m; string name; mixed value)
+      if( stringp(value) )
+      {
+        args[i] = ([ name : PrintableString(value) ]);
+        break;
+      }
+  }
+
   return Sequence(map(args, lambda(mapping rdn) {
 			      return attribute_set(
 				.Identifiers.at_ids, rdn);
@@ -183,7 +225,7 @@ Sequence decode_pem_certificate(string cert)
 //!  Distinguished Name (DN).
 Sequence get_certificate_issuer(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
+  return Standards.ASN1.Decode.simple_der_decode(cert)[0][3];
 }
 
 //! Converts an RDN (relative distinguished name) Seqeunce object to a
@@ -212,8 +254,8 @@ string get_dn_string(Sequence dnsequence)
     foreach(att->elements, Sequence val)
     {
       array value = ({});
-      string t = short_name_ids[val->elements[0]];
-      string v = val->elements[1]->value;
+      string t = short_name_ids[val[0]];
+      string v = val[1]->value;
 
       // we must escape characters now.
       v = replace(v, 
@@ -249,7 +291,7 @@ string get_dn_string(Sequence dnsequence)
 //!  Distinguished Name (DN).
 Sequence get_certificate_subject(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[5];
+  return Standards.ASN1.Decode.simple_der_decode(cert)[0][5];
 }
 
 class Attribute
@@ -277,7 +319,3 @@ class Attributes
 		 }, m, types));
   }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

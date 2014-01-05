@@ -15,7 +15,7 @@
 #include "time_stuff.h"
 #include "program_id.h"
 #include "pike_rusage.h"
-#include "block_alloc_h.h"
+#include "block_allocator.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
@@ -110,6 +110,8 @@ extern struct pike_string *type_check_system_string;
 #define LFUN__TYPES 46
 #define LFUN__SERIALIZE 47
 #define LFUN__DESERIALIZE 48
+#define LFUN__SIZE_OBJECT 49
+#define LFUN__RANDOM 50
 
 extern const char *const lfun_names[];
 
@@ -565,10 +567,6 @@ struct pike_trampoline
  * module. */
 #define PROGRAM_LIVE_OBJ 0x2000
 
-/* Indicates that the class is a facet or product_class. */
-#define PROGRAM_IS_FACET 0x4000
-#define PROGRAM_IS_PRODUCT 0x8000
-
 /* Using define instead of enum allows for ifdefs - Hubbe */
 #define PROG_EVENT_INIT 0
 #define PROG_EVENT_EXIT 1
@@ -643,15 +641,9 @@ struct program
 #include "program_areas.h"
   
   INT16 lfuns[NUM_LFUNS];
-
-#ifdef WITH_FACETS
-  /* Facet related stuff */
-  INT32 facet_index;   /* Index to the facet this facet class belongs to */
-  struct object *facet_group;
-#endif
 };
 
-void dump_program_tables (const struct program *p, int indent);
+PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 #ifdef PIKE_DEBUG
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {
@@ -701,7 +693,11 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TY
   }while(0)
 #endif
 
-BLOCK_ALLOC_FILL_PAGES(program, n/a);
+ATTRIBUTE((malloc))
+PMOD_EXPORT struct program * alloc_program();
+PMOD_EXPORT void really_free_program(struct program * p);
+void count_memory_in_programs(size_t *num, size_t *_size);
+void free_all_program_blocks();
 
 
 extern struct program *first_program;
@@ -784,6 +780,7 @@ void unuse_modules(INT32 howmany);
 node *find_module_identifier(struct pike_string *ident,
 			     int see_inherit);
 node *resolve_identifier(struct pike_string *ident);
+PMOD_EXPORT struct program *resolve_program(struct pike_string *ident);
 node *program_magic_identifier (struct program_state *state,
 				int state_depth, int inherit_num,
 				struct pike_string *ident,
@@ -795,7 +792,8 @@ void fsort_program_identifier_index(unsigned short *start,
 				    unsigned short *end,
 				    struct program *p);
 struct pike_string *find_program_name(struct program *p, INT_TYPE *line);
-int override_identifier (struct reference *ref, struct pike_string *name);
+int override_identifier (struct reference *ref, struct pike_string *name,
+			 int required_flags);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
@@ -807,6 +805,7 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
+int is_variant_dispatcher(struct program *prog, int fun);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
@@ -817,17 +816,24 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int));
 PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *));
-int really_low_reference_inherited_identifier(struct program_state *q,
-					      int e,
-					      int i);
-int low_reference_inherited_identifier(struct program_state *q,
-				       int e,
-				       struct pike_string *name,
-				       int flags);
+PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
+							  int i,
+							  int f);
+PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
+						   int e,
+						   struct pike_string *name,
+						   int flags);
 int find_inherit(struct program *p, struct pike_string *name);
-node *reference_inherited_identifier(struct pike_string *super_name,
-				     struct pike_string *function_name);
+PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
+					       struct pike_string *inherit,
+					       struct pike_string *name);
 void rename_last_inherit(struct pike_string *n);
+void lower_inherit(struct program *p,
+		   struct object *parent,
+		   int parent_identifier,
+		   int parent_offset,
+		   INT32 flags,
+		   struct pike_string *name);
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,
 			     int parent_identifier,
@@ -910,9 +916,14 @@ INT32 define_function(struct pike_string *name,
 		      unsigned function_flags,
 		      union idptr *func,
 		      unsigned opt_flags);
-int really_low_find_shared_string_identifier(struct pike_string *name,
-					     struct program *prog,
-					     int flags);
+PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
+							 struct program *prog,
+							 int flags);
+int really_low_find_variant_identifier(struct pike_string *name,
+				       struct program *prog,
+				       struct pike_type *type,
+				       int start_pos,
+				       int flags);
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
@@ -1027,9 +1038,10 @@ void push_compiler_frame(int lexical_scope);
 void low_pop_local_variables(int level);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
+PMOD_EXPORT char *get_inherit_storage(struct object *o, int inherit);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
-struct program *low_program_from_function(struct object *o, INT32 i);
+PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
@@ -1044,13 +1056,17 @@ void yyexplain_not_compatible(int severity_level,
 			      struct program *a, struct program *b);
 void yyexplain_not_implements(int severity_level,
 			      struct program *a, struct program *b);
+void string_builder_explain_not_compatible(struct string_builder *s,
+					   struct program *a,
+					   struct program *b);
+void string_builder_explain_not_implements(struct string_builder *s,
+					   struct program *a,
+					   struct program *b);
 PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
-
-void count_memory_in_programs(size_t *, size_t *);
 
 #ifndef PIKE_USE_MACHINE_CODE
 #define make_program_executable(X)

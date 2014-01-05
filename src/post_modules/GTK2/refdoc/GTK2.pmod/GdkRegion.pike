@@ -2,7 +2,7 @@
 //!
 //!
 
-static GDK2.Region create( );
+protected GDK2.Region create( );
 //! Create a new (empty) region
 //!
 //! NOIMG

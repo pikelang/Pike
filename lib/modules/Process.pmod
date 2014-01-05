@@ -6,6 +6,12 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
+#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
+constant path_separator = ";";
+#else
+constant path_separator = ":";
+#endif
+
 #if constant(Stdio.__HAVE_SEND_FD__)
 protected Stdio.File forkd_pipe;
 protected create_process forkd_pid;
@@ -414,14 +420,6 @@ string locate_binary(array(string) path, string name)
 
   foreach(path, string dir)
   {
-#ifdef __NT__
-    // Windows doesn't seem to strip quotation marks from PATH
-    // components that contain them so we need to do that here,
-    // otherwise we'll end up with a bogus path to stat on.
-    if(sizeof(dir) && dir[0] == '"' && dir[-1] == '"')
-         dir = dir[1..<1];
-#endif /* __NT__ */
-    
     string fname = combine_path(dir, name);
     Stdio.Stat info = file_stat(fname);
     if (info && (info->mode & 0111))
@@ -458,7 +456,10 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
     if(options && options->add_predefines)
     {
       foreach (master()->predefines; string key; string value)
-        res+=({"-D" + key + "=" + value});
+	if( stringp( value ) )
+	  res+=({"-D" + key + "=" + value});
+	else if( intp( value ) )
+	  res+=({"-D" + key });
     }
     if(options && options->add_program_path)
     {
@@ -476,13 +477,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 	&& !has_value(res[0], "\\")
 #endif /* __NT__ */
 	)
-      res[0] = locate_binary(getenv("PATH")/
-#if defined(__NT__) || defined(__amigaos__)
-			     ";"
-#else
-			     ":"
-#endif
-			     ,res[0]);
+      res[0] = search_path(res[0]);
     runpike = res;
   }
   return Process(runpike + argv, options);
@@ -647,25 +642,43 @@ int exec(string file,string ... foo)
 }
 #endif
 
+protected string search_path_raw;
 protected array(string) search_path_entries=0;
 
+//! Search for the path to an executable.
 //!
+//! @param command
+//!   Executable to search for.
+//!
+//! Searches for @[command] in the directories listed in the
+//! environment variable @tt{$PATH@}.
+//!
+//! @returns
+//!   Returns the path to @[command] if found, and
+//!   @expr{0@} (zero) on failure.
+//!
+//! @note
+//!   This function is NOT thread safe if the environment
+//!   variable @tt{$PATH@} is being changed concurrently.
+//!
+//! @note
+//!   In Pike 7.8.752 and earlier the environment
+//!   variable @tt{$PATH@} was only read once.
 string search_path(string command)
 {
    if (command=="" || command[0]=='/') return command;
 
-   if (!search_path_entries) 
+   string path = getenv("PATH")||"";
+   if ((path != search_path_raw) || !search_path_entries)
    {
+      string raw_path = path;
 #ifdef __NT__
-      array(string) e=replace(getenv("PATH")||"", "\\", "/")/";"-({""});
-#elif defined(__amigaos__)
-      array(string) e=(getenv("PATH")||"")/";"-({""});
-#else
-      array(string) e=(getenv("PATH")||"")/":"-({""});
+      path = replace(path, "\\", "/");
 #endif
+      array(string) e = path/path_separator - ({""});
 
       multiset(string) filter=(<>);
-      search_path_entries=({});
+      array(string) entries=({});
       foreach (e,string s)
       {
 	 string t;
@@ -677,21 +690,25 @@ string search_path(string command)
 	    {
 	       // expand user?
 	    }
+#ifdef __NT__
+	 } else if (sizeof(s) && (s[0] == '"') && s[-1] == '"') {
+	   // Windows doesn't seem to strip quotation marks from PATH
+	   // components that contain them so we need to do that here,
+	   // otherwise we'll end up with a bogus path to stat on.
+	   s = s[1..<1];
+#endif /* __NT__ */
 	 }
-	 if (!filter[s] /* && directory exist */ ) 
+	 if (!filter[s] /* && directory exist */ )
 	 {
-	    search_path_entries+=({s}); 
+	    entries += ({s});
 	    filter[s]=1;
 	 }
       }
+      // FIXME: This is NOT thread safe!
+      search_path_entries = entries;
+      search_path_raw = raw_path;
    }
-   foreach (search_path_entries, string path)
-   {
-      string p=combine_path(path,command);
-      Stdio.Stat s=file_stat(p);
-      if (s && s->mode&0111) return p;
-   }
-   return 0;
+   return locate_binary(search_path_entries, command);
 }
 
 //!
@@ -913,11 +930,12 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //! @seealso
 //!   @[system], @[spawn]
 
-Stdio.FILE|string popen(string s, string|void mode) {
-  if(mode)
-    return fpopen(s,mode);
-  else
-    return fpopen(s)->read();
+variant string popen(string s) {
+   return fpopen(s)->read();
+}
+
+variant Stdio.FILE popen(string s, string mode) {
+  return fpopen(s,mode);
 }
 
 protected Stdio.FILE fpopen(string s, string|void mode)
@@ -1084,4 +1102,116 @@ class Spawn
    // array rusage();
 }
 #endif
+#endif
+
+#if constant(fork) || constant(System.daemon)
+private int low_daemon(int nochdir, int noclose)
+{
+#if constant(System.daemon)
+    return System.daemon(nochdir, noclose);
+#else
+    if (fork())
+        exit(0);
+
+#if constant(System.setsid)
+        System.setsid();
+#endif /* System.setsid */
+
+    if (!nochdir)
+        cd("/");
+
+    Stdio.File fd;
+    if (!noclose && (fd = Stdio.File("/dev/null", "rw")))
+    {
+        fd->dup2(Stdio.stdin);
+        fd->dup2(Stdio.stdout);
+        fd->dup2(Stdio.stderr);
+        if (fd->query_fd() > 2)
+            fd->close();
+    }
+    return 0;
+#endif /* !System.daemon */
+}
+
+void daemon(int nochdir, int noclose,
+            void|mapping(string:string|Stdio.File) modifiers)
+//! A function to run current program in the background.
+//!
+//! @param nochdir
+//!   If 0 the process will continue to run in / or the directory
+//!   dictadet by modifiers.
+//! @param noclose
+//!  If this is not 0 the process will keep current file descriptors
+//!  open.
+//! @param modifiers
+//!   Optional extra arguments. The parameters passed in this mapping
+//!   will override the arguments nochdir and noclose.
+//!   @mapping
+//!     @member string "cwd"
+//!       Change current working directory to this directory.
+//!     @member string|Stdio.File "stdin"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard input to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard input.
+//!     @member string|Stdio.File "stdout"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard output to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard output.
+//!     @member string|Stdio.File "stderr"
+//!       If this is a string this will be interpreted as a filename
+//!       pointing out a file to be used as stdandard error to the process.
+//!       If this is a Stdio.File object the process will use this as
+//!       standard error.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[System.daemon]
+//!
+//! @note
+//!   This function only works on UNIX-like operating systems.
+//!
+//! @example
+//!    /* close all fd:s and cd to '/' */
+//!   Process.daemon(0, 0);
+//!
+//!   /* Do not change working directory. Write stdout to a file called
+//!      access.log and stderr to error.log. */
+//!   Process.daemon(1, 0, ([ "stdout": "access.log", "stderr": "error.log" ]) );
+{
+    array(Stdio.File) opened = ({});
+    Stdio.File getfd(string|object f)
+    {
+        if (stringp(f))
+        {
+            Stdio.File ret = Stdio.File(f, "crw");
+            opened += ({ ret });
+            return ret;
+        }
+        else if (objectp(f))
+            return f;
+	else
+	  return 0;
+    };
+
+    if (low_daemon(nochdir, noclose) == -1)
+      error("Failed to daemonize: " + strerror(errno())+"\n");
+    if (!modifiers)
+        return;
+
+    if (modifiers["cwd"])
+        cd(modifiers["cwd"]);
+
+    if (modifiers["stdin"])
+        getfd(modifiers["stdin"])->dup2(Stdio.stdin);
+
+    if (modifiers["stdout"])
+        getfd(modifiers["stdout"])->dup2(Stdio.stdout);
+
+    if (modifiers["stderr"])
+        getfd(modifiers["stderr"])->dup2(Stdio.stderr);
+
+    opened->close();
+}
 #endif

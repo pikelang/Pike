@@ -10,7 +10,6 @@
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
-#include "block_alloc_h.h"
 
 /* Weak flags for arrays, multisets and mappings. 1 is avoided for
  * compatibility reasons. */
@@ -165,6 +164,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args);
 PMOD_EXPORT void f_function_defined(INT32 args);
 void init_builtin_efuns(void);
 void exit_builtin_efuns(void);
+unsigned int rec_size_svalue( struct svalue *s, struct mapping **m );
 
 /* From iterators.cmod. */
 PMOD_EXPORT void f_get_iterator(INT32 args);
@@ -207,7 +207,8 @@ struct pike_list_node
   struct pike_list_node *prev;
   struct svalue val;
 };
-BLOCK_ALLOC_FILL_PAGES(pike_list_node, 4);
+void count_memory_in_pike_list_nodes(size_t * n, size_t * s);
+void free_all_pike_list_node_blocks();
 PMOD_EXPORT void free_list_node(struct pike_list_node *node);
 PMOD_EXPORT void unlink_list_node(struct pike_list_node *n);
 PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,

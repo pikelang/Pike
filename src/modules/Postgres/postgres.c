@@ -67,7 +67,7 @@ PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #ifdef PGDEBUG
 #define pgdebug printf
 #else
-static void pgdebug (char * a, ...) {}
+static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
 struct program * postgres_program;
@@ -81,7 +81,7 @@ static void set_error (char * newerror)
 	return;
 }
 
-static void pgres_create (struct object * o) {
+static void pgres_create (struct object * UNUSED(o)) {
 	pgdebug ("pgres_create().\n");
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
@@ -96,7 +96,7 @@ static void pgres_create (struct object * o) {
 
 }
 
-static void pgres_destroy (struct object * o)
+static void pgres_destroy (struct object * UNUSED(o))
 {
 	PGconn * conn;
 	PQ_FETCH();
@@ -328,7 +328,7 @@ static void f_create (INT32 args)
 
 static void f_select_db (INT32 args)
 {
-	char *host, *port, *options, *tty, *db;
+	char *host, *port, *options, *db;
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
@@ -352,7 +352,7 @@ static void f_select_db (INT32 args)
 	host=PQhost(conn);
 	port=PQport(conn);
 	options=PQoptions(conn);
-	tty=PQtty(conn);
+
 	/* This could be really done calling f_create, but it's more efficient this
 	 * way */
 	/* using newconn is necessary or otherwise the datastructures I use
@@ -360,7 +360,7 @@ static void f_select_db (INT32 args)
 	 * situations (i.e. if the temporary use of _one_ more filedescriptor
 	 * is not possible.
 	 */
-	newconn=PQsetdb(host,port,options,tty,db);
+	newconn=PQsetdb(host,port,options,NULL,db);
 	PQfinish(conn);
 	conn=newconn;
 	PQ_UNLOCK();

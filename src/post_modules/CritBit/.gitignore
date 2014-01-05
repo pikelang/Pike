@@ -2,14 +2,12 @@
 /config.log
 /config.status
 /configure
-/critbit_config.h
-/critbit_config.h.in
 /dependencies
 /floattree.c
 /inttree.c
 /stringtree.c
+/bignumtree.c
 /make_variables
 /propagated_variables
 /stamp-h
 /stamp-h.in
-/tree.c

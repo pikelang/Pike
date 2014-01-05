@@ -51,7 +51,9 @@ protected class Port {
   void destroy();
 }
 
+//! The socket that this request came in on.
 Stdio.File my_fd;
+
 Port server_port;
 .HeaderParser headerparser;
 
@@ -104,15 +106,18 @@ int send_timeout_delay=180;
 int connection_timeout_delay=180;
 
 function(this_program:void) request_callback;
+function(this_program,array:void) error_callback;
 
 void attach_fd(Stdio.File _fd, Port server,
 	       function(this_program:void) _request_callback,
-	       void|string already_data)
+	       void|string already_data,
+	       void|function(this_program,array:void) _error_callback)
 {
    my_fd=_fd;
    server_port=server;
    headerparser = .HeaderParser();
    request_callback=_request_callback;
+   error_callback = _error_callback;
 
    my_fd->set_nonblocking(read_cb,0,close_cb);
 
@@ -387,34 +392,34 @@ protected void parse_post()
     if(!messg->body_parts) return;
 
     foreach(messg->body_parts, object part) {
+      if(!part->disp_params->name) continue;
       if(part->disp_params->filename) {
+	if(variables[part->disp_params->name] && !arrayp(variables[part->disp_params->name]))
+	  variables[part->disp_params->name] = ({ variables[part->disp_params->name] });
 
-	      if(variables[part->disp_params->name] && !arrayp(variables[part->disp_params->name]))
-	        variables[part->disp_params->name] = ({ variables[part->disp_params->name] });
-	
-	      if(variables[part->disp_params->name] && arrayp(variables[part->disp_params->name]))
-	        variables[part->disp_params->name] += ({part->getdata()});
-	      else variables[part->disp_params->name]=part->getdata();
+	if(variables[part->disp_params->name] && arrayp(variables[part->disp_params->name]))
+	  variables[part->disp_params->name] += ({ part->getdata() });
+	else variables[part->disp_params->name] = part->getdata();
 
-	      if(variables[part->disp_params->name+".filename"] && !arrayp(variables[part->disp_params->name+".filename"]))
-	        variables[part->disp_params->name+".filename"] = ({ variables[part->disp_params->name+".filename"] });
-	
-	      if(variables[part->disp_params->name+".filename"] && arrayp(variables[part->disp_params->name+".filename"]))
-	        variables[part->disp_params->name+".filename"] += ({part->disp_params->filename});
-	      else
- 	        variables[part->disp_params->name+".filename"]= part->disp_params->filename;      
- 	        
- 	      if(variables[part->disp_params->name+".mimetype"] && !arrayp(variables[part->disp_params->name+".mimetype"]))
-  	      variables[part->disp_params->name+".mimetype"] = ({ variables[part->disp_params->name+".mimetype"] });
+	if(variables[part->disp_params->name+".filename"] && !arrayp(variables[part->disp_params->name+".filename"]))
+	  variables[part->disp_params->name+".filename"] = ({ variables[part->disp_params->name+".filename"] });
 
-  	    if(variables[part->disp_params->name+".mimetype"] && arrayp(variables[part->disp_params->name+".mimetype"]))
-  	      variables[part->disp_params->name+".mimetype"] += ({part->disp_params->filename});
-  	    else
-   	      variables[part->disp_params->name+".mimetype"]= part->disp_params->filename;      
-  	    
-	    } 
-	    else
-	      variables[part->disp_params->name] = part->getdata();
+	if(variables[part->disp_params->name+".filename"] && arrayp(variables[part->disp_params->name+".filename"]))
+	  variables[part->disp_params->name+".filename"] += ({ part->disp_params->filename });
+	else
+	  variables[part->disp_params->name+".filename"] = part->disp_params->filename;
+
+	if(variables[part->disp_params->name+".mimetype"] && !arrayp(variables[part->disp_params->name+".mimetype"]))
+	  variables[part->disp_params->name+".mimetype"] = ({ variables[part->disp_params->name+".mimetype"] });
+
+	if(variables[part->disp_params->name+".mimetype"] && arrayp(variables[part->disp_params->name+".mimetype"]))
+	  variables[part->disp_params->name+".mimetype"] += ({ part->disp_params->filename });
+	else
+	  variables[part->disp_params->name+".mimetype"] = part->disp_params->filename;
+
+      }
+      else
+	variables[part->disp_params->name] = part->getdata();
     }
   }
   else if( request_headers["content-type"] &&
@@ -430,14 +435,19 @@ protected void finalize()
 {
   my_fd->set_blocking();
   flatten_headers();
-  parse_post();
-
-  if (request_headers->cookie)
-    foreach (request_headers->cookie/";";;string cookie)
-      if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
-        cookies[a]=b;
-
-  request_callback(this);
+  if (array err = catch {parse_post();})
+  {
+    if (error_callback) error_callback(this, err);
+    else throw(err);
+  }
+  else
+  {
+    if (request_headers->cookie)
+      foreach (request_headers->cookie/";";;string cookie)
+        if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
+          cookies[a]=b;
+    request_callback(this);
+  }
 }
 
 // Adds incoming data to raw and buf. Once content-length or
@@ -571,6 +581,17 @@ string make_response_header(mapping m)
        res+=({"Connection: Close"});
 
    return res*"\r\n"+"\r\n\r\n";
+}
+
+//! Return the IP address that originated the request, or 0 if
+//! the IP address could not be determined. In the event of an
+//! error, @[my_fd]@tt{->errno()@} will be set.
+string get_ip()
+{
+	string addr = my_fd?->query_address();
+	if (!addr) return 0;
+	sscanf(addr,"%s ",addr);
+	return addr;
 }
 
 //! return a properly formatted response to the HTTP client
@@ -735,14 +756,14 @@ void finish(int clean)
        || !my_fd
        || !keep_alive)
    {
-      if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
+      if (my_fd) { catch(my_fd->close()); destruct(my_fd); my_fd=0; }
       return;
    }
 
    // create new request
 
-   this_program r=this_program();
-   r->attach_fd(my_fd,server_port,request_callback,buf);
+   this_program r=server_port->request_program();
+   r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
 
    my_fd=0; // and drop this object
 }

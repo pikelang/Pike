@@ -342,7 +342,7 @@ protected private class Extractor {
           [decls, got_nl] = parseAdjacentDecls(c);
           s = parser->peekToken(WITH_NL);
           if (isDocComment(s))
-            extractorError("doc + decl + doc  is forbidden!");
+            extractorError("doc + decl + doc is forbidden!");
         }
       }
       else {
@@ -353,7 +353,7 @@ protected private class Extractor {
 	if (got_nl) {
 	  s = parser->peekToken(WITH_NL);
 	  if ( !isDelimiter(s) )
-	    extractorError("decl + doc + decl  is forbidden!");
+	    extractorError("decl + doc + decl is forbidden!");
 	}
       }
 
@@ -446,7 +446,7 @@ protected private class Extractor {
       if (sizeof(docDecls)) {
         if (sizeof(decls)) {
           if (sizeof(decls) != 1)
-            extractorError("only one pike declaration can be combined with @decl");
+            extractorError("only one pike declaration can be combined with @decl %O", decls->position);
           foreach(docDecls, PikeObject d)
             if (decls[0]->objtype != d->objtype)
               extractorError("@decl of %s mismatches %s in pike code",
@@ -540,8 +540,7 @@ protected private class Extractor {
 
     for (;;) {
       Documentation doc;
-      string s;
-      if (isDocComment(s = parser->peekToken())) {
+      if (isDocComment(parser->peekToken())) {
 	doc = readAdjacentDocLines();
 	object(.DocParser.Parse) parse =
 	  .DocParser.Parse(doc->text, doc->position, flags);
@@ -567,6 +566,15 @@ protected private class Extractor {
 	t = new_type;
       }
       var->type = t;
+      if (isDocComment(parser->peekToken())) {
+	if (doc)
+	  extractorError("doc + decl + doc is forbidden!");
+	doc = readAdjacentDocLines();
+	object(.DocParser.Parse) parse =
+	  .DocParser.Parse(doc->text, doc->position, flags);
+	.DocParser.MetaData metadata = parse->metadata();
+	doc->xml = parse->doc("_variable");
+      }
       if (doc) {
 	c->docGroups += ({ DocGroup(({ var }), doc) });
       } else {
@@ -574,7 +582,6 @@ protected private class Extractor {
       }
       if (parser->peekToken() != ",") break;
       parser->eat(",");
-      // FIXME: Support doc comment following the variable decl.
     }
 
     c->docGroups += ({
@@ -622,6 +629,13 @@ Module extractModule(string s, void|string filename, void|string moduleName,
   // if there was no documentation in the file whatsoever
   if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
     return 0;
+
+  // If there's a _module_value it replaces the module itself.
+  PikeObject module_value = m->findChild("_module_value");
+  if (module_value) {
+    module_value->name = m->name;
+    m = module_value;
+  }
   return m;
 }
 

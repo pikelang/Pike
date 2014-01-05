@@ -1,0 +1,5 @@
+AC_INIT()
+AC_MODULE_INIT()
+AC_CONFIG_HEADERS(bson_config.h)
+AC_CHECK_HEADERS(WinSock2.h arpa/inet.h stdint.h)
+AC_OUTPUT(Makefile)

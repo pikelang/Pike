@@ -16,7 +16,7 @@ array children( );
 //!
 //!
 
-static GDK2.Window create( GTK2.GdkWindow parent, mapping|void attributes );
+protected GDK2.Window create( GTK2.GdkWindow parent, mapping|void attributes );
 //! Not for non-experts. I promise.
 //!
 //!

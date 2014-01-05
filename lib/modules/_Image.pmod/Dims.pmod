@@ -1,3 +1,4 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
 //   Imagedimensionreadermodule for Pike.
@@ -125,6 +126,18 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
+      if (f->seek(0) == 0)
+      {
+	mapping exif = Standards.EXIF.get_properties(f);
+	if ((< "5", "6", "7", "8" >)[exif->Orientation])
+	{
+	  // Picture has been rotated/flipped 90 or 270 degrees, so
+	  // exchange width and height to reflect that.
+	  int tmp = image_height;
+	  image_height = image_width;
+	  image_width = tmp;
+	}
+      }
       return ({ image_width,image_height });
       break;
 	

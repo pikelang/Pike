@@ -62,8 +62,6 @@
 
 import .Bencoding;
 
-constant cvsid="$Id$";
-
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
 mapping(string:int|array|string|mapping) metainfo;
@@ -409,7 +407,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
 			      lambda(int i) { return !file_got[i]; });
 
    all_pieces_bits=bits2string(replace(copy_value(file_got),0,1));
-   no_pieces_bits="\0"*strlen(file_got);
+   no_pieces_bits="\0"*sizeof(file_got);
 
    return search(targets->created,0)==-1 ? 2 : 1;
 }
@@ -450,13 +448,8 @@ void open_port(void|int port)
 
 private protected inline string generate_peer_id()
 {
-   array v=array_sscanf(cvsid,"%*s %*s %d.%d %d/%d/%d");
-   int day=Calendar.Day(@v[2..4])->julian_day()-2452991;
-   string s=sprintf("Pi%c%c%2c%s",
-		    v[0],v[1],day,
-		    random_string(14));
-   return s;
-};
+   return "Pi" + random_string(18);
+}
 
 //! Calculate the bytes successfully downloaded (full pieces).
 int bytes_done()

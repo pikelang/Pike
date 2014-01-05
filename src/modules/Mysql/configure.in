@@ -13,6 +13,12 @@
 #   libmysql.a				libmysqllib.a
 #   libstrings.a			libmystrings.a
 #
+#   MariaDB-Client 1.0.0
+#   -------------------------------------------------------------------
+#   /usr/local/lib
+#   /usr/local/mariadbclient/include
+#   libmariadbclient.a
+#
 
 
 AC_INIT(mysql.c)
@@ -30,11 +36,19 @@ OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(mariadb,[  --without-mariadb     disable use of MariaDB-client library],[],[with_mariadb=yes])
 
 if test x$with_mysql = xno; then
   :
 else
   PIKE_FEATURE_NODEP(Mysql)
+
+  if test "x$with_mariadb" = "xno"; then
+      MARIADB_CONFIG=no
+  else
+      AC_PATH_PROG(MARIADB_CONFIG,${ac_tool_prefix}mariadb_config,no)
+  fi
+  if test "x${MARIADB_CONFIG}" = "xno"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
   AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
@@ -105,9 +119,41 @@ else
 
     if test x$pike_cv_mysql_include_dir = xno; then :; else
       echo Adding $pike_cv_mysql_include_dir to the include search path.
-      CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
+      CPPFLAGS="-I$pike_cv_mysql_include_dir ${CPPFLAGS}"
     fi
   fi
+  else
+      echo "MariaDB found. Attempting to use."
+      # MariaDB
+      # NB: mariadb_config doens't distinguish between
+      #     LDFLAGS and LIBS
+      MARIADB_LIBS=""
+      set ignored `${MARIADB_CONFIG} --libs_r`
+      while test "$#" -gt 1; do
+        case "$2" in
+          -L*)
+	    echo "Adding `echo $2 | sed -e 's/^-L//'` to the library search path."
+	    LDFLAGS="${LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
+	    ;;
+          -R*)
+	    echo "Adding `echo $2 | sed -e 's/^-R//'` to the library runtime search path."
+	    LDFLAGS="${LDFLAGS} $2"
+	    ;;
+	  -lmaria*)
+	    # We handle the client library itself later.
+	    ;;
+	  *)
+	    # NB: We need to buffer libs to get them in the correct order.
+	    echo "Adding $2 to LIBS."
+	    MARIADB_LIBS="${MARIADB_LIBS} $2"
+	    ;;
+	esac
+	shift
+      done
+      echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
+      CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+  fi
+
 
   # Header file
 
@@ -118,6 +164,25 @@ else
 #include <winsock.h>
 #endif
   ])
+  AC_MSG_CHECKING(for mysql/mysqld_ername.h)
+  AC_CACHE_VAL(ac_cv_mysqld_ername, [
+  AC_TRY_COMPILE([],[
+struct foo {
+    const char * a;
+    int b;
+};
+const static struct foo[] = {
+#include <mysql/mysqld_ername.h>
+};
+    ],ac_cv_mysqld_ername=yes,ac_cv_mysqld_ername=yes)
+  ])
+  if test x$ac_cv_mysqld_ername = xyes; then
+      AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
+      AC_MSG_RESULT(yes)
+  else
+      AC_MSG_RESULT(no)
+  fi
+AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
 
   if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
     # Required headerfile missing.
@@ -200,11 +265,19 @@ dnl   fi
     ])
   ])
 
+  # Needed for libmariadbclient.a 1.0.0.
+  AC_SEARCH_LIBS(OPENSSL_config, crypto)
+  AC_SEARCH_LIBS(SSL_library_init, ssl)
+
   AC_SEARCH_LIBS(_db_doprnt_, dbug)
   AC_SEARCH_LIBS(my_init, mysys)
 
   # mysql 3.23.x libmysqlclient requires zlib...
   AC_SEARCH_LIBS(compress, z)
+
+  if test "x${MARIADB_CONFIG}" = "x"; then :; else
+      LIBS="${MARIADB_LIBS} ${LIBS}"
+  fi
 
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
@@ -283,6 +356,7 @@ else
 fi
 ])
 
+  if test "x${MARIADB_CONFIG}" = "xno"; then
   # libmysql.lib is the name for the libmysql.dll wrapper in the
   # windows releases. There's also a mysqlclient.lib which contain the
   # static version. We prefer the dynamic one so check libmysql first.
@@ -304,6 +378,18 @@ fi
       ])
     ])
   ])
+  else
+      AC_CHECK_SQLLIB(mariadbclient, [
+	LIBS="-lmariadbclient $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mariadb, [
+	  LIBS="-lmariadb $LIBS"
+	], [
+	  PIKE_FEATURE_NODEP(Mysql)
+	  pike_cv_mysql="no"
+	])
+      ])
+  fi
 
   if test x$pike_cv_mysql = xno; then :; else
     # Check version match
@@ -392,6 +478,7 @@ int main(int argc, char *argv[])
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
     PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
     PIKE_CHECK_MYSQL_FUNC(mysql_ssl_set)
+    PIKE_CHECK_MYSQL_FUNC(mysql_sqlstate)
 
     # This function should exist even in ancient versions, but it
     # appear to exist only in header files sometimes.

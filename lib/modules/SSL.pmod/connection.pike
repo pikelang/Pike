@@ -82,9 +82,7 @@ protected object recv_packet(string data)
 {
   mixed res;
 
-#ifdef SSL3_DEBUG
-//  werror("SSL.connection->recv_packet(%O)\n", data);
-#endif
+  //  SSL3_DEBUG_MSG("SSL.connection->recv_packet(%O)\n", data);
   if (left_over || !packet)
   {
     packet = Packet(2048);
@@ -97,14 +95,10 @@ protected object recv_packet(string data)
   { /* Finished a packet */
     left_over = [string]res;
     if (current_read_state) {
-#ifdef SSL3_DEBUG
-      werror("Decrypting packet.. version[1]="+version[1]+"\n");
-#endif /* SSL3_DEBUG */
+      SSL3_DEBUG_MSG("Decrypting packet.. version[1]="+version[1]+"\n");
       return current_read_state->decrypt_packet(packet,version[1]);
     } else {
-#ifdef SSL3_DEBUG
-      werror("SSL.connection->recv_packet(): current_read_state is zero!\n");
-#endif /* SSL3_DEBUG */
+      SSL3_DEBUG_MSG("SSL.connection->recv_packet(): current_read_state is zero!\n");
       return 0;
     }
   }
@@ -119,9 +113,7 @@ protected object recv_packet(string data)
 void send_packet(object packet, int|void priority)
 {
   if (closing & 1) {
-#ifdef SSL3_DEBUG
-    werror("SSL.connection->send_packet: ignoring packet after close\n");
-#endif
+    SSL3_DEBUG_MSG("SSL.connection->send_packet: ignoring packet after close\n");
     return;
   }
 
@@ -137,16 +129,9 @@ void send_packet(object packet, int|void priority)
 		  PACKET_change_cipher_spec : PRI_urgent,
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
-#ifdef SSL3_DEBUG
-#if 0
-  if (packet->content_type == 22)
-    werror("SSL.connection->send_packet() called from:\n"
-	   "%s\n", describe_backtrace(backtrace()));
-#endif
-  werror(sprintf("SSL.connection->send_packet: type %d, desc %d, pri %d, %O\n",
+  SSL3_DEBUG_MSG("SSL.connection->send_packet: type %d, desc %d, pri %d, %O\n",
 		 packet->content_type, packet->description, priority,
-		 packet->fragment[..5]));
-#endif
+		 packet->fragment[..5]);
   switch (priority)
   {
   default:
@@ -180,10 +165,8 @@ string|int to_write()
     return closing ? 1 : "";
   }
 
-#ifdef SSL3_DEBUG
-  werror("SSL.connection: writing packet of type %d, %O\n",
-	 packet->content_type, packet->fragment[..6]);
-#endif
+  SSL3_DEBUG_MSG("SSL.connection: writing packet of type %d, %O\n",
+                 packet->content_type, packet->fragment[..6]);
   if (packet->content_type == PACKET_alert)
   {
     if (packet->level == ALERT_fatal)
@@ -226,24 +209,18 @@ int handle_alert(string s)
   }
   if (level == ALERT_fatal)
   {
-#ifdef SSL3_DEBUG
-    werror("SSL.connection: Fatal alert %d\n", description);
-#endif
+    SSL3_DEBUG_MSG("SSL.connection: Fatal alert %d\n", description);
     return -1;
   }
   if (description == ALERT_close_notify)
   {
-#ifdef SSL3_DEBUG
-    werror("SSL.connection: Close notify  alert %d\n", description);
-#endif
+    SSL3_DEBUG_MSG("SSL.connection: Close notify  alert %d\n", description);
     closing |= 2;
     return 1;
   }
   if (description == ALERT_no_certificate)
   {
-#ifdef SSL3_DEBUG
-    werror("SSL.connection: No certificate  alert %d\n", description);
-#endif
+    SSL3_DEBUG_MSG("SSL.connection: No certificate  alert %d\n", description);
 
     if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
     {
@@ -267,9 +244,7 @@ int handle_change_cipher(int c)
 {
   if (!expect_change_cipher || (c != 1))
   {
-#ifdef SSL3_DEBUG
-    werror("SSL.connection: handle_change_cipher: Unexcepted message!");
-#endif
+    SSL3_DEBUG_MSG("SSL.connection: handle_change_cipher: Unexcepted message!");
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1]));
     return -1;
   }
@@ -312,9 +287,7 @@ string|int got_data(string|int s)
 
     if (packet->is_alert)
     { /* Reply alert */
-#ifdef SSL3_DEBUG
-      werror("SSL.connection: Bad received packet\n");
-#endif
+      SSL3_DEBUG_MSG("SSL.connection: Bad received packet\n");
       send_packet(packet);
       if (alert_callback)
 	alert_callback(packet, current_read_state->seq_num, alert_context);
@@ -325,10 +298,8 @@ string|int got_data(string|int s)
     }
     else
     {
-#ifdef SSL3_DEBUG
-      werror("SSL.connection: received packet of type %d\n",
-	     packet->content_type);
-#endif
+      SSL3_DEBUG_MSG("SSL.connection: received packet of type %d\n",
+                     packet->content_type);
       switch (packet->content_type)
       {
       case PACKET_alert:
@@ -361,9 +332,7 @@ string|int got_data(string|int s)
 	 for (i = 0; (i < sizeof(packet->fragment)); i++)
 	 {
 	   err = handle_change_cipher(packet->fragment[i]);
-#ifdef SSL3_DEBUG
-	   werror("tried change_cipher: %d\n", err);
-#endif
+           SSL3_DEBUG_MSG("tried change_cipher: %d\n", err);
 	   if (err)
 	     return err;
 	 }

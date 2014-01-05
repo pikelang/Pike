@@ -6,8 +6,6 @@ NICK Mirar^
 USER mirar mistel.idonex.se irc.starchat.net :Mirar is testing
 */
 
-string __cvs_id="$Id$";
-
 import ".";
 
 class Request

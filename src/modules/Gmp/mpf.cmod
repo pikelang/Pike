@@ -17,6 +17,8 @@
 
 #if defined(USE_GMP) || defined(USE_GMP2)
 
+#include "my_gmp.h"
+
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -33,8 +35,6 @@
 #include "operators.h"
 #include "mapping.h"
 #include "gc.h"
-
-#include "my_gmp.h"
 
 #include <limits.h>
 #include <math.h>
@@ -111,7 +111,7 @@ PIKECLASS mpf
 {
   CVAR MP_FLT n;
 
-  static void get_mpf_from_digits(MP_FLT *tmp,
+  static void get_mpf_from_digits(MP_FLT *UNUSED(tmp),
 				  struct pike_string *digits,
 				  int base)
     {
@@ -139,11 +139,8 @@ PIKECLASS mpf
 	  break;
 	  
 	case T_OBJECT:
-	  if((s->u.object->prog == mpzmod_program)
-#ifdef AUTO_BIGNUM
-	     || (s->u.object->prog == bignum_program)
-#endif
-	     )
+	  if((s->u.object->prog == mpzmod_program) ||
+             (s->u.object->prog == bignum_program))
 	  {
 	    mpf_set_z(tmp, OBTOMPZ(s->u.object));
 	    break;
@@ -245,14 +242,8 @@ PIKECLASS mpf
     {
       struct object * ret;
       ref_push_object(fp->current_object);
-#ifdef AUTO_BIGNUM
       ret=clone_object(bignum_program, 1);
       mpzmod_reduce(ret);
-#else
-      ret=clone_object(mpzmod_program, 1);
-      push_int(mpz_get_si(OBTOMPZ(ret)));
-      free_object(ret);
-#endif
     }
 
   /*! @decl float get_float()
@@ -481,11 +472,8 @@ PIKECLASS mpf
 	  if(s->u.object->prog == mpf_program)
 	    return (MP_FLT *)s->u.object->storage;
 
-	  if((s->u.object->prog == mpzmod_program)
-#ifdef AUTO_BIGNUM
-	     || (s->u.object->prog == bignum_program)
-#endif
-	     )
+	  if((s->u.object->prog == mpzmod_program) ||
+             (s->u.object->prog == bignum_program))
 	  {
 	    prec=mpz_size(OBTOMPZ(s->u.object)) *
 	      sizeof(mp_limb_t) * CHAR_BITS;

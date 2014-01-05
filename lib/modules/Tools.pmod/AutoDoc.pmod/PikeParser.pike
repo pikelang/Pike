@@ -394,36 +394,44 @@ FunctionType parseFunction() {
   return f;
 }
 
-//! Parse an integer type.
-IntType parseInt() {
-  eat("int");
-  IntType i = IntType();
+
+StringType|IntType parseRange(StringType|IntType s)
+{
+  string tk;
   if (peekToken() == "(") {
     readToken();
     if (peekToken() != "..")
-      i->min = eatLiteral();
+      s->min = eatLiteral();
+
+    if( (<"bit","bits">)[(tk = peekToken())] )
+    {
+        eat(tk);
+        eat(")");
+        s->max = (string)((1<<(int)s->min)-1);
+        s->min = "0";
+        return s;
+    }
+
     eat("..");
+
     if (peekToken() != ")")
-      i->max = eatLiteral();
+      s->max = eatLiteral();
+
     eat(")");
   }
-  return i;
+  return s;
+}
+
+//! Parse an integer type.
+IntType parseInt() {
+  eat("int");
+  return parseRange(IntType());
 }
 
 //! Parse a string type.
 StringType parseString() {
   eat("string");
-  StringType s = StringType();
-  if (peekToken() == "(") {
-    readToken();
-    if (peekToken() != "..")
-      s->min = eatLiteral();
-    eat("..");
-    if (peekToken() != ")")
-      s->max = eatLiteral();
-    eat(")");
-  }
-  return s;
+  return parseRange(StringType());
 }
 
 //! Parse a '.'-separated identitifer string.
@@ -518,6 +526,7 @@ AttributeType parseAttributeType()
   string s = peekToken();
   if (sizeof(s) >= 2 && s[0] == '"') {
     t->attribute = s;
+    eat(s);
   } else parseError("expected attribute name");
   if (peekToken() == ",") {
     readToken();

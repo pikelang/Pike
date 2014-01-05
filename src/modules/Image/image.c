@@ -175,7 +175,7 @@ static void chrono(char *x)
 
 /***************** init & exit *********************************/
 
-static void init_image_struct(struct object *obj)
+static void init_image_struct(struct object *UNUSED(obj))
 {
   THIS->img=NULL;
   THIS->rgb.r=0;
@@ -186,7 +186,7 @@ static void init_image_struct(struct object *obj)
 /*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
 
-static void exit_image_struct(struct object *obj)
+static void exit_image_struct(struct object *UNUSED(obj))
 {
   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 /*
@@ -2879,7 +2879,6 @@ void image_yuv_to_rgb(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   char *err = NULL;
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
@@ -2919,10 +2918,6 @@ void image_yuv_to_rgb(INT32 args)
 exit_loop:
    ;	/* Needed to keep some compilers happy. */
    THREADS_DISALLOW();
-
-   if (err) {
-     Pike_error("%s\n", err);
-   }
 
    pop_n_elems(args);
    push_object(o);
@@ -4826,7 +4821,7 @@ void image_tobitmap(INT32 args)
 
 /***************** Serialization methods ***********************/
 
-void image__encode( INT32 args )
+void image__encode( INT32 UNUSED(args) )
 {
     push_int( THIS->xsize );
     push_int( THIS->ysize );
@@ -4865,6 +4860,14 @@ void image__decode( INT32 args )
     pop_stack();
 }
 
+static void image__size_object(INT32 args)
+{
+    INT_TYPE sz = 0;
+    if( THIS->img )
+        sz = THIS->xsize*THIS->ysize*sizeof(rgb_group)+RGB_VEC_PAD;
+    push_int(sz);
+}
+
 /***************** global init etc *****************************/
 
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
@@ -4880,7 +4883,7 @@ void init_image_image(void)
    ADD_STORAGE(struct image);
    
    ADD_FUNCTION("_sprintf", image__sprintf, tFunc(tInt , tString), 0 );
-
+   ADD_FUNCTION("_size_object", image__size_object, tFunc(tVoid,tInt), 0);
 
    ADD_FUNCTION("_encode", image__encode, tFunc(tVoid,tArray), 0 );
    ADD_FUNCTION("_decode", image__decode, tFunc(tArray,tVoid), 0 );

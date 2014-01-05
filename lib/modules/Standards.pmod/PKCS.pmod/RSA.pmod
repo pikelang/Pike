@@ -4,15 +4,17 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if 0
-#define WERROR werror
-#else
-#define WERROR(x)
-#endif
-
-#if constant(Standards.ASN1.Decode) && constant(Crypto.RSA)
+#if constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
+
+//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! 4.1.1.2. Optionally the DSA parameters are included, if a DSA
+//! object is given as argument.
+Sequence algorithm_identifier()
+{
+  return Sequence( ({ .Identifiers.rsa_id, Null() }) );
+}
 
 //! Create a DER-coded RSAPublicKey structure
 //! @param rsa
@@ -21,8 +23,8 @@ import Standards.ASN1.Types;
 //!   ASN1 coded RSAPublicKey structure
 string public_key(Crypto.RSA rsa)
 {
-  return Sequence(map( ({ rsa->get_n(), rsa->get_e() }),
-		       Integer))->get_der();
+  return Sequence(({ Integer(rsa->get_n()), Integer(rsa->get_e()) }))
+    ->get_der();
 }
 
 //! Create a DER-coded RSAPrivateKey structure
@@ -49,7 +51,7 @@ string private_key(Crypto.RSA rsa)
 
 //! Decode a DER-coded RSAPublicKey structure
 //! @param key
-//!   RSAPublicKey provided in ASN1 encoded format
+//!   RSAPublicKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
 Crypto.RSA parse_public_key(string key)
@@ -69,15 +71,13 @@ Crypto.RSA parse_public_key(string key)
 
 //! Decode a DER-coded RSAPrivateKey structure
 //! @param key
-//!   RSAPrivateKey provided in ASN1 encoded format
+//!   RSAPrivateKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
 Crypto.RSA parse_private_key(string key)
 {
-  WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
   
-  WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
       || (a->type_name != "SEQUENCE")
       || (sizeof(a->elements) != 9)
@@ -91,14 +91,44 @@ Crypto.RSA parse_private_key(string key)
   return rsa;
 }
 
-Sequence build_rsa_public_key(object rsa)
+//! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[rsa]
+//! object. See RFC 5280 section 4.1.2.7.
+Sequence build_public_key(Crypto.RSA rsa)
 {
-  return Sequence( ({
-    Sequence(
-      ({ .Identifiers.rsa_id, Null() }) ),
-    BitString(Sequence(
-      ({ Integer(rsa->get_n()), Integer(rsa->get_e()) }) )->get_der()) }) );
+  return Sequence(({
+                    algorithm_identifier(),
+                    BitString( public_key(rsa) ),
+                  }));
 }
+
+//! Returns the PKCS-1 algorithm identifier for RSA and the provided
+//! hash algorithm. One of @[MD2], @[MD5] or @[SHA1].
+Sequence signature_algorithm_id(Crypto.Hash hash)
+{
+  switch(hash->name())
+  {
+  case "md2":
+    return Sequence( ({ .Identifiers.rsa_md2_id, Null() }) );
+    break;
+  case "md5":
+    return Sequence( ({ .Identifiers.rsa_md5_id, Null() }) );
+    break;
+  case "sha1":
+    return Sequence( ({ .Identifiers.rsa_sha1_id, Null() }) );
+    break;
+  case "sha256":
+    return Sequence( ({ .Identifiers.rsa_sha256_id, Null() }) );
+    break;
+  case "sha384":
+    return Sequence( ({ .Identifiers.rsa_sha384_id, Null() }) );
+    break;
+  case "sha512":
+    return Sequence( ({ .Identifiers.rsa_sha512_id, Null() }) );
+    break;
+  }
+  return 0;
+}
+
 
 #else
 constant this_program_does_not_exist=1;

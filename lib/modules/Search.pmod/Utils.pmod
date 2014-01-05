@@ -696,14 +696,14 @@ class Logger {
     stderr_logging = _stderr_logging;
 
     // create table eventlog (event int unsigned auto_increment primary key,
-    // at timestamp(14) not null, code int unsigned not null, extra varchar(255))
+    // at timestamp not null, code int unsigned not null, extra varchar(255))
 
     Sql.Sql db = get_db();
 
     if(catch(db->query("SELECT code FROM eventlog WHERE event=0")))
       db->query("CREATE TABLE eventlog ("
 		"event int unsigned auto_increment primary key,"
-		"at timestamp(14) not null,"
+		"at timestamp not null,"
 		"profile int unsigned not null,"
 		"code int unsigned not null,"
 		"type enum('error','warning','notice') not null,"

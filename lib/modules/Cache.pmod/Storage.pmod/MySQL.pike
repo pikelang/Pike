@@ -1,19 +1,19 @@
-/*
- * An SQL-based storage manager
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * This storage manager provides the means to save data to an SQL-based 
- * backend.
- * 
- * For now it's mysql only, dialectization will be added at a later time.
- * Serialization should be taken care of by the low-level SQL drivers.
- *
- * Notice: the administrator is supposed to create the database and give
- * the roxen user enough privileges to write to it. It will be care
- * of this driver to create the database itself.
- *
- * 
- */
+
+//! An SQL-based storage manager
+//!
+//! This storage manager provides the means to save data to an SQL-based 
+//! backend.
+//!
+//! For now it's mysql only, dialectization will be added at a later time.
+//! Serialization should be taken care of by the low-level SQL drivers.
+//!
+//! @note
+//!   An administrator is supposed to create the database and give
+//!   the user enough privileges to write to it. It will be care
+//!   of this driver to create the database tables itself.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
@@ -43,8 +43,8 @@ int have_dependants=0;
 #endif // 1
 
 
-//database manipulation is done externally. This class only returns
-//values, with some lazy decoding.
+//! Database manipulation is done externally. This class only returns
+//! values, with some lazy decoding.
 class Data {
   inherit Cache.Data;
   private int _size;
@@ -177,7 +177,7 @@ void aget(string key,
 }
 
 
-
+//!
 void create(string sql_url) {
   array result=0;
   mixed err=0;

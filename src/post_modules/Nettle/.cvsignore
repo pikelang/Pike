@@ -1,9 +1,0 @@
-*.cmod.compiled
-cipher.c
-configure
-dependencies
-hash.c
-nettle.c
-nettle_config.h.in
-nt.c
-stamp-h.in

@@ -1188,7 +1188,7 @@ class YMD
 // ----------------------------------------
 
    string nice_print();
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1236,7 +1236,7 @@ class cYear
 //!	and also, for more practical use, from the year number.
 //!
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1318,7 +1318,7 @@ class cYear
    
 // ----------------
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1547,7 +1547,7 @@ class cMonth
    int nd; // number of days
    int nw; // number of weeks
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1625,7 +1625,7 @@ class cMonth
       }
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    { 
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
@@ -1849,7 +1849,7 @@ class cWeek
 //!	number.
 //!
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1932,7 +1932,7 @@ class cWeek
       }
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    { 
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
@@ -2189,7 +2189,7 @@ class cDay
 //!	from year and day of year, and from julian day
 //!	without extra fuzz.
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -2309,7 +2309,7 @@ class cDay
       }	 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -2823,36 +2823,37 @@ protected TimeRange dwim_zone(TimeRange origin,string zonename,
      zonename = zonename[..<3];
 
    if (origin->rules->abbr2zone[zonename])
-      zonename=origin->rules->abbr2zone[zonename];
+         zonename=origin->rules->abbr2zone[zonename];
 
-   Calendar.Rule.Timezone zone=Calendar.Timezone[zonename];
+   Calendar.Rule.Timezone zone = Calendar.Timezone[zonename];
+
    if (!zone)
    {
-      if (sscanf(zonename,"%[^+-]%s",string a,string b)==2 && a!="" && b!="")
-      {
-	 TimeRange tr=dwim_zone(origin,a,whut,@args);
-	 if (!tr) return 0;
+     if (sscanf(zonename,"%[^+-]%s",string a,string b)==2 && a!="" && b!="")
+     {
+       TimeRange tr=dwim_zone(origin,a,whut,@args);
+       if (!tr) return 0;
 
-	 return 
-	    dwim_tod(origin->set_timezone(
-	       Calendar.Timezone.make_new_timezone(
-		  tr->timezone(),
-		  Calendar.Timezone.decode_timeskew(b))),
-	       whut,@args);
-      }
-      if(!abbr2zones)
-	abbr2zones = master()->resolv("Calendar")["TZnames"]["abbr2zones"];
-      array pz=abbr2zones[zonename];
-      if (!pz) return 0;
-      foreach (pz,string zn)
-      {
-	 TimeRange try=dwim_zone(origin,zn,whut,@args);
-	 if (try && try->tzname()==zonename) return try;
-      }
-      return 0;
+       return
+         dwim_tod(origin->set_timezone(
+                                Calendar.Timezone.make_new_timezone(
+                                    tr->timezone(),
+                                    Calendar.Timezone.decode_timeskew(b))),
+                            whut,@args);
+     }
+     if(!abbr2zones)
+       abbr2zones = master()->resolv("Calendar")["TZnames"]["abbr2zones"];
+     array pz=abbr2zones[zonename];
+     if (!pz) return 0;
+     foreach (pz,string zn)
+     {
+       TimeRange try=dwim_zone(origin,zn,whut,@args);
+       if (try && try->tzname()==zonename) return try;
+     }
+     return 0;
    }
-   else
-      return dwim_tod(origin->set_timezone(zone),whut,@args);
+
+   return dwim_tod(origin->set_timezone(zone),whut,@args);
 }
 
 protected mapping(string:array) parse_format_cache=([]);
@@ -3053,7 +3054,6 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	       return 0; // need "am" or "pm"
 	 }
       }
-
       if (m->z) // zone
 	 low = dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
@@ -3203,6 +3203,14 @@ cDay dwim_day(string day,void|TimeRange context)
    error("Failed to dwim day from %O\n",day);
 }
 
+//! method Day dwim_time(string date_time)
+//! method Day dwim_time(string date_time, TimeRange context)
+//!	Tries a number of different formats on the given date_time.
+//!
+//! note:
+//!	Casts exception if it fails to dwim out a time.
+//!	"dwim" means do-what-i-mean.
+
 TimeofDay dwim_time(string what,void|TimeRange cx)
 {
    TimeofDay t;
@@ -3274,19 +3282,21 @@ TimeofDay http_time(string what, void|TimeRange cx)
 {
   TimeofDay t;
 
-  string date1 = "%D %M %Y"; // 2+1+3+1+4=11
-  string date2 = "%D-%M-%y"; // 2+1+3+1+2=9
-  string date3 = "%M %*[ ]%D"; // 2+1+2=5
-  string time = "%h:%m:%s"; // 2+1+2+1+2=8
+  constant date1 = "%D %M %Y"; // 2+1+3+1+4=11
+  constant date2 = "%D-%M-%y"; // 2+1+3+1+2=9
+  constant date3 = "%M %*[ ]%D"; // 2+1+2=5
+  constant time = "%h:%m:%s"; // 2+1+2+1+2=8
 
   // 3+2+ 11 +1+ 8 +4 = 29
-  string rfc1123_date = "%e, "+date1+" "+time+" %z";
+  // RFC 1123 (and RFC 822 which it bases its timestamp format on)
+  // supports more variations than we support here.
+  constant rfc1123_date = "%e, "+date1+" "+time+" %z";
 
   // 6+2+ 9 +1+ 8 +4 = 33
-  string rfc850_date = "%e, "+date2+" "+time+" %z";
+  constant rfc850_date = "%e, "+date2+" "+time+" %z";
 
   // 3+1+ 5 +1+ 8 +1+4 = 23
-  string asctime_date = "%e "+date3+" "+time+" %Y";
+  constant asctime_date = "%e "+date3+" "+time+" %Y";
 
   if( sizeof(what)<23 ) return 0;
 

@@ -46,7 +46,7 @@ struct fuse_cmd_storage
     struct fuse_cmd *cmd;
 };
 
-static void f_fuse_cmd_process( INT32 args )
+static void f_fuse_cmd_process( INT32 UNUSED(args) )
 {
     struct svalue *sp = Pike_sp;
     fuse_process_cmd(THISC->f, THISC->cmd);
@@ -248,7 +248,7 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
 }
 
 static int pf_read(const char *path, char *buf, size_t size, off_t offset,
-                    struct fuse_file_info *fi)
+                    struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( size );
@@ -266,7 +266,7 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
 }
 
 static int pf_write(const char *path, const char *buf, size_t size,
-		    off_t offset, struct fuse_file_info *fi)
+		    off_t offset, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_string( make_shared_binary_string(buf, size ) );
@@ -312,7 +312,7 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     return 0;
 }
 
-static int pf_release(const char *path, struct fuse_file_info *fi)
+static int pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     apply( global_fuse_obj, "release", 1 );
@@ -438,7 +438,7 @@ static int pf_access( const char *path, int mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_releasedir( const char *path, struct fuse_file_info *fi)
+static int pf_releasedir( const char *path, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     apply( global_fuse_obj, "releasedir", 1 );
@@ -447,7 +447,7 @@ static int pf_releasedir( const char *path, struct fuse_file_info *fi)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *fi)
+static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( nometa );
@@ -513,7 +513,7 @@ static void low_dispatch_fuse_command( void *ptr )
     pop_n_elems( Pike_sp - old );
 }
 
-static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a )
+static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *UNUSED(a) )
 {
     struct passon x = {
 	.f = f,
@@ -521,14 +521,23 @@ static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a
     };
     struct thread_state *state;
 
-    if((state = thread_state_for_id(th_self()))==NULL) 
+    if((state = thread_state_for_id(th_self()))==NULL)
     {
 	struct object *thread_obj;
-	fprintf( stderr, "Creating a new pike-thread\n");
+/*	fprintf( stderr, "Creating a new pike-thread\n");*/
 
 	mt_lock_interpreter();
+        /* Note: LEAKS. Better than a crash.
+
+           Since we never stop the threads anyway, currently, this is
+           less important than it might seem.
+        */
+        Pike_interpreter_pointer = malloc( sizeof( struct Pike_interpreter_struct ) );
 	init_interpreter();
-	Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+#ifdef PROFILING
+        Pike_interpreter.stack_bottom=((char *)&x);
+#endif
+	Pike_interpreter.stack_top=((char *)&state) + (thread_stack_size-16384) * STACK_DIRECTION;
 	Pike_interpreter.recoveries = NULL;
 	thread_obj = fast_clone_object(thread_id_prog);
 	INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +

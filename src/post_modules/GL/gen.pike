@@ -503,7 +503,7 @@ string gen()
 
 void main(int argc, array(string) argv)
 {
-  array(string) f = Stdio.File("stdin")->read()/"@@";
+  array(string) f = Stdio.File((argc>1?argv[1]:"stdin"))->read()/"@@";
   write(({
     "#line 1 \"auto.c.in\"\n",
     f[0],

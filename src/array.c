@@ -417,7 +417,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
       int e = v->size;
       struct svalue *s = ITEM(ret);
       while (e--) {
-	if (TYPEOF(*s) <= MAX_REF_TYPE) add_ref(s->u.dummy);
+	if (REFCOUNTED_TYPE(TYPEOF(*s))) add_ref(s->u.dummy);
 	s++;
       }
     }
@@ -646,6 +646,16 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   }
 }
 
+static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t start )
+{
+  ptrdiff_t e;
+  struct svalue *ip = ITEM(v);
+  for(e=start;e<v->size;e++)
+    if(is_eq(ip+e,s))
+      return e;
+  return -1;
+}
+
 /**
  * Search for in svalue in an array.
  * @param v the array to search
@@ -656,40 +666,23 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 				   ptrdiff_t start)
 {
-  ptrdiff_t e;
-
 #ifdef PIKE_DEBUG
   if(start<0)
     Pike_fatal("Start of find_index is less than zero.\n");
 #endif
-
-  check_destructed(s);
-
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
-  /* Why search for something that is not there? 
+  check_destructed(s);
+
+  /* Why search for something that is not there?
    * however, we must explicitly check for searches
    * for destructed objects/functions
    */
   if((v->type_field & (1 << TYPEOF(*s)))  ||
      (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
      ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
-  {
-    if(start)
-    {
-      for(e=start;e<v->size;e++)
-	if(is_eq(ITEM(v)+e,s)) return e;
-    }else{
-      TYPE_FIELD t=0;
-      for(e=0;e<v->size;e++)
-      {
-	if(is_eq(ITEM(v)+e,s)) return e;
-	t |= 1<<TYPEOF(ITEM(v)[e]);
-      }
-      v->type_field=t;
-    }
-  }
+    return fast_array_search( v, s, start );
   return -1;
 }
 
@@ -2041,6 +2034,107 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 #endif
 }
 
+/** Remove all instances of an svalue from an array
+*/
+static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
+{
+  size_t size = a->size;
+  size_t from=0, to=0;
+  TYPE_FIELD to_type = 1<<TYPEOF(*b);
+  TYPE_FIELD type_field = 0;
+  ONERROR ouch;
+  struct svalue *ip=ITEM(a), *dp=ip;
+  int destructive = 1;
+
+  if( size == 0 )
+    return copy_array(a);
+
+  if( a->refs > 1 )
+  {
+    /* We only need to do anything if the value exists in the array. */
+    ptrdiff_t off  = fast_array_search( a, b, 0 );
+    TYPE_FIELD tmp;
+
+    if( off == -1 )
+      /* We still need to return a new array. */
+      return copy_array(a);
+
+    /* In this case we generate a new array and modify that one. */
+    destructive = 0;
+    from = (size_t)off;
+    tmp = a->type_field;
+    a = allocate_array_no_init(size-1,0);
+    a->type_field = tmp;
+    SET_ONERROR( ouch, do_free_array, a );
+    dp = ITEM(a);
+
+    /* Copy the part of the array that is not modified first.. */
+    for( to=0; to<from; to++, ip++, dp++)
+    {
+      assign_svalue_no_free(dp, ip);
+      type_field |= 1<<TYPEOF(*dp);
+    }
+    a->size = from;
+  }
+
+#define MATCH_COPY(X)  do {                                                 \
+    if( X )                                                                 \
+    {  /* include entry */                                                  \
+      type_field|=1<<TYPEOF(*ip);                                           \
+      if(!destructive)                                                      \
+        assign_svalue_no_free(dp,ip);                                       \
+      else if(ip!=dp)                                                       \
+        *dp=*ip;                                                            \
+      dp++;                                                                 \
+      if( !destructive ) a->size++;                                         \
+    }                                                                       \
+    else if( destructive )                                                  \
+      free_svalue( ip );                                                    \
+  } while(0)
+
+
+  if( UNSAFE_IS_ZERO( b ) )
+  {
+    /* Remove 0-valued elements.
+       Rather common, so a special case is motivated.
+
+       This saves time becase there is no need to check if 'b' is zero
+       for each loop.
+    */
+    for( ;from<size; from++, ip++ )
+      MATCH_COPY( !UNSAFE_IS_ZERO(ip) );
+  }
+  else if((a->type_field & to_type) || ((a->type_field | to_type) & BIT_OBJECT))
+  {
+    for( ; from<size; from++, ip++ )
+      MATCH_COPY( !is_eq(ip,b) );
+  }
+  else /* b does not exist in the array. */
+  {
+    add_ref(a);
+    return a;
+  }
+#undef MATCH_COPY
+
+  if( dp != ip )
+  {
+    a->type_field = type_field;
+    a->size = dp-ITEM(a);
+  }
+
+  if( !destructive )
+    UNSET_ONERROR( ouch );
+  else
+    add_ref(a);
+
+  if( a->size )
+    return a;
+
+  free_array(a);
+  add_ref(&empty_array);
+  return &empty_array;
+}
+
 /** Subtract an array from another.
 */
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
@@ -2051,10 +2145,12 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
     array_check_type_field(b);
   }
 #endif
-  check_array_for_destruct(a);
+  if( b->size == 1 )
+    return subtract_array_svalue( a, ITEM(b) );
 
-  if((a->type_field & b->type_field) ||
-     ((a->type_field | b->type_field) & BIT_OBJECT))
+  if(b->size && 
+     ((a->type_field & b->type_field) ||
+      ((a->type_field | b->type_field) & BIT_OBJECT)))
   {
     return merge_array_with_order(a, b, PIKE_ARRAY_OP_SUB);
   }else{
@@ -2063,9 +2159,10 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
       add_ref(a);
       return a;
     }
-    return slice_array(a,0,a->size);
+    return copy_array(a);
   }
 }
+
 
 /** And two arrays together.
  */
@@ -2296,8 +2393,9 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
  */
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 {
-  a=resize_array(a,a->size+1);
-  array_set_index(a, a->size-1, s);
+  INT32 size = a->size;
+  a=resize_array(a, size+1);
+  array_set_index(a, size, s);
   return a;
 }
 
@@ -2337,7 +2435,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     s=str->str;
     end=s+(str->len << str->size_shift);
 
-    ret=allocate_array(10);
+    ret=allocate_array(2);
     ret->size=0;
 
     mojt=compile_memsearcher(MKPCHARP_STR(del),
@@ -2408,13 +2506,16 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 PMOD_EXPORT struct pike_string *implode(struct array *a,
                                         struct pike_string *del)
 {
-  INT32 len, e;
+  INT32 len, e, delims;
   PCHARP r;
   struct pike_string *ret;
   struct svalue *ae;
   int max_shift = del->size_shift;
 
   len=0;
+  delims = 0;
+
+
 
   for(e=a->size, ae=a->item; e--; ae++)
     switch(TYPEOF(*ae))
@@ -2426,43 +2527,46 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
       default:
 	Pike_error("Array element %d is not a string\n", ae-a->item);
       case T_STRING:
+	delims++;
         len+=ae->u.string->len + del->len;
         if(ae->u.string->size_shift > max_shift)
 	  max_shift=ae->u.string->size_shift;
 	break;
     }
-  if(len) len-=del->len;
-  
+
+  if(delims)
+  {
+    len-=del->len;
+    delims--;
+  }
+
+  if( a->size == 1 && TYPEOF(*ITEM(a)) == PIKE_T_STRING )
+  {
+      struct pike_string * res = ITEM(a)->u.string;
+      res->refs++;
+      return res;
+  }
+
   ret=begin_wide_shared_string(len,max_shift);
   r=MKPCHARP_STR(ret);
   len = del->len;
   if((e = a->size))
-    for(ae=a->item;;ae++)
+    for(ae=a->item;e--;ae++)
     {
-      switch(TYPEOF(*ae))
+      if (TYPEOF(*ae) == T_STRING)
       {
-        case T_STRING:
-        {
-          struct pike_string *tmp = ae->u.string;
-          pike_string_cpy(r,tmp);
-          INC_PCHARP(r,tmp->len);
-          break;
-        }
-        default:
-        case T_INT:
-          if(!--e)
-	    goto ret;
-          continue;
-      }
-      if(!--e)
-        break;
-      if(len)
-      {
-        pike_string_cpy(r,del);
-        INC_PCHARP(r,len);
+	struct pike_string *tmp = ae->u.string;
+	pike_string_cpy(r,tmp);
+	INC_PCHARP(r,tmp->len);
+	if(len && delims)
+	{
+	  delims--;
+	  pike_string_cpy(r,del);
+	  INC_PCHARP(r,len);
+	}
       }
     }
-ret:
+
   return low_end_shared_string(ret);
 }
 
@@ -2521,43 +2625,30 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
     TYPE_FIELD new_types = 0;
+    struct array *aa;
     if ((flags & 1) && (a->refs == 1)) {
       /* Destructive operation possible. */
-      ref_push_array(a);
-      a->type_field |= BIT_UNFINISHED;
-      for (e=0; e < a->size; e++)
-      {
-	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
-	Pike_sp+=args;
-	/* FIXME: Don't throw apply errors from apply_svalue here. */
-	apply_svalue(ITEM(a)+e,args);
-	new_types |= 1 << TYPEOF(Pike_sp[-1]);
-	assign_svalue(ITEM(a)+e, &Pike_sp[-1]);
-	pop_stack();
-      }
-      a->type_field = new_types;
-#ifdef PIKE_DEBUG
-      array_check_type_field(a);
-#endif
+      add_ref(aa = a);
+      aa->type_field |= BIT_UNFINISHED;
     } else {
-      struct array *aa;
-      push_array(aa = allocate_array_no_init(0, a->size));
-      for (e=0; (e<a->size) && (e < aa->malloced_size); e++)
-      {
-	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
-	Pike_sp+=args;
-	/* FIXME: Don't throw apply errors from apply_svalue here. */
-	apply_svalue(ITEM(a)+e,args);
-	new_types |= 1 << TYPEOF(Pike_sp[-1]);
-	assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
-	aa->size = e+1;
-	pop_stack();
-      }
-      aa->type_field = new_types;
-#ifdef PIKE_DEBUG
-      array_check_type_field(aa);
-#endif
+      aa = allocate_array(a->size);
     }
+    SET_CYCLIC_RET(aa);
+    push_array(aa);
+    for (e=0; e < a->size; e++)
+    {
+      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+      Pike_sp+=args;
+      /* FIXME: Don't throw apply errors from apply_svalue here. */
+      apply_svalue(ITEM(a)+e, args);
+      new_types |= 1 << TYPEOF(Pike_sp[-1]);
+      assign_svalue(ITEM(aa)+e, &Pike_sp[-1]);
+      pop_stack();
+    }
+    aa->type_field = new_types;
+#ifdef PIKE_DEBUG
+    array_check_type_field(aa);
+#endif
     stack_pop_n_elems_keep_top(args);
   }
   else {
@@ -2628,8 +2719,8 @@ void array_replace(struct array *a,
 		   struct svalue *to)
 {
   ptrdiff_t i = -1;
-
-  while((i=array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
+  check_array_for_destruct(a);
+  while((i=fast_array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }
 
 #ifdef PIKE_DEBUG

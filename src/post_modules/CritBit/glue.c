@@ -19,9 +19,12 @@
 #include <stdio.h>
 
 extern void pike_init_inttree_module();
+extern void pike_init_bignumtree_module();
 extern void pike_init_tree_module();
 extern void pike_init_floattree_module();
+
 extern void pike_exit_inttree_module();
+extern void pike_exit_bignumtree_module();
 extern void pike_exit_tree_module();
 extern void pike_exit_floattree_module();
 
@@ -29,10 +32,12 @@ PIKE_MODULE_INIT {
     pike_init_inttree_module();
     pike_init_tree_module();
     pike_init_floattree_module();
+    pike_init_bignumtree_module();
 }
 
 PIKE_MODULE_EXIT {
     pike_exit_inttree_module();
     pike_exit_tree_module();
     pike_exit_floattree_module();
+    pike_exit_bignumtree_module();
 }

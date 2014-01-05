@@ -22,7 +22,7 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-#define PRGM_NAME "Locale.Charset.ISO2022"
+#define PRGM_NAME "Charset.ISO2022"
 
 
 static struct program *iso2022dec_program = NULL;
@@ -1488,7 +1488,7 @@ static void f_set_repcb(INT32 args)
   pop_n_elems(args);
 }
 
-static void init_stor(struct object *o)
+static void init_stor(struct object *UNUSED(o))
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -1500,7 +1500,7 @@ static void init_stor(struct object *o)
   pop_n_elems(1);
 }
 
-static void exit_stor(struct object *o)
+static void exit_stor(struct object *UNUSED(o))
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -1512,7 +1512,7 @@ static void exit_stor(struct object *o)
   free_string_builder(&s->strbuild);
 }
 
-static void init_enc_stor(struct object *o)
+static void init_enc_stor(struct object *UNUSED(o))
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
@@ -1527,7 +1527,7 @@ static void init_enc_stor(struct object *o)
   pop_n_elems(1);
 }
 
-static void exit_enc_stor(struct object *o)
+static void exit_enc_stor(struct object *UNUSED(o))
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;

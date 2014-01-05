@@ -120,19 +120,25 @@ PIKE_MODULE_INIT
     rfc822ctype[(int)"<>@,;:\\/?"[i]] = CT_SPECIAL;
 
   /* Add global functions */
-  add_function_constant( "decode_base64", f_decode_base64,
-			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_base64", f_encode_base64,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  /* Really tFunc(tStr7, tStr8), but cut down on warnings for now. */
+  ADD_FUNCTION2( "decode_base64", f_decode_base64,
+                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_base64", f_encode_base64,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_qp", f_encode_qp,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_qp", f_encode_qp,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_uue", f_encode_uue,
-			 "function(string,void|string:string)",
-			 OPT_TRY_OPTIMIZE);
+
+  ADD_FUNCTION2( "encode_uue", f_encode_uue,
+                 tFunc(tStr tOr(tVoid,tStr),tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
 
@@ -186,7 +192,7 @@ static void f_decode_base64( INT32 args )
     SIGNED char *src;
     ptrdiff_t cnt;
     INT32 d = 1;
-    int pads = 0;
+    int pads = 3;
 
     init_string_builder( &buf, 0 );
 
@@ -202,14 +208,26 @@ static void f_decode_base64( INT32 args )
 	  d=1;
 	}
       } else if (*src=='=') {
-	/* A pad character has been encountered.
-	   Increase pad count, and remove unused bits from d. */
-	pads++;
-	d>>=2;
+	/* A pad character has been encountered. */
       }
 
     /* If data size not an even multiple of 3 bytes, output remaining data */
+    if (d & 0x3f000000) {
+      /* NOT_REACHED, but here for symmetry. */
+      pads = 0;
+    } else if (d & 0xfc0000) {
+      pads = 1;
+      /* Remove unused bits from d. */
+      d >>= 2;
+    } else if (d & 0x3f000) {
+      pads = 2;
+      /* Remove unused bits from d. */
+      d >>= 4;
+    }
     switch(pads) {
+    case 0:
+      /* NOT_REACHED, but here for symmetry. */
+      string_builder_putchar( &buf, (d>>16)&0xff );
     case 1:
       string_builder_putchar( &buf, (d>>8)&0xff );
     case 2:

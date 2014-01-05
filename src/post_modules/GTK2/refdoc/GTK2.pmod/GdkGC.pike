@@ -14,12 +14,11 @@ GDK2.GC copy( GTK2.GdkGC source );
 //!
 //!
 
-static GDK2.GC create( GTK2.Widget context, mapping|void attributes );
+protected GDK2.GC create( GTK2.Widget context, mapping|void attributes );
 //! The argument is either a W(Widget) or a GDK2(Drawable) in
 //! which the gc will be valid.
 //!
 //!
-
 
 GTK2.GdkScreen get_screen( );
 //! Gets the screen.

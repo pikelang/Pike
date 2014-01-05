@@ -4,9 +4,6 @@ OBJS=image_webp.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
-# Note: This module requires precompiler API 3 or later.
-PRECOMPILER_ARGS=--api 3
-
 @dynamic_module_makefile@
 
 image_webp.o : $(SRCDIR)/image_webp.c

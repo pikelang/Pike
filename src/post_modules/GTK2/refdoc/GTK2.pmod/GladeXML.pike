@@ -8,7 +8,7 @@
 
 inherit G.Object;
 
-static GTK2.GladeXML create( string filename_or_buffer, int|void size, string|void root, string|void domain );
+protected GTK2.GladeXML create( string filename_or_buffer, int|void size, string|void root, string|void domain );
 //! Creates a new GladeXML object (and the corresponding widgets) from the
 //! XML file.  Optionally it will only build the interface from the widget
 //! node root.  This feature is useful if you only want to build say a

@@ -91,7 +91,6 @@ import ".";
 #define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value->cast_to_int())
 #define ASN1_RESULTSTRING(X)		((X)->elements[1]->elements[2]->value)
 #define ASN1_RESULTREFS(X)		((X)->elements[1]->elements[3]->elements)
-#define ASN1_RAWDEBUG(X)		((X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
@@ -157,8 +156,8 @@ protected function(string:string) get_attr_encoder (string attr)
   return 0;
 }
 
-typedef string|Locale.Charset.DecodeError|
-  array(string|Locale.Charset.DecodeError) ResultAttributeValue;
+typedef string|Charset.DecodeError|
+  array(string|Charset.DecodeError) ResultAttributeValue;
 
 typedef mapping(string:ResultAttributeValue) ResultEntry;
 
@@ -268,9 +267,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	  string errmsg = describe_error (err) +			\
 	    "The string is the DN of an entry.\n";			\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    DN = Locale.Charset.DecodeError (DN, -1, 0, errmsg);	\
+	    DN = Charset.DecodeError (DN, -1, 0, errmsg);               \
 	  else								\
-	    throw (Locale.Charset.DecodeError (DN, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (DN, -1, 0, errmsg));            \
 	}								\
       } while (0)
 
@@ -296,9 +295,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0], \
 		     decoder, descr1, descr2);				\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
 	  else								\
-	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
 	}								\
       } while (0)
 
@@ -312,9 +311,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     "in entry with DN %O.\n",				\
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0]); \
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
 	  else								\
-	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
 	}								\
       } while (0)
 
@@ -329,7 +328,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	    ent[attr] = vals;
 	  }
 	  else
-	    foreach (vals; int i; string|Locale.Charset.DecodeError val) {
+	    foreach (vals; int i; string|Charset.DecodeError val) {
 	      DECODE_VALUE (attr, val, decoder);
 	      vals[i] = val;
 	    }
@@ -462,7 +461,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!    valued.
     //!
     //!    If @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given
-    //!    to @[search] then @[Locale.Charset.DecodeError] objects are
+    //!    to @[search] then @[Charset.DecodeError] objects are
     //!    returned in place of a string whenever an attribute value
     //!    fails to be decoded.
     //!
@@ -470,7 +469,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!    This special entry contains the object name of the entry as
     //!    a distinguished name.
     //!
-    //!    This might also be a @[Locale.Charset.DecodeError] if
+    //!    This might also be a @[Charset.DecodeError] if
     //!    @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given to
     //!    @[search].
     //!  @endmapping
@@ -480,8 +479,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @throws
     //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
-    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
-    //!  if there is an error decoding the DN or any attribute value.
+    //!  given to @[search], a @[Charset.DecodeError] is thrown if
+    //!  there is an error decoding the DN or any attribute value.
     //!
     //! @note
     //!  It's undefined whether or not destructive operations on the
@@ -526,7 +525,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //! @note
     //!  In Pike 7.6 and earlier, this field was incorrectly returned
     //!  in UTF-8 encoded form for LDAPv3 connections.
-    string|Locale.Charset.DecodeError get_dn()
+    string|Charset.DecodeError get_dn()
     {
       string|array(string) dn = fetch()->dn;
       return stringp (dn) ? dn : dn[0];	// To cope with SEARCH_MULTIVAL_ARRAYS_ONLY.
@@ -563,8 +562,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @throws
     //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
-    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
-    //!  if there is an error decoding the DN or any attribute value.
+    //!  given to @[search], a @[Charset.DecodeError] is thrown if
+    //!  there is an error decoding the DN or any attribute value.
     //!
     //! @seealso
     //!   @[fetch]

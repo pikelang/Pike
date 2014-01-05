@@ -82,7 +82,7 @@ int test_charset_table(string t) {
       names += ({ name });
   }
 
-  constant path = "lib/modules/Locale.pmod/Charset.pmod/module.pmod";
+  constant path = "lib/modules/Charset.pmod/module.pmod";
   string code = Stdio.read_file(path);
   if(!code)
   {
@@ -139,10 +139,14 @@ int test_realpike() {
   foreach( ({ "lib", /* "bin", "tools" */ }), string dir)
     foreach(Filesystem.Traversion(dir); string path; string file)
       if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
-	if(!has_value(Stdio.read_file(path+file),"#pike")) {
+      {
+        string f = Stdio.read_file(path+file);
+        if(!f) { write("Unable to read %O\n", path+file); continue; }
+	if(!has_value(f,"#pike")) {
 	  write("%s%s is missing a #pike directive.\n", path,file);
 	  status = 0;
 	}
+      }
   foreach(Filesystem.Traversion("src"); string path; string file)
     if(file=="module.pmod.in" &&
        !has_value(Stdio.read_file(path+file),"#pike")) {

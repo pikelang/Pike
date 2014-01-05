@@ -19,7 +19,7 @@ GTK2.FileFilter add_pixbuf_formats( );
 //!
 //!
 
-static GTK2.FileFilter create( );
+protected GTK2.FileFilter create( );
 //! Creates a new W(FileFilter) with no rules added to it.  Such a filter
 //! doesn't accept any files, so is not particularly useful until you add rules
 //! with add_mime_type(), add_pattern(), or add_custom().  To create a filter

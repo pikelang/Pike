@@ -1,7 +1,5 @@
 /* vim:syntax=c
  */
-#ifdef cmod___CMOD__
-
 #include "common.h"
 
 #include "critbit/string2svalue.h"
@@ -42,7 +40,7 @@ PIKECLASS StringTree {
 #cmod_define iterator_class Iterator
 #cmod_define tree_class StringTree
 #cmod_define cmod_OBJ2_TREE OBJ2_STRINGTREE
-#cmod_define T_KEY PIKE_T_STRING
+#cmod_define T_KEY BIT_STRING
 #cmod_define key_ptype string
 #cmod_define sval_type string
 #cmod_define sample_key "foo"
@@ -71,10 +69,3 @@ void pike_init_tree_module(void) {
 void pike_exit_tree_module(void) {
     EXIT
 }
-
-#else
-void pike_init_tree_module(void) {
-    add_integer_constant("this_program_does_not_exist", 1, 0);
-}
-void pike_exit_tree_module(void) {}
-#endif

@@ -6,6 +6,7 @@
    I'm not sure. /Zino */
 
 //! @appears Image.PSD
+//! PhotoShop Document image format.
 
 //! @ignore
  inherit Image._PSD;

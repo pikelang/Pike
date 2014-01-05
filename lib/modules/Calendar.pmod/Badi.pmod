@@ -544,7 +544,7 @@ class Vahid
       return sprintf("v%d", v);
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {

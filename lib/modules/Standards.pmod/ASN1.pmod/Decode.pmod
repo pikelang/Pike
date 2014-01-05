@@ -4,8 +4,6 @@
 
 //! Decodes a DER object.
 
-#if constant(Gmp.mpz)
-
 //! Primitive unconstructed ASN1 data type.
 class Primitive
 {
@@ -37,7 +35,7 @@ class Primitive
   }
 
 #ifdef COMPATIBILITY
-  string debug_string() {
+  __deprecated__ string debug_string() {
     return sprintf("primitive(%d)", combined_tag);
   }
 #endif
@@ -46,17 +44,13 @@ class Primitive
 //! Constructed type
 class Constructed
 {
-  //! @decl inherit Types.Object
-  inherit .Types.Object;
+  inherit .Types.Compound;
+  constant type_name = "CONSTRUCTED";
 
-  constant constructed = 1;
   int combined_tag;
 
   //! raw encoded  contents
   string raw;
-
-  //! elements of object
-  array elements;
 
   string get_der() { return raw; }
   int get_combined_tag() { return combined_tag; }
@@ -67,14 +61,10 @@ class Constructed
   //! get class
   int get_cls() { return .Types.extract_cls(combined_tag); }
 
-  void create(int t, string r, array e) {
+  void create(int t, string r, array(.Types.Object) e) {
     combined_tag = t;
     raw = r;
     elements = e;
-  }
-
-  protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
   }
 }
 
@@ -99,7 +89,7 @@ class Constructed
 {
   int raw_tag = data->get_uint(1);
   int len;
-  string contents;
+  string(0..255) contents;
 
 #ifdef ASN1_DEBUG
   werror("decoding raw_tag %x\n", raw_tag);
@@ -204,7 +194,7 @@ mapping(int:program(.Types.Object)) universal_types =
 //!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.Primitive] or
 //!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
-.Types.Object simple_der_decode(string data)
+.Types.Object simple_der_decode(string(0..255) data)
 {
   return der_decode(ADT.struct(data), universal_types);
 }
@@ -212,8 +202,4 @@ mapping(int:program(.Types.Object)) universal_types =
 #ifdef COMPATIBILITY
 constant primitive = Primitive;
 constant constructed = Constructed;
-#endif
-
-#else
-constant this_program_does_not_exist=1;
 #endif

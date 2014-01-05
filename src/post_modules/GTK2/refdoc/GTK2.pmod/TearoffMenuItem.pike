@@ -19,7 +19,9 @@
 
 inherit GTK2.MenuItem;
 
-static GTK2.TearoffMenuItem create( mapping|void props );
+inherit GTK2.Activatable;
+
+protected GTK2.TearoffMenuItem create( mapping|void props );
 //! Create a new tearoff menu item
 //!
 //!

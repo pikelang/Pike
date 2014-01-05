@@ -43,6 +43,9 @@
 /* Define this if you have mpz_bin_ui */
 #undef HAVE_MPZ_BIN_UI
 
+/* Define this if you have mpz_divisible_p */
+#undef HAVE_MPZ_DIVISIBLE_P
+
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
 

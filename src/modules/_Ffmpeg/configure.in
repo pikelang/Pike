@@ -105,7 +105,10 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
       AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
       dnl PIKE_FEATURE(FFmpeg)
 
-      AC_CHECK_FUNCS(avcodec_decode_audio avcodec_decode_audio2 av_codec_next)
+      AC_CHECK_FUNCS([avcodec_decode_audio avcodec_decode_audio2 \
+	              avcodec_decode_audio3 avcodec_decode_audio4 \
+		      av_codec_next avcodec_open avcodec_open2
+		    ])
     else 
       PIKE_FEATURE(FFmpeg,[no (not working)])
     fi
@@ -202,6 +205,35 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     AC_MSG_RESULT($pike_cv_AVCodecContext_has_frame_rate)
     if test "x$pike_cv_AVCodecContext_has_frame_rate" = "xyes"; then
       AC_DEFINE(HAVE_AVCODECCONTEXT_FRAME_RATE)
+    fi
+
+    AC_MSG_CHECKING(if AVCodec has encode2)
+    AC_CACHE_VAL(pike_cv_AVCodec_has_encode2, [
+      AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+#endif
+#endif
+      ], [
+        AVCodec codec;
+	codec.encode2 = 0;
+      ], pike_cv_AVCodec_has_encode2=yes,
+      pike_cv_AVCodec_has_encode2=no)
+    ])
+    AC_MSG_RESULT($pike_cv_AVCodec_has_encode2)
+    if test "x$pike_cv_AVCodec_has_encode2" = "xyes"; then
+      AC_DEFINE(HAVE_AVCODEC_ENCODE2)
     fi
   fi
 fi

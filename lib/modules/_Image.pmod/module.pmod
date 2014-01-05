@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+//! @appears Image
+
 protected constant fmts = ([
   "image/x-pnm" : "PNM",
   "image/x-webp" : "WebP",
@@ -17,7 +19,6 @@ protected constant fmts = ([
   "application/x-photoshop" : "PSD",
 ]);
 
-//! @belongs Image
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
 Image.Image decode( string data )
@@ -27,7 +28,6 @@ Image.Image decode( string data )
         return res->image;
 }
 
-//! @belongs Image
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
 mapping _decode( string data )
@@ -166,7 +166,6 @@ mapping _decode( string data )
   ]);
 }
 
-//! @belongs Image
 //! Attempts to decode @[data] as image layer data. Additional
 //! arguments to the various formats decode_layers method can
 //! be passed through @[opt].
@@ -204,7 +203,6 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
   return i;
 }
 
-//! @belongs Image
 //! Reads the file @[file] and, if the file is compressed
 //! with gzip or bzip, attempts to decompress it by calling
 //! @tt{gzip@} and @tt{bzip2@} in a @[Process.create_process]
@@ -238,7 +236,6 @@ string read_file(string file)
   return Stdio.read_file( file );
 }
 
-//! @belongs Image
 //! Loads in a file, which need not be an image file. If no
 //! argument is given the data will be taken from stdin. If
 //! a file object is given, it will be read to the end of the
@@ -259,7 +256,6 @@ local string load_file( void|object|string file )
   return data;
 }
 
-//! @belongs Image
 //! Loads a file with @[load_file] and decodes it with @[_decode].
 mapping _load(void|object|string file)
 {
@@ -269,7 +265,6 @@ mapping _load(void|object|string file)
    return _decode( data );
 }
 
-//! @belongs Image
 //! Helper function to load an image layer from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with _decode.
@@ -282,7 +277,6 @@ Image.Layer load_layer(void|object|string file)
       return Image.Layer( (["image":m->image]) );
 }
 
-//! @belongs Image
 //! Helper function to load all image layers from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with decode_layers. Extra
@@ -293,7 +287,6 @@ array(Image.Layer) load_layers(void|object|string file, mixed|void opts)
   return decode_layers( load_file( file ), opts );
 }
 
-//! @belongs Image
 //! Helper function to load an image from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with _decode.
@@ -310,7 +303,6 @@ Image.Image load(void|object|string file)
 //! @decl Image.Layer filled_circle_layer(int xd,int yd,Image.Color.Color color)
 //! @decl Image.Layer filled_circle_layer(int d,int r,int g,int b)
 //! @decl Image.Layer filled_circle_layer(int xd,int yd,int r,int g,int b)
-//! @belongs Image
 //!
 //!	Generates a filled circle of the 
 //!	dimensions xd x yd (or d x d).

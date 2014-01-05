@@ -3,12 +3,9 @@ AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT(___MIME)
 
-PIKE_FEATURE_OK(MIME)
-
 if test "x$ac_cv_prog_cc_cross" = "xyes"; then
   AC_MSG_WARN([Cross-compiling, assuming char is unsigned.])
   ac_cv_c_char_unsigned=yes
-  PIKE_FEATURE(MIME,[yes (assuming unsigned char)])
 fi
 AC_C_CHAR_UNSIGNED
 

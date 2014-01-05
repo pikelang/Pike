@@ -11,6 +11,21 @@ test_eq( Unicode.is_wordchar(0), 0 )
 test_eq( Unicode.is_wordchar(65), 1 )
 test_eq( Unicode.is_wordchar(-1), 0 )
 
+test_eq( Unicode.is_rtlchar(0), 0 )
+test_eq( Unicode.is_rtlchar(-1), 0 )
+test_eq( Unicode.is_rtlchar(0x5bd), 0 )
+test_eq( Unicode.is_rtlchar(0x5be), 1 )
+test_eq( Unicode.is_rtlchar(0x5bf), 0 )
+test_eq( Unicode.is_rtlchar(0x600), 0 )
+test_eq( Unicode.is_rtlchar(0x608), 1 )
+test_eq( Unicode.is_rtlchar(0x202b), 1 )
+test_eq( Unicode.is_rtlchar(0x202e), 1 )
+
+test_eq( Unicode.is_rtlstring(""), 0 )
+test_eq( Unicode.is_rtlstring("hej"), 0 )
+test_eq( Unicode.is_rtlstring("hej\x5besan"), 1 )
+test_eq( Unicode.is_rtlstring("\uffffffff"), 0)
+
 test_true( sizeof(Unicode.version) )
 test_true( stringp(Unicode.version) )
 

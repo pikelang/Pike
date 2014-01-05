@@ -1,9 +1,0 @@
-AC_INIT(sprintf.c)
-
-AC_CONFIG_HEADER(config.h)
-
-AC_MODULE_INIT()
-
-AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

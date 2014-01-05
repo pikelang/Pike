@@ -148,6 +148,27 @@ class Client
     if(catch(cmd("EHLO "+gethostname())))
       cmd("HELO "+gethostname(), "greeting failed.");
   }
+
+  protected string punycode_address(string address)
+  {
+    // FIXME: Add support RFC5336 and the UTF8SMTP EHLO-extension.
+    catch { address = utf8_to_string(address); };
+    array(string|int) tokens =
+      MIME.decode_words_tokenized_remapped(address);
+    int in_hostname;
+    foreach(tokens; int i; string|int token) {
+      if (token == '@') in_hostname = 1;
+      if (!stringp(token)) continue;
+      if (in_hostname) {
+	token = map(token/".", Standards.IDNA.to_ascii) * ".";
+      } else {
+	token = string_to_utf8(token);
+      }
+      tokens[i] = token;
+    }
+
+    return MIME.quote(tokens);
+  }
   
   //! Sends a mail message from @[from] to the mail addresses
   //! listed in @[to] with the mail body @[body]. The body
@@ -162,9 +183,9 @@ class Client
   //!   200-399 an exception will be thrown.
   void send_message(string from, array(string) to, string body)
   {
-    cmd("MAIL FROM: <" + from + ">");
+    cmd("MAIL FROM: <" + punycode_address(from) + ">");
     foreach(to, string t) {
-      cmd("RCPT TO: <" + t + ">");
+      cmd("RCPT TO: <" + punycode_address(t) + ">");
     }
     cmd("DATA");
 

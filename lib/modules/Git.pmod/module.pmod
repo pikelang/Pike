@@ -1,4 +1,12 @@
+#pike __REAL_VERSION__
 
+//! This is a module for interacting with the Git
+//! distributed version control system.
+
+//! The git binary to use.
+//!
+//! Defaults to @expr{"git"@}, but may be overridden
+//! to select a different binary.
 string git_binary = "git";
 
 //! A normal (non-executable) file.
@@ -20,17 +28,55 @@ constant MODE_DIR = 040000;
 constant NULL_SHA1 = "0000000000000000000000000000000000000000";
 
 //! Start a git process.
+//!
+//! @param options
+//!   Options for @[Process.Process()].
+//!
+//! @param git_dir
+//!   Directory containing the Git repository. May be @expr{UNDEFINED@}
+//!   to specify the Git repository for the current directory.
+//!
+//! @param command
+//!   Git subcommand to execute.
+//!
+//! @param args
+//!   Arguemnts for @[command].
+//!
+//! @returns
+//!   Returns the corresponding @[Process.Process] object.
 Process.Process low_git(mapping(string:mixed) options,
 			string git_dir, string command, string ... args)
 {
-  return Process.Process(({ git_binary, "--git-dir", git_dir,
-			    command, @args }), options);
+  if (git_dir) {
+    return Process.Process(({ git_binary, "--git-dir", git_dir,
+			      command, @args }), options);
+  }
+  return Process.Process(({ git_binary, command, @args }), options);
 }
 
 //! Run a git command, and get the output.
+//!
+//! @param git_dir
+//!   Directory containing the Git repository. May be @expr{UNDEFINED@}
+//!   to specify the Git repository for the current directory.
+//!
+//! @param command
+//!   Git subcommand to execute.
+//!
+//! @param args
+//!   Arguemnts for @[command].
+//!
+//! @returns
+//!   Returns the output on @tt{stdout@} from running the command
+//!   on success, and throws and error on failure.
 string git(string git_dir, string command, string ... args)
 {
-  array(string) cmd = ({ git_binary, "--git-dir", git_dir, command, @args });
+  array(string) cmd;
+  if (git_dir) {
+    cmd = ({ git_binary, "--git-dir", git_dir, command, @args });
+  } else {
+    cmd = ({ git_binary, command, @args });
+  }
   mapping(string:string|int) res = Process.run(cmd);
   if (res->exitcode) {
     werror("CWD: %O\n", getcwd());

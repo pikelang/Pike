@@ -17,7 +17,7 @@
 
 inherit GTK2.Scale;
 
-static GTK2.Vscale create( GTK2.Adjustment settings_or_min_props, float|void max, float|void step );
+protected GTK2.Vscale create( GTK2.Adjustment settings_or_min_props, float|void max, float|void step );
 //! Used to create a new hscale widget.
 //! Either pass an W(Adjustment), or three floats representing min, max, and
 //! step values.

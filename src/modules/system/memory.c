@@ -106,11 +106,16 @@ static void memory_shm(INT32 args);
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
 
-static void init_memory(struct object *o)
+static void init_memory(struct object *UNUSED(o))
 {
    THIS->p=NULL;
    THIS->size=0;
    THIS->flags=0;
+}
+
+static void memory__size_object( INT32 UNUSED(args) )
+{
+    push_int(THIS->size);
 }
 
 static void MEMORY_FREE( struct memory_storage *storage )
@@ -142,7 +147,7 @@ static void MEMORY_FREE( struct memory_storage *storage )
    if (!(STORAGE->p))							\
       Pike_error("%s: no memory in this Memory object\n",FUNC);
 
-static void exit_memory(struct object *o)
+static void exit_memory(struct object *UNUSED(o))
 {
    MEMORY_FREE(THIS);
 }
@@ -945,6 +950,9 @@ void init_system_memory(void)
 
    ADD_FUNCTION("allocate",memory_allocate,
 		tFunc(tIntPos tOr(tByte,tVoid),tVoid),0);
+
+   ADD_FUNCTION("_size_object",memory__size_object,
+                tFunc(tVoid,tInt),0);
    
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 

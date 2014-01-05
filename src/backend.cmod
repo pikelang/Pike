@@ -37,6 +37,7 @@
 #include "svalue.h"
 #include "gc.h"
 #include "module_support.h"
+#include "block_allocator.h"
 
 /*
  * Things to do
@@ -132,8 +133,8 @@
 
 /* Declarations for the legacy backend interface stuff. */
 
-#include "block_alloc_h.h"
-BLOCK_ALLOC (compat_cb_box, N/A);
+static struct compat_cb_box * alloc_compat_cb_box();
+static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
 /* CALL OUT STUFF */
@@ -362,7 +363,7 @@ PIKECLASS Backend
     return b->backend_obj;
   }
 
-  static int wakeup_callback(struct fd_callback_box *box, int event)
+  static int wakeup_callback(struct fd_callback_box *box, int UNUSED(event))
   {
     char buffer[1024];
     fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
@@ -433,6 +434,13 @@ PIKECLASS Backend
    * Call outs.
    */
 
+  /*! @class CallOut
+   *!
+   *! Represents a single call_out in the call_out list.
+   *!
+   *! @seealso
+   *!   @[call_out()]
+   */
   PIKECLASS CallOut
     program_flags PROGRAM_USES_PARENT;
     flags ID_PROTECTED|ID_PRIVATE|ID_USED;
@@ -444,6 +452,10 @@ PIKECLASS Backend
     CVAR struct Backend_CallOut_struct **prev_fun;
     CVAR struct Backend_CallOut_struct *next_arr;
     CVAR struct Backend_CallOut_struct **prev_arr;
+    /*! @decl static array args
+     *!
+     *! The array containing the function and arguments.
+     */
     PIKEVAR array args
       flags ID_STATIC;
     CVAR struct object *this;
@@ -653,7 +665,23 @@ PIKECLASS Backend
       EXIT_BLOCK(this);
     }
 
-    /* Start a new call out */
+    /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
+     *!
+     *!   Start a new call out.
+     *!
+     *!   This is the low-level implementation of @[call_out()].
+     *!
+     *!   @[call_out()] is essentially implemented as:
+     *!   @code
+     *!     array call_out(mixed fun, int|float seconds, mixed ... args)
+     *!     {
+     *!       return CallOut(seconds, fun, @@args)->args;
+     *!     }
+     *!   @endcode
+     *!
+     *! @seealso
+     *!   @[call_out()]
+     */
     PIKEFUN void create(int|float seconds, mixed fun, mixed ... extra_args)
       flags ID_PROTECTED;
     {
@@ -811,6 +839,8 @@ PIKECLASS Backend
       UNPROTECT_CALL_OUTS();
     }
   }
+  /*! @endclass
+   */
 
 #undef THIS
 #define THIS THIS_BACKEND
@@ -826,9 +856,9 @@ PIKECLASS Backend
 
   }
 
-  static void count_memory_in_call_outs(struct callback *foo,
-					void *bar,
-					void *gazonk)
+  static void count_memory_in_call_outs(struct callback *UNUSED(foo),
+					void *UNUSED(bar),
+					void *UNUSED(gazonk))
   {
     backend_count_memory_in_call_outs(default_backend);
   }
@@ -885,7 +915,8 @@ PIKECLASS Backend
  *!   This value can be sent to eg @[find_call_out()] or @[remove_call_out()].
  *!
  *! @seealso
- *!   @[remove_call_out()], @[find_call_out()], @[call_out_info()]
+ *!   @[remove_call_out()], @[find_call_out()], @[call_out_info()],
+ *!   @[CallOut]
  */
    PIKEFUN array call_out(mixed f, int|float t, mixed ... rest)
      {
@@ -1003,16 +1034,25 @@ PIKECLASS Backend
        return call_count;
      }
 
-
-   static int backend_find_call_out(struct Backend_struct *me,
-				    struct svalue *fun)
+   /* NB: Calls Pike code, so MUST NOT be used in a PROTECT_CALL_OUTS()
+    *     context.
+    *
+    *     Note that a non-NULL return value only indicates that the
+    *     fun was found before the calls of is_eq(), which may have
+    *     caused the call_out to be removed.
+    */
+   static struct array *backend_find_call_out_info(struct Backend_struct *me,
+						   struct svalue *fun)
      {
        size_t hval, fun_hval;
        struct Backend_CallOut_struct *c;
-       struct svalue *save_sp;
-       
-       if(!me->num_pending_calls) return -1;
-       
+       struct svalue *save_sp = Pike_sp;
+       DECLARE_PROTECT_CALL_OUTS;
+
+       if(!me->num_pending_calls) return NULL;
+
+       PROTECT_CALL_OUTS();
+
        if(TYPEOF(*fun) == T_ARRAY)
        {
 	 hval=PTR_TO_INT(fun->u.array);
@@ -1025,16 +1065,15 @@ PIKECLASS Backend
 	     if(CALL(c->pos) != c)
 	       Pike_fatal("Call_out->pos not correct!\n");
 #endif
-	     return c->pos;
+	     UNPROTECT_CALL_OUTS();
+	     add_ref(c->args);
+	     return c->args;
 	   }
 	 }
        }
-       /* Note: is_eq() may call Pike code (which we want),
-	*       but Pike code may change the hash tables...
-	*/
+
        fun_hval=hash_svalue(fun);
        hval = fun_hval % me->hash_size;
-       save_sp = Pike_sp;
        for(c=me->call_hash[hval].fun;c;c=c->next_fun)
        {
 	 if(c->fun_hval == fun_hval)
@@ -1043,28 +1082,57 @@ PIKECLASS Backend
 	   if(CALL(c->pos) != c)
 	     Pike_fatal("Call_out->pos not correct!\n");
 #endif
-	   push_int(c->pos);
-	   push_svalue(ITEM(c->args));
+	   /* Delay the is_eq() call until we've finished
+	    * scanning the hash table.
+	    */
+	   ref_push_array(c->args);
 	 }
+       }
+       UNPROTECT_CALL_OUTS();
+
+       /* Note: is_eq() may call Pike code (which we want),
+	*       however, we can't let it modify the hash
+	*       table while we're scanning it.
+	*/
+       while (Pike_sp > save_sp) {
+	 struct array *res = Pike_sp[-1].u.array;
+	 /* FIXME: Use CYCLIC! */
+	 if (is_eq(fun, ITEM(res))) {
+	   add_ref(res);
+	   pop_n_elems(Pike_sp - save_sp);
+	   return res;
+	 }
+	 pop_stack();
        }
 
-       /* Check if any of the potential hits we found is a match. */
-       while (Pike_sp > save_sp) {
-	 if (is_eq(fun, Pike_sp-1)) {
-	   INT_TYPE pos;
-#ifdef PIKE_DEBUG
-	   if (TYPEOF(Pike_sp[-2]) != T_INT)
-	     Pike_fatal("Call_out->pos out of sync!\n");
-#endif
-	   pos = Pike_sp[-2].u.integer;
-	   pop_n_elems(Pike_sp - save_sp);
-	   return pos;
-	 }
-	 pop_n_elems(2);
-       }
-       return -1;
+       return NULL;
      }
 
+   /* Typically used in a PROTECT_CALL_OUTS() context. */
+   static int backend_find_call_out(struct Backend_struct *me,
+				    struct array *co_info)
+     {
+       size_t hval, fun_hval;
+       struct Backend_CallOut_struct *c;
+
+       if(!co_info || !me->num_pending_calls) return -1;
+
+       hval=PTR_TO_INT(co_info);
+       hval%=me->hash_size;
+       for(c=me->call_hash[hval].arr;c;c=c->next_arr)
+       {
+	 if(c->args == co_info)
+	 {
+#ifdef PIKE_DEBUG
+	   if(CALL(c->pos) != c)
+	     Pike_fatal("Call_out->pos not correct!\n");
+#endif
+	   return c->pos;
+	 }
+       }
+
+       return -1;
+     }
 
 /*! @decl int _do_call_outs()
  *!
@@ -1110,29 +1178,39 @@ PIKECLASS Backend
  *!   @[call_out()], @[remove_call_out()], @[call_out_info()]
  */
    PIKEFUN int find_call_out(function|mixed f)
+   {
+     struct Backend_struct *me=THIS;
+     struct array *co_info;
+
+     backend_verify_call_outs(me);
+
+     co_info = backend_find_call_out_info(me, f);
+
+     if(!co_info)
      {
-       struct Backend_struct *me=THIS;
+       /* NB: This is a very exotic value! */
+       SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
+       Pike_sp++;
+     } else {
        int e;
+       struct timeval now;
        DECLARE_PROTECT_CALL_OUTS;
-
-       backend_verify_call_outs(me);
-
        PROTECT_CALL_OUTS();
-       e=backend_find_call_out(me, f);
+       e = backend_find_call_out(me, co_info);
        pop_n_elems(args);
-       if(e==-1)
-       {
+       free_array(co_info);
+       if (e == -1) {
 	 /* NB: This is a very exotic value! */
 	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }else{
-	 struct timeval now;
 	 INACCURATE_GETTIMEOFDAY(&now);
 	 push_int(CALL(e)->tv.tv_sec - now.tv_sec);
        }
        UNPROTECT_CALL_OUTS();
-       backend_verify_call_outs(me);
      }
+     backend_verify_call_outs(me);
+   }
 
 /*! @decl int remove_call_out(function f)
  *! @decl int remove_call_out(array id)
@@ -1152,14 +1230,26 @@ PIKECLASS Backend
  *!   @[call_out_info()], @[call_out()], @[find_call_out()]
  */
    PIKEFUN int remove_call_out(function|mixed f)
+   {
+     struct Backend_struct *me=THIS;
+     struct array *co_info;
+
+     backend_verify_call_outs(me);
+
+     co_info = backend_find_call_out_info(me, f);
+
+     if(!co_info)
      {
-       struct Backend_struct *me=THIS;
+       /* NB: This is a very exotic value! */
+       SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
+       Pike_sp++;
+     } else {
        int e;
        DECLARE_PROTECT_CALL_OUTS;
 
        PROTECT_CALL_OUTS();
        backend_verify_call_outs(me);
-       e=backend_find_call_out(me,f);
+       e = backend_find_call_out(me, co_info);
        backend_verify_call_outs(me);
        if(e!=-1)
        {
@@ -1190,9 +1280,11 @@ PIKECLASS Backend
 	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }
+       free_array(co_info);
        backend_verify_call_outs(me);
        UNPROTECT_CALL_OUTS();
      }
+   }
 
 /* return an array containing info about all call outs:
  * ({  ({ delay, caller, function, args, ... }), ... })
@@ -1281,6 +1373,7 @@ PIKECLASS Backend
     (FD) < (ME)->fd_boxes_start + (ME)->fd_boxes_size ?			\
     GET_ACTIVE_BOX (ME, FD) : NULL)
 
+
    static struct fd_callback_box *safe_get_box (struct Backend_struct *me, int fd)
    {
      if (fd < 0) {
@@ -1299,6 +1392,11 @@ PIKECLASS Backend
 	 return me->fd_boxes[fd];
      }
      return NULL;
+   }
+
+   PMOD_EXPORT struct fd_callback_box *get_fd_callback_box_for_fd( struct Backend_struct *me, int fd )
+   {
+       return safe_get_box( me, fd );
    }
 
 /* NOTE: Some versions of AIX seem to have a
@@ -2290,6 +2388,8 @@ PIKECLASS Backend
 #endif
   }
 
+  /*! @decl void create()
+   */
   PIKEFUN void create()
     flags ID_PROTECTED;
   {
@@ -2828,7 +2928,7 @@ int pdb_MY_FD_SET2(int *pfd, int fd, int filter, int fflags)
  else
    EV_SET(ev, fd, filter, EV_ADD|EV_ENABLE, fflags, 0, 0);
   
-  return kevent(*pfd, ev, 2, NULL, 0, NULL);
+  return kevent(*pfd, ev, 1, NULL, 0, NULL);
 }
 
 #define pdb_MY_FD_CLR_RDBAND(SET, FD)
@@ -2915,7 +3015,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 #define PDB_CHECK_ERROR_EVENT(EVENT, MASK)	PDB_CHECK_EVENT(EVENT, MASK)
 #endif /* PB_CHECK_ERROR_EVENT */
 
-#ifdef RBBAND_IS_SPECIAL
+#ifdef RDBAND_IS_SPECIAL
 #  define pb_MY_FD_CLR_RDBAND(SET, FD) pb_MY_FD_CLR (SET, FD, MY_POLLRDBAND)
 #else
 #  define pb_MY_FD_CLR_RDBAND(SET, FD)
@@ -2979,15 +3079,20 @@ PIKECLASS PollDeviceBackend
 
   DECLARE_STORAGE
 
+  /*! @decl void set_signal_event_callback(int signum, function cb)
+   *!
+   *! @note
+   *!   This function is a noop except for the @tt{kqueue@} case.
+   */
   PIKEFUN void set_signal_event_callback(int signum, function cb)
   {
-	int q;
+    int q;
 #ifdef BACKEND_USES_KQUEUE
-  struct kevent ev[2];
-  EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
-  q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
+    struct kevent ev[2];
+    EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
+    q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
 #endif
-	pop_n_elems(args);
+    pop_n_elems(args);
   }
 
   /*
@@ -3022,7 +3127,7 @@ PIKECLASS PollDeviceBackend
 #elif defined(BACKEND_USES_KQUEUE)
 
     /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
-    struct kevent ev[2];
+    struct kevent ev[3];
     int nev = 0;
     if (wanted_events & PIKE_BIT_FD_READ ||
 	wanted_events & PIKE_BIT_FD_READ_OOB) {
@@ -3031,12 +3136,12 @@ PIKECLASS PollDeviceBackend
     }
     if (wanted_events & PIKE_BIT_FD_WRITE ||
 	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
-      EV_SET(ev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
+      EV_SET(ev+nev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_FS_EVENT) {
 // kqueue TODO generate fflags from the high bits of the wanted_events argument.
-      EV_SET(ev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
+      EV_SET(ev+nev, fd, MY_POLLFSEVENT, EV_ADD, 0, 0, 0);
       nev++;
     }
     if (nev)
@@ -3124,7 +3229,7 @@ PIKECLASS PollDeviceBackend
   }
 
 #if defined(BACKEND_USES_CFRUNLOOP)
-static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info) {
+static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackTypes), void *info) {
     struct kevent kev;
     struct timespec tv;
     struct PollDeviceBackend_struct * this_backend;
@@ -3177,7 +3282,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
   }
 
   /* Called in the child after fork(). */
-  static void reopen_all_pdb_backends(struct callback *cb, void *a, void *b)
+  static void reopen_all_pdb_backends(struct callback *UNUSED(cb), void *UNUSED(a), void *UNUSED(b))
   {
     int i;
     for (i=0; i < num_pdb_backends; i++) {
@@ -3414,11 +3519,11 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, v
 	poll_timeout = -1;
       else if(next_timeout->tv_sec < 0)
 	poll_timeout = 0;
-      else if(next_timeout->tv_sec > (INT_MAX/1002))
-	poll_timeout = INT_MAX;
+      else if(next_timeout->tv_sec > (INT_MAX/1002)) /* about 24 days.*/
+	poll_timeout = INT_MAX/1002;
       else
-	poll_timeout = (next_timeout->tv_sec*1000) +
-	  next_timeout->tv_usec/1000;
+        poll_timeout = MAXIMUM((next_timeout->tv_sec*1000) +
+			       next_timeout->tv_usec/1000,2);
 #elif defined(TIMEOUT_IS_TIMEVAL)
       poll_timeout = *next_timeout;
 #elif defined(TIMEOUT_IS_TIMESPEC)
@@ -3482,6 +3587,7 @@ else
       done_something = 1;
 
 
+#if 0
       /* First clear revents for all the fds.
        *
        * FIXME: This is done for paranoia reasons. If all code that
@@ -3508,6 +3614,7 @@ else
           box->rflags = 0;
 	}
       }
+#endif
 
       /* Then flag the active events.
        */
@@ -4269,7 +4376,7 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLFSEVENT)) {
+	  if (PDB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
 			  THR_NO, me->id, fd));
 	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
@@ -4493,8 +4600,7 @@ PIKECLASS PollBackend
 /*! @endclass
  */
 
-#endif /* HAVE_POLL */
-
+#else /* HAVE_POLL */
 /*! @class SelectBackend
  *! @inherit __Backend
  *!
@@ -4988,6 +5094,7 @@ PIKECLASS SelectBackend
 
 /*! @endclass
  */
+#endif
 
 /*! @module DefaultBackend
  *!   This is the @[Backend] object that files and call_outs are
@@ -5108,18 +5215,29 @@ struct compat_cb_box
   int flags; /* fs event flags */
 };
 
-#include "block_alloc.h"
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT read_data
-
 #undef DMALLOC_DESCRIBE_BLOCK
 #define DMALLOC_DESCRIBE_BLOCK(X) do {					\
     fprintf (stderr, "  backend: %p, fd: %d, events: 0x%x\n",		\
 	     X->box.backend, X->box.fd, X->box.events);			\
   } while (0)
 
-BLOCK_ALLOC_FILL_PAGES (compat_cb_box, 1)
+static struct block_allocator compat_cb_allocator = BA_INIT_PAGES(sizeof(struct compat_cb_box), 1);
+
+static struct compat_cb_box * alloc_compat_cb_box() {
+    return ba_alloc(&compat_cb_allocator);
+}
+
+static void really_free_compat_cb_box(struct compat_cb_box * b) {
+    ba_free(&compat_cb_allocator, b);
+}
+
+void count_memory_in_compat_cb_boxs(size_t * n, size_t * s) {
+    ba_count_all(&compat_cb_allocator, n, s);
+}
+
+void free_all_compat_cb_box_blocks() {
+    ba_destroy(&compat_cb_allocator);
+}
 
 static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 {
@@ -5396,7 +5514,6 @@ static struct callback *mem_callback;
 void init_backend(void)
 {
   IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
-  init_compat_cb_box_blocks();
   IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
   INIT;
   IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));

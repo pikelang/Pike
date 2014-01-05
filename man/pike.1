@@ -6,8 +6,8 @@
 .\" On OSF/1 ]L will already contain the wanted string.
 .if !\*(]LPike .ds ]L $Date: 2008/08/12 20:18:50 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
-.nr mj 7
-.nr mn 8
+.nr mj 8
+.nr mn 0
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -95,15 +95,38 @@ Use
 .I master_program
 instead of the ordinary master program.
 .TP
+.B \-p
+Increase the level of profiling with 1 (debug).
+.TP
+.BI \-p num
+Set the level of profiling to
+.I num
+(debug).
+.TP
+.BI \-ps
+Enable stack profiling (debug).
+.TP
 .BI \-q num
 End execution after executing
 .I num
 Pike instructions.
 .TP
+.B \-rt
+Turn on runtime checking of arguments to function calls, and soft casts.
+.TP
+.B \-rT
+Turn on
+.B #pragma strict_types
+for all files.
+.TP
 .BI \-s num
 Set Pike stack size to
 .I num
 (minimum is 256).
+.TP
+.BI \-ss num
+Set the pike C-level thread stack size to
+.I num.
 .TP
 .B \-t
 Increase the level of runtime trace with 1 (debug).
@@ -115,22 +138,6 @@ Set the level of runtime trace to
 .TP
 .B \-tg
 Log the gc runs to stderr.
-.TP
-.B \-p
-Increase the level of profiling with 1 (debug).
-.TP
-.BI \-p num
-Set the level of profiling to
-.I num
-(debug).
-.TP
-.B \-rt
-Turn on runtime checking of arguments to function calls, and soft casts.
-.TP
-.B \-rT
-Turn on
-.B #pragma strict_types
-for all files.
 .LP
 The following options are supported by the default master program:
 .TP

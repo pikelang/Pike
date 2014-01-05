@@ -1,11 +1,14 @@
 // Extracts IPTC Information Interchange Model data (aka "IPTC
 // headers") from JPEG files created with PhotoShop.
-// 
-// http://www.iptc.org/IIM/
 //
 // Anders Johansson & Henrik Grubbström
 
 #pike __REAL_VERSION__
+
+//! IPTC Information Interchange Model data
+//! (aka "IPTC header") extraction.
+//!
+//! @url{http://www.iptc.org/IIM/@}
 
 mapping(int:mapping(int:string)) fields =
   ([
@@ -255,6 +258,21 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
   return res;
 }
 
+//! Get IPTC information from an open file.
+//!
+//! Supported embedding formats are:
+//!
+//! @ul
+//!   @item
+//!     PhotoShop Document (aka PSD).
+//!   @item
+//!     Postscript and Embedded Postscript.
+//!   @item
+//!     Joint Picture Experts Group (aka JPEG).
+//! @endul
+//!
+//! @returns
+//!   Returns a mapping containing any found IPTC IIM data.
 mapping get_information(Stdio.File fd)
 {
   string marker = fd->read(2);
@@ -319,6 +337,12 @@ mapping get_information(Stdio.File fd)
 	break;
       }
     } while (1);
+  } else if (marker == "8B") {
+    //  May be a native PSD file. It should start with "8BPS\0\1" to be valid.
+    string marker2 = fd->read(4);
+    if (marker2 == "PS\0\1") {
+      photoshop_data = "8BPS\0\1" + fd->read();
+    }
   } else {
     //werror("unknown marker: %O neither JPEG nor Postscript\n", marker);
     return ([]);

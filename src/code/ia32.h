@@ -143,11 +143,7 @@ void ia32_init_interpreter_state(void);
 
 #define CALL_MACHINE_CODE(pc)                                           \
   do {                                                                  \
-    /* The test is needed to get the labels to work... */               \
-    if (pc) {                                                           \
-      ((int (*)(void))(pc)) ();						\
-      goto inter_return_label;                                          \
-    }                                                                   \
+    ((int (*)(void))(pc)) ();						\
   } while(0)
 
 #else /* !INS_ENTRY */

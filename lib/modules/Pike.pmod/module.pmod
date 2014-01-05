@@ -65,7 +65,9 @@ constant SmallBackend = __builtin.SelectBackend;
 //! This is the most suitable backend implementation if you only want
 //! to monitor a small number of @[Stdio.File] objects.
 
+#if constant(__builtin.SelectBackend)
 constant SelectBackend = __builtin.SelectBackend;
+#endif
 
 constant DefaultBackend = __builtin.__backend;
 

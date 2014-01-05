@@ -12,7 +12,7 @@ struct buffer
   unsigned int allocated_size;
   /* The actual allocated size */
 
-  unsigned char *data;
+  char *data;
 
   struct pike_string *str;
   /* Used when read_only==1, to save memory. Data points to str->str,

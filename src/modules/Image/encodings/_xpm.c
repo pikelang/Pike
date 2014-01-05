@@ -263,7 +263,7 @@ void f__xpm_write_rows( INT32 args )
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
-    Pike_error("Sluta pilla på interna saker..\n");
+    Pike_error("Expected images as arguments\n");
 
   if (pixels->size < iimg->ysize + colors->size) {
     SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
@@ -335,7 +335,7 @@ void f__xpm_write_rows( INT32 args )
        if(ind > 127) 
        {
          p_colors[id] = (rgba_group *)realloc(p_colors[id],sizeof(rgba_group)*256);
-         MEMSET(p_colors[id]+sizeof(rgba_group)*128,0,sizeof(rgba_group)*128);
+         MEMSET(p_colors[id]+128, 0, sizeof(rgba_group)*128);
        }
        p_colors[id][ind]=parse_color_line( c, bpc );
      }

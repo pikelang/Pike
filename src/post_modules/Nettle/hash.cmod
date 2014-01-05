@@ -12,6 +12,7 @@
 /* For this_object() */
 #include "object.h"
 #include "module_support.h"
+#include "pike_memory.h"
 
 #include "nettle_config.h"
 
@@ -27,6 +28,15 @@ DECLARATIONS
 #include <nettle/md2.h>
 #endif
 #include <nettle/sha.h>
+#ifdef HAVE_NETTLE_SHA3_H
+#include <nettle/sha3.h>
+#endif
+#ifdef HAVE_NETTLE_RIPEMD160_H
+#include <nettle/ripemd160.h>
+#endif
+#ifdef HAVE_NETTLE_GOSTHASH94_H
+#include <nettle/gosthash94.h>
+#endif
 #include <nettle/nettle-meta.h>
 
 #include <stdio.h>
@@ -47,70 +57,71 @@ werror(const char *format, ...)
 #define werror(x)
 #endif
 
-static struct program *Fd_ref_program = NULL;
-static struct program *Fd_program = NULL;
-
 /*! @module Nettle */
 
-/*! @class HashInfo
+/*! @class Hash
  *!
  *! Represents information about a hash algorithm, such as
  *! name, digest size, and internal block size.
  */
-PIKECLASS HashInfo
+PIKECLASS Hash
 {
+  /*! @decl inherit __builtin.Nettle.Hash
+   */
+  INHERIT "__builtin.Nettle.Hash";
+
   CVAR const struct nettle_hash *meta;
 
-  /*! @decl string name(void)
+  /*! @decl string(0..255) name(void)
    *!
    *! Returns a human readable name for the algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_text(THIS->meta->name);
     }
 
-  /*! @decl string digest_size(void)
+  /*! @decl int(0..) digest_size(void)
    *!
    *! Returns the size of a hash digests.
    */
-  PIKEFUN int digest_size()
+    PIKEFUN int(0..) digest_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_int(THIS->meta->digest_size);
     }
 
-  /*! @decl string block_size(void)
+  /*! @decl int(0..) block_size(void)
    *!
    *! Returns the internal block size of the hash algorithm.
    */
-  PIKEFUN int block_size()
+    PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.\n");
+	Pike_error("Hash not properly initialized.\n");
 
       push_int(THIS->meta->block_size);
     }
 
 
-  /*! @decl string hash(string data)
+  /*! @decl string(0..255) hash(string(0..255) data)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{HashState()->update(data)->digest()@}, where HashState is
-   *!  the hash state class corresponding to this HashInfo.
+   *!  @expr{State()->update(data)->digest()@}, where State is
+   *!  the hash state class corresponding to this Hash.
    *!
    *! @seealso
-   *!   @[HashState()->update()] and @[HashState()->digest()].
+   *!   @[State()->update()] and @[State()->digest()].
    */
-  PIKEFUN string hash(string in)
+    PIKEFUN string(0..255) hash(string(0..255) in)
     optflags OPT_TRY_OPTIMIZE;
   {
     void *ctx;
@@ -119,7 +130,7 @@ PIKECLASS HashInfo
     const struct nettle_hash *meta = THIS->meta;
 
     if (!meta)
-      Pike_error("HashInfo not properly initialized.\n");
+      Pike_error("Hash not properly initialized.\n");
     NO_WIDE_STRING(in);
 
     ctx = (void *)alloca(meta->context_size);
@@ -145,12 +156,25 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
-  /*! @decl string hash(Stdio.File file, void|int bytes)
+  int is_stdio_file(struct object *o)
+  {
+    struct program *p = o->prog;
+    INT32 i = p->num_inherits;
+    while( i-- )
+    {
+      if( p->inherits[i].prog->id == PROG_STDIO_FD_ID ||
+          p->inherits[i].prog->id == PROG_STDIO_FD_REF_ID )
+        return 1;
+    }
+    return 0;
+  }
+
+  /*! @decl string(0..255) hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{HashState()->update(Stdio.read_file(file))->digest()@},
-   *!  where HashState is the hash state class corresponding to this
-   *!  HashInfo.
+   *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
+   *!  where State is the hash state class corresponding to this
+   *!  Hash.
    *!
    *! @param bytes
    *!   The number of bytes of the file object @[file] that should be
@@ -158,10 +182,10 @@ PIKECLASS HashInfo
    *!   hashed.
    *!
    *! @seealso
-   *!   @[Stdio.File], @[HashState()->update()] and
-   *!   @[HashState()->digest()].
+   *!   @[Stdio.File], @[State()->update()] and
+   *!   @[State()->digest()].
    */
-  PIKEFUN string hash(object in, void|int bytes)
+  PIKEFUN string(0..255) hash(object in, void|int bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
@@ -174,37 +198,10 @@ PIKECLASS HashInfo
     if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
 
-    /* Verify that the input is a Stdio.Fd or Stdio.Fd_ref */
-    if (!Fd_program)
-      {
-	push_text("files.Fd");
-	SAFE_APPLY_MASTER("resolv",1);
-	Fd_program = program_from_svalue(Pike_sp-1);
-	if (!Fd_program) {
-	  pop_stack();
-	  Pike_error("Unable to resolv files.Fd.\n");
-	}
-	add_ref(Fd_program);
-	pop_stack( );
-      }
+    if (!is_stdio_file(in))
+      Pike_error("Object not Fd or Fd_ref, or subclass.\n");
 
-    if (!Fd_ref_program)
-      {
-	push_text("files.Fd_ref");
-	SAFE_APPLY_MASTER("resolv",1);
-	Fd_ref_program = program_from_svalue(Pike_sp-1);
-	if (!Fd_ref_program) {
-	  pop_stack();
-	  Pike_error("Unable to resolv files.Fd_ref.\n");
-	}
-	add_ref(Fd_ref_program);
-	pop_stack( );
-      }
-
-    if (!get_storage(in, Fd_program) && !get_storage(in, Fd_ref_program) )
-      Pike_error("Object not Fd or Fd_ref or subclass.\n");
-
-    safe_apply(in, "query_fd", 0);
+    apply(in, "query_fd", 0);
     fd = Pike_sp[-1].u.integer;
     pop_stack();
 
@@ -247,46 +244,284 @@ PIKECLASS HashInfo
     push_string(end_shared_string(out));
   }
 
+  /* NOTE: This is NOT the MIME base64 table! */
+  static const char b64tab[64] =
+    "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+  static inline void b64enc(char *dest, int a, int b, int c, int sz)
+  {
+    unsigned int bitbuf = a | (b << 8) | (c << 16);
+    while (sz--) {
+      *(dest++) = b64tab[bitbuf & 63];
+      bitbuf >>= 6;
+    }
+  }
+
+  /*! @decl string(0..127) crypt_hash(string(0..255) password, @
+   *!                                 string(0..255) salt, int rounds)
+   *!
+   *!   Password hashing function in @[crypt_md5()]-style.
+   *!
+   *!   Implements the algorithm described in
+   *!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
+   *!
+   *!   This is the algorithm used by @tt{crypt(2)@} in
+   *!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
+   *!
+   *!   The @[password] memory will be cleared before released.
+   *!
+   *! @seealso
+   *!   @[crypt_md5()]
+   */
+  PIKEFUN string(0..127) crypt_hash(string(0..255) password,
+				    string(0..255) salt, int rounds)
+  {
+    struct pike_string *res;
+    const struct nettle_hash *meta = THIS->meta;
+    void *ctx;
+    uint8_t *abcbuf;
+    uint8_t *dpbuf;
+    uint8_t *dsbuf;
+
+    unsigned char *p;
+    unsigned char *s;
+    int plen;
+    int slen;
+    int dsz = meta->digest_size;
+
+    int i;
+    int r;
+
+    int a, b, c;
+
+    if (!rounds) rounds = 5000;
+    if (rounds < 1000) rounds = 1000;
+    if (rounds > 999999999) rounds = 999999999;
+
+    NO_WIDE_STRING(password);
+    NO_WIDE_STRING(salt);
+
+    password->flags |= STRING_CLEAR_ON_EXIT;
+
+    ctx = (void *)alloca(meta->context_size);
+    if (!ctx)
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->context_size);
+
+    abcbuf = (uint8_t *)alloca(meta->digest_size * 3);
+    if (!abcbuf)
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->digest_size * 3);
+
+    dpbuf = abcbuf + meta->digest_size;
+    dsbuf = dpbuf + meta->digest_size;
+
+    /* NB: We use these to allow the compiler to
+     *     avoid dereferencing at every step.
+     */
+    p = (unsigned char*)password->str;
+    plen = password->len;
+    s = (unsigned char*)salt->str;
+    slen = salt->len;
+    if (slen > 16) slen = 16;
+    dsz = meta->digest_size;
+
+    /* NB: We allocate the result here to avoid throwing away all the work
+     *     on out of memory at the end.
+     */
+    if (dsz == 32) {
+      /* 4 * (30/3) + 3 */
+      res = begin_shared_string(43);
+    } else if (dsz == 64) {
+      /* 4 * (63/3) + 2 */
+      res = begin_shared_string(86);
+    } else {
+      Pike_error("crypt_hash() not supported for this digest size yet (%d).\n",
+		 dsz);
+    }
+
+    THREADS_ALLOW();
+
+    /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
+    meta->init(ctx);						/* 4 */
+    meta->update(ctx, plen, p);					/* 5 */
+    meta->update(ctx, slen, s);					/* 6 */
+    meta->update(ctx, plen, p);					/* 7 */
+    meta->digest(ctx, dsz, abcbuf);				/* 8 */
+
+    meta->init(ctx);						/* 1 */
+    meta->update(ctx, plen, p);					/* 2 */
+    meta->update(ctx, slen, s);					/* 3 */
+
+    for (i = 0; i + dsz < plen; i += dsz) {			/* 9 */
+      meta->update(ctx, dsz, abcbuf);
+    }
+
+    meta->update(ctx, plen - i, abcbuf);			/* 10 */
+
+    for (i = 1; i < plen; i <<= 1) {				/* 11 */
+      if (plen & i) {
+	meta->update(ctx, dsz, abcbuf);
+      } else {
+	meta->update(ctx, plen, p);
+      }
+    }
+
+    meta->digest(ctx, dsz, abcbuf);				/* 12 */
+
+    meta->init(ctx);						/* 13 */
+    for (i = 0; i < plen; i++) {				/* 14 */
+      meta->update(ctx, plen, p);
+    }
+    meta->digest(ctx, dsz, dpbuf);				/* 15 */
+
+    /* Sequence P is implicit. */				/* 16 */
+
+    meta->init(ctx);						/* 17 */
+    for(i = 0; i < 16 + abcbuf[0]; i++) {			/* 18 */
+      meta->update(ctx, slen, s);
+    }
+    meta->digest(ctx, dsz, dsbuf);				/* 19 */
+
+    /* Sequence S is implicit. */				/* 20 */
+
+    for (r = 0; r < rounds; r++) {				/* 21 */
+      meta->init(ctx);						/* a */
+      if (r & 1) {						/* b */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      } else {
+	meta->update(ctx, dsz, abcbuf);				/* c */
+      }
+      if (r % 3) {						/* d */
+	for (i = 0; i + dsz < slen; i += dsz) {
+	  meta->update(ctx, dsz, dsbuf);
+	}
+	meta->update(ctx, slen - i, dsbuf);
+      }
+      if (r % 7) {						/* e */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      }
+      if (r & 1) {						/* f */
+	meta->update(ctx, dsz, abcbuf);
+      } else {							/* g */
+	for (i = 0; i + dsz < plen; i += dsz) {
+	  meta->update(ctx, dsz, dpbuf);
+	}
+	meta->update(ctx, plen - i, dpbuf);
+      }
+      meta->digest(ctx, dsz, abcbuf);				/* h */
+    }
+    THREADS_DISALLOW();
+
+    /* And now time for some pointless shuffling of the result.
+     * Note that the shuffling is slightly different between
+     * the two cases.
+     *
+     * This is followed by a custom base64-style encoding.
+     */
+    c = 0;
+    b = dsz/3;
+    a = 2*b;
+    if (dsz == 32) {
+      for (i = 0, r = 0; i + 3 < dsz; i+=3, r+=4) {
+	int t;
+	b64enc(res->str + r, abcbuf[a], abcbuf[b], abcbuf[c], 4);
+
+	t = a+1;
+	a = b+1;
+	b = c+1;
+	c = t;
+      }
+      b64enc(res->str + r, abcbuf[30], abcbuf[31], 0, 3);
+    } else {
+      for (i = 0, r = 0; i + 3 < dsz; i+=3, r+=4) {
+	int t;
+	b64enc(res->str + r, abcbuf[a], abcbuf[b], abcbuf[c], 4);
+
+	t = a+1;
+	a = c+1;
+	c = b+1;
+	b = t;
+      }
+      b64enc(res->str + r, abcbuf[63], 0, 0, 2);
+    }
+
+    push_string(end_shared_string(res));		/* 22e */
+
+    /* Clean intermediate values. */
+    MEMSET(ctx, 0, meta->context_size);
+    MEMSET(abcbuf, 0, 3*dsz);
+  }
+
   INIT
     {
-      werror("HashInfo->INIT\n");
+      werror("Hash->INIT\n");
       THIS->meta = NULL;
     }
-}
 
-/*! @endclass HashInfo */
-
-#define GET_META(o) \
-( ((struct HashInfo_struct *) get_storage((o), HashInfo_program)) \
-  ->meta)
-
-/* The algorithm objects have to be implemented in pike. */
-
-/*! @class HashState
- *!
- *! Base class for hashing contexts.
- */
-PIKECLASS HashState
-{
-  INHERIT HashInfo;
-  CVAR void *ctx;
-
-  /* FIXME: Create should copy state from the other object, if
-   * provided. */
-
-  /*! @decl HashState update(string data)
+  /*! @class State
    *!
-   *! Hashes more data.
+   *! Base class for hashing contexts.
    */
-  PIKEFUN object update(string data)
-    optflags OPT_SIDE_EFFECT;
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit Hash::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.Hash.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+#define GET_META(o)						\
+    ( ((struct Hash_struct *)parent_storage(1))->meta )
+
+    CVAR void *ctx;
+
+    /* FIXME: Create should copy state from the other object, if
+     * provided. */
+
+    /*! @decl State update(string(0..255) data)
+     *!
+     *! Hashes more data.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object update(string(0..255) data)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_HASH_STATE);
     {
       void *ctx = THIS->ctx;
       const struct nettle_hash *meta =
 	GET_META(Pike_fp->current_object);
 
       if (!ctx || !meta)
-	Pike_error("HashState not properly initialized.\n");
+	Pike_error("State not properly initialized.\n");
 
       NO_WIDE_STRING(data);
       
@@ -302,29 +537,28 @@ PIKECLASS HashState
       push_object(this_object());
     }
 
-  /*! @decl string digest(int|void length)
-   *!
-   *! Generates a digests, and resets the hashing contents.
-   *!
-   *! @param length
-   *!   If the length argument is provided, the digest is truncated
-   *!   to the given length.
-   *!
-   *! @returns
-   *!   The digest.
-   */
-  PIKEFUN string digest(int|void arg)
+    /*! @decl string(0..255) digest(int|void length)
+     *!
+     *! Generates a digest, and resets the hashing contents.
+     *!
+     *! @param length
+     *!   If the length argument is provided, the digest is truncated
+     *!   to the given length.
+     *!
+     *! @returns
+     *!   The digest.
+     */
+    PIKEFUN string(0..255) digest(int|void arg)
     {
       const struct nettle_hash *meta;
       struct pike_string *digest;
       unsigned length;
 
-      if (! THIS->ctx)
-	Pike_error("HashState not properly initialized.\n");
-
       meta = GET_META(Pike_fp->current_object);
-      assert(meta);
-      
+
+      if (!THIS->ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
       if (!arg)
 	length = meta->digest_size;
       else
@@ -344,27 +578,33 @@ PIKECLASS HashState
       push_string(end_shared_string(digest));
     }
 
-  INIT
+    INIT
     {
-      werror("HashState->INIT\n");
+      werror("State->INIT\n");
       THIS->ctx = NULL;
     }
 
-  EXIT
-    gc_trivial;
+    EXIT
     {
-      werror("HashState->EXIT\n");
-      if (THIS->ctx && Pike_fp->current_object->prog)
+      werror("State->EXIT\n");
+      if (THIS->ctx)
       {
 	const struct nettle_hash *meta =
 	  GET_META(Pike_fp->current_object);
-	assert(meta);
-	memset(THIS->ctx, 0, meta->context_size);
+	if (meta) {
+	  memset(THIS->ctx, 0, meta->context_size);
+	}
       }
     }
+  }
+
+  /*! @endclass State */
+
 }
 
-/*! @endclass HashState */
+/*! @endclass Hash */
+
+/* The algorithm objects can be overloaded in pike. */
 
 #cmod_define TOSTR(DEF)	#DEF
 
@@ -396,6 +636,16 @@ PIKECLASS HashState
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+#ifdef HAVE_NETTLE_SHA224_INIT
+
+#cmod_define PIKE_NAME SHA224
+#cmod_define NETTLE_NAME sha224
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
 #cmod_define PIKE_NAME SHA256
 #cmod_define NETTLE_NAME sha256
 #cmod_include "hash.H"
@@ -422,6 +672,54 @@ PIKECLASS HashState
 
 #endif /* SHA512_DIGEST_SIZE */
 
+#ifdef HAVE_NETTLE_SHA3_H
+
+#cmod_define PIKE_NAME SHA3_224
+#cmod_define NETTLE_NAME sha3_224
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_256
+#cmod_define NETTLE_NAME sha3_256
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_384
+#cmod_define NETTLE_NAME sha3_384
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME SHA3_512
+#cmod_define NETTLE_NAME sha3_512
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* HAVE_NETTLE_SHA3_H */
+
+#ifdef HAVE_NETTLE_RIPEMD160_H
+
+#cmod_define PIKE_NAME RIPEMD160
+#cmod_define NETTLE_NAME ripemd160
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
+#ifdef HAVE_NETTLE_GOSTHASH94_H
+
+#cmod_define PIKE_NAME GOST94
+#cmod_define NETTLE_NAME gosthash94
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
 /*! @endmodule Nettle */
 
 void
@@ -435,12 +733,6 @@ void
 hash_exit(void)
 {
   werror("Nettle, hash exit\n");
-  if (Fd_program) {
-    free_program( Fd_program );
-  }
-  if (Fd_ref_program) {
-    free_program( Fd_ref_program );
-  }
   EXIT;
 }
 

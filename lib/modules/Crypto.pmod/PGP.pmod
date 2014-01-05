@@ -1,5 +1,5 @@
 
-//! PGP stuff. See RFC 2440.
+//! PGP stuff. See RFC 4880.
 
 #pike __REAL_VERSION__
 
@@ -28,6 +28,7 @@ protected mapping decode_public_key(string s) {
   switch(r->type) {
   case 1: {
     // RSA, Encrypt or Sign
+    r->_type = "RSA (encrypt or sign)";
     Gmp.mpz n, e;
 
     l = (l+7)>>3;
@@ -40,15 +41,19 @@ protected mapping decode_public_key(string s) {
     break;
   case 2:
     // RSA, Encrypt only
+    r->_type = "RSA (encrypt only)";
     break;
   case 3:
     // RSA, Sign only
+    r->_type = "RSA (sign only)";
     break;
   case 16:
     // Elgamal, Encrypt only
+    r->_type = "Elgamal (encrypt only)";
     break;
   case 17: {
     // DSA
+    r->_type = "DSA";
     Gmp.mpz p, q, g, y;
 
     l = (l+7)>>3;
@@ -68,17 +73,27 @@ protected mapping decode_public_key(string s) {
     break;
   case 18:
     // Elliptic Curve
+    r->_rtype = "ECC";
     break;
   case 19:
     // ECDSA
+    r->_type = "ECDSA";
     break;
   case 20:
     // Elgamal, Encrypt or Sign
+    r->_type = "Elgamal (encrypt or sign)";
     break;
   case 21:
     // Diffie-Hellman, X9.42
+    r->_type = "Diffie-Hellmanm X9.42";
     break;
+  case 100..110:
     // 100-110 is for private/experimental algorithms.
+    r->type = "Private/experimental";
+    break;
+  default:
+    r->_type = "Unknown";
+    break;
   }
 
   return r;
@@ -122,7 +137,6 @@ protected mapping decode_signature(string s) {
 }
 
 protected mapping decode_compressed(string s) {
-  error("Can't decompress.\n");
   int type = s[0];
   s = s[1..];
   switch(type) {
@@ -132,12 +146,17 @@ protected mapping decode_compressed(string s) {
   case 2:
     // ZLIB
     error("Don't know how to decompress ZLIB.\n");
+  case 3:
+    // BZip2
+    error("Don't know how to decompress BZip2.\n");
+  case 100..110:
+    error("Private/experimental compression.\n");
+  default:
+    error("Unknown compression.\n");
 #if 0
     // Perhaps like this?
     return decode( Gz.inflate()->inflate(s) );
 #endif
-  default:
-    return ([ "type":type, "data":s ]);
   }
 }
 
@@ -208,10 +227,10 @@ mapping(string:string|mapping) decode(string s) {
 string encode(int type, string data) {
   type <<= 2;
   if(sizeof(data)>65535)
-    return sprintf("%c%4c%s", type+2, sizeof(data), data);
+    return sprintf("%c%4H", type+2, data);
   if(sizeof(data)>255)
-    return sprintf("%c%2c%s", type+1, sizeof(data), data);
-  return sprintf("%c%c%s", type, sizeof(data), data);
+    return sprintf("%c%2H", type+1, data);
+  return sprintf("%c%1H", type, data);
 }
 
 protected int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
@@ -245,10 +264,23 @@ int verify_signature(string text, string sig, string pubkey)
 {
   mapping signt = decode(sig)->signature;
   object hash;
-  if(signt->digest_algorithm == 2)
-    hash = Crypto.SHA1();
-  else
-    hash = Crypto.MD5();
+
+  switch( signt->digest_algorithm )
+  {
+  case 1:  hash = Crypto.MD5();    break;
+  case 2:  hash = Crypto.SHA1();   break;
+  case 3: error("RIPE-MD/160 not supported.\n"); break;
+  case 8:  hash = Crypto.SHA256(); break;
+#if constant(Crypto.SHA384)
+  case 9:  hash = Crypto.SHA384(); break;
+#endif
+#if constant(Crypto.SHA512)
+  case 10: hash = Crypto.SHA512(); break;
+#endif
+  case 11: error("SHA224 not supported.\n"); break;
+  case 100..110: error("Private/experimental hash function.\n");
+  default: error("Unknown hash function %O\n", signt->digest_algorithm );
+  }
   if(signt->literal_data && signt->literal_data!=text) return 0;
   hash->update(text);
   return verify(hash, signt,
@@ -299,55 +331,34 @@ protected int crc24(string data) {
 //! Encode PGP data with ASCII armour.
 string encode_radix64(string data, string type,
 		      void|mapping(string:string) extra) {
-  string ret = "-----BEGIN " + type + "-----\n";
   if(!extra) extra = ([]);
   if(!extra->Version)
     extra->Version = "Pike " + __REAL_MAJOR__ + "." +
       __REAL_MINOR__ + "." + __REAL_BUILD__;
-  foreach(extra; string key; string value)
-    ret += key + ": " + value + "\n";
-  ret += "\n";
-  ret += (MIME.encode_base64(data,1)/64.0)*"\n" + "\n";
-  ret += "=" + MIME.encode_base64(sprintf("%3c",crc24(data))) + "\n";
-  ret += "-----END " + type + "-----\n";
-  return ret;
+
+  return Standards.PEM.build(type, data, extra, sprintf("%3c",crc24(data)));
 }
 
 //! Decode ASCII armour.
 mapping(string:mixed) decode_radix64(string data) {
-  mapping ret = ([]);
-  string tmp;
-  if(sscanf(data, "%*s-----BEGIN %s-----", tmp)!=2)
-    error("String does not contain \"-----BEGIN\".\n");
-  ret->armor_header = tmp;
-  if(!has_value(data, "-----END "+tmp+"-----"))
-    error("String is imcomplete; no armor tail found.\n");
-  sscanf(data, "%*s-----BEGIN "+tmp+"-----\n%s-----END "+tmp+"-----", data);
 
-  array lines = String.trim_all_whites(data)/"\n";
-  while(String.trim_all_whites(lines[0])!="") {
-    string key,value;
-    if(sscanf(lines[0], "%s:%s", key, value)!=2)
-      error("Error in key-value pairs.\n");
-    switch(key) {
-    case "Comment":
-      ret->Comment = utf8_to_string(value);
-      break;
-    case "Hash":
-      ret->Hash = value/",";
-      break;
-    default:
-      ret[key]=value;
-    }
-    lines = lines[1..];
-  }
+  Standards.PEM.Message m = Standards.PEM.Message(data);
+  if( m->pre != m->post )
+    error("Illegal format. Begin token %O doesn't match end token %O.\n",
+          m->pre, m->post);
 
-  if(lines[-1][0]=='=') {
-    ret->checksum = (int)Gmp.mpz(MIME.decode_base64(lines[-1][1..]),256);
-    lines = lines[..<1];
-  }
 
-  ret->data = MIME.decode_base64(lines*"\n");
+  mapping ret = m->headers || ([]);
+  if( ret->comment )
+    ret->comment = utf8_to_string(ret->comment);
+  if( ret->hash )
+    ret->hash = ret->hash/",";
+
+  if( m->trailer )
+    ret->checksum = (int)Gmp.mpz(m->trailer,256);
+
+  ret->armor_header = m->pre;
+  ret->data = m->body;
   ret->actual_checksum = crc24(ret->data);
   return ret;
 }

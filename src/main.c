@@ -35,19 +35,13 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
-
-#ifdef AUTO_BIGNUM
 #include "bignum.h"
-#endif
 
 #include "pike_embed.h"
 
 #ifdef LIBPIKE
 #if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
-#elif !defined(USE_DLL) && defined(USE_MY_WIN32_DLOPEN)
-#include "pike_dlfcn.h"
-#else
 #undef LIBPIKE
 #endif
 #endif
@@ -484,9 +478,9 @@ int main(int argc, char **argv)
 
 	    case 'c':
 	      p++;
-#if defined(YYDEBUG) || defined(PIKE_DEBUG)
+#if (defined(YYDEBUG) && (YYDEBUG==1)) && defined(PIKE_DEBUG)
 	      yydebug++;
-#endif /* YYDEBUG || PIKE_DEBUG */
+#endif /* YYDEBUG && PIKE_DEBUG */
 	      break;
 
 	    case 's':

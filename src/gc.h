@@ -56,6 +56,20 @@ extern double gc_average_slowness;
  * threshold if it takes a while until the gc can run. */
 #define GC_MAX_ALLOC_THRESHOLD (ALLOC_COUNT_TYPE_MAX - 10000000)
 
+/* Callback called when gc() starts. */
+extern struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+extern struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+extern struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+extern struct svalue gc_done_cb;
+
 /* #define GC_MARK_DEBUG */
 
 /* If we only have 32 bits we need to make good use of them for the
@@ -394,9 +408,9 @@ extern struct pike_queue gc_mark_queue;
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
 
-extern void *gc_found_in;
-extern int gc_found_in_type;
-extern const char *gc_found_place;
+PMOD_EXPORT extern void *gc_found_in;
+PMOD_EXPORT extern int gc_found_in_type;
+PMOD_EXPORT extern const char *gc_found_place;
 
 #define GC_ENTER(THING, TYPE)						\
   do {									\
@@ -659,7 +673,7 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
  * VISIT_COMPLEX_ONLY. */
 
 /* Map between type and visit function for the standard ref types. */
-PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
+PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
@@ -669,7 +683,7 @@ static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
 					   int ref_type)
 {
   check_short_svalue (u, t);
-  if (t <= MAX_REF_TYPE)
+  if (REFCOUNTED_TYPE(t))
     visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
   return 0;
 }
@@ -690,7 +704,7 @@ static INLINE void dmalloc_visit_svalue (struct svalue *s,
   int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
-  if (t <= MAX_REF_TYPE) {
+  if (REFCOUNTED_TYPE(t)) {
     if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
     else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
   }
@@ -703,7 +717,7 @@ static INLINE void visit_svalue (struct svalue *s, int ref_type)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
-  if (t <= MAX_REF_TYPE) {
+  if (REFCOUNTED_TYPE(t)) {
     if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
     else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
   }

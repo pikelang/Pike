@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 class Boundary(mixed x) {
     int (0..1) `<(object b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {

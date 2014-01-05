@@ -1,5 +1,8 @@
 #pike __REAL_VERSION__
 
+//! @appears Image.XPM
+//! X PixMap image format.
+
 inherit Image._XPM;
 #if 0
 # define TE( X )  werror("XPM profile: %-20s ... ", (X));
@@ -16,6 +19,7 @@ int old_time,start_time;
 # define TE(X)
 #endif
 
+//! @decl mapping _decode(string bytes, mapping|void options)
 mapping _decode( string what, void|mapping opts )
 {
   array data;
@@ -103,6 +107,7 @@ array ok = ({
 
 array cmap_t;
 
+//! @decl string encode(Image.Image image, mapping|void options)
 string encode( object what, mapping|void options )
 {
   int x,y,q;
@@ -185,7 +190,7 @@ string encode( object what, mapping|void options )
   return res;
 }
 
-
+//! @decl Image.Image decode(string bytes)
 object decode( string what )
 {
   return _decode(what)->image;

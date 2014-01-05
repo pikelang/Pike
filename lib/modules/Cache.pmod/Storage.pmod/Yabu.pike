@@ -1,10 +1,9 @@
-/*
- * A Yabu-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * Settings will be added later.
- * 
- */
+//! A Yabu-based storage manager.
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
@@ -16,6 +15,7 @@ Yabu.db yabudb;
 int deletion_ops=0;
 int have_dependants=0;
 
+//!
 class Data {
   inherit Cache.Data;
   //metadata is kept around, data loaded on demand.
@@ -171,6 +171,7 @@ void delete(string key, void|int(0..1) hard) {
   }
 }
 
+//!
 void create(string path) {
   yabudb=Yabu.db(path+".yabu","wcSQ"); //let's hope I got the mode right.
   db=yabudb["data"];

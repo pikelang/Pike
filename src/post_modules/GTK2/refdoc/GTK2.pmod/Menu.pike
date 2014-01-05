@@ -55,7 +55,7 @@ GTK2.Menu attach( GTK2.Widget child, int left_attach, int right_attach, int top_
 //!
 //!
 
-static GTK2.Menu create( mapping|void props );
+protected GTK2.Menu create( mapping|void props );
 //! Creates a new GTK2.Menu widget.
 //!
 //!

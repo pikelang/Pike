@@ -1,7 +1,6 @@
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
-AC_ARG_WITH(bignums, [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
 
@@ -243,6 +242,7 @@ if test x$with_gmp = xyes ; then
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
   CHECK_GMP_FUNC(mpz_fits_ulong_p, [mpz_t a; mpz_fits_ulong_p (a)])
   CHECK_GMP_FUNC(mpz_bin_ui, [mpz_t a, b; mpz_bin_ui(a, b, 1)])
+  CHECK_GMP_FUNC(mpz_divisible_p, [mpz_t a, b; mpz_divisible_p(a, b)])
 
   echo >>confdefs.h '
 #ifdef HAVE_GMP2_GMP_H
@@ -373,17 +373,9 @@ int main()
     AC_DEFINE(MPZ_SET_SI_WORKS)
   fi
   else
-    PIKE_ENABLE_BUNDLE(gmp, [
-      ac_cv_header_gmp2_gmp_h
-      ac_cv_header_gmp_h
-      pike_cv_working_gmp
-      pike_cv_working_gmp2
-    ], [Cannot compile --with-bignums without the GMP library
-It is highly recommended that you install a working GMP
-library on your system as that will add features to Pike
-required by many applications.  (Such as Roxen) However,
-if you know that you do not need GMP, you may re-run configure
-with the option --without-bignums instead.
+    AC_MSG_ERROR([Cannot compile bignums without the GMP library. To
+compile Pike you are required to install a working GMP
+library on your system.
     ])
   fi
 

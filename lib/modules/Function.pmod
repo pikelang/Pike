@@ -79,7 +79,7 @@ function Y(function f)
 //! @code
 //!   Function.curry(`+)(7)
 //! @endcode
-function curry(function f)
+function(mixed...:function(mixed...:mixed|void)) curry(function f)
 {
   return lambda(mixed ... args1) {
 	   return lambda(mixed ... args2) {

@@ -434,7 +434,7 @@ static void f_rle_encode( INT32 args )
 
 static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
                                           struct image *data,
-                                          struct options *opts )
+                                          struct options *UNUSED(opts) )
 {
   struct pike_string *b;
   int x, y;

@@ -115,7 +115,13 @@ typedef struct {
 int encoder_flg(AVCodec *codec) {
   int flg = -1;
 
-  if( codec->encode )
+  if( codec->
+#ifdef HAVE_AVCODEC_ENCODE2
+      encode2
+#else
+      encode
+#endif
+      )
     flg = 1;
   else if( codec->decode )
     flg = 0;
@@ -191,6 +197,7 @@ static void f_create(INT32 args)
       }
 
       memset(&THIS->codec_context, 0, sizeof(THIS->codec_context));
+      /* FIXME: Use avcodec_open2() if available. */
       if (avcodec_open(&THIS->codec_context, codec) < 0)
         Pike_error("Could not open codec.\n");
       THIS->codec = codec;
@@ -351,6 +358,9 @@ static void f_get_codec_status(INT32 args) {
 #ifndef HAVE_AVCODEC_DECODE_AUDIO2
 #define avcodec_decode_audio2 avcodec_decode_audio3
 #define USE_AVPACKET_FOR_DECODE
+#ifndef HAVE_AVCODEC_DECODE_AUDIO3
+  /* FIXME: Support avcodec_decode_audio4(). */
+#endif
 #endif
 #endif
 
@@ -473,7 +483,6 @@ static void f_list_codecs(INT32 args) {
   int cnt = 0;
   AVCodec *codec;
 
-  avcodec_init();
   avcodec_register_all();
 
   pop_n_elems(args);
@@ -562,7 +571,6 @@ static void init_ffmpeg_data(struct object *obj) {
   THIS->outbuf = NULL;
   THIS->encoder = 0;
 
-  avcodec_init();
   avcodec_register_all(); /* FIXME: register only "interesting" codec ? */
 }
 

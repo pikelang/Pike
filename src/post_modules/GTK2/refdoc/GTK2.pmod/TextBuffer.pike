@@ -86,7 +86,7 @@ GTK2.TextBuffer copy_clipboard( GTK2.Clipboard clipboard );
 //!
 //!
 
-static GTK2.TextBuffer create( GTK2.TextTagTable table_or_props );
+protected GTK2.TextBuffer create( GTK2.TextTagTable table_or_props );
 //! Creates a new text buffer.
 //!
 //!
@@ -270,8 +270,8 @@ GTK2.TextMark get_selection_bound( );
 //!
 
 array get_selection_bounds( );
-//! Returns either a start and end W(TextIter) if some text is selected, or
-//! 2 0's.
+//! Returns either an array with start and end W(TextIter)
+//! if some text is selected, or 0 if there's no active selection.
 //!
 //!
 
@@ -467,8 +467,8 @@ GTK2.TextBuffer set_modified( int setting );
 //!
 //!
 
-GTK2.TextBuffer set_text( string text, int len );
-//! Deletes current contents of this buffer, and inserts text instead.  If
-//! len is -1, text must be nul-terminated.  text must be valid UTF-8.
+GTK2.TextBuffer set_text( sprintf_format text, sprintf_args... fmt );
+//! Deletes current contents of this buffer, and inserts text instead.
+//! If multiple arguments are supplied, sprintf() is called implicitly.
 //!
 //!

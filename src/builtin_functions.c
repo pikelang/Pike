@@ -257,7 +257,7 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash()], @[7.0::hash()]
+ *!   @[predef::hash()], @[7.0::hash()]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -325,7 +325,7 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[hash()], @[7.4::hash()]
+ *!   @[predef::hash()], @[7.4::hash()]
  */
 static void f_hash_7_0( INT32 args )
 {
@@ -645,14 +645,14 @@ static struct case_info *find_ci_shift0(INT32 c)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
- *!   can do the initial conversion for you.
+ *!   ISO-10646 (aka Unicode). If they are not, @[Charset.decoder] can
+ *!   do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[upper_case()], @[Locale.Charset.decoder]
+ *!   @[upper_case()], @[Charset.decoder]
  */
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
@@ -668,8 +668,12 @@ PMOD_EXPORT void f_lower_case(INT32 args)
     pop_n_elems(args-1);
     return;
   }
-  
+
   orig = Pike_sp[-args].u.string;
+
+  if( orig->flags & STRING_IS_LOWERCASE )
+      return;
+
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
@@ -700,8 +704,10 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 #endif
   }
 
+  ret = end_shared_string(ret);
+  ret->flags |= STRING_IS_LOWERCASE;
   pop_n_elems(args);
-  push_string(end_shared_string(ret));
+  push_string(ret);
 }
 
 /*! @decl string upper_case(string s)
@@ -716,14 +722,14 @@ PMOD_EXPORT void f_lower_case(INT32 args)
  *!
  *! @note
  *!   Assumes the string or character to be coded according to
- *!   ISO-10646 (aka Unicode). If they are not, @[Locale.Charset.decoder]
- *!   can do the initial conversion for you.
+ *!   ISO-10646 (aka Unicode). If they are not, @[Charset.decoder] can
+ *!   do the initial conversion for you.
  *!
  *! @note
  *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
- *!   @[lower_case()], @[Locale.Charset.decoder]
+ *!   @[lower_case()], @[Charset.decoder]
  */
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
@@ -738,8 +744,13 @@ PMOD_EXPORT void f_upper_case(INT32 args)
     pop_n_elems(args-1);
     return;
   }
-  
+
   orig = Pike_sp[-args].u.string;
+  if( orig->flags & STRING_IS_UPPERCASE )
+  {
+      return;
+  }
+
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
 
@@ -800,7 +811,9 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   }
 
   pop_n_elems(args);
-  push_string(end_shared_string(ret));
+  ret = end_shared_string(ret);
+  ret->flags |= STRING_IS_UPPERCASE;
+  push_string(ret);
 }
 
 /*! @decl string random_string(int len)
@@ -828,7 +841,6 @@ PMOD_EXPORT void f_random_string(INT32 args)
 PMOD_EXPORT void f_random_seed(INT32 args)
 {
   INT_TYPE i;
-#ifdef AUTO_BIGNUM
   check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
   if(TYPEOF(Pike_sp[-args]) == T_INT)
   {
@@ -836,9 +848,6 @@ PMOD_EXPORT void f_random_seed(INT32 args)
   }else{
     i=hash_svalue(Pike_sp-args);
   }
-#else
-  get_all_args("random_seed",args,"%i",&i);
-#endif
   my_srand(i);
   pop_n_elems(args);
 }
@@ -954,7 +963,13 @@ PMOD_EXPORT void f_search(INT32 args)
       } else {
 	val = index_shared_string(Pike_sp[1-args].u.string, 0);
       }
-      
+
+      if( !string_range_contains( haystack, val )  )
+      {
+          pop_n_elems(args);
+          push_int( -1 );
+          return;
+      }
       switch(Pike_sp[-args].u.string->size_shift) {
       case 0:
 	{
@@ -1178,7 +1193,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   a = Pike_sp[-args].u.string;
 
   /* First handle some common special cases. */
-  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)
+      || !string_range_contains_string(a, b)) {
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1250,7 +1266,8 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   b = Pike_sp[1-args].u.string;
 
   /* First handle some common special cases. */
-  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)
+      || !string_range_contains_string(a, b)) {
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1637,7 +1654,7 @@ static int generate_zero_type(node *n)
  *!   Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
  *!
  *! @seealso
- *!   @[Locale.Charset.decoder()], @[string_to_utf8()], @[unicode_to_string()],
+ *!   @[Charset.decoder()], @[string_to_utf8()], @[unicode_to_string()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_unicode(INT32 args)
@@ -1773,7 +1790,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
  *!   This function did not decode surrogates in Pike 7.2 and earlier.
  *!
  *! @seealso
- *!   @[Locale.Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_unicode_to_string(INT32 args)
@@ -1939,7 +1956,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *!   characters are however not UTF-8 compliant.
  *!
  *! @seealso
- *!   @[Locale.Charset.encoder()], @[string_to_unicode()],
+ *!   @[Charset.encoder()], @[string_to_unicode()],
  *!   @[unicode_to_string()], @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_utf8(INT32 args)
@@ -1949,13 +1966,23 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   struct pike_string *out;
   ptrdiff_t i,j;
   INT_TYPE extended = 0;
+  PCHARP src;
+  INT32 min, max;
 
   get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
   len = in->len;
 
-  for(i=0; i < in->len; i++) {
-    unsigned INT32 c = index_shared_string(in, i);
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args - 1);
+    return;
+  }
+
+  for(i=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+    unsigned INT32 c = EXTRACT_PCHARP(src);
     if (c & ~0x7f) {
       /* 8bit or more. */
       len++;
@@ -2001,8 +2028,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   }
   out = begin_shared_string(len);
 
-  for(i=j=0; i < in->len; i++) {
-    unsigned INT32 c = index_shared_string(in, i);
+  for(i=j=0,src=MKPCHARP_STR(in); i < in->len; INC_PCHARP(src,1),i++) {
+    unsigned INT32 c = EXTRACT_PCHARP(src);
     if (!(c & ~0x7f)) {
       /* 7bit */
       out->str[j++] = c;
@@ -2084,7 +2111,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!   non-shortest forms are not decoded. An error is thrown instead.
  *!
  *! @seealso
- *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[unicode_to_string()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
@@ -2095,8 +2122,17 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   int shift = 0;
   ptrdiff_t i,j=0;
   INT_TYPE extended = 0;
+  INT32 min, max;
 
   get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
+
+  check_string_range(in, 1, &min, &max);
+
+  if (min >= 0 && max <= 0x7f) {
+    /* 7bit string -- already valid utf8. */
+    pop_n_elems(args - 1);
+    return;
+  }
 
   for(i=0; i < in->len; i++) {
     unsigned int c = STR0(in)[i];
@@ -3002,7 +3038,7 @@ PMOD_EXPORT void f_time(INT32 args)
   push_int(ret.tv_sec);
 }
 
-/*! @decl string crypt(string password)
+/*! @decl string(0..127) crypt(string password)
  *! @decl int(0..1) crypt(string typed_password, string crypted_password)
  *!
  *!   This function crypts and verifies a short string (only the first
@@ -3218,7 +3254,7 @@ PMOD_EXPORT void f_indices(INT32 args)
 /* FIXME: This function messes around with the implementation of pike_type,
  * and should probably be in pike_types.h instead.
  */
-static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int deftypelen)
+static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNUSED(deftypelen))
 {
   node **first_arg;
   struct pike_type *t, *t2;
@@ -4597,10 +4633,7 @@ PMOD_EXPORT void f_objectp(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT || !Pike_sp[-args].u.object->prog
-#ifdef AUTO_BIGNUM
-     || is_bignum_object(Pike_sp[-args].u.object)
-#endif
-     )
+     || is_bignum_object(Pike_sp[-args].u.object))
   {
     pop_n_elems(args);
     push_int(0);
@@ -4631,6 +4664,58 @@ PMOD_EXPORT void f_functionp(INT32 args)
   push_int(res);
 }
 
+static int callablep(struct svalue *s)
+{
+  int ret = 0;
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(s, NULL)) {
+    END_CYCLIC();
+    return 1;
+  }
+
+  SET_CYCLIC_RET((ptrdiff_t)1);
+
+  switch( TYPEOF(*s) )
+  {
+    case T_FUNCTION:
+      if( SUBTYPEOF(*s) == FUNCTION_BUILTIN
+	  || s->u.object->prog)
+	ret = 1;
+      break;
+    case T_PROGRAM:
+      ret = 1;
+      break;
+    case T_OBJECT:
+      {
+	struct program *p;
+	if((p = s->u.object->prog) &&
+	   FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog,
+		     LFUN_CALL ) != -1)
+          ret = 1;
+      }
+      break;
+    case T_ARRAY:
+      array_fix_type_field(s->u.array);
+      if( !s->u.array->type_field) {
+        ret = 1;
+	break;
+      }
+      if( !(s->u.array->type_field & ~(BIT_CALLABLE|BIT_INT)) ) {
+	struct array *a = s->u.array;
+	int i;
+	ret = 1;
+	for(i=0; i<a->size; i++)
+	  if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
+	    ret = 0;
+      }
+      break;
+  }
+
+  END_CYCLIC();
+  return ret;
+}
+
 /*! @decl int callablep(mixed arg)
  *!
  *!   Returns @expr{1@} if @[arg] is a callable, @expr{0@} (zero) otherwise.
@@ -4645,46 +4730,7 @@ PMOD_EXPORT void f_callablep(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("callablep", 1);
 
-  switch( TYPEOF(Pike_sp[-args]) )
-  {
-    case T_FUNCTION:
-      if( SUBTYPEOF(Pike_sp[-args]) != FUNCTION_BUILTIN
-	  && !Pike_sp[-args].u.object->prog)
-	break;
-      res = 1;
-      break;
-    case T_PROGRAM:
-      res = 1;
-      break;
-    case T_OBJECT:
-      {
-	struct program *p;
-	if((p = Pike_sp[-args].u.object->prog) &&
-	   FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-args])].prog,
-		     LFUN_CALL ) != -1)
-	  res = 1;
-      }
-      break;
-    case T_ARRAY:
-      /* FIXME: What about the recursive case? */
-      array_fix_type_field(Pike_sp[-args].u.array);
-      if( (Pike_sp[-args].u.array->type_field==BIT_CALLABLE) ||
-	  !Pike_sp[-args].u.array->type_field) {
-	res = 1;
-      }
-      else if( !(Pike_sp[-args].u.array->type_field &
-		 ~(BIT_CALLABLE|BIT_INT)) ) {
-	struct array *a = Pike_sp[-args].u.array;
-	int i;
-	res = 1;
-	for(i=0; i<a->size; i++)
-	  if( TYPEOF(ITEM(a)[i]) == T_INT && ITEM(a)[i].u.integer ) {
-	    res = 0;
-	    break;
-	  }
-      }
-      break;
-  }
+  res = callablep(&Pike_sp[-args]);
   pop_n_elems(args);
   push_int(res);
 }
@@ -5184,6 +5230,45 @@ PMOD_EXPORT void f_rows(INT32 args)
   dmalloc_touch_svalue(Pike_sp);
   pop_n_elems(args);
   push_array(a);
+}
+
+
+/*! @decl int map_all_objects(function(object:void) cb)
+ *! @belongs Debug
+ *!
+ *! Call cb for all objects that currently exist. The callback will
+ *! not be called with destructed objects as it's argument.
+ *!
+ *! Objects might be missed if @[cb] creates new objects or destroys
+ *! old ones.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of objects
+ *!
+ *! @seealso
+ *!   @[next_object()]
+ */
+static void f_map_all_objects( INT32 args )
+{
+    struct object *o = first_object;
+    INT32 total = 0;
+    ASSERT_SECURITY_ROOT("_map_all_objects");
+    while( o )
+    {
+        struct object *next = o->next;
+        if( o->prog )
+        {
+            ref_push_object( o );
+            safe_apply_svalue( Pike_sp-2, 1, 1 );
+            pop_stack();
+        }
+        total++;
+        o = next;
+    }
+    pop_stack();
+    push_int(total);
 }
 
 /*! @decl void verify_internals()
@@ -7576,6 +7661,185 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }
 
+/* Estimate the size of an svalue, not including objects.
+   this is used from size_object.
+
+   It should not include the size of the svalue itself, so the basic
+   types count as 0 bytes.
+
+   This is an estimate mainly because it is very hard to know to whom
+   a certain array/mapping/multiset or string "belongs".
+
+   The returned size will be the memory usage of the svalue divided by
+   the number of references to it.
+*/
+
+struct string_header
+{
+    PIKE_STRING_CONTENTS;
+};
+
+unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
+{
+    unsigned int res = 0;
+    int i;
+    ptrdiff_t node_ref;
+    INT32 e;
+    struct svalue *x;
+    struct keypair *k;
+
+    switch( s->type )
+    {
+        case PIKE_T_STRING:
+            /* FIXME: This makes assumptions about the threshold for short strings. */
+            if( s->u.string->flags & STRING_IS_SHORT )
+                return (16+sizeof(struct string_header)) / s->u.string->refs;
+            return ((s->u.string->len << s->u.string->size_shift) +
+                    sizeof(struct string_header)) / s->u.string->refs;
+        case PIKE_T_INT:
+        case PIKE_T_OBJECT:
+        case PIKE_T_FLOAT:
+        case PIKE_T_FUNCTION:
+        case PIKE_T_TYPE:
+            return 0;
+    }
+    if( !m ) return 0;
+
+    if( !*m )
+        *m = allocate_mapping( 10 );
+    else if( (x = low_mapping_lookup( *m, s )) )
+    {
+        /* Already counted. Use the old size. */
+        return x->u.integer;
+    }
+
+    low_mapping_insert( *m, s, &svalue_int_one, 0 );
+    switch( s->type )
+    {
+        case PIKE_T_ARRAY:
+            res = sizeof( struct array );
+            for( i=0; i<s->u.array->size; i++ )
+                res += sizeof(struct svalue) + rec_size_svalue( s->u.array->item+i, m );
+            break;
+
+        case PIKE_T_MULTISET:
+            res = sizeof(struct multiset) + sizeof(struct multiset_data);
+            node_ref = multiset_last( s->u.multiset );
+            while( node_ref != -1 )
+            {
+                res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
+                    /* each node has the index and left/right node pointers. */
+                    + sizeof(struct svalue) + (sizeof(void*)*2);
+                node_ref = multiset_prev( s->u.multiset, node_ref );
+            }
+            break;
+
+        case PIKE_T_MAPPING:
+            res = sizeof(struct mapping);
+            {
+                struct mapping_data *d = s->u.mapping->data;
+                struct keypair *f = d->free_list;
+                int data_size = sizeof( struct mapping_data );
+                data_size += d->hashsize * sizeof(struct keypair *) - sizeof(struct keypair *);
+                while( f )
+                {
+                    data_size += sizeof(struct keypair);
+                    f = f->next;
+                }
+                NEW_MAPPING_LOOP( s->u.mapping->data  )
+                {
+                    data_size += rec_size_svalue( &k->ind, m );
+                    data_size += rec_size_svalue( &k->val, m );
+                    data_size += sizeof( struct keypair );
+                }
+                res += data_size / (d->hardlinks+1);
+            }
+            break;
+    }
+    res /= *s->u.refs;
+    low_mapping_lookup(*m,s)->u.integer = res;
+    return res;
+}
+
+/*! @decl int size_object(object o)
+ *! @belongs Debug
+ *!
+ *!  Return the aproximate size of the object, in bytes.
+ *!  This might not work very well for native objects
+ *!
+ *!
+ *! The function tries to estimate the memory usage of variables
+ *! belonging to the object.
+ *!
+ *! It will not, however, include the size of objects assigned to
+ *! variables in the object.
+ *!
+ *!
+ *! If the object has a @[lfun::_size_object()] it will be called
+ *! without arguments, and the return value will be added to the final
+ *! size. It is primarily intended to be used by C-objects that
+ *! allocate memory that is not normally visible to pike.
+ *!
+ *! @seealso
+ *!   @[lfun::_size_object()], @[sizeof()]
+ */
+static void f__size_object( INT32 args )
+{
+    size_t sum;
+    unsigned int i;
+    ptrdiff_t fun;
+    struct object *o;
+    struct program *p;
+    struct mapping *map = NULL;
+    if( Pike_sp[-1].type != PIKE_T_OBJECT )
+        Pike_error("Expected an object as argument\n");
+    o = Pike_sp[-1].u.object;
+
+    if( !(p=o->prog) )
+    {
+        pop_stack();
+        push_int(0);
+        return;
+    }
+    sum = sizeof(struct object);
+    sum += p->storage_needed;
+
+    if( (fun = low_find_lfun( p, LFUN__SIZE_OBJECT)) != -1 )
+    {
+        apply_low( o, fun, 0 );
+        if( Pike_sp[-1].type == PIKE_T_INT )
+            sum += Pike_sp[-1].u.integer;
+        pop_stack();
+    }
+
+    Pike_sp++;
+    for (i = 0; i < p->num_identifier_references; i++)
+    {
+        struct reference *ref = PTR_FROM_INT(p, i);
+        struct identifier *id =  ID_FROM_PTR(p, ref);
+        struct inherit *inh = p->inherits;
+        if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+            id->run_time_type == PIKE_T_GET_SET)
+        {
+            continue;
+        }
+
+        /* NOTE: makes the assumption that a variable saved in an
+         * object has at least one reference.
+         */
+        low_object_index_no_free(Pike_sp-1, o, i + inh->identifier_level);
+        if (REFCOUNTED_TYPE(TYPEOF(Pike_sp[-1])))
+            sub_ref( Pike_sp[-1].u.dummy );
+        sum += rec_size_svalue(Pike_sp-1, &map);
+    }
+    Pike_sp--;
+    if( map ) free_mapping(map);
+
+    pop_stack();
+    push_int(sum);
+}
+
+
 /*! @decl mixed _next(mixed x)
  *!
  *!   Find the next object/array/mapping/multiset/program or string.
@@ -7688,7 +7952,7 @@ PMOD_EXPORT void f__refs(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_refs", 1);
 
-  if(TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("refs", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
@@ -7709,7 +7973,7 @@ PMOD_EXPORT void f__leak(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
 
-  if(TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("_leak", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
@@ -7775,7 +8039,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
 
   push_constant_text ("is_pike_master");
   args++;
-  object_set_index (new_master, 0, Pike_sp - 1, &svalue_int_one);
+  object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
 
   free_object(master_object);
   master_object=new_master;
@@ -8396,7 +8660,7 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
 
   if (args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
-  if (TYPEOF(Pike_sp[-args]) > MAX_REF_TYPE)
+  if (!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
     SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
   gc_watch(Pike_sp[-args].u.refs);
   pop_n_elems(args);
@@ -9164,7 +9428,6 @@ void f_enumerate(INT32 args)
       for (i=0; i<n; i++)
       {
 	 ITEM(d)[i].u.integer=start;
-#ifdef AUTO_BIGNUM
 	 if ((step>0 && start+step<start) ||
 	     (step<0 && start+step>start)) /* overflow */
 	 {
@@ -9177,7 +9440,6 @@ void f_enumerate(INT32 args)
 	    f_enumerate(3);
 	    return;
 	 }
-#endif
 	 start+=step;
       }
       d->type_field = BIT_INT;
@@ -9249,6 +9511,89 @@ void f_enumerate(INT32 args)
 
 /*! @module Program
  */
+
+
+/*! @decl string defined(program x, string identifier)
+ *!
+ *!   Returns a string with filename and linenumber where @[idenfifier]
+ *!   in @[x] was defined.
+ *!
+ *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
+ *!   builtin functions.
+ *!
+ *!   If @[idenfier] can not be found in @[x] this function returns
+ *!   where the program is defined.
+ */
+PMOD_EXPORT void f_program_identifier_defined(INT32 args)
+{
+  struct program *p;
+  struct pike_string *ident;
+  struct program *id_prog, *p2;
+  struct identifier *id;
+  INT_TYPE line;
+  INT_TYPE offset;
+  struct pike_string *file = NULL;
+
+  if( !(p = program_from_svalue(Pike_sp-args)) )
+      Pike_error("Illegal argument 1 to defined(program,string)\n");
+
+  if( Pike_sp[-args+1].type != PIKE_T_STRING )
+      Pike_error("Illegal argument 2 to defined(program,string)\n");
+  else
+      ident = Pike_sp[-args+1].u.string;
+
+  if( (offset = find_shared_string_identifier( ident, p )) == -1 )
+  {
+      INT_TYPE line;
+      struct pike_string *tmp = low_get_program_line(p, &line);
+
+      pop_n_elems(args);
+
+      if (tmp) 
+      {
+          push_string(tmp);
+          if(line >= 1)
+          {
+              push_constant_text(":");
+              push_int(line);
+              f_add(3);
+          }
+      }
+      else
+          push_int(0);
+      return;
+  }
+
+  id = ID_FROM_INT(p, offset);
+  id_prog = PROG_FROM_INT (p, offset);
+
+  if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
+     id->func.offset != -1)
+      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
+           id->func.const_info.offset >= 0 &&
+           (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
+      file = low_get_program_line (p2, &line);
+  else
+      /* The program line is better than nothing for C functions. */
+      file = low_get_program_line (p, &line);
+
+  if (file)
+  {
+      pop_n_elems(args);
+      if (line) {
+          push_string(file);
+          push_constant_text(":");
+          push_int(line);
+          f_add(3);
+      }
+      else
+          push_string (file);
+      return;
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
 
 /*! @decl array(program) inherit_list(program p)
  *!
@@ -9540,7 +9885,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
 #ifdef __amigaos__
@@ -9559,7 +9904,7 @@ void init_builtin_efuns(void)
   
 /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
-	   tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
+	   tOr(tFunc(tStr,tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
   
 /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
@@ -9639,6 +9984,9 @@ void init_builtin_efuns(void)
 /* function(void|object:object) */
   ADD_EFUN("next_object",f_next_object,
 	   tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("_map_all_objects",f_map_all_objects,
+           tFunc(tFunction,tIntPos),OPT_EXTERNAL_DEPEND);
   
 /* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
   ADD_EFUN("_next",f__next,
@@ -9915,6 +10263,9 @@ void init_builtin_efuns(void)
   ADD_EFUN("_memory_usage",f__memory_usage,
 	   tFunc(tNone,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 
+  ADD_EFUN("_size_object",f__size_object,
+	   tFunc(tObj,tInt),OPT_EXTERNAL_DEPEND);
+
   
 /* function(:int) */
   ADD_EFUN("gc",f_gc,tFunc(tNone,tInt),OPT_SIDE_EFFECT);
@@ -9928,11 +10279,11 @@ void init_builtin_efuns(void)
 
 /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value", f_encode_value,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
   /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
 
 /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
@@ -10060,6 +10411,8 @@ void init_builtin_efuns(void)
 		
   ADD_FUNCTION2("inherit_list", f_inherit_list,
 		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0, OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,
+               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0, OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 

@@ -4,7 +4,8 @@ OBJS=unicode_module.o normalize.o split.o buffer.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 SRC_TARGETS=$(SRCDIR)/wordbits.h \
-	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h $(SRCDIR)/uversion.h
+	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h \
+	$(SRCDIR)/uversion.h $(SRCDIR)/rtl.h
 @dynamic_module_makefile@
 
 UNICODEDATA=../../UnicodeData.txt
@@ -15,24 +16,29 @@ unicode_module.o: $(SRCDIR)/unicode_module.c
 
 $(SRCDIR)/decompositions.h: $(SRCDIR)/make_decompose.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_decompose.pike 		\
-                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+                    $(SRCDIR)/$(UNICODEDATA) "$@" || { rm "$@"; exit 1; }
 
 $(SRCDIR)/canonicals.h: $(SRCDIR)/make_canonicals.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_canonicals.pike 		\
-                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+                     $(SRCDIR)/$(UNICODEDATA)  "$@" || { rm "$@"; exit 1; }
 
 $(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_wordbits.pike 		\
-                    < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
+                     $(SRCDIR)/$(UNICODEDATA) "$@" || { rm "$@"; exit 1; }
 
-$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATA)
+$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATARM)
 	 $(RUNPIKE) $(SRCDIR)/make_uversion.pike		\
-                    $(SRCDIR)/$(UNICODEDATARM) > "$@" || { rm "$@"; exit 1; }
+                    $(SRCDIR)/$(UNICODEDATARM) "$@" || { rm "$@"; exit 1; }
+
+$(SRCDIR)/rtl.h: $(SRCDIR)/make_rtl.pike $(SRCDIR)/$(UNICODEDATA)
+	$(RUNPIKE) $(SRCDIR)/make_rtl.pike			\
+		$(SRCDIR)/$(UNICODEDATA) "$@" || { rm "$@"; exit 1; }
 
 unicode_module.o: $(SRCDIR)/unicode_module.c $(SRCDIR)/wordbits.h         \
 		  $(SRCDIR)/canonicals.h     			\
 		  $(SRCDIR)/decompositions.h			\
-		  $(SRCDIR)/uversion.h
+		  $(SRCDIR)/uversion.h				\
+		  $(SRCDIR)/rtl.h
 
 split.o: $(SRCDIR)/wordbits.h
 

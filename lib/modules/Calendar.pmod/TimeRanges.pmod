@@ -12,7 +12,7 @@ string calendar_name() { return "TimeRanges"; }
 
 object calendar_object=this;
 
-string _sprintf(int t) { return (t=='O')?calendar_name():0; }
+protected string _sprintf(int t) { return t=='O' && calendar_name(); }
 
 Calendar.Ruleset default_rules=Calendar.default_rules;
 
@@ -69,7 +69,7 @@ class TimeRange
    protected void create_unixtime_default(int unixtime);
    protected void create_julian_day(int jd);
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (sizeof(args)) switch (args[0])
       {
@@ -944,7 +944,7 @@ class TimeRange
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -981,7 +981,7 @@ class cSuperTimeRange
 //!	two time ranges. Otherwise, it's either not
 //!	a time period at all or a normal time period.
 
-   void create(array(TimeRange) _parts)
+   protected void create(array(TimeRange) _parts)
    {
       if (sizeof(_parts->is_supertimerange-({0})))
 	 error("one part is super\n%O\n",_parts);
@@ -1133,12 +1133,12 @@ class cSuperTimeRange
       return 0;
    }
 
-   int __hash()
+   protected int __hash()
    {
       return predef::`+(@map(parts,"__hash"));
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1180,7 +1180,7 @@ protected class cNullTimeRange
    constant is_nulltimerange=1;
 
 // overload
-   void create()
+   protected void create()
    {
    }
 
@@ -1259,7 +1259,7 @@ protected class cNullTimeRange
       return 1;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {

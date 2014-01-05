@@ -7,14 +7,9 @@
 
 inherit GDK2.Drawable;
 
-static GDK2.Bitmap create( int|Image.Image xsize_or_image, int|void ysize, string|void bitmap );
+protected GDK2.Bitmap create( int|Image.Image xsize_or_image, int|void ysize, string|void bitmap );
 //! Create a new GDK2.Bitmap object.
 //! Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
-//!
-//!
-
-GDK2.Bitmap destroy( );
-//! Destructor. Destroys the bitmap. This will free the bitmap on the X-server.
 //!
 //!
 

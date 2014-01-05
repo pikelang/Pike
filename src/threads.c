@@ -524,17 +524,19 @@ PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
 
 PMOD_EXPORT INLINE void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
+  int owner = threads_disabled;
   pike_low_wait_interpreter (cond COMMA_DLOC_ARGS_OPT);
-  if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
 }
 
 PMOD_EXPORT INLINE int pike_timedwait_interpreter (COND_T *cond,
 						   long sec, long nsec
 						   COMMA_DLOC_DECL)
 {
+  int owner = threads_disabled;
   int res = pike_low_timedwait_interpreter (cond, sec, nsec
 					    COMMA_DLOC_ARGS_OPT);
-  if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
   return res;
 }
 
@@ -910,7 +912,7 @@ void low_init_threads_disable(void)
  *! gc. (This advice applies to mutex locks in general, for that
  *! matter.)
  */
-void init_threads_disable(struct object *o)
+void init_threads_disable(struct object *UNUSED(o))
 {
   low_init_threads_disable();
 
@@ -928,7 +930,7 @@ void init_threads_disable(struct object *o)
   }
 }
 
-void exit_threads_disable(struct object *o)
+void exit_threads_disable(struct object *UNUSED(o))
 {
   THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): threads_disabled:%d\n",
 		      threads_disabled));
@@ -1204,6 +1206,9 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     thread_obj = NULL;
     num_threads--;
     mt_unlock_interpreter();
+#ifdef PIKE_DEBUG
+    Pike_interpreter_pointer = NULL;
+#endif
   }
 }
 
@@ -1291,7 +1296,7 @@ PMOD_EXPORT int count_pike_threads(void)
   return num_pike_threads;
 }
 
-static void check_threads(struct callback *cb, void *arg, void * arg2)
+static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
 #ifdef PROFILE_CHECK_THREADS
   static unsigned long calls = 0, yields = 0;
@@ -2258,14 +2263,14 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
     push_int(0);
 }
 
-void init_mutex_obj(struct object *o)
+void init_mutex_obj(struct object *UNUSED(o))
 {
   co_init(& THIS_MUTEX->condition);
   THIS_MUTEX->key=0;
   THIS_MUTEX->num_waiting = 0;
 }
 
-void exit_mutex_obj(struct object *o)
+void exit_mutex_obj(struct object *UNUSED(o))
 {
   struct mutex_storage *m = THIS_MUTEX;
   struct object *key = m->key;
@@ -2303,7 +2308,7 @@ void exit_mutex_obj(struct object *o)
 #endif
 }
 
-void exit_mutex_obj_compat_7_4(struct object *o)
+void exit_mutex_obj_compat_7_4(struct object *UNUSED(o))
 {
   struct mutex_storage *m = THIS_MUTEX;
   struct object *key = m->key;
@@ -2341,7 +2346,7 @@ void exit_mutex_obj_compat_7_4(struct object *o)
  *!   @[Mutex], @[Condition]
  */
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
-void init_mutex_key_obj(struct object *o)
+void init_mutex_key_obj(struct object *UNUSED(o))
 {
   THREADS_FPRINTF(1, (stderr, "KEY k:%p, t:%p\n",
 		      THIS_KEY, Pike_interpreter.thread_state));
@@ -2352,7 +2357,7 @@ void init_mutex_key_obj(struct object *o)
   THIS_KEY->initialized=1;
 }
 
-void exit_mutex_key_obj(struct object *o)
+void exit_mutex_key_obj(struct object *DEBUGUSED(o))
 {
   THREADS_FPRINTF(1, (stderr, "UNLOCK k:%p m:(%p) t:%p o:%p\n",
 		      THIS_KEY, THIS_KEY->mut,
@@ -2574,13 +2579,13 @@ void f_cond_broadcast(INT32 args)
   co_broadcast(&(THIS_COND->cond));
 }
 
-void init_cond_obj(struct object *o)
+void init_cond_obj(struct object *UNUSED(o))
 {
   co_init(&(THIS_COND->cond));
   THIS_COND->wait_count = 0;
 }
 
-void exit_cond_obj(struct object *o)
+void exit_cond_obj(struct object *UNUSED(o))
 {
   /* Wake up any threads that might be waiting on this cond.
    *
@@ -2698,7 +2703,7 @@ void f_thread_id_id_number(INT32 args)
  *! Waits for the thread to complete, and then returns
  *! the value returned from the thread function.
  */
-static void f_thread_id_result(INT32 args)
+static void f_thread_id_result(INT32 UNUSED(args))
 {
   struct thread_state *th=THIS_THREAD;
 
@@ -2735,7 +2740,7 @@ static int num_pending_interrupts = 0;
 static struct callback *thread_interrupt_callback = NULL;
 
 static void check_thread_interrupt(struct callback *foo,
-				   void *bar, void *gazonk)
+				   void *UNUSED(bar), void *UNUSED(gazonk))
 {
   if (Pike_interpreter.thread_state->flags & THREAD_FLAG_SIGNAL_MASK) {
     if (Pike_interpreter.thread_state->flags & THREAD_FLAG_TERM) {
@@ -2813,7 +2818,7 @@ static void f_thread_id_kill(INT32 args)
   push_int(0);
 }
 
-void init_thread_obj(struct object *o)
+void init_thread_obj(struct object *UNUSED(o))
 {
   MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
@@ -2852,7 +2857,7 @@ static void cleanup_thread_state (struct thread_state *th)
   th_destroy(& THIS_THREAD->id);
 }
 
-void exit_thread_obj(struct object *o)
+void exit_thread_obj(struct object *UNUSED(o))
 {
   THIS_THREAD->thread_obj = NULL;
 
@@ -2867,14 +2872,14 @@ void exit_thread_obj(struct object *o)
 /*! @endclass
  */
 
-static void thread_was_recursed(struct object *o)
+static void thread_was_recursed(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_recurse_mapping(tmp->thread_local);
 }
 
-static void thread_was_checked(struct object *o)
+static void thread_was_checked(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)

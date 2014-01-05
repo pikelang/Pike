@@ -4,10 +4,10 @@
 || for more information.
 */
 
-#include "global.h"
-
 #ifndef SECURITY_H
 #define SECURITY_H
+
+#include "global.h"
 
 #ifdef PIKE_SECURITY
 #include "object.h"

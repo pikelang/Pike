@@ -107,7 +107,7 @@ protected class NTSource {
 //! A pseudo random generator based on the arcfour crypto.
 class arcfour_random {
 
-  inherit Nettle.ARCFOUR_State;
+  inherit .arcfour;
 
   //! Initialize and seed the arcfour random generator.
   void create(string secret)

@@ -1,30 +1,51 @@
 START_MARKER
 
 dnl Note: This module has some tests with an external test script in
-dnl src/modules/files.
+dnl src/modules/_Stdio
 
 test_any([[
 #pike 7.4
 return SSL.constants && 1;
 ]], 1)
 
-cond_resolv(Crypto.Hash, [[
+cond_begin( Crypto.Hash )
 test_any([[
 #pike 7.4
 return SSL.cipher && 1;
 ]], 1)
 
+test_do( add_constant( "S", String.string2hex ) )
+test_eq( S(SSL.Cipher.MACsha("foo")->hash_raw("bar")),
+	 "62cdb7020ff920e5aa642c3d4066950dd1f01f4d" )
+test_eq( S(SSL.Cipher.MACsha("foo")->hash_master("bar")),
+	 "2e6eda2d36d2a2f4b5d7c28c920a0b679f17d76c" )
+test_eq( S(SSL.Cipher.MACmd5("foo")->hash_raw("bar")),
+         "37b51d194a7513e45b56f6524f2d51f2" )
+test_eq( S(SSL.Cipher.MACmd5("foo")->hash_master("bar")),
+         "c413fb96a80f160c25d0e61f5b5d8078" )
+test_eq( S(SSL.Cipher.MAChmac_sha("foo")->hash_raw("bar")),
+         "46b4ec586117154dacd49d664e5d63fdc88efb51" )
+test_eq( S(SSL.Cipher.MAChmac_md5("foo")->hash_raw("bar")),
+         "0c7a250281315ab863549f66cd8a3a53" )
+test_eq( S(SSL.Cipher.MAChmac_sha256("foo")->hash_raw("bar")),
+         "f9320baf0249169e73850cd6156ded0106e2bb6ad8cab01b7bbbebe6d1065317" )
+test_eq( S(SSL.Cipher.MAChmac_sha384("foo")->hash_raw("bar")),
+         "3d10d391bee2364df2c55cf605759373e1b5a4ca9355d8f3fe42970471eca2e422a79271a0e857a69923839015877fc6" )
+test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash_raw("bar")),
+         "114682914c5d017dfe59fdc804118b56a3a652a0b8870759cf9e792ed7426b08197076bf7d01640b1b0684df79e4b67e37485669e8ce98dbab60445f0db94fce" )
+
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
   object rsa = Crypto.RSA();
-  rsa->generate_key( 1024, random_string );
-  string _key = Tools.PEM.simple_build_pem("RSA PRIVATE KEY",
+  rsa->set_random(random_string);
+  rsa->generate_key( 1024 );
+  string _key = Standards.PEM.build("RSA PRIVATE KEY",
     Standards.PKCS.RSA.private_key(rsa));
 
-  object msg = Tools.PEM.pem_msg()->init(_key);
+  object msg = Standards.PEM.Messages(_key);
   object part = msg->parts["RSA PRIVATE KEY"];
-  object rsa_again=Standards.PKCS.RSA.parse_private_key(part->decoded_body());
+  object rsa_again=Standards.PKCS.RSA.parse_private_key(part->body);
 
   ASSERT(rsa->public_key_equal(rsa_again));
 
@@ -33,75 +54,180 @@ test_do([[
     (["commonName":Standards.ASN1.Types.PrintableString("*")]),
   });
 
-  string _cert = Tools.PEM.simple_build_pem("CERTIFICATE",
-    Tools.X509.make_selfsigned_rsa_certificate(rsa_again, 3600*24, attrs));
+  string _cert = Standards.PEM.build("CERTIFICATE",
+    Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs));
 
   add_constant("pem_key", _key);
   add_constant("pem_cert", _cert);
 ]])
 
-test_program([[
+test_do([[
 
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
-class Server {
-  SSL.context ctx;
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
 
-  void create() {
-    ctx = SSL.context();
-    ctx->random = random_string;
+  object msg = Standards.PEM.Messages( pem_cert );
+  object part = msg->parts["CERTIFICATE"];
+  string cert = part->body;
+  ASSERT(cert);
 
-    object msg = Tools.PEM.pem_msg()->init( pem_cert );
-    object part = msg->parts["CERTIFICATE"];
-    string cert = part->decoded_body();
-    ASSERT(cert);
+  msg = Standards.PEM.Messages( pem_key );
+  part = msg->parts["RSA PRIVATE KEY"];
+  string key = part->body;
+  ASSERT(key);
 
-    msg = Tools.PEM.pem_msg()->init( pem_key );
-    part = msg->parts["RSA PRIVATE KEY"];
-    string key = part->decoded_body();
-    ASSERT(key);
+  object rsa = Standards.PKCS.RSA.parse_private_key(key);
+  ctx->rsa = rsa;
+  ASSERT(rsa->rsa_size()>512);
+  ctx->short_rsa = Crypto.RSA();
+  ctx->short_rsa->set_random(ctx->random);
+  ctx->short_rsa->generate_key(512);
+  ctx->rsa_mode();
 
-    object rsa = Standards.PKCS.RSA.parse_private_key(key);
-    ctx->rsa = rsa;
-    ASSERT(rsa->rsa_size()>512);
-    ctx->short_rsa = Crypto.RSA()->generate_key(512, ctx->random);
-    ctx->rsa_mode();
+  object tbs = Standards.X509.decode_certificate(cert);
+  ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
+  ctx->certificates = ({ cert });
 
-    object tbs = Tools.X509.decode_certificate(cert);
-    ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
-    ctx->certificates = ({ cert });
-
-    add_constant("server_ctx", ctx);
-  }
-}
-
-int a() {
-  object s = Server();
-  return 1;
-}
+  add_constant("server_rsa_ctx", ctx);
 ]])
 
 test_do([[
-  add_constant("client_msg", Crypto.Random.random_string(65536));
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
+  ctx->dsa = Crypto.DSA()->generate_key(1024, 160);
+  mapping attrs = ([
+    "organizationName" : "Test",
+    "commonName" : "*",
+  ]);
+  string cert = Standards.X509.make_selfsigned_certificate(ctx->dsa,
+    3600*24, attrs);
+  ctx->certificates = ({ cert });
+  ctx->dhe_dss_mode();
+  add_constant("server_dss_ctx", ctx);
 ]])
 
+test_do([[
+  add_constant("client_msg", random_string(65536));
 ]])
-dnl Avoid too large strings to cond...
-cond_resolv(Crypto.Hash, [[
+
+test_do([[
+  add_constant("fmt_cipher_suite",
+	       lambda(int s)
+	       {
+		 foreach(indices(SSL.Constants), string id)
+		   if ((has_prefix(id, "SSL_") || has_prefix(id, "TLS_")) &&
+		       (SSL.Constants[id] == s)) return id;
+		 return sprintf("0x%04x", s);
+	       });
+]])
+test_do([[
+  add_constant("log_ssl_failure",
+	       lambda(int cmin, int cmax, int smin, int smax,
+		      string expected,
+		      int suite, int state, string got)
+	       {
+		 log_msg("SSL 3.%d..3.%d client with SSL 3.%d..3.%d server failed.\n",
+			 cmin, cmax, smin, smax);
+		 log_msg("Cipher_suite: %s\n", fmt_cipher_suite(suite));
+		 if (state != 3) {
+		   log_msg("Unexpected exit state: %d.\n", state);
+		 } else {
+		   log_msg("Unexpected result:\n"
+			   "Got:      %O\n"
+			   "Expected: %O\n",
+			   got, expected);
+		 }
+	       });
+]])
+
+test_do([[
+  add_constant("invalid_suites", ([
+    SSL.Constants.PROTOCOL_TLS_1_1: ({
+      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
+      SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_anon_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_md5,
+      SSL.Constants.SSL_null_with_null_null,
+    }),
+    SSL.Constants.PROTOCOL_TLS_1_2: ({
+      SSL.Constants.SSL_rsa_with_idea_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha,
+      SSL.Constants.SSL_dh_anon_with_des_cbc_sha,
+      SSL.Constants.SSL_rsa_with_des_cbc_sha,
+      SSL.Constants.SSL_dhe_dss_with_des_cbc_sha,
+      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha,
+      SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
+      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
+      SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_anon_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_sha,
+      SSL.Constants.SSL_rsa_with_null_md5,
+      SSL.Constants.SSL_null_with_null_null,
+    }),
+  ]));
+]])
+
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
-  test_any([[
-    log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 server...");
+  test_tests([[array(int) a() {
 
+    int expected_protocol = min($2, $4);
+    int successes;
+    int failures;
+
+    foreach( ({
+        SSL.Constants.SIGNATURE_rsa,
+        SSL.Constants.SIGNATURE_dsa,
+      }), int mode) {
+
+    object server_ctx;
+    array(int) suites;
+
+    if( mode == SSL.Constants.SIGNATURE_rsa )
+    {
+      server_ctx = server_rsa_ctx;
+      suites = ({
+        SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
+      });
+      log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 RSA server...");
+    }
+    else
+    {
+      server_ctx = server_dss_ctx;
+      suites = ({
+        SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha
+      });
+      log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 DSS server...");
+    }
+
+    if( `==($1,$2,$3,$4) )
+      suites = server_ctx->get_suites(mode, 0, $4) -
+  	    (invalid_suites[expected_protocol] || ({}));
+
+    foreach(suites, int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
-                                     0, $3, $4);
+				     0, $3, $4);
 
     SSL.context client_ctx = SSL.context();
-    client_ctx->random = Crypto.Random.random_string;
+    client_ctx->random = random_string;
+    client_ctx->preferred_suites = ({ suite });
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0, $1, $2);
 
     int state;
@@ -115,11 +241,11 @@ define(test_ssl, [[
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
       if (!sizeof(server_buf)) {
-        server->set_write_callback(UNDEFINED);
-        if (state) {
-          server->close();
-          state = 2;
-        }
+	server->set_write_callback(UNDEFINED);
+	if (state) {
+	  server->close();
+	  state = 2;
+	}
       }
     };
     void server_got_data(mixed ignored, string data)
@@ -151,8 +277,8 @@ define(test_ssl, [[
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
-        client->set_write_callback(UNDEFINED);
-        state = 1;
+	client->set_write_callback(UNDEFINED);
+	state = 1;
       }
     };
     void client_got_close()
@@ -170,65 +296,151 @@ define(test_ssl, [[
     server->set_nonblocking(server_got_data, 0, server_got_close);
     server->set_alert_callback(server_alert);
     client->set_nonblocking(client_got_data, client_send_data,
-                            client_got_close);
+			    client_got_close);
     client->set_alert_callback(client_alert);
 
     // We loop the backend while something happens...
     while (trigged--) {
-      Pike.DefaultBackend(0.1);
+      mixed err = catch {
+        Pike.DefaultBackend(0.005);
+      };
+      if (err) {
+        state = -1;
+        master()->handle_error(err);
+        break;
+      }
     }
-
-    return (state == 3) ? client_recv_buf : state;
-  ]], $5)
+    if (!$5 || ((state == 3) && (client_recv_buf == $5))) {
+      // log_status("OK: %s\n", fmt_cipher_suite(suite));
+      successes++;
+    } else {
+      log_ssl_failure($1,$2,$3,$4,$5,suite,state,client_recv_buf);
+      failures++;
+    }
+    client->close();
+    server->close();
+    }
+    }
+    return ({ successes, failures });
+  }]])
 ]])
 
-  test_ssl(0,0,0,0,client_msg)
-  test_ssl(0,1,0,0,client_msg)
-  test_ssl(1,1,0,0,0)
-  test_ssl(0,2,0,0,client_msg)
-  test_ssl(1,2,0,0,0)
-  test_ssl(2,2,0,0,0)
+test_ssl(0,0,0,0,client_msg)
+test_ssl(0,1,0,0,client_msg)
+test_ssl(1,1,0,0,0)
+test_ssl(0,2,0,0,client_msg)
+test_ssl(1,2,0,0,0)
+test_ssl(2,2,0,0,0)
+test_ssl(0,3,0,0,client_msg)
+test_ssl(1,3,0,0,0)
+test_ssl(2,3,0,0,0)
+test_ssl(3,3,0,0,0)
 
-  test_ssl(0,0,0,1,client_msg)
-  test_ssl(0,0,1,1,0)
-  test_ssl(0,1,0,1,client_msg)
-  test_ssl(0,1,1,1,client_msg)
-  test_ssl(1,1,0,1,client_msg)
-  test_ssl(1,1,1,1,client_msg)
-  test_ssl(0,2,0,1,client_msg)
-  test_ssl(0,2,1,1,client_msg)
-  test_ssl(1,2,0,1,client_msg)
-  test_ssl(1,2,1,1,client_msg)
-  test_ssl(2,2,0,1,0)
-  test_ssl(2,2,1,1,0)
+test_ssl(0,0,0,1,client_msg)
+test_ssl(0,0,1,1,0)
+test_ssl(0,1,0,1,client_msg)
+test_ssl(0,1,1,1,client_msg)
+test_ssl(1,1,0,1,client_msg)
+test_ssl(1,1,1,1,client_msg)
+test_ssl(0,2,0,1,client_msg)
+test_ssl(0,2,1,1,client_msg)
+test_ssl(1,2,0,1,client_msg)
+test_ssl(1,2,1,1,client_msg)
+test_ssl(2,2,0,1,0)
+test_ssl(2,2,1,1,0)
+test_ssl(0,3,0,1,client_msg)
+test_ssl(0,3,1,1,client_msg)
+test_ssl(1,3,0,1,client_msg)
+test_ssl(1,3,1,1,client_msg)
+test_ssl(2,3,0,1,0)
+test_ssl(2,3,1,1,0)
+test_ssl(3,3,0,1,0)
+test_ssl(3,3,1,1,0)
 
-  test_ssl(0,0,0,2,client_msg)
-  test_ssl(0,0,1,2,0)
-  test_ssl(0,0,2,2,0)
-  test_ssl(0,1,0,2,client_msg)
-  test_ssl(0,1,1,2,client_msg)
-  test_ssl(0,1,2,2,0)
-  test_ssl(1,1,0,2,client_msg)
-  test_ssl(1,1,1,2,client_msg)
-  test_ssl(1,1,2,2,0)
-  test_ssl(0,2,0,2,client_msg)
-  test_ssl(0,2,1,2,client_msg)
-  test_ssl(0,2,2,2,client_msg)
-  test_ssl(1,2,0,2,client_msg)
-  test_ssl(1,2,1,2,client_msg)
-  test_ssl(1,2,2,2,client_msg)
-  test_ssl(2,2,0,2,client_msg)
-  test_ssl(2,2,1,2,client_msg)
-  test_ssl(2,2,2,2,client_msg)
+test_ssl(0,0,0,2,client_msg)
+test_ssl(0,0,1,2,0)
+test_ssl(0,0,2,2,0)
+test_ssl(0,1,0,2,client_msg)
+test_ssl(0,1,1,2,client_msg)
+test_ssl(0,1,2,2,0)
+test_ssl(1,1,0,2,client_msg)
+test_ssl(1,1,1,2,client_msg)
+test_ssl(1,1,2,2,0)
+test_ssl(0,2,0,2,client_msg)
+test_ssl(0,2,1,2,client_msg)
+test_ssl(0,2,2,2,client_msg)
+test_ssl(1,2,0,2,client_msg)
+test_ssl(1,2,1,2,client_msg)
+test_ssl(1,2,2,2,client_msg)
+test_ssl(2,2,0,2,client_msg)
+test_ssl(2,2,1,2,client_msg)
+test_ssl(2,2,2,2,client_msg)
+test_ssl(0,3,0,2,client_msg)
+test_ssl(0,3,1,2,client_msg)
+test_ssl(0,3,2,2,client_msg)
+test_ssl(1,3,0,2,client_msg)
+test_ssl(1,3,1,2,client_msg)
+test_ssl(1,3,2,2,client_msg)
+test_ssl(2,3,0,2,client_msg)
+test_ssl(2,3,1,2,client_msg)
+test_ssl(2,3,2,2,client_msg)
+test_ssl(3,3,0,2,0)
+test_ssl(3,3,1,2,0)
+test_ssl(3,3,2,2,0)
 
-  test_do([[
-    add_constant("client_msg");
-    add_constant("server_ctx");
-    add_constant("pem_cert");
-    add_constant("pem_key");
-  ]])
+test_ssl(0,0,0,3,client_msg)
+test_ssl(0,0,1,3,0)
+test_ssl(0,0,2,3,0)
+test_ssl(0,0,3,3,0)
+test_ssl(0,1,0,3,client_msg)
+test_ssl(0,1,1,3,client_msg)
+test_ssl(0,1,2,3,0)
+test_ssl(0,1,3,3,0)
+test_ssl(1,1,0,3,client_msg)
+test_ssl(1,1,1,3,client_msg)
+test_ssl(1,1,2,3,0)
+test_ssl(1,1,3,3,0)
+test_ssl(0,2,0,3,client_msg)
+test_ssl(0,2,1,3,client_msg)
+test_ssl(0,2,2,3,client_msg)
+test_ssl(0,2,3,3,0)
+test_ssl(1,2,0,3,client_msg)
+test_ssl(1,2,1,3,client_msg)
+test_ssl(1,2,2,3,client_msg)
+test_ssl(1,2,3,3,0)
+test_ssl(2,2,0,3,client_msg)
+test_ssl(2,2,1,3,client_msg)
+test_ssl(2,2,2,3,client_msg)
+test_ssl(2,2,3,3,0)
+test_ssl(0,3,0,3,client_msg)
+test_ssl(0,3,1,3,client_msg)
+test_ssl(0,3,2,3,client_msg)
+test_ssl(0,3,3,3,client_msg)
+test_ssl(1,3,0,3,client_msg)
+test_ssl(1,3,1,3,client_msg)
+test_ssl(1,3,2,3,client_msg)
+test_ssl(1,3,3,3,client_msg)
+test_ssl(2,3,0,3,client_msg)
+test_ssl(2,3,1,3,client_msg)
+test_ssl(2,3,2,3,client_msg)
+test_ssl(2,3,3,3,client_msg)
+test_ssl(3,3,0,3,client_msg)
+test_ssl(3,3,1,3,client_msg)
+test_ssl(3,3,2,3,client_msg)
+test_ssl(3,3,3,3,client_msg)
 
+test_do([[
+  add_constant("invalid_suites");
+  add_constant("log_ssl_failure");
+  add_constant("fmt_cipher_suite");
+  add_constant("client_msg");
+  add_constant("server_rsa_ctx");
+  add_constant("server_dss_ctx");
+  add_constant("pem_cert");
+  add_constant("pem_key");
 ]])
+
+cond_end
 
 dnl   test_do([[
 dnl     object p = Process.Process(RUNPIKE + " \"]]SRCDIR[[/https.pike\"");
@@ -239,4 +451,7 @@ dnl       error("Failed\n");
 dnl     /* How to kill the process if running on windows? */
 dnl     p->kill(15);
 dnl   ]])
+
+test_do( add_constant("S") )
+
 END_MARKER

@@ -26,12 +26,6 @@ inherit Calendar.TimeRanges:TimeRanges;
 
 function(mixed...:TimeRange) Day;
 
-// sanity check
-
-#ifndef __AUTO_BIGNUM__
-#error Calendar.Time needs bignums (Gmp.mpz)
-#endif
-
 Calendar.Rule.Timezone Timezone_UTC=
   Calendar.Rule.Timezone(0,"UTC"); // needed for dumping
 
@@ -72,7 +66,7 @@ class TimeofDay
 //- for internal use:
 //- method void create("timeofday",rules,unixtime,len)
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1226,7 +1220,7 @@ class cSuperTimeRange
       return parts[0]->distance(z)->format_elapsed();
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       if (t=='t') 
 	 return "Calendar."+calendar_name()+".TimeofDay";
@@ -1266,7 +1260,7 @@ class cHour
 
    inherit TimeofDay;
 
-   int __hash() { return ux/(60*60); }
+   protected int __hash() { return ux/(60*60); }
 
    void create_unixtime_default(int unixtime)
    {
@@ -1306,7 +1300,7 @@ class cHour
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       if (catch {
       switch (t)
@@ -1378,7 +1372,7 @@ class cMinute
 
    inherit TimeofDay;
 
-   int __hash() { return ux/60; }
+   protected int __hash() { return ux/60; }
 
    protected void create_unixtime(int _ux,int _len)
    {
@@ -1418,7 +1412,7 @@ class cMinute
       return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1485,7 +1479,7 @@ class cSecond
 
    inherit TimeofDay;
 
-  int __hash() { return ux; }
+   protected int __hash() { return ux; }
 
    void create_unixtime_default(int unixtime)
    {
@@ -1517,7 +1511,7 @@ class cSecond
       return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1628,7 +1622,7 @@ class cFraction
 //!	If created without explicit length, the fraction will always be
 //!	of zero length.
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1775,7 +1769,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1794,7 +1788,7 @@ class cFraction
       }
    }
 
-   int __hash() { return ux; }
+   protected int __hash() { return ux; }
 
    string nice_print()
    {

@@ -40,7 +40,7 @@
 
 inherit GTK2.Misc;
 
-static GTK2.Label create( string|mapping text_or_props );
+protected GTK2.Label create( string|mapping text_or_props );
 //! Creates a new label.
 //!
 //!
@@ -250,12 +250,12 @@ GTK2.Label set_single_line_mode( int mode );
 //!
 //!
 
-GTK2.Label set_text( string text );
+GTK2.Label set_text( sprintf_format text, sprintf_args... fmt );
 //! Set the text in the label
 //!
 //!
 
-GTK2.Label set_text_with_mnemonic( string text );
+GTK2.Label set_text_with_mnemonic( sprintf_format text, sprintf_args... fmt );
 //! Sets the label's text from the string text.  If characters in text are
 //! preceded by an underscore, they are underlined indicating that they
 //! represent a keyboard accelerator called a mnemonic.  The mnemonic key can

@@ -23,7 +23,7 @@
 
 inherit GTK2.Data;
 
-static GTK2.Tooltips create( );
+protected GTK2.Tooltips create( );
 //! Creates an empty group of tooltips. This function initialises a
 //! GTK2.Tooltips structure. Without at least one such structure, you
 //! can not add tips to your application.

@@ -53,9 +53,6 @@
 static void init_builtin_modules(void)
 {
   void init_iterators(void);
-#ifdef WITH_FACETS
-  void init_facetgroup(void);
-#endif
 
 #ifdef DEBUG_MALLOC
   /* Make some statically allocated structs known to dmalloc. These
@@ -118,27 +115,21 @@ static void init_builtin_modules(void)
   TRACE((stderr, "Init dynamic loading...\n"));
 
   init_dynamic_load();
-#ifdef WITH_FACETS
 
-  TRACE((stderr, "Init facets...\n"));
+  TRACE((stderr, "Init sprintf...\n"));
 
-  init_facetgroup();
-#endif
+  init_sprintf();
 }
 
 static void exit_builtin_modules(void)
 {
 #ifdef DO_PIKE_CLEANUP
   void exit_iterators(void);
-#ifdef WITH_FACETS
-  void exit_facetgroup(void);
-#endif
 
   /* Clear various global references. */
 
-#ifdef AUTO_BIGNUM
+  exit_sprintf();
   exit_auto_bignum();
-#endif
   exit_pike_searching();
   exit_object();
   exit_signals();
@@ -150,9 +141,6 @@ static void exit_builtin_modules(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
-#ifdef WITH_FACETS
-  exit_facetgroup();
-#endif
   cleanup_program();
   cleanup_compiler();
   cleanup_error();
@@ -394,6 +382,25 @@ static const struct static_module module_list[] = {
 #include "post_modules/modlist.h"
 #endif
 };
+
+/*! @decl object _static_modules
+ *!
+ *! This is an object containing the classes for all static
+ *! (ie non-dynamic) C-modules.
+ *!
+ *! In a typic Pike with support for dynamic modules the contained
+ *! module classes are:
+ *! @dl
+ *!   @item @[Builtin]
+ *!   @item @[Gmp]
+ *!   @item @[_Stdio]
+ *!   @item @[_math]
+ *!   @item @[_system]
+ *! @enddl
+ *!
+ *! If the Pike binary lacks support for dynamic modules, all C-modules
+ *! will show up here.
+ */
 
 void init_modules(void)
 {

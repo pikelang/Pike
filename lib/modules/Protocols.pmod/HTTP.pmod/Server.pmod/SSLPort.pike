@@ -9,10 +9,11 @@ int portno;
 string|int(0..0) interface;
 function(Request:void) callback;
 
-program request_program=Request;
+//!
+object|function|program request_program=Request;
 
 //! The simplest SSL server possible. Binds a port and calls
-//! a callback with @[Request] objects.
+//! a callback with @[request_program] objects.
 
 //! Create a HTTPS (HTTP over SSL) server.
 //!
@@ -75,49 +76,20 @@ class MySSLPort
 
   inherit SSL.sslport;
 
-  string my_certificate = MIME.decode_base64(
-  "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
-  "BAgTClRodWVyaW5nZW4xEDAOBgNVBAcTB0lsbWVuYXUxEzARBgNVBAoTClRVIEls\n"
-  "bWVuYXUxDDAKBgNVBAsTA1BNSTEUMBIGA1UEAxMLZGVtbyBzZXJ2ZXIwHhcNOTYw\n"
-  "NDMwMDUzNjU4WhcNOTYwNTMwMDUzNjU5WjBtMQswCQYDVQQGEwJERTETMBEGA1UE\n"
-  "CBMKVGh1ZXJpbmdlbjEQMA4GA1UEBxMHSWxtZW5hdTETMBEGA1UEChMKVFUgSWxt\n"
-  "ZW5hdTEMMAoGA1UECxMDUE1JMRQwEgYDVQQDEwtkZW1vIHNlcnZlcjBcMA0GCSqG\n"
-  "SIb3DQEBAQUAA0sAMEgCQQDBB6T7bGJhRhRSpDESxk6FKh3iKKrpn4KcDtFM0W6s\n"
-  "16QSPz6J0Z2a00lDxudwhJfQFkarJ2w44Gdl/8b+de37AgMBAAEwDQYJKoZIhvcN\n"
-  "AQEEBQADQQB5O9VOLqt28vjLBuSP1De92uAiLURwg41idH8qXxmylD39UE/YtHnf\n"
-  "bC6QS0pqetnZpQj1yEsjRTeVfuRfANGw\n");
-
-  string my_key = MIME.decode_base64(
-  "MIIBOwIBAAJBAMEHpPtsYmFGFFKkMRLGToUqHeIoqumfgpwO0UzRbqzXpBI/PonR\n"
-  "nZrTSUPG53CEl9AWRqsnbDjgZ2X/xv517fsCAwEAAQJBALzUbJmkQm1kL9dUVclH\n"
-  "A2MTe15VaDTY3N0rRaZ/LmSXb3laiOgBnrFBCz+VRIi88go3wQ3PKLD8eQ5to+SB\n"
-  "oWECIQDrmq//unoW1+/+D3JQMGC1KT4HJprhfxBsEoNrmyIhSwIhANG9c0bdpJse\n"
-  "VJA0y6nxLeB9pyoGWNZrAB4636jTOigRAiBhLQlAqhJnT6N+H7LfnkSVFDCwVFz3\n"
-  "eygz2yL3hCH8pwIhAKE6vEHuodmoYCMWorT5tGWM0hLpHCN/z3Btm38BGQSxAiAz\n"
-  "jwsOclu4b+H8zopfzpAaoB8xMcbs0heN+GNNI0h/dQ==\n");
-
-/* PKCS#1 Private key structure:
-
-RSAPrivateKey ::= SEQUENCE {
-  version Version,
-  modulus INTEGER, -- n
-  publicExponent INTEGER, -- e
-  privateExponent INTEGER, -- d
-  prime1 INTEGER, -- p
-  prime2 INTEGER, -- q
-  exponent1 INTEGER, -- d mod (p-1)
-  exponent2 INTEGER, -- d mod (q-1)
-  coefficient INTEGER -- (inverse of q) mod p }
-
-Version ::= INTEGER
-
-*/
-
   //!
   void set_default_keycert()
   {
-    set_key(my_key);
-    set_certificate(my_certificate);
+    rsa = Crypto.RSA();
+    rsa->generate_key( 4096 );
+
+    mapping attrs = ([
+      "organizationName" : "Pike TLS server",
+      "commonName" : "*",
+    ]);
+
+    certificates = ({
+      Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs)
+    });
   }
 
   //!

@@ -73,6 +73,7 @@ static void encode_truecolor_24_rgb_al32( rgb_group *s,
     {
       MEMCPY(d,(unsigned char *)s,w*3);
       d += (w*3+3)&~3;
+      q--;
     }
   }
 }

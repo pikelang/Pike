@@ -40,7 +40,7 @@ int can_undo( );
 //!
 //!
 
-static GTK2.SourceBuffer create( GTK2.SourceTagTable table_or_lang );
+protected GTK2.SourceBuffer create( GTK2.SourceTagTable table_or_lang );
 //! Creates a new source buffer.  If table_or_lang is a GTK2.SourceLanguage,
 //! it will create a buffer using the highlighting patterns of that language.
 //! If it is a GTK2.SourceTagTable, it will use that table, otherwise it will

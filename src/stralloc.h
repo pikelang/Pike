@@ -9,7 +9,6 @@
 #include "global.h"
 
 #include "pike_macros.h"
-#include "block_alloc_h.h"
 
 #define STRINGS_ARE_SHARED
 
@@ -21,19 +20,23 @@
 #define PIKE_STRING_CONTENTS						\
   INT32 refs;								\
   INT32 ref_type;							\
-  INT16 flags;								\
-  INT16 size_shift; /* 14 bit waste, but good for alignment... */	\
+  unsigned char  flags;								\
+  unsigned char  size_shift; 	\
+  unsigned char  min;								\
+  unsigned char  max; 	\
   ptrdiff_t len; /* Not counting terminating NUL. */			\
   size_t hval;								\
-  struct pike_string *next 
+  struct pike_string *next
 #else /* !ATOMIC_SVALUE */
-#define PIKE_STRING_CONTENTS						\
-  INT32 refs;								\
-  INT16 flags;								\
-  INT16 size_shift; /* 14 bit waste, but good for alignment... */	\
-  ptrdiff_t len; /* Not counting terminating NUL. */			\
-  size_t hval;								\
-  struct pike_string *next 
+#define PIKE_STRING_CONTENTS                \
+    INT32 refs;                                     \
+    unsigned char  flags;                           \
+    unsigned char  size_shift;                      \
+    unsigned char  min;								\
+    unsigned char  max;                                             \
+    ptrdiff_t len; /* Not counting terminating NUL. */              \
+    size_t hval;                                                    \
+    struct pike_string *next
 #endif
 
 struct pike_string
@@ -50,10 +53,16 @@ struct string_builder
 };
 
 /* Flags used in pike_string->flags. */
-#define STRING_NOT_HASHED	1	/* Hash value is invalid. */
-#define STRING_NOT_SHARED	2	/* String not shared. */
-#define STRING_IS_SHORT		4	/* String is blockalloced. */
-#define STRING_CLEAR_ON_EXIT    8       /* Overwrite before free. */
+#define STRING_NOT_HASHED	    1	/* Hash value is invalid. */
+#define STRING_NOT_SHARED	    2	/* String not shared. */
+#define STRING_IS_SHORT		    4	/* String is blockalloced. */
+#define STRING_CLEAR_ON_EXIT    8   /* Overwrite before free. */
+
+#define STRING_CONTENT_CHECKED 16 /* if true, min and max are valid */
+#define STRING_IS_LOWERCASE    32
+#define STRING_IS_UPPERCASE    64
+
+#define CLEAR_STRING_CHECKED(X) do{(X)->flags &= 15;}while(0)
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */
@@ -95,10 +104,6 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #define my_hash_string(X) PTR_TO_INT(X)
 #define is_same_string(X,Y) ((X)==(Y))
-
-/* NB: This intentionally only works for narrow strings. */
-#define string_has_null(X)						\
-  (STRNLEN((X)->str, (size_t)(X)->len) != (size_t)(X)->len)
 
 #ifdef PIKE_DEBUG
 #define STR0(X) ((p_wchar0 *)debug_check_size_shift((X),0)->str)
@@ -270,10 +275,6 @@ struct pike_string *findstring(const char *foo);
 struct short_pike_string0;
 struct short_pike_string1;
 struct short_pike_string2;
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK);
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK);
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK);
-
 
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len) ATTRIBUTE((malloc));
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)  ATTRIBUTE((malloc));
@@ -290,6 +291,14 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
+PMOD_EXPORT void check_string_range( struct pike_string *str, int loose,
+                                     INT32 *min, INT32 *max );
+/* Returns true if str1 could contain str2. */
+PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
+                                              struct pike_string *str2 );
+/* Returns true if str could contain n. */
+PMOD_EXPORT int string_range_contains( struct pike_string *str, int n );
+
 PMOD_EXPORT void do_free_string(struct pike_string *s);
 PMOD_EXPORT void do_free_unlinked_pike_string(struct pike_string *s);
 PMOD_EXPORT void really_free_string(struct pike_string *s);
@@ -378,6 +387,11 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  ptrdiff_t start,
 						  ptrdiff_t max_len,
 						  int flags);
+PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b);
+PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
+                                    unsigned char aflags, unsigned char amin,
+                                    unsigned char amax,
+                                    struct pike_string *b);
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       LONGEST val,
 					       unsigned int base,
@@ -433,6 +447,15 @@ static INLINE void string_builder_binary_strcat(struct string_builder *s,
 						const char *str, ptrdiff_t len)
 {
   string_builder_binary_strcat0 (s, (const p_wchar0 *) str, len);
+}
+
+/* Note: Does not work 100% correctly with shift==2 strings. */
+static INLINE int string_has_null( struct pike_string *x )
+{
+    INT32 min;
+    if( !x->len ) return 0;
+    check_string_range(x,0,&min,0);
+    return min <= 0;
 }
 
 #define ISCONSTSTR(X,Y) c_compare_string((X),Y,sizeof(Y)-sizeof(""))
@@ -497,5 +520,8 @@ static INLINE void string_builder_binary_strcat(struct string_builder *s,
 
 PMOD_EXPORT void f_sprintf(INT32 num_arg);
 void f___handle_sprintf_format(INT32 args);
+void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r);
+void init_sprintf();
+void exit_sprintf();
 
 #endif /* STRALLOC_H */

@@ -203,7 +203,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
-  if(TYPEOF(throw_value) <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(throw_value)))
   {
     debug_malloc_update_location(throw_value.u.refs,
 				 Pike_interpreter.recoveries->file);
@@ -306,6 +306,7 @@ PMOD_EXPORT void make_error (const char *fmt, ...)
   va_end (args);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
 {
   va_list args;
@@ -369,7 +370,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
     push_int(0);
 
   for (i=-args; i; i++) {
-    if (TYPEOF(oldsp[i]) <= PIKE_T_FLOAT) {
+    if (TYPEOF(oldsp[i]) <= MAX_TYPE) {
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
@@ -514,7 +515,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
      * evaluator stuff while we let the master describe the backtrace
      * below. Doing it the naughty way without going through
      * init_threads_disable etc to avoid hanging on runaway locks. */
+#ifdef PIKE_THREADS
     threads_disabled++;
+#endif
     MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
@@ -526,7 +529,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     }
     UNSETJMP (jmp);
+#ifdef PIKE_THREADS
     threads_disabled--;
+#endif
     evaluator_callbacks = saved_eval_cbs;
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
@@ -535,6 +540,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   do_abort();
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
 {
   va_list args;
@@ -669,6 +675,28 @@ static void f_error_index(INT32 args)
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }
+}
+
+static void f_error__sizeof(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(2);
+}
+
+static void f_error__indices(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(0);
+  push_int(1);
+  f_aggregate(2);
+}
+
+static void f_error__values(INT32 args)
+{
+  pop_n_elems(args);
+  apply_current(generic_err_message_fun, 0);
+  apply_current(generic_err_backtrace_fun, 0);
+  f_aggregate(2);
 }
 
 /*! @decl string describe()

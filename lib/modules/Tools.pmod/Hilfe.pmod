@@ -137,8 +137,9 @@ protected class CommandSet {
   }
 
   protected class Intwriter (string type, function fallback) {
-    void `()(function(string, mixed ... : int) w, string sres, int num,
-	     mixed res, int last_compile_time, int last_eval_time) {
+    protected void `()(function(string, mixed ... : int) w, string sres,
+                       int num, mixed res, int last_compile_time,
+                       int last_eval_time) {
       if(res && intp(res)) {
 	if(type=="b") {
 	  string s = sprintf("%b", res);
@@ -345,7 +346,7 @@ by pressing F1.";
       docs = module;
 
     object child;
-    if (docs && docs->documentation)
+    if (docs?->documentation)
     {
       if (docs->objects && sizeof(docs->objects))
         e->safe_write("\n%{%s\n%}\n", docs->objects->print());
@@ -618,11 +619,7 @@ protected class CommandNew {
 
 protected class CommandStartStop {
   inherit Command;
-  SubSystems subsystems;
-
-  void create() {
-    subsystems=SubSystems();
-  }
+  SubSystems subsystems = SubSystems();
 
   string help(string what) {
     switch(what){
@@ -665,10 +662,6 @@ protected class SubSysBackend {
   "\twill end at first exception. Can be restarted with \"start backend\".\n";
 
   constant stopdoc = "backend\n\tstop the backend thread.\n";
-
-  void create(){
-    is_running=0;
-  }
 
   void start(Evaluator e, array(string) words){
     int(0..1) once = (sizeof(words)>=2 && words[1]=="once");
@@ -714,25 +707,21 @@ protected class SubSysLogger {
   constant stopdoc = "logging\n\tTurns off logging to file.\n";
   int(0..1) running;
 
-  protected class Logger {
-
-    Stdio.File logfile;
-    Evaluator e;
+  protected class Logger (Evaluator e, Stdio.File logfile)
+  {
     constant is_logger = 1;
 
-    void create(Evaluator _e, Stdio.File _logfile) {
-      e = _e;
-      logfile = _logfile;
+    protected void create() {
       e->add_input_hook(this);
       running = 1;
     }
 
-    void destroy() {
+    protected void destroy() {
       e && e->remove_input_hook(this);
       running = 0;
     }
 
-    int(0..0) `() (string in) {
+    protected int(0..0) `() (string in) {
       if(!running) return 0;
       if(catch( logfile->write(in) )) {
 	e->remove_writer(this);
@@ -829,7 +818,7 @@ protected class SubSysPhish {
 protected class SubSystems {
   mapping(string:object) subsystems;
 
-  void create (){
+  protected void create () {
     // Register the subsystems here.
     subsystems = ([
 #if constant(thread_create)
@@ -968,7 +957,7 @@ class Expression {
 
   //! @param t
   //!   An array of Pike tokens.
-  void create(array(string) t) {
+  protected void create(array(string) t) {
     positions = ([]);
     depths = allocate(sizeof(t));
     sscanf_depths = (<>);
@@ -1196,7 +1185,7 @@ protected class ParserState {
       pipeline += ({ token });
 
       // If we start a block at the uppermost level, what kind of block is it?
-      if(!pstack->ptr)
+      if(!sizeof(pstack))
         switch(token)
         {
         case "{":
@@ -1235,7 +1224,7 @@ protected class ParserState {
       // Do we end any kind of parenthesis level?
       if(token==")" || token=="}" || token=="]" ||
 	 token==">)" || token=="})" || token=="])" ) {
-	if(!pstack->ptr)
+	if(!sizeof(pstack))
 	   throw(sprintf("%O end parenthesis without start parenthesis.",
 			 token));
 	if(pstack->top()!=starts[token])
@@ -1246,7 +1235,7 @@ protected class ParserState {
       }
 
       // expressions
-      if(token==";" && !pstack->ptr) {
+      if(token==";" && !sizeof(pstack)) {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
@@ -1255,7 +1244,7 @@ protected class ParserState {
 
       // If we end a block at the uppermost level, and it doesn't need a ";",
       // then we can move out that block of the pipeline.
-      if(token=="}" && !pstack->ptr && !termblock[block]) {
+      if(token=="}" && !sizeof(pstack) && !termblock[block]) {
 	ready += ({ Expression(pipeline) });
 	pipeline = ({});
 	block = 0;
@@ -1265,7 +1254,7 @@ protected class ParserState {
       // Preprocessor
       if( token[0]=='#' ) {
 	string tmp = token-" ";
-	if( has_prefix(tmp, "#error") && !pstack->ptr) {
+	if( has_prefix(tmp, "#error") && !sizeof(pstack)) {
 	  ready += ({ Expression( pipeline ) });
 	  pipeline = ({});
 	  block = 0;
@@ -1369,7 +1358,7 @@ protected class ParserState {
   //! Are we in the middle of an expression. Used e.g. for changing the
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
-    if(pstack->ptr) return 0;
+    if(sizeof(pstack)) return 0;
     if(low_state->in_token) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
@@ -1392,7 +1381,7 @@ protected class ParserState {
   //! Returns the current parser state. Used by "dump state".
   string status() {
     string ret = "Current parser state\n";
-    ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
+    ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..sizeof(pstack)]*" ");
     ret += sprintf("Current pipeline: %O\n", pipeline);
     ret += sprintf("Last token: %O\n", last);
     ret += sprintf("Current block: %O\n", block);
@@ -1422,7 +1411,7 @@ protected class HilfeHistory {
   }
 
   // Give better names in backtraces.
-  mixed `[](int i) {
+  protected mixed `[](int i) {
     mixed ret;
     array err = catch( ret = ::`[](i) );
     if(err)
@@ -1431,7 +1420,7 @@ protected class HilfeHistory {
   }
 
   // Give the object a better name.
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%d)", this_program,
 			     _sizeof(), get_maxsize() );
   }
@@ -1507,6 +1496,17 @@ class Evaluator {
       if(arrayp(in)) in *= "";
       if(sizeof(args))
 	in = sprintf(in, @args);
+      if (String.width(in) > 8) {
+	// Variable and function names may contain wide characters...
+	// Perform Unicode escaping.
+	in = map(in/"",
+		 lambda(string s) {
+		   if (String.width(s) <= 8) return s;
+		   int c = s[0] & 0xffffffff;
+		   if (c <= 0xffff) return sprintf("\\u%04x", c);
+		   return sprintf("\\U%08x", c);
+		 }) * "";
+      }
       int ret = write(in);
       if(!ret && sizeof(in)) return sizeof(in);
       return ret;
@@ -1537,9 +1537,7 @@ class Evaluator {
     input_hooks -= ({ old });
   }
 
-
-  //!
-  void create()
+  protected void create()
   {
     print_version();
     commands->set = CommandSet();
@@ -2154,11 +2152,9 @@ class Evaluator {
 
   protected string hch_errors = "";
   protected string hch_warnings = "";
-  protected class HilfeCompileHandler {
+  protected class HilfeCompileHandler (int stack_level) {
 
-    int stack_level;
-    void create(int _stack_level) {
-      stack_level = _stack_level;
+    protected void create() {
       hch_errors = "";
       hch_warnings = "";
     }
@@ -2167,7 +2163,7 @@ class Evaluator {
 
     mapping(string:mixed) get_default_module() {
       object compat = get_active_compilation_handler();
-      if (compat && compat->get_default_module) {
+      if (compat?->get_default_module) {
 	// Support things like @expr{7.4::rusage}.
 	return compat->get_default_module() + hilfe_symbols;
       }
@@ -2516,7 +2512,7 @@ class StdinHilfe
 
   //! Any hilfe statements given in the init array will be executed
   //! once .hilferc has been executed.
-  void create(void|array(string) init)
+  protected void create(void|array(string) init)
   {
     readline = Stdio.Readline();
     write = readline->write;
@@ -2760,12 +2756,12 @@ class StdinHilfe
     {
       foreach(completions; int count; string item)
       {
-        object stat = file_stat(dir+"/"+item);
-        if (objectp(stat))
+        Stdio.Stat stat = file_stat(dir+"/"+item);
+        if (stat)
           completions[count] += filetypes[stat->type]||"";
 
         stat = file_stat(dir+"/"+item, 1);
-        if (objectp(stat) && stat->type == "lnk")
+        if (stat?->type == "lnk")
           completions[count] += filetypes["lnk"];
       }
       return completions;
@@ -2963,7 +2959,7 @@ class GenericHilfe
   inherit Evaluator;
 
   //!
-  void create(Stdio.FILE in, Stdio.File out)
+  protected void create(Stdio.FILE in, Stdio.File out)
   {
     write=out->write;
     ::create();
@@ -2982,10 +2978,9 @@ class GenericHilfe
 }
 
 //!
-class GenericAsyncHilfe
+class GenericAsyncHilfe (Stdio.File infile, Stdio.File outfile)
 {
   inherit Evaluator;
-  Stdio.File infile, outfile;
 
   string outbuffer="";
 
@@ -3018,16 +3013,13 @@ class GenericAsyncHilfe
     write("Terminal closed.\n");
     destruct(this);
     destruct(infile);
-    if(outfile) destruct(outfile);
+    destruct(outfile);
   }
 
-  //!
-  void create(Stdio.File in, Stdio.File out)
+  protected void create()
   {
-    infile=in;
-    outfile=out;
-    in->set_nonblocking(read_callback, 0, close_callback);
-    out->set_write_callback(write_callback);
+    infile->set_nonblocking(read_callback, 0, close_callback);
+    outfile->set_write_callback(write_callback);
 
     write=send_output;
     ::create();

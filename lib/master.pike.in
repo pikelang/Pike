@@ -55,7 +55,7 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //        or at least some functions that use them should be.
 //        cf Tools.Shoot.runpike.
 //	/grubba 2004-04-11
-#if defined(__NT__) || defined(__amigaos__)
+#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
@@ -95,7 +95,7 @@ int is_pike_master = 0;
 
 // Have to access some stuff without going through the resolver.
 private object(_static_modules.Builtin) Builtin = _static_modules.Builtin();
-private constant Files = _static_modules.files;
+private constant Files = _static_modules._Stdio;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
@@ -131,8 +131,8 @@ protected int _msg_depth;
 #ifdef RESOLV_DEBUG
 
 #define GET_RESOLV_MSG_DEPTH GET_MSG_DEPTH
-#define INC_RESOLV_MSG_DEPTH INC_MSG_DEPTH
-#define DEC_RESOLV_MSG_DEPTH DEC_MSG_DEPTH
+#define INC_RESOLV_MSG_DEPTH() INC_MSG_DEPTH()
+#define DEC_RESOLV_MSG_DEPTH() DEC_MSG_DEPTH()
 
 void resolv_debug (sprintf_format fmt, sprintf_args... args)
 {
@@ -1016,7 +1016,7 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
   return IS_ABSOLUTE_PATH(p);
 #else
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
@@ -1028,7 +1028,7 @@ int is_absolute_path(string p)
 #endif
 }
 
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
 #define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
 #else
 #define EXPLODE_PATH(X) ((X)/"/")
@@ -1280,20 +1280,21 @@ protected void set_lc_env (mapping(string:string) env)
 }
 #endif
 
-//! @decl string getenv (string varname, void|int force_update)
 //! @decl mapping(string:string) getenv (void|int force_update)
 //!
-//! Queries the environment variables. The first variant returns the
-//! value of a specific variable or zero if it doesn't exist in the
-//! environment. The second variant returns the whole environment as a
-//! mapping. Destructive operations on the mapping will not affect the
-//! internal environment representation.
+//! Queries the environment variables.
 //!
-//! A cached copy of the real environment is kept to make this
-//! function quicker. If the optional flag @[force_update] is nonzero
-//! then the real environment is queried and the cache is updated from
-//! it. That can be necessary if the environment changes through other
-//! means than @[putenv], typically from a C-level library.
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the whole environment as a mapping. Destructive
+//!   operations on the mapping will not affect the internal
+//!   environment representation.
 //!
 //! Variable names and values cannot be wide strings nor contain
 //! @expr{'\0'@} characters. Variable names also cannot contain
@@ -1304,80 +1305,102 @@ protected void set_lc_env (mapping(string:string) env)
 //!
 //! @seealso
 //!   @[putenv()]
-string|mapping(string:string) getenv (void|int|string varname,
-				      void|int force_update)
+mapping(string:string) getenv (void|int force_update)
 {
-  // Variants doesn't seem to work well yet.
-  if (stringp (varname)) {
-    if (!environment || force_update) {
+  mapping(string:string) res;
+
+  if (force_update) {
+    res = Builtin._getenv();
 #ifdef __NT__
-      set_lc_env (Builtin._getenv());
+    set_lc_env (res);
 #else
-      environment = Builtin._getenv();
+    environment = res + ([]);
 #endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-#ifdef __NT__
-    varname = lower_case(varname);
-#endif
-
-    if (compat_environment) {
-      array(string) res;
-      if (!equal(res = compat_environment[varname],
-		 compat_environment_copy[varname])) {
-	// Something has messed with the compat environment mapping.
-	putenv(varname, res && res[1]);
-      }
-    }
-
-    return environment[varname];
+    // Kill the compat environment if forced.
+    compat_environment = compat_environment_copy = 0;
   }
 
   else {
-    force_update = varname;
-
-    mapping(string:string) res;
-
-    if (force_update) {
-      res = Builtin._getenv();
-#ifdef __NT__
-      set_lc_env (res);
-#else
-      environment = res + ([]);
-#endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-    else {
-      if (compat_environment &&
-	  !equal(compat_environment, compat_environment_copy)) {
-	foreach(compat_environment; varname; array(string) pair) {
-	  if (!equal(pair, compat_environment_copy[varname])) {
-	    putenv(pair[0], pair[1]);
-	  }
-	}
-	foreach(compat_environment_copy; varname; array(string) pair) {
-	  if (!compat_environment[varname]) {
-	    putenv(pair[0]);
-	  }
+    if (compat_environment &&
+	!equal(compat_environment, compat_environment_copy)) {
+      foreach(compat_environment; string varname; array(string) pair) {
+	if (!equal(pair, compat_environment_copy[varname])) {
+	  putenv(pair[0], pair[1]);
 	}
       }
-#ifdef __NT__
-      // Can't use the cached environment since variable names have been
-      // lowercased there.
-      res = Builtin._getenv();
-      if (!environment) set_lc_env (res);
-#else
-      if (!environment) environment = Builtin._getenv();
-      res = environment + ([]);
-#endif
+      foreach(compat_environment_copy; string varname; array(string) pair) {
+	if (!compat_environment[varname]) {
+	  putenv(pair[0]);
+	}
+      }
     }
-
-    return res;
+#ifdef __NT__
+    // Can't use the cached environment since variable names have been
+    // lowercased there.
+    res = Builtin._getenv();
+    if (!environment) set_lc_env (res);
+#else
+    if (!environment) environment = Builtin._getenv();
+    res = environment + ([]);
+#endif
   }
+
+  return res;
+}
+
+//! @decl string getenv (string varname, void|int force_update)
+//!
+//! Query the value of a specific environment variable.
+//!
+//! @param varname
+//!   Environment variable to query.
+//!
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the value of the environment variable @[varname]
+//!   if it exists, and @expr{0@} (zero) otherwise.
+//!
+//! Variable names and values cannot be wide strings nor contain
+//! @expr{'\0'@} characters. Variable names also cannot contain
+//! @expr{'='@} characters.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
+//!
+//! @seealso
+//!   @[putenv()]
+variant string getenv (string varname, void|int force_update)
+{
+  if (!environment || force_update) {
+#ifdef __NT__
+    set_lc_env (Builtin._getenv());
+#else
+    environment = Builtin._getenv();
+#endif
+    // Kill the compat environment if forced.
+    compat_environment = compat_environment_copy = 0;
+  }
+
+#ifdef __NT__
+  varname = lower_case(varname);
+#endif
+
+  if (compat_environment) {
+    array(string) res;
+    if (!equal(res = compat_environment[varname],
+	       compat_environment_copy[varname])) {
+      // Something has messed with the compat environment mapping.
+      putenv(varname, res[?1]);
+    }
+  }
+
+  return environment[varname];
 }
 
 void putenv (string varname, void|string value)
@@ -1605,7 +1628,7 @@ protected void call_compile_warning (object handler, string file,
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim_all_whites (msg);
-  if (handler && handler->compile_warning)
+  if (handler?->compile_warning)
     handler->compile_warning (file, 0, msg);
   else if (master()->compile_warning)
     master()->compile_warning (file, 0, msg);
@@ -1845,11 +1868,11 @@ protected program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      decoded = decode_value(read_precompiled (oname),
-				     (handler && handler->get_codec ||
+				     (handler?->get_codec ||
 				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      if (decoded && decoded->this_program_does_not_exist) {
+	      if (decoded?->this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
 		return programs[fname] = 0;
@@ -1942,7 +1965,7 @@ protected program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-    if (ret && ret->this_program_does_not_exist) {
+    if (ret?->this_program_does_not_exist) {
       resolv_debug ("low_findprog %s: program says it doesn't exist\n", fname);
       return programs[fname] = 0;
     }
@@ -2091,6 +2114,19 @@ program cast_to_program(string pname,
 }
 
 
+protected string narrowify_string(string s)
+{
+  if (Builtin.string_width(s) <= 8) return s;
+  // Perform Unicode escaping.
+  return map(s/"",
+	     lambda(string s) {
+	       if (Builtin.string_width(s) <= 8) return s;
+	       int c = s[0] & 0xffffffff;
+	       if (c <= 0xffff) return sprintf("\\u%04x", c);
+	       return sprintf("\\U%08x", c);
+	     }) * "";
+}
+
 //! This function is called when an error occurs that is not caught
 //! with catch().
 void handle_error(array|object trace)
@@ -2111,14 +2147,14 @@ void handle_error(array|object trace)
 	if (catch {
 	  string msg = [string]x[0];
 	  array bt = [array]x[1];
-	  werror("%s", msg);
-	  werror("%O\n", bt);
+	  werror("%s", narrowify_string(msg));
+	  werror(narrowify_string(sprintf("%O\n", bt)));
 	}) {
-	  werror("%O\n", x);
+	  werror(narrowify_string(sprintf("%O\n", x)));
 	}
       };
-      werror("Original error:\n"
-	     "%O\n", trace);
+      werror(narrowify_string(sprintf("Original error:\n"
+				      "%O\n", trace)));
     }) {
       werror("sprintf() failed to write error.\n");
     }
@@ -2202,7 +2238,6 @@ protected void create()
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
 
-  add_constant("strlen", sizeof);
   add_constant("write", write);
   add_constant("werror", werror);
   // To make it possible to overload get_dir and file_stat later on.
@@ -2413,7 +2448,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   class module_checker
   {
-    int `!()
+    protected int `!()
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
 
@@ -2445,14 +2480,14 @@ class dirnode (string dirname, object|void compilation_handler,
       }
     }
 
-    mixed `[](string index)
+    protected mixed `[](string index)
       {
 	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
-		      dirname, index, module && module[index]);
-	return module && module[index];
+		      dirname, index, module[?index]);
+	return module[?index];
       }
-    array(string) _indices() { if(module) return indices(module); }
-    array _values() { if(module) return values(module); }
+    protected array(string) _indices() { if(module) return indices(module); }
+    protected array _values() { if(module) return values(module); }
   }
 
   protected mixed low_ind(string index, int(0..1)|void set_module)
@@ -2580,7 +2615,7 @@ class dirnode (string dirname, object|void compilation_handler,
     return low_ind(index);
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
 #ifdef MODULE_TRACE
@@ -2660,7 +2695,7 @@ class dirnode (string dirname, object|void compilation_handler,
 		  _cache_full?"full":"partially filled");
   }
 
-  protected array(string) _indices()
+  protected protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2670,7 +2705,7 @@ class dirnode (string dirname, object|void compilation_handler,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  protected array(mixed) _values()
+  protected protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2808,7 +2843,7 @@ class joinnode (array(object|mapping) joined_modules,
     return fallback_module[index];
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
     if (!zero_type(ret = cache[index])) {
@@ -2855,7 +2890,7 @@ class joinnode (array(object|mapping) joined_modules,
     _cache_full = 1;
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2865,7 +2900,7 @@ class joinnode (array(object|mapping) joined_modules,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2888,7 +2923,7 @@ class joinnode (array(object|mapping) joined_modules,
     }
   }
 
-  int `== (mixed other)
+  protected int `== (mixed other)
   {
     return objectp (other) && (other->is_resolv_joinnode == 1) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
@@ -3466,7 +3501,7 @@ class CompatResolver
       compile_cb_rethrow (err);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("CompatResolver(%O)",ver);
   }
@@ -3533,7 +3568,7 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver.
-void _main(array(string) orig_argv)
+void _main(array(string(0..255)) orig_argv)
 {
   array(string) argv=copy_value(orig_argv);
   int debug,trace,run_tool;
@@ -3744,7 +3779,7 @@ void _main(array(string) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright © 1994-2011 Linköping University\n"
+        exit(0, string_to_utf8(version() + " Copyright © 1994-2013 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
             "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));
@@ -3790,10 +3825,7 @@ void _main(array(string) orig_argv)
 	exit(0, format_paths());
 
       case "execute":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
 	random_seed((time() ^ (getpid()<<8)));
 	argv = tmp->get_args(argv,1);
 
@@ -3861,9 +3893,7 @@ void _main(array(string) orig_argv)
 	exit(ret);
 
       case "preprocess":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
@@ -3893,10 +3923,7 @@ void _main(array(string) orig_argv)
 	exit(0);
   }
 
-#ifdef __AUTO_BIGNUM__
   main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
   random_seed(time() ^ (getpid()<<8));
 
   if(sizeof(argv)==1)
@@ -4006,8 +4033,18 @@ void _main(array(string) orig_argv)
 	error("Error: %s has no main().\n", argv[0]);
       if (cur_compat_ver <= Version (7, 6))
 	ret=script->main(sizeof(argv),argv,getenv());
+      else if (cur_compat_ver <= Version (8, 0))
+	ret = script->main(sizeof(argv),argv);
       else
-	ret=script->main(sizeof(argv),argv);
+      {
+	mixed first_arg = __get_first_arg_type(_typeof(script->main));
+	// NB: first_arg may be zero eg in case main() ignores all args.
+        if( first_arg && (typeof(argv) <= first_arg) ) {
+	  // argv accepted as first argument.
+          ret=script->main(argv);
+        } else
+          ret=script->main(sizeof(argv),argv);
+      }
     };
   // Disable tracing.
   trace = predef::trace(trace);
@@ -4037,11 +4074,43 @@ void _main(array(string) orig_argv)
 #if constant(thread_local)
 object inhibit_compile_errors = thread_local();
 
-void set_inhibit_compile_errors(mixed f)
+//! Set the compile error, warning and exception behaviour.
+//!
+//! @param behaviour
+//!   The desired behaviour. One of:
+//!   @mixed
+//!     @type int(0..0)
+//!       Output compilation errors and warnings to @tt{stderr@}.
+//!       This is the default behaviour.
+//!     @type int(1..1)
+//!       Inhibit output of compilator diagnostics.
+//!     @type function(string, int, string:void)
+//!       Function to call for compilation errors. Compilation
+//!       warnings and exceptions are inhibited.
+//!
+//!       The function will be called with the same arguments
+//!       as those passed to @[compile_error()].
+//!     @type CompilationHandler
+//!       Compilation handler to use for diagnostics.
+//!   @endmixed
+//!
+//! @note
+//!   Note that the behaviour is thread local, and is not copied
+//!   to new threads when they are created.
+//!
+//! @seealso
+//!   @[get_inhibit_compile_errors()]
+void set_inhibit_compile_errors(mixed behaviour)
 {
-  inhibit_compile_errors->set(f);
+  inhibit_compile_errors->set(behaviour);
 }
 
+//! Get the current compile error, warning and exception behaviour.
+//!
+//! See @[set_inhibit_compile_errors()] for details.
+//!
+//! @seealso
+//!   @[set_inhibit_compile_errors()]
 mixed get_inhibit_compile_errors()
 {
   return inhibit_compile_errors->get();
@@ -4095,13 +4164,17 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
 //! This function is called whenever a compile error occurs. @[line]
 //! is zero for errors that aren't associated with any specific line.
 //! @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_warning()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_error(string file,int line,string err)
 {
   mixed val;
   if(! (val = get_inhibit_compile_errors() ))
   {
     werror( "%s:%s:%s\n",trim_file_name(file),
-	    line?(string)line:"-",err );
+	    line?(string)line:"-",narrowify_string(err) );
   }
   else if(objectp(val) ||
 	  programp(val) ||
@@ -4119,6 +4192,10 @@ void compile_error(string file,int line,string err)
 //! This function is called whenever a compile warning occurs. @[line]
 //! is zero for warnings that aren't associated with any specific
 //! line. @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_warning(string file,int line,string err)
 {
   mixed val;
@@ -4127,7 +4204,7 @@ void compile_warning(string file,int line,string err)
   {
     if(want_warnings)
       werror( "%s:%s: Warning: %s\n",trim_file_name(file),
-	      line?(string)line:"-",err );
+	      line?(string)line:"-",narrowify_string(err) );
   }
   else if (objectp(val) && val->compile_warning) {
     ([function(string,int,string:void)]([object]val)
@@ -4139,6 +4216,10 @@ void compile_warning(string file,int line,string err)
 //! This function is called when an exception is caught during
 //! compilation. Its message is also reported to @[compile_error] if
 //! this function returns zero.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_warning()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 int compile_exception (array|object trace)
 {
   if (objectp (trace) && ([object]trace)->is_cpp_or_compilation_error)
@@ -4192,11 +4273,9 @@ protected object Charset;
 string decode_charset(string data, string charset)
 {
   if (!Charset) {
-    object mod = [object]resolv("Locale");
-
-    Charset = [object](mod && mod["Charset"]);
+    Charset = [object]resolv("Charset");
     if (!Charset)
-      compile_cb_error("Cannot handle charset - no Locale.Charset module found.");
+      compile_cb_error("Cannot handle charset - no Charset module found.");
   }
 
   if (mixed err = catch {
@@ -4332,6 +4411,9 @@ class Describer
       }
       break;
     }
+    // Objects may have _sprintfs that output wide characters,
+    // and function names may be wide, etc...
+    res = narrowify_string(res);
     if (stringp(ident[m]))
       return ident[m] + "=" + res;
     return res;
@@ -5034,7 +5116,7 @@ array get_backtrace (object|array err)
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
 	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
@@ -5048,7 +5130,7 @@ array get_backtrace (object|array err)
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
 	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
@@ -5164,7 +5246,13 @@ class Encoder
 	  break compare;
 	}
 
-	if (resolved->is_resolv_dirnode)
+	if ((resolved->is_resolv_joinnode) &&
+	    (sizeof(resolved->joined_modules) == 1)) {
+	  ENC_MSG("  compare_resolved: %O is a single element joinnode.\n",
+		  resolved);
+	  resolved = resolved->joined_modules[0];
+	}
+	if (resolved->is_resolv_dirnode) {
 	  if (resolved->module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
@@ -5180,7 +5268,7 @@ class Encoder
 	  else
 	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
 		     what, resolved->module);
-
+	}
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
 	// and we don't know that.
@@ -5195,6 +5283,8 @@ class Encoder
 	    }
 	}
 #endif
+      } else {
+	ENC_MSG("  compare_resolved: %O is not an object.\n", resolved);
       }
 
       ENC_MSG ("  compare_resolved: %O is different from %O\n", what, resolved);
@@ -5391,7 +5481,7 @@ class Encoder
 
 	array parent_object = ({0});
 	string|array parent_name = nameof (parent, parent_object);
-	if (!parent_name) {
+	if (!parent_name || (parent_name == "o")) {
 	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	  return UNDEFINED;
 	}
@@ -5751,12 +5841,12 @@ class Version
 
   //! Methods define so that version objects
   //! can be compared and ordered.
-  int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
-  int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
-  int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
-  int __hash() { return major * 4711 + minor ; }
+  protected int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
+  protected int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
+  protected int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
+  protected int __hash() { return major * 4711 + minor ; }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     switch(t) {
     case 's': return sprintf("%d.%d",major,minor);
     case 'O': return sprintf("%O(%s)", this_program, this);
@@ -5764,7 +5854,7 @@ class Version
   }
 
   //! The version object can be casted into a string.
-  mixed cast(string type)
+  protected mixed cast(string type)
     {
       switch(type)
       {

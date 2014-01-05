@@ -24,6 +24,9 @@ DECLARATIONS
 #include "nettle.h"
 
 #include <nettle/aes.h>
+#ifdef HAVE_NETTLE_ARCTWO_H
+#include <nettle/arctwo.h>
+#endif
 #include <nettle/arcfour.h>
 #ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
@@ -31,14 +34,19 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_CAMELLIA_H
 #include <nettle/camellia.h>
 #endif
-#include <nettle/des.h>
 #include <nettle/cast128.h>
+#include <nettle/des.h>
+#ifdef HAVE_NETTLE_SALSA20_CRYPT
+#include <nettle/salsa20.h>
+#endif
 #ifdef HAVE_NETTLE_SERPENT_DECRYPT
 #include <nettle/serpent.h>
 #endif
 #include <nettle/twofish.h>
 #include "idea.h"
 #include <nettle/nettle-meta.h>
+
+#include <nettle/cbc.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -102,111 +110,141 @@ struct pike_cipher
   (crypt_func) name##_decrypt,			\
 }
 
-/*! @class CipherInfo
+/*! @class Cipher
  *!
  *! Represents information about a cipher algorithm, such as
  *! name, key size, and block size.
  */
-PIKECLASS CipherInfo
+PIKECLASS Cipher
 {
+  /*! @decl inherit __builtin.Nettle.Cipher
+   */
+  INHERIT "__builtin.Nettle.Cipher";
+
   CVAR const struct pike_cipher *meta;
   
-  /*! @decl string name(void)
+  /*! @decl string(0..255) name()
    *!
    *! @returns
    *!   A human readable name for the algorithm.
    */
-  PIKEFUN string name()
+  PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
-    {
-      if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.\n");
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
 
-      push_text(THIS->meta->name);
-    }
+    push_text(THIS->meta->name);
+  }
 
-  /*! @decl string key_size(void)
+  /*! @decl int(0..) key_size()
    *!
    *! @returns
    *!   The recommended key size for the cipher.
    */
-  PIKEFUN int key_size()
+  PIKEFUN int(0..) key_size()
     optflags OPT_TRY_OPTIMIZE;
-    {
-      if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.\n");
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
 
-      push_int(THIS->meta->key_size);
-    }
+    push_int(THIS->meta->key_size);
+  }
   
-  /*! @decl string block_size(void)
+  /*! @decl int(0..) block_size()
    *!
    *! @returns
    *!   The block size of the cipher (1 for stream ciphers).
    */
-  PIKEFUN int block_size()
+  PIKEFUN int(0..) block_size()
     optflags OPT_TRY_OPTIMIZE;
-    {
-      if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.\n");
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
 
-      push_int(THIS->meta->block_size);
-    }
+    push_int(THIS->meta->block_size);
+  }
+
   INIT
-    {
-      THIS->meta = NULL;
-    }
-}
-/*! @endclass
- */
+  {
+    THIS->meta = NULL;
+  }
 
-#define GET_INFO(o) \
-((struct CipherInfo_struct *) get_storage((o), CipherInfo_program))
-
-/* Generate a random string of length @[size] on top of the stack. */
-static void low_make_key(INT32 size)
-{
-  push_text("Crypto.Random");
-  SAFE_APPLY_MASTER("resolv",1);
-  if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
-    Pike_error("Failed to resolv Crypto.Random.\n");
-  push_int(size);
-  apply(Pike_sp[-2].u.object, "random_string", 1);
-  stack_swap();
-  pop_stack();
-}
-
-/*! @class CipherState
- *!
- *! Base class for hashing contexts.
- */
-PIKECLASS CipherState
-{
-  INHERIT CipherInfo;
-  CVAR crypt_func crypt;
-  CVAR void *ctx;
-  CVAR int key_size;
-
-  /* FIXME: Create should copy state from the other object, if
-   * provided. */
-
-  /*! @decl CipherState set_encrypt_key(string key, void|int force)
+  /*! @class State
    *!
-   *! Initializes the object for encryption.
-   *!
-   *! @seealso
-   *!   @[set_decrypt_key], @[crypt]
+   *! Base class for cipher contexts.
    */
-  PIKEFUN object set_encrypt_key(string key, void|int force)
-    optflags OPT_SIDE_EFFECT;
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit Cipher::State
+    DOCEND()
+
+    EXTRA
     {
-      struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.Hash.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    CVAR crypt_func crypt;
+    CVAR void *ctx;
+    CVAR int key_size;
+
+    /* FIXME: Create should copy state from the other object, if
+     * provided. */
+
+#define GET_INFO()	((struct Cipher_struct *)parent_storage(1))
+
+    /* Generate a random string of length @[size] on top of the stack. */
+    static void low_make_key(INT32 size)
+    {
+      push_text("Crypto.Random");
+      SAFE_APPLY_MASTER("resolv",1);
+      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
+	Pike_error("Failed to resolv Crypto.Random.\n");
+      push_int(size);
+      apply(Pike_sp[-2].u.object, "random_string", 1);
+      stack_swap();
+      pop_stack();
+    }
+
+    /*! @decl State set_encrypt_key(string(0..255) key, void|int force)
+     *!
+     *! Initializes the object for encryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key], @[crypt]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key, void|int force)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+    {
+      struct Cipher_struct *info = GET_INFO();
       assert(info);
-      
+
       if (!THIS->ctx || !info->meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str,
 				  force ? force->u.integer : 0);
 
@@ -216,23 +254,26 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
-  /*! @decl CipherState set_decrypt_key(string key, void|int force)
-   *!
-   *! Initializes the object for decryption.
-   *!
-   *! @seealso
-   *!   @[set_encrypt_key], @[crypt]
-   */
-  PIKEFUN object set_decrypt_key(string key, void|int force)
-    optflags OPT_SIDE_EFFECT;
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int force)
+     *!
+     *! Initializes the object for decryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key], @[crypt]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int force)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
     {
-      struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+      struct Cipher_struct *info = GET_INFO();
       assert(info);
       
       if (!THIS->ctx || !info->meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str,
 				  force ? force->u.integer : 0);
       THIS->crypt = info->meta->decrypt;
@@ -241,48 +282,51 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
-  /*! @decl string make_key()
-   *!
-   *! Generate a key by calling @[Crypto.Random.random_string] and
-   *! initialize this object for encryption with that key.
-   *!
-   *! @returns
-   *!   The generated key.
-   *!
-   *! @seealso
-   *!   @[set_encrypt_key]
-   */
-  PIKEFUN string make_key()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
-    assert(info);
-
-    low_make_key(info->meta->key_size);
-
-    /* FIXME: There should be a check for weak keys so this never throws. */
-    stack_dup();
-    f_CipherState_set_encrypt_key(1);
-    pop_stack();
-  }
-
-  /*! @decl string crypt(string data)
-   *!
-   *! Encrypts or decrypts data, using the current key.
-   *!
-   *! @param data
-   *!   For block ciphers, data must be an integral number of blocks.
-   *!
-   *! @returns
-   *!   The encrypted or decrypted data.
-   */
-  PIKEFUN string crypt (string data)
-    optflags OPT_EXTERNAL_DEPEND;
+    /*! @decl string(0..255) make_key()
+     *!
+     *! Generate a key by calling @[Crypto.Random.random_string] and
+     *! initialize this object for encryption with that key.
+     *!
+     *! @returns
+     *!   The generated key. The key memory will be cleared before
+     *!   released.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key]
+     */
+    PIKEFUN string(0..255) make_key()
+      optflags OPT_EXTERNAL_DEPEND;
     {
-      struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+      struct Cipher_struct *info = GET_INFO();
+      assert(info);
+
+      low_make_key(info->meta->key_size);
+
+      stack_dup();
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+      apply_current(f_Cipher_State_set_encrypt_key_fun_num, 1);
+      pop_stack();
+    }
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypts or decrypts data, using the current key. Neither the
+     *! input nor output data is automatically memory scrubbed,
+     *! unless @[String.secure] has been called on them.
+     *!
+     *! @param data
+     *!   For block ciphers, data must be an integral number of blocks.
+     *!
+     *! @returns
+     *!   The encrypted or decrypted data.
+     */
+    PIKEFUN string(0..255) crypt (string(0..255) data)
+      optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
+    {
+      struct Cipher_struct *info = GET_INFO();
       struct pike_string *s;
       assert(info);
-      
+
       if (!THIS->ctx || !THIS->crypt|| !info->meta)
 	Pike_error("CipherState not properly initialized.\n");
 
@@ -294,61 +338,95 @@ PIKECLASS CipherState
       s = begin_shared_string(data->len);
       THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
                   (const uint8_t *)data->str);
-      push_string(end_shared_string(s));
+      s = end_shared_string(s);
+      push_string(s);
     }
 
-  /*! @decl string key_size(void)
-   *!
-   *! @returns
-   *!   The actual key size for this cipher.
-   */
-  PIKEFUN int key_size()
-    optflags OPT_EXTERNAL_DEPEND;
+    /*! @decl string(0..255) name(void)
+     *!
+     *! @returns
+     *!   A human readable name for the algorithm.
+     *!
+     *! @note
+     *!   The default implementation just calls @[Cipher::name()]
+     *!   in the parent.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Cipher_name_fun_num, args);
+    }
+
+    /*! @decl int(0..) key_size(void)
+     *!
+     *! @returns
+     *!   The actual key size for this cipher.
+     */
+    PIKEFUN int(0..) key_size()
+      optflags OPT_TRY_OPTIMIZE;
     {
       RETURN THIS->key_size;
     }
 
-  INIT
+    /*! @decl int(0..) block_size(void)
+     *!
+     *! @returns
+     *!   The block size for this cipher.
+     *!
+     *! @note
+     *!   The default implementation just calls @[Cipher::block_size()]
+     *!   in the parent.
+     */
+    PIKEFUN int(0..) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Cipher_block_size_fun_num, args);
+    }
+
+    INIT
     {
       THIS->ctx = NULL;
       THIS->crypt = NULL;
       THIS->key_size = 0;
     }
 
-  EXIT
-    gc_trivial;
+    EXIT
     {
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
-	struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+	struct Cipher_struct *info = GET_INFO();
 	assert(info);
 	assert(info->meta);
 	memset(THIS->ctx, 0, info->meta->context_size);
       }
     }
+  }
+  /*! @endclass State */
+
 }
-/*! @endclass CipherState */
+/*! @endclass Cipher
+ */
 
 static void
 pike_aes_set_encrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   if (length == 16 || length == 24 || length == 32)
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
   else
-    Pike_error("AES_Info: Bad keysize for AES.\n");
+    Pike_error("AES: Bad keysize for AES.\n");
 }
 
 static void
 pike_aes_set_decrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   if (length == 16 || length == 24 || length == 32)
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
   else
-    Pike_error("AES_Info: Bad keysize for AES.\n");
+    Pike_error("AES: Bad keysize for AES.\n");
 }
 
 #cmod_define PIKE_NAME AES
@@ -357,13 +435,177 @@ pike_aes_set_decrypt_key(void *ctx,
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+#ifdef HAVE_NETTLE_ARCTWO_H
+
+/* NB: Requires Nettle 1.11 or later, which should be fine by now. */
+static void pike_arctwo_set_key(void *ctx,
+				ptrdiff_t length, const char *key,
+				int ekb)
+{
+  if (length < ARCTWO_MIN_KEY_SIZE || length > ARCTWO_MAX_KEY_SIZE)
+    Pike_error("ARCTWO: Bad keysize for ARCTWO.\n");
+
+  arctwo_set_key_ekb(ctx, length, (const uint8_t *)key, ekb);
+}
+
+#define pike_arctwo_set_encrypt_key pike_arctwo_set_key
+#define pike_arctwo_set_decrypt_key pike_arctwo_set_key
+
+/*! @class ARCTWO
+ *!
+ *! Implementation of the ARCTWO cipher.
+ *!
+ */
+PIKECLASS ARCTWO
+{
+  /*! @decl inherit Cipher
+   */
+  INHERIT Cipher;
+
+  static const struct pike_cipher pike_arctwo =
+    _PIKE_CIPHER(arctwo, ARCTWO);
+
+  INIT
+    {
+      struct Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
+			     Cipher_program);
+      cipher->meta = &pike_arctwo;
+    }
+
+  /*! @class State
+   *!
+   *! State for PIKE_NAME encyption.
+   *!
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit Cipher::State
+     */
+
+    static int f_ARCTWO_State_inherited_set_encrypt_key_fun_num = -1;
+    static int f_ARCTWO_State_inherited_set_decrypt_key_fun_num = -1;
+
+    EXTRA
+    {
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
+						      f_Cipher_State_set_encrypt_key_fun_num);
+	  f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
+						      f_Cipher_State_set_decrypt_key_fun_num);
+	}
+      }
+    }
+
+    CVAR struct arctwo_ctx arctwo;
+
+    INIT
+    {
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
+      state->ctx = &THIS->arctwo;
+    }
+
+    /*! @decl State set_encrypt_key(string(0..255) key, int|void ekb)
+     *!
+     *! Initializes the object for encryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @param ekb
+     *!   The effective number of bits in the key.
+     *!   @int
+     *!     @value UNDEFINED
+     *!       Derive from the key size (ie @expr{8 * sizeof(key)@}).
+     *!     @value 0
+     *!       Convenience alias for max (ie @expr{1024@}).
+     *!     @value 1..1024
+     *!       Reduce the effective key size to the specified number of bits.
+     *!   @endint
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key], @[crypt]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key, void|int(0..1024) ekb)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+    {
+      NO_WIDE_STRING(key);
+      if (!ekb) {
+	if (args > 1) pop_n_elems(args - 1);
+	push_int(key->len * 8);
+	args = 2;
+      }
+      apply_current(f_ARCTWO_State_inherited_set_encrypt_key_fun_num, args);
+    }
+
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int ekb)
+     *!
+     *! Initializes the object for decryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @param ekb
+     *!   The effective number of bits in the key.
+     *!   @int
+     *!     @value UNDEFINED
+     *!       Derive from the key size (ie @expr{8 * sizeof(key)@}).
+     *!     @value 0
+     *!       Convenience alias for max (ie @expr{1024@}).
+     *!     @value 1..1024
+     *!       Reduce the effective key size to the specified number of bits.
+     *!   @endint
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key], @[crypt]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int ekb)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+    {
+      NO_WIDE_STRING(key);
+      if (!ekb) {
+	if (args > 1) pop_n_elems(args - 1);
+	push_int(key->len * 8);
+	args = 2;
+      }
+      apply_current(f_ARCTWO_State_inherited_set_decrypt_key_fun_num, args);
+    }
+  }
+  /*! @endclass State
+   */
+}
+
+/*! @endclass ARCTWO
+ */
+
+#endif /* HAVE_NETTLE_ARCTWO_H */
+
 static void
 pike_arcfour_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < ARCFOUR_MIN_KEY_SIZE || length > ARCFOUR_MAX_KEY_SIZE)
-    Pike_error("ARCFOUR_Info: Bad keysize for ARCFOUR.\n");
+    Pike_error("ARCFOUR: Bad keysize for ARCFOUR.\n");
 
   arcfour_set_key(ctx, length, (const uint8_t *)key);
 }
@@ -384,12 +626,12 @@ pike_arcfour_set_key(void *ctx,
 static void
 pike_blowfish_set_key(void *ctx,
 		      ptrdiff_t length, const char *key,
-		      int force)
+		      int UNUSED(force))
 {
   if (length < BLOWFISH_MIN_KEY_SIZE || length > BLOWFISH_MAX_KEY_SIZE)
-    Pike_error("BLOWFISH_Info: Bad keysize for BLOWFISH.\n");
+    Pike_error("BLOWFISH: Bad keysize for BLOWFISH.\n");
   if (!blowfish_set_key(ctx, length, (const uint8_t *)key))
-    Pike_error("BLOWFISH_Info: Key is weak (and force flag is currently ignored).\n");
+    Pike_error("BLOWFISH: Key is weak (and force flag is currently ignored).\n");
 }
 #define pike_blowfish_set_encrypt_key pike_blowfish_set_key
 #define pike_blowfish_set_decrypt_key pike_blowfish_set_key
@@ -407,10 +649,10 @@ pike_blowfish_set_key(void *ctx,
 static void
 pike_camellia_set_encrypt_key(void *ctx,
 			      ptrdiff_t length, const char *key,
-			      int force)
+			      int UNUSED(force))
 {
   if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
-    Pike_error("CAMELLIA_Info: Bad keysize for CAMELLIA.\n");
+    Pike_error("CAMELLIA: Bad keysize for CAMELLIA.\n");
   camellia_set_encrypt_key(ctx, length, (const uint8_t *)key);
 }
 
@@ -420,7 +662,7 @@ pike_camellia_set_decrypt_key(void *ctx,
 			      int force)
 {
   if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
-    Pike_error("CAMELLIA_Info: Bad keysize for CAMELLIA.\n");
+    Pike_error("CAMELLIA: Bad keysize for CAMELLIA.\n");
   camellia_set_decrypt_key(ctx, length, (const uint8_t *)key);
 }
 
@@ -438,7 +680,7 @@ pike_camellia_set_decrypt_key(void *ctx,
 static void
 pike_cast128_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < CAST128_MIN_KEY_SIZE || length > CAST128_MAX_KEY_SIZE)
     Pike_error("CAST128_info: Bad keysize for CAST128.\n");
@@ -482,8 +724,6 @@ pike_des_set_key(void *c,
       break;
       
     case DES_BAD_PARITY:
-      /* FIXME: I don't think this should be visible in the user
-       * interface, the parity bits should just be ignored. */
       Pike_error("DES_INFO: Key has bad parity.\n");
     default:
       Pike_error("DES_INFO: Unexpected error, please send a bug report.\n");
@@ -495,31 +735,41 @@ pike_des_set_key(void *c,
 #define pike_des_set_encrypt_key pike_des_set_key
 #define pike_des_set_decrypt_key pike_des_set_key
 
-/*! @class DES_Info
+/*! @class DES
  *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with CipherInfo. */
-
-PIKECLASS DES_Info
+ *! Implementation of the Data Encryption Standard (DES) crypto algorithm.
+ *!
+ */
+PIKECLASS DES
 {
+  /*! @decl inherit Cipher
+   */
+  INHERIT Cipher;
+
   INIT
     {
       static const struct pike_cipher pike_des = _PIKE_CIPHER(des, DES);
-      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
-
-      if (CipherInfo && !CipherInfo->meta)
-	CipherInfo->meta = &pike_des;
+      /* FIXME: Ought to traverse the inherit graph for
+       *        the current program.
+       */
+      struct Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
+			     Cipher_program);
+      cipher->meta = &pike_des;
     }
 
-  /*! @decl string fix_parity(string key)
+  /*! @decl string(0..255) fix_parity(string(0..255) key)
    *! Sets the last bit in every byte in @[key] to reflect the parity.
    *! If a seven byte key is used, it will be expanded into eight
    *! bytes. If a key longer than eight characters is used, it will
    *! be truncated to eight characters.
    */
-  PIKEFUN string fix_parity(string key)
+  PIKEFUN string(0..255) fix_parity(string(0..255) key)
   {
     uint8_t buf[8];
+
+    NO_WIDE_STRING(key);
+
     if(key->len < 7)
       Pike_error("Key must be at least 7 characters.\n");
 
@@ -539,53 +789,94 @@ PIKECLASS DES_Info
     des_fix_parity(8, buf, buf);
     RETURN make_shared_binary_string((char *)buf, 8);
   }
-}
 
-/*! @endclass DES_Info */
+  /*! @class State
+   *!
+   *! State for DES encyption
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    DOCSTART() @decl inherit Cipher::State
+    DOCEND()
 
-/*! @class DES_State
- *!
- *! State for DES encyption
- */
-PIKECLASS DES_State
-{
-  INHERIT DES_Info;
-  INHERIT CipherState;
-  CVAR struct des_ctx des;
-
-  INIT
+    EXTRA
     {
-      struct CipherState_struct *state
-	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
-						    CipherState_program);
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
 
-      assert(state);
+    CVAR struct des_ctx des;
+
+    INIT
+    {
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
       state->ctx = &THIS->des;
     }
 
-  PIKEFUN string make_key()
-  {
-    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
-    struct CipherState_struct *state
-	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
-						    CipherState_program);
-    assert(info);
-    assert(state);
+    PIKEFUN string(0..255) make_key()
+    {
+      struct Cipher_struct *info = GET_INFO();
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
+      assert(info);
 
-    low_make_key(info->meta->key_size);
-    f_DES_Info_fix_parity(1);
+#ifndef DES_WEAK_KEY
+      do {
+        low_make_key(info->meta->key_size);
+      } while( !des_set_key(state->ctx,
+                            (const uint8_t *)Pike_sp[-1].u.string->str) );
+      f_DES_fix_parity(1);
+#else
+      low_make_key(info->meta->key_size);
+      f_DES_fix_parity(1);
 
-    /* FIXME: There should be a check for weak keys so this never throws. */
-    info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
-				Pike_sp[-1].u.string->str, 0);
+      info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
+				  Pike_sp[-1].u.string->str, 0);
+#endif
 
-    state->crypt = info->meta->encrypt;
-    state->key_size = Pike_sp[-1].u.string->len;
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+      state->crypt = info->meta->encrypt;
+      state->key_size = Pike_sp[-1].u.string->len;
+    }
+
+    /*! @decl string(0..255) fix_parity(string(0..255) key)
+     *! Sets the last bit in every byte in @[key] to reflect the parity.
+     *! If a seven byte key is used, it will be expanded into eight
+     *! bytes. If a key longer than eight characters is used, it will
+     *! be truncated to eight characters.
+     */
+    PIKEFUN string(0..255) fix_parity(string(0..255) key)
+    {
+      apply_external(1, f_DES_fix_parity_fun_num, args);
+    }
   }
-}
-/*! @endclass DES_State */
+  /*! @endclass State */
 
-void f_DES3_Info_fix_parity(INT32);
+}
+/*! @endclass DES */
+
+void f_DES3_fix_parity(INT32);
 
 static void
 pike_des3_set_key(void *c,
@@ -601,7 +892,7 @@ pike_des3_set_key(void *c,
     push_string(make_shared_binary_string(key, length));
     push_text("1234567");
     f_add(2);
-    f_DES3_Info_fix_parity(1);
+    f_DES3_fix_parity(1);
 
     MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8);
     pop_stack();
@@ -626,7 +917,7 @@ pike_des3_set_key(void *c,
 
   case 7+7+7:
     push_string(make_shared_binary_string(key, length));
-    f_DES3_Info_fix_parity(1);
+    f_DES3_fix_parity(1);
     MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
     pop_stack();
 
@@ -642,17 +933,16 @@ pike_des3_set_key(void *c,
     break;
   }
 
+#ifndef DES_WEAK_KEY
+  if( !des3_set_key(ctx, (const uint8_t *)key) && !force )
+    Pike_error("DES3_INFO: Key is weak.\n");
+#else
   /* The hack of resetting ctx->status to use a weak key doesn't
    * currently work with nettle's des3_set_key function. So we set the
    * individual keys by ourself. */
   for (i = 0; i<3; i++, key += DES_KEY_SIZE)
     if (!des_set_key(&ctx->des[i], (const uint8_t *)key))
     {
-#ifndef DES_WEAK_KEY
-      /* Nettle 2.1 and later. */
-      if (!force)
-	Pike_error("DES3_INFO: Key is weak.\n");
-#else
       /* Nettle 2.0 and earlier. */
       switch (ctx->des[i].status)
       {
@@ -665,45 +955,52 @@ pike_des3_set_key(void *c,
 	break;
       
       case DES_BAD_PARITY:
-	/* FIXME: I don't think this should be visible in the user
-	 * interface, the parity bits should just be ignored. */
 	Pike_error("DES3_INFO: Key has bad parity.\n");
       default:
 	Pike_error("DES3_INFO: Unexpected error, please send a bug report.\n");
       }
-#endif
     }
+#endif
 }
 #define pike_des3_set_encrypt_key pike_des3_set_key
 #define pike_des3_set_decrypt_key pike_des3_set_key
 
 
-/*! @class DES3_Info
+/*! @class DES3
  *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with CipherInfo. */
-
-PIKECLASS DES3_Info
+ *! Implementation of the DES3 cipher algorithm.
+ *!
+ */
+PIKECLASS DES3
 {
+  /*! @decl inherit Cipher
+   */
+  INHERIT Cipher;
+
   INIT
     {
       static const struct pike_cipher pike_des3 = _PIKE_CIPHER(des3, DES3);
-      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
-
-      if (CipherInfo && !CipherInfo->meta)
-	CipherInfo->meta = &pike_des3;
+      /* FIXME: Ought to traverse the inherit graph for
+       *        the current program.
+       */
+      struct Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
+			     Cipher_program);
+      cipher->meta = &pike_des3;
     }
 
-  /*! @decl string fix_parity(string key)
+  /*! @decl string(0..255) fix_parity(string(0..255) key)
    *! Sets the last bit in every byte in @[key] to reflect the parity.
    *! If a 21 byte key is used, it will be expanded into 24
    *! bytes. If a key longer than 24 characters is used, it will
    *! be truncated to 24 characters.
    */
-  PIKEFUN string fix_parity(string key)
+  PIKEFUN string(0..255) fix_parity(string(0..255) key)
   {
     INT32 i;
     struct array *arr;
+
+    NO_WIDE_STRING(key);
 
     if(key->len < 24 && key->len != 21)
       Pike_error("Key must be 21 or >=24 characters.\n");
@@ -722,68 +1019,260 @@ PIKECLASS DES3_Info
     for(i=0; i<3; i++) {
       push_int(0);
       array_index(&Pike_sp[-1], arr, i);
-      f_DES_Info_fix_parity(1);
+      f_DES_fix_parity(1);
     }
     free_array(arr);
 
     /* Join the subkeys */
     f_add(3);
   }
-}
 
-/*! @endclass DES3_Info */
+  /*! @class State
+   *!
+   *! State for DES3 encyption
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    DOCSTART() @decl inherit Cipher::State
+    DOCEND()
 
-/*! @class DES3_State
- *!
- *! State for DES3 encyption
- */
-PIKECLASS DES3_State
-{
-  INHERIT DES3_Info;
-  INHERIT CipherState;
-  CVAR struct des3_ctx des3;
-
-  INIT
+    EXTRA
     {
-      struct CipherState_struct *state
-	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
-						    CipherState_program);
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
 
-      assert(state);
+    CVAR struct des3_ctx des3;
+
+    INIT
+    {
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
       state->ctx = &THIS->des3;
     }
 
-  PIKEFUN string make_key()
-  {
-    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
-    struct CipherState_struct *state
-	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
-						    CipherState_program);
-    assert(info);
-    assert(state);
+    PIKEFUN string(0..255) make_key()
+    {
+      struct Cipher_struct *info = GET_INFO();
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
+      assert(info);
 
-    low_make_key(info->meta->key_size);
-    f_DES3_Info_fix_parity(1);
+#ifndef DES_WEAK_KEY
+      do {
+        low_make_key(info->meta->key_size);
+      } while( !des3_set_key(state->ctx,
+                             (const uint8_t *)Pike_sp[-1].u.string->str) );
+      f_DES3_fix_parity(1);
+#else
+      low_make_key(info->meta->key_size);
+      f_DES3_fix_parity(1);
 
-    /* FIXME: There should be a check for weak keys so this never throws. */
-    info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
-				Pike_sp[-1].u.string->str, 0);
+      info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
+				  Pike_sp[-1].u.string->str, 0);
+#endif
 
-    state->crypt = info->meta->encrypt;
-    state->key_size = Pike_sp[-1].u.string->len;
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+      state->crypt = info->meta->encrypt;
+      state->key_size = Pike_sp[-1].u.string->len;
+    }
   }
+  /*! @endclass State */
+
 }
-/*! @endclass DES3_State */
+
+/*! @endclass DES3 */
+
+#ifdef HAVE_NETTLE_SALSA20_CRYPT
+
+static void
+pike_salsa20_set_key(void *ctx,
+                     ptrdiff_t length, const char *key,
+                     int UNUSED(force))
+{
+  if ((length != SALSA20_MIN_KEY_SIZE) && (length != SALSA20_MAX_KEY_SIZE))
+    Pike_error("SALSA20: Bad keysize for SALSA20.\n");
+
+  salsa20_set_key(ctx, length, (const uint8_t *)key);
+}
+
+#define pike_salsa20_set_encrypt_key pike_salsa20_set_key
+#define pike_salsa20_set_decrypt_key pike_salsa20_set_key
+#define salsa20_encrypt salsa20_crypt
+#define salsa20_decrypt salsa20_crypt
+
+/*! @class SALSA20
+ *!
+ *! Implementation of the SALSA20 cipher.
+ *!
+ */
+PIKECLASS SALSA20
+{
+  /*! @decl inherit Cipher
+   */
+  INHERIT Cipher;
+
+  static const struct pike_cipher pike_salsa20 =
+    _PIKE_CIPHER(salsa20, SALSA20);
+
+  INIT
+    {
+      struct Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
+			     Cipher_program);
+      cipher->meta = &pike_salsa20;
+    }
+
+  /*! @class State
+   *!
+   *! State for SALSA20 encyption.
+   *!
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit Cipher::State
+     */
+
+    EXTRA
+    {
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    CVAR struct salsa20_ctx salsa20;
+
+    /*! @decl object set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector (aka nonce) and reset
+     *! the block counter to zero.
+     *!
+     *! @param iv
+     *!   An 8-byte long string which is only to be used
+     *!   once for every key.
+     *!
+     *! @note
+     *!   This function MUST be called in addition to
+     *!   @[set_encrypt_key()] or @[set_decrypt_key()].
+     *!
+     *! @note
+     *!   The same @[iv] should NEVER be reused with the same key!
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      rawtype tFunc(tStr8, tObjImpl_CIPHER_STATE);
+    {
+      NO_WIDE_STRING(iv);
+      if (iv->len != SALSA20_IV_SIZE)
+        Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_IV_SIZE);
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      salsa20_set_iv(&THIS->salsa20, (uint8_t *)iv->str);
+      push_object(this_object());
+    }
+
+    INIT
+    {
+      struct Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
+			     Cipher_State_program);
+      state->ctx = &THIS->salsa20;
+    }
+  }
+  /*! @endclass State
+   */
+
+}
+
+/*! @endclass SALSA20
+ */
+
+#ifdef salsa20r12_crypt
+
+#define pike_salsa20r12_set_encrypt_key pike_salsa20_set_encrypt_key
+#define pike_salsa20r12_set_decrypt_key pike_salsa20_set_decrypt_key
+#define salsa20r12_encrypt salsa20r12_crypt
+#define salsa20r12_decrypt salsa20r12_crypt
+#define salsa20r12_ctx salsa20_ctx
+
+#define SALSA20R12_BLOCK_SIZE	SALSA20_BLOCK_SIZE
+#define SALSA20R12_KEY_SIZE	SALSA20_KEY_SIZE
+
+/*! @class SALSA20R12
+ *!
+ *! Implementation of the @[SALSA20] cipher reduced to 12 rounds.
+ *!
+ */
+PIKECLASS SALSA20R12
+{
+  /*! @decl inherit SALSA20
+   */
+  INHERIT SALSA20;
+
+  static const struct pike_cipher pike_salsa20r12 =
+    _PIKE_CIPHER(salsa20r12, SALSA20R12);
+
+  INIT
+    {
+      struct Cipher_struct *cipher;
+      /* NB: We know that Cipher is the first inherit of SALSA20. */
+      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 2,
+			     Cipher_program);
+      cipher->meta = &pike_salsa20r12;
+    }
+}
+
+/*! @endclass SALSA20R12
+ */
+
+#endif /* salsa20r12_crypt */
+
+#endif	/* HAVE_NETTLE_SALSA20_CRYPT */
 
 #ifdef HAVE_NETTLE_SERPENT_DECRYPT
 
 static void
 pike_serpent_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < SERPENT_MIN_KEY_SIZE || length > SERPENT_MAX_KEY_SIZE)
-    Pike_error("SERPENT_Info: Bad keysize for SERPENT.\n");
+    Pike_error("SERPENT: Bad keysize for SERPENT.\n");
   
   serpent_set_key(ctx, length, (const uint8_t *)key);
 }
@@ -801,10 +1290,10 @@ pike_serpent_set_key(void *ctx,
 static void
 pike_twofish_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
-		     int force)
+		     int UNUSED(force))
 {
   if (length < TWOFISH_MIN_KEY_SIZE || length > TWOFISH_MAX_KEY_SIZE)
-    Pike_error("TWOFISH_Info: Bad keysize for TWOFISH.\n");
+    Pike_error("TWOFISH: Bad keysize for TWOFISH.\n");
 
   twofish_set_key(ctx, length, (const uint8_t *)key);
 }
@@ -825,19 +1314,19 @@ pike_twofish_set_key(void *ctx,
 static void
 pike_idea_set_encrypt_key(void *ctx_v,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   struct idea_ctx *ctx = ctx_v;
   if (length == IDEA_KEY_SIZE)
     idea_expand((unsigned INT16 *)ctx->ctx, (unsigned INT8 *)key);
   else
-    Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
+    Pike_error("IDEA: Bad keysize for IDEA.\n");
 }
 
 static void
 pike_idea_set_decrypt_key(void *ctx_v,
 			 ptrdiff_t length, const char *key,
-			 int force)
+			 int UNUSED(force))
 {
   struct idea_ctx *ctx = ctx_v;
   if (length == IDEA_KEY_SIZE) {
@@ -845,7 +1334,7 @@ pike_idea_set_decrypt_key(void *ctx_v,
     idea_invert((unsigned INT16 *)ctx->ctx, (unsigned INT16 *)ctx->ctx);
   }
   else
-    Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
+    Pike_error("IDEA: Bad keysize for IDEA.\n");
 }
 
 #define idea_encrypt idea_crypt_blocks
@@ -858,6 +1347,1510 @@ pike_idea_set_decrypt_key(void *ctx_v,
 #cmod_undef NETTLE_NAME
 
 #endif /* WITH_IDEA */
+
+static const char *crypto_functions[] = {
+  "block_size",
+  "key_size",
+  "set_encrypt_key",
+  "set_decrypt_key",
+  "crypt",
+  0
+};
+
+static const char *assert_is_crypto_object(struct program *p,
+				    const char *const *required) {
+  while (*required) {
+    if (find_identifier( (char *) *required, p) < 0)
+      return *required;
+    required++;
+  }
+  return 0;
+}
+
+static struct object *make_cipher_object(INT32 args) {
+  ptrdiff_t fun;
+  const char *missing;
+  struct svalue *top = Pike_sp-args;
+  struct object *obj;
+
+  switch(TYPEOF(*top))
+  {
+    case T_PROGRAM:
+      obj = clone_object(top->u.program, args-1);
+      break;
+
+    case T_FUNCTION:
+      apply_svalue(Pike_sp - args, args-1);
+
+      /* Check return value */
+      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
+	Pike_error("Returned value is not an object.\n");
+
+      add_ref(obj = Pike_sp[-1].u.object);
+      break;
+
+    case T_OBJECT:
+      fun = -1;
+      missing = assert_is_crypto_object(top->u.object->prog,
+					crypto_functions);
+      if(missing)
+	fun = FIND_LFUN(top->u.object->prog, LFUN_CALL);
+      if(fun!=-1) {
+	apply_low(top->u.object, fun, args-1);
+	stack_swap();
+	pop_stack();
+      }
+      else
+	if(args!=1) Pike_error("Too many arguments.\n");
+
+      add_ref(obj = top->u.object);
+      break;
+    default:
+      SIMPLE_BAD_ARG_ERROR("create", 1, "program|object|function");
+    }
+
+  pop_stack();
+
+  missing = assert_is_crypto_object(obj->prog, crypto_functions);
+  if(missing) {
+    free_object(obj);
+    Pike_error("Object is missing identifier \"%s\"\n", missing);
+  }
+
+  return obj;
+}
+
+
+/* Generic callback function for Nettle in case the crypt()
+ * function in the object isn't a Nettle function.
+ */
+static void pike_crypt_func(void *object, unsigned length, uint8_t *dst,
+			    const uint8_t *src)
+{
+  int args;
+  struct pike_string *str;
+  push_string(make_shared_binary_string((const char *)src, length));
+  args = safe_apply(object, "crypt", 1);
+  get_all_args("crypt", args, "%n", &str);
+  if (str->len != (ptrdiff_t)length) {
+    Pike_error("Bad string length %ld returned from crypt()\n",
+	       DO_NOT_WARN((long)str->len));
+  }
+  MEMCPY(dst, str->str, length);
+  pop_n_elems(args);
+}
+
+/*! @class CBC
+ *! Implementation of the cipher block chaining mode (CBC). Works as
+ *! a wrapper for the cipher algorithm put in create.
+ *!
+ *! @note
+ *!   Use @[Crypto.CBC] instead.
+ *!
+ *! @seealso
+ *!   @[Crypto.CBC], @[GCM]
+ */
+PIKECLASS CBC
+{
+  /*! @decl inherit __builtin.Nettle.Cipher
+   */
+  INHERIT "__builtin.Nettle.Cipher";
+
+  PIKEVAR object object
+    flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+  CVAR struct Cipher_State_struct *crypt_state;
+  CVAR unsigned INT8 *iv;
+  CVAR INT32 block_size;
+  CVAR INT32 mode;
+
+  EXIT
+    gc_trivial;
+  {
+    if(THIS->object) {
+      free_object(THIS->object);
+      THIS->object = NULL;
+    }
+    if(THIS->iv) {
+      guaranteed_memset(THIS->iv, 0, THIS->block_size);
+      free(THIS->iv);
+    }
+  }
+
+  /*! @decl void create(program|object|function cipher, mixed ... args)
+   *!
+   *! Initialize the CBC wrapper with a cipher algorithm. If it is a
+   *! program, an object will be instantiated with @[args] as
+   *! arguments. If it is an object that doesn't conform to the cipher
+   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+   *! a function, that function will be called with @[args] as
+   *! arguments.
+   */
+  PIKEFUN void create(program|object|function cipher, mixed ... more)
+    flags ID_PROTECTED;
+  {
+    struct object *o = make_cipher_object(args);
+    struct inherit *inh;
+    int old_block_size = THIS->block_size;
+    int f;
+
+    if (THIS->object) free_object(THIS->object);
+    THIS->object = o;
+
+    f = find_identifier("crypt", o->prog);
+    inh = INHERIT_FROM_INT(o->prog, f);
+    if (inh->prog == Cipher_State_program) {
+      /* crypt() is from Nettle.Cipher.State.
+       * Check if the context and crypt function are valid.
+       */
+      THIS->crypt_state = (struct Cipher_State_struct *)
+	get_inherit_storage(o, inh - o->prog->inherits);
+    }
+
+    safe_apply(THIS->object, "block_size", 0);
+
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
+      Pike_error("block_size() didn't return an int.\n");
+
+    if(THIS->iv) {
+      guaranteed_memset(THIS->iv, 0, old_block_size);
+      free(THIS->iv);
+      THIS->iv = NULL;
+    }
+
+    THIS->block_size = Pike_sp[-1].u.integer;
+
+    if ((!THIS->block_size) ||
+	(THIS->block_size > 4096))
+      Pike_error("Bad block size %d.\n", THIS->block_size);
+
+    pop_stack();
+
+    THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
+    MEMSET(THIS->iv, 0, THIS->block_size);
+  }
+
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"CBC(x)"@} where x is the
+   *! encapsulated algorithm.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("CBC(");
+    safe_apply(THIS->object, "name", 0);
+    push_constant_text(")");
+    f_add(3);
+  }
+
+  /*! @decl int(0..) block_size()
+   *! Returns the block size of the encapsulated cipher.
+   */
+  PIKEFUN int(0..) block_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN THIS->block_size;
+  }
+
+  /*! @decl int(0..) key_size()
+   *! Returns the key size of the encapsulated cipher.
+   */
+  PIKEFUN int(0..) key_size()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    safe_apply(THIS->object, "key_size", args);
+  }
+
+  /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+   *!
+   *! Prepare the cipher and the wrapper for encrypting with the given
+   *! @[key]. The @[key] memory will be cleared before released.
+   */
+  PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+    optflags OPT_SIDE_EFFECT;
+  {
+    assert(THIS->block_size);
+    THIS->mode = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
+    safe_apply(THIS->object, "set_encrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+   *!
+   *! Prepare the cipher and the wrapper for decrypting with the given
+   *! @[key]. The @[key] memory will be cleared before released.
+   */
+  PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+    optflags OPT_SIDE_EFFECT;
+  {
+    assert(THIS->block_size);
+    THIS->mode = 1;
+    key->flags |= STRING_CLEAR_ON_EXIT;
+    safe_apply(THIS->object, "set_decrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl this_program set_iv(string(0..255) iv)
+   *!
+   *! Set the initialization vector to @[iv]. The @[iv] memory will be
+   *! cleared before released.
+   */
+  PIKEFUN object set_iv(string(0..255) iv)
+    optflags OPT_SIDE_EFFECT;
+  {
+    assert(THIS->iv);
+    iv->flags |= STRING_CLEAR_ON_EXIT;
+    NO_WIDE_STRING(iv);
+    if(iv->len != THIS->block_size)
+      Pike_error("Argument incompatible with cipher block size.\n");
+    MEMCPY(THIS->iv, iv->str, THIS->block_size);
+    RETURN this_object();
+  }
+
+  /*! @decl string(0..255) crypt(string(0..255) data)
+   *!
+   *! Encrypt/decrypt @[data] and return the result. @[data] must
+   *! be an integral number of blocks.
+   *!
+   *! Neither the input or output data is not automatically memory
+   *! scrubbed, unless @[String.secure] has been called on the data.
+   */
+  PIKEFUN string(0..255) crypt(string(0..255) data)
+  {
+    struct pike_string *result;
+    ONERROR uwp;
+    crypt_func func = pike_crypt_func;
+    void *ctx = THIS->object;
+
+    NO_WIDE_STRING(data);
+
+    if(data->len % THIS->block_size)
+      Pike_error("Data length not multiple of block size.\n");
+
+    if (!THIS->object || !THIS->object->prog) {
+      Pike_error("Lookup in destructed object.\n");
+    }
+
+    result = begin_shared_string(data->len);
+    SET_ONERROR (uwp, do_free_string, result);
+
+    if (THIS->crypt_state && THIS->crypt_state->crypt) {
+      func = THIS->crypt_state->crypt;
+      ctx = THIS->crypt_state->ctx;
+    }
+
+    if(THIS->mode == 0) {
+      cbc_encrypt(ctx, func, THIS->block_size,
+		  THIS->iv, data->len, STR0(result), STR0(data));
+    }
+    else {
+      cbc_decrypt(ctx, func, THIS->block_size,
+		  THIS->iv, data->len, STR0(result), STR0(data));
+    }
+
+    pop_n_elems(args);
+    push_string(end_shared_string(result));
+    UNSET_ONERROR(uwp);
+  }
+}
+
+/*! @endclass
+ */
+
+#ifdef HAVE_NETTLE_CTR_H
+#include <nettle/ctr.h>
+
+/*! @class CTR
+ *! Implementation of Counter Mode (GCM). Works as
+ *! a wrapper for the cipher algorithm put in create.
+ *!
+ *! This cipher mode works like a stream cipher with
+ *! a block size >= 1. This means that the same key
+ *! and initialization vector (aka counter) should
+ *! never be reused, since a simple xor would reveal
+ *! information about the plain text. It also means
+ *! that it should never be used without a suiteable
+ *! Message Authentication Code (MAC).
+ *!
+ *! @note
+ *!   Use @[Crypto.CTR] instead.
+ *!
+ *! @note
+ *!   Note that this class is not available in all versions of Nettle.
+ *!
+ *! @seealso
+ *!   @[Crypto.CTR], @[CBC]
+ */
+PIKECLASS CTR
+{
+  /*! @decl inherit __builtin.Nettle.Cipher
+   */
+  INHERIT "__builtin.Nettle.Cipher";
+
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"CTR"@}.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("CTR");
+  }
+
+  static int CTR_State_program_fun_num;
+
+  /*! @decl State `()(program|object|function cipher, mixed ... args)
+   *!
+   *! @returns
+   *!   Returns a new @[State] object.
+   */
+  PIKEFUN Cipher_State `()(program|object|function cipher, mixed ... extras)
+  {
+    apply_current(CTR_State_program_fun_num, args);
+  }
+
+  /*! @class State
+   *!
+   *! The state for a GCM instance.
+   */
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit Cipher::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    PIKEVAR object object
+      flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+    CVAR struct Cipher_State_struct *crypt_state;
+    CVAR unsigned INT8 *iv;
+    CVAR INT32 block_size;
+
+    EXIT
+      gc_trivial;
+    {
+      if (THIS->object) {
+	free_object(THIS->object);
+	THIS->object = NULL;
+      }
+    }
+
+    /*! @decl void create(program|object|function cipher, mixed ... args)
+     *!
+     *! Initialize the CTR wrapper with a cipher algorithm. If it is a
+     *! program, an object will be instantiated with @[args] as
+     *! arguments. If it is an object that doesn't conform to the cipher
+     *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+     *! a function, that function will be called with @[args] as
+     *! arguments.
+     *!
+     *! @note
+     *!   For correct key setup, @[set_encrypt_key()] or @[set_decrypt_key()]
+     *!   MUST be used.
+     */
+    PIKEFUN void create(program|object|function cipher, mixed ... more)
+      flags ID_PROTECTED;
+    {
+      struct object *o = make_cipher_object(args);
+      struct inherit *inh;
+      int old_block_size = THIS->block_size;
+      int f;
+
+      if (THIS->object) free_object(THIS->object);
+      THIS->object = o;
+
+      f = find_identifier("crypt", o->prog);
+      inh = INHERIT_FROM_INT(o->prog, f);
+      if (inh->prog == Cipher_State_program) {
+	/* crypt() is from Nettle.Cipher.State.
+	 * Check if the context and crypt function are valid.
+	 */
+	THIS->crypt_state = (struct Cipher_State_struct *)
+	  get_inherit_storage(o, inh - o->prog->inherits);
+      }
+
+      safe_apply(THIS->object, "block_size", 0);
+
+      if (TYPEOF(Pike_sp[-1]) != T_INT)
+	Pike_error("block_size() didn't return an int.\n");
+
+      if(THIS->iv) {
+	guaranteed_memset(THIS->iv, 0, old_block_size);
+	free(THIS->iv);
+	THIS->iv = NULL;
+      }
+
+      THIS->block_size = Pike_sp[-1].u.integer;
+
+      if ((!THIS->block_size) ||
+	  (THIS->block_size > 4096))
+	Pike_error("Bad block size %d.\n", THIS->block_size);
+
+      pop_stack();
+
+      THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
+      MEMSET(THIS->iv, 0, THIS->block_size);
+    }
+
+    /*! @decl string(0..255) name()
+     *! Returns the string @expr{"CTR(x)"@} where x is the
+     *! encapsulated algorithm.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      push_constant_text("CTR(");
+      safe_apply(THIS->object, "name", 0);
+      push_constant_text(")");
+      f_add(3);
+    }
+
+    /*! @decl int(16..16) block_size()
+     *! Returns the block size of the encapsulated cipher,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(1..) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN THIS->block_size;
+    }
+
+    /*! @decl int(12..12) iv_size()
+     *! Returns the recommended size for the initialization vector
+     *! (ie @expr{12@}).
+     *!
+     *! Other sizes are allowed, but will be compressed or expanded
+     *! to this size using the encapsulated cipher.
+     */
+    PIKEFUN int(1..) iv_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN THIS->block_size;
+    }
+
+    /*! @decl int(0..) key_size()
+     *! Returns the key size of the encapsulated cipher.
+     */
+    PIKEFUN int(0..) key_size()
+      optflags OPT_EXTERNAL_DEPEND;
+    {
+      safe_apply(THIS->object, "key_size", args);
+    }
+
+    /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for encrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for decrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      /* NOTE: CTR always uses the encryption function
+       *       of the underlying cipher!
+       */
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector to @[iv]. The @[iv] memory will be
+     *! cleared before released.
+     *!
+     *! @note
+     *!   @[iv] must have the length reported by @[iv_size()].
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_decrypt_key()].
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      optflags OPT_SIDE_EFFECT;
+    {
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(iv);
+      if(iv->len != THIS->block_size)
+	Pike_error("Argument incompatible with cipher block size.\n");
+      MEMCPY(THIS->iv, iv->str, THIS->block_size);
+      RETURN this_object();
+    }
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypt/decrypt @[data] and return the result. @[data] must
+     *! be an integral number of blocks.
+     *!
+     *! The length of @[data] MUST be a multiple of the block size
+     *! for all calls except the last.
+     *!
+     *! Neither the input or output data is not automatically memory
+     *! scrubbed, unless @[String.secure] has been called on the data.
+     *!
+     *! @seealso
+     *!   @[update()], @[digest()]
+     */
+    PIKEFUN string(0..255) crypt(string(0..255) data)
+    {
+      struct pike_string *result;
+      ONERROR uwp;
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+
+      NO_WIDE_STRING(data);
+
+      if (!THIS->object || !THIS->object->prog) {
+	Pike_error("Lookup in destructed object.\n");
+      }
+
+      result = begin_shared_string(data->len);
+      SET_ONERROR (uwp, do_free_string, result);
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+
+      ctr_crypt(ctx, func, THIS->block_size, THIS->iv,
+		data->len, STR0(result), STR0(data));
+
+      pop_n_elems(args);
+      push_string(end_shared_string(result));
+      UNSET_ONERROR(uwp);
+    }
+
+  }
+  /*! @endclass
+   */
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_NETTLE_CTR_H */
+
+#ifdef HAVE_NETTLE_GCM_H
+#include <nettle/gcm.h>
+
+/*! @class GCM
+ *! Implementation of the Galois Counter Mode (GCM). Works as
+ *! a wrapper for the cipher algorithm put in create.
+ *!
+ *! This is a so-called authenticated encryption with associated data
+ *! (AEAD) algorithm, and in addition to encryption also provides
+ *! message digests.
+ *!
+ *! The operation of GCM is specified in
+ *! NIST Special Publication 800-38D.
+ *!
+ *! @note
+ *!   Wrapped ciphers MUST have a block size of @expr{16@}.
+ *!
+ *! @note
+ *!   Use @[Crypto.GCM] instead.
+ *!
+ *! @note
+ *!   Note that this class is not available in all versions of Nettle.
+ *!
+ *! @seealso
+ *!   @[Crypto.GCM], @[CBC]
+ */
+PIKECLASS GCM
+{
+  /*! @decl inherit __builtin.Nettle.AEAD
+   */
+  INHERIT "__builtin.Nettle.AEAD";
+
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"GCM"@}.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("GCM");
+  }
+
+  /*! @decl int(16..16) block_size()
+   *! Returns the block size of the encapsulated cipher,
+   *! which is always @expr{16@} for GCM.
+   */
+  PIKEFUN int(16..16) block_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN GCM_BLOCK_SIZE;
+  }
+
+  /*! @decl int(12..12) iv_size()
+   *! Returns the recommended size for the initialization vector
+   *! (ie @expr{12@}).
+   *!
+   *! Other sizes are allowed, but will be compressed or expanded
+   *! to this size using the encapsulated cipher.
+   */
+  PIKEFUN int(12..12) iv_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN GCM_IV_SIZE;
+  }
+
+  /*! @class State
+   *!
+   *! The state for a GCM instance.
+   */
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit AEAD::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.AEAD.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    PIKEVAR object object
+      flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+    CVAR struct Cipher_State_struct *crypt_state;
+    CVAR INT32 mode;
+    CVAR INT32 dmode;
+    CVAR struct gcm_key gcm_key;
+    CVAR struct gcm_ctx gcm_ctx;
+
+    /* dmode flags */
+#define NO_ADATA	1	/* Disallow associated data. */
+#define NO_CDATA	2	/* Disallow crypted data. */
+
+    INIT
+    {
+      THIS->mode = -1;
+    }
+
+    EXIT
+      gc_trivial;
+    {
+      if (THIS->object) {
+	free_object(THIS->object);
+	THIS->object = NULL;
+      }
+    }
+
+    /*! @decl void create(program|object|function cipher, mixed ... args)
+     *!
+     *! Initialize the GCM wrapper with a cipher algorithm. If it is a
+     *! program, an object will be instantiated with @[args] as
+     *! arguments. If it is an object that doesn't conform to the cipher
+     *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+     *! a function, that function will be called with @[args] as
+     *! arguments.
+     *!
+     *! @note
+     *!   For correct key setup, @[set_encrypt_key()] or @[set_decrypt_key()]
+     *!   MUST be used.
+     */
+    PIKEFUN void create(program|object|function cipher, mixed ... more)
+      flags ID_PROTECTED;
+    {
+      struct object *o = make_cipher_object(args);
+      struct inherit *inh;
+      int f;
+
+      if (THIS->object) free_object(THIS->object);
+      THIS->object = o;
+
+      f = find_identifier("crypt", o->prog);
+      inh = INHERIT_FROM_INT(o->prog, f);
+      if (inh->prog == Cipher_State_program) {
+	/* crypt() is from Nettle.Cipher.State.
+	 * Check if the context and crypt function are valid.
+	 */
+	THIS->crypt_state = (struct Cipher_State_struct *)
+	  get_inherit_storage(o, inh - o->prog->inherits);
+      }
+
+      safe_apply(THIS->object, "block_size", 0);
+
+      if (TYPEOF(Pike_sp[-1]) != T_INT)
+	Pike_error("block_size() didn't return an int.\n");
+
+      if (Pike_sp[-1].u.integer != GCM_BLOCK_SIZE)
+	Pike_error("cipher has an invalid block size for GCM.\n");
+
+      pop_stack();
+
+      THIS->mode = -1;
+    }
+
+    /*! @decl string(0..255) name()
+     *! Returns the string @expr{"GCM(x)"@} where x is the
+     *! encapsulated algorithm.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      push_constant_text("GCM(");
+      safe_apply(THIS->object, "name", 0);
+      push_constant_text(")");
+      f_add(3);
+    }
+
+    /*! @decl int(16..16) block_size()
+     *! Returns the block size of the encapsulated cipher,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(16..16) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_BLOCK_SIZE;
+    }
+
+    /*! @decl int(12..12) iv_size()
+     *! Returns the recommended size for the initialization vector
+     *! (ie @expr{12@}).
+     *!
+     *! Other sizes are allowed, but will be compressed or expanded
+     *! to this size using the encapsulated cipher.
+     */
+    PIKEFUN int(12..12) iv_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_IV_SIZE;
+    }
+
+    /*! @decl int(0..) key_size()
+     *! Returns the key size of the encapsulated cipher.
+     */
+    PIKEFUN int(0..) key_size()
+      optflags OPT_EXTERNAL_DEPEND;
+    {
+      safe_apply(THIS->object, "key_size", args);
+    }
+
+    /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for encrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+      gcm_set_key(&THIS->gcm_key, ctx, func);
+      THIS->mode = 0;
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+     *!
+     *! Prepare the cipher and the wrapper for decrypting with the given
+     *! @[key]. The @[key] memory will be cleared before released.
+     *!
+     *! @note
+     *!   Note that this operation does not by itself reset the
+     *!   context sufficiently to start a new message; @[set_iv()]
+     *!   needs to be called too.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_iv()]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+      optflags OPT_SIDE_EFFECT;
+    {
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      /* NOTE: GCM always uses the encryption function
+       *       of the underlying cipher!
+       */
+      safe_apply(THIS->object, "set_encrypt_key", args);
+      pop_stack();
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+      gcm_set_key(&THIS->gcm_key, ctx, func);
+      THIS->mode = 1;
+
+      RETURN this_object();
+    }
+
+    /*! @decl this_program set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector to @[iv]. The @[iv] memory will be
+     *! cleared before released.
+     *!
+     *! Also resets all state needed to start a new message.
+     *!
+     *! @note
+     *!   For @[iv]s of length other than @expr{12@}, an encryption or
+     *!   decryption key must have been set first.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key()], @[set_decrypt_key()].
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      optflags OPT_SIDE_EFFECT;
+    {
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(iv);
+      if ((THIS->mode < 0) && (iv->len != GCM_IV_SIZE))
+	Pike_error("The key must be set to use an iv of length other than %d.\n",
+		   GCM_IV_SIZE);
+      gcm_set_iv(&THIS->gcm_ctx, &THIS->gcm_key, iv->len, STR0(iv));
+      THIS->dmode = 0;
+      RETURN this_object();
+    }
+
+    /*! @decl void update(string(0..255) public_data)
+     *!
+     *! Add @[public_data] to be authenticated.
+     *!
+     *! The length of @[public_data] MUST be a multiple of the
+     *! block size (ie @expr{16@}) for all calls except the last.
+     *!
+     *! All calls of @[update()] need to be performed before
+     *! any calls of @[crypt()].
+     */
+    PIKEFUN void update(string(0..255) data)
+    {
+      NO_WIDE_STRING(data);
+
+      if (!THIS->object || !THIS->object->prog) {
+	Pike_error("Lookup in destructed object.\n");
+      }
+
+      if (THIS->mode < 0)
+	Pike_error("Key schedule not initialized.\n");
+
+      if (THIS->dmode & NO_ADATA)
+	Pike_error("Public data not allowed now.\n");
+
+      gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
+
+      if (data->len & (GCM_BLOCK_SIZE - 1))
+	THIS->dmode |= NO_ADATA;
+
+      pop_n_elems(args);
+    }
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypt/decrypt @[data] and return the result. @[data] must
+     *! be an integral number of blocks.
+     *!
+     *! The length of @[data] MUST be a multiple of the block size
+     *! (ie @expr{16@}) for all calls except the last.
+     *!
+     *! Neither the input or output data is not automatically memory
+     *! scrubbed, unless @[String.secure] has been called on the data.
+     *!
+     *! @seealso
+     *!   @[update()], @[digest()]
+     */
+    PIKEFUN string(0..255) crypt(string(0..255) data)
+    {
+      struct pike_string *result;
+      ONERROR uwp;
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+
+      NO_WIDE_STRING(data);
+
+      if (!THIS->object || !THIS->object->prog) {
+	Pike_error("Lookup in destructed object.\n");
+      }
+
+      if (THIS->mode < 0)
+	Pike_error("Key schedule not initialized.\n");
+
+      if (THIS->dmode & NO_CDATA)
+	Pike_error("More data not allowed before the iv is reset.\n");
+
+      result = begin_shared_string(data->len);
+      SET_ONERROR (uwp, do_free_string, result);
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+
+      if (!THIS->mode) {
+	gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		    data->len, STR0(result), STR0(data));
+      } else {
+	gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		    data->len, STR0(result), STR0(data));
+      }
+
+      THIS->dmode |= NO_ADATA;
+
+      if (data->len & (GCM_BLOCK_SIZE - 1))
+	THIS->dmode |= NO_CDATA;
+
+      pop_n_elems(args);
+      push_string(end_shared_string(result));
+      UNSET_ONERROR(uwp);
+    }
+
+    /*! @decl string(0..255) digest()
+     *!
+     *! Generate a message digest for the data accumulated so far.
+     *!
+     *! @note
+     *!   @[set_iv()] needs to be called to start the next message.
+     *!
+     *! @seealso
+     *!   @[update()], @[digest()]
+     */
+    PIKEFUN string(0..255) digest()
+    {
+      struct pike_string *result;
+      ONERROR uwp;
+      crypt_func func = pike_crypt_func;
+      void *ctx = THIS->object;
+
+      if (!THIS->object || !THIS->object->prog) {
+	Pike_error("Lookup in destructed object.\n");
+      }
+
+      if (THIS->mode < 0)
+	Pike_error("Key schedule not initialized.\n");
+
+      result = begin_shared_string(GCM_BLOCK_SIZE);
+      SET_ONERROR (uwp, do_free_string, result);
+
+      if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	func = THIS->crypt_state->crypt;
+	ctx = THIS->crypt_state->ctx;
+      }
+
+      gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		 GCM_BLOCK_SIZE, STR0(result));
+
+      THIS->dmode |= NO_ADATA | NO_CDATA;
+
+      pop_n_elems(args);
+      push_string(end_shared_string(result));
+      UNSET_ONERROR(uwp);
+    }
+  }
+  /*! @endclass
+   */
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_NETTLE_GCM_H */
+
+/*! @class Proxy
+ *! Acts as a buffer so that data can be fed to a cipher in blocks
+ *! that don't correspond to cipher block sizes.
+ *!
+ *! @note
+ *!   Use @[Crypto.Buffer] instead.
+ */
+PIKECLASS Proxy {
+  /*! @decl inherit __builtin.Nettle.Cipher
+   */
+  INHERIT "__builtin.Nettle.Cipher";
+
+  CVAR struct object *object;
+  CVAR int block_size;
+  CVAR unsigned char *backlog;
+  CVAR int backlog_len;
+
+  INIT {
+    THIS->object = NULL;
+    THIS->block_size = 0;
+    THIS->backlog = NULL;
+    THIS->backlog_len = 0;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if(THIS->backlog) {
+      guaranteed_memset(THIS->backlog, 0, THIS->block_size);
+      free(THIS->backlog);
+      THIS->backlog = NULL;
+    }
+    if(THIS->object) {
+      free_object(THIS->object);
+      THIS->object = NULL;
+    }
+  }
+
+  /*! @decl void create(program|object|function cipher, mixed ... args)
+   *!
+   *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
+   *! program, an object will be instantiated with @[args] as
+   *! arguments. If it is an object that doesn't conform to the cipher
+   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
+   *! a function, that function will be called with @[args] as
+   *! arguments.
+   */
+  PIKEFUN void create(program|object|function cipher, mixed ... more)
+    flags ID_PROTECTED;
+  {
+    exit_Proxy_struct();
+    THIS->object = make_cipher_object(args);
+
+    safe_apply(THIS->object, "block_size", 0);
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+      Pike_error("block_size() didn't return an int\n");
+    THIS->block_size = Pike_sp[-1].u.integer;
+
+    pop_stack();
+
+    if ((!THIS->block_size) ||
+	(THIS->block_size > 4096))
+      Pike_error("Bad block size %ld\n", DO_NOT_WARN((long)THIS->block_size));
+
+    THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
+    THIS->backlog_len = 0;
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+  }
+
+  /*! @decl string(0..255) name()
+   *! Returns the string @expr{"Proxy(x)"@} where x is the
+   *! encapsulated algorithm.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    push_constant_text("Proxy(");
+    safe_apply(THIS->object, "name", 0);
+    push_constant_text(")");
+    f_add(3);
+  }
+
+  /*! @decl int(0..) block_size()
+   *!
+   *! Get the block size of the contained block crypto.
+   */
+  PIKEFUN int(0..) block_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN THIS->block_size;
+  }
+
+  /*! @decl int(0..) key_size()
+   *!
+   *! Get the key size of the contained block crypto.
+   */
+  PIKEFUN int(0..) key_size()
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    safe_apply(THIS->object, "key_size", args);
+  }
+
+  /*! @decl this_program set_encrypt_key(string(0..255) key)
+   *!
+   *! Set the encryption key. The @[key] memory will be cleared before
+   *! released.
+   *!
+   *! @note
+   *!   As a side-effect any buffered data will be cleared.
+   */
+  PIKEFUN object set_encrypt_key(string(0..255) key)
+    optflags OPT_SIDE_EFFECT;
+  {
+    THIS->backlog_len = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
+    safe_apply(THIS->object, "set_encrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl this_program set_decrypt_key(string(0..255) key)
+   *!
+   *! Set the decryption key. The @[key] memory will be cleared before
+   *! released.
+   *!
+   *! @note
+   *!   As a side-effect any buffered data will be cleared.
+   */
+  PIKEFUN object set_decrypt_key(string(0..255) key)
+    optflags OPT_SIDE_EFFECT;
+  {
+    THIS->backlog_len = 0;
+    key->flags |= STRING_CLEAR_ON_EXIT;
+    safe_apply(THIS->object, "set_decrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl string(0..255) crypt(string(0..255) data)
+   *!
+   *! Encrypt or decrypt some data.
+   *!
+   *! Adds data to be en/decrypted to the buffer. If there's enough
+   *! data to en/decrypt a block, that will be done, and the result
+   *! returned. Any unprocessed data will be left in the buffer.
+   *!
+   *! Neither the input or output data is not automatically memory
+   *! scrubbed, unless @[String.secure] has been called on the data.
+   */
+  PIKEFUN string(0..255) crypt(string(0..255) data) {
+    unsigned char *result;
+    ptrdiff_t roffset = 0;
+    ptrdiff_t soffset = 0;
+    ptrdiff_t len;
+    ONERROR uwp;
+
+    if (!(result = malloc(data->len + THIS->block_size)))
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
+    SET_ONERROR (uwp, free, result);
+
+    if (THIS->backlog_len) {
+      if (data->len >= (THIS->block_size - THIS->backlog_len)) {
+	MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
+	       (THIS->block_size - THIS->backlog_len));
+	soffset += (THIS->block_size - THIS->backlog_len);
+	THIS->backlog_len = 0;
+	push_string(make_shared_binary_string((char *)THIS->backlog,
+					      THIS->block_size));
+	safe_apply(THIS->object, "crypt", 1);
+	if (TYPEOF(Pike_sp[-1]) != T_STRING)
+	  Pike_error("crypt() did not return string\n");
+	if (Pike_sp[-1].u.string->len != THIS->block_size)
+	  Pike_error("Unexpected string length %ld\n",
+		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+
+	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
+	roffset = THIS->block_size;
+	pop_stack();
+      } else {
+	MEMCPY(THIS->backlog + THIS->backlog_len,
+	       data->str, data->len);
+	THIS->backlog_len += data->len;
+	pop_n_elems(args);
+	push_empty_string();
+	CALL_AND_UNSET_ONERROR (uwp);
+	return;
+      }
+    }
+
+    len = (Pike_sp[-1].u.string->len - soffset);
+    len -= len % THIS->block_size;
+
+    if (len) {
+      push_string(make_shared_binary_string(Pike_sp[-1].u.string->str +
+					    soffset, len));
+      soffset += len;
+
+      safe_apply(THIS->object, "crypt", 1);
+
+      if (TYPEOF(Pike_sp[-1]) != T_STRING)
+	Pike_error("crypt() did not return string.\n");
+      if (Pike_sp[-1].u.string->len != len)
+	Pike_error("crypt() Unexpected string length %ld.\n",
+		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+
+      MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
+
+      pop_stack();
+    }
+
+    if (soffset < Pike_sp[-1].u.string->len) {
+      MEMCPY(THIS->backlog, Pike_sp[-1].u.string->str + soffset,
+	     Pike_sp[-1].u.string->len - soffset);
+      THIS->backlog_len = Pike_sp[-1].u.string->len - soffset;
+    }
+
+    pop_n_elems(args);
+
+    push_string(make_shared_binary_string((char *)result, roffset + len));
+    guaranteed_memset(result, 0, roffset + len);
+    CALL_AND_UNSET_ONERROR (uwp);
+  }
+
+  /*! @decl string(0..255) pad(void|int method)
+   *!
+   *! Pad and encrypt any data left in the buffer. The output data is
+   *! not automatically memory scrubbed, unless @[String.secure] is
+   *! called on the data.
+   *!
+   *! @param method
+   *! The type of padding to apply to the buffer.
+   *! @int
+   *!   @value Crypto.PAD_ISO_10126
+   *!     Pads according to ISO 10126, which means filling all extra
+   *!     space with random data and putting the size of the
+   *!     non-payload data last.
+   *!   @value Crypto.PAD_SSL
+   *!     As ISO 10126, but with the size of the random data last.
+   *!   @value Crypto.PAD_ANSI_X923
+   *!     Pads according to ANSI X.923, which means filling all extra
+   *!     space with zero and putting the size of the non-payload data
+   *!     last.
+   *!   @value Crypto.PAD_PKCS7
+   *!     Pads according to PKCS7 / RFC 3852, which means filling all
+   *!     extra space with the size of the extra space.
+   *!   @value Crypto.PAD_ZERO
+   *!     Fills the extra space with null bytes. To correctly remove
+   *!     the padding the clear text data must not end with a null
+   *!     byte. In that case the data would have to be manually
+   *!     padded/unpadded before/after calling @[crypt()].
+   *! @endint
+   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
+   *!
+   *! @seealso
+   *!   @[unpad()]
+   */
+  PIKEFUN string(0..255) pad(void|int method) {
+    ptrdiff_t i;
+    int m = 0;
+    int size = THIS->block_size - THIS->backlog_len;
+
+    if(method)
+    {
+      if(TYPEOF(*method) != PIKE_T_INT)
+        Pike_error("Bad argument type.\n");
+      m = method->u.integer;
+    }
+
+    switch(m)
+    {
+    case 0:
+      size--;
+      break;
+    case 4:
+      if( THIS->backlog_len>0 &&
+          THIS->backlog[THIS->backlog_len-1] == 0 )
+        Pike_error("Using zero padding on a zero terminated string.\n");
+      size = 0;
+      break;
+    }
+
+    for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
+      switch(m)
+      {
+      default:
+        Pike_error("Unknown method.\n");
+      case 0:
+      case 1:
+        /* ISO 10126 */
+        THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+        break;
+      case 2:
+        /* ANSI X.923 */
+        THIS->backlog[i] = 0;
+        break;
+      case 3:
+        /* PKCS7 / RFC 3852 */
+        THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
+        break;
+      case 4:
+        /* Null only */
+        THIS->backlog[i] = 0;
+        break;
+      }
+
+
+    THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
+    push_string(make_shared_binary_string((const char *)THIS->backlog, THIS->block_size));
+
+    THIS->backlog_len = 0;
+
+    safe_apply(THIS->object, "crypt", 1);
+  }
+
+  /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
+   *!
+   *! Decrypt and unpad a block of data. Neither the input or output
+   *! data is not automatically memory scrubbed, unless
+   *! @[String.secure] has been called on the data.
+   *!
+   *! This performs the reverse operation of @[pad()].
+   *!
+   *! @param method
+   *! The type of padding that was applied to the original buffer.
+   *! @int
+   *!   @value Crypto.PAD_SSL
+   *!   @value Crypto.PAD_ISO_10126
+   *!   @value Crypto.PAD_ANSI_X923
+   *!   @value Crypto.PAD_PKCS7
+   *!   @value Crypto.PAD_ZERO
+   *! @endint
+   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
+   *!
+   *! @seealso
+   *!   @[pad()]
+   */
+  PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
+    ptrdiff_t len;
+    int m = 0;
+
+    len = str->len + THIS->backlog_len;
+    if( len % THIS->block_size)
+      Pike_error("Total data size must be integral numbers of blocks.\n");
+
+    if( method!=NULL )
+    {
+      m = method->u.integer;
+      pop_stack();
+      args--;
+    }
+
+    f_Proxy_crypt(1);
+    if (TYPEOF(Pike_sp[-1]) != T_STRING)
+      Pike_error("crypt() did not return string.\n");
+    if (Pike_sp[-1].u.string->len != len)
+      Pike_error("crypt() Unexpected string length %ld.\n",
+		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+    str = Pike_sp[-1].u.string;
+
+    if( m==0 )
+    {
+      if (str->str[len - 1]+1 > THIS->block_size)
+        Pike_error("Invalid padding (%d > %d)\n",
+                   str->str[len-1]+1, THIS->block_size-1);
+    }
+    else
+      if (str->str[len - 1] > THIS->block_size)
+        Pike_error("Invalid padding (%d > %d)\n",
+                   str->str[len-1], THIS->block_size-1);
+
+
+    len -= str->str[len - 1];
+    switch( m )
+    {
+    case 0:
+      len--;
+      break;
+    case 4:
+      {
+        int c=THIS->block_size;
+        while( str->str[len-1]==0 && c>0 )
+        {
+          c--;
+          len--;
+        }
+      }
+    }
+
+    if (len < 0)
+      Pike_error("String too short to unpad\n");
+
+    add_ref(str);
+    pop_stack();
+    push_string(make_shared_binary_string(str->str, len));
+    free_string(str);
+  }
+
+  /*! @decl this_program set_iv(string(0..255) iv)
+   *! Set the initialization vector to @[iv].
+   */
+  PIKEFUN object set_iv(string(0..255) iv)
+    optflags OPT_SIDE_EFFECT;
+  {
+    apply(THIS->object, "set_iv", args);
+    args = 1;
+    RETURN this_object();
+  }
+
+}
+
+/*! @endclass
+ */
+
 
 /*! @endmodule Nettle */
 

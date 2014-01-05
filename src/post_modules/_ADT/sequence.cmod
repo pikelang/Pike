@@ -359,7 +359,7 @@ PIKECLASS Sequence
 
   PIKEFUN int _search(mixed value, void|int start)
   {
-    if(args == 2)
+    if(start)
     { 
       if (TYPEOF(*start) != PIKE_T_INT)
       { 
@@ -598,7 +598,7 @@ PIKECLASS Sequence
       {
 	THIS->sequence = OBJ2_SEQUENCE(sequence);
 	add_ref(THIS->obj = sequence);
-	if (args == 2) // if there was an start index supplied
+	if (start) // if there was an start index supplied
 	{
 	  THIS->pos=start->u.integer;
 	  if (THIS->sequence->a && ((THIS->pos > THIS->sequence->a->size) 
@@ -748,7 +748,7 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->sequence && THIS->sequence->a && 
 		(THIS->pos + 1) <= THIS->sequence->a->size);
@@ -771,7 +771,7 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (args==0)
+      if (!steps)
       {
 	RETURN (THIS->sequence && THIS->sequence->a &&
 		(THIS->pos) > 0);
@@ -976,7 +976,7 @@ PIKECLASS Sequence
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
-    if (args > 0)
+    if (ind)
     {
       push_svalue(ind);
     }

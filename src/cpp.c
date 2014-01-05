@@ -311,7 +311,7 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
  *!   @[raw] decoded to UNICODE, or @expr{0@} (zero) if the decoding failed.
  *!
  *! @seealso
- *!   @[Locale.Charset]
+ *!   @[Charset]
  */
 
 /*! @endclass
@@ -525,9 +525,9 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
 
 /*! @directive #charset
  *!
- *!   Inform the preprocessor about which charset the file is encoded with.
- *!   The Locale.Charset module is called with this string to decode the
- *!   remainder of the file.
+ *!   Inform the preprocessor about which charset the file is encoded
+ *!   with. The Charset module is called with this string to decode
+ *!   the remainder of the file.
  */
 
 /*! @directive #if
@@ -841,7 +841,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!   @[#if], @[#ifdef], @[constant()]
  */
 static void check_defined(struct cpp *this,
-			  struct define *def,
+			  struct define *UNUSED(def),
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
@@ -2048,8 +2048,8 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
  *! integer, in the source file.
  */
 static void insert_current_line(struct cpp *this,
-				struct define *def,
-				struct define_argument *args,
+				struct define *UNUSED(def),
+				struct define_argument *UNUSED(args),
 				struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
@@ -2060,8 +2060,8 @@ static void insert_current_line(struct cpp *this,
  *! This define contains the file path and name of the source file.
  */
 static void insert_current_file_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
@@ -2073,8 +2073,8 @@ static void insert_current_file_as_string(struct cpp *this,
  *! This define contains the directory path of the source file.
  */
 static void insert_current_dir_as_string(struct cpp *this,
-                                         struct define *def,
-                                         struct define_argument *args,
+                                         struct define *UNUSED(def),
+                                         struct define_argument *UNUSED(args),
                                          struct string_builder *tmp)
 {
   ref_push_string(this->current_file);
@@ -2090,9 +2090,9 @@ static void insert_current_dir_as_string(struct cpp *this,
  *! This define contains the current time at the time of compilation,
  *! e.g. "12:20:51".
  */
-static void insert_current_time_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+static void insert_current_time_as_string(struct cpp *UNUSED(this),
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2109,9 +2109,9 @@ static void insert_current_time_as_string(struct cpp *this,
  *! This define contains the current date at the time of compilation,
  *! e.g. "Jul 28 2001".
  */
-static void insert_current_date_as_string(struct cpp *this,
-					  struct define *def,
-					  struct define_argument *args,
+static void insert_current_date_as_string(struct cpp *UNUSED(this),
+					  struct define *UNUSED(def),
+					  struct define_argument *UNUSED(args),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2134,8 +2134,8 @@ static void insert_current_date_as_string(struct cpp *this,
  *!   @[__REAL_VERSION__]
  */
 static void insert_current_version(struct cpp *this,
-				   struct define *def,
-				   struct define_argument *args,
+				   struct define *UNUSED(def),
+				   struct define_argument *UNUSED(args),
 				   struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d.%d ", this->compat_major,
@@ -2152,8 +2152,8 @@ static void insert_current_version(struct cpp *this,
  *!   @[__REAL_MINOR__]
  */
 static void insert_current_minor(struct cpp *this,
-				 struct define *def,
-				 struct define_argument *args,
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
@@ -2169,8 +2169,8 @@ static void insert_current_minor(struct cpp *this,
  *!   @[__REAL_MAJOR__]
  */
 static void insert_current_major(struct cpp *this,
-				 struct define *def,
-				 struct define_argument *args,
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_major);
@@ -2189,7 +2189,7 @@ static void insert_current_major(struct cpp *this,
  *!   @[#pragma]
  */
 static void insert_pragma(struct cpp *this,
-			  struct define *def,
+			  struct define *UNUSED(def),
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
@@ -2267,7 +2267,7 @@ static void insert_callback_define(struct cpp *this,
 
 static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
-                                           struct define_argument *args,
+                                           struct define_argument *UNUSED(args),
                                            struct string_builder *tmp)
 {
   struct svalue *save_sp = Pike_sp;
@@ -2345,7 +2345,7 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   are supported.
  *!
  *! @seealso
- *!   @[_Static_assert()]
+ *!   @[predef::_Static_assert()]
  */
 
 /*! @decl constant __PIKE__
@@ -2373,6 +2373,11 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! This define is defined when the Pike is running on Amiga OS.
  */
 
+/*! @decl constant __OS2__
+ *!
+ *! This define is defined when the Pike is running on IBM OS/2.
+ */
+
 /*! @endnamespace */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
@@ -2391,16 +2396,16 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! The following members are recognized:
  *!
  *! @mapping
- *! 	@member string current_file
- *! 	@member int|string charset
- *! 	@member object handler
- *! 	@member int compat_major
- *! 	@member int compat_minor
- *! 	@member int picky_cpp
- *!	@member int keep_comments
- *! 		This option does not strip comments from the file. Useful
- *! 		in combination with the prefix feature.
- *! 	@member string prefix
+ *! 	@member string "current_file"
+ *! 	@member int|string "charset"
+ *! 	@member object "handler"
+ *! 	@member int "compat_major"
+ *! 	@member int "compat_minor"
+ *! 	@member int "picky_cpp"
+ *!	@member int "keep_comments"
+ *! 		This option causes @[cpp()] not to strip comments.
+ *!             Useful in combination with the prefix feature below.
+ *! 	@member string "prefix"
  *! 		If a prefix is given, only prefixed directives will be
  *! 		processed. For example, if the prefix is @expr{"foo"@}, then
  *! 		@expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
@@ -2672,14 +2677,15 @@ void f_cpp(INT32 args)
 		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
     simple_add_define(&this, "__REAL_BUILD__",
 		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
-#ifdef AUTO_BIGNUM
     simple_add_define(&this, "__AUTO_BIGNUM__", " 1 ");
-#endif
 #ifdef __NT__
     simple_add_define(&this, "__NT__", " 1 ");
 #endif
 #ifdef __amigaos__
     simple_add_define(&this, "__amigaos__", " 1 ");
+#endif
+#ifdef __OS2__
+    simple_add_define(&this, "__OS2__", " 1 ");
 #endif
 #ifdef __APPLE__
     simple_add_define(&this, "__APPLE__", " 1 ");
@@ -2752,6 +2758,11 @@ void f_cpp(INT32 args)
   }
 }
 
+/*! @module Builtin
+ */
+
+/*! @decl mapping(string:mixed) _take_over_initial_predefines()
+ */
 void f__take_over_initial_predefines (INT32 args)
 {
   pop_n_elems (args);
@@ -2771,6 +2782,9 @@ void f__take_over_initial_predefines (INT32 args)
   }
   else Pike_error ("Initial predefines already taken over.\n");
 }
+
+/*! @endmodule
+ */
 
 void init_cpp()
 {

@@ -18,7 +18,7 @@ import .Constants;
 protected constant Struct = ADT.struct;
 
 //! Identifies the session to the server
-string identity;
+string(0..255) identity;
 
 //! Always COMPRESSION_null.
 int compression_algorithm;
@@ -34,9 +34,12 @@ int cipher_suite;
 //! Key exchange method, also derived from the cipher_suite.
 int ke_method;
 
+//! Key exchange factory, derived from @[ke_method].
+program(.Cipher.KeyExchange) ke_factory;
+
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
-string master_secret;
+string(0..255) master_secret;
 
 //! information about the certificate in use by the peer, such as issuing authority, and verification status.
 mapping cert_data;
@@ -55,67 +58,102 @@ Crypto.RSA rsa;
 //! The server's dsa private key
 Crypto.DSA dsa;
 
+#if constant(Crypto.ECC.Curve)
+//! The selected ECC curve
+Crypto.ECC.Curve curve;
+#endif /* Crypto.ECC.Curve */
+
+//! Indicates if this session has the required server certificate keys
+//! set. No means that no or the wrong type of certificate was sent
+//! from the server.
+int(0..1) has_required_certificates()
+{
+  if( cipher_spec->sign == .Cipher.rsa_sign) return !!rsa;
+  if( cipher_spec->sign == .Cipher.dsa_sign) return !!dsa;
+  if( cipher_spec->sign == .Cipher.anon_sign) return 1;
+  object o = function_object([function(mixed ...:void|mixed)](mixed)
+			     cipher_spec->sign);
+  if (objectp(o) && cipher_spec->sign == o->rsa_sign) return !!rsa;
+  if (objectp(o) && cipher_spec->sign == o->dsa_sign) return !!dsa;
+  return 0;
+}
+
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
-void set_cipher_suite(int suite, ProtocolVersion|int version)
+int set_cipher_suite(int suite, ProtocolVersion|int version,
+		     array(array(int))|void signature_algorithms)
 {
-  array res = .Cipher.lookup(suite, version);
+  // FIXME: The maximum allowable hash size depends on the size of the
+  //        RSA key when RSA is in use. With a 64 byte (512 bit) key,
+  //        the block size is 61 bytes, allow for 23 bytes of overhead.
+  int max_hash_size = 61-23;
+  array res = .Cipher.lookup(suite, version, signature_algorithms,
+			     max_hash_size);
+  if (!res) return 0;
   cipher_suite = suite;
   ke_method = [int]res[0];
+  switch(ke_method) {
+  case KE_null:
+    ke_factory = .Cipher.KeyExchangeNULL;
+    break;
+  case KE_rsa:
+    ke_factory = .Cipher.KeyExchangeRSA;
+    break;
+  case KE_dh_anon:
+    ke_factory = .Cipher.KeyExchangeDH;
+    break;
+  case KE_dhe_rsa:
+  case KE_dhe_dss:
+    ke_factory = .Cipher.KeyExchangeDHE;
+    break;
+  case KE_ecdhe_rsa:
+  case KE_ecdhe_ecdsa:
+  case KE_ecdh_anon:
+    ke_factory = .Cipher.KeyExchangeECDHE;
+    break;
+  default:
+    error("set_cipher_suite: Unsupported key exchange method: %d\n",
+	  ke_method);
+    break;
+  }
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",
 	 mkmapping(indices(cipher_spec), values(cipher_spec)));
 #endif
+  return 1;
 }
 
 //! Sets the compression method. Currently only @[COMPRESSION_null] is
 //! supported.
 void set_compression_method(int compr)
 {
-  if (compr != COMPRESSION_null)
+  switch(compr) {
+  case COMPRESSION_null:
+    break;
+  case COMPRESSION_deflate:
+    break;
+  default:
     error( "Method not supported\n" );
+  }
   compression_algorithm = compr;
 }
 
-protected string generate_key_block(string client_random, string server_random,
-			  array(int) version)
+protected string(0..255) generate_key_block(string(0..255) client_random,
+					    string(0..255) server_random,
+					    array(int) version)
 {
   int required = 2 * (
-#ifndef WEAK_CRYPTO_40BIT
     cipher_spec->is_exportable ?
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
     (5 + cipher_spec->hash_size)
-#ifndef WEAK_CRYPTO_40BIT
     : ( cipher_spec->key_material +
 	cipher_spec->hash_size +
 	cipher_spec->iv_size)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   );
-  string key = "";
+  string(0..255) key = "";
 
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    .Cipher.MACsha sha = .Cipher.MACsha();
-    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-    int i = 0;
-
-    while (sizeof(key) < required)
-      {
-	i++;
-	string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
-#ifdef SSL3_DEBUG
-	werror("cookie %O\n", cookie);
-#endif
-	key += md5->hash_raw(master_secret +
-			     sha->hash_raw(cookie + master_secret +
-					   server_random + client_random));
-      }
-  }
-  else if (version[1] >= PROTOCOL_TLS_1_0) {
-    // TLS 1.0 or later.
-    key = .Cipher.prf(master_secret, "key expansion",
-		      server_random+client_random, required);
-  }
+  key = cipher_spec->prf(master_secret, "key expansion",
+			 server_random + client_random, required);
 
 #ifdef SSL3_DEBUG
   werror("key_block: %O\n", key);
@@ -155,72 +193,70 @@ protected void printKey(string name, string key) {
 //!     @elem string 5
 //!       Server write IV
 //!  @endarray
-array(string) generate_keys(string client_random, string server_random,
-			    array(int) version)
+array(string(0..255)) generate_keys(string(0..255) client_random,
+				    string(0..255) server_random,
+				    array(int) version)
 {
   Struct key_data = Struct(generate_key_block(client_random, server_random,
 					      version));
-  array(string) keys = allocate(6);
+  array(string(0..255)) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
-  werror("client_random: %O\nserver_random: %O\nversion: %d.%d\n",
-	 client_random, server_random, version[0], version[1]);
+  werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
+	 client_random?String.string2hex(client_random):"NULL",
+         server_random?String.string2hex(server_random):"NULL",
+         version[0], version[1]);
 #endif
   // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
   // server_write_MAC_secret
   keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
-#ifndef WEAK_CRYPTO_40BIT
   if (cipher_spec->is_exportable)
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
     // Exportable (ie weak) crypto.
     if(version[1] == PROTOCOL_SSL_3_0) {
       // SSL 3.0
-      function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
-      
-      keys[2] = md5(key_data->get_fix_string(5) +
-		    client_random + server_random)
+      keys[2] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+				client_random + server_random)
 	[..cipher_spec->key_material-1];
-      keys[3] = md5(key_data->get_fix_string(5) +
-		    server_random + client_random)
+      keys[3] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+				server_random + client_random)
 	[..cipher_spec->key_material-1];
       if (cipher_spec->iv_size)
 	{
-	  keys[4] = md5(client_random +
-			server_random)[..cipher_spec->iv_size-1];
-	  keys[5] = md5(server_random +
-			client_random)[..cipher_spec->iv_size-1];
+	  keys[4] = Crypto.MD5.hash(client_random +
+				    server_random)[..cipher_spec->iv_size-1];
+	  keys[5] = Crypto.MD5.hash(server_random +
+				    client_random)[..cipher_spec->iv_size-1];
 	}
 
     } else if(version[1] >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
-      string client_wkey = key_data->get_fix_string(5);
-      string server_wkey = key_data->get_fix_string(5);
-      keys[2] = .Cipher.prf(client_wkey, "client write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
-      keys[3] = .Cipher.prf(server_wkey, "server write key",
-			    client_random+server_random,
-			    cipher_spec->key_material);
+      string(0..255) client_wkey = key_data->get_fix_string(5);
+      string(0..255) server_wkey = key_data->get_fix_string(5);
+      keys[2] = cipher_spec->prf(client_wkey, "client write key",
+				 client_random + server_random,
+				 cipher_spec->key_material);
+      keys[3] = cipher_spec->prf(server_wkey, "server write key",
+				 client_random + server_random,
+				 cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string iv_block = .Cipher.prf("", "IV block",
-				      client_random+server_random,
-				      2*cipher_spec->iv_size);
+	string(0..255) iv_block =
+	  cipher_spec->prf("", "IV block",
+			   client_random + server_random,
+			   2 * cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
 #ifdef SSL3_DEBUG
 	werror("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
-	       sizeof([string]keys[4]), sizeof([string]keys[4]));
+	       sizeof(keys[4]), sizeof(keys[4]));
 #endif
       }
 
     }
     
   }
-  
-#ifndef WEAK_CRYPTO_40BIT
   else {
     keys[2] = key_data->get_fix_string(cipher_spec->key_material);
     keys[3] = key_data->get_fix_string(cipher_spec->key_material);
@@ -230,7 +266,6 @@ array(string) generate_keys(string client_random, string server_random,
 	keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
       }
   }
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #ifdef SSL3_DEBUG
   printKey( "client_write_MAC_secret",keys[0]);
@@ -260,7 +295,8 @@ array(string) generate_keys(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(string client_random, string server_random,
+array(.state) new_server_states(string(0..255) client_random,
+				string(0..255) server_random,
 				array(int) version)
 {
   .state write_state = .state(this);
@@ -285,13 +321,41 @@ array(.state) new_server_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+      if (cipher_spec->cipher_type != CIPHER_aead) {
+	if (version[1] >= PROTOCOL_TLS_1_1) {
+	  // TLS 1.1 and later have an explicit IV.
+	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+	}
+	read_state->crypt->set_iv(keys[4]);
+	write_state->crypt->set_iv(keys[5]);
+      } else {
+	read_state->tls_iv = write_state->tls_iv = 0;
+	read_state->salt = keys[4];
+	write_state->salt = keys[5];
       }
-      read_state->crypt->set_iv(keys[4]);
-      write_state->crypt->set_iv(keys[5]);
     }
+  }
+
+  switch(compression_algorithm) {
+  case COMPRESSION_deflate:
+    // FIXME: RFC 5246 6.2.2:
+    //   If the decompression function encounters a TLSCompressed.fragment
+    //   that would decompress to a length in excess of 2^14 bytes, it MUST
+    //   report a fatal decompression failure error.
+    read_state->compress = Gz.inflate()->inflate;
+    write_state->compress =
+      class(function(string, int:string) _deflate) {
+	string deflate(string s) {
+	  // RFC 3749 2:
+	  //   All data that was submitted for compression MUST be
+	  //   included in the compressed output, with no data
+	  //   retained to be included in a later output payload.
+	  //   Flushing ensures that each compressed packet payload
+	  //   can be decompressed completely.
+	  return _deflate(s, Gz.SYNC_FLUSH);
+	}
+      }(Gz.deflate()->deflate)->deflate;
+    break;
   }
   return ({ read_state, write_state });
 }
@@ -306,7 +370,8 @@ array(.state) new_server_states(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(string client_random, string server_random,
+array(.state) new_client_states(string(0..255) client_random,
+				string(0..255) server_random,
 				array(int) version)
 {
   .state write_state = .state(this);
@@ -331,12 +396,18 @@ array(.state) new_client_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+      if (cipher_spec->cipher_type != CIPHER_aead) {
+	if (version[1] >= PROTOCOL_TLS_1_1) {
+	  // TLS 1.1 and later have an explicit IV.
+	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+	}
+	read_state->crypt->set_iv(keys[5]);
+	write_state->crypt->set_iv(keys[4]);
+      } else {
+	read_state->tls_iv = write_state->tls_iv = 0;
+	read_state->salt = keys[5];
+	write_state->salt = keys[4];
       }
-      read_state->crypt->set_iv(keys[5]);
-      write_state->crypt->set_iv(keys[4]);
     }
   }
   return ({ read_state, write_state });

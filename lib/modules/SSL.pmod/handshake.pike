@@ -6,7 +6,7 @@
 //! buffers, a pointer to a session object (reuse or created as
 //! appropriate), and pending read and write states being negotiated.
 //!
-//! Each connection will have two sets or read and write state: The
+//! Each connection will have two sets of read and write states: The
 //! current read and write states used for encryption, and pending read
 //! and write states to be taken into use when the current keyexchange
 //! handshake is finished.
@@ -53,42 +53,63 @@ int certificate_state;
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 			   * received */
 
+multiset(int) remote_extensions = (<>);
+
 // RFC 5746-related fields
 int secure_renegotiation;
-string client_verify_data = "";	// 3.2: Initially of zero length for both the
-string server_verify_data = "";	//      ClientHello and the ServerHello.
+string(0..255) client_verify_data = "";
+string(0..255) server_verify_data = "";
+// 3.2: Initially of zero length for both the
+//      ClientHello and the ServerHello.
 
 // RFC 4366 3.1
-array(string) server_names;
+array(string(0..255)) server_names;
 
-Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
-		      * as the server's certified key) */
+//! The active @[Cipher.KeyExchange] (if any).
+.Cipher.KeyExchange ke;
 
-.Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
-
-int rsa_message_was_bad;
 ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 array(int) version;
 array(int) client_version; /* Used to check for version roll-back attacks. */
-int anonymous = 0;
 int reuse;
+
+//! The set of <hash, signature> combinations supported by the other end.
+//!
+//! Only used with TLS 1.2 and later.
+//!
+//! Defaults to the settings from RFC 5246 7.4.1.4.1.
+array(array(int)) signature_algorithms = ({
+  ({ HASH_sha, SIGNATURE_rsa }),
+  ({ HASH_sha, SIGNATURE_dsa }),
+  ({ HASH_sha, SIGNATURE_ecdsa }),
+});
+
+//! Supported elliptical curve cipher curves in order of preference.
+array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
+
+//! The selected elliptical curve point format.
+//!
+//! @note
+//!   May be @expr{-1@} to indicate that there's no supported overlap
+//!   between the server and client.
+int ecc_point_format = POINT_uncompressed;
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
-array(string) client_cert_distinguished_names;
+array(string(0..255)) client_cert_distinguished_names;
 
 
 //! Random cookies, sent and received with the hello-messages.
-string client_random;
-string server_random;
+string(0..255) client_random;
+string(0..255) server_random;
 
 constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
 int has_next_protocol_negotiation;
-
-string next_protocol;
+int has_application_layer_protocol_negotiation;
+string(0..255) next_protocol;
 
 #ifdef SSL3_PROFILING
 int timestamp;
@@ -97,9 +118,9 @@ void addRecord(int t,int s) {
 }
 #endif
 
-private array(string) select_server_certificate()
+private array(string(0..255)) select_server_certificate()
 {
-  array(string) certs;
+  array(string(0..255)) certs;
   if(context->select_server_certificate_func)
     certs = context->select_server_certificate_func(context, server_names);
   if(!certs)
@@ -122,7 +143,7 @@ private object select_server_key()
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
 
-string handshake_messages;
+string(0..255) handshake_messages;
 
 Packet handshake_packet(int type, string data)
 {
@@ -133,7 +154,7 @@ Packet handshake_packet(int type, string data)
   /* Perhaps one need to split large packages? */
   Packet packet = Packet();
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%c%3c%s", type, sizeof(data), data);
+  packet->fragment = sprintf("%c%3H", type, [string(0..255)]data);
   handshake_messages += packet->fragment;
   return packet;
 }
@@ -148,9 +169,8 @@ Packet server_hello_packet()
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
   struct->put_uint(version[0],1); struct->put_uint(version[1],1); /* version */
-#ifdef SSL3_DEBUG
-  werror("Writing server hello, with version: %d.%d\n", @version);
-#endif
+  SSL3_DEBUG_MSG("Writing server hello, with version: %d.%d\n",
+                 version[0], version[1]);
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
@@ -170,10 +190,32 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
-  if (has_next_protocol_negotiation && context->advertised_protocols) {
+  if (sizeof(ecc_curves) && remote_extensions[EXTENSION_ec_point_formats]) {
+    // RFC 4492 5.2:
+    // The Supported Point Formats Extension is included in a
+    // ServerHello message in response to a ClientHello message
+    // containing the Supported Point Formats Extension when
+    // negotiating an ECC cipher suite.
+    ADT.struct extension = ADT.struct();
+    extension->put_uint(POINT_uncompressed, 1);
+    extension->put_var_string(extension->pop_data(), 1);
+    extensions->put_uint(EXTENSION_ec_point_formats, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (has_application_layer_protocol_negotiation &&
+      next_protocol)
+  {
+    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation,2);
+    extensions->put_uint(sizeof(next_protocol)+3, 2);
+    extensions->put_uint(sizeof(next_protocol)+1, 2);
+    extensions->put_var_string(next_protocol, 1);
+  }
+  else if (has_next_protocol_negotiation &&
+           context->advertised_protocols) {
     extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
     ADT.struct extension = ADT.struct();
-    foreach (context->advertised_protocols;; string proto) {
+    foreach (context->advertised_protocols;; string(0..255) proto) {
       extension->put_var_string(proto, 1);
     }
     extensions->put_var_string(extension->pop_data(), 2);
@@ -183,9 +225,7 @@ Packet server_hello_packet()
       struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Server hello: %O\n", data);
-#endif
+  SSL3_DEBUG_MSG("SSL.handshake: Server hello: %O\n", data);
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
@@ -196,7 +236,17 @@ Packet client_hello()
   client_version = version + ({});
   struct->put_uint(client_version[0], 1); /* version */
   struct->put_uint(client_version[1], 1);
-  client_random = sprintf("%4c%s", time(), context->random(28));
+
+  // The first four bytes of the client_random is specified to be the
+  // timestamp on the client side. This is to guard against bad random
+  // generators, where a client could produce the same random numbers
+  // if the seed is reused. This argument is flawed, since a broken
+  // random generator will make the connection insecure anyways. The
+  // standard explicitly allows these bytes to not be correct, so
+  // sending random data instead is safer and reduces client
+  // fingerprinting.
+  client_random = context->random(32);
+
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
 
@@ -208,6 +258,7 @@ Packet client_hello()
     // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
   }
+  SSL3_DEBUG_MSG("Client ciphers:\n%s", fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
   int cipher_len = sizeof(cipher_suites)*2;
@@ -216,31 +267,70 @@ Packet client_hello()
   struct->put_var_uint_array(compression_methods, 1, 1);
 
   ADT.struct extensions = ADT.struct();
-  ADT.struct extension;
-  int have_extensions = 0;
 
   if (secure_renegotiation) {
-    have_extensions++;
-
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    extension = ADT.struct();
+    ADT.struct extension = ADT.struct();
     extension->put_var_string(client_verify_data, 1);
     extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
+  if (sizeof(ecc_curves)) {
+    // RFC 4492 5.1:
+    // The extensions SHOULD be sent along with any ClientHello message
+    // that proposes ECC cipher suites.
+    ADT.struct extension = ADT.struct();
+    foreach(ecc_curves, int curve) {
+      extension->put_uint(curve, 2);
+    }
+    extension->put_var_string(extension->pop_data(), 2);
+    extensions->put_uint(EXTENSION_elliptic_curves, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+
+    extension->put_uint(POINT_uncompressed, 1);
+    extension->put_var_string(extension->pop_data(), 1);
+    extensions->put_uint(EXTENSION_ec_point_formats, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  if (client_version[1] >= PROTOCOL_TLS_1_2) {
+    // RFC 5246 7.4.1.4.1:
+    // If the client supports only the default hash and signature algorithms
+    // (listed in this section), it MAY omit the signature_algorithms
+    // extension.  If the client does not support the default algorithms, or
+    // supports other hash and signature algorithms (and it is willing to
+    // use them for verifying messages sent by the server, i.e., server
+    // certificates and server key exchange), it MUST send the
+    // signature_algorithms extension, listing the algorithms it is willing
+    // to accept.
+
+    // We list all hashes and signature formats that we support.
+    ADT.struct extension = ADT.struct();
+    string(0..255) ext =
+      (string(0..255))(map(sort(indices(HASH_lookup)),
+			   lambda(int h) {
+			     return ({
+			       h, SIGNATURE_rsa,
+			       h, SIGNATURE_dsa,
+			     });
+			   })*({}));
+    extension->put_var_string(ext, 2);
+    extensions->put_uint(EXTENSION_signature_algorithms, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
   if(context->client_use_sni)
   {
-    have_extensions++;
-    extension = ADT.struct();
+    ADT.struct extension = ADT.struct();
     if(context->client_server_names)
     {
-      foreach(context->client_server_names;; string server_name)
+      foreach(context->client_server_names;; string(0..255) server_name)
       {
         ADT.struct hostname = ADT.struct();
         hostname->put_uint(0, 1); // hostname
@@ -250,131 +340,78 @@ Packet client_hello()
       }
     }
 
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Adding Server Name extension.\n");
-#endif
-
+    SSL3_DEBUG_MSG("SSL.handshake: Adding Server Name extension.\n");
     extensions->put_uint(EXTENSION_server_name, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   } 
 
-  if(have_extensions)
+  if (context->advertised_protocols)
+  {
+    array(string) prots = context->advertised_protocols;
+    ADT.struct extension = ADT.struct();
+    extension->put_uint( [int]Array.sum(Array.map(prots, sizeof)) +
+                         sizeof(prots), 2);
+    foreach(context->advertised_protocols;; string(0..255) proto)
+      extension->put_var_string(proto, 1);
+
+    SSL3_DEBUG_MSG("SSL.handshake: Adding ALPN extension.\n");
+    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  // When the client HELLO packet data is in the range 256-511 bytes
+  // f5 SSL terminators will intepret it as SSL2 requiring an
+  // additional 8k of data, which will cause the connection to hang.
+  // The solution is to pad the package to more than 511 bytes using a
+  // dummy exentsion.
+  int packet_size = sizeof(struct)+sizeof(extensions)+2;
+  if(packet_size>255 && packet_size<512)
+  {
+    SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
+                   512-packet_size-4);
+    extensions->put_uint(EXTENSION_padding, 2);
+    extensions->put_var_string("\0"*(512-packet_size-4), 2);
+  }
+
+  if(sizeof(extensions))
     struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 
-#ifdef SSL3_DEBUG
-  werror("SSL.handshake: Client hello: %O\n", data);
-#endif
-
+  SSL3_DEBUG_MSG("SSL.handshake: Client hello: %O\n", data);
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
 Packet server_key_exchange_packet()
 {
-  ADT.struct struct;
-  
-  switch (session->ke_method)
-  {
-  case KE_rsa:
-#ifdef WEAK_CRYPTO_40BIT
-    temp_key = context->short_rsa;
-#endif /* WEAK_CRYPTO_40BIT (magic comment) */
-#ifndef WEAK_CRYPTO_40BIT
-    temp_key = (session->cipher_spec->is_exportable
-		? context->short_rsa
-		: context->long_rsa);
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-    if (temp_key)
-    {
-      /* Send a ServerKeyExchange message. */
-      
-#ifdef SSL3_DEBUG
-      werror("Sending a server key exchange-message, "
-	     "with a %d-bits key.\n", temp_key->rsa_size());
-#endif
-      struct = ADT.struct();
-      struct->put_bignum(temp_key->get_n());
-      struct->put_bignum(temp_key->get_e());
-    }
-    else
-      return 0;
-    break;
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-  case KE_dh_anon:
-    // anonymous, not used on the server, but here for completeness.
-    anonymous = 1;
-    struct = ADT.struct();
-
-    /* werror("dh_params = %O\n", context->dh_params); */
-    dh_state = .Cipher.DHKeyExchange(context->dh_params);
-    dh_state->new_secret(context->random);
-    
-    struct->put_bignum(context->dh_params->p);
-    struct->put_bignum(context->dh_params->g);
-    struct->put_bignum(dh_state->our);
-    break;
-  default:
-    return 0;
-  }
-
-  session->cipher_spec->sign(session, client_random + server_random, struct);
-  return handshake_packet (HANDSHAKE_server_key_exchange,
-			  struct->pop_data());
+  if (ke) error("KE!\n");
+  ke = session->ke_factory(context, session, this, client_version);
+  string data = ke->server_key_exchange_packet(client_random, server_random);
+  return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
 Packet client_key_exchange_packet()
 {
-  ADT.struct struct = ADT.struct();
-  string data;
-
-  switch (session->ke_method)
-  {
-  case KE_rsa:
-    // NOTE: To protect against version roll-back attacks,
-    //       the version sent here MUST be the same as the
-    //       one in the initial handshake!
-    struct->put_uint(client_version[0], 1);
-    struct->put_uint(client_version[1], 1);
-    string random = context->random(46);
-    struct->put_fix_string(random);
-    string premaster_secret = struct->pop_data();
-    session->master_secret = client_derive_master_secret(premaster_secret);
-
-    array(.state) res = session->new_client_states(client_random,
-						   server_random,version);
-    pending_read_state = res[0];
-    pending_write_state = res[1];
-
-    data = (temp_key || session->rsa)->encrypt(premaster_secret);
-
-    if(version[1] >= PROTOCOL_TLS_1_0)
-      data=sprintf("%2c",sizeof(data))+data;
-      
-    break;
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-  case KE_dh_anon:
-#ifdef SSL3_DEBUG
-    werror("FIXME: Not handled yet\n");
-#endif
-    anonymous = 1;
+  ke = ke || session->ke_factory(context, session, this, client_version);
+  string data =
+    ke->client_key_exchange_packet(client_random, server_random, version);
+  if (!data) {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
     return 0;
-    break;
-  default:
-    return 0;
   }
+
+  array(.state) res =
+    session->new_client_states(client_random, server_random, version);
+  pending_read_state = res[0];
+  pending_write_state = res[1];
 
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
 Packet certificate_verify_packet()
 {
-
   ADT.struct struct = ADT.struct();
 
   .context cx = .context();
@@ -384,7 +421,13 @@ Packet certificate_verify_packet()
 
   return handshake_packet (HANDSHAKE_certificate_verify,
 			  struct->pop_data());
-  
+}
+
+int(0..1) not_ecc_suite(int cipher_suite)
+{
+  array(int) suite = [array(int)]CIPHER_SUITES[cipher_suite];
+  return suite &&
+    !(< KE_ecdh_ecdsa, KE_ecdhe_ecdsa, KE_ecdh_rsa, KE_ecdhe_rsa >)[suite[0]];
 }
 
 int(-1..0) reply_new_session(array(int) cipher_suites,
@@ -392,25 +435,30 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 {
   reuse = 0;
   session = context->new_session();
-  multiset(int) common_suites;
 
-  SSL3_DEBUG_MSG("ciphers: me: %O, client: %O\n",
-		 context->preferred_suites, cipher_suites);
-  common_suites = mkmultiset(cipher_suites & context->preferred_suites);
-  SSL3_DEBUG_MSG("intersection: %O\n", common_suites);
+  SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
+		 fmt_cipher_suites(context->preferred_suites),
+                 fmt_cipher_suites(cipher_suites));
+  cipher_suites = context->preferred_suites & cipher_suites;
+  SSL3_DEBUG_MSG("intersection:\n%s\n",
+                 fmt_cipher_suites((array(int))cipher_suites));
 
-  if (sizeof(common_suites))
-  {
-    int suite;
-    foreach(context->preferred_suites, suite)
-      if (common_suites[suite]) break;
-    session->set_cipher_suite(suite,version[1]);
-  } else {
+  if (!sizeof(ecc_curves) || (ecc_point_format == -1)) {
+    // No overlapping support for ecc.
+    // Filter the ECC suites from the set.
+    SSL3_DEBUG_MSG("ECC not supported.\n");
+    cipher_suites = filter(cipher_suites, not_ecc_suite);
+  }
+
+  if (!sizeof(cipher_suites) ||
+      !session->set_cipher_suite(cipher_suites[0], version[1],
+				 signature_algorithms)) {
+    // No overlapping cipher suites, or obsolete cipher suite selected.
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
-  
-  compression_methods &= context->preferred_compressors;
+
+  compression_methods = context->preferred_compressors & compression_methods;
   if (sizeof(compression_methods))
     session->set_compression_method(compression_methods[0]);
   else
@@ -420,48 +468,41 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   }
   
   send_packet(server_hello_packet());
-  
-  /* Send Certificate, ServerKeyExchange and CertificateRequest as
-   * appropriate, and then ServerHelloDone.
-   */
 
-  array(string) certs;
-#ifdef SSL3_DEBUG
-  werror("Selecting server key.\n");
-#endif
+  // Don't send any certificate in anonymous mode.
+  if (session->cipher_spec->sign != .Cipher.anon_sign) {
+    /* Send Certificate, ServerKeyExchange and CertificateRequest as
+     * appropriate, and then ServerHelloDone.
+     */
 
-  // populate the key to be used for the session.
-  object key = select_server_key();
+    array(string(0..255)) certs;
+    SSL3_DEBUG_MSG("Selecting server key.\n");
 
-#ifdef SSL3_DEBUG
-  werror("Selected server key: %O\n", key);
-#endif
+    // populate the key to be used for the session.
+    object key = select_server_key();
+    SSL3_DEBUG_MSG("Selected server key: %O\n", key);
 
-  if(Program.implements(object_program(key), Crypto.DSA))
-  { 
-    session->dsa = [object(Crypto.DSA)]key;
+    if(Program.implements(object_program(key), Crypto.DSA))
+    { 
+      session->dsa = [object(Crypto.DSA)]key;
+    }
+    else
+    {
+      session->rsa = [object(Crypto.RSA)]key;
+    }
+
+    SSL3_DEBUG_MSG("Checking for Certificate.\n");
+
+    if (certs = select_server_certificate())
+    {
+      SSL3_DEBUG_MSG("Sending Certificate.\n");
+      send_packet(certificate_packet(certs));
+    } else {
+      // Otherwise the server will just silently send an invalid
+      // ServerHello sequence.
+      error ("Certificate(s) missing.\n");
+    }
   }
-  else
-  {
-    session->rsa = [object(Crypto.RSA)]key;
-  }
-
-#ifdef SSL3_DEBUG
-  werror("Checking for Certificate.\n");
-#endif
-
-  if (certs = select_server_certificate())
-  {
-#ifdef SSL3_DEBUG
-  werror("Sending Certificate.\n");
-#endif
-
-    send_packet(certificate_packet(certs));
-  }
-  else if (session->cipher_spec->sign != .Cipher.anon_sign)
-    // Otherwise the server will just silently send an invalid
-    // ServerHello sequence.
-    error ("Certificate(s) missing.\n");
 
   Packet key_exchange = server_key_exchange_packet();
 
@@ -487,25 +528,26 @@ Packet change_cipher_packet()
   return packet;
 }
 
-string hash_messages(string sender)
+string(0..255) hash_messages(string(0..255) sender)
 {
   if(version[1] == PROTOCOL_SSL_3_0) {
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    return .Cipher.prf(session->master_secret, sender,
-		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
-		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
+  else if(version[1] <= PROTOCOL_TLS_1_1) {
+    return session->cipher_spec->prf(session->master_secret, sender,
+				     Crypto.MD5.hash(handshake_messages)+
+				     Crypto.SHA1.hash(handshake_messages), 12);
+  } else if(version[1] >= PROTOCOL_TLS_1_2) {
+    return session->cipher_spec->prf(session->master_secret, sender,
+				     session->cipher_spec->hash->hash(handshake_messages), 12);
   }
 }
 
-Packet finished_packet(string sender)
+Packet finished_packet(string(0..255) sender)
 {
-#ifdef SSL3_DEBUG
-  werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
-#endif
-  string verify_data = hash_messages(sender);
+  SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
+  string(0..255) verify_data = hash_messages(sender);
   if (handshake_state >= STATE_client_min) {
     // We're the client.
     client_verify_data = verify_data;
@@ -521,188 +563,34 @@ Packet certificate_request_packet(SSL.context context)
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-
-    int len; 
-
-    // an empty certificate request is allowed.
-    if(context->authorities_cache && sizeof(context->authorities_cache))
-      len = `+(@ Array.map(context->authorities_cache,
-			     lambda(Tools.X509.TBSCertificate s)
-       { return sizeof(s->subject->get_der());} ));
-
-    struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
-    foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
-      struct->put_var_string(auth->subject->get_der(), 2);
+    struct->put_var_string([string(0..255)]
+			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
 }
 
-Packet certificate_packet(array(string) certificates)
+Packet certificate_packet(array(string(0..255)) certificates)
 {
   ADT.struct struct = ADT.struct();
   int len = 0;
 
   if(certificates && sizeof(certificates))
     len = `+( @ Array.map(certificates, sizeof));
-#ifdef SSL3_DEBUG
-  //    werror("SSL.handshake: certificate_message size %d\n", len);
-#endif
+  //  SSL3_DEBUG_MSG("SSL.handshake: certificate_message size %d\n", len);
   struct->put_uint(len + 3 * sizeof(certificates), 3);
-  foreach(certificates, string cert)
+  foreach(certificates, string(0..255) cert)
     struct->put_var_string(cert, 3);
 
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
-
 }
 
-string server_derive_master_secret(string data)
+string(0..255) server_derive_master_secret(string(0..255) data)
 {
-  string premaster_secret;
-  
-#ifdef SSL3_DEBUG
-  werror("server_derive_master_secret: ke_method %d\n", session->ke_method);
-#endif
-  switch(session->ke_method)
-  {
-  default:
-    error( "Internal error\n" );
-#if 0
-    /* What is this for? */
-  case 0:
-    return 0;
-#endif
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-    if (!sizeof(data))
-    {
-      /* Implicit encoding; Should never happen unless we have
-       * requested and received a client certificate of type
-       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-#ifdef SSL3_DEBUG
-      werror("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
-	     "               Hanging up.\n");
-#endif
-      send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown, version[1]));
-      return 0;
-    }
-    /* Fall through */
-  case KE_dh_anon:
-  {
-    anonymous = 1;
-
-    /* Explicit encoding */
-    ADT.struct struct = ADT.struct(data);
-
-    if (catch
-	{
-	  dh_state->set_other(struct->get_bignum);
-	} || !struct->is_empty())
-      {
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-		      "SSL.session->handle_handshake: unexpected message\n",
-		      backtrace()));
-	return 0;
-      }
-
-    premaster_secret = (string)dh_state->get_shared();
-    dh_state = 0;
-    break;
-  }
-  case KE_rsa:
-   {
-     /* Decrypt the premaster_secret */
-#ifdef SSL3_DEBUG
-     werror("encrypted premaster_secret: %O\n", data);
-#endif
-     if(version[1] >= PROTOCOL_TLS_1_0) {
-       if(sizeof(data)-2 == data[0]*256+data[1]) {
-	 premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
-       }
-     } else {
-       premaster_secret = (temp_key || session->rsa)->decrypt(data);
-     }
-#ifdef SSL3_DEBUG
-     werror("premaster_secret: %O\n", premaster_secret);
-#endif
-     if (!premaster_secret
-	 || (sizeof(premaster_secret) != 48)
-	 || (premaster_secret[0] != 3)
-	 || (premaster_secret[1] != client_version[1]))
-     {
-       /* To avoid the chosen ciphertext attack discovered by Daniel
-	* Bleichenbacher, it is essential not to send any error
-	* messages back to the client until after the client's
-	* Finished-message (or some other invalid message) has been
-	* received.
-	*/
-       /* Also checks for version roll-back attacks.
-	*/
-#ifdef SSL3_DEBUG
-       werror("SSL.handshake: Invalid premaster_secret! "
-	      "A chosen ciphertext attack?\n");
-       if (premaster_secret && sizeof(premaster_secret) > 2) {
-	 werror("SSL.handshake: Strange version (%d.%d) detected in "
-		"key exchange message (expected %d.%d).\n",
-		premaster_secret[0], premaster_secret[1],
-		client_version[0], client_version[1]);
-       }
-#endif
-
-       premaster_secret = context->random(48);
-       rsa_message_was_bad = 1;
-
-     } else {
-     }
-     break;
-   }
-  }
-  string res = "";
-
-  .Cipher.MACsha sha = .Cipher.MACsha();
-  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    foreach( ({ "A", "BB", "CCC" }), string cookie)
-      res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
-					   + client_random + server_random));
-  }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    res=.Cipher.prf(premaster_secret,"master secret",
-		    client_random+server_random,48);
-  }
-  
-#ifdef SSL3_DEBUG
-  werror("master: %O\n", res);
-#endif
-  return res;
-}
-
-string client_derive_master_secret(string premaster_secret)
-{
-  string res = "";
-
-  .Cipher.MACsha sha = .Cipher.MACsha();
-  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-
-#ifdef SSL3_DEBUG
-  werror("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
-#endif
-
-  if(version[1] == PROTOCOL_SSL_3_0) {
-    foreach( ({ "A", "BB", "CCC" }), string cookie)
-      res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
-					   + client_random + server_random));
-  }
-  else if(version[1] >= PROTOCOL_TLS_1_0) {
-    res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
-  }
-  
-#ifdef SSL3_DEBUG
-  werror("bahmaster: %O\n", res);
-#endif
-  return res;
+  string(0..255)|int res =
+    ke->server_derive_master_secret(data, client_random, server_random, version);
+  if (stringp(res)) return [string]res;
+  send_packet(Alert(ALERT_fatal, [int]res, version[1]));
+  return 0;
 }
 
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
@@ -750,21 +638,17 @@ int verify_certificate_chain(array(string) certs)
   if(!certs || !sizeof(certs))
     return 0;
 
-  int issuer_known = 0;
 
-  // step one: see if the issuer of the certificate is acceptable.
-  // this means the issuer of the certificate must be one of the authorities.
-  string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
-    ->get_der();
-
-  // if we've got authorities, we need to check to see that the
-  // provided cert is authorized. is this useful for server
-  // connections???
+  // See if the issuer of the certificate is acceptable. This means
+  // the issuer of the certificate must be one of the authorities.
   if(sizeof(context->authorities_cache))
   {
-    foreach(context->authorities_cache, Tools.X509.TBSCertificate c)
+    string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
+      ->get_der();
+    int issuer_known = 0;
+    foreach(context->authorities_cache, string c)
     {
-      if((r == (c->subject->get_der()))) // we have a trusted issuer
+      if(r == c) // we have a trusted issuer
       {
         issuer_known = 1;
         break;
@@ -782,18 +666,14 @@ int verify_certificate_chain(array(string) certs)
   
   // next we must verify the chain to see if the chain is unbroken
 
-  mapping auth=([]);
-
-  foreach(context->trusted_issuers_cache, array(Tools.X509.TBSCertificate) i)
-  {
-    // we want the first item, the top level
-    auth[i[-1]->subject->get_der()] = i[-1]->public_key;
-  }
-
-  mapping result = Tools.X509.verify_certificate_chain(certs, auth, context->require_trust);
+  mapping result =
+    Standards.X509.verify_certificate_chain(certs,
+                                            context->trusted_issuers_cache,
+					    context->require_trust);
 
   if(result->verified)
   {
+    // This data isn't actually used internally.
     session->cert_data = result;
     return 1;
   }
@@ -801,14 +681,27 @@ int verify_certificate_chain(array(string) certs)
  return 0;
 }
 
+protected string fmt_cipher_suites(array(int) s)
+{
+  String.Buffer b = String.Buffer();
+  mapping(int:string) ciphers = ([]);
+  foreach([array(string)]indices(.Constants), string id)
+    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
+	has_prefix(id, "SSL2_") )
+      ciphers[.Constants[id]] = id;
+  foreach(s, int c)
+    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
+  return (string)b;
+}
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
 //!
-//! This function returns 0 if hadshake is in progress, 1 if handshake
+//! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string data, string raw)
+int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 {
   ADT.struct input = ADT.struct(data);
 #ifdef SSL3_PROFILING
@@ -830,11 +723,20 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
-     rsa_message_was_bad = 0;
-     temp_key = 0;
+     ke = 0;
      
      handshake_messages = raw;
-     server_random = sprintf("%4c%s", time(), context->random(28));
+
+
+     // The first four bytes of the client_random is specified to be
+     // the timestamp on the client side. This is to guard against bad
+     // random generators, where a client could produce the same
+     // random numbers if the seed is reused. This argument is flawed,
+     // since a broken random generator will make the connection
+     // insecure anyways. The standard explicitly allows these bytes
+     // to not be correct, so sending random data instead is safer and
+     // reduces client fingerprinting.
+     server_random = context->random(32);
 
      switch(type)
      {
@@ -863,10 +765,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: received hello\n"
 			 "version = %d.%d\n"
 			 "id=%O\n"
-			 "cipher suites: %O\n"
+			 "cipher suites:\n%s\n"
 			 "compression methods: %O\n",
 			 client_version[0], client_version[1],
-			 id, cipher_suites, compression_methods);
+			 id, fmt_cipher_suites(cipher_suites),
+                         compression_methods);
 
 	}
 	  || (cipher_len & 1))
@@ -879,7 +782,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if ((client_version[0] != PROTOCOL_major) ||
 	    (client_version[1] < min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 @client_version);
+			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Unsupported version.\n",
 			    backtrace()));
@@ -910,7 +813,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 
 	int missing_secure_renegotiation = secure_renegotiation;
-
+	ecc_curves = ({});
 	if (!input->is_empty()) {
 	  ADT.struct extensions = ADT.struct(input->get_var_string(2));
 
@@ -923,7 +826,35 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   extension_type,
 			   extension_data->buffer,
 			   sizeof(extension_data->buffer));
+	    remote_extensions[extension_type] = 1;
+          extensions:
 	    switch(extension_type) {
+	    case EXTENSION_signature_algorithms:
+	      // RFC 5246
+	      string bytes = extension_data->get_var_string(2);
+	      // Pairs of <hash_alg, signature_alg>.
+	      signature_algorithms = ((array(int))bytes)/2;
+	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n", signature_algorithms);
+	      break;
+	    case EXTENSION_elliptic_curves:
+	      int sz = extension_data->get_uint(2)/2;
+	      ecc_curves =
+		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
+		       ECC_CURVES);
+	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", ecc_curves);
+	      break;
+	    case EXTENSION_ec_point_formats:
+	      array(int) ecc_point_formats =
+		extension_data->get_var_uint_array(1, 1);
+	      // NB: We only support the uncompressed point format for now.
+	      if (has_value(ecc_point_formats, POINT_uncompressed)) {
+		ecc_point_format = POINT_uncompressed;
+	      } else {
+		// Not a supported point format.
+		ecc_point_format = -1;
+	      }
+	      SSL3_DEBUG_MSG("Elliptic point format: %O\n", ecc_point_format);
+	      break;
 	    case EXTENSION_server_name:
 	      // RFC 4366 3.1 "Server Name Indication"
 	      // Example: "\0\f\0\0\tlocalhost"
@@ -940,7 +871,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		  break;
 		}
 	      }
+              SSL3_DEBUG_MSG("SNI extension: %O\n", server_names);
 	      break;
+
 	    case EXTENSION_renegotiation_info:
 	      string renegotiated_connection =
 		extension_data->get_var_string(1);
@@ -965,11 +898,68 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	      }
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
+              SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
 	      break;
+
 	    case EXTENSION_next_protocol_negotiation:
 	      has_next_protocol_negotiation = 1;
+              SSL3_DEBUG_MSG("NPN extension\n");
 	      break;
+
+            case EXTENSION_application_layer_protocol_negotiation:
+              {
+                has_application_layer_protocol_negotiation = 1;
+                if( !context->advertised_protocols )
+                  break;
+                array(string) protocols = ({});
+                while (!extension_data->is_empty()) {
+                  string server_name = extension_data->get_var_string(1);
+                  if( sizeof(server_name)==0 )
+                  {
+                    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+                                      version[1],
+                                      "SSL.session->handle_handshake: "
+                                      "Empty protocol in ALPN.\n",
+                                      backtrace()));
+                    return -1;
+                  }
+                  protocols += ({ server_name });
+                }
+
+                if( !sizeof(protocols) )
+                {
+                  // FIXME: What does an empty list mean? Ignore, no
+                  // protocol failure or handshake failure?
+                }
+
+                // Although the protocol list is sent in client
+                // preference order, it is the server preference that
+                // wins.
+                next_protocol = 0;
+                foreach(context->advertised_protocols;; string(0..255) prot)
+                  if( has_value(protocols, prot) )
+                    next_protocol = prot;
+                if( !next_protocol )
+                  send_packet(Alert(ALERT_fatal, ALERT_no_application_protocol,
+                                    version[1],
+                                    "SSL.session->handler_handshake: "
+                                    "No compatible ALPN protocol.\n",
+                                    backtrace()));
+                SSL3_DEBUG_MSG("ALPN extension: %O %O\n", protocols, next_protocol);
+              }
+              break;
+
 	    default:
+#ifdef SSL3_DEBUG
+              foreach([array(string)]indices(.Constants), string id)
+                if(has_prefix(id, "EXTENSION_") &&
+                   .Constants[id]==extension_type)
+                {
+                  werror("Unhandled extension %s\n", id);
+                  break extensions;
+                }
+              werror("Unknown extension %O\n", extension_type);
+#endif
 	      break;
 	    }
 	  }
@@ -1021,9 +1011,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	session = sizeof(id) && context->lookup_session(id);
 	if (session)
 	  {
-#ifdef SSL3_DEBUG
-	    werror("SSL.handshake: Reusing session %O\n", id);
-#endif
+            SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
 	    /* Reuse session */
 	  reuse = 1;
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
@@ -1035,9 +1023,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array(.state) res = session->new_server_states(client_random,
-							 server_random,
-							 version);
+	  array(.state) res;
+          if( catch(res = session->new_server_states(client_random,
+                                                     server_random,
+                                                     version)) )
+          {
+            // DES/DES3 throws an exception if a weak key is used. We
+            // coul possibly send ALERT_insufficient_security instead.
+            send_packet(Alert(ALERT_fatal, ALERT_internal_error,
+                              version[1]));
+            return -1;
+          }
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
@@ -1063,10 +1059,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      case HANDSHAKE_hello_v2:
       {
 	SSL3_DEBUG_MSG("SSL.session: CLIENT_HELLO_V2\n");
+        SSL3_DEBUG_MSG("SSL.handshake: SSL2 hello message received\n");
 
-#ifdef SSL3_DEBUG
-	werror("SSL.handshake: SSL2 hello message received\n");
-#endif
 	int ci_len;	// Cipher specs length
 	int id_len;	// Session id length
 	int ch_len;	// Challenge length
@@ -1078,10 +1072,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16))
 	{
-#ifdef SSL3_DEBUG
-	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
-		 "%s\n", err?describe_backtrace(err):"");
-#endif /* SSL3_DEBUG */
+          SSL3_DEBUG_MSG("SSL.handshake: Error decoding SSL2 handshake:\n"
+                         "%s\n", err?describe_backtrace(err):"");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -1091,7 +1083,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if ((client_version[0] != PROTOCOL_major) ||
 	    (client_version[1] < min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 @client_version);
+			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Unsupported version.\n",
 			    backtrace()));
@@ -1121,7 +1113,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  version[1] = client_version[1];
 	}
 
-	string challenge;
+	string(0..255) challenge;
 	if (catch{
 	    // FIXME: Support for restarting sessions?
 	  cipher_suites = input->get_fix_uint_array(3, ci_len/3);
@@ -1176,10 +1168,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      }
     case HANDSHAKE_finished:
      {
-       string my_digest;
-       string digest;
+       string(0..255) my_digest;
+       string(0..255) digest;
        
-	SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
+       SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
        if(version[1] == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
@@ -1209,11 +1201,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        }
 
-       if (rsa_message_was_bad       /* Error delayed until now */
+       if ((ke && ke->message_was_bad)	/* Error delayed until now */
 	   || (my_digest != digest))
        {
-	 if(rsa_message_was_bad)
-	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
+	 if(ke && ke->message_was_bad)
+	   SSL3_DEBUG_MSG("message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1255,9 +1247,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_client_key_exchange:
       SSL3_DEBUG_MSG("SSL.session: CLIENT_KEY_EXCHANGE\n");
 
-#ifdef SSL3_DEBUG
-      werror("client_key_exchange\n");
-#endif
       if (certificate_state == CERT_requested)
       { /* Certificate must be sent before key exchange message */
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1272,14 +1261,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       } else {
 
 	// trace(1);
-	array(.state) res = session->new_server_states(client_random,
-						       server_random,version);
+	array(.state) res =
+	  session->new_server_states(client_random, server_random, version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
-#ifdef SSL3_DEBUG
-	werror("certificate_state: %d\n", certificate_state);
-#endif
+        SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       }
       // TODO: we need to determine whether the certificate has signing abilities.
       if (certificate_state == CERT_received)
@@ -1297,9 +1284,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      {
        SSL3_DEBUG_MSG("SSL.session: CLIENT_CERTIFICATE\n");
 
-#ifdef SSL3_DEBUG
-      werror("client_certificate\n");
-#endif
        if (certificate_state != CERT_requested)
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1359,17 +1343,22 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_VERIFY\n");
 
-      if (!rsa_message_was_bad)
+      if (!ke->message_was_bad)
       {
 	int(0..1) verification_ok;
-	if( catch
-	{
-	  Gmp.mpz signature = input->get_bignum();
-	  ADT.struct handshake_messages_struct = ADT.struct();
-	  handshake_messages_struct->put_fix_string(handshake_messages);
-	  verification_ok = session->cipher_spec->verify(
-	    session, "", handshake_messages_struct, signature);
-	} || verification_ok)
+	mixed err = catch {
+	    ADT.struct handshake_messages_struct = ADT.struct();
+	    handshake_messages_struct->put_fix_string(handshake_messages);
+	    verification_ok = session->cipher_spec->verify(
+	      session, "", handshake_messages_struct, input);
+	  };
+#ifdef SSL3_DEBUG
+	if (err) {
+	  master()->handle_error(err);
+	}
+#endif
+	err = UNDEFINED;	// Get rid of warning.
+	if (!verification_ok)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
@@ -1425,7 +1414,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if ((version[0] != PROTOCOL_major) || (version[1] < min_version)) {
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-		       @version);
+		       version[0], version[1]);
 	version = client_version + ({});
 	send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			  "SSL.session->handle_handshake: Unsupported version.\n",
@@ -1456,7 +1445,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	version[1] = client_version[1];
       }
 
-      session->set_cipher_suite(cipher_suite,version[1]);
+      if (!session->set_cipher_suite(cipher_suite, version[1],
+				     signature_algorithms)) {
+	// Unsupported or obsolete cipher suite selected.
+	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
+	return -1;
+      }
       session->set_compression_method(compression_method);
       SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
 		     "version = %d.%d\n"
@@ -1511,6 +1505,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    secure_renegotiation = 1;
 	    missing_secure_renegotiation = 0;
 	    break;
+	  case EXTENSION_ec_point_formats:
+	    array(int) ecc_point_formats =
+	      extension_data->get_var_uint_array(1, 1);
+	    // NB: We only support the uncompressed point format for now.
+	    if (has_value(ecc_point_formats, POINT_uncompressed)) {
+	      ecc_point_format = POINT_uncompressed;
+	    } else {
+	      // Not a supported point format.
+	      ecc_point_format = -1;
+	    }
+	    break;
 	  case EXTENSION_server_name:
 	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
             break;
@@ -1560,7 +1565,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	SSL3_DEBUG_MSG("SSL.session: CERTIFICATE\n");
 
       // we're anonymous, so no certificate is requred.
-      if(anonymous)
+      if(ke && ke->anonymous)
          break;
 
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
@@ -1582,39 +1587,24 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
         session->peer_certificate_chain = certs;
       }
-      
+
       mixed error=catch
       {
-	Tools.X509.Verifier public_key = Tools.X509.decode_certificate(
+	Standards.X509.Verifier public_key = Standards.X509.decode_certificate(
                 session->peer_certificate_chain[0])->public_key;
 
 	if(public_key->type == "rsa")
-	  {
-	    Crypto.RSA rsa = Crypto.RSA();
-	    rsa->set_public_key(public_key->rsa->get_n(),
-				public_key->rsa->get_e());
-	    session->rsa = rsa;
-	  }
-	else
-	  {
-#ifdef SSL3_DEBUG
-	    werror("Other certificates than RSA not supported!\n");
-#endif
-	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-			      "SSL.session->handle_handshake: Unsupported certificate type\n",
-			      backtrace()));
-	    return -1;
-	  }
+          session->rsa = public_key->rsa;
+        else
+          session->dsa = public_key->dsa;
       };
 
       if(error)
 	{
-#ifdef SSL3_DEBUG
-	  werror("Failed to decode certificate!\n");
-#endif
+          SSL3_DEBUG_MSG("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: Failed to decode certificate\n",
-			    backtrace()));
+			    error));
 	  return -1;
 	}
       
@@ -1624,40 +1614,24 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_server_key_exchange:
       {
-	SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
-
-	Gmp.mpz n = input->get_bignum();
-	Gmp.mpz e = input->get_bignum();
-	Gmp.mpz signature = input->get_bignum();
-	ADT.struct temp_struct = ADT.struct();
-	temp_struct->put_bignum(n);
-	temp_struct->put_bignum(e);
-	int verification_ok;
-	if( catch{ verification_ok = session->cipher_spec->verify(
-	  session, client_random + server_random, temp_struct, signature); }
-	    || !verification_ok)
-	{
+	if (ke) error("KE!\n");
+	ke = session->ke_factory(context, session, this, client_version);
+	if (ke->server_key_exchange(input, client_random, server_random) < 0) {
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: verification of"
 			    " ServerKeyExchange message failed\n",
 			    backtrace()));
 	  return -1;
 	}
-	Crypto.RSA rsa = Crypto.RSA();
-	rsa->set_public_key(n, e);
-	session->rsa = rsa;
 	break;
       }
 
     case HANDSHAKE_certificate_request:
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_REQUEST\n");
 
-#ifdef SSL3_DEBUG
-	werror("Certificate request received.\n");
-#endif
-        // it is a fatal handshake_failure alert for an anonymous server to 
+        // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
-        if(anonymous)
+        if(ke->anonymous)
         {
 	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			    "SSL.session->handle_handshake: anonymous server "
@@ -1674,7 +1648,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
           ADT.struct s = ADT.struct(input->get_fix_string(num_distinguished_names));
           while(!s->is_empty())
           {
-            object asn = Standards.ASN1.Decode.simple_der_decode((string)s->get_var_string(2));
+            object asn =
+	      Standards.ASN1.Decode.simple_der_decode(s->get_var_string(2));
             if(object_program(asn) != Standards.ASN1.Types.Sequence)
             {
                     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -1684,9 +1659,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
             Standards.ASN1.Types.Sequence seq = [object(Standards.ASN1.Types.Sequence)]asn;
             client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string( 
                                             seq ) }); 
-#ifdef SSL3_DEBUG
-            werror("got an authorized issuer: %O\n", client_cert_distinguished_names[-1]);
-#endif
+            SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
+                           client_cert_distinguished_names[-1]);
            }
         }
 
@@ -1707,16 +1681,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
         // we have so that we only send certificates that match what they 
         // want.
 
-        array(string) certs = context->client_certificate_selector(context, 
-                                          client_cert_types, 
-                                          client_cert_distinguished_names);
+        array(string(0..255)) certs =
+	  context->client_certificate_selector(context,
+					       client_cert_types,
+					       client_cert_distinguished_names);
         if(!certs || !sizeof(certs))
           certs = ({});
 
 #ifdef SSL3_DEBUG
         foreach(certs, string c)
         {
-werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.X509.decode_certificate(c)->subject) + "\n");
+werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
         }
 #endif
 
@@ -1731,26 +1706,14 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
       }
 
 
+      if( !session->has_required_certificates() )
       {
-
-      check_serv_cert: {
-	  switch (session->cipher_spec->sign) {
-	    case .Cipher.rsa_sign:
-	      if (session->rsa) break check_serv_cert;
-	      break;
-	    case .Cipher.dsa_sign:
-	      if (session->dsa) break check_serv_cert;
-	      break;
-	  }
-
-#ifdef SSL3_DEBUG
-	  werror ("Certificate message required from server.\n");
-#endif
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-			    "SSL.session->handle_handshake: Certificate message missing\n",
-			    backtrace()));
-	  return -1;
-	}
+        SSL3_DEBUG_MSG("Certificate message required from server.\n");
+        send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+                          "SSL.session->handle_handshake: Certificate message missing\n",
+                          backtrace()));
+        return -1;
+      }
 
       Packet key_exchange = client_key_exchange_packet();
 
@@ -1759,7 +1722,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 
       // FIXME: Certificate verify; we should redo this so it makes more sense
       if(certificate_state == CERT_received
-          && sizeof(context->client_certificates) && context->client_rsa) 
+         && sizeof(context->client_certificates) && context->client_rsa)
          // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
@@ -1771,11 +1734,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 	send_packet(finished_packet("CLNT"));
       else if(version[1] >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
-      
-      }
-	handshake_state = STATE_client_wait_for_finish;
-	expect_change_cipher = 1;
-	break;
+
+      handshake_state = STATE_client_wait_for_finish;
+      expect_change_cipher = 1;
+      break;
     }
     break;
 
@@ -1813,9 +1775,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
     }
     }
   }
-#ifdef SSL3_DEBUG
-//  werror("SSL.handshake: messages = %O\n", handshake_messages);
-#endif
+  //  SSL3_DEBUG_MSG("SSL.handshake: messages = %O\n", handshake_messages);
   return 0;
 }
 

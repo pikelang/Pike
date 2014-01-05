@@ -271,13 +271,13 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-static void do_pop_mark(void *ignored)
+static void do_pop_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_MARK);
 }
 
-static void do_pop_to_mark(void *ignored)
+static void do_pop_to_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_TO_MARK);
@@ -615,7 +615,7 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
 {
   struct compilation *c = THIS_COMPILATION;
   node *low = CADR (n), *high = CDDR (n);
-  int bound_types;		/* Got bogus gcc warning here. */
+  int bound_types = 0;		/* Got bogus gcc warning here. */
 
   switch (low->token) {
     case F_RANGE_FROM_BEG: bound_types = RANGE_LOW_FROM_BEG; break;
@@ -918,7 +918,7 @@ static int do_docode2(node *n, int flags)
 	  }
 	} else if (level) {
 	  if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-	      (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
+	      (ref->id_flags & ID_INLINE) &&
 	      (id->func.const_info.offset >= 0)) {
 	    /* An inline, local or final constant identifier in
 	     * a lexically surrounding (aka parent) class.
@@ -926,6 +926,7 @@ static int do_docode2(node *n, int flags)
 	     * the constant to this class.
 	     */
 	    struct svalue *s = &state->new_program->
+	      inherits[ref->inherit_offset].prog->
 	      constants[id->func.const_info.offset].sval;
 	    if (TYPEOF(*s) == T_PROGRAM &&
 		s->u.program->flags & PROGRAM_USES_PARENT) {
@@ -936,6 +937,13 @@ static int do_docode2(node *n, int flags)
 	      emit1(F_CONSTANT, tmp1);
 	    }
 	  } else {
+	    struct program_state *state = Pike_compiler;
+	    int e;
+	    for (e = level; e; e--) {
+	      state->new_program->flags |=
+		PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+	      state = state->previous;
+	    }
 	    emit2(F_EXTERNAL, n->u.integer.b, level);
 	  }
 	} else if (n->u.integer.b == IDREF_MAGIC_THIS) {

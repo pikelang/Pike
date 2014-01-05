@@ -34,3 +34,7 @@ void cipher_exit(void);
 void nt_init(void);
 
 void nt_exit(void);
+
+void hogweed_init(void);
+
+void hogweed_exit(void);

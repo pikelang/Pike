@@ -62,7 +62,6 @@
 %token TOK_IF
 %token TOK_IMPORT
 %token TOK_INHERIT
-%token TOK_FACET
 %token TOK_INLINE
 %token TOK_LOCAL_ID
 %token TOK_FINAL_ID
@@ -99,6 +98,7 @@
 %token TOK_OPTIONAL
 %token TOK_SAFE_INDEX
 %token TOK_SAFE_START_INDEX
+%token TOK_BITS
 
 
 %right '='
@@ -221,7 +221,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_DEFAULT
 %type <number> TOK_DO
 %type <number> TOK_ELSE
-%type <number> TOK_FACET
 %type <number> TOK_FLOAT_ID
 %type <number> TOK_FOR
 %type <number> TOK_FOREACH
@@ -284,11 +283,15 @@ int yylex(YYSTYPE *yylval);
 %type <n> simple_type
 %type <n> simple_type2
 %type <n> simple_identifier_type
+%type <n> real_string_constant
+%type <n> real_string_or_identifier
 %type <n> string_constant
+%type <n> string_or_identifier
 %type <n> string_segment
 %type <n> string
 %type <n> TOK_STRING
 %type <n> TOK_NUMBER
+%type <n> TOK_BITS
 %type <n> optional_attributes
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
@@ -389,21 +392,11 @@ program: program def
   |  /* empty */
   ;
 
-string_constant: string
-  | string_constant '+' string
-  {
-    struct pike_string *a,*b;
-    copy_shared_string(a,$1->u.sval.u.string);
-    copy_shared_string(b,$3->u.sval.u.string);
-    free_node($1);
-    free_node($3);
-    a=add_and_free_shared_strings(a,b);
-    $$=mkstrnode(a);
-    free_string(a);
-  }
+real_string_or_identifier: TOK_IDENTIFIER
+  | real_string_constant
   ;
 
-optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
+optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
   | ':' bad_identifier { $$=0; }
   | ':' error { $$=0; }
   | { $$=0; }
@@ -465,47 +458,6 @@ program_ref: low_program_ref
   }
   ;
 
-facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
-  {
-#ifdef WITH_FACETS
-    struct object *o;
-    if (Pike_compiler->compiler_pass == 1) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
-	yyerror("A class can only belong to one facet.");
-      }
-      else {
-	resolv_constant($4);
-	if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	  /* FIXME: Object subtypes! */
-	  o = Pike_sp[-1].u.object;
-	  ref_push_string($2->u.sval.u.string);
-	  push_int(Pike_compiler->new_program->id);
-	  push_int(!!(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT));
-	  safe_apply(o, "add_facet_class", 3);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer >= 0) {
-	    Pike_compiler->new_program->flags &= ~PROGRAM_IS_PRODUCT;
-	    Pike_compiler->new_program->flags |= PROGRAM_IS_FACET;
-	    Pike_compiler->new_program->facet_index = Pike_sp[-1].u.integer;
-	    add_ref(Pike_compiler->new_program->facet_group = o);
-	  }
-	  else
-	    yyerror("Could not add facet class to system.");
-	  pop_stack();
-	}
-	else
-	  yyerror("Invalid facet group specifier.");
-	pop_stack();
-      }
-    }
-    free_node($2);
-    free_node($4);
-#else
-    yyerror("No support for facets.");
-#endif
-  }
-  ;
-
 inherit_ref:
   {
     SET_FORCE_RESOLVE($<number>$);
@@ -528,28 +480,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
       if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
-
-#ifdef WITH_FACETS
-    /* If this is a product class, check that all product classes in its
-     * facet-group inherit from all facets */
-    if($3 && Pike_compiler->compiler_pass == 2) {
-      if (Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT) {
-	if (!Pike_compiler->new_program->facet_group)
-	  yyerror("Product class without facet group.");
-	else {
-	  safe_apply(Pike_compiler->new_program->facet_group,
-		     "product_classes_checked", 0);
-	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
-	      Pike_sp[-1].u.integer == 0) {
-	    pop_stack();
-	    safe_apply(Pike_compiler->new_program->facet_group,
-		       "check_product_classes", 0);
-	  }
-	  pop_stack();
-	}
-      }
-    }
-#endif
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -889,62 +819,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       struct pike_type *s=compiler_pop_type();
       int i = isidentifier($6->u.sval.u.string);
 
-      if (Pike_compiler->compiler_pass == 1) {
-	if ($1 & ID_VARIANT) {
-	  /* FIXME: Lookup the type of any existing variant */
-	  /* Or the types. */
-	  fprintf(stderr, "Pass %d: Identifier %s:\n",
-		  Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	  if (i >= 0) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    if (id) {
-	      struct pike_type *new_type;
-	      fprintf(stderr, "Defined, type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(id->type);
-#endif
-
-	      new_type = or_pike_types(s, id->type, 1);
-	      free_type(s);
-	      s = new_type;
-
-	      fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	      simple_describe_type(s);
-#endif
-	    } else {
-	      my_yyerror("Lost identifier %S (%d).",
-			 $6->u.sval.u.string, i);
-	    }
-	  } else {
-	    fprintf(stderr, "Not defined.\n");
-	  }
-	  fprintf(stderr, "New type:\n");
-#ifdef PIKE_DEBUG
-	  simple_describe_type(s);
-#endif
-	}
-      } else {
-	/* FIXME: Second pass reuses the type from the end of
-	 * the first pass if this is a variant function.
-	 */
-	if (i >= 0) {
-	  if (Pike_compiler->new_program->identifier_references[i].id_flags &
-	      ID_VARIANT) {
-	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-	    fprintf(stderr, "Pass %d: Identifier %s:\n",
-		    Pike_compiler->compiler_pass, $6->u.sval.u.string->str);
-
-	    free_type(s);
-	    copy_pike_type(s, id->type);
-
-	    fprintf(stderr, "Resulting type:\n");
-#ifdef PIKE_DEBUG
-	    simple_describe_type(s);
-#endif
-	  }
-	} else {
+      if (Pike_compiler->compiler_pass != 1) {
+	if (i < 0) {
 	  my_yyerror("Identifier %S lost after first pass.",
 		     $6->u.sval.u.string);
 	}
@@ -970,11 +846,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 			$4);
 
       Pike_compiler->varargs=0;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n",
-		Pike_compiler->compiler_frame->current_function_number);
-      }
     }
   }
   block_or_semi
@@ -1005,19 +876,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	  my_yyerror("Missing name for argument %d.", e - $<number>9);
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
-	    if ($1 & ID_VARIANT) {
-	      struct pike_type *arg_type =
-		Pike_compiler->compiler_frame->variable[e].type;
-
-	      /* FIXME: Generate code that checks the arguments. */
-	      /* If there is a bad argument, call the fallback, and return. */
-	      if (! pike_types_le(void_type_string, arg_type)) {
-		/* Argument my not be void.
-		 * ie it's required.
-		 */
-		num_required_args++;
-	      }
-	    } else {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
 		  (Pike_compiler->compiler_frame->variable[e].type !=
@@ -1026,41 +884,19 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		local_node = mklocalnode(e, 0);
+		local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
 		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
-
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
 			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
 					local_node));
 	      }
-	    }
 	  }
 	}
-      }
-
-      if ($1 & ID_VARIANT) {
-	struct pike_string *bad_arg_str;
-	MAKE_CONST_STRING(bad_arg_str,
-			  "Bad number of arguments!\n");
-
-	fprintf(stderr, "Required args: %d\n", num_required_args);
-
-	check_args =
-	  mknode('?',
-		 mkopernode("`<",
-			    mkefuncallnode("query_num_arg", NULL),
-			    mkintnode(num_required_args)),
-		 mknode(':',
-			mkefuncallnode("throw",
-				       mkefuncallnode("aggregate",
-						      mkstrnode(bad_arg_str))),
-			NULL));
       }
 
       if ($<number>9) {
@@ -1089,10 +925,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-      if ($1 & ID_VARIANT) {
-	fprintf(stderr, "Function number: %d\n", f);
-      }
 
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.recoveries &&
@@ -1166,7 +998,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     }
   }
   | inheritance {}
-  | facet {}
   | import {}
   | constant {}
   | modifiers class { free_node($2); }
@@ -1336,7 +1167,6 @@ magic_identifiers3:
   | TOK_CONSTANT   { $$ = "constant"; }
   | TOK_CONTINUE   { $$ = "continue"; }
   | TOK_DEFAULT    { $$ = "default"; }
-  | TOK_FACET      { $$ = "facet"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
@@ -1671,6 +1501,11 @@ opt_int_range: /* Empty */
   {
     push_int_type(MIN_INT_TYPE, MAX_INT_TYPE);
   }
+  | '(' TOK_BITS ')'
+  {
+      push_int_type( 0, (1<<$2->u.sval.u.integer)-1 );
+      free_node( $2 );
+  }
   | '(' number_or_minint expected_dot_dot number_or_maxint ')'
   {
     INT_TYPE min = MIN_INT_TYPE;
@@ -1680,28 +1515,24 @@ opt_int_range: /* Empty */
     if($4->token == F_CONSTANT) {
       if (TYPEOF($4->u.sval) == T_INT) {
 	max = $4->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
 	push_int(0);
 	if (is_lt(&$4->u.sval, Pike_sp-1)) {
 	  max = MIN_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 
     if($2->token == F_CONSTANT) {
       if (TYPEOF($2->u.sval) == T_INT) {
 	min = $2->u.sval.u.integer;
-#ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
 	push_int(0);
 	if (is_lt(Pike_sp-1, &$2->u.sval)) {
 	  min = MAX_INT_TYPE;
 	}
 	pop_stack();
-#endif /* AUTO_BIGNUM */
       }
     }
 
@@ -1876,10 +1707,32 @@ new_name: optional_stars TOK_IDENTIFIER
   }
   expr0
   {
-    Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
-		     mkcastnode(void_type_string,
-				mknode(F_ASSIGN,$5,
-				       mkidentifiernode($<number>4))));
+    if ((Pike_compiler->compiler_pass == 2) &&
+	!TEST_COMPAT(7, 8) && ($5) && ($5->token == F_CONSTANT) &&
+	!Pike_compiler->num_parse_error) {
+      /* Check if it is zero, in which case we can throw it away.
+       *
+       * NB: The compat test is due to that this changes the semantics
+       *     of calling __INIT() by hand.
+       */
+      if (SAFE_IS_ZERO(&$5->u.sval) &&
+	  !SUBTYPEOF($5->u.sval) &&
+	  !IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
+					   $<number>4)->identifier_flags)) {
+	/* NB: Inherited variables get converted into aliases by
+	 *     define_variable, and we need to support clearing
+	 *     of inherited variables.
+	 */
+	free_node($5);
+	$5 = NULL;
+      }
+    }
+    if ($5) {
+      Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
+		       mkcastnode(void_type_string,
+				  mknode(F_ASSIGN,$5,
+					 mkidentifiernode($<number>4))));
+    }
     free_node($2);
   }
   | optional_stars TOK_IDENTIFIER '=' error
@@ -2927,12 +2780,12 @@ class: TOK_CLASS line_number_info optional_identifier
 		   mixed_type_string)) {
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		/* The following is needed to go around the optimization in
-		 * mksoftcastnode().
-		 */
-		free_type(local_node->type);
-		copy_pike_type(local_node->type, mixed_type_string);
+		local_node = mkcastnode(mixed_type_string, local_node);
 
+		/* NOTE: The cast to mixed above is needed to avoid generating
+		 *       compilation errors, as well as avoiding optimizations
+		 *       in mksoftcastnode().
+		 */
 		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 					    variable[e].type, local_node);
 	      }
@@ -3754,10 +3607,10 @@ expr4: string
   }
   | expr4 TOK_SAFE_START_INDEX line_number_info expr0 ']'
   {
-    /* A?[X] to ((tmp=A) && tmp[X]) */
+    /* A[?X] to ((tmp=A) && tmp[X]) */
     if( $1->token == F_LOCAL )
     {
-      $$=mknode(F_LAND, $1, mknode(F_INDEX,  $1, $4));
+      $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
     }
     else
     {
@@ -3785,11 +3638,11 @@ expr4: string
   | expr4 TOK_SAFE_START_INDEX  line_number_info
     range_bound expected_dot_dot range_bound ']'
   {
-    /* A?[X..Y] to ((tmp=A) && tmp[X..Y]) */
+    /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
     node *range = mknode(':',$4,$6);
     if( $1->token == F_LOCAL )
     {
-      $$ = mknode( F_LAND, $1, mknode(F_RANGE, $1, range) );
+      $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
     }
     else
     {
@@ -3811,10 +3664,6 @@ expr4: string
         yyerror("Indexing unexpected value.");
       }
     }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-
-
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
@@ -3907,7 +3756,7 @@ expr4: string
     int temporary;
     if( $1->token == F_LOCAL )
     {
-      $$=mknode(F_LAND, $1, mknode(F_ARROW,  $1, $4));
+      $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
     }
     else
     {
@@ -3974,7 +3823,7 @@ idents2: idents
 	$$ = 0;
       }
       else {
-	if (!(ref->id_flags & ID_HIDDEN)) {
+	if (!(ref->id_flags & ID_LOCAL)) {
 	  /* We need to generate a new reference. */
 	  int d;
 	  struct reference funp = *ref;
@@ -3984,9 +3833,10 @@ idents2: idents
 	    struct reference *refp;
 	    refp = Pike_compiler->new_program->identifier_references + d;
 
+	    if (!(refp->id_flags & ID_LOCAL)) continue;
+
 	    if((refp->inherit_offset == funp.inherit_offset) &&
-	       (refp->identifier_offset == funp.identifier_offset) &&
-	       ((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
+	       (refp->identifier_offset == funp.identifier_offset)) {
 	      i = d;
 	      break;
 	    }
@@ -4030,32 +3880,85 @@ idents: low_idents
   | idents '.' error {}
   ;
 
-inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
+string_or_identifier: TOK_IDENTIFIER
+  | string
+  ;
+
+/* Note that the result of this rule is passed both with
+ * the node value (inherit number) and with two global
+ * variables (inherit_state and inherit_depth).
+ *
+ * Note also that inherit number -1 indicates any inherit.
+ */
+inherit_specifier: string_or_identifier TOK_COLON_COLON
   {
     struct compilation *c = THIS_COMPILATION;
+    struct program_state *state = Pike_compiler;
+    int depth;
     int e = -1;
 
-    inherit_state = Pike_compiler;
+    inherit_state = NULL;
+    inherit_depth = 0;
 
-    for (inherit_depth = 0;; inherit_depth++, inherit_state = inherit_state->previous) {
-      int inh = find_inherit(inherit_state->new_program, $1->u.sval.u.string);
-      if (inh) {
+    /* NB: The heuristics here are a bit strange
+     *     (all to make it as backward compatible as possible).
+     *
+     *     The priority order is as follows:
+     *
+     *     1: Direct inherits in the current class.
+     *
+     *     2: The name of the current class.
+     *
+     *     3: 1 & 2 recursively for surrounding parent classes.
+     *
+     *     4: Indirect inherits in the current class.
+     *
+     *     5: 4 recursively for surrounding parent classes.
+     *
+     *     6: this_program.
+     *
+     * Note that a deep inherit in the current class trumphs
+     * a not so deep inherit in a parent class (but not a
+     * direct inherit in a parent class). To select the deep
+     * inherit in the parent class in this case, prefix it
+     * with the name of the parent class.
+     */
+    for (depth = 0;; depth++, state = state->previous) {
+      int inh = find_inherit(state->new_program, $1->u.sval.u.string);
+      if (inh &&
+	  (!inherit_state ||
+	   (state->new_program->inherits[inh].inherit_level == 1))) {
+	/* Found, and we've either not found anything earlier,
+	 * or this is a direct inherit (and the previous
+	 * wasn't since we didn't break out of the loop).
+	 */
 	e = inh;
-	break;
+	inherit_state = state;
+	inherit_depth = depth;
+	if (state->new_program->inherits[inh].inherit_level == 1) {
+	  /* Name of direct inherit ==> Done. */
+	  break;
+	}
       }
-      if (inherit_depth == c->compilation_depth) break;
+      /* The top-level class does not have a name, so break here. */
+      if (depth == c->compilation_depth) break;
       if (!TEST_COMPAT (7, 2) &&
-	  ID_FROM_INT (inherit_state->previous->new_program,
-		       inherit_state->parent_identifier)->name ==
+	  ID_FROM_INT (state->previous->new_program,
+		       state->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
+	/* Name of surrounding class ==> Done. */
 	e = 0;
+	inherit_state = state;
+	inherit_depth = depth;
 	break;
       }
     }
     if (e == -1) {
-      if (TEST_COMPAT (7, 2))
+      inherit_state = state;
+      inherit_depth = depth;
+      if (TEST_COMPAT (7, 2)) {
 	my_yyerror("No such inherit %S.", $1->u.sval.u.string);
-      else {
+      } else {
 	if ($1->u.sval.u.string == this_program_string) {
 	  inherit_state = Pike_compiler;
 	  inherit_depth = 0;
@@ -4585,6 +4488,47 @@ string: string_segment
   }
   ;
 
+string_constant: string
+  | string_constant '+' string
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$3->u.sval.u.string);
+    free_node($1);
+    free_node($3);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  ;
+
+/* Same as string_constant above, but without TOK_FUNCTION_NAME. */
+real_string_constant: TOK_STRING
+  | real_string_constant TOK_STRING
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$2->u.sval.u.string);
+    free_node($1);
+    free_node($2);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  | real_string_constant '+' TOK_STRING
+  {
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$3->u.sval.u.string);
+    free_node($1);
+    free_node($3);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
+  }
+  ;
+
+
 /*
  * Some error-handling
  */
@@ -4667,8 +4611,6 @@ bad_expr_ident:
   { yyerror_reserved("return"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
-  | TOK_FACET
-  { yyerror_reserved("facet"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
   | TOK_CATCH

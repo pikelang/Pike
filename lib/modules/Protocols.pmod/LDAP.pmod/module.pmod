@@ -190,8 +190,7 @@ constant SEARCH_RETURN_DECODE_ERRORS = 4;
 //!   Don't throw attribute value decode errors, instead return them
 //!   in the result from @[Protocols.LDAP.client.result.fetch] in
 //!   place of the value. I.e. anywhere an attribute value string
-//!   occurs, you might instead have a @[Locale.Charset.DecodeError]
-//!   object.
+//!   occurs, you might instead have a @[Charset.DecodeError] object.
 //! @enddl
 
 constant SCOPE_BASE = 0;

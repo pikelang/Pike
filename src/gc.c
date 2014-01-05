@@ -27,6 +27,7 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_threadlib.h"
 #include "gc.h"
 #include "main.h"
+#include "block_allocator.h"
 
 #include <math.h>
 
@@ -43,6 +44,23 @@ double gc_min_time_ratio = 1.0/10000.0; /* Martys constant. */
 /* This slowness factor approximately corresponds to the average over
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
 double gc_average_slowness = 0.9;
+
+/* High-level callbacks.
+ * NB: These are initialized from builtin.cmod.
+ */
+/* Callback called when gc() starts. */
+struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+struct svalue gc_done_cb;
 
 /* The gc will free all things with no external nonweak references
  * that isn't referenced by live objects. An object is considered
@@ -420,25 +438,25 @@ static unsigned rec_frames, link_frames, free_extra_frames;
 static unsigned max_rec_frames, max_link_frames;
 static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_extra_frames = 0;
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(f) do {						\
-    if (++rec_frames > max_rec_frames)					\
-      max_rec_frames = rec_frames;					\
-  } while (0)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f) do {						\
-    DO_IF_DEBUG ({							\
-	if (f->rf_flags & GC_FRAME_FREED)				\
-	  gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");	\
-	f->rf_flags |= GC_FRAME_FREED;					\
-	f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;		\
-	f->prev = f->next = f->cycle_id = f->cycle_piece =		\
-	  (struct gc_rec_frame *) (ptrdiff_t) -1;			\
-      });								\
-    rec_frames--;							\
-  } while (0)
+struct block_allocator gc_rec_frame_allocator =
+    BA_INIT_PAGES(sizeof(struct gc_rec_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
+static void really_free_gc_rec_frame(struct gc_rec_frame * f) {
+#ifdef PIKE_DEBUG
+  if (f->rf_flags & GC_FRAME_FREED)
+    gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");
+  f->rf_flags |= GC_FRAME_FREED;
+  f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;
+  f->prev = f->next = f->cycle_id = f->cycle_piece =
+    (struct gc_rec_frame *) (ptrdiff_t) -1;
+#endif
+  rec_frames--;
+  ba_free(&gc_rec_frame_allocator, f);
+}
+
+void count_memory_in_gc_rec_frames(size_t *num, size_t * size) {
+  ba_count_all(&gc_rec_frame_allocator, num, size);
+}
 
 /* Link and free_extra frames are approximately the same size, so let
  * them share block_alloc area. */
@@ -451,18 +469,16 @@ struct ba_mixed_frame
   } u;
 };
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT u.next
-#undef INIT_BLOCK
-#define INIT_BLOCK(f)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f)
+static struct block_allocator ba_mixed_frame_allocator
+    = BA_INIT_PAGES(sizeof(struct ba_mixed_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (ba_mixed_frame, 2)
+void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
+  ba_count_all(&ba_mixed_frame_allocator, num, size);
+}
 
 static INLINE struct link_frame *alloc_link_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
     max_link_frames = link_frames;
   return (struct link_frame *) f;
@@ -470,7 +486,7 @@ static INLINE struct link_frame *alloc_link_frame()
 
 static INLINE struct free_extra_frame *alloc_free_extra_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
   return (struct free_extra_frame *) f;
 }
@@ -478,13 +494,13 @@ static INLINE struct free_extra_frame *alloc_free_extra_frame()
 static INLINE void really_free_link_frame (struct link_frame *f)
 {
   link_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
 {
   free_extra_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 /* These are only collected for the sake of gc_status. */
@@ -522,6 +538,8 @@ static void gc_cycle_pop();
   (X)->flags=(X)->refs=(X)->weak_refs=0;		\
   (X)->frame = 0;
 #endif
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(f)
 
 #undef get_marker
 #define get_marker debug_get_marker
@@ -546,9 +564,9 @@ PMOD_EXPORT struct marker *pmod_find_marker (void *p)
 }
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
-void *gc_found_in = NULL;
-int gc_found_in_type = PIKE_T_UNKNOWN;
-const char *gc_found_place = NULL;
+PMOD_EXPORT void *gc_found_in = NULL;
+PMOD_EXPORT int gc_found_in_type = PIKE_T_UNKNOWN;
+PMOD_EXPORT const char *gc_found_place = NULL;
 #endif
 
 #ifdef DO_PIKE_CLEANUP
@@ -574,7 +592,7 @@ static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
 				struct gc_rec_frame *p3, const char *p3_name)
 {
   struct gc_rec_frame *l, *cp;
-  size_t longest;
+  size_t longest = 0;
 
   if (p1) longest = strlen (p1_name);
   if (p2) {size_t l = strlen (p2_name); if (l > longest) longest = l;}
@@ -1001,7 +1019,7 @@ static void describe_marker(struct marker *m)
 
 #endif /* PIKE_DEBUG */
 
-static void debug_gc_fatal_va (void *a, int type, int flags,
+static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBUGUSED(flags),
 			       const char *fmt, va_list args)
 {
   int orig_gc_pass = Pike_in_gc;
@@ -2039,8 +2057,8 @@ void exit_gc(void)
   if (!gc_keep_markers)
     cleanup_markers();
 
-  free_all_gc_rec_frame_blocks();
-  free_all_ba_mixed_frame_blocks();
+  ba_free_all(&gc_rec_frame_allocator);
+  ba_free_all(&ba_mixed_frame_allocator);
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
@@ -2077,7 +2095,7 @@ void locate_references(void *a)
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
   int i=0;
-  if(!marker_blocks)
+  if(!marker_hash_table)
   {
     i=1;
     init_gc();
@@ -2347,7 +2365,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
   /* This debug check is disabled during the final cleanup since this
    * is O(n^2) on the stack size, and the stack gets a lot larger then. */
   if (gc_debug && !gc_destruct_everything) {
-    struct gc_rec_frame *l, *last_cycle_id;
+    struct gc_rec_frame *l, *last_cycle_id = NULL;
     for (l = &sentinel_frame; l != stack_top;) {
       l = l->next;
       check_rec_stack_frame (l, p1, p1n, p2, p2n, file, line);
@@ -2636,7 +2654,9 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 
 static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
 {
-  struct gc_rec_frame *r = alloc_gc_rec_frame();
+  struct gc_rec_frame *r =
+    (struct gc_rec_frame*)ba_alloc(&gc_rec_frame_allocator);
+  if (++rec_frames > max_rec_frames) max_rec_frames = rec_frames;
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
     gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
@@ -3426,7 +3446,7 @@ static void warn_bad_cycles(void)
   CALL_AND_UNSET_ONERROR(tmp);
 }
 
-size_t do_gc(void *ignored, int explicit_call)
+size_t do_gc(void *UNUSED(ignored), int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -3469,6 +3489,12 @@ size_t do_gc(void *ignored, int explicit_call)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
+
+  if (!SAFE_IS_ZERO(&gc_pre_cb)) {
+    safe_apply_svalue(&gc_pre_cb, 0, 1);
+    pop_stack();
+  }
+
   gc_start_time = get_cpu_time();
   gc_start_real_time = get_real_time();
 #ifdef GC_DEBUG
@@ -3784,6 +3810,11 @@ size_t do_gc(void *ignored, int explicit_call)
   destroy_count = 0;
 #endif
 
+  if (!SAFE_IS_ZERO(&gc_post_cb)) {
+    safe_apply_svalue(&gc_post_cb, 0, 1);
+    pop_stack();
+  }
+
   {
     enum object_destruct_reason reason =
 #ifdef DO_PIKE_CLEANUP
@@ -3840,6 +3871,11 @@ size_t do_gc(void *ignored, int explicit_call)
 	}
 	else fputs(", is destructed\n", stderr);
       );
+      if (!SAFE_IS_ZERO(&gc_destruct_cb)) {
+	ref_push_object(o);
+	safe_apply_svalue(&gc_destruct_cb, 1, 1);
+	pop_stack();
+      }
 
       destruct_object (o, reason);
       free_object(o);
@@ -4117,6 +4153,13 @@ size_t do_gc(void *ignored, int explicit_call)
   if (gc_destruct_everything)
     return destroy_count;
 #endif
+
+  if (!SAFE_IS_ZERO(&gc_done_cb)) {
+    push_int(unreferenced);
+    safe_apply_svalue(&gc_done_cb, 1, 1);
+    pop_stack();
+  }
+
   return unreferenced;
 }
 
@@ -4355,7 +4398,15 @@ PMOD_EXPORT visit_ref_cb *visit_ref = NULL;
 /* Be careful if extending this with internal types like
  * T_MAPPING_DATA and T_MULTISET_DATA; there's code that assumes
  * type_from_visit_fn only returns types that fit in a TYPE_FIELD. */
-PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1] = {
+PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1] = {
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
   (visit_thing_fn *) &visit_array,
   (visit_thing_fn *) &visit_mapping,
   (visit_thing_fn *) &visit_multiset,
@@ -5142,8 +5193,8 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     MC_DEBUG_MSG (ref_to, "not enqueued");
 }
 
-static void pass_mark_external_visit_ref (void *thing, int ref_type,
-					  visit_thing_fn *visit_fn, void *extra)
+static void pass_mark_external_visit_ref (void *thing, int UNUSED(ref_type),
+					  visit_thing_fn *UNUSED(visit_fn), void *UNUSED(extra))
 {
   struct mc_marker *ref_to = find_mc_marker (thing);
 
@@ -5557,7 +5608,7 @@ void f_count_memory (INT32 args)
       if (TYPEOF(*s) == T_INT)
 	continue;
 
-      else if (TYPEOF(*s) > MAX_REF_TYPE) {
+      else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
 	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;

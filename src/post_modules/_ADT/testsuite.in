@@ -989,6 +989,53 @@ test_any_equal(_ADT.CircularList a = _ADT.CircularList(5);
 	       a->allocate(5);
 	       return a->_values(), ({1,2,3,4}))
 
+// LysLysKOM 20179471/Pike mailinglist 13520.
+test_any(
+#define BLOCKSIZE 2048
+  class AutoList {
+    inherit _ADT.CircularList;
+
+    void create()
+    {
+      ::create(BLOCKSIZE);
+    }
+    void push_back(mixed m)
+    {
+      if (sizeof(this) == max_size()) {
+        allocate(BLOCKSIZE);
+      }
+      ::push_back(m);
+    }
+  };
+  object al = AutoList();
+  for (int i = 0; i < BLOCKSIZE * 128; i++) {
+    al->push_back((["xixi":"haha"]));
+  }
+  return sizeof(al),
+  262144)
+test_any(
+#define BLOCKSIZE 2048
+  class AutoList {
+    inherit _ADT.CircularList;
+
+    void create()
+    {
+      ::create(BLOCKSIZE);
+    }
+    void push_front(mixed m)
+    {
+      if (sizeof(this) == max_size()) {
+        allocate(BLOCKSIZE);
+      }
+      ::push_front(m);
+    }
+  };
+  object al = AutoList();
+  for (int i = 0; i < BLOCKSIZE * 128; i++) {
+    al->push_front((["xixi":"haha"]));
+  }
+  return sizeof(al),
+  262144)
 
 ************************** test copy on change *****************************
 

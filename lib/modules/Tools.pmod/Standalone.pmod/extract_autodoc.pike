@@ -356,6 +356,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
 	  num_updated_files++;
+      Stdio.mkdirhier( builddir );
 	  Stdio.write_file(builddir+fn+".xml", res);
 	  rm(builddir + fn + ".brokenxml");
 	}

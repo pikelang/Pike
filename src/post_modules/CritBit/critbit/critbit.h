@@ -17,7 +17,7 @@
 
 typedef struct cb_size {
     size_t bits;
-    size_t chars;
+    ptrdiff_t chars;
 } cb_size;
 
 #endif

@@ -85,6 +85,19 @@
 #define PIKE_MEM_NOT_DEF_RANGE(addr, bytes)				\
   VALGRIND_CHECK_MEM_IS_DEFINED(addr, bytes)
 
+#ifdef VALGRIND_CREATE_MEMPOOL
+# define PIKE_MEMPOOL_CREATE(a)         VALGRIND_CREATE_MEMPOOL(a, 0, 0)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MEMPOOL_ALLOC(a, p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)     VALGRIND_MEMPOOL_FREE(a, p)
+# define PIKE_MEMPOOL_DESTROY(a)        VALGRIND_DESTROY_MEMPOOL(a)
+#else
+/* somewhat functional alternatives to mempool macros */
+# define PIKE_MEMPOOL_CREATE(a)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)    PIKE_MEM_WO_RANGE(p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)     PIKE_MEM_NA_RANGE(p, l)
+# define PIKE_MEMPOOL_DESTROY(a)
+#endif
+
 #else  /* !HAVE_VALGRIND_MACROS */
 
 #define PIKE_MEM_NA(lvalue)		do {} while (0)
@@ -100,6 +113,10 @@
 #define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes) 0
 #define PIKE_MEM_NOT_DEF(lvalue)	0
 #define PIKE_MEM_NOT_DEF_RANGE(addr, bytes) 0
+#define PIKE_MEMPOOL_CREATE(a)
+#define PIKE_MEMPOOL_ALLOC(a, p, l)
+#define PIKE_MEMPOOL_FREE(a, p, l)
+#define PIKE_MEMPOOL_DESTROY(a)
 
 #endif	/* !HAVE_VALGRIND_MACROS */
 
@@ -131,6 +148,15 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
+/*
+ * The purpose of this function is to avoid dead store elimination in cases when
+ * sensitive data has to be cleared from memory.
+ */
+static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
+    volatile char * _p = (char *)p;
+    while (n--) *_p++ = c;
+    return (void *)p;
+}
 
 #include "pike_search.h"
 
@@ -150,10 +176,11 @@ PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
+extern PMOD_EXPORT
 #ifdef __i386__
 __attribute__((fastcall)) 
 #endif
-  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
@@ -172,12 +199,20 @@ PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void debug_xfree(void *mem);
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s) MALLOC_FUNCTION;
+PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) MALLOC_FUNCTION;
+
+#define PIKE_ALIGNTO(x, a)	(((x) + (a)-1) & ~((a)-1))
 
 PMOD_EXPORT void *mexec_alloc(size_t sz) MALLOC_FUNCTION;
 PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz) MALLOC_FUNCTION;
 PMOD_EXPORT void mexec_free(void *ptr);
 void init_pike_memory (void);
 void exit_pike_memory (void);
+
+#ifdef DEBUG_MALLOC
+PMOD_EXPORT void * system_malloc(size_t) MALLOC_FUNCTION;
+PMOD_EXPORT void system_free(void *);
+#endif
 
 #undef BLOCK_ALLOC
 

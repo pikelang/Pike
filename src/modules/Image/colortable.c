@@ -175,12 +175,12 @@ static void colortable_init_stuff(struct neo_colortable *nct)
    nct->dither_type=NCTD_NONE;
 }
 
-static void init_colortable_struct(struct object *obj)
+static void init_colortable_struct(struct object *UNUSED(obj))
 {
    colortable_init_stuff(THIS);
 }
 
-static void exit_colortable_struct(struct object *obj)
+static void exit_colortable_struct(struct object *UNUSED(obj))
 {
    free_colortable_struct(THIS);
 }
@@ -360,10 +360,14 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	       sum.b += src[i].color.b*mul;
 	       tot += mul;
 	    }
-	    
-	    dest->color.r = sum.r/tot;
-	    dest->color.g = sum.g/tot;
-	    dest->color.b = sum.b/tot;
+	    if (tot) {
+	      dest->color.r = sum.r/tot;
+	      dest->color.g = sum.g/tot;
+	      dest->color.b = sum.b/tot;
+	    } else {
+	      /* Unlikely to actually happen, but... */
+	      dest->color.r = dest->color.g = dest->color.b = 0;
+	    }
 	    dest->weight = tot;
 	    dest->no = -1;
 
@@ -770,7 +774,7 @@ static INLINE rgb_group get_mask_of_level(int level)
 }
 
 static struct nct_flat _img_get_flat_from_image(struct image *img,
-						unsigned long maxcols)
+						unsigned long UNUSED(maxcols))
 {
    struct color_hash_entry *hash;
    unsigned long hashsize=DEFAULT_COLOR_HASH_SIZE;
@@ -1362,9 +1366,10 @@ static void _img_add_colortable(struct neo_colortable *rdest,
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_1:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1383,7 +1388,10 @@ rerun_rehash_add_1:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_1;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_1;
+	       }
 	       mark->no=oldhash[i].no;
 	       mark->pixels=oldhash[i].pixels;
 	    }
@@ -1408,9 +1416,10 @@ rerun_rehash_add_1:
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_2:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1429,7 +1438,10 @@ rerun_rehash_add_2:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_2;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_2;
+	       }
 	       if (mark->pixels!=1)
 		  mark->no=oldhash[i].no;
 	       mark->pixels=oldhash[i].pixels;
@@ -1826,7 +1838,7 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1841,7 +1853,7 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1858,13 +1870,13 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 }
 
 static void dither_ordered_newline(struct nct_dither *dith,
-				   int *rowpos,
-				   rgb_group **s,
-				   rgb_group **drgb,
-				   unsigned char **d8bit,
-				   unsigned short **d16bit,
-				   unsigned INT32 **d32bit,
-				   int *cd)
+				   int *UNUSED(rowpos),
+				   rgb_group **UNUSED(s),
+				   rgb_group **UNUSED(drgb),
+				   unsigned char **UNUSED(d8bit),
+				   unsigned short **UNUSED(d16bit),
+				   unsigned INT32 **UNUSED(d32bit),
+				   int *UNUSED(cd))
 {
    dith->u.ordered.row++;
 }
@@ -2704,7 +2716,7 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
    push_string(end_shared_string(str));
 }
 
-static void image_colortable__encode( INT32 args )
+static void image_colortable__encode( INT32 UNUSED(args) )
 {
     image_colortable_cast_to_string( THIS );
 }
@@ -3175,7 +3187,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 }
 
 static INLINE void _cub_add_cs(struct neo_colortable *nct,
-			       struct nctlu_cubicle *cub,
+			       struct nctlu_cubicle *UNUSED(cub),
 			       int **pp,int *i,int *p,
 			       int ri,int gi,int bi,
 			       int red,int green,int blue,
@@ -4110,7 +4122,6 @@ static int* ordered_calculate_errors(int dxs,int dys)
 	 case 9: errs=errors3x3; break;
 	 default:
 	   Pike_fatal("impossible case in colortable ordered dither generator.\n");
-	   return NULL; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
       }
       
       sz=sxs*sys;
@@ -4441,7 +4452,7 @@ void image_colortable_image(INT32 args)
    {
       dest->r=flat.entries[i].color.r;
       dest->g=flat.entries[i].color.g;
-      dest->g=flat.entries[i].color.b;
+      dest->b=flat.entries[i].color.b;
       dest++;
    }
 

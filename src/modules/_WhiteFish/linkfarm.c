@@ -79,7 +79,7 @@ static void low_add( struct linkfarm *t,
   {
     case 0:
       {
-	char *d = (unsigned char*)s->str;
+	p_wchar0 *d = STR0(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
@@ -92,7 +92,7 @@ static void low_add( struct linkfarm *t,
       break;
     case 1:
       {
-	short *d = (unsigned short*)s->str;
+	p_wchar1 *d = STR1(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
@@ -105,7 +105,7 @@ static void low_add( struct linkfarm *t,
       break;
     case 2:
       {
-	int *d = (int*)s->str;
+	p_wchar2 *d = STR2(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {

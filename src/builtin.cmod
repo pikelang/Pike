@@ -28,7 +28,7 @@
 #include "fsort.h"
 #include "port.h"
 #include "gc.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 #include "pikecode.h"
 #include "opcodes.h"
 
@@ -37,6 +37,625 @@
 #include <math.h>
 
 DECLARATIONS
+
+
+/*! @module System
+ */
+
+#if defined(HAVE_MKTIME) && defined(HAVE_GMTIME) && defined(HAVE_LOCALTIME)
+/*! @class TM
+ *! A wrapper for the system struct tm time keeping structure.
+ *! This can be used as a (very) lightweight alternative to Calendar.
+ */
+PIKECLASS TM
+{
+    CVAR struct tm t;
+    CVAR time_t unix_time;
+    CVAR int modified;
+    CVAR struct pike_string *set_zone;
+
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+#define tm_zone __tm_zone
+#define tm_gmtoff __tm_gmtoff
+#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
+#define GET_ZONE(TM)	((TM)->tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
+#elif defined(STRUCT_TM_HAS_GMTOFF)
+#define GET_GMTOFF(TM)	((TM)->tm_gmtoff)
+#define GET_ZONE(TM)	((TM)->tm_zone)
+#define SET_GMTOFF(TM, VAL)	(((TM)->tm_gmtoff) = (VAL))
+#define SET_ZONE(TM, VAL)	(((TM)->tm_zone) = (VAL))
+#else
+#define GET_GMTOFF(TM)	0
+#define GET_ZONE(TM)	((char*)NULL)
+#define SET_GMTOFF(TM, VAL)	(VAL)
+#define SET_ZONE(TM, VAL)	(VAL)
+#endif
+
+#if 0
+/* This is supposed to make any timezone work.
+ * However: It does not really work. And makes things even slower than
+ * the calendar module.
+ */
+#ifndef HAVE_EXTERNAL_TIMEZONE
+#define timezone 0
+#endif
+#define WITH_ZONE(RETURNTYPE, FUNCTION, ARGUMENTS, CALL )             \
+    static RETURNTYPE FUNCTION##_zone ARGUMENTS                       \
+    {                                                                 \
+        RETURNTYPE res;                                               \
+        int reset = 0;                                                \
+        char *old_zone = NULL;                                        \
+        if( GET_ZONE(x) )					      \
+        {                                                             \
+            reset = 1;                                                \
+            old_zone = getenv("TZ");                                  \
+            setenv("TZ", GET_ZONE(x), 1 );			      \
+            tzset();                                                  \
+            SET_GMTOFF(x, timezone);				      \
+        }                                                             \
+                                                                      \
+        res = FUNCTION CALL;                                          \
+                                                                      \
+        if( reset )                                                   \
+        {                                                             \
+            if( old_zone )                                            \
+                setenv("TZ", old_zone, 1 );                           \
+            else                                                      \
+                unsetenv( "TZ" );                                     \
+            tzset();                                                  \
+        }                                                             \
+        return res;                                                   \
+    }
+
+    WITH_ZONE(time_t,mktime,( struct tm *x ),(x));
+    WITH_ZONE(struct tm*,localtime,( time_t *t, struct tm *x ),(t));
+    WITH_ZONE(char *,asctime,( struct tm *x ),(x));
+    WITH_ZONE(int,strftime,( char *buffer, size_t max_len, char *format, struct tm *x ),(buffer,max_len,format,x));
+#ifdef HAVE_STRPTIME
+    WITH_ZONE(char *,strptime,( const char *str, const char *format, struct tm *x ),(str,format,x));
+#endif
+#else
+#define strftime_zone strftime
+#define mktime_zone mktime
+#define strptime_zone strptime
+#define asctime_zone asctime
+#define localtime_zone(X,Y) localtime(X)
+#endif
+#ifndef HAVE_EXTERNAL_TIMEZONE
+#undef timezone
+#endif
+
+#define MODIFY(X) do{ THIS->modified = 1;THIS->t.X; }while(0)
+#define FIX_THIS() do {                                               \
+        if(THIS->modified){                                           \
+            THIS->unix_time = mktime_zone( &THIS->t );                \
+            THIS->modified = 0;                                       \
+        }                                                             \
+    }  while(0)
+
+#ifdef HAVE_STRPTIME
+    /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
+     *!
+     *! Parse the given @[data] using the format in @[format] as a date.
+     *!
+     *! @dl
+     *!   @item %%
+     *!     The % character.
+     *!
+     *!   @item %a or %A
+     *!     The weekday name according to the C locale, in abbreviated
+     *!     form or the full name.
+     *!
+     *!   @item %b or %B or %h
+     *!     The month name according to the C locale, in abbreviated form
+     *!     or the full name.
+     *!
+     *!   @item %c
+     *!     The date and time representation for the C locale.
+     *!
+     *!   @item %C
+     *!     The century number (0-99).
+     *!
+     *!   @item %d or %e
+     *!     The day of month (1-31).
+     *!
+     *!   @item %D
+     *!     Equivalent to %m/%d/%y.
+     *!
+     *!   @item %H
+     *!     The hour (0-23).
+     *!
+     *!   @item %I
+     *!     The hour on a 12-hour clock (1-12).
+     *!
+     *!   @item %j
+     *!     The day number in the year (1-366).
+     *!
+     *!   @item %m
+     *!     The month number (1-12).
+     *!
+     *!   @item %M
+     *!     The minute (0-59).
+     *!
+     *!   @item %n
+     *!     Arbitrary whitespace.
+     *!
+     *!   @item %p
+     *!     The C locale's equivalent of AM or PM.
+     *!
+     *!   @item %R
+     *!     Equivalent to %H:%M.
+     *!
+     *!   @item %S
+     *!     The second (0-60; 60 may occur for leap seconds;
+     *!     earlier also 61 was allowed).
+     *!
+     *!   @item %t
+     *!     Arbitrary whitespace.
+     *!
+     *!   @item %T
+     *!     Equivalent to %H:%M:%S.
+     *!
+     *!   @item %U
+     *!     The week number with Sunday the first day of the week (0-53).
+     *!
+     *!   @item %w
+     *!     The weekday number (0-6) with Sunday = 0.
+     *!
+     *!   @item %W
+     *!     The week number with Monday the first day of the week (0-53).
+     *!
+     *!   @item %x
+     *!     The date, using the C locale's date format.
+     *!
+     *!   @item %X
+     *!     The time, using the C locale's time format.
+     *!
+     *!   @item %y
+     *!     The year within century (0-99).  When a century is not
+     *!     otherwise specified, values in the range 69-99 refer to years
+     *!     in the twentieth century (1969-1999); values in the range
+     *!     00-68 refer to years in the twenty-first century (2000-2068).
+     *!
+     *!   @item %Y
+     *!     The year, including century (for example, 1991).
+     *! @enddl
+     *!
+     */
+    PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
+    {
+        if( format->size_shift || data->size_shift )
+            Pike_error("Only 8bit strings are supported\n");
+        THIS->modified = 1;
+        if( strptime_zone( data->str, format->str, &THIS->t ) == NULL )
+            RETURN 0;
+        RETURN 1;
+    }
+#endif
+    /*! @decl string(1..255) strftime( string(1..255) format )
+     *! See also @[Gettext.setlocale]
+     *!
+     *! Convert the structure to a string.
+     *!
+     *! @dl
+     *!   @item %a
+     *!     The abbreviated weekday name according to the current locale
+     *!
+     *!   @item %A
+     *!     The full weekday name according to the current locale.
+     *!
+     *!   @item %b
+     *!     The abbreviated month name according to the current locale.
+     *!
+     *!   @item %B
+     *!     The full month name according to the current locale.
+     *!
+     *!   @item %c
+     *!     The preferred date and time representation for the current locale.
+     *!
+     *!   @item %C
+     *!     The century number (year/100) as a 2-digit integer.
+     *!
+     *!   @item %d
+     *!     The day of the month as a decimal number (range 01 to 31).
+     *!
+     *!   @item %D
+     *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+     *!     Americans should note that in other countries @expr{%d/%m/%y@}
+     *!     is rather common. This means that in international context
+     *!     this format is ambiguous and should not be used.)
+     *!
+     *!   @item %e
+     *!     Like @expr{%d@}, the day of the month as a decimal number,
+     *!     but a leading zero is replaced by a space.
+     *!
+     *!   @item %E
+     *!     Modifier: use alternative format, see below.
+     *!
+     *!   @item %F
+     *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+     *!
+     *!   @item %G
+     *!     The ISO 8601 week-based year (see NOTES) with century as a
+     *!     decimal number. The 4-digit year corresponding to the ISO
+     *!     week number (see @expr{%V@}). This has the same format and
+     *!     value as @expr{%Y@}, except that if the ISO week number
+     *!     belongs to the previous or next year, that year is used instead.
+     *!
+     *!   @item %g
+     *!     Like @expr{%G@}, but without century, that is,
+     *!     with a 2-digit year (00-99). (TZ)
+     *!
+     *!   @item %h
+     *!     Equivalent to %b.
+     *!
+     *!   @item %H
+     *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+     *!
+     *!   @item %I
+     *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+     *!
+     *!   @item %j
+     *!     The day of the year as a decimal number (range 001 to 366).
+     *!
+     *!   @item %k
+     *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
+     *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
+     *!
+     *!   @item %l
+     *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
+     *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
+     *!
+     *!   @item %m
+     *!     The month as a decimal number (range 01 to 12).
+     *!
+     *!   @item %M
+     *!     The minute as a decimal number (range 00 to 59).
+     *!
+     *!   @item %n
+     *!     A newline character. (SU)
+     *!
+     *!   @item %O
+     *!     Modifier: use alternative format, see below. (SU)
+     *!
+     *!   @item %p
+     *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+     *!     value, or the corresponding strings for the current locale.
+     *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+     *!
+     *!   @item %P
+     *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+     *!     or a corresponding string for the current locale.
+     *!
+     *!   @item %r
+     *!     The time in a.m. or p.m. notation. In the POSIX locale this is
+     *!     equivalent to @expr{%I:%M:%S %p@}.
+     *!
+     *!   @item %R
+     *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
+     *!     For a version including the seconds, see @expr{%T@} below.
+     *!
+     *!   @item %s
+     *!     The number of seconds since the Epoch,
+     *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+     *!
+     *!   @item %S
+     *!     The second as a decimal number (range 00 to 60).
+     *!     (The range is up to 60 to allow for occasional leap seconds.)
+     *!
+     *!   @item %t
+     *!     A tab character. (SU)
+     *!
+     *!   @item %T
+     *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+     *!
+     *!   @item %u
+     *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
+     *!     See also @expr{%w@}. (SU)
+     *!
+     *!   @item %U
+     *!     The week number of the current year as a decimal number,
+     *!     range 00 to 53, starting with the first Sunday as the first
+     *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+     *!
+     *!   @item %V
+     *!     The ISO 8601 week number of the current year as a decimal number,
+     *!     range 01 to 53, where week 1 is the first week that has at least
+     *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+     *!
+     *!   @item %w
+     *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
+     *!     See also @expr{%u@}.
+     *! @enddl
+     */
+    PIKEFUN string strftime(string(1..255) format)
+    {
+        char *buffer = xalloc( 8192 );
+        buffer[0] = 0;
+        strftime_zone( buffer, 8192, format->str, &THIS->t );
+        push_text( buffer );
+    }
+
+    /*! @decl int(0..60) sec;
+     *! @decl int(0..59) min;
+     *! @decl int(0..59) hour;
+     *! @decl int(1..31) mday;
+     *! @decl int(0..11) mon;
+     *! @decl int year;
+     *!
+     *! The various fields in the structure. Note that setting these
+     *! might cause other fields to be recalculated, as an example,
+     *! adding 1000 to the hour field would advance the 'mday', 'mon'
+     *! and possibly 'year' fields.
+     *!
+     *! When read the fields are always normalized.
+     *!
+     *! Unlike the system struct tm the 'year' field is not year-1900,
+     *! instead it is the actual year.
+     */
+    PIKEFUN int(0..60) `sec()       { FIX_THIS();RETURN THIS->t.tm_sec;  }
+    PIKEFUN int(0..59) `min()       { FIX_THIS();RETURN THIS->t.tm_min;  }
+    PIKEFUN int(0..23) `hour()      { FIX_THIS();RETURN THIS->t.tm_hour; }
+    PIKEFUN int(1..31) `mday()      { FIX_THIS();RETURN THIS->t.tm_mday; }
+    PIKEFUN int(0..11) `mon()       { FIX_THIS();RETURN THIS->t.tm_mon; }
+    PIKEFUN int `year()             { FIX_THIS();RETURN THIS->t.tm_year+1900; }
+
+    PIKEFUN int `sec=(int a) { MODIFY(tm_sec=a); }
+    PIKEFUN int `min=(int a) { MODIFY(tm_min=a); }
+    PIKEFUN int `hour=(int a){ MODIFY(tm_hour=a); }
+    PIKEFUN int `mday=(int a){ MODIFY(tm_mday=a); }
+    PIKEFUN int `year=(int a){ MODIFY(tm_year=a-1900); }
+    PIKEFUN int `mon=(int a){ MODIFY(tm_mon=a); }
+
+    /*! @decl int isdst
+     *!
+     *! True if daylight savings are in effect.  If this field is -1
+     *! (the default) it (and the timezone info) will be updated
+     *! automatically using the timezone rules.
+     */
+    PIKEFUN int(-1..1) `isdst()  {
+        FIX_THIS();
+        RETURN THIS->t.tm_isdst;
+    }
+
+    /*! @decl int wday
+     *! The day of the week, sunday is 0, saturday is 6.
+     *! This is calculated from the other fields and can not be changed directly.
+     */
+    PIKEFUN int(0..6) `wday()      { FIX_THIS(); RETURN THIS->t.tm_wday; }
+
+    /*! @decl int yday
+     *! The day of the year, from 0 (the first day) to 365
+     *! This is calculated from the other fields and can not be changed directly.
+     */
+    PIKEFUN int(0..365) `yday()      { FIX_THIS(); RETURN THIS->t.tm_yday; }
+
+    /*! @decl int unix_time()
+     *! Return the unix time corresponding to this time_t. If no time
+     *! can be parsed from the structure -1 is returned.
+     */
+    PIKEFUN int unix_time()
+    {
+        FIX_THIS();
+        RETURN THIS->unix_time;
+    }
+
+    /*! @decl string asctime()
+     *! Return a string representing the time. Mostly useful for debug
+     *! purposes, the exact format is very locale (see
+     *! @[Gettext.setlocale]) and OS dependent.
+     */
+    PIKEFUN string asctime()
+    {
+        FIX_THIS();
+        {
+            char *tval = asctime_zone( &THIS->t );
+            if( tval )
+                push_text( tval );
+            else
+                push_undefined();
+        }
+    }
+
+    PIKEFUN void _sprintf( int flag, mapping options )
+    {
+        int post_sum = 1;
+        switch( flag )
+        {
+          case 'O':
+            push_text("System.TM(");
+            post_sum = 1;
+            /* fallthrough */
+          case 's':
+            f_TM_asctime(0);
+            push_text("\n");
+            if( GET_ZONE(&(THIS->t)) )
+            {
+                push_text(" ");
+                push_text( GET_ZONE(&(THIS->t)) );
+                f_add( 2 );
+            }
+            else
+                push_text("");
+            f_replace( 3 );
+            break;
+          case 'd':
+            f_TM_unix_time(0);
+            break;
+        default:
+            Pike_error("Can not format as %c", flag );
+        }
+        if( post_sum )
+        {
+            push_text(")");
+            f_add(3);
+        }
+
+    }
+
+    PIKEFUN mixed cast( string to )
+    {
+        struct pike_string *s_string, *s_int;
+        MAKE_CONST_STRING(s_int, "int");
+        MAKE_CONST_STRING(s_string, "string");
+        if( to == s_int )
+        {
+            f_TM_unix_time(0);
+            return;
+        }
+        if( to == s_string )
+        {
+            f_TM_asctime(0);
+            return;
+       }
+       Pike_error("Does not know how to cast to %s\n", to->str );
+    }
+
+    /*! @decl string zone
+     *!
+     *! The timezone of this structure
+     */
+    PIKEFUN string `zone() {
+        FIX_THIS();
+        if( GET_ZONE(&(THIS->t)) )
+            push_text( GET_ZONE(&(THIS->t)) );
+        else
+            push_undefined();
+    }
+
+    /*! @decl int gmtoff
+     *! The offset from GMT for the time in this tm-struct
+     */
+    PIKEFUN int `gmtoff() {
+        FIX_THIS();
+        push_int( GET_GMTOFF(&(THIS->t)) );
+    }
+
+    /* Setting the zone does not work, so.. */
+
+    /* PIKEFUN string `zone=(string x) { */
+    /*     if( THIS->set_zone ) */
+    /*         free_string( THIS->set_zone ); */
+    /*     THIS->set_zone = x; */
+    /*     MODIFY( tm_zone = x->str ); */
+    /*     x->refs++; */
+    /* } */
+
+    /*! @decl int(0..1) localtime( int time )
+     *! Initialize the struct tm to the local time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) localtime( int _t )
+    {
+        time_t t = _t;
+        struct tm *res = localtime_zone( &t, &THIS->t );
+
+        /* These are supposedly correctly by localtime_zone. */
+        SET_GMTOFF(res, GET_GMTOFF(&(THIS->t)));
+        SET_ZONE(res, GET_ZONE(&(THIS->t)));
+
+        if( !res )
+            RETURN 0;
+        THIS->t = *res;
+        THIS->modified = 1;
+        RETURN 1;
+    }
+
+
+    /*! @decl int(0..1) gmtime( int time )
+     *! Initialize the struct tm to the UTC time for the specified
+     *! unix time_t.
+     */
+    PIKEFUN int(0..1) gmtime( int _t )
+    {
+        time_t t = _t;
+        struct tm *res = gmtime( &t );
+
+        if( !res )
+            RETURN 0;
+
+        THIS->t = *res;
+        THIS->modified = 1;
+        RETURN 1;
+    }
+
+    /*! @decl void create(int t)
+     *! Create a new @[TM] initialized from a unix time_t.
+     *! The timezone will always be UTC when using this function.
+     */
+    PIKEFUN void create( int _t )
+    {
+        f_TM_gmtime( 1 );
+        if( Pike_sp[-1].u.integer == 0 )
+            Pike_error("time out of range\n");
+    }
+
+    /*! @decl void create()
+     *! Construct a new TM, all fields will be set to 0.
+     */
+    PIKEFUN void create( )
+    {
+        memset( &THIS->t, 0, sizeof( struct tm ) );
+        THIS->t.tm_isdst = -1;
+        THIS->unix_time = 0;
+        THIS->modified = 1;
+    }
+
+    /*! @decl void create( int year, int(0..11) mon, int(1..31) mday, @
+     *!                    int(0..24) hour, int(0..59) min, int(0..59) sec, @
+     *!                    string|void timezone )
+     *! Construct a new time using the given values.
+     *! Slightly faster than setting them individually.
+     */
+    PIKEFUN void create( int year, int(0..11) mon, int(1..31) mday,
+                         int(0..24) hour, int(0..59) min, int(0..59) sec,
+                         string|void timezone )
+    {
+        struct tm *t = &THIS->t;
+        t->tm_isdst = -1;
+        t->tm_year = year - 1900;
+        t->tm_mon = mon;
+        t->tm_mday = mday;
+        t->tm_hour = hour;
+        t->tm_min = min;
+        t->tm_sec = sec;
+	if (THIS->set_zone) {
+	    free_string(THIS->set_zone);
+	    THIS->set_zone = NULL;
+	}
+        if( !timezone ) /* gmtime. */
+	    SET_ZONE(t, "UTC");
+        else
+        {
+	    add_ref(timezone);
+            THIS->set_zone = timezone;
+            SET_ZONE(t, timezone->str);
+        }
+        THIS->unix_time = mktime_zone( t );
+    }
+
+    INIT {
+        THIS->set_zone = 0;
+        THIS->modified = 0;
+    }
+
+    EXIT {
+        if( THIS->set_zone )
+            free_string( THIS->set_zone );
+    }
+}
+/*! @endclass
+ */
+#undef FIX_THIS
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+#undef tm_zone
+#undef tm_gmtoff
+#endif
+#endif
+/*! @endmodule
+ */
 
 /*! @decl array(array(int|string|type)) describe_program(program p)
  *! @belongs Debug
@@ -330,7 +949,7 @@ static const unsigned char hexdecode[256] =
 };
 
 PMOD_EXPORT
-PIKEFUN string string2hex(string s)
+    PIKEFUN string(0..255) string2hex(string s)
   errname String.string2hex;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -363,7 +982,7 @@ PIKEFUN string string2hex(string s)
  *!   @[string2hex()]
  */
 PMOD_EXPORT
-PIKEFUN string hex2string(string hex)
+PIKEFUN string(0..255) hex2string(string hex)
   errname String.hex2string;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -559,6 +1178,17 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
  *!   with this slowness factor. It should be a value between 0.0 and
  *!   1.0 that specifies the weight to give to the old average value.
  *!   The remaining weight up to 1.0 is given to the last reading.
+ *! @member function(:void) "pre_cb"
+ *!   This function is called when the gc starts.
+ *! @member function(:void) "post_cb"
+ *!   This function is called when the mark and sweep pass of the gc
+ *!   is done.
+ *! @member function(object:void) "destruct_cb"
+ *!   This function is called once for each object that is part of
+ *!   a cycle just before the gc will destruct it.
+ *! @member function(int:void) "done_cb"
+ *!   This function is called when the gc is done and about to exit.
+ *!   The argument is the same value as will be returned by gc().
  *! @endmapping
  *!
  *! @seealso
@@ -628,6 +1258,27 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   HANDLE_FLOAT_FACTOR ("garbage_ratio_high", gc_garbage_ratio_high);
   HANDLE_FLOAT_FACTOR ("min_gc_time_ratio", gc_min_time_ratio);
   HANDLE_FLOAT_FACTOR ("average_slowness", gc_average_slowness);
+
+  HANDLE_PARAM("pre_cb", {
+      assign_svalue(&gc_pre_cb, set);
+    }, {
+      assign_svalue(&get, &gc_pre_cb);
+    });
+  HANDLE_PARAM("post_cb", {
+      assign_svalue(&gc_post_cb, set);
+    }, {
+      assign_svalue(&get, &gc_post_cb);
+    });
+  HANDLE_PARAM("destruct_cb", {
+      assign_svalue(&gc_destruct_cb, set);
+    }, {
+      assign_svalue(&get, &gc_destruct_cb);
+    });
+  HANDLE_PARAM("done_cb", {
+      assign_svalue(&gc_done_cb, set);
+    }, {
+      assign_svalue(&get, &gc_done_cb);
+    });
 
 #undef HANDLE_PARAM
 #undef HANDLE_FLOAT_FACTOR
@@ -988,6 +1639,29 @@ PIKEFUN string string_trim_all_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
+/*! @decl string status(int verbose)
+ *! @belongs String
+ *!
+ *!   Get string table statistics.
+ *!
+ *! @returns
+ *!   Returns a string with an ASCII table containing
+ *!   the current string table statistics.
+ *!
+ *! @note
+ *!   Currently returns the empty string (@expr{""@})
+ *!   if @[verbose] is zero.
+ *!
+ *! @note
+ *!   The formatting and contents of the result
+ *!   may vary between different versions of Pike.
+ */
+PIKEFUN string string_status(int verbose)
+  errname String.status;
+{
+  RETURN add_string_status(verbose);
+}
+
 /*! @decl int implements(program prog, program api)
  *! @belongs Program
  *!
@@ -1001,17 +1675,21 @@ PIKEFUN int program_implements(program prog, program api)
   RETURN implements(prog, api);
 }
 
-/*! @decl int inherits(program child, program parent)
+/*! @decl int inherits(program|object child, program parent)
  *! @belongs Program
  *!
  *! Returns 1 if @[child] has inherited @[parent].
  */
 PMOD_EXPORT
-PIKEFUN int program_inherits(program parent, program child)
+PIKEFUN int program_inherits(program|object child, program parent)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN low_get_storage(parent, child) != -1;
+  struct program *p = program_from_svalue(child);
+
+  if (!p)
+    SIMPLE_ARG_TYPE_ERROR("Program.inherits", 1, "program|object");
+  RETURN low_get_storage(p, parent) != -1;
 }
 
 /*! @decl string defined(program p)
@@ -1053,15 +1731,21 @@ PIKEFUN string program_defined(program p)
  *!
  *! Returns the width of a string.
  *!
- *! Three return values are possible:
- *! @int
- *!   @value 8
- *!     The string @[s] only contains characters <= 255.
- *!   @value 16
- *!     The string @[s] only contains characters <= 65535.
- *!   @value 32
- *!     The string @[s] contains characters >= 65536.
- *! @endint
+ *! @returns
+ *!   Three return values are currently possible:
+ *!   @int
+ *!     @value 8
+ *!       The string @[s] only contains characters <= 255.
+ *!     @value 16
+ *!       The string @[s] only contains characters <= 65535.
+ *!     @value 32
+ *!       The string @[s] contains characters >= 65536.
+ *!   @endint
+ *!
+ *! @note
+ *!   It is possible that a future version of Pike may return
+ *!   further values. In particular the width @expr{7@} seems
+ *!   like it could be useful.
  */
 PMOD_EXPORT
 PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
@@ -1177,9 +1861,9 @@ static struct pike_string *delambda(struct pike_string *str)
   return make_shared_binary_pcharp(pcharp, len);
 }
 
-/*! @decl string function_name(function f)
+/*! @decl string function_name(function|program f)
  *!
- *! Return the name of the function @[f].
+ *! Return the name of the function or program @[f].
  *!
  *! If @[f] is a global function defined in the runtime @expr{0@}
  *! (zero) will be returned.
@@ -1371,16 +2055,9 @@ PIKEFUN program function_program(program|function func)
 /*! @decl mixed random(object o)
  *!   If random is called with an object, @[lfun::random] will be
  *!   called in the object.
+ *!
  *! @seealso
- *!  @[lfun::_random]
- */
-
-/*! @decl mixed lfun::_random()
- *!   Called by @[random]. Typical uses is when the object implements
- *!   a ADT, then a call to this lfun should return a random member of
- *!   the ADT or range implied by the ADT.
- *! @seealso
- *!   @[predef::random()]
+ *!  @[lfun::_random()]
  */
 
 PMOD_EXPORT
@@ -1388,7 +2065,11 @@ PIKEFUN mixed random(object o)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
-  apply(o,"_random",0);
+  int f = low_find_lfun(o->prog, LFUN__RANDOM);
+  if (f < 0) {
+    Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
+  }
+  apply_low(o, f, 0);
   stack_swap();
   pop_stack();
 }
@@ -1406,7 +2087,7 @@ PMOD_EXPORT
 PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
-#if defined (AUTO_BIGNUM) && SIZEOF_INT_TYPE > 4
+#if SIZEOF_INT_TYPE > 4
   if(i >> 31) {
     unsigned INT_TYPE a = my_rand();
     unsigned INT_TYPE b = my_rand();
@@ -2135,13 +2816,9 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(sizeof(INT_TYPE) * 8);
   push_constant_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
-#ifdef AUTO_BIGNUM
   push_constant_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(6*2);
-#else
-  f_aggregate_mapping(5*2);
-#endif
 }
 
 /*! @endmodule
@@ -2212,7 +2889,12 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 
       if(of && of->locals) {
 	/* f->num_args can be too large, so this is necessary for some
-	 * reason. I don't know why. /mast */
+	 * reason. I don't know why. /mast
+	 *
+	 * possibly because f->num_args was uninitialized for c_initializers
+	 *  /arne
+	 * */
+
 	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
       }
 
@@ -2317,11 +2999,17 @@ PIKECLASS Buffer
 {
   CVAR struct string_builder str;
   CVAR int initial;
-  
+
+  PIKEFUN int _size_object()
+  {
+      if( THIS->str.s )
+          RETURN THIS->str.malloced;
+      RETURN 0;
+  }
+
   void f_Buffer_get_copy( INT32 args );
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
-
 
   /*! @decl void create(int initial_size)
    *!
@@ -2335,7 +3023,7 @@ PIKECLASS Buffer
   PIKEFUN void create( int|void size )
   {
     struct Buffer_struct *str = THIS;
-    if( args )
+    if( size )
       str->initial = MAXIMUM( size->u.integer, 512 );
     else
       str->initial = 256;
@@ -2423,9 +3111,10 @@ PIKECLASS Buffer
     Pike_error("Cannot cast to %S\n", type);
   }
   
-  /*! @decl String.Buffer `+( string what )
+  /*! @decl String.Buffer `+( string|String.Buffer what )
    */
-  PIKEFUN object `+( string what )
+  PIKEFUN object `+( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     struct Buffer_struct *str = THIS, *str2;
     struct object *res = fast_clone_object( Buffer_program );
@@ -2437,34 +3126,54 @@ PIKECLASS Buffer
     RETURN res;
   }
 
-  /*! @decl String.Buffer `+=( string what )
+  /*! @decl String.Buffer `+=( string|String.Buffer what )
    */
-  PIKEFUN object `+=( string what )
+  PIKEFUN object `+=( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     f_Buffer_add( 1 );
     REF_RETURN Pike_fp->current_object;
   }
 
-  /*! @decl int add(string ... data)
+  /*! @decl int add(string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.
    *!
    *! @returns
    *!   Returns the size of the buffer.
    *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
+   *!
    *! @seealso
    *!   @[addat()]
    */
-  PIKEFUN int add( string ... arg1 )
+  PIKEFUN int add( string|Buffer ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
     int init_from_arg0 = 0, j;
+
+    for (j=0; j < args; j++) {
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+      } else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		 (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
+      }
+    }
 
     if (!str->str.s && args) {
       ptrdiff_t sum = 0;
       int shift = 0;
       for (j=0; j < args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	sum += a->len;
 	shift |= a->size_shift;
       }
@@ -2474,7 +3183,8 @@ PIKECLASS Buffer
 	sum <<= 1;
       shift = shift & ~(shift >> 1);
 
-      if (shift == Pike_sp[-args].u.string->size_shift &&
+      if ((TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) &&
+	  (shift == Pike_sp[-args].u.string->size_shift) &&
 	  init_string_builder_with_string (&str->str, Pike_sp[-args].u.string)) {
 	mark_free_svalue (Pike_sp - args);
 	if (sum > str->str.s->len)
@@ -2490,7 +3200,13 @@ PIKECLASS Buffer
 
     for( j = init_from_arg0; j<args; j++ )
     {
-      struct pike_string *a = Pike_sp[j-args].u.string;
+      struct pike_string *a;
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	a = Pike_sp[j-args].u.string;
+      } else {
+	a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	if (!a) continue;
+      }
       string_builder_shared_strcat( &str->str, a );
     }
 
@@ -2501,7 +3217,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl int addat(int(0..) pos, string ... data)
+  /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
    *!
@@ -2509,13 +3225,18 @@ PIKECLASS Buffer
    *!   Returns the size of the buffer.
    *!
    *! @note
-   *!   If the buffer isn't of the required size, it is padded
+   *!   If the buffer isn't of the required size, it will be padded
    *!   with NUL-characters.
+   *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
    *!
    *! @seealso
    *!   @[add()]
    */
   PIKEFUN int addat(int(0..) pos, string ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
 
@@ -2527,7 +3248,16 @@ PIKECLASS Buffer
       ptrdiff_t sum = 0;
       int shift = 0;
       for (j=1; j < args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	sum += a->len;
 	shift |= a->size_shift;
       }
@@ -2562,7 +3292,13 @@ PIKECLASS Buffer
       }
 
       for(j = 1; j<args; j++) {
-	struct pike_string *a = Pike_sp[j-args].u.string;
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	  a = Pike_sp[j-args].u.string;
+	} else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
 	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, pos), a);
 	pos += a->len;
       }
@@ -2591,10 +3327,30 @@ PIKECLASS Buffer
     string_builder_putchar(&str->str, c);
   }
 
+  /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
+   *! Appends the output from @[sprintf] at the end of the string.
+   *! Returns the resulting size of the String.Buffer.
+   */
+  PIKEFUN int sprintf(mixed ... arguments)
+    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
+		   tAttr("sprintf_args", tMix), tStr);
+
+  {
+    // FIXME: Reset length on exception?
+    struct Buffer_struct *str = THIS;
+    if(!str->str.s)
+      init_string_builder_alloc(&str->str, str->initial, 0);
+    low_f_sprintf(args, 0, &str->str);
+    RETURN str->str.s->len;
+  }
+
   /*! @decl string get_copy()
    *!
    *!   Get the data from the buffer. Significantly slower than @[get],
    *!   but does not clear the buffer.
+   *!
+   *! @seealso
+   *!   @[get()]
    */
   PIKEFUN string get_copy()
   {
@@ -2629,6 +3385,9 @@ PIKECLASS Buffer
    *!
    *! @note
    *!   This will clear the data in the buffer
+   *!
+   *! @seealso
+   *!   @[get_copy()], @[clear()]
    */
   PIKEFUN string get( )
   {
@@ -2643,6 +3402,29 @@ PIKECLASS Buffer
     pop_n_elems(args);
     push_empty_string();
     return;
+  }
+
+  /*! @decl void clear()
+   *!
+   *!   Empty the buffer, and don't care about the old content.
+   *!
+   *! @note
+   *!   This function was not available in Pike 7.8 and earlier.
+   *!
+   *! @seealso
+   *!   @[get()]
+   */
+  PIKEFUN void clear()
+  {
+    /* FIXME: Support resetting the initial size? */
+    struct Buffer_struct *str = THIS;
+    if (str->str.s) {
+      /* FIXME: There's also the alternative of using
+       *        reset_string_builder() here.
+       */
+      free_string_builder(&str->str);
+      str->str.s = NULL;
+    }
   }
 
   /*! @decl int _sizeof()
@@ -2695,6 +3477,26 @@ PIKECLASS multi_string_replace
   /* NOTE: from and to are only kept for _encode()'s use. */
   PIKEVAR array from flags ID_PROTECTED;
   PIKEVAR array to flags ID_PROTECTED;
+
+  PIKEFUN int _size_object()
+  {
+      int res = 0, i;
+      if( THIS->ctx.v )
+      {
+          struct svalue tmp;
+          tmp.type = PIKE_T_STRING;
+          for( i=0; i<THIS->ctx.num; i++ )
+          {
+              res += sizeof(struct replace_many_tupel);
+              tmp.u.string = THIS->ctx.v[i].ind;
+              res += rec_size_svalue( &tmp, NULL );
+              tmp.u.string = THIS->ctx.v[i].val;
+              res += rec_size_svalue( &tmp, NULL );
+          }
+      }
+
+      RETURN res;
+  }
 
   /*! @decl void create(array(string)|mapping(string:string)|void from, @
    *!                   array(string)|string|void to)
@@ -3355,16 +4157,12 @@ PIKECLASS Time
     else
       INACCURATE_GETTIMEOFDAY( &now );
 
-#ifdef AUTO_BIGNUM
     push_int( now.tv_sec );
     push_int( 1000000 );
     f_multiply( 2 );
     push_int( now.tv_usec );
     f_add( 2 );
     return;
-#else
-    RETURN (now.tv_sec * 1000000 + now.tv_usec);
-#endif
   }
 
   /*! @decl protected void create( int fast );
@@ -3448,11 +4246,34 @@ PIKECLASS Timer
  */
 
 
+/*! @module Builtin
+ */
+
+/*! @class automap_marker
+ *!
+ *! This is an internal class used by @[__automap__()].
+ *!
+ *! It may show up during module dumping or in backtraces
+ *! and the like.
+ *!
+ *! It should in normal circumstances never be used directly.
+ *!
+ *! @seealso
+ *!   @[__automap__()], @[map()]
+ */
 PIKECLASS automap_marker
 {
   PIKEVAR array arg;
   PIKEVAR int depth;
 
+  /*! @decl void create(array arr, int depth)
+   *!
+   *! @param arr
+   *!   Array that @[__automap__()] is to loop over.
+   *!
+   *! @param depth
+   *!   Recursion depth of @[arr] where the loop will be.
+   */
   PIKEFUN void create(array a, int d)
     {
       if(THIS->arg) free_array(THIS->arg);
@@ -3477,6 +4298,11 @@ PIKECLASS automap_marker
     }
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 static void low_automap(int d,
 			int depth,
@@ -3508,10 +4334,8 @@ static void low_automap(int d,
     }
   }
 
-#ifdef PIKE_DEBUG
-   if(size == 0x7fffffff)
-    Pike_fatal("No automap markers found in low_automap\n");
-#endif
+  if(size == 0x7fffffff)
+    Pike_error("No automap markers found in __automap__\n");
 
   push_array(ret=allocate_array(size));
   types = 0;
@@ -3545,7 +4369,39 @@ static void low_automap(int d,
   stack_unlink(args);
 }
 
-
+/*! @decl array __automap__(function fun, mixed ... args)
+ *!
+ *! Automap execution function.
+ *!
+ *! @param fun
+ *!   Function to call for each of the mapped arguments.
+ *!
+ *! @param args
+ *!   Arguments for @[fun]. Either
+ *!   @mixed
+ *!     @type Builtin.automap_marker
+ *!       Wrapper for an array to loop over. All of the
+ *!       arrays will be looped over in parallel.
+ *!     @type mixed
+ *!       All other arguments will be held constant during
+ *!       the automap, and sent as is to @[fun].
+ *!   @endmixed
+ *!
+ *! @note
+ *!   This function is used by the compiler to implement the
+ *!   automap syntax, and should in normal circumstances never
+ *!   be used directly.
+ *!
+ *!   It may however show up during module dumping and in
+ *!   backtraces.
+ *!
+ *! @note
+ *!   It is an error not to have any @[Builtin.automap_marker]s
+ *!   in @[args].
+ *!
+ *! @seealso
+ *!   @[Builtin.automap_marker], @[map()]
+ */
 PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
   efun;
 {
@@ -3569,161 +4425,30 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
   stack_unlink(args);
 }
 
-/* Linked list stuff.
- */
-#undef INIT_BLOCK
-#define INIT_BLOCK(NODE) do {				\
-    (NODE)->next = (NODE)->prev = NULL;			\
-    (NODE)->refs = 1;					\
-    SET_SVAL((NODE)->val, T_INT, NUMBER_UNDEFINED,	\
-	     integer, 0);				\
-  } while(0) 
-
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(NODE) do {				\
-    if ((NODE)->prev) {					\
-      free_list_node((NODE)->prev);			\
-    }							\
-    if ((NODE)->next) {					\
-      free_list_node((NODE)->next);			\
-    }							\
-    free_svalue(&(NODE)->val);				\
-  } while(0)
-
-BLOCK_ALLOC_FILL_PAGES(pike_list_node, 4);
-
-PMOD_EXPORT void free_list_node(struct pike_list_node *node)
-{
-  if (!sub_ref(node)) {
-    really_free_pike_list_node(node);
-  }
-}
-
-PMOD_EXPORT void unlink_list_node(struct pike_list_node *n)
-{
-#ifdef PIKE_DEBUG
-  if (!n) {
-    Pike_fatal("Unlinking NULL node.\n");
-  }
-  if (!n->next || !n->prev) {
-    Pike_fatal("Unlinking unlinked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  if (n->prev->next == n) {
-#ifdef PIKE_DEBUG
-    if (n->next->prev != n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    n->next = n->prev = NULL;
-
-    /* We've lost two references. */
-    free_list_node(n);
-    free_list_node(n);
-  } else {
-#ifdef PIKE_DEBUG
-    if (n->next->prev == n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    /* The node is already detached. */
-    n->next = n->prev = NULL;
-  }
-}
-
-PMOD_EXPORT void detach_list_node(struct pike_list_node *n)
-{
-#ifdef PIKE_DEBUG
-  if (!n) {
-    Pike_fatal("Detaching NULL node.\n");
-  }
-  if (!n->next || !n->prev) {
-    Pike_fatal("Detaching unlinked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  if (n->prev->next == n) {
-#ifdef PIKE_DEBUG
-    if (n->next->prev != n) {
-      Pike_fatal("Partially detached node.\n");
-    }
-#endif /* PIKE_DEBUG */
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    add_ref(n->next);
-    add_ref(n->prev);
-
-    /* We've lost two references. */
-    free_list_node(n);
-    free_list_node(n);
-#ifdef PIKE_DEBUG
-  } else if (n->next->prev == n) {
-    Pike_fatal("Partially detached node.\n");
-#endif /* PIKE_DEBUG */
-  }
-}
-
-PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
-				   struct pike_list_node *new_node)
-{
-#ifdef PIKE_DEBUG
-  if (!node) {
-    Pike_fatal("No node to prepend.\n");
-  }
-  if (!node->prev) {
-    Pike_fatal("Prepending unhooked node.\n");
-  }
-  if (!new_node) {
-    Pike_fatal("Prepending NULL node.\n");
-  }
-  if (new_node->next || new_node->prev) {
-    Pike_fatal("Prepending hooked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  new_node->next = node;
-  new_node->prev = node->prev;
-  new_node->prev->next = node->prev = new_node;
-  add_ref(new_node);
-  add_ref(new_node);
-}
-
-PMOD_EXPORT void append_list_node(struct pike_list_node *node,
-				  struct pike_list_node *new_node)
-{
-#ifdef PIKE_DEBUG
-  if (!node) {
-    Pike_fatal("No node to append.\n");
-  }
-  if (!node->next) {
-    Pike_fatal("Appending unhooked node.\n");
-  }
-  if (!new_node) {
-    Pike_fatal("Appending NULL node.\n");
-  }
-  if (new_node->next || new_node->prev) {
-    Pike_fatal("Appending hooked node.\n");
-  }
-#endif /* PIKE_DEBUG */
-  new_node->next = node->next;
-  new_node->prev = node;
-  new_node->next->prev = node->next = new_node;
-  add_ref(new_node);
-  add_ref(new_node);
-}
-
 /*! @module Builtin
  */
 
 /*! @class Setter
  *!
  *! Internal class for implementing setters.
+ *!
+ *! This class is used by @[_get_setter()].
+ *!
+ *! @seealso
+ *!   @[_get_setter()]
  */
 PIKECLASS Setter
 {
   PIKEVAR object o
     flags ID_PROTECTED|ID_PRIVATE|ID_LOCAL;
   CVAR int f;
+
+  /*! @decl void `()(mixed val)
+   *!
+   *! Set the variable for the setter to @[val].
+   *!
+   *! This is the function returned by @[_get_setter()].
+   */
   PIKEFUN void `()(mixed val)
     flags ID_PROTECTED;
   {
@@ -3752,6 +4477,9 @@ PIKECLASS Setter
   }
 }
 
+/*! @endclass
+ */
+
 PMOD_EXPORT struct object *get_setter(struct object *o, int f)
 {
   struct object *res = clone_object(Setter_program, 0);
@@ -3761,9 +4489,13 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void) _get_setter(object o, string s)
+/*! @decl function(mixed_void) _get_setter(object o, string varname)
  *!
- *! Get a setter for the variable named @[s] in object @[o].
+ *! Get a setter for the variable named @[varname] in object @[o].
+ *!
+ *! @returns
+ *!   Returns a @[Setter()->`()()] for the variable if it exists,
+ *!   and @expr{UNDEFINED@} otherwise.
  *!
  *! @seealso
  *!   @[object_variablep()]
@@ -3788,9 +4520,6 @@ PIKEFUN function(mixed:void) _get_setter(object o, string s)
   }
   stack_pop_n_elems_keep_top(args);
 }
-
-/*! @endclass
- */
 
 /*! @class Null
  *!
@@ -3891,6 +4620,45 @@ PIKECLASS Null
 
 /*! @endclass
  */
+
+PMOD_EXPORT
+PIKEFUN int levenshtein_distance(string a, string b)
+{
+  int i, j, n, *lev_i, *lev_p;
+
+  /* Simple cases: strings are equal or one of them is empty: */
+  if (a == b) RETURN 0;
+  if (a->len == 0) RETURN b->len;
+  if (b->len == 0) RETURN a->len;
+
+  /* Return -1 if any of the strings is wider than 8 bits: */
+  if (a->size_shift || b->size_shift) RETURN -1;
+
+  /* Allocate two rows on the stack: */
+  n = b->len+1;
+  lev_i = alloca(n*sizeof(int));
+  lev_p = alloca(n*sizeof(int));
+  if (!lev_i || !lev_p) RETURN -1;
+
+  /* Initialise the first row */
+  for (j = 0; j < n; j++) lev_i[j] = j;
+
+  for (i = 0; i < a->len; i++)
+  {
+    /* lev_p = row for i, lev_i = row for i+1: */
+    memcpy(lev_p, lev_i, n*sizeof(int));
+    lev_i[0] = i + 1;
+    for (j = 0; j < b->len; j++)
+    {
+      int cost = (a->str[i] == b->str[j]) ? 0 : 1;
+      int test, min_val = lev_i[j]+1;
+      if ((test = lev_p[j+1]+1) < min_val) min_val = test;
+      if ((test = lev_p[j]+cost) < min_val) min_val = test;
+      lev_i[j+1] = min_val;
+    }
+  }
+  RETURN lev_i[b->len];
+}
 
 /*! @endmodule
  */
@@ -4008,7 +4776,16 @@ PIKECLASS Serializable
    *!   in the inheriting class.
    *!
    *! This function calls @[_serialize_variable()] once
-   *! for every variable in the inheriting class.
+   *! for every variable in the inheriting class, which
+   *! in turn will call @[serializer] with the arguments:
+   *! @dl
+   *!   @item Argument 1
+   *!     The value of the variable.
+   *!   @item Argument 2
+   *!     The name of the variable.
+   *!   @item Argument 3
+   *!     The declared type of the variable.
+   *! @enddl
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -4016,6 +4793,10 @@ PIKECLASS Serializable
    *!
    *! @note
    *!   This function is typically called via @[Serializer.serialize()].
+   *!
+   *! @seealso
+   *!   @[Serializer.serialize()], @[_serialize_variable()],
+   *!   @[_deserialize()]
    */
   PIKEFUN void _serialize(object o,
 			  function(mixed, string, type:void) serializer)
@@ -4099,7 +4880,7 @@ PIKECLASS Serializable
    *!   These issues can all be solved by overloading this function.
    *!
    *! @seealso
-   *!   @[_deserialize()], @[_serialize_variable()]
+   *!   @[_deserialize()], @[_serialize_variable()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize_variable(function(function(mixed:void),
 					      string, type: void)
@@ -4141,7 +4922,16 @@ PIKECLASS Serializable
    *!   in the inheriting class.
    *!
    *! This function calls @[_deserialize_variable()] once
-   *! for every variable in the inheriting class.
+   *! for every variable in the inheriting class, which
+   *! in turn will call @[deserializer] with the arguments:
+   *! @dl
+   *!   @item Argument 1
+   *!     The setter for the variable.
+   *!   @item Argument 2
+   *!     The name of the variable.
+   *!   @item Argument 3
+   *!     The declared type of the variable.
+   *! @enddl
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -4149,6 +4939,10 @@ PIKECLASS Serializable
    *!
    *! @note
    *!   This function is typically called via @[Serializer.deserialize()].
+   *!
+   *! @seealso
+   *!   @[Serializer.deserialize()], @[_deserialize_variable()],
+   *!   @[_serialize()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize(object o,
 			    function(function(mixed:void),
@@ -4230,6 +5024,154 @@ PIKEFUN void deserialize(object o,
 /*! @module ADT
  */
 
+/* Linked list stuff.
+ */
+static struct block_allocator pike_list_node_allocator = BA_INIT_PAGES(sizeof(struct pike_list_node), 4);
+
+ATTRIBUTE((malloc))
+static struct pike_list_node * alloc_pike_list_node() {
+    struct pike_list_node * node = ba_alloc(&pike_list_node_allocator);
+    node->next = node->prev = NULL;
+    node->refs = 1;
+    SET_SVAL(node->val, T_INT, NUMBER_UNDEFINED, integer, 0);
+    return node;
+}
+
+void count_memory_in_pike_list_nodes(size_t * n, size_t * s) {
+    ba_count_all(&pike_list_node_allocator, n, s);
+}
+
+void free_all_pike_list_node_blocks() {
+    ba_destroy(&pike_list_node_allocator);
+}
+
+PMOD_EXPORT void free_list_node(struct pike_list_node *node)
+{
+  if (!sub_ref(node)) {
+    if (node->prev) {
+      free_list_node(node->prev);
+    }
+    if (node->next) {
+      free_list_node(node->next);
+    }
+    free_svalue(&node->val);
+    ba_free(&pike_list_node_allocator, node);
+  }
+}
+
+PMOD_EXPORT void unlink_list_node(struct pike_list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Unlinking NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Unlinking unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    n->next = n->prev = NULL;
+
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+  } else {
+#ifdef PIKE_DEBUG
+    if (n->next->prev == n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    /* The node is already detached. */
+    n->next = n->prev = NULL;
+  }
+}
+
+PMOD_EXPORT void detach_list_node(struct pike_list_node *n)
+{
+#ifdef PIKE_DEBUG
+  if (!n) {
+    Pike_fatal("Detaching NULL node.\n");
+  }
+  if (!n->next || !n->prev) {
+    Pike_fatal("Detaching unlinked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (n->prev->next == n) {
+#ifdef PIKE_DEBUG
+    if (n->next->prev != n) {
+      Pike_fatal("Partially detached node.\n");
+    }
+#endif /* PIKE_DEBUG */
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    add_ref(n->next);
+    add_ref(n->prev);
+
+    /* We've lost two references. */
+    free_list_node(n);
+    free_list_node(n);
+#ifdef PIKE_DEBUG
+  } else if (n->next->prev == n) {
+    Pike_fatal("Partially detached node.\n");
+#endif /* PIKE_DEBUG */
+  }
+}
+
+PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
+				   struct pike_list_node *new_node)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to prepend.\n");
+  }
+  if (!node->prev) {
+    Pike_fatal("Prepending unhooked node.\n");
+  }
+  if (!new_node) {
+    Pike_fatal("Prepending NULL node.\n");
+  }
+  if (new_node->next || new_node->prev) {
+    Pike_fatal("Prepending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new_node->next = node;
+  new_node->prev = node->prev;
+  new_node->prev->next = node->prev = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
+}
+
+PMOD_EXPORT void append_list_node(struct pike_list_node *node,
+				  struct pike_list_node *new_node)
+{
+#ifdef PIKE_DEBUG
+  if (!node) {
+    Pike_fatal("No node to append.\n");
+  }
+  if (!node->next) {
+    Pike_fatal("Appending unhooked node.\n");
+  }
+  if (!new_node) {
+    Pike_fatal("Appending NULL node.\n");
+  }
+  if (new_node->next || new_node->prev) {
+    Pike_fatal("Appending hooked node.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new_node->next = node->next;
+  new_node->prev = node;
+  new_node->next->prev = node->next = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
+}
+
 /*! @class List
  *!
  *!   Linked list of values.
@@ -4270,6 +5212,22 @@ PIKECLASS List
    *   o Initialization from array.
    *   o Support for Pike.count_memory.
    */
+
+
+  PIKEFUN int _size_object()
+  {
+      int q = THIS->num_elems;
+      int res = q * sizeof(struct pike_list_node);
+      struct mapping *m = NULL;
+      struct pike_list_node *n = THIS->head;
+      while( q-- )
+      {
+          res += rec_size_svalue( &n->val, &m );
+          n = n->next;
+      }
+      if( m ) free_mapping( m );
+      RETURN res;
+  }
 
   INIT
   {
@@ -5150,20 +6108,29 @@ PIKECLASS __Backtrace_Tester__
 
 void init_builtin(void)
 {
-  init_pike_list_node_blocks();
+  SET_SVAL(gc_pre_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_post_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_destruct_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(gc_done_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   INIT
 }
 
 void exit_builtin(void)
 {
+  struct svalue zero;
   if (val_module) free_object (val_module);
   EXIT
+  SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  assign_svalue(&gc_pre_cb, &zero);
+  assign_svalue(&gc_post_cb, &zero);
+  assign_svalue(&gc_destruct_cb, &zero);
+  assign_svalue(&gc_done_cb, &zero);
 #ifndef DO_PIKE_CLEANUP
   /* This is performed by exit_builtin_modules() at a later point
    * in this case, so that the pike_list_node's are valid at cleanup
    * time, thus avoiding "got invalid pointer" fatals at exit.
    */
-  free_all_pike_list_node_blocks();
+  ba_destroy(&pike_list_node_allocator);
 #endif
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
