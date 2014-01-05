@@ -728,7 +728,7 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
 PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args)
 {
   char buffer[10000];
-  VSNPRINTF(buffer,sizeof(buffer),s,args);
+  int i=VSNPRINTF(buffer,sizeof(buffer),s,args);
   return fwrite(buffer,i,1,f);
 }
 #endif
