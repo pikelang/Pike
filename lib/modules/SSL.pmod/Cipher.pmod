@@ -1100,6 +1100,7 @@ class DES3
   }
 }
 
+#if constant(Crypto.Arctwo)
 //!
 class RC2
 {
@@ -1118,13 +1119,16 @@ class RC2
     return this;
   }
 }
+#endif /* Crypto.Arctwo */
 
+#if constant(Crypto.IDEA)
 //!
 class IDEA
 {
   inherit Crypto.CBC;
   protected void create() { ::create(Crypto.IDEA()); }
 }
+#endif
 
 //!
 class AES
@@ -1434,6 +1438,7 @@ array lookup(int suite, ProtocolVersion|int version,
 
   switch(algorithms[1])
   {
+#if constant(Crypto.Arctwo)
   case CIPHER_rc2_40:
     res->bulk_cipher_algorithm = RC2;
     res->cipher_type = CIPHER_block;
@@ -1442,6 +1447,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->iv_size = 8;
     res->key_bits = 40;
     break;
+#endif
   case CIPHER_rc4_40:
     res->bulk_cipher_algorithm = Crypto.Arcfour.State;
     res->cipher_type = CIPHER_stream;
@@ -1490,6 +1496,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->iv_size = 8;
     res->key_bits = 168;
     break;
+#if constant(Crypto.IDEA)
   case CIPHER_idea:
     res->bulk_cipher_algorithm = IDEA;
     res->cipher_type = CIPHER_block;
@@ -1498,6 +1505,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->iv_size = 8;
     res->key_bits = 128;
     break;
+#endif
   case CIPHER_aes:
     res->bulk_cipher_algorithm = AES;
     res->cipher_type = CIPHER_block;
