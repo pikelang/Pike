@@ -220,7 +220,7 @@ PMOD_EXPORT int MEMCMP(const void *b,const void *a,size_t s);
 #endif
 
 #ifndef HAVE_MEMCHR
-PMOD_EXPORT void *MEMCHR(void *p,char c,size_t e);
+PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e);
 #else
 #  define MEMCHR(X,Y,Z) ((void *)memchr(X,Y,Z))
 #endif
