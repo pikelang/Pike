@@ -63,8 +63,8 @@ test_eq( Calendar.dwim_day("1/2/3"), Calendar.Day(2003,1,2) )
 test_eq( Calendar.dwim_day("1 aug 2001"), Calendar.Day(2001,8,1) )
 test_false( Calendar.dwim_day("1 aug 2001")==Calendar.Day(2001,8,2) )
 dnl Missing two dwim_time tests
-test_eq( Calendar.parse("%Y-%M-%D %h:%m","2040-11-08 2:46"),
-  Calendar.Minute(2040,11,8,2,46) )
+test_eq( Calendar.set_timezone("UTC")->parse("%Y-%M-%D %h:%m","2040-11-08 2:46"),
+  Calendar.set_timezone("UTC")->Minute(2040,11,8,2,46) )
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
   < Calendar.set_timezone("CET")->Minute(1913,1,20,14,14) )
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
