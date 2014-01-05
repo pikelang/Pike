@@ -71,7 +71,7 @@ class DynamicImporter {
 	static mixed `[](string index) { return bind(Object::`[](index)); }
 	static mixed `->(string index, object|void o, int|void n) {
 	  if (o != Instance::this) {
-	    mixed real_value = ::`->(index, 2);
+	    mixed real_value = ::`->(index, this);
 	    if(real_value != UNDEFINED) return real_value;
 	  }
 	  return bind(Object::`->(index));
@@ -181,7 +181,7 @@ class DynamicImporter {
 	static mixed `[](string index) { return bind(fields[index] || Struct::`[](index)); }
 	static mixed `->(string index, object|void o, int|void n) {
 	  if (o != Instance::this) {
-	    mixed real_value = ::`->(index, 2);
+	    mixed real_value = ::`->(index, this);
 	    if(real_value != UNDEFINED) return real_value;
 	  }
 	  return bind(fields[index] || Struct::`[](index));
