@@ -24,7 +24,9 @@ DECLARATIONS
 #include "nettle.h"
 
 #include <nettle/aes.h>
+#ifdef HAVE_NETTLE_ARCTWO_H
 #include <nettle/arctwo.h>
+#endif
 #include <nettle/arcfour.h>
 #ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
@@ -433,6 +435,8 @@ pike_aes_set_decrypt_key(void *ctx,
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+#ifdef HAVE_NETTLE_ARCTWO_H
+
 /* NB: Requires Nettle 1.11 or later, which should be fine by now. */
 static void pike_arctwo_set_key(void *ctx,
 				ptrdiff_t length, const char *key,
@@ -592,6 +596,8 @@ PIKECLASS ARCTWO
 
 /*! @endclass ARCTWO
  */
+
+#endif /* HAVE_NETTLE_ARCTWO_H */
 
 static void
 pike_arcfour_set_key(void *ctx,
