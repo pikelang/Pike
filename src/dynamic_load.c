@@ -36,38 +36,37 @@
 #include <string.h>
 #endif /* HAVE_STRING_H */
 
-#if !defined(HAVE_DLOPEN)
+#if !defined(HAVE_DLOPEN) || defined(USE_SEMIDYNAMIC_MODULES)
 
-#if defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
+#ifdef USE_SEMIDYNAMIC_MODULES
+#undef HAVE_DLOPEN
+#define USE_STATIC_MODULES
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#define USE_DYNAMIC_MODULES
+#elif defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
 #define USE_DLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else
-#if defined(HAVE_SHL_LOAD) && defined(HAVE_DL_H)
+#elif defined(HAVE_SHL_LOAD) && defined(HAVE_DL_H)
 #define USE_HPUX_DL
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#else
-
-#ifdef USE_DLL
-#if defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
-    defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
+#elif defined(USE_DLL) && \
+      defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
+      defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
 #define USE_LOADLIBRARY
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#endif
-#endif
-
-#ifdef HAVE_MACH_O_DYLD_H
+#elif defined(HAVE_MACH_O_DYLD_H)
 /* MacOS X... */
 #define USE_DYLD
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
-#endif /* HAVE_MACH_O_DYLD_H */
+#endif
 
-#endif
-#endif
 #else
+/* HAVE_DLOPEN */
 #define HAVE_SOME_DLOPEN
 #endif
 
@@ -76,7 +75,54 @@
 
 typedef void (*modfun)(void);
 
-#ifdef USE_LOADLIBRARY
+#ifdef USE_STATIC_MODULES
+
+static void *dlopen(const char *foo, int how)
+{
+  struct pike_string *s = low_read_file(foo);
+  char *name, *end;
+  void *res;
+
+  if (!s) return NULL;
+  if (strncmp(s->str, "PMODULE=\"", 9)) {
+    free_string(s);
+    return NULL;
+  }
+  name = s->str + 9;
+  if (!(end = strchr(name, '\"'))) {
+    free_string(s);
+    return NULL;
+  }
+
+  res = find_semidynamic_module(name, end - name);
+  free_string(s);
+  return res;
+}
+
+static char *dlerror(void)
+{
+  return "Invalid dynamic module.";
+}
+
+static void *dlsym(void *module, char *function)
+{
+  if (!strcmp(function, "pike_module_init"))
+    return get_semidynamic_init_fun(module);
+  if (!strcmp(function, "pike_module_exit"))
+    return get_semidynamic_exit_fun(module);
+  return NULL;
+}
+
+static int dlinit(void)
+{
+  return 1;
+}
+
+static void dlclose(void *module)
+{
+}
+
+#elif defined(USE_LOADLIBRARY)
 #include <windows.h>
 
 static TCHAR *convert_string(const char *str, ptrdiff_t len)

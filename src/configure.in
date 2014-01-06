@@ -8514,11 +8514,12 @@ if test x$with_dynamic_modules = xyes ; then
   POST_MODULE_BUILD_TYPE=dynamic
   STATIC_POST_MODULES_LINKOPTS=
 else
-  dmmsrc="modules/static_module_makefile.in"
+  AC_DEFINE(USE_SEMIDYNAMIC_MODULES)
+  dmmsrc="modules/semidynamic_module_makefile.in"
   PIKE_LIB="libpike.a"
   MODULE_O=module.o
   BUILD_PIKE=tpike$EXEEXT
-  POST_MODULE_BUILD_TYPE=static
+  POST_MODULE_BUILD_TYPE=dynamic
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options
   DYNAMIC_MODULE_FLAGS=""
 fi

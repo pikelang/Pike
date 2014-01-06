@@ -1,0 +1,122 @@
+LC_REQ=@LC_REQ@
+
+UNIQUE_MODNAME=$(MODNAME)
+
+LINKAGE_CPPFLAGS=-Dpike_module_init=pike_module_$(UNIQUE_MODNAME)_init -Dpike_module_exit=pike_module_$(UNIQUE_MODNAME)_exit
+LINKAGE_CFLAGS=
+
+MODULE_PROGRAM=.$(MODULE_WRAPPER_PREFIX)$(MODNAME)
+MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so
+
+# The reason for this is that we can't use targets directly to specify
+# the build type; many module makefiles depend on being able to
+# override the default target.
+all:
+	@case "x$$MODULE_BUILD_TYPE" in \
+	  xstatic) $(MAKE) $(MAKE_FLAGS) static;; \
+	  xdynamic) $(MAKE) $(MAKE_FLAGS) dynamic;; \
+	  x) $(MAKE) $(MAKE_FLAGS) static dynamic;; \
+	  *) \
+	    echo "Invalid MODULE_BUILD_TYPE: $$MODULE_BUILD_TYPE" >&2; \
+	    exit 1;; \
+	esac
+
+@common_module_makefile@
+
+build_type:
+	@echo semidynamic > build_type
+
+static: Makefile $(DUMMY) module-preamble module-main
+	@:
+
+# Depend on $(DUMMY) here too for the sake of post modules, where the
+# static target never gets called.
+dynamic: $(DUMMY) module-main
+	@:
+
+linker_options: Makefile module.a $(MODULE_ARCHIVES)
+	@linkopts="";\
+	for a in "`pwd`/module.a" $(MODULE_ARCHIVES); do \
+	  if test "x$$a" = "x"; then :; else \
+	    case "$$a" in \
+	      /*) \
+		linkopts="$$linkopts $$a" \
+	      ;; \
+	      *) \
+		linkopts="$$linkopts `pwd`/$$a" \
+	      ;; \
+	    esac; \
+	  fi; \
+	done; \
+	linkopts="$$linkopts `echo '$(MODULE_LDFLAGS)' | sed -e 's@$(BASE_LDFLAGS)@@'`"; \
+	echo "echo $$linkopts > linker_options"; \
+	echo $$linkopts > linker_options
+
+modlist_segment: Makefile
+	@echo >modlist_segment " ,{ \"$(MODULE_PROGRAM)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit, 1 } "
+
+# Can't depend on $(SRCDIR)/$(CONFIG_HEADERS).in since
+# $(CONFIG_HEADERS) isn't always used.
+Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies make_variables config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
+	touch remake
+	@echo "Run make again" >&2
+	@exit 1
+
+$(MODULE_TARGET): module.so module.a
+	@if test "x$(OBJS)" = "x" ; then \
+	  exit 0; \
+	fi; \
+	if test "x$(PIKE_EXTERNAL_MODULE)" = "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(MODULE_TARGET) && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb `echo "$(MODULE_TARGET)" | sed -e 's,[^/]*$$,,'`; \
+	  else :; fi; \
+	fi
+
+module.a: $(OBJS)
+	-rm -f module.a
+	$(AR) cq module.a $(OBJS)
+	-@RANLIB@ module.a
+	if test -f linker_options ; then touch linker_options ; else :; fi
+
+module.so:
+	@echo "PMODULE=\"$(MODULE_PROGRAM)\"" >module.so
+
+$(OBJS): propagated_variables
+
+#
+# install a standard module with optional c component in the system module path
+#
+install: $(MODULE_INSTALL)
+	@if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	fi; \
+	if test "x$(MODULE_PMOD_IN)" != "x"; then \
+	  $(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
+	fi;
+
+#
+# install the module in LOCAL_MODULE_PATH, creating it if it doesn't already exist.
+#
+local_install: $(MODULE_INSTALL)
+	if test ! -d "$(LOCAL_MODULE_PATH)" ; then \
+	  mkdir -p $(LOCAL_MODULE_PATH) ; \
+	fi; if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	fi; \
+	if test "x$(MODULE_PMOD_IN)" != "x"; then \
+	  $(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
+	fi
+
+dump_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(FINAL_PIKE) -x dump $$args \
+	--recursive "$(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"
+
+dump_local_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(FINAL_PIKE) -x dump $$args \
+	--recursive "$(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"

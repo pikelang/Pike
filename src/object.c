@@ -457,7 +457,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
   return o;
 }
 
-static struct pike_string *low_read_file(const char *file)
+struct pike_string *low_read_file(const char *file)
 {
   struct pike_string *s;
   PIKE_OFF_T len;

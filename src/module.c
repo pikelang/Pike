@@ -373,15 +373,46 @@ struct static_module
   char *name;
   modfun init;
   modfun exit;
+  int semidynamic;
 };
 
 static const struct static_module module_list[] = {
-  { "Builtin", init_builtin_modules, exit_builtin_modules }
+  { "Builtin", init_builtin_modules, exit_builtin_modules, 0 }
 #include "modules/modlist.h"
 #ifndef PRE_PIKE
 #include "post_modules/modlist.h"
 #endif
 };
+
+/* The follwing are used to simulate dlopen() et al. */
+
+const struct static_module *find_semidynamic_module(const char *name, int namelen)
+{
+  unsigned int e;
+  for(e=0;e<NELEM(module_list);e++) {
+    if (module_list[e].semidynamic &&
+	!strncmp(module_list[e].name, name, namelen) &&
+	!module_list[e].name[namelen]) {
+      TRACE((stderr, "Found semidynamic module #%d: \"%s\"...\n",
+	     e, module_list[e].name));
+      return module_list+e;
+    }
+  }
+  return NULL;
+}
+
+void *get_semidynamic_init_fun(const struct static_module *sm)
+{
+  if (!sm) return NULL;
+  return sm->init;
+}
+
+void *get_semidynamic_exit_fun(const struct static_module *sm)
+{
+  if (!sm) return NULL;
+  return sm->exit;
+}
+
 
 /*! @decl object _static_modules
  *!
@@ -419,6 +450,7 @@ void init_modules(void)
       start_new_program();
       p = Pike_compiler->new_program;
     }
+    if (module_list[e].semidynamic) continue;
     if(SETJMP(recovery)) {
       /* FIXME: We could loop here until we find p. */
       free_program(end_program());
@@ -502,6 +534,7 @@ void exit_modules(void)
 
   for(e=NELEM(module_list)-1;e>=0;e--)
   {
+    if (module_list[e].semidynamic) continue;
     if(SETJMP(recovery))
       call_handle_error();
     else {
