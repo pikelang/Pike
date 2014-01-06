@@ -8519,7 +8519,7 @@ else
   PIKE_LIB="libpike.a"
   MODULE_O=module.o
   BUILD_PIKE=tpike$EXEEXT
-  POST_MODULE_BUILD_TYPE=dynamic
+  POST_MODULE_BUILD_TYPE=static
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options
   DYNAMIC_MODULE_FLAGS=""
 fi

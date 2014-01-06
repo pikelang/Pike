@@ -49,10 +49,10 @@ modlist.h: $(MODULE_SEGMENTS)
 	@echo 'Updating $(MY_DIR)/modlist.h'; \
 	cat $(MODULE_SEGMENTS) </dev/null >modlist.h
 
-modlist_headers.h: $(MODULE_SEGMENTS)
+modlist_headers.h: $(MODULE_SEGMENTS) Makefile
 	@echo 'Updating $(MY_DIR)/modlist_headers.h'; \
 	cat $(MODULE_SEGMENTS) </dev/null | \
-	sed -e 's/^.*{.*,\(.*\),\(.*\)}.*$$/void \1(void),\2(void);/' >modlist_headers.h
+	sed -e 's/^.*{.*,\(.*\),\(.*\),\(.*\)}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
 	@echo 'Updating $(MY_DIR)/linker_options'; \
