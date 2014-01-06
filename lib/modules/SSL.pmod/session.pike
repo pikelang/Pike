@@ -106,11 +106,13 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
   case KE_dhe_dss:
     ke_factory = .Cipher.KeyExchangeDHE;
     break;
+#if constant(SSL.Cipher.KeyExchangeECDHE)
   case KE_ecdhe_rsa:
   case KE_ecdhe_ecdsa:
   case KE_ecdh_anon:
     ke_factory = .Cipher.KeyExchangeECDHE;
     break;
+#endif
   default:
     error("set_cipher_suite: Unsupported key exchange method: %d\n",
 	  ke_method);
