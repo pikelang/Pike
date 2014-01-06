@@ -13,4 +13,6 @@ override:
 # UnixWare make needs help to find the source file...
 Shuffler.o: $(SRCDIR)/Shuffler.c $(SRCDIR)/shuffler.h
 
+sources.h:
+
 @dependencies@
