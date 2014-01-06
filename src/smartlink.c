@@ -15,9 +15,13 @@
 #error Smartlink binary does not support Mingw32.
 #endif
 
+#ifdef PIKE_CORE
+#include "machine.h"
+#else
 /* NOTE: Use confdefs.h and not machine.h, since we are compiled by configure
  */
 #include "confdefs.h"
+#endif
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
@@ -300,7 +304,7 @@ int main(int argc, char **argv)
   if (ld_lib_path) {
     char *p;
 
-    while (p = strchr(ld_lib_path, ':')) {
+    while ((p = strchr(ld_lib_path, ':'))) {
       *p = 0;
       rpath_in_use |= add_path(rpath, ld_lib_path);
       *p = ':';		/* Make sure LD_LIBRARY_PATH isn't modified */
@@ -396,6 +400,16 @@ int main(int argc, char **argv)
   }
 #endif
 #endif
+
+  if (getenv("SMARTLINK_DEBUG")) {
+    int i = 0;
+    fprintf(stderr, "SMARTLINK:");
+    while (new_argv[i]) {
+      fprintf(stderr, " %s", new_argv[i]);
+      i++;
+    }
+    fprintf(stderr, "\n");
+  }
 
   execv(argv[1], new_argv);
   fprintf(stderr, "%s: exec of %s failed!\n", argv[0], argv[1]);
