@@ -92,6 +92,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 					       int args);
 PMOD_EXPORT struct object *clone_object_from_object(struct object *o, int args);
 struct object *decode_value_clone_object(struct svalue *prog);
+struct pike_string *low_read_file(const char *file);
 PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
