@@ -825,6 +825,10 @@ enum NamedCurve {
   CURVE_secp384r1			= 24,
   CURVE_secp521r1			= 25,
 
+  CURVE_brainpoolP256r1			= 26,	// RFC 7027
+  CURVE_brainpoolP384r1			= 27,	// RFC 7027
+  CURVE_brainpoolP512r1			= 28,	// RFC 7027
+
   CURVE_arbitrary_explicit_prime_curves	= 0xFF01,
   CURVE_arbitrary_explicit_char2_curves	= 0xFF02,
 }
