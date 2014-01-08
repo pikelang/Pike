@@ -1001,7 +1001,7 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_WORKING_LIBTIFF
    opt_compression = 0;
-#ifdef DYNAMIC_MODULE
+#ifndef FAKE_DYNAMIC_LOAD
    image_program = PIKE_MODULE_IMPORT(Image, image_program);
    image_colortable_program = PIKE_MODULE_IMPORT(Image,
 						image_colortable_program);

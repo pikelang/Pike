@@ -2751,11 +2751,11 @@ struct program *image_encoding_gif_program=NULL;
 
 PIKE_MODULE_INIT
 {
-#ifdef DYNAMIC_MODULE
+#ifndef FAKE_DYNAMIC_LOAD
   image_program = PIKE_MODULE_IMPORT(Image, image_program);
   image_colortable_program=PIKE_MODULE_IMPORT(Image, image_colortable_program);
   image_layer_program = PIKE_MODULE_IMPORT(Image, image_layer_program);
-#endif /* DYNAMIC_MODULE */
+#endif
 
   if (!image_program || !image_colortable_program || !image_layer_program) {
     yyerror("Could not load Image module.");
