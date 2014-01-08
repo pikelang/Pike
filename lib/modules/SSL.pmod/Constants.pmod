@@ -846,7 +846,7 @@ constant EXTENSION_client_certificate_url	= 2;		// RFC 6066
 constant EXTENSION_trusted_ca_keys		= 3;		// RFC 6066
 constant EXTENSION_truncated_hmac		= 4;		// RFC 6066
 constant EXTENSION_status_request		= 5;		// RFC 6066
-constant EXTENSIONS_user_mapping                = 6;            // RFC 4681
+constant EXTENSION_user_mapping                 = 6;            // RFC 4681
 constant EXTENSION_client_authz			= 7;		// RFC 5878
 constant EXTENSION_server_authz			= 8;		// RFC 5878
 constant EXTENSION_cert_type                    = 9;            // RFC 6091
@@ -859,10 +859,10 @@ constant EXTENSION_heartbeat                    = 15;           // RFC 6520
 constant EXTENSION_application_layer_protocol_negotiation = 16; // draft-ietf-tls-applayerprotoneg
 constant EXTENSION_status_request_v2            = 17;           // RFC-ietf-tls-multiple-cert-status-extension-08
 constant EXTENSION_signed_certificate_timestamp = 18;           // RFC 6962
-constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507
-constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
+constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507 / RFC 5077
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
 constant EXTENSION_padding                      = 35655;        // Same as Firefox / Chromium NSS
+constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 
 constant ECC_CURVES = ([
 #if constant(Crypto.ECC.Curve)
