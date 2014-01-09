@@ -79,19 +79,19 @@ enum EntryType
   //! Type - start of a zone of authority
   T_SOA=6,
 
-  //! Type - mailbox domain name (EXPERIMENTAL)
+  //! Type - mailbox domain name (Obsolete)
   T_MB=7,
 
-  //! Type - mail group member (EXPERIMENTAL)
+  //! Type - mail group member (Obsolete)
   T_MG=8,
 
-  //! Type - mail rename domain name (EXPERIMENTAL)
+  //! Type - mail rename domain name (Obsolete)
   T_MR=9,
 
-  //! Type - null RR (EXPERIMENTAL)
+  //! Type - null RR (Obsolete RFC 1035)
   T_NULL=10,
 
-  //! Type - well known service description
+  //! Type - well known service description (Obsolete RFC 1123, RFC 1127)
   T_WKS=11,
 
   //! Type - domain name pointer
@@ -100,7 +100,7 @@ enum EntryType
   //! Type - host information
   T_HINFO=13,
 
-  //! Type - mailbox or mail list information
+  //! Type - mailbox or mail list information (Obsolete)
   T_MINFO=14,
 
   //! Type - mail exchange
@@ -109,26 +109,156 @@ enum EntryType
   //! Type - text strings
   T_TXT=16,
 
+  //! Type - Responsible Person
+  T_RP=17,
+
+  //! Type - AFC database record (RFC 1183)
+  T_AFSDB=18,
+
+  //! Type - X25 PSDN address (RFC 1183)
+  T_X25=19,
+
+  //! Type - ISDN address (RFC 1183)
+  T_ISDN=20,
+
+  //! Type - Route Through (RFC 1183)
+  T_RT=21,
+
+  //! Type - OSI Network Service Access Protocol (RFC 1348, RFC 1637,
+  //!                                             RFC 1706)
+  T_NSAP=22,
+
+  //! Type - OSI NSAP Pointer (RFC 1348, Obsolete RFC 1637)
+  T_NSAP_PTR=23,
+
+  //! Type - Signature (RFC 2535)
+  T_SIG=24,
+
+  //! Type - Key record (RFC 2535 and RFC 2930)
+  T_KEY=25,
+
+  //! Type - Pointer to X.400 mapping information (RFC 1664)
+  T_PX=26,
+
+  //! Type - Global Position (RFC 1712 Obsolete use LOC).
+  T_GPOS=27,
+
   //! Type - IPv6 address record (RFC 1886)
   T_AAAA=28,
 
   //! Type - Location Record (RFC 1876)
   T_LOC=29,
 
+  //! Type - Next (RFC 2065, Obsolete RFC 3755)
+  T_NXT=30,
+
+  //! Type - Nimrod Endpoint IDentifier (draft)
+  T_EID=31,
+
+  //! Type - Nimrod Locator (draft)
+  T_NIMLOC=32,
+
   //! Type - Service location record (RFC 2782)
   T_SRV=33,
+
+  //! Type - ATM End System Address (af-saa-0069.000)
+  T_ATMA=34,
 
   //! Type - NAPTR (RFC 3403)
   T_NAPTR=35,
 
-  //! Type - IPv6 address record (RFC 2874, incomplete support)
+  //! Type - Key eXchanger record (RFC 2230)
+  T_KX=36,
+
+  //! Type - Certificate Record (RFC 4398)
+  T_CERT=37,
+
+  //! Type - IPv6 address record (RFC 2874 Obsolete RFC 6563)
   T_A6=38,
+
+  //! Type - Delegation Name (RFC 2672)
+  T_DNAME=39,
+
+  //! Type - Kitchen Sink (draft)
+  T_SINK=40,
+
+  //! Type - Option (RFC 2671)
+  T_OPT=41,
+
+  //! Type - Address Prefix List (RFC 3123)
+  T_APL=42,
+
+  //! Type - Delegation Signer (RFC 4034)
+  T_DS=43,
+
+  //! Type - SSH Public Key Fingerprint (RFC 4255)
+  T_SSHFP=44,
+
+  //! Type - IPsec Key (RFC 4025)
+  T_IPSECKEY=45,
+
+  //! Type - DNSSEC signature (RFC 4034)
+  T_RRSIG=46,
+
+  //! Type - Next-Secure record (RFC 4034)
+  T_NSEC=47,
+
+  //! Type - DNS Key record (RFC 4034)
+  T_DNSKEY=48,
+
+  //! Type - DHCP identifier (RFC 4701)
+  T_DHCID=49,
+
+  //! Type - NSEC record version 3 (RFC 5155)
+  T_NSEC3=50,
+
+  //! Type - NSEC3 parameters (RFC 5155)
+  T_NSEC3PARAM=51,
+
+  //! Type - TLSA certificate association (RFC 6698)
+  T_TLSA=52,
+
+  //! Type - Host Identity Protocol (RFC 5205)
+  T_HIP=55,
 
   //! Type - SPF - Sender Policy Framework (RFC 4408)
   T_SPF=99,
 
+  // UserDB via DNS?
+  T_UINFO=100,
+  T_UID=101,
+  T_GID=102,
+  T_UNSPEC=103,
+
+  //! Type - Secret key record (RFC 2930)
+  T_TKEY=249,
+
+  //! Type - Transaction Signature (RFC 2845)
+  T_TSIG=250,
+
+  //! Type - Incremental Zone Transfer (RFC 1996)
+  T_IXFR=251,
+
+  //! Type - Authoritative Zone Transfer (RFC 1035)
+  T_AXFR=252,
+
+  //! Type - Mail Box (MB, MG or MR) (Obsolete - use MX)
+  T_MAILB=253,
+
+  //! Type - Mail Agent (both MD and MF) (Obsolete - use MX)
+  T_MAILA=254,
+
   //! Type - ANY - A request for all records
   T_ANY=255,
+
+  //! Type - Certificate Authority Authorization (RFC 6844)
+  T_CAA=257,
+
+  //! Type - DNSSEC Trust Authorities (draft)
+  T_TA=32768,
+
+  //! Type - DNSSEC Lookaside Validation Record (RFC 4431)
+  T_DLV=32769,
 };
 
 int safe_bind(Stdio.UDP udp, string|int port, string|void device)
