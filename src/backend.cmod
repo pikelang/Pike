@@ -100,6 +100,9 @@
 #include <sys/syscall.h>
 #endif /* HAVE_SYSCALL_H || HAVE_SYS_SYSCALL_H */
 
+#if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
+struct program * PollDeviceBackend_program;
+#endif /* BACKEND_USES_POLL_DEVICE || BACKEND_USES_KQUEUE */
 
 /*
  * Debugging and tracing.
@@ -136,6 +139,9 @@
 static struct compat_cb_box * alloc_compat_cb_box();
 static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
+
+/* used by CoreFoundation backend to get around lack of PDB structures early in the CMOD. */
+void check_set_timer(struct timeval when);
 
 /* CALL OUT STUFF */
 
@@ -188,6 +194,10 @@ static int num_active_backends = 0;
 
 #if defined(BACKEND_USES_CFRUNLOOP)
 static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags callBackTypes, void *info);
+void cfObserverCallback(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void* info);
+void cfTimerCallback(CFRunLoopTimerRef timer, void * info);
+
 #endif /* BACKEND_USES_CFRUNLOOP */
 
 static int backend_do_call_outs(struct Backend_struct *me);
@@ -803,6 +813,8 @@ PIKECLASS Backend
 	Pike_fatal("Bad timeout to new_call_out!\n");
       }
 
+      check_set_timer(new->tv);
+
 #ifdef _REENTRANT
       if(num_threads>1)
       {
@@ -831,7 +843,7 @@ PIKECLASS Backend
 
       adjust_up(me, me->num_pending_calls-1);
       backend_verify_call_outs(me);
-     
+
 #ifdef _REENTRANT
       backend_wake_up_backend(me);
 #endif
@@ -1997,7 +2009,6 @@ PIKECLASS Backend
 #else
     me->exec_thread = 1;
 #endif
-      
 
 #ifndef OWN_GETHRTIME
     ACCURATE_GETTIMEOFDAY(&now);
@@ -3068,9 +3079,14 @@ PIKECLASS PollDeviceBackend
   CVAR int set;
 #if defined(BACKEND_USES_CFRUNLOOP)
   CVAR int go_cf;
+  CVAR int external_run;
   CVAR CFFileDescriptorRef fdref;
   CVAR CFRunLoopSourceRef source;
+  CVAR CFRunLoopObserverRef beObserver;
+  CVAR CFRunLoopTimerRef beTimer;
   CVAR int event_count;
+  CVAR int gil_released;
+  CVAR struct thread_state * thread_state; /* used by external runloops. */
 #endif /* BACKEND_USES_CFRUNLOOP */
 #ifdef DECLARE_POLL_EXTRAS
     /* Declare any extra variables needed by MY_POLL(). */
@@ -3153,8 +3169,18 @@ PIKECLASS PollDeviceBackend
 #if defined(BACKEND_USES_CFRUNLOOP)
   /* we place this declaration here rather than at the top in order to avoid struct-y unpleasantness */
   int init_cf(struct PollDeviceBackend_struct *me, int i);
+  int init_external_cfrl(struct PollDeviceBackend_struct *me, int i);
 
   int my_kqueue(struct PollDeviceBackend_struct *me)
+  {
+     int i;
+     
+     i = low_my_kqueue(me);
+     
+     return i;
+  }
+  
+  int low_my_kqueue(struct PollDeviceBackend_struct *me)
   {
     int i;
 
@@ -3164,6 +3190,48 @@ PIKECLASS PollDeviceBackend
     else return i;
   }
 
+  /* arg i is the kqueue. */
+  int init_external_cfrl(struct PollDeviceBackend_struct *me, int i)
+  {
+    /* we assume that init_cf() has already been called. */
+    
+    CFRunLoopObserverRef beObserver = NULL;
+    
+    int myActivities = kCFRunLoopBeforeWaiting | kCFRunLoopAfterWaiting | kCFRunLoopBeforeTimers | 
+                                kCFRunLoopBeforeSources | kCFRunLoopExit;
+
+    CFRunLoopObserverContext context = {0, me, NULL, NULL, NULL};
+
+    beObserver = CFRunLoopObserverCreate(NULL, myActivities, 1,
+            /* repeat */ 1, cfObserverCallback, &context);
+
+    if (beObserver)
+    {
+      CFRetain(beObserver);
+      CFRunLoopAddObserver(CFRunLoopGetCurrent(), beObserver,
+        kCFRunLoopDefaultMode);
+    }
+  }
+
+  /* arg i is the kqueue. */
+  int exit_external_cfrl(struct PollDeviceBackend_struct *me)
+  {
+    /* we assume that init_cf() has already been called. */
+    CFRunLoopObserverRef beObserver = me->beObserver;
+    CFRunLoopTimerRef beTimer = me->beTimer;    
+    if (beObserver)
+    {
+      CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), beObserver,
+        kCFRunLoopDefaultMode);
+      CFRelease(beObserver);
+    }    
+    if(beTimer)
+    {
+      CFRelease(beTimer);
+    }
+  }
+
+  /* arg i is the kqueue. */
   int init_cf(struct PollDeviceBackend_struct *me, int i)
   {
     CFFileDescriptorContext context = {0, me, NULL, NULL, NULL};
@@ -3484,12 +3552,13 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
     int i, done_something = 0;
     struct timeval start_time = *timeout;
     struct Backend_struct *me = pdb->backend;
+
 #ifdef DECLARE_POLL_EXTRAS
     /* Declare any extra variables needed by MY_POLL(). */
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
+    SET_ONERROR(uwp, low_backend_cleanup, me);
     low_backend_once_setup(pdb->backend, &start_time);
 
     if (TYPEOF(me->before_callback) != T_INT)
@@ -3548,6 +3617,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 
       pdb->event_count = 0;
       pdb->poll_fds = (poll_fds);
+      
       CFFileDescriptorEnableCallBacks(pdb->fdref, kCFFileDescriptorReadCallBack);
       CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source, kCFRunLoopDefaultMode);
       CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
@@ -3837,6 +3907,73 @@ else
     UNSET_ONERROR (uwp);
   }
 
+#ifdef BACKEND_USES_CFRUNLOOP
+  void cfTimerCallback(CFRunLoopTimerRef timer, void * info)
+  {
+    struct PollDeviceBackend_struct *me;
+    struct timeval timeout;
+    me = (struct PollDeviceBackend_struct *)info; 
+    
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    pdb_low_backend_once(me, &timeout);    
+  }
+
+  /* our external CFRunLoop has received events or timed out. We should
+     do a once-through the runloop to find out if there's anything to do. */
+  void cfObserverCallback(CFRunLoopObserverRef observer,
+      CFRunLoopActivity activity, void* info)
+  {
+    struct timeval timeout;
+    struct thread_state *cur_ts__;
+    struct PollDeviceBackend_struct *me;
+    me = (struct PollDeviceBackend_struct *)info; 
+
+    switch(activity)
+    {
+      case kCFRunLoopEntry:
+        /* release the interpreter lock. */
+        me->gil_released = 1;
+        {
+          cur_ts__ = Pike_interpreter.thread_state;  
+          me->thread_state = cur_ts__; /* for use later. */
+          pike_threads_allow (cur_ts__ COMMA_DLOC);
+          HIDE_GLOBAL_VARIABLES();
+        }
+        break;
+
+      case kCFRunLoopBeforeTimers:
+      case kCFRunLoopBeforeSources:
+        /* gain the interpreter lock, if released. */
+        if(me->gil_released)
+        {
+          cur_ts__ = me->thread_state;
+          me->gil_released = 0;
+          REVEAL_GLOBAL_VARIABLES();
+          pike_threads_disallow (cur_ts__ COMMA_DLOC);
+          me->thread_state = 0;
+        }
+        break;
+      
+      case kCFRunLoopExit:
+        if(me->gil_released)
+        {
+          cur_ts__ = me->thread_state;
+          me->gil_released = 0;
+          REVEAL_GLOBAL_VARIABLES();
+          pike_threads_disallow (cur_ts__ COMMA_DLOC);
+          me->thread_state = 0;
+        }
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+        pdb_low_backend_once(me, &timeout);
+        break;
+    }
+
+  }
+#endif /* BACKEND_USES_CFRUNLOOP */
+
   /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
    *!   Perform one pass through the backend.
    *!
@@ -3910,6 +4047,8 @@ PIKEFUN int enable_core_foundation(int enable)
   else if(!enable && THIS->go_cf)
   {
     THIS->go_cf = 0;
+    if(THIS->external_run)
+      exit_external_cfrl(THIS);
     exit_cf(THIS);
   }
   pop_stack();
@@ -3933,6 +4072,47 @@ PIKEFUN int query_core_foundation_enabled()
   push_int(x);
   return;
 }
+
+/*! @decl int enable_external_runloop(int(0..1) enable)
+ *!   On systems with CoreFoundation (OSX, iOS, etc), delegate 
+ *!   running of the Pike Backend to the main runloop of the 
+ *!   process (such as a Cocoa application's NSRunLoop). 
+ *!
+ *!   Enabling the external runloop allows Pike callouts and 
+ *!   callback-based I/O to function normally while greatly reducing 
+ *!   cpu utilization compared to running the external runloop
+ *!   manually.
+ *!
+ *!  @param enable
+ *!    enable or disable this functionality
+ *!
+ *!  @returns
+ *!    the previous value of this setting.
+ *!
+ */
+PIKEFUN int enable_external_runloop(int enable)
+{
+  int x = THIS->external_run;
+
+  if(enable && !THIS->external_run)
+  {
+    THIS->external_run = 1;
+    
+    if(!THIS->go_cf)
+      init_cf(THIS, THIS->set);
+      
+    init_external_cfrl(THIS, THIS->set);
+  }
+  else if(!enable && THIS->external_run)
+  {
+    THIS->external_run = 0;
+    exit_external_cfrl(THIS);
+  }
+  pop_stack();
+
+  push_int(x);
+}
+
 #endif /* BACKEND_USES_CFRUNLOOP */
 
 
@@ -3987,6 +4167,8 @@ PIKEFUN int query_core_foundation_enabled()
 		    THR_NO, me->id));
 
 #ifdef BACKEND_USES_CFRUNLOOP 
+    if(THIS->external_run)
+      exit_external_cfrl(THIS);
     exit_cf(THIS);
 #endif /* BACKEND_USES_CFRUNLOOP */
 
@@ -4001,6 +4183,54 @@ PIKEFUN int query_core_foundation_enabled()
  */
 
 #endif /* BACKEND_USES_POLL_DEVICE || BACKEND_USES_KQUEUE */
+
+void check_set_timer(struct timeval tmp)
+{
+#ifdef BACKEND_USES_CFRUNLOOP
+  {
+    /* register a timer if the backend is using external cfrl. */
+    struct external_variable_context loc;
+    struct PollDeviceBackend_struct * pdb;
+    char * _st;
+    loc.o = Pike_fp->current_object;
+    loc.parent_identifier = 0;
+    loc.inherit = Pike_fp->context;
+    
+    find_external_context(&loc, 1);
+    
+    if (!loc.o->prog)
+    {
+      Pike_error ("Cannot access storage of destructed parent object.\n");
+    }
+    
+    _st = get_storage(loc.o, PollDeviceBackend_program);
+
+      
+    if(pdb) 
+      pdb = (struct PollDeviceBackend_struct *)_st;
+    
+    if(pdb && pdb->external_run)
+    {
+      CFRunLoopTimerContext context = {0, pdb, NULL, NULL, NULL};
+      CFRunLoopTimerRef timer; 
+      CFTimeInterval when = 0.0;
+
+      when = (CFTimeInterval)tmp.tv_sec + (1.0E-6 * (CFTimeInterval) tmp.tv_usec);
+      timer = CFRunLoopTimerCreate(NULL, CFAbsoluteTimeGetCurrent() + when,0, 0, 0, &cfTimerCallback, &context);
+
+      if(timer)
+      {
+        /* set the timer. */
+        CFRunLoopAddTimer(CFRunLoopGetCurrent(), timer, kCFRunLoopDefaultMode);
+      }
+      else
+      {
+        Pike_error("ERROR: unable to create run loop timer!\n");
+      }
+    }
+  }
+#endif /* BACKEND_USES_CFRUNLOOP */
+}
 
 #ifdef HAVE_POLL
 
