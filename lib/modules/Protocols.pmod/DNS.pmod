@@ -1868,14 +1868,17 @@ class async_client
   inherit Stdio.UDP : udp;
   async_client next_client;
 
-  class Request
+  class Request(string domain, string req,
+		function(string,mapping,mixed...:void) callback,
+		array(mixed) args)
   {
-    string req;
-    string domain;
-    function callback;
     int retries;
-    int timestamp;
-    array args;
+    int timestamp = time();
+
+    void cancel()
+    {
+      remove(this_object());
+    }
   };
 
   mapping requests=([]);
@@ -1918,12 +1921,7 @@ class async_client
       {
 	string req=low_mkquery(lid,domain,cl,type);
 	
-	object r=Request();
-	r->req=req;
-	r->domain=domain;
-	r->callback=callback;
-	r->args=args;
-	r->timestamp=time();
+	object r = Request(domain, req, callback, args);
 	requests[lid]=r;
 	udp::send(nameservers[0],53,r->req);
 	call_out(retry,RETRY_DELAY,r,1);
