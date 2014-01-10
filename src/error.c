@@ -237,7 +237,7 @@ PMOD_EXPORT void push_error(const char *description)
 }
 
 PMOD_EXPORT struct svalue throw_value = SVALUE_INIT_FREE;
-int throw_severity;
+PMOD_EXPORT int throw_severity;
 static const char *in_error;
 
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn))
