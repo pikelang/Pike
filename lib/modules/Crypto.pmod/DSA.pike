@@ -223,21 +223,54 @@ variant this_program generate_key()
 //
 
 #define Sequence Standards.ASN1.Types.Sequence
+#define Integer Standards.ASN1.Types.Integer
+#define BitString Standards.ASN1.Types.BitString
 
-//! Calls @[Standards.PKCS.DSA.signatue_algorithm_id] with the
-//! provided @[hash].
+//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! 4.1.1.2 including the DSA parameters.
+Sequence pkcs_algorithm_identifier()
+{
+  return
+    Sequence( ({ Standards.PKCS.Identifiers.dsa_id,
+		 Sequence( ({ Integer(get_p()),
+			      Integer(get_q()),
+			      Integer(get_g())
+			   }) )
+	      }) );
+}
+
+
+//! Returns the PKCS-1 algorithm identifier for DSA and the provided
+//! hash algorithm. Only @[SHA1] supported.
 Sequence pkcs_signature_algorithm_id(.Hash hash)
 {
-  return [object(Sequence)]Standards.PKCS.DSA->signature_algorithm_id(hash);
+  switch(hash->name())
+  {
+  case "sha1":
+    return Sequence( ({ Standards.PKCS.Identifiers.dsa_sha_id }) );
+    break;
+  case "sha224":
+    return Sequence( ({ Standards.PKCS.Identifiers.dsa_sha224_id }) );
+    break;
+  case "sha256":
+    return Sequence( ({ Standards.PKCS.Identifiers.dsa_sha256_id }) );
+    break;
+  }
+  return 0;
 }
 
-//! Calls @[Standards.PKCS.DSA.build_public_key] with this object as
-//! argument.
+//! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
+//! See RFC 5280 section 4.1.2.7.
 Sequence pkcs_public_key()
 {
-  return [object(Sequence)]Standards.PKCS.DSA->build_public_key(this);
+  return Sequence(({
+                    pkcs_algorithm_identifier(),
+                    BitString(Integer(get_y())->get_der()),
+                  }));
 }
 
+#undef BitString
+#undef Integer
 #undef Sequence
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm
