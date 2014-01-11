@@ -24,7 +24,7 @@ all:
 @common_module_makefile@
 
 build_type:
-	@echo semidynamic > build_type
+	@echo static > build_type
 
 static: Makefile $(DUMMY) module-preamble module-main
 	@:
