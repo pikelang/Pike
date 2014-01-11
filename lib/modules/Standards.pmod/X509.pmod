@@ -128,13 +128,13 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
                 Sequence subject, int serial, int ttl, array|void extensions)
 {
-  Sequence algorithm_id = c->pkcs_algorithm_id(h);
+  Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
   Sequence tbs = make_tbs(issuer, algorithm_id,
                           subject, c->pkcs_public_key(),
                           Integer(serial), ttl, extensions);
 
-  return Sequence(({ tbs, c->pkcs_algorithm_id(h),
+  return Sequence(({ tbs, c->pkcs_signature_algorithm_id(h),
                      BitString(c->pkcs_sign(tbs->get_der(), h))
                   }))->get_der();
 }
