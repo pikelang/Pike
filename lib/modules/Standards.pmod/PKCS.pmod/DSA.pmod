@@ -16,10 +16,7 @@ import Standards.ASN1.Types;
 Sequence algorithm_identifier(Crypto.DSA|void dsa)
 {
   return
-    dsa ? Sequence( ({ .Identifiers.dsa_id,
-		       Sequence( ({ Integer(dsa->get_p()),
-				    Integer(dsa->get_q()),
-				    Integer(dsa->get_g()) }) ) }) )
+    dsa ? dsa->pkcs_algorithm_identifier()
     : Sequence( ({ .Identifiers.dsa_id }) ); // FIXME: Shouldn't there be a Null() here?
 }
 
