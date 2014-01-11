@@ -433,4 +433,12 @@ double LDEXP(double x, int exp);
 void _dosmaperr(int x);
 #endif
 
+#ifdef __clang__
+#define PIKE_CLANG_FEATURE(x)   __has_feature(x)
+#define PIKE_CLANG_BUILTIN(x)   __has_builtin(x)
+#else
+#define PIKE_CLANG_FEATURE(x)	(0)
+#define PIKE_CLANG_BUILTIN(x)   (0)
+#endif
+
 #endif

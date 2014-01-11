@@ -1644,15 +1644,11 @@ PMOD_EXPORT void f_add(INT32 args)
     size = 0;
     for(e = -args; e < 0; e++)
     {
-      if(INT_TYPE_ADD_OVERFLOW(sp[e].u.integer, size))
+      if (DO_INT_TYPE_ADD_OVERFLOW(size, sp[e].u.integer, &size))
       {
-	convert_svalue_to_bignum(sp-args);
-	f_add(args);
-	return;
-      }
-      else
-      {
-	size += sp[e].u.integer;
+        convert_svalue_to_bignum(sp-args);
+        f_add(args);
+        return;
       }
     }
     sp-=args;
@@ -3604,11 +3600,17 @@ PMOD_EXPORT void o_multiply(void)
 
   case TWO_TYPES(T_INT,T_INT):
 #ifdef AUTO_BIGNUM
-    if(INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  {
+    INT_TYPE res;
+
+    if (DO_INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer, &res))
     {
       convert_stack_top_to_bignum();
       goto do_lfun_multiply;
     }
+    SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
+    return;
+  }
 #endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer *= sp[0].u.integer;
@@ -4199,21 +4201,21 @@ do_lfun_modulo:
 	res = a % b;
       }else{
 	/* res = ((a+~b)%-b)-~b */
-	res = DO_INT_TYPE_ADD_OVERFLOW(a, ~b, &of);
-	res = DO_INT_TYPE_MOD_OVERFLOW(res, b, &of);
-	res = DO_INT_TYPE_SUB_OVERFLOW(res, ~b, &of);
+        of = DO_INT_TYPE_ADD_OVERFLOW(a, ~b, &res)
+          || DO_INT_TYPE_MOD_OVERFLOW(res, b, &res)
+          || DO_INT_TYPE_SUB_OVERFLOW(res, ~b, &res);
       }
     }else{
       if(b>=0)
       {
 	/* res = b+~((~a) % b) */
-	res = DO_INT_TYPE_MOD_OVERFLOW(~a, b, &of);
-	res = DO_INT_TYPE_ADD_OVERFLOW(b, ~res, &of);
+	of = DO_INT_TYPE_MOD_OVERFLOW(~a, b, &res)
+	  || DO_INT_TYPE_ADD_OVERFLOW(b, ~res, &res);
       }else{
 	/* a % b and a % -b are equivalent, if overflow does not
 	 * happen
 	 * res = -(-a % -b) = a % b; */
-	res = DO_INT_TYPE_MOD_OVERFLOW(a, b, &of);
+	of = DO_INT_TYPE_MOD_OVERFLOW(a, b, &res);
       }
     }
 #ifdef AUTO_BIGNUM

@@ -195,6 +195,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 {
   ptrdiff_t l = 1;
   p_wchar2 c;
+  int of = 0;
 
   switch ((c = *buf))
   {
@@ -213,57 +214,72 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
-      unsigned of = 0;
       unsigned INT32 n = c-'0';
       for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
-	if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, eight);
-	n = 8 * n + buf[l] - '0';
+	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
+	  of = 1;
+	else
+	  n += buf[l] - '0';
       }
-      if (of) {*len = l; return 4;}
+      if (of) {
+	*len = l;
+	return 4;
+      }
       c = (p_wchar2)n;
       break;
     }
       
     case 'x': {
-      unsigned of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - '0';
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - '0';
 	    continue;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'a' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'a' + 10;
 	    continue;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'A' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'A' + 10;
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 5;}
+      if (of) {
+	*len = l;
+	return 5;
+      }
       c = (p_wchar2)n;
       break;
     }
 
     case 'd': {
-      unsigned of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, ten);
-	    n = 10 * n + buf[l] - '0';
+	    if (DO_UINT32_MUL_OVERFLOW(n, 10, &n) || DO_UINT32_ADD_OVERFLOW(n, buf[l] - '0', &n)) {
+	      of = 1;
+            }
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 6;}
+      if (of) {
+	*len = l;
+	return 6;
+      }
       c = (p_wchar2)n;
       break;
     }
