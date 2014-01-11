@@ -243,7 +243,7 @@ variant __deprecated__ this_program generate_key(int(128..) bits,
 
 //! Calls @[Standards.PKCS.RSA.signatue_algorithm_id] with the
 //! provided @[hash].
-Sequence pkcs_algorithm_id(.Hash hash)
+Sequence pkcs_signature_algorithm_id(.Hash hash)
 {
   return [object(Sequence)]Standards.PKCS.RSA->signature_algorithm_id(hash);
 }

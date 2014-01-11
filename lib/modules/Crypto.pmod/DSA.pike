@@ -226,7 +226,7 @@ variant this_program generate_key()
 
 //! Calls @[Standards.PKCS.DSA.signatue_algorithm_id] with the
 //! provided @[hash].
-Sequence pkcs_algorithm_id(.Hash hash)
+Sequence pkcs_signature_algorithm_id(.Hash hash)
 {
   return [object(Sequence)]Standards.PKCS.DSA->signature_algorithm_id(hash);
 }
