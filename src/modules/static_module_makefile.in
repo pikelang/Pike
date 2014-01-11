@@ -22,7 +22,7 @@ all:
 
 @common_module_makefile@
 
-build_type:
+build_type: Makefile
 	@echo static > build_type
 
 static: Makefile $(DUMMY) module-preamble module-main
