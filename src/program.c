@@ -11340,7 +11340,7 @@ PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
   if(!o) return -1;
   oid=o->id;
   pid=p->id;
-  hval=oid*9248339 + pid;
+  hval=(unsigned)oid*9248339 + (unsigned)pid;
   hval%=GET_STORAGE_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval>GET_STORAGE_CACHE_SIZE)
@@ -11563,7 +11563,7 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
   if(!a || !b) return -1;
   if(a==b) return 1;
 
-  hval = a->id*9248339 + b->id;
+  hval = (unsigned)a->id*9248339 + (unsigned)b->id;
   hval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval >= IMPLEMENTS_CACHE_SIZE)
@@ -11648,7 +11648,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
     bid = tmp;
   }
 
-  hval = aid*9248339 + bid;
+  hval = (unsigned long)aid*9248339 + (unsigned long)bid;
   hval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval >= IMPLEMENTS_CACHE_SIZE)
@@ -11666,7 +11666,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
     /* a implements b */
     return 1;
   }
-  rhval = bid*9248339 + aid;
+  rhval = (unsigned long)bid*9248339 + (unsigned long)aid;
   rhval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(rhval >= IMPLEMENTS_CACHE_SIZE)

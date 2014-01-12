@@ -2964,7 +2964,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     else shift = delta;
 
     /* Calculate actual number of digits and initial shift. */
-    for (; tmp >> shift && shift < SIZEOF_LONGEST * 8; shift += delta, len++)
+    for (; shift < SIZEOF_LONGEST * 8 && tmp >> shift; shift += delta, len++)
       ;
 
     if ((len < min_width) && !(flags & APPEND_LEFT)) {
