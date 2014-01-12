@@ -674,7 +674,7 @@ static struct pike_string *do_read(int fd,
   *err=0;
 
   if(r <= DIRECT_BUFSIZE ||
-     (all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1)))   /* r<<1 != power of two */
+     (all && !INT32_MUL_OVERFLOW(r, 2) && (((r<<1)-1)&(r<<1))))   /* r<<1 != power of two */
   {
     struct pike_string *str;
 
@@ -763,7 +763,7 @@ static struct pike_string *do_read(int fd,
     b.s.str=0;
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
-    i = all && (r<<1)>r ? DIRECT_BUFSIZE : READ_BUFFER;
+    i = all && !INT32_MUL_OVERFLOW(r, 2) ? DIRECT_BUFSIZE : READ_BUFFER;
     do{
       int e;
       char *buf;
