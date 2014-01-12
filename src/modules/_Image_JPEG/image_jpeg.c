@@ -1501,7 +1501,7 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
-#ifdef FAKE_DYNAMIC_LOAD
+#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
        yyerror("Could not load Image module.");
