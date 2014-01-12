@@ -28,6 +28,7 @@
 #include "gc.h"
 #include "pike_compiler.h"
 #include "block_allocator.h"
+#include "bitvector.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -1380,11 +1381,7 @@ static void push_type_field(TYPE_FIELD field)
 
 INT32 extract_type_int(char *p)
 {
-  int e;
-  INT32 ret=0;
-  for(e=0;e<(int)sizeof(INT32);e++)
-    ret=(ret<<8) | EXTRACT_UCHAR(p+e);
-  return ret;
+  return get_unaligned_be32(p);
 }
 
 struct pike_type *debug_pop_unfinished_type(void)
