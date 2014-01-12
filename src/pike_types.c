@@ -2104,7 +2104,7 @@ void simple_describe_type(struct pike_type *s)
 #endif /* PIKE_DEBUG */
 	      min = CAR_TO_INT(char_type);
 	      max = CDR_TO_INT(char_type);
-	      if (!min && max && !(max & (max+1))) {
+	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 		int j = 0;
 		while (max) {
 		  max >>= 1;
@@ -2139,7 +2139,7 @@ void simple_describe_type(struct pike_type *s)
 #endif /* PIKE_DEBUG */
 	      min = CAR_TO_INT(s);
 	      max = CDR_TO_INT(s);
-	      if (!min && max && !(max & (max+1))) {
+	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 		int j = 0;
 		while (max) {
 		  max >>= 1;
@@ -2310,7 +2310,7 @@ static void low_describe_type(struct pike_type *t)
       INT32 max=CDR_TO_INT(t);
       my_strcat("int");
       
-      if (!min && max && !(max & (max+1))) {
+      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 	int j = 0;
 	while (max) {
 	  max >>= 1;
@@ -2388,7 +2388,7 @@ static void low_describe_type(struct pike_type *t)
 	    } else {
 	      min = CAR_TO_INT(char_type);
 	      max = CDR_TO_INT(char_type);
-	      if (!min && max && !(max & (max+1))) {
+	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 		int j = 0;
 		while (max) {
 		  max >>= 1;
@@ -2419,7 +2419,7 @@ static void low_describe_type(struct pike_type *t)
 	  } else {
 	    min = CAR_TO_INT(t);
 	    max = CDR_TO_INT(t);
-	    if (!min && max && !(max & (max+1))) {
+	    if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 	      int j = 0;
 	      while (max) {
 		max >>= 1;
