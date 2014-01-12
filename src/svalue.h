@@ -847,6 +847,14 @@ int svalues_are_constant(const struct svalue *s,
 			 TYPE_FIELD hint,
 			 struct processing *p);
 
+static INLINE TYPE_FIELD BITOF(struct svalue sv) {
+    if (TYPEOF(sv) >= sizeof(TYPE_FIELD) * 8) {
+        return BIT_MIXED | BIT_UNFINISHED;
+    }
+
+    return 1 << TYPEOF(sv);
+}
+
 #define gc_cycle_check_without_recurse gc_mark_without_recurse
 #define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 
