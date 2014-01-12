@@ -1256,7 +1256,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
     new_catch_ctx->save_expendible = Pike_fp->expendible;
-    new_catch_ctx->continue_reladdr = ((INT32 *)addr)[0]
+    new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr)
       /* We need to run the entry prologue... */
       - ENTRY_PROLOGUE_SIZE;
 
