@@ -148,10 +148,10 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 
 #define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
 #define CHECKWORD2(X,LEN) \
- (!MEMCMP(X,data+pos,LEN<<SHIFT) && !WC_ISIDCHAR(data[pos+LEN]))
+ (pos + (ptrdiff_t)(LEN) <= len && !MEMCMP(X,data+pos,(LEN)<<(SHIFT)) && (pos + (ptrdiff_t)(LEN) == len || !WC_ISIDCHAR(data[pos+(LEN)])))
 #define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
 #define GOBBLEOP2(X) \
- ((!MEMCMP(X,data+pos,sizeof(X))) ? (pos += NELEM(X)),1 : 0)
+ (pos + (ptrdiff_t)NELEM(X) < len && ((!MEMCMP(X,data+pos,sizeof(X))) ? (pos += NELEM(X)),1 : 0))
 
 /*
  * Some prototypes
