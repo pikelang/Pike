@@ -37,6 +37,7 @@
 #include "pikecode.h"
 #include "pike_compiler.h"
 #include "module_support.h"
+#include "bitvector.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -7225,29 +7226,21 @@ INT_TYPE get_small_number(char **q)
   /* This is a workaround for buggy cc & Tru64 */
   unsigned char *addr = (unsigned char *)*q;
   INT_TYPE ret = *((signed char *)addr);
-  ret=*(signed char *)*q;
   addr++;
   switch(ret)
   {
   case -127:
-    ret = (((signed char *)addr)[0]<<8) | addr[1];
+    ret = (INT16)get_unaligned_be16(addr);
     addr += 2;
     if (!ret) {
       /* 64-bit signed number. */
-      ret = *((signed char *)addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
-      ret = (ret<<8) | *(addr++);
+      ret = get_unaligned_be64(addr);
+      addr += 8;
     }
     break;
 
   case -128:
-    ret = (((signed char *)addr)[0]<<24) | (addr[1]<<16) |
-      (addr[2]<<8) | addr[3];
+    ret = (INT32)get_unaligned_be32(addr);
     addr += 4;
     break;
 

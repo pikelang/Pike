@@ -30,6 +30,7 @@
 #include "opcodes.h"
 #include "peep.h"
 #include "pike_compiler.h"
+#include "bitvector.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -2475,14 +2476,12 @@ static void low_decode_type(struct decode_data *data)
     case T_INT:
       {
 	INT32 min=0, max=0;
-	min = GETC();
-	min = (min<<8)|GETC();
-	min = (min<<8)|GETC();
-	min = (min<<8)|GETC();
-	max = GETC();
-	max = (max<<8)|GETC();
-	max = (max<<8)|GETC();
-	max = (max<<8)|GETC();
+	if(data->ptr + 8 > data->len)
+	  Pike_error("Decode error: Not enough data in string.\n");
+	min = get_unaligned_be32(data->data + data->ptr);
+	data->ptr += 4;
+	max = get_unaligned_be32(data->data + data->ptr);
+	data->ptr += 4;
 	push_int_type(min, max);
       }
       break;
