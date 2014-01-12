@@ -17,6 +17,7 @@ typedef p_wchar2 CB_NAME(char);
 #define cb_char CB_NAME(char)
 
 #define hton8(x) (x)
+#define get_unaligned_be8(x) ((unsigned INT8 *)x)[0]
 
 #ifdef CB_SOURCE
 #define CB_ADD_KEY_REF(x)	do { if ((x).str) add_ref((x).str); } while(0)
@@ -70,11 +71,11 @@ static inline cb_size cb_prefix_count_wide0(const cb_string s1,
 #define PREFIX(n) do {						\
     size_t k = j/sizeof(unsigned INT ##n );				\
     for (;k < len.chars/sizeof(unsigned INT ##n );k++) {		\
-	unsigned INT ##n x = ((unsigned INT ##n *)p1)[k] 		\
-			^ ((unsigned INT ##n *)p2)[k];	    	\
+        unsigned INT ##n x = get_unaligned_be ##n (p1 + k * sizeof(unsigned INT ##n))\
+                           ^ get_unaligned_be ##n (p2 + k * sizeof(unsigned INT ##n));\
 	if (x) {						\
 	    unsigned INT32 a;						\
-	    a = clz ##n(hton ##n(x));				\
+	    a = clz ##n(x);				\
 	    start.chars = k*sizeof(unsigned INT ##n ) + a/8;	\
 	    start.bits = 24 + a % 8;				\
 	    return start;					\
