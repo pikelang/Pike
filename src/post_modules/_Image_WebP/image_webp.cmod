@@ -82,17 +82,18 @@ typedef int (*Importer)(WebPPicture* const, const uint8_t* const, int);
 typedef struct object object;
 typedef struct program program;
 
+static program *img_program;
+
 static program *image_program()
 {
-  static program *ip;
-  if( !ip )
+  if( !img_program )
   {
     push_text("Image.Image");
     SAFE_APPLY_MASTER("resolv",1);
-    ip = Pike_sp[-1].u.program;
+    img_program = Pike_sp[-1].u.program;
     Pike_sp--;
   }
-  return ip;
+  return img_program;
 }
 
 static object *allocate_image(int w, int h )
@@ -420,6 +421,13 @@ PIKEFUN string encode( object i,
 
     push_string( make_shared_binary_string( (const char *)result, size ) );
     free( result );
+}
+
+EXIT {
+    if (img_program) {
+        free_program(img_program);
+        img_program = NULL;
+    }
 }
 
 
