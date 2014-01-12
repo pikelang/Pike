@@ -66,18 +66,14 @@ THREADS_ALLOW();
 		 {\
 		   if (abs(V)>abs(H))\
 		     if (V<0)\
-		       imgi[i].R=DOUBLE_TO_CHAR(0.5+224+(((float)H)/\
-						         (0-V))*32.0);\
+		       imgi[i].R=DOUBLE_TO_COLORTYPE(0.5+224+(((float)H)/(0-V))*32.0);\
 		     else\
-		       imgi[i].R=DOUBLE_TO_CHAR(0.5+96+(((float)H)/\
-					                (V))*32.0);\
+		       imgi[i].R=DOUBLE_TO_COLORTYPE(0.5+96+(((float)H)/(V))*32.0);\
 		   else\
 		     if (H<0)\
-		       imgi[i].R=DOUBLE_TO_CHAR(0.5+32+(((float)V)/\
-					                (0-H))*32.0);\
+		       imgi[i].R=DOUBLE_TO_COLORTYPE(0.5+32+(((float)V)/(0-H))*32.0);\
 		     else\
-		       imgi[i].R=DOUBLE_TO_CHAR(0.5+160+(((float)V)/\
-						         (H))*32.0);\
+		       imgi[i].R=DOUBLE_TO_COLORTYPE(0.5+160+(((float)V)/(H))*32.0);\
 		 }\
 	     }\
 	 }
