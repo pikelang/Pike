@@ -668,7 +668,7 @@ static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 #define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
 
-#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
+#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED && (N) < NUM_LFUNS ?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
 #ifdef DO_PIKE_CLEANUP
