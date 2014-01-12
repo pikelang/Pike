@@ -16,6 +16,8 @@ typedef p_wchar2 CB_NAME(char);
 #endif
 #define cb_char CB_NAME(char)
 
+#define hton8(x) (x)
+
 #ifdef CB_SOURCE
 #define CB_ADD_KEY_REF(x)	do { if ((x).str) add_ref((x).str); } while(0)
 #define CB_FREE_KEY(x)		do { if ((x).str) free_string((x).str); } while(0)
