@@ -161,7 +161,7 @@ union nodeptr {
 #define DELETED_PREV(NODE) INODE (msnode_check (NODE)->i.prev)
 #define DELETED_NEXT(NODE) ((union msnode *) msnode_check (NODE)->i.ind.u.ptr)
 
-#define NODE_AT(MSD, TYPE, POS) ((struct TYPE *) &(MSD)->nodes + (POS))
+#define NODE_AT(MSD, TYPE, POS) ((struct TYPE *)((char*)(MSD) + OFFSETOF(multiset_data, nodes)) + (POS))
 #define NODE_OFFSET(TYPE, POS)						\
   PTR_TO_INT (NODE_AT ((struct multiset_data *) NULL, TYPE, POS))
 

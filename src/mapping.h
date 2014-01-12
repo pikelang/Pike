@@ -63,8 +63,10 @@ extern struct mapping *gc_internal_mapping;
 
 #define MD_KEYPAIRS(MD, HSIZE) \
    ( (struct keypair *)							\
-     DO_ALIGN( PTR_TO_INT(((struct mapping_data *)(MD))->hash + HSIZE),	\
+     DO_ALIGN( PTR_TO_INT(MD) + OFFSETOF(mapping_data, hash) + HSIZE * sizeof(struct keypair *),	\
 	       ALIGNOF(struct keypair)) )
+
+
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
