@@ -78,8 +78,9 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
 
     unsigned INT32 ip = (unsigned INT32)key.str;
 
-    if (key.len.bits || !key.len.chars) {
-	ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
+    if (key.len.bits && !key.len.chars) {
+	if (key.len.bits > WASTED_BITS)
+	    ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
 	len = snprintf(buf, 19, "%u.%u.%u.%u/%u",
 		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
 		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff),

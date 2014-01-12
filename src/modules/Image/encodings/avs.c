@@ -137,7 +137,7 @@ void image_avs_f_encode(INT32 args )
   for(y=0; y<i->ysize; y++)
     for(x=0; x<i->xsize; x++)
     {
-      register int rv = 0;
+      register unsigned int rv = 0;
       rgb_group pix = *(is++);
       if(as) apix = *(as++);
       rv = ((apix.g<<24)|(pix.r<<16)|(pix.g<<8)|pix.b);

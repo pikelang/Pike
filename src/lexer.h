@@ -292,6 +292,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case 'U': {
       /* FIXME: Do we need compat goo to turn this off? */
       /* Note: Code dup in gobble_identifier in preprocessor.h. */
+      unsigned INT32 n = 0;
       int stop, longq;
       l = 1;
       if (buf[1] == c) {
@@ -312,23 +313,23 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	stop = l + 8;
 	longq = 1;
       }
-      c = 0;
       for (; l < stop; l++)
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    c = 16 * c + buf[l] - '0';
+	    n = 16 * n + buf[l] - '0';
 	    break;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    c = 16 * c + buf[l] - 'a' + 10;
+	    n = 16 * n + buf[l] - 'a' + 10;
 	    break;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    c = 16 * c + buf[l] - 'A' + 10;
+	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
 	  default:
 	    *len = l;
 	    return longq ? 8 : 7;
 	}
+      c = (p_wchar2)n;
     }
   }
 

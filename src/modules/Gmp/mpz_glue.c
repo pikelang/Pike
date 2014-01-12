@@ -658,15 +658,15 @@ static INT32 crc_table[256];
 
 static void init_crc_table(void)
 {
-  int i;
+  unsigned INT32 i;
   for (i = 0; i < 256; i++) {
     int j;
     INT32 crc = i << 24;
     for (j = 0; j < 8; j++) {
       if (crc < 0) {
-	crc = (crc << 1)^0x04c11db7L;
+	crc = (((unsigned INT32)crc) << 1)^0x04c11db7L;
       } else {
-	crc <<= 1;
+	crc = ((unsigned INT32)crc) << 1;
       }
     }
     crc_table[i] = crc;
