@@ -1428,7 +1428,7 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
-    t |= 1 << TYPEOF(ITEM(v)[e]);
+    t |= BITOF(ITEM(v)[e]);
   }
 
 #ifdef PIKE_DEBUG
