@@ -61,7 +61,7 @@
 
 #define LOOK() INDEX_CHARP(lex->pos,0,SHIFT)
 #define SKIP() (lex->pos += (1<<SHIFT))
-#define SKIPN(N) (lex->pos += ((N)<<SHIFT))
+#define SKIPN(N) (lex->pos += (N) < 0 ? -(-(N) << SHIFT) : ((N)<<SHIFT))
 #define GETC() (SKIP(),INDEX_CHARP(lex->pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\

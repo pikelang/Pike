@@ -125,13 +125,20 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
    (((p_wchar2 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar2) (VAL))))
 
 
+/* arithmetic left shift. compilers will understand this
+ * and generate one arithmetic left shift. Left shifting
+ * a negative integer is undefined and could be optimized
+ * away by compilers.
+ */
+#define SAL(a, b)	((a) < 0 ? -(-(a) << (b)) : (a) << (b))
+
 #define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
-#define CHARP_ADD(PTR,X,SHIFT) (PTR)+=(X)<<(SHIFT)
+#define CHARP_ADD(PTR,X,SHIFT) (PTR)+=SAL(X,SHIFT)
 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
 #define SET_INDEX_PCHARP(X,Y,Z) SET_INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
 #define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
-#define INC_PCHARP(X,Y) (((X).ptr)+=(Y) << (X).shift)
+#define INC_PCHARP(X,Y) (((X).ptr)+= SAL(Y, (X).shift))
 
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
 #define LOW_SUBTRACT_PCHARP(X,Y) (LOW_COMPARE_PCHARP((X),-,(Y))>>(X).shift)
@@ -154,10 +161,10 @@ static INLINE PCHARP MKPCHARP(const void *ptr, int shift)
   return tmp;
 }
 
-#define MKPCHARP_OFF(PTR,SHIFT,OFF) MKPCHARP( ((char *)(PTR)) + ((OFF)<<(SHIFT)), (SHIFT))
+#define MKPCHARP_OFF(PTR,SHIFT,OFF) MKPCHARP( ((char *)(PTR)) + SAL(OFF, SHIFT), (SHIFT))
 #define MKPCHARP_STR(STR) MKPCHARP((STR)->str, (STR)->size_shift)
 #define MKPCHARP_STR_OFF(STR,OFF) \
- MKPCHARP((STR)->str + ((OFF)<<(STR)->size_shift), (STR)->size_shift)
+ MKPCHARP((STR)->str + SAL((OFF),(STR)->size_shift), (STR)->size_shift)
 #define ADD_PCHARP(PTR,I) MKPCHARP_OFF((PTR).ptr,(PTR).shift,(I))
 
 #define reference_shared_string(s) add_ref(s)
