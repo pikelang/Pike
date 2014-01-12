@@ -6,8 +6,8 @@
 //! @[SSL.connection] inherits @[SSL.handshake], and in addition to the state in
 //! the handshake super class, it contains the current read and write
 //! states, packet queues. This object is responsible for receiving and
-//! sending packets, processing handshake packets, and providing a clear
-//! text packages for some application.
+//! sending packets, processing handshake packets, and providing clear
+//! text packets for some application.
 
 // SSL/TLS Protocol Specification documents:
 //
@@ -25,6 +25,7 @@
 string left_over;
 Packet packet;
 
+int sent;
 int dying;
 int closing; // Bitfield: 1 if a close is sent, 2 of one is received.
 
@@ -190,10 +191,31 @@ void send_close()
 //! of the sent data is returned.
 int send_streaming_data (string data)
 {
+  if (!sizeof(data)) return 0;
   Packet packet = Packet();
   packet->content_type = PACKET_application_data;
-  int size = sizeof ((packet->fragment = data[..PACKET_MAX_SIZE-1]));
+  int size;
+  if ((!sent) && (version[1] < PROTOCOL_TLS_1_1) &&
+      (current_write_state->session->cipher_spec->cipher_type ==
+       CIPHER_block)) {
+    // Workaround for the BEAST attack.
+    // This method is known as the 1/(n-1) split:
+    //   Send just one byte of payload in the first packet
+    //   to improve the initialization vectors in TLS 1.0.
+    size = sizeof((packet->fragment = data[..0]));
+    if (sizeof(data) > 1) {
+      // If we have more data, take the opportunity to queue some of it too.
+      send_packet(packet);
+
+      packet = Packet();
+      packet->content_type = PACKET_application_data;
+      size += sizeof((packet->fragment = data[1..PACKET_MAX_SIZE-1]));
+    }
+  } else {
+    size = sizeof ((packet->fragment = data[..PACKET_MAX_SIZE-1]));
+  }
   send_packet (packet);
+  sent += size;
   return size;
 }
 
