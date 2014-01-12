@@ -252,43 +252,63 @@ static inline unsigned INT32 ctz64(const unsigned INT64 i) {
 
 #endif /* SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8 */
 
-#define hton8(x)	(x)
-
-#if !(defined(PIKE_BYTEORDER))
-# error "Byte order could not be decided."
+static INLINE unsigned INT32 bswap32(unsigned INT32 x) {
+#ifdef HAS___BUILTIN_BSWAP32
+    return __builtin_bswap32(x);
+#elif defined(HAS__BSWAP)
+    return _bswap(x);
+#elif defined(HAS__BYTESWAP_ULONG)
+    return _byteswap_ulong((unsigned long)x);
 #else
-# if PIKE_BYTEORDER == 1234
-/* # warning "little endian" */
-#  define LBITMASK(type, n)	((type)1 << (type)(n))
-#  define LBITN(type, p, n)	(!!((p) & LBITMASK(type, n)))
-#  ifdef HAS___BUILTIN_BSWAP32
-#   define hton32(x)	__builtin_bswap32(x)
-#  elif defined(HAS__BSWAP)
-#   define hton32(x)	_bswap(x)
-#  elif defined(HAS__BYTESWAP_ULONG)
-#   define hton32(x)	_byteswap_ulong((unsigned long)x)
-#  else
-#   define hton32(x)	((((x) & 0xff000000) >> 24) | (((x) & 0x000000ff) << 24) \
-			 | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8))
-#  endif
-#  ifdef HAS___BUILTIN_BSWAP64
-#   define hton64(x)	__builtin_bswap64(x)
-#  elif defined(HAS__BSWAP64)
-#   define hton64(x)	_bswap64(x)
-#  elif defined(HAS__BYTESWAP_UINT64)
-#   define hton64(x)	_byteswap_uint64((unsigned __int64)x)
-#  else
-#   define hton64(x)	((INT64)hton32((int)((x) >> 32))\
-	      | (((INT64)hton32((int)((x) & 0x00000000ffffffff))) << 32))
-#  endif
-# else /* PIKE_BYTEORDER = 1234 */
-/* # warning "big endian" */
-#  define hton64(x)	(x)
-#  define hton32(x)	(x)
-#  define LBITMASK(type, n)	((type)1 << (type)((sizeof(type)	\
-				    - ((type)(n)<<8) - 1)*8 + (type)(n)&7))
-#  define LBITN(type, p, n)	(!!((p) & LBITMASK(type, n)))
-# endif /* PIKE_BYTEORDER == 1234 */
+    return (((x & 0xff000000) >> 24) | ((x & 0x000000ff) << 24)
+            | ((x & 0x00ff0000) >> 8) | ((x & 0x0000ff00) << 8));
+#endif
+}
+
+static INLINE unsigned INT64 bswap64(unsigned INT64 x) {
+#ifdef HAS___BUILTIN_BSWAP64
+    return __builtin_bswap64(x);
+#elif defined(HAS__BSWAP64)
+    return _bswap64(x);
+#elif defined(HAS__BYTESWAP_UINT64)
+    return _byteswap_uint64((unsigned INT64)x);
+#else
+    return bswap32(x >> 32) | (unsigned INT64)bswap32(x & 0xffffffff) << 32;
+#endif
+}
+
+#define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
+
+#if PIKE_BYTEORDER == 1234
+#define get_unaligned_le16 get_unaligned16
+#define get_unaligned_le32 get_unaligned32
+#define get_unaligned_le64 get_unaligned64
+#define set_unaligned_le16 set_unaligned16
+#define set_unaligned_le32 set_unaligned32
+#define set_unaligned_le64 set_unaligned64
+#define get_unaligned_be16(x) bswap16(get_unaligned16(x))
+#define get_unaligned_be32(x) bswap32(get_unaligned32(x))
+#define get_unaligned_be64(x) bswap64(get_unaligned64(x))
+#define set_unaligned_be16(x) set_unaligned16(bswap16(x))
+#define set_unaligned_be32(x) set_unaligned32(bswap32(x))
+#define set_unaligned_be64(x) set_unaligned64(bswap64(x))
+#define hton32(x) bswap32(x)
+#define hton64(x) bswap64(x)
+#else
+#define get_unaligned_be16 get_unaligned16
+#define get_unaligned_be32 get_unaligned32
+#define get_unaligned_be64 get_unaligned64
+#define set_unaligned_be16 set_unaligned16
+#define set_unaligned_be32 set_unaligned32
+#define set_unaligned_be64 set_unaligned64
+#define get_unaligned_le16(x) bswap16(get_unaligned16(x))
+#define get_unaligned_le32(x) bswap32(get_unaligned32(x))
+#define get_unaligned_le64(x) bswap64(get_unaligned64(x))
+#define set_unaligned_le16(x) set_unaligned16(bswap16(x))
+#define set_unaligned_le32(x) set_unaligned32(bswap32(x))
+#define set_unaligned_le64(x) set_unaligned64(bswap64(x))
+#define hton32(x) (x)
+#define hton64(x) (x)
 #endif
 
 #endif /* BITVECTOR_H */

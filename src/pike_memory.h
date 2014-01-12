@@ -158,6 +158,36 @@ static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
     return (void *)p;
 }
 
+static INLINE unsigned INT64 get_unaligned64(const void * ptr) {
+    unsigned INT64 v;
+    memcpy(&v, ptr, 8);
+    return v;
+}
+
+static INLINE void set_unaligned64(void * ptr, unsigned INT64 v) {
+    memcpy(ptr, &v, 8);
+}
+
+static INLINE unsigned INT64 get_unaligned32(const void * ptr) {
+    unsigned INT32 v;
+    memcpy(&v, ptr, 4);
+    return v;
+}
+
+static INLINE void set_unaligned32(void * ptr, unsigned INT32 v) {
+    memcpy(ptr, &v, 4);
+}
+
+static INLINE unsigned INT16 get_unaligned16(const void * ptr) {
+    unsigned INT16 v;
+    memcpy(&v, ptr, 2);
+    return v;
+}
+
+static INLINE void set_unaligned16(void * ptr, unsigned INT16 v) {
+    memcpy(ptr, &v, 2);
+}
+
 #include "pike_search.h"
 
 #include "block_alloc_h.h"
