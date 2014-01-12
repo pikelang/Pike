@@ -248,8 +248,11 @@ CHRONO("begin hsv...");
 	}
 	else z=0,w=0;
      else {
-	z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
-	w = my_abs(DOUBLE_TO_INT(j));
+	if (j) {
+	    z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
+	    w = my_abs(DOUBLE_TO_INT(j));
+	}
+	else z=0,w=0;
      }
 
      d->r=(COLORTYPE)z;
