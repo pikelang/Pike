@@ -4578,6 +4578,14 @@ static TYPE_FIELD mc_block_lookahead_default = BIT_PROGRAM|BIT_STRING|BIT_TYPE;
  * blocked because they are acyclic and don't contain refs to anything
  * but strings and other types. */
 
+static INLINE int mc_lookahead_blocked(unsigned INT16 type) {
+    if (type < sizeof(TYPE_FIELD)*8) {
+        return !!(mc_block_lookahead & ((TYPE_FIELD)1 << type));
+    }
+
+    return 0;
+}
+
 static int mc_block_strings;
 
 static int mc_enqueued_noninternal;
@@ -5125,7 +5133,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     ref_to->flags = ref_to_flags;
     ref_to->la_count = ref_to_la_count;
 
-    if (mc_block_lookahead & (1 << type_from_visit_fn (visit_fn))) {
+    if (mc_lookahead_blocked(type_from_visit_fn (visit_fn))) {
       MC_DEBUG_MSG (ref_to, "type is blocked - not enqueued");
       return;
     }
@@ -5149,7 +5157,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
   /* Normal handling. */
 
-  if (mc_block_lookahead & (1 << type_from_visit_fn (visit_fn))) {
+  if (mc_lookahead_blocked(type_from_visit_fn (visit_fn))) {
     ref_to->flags = ref_to_flags;
     ref_to->la_count = ref_to_la_count;
     MC_DEBUG_MSG (ref_to, "type is blocked - not enqueued");
@@ -5820,7 +5828,7 @@ void f_count_memory (INT32 args)
 	  assert (!(m->flags & MC_FLAG_INTERNAL));
 	  assert (m->flags & MC_FLAG_LA_VISITED);
 	  assert (list != &mc_incomplete || !(m->flags & MC_FLAG_CANDIDATE));
-	  if (mc_block_lookahead & (1 << type))
+	  if (mc_lookahead_blocked(type))
 	    MC_DEBUG_MSG (m, "type is blocked - not visiting");
 	  else {
 #ifdef MEMORY_COUNT_DEBUG
@@ -5863,8 +5871,7 @@ void f_count_memory (INT32 args)
 	assert (!(m->flags & (MC_FLAG_INTERNAL | MC_FLAG_INT_VISITED)));
 	m->flags |= MC_FLAG_INTERNAL;
 	assert (m->flags & (MC_FLAG_CANDIDATE | MC_FLAG_LA_VISITED));
-	assert (!(mc_block_lookahead &
-		  (1 << type_from_visit_fn (m->visit_fn))));
+	assert (!(mc_lookahead_blocked(type_from_visit_fn (m->visit_fn))));
 	/* The following assertion implies that the lookahead count
 	 * already has been raised as it should. */
 	assert (m->flags & MC_FLAG_CANDIDATE_REF);
