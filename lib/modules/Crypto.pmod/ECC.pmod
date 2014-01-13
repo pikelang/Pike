@@ -58,6 +58,18 @@ class Curve {
 
     //! @decl inherit ECC_Curve::ECDSA;
 
+    //! Return the curve.
+    Curve curve()
+    {
+      return Curve::this;
+    }
+
+    //! Return the curve size in bits.
+    int size()
+    {
+      return Curve::size();
+    }
+
     //! Set the private key.
     //!
     //! @note
