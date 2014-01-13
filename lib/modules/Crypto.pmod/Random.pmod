@@ -146,8 +146,8 @@ protected class RND {
       bytes_left -= pass;
       len -= pass;
       if(bytes_left - pass <= 0) {
-	update( s->read(32), 0, 256 );
-	bytes_left += 32;
+	update( s->read(0x1000), 0, 0x8000 );
+	bytes_left += 0x1000;
       }
     }
     return (string(8bit))buf;
