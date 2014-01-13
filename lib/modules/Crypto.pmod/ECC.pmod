@@ -98,6 +98,29 @@ class Curve {
       return this;
     }
 
+    //! Change to the selected point on the curve as public key.
+    //!
+    //! @param key
+    //!   The public key encoded according to ANSI x9.62 4.3.6.
+    //!
+    //! @note
+    //!   Throws errors if the point isn't on the curve.
+    variant this_program set_public_key(string(8bit) key)
+    {
+      int sz = (size() + 7)>>3;
+      if ((sizeof(key) != 1 + 2*sz) || (key[0] != 4)) {
+	error("Invalid public key for curve.\n");
+      }
+
+      object(Gmp.mpz)|int x;
+      object(Gmp.mpz)|int y;
+
+      sscanf(key, "%*c%" + sz + "c%" + sz + "c", x, y);
+
+      ::set_public_key(x, y);
+      return this;
+    }
+
     //! Set the random function, used to generate keys and parameters,
     //! to the function @[r].
     this_program set_random(function(int:string(8bit)) r)
