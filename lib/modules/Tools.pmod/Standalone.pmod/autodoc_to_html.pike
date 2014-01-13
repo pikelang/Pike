@@ -494,7 +494,7 @@ string range_type( string type, Node min, Node max )
 
     if( low == 0 && (high+1)->popcount() == 1 )
     {
-        return type+"("+strlen((high+1)->digits(2))+"bit)";
+        return type+"("+strlen((high)->digits(2))+"bit)";
     }
     return type+"("+low+".."+high+")";
 }
