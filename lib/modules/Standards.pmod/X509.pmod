@@ -63,6 +63,17 @@ protected {
     Identifiers.dsa_sha224_id->get_der() : Crypto.SHA224,
 #endif
     Identifiers.dsa_sha256_id->get_der() : Crypto.SHA256,
+
+#if constant(Crypto.SHA224)
+    Identifiers.ecdsa_sha224_id->get_der() : Crypto.SHA224,
+#endif
+    Identifiers.ecdsa_sha256_id->get_der() : Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Identifiers.ecdsa_sha384_id->get_der() : Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Identifiers.ecdsa_sha512_id->get_der() : Crypto.SHA512,
+#endif
   ]);
 }
 
@@ -181,9 +192,12 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
 
 class Verifier {
   constant type = "none";
-  Crypto.RSA|Crypto.DSA pkc;
+  Crypto.Sign pkc;
   optional Crypto.RSA rsa;
   optional Crypto.DSA dsa;
+#if constant(Crypto.ECC.Curve)
+  optional Crypto.ECC.SECP_521R1.ECDSA ecdsa;
+#endif
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
@@ -219,6 +233,33 @@ protected class DSAVerifier
 
   Crypto.DSA `dsa() { return [object(Crypto.DSA)]pkc; }
 }
+
+#if constant(Crypto.ECC.Curve)
+protected class ECDSAVerifier
+{
+  inherit Verifier;
+  constant type = "ecdsa";
+
+  protected void create(string(8bit) key, string(8bit) curve_der)
+  {
+    Crypto.ECC.Curve curve;
+    foreach(values(Crypto.ECC), mixed c) {
+      if (objectp(c) && c->pkcs_named_curve_id &&
+	  (c->pkcs_named_curve_id()->get_der() == curve_der)) {
+	curve = [object(Crypto.ECC.Curve)]c;
+	break;
+      }
+    }
+    DBG("ECC Curve: %O (DER: %O)\n", curve, curve_der);
+    pkc = curve->ECDSA()->set_public_key(key);
+  }
+
+  Crypto.ECC.SECP_521R1.ECDSA `ecdsa()
+  {
+    return [object(Crypto.ECC.SECP_521R1.ECDSA)]pkc;
+  }
+}
+#endif
 
 protected Verifier make_verifier(Object _keyinfo)
 {
@@ -258,6 +299,20 @@ protected Verifier make_verifier(Object _keyinfo)
     return DSAVerifier(str->value, params[0]->value,
                        params[1]->value, params[2]->value);
   }
+
+#if constant(Crypto.ECC.Curve)
+  if(seq[0]->get_der() == Identifiers.ec_id->get_der())
+  {
+    if( sizeof(seq)!=2 || seq[1]->type_name!="SEQUENCE" ||
+        sizeof(seq[1])!=1 || seq[1][0]->type_name!="OBJECT IDENTIFIER" )
+      return 0;
+
+    Sequence params = seq[1];
+    return ECDSAVerifier(str->value, params[0]->get_der());
+  }
+#endif
+
+  DBG("make_verifier: Unknown algorithm identifier: %O\n", seq[0]);
 }
 
 //! Represents a TBSCertificate.
