@@ -303,12 +303,11 @@ protected Verifier make_verifier(Object _keyinfo)
 #if constant(Crypto.ECC.Curve)
   if(seq[0]->get_der() == Identifiers.ec_id->get_der())
   {
-    if( sizeof(seq)!=2 || seq[1]->type_name!="SEQUENCE" ||
-        sizeof(seq[1])!=1 || seq[1][0]->type_name!="OBJECT IDENTIFIER" )
+    if( sizeof(seq)!=2 || seq[1]->type_name!="OBJECT IDENTIFIER" )
       return 0;
 
     Sequence params = seq[1];
-    return ECDSAVerifier(str->value, params[0]->get_der());
+    return ECDSAVerifier(str->value, params->get_der());
   }
 #endif
 
