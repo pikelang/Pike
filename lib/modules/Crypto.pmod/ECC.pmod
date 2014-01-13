@@ -42,9 +42,9 @@ class Curve {
 
   //! Returns the PKCS-1 elliptic curve parameters for the curve.
   //! cf RFC 5480 2.1.1.
-  Sequence pkcs_ec_parameters()
+  Identifier pkcs_ec_parameters()
   {
-    return Sequence( ({ pkcs_named_curve_id() }) );
+    return pkcs_named_curve_id();
   }
 
   //! Returns the AlgorithmIdentifier as defined in RFC5480 section 2.
