@@ -33,6 +33,12 @@ class Hash {
   inherit Nettle.Hash;
 }
 
+//! Abstract class for signature algorithms. Contains some tools useful
+//! for all hashes.
+class Sign {
+  inherit __builtin.Nettle.Sign;
+}
+
 //! Hashes a @[password] together with a @[salt] with the
 //! crypt_md5 algorithm and returns the result.
 //!

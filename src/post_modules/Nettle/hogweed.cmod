@@ -373,6 +373,10 @@ PIKECLASS ECC_Curve
   PIKECLASS ECDSA
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
   {
+    /*! @decl inherit __builtin.Nettle.Sign
+     */
+    INHERIT "__builtin.Nettle.Sign";
+
     CVAR struct ecc_scalar key;
     CVAR struct ecc_point pub;
 

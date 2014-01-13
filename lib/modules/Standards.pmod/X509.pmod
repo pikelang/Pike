@@ -103,8 +103,8 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 //!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param c
-//!   RSA or DSA parameters for the issuer.
-//!   See @[Crypto.RSA] and @[Crypto.DSA].
+//!   RSA, DSA or ECDSA parameters for the issuer.
+//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
 //!
 //! @param subject
 //!   Distinguished name for the issuer.
@@ -125,7 +125,7 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
-string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
+string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
                 Sequence subject, int serial, int ttl, array|void extensions)
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
@@ -145,9 +145,9 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
 //! @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param c
-//!   The public key cipher used for the certificate, @[Crypto.RSA] or
-//!   @[Crypto.DSA]. The object should be initialized with (at least)
-//!   public keys.
+//!   The public key cipher used for the certificate, @[Crypto.RSA],
+//!   @[Crypto.DSA] or @[Crypto.ECC.Curve.ECDSA]. The object should be
+//!   initialized with (at least) public keys.
 //!
 //! @param ttl
 //!   The validity of the certificate, in seconds, starting from
@@ -169,7 +169,7 @@ string sign_key(Sequence issuer, Crypto.RSA|Crypto.DSA c, Crypto.Hash h,
 //!   version1 value with random node. Some browsers will refuse
 //!   different certificates from the same signer with the same serial
 //!   number.
-string make_selfsigned_certificate(Crypto.RSA|Crypto.DSA c, int ttl,
+string make_selfsigned_certificate(Crypto.Sign c, int ttl,
                                    mapping|array name, array|void extensions,
                                    void|Crypto.Hash h, void|int serial)
 {
