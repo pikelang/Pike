@@ -63,6 +63,8 @@ test_eq(Standards.ASN1.Types.OctetString(String.hex2string("0123456789abcdef"))
 test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
   String.hex2string("130b5465737420557365722031"))
 
+test_eq(Standards.ASN1.Types.UTC()->set_posix(42)->get_posix(), 42)
+
 test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_der(),
   String.hex2string("170d3931303530363233343534305a"))
 
