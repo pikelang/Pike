@@ -16,27 +16,35 @@ class Curve {
   inherit Nettle.ECC_Curve;
 
 #define BitString Standards.ASN1.Types.BitString
+#define Identifier Standards.ASN1.Types.Identifier
 #define Integer Standards.ASN1.Types.Integer
 #define Object Standards.ASN1.Types.Object
 #define Sequence Standards.ASN1.Types.Sequence
+
+  //! Returns the PKCS-1 elliptic curve identifier for the curve.
+  //! cf RFC 5480 2.1.1.
+  Identifier pkcs_named_curve_id()
+  {
+    switch(name()) {
+    case "SECP_192R1":
+      return Standards.PKCS.Identifiers.ecc_secp192r1_id;
+    case "SECP_224R1":
+      return Standards.PKCS.Identifiers.ecc_secp224r1_id;
+    case "SECP_256R1":
+      return Standards.PKCS.Identifiers.ecc_secp256r1_id;
+    case "SECP_384R1":
+      return Standards.PKCS.Identifiers.ecc_secp384r1_id;
+    case "SECP_521R1":
+      return Standards.PKCS.Identifiers.ecc_secp521r1_id;
+    }
+    return 0;
+  }
 
   //! Returns the PKCS-1 elliptic curve parameters for the curve.
   //! cf RFC 5480 2.1.1.
   Sequence pkcs_ec_parameters()
   {
-    switch(name()) {
-    case "SECP_192R1":
-      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp192r1_id }) );
-    case "SECP_224R1":
-      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp224r1_id }) );
-    case "SECP_256R1":
-      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp256r1_id }) );
-    case "SECP_384R1":
-      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp384r1_id }) );
-    case "SECP_521R1":
-      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp521r1_id }) );
-    }
-    return 0;
+    return Sequence( ({ pkcs_named_curve_id() }) );
   }
 
   //! Returns the AlgorithmIdentifier as defined in RFC5480 section 2.
@@ -181,6 +189,7 @@ class Curve {
 #undef Sequence
 #undef Object
 #undef Integer
+#undef Identifier
 #undef BitString
   }
 }
