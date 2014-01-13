@@ -79,7 +79,11 @@ PIKEFUN array(object(Gmp.mpz))
   dsa_private_key_init(&key);
 
   if( !nettle_dsa_generate_keypair(&pub, &key, rnd, random_func_wrapper,
-                                   NULL, NULL, p_bits, q_bits) )
+                                   NULL, NULL, p_bits
+#ifdef HAVE_DSA_QBITS_KEYPAIR_ARG
+                                   , q_bits
+#endif
+                                  ) )
   {
     dsa_private_key_clear(&key);
     dsa_public_key_clear(&pub);

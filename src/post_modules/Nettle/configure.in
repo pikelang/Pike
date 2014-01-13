@@ -32,7 +32,27 @@ else
   fi
   AC_CHECK_LIB(nettle, nettle_md5_init)
   AC_CHECK_LIB(nettle, md5_init)
-  AC_CHECK_LIB(hogweed, nettle_dsa_generate_keypair)
+  AC_CHECK_LIB(hogweed, nettle_rsa_generate_keypair)
+  if test "x$ac_cv_lib_hogweed_nettle_rsa_generate_keypair" = "xyes" ; then
+    AC_MSG_CHECKING([if nettle_*_generate_keypair takes qbits])
+    AC_CACHE_VAL(pike_cv_nettle_hogweed_keypair_args, [
+      pike_cv_nettle_hogweed_keypair_args=no
+      AC_TRY_COMPILE([
+#include <nettle/dsa.h>
+#include <nettle/rsa.h>
+     ], [
+  struct dsa_public_key pub;
+  struct dsa_private_key key;
+  nettle_dsa_generate_keypair(&pub, &key, 0, 0, 0, 0, 2048, 384);
+      ], [
+        pike_cv_nettle_hogweed_keypair_args=yes
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_nettle_hogweed_keypair_args);
+    if test "x$pike_cv_nettle_hogweed_keypair_args" = "xyes"; then
+      AC_DEFINE(HAVE_DSA_QBITS_KEYPAIR_ARG, [], [Define if generate_dsa_keypair takes the qbits argument])
+    fi
+ fi
 
   AC_SUBST(IDEA_OBJ)
 
