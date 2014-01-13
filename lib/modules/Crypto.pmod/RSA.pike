@@ -7,6 +7,8 @@
 
 #if constant(Crypto.Hash)
 
+inherit Crypto.Sign;
+
 //
 // --- Variables and accessors
 //
