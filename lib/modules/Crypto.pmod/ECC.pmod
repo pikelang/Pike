@@ -15,6 +15,39 @@
 class Curve {
   inherit Nettle.ECC_Curve;
 
+#define BitString Standards.ASN1.Types.BitString
+#define Integer Standards.ASN1.Types.Integer
+#define Object Standards.ASN1.Types.Object
+#define Sequence Standards.ASN1.Types.Sequence
+
+  //! Returns the PKCS-1 elliptic curve parameters for the curve.
+  //! cf RFC 5480 2.1.1.
+  Sequence pkcs_ec_parameters()
+  {
+    switch(name()) {
+    case "SECP_192R1":
+      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp192r1_id }) );
+    case "SECP_224R1":
+      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp224r1_id }) );
+    case "SECP_256R1":
+      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp256r1_id }) );
+    case "SECP_384R1":
+      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp384r1_id }) );
+    case "SECP_521R1":
+      return Sequence( ({ Standards.PKCS.Identifiers.ecc_secp521r1_id }) );
+    }
+    return 0;
+  }
+
+  //! Returns the AlgorithmIdentifier as defined in RFC5480 section 2.
+  Sequence pkcs_algorithm_identifier()
+  {
+    return
+      Sequence( ({ Standards.PKCS.Identifiers.ec_id,
+		   pkcs_ec_parameters(),
+		}) );
+  }
+
   //! Elliptic Curve Digital Signing Algorithm
   //!
   class ECDSA
@@ -60,15 +93,22 @@ class Curve {
       return this;
     }
 
+    //! Get the ANSI x9.62 4.3.6 encoded uncompressed public key.
+    string(8bit) get_public_key()
+    {
+      return sprintf("%c%*c%*c",
+		     4,	// Uncompressed.
+		     (size() + 7)>>3, get_x(),
+		     (size() + 7)>>3, get_y());
+    }
+
     //! Signs the @[message] with a PKCS-1 signature using hash algorithm
     //! @[h].
     string(8bit) pkcs_sign(string(8bit) message, .Hash h)
     {
-      array sign = map(raw_sign(h->hash(message)), Standards.ASN1.Types.Integer);
-      return Standards.ASN1.Types.Sequence(sign)->get_der();
+      array sign = map(raw_sign(h->hash(message)), Integer);
+      return Sequence(sign)->get_der();
     }
-
-#define Object Standards.ASN1.Types.Object
 
     //! Verify PKCS-1 signature @[sign] of message @[message] using hash
     //! algorithm @[h].
@@ -92,7 +132,44 @@ class Curve {
 			value);
     }
 
+    //! Returns the PKCS-1 algorithm identifier for ECDSA and the provided
+    //! hash algorithm. Only SHA-2 based hashes are supported currently.
+    Sequence pkcs_signature_algorithm_id(.Hash hash)
+    {
+      switch(hash->name())
+      {
+      case "sha224":
+	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha224_id }) );
+      case "sha256":
+	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha256_id }) );
+      case "sha384":
+	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha384_id }) );
+      case "sha512":
+	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha512_id }) );
+      }
+      return 0;
+    }
+
+    //! Returns the AlgorithmIdentifier as defined in RFC5480 section
+    //! 2.1.1 including the ECDSA parameters.
+    Sequence pkcs_algorithm_identifier()
+    {
+      return Curve::pkcs_algorithm_identifier();
+    }
+
+    //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
+    //! See RFC 5280 section 4.1.2.7.
+    Sequence pkcs_public_key()
+    {
+      return Sequence(({
+			pkcs_algorithm_identifier(),
+			BitString(get_public_key()),
+		      }));
+    }
+#undef Sequence
 #undef Object
+#undef Integer
+#undef BitString
   }
 }
 
