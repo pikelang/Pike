@@ -109,6 +109,23 @@ test_do([[
 ]])
 
 test_do([[
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
+  // FIXME: Should we test all the curves?
+  ctx->ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
+    set_random(random_string)->generate_key();
+  mapping attrs = ([
+    "organizationName" : "Test",
+    "commonName" : "*",
+  ]);
+  string cert = Standards.X509.make_selfsigned_certificate(ctx->ecdsa,
+    3600*24, attrs);
+  ctx->certificates = ({ cert });
+  ctx->ecdsa_mode();
+  add_constant("server_ecdsa_ctx", ctx);
+]])
+
+test_do([[
   add_constant("client_msg", random_string(65536));
 ]])
 
@@ -153,6 +170,7 @@ test_do([[
       SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
       SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
       SSL.Constants.TLS_ecdh_anon_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
@@ -172,6 +190,7 @@ test_do([[
       SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
       SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
       SSL.Constants.TLS_ecdh_anon_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
@@ -191,26 +210,37 @@ define(test_ssl, [[
     foreach( ({
         SSL.Constants.SIGNATURE_rsa,
         SSL.Constants.SIGNATURE_dsa,
+        SSL.Constants.SIGNATURE_ecdsa,
       }), int mode) {
 
     object server_ctx;
     array(int) suites;
 
-    if( mode == SSL.Constants.SIGNATURE_rsa )
-    {
+    switch(mode) {
+    case SSL.Constants.SIGNATURE_rsa:
       server_ctx = server_rsa_ctx;
       suites = ({
         SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
       });
       log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 RSA server...");
-    }
-    else
-    {
+      break;
+    case SSL.Constants.SIGNATURE_dsa:
       server_ctx = server_dss_ctx;
       suites = ({
         SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha
       });
       log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 DSS server...");
+      break;
+    case SSL.Constants.SIGNATURE_ecdsa:
+      server_ctx = server_ecdsa_ctx;
+      suites = ({
+        SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha
+      });
+      log_status("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 ECDSA server...");
+      break;
+    default:
+      error("Unsupported certificate type: %d\n", mode);
+      break;
     }
 
     if( `==($1,$2,$3,$4) )
@@ -436,6 +466,7 @@ test_do([[
   add_constant("client_msg");
   add_constant("server_rsa_ctx");
   add_constant("server_dss_ctx");
+  add_constant("server_ecdsa_ctx");
   add_constant("pem_cert");
   add_constant("pem_key");
 ]])
