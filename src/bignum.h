@@ -147,14 +147,6 @@ static INLINE int DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b
     *res = (unsigned type)tmp;                                                          \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b,       \
-                                                unsigned type * res) {                  \
-    utype2 tmp;                                                                         \
-    tmp = (utype2)a - (utype2)b;                                                        \
-    if (tmp >> size) return 1;                                                          \
-    *res = (unsigned type)tmp;                                                          \
-    return 0;                                                                           \
-}                                                                                       \
 static INLINE int DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     utype2 tmp;                                                                         \
@@ -231,10 +223,21 @@ static INLINE int DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b
     return 0;                                                                           \
 }                                                                                       \
 
+#define GEN_USUB_OF(type)                                                               \
+static INLINE int DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b,       \
+                                                unsigned type * res) {                  \
+    if (b > a)                                                                          \
+        return 1;                                                                       \
+    *res = a - b;                                                                       \
+    return 0;                                                                           \
+}                                                                                       \
+
 #define GEN_OF1(size)					\
+  GEN_USUB_OF(INT ## size)                              \
   _GEN_OF1(INT ## size, size)				\
   GENERIC_OVERFLOW_CHECKS(INT ## size)
 #define GEN_OF2(s1, s2)					\
+  GEN_USUB_OF(INT ## s1)                                \
   _GEN_OF2(INT ## s1, INT ## s2, UINT ## s2, s1)	\
   GENERIC_OVERFLOW_CHECKS(INT ## s1)
 
