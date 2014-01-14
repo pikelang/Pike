@@ -202,6 +202,16 @@ int main()
   client(con);
   return -17;
 #else
+#ifdef ECDSA_MODE
+  ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
+    set_random(Crypto.Random.random_string)->generate_key();
+  my_certificate =
+    Standards.X509.make_selfsigned_certificate(ecdsa, 3600*4, ([
+						 "organizationName" : "Test",
+						 "commonName" : "*",
+					       ]));
+  ecdsa_mode();
+#else
   SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
   SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
 #if 0
@@ -225,6 +235,7 @@ int main()
 #endif /* 0 */
   // Make sure all cipher suites are available.
   rsa_mode();
+#endif
   SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
   certificates = ({ my_certificate });
   random = no_random()->read;
