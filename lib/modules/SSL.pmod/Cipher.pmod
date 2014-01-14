@@ -130,6 +130,15 @@ class TLSSigner
     return struct;
   }
 
+  ADT.struct ecdsa_sign(object context, string cookie, ADT.struct struct)
+  {
+    string sign = context->ecdsa->pkcs_sign(cookie + struct->contents(), hash);
+    struct->put_uint(hash_id, 1);
+    struct->put_uint(SIGNATURE_ecdsa, 1);
+    struct->put_var_string(sign, 2);
+    return struct;
+  }
+
   int(0..1) verify(object context, string cookie, ADT.struct struct,
 		   ADT.struct input)
   {
@@ -147,6 +156,10 @@ class TLSSigner
     if ((sign_id == SIGNATURE_dsa) && context->dsa) {
       return context->dsa->pkcs_verify(cookie + struct->contents(),
 				       hash, sign);
+    }
+    if ((sign_id == SIGNATURE_ecdsa) && context->ecdsa) {
+      return context->ecdsa->pkcs_verify(cookie + struct->contents(),
+					 hash, sign);
     }
     return 0;
   }
@@ -1210,6 +1223,23 @@ int(0..1) dsa_verify(object context, string cookie, ADT.struct struct,
 				   Crypto.SHA1, input->get_var_string(2));
 }
 
+//! Signing using ECDSA.
+ADT.struct ecdsa_sign(object context, string cookie, ADT.struct struct)
+{
+  string sign = context->ecdsa->pkcs_sign(cookie + struct->contents(),
+					  Crypto.SHA1);
+  struct->put_var_string(sign, 2);
+  return struct;
+}
+
+//! Verify a ECDSA signature.
+int(0..1) ecdsa_verify(object context, string cookie, ADT.struct struct,
+		       ADT.struct input)
+{
+  return context->ecdsa->pkcs_verify(cookie + struct->contents(),
+				     Crypto.SHA1, input->get_var_string(2));
+}
+
 //! The NULL signing method.
 ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
 {
@@ -1366,9 +1396,13 @@ array lookup(int suite, ProtocolVersion|int version,
       res->sign = anon_sign;
       res->verify = anon_verify;
       break;
+#if constant(Crypto.ECC.Curve)
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
-      // FIXME: Not implemented yet.
+      res->sign = ecdsa_sign;
+      res->verify = ecdsa_verify;
+      break;
+#endif
     default:
       error( "Internal error.\n" );
     }
@@ -1429,8 +1463,11 @@ array lookup(int suite, ProtocolVersion|int version,
       res->sign = anon_sign;
       res->verify = anon_verify;
       break;
+#if constant(Crypto.ECC.Curve)
     case SIGNATURE_ecdsa:
-      // FIXME: Not implemented yet.
+      res->sign = signer->ecdsa_sign;
+      break;
+#endif
     default:
       error( "Internal error.\n" );
     }

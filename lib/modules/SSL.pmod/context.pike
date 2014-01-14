@@ -176,6 +176,15 @@ Crypto.DSA dsa;
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
 
+//! Servers default ecdsa key.
+//!
+//! @note
+//!   If SNI (Server Name Indication) is used and multiple keys are
+//!   available, this key will not be used, instead the appropriate
+//!   SNI key will be used (the default implementation stores these in
+//!   @[sni_keys].
+Crypto.ECC.SECP_521R1.ECDSA ecdsa;
+
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
@@ -393,7 +402,7 @@ void filter_weak_suites(int min_keylength)
 //!   Minimum acceptable key length in bits.
 //!
 //! @seealso
-//!   @[dhe_dss_mode()], @[filter_weak_suites()]
+//!   @[dhe_dss_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
 void rsa_mode(int|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
@@ -406,11 +415,24 @@ void rsa_mode(int|void min_keylength, int|void max_version)
 //!   Minimum acceptable key length in bits.
 //!
 //! @seealso
-//!   @[rsa_mode()], @[filter_weak_suites()]
+//!   @[rsa_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
 void dhe_dss_mode(int|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
   preferred_suites = get_suites(SIGNATURE_dsa, min_keylength, max_version);
+}
+
+//! Set @[preferred_suites] to ECDSA based methods.
+//!
+//! @param min_keylength
+//!   Minimum acceptable key length in bits.
+//!
+//! @seealso
+//!   @[rsa_mode()], @[dhe_dss_mode()], @[filter_weak_suites()]
+void ecdsa_mode(int|void min_keylength, int|void max_version)
+{
+  SSL3_DEBUG_MSG("SSL.context: ecdsa_mode()\n");
+  preferred_suites = get_suites(SIGNATURE_ecdsa, min_keylength, max_version);
 }
 
 //! Lists the supported compression algorithms in order of preference.

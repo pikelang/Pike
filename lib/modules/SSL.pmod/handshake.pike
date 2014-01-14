@@ -135,7 +135,7 @@ private object select_server_key()
   if(context->select_server_key_func)
     key = context->select_server_key_func(context, server_names);
   if(!key) // fallback on previous behavior.
-    key = context->rsa || context->dsa;
+    key = context->rsa || context->dsa || context->ecdsa;
 
   return key;
 }
@@ -318,6 +318,7 @@ Packet client_hello()
 			     return ({
 			       h, SIGNATURE_rsa,
 			       h, SIGNATURE_dsa,
+			       h, SIGNATURE_ecdsa,
 			     });
 			   })*({}));
     extension->put_var_string(ext, 2);
@@ -482,13 +483,14 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     object key = select_server_key();
     SSL3_DEBUG_MSG("Selected server key: %O\n", key);
 
-    if(Program.implements(object_program(key), Crypto.DSA))
-    { 
-      session->dsa = [object(Crypto.DSA)]key;
-    }
-    else
-    {
-      session->rsa = [object(Crypto.RSA)]key;
+    if (key) {
+      if(Program.implements(object_program(key), Crypto.DSA)) {
+	session->dsa = [object(Crypto.DSA)]key;
+      } else if(Program.implements(object_program(key), Crypto.RSA)) {
+	session->rsa = [object(Crypto.RSA)]key;
+      } else {
+	session->ecdsa = [object(Crypto.ECC.SECP_521R1.ECDSA)]key;
+      }
     }
 
     SSL3_DEBUG_MSG("Checking for Certificate.\n");
@@ -1595,8 +1597,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	if(public_key->type == "rsa")
           session->rsa = public_key->rsa;
-        else
+        else if(public_key->type == "dsa")
           session->dsa = public_key->dsa;
+        else
+          session->ecdsa = public_key->ecdsa;
       };
 
       if(error)
