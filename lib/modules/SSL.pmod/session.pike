@@ -60,7 +60,7 @@ Crypto.DSA dsa;
 
 #if constant(Crypto.ECC.Curve)
 //! The server's ecdsa private key
-Crypto.ECDSA ecdsa;
+Crypto.ECC.SECP_521R1.ECDSA ecdsa;
 
 //! The selected ECC curve
 Crypto.ECC.Curve curve;
