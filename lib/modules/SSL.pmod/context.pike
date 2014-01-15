@@ -176,6 +176,7 @@ Crypto.DSA dsa;
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
 
+#if constant(Crypto.ECC.Curve)
 //! Servers default ecdsa key.
 //!
 //! @note
@@ -184,6 +185,7 @@ Crypto.DSA dsa;
 //!   SNI key will be used (the default implementation stores these in
 //!   @[sni_keys].
 Crypto.ECC.SECP_521R1.ECDSA ecdsa;
+#endif
 
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
