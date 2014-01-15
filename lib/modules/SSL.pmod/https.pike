@@ -203,6 +203,7 @@ int main()
   return -17;
 #else
 #ifdef ECDSA_MODE
+#if constant(Crypto.ECC.Curve)
   ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(Crypto.Random.random_string)->generate_key();
   my_certificate =
@@ -211,6 +212,10 @@ int main()
 						 "commonName" : "*",
 					       ]));
   ecdsa_mode();
+#else
+#error ECDSA not supported by this Pike.
+  exit(1);
+#endif
 #else
   SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
   SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));

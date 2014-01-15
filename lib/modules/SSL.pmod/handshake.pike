@@ -135,7 +135,11 @@ private object select_server_key()
   if(context->select_server_key_func)
     key = context->select_server_key_func(context, server_names);
   if(!key) // fallback on previous behavior.
-    key = context->rsa || context->dsa || context->ecdsa;
+    key = context->rsa || context->dsa
+#if constant(Crypto.ECC.Curve)
+      || context->ecdsa
+#endif
+;
 
   return key;
 }
@@ -488,9 +492,13 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 	session->dsa = [object(Crypto.DSA)]key;
       } else if(Program.implements(object_program(key), Crypto.RSA)) {
 	session->rsa = [object(Crypto.RSA)]key;
-      } else {
+      }
+#if constant(Crypto.ECC.Curve)
+      else
+      {
 	session->ecdsa = [object(Crypto.ECC.SECP_521R1.ECDSA)]key;
       }
+#endif
     }
 
     SSL3_DEBUG_MSG("Checking for Certificate.\n");
