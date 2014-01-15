@@ -2586,7 +2586,7 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
     if (ch < 0 || ch > 0xffff) {
       /* Huge character. */
       string_builder_binary_strcat(buf, "\\U", 2);
-      string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 8, 8);
+      string_builder_append_integer(buf, (unsigned INT32)ch, 16, APPEND_ZERO_PAD, 8, 8);
     } else if (ch > 0xff) {
       /* Unicode character. */
       string_builder_binary_strcat(buf, "\\u", 2);
