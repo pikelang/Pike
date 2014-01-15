@@ -654,7 +654,7 @@ static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 #define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
 
-#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED && (N) < NUM_LFUNS ?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
+#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED && (N) < NUM_LFUNS ?((P)->lfuns[(N)]):find_lfun_fatal((P), (N)) )
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
 #ifdef DO_PIKE_CLEANUP
@@ -889,6 +889,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
+PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);

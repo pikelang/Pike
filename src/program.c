@@ -6200,7 +6200,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   struct identifier *id;
 #endif
   if ((size_t)lfun >= NELEM(lfun_strings)) {
-      return -1;
+    return find_lfun_fatal(p, lfun);
   }
 
   lfun_name = lfun_strings[lfun];
@@ -6219,6 +6219,12 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   }
 #endif /* 0 */
   return i;
+}
+
+PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun)
+{
+  Pike_fatal("Invalid lfun number: %d\n", lfun);
+  return -1;
 }
 
 int lfun_lookup_id(struct pike_string *lfun_name)
