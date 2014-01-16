@@ -6,6 +6,10 @@
 
 #if constant(Nettle.ECC_Curve)
 
+// The module dumper has problems with the overloaded ECDSA class,
+// so inhibit dumping of this module for now.
+constant dont_dump_module = 1;
+
 //! The definition of an elliptic curve.
 //!
 //! Objects of this class are typically not created by the user.
@@ -255,4 +259,6 @@ Curve SECP_384R1 = Curve(1, 384, 1);
 Curve SECP_521R1 = Curve(1, 521, 1);
 //! @endignore
 
+#else
+constant this_program_does_not_exist=1;
 #endif /* Nettle.ECC_Curve */
