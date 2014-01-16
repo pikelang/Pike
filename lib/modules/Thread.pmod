@@ -605,7 +605,7 @@ optional class Farm
         threads += ({ Handler() });
         free_threads += ({ threads[-1] });
       } else {
-        ft_cond->wait(mutex);
+        ft_cond->wait(lock);
       }
     }
     object(Handler) t = free_threads[0];
