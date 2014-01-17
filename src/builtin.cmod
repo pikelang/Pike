@@ -1183,9 +1183,24 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
  *! @member function(:void) "post_cb"
  *!   This function is called when the mark and sweep pass of the gc
  *!   is done.
- *! @member function(object:void) "destruct_cb"
+ *! @member function(object,int,int:void) "destruct_cb"
  *!   This function is called once for each object that is part of
  *!   a cycle just before the gc will destruct it.
+ *!   The arguments are:
+ *!   @dl
+ *!     @item
+ *!       The object to be destructed.
+ *!     @item
+ *!       The reason for it being destructed. One of:
+ *!       @int
+ *!         @value Object.DESTRUCT_CLEANUP
+ *!           Destructed during exit.
+ *!         @value Object.DESTRUCT_GC
+ *!           Destructed during normal implicit or explicit @[gc()].
+ *!       @endint
+ *!     @item
+ *!       The number of references it had.
+ *!   @enddl
  *! @member function(int:void) "done_cb"
  *!   This function is called when the gc is done and about to exit.
  *!   The argument is the same value as will be returned by gc().

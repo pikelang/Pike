@@ -3873,7 +3873,9 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
       );
       if (!SAFE_IS_ZERO(&gc_destruct_cb)) {
 	ref_push_object(o);
-	safe_apply_svalue(&gc_destruct_cb, 1, 1);
+	push_int(reason);
+	push_int(o->refs - 1);
+	safe_apply_svalue(&gc_destruct_cb, 3, 1);
 	pop_stack();
       }
 
