@@ -1313,8 +1313,14 @@ class MetaExplicit
     }
 
     protected string _sprintf(int t) {
-      return t=='O' && sprintf("%O(%s %d %O)", this_program, type_name,
-			       real_tag, contents);
+      if (t != 'O') return UNDEFINED;
+      if ((real_cls == 2) && (real_tag <= 3)) {
+	// Special case for the convenience variants further below.
+	return sprintf("%O.TaggedType%d(%O)",
+		       global::this, real_tag, contents);
+      }
+      return sprintf("%O(%s %d %O)", this_program, type_name,
+		     real_tag, contents);
     }
 
 #ifdef COMPATIBILITY
@@ -1332,6 +1338,27 @@ class MetaExplicit
   }
 }
 
+//! Some common explicit tags for convenience.
+//!
+//! These are typically used to indicate which
+//! of several optional fields are present.
+//!
+//! @example
+//!   Eg RFC 5915 section 3:
+//!   @code
+//!     ECPrivateKey ::= SEQUENCE {
+//!       version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+//!       privateKey     OCTET STRING,
+//!       parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
+//!       publicKey  [1] BIT STRING OPTIONAL
+//!     }
+//!   @endcode
+//!   The presence of the fields @tt{parameters@} and @tt{publicKey@} above
+//!   are indicated with @[TaggedType0] and @[TaggedType1] respectively.
+MetaExplicit TaggedType0 = MetaExplicit(2, 0);
+MetaExplicit TaggedType1 = MetaExplicit(2, 1);
+MetaExplicit TaggedType2 = MetaExplicit(2, 2);
+MetaExplicit TaggedType3 = MetaExplicit(2, 3);
 
 #ifdef COMPATIBILITY
 constant meta_explicit = MetaExplicit;
