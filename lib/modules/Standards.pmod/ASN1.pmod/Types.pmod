@@ -72,7 +72,7 @@ class Object
   //! @returns
   //!   the combined tag header
   int get_combined_tag() {
-    return make_combined_tag(get_tag(), get_cls());
+    return make_combined_tag(get_cls(), get_tag());
   }
 
   string(0..255) der;
@@ -1281,6 +1281,17 @@ class MetaExplicit
     int get_cls() { return real_cls; }
 
     Object contents;
+
+    array(Object) `elements() { return contents ? ({ contents }) : ({}); }
+    void `elements=(array(Object) args)
+    {
+      if (sizeof(args) > 1) error("Invalid number of elements.\n");
+      contents = sizeof(args) && args[0];
+    }
+
+    int `combined_tag() {
+      return get_combined_tag();
+    }
 
     this_program init(Object o) {
       contents = o;
