@@ -128,12 +128,21 @@ class Constructed
 
     if (!p)
     {
-#ifdef ASN1_DEBUG
-      werror("Unknown constructed type\n");
-#endif
       while (!struct->is_empty())
 	elements += ({ der_decode(struct, types) });
 
+      if (((raw_tag & 0xc0) == 0x80) && (sizeof(elements) == 1)) {
+	// Context-specific constructed compound with a single element.
+	// ==> Probably a TaggedType.
+#ifdef ASN1_DEBUG
+	werror("Probable tagged type.\n");
+#endif
+	return .Types.MetaExplicit(2, raw_tag & 0x1f)(elements[0]);
+      }
+
+#ifdef ASN1_DEBUG
+      werror("Unknown constructed type.\n");
+#endif
       return constructed(tag, contents, elements);
     }
 
