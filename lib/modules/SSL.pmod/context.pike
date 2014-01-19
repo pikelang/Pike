@@ -303,6 +303,21 @@ protected int cipher_suite_sort_key(int suite)
   return cipher | hash << 8 | ke_prio << 16 | keylength << 24 | auth_prio << 36;
 }
 
+//! Sort a set of cipher suites according to our preferences.
+//!
+//! @returns
+//!   Returns the array sorted with the most preferrable (aka "best")
+//!   cipher suite first.
+//!
+//! @note
+//!   The original array (@[suites]) is modified destructively,
+//!   but is not the same array as the result.
+array(int) sort_suites(array(int) suites)
+{
+  sort(map(suites, cipher_suite_sort_key), suites);
+  return reverse(suites);
+}
+
 //! Get the prioritized list of supported cipher suites
 //! that satisfy the requirements.
 //!
@@ -378,10 +393,8 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 	       });
 #endif
 
-  // Sort.
-  sort(map(res, cipher_suite_sort_key), res);
-
-  return reverse(res);
+  // Sort and return.
+  return sort_suites(res);
 }
 
 //! Filter cipher suites from @[preferred_suites] that don't have a
