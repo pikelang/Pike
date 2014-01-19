@@ -112,34 +112,34 @@ class TLSSigner
   //! The TLS 1.2 hash used to sign packets.
   Crypto.Hash hash = Crypto.SHA1;
 
-  ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
+  ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = context->rsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign = session->rsa->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_rsa, 1);
     struct->put_var_string(sign, 2);
     return struct;
   }
 
-  ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
+  ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = context->dsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign = session->dsa->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_dsa, 1);
     struct->put_var_string(sign, 2);
     return struct;
   }
 
-  ADT.struct ecdsa_sign(object context, string cookie, ADT.struct struct)
+  ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = context->ecdsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign = session->ecdsa->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_ecdsa, 1);
     struct->put_var_string(sign, 2);
     return struct;
   }
 
-  int(0..1) verify(object context, string cookie, ADT.struct struct,
+  int(0..1) verify(object session, string cookie, ADT.struct struct,
 		   ADT.struct input)
   {
     int hash_id = input->get_uint(1);
@@ -149,16 +149,16 @@ class TLSSigner
     Crypto.Hash hash = HASH_lookup[hash_id];
     if (!hash) return 0;
 
-    if ((sign_id == SIGNATURE_rsa) && context->rsa) {
-      return context->rsa->pkcs_verify(cookie + struct->contents(),
+    if ((sign_id == SIGNATURE_rsa) && session->rsa) {
+      return session->rsa->pkcs_verify(cookie + struct->contents(),
 				       hash, sign);
     }
-    if ((sign_id == SIGNATURE_dsa) && context->dsa) {
-      return context->dsa->pkcs_verify(cookie + struct->contents(),
+    if ((sign_id == SIGNATURE_dsa) && session->dsa) {
+      return session->dsa->pkcs_verify(cookie + struct->contents(),
 				       hash, sign);
     }
-    if ((sign_id == SIGNATURE_ecdsa) && context->ecdsa) {
-      return context->ecdsa->pkcs_verify(cookie + struct->contents(),
+    if ((sign_id == SIGNATURE_ecdsa) && session->ecdsa) {
+      return session->ecdsa->pkcs_verify(cookie + struct->contents(),
 					 hash, sign);
     }
     return 0;
@@ -1178,21 +1178,21 @@ class Camellia_GCM
 #endif
 
 //! Signing using RSA.
-ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
+ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
 {
   /* Exactly how is the signature process defined? */
   
   string params = cookie + struct->contents();
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
       
-  object s = context->rsa->raw_sign(digest);
+  object s = session->rsa->raw_sign(digest);
 
   struct->put_bignum(s);
   return struct;
 }
 
 //! Verify an RSA signature.
-int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
+int(0..1) rsa_verify(object session, string cookie, ADT.struct struct,
 		     ADT.struct input)
 {
   /* Exactly how is the signature process defined? */
@@ -1202,52 +1202,52 @@ int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
 
   Gmp.mpz signature = input->get_bignum();
 
-  return context->rsa->raw_verify(digest, signature);
+  return session->rsa->raw_verify(digest, signature);
 }
 
 //! Signing using DSA.
-ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
+ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
-  string s = context->dsa->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
+  string s = session->dsa->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
   struct->put_var_string(s, 2); 
   return struct;
 }
 
 //! Verify a DSA signature.
-int(0..1) dsa_verify(object context, string cookie, ADT.struct struct,
+int(0..1) dsa_verify(object session, string cookie, ADT.struct struct,
 		     ADT.struct input)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
-  return context->dsa->pkcs_verify(cookie + struct->contents(),
+  return session->dsa->pkcs_verify(cookie + struct->contents(),
 				   Crypto.SHA1, input->get_var_string(2));
 }
 
 //! Signing using ECDSA.
-ADT.struct ecdsa_sign(object context, string cookie, ADT.struct struct)
+ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
 {
-  string sign = context->ecdsa->pkcs_sign(cookie + struct->contents(),
+  string sign = session->ecdsa->pkcs_sign(cookie + struct->contents(),
 					  Crypto.SHA1);
   struct->put_var_string(sign, 2);
   return struct;
 }
 
 //! Verify a ECDSA signature.
-int(0..1) ecdsa_verify(object context, string cookie, ADT.struct struct,
+int(0..1) ecdsa_verify(object session, string cookie, ADT.struct struct,
 		       ADT.struct input)
 {
-  return context->ecdsa->pkcs_verify(cookie + struct->contents(),
+  return session->ecdsa->pkcs_verify(cookie + struct->contents(),
 				     Crypto.SHA1, input->get_var_string(2));
 }
 
 //! The NULL signing method.
-ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
+ADT.struct anon_sign(object session, string cookie, ADT.struct struct)
 {
   return struct;
 }
 
 //! The NULL verifier.
-int(0..1) anon_verify(object context, string cookie, ADT.struct struct,
+int(0..1) anon_verify(object session, string cookie, ADT.struct struct,
 		      ADT.struct input)
 {
   return 1;
