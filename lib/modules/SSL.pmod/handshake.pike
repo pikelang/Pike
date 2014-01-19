@@ -483,29 +483,18 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     array(string(0..255)) certs;
     SSL3_DEBUG_MSG("Selecting server key.\n");
 
-    // populate the key to be used for the session.
-    object key = select_server_key();
+    // Populate the key to be used for the session.
+    Crypto.Sign key = select_server_key();
     SSL3_DEBUG_MSG("Selected server key: %O\n", key);
 
-    if (key) {
-      if(Program.implements(object_program(key), Crypto.DSA)) {
-	session->dsa = [object(Crypto.DSA)]key;
-      } else if(Program.implements(object_program(key), Crypto.RSA)) {
-	session->rsa = [object(Crypto.RSA)]key;
-      }
-#if constant(Crypto.ECC.Curve)
-      else
-      {
-	session->ecdsa = [object(Crypto.ECC.SECP_521R1.ECDSA)]key;
-      }
-#endif
-    }
+    session->private_key = key;
 
     SSL3_DEBUG_MSG("Checking for Certificate.\n");
 
     if (certs = select_server_certificate())
     {
       SSL3_DEBUG_MSG("Sending Certificate.\n");
+      session->certificate_chain = certs;
       send_packet(certificate_packet(certs));
     } else {
       // Otherwise the server will just silently send an invalid
@@ -1600,15 +1589,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       mixed error=catch
       {
-	Standards.X509.Verifier public_key = Standards.X509.decode_certificate(
-                session->peer_certificate_chain[0])->public_key;
-
-	if(public_key->type == "rsa")
-          session->rsa = public_key->rsa;
-        else if(public_key->type == "dsa")
-          session->dsa = public_key->dsa;
-        else
-          session->ecdsa = public_key->ecdsa;
+	session->peer_public_key = Standards.X509.decode_certificate(
+                session->peer_certificate_chain[0])->public_key->pkc;
       };
 
       if(error)

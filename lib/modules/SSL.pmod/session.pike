@@ -52,16 +52,13 @@ array(string) peer_certificate_chain;
 //! our certificate chain
 array(string) certificate_chain;
 
-//! The server's private key
-Crypto.RSA rsa;
+//! Our private key.
+Crypto.Sign private_key;
 
-//! The server's dsa private key
-Crypto.DSA dsa;
+//! The peer's public key (from the certificate).
+Crypto.Sign peer_public_key;
 
 #if constant(Crypto.ECC.Curve)
-//! The server's ecdsa private key
-Crypto.ECC.SECP_521R1.ECDSA ecdsa;
-
 //! The selected ECC curve
 Crypto.ECC.Curve curve;
 #endif /* Crypto.ECC.Curve */
@@ -71,26 +68,21 @@ Crypto.ECC.Curve curve;
 //! from the server.
 int(0..1) has_required_certificates()
 {
-  if( cipher_spec->sign == .Cipher.rsa_sign) return !!rsa;
-  if( cipher_spec->sign == .Cipher.dsa_sign) return !!dsa;
-#if constant(Crypto.ECC.Curve)
-  if (cipher_spec->sign == .Cipher.ecdsa_sign) return !!ecdsa;
-#endif /* Crypto.ECC.Curve */
-  if( cipher_spec->sign == .Cipher.anon_sign) return 1;
-  object o = function_object([function(mixed ...:void|mixed)](mixed)
-			     cipher_spec->sign);
-  if (objectp(o)) {
-    if (cipher_spec->sign == o->rsa_sign) return !!rsa;
-    if (cipher_spec->sign == o->dsa_sign) return !!dsa;
-#if constant(Crypto.ECC.Curve)
-    if (cipher_spec->sign == o->ecdsa_sign) return !!ecdsa;
-#endif /* Crypto.ECC.Curve */
-  }
-  return 0;
+  if (!peer_public_key) return (cipher_spec->sign == .Cipher.anon_sign);
+  return 1;
 }
 
 //! Sets the proper authentication method and cipher specification
-//! for the given cipher @[suite] and @[verison].
+//! for the given parameters.
+//!
+//! @param client_suites
+//!   The set of cipher suites that the client claims to support.
+//!
+//! @param version
+//!   The SSL protocol version to use.
+//!
+//! @param signature_algorithms
+//!   The set of signature algorithms tuples that the client claims to support.
 int set_cipher_suite(int suite, ProtocolVersion|int version,
 		     array(array(int))|void signature_algorithms)
 {

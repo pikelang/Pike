@@ -114,7 +114,8 @@ class TLSSigner
 
   ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = session->rsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign =
+      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_rsa, 1);
     struct->put_var_string(sign, 2);
@@ -123,7 +124,8 @@ class TLSSigner
 
   ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = session->dsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign =
+      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_dsa, 1);
     struct->put_var_string(sign, 2);
@@ -132,7 +134,8 @@ class TLSSigner
 
   ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
   {
-    string sign = session->ecdsa->pkcs_sign(cookie + struct->contents(), hash);
+    string sign =
+      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
     struct->put_uint(SIGNATURE_ecdsa, 1);
     struct->put_var_string(sign, 2);
@@ -149,19 +152,11 @@ class TLSSigner
     Crypto.Hash hash = HASH_lookup[hash_id];
     if (!hash) return 0;
 
-    if ((sign_id == SIGNATURE_rsa) && session->rsa) {
-      return session->rsa->pkcs_verify(cookie + struct->contents(),
-				       hash, sign);
-    }
-    if ((sign_id == SIGNATURE_dsa) && session->dsa) {
-      return session->dsa->pkcs_verify(cookie + struct->contents(),
-				       hash, sign);
-    }
-    if ((sign_id == SIGNATURE_ecdsa) && session->ecdsa) {
-      return session->ecdsa->pkcs_verify(cookie + struct->contents(),
-					 hash, sign);
-    }
-    return 0;
+    // FIXME: Validate that the sign_id is correct.
+
+    return session->peer_public_key &&
+      session->peer_public_key->pkcs_verify(cookie + struct->contents(),
+					    hash, sign);
   }
 
   protected void create(int hash_id)
@@ -393,8 +388,9 @@ class KeyExchangeRSA
     premaster_secret = struct->pop_data();
 
     SSL3_DEBUG_MSG("temp_key: %O\n"
-		   "session->rsa: %O\n", temp_key, session->rsa);
-    data = (temp_key || session->rsa)->encrypt(premaster_secret);
+		   "session->peer_public_key: %O\n",
+		   temp_key, session->peer_public_key);
+    data = (temp_key || session->peer_public_key)->encrypt(premaster_secret);
 
     if(version[1] >= PROTOCOL_TLS_1_0)
       data=sprintf("%2H", [string(0..255)]data);
@@ -422,13 +418,15 @@ class KeyExchangeRSA
     /* Decrypt the premaster_secret */
     SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
     SSL3_DEBUG_MSG("temp_key: %O\n"
-		   "session->rsa: %O\n", temp_key, session->rsa);
+		   "session->private_key: %O\n",
+		   temp_key, session->private_key);
     if(version[1] >= PROTOCOL_TLS_1_0) {
       if(sizeof(data)-2 == data[0]*256+data[1]) {
-	premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
+	premaster_secret =
+	  (temp_key || session->private_key)->decrypt(data[2..]);
       }
     } else {
-      premaster_secret = (temp_key || session->rsa)->decrypt(data);
+      premaster_secret = (temp_key || session->private_key)->decrypt(data);
     }
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
     if (!premaster_secret
@@ -477,7 +475,7 @@ class KeyExchangeRSA
     temp_struct->put_bignum(e);
     Crypto.RSA rsa = Crypto.RSA();
     rsa->set_public_key(n, e);
-    context->long_rsa = session->rsa;
+    context->long_rsa = session->peer_public_key;
     context->short_rsa = rsa;
     if (session->cipher_spec->is_exportable) {
       temp_key = rsa;
@@ -1185,7 +1183,7 @@ ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
   string params = cookie + struct->contents();
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
       
-  object s = session->rsa->raw_sign(digest);
+  object s = session->private_key->raw_sign(digest);
 
   struct->put_bignum(s);
   return struct;
@@ -1202,14 +1200,15 @@ int(0..1) rsa_verify(object session, string cookie, ADT.struct struct,
 
   Gmp.mpz signature = input->get_bignum();
 
-  return session->rsa->raw_verify(digest, signature);
+  return session->peer_public_key->raw_verify(digest, signature);
 }
 
 //! Signing using DSA.
 ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
-  string s = session->dsa->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
+  string s =
+    session->private_key->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
   struct->put_var_string(s, 2); 
   return struct;
 }
@@ -1219,15 +1218,16 @@ int(0..1) dsa_verify(object session, string cookie, ADT.struct struct,
 		     ADT.struct input)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
-  return session->dsa->pkcs_verify(cookie + struct->contents(),
-				   Crypto.SHA1, input->get_var_string(2));
+  return session->peer_public_key->pkcs_verify(cookie + struct->contents(),
+					       Crypto.SHA1,
+					       input->get_var_string(2));
 }
 
 //! Signing using ECDSA.
 ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
 {
-  string sign = session->ecdsa->pkcs_sign(cookie + struct->contents(),
-					  Crypto.SHA1);
+  string sign =
+    session->private_key->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
   struct->put_var_string(sign, 2);
   return struct;
 }
@@ -1236,8 +1236,9 @@ ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
 int(0..1) ecdsa_verify(object session, string cookie, ADT.struct struct,
 		       ADT.struct input)
 {
-  return session->ecdsa->pkcs_verify(cookie + struct->contents(),
-				     Crypto.SHA1, input->get_var_string(2));
+  return session->peer_public_key->pkcs_verify(cookie + struct->contents(),
+					       Crypto.SHA1,
+					       input->get_var_string(2));
 }
 
 //! The NULL signing method.
