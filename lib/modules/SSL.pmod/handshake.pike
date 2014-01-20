@@ -1071,6 +1071,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16))
 	{
+	  // NB TLS 1.2 E.2:
+	  //   session_id
+	  //     This field MUST be empty.
+	  // [...]
+	  //   Requests to resume a TLS session MUST use a TLS client hello.
           SSL3_DEBUG_MSG("SSL.handshake: Error decoding SSL2 handshake:\n"
                          "%s\n", err?describe_backtrace(err):"");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
