@@ -74,7 +74,7 @@ function (.context,array(string(0..255)):array(string(0..255)))
 //!
 //! The default implementation will select the key for a given server
 //! based on values contained in @[sni_keys].
-function (.context,array(string):object) select_server_key_func 
+function (.context,array(string):object(Crypto.Sign)) select_server_key_func
   = internal_select_server_key;
 
 //! Policy for client authentication. One of
@@ -211,7 +211,7 @@ mapping(string:array(string(0..255))) sni_certificates = ([]);
 //! @note
 //!  keys objects may be generated from a decoded key string using
 //!  @[Standards.PKCS.RSA.parse_private_key()].
-mapping(string:object) sni_keys = ([]);
+mapping(string:object(Crypto.Sign)) sni_keys = ([]);
 
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
@@ -577,10 +577,10 @@ private array(string(0..255))
   return 0;
 }
 
-private object internal_select_server_key(.context context,
+private Crypto.Sign internal_select_server_key(.context context,
   array(string) server_names)
 {
-  object key;
+  Crypto.Sign key;
 
   if(server_names && sizeof(server_names))
   {

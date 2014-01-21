@@ -129,9 +129,9 @@ private array(string(0..255)) select_server_certificate()
   return certs;
 }
 
-private object select_server_key()
+private Crypto.Sign select_server_key()
 {
-  object key;
+  Crypto.Sign key;
   if(context->select_server_key_func)
     key = context->select_server_key_func(context, server_names);
   if(!key) // fallback on previous behavior.
