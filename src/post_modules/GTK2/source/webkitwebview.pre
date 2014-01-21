@@ -1,0 +1,34 @@
+class Webkit.WebView;
+inherit GTK2.Container;
+
+
+%{
+#include <webkit-1.0/webkit/webkitwebview.h>
+%}
+
+signal close_web_view;
+signal create_web_view;
+signal web_view_ready;
+
+void create();
+
+int can_go_back();
+int can_go_forward();
+int can_copy_clipboard();
+int can_cut_clipboard();
+int can_paste_clipboard();
+int can_redo();
+
+/*void open(string uri);*/
+void load_uri(string uri);
+
+void paste_clipboard();
+void copy_clipboard();
+void cut_clipboard();
+
+void redo();
+void reload();
+void reload_bypass_cache();
+void select_all();
+
+void set_custom_encoding(string encoding);

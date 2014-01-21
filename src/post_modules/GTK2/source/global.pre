@@ -261,6 +261,9 @@ array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
     data[0]=g_strdup("Pike GTK");
     argc=1;
   }
+
+  if (!g_thread_supported ()) g_thread_init (NULL);
+
   pgtk2_is_setup=1;
   gtk_set_locale();
   gtk_init(&argc,&data);
