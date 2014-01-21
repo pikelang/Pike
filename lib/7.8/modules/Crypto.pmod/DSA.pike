@@ -61,7 +61,7 @@ this_program set_random(function(int:string) r)
 //! Makes a DSA hash of the messge @[msg].
 Gmp.mpz hash(string msg)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(Crypto.SHA1.hash(msg), 256) % q);
+  return [object(Gmp.mpz)](Gmp.mpz(Crypto.SHA1.hash([string(8bit)]msg), 256) % q);
 }
   
 protected Gmp.mpz random_number(Gmp.mpz n)
@@ -133,7 +133,7 @@ string sign_ssl(string msg)
 int(0..1) verify_ssl(string msg, string s)
 {
 #define Object Standards.ASN1.Types.Object
-  Object a = Standards.ASN1.Decode.simple_der_decode(s);
+  Object a = Standards.ASN1.Decode.simple_der_decode([string(8bit)]s);
 
   if (!a
       || (a->type_name != "SEQUENCE")
@@ -155,7 +155,7 @@ int(0..1) verify_ssl(string msg, string s)
 protected string nist_hash(Gmp.mpz x)
 {
   string s = x->digits(256);
-  return Crypto.SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
+  return Crypto.SHA1.hash([string(8bit)]s[sizeof(s) - SEED_LENGTH..]);
 }
 
 //! The (slow) NIST method of generating a DSA prime pair. Algorithm
