@@ -207,7 +207,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	       "Seqence number: %O\n",
 	       digest, mac->hash(packet, seq_num), seq_num);
 #endif
-	alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	alert = alert || Alert(ALERT_fatal, ALERT_bad_record_mac, version);
       }
     seq_num += 1;
   }
