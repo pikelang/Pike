@@ -9,6 +9,67 @@ inherit GTK2.Container;
 signal close_web_view;
 signal create_web_view;
 signal web_view_ready;
+signal console_message;
+signal context_menu;
+signal copy_clipboard;
+signal create_plugin_widget;
+signal cut_clipboard;
+signal database_quota_exceeded;
+signal document_load_finished;
+signal cut_clipboard;
+signal database_quota_exceeded;
+signal document_load_finished;
+signal download_requested;
+signal editing_began;
+signal editing_ended;
+signal entering_fullscreen;
+signal frame_created;
+signal geolocation_policy_decision_cancelled;
+signal geolocation_policy_decision_requested;
+signal hovering_over_link;
+signal icon_loaded;
+signal leaving_fullscreen;
+signal load_committed;
+signal load_error;
+signal load_finished;
+signal load_progress_changed;
+signal load_started;
+signal mime_type_policy_decision_requested;
+signal move_cursor;
+signal navigation_policy_decision_requested;
+signal navigation_requested;
+signal new_window_policy_decision_requested;
+signal paste_clipboard;
+signal populate_popup;
+signal print_requested;
+signal redo;
+signal resource_content_length_received;
+signal resource_load_failed;
+signal resource_load_finished;
+signal resource_request_starting;
+signal resource_response_received;
+signal run_file_chooser;
+signal script_alert;
+signal script_confirm;
+signal script_prompt;
+signal select_all;
+signal selection_changed;
+signal should_apply_style;
+signal should_begin_editing;
+signal should_change_selected_range;
+signal should_delete_range;
+signal should_end_editing;
+signal should_insert_node;
+signal should_insert_text;
+signal should_show_delete_interface_for_element;
+signal status_bar_text_changed;
+signal title_changed;
+signal undo;
+signal user_changed_contents;
+signal viewport_attributes_changed;
+signal viewport_attributes_recompute_requested;
+signal web_view_ready;
+signal window_object_cleared;
 
 void create();
 
@@ -18,6 +79,13 @@ int can_copy_clipboard();
 int can_cut_clipboard();
 int can_paste_clipboard();
 int can_redo();
+int can_undo();
+void delete_selection();
+
+void execute_script(string script);
+
+int can_go_back_or_forward(int steps);
+int can_show_mime_type(string mime_type);
 
 /*void open(string uri);*/
 void load_uri(string uri);
@@ -26,9 +94,43 @@ void paste_clipboard();
 void copy_clipboard();
 void cut_clipboard();
 
+void undo();
+
 void redo();
 void reload();
 void reload_bypass_cache();
 void select_all();
 
 void set_custom_encoding(string encoding);
+string get_custom_encoding();
+int get_editable();
+string get_encoding();
+int get_full_content_zoom();
+string get_icon_uri();
+float get_progress();
+string get_title();
+int get_transparent();
+string get_uri();
+int get_view_source_mode();
+float get_zoom_level();
+void go_back();
+void go_back_or_forward(int steps);
+void go_forward();
+int has_selection();
+
+void load_string(string content, string mime_type, string encoding string base_uri);
+int mark_text_matches(string str, int case_sensitive, int limit);
+int search_text(string text, int case_sensitive, int forward, int wrap);
+void set_editable(int flag);
+void set_full_content_zoom(int full_content_zoom);
+void set_highlight_text_matches(int highlight);
+void set_maintains_back_forward_list(int flag);
+void set_transparent(int flag);
+void set_view_source_mode(int view_source_mode);
+void set_zoom_level(float zoom_level);
+void stop_loading();
+
+void unmark_text_matches();
+void zoom_in();
+void zoom_out();
+
