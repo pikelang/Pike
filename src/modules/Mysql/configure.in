@@ -245,7 +245,7 @@ dnl   fi
     ])
   ])
 
-  if test "x${MARIADB_CONFIG}" = "x"; then :; else
+  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
       # Needed for libmariadbclient.a 1.0.0.
       AC_SEARCH_LIBS(OPENSSL_config, crypto)
       AC_SEARCH_LIBS(SSL_library_init, ssl)
@@ -257,7 +257,7 @@ dnl   fi
   # mysql 3.23.x libmysqlclient requires zlib...
   AC_SEARCH_LIBS(compress, z)
 
-  if test "x${MARIADB_CONFIG}" = "x"; then :; else
+  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
       LIBS="${MARIADB_LIBS} ${LIBS}"
   fi
 
