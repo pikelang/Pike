@@ -265,9 +265,11 @@ dnl   fi
     ])
   ])
 
-  # Needed for libmariadbclient.a 1.0.0.
-  AC_SEARCH_LIBS(OPENSSL_config, crypto)
-  AC_SEARCH_LIBS(SSL_library_init, ssl)
+  if test "x${MARIADB_CONFIG}" = "x"; then :; else
+      # Needed for libmariadbclient.a 1.0.0.
+      AC_SEARCH_LIBS(OPENSSL_config, crypto)
+      AC_SEARCH_LIBS(SSL_library_init, ssl)
+  fi
 
   AC_SEARCH_LIBS(_db_doprnt_, dbug)
   AC_SEARCH_LIBS(my_init, mysys)
