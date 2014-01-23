@@ -1,0 +1,11 @@
+class Webkit.WebSettings;
+inherit G.Object;
+
+
+%{
+#include <webkit-1.0/webkit/webkitwebview.h>
+%}
+
+void create();
+
+string get_user_agent();

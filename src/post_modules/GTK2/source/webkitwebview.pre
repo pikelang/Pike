@@ -4,6 +4,7 @@ inherit GTK2.Container;
 
 %{
 #include <webkit-1.0/webkit/webkitwebview.h>
+#include <webkit-1.0/webkit/webkitwebsettings.h>
 %}
 
 signal close_web_view;
@@ -118,7 +119,7 @@ void go_back_or_forward(int steps);
 void go_forward();
 int has_selection();
 
-void load_string(string content, string mime_type, string encoding string base_uri);
+void load_string(string content, string mime_type, string encoding, string base_uri);
 int mark_text_matches(string str, int case_sensitive, int limit);
 int search_text(string text, int case_sensitive, int forward, int wrap);
 void set_editable(int flag);
@@ -133,4 +134,16 @@ void stop_loading();
 void unmark_text_matches();
 void zoom_in();
 void zoom_out();
+
+object get_settings()
+{
+ WebKitWebSettings * ws;  
+ pgtk2_verify_inited();
+  {
+    pgtk2_pop_n_elems(args);
+    ws=webkit_web_view_get_settings(WEBKIT_WEB_VIEW(THIS->obj));
+    push_gobjectclass(ws,pwebkit2_web_settings_program);
+  }
+}
+
 
