@@ -135,11 +135,7 @@ private Crypto.Sign select_server_key()
   if(context->select_server_key_func)
     key = context->select_server_key_func(context, server_names);
   if(!key) // fallback on previous behavior.
-    key = context->rsa || context->dsa
-#if constant(Crypto.ECC.Curve)
-      || context->ecdsa
-#endif
-;
+    key = context->private_key;
 
   return key;
 }

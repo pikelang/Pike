@@ -16,14 +16,42 @@
 
 import .Constants;
 
-//! The server's default private key
+//! The server's default private key.
+//!
+//! Supported key types are currently:
+//! @mixed
+//!   @type Crypto.RSA
+//!     Rivest-Shamir-Adelman.
+//!   @type Crypto.DSA
+//!     Digital Signing Algorithm.
+//!   @type Crypto.ECC.Curve.ECDSA
+//!     Elliptic Curve Digital Signing Algorithm.
+//! @endmixed
+//!
+//! This key MUST match the public key in the first certificate
+//! in @[certificates].
 //! 
 //! @note
 //!   If SNI (Server Name Indication) is used and multiple keys are
 //!   available, this key will not be used, instead the appropriate
 //!   SNI key will be used (the default implementation stores these in
 //!   @[sni_keys].
-Crypto.RSA rsa;
+Crypto.Sign private_key;
+
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ Crypto.RSA `rsa()
+{
+  return private_key && (private_key->name() == "RSA") &&
+    [object(Crypto.RSA)]private_key;
+}
+
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ void `rsa=(Crypto.RSA k)
+{
+  private_key = k;
+}
 
 //! Should an SSL client include the Server Name extension?
 //!
@@ -38,7 +66,22 @@ array(string(0..255)) client_server_names = ({});
 
 //! The client's private key (used with client certificate
 //! authentication)
-Crypto.RSA client_rsa;
+Crypto.Sign client_public_key;
+
+//! Compatibility.
+//! @deprecated client_public_key
+__deprecated__ Crypto.RSA `client_rsa()
+{
+  return client_public_key && (client_public_key->name() == "RSA") &&
+    [object(Crypto.RSA)]client_public_key;
+}
+
+//! Compatibility.
+//! @deprecated client_public_key
+__deprecated__ void `client_rsa=(Crypto.RSA k)
+{
+  client_public_key = k;
+}
 
 //! An array of certificate chains a client may present to a server
 //! when client certificate authentication is requested.
@@ -164,27 +207,39 @@ int verify_certificates = 0;
 Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
 
-//! Servers default dsa key.
-//!
-//! @note
-//!   If SNI (Server Name Indication) is used and multiple keys are
-//!   available, this key will not be used, instead the appropriate
-//!   SNI key will be used (the default implementation stores these in
-//!   @[sni_keys].
-Crypto.DSA dsa;
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ Crypto.DSA `dsa()
+{
+  return private_key && (private_key->name() == "DSA") && 
+    [object(Crypto.DSA)]private_key;
+}
+
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ void `dsa=(Crypto.DSA k)
+{
+  private_key = k;
+}
 
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
 
 #if constant(Crypto.ECC.Curve)
-//! Servers default ecdsa key.
-//!
-//! @note
-//!   If SNI (Server Name Indication) is used and multiple keys are
-//!   available, this key will not be used, instead the appropriate
-//!   SNI key will be used (the default implementation stores these in
-//!   @[sni_keys].
-Crypto.ECC.SECP_521R1.ECDSA ecdsa;
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ Crypto.ECC.SECP_521R1.ECDSA `ecdsa()
+{
+  return private_key && has_prefix(private_key->name(), "ECDSA") && 
+    [object(Crypto.ECC.SECP_521R1.ECDSA)]private_key;
+}
+
+//! Compatibility.
+//! @deprecated private_key
+__deprecated__ void `ecdsa=(Crypto.ECC.SECP_521R1.ECDSA k)
+{
+  private_key = k;
+}
 #endif
 
 //! Used to generate random cookies for the hello-message. If we use
