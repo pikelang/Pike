@@ -1855,6 +1855,32 @@ class client
 
     return b;
   }
+
+  //!
+  class Request(string domain, string req,
+		function(string,mapping,mixed...:void) callback,
+		array(mixed) args)
+  {
+    int retries;
+    int timestamp = time();
+
+    //! Cancel the current request.
+    void cancel()
+    {
+      remove(this_object());
+    }
+  };
+
+  mapping requests=([]);
+
+  protected void remove(object(Request) r)
+  {
+    if(!r) return;
+    sscanf(r->req,"%2c",int id);
+    m_delete(requests,id);
+    r->callback && r->callback(r->domain,0,@r->args);
+    destruct(r);
+  }
 }
 
 #define REMOVE_DELAY 120
@@ -1868,30 +1894,6 @@ class async_client
   inherit Stdio.UDP : udp;
   async_client next_client;
 
-  class Request(string domain, string req,
-		function(string,mapping,mixed...:void) callback,
-		array(mixed) args)
-  {
-    int retries;
-    int timestamp = time();
-
-    void cancel()
-    {
-      remove(this_object());
-    }
-  };
-
-  mapping requests=([]);
-
-  protected private void remove(object(Request) r)
-  {
-    if(!r) return;
-    sscanf(r->req,"%2c",int id);
-    m_delete(requests,id);
-    r->callback(r->domain,0,@r->args);
-    destruct(r);
-  }
-
   void retry(object(Request) r, void|int nsno)
   {
     if(!r) return;
@@ -1904,15 +1906,21 @@ class async_client
 	nsno = 0;
       }
     }
-    
+
     send(nameservers[nsno],53,r->req);
     call_out(retry,RETRY_DELAY,r,nsno+1);
   }
 
+  //! Enqueue a new raw DNS request.
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object.
+  //!
+  //! @note
+  //!   Pike versions prior to 8.0 did not return the @[Request] object.
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
     for(int e=next_client ? 100 : 256;e>=0;e--)
     {
@@ -1925,7 +1933,7 @@ class async_client
 	requests[lid]=r;
 	udp::send(nameservers[0],53,r->req);
 	call_out(retry,RETRY_DELAY,r,1);
-	return;
+	return r;
       }
     }
     
@@ -1936,7 +1944,7 @@ class async_client
     if(!next_client)
       next_client=this_program(nameservers,domains);
     
-    next_client->do_query(domain, cl, type, callback, @args);
+    return next_client->do_query(domain, cl, type, callback, @args);
   }
 
   protected private void rec_data(mapping m)
@@ -1960,15 +1968,15 @@ class async_client
     }
   }
 
-  protected private void generic_get(string d,
-				  mapping answer,
-				  int multi, 
-				  int all,
-				  int type, 
-				  string field,
-				  string domain,
-				  function callback,
-				  mixed ... args)
+  protected private Request generic_get(string d,
+					mapping answer,
+					int multi,
+					int all,
+					int type,
+					string field,
+					string domain,
+					function callback,
+					mixed ... args)
   {
     if(!answer || !answer->an || !sizeof(answer->an))
     {
@@ -1978,9 +1986,9 @@ class async_client
 	callback(domain,0,@args);
       } else {
 	// Multiple domain request. Try the next one...
-	do_query(domain+"."+domains[multi], C_IN, type,
-		 generic_get, ++multi, all, type, field, domain,
-		 callback, @args);
+	return do_query(domain+"."+domains[multi], C_IN, type,
+			generic_get, ++multi, all, type, field, domain,
+			callback, @args);
       }
     } else {
       if (all) {
@@ -1990,61 +1998,61 @@ class async_client
 	  if(an[field])
 	  {
 	    callback(domain, an[field], @args);
-	    return;
+	    return UNDEFINED;
 	  }
 	callback(domain,0,@args);
-	return;
       }
     }
+    return UNDEFINED;
   }
 
   //!
-  void host_to_ip(string host, function callback, mixed ... args)
+  Request host_to_ip(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_A,
-	       generic_get, 0, 0, T_A, "a", host, callback, @args );
+      return do_query(host, C_IN, T_A,
+		      generic_get, 0, 0, T_A, "a", host, callback, @args );
     } else {
-      do_query(host, C_IN, T_A,
-	       generic_get, -1, 0, T_A, "a",
-	       host, callback, @args);
+      return do_query(host, C_IN, T_A,
+		      generic_get, -1, 0, T_A, "a",
+		      host, callback, @args);
     }
   }
 
   //!
-  void ip_to_host(string ip, function callback, mixed ... args)
+  Request ip_to_host(string ip, function callback, mixed ... args)
   {
-    do_query(arpa_from_ip(ip), C_IN, T_PTR,
-	     generic_get, -1, 0, T_PTR, "ptr",
-	     ip, callback,
-	     @args);
+    return do_query(arpa_from_ip(ip), C_IN, T_PTR,
+		    generic_get, -1, 0, T_PTR, "ptr",
+		    ip, callback,
+		    @args);
   }
 
   //!
-  void get_mx_all(string host, function callback, mixed ... args)
+  Request get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_MX,
-	       generic_get, 0, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, 0, 1, T_MX, "mx", host, callback, @args);
     } else {
-      do_query(host, C_IN, T_MX,
-	       generic_get, -1, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, -1, 1, T_MX, "mx", host, callback, @args);
     }
   }
 
   //!
-  void get_mx(string host, function callback, mixed ... args)
+  Request get_mx(string host, function callback, mixed ... args)
   {
-    get_mx_all(host,
-	       lambda(string domain, array(mapping) mx,
-		      function callback, mixed ... args) {
-		 array a;
-		 if (mx) {
-		   a = column(mx, "mx");
-		   sort(column(mx, "preference"), a);
-		 }
-		 callback(a, @args);
-	       }, callback, @args);
+    return get_mx_all(host,
+		      lambda(string domain, array(mapping) mx,
+			     function callback, mixed ... args) {
+			array a;
+			if (mx) {
+			  a = column(mx, "mx");
+			  sort(column(mx, "preference"), a);
+			}
+			callback(a, @args);
+		      }, callback, @args);
   }
 
   //! Close the client.
@@ -2128,20 +2136,30 @@ class async_tcp_client
 {
   inherit async_client;
 
-  class Request(string domain, string req,
-		function(string,mapping,mixed...:void) callback,
-		array(mixed) args)
+  //!
+  class Request
   {
-    Stdio.File sock;
-    string writebuf="",readbuf="";
+    inherit ::this_program;
 
-    void create()
+    protected Stdio.File sock;
+    protected string writebuf="",readbuf="";
+
+    protected void create(string domain, string req,
+			  function(string,mapping,mixed...:void) callback,
+			  array(mixed) args)
     {
+      ::create(domain, req, callback, args);
       sock=Stdio.File();
       sock->async_connect(nameservers[0], 53, connectedcb);
     }
 
-    void connectedcb(int ok)
+    protected void close()
+    {
+      sock && sock->close();
+      sock = UNDEFINED;
+    }
+
+    protected void connectedcb(int ok)
     {
       if (!ok) {callback(domain, 0, @args); return;}
       sock->set_nonblocking(readcb, writecb, closecb);
@@ -2149,37 +2167,41 @@ class async_tcp_client
       writecb();
     }
 
-    void readcb(mixed id,string data)
+    protected void readcb(mixed id,string data)
     {
       readbuf+=data;
       if (sscanf(readbuf,"%2H",string ret))
       {
         if (callback) callback(domain, decode_res(ret), @args);
         callback=0;
-        sock->close();
+        close();
       }
     }
 
-    void writecb()
+    protected void writecb()
     {
       if (writebuf!="") writebuf=writebuf[sock->write(writebuf)..];
     }
 
-    void closecb()
+    protected void closecb()
     {
-      sock->close();
-      if (callback) callback(domain, 0, @args);
-      callback=0;
+      cancel();
+    }
+
+    void cancel()
+    {
+      close();
+      ::cancel();
     }
   }
 
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
     string req=low_mkquery(random(65536),domain,cl,type);
-    Request(domain, req, callback, args);
+    return Request(domain, req, callback, args);
   }
 }
 
@@ -2215,11 +2237,12 @@ class async_dual_client
   }
 
   //!
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
-    UDP::do_query(domain,cl,type,check_truncation,cl,type,callback,@args);
+    return UDP::do_query(domain,cl,type,check_truncation,
+			 cl,type,callback,@args);
   }
 
   void create(mixed ... args) {::create(@args);}
@@ -2229,11 +2252,11 @@ class async_dual_client
 async_client global_async_client;
 
 #define GAC(X)								\
-void async_##X( string host, function callback, mixed ... args ) 	\
+async_client.Request async_##X( string host, function callback, mixed ... args ) 	\
 {									\
   if( !global_async_client )						\
     global_async_client = async_client();				\
-  global_async_client->X(host,callback,@args);				\
+  return global_async_client->X(host,callback,@args);			\
 }
 
 //! @ignore
