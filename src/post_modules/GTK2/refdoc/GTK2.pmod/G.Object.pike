@@ -65,6 +65,11 @@ G.Object signal_emit( string signal_name, string|void detail );
 //!
 //!
 
+G.Object signal_stop( string signal_name );
+//! Stop the emission of a signal.
+//!
+//!
+
 G.Object signal_unblock( int signal_id );
 //! Unblock a formerly blocked signal handler.  See signal_block() and
 //! signal_connect() for more info.
