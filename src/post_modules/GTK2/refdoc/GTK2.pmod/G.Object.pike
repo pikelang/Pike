@@ -18,11 +18,7 @@ G.Object destroy( );
 //!
 
 object get_data( string name );
-//! Each object carries around a table of associations from strings to
-//! pointers. This function lets you set an association. 
-//!
-//! If the object already had an association with that name, the old
-//! association will be destroyed.
+//! Gets a named field from the object.
 //!
 //!
 
@@ -47,7 +43,11 @@ G.Object notify( string property );
 //!
 
 object set_data( string name, mixed arg );
-//! Gets a named field from the object.
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association.
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
 //!
 //!
 

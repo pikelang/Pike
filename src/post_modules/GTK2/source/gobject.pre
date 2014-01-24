@@ -305,7 +305,11 @@ void pgtk2_object_destroy_data(gpointer data) {
 %}
 
 object set_data(string name, mixed arg)
-//! Gets a named field from the object.
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association.
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
 {
   pgtk2_verify_inited();
   {
@@ -322,11 +326,7 @@ object set_data(string name, mixed arg)
 }
 
 object get_data(string name)
-//! Each object carries around a table of associations from strings to
-//! pointers. This function lets you set an association. 
-//!
-//! If the object already had an association with that name, the old
-//! association will be destroyed.
+//! Gets a named field from the object.
 {
   pgtk2_verify_inited();
   {
