@@ -141,7 +141,7 @@ Identifier dh_id = Identifier(1, 2, 840, 10046, 2, 1);
 
 Identifier at_id = Identifier(2, 5, 4);
 
-mapping(Identifier:string) short_name_ids = 
+mapping(Identifier:string(7bit)) short_name_ids =
 ([
   at_id->append(3) : "CN",       /* printable string */
   at_id->append(6) : "C",       /* printable string */
@@ -152,7 +152,17 @@ mapping(Identifier:string) short_name_ids =
   Identifier(1, 2, 840, 113549, 1, 9, 1) : "E" /* printable string */
 ]);
 
-mapping(string:Identifier) name_ids =
+protected mapping(Identifier:string(7bit))
+  reverse_lookup(mapping(string(7bit):Identifier) table)
+{
+  mapping(Identifier:string(7bit)) ret = ([]);
+  foreach(sort(indices(table)), string(7bit) index) {
+    ret[table[index]] = index;
+  }
+  return ret;
+}
+
+mapping(string(7bit):Identifier) name_ids =
 ([  
   /* layman.asc says "commonUnitName". Typo? */
   "commonName" : at_id->append(3),        /* printable string */
@@ -165,7 +175,9 @@ mapping(string:Identifier) name_ids =
   "postalCode" : at_id->append(17),       /* printable string */
   ]);
 
-mapping(string:Identifier) attribute_ids =
+mapping(Identifier:string(7bit)) reverse_name_ids = reverse_lookup(name_ids);
+
+mapping(string(7bit):Identifier) attribute_ids =
 ([
   "emailAddress" : pkcs_9_id->append(1),            /* IA5String */
   "unstructuredName" : pkcs_9_id->append(2),        /* IA5String */
@@ -181,9 +193,12 @@ mapping(string:Identifier) attribute_ids =
   "localKeyID" : pkcs_9_id->append(21)              /* OCTET STRING */
 ]);
 
+mapping(Identifier:string(7bit)) reverse_attribute_ids =
+  reverse_lookup(attribute_ids);
+
 /* From RFC 2459 */
 
-mapping(string:Identifier) at_ids =
+mapping(string(7bit):Identifier) at_ids =
 ([ /* All attribute values are a CHOICE of most string types,
     * including PrintableString, TeletexString (which in practice
     * means latin1) and UTF8String. */
@@ -205,11 +220,13 @@ mapping(string:Identifier) at_ids =
   "emailAddress" : pkcs_9_id->append(1)            /* IA5String */  
 ]);
 
+mapping(Identifier:string(7bit)) reverse_at_ids = reverse_lookup(at_ids);
+
 Identifier ce_id = Identifier(2, 5, 29);
 Identifier pkix_id = Identifier(1, 3, 6, 1, 5, 5, 7);
 
 
-mapping(string:Identifier) ce_ids =
+mapping(string(7bit):Identifier) ce_ids =
 ([
    "subjectDirectoryAttributes"	: ce_id->append(9),
    "subjectKeyIdentifier"	: ce_id->append(14),
@@ -227,23 +244,29 @@ mapping(string:Identifier) ce_ids =
    "extKeyUsage"		: ce_id->append(37)
  ]);
 
+mapping(Identifier:string(7bit)) reverse_ce_ids = reverse_lookup(ce_ids);
+
 /* Policy qualifiers */
 Identifier qt_id = pkix_id->append(2);
 
-mapping(string:Identifier) qt_ids =
+mapping(string(7bit):Identifier) qt_ids =
 ([ "cps" : qt_id->append(1),
    "unotice" : qt_id->append(2) ]);
+
+mapping(Identifier:string(7bit)) reverse_qt_ids = reverse_lookup(qt_ids);
   
 /* Key purposes */
 
 Identifier kp_id = pkix_id->append(3);
 
-mapping(string:Identifier) kp_ids =
+mapping(string(7bit):Identifier) kp_ids =
 ([ "serverAuth" : kp_id->append(1),
    "clientAuth" : kp_id->append(2),
    "codeSigning" : kp_id->append(3),
    "emailProtection" : kp_id->append(4),
    "timeStamping" : kp_id->append(8) ]);
+
+mapping(Identifier:string(7bit)) reverse_kp_ids = reverse_lookup(kp_ids);
 
 /* Private extensions */
 Identifier pe_id = pkix_id->append(1);
@@ -252,5 +275,7 @@ Identifier pe_id = pkix_id->append(1);
 
 Identifier ad_id = pkix_id->append(48);
 
-mapping(string:Identifier) ad_ids =
+mapping(string(7bit):Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
+
+mapping(Identifier:string(7bit)) reverse_ad_ids = reverse_lookup(ad_ids);
