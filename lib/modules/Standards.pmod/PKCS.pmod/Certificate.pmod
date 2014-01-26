@@ -207,9 +207,25 @@ variant Sequence build_distinguished_name(array args)
 			    } ));
 }
 
-Sequence decode_pem_certificate(string cert)
+//! Perform the reverse operation of @[build_distinguished_name()].
+//!
+//! @seealso
+//!   @[build_distinguished_name()]
+array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
 {
-
+  array(mapping(string(7bit):string)) ret =
+    allocate(sizeof(dn->elements), aggregate_mapping)();
+  foreach(dn->elements; int i; Set attr) {
+    foreach(attr->elements, Sequence val) {
+      string(7bit) name = reverse_at_ids[val[0]];
+      if (!name) {
+	// Unknown identifier.
+	name = ((array(string))val[0]->id) * ".";
+      }
+      ret[i][name] = val[1]->value;
+    }
+  }
+  return ret;
 }
 
 //! Return the certificate issuer RDN from a certificate string.
