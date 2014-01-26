@@ -16,10 +16,35 @@ void destroy()
   push_int(0);
 }
 
+array list_properties()
+{
+  GParamSpec **gpsa;
+  GParamSpec **loc;
+  int num, x;
+  
+  pgtk2_verify_inited();
+
+  gpsa=g_object_class_list_properties(G_OBJECT_GET_CLASS(THIS->obj), &n);
+  if (!gpsa)
+    Pike_error("Unable to get properties list.");
+
+  loc = gpsa;
+
+  for(x = 0; x < num; x++)
+  {
+    push_text(loc->name)
+    loc++;
+  }
+
+  g_free(gpsa);
+  f_aggregate(num);
+
+
+}
+
 void set_property(string property, mixed value)
 //! Set a property on a G.Object (and any derived types) to value.
 {
-  pgtk2_verify_inited();
   {
     char *prop;
     struct svalue *sv;
