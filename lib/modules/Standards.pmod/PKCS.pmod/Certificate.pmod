@@ -154,6 +154,7 @@ class attribute_set
   }
 }
 
+//!
 variant Sequence build_distinguished_name(mapping args)
 {
   // Turn mapping into array of pairs
