@@ -79,23 +79,23 @@ class MySSLPort
   //!
   void set_default_keycert()
   {
-    rsa = Crypto.RSA();
-    rsa->generate_key( 4096 );
+    private_key = Crypto.RSA();
+    private_key->generate_key( 4096 );
 
-    mapping attrs = ([
+    mapping a = ([
       "organizationName" : "Pike TLS server",
       "commonName" : "*",
     ]);
 
     certificates = ({
-      Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs)
+      Standards.X509.make_selfsigned_certificate(private_key, 3600*24*365, a)
     });
   }
 
   //!
   void set_key(string skey)
   {
-    rsa = Standards.PKCS.RSA.parse_private_key(skey);
+    private_key = Standards.PKCS.RSA.parse_private_key(skey);
   }
 
   //!
