@@ -95,7 +95,8 @@ class MySSLPort
   //!
   void set_key(string skey)
   {
-    private_key = Standards.PKCS.RSA.parse_private_key(skey);
+    private_key = Standards.PKCS.RSA.parse_private_key(skey) ||
+      Standards.PKCS.DSA.parse_private_key(skey);
   }
 
   //!
@@ -106,13 +107,6 @@ class MySSLPort
     else
       certificates = ({ [string]certificate });
   }
-
-  void create()
-  {
-    sslport::create();
-    random = Crypto.Random.random_string;
-  }
-
 }
 
 string _sprintf(int t) {
