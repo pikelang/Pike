@@ -501,14 +501,6 @@ cond_resolv( Nettle.Proxy, [[
   ]], "")
   
 ]])
-	  
-cond_resolv( Nettle.CBC, [[
-test_tests(
-  array(int) a() {
-    return Tools.Testsuite.run_script (({"]]SRCDIR[[/rijndaeltest.pike",
-				         "--quick"}));
-  }
-)
 
 test_do([[
   object x = Nettle.CBC (Crypto.AES);
