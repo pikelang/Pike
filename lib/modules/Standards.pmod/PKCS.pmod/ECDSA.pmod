@@ -15,8 +15,9 @@ protected void create()
 {
   // Initialize the curve_lookup table.
   foreach(values(Crypto.ECC), mixed c) {
-    if (!objectp(c) || !functionp(c->pkcs_named_curve_id)) continue;
-    curve_lookup[c->pkcs_named_curve_id()->get_der()] = c;
+    if (!objectp(c) || !functionp(([object]c)->pkcs_named_curve_id)) continue;
+    object(Crypto.ECC.Curve) curve = [object(Crypto.ECC.Curve)]c;
+    curve_lookup[curve->pkcs_named_curve_id()->get_der()] = curve;
   }
 }
 
@@ -43,13 +44,13 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 		    1,
 		    // privateKey     OCTET STRING,
 		    OctetString(sprintf("%*c",
-					(ecdsa->size() + 7)>>3,
+					[int(0..)]((ecdsa->size() + 7)>>3),
 					ecdsa->get_private_key())),
 		    // parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
-		    ContextTag0(ecdsa->curve()->pkcs_ec_parameters()),
+		    TaggedType0(ecdsa->curve()->pkcs_ec_parameters()),
 		    // publicKey  [1] BIT STRING OPTIONAL
-		    ContextTag1(BitString(ecdsa->get_public_key())),
-		  }));
+		    TaggedType1(BitString(ecdsa->get_public_key())),
+		  }))->get_der();
   // }
 }
 
@@ -57,18 +58,33 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 //! an ASN.1 DER encoded ec private key.
 //!
 //! As specified in RFC 5915 section 3.
-Crypto.ECC.SECP_521R1.ECDSA parse_ec_private_key(string ec_private_key)
+Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
+					      Crypto.ECC.Curve|void c)
 {
-  Object a = Standards.ASN1.Decode.simple_der_decode(ec_private_key);
-  if (!a || a->type_name != "SEQUENCE" || (sizeof(a->elements) < 2) ||
+  Object o =
+    Standards.ASN1.Decode.simple_der_decode(ec_private_key);
+  if (!o || o->type_name != "SEQUENCE") return UNDEFINED;
+  Sequence a = [object(Sequence)]o;
+  if ((sizeof(a->elements) < 2) ||
       (a->elements[0]->type_name != "INTEGER") ||
       (a->elements[0]->value != 1) ||
       (a->elements[1]->type_name != "OCTET STRING")) {
     return UNDEFINED;
   }
 
+  if ((sizeof(a->elements) > 2) &&
+      (a->elements[2]->type_name == "EXPLICIT") &&
+      !a->elements[2]->get_tag()) {
+    Sequence b = [object(Sequence)]a->elements[2];
+    if ((sizeof(b->elements) == 1)) {
+      c = parse_ec_parameters([string(8bit)]b->elements[0]->get_der());
+    }
+  }
+
+  if (!c) return UNDEFINED;
+
   Crypto.ECC.SECP_521R1.ECDSA res = c->ECDSA();
-  res->set_private_key(Gmp.mpz(a->elements[1]->value, 256));
+  res->set_private_key(Gmp.mpz([string(8bit)]a->elements[1]->value, 256));
   return res;
 }
 #else
