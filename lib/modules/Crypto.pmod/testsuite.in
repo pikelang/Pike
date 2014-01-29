@@ -469,6 +469,7 @@ test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),1), 0 )
 test_do( add_constant("RSA") )
 
 // Crypto.DSA
+
 cond_resolv(Crypto.SHA1.name, [[
 test_do( add_constant("DSA", Crypto.DSA()) )
 test_eq( DSA->name(), "DSA" )
@@ -518,6 +519,31 @@ test_true( DSB->get_y()->gcdext2 )
 test_do( add_constant("DSB") )
 test_do( add_constant("DSA") )
 ]])
+
+// Crypto.ECC
+
+define(test_curve,[[
+cond_resolv(Crypto.ECC.$1, [[
+  test_eq(Crypto.ECC.$1->name(),"$1")
+  test_eq(Crypto.ECC.$1->size(),(int)"$1"[5..])
+  test_eq((array(string))Crypto.ECC.$1->pkcs_named_curve_id()->_encode()*".",
+          $2)
+  test_do(add_constant("ecdsa", Crypto.ECC.$1.ECDSA()))
+  test_true(ecdsa->set_random(random_string))
+  test_true(ecdsa->generate_key())
+  test_eq(ecdsa->curve(),Crypto.ECC.$1)
+  test_eq(ecdsa->size(),(int)"$1"[5..])
+  test_any([[
+    array sign = ecdsa->raw_sign("hej");
+    return ecdsa->raw_verify("hej", @sign);
+  ]], 1)
+  test_do(add_constant("ecdsa"))
+]])]])
+test_curve(SECP_192R1,"1.2.840.10045.3.1.1")
+test_curve(SECP_224R1,"1.3.132.0.33")
+test_curve(SECP_256R1,"1.2.840.10045.3.1.7")
+test_curve(SECP_384R1,"1.3.132.0.34")
+test_curve(SECP_521R1,"1.3.132.0.35")
 
 dnl Crypto.substitution
 
