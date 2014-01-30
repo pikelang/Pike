@@ -105,7 +105,8 @@ PIKEFUN array(object(Gmp.mpz))
 }
 
 /*! @decl array(object(Gmp.mpz)) @
- *!         rsa_generate_keypair(int bits, int e, function(int:string(0..255)) rnd)
+ *!         rsa_generate_keypair(int bits, int e, @
+ *!                              function(int:string(0..255)) rnd)
  *!
  *! Generates an RSA key pair with a @[bits] sized modulus (n), using
  *! the provided value for @[e] and random function @[rnd].
@@ -444,7 +445,7 @@ PIKECLASS ECC_Curve
 
     /*! @decl void set_private_key(object(Gmp.mpz)|int k)
      *!
-     *! Set the private key.
+     *! Set the private key (and corresponding private key).
      *!
      *! @note
      *!   Throws errors if the key isn't valid for the curve.
@@ -455,6 +456,8 @@ PIKECLASS ECC_Curve
       if (!ecc_scalar_set(&THIS->key, (mpz_srcptr)k->u.object->storage)) {
 	SIMPLE_ARG_ERROR("set_private_key", 1, "Invalid key for curve.");
       }
+      /* Set the corresponding public key, */
+      ecc_point_mul_g(&THIS->pub, &THIS->key);
     }
 
     /*! @decl object(Gmp.mpz) get_x()
