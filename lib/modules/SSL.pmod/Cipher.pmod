@@ -1382,7 +1382,6 @@ array lookup(int suite, ProtocolVersion|int version,
     {
     case KE_rsa:
     case KE_dhe_rsa:
-    case KE_ecdh_rsa:
     case KE_ecdhe_rsa:
       res->sign = rsa_sign;
       res->verify = rsa_verify;
@@ -1398,6 +1397,7 @@ array lookup(int suite, ProtocolVersion|int version,
       res->verify = anon_verify;
       break;
 #if constant(Crypto.ECC.Curve)
+    case KE_ecdh_rsa:
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
       res->sign = ecdsa_sign;
@@ -1412,13 +1412,13 @@ array lookup(int suite, ProtocolVersion|int version,
     switch(ke_method) {
     case KE_rsa:
     case KE_dhe_rsa:
-    case KE_ecdh_rsa:
     case KE_ecdhe_rsa:
       sign_id = SIGNATURE_rsa;
       break;
     case KE_dhe_dss:
       sign_id = SIGNATURE_dsa;
       break;
+    case KE_ecdh_rsa:
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
       sign_id = SIGNATURE_ecdsa;
