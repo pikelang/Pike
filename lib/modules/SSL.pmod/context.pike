@@ -277,6 +277,9 @@ array(int) preferred_auth_methods =
 //! first.
 array(int) preferred_suites;
 
+//! Supported elliptical curve cipher curves in order of preference.
+array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
+
 //! List of advertised protocols using using TLS next protocol
 //! negotiation.
 array(string(0..255)) advertised_protocols;

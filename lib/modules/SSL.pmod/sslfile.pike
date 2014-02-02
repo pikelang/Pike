@@ -543,7 +543,7 @@ protected void create (Stdio.File stream, SSL.context ctx,
 
 mixed get_server_names()
 {
-  return conn->server_names;
+  return conn->session->server_names;
 }
 
 //! @returns

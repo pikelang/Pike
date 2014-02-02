@@ -58,6 +58,38 @@ Crypto.Sign private_key;
 //! The peer's public key (from the certificate).
 Crypto.Sign peer_public_key;
 
+/*
+ * Extensions provided by the peer.
+ */
+
+//! RFC 4366 3.1 (SNI)
+array(string(0..255)) server_names;
+
+//! The set of <hash, signature> combinations supported by the other end.
+//!
+//! Only used with TLS 1.2 and later.
+//!
+//! Defaults to the settings from RFC 5246 7.4.1.4.1.
+array(array(int)) signature_algorithms = ({
+  ({ HASH_sha, SIGNATURE_rsa }),
+  ({ HASH_sha, SIGNATURE_dsa }),
+  ({ HASH_sha, SIGNATURE_ecdsa }),
+});
+
+//! Supported elliptical curve cipher curves in order of preference.
+array(int) ecc_curves = ({});
+
+//! The selected elliptical curve point format.
+//!
+//! @note
+//!   May be @expr{-1@} to indicate that there's no supported overlap
+//!   between the server and client.
+int ecc_point_format = POINT_uncompressed;
+
+/*
+ * End of extensions.
+ */
+
 #if constant(Crypto.ECC.Curve)
 //! The selected ECC curve
 Crypto.ECC.Curve curve;
