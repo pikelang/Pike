@@ -62,9 +62,6 @@ string(0..255) server_verify_data = "";
 // 3.2: Initially of zero length for both the
 //      ClientHello and the ServerHello.
 
-// RFC 4366 3.1
-array(string(0..255)) server_names;
-
 //! The active @[Cipher.KeyExchange] (if any).
 .Cipher.KeyExchange ke;
 
@@ -72,27 +69,6 @@ ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 array(int) version;
 array(int) client_version; /* Used to check for version roll-back attacks. */
 int reuse;
-
-//! The set of <hash, signature> combinations supported by the other end.
-//!
-//! Only used with TLS 1.2 and later.
-//!
-//! Defaults to the settings from RFC 5246 7.4.1.4.1.
-array(array(int)) signature_algorithms = ({
-  ({ HASH_sha, SIGNATURE_rsa }),
-  ({ HASH_sha, SIGNATURE_dsa }),
-  ({ HASH_sha, SIGNATURE_ecdsa }),
-});
-
-//! Supported elliptical curve cipher curves in order of preference.
-array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
-
-//! The selected elliptical curve point format.
-//!
-//! @note
-//!   May be @expr{-1@} to indicate that there's no supported overlap
-//!   between the server and client.
-int ecc_point_format = POINT_uncompressed;
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
@@ -122,7 +98,8 @@ private array(string(0..255)) select_server_certificate()
 {
   array(string(0..255)) certs;
   if(context->select_server_certificate_func)
-    certs = context->select_server_certificate_func(context, server_names);
+    certs = context->select_server_certificate_func(context,
+						    session->server_names);
   if(!certs)
     certs = context->certificates;
 
@@ -133,7 +110,8 @@ private Crypto.Sign select_server_key()
 {
   Crypto.Sign key;
   if(context->select_server_key_func)
-    key = context->select_server_key_func(context, server_names);
+    key = context->select_server_key_func(context,
+					  session->server_names);
   if(!key) // fallback on previous behavior.
     key = context->private_key;
 
@@ -190,7 +168,8 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
-  if (sizeof(ecc_curves) && remote_extensions[EXTENSION_ec_point_formats]) {
+  if (sizeof(session->ecc_curves) &&
+      remote_extensions[EXTENSION_ec_point_formats]) {
     // RFC 4492 5.2:
     // The Supported Point Formats Extension is included in a
     // ServerHello message in response to a ClientHello message
@@ -281,12 +260,12 @@ Packet client_hello()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
-  if (sizeof(ecc_curves)) {
+  if (sizeof(context->ecc_curves)) {
     // RFC 4492 5.1:
     // The extensions SHOULD be sent along with any ClientHello message
     // that proposes ECC cipher suites.
     ADT.struct extension = ADT.struct();
-    foreach(ecc_curves, int curve) {
+    foreach(context->ecc_curves, int curve) {
       extension->put_uint(curve, 2);
     }
     extension->put_var_string(extension->pop_data(), 2);
@@ -434,9 +413,6 @@ int(0..1) not_ecc_suite(int cipher_suite)
 int(-1..0) reply_new_session(array(int) cipher_suites,
 			     array(int) compression_methods)
 {
-  reuse = 0;
-  session = context->new_session();
-
   SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
 		 fmt_cipher_suites(context->preferred_suites),
                  fmt_cipher_suites(cipher_suites));
@@ -444,7 +420,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   SSL3_DEBUG_MSG("intersection:\n%s\n",
                  fmt_cipher_suites((array(int))cipher_suites));
 
-  if (!sizeof(ecc_curves) || (ecc_point_format == -1)) {
+  if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
     // No overlapping support for ecc.
     // Filter the ECC suites from the set.
     SSL3_DEBUG_MSG("ECC not supported.\n");
@@ -453,7 +429,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 
   if (!sizeof(cipher_suites) ||
       !session->set_cipher_suite(cipher_suites[0], version[1],
-				 signature_algorithms)) {
+				 session->signature_algorithms)) {
     // No overlapping cipher suites, or obsolete cipher suite selected.
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
@@ -807,11 +783,31 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  version[1] = client_version[1];
 	}
 
-	int missing_secure_renegotiation = secure_renegotiation;
-	ecc_curves = ({});
+	ADT.struct extensions;
 	if (!input->is_empty()) {
-	  ADT.struct extensions = ADT.struct(input->get_var_string(2));
+	  extensions = ADT.struct(input->get_var_string(2));
+	}
 
+#ifdef SSL3_DEBUG
+	if (!input->is_empty())
+	  werror("SSL.connection->handle_handshake: "
+		 "extra data in hello message ignored\n");
+      
+	if (sizeof(id))
+	  werror("SSL.handshake: Looking up session %O\n", id);
+#endif
+	session = sizeof(id) && context->lookup_session(id);
+	if (session) {
+	  SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
+	  /* Reuse session */
+	  reuse = 1;
+	} else {
+	  session = context->new_session();
+	  reuse = 0;
+	}
+
+	int missing_secure_renegotiation = secure_renegotiation;
+	if (extensions) {
 	  while (!extensions->is_empty()) {
 	    int extension_type = extensions->get_uint(2);
 	    ADT.struct extension_data =
@@ -828,45 +824,47 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      // RFC 5246
 	      string bytes = extension_data->get_var_string(2);
 	      // Pairs of <hash_alg, signature_alg>.
-	      signature_algorithms = ((array(int))bytes)/2;
-	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n", signature_algorithms);
+	      session->signature_algorithms = ((array(int))bytes)/2;
+	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n",
+			     session->signature_algorithms);
 	      break;
 	    case EXTENSION_elliptic_curves:
 	      int sz = extension_data->get_uint(2)/2;
-	      ecc_curves =
+	      session->ecc_curves =
 		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
 		       ECC_CURVES);
-	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", ecc_curves);
+	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", session->ecc_curves);
 	      break;
 	    case EXTENSION_ec_point_formats:
 	      array(int) ecc_point_formats =
 		extension_data->get_var_uint_array(1, 1);
 	      // NB: We only support the uncompressed point format for now.
 	      if (has_value(ecc_point_formats, POINT_uncompressed)) {
-		ecc_point_format = POINT_uncompressed;
+		session->ecc_point_format = POINT_uncompressed;
 	      } else {
 		// Not a supported point format.
-		ecc_point_format = -1;
+		session->ecc_point_format = -1;
 	      }
-	      SSL3_DEBUG_MSG("Elliptic point format: %O\n", ecc_point_format);
+	      SSL3_DEBUG_MSG("Elliptic point format: %O\n",
+			     session->ecc_point_format);
 	      break;
 	    case EXTENSION_server_name:
 	      // RFC 4366 3.1 "Server Name Indication"
 	      // Example: "\0\f\0\0\tlocalhost"
-	      server_names = ({});
+	      session->server_names = ({});
 	      while (!extension_data->is_empty()) {
 		ADT.struct server_name =
 		  ADT.struct(extension_data->get_var_string(2));
 		switch(server_name->get_uint(1)) {	// name_type
 		case 0:	// host_name
-		  server_names += ({ server_name->get_var_string(2) });
+		  session->server_names += ({ server_name->get_var_string(2) });
 		  break;
 		default:
 		  // Ignore other NameTypes for now.
 		  break;
 		}
 	      }
-              SSL3_DEBUG_MSG("SNI extension: %O\n", server_names);
+              SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_names);
 	      break;
 
 	    case EXTENSION_renegotiation_info:
@@ -1003,12 +1001,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	if (sizeof(id))
 	  werror("SSL.handshake: Looking up session %O\n", id);
 #endif
-	session = sizeof(id) && context->lookup_session(id);
-	if (session)
-	  {
-            SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
-	    /* Reuse session */
-	  reuse = 1;
+	if (reuse) {
+	  /* Reuse session */
+	  SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
 	  {
@@ -1024,7 +1019,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                                                      version)) )
           {
             // DES/DES3 throws an exception if a weak key is used. We
-            // coul possibly send ALERT_insufficient_security instead.
+            // could possibly send ALERT_insufficient_security instead.
             send_packet(Alert(ALERT_fatal, ALERT_internal_error,
                               version[1]));
             return -1;
@@ -1446,7 +1441,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       }
 
       if (!session->set_cipher_suite(cipher_suite, version[1],
-				     signature_algorithms)) {
+				     session->signature_algorithms)) {
 	// Unsupported or obsolete cipher suite selected.
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
 	return -1;
@@ -1510,10 +1505,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      extension_data->get_var_uint_array(1, 1);
 	    // NB: We only support the uncompressed point format for now.
 	    if (has_value(ecc_point_formats, POINT_uncompressed)) {
-	      ecc_point_format = POINT_uncompressed;
+	      session->ecc_point_format = POINT_uncompressed;
 	    } else {
 	      // Not a supported point format.
-	      ecc_point_format = -1;
+	      session->ecc_point_format = -1;
 	    }
 	    break;
 	  case EXTENSION_server_name:

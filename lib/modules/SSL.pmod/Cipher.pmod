@@ -681,7 +681,7 @@ class KeyExchangeECDHE
     struct = ADT.struct();
 
     // Select a suitable curve.
-    int c = connection->ecc_curves[0];
+    int c = session->ecc_curves[0];
     session->curve = ECC_CURVES[c];
 
     SSL3_DEBUG_MSG("Curve: %d: %O\n", c, session->curve);
