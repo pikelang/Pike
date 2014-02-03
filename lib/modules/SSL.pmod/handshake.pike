@@ -1641,13 +1641,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  context->client_certificate_selector(context,
 					       client_cert_types,
 					       client_cert_distinguished_names);
-        if(!certs || !sizeof(certs))
-          certs = ({});
-
 #ifdef SSL3_DEBUG
         foreach(certs, string c)
         {
-werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
+          werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
         }
 #endif
 

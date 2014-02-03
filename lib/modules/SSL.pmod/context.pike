@@ -652,42 +652,50 @@ private Crypto.Sign internal_select_server_key(.context context,
   return 0;
 }
 
-// FIXME: we only really know that RSA and DSS keys will get caught here.
 private array(string(0..255))
   internal_select_client_certificate(.context context,
 				     array(int) acceptable_types,
 				     array(string) acceptable_authority_dns)
 {
-  if(!context->client_certificates|| 
-         ![int]sizeof((context->client_certificates)))
+  if( !context->client_certificates ||
+      !sizeof(context->client_certificates) )
     return ({});
 
+  // FIXME: Create a cache for the certificate objects.
   array(mapping(string:mixed)) c = ({});
-  int i = 0;
-  foreach(context->client_certificates, array(string) chain)
+  foreach(context->client_certificates; int i; array(string) chain)
   {
-    if(!sizeof(chain)) { i++; continue; }
-
-    c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
-              "chain":i ]) });
-    i++;
+    if(sizeof(chain))
+      c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
+                "chain":i ]) });
   }
 
   string wantedtype;
-  mapping cert_types = ([1:"rsa", 2:"dss", 3:"rsa_fixed_dh", 4:"dss_fixed_dh"]);
+  mapping(int:string) cert_types = ([
+    1 : "rsa",
+    2 : "dss",
+    3 : "rsa_fixed_dh",
+    4 : "dss_fixed_dh"
+  ]);
+
   foreach(acceptable_types, int t)
   {
-      wantedtype= [string]cert_types[t];
+    // FIXME: The only valid Verifier types are "rsa", "dsa" and
+    // "ecdsa". We should probably use wantedtype below as well.
+    wantedtype = cert_types[t];
 
-      foreach(c, mapping(string:mixed) cert)
-      {
-        object crt = [object](cert->cert);
-        if((string)((object)(crt->public_key))->type == "rsa")
-          return context->client_certificates[[int](cert->chain)];
-      }
+    foreach(c, mapping(string:mixed) cert)
+    {
+      Standards.X509.TBSCertificate crt =
+        [object(Standards.X509.TBSCertificate)]cert->cert;
+      if(crt->public_key->type == "rsa")
+        return context->client_certificates[[int]cert->chain];
+    }
   }
+
   // FIXME: Check acceptable_authority_dns.
   acceptable_authority_dns;
+  return ({});
 }
 
 // update the cached decoded issuers list
