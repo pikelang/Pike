@@ -60,7 +60,7 @@ int client_use_sni = 0;
 
 //! Host names to send to the server when using the Server Name
 //! extension.
-array(string(0..255)) client_server_names = ({});
+array(string(8bit)) client_server_names = ({});
 
 /* For client authentication */
 
@@ -85,7 +85,7 @@ __deprecated__ void `client_rsa=(Crypto.RSA k)
 
 //! An array of certificate chains a client may present to a server
 //! when client certificate authentication is requested.
-array(array(string(0..255))) client_certificates = ({});
+array(array(string(8bit))) client_certificates = ({});
 
 //! A function which will select an acceptable client certificate for
 //! presentation to a remote server. This function will receive the
@@ -94,7 +94,7 @@ array(array(string(0..255))) client_certificates = ({});
 //! return an array of strings containing a certificate chain, with
 //! the client certificate first, (and the root certificate last, if
 //! applicable.)
-function(.context,array(int),array(string(0..255)):array(string(0..255)))
+function(.context,array(int),array(string(8bit)):array(string(8bit)))
   client_certificate_selector = internal_select_client_certificate;
 
 //! A function which will select an acceptable server certificate for
@@ -106,7 +106,7 @@ function(.context,array(int),array(string(0..255)):array(string(0..255)))
 //!
 //! The default implementation will select a certificate chain for a
 //! given server based on values contained in @[sni_certificates].
-function (.context,array(string(0..255)):array(string(0..255)))
+function (.context,array(string(8bit)):array(string(8bit)))
   select_server_certificate_func = internal_select_server_certificate;
 
 //! A function which will select an acceptable server key for
@@ -157,7 +157,7 @@ array(string) get_authorities()
 }
 
 protected array(string) authorities = ({});
-array(string(0..255)) authorities_cache = ({});
+array(string(8bit)) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers. 
 //!
@@ -246,17 +246,17 @@ __deprecated__ void `ecdsa=(Crypto.ECC.SECP_521R1.ECDSA k)
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
 //! default set to @[Crypto.Random.random_string].
-function(int:string(0..255)) random = Crypto.Random.random_string;
+function(int:string(8bit)) random = Crypto.Random.random_string;
 
 //! The server's certificate, or a chain of X509.v3 certificates, with
 //! the server's certificate first and root certificate last.
-array(string(0..255)) certificates;
+array(string(8bit)) certificates;
 
 //! A mapping containing certificate chains for use by SNI (Server
 //! Name Indication). Each entry should consist of a key indicating
 //! the server hostname and the value containing the certificate chain
 //! for that hostname.
-mapping(string:array(string(0..255))) sni_certificates = ([]);
+mapping(string:array(string(8bit))) sni_certificates = ([]);
 
 //! A mapping containing private keys for use by SNI (Server Name
 //! Indication). Each entry should consist of a key indicating the
@@ -282,11 +282,11 @@ array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
 //! List of advertised protocols using using TLS next protocol
 //! negotiation.
-array(string(0..255)) advertised_protocols;
+array(string(8bit)) advertised_protocols;
 
 //! Protocols to advertise during handshake using the next protocol
 //! negotiation extension. Currently only used together with spdy.
-void advertise_protocols(string(0..255) ... protos)
+void advertise_protocols(string(8bit) ... protos)
 {
     advertised_protocols = protos;
 }
@@ -527,10 +527,10 @@ int session_lifetime = 600;
 //! Maximum number of sessions to keep in the cache.
 int max_sessions = 300;
 
-/* Session cache */
-ADT.Queue active_sessions;  /* Queue of pairs (time, id), in
-                               cronological order */
-mapping(string:.session) session_cache;
+/* Queue of pairs (time, id), in cronological order */
+ADT.Queue active_sessions = ADT.Queue();
+
+mapping(string:.session) session_cache = ([]);
 
 int session_number; /* Incremented for each session, and used when
 		     * constructing the session id */
@@ -567,7 +567,7 @@ void forget_old_sessions()
 {
   .session s = .session();
   s->identity = (use_cache) ?
-    [string(0..255)]sprintf("%4cPikeSSL3%4c", time(), session_number++) : "";
+    sprintf("%4cPikeSSL3%4c", time(), session_number++) : "";
   return s;
 }
 
@@ -585,7 +585,7 @@ void record_session(.session s)
     forget_old_sessions();
     SSL3_DEBUG_MSG("SSL.context->record_session: caching session %O\n",
                    s->identity);
-    active_sessions->put( ({ time(), s->identity }) );
+    active_sessions->put( ({ time(1), s->identity }) );
     session_cache[s->identity] = s;
   }
 }
@@ -599,11 +599,9 @@ void purge_session(.session s)
   /* There's no need to remove the id from the active_sessions queue */
 }
 
-void create()
+protected void create()
 {
   SSL3_DEBUG_MSG("SSL.context->create\n");
-  active_sessions = ADT.Queue();
-  session_cache = ([ ]);
   /* Backwards compatibility */
   rsa_mode(128);
 }
@@ -617,15 +615,15 @@ private void update_authorities()
                             subject->get_der() });
 }
 
-private array(string(0..255))
+private array(string(8bit))
   internal_select_server_certificate(.context context,
-				     array(string(0..255)) server_names)
+				     array(string(8bit)) server_names)
 {
-  array(string(0..255)) certs;
+  array(string(8bit)) certs;
 
   if(server_names && sizeof(server_names))
   {
-    foreach(server_names;; string(0..255) sn)
+    foreach(server_names;; string(8bit) sn)
     {
       if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
         return certs;
@@ -636,7 +634,7 @@ private array(string(0..255))
 }
 
 private Crypto.Sign internal_select_server_key(.context context,
-  array(string) server_names)
+                                               array(string) server_names)
 {
   Crypto.Sign key;
 
@@ -652,7 +650,7 @@ private Crypto.Sign internal_select_server_key(.context context,
   return 0;
 }
 
-private array(string(0..255))
+private array(string(8bit))
   internal_select_client_certificate(.context context,
 				     array(int) acceptable_types,
 				     array(string) acceptable_authority_dns)
