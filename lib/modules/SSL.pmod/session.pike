@@ -17,6 +17,12 @@
 import .Constants;
 protected constant Struct = ADT.struct;
 
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
+
 //! Identifies the session to the server
 string(0..255) identity;
 
@@ -47,10 +53,10 @@ mapping cert_data;
 array(int) version;
 
 //! the peer certificate chain
-array(string) peer_certificate_chain;
+array(string(8bit)) peer_certificate_chain;
 
 //! our certificate chain
-array(string) certificate_chain;
+array(string(8bit)) certificate_chain;
 
 //! Our private key.
 Crypto.Sign private_key;
@@ -101,6 +107,34 @@ Crypto.ECC.Curve curve;
 int(0..1) has_required_certificates()
 {
   if (!peer_public_key) return (cipher_spec->sign == .Cipher.anon_sign);
+  return 1;
+}
+
+//! Select an appropriate certificate and cipher suite
+//! given the parameters provided by the client.
+int select_cipher_suite(object context,
+			array(int) cipher_suites,
+			ProtocolVersion|int version)
+{
+  if (!set_cipher_suite(cipher_suites[0], version, signature_algorithms))
+    return 0;
+
+  // Select a certificate key.
+  SSL3_DEBUG_MSG("Selecting server key.\n");
+  private_key = context->select_server_key_func &&
+    ([function(object, array(string(8bit)): Crypto.Sign)]
+     context->select_server_key_func)(context, server_names);
+  if (!private_key)
+    private_key = [object(Crypto.Sign)]context->private_key;
+  SSL3_DEBUG_MSG("Selected server key: %O\n", private_key);
+
+  SSL3_DEBUG_MSG("Checking for Certificate.\n");
+  certificate_chain = context->select_server_certificate_func &&
+    ([function(object, array(string(8bit)): array(string(8bit)))]
+     context->select_server_certificate_func)(context, server_names);
+  if (!certificate_chain)
+    certificate_chain = [array(string(8bit))]context->certificates;
+
   return 1;
 }
 

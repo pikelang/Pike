@@ -94,30 +94,6 @@ void addRecord(int t,int s) {
 }
 #endif
 
-private array(string(0..255)) select_server_certificate()
-{
-  array(string(0..255)) certs;
-  if(context->select_server_certificate_func)
-    certs = context->select_server_certificate_func(context,
-						    session->server_names);
-  if(!certs)
-    certs = context->certificates;
-
-  return certs;
-}
-
-private Crypto.Sign select_server_key()
-{
-  Crypto.Sign key;
-  if(context->select_server_key_func)
-    key = context->select_server_key_func(context,
-					  session->server_names);
-  if(!key) // fallback on previous behavior.
-    key = context->private_key;
-
-  return key;
-}
-
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
 
@@ -428,9 +404,9 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   }
 
   if (!sizeof(cipher_suites) ||
-      !session->set_cipher_suite(cipher_suites[0], version[1],
-				 session->signature_algorithms)) {
-    // No overlapping cipher suites, or obsolete cipher suite selected.
+      !session->select_cipher_suite(context, cipher_suites, version[1])) {
+    // No overlapping cipher suites, or obsolete cipher suite selected,
+    // or incompatible certificates.
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
@@ -450,24 +426,14 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   if (session->cipher_spec->sign != .Cipher.anon_sign) {
     /* Send Certificate, ServerKeyExchange and CertificateRequest as
      * appropriate, and then ServerHelloDone.
+     *
+     * NB: session->certificate_chain is set by
+     *     session->select_cipher_suite() above.
      */
-
-    array(string(0..255)) certs;
-    SSL3_DEBUG_MSG("Selecting server key.\n");
-
-    // Populate the key to be used for the session.
-    Crypto.Sign key = select_server_key();
-    SSL3_DEBUG_MSG("Selected server key: %O\n", key);
-
-    session->private_key = key;
-
-    SSL3_DEBUG_MSG("Checking for Certificate.\n");
-
-    if (certs = select_server_certificate())
+    if (session->certificate_chain)
     {
       SSL3_DEBUG_MSG("Sending Certificate.\n");
-      session->certificate_chain = certs;
-      send_packet(certificate_packet(certs));
+      send_packet(certificate_packet(session->certificate_chain));
     } else {
       // Otherwise the server will just silently send an invalid
       // ServerHello sequence.
@@ -1294,7 +1260,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 #else
 	 certs_len;	// Fix warning.
 #endif
-	 array(string) certs = ({ });
+	 array(string(8bit)) certs = ({ });
 	 while(!input->is_empty())
 	   certs += ({ input->get_var_string(3) });
 
@@ -1565,7 +1531,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
       int certs_len = input->get_uint(3); certs_len;
-      array(string) certs = ({ });
+      array(string(8bit)) certs = ({ });
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
 
