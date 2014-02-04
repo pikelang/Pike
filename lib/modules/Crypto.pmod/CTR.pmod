@@ -37,14 +37,14 @@ class State
 {
   inherit ::this_program;
 
-  protected object obj;
+  protected State obj;
   protected Gmp.mpz iv;
-  protected int _block_size;
+  protected int(1..) _block_size;
 
-  protected void create(program|object|function cipher, mixed ... more)
+  protected void create(program|State|function cipher, mixed ... more)
   {
-    if (callablep(cipher)) cipher = cipher(@more);
-    obj = cipher;
+    if (callablep(cipher)) cipher = [object(State)]cipher(@more);
+    obj = [object(State)]cipher;
     _block_size = obj->block_size();
     iv = Gmp.mpz(0);
   }
@@ -86,7 +86,7 @@ class State
   this_program set_iv(string(8bit) iv)
   {
     String.secure(iv);
-    this_program::iv = Gmp.mpz(iv, 256);
+    State::iv = Gmp.mpz(iv, 256);
   }
 
   string(8bit) crypt(string(8bit) data)
@@ -94,7 +94,7 @@ class State
     int len = sizeof(data);
     String.Buffer buf = String.Buffer(len);
     while (len > 0) {
-      string chunk = iv->digits(256);
+      string(8bit) chunk = iv->digits(256);
       iv++;
       if (sizeof(chunk) < _block_size) {
 	chunk = "\0"*(_block_size - sizeof(chunk)) + chunk;
@@ -103,7 +103,7 @@ class State
       buf->add(chunk[..len-1]);
       len -= _block_size;
     }
-    return data ^ (string)buf;
+    return [string(8bit)](data ^ (string(8bit))buf);
   }
 }
 
