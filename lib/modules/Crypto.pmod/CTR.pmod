@@ -86,7 +86,7 @@ class State
   this_program set_iv(string(8bit) iv)
   {
     String.secure(iv);
-    State::iv = Gmp.mpz(iv, 256);
+    this_program::iv = Gmp.mpz(iv, 256);
   }
 
   string(8bit) crypt(string(8bit) data)
