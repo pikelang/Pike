@@ -5001,6 +5001,17 @@ void compiler_do_inherit(node *n,
 	}
 	p = state->new_program;
 	numid = n->u.integer.b;
+	if ((name == this_program_string) && (offset == 1)) {
+	  /* Klugde: Default to renaming ::this_program
+	   *         to the name of the current class.
+	   *
+	   *         Otherwise the this_program:-scope
+	   *         will become confusing, as it will
+	   *         refer to the inherit and not the
+	   *         current class.
+	   */
+	  name = ID_FROM_INT(p, numid)->name;
+	}
       }
 
   continue_inherit:
