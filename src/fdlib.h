@@ -87,7 +87,7 @@ typedef off_t PIKE_OFF_T;
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
 #define fd_accept(X,Y,Z) dmalloc_register_fd(debug_fd_accept((X),(Y),(Z)))
@@ -337,7 +337,7 @@ typedef off_t PIKE_OFF_T;
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
 #define fd_accept(X,Y,Z) dmalloc_register_fd(accept((X),(Y),(Z)))
