@@ -79,18 +79,13 @@ protected {
 
 //! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
 //! 4.1) to be signed (TBS) by the CA. version is explicitly set to
-//! v3, validity is calculated based on time and @[ttl], and
-//! @[extensions] is optionally added to the sequence. issuerUniqueID
-//! and subjectUniqueID are not supported.
+//! v3, and @[extensions] is optionally added to the sequence.
+//! issuerUniqueID and subjectUniqueID are not supported.
 Sequence make_tbs(Sequence issuer, Sequence algorithm,
                   Sequence subject, Sequence keyinfo,
-                  Integer serial, int ttl,
-                  array extensions)
+                  Integer serial, Sequence validity,
+                  array|void extensions)
 {
-  int now = time();
-  Sequence validity = Sequence( ({ UTC()->set_posix(now),
-                                   UTC()->set_posix(now + ttl) }) );
-
   return (extensions
 	  ? Sequence( ({ version_integer(Integer(2)), /* Version 3 */
 			 serial,
@@ -108,6 +103,54 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 			 keyinfo }) ));
 }
 
+//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
+//! v3, validity is calculated based on time and @[ttl], and
+//! @[extensions] is optionally added to the sequence.
+//! issuerUniqueID and subjectUniqueID are not supported.
+variant Sequence make_tbs(Sequence issuer, Sequence algorithm,
+			  Sequence subject, Sequence keyinfo,
+			  Integer serial, int ttl,
+			  array|void extensions)
+{
+  int now = time();
+  Sequence validity = Sequence( ({ UTC()->set_posix(now),
+                                   UTC()->set_posix(now + ttl) }) );
+
+  return make_tbs(issuer, algorithm, subject, keyinfo,
+		  serial, validity, extensions);
+}
+
+//! Sign the provided TBSCertificate.
+//!
+//! @param tbs
+//!   Either one of:
+//!   @mixed
+//!     @type TBSCertificate
+//!       A @[TBSCertificate] as returned by @[decode_certificate()].
+//!     @type Sequence
+//!       A TBSCertificate @[Sequence] as returned by @[make_tbs()].
+//!   @endmixed
+//!
+//! @param sign
+//!   RSA, DSA or ECDSA parameters for the issuer.
+//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!
+//! @param hash
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto.
+Sequence sign_tbs(Sequence|TBSCertificate tbs,
+		  Crypto.Sign sign, Crypto.Hash hash)
+{
+  if (tbs->get_asn1) {
+    tbs = ([object(TBSCertificate)]tbs)->get_asn1();
+  }
+  return Sequence(({ [object(Sequence)]tbs,
+		     sign->pkcs_signature_algorithm_id(hash),
+		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
+		  }));
+}
+
 //!
 //! @param issuer
 //!   Distinguished name for the issuer.
@@ -116,6 +159,10 @@ Sequence make_tbs(Sequence issuer, Sequence algorithm,
 //! @param c
 //!   RSA, DSA or ECDSA parameters for the issuer.
 //!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!
+//! @param h
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto.
 //!
 //! @param subject
 //!   Distinguished name for the issuer.
@@ -354,6 +401,13 @@ class TBSCertificate
   //! optional
   BitString subject_id;
 
+  //! The raw ASN.1 objects from which @[extensions] and @[critical]
+  //! have been generated.
+  //!
+  //! @note
+  //! optional
+  Sequence raw_extensions;
+
   //! @note
   //! optional
   mapping(string:Object) extensions = ([]);
@@ -361,6 +415,27 @@ class TBSCertificate
   //! @note
   //! optional
   multiset critical = (<>);
+
+  //! Get the ASN.1 representation of the TBSCertificate.
+  //!
+  //! @note
+  //!   This recreates the ASN.1 from the field values
+  //!   in the object.
+  //!
+  //! @note
+  //!   The @[version] field is currently ignored, and will
+  //!   be set according to the presence of @[raw_extensions].
+  //!
+  //!   This means that it may differ from the DER in @[der].
+  Sequence get_asn1()
+  {
+    return make_tbs(issuer, algorithm, subject,
+		    public_key->pkc->pkcs_public_key(),
+		    Integer(serial),
+		    Sequence(({ UTC()->set_posix(not_before),
+				UTC()->set_posix(not_after) })),
+		    (raw_extensions && raw_extensions->elements) || UNDEFINED);
+  }
 
   protected mixed cast(string to)
   {
@@ -534,8 +609,9 @@ class TBSCertificate
         && sizeof(a[i])==1
         && a[i][0]->type_name == "SEQUENCE")
     {
+      raw_extensions = a[i][0];
       extensions = ([]);
-      foreach(a[i][0]->elements, Object _ext)
+      foreach(raw_extensions->elements, Object _ext)
       {
         if( _ext->type_name != "SEQUENCE" ||
             sizeof(_ext)<2 || sizeof(_ext)>3 )
