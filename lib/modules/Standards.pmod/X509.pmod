@@ -135,6 +135,7 @@ variant Sequence make_tbs(Sequence issuer, Sequence algorithm,
 //! @param sign
 //!   RSA, DSA or ECDSA parameters for the issuer.
 //!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!   Must be initialized with the private key.
 //!
 //! @param hash
 //!   The hash function to use for the certificate. Must be one of the
@@ -151,6 +152,7 @@ Sequence sign_tbs(Sequence|TBSCertificate tbs,
 		  }));
 }
 
+//! Low-level function for creating a self-signed certificate.
 //!
 //! @param issuer
 //!   Distinguished name for the issuer.
@@ -158,6 +160,7 @@ Sequence sign_tbs(Sequence|TBSCertificate tbs,
 //!
 //! @param c
 //!   RSA, DSA or ECDSA parameters for the issuer.
+//!   Both the public and the private keys need to be set.
 //!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
 //!
 //! @param h
@@ -183,18 +186,18 @@ Sequence sign_tbs(Sequence|TBSCertificate tbs,
 //!
 //! @returns
 //!   Returns a DER-encoded certificate.
+//!
+//! @seealso
+//!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
 string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
                 Sequence subject, int serial, int ttl, array|void extensions)
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
-  Sequence tbs = make_tbs(issuer, algorithm_id,
-                          subject, c->pkcs_public_key(),
-                          Integer(serial), ttl, extensions);
-
-  return Sequence(({ tbs, c->pkcs_signature_algorithm_id(h),
-                     BitString(c->pkcs_sign(tbs->get_der(), h))
-                  }))->get_der();
+  return sign_tbs(make_tbs(issuer, algorithm_id,
+			   subject, c->pkcs_public_key(),
+			   Integer(serial), ttl, extensions),
+		  c, h)->get_der();
 }
 
 //! Creates a selfsigned certificate, i.e. where issuer and subject
@@ -205,7 +208,7 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
 //! @param c
 //!   The public key cipher used for the certificate, @[Crypto.RSA],
 //!   @[Crypto.DSA] or @[Crypto.ECC.Curve.ECDSA]. The object should be
-//!   initialized with (at least) public keys.
+//!   initialized with both public and private keys.
 //!
 //! @param ttl
 //!   The validity of the certificate, in seconds, starting from
@@ -227,6 +230,9 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
 //!   version1 value with random node. Some browsers will refuse
 //!   different certificates from the same signer with the same serial
 //!   number.
+//!
+//! @seealso
+//!   @[sign_key()], @[sign_tbs()]
 string make_selfsigned_certificate(Crypto.Sign c, int ttl,
                                    mapping|array name, array|void extensions,
                                    void|Crypto.Hash h, void|int serial)
