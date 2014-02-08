@@ -143,9 +143,6 @@ variant Sequence make_tbs(Sequence issuer, Sequence algorithm,
 Sequence sign_tbs(Sequence|TBSCertificate tbs,
 		  Crypto.Sign sign, Crypto.Hash hash)
 {
-  if (tbs->get_asn1) {
-    tbs = ([object(TBSCertificate)]tbs)->get_asn1();
-  }
   return Sequence(({ [object(Sequence)]tbs,
 		     sign->pkcs_signature_algorithm_id(hash),
 		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
@@ -370,77 +367,312 @@ protected Verifier make_verifier(Object _keyinfo)
 //! Represents a TBSCertificate.
 class TBSCertificate
 {
-  //!
-  string der;
+  inherit Sequence;
 
-  //!  
-  int version;
+  protected string internal_der;
 
   //!
-  Gmp.mpz serial;
-  
-  //!
-  Sequence algorithm;  /* Algorithm Identifier */
+  void `der=(string asn1)
+  {
+    internal_der = UNDEFINED;
+    if (init(Standards.ASN1.Decode.simple_der_decode(asn1))) {
+      internal_der = asn1;
+    }
+  }
+  string `der()
+  {
+    if (internal_der) return internal_der;
+    return internal_der = get_der();
+  }
 
   //!
-  Sequence issuer;
+  void `version=(int v)
+  {
+    internal_der = UNDEFINED;
+    if (v == 1) {
+      if (sizeof(elements) > 6) {
+	elements = elements[1..6];
+	issuer_pos = subject_pos = extensions_pos = 0;
+      }
+    } else if (sizeof(elements) == 6) {
+      elements = ({ version_integer(Integer(v-1)) }) + elements;
+    } else {
+      elements[0] = version_integer(Integer(v-1));
+    }
+  }
+  int `version()
+  {
+    if (sizeof(elements) == 6) return 1;
+    return (int)elements[0][0]->value + 1;
+  }
+
+  //! @param index
+  //!   Index in a v1 certificate.
+  //!
+  //! @param val
+  //!   New value for index.
+  protected void low_set(int index, Sequence|Integer val)
+  {
+    internal_der = UNDEFINED;
+    if (sizeof(elements) > 6) index++;
+    elements[index] = val;
+  }
+
+  protected Sequence|Integer low_get(int index)
+  {
+    if (sizeof(elements) > 6) index++;
+    return elements[index];
+  }
 
   //!
-  int not_after;
+  void `serial=(Gmp.mpz|int s)
+  {
+    low_set(0, Integer(s));
+  }
+  Gmp.mpz `serial()
+  {
+    Integer s = low_get(0);
+    return s->value;
+  }
+
+  //! Algorithm Identifier.
+  void `algorithm=(Sequence a)
+  {
+    low_set(1, a);
+  }
+  Sequence `algorithm()
+  {
+    return low_get(1);
+  }
+
+  //! Certificate issuer.
+  void `issuer=(Sequence i)
+  {
+    low_set(2, i);
+  }
+  Sequence `issuer()
+  {
+    return low_get(2);
+  }
 
   //!
-  int not_before;
+  void `not_before=(int t)
+  {
+    Sequence validity = low_get(3);
+    validity->elements[0] = UTC()->set_posix(t);
+    internal_der = UNDEFINED;
+  }
+  int `not_before()
+  {
+    Sequence validity = low_get(3);
+    return validity[0]->get_posix();
+  }
 
   //!
-  Sequence subject;
+  void `not_after=(int t)
+  {
+    Sequence validity = low_get(3);
+    validity->elements[1] = UTC()->set_posix(t);
+    internal_der = UNDEFINED;
+  }
+  int `not_after()
+  {
+    Sequence validity = low_get(3);
+    return validity[1]->get_posix();
+  }
 
   //!
-  Verifier public_key;
+  void `subject=(Sequence s)
+  {
+    low_set(4, s);
+  }
+  Sequence `subject()
+  {
+    return low_get(4);
+  }
+
+  protected Verifier internal_public_key;
+
+  //!
+  void `public_key=(Verifier v)
+  {
+    internal_public_key = v;
+    low_set(5, v->pkc->pkcs_public_key());
+  }
+  Verifier `public_key()
+  {
+    return internal_public_key;
+  }
 
   /* Optional */
 
+  protected int issuer_pos;
+  protected int subject_pos;
+  protected int extensions_pos;
+
   //! @note
   //! optional
-  BitString issuer_id;
-  
+  void `issuer_id=(BitString i)
+  {
+    internal_der = UNDEFINED;
+    if (!i) {
+      if (!issuer_pos) return;
+      elements = elements[..6] + elements[8..];
+      issuer_pos = 0;
+      if (subject_pos) subject_pos--;
+      if (extensions_pos) extensions_pos--;
+      return;
+    }
+    TaggedType1 tti = TaggedType1(i);
+    if (!issuer_pos) {
+      if (version < 2) version = 2;
+      issuer_pos = 7;
+      elements = elements[..6] + ({ tti }) + elements[7..];
+      if (subject_pos) subject_pos++;
+      if (extensions_pos) extensions_pos++;
+      return;
+    }
+    elements[issuer_pos] = tti;
+  }
+  BitString `issuer_id()
+  {
+    if (issuer_pos) return elements[issuer_pos][0];
+    return UNDEFINED;
+  }
+
   //! @note
   //! optional
-  BitString subject_id;
+  void `subject_id=(BitString s)
+  {
+    internal_der = UNDEFINED;
+    if (!s) {
+      if (!subject_pos) return;
+      elements = elements[..subject_pos -1] + elements[subject_pos+1..];
+      subject_pos = 0;
+      if (extensions_pos) extensions_pos--;
+      return;
+    }
+    TaggedType2 tts = TaggedType2(s);
+    if (!subject_pos) {
+      if (version < 2) version = 2;
+      subject_pos = (issuer_pos || 6) + 1;
+      elements = elements[..subject_pos-1] + ({ tts }) +
+	elements[subject_pos..];
+      if (extensions_pos) extensions_pos++;
+      return;
+    }
+    elements[subject_pos] = tts;
+  }
+  BitString `subject_id()
+  {
+    if (subject_pos) return elements[subject_pos][0];
+    return UNDEFINED;
+  }
 
   //! The raw ASN.1 objects from which @[extensions] and @[critical]
   //! have been generated.
   //!
   //! @note
   //! optional
-  Sequence raw_extensions;
-
-  //! @note
-  //! optional
-  mapping(string:Object) extensions = ([]);
-
-  //! @note
-  //! optional
-  multiset critical = (<>);
-
-  //! Get the ASN.1 representation of the TBSCertificate.
-  //!
-  //! @note
-  //!   This recreates the ASN.1 from the field values
-  //!   in the object.
-  //!
-  //! @note
-  //!   The @[version] field is currently ignored, and will
-  //!   be set according to the presence of @[raw_extensions].
-  //!
-  //!   This means that it may differ from the DER in @[der].
-  Sequence get_asn1()
+  void `raw_extensions=(Sequence r)
   {
-    return make_tbs(issuer, algorithm, subject,
-		    public_key->pkc->pkcs_public_key(),
-		    Integer(serial),
-		    Sequence(({ UTC()->set_posix(not_before),
-				UTC()->set_posix(not_after) })),
-		    (raw_extensions && raw_extensions->elements) || UNDEFINED);
+    internal_der = UNDEFINED;
+    internal_extensions = ([]);
+    internal_critical = (<>);
+    mapping(string:Object) extensions = ([]);
+    multiset critical = (<>);
+
+    if (!r) {
+      if (!extensions_pos) return;
+      elements = elements[..extensions_pos-1];
+      extensions_pos = 0;
+      return;
+    }
+
+    foreach(r->elements, Object _ext)
+    {
+      if( _ext->type_name != "SEQUENCE" ||
+	  sizeof(_ext)<2 || sizeof(_ext)>3 )
+      {
+	DBG("TBSCertificate: Bad extensions structure.\n");
+	return 0;
+      }
+      Sequence ext = [object(Sequence)]_ext;
+      if( ext[0]->type_name != "OBJECT IDENTIFIER" ||
+	  ext[-1]->type_name != "OCTET STRING" )
+      {
+	DBG("TBSCertificate: Bad extensions structure.\n");
+	return 0;
+      }
+      DBG("TBSCertificate: extension: %O\n", ext[0]);
+      string id = ext[0]->get_der();
+
+      if( extensions[id] )
+      {
+	DBG("TBSCertificate: extension %O sent twice.\n");
+	return 0;
+      }
+
+      extensions[ id ] =
+        Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value);
+      if(sizeof(ext)==3)
+      {
+	if( ext[1]->type_name != "BOOLEAN" ) return 0;
+	if( ext[1]->value ) critical[id]=1;
+      }
+    }
+
+    if (extensions_pos) {
+      if (version < 3) version = 3;
+      extensions_pos = sizeof(elements);
+      elements = elements + ({ TaggedType3(r) });
+    } else {
+      elements[extensions_pos] = TaggedType3(r);
+    }
+
+    internal_extensions = extensions;
+    internal_critical = critical;
+  }
+  Sequence `raw_extensions()
+  {
+    if (extensions_pos) return elements[extensions_pos][0];
+    return UNDEFINED;
+  }
+
+  //! @note
+  //! optional
+  protected mapping(string:Object) internal_extensions = ([]);
+  mapping(string:Object) `extensions()
+  {
+    return internal_extensions;
+  }
+
+  //! @note
+  //! optional
+  protected multiset internal_critical = (<>);
+  multiset `critical()
+  {
+    return internal_critical;
+  }
+
+  protected void create(Sequence|void asn1)
+  {
+    // Initialize to defaults.
+    elements = ({
+      Integer(0),					// serialNumber
+      Null,						// signature
+      Sequence(({})),					// issuer
+      Sequence(({ UTC()->set_posix(-0x8000000),
+		  UTC()->set_posix(0x7fffffff) })),	// validity
+      Sequence(({})),					// subject
+      Null,						// subjectPublicKeyInfo
+    });
+
+    if (asn1) {
+      if (!init(asn1)) {
+	error("Invalid ASN.1 structure for a TBSCertificate.\n");
+      }
+    }
   }
 
   protected mixed cast(string to)
@@ -506,17 +738,23 @@ class TBSCertificate
   //! Object. Returns the object on success, otherwise @expr{0@}. You
   //! probably want to call @[decode_certificate] or even
   //! @[verify_certificate].
-  this_program init(Object asn1)
+  this_program init(array(Object)|Object asn1)
   {
-    der = asn1->get_der();
-    if (asn1->type_name != "SEQUENCE")
-      return 0;
+    array(Object) a;
+    if (objectp(asn1)) {
+      if (asn1->type_name != "SEQUENCE")
+	return 0;
 
-    array(Object) a = ([object(Sequence)]asn1)->elements;
+      a = ([object(Sequence)]asn1)->elements;
+    } else {
+      a = [array(Object)]asn1;
+    }
     DBG("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
     if (sizeof(a) < 6)
       return 0;
+
+    int version = 1;
 
     if (sizeof(a) > 6)
     {
@@ -531,9 +769,10 @@ class TBSCertificate
       if ( (version < 2) || (version > 3))
 	return 0;
       a = a[1..];
-    } else
-      version = 1;
+    }
     DBG("TBSCertificate: version = %d\n", version);
+
+    this_program::version = version;
 
     if (a[0]->type_name != "INTEGER")
       return 0;
@@ -558,17 +797,15 @@ class TBSCertificate
       return 0;
     array validity = a[3]->elements;
 
-    catch {
-      not_before = validity[0]->get_posix();
-    };
-    if (!not_before)
+    if (catch {
+	not_before = validity[0]->get_posix();
+      })
       return 0;
     DBG("TBSCertificate: not_before = %O\n", not_before);
 
-    catch {
-      not_after = validity[1]->get_posix();
-    };
-    if (!not_after)
+    if (catch {
+	not_after = validity[1]->get_posix();
+      })
       return 0;
     DBG("TBSCertificate: not_after = %O\n", not_after);
 
@@ -586,74 +823,37 @@ class TBSCertificate
         public_key->type);
 
     int i = 6;
+
+    if (version >= 2)
+    {
+      if ((i < sizeof(a)) && !a[i]->constructed &&
+	  (a[i]->combined_tag == make_combined_tag(2, 1)))
+      {
+	issuer_id = BitString()->decode_primitive(a[i]->raw);
+	DBG("TBSCertificate: issuer_id = %O\n", issuer_id);
+	i++;
+      }
+      if ((i < sizeof(a)) && !a[i]->constructed &&
+	  (a[i]->combined_tag == make_combined_tag(2, 2)))
+      {
+	subject_id = BitString()->decode_primitive(a[i]->raw);
+	DBG("TBSCertificate: subject_id = %O\n", subject_id);
+	i++;
+	if (i == sizeof(a))
+	  return this;
+      }
+    }
+    if (version >= 3) {
+      if ((i < sizeof(a)) && a[i]->constructed &&
+	  (a[i]->combined_tag == make_combined_tag(2, 3)) &&
+	  sizeof(a[i])==1 &&
+	  a[i][0]->type_name == "SEQUENCE") {
+	raw_extensions = a[i][0];
+      }
+    }
+    internal_der = asn1->get_der();
     if (i == sizeof(a))
       return this;
-
-    if (version < 2)
-      return 0;
-
-    if (! a[i]->constructed
-	&& (a[i]->combined_tag == make_combined_tag(2, 1)))
-    {
-      issuer_id = BitString()->decode_primitive(a[i]->raw);
-      DBG("TBSCertificate: issuer_id = %O\n", issuer_id);
-      i++;
-      if (i == sizeof(a))
-	return this;
-    }
-    if (! a[i]->constructed
-	&& (a[i]->combined_tag == make_combined_tag(2, 2)))
-    {
-      subject_id = BitString()->decode_primitive(a[i]->raw);
-      DBG("TBSCertificate: subject_id = %O\n", subject_id);
-      i++;
-      if (i == sizeof(a))
-	return this;
-    }
-    if (a[i]->constructed
-	&& (a[i]->combined_tag == make_combined_tag(2, 3))
-        && sizeof(a[i])==1
-        && a[i][0]->type_name == "SEQUENCE")
-    {
-      raw_extensions = a[i][0];
-      extensions = ([]);
-      foreach(raw_extensions->elements, Object _ext)
-      {
-        if( _ext->type_name != "SEQUENCE" ||
-            sizeof(_ext)<2 || sizeof(_ext)>3 )
-        {
-          DBG("TBSCertificate: Bad extensions structure.\n");
-          return 0;
-        }
-        Sequence ext = [object(Sequence)]_ext;
-        if( ext[0]->type_name != "OBJECT IDENTIFIER" ||
-            ext[-1]->type_name != "OCTET STRING" )
-        {
-          DBG("TBSCertificate: Bad extensions structure.\n");
-          return 0;
-        }
-        DBG("TBSCertificate: extension: %O\n", ext[0]);
-        string id = ext[0]->get_der();
-
-        if( extensions[id] )
-        {
-          DBG("TBSCertificate: extension %O sent twice.\n");
-          return 0;
-        }
-
-        extensions[ id ] =
-          Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value);
-        if(sizeof(ext)==3)
-        {
-          if( ext[1]->type_name != "BOOLEAN" ) return 0;
-          if( ext[1]->value ) critical[id]=1;
-        }
-      }
-
-      i++;
-      if (i == sizeof(a))
-	return this;
-    }
     /* Too many fields */
     return 0;
   }
