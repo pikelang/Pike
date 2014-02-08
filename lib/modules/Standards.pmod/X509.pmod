@@ -382,7 +382,7 @@ class TBSCertificate
   string `der()
   {
     if (internal_der) return internal_der;
-    return internal_der = get_der();
+    return internal_der = der_encode();
   }
 
   //!
