@@ -482,17 +482,20 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
 // type(min..max)
 string range_type( string type, Node min, Node max )
 {
-    if( !min && !max )
+    // Work with plain text; if there's no node, that's the same as an empty node.
+    string min_text = min ? parse_text(min) : "";
+    string max_text = max ? parse_text(max) : "";
+    if( min_text == "" && max_text == "" )
         return type;
-    if( !min )
-        return type+"(.."+parse_text(max)+")";
-    if( !max )
-        return type+"("+parse_text(min)+"..)";
+    if( min_text == "" )
+        return type+"(.."+max_text+")";
+    if( max_text == "" )
+        return type+"("+min_text+"..)";
 
-    int low = (int)parse_text(min);
-    int high = (int)parse_text(max);
+    int low = (int)min_text;
+    int high = (int)max_text;
 
-    if( low == 0 && (high+1)->popcount() == 1 )
+    if( low == 0 && high && (high+1)->popcount() == 1 )
     {
         return type+"("+strlen((high)->digits(2))+"bit)";
     }
