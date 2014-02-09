@@ -365,6 +365,10 @@ protected Verifier make_verifier(Object _keyinfo)
 }
 
 //! Represents a TBSCertificate.
+//!
+//! @note
+//!   Was not compatible with @[Standards.ASN1.Types.Sequence]
+//!   Prior to Pike 8.0.
 class TBSCertificate
 {
   inherit Sequence;
@@ -456,6 +460,17 @@ class TBSCertificate
   }
 
   //!
+  void `validity=(Sequence v)
+  {
+    // FIXME: Validate?
+    low_set(3, v);
+  }
+  Sequence `validity()
+  {
+    return low_get(3);
+  }
+
+  //!
   void `not_before=(int t)
   {
     Sequence validity = low_get(3);
@@ -492,6 +507,17 @@ class TBSCertificate
   }
 
   protected Verifier internal_public_key;
+
+  //!
+  void `keyinfo=(Sequence ki)
+  {
+    internal_public_key = make_verifier(ki);
+    low_set(5, ki);
+  }
+  Sequence `keyinfo()
+  {
+    return low_get(5);
+  }
 
   //!
   void `public_key=(Verifier v)
