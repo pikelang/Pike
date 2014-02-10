@@ -395,12 +395,25 @@ class TBSCertificate
     internal_der = UNDEFINED;
     if (v == 1) {
       if (sizeof(elements) > 6) {
+	DBG("Reducing version to %d\n", v);
 	elements = elements[1..6];
 	issuer_pos = subject_pos = extensions_pos = 0;
+	internal_extensions = ([]);
+	internal_critical = (<>);
       }
     } else if (sizeof(elements) == 6) {
+      DBG("Bumping version to %d\n", v);
       elements = ({ version_integer(Integer(v-1)) }) + elements;
     } else {
+      if ((v < 3) && extensions_pos) {
+	DBG("Reducing version to %d\n", v);
+	elements = elements[..extensions_pos-1];
+	extensions_pos = 0;
+	internal_extensions = ([]);
+	internal_critical = (<>);
+      } else {
+	DBG("Bumping version to %d\n", v);
+      }
       elements[0] = version_integer(Integer(v-1));
     }
   }
@@ -648,7 +661,7 @@ class TBSCertificate
       }
     }
 
-    if (extensions_pos) {
+    if (!extensions_pos) {
       if (version < 3) version = 3;
       extensions_pos = sizeof(elements);
       elements = elements + ({ TaggedType3(r) });
@@ -865,8 +878,6 @@ class TBSCertificate
 	subject_id = BitString()->decode_primitive(a[i]->raw);
 	DBG("TBSCertificate: subject_id = %O\n", subject_id);
 	i++;
-	if (i == sizeof(a))
-	  return this;
       }
     }
     if (version >= 3) {
@@ -875,6 +886,7 @@ class TBSCertificate
 	  sizeof(a[i])==1 &&
 	  a[i][0]->type_name == "SEQUENCE") {
 	raw_extensions = a[i][0];
+	i++;
       }
     }
     internal_der = asn1->get_der();
