@@ -161,7 +161,7 @@ class Object
     return der || (der = der_encode());
   }
 
-  void create(mixed ...args) {
+  protected void create(mixed ...args) {
     WERROR("asn1_object[%s]->create\n", type_name);
     if (sizeof(args))
       init(@args);
@@ -1342,7 +1342,8 @@ class MetaExplicit
   }
 
   //!
-  void create(int cls, int tag, mapping(int:program(Object))|void types) {
+  protected void create(int cls, int tag,
+			mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
     valid_types = types;
