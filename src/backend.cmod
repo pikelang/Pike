@@ -4206,9 +4206,9 @@ void check_set_timer(struct timeval tmp)
     _st = get_storage(loc.o, PollDeviceBackend_program);
 
       
-    if(pdb) 
+    if(_st) 
       pdb = (struct PollDeviceBackend_struct *)_st;
-    
+
     if(pdb && pdb->external_run)
     {
       CFRunLoopTimerContext context = {0, pdb, NULL, NULL, NULL};
