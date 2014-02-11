@@ -82,25 +82,19 @@ protected {
 //! v3, and @[extensions] is optionally added to the sequence.
 //! issuerUniqueID and subjectUniqueID are not supported.
 Sequence make_tbs(Sequence issuer, Sequence algorithm,
-                  Sequence subject, Sequence keyinfo,
-                  Integer serial, Sequence validity,
-                  array|void extensions)
+		  Sequence subject, Sequence keyinfo,
+		  Integer serial, Sequence validity,
+		  array|void extensions)
 {
-  return (extensions
-	  ? Sequence( ({ version_integer(Integer(2)), /* Version 3 */
-			 serial,
-			 algorithm,
-			 issuer,
-			 validity,
-			 subject,
-			 keyinfo,
-			 extension_sequence(extensions) }) )
-	  : Sequence( ({ serial,
-			 algorithm,
-			 issuer,
-			 validity,
-			 subject,
-			 keyinfo }) ));
+  TBSCertificate tbs = TBSCertificate();
+  tbs->serial = serial->value;
+  tbs->algorithm = algorithm;
+  tbs->issuer = issuer;
+  tbs->validity = validity;
+  tbs->subject = subject;
+  tbs->keyinfo = keyinfo;
+  tbs->raw_extensions = extensions && Sequence(extensions);
+  return tbs;
 }
 
 //! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
