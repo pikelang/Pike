@@ -508,19 +508,23 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
 }
 
 static INLINE void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
+#ifdef USE_VALGRIND
     while (b && b != BA_ONE) {
         PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
         PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
         b = b->next;
     }
+#endif
 }
 
 static INLINE void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
+#ifdef USE_VALGRIND
     while (b && b != BA_ONE) {
         struct ba_block_header * next = b->next;
         PIKE_MEMPOOL_FREE(a, b, a->l.block_size);
         b = next;
     }
+#endif
 }
 
 /*
