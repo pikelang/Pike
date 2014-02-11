@@ -77,163 +77,6 @@ protected {
   ]);
 }
 
-//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
-//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
-//! v3, and @[extensions] is optionally added to the sequence.
-//! issuerUniqueID and subjectUniqueID are not supported.
-Sequence make_tbs(Sequence issuer, Sequence algorithm,
-		  Sequence subject, Sequence keyinfo,
-		  Integer serial, Sequence validity,
-		  array|void extensions)
-{
-  TBSCertificate tbs = TBSCertificate();
-  tbs->serial = serial->value;
-  tbs->algorithm = algorithm;
-  tbs->issuer = issuer;
-  tbs->validity = validity;
-  tbs->subject = subject;
-  tbs->keyinfo = keyinfo;
-  tbs->raw_extensions = extensions && Sequence(extensions);
-  return tbs;
-}
-
-//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
-//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
-//! v3, validity is calculated based on time and @[ttl], and
-//! @[extensions] is optionally added to the sequence.
-//! issuerUniqueID and subjectUniqueID are not supported.
-variant Sequence make_tbs(Sequence issuer, Sequence algorithm,
-			  Sequence subject, Sequence keyinfo,
-			  Integer serial, int ttl,
-			  array|void extensions)
-{
-  int now = time();
-  Sequence validity = Sequence( ({ UTC()->set_posix(now),
-                                   UTC()->set_posix(now + ttl) }) );
-
-  return make_tbs(issuer, algorithm, subject, keyinfo,
-		  serial, validity, extensions);
-}
-
-//! Sign the provided TBSCertificate.
-//!
-//! @param tbs
-//!   Either one of:
-//!   @mixed
-//!     @type TBSCertificate
-//!       A @[TBSCertificate] as returned by @[decode_certificate()].
-//!     @type Sequence
-//!       A TBSCertificate @[Sequence] as returned by @[make_tbs()].
-//!   @endmixed
-//!
-//! @param sign
-//!   RSA, DSA or ECDSA parameters for the issuer.
-//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
-//!   Must be initialized with the private key.
-//!
-//! @param hash
-//!   The hash function to use for the certificate. Must be one of the
-//!   standardized PKCS hashes to be used with the given Crypto.
-Sequence sign_tbs(Sequence|TBSCertificate tbs,
-		  Crypto.Sign sign, Crypto.Hash hash)
-{
-  return Sequence(({ [object(Sequence)]tbs,
-		     sign->pkcs_signature_algorithm_id(hash),
-		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
-		  }));
-}
-
-//! Low-level function for creating a self-signed certificate.
-//!
-//! @param issuer
-//!   Distinguished name for the issuer.
-//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
-//!
-//! @param c
-//!   RSA, DSA or ECDSA parameters for the issuer.
-//!   Both the public and the private keys need to be set.
-//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
-//!
-//! @param h
-//!   The hash function to use for the certificate. Must be one of the
-//!   standardized PKCS hashes to be used with the given Crypto.
-//!
-//! @param subject
-//!   Distinguished name for the issuer.
-//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
-//!
-//! @param public_key
-//!   DER-encoded RSAPublicKey structure.
-//!   See @[Standards.PKCS.RSA.public_key()].
-//!
-//! @param serial
-//!   Serial number for this key and subject.
-//!
-//! @param ttl
-//!   Validity time in seconds for this signature to be valid.
-//!
-//! @param extensions
-//!   Set of extensions.
-//!
-//! @returns
-//!   Returns a DER-encoded certificate.
-//!
-//! @seealso
-//!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
-string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
-                Sequence subject, int serial, int ttl, array|void extensions)
-{
-  Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
-  if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
-  return sign_tbs(make_tbs(issuer, algorithm_id,
-			   subject, c->pkcs_public_key(),
-			   Integer(serial), ttl, extensions),
-		  c, h)->get_der();
-}
-
-//! Creates a selfsigned certificate, i.e. where issuer and subject
-//! are the same entity. This entity is derived from the list of pairs
-//! in @[name], which is encoded into an distinguished_name by
-//! @[Standards.PKCS.Certificate.build_distinguished_name].
-//!
-//! @param c
-//!   The public key cipher used for the certificate, @[Crypto.RSA],
-//!   @[Crypto.DSA] or @[Crypto.ECC.Curve.ECDSA]. The object should be
-//!   initialized with both public and private keys.
-//!
-//! @param ttl
-//!   The validity of the certificate, in seconds, starting from
-//!   creation date.
-//!
-//! @param name
-//!   List of properties to create distinguished name from.
-//!
-//! @param extensions
-//!   List of extensions as ASN.1 structures.
-//!
-//! @param h
-//!   The hash function to use for the certificate. Must be one of the
-//!   standardized PKCS hashes to be used with the given Crypto. By
-//!   default @[Crypto.SHA256] is selected for both RSA and DSA.
-//!
-//! @param serial
-//!   Serial number of the certificate. Defaults to generating a UUID
-//!   version1 value with random node. Some browsers will refuse
-//!   different certificates from the same signer with the same serial
-//!   number.
-//!
-//! @seealso
-//!   @[sign_key()], @[sign_tbs()]
-string make_selfsigned_certificate(Crypto.Sign c, int ttl,
-                                   mapping|array name, array|void extensions,
-                                   void|Crypto.Hash h, void|int serial)
-{
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-  Sequence dn = Certificate.build_distinguished_name(name);
-  return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
-}
-
 class Verifier {
   constant type = "none";
   Crypto.Sign pkc;
@@ -889,6 +732,164 @@ class TBSCertificate
     /* Too many fields */
     return 0;
   }
+}
+
+//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
+//! v3, and @[extensions] is optionally added to the sequence.
+//! issuerUniqueID and subjectUniqueID are not supported.
+TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
+			Sequence subject, Sequence keyinfo,
+			Integer serial, Sequence validity,
+			array|void extensions)
+{
+  TBSCertificate tbs = TBSCertificate();
+  tbs->serial = serial->value;
+  tbs->algorithm = algorithm;
+  tbs->issuer = issuer;
+  tbs->validity = validity;
+  tbs->subject = subject;
+  tbs->keyinfo = keyinfo;
+  tbs->raw_extensions = extensions && Sequence(extensions);
+  return tbs;
+}
+
+//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! 4.1) to be signed (TBS) by the CA. version is explicitly set to
+//! v3, validity is calculated based on time and @[ttl], and
+//! @[extensions] is optionally added to the sequence.
+//! issuerUniqueID and subjectUniqueID are not supported.
+//!
+//! @note
+//!   Prior to Pike 8.0 this function returned a plain @[Sequence] object.
+variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
+				Sequence subject, Sequence keyinfo,
+				Integer serial, int ttl,
+				array|void extensions)
+{
+  int now = time();
+  Sequence validity = Sequence( ({ UTC()->set_posix(now),
+                                   UTC()->set_posix(now + ttl) }) );
+
+  return make_tbs(issuer, algorithm, subject, keyinfo,
+		  serial, validity, extensions);
+}
+
+//! Sign the provided TBSCertificate.
+//!
+//! @param tbs
+//!   A @[TBSCertificate] as returned by @[decode_certificate()]
+//!   or @[make_tbs()].
+//!
+//! @param sign
+//!   RSA, DSA or ECDSA parameters for the issuer.
+//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!   Must be initialized with the private key.
+//!
+//! @param hash
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto.
+//!
+//! @seealso
+//!   @[decode_certificate()], @[make_tbs()]
+Sequence sign_tbs(TBSCertificate tbs,
+		  Crypto.Sign sign, Crypto.Hash hash)
+{
+  return Sequence(({ [object(Sequence)]tbs,
+		     sign->pkcs_signature_algorithm_id(hash),
+		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
+		  }));
+}
+
+//! Low-level function for creating a self-signed certificate.
+//!
+//! @param issuer
+//!   Distinguished name for the issuer.
+//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
+//!
+//! @param c
+//!   RSA, DSA or ECDSA parameters for the issuer.
+//!   Both the public and the private keys need to be set.
+//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!
+//! @param h
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto.
+//!
+//! @param subject
+//!   Distinguished name for the issuer.
+//!   See @[Standards.PKCS.Certificate.build_distinguished_name].
+//!
+//! @param public_key
+//!   DER-encoded RSAPublicKey structure.
+//!   See @[Standards.PKCS.RSA.public_key()].
+//!
+//! @param serial
+//!   Serial number for this key and subject.
+//!
+//! @param ttl
+//!   Validity time in seconds for this signature to be valid.
+//!
+//! @param extensions
+//!   Set of extensions.
+//!
+//! @returns
+//!   Returns a DER-encoded certificate.
+//!
+//! @seealso
+//!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
+string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
+                Sequence subject, int serial, int ttl, array|void extensions)
+{
+  Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
+  if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
+  return sign_tbs(make_tbs(issuer, algorithm_id,
+			   subject, c->pkcs_public_key(),
+			   Integer(serial), ttl, extensions),
+		  c, h)->get_der();
+}
+
+//! Creates a selfsigned certificate, i.e. where issuer and subject
+//! are the same entity. This entity is derived from the list of pairs
+//! in @[name], which is encoded into an distinguished_name by
+//! @[Standards.PKCS.Certificate.build_distinguished_name].
+//!
+//! @param c
+//!   The public key cipher used for the certificate, @[Crypto.RSA],
+//!   @[Crypto.DSA] or @[Crypto.ECC.Curve.ECDSA]. The object should be
+//!   initialized with both public and private keys.
+//!
+//! @param ttl
+//!   The validity of the certificate, in seconds, starting from
+//!   creation date.
+//!
+//! @param name
+//!   List of properties to create distinguished name from.
+//!
+//! @param extensions
+//!   List of extensions as ASN.1 structures.
+//!
+//! @param h
+//!   The hash function to use for the certificate. Must be one of the
+//!   standardized PKCS hashes to be used with the given Crypto. By
+//!   default @[Crypto.SHA256] is selected for both RSA and DSA.
+//!
+//! @param serial
+//!   Serial number of the certificate. Defaults to generating a UUID
+//!   version1 value with random node. Some browsers will refuse
+//!   different certificates from the same signer with the same serial
+//!   number.
+//!
+//! @seealso
+//!   @[sign_key()], @[sign_tbs()]
+string make_selfsigned_certificate(Crypto.Sign c, int ttl,
+                                   mapping|array name, array|void extensions,
+                                   void|Crypto.Hash h, void|int serial)
+{
+  if(!serial)
+    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
+  Sequence dn = Certificate.build_distinguished_name(name);
+  return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
 //! Decodes a certificate and verifies that it is structually sound.
