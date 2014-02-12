@@ -111,7 +111,6 @@ test_do([[
 test_do([[
   SSL.context ctx = SSL.context();
   ctx->random = random_string;
-  // FIXME: Should we test all the curves?
   ctx->ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(random_string)->generate_key();
   mapping attrs = ([
@@ -474,6 +473,46 @@ test_ssl(3,3,0,3,client_msg)
 test_ssl(3,3,1,3,client_msg)
 test_ssl(3,3,2,3,client_msg)
 test_ssl(3,3,3,3,client_msg)
+
+test_tests([[
+object make_context(Crypto.ECC.Curve curve) {
+  SSL.context ctx = SSL.context();
+  ctx->random = random_string;
+  ctx->ecdsa = curve->ECDSA()->
+    set_random(random_string)->generate_key();
+  mapping attrs = ([
+    "organizationName" : "Test",
+    "commonName" : "*",
+  ]);
+  string cert = Standards.X509.make_selfsigned_certificate(ctx->ecdsa,
+    3600*24, attrs);
+  ctx->certificates = ({ cert });
+  ctx->ecdsa_mode();
+  return ctx;
+}
+array(int) a() {
+  int successes;
+  int tests;
+
+  foreach( ({
+    Crypto.ECC.SECP_192R1,
+    Crypto.ECC.SECP_224R1,
+    Crypto.ECC.SECP_256R1,
+    Crypto.ECC.SECP_384R1,
+    // Crypto.ECC.SECP_521R1, // Tested above.
+  }), Crypto.ECC.Curve curve)
+  {
+    log_status("Testing ECDSA curve %O...", curve->name());
+    object server_ctx = make_context(curve);
+    array suites = server_ctx->get_suites(SSL.Constants.SIGNATURE_ecdsa, 128,
+       SSL.Constants.PROTOCOL_TLS_1_2);
+    successes += test_ssl_connection(0,3,3,3,client_msg,server_ctx,suites);
+    tests++;
+  }
+
+    return ({ successes, tests-successes });
+}
+]])
 
 test_do([[
   add_constant("invalid_suites");
