@@ -199,12 +199,21 @@ mapping(int:program(.Types.Object)) universal_types =
 //!
 //! @param data
 //!   a DER encoded object
+//!
+//! @param types
+//!   An optional set of application-specific types.
+//!   This set is used to extend @[universal_types].
+//!
 //! @returns
 //!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.Primitive] or
 //!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
-.Types.Object simple_der_decode(string(0..255) data)
+.Types.Object simple_der_decode(string(0..255) data,
+				mapping(int:program(.Types.Object))|void types)
 {
+  if (types) {
+    return der_decode(ADT.struct(data), universal_types + types);
+  }
   return der_decode(ADT.struct(data), universal_types);
 }
 
