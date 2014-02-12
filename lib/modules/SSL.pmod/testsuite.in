@@ -200,8 +200,8 @@ test_do([[
 ]])
 
 test_do([[
-  array f(int client_min, int client_max, int server_min, int server_max,
-          string expected, object server_ctx, array(int) suites)
+  int f(int client_min, int client_max, int server_min, int server_max,
+        string expected, object server_ctx, array(int) suites)
   {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
@@ -297,18 +297,19 @@ test_do([[
       }
     }
 
-    array ret;
+    int ok;
     if (!expected || ((state == 3) && (client_recv_buf == expected))) {
       // log_status("OK: %s\n", SSL.Constants.fmt_cipher_suites(suites));
+      ok = 1;
     } else {
       log_ssl_failure(client_min,client_max,server_min,server_max,expected,suites,state,client_recv_buf);
-      ret = ({ state, client_recv_buf });
+      ok = 0;
     }
     client->close();
     server->close();
     destruct(client);
     destruct(server);
-    return ret;
+    return ok;
   };
   add_constant("test_ssl_connection", f);
 ]])
@@ -319,7 +320,7 @@ define(test_ssl, [[
 
     int expected_protocol = min($2, $4);
     int successes;
-    int failures;
+    int tests;
 
     foreach( ({
         SSL.Constants.SIGNATURE_rsa,
@@ -362,15 +363,11 @@ define(test_ssl, [[
   	    (invalid_suites[expected_protocol] || ({}));
 
     foreach(suites, int suite) {
-      array ret = test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
-
-      if( !ret )
-        successes++;
-      else
-        failures++;
+      successes += test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
+      tests++;
     }
     }
-    return ({ successes, failures });
+    return ({ successes, tests-successes });
   }]])
 ]])
 
