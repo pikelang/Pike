@@ -3170,6 +3170,7 @@ PIKECLASS PollDeviceBackend
   /* we place this declaration here rather than at the top in order to avoid struct-y unpleasantness */
   int init_cf(struct PollDeviceBackend_struct *me, int i);
   int init_external_cfrl(struct PollDeviceBackend_struct *me, int i);
+  int low_my_kqueue(struct PollDeviceBackend_struct *me);
 
   int my_kqueue(struct PollDeviceBackend_struct *me)
   {
@@ -3211,6 +3212,8 @@ PIKECLASS PollDeviceBackend
       CFRunLoopAddObserver(CFRunLoopGetCurrent(), beObserver,
         kCFRunLoopDefaultMode);
     }
+
+    return 0;
   }
 
   /* arg i is the kqueue. */
@@ -3229,6 +3232,8 @@ PIKECLASS PollDeviceBackend
     {
       CFRelease(beTimer);
     }
+
+    return 0;
   }
 
   /* arg i is the kqueue. */
@@ -4190,8 +4195,8 @@ void check_set_timer(struct timeval tmp)
   {
     /* register a timer if the backend is using external cfrl. */
     struct external_variable_context loc;
-    struct PollDeviceBackend_struct * pdb;
-    char * _st;
+    struct PollDeviceBackend_struct * pdb = NULL;
+    char * _st = NULL;
     loc.o = Pike_fp->current_object;
     loc.parent_identifier = 0;
     loc.inherit = Pike_fp->context;
@@ -4205,9 +4210,7 @@ void check_set_timer(struct timeval tmp)
     
     _st = get_storage(loc.o, PollDeviceBackend_program);
 
-      
-    if(_st) 
-      pdb = (struct PollDeviceBackend_struct *)_st;
+    pdb = (struct PollDeviceBackend_struct *)_st;
 
     if(pdb && pdb->external_run)
     {
