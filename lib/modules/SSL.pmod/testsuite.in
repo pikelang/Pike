@@ -143,11 +143,11 @@ test_do([[
   add_constant("log_ssl_failure",
 	       lambda(int cmin, int cmax, int smin, int smax,
 		      string expected,
-		      int suite, int state, string got)
+		      array(int) suites, int state, string got)
 	       {
 		 log_msg("SSL 3.%d..3.%d client with SSL 3.%d..3.%d server failed.\n",
 			 cmin, cmax, smin, smax);
-		 log_msg("Cipher_suite: %s\n", fmt_cipher_suite(suite));
+		 log_msg("Cipher_suite: %s", SSL.Constants.fmt_cipher_suites(suites));
 		 if (state != 3) {
 		   log_msg("Unexpected exit state: %d.\n", state);
 		 } else {
@@ -201,7 +201,7 @@ test_do([[
 
 test_do([[
   array f(int client_min, int client_max, int server_min, int server_max,
-          string expected, object server_ctx, int suite)
+          string expected, object server_ctx, array(int) suites)
   {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
@@ -212,7 +212,7 @@ test_do([[
 
     SSL.context client_ctx = SSL.context();
     client_ctx->random = random_string;
-    client_ctx->preferred_suites = ({ suite });
+    client_ctx->preferred_suites = suites;
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0,
                                      client_min, client_max);
 
@@ -299,13 +299,15 @@ test_do([[
 
     array ret;
     if (!expected || ((state == 3) && (client_recv_buf == expected))) {
-      // log_status("OK: %s\n", fmt_cipher_suite(suite));
+      // log_status("OK: %s\n", SSL.Constants.fmt_cipher_suites(suites));
     } else {
-      log_ssl_failure(client_min,client_max,server_min,server_max,expected,suite,state,client_recv_buf);
+      log_ssl_failure(client_min,client_max,server_min,server_max,expected,suites,state,client_recv_buf);
       ret = ({ state, client_recv_buf });
     }
     client->close();
     server->close();
+    destruct(client);
+    destruct(server);
     return ret;
   };
   add_constant("test_ssl_connection", f);
@@ -360,7 +362,7 @@ define(test_ssl, [[
   	    (invalid_suites[expected_protocol] || ({}));
 
     foreach(suites, int suite) {
-      array ret = test_ssl_connection($1,$2,$3,$4,$5, server_ctx, suite);
+      array ret = test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
 
       if( !ret )
         successes++;

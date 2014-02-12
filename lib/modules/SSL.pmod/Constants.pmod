@@ -600,6 +600,19 @@ constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080;
 constant SSL2_ck_des_64_cbc_with_md5		= 0x060040;
 constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0;
 
+string fmt_cipher_suites(array(int) s)
+{
+  String.Buffer b = String.Buffer();
+  mapping(int:string) ciphers = ([]);
+  foreach([array(string)]indices(this), string id)
+    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
+	has_prefix(id, "SSL2_") )
+      ciphers[.Constants[id]] = id;
+  foreach(s, int c)
+    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
+  return (string)b;
+}
+
 /* FIXME: Add SIGN-type element to table */
 constant CIPHER_SUITES =
 ([
