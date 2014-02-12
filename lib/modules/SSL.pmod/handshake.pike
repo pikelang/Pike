@@ -213,7 +213,7 @@ Packet client_hello()
     // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
   }
-  SSL3_DEBUG_MSG("Client ciphers:\n%s", fmt_cipher_suites(cipher_suites));
+  SSL3_DEBUG_MSG("Client ciphers:\n%s", .Constants.fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
   int cipher_len = sizeof(cipher_suites)*2;
@@ -390,11 +390,11 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 			     array(int) compression_methods)
 {
   SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
-		 fmt_cipher_suites(context->preferred_suites),
-                 fmt_cipher_suites(cipher_suites));
+		 .Constants.fmt_cipher_suites(context->preferred_suites),
+                 .Constants.fmt_cipher_suites(cipher_suites));
   cipher_suites = context->preferred_suites & cipher_suites;
   SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 fmt_cipher_suites((array(int))cipher_suites));
+                 .Constants.fmt_cipher_suites((array(int))cipher_suites));
 
   if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
     // No overlapping support for ecc.
@@ -618,19 +618,6 @@ int verify_certificate_chain(array(string) certs)
  return 0;
 }
 
-protected string fmt_cipher_suites(array(int) s)
-{
-  String.Buffer b = String.Buffer();
-  mapping(int:string) ciphers = ([]);
-  foreach([array(string)]indices(.Constants), string id)
-    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
-	has_prefix(id, "SSL2_") )
-      ciphers[.Constants[id]] = id;
-  foreach(s, int c)
-    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
-  return (string)b;
-}
-
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
@@ -705,7 +692,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 			 "cipher suites:\n%s\n"
 			 "compression methods: %O\n",
 			 client_version[0], client_version[1],
-			 id, fmt_cipher_suites(cipher_suites),
+			 id, .Constants.fmt_cipher_suites(cipher_suites),
                          compression_methods);
 
 	}
