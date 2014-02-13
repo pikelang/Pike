@@ -2002,7 +2002,11 @@ PIKECLASS Backend
 	 * and when it reads the data), and besides I can't think
 	 * of any sane way to use it. Also, this error can help
 	 * discover otherwise tricky bugs. /mast */
+#ifndef BACKEND_USES_CFRUNLOOP
 	Pike_error ("Backend already running - cannot reenter.\n");
+#else
+        ; /* Do nothing, as we can call setup more than once. */
+#endif
     }
 #ifdef PIKE_THREADS
     me->exec_thread = Pike_interpreter.thread_state;
