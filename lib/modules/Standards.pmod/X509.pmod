@@ -40,6 +40,24 @@ constant CERT_BAD_SIGNATURE = 6;
 constant CERT_UNAUTHORIZED_CA = 7;
 #endif
 
+//! Unique identifier for the certificate issuer.
+//!
+//! X.509v2 (deprecated).
+class IssuerId {
+  inherit BitString;
+  constant cls = 2;
+  constant tag = 1;
+}
+
+//! Unique identifier for the certificate subject.
+//!
+//! X.509v2 (deprecated).
+class SubjectId {
+  inherit BitString;
+  constant cls = 2;
+  constant tag = 2;
+}
+
 protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
   MetaExplicit version_integer = MetaExplicit(2, 0);
@@ -201,6 +219,11 @@ protected Verifier make_verifier(Object _keyinfo)
   DBG("make_verifier: Unknown algorithm identifier: %O\n", seq[0]);
 }
 
+protected mapping(int:program(Object)) x509_types = ([
+    make_combined_tag(2, 1):IssuerId,
+    make_combined_tag(2, 2):SubjectId,
+  ]);
+
 //! Represents a TBSCertificate.
 //!
 //! @note
@@ -216,7 +239,7 @@ class TBSCertificate
   void `der=(string asn1)
   {
     internal_der = UNDEFINED;
-    if (init(Standards.ASN1.Decode.simple_der_decode(asn1))) {
+    if (init(Standards.ASN1.Decode.simple_der_decode(asn1, x509_types))) {
       internal_der = asn1;
     }
   }
@@ -388,7 +411,7 @@ class TBSCertificate
 
   //! @note
   //! optional
-  void `issuer_id=(BitString i)
+  void `issuer_id=(IssuerId|BitString i)
   {
     internal_der = UNDEFINED;
     if (!i) {
@@ -399,26 +422,32 @@ class TBSCertificate
       if (extensions_pos) extensions_pos--;
       return;
     }
-    TaggedType1 tti = TaggedType1(i);
+    if (i->cls != 2) {
+      // Convert BitString to IssuerId.
+      i = IssuerId(i->value);
+    } else if (i->raw) {
+      // Convert Primitive to IssuerId.
+      (i = IssuerId())->decode_primitive(a[i]->raw);
+    }
     if (!issuer_pos) {
       if (version < 2) version = 2;
       issuer_pos = 7;
-      elements = elements[..6] + ({ tti }) + elements[7..];
+      elements = elements[..6] + ({ i }) + elements[7..];
       if (subject_pos) subject_pos++;
       if (extensions_pos) extensions_pos++;
       return;
     }
-    elements[issuer_pos] = tti;
+    elements[issuer_pos] = i;
   }
-  BitString `issuer_id()
+  IssuerId `issuer_id()
   {
-    if (issuer_pos) return elements[issuer_pos][0];
+    if (issuer_pos) return elements[issuer_pos];
     return UNDEFINED;
   }
 
   //! @note
   //! optional
-  void `subject_id=(BitString s)
+  void `subject_id=(SubjectId|BitString s)
   {
     internal_der = UNDEFINED;
     if (!s) {
@@ -428,20 +457,26 @@ class TBSCertificate
       if (extensions_pos) extensions_pos--;
       return;
     }
-    TaggedType2 tts = TaggedType2(s);
+    if (s->cls != 2) {
+      // Convert BitString to SubjectId.
+      s = SubjectId()->decode_primitive(s->raw);
+    } else if (i->raw) {
+      // Convert Primitive to SubjectId.
+      (s = SubjectId())->decode_primitive(a[i]->raw);
+    }
     if (!subject_pos) {
       if (version < 2) version = 2;
       subject_pos = (issuer_pos || 6) + 1;
-      elements = elements[..subject_pos-1] + ({ tts }) +
+      elements = elements[..subject_pos-1] + ({ s }) +
 	elements[subject_pos..];
       if (extensions_pos) extensions_pos++;
       return;
     }
-    elements[subject_pos] = tts;
+    elements[subject_pos] = s;
   }
-  BitString `subject_id()
+  SubjectId `subject_id()
   {
-    if (subject_pos) return elements[subject_pos][0];
+    if (subject_pos) return elements[subject_pos];
     return UNDEFINED;
   }
 
@@ -703,16 +738,24 @@ class TBSCertificate
     if (version >= 2)
     {
       if ((i < sizeof(a)) && !a[i]->constructed &&
-	  (a[i]->combined_tag == make_combined_tag(2, 1)))
+	  (a[i]->get_combined_tag() == make_combined_tag(2, 1)))
       {
-	issuer_id = BitString()->decode_primitive(a[i]->raw);
+	if (a[i]->raw) {
+	  (issuer_id = IssuerId())->decode_primitive(a[i]->raw);
+	} else {
+	  issuer_id = a[i];
+	}
 	DBG("TBSCertificate: issuer_id = %O\n", issuer_id);
 	i++;
       }
       if ((i < sizeof(a)) && !a[i]->constructed &&
-	  (a[i]->combined_tag == make_combined_tag(2, 2)))
+	  (a[i]->get_combined_tag() == make_combined_tag(2, 2)))
       {
-	subject_id = BitString()->decode_primitive(a[i]->raw);
+	if (a[i]->raw) {
+	  (subject_id = SubjectId())->decode_primitive(a[i]->raw);
+	} else {
+	  subject_id = a[i];
+	}
 	DBG("TBSCertificate: subject_id = %O\n", subject_id);
 	i++;
       }
@@ -896,7 +939,9 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
 //! Returns a @[TBSCertificate] object if ok, otherwise @expr{0@}.
 TBSCertificate decode_certificate(string|object cert)
 {
-  if (stringp (cert)) cert = Standards.ASN1.Decode.simple_der_decode(cert);
+  if (stringp (cert)) {
+    cert = Standards.ASN1.Decode.simple_der_decode(cert, x509_types);
+  }
 
   if (!cert
       || (cert->type_name != "SEQUENCE")
