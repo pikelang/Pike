@@ -43,6 +43,8 @@ if test x$with_mysql = xno; then
 else
   PIKE_FEATURE_NODEP(Mysql)
 
+  PIKE_SELECT_ABI
+
   if test "x$with_mariadb" = "xno"; then
       MARIADB_CONFIG=no
   else
