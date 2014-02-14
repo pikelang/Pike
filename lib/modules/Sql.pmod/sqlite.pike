@@ -1,11 +1,11 @@
 
 #pike __REAL_VERSION__
+#require constant(SQLite.SQLite)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
 constant dont_dump_program = 1;
 
-#if constant(SQLite.SQLite)
 inherit SQLite.SQLite;
 
 void create(string a, void|string b, void|mixed c, void|mixed d,
@@ -100,8 +100,3 @@ array list_tables(string|void n)
   }
   return out;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
-

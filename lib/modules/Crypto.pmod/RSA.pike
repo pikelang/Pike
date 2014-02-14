@@ -4,8 +4,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 inherit Crypto.Sign;
 
@@ -504,7 +503,3 @@ __deprecated__ int(0..1) verify(string(8bit) message, .Hash h, Gmp.mpz sign)
 {
   return raw_verify(Standards.PKCS.Signature.build_digestinfo(message, h), sign);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

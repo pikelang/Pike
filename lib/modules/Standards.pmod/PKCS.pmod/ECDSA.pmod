@@ -2,8 +2,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.ECC.Curve)
+#require constant(Crypto.ECC)
 
 import Standards.ASN1.Types;
 
@@ -87,6 +86,3 @@ Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
   res->set_private_key(Gmp.mpz([string(8bit)]a->elements[1]->value, 256));
   return res;
 }
-#else
-constant this_program_does_not_exist=1;
-#endif

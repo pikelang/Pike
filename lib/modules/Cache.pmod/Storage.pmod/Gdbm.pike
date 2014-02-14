@@ -9,13 +9,12 @@
 //! @thanks
 //!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
-
 #pike __REAL_VERSION__
+#require constant(Gdbm.gdbm)
 
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 1000
 
-#if constant(Gdbm.gdbm)
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
@@ -176,10 +175,6 @@ void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/
 //maybe we should split the database into two databases, one for the data

@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
+#require constant(Nettle.ECC_Curve)
 
 //! Elliptic Curve Cipher Constants.
 //!
 //! This module contains constants used with elliptic curve algorithms.
 
-#if constant(Nettle.ECC_Curve)
 
 // The module dumper has problems with the overloaded ECDSA class,
 // so inhibit dumping of this module for now.
@@ -258,7 +258,3 @@ Curve SECP_256R1 = Curve(1, 256, 1);
 Curve SECP_384R1 = Curve(1, 384, 1);
 Curve SECP_521R1 = Curve(1, 521, 1);
 //! @endignore
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* Nettle.ECC_Curve */

@@ -52,12 +52,11 @@
 //! @endsection
 
 #pike __REAL_VERSION__
+#require constant(Mysql.mysql)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
 constant dont_dump_program = 1;
-
-#if constant(Mysql.mysql)
 
 inherit Mysql.mysql;
 
@@ -945,7 +944,3 @@ protected void create(string|void host, string|void database,
     update_unicode_encode_mode_from_charset ("latin1");
   }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(Mysql.mysql) */

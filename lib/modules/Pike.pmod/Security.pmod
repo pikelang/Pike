@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(__builtin.security)
 
-#if constant(__builtin.security)
 // Pike internal security support.
 //
 // @note
@@ -58,7 +58,3 @@ class User {
     return 3;
   }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(__builtin.security) */

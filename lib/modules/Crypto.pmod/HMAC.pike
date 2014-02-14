@@ -3,8 +3,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 protected .Hash H;  // hash object
 
@@ -49,7 +48,3 @@ Crypto.Hash.HMAC `()(string(8bit) passwd)
 {
   return H->HMAC(passwd, B);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

@@ -3,6 +3,7 @@
  */
 
 #pike __REAL_VERSION__
+#require constant(GL.glOrtho)
 
 //! The GL Utilities module is a partial implementation of the
 //! GLU library. This module only contains functions that someone
@@ -11,7 +12,6 @@
 //! the GLU library (Mesa was used last time), tweak it so that
 //! it compiles as Pike code and then check it in into the CVS.
 
-#if constant(GL) && constant(GL.glOrtho)
 import GL;
 
 #ifndef M_PI
@@ -236,7 +236,3 @@ array(float) gluProject(float objx, float objy,
 //     return GL_FALSE;
 //   return ({ out[0]/out[3], out[1]/out[3], out[2]/out[3] });
 // }
-
-#else /* constant(GL) */
-constant this_program_does_not_exist=1;
-#endif

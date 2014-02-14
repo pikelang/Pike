@@ -57,8 +57,7 @@
 //! @endcode
 
 #pike __REAL_VERSION__
-
-#if constant(Crypto.SHA1)
+#require constant(Crypto.SHA1)
 
 import .Bencoding;
 
@@ -1370,9 +1369,3 @@ void destroy()
 }
 
 // ----------------------------------------------------------------
-
-#else /* !constant(Crypto.SHA1) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(Crypto.SHA1) */

@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Crypto.Hash)
 
 //! Keeps the state that is shared by all SSL-connections for one
 //! server (or one port). It includes policy configuration, a server
@@ -11,8 +12,6 @@
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
-
-#if constant(Crypto.Hash)
 
 import .Constants;
 
@@ -714,7 +713,3 @@ private void update_trusted_issuers()
     trusted_issuers_cache[cert->subject->get_der()] = cert->public_key;
   }
 }
-
-#else // constant(Crypto.Hash)
-constant this_program_does_not_exist = 1;
-#endif

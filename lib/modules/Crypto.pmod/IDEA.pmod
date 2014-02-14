@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.IDEA)
 
 //! The IDEA(tm) block cipher is covered by patents held by ETH and a
 //! Swiss company called Ascom-Tech AG. The Swiss patent number is
@@ -8,10 +9,4 @@
 //! Ascom-Tech AG. There is no license fee required for noncommercial
 //! use.
 
-#if constant(Nettle) && constant(Nettle.IDEA)
-
 inherit Nettle.IDEA;
-
-#else
-constant this_program_does_not_exist=1;
-#endif

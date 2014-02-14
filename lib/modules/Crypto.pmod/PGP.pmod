@@ -2,8 +2,7 @@
 //! PGP stuff. See RFC 4880.
 
 #pike __REAL_VERSION__
-
-#if constant(Crypto.HashState)
+#require constant(Crypto.HashState)
 
 // Decodes a PGP public key.
 // @returns
@@ -362,7 +361,3 @@ mapping(string:mixed) decode_radix64(string data) {
   ret->actual_checksum = crc24(ret->data);
   return ret;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

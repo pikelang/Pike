@@ -66,12 +66,9 @@
 //	Interesting, applicable
 //	RFC 2307   (LDAP as network information services; draft?)
 
-
-#if constant(.ldap_privates)
-
 #include "ldap_globals.h"
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 import SSL.Constants;
 #endif
 
@@ -2548,8 +2545,4 @@ int main (int argc, array(string) argv)
     }
 }
 
-#endif
-
-#else
-constant this_program_does_not_exist=1;
 #endif

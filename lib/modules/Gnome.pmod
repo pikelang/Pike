@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK1) && constant(GTK1.Widget)
+#require constant(GTK1.Widget)
 
 //! @decl import GTK1
 
@@ -22,7 +21,3 @@ array _values()
 {
   return map(_indices(), `[]);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(GTK1.Widget) */

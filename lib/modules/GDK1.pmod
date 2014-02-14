@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK1) && constant(GTK1.Widget)
+#require constant(GTK1.Widget)
 
 #define INDEX(x) GTK1[x]
 
@@ -52,7 +51,3 @@ mixed `[](string what)
   return UNDEFINED;
 //   return  GDKSupport[what];
 }
-
-#else /* constant(GTK1.Widget) */
-constant this_program_does_not_exist=1;
-#endif

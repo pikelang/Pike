@@ -2,8 +2,7 @@
 
 #pike __REAL_VERSION__
 // #pragma strict_types
-
-#if constant(Crypto.RSA)
+#require constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 
@@ -34,8 +33,4 @@ object build_csr_dsa(Crypto.DSA dsa, object name)
 {
   Sequence info = Sequence( ({ Integer }) );
 }
-#endif
-
-#else
-constant this_program_does_not_exist=1;
 #endif

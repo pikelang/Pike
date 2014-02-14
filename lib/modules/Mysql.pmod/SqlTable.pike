@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
-#if !constant (___Mysql)
-constant this_program_does_not_exist = 1;
-#else  // !___Mysql
+#require constant(___Mysql)
 
 //! This class provides some abstractions on top of an SQL table.
 //!

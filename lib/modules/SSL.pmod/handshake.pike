@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(SSL.Cipher)
 
 //! SSL.handshake keeps the state relevant for SSL handshaking. This
 //! includes a pointer to a context object (which doesn't change), various
@@ -12,8 +13,6 @@
 //! handshake is finished.
 
 //#define SSL3_PROFILING
-
-#if constant(SSL.Cipher.DHKeyExchange)
 
 import .Constants;
 
@@ -1765,7 +1764,3 @@ void create(int is_server, void|SSL.context ctx,
     send_packet(client_hello());
   }
 }
-
-#else // constant(SSL.Cipher.DHKeyExchange)
-constant this_program_does_not_exist = 1;
-#endif

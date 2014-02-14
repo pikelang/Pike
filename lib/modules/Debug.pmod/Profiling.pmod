@@ -1,8 +1,8 @@
 /* -*- Mode: pike; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #pike __REAL_VERSION__
+#require constant(get_profiling_info)
 
-#if constant(get_profiling_info)
-private multiset(program) object_programs() 
+private multiset(program) object_programs()
 {
     multiset x = (<>);
     int orig_enabled = Pike.gc_parameters()->enabled;
@@ -327,6 +327,3 @@ void display(int|void num,
     sort( (array(float))column(rows,1+(__MINOR__==6?0:1)), rows );
     output_result( reverse(rows)[..num||99], 6 );
 }
-#else
-constant this_program_does_not_exist = 1;
-#endif

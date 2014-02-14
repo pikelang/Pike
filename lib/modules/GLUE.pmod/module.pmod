@@ -1,7 +1,5 @@
-//
-
 #pike __REAL_VERSION__
-#if constant(GL) && constant(GL.glOrtho)
+#require constant(GL.glOrtho)
 
 //! GL Universal Environment
 
@@ -2112,7 +2110,3 @@ mapping(string:mixed) debug_stuff() {
     "fast_mipmap" : fast_mipmap,
   ]);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

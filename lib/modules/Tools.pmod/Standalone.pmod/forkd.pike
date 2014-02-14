@@ -1,8 +1,5 @@
 #pike __REAL_VERSION__
-
-#if !constant (Process.ForkdDecoder)
-constant this_program_does_not_exist = 1;
-#else
+#require constant(Process.ForkdDecoder)
 
 //! Fork Daemon
 //!
@@ -190,5 +187,3 @@ int main(int argc, array(string) argv)
 
   return -1;
 }
-
-#endif	// Process.ForkdDecoder

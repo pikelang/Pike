@@ -3,12 +3,12 @@
  */
 
 #pike __REAL_VERSION__
+#require constant(Odbc.odbc)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
 constant dont_dump_program = 1;
 
-#if constant(Odbc.odbc)
 inherit Odbc.odbc;
 
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
@@ -19,7 +19,3 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 }
 
 constant list_dbs = Odbc.list_dbs;
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(Odbc.odbc) */
