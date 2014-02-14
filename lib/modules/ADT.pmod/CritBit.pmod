@@ -1,10 +1,7 @@
 #pike __REAL_VERSION__
+#require constant(ADT._CritBit)
 
 //! @ignore
-#if !constant (ADT._CritBit)
-constant this_program_does_not_exist = 1;
-#else
-
 inherit ADT._CritBit : C;
 //! @endignore
 

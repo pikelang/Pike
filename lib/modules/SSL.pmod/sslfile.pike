@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(SSL.Cipher.CipherAlgorithm)
+#require constant(SSL.Cipher)
 
 //! Interface similar to @[Stdio.File].
 //!
@@ -2309,7 +2308,3 @@ protected int ssl_close_callback (int called_from_real_backend)
 string `->next_protocol() {
     return conn->next_protocol;
 }
-
-#else // constant(SSL.Cipher.CipherAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

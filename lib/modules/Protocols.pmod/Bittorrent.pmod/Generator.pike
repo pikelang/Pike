@@ -16,8 +16,7 @@
 //!   }
 
 #pike __REAL_VERSION__
-
-#if constant(.Torrent)
+#require constant(Protocols.Bittorrent.Torrent)
 
 inherit .Torrent;
 
@@ -177,9 +176,3 @@ string digest(void|function(int,int:void) progress_callback)
 
    return .Bencoding.encode(info);
 }
-
-#else /* !constant(.Torrent) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(.Torrent) */

@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(SSL.Cipher.CipherAlgorithm)
+#require constant(SSL.Cipher)
 
 //! Interface similar to @[Stdio.Port].
 
@@ -174,7 +173,3 @@ void create()
   accept_queue::create();
   set_id(this);
 }
-
-#else // constant(SSL.Cipher.CipherAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

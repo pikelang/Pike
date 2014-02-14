@@ -1,8 +1,5 @@
 #pike __REAL_VERSION__
-
-/*
- * dummy https server/client
- */
+#require constant(SSL.Cipher)
 
 //! Dummy HTTPS server/client
 
@@ -15,8 +12,6 @@
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
-
-#if constant(SSL.Cipher.CipherAlgorithm)
 
 import Stdio;
 
@@ -256,7 +251,3 @@ int main()
   }
 #endif
 }
-
-#else // constant(SSL.Cipher.CipherAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

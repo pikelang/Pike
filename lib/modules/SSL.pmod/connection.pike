@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 //#pragma strict_types
+#require constant(SSL.Cipher)
 
 //! SSL packet layer.
 //!
@@ -17,8 +18,6 @@
 // TLS 1.0 (SSL 3.1)	RFC 2246 "The TLS Protocol Version 1.0".
 // TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
 // Renegotiation	RFC 5746 "Renegotiation Indication Extension".
-
-#if constant(SSL.Cipher.CipherAlgorithm)
 
 .state current_read_state;
 .state current_write_state;
@@ -442,7 +441,3 @@ string|int got_data(string|int s)
   }
   return closing & 2 ? 1 : res;
 }
-
-#else // constant(SSL.Cipher.CipherAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

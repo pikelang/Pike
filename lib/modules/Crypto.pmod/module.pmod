@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.Hash)
 
 //! Various cryptographic classes and functions.
 //!
@@ -22,8 +23,6 @@
 //! @note
 //!   This module is only available if Pike has been compiled with
 //!   @[Nettle] enabled (this is the default).
-
-#if constant(Nettle.Hash)
 
 constant HashState = Nettle.Hash.State;
 
@@ -127,7 +126,3 @@ constant PAD_ISO_10126 = 1;
 constant PAD_ANSI_X923 = 2;
 constant PAD_PKCS7 = 3;
 constant PAD_ZERO = 4;
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(Nettle.Hash) */

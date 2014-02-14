@@ -5,8 +5,7 @@
 
 #pike __REAL_VERSION__
 // #pragma strict_types
-
-#if constant(Crypto.DSA)
+#require constant(Crypto.DSA)
 
 import Standards.ASN1.Types;
 
@@ -107,7 +106,3 @@ Sequence signature_algorithm_id(Crypto.Hash hash)
   }
   return 0;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

@@ -1,12 +1,10 @@
 #pike __REAL_VERSION__
+#require constant(System._Inotify.parse_event)
 
 /* vim:syntax=lpc
  */
 
 //! @ignore
-#if !constant (System._Inotify.parse_event)
-constant this_program_does_not_exist = 1;
-#else
 inherit System._Inotify;
 //! @endignore
 
@@ -181,4 +179,3 @@ class Instance {
 	file->close();
     }
 }
-#endif

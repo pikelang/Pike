@@ -5,12 +5,11 @@
  */
 
 #pike __REAL_VERSION__
+#require constant(sybase.sybase)
 
-// Cannot dump this since the #if constant(...) check below may depend
-// on the presence of system libs at runtime.
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
 constant dont_dump_program = 1;
-
-#if constant(sybase.sybase)
 
 inherit sybase.sybase:mo;
 #define THROW(X) throw(({X+"\n",backtrace()}))
@@ -107,7 +106,3 @@ int|object big_query(string q, mapping(string|int:mixed)|void bindings) {
     return ::big_query(q);
   return ::big_query(.sql_util.emulate_bindings(q,bindings,this));
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

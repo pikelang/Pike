@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK2) && constant(GTK2.PangoLayout)
+#require constant(GTK2.PangoLayout)
 
 //! @decl import GTK2
 
@@ -22,7 +21,3 @@ array _values()
 {
   return map(_indices(), `[]);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif /* constant(GTK2.PangoLayout) */

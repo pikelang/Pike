@@ -1,11 +1,10 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.MD5)
 
 //! MD5 is a message digest function constructed by Ronald Rivest, and
 //! is described in RFC 1321. It outputs message digests of 128 bits,
 //! or 16 octets.
-
-#if constant(Nettle) && constant(Nettle.MD5)
 
 inherit Nettle.MD5;
 
@@ -29,7 +28,3 @@ string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
 {
   return Nettle.crypt_md5(password, salt);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

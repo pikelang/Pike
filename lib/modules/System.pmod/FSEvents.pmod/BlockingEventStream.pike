@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#require constant(System.FSEvents.EventStream)
 
 //! A variation of @[EventStream] that provides a blocking interface.
 //!
@@ -12,8 +13,6 @@
 //!   @[read_event] will run not run the EventLoop that this
 //!   EventStream is registered with, resulting in events never being
 //!   delivered.
-
-#if constant(System.FSEvents.EventStream)
 
   inherit .EventStream;
 
@@ -66,6 +65,3 @@
     else
       return received_events->get();
   }
-#else
-constant this_program_does_not_exist=1;
-#endif

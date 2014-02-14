@@ -1,8 +1,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(.CipherState)
+#require constant(Crypto.CipherState)
 
 //! A wrapper class that connects several cipher algorithms into one
 //! algorithm. E.g. triple DES can be emulated with
@@ -109,7 +108,3 @@ string(8bit) crypt(string(8bit) data) {
     data = c->crypt(data);
   return data;
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

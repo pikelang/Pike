@@ -2,11 +2,9 @@
 //! The Digital Signature Algorithm DSA is part of the NIST Digital
 //! Signature Standard DSS, FIPS-186 (1993).
 
-
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 inherit Crypto.Sign;
 
@@ -394,7 +392,3 @@ __deprecated__ int(0..1) verify_ssl(string(8bit) msg, string(8bit) s)
 {
   return pkcs_verify(msg, .SHA1, s);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

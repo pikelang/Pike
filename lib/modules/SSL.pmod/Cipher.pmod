@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 //! Encryption and MAC algorithms used in SSL.
 
@@ -1716,7 +1715,3 @@ array lookup(int suite, ProtocolVersion|int version,
 
   return ({ ke_method, res });
 }
-
-#else // constant(Crypto.Hash)
-constant this_program_does_not_exist = 1;
-#endif

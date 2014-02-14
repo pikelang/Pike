@@ -1,12 +1,11 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
+#require constant(SSL.Cipher)
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
 //! stream of packets, and operates in either decryption or encryption
 //! mode.
-
-#if constant(SSL.Cipher.MACAlgorithm)
 
 import .Constants;
 
@@ -295,7 +294,3 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 
   return [object(Alert)]packet->check_size(version, 2048) || packet;
 }
-
-#else // constant(SSL.Cipher.MACAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

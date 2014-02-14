@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(SSL.Cipher)
 
 //! The most important information in a session object is a
 //! choice of encryption algorithms and a "master secret" created by
@@ -11,8 +12,6 @@
 //!
 //! It is also possible to change to a new session in the middle of a
 //! connection.
-
-#if constant(SSL.Cipher.CipherSpec)
 
 import .Constants;
 protected constant Struct = ADT.struct;
@@ -483,7 +482,3 @@ array(.state) new_client_states(string(0..255) client_random,
   }
   return ({ read_state, write_state });
 }
-
-#else // constant(SSL.Cipher.CipherSpec)
-constant this_program_does_not_exist = 1;
-#endif

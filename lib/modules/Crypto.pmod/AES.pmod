@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.AES)
 
 //! AES (American Encryption Standard) is a quite new block cipher,
 //! specified by NIST as a replacement for the older DES standard. The
@@ -12,10 +13,4 @@
 //! bits (16, 24 and 32 octets) being the allowed key sizes. It does
 //! not have any weak keys.
 
-#if constant(Nettle) && constant(Nettle.AES)
-
 inherit Nettle.AES;
-
-#else
-constant this_program_does_not_exist=1;
-#endif
