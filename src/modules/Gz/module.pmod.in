@@ -1,6 +1,6 @@
 // -*- pike -*-
 #pike __REAL_VERSION__
-#if constant(@module@)
+#require constant(@module@)
 
 inherit @module@;
 
