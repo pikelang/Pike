@@ -1074,7 +1074,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
   int include_mode;
   INT_TYPE first_line = this->current_line;
   /* FIXME: What about this->current_file? */
-  
+
   for(pos=0; pos<len;)
   {
     ptrdiff_t old_pos = pos;
@@ -2530,6 +2530,46 @@ concat_identifier:
 	    FIND_EOL();
 	  break;
 	}
+      }
+    case 'r': /* require */
+      {
+        static const WCHAR require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
+        if(WGOBBLE2(require_))
+        {
+          struct string_builder save, tmp;
+          save = this->buf;
+          init_string_builder(&this->buf, SHIFT);
+          pos += lower_cpp(this, data+pos, len-pos,
+                           CPP_END_AT_NEWLINE | CPP_DO_IF,
+                           auto_convert, charset);
+          tmp = this->buf;
+          this->buf = save;
+          string_builder_putchar(&tmp, 0);
+          tmp.s->len--;
+
+          switch(tmp.s->size_shift) {
+	  case 0:
+	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0, 0);
+	    break;
+	  case 1:
+	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0, 0);
+	    break;
+	  case 2:
+	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0, 0);
+	    break;
+#ifdef PIKE_DEBUG
+	  default:
+	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
+	    break;
+#endif
+	  }
+          if(SAFE_IS_ZERO(Pike_sp-1)) this->dependencies_fail=1;
+          pop_stack();
+          free_string_builder(&tmp);
+          if(this->dependencies_fail) return pos;
+          break;
+        }
+	goto unknown_preprocessor_directive;
       }
     case 'w': /* warning */
       {

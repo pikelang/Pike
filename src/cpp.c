@@ -131,7 +131,7 @@ struct cpp
   INT_TYPE compat_minor;
   struct pike_string *data;
   struct pike_string *prefix;
-  INT_TYPE picky_cpp, keep_comments;
+  INT_TYPE picky_cpp, keep_comments, dependencies_fail;
 };
 
 struct define *defined_macro =0;
@@ -586,6 +586,17 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!
  *! @seealso
  *!   @[#if], @[#ifdef], @[defined]
+ */
+
+/*! @directive #require
+ *!
+ *!   If the directive evaluates to false, the source file will be
+ *!   considered to have failed dependencies, and will not be found by
+ *!   the resolver. In practical terms the @[cpp()] call will return
+ *!   zero.
+ *!
+ *! @seealso
+ *!   @[#if]
  */
 
 /*! @directive #endif
@@ -2471,6 +2482,7 @@ void f_cpp(INT32 args)
   this.compile_errors=0;
   this.defines=0;
   this.keep_comments = 0;
+  this.dependencies_fail = 0;
 
 #define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
 		      || ((type) == PIKE_T_MAPPING && "mapping")\
@@ -2752,7 +2764,14 @@ void f_cpp(INT32 args)
     free_string_builder(&this.buf);
     throw_error_object(fast_clone_object(cpp_error_program), 0, 0, 0,
 		       "Cpp() failed\n");
-  }else{
+  }
+  else if(this.dependencies_fail)
+  {
+    free_string_builder(&this.buf);
+    push_int(0);
+  }
+  else
+  {
     pop_n_elems(sp - save_sp);
     push_string(finish_string_builder(&this.buf));
   }

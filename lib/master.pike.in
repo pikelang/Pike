@@ -1171,16 +1171,19 @@ program compile_string(string source, void|string filename,
   werror ("%*s>>> compile_string %O\n", GET_MSG_DEPTH, "", filename);
   INC_MSG_DEPTH();
 #endif
-  program ret = compile(cpp(source, filename||"-", 1, handler,
-		     compat_major, compat_minor,
-		     (zero_type(_show_if_constant_errors)?
-		      show_if_constant_errors:
-		      _show_if_constant_errors)),
-		 handler,
-		 compat_major,
-		 compat_minor,
-		 p,
-		 o);
+  string code = cpp(source, filename||"-", 1, handler,
+                    compat_major, compat_minor,
+                    (zero_type(_show_if_constant_errors)?
+                     show_if_constant_errors:
+                     _show_if_constant_errors));
+  program ret;
+  if(code)
+    ret = compile(code,
+                  handler,
+                  compat_major,
+                  compat_minor,
+                  p,
+                  o);
   if (source_cache)
     source_cache[ret] = source;
 #ifdef RECUR_COMPILE_DEBUG
@@ -2066,7 +2069,10 @@ protected program low_findprog(string pname,
       return programs[fname] = 0;
     }
     else {
-      resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+      if(!ret)
+        resolv_debug("low_findprog %s: dependencies failed.\n");
+      else
+        resolv_debug("low_findprog %s: returning %O\n", fname, ret);
       return programs[fname]=ret;
     }
   }
