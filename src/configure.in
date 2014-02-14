@@ -5494,6 +5494,8 @@ if test "$with_machine_code" = "no"; then :; else
 #if defined(__GNUC__)
 #if !defined(__i386__) && !defined(__i386)
 #error Not ia32 architecture
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 5)
+#error Not supported with gcc 4.6.0 and later.
 #endif
 #elif defined(_MSC_VER)
 #if !defined(_M_IX86)
