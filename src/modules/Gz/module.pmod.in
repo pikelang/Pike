@@ -1,6 +1,5 @@
 // -*- pike -*-
 #pike __REAL_VERSION__
-
 #if constant(@module@)
 
 inherit @module@;
@@ -411,7 +410,3 @@ class File {
     return (string)buf;
   }
 }
-
-#else
-constant this_program_does_not_exist = 1;
-#endif // constant(@module@)
