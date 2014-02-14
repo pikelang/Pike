@@ -2960,6 +2960,7 @@ class CompatResolver
         object fs;
         catch(fs = resolv("Filesystem.Zip")(tmp));
         if(fs) add_filesystem_handler(tmp, fs);
+	tmp = combine_path(tmp, "modules");
       }
       root_module->add_path(tmp);
       pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
@@ -2975,6 +2976,11 @@ class CompatResolver
   void remove_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
+
+      // do we have a mounted zip?
+      if(fs_map[tmp]) 
+	tmp = combine_path(tmp, "modules");
+
       root_module->rem_path(tmp);
       pike_module_path -= ({ tmp });
     }
