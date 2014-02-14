@@ -448,7 +448,7 @@ class LocalFileRecord
      encode_extra(-1);
 
      string ret = sprintf(
-             "%-4c" + "%-2c"*5 + "%-4c"*3 + "%-2c"*2,
+             "%-4c" + "%-2c"*5 + "%-4c"*5 + "%-2c"*2,
              signature, ver_2_extract, general_flags,
              comp_method, time, date, crc32, 
              comp_size, uncomp_size,  (use_zip64?0xffffffff:comp_size),
