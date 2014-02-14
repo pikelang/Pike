@@ -17,6 +17,8 @@ if test x$with_oracle = xyes; then
 
   PIKE_FEATURE_NODEP(Oracle)
 
+  PIKE_SELECT_ABI
+
   AC_MSG_CHECKING(if this is HP-UX)
   if test "x$pike_cv_sys_os" = "xHP-UX"; then
     AC_MSG_RESULT(yes - disabling dynamic loading for this module)
