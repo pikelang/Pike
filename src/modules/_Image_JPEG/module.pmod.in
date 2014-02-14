@@ -1,7 +1,6 @@
 // -*- pike -*-
 #pike __REAL_VERSION__
-
-#if constant(@module@.Marker)
+#require constant(@module@.Marker)
 
 inherit @module@;
 
@@ -87,6 +86,3 @@ mapping exif_decode(string data, mapping|void options)
     return m;
 
 }
-#else
-constant this_program_does_not_exist = 1;
-#endif // constant(@module@)
