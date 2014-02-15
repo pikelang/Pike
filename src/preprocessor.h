@@ -529,16 +529,11 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
       /* NOTE: defined() can not be handled here, 
        *       since the argument must not be expanded.
        */
-      void (*cpp_func)(struct cpp *this, INT32 args) = NULL;
 
-      if (func_name == efun_str || func_name == constant_str)
-      {
-	cpp_func = cpp_func_constant;
-      }
-      
       SKIPWHITE();
 
-      if (cpp_func && data[pos] == '(')
+      if ( (func_name==efun_str || func_name==constant_str) &&
+           data[pos] == '(')
       {
 	int start, end;
 	int arg = 0;
@@ -615,7 +610,15 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	}
 	/* NOTE: cpp_func MUST protect against errors. */
 	if(OUTP())
-	  cpp_func(this, arg);
+        {
+          if (arg != 1) {
+            cpp_error(this, "Bad number of arguments to constant().");
+            pop_n_elems(arg);
+            push_int(0);
+          }
+          else
+            cpp_constant(this, 0);
+        }
 	else
 	  pop_n_elems(arg);
       } else if (data[pos] == '.') {
@@ -644,7 +647,10 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	if (func_name == NULL)
 	  break;
 	if(OUTP())
-	  cpp_resolv_constant(this, func_name);
+        {
+          ref_push_string(func_name);
+          cpp_constant(this, 1);
+        }
       } else {
 	if(OUTP())
 	  push_int(0);
