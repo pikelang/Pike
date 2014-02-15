@@ -126,6 +126,8 @@ Version ::= INTEGER
 import Standards.ASN1.Types;
 import .Identifiers;
 
+protected object X509 = master()->resolv("Standards.X509");
+
 class AttributeValueAssertion
 {
   inherit Sequence;
@@ -234,25 +236,21 @@ array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
 //! @param cert
 //! A string containing an X509 certificate.
 //!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
+//! Note that the certificate usually must be decoded using
+//! @[Standards.PEM.simple_decode()].
 //!
 //! @returns
 //!  An Standards.ASN1.Sequence object containing the certificate issuer
 //!  Distinguished Name (DN).
-Sequence get_certificate_issuer(string cert)
+//!
+//! @deprecated Standards.X509.decode_certificate()
+__deprecated__ Sequence get_certificate_issuer(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)[0][3];
+  return X509.decode_certificate(cert)->issuer;
 }
 
 //! Converts an RDN (relative distinguished name) Seqeunce object to a
 //! human readable string in X500 format.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
 //!
 //! @returns
 //!  A string containing the certificate issuer
@@ -300,15 +298,17 @@ string get_dn_string(Sequence dnsequence)
 //! @param cert
 //! A string containing an X509 certificate.
 //!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
+//! Note that the certificate usually must be decoded using
+//! @[PEM.simpe_decode()].
 //!
 //! @returns
 //!  An Standards.ASN1.Sequence object containing the certificate subject
 //!  Distinguished Name (DN).
-Sequence get_certificate_subject(string cert)
+//!
+//! @deprecated Standards.X509.decode_certificate()
+__deprecated__ Sequence get_certificate_subject(string cert)
 {
-  return Standards.ASN1.Decode.simple_der_decode(cert)[0][5];
+  return X509.decode_certificate(cert)->subject;
 }
 
 class Attribute
