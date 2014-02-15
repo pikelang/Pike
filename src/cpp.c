@@ -907,7 +907,15 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   return res;
 }
 
-static void cpp_low_constant(struct cpp *this, int value)
+/*! @decl int(0..1) constant(mixed identifier)
+ *! @decl __deprecated__ int(0..1) efun(mixed identifier)
+ *!
+ *!   Check whether the argument resolves to a constant or not.
+ *!
+ *! @seealso
+ *!   @[#if], @[defined()]
+ */
+static void cpp_constant(struct cpp *this, int value)
 {
   struct svalue *save_stack=sp;
   struct array *arr;
@@ -1019,37 +1027,6 @@ static void cpp_low_constant(struct cpp *this, int value)
 
   pop_n_elems(1 + sp - save_stack);
   push_int(res);
-}
-
-/*! @decl int(0..1) constant(mixed identifier)
- *! @decl __deprecated__ int(0..1) efun(mixed identifier)
- *!
- *!   Check whether the argument resolves to a constant or not.
- *!
- *! @seealso
- *!   @[#if], @[defined()]
- */
-void cpp_func_constant(struct cpp *this, INT32 args)
-{
-  if (args != 1) {
-    cpp_error(this, "Bad number of arguments to constant().");
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-#ifdef PIKE_DEBUG
-  if (TYPEOF(Pike_sp[-1]) != T_STRING) {
-    Pike_fatal("Bad argument 1 to constant(): %s (expected string).\n",
-	       get_name_of_type(TYPEOF(Pike_sp[-1])));
-  }
-#endif /* PIKE_DEBUG */
-  cpp_low_constant(this, 0);
-}
-
-void cpp_resolv_constant(struct cpp *this, struct pike_string *identifier)
-{
-  ref_push_string (identifier);
-  cpp_low_constant(this, 1);
 }
 
 /* Macro handling. */
