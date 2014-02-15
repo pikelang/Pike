@@ -18,7 +18,7 @@ inherit sybase.sybase:mo;
 /*
  * Deprecated. Use connect(host,db,user,pass) instead.
  */
-void select_db(string db)
+__deprecated__ void select_db(string db)
 {
   mo::big_query("use "+db);
 }
@@ -26,14 +26,14 @@ void select_db(string db)
 /*
  * Deprecated. Use an SQL command instead.
  */
-void create_db (string dbname) {
+__deprecated__ void create_db (string dbname) {
   mo::big_query("create database "+dbname);
 }
 
 /*
  * Deprecated. Use an SQL command instead.
  */
-void drop_db (string dbname) {
+__deprecated__ void drop_db (string dbname) {
   mo::big_query("drop database "+dbname);
 }
 
