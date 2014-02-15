@@ -539,11 +539,6 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	int arg = 0;
 	INT_TYPE start_line;
 
-#ifdef PIKE_DEBUG
-	if (func_name->size_shift)
-	  Pike_fatal ("Didn't expect wide string name for meta function.\n");
-#endif
-
 	pos++; /* GOBBLE('(') */
 
 	start_line = this->current_line;
@@ -612,7 +607,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	if(OUTP())
         {
           if (arg != 1) {
-            cpp_error(this, "Bad number of arguments to constant().");
+            cpp_error_sprintf(this, "Bad number of arguments to %S().",
+                              func_name);
             pop_n_elems(arg);
             push_int(0);
           }
