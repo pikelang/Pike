@@ -579,7 +579,7 @@ int verify_certificate_chain(array(string) certs)
   // the issuer of the certificate must be one of the authorities.
   if(sizeof(context->authorities_cache))
   {
-    string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
+    string r=Standards.X509.decode_certificate(certs[-1])->issuer
       ->get_der();
     int issuer_known = 0;
     foreach(context->authorities_cache, string c)
