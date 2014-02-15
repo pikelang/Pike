@@ -1974,7 +1974,7 @@ protected program low_findprog(string pname,
     }
     else {
       if(!ret)
-        resolv_debug("low_findprog %s: dependencies failed.\n");
+        resolv_debug("low_findprog %s: dependencies failed.\n", fname);
       else
         resolv_debug("low_findprog %s: returning %O\n", fname, ret);
       return programs[fname]=ret;
