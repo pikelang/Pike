@@ -661,5 +661,3 @@ class IntTree {
     }
 }
 #endif // constant(ADT._CritBit.BigNumTree)
-
-#endif // constant(ADT._CritBit)
