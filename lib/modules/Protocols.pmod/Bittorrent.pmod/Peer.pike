@@ -1,6 +1,6 @@
 // Bittorrent client - originally by Mirar 
 #pike __REAL_VERSION__
-#require constant(Proitocols.Bittorrent.Torrent)
+#require constant(Protocols.Bittorrent.Torrent)
 
 constant dont_dump_program = 1;
 
