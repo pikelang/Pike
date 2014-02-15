@@ -14,6 +14,9 @@ class CRIAttributes
   constant tag = 0;
 }
 
+// FIXME: Mark as deprecated!
+constant CSR_Attributes = CRIAttributes;
+
 //! Build a Certificate Signing Request.
 //!
 //! @param sign
