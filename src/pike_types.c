@@ -930,11 +930,16 @@ void debug_push_type(unsigned int type)
 					  PT_COPY_BOTH);
     break;
 
+  case T_PROGRAM:
+    if ((*Pike_compiler->type_stackp)->type != T_OBJECT) {
+      /* Not a program type, convert it to a type type. */
+      type = T_TYPE;
+    }
+    /* FALL_THROUGH */
   case T_ARRAY:
   case T_MULTISET:
   case T_NOT:
   case T_TYPE:
-  case T_PROGRAM:
   case T_STRING:
     /* Make a new type of the top type, and put it in car. */
     *Pike_compiler->type_stackp = mk_type(type,
