@@ -1336,7 +1336,7 @@ basic_type:
   | TOK_MAPPING_ID  opt_mapping_type  {}
   | TOK_FUNCTION_ID opt_function_type {}
   | TOK_OBJECT_ID   opt_object_type   {}
-  | TOK_PROGRAM_ID  opt_object_type   { push_type(T_PROGRAM); }
+  | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
   | TOK_ATTRIBUTE_ID '(' string_constant ',' type7 ')'
@@ -1586,6 +1586,15 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
       push_type_name(Pike_sp[-2].u.string);
     }
     pop_n_elems(2);
+  }
+  ;
+
+opt_program_type:  /* Empty */ { push_object_type(0, 0); }
+  | '(' type4 ')'
+  | '(' error ')'
+  {
+    push_object_type(0, 0);
+    yyerror("Invalid program subtype.");
   }
   ;
 
