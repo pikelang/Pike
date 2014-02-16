@@ -28,7 +28,7 @@ inherit __builtin.Nettle.Cipher;
 
 //! @endignore
 
-string name()
+string(7bit) name()
 {
   return "CTR";
 }
