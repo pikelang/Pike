@@ -932,8 +932,14 @@ void debug_push_type(unsigned int type)
 
   case T_PROGRAM:
     if ((*Pike_compiler->type_stackp)->type != T_OBJECT) {
-      /* Not a program type, convert it to a type type. */
-      type = T_TYPE;
+      struct pike_type *t = (*Pike_compiler->type_stackp);
+      while ((t->type == PIKE_T_NAME) || (t->type == PIKE_T_ATTRIBUTE)) {
+	t = t->cdr;
+      }
+      if (t->type != T_OBJECT) {
+	/* Not a program type, convert it to a type type. */
+	type = T_TYPE;
+      }
     }
     /* FALL_THROUGH */
   case T_ARRAY:
