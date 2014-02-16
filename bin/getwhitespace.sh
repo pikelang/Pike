@@ -2,6 +2,10 @@
 
 echo "/* File generated on `date`
 by getwhitespace <UnicodeData.txt */
+
+#define SPACECASE8							\\
+       case ' ':case '\\\\t':case '\\\\r':case '\\\\n':case '\\\\v':case '\\\\f':	\\
+       case 0x85:case 0xa0:
 "
 
 echo '#define SPACECASE16	SPACECASE8 \'

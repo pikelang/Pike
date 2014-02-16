@@ -31,6 +31,7 @@
 #include "block_allocator.h"
 #include "pikecode.h"
 #include "opcodes.h"
+#include "whitespace.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -1527,10 +1528,6 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
     if(bshift == shift)
       sb.known_shift = bshift;
   }
-#define SPACECASE8							\
-       case ' ':case '\t':case '\r':case '\n':case '\v':case '\f':	\
-       case 0x85:case 0xa0:
-#include "whitespace.h"
 
   switch (shift) {
 #define NORMALISE_TIGHT_LOOP(TYPE,CASE)					\
@@ -1595,8 +1592,6 @@ skip##TYPE:;								\
     case 1: NORMALISE_TIGHT_LOOP (p_wchar1,SPACECASE16); break;
     case 2: NORMALISE_TIGHT_LOOP (p_wchar2,SPACECASE16); break;
 #undef NORMALISE_TIGHT_LOOP
-#undef SPACECASE8
-#undef SPACECASE16
   }
   if (wstemp)
     free(wstemp);
@@ -1620,10 +1615,6 @@ PIKEFUN string string_trim_all_whites (string s)
   ptrdiff_t start = 0, end = s->len;
   int chr;
   switch (s->size_shift) {
-#define SPACECASE8							\
-       case ' ':case '\t':case '\r':case '\n':case '\v':case '\f':	\
-       case 0x85:case 0xa0:
-#include "whitespace.h"
 
 #define DO_IT(TYPE,CASE)						\
     {									\
@@ -1648,8 +1639,6 @@ PIKEFUN string string_trim_all_whites (string s)
     case 1: DO_IT (p_wchar1,SPACECASE16); break;
     case 2: DO_IT (p_wchar2,SPACECASE16); break;
 #undef DO_IT
-#undef SPACECASE8
-#undef SPACECASE16
   }
   RETURN string_slice (s, start, end + 1 - start);
 }
