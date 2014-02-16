@@ -5837,10 +5837,12 @@ multiset & mapping -> mapping
   ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
 #define SHIFT_TYPE							\
-   tOr(tAnd(tNot(tFuncV(tNone, tNot(tObj), tMix)),			\
-	    tOr(tFunc(tMix tObj,tMix),					\
-		tFunc(tObj tMix,tMix))),				\
-       tFunc(tInt tInt,tInt))
+  tOr3(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
+	      tOr(tFunc(tMix tObj,tMix),				\
+		  tFunc(tObj tMix,tMix))),				\
+       tIfnot(tFuncV(tNone, tNot(tInt), tMix),				\
+	      tFunc(tInt tInt, tInt)),					\
+       tFunc(tIntPos tIntPos, tIntPos))
 
   ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_lsh);
