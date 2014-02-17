@@ -532,7 +532,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
       SKIPWHITE();
 
-      if ( (func_name==efun_str || func_name==constant_str) &&
+      if ( (func_name==constant_str || func_name==efun_str) &&
            data[pos] == '(')
       {
 	int start, end;

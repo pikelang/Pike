@@ -84,7 +84,7 @@ int main(int argc, array argv)
 		  }
 		}, t);
 
-#if efun(thread_set_concurrency)
+#if constant(thread_set_concurrency)
   thread_set_concurrency(10);
 #endif
   port = files.port();

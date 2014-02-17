@@ -123,6 +123,6 @@ function l_sizeof = sizeof;
 function listp = multisetp;
 function mklist = mkmultiset;
 function aggregate_list = aggregate_multiset;
-#if efun(gethostname)
+#if constant(gethostname)
 function query_host_name=gethostname;
 #endif
