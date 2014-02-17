@@ -1763,4 +1763,3 @@ protected string make_set_clause (mapping(string:mixed) rec,
 
   return buf->get();
 }
-#endif
