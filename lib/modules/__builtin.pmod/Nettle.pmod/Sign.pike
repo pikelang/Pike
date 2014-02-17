@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 //!
 //! Base class for cryptographic signature algorithms.
 //!
