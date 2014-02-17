@@ -243,7 +243,7 @@ array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
 //!  An Standards.ASN1.Sequence object containing the certificate issuer
 //!  Distinguished Name (DN).
 //!
-//! @deprecated Standards.X509.decode_certificate()
+//! @deprecated Standards.X509.decode_certificate
 __deprecated__ Sequence get_certificate_issuer(string cert)
 {
   return X509.decode_certificate(cert)->issuer;
@@ -305,7 +305,7 @@ string get_dn_string(Sequence dnsequence)
 //!  An Standards.ASN1.Sequence object containing the certificate subject
 //!  Distinguished Name (DN).
 //!
-//! @deprecated Standards.X509.decode_certificate()
+//! @deprecated Standards.X509.decode_certificate
 __deprecated__ Sequence get_certificate_subject(string cert)
 {
   return X509.decode_certificate(cert)->subject;
