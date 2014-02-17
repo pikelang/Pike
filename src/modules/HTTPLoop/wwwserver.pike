@@ -1,6 +1,5 @@
 import Stdio;
 
-mapping exts = ([]);
 constant days = ({ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" });
 constant months = ({ "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" });
@@ -92,7 +91,7 @@ mixed handle(object o)
 	catch { readlink(f+file); islink = 1; };
 #endif
 	string ext = (file / ".") [-1];
-	string ctype = (size >= 0 ? exts[ext] || "text/plain" :
+	string ctype = (size >= 0 ? MIME.ext_to_media_type(ext) || "text/plain" :
 			"Directory");
 	if(size < -1)
 	  file += "/";
@@ -120,8 +119,7 @@ mixed handle(object o)
     }
   } else {
     string ext = (f / ".") [-1];
-    string ctype = exts[ext] || "text/plain";
-#if 1
+    string ctype = MIME.ext_to_media_type(ext) || "text/plain";
     o->reply_with_cache("HTTP/1.1 200 Ok\r\n"
 			"Content-type: "+ctype+"\r\n"
 			"Content-Length: "+s[1]+"\r\n"
@@ -131,17 +129,6 @@ mixed handle(object o)
 			"Connection: Keep-Alive\r\n"
 			"\r\n"+
 			read_bytes(f), 20);
-#else
-    o->reply("HTTP/1.1 200 Ok\r\n"
-             "Content-type: "+ctype+"\r\n"
-             "Content-Length: "+s[1]+"\r\n"
-             "Last-Modified: "+http_date(s[4])+"\r\n"
-             "MIME-Version: 1.0\r\n"
-             "Server: Neo-FastSpeed\r\n"
-             "Connection: Keep-Alive\r\n"
-             "\r\n",
-             Stdio.File(f, "r"), s[1]);
-#endif
     destruct(o);
   }
 }
@@ -155,14 +142,6 @@ int main(int argc, array (string) argv)
   thread_set_concurrency(100);
 #endif
   port = Stdio.Port();
-  array foo;
-  foreach(read_file((argv[0] - "wwwserver.pike") + "extensions")/"\n",
-	  string s) {
-    if(sizeof(s) && s[0] != '#' && (foo = (s / "\t" - ({""}))) &&
-       sizeof(foo) == 2)
-      exts[foo[0]] = foo[1];
-  }
-  werror(sprintf("Found %d extensions...\n", sizeof(exts)));
   if(!port->bind(PORT))
   {
     werror("Bind failed.\n");
