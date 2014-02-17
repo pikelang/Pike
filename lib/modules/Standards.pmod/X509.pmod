@@ -427,7 +427,7 @@ class TBSCertificate
       i = IssuerId(i->value);
     } else if (i->raw) {
       // Convert Primitive to IssuerId.
-      (i = IssuerId())->decode_primitive(a[i]->raw);
+      (i = IssuerId())->decode_primitive(i->raw);
     }
     if (!issuer_pos) {
       if (version < 2) version = 2;
@@ -460,9 +460,9 @@ class TBSCertificate
     if (s->cls != 2) {
       // Convert BitString to SubjectId.
       s = SubjectId()->decode_primitive(s->raw);
-    } else if (i->raw) {
+    } else if (s->raw) {
       // Convert Primitive to SubjectId.
-      (s = SubjectId())->decode_primitive(a[i]->raw);
+      (s = SubjectId())->decode_primitive(s->raw);
     }
     if (!subject_pos) {
       if (version < 2) version = 2;
