@@ -784,7 +784,7 @@ class TBSCertificate
 TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 			Sequence subject, Sequence keyinfo,
 			Integer serial, Sequence validity,
-			array|void extensions)
+			array|int(0..0)|void extensions)
 {
   TBSCertificate tbs = TBSCertificate();
   tbs->serial = serial->value;
@@ -808,7 +808,7 @@ TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 				Sequence subject, Sequence keyinfo,
 				Integer serial, int ttl,
-				array|void extensions)
+				array|int(0..0)|void extensions)
 {
   int now = time();
   Sequence validity = Sequence( ({ UTC()->set_posix(now),
