@@ -212,6 +212,16 @@ o Dynamic macros
     |    }
     | }
 
+o Dependency declarations
+
+  It is now possible to use the CPP directive #require to specify a
+  condition that must be true for the file to be seen by the resolver.
+  This would typically be the inherited C part of a module or a system
+  call.
+
+    | #require constant(__WebKit)
+    | inherit __WebKit;
+
 
 Optimizations
 -------------
