@@ -27,7 +27,7 @@ array(string) features()
   a += ({ "dynamic_modules" });
 #endif
 
-#if efun(thread_create)
+#if constant(thread_create)
   a += ({ "threads" });
 #endif
 

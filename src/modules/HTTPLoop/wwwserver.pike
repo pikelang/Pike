@@ -151,7 +151,7 @@ object l;
 
 int main(int argc, array (string) argv)
 {
-#if efun(thread_set_concurrency)
+#if constant(thread_set_concurrency)
   thread_set_concurrency(100);
 #endif
   port = Stdio.Port();

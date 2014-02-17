@@ -6,7 +6,7 @@
 
 // FIXME: Ought to test all the available backends.
 
-#if !efun(strerror)
+#if !constant(strerror)
 #define strerror(X) ("ERRNO = "+(string)(X))
 #endif
 

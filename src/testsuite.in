@@ -5,6 +5,8 @@ test_compile_any([[#pike 7.2]])
 test_compile_any([[#pike 7.4]])
 test_compile_any([[#pike 7.0]])
 test_compile_any([[#pike 0.6]])
+test_compile_any([[#pike 7.6]])
+test_compile_any([[#pike 7.8]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -10271,6 +10273,14 @@ do_test_foop(programp,8)
 // add_constant
 test_do(add_constant("foobar",lambda() { return 1; }))
 test_any([[
+#if constant(foobar)
+return 1;
+#else
+return 0;
+#endif
+]],1)
+test_any([[
+#pike 7.8
 #if efun(foobar)
 return 1;
 #else
@@ -10280,7 +10290,7 @@ return 0;
 test_eq(foobar(),1)
 test_do(add_constant("foobar"))
 test_any([[
-#if efun(foobar)
+#if constant(foobar)
 return 1;
 #else
 return 0;

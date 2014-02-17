@@ -186,7 +186,7 @@ int main(int argc, array(string) argv)
 
   werror("Grammar:\n\n" + (string) g);
 
-#if efun(_memory_usage)
+#if constant(_memory_usage)
   werror(sprintf("Memory usage:\n%O\n", _memory_usage()));
 #endif
 
@@ -198,7 +198,7 @@ int main(int argc, array(string) argv)
 
   werror("Compilation finished!\n");
 
-#if efun(_memory_usage)
+#if constant(_memory_usage)
   werror(sprintf("Memory usage:\n%O\n", _memory_usage()));
 #endif
 
