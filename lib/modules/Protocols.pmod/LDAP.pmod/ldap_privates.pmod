@@ -58,7 +58,7 @@ class asn1_boolean
   string der_encode() { return build_der(value? "\377" : "\0"); }
 
   this_program decode_primitive(string contents) {
-    record_der(contents);
+    der = contents;
     value = ( contents != "\0" );
     return this;
   }
