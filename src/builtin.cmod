@@ -4681,7 +4681,7 @@ PIKEFUN int levenshtein_distance(string a, string b)
  */
 PIKECLASS Serializable
 {
-  /* Loop over all variables, and call fun_num in the current object. */
+  /* Loop over all true variables, and call fun_num in the current object. */
   static void low_serialize(int i, struct svalue *fun,
 			    int use_setter, int fun_num)
   {
@@ -4701,7 +4701,8 @@ PIKECLASS Serializable
 	continue;
       }
       id = ID_FROM_PTR(p, ref);
-      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+	  (id->run_time_type == PIKE_T_GET_SET)) {
 	continue;
       }
       push_svalue(fun);
