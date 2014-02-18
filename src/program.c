@@ -6706,6 +6706,9 @@ static void f_dispatch_variant(INT32 args)
   struct pike_string *name = id->name;
   int fun_num = prog->num_identifier_references;
   int flags = 0;
+  int best = -1;
+  struct pike_type *t;
+  struct pike_type *expected = NULL;
 
   /* NB: The following is mostly to support a potential future
    *     case where a mixed set of protections would cause
@@ -6721,7 +6724,6 @@ static void f_dispatch_variant(INT32 args)
   while ((fun_num = really_low_find_variant_identifier(name, prog, NULL,
 						       fun_num, flags)) != -1) {
     int i;
-    struct pike_type *t;
     struct pike_type *ret;
 
     id = ID_FROM_INT(prog, fun_num);
@@ -6730,20 +6732,53 @@ static void f_dispatch_variant(INT32 args)
     /* Check whether the type is compatible with our arguments. */
     for (i = 0; i < args; i++) {
       struct pike_type *cont = check_call_svalue(t, 0, Pike_sp+i - args);
-      free_type(t);
+      if (!cont && (i > best)) {
+	if (expected) free_type(expected);
+	best = i;
+	expected = t;
+	t = NULL;
+	break;
+      } else {
+	free_type(t);
+      }
       if (!(t = cont)) break;
     }
     if (!t) continue;
     ret = new_get_return_type(t, 0);
+    if (!ret && (i+1 > best)) {
+      if (expected) free_type(expected);
+      best = i+1;
+      expected = t;
+      continue;
+    }
     free_type(t);
     if (!ret) continue;
     free_type(ret);
+
+    if (expected) free_type(expected);
 
     /* Found a function to call! */
     apply_current(fun_num, args);
     return;
   }
-  Pike_error("Invalid arguments to %S()!\n", name);
+  if (!expected) {
+    /* No variants listed? */
+    Pike_error("No variants of %S() to dispatch to!\n", name);
+  }
+  t = get_first_arg_type(expected, 0);
+  free_type(expected);
+  if (t) {
+    push_type_value(t);
+    if (best < args) {
+      Pike_error("Bad argument %d to %S(). Expected %O.\n",
+		 best + 1, name, Pike_sp-1);
+    } else {
+      Pike_error("Too few arguments to %S(). Expected %O.\n",
+		 name, Pike_sp-1);
+    }
+  } else {
+    Pike_error("Too many arguments to %S().\n", name);
+  }
 }
 
 PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
