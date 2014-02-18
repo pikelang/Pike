@@ -539,6 +539,9 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	int arg = 0;
 	INT_TYPE start_line;
 
+        if( func_name==efun_str && !CPP_TEST_COMPAT(this,7,9) )
+          cpp_warning(this, "Directive efun() deprecated.");
+
 	pos++; /* GOBBLE('(') */
 
 	start_line = this->current_line;
