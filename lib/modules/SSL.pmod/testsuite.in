@@ -129,16 +129,6 @@ test_do([[
 ]])
 
 test_do([[
-  add_constant("fmt_cipher_suite",
-	       lambda(int s)
-	       {
-		 foreach(indices(SSL.Constants), string id)
-		   if ((has_prefix(id, "SSL_") || has_prefix(id, "TLS_")) &&
-		       (SSL.Constants[id] == s)) return id;
-		 return sprintf("0x%04x", s);
-	       });
-]])
-test_do([[
   add_constant("log_ssl_failure",
 	       lambda(int cmin, int cmax, int smin, int smax,
 		      string expected,
@@ -517,7 +507,6 @@ array(int) a() {
 test_do([[
   add_constant("invalid_suites");
   add_constant("log_ssl_failure");
-  add_constant("fmt_cipher_suite");
   add_constant("client_msg");
   add_constant("server_rsa_ctx");
   add_constant("server_dss_ctx");
