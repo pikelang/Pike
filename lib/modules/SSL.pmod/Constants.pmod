@@ -600,6 +600,14 @@ constant SSL2_ck_idea_128_cbc_with_md5		= 0x050080;
 constant SSL2_ck_des_64_cbc_with_md5		= 0x060040;
 constant SSL2_ck_des_192_ede3_cbc_with_md5	= 0x0700c0;
 
+string fmt_constant(string prefix, int c)
+{
+  if (!has_suffix(prefix, "_")) prefix += "_";
+  foreach([array(string)]indices(this), string id)
+    if (has_prefix(id, prefix) && (this[id] == c)) return id;
+  return sprintf("%sunknown(%d)", prefix, c);
+}
+
 string fmt_cipher_suites(array(int) s)
 {
   String.Buffer b = String.Buffer();
