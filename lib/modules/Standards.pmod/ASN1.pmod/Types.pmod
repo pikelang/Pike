@@ -656,16 +656,19 @@ class Set
   constant tag = 17;
   constant type_name = "SET";
 
-  int(-1..1) compare_octet_strings(string r, string s) {
+  int(-1..1) compare_octet_strings(string r, string s)
+  {
+    if (r == s) return 0;
+
     for(int i = 0;; i++) {
       if (i == sizeof(r))
-	return (i = sizeof(s)) ? 0 : 1;
+	return (i = sizeof(s)) ? 0 : -1;
       if (i == sizeof(s))
-	return -1;
-      if (r[i] < s[i])
 	return 1;
-      else if (r[i] > s[i])
+      if (r[i] < s[i])
 	return -1;
+      else if (r[i] > s[i])
+	return 1;
     }
   }
 
