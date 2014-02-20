@@ -82,6 +82,7 @@ protected {
 #endif
     Identifiers.dsa_sha256_id->get_der() : Crypto.SHA256,
 
+    Identifiers.ecdsa_sha1_id->get_der() : Crypto.SHA1,
 #if constant(Crypto.SHA224)
     Identifiers.ecdsa_sha224_id->get_der() : Crypto.SHA224,
 #endif
@@ -108,9 +109,15 @@ class Verifier {
   //! indicated hash @[algorithm].
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
+    DBG("Verify hash %O\n", algorithm[0]);
     Crypto.Hash hash = algorithms[algorithm[0]->get_der()];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
+  }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, pkc);
   }
 }
 
@@ -988,7 +995,7 @@ TBSCertificate verify_certificate(string s, mapping(string:Verifier) authorities
   
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
-    DBG("Self signed certificate\n");
+    DBG("Self signed certificate: %O\n", tbs->public_key);
     v = tbs->public_key;
   }
   else

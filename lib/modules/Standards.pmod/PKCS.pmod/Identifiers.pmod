@@ -84,6 +84,7 @@ Identifier rsa_sha256_id = pkcs_1_id->append(11);
 Identifier rsa_sha384_id = pkcs_1_id->append(12);
 Identifier rsa_sha512_id = pkcs_1_id->append(13);
 
+Identifier ecdsa_sha1_id   = Identifier(1, 2, 840, 10045, 4, 1);
 Identifier ecdsa_sha224_id = Identifier(1, 2, 840, 10045, 4, 3, 1);
 Identifier ecdsa_sha256_id = Identifier(1, 2, 840, 10045, 4, 3, 2);
 Identifier ecdsa_sha384_id = Identifier(1, 2, 840, 10045, 4, 3, 3);
