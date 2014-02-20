@@ -13,12 +13,12 @@ class Primitive
   constant constructed = 0;
   int combined_tag;
 
-  string raw;
+  string(8bit) raw;
 
   string(8bit) der_encode() { return build_der(raw); }
 
   //! get raw encoded contents of object
-  string get_contents() { return raw; }
+  string(8bit) get_contents() { return raw; }
   int get_combined_tag() { return combined_tag; }
 
   //! get tag
@@ -31,7 +31,7 @@ class Primitive
 
   int `cls() { return .Types.extract_cls(combined_tag); }
 
-  void create(int t, string r) {
+  void create(int t, string(8bit) r) {
     combined_tag = t;
     raw = r;
   }
@@ -56,7 +56,7 @@ class Constructed
   int combined_tag;
 
   //! raw encoded  contents
-  string raw;
+  string(8bit) raw;
 
   string(8bit) der_encode() { return build_der(raw); }
   string(8bit) get_contents() { return raw; }
@@ -72,7 +72,7 @@ class Constructed
 
   int `cls() { return .Types.extract_cls(combined_tag); }
 
-  void create(int t, string r, array(.Types.Object) e) {
+  void create(int t, string(8bit) r, array(.Types.Object) e) {
     combined_tag = t;
     raw = r;
     elements = e;
