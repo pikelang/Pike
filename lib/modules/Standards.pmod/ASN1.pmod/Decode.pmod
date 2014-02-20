@@ -15,15 +15,21 @@ class Primitive
 
   string raw;
 
+  string(8bit) der_encode() { return build_der(raw); }
+
   //! get raw encoded contents of object
-  string get_der() { return raw; }
+  string get_contents() { return raw; }
   int get_combined_tag() { return combined_tag; }
 
   //! get tag
   int get_tag() { return .Types.extract_tag(combined_tag); }
 
+  int `tag() { return .Types.extract_tag(combined_tag); }
+
   //! get class
   int get_cls() { return .Types.extract_cls(combined_tag); }
+
+  int `cls() { return .Types.extract_cls(combined_tag); }
 
   void create(int t, string r) {
     combined_tag = t;
@@ -52,14 +58,19 @@ class Constructed
   //! raw encoded  contents
   string raw;
 
-  string get_der() { return raw; }
+  string(8bit) der_encode() { return build_der(raw); }
+  string(8bit) get_contents() { return raw; }
   int get_combined_tag() { return combined_tag; }
 
   //! get tag
   int get_tag() { return .Types.extract_tag(combined_tag); }
 
+  int `tag() { return .Types.extract_tag(combined_tag); }
+
   //! get class
   int get_cls() { return .Types.extract_cls(combined_tag); }
+
+  int `cls() { return .Types.extract_cls(combined_tag); }
 
   void create(int t, string r, array(.Types.Object) e) {
     combined_tag = t;
