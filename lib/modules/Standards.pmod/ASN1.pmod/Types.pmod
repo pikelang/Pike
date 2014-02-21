@@ -52,8 +52,18 @@ class Object
   constant tag = 0;
   constant constructed = 0;
 
-  constant type_name = 0;
-  string(0..255) der_encode();
+  constant type_name = "";
+
+  //! Return the DER payload.
+  string(8bit) get_der_content()
+  {
+    return "";
+  }
+
+  string(0..255) der_encode()
+  {
+    return build_der(get_der_content());
+  }
 
   //! Get the class of this object.
   //!
@@ -248,8 +258,8 @@ class String
     return this;
   }
 
-  string(0..255) der_encode() {
-    return build_der([string(0..255)]value);
+  string(0..255) get_der_content() {
+    return [string(0..255)]value;
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -294,8 +304,9 @@ class Boolean
     return this;
   }
 
-  string(0..255) der_encode() {
-    return build_der(value ? "\377" : "\0");
+  string(0..255) get_der_content()
+  {
+    return value ? "\377" : "\0";
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -336,7 +347,7 @@ class Integer
     return this;
   }
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
     string(0..255) s;
 
@@ -353,7 +364,8 @@ class Integer
       if (s[0] & 0x80)
 	s = "\0" + s;
     }
-    return build_der(s);
+
+    return s;
   }
 
   this_object decode_primitive(string(0..255) contents,
@@ -406,9 +418,9 @@ class BitString
     return this;
   }
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
-    return build_der([string(0..255)]sprintf("%c%s", unused, value));
+    return [string(0..255)]sprintf("%c%s", unused, value);
   }
 
   //! Set the bitstring value as a string with @expr{"1"@} and
@@ -485,7 +497,7 @@ class Null
   constant tag = 5;
   constant type_name = "NULL";
 
-  string(0..255) der_encode() { return build_der(""); }
+  string(0..255) get_der_content() { return ""; }
 
   this_program decode_primitive(string(0..255) contents,
 				function(ADT.struct,
@@ -529,11 +541,11 @@ class Identifier
     return this_program(@id, @args);
   }
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
-    return build_der([string(0..255)]sprintf("%s%@s",
-					     to_base_128(40 * id[0] + id[1]),
-					     map(id[2..], to_base_128)));
+    return [string(0..255)]sprintf("%s%@s",
+				   to_base_128(40 * id[0] + id[1]),
+				   map(id[2..], to_base_128));
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -599,9 +611,9 @@ class UTF8String
   constant tag = 12;
   constant type_name = "UTF8String";
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
-    return build_der(string_to_utf8(value));
+    return string_to_utf8(value);
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -626,12 +638,12 @@ class Sequence
   constant tag = 16;
   constant type_name = "SEQUENCE";
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
     WERROR("ASN1.Sequence: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("ASN1.Sequence: der_encode(elements) = '%O\n", a);
-    return build_der([string(0..255)]`+("", @ a));
+    return [string(0..255)]`+("", @ a);
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -672,13 +684,13 @@ class Set
     }
   }
 
-  string der_encode() {
+  string get_der_content() {
     WERROR("asn1_set->der: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("asn1_set->der: der_encode(elements) = '%O\n", a);
-    return build_der([string(0..255)]
-		     `+("", @[array(string)]
-			Array.sort_array(a, compare_octet_strings)));
+    return [string(0..255)]
+      `+("", @[array(string)]
+	 Array.sort_array(a, compare_octet_strings));
   }
 }
 
@@ -1085,10 +1097,10 @@ class TeletexString
 #undef OG
 #undef CA
 
-  string(0..255) der_encode()
+  string(0..255) get_der_content()
   {
-    return build_der([string(0..255)]replace(value, [array(string)]encode_from,
-					     [array(string(0..255))]encode_to));
+    return [string(0..255)]replace(value, [array(string)]encode_from,
+				   [array(string(0..255))]encode_to);
   }
 
   this_program decode_primitive (string(0..255) contents,
@@ -1215,7 +1227,7 @@ class UniversalString
   constant tag = 28;
   constant type_name = "UniversalString";
 
-  string der_encode() {
+  string get_der_content() {
     error( "Encoding not implemented\n" );
   }
 
@@ -1246,8 +1258,8 @@ class BMPString
   constant tag = 30;
   constant type_name = "BMPString";
 
-  string der_encode() {
-    return build_der (string_to_unicode (value));
+  string get_der_content() {
+    return string_to_unicode (value);
   }
 
   this_program decode_primitive (string(0..255) contents,
@@ -1301,9 +1313,9 @@ class MetaExplicit
       return this;
     }
 
-    string der_encode() {
+    string get_der_content() {
       WERROR("asn1_explicit->der: contents = '%O\n", contents);
-      return build_der(contents->get_der());
+      return contents->get_der();
     }
 
     this_program decode_constructed_element(int i, Object e) {

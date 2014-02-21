@@ -15,10 +15,9 @@ class Primitive
 
   string(8bit) raw;
 
-  string(8bit) der_encode() { return build_der(raw); }
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
 
-  //! get raw encoded contents of object
-  string(8bit) get_contents() { return raw; }
   int get_combined_tag() { return combined_tag; }
 
   //! get tag
@@ -58,8 +57,9 @@ class Constructed
   //! raw encoded  contents
   string(8bit) raw;
 
-  string(8bit) der_encode() { return build_der(raw); }
-  string(8bit) get_contents() { return raw; }
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
+
   int get_combined_tag() { return combined_tag; }
 
   //! get tag
