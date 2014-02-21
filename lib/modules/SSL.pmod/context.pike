@@ -669,9 +669,9 @@ private array(string(8bit))
 
   string wantedtype;
   mapping(int:string) cert_types = ([
-    Constant.AUTH_rsa_sign : "rsa",
-    Constant.AUTH_dss_sign : "dss",
-    Constant.AUTH_ecdsa_sign : "ecdsa",
+    AUTH_rsa_sign : "rsa",
+    AUTH_dss_sign : "dss",
+    AUTH_ecdsa_sign : "ecdsa",
   ]);
 
   foreach(acceptable_types, int t)
