@@ -619,13 +619,14 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 	    " unlocked: %" PRINT_CPU_TIME "\n",
 	    ts, now, ts->state.unlocked_time);
 #endif
-#ifdef PIKE_DEBUG
-    if (now < -Pike_interpreter.unlocked_time) {
-      pike_fatal_dloc("Time at swap in is before time at swap out."
-		      " %" PRINT_CPU_TIME " < %" PRINT_CPU_TIME
-		      "\n", now, -Pike_interpreter.unlocked_time);
-    }
-#endif
+/* This will not work, since Pike_interpreter_pointer is always null here... */
+/* #ifdef PIKE_DEBUG */
+/*     if (now < -Pike_interpreter.unlocked_time) { */
+/*           pike_fatal_dloc("Time at swap in is before time at swap out." */
+/*                           " %" PRINT_CPU_TIME " < %" PRINT_CPU_TIME */
+/*                           "\n", now, -Pike_interpreter.unlocked_time); */
+/*     } */
+/* #endif */
     ts->state.unlocked_time += now;
   }
 #endif
