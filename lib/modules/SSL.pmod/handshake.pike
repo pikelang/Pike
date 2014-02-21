@@ -499,6 +499,7 @@ Packet certificate_request_packet(SSL.context context)
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
+    // FIXME: TLS 1.2 has var_uint_array of hash and sign pairs here.
     struct->put_var_string([string(0..255)]
 			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
@@ -1584,6 +1585,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
         client_cert_types = input->get_var_uint_array(1, 1);
         client_cert_distinguished_names = ({});
+
+        // FIXME: TLS 1.2 has var_uint_array of hash and sign pairs here.
+
         int num_distinguished_names = input->get_uint(2);
         if(num_distinguished_names)
         {
