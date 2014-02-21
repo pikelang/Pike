@@ -99,8 +99,8 @@ protected {
 class Verifier {
   constant type = "none";
   Crypto.Sign pkc;
-  optional /* __deprecated__ */ Crypto.RSA rsa;
-  optional /* __deprecated__ */ Crypto.DSA dsa;
+  optional __deprecated__(Crypto.RSA) rsa;
+  optional __deprecated__(Crypto.DSA) dsa;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
