@@ -1429,7 +1429,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
       /* Try again with tracking to be able to remove the destructed node. */
       RBSTACK_INIT (rbstack);
 
-      while (1) {
+      while (msd->root) {
 	enum find_types find_type = low_multiset_track_eq (msd, key, &rbstack);
 
 	if (l->msd != msd)
@@ -1450,10 +1450,11 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 	  goto done;
 	}
       }
-
-      /* NOT REACHED */
+      node = NULL;
+      RBSTACK_FREE (rbstack);
+      goto done;
     }
-  }
+  } /* while(1) */
 
 done:
   UNSET_ONERROR (uwp);
