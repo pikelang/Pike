@@ -2745,6 +2745,7 @@ void f_cpp(INT32 args)
   else if(this.dependencies_fail)
   {
     free_string_builder(&this.buf);
+    pop_n_elems(sp - save_sp);
     push_int(0);
   }
   else
