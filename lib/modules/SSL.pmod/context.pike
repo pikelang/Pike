@@ -669,23 +669,20 @@ private array(string(8bit))
 
   string wantedtype;
   mapping(int:string) cert_types = ([
-    1 : "rsa",
-    2 : "dss",
-    3 : "rsa_fixed_dh",
-    4 : "dss_fixed_dh"
+    Constant.AUTH_rsa_sign : "rsa",
+    Constant.AUTH_dss_sign : "dss",
+    Constant.AUTH_ecdsa_sign : "ecdsa",
   ]);
 
   foreach(acceptable_types, int t)
   {
-    // FIXME: The only valid Verifier types are "rsa", "dsa" and
-    // "ecdsa". We should probably use wantedtype below as well.
     wantedtype = cert_types[t];
 
     foreach(c, mapping(string:mixed) cert)
     {
       Standards.X509.TBSCertificate crt =
         [object(Standards.X509.TBSCertificate)]cert->cert;
-      if(crt->public_key->type == "rsa")
+      if(crt->public_key->type == wantedtype)
         return context->client_certificates[[int]cert->chain];
     }
   }
