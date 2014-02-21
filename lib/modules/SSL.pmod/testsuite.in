@@ -87,7 +87,6 @@ test_do([[
   ctx->rsa_mode();
 
   object tbs = Standards.X509.decode_certificate(cert);
-  ASSERT(tbs->public_key->rsa->public_key_equal(rsa));
   ctx->certificates = ({ cert });
 
   add_constant("server_rsa_ctx", ctx);
