@@ -99,11 +99,8 @@ protected {
 class Verifier {
   constant type = "none";
   Crypto.Sign pkc;
-  optional Crypto.RSA rsa;
-  optional Crypto.DSA dsa;
-#if constant(Crypto.ECC.Curve)
-  optional Crypto.ECC.SECP_521R1.ECDSA ecdsa;
-#endif
+  optional /* __deprecated__ */ Crypto.RSA rsa;
+  optional /* __deprecated__ */ Crypto.DSA dsa;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
@@ -130,7 +127,7 @@ protected class RSAVerifier
     pkc = RSA.parse_public_key(key);
   }
 
-  Crypto.RSA `rsa() { return [object(Crypto.RSA)]pkc; }
+  __deprecated__ Crypto.RSA `rsa() { return [object(Crypto.RSA)]pkc; }
 }
 
 protected class DSAVerifier
@@ -143,7 +140,7 @@ protected class DSAVerifier
     pkc = DSA.parse_public_key(key, p, q, g);
   }
 
-  Crypto.DSA `dsa() { return [object(Crypto.DSA)]pkc; }
+  __deprecated__ Crypto.DSA `dsa() { return [object(Crypto.DSA)]pkc; }
 }
 
 #if constant(Crypto.ECC.Curve)
@@ -164,11 +161,6 @@ protected class ECDSAVerifier
     }
     DBG("ECC Curve: %O (DER: %O)\n", curve, curve_der);
     pkc = curve->ECDSA()->set_public_key(key);
-  }
-
-  Crypto.ECC.SECP_521R1.ECDSA `ecdsa()
-  {
-    return [object(Crypto.ECC.SECP_521R1.ECDSA)]pkc;
   }
 }
 #endif
