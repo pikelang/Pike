@@ -69,6 +69,17 @@ int(0..1) public_key_equal(this_program dsa)
     (g == dsa->get_g()) && (y == dsa->get_y());
 }
 
+//! Compares the keys of this DSA object with something other.
+protected int(0..1) _equal(mixed other)
+{
+  if (!objectp(other) || (object_program(other) != object_program(this)) ||
+      !public_key_equal([object(this_program)]other)) {
+    return 0;
+  }
+  this_program dsa = [object(this_program)]other;
+  return x == dsa->get_x();
+}
+
 //! Sets the private key, the x parameter, in this DSA object.
 this_program set_private_key(Gmp.mpz secret)
 {

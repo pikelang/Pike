@@ -81,6 +81,17 @@ int(0..1) public_key_equal(this_program rsa)
   return n == rsa->get_n() && e == rsa->get_e();
 }
 
+//! Compares the keys of this RSA object with something other.
+protected int(0..1) _equal(mixed other)
+{
+  if (!objectp(other) || (object_program(other) != object_program(this)) ||
+      !public_key_equal([object(this_program)]other)) {
+    return 0;
+  }
+  this_program rsa = [object(this_program)]other;
+  return d == rsa->get_d();
+}
+
 //! Sets the private key.
 //! @param priv
 //!   The private RSA exponent, often called d.

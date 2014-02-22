@@ -8,11 +8,31 @@
 //! @[Crypto.ECC.Curve.ECDSA].
 //!
 
-// PKCS-1
-#define Sequence Standards.ASN1.Types.Sequence
-
 //! Returns the printable name of the signing algorithm.
 string(7bit) name();
+
+//! Check whether the public key is the same in
+//! two objects.
+//!
+//! @note
+//!   This function differs from @[_equal()] in that only the
+//!   public key is regarded, and that it only needs to regard
+//!   objects implementing @[Crypto.Sign].
+//!
+//! @seealso
+//!   @[_equal()]
+int(0..1) public_key_equal(this_program other);
+
+//! Check whether two objects are equvivalent.
+//!
+//! This includes checking both the public and private keys.
+//!
+//! @seealso
+//!   @[public_key_equal()]
+protected int(0..1) _equal(mixed x);
+
+// PKCS-1
+#define Sequence Standards.ASN1.Types.Sequence
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm
 //! @[h].

@@ -125,6 +125,26 @@ class Curve {
       return this;
     }
 
+    //! Compares the public key in this object with that in the provided
+    //! ECDSA object.
+    int(0..1) public_key_equal(this_program ecdsa)
+    {
+      return ecdsa->curve() == Curve::this &&
+	ecdsa->get_x() == get_x() &&
+	ecdsa->get_y() == get_y();
+    }
+
+    //! Compares the keys of this ECDSA object with something other.
+    protected int(0..1) _equal(mixed other)
+    {
+      if (!objectp(other) || (object_program(other) != object_program(this)) ||
+	  !public_key_equal([object(this_program)]other)) {
+	return 0;
+      }
+      this_program ecdsa = [object(this_program)]other;
+      return get_private_key() == ecdsa->get_private_key();
+    }
+
     //! Set the random function, used to generate keys and parameters,
     //! to the function @[r].
     this_program set_random(function(int:string(8bit)) r)
