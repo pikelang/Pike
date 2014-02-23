@@ -315,12 +315,18 @@ class Attribute
 {
   inherit Sequence;
 
-  void create(mapping(string:object) types, string type,
-	      array(object) v)
+  protected void create(mapping(string:object) types, string type,
+			array(object) v)
   {
     if (!types[type])
       error( "Unknown attribute type '%s'\n", type);
     ::create( ({ types[type], Set(v) }) );
+  }
+  protected variant void create(array(Object) elements)
+  {
+    if (sizeof(elements) != 2)
+      error("Invalid attribute encoding.\n");
+    ::create(elements);
   }
 }
 
@@ -328,11 +334,19 @@ class Attributes
 {
   inherit Set;
 
-  void create(mapping(string:object) types, mapping(string:array(object)) m)
+  protected void create(mapping(string:object) types,
+			mapping(string:array(object)) m)
   {
     ::create(map(indices(m),
 		 lambda(string field, mapping m, mapping t) {
 		   return Attribute(t, field, m[field]);
 		 }, m, types));
+  }
+  protected variant void create(array(Object) elements)
+  {
+    ::create(map(elements,
+		 lambda(object e) {
+		   return Attribute(e->elements);
+		 }));
   }
 }
