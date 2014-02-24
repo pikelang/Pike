@@ -1815,9 +1815,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   int x,y;
   rgb_group color, *from, old;
   if(!xsize || !maxheight) return;
-#ifdef HIDE_WARNINGS
+
   old.r = old.g = old.b = 0;
-#endif
+
   if(length > 128)
   {
     for(y=0; y<maxheight; y++)
@@ -4860,7 +4860,7 @@ void image__decode( INT32 args )
     pop_stack();
 }
 
-static void image__size_object(INT32 args)
+static void image__size_object(INT32 UNUSED(args))
 {
     INT_TYPE sz = 0;
     if( THIS->img )

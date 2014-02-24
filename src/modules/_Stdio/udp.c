@@ -1187,7 +1187,7 @@ static void udp_query_address(INT32 args)
   PIKE_SOCKADDR addr;
   int i;
   int fd = FD;
-  char buffer[496],*q;
+  char buffer[496];
   ACCEPT_SIZE_T len;
 
   if(fd <0)
