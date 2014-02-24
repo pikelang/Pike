@@ -1598,7 +1598,7 @@ PMOD_EXPORT void f_add(INT32 args)
     struct pike_string *r;
     PCHARP buf;
     char buffer[MAX_NUM_BUF];
-    int max_shift=0;
+    int max_shift=0, len;
 
     if ((TYPEOF(sp[-args]) != T_STRING) && (TYPEOF(sp[1-args]) != T_STRING)) {
       struct svalue *save_sp = sp;
@@ -1693,24 +1693,22 @@ PMOD_EXPORT void f_add(INT32 args)
 #endif
 
       append_buffer:
+        len = strlen(buffer);
 	switch(max_shift)
 	{
 	  case 0:
-	    convert_0_to_0((p_wchar0 *)buf.ptr,buffer,strlen(buffer));
+	    convert_0_to_0((p_wchar0 *)buf.ptr,buffer,len);
 	    break;
 
 	  case 1:
-	    convert_0_to_1((p_wchar1 *)buf.ptr,(p_wchar0 *)buffer,
-			   strlen(buffer));
+	    convert_0_to_1((p_wchar1 *)buf.ptr,(p_wchar0 *)buffer,len);
 	    break;
 
 	  case 2:
-	    convert_0_to_2((p_wchar2 *)buf.ptr,(p_wchar0 *)buffer,
-			   strlen(buffer));
+	    convert_0_to_2((p_wchar2 *)buf.ptr,(p_wchar0 *)buffer,len);
 	    break;
-
 	}
-	INC_PCHARP(buf,strlen(buffer));
+	INC_PCHARP(buf,len);
       }
     }
     r = realloc_unlinked_string(r, SUBTRACT_PCHARP(buf, MKPCHARP_STR(r)));
