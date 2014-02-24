@@ -2454,7 +2454,10 @@ static void f_parse_pike_type( INT32 args )
   free_type(t);
 }
 
-/*! @decl type __soft_cast(type to, type from)
+/*! @module Pike
+ */
+
+/*! @decl type soft_cast(type to, type from)
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
  */
@@ -2478,8 +2481,8 @@ static void f___soft_cast(INT32 args)
   }
 }
 
-/*! @decl type __low_check_call(type fun_type, type arg_type)
- *! @decl type __low_check_call(type fun_type, type arg_type, int flags)
+/*! @decl type low_check_call(type fun_type, type arg_type)
+ *! @decl type low_check_call(type fun_type, type arg_type, int flags)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -2530,7 +2533,7 @@ static void f___low_check_call(INT32 args)
   }
 }
 
-/*! @decl type __get_return_type(type fun_type)
+/*! @decl type get_return_type(type fun_type)
  *!
  *!   Check what a function of the type @[fun_type] will
  *!   return if called with no arguments.
@@ -2558,7 +2561,7 @@ static void f___get_return_type(INT32 args)
   }
 }
 
-/*! @decl type __get_first_arg_type(type fun_type)
+/*! @decl type get_first_arg_type(type fun_type)
  *!
  *!   Check if a function of the type @[fun_type] may be called
  *!   with an argument, and return the type of that argument.
@@ -2588,7 +2591,7 @@ static void f___get_first_arg_type(INT32 args)
   }
 }
 
-/*! @decl array(string) __get_type_attributes(type t)
+/*! @decl array(string) get_type_attributes(type t)
  *!
  *!   Get the attribute markers for a type.
  *!
@@ -2596,7 +2599,7 @@ static void f___get_first_arg_type(INT32 args)
  *!   Returns an array with the attributes for the type @[t].
  *!
  *! @seealso
- *!   @[__get_return_type()], @[__get_first_arg_type()]
+ *!   @[get_return_type()], @[get_first_arg_type()]
  */
 static void f___get_type_attributes(INT32 args)
 {
@@ -2621,6 +2624,9 @@ static void f___get_type_attributes(INT32 args)
   f_aggregate(count);
   stack_pop_n_elems_keep_top(args);
 }
+
+/*! @endmodule Pike
+ */
 
 /*! @decl mapping (string:mixed) all_constants()
  *!
