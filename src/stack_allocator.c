@@ -1,5 +1,6 @@
 #include "stack_allocator.h"
 
+MALLOC_FUNCTION
 static struct chunk * alloc_chunk(size_t size) {
     struct chunk * c = (struct chunk*)xalloc(sizeof(struct chunk) + size);
     c->data = c->top = c + 1;

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "pike_memory.h"
 
 struct stack_allocator {
     struct chunk * cur;
@@ -31,6 +32,7 @@ static INLINE void sa_alloc_enlarge(struct stack_allocator * a, size_t size) {
         stack_alloc_enlarge(a, size);
 }
 
+MALLOC_FUNCTION
 static INLINE void * sa_alloc_fast(struct stack_allocator * a, size_t size) {
     struct chunk * c = a->cur;
     void * ret = c->top;
@@ -38,6 +40,7 @@ static INLINE void * sa_alloc_fast(struct stack_allocator * a, size_t size) {
     return ret;
 }
 
+MALLOC_FUNCTION
 static INLINE void * sa_alloc(struct stack_allocator * a, size_t size) {
     sa_alloc_enlarge(a, size);
     return sa_alloc_fast(a, size);
