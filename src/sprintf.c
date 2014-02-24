@@ -2299,7 +2299,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	if ('7' > max_char) max_char = '7';
 	/* FALL_THROUGH */
       case 'b':
-	if ('2' > max_char) max_char = '7';
+	if ('1' > max_char) max_char = '1';
 	if ('+' < min_char) min_char = '+';
       {
 	push_object_type(0, 0);
