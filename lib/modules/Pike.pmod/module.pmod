@@ -78,9 +78,11 @@ constant count_memory = __builtin.count_memory;
 constant get_runtime_info = __builtin.get_runtime_info;
 
 // Type-checking:
+constant soft_cast = predef::__soft_cast;
 constant low_check_call = predef::__low_check_call;
 constant get_return_type = predef::__get_return_type;
 constant get_first_arg_type = predef::__get_first_arg_type;
+constant get_type_attributes = predef::__get_type_attributes;
 
 // precompile.pike checks for this
 #if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
