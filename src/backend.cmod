@@ -118,8 +118,10 @@ struct program * PollDeviceBackend_program;
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
+#define PDUNUSED(x) x
 #else /* !POLL_DEBUG */
 #define IF_PD(x)
+#define PDUNUSED(x) UNUSED(x)
 #endif /* POLL_DEBUG */
 
 #ifdef CALL_OUT_DEBUG
@@ -140,9 +142,10 @@ static struct compat_cb_box * alloc_compat_cb_box();
 static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
+#ifdef BACKEND_USES_CFRUNLOOP
 /* used by CoreFoundation backend to get around lack of PDB structures early in the CMOD. */
-void check_set_timer(struct timeval when);
-
+static void check_set_timer(struct timeval when);
+#endif
 /* CALL OUT STUFF */
 
 #ifdef PIKE_DEBUG
@@ -376,7 +379,7 @@ PIKECLASS Backend
   static int wakeup_callback(struct fd_callback_box *box, int UNUSED(event))
   {
     char buffer[1024];
-    fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+    while( (fd_read(box->fd, buffer, sizeof(buffer)) < 0) && (errno==EINTR)); /* Clear 'flag' */
 #ifdef _REENTRANT
     while (box->backend->set_busy) {
       co_wait_interpreter(&box->backend->set_change);
@@ -813,8 +816,9 @@ PIKECLASS Backend
 	Pike_fatal("Bad timeout to new_call_out!\n");
       }
 
+#ifdef BACKEND_USES_CFRUNLOOP
       check_set_timer(new->tv);
-
+#endif
 #ifdef _REENTRANT
       if(num_threads>1)
       {
@@ -2068,6 +2072,7 @@ PIKECLASS Backend
     }
   }
 
+
   /* Call callbacks for the active events.
    *
    * NOTE: The first element in the fd_list is a sentinel!
@@ -2075,7 +2080,7 @@ PIKECLASS Backend
    * returns 1 on early exit.
    */
   static int backend_call_active_callbacks(struct fd_callback_box *fd_list,
-					   struct Backend_struct *me)
+                                           struct Backend_struct *PDUNUSED(me))
   {
     struct fd_callback_box *box;
     while((box = fd_list->next))
@@ -2531,7 +2536,7 @@ PIKECLASS Backend
   ((poll_request.dp_timeout = (TIMEOUT)),			\
    (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
 
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *PDUNUSED(me),
 			   int pfd, int fd, INT32 events)
 {
   struct pollfd poll_state[2];
@@ -2675,7 +2680,7 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 #define PDB_POLL(PFD, TIMEOUT)				\
   epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
 
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
 			   int pfd, int fd, INT32 events)
 {
   int e;
@@ -3369,7 +3374,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 
   static void pdb_update_fd_set(struct Backend_struct *me,
 				struct PollDeviceBackend_struct *pdb, int fd,
-				int old_events, int new_events, int flags)
+				int old_events, int new_events, int PDUNUSED(flags))
   {
     int changed_events = old_events ^ new_events;
 
@@ -4193,9 +4198,9 @@ PIKEFUN int enable_external_runloop(int enable)
 
 #endif /* BACKEND_USES_POLL_DEVICE || BACKEND_USES_KQUEUE */
 
-void check_set_timer(struct timeval tmp)
-{
 #ifdef BACKEND_USES_CFRUNLOOP
+static void check_set_timer(struct timeval tmp)
+{
   {
     /* register a timer if the backend is using external cfrl. */
     struct external_variable_context loc;
@@ -4236,8 +4241,8 @@ void check_set_timer(struct timeval tmp)
       }
     }
   }
-#endif /* BACKEND_USES_CFRUNLOOP */
 }
+#endif /* BACKEND_USES_CFRUNLOOP */
 
 #ifdef HAVE_POLL
 
@@ -4271,7 +4276,7 @@ PIKECLASS PollBackend
 
   static void pb_update_fd_set (struct Backend_struct *me,
 				struct PollBackend_struct *pb, int fd,
-				int old_events, int new_events, int flags)
+				int old_events, int new_events, int UNUSED(flags))
   {
     int changed_events = old_events ^ new_events;
 

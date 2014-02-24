@@ -4618,6 +4618,7 @@ PIKECLASS Null
    */
   PIKEFUN string encode_json(...)
   {
+    pop_n_elems(args);
     push_constant_text ("null");
   }
 }

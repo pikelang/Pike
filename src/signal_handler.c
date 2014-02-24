@@ -1162,7 +1162,7 @@ void forkd(int fd)
 
 #ifdef USE_SIGCHILD
 
-static RETSIGTYPE receive_sigchild(int signum)
+static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 {
   pid_t pid;
   WAITSTATUSTYPE status;
@@ -3928,7 +3928,9 @@ void f_create_process(INT32 args)
       if(storage.env) environ=storage.env;
 
 #ifdef HAVE_SETEUID
-      seteuid(0);
+      if( seteuid(0) == -1 ) {
+          /* all is ok, just silencing gcc-warning */
+      }
 #else /* !HAVE_SETEUID */
 #ifdef HAVE_SETRESUID
       setresuid(0,0,-1);
@@ -3982,7 +3984,10 @@ void f_create_process(INT32 args)
 
 #ifdef HAVE_NICE
       if(nice_val)
-        nice(nice_val);
+          if( nice(nice_val) == -1 )
+          {
+              /* nice failed. Should we do something? */
+          }
 #endif
 
 #ifdef HAVE_SETRLIMIT
@@ -4241,7 +4246,11 @@ void f_create_process(INT32 args)
 #endif /* SETUID */
 
 #ifdef HAVE_SETEUID
-      seteuid(wanted_uid);
+      if( seteuid(wanted_uid) == -1 )
+      {
+          perror("seteuid");
+          PROCERROR(PROCE_SETUID, (int)wanted_uid);
+      }
 #else /* !HAVE_SETEUID */
 #ifdef HAVE_SETRESUID
       setresuid(wanted_uid, wanted_uid, -1);
@@ -4252,7 +4261,7 @@ void f_create_process(INT32 args)
       set_close_on_exec(0,0);
       set_close_on_exec(1,0);
       set_close_on_exec(2,0);
-      
+
 #ifdef HAVE_BROKEN_F_SETFD
       do_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
@@ -4268,7 +4277,7 @@ void f_create_process(INT32 args)
 	ptrace(PTRACE_TRACEME, 0, NULL, 0);
       }
 #endif /* HAVE_PTRACE */
-	
+
 #ifdef PROC_DEBUG
       write(2, debug_prefix, sizeof(debug_prefix));
       write(2, "Child: Calling exec()...\n", 25);

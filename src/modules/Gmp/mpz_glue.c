@@ -2442,8 +2442,6 @@ PIKE_MODULE_INIT
 {
   extern struct svalue auto_bignum_program;
 #if defined(USE_GMP) || defined(USE_GMP2)
-  int id;
-
   init_crc_table();
 
   /* Make sure that gmp uses the same malloc functions as we do since
@@ -2485,7 +2483,7 @@ PIKE_MODULE_INIT
    */
   MPZ_DEFS();
 
-  id=add_program_constant("bignum", bignum_program=end_program(), 0);
+  add_program_constant("bignum", bignum_program=end_program(), 0);
   bignum_program->id = PROG_GMP_BIGNUM_ID;
   bignum_program->flags |=
     PROGRAM_NO_WEAK_FREE |
@@ -2495,7 +2493,7 @@ PIKE_MODULE_INIT
   mpz_init (mpz_int_type_min);
   mpz_setbit (mpz_int_type_min, INT_TYPE_BITS);
   mpz_neg (mpz_int_type_min, mpz_int_type_min);
-    
+
   /* Magic hook in... */
 #ifdef PIKE_DEBUG
   if (REFCOUNTED_TYPE(TYPEOF(auto_bignum_program))) {

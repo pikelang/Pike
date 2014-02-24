@@ -18,6 +18,7 @@
 
 #ifdef HAVE_MYSQL
 
+
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
@@ -32,11 +33,13 @@ typedef INT64 _ll_t;
 typedef unsigned INT64 _ull_t;
 
 _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
+  void *ignored;
+  int ignore3;
 #ifdef HAVE_LDIV
-  ldiv(10, 3);
+  ldiv_t ignored2 = ldiv(10, 3);
 #endif
 #ifdef HAVE_OPEN
-  open(0, 0);
+  open("foo", 0);
 #endif
 #ifdef HAVE_SOPEN
   sopen(0, 0, 0);
@@ -45,17 +48,17 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
   close(0);
 #endif
 #ifdef HAVE_READ
-  read(0, 0, 0);
+  ignore3 = read(0, 0, 0);
 #endif
 #ifdef HAVE_FILENO
   /* This is a macro on AIX 4.3, so we need a proper argument. */
-  fileno(stderr);
+  ignore3 = fileno(stderr);
 #endif
 #ifdef HAVE_PUTS
   puts(" ");
 #endif
 #ifdef HAVE_FGETS
-  fgets(0, 0, 0);
+  ignored = fgets(0, 0, 0);
 #endif
 #ifdef HAVE__FINDFIRST
   _findfirst(0,0);
@@ -68,7 +71,6 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
 #endif
   return(a%b+(c%d)+(c/d)+(a/b));
 }
-
 #else
 static int place_holder;	/* Keep the compiler happy */
 #endif /* HAVE_MYSQL */
