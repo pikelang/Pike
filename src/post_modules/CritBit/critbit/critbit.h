@@ -15,6 +15,11 @@
 #define CB_TYPE(name)	CONCAT5(cb_, CB_NAMESPACE, _, name, _t)
 #endif
 
+
+#define MASK(type, bits)        (~((~((type)0)) >> (bits)))
+#define BITMASK(type, n)        ((type)1 << (type)(sizeof(type)*8 - 1 - (n)))
+#define BITN(type, p, n)        (!!((p) & BITMASK(type, n)))
+
 typedef struct cb_size {
     size_t bits;
     ptrdiff_t chars;
