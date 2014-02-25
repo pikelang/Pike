@@ -264,7 +264,9 @@ array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
   pgtk2_is_setup=1;
   gtk_set_locale();
   gtk_init(&argc,&data);
+#if GLIB_MAJOR_VERISON > 2 || GLIB_MINOR_VERSION < 36
   g_type_init();
+#endif
 
   backend_cb=(void *)add_backend_callback(backend_callback,0,0);
   pgtk2_pop_n_elems(args);
