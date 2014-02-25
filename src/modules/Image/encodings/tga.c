@@ -416,40 +416,6 @@ static ptrdiff_t rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
   return nelems;
 }
 
-static int getbit( unsigned char **p, int *o )
-{
-  int bit = (((*p)[0]) & (1<<*o));
-  (*o)++;
-  if( *o == 8 )
-  {
-    (*o) = 0;
-    (*p)++;
-  }
-  return bit ? 1 : 0;
-}
-
-static int getbits( unsigned char **pointer, int numbits, int *bittoffset,
-                    int wantedbits )
-{
-  int result = 0;
-  int scale = (1<<wantedbits)-1;
-  int scale2 = (1<<numbits)-1;
-  if(!numbits) return 0;
-  while( numbits-- ) result = (result << 1) | getbit( pointer,bittoffset );
-  return (result * scale) / scale2;
-}
-
-static void swap_every_other_byte( unsigned char *p, size_t nelems )
-{
-  size_t i;
-  for( i = 0; i<nelems; i+=2 )
-  {
-    unsigned char tmp = p[i];
-    p[i] = p[i+1];
-    p[i+1] = tmp;
-  }
-}
-
 static unsigned short extract_le_short( unsigned char **data )
 {
   (*data)+=2;

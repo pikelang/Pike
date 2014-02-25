@@ -1606,6 +1606,7 @@ WARN_TRACE(1)
 #undef L_TRUNC
 #undef L_OPER
 
+#if 0
 #define LM_FUNC lm_a_add
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
@@ -1616,6 +1617,7 @@ WARN_TRACE(1)
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
+#endif
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
@@ -2347,7 +2349,7 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
       }
 }
 
-static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
+static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED(d),
 		     rgb_group *sa,rgb_group *la,rgb_group *da,
 		     int len,double alpha)
 {

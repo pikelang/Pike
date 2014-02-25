@@ -44,25 +44,6 @@ static void push_words( struct buffer *data, struct words *w )
   uc_words_free( w );
 }
 
-static void push_words0( struct pike_string *ds, struct words *w )
-{
-  /*    push_object( clone_object( words_program, 0 ) ); */
-  struct array *r = allocate_array( w->size );
-  const p_wchar0 *d = STR0(ds);
-  unsigned int i;
-  for( i=0; i<w->size; i++ )
-  {
-    SET_SVAL(r->item[i], PIKE_T_STRING, 0, string,
-	     make_shared_binary_string( (const char *)d+w->words[i].start,
-					w->words[i].size ));
-  }
-  r->type_field = BIT_STRING;
-  pop_stack();
-  push_array( r );
-  uc_words_free( w );
-}
-
-
 /*! @decl array(string) split_words(string input)
  *! Splits the input string into an array of words, on the boundaries between
  *! the different kinds of word characters as defined by @[is_wordchar]. The
@@ -89,15 +70,6 @@ PIKEFUN array(string) split_words_and_normalize( string input )
      optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
-#if 0
-  /* Invalid optimization. See testsuite. */
-  if( !input->size_shift && (res = unicode_split_words_pikestr0( input )) )
-  {
-    push_words0( input, res );
-    return;
-  }
-#endif
-
   {
     struct buffer *data;
     data = uc_buffer_from_pikestring(input);
