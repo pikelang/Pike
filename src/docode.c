@@ -2463,8 +2463,7 @@ static int do_docode2(node *n, int flags)
       return 2;
     }else{
       tmp1 = do_docode(CAR(n), DO_NOT_COPY);
-      /* fake lfuns start at NUM_LFUN and are not accessible via F_LOOKUP_LFUN */
-      if ((tmp2 = lfun_lookup_id(CDR(n)->u.sval.u.string)) != -1 && tmp2 < NUM_LFUNS) {
+      if ((tmp2 = lfun_lookup_id(CDR(n)->u.sval.u.string)) != -1 ) {
 	emit1(F_LOOKUP_LFUN, tmp2);
       } else {
 	emit1(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
