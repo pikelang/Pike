@@ -282,42 +282,42 @@ PIKECLASS mpq
     switch(args)
     {
       case 1:
-	if(TYPEOF(sp[-args]) == T_STRING)
-	  get_mpq_from_digits(THISMPQ, sp[-args].u.string, 0);
+	if(TYPEOF(*x) == T_STRING)
+	  get_mpq_from_digits(THISMPQ, x->u.string, 0);
 	else
-	  get_new_mpq(THISMPQ, sp-args, 1, "Gmp.mpq", 1, args);
+	  get_new_mpq(THISMPQ, x, 1, "Gmp.mpq", 1, args);
 	break;
-	
+
       case 2:
 	/* Args are string of digits and integer base */
 	/* or int num / den */
-	
-	if (TYPEOF(sp[1-args]) != T_INT)
-	  if(TYPEOF(sp[1-args]) != T_OBJECT ||
-	     sp[1-args].u.object->prog != bignum_program ||
-	     TYPEOF(sp[-args]) == T_STRING)
+
+	if (TYPEOF(*base) != T_INT)
+	  if(TYPEOF(*base) != T_OBJECT ||
+	     base->u.object->prog != bignum_program ||
+	     TYPEOF(*x) == T_STRING)
             SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
 
-	switch(TYPEOF(sp[-args]))
+	switch(TYPEOF(*x))
 	{
 	  case T_STRING:
-	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
+	    get_mpq_from_digits(THISMPQ, x->u.string, base->u.integer);
 	    break;
 
 	  case T_OBJECT:
-	    if(sp[-args].u.object->prog != bignum_program)
+	    if(x->u.object->prog != bignum_program)
 
 	  default:
 	      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
 
 	  case T_INT:
-	    mpq_set_num(THISMPQ,get_mpz(sp-args, 1, "Gmp.mpq", 1, args));
-	    mpq_set_den(THISMPQ,get_mpz(sp-args+1, 1, "Gmp.mpq", 2, args));
+	    mpq_set_num(THISMPQ,get_mpz(x, 1, "Gmp.mpq", 1, args));
+	    mpq_set_den(THISMPQ,get_mpz(base, 1, "Gmp.mpq", 2, args));
 	    mpq_canonicalize(THISMPQ);
 	    break;
 	}
 	break;
-	
+
       default:
 	SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpq", 2);
 
@@ -325,7 +325,7 @@ PIKECLASS mpq
 	break;	/* Needed by AIX cc */
     }
   }
-  
+
   /*! @decl int get_int()
    */
   PIKEFUN int get_int()
@@ -566,16 +566,12 @@ PIKECLASS mpq
   PIKEFUN string _sprintf(int c, mapping flags)
     flags ID_PROTECTED;
     {
-      INT_TYPE precision, width, base = 0, mask_shift = 0;
-      struct pike_string *s = 0;
-      INT_TYPE flag_left;
+        INT_TYPE precision;
 
       precision=lookup("Gmp.Mpq->_sprintf",flags,"precision",7, 2, args);
-      width=lookup("Gmp.Mpq->_sprintf",flags,"width",-1, 2, args);
-      flag_left=lookup("Gmp.Mpq->_sprintf",flags,"flag_left",0, 2, args);
       pop_n_elems(args);
       if(precision<0) precision=0;
-      
+
       switch(c)
       {
 	default:
@@ -596,7 +592,6 @@ PIKECLASS mpq
 	case 'f':
 	{
 	  mpz_t tmp;
-	  ptrdiff_t len;
 
 	  mpz_init(tmp);
 	  mpz_ui_pow_ui(tmp, 10, precision);
@@ -617,7 +612,7 @@ PIKECLASS mpq
   
   /*! @decl static int(0..1) _is_type(string arg)
    */
-  PIKEFUN int(0..1) _is_type(string arg)
+  PIKEFUN int(0..1) _is_type(string UNUSED)
     flags ID_PROTECTED;
     {
       push_constant_text("float");
@@ -691,7 +686,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq `+(int|float|object ... a)
    */
-  PIKEFUN object `+(int|float|object ... a)
+    PIKEFUN object `+(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -702,13 +697,13 @@ PIKECLASS mpq
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)
 	mpq_add(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
-      
+
       RETURN res;
     }
 
   /*! @decl static Gmp.mpq ``+(int|float|object ... a)
    */
-  PIKEFUN object ``+(int|float|object ... a)
+  PIKEFUN object ``+(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -725,7 +720,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq `+=(int|float|object ... a)
    */
-  PIKEFUN object `+=(int|float|object ... a)
+  PIKEFUN object `+=(int|float|object ... UNUSED)
     flags ID_PROTECTED;
   {
     INT32 e;
@@ -793,7 +788,7 @@ PIKECLASS mpq
   
   /*! @decl static Gmp.mpq `*(int|float|object ... a)
    */
-  PIKEFUN object `*(int|float|object ... a)
+  PIKEFUN object `*(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -808,7 +803,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq ``*(int|float|object ... a)
    */
-  PIKEFUN object ``*(int|float|object ... a)
+  PIKEFUN object ``*(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -823,7 +818,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq `*=(int|float|object ... a)
    */
-  PIKEFUN object `*=(int|float|object ... a)
+  PIKEFUN object `*=(int|float|object ... UNUSED)
     flags ID_PROTECTED;
   {
     mult_convert_args(args, "Gmp.mpq->`*=");
@@ -833,7 +828,7 @@ PIKECLASS mpq
   
   /*! @decl static Gmp.mpq `-(int|float|object ... a)
    */
-  PIKEFUN object `-(int|float|object ... a)
+  PIKEFUN object `-(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -871,7 +866,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq `/(int|float|object ... a)
    */
-  PIKEFUN object `/(int|float|object ... a)
+  PIKEFUN object `/(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -910,7 +905,7 @@ PIKECLASS mpq
   /*! @decl static Gmp.mpq `%(int|float|object ... a)
    *! @expr{a%b =  a -  floor(a/b)*b @}
    */
-  PIKEFUN object `%(int|float|object ... a)
+  PIKEFUN object `%(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -952,7 +947,7 @@ PIKECLASS mpq
 
   /*! @decl static Gmp.mpq ``%(int|float|object a)
    */
-  PIKEFUN object ``%(int|float|object a)
+  PIKEFUN object ``%(int|float|object UNUSED)
     flags ID_PROTECTED;
     {
       MP_RAT *a;
