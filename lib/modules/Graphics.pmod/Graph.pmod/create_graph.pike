@@ -1037,8 +1037,15 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     start=diagram_data->xspace*ceil((start)/diagram_data->xspace);
     diagram_data->values_for_xnames=({start});
     while(diagram_data->values_for_xnames[-1]
-	  <= diagram_data->xmaxvalue-diagram_data->xspace)
+	  <= diagram_data->xmaxvalue-diagram_data->xspace) {
       diagram_data->values_for_xnames+=({start+=diagram_data->xspace});
+      if (diagram_data->values_for_xnames[-1] <=
+	  diagram_data->values_for_xnames[-2]) {
+	// Step smaller than mantissa or negative.
+	diagram_data->values_for_xnames = diagram_data->values_for_xnames[..<1];
+	break;
+      }
+    }
   }
   if (!(diagram_data->values_for_ynames))
   {
@@ -1051,8 +1058,15 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     start=diagram_data->yspace*ceil((start)/diagram_data->yspace);
     diagram_data->values_for_ynames=({start});
     while(diagram_data->values_for_ynames[-1]
-	  <= diagram_data->ymaxvalue-diagram_data->yspace)
+	  <= diagram_data->ymaxvalue-diagram_data->yspace) {
       diagram_data->values_for_ynames+=({start+=diagram_data->yspace});
+      if (diagram_data->values_for_ynames[-1] <=
+	  diagram_data->values_for_ynames[-2]) {
+	// Step smaller than mantissa or negative.
+	diagram_data->values_for_ynames = diagram_data->values_for_ynames[..<1];
+	break;
+      }
+    }
   }
   
   //Generate the texten if it doesn't exist
