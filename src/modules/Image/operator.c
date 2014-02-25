@@ -84,6 +84,7 @@ extern struct program *image_program;
       if (oper->xsize!=THIS->xsize					\
           || oper->ysize!=THIS->ysize)					\
          Pike_error("operands differ in size (image->"what")\n");	\
+      rgb.r=rgb.b=rgb.g=0;    /*silence warning,hyperminimal suboptimization..*/ \
    }									\
 									\
    push_int(THIS->xsize);						\
@@ -602,6 +603,8 @@ void image_operator_equal(INT32 args)
 	 push_int(0);
 	 return;
       }
+      /* silence warning.. */
+      rgb.r = rgb.g = rgb.b = 0;
    }
 
    s1=THIS->img;

@@ -728,6 +728,8 @@ void image_gif_render_block(INT32 args)
 
 CHRONO("gif render_block begin");
 
+   alphacolor.r=alphacolor.g=alphacolor.b=0;
+
    if (args<2) 
       Pike_error("Image.GIF.render_block(): Too few arguments\n");
    if (TYPEOF(sp[-args]) != T_OBJECT ||
@@ -779,7 +781,6 @@ CHRONO("gif render_block begin");
 	 alphaidx=numcolors;
 	 n=9;
 
-	 alphacolor.r=alphacolor.g=alphacolor.b=0;
 	 if (args>=9)
 	 {
 	    if (TYPEOF(sp[6-args]) != T_INT ||
