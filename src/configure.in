@@ -1796,6 +1796,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wformat-security,Wformat_security,WARN)
     AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
     AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
+    AC_SYS_COMPILER_FLAG(-Wunused-function,Wunused_function,WARN)
     AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
 
     if test "x$with_copt" != xno; then
@@ -2457,7 +2458,29 @@ return 0;
     )
 ])
 
-# GCC builtins
+
+define(TEST_BUILTIN_VOID, [
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_LINK([
+$3
+],[
+unsigned long lint;
+$1($2);
+return 0;
+],
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    ,
+    AC_MSG_RESULT(no)
+    )
+])
+
+# RDRND hardware random support
+AC_SYS_COMPILER_FLAG(-mrdrnd, opt_rdrnd, OPTIMIZE)
+TEST_BUILTIN(__builtin_ia32_rdrand32_step,[&foo])
+
+TEST_BUILTIN_VOID(__builtin_unreachable,[])
+TEST_BUILTIN_VOID(__builtin_expect,[1,1])
 TEST_BUILTIN(__builtin_clz, 23)
 TEST_BUILTIN(__builtin_clzl, 23)
 TEST_BUILTIN(__builtin_clzll, 23)
