@@ -172,7 +172,7 @@ void gc_mark_stack_external (struct pike_frame *f,
     gc_mark_external_svalues (stack, stack_p - stack, " on svalue stack");
 }
 
-static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
+static void gc_check_stack_callback(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
   if (Pike_interpreter.evaluator_stack
 #ifdef PIKE_DEBUG

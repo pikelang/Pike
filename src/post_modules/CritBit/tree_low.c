@@ -144,7 +144,7 @@ CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree * src,
     }
 }
 
-static inline cb_node_t cb_node_from_string(const struct cb_tree * tree, 
+static inline cb_node_t cb_node_from_string(const struct cb_tree * UNUSED(tree),
 					    const cb_key s,
 					    const cb_value * val) {
     cb_node_t node = node_init();
@@ -160,7 +160,7 @@ static inline cb_node_t cb_node_from_string(const struct cb_tree * tree,
     return node;
 }
 
-static inline cb_node_t cb_clone_node(const struct cb_tree * tree,
+static inline cb_node_t cb_clone_node(const struct cb_tree * UNUSED(tree),
 				      const cb_node_t node) {
     cb_node_t nnode = CB_NODE_ALLOC();
 
@@ -212,7 +212,8 @@ static void cb_free_node(const struct cb_tree * tree, cb_node_t node) {
     cb_zap_node(tree, node);
 }
 
-static inline void cb_zap_node(const struct cb_tree * tree, cb_node_t node) {
+static inline void cb_zap_node(const struct cb_tree * UNUSED(tree),
+                               cb_node_t node) {
     CB_FREE_KEY(node->key);
     CB_RM_VALUE(node);
     CB_NODE_FREE(node);

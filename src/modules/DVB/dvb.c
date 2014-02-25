@@ -801,7 +801,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
       return -1;
     }
 
-    if (cks && crc32(buffer+1,n) != 0)
+    if (cks && crc32((char *)buffer+1,n) != 0)
     {
       fprintf(stderr,"crc error\n"); /* FIXME: ??? */
       continue;
@@ -1093,7 +1093,7 @@ static void f_parse_pmt(INT32 args)
           case 0x0a:
             if (buffer[index]==3 || buffer[index]==4) {
 	      push_text("lang");
-	      push_string(make_shared_binary_string(&buffer[i+2], 3)); cnt++;
+	      push_string(make_shared_binary_string((char *)&buffer[i+2], 3)); cnt++;
             }
             break;
           case 0x09:
@@ -1366,7 +1366,7 @@ static void f_stream_read(INT32 args) {
 
   dvb_stream_data *dvb_stream = DVBStream;
   int all = 1, ret, e, cnt, ix = 0;
-  char buf[MAX_DVB_READ_SIZE], *bufptr;
+  unsigned char buf[MAX_DVB_READ_SIZE], *bufptr;
 
   if(dvb_stream->fd < 0)
     Pike_error("Object destroyed!\n");
@@ -1664,7 +1664,7 @@ static void f_audio_mixer(INT32 args) {
 /*! @endmodule
  */
 
-static void init_dvb_data(struct object *obj) {
+static void init_dvb_data(struct object *UNUSED(obj)) {
 
   unsigned int i;
 
@@ -1674,7 +1674,7 @@ static void init_dvb_data(struct object *obj) {
 }
 
 static void exit_dvb_stream(struct object *obj);
-static void exit_dvb_data(struct object *obj) {
+static void exit_dvb_data(struct object *UNUSED(obj)) {
 
   dvb_stream_data *s;
 
@@ -1688,17 +1688,17 @@ static void exit_dvb_data(struct object *obj) {
   }
 }
 
-static void init_dvb_audio(struct object *obj) {
+static void init_dvb_audio(struct object *UNUSED(obj)) {
   DVBAudio->fd = -1;
   memset(&DVBAudio->low_errmsg, '\0', sizeof(DVBAudio->low_errmsg));
 }
 
-static void exit_dvb_audio(struct object *obj) {
+static void exit_dvb_audio(struct object *UNUSED(obj)) {
   if(DVBAudio->fd != -1)
     close(DVBAudio->fd);
 }
 
-static void init_dvb_stream(struct object *obj) {
+static void init_dvb_stream(struct object *UNUSED(obj)) {
 
   DVBStream->parent = NULL;
   DVBStream->next = NULL;
@@ -1711,7 +1711,7 @@ static void init_dvb_stream(struct object *obj) {
 }
 
 
-static void exit_dvb_stream(struct object *obj) {
+static void exit_dvb_stream(struct object *UNUSED(obj)) {
 
   struct ECMINFO *e;
   unsigned int i;

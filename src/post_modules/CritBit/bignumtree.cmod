@@ -1,7 +1,8 @@
 /* vim:syntax=c
  */
+#ifdef PIKE_DEBUG
 #define DEBUG_CHECKS
-
+#endif
 #include "common.h"
 
 #include "critbit/bignum2svalue.h"

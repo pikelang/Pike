@@ -142,7 +142,9 @@ static inline int cb_print_path(struct string_builder *buf, cb_node_t node,
     return 0;
 }
 
-static inline void cb_check(cb_node_t node, cb_node_t last, char *issue) {
+static inline void cb_check(cb_node_t node,
+                            cb_node_t DEBUGUSED(last),
+                            char *issue) {
 #ifdef DEBUG_CHECKS
     if (CB_LT(node->key.len, last->key.len)) {
 	struct string_builder buf;
@@ -186,7 +188,7 @@ static inline int cb_rec_check_parents(cb_node_t node) {
 
 static inline void cb_aggregate_values(cb_node_t node,
 				       struct array * a, size_t start,
-				       size_t len) {
+				       size_t UNUSED(len)) {
     if (CB_HAS_VALUE(node))
 	CB_GET_VALUE(node, ITEM(a)+start++);
     WALK_FORWARD(node, {
