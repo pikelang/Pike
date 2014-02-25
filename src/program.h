@@ -104,7 +104,6 @@ extern struct pike_string *type_check_system_string;
 #define NUM_LFUNS 45
 
 /* NOTE: After this point there are only fake lfuns.
- *       ie use low_find_lfun(), and NOT FIND_LFUN()!
  */
 #define LFUN__SEARCH 45
 #define LFUN__TYPES 46
@@ -1069,10 +1068,11 @@ void make_program_executable(struct program *p);
 /* Prototypes end here */
 
 static INLINE int FIND_LFUN(struct program * p, int lfun) {
+#ifdef PIKE_DEBUG
     dmalloc_touch(struct program*, p);
-    if (lfun < 0 || lfun >= NUM_LFUNS) return find_lfun_fatal(p, lfun);
-
-    if (p->flags & PROGRAM_FIXED) return p->lfuns[lfun];
+    if (lfun < 0) return find_lfun_fatal(p, lfun);
+#endif
+    if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) return p->lfuns[lfun];
     return low_find_lfun(p, lfun);
 }
 
