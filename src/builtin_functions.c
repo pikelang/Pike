@@ -842,6 +842,7 @@ PMOD_EXPORT void f_random_seed(INT32 args)
 {
   INT_TYPE i;
   check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
+
   if(TYPEOF(Pike_sp[-args]) == T_INT)
   {
     i=Pike_sp[-args].u.integer;
@@ -5256,7 +5257,7 @@ PMOD_EXPORT void f_rows(INT32 args)
  *! @seealso
  *!   @[next_object()]
  */
-static void f_map_all_objects( INT32 args )
+static void f_map_all_objects( INT32 UNUSED(args) )
 {
     struct object *o = first_object;
     INT32 total = 0;
@@ -7789,7 +7790,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
  *! @seealso
  *!   @[lfun::_size_object()], @[sizeof()]
  */
-static void f__size_object( INT32 args )
+static void f__size_object( INT32 UNUSED(args) )
 {
     size_t sum;
     unsigned int i;

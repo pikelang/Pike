@@ -458,7 +458,7 @@ void gdb_break_on_pike_stack_record(long stack_size)
 static unsigned int samples[8200];
 long record;
 
-static void sample_stack(struct callback *cb,void *tmp,void *ignored)
+static void sample_stack(struct callback *cb,void *UNUSED(tmp),void *UNUSED(ignored))
 {
   long stack_size=( ((char *)&cb) - Pike_interpreter.stack_bottom) * STACK_DIRECTION;
   stack_size>>=10;

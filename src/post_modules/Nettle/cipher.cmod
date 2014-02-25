@@ -659,7 +659,7 @@ pike_camellia_set_encrypt_key(void *ctx,
 static void
 pike_camellia_set_decrypt_key(void *ctx,
 			      ptrdiff_t length, const char *key,
-			      int force)
+                              int UNUSED(force))
 {
   if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
     Pike_error("CAMELLIA: Bad keysize for CAMELLIA.\n");

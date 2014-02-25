@@ -88,7 +88,7 @@ static inline FLOAT_TYPE cb_decode_float(cb_char s) {
 static inline cb_size cb_prefix_count_float(const cb_string s1,
 					    const cb_string s2,
 					    const cb_size len,
-					    const cb_size start) {
+                                            const cb_size UNUSED(start)) {
     cb_size ret;
 
     if (s1 == s2) return len;

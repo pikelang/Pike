@@ -1589,10 +1589,11 @@ jtransform_execute_transform (j_decompress_ptr srcinfo,
  */
 
 #ifndef TRANSFORMS_NOT_SUPPORTED
+
+#ifdef SAVE_MARKERS_SUPPORTED
 GLOBAL(void)
 jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
 {
-#ifdef SAVE_MARKERS_SUPPORTED
   int m;
 
   /* Save comments except under NONE option */
@@ -1604,8 +1605,11 @@ jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
     for (m = 0; m < 16; m++)
       jpeg_save_markers(srcinfo, JPEG_APP0 + m, 0xFFFF);
   }
-#endif /* SAVE_MARKERS_SUPPORTED */
 }
+#else
+GLOBAL(void)
+jcopy_markers_setup (j_decompress_ptr UNUSED(srcinfo), JCOPY_OPTION UNUSED(option)) {}
+#endif /* SAVE_MARKERS_SUPPORTED */
 
 /* Copy markers saved in the given source object to the destination object.
  * This should be called just after jpeg_start_compress() or

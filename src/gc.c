@@ -1075,9 +1075,12 @@ static void dloc_gc_fatal (const char *file, INT_TYPE line,
   va_end (args);
 }
 
-static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
-			     struct gc_rec_frame *p1, const char *p1n,
-			     struct gc_rec_frame *p2, const char *p2n,
+static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
+                             const char *DEBUGUSED(err_name),
+                             struct gc_rec_frame *DEBUGUSED(p1), 
+                             const char *DEBUGUSED(p1n),
+                             struct gc_rec_frame *DEBUGUSED(p2), 
+                             const char *DEBUGUSED(p2n),
 			     const char *file, INT_TYPE line,
 			     const char *fmt, ...)
 {
