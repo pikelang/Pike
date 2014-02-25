@@ -207,6 +207,14 @@ struct timeval;
 #define DECLSPEC(X)
 #endif /* HAVE_DECLSPEC */
 
+#ifdef HAS_BUILTIN_EXPECT
+# define UNLIKELY(X) __builtin_expect( (X), 0 )
+# define LIKELY(X) __builtin_expect( (X), 1 )
+#else
+# define UNLIKELY(X) X
+# define LIKELY(X) X
+#endif
+
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
 #endif
