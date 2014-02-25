@@ -137,18 +137,6 @@ void exit_stdio_sendfile(void);
 void init_stdio_udp(void);
 void exit_stdio_udp(void);
 
-#define CBFUNCS(X) \
-static void PIKE_CONCAT(file_set_,X) (INT32 args); \
-static void PIKE_CONCAT(file_query_,X) (INT32 args);
-CBFUNCS(read_callback)
-CBFUNCS(write_callback)
-CBFUNCS(read_oob_callback)
-CBFUNCS(write_oob_callback)
-CBFUNCS(fs_event_callback)
-
-static void file_query_fs_event_flags(INT32 args);
-
-static void file_write(INT32 args);
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
 PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
 				    int fd, int mode, int guess);
