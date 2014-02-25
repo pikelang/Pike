@@ -256,38 +256,6 @@ static INLINE int min_magnitude(p_wchar2 c)
   return 2;
 }
 
-static INLINE p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
-{
-  switch(size)
-  {
-    case 0: return ((p_wchar0 *)str)[pos];
-    case 1: return ((p_wchar1 *)str)[pos];
-    case 2: return ((p_wchar2 *)str)[pos];
-  }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift size!\n");
-#endif
-  return 0;
-}
-
-PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
-					 ptrdiff_t pos)
-{
-#ifdef PIKE_DEBUG
-  if(pos > s->len || pos<0) {
-    if (s->len) {
-      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
-		 "range 0..%"PRINTPTRDIFFT"d.\n",
-		 pos, s->len-1);
-    } else {
-      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
-		 pos);
-    }
-  }
-#endif
-  return generic_extract(s->str,s->size_shift,pos);
-}
-
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 {
 #ifdef PIKE_DEBUG
@@ -408,6 +376,34 @@ PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from)
 #else
 #define DM(X)
 #endif
+
+PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
+                                         ptrdiff_t pos)
+{
+  if(pos > s->len || pos<0) {
+    if (s->len) {
+      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
+		 "range 0..%"PRINTPTRDIFFT"d.\n",
+		 pos, s->len-1);
+    } else {
+      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
+		 pos);
+    }
+  }
+  return generic_extract(s->str,s->size_shift,pos);
+}
+
+PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+{
+  switch(size)
+  {
+    case 0: return ((p_wchar0 *)str)[pos];
+    case 1: return ((p_wchar1 *)str)[pos];
+    case 2: return ((p_wchar2 *)str)[pos];
+  }
+  Pike_fatal("Unsupported string shift: %d\n", size);
+  return 0;
+}
 
 static void locate_problem(int (*isproblem)(struct pike_string *))
 {
