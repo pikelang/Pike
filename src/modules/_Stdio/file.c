@@ -1106,7 +1106,6 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
       int e;
-      char *buf;
       try_read=MINIMUM(CHUNK,r);
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -1715,18 +1714,13 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
 }
 
 #undef CBFUNCS
+
 #define CBFUNCS(CB, EVENT)						\
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
     if(!args)								\
       SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
     set_fd_event_cb (THIS, Pike_sp-args, EVENT, 0);			\
-  }									\
-									\
-  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
-  {									\
-    pop_n_elems(args);							\
-    push_svalue(& THIS->event_cbs[EVENT]);				\
   }
 
 #define CBFUNCS2(CB, EVENT)						\
@@ -1738,12 +1732,6 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
       SIMPLE_ARG_TYPE_ERROR("Stdio.File->set_" #CB, 2, "int");		\
     set_fd_event_cb (THIS, Pike_sp-args, EVENT,				\
 		     Pike_sp[1-args].u.integer);			\
-  }									\
-									\
-  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
-  {									\
-    pop_n_elems(args);							\
-    push_svalue(& THIS->event_cbs[EVENT]);				\
   }
 
 CBFUNCS(read_callback, PIKE_FD_READ)
@@ -2277,7 +2265,6 @@ static void file_write_oob(INT32 args)
  */
 static void file_send_fd(INT32 args)
 {
-  int e;
   int other_fd;
   struct object *o = NULL;
   struct my_file *f = NULL;
@@ -4600,9 +4587,8 @@ static void file_open_socket(INT32 args)
   else if (args > 2 && TYPEOF(Pike_sp[2-args]) == PIKE_T_STRING &&
 	   !Pike_sp[2-args].u.string->size_shift) {
     PIKE_SOCKADDR addr;
-    int addr_len;
-    addr_len = get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
-			     NULL, -1, 0);
+    get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
+                  NULL, -1, 0);
     family = SOCKADDR_FAMILY(addr);
     INVALIDATE_CURRENT_TIME();
   }
