@@ -51,6 +51,18 @@
 #define DEF_ARG_NEED_COMMA  0x800000
 #define DEF_ARG_MASK        0x0fffff
 
+struct define_part;
+struct define_argument;
+struct define;
+struct cpp;
+
+
+/* Return true if compat version is equal or less than MAJOR.MINOR */
+#define CPP_TEST_COMPAT(THIS,MAJOR,MINOR)      \
+  (THIS->compat_major < (MAJOR) ||	       \
+   (THIS->compat_major == (MAJOR) &&	       \
+    THIS->compat_minor <= (MINOR)))
+
 #if 0
 #define CALC_DUMPPOS(X)	DUMPPOS(X)
 #else /* !0 */
@@ -134,6 +146,13 @@ struct cpp
   INT_TYPE picky_cpp, keep_comments, dependencies_fail;
 };
 
+static void cpp_error(struct cpp *this, const char *err);
+static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
+				va_list args);
+static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...);
+static void cpp_handle_exception(struct cpp *this,
+				 const char *cpp_error_fmt, ...);
+static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...);
 struct define *defined_macro =0;
 
 static struct pike_string *binary_findstring1(p_wchar1 *str, ptrdiff_t len);
@@ -1966,7 +1985,7 @@ static struct pike_string *filter_bom(struct pike_string *data)
   return(data);
 }
 
-void free_one_define(struct hash_entry *h)
+static void free_one_define(struct hash_entry *h)
 {
   int e;
   struct define *d=BASEOF(h, define, link);
