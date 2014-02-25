@@ -2278,10 +2278,11 @@ static struct %s *%s_gdb_dummy_ptr;
 	    min_args--;
 
 	  foreach(args, Argument arg)
-	    ret+=({
-	      PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),
-		       arg->line()),
-	    });
+          if( arg->name() != "UNUSED" )
+              ret+=({
+                  PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),
+                           arg->line()),
+              });
 
 
 	  int argnum;
@@ -2329,7 +2330,13 @@ static struct %s *%s_gdb_dummy_ptr;
 	  foreach(args, Argument arg)
 	  {
 	    int got_void_or_zero_check = 0;
-
+        if( arg->name() == "UNUSED" )
+        {
+            // simply skip directly for now.
+            // should probably also handle ... etc?
+            argnum++;
+            continue;
+        }
 	    if (argnum == repeat_arg) {
 	      // Begin the argcnt loop.
 	      check_argbase = "+argcnt"+argbase;
