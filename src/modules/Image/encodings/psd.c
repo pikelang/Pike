@@ -90,12 +90,6 @@ static unsigned char psd_read_uchar( struct buffer *from )
   return res;
 }
 
-static int psd_read_char( struct buffer *from )
-{
-  return (char)psd_read_uchar( from );
-}
-
-
 static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
