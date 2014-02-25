@@ -715,7 +715,7 @@ PIKECLASS Simple
    *! @note
    *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN array parse(string s, string|function cb, mixed ... extra_args)
+  PIKEFUN array parse(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
   {
     int d;
@@ -753,7 +753,7 @@ PIKECLASS Simple
    *! @note
    *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... extras)
+  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
   {
     int d;
