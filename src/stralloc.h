@@ -16,6 +16,12 @@
 #define STRUCT_PIKE_STRING_DECLARED
 #endif
 
+enum size_shift {
+    eightbit=0,
+    sixteenbit=1,
+    thirtytwobit=2,
+};
+
 #ifdef ATOMIC_SVALUE
 #define PIKE_STRING_CONTENTS						\
   INT32 refs;								\
@@ -31,7 +37,7 @@
 #define PIKE_STRING_CONTENTS                \
     INT32 refs;                                     \
     unsigned char  flags;                           \
-    unsigned char  size_shift;                      \
+    enum size_shift  size_shift:8;                        \
     unsigned char  min;								\
     unsigned char  max;                                             \
     ptrdiff_t len; /* Not counting terminating NUL. */              \
@@ -115,8 +121,33 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define STR2(X) ((p_wchar2 *)(X)->str)
 #endif
 
-#define INDEX_CHARP(PTR,IND,SHIFT) \
-  ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]:(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]:((p_wchar2 *)(PTR))[(IND)])
+#ifndef PIKE_DEBUG
+static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
+
+static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+{
+/* this gives better code than a lot of other versions I have tested.
+
+When inlined the ret/eax is of course somewhat different, it can be
+less or more optimal, but this is at least actually smaller than the
+expanded code for INDEX_CHARP.
+*/
+  if( LIKELY(size == 0) ) return ((p_wchar0 *)str)[pos];
+  if( LIKELY(size == 1) ) return ((p_wchar1 *)str)[pos];
+  return ((p_wchar2 *)str)[pos];
+}
+
+static INLINE p_wchar2 index_shared_string(struct pike_string *s,  ptrdiff_t pos)
+{
+  return generic_extract(s->str,s->size_shift,pos);
+}
+#else
+PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos);
+PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
+                                         ptrdiff_t pos)
+#endif
+
+#define INDEX_CHARP(PTR,IND,SHIFT) generic_extract(PTR,SHIFT,IND)
 
 #define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
   ((SHIFT)==0?								\
@@ -259,8 +290,6 @@ INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, con
 PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
 /* Prototypes begin here */
-PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
-					 ptrdiff_t pos);
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
 PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
