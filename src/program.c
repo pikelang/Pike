@@ -11471,6 +11471,19 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
   return low_program_from_function(f->u.object, SUBTYPEOF(*f));
 }
 
+static const struct pike_type *is_subtyped_object_type(struct pike_type *t)
+{
+  if ((t->type == T_OBJECT) && t->cdr) return t;
+  return NULL;
+}
+
+PMOD_EXPORT struct program *program_from_type(const struct pike_type *t)
+{
+  t = find_type(t, is_subtyped_object_type);
+  if (!t) return NULL;
+  return id_to_program((int)(ptrdiff_t)t->cdr);
+}
+
 /* NOTE: Does not add references to the return value! */
 PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
@@ -11510,6 +11523,10 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 
   case T_PROGRAM:
     return s->u.program;
+
+  case PIKE_T_TYPE:
+    return program_from_type(s->u.type);
+
   default:
     return 0;
   }

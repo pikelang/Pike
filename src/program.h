@@ -1042,6 +1042,7 @@ PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
+PMOD_EXPORT struct program *program_from_type(const struct pike_type *t);
 PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
 						    int *parent_id);
