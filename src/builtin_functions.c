@@ -826,7 +826,15 @@ PMOD_EXPORT void f_random_string(INT32 args)
   INT_TYPE len, e;
   get_all_args("random_string",args,"%+",&len);
   ret = begin_shared_string(len);
-  for(e=0;e<len;e++) ret->str[e] = DO_NOT_WARN((char)my_rand());
+
+  /* Note: Assumes pike_string->str is aligned on a 4 byte boundary
+   * (it is, currently)
+   */
+  for(e=3;e<len;e+=sizeof(INT32))
+      ((unsigned INT32 *)(ret->str+e-3))[0] = DO_NOT_WARN(my_rand());
+  for(;e<len;e++)
+      ret->str[e] = DO_NOT_WARN((char)my_rand());
+
   pop_n_elems(args);
   push_string(end_shared_string(ret));
 }
