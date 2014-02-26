@@ -204,8 +204,12 @@ void cfTimerCallback(CFRunLoopTimerRef timer, void * info);
 #endif /* BACKEND_USES_CFRUNLOOP */
 
 static int backend_do_call_outs(struct Backend_struct *me);
+#ifdef PIKE_DEBUG
 static void backend_verify_call_outs(struct Backend_struct *me);
+#endif
+#ifdef DO_PIKE_CLEANUP
 static void backend_cleanup();
+#endif
 
 struct Backend_struct *get_backend_for_fd(int fd)
 {
