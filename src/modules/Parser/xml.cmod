@@ -1122,7 +1122,6 @@ static inline int xmlread(int z, int UNUSED(line))
 
 static void sys(void);
 static int low_parse_dtd(void);
-static void free_xmldata(void);
 static void simple_readname(void);
 static int simple_readname_period(void);
 static void simple_read_system_literal(void);

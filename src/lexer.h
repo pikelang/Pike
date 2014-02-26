@@ -430,7 +430,9 @@ static struct pike_string *readstring(struct lex *lex)
 
 
 
+#if LEXDEBUG>4
 static int low_yylex(struct lex *lex, YYSTYPE *);
+#endif /* LEXDEBUG>4 */
 int yylex(struct lex *lex, YYSTYPE *yylval)
 #if LEXDEBUG>4
 {

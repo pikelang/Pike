@@ -2306,8 +2306,11 @@ static void file_send_fd(INT32 args)
     THIS->fd_info = fd_info = fds;
 #ifdef PIKE_DEBUG
     /* Note: Unusual range. */
-    for (e = fds[0]-2; e > fds[1]; e--) {
-      fds[e + 1] = -1;
+    {
+      int e;
+      for (e = fds[0]-2; e > fds[1]; e--) {
+        fds[e + 1] = -1;
+      }
     }
 #endif
   }

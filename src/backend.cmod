@@ -204,8 +204,12 @@ void cfTimerCallback(CFRunLoopTimerRef timer, void * info);
 #endif /* BACKEND_USES_CFRUNLOOP */
 
 static int backend_do_call_outs(struct Backend_struct *me);
+#ifdef PIKE_DEBUG
 static void backend_verify_call_outs(struct Backend_struct *me);
+#endif
+#ifdef DO_PIKE_CLEANUP
 static void backend_cleanup();
+#endif
 
 struct Backend_struct *get_backend_for_fd(int fd)
 {
@@ -3374,7 +3378,13 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 
   static void pdb_update_fd_set(struct Backend_struct *me,
 				struct PollDeviceBackend_struct *pdb, int fd,
-				int old_events, int new_events, int PDUNUSED(flags))
+				int old_events, int new_events, 
+#ifdef BACKEND_USES_POLL_DEVICE
+				int PDUNUSED(flags),
+#else
+				int flags
+#endif
+				)
   {
     int changed_events = old_events ^ new_events;
 
