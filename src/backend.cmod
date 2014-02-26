@@ -3380,7 +3380,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 				struct PollDeviceBackend_struct *pdb, int fd,
 				int old_events, int new_events, 
 #ifdef BACKEND_USES_POLL_DEVICE
-				int PDUNUSED(flags),
+				int PDUNUSED(flags)
 #else
 				int flags
 #endif
