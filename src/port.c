@@ -161,11 +161,15 @@ PMOD_EXPORT void my_srand(INT32 seed)
   unsigned int ignore, cpuid_ecx;
 
   if( use_rdrnd )
+  {
+    rnd_index = seed;
     return;
+  }
   __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
   if( cpuid_ecx & bit_RDRND_2 )
   {
     use_rdrnd = 1;
+    rnd_index = seed;
     return;
   }
   else
@@ -196,11 +200,11 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
-    unsigned int ok=0, rand;
+    unsigned int ok=0;
     do{
-      rand = __builtin_ia32_rdrand32_step( &ok );
+      ok = __builtin_ia32_rdrand32_step( &rnd_index );
     } while(!ok);
-    return rand;
+    return rnd_index;
   }
 #endif
   if( ++rnd_index == RNDBUF) rnd_index=0;
