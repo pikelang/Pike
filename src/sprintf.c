@@ -420,7 +420,7 @@ struct format_stack
 #endif
 #endif
 
-INLINE static void low_write_IEEE_float(char *b, double d, int sz)
+static void low_write_IEEE_float(char *b, double d, int sz)
 {
   int maxexp;
   unsigned INT32 maxf;
@@ -550,7 +550,7 @@ INLINE static void low_write_IEEE_float(char *b, double d, int sz)
 
 /* Position a string inside a field with fill */
 
-INLINE static void fix_field(struct string_builder *r,
+static void fix_field(struct string_builder *r,
 			     PCHARP b,
 			     ptrdiff_t len,
 			     int flags,
@@ -684,7 +684,7 @@ static void free_sprintf_strings(struct format_stack *fs)
 }
 
 static void sprintf_error(struct format_stack *fs,
-			  char *s,...) ATTRIBUTE((noreturn,format (printf, 2, 3)));
+			  char *s,...) ATTRIBUTE((noinline,noreturn,format (printf, 2, 3)));
 static void sprintf_error(struct format_stack *fs,
 			  char *s,...)
 {
@@ -698,14 +698,92 @@ static void sprintf_error(struct format_stack *fs,
   va_end(args);
 }
 
+static void mapping_to_format_info(struct mapping * m, struct format_info * fsp, int * indent) {
+  struct svalue *sval;
+
+  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
+      (TYPEOF(*sval) == T_INT)) {
+    fsp->precision = sval->u.integer;
+  }
+  if ((sval = simple_mapping_string_lookup(m, "width")) &&
+      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
+    fsp->width = sval->u.integer;
+  }
+  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
+      (TYPEOF(*sval) == T_INT)) {
+    if (sval->u.integer) {
+      fsp->flags |= FIELD_LEFT;
+    } else {
+      fsp->flags &= ~FIELD_LEFT;
+    }
+  }
+  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
+      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
+    *indent = sval->u.integer;
+  }
+}
+
+static int call_object_sprintf(int mode, struct object * o, ptrdiff_t fun, struct format_stack * fs) {
+  int n = 0;
+  struct format_info *fsp = fs->fsp;
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(o, fun)) return 0;
+
+  push_int(mode);
+
+  if (fsp->precision!=SPRINTF_UNDECIDED)
+  {
+     push_constant_text("precision");
+     push_int(fsp->precision);
+     n+=2;
+  }
+  if (fsp->width!=SPRINTF_UNDECIDED)
+  {
+     push_constant_text("width");
+     push_int64(fsp->width);
+     n+=2;
+  }
+  if ((fsp->flags&FIELD_LEFT))
+  {
+     push_constant_text("flag_left");
+     push_int(1);
+     n+=2;
+  }
+  f_aggregate_mapping(n);
+
+  SET_CYCLIC_RET(1);
+
+  apply_low(o, fun, 2);
+
+  END_CYCLIC();
+
+  if(TYPEOF(Pike_sp[-1]) == T_STRING)
+  {
+    DO_IF_DEBUG( if(fsp->to_free_string)
+                 Pike_fatal("OOps in sprintfn"); )
+    fsp->to_free_string = (--Pike_sp)->u.string;
+
+    fsp->b = MKPCHARP_STR(fsp->to_free_string);
+    fsp->len = fsp->to_free_string->len;
+    return 1;
+  }
+
+  if (!SAFE_IS_ZERO(Pike_sp-1))
+    sprintf_error(fs,"(object) returned illegal value from _sprintf()\n");
+  pop_stack();
+
+  return 0;
+}
+
 /* This is called once for every '%' on every outputted line
  * it takes care of linebreak and column mode. It returns 1
  * if there is more for next line.
  */
 
-INLINE static int do_one(struct format_stack *fs,
-			 struct string_builder *r,
-			 struct format_info *f)
+static int do_one(struct format_stack *fs,
+                  struct string_builder *r,
+                  struct format_info *f)
 {
   PCHARP rest;
   ptrdiff_t e, d, lastspace;
@@ -852,6 +930,11 @@ INLINE static int do_one(struct format_stack *fs,
   return f->len>0;
 }
 
+#define POP_ARGUMENT() do { \
+    if (arg) arg = NULL;      \
+    else if (argument < num_arg) argument++; \
+    else sprintf_error(fs, "Too few arguments to sprintf.\n"); \
+} while (0)
 
 #define GET_SVALUE(VAR) \
   if(arg) \
@@ -899,101 +982,6 @@ INLINE static int do_one(struct format_stack *fs,
 #define GET_ARRAY(VAR) GET(VAR,T_ARRAY,"array",array)
 #define GET_OBJECT(VAR) GET(VAR,T_OBJECT,"object",object)
 
-#define DO_OP()								\
-   if(fs->fsp->flags & SNURKEL)						\
-   {									\
-     ONERROR _e;							\
-     struct array *_v;							\
-     struct string_builder _b;						\
-     init_string_builder(&_b,0);					\
-     SET_ONERROR(_e, free_string_builder, &_b);				\
-     GET_ARRAY(_v);							\
-     for(tmp=0;tmp<_v->size;tmp++)					\
-     {									\
-       struct svalue *save_sp=Pike_sp;					\
-       array_index_no_free(Pike_sp,_v,tmp);				\
-       Pike_sp++;							\
-       low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,	\
-			Pike_sp-1,1,nosnurkel+1, compat_mode);		\
-       if(save_sp < Pike_sp) pop_stack();				\
-     }									\
-     fs->fsp->b=MKPCHARP_STR(_b.s);					\
-     fs->fsp->len=_b.s->len;						\
-     fs->fsp->fi_free_string=(char *)_b.s;				\
-     fs->fsp->pad_string=MKPCHARP(" ",0);				\
-     fs->fsp->pad_length=1;						\
-     fs->fsp->column_width=0;						\
-     fs->fsp->pos_pad=0;						\
-     fs->fsp->flags=0;							\
-     fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;		\
-     UNSET_ONERROR(_e);							\
-     break;                                                             \
-   }
-
-#define CHECK_OBJECT_SPRINTF()						      \
-	{								      \
-	   /* NOTE: It would be nice if this was a do { } while(0) macro */   \
-	   /* but it cannot be since we need to break out of the case... */   \
-	  struct svalue *sv;						      \
-	  PEEK_SVALUE(sv);						      \
-	  if(TYPEOF(*sv) == T_OBJECT && sv->u.object->prog)		      \
-	  {                                                                   \
-            ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
-	    if (fun != -1) {						      \
-              DECLARE_CYCLIC();						      \
-              if (!BEGIN_CYCLIC(sv->u.object, fun))			      \
-              {                                                               \
-              	int n=0;						      \
-	      	push_int(EXTRACT_PCHARP(a));				      \
-	      	if (fs->fsp->precision!=SPRINTF_UNDECIDED)		      \
-	      	{							      \
-	      	   push_constant_text("precision");			      \
-	      	   push_int(fs->fsp->precision);			      \
-              	   n+=2;						      \
-	      	}							      \
-	      	if (fs->fsp->width!=SPRINTF_UNDECIDED)			      \
-	      	{							      \
-	      	   push_constant_text("width");	           		      \
-	      	   push_int64(fs->fsp->width);				      \
-              	   n+=2;						      \
-	      	}							      \
-	      	if ((fs->fsp->flags&FIELD_LEFT))			      \
-	      	{							      \
-	      	   push_constant_text("flag_left");	       		      \
-	      	   push_int(1);						      \
-              	   n+=2;						      \
-	      	}							      \
-	      	f_aggregate_mapping(n);					      \
-	      								      \
-	      	SET_CYCLIC_RET(1);					      \
-	      	apply_low(sv->u.object, fun, 2);                              \
-									      \
-		if(TYPEOF(Pike_sp[-1]) == T_STRING)			      \
-	      	{	                                                      \
-              	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
-              		       Pike_fatal("OOps in sprintf\n"); )             \
-              	  fs->fsp->to_free_string = (--Pike_sp)->u.string;            \
-	      								      \
-	      	  fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);	      \
-	      	  fs->fsp->len = fs->fsp->to_free_string->len;		      \
-	      								      \
-              	  /* We have to lift one argument from the format stack. */   \
-              	  GET_SVALUE(sv);                                             \
-                  END_CYCLIC();						      \
-	      	  break;						      \
-	      	}							      \
-	      	if(!SAFE_IS_ZERO(Pike_sp-1))				      \
-	      	{							      \
-	      	   sprintf_error(fs,"argument %d (object) returned "	      \
-	      			 "illegal value from _sprintf()\n",	      \
-				 argument+1);				      \
-	      	}							      \
-	      	pop_stack();						      \
-              }								      \
-              END_CYCLIC();						      \
-	    }								      \
-	  }								      \
-	}
 
 /* This is the main pike_sprintf function, note that it calls itself
  * recursively during the '%{ %}' parsing. The string is stored in
@@ -1068,21 +1056,119 @@ static void low_pike_sprintf(struct format_stack *fs,
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
-#if 0
-      fprintf(stderr,"sprintf-flop: %d (%c)\n",
-	      EXTRACT_PCHARP(a),EXTRACT_PCHARP(a));
-#endif
-      switch(EXTRACT_PCHARP(a))
+      int mode = EXTRACT_PCHARP(a);
+
+      switch (mode) {
+      case '{':
+      case 'n':
+      case 't':
+      case 'c':
+      case 'H':
+      case 'b':
+      case 'o':
+      case 'd':
+      case 'u':
+      case 'x':
+      case 'X':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      case 'F':
+      case 'O':
+      /* case 'p': */
+      case 's':
+      case 'q':
+        if(UNLIKELY(fs->fsp->flags & SNURKEL))
+        {
+          ONERROR _e;
+          struct array *_v;
+          struct string_builder _b;
+          init_string_builder(&_b,0);
+          SET_ONERROR(_e, free_string_builder, &_b);
+          GET_ARRAY(_v);
+          for(tmp=0;tmp<_v->size;tmp++)
+          {
+            struct svalue *save_sp=Pike_sp;
+            array_index_no_free(Pike_sp,_v,tmp);
+            Pike_sp++;
+            low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,
+                             Pike_sp-1,1,nosnurkel+1, compat_mode);
+            if(save_sp < Pike_sp) pop_stack();
+          }
+          fs->fsp->b=MKPCHARP_STR(_b.s);
+          fs->fsp->len=_b.s->len;
+          fs->fsp->fi_free_string=(char *)_b.s;
+          fs->fsp->pad_string=MKPCHARP(" ",0);
+          fs->fsp->pad_length=1;
+          fs->fsp->column_width=0;
+          fs->fsp->pos_pad=0;
+          fs->fsp->flags=0;
+          fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;
+          UNSET_ONERROR(_e);
+          break;
+        }
+      default:
+        goto cont_1;
+      }
+      break;
+
+cont_1:
+
+      switch (mode) {
+      case 't':
+      case 'c':
+      case 'H':
+      case 'b':
+      case 'o':
+      case 'd':
+      case 'u':
+      case 'x':
+      case 'X':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      case 'F':
+        /* Its necessary to use CHECK_OBJECT_SPRINTF() here,
+           because describe_svalue encodes \t and others
+           when returned by _sprintf */
+      case 'O':
+      case 's':
+      case 'q':
+        {
+          struct svalue *sv;
+          PEEK_SVALUE(sv);
+          if(TYPEOF(*sv) == T_OBJECT && sv->u.object->prog)
+          {
+            ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);
+            if (fun != -1) {
+              if (call_object_sprintf(mode, sv->u.object, fun, fs)) {
+                POP_ARGUMENT();
+                break;
+              }
+            }
+          }
+        }
+      default:
+        goto cont_2;
+      }
+      break;
+
+cont_2:
+
+      switch(mode)
       {
       default:
-	if(EXTRACT_PCHARP(a) < 256 && 
-	   isprint(EXTRACT_PCHARP(a)))
+	if(mode < 256 && isprint(mode))
 	{
 	  sprintf_error(fs, "Error in format string, %c is not a format.\n",
-			EXTRACT_PCHARP(a));
+			mode);
 	}else{
 	  sprintf_error(fs,"Error in format string, U%08x is not a format.\n",
-			EXTRACT_PCHARP(a));
+			mode);
 	}
 
       /* First the modifiers */
@@ -1113,27 +1199,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			  argument+1, "int|mapping(string:int)",
 			  get_name_of_type(TYPEOF(*sval)));
 	  }
-	  m = sval->u.mapping;
-	  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
-	      (TYPEOF(*sval) == T_INT)) {
-	    fs->fsp->precision = sval->u.integer;
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "width")) &&
-	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
-	    fs->fsp->width = sval->u.integer;
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
-	      (TYPEOF(*sval) == T_INT)) {
-	    if (sval->u.integer) {
-	      fs->fsp->flags |= FIELD_LEFT;
-	    } else {
-	      fs->fsp->flags &= ~FIELD_LEFT;
-	    }
-	  }
-	  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
-	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
-	    indent = sval->u.integer;
-	  }
+          mapping_to_format_info(sval->u.mapping, fs->fsp, &indent);
 	  continue;
 	}
 
@@ -1246,7 +1312,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 #ifdef PIKE_DEBUG
 	struct format_info *fsp_save=fs->fsp;
 #endif
-	DO_OP();
 	for(e=1,tmp=1;tmp;e++)
 	{
 	  if (!INDEX_PCHARP(a,e) &&
@@ -1314,7 +1379,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	break;
 
       case 'n':
-	DO_OP();
 	fs->fsp->b=MKPCHARP("",0);
 	fs->fsp->len=0;
 	break;
@@ -1322,8 +1386,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 't':
       {
 	struct svalue *t;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_SVALUE(t);
 	fs->fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
 	fs->fsp->len=strlen((char *)fs->fsp->b.ptr);
@@ -1335,8 +1397,6 @@ static void low_pike_sprintf(struct format_stack *fs,
         INT_TYPE tmp;
 	ptrdiff_t l,n;
 	char *x;
-        DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	if(fs->fsp->width == SPRINTF_UNDECIDED)
 	{
 	  GET_INT(tmp);
@@ -1387,8 +1447,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	ptrdiff_t l,n;
 	char *x;
 
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 	if( s->size_shift )
 	  sprintf_error(fs, "%%H requires all characters in the string "
@@ -1449,17 +1507,14 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'X':
       {
 	int base = 0, mask_size = 0;
-	char mode, *x;
+       char *x;
 	INT_TYPE val;
 	
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_INT(val);
 
 	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision > 0)
 	  mask_size = fs->fsp->precision;
 	
-	mode=EXTRACT_PCHARP(a);
 	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
 	fs->fsp->b=MKPCHARP(x,0);
 	
@@ -1521,8 +1576,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'G':
       {
 	char *x;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_FLOAT(tf);
 
 	/* Special casing for infinity and not a number,
@@ -1553,7 +1606,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)xalloc(320+MAXIMUM(fs->fsp->precision,3));
 	fs->fsp->fi_free_string=x;
 	fs->fsp->b=MKPCHARP(x,0);
-	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
+	sprintf(buffer,"%%*.*%c", mode);
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
@@ -1590,8 +1643,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
         ptrdiff_t l;
 	char *x;
-        DO_OP();
-        CHECK_OBJECT_SPRINTF();
         l=4;
         if(fs->fsp->width > 0) l=fs->fsp->width;
 	if(l != 4 && l != 8)
@@ -1660,11 +1711,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 'O':
       {
 	struct svalue *t;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
-	/* Its necessary to use CHECK_OBJECT_SPRINTF() here,
-	   because describe_svalue encodes \t and others 
-	   when returned by _sprintf */
 	GET_SVALUE(t);
 	if (compat_mode && (compat_mode <= 76)) {
 	  /* We don't care about the nested case, since it
@@ -1708,7 +1754,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	dynbuf_string s;
 	char buf[50];
 	struct svalue *t;
-	DO_OP();
 	GET_SVALUE(t);
 	init_buf(&save_buf);
 	sprintf (buf, "%p", t->u.refs);
@@ -1724,8 +1769,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       case 's':
       {
 	struct pike_string *s;
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 	fs->fsp->b=MKPCHARP_STR(s);
 	fs->fsp->len=s->len;
@@ -1739,8 +1782,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	struct string_builder buf;
 	struct pike_string *s;
 
-	DO_OP();
-	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 
 	init_string_builder_alloc(&buf, s->len+2, 0);
@@ -1997,18 +2038,18 @@ static int push_sprintf_argument_types(PCHARP format,
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
-      switch(EXTRACT_PCHARP(a))
+      switch(c = EXTRACT_PCHARP(a))
       {
       default:
-	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
+	if(c < 256 && isprint(c))
 	{
 	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, %c is not a format.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	}else{
 	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, U%08x is not a format.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	}
 	ret = -1;
 	num_snurkel = 0;
@@ -2152,10 +2193,10 @@ static int push_sprintf_argument_types(PCHARP format,
 	  tmp = 0;
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
-	if(EXTRACT_PCHARP(a)!=']')  {
+	if((c = EXTRACT_PCHARP(a))!=']')  {
 	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
-		   EXTRACT_PCHARP(a));
+		   c);
 	  ret = -1;
 	}
 #if 0
