@@ -159,20 +159,24 @@ PMOD_EXPORT void my_srand(INT32 seed)
 {
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   unsigned int ignore, cpuid_ecx;
+  if( !use_rdrnd )
+  {
+    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
+    if( cpuid_ecx & bit_RDRND_2 )
+      use_rdrnd = 1;
+  }
+  /* We still do the initialization here, since rdrnd might stop
+     working if the hardware random unit in the CPU fails (according
+     to intel documentation).
 
-  if( use_rdrnd )
-  {
-    rnd_index = seed;
-    return;
-  }
-  __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
-  if( cpuid_ecx & bit_RDRND_2 )
-  {
-    use_rdrnd = 1;
-    rnd_index = seed;
-    return;
-  }
-  else
+
+     This is likely to be rather rare. But the cost is not exactly
+     high.
+
+     Source:
+
+     http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide
+  */
 #endif
   {
     int e;
@@ -200,11 +204,21 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
-    unsigned int ok=0;
+    unsigned int cnt = 0;
+    unsigned int ok = 0;
     do{
       ok = __builtin_ia32_rdrand32_step( &rnd_index );
-    } while(!ok);
-    return rnd_index;
+    } while(!ok && cnt++ < 100);
+
+    if( cnt > 99 )
+    {
+      /* hardware random unit most likely not healthy.
+         Switch to software random. */
+      rnd_index = 0;
+      use_rdrnd = 0;
+    }
+    else
+      return rnd_index;
   }
 #endif
   if( ++rnd_index == RNDBUF) rnd_index=0;
