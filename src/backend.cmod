@@ -3378,7 +3378,13 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 
   static void pdb_update_fd_set(struct Backend_struct *me,
 				struct PollDeviceBackend_struct *pdb, int fd,
-				int old_events, int new_events, int PDUNUSED(flags))
+				int old_events, int new_events, 
+#ifdef BACKEND_USES_POLL_DEVICE
+				int PDUNUSED(flags),
+#else
+				int flags
+#endif
+				)
   {
     int changed_events = old_events ^ new_events;
 
