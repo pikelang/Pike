@@ -10,10 +10,6 @@
 #include "global.h"
 #include "stralloc.h"
 
-static void DECLSPEC(noreturn) transcode_error_va (
-  struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
-  int encode, const char *reason, va_list args) ATTRIBUTE((noreturn));
-
 void DECLSPEC(noreturn) transcode_error (
   struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
   int encode, const char *reason, ...);
