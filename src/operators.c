@@ -710,6 +710,19 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	}
 	return;
 
+        case PIKE_T_TYPE:
+	{
+	  struct pike_type *t = Pike_sp[-1].u.type;
+	  struct program *p = program_from_type(t);
+	  pop_stack();
+	  if (p) {
+	    ref_push_program(p);
+	  } else {
+	    push_int(0);
+	  }
+	  return;
+	}
+
 	default:
 	  Pike_error("Cannot cast %s to a program.\n",
 		     get_name_of_type(TYPEOF(sp[-1])));
