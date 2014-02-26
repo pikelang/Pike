@@ -60,6 +60,28 @@ time_t time PROT((time_t *));
 #define ULONG_MAX	UINT_MAX
 #endif
 
+
+#if SIZEOF_CHAR_P == 4
+#define __cpuid(level, a, b, c, d)                      \
+    __asm__ ("pushl %%ebx      \n\t"                    \
+             "cpuid \n\t"                               \
+             "movl %%ebx, %1   \n\t"                    \
+             "popl %%ebx       \n\t"                    \
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "a" (level)                              \
+             : "cc")
+#else
+#define __cpuid(level, a, b, c, d)                      \
+    __asm__ ("push %%rbx      \n\t"			\
+             "cpuid \n\t"                               \
+             "movl %%ebx, %1   \n\t"                    \
+             "pop %%rbx       \n\t"			\
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "a" (level)                              \
+             : "cc")
+#endif
+
+
 #ifndef HAVE_GETTIMEOFDAY
 
 #ifdef HAVE_GETSYSTEMTIMEASFILETIME
@@ -128,29 +150,59 @@ static void slow_srand(INT32 seed)
 static unsigned INT32 rndbuf[ RNDBUF ];
 static int rnd_index;
 
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+static int use_rdrnd;
+#endif
+#define bit_RDRND_2 (1<<30)
+
 PMOD_EXPORT void my_srand(INT32 seed)
 {
-  int e;
-  unsigned INT32 mask;
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  unsigned int ignore, cpuid_ecx;
 
-  slow_srand(seed);
-  
-  rnd_index = 0;
-  for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
-
-  mask = (unsigned INT32) -1;
-
-  for (e=0;e< (int)sizeof(INT32)*8 ;e++)
+  if( use_rdrnd )
+    return;
+  __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
+  if( cpuid_ecx & bit_RDRND_2 )
   {
-    int d = RNDSTEP * e + 3;
-    rndbuf[d % RNDBUF] &= mask;
-    mask>>=1;
-    rndbuf[d % RNDBUF] |= (mask+1);
+    use_rdrnd = 1;
+    return;
+  }
+  else
+#endif
+  {
+    int e;
+    unsigned INT32 mask;
+
+    slow_srand(seed);
+
+    rnd_index = 0;
+    for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
+
+    mask = (unsigned INT32) -1;
+
+    for (e=0;e< (int)sizeof(INT32)*8 ;e++)
+    {
+      int d = RNDSTEP * e + 3;
+      rndbuf[d % RNDBUF] &= mask;
+      mask>>=1;
+      rndbuf[d % RNDBUF] |= (mask+1);
+    }
   }
 }
 
 PMOD_EXPORT unsigned INT32 my_rand(void)
 {
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  if( use_rdrnd )
+  {
+    unsigned int ok=0, rand;
+    do{
+      rand = __builtin_ia32_rdrand32_step( &ok );
+    } while(!ok);
+    return rand;
+  }
+#endif
   if( ++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
 }
