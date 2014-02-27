@@ -674,13 +674,21 @@ static void fix_field(struct string_builder *r,
 
 static void free_sprintf_strings(struct format_stack *fs)
 {
-  for(;fs->fsp>=fs->format_info_stack;fs->fsp--)
+  struct format_info * f, * fend;
+  f = fs->fsp;
+  fend = fs->format_info_stack;
+  for(;f>=fend;f--)
   {
-    if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
-    fs->fsp->fi_free_string=0;
-    if(fs->fsp->to_free_string) free_string(fs->fsp->to_free_string);
-    fs->fsp->to_free_string=0;
+    if(f->fi_free_string) free(f->fi_free_string);
+#ifdef PIKE_DEBUG
+    f->fi_free_string=0;
+#endif
+    if(f->to_free_string) free_string(f->to_free_string);
+#ifdef PIKE_DEBUG
+    f->to_free_string=0;
+#endif
   }
+  fs->fsp = f;
 }
 
 static void sprintf_error(struct format_stack *fs,
@@ -1028,7 +1036,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   int tmp,setwhat,d,e,indent;
   char buffer[140];
   ptrdiff_t start;
-  struct format_info *f;
+  struct format_info *f, *fsp;
   double tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
@@ -1057,22 +1065,23 @@ static void low_pike_sprintf(struct format_stack *fs,
     if(fs->fsp < fs->format_info_stack)
       Pike_fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
-    fs->fsp->pad_string=MKPCHARP(" ",0);
-    fs->fsp->pad_length=1;
-    fs->fsp->fi_free_string=0;
-    fs->fsp->to_free_string=0;
-    fs->fsp->column_width=0;
-    fs->fsp->pos_pad = 0;
-    fs->fsp->flags = 0;
-    fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;
+    fsp = fs->fsp;
+    fsp->pad_string=MKPCHARP(" ",0);
+    fsp->pad_length=1;
+    fsp->fi_free_string=0;
+    fsp->to_free_string=0;
+    fsp->column_width=0;
+    fsp->pos_pad = 0;
+    fsp->flags = 0;
+    fsp->width=fsp->precision=SPRINTF_UNDECIDED;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
       for(e=0;INDEX_PCHARP(a,e)!='%' &&
 	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++);
-      fs->fsp->b=a;
-      fs->fsp->len=e;
-      fs->fsp->width=e;
+      fsp->b=a;
+      fsp->len=e;
+      fsp->width=e;
       INC_PCHARP(a,e-1);
       continue;
     }
@@ -1108,7 +1117,7 @@ static void low_pike_sprintf(struct format_stack *fs,
       /* case 'p': */
       case 's':
       case 'q':
-        if(UNLIKELY(fs->fsp->flags & SNURKEL))
+        if(UNLIKELY(fsp->flags & SNURKEL))
         {
           ONERROR _e;
           struct array *_v;
@@ -1125,15 +1134,15 @@ static void low_pike_sprintf(struct format_stack *fs,
                              Pike_sp-1,1,nosnurkel+1, compat_mode);
             if(save_sp < Pike_sp) pop_stack();
           }
-          fs->fsp->b=MKPCHARP_STR(_b.s);
-          fs->fsp->len=_b.s->len;
-          fs->fsp->fi_free_string=(char *)_b.s;
-          fs->fsp->pad_string=MKPCHARP(" ",0);
-          fs->fsp->pad_length=1;
-          fs->fsp->column_width=0;
-          fs->fsp->pos_pad=0;
-          fs->fsp->flags=0;
-          fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;
+          fsp->b=MKPCHARP_STR(_b.s);
+          fsp->len=_b.s->len;
+          fsp->fi_free_string=(char *)_b.s;
+          fsp->pad_string=MKPCHARP(" ",0);
+          fsp->pad_length=1;
+          fsp->column_width=0;
+          fsp->pos_pad=0;
+          fsp->flags=0;
+          fsp->width=fsp->precision=SPRINTF_UNDECIDED;
           UNSET_ONERROR(_e);
           break;
         }
@@ -1203,7 +1212,7 @@ cont_2:
       case '0':
 	 if (setwhat<2) 
 	 { 
-	    fs->fsp->flags|=ZERO_PAD; 
+	    fsp->flags|=ZERO_PAD;
 	    continue; 
 	 }
       case '1': case '2': case '3':
@@ -1227,7 +1236,7 @@ cont_2:
 			  argument+1, "int|mapping(string:int)",
 			  get_name_of_type(TYPEOF(*sval)));
 	  }
-          mapping_to_format_info(sval->u.mapping, fs->fsp, &indent);
+          mapping_to_format_info(sval->u.mapping, fsp, &indent);
 	  continue;
 	}
 
@@ -1237,11 +1246,11 @@ cont_2:
 	case 0:
 	case 1:
 	  if(tmp < 0) sprintf_error(fs, "Illegal width %d.\n", tmp);
-	  fs->fsp->width=tmp;
+	  fsp->width=tmp;
 	  if (!setwhat) break;
-	case 2: fs->fsp->precision=tmp; break;
-	case 3: fs->fsp->column_width=tmp; break;
-	case 4: fs->fsp->precision=-tmp; break;
+	case 2: fsp->precision=tmp; break;
+	case 3: fsp->column_width=tmp; break;
+	case 4: fsp->precision=-tmp; break;
 	}
 	continue;
 
@@ -1249,35 +1258,35 @@ cont_2:
       case '.': setwhat=2; continue;
       case ':': setwhat=1; continue;
 
-      case '=': fs->fsp->flags|=LINEBREAK;
-	if (fs->fsp->flags & ROUGH_LINEBREAK)
+      case '=': fsp->flags|=LINEBREAK;
+	if (fsp->flags & ROUGH_LINEBREAK)
 	  sprintf_error(fs,
 			"Combining modifiers '=' and '/' is not allowed.\n");
 	continue;
-      case '/': fs->fsp->flags|=ROUGH_LINEBREAK;
-	if (fs->fsp->flags & LINEBREAK)
+      case '/': fsp->flags|=ROUGH_LINEBREAK;
+	if (fsp->flags & LINEBREAK)
 	  sprintf_error(fs,
 			"Combining modifiers '=' and '/' is not allowed.\n");
 	continue;
-      case '#': fs->fsp->flags|=COLUMN_MODE; continue;
-      case '$': fs->fsp->flags|=INVERSE_COLUMN_MODE; continue;
+      case '#': fsp->flags|=COLUMN_MODE; continue;
+      case '$': fsp->flags|=INVERSE_COLUMN_MODE; continue;
 
       case '-':
 	if(setwhat==2)
 	  setwhat=4;
 	else
-	  fs->fsp->flags|=FIELD_LEFT;
+	  fsp->flags|=FIELD_LEFT;
 	continue;
-      case '|': fs->fsp->flags|=FIELD_CENTER; continue;
-      case ' ': fs->fsp->pos_pad=' '; continue;
-      case '+': fs->fsp->pos_pad='+'; continue;
-      case '!': fs->fsp->flags^=DO_TRUNC; continue;
-      case '^': fs->fsp->flags|=REPEAT; continue;
-      case '>': fs->fsp->flags|=MULTI_LINE_BREAK; continue;
-      case '_': fs->fsp->flags|=WIDTH_OF_DATA; continue;
+      case '|': fsp->flags|=FIELD_CENTER; continue;
+      case ' ': fsp->pos_pad=' '; continue;
+      case '+': fsp->pos_pad='+'; continue;
+      case '!': fsp->flags^=DO_TRUNC; continue;
+      case '^': fsp->flags|=REPEAT; continue;
+      case '>': fsp->flags|=MULTI_LINE_BREAK; continue;
+      case '_': fsp->flags|=WIDTH_OF_DATA; continue;
       case '@':
 	if(++num_snurkel > nosnurkel)
-	  fs->fsp->flags|=SNURKEL;
+	  fsp->flags|=SNURKEL;
 	continue;
 
       case '\'':
@@ -1293,8 +1302,8 @@ cont_2:
 	}
 	if(tmp)
 	{
-	  fs->fsp->pad_string=a;
-	  fs->fsp->pad_length=tmp;
+	  fsp->pad_string=a;
+	  fsp->pad_length=tmp;
 	}
 	INC_PCHARP(a,tmp);
 	continue;
@@ -1304,8 +1313,8 @@ cont_2:
 	struct pike_string *s;
 	GET_STRING(s);
 	if (s->len) {
-	  fs->fsp->pad_string=MKPCHARP_STR(s);
-	  fs->fsp->pad_length=s->len;
+	  fsp->pad_string=MKPCHARP_STR(s);
+	  fsp->pad_length=s->len;
 	}
 	continue;
       }
@@ -1337,9 +1346,6 @@ cont_2:
       {
 	struct array *w;
 	struct string_builder b;
-#ifdef PIKE_DEBUG
-	struct format_info *fsp_save=fs->fsp;
-#endif
 	for(e=1,tmp=1;tmp;e++)
 	{
 	  if (!INDEX_PCHARP(a,e) &&
@@ -1359,8 +1365,8 @@ cont_2:
 	GET_ARRAY(w);
 	if(!w->size)
 	{
-	  fs->fsp->b=MKPCHARP("",0);
-	  fs->fsp->len=0;
+	  fsp->b=MKPCHARP("",0);
+	  fsp->len=0;
 	}else{
 	  ONERROR err;
 	  init_string_builder(&b,0);
@@ -1388,12 +1394,12 @@ cont_2:
 #ifdef PIKE_DEBUG
 	  if(fs->fsp < fs->format_info_stack)
 	    Pike_fatal("sprintf: fs->fsp out of bounds.\n");
-	  if(fs->fsp!=fsp_save)
+	  if(fs->fsp!=fsp)
 	    Pike_fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
 #endif
-	  fs->fsp->b=MKPCHARP_STR(b.s);
-	  fs->fsp->len=b.s->len;
-	  fs->fsp->fi_free_string=(char *)b.s;
+	  fsp->b=MKPCHARP_STR(b.s);
+	  fsp->len=b.s->len;
+	  fsp->fi_free_string=(char *)b.s;
 	  UNSET_ONERROR(err);
 	}
 	
@@ -1402,21 +1408,21 @@ cont_2:
       }
 
       case '%':
-	fs->fsp->b=MKPCHARP("%",0);
-	fs->fsp->len=fs->fsp->width=1;
+	fsp->b=MKPCHARP("%",0);
+	fsp->len=fsp->width=1;
 	break;
 
       case 'n':
-	fs->fsp->b=MKPCHARP("",0);
-	fs->fsp->len=0;
+	fsp->b=MKPCHARP("",0);
+	fsp->len=0;
 	break;
 
       case 't':
       {
 	struct svalue *t;
 	GET_SVALUE(t);
-	fs->fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
-	fs->fsp->len=strlen((char *)fs->fsp->b.ptr);
+	fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
+	fsp->len=strlen((char *)fsp->b.ptr);
 	break;
       }
 
@@ -1425,23 +1431,23 @@ cont_2:
         INT_TYPE tmp;
 	ptrdiff_t l,n;
 	char *x;
-	if(fs->fsp->width == SPRINTF_UNDECIDED)
+	if(fsp->width == SPRINTF_UNDECIDED)
 	{
 	  GET_INT(tmp);
           x=(char *)sa_alloc(&fs->a, 4);
-	  if(tmp<256) fs->fsp->b=MKPCHARP(x,0);
-	  else if(tmp<65536) fs->fsp->b=MKPCHARP(x,1);
-	  else  fs->fsp->b=MKPCHARP(x,2);
-	  SET_INDEX_PCHARP(fs->fsp->b,0,tmp);
-	  fs->fsp->len=1;
+	  if(tmp<256) fsp->b=MKPCHARP(x,0);
+	  else if(tmp<65536) fsp->b=MKPCHARP(x,1);
+	  else  fsp->b=MKPCHARP(x,2);
+	  SET_INDEX_PCHARP(fsp->b,0,tmp);
+	  fsp->len=1;
 	}
-	else if ( (fs->fsp->flags&FIELD_LEFT) )
+	else if ( (fsp->flags&FIELD_LEFT) )
 	{
 	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if(fsp->width > 0) l=fsp->width;
           x=(char *)sa_alloc(&fs->a, l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
+	  fsp->b=MKPCHARP(x,0);
+	  fsp->len=l;
 	  GET_INT(tmp);
 	  n=0;
 	  while(n<l)
@@ -1453,10 +1459,10 @@ cont_2:
 	else 
 	{
 	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if(fsp->width > 0) l=fsp->width;
 	  x=(char *)sa_alloc(&fs->a, l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
+	  fsp->b=MKPCHARP(x,0);
+	  fsp->len=l;
 	  GET_INT(tmp);
 	  while(--l>=0)
 	  {
@@ -1482,9 +1488,9 @@ cont_2:
 
 	tmp = s->len;
         l=1;
-        if(fs->fsp->width > 0)
-          l=fs->fsp->width;
-        else if(fs->fsp->flags&ZERO_PAD)
+        if(fsp->width > 0)
+          l=fsp->width;
+        else if(fsp->flags&ZERO_PAD)
           sprintf_error(fs, "Length of string to %%H is 0.\n");
 
 	/* Note: The >>-operator performs an implicit % (sizeof(tmp)*8)
@@ -1495,10 +1501,10 @@ cont_2:
 
 
         x=(char *)sa_alloc(&fs->a, l);
-        fs->fsp->b=MKPCHARP(x,0);
-        fs->fsp->len=l;
+        fsp->b=MKPCHARP(x,0);
+        fsp->len=l;
 
-        if ( (fs->fsp->flags&FIELD_LEFT) )
+        if ( (fsp->flags&FIELD_LEFT) )
 	{
 	  n=0;
 	  while(n<l)
@@ -1516,14 +1522,14 @@ cont_2:
 	  }
 	}
 
-	init_string_builder_alloc(&buf, s->len+fs->fsp->len, 0);
-	string_builder_append(&buf,fs->fsp->b,fs->fsp->len);
+	init_string_builder_alloc(&buf, s->len+fsp->len, 0);
+	string_builder_append(&buf,fsp->b,fsp->len);
 	string_builder_shared_strcat(&buf,s);
 	
-	fs->fsp->b = MKPCHARP_STR(buf.s);
-	fs->fsp->len = buf.s->len;
+	fsp->b = MKPCHARP_STR(buf.s);
+	fsp->len = buf.s->len;
 	buf.s->len = buf.malloced;
-	fs->fsp->to_free_string = buf.s;
+	fsp->to_free_string = buf.s;
 	break;
       }
 
@@ -1540,11 +1546,11 @@ cont_2:
 	
 	GET_INT(val);
 
-	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision > 0)
-	  mask_size = fs->fsp->precision;
+	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision > 0)
+	  mask_size = fsp->precision;
 	
 	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
-	fs->fsp->b=MKPCHARP(x,0);
+	fsp->b=MKPCHARP(x,0);
 	
 	switch(mode)
 	{
@@ -1593,7 +1599,7 @@ cont_2:
 	else
 	  sprintf(x, "%"PRINTPIKEINT"d", val);
 
-	fs->fsp->len=strlen(x);
+	fsp->len=strlen(x);
 	break;
       }
 
@@ -1611,55 +1617,55 @@ cont_2:
 	 */
 	if (PIKE_ISNAN(tf)) {
 	  /* NaN */
-	  fs->fsp->b = MKPCHARP("nan", 0);
-	  fs->fsp->len = 3;
+	  fsp->b = MKPCHARP("nan", 0);
+	  fsp->len = 3;
 	  break;
 	} else if (PIKE_ISINF(tf)) {
 	  /* Infinity. */
 	  if (tf > 0.0) {
-	    fs->fsp->b = MKPCHARP("inf", 0);
-	    fs->fsp->len = 3;
+	    fsp->b = MKPCHARP("inf", 0);
+	    fsp->len = 3;
 	  } else {
-	    fs->fsp->b = MKPCHARP("-inf", 0);
-	    fs->fsp->len = 4;
+	    fsp->b = MKPCHARP("-inf", 0);
+	    fsp->len = 4;
 	  }
 	  break;
 	}
 
-	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
+	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
 
 	/* FIXME: The constant (320) is good for IEEE double precision
 	 * float, but will definitely fail for bigger precision! --aldem
 	 */
-	x=(char *)xalloc(320+MAXIMUM(fs->fsp->precision,3));
-	fs->fsp->fi_free_string=x;
-	fs->fsp->b=MKPCHARP(x,0);
+	x=(char *)xalloc(320+MAXIMUM(fsp->precision,3));
+	fsp->fi_free_string=x;
+	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c", mode);
 
-	if(fs->fsp->precision<0) {
-	  double m=pow(10.0, (double)fs->fsp->precision);
+	if(fsp->precision<0) {
+	  double m=pow(10.0, (double)fsp->precision);
 	  tf = RINT(tf*m)/m;
-	} else if (fs->fsp->precision==0) {
+	} else if (fsp->precision==0) {
 	  tf = RINT(tf);
         }
 
 	debug_malloc_touch(x);
-	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
+	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
 	debug_malloc_touch(x);
-	fs->fsp->len=strlen(x);
+	fsp->len=strlen(x);
 	
 	/* Make sure that the last digits really are zero. */
-	if(fs->fsp->precision<0)
+	if(fsp->precision<0)
 	{
 	  ptrdiff_t i, j;
 	  /* Find the ending of the number.  Yes, this can be made
 	     simpler now when the alignment bug for floats is fixed. */
-	  for(i=fs->fsp->len-1; i>=0; i--)
+	  for(i=fsp->len-1; i>=0; i--)
  	    if('0'<=x[i] && x[i]<='9')
 	    {
-	      i+=fs->fsp->precision+1;
+	      i+=fsp->precision+1;
 	      if(i>=0 && '0'<=x[i] && x[i]<='9')
-		for(j=0; j<-fs->fsp->precision; j++)
+		for(j=0; j<-fsp->precision; j++)
 		  x[i+j]='0';
 	      break;
 	    }
@@ -1672,13 +1678,13 @@ cont_2:
         ptrdiff_t l;
 	char *x;
         l=4;
-        if(fs->fsp->width > 0) l=fs->fsp->width;
+        if(fsp->width > 0) l=fsp->width;
 	if(l != 4 && l != 8)
 	  sprintf_error(fs, "Invalid IEEE width %ld.\n",
 			PTRDIFF_T_TO_LONG(l));
 	x=(char *)sa_alloc(&fs->a, l);
-	fs->fsp->b=MKPCHARP(x,0);
-	fs->fsp->len=l;
+	fsp->b=MKPCHARP(x,0);
+	fsp->len=l;
 	GET_FLOAT(tf);
 	switch(l) {
 	case 4:
@@ -1722,7 +1728,7 @@ cont_2:
 	  low_write_IEEE_float(x, tf, 8);
 #endif
 	}
-	if (fs->fsp->flags & FIELD_LEFT) {
+	if (fsp->flags & FIELD_LEFT) {
 	  /* Reverse the byte order. */
 	  int i;
 	  char c;
@@ -1751,12 +1757,12 @@ cont_2:
 	    string_builder_quote_string(&buf, t->u.string, 0, 0x7fffffff, 0);
 	    string_builder_putchar(&buf, '"');
 	    
-	    fs->fsp->b = MKPCHARP_STR(buf.s);
-	    fs->fsp->len = buf.s->len;
+	    fsp->b = MKPCHARP_STR(buf.s);
+	    fsp->len = buf.s->len;
 	    /* NOTE: We need to do this since we're not
 	     *       using free_string_builder(). */
 	    buf.s->len = buf.malloced;
-	    fs->fsp->to_free_string = buf.s;
+	    fsp->to_free_string = buf.s;
 	    break;
 	  }
 	}
@@ -1767,9 +1773,9 @@ cont_2:
 	  init_buf(&save_buf);
 	  describe_svalue(t,indent,0);
 	  s=complex_free_buf(&save_buf);
-	  fs->fsp->b=MKPCHARP(s.str,0);
-	  fs->fsp->len=s.len;
-	  fs->fsp->fi_free_string=s.str;
+	  fsp->b=MKPCHARP(s.str,0);
+	  fsp->len=s.len;
+	  fsp->fi_free_string=s.str;
 	  break;
 	}
       }
@@ -1787,9 +1793,9 @@ cont_2:
 	sprintf (buf, "%p", t->u.refs);
 	my_strcat (buf);
 	s=complex_free_buf(&save_buf);
-	fs->fsp->b=MKPCHARP(s.str,0);
-	fs->fsp->len=s.len;
-	fs->fsp->fi_free_string=s.str;
+	fsp->b=MKPCHARP(s.str,0);
+	fsp->len=s.len;
+	fsp->fi_free_string=s.str;
 	break;
       }
 #endif
@@ -1798,10 +1804,10 @@ cont_2:
       {
 	struct pike_string *s;
 	GET_STRING(s);
-	fs->fsp->b=MKPCHARP_STR(s);
-	fs->fsp->len=s->len;
-	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision < fs->fsp->len)
-	  fs->fsp->len = (fs->fsp->precision < 0 ? 0 : fs->fsp->precision);
+	fsp->b=MKPCHARP_STR(s);
+	fsp->len=s->len;
+	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision < fsp->len)
+	  fsp->len = (fsp->precision < 0 ? 0 : fsp->precision);
 	break;
       }
 
@@ -1815,17 +1821,17 @@ cont_2:
 	init_string_builder_alloc(&buf, s->len+2, 0);
 	string_builder_putchar(&buf, '"');
 	string_builder_quote_string(&buf, s, 0,
-				    (fs->fsp->precision == SPRINTF_UNDECIDED)?
-				    0x7fffffff:fs->fsp->precision-1,
+				    (fsp->precision == SPRINTF_UNDECIDED)?
+				    0x7fffffff:fsp->precision-1,
 				    QUOTE_NO_STRING_CONCAT);
 	string_builder_putchar(&buf, '"');
 
-	fs->fsp->b = MKPCHARP_STR(buf.s);
-	fs->fsp->len = buf.s->len;
+	fsp->b = MKPCHARP_STR(buf.s);
+	fsp->len = buf.s->len;
 	/* NOTE: We need to do this since we're not
 	 *       using free_string_builder(). */
 	buf.s->len = buf.malloced;
-	fs->fsp->to_free_string = buf.s;
+	fsp->to_free_string = buf.s;
 	break;
       }
       }
@@ -1894,23 +1900,30 @@ cont_2:
     for(;f<=fs->fsp && (f->flags&MULTILINE); f++);
   }
 
-  while(fs->fsp>fs->format_info_stack + start)
+  f = fs->fsp;
+  fsp = fs->format_info_stack + start;
+  while(f > fsp)
   {
 #ifdef PIKE_DEBUG
-    if(fs->fsp < fs->format_info_stack)
+    if(f < fs->format_info_stack)
       Pike_fatal("sprintf: fsp out of bounds.\n");
 #endif
     
-    if(fs->fsp->fi_free_string)
-      free(fs->fsp->fi_free_string);
-    fs->fsp->fi_free_string=0;
+    if(f->fi_free_string)
+      free(f->fi_free_string);
+#ifdef PIKE_DEBUG
+    f->fi_free_string=0;
+#endif
     
-    if(fs->fsp->to_free_string)
-      free_string(fs->fsp->to_free_string);
-    fs->fsp->to_free_string=0;
+    if(f->to_free_string)
+      free_string(f->to_free_string);
+#ifdef PIKE_DEBUG
+    f->to_free_string=0;
+#endif
     
-    fs->fsp--;
+    f--;
   }
+  fs->fsp = f;
 }
 
 static void free_f_sprintf_data (struct format_stack *fs)
