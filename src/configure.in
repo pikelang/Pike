@@ -1822,7 +1822,8 @@ if test "$cflags_is_set" = "no"; then
     else :; fi
 
     if test "x$with_cdebug" = "xyes" ; then
-      AC_SYS_COMPILER_FLAG(-ggdb3,ggdb3,CFLAGS)
+      AC_SYS_COMPILER_FLAG(-ggdb,ggdb,CFLAGS)
+      AC_SYS_COMPILER_FLAG(-fvar-tracking-assignments,vartracking,CFLAGS)
     fi
 
     ##
@@ -1835,7 +1836,7 @@ if test "$cflags_is_set" = "no"; then
     #  :
     #fi  
 
-
+    AC_SYS_COMPILER_FLAG(-funswitch-loops,unswitch_loops,CFLAGS)
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
   case "`uname -m 2>/dev/null`" in
