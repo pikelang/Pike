@@ -11,8 +11,11 @@
 //! This module is intended to be used for incremental scanning of
 //! a filesystem.
 //!
-//! Supports FSEvents on MacOS X and Inotify on Linux to provide low overhead monitoring; other
-//! systems use a less efficient polling approach.
+//! Supports FSEvents on MacOS X and Inotify on Linux to provide low 
+//! overhead monitoring; other systems use a less efficient polling approach.
+//!
+//! @seealso
+//!  @[System.FSEvents], @[System.Inotify]
 
 //
 // some necessary setup activities for systems that provide filesystem event monitoring
@@ -53,7 +56,7 @@
 	};
 
         if (err) {
-	  // TODO: might have a partial even struct here which gets completed
+	  // TODO: might have a partial event struct here which gets completed
 	  // by the next call?? maybe add an internal buffer.
   	  werror("Could not parse inotify event: %s\n", describe_error(err));
 	  return;
