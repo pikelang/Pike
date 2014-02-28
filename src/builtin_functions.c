@@ -830,8 +830,10 @@ PMOD_EXPORT void f_random_string(INT32 args)
   /* Note: Assumes pike_string->str is aligned on a 4 byte boundary
    * (it is, currently)
    */
-  for(e=3;e<len;e+=sizeof(INT32))
-      ((unsigned INT32 *)(ret->str+e-3))[0] = DO_NOT_WARN(my_rand());
+  len -= sizeof(INT32)-1;
+  for(e=0;e<len;e+=sizeof(INT32))
+      ((unsigned INT32 *)(ret->str+e))[0] = DO_NOT_WARN(my_rand());
+  len += sizeof(INT32)-1;
   for(;e<len;e++)
       ret->str[e] = DO_NOT_WARN((char)my_rand());
 
