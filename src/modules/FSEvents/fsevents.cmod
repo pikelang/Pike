@@ -462,7 +462,7 @@ PIKE_MODULE_INIT
  *! Available in MacOS X 10.7 and newer.
  */
 
-/*! @decl constant kFSEventStreamEventFlagModified 
+/*! @decl constant kFSEventStreamEventFlagItemModified 
  *! Available in MacOS X 10.7 and newer.
  */
 
