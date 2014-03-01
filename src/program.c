@@ -3398,6 +3398,11 @@ static void toss_compilation_resources(void)
     Pike_compiler->last_file=0;
   }
 
+  if (Pike_compiler->current_attributes) {
+    free_node(Pike_compiler->current_attributes);
+    Pike_compiler->current_attributes = NULL;
+  }
+
   unuse_modules(Pike_compiler->num_used_modules);
 
   free_all_nodes();
@@ -8776,6 +8781,10 @@ static void free_compilation(struct compilation *c)
     free_string(c->lex.current_file);
     c->lex.current_file = NULL;
   }
+  if(c->lex.attributes) {
+    free_node(c->lex.attributes);
+    c->lex.attributes = NULL;
+  }
   if (c->resolve_cache) {
     free_mapping(c->resolve_cache);
     c->resolve_cache = NULL;
@@ -8801,6 +8810,8 @@ static void run_init(struct compilation *c)
   c->lex.current_line=1;
   free_string(c->lex.current_file);
   c->lex.current_file=make_shared_string("-");
+
+  c->lex.attributes = NULL;
 
   if (runtime_options & RUNTIME_STRICT_TYPES)
   {

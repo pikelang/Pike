@@ -24,6 +24,7 @@ struct lex
   char *end;
   INT_TYPE current_line;
   INT32 pragmas;
+  node *attributes;
   struct pike_string *current_file;
   int (*current_lexer)(struct lex *, YYSTYPE *);
 };
