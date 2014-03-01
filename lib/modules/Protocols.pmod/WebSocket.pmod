@@ -448,7 +448,7 @@ class Request {
     }
 
     protected void parse_request() {
-	if (!has_index(request_headers, "sec-websocket-key")) {
+	if (!cb || !has_index(request_headers, "sec-websocket-key")) {
 	    ::parse_request();
 	    return;
 	} else {
@@ -498,29 +498,38 @@ class Request {
 //! requested by the client and the second argument the corresponding
 //! @[Request] object. The WebSocket connection handshake is completed
 //! by calling @[Request.websocket_accept].
-//! @expr{http_cb@} will be called for all other HTTP Requests.
+//! @expr{http_cb@} will be called for all other HTTP Requests or if @expr{ws_cb@}
+//! is zero.
 //! @seealso
 //!     @[Protocols.HTTP.Server.Port]
-Protocols.HTTP.Server.Port
-    Port(function(Protocols.HTTP.Server.Request:void) http_cb,
-         function(array(string), Request:void) ws_cb,
-         void|int portno, void|string interface) {
+class Port {
+    inherit Protocols.HTTP.Server.Port;
 
-    object p = Protocols.HTTP.Server.Port(http_cb, portno, interface);
-    p->request_program = Function.curry(Request)(ws_cb);
-    return p;
+    void create(function(Protocols.HTTP.Server.Request:void) http_cb,
+                function(array(string), Request:void)|void ws_cb,
+                void|int portno, void|string interface) {
+
+        ::create(http_cb, portno, interface);
+
+        if (ws_cb)
+            request_program = Function.curry(Request)(ws_cb);
+    }
 }
 
 //! Opens a simple HTTPS Server which supports WebSocket connections.
 //! @seealso
 //!     @[Port], @[Protocols.HTTP.Server.SSLPort]
-Protocols.HTTP.Server.SSLPort
-    SSLPort(function(Protocols.HTTP.Server.Request:void) http_cb,
-            function(array(string), Request:void) ws_cb,
-            void|int portno, void|string interface,
-            void|string key, void|string|array certificate) {
+class SSLPort {
+    inherit Protocols.HTTP.Server.SSLPort;
 
-    object p = Protocols.HTTP.Server.SSLPort(http_cb, portno, interface, key, certificate);
-    p->request_program = Function.curry(Request)(ws_cb);
-    return p;
+    void create(function(Protocols.HTTP.Server.Request:void) http_cb,
+                function(array(string), Request:void)|void ws_cb,
+                void|int portno, void|string interface,
+                void|string key, void|string|array certificate) {
+
+        ::create(http_cb, portno, interface, key, certificate);
+
+        if (ws_cb)
+            request_program = Function.curry(Request)(ws_cb);
+    }
 }
