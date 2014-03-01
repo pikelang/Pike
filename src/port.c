@@ -148,7 +148,7 @@ static void slow_srand(INT32 seed)
 #define RNDJUMP 103
 
 static unsigned INT32 rndbuf[ RNDBUF ];
-static int rnd_index;
+static unsigned int rnd_index;
 
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
