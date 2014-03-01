@@ -163,6 +163,7 @@
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
+  ZMEMBER(node *,current_attributes,0)
   ZMEMBER(int,varargs,0)
   ZMEMBER(int, num_create_args, 0)
   ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */

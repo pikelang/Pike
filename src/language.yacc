@@ -292,7 +292,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_STRING
 %type <n> TOK_NUMBER
 %type <n> TOK_BITS
-%type <n> optional_attributes
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> implicit_identifier
@@ -807,8 +806,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       push_type(T_FUNCTION);
     }
 
-    if ($2) {
-      node *n = $2;
+    if (Pike_compiler->current_attributes) {
+      node *n = Pike_compiler->current_attributes;
       while (n) {
 	push_type_attribute(CDR(n)->u.sval.u.string);
 	n = CAR(n);
@@ -962,9 +961,9 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     free_node($6);
     free_node($11);
     free_node($<n>12);
-    if ($2) free_node($2);
   }
-  | modifiers optional_attributes type_or_error optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
+  | modifiers optional_attributes type_or_error
+  optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
     error
   {
 #ifdef PIKE_DEBUG
@@ -977,13 +976,9 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 #endif
     pop_compiler_frame();
     free_node($6);
-    if ($2)
-      free_node($2);
   }
   | modifiers optional_attributes type_or_error optional_constant optional_stars bad_identifier
   {
-    if ($2)
-      free_node($2);
     compiler_discard_type();
   }
     '(' arguments ')' block_or_semi
@@ -991,12 +986,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     if ($11) free_node($11);
   }
   | modifiers optional_attributes type_or_error optional_constant name_list ';'
-  {
-    if ($2) {
-      yyerror("Invalid use of attributes in variable declaration.\n");
-      free_node($2);
-    }
-  }
   | inheritance {}
   | import {}
   | constant {}
@@ -1218,8 +1207,23 @@ attribute: TOK_ATTRIBUTE_ID '(' string_constant optional_comma ')'
   }
   ;
 
-optional_attributes: /* empty */ { $$ = 0; }
-  | optional_attributes attribute { $$ = mknode(F_ARG_LIST, $1, $2); }
+optional_attributes: /* empty */
+  {
+    if (Pike_compiler->current_attributes) {
+      free_node(Pike_compiler->current_attributes);
+    }
+    if ((Pike_compiler->current_attributes =
+	 THIS_COMPILATION->lex.attributes)) {
+      add_ref(Pike_compiler->current_attributes);
+    }
+  }
+  | optional_attributes attribute
+  {
+    if ($2) {
+      Pike_compiler->current_attributes =
+	mknode(F_ARG_LIST, Pike_compiler->current_attributes, $2);
+    }
+  }
   ;
 
 optional_stars: optional_stars '*' { $$=$1 + 1; }
@@ -1685,11 +1689,17 @@ name_list: new_name
 new_name: optional_stars TOK_IDENTIFIER
   {
     struct pike_type *type;
+    node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
+    n = Pike_compiler->current_attributes;
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
     type=compiler_pop_type();
     define_variable($2->u.sval.u.string, type,
 		    Pike_compiler->current_modifiers);
@@ -1700,11 +1710,17 @@ new_name: optional_stars TOK_IDENTIFIER
   | optional_stars TOK_IDENTIFIER '='
   {
     struct pike_type *type;
+    node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
+    n = Pike_compiler->current_attributes;
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
     type=compiler_pop_type();
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
 	(Pike_compiler->compiler_pass == 1)) {
