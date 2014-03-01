@@ -39,7 +39,7 @@
 //!   destructed timely when dropped.
 //! @endul
 
-// #define DEBUG
+// #define SSLFILE_DEBUG
 // #define SSL3_DEBUG
 // #define SSL3_DEBUG_MORE
 // #define SSL3_DEBUG_TRANSPORT
@@ -217,7 +217,7 @@ protected constant epipe_errnos = (<
 #define SSL_INTERNAL_WRITING (sizeof (write_buffer) ||			\
 			      close_packet_send_state == CLOSE_PACKET_SCHEDULED)
 
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
 
 #if constant (Thread.thread_create)
 
@@ -341,7 +341,7 @@ protected THREAD_T op_thread;
   if (_op_err) throw (_op_err);						\
   } while (0)
 
-#else  // !DEBUG
+#else  // !SSLFILE_DEBUG
 
 #define CHECK_CB_MODE(CUR_THREAD) do {} while (0)
 #define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {} while (0)
@@ -350,7 +350,7 @@ protected THREAD_T op_thread;
 #define RETURN(RET_VAL) return (RET_VAL)
 #define LEAVE while (0)
 
-#endif	// !DEBUG
+#endif	// !SSLFILE_DEBUG
 
 // stream is assumed to be operational on entry but might be zero
 // afterwards. cb_errno is assumed to be 0 on entry.
@@ -732,7 +732,7 @@ Stdio.File shutdown()
 		    "Abrupt close");
 
     if ((conn->closing & 2) && sizeof (conn->left_over || "")) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
       werror ("Warning: Got buffered data after close in %O: %O%s\n", this,
 	      conn->left_over[..99], sizeof (conn->left_over) > 100 ? "..." : "");
 #endif
@@ -1303,7 +1303,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_alert_callback (%O)\n", alert);
   CHECK (0, 0);
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
   if (close_state == STREAM_UNINITIALIZED || !conn)
     error ("Doesn't have any connection.\n");
 #endif
@@ -1343,7 +1343,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_accept_callback (%O)\n", accept);
   ENTER (0, 0) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
 #endif
@@ -1370,7 +1370,7 @@ void set_read_callback (function(void|mixed,void|string:int) read)
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_read_callback (%O)\n", read);
   ENTER (0, 0) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
 #endif
@@ -1397,7 +1397,7 @@ void set_write_callback (function(void|mixed:int) write)
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_write_callback (%O)\n", write);
   ENTER (0, 0) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
 #endif
@@ -1425,7 +1425,7 @@ void set_close_callback (function(void|mixed:int) close)
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_close_callback (%O)\n", close);
   ENTER (0, 0) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
 #endif
@@ -1678,7 +1678,7 @@ protected void update_internal_state (void|int assume_real_backend)
     stream->set_write_callback (install_write_cb && !got_extra_read_call_out &&
 				ssl_write_callback);
 
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (!assume_real_backend && op_thread)
       // Check that we haven't installed callbacks that might start
       // executing in parallell in another thread. That's legitimate
@@ -1790,7 +1790,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
       string|int data =
 	close_state == ABRUPT_CLOSE ? -1 : conn->got_data (input);
 
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
       if (got_extra_read_call_out)
 	error ("Got to real read callback with queued extra read call out.\n");
 #endif
@@ -1806,7 +1806,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	int write_res;
 	if (stringp(data) || (data > 0) ||
 	    ((data < 0) && !conn->handshake_finished)) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
 	  if (!stream)
 	    error ("Got zapped stream in callback.\n");
 #endif
@@ -1822,7 +1822,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
 	    update_internal_state();
 	    if (called_from_real_backend && accept_callback) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
 	      if (close_state >= NORMAL_CLOSE)
 		error ("Didn't expect the connection to be "
 		       "explicitly closed already.\n");
@@ -1894,7 +1894,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 
     if (alert_cb_called || call_accept_cb + call_read_cb + do_close_stuff > 1) {
       // Need to do a call out to ourselves; see comment above.
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
       if (!alert_cb_called && !called_from_real_backend)
 	error ("Internal confusion.\n");
       if (called_from_real_backend && got_extra_read_call_out < 0)
@@ -1943,7 +1943,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
     }
 
     else if (do_close_stuff) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
       if (got_extra_read_call_out)
 	error ("Shouldn't have more to do after close stuff.\n");
 #endif
@@ -2013,7 +2013,7 @@ protected int ssl_write_callback (int called_from_real_backend)
   int ret = 0;
 
   ENTER (1, called_from_real_backend) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
     if (got_extra_read_call_out)
@@ -2135,7 +2135,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 
       if (int err = queue_write()) {
 	if (err > 0) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
 	  if (!conn->closing || close_packet_send_state < CLOSE_PACKET_QUEUED_OR_DONE)
 	    error ("Expected a close to be sent or received\n");
 #endif
@@ -2144,7 +2144,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 	    SSL3_DEBUG_MSG ("ssl_write_callback: "
 			    "Close packet queued but not yet sent\n");
 	  else {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
 	    if (!(conn->closing & 1))
 	      error ("Expected a close packet to be queued or sent.\n");
 #endif
@@ -2210,7 +2210,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 
     if (close_state >= NORMAL_CLOSE &&
 	(close_packet_send_state >= CLOSE_PACKET_QUEUED_OR_DONE || cb_errno)) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
       if (close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR)
 	error ("Unexpected close_packet_send_state\n");
 #endif
@@ -2234,7 +2234,7 @@ protected int ssl_close_callback (int called_from_real_backend)
 		  close_packet_send_state + ")" : "");
 
   ENTER (1, called_from_real_backend) {
-#ifdef DEBUG
+#ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
     if (got_extra_read_call_out)

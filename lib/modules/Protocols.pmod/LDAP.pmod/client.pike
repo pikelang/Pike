@@ -118,13 +118,13 @@ protected function(string:string) get_attr_decoder (string attr,
     if (function(string:string) decoder =
 	syntax_decode_fns[attr_descr->syntax_oid])
       return decoder;
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
   }
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   else if (!nowarn && !has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
 	    "binary content assumed.\n", attr);
@@ -139,13 +139,13 @@ protected function(string:string) get_attr_encoder (string attr)
     if (function(string:string) encoder =
 	syntax_encode_fns[attr_descr->syntax_oid])
       return encoder;
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
   }
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   else if (!has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
 	    "binary content assumed.\n", attr);

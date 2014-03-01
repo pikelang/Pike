@@ -460,7 +460,7 @@ array(mixed) fetch_row(void|int|string|array(string) buffer)
 	_pgsqlsess._decodemsg();	      // Flush previous portal sequence
       for(;;)
       {
-#ifdef DEBUGMORE
+#ifdef PG_DEBUGMORE
 	PD("buffer: %d	nextportal: %d	lock: %d\n",
 	 buffer,_pgsqlsess._nextportal,!!_qmtxkey);
 #endif

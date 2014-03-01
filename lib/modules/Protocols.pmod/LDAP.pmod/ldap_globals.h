@@ -36,7 +36,7 @@
 #define DWRITE_HI(X...)
 #endif
 
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
 #define DO_IF_DEBUG(X...) X
 #else
 #define DO_IF_DEBUG(X...)
