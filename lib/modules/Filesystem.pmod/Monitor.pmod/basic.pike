@@ -754,6 +754,23 @@ protected class Monitor(string path,
       update(st);
       return 1;
     }
+#ifdef HAVE_EVENTSTREAM
+    else if(orig_flags & MF_RECURSE)
+    {
+      // if using FSEvents, we won't receive the name of the file changed, 
+      // so we have to scan for it. 
+      int caught;
+      array(string) files = get_dir(path) || ({});
+      this_program::files = files;
+      foreach(files, string file) {
+        file = canonic_path(Stdio.append_path(path, file));
+ 	if (monitors[file]) {
+          if(check_monitor(monitors[file])) caught = 1;
+        } 
+      }
+      return caught;
+    }
+#endif /* HAVE_EVENTSTREAM */
     return 0;
   }
 }
