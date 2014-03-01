@@ -374,14 +374,38 @@ float logn(float n, float x) { return log(x)/log(n); }
 
 //! Factorize the integer @[x]. The returned list of factors will
 //! be sorted biggest to smallest factor.
+//!
 //! @note
 //!   This function is only available when Pike has been compiled with
 //!   bignums.
+//!
+//! @note
+//!   In Pike versions prior to v8.0, only primes @expr{<= 8161@} were
+//!   considered.
 array(int) factor(int x) {
-  int f = Gmp.mpz(x)->small_factor();
-  if(f==0)
-    return ({ x });
-  else
+  if (!x) return ({ 0 });
+  int f = x->small_factor();
+  if(!f) {
+    /* No small factors left. */
+    if (x->probably_prime_p()) {
+      /* The remainder seems to be a prime. */
+      return ({ x });
+    }
+    array(int) ret = ({});
+    int p = 8161;	/* The largest prime known by small_factor(). */
+    while (x > p) {
+      p = (p+1)->next_prime();
+      if (!(x % p)) {
+	while (!(x % p)) {
+	  ret = ({ p }) + ret;
+	  x /= p;
+	}
+	if (x->probably_prime_p()) break;
+      }
+    }
+    if (x != 1) ret = ({ x }) + ret;
+    return ret;
+  } else
     return factor(x/f) + ({ f });
 }
 #endif
