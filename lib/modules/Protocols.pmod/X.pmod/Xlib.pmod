@@ -23,7 +23,7 @@
 
 #pike __REAL_VERSION__
 
-// #define DEBUG
+// #define XDEBUG
 
 constant XPORT = 6000;
 
@@ -192,7 +192,7 @@ class Display
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
-#ifdef DEBUG
+#ifdef XDEBUG
   mapping debug_requests = ([ ]);
 # define DEBUGREQ(X) ((X)&0xfff)
 #endif
@@ -441,7 +441,7 @@ class Display
 		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
 		m->errorCode = ._Xlib.error_codes[errorCode];
-#ifdef DEBUG
+#ifdef XDEBUG
 		m->failed_request = debug_requests[DEBUGREQ(m->sequenceNumber)];
 #endif
 #if 0
@@ -839,7 +839,7 @@ class Display
   {
     string data = req->to_string();
     send(data);
-#ifdef DEBUG
+#ifdef XDEBUG
     debug_requests[DEBUGREQ(sequence_number)] = data;
 #endif
     return (sequence_number++)&0xffff; // sequence number is just 2 bytes

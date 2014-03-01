@@ -616,9 +616,9 @@ private void phasedreconnect()
 
 final int _decodemsg(void|state waitforstate)
 {
-#ifdef DEBUG
+#ifdef PG_DEBUG
   { array line;
-#ifdef DEBUGMORE
+#ifdef PG_DEBUGMORE
     line=backtrace();
 #endif
     PD("Waiting for state %O %O\n",waitforstate,line&&line[sizeof(line)-2]);
@@ -797,7 +797,7 @@ final int _decodemsg(void|state waitforstate)
 	msglen-=4+2+4*cols;
 	foreach(a=allocate(cols);int i;)
 	  a[i]=_c.getint32();
-#ifdef DEBUGMORE
+#ifdef PG_DEBUGMORE
 	PD("%O\n",a);
 #endif
 	if(_c.portal)
@@ -825,7 +825,7 @@ final int _decodemsg(void|state waitforstate)
 	  res->formatcode=_c.getint16();	// Currently broken in Postgres
 	  a[i]=res;
 	}
-#ifdef DEBUGMORE
+#ifdef PG_DEBUGMORE
 	PD("%O\n",a);
 #endif
 	if(_c.portal)
@@ -1617,7 +1617,7 @@ final private void sendclose(void|int hold)
   { _c.portal->_portalname = UNDEFINED;
     _c.setportal();
     portalsinflight--;
-#ifdef DEBUGMORE
+#ifdef PG_DEBUGMORE
     PD("Closetrace %O\n",backtrace());
 #endif
     if(!sizeof(portalname))
@@ -2014,7 +2014,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
           plugbuf[1]=_c.plugint32(len);
           PD("Bind portal %s statement %s\n",portalname,preparedname);
           _c.sendcmd(plugbuf);
-#ifdef   DEBUGMORE
+#ifdef   PG_DEBUGMORE
           PD("%O\n",plugbuf);
 #endif
         }

@@ -42,7 +42,7 @@
 #define MARKERROR	     ">"">"">"">"     // foldeditors from recognising
 #define MARKEND		     "\n}""}"	      // it as a fold
 
-#ifdef DEBUG
+#ifdef PG_DEBUG
 #define PD(X ...)     werror(X)
 #define UNBUFFEREDIO  1		    // Make all IO unbuffered
 #else

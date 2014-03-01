@@ -701,7 +701,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! explicitly instead of being retrieved via @[get_db].
 {
   Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert %O\n",
@@ -722,7 +722,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! explicitly instead of being retrieved via @[get_db].
 {
   Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert_ignore %O\n",
@@ -746,7 +746,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! explicitly instead of being retrieved via @[get_db].
 {
   Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: replace %O\n",
@@ -768,7 +768,7 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! explicitly instead of being retrieved via @[get_db].
 {
   Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
 #endif
@@ -796,7 +796,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! passed explicitly instead of being retrieved via @[get_db].
 {
   Sql.mysql conn = db_conn->master_sql;
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
 #endif
@@ -819,7 +819,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
   string prop_col_value;
 
   if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col) error ("Column(s) %s missing in table %O.\n",
 			  String.implode_nicely (indices (other_fields)),
 			  table);
@@ -993,7 +993,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
   Sql.mysql_result res = db_conn->master_sql->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (res->num_fields() != 1)
     error ("Result from %O did not contain a single field (got %d fields).\n",
 	   query, res->num_fields());
@@ -1024,7 +1024,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
 {
   Sql.mysql conn = db_conn->master_sql;
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (fields && !sizeof (fields)) error ("No fields selected.\n");
 #endif
 
@@ -1046,7 +1046,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
       mapping(string:string) field_map = mkmapping (fields, fields);
       other_fields = field_map - real_cols;
     }
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col)
       error ("Requested nonexisting column(s) %s.\n",
 	     String.implode_nicely (indices (other_fields ||
@@ -1243,7 +1243,7 @@ class Result
   // Internal function to initialize all the variables from an
   // optional array of requested fields.
   {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (fields && !sizeof (fields)) error ("No fields selected.\n");
 #endif
 
@@ -1291,7 +1291,7 @@ class Result
 	mapping(string:string) field_map = mkmapping (fields, fields);
 	other_fields = field_map - real_cols;
       }
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (!prop_col)
 	error ("Requested nonexisting column(s) %s.\n",
 	       String.implode_nicely (indices (other_fields ||
@@ -1324,7 +1324,7 @@ class Result
   // Iterator interface. This is a separate object only to avoid
   // implementing a `! in Result, which would make it behave oddly.
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   protected int got_iterator;
 #endif
 
@@ -1332,7 +1332,7 @@ class Result
   //! Returns an iterator for the result. Only one iterator may be
   //! created per @[Result] object.
   {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (got_iterator)
       error ("Cannot create more than one iterator for a Result object.\n");
     got_iterator = 1;
@@ -1425,7 +1425,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
 // A value with zero_type is formatted as "DEFAULT".
 {
   if (stringp (val)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (col_types[col_name] != "string")
       error ("Got string value %q for %s column `%s`.\n",
 	     val, col_types[col_name], col_name);
@@ -1447,7 +1447,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
     if (zero_type (val))
       buf->add ("DEFAULT");
     else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (col_types[col_name] != "int" && !datetime_cols[col_name])
 	error ("Got integer value %O for %s column `%s`.\n",
 	       val, col_types[col_name] || "string", col_name);
@@ -1461,7 +1461,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
   else if (val == Val.null)
     buf->add ("NULL");
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (objectp (val) && functionp (val->den)) {
       // Allow Gmp.mpq for float fields, and for int fields if they
       // have no fractional part.
@@ -1493,7 +1493,7 @@ protected string make_insert_clause (array(mapping(string:mixed)) records)
   // FIXME: Ought to use bindings, but Mysql.mysql doesn't support it
   // yet (as of pike 7.8.191).
 
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
 
@@ -1502,7 +1502,7 @@ protected string make_insert_clause (array(mapping(string:mixed)) records)
     mapping(string:mixed) other_fields = rec - real_cols;
 
     if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (!prop_col) error ("Column(s) %s missing.\n",
 			    String.implode_nicely (indices (other_fields)));
 #endif
@@ -1555,7 +1555,7 @@ protected string make_pk_where (mapping(string:mixed) rec)
 // primary key, or zero if the record doesn't have values for all pk
 // columns. The pk fields are also removed from the rec mapping.
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (pk_cols)) error ("There is no primary key in this table.\n");
 #endif
   String.Buffer buf = String.Buffer();
@@ -1575,14 +1575,14 @@ protected string simple_make_pk_where (mixed id)
 // Returns a WHERE expression like "a=1 AND b=2" for matching the
 // primary key. id is like the argument to get().
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (!sizeof (pk_cols)) error ("There is no primary key in this table.\n");
 #endif
 
   String.Buffer buf = String.Buffer();
   if (sizeof (pk_cols) == 1) {
     buf->add ("`", pk_cols[0], "`=");
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (id == Val.null)
       error ("Cannot use Val.null for primary key column %O.\n",
 	     pk_cols[0]);
@@ -1592,7 +1592,7 @@ protected string simple_make_pk_where (mixed id)
   }
 
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!arrayp (id) || sizeof (id) != sizeof (pk_cols))
       error ("The id must be an array with %d elements.\n", sizeof (pk_cols));
 #endif
@@ -1600,7 +1600,7 @@ protected string simple_make_pk_where (mixed id)
     foreach (pk_cols; int i; string pk_col) {
       if (first) first = 0; else buf->add (" AND ");
       buf->add ("`", pk_cols[0], "`=");
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
       if (id[i] == Val.null)
 	error ("Cannot use Val.null for primary key column %O.\n", pk_col);
 #endif
@@ -1616,7 +1616,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
 // Returns a WHERE expression like "foo IN (2,3,17,4711)" for matching
 // a bunch of records by primary key.
 {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
   if (sizeof (pk_cols) != 1)
     error ("The table must have a single column primary key.\n");
 #endif
@@ -1629,7 +1629,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   string optional_not = negated?" NOT ":"";
 
   if ((<"float", "int">)[pk_type]) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     foreach (ids; int i; mixed id)
       if (!intp (id) && !floatp (id))
 	error ("Expected numeric value for primary key column %O, "
@@ -1642,7 +1642,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   }
 
   else {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     foreach (ids; int i; mixed id)
       if (!stringp (id))
 	error ("Expected string value for primary key column %O, "
@@ -1723,7 +1723,7 @@ protected mapping(string:mixed) update_pack_fields (
   mapping(string:mixed) other_fields = rec - real_cols;
 
   if (sizeof (other_fields)) {
-#ifdef DEBUG
+#ifdef MYSQL_DEBUG
     if (!prop_col) error ("Column(s) %s missing in table %O.\n",
 			  String.implode_nicely (indices (other_fields)),
 			  table);

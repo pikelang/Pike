@@ -32,7 +32,7 @@
  * Defines
  */
 
-/* #define DEBUG */
+/* #define LR_DEBUG */
 
 /* Errors during parsing */
 /* Action for rule is missing from master object */
@@ -324,16 +324,16 @@ Parser make_parser(string str, object|void m)
   nonterminal_lookup = ([]);
 
   ErrorHandler eh = ErrorHandler(
-#ifdef DEBUG
+#ifdef LR_DEBUG
 				 1
-#else /* !DEBUG */
+#else /* !LR_DEBUG */
 				 0
-#endif /* DEBUG */
+#endif /* LR_DEBUG */
 				 );
 
-#ifdef DEBUG
+#ifdef LR_DEBUG
   _parser->set_error_handler(eh->report);
-#endif /* DEBUG */
+#endif /* LR_DEBUG */
 
   g->set_error_handler(eh->report);
 

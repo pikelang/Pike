@@ -1260,7 +1260,7 @@ protected void create()
   foreach (incomplete, mapping(string:mixed) descr)
     complete (descr);
 
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   // To discover duplicate constant names.
   get_constant_name (0);
 #endif
