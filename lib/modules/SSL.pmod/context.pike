@@ -224,23 +224,6 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
 
-#if constant(Crypto.ECC.Curve)
-//! Compatibility.
-//! @deprecated private_key
-__deprecated__ Crypto.ECC.SECP_521R1.ECDSA `ecdsa()
-{
-  return private_key && has_prefix(private_key->name(), "ECDSA") && 
-    [object(Crypto.ECC.SECP_521R1.ECDSA)]private_key;
-}
-
-//! Compatibility.
-//! @deprecated private_key
-__deprecated__ void `ecdsa=(Crypto.ECC.SECP_521R1.ECDSA k)
-{
-  private_key = k;
-}
-#endif
-
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
