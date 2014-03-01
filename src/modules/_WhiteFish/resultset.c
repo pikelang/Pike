@@ -882,17 +882,6 @@ static void f_dateset_finalize( INT32 args )
   RETURN_THIS();
 }
 
-static void f_resultset_set( INT32 args )
-{
-  int i;
-  ResultSet *source = THIS->d;
-  if (source) {
-    for( i = 0; i<source->num_docs; i++ )
-      source->hits[i].ranking = 0;
-  }
-  RETURN_THIS();
-}
-
 #define DUP_DATESET()   do {			\
     pop_n_elems(args);				\
     o = dup_dateset();				\
