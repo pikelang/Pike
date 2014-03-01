@@ -676,6 +676,7 @@ void image_operator_lesser(INT32 args)
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
 	 Pike_error("image->`<: operators differ in size\n");
+      return; /* Silence uninitialized variable warning. */
    }
 
    s1=THIS->img;
@@ -748,6 +749,7 @@ void image_operator_greater(INT32 args)
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
 	 Pike_error("image->`>: operators differ in size\n");
+      return; /* Silence uninitialized variable warning. */
    }
 
    s1=THIS->img;

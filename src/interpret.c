@@ -1181,6 +1181,7 @@ void count_memory_in_catch_contexts(size_t *num, size_t *size )
   *size = num_catch_ctx * (sizeof(struct catch_context)+8); /* assumes 8 bytes overhead. */
 }
 
+#ifdef DO_PIKE_CLEANUP
 static void free_all_catch_context_blocks(void)
 {
     struct catch_context *x = free_catch_context, *n;
@@ -1193,6 +1194,7 @@ static void free_all_catch_context_blocks(void)
     }
     free_catch_context = NULL;
 }
+#endif
 
 static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 
@@ -2032,6 +2034,7 @@ void count_memory_in_pike_frames(size_t *num, size_t *size )
 #undef FRAMES_PER_CHUNK
 #undef FRAME_CHUNK_SIZE
 
+#ifdef DO_PIKE_CLEANUP
 static void free_all_pike_frame_blocks(void)
 {
   struct pike_frame_chunk *x = pike_frame_chunks, *n;
@@ -2046,6 +2049,7 @@ static void free_all_pike_frame_blocks(void)
   num_pike_frames=0;
   num_pike_frame_chunks=0;
 }
+#endif
 
 void really_free_pike_scope(struct pike_frame *scope)
 {

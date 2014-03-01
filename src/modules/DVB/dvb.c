@@ -1791,7 +1791,7 @@ PIKE_MODULE_INIT {
     add_function("read", f_stream_read, "function(int|void:string|int)", 0);
     add_function("set_buffer", f_stream_set_buffer, "function(int:int)", 0);
     add_function("info", f_stream_info, "function(int:mapping|int)", 0);
-    add_function("close", f_stream_info, "function(:void)", 0);
+    add_function("close", f_stream_close, "function(:void)", 0);
 
   dvb_stream_program = end_program();
   add_program_constant("Stream", dvb_stream_program, 0);
