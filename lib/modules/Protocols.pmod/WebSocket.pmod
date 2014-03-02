@@ -352,10 +352,12 @@ class Connection {
         // without a read callback pike does not trigger the
         // close event.
         if (state == CLOSED) return;
-
         parser->feed(data);
 
         while (object frame = parser->parse()) {
+#ifdef WEBSOCKET_DEBUG
+            werror("%O in %O\n", this, frame);
+#endif
             switch (frame->opcode) {
             case FRAME_PING:
                 send(Frame(FRAME_PONG, frame->data));
@@ -454,6 +456,9 @@ class Request {
 	} else {
 	    string proto = request_headers["sec-websocket-protocol"];
 	    array(string) protocols =  proto ? proto / ", " : ({});
+#ifdef WEBSOCKET_DEBUG
+            werror("websocket request: %O %O\n", this, protocols);
+#endif
 	    cb(protocols, this);
 	}
     }
@@ -481,11 +486,22 @@ class Request {
         Connection ws = Connection(my_fd);
         my_fd = 0;
 
-        ws->send_raw(make_response_header(([
-	    "error" : 101,
-	    "type" : "application/octet-stream",
-	    "extra_heads" : heads,
-	])));
+        array a = allocate(1 + sizeof(heads));
+        int i = 1;
+
+        a[0] = "HTTP/1.1 101 SwitchingProtocols";
+
+        foreach (heads; string k; string v) {
+            a[i++] = sprintf("%s: %s", k, v);
+        }
+
+        string reply = a * "\r\n" + "\r\n\r\n";
+
+        ws->send_raw(reply);
+
+#ifdef WEBSOCKET_DEBUG
+        werror("%O reply %O\n", protocol, reply);
+#endif
 
         finish(0);
 
