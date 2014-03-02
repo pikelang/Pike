@@ -17,6 +17,7 @@ if test x$with_svg = xyes ; then
   if ${ac_tool_prefix}pkg-config librsvg-2.0 2>/dev/null ; then
     SVG_CFLAGS="`${ac_tool_prefix}pkg-config librsvg-2.0 --cflags`"
     SVG_LIBS="`${ac_tool_prefix}pkg-config librsvg-2.0 --libs`"
+    SVG_VERSION="`${ac_tool_prefix}pkg-config librsvg-2.0 --modversion`"
     AC_MSG_CHECKING(if librsvg actually works)
 
     OLDCPPFLAGS="$CPPFLAGS"
@@ -36,11 +37,15 @@ if test x$with_svg = xyes ; then
     if test yes = "$svg_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_SVG)
+      if test `echo "$SVG_VERSION"|cut -d. -f1` -gt 2 -o `echo "$SVG_VERSION"|cut -d. -f2` -ge 36 ; then
+        AC_DEFINE(HAVE_SVG_2_36_OR_NEWER, 1, [Define if librsvg is version 2.36 or newer])
+      fi
       PIKE_FEATURE_OK(Image.SVG)
     else
       AC_MSG_RESULT(no)
       SVG_CFLAGS=""
       SVG_LIBS=""
+      SVG_VERSION=""
       CPPFLAGS="$OLDCPPFLAGS"
       LIBS="$OLDLIBS"
     fi
