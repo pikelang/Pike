@@ -543,7 +543,11 @@ static int pgtk2_push_int_param(const GValue *a) {
       retval=(LONGEST)g_value_get_long(a); 
       break;
     case G_TYPE_CHAR:
+#ifdef HAVE_G_VALUE_GET_SCHAR
       retval=(LONGEST)g_value_get_schar(a); 
+#else
+      retval=(LONGEST)g_value_get_char(a); 
+#endif
       break;
     default:
       retval=(LONGEST)g_value_get_uint(a); 
@@ -1201,7 +1205,11 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_uint(gv,(guint)PGTK_GETINT(sv));
       break;
     case G_TYPE_CHAR:
+#ifdef HAVE_G_VALUE_SET_SCHAR
       g_value_set_schar(gv,(gchar)PGTK_GETINT(sv));
+#else
+      g_value_set_char(gv,(gchar)PGTK_GETINT(sv));
+#endif
       break;
     case G_TYPE_UCHAR:
       g_value_set_uchar(gv,(guchar)PGTK_GETINT(sv));

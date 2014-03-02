@@ -349,7 +349,7 @@ OLD_LIBS="$LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
 LIBS="$LIBS $GTK_LIBS"
 
-AC_CHECK_FUNCS(gtk_tree_selection_unselect_range)
+AC_CHECK_FUNCS(gtk_tree_selection_unselect_range g_value_get_schar g_value_set_schar)
 
 AC_MSG_CHECKING([if g_signal_connect_data takes six args])
 AC_CACHE_VAL(pgtk2_cv_g_signal_connect_has_six_args, [
