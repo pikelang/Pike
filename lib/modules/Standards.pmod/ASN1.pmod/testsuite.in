@@ -65,13 +65,13 @@ test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
 
 test_eq(Standards.ASN1.Types.UTC()->set_posix(42)->get_posix(), 42)
 
-test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_der(),
-  String.hex2string("170d3931303530363233343534305a"))
+test_eq(Standards.ASN1.Types.UTC("910506214540Z")->get_der(),
+  String.hex2string("170d3931303530363231343534305a"))
 
 test_eq(Standards.ASN1.Types.UTC()->set_posix(673566340)->get_der(),
-  String.hex2string("170d3931303530363233343534305a"))
+  String.hex2string("170d3931303530363231343534305a"))
 
-test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_posix(),
+test_eq(Standards.ASN1.Types.UTC("910506214540Z")->get_posix(),
  673566340)
 
 test_eq(Standards.ASN1.Types.TeletexString("clés publiques")->get_der(),

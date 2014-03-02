@@ -1178,7 +1178,7 @@ class UTC
 
   this_program set_posix(int t)
   {
-    object second = Calendar.ISO.Second(t);
+    object second = Calendar.ISO_UTC.Second(t);
 
     // FIXME: What is this based on?
     if (second->year_no() >= 2050)
@@ -1204,7 +1204,7 @@ class UTC
     else
       t[0]+=2000;
 
-    return [int]Calendar.ISO.Second(@t)->unix_time();
+    return [int]Calendar.ISO_UTC.Second(@t)->unix_time();
   }
 }
 
