@@ -358,7 +358,11 @@ static void f_decode( INT32 args )
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_SVG
+#ifdef HAVE_SVG_2_36_OR_NEWER
   g_type_init(); /* Initialize the glib type system. */
+#else
+  rsvg_init(); /* Initialize librsvg */
+#endif
 
   add_function( "decode", f_decode,
 		"function(string,mapping|void:object)", 0 );
