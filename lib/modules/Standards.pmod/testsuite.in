@@ -237,8 +237,8 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
   "extensions": ([]),
-  "not_after": 1848866399,
-  "not_before": 822870000,
+  "not_after": 1848873599,
+  "not_before": 822873600,
   "serial": "3f691e819cf09a4af373ffb948a2e4dd",
   "subject": "Class 1 Public Primary Certification Authority",
   "version": 1
