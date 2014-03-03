@@ -3190,7 +3190,11 @@ static struct pike_string *get_name_of_function(node *n)
 
   case F_ARROW:
   case F_INDEX:
-    if(CDR(n)->token == F_CONSTANT &&
+    if(!CDR(n))
+    {
+      MAKE_CONST_STRING(name, "NULL");
+    }
+    else if(CDR(n)->token == F_CONSTANT &&
        TYPEOF(CDR(n)->u.sval) == T_STRING)
     {
       name = CDR(n)->u.sval.u.string;
