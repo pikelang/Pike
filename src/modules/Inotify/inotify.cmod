@@ -28,6 +28,7 @@
 #include "fdlib.h"
 #include "pike_threadlib.h"
 
+#include "modules/_Stdio/file_machine.h"
 #include "modules/_Stdio/file.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
