@@ -39,34 +39,6 @@
 #include <limits.h>
 #endif /* HAVE_LIMITS_H */
 
-#ifdef HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# ifdef HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-# else /* !HAVE_SYS_NDIR_H */
-#  ifdef HAVE_SYS_DIR_H
-#   include <sys/dir.h>
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#  else /* !HAVE_SYS_DIR_H */
-#   ifdef HAVE_NDIR_H
-#    include <ndir.h>
-#    define dirent direct
-#    define NAMLEN(dirent) (dirent)->d_namlen
-#   else /* !HAVE_NDIR_H */
-#    ifdef HAVE_DIRECT_H
-#     include <direct.h>
-#     define NAMLEN(dirent) strlen((dirent)->d_name)
-#    endif /* HAVE_DIRECT_H */
-#   endif /* HAVE_NDIR_H */
-#  endif /* HAVE_SYS_DIR_H */
-# endif /* HAVE_SYS_NDIR_H */
-#endif /* HAVE_DIRENT_H */
-
 #include "dmalloc.h"
 
 #ifdef HAVE_PROCESS_H
@@ -1207,7 +1179,8 @@ void f_get_dir(INT32 args)
 
 #else /* !__NT__ */
 
-static void low_get_dir(DIR *dir, ptrdiff_t name_max)
+/* Note: Also used from file_get_dir(). */
+void low_get_dir(DIR *dir, ptrdiff_t name_max)
 {
   if(dir) {
     struct dirent *d;

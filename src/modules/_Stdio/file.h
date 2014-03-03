@@ -16,6 +16,34 @@
 #include <arpa/inet.h>
 #define ARPA_INET_H
 
+#ifdef HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# ifdef HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+# else /* !HAVE_SYS_NDIR_H */
+#  ifdef HAVE_SYS_DIR_H
+#   include <sys/dir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+#  else /* !HAVE_SYS_DIR_H */
+#   ifdef HAVE_NDIR_H
+#    include <ndir.h>
+#    define dirent direct
+#    define NAMLEN(dirent) (dirent)->d_namlen
+#   else /* !HAVE_NDIR_H */
+#    ifdef HAVE_DIRECT_H
+#     include <direct.h>
+#     define NAMLEN(dirent) strlen((dirent)->d_name)
+#    endif /* HAVE_DIRECT_H */
+#   endif /* HAVE_NDIR_H */
+#  endif /* HAVE_SYS_DIR_H */
+# endif /* HAVE_SYS_NDIR_H */
+#endif /* HAVE_DIRENT_H */
+
 /* Stupid patch to avoid trouble with Linux includes... */
 #ifdef LITTLE_ENDIAN
 #undef LITTLE_ENDIAN
@@ -151,6 +179,10 @@ PMOD_EXPORT int pike_make_pipe(int *fds);
 PMOD_EXPORT int fd_from_object(struct object *o);
 void f_strerror(INT32 args);
 void push_stat(PIKE_STAT_T *s);
+
+#ifndef __NT__
+void low_get_dir(DIR *dir, ptrdiff_t name_max);
+#endif
 /* Prototypes end here */
 
 /* Defined by winnt.h */

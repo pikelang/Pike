@@ -3369,6 +3369,92 @@ static void file_unlinkat(INT32 args)
 #endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
 
+#if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
+/*! @decl array(string) get_dir(string|void path)
+ *!
+ *! Get directory contents relative to an open directory.
+ *!
+ *! @param path
+ *!   Path relative to the open directory. Defaults to the
+ *!   directory itself.
+ *!
+ *! @returns
+ *!   Returns an array of filenames.
+ *!
+ *! @note
+ *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!
+ *! @seealso
+ *!   @[predef::get_dir()], @[statat()], @[openat()], @[unlinkat()]
+ */
+static void file_get_dir(INT32 args)
+{
+  int fd;
+  int dfd;
+  struct pike_string *path = NULL;
+  ptrdiff_t name_max = -1;
+  DIR *dir = NULL;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args("get_dir", args, ".%S", &path);
+
+  if (path && string_has_null(path)) {
+    fprintf(stderr, "NULL\n");
+    /* Filenames with NUL are not supported. */
+    ERRNO = errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  fd = FD;
+  dfd = -1;
+
+  while(1) {
+    THREADS_ALLOW_UID();
+    if (!path) {
+      dfd = dup(fd);
+    } else {
+      dfd = openat(fd, path->str, O_RDONLY);
+    }
+    THREADS_DISALLOW_UID();
+
+    if ((dfd == -1) && (errno == EINTR)) {
+      check_threads_etc();
+      continue;
+    }
+    break;
+  }
+
+  if (dfd == -1) {
+    ERRNO = errno;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+#ifdef HAVE_FPATHCONF
+  name_max = fpathconf(dfd, _PC_NAME_MAX);
+#endif /* HAVE_FPATHCONF */
+
+  if (!(dir = fdopendir(dfd))) {
+    ERRNO = errno;
+    close(dfd);
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  /* NB: The fd dfd has been eaten by fdopendir(3),
+   *     so we don't need to close it.
+   */
+
+  low_get_dir(dir, name_max);
+}
+#endif /* HAVE_FDOPENDIR && HAVE_OPENAT */
+
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /* All A-OK.*/
 

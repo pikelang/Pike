@@ -64,6 +64,9 @@ FILE_FUNC("statat", file_statat,
 FILE_FUNC("unlinkat", file_unlinkat, tFunc(tStr, tInt01));
 #endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
+#if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
+FILE_FUNC("get_dir", file_get_dir, tFunc(tOr(tStr,tVoid),tArr(tStr8)));
+#endif /* HAVE_FDOPENDIR && HAVE_OPENAT */
 /* function(:int) */
 FILE_FUNC("errno",file_errno, tFunc(tNone,tInt))
 /* function(:int) */
