@@ -1087,42 +1087,23 @@ void f_mkdir(INT32 args)
  *! @seealso
  *!   @[mkdir()], @[cd()]
  */
+#ifdef __NT__
 void f_get_dir(INT32 args)
 {
-#ifdef __NT__
   HANDLE dir;
   WIN32_FIND_DATAW d;
   struct string_builder sb;
-#else /* !__NT__ */
-#ifdef USE_FDOPENDIR
-  int dir_fd;
-#endif
-  DIR *dir = NULL;
-#ifdef HAVE_READDIR_R
-  ptrdiff_t name_max = -1;
-#endif
-#endif /* __NT__ */
   struct pike_string *str=0;
 
   VALID_FILE_IO("get_dir","read");
 
-#ifdef __NT__
   get_all_args("get_dir",args,".%T",&str);
-#else /* !__NT__ */
-  get_all_args("get_dir",args,".%N",&str);
-#endif /* __NT__ */
 
   if(!str) {
-#if defined(__amigaos4__)
-    push_empty_string();
-#else
     push_constant_text(".");
-#endif
     str = Pike_sp[-1].u.string;
     args++;
   }
-
-#ifdef __NT__
 
   if (str->size_shift == 2) {
     /* Filenames that are too wide are not supported. */
@@ -1222,41 +1203,13 @@ void f_get_dir(INT32 args)
       return;
     }
   }
+}
 
 #else /* !__NT__ */
 
-  if (string_has_null(str)) {
-    /* Filenames with NUL are not supported. */
-    errno = ENOENT;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
-  THREADS_ALLOW_UID();
-#ifdef USE_FDOPENDIR
-  dir_fd = open(str->str, O_RDONLY);
-  if (dir_fd != -1) {
-#ifdef USE_FPATHCONF
-    name_max = fpathconf(dir_fd, _PC_NAME_MAX);
-#endif /* USE_FPATHCONF */
-    dir = fdopendir(dir_fd);
-    if (!dir) close(dir_fd);
-  }
-#else
-  dir = opendir(str->str);
-#ifdef USE_FPATHCONF
-  if (dir) {
-    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
-  }
-#endif
-#endif /* !HAVE_FDOPENDIR */
-#ifdef USE_PATHCONF
-  name_max = pathconf(str->str, _PC_NAME_MAX);
-#endif
-  THREADS_DISALLOW_UID();
-  if(dir)
-  {
+static void low_get_dir(DIR *dir, ptrdiff_t name_max)
+{
+  if(dir) {
     struct dirent *d;
     struct dirent *tmp = NULL;
 #if defined(_REENTRANT) && defined(HAVE_READDIR_R)
@@ -1332,18 +1285,15 @@ void f_get_dir(INT32 args)
 	errno = 0;
 	if ((err = readdir_r(dir, tmp, &d)) || !d) {
 #ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r(\"%s\") => err %d\n",
-		  str->str, err);
-	  fprintf(stderr, "POSIX readdir_r(), d= 0x%08x\n",
-		  (unsigned int)d);
+	  fprintf(stderr, "POSIX readdir_r() => err %d\n", err);
+	  fprintf(stderr, "POSIX readdir_r(), d= 0x%08x\n", (unsigned int)d);
 #endif /* READDIR_DEBUG */
 	  if (err == -1) {
 	    /* Solaris readdir_r returns -1, and sets errno. */
 	    err = errno;
 	  }
 #ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r(\"%s\") => errno %d\n",
-		  str->str, err);
+	  fprintf(stderr, "POSIX readdir_r() => errno %d\n", err);
 #endif /* READDIR_DEBUG */
 	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
 	   *
@@ -1355,8 +1305,7 @@ void f_get_dir(INT32 args)
 	  break;
 	}
 #ifdef READDIR_DEBUG
-	fprintf(stderr, "POSIX readdir_r(\"%s\") => \"%s\"\n",
-		str->str, d->d_name);
+	fprintf(stderr, "POSIX readdir_r() => \"%s\"\n", d->d_name);
 #endif /* READDIR_DEBUG */
 #else
 #error Unknown readdir_r variant
@@ -1378,7 +1327,7 @@ void f_get_dir(INT32 args)
       THREADS_DISALLOW();
       if ((!d) && err) {
 	free(tmp);
-	Pike_error("get_dir(): readdir_r(\"%S\") failed: %d\n", str, err);
+	Pike_error("get_dir(): readdir_r() failed: %d\n", err);
       }
 #ifdef READDIR_DEBUG
       fprintf(stderr, "Pushing %d filenames...\n", num_files);
@@ -1398,6 +1347,9 @@ void f_get_dir(INT32 args)
 #else
     for(d=readdir(dir); d; d=readdir(dir))
     {
+#ifdef READDIR_DEBUG
+      fprintf(stderr, "readdir(): %s\n", d->d_name);
+#endif /* READDIR_DEBUG */
       /* Filter "." and ".." from the list. */
       if(d->d_name[0]=='.')
       {
@@ -1412,13 +1364,72 @@ void f_get_dir(INT32 args)
     closedir(dir);
 
     END_AGGREGATE_ARRAY;
-    stack_pop_n_elems_keep_top(args);
   } else {
-    pop_n_elems(args);
     push_int(0);
   }
-#endif /* __NT__ */
 }
+
+void f_get_dir(INT32 args)
+{
+#ifdef USE_FDOPENDIR
+  int dir_fd;
+#endif
+  DIR *dir = NULL;
+#ifdef HAVE_READDIR_R
+  ptrdiff_t name_max = -1;
+#endif
+  struct pike_string *str=0;
+
+  VALID_FILE_IO("get_dir","read");
+
+  get_all_args("get_dir",args,".%N",&str);
+
+  if(!str) {
+#if defined(__amigaos4__)
+    push_empty_string();
+#else
+    push_constant_text(".");
+#endif
+    str = Pike_sp[-1].u.string;
+    args++;
+  }
+
+  if (string_has_null(str)) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  THREADS_ALLOW_UID();
+#ifdef USE_FDOPENDIR
+  dir_fd = open(str->str, O_RDONLY);
+  if (dir_fd != -1) {
+#ifdef USE_FPATHCONF
+    name_max = fpathconf(dir_fd, _PC_NAME_MAX);
+#endif /* USE_FPATHCONF */
+    dir = fdopendir(dir_fd);
+    if (!dir) close(dir_fd);
+  }
+#else
+  dir = opendir(str->str);
+#ifdef USE_FPATHCONF
+  if (dir) {
+    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+  }
+#endif
+#endif /* !HAVE_FDOPENDIR */
+#ifdef USE_PATHCONF
+  name_max = pathconf(str->str, _PC_NAME_MAX);
+#endif
+
+  THREADS_DISALLOW_UID();
+
+  low_get_dir(dir, name_max);
+  stack_pop_n_elems_keep_top(args);
+}
+#endif /* __NT__ */
 
 /*! @decl int cd(string s)
  *!
