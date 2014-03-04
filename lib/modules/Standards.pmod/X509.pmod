@@ -976,27 +976,31 @@ TBSCertificate decode_certificate(string|object cert)
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
-TBSCertificate verify_certificate(string s, mapping(string:Verifier) authorities)
+TBSCertificate verify_certificate(string s,
+				  mapping(string:Verifier|array(Verifier)) authorities)
 {
   object cert = Standards.ASN1.Decode.simple_der_decode(s);
 
   TBSCertificate tbs = decode_certificate(cert);
   if (!tbs) return 0;
 
-  object v;
+  array(Verifier)|Verifier verifiers;
   
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     DBG("Self signed certificate: %O\n", tbs->public_key);
-    v = tbs->public_key;
+    verifiers = ({ tbs->public_key });
   }
-  else
-    v = authorities[tbs->issuer->get_der()];
+  else {
+    verifiers = authorities[tbs->issuer->get_der()];
+    if (objectp(verifiers)) verifiers = ({ verifiers });
+  }
 
-  return v && v->verify(cert[1],
-			cert[0]->get_der(),
-			cert[2]->value)
-    && tbs;
+  foreach(verifiers || ({}), Verifier v) {
+    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value))
+      return tbs;
+  }
+  return 0;
 }
 
 //! Decodes a root certificate using @[decode_certificate] and
@@ -1098,7 +1102,7 @@ TBSCertificate verify_root_certificate(string s)
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
 mapping verify_certificate_chain(array(string) cert_chain,
-				 mapping(string:Verifier) authorities,
+				 mapping(string:Verifier|array(Verifier)) authorities,
                                  int|void require_trust)
 {
   mapping m = ([ ]);
@@ -1126,15 +1130,15 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   foreach(chain_obj; int idx; TBSCertificate tbs)
   {
-    Verifier v;
+    array(Verifier)|Verifier verifiers;
 
     if(idx == 0) // The root cert
     {
-      v = authorities[tbs->issuer->get_der()];
+      verifiers = authorities[tbs->issuer->get_der()];
 
       // if we don't know the issuer of the root certificate, and we
       // require trust, we're done.
-      if(!v && require_trust)
+      if(!verifiers && require_trust)
         ERROR(CERT_ROOT_UNTRUSTED);
 
       // Is the root self signed?
@@ -1144,8 +1148,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
         m->self_signed = 1;
 
         // always trust our own authority first, even if it is self signed.
-        if(!v) 
-          v = tbs->public_key;
+        if(!verifiers) 
+          verifiers = ({ tbs->public_key });
+      } else if (objectp(verifiers)) {
+	verifiers = ({ verifiers });
       }
     }
 
@@ -1169,18 +1175,18 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
       // the verifier for this certificate should be the public key of
       // the previous certificate in the chain.
-      v = chain_obj[idx-1]->public_key;
+      verifiers = ({ chain_obj[idx-1]->public_key });
     }
 
-    if (v)
-    {
+    int verified;
+    foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
                     chain_cert[idx][0]->get_der(),
                     chain_cert[idx][2]->value)
           && tbs)
       {
         DBG("signature is verified..\n");
-        m->verified = 1;
+        m->verified = verified = 1;
 
         // if we're the root of the chain and we've verified, this is
         // the authority.
@@ -1188,10 +1194,11 @@ mapping verify_certificate_chain(array(string) cert_chain,
           m->authority = tbs->issuer;
  
         if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
+        break;
       }
-      else
-        ERROR(CERT_BAD_SIGNATURE);
     }
+    if (!verified)
+      ERROR(CERT_BAD_SIGNATURE);
   }
   return m;
 
