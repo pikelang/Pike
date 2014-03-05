@@ -1063,6 +1063,128 @@ TBSCertificate verify_root_certificate(string s)
   return tbs;
 }
 
+//! Convenience function for loading known root ceritificates.
+//!
+//! @param root_cert_dirs
+//!   Directory/directories containing the PEM-encoded root certificates
+//!   to load. Defaults to a rather long list of directories, including
+//!   @expr{"/etc/ssl/certs"@}, @expr{"/etc/pki/tls/certs"@} and
+//!   @expr{"/System/Library/OpenSSL/certs"@}, which seem to be the most
+//!   common locations.
+//!
+//! @returns
+//!   Returns a mapping from DER-encoded issuer to @[Verifier]s
+//!   compatible with eg @[verify_certificate()]
+//!
+//! @note
+//!   If a certificate directory contains a file named
+//!   @expr{"ca-certificates.crt"@}, it is assumed to
+//!   contain a concatenation of all the certificates
+//!   in the directory.
+//!
+//! @seealso
+//!   @[verify_certificate()], @[verify_certificate_chain()]
+mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_cert_dirs)
+{
+  root_cert_dirs = root_cert_dirs || ({
+    // These directories have with some minor modifications
+    // been taken from the list at
+    // http://gagravarr.org/writing/openssl-certs/others.shtml
+
+    "/etc/ssl/certs",
+    // This seems to be the default for most current installations
+    // with the exception of RHEL and MacOS X.
+    //
+    // Debian Woody (3.0), OpenSSL 0.9.6
+    // Debian Sarge (3.1), OpenSSL 0.9.7
+    // Debian Etch (4.0), OpenSSL 0.9.8
+    // Debian Lenny (5.0), OpenSSL 0.9.8
+    // Debian Squeeze (6.0), OpenSSL 0.9.8o
+    // FreeBSD, OpenSSL 0.9.8
+    // Gentoo, OpenSSL 0.9.7
+    // Nokia N900 Maemo 5, OpenSSL 0.9.8n
+    // OpenBSD, OpenSSL 0.9.x
+    // Slackware, OpenSSL 0.9.6
+    // SuSE 8.1 / 8.2, OpenSSL 0.9.6
+    // Ubuntu Maverick (10.10), OpenSSL 0.9.8o
+    // Ubuntu Precise (12.04), OpenSSL 1.0.1
+
+    "/etc/pki/tls/certs",
+    // Redhat Enterprise 6, OpenSSL 1.0.0
+    // Redhat Fedora Core 4, OpenSSL 0.9.7
+    // Redhat Fedora Core 5 / 6, OpenSSL 0.9.8
+
+    "/System/Library/OpenSSL/certs",
+    // Mac OS X 10.1.2, OpenSSL 0.9.6b
+
+    "/etc/openssl/certs",
+    // NetBSD, OpenSSL 0.9.x
+
+    // From this point on the operation systems start getting
+    // a bit old.
+
+    "/usr/share/ssl/certs",
+    // Centos 3 / 4, OpenSSL 0.9.7
+    // Redhat 6.2 / 7.x / 8.0 / 9, OpenSSL 0.9.6
+    // Redhat Enterprise 3 / 4, OpenSSL 0.9.7
+    // Redhat Fedora Core 2 / 3, OpenSSL 0.9.7
+    // SuSE 7.3 / 8.0, OpenSSL 0.9.6
+
+    "/usr/lib/ssl/certs",
+    // Gentoo, OpenSSL 0.9.6
+    // Mandrake 7.1 -> 8.2, OpenSSL 0.9.6
+
+    "/var/ssl/certs",
+    // AIX, OpenSSL 0.9.6 (from OpenSSH support packages)
+
+    "/usr/ssl/certs",
+    // Cygwin, OpenSSL 0.9.6
+
+    "/usr/local/openssl/certs",
+    // FreeBSD, OpenSSL 0.9.x (custom complile)
+
+    "/usr/local/ssl/certs",
+    // Normal OpenSSL Tarball Build, OpenSSL 0.9.6
+
+    "/opt/local/ssl/certs",
+    // Common alternative to /usr/local/.
+  });
+  if (!arrayp(root_cert_dirs)) {
+    root_cert_dirs = ({ root_cert_dirs });
+  }
+  mapping(string:array(Verifier)) res = ([]);
+
+  foreach(root_cert_dirs, string dir) {
+    string pem = Stdio.read_bytes(combine_path(dir, "ca-certificates.crt"));
+    if (pem) {
+      Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
+      foreach(messages->fragments, string|Standards.PEM.Message m) {
+	if (!objectp(m)) continue;
+	TBSCertificate tbs = decode_certificate(m->body);
+	if (!tbs) continue;
+	res[tbs->subject->get_der()] += ({ tbs->public_key });
+      }
+      continue;
+    }
+    foreach(get_dir(dir) || ({}), string fname) {
+      if (has_suffix(fname, ".0")) {
+	// Skip OpenSSL hash files for now (as they are duplicates).
+	continue;
+      }
+      fname = combine_path(dir, fname);
+      if (!Stdio.is_file(fname)) continue;
+      pem = Stdio.read_bytes(fname);
+      if (!pem) continue;
+      string cert = Standards.PEM.simple_decode(pem);
+      if (!cert) continue;
+      TBSCertificate tbs = decode_certificate(cert);
+      if (!tbs) continue;
+      res[tbs->subject->get_der()] += ({ tbs->public_key });
+    }
+  }
+  return res;
+}
+
 //! Decodes a certificate chain, checks the signatures. Verifies that the
 //! chain is unbroken, and that all certificates are in effect  
 //! (time-wise.) 
