@@ -278,6 +278,34 @@ void advertise_protocols(string(8bit) ... protos)
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 
+//! Add a certificate.
+//!
+//! @param key
+//!   Private key matching the first certificate in @[certs].
+//!
+//! @param certs
+//!  A chain of X509.v1 or X509.v3 certificates, with the local
+//!  certificate first and root-most certificate last.
+//!
+//! @note
+//!   Currently this replaces the default certificate,
+//!   (if any) but in the future it may support having
+//!   multiple certificates and certificate selection
+//!   depending on parameters supplied by the peer.
+//!
+//! @fixme
+//!   The function does currently NOT validate that the @[key]
+//!   matches the first entry of @[certs], or that the list
+//!   of @[certs] is valid, but may do so in the future.
+void add_cert(Crypto.Sign key, array(string(8bit)) certs)
+{
+  if (!sizeof(certs)) {
+    error("Empty list of certificates.\n");
+  }
+  private_key = key;
+  certificates = certs;
+}
+
 // Generate a sort key for a cipher suite.
 //
 // The larger the value, the stronger the cipher suite.
