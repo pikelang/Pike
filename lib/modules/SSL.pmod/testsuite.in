@@ -79,7 +79,6 @@ test_do([[
   ASSERT(key);
 
   object rsa = Standards.PKCS.RSA.parse_private_key(key);
-  ctx->private_key = rsa;
   ASSERT(rsa->rsa_size()>512);
   ctx->short_rsa = Crypto.RSA();
   ctx->short_rsa->set_random(ctx->random);
@@ -87,7 +86,8 @@ test_do([[
   ctx->rsa_mode();
 
   object tbs = Standards.X509.decode_certificate(cert);
-  ctx->certificates = ({ cert });
+
+  ctx->add_cert(rsa, ({ cert }));
 
   add_constant("server_rsa_ctx", ctx);
 ]])
@@ -95,14 +95,16 @@ test_do([[
 test_do([[
   SSL.context ctx = SSL.context();
   ctx->random = random_string;
-  ctx->private_key = Crypto.DSA()->generate_key(1024, 160);
+  object dsa = Crypto.DSA()->generate_key(1024, 160);
   mapping attrs = ([
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
-  string cert = Standards.X509.make_selfsigned_certificate(ctx->private_key,
+  string cert = Standards.X509.make_selfsigned_certificate(dsa,
     3600*24, attrs);
-  ctx->certificates = ({ cert });
+
+  ctx->add_cert(dsa, ({ cert }));
+
   ctx->dhe_dss_mode();
   add_constant("server_dss_ctx", ctx);
 ]])
@@ -110,15 +112,17 @@ test_do([[
 test_do([[
   SSL.context ctx = SSL.context();
   ctx->random = random_string;
-  ctx->private_key = Crypto.ECC.SECP_521R1.ECDSA()->
+  object ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(random_string)->generate_key();
   mapping attrs = ([
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
-  string cert = Standards.X509.make_selfsigned_certificate(ctx->private_key,
+  string cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs);
-  ctx->certificates = ({ cert });
+
+  ctx->add_cert(ecdsa, ({ cert }));
+
   ctx->ecdsa_mode();
   add_constant("server_ecdsa_ctx", ctx);
 ]])
@@ -467,15 +471,17 @@ test_tests([[
 object make_context(Crypto.ECC.Curve curve) {
   SSL.context ctx = SSL.context();
   ctx->random = random_string;
-  ctx->private_key = curve->ECDSA()->
+  object ecdsa = curve->ECDSA()->
     set_random(random_string)->generate_key();
   mapping attrs = ([
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
-  string cert = Standards.X509.make_selfsigned_certificate(ctx->private_key,
+  string cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs);
-  ctx->certificates = ({ cert });
+
+  ctx->add_cert(ecdsa, ({ cert }));
+
   ctx->ecdsa_mode();
   return ctx;
 }
