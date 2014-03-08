@@ -165,6 +165,7 @@ constant HASH_lookup = ([
 
 //! Signature algorithms from TLS 1.2.
 enum SignatureAlgorithm {
+  SIGNATURE_invalid	= -1,	//! Signature not supported (internal).
   SIGNATURE_anonymous	= 0,	//! No signature.
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
@@ -189,6 +190,23 @@ enum KeyExchangeType {
   KE_ecdhe_rsa  = 11,	//! Elliptic Curve DH Ephemeral with RSA
   KE_ecdh_anon  = 12,	//! Elliptic Curve DH Anonymous
 }
+
+//! Mapps from @[KeyExchangeType] to @[SignatureAlgorithm].
+constant KE_TO_SA = ([
+  KE_null:		SIGNATURE_anonymous,
+  KE_rsa:		SIGNATURE_rsa,
+  KE_dh:		SIGNATURE_anonymous,
+  KE_dhe_dss:		SIGNATURE_dsa,
+  KE_dhe_rsa:		SIGNATURE_rsa,
+  KE_dh_anon:		SIGNATURE_anonymous,
+  KE_dms:		SIGNATURE_invalid,
+  KE_fortezza:		SIGNATURE_invalid,
+  KE_ecdh_ecdsa:	SIGNATURE_ecdsa,
+  KE_ecdhe_ecdsa:	SIGNATURE_ecdsa,
+  KE_ecdh_rsa:		SIGNATURE_rsa,
+  KE_ecdhe_rsa:		SIGNATURE_rsa,
+  KE_ecdh_anon:		SIGNATURE_anonymous,
+]);
 
 //! Compression methods.
 enum CompressionType {
@@ -879,6 +897,15 @@ enum NamedCurve {
   CURVE_arbitrary_explicit_prime_curves	= 0xFF01,
   CURVE_arbitrary_explicit_char2_curves	= 0xFF02,
 }
+
+//! Lookup for Pike ECC name to @[NamedCurve].
+constant ECC_NAME_TO_CURVE = ([
+  "SECP_192R1": CURVE_secp192r1,
+  "SECP_224R1": CURVE_secp224r1,
+  "SECP_256R1": CURVE_secp256r1,
+  "SECP_384R1": CURVE_secp384r1,
+  "SECP_521R1": CURVE_secp521r1,
+]);
 
 /* ECC point formats from RFC 4492 5.1.2. */
 enum PointFormat {
