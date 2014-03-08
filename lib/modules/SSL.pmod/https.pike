@@ -197,12 +197,14 @@ int main()
   client(con);
   return -17;
 #else
+  Crypto.Sign key;
+
 #ifdef ECDSA_MODE
 #if constant(Crypto.ECC.Curve)
-  ecdsa = Crypto.ECC.SECP_521R1.ECDSA()->
+  key = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(Crypto.Random.random_string)->generate_key();
   my_certificate =
-    Standards.X509.make_selfsigned_certificate(ecdsa, 3600*4, ([
+    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
@@ -231,13 +233,13 @@ int main()
   rsa->set_private_key(d);
 #else /* !0 */
   // FIXME: Is this correct?
-  rsa = Standards.PKCS.RSA.parse_private_key(my_key);
+  key = Standards.PKCS.RSA.parse_private_key(my_key);
 #endif /* 0 */
   // Make sure all cipher suites are available.
   rsa_mode();
 #endif
   SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
-  certificates = ({ my_certificate });
+  add_cert(key, ({ my_certificate }));
   random = no_random()->read;
   werror("Starting\n");
   if (!bind(PORT, my_accept_callback))
