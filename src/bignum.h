@@ -25,6 +25,8 @@
  *  be used.
  *  These functions will also detect and try to avoid undefined behavior, e.g. shifts of
  *  negative integers.
+ *
+ *  The family of DO_*_OVERFLOW functions sets the result only if no overflow occured.
  */
 #define GENERIC_OVERFLOW_CHECKS(type)                                                   \
 static INLINE int DO_## type ## _NEG_OVERFLOW(type a, type * res) {                     \
@@ -96,21 +98,38 @@ static INLINE int DO_ ## type ## _RSH_OVERFLOW(type a, type b, type * res) {    
 }
 
 #if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow)
-#define DO_INT32_ADD_OVERFLOW   __builtin_sadd_overflow
-#define DO_INT32_SUB_OVERFLOW   __builtin_ssub_overflow
-#define DO_INT32_MUL_OVERFLOW   __builtin_smul_overflow
-#define DO_UINT32_ADD_OVERFLOW   __builtin_uadd_overflow
-#define DO_UINT32_SUB_OVERFLOW   __builtin_usub_overflow
-#define DO_UINT32_MUL_OVERFLOW   __builtin_umul_overflow
-#define DO_INT64_ADD_OVERFLOW   __builtin_saddl_overflow
-#define DO_INT64_SUB_OVERFLOW   __builtin_ssubl_overflow
-#define DO_INT64_MUL_OVERFLOW   __builtin_smull_overflow
-#define DO_UINT64_ADD_OVERFLOW   __builtin_uaddl_overflow
-#define DO_UINT64_SUB_OVERFLOW   __builtin_usubl_overflow
-#define DO_UINT64_MUL_OVERFLOW   __builtin_umull_overflow
+#define DO_CLANG_OF(name, type, builtin)                \
+static INLINE int name(type a, type b, type * res) {    \
+    type tmp;                                           \
+    if (builtin(a, b, &tmp)) return 1;                  \
+    *res = tmp;                                         \
+    return 0;                                           \
+}
+
+DO_CLANG_OF(DO_INT32_ADD_OVERFLOW, INT32, __builtin_sadd_overflow)
+DO_CLANG_OF(DO_INT32_SUB_OVERFLOW, INT32, __builtin_ssub_overflow)
+DO_CLANG_OF(DO_INT32_MUL_OVERFLOW, INT32, __builtin_smul_overflow)
+DO_CLANG_OF(DO_UINT32_ADD_OVERFLOW, unsigned INT32, __builtin_uadd_overflow)
+DO_CLANG_OF(DO_UINT32_SUB_OVERFLOW, unsigned INT32, __builtin_usub_overflow)
+DO_CLANG_OF(DO_UINT32_MUL_OVERFLOW, unsigned INT32, __builtin_umul_overflow)
 
 GENERIC_OVERFLOW_CHECKS(INT32)
 #if defined(INT64)
+# if SIZEOF_LONG == 8
+DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddl_overflow)
+DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubl_overflow)
+DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smull_overflow)
+DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, unsigned INT64, __builtin_uaddl_overflow)
+DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, unsigned INT64, __builtin_usubl_overflow)
+DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, unsigned INT64, __builtin_umull_overflow)
+# elif SIZEOF_LONG_LONG == 8
+DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddll_overflow)
+DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubll_overflow)
+DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smulll_overflow)
+DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, unsigned INT64, __builtin_uaddll_overflow)
+DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, unsigned INT64, __builtin_usubll_overflow)
+DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, unsigned INT64, __builtin_umulll_overflow)
+#endif
 GENERIC_OVERFLOW_CHECKS(INT64)
 #endif
 
