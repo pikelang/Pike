@@ -947,3 +947,117 @@ constant ECC_CURVES = ([
   CURVE_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 ]);
+
+protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
+  pkcs_der_to_sign_alg = ([
+  // RSA
+  Standards.PKCS.Identifiers.rsa_md5_id->get_der():
+  ({ HASH_md5, SIGNATURE_rsa }),
+  Standards.PKCS.Identifiers.rsa_sha1_id->get_der():
+  ({ HASH_sha, SIGNATURE_rsa }),
+  Standards.PKCS.Identifiers.rsa_sha256_id->get_der():
+  ({ HASH_sha256, SIGNATURE_rsa }),
+  Standards.PKCS.Identifiers.rsa_sha384_id->get_der():
+  ({ HASH_sha384, SIGNATURE_rsa }),
+  Standards.PKCS.Identifiers.rsa_sha512_id->get_der():
+  ({ HASH_sha512, SIGNATURE_rsa }),
+
+  // DSA
+  Standards.PKCS.Identifiers.dsa_sha_id->get_der():
+  ({ HASH_sha, SIGNATURE_dsa }),
+  Standards.PKCS.Identifiers.dsa_sha224_id->get_der():
+  ({ HASH_sha224, SIGNATURE_dsa }),
+  Standards.PKCS.Identifiers.dsa_sha256_id->get_der():
+  ({ HASH_sha256, SIGNATURE_dsa }),
+
+  // ECDSA
+  Standards.PKCS.Identifiers.ecdsa_sha1_id->get_der():
+  ({ HASH_sha, SIGNATURE_ecdsa }),
+  Standards.PKCS.Identifiers.ecdsa_sha224_id->get_der():
+  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  Standards.PKCS.Identifiers.ecdsa_sha256_id->get_der():
+  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  Standards.PKCS.Identifiers.ecdsa_sha384_id->get_der():
+  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  Standards.PKCS.Identifiers.ecdsa_sha512_id->get_der():
+  ({ HASH_sha512, SIGNATURE_ecdsa }),
+]);
+
+//! A chain of X509 certificates with corresponding private key.
+//!
+//! It also contains some derived metadata.
+class CertificatePair
+{
+  //! Private key.
+  Crypto.Sign key;
+
+  //! Chain of certificates, root cert last.
+  array(string(8bit)) certs;
+
+  //! Array of DER for the issuers matching @[certs].
+  array(string(8bit)) issuers;
+
+  //! Array of commonName globs from the first certificate in @[certs].
+  array(string(8bit)) globs;
+
+  //! TLS 1.2-style hash and signature pairs matching the @[certs].
+  array(array(HashAlgorithm|SignatureAlgorithm)) sign_algs;
+
+  //! Initializa a new @[CertificatePair].
+  //!
+  //! @param key
+  //!   Private key.
+  //!
+  //! @param certs
+  //!   Chain of certificates, root cert last.
+  //!
+  //! @param extra_globs
+  //!   The set of @[globs] from the first certificate
+  //!   is optionally extended with these.
+  //!
+  //! @note
+  //!   Performs various validation checks.
+  protected void create(Crypto.Sign key, array(string(8bit)) certs,
+			array(string(8bit))|void extra_name_globs)
+  {
+    if (!sizeof(certs)) {
+      error("Empty list of certificates.\n");
+    }
+
+    array(Standards.X509.TBSCertificate) tbss =
+      map(certs, Standards.X509.decode_certificate);
+
+    if (has_value(tbss, 0)) error("Invalid cert\n");
+
+    // Validate that the key matches the cert.
+    if (!key->public_key_equal(tbss[0]->public_key->pkc)) {
+      error("Private key doesn't match certificate.\n");
+    }
+
+    this_program::key = key;
+    this_program::certs = certs;
+
+    issuers = tbss->issuer->get_der();
+
+    sign_algs = map(map(tbss->algorithm, `[], 0)->get_der(),
+		    pkcs_der_to_sign_alg);
+
+    if (has_value(sign_algs, 0)) error("Unknown signature algorithm.\n");
+
+    globs = ({});
+
+    string cn;
+    foreach(Standards.PKCS.Certificate.
+	    decode_distinguished_name(tbss[0]->subject)->commonName, cn) {
+      if (cn) {
+	globs += ({ lower_case(cn) });
+      }
+    }
+
+    if (extra_name_globs) globs += map(extra_name_globs, lower_case);
+
+    if (!sizeof(globs)) error("No common name.\n");
+
+    globs = Array.uniq(globs);
+  }
+}
