@@ -407,6 +407,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
       !session->select_cipher_suite(context, cipher_suites, version[1])) {
     // No overlapping cipher suites, or obsolete cipher suite selected,
     // or incompatible certificates.
+    SSL3_DEBUG_MSG("No common suites.\n");
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
@@ -416,6 +417,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     session->set_compression_method(compression_methods[0]);
   else
   {
+    SSL3_DEBUG_MSG("Unsupported compression method.\n");
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
@@ -961,6 +963,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
 	  {
+	    SSL3_DEBUG_MSG("Unsupported saved session state.\n");
 	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
 			      version[1]));
 	    return -1;
@@ -1396,8 +1399,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       }
 
       if (!session->set_cipher_suite(cipher_suite, version[1],
-				     session->signature_algorithms)) {
+				     session->signature_algorithms,
+				     512)) {
 	// Unsupported or obsolete cipher suite selected.
+	SSL3_DEBUG_MSG("Unsupported or obsolete cipher suite selected.\n");
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
 	return -1;
       }

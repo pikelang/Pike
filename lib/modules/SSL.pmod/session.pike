@@ -109,32 +109,166 @@ int(0..1) has_required_certificates()
   return 1;
 }
 
-//! Select an appropriate certificate and cipher suite
-//! given the parameters provided by the client.
+//! Used to filter certificates not supported by the peer.
+//!
+//! @param cp
+//!   Candidate @[CertificatePair].
+//!
+//! @param version
+//!   Negotiated version of SSL.
+//!
+//! @param ecc_curves
+//!   The set of ecc_curves supported by the peer.
+protected int(0..1) is_supported_cert(CertificatePair cp,
+				      int version,
+				      array(int) ecc_curves)
+{
+  if (version >= PROTOCOL_TLS_1_2) {
+    // FIXME: In TLS 1.2 and later check that all sign_algs
+    //        in the cert chain are supported by the peer.
+  }
+
+#if constant(Crypto.ECC.Curve)
+  if (cp->key->curve) {
+    // Is the ECC curve supported by the client?
+    Crypto.ECC.Curve c =
+      ([object(Crypto.ECC.SECP_521R1.ECDSA)]cp->key)->curve();
+    SSL3_DEBUG_MSG("Curve: %O\n"
+		   "CURVE ID: %d\n",
+		   c, ECC_NAME_TO_CURVE[c->name()]);
+    return has_value(ecc_curves, ECC_NAME_TO_CURVE[c->name()]);
+  }
+#endif
+  return 1;
+}
+
+//! Used to filter the set of cipher suites suggested by the peer
+//! based on our available certificates.
+//!
+//! @param suite
+//!   Candidate cipher suite.
+//!
+//! @param certs
+//!   Available certificates.
+protected int(0..1) is_supported_suite(int suite,
+				       array(CertificatePair) certs)
+{
+  array(int) suite_info = [array(int)]CIPHER_SUITES[suite];
+  if (!suite_info) {
+    SSL3_DEBUG_MSG("Suite %d is not supported.\n", suite);
+    return 0;
+  }
+  SignatureAlgorithm sa = [int(-1..3)]KE_TO_SA[suite_info[0]];
+  if (sa <= 0) return !sa;
+
+  foreach(certs, CertificatePair cp) {
+    if (cp->sign_algs[0][1] == sa) return 1;
+  }
+
+  return 0;
+}
+
+//! Selects an apropriate certificate, authentication method
+//! and cipher suite for the parameters provided by the client.
+//!
+//! @param context
+//!   The server context.
+//!
+//! @param client_suites
+//!   The set of cipher suites that the client claims to support.
+//!
+//! @param version
+//!   The SSL protocol version to use.
+//!
+//! Typical client extensions that also are used:
+//! @ul
+//!   @li @[signature_algorithms]
+//!     The set of signature algorithms tuples that
+//!     the client claims to support.
+//!
+//!   @li @[server_names]
+//!     Server Name Indication extension from the client.
+//!     May be @expr{0@} (zero) if the client hasn't sent any SNI.
+//! @endul
 int select_cipher_suite(object context,
 			array(int) cipher_suites,
 			ProtocolVersion|int version)
 {
-  if (!set_cipher_suite(cipher_suites[0], version, signature_algorithms))
+  if (!sizeof(cipher_suites)) return 0;
+
+  // First we need to check what certificate candidates we have.
+  array(CertificatePair) certs =
+    ([function(array(string(8bit)): array(CertificatePair))]
+     context->find_cert)(server_names);
+
+  SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
+
+  // Filter any certs that the client doesn't support.
+  certs = [array(CertificatePair)]
+    filter(certs, is_supported_cert, version, ecc_curves);
+
+  SSL3_DEBUG_MSG("Client supported certificates: %O\n", certs);
+
+  // Given the set of certs, filter the set of client_suites,
+  // to find the best.
+  cipher_suites =
+    ([function(array(int):array(int))]
+     context->sort_suites)(filter(cipher_suites, is_supported_suite,
+				  certs || ([])));
+
+  if (!sizeof(cipher_suites)) {
+    SSL3_DEBUG_MSG("No suites left after certificate filtering.\n");
     return 0;
+  }
 
-  // Select a certificate key.
-  SSL3_DEBUG_MSG("Selecting server key.\n");
-  private_key = context->select_server_key_func &&
-    ([function(object, array(string(8bit)): Crypto.Sign)]
-     context->select_server_key_func)(context, server_names);
-  if (!private_key)
-    private_key = [object(Crypto.Sign)]context->private_key;
-  SSL3_DEBUG_MSG("Selected server key: %O\n", private_key);
+  SSL3_DEBUG_MSG("intersection:\n%s\n",
+                 fmt_cipher_suites(cipher_suites));
 
-  SSL3_DEBUG_MSG("Checking for Certificate.\n");
-  certificate_chain = context->select_server_certificate_func &&
-    ([function(object, array(string(8bit)): array(string(8bit)))]
-     context->select_server_certificate_func)(context, server_names);
-  if (!certificate_chain)
-    certificate_chain = [array(string(8bit))]context->certificates;
+  int suite = cipher_suites[0];
 
-  return 1;
+  ke_method = [int]CIPHER_SUITES[suite][0];
+
+  SSL3_DEBUG_MSG("Selecting server key and certificate.\n");
+
+  int max_hash_size = 512;
+
+  // Now we can select the actual cert to use.
+  SignatureAlgorithm sa = [int(0..0)|SignatureAlgorithm]KE_TO_SA[ke_method];
+  if (sa != SIGNATURE_anonymous) {
+    CertificatePair cert;
+
+    foreach(certs, CertificatePair cp) {
+      if (cp->sign_algs[0][1] == sa) {
+	cert = cp;
+	break;
+      }
+    }
+
+    if (!cert) {
+      error("No suitable certificate for selected cipher suite: %s (%s).\n",
+	    fmt_cipher_suite(suite), fmt_constant("SIGNATURE_", sa));
+    }
+
+    private_key = cert->key;
+    SSL3_DEBUG_MSG("Selected server key: %O\n", private_key);
+
+    certificate_chain = cert->certs;
+#if constant(Crypto.ECC.Curve)
+    if (private_key->curve) {
+      curve = [object(Crypto.ECC.Curve)]private_key->curve();
+    }
+#endif /* Crypto.ECC.Curve */
+
+    if (private_key->block_size) {
+      // FIXME: The maximum allowable hash size depends on the size of the
+      //        RSA key when RSA is in use. With a 64 byte (512 bit) key,
+      //        the block size is 61 bytes, allow for 23 bytes of overhead.
+      max_hash_size = [int]private_key->block_size() - 23;
+    }
+  }
+
+  return set_cipher_suite(suite, version, signature_algorithms,
+			  max_hash_size);
 }
 
 //! Sets the proper authentication method and cipher specification
@@ -149,12 +283,9 @@ int select_cipher_suite(object context,
 //! @param signature_algorithms
 //!   The set of signature algorithms tuples that the client claims to support.
 int set_cipher_suite(int suite, ProtocolVersion|int version,
-		     array(array(int))|void signature_algorithms)
+		     array(array(int)) signature_algorithms,
+		     int max_hash_size)
 {
-  // FIXME: The maximum allowable hash size depends on the size of the
-  //        RSA key when RSA is in use. With a 64 byte (512 bit) key,
-  //        the block size is 61 bytes, allow for 23 bytes of overhead.
-  int max_hash_size = 61-23;
   array res = .Cipher.lookup(suite, version, signature_algorithms,
 			     max_hash_size);
   if (!res) return 0;
@@ -186,6 +317,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 	  ke_method);
     break;
   }
+
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",

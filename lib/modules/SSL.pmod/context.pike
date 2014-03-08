@@ -289,26 +289,47 @@ void advertise_protocols(string(8bit) ... protos)
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 
+//! Look up a suitable set of signature algorithms for the
+//! specified SNI.
+//!
+//! @note
+//!   This function only selects certs based on @[sni].
+//!   Any filtering on other criteria (cipher suites,
+//!   signature algorithms, etc) will have to be done
+//!   afterwards.
+//!
+//! @fixme
+//!   @[sni] is currently ignored.
+array(CertificatePair) find_cert(array(string)|void sni)
+{
+  return cert_pairs;
+}
+
 //! Add a certificate.
 //!
 //! @param key
 //!   Private key matching the first certificate in @[certs].
 //!
 //! @param certs
-//!  A chain of X509.v1 or X509.v3 certificates, with the local
-//!  certificate first and root-most certificate last.
+//!   A chain of X509.v1 or X509.v3 certificates, with the local
+//!   certificate first and root-most certificate last.
 //!
-//! @note
-//!   Currently this replaces the default certificate,
-//!   (if any) but in the future it may support having
-//!   multiple certificates and certificate selection
-//!   depending on parameters supplied by the peer.
+//! @param extra_name_globs
+//!   Further SNI globs (than the ones in the first certificate), that
+//!   this certificate should be selected for. Typically used to set
+//!   the default certificate(s) by specifying @expr{({ "*" })@}.
 //!
-//! @fixme
-//!   The function does currently NOT validate that the @[key]
-//!   matches the first entry of @[certs], or that the list
-//!   of @[certs] is valid, but may do so in the future.
-void add_cert(Crypto.Sign key, array(string(8bit)) certs)
+//! This function adds the key and chain of certificates
+//! to the set of certificate candidates to use in @[find_cert()].
+//!
+//! @throws
+//!   The function performs various validation of the @[key]
+//!   and @[certs], and throws errors if the validation fails.
+//!
+//! @seealso
+//!   @[find_cert()]
+void add_cert(Crypto.Sign key, array(string(8bit)) certs,
+	      array(string(8bit))|void extra_name_globs)
 {
   cert_pairs += ({ CertificatePair(key, certs) });
 }
@@ -397,8 +418,19 @@ array(int) sort_suites(array(int) suites)
 //! that satisfy the requirements.
 //!
 //! @param sign
-//!   Signature algorithm, typically @[SIGNATURE_rsa] or
-//!   @[SIGNATURE_dsa].
+//!   Signature algorithm to support. One of
+//!     @int
+//!       @value SIGNATURE_invalid
+//!         Support all signature algorithms that we have certificates for.
+//!       @value SIGNATURE_anonymous
+//!         Support only anonymous signatures.
+//!       @value SIGNATURE_rsa
+//!         Support only RSA signatures.
+//!       @value SIGNATURE_dsa
+//!         Support only DSA signatures.
+//!       @value SIGNATURE_ecdsa
+//!         Support only ECDSA signatures.
+//!     @endint
 //!
 //! @param min_keylength
 //!   Minimum supported effective keylength.
@@ -409,15 +441,30 @@ array(int) sort_suites(array(int) suites)
 //!   are known attacks.
 array(int) get_suites(int sign, int min_keylength, int|void max_version)
 {
-  // Default to the unsigned key exchange methods.
-  multiset(int) kes = (< KE_null, KE_dh, KE_dh_anon,
-#if constant(Crypto.ECC.Curve)
-			 KE_ecdh_anon,
-#endif
-  >);
+  multiset(int) kes = (<>);
 
   // Add the signature-dependent methods.
   switch(sign) {
+  case SIGNATURE_invalid:
+    // Don't filter on signature.
+    kes |= (< KE_rsa, KE_dhe_rsa,
+	      KE_dhe_dss,
+	      KE_null, KE_dh, KE_dh_anon,
+#if constant(Crypto.ECC.Curve)
+	      KE_ecdh_rsa, KE_ecdhe_rsa,
+	      KE_ecdh_ecdsa, KE_ecdhe_ecdsa,
+	      KE_ecdh_anon,
+#endif
+    >);
+    break;
+  case SIGNATURE_anonymous:
+    // Unsigned key exchange methods.
+    kes |= (< KE_null, KE_dh, KE_dh_anon,
+#if constant(Crypto.ECC.Curve)
+	      KE_ecdh_anon,
+#endif
+    >);
+    break;
   case SIGNATURE_rsa:
     kes |= (< KE_rsa, KE_dhe_rsa,
 #if constant(Crypto.ECC.Curve)
