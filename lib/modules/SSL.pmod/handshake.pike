@@ -369,8 +369,9 @@ Packet certificate_verify_packet()
 {
   ADT.struct struct = ADT.struct();
 
+  // FIXME: This temporary context is probably not needed.
   .context cx = .context();
-  cx->rsa = context->client_rsa;
+  cx->private_key = context->private_key;
 
   session->cipher_spec->sign(cx, handshake_messages, struct);
 
@@ -1272,7 +1273,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	 return -1;
        }	
 
-       if(session->peer_certificate_chain && sizeof(session->peer_certificate_chain))
+       if(session->peer_certificate_chain &&
+	  sizeof(session->peer_certificate_chain))
           certificate_state = CERT_received;
        else certificate_state = CERT_no_certificate;
        break;
@@ -1544,6 +1546,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       if(error)
 	{
+	  session->peer_certificate_chain = UNDEFINED;
           SSL3_DEBUG_MSG("Failed to decode certificate!\n");
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: Failed to decode certificate\n",
@@ -1664,8 +1667,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	send_packet(key_exchange);
 
       // FIXME: Certificate verify; we should redo this so it makes more sense
-      if(certificate_state == CERT_received
-         && sizeof(context->client_certificates) && context->client_rsa)
+      if(certificate_state == CERT_received &&
+         sizeof(context->client_certificates) &&
+	 context->private_key)
          // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
