@@ -608,16 +608,27 @@ string fmt_constant(string prefix, int c)
   return sprintf("%sunknown(%d)", prefix, c);
 }
 
+protected mapping(int:string) suite_to_symbol = ([]);
+
+string fmt_cipher_suite(int suite)
+{
+  if (!sizeof(suite_to_symbol)) {
+    foreach([array(string)]indices(this), string id)
+      if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
+	  has_prefix(id, "SSL2_") ) {
+	suite_to_symbol[this[id]] = id;
+      }
+  }
+  string res = suite_to_symbol[suite];
+  if (res) return res;
+  return suite_to_symbol[suite] = sprintf("unknown(%d)", suite);
+}
+
 string fmt_cipher_suites(array(int) s)
 {
   String.Buffer b = String.Buffer();
-  mapping(int:string) ciphers = ([]);
-  foreach([array(string)]indices(this), string id)
-    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
-	has_prefix(id, "SSL2_") )
-      ciphers[.Constants[id]] = id;
   foreach(s, int c)
-    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
+    b->sprintf("   %-6d: %s\n", c, fmt_cipher_suite(c));
   return (string)b;
 }
 
