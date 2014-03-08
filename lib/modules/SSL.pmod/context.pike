@@ -63,23 +63,18 @@ array(string(8bit)) client_server_names = ({});
 
 /* For client authentication */
 
-//! The client's private key (used with client certificate
-//! authentication)
-Crypto.Sign client_public_key;
-
 //! Compatibility.
-//! @deprecated client_public_key
+//! @deprecated private_key
 __deprecated__ Crypto.RSA `client_rsa()
 {
-  return client_public_key && (client_public_key->name() == "RSA") &&
-    [object(Crypto.RSA)]client_public_key;
+  return rsa;
 }
 
 //! Compatibility.
-//! @deprecated client_public_key
+//! @deprecated private_key
 __deprecated__ void `client_rsa=(Crypto.RSA k)
 {
-  client_public_key = k;
+  private_key = k;
 }
 
 //! An array of certificate chains a client may present to a server
