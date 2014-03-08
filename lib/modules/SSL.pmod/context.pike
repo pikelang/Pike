@@ -35,8 +35,12 @@ import .Constants;
 //!   available, this key will not be used, instead the appropriate
 //!   SNI key will be used (the default implementation stores these in
 //!   @[sni_keys].
-Crypto.Sign private_key;
+__deprecated__ Crypto.Sign `private_key()
+{
+  if (cert_pairs) return cert_pairs[0]->key;
+}
 
+#if 0
 //! Compatibility.
 //! @deprecated private_key
 __deprecated__ Crypto.RSA `rsa()
@@ -52,6 +56,8 @@ __deprecated__ void `rsa=(Crypto.RSA k)
   private_key = k;
 }
 
+#endif /* 0 */
+
 //! Should an SSL client include the Server Name extension?
 //!
 //! If so, then client_server_names should specify the values to send.
@@ -63,6 +69,7 @@ array(string(8bit)) client_server_names = ({});
 
 /* For client authentication */
 
+#if 0
 //! Compatibility.
 //! @deprecated private_key
 __deprecated__ Crypto.RSA `client_rsa()
@@ -76,6 +83,7 @@ __deprecated__ void `client_rsa=(Crypto.RSA k)
 {
   private_key = k;
 }
+#endif /* 0 */
 
 //! An array of certificate chains a client may present to a server
 //! when client certificate authentication is requested.
@@ -201,6 +209,7 @@ int verify_certificates = 0;
 Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
 
+#if 0
 //! Compatibility.
 //! @deprecated private_key
 __deprecated__ Crypto.DSA `dsa()
@@ -215,6 +224,7 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 {
   private_key = k;
 }
+#endif /* 0 */
 
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
@@ -227,7 +237,13 @@ function(int:string(8bit)) random = Crypto.Random.random_string;
 
 //! The server's certificate, or a chain of X509.v3 certificates, with
 //! the server's certificate first and root certificate last.
-array(string(8bit)) certificates;
+__deprecated__ array(string(8bit)) `certificates()
+{
+  if (sizeof(cert_pairs)) return cert_pairs[0]->certs;
+}
+
+//! Certificates and their corresponding keys.
+array(CertificatePair) cert_pairs = ({});
 
 //! A mapping containing certificate chains for use by SNI (Server
 //! Name Indication). Each entry should consist of a key indicating
@@ -294,11 +310,7 @@ int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 //!   of @[certs] is valid, but may do so in the future.
 void add_cert(Crypto.Sign key, array(string(8bit)) certs)
 {
-  if (!sizeof(certs)) {
-    error("Empty list of certificates.\n");
-  }
-  private_key = key;
-  certificates = certs;
+  cert_pairs += ({ CertificatePair(key, certs) });
 }
 
 // Generate a sort key for a cipher suite.
