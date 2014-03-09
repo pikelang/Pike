@@ -295,8 +295,7 @@ void advertise_protocols(string(8bit) ... protos)
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 
-//! Look up a suitable set of signature algorithms for the
-//! specified SNI.
+//! Look up a suitable set of certificates for the specified SNI.
 //!
 array(CertificatePair) find_cert(array(string)|void sni)
 {
