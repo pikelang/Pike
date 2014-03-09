@@ -123,7 +123,7 @@ signal grab_focus;
 signal grab_notify;
 signal hide;
 //! Called when the widget is hidden
-signal heirarchy_changed;
+signal hierarchy_changed;
 signal key_press_event;
 //! Called when a keyboard key is pressed
 signal key_release_event;

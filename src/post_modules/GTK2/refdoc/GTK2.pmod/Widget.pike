@@ -149,7 +149,7 @@
 //!
 //! @b{grab_notify@}
 //!
-//! @b{heirarchy_changed@}
+//! @b{hierarchy_changed@}
 //!
 //! @b{hide@}
 //! Called when the widget is hidden
