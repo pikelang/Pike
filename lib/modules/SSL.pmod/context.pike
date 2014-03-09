@@ -245,6 +245,12 @@ __deprecated__ array(string(8bit)) `certificates()
 //! Certificates and their corresponding keys.
 array(CertificatePair) cert_pairs = ({});
 
+//! Lookup from SNI (Server Name Indication) (server), or Issuer DER
+//! (client) to an array of suitable @[CertificatePair]s.
+//!
+//! Generated on demand from @[cert_pairs].
+mapping(string(8bit):array(CertificatePair)) cert_cache = ([]);
+
 //! A mapping containing certificate chains for use by SNI (Server
 //! Name Indication). Each entry should consist of a key indicating
 //! the server hostname and the value containing the certificate chain
@@ -292,17 +298,56 @@ int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 //! Look up a suitable set of signature algorithms for the
 //! specified SNI.
 //!
-//! @note
-//!   This function only selects certs based on @[sni].
-//!   Any filtering on other criteria (cipher suites,
-//!   signature algorithms, etc) will have to be done
-//!   afterwards.
-//!
-//! @fixme
-//!   @[sni] is currently ignored.
 array(CertificatePair) find_cert(array(string)|void sni)
 {
-  return cert_pairs;
+  mapping(string(8bit):array(CertificatePair)) certs = ([]);
+  array(string(8bit)) maybes = ({});
+
+  sni = [array(string(8bit))]map(sni || ({ "" }), lower_case);
+
+  foreach(sni, string name) {
+    array(CertificatePair) res;
+    if (res = cert_cache[name]) {
+      certs[name] = res;
+      continue;
+    }
+    if (zero_type(res)) {
+      // Not known bad.
+      certs[name] = ({});
+      maybes += ({ name });
+    }
+  }
+
+  if (sizeof(maybes)) {
+    // There were some unknown names. Check them.
+    foreach(cert_pairs, CertificatePair cp) {
+      foreach(cp->globs, string(8bit) g) {
+	foreach(glob(g, maybes), string name) {
+	  certs[name] += ({ cp });
+	}
+      }
+    }
+
+    if (sizeof(cert_cache) > (sizeof(cert_pairs) * 10 + 10)) {
+      // It seems the cache has been poisoned. Clean it.
+      cert_cache = ([]);
+    }
+
+    // Update the cache.
+    foreach(maybes, string name) {
+      cert_cache[name] = certs[name];
+    }
+  }
+
+  // No certificate found.
+  if (!sizeof(certs)) return UNDEFINED;
+
+  if (sizeof(certs) == 1) {
+    // Just a single matching name.
+    return values(certs)[0];
+  }
+
+  return values(certs) * ({});
 }
 
 //! Add a certificate.
@@ -331,7 +376,11 @@ array(CertificatePair) find_cert(array(string)|void sni)
 void add_cert(Crypto.Sign key, array(string(8bit)) certs,
 	      array(string(8bit))|void extra_name_globs)
 {
-  cert_pairs += ({ CertificatePair(key, certs) });
+  CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
+
+  cert_pairs += ({ cp });
+
+  cert_cache = ([]);
 }
 
 // Generate a sort key for a cipher suite.
