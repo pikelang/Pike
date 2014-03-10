@@ -2540,7 +2540,7 @@ PIKECLASS Backend
   ((poll_request.dp_timeout = (TIMEOUT)),			\
    (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
 
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *PDUNUSED(me),
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 			   int pfd, int fd, INT32 events)
 {
   struct pollfd poll_state[2];
