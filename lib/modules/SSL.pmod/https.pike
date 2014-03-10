@@ -239,7 +239,8 @@ int main()
   rsa_mode();
 #endif
   SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
-  add_cert(key, ({ my_certificate }));
+  add_cert(key, ({ my_certificate }), ({ "*" }));
+  SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
   random = no_random()->read;
   werror("Starting\n");
   if (!bind(PORT, my_accept_callback))
