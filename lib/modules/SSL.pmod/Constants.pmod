@@ -1060,4 +1060,9 @@ class CertificatePair
 
     globs = Array.uniq(globs);
   }
+
+  protected string _sprintf(int c)
+  {
+    return sprintf("CertifivatePair(({%{%O, %}}))", globs);
+  }
 }
