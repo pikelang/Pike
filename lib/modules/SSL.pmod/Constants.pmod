@@ -1063,6 +1063,6 @@ class CertificatePair
 
   protected string _sprintf(int c)
   {
-    return sprintf("CertifivatePair(({%{%O, %}}))", globs);
+    return sprintf("CertificatePair(({%{%O, %}}))", globs);
   }
 }
