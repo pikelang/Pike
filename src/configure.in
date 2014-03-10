@@ -1796,7 +1796,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wformat-security,Wformat_security,WARN)
     AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
     AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
-    AC_SYS_COMPILER_FLAG(-Wunused-function,Wunused_function,WARN)
+#   AC_SYS_COMPILER_FLAG(-Wunused-function,Wunused_function,WARN)
     AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
 
     if test "x$with_copt" != xno; then
