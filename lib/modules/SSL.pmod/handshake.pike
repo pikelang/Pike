@@ -1547,6 +1547,13 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       {
 	session->peer_public_key = Standards.X509.decode_certificate(
                 session->peer_certificate_chain[0])->public_key->pkc;
+#if constant(Crypto.ECC.Curve)
+	if (session->peer_public_key->curve) {
+	  session->curve =
+	    ([object(Crypto.ECC.SECP_521R1.ECDSA)]session->peer_public_key)->
+	    curve();
+	}
+#endif
       };
 
       if(error)
