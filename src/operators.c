@@ -3608,6 +3608,7 @@ PMOD_EXPORT void o_multiply(void)
       convert_stack_top_to_bignum();
       goto do_lfun_multiply;
     }
+    sp--;
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, res);
     return;
   }
