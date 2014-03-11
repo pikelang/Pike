@@ -1091,6 +1091,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  challenge = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge;
 	client_random = challenge[sizeof (challenge) - 32..];
 
+	session = context->new_session();
 	{
 	  int(-1..0) err = reply_new_session(cipher_suites,
 					     ({ COMPRESSION_null }) );
