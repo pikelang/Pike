@@ -111,8 +111,9 @@ DECLARATIONS
  *! 	@endarray
  */
 PIKEFUN array(string|int) parse_event(string data) {
-    struct inotify_event * event;
+    struct inotify_event event;
     size_t len;
+    const char * d;
 
     if (data->size_shift)
 	Pike_error("Inotify events should not be wide.\n");
@@ -120,21 +121,24 @@ PIKEFUN array(string|int) parse_event(string data) {
     if ((size_t)data->len < sizeof(struct inotify_event))
 	Pike_error("Malformed data.\n");
 
-    event = (struct inotify_event *)data->str;
+    d = data->str;
 
-    if (event->len > data->len - sizeof(struct inotify_event))
-	Pike_error("Data missing.\n");
+    memcpy(&event, d, sizeof(struct inotify_event));
 
-    push_int((int)event->wd);
-    push_int((int)event->mask);
-    push_int((int)event->cookie);
+    push_int(event.wd);
+    push_int((int)event.mask);
+    push_int((int)event.cookie);
 
-    if (event->len && (len = strlen(event->name)))
-	push_string(make_shared_binary_string(event->name, len));
-    else
-	push_int(0);
+    if (event.len) {
+        if (event.len > data->len - sizeof(struct inotify_event))
+            Pike_error("Data missing. Got %u expected %u bytes.\n", (unsigned)(data->len - sizeof(struct inotify_event)), event.len);
+        d += sizeof(struct inotify_event);
+	push_string(make_shared_binary_string(d, strnlen(d, event.len)));
+    } else {
+        push_int(0);
+    }
 
-    push_int((int)(event->len + sizeof(struct inotify_event)));
+    push_int((int)(event.len + sizeof(struct inotify_event)));
 
     f_aggregate(5);
     stack_swap();
