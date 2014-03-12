@@ -198,7 +198,10 @@ mapping git_cmd(string ... args)
 {
   mapping res =
     Process.run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
-  if (res->exitcode) exit(res->exitcode);
+  if (res->exitcode) {
+    werror(res->stderr || "");
+    exit(res->exitcode);
+  }
   return res;
 }
 
