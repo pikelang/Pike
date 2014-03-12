@@ -2478,11 +2478,15 @@ static void low_decode_type(struct decode_data *data)
       {
 	INT32 min=0, max=0;
 	if(data->ptr + 8 > data->len)
-	  Pike_error("Decode error: Not enough data in string.\n");
+          decode_error(data, NULL, "Not enough data.\n");
 	min = get_unaligned_be32(data->data + data->ptr);
 	data->ptr += 4;
 	max = get_unaligned_be32(data->data + data->ptr);
 	data->ptr += 4;
+
+        if (min > max)
+          decode_error(data, NULL, "Error in int type (min (%d) > max (%d)).\n", min, max);
+
 	push_int_type(min, max);
       }
       break;
@@ -4364,6 +4368,14 @@ static void decode_value2(struct decode_data *data)
 		/* identifier_offset */
 		/* Actually the id ref number from the inherited program */
 		decode_number(ref_no, data);
+
+                if (ref.inherit_offset >= p->num_inherits)
+                    decode_error(data, NULL, "Inherit offset out of range %u vs %u.\n",
+                                 ref.inherit_offset, p->num_inherits);
+                if (ref_no < 0 || ref_no >= p->inherits[ref.inherit_offset].prog->num_identifier_references)
+                    decode_error(data, NULL, "Identifier reference out of range %u vs %u.\n",
+                    ref_no, p->inherits[ref.inherit_offset].prog->num_identifier_references);
+
 		ref.identifier_offset = p->inherits[ref.inherit_offset].prog->
 		  identifier_references[ref_no].identifier_offset;
 
@@ -4484,7 +4496,7 @@ static void decode_value2(struct decode_data *data)
 				    Pike_sp[-1].u.type,
 				    id_flags, func_flags,
 				    &func, opt_flags);
-		if (no >= p->num_identifier_references ||
+		if ((no < 0 || no >= p->num_identifier_references) ||
 		    (no != n &&
 		     (p->identifier_references[no].id_flags != id_flags ||
 		      p->identifier_references[no].identifier_offset !=
