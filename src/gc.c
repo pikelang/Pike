@@ -1065,6 +1065,8 @@ void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...)
   va_end (args);
 }
 
+#ifdef PIKE_DEBUG
+
 static void dloc_gc_fatal (const char *file, INT_TYPE line,
 			   void *a, int flags, const char *fmt, ...)
 {
@@ -1101,8 +1103,6 @@ static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
   debug_fatal (NULL);
   va_end (args);
 }
-
-#ifdef PIKE_DEBUG
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
