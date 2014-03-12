@@ -96,7 +96,20 @@ int ecc_point_format = POINT_uncompressed;
  */
 
 #if constant(Crypto.ECC.Curve)
-//! The selected ECC curve
+//! The ECC curve selected by the key exchange.
+//!
+//! @int
+//!   @value KE_ecdh_ecdsa
+//!   @value KE_ecdh_rsa
+//!     The curve from the server certificate.
+//!
+//!   @value KE_ecdhe_ecdsa
+//!   @value KE_ecdhe_rsa
+//!   @value KE_ecdh_anon
+//!     The curve selected for the ECDHE key exchange
+//!     (typically the largest curve supported by both
+//!     the client and the server).
+//! @endint
 Crypto.ECC.Curve curve;
 #endif /* Crypto.ECC.Curve */
 
@@ -158,11 +171,33 @@ protected int(0..1) is_supported_suite(int suite,
     SSL3_DEBUG_MSG("Suite %d is not supported.\n", suite);
     return 0;
   }
-  SignatureAlgorithm sa = [int(-1..3)]KE_TO_SA[suite_info[0]];
+
+  KeyExchangeType ke = [int(0..0)|KeyExchangeType]suite_info[0];
+  SignatureAlgorithm sa = [int(-1..3)]KE_TO_SA[ke];
   if (sa <= 0) return !sa;
 
   foreach(certs, CertificatePair cp) {
-    if (cp->sign_algs[0][1] == sa) return 1;
+    if (cp->sign_algs[0][1] == sa) {
+      if (ke == KE_ecdh_ecdsa) {
+	if ((sizeof(cp->sign_algs) > 1) &&
+	    (cp->sign_algs[1][1] != sa)) {
+	  // RFC 4492 2.1: ECDH_ECDSA
+	  // In ECDH_ECDSA, the server's certificate MUST contain
+	  // an ECDH-capable public key and be signed with ECDSA.
+	  continue;
+	}
+      } else if (ke == KE_ecdh_rsa) {
+	if ((sizeof(cp->sign_algs) == 1) ||
+	    (cp->sign_algs[1][1] != SIGNATURE_rsa)) {
+	  // RFC 4492 2.3: ECDH_RSA
+	  // This key exchange algorithm is the same as ECDH_ECDSA
+	  // except that the server's certificate MUST be signed
+	  // with RSA rather than ECDSA.
+	  continue;
+	}
+      }
+      return 1;
+    }
   }
 
   return 0;
@@ -238,7 +273,7 @@ int select_cipher_suite(object context,
     CertificatePair cert;
 
     foreach(certs, CertificatePair cp) {
-      if (cp->sign_algs[0][1] == sa) {
+      if (is_supported_suite(suite, ({ cp }))) {
 	cert = cp;
 	break;
       }
@@ -310,6 +345,10 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
   case KE_ecdhe_ecdsa:
   case KE_ecdh_anon:
     ke_factory = .Cipher.KeyExchangeECDHE;
+    break;
+  case KE_ecdh_rsa:
+  case KE_ecdh_ecdsa:
+    ke_factory = .Cipher.KeyExchangeECDH;
     break;
 #endif
   default:
