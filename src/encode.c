@@ -2286,7 +2286,7 @@ static DECLSPEC(noreturn) void decode_error (
   } while(0);
 
 #define getdata2(S,L) do {						\
-      if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
+      if(sizeof(S[0])*(L) > (size_t)(data->len - data->ptr))		\
 	decode_error(data, NULL, "String range error.\n");		\
       MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
       data->ptr+=sizeof(S[0])*(L);					\
@@ -2901,7 +2901,7 @@ static void decode_value2(struct decode_data *data)
 		     "Failed to decode array (array size is negative).\n");
 
       /* Heruetical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode array (not enough data).\n");
 
       EDB(2,fprintf(stderr, "%*sDecoding array of size %d to <%d>\n",
@@ -2930,7 +2930,7 @@ static void decode_value2(struct decode_data *data)
 		     "(mapping size is negative).\n");
 
       /* Heuristical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode mapping "
 		     "(not enough data).\n");
 
@@ -2960,7 +2960,7 @@ static void decode_value2(struct decode_data *data)
 		     "(multiset size is negative).\n");
 
       /* Heruetical */
-      if(data->ptr + num > data->len)
+      if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode multiset "
 		     "(not enough data).\n");
 
@@ -4151,7 +4151,7 @@ static void decode_value2(struct decode_data *data)
 #endif /* PIKE_USE_MACHINE_CODE */
 
 	    /* Decode program */
-	    if (data->ptr + (int)local_num_program >= data->len) {
+	    if (local_num_program >= (size_t)(data->len - data->ptr)) {
 	      decode_error(data, NULL,
 			   "Failed to decode program (string too short).\n");
 	    }
@@ -4175,7 +4175,7 @@ static void decode_value2(struct decode_data *data)
 	    make_program_executable(p);
 
 	    /* Decode linenumbers */
-	    if (data->ptr + (int)local_num_linenumbers >= data->len) {
+	    if (local_num_linenumbers >= (size_t)(data->len - data->ptr)) {
 	      decode_error(data, NULL, "Failed to decode linenumbers "
 			   "(string too short).\n");
 	    }
