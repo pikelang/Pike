@@ -5,7 +5,6 @@
 */
 
 #include "global.h"
-
 #include "config.h"
 
 #if !defined(HAVE_LIBJPEG)
@@ -13,6 +12,22 @@
 #endif
 
 #ifdef HAVE_JPEGLIB_H
+
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "stralloc.h"
+#include "threads.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "operators.h"
+
 
 #include <stdio.h>
 
@@ -47,21 +62,6 @@
 #ifdef EXTERN
 #undef EXTERN
 #endif
-
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
-#include "interpret.h"
-#include "svalue.h"
-#include "threads.h"
-#include "array.h"
-#include "mapping.h"
-#include "pike_error.h"
-#include "stralloc.h"
-#include "threads.h"
-#include "builtin_functions.h"
-#include "module_support.h"
-#include "operators.h"
 
 #define sp Pike_sp
 
