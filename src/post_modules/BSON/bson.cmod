@@ -231,7 +231,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       bump = get_unaligned_le32(n);
       left = pike_slist->len - (n - slist);
 
-      if(!bump || bump > left)
+      if(bump <= 0 || bump > left)
       {
         Pike_error("invalid BSON. not enough data: need %d, have %d.\n", bump, left);
       }
@@ -251,7 +251,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       n+=4;
       left = pike_slist->len - (n - slist);
 
-      if(!bump || bump > left)
+      if(bump <= 0 || bump > left)
       {
         Pike_error("invalid BSON. not enough data 5.\n");
       }
@@ -510,7 +510,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       int32_t left;
       n+=4;
       left = pike_slist->len - (n - slist);
-      if(!bump || bump > left)
+      if(bump <= 0 || bump > left)
         Pike_error("invalid BSON. not enough data.\n");
       val = make_shared_binary_string(n, bump-1); // length includes null.
       n += (bump);
