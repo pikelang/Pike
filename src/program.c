@@ -11484,7 +11484,32 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 
 PMOD_EXPORT struct program *program_from_type(const struct pike_type *t)
 {
-  t = find_object_type(t);
+  if (!t) return NULL;
+
+  switch(t->type) {
+  case T_OBJECT:
+    if (t->cdr) break;
+    return NULL;
+  case T_TUPLE:
+  case T_OR:
+  case T_AND:
+  case PIKE_T_RING:
+    {
+      struct program *res;
+      res = program_from_type(t->car);
+      if (res) return res;
+    }
+    /* FALL_THROUGH */
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_ATTRIBUTE:
+  case PIKE_T_NAME:
+    return program_from_type(t->cdr);
+    break;
+  default:
+    return NULL;
+  }
+
   if (!t) return NULL;
   return id_to_program((int)(ptrdiff_t)t->cdr);
 }
