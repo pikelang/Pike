@@ -237,14 +237,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
+#ifdef ENCODE_DEBUG
 /* NOTE: Fix when type encodings change. */
-static int type_to_tag(int type)
-{
-  if (type == T_FLOAT) return TAG_FLOAT;
-  if (type == T_TYPE) return TAG_TYPE;
-  if (type <= MAX_TYPE) return type ^ MIN_REF_TYPE;
-  return type;
-}
 static int tag_to_type(int tag)
 {
   if (tag == TAG_FLOAT) return T_FLOAT;
@@ -252,6 +246,7 @@ static int tag_to_type(int tag)
   if (tag <= MAX_TYPE) return tag ^ MIN_REF_TYPE;
   return tag;
 }
+#endif
 
 /* Let's cram those bits... */
 static void code_entry(int tag, INT64 num, struct encode_data *data)
