@@ -624,17 +624,17 @@ class KeyExchangeDHE
 }
 
 #if constant(Crypto.ECC.Curve)
-//! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
+//! KeyExchange for @[KE_ecdh_rsa] and @[KE_ecdh_ecdsa].
 //!
-//! KeyExchange that uses Elliptic Curve Diffie-Hellman to
-//! generate an Ephemeral key.
-class KeyExchangeECDHE
+//! NB: The only difference between the two is whether the certificate
+//!     is signed with RSA or ECDSA.
+//!
+//! This KeyExchange uses the Elliptic Curve parameters from
+//! the ECDSA certificate on the server side, and ephemeral
+//! parameters on the client side.
+class KeyExchangeECDH
 {
   inherit KeyExchange;
-
-  protected Gmp.mpz secret;
-  protected Gmp.mpz pubx;
-  protected Gmp.mpz puby;
 
   string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
   {
@@ -668,6 +668,164 @@ class KeyExchangeECDHE
       break;
     }
     return ({ x, y });
+  }
+
+  protected Gmp.mpz get_server_secret()
+  {
+    return session->private_key->get_private_key();
+  }
+
+  protected Gmp.mpz get_server_pubx()
+  {
+    return session->peer_public_key->get_x();
+  }
+
+  protected Gmp.mpz get_server_puby()
+  {
+    return session->peer_public_key->get_y();
+  }
+
+  ADT.struct server_key_params()
+  {
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+    // RFC 4492 2.1:
+    // A ServerKeyExchange MUST NOT be sent (the server's certificate
+    // contains all the necessary keying information required by the client
+    // to arrive at the premaster secret).
+    return 0;
+  }
+
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
+				    array(int) version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
+		   client_random, server_random, version[0], version[1]);
+    ADT.struct struct = ADT.struct();
+    string data;
+    string premaster_secret;
+
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+
+    Gmp.mpz secret = session->curve->new_scalar(context->random);
+    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+
+    ADT.struct point = ADT.struct();
+
+    struct->put_var_string(encode_point(x, y), 1);
+
+    data = struct->pop_data();
+
+    Gmp.mpz pubx = get_server_pubx();
+    Gmp.mpz puby = get_server_puby();
+
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+    premaster_secret =
+      sprintf("%*c",
+	      (session->curve->size() + 7)>>3,
+	      session->curve->point_mul(pubx, puby, secret)[0]);
+
+    secret = 0;
+
+    session->master_secret =
+      derive_master_secret(premaster_secret, client_random, server_random,
+			   version);
+    return data;
+  }
+
+  //! @returns
+  //!   Master secret or alert number.
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 array(int) version)
+  {
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+
+    if (!sizeof(data))
+    {
+      /* Implicit encoding; Should never happen unless we have
+       * requested and received a client certificate of type
+       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+		     "               Hanging up.\n");
+      connection->ke = UNDEFINED;
+      return ALERT_certificate_unknown;
+    }
+
+    string premaster_secret;
+
+    /* Explicit encoding */
+    ADT.struct struct = ADT.struct(data);
+
+    if (catch
+      {
+	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->get_var_string(1));
+	Gmp.mpz secret = get_server_secret();
+	// RFC 4492 5.10:
+	// Note that this octet string (Z in IEEE 1363 terminology) as
+	// output by FE2OSP, the Field Element to Octet String
+	// Conversion Primitive, has constant length for any given
+	// field; leading zeros found in this octet string MUST NOT be
+	// truncated.
+	premaster_secret =
+	  sprintf("%*c",
+		  (session->curve->size() + 7)>>3,
+		  session->curve->point_mul(x, y, secret)[0]);
+      } || !struct->is_empty())
+    {
+      connection->ke = UNDEFINED;
+      return ALERT_unexpected_message;
+    }
+
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
+  }
+
+  ADT.struct parse_server_key_exchange(ADT.struct input)
+  {
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+    // RFC 4492 2.1:
+    // A ServerKeyExchange MUST NOT be sent (the server's certificate
+    // contains all the necessary keying information required by the client
+    // to arrive at the premaster secret).
+    error("Invalid message.\n");
+  }
+}
+
+//! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
+//!
+//! KeyExchange that uses Elliptic Curve Diffie-Hellman to
+//! generate an Ephemeral key.
+class KeyExchangeECDHE
+{
+  inherit KeyExchangeECDH;
+
+  protected Gmp.mpz secret;
+  protected Gmp.mpz pubx;
+  protected Gmp.mpz puby;
+
+  protected Gmp.mpz get_server_secret()
+  {
+    return secret;
+  }
+
+  protected Gmp.mpz get_server_pubx()
+  {
+    return pubx;
+  }
+
+  protected Gmp.mpz get_server_puby()
+  {
+    return puby;
   }
 
   ADT.struct server_key_params()
@@ -704,40 +862,8 @@ class KeyExchangeECDHE
 				    string server_random,
 				    array(int) version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version[0], version[1]);
-    ADT.struct struct = ADT.struct();
-    string data;
-    string premaster_secret;
-
-    SSL3_DEBUG_MSG("KE_ECDHE\n");
     anonymous = 1;
-
-    secret = session->curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
-
-    ADT.struct point = ADT.struct();
-
-    struct->put_var_string(encode_point(x, y), 1);
-
-    data = struct->pop_data();
-    // RFC 4492 5.10:
-    // Note that this octet string (Z in IEEE 1363 terminology) as
-    // output by FE2OSP, the Field Element to Octet String
-    // Conversion Primitive, has constant length for any given
-    // field; leading zeros found in this octet string MUST NOT be
-    // truncated.
-    premaster_secret =
-      sprintf("%*c",
-	      (session->curve->size() + 7)>>3,
-	      session->curve->point_mul(pubx, puby, secret)[0]);
-
-    secret = 0;
-
-    session->master_secret =
-      derive_master_secret(premaster_secret, client_random, server_random,
-			   version);
-    return data;
+    return ::client_key_exchange_packet(client_random, server_random, version);
   }
 
   //! @returns
@@ -747,51 +873,9 @@ class KeyExchangeECDHE
 						 string(0..255) server_random,
 						 array(int) version)
   {
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
-		   session->ke_method);
-
-    SSL3_DEBUG_MSG("KE_ECDHE\n");
-
-    if (!sizeof(data))
-    {
-      /* Implicit encoding; Should never happen unless we have
-       * requested and received a client certificate of type
-       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
-		     "               Hanging up.\n");
-      connection->ke = UNDEFINED;
-      return ALERT_certificate_unknown;
-    }
-
-    string premaster_secret;
     anonymous = 1;
-
-    /* Explicit encoding */
-    ADT.struct struct = ADT.struct(data);
-
-    if (catch
-      {
-	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->get_var_string(1));
-	// RFC 4492 5.10:
-	// Note that this octet string (Z in IEEE 1363 terminology) as
-	// output by FE2OSP, the Field Element to Octet String
-	// Conversion Primitive, has constant length for any given
-	// field; leading zeros found in this octet string MUST NOT be
-	// truncated.
-	premaster_secret =
-	  sprintf("%*c",
-		  (session->curve->size() + 7)>>3,
-		  session->curve->point_mul(x, y, secret)[0]);
-      } || !struct->is_empty())
-    {
-      connection->ke = UNDEFINED;
-      return ALERT_unexpected_message;
-    }
-
-    secret = 0;
-
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    return ::server_derive_master_secret(data, client_random,
+					 server_random, version);
   }
 
   ADT.struct parse_server_key_exchange(ADT.struct input)

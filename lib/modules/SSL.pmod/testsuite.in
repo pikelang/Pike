@@ -164,6 +164,8 @@ test_do([[
       SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
       SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_ecdsa_with_null_sha,
       SSL.Constants.TLS_ecdh_anon_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
@@ -184,6 +186,8 @@ test_do([[
       SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
       SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
       SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_rsa_with_null_sha,
+      SSL.Constants.TLS_ecdh_ecdsa_with_null_sha,
       SSL.Constants.TLS_ecdh_anon_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
@@ -202,6 +206,15 @@ test_do([[
 
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
 				     0, server_min, server_max);
+
+    // We only have self-signed certificates, so all ECDH_RSA suites will
+    // fail, since they require the certificate to be signed with RSA.
+    if (sizeof(suites) == 1) {
+      if (SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
+          SSL.Constants.KE_ecdh_rsa) {
+        expected = 0;
+      }
+    }
 
     // A client that supports just a single cipher suite.
     SSL.context client_ctx = SSL.context();
@@ -325,9 +338,13 @@ define(test_ssl, [[
       SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
+#if constant(Crypto.ECC.Curve)
       SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
       SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
       SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
+#endif
     });
 
     if( `==($1,$2,$3,$4) ) {

@@ -203,7 +203,7 @@ constant KE_TO_SA = ([
   KE_fortezza:		SIGNATURE_invalid,
   KE_ecdh_ecdsa:	SIGNATURE_ecdsa,
   KE_ecdhe_ecdsa:	SIGNATURE_ecdsa,
-  KE_ecdh_rsa:		SIGNATURE_rsa,
+  KE_ecdh_rsa:		SIGNATURE_ecdsa,
   KE_ecdhe_rsa:		SIGNATURE_rsa,
   KE_ecdh_anon:		SIGNATURE_anonymous,
 ]);
@@ -715,11 +715,23 @@ constant CIPHER_SUITES =
    TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
 
    // Suites from RFC 4492 (TLSECC)
+   TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, 0 }),
+   TLS_ecdh_ecdsa_with_rc4_128_sha : ({ KE_ecdh_ecdsa, CIPHER_rc4, HASH_sha }),
+   TLS_ecdh_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_3des, HASH_sha }),
+   TLS_ecdh_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha }),
+   TLS_ecdh_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha }),
+
    TLS_ecdhe_ecdsa_with_null_sha :	({ KE_ecdhe_ecdsa, 0, 0 }),
    TLS_ecdhe_ecdsa_with_rc4_128_sha :	({ KE_ecdhe_ecdsa, CIPHER_rc4, HASH_sha }),
    TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_3des, HASH_sha }),
    TLS_ecdhe_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha }),
    TLS_ecdhe_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha }),
+
+   TLS_ecdh_rsa_with_null_sha : ({ KE_ecdh_rsa, 0, 0 }),
+   TLS_ecdh_rsa_with_rc4_128_sha : ({ KE_ecdh_rsa, CIPHER_rc4, HASH_sha }),
+   TLS_ecdh_rsa_with_3des_ede_cbc_sha : ({ KE_ecdh_rsa, CIPHER_3des, HASH_sha }),
+   TLS_ecdh_rsa_with_aes_128_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha }),
+   TLS_ecdh_rsa_with_aes_256_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha }),
 
    TLS_ecdhe_rsa_with_null_sha :	({ KE_ecdhe_rsa, 0, 0 }),
    TLS_ecdhe_rsa_with_rc4_128_sha :	({ KE_ecdhe_rsa, CIPHER_rc4, HASH_sha }),
@@ -740,8 +752,12 @@ constant CIPHER_SUITES =
    // Note that these are not valid for TLS versions prior to TLS 1.2.
    TLS_ecdhe_ecdsa_with_aes_128_cbc_sha256 : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
    TLS_ecdhe_ecdsa_with_aes_256_cbc_sha384 : ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+   TLS_ecdh_ecdsa_with_aes_128_cbc_sha256 : ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
+   TLS_ecdh_ecdsa_with_aes_256_cbc_sha384 : ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
    TLS_ecdhe_rsa_with_aes_128_cbc_sha256 : ({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
    TLS_ecdhe_rsa_with_aes_256_cbc_sha384 : ({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+   TLS_ecdh_rsa_with_aes_128_cbc_sha256 : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
+   TLS_ecdh_rsa_with_aes_256_cbc_sha384 : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
 
 #if constant(Crypto.Camellia)
    // Camellia Suites:
@@ -780,13 +796,17 @@ constant CIPHER_SUITES =
    TLS_dhe_rsa_with_aes_128_gcm_sha256:	({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dhe_dss_with_aes_128_gcm_sha256:	({ KE_dhe_dss, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_ecdhe_rsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_rsa_with_aes_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
 
    TLS_rsa_with_aes_256_gcm_sha384:	({ KE_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_rsa_with_aes_256_gcm_sha384:	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_dss_with_aes_256_gcm_sha384:	({ KE_dhe_dss, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384: ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+   TLS_ecdh_ecdsa_with_aes_256_gcm_sha384: ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_ecdhe_rsa_with_aes_256_gcm_sha384: ({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+   TLS_ecdh_rsa_with_aes_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
 
    // Anonymous variants:
    TLS_dh_anon_with_aes_128_gcm_sha256: ({ KE_dh_anon, CIPHER_aes, HASH_sha256, MODE_gcm }),
@@ -808,8 +828,12 @@ constant CIPHER_SUITES =
    // From RFC 6367
    TLS_ecdhe_ecdsa_with_camellia_128_gcm_sha256: ({ KE_ecdhe_ecdsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_ecdhe_ecdsa_with_camellia_256_gcm_sha384: ({ KE_ecdhe_ecdsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+   TLS_ecdh_ecdsa_with_camellia_128_gcm_sha256: ({ KE_ecdh_ecdsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_ecdsa_with_camellia_256_gcm_sha384: ({ KE_ecdh_ecdsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
    TLS_ecdhe_rsa_with_camellia_128_gcm_sha256: ({ KE_ecdhe_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_ecdhe_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdhe_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+   TLS_ecdh_rsa_with_camellia_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
 #endif /* Crypto.Camellia */
 #endif /* Crypto.GCM */
 ]);

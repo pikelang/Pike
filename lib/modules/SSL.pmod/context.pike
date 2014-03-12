@@ -516,7 +516,7 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
   case SIGNATURE_rsa:
     kes |= (< KE_rsa, KE_dhe_rsa,
 #if constant(Crypto.ECC.Curve)
-	      KE_ecdh_rsa, KE_ecdhe_rsa,
+	      KE_ecdhe_rsa,
 #endif
     >);
     break;
@@ -525,7 +525,7 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
     break;
 #if constant(Crypto.ECC.Curve)
   case SIGNATURE_ecdsa:
-    kes |= (< KE_ecdh_ecdsa, KE_ecdhe_ecdsa >);
+    kes |= (< KE_ecdh_rsa, KE_ecdh_ecdsa, KE_ecdhe_ecdsa >);
     break;
 #endif
   }
