@@ -298,7 +298,6 @@ struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);
 void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
-PMOD_EXPORT struct pike_type *find_object_type(struct pike_type *t);
 PMOD_EXPORT void *find_type(struct pike_type *t,
 			    void *(*cb)(struct pike_type *));
 PMOD_EXPORT void visit_type (struct pike_type *t, int action);

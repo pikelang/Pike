@@ -8802,32 +8802,6 @@ void cleanup_pike_type_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
-PMOD_EXPORT struct pike_type *find_object_type(struct pike_type *t)
-{
-  struct pike_type *res;
-
-  if (!t) return NULL;
-
-  switch(t->type) {
-  case T_OBJECT:
-    if (t->cdr) return t;
-    break;
-  case T_TUPLE:
-  case T_OR:
-  case T_AND:
-  case PIKE_T_RING:
-    res = find_object_type(t->car);
-    if (res) return res;
-    /* FALL_THROUGH */
-  case T_SCOPE:
-  case T_ASSIGN:
-  case PIKE_T_ATTRIBUTE:
-  case PIKE_T_NAME:
-    return find_object_type(t->cdr);
-  }
-  return NULL;
-}
-
 PMOD_EXPORT void *find_type(struct pike_type *t,
 			    void *(*cb)(struct pike_type *))
 {
