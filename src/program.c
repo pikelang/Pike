@@ -8701,17 +8701,18 @@ static void f_compilation_env_handle_inherit(INT32 args)
   }
 }
 
-/*! @decl int filter_exception(SeverityLevel level, mixed err)
- *!
- *!   The default implementation calls
- *!   @[MasterObject()->compile_exception()] for @[level] @[ERROR]
- *!   and @[FATAL].
- *!
- *! @note
- *!   This function is not implemented in Pike 7.8.
- *!
- *! @seealso
- *!   @[MasterObject()->compile_exception()].
+#if 0
+/* @decl int filter_exception(SeverityLevel level, mixed err)
+ *
+ *   The default implementation calls
+ *   @[MasterObject()->compile_exception()] for @[level] @[ERROR]
+ *   and @[FATAL].
+ *
+ * @note
+ *   This function is not implemented in Pike 7.8.
+ *
+ * @seealso
+ *   @[MasterObject()->compile_exception()].
  */
 static void f_compilation_env_filter_exception(INT32 args)
 {
@@ -8741,6 +8742,7 @@ static void f_compilation_env_filter_exception(INT32 args)
   push_undefined();
   return;
 }
+#endif
 
 /*! @class PikeCompiler
  *!
