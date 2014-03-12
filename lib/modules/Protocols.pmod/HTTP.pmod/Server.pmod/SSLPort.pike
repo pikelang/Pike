@@ -32,7 +32,8 @@ object|function|program request_program=Request;
 //!   certificate first, provided in binary format.
 void create(function(Request:void) _callback,
 	    void|int _portno,
-	    void|string _interface, void|string key, void|string|array certificate)
+	    void|string _interface, void|string key,
+            void|string|array(string) certificate)
 {
    portno=_portno;
    if (!portno) portno=443; // default HTTPS port
@@ -42,10 +43,8 @@ void create(function(Request:void) _callback,
 
    port=MySSLPort();
    port->set_default_keycert();
-   if(key)
-     port->set_key(key);
-   if(certificate)
-     port->set_certificate(certificate);
+   if( key && certificate )
+     port->add_cert( key, certificate );
 
    if (!port->bind(portno,new_connection,[string]interface))
       error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
@@ -79,7 +78,7 @@ class MySSLPort
   //!
   void set_default_keycert()
   {
-    private_key = Crypto.RSA();
+    Crypto.Sign private_key = Crypto.RSA();
     private_key->generate_key( 4096 );
 
     mapping a = ([
@@ -87,25 +86,36 @@ class MySSLPort
       "commonName" : "*",
     ]);
 
-    certificates = ({
-      Standards.X509.make_selfsigned_certificate(private_key, 3600*24*365, a)
-    });
+    add_cert( private_key,
+      ({
+        Standards.X509.make_selfsigned_certificate(private_key, 3600*24*365, a)
+      }) );
   }
 
-  //!
-  void set_key(string skey)
+
+  // ---- Remove this?
+
+  private Crypto.Sign tmp_key;
+  private array(string) tmp_cert;
+
+  //! @deprecated add_cert
+  __deprecated__ void set_key(string skey)
   {
-    private_key = Standards.PKCS.RSA.parse_private_key(skey) ||
+    tmp_key = Standards.PKCS.RSA.parse_private_key(skey) ||
       Standards.PKCS.DSA.parse_private_key(skey);
+    if( tmp_key && tmp_cert )
+      add_cert( tmp_key, tmp_cert );
   }
 
-  //!
-  void set_certificate(string|array(string) certificate)
+  //! @deprecated add_cert
+  __deprecated__ void set_certificate(string|array(string) certificate)
   {
     if(arrayp(certificate))
-      certificates = [array(string)]certificate;
+      tmp_cert = [array(string)]certificate;
     else
-      certificates = ({ [string]certificate });
+      tmp_cert = ({ [string]certificate });
+    if( tmp_key && tmp_cert )
+      add_cert( tmp_key, tmp_cert );
   }
 }
 
