@@ -1702,8 +1702,13 @@ TH_RETURN_TYPE new_thread_func(void *data)
 	       __FILE__, __LINE__, errno);
 #endif
 #endif
-    setegid(arg.egid);
-    seteuid(arg.euid);
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+    if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
+    {
+      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+    }
+#endif
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
     if (current != -1 && prctl(PR_SET_DUMPABLE, current) == -1) {
 #if defined(PIKE_DEBUG)
@@ -3051,8 +3056,13 @@ static TH_RETURN_TYPE farm(void *_a)
      * have set with system.dumpable. */
     int current = prctl(PR_GET_DUMPABLE);
 #endif
-    setegid(me->egid);
-    seteuid(me->euid);
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+    if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
+    {
+      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+    }
+#endif
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
     if (prctl(PR_SET_DUMPABLE, current) == -1)
       Pike_fatal ("Didn't expect prctl to go wrong. errno=%d\n", errno);
