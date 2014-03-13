@@ -1710,10 +1710,6 @@ if test "x$with_dtrace" = "xyes"; then
    fi
 fi
 
-if test "x$with_checker" = "xyes"; then
-  AC_DEFINE(__CHECKER__)
-else :; fi
-
 if test "x$with_relocatable_dumped_modules" = xyes; then
   PIKE_MODULE_RELOC=1
 else
@@ -4209,8 +4205,41 @@ pthread_t gazonk;
     # On Linux the threads don't inherit euid & egid from the main thread.
     # FIXME: Add a real test here!
 	case "$pike_cv_sys_os" in
-	  Linux* | *kFreeBSD*)
-		AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)
+	  Linux*)
+           # Since 2.6 it is not actually very likely to be broken,
+           # since LinuxThreads is not used unless you patch the
+           # kernel source and build your own kernel.
+    AC_MSG_CHECKING([If threads are broken ...]);
+    AC_TRY_RUN([
+#define _REENTRANT
+#define _THREAD_SAFE
+#define _MIT_POSIX_THREADS 1
+
+#include <pthread.h>
+
+void *foo(void *bar) { return (void *)getpid();  }
+pthread_mutexattr_t attr;
+pthread_mutex_t tmp;
+pthread_t gazonk;
+
+int main()
+{
+  void *sune;
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
+  pthread_create(&gazonk,0,foo,0);
+  pthread_join(gazonk,&sune);
+  exit(((int)sune) != getpid());
+}],[
+    AC_MSG_RESULT(no)
+],
+[
+ AC_MSG_RESULT(yes)
+ AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)],
+[AC_MSG_RESULT(assuming no)])
+	  ;;
+          *kFreeBSD*)
 	  ;;
 	esac
 
