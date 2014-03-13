@@ -130,7 +130,7 @@ static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
 
 When inlined the ret/eax is of course somewhat different, it can be
 less or more optimal, but this is at least actually smaller than the
-expanded code for INDEX_CHARP.
+expanded code for the oldINDEX_CHARP.
 */
   if( LIKELY(size == 0) ) return ((p_wchar0 *)str)[pos];
   if( LIKELY(size == 1) ) return ((p_wchar1 *)str)[pos];
@@ -149,9 +149,9 @@ PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s, ptrdiff_t pos);
 #define INDEX_CHARP(PTR,IND,SHIFT) generic_extract(PTR,SHIFT,IND)
 
 #define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
-  ((SHIFT)==0?								\
+  (LIKELY((SHIFT)==0)?                                                  \
    (((p_wchar0 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar0) (VAL))):	\
-   (SHIFT)==1?(((p_wchar1 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar1) (VAL))): \
+  LIKELY((SHIFT)==1)?(((p_wchar1 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar1) (VAL))): \
    (((p_wchar2 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar2) (VAL))))
 
 
@@ -307,9 +307,6 @@ void generic_memcpy(PCHARP to,
 PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from);
 struct pike_string *binary_findstring(const char *foo, ptrdiff_t l);
 struct pike_string *findstring(const char *foo);
-struct short_pike_string0;
-struct short_pike_string1;
-struct short_pike_string2;
 
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len) ATTRIBUTE((malloc));
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)  ATTRIBUTE((malloc));
