@@ -272,40 +272,51 @@ GEN_OF1(32)
 
 #endif
 
+/* NB: GCC 4.1.2 doesn't alias pointers to INT_TYPE and to INT32/INT64,
+ *     so the DO_INT_TYPE_*_OVERFLOW variants can't just be cpp-renames
+ *     to the corresponding INT32/INT64 variant, as the stores to the
+ *     target variable may get lost. We fix this by having variables
+ *     of the correct type as temporaries, and then copying the result.
+ */
+#define _GEN_INT_TYPE_UNOP(OP, size)					\
+  static INLINE int INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a) {		\
+    INT ## size tmp;							\
+      return (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, &tmp));		\
+  }									\
+  static INLINE int DO_INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
+						    INT_TYPE *res) {	\
+    INT ## size tmp;							\
+    if (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, &tmp)) return 1;	\
+    *res = tmp;								\
+    return 0;								\
+  }
+#define _GEN_INT_TYPE_BINOP(OP, size)					\
+  static INLINE int INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
+						 INT_TYPE b) {		\
+    INT ## size tmp;							\
+    return (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, b, &tmp));	\
+  }									\
+  static INLINE int DO_INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
+						    INT_TYPE b,		\
+						    INT_TYPE *res) {	\
+    INT ## size tmp;							\
+    if (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, b, &tmp)) return 1;	\
+    *res = tmp;								\
+    return 0;								\
+  }
+#define GEN_INT_TYPE(size)				\
+  _GEN_INT_TYPE_UNOP(NEG, size)				\
+  _GEN_INT_TYPE_BINOP(MUL, size)			\
+  _GEN_INT_TYPE_BINOP(ADD, size)			\
+  _GEN_INT_TYPE_BINOP(SUB, size)			\
+  _GEN_INT_TYPE_BINOP(DIV, size)			\
+  _GEN_INT_TYPE_BINOP(MOD, size)			\
+  _GEN_INT_TYPE_BINOP(LSH, size)			\
+  _GEN_INT_TYPE_BINOP(RSH, size)
 #if SIZEOF_INT_TYPE == 8
-#define INT_TYPE_MUL_OVERFLOW	    INT64_MUL_OVERFLOW
-#define INT_TYPE_ADD_OVERFLOW	    INT64_ADD_OVERFLOW
-#define INT_TYPE_SUB_OVERFLOW	    INT64_SUB_OVERFLOW
-#define INT_TYPE_NEG_OVERFLOW	    INT64_NEG_OVERFLOW
-#define INT_TYPE_DIV_OVERFLOW	    INT64_DIV_OVERFLOW
-#define INT_TYPE_MOD_OVERFLOW	    INT64_MOD_OVERFLOW
-#define INT_TYPE_LSH_OVERFLOW       INT64_LSH_OVERFLOW
-#define INT_TYPE_RSH_OVERFLOW       INT64_RSH_OVERFLOW
-#define DO_INT_TYPE_MUL_OVERFLOW    DO_INT64_MUL_OVERFLOW
-#define DO_INT_TYPE_ADD_OVERFLOW    DO_INT64_ADD_OVERFLOW
-#define DO_INT_TYPE_SUB_OVERFLOW    DO_INT64_SUB_OVERFLOW
-#define DO_INT_TYPE_NEG_OVERFLOW    DO_INT64_NEG_OVERFLOW
-#define DO_INT_TYPE_DIV_OVERFLOW    DO_INT64_DIV_OVERFLOW
-#define DO_INT_TYPE_MOD_OVERFLOW    DO_INT64_MOD_OVERFLOW
-#define DO_INT_TYPE_LSH_OVERFLOW    DO_INT64_LSH_OVERFLOW
-#define DO_INT_TYPE_RSH_OVERFLOW    DO_INT64_RSH_OVERFLOW
+GEN_INT_TYPE(64)
 #elif SIZEOF_INT_TYPE == 4
-#define INT_TYPE_MUL_OVERFLOW	    INT32_MUL_OVERFLOW
-#define INT_TYPE_ADD_OVERFLOW	    INT32_ADD_OVERFLOW
-#define INT_TYPE_SUB_OVERFLOW	    INT32_SUB_OVERFLOW
-#define INT_TYPE_NEG_OVERFLOW	    INT32_NEG_OVERFLOW
-#define INT_TYPE_DIV_OVERFLOW	    INT32_DIV_OVERFLOW
-#define INT_TYPE_MOD_OVERFLOW	    INT32_MOD_OVERFLOW
-#define INT_TYPE_LSH_OVERFLOW       INT32_LSH_OVERFLOW
-#define INT_TYPE_RSH_OVERFLOW       INT32_RSH_OVERFLOW
-#define DO_INT_TYPE_MUL_OVERFLOW    DO_INT32_MUL_OVERFLOW
-#define DO_INT_TYPE_ADD_OVERFLOW    DO_INT32_ADD_OVERFLOW
-#define DO_INT_TYPE_SUB_OVERFLOW    DO_INT32_SUB_OVERFLOW
-#define DO_INT_TYPE_NEG_OVERFLOW    DO_INT32_NEG_OVERFLOW
-#define DO_INT_TYPE_DIV_OVERFLOW    DO_INT32_DIV_OVERFLOW
-#define DO_INT_TYPE_MOD_OVERFLOW    DO_INT32_MOD_OVERFLOW
-#define DO_INT_TYPE_LSH_OVERFLOW    DO_INT32_LSH_OVERFLOW
-#define DO_INT_TYPE_RSH_OVERFLOW    DO_INT32_RSH_OVERFLOW
+GEN_INT_TYPE(32)
 #endif
 
 /* Prototypes begin here */
