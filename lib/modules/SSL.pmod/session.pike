@@ -333,9 +333,11 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
   case KE_rsa:
     ke_factory = .Cipher.KeyExchangeRSA;
     break;
-  case KE_dh_anon:
+  case KE_dh_dss:
+  case KE_dh_rsa:
     ke_factory = .Cipher.KeyExchangeDH;
     break;
+  case KE_dh_anon:
   case KE_dhe_rsa:
   case KE_dhe_dss:
     ke_factory = .Cipher.KeyExchangeDHE;

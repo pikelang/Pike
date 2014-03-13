@@ -484,9 +484,10 @@ class KeyExchangeRSA
   }
 }
 
-//! Key exchange for @[KE_dh_anon].
+//! Key exchange for @[KE_dh_dss] and @[KE_dh_dss].
 //!
-//! @[KeyExchange] that uses anonymous Diffie-Hellman.
+//! @[KeyExchange] that uses Diffie-Hellman with a key from
+//! a DSS certificate.
 class KeyExchangeDH
 {
   inherit KeyExchange;
@@ -502,14 +503,18 @@ class KeyExchangeDH
     anonymous = 1;
     struct = ADT.struct();
 
-    dh_state = context->dh_ke = .Cipher.DHKeyExchange(.Cipher.DHParameters());
-    dh_state->new_secret(context->random);
+    dh_state =
+      .Cipher.DHKeyExchange(.Cipher.DHParameters(session->private_key));
+    dh_state->secret = session->private_key->get_x();
 
-    struct->put_bignum(dh_state->parameters->p);
-    struct->put_bignum(dh_state->parameters->g);
-    struct->put_bignum(dh_state->our);
-
-    return struct;
+    // RFC 4346 7.4.3:
+    // It is not legal to send the server key exchange message for the
+    // following key exchange methods:
+    //
+    //   RSA
+    //   DH_DSS
+    //   DH_RSA
+    return 0;
   }
 
   string client_key_exchange_packet(string client_random,
@@ -522,12 +527,17 @@ class KeyExchangeDH
     string data;
     string premaster_secret;
 
-    SSL3_DEBUG_MSG("KE_DHE\n");
+    SSL3_DEBUG_MSG("KE_DH\n");
     anonymous = 1;
-    context->dh_ke->new_secret(context->random);
-    struct->put_bignum(context->dh_ke->our);
+    if (!dh_state) {
+      dh_state =
+	.Cipher.DHKeyExchange(.Cipher.DHParameters(session->peer_public_key));
+      dh_state->other = session->peer_public_key->get_y();
+    }
+    dh_state->new_secret(context->random);
+    struct->put_bignum(dh_state->our);
     data = struct->pop_data();
-    premaster_secret = context->dh_ke->get_shared()->digits(256);
+    premaster_secret = dh_state->get_shared()->digits(256);
 
     session->master_secret =
       derive_master_secret(premaster_secret, client_random, server_random,
@@ -571,29 +581,43 @@ class KeyExchangeDH
 
   ADT.struct parse_server_key_exchange(ADT.struct input)
   {
-    ADT.struct temp_struct = ADT.struct();
-
     SSL3_DEBUG_MSG("KE_DH\n");
-    Gmp.mpz p = input->get_bignum();
-    Gmp.mpz g = input->get_bignum();
-    Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
-    temp_struct->put_bignum(p);
-    temp_struct->put_bignum(g);
-    context->dh_ke =
-      .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
-    context->dh_ke->set_other(input->get_bignum());
-    temp_struct->put_bignum(context->dh_ke->other);
-
-    return temp_struct;
+    // RFC 4346 7.4.3:
+    // It is not legal to send the server key exchange message for the
+    // following key exchange methods:
+    //
+    //   RSA
+    //   DH_DSS
+    //   DH_RSA
+    error("Invalid message.\n");
   }
 }
 
-//! KeyExchange for @[KE_dhe_rsa] and @[KE_dhe_dss].
+//! KeyExchange for @[KE_dhe_rsa], @[KE_dhe_dss] and @[KE_dh_anon].
 //!
 //! KeyExchange that uses Diffie-Hellman to generate an Ephemeral key.
 class KeyExchangeDHE
 {
   inherit KeyExchangeDH;
+
+  ADT.struct server_key_params()
+  {
+    ADT.struct struct;
+
+    SSL3_DEBUG_MSG("KE_DHE\n");
+    // anonymous, not used on the server, but here for completeness.
+    anonymous = 1;
+    struct = ADT.struct();
+
+    dh_state = .Cipher.DHKeyExchange(.Cipher.DHParameters());
+    dh_state->new_secret(context->random);
+
+    struct->put_bignum(dh_state->parameters->p);
+    struct->put_bignum(dh_state->parameters->g);
+    struct->put_bignum(dh_state->our);
+
+    return struct;
+  }
 
   //! @returns
   //!   Master secret or alert number.
@@ -620,6 +644,23 @@ class KeyExchangeDHE
 
     return ::server_derive_master_secret(data, client_random, server_random,
 					 version);
+  }
+
+  ADT.struct parse_server_key_exchange(ADT.struct input)
+  {
+    ADT.struct temp_struct = ADT.struct();
+
+    SSL3_DEBUG_MSG("KE_DHE\n");
+    Gmp.mpz p = input->get_bignum();
+    Gmp.mpz g = input->get_bignum();
+    Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
+    temp_struct->put_bignum(p);
+    temp_struct->put_bignum(g);
+    dh_state = .Cipher.DHKeyExchange(.Cipher.DHParameters(p, g, order));
+    dh_state->set_other(input->get_bignum());
+    temp_struct->put_bignum(dh_state->other);
+
+    return temp_struct;
   }
 }
 
@@ -1377,6 +1418,11 @@ class DHParameters
     case 0:
       orm96();
       break;
+    case 1:
+      p = args[0]->get_p();
+      g = args[0]->get_g();
+      order = args[0]->get_q();
+      break;
     case 3:
       [p, g, order] = args;
       break;
@@ -1469,6 +1515,8 @@ array lookup(int suite, ProtocolVersion|int version,
       res->sign = rsa_sign;
       res->verify = rsa_verify;
       break;
+    case KE_dh_rsa:
+    case KE_dh_dss:
     case KE_dhe_dss:
       res->sign = dsa_sign;
       res->verify = dsa_verify;
@@ -1498,6 +1546,8 @@ array lookup(int suite, ProtocolVersion|int version,
     case KE_ecdhe_rsa:
       sign_id = SIGNATURE_rsa;
       break;
+    case KE_dh_rsa:
+    case KE_dh_dss:
     case KE_dhe_dss:
       sign_id = SIGNATURE_dsa;
       break;
