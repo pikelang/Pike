@@ -409,27 +409,29 @@ protected int cipher_suite_sort_key(int suite)
     KE_fortezza:	3,
     KE_dms:		4,
     KE_rsa:		5,
-    KE_dh:		6,
-    KE_ecdh_rsa:	7,
-    KE_ecdh_ecdsa:	8,
-    KE_dhe_rsa:		9,
-    KE_dhe_dss:		10,
-    KE_ecdhe_rsa:	11,
-    KE_ecdhe_ecdsa:	12,
+    KE_dh_rsa:		6,
+    KE_dh_dss:		7,
+    KE_ecdh_rsa:	8,
+    KE_ecdh_ecdsa:	9,
+    KE_dhe_rsa:		10,
+    KE_dhe_dss:		11,
+    KE_ecdhe_rsa:	12,
+    KE_ecdhe_ecdsa:	13,
   ])[info[0]];
 
   int auth_prio = ([
     KE_null:		0,
-    KE_dh:		0,
     KE_dh_anon:		0,
     KE_ecdh_anon:	0,
     KE_fortezza:	1,
     KE_dms:		2,
     KE_rsa:		8,
-    KE_ecdh_rsa:	8,
     KE_dhe_rsa:		8,
     KE_ecdhe_rsa:	8,
+    KE_dh_dss:		8,
+    KE_dh_rsa:		8,
     KE_dhe_dss:		8,
+    KE_ecdh_rsa:	8,
     KE_ecdh_ecdsa:	8,
     KE_ecdhe_ecdsa:	8,
   ])[info[0]];
@@ -496,8 +498,8 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
   case SIGNATURE_invalid:
     // Don't filter on signature.
     kes |= (< KE_rsa, KE_dhe_rsa,
-	      KE_dhe_dss,
-	      KE_null, KE_dh, KE_dh_anon,
+	      KE_dh_rsa, KE_dh_dss, KE_dhe_dss,
+	      KE_null, KE_dh_anon,
 #if constant(Crypto.ECC.Curve)
 	      KE_ecdh_rsa, KE_ecdhe_rsa,
 	      KE_ecdh_ecdsa, KE_ecdhe_ecdsa,
@@ -507,7 +509,7 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
     break;
   case SIGNATURE_anonymous:
     // Unsigned key exchange methods.
-    kes |= (< KE_null, KE_dh, KE_dh_anon,
+    kes |= (< KE_null, KE_dh_anon,
 #if constant(Crypto.ECC.Curve)
 	      KE_ecdh_anon,
 #endif
@@ -521,7 +523,7 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
     >);
     break;
   case SIGNATURE_dsa:
-    kes |= (< KE_dhe_dss >);
+    kes |= (< KE_dh_rsa, KE_dh_dss, KE_dhe_dss >);
     break;
 #if constant(Crypto.ECC.Curve)
   case SIGNATURE_ecdsa:
