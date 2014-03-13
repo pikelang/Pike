@@ -826,15 +826,6 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   return t;
 }
 
-PMOD_EXPORT void hash_string(struct pike_string *s)
-{
-  if (!(s->flags & STRING_NOT_HASHED)) return;
-  /* if( s->len < hash_prefix_len ) */
-  /*   check_string_range( s, 0, 0, 0 ); */
-  s->hval=do_hash(s);
-  s->flags &= ~STRING_NOT_HASHED;
-}
-
 /*
  * This function assumes that the shift size is already the minimum it
  * can be.
