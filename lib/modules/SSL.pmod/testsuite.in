@@ -213,11 +213,16 @@ test_do([[
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
 				     0, server_min, server_max);
 
-    // We only have self-signed certificates, so all ECDH_RSA suites will
-    // fail, since they require the certificate to be signed with RSA.
-    if (sizeof(suites) == 1) {
-      if (SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
-          SSL.Constants.KE_ecdh_rsa) {
+    // We only have self-signed certificates, so all ECDH_RSA and
+    // DH_RSA suites will fail prior to TLS 1.2, since they require
+    // the certificate to be signed with RSA.
+    if (((client_max < SSL.Constants.PROTOCOL_TLS_1_2) ||
+         (server_max < SSL.Constants.PROTOCOL_TLS_1_2)) &
+        (sizeof(suites) == 1)) {
+      if ((SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
+           SSL.Constants.KE_ecdh_rsa) ||
+          (SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
+           SSL.Constants.KE_dh_rsa)) {
         expected = 0;
       }
     }

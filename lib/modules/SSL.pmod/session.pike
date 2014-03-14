@@ -133,12 +133,17 @@ int(0..1) has_required_certificates()
 //! @param ecc_curves
 //!   The set of ecc_curves supported by the peer.
 protected int(0..1) is_supported_cert(CertificatePair cp,
+				      int ke_mask,
 				      int version,
 				      array(int) ecc_curves)
 {
   if (version >= PROTOCOL_TLS_1_2) {
+    if (!(ke_mask & cp->ke_mask_invariant)) return 0;
+
     // FIXME: In TLS 1.2 and later check that all sign_algs
     //        in the cert chain are supported by the peer.
+  } else {
+    if (!(ke_mask & cp->ke_mask)) return 0;
   }
 
 #if constant(Crypto.ECC.Curve)
@@ -161,45 +166,19 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 //! @param suite
 //!   Candidate cipher suite.
 //!
-//! @param certs
-//!   Available certificates.
-protected int(0..1) is_supported_suite(int suite,
-				       array(CertificatePair) certs)
+//! @param ke_mask
+//!   The bit mask of the key exchange algorithms supported by
+//!   the set of available certificates.
+protected int(0..1) is_supported_suite(int suite, int ke_mask)
 {
   array(int) suite_info = [array(int)]CIPHER_SUITES[suite];
   if (!suite_info) {
-    SSL3_DEBUG_MSG("Suite %d is not supported.\n", suite);
+    SSL3_DEBUG_MSG("Suite %s is not supported.\n", fmt_cipher_suite(suite));
     return 0;
   }
 
   KeyExchangeType ke = [int(0..0)|KeyExchangeType]suite_info[0];
-  SignatureAlgorithm sa = [int(-1..3)]KE_TO_SA[ke];
-  if (sa <= 0) return !sa;
-
-  foreach(certs, CertificatePair cp) {
-    if (cp->sign_algs[0][1] == sa) {
-      if (ke == KE_ecdh_ecdsa) {
-	if ((sizeof(cp->sign_algs) > 1) &&
-	    (cp->sign_algs[1][1] != sa)) {
-	  // RFC 4492 2.1: ECDH_ECDSA
-	  // In ECDH_ECDSA, the server's certificate MUST contain
-	  // an ECDH-capable public key and be signed with ECDSA.
-	  continue;
-	}
-      } else if (ke == KE_ecdh_rsa) {
-	if ((sizeof(cp->sign_algs) == 1) ||
-	    (cp->sign_algs[1][1] != SIGNATURE_rsa)) {
-	  // RFC 4492 2.3: ECDH_RSA
-	  // This key exchange algorithm is the same as ECDH_ECDSA
-	  // except that the server's certificate MUST be signed
-	  // with RSA rather than ECDSA.
-	  continue;
-	}
-      }
-      return 1;
-    }
-  }
-
+  if (ke_mask & (1<<ke)) return 1;
   return 0;
 }
 
@@ -238,18 +217,38 @@ int select_cipher_suite(object context,
 
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
+  // Find the set of key exchange algorithms supported by the client.
+  int ke_mask = 0;
+  foreach(cipher_suites, int suite) {
+    if (CIPHER_SUITES[suite]) {
+      ke_mask |= 1 << [int](CIPHER_SUITES[suite][0]);
+    }
+  }
+
   // Filter any certs that the client doesn't support.
   certs = [array(CertificatePair)]
-    filter(certs, is_supported_cert, version, ecc_curves);
+    filter(certs, is_supported_cert, ke_mask, version, ecc_curves);
 
   SSL3_DEBUG_MSG("Client supported certificates: %O\n", certs);
+
+  // Find the set of key exchange algorithms supported by
+  // the remaining certs.
+  ke_mask = (1<<KE_null)|(1<<KE_dh_anon)
+#if constant(Crypto.ECC.Curve)
+    |(1<<KE_ecdh_anon)
+#endif
+    ;
+  if (version >= PROTOCOL_TLS_1_2) {
+    ke_mask = `|(ke_mask, @certs->ke_mask_invariant);
+  } else {
+    ke_mask = `|(ke_mask, @certs->ke_mask);
+  }
 
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
   cipher_suites =
     ([function(array(int):array(int))]
-     context->sort_suites)(filter(cipher_suites, is_supported_suite,
-				  certs || ([])));
+     context->sort_suites)(filter(cipher_suites, is_supported_suite, ke_mask));
 
   if (!sizeof(cipher_suites)) {
     SSL3_DEBUG_MSG("No suites left after certificate filtering.\n");
@@ -272,10 +271,19 @@ int select_cipher_suite(object context,
   if (sa != SIGNATURE_anonymous) {
     CertificatePair cert;
 
-    foreach(certs, CertificatePair cp) {
-      if (is_supported_suite(suite, ({ cp }))) {
-	cert = cp;
-	break;
+    if (version >= PROTOCOL_TLS_1_2) {
+      foreach(certs, CertificatePair cp) {
+	if (is_supported_suite(suite, cp->ke_mask_invariant)) {
+	  cert = cp;
+	  break;
+	}
+      }
+    } else {
+      foreach(certs, CertificatePair cp) {
+	if (is_supported_suite(suite, cp->ke_mask)) {
+	  cert = cp;
+	  break;
+	}
       }
     }
 
