@@ -173,10 +173,10 @@ struct foo {
     const char * a;
     int b;
 };
-const static struct foo[] = {
+const static struct foo list[] = {
 #include <mysql/mysqld_ername.h>
 };
-    ],ac_cv_mysqld_ername=yes,ac_cv_mysqld_ername=yes)
+    ],ac_cv_mysqld_ername=yes,ac_cv_mysqld_ername=no)
   ])
   if test x$ac_cv_mysqld_ername = xyes; then
       AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
@@ -184,7 +184,6 @@ const static struct foo[] = {
   else
       AC_MSG_RESULT(no)
   fi
-AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
 
   if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
     # Required headerfile missing.
