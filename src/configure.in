@@ -1505,9 +1505,9 @@ PIKE_AC_DEBUG
 
 AC_ARG_WITH(thread_c_stack,
 	    MY_DESCR([--with-thread-c-stack=n],
-	             [tune the thread c-stack (default is 256 * 1024)]),
+	             [tune the thread c-stack (default is 1024 * 1024)]),
 	    [AC_DEFINE_UNQUOTED(PIKE_THREAD_C_STACK_SIZE,($withval))],
-	    [AC_DEFINE(PIKE_THREAD_C_STACK_SIZE,(256 * 1024))])
+	    [AC_DEFINE(PIKE_THREAD_C_STACK_SIZE,(1024 * 1024))])
 
 AC_ARG_WITH(devpoll, MY_DESCR([--without-devpoll],
 			      [disable support for /dev/poll]),
