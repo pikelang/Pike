@@ -1663,7 +1663,7 @@ PIKECLASS CBC
 #include <nettle/ctr.h>
 
 /*! @class CTR
- *! Implementation of Counter Mode (GCM). Works as
+ *! Implementation of Counter Mode (CTR). Works as
  *! a wrapper for the cipher algorithm put in create.
  *!
  *! This cipher mode works like a stream cipher with
@@ -1712,7 +1712,7 @@ PIKECLASS CTR
 
   /*! @class State
    *!
-   *! The state for a GCM instance.
+   *! The state for a CTR instance.
    */
   PIKECLASS State
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
@@ -1828,9 +1828,8 @@ PIKECLASS CTR
       f_add(3);
     }
 
-    /*! @decl int(16..16) block_size()
-     *! Returns the block size of the encapsulated cipher,
-     *! which is always @expr{16@} for GCM.
+    /*! @decl int(1..) block_size()
+     *! Returns the block size of the encapsulated cipher.
      */
     PIKEFUN int(1..) block_size()
       optflags OPT_TRY_OPTIMIZE;
@@ -1838,12 +1837,8 @@ PIKECLASS CTR
       RETURN THIS->block_size;
     }
 
-    /*! @decl int(12..12) iv_size()
-     *! Returns the recommended size for the initialization vector
-     *! (ie @expr{12@}).
-     *!
-     *! Other sizes are allowed, but will be compressed or expanded
-     *! to this size using the encapsulated cipher.
+    /*! @decl int(1..) iv_size()
+     *! Returns the size for the initialization vector
      */
     PIKEFUN int(1..) iv_size()
       optflags OPT_TRY_OPTIMIZE;
