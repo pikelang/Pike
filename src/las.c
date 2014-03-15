@@ -3085,6 +3085,7 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
+#ifndef NEW_ARG_CHECK
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static void low_build_function_type(node *n)
 {
@@ -3170,6 +3171,7 @@ static void low_build_function_type(node *n)
     push_type(T_FUNCTION);
   }
 }
+#endif
 
 static struct pike_string *get_name_of_function(node *n)
 {
