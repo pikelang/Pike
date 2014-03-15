@@ -3393,14 +3393,23 @@ static void decode_value2(struct decode_data *data)
 
 	  if(data->pass == 1)
 	  {
+            int overflow = 0;
+            size_t tmp = 0;
 #ifdef PIKE_USE_MACHINE_CODE
   /* We want our program to be in mexec-allocated memory... */
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
 #endif /* PIKE_USE_MACHINE_CODE */ 
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-          size=DO_ALIGN(size, ALIGNOF(TYPE)); \
-          size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)          \
+          if (size) {                           \
+            size=DO_ALIGN(size, ALIGNOF(TYPE)); \
+            overflow |= !size;                  \
+          }                                     \
+          overflow |= DO_SIZE_T_MUL_OVERFLOW(sizeof(p->NAME[0]), p->PIKE_CONCAT(num_,NAME), &tmp)\
+                    | DO_SIZE_T_ADD_OVERFLOW(size, tmp, &size);
 #include "program_areas.h"
+
+            if (overflow)
+              decode_error(data, NULL, "Program area sizes overflowed.\n");
 
 	    dat=xalloc(size);
 	    debug_malloc_touch(dat);
@@ -3409,8 +3418,9 @@ static void decode_value2(struct decode_data *data)
 #ifdef PIKE_USE_MACHINE_CODE
   /* We want our program to be in mexec-allocated memory... */
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
-          p->NAME = (TYPE *)mexec_alloc(p->PIKE_CONCAT(num_, NAME) *	\
-					sizeof(p->NAME[0]));
+          if (DO_SIZE_T_MUL_OVERFLOW(p->PIKE_CONCAT(num_, NAME), sizeof(p->NAME[0]), &tmp))\
+            decode_error(data, NULL, "Program area sizes overflowed.\n");\
+          p->NAME = (TYPE *)mexec_alloc(tmp);
 #endif /* PIKE_USE_MACHINE_CODE */ 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
 	  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
@@ -4150,7 +4160,8 @@ static void decode_value2(struct decode_data *data)
 #endif /* PIKE_USE_MACHINE_CODE */
 
 	    /* Decode program */
-	    if (local_num_program >= (size_t)(data->len - data->ptr)) {
+	    if (SIZE_T_MUL_OVERFLOW(local_num_program, sizeof(PIKE_OPCODE_T)) ||
+                local_num_program * sizeof(PIKE_OPCODE_T) >= (size_t)(data->len - data->ptr)) {
 	      decode_error(data, NULL,
 			   "Failed to decode program (string too short).\n");
 	    }
