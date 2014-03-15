@@ -105,14 +105,18 @@ test_tests([[
 	    "40":CIPHER_rc4_40,
 	    "128":CIPHER_rc4,
 	  ]),
+#if constant(Crypto.Arctwo)
 	  "rc2":([
 	    "cbc":([
 	      "40":CIPHER_rc2_40,
 	    ]),
 	  ]),
+#endif
 	  "des40":CIPHER_des40,
 	  "des":CIPHER_des,
+#if constant(Crypto.IDEA)
 	  "idea":CIPHER_idea,
+#endif
 	  "3des":([
 	    "ede":cipher = CIPHER_3des,
 	  ]),
@@ -120,10 +124,12 @@ test_tests([[
 	    "128":CIPHER_aes,
 	    "256":CIPHER_aes256,
 	  ]),
+#if constant(Crypto.Camellia)
 	  "camellia":([
 	    "128":CIPHER_camellia128,
 	    "256":CIPHER_camellia256,
 	  ]),
+#endif
 	]));
       int mode = -1;
       if (sizeof(fields) > fno) {
@@ -131,9 +137,12 @@ test_tests([[
 	case "cbc":
 	  fno++;
 	  break;
+#if constant(Crypto.GCM)
 	case "gcm":
 	  mode = MODE_gcm;
 	  fno++;
+	  break;
+#endif
 	}
       }
       int hash = -1;
