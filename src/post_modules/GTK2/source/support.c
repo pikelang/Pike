@@ -598,9 +598,7 @@ static int pgtk2_push_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_pike_object_param(const GValue *a) {
-  struct object *o=g_value_get_pointer(a);
-  if (o)
-    ref_push_object(o);
+  push_int64((LONGEST)g_value_get_pointer(a));
   return PUSHED_VALUE;
 }
 
