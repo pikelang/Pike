@@ -724,29 +724,29 @@ constant CIPHER_SUITES =
    TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
    TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
    TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
-   TLS_dh_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
-   TLS_dh_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
+   TLS_dh_dss_with_aes_256_cbc_sha :	({ KE_dh_dss, CIPHER_aes256, HASH_sha }),
+   TLS_dh_rsa_with_aes_256_cbc_sha :	({ KE_dh_rsa, CIPHER_aes256, HASH_sha }),
 
    // Suites from RFC 4492 (TLSECC)
-   TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, 0 }),
+   TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, HASH_sha }),
    TLS_ecdh_ecdsa_with_rc4_128_sha : ({ KE_ecdh_ecdsa, CIPHER_rc4, HASH_sha }),
    TLS_ecdh_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_3des, HASH_sha }),
    TLS_ecdh_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha }),
    TLS_ecdh_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha }),
 
-   TLS_ecdhe_ecdsa_with_null_sha :	({ KE_ecdhe_ecdsa, 0, 0 }),
+   TLS_ecdhe_ecdsa_with_null_sha :	({ KE_ecdhe_ecdsa, 0, HASH_sha }),
    TLS_ecdhe_ecdsa_with_rc4_128_sha :	({ KE_ecdhe_ecdsa, CIPHER_rc4, HASH_sha }),
    TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_3des, HASH_sha }),
    TLS_ecdhe_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha }),
    TLS_ecdhe_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha }),
 
-   TLS_ecdh_rsa_with_null_sha : ({ KE_ecdh_rsa, 0, 0 }),
+   TLS_ecdh_rsa_with_null_sha : ({ KE_ecdh_rsa, 0, HASH_sha }),
    TLS_ecdh_rsa_with_rc4_128_sha : ({ KE_ecdh_rsa, CIPHER_rc4, HASH_sha }),
    TLS_ecdh_rsa_with_3des_ede_cbc_sha : ({ KE_ecdh_rsa, CIPHER_3des, HASH_sha }),
    TLS_ecdh_rsa_with_aes_128_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha }),
    TLS_ecdh_rsa_with_aes_256_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha }),
 
-   TLS_ecdhe_rsa_with_null_sha :	({ KE_ecdhe_rsa, 0, 0 }),
+   TLS_ecdhe_rsa_with_null_sha :	({ KE_ecdhe_rsa, 0, HASH_sha }),
    TLS_ecdhe_rsa_with_rc4_128_sha :	({ KE_ecdhe_rsa, CIPHER_rc4, HASH_sha }),
    TLS_ecdhe_rsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_rsa, CIPHER_3des, HASH_sha }),
    TLS_ecdhe_rsa_with_aes_128_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha }),
@@ -762,8 +762,8 @@ constant CIPHER_SUITES =
    TLS_rsa_with_aes_256_cbc_sha256 :	({ KE_rsa, CIPHER_aes256, HASH_sha256 }),
    TLS_dhe_rsa_with_aes_256_cbc_sha256 : ({ KE_dhe_rsa, CIPHER_aes256, HASH_sha256 }),
    TLS_dhe_dss_with_aes_256_cbc_sha256 : ({ KE_dhe_dss, CIPHER_aes256, HASH_sha256 }),
-   TLS_dh_rsa_with_aes_256_cbc_sha256 : ({ KE_dhe_rsa, CIPHER_aes256, HASH_sha256 }),
-   TLS_dh_dss_with_aes_256_cbc_sha256 : ({ KE_dhe_dss, CIPHER_aes256, HASH_sha256 }),
+   TLS_dh_rsa_with_aes_256_cbc_sha256 : ({ KE_dh_rsa, CIPHER_aes256, HASH_sha256 }),
+   TLS_dh_dss_with_aes_256_cbc_sha256 : ({ KE_dh_dss, CIPHER_aes256, HASH_sha256 }),
 
    // Suites from RFC 5289
    // Note that these are not valid for TLS versions prior to TLS 1.2.
