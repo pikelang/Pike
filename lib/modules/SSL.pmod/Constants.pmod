@@ -658,6 +658,7 @@ constant CIPHER_SUITES =
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
+   TLS_rsa_with_null_sha256 :      	({ KE_rsa, 0, HASH_sha256 }),
 
    // NB: The export suites are obsolete in TLS 1.1 and later.
    //     The RC4/40 suite is required for Netscape 4.05 Intl.
@@ -809,6 +810,10 @@ constant CIPHER_SUITES =
    // From RFC 6367
    // Note that this RFC explicitly allows use of these suites
    // with TLS versions prior to TLS 1.2 (RFC 6367 3.3).
+   TLS_ecdh_ecdsa_with_camellia_128_cbc_sha256: ({ KE_ecdh_ecdsa, CIPHER_camellia128, HASH_sha256 }),
+   TLS_ecdh_ecdsa_with_camellia_256_cbc_sha384: ({ KE_ecdh_ecdsa, CIPHER_camellia256, HASH_sha384 }),
+   TLS_ecdh_rsa_with_camellia_128_cbc_sha256: ({ KE_ecdh_rsa, CIPHER_camellia128, HASH_sha256 }),
+   TLS_ecdh_rsa_with_camellia_256_cbc_sha384: ({ KE_ecdh_rsa, CIPHER_camellia256, HASH_sha384 }),
    TLS_ecdhe_ecdsa_with_camellia_128_cbc_sha256: ({ KE_ecdhe_ecdsa, CIPHER_camellia128, HASH_sha256 }),
    TLS_ecdhe_ecdsa_with_camellia_256_cbc_sha384: ({ KE_ecdhe_ecdsa, CIPHER_camellia256, HASH_sha384 }),
    TLS_ecdhe_rsa_with_camellia_128_cbc_sha256: ({ KE_ecdhe_rsa, CIPHER_camellia128, HASH_sha256 }),
