@@ -586,6 +586,9 @@ static int pgtk2_push_object_param(const GValue *a) {
       push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
       push_gdkobject(gp,region,0);
+    } else {
+      /* Don't know how to push this sort of object, so push its name */
+      PGTK_PUSH_GCHAR(G_VALUE_TYPE_NAME(a));
     }
   } else {
     obj=g_value_get_object(a);
