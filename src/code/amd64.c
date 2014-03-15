@@ -78,11 +78,13 @@ static void ib( char x )
   add_to_program( x );
 }
 
+#if 0
 static void iw( short x )
 {
   add_to_program( x>>8 );
   add_to_program( x );
 }
+#endif
 
 static void id( int x )
 {
@@ -299,6 +301,7 @@ static void shl_reg_imm( enum amd64_reg from_reg, int shift )
   }
 }
 
+#if 0
 static void shl_reg_reg( enum amd64_reg reg, enum amd64_reg sreg)
 {
   if( sreg != P_REG_RCX )
@@ -308,6 +311,7 @@ static void shl_reg_reg( enum amd64_reg reg, enum amd64_reg sreg)
   opcode( 0xd3 );
   modrm( 3, 4, reg );
 }
+#endif
 
 static void shl_reg32_reg( enum amd64_reg reg, enum amd64_reg sreg)
 {
@@ -318,6 +322,7 @@ static void shl_reg32_reg( enum amd64_reg reg, enum amd64_reg sreg)
   modrm( 3, 4, reg );
 }
 
+#if 0
 static void shl_reg_mem( enum amd64_reg reg, enum amd64_reg mem, int offset)
 {
   if( reg == P_REG_RCX )
@@ -325,6 +330,7 @@ static void shl_reg_mem( enum amd64_reg reg, enum amd64_reg mem, int offset)
   mov_mem8_reg( mem, offset, P_REG_RCX );
   shl_reg_reg( reg, P_REG_RCX );
 }
+#endif
 
 static void shr_reg_imm( enum amd64_reg from_reg, int shift )
 {
@@ -347,12 +353,14 @@ static void clear_reg( enum amd64_reg reg )
   xor_reg_reg( reg, reg );
 }
 
+#if 0
 static void neg_reg( enum amd64_reg reg )
 {
   rex(1,0,0,reg);
   opcode(0xf7);
   modrm(3,3,reg);
 }
+#endif
 
 static void mov_imm_reg( long imm, enum amd64_reg reg )
 {
@@ -419,12 +427,14 @@ static void mov_reg_mem32( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdi
   low_mov_reg_mem( from_reg, to_reg, offset );
 }
 
+#if 0
 static void mov_reg_mem16( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
 {
   opcode( 0x66 );
   rex(0, from_reg, 0, to_reg );
   low_mov_reg_mem( from_reg, to_reg, offset );
 }
+#endif
 
 
 
@@ -855,16 +865,19 @@ static int jz_imm_rel32( int rel )
 static void jmp( struct label *l ) { return jump_rel8( l, 0xeb ); }
 static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
 static void jno( struct label *l ) { return jump_rel8( l, 0x71 ); }
+#if 0
 static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
 static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
+#endif
 static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
 static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
 static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
 static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
 static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
 static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
+#if 0
 static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
-
+#endif
 
 #define LABELS()  struct label label_A, label_B, label_C, label_D, label_E;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;label_D.addr = -1;label_D.n_label_uses = 0;label_E.addr=-1;label_E.n_label_uses=0;
 #define LABEL_A label(&label_A)
@@ -1222,10 +1235,12 @@ static void amd64_push_local_function(int fun)
   amd64_add_sp(1);
 }
 
+#ifdef PIKE_DEBUG
 static void amd64_stack_error(void)
 {
   Pike_fatal("Stack error\n");
 }
+#endif
 
 void amd64_update_pc(void)
 {
