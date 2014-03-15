@@ -14,7 +14,9 @@
 #define BA_ONE	((struct ba_block_header *)1)
 #define BA_FLAG_SORTED 1u
 
+#ifdef PIKE_DEBUG
 static void print_allocator(const struct block_allocator * a);
+#endif
 
 #ifdef PIKE_DEBUG
 static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header *loc,
@@ -331,6 +333,7 @@ found:
     PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
 
+#ifdef PIKE_DEBUG
 static void print_allocator(const struct block_allocator * a) {
     int i;
     struct ba_layout l;
@@ -342,8 +345,6 @@ static void print_allocator(const struct block_allocator * a) {
 		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
     }
 }
-
-#ifdef PIKE_DEBUG
 
 #define Pike_nfatal(n) \
     (fprintf(stderr,msg_fatal_error,__FILE__,(long)(n)),debug_fatal)
