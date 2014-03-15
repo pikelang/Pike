@@ -278,45 +278,57 @@ GEN_OF1(32)
  *     target variable may get lost. We fix this by having variables
  *     of the correct type as temporaries, and then copying the result.
  */
-#define _GEN_INT_TYPE_UNOP(OP, size)					\
-  static INLINE int INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a) {		\
-    INT ## size tmp;							\
-      return (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, &tmp));		\
+#define _GEN_UNOP(OP, type1, type2, name)				\
+  static INLINE int name ## _ ## OP ## _OVERFLOW(type2 a) {		\
+    type1 tmp;							        \
+      return (DO_## type1 ## _ ## OP ## _OVERFLOW(a, &tmp));		\
   }									\
-  static INLINE int DO_INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
-						    INT_TYPE *res) {	\
-    INT ## size tmp;							\
-    if (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, &tmp)) return 1;	\
+  static INLINE int DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
+						        type2 *res) {	\
+    type1 tmp;							        \
+    if (DO_ ## type1 ## _ ## OP ## _OVERFLOW(a, &tmp)) return 1;	\
     *res = tmp;								\
     return 0;								\
   }
-#define _GEN_INT_TYPE_BINOP(OP, size)					\
-  static INLINE int INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
-						 INT_TYPE b) {		\
-    INT ## size tmp;							\
-    return (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, b, &tmp));	\
+#define _GEN_BINOP(OP, type1, type2, name)				\
+  static INLINE int name ## _ ## OP ## _OVERFLOW(type2 a, type2 b) {	\
+    type1 tmp;							        \
+    return (DO_ ## type1 ## _ ## OP ## _OVERFLOW(a, b, &tmp));	        \
   }									\
-  static INLINE int DO_INT_TYPE_ ## OP ## _OVERFLOW(INT_TYPE a,		\
-						    INT_TYPE b,		\
-						    INT_TYPE *res) {	\
-    INT ## size tmp;							\
-    if (DO_INT ## size ## _ ## OP ## _OVERFLOW(a, b, &tmp)) return 1;	\
+  static INLINE int DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
+                                                        type2 b,	\
+                                                        type2 *res) {	\
+    type1 tmp;	        						\
+    if (DO_ ## type1 ## _ ## OP ## _OVERFLOW(a, b, &tmp)) return 1;	\
     *res = tmp;								\
     return 0;								\
   }
-#define GEN_INT_TYPE(size)				\
-  _GEN_INT_TYPE_UNOP(NEG, size)				\
-  _GEN_INT_TYPE_BINOP(MUL, size)			\
-  _GEN_INT_TYPE_BINOP(ADD, size)			\
-  _GEN_INT_TYPE_BINOP(SUB, size)			\
-  _GEN_INT_TYPE_BINOP(DIV, size)			\
-  _GEN_INT_TYPE_BINOP(MOD, size)			\
-  _GEN_INT_TYPE_BINOP(LSH, size)			\
-  _GEN_INT_TYPE_BINOP(RSH, size)
+
+#define GEN_INT_TYPE(size)		                \
+  _GEN_UNOP(NEG, INT ## size, INT_TYPE, INT_TYPE)       \
+  _GEN_BINOP(MUL, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(ADD, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(SUB, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(DIV, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(MOD, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(LSH, INT ## size, INT_TYPE, INT_TYPE)	\
+  _GEN_BINOP(RSH, INT ## size, INT_TYPE, INT_TYPE)
+
 #if SIZEOF_INT_TYPE == 8
 GEN_INT_TYPE(64)
 #elif SIZEOF_INT_TYPE == 4
 GEN_INT_TYPE(32)
+#endif
+
+/* let's assume that sizeof(char*) == sizeof(size_t) */
+#if SIZEOF_CHAR_P == 8
+_GEN_BINOP(ADD, UINT64, size_t, SIZE_T)
+_GEN_BINOP(SUB, UINT64, size_t, SIZE_T)
+_GEN_BINOP(MUL, UINT64, size_t, SIZE_T)
+#elif SIZEOF_CHAR_P == 4
+_GEN_BINOP(ADD, UINT32, size_t, SIZE_T)
+_GEN_BINOP(SUB, UINT32, size_t, SIZE_T)
+_GEN_BINOP(MUL, UINT32, size_t, SIZE_T)
 #endif
 
 /* Prototypes begin here */
