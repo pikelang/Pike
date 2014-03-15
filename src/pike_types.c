@@ -821,36 +821,6 @@ void debug_push_finished_type(struct pike_type *t)
   TYPE_STACK_DEBUG("push_finished_type");
 }
 
-/* Only to be used from {or,and}_pike_types() et al! */
-static void push_joiner_type(unsigned int type)
-{
-  /* fprintf(stderr, "push_joiner_type(%d)\n", type); */
-
-  switch(type) {
-  case T_OR:
-  case T_AND:
-    /* Special case: Check if the two top elements are equal. */
-    if (Pike_compiler->type_stackp[-1] == Pike_compiler->type_stackp[0]) {
-      free_type(*(Pike_compiler->type_stackp--));
-      return;
-    }
-    /* Make a new type of the top two types. */
-    --Pike_compiler->type_stackp;
-#ifdef PIKE_DEBUG
-    if ((*Pike_compiler->type_stackp+1)->type == type) {
-      Pike_fatal("Invalid CAR to push_joiner_type().\n");
-    }
-#endif /* PIKE_DEBUG */
-    *Pike_compiler->type_stackp = mk_type(type,
-					  *(Pike_compiler->type_stackp+1),
-					  *Pike_compiler->type_stackp,
-					  PT_COPY_BOTH);
-    break;
-  default:
-    Pike_fatal("Illegal joiner type: %d\n", type);
-  }
-}
-
 static void push_reverse_joiner_type(unsigned int type)
 {
   /* fprintf(stderr, "push_reverse_joiner_type(%d)\n", type); */
@@ -2651,11 +2621,6 @@ struct pike_string *describe_type(struct pike_type *type)
 
 /******/
 
-static int low_is_same_type(struct pike_type *a, struct pike_type *b)
-{
-  return a == b;
-}
-
 TYPE_T compile_type_to_runtime_type(struct pike_type *t)
 {
   switch(t->type)
@@ -2702,20 +2667,6 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
   case T_FLOAT:
     return t->type;
   }
-}
-
-
-static int low_find_exact_type_match(struct pike_type *needle,
-				     struct pike_type *haystack,
-				     unsigned int separator)
-{
-  while(haystack->type == separator)
-  {
-    if(low_find_exact_type_match(needle, haystack->car, separator))
-      return 1;
-    haystack = haystack->cdr;
-  }
-  return low_is_same_type(needle, haystack);
 }
 
 static void low_or_pike_types(struct pike_type *t1,
