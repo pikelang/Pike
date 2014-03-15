@@ -41,7 +41,6 @@
 
 static node *eval(node *);
 static void optimize(node *n);
-static node *localopt(node *n);
 
 int cumulative_parse_error=0;
 extern char *get_type_name(int);
@@ -4433,7 +4432,7 @@ static void zapp_try_optimize(node *n)
   n->parent = parent;
 }
 
-#if defined(SHARED_NODES)
+#if defined(SHARED_NODES) && 0
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static void find_usage(node *n, unsigned char *usage,
 		       unsigned char *switch_u,
@@ -5146,7 +5145,7 @@ static node *localopt(node *n)
   free_node(n);
   return n2;
 }
-#endif /* SHARED_NODES */
+#endif /* SHARED_NODES && 0 */
 
 static void optimize(node *n)
 {
