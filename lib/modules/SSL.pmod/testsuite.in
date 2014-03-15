@@ -34,6 +34,159 @@ test_eq( S(SSL.Cipher.MAChmac_sha384("foo")->hash_raw("bar")),
 test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash_raw("bar")),
          "114682914c5d017dfe59fdc804118b56a3a652a0b8870759cf9e792ed7426b08197076bf7d01640b1b0684df79e4b67e37485669e8ce98dbab60445f0db94fce" )
 
+test_tests([[
+  import SSL.Constants;
+  array(int) parse_fields(array(string) fields, int fno,
+			  mapping(string:mapping|int) tab)
+  {
+    while (fno < sizeof(fields)) {
+      int|mapping val = tab[fields[fno++] ];
+      if (!val && zero_type(val)) break;
+      if (intp(val)) return ({ val, fno });
+      tab = val;
+    }
+    return ({ -1, fno });
+  }
+  array(int) a()
+  {
+    // Validate the SSL.Constants.CIPHER_SUITES table.
+
+    log_status("Testing the cipher suite lookup table...");
+
+    int successes;
+    int tests;
+
+    foreach(indices(SSL.Constants), string sym) {
+      if (!has_prefix(sym, "SSL_") && !has_prefix(sym, "TLS_")) continue;
+      array(string) fields = sym/"_";
+      int fno = 1;
+
+      int ke = -1;
+
+      [ke, fno] = parse_fields(fields, fno,
+	([
+	  "null":KE_null,
+	  "rsa":KE_rsa,
+	  "dh":([
+	    "dss":KE_dh_dss,
+	    "rsa":KE_dh_rsa,
+	    "anon":KE_dh_anon,
+	  ]),
+	  "dhe":([
+	    "dss":KE_dhe_dss,
+	    "rsa":KE_dhe_rsa,
+	  ]),
+	  "ecdh":([
+	    "ecdsa":KE_ecdh_ecdsa,
+	    "rsa":KE_ecdh_rsa,
+	    "anon":KE_ecdh_anon,
+	  ]),
+	  "ecdhe":([
+	    "ecdsa":KE_ecdhe_ecdsa,
+	    "rsa":KE_ecdhe_rsa,
+	  ]),
+	]));
+
+      if ((sizeof(fields) > fno) &&
+	  !(<"export", "with">)[fields[fno] ]) {
+	// Probably something like "psk".
+	ke = -1;
+      }
+
+      // Skip ahead to the cipher.
+      while ((sizeof(fields) > fno) && (fields[fno++] != "with"))
+	;
+
+      int cipher = -1;
+      [cipher, fno] = parse_fields(fields, fno,
+	([
+	  "null":CIPHER_null,
+	  "rc4":([
+	    "40":CIPHER_rc4_40,
+	    "128":CIPHER_rc4,
+	  ]),
+	  "rc2":([
+	    "cbc":([
+	      "40":CIPHER_rc2_40,
+	    ]),
+	  ]),
+	  "des40":CIPHER_des40,
+	  "des":CIPHER_des,
+	  "idea":CIPHER_idea,
+	  "3des":([
+	    "ede":cipher = CIPHER_3des,
+	  ]),
+	  "aes":([
+	    "128":CIPHER_aes,
+	    "256":CIPHER_aes256,
+	  ]),
+	  "camellia":([
+	    "128":CIPHER_camellia128,
+	    "256":CIPHER_camellia256,
+	  ]),
+	]));
+      int mode = -1;
+      if (sizeof(fields) > fno) {
+	switch(fields[fno]) {
+	case "cbc":
+	  fno++;
+	  break;
+	case "gcm":
+	  mode = MODE_gcm;
+	  fno++;
+	}
+      }
+      int hash = -1;
+      [hash, fno] = parse_fields(fields, fno,
+	([
+	  "null":HASH_none,
+	  "md5":HASH_md5,
+	  "sha":HASH_sha,
+	  "sha256":HASH_sha256,
+	  "sha384":HASH_sha384,
+	  "sha512":HASH_sha512,
+	]));
+      array(int) expected = UNDEFINED;
+      if ((ke >= 0) && (cipher >= 0) && (hash >= 0)) {
+	if ((mode == -1) &&
+	    ((hash > HASH_sha256) &&
+	     !((cipher == CIPHER_camellia256) &&
+	       has_prefix(sym, "TLS_ecdh")) ||
+	     ((hash == HASH_sha256) &&
+	      (cipher == CIPHER_aes) &&
+	      has_prefix(sym, "TLS_ecdh")))) {
+	  // NB: The RFC 6367 suites allow use with TLS 1.1 and earlier.
+	  //     While the reverse is true for the RFC 5289 suites.
+	  mode = MODE_cbc;
+	}
+	if (mode >= 0) {
+	  expected = ({ ke, cipher, hash, mode });
+	} else {
+	  expected = ({ ke, cipher, hash });
+	}
+      }
+
+      tests++;
+      if (equal(CIPHER_SUITES[SSL.Constants[sym] ], expected)) {
+	successes++;
+      } else if (expected) {
+	if (!CIPHER_SUITES[SSL.Constants[sym] ]) {
+	  log_msg("Unimplemented cipher suite: %s\n", sym);
+	} else {
+	  log_msg("Cipher suite lookup table error for suite %s.\n"
+		  "Got:      ({ %{%d, %}}).\n"
+		  "Expected: ({ %{%d, %})).\n",
+		  sym, SSL.Constants.CIPHER_SUITES[SSL.Constants[sym] ],
+		  expected);
+	}
+      } else {
+	log_msg("Cipher suite %s not supported by test script.\n", sym);
+      }
+    }
+    return ({ successes, tests - successes });
+  }
+]])
+
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
