@@ -607,6 +607,14 @@ constant TLS_rsa_with_aes_128_ccm_8		= 0xc0a0;	// RFC 6655
 constant TLS_rsa_with_aes_256_ccm_8		= 0xc0a1;	// RFC 6655
 constant TLS_dhe_rsa_with_aes_128_ccm_8		= 0xc0a2;	// RFC 6655
 constant TLS_dhe_rsa_with_aes_256_ccm_8		= 0xc0a3;	// RFC 6655
+constant TLS_psk_with_aes_128_ccm		= 0xc0a4;	// RFC 6655
+constant TLS_psk_with_aes_256_ccm		= 0xc0a5;	// RFC 6655
+constant TLS_dhe_psk_with_aes_128_ccm		= 0xc0a6;	// RFC 6655
+constant TLS_dhe_psk_with_aes_256_ccm		= 0xc0a7;	// RFC 6655
+constant TLS_psk_with_aes_128_ccm_8		= 0xc0a8;	// RFC 6655
+constant TLS_psk_with_aes_256_ccm_8		= 0xc0a9;	// RFC 6655
+constant TLS_psk_dhe_with_aes_128_ccm_8		= 0xc0aa;	// RFC 6655
+constant TLS_psk_dhe_with_aes_256_ccm_8		= 0xc0ab;	// RFC 6655
 
 // Constants from SSL 2.0.
 // These may appear in HANDSHAKE_hello_v2 and
