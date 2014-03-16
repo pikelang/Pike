@@ -81,10 +81,11 @@ constant PROTOCOL_major = 3;
 constant PROTOCOL_minor = PROTOCOL_TLS_1_2;
 
 /* Packet types */
-constant PACKET_change_cipher_spec = 20;
-constant PACKET_alert              = 21;
-constant PACKET_handshake          = 22;
-constant PACKET_application_data   = 23;
+constant PACKET_change_cipher_spec = 20; // RFC 5246
+constant PACKET_alert              = 21; // RFC 5246
+constant PACKET_handshake          = 22; // RFC 5246
+constant PACKET_application_data   = 23; // RFC 5246
+constant PACKET_heartbeat          = 24; // RFC 6520
 constant PACKET_types = (< PACKET_change_cipher_spec,
 			   PACKET_alert,
 			   PACKET_handshake,
@@ -250,7 +251,7 @@ constant ALERT_certificate_unobtainable		= 111;	// RFC 3546
 constant ALERT_unrecognized_name		= 112;	// RFC 3546
 constant ALERT_bad_certificate_status_response	= 113;	// RFC 3546
 constant ALERT_bad_certificate_hash_value	= 114;	// RFC 3546
-constant ALERT_unknown_psk_identity		= 115;
+constant ALERT_unknown_psk_identity		= 115;  // RFC 4279
 constant ALERT_no_application_protocol          = 120;  // draft-ietf-tls-applayerprotoneg
 constant ALERT_descriptions = ([
   ALERT_close_notify: "Connection closed.",
@@ -885,21 +886,21 @@ constant CIPHER_SUITES =
 ]);
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
-constant HANDSHAKE_hello_request	= 0;
-constant HANDSHAKE_client_hello		= 1;
-constant HANDSHAKE_server_hello		= 2;
-constant HANDSHAKE_hello_verify_request = 3;
-constant HANDSHAKE_NewSessionTicket     = 4;
-constant HANDSHAKE_certificate		= 11;
-constant HANDSHAKE_server_key_exchange	= 12;
-constant HANDSHAKE_certificate_request	= 13;
-constant HANDSHAKE_server_hello_done	= 14;
-constant HANDSHAKE_certificate_verify	= 15;
-constant HANDSHAKE_client_key_exchange	= 16;
-constant HANDSHAKE_finished		= 20;
-constant HANDSHAKE_cerificate_url       = 21;
-constant HANDSHAKE_certificate_status   = 22;
-constant HANDSHAKE_supplemental_data    = 23;
+constant HANDSHAKE_hello_request	= 0;  // RFC 5246
+constant HANDSHAKE_client_hello		= 1;  // RFC 5246
+constant HANDSHAKE_server_hello		= 2;  // RFC 5246
+constant HANDSHAKE_hello_verify_request = 3;  // RFC 6347
+constant HANDSHAKE_NewSessionTicket     = 4;  // RFC 4507
+constant HANDSHAKE_certificate		= 11; // RFC 5246
+constant HANDSHAKE_server_key_exchange	= 12; // RFC 5246
+constant HANDSHAKE_certificate_request	= 13; // RFC 5246
+constant HANDSHAKE_server_hello_done	= 14; // RFC 5246
+constant HANDSHAKE_certificate_verify	= 15; // RFC 5246
+constant HANDSHAKE_client_key_exchange	= 16; // RFC 5246
+constant HANDSHAKE_finished		= 20; // RFC 5246
+constant HANDSHAKE_cerificate_url       = 21; // RFC 6066
+constant HANDSHAKE_certificate_status   = 22; // RFC 6066
+constant HANDSHAKE_supplemental_data    = 23; // RFC 4680
 constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
 
 constant AUTHLEVEL_none		= 1;
@@ -1003,9 +1004,11 @@ constant EXTENSION_heartbeat                    = 15;           // RFC 6520
 constant EXTENSION_application_layer_protocol_negotiation = 16; // draft-ietf-tls-applayerprotoneg
 constant EXTENSION_status_request_v2            = 17;           // RFC-ietf-tls-multiple-cert-status-extension-08
 constant EXTENSION_signed_certificate_timestamp = 18;           // RFC 6962
+constant EXTENSION_client_certificate_type      = 19;           // RFC-ietf-tls-oob-pubkey-11
+constant EXTENSION_server_certificate_type      = 20;           // RFC-ietf-tls-oob-pubkey-11
+constant EXTENSION_padding                      = 21;           // TEMPORARY draft-agl-tls-padding
 constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507 / RFC 5077
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
-constant EXTENSION_padding                      = 35655;        // Same as Firefox / Chromium NSS
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 
 constant ECC_CURVES = ([
