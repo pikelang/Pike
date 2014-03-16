@@ -319,13 +319,15 @@ Packet client_hello()
   // additional 8k of data, which will cause the connection to hang.
   // The solution is to pad the package to more than 511 bytes using a
   // dummy exentsion.
+  // Reference: draft-agl-tls-padding
   int packet_size = sizeof(struct)+sizeof(extensions)+2;
   if(packet_size>255 && packet_size<512)
   {
+    int padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
-                   512-packet_size-4);
+                   padding);
     extensions->put_uint(EXTENSION_padding, 2);
-    extensions->put_var_string("\0"*(512-packet_size-4), 2);
+    extensions->put_var_string("\0"*padding, 2);
   }
 
   if(sizeof(extensions))
