@@ -35,12 +35,12 @@ PIKECLASS FloatTree {
 #define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
 
 static INLINE cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
-    cb_float f;
+    FLOAT_TYPE f;
 
     if (TYPEOF(*v) == PIKE_T_INT) {
-	f.f = (FLOAT_TYPE)v->u.integer;
+	f = (FLOAT_TYPE)v->u.integer;
     } else {
-	f.f = v->u.float_number;
+	f = v->u.float_number;
     }
 
     return cb_encode_float(f);
