@@ -1758,6 +1758,19 @@ PIKECLASS CTR
       }
     }
 
+    /*! @decl object `obj()
+     *!
+     *! Getter for the wrapped cipher algorithm.
+     */
+    PIKEFUN object `obj()
+    {
+      if (THIS->object) {
+	ref_push_object(THIS->object);
+      } else {
+	push_int(0);
+      }
+    }
+
     /*! @decl void create(program|object|function cipher, mixed ... args)
      *!
      *! Initialize the CTR wrapper with a cipher algorithm. If it is a
