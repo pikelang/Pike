@@ -33,14 +33,10 @@ typedef unsigned INT32 CB_NAME(char);
 #define int2float(x)	(*(FLOAT_TYPE*)&(x))
 #define float2int(x)	(*(cb_char*)&(x))
 
-typedef union {
-    FLOAT_TYPE f;
-    cb_char i;
-} cb_float;
+static inline cb_string cb_encode_float(FLOAT_TYPE f) {
+    cb_char str;
 
-
-static inline cb_string cb_encode_float(const cb_float f) {
-    cb_char str = f.i;
+    memcpy(&str, &f, sizeof(str));
 
     if (str & MASK(cb_char, 1)) {
 	str = ~str;
@@ -52,15 +48,17 @@ static inline cb_string cb_encode_float(const cb_float f) {
 }
 
 static inline FLOAT_TYPE cb_decode_float(cb_char s) {
-    cb_float u;
+    FLOAT_TYPE f;
+
     if (s & MASK(cb_char, 1)) {
 	s = (s ^ MASK(cb_char, 1));
     } else {
 	s = (~s);
     }
-    u.i = s;
 
-    return u.f;
+    memcpy(&f, &s, sizeof(f));
+
+    return f;
 }
 
 #define CB_ADD_KEY_REF(x)	do { } while(0)
