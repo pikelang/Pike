@@ -2047,6 +2047,16 @@ PIKECLASS GCM
     RETURN GCM_BLOCK_SIZE;
   }
 
+  /*! @decl int(16..16) digest_size()
+   *! Returns the size of the generated digest,
+   *! which is always @expr{16@} for GCM.
+   */
+  PIKEFUN int(16..16) digest_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    RETURN GCM_BLOCK_SIZE;
+  }
+
   /*! @decl int(12..12) iv_size()
    *! Returns the recommended size for the initialization vector
    *! (ie @expr{12@}).
@@ -2183,6 +2193,16 @@ PIKECLASS GCM
      *! which is always @expr{16@} for GCM.
      */
     PIKEFUN int(16..16) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_BLOCK_SIZE;
+    }
+
+    /*! @decl int(16..16) digest_size()
+     *! Returns the size of the generated digest,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(16..16) digest_size()
       optflags OPT_TRY_OPTIMIZE;
     {
       RETURN GCM_BLOCK_SIZE;
