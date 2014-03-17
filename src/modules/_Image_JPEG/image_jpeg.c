@@ -11,8 +11,6 @@
 #undef HAVE_JPEGLIB_H
 #endif
 
-#ifdef HAVE_JPEGLIB_H
-
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -30,6 +28,8 @@
 
 
 #include <stdio.h>
+
+#ifdef HAVE_JPEGLIB_H
 
 /* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
