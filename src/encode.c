@@ -4615,11 +4615,8 @@ static void decode_value2(struct decode_data *data)
 		/* refno */
 		decode_number(refno, data);
 
-                if (refno < 0 || refno >= p->num_identifier_references)
-                    decode_error(data, NULL, "Bad identifier reference %d\n", refno);
-
 		/* FIXME:
-		 *   Verify validity of depth.
+		 *   Verify validity of depth and refno.
 		 */
 
 		/* Expected identifier number. */
