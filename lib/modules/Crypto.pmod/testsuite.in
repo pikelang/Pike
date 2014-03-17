@@ -382,6 +382,63 @@ test_cipher(SALSA20,salsa20)
 test_cipher(Serpent,serpent)
 test_cipher(Twofish,twofish)
 
+dnl class, wrapped, key, iv, associated_data, payload, crypt_text, dsize
+define(test_aead, [[
+cond_resolv( Crypto.$1.name,[[
+  test_any([[
+    object c = Crypto.$1(Crypto.$2);
+    c->set_encrypt_key(String.hex2string($3));
+    c->set_iv(String.hex2string($4));
+    c->update(String.hex2string($5));
+    return c->crypt(String.hex2string($6)) + c->digest($8);
+  ]], String.hex2string($7))
+  test_any([[
+    object c = Crypto.$1(Crypto.$2);
+    c->set_decrypt_key(String.hex2string($3));
+    c->set_iv(String.hex2string($4));
+    c->update(String.hex2string($5));
+    return c->crypt(String.hex2string($7)[..<$8]) + c->digest($8);
+  ]], String.hex2string($6) + String.hex2string($7)[<$8-1..])
+]])]])
+
+// Crypto.CCM
+
+dnl NIST SP800-38C C1
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f", "10111213141516",
+	  "0001020304050607", "20212223", "7162015b4dac255d", 4)
+dnl NIST SP800-38C C2
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f", "1011121314151617",
+	  "000102030405060708090a0b0c0d0e0f",
+	  "202122232425262728292a2b2c2d2e2f",
+	  "d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd", 6)
+dnl NIST SP800-38C C3
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f",
+	  "101112131415161718191a1b",
+	  "000102030405060708090a0b0c0d0e0f10111213",
+	  "202122232425262728292a2b2c2d2e2f3031323334353637",
+	  "e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951", 8)
+dnl NIST SP800-38C C4
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f",
+	  "101112131415161718191a1b1c",
+	  "000102030405060708090a0b0c0d0e0f"
+	  "101112131415161718191a1b1c1d1e1f"
+	  "202122232425262728292a2b2c2d2e2f"
+	  "303132333435363738393a3b3c3d3e3f"
+	  "404142434445464748494a4b4c4d4e4f"
+	  "505152535455565758595a5b5c5d5e5f"
+	  "606162636465666768696a6b6c6d6e6f"
+	  "707172737475767778797a7b7c7d7e7f"
+	  "808182838485868788898a8b8c8d8e8f"
+	  "909192939495969798999a9b9c9d9e9f"
+	  "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"
+	  "b0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
+	  "c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"
+	  "d0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
+	  "e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+	  "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff" * 256,
+	  "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+	  "69915dad1e84c6376a68c2967e4dab615ae0fd1faec44cc484828529463ccf72"
+	  "b4ac6bec93e8598e7f0dadbcea5b", 14)
 
 // Crypto.RSA
 
