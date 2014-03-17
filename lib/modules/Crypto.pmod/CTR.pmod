@@ -14,7 +14,7 @@
 //! Message Authentication Code (MAC).
 //!
 //! @seealso
-//!   @[CBC], @[GCM]
+//!   @[CBC], @[CCM], @[GCM]
 
 inherit Nettle.CTR;
 
