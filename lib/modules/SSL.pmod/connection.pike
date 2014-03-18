@@ -95,7 +95,7 @@ protected object recv_packet(string data)
   { /* Finished a packet */
     left_over = [string]res;
     if (current_read_state) {
-      SSL3_DEBUG_MSG("Decrypting packet.. version[1]="+version[1]+"\n");
+      SSL3_DEBUG_MSG("SSL.connection->recv_packet(): version[1]="+version[1]+"\n");
       return current_read_state->decrypt_packet(packet,version[1]);
     } else {
       SSL3_DEBUG_MSG("SSL.connection->recv_packet(): current_read_state is zero!\n");
