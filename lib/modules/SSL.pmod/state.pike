@@ -145,7 +145,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	// NB: Only valid in TLS 1.2 and later.
 	// The message consists of explicit_iv + crypted-msg + digest.
 	string iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
-	int digest_size = crypt->block_size();
+	int digest_size = crypt->digest_size();
 	string digest = msg[<digest_size-1..];
 	crypt->set_iv(iv);
 	string auth_data = sprintf("%8c%c%c%c%2c",
