@@ -145,7 +145,9 @@ enum HashAlgorithm {
 //! Cipher operation modes.
 enum CipherModes {
   MODE_cbc	= 0,	//! CBC - Cipher Block Chaining mode.
-  MODE_gcm	= 1,	//! GCM - Galois Cipher Mode.
+  MODE_ccm_8	= 1,	//! CCM - Counter with 8 bit CBC-MAC mode.
+  MODE_ccm	= 2,	//! CCM - Counter with CBC-MAC mode.
+  MODE_gcm	= 3,	//! GCM - Galois Cipher Mode.
 }
 
 //! Lookup from @[HashAlgorithm] to corresponding @[Crypto.Hash].
