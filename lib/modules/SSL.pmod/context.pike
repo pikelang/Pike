@@ -495,6 +495,15 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 
   // Add the signature-dependent methods.
   switch(sign) {
+  case SIGNATURE_any:
+    kes |= (< KE_rsa, KE_dhe_rsa,
+	      KE_dh_rsa, KE_dh_dss, KE_dhe_dss,
+#if constant(Crypto.ECC.Curve)
+	      KE_ecdh_rsa, KE_ecdhe_rsa,
+	      KE_ecdh_ecdsa, KE_ecdhe_ecdsa,
+#endif
+    >);
+    break;
   case SIGNATURE_invalid:
     // Don't filter on signature.
     kes |= (< KE_rsa, KE_dhe_rsa,
@@ -716,8 +725,9 @@ void purge_session(.session s)
 protected void create()
 {
   SSL3_DEBUG_MSG("SSL.context->create\n");
+
   /* Backwards compatibility */
-  rsa_mode(128);
+  preferred_suites = get_suites(SIGNATURE_any, 128);
 }
 
 // update the cached decoded authorities list

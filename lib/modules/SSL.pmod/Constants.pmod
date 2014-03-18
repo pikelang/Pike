@@ -166,6 +166,7 @@ constant HASH_lookup = ([
 
 //! Signature algorithms from TLS 1.2.
 enum SignatureAlgorithm {
+  SIGNATURE_any         = -2,   //! All non-anonymous signatures (internal).
   SIGNATURE_invalid	= -1,	//! Signature not supported (internal).
   SIGNATURE_anonymous	= 0,	//! No signature.
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
