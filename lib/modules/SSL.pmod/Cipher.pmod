@@ -1277,6 +1277,24 @@ class AES
   protected void create() { ::create(Crypto.AES()); }
 }
 
+//!
+class AES_CCM
+{
+  inherit Crypto.CCM.State;
+  protected void create() { ::create(Crypto.AES()); }
+}
+
+//!
+class AES_CCM_8
+{
+  inherit AES_CCM;
+
+  int digest_size()
+  {
+    return 8;
+  }
+}
+
 #if constant(Crypto.Camellia)
 //!
 class Camellia
@@ -1801,6 +1819,34 @@ array lookup(int suite, ProtocolVersion|int version,
   if (sizeof(algorithms) > 3) {
     switch(algorithms[3]) {
     case MODE_cbc:
+      break;
+    case MODE_ccm:
+      if (res->bulk_cipher_algorithm == AES) {
+	res->bulk_cipher_algorithm = AES_CCM;
+      } else {
+	// Unsupported.
+	return 0;
+      }
+      res->cipher_type = CIPHER_aead;
+      res->iv_size = 4;			// Length of the salt.
+      res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
+      res->hash_size = 0;		// No need for MAC keys.
+      res->mac_algorithm = 0;		// MACs are not used with AEAD.
+
+      break;
+    case MODE_ccm_8:
+      if (res->bulk_cipher_algorithm == AES) {
+	res->bulk_cipher_algorithm = AES_CCM_8;
+      } else {
+	// Unsupported.
+	return 0;
+      }
+      res->cipher_type = CIPHER_aead;
+      res->iv_size = 4;			// Length of the salt.
+      res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
+      res->hash_size = 0;		// No need for MAC keys.
+      res->mac_algorithm = 0;		// MACs are not used with AEAD.
+
       break;
 #if constant(Crypto.GCM)
     case MODE_gcm:

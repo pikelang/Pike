@@ -137,6 +137,15 @@ test_tests([[
 	case "cbc":
 	  fno++;
 	  break;
+	case "ccm":
+	  fno++;
+	  mode = MODE_ccm;
+	  if ((sizeof(fields) > fno) &&
+	      (fields[fno] == "8")) {
+	    mode = MODE_ccm_8;
+	    fno++;
+	  }
+	  break;
 #if constant(Crypto.GCM)
 	case "gcm":
 	  mode = MODE_gcm;
@@ -156,6 +165,10 @@ test_tests([[
 	  "sha512":HASH_sha512,
 	]));
       array(int) expected = UNDEFINED;
+      if ((hash == -1) && (< MODE_ccm, MODE_ccm_8 >)[mode]) {
+	// RFC 6655 3.
+	hash = HASH_sha256;
+      }
       if ((ke >= 0) && (cipher >= 0) && (hash >= 0)) {
 	if ((mode == -1) &&
 	    ((hash > HASH_sha256) &&
