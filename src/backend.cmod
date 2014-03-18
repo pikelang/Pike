@@ -2905,6 +2905,16 @@ static void pb_copy_selectors(struct pb_selectors *to,
 #define MY_POLLHUP	0
 #endif /* 0 */
 
+#ifdef __APPLE__
+/* Not defined in old MacOS X. */
+#ifndef EV_OOBAND
+#define EV_OOBAND	EV_FLAG1
+#endif
+#elif !defined(EV_OOBAND)
+/* FreeBSD seems to handle OOB data inline with ordinary data. */
+#define EV_OOBAND	0
+#endif /* __APPLE__ */
+
 /* FIXME: The kqueue API has no documented support for out of band data. */
 #define MY_POLLEXCEPT	EVFILT_READ
 #define MY_POLLRDBAND	EVFILT_READ
@@ -3156,17 +3166,28 @@ PIKECLASS PollDeviceBackend
 		  me->set, fd, events));
     POLL_DEVICE_SET_EVENTS(me->backend, me->set, fd, events);
 #elif defined(BACKEND_USES_KQUEUE)
-
     /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
     struct kevent ev[3];
     int nev = 0;
-    if (wanted_events & PIKE_BIT_FD_READ ||
-	wanted_events & PIKE_BIT_FD_READ_OOB) {
-      EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
+    if (wanted_events & (PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB)) {
+      if (wanted_events & PIKE_BIT_FD_READ_OOB) {
+	/* We want OOB notifications.
+	 *
+	 * Without setting EV_OOBAND, we won't get any OOB notifications,
+	 * unless there is also in-band data.
+	 */
+	IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, READ, ADD, [OOBAND]\n",
+		      fd));
+	EV_SET(ev, fd, MY_POLLIN, EV_ADD|EV_OOBAND, 0, 0, 0);
+      } else {
+	IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, READ, ADD\n", fd));
+	EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
+      }
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_WRITE ||
 	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
+      IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, WRITE, ADD\n", fd));
       EV_SET(ev+nev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
       nev++;
     }
@@ -3400,6 +3421,42 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
 
       pdb_UPDATE_BLACK_BOX(pdb, fd, new_events);
 
+#elif defined(BACKEND_USES_KQUEUE)
+      struct kevent ev[2];
+
+      if (changed_events & (PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB)) {
+	if (new_events & PIKE_BIT_FD_READ_OOB) {
+	  /* We want OOB even if there's no in-band data. */
+	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, ADD, [OOBAND]\n",
+			THR_NO, me->id, fd));
+	  EV_SET(ev, fd, EVFILT_READ, EV_ADD|EV_OOBAND, 0, 0, 0);
+	  EV_SET(ev+1, fd, EVFILT_READ, EV_ENABLE|EV_OOBAND, 0, 0, 0);
+	  kevent(pdb->set, ev, 2, NULL, 0, NULL);
+	} else if (new_events & PIKE_BIT_FD_READ) {
+	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, ADD\n",
+			THR_NO, me->id, fd));
+	  EV_SET(ev, fd, EVFILT_READ, EV_ADD, 0, 0, 0);
+	  EV_SET(ev+1, fd, EVFILT_READ, EV_ENABLE, 0, 0, 0);
+	  kevent(pdb->set, ev, 2, NULL, 0, NULL);
+	} else {
+	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, DISABLE\n",
+			THR_NO, me->id, fd));
+	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLIN);
+	}
+      }
+
+      if (changed_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
+	if (new_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
+	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d WRITE, ADD\n",
+			THR_NO, me->id, fd));
+	  pdb_MY_FD_SET(&pdb->set, fd, MY_POLLOUT);
+	} else {
+	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d WRITE, DISABLE\n",
+			THR_NO, me->id, fd));
+	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLOUT);
+	}
+      }
+
 #else  /* !BACKEND_USES_POLL_DEVICE */
       if (changed_events & PIKE_BIT_FD_READ) {
 	if (new_events & PIKE_BIT_FD_READ) {
@@ -3488,7 +3545,7 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
    * data_out	write	POLLOUT		EVFILT_WRITE		WRITE
    *			POLLWRNORM
    *
-   * oob_in	except	POLLPRI		(EVFILT_READ)		READ_OOB
+   * oob_in	except	POLLPRI		EVFILT_READ[EV_OOBAND]	READ_OOB
    *			POLLRDBAND
    *
    * oob_out	write	POLLWRBAND	(EVFILT_WRITE)		WRITE_OOB
@@ -3528,6 +3585,9 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
       fprintf(stderr, "  POLLFSEVENT");
     } else {
       fprintf(stderr, "  UNKNOWN");
+    }
+    if (event.flags & EV_OOBAND) {
+      fprintf(stderr, "[OOBAND]");
     }
     if (event.flags & EV_ERROR) {
       fprintf(stderr, "[ERROR]");
@@ -3785,7 +3845,11 @@ else
 	    box->revents |= PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLRDBAND)) {
+	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLRDBAND)
+#ifdef BACKEND_USES_KQUEUE
+	      && (!EV_OOBAND || PDB_CHECK_ERROR_EVENT(poll_fds[i], EV_OOBAND))
+#endif
+	      ) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
 			  THR_NO, me->id, fd));
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
