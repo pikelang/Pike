@@ -34,6 +34,16 @@ string(7bit) name()
   return "CCM";
 }
 
+//! Default digest size.
+//!
+//! @returns
+//!   Returns @expr{16@}, but overloading via inherit is supported,
+//!   and may return any even number in the range @expr{[4..16]@}.
+int(4..16) digest_size()
+{
+  return 16;
+}
+
 //! 
 class State
 {
@@ -129,17 +139,44 @@ class State
     }
   }
 
-  string(8bit) digest(int|void digest_size)
+  //! Default digest size.
+  //!
+  //! This function is used by @[digest()] to determine the digest
+  //! size if no argument was given.
+  //!
+  //! @returns
+  //!   The default implementation returns the result from calling
+  //!   @[global::digest_size()], but overloading via inherit is supported,
+  //!   and may return any even number in the range @expr{[4..16]@}.
+  //!
+  //! @seealso
+  //!   @[digest()], @[global::digest_size()]
+  int digest_size()
   {
-    if (digest_size & 1) {
-      digest_size++;
+    return global::digest_size();
+  }
+
+  //! Returns the CBC-MAC digest of the specified size.
+  //!
+  //! @param bytes
+  //!   Size in bytes for the desired digest. Any even number in
+  //!   the range @expr{[4..16]@}. If not specified the value from
+  //!   calling @[digest_size()] will be used.
+  //!
+  //! @seealso
+  //!   @[digest_size()], @[global::digest_size()]
+  string(8bit) digest(int(4..16)|void bytes)
+  {
+    if (bytes & 1) {
+      bytes++;
     }
-    if (!digest_size) {
-      digest_size = 16;
-    } else if (digest_size < 4) {
-      digest_size = 4;
-    } else if (digest_size > 16) {
-      digest_size = 16;
+    if (!bytes) {
+      bytes = digest_size();
+    }
+    if (bytes < 4) {
+      bytes = 4;
+    } else if (bytes > 16) {
+      bytes = 16;
     }
 
     if (!sizeof(pbuf)) {
@@ -148,7 +185,7 @@ class State
       // werror("CCM: S0: %s\n", String.string2hex(mac_mask));
     }
 
-    int flags = ((digest_size-2)<<2) | (14 - sizeof(nonce));
+    int flags = ((bytes-2)<<2) | (14 - sizeof(nonce));
     if (sizeof(abuf)) {
       // Set the a-bit.
       flags |= 0x40;
@@ -192,6 +229,6 @@ class State
 
     // werror("CCM: T: %s\n", String.string2hex(buf));
 
-    return (buf ^ mac_mask)[..digest_size-1];
+    return (buf ^ mac_mask)[..bytes-1];
   }
 }
