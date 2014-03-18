@@ -660,6 +660,14 @@ string fmt_cipher_suites(array(int) s)
   return (string)b;
 }
 
+string fmt_signature_pairs(array(array(int)) pairs)
+{
+  String.Buffer b = String.Buffer();
+  foreach(pairs, [int hash, int signature])
+    b->sprintf("  <%s, %s>\n", fmt_constant("HASH",hash), fmt_constant("SIGNATURE",signature));
+  return (string)b;
+}
+
 /* FIXME: Add SIGN-type element to table */
 constant CIPHER_SUITES =
 ([

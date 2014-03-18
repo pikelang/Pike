@@ -166,6 +166,11 @@ class TLSSigner
     }
     this_program::hash_id = hash_id;
   }
+
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, hash);
+  }
 }
 
 //! KeyExchange method base class.
@@ -1569,8 +1574,8 @@ array lookup(int suite, ProtocolVersion|int version,
     //
     // Fortunately the hash identifiers have a nice order property.
     int hash_id = HASH_sha;
-    SSL3_DEBUG_MSG("Signature algorithms: %O, max: %d\n",
-		   signature_algorithms, max_hash_size);
+    SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
+                   max_hash_size, fmt_signature_pairs(signature_algorithms));
     foreach(signature_algorithms || ({}), array(int) pair) {
       if ((pair[1] == sign_id) && (pair[0] > hash_id) &&
 	  HASH_lookup[pair[0]]) {
@@ -1581,7 +1586,8 @@ array lookup(int suite, ProtocolVersion|int version,
 	hash_id = pair[0];
       }
     }
-    SSL3_DEBUG_MSG("Selected <Hash: %d, Signature: %d>\n", hash_id, sign_id);
+    SSL3_DEBUG_MSG("Selected <%s, %s>\n", fmt_constant("HASH",hash_id),
+                   fmt_constant("SIGNATURE",sign_id));
     TLSSigner signer = TLSSigner(hash_id);
     res->verify = signer->verify;
 
