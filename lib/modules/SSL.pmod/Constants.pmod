@@ -797,6 +797,17 @@ constant CIPHER_SUITES =
    TLS_ecdh_rsa_with_aes_128_cbc_sha256 : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
    TLS_ecdh_rsa_with_aes_256_cbc_sha384 : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
 
+   // Suites from RFC 6655
+   // These are AEAD suites, and thus not valid for TLS prior to TLS 1.2.
+   TLS_rsa_with_aes_128_ccm: ({ KE_rsa, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_rsa_with_aes_256_ccm: ({ KE_rsa, CIPHER_aes256, HASH_sha256, MODE_ccm }),
+   TLS_dhe_rsa_with_aes_128_ccm: ({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_dhe_rsa_with_aes_256_ccm: ({ KE_dhe_rsa, CIPHER_aes256, HASH_sha256, MODE_ccm }),
+   TLS_rsa_with_aes_128_ccm_8: ({ KE_rsa, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
+   TLS_rsa_with_aes_256_ccm_8: ({ KE_rsa, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
+   TLS_dhe_rsa_with_aes_128_ccm_8: ({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
+   TLS_dhe_rsa_with_aes_256_ccm_8: ({ KE_dhe_rsa, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
+
 #if constant(Crypto.Camellia)
    // Camellia Suites:
    TLS_rsa_with_camellia_128_cbc_sha:	({ KE_rsa, CIPHER_camellia128, HASH_sha }),
