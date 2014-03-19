@@ -9,10 +9,9 @@
 
 import .Constants;
 
-void create(object/*(.session)*/ s)
+protected void create(object/*(.session)*/ s)
 {
   session = s;
-  seq_num = Gmp.mpz(0);
 }
 
 //! Information about the used algorithms.
@@ -27,7 +26,7 @@ object/*(.session)*/ session;
 object compress;
 
 //! 64-bit sequence number.
-Gmp.mpz seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
+Gmp.mpz seq_num = Gmp.mpz(0);    /* Bignum, values 0, .. 2^64-1 are valid */
 
 //!
 constant Alert = .alert;
@@ -41,14 +40,14 @@ string salt;
 
 string tls_pad(string data, int blocksize) {
   int plen=(blocksize-(sizeof(data)+1)%blocksize)%blocksize;
-  return data + sprintf("%c",plen)*plen+sprintf("%c",plen);
+  return data + sprintf("%1c",plen)*(plen+1);
 }
 
 string tls_unpad(string data)
 {
   int(0..255) plen=[int(0..255)]data[-1];
 
-  string padding=reverse(data)[..plen];
+  string padding=data[<plen..];
 
   string ret = data[..<plen+1];
 
