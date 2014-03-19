@@ -1020,6 +1020,8 @@ TBSCertificate verify_root_certificate(string s)
     return tbs->extensions[id];
   };
 
+  // FIXME: Move extension parsing into tbs.
+
   // id-ce-basicConstraints is required for certificates with public
   // key used to validate certificate signatures. RFC 3280, 4.2.1.10.
   Object c = lookup(19);
@@ -1030,6 +1032,7 @@ TBSCertificate verify_root_certificate(string s)
     DBG("verify root: Bad or missing id-ce-basicConstraints.\n");
     return 0;
   }
+  // FIXME: Verify pathLenConstraint
 
   // id-ce-authorityKeyIdentifier is required, unless self signed. RFC
   // 3280 4.2.1.1
@@ -1047,7 +1050,8 @@ TBSCertificate verify_root_certificate(string s)
   }
 
   // id-ce-keyUsage is required. RFC 3280 4.2.1.3
-  if( !lookup(15) ) // FIXME: Look at usage bits
+  c = lookup(15);
+  if( !c ) // FIXME: Look at usage bits
   {
     DBG("verify root: Missing id-ce-keyUsage.\n");
     return 0;
@@ -1063,7 +1067,7 @@ TBSCertificate verify_root_certificate(string s)
   return tbs;
 }
 
-//! Convenience function for loading known root ceritificates.
+//! Convenience function for loading known root certificates.
 //!
 //! @param root_cert_dirs
 //!   Directory/directories containing the PEM-encoded root certificates
