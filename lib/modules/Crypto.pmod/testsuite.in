@@ -145,6 +145,23 @@ cond_resolv( Nettle.Proxy, [[
   ]],[[ ",1234512345123451,,234512345" ]])
 ]])
 
+test_eval_error([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
+]])
+test_eval_error([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  b->unpad("\225\222\355<k\b$.\327\370\317b\236p-\245", Crypto.PAD_ANSI_X923);
+]])
+test_eval_error([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  b->unpad("\362\237""7r\302% \360\276\201\316#<W4\231", Crypto.PAD_PKCS7);
+]])
+
+
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
 ]])

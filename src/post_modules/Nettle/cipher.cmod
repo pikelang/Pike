@@ -2479,7 +2479,6 @@ PIKECLASS GCM
 #define PAD_PKCS7      3
 #define PAD_ZERO       4
 
-
 /*! @class Proxy
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that don't correspond to cipher block sizes.
@@ -2717,7 +2716,10 @@ PIKECLASS Proxy {
    *!     space with random data and putting the size of the
    *!     non-payload data last.
    *!   @value Crypto.PAD_SSL
-   *!     As ISO 10126, but with the size of the random data last.
+   *!     Pads according to RFC 5246 section 6.2.3.2, meaning that all
+   *!     extra space is filled with the size of the padding. Note
+   *!     that this size has an off by one difference to the other
+   *!     schemas, so 0 means 1 byte of padding.
    *!   @value Crypto.PAD_ANSI_X923
    *!     Pads according to ANSI X.923, which means filling all extra
    *!     space with zero and putting the size of the non-payload data
@@ -2767,6 +2769,9 @@ PIKECLASS Proxy {
       default:
         Pike_error("Unknown method.\n");
       case PAD_SSL:
+        /* TLS 1.1 and forward */
+        THIS->backlog[i] = size;
+        break;
       case PAD_ISO_10126:
         /* ISO 10126 */
         THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
@@ -2817,8 +2822,8 @@ PIKECLASS Proxy {
    *!   @[pad()]
    */
   PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
-    ptrdiff_t len;
-    int m = 0;
+    ptrdiff_t len, bytes;
+    int m = 0, i, invalid = 0, padding=0;
 
     len = str->len + THIS->backlog_len;
     if( len % THIS->block_size)
@@ -2839,34 +2844,50 @@ PIKECLASS Proxy {
 		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
     str = Pike_sp[-1].u.string;
 
-    if( m==PAD_SSL )
-    {
-      if (str->str[len - 1]+1 > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1]+1, THIS->block_size-1);
-    }
-    else
-      if (str->str[len - 1] > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1], THIS->block_size-1);
+    bytes = str->str[len -1];
+    if( m==PAD_SSL ) bytes++;
 
+    if (bytes > THIS->block_size)
+      Pike_error("Invalid padding (%d > %d)\n",
+                 bytes, THIS->block_size-1);
 
-    len -= str->str[len - 1];
     switch( m )
     {
-    case PAD_SSL:
-      len--;
-      break;
+    default:
+      Pike_error("Unknown method.\n");
+    case PAD_ISO_10126:
     case PAD_ZERO:
+      break;
+    case PAD_ANSI_X923:
+      padding = 0;
+      goto do_check;
+    case PAD_SSL:
+      padding = bytes-1;
+      goto do_check;
+    case PAD_PKCS7:
+      padding = bytes;
+    do_check:
+      /* Try to be constant time here. */
+      for(i=len-bytes; i<len-1; i++)
+        if( str->str[i] != padding )
+          invalid = 1;
+
+      if( invalid == 1 )
+        Pike_error("Invalid padding value.\n");
+      break;
+    }
+
+    if( m == PAD_ZERO )
+    {
+      int c=THIS->block_size;
+      while( str->str[len-1]==0 && c>0 )
       {
-        int c=THIS->block_size;
-        while( str->str[len-1]==0 && c>0 )
-        {
-          c--;
-          len--;
-        }
+        c--;
+        len--;
       }
     }
+    else
+      len -= bytes;
 
     if (len < 0)
       Pike_error("String too short to unpad\n");
