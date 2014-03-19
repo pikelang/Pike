@@ -121,8 +121,8 @@ class Buffer {
 function(string(8bit):string(8bit)) rot13 =
   Crypto.Substitution()->set_rot_key()->crypt;
 
-constant PAD_SSL = 0;
-constant PAD_ISO_10126 = 1;
-constant PAD_ANSI_X923 = 2;
-constant PAD_PKCS7 = 3;
-constant PAD_ZERO = 4;
+constant PAD_SSL       = Nettle.PAD_SSL;
+constant PAD_ISO_10126 = Nettle.PAD_ISO_10126;
+constant PAD_ANSI_X923 = Nettle.PAD_ANSI_X923;
+constant PAD_PKCS7     = Nettle.PAD_PKCS7;
+constant PAD_ZERO      = Nettle.PAD_ZERO;
