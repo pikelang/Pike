@@ -2473,6 +2473,13 @@ PIKECLASS GCM
 
 #endif /* HAVE_NETTLE_GCM_H */
 
+#define PAD_SSL        0
+#define PAD_ISO_10126  1
+#define PAD_ANSI_X923  2
+#define PAD_PKCS7      3
+#define PAD_ZERO       4
+
+
 /*! @class Proxy
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that don't correspond to cipher block sizes.
@@ -2743,10 +2750,10 @@ PIKECLASS Proxy {
 
     switch(m)
     {
-    case 0:
+    case PAD_SSL:
       size--;
       break;
-    case 4:
+    case PAD_ZERO:
       if( THIS->backlog_len>0 &&
           THIS->backlog[THIS->backlog_len-1] == 0 )
         Pike_error("Using zero padding on a zero terminated string.\n");
@@ -2759,20 +2766,20 @@ PIKECLASS Proxy {
       {
       default:
         Pike_error("Unknown method.\n");
-      case 0:
-      case 1:
+      case PAD_SSL:
+      case PAD_ISO_10126:
         /* ISO 10126 */
         THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
         break;
-      case 2:
+      case PAD_ANSI_X923:
         /* ANSI X.923 */
         THIS->backlog[i] = 0;
         break;
-      case 3:
+      case PAD_PKCS7:
         /* PKCS7 / RFC 3852 */
         THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
         break;
-      case 4:
+      case PAD_ZERO:
         /* Null only */
         THIS->backlog[i] = 0;
         break;
@@ -2832,7 +2839,7 @@ PIKECLASS Proxy {
 		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
     str = Pike_sp[-1].u.string;
 
-    if( m==0 )
+    if( m==PAD_SSL )
     {
       if (str->str[len - 1]+1 > THIS->block_size)
         Pike_error("Invalid padding (%d > %d)\n",
@@ -2847,10 +2854,10 @@ PIKECLASS Proxy {
     len -= str->str[len - 1];
     switch( m )
     {
-    case 0:
+    case PAD_SSL:
       len--;
       break;
-    case 4:
+    case PAD_ZERO:
       {
         int c=THIS->block_size;
         while( str->str[len-1]==0 && c>0 )
@@ -2889,10 +2896,20 @@ PIKECLASS Proxy {
 
 /*! @endmodule Nettle */
 
+#define PAD_ISO_10126  1
+#define PAD_ANSI_X923  2
+#define PAD_PKCS7      3
+#define PAD_ZERO       4
+
 void
 cipher_init(void)
 {
   INIT;
+  ADD_INT_CONSTANT("PAD_SSL",       PAD_SSL,       0);
+  ADD_INT_CONSTANT("PAD_ISO_10126", PAD_ISO_10126, 0);
+  ADD_INT_CONSTANT("PAD_ANSI_X923", PAD_ANSI_X923, 0);
+  ADD_INT_CONSTANT("PAD_PKCS7",     PAD_PKCS7,     0);
+  ADD_INT_CONSTANT("PAD_ZERO",      PAD_ZERO,      0);
 }
 
 void
