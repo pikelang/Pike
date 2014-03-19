@@ -193,6 +193,14 @@ enum KeyExchangeType {
   KE_ecdh_rsa   = 11,	//! Elliptic Curve DH cert signed with RSA
   KE_ecdhe_rsa  = 12,	//! Elliptic Curve DH Ephemeral with RSA
   KE_ecdh_anon  = 13,	//! Elliptic Curve DH Anonymous
+  // The following three are from RFC 4279.
+  KE_psk	= 14,	//! Preshared Key
+  KE_dhe_psk	= 15,	//! Preshared Key with DHE
+  KE_rsa_psk	= 16,	//! Preshared Key signed with RSA
+  // The following three are from RFC 5054.
+  KE_srp_sha	= 17,	//! Secure Remote Password (SRP)
+  KE_srp_sha_rsa= 18,	//! SRP signed with RSA
+  KE_srp_sha_dss= 19,	//! SRP signed with DSS
 }
 
 //! Mapps from @[KeyExchangeType] to @[SignatureAlgorithm].
