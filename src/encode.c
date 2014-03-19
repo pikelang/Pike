@@ -1854,6 +1854,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(d_max, data);
 
 	      /* name */
+              if (!inh->name)
+                  Pike_error("Cannot encode programs with unnamed inherits.\n");
 	      str_sval.u.string = inh->name;
 	      encode_value2(&str_sval, data, 0);
 
