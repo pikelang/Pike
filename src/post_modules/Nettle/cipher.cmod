@@ -251,7 +251,7 @@ PIKECLASS Cipher
       THIS->crypt = info->meta->encrypt;
       THIS->key_size = key->len;
 
-      push_object(this_object());
+      RETURN this_object();
     }
 
     /*! @decl State set_decrypt_key(string(0..255) key, void|int force)
@@ -279,7 +279,7 @@ PIKECLASS Cipher
       THIS->crypt = info->meta->decrypt;
       THIS->key_size = key->len;
 
-      push_object(this_object());
+      RETURN this_object();
     }
 
     /*! @decl string(0..255) make_key()
@@ -1580,7 +1580,7 @@ PIKECLASS CBC
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
-    RETURN this_object();
+    push_object(this_object());
   }
 
   /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
@@ -1596,7 +1596,7 @@ PIKECLASS CBC
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_decrypt_key", args);
     pop_stack();
-    RETURN this_object();
+    push_object(this_object());
   }
 
   /*! @decl this_program set_iv(string(0..255) iv)
@@ -1897,7 +1897,7 @@ PIKECLASS CTR
       safe_apply(THIS->object, "set_encrypt_key", args);
       pop_stack();
 
-      RETURN this_object();
+      push_object(this_object());
     }
 
     /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
@@ -1925,7 +1925,7 @@ PIKECLASS CTR
       safe_apply(THIS->object, "set_encrypt_key", args);
       pop_stack();
 
-      RETURN this_object();
+      push_object(this_object());
     }
 
     /*! @decl this_program set_iv(string(0..255) iv)
@@ -2266,7 +2266,7 @@ PIKECLASS GCM
       gcm_set_key(&THIS->gcm_key, ctx, func);
       THIS->mode = 0;
 
-      RETURN this_object();
+      push_object(this_object());
     }
 
     /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
@@ -2301,7 +2301,7 @@ PIKECLASS GCM
       gcm_set_key(&THIS->gcm_key, ctx, func);
       THIS->mode = 1;
 
-      RETURN this_object();
+      push_object(this_object());
     }
 
     /*! @decl this_program set_iv(string(0..255) iv)
@@ -2596,7 +2596,7 @@ PIKECLASS Proxy {
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_encrypt_key", args);
     pop_stack();
-    RETURN this_object();
+    push_object(this_object());
   }
 
   /*! @decl this_program set_decrypt_key(string(0..255) key)
@@ -2614,7 +2614,7 @@ PIKECLASS Proxy {
     key->flags |= STRING_CLEAR_ON_EXIT;
     safe_apply(THIS->object, "set_decrypt_key", args);
     pop_stack();
-    RETURN this_object();
+    push_object(this_object());
   }
 
   /*! @decl string(0..255) crypt(string(0..255) data)
