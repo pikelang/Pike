@@ -1,0 +1,477 @@
+subject: Pike 7.8: Multiple fixes:
+from: cb765a0af476021b3e53744ef6c6c6b79a13e064
+to: 9fc6d5cf19517ccf4efb5f453a6bc4700d5171a4
+originator: wellhardh@roxen.com
+depends: 2013-08-08T150312
+restart: true
+
+Multiple fixes:
+
+  * Calendar.Timezone.Runtime_timezone_compiler: Improve reentrancy.
+    
+    The runtime timezone compiler was not thread safe, and could
+    fail with the compiler error "Undefined identifier forever."
+    when multiple concurrent threads compiled the same timezone.
+    
+    Potentially fixes [bug 6816] #1:1.
+
+  * release number bumped to 784 by export.pike
+
+  * release number bumped to 785 by export.pike
+
+  * Mysql: Support the MariaDB client library.
+    
+    The MariaDB client library is a forward port of the LGPL
+    mysql client library from MySQL 3.23 to support modern
+    MySQL and MariaDB.
+
+  * Mysql: Added option to disable use of MariaDB-client.
+
+  * Tools.Standalone.features: Version and license for Mysql.
+    
+    The feature listers now know about how to detect MariaDB.
+
+  * release number bumped to 786 by export.pike
+
+  * release number bumped to 787 by export.pike
+
+  * Mysql: Add include directives first.
+    
+    This should hopefully fix the "WARNING: Header version does not match
+    library version, diabling module" problem.
+
+  * release number bumped to 788 by export.pike
+
+  * release number bumped to 789 by export.pike
+
+  * release number bumped to 790 by export.pike
+
+  * release number bumped to 791 by export.pike
+
+  * Mysql: libssl is needed by modern lib{mysql,mariadb}client.
+
+  * release number bumped to 792 by export.pike
+
+  * release number bumped to 793 by export.pike
+
+  * Mysql: Added Mysql.client_info().
+
+  * release number bumped to 794 by export.pike
+
+  * release number bumped to 795 by export.pike
+
+  * [compiler] Avoid recursion on the C-stack.
+    
+    las.c:count_args() now uses the parent links (as per an old FIXME),
+    to avoid running out of C-stack when counting huge argument lists.
+    
+    Fixes [bug 6860].
+
+  * Add PS_NAME attribute in info mapping if possible. Needed to
+    facilitate compatibility with code relying on behaviour of older
+    versions of FreeType.
+    
+    Background: modern FreeType implementations return the FONT_FAMILY and
+    FONT_SUBFAMILY SFNT attributes as family and style in the mapping
+    returned by the info() function; older versions (at least FreeType
+    2.1.9 and older) returned PS_NAME and a string derived from other data
+    for those fields.
+    
+    The problem was noticed when a Roxen customer wanted to update their
+    Roxen CMS installation from 4.5 (based on on Pike7.4 with
+    FreeType2.1.9) to a more modern version. Additional fixes in Roxen
+    will be required for full compatibility, but this Pike change makes
+    the necessary data available to enable that. (Roxen internal note:
+    RT#21337.)
+
+  * release number bumped to 796 by export.pike
+
+  * release number bumped to 797 by export.pike
+
+  * initialize pike_frame->num_args even in special cases
+
+  * Get rid of some harmless valgrind warnings
+
+  * activate __CHECKER__ and CLEANUP when --with-valgrind
+
+  * TURBO2-80: Do not crash when decoding certain PNG files.
+    
+    The aggregate and n++ was not done if the PNG was (slightly) truncated
+
+  * Build: sprshd doesn't seem to like I/O redirection.
+
+  * Backend: Fixed typo in out of band data handling.
+    
+    Thanks to Chris Angelico <rosuav@gmail.com> for the report.
+    
+    Fixes [LysLysKOM 20481103]/[Pike mailing list 13683].
+
+  * Backend: Improved thread safety in find_call_out() et al.
+    
+    backend_find_call_out() called is_eq() (which may call Pike code
+    and release the interpreter lock) in a PROTECT_CALL_OUTS() context.
+    This could cause call_out operations performed in other threads to
+    either (no debug) mess with the hash table being traversed or (with
+    debug) cause the fatal "Recursive call in call_out module.".
+
+  * sprintf: do not use alloca
+    
+    This commit replaces alloca in sprintf by a simple heap allocator. This
+    fixes a stack corruption bug which occurs when using certain compilers
+    (e.g. msvc). The problem occurs when alloca and longjmp are used from
+    within the same frame.
+
+  * sprintf: do not pre-allocate space for temporary buffer allocation
+
+  * release number bumped to 798 by export.pike
+
+  * release number bumped to 799 by export.pike
+
+  * MIME: getencoded() should probably never return a StringRange.
+    
+    (cherry picked from commit 87b47190e06ff9b0f253c1db0350e135f2595a71)
+
+  * Updated to tzdata2013h.
+
+  * release number bumped to 800 by export.pike
+
+  * release number bumped to 801 by export.pike
+
+  * CHANGES: preparing for a 7.8 release
+
+  * release number bumped to 802 by export.pike
+
+  * release number bumped to 803 by export.pike
+
+  * Search.Utils: Get rid of the timestamp(len) syntax.
+    
+    The syntax was ignored in MySQL 4.1, deprecated in MySQL 5.1,
+    and removed in MySQL 5.5. Cf MySQL 5.5 Ref Manual 2.12.1.1.
+
+  * Compiler: Fixed broken attribute handling.
+    
+    debug_push_finished_type_with_markers() had broken handling of
+    PIKE_T_ATTRIBUTE types (struct pike_strings were handled as types),
+    which could trigger SIGSEGV.
+
+  * Mysql: Fixed overflow in fetch_fields().
+    
+    The length attribute can be larger than 0x7fffffff for
+    eg longblob (where it is 0xffffffff).
+    
+    Fixes some of [bug 6739].
+
+  * Image.Image: Fixed SEGV in skewy().
+    
+    The bug seems to have been due to a code sequencing miss (the
+    corresponding code in skewx() was correct).
+    
+    Fixes [bug 3687].
+
+  * release number bumped to 804 by export.pike
+
+  * release number bumped to 805 by export.pike
+
+  * SSL: Improved robustness in destroy().
+    
+    The embedded stream may still be registered with a backend when the
+    sslfile object loses its last reference. Make sure not to trigger
+    the "In callback mode in a different backend." error in that case.
+    
+    Fixes [bug 6958].
+
+  * SSL: set_backend(UNDEFINED) is not supported.
+    
+    Fixes previous commit.
+
+  * SSL: Improved robustness in destroy() take III.
+    
+    Clearing the backend callbacks is a better approach
+    to inhibiting the CHECK_CB_MODE() test.
+
+  * SSL: Some more robustness fixes in destroy().
+    
+    set_nonblocking_keep_callbacks() calls update_internal_state(),
+    which is likely to install callbacks and thus may trigger the
+    tests in CHECK_CB_MODE() (cf [bug 6958] #6).
+    
+    Yet another potential fix for [bug 6958].
+
+  * SSL.sslfile: Improved propagation of write errors.
+    
+    The write callback needs to be called on write failure
+    if there's no close callback and even if there's data
+    buffered for writing.
+    
+    Fixes Stdio.sendfile hanging on SSL.sslfiles where the
+    remote has closed the connection before reading all data.
+    
+    Fixes remainder of [bug 6958].
+
+  * Stdio.sendfile: Fixed typo in start_writer().
+    
+    The close callback was likely to be cleared when the write callback
+    was installed.
+
+  * GTK2: Prevent segfault in G.Object()->get_data() if nothing set
+
+  * release number bumped to 806 by export.pike
+
+  * release number bumped to 807 by export.pike
+
+  * release number bumped to 808 by export.pike
+
+  * release number bumped to 809 by export.pike
+
+  * release number bumped to 810 by export.pike
+
+  * release number bumped to 811 by export.pike
+
+  * Updated to tzdata2013i.
+
+  * Unicode.normalize: use unsigned ints for hash value
+    
+    hval % HSIZE for a negative hval will result in a negative htable index.
+    this is triggered by characters in 32 bit strings which are represented
+    by negative 32 bit signed integers
+
+  * program: check lfun number before accesing array
+    
+    this led to out of bounds reads when accessing lfuns like _random
+
+  * Runtime: Using FIND_LFUN() with non-LFUNS is an error.
+    
+    Make sure to fatal if FIND_LFUN() is used with a fake LFUN.
+
+  * Runtime: make FIND_LFUN work again with unfixed programs
+    
+    Conflicts:
+    	src/program.h
+
+  * Thread.Farm: typo in call to cond->wait()
+
+  * sprintf: unwanted sign extension
+
+  * Fixed a warning in _Image_GIF.
+
+  * Image: unintended sign extensions
+    [SCAN 742709] [SCAN 742705] [SCAN 742704] [SCAN 742702]
+
+  * Fix debug warnings.
+
+  * Image.GIF: Fixed broken robustness.
+    
+    Fix broken robustness against decoding a broken GCE-extension (0xf9).
+
+  * Somewhat dubious fix for infinite loops in Image.GIF.decode.
+    
+    Certain input data can create loops in the LZW decoder due to
+    the way it is implemented. This stops the loops, and that is
+    about it.
+
+  * release number bumped to 812 by export.pike
+
+  * release number bumped to 813 by export.pike
+
+  * release number bumped to 814 by export.pike
+
+  * release number bumped to 815 by export.pike
+
+  * release number bumped to 816 by export.pike
+
+  * release number bumped to 817 by export.pike
+
+  * Mysql: Avoid pulling in OpenSSL if not needed.
+
+  * release number bumped to 818 by export.pike
+
+  * release number bumped to 819 by export.pike
+
+  * Mysql: Fixed disabling of MariaDB.
+    
+    There were some typos in the tests of ${MARIADB_CONFIG}.
+
+  * release number bumped to 820 by export.pike
+
+  * release number bumped to 821 by export.pike
+
+  * GTK2: Add a signal_stop() method to prevent signal propagation
+
+  * Compatibility with newer freetypes
+
+  * GTK2: Call the correct callback when an accelerator is hit
+
+  * GTK: Pass arguments to accel_group callbacks separately rather than as one array
+
+  * GTK2.GDKEvent: Increase refcounts of strings returned from index operations
+    Thanks to Tim Angelico for help pinning down the crash that this caused.
+
+  * GTK2.TreePath: Query the depth for get_indices() rather than looking for a terminator
+
+  * release number bumped to 822 by export.pike
+
+  * release number bumped to 823 by export.pike
+
+  * release number bumped to 824 by export.pike
+
+  * release number bumped to 825 by export.pike
+
+  * [ia32] At least gentoo provides a REG_* enum, in sys/ucontext.h
+    
+    Thus, move to using a more unique naming scheme - P_REG_* etc.
+
+  * release number bumped to 826 by export.pike
+
+  * release number bumped to 827 by export.pike
+
+  * Support binary-mode file opening, on platforms where it matters
+
+  * Open all files in binary mode, on platforms where this is meaningful
+
+  * release number bumped to 828 by export.pike
+
+  * release number bumped to 829 by export.pike
+
+  * Configure: Inhibit machine code with gcc 4.6.0 and later.
+    
+    The machine code generator is broken when compiled with
+    gcc 4.6.0 and later, so disable it in that case.
+
+  * release number bumped to 830 by export.pike
+
+  * release number bumped to 831 by export.pike
+
+  * CHANGES: updated for new alpha
+
+  * release number bumped to 832 by export.pike
+
+  * release number bumped to 833 by export.pike
+
+  * release number bumped to 834 by export.pike
+
+  * release number bumped to 835 by export.pike
+
+  * Graphics.Graph: Fixed some infinite loops.
+    
+    The step when assigning the axis lables could be smaller than the
+    mantissa allows, which caused infinite cpu and memory consumption.
+    
+    This state is now detected and the loops terminated.
+    
+    Fixes [LysLysKOM 20708162].
+
+  * Fixed a crash reported by Martin Bähr.
+
+  * release number bumped to 836 by export.pike
+
+  * release number bumped to 837 by export.pike
+
+  * Updated to tzdata2014a.
+
+  * release number bumped to 838 by export.pike
+
+  * release number bumped to 839 by export.pike
+
+  * Clang appears to short-circuit the overflow test so we flag parameters as volatile
+    to bring back bignums. Removed HAVE_NICE_FPU_DIVISION code path which isn't triggered
+    anywhere.
+
+  * auto_bignum: make multiply overflow checks static
+
+  * bignum: added standard compliant overflow checks
+
+  * Add detection of unsigned 128-bit integer.
+    
+    Define UINT128 as distinct type since "unsigned __int128_t" does not always work even when __int128_t does. Adds UINT64 as well for macro expansion in bignum.h.
+
+  * `%: add overflow checks
+    
+    Conflicts:
+    	src/operators.c
+    	src/testsuite.in
+
+  * bignum: added missing definitions for mod overflow checks
+
+  * Some double include protections.
+
+  * bignum: reorganized overflow checks and use clang intrinsics
+    
+    Conflicts:
+    	src/bignum.h
+    	src/lexer.h
+    	src/operators.c
+
+  * bignum: always define unsigned sub overflow check
+    
+    The unsigned sub overflow check was not defined on x86_32, but
+    referenced.
+
+  * bignum: fix overflow check semantics with clang
+    
+    The clang builtins for checking integer overflow set the result even if
+    overflow occurs. Added wrapper functions to make the bahavior
+    equivalent to non clang builds.
+    By not exposing the undefined result of the overflow operation,
+    undefined behavior cannot propagate.
+
+  * Corrections to merge bugs.
+
+  * release number bumped to 840 by export.pike
+
+  * release number bumped to 841 by export.pike
+
+  * Export: Make sure to display diagnostics on failure.
+
+  * release number bumped to 842 by export.pike
+
+  * release number bumped to 843 by export.pike
+
+  * release number bumped to 844 by export.pike
+
+  * release number bumped to 845 by export.pike
+
+  * Bignum: Fixed aliasing problem with DO_INT_TYPE_*_OVERFLOW().
+    
+    Gcc 4.1.2 doesn't alias pointers to INT_TYPE and the corresponding
+    pointer to INT32/INT64, so stores to the target variable could get
+    lost in when the DO_INT_TYPE_*_OVERFLOW() functions were used in
+    eg loops.
+    
+    Also fixes some related compiler warnings.
+    
+    Fixes [bug 7057].
+
+  * release number bumped to 846 by export.pike
+
+  * release number bumped to 847 by export.pike
+
+  * Runtime: Increase the default thread C stack size to 1MB.
+    
+    The old default (256KB) is a bit too little on current 64-bit hardware.
+    
+    This essentially reverts 78797d06 (aka src/threads.c:1.157).
+    
+    Most likely fixes [bug 7061].
+
+  * release number bumped to 848 by export.pike
+
+  * release number bumped to 849 by export.pike
+
+  * Backend: Improved support for OOB with kqueue(2).
+    
+    On MacOS X out-of-band data on sockets is signalled by the flag EV_OOBAND
+    (aka EV_FLAG1) in the EVFILT_READ notification. Unfortunately this
+    notification is by default only sent when there is also normal data
+    available. The kernel source indicates that it should be possible to get
+    notifications on just OOB by setting EV_OOBAND in the call to kevent(2)
+    (this is what poll(2) does internally). kevent(2) however masks the flag
+    before calling the internal function kevent_register(), so it is not
+    possible at this time.
+    
+    On FreeBSD it seems out-of-band data is signalled as a normal EVFILT_READ
+    notification.
+    
+    Improves the status for [bug 7063], but requires kernel changes
+    to fix the problem on MacOS X fully.
+
+  * release number bumped to 850 by export.pike
