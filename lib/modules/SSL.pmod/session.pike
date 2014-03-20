@@ -63,6 +63,9 @@ Crypto.Sign private_key;
 //! The peer's public key (from the certificate).
 Crypto.Sign peer_public_key;
 
+//! The max fragment size requested by the client.
+int max_packet_size = PACKET_MAX_SIZE;
+
 /*
  * Extensions provided by the peer.
  */
