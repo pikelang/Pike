@@ -143,6 +143,21 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
+  if (session->max_packet_size != PACKET_MAX_SIZE) {
+    // RFC 3546 3.2.
+    ADT.struct extension = ADT.struct();
+    extension->put_uint(EXTENSION_max_fragment_length, 2);
+    switch(session->max_packet_size) {
+    case 512:  extension->put_uint(FRAGMENT_512,  1); break;
+    case 1024: extension->put_uint(FRAGMENT_1024, 1); break;
+    case 2048: extension->put_uint(FRAGMENT_2048, 1); break;
+    case 4096: extension->put_uint(FRAGMENT_4096, 1); break;
+    default:
+      return Alert(ALERT_fatal, ALERT_illegal_parameter, version[1]);
+    }
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
   if (sizeof(session->ecc_curves) &&
       remote_extensions[EXTENSION_ec_point_formats]) {
     // RFC 4492 5.2:
@@ -823,6 +838,22 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 		}
 	      }
               SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_names);
+	      break;
+	    case EXTENSION_max_fragment_length:
+	      // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
+	      int mfsz = !extension_data->is_empty() &&
+		extension_data->get_uint(1);
+	      if (!extension_data->is_empty()) mfsz = 0;
+	      switch(mfsz) {
+	      case FRAGMENT_512:  session->max_packet_size = 512; break;
+	      case FRAGMENT_1024: session->max_packet_size = 1024; break;
+	      case FRAGMENT_2048: session->max_packet_size = 2048; break;
+	      case FRAGMENT_4096: session->max_packet_size = 4096; break;
+	      default:
+		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+				  version[1]));
+		return -1;
+	      }
 	      break;
 
 	    case EXTENSION_renegotiation_info:

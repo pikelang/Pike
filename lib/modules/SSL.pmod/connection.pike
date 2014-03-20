@@ -193,6 +193,7 @@ int send_streaming_data (string data)
   if (!sizeof(data)) return 0;
   Packet packet = Packet();
   packet->content_type = PACKET_application_data;
+  int max_packet_size = current_write_state->session->max_packet_size;
   int size;
   if ((!sent) && (version[1] < PROTOCOL_TLS_1_1) &&
       (current_write_state->session->cipher_spec->cipher_type ==
@@ -208,10 +209,10 @@ int send_streaming_data (string data)
 
       packet = Packet();
       packet->content_type = PACKET_application_data;
-      size += sizeof((packet->fragment = data[1..PACKET_MAX_SIZE-1]));
+      size += sizeof((packet->fragment = data[1..max_packet_size-1]));
     }
   } else {
-    size = sizeof ((packet->fragment = data[..PACKET_MAX_SIZE-1]));
+    size = sizeof ((packet->fragment = data[..max_packet_size-1]));
   }
   send_packet (packet);
   sent += size;

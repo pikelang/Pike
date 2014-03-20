@@ -92,7 +92,7 @@ constant PACKET_types = (< PACKET_change_cipher_spec,
 			   PACKET_application_data >);
 constant PACKET_V2 = -1; /* Backwards compatibility */
 
-constant PACKET_MAX_SIZE = 0x4000;
+constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
 /* Cipher specification */
 constant CIPHER_stream   = 0;
@@ -1013,6 +1013,14 @@ enum PointFormat {
   POINT_uncompressed = 0,
   POINT_ansiX962_compressed_prime = 1,
   POINT_ansiX962_compressed_char2 = 2,
+}
+
+//! Fragment lengths for @[EXTENSION_max_fragment_length].
+enum FragmentLength {
+  FRAGMENT_512	= 1,
+  FRAGMENT_1024	= 2,
+  FRAGMENT_2048	= 3,
+  FRAGMENT_4096	= 4,
 }
 
 constant EXTENSION_server_name			= 0;		// RFC 6066
