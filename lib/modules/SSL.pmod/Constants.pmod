@@ -732,6 +732,7 @@ constant CIPHER_SUITES =
 
    SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
+   TLS_dhe_dss_with_rc4_128_sha :	({ KE_dhe_dss, CIPHER_rc4, HASH_sha }),
 
    // Some anonymous diffie-hellman variants.
    SSL_dh_anon_export_with_rc4_40_md5:	({ KE_dh_anon, CIPHER_rc4_40, HASH_md5 }),
