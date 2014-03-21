@@ -8,6 +8,7 @@
  *
  *   SSL 3.1/TLS 1.0		RFC 2246
  *   Kerberos for TLS 1.0	RFC 2712
+ *   56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
  *   AES Ciphers for TLS 1.0	RFC 3268
  *   Extensions for TLS 1.0	RFC 3546
  *   LZS Compression for TLS	RFC 3943
@@ -58,6 +59,10 @@
  * The SSL 2.0 protocol was specified in the following document:
  *
  *   SSL 2.0			draft-hickman-netscape-ssl-00.txt
+ *
+ * The TLS parameters registry:
+ *   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+ *
  */
 
 //! Protocol constants
@@ -378,6 +383,17 @@ constant TLS_dh_rsa_with_camellia_128_cbc_sha   = 0x0043;	// RFC 4132
 constant TLS_dhe_dss_with_camellia_128_cbc_sha  = 0x0044;	// RFC 4132
 constant TLS_dhe_rsa_with_camellia_128_cbc_sha  = 0x0045;	// RFC 4132
 constant TLS_dh_anon_with_camellia_128_cbc_sha  = 0x0046;	// RFC 4132
+
+// draft-ietf-tls-ecc-01.txt has ECDH_* suites in the range [0x0047, 0x005a].
+// They were moved to 0xc001.. in RFC 4492.
+
+// These suites from the 56-bit draft are apparently in use
+// by some versions of MSIE.
+constant TLS_rsa_export1024_with_des_cbc_sha	= 0x0062;	// 56bit draft
+constant TLS_dhe_dss_export1024_with_des_cbc_sha= 0x0063;	// 56bit draft
+constant TLS_rsa_export1024_with_rc4_56_sha	= 0x0064;	// 56bit draft
+constant TLS_dhe_dss_export1024_with_rc4_56_sha	= 0x0065;	// 56bit draft
+constant TLS_dhe_dss_with_rc4_128_sha		= 0x0066;	// 56bit draft
 
 constant TLS_dhe_rsa_with_aes_128_cbc_sha256    = 0x0067;	// TLS 1.2
 constant TLS_dh_dss_with_aes_256_cbc_sha256     = 0x0068;	// TLS 1.2
