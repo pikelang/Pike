@@ -981,31 +981,31 @@ enum ECBasisType {
 
 /* ECC named curves from RFC 4492 5.1.1. */
 enum NamedCurve {
-  CURVE_sect163k1			= 1,
-  CURVE_sect163r1			= 2,
-  CURVE_sect163r2			= 3,
-  CURVE_sect193r1			= 4,
-  CURVE_sect193r2			= 5,
-  CURVE_sect233k1			= 6,
-  CURVE_sect233r1			= 7,
-  CURVE_sect239k1			= 8,
-  CURVE_sect283k1			= 9,
-  CURVE_sect283r1			= 10,
-  CURVE_sect409k1			= 11,
-  CURVE_sect409r1			= 12,
-  CURVE_sect571k1			= 13,
-  CURVE_sect571r1			= 14,
-  CURVE_secp160k1			= 15,
-  CURVE_secp160r1			= 16,
-  CURVE_secp160r2			= 17,
-  CURVE_secp192k1			= 18,
-  CURVE_secp192r1			= 19,
-  CURVE_secp224k1			= 20,
-  CURVE_secp224r1			= 21,
-  CURVE_secp256k1			= 22,
-  CURVE_secp256r1			= 23,
-  CURVE_secp384r1			= 24,
-  CURVE_secp521r1			= 25,
+  CURVE_sect163k1			= 1,	// RFC 4492
+  CURVE_sect163r1			= 2,	// RFC 4492
+  CURVE_sect163r2			= 3,	// RFC 4492
+  CURVE_sect193r1			= 4,	// RFC 4492
+  CURVE_sect193r2			= 5,	// RFC 4492
+  CURVE_sect233k1			= 6,	// RFC 4492
+  CURVE_sect233r1			= 7,	// RFC 4492
+  CURVE_sect239k1			= 8,	// RFC 4492
+  CURVE_sect283k1			= 9,	// RFC 4492
+  CURVE_sect283r1			= 10,	// RFC 4492
+  CURVE_sect409k1			= 11,	// RFC 4492
+  CURVE_sect409r1			= 12,	// RFC 4492
+  CURVE_sect571k1			= 13,	// RFC 4492
+  CURVE_sect571r1			= 14,	// RFC 4492
+  CURVE_secp160k1			= 15,	// RFC 4492
+  CURVE_secp160r1			= 16,	// RFC 4492
+  CURVE_secp160r2			= 17,	// RFC 4492
+  CURVE_secp192k1			= 18,	// RFC 4492
+  CURVE_secp192r1			= 19,	// RFC 4492
+  CURVE_secp224k1			= 20,	// RFC 4492
+  CURVE_secp224r1			= 21,	// RFC 4492
+  CURVE_secp256k1			= 22,	// RFC 4492
+  CURVE_secp256r1			= 23,	// RFC 4492
+  CURVE_secp384r1			= 24,	// RFC 4492
+  CURVE_secp521r1			= 25,	// RFC 4492
 
   CURVE_brainpoolP256r1			= 26,	// RFC 7027
   CURVE_brainpoolP384r1			= 27,	// RFC 7027
