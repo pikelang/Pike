@@ -770,7 +770,18 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  werror("SSL.handshake: Looking up session %O\n", id);
 #endif
 	session = sizeof(id) && context->lookup_session(id);
-	if (session) {
+	if (session &&
+	    has_value(cipher_suites, session->cipher_suite) &&
+	    has_value(compression_methods, session->compression_algorithm)) {
+	  // SSL3 5.6.1.2:
+	  // If the session_id field is not empty (implying a session
+	  // resumption request) this vector [cipher_suites] must
+	  // include at least the cipher_suite from that session.
+	  // ...
+	  // If the session_id field is not empty (implying a session
+	  // resumption request) this vector [compression_methods]
+	  // must include at least the compression_method from
+	  // that session.
 	  SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
 	  /* Reuse session */
 	  reuse = 1;
@@ -1222,6 +1233,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     }
     break;
   case STATE_server_wait_for_client:
+    // NB: ALERT_no_certificate can be valid in this state, and
+    //     is handled directly by connection:handle_alert().
     handshake_messages += raw;
     switch(type)
     {

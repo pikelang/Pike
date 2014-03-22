@@ -169,8 +169,18 @@ string|int to_write()
                  packet->content_type, packet->fragment[..6]);
   if (packet->content_type == PACKET_alert)
   {
-    if (packet->level == ALERT_fatal)
+    if (packet->level == ALERT_fatal) {
       dying = 1;
+      // SSL3 5.4:
+      // Alert messages with a level of fatal result in the immediate
+      // termination of the connection. In this case, other
+      // connections corresponding to the session may continue, but
+      // the session identifier must be invalidated, preventing the
+      // failed session from being used to establish new connections.
+      if (session) {
+	context->purge_session(session);
+      }
+    }
   }
   string res = current_write_state->encrypt_packet(packet,version[1])->send();
   if (packet->content_type == PACKET_change_cipher_spec)
