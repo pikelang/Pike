@@ -467,78 +467,75 @@ array(int) sort_suites(array(int) suites)
 //! Get the prioritized list of supported cipher suites
 //! that satisfy the requirements.
 //!
-//! @param sign
-//!   Signature algorithm to support. One of
-//!     @int
-//!       @value SIGNATURE_invalid
-//!         Support all signature algorithms that we have certificates for.
-//!       @value SIGNATURE_anonymous
-//!         Support only anonymous signatures.
-//!       @value SIGNATURE_rsa
-//!         Support only RSA signatures.
-//!       @value SIGNATURE_dsa
-//!         Support only DSA signatures.
-//!       @value SIGNATURE_ecdsa
-//!         Support only ECDSA signatures.
-//!     @endint
-//!
 //! @param min_keylength
-//!   Minimum supported effective keylength.
+//!   Minimum supported effective keylength in bits. Defaults to @expr{128@}.
+//!   Specify @expr{-1@} to enable null ciphers.
+//!
+//! @param ke_mode
+//!   Level of protection for the key exchange.
+//!   @int
+//!     @value 0
+//!       Require forward secrecy (ephemeral keys).
+//!     @value 1
+//!       Also allow certificate based key exchanges.
+//!     @value 2
+//!       Allow anonymous server key exchange. Note that this
+//!       allows for man in the middle attacks.
+//!   @endint
+//!
+//! @param blacklisted_ciphers
+//!   Multiset of ciphers that are NOT to be used.
+//!
+//! @param blacklisted_kes
+//!   Multiset of key exchange methods that are NOT to be used.
+//!
+//! @param blacklisted_hashes
+//!   Multiset of hash algoriths that are NOT to be used.
+//!
+//! @param blacklisted_ciphermodes
+//!   Multiset of cipher modes that are NOT to be used.
 //!
 //! @note
 //!   Note that the effective keylength may differ from
 //!   the actual keylength for old ciphers where there
 //!   are known attacks.
-array(int) get_suites(int sign, int min_keylength, int|void max_version)
+array(int) get_suites(int(-1..)|void min_keylength,
+		      int(0..2)|void ke_flags,
+		      multiset(int)|void blacklisted_ciphers,
+		      multiset(KeyExchangeType)|void blacklisted_kes,
+		      multiset(HashAlgorithm)|void blacklisted_hashes,
+		      multiset(CipherModes)|void blacklisted_ciphermodes)
 {
-  multiset(int) kes = (<>);
+  if (!min_keylength) min_keylength = 128;	// Reasonable default.
 
-  // Add the signature-dependent methods.
-  switch(sign) {
-  case SIGNATURE_any:
-    kes |= (< KE_rsa, KE_dhe_rsa,
-	      KE_dh_rsa, KE_dh_dss, KE_dhe_dss,
+  // Ephemeral key exchange methods.
+  multiset(int) kes = (<
+    KE_dhe_rsa, KE_dhe_dss,
+    KE_ecdhe_rsa, KE_ecdhe_ecdsa,
+  >);
+
+  if (ke_flags) {
+    // Static certificate based key exchange methods.
+    kes |= (<
+      KE_rsa,
+      KE_dh_rsa, KE_dh_dss,
 #if constant(Crypto.ECC.Curve)
-	      KE_ecdh_rsa, KE_ecdhe_rsa,
-	      KE_ecdh_ecdsa, KE_ecdhe_ecdsa,
+      KE_ecdh_rsa,
+      KE_ecdh_ecdsa,
 #endif
     >);
-    break;
-  case SIGNATURE_invalid:
-    // Don't filter on signature.
-    kes |= (< KE_rsa, KE_dhe_rsa,
-	      KE_dh_rsa, KE_dh_dss, KE_dhe_dss,
-	      KE_null, KE_dh_anon,
+    if (ke_flags == 2) {
+      // Unsigned key exchange methods.
+      kes |= (< KE_null, KE_dh_anon,
 #if constant(Crypto.ECC.Curve)
-	      KE_ecdh_rsa, KE_ecdhe_rsa,
-	      KE_ecdh_ecdsa, KE_ecdhe_ecdsa,
-	      KE_ecdh_anon,
+		KE_ecdh_anon,
 #endif
-    >);
-    break;
-  case SIGNATURE_anonymous:
-    // Unsigned key exchange methods.
-    kes |= (< KE_null, KE_dh_anon,
-#if constant(Crypto.ECC.Curve)
-	      KE_ecdh_anon,
-#endif
-    >);
-    break;
-  case SIGNATURE_rsa:
-    kes |= (< KE_rsa, KE_dhe_rsa,
-#if constant(Crypto.ECC.Curve)
-	      KE_ecdhe_rsa,
-#endif
-    >);
-    break;
-  case SIGNATURE_dsa:
-    kes |= (< KE_dh_rsa, KE_dh_dss, KE_dhe_dss >);
-    break;
-#if constant(Crypto.ECC.Curve)
-  case SIGNATURE_ecdsa:
-    kes |= (< KE_ecdh_rsa, KE_ecdh_ecdsa, KE_ecdhe_ecdsa >);
-    break;
-#endif
+      >);
+    }
+  }
+
+  if (blacklisted_kes) {
+    kes -= blacklisted_kes;
   }
 
   // Filter unsupported key exchange methods.
@@ -549,7 +546,7 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 	   });
 
   // Filter short effective key lengths.
-  if (min_keylength) {
+  if (min_keylength > 0) {
     res = filter(res,
 		 lambda(int suite, int min_keylength) {
 		   return min_keylength <=
@@ -557,22 +554,35 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 		 }, min_keylength);
   }
 
-  if (!zero_type(max_version) && (max_version < PROTOCOL_TLS_1_2)) {
-    // AEAD protocols are not supported prior to TLS 1.2.
-    // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
+  if (blacklisted_ciphers) {
     res = filter(res,
-		 lambda(int suite) {
-		   return (sizeof(CIPHER_SUITES[suite]) < 4);
-		 });
+		 lambda(int suite, multiset(int) blacklisted_hashes) {
+		   return !blacklisted_hashes[CIPHER_SUITES[suite][1]];
+		 }, blacklisted_ciphers);
   }
 
 #if !constant(Crypto.SHA384)
   // Filter suites needing SHA384 as our Nettle doesn't support it.
-  res = filter(res,
-	       lambda(int suite) {
-		 return (CIPHER_SUITES[suite][2] != HASH_sha384);
-	       });
+  if (!blacklisted_hashes)
+    blacklisted_hashes = (< HASH_sha384 >);
+  else
+    blacklisted_hashes[HASH_sha384] = 1;
 #endif
+  if (blacklisted_hashes) {
+    res = filter(res,
+		 lambda(int suite, multiset(int) blacklisted_hashes) {
+		   return !blacklisted_hashes[CIPHER_SUITES[suite][2]];
+		 }, blacklisted_hashes);
+  }
+
+  if (blacklisted_ciphermodes) {
+    res = filter(res,
+		 lambda(int suite, multiset(int) blacklisted_ciphermodes) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   int mode = (sizeof(info) > 3)?info[3]:MODE_cbc;
+		   return !blacklisted_ciphermodes[mode];
+		 }, blacklisted_ciphermodes);
+  }
 
   // Sort and return.
   return sort_suites(res);
@@ -599,10 +609,12 @@ void filter_weak_suites(int min_keylength)
 //!
 //! @seealso
 //!   @[dhe_dss_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
-void rsa_mode(int|void min_keylength, int|void max_version)
+//!
+//! @deprecated get_suites
+__deprecated__ void rsa_mode(int(0..)|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
-  preferred_suites = get_suites(SIGNATURE_rsa, min_keylength, max_version);
+  preferred_suites = get_suites(min_keylength, 1);
 }
 
 //! Set @[preferred_suites] to DSS based methods.
@@ -612,10 +624,12 @@ void rsa_mode(int|void min_keylength, int|void max_version)
 //!
 //! @seealso
 //!   @[rsa_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
-void dhe_dss_mode(int|void min_keylength, int|void max_version)
+//!
+//! @deprecated get_suites
+__deprecated__ void dhe_dss_mode(int(0..)|void min_keylength, int|void max_version)
 {
   SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
-  preferred_suites = get_suites(SIGNATURE_dsa, min_keylength, max_version);
+  preferred_suites = get_suites(min_keylength, 1);
 }
 
 //! Set @[preferred_suites] to ECDSA based methods.
@@ -625,10 +639,12 @@ void dhe_dss_mode(int|void min_keylength, int|void max_version)
 //!
 //! @seealso
 //!   @[rsa_mode()], @[dhe_dss_mode()], @[filter_weak_suites()]
-void ecdsa_mode(int|void min_keylength, int|void max_version)
+//!
+//! @deprecated get_suites
+__deprecated__ void ecdsa_mode(int(0..)|void min_keylength, int|void max_version)
 {
-  SSL3_DEBUG_MSG("SSL.context: ecdsa_mode()\n");
-  preferred_suites = get_suites(SIGNATURE_ecdsa, min_keylength, max_version);
+  SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
+  preferred_suites = get_suites(min_keylength, 1);
 }
 
 //! Lists the supported compression algorithms in order of preference.
@@ -727,7 +743,7 @@ protected void create()
   SSL3_DEBUG_MSG("SSL.context->create\n");
 
   /* Backwards compatibility */
-  preferred_suites = get_suites(SIGNATURE_any, 128);
+  preferred_suites = get_suites(128, 1);
 }
 
 // update the cached decoded authorities list
