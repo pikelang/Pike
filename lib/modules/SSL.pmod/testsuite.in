@@ -271,9 +271,7 @@ test_do([[
   server_ctx->short_rsa->generate_key(512);
 
   // Make sure that all cipher suites are available server side.
-  server_ctx->preferred_suites =
-    server_ctx->get_suites(SSL.Constants.SIGNATURE_invalid, 0,
-                           SSL.Constants.PROTOCOL_TLS_1_2);
+  server_ctx->preferred_suites = server_ctx->get_suites(-1, 2);
 ]])
 
 test_do([[
@@ -401,6 +399,11 @@ test_do([[
           (SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
            SSL.Constants.KE_dh_rsa)) {
         expected = 0;
+      }
+      if (sizeof(SSL.Constants.CIPHER_SUITES[suites[0] ]) == 4) {
+        // AEAD ciphers and cipher specific prfs not supported prior
+	// to TLS 1.2.
+	expected = 0;
       }
     }
 
@@ -539,7 +542,7 @@ define(test_ssl, [[
 
     if( `==($1,$2,$3,$4) ) {
       // Test all known cipher suites.
-      suites = server_ctx->get_suites(SSL.Constants.SIGNATURE_invalid, 0, $4) -
+      suites = server_ctx->get_suites(-1, 2) -
   	    (invalid_suites[expected_protocol] || ({}));
     }
 
@@ -670,7 +673,7 @@ object make_context(Crypto.ECC.Curve curve) {
 
   ctx->add_cert(ecdsa, ({ cert }));
 
-  ctx->ecdsa_mode();
+  ctx->preferred_suites = server_ctx->get_suites(-1, 2);
   return ctx;
 }
 array(int) a() {
@@ -687,8 +690,7 @@ array(int) a() {
   {
     log_status("Testing ECDSA curve %O...", curve->name());
     object server_ctx = make_context(curve);
-    array suites = server_ctx->get_suites(SSL.Constants.SIGNATURE_ecdsa, 128,
-       SSL.Constants.PROTOCOL_TLS_1_2);
+    array suites = server_ctx->get_suites(128, 2);
     successes += test_ssl_connection(0,3,3,3,client_msg,server_ctx,suites);
     tests++;
   }
