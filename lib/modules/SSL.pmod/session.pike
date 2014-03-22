@@ -172,7 +172,10 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 //! @param ke_mask
 //!   The bit mask of the key exchange algorithms supported by
 //!   the set of available certificates.
-protected int(0..1) is_supported_suite(int suite, int ke_mask)
+//!
+//! @param version
+//!   The negotiated version of SSL/TLS.
+protected int(0..1) is_supported_suite(int suite, int ke_mask, int version)
 {
   array(int) suite_info = [array(int)]CIPHER_SUITES[suite];
   if (!suite_info) {
@@ -181,8 +184,28 @@ protected int(0..1) is_supported_suite(int suite, int ke_mask)
   }
 
   KeyExchangeType ke = [int(0..0)|KeyExchangeType]suite_info[0];
-  if (ke_mask & (1<<ke)) return 1;
-  return 0;
+  if (!(ke_mask & (1<<ke))) return 0;
+
+  if ((version < PROTOCOL_TLS_1_2) && (sizeof(suite_info) >= 4)) {
+    // AEAD protocols are not supported prior to TLS 1.2.
+    // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
+    return 0;
+  }
+
+  if ((version >= PROTOCOL_TLS_1_1) &&
+      (< CIPHER_null, CIPHER_rc4_40, CIPHER_rc2_40, CIPHER_des40 >)
+      [suite_info[1]]) {
+    // RFC 4346 A.5: Export suites
+    // TLS 1.1 implementations MUST NOT negotiate
+    // these cipher suites in TLS 1.1 mode.
+    // ...
+    // TLS 1.1 clients MUST check that the server
+    // did not choose one of these cipher suites
+    // during the handshake.
+    return 0;
+  }
+
+  return 1;
 }
 
 //! Selects an apropriate certificate, authentication method
@@ -251,7 +274,8 @@ int select_cipher_suite(object context,
   // to find the best.
   cipher_suites =
     ([function(array(int):array(int))]
-     context->sort_suites)(filter(cipher_suites, is_supported_suite, ke_mask));
+     context->sort_suites)(filter(cipher_suites, is_supported_suite,
+				  ke_mask, version));
 
   if (!sizeof(cipher_suites)) {
     SSL3_DEBUG_MSG("No suites left after certificate filtering.\n");
@@ -276,14 +300,14 @@ int select_cipher_suite(object context,
 
     if (version >= PROTOCOL_TLS_1_2) {
       foreach(certs, CertificatePair cp) {
-	if (is_supported_suite(suite, cp->ke_mask_invariant)) {
+	if (is_supported_suite(suite, cp->ke_mask_invariant, version)) {
 	  cert = cp;
 	  break;
 	}
       }
     } else {
       foreach(certs, CertificatePair cp) {
-	if (is_supported_suite(suite, cp->ke_mask)) {
+	if (is_supported_suite(suite, cp->ke_mask, version)) {
 	  cert = cp;
 	  break;
 	}
