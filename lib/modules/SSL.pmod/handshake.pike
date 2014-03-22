@@ -1388,7 +1388,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       compression_method = input->get_uint(1);
 
       if( !has_value(context->preferred_suites, cipher_suite) ||
-	  !has_value(context->preferred_compressors, compression_method))
+	  !has_value(context->preferred_compressors, compression_method) ||
+	  !session->is_supported_suite(cipher_suite, ~0, version[1]))
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
