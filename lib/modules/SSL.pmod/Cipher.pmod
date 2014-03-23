@@ -352,12 +352,10 @@ class KeyExchangeRSA
     ADT.struct struct;
   
     SSL3_DEBUG_MSG("KE_RSA\n");
-    temp_key = (session->cipher_spec->is_exportable
-		? context->short_rsa
-		: context->long_rsa);
-    if (temp_key)
+    if (session->cipher_spec->is_exportable)
     {
       /* Send a ServerKeyExchange message. */
+      temp_key = context->short_rsa;
 
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		     "with a %d-bits key.\n", temp_key->key_size());
@@ -479,8 +477,6 @@ class KeyExchangeRSA
     temp_struct->put_bignum(e);
     Crypto.RSA rsa = Crypto.RSA();
     rsa->set_public_key(n, e);
-    context->long_rsa = session->peer_public_key;
-    context->short_rsa = rsa;
     if (session->cipher_spec->is_exportable) {
       temp_key = rsa;
     }
