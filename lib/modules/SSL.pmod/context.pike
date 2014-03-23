@@ -194,20 +194,26 @@ mapping(string:Standards.X509.Verifier) trusted_issuers_cache = ([]);
 //! verified, or just accepted as being valid.
 int verify_certificates = 0;
 
-//! Temporary, non-certified, private keys, used with a
-//! server_key_exchange message. The rules are as follows:
+//! Temporary, non-certified, private keys, used for RSA key exchange
+//! in export mode. They are used as follows:
 //!
-//! If the negotiated cipher_suite has the "exportable" property, and
-//! short_rsa is not zero, send a server_key_exchange message with the
-//! (public part of) the short_rsa key.
+//! @[short_rsa] is a 512-bit RSA key used for the SSL 3.0 and TLS 1.0
+//! export cipher suites.
 //!
-//! If the negotiated cipher_suite does not have the exportable
-//! property, and long_rsa is not zero, send a server_key_exchange
-//! message with the (public part of) the long_rsa key.
+//! @[long_rsa] is a 1024-bit RSA key to be used for the RSA_EXPORT1024
+//! suites from draft-ietf-tls-56-bit-ciphersuites-01.txt.
 //!
-//! Otherwise, dont send any server_key_exchange message.
+//! They have associated counters @[short_rsa_counter] and @[long_rsa_counter],
+//! which are decremented each time the keys are used.
+//!
+//! When the counters reach zero, the corresponding RSA key is cleared,
+//! and a new generated on demand at which time the counter is reset.
 Crypto.RSA long_rsa;
 Crypto.RSA short_rsa;
+
+//! Counters for export RSA keys.
+int long_rsa_counter;
+int short_rsa_counter;
 
 #if 0
 //! Compatibility.
