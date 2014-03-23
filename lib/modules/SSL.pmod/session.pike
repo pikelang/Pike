@@ -179,7 +179,7 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 //!
 //! @param version
 //!   The negotiated version of SSL/TLS.
-protected int(0..1) is_supported_suite(int suite, int ke_mask, int version)
+int(0..1) is_supported_suite(int suite, int ke_mask, int version)
 {
   array(int) suite_info = [array(int)]CIPHER_SUITES[suite];
   if (!suite_info) {
