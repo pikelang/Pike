@@ -190,11 +190,12 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying mac verification...\n");
 #endif
-    int length = sizeof(packet->fragment) - session->cipher_spec->hash_size;
+    int hmac_size = session->truncated_hmac?10:session->cipher_spec->hash_size;
+    int length = sizeof(packet->fragment) - hmac_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
     
-    if (digest != mac->hash(packet, seq_num))
+    if (digest != mac->hash(packet, seq_num)[..hmac_size-1])
       {
 #ifdef SSL3_DEBUG
 	werror("Failed MAC-verification!!\n");
@@ -237,9 +238,13 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
     packet->fragment = [string]compress(packet->fragment);
   }
 
-  if (mac)
-    digest = mac->hash(packet, seq_num);
-  else
+  if (mac) {
+    if (session->truncated_hmac) {
+      digest = mac->hash(packet, seq_num)[..9];
+    } else {
+      digest = mac->hash(packet, seq_num);
+    }
+  } else
     digest = "";
 
   if (crypt)

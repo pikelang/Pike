@@ -66,6 +66,10 @@ Crypto.Sign peer_public_key;
 //! The max fragment size requested by the client.
 int max_packet_size = PACKET_MAX_SIZE;
 
+//! Indicates that the packet HMACs should be truncated
+//! to the first 10 bytes (80 bits). Cf RFC 3546 3.5.
+int(0..1) truncated_hmac;
+
 /*
  * Extensions provided by the peer.
  */
@@ -357,7 +361,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 		     int max_hash_size)
 {
   array res = .Cipher.lookup(suite, version, signature_algorithms,
-			     max_hash_size);
+			     truncated_hmac?512:max_hash_size);
   if (!res) return 0;
   cipher_suite = suite;
   ke_method = [int]res[0];
