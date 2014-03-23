@@ -798,10 +798,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
+	  int maybe_safari_10_8 = 1;
 	  while (!extensions->is_empty()) {
 	    int extension_type = extensions->get_uint(2);
-	    ADT.struct extension_data =
-	      ADT.struct(extensions->get_var_string(2));
+	    string(8bit) raw = extensions->get_var_string(2);
+	    ADT.struct extension_data = ADT.struct(raw);
 	    SSL3_DEBUG_MSG("SSL.handshake->handle_handshake: "
 			   "Got extension 0x%04x, %O (%d bytes).\n",
 			   extension_type,
@@ -811,6 +812,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
           extensions:
 	    switch(extension_type) {
 	    case EXTENSION_signature_algorithms:
+	      if (!remote_extensions[EXTENSION_ec_point_formats] ||
+		  (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
+		  (client_version[1] != PROTOCOL_TLS_1_2)) {
+		maybe_safari_10_8 = 0;
+	      }
 	      // RFC 5246
 	      string bytes = extension_data->get_var_string(2);
 	      // Pairs of <hash_alg, signature_alg>.
@@ -819,6 +825,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 			     session->signature_algorithms);
 	      break;
 	    case EXTENSION_elliptic_curves:
+	      if (!remote_extensions[EXTENSION_server_name] ||
+		  (raw != "\0\6\0\x17\0\x18\0\x19")) {
+		maybe_safari_10_8 = 0;
+	      }
 	      int sz = extension_data->get_uint(2)/2;
 	      session->ecc_curves =
 		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
@@ -826,6 +836,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", session->ecc_curves);
 	      break;
 	    case EXTENSION_ec_point_formats:
+	      if (!remote_extensions[EXTENSION_elliptic_curves] ||
+		  (raw != "\1\0")) {
+		maybe_safari_10_8 = 0;
+	      }
 	      array(int) ecc_point_formats =
 		extension_data->get_var_uint_array(1, 1);
 	      // NB: We only support the uncompressed point format for now.
@@ -839,6 +853,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 			     session->ecc_point_format);
 	      break;
 	    case EXTENSION_server_name:
+	      if (sizeof(remote_extensions) != 1) {
+		maybe_safari_10_8 = 0;
+	      }
 	      // RFC 4366 3.1 "Server Name Indication"
 	      // Example: "\0\f\0\0\tlocalhost"
 	      session->server_names = ({});
@@ -968,6 +985,38 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
               werror("Unknown extension %O\n", extension_type);
 #endif
 	      break;
+	    }
+	  }
+	  if (maybe_safari_10_8) {
+	    // According to OpenSSL (ssl/t1_lib.c:ssl_check_for_safari()),
+	    // the Safari browser versions 10.8.0..10.8.3 have
+	    // broken support for ECDHE_ECDSA, but advertise such
+	    // suites anyway. We attempt to fingerprint Safari 10.8
+	    // above by the set of extensions and the order it
+	    // sends them in.
+	    SSL3_DEBUG_MSG("Client version: %d.%d\n"
+			   "Number of extensions: %d\n",
+			   client_version[0], client_version[1],
+			   sizeof(remote_extensions));
+	    if (((client_version[1] == PROTOCOL_TLS_1_2) &&
+		 ((sizeof(remote_extensions) != 4) ||
+		  !remote_extensions[EXTENSION_signature_algorithms])) ||
+		((client_version[1] < PROTOCOL_TLS_1_2) &&
+		 ((sizeof(remote_extensions) != 3) ||
+		  !remote_extensions[EXTENSION_ec_point_formats]))) {
+	      maybe_safari_10_8 = 0;
+	    }
+	    if (maybe_safari_10_8) {
+	      SSL3_DEBUG_MSG("Safari 10.8 (or similar) detected.\n");
+	      cipher_suites = filter(cipher_suites,
+				     lambda(int suite) {
+				       return CIPHER_SUITES[suite] &&
+					 (CIPHER_SUITES[suite][0] !=
+					  KE_ecdhe_ecdsa);
+				     });
+	      SSL3_DEBUG_MSG("Remaining cipher suites:\n"
+			     "%s\n",
+			     .Constants.fmt_cipher_suites(cipher_suites));
 	    }
 	  }
 	}
