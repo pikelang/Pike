@@ -172,6 +172,12 @@ Packet server_hello_packet()
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
+  if (session->truncated_hmac) {
+    // RFC 3546 3.5 "Truncated HMAC"
+    extensions->put_uint(EXTENSION_truncated_hmac, 2);
+    extensions->put_var_string("", 2);
+  }
+
   if (has_application_layer_protocol_negotiation &&
       next_protocol)
   {
@@ -865,6 +871,14 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				  version[1]));
 		return -1;
 	      }
+	      break;
+	    case EXTENSION_truncated_hmac:
+	      // RFC 3546 3.5 "Truncated HMAC"
+	      if (!extension_data->is_empty()) {
+		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+				  version[1]));
+	      }
+	      session->truncated_hmac = 1;
 	      break;
 
 	    case EXTENSION_renegotiation_info:
