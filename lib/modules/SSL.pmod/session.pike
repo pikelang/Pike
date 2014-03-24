@@ -83,6 +83,13 @@ array(string(0..255)) server_names;
 //!
 //! Defaults to the settings from RFC 5246 7.4.1.4.1.
 array(array(int)) signature_algorithms = ({
+  // RFC 5246 7.4.1.4.1:
+  // Note: this is a change from TLS 1.1 where there are no explicit
+  // rules, but as a practical matter one can assume that the peer
+  // supports MD5 and SHA-1.
+  ({ HASH_md5, SIGNATURE_rsa }),
+  ({ HASH_md5, SIGNATURE_dsa }),
+  ({ HASH_md5, SIGNATURE_ecdsa }),
   ({ HASH_sha, SIGNATURE_rsa }),
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_ecdsa }),
@@ -144,11 +151,24 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 				      int version,
 				      array(int) ecc_curves)
 {
+  // Check if the certificate is useful for any of the
+  // key exchange algorithms that the peer supports.
   if (version >= PROTOCOL_TLS_1_2) {
+    // In TLS 1.2 and later DH_DSS/DH_RSA and ECDH_ECDSA/ECDH_RSA
+    // have been unified, so use the invariant ke_mask.
+    // They have been unified, since the signature_algorithms
+    // extension allows the peer to specify exactly which
+    // combinations it supports, cf below.
     if (!(ke_mask & cp->ke_mask_invariant)) return 0;
 
-    // FIXME: In TLS 1.2 and later check that all sign_algs
-    //        in the cert chain are supported by the peer.
+    // Check that all sign_algs in the cert chain are supported by the peer.
+    foreach(cp->sign_algs, array(int) sign_alg) {
+      int found;
+      foreach(signature_algorithms, array(int) sup_alg) {
+	if (found = equal(sign_alg, sup_alg)) break;
+      }
+      if (!found) return 0;
+    }
   } else {
     if (!(ke_mask & cp->ke_mask)) return 0;
   }
