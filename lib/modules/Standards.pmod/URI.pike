@@ -80,6 +80,7 @@ protected void parse_authority()
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
 protected void inherit_properties(this_program uri)
 {
+  sprintf_cache = ([]);
   authority = uri->authority;
   scheme = uri->scheme;
   user = uri->user; password = uri->password;
@@ -93,9 +94,24 @@ protected void inherit_properties(this_program uri)
 //!   Compare the URI to this
 int `==(mixed something)
 {
-  return
-    _sprintf('t') == sprintf("%t", something) &&
-    _sprintf('x') == sprintf("%x", [object]something);
+    if( !objectp( something ) || object_program(something) < this_program )
+        return false;
+    Standards.URI other = [object(Standards.URI)]something;
+    // For protocols with host/port/user/password we do lower_case on
+    // the host when comparing, and use the port according to RFC 2396
+    // section 6.
+    return
+        ((host
+          && other->host
+          && lower_case(other->host) == lower_case(host)
+          && other->port == port
+          && other->user == user
+          && other->password == password)
+         || (other->authority == authority))
+        && other->path == path
+        && other->query == query
+        && other->scheme == scheme
+        && other->fragment == fragment;
 }
 
 string combine_uri_path(string base, string rel)
@@ -186,7 +202,6 @@ string combine_uri_path(string base, string rel)
 void reparse_uri(this_program|string|void base_uri)
 {
   string uri = raw_uri;
-
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
@@ -297,6 +312,7 @@ void reparse_uri(this_program|string|void base_uri)
 
     DEBUG("Scheme found! RFC 2396, §5.2, step 3 "
 	  "says we're absolute. Done!");
+    sprintf_cache['s'] = raw_uri;
     return;
   }
   scheme = this_program::base_uri->scheme;
@@ -363,13 +379,11 @@ void create(this_program|string uri,
 	    this_program|string|void base_uri)
 {
   DEBUG("create(%O, %O) called!", uri, base_uri);
+  sprintf_cache = ([]);
   if(stringp(uri))
     raw_uri = [string]uri; // Keep for future runs of reparse_uri after a base_uri change
   else if(objectp(uri)) // If uri is 0, we want to inherit from the base_uri.
-  {
     raw_uri = uri->raw_uri;
-    inherit_properties([object(this_program)]uri);
-  }
 
   reparse_uri(base_uri);
 }
@@ -384,6 +398,7 @@ mixed `->=(string property, mixed value) { return `[]=(property, value); }
 mixed `[]=(string property, mixed value)
 {
   DEBUG("`[]=(%O, %O)", property, value);
+  sprintf_cache = ([]);
   switch(property)
   {
     case "user":
@@ -479,6 +494,7 @@ mapping(string:string) get_query_variables() {
 
 //! Sets the query variables from the provided mapping.
 void set_query_variables(mapping(string:string) vars) {
+  sprintf_cache = ([]);
   variables = vars;
   if(!sizeof(vars))
     query = 0;
@@ -544,41 +560,33 @@ string get_http_path_query() {
   return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
 }
 
+int __hash() { return hash_value(_sprintf('s')); }
 
+private mapping(int:string) sprintf_cache = ([]);
 string _sprintf(int how, mapping|void args)
 {
+  if( how == 't' ) return "Standards.URI";
+  if( string res = sprintf_cache[how] )
+      return res;
   string look, _host = host, getstring;
-  switch(how)
-  {
-    case 't':
-      return "Standards.URI";
-
-    case 'x': // A case-mangling version, especially suited for readable hash values
-      if(_host) _host = lower_case(_host);
-    default:
-    case 's':
-    case 'O':
-      getstring = (path||"") +
-	          (query ? "?" + query : "");
-      look =
-	(scheme?(scheme + ":"):"") +
-	(authority ?
-	 "//" +
-	 (user ? user + (password ? ":" + password : "") + "@" : "") +
-	 (_host?(has_value(_host, ":")?("["+_host+"]"):_host):"") +
-	 (port != Protocols.Ports.tcp[scheme] ? ":" + port : "") : ("")) +
-	getstring +
-	(fragment ? "#" + fragment : "");
-      break;
-  }
+  if(how == 'x' && _host)
+      _host = lower_case(_host);
+  getstring = (path||"") + (query ? "?" + query : "");
+  if(args && args->flag_left)
+      return getstring;
+  look =
+      (scheme?(scheme + ":"):"") +
+      (authority ?
+       "//" +
+       (user ? user + (password ? ":" + password : "") + "@" : "") +
+       (_host?(has_value(_host, ":")?("["+_host+"]"):_host):"") +
+       (port != Protocols.Ports.tcp[scheme] ? ":" + port : "") : ("")) +
+      getstring +
+      (fragment ? "#" + fragment : "");
 
   if(how == 'O')
-    return "URI(\"" + look + "\")";
-  else
-    if(args && args->flag_left)
-      return getstring;
-    else
-      return look;
+      look=sprintf("URI(%q)", look);
+  return sprintf_cache[how]=look;
 }
 
 // Master codec API function. Allows for serialization with
