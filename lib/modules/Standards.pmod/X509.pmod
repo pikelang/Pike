@@ -687,6 +687,8 @@ class TBSCertificate
     if (a[0]->type_name != "INTEGER")
       return 0;
     serial = a[0]->value;
+    if(serial<0)
+      return 0;
     DBG("TBSCertificate: serial = %s\n", (string) serial);
       
     if ((a[1]->type_name != "SEQUENCE")
@@ -885,6 +887,7 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
+  if(serial<0) error("Serial number needs to be >=0.\n");
   return sign_tbs(make_tbs(issuer, algorithm_id,
 			   subject, c->pkcs_public_key(),
 			   Integer(serial), ttl, extensions),
@@ -1003,12 +1006,11 @@ TBSCertificate verify_certificate(string s,
   return 0;
 }
 
-//! Decodes a root certificate using @[decode_certificate] and
-//! verifies that all extensions mandated for root certificates are
-//! present and valid.
-TBSCertificate verify_root_certificate(string s)
+
+//! Verifies that all extensions mandated for certificate signing
+//! certificates are present and valid.
+TBSCertificate verify_root_certificate(TBSCertificate tbs)
 {
-  TBSCertificate tbs = decode_certificate(s);
   if(!tbs) return 0;
 
   multiset crit = tbs->critical + (<>);
@@ -1238,6 +1240,9 @@ mapping verify_certificate_chain(array(string) cert_chain,
     return m; \
     } while(0)
 
+  // Decode all certificates in the chain. Leaf is first and root is
+  // last.
+
   int len = sizeof(cert_chain);
   array chain_obj = allocate(len);
   array chain_cert = allocate(len);
@@ -1253,6 +1258,8 @@ mapping verify_certificate_chain(array(string) cert_chain,
      chain_cert[idx] = cert;
      chain_obj[idx] = tbs;
   }
+
+  // Chain is now reversed so root is first and leaf is last.
 
   foreach(chain_obj; int idx; TBSCertificate tbs)
   {
