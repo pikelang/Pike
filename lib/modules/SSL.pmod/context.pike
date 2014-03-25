@@ -425,7 +425,7 @@ protected int cipher_suite_sort_key(int suite)
     KE_ecdhe_ecdsa:	13,
   ])[info[0]];
 
-  int auth_prio = ([
+  int auth_prio = keylength && ([
     KE_null:		0,
     KE_dh_anon:		0,
     KE_ecdh_anon:	0,

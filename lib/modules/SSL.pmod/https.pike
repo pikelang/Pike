@@ -180,6 +180,9 @@ class client
   {
     SSL.context ctx = SSL.context();
     ctx->random = no_random()->read;
+    // Make sure all cipher suites are available.
+    ctx->preferred_suites =
+      ctx->sort_suites(indices(SSL.Constants.CIPHER_SUITES));
     werror("Starting\n");
     ssl = SSL.sslfile(con, ctx, 1);
     ssl->set_nonblocking(got_data, write_cb, con_closed);
@@ -199,7 +202,49 @@ int main()
 #else
   Crypto.Sign key;
 
-#ifdef ECDSA_MODE
+#if 0
+  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
+#if 0
+  array raw_key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
+  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
+  object n = raw_key[1][1];
+  object e = raw_key[2][1];
+  object d = raw_key[3][1];
+  object p = raw_key[4][1];
+  object q = raw_key[5][1];
+
+  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
+	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
+
+  key = Crypto.RSA();
+  key->set_public_key(n, e);
+  key->set_private_key(d);
+#else /* !0 */
+  // FIXME: Is this correct?
+  key = Standards.PKCS.RSA.parse_private_key(my_key);
+#endif /* 0 */
+#else
+  key = Crypto.RSA()->
+    set_random(Crypto.Random.random_string)->generate_key(1024);
+  my_certificate =
+    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
+						 "organizationName" : "Test",
+						 "commonName" : "*",
+					       ]));
+#endif
+  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
+  add_cert(key, ({ my_certificate }), ({ "*" }));
+
+  key = Crypto.DSA()->
+    set_random(Crypto.Random.random_string)->generate_key(1024, 160);
+  my_certificate =
+    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
+						 "organizationName" : "Test",
+						 "commonName" : "*",
+					       ]));
+  add_cert(key, ({ my_certificate }));
+
 #if constant(Crypto.ECC.Curve)
   key = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(Crypto.Random.random_string)->generate_key();
@@ -208,39 +253,11 @@ int main()
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-  ecdsa_mode();
-#else
-#error ECDSA not supported by this Pike.
-  exit(1);
+  add_cert(key, ({ my_certificate }));
 #endif
-#else
-  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
-  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
-#if 0
-  array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
-  object n = key[1][1];
-  object e = key[2][1];
-  object d = key[3][1];
-  object p = key[4][1];
-  object q = key[5][1];
 
-  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
-	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
-
-  rsa = Crypto.RSA();
-  rsa->set_public_key(n, e);
-  rsa->set_private_key(d);
-#else /* !0 */
-  // FIXME: Is this correct?
-  key = Standards.PKCS.RSA.parse_private_key(my_key);
-#endif /* 0 */
-  // Make sure all cipher suites are available.
-  rsa_mode();
-#endif
-  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
-  add_cert(key, ({ my_certificate }), ({ "*" }));
   SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
+
   random = no_random()->read;
   werror("Starting\n");
   if (!bind(PORT, my_accept_callback))
