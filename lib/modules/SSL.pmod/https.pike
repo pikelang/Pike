@@ -181,8 +181,7 @@ class client
     SSL.context ctx = SSL.context();
     ctx->random = no_random()->read;
     // Make sure all cipher suites are available.
-    ctx->preferred_suites =
-      ctx->sort_suites(indices(SSL.Constants.CIPHER_SUITES));
+    ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
     ssl = SSL.sslfile(con, ctx, 1);
     ssl->set_nonblocking(got_data, write_cb, con_closed);
@@ -233,7 +232,6 @@ int main()
 						 "commonName" : "*",
 					       ]));
 #endif
-  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
   add_cert(key, ({ my_certificate }), ({ "*" }));
 
   key = Crypto.DSA()->
@@ -255,6 +253,10 @@ int main()
 					       ]));
   add_cert(key, ({ my_certificate }));
 #endif
+
+  // Make sure all cipher suites are available.
+  preferred_suites = get_suites(-1, 2);
+  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
 
   SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
 
