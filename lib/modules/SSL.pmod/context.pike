@@ -638,21 +638,6 @@ __deprecated__ void dhe_dss_mode(int(0..)|void min_keylength, int|void max_versi
   preferred_suites = get_suites(min_keylength, 1);
 }
 
-//! Set @[preferred_suites] to ECDSA based methods.
-//!
-//! @param min_keylength
-//!   Minimum acceptable key length in bits.
-//!
-//! @seealso
-//!   @[rsa_mode()], @[dhe_dss_mode()], @[filter_weak_suites()]
-//!
-//! @deprecated get_suites
-__deprecated__ void ecdsa_mode(int(0..)|void min_keylength, int|void max_version)
-{
-  SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
-  preferred_suites = get_suites(min_keylength, 1);
-}
-
 //! Lists the supported compression algorithms in order of preference.
 //!
 //! Defaults to @expr{({ COMPRESSION_null, COMPRESSION_deflate })@}
