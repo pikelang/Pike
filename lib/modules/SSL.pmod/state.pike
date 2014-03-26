@@ -38,48 +38,6 @@ int tls_iv;
 //! This is used as a prefix for the IV for the AEAD cipher algorithms.
 string salt;
 
-string tls_unpad(string data)
-{
-  int(0..255) plen=[int(0..255)]data[-1];
-
-  string padding=data[<plen..];
-
-  string ret = data[..<plen+1];
-
-  /* NOTE: Perform some extra MAC operations, to avoid timing
-   *       attacks on the length of the padding.
-   *
-   *       This is to alleviate the "Lucky Thirteen" attack:
-   *       http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
-   *
-   * NOTE: The digest quanta size is 64 bytes for all
-   *       MAC-algorithms currently in use.
-   */
-  string junk = padding;
-  if (!((sizeof(ret) +
-	 mac->hash_header_size - session->cipher_spec->hash_size) & 63) ||
-      !(sizeof(junk) & 63)) {
-    // We're at the edge of a MAC block, so we need to
-    // pad junk with an extra MAC block of data.
-    //
-    // NB: data will have at least 64 bytes if it's not empty.
-    junk += data[<64..];
-  }
-  junk = mac && mac->hash_raw(junk);
-
-  /* Check that the padding is correctly done. Required by TLS 1.1.
-   *
-   * Attempt to do it in a manner that takes constant time regardless
-   * of the size of the padding.
-   */
-  for (int i = 0, j = 0; i < 255; i++,j++) {
-    if (j >= sizeof (padding)) j = 0;
-    if (padding[j] != plen) ret = UNDEFINED;	// Invalid padding.
-  }
-
-  return ret;
-}
-
 //! Destructively decrypts a packet (including inflating and MAC-verification,
 //! if needed). On success, returns the decrypted packet. On failure,
 //! returns an alert packet. These cases are distinguished by looking
@@ -122,15 +80,14 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
       case CIPHER_block:
 	if(version == PROTOCOL_SSL_3_0) {
 	  // crypt->unpad() performs decrypt.
-	  if (catch { msg = crypt->unpad(msg); })
+	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
 	    alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
 	} else if (version >= PROTOCOL_TLS_1_0) {
-	  msg = crypt->crypt(msg);
 
-	  if (catch { msg = tls_unpad(msg); })
-	    alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
-	  else if (!msg) {
+	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
 	    // TLS 1.1 requires a bad_record_mac alert on invalid padding.
+            // Note that mac will still be calculated below even if
+            // padding was wrong, to mitigate Lucky Thirteen attacks.
 	    alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
 	  }
 	}
