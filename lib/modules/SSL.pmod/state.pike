@@ -38,11 +38,6 @@ int tls_iv;
 //! This is used as a prefix for the IV for the AEAD cipher algorithms.
 string salt;
 
-string tls_pad(string data, int blocksize) {
-  int plen=(blocksize-(sizeof(data)+1)%blocksize)%blocksize;
-  return data + sprintf("%1c",plen)*(plen+1);
-}
-
 string tls_unpad(string data)
 {
   int(0..255) plen=[int(0..255)]data[-1];
@@ -256,7 +251,7 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
     case CIPHER_block:
       if(version == PROTOCOL_SSL_3_0) {
 	packet->fragment = crypt->crypt(packet->fragment + digest);
-	packet->fragment += crypt->pad();
+	packet->fragment += crypt->pad(Crypto.PAD_SSL);
       } else if (version >= PROTOCOL_TLS_1_0) {
 	if (tls_iv) {
 	  // RFC 4346 6.2.3.2.2:
@@ -265,9 +260,9 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 	  // to encryption.
 	  string iv = Crypto.Random.random_string(tls_iv);
 	  crypt->set_iv(iv);
-	  packet->fragment = iv + crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_SSL);
+	  packet->fragment = iv + crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
 	} else {
-          packet->fragment = crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_SSL);
+          packet->fragment = crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
         }
       }
       break;
