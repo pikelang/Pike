@@ -2629,15 +2629,9 @@ PIKECLASS Proxy {
    *! scrubbed, unless @[String.secure] has been called on the data.
    */
   PIKEFUN string(0..255) crypt(string(0..255) data) {
-    unsigned char *result;
-    ptrdiff_t roffset = 0;
+    ptrdiff_t strings = 0;
     ptrdiff_t soffset = 0;
     ptrdiff_t len;
-    ONERROR uwp;
-
-    if (!(result = malloc(data->len + THIS->block_size)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
-    SET_ONERROR (uwp, free, result);
 
     if (THIS->backlog_len) {
       if (data->len >= (THIS->block_size - THIS->backlog_len)) {
@@ -2645,35 +2639,30 @@ PIKECLASS Proxy {
 	       (THIS->block_size - THIS->backlog_len));
 	soffset += (THIS->block_size - THIS->backlog_len);
 	THIS->backlog_len = 0;
-	push_string(make_shared_binary_string((char *)THIS->backlog,
-					      THIS->block_size));
+        push_string(make_shared_binary_string((char *)THIS->backlog,
+                                       THIS->block_size));
 	safe_apply(THIS->object, "crypt", 1);
 	if (TYPEOF(Pike_sp[-1]) != T_STRING)
 	  Pike_error("crypt() did not return string\n");
 	if (Pike_sp[-1].u.string->len != THIS->block_size)
 	  Pike_error("Unexpected string length %ld\n",
 		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
-	roffset = THIS->block_size;
-	pop_stack();
+        strings++;
       } else {
 	MEMCPY(THIS->backlog + THIS->backlog_len,
 	       data->str, data->len);
 	THIS->backlog_len += data->len;
 	pop_n_elems(args);
 	push_empty_string();
-	CALL_AND_UNSET_ONERROR (uwp);
 	return;
       }
     }
 
-    len = (Pike_sp[-1].u.string->len - soffset);
+    len = (data->len - soffset);
     len -= len % THIS->block_size;
 
     if (len) {
-      push_string(make_shared_binary_string(Pike_sp[-1].u.string->str +
-					    soffset, len));
+      push_string( string_slice( data, soffset, len ) );
       soffset += len;
 
       safe_apply(THIS->object, "crypt", 1);
@@ -2684,22 +2673,20 @@ PIKECLASS Proxy {
 	Pike_error("crypt() Unexpected string length %ld.\n",
 		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
 
-      MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
-
-      pop_stack();
+      strings++;
     }
 
-    if (soffset < Pike_sp[-1].u.string->len) {
-      MEMCPY(THIS->backlog, Pike_sp[-1].u.string->str + soffset,
-	     Pike_sp[-1].u.string->len - soffset);
-      THIS->backlog_len = Pike_sp[-1].u.string->len - soffset;
+    if (soffset < data->len) {
+      MEMCPY(THIS->backlog, data->str + soffset, data->len - soffset);
+      THIS->backlog_len = data->len - soffset;
     }
 
-    pop_n_elems(args);
+    if( !strings )
+        push_empty_string();
+    else if( strings > 1 )
+        f_add( strings );
 
-    push_string(make_shared_binary_string((char *)result, roffset + len));
-    guaranteed_memset(result, 0, roffset + len);
-    CALL_AND_UNSET_ONERROR (uwp);
+    stack_pop_n_elems_keep_top(args);
   }
 
   /*! @decl string(0..255) pad(void|int method)
