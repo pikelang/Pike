@@ -258,8 +258,6 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 	packet->fragment = crypt->crypt(packet->fragment + digest);
 	packet->fragment += crypt->pad();
       } else if (version >= PROTOCOL_TLS_1_0) {
-	packet->fragment = tls_pad(packet->fragment+digest,
-				   crypt->block_size());
 	if (tls_iv) {
 	  // RFC 4346 6.2.3.2.2:
 	  // Generate a cryptographically strong random number R of length
@@ -267,10 +265,10 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 	  // to encryption.
 	  string iv = Crypto.Random.random_string(tls_iv);
 	  crypt->set_iv(iv);
-	  packet->fragment = iv + crypt->crypt(packet->fragment);
+	  packet->fragment = iv + crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_SSL);
 	} else {
-	  packet->fragment = crypt->crypt(packet->fragment);
-	}
+          packet->fragment = crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_SSL);
+        }
       }
       break;
     case CIPHER_aead:
