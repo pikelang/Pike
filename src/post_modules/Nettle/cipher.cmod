@@ -2797,8 +2797,8 @@ PIKECLASS Proxy {
    *! @[String.secure] has been called on the data.
    *!
    *! This performs the reverse operation of @[pad()]. The padding
-   *! will be verified to be correct, if possible. If not, an
-   *! exception is thrown.
+   *! will be verified to be correct, if possible. If not, zero is
+   *! returned.
    *!
    *! @param method
    *! The type of padding that was applied to the original buffer.
@@ -2866,9 +2866,6 @@ PIKECLASS Proxy {
       for(i=len-bytes; i<len-1; i++)
         if( str->str[i] != padding )
           invalid = 1;
-
-      if( invalid == 1 )
-        Pike_error("Invalid padding value.\n");
       break;
     }
 
@@ -2891,6 +2888,11 @@ PIKECLASS Proxy {
     pop_stack();
     push_string(make_shared_binary_string(str->str, len));
     free_string(str);
+    if( invalid==1 )
+    {
+      pop_stack();
+      push_int(0);
+    }
   }
 
   /*! @decl this_program set_iv(string(0..255) iv)
