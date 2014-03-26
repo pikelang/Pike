@@ -124,7 +124,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #ifndef PIKE_DEBUG
 static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
 
-static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+static INLINE p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
 {
 /* this gives better code than a lot of other versions I have tested.
 
