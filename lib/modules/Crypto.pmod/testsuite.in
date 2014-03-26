@@ -20,7 +20,7 @@ cond_resolv( Nettle.Proxy, [[
     b2->set_decrypt_key("A"*32);
     foreach( ({ Crypto.PAD_SSL, Crypto.PAD_ISO_10126,
                 Crypto.PAD_ANSI_X923, Crypto.PAD_PKCS7,
-                Crypto.PAD_ZERO }), int m )
+                Crypto.PAD_ZERO, Crypto.PAD_TLS }), int m )
     {
       for(int i=1; i<Crypto.AES->block_size(); i++) {
         string p = "x"*i;
@@ -115,7 +115,7 @@ cond_resolv( Nettle.Proxy, [[
   test_eval_error([[
     object b = Crypto.Buffer(Crypto.AES);
     b->set_encrypt_key("A"*32);
-    b->pad(5);
+    b->pad(6);
   ]])
   test_eval_error([[
     object b = Crypto.Buffer(Crypto.AES);
@@ -145,11 +145,11 @@ cond_resolv( Nettle.Proxy, [[
   ]],[[ ",1234512345123451,,234512345" ]])
 ]])
 
-test_eval_error([[
+test_any([[
   object b = Crypto.Buffer(Crypto.AES);
   b->set_decrypt_key("A"*16);
-  b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
-]])
+  return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
+]], "AA")
 test_eval_error([[
   object b = Crypto.Buffer(Crypto.AES);
   b->set_decrypt_key("A"*16);
@@ -159,6 +159,11 @@ test_eval_error([[
   object b = Crypto.Buffer(Crypto.AES);
   b->set_decrypt_key("A"*16);
   b->unpad("\362\237""7r\302% \360\276\201\316#<W4\231", Crypto.PAD_PKCS7);
+]])
+test_eval_error([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5", Crypto.PAD_TLS);
 ]])
 
 

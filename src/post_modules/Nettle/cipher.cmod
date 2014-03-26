@@ -2478,6 +2478,7 @@ PIKECLASS GCM
 #define PAD_ANSI_X923  2
 #define PAD_PKCS7      3
 #define PAD_ZERO       4
+#define PAD_TLS        5
 
 /*! @class Proxy
  *! Acts as a buffer so that data can be fed to a cipher in blocks
@@ -2702,6 +2703,7 @@ PIKECLASS Proxy {
    *!     Pads according to ISO 10126, which means filling all extra
    *!     space with random data and putting the size of the
    *!     non-payload data last.
+   *!   @value Crypto.PAD_TLS
    *!   @value Crypto.PAD_SSL
    *!     Pads according to RFC 5246 section 6.2.3.2, meaning that all
    *!     extra space is filled with the size of the padding. Note
@@ -2740,6 +2742,7 @@ PIKECLASS Proxy {
     switch(m)
     {
     case PAD_SSL:
+    case PAD_TLS:
       size--;
       break;
     case PAD_ZERO:
@@ -2756,6 +2759,7 @@ PIKECLASS Proxy {
       default:
         Pike_error("Unknown method.\n");
       case PAD_SSL:
+      case PAD_TLS:
         /* TLS 1.1 and forward */
         THIS->backlog[i] = size;
         break;
@@ -2792,12 +2796,15 @@ PIKECLASS Proxy {
    *! data is not automatically memory scrubbed, unless
    *! @[String.secure] has been called on the data.
    *!
-   *! This performs the reverse operation of @[pad()].
+   *! This performs the reverse operation of @[pad()]. The padding
+   *! will be verified to be correct, if possible. If not, an
+   *! exception is thrown.
    *!
    *! @param method
    *! The type of padding that was applied to the original buffer.
    *! @int
    *!   @value Crypto.PAD_SSL
+   *!   @value Crypto.PAD_TLS
    *!   @value Crypto.PAD_ISO_10126
    *!   @value Crypto.PAD_ANSI_X923
    *!   @value Crypto.PAD_PKCS7
@@ -2832,7 +2839,7 @@ PIKECLASS Proxy {
     str = Pike_sp[-1].u.string;
 
     bytes = str->str[len -1];
-    if( m==PAD_SSL ) bytes++;
+    if( m==PAD_SSL || m==PAD_TLS ) bytes++;
 
     if (bytes > THIS->block_size)
       Pike_error("Invalid padding (%d > %d)\n",
@@ -2844,11 +2851,12 @@ PIKECLASS Proxy {
       Pike_error("Unknown method.\n");
     case PAD_ISO_10126:
     case PAD_ZERO:
+    case PAD_SSL:
       break;
     case PAD_ANSI_X923:
       padding = 0;
       goto do_check;
-    case PAD_SSL:
+    case PAD_TLS:
       padding = bytes-1;
       goto do_check;
     case PAD_PKCS7:
@@ -2913,6 +2921,7 @@ cipher_init(void)
   ADD_INT_CONSTANT("PAD_ANSI_X923", PAD_ANSI_X923, 0);
   ADD_INT_CONSTANT("PAD_PKCS7",     PAD_PKCS7,     0);
   ADD_INT_CONSTANT("PAD_ZERO",      PAD_ZERO,      0);
+  ADD_INT_CONSTANT("PAD_TLS",       PAD_TLS,       0);
 }
 
 void
