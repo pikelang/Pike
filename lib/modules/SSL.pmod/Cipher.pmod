@@ -22,7 +22,7 @@ class CipherAlgorithm {
   //! Return the block size for this crypto.
 
   optional string crypt(string);
-  optional string unpad(string);
+  optional string unpad(string,int);
   optional string pad(int);
 
   optional this_program set_iv(string);
