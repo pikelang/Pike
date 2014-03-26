@@ -597,7 +597,9 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	RETURN (0);
       }, 0);
 
-    if (close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED)
+    if (dont_throw) {
+      close_packet_send_state = CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR;
+    } else if (close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED)
       close_packet_send_state = CLOSE_PACKET_SCHEDULED;
 
     // Even in nonblocking mode we call direct_write here to try to
