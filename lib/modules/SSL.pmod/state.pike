@@ -84,7 +84,9 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	    alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
 	} else if (version >= PROTOCOL_TLS_1_0) {
 
-	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
+	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); })
+            alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
+          else if (!msg) {
 	    // TLS 1.1 requires a bad_record_mac alert on invalid padding.
             // Note that mac will still be calculated below even if
             // padding was wrong, to mitigate Lucky Thirteen attacks.
