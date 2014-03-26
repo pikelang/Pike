@@ -23,7 +23,7 @@ class CipherAlgorithm {
 
   optional string crypt(string);
   optional string unpad(string);
-  optional string pad(int|void);
+  optional string pad(int);
 
   optional this_program set_iv(string);
 }
