@@ -23,7 +23,7 @@ class CipherAlgorithm {
 
   optional string crypt(string);
   optional string unpad(string);
-  optional string pad();
+  optional string pad(int|void);
 
   optional this_program set_iv(string);
 }
@@ -1063,14 +1063,13 @@ class MAChmac_sha {
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
-
-    string s = sprintf("%~8s%c%c%c%2H",
-		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
-		       packet->content_type,
-		       packet->protocol_version[0],packet->protocol_version[1],
-		       packet->fragment);
-
-    return hmac(s);
+    hmac->update( sprintf("%~8s%c%{%c%}%2c",
+                          "\0"*8, seq_num->digits(256),
+                          packet->content_type,
+                          packet->protocol_version,
+                          sizeof(packet->fragment)));
+    hmac->update( packet->fragment );
+    return hmac->digest();
   }
 
   //!
