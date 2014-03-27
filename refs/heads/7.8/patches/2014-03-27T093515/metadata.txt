@@ -1,11 +1,11 @@
-subject: Pike 7.8:   * release number bumped to 851 by export.pike
+subject: Pike 7.8: SSL hang fix
 from: 9fc6d5cf19517ccf4efb5f453a6bc4700d5171a4
 to: f562044d9b69d265a58b827a0589f7e36b7eeca0
 originator: wellhardh@roxen.com
 depends: 2014-03-20T154200|pike/7.8.850
 restart: true
 
-  * release number bumped to 851 by export.pike
+This patch fixes:
 
   * SSL.sslfile: Make sure not to hang on destruct.
     
