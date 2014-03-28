@@ -465,6 +465,16 @@ class BitString
     return this;
   }
 
+  protected mixed cast(string to)
+  {
+    switch(to)
+    {
+    case "int":
+      return Gmp.bignum(value,256)>>unused;
+    }
+    return UNDEFINED;
+  }
+
   protected string _sprintf(int t) {
     int size = sizeof(value)*8-unused;
     return t=='O' && sprintf("%O(%d %0"+size+"s)", this_program, size,
