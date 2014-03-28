@@ -102,7 +102,11 @@ class MySSLPort
   __deprecated__ void set_key(string skey)
   {
     tmp_key = Standards.PKCS.RSA.parse_private_key(skey) ||
-      Standards.PKCS.DSA.parse_private_key(skey);
+      Standards.PKCS.DSA.parse_private_key(skey) ||
+#if constant(Crypto.ECC.Curve)
+      Standards.PKCS.ECDSA.parse_private_key(skey) ||
+#endif
+      0;
     if( tmp_key && tmp_cert )
       add_cert( tmp_key, tmp_cert );
   }
