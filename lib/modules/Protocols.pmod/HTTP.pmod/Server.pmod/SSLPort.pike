@@ -78,18 +78,36 @@ class MySSLPort
   //!
   void set_default_keycert()
   {
-    Crypto.Sign private_key = Crypto.RSA();
-    private_key->generate_key( 4096 );
+    foreach(({ Crypto.RSA(), Crypto.DSA(),
+#if constant(Crypto.ECC.Curve)
+	       Crypto.ECC.SECP_521R1.ECDSA(),
+#endif
+	    }), Crypto.Sign private_key) {
+      private_key->set_random(Crypto.Random.random_string);
+      switch(private_key->name()) {
+      case "RSA":
+	private_key->generate_key(4096);
+	break;
+      case "DSA":
+	private_key->generate_key(4096, 160);
+	break;
+      default:
+	// ECDSA.
+	private_key->generate_key();
+	break;
+      }
 
-    mapping a = ([
-      "organizationName" : "Pike TLS server",
-      "commonName" : "*",
-    ]);
+      mapping a = ([
+	"organizationName" : "Pike TLS server",
+	"commonName" : "*",
+      ]);
 
-    add_cert( private_key,
-      ({
-        Standards.X509.make_selfsigned_certificate(private_key, 3600*24*365, a)
-      }) );
+      add_cert( private_key,
+		({
+		  Standards.X509.make_selfsigned_certificate(private_key,
+							     3600*24*365, a)
+		}) );
+    }
   }
 
 
