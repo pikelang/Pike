@@ -59,7 +59,11 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
 	 version, packet->content_type, packet->fragment);
 #endif
-  
+
+  int hmac_size = session->truncated_hmac ? 10 :
+    session->cipher_spec?->hash_size;
+  int padding;
+
   if (crypt)
   {
 #ifdef SSL3_DEBUG_CRYPT
@@ -75,9 +79,21 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
     } else {
       switch(session->cipher_spec->cipher_type) {
       case CIPHER_stream:
+
+        // If data is too small, we can safely abort early.
+        if( sizeof(msg) < hmac_size+1 )
+          return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+
 	msg = crypt->crypt(msg);
 	break;
+
       case CIPHER_block:
+
+        // If data is too small or doesn't match block size, we can
+        // safely abort early.
+        if( sizeof(msg) < hmac_size+1 || sizeof(msg) % crypt->block_size() )
+          return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+
 	if(version == PROTOCOL_SSL_3_0) {
 	  // crypt->unpad() performs decrypt.
 	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
@@ -94,7 +110,9 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	  }
 	}
 	break;
+
       case CIPHER_aead:
+
 	// NB: Only valid in TLS 1.2 and later.
 	// The message consists of explicit_iv + crypted-msg + digest.
 	string iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
@@ -123,6 +141,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
       }
     }
     if (!msg) msg = packet->fragment;
+    padding = sizeof(packet->fragment) - sizeof(msg);
     packet->fragment = msg;
   }
 
@@ -144,11 +163,31 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying mac verification...\n");
 #endif
-    int hmac_size = session->truncated_hmac?10:session->cipher_spec->hash_size;
     int length = sizeof(packet->fragment) - hmac_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
-    
+
+   /* NOTE: Perform some extra MAC operations, to avoid timing
+    *       attacks on the length of the padding.
+    *
+    *       This is to alleviate the "Lucky Thirteen" attack:
+    *       http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
+    *
+    * NOTE: The digest quanta size is 64 bytes for all
+    *       MAC-algorithms currently in use.
+    */
+    string junk = packet->fragment[<padding-1..];
+    if (!((sizeof(packet->fragment) +
+           mac->hash_header_size - session->cipher_spec->hash_size) & 63) ||
+        !(padding & 63)) {
+      // We're at the edge of a MAC block, so we need to
+      // pad junk with an extra MAC block of data.
+      //
+      // NB: data will have at least 64 bytes if it's not empty.
+      junk += packet->fragment[<64..];
+    }
+    junk = mac->hash_raw(junk);
+
     if (digest != mac->hash(packet, seq_num)[..hmac_size-1])
       {
 #ifdef SSL3_DEBUG
