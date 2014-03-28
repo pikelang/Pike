@@ -302,7 +302,7 @@ test_do([[
 ]])
 
 test_do([[
-  add_constant("client_msg", random_string(65536));
+  add_constant("client_msg", random_string(65519));
 ]])
 
 test_do([[
