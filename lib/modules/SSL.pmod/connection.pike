@@ -447,6 +447,7 @@ string|int got_data(string|int s)
 	 if (err)
 	   return err;
        }
+       break;
       default:
 	if (!handshake_finished)
 	{
