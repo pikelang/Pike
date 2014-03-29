@@ -186,7 +186,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
       // NB: data will have at least 64 bytes if it's not empty.
       junk += packet->fragment[<64..];
     }
-    junk = mac->hash(junk);
+    junk = mac->hash_raw(junk);
 
     if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
       {
