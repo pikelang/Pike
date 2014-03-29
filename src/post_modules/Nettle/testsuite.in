@@ -441,9 +441,9 @@ test_gcm(#"00000000000000000000000000000000
 
 ]])
 
-cond_resolv( Nettle.Proxy, [[
-  test_eval_error( Nettle.Proxy( class{} ) )
-  test_eval_error( object o=class{}(); Nettle.Proxy(o); )
+cond_resolv( Nettle.Buffer, [[
+  test_eval_error( Nettle.Buffer( class{} ) )
+  test_eval_error( object o=class{}(); Nettle.Buffer(o); )
   test_eval_error([[
     class A {
       int block_size() { return 0; }
@@ -452,7 +452,7 @@ cond_resolv( Nettle.Proxy, [[
       void set_decrypt_key(string key) { }
       string crypt(string data) {}
     };
-    Nettle.Proxy(A);
+    Nettle.Buffer(A);
   ]])
   test_eval_error([[
     class A {
@@ -461,7 +461,7 @@ cond_resolv( Nettle.Proxy, [[
       void set_decrypt_key(string key) { }
       string crypt(string data) {}
     };
-    Nettle.Proxy(A);
+    Nettle.Buffer(A);
   ]])
   test_do([[
     class A {
@@ -472,22 +472,22 @@ cond_resolv( Nettle.Proxy, [[
       int `()() { return 0; }
       string crypt(string data) {}
     };
-    Nettle.Proxy(A);
+    Nettle.Buffer(A);
   ]])
-  test_eq( Nettle.Proxy(Crypto.AES())->block_size(), 16)
-  test_eq( Nettle.Proxy(Crypto.AES)->block_size(), 16)
-  test_eq( Nettle.Proxy(Crypto.AES())->key_size(), 0)
-  test_eq( Nettle.Proxy(Crypto.AES)->key_size(), 0)
+  test_eq( Nettle.Buffer(Crypto.AES())->block_size(), 16)
+  test_eq( Nettle.Buffer(Crypto.AES)->block_size(), 16)
+  test_eq( Nettle.Buffer(Crypto.AES())->key_size(), 0)
+  test_eq( Nettle.Buffer(Crypto.AES)->key_size(), 0)
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES());
+    object proxy=Nettle.Buffer(Crypto.AES());
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->key_size();]], 32)
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES);
+    object proxy=Nettle.Buffer(Crypto.AES);
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->key_size();]], 32)
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES());
+    object proxy=Nettle.Buffer(Crypto.AES());
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     string r = "";
     foreach( "0123456789abcdefg"/1, string str )
@@ -495,7 +495,7 @@ cond_resolv( Nettle.Proxy, [[
     return r;
   ]], String.hex2string("b71a7f6d29d66bd468294ed9cfda2af1"))
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES);
+    object proxy=Nettle.Buffer(Crypto.AES);
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->crypt("123");
   ]], "")
@@ -510,7 +510,7 @@ test_do([[
 ]])
 ]])
 
-cond_resolv(Nettle.Proxy, [[
+cond_resolv(Nettle.Buffer, [[
   test_do([[
     object x = Crypto.Buffer (Crypto.AES);
     x->set_encrypt_key ("0" * 32);

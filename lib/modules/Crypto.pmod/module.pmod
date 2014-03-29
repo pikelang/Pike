@@ -111,7 +111,7 @@ class CBC {
 //!     }
 //!   }
 class Buffer {
-  inherit Nettle.Proxy;
+  inherit Nettle.Buffer;
 }
 
 //! @decl string(8bit) rot13(string(8bit) data)
