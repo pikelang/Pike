@@ -30,17 +30,20 @@ class CipherAlgorithm {
 
 //! Message Authentication Code interface.
 class MACAlgorithm {
+
+  //! Generates a header and creates a HMAC hash for the given
+  //! @[packet].
   //! @param packet
   //!   @[Packet] to generate a MAC hash for.
   //! @param seq_num
   //!   Sequence number for the packet in the stream.
   //! @returns
   //!   Returns the MAC hash for the @[packet].
-  string hash(object packet, Gmp.mpz seq_num);
+  string hash_packet(object packet, Gmp.mpz seq_num);
 
-  //! Hashes the data with the hash algorithm and retuns it as a raw
-  //! binary string.
-  string hash_raw(string data);
+  //! Creates a HMAC hash of the @[data] with the underlying hash
+  //! algorithm.
+  string hash(string data);
 
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
@@ -1002,13 +1005,13 @@ class MACsha
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 11;
 
-  string(0..255) hash_raw(string(0..255) data)
+  string(0..255) hash(string(0..255) data)
   {
     return algorithm->hash(data);
   }
 
   //!
-  string(0..255) hash(object packet, Gmp.mpz seq_num)
+  string(0..255) hash_packet(object packet, Gmp.mpz seq_num)
   {
     string s = sprintf("%~8s%c%2c",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
@@ -1018,14 +1021,14 @@ class MACsha
     h->update(pad_1);
     h->update(s);
     h->update(packet->fragment);
-    return hash_raw(secret + pad_2 + h->digest());
+    return hash(secret + pad_2 + h->digest());
   }
 
   //!
   string(0..255) hash_master(string(0..255) data)
   {
-    return hash_raw(secret + pad_2 +
-		hash_raw(data + secret + pad_1));
+    return hash(secret + pad_2 +
+		hash(data + secret + pad_1));
   }
 
   //!
@@ -1059,13 +1062,13 @@ class MAChmac_sha {
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 
-  string hash_raw(string data)
+  string hash(string data)
   {
     return hmac(data);
   }
 
   //!
-  string hash(object packet, Gmp.mpz seq_num) {
+  string hash_packet(object packet, Gmp.mpz seq_num) {
     hmac->update( sprintf("%~8s%c%{%c%}%2c",
                           "\0"*8, seq_num->digits(256),
                           packet->content_type,
