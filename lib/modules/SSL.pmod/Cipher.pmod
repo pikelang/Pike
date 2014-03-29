@@ -1010,12 +1010,15 @@ class MACsha
   //!
   string(0..255) hash(object packet, Gmp.mpz seq_num)
   {
-    string s = sprintf("%~8s%c%2c%s",
+    string s = sprintf("%~8s%c%2c",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
-		       packet->content_type, sizeof(packet->fragment),
-		       packet->fragment);
-    return hash_raw(secret + pad_2 +
-		    hash_raw(secret + pad_1 + s));
+		       packet->content_type, sizeof(packet->fragment));
+    Crypto.Hash.State h = algorithm();
+    h->update(secret);
+    h->update(pad_1);
+    h->update(s);
+    h->update(packet->fragment);
+    return hash_raw(secret + pad_2 + h->digest());
   }
 
   //!
