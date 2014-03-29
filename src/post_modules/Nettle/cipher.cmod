@@ -1705,7 +1705,7 @@ PIKECLASS CTR
     push_constant_text("CTR");
   }
 
-  static int CTR_State_program_fun_num;
+  static int Nettle_CTR_State_program_fun_num;
 
   /*! @decl State `()(program|object|function cipher, mixed ... args)
    *!
@@ -1714,7 +1714,7 @@ PIKECLASS CTR
    */
   PIKEFUN Nettle_Cipher_State `()(program|object|function cipher, mixed ... extras)
   {
-    apply_current(CTR_State_program_fun_num, args);
+    apply_current(Nettle_CTR_State_program_fun_num, args);
   }
 
   /*! @class State
