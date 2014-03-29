@@ -256,14 +256,20 @@ test_any_equal([[
   string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
 
   object t = Standards.X509.decode_certificate(c);
-  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":t->extensions, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
+  mapping ext = t->extensions;
+  foreach(ext; string id; object value) ext[id]=value->get_der();
+  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":ext, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
 ]],[[ ([
-  "version" : 1,
+  "version" : 3,
   "serial" : "5",
   "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.11)",
   "issuer" : "Test",
   "subject" : "Test",
-  "extensions" : ([]),
+  "extensions" : ([
+      "\6\3U\35\16": "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+      "\6\3U\35\17": "\3\3\a0\200",
+      "\6\3U\35\23": "0\3\1\1\377"
+  ]),
   "public_key": 1,
 ]) ]])
 
