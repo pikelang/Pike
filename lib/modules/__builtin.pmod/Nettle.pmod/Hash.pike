@@ -14,10 +14,10 @@
 string name();
 
 //! Returns the size of a hash digests.
-int digest_size();
+int(0..) digest_size();
 
 //! Returns the internal block size of the hash algorithm.
-int block_size();
+int(1..) block_size();
 
 //! This is the context for a single incrementally updated hash.
 //!
@@ -427,6 +427,16 @@ class HMAC
 
     if (length) return res[..length-1];
     return res;
+  }
+
+  int(0..) digest_size()
+  {
+    return global::digest_size();
+  }
+
+  int(1..) block_size()
+  {
+    return global::block_size();
   }
 
   //! Hashes the @[text] according to the HMAC algorithm and returns
