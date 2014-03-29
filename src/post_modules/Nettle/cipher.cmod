@@ -883,7 +883,7 @@ PIKECLASS DES
 }
 /*! @endclass DES */
 
-void f_DES3_fix_parity(INT32);
+void f_Nettle_DES3_fix_parity(INT32);
 
 static void
 pike_des3_set_key(void *c,
@@ -899,7 +899,7 @@ pike_des3_set_key(void *c,
     push_string(make_shared_binary_string(key, length));
     push_text("1234567");
     f_add(2);
-    f_DES3_fix_parity(1);
+    f_Nettle_DES3_fix_parity(1);
 
     MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8);
     pop_stack();
@@ -924,7 +924,7 @@ pike_des3_set_key(void *c,
 
   case 7+7+7:
     push_string(make_shared_binary_string(key, length));
-    f_DES3_fix_parity(1);
+    f_Nettle_DES3_fix_parity(1);
     MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
     pop_stack();
 
@@ -1090,10 +1090,10 @@ PIKECLASS DES3
         low_make_key(info->meta->key_size);
       } while( !des3_set_key(state->ctx,
                              (const uint8_t *)Pike_sp[-1].u.string->str) );
-      f_DES3_fix_parity(1);
+      f_Nettle_DES3_fix_parity(1);
 #else
       low_make_key(info->meta->key_size);
-      f_DES3_fix_parity(1);
+      f_Nettle_DES3_fix_parity(1);
 
       info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
 				  Pike_sp[-1].u.string->str, 0);
@@ -2530,7 +2530,7 @@ PIKECLASS Proxy {
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
   {
-    exit_Proxy_struct();
+    exit_Nettle_Proxy_struct();
     THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
@@ -2830,7 +2830,7 @@ PIKECLASS Proxy {
       args--;
     }
 
-    f_Proxy_crypt(1);
+    f_Nettle_Proxy_crypt(1);
     if (TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("crypt() did not return string.\n");
     if (Pike_sp[-1].u.string->len != len)
