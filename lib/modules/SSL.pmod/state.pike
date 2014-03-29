@@ -172,19 +172,17 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
     *
     *       This is to alleviate the "Lucky Thirteen" attack:
     *       http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
-    *
-    * NOTE: The digest quanta size is 64 bytes for all
-    *       MAC-algorithms currently in use.
     */
-    string junk = packet->fragment[<padding-1..];
+    int block_size = mac->block_size();
+    string pad_string = "\0"*block_size;
+    string junk = pad_string[<padding-1..];
     if (!((sizeof(packet->fragment) +
-           mac->hash_header_size - session->cipher_spec->hash_size) & 63) ||
-        !(padding & 63)) {
+           mac->hash_header_size - session->cipher_spec->hash_size) %
+          block_size ) ||
+        !(padding % block_size)) {
       // We're at the edge of a MAC block, so we need to
       // pad junk with an extra MAC block of data.
-      //
-      // NB: data will have at least 64 bytes if it's not empty.
-      junk += packet->fragment[<64..];
+      junk += pad_string;
     }
     junk = mac->hash_raw(junk);
 

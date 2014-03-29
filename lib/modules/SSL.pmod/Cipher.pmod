@@ -49,6 +49,9 @@ class MACAlgorithm {
   //! algorithm.
   string hash_raw(string data);
 
+  //! The block size of the underlying hash algorithm.
+  int block_size();
+
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 }
@@ -1032,6 +1035,11 @@ class MACsha
 		hash_raw(data + secret + pad_1));
   }
 
+  int(1..) block_size()
+  {
+    return algorithm->block_size();
+  }
+
   protected void create (string|void s)
   {
     secret = s || "";
@@ -1080,6 +1088,11 @@ class MAChmac_sha {
                           sizeof(packet->fragment)));
     hmac->update( packet->fragment );
     return hmac->digest();
+  }
+
+  int(1..) block_size()
+  {
+    return algorithm->block_size();
   }
 
   //!
