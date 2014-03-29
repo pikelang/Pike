@@ -40,6 +40,14 @@ constant CERT_BAD_SIGNATURE = 6;
 constant CERT_UNAUTHORIZED_CA = 7;
 #endif
 
+protected enum keyUsage {
+  digitalSignature  = (1<<0),
+  nonRepudiation    = (1<<1),
+  keyCertSign       = (1<<5),
+  cRLSign           = (1<<6),
+};
+
+
 //! Unique identifier for the certificate issuer.
 //!
 //! X.509v2 (deprecated).
@@ -894,6 +902,17 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
 		  c, h)->get_der();
 }
 
+//! Creates a certificate extension with the @[id] as identifier and
+//! @[ext] as the extension payload. If the @[critical] flag is set
+//! the extension will be marked as critical.
+Sequence make_extension(Identifier id, Object ext, void|int critical)
+{
+  array seq = ({ id });
+  if( critical )
+    seq += ({ Boolean(1) });
+  return Sequence( seq+({ OctetString(ext->get_der()) }) );
+}
+
 //! Creates a selfsigned certificate, i.e. where issuer and subject
 //! are the same entity. This entity is derived from the list of pairs
 //! in @[name], which is encoded into an distinguished_name by
@@ -912,7 +931,9 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
 //!   List of properties to create distinguished name from.
 //!
 //! @param extensions
-//!   List of extensions as ASN.1 structures.
+//!   List of extensions as ASN.1 structures. The extensions
+//!   subjectKeyIdentifier, keyUsage (flagged critical) and
+//!   basicConstraints (flagged critical) will automatically be added.
 //!
 //! @param h
 //!   The hash function to use for the certificate. Must be one of the
@@ -934,6 +955,28 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
   Sequence dn = Certificate.build_distinguished_name(name);
+
+  // Extensions mandated for Suite B Self-Signed CA Certificates, RFC
+  // 5759 4.5.1.
+#define ADD(X,Y,Z) extensions+=({ make_extension(Identifiers.ce_ids->X,Y,Z) })
+
+  if(!extensions) extensions = ({});
+
+  // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
+  // STRING part of the subjectPublicKey, it is only a suggestion.
+  ADD(subjectKeyIdentifier,
+      OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
+      0);
+  ADD(keyUsage,
+      BitString()->
+      set_from_ascii(sprintf("%09b", keyCertSign|cRLSign|digitalSignature)),
+      1);
+  ADD(basicConstraints,
+      Sequence(({Boolean(1)})),
+      1);
+
+#undef ADD
+
   return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
@@ -1014,10 +1057,11 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
   if(!tbs) return 0;
 
   multiset crit = tbs->critical + (<>);
+  int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
 
-  Object lookup(int num)
+  Object lookup(string id)
   {
-    string id = Identifiers.ce_id->append(num)->get_der();
+    id = Identifiers.ce_ids[id]->get_der();
     crit[id]=0;
     return tbs->extensions[id];
   };
@@ -1026,7 +1070,7 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
 
   // id-ce-basicConstraints is required for certificates with public
   // key used to validate certificate signatures. RFC 3280, 4.2.1.10.
-  Object c = lookup(19);
+  Object c = lookup("basicConstraints");
   if( !c || c->type_name!="SEQUENCE" || sizeof(c)<1 || sizeof(c)>2 ||
       c[0]->type_name!="BOOLEAN" ||
       !c[0]->value )
@@ -1034,30 +1078,47 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
     DBG("verify root: Bad or missing id-ce-basicConstraints.\n");
     return 0;
   }
-  // FIXME: Verify pathLenConstraint
+  Sequence s = [object(Sequence)]c;
+  if( sizeof(s)==2 && ( s[1]->type_name!="INTEGER" || 0 > s[1]->value ) )
+  {
+    // FIXME: Compare with actual path length and not 0.
+    DBG("verify root: Path length longer than pathLenConstraint.\n");
+    return 0;
+  }
 
   // id-ce-authorityKeyIdentifier is required, unless self signed. RFC
   // 3280 4.2.1.1
-  if( !lookup(35) && tbs->issuer->get_der() != tbs->subject->get_der() )
+  if( !lookup("authorityKeyIdentifier") && !self_signed )
   {
     DBG("verify root: Missing id-ce-authorityKeyIdentifier.\n");
     return 0;
   }
 
   // id-ce-subjectKeyIdentifier is required. RFC 3280 4.2.1.2
-  if( !lookup(14) )
+  if( !lookup("subjectKeyIdentifier") )
   {
     DBG("verify root: Missing id-ce-subjectKeyIdentifier.\n");
     return 0;
   }
 
   // id-ce-keyUsage is required. RFC 3280 4.2.1.3
-  c = lookup(15);
-  if( !c ) // FIXME: Look at usage bits
+  c = lookup("keyUsage");
+  if( !c || c->type_name!="BIT STRING" )
   {
     DBG("verify root: Missing id-ce-keyUsage.\n");
     return 0;
   }
+  keyUsage usage = (int)c;
+  if( !( usage & digitalSignature ) )
+  {
+    DBG("verify root: id-ce-keyUsage doesn't allow digitalSignature.\n");
+    return 0;
+  }
+  if( !( usage & keyCertSign ) ) // RFC 5759
+  {
+    return 0;
+  }
+
 
   // One or more critical extensions have not been processed.
   if( sizeof(crit) )
