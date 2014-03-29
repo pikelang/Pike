@@ -31,6 +31,14 @@ string usage = #"[options] <from> > <to>
 
    -v,--version	 Display the API version.
 
+   --api	 Set the API version.
+
+   -b,--base	 Set the base name for the file.
+
+   -o,--out	 Set the output filename.
+
+   -w,--warnings Enable warnings.
+
  The input can look something like this:
 
  DECLARATIONS
@@ -2730,6 +2738,8 @@ int main(int argc, array(string) argv)
 {
   mixed x;
 
+  string base = "";
+
   warnings = 1;
   api = (int)precompile_api_version;
 
@@ -2742,6 +2752,7 @@ int main(int argc, array(string) argv)
       ({ "output",     Getopt.HAS_ARG,      "-o,--out"/"," }),
       ({ "version",    Getopt.NO_ARG,       "-v,--version"/"," }),
       ({ "warnings",   Getopt.NO_ARG,       "-w,--warnings"/"," }),
+      ({ "base",       Getopt.HAS_ARG,      "-b,--base"/"," }),
    })), array opt ) {
     switch(opt[0]) {
     case "version":
@@ -2802,6 +2813,9 @@ int main(int argc, array(string) argv)
       break;
     case "output":
       outpath = opt[1];
+      break;
+    case "base":
+      base = opt[1];
       break;
     }
   }
@@ -2880,7 +2894,7 @@ int main(int argc, array(string) argv)
 
   x = recursive(allocate_strings, x);
 
-  ParseBlock tmp=ParseBlock(x,"","");
+  ParseBlock tmp=ParseBlock(x, base, "");
 
   tmp->declarations += ({
     "\n\n"
