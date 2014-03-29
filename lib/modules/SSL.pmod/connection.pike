@@ -447,6 +447,18 @@ string|int got_data(string|int s)
 	 if (err)
 	   return err;
        }
+      default:
+	if (!handshake_finished)
+	{
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1]));
+	  return -1;
+	}
+	// RFC 4346 6:
+	//   If a TLS implementation receives a record type it does not
+	//   understand, it SHOULD just ignore it.
+	SSL3_DEBUG_MSG("SSL.connection: Ignoring packet of type %s\n",
+		       fmt_constant("PACKET_", packet->content_type));
+	break;
       }
     }
   }
