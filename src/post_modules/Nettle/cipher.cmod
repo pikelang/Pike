@@ -210,7 +210,7 @@ PIKECLASS Cipher
     /* FIXME: Create should copy state from the other object, if
      * provided. */
 
-#define GET_INFO()	((struct Cipher_struct *)parent_storage(1))
+#define GET_INFO()	((struct Nettle_Cipher_struct *)parent_storage(1))
 
     /* Generate a random string of length @[size] on top of the stack. */
     static void low_make_key(INT32 size)
@@ -235,9 +235,9 @@ PIKECLASS Cipher
      */
     PIKEFUN object set_encrypt_key(string(0..255) key, void|int force)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
-      struct Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
 
       if (!THIS->ctx || !info->meta)
@@ -264,9 +264,9 @@ PIKECLASS Cipher
      */
     PIKEFUN object set_decrypt_key(string(0..255) key, void|int force)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
-      struct Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
       
       if (!THIS->ctx || !info->meta)
@@ -297,14 +297,14 @@ PIKECLASS Cipher
     PIKEFUN string(0..255) make_key()
       optflags OPT_EXTERNAL_DEPEND;
     {
-      struct Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
 
       low_make_key(info->meta->key_size);
 
       stack_dup();
       Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
-      apply_current(f_Cipher_State_set_encrypt_key_fun_num, 1);
+      apply_current(f_Nettle_Cipher_State_set_encrypt_key_fun_num, 1);
       pop_stack();
     }
 
@@ -323,7 +323,7 @@ PIKECLASS Cipher
     PIKEFUN string(0..255) crypt (string(0..255) data)
       optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     {
-      struct Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_struct *info = GET_INFO();
       struct pike_string *s;
       assert(info);
 
@@ -354,7 +354,7 @@ PIKECLASS Cipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Cipher_name_fun_num, args);
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
     }
 
     /*! @decl int(0..) key_size(void)
@@ -380,7 +380,7 @@ PIKECLASS Cipher
     PIKEFUN int(0..) block_size()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Cipher_block_size_fun_num, args);
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     INIT
@@ -394,7 +394,7 @@ PIKECLASS Cipher
     {
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
-	struct Cipher_struct *info = GET_INFO();
+	struct Nettle_Cipher_struct *info = GET_INFO();
 	assert(info);
 	assert(info->meta);
 	memset(THIS->ctx, 0, info->meta->context_size);
@@ -460,16 +460,16 @@ PIKECLASS ARCTWO
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Cipher;
+  INHERIT Nettle_Cipher;
 
   static const struct pike_cipher pike_arctwo =
     _PIKE_CIPHER(arctwo, ARCTWO);
 
   INIT
     {
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
       cipher->meta = &pike_arctwo;
     }
 
@@ -508,10 +508,10 @@ PIKECLASS ARCTWO
 		      1 + 42, 0, NULL);
 	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
 	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Cipher_State_set_encrypt_key_fun_num);
+						      f_Nettle_Cipher_State_set_encrypt_key_fun_num);
 	  f_ARCTWO_State_inherited_set_decrypt_key_fun_num =
 	    really_low_reference_inherited_identifier(NULL, 1,
-						      f_Cipher_State_set_decrypt_key_fun_num);
+						      f_Nettle_Cipher_State_set_decrypt_key_fun_num);
 	}
       }
     }
@@ -520,9 +520,9 @@ PIKECLASS ARCTWO
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->arctwo;
     }
 
@@ -547,7 +547,7 @@ PIKECLASS ARCTWO
      */
     PIKEFUN object set_encrypt_key(string(0..255) key, void|int(0..1024) ekb)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(key);
       if (!ekb) {
@@ -579,7 +579,7 @@ PIKECLASS ARCTWO
      */
     PIKEFUN object set_decrypt_key(string(0..255) key, void|int ekb)
       optflags OPT_SIDE_EFFECT;
-      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_CIPHER_STATE);
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(key);
       if (!ekb) {
@@ -751,7 +751,7 @@ PIKECLASS DES
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Cipher;
+  INHERIT Nettle_Cipher;
 
   INIT
     {
@@ -759,9 +759,9 @@ PIKECLASS DES
       /* FIXME: Ought to traverse the inherit graph for
        *        the current program.
        */
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
       cipher->meta = &pike_des;
     }
 
@@ -834,18 +834,18 @@ PIKECLASS DES
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->des;
     }
 
     PIKEFUN string(0..255) make_key()
     {
-      struct Cipher_struct *info = GET_INFO();
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       assert(info);
 
 #ifndef DES_WEAK_KEY
@@ -853,10 +853,10 @@ PIKECLASS DES
         low_make_key(info->meta->key_size);
       } while( !des_set_key(state->ctx,
                             (const uint8_t *)Pike_sp[-1].u.string->str) );
-      f_DES_fix_parity(1);
+      f_Nettle_DES_fix_parity(1);
 #else
       low_make_key(info->meta->key_size);
-      f_DES_fix_parity(1);
+      f_Nettle_DES_fix_parity(1);
 
       info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
 				  Pike_sp[-1].u.string->str, 0);
@@ -875,7 +875,7 @@ PIKECLASS DES
      */
     PIKEFUN string(0..255) fix_parity(string(0..255) key)
     {
-      apply_external(1, f_DES_fix_parity_fun_num, args);
+      apply_external(1, f_Nettle_DES_fix_parity_fun_num, args);
     }
   }
   /*! @endclass State */
@@ -982,7 +982,7 @@ PIKECLASS DES3
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Cipher;
+  INHERIT Nettle_Cipher;
 
   INIT
     {
@@ -990,9 +990,9 @@ PIKECLASS DES3
       /* FIXME: Ought to traverse the inherit graph for
        *        the current program.
        */
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
       cipher->meta = &pike_des3;
     }
 
@@ -1026,7 +1026,7 @@ PIKECLASS DES3
     for(i=0; i<3; i++) {
       push_int(0);
       array_index(&Pike_sp[-1], arr, i);
-      f_DES_fix_parity(1);
+      f_Nettle_DES_fix_parity(1);
     }
     free_array(arr);
 
@@ -1071,18 +1071,18 @@ PIKECLASS DES3
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->des3;
     }
 
     PIKEFUN string(0..255) make_key()
     {
-      struct Cipher_struct *info = GET_INFO();
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_struct *info = GET_INFO();
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       assert(info);
 
 #ifndef DES_WEAK_KEY
@@ -1137,16 +1137,16 @@ PIKECLASS SALSA20
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Cipher;
+  INHERIT Nettle_Cipher;
 
   static const struct pike_cipher pike_salsa20 =
     _PIKE_CIPHER(salsa20, SALSA20);
 
   INIT
     {
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
       cipher->meta = &pike_salsa20;
     }
 
@@ -1203,7 +1203,7 @@ PIKECLASS SALSA20
      *!   The same @[iv] should NEVER be reused with the same key!
      */
     PIKEFUN object set_iv(string(0..255) iv)
-      rawtype tFunc(tStr8, tObjImpl_CIPHER_STATE);
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(iv);
       if (iv->len != SALSA20_IV_SIZE)
@@ -1215,9 +1215,9 @@ PIKECLASS SALSA20
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->salsa20;
     }
   }
@@ -1249,17 +1249,17 @@ PIKECLASS SALSA20R12
 {
   /*! @decl inherit SALSA20
    */
-  INHERIT SALSA20;
+  INHERIT Nettle_SALSA20;
 
   static const struct pike_cipher pike_salsa20r12 =
     _PIKE_CIPHER(salsa20r12, SALSA20R12);
 
   INIT
     {
-      struct Cipher_struct *cipher;
+      struct Nettle_Cipher_struct *cipher;
       /* NB: We know that Cipher is the first inherit of SALSA20. */
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 2,
-			     Cipher_program);
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 2,
+			     Nettle_Cipher_program);
       cipher->meta = &pike_salsa20r12;
     }
 }
@@ -1465,7 +1465,7 @@ PIKECLASS CBC
 
   PIKEVAR object object
     flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-  CVAR struct Cipher_State_struct *crypt_state;
+  CVAR struct Nettle_Cipher_State_struct *crypt_state;
   CVAR unsigned INT8 *iv;
   CVAR INT32 block_size;
   CVAR INT32 mode;
@@ -1505,11 +1505,11 @@ PIKECLASS CBC
 
     f = find_identifier("crypt", o->prog);
     inh = INHERIT_FROM_INT(o->prog, f);
-    if (inh->prog == Cipher_State_program) {
+    if (inh->prog == Nettle_Cipher_State_program) {
       /* crypt() is from Nettle.Cipher.State.
        * Check if the context and crypt function are valid.
        */
-      THIS->crypt_state = (struct Cipher_State_struct *)
+      THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
 	get_inherit_storage(o, inh - o->prog->inherits);
     }
 
@@ -1712,7 +1712,7 @@ PIKECLASS CTR
    *! @returns
    *!   Returns a new @[State] object.
    */
-  PIKEFUN Cipher_State `()(program|object|function cipher, mixed ... extras)
+  PIKEFUN Nettle_Cipher_State `()(program|object|function cipher, mixed ... extras)
   {
     apply_current(CTR_State_program_fun_num, args);
   }
@@ -1752,7 +1752,7 @@ PIKECLASS CTR
 
     PIKEVAR object object
       flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-    CVAR struct Cipher_State_struct *crypt_state;
+    CVAR struct Nettle_Cipher_State_struct *crypt_state;
     CVAR unsigned INT8 *iv;
     CVAR INT32 block_size;
 
@@ -1804,11 +1804,11 @@ PIKECLASS CTR
 
       f = find_identifier("crypt", o->prog);
       inh = INHERIT_FROM_INT(o->prog, f);
-      if (inh->prog == Cipher_State_program) {
+      if (inh->prog == Nettle_Cipher_State_program) {
 	/* crypt() is from Nettle.Cipher.State.
 	 * Check if the context and crypt function are valid.
 	 */
-	THIS->crypt_state = (struct Cipher_State_struct *)
+	THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
 	  get_inherit_storage(o, inh - o->prog->inherits);
       }
 
@@ -2112,7 +2112,7 @@ PIKECLASS GCM
 
     PIKEVAR object object
       flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-    CVAR struct Cipher_State_struct *crypt_state;
+    CVAR struct Nettle_Cipher_State_struct *crypt_state;
     CVAR INT32 mode;
     CVAR INT32 dmode;
     CVAR struct gcm_key gcm_key;
@@ -2161,11 +2161,11 @@ PIKECLASS GCM
 
       f = find_identifier("crypt", o->prog);
       inh = INHERIT_FROM_INT(o->prog, f);
-      if (inh->prog == Cipher_State_program) {
+      if (inh->prog == Nettle_Cipher_State_program) {
 	/* crypt() is from Nettle.Cipher.State.
 	 * Check if the context and crypt function are valid.
 	 */
-	THIS->crypt_state = (struct Cipher_State_struct *)
+	THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
 	  get_inherit_storage(o, inh - o->prog->inherits);
       }
 

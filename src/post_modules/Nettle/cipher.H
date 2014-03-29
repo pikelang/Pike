@@ -12,16 +12,16 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit Cipher
   DOCEND()
-  INHERIT Cipher;
+  INHERIT Nettle_Cipher;
 
   static const struct pike_cipher cmod_CONCAT_EVAL(pike_, NETTLE_NAME) =
     _PIKE_CIPHER(NETTLE_NAME, PIKE_NAME);
 
   INIT
     {
-      struct Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Cipher_struct, 1,
-			     Cipher_program);
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
       cipher->meta = &cmod_CONCAT_EVAL(pike_, NETTLE_NAME);
     }
 
@@ -63,9 +63,9 @@ PIKECLASS PIKE_NAME
 
     INIT
     {
-      struct Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Cipher_State_struct, 1,
-			     Cipher_State_program);
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
       state->ctx = &THIS->NETTLE_NAME;
     }
   }

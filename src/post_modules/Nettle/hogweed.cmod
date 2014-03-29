@@ -391,7 +391,7 @@ PIKECLASS ECC_Curve
     INIT
     {
       const struct ecc_curve *curve =
-	(((const struct ECC_Curve_struct *)parent_storage(1))->curve);
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1))->curve);
       if (!curve) Pike_error("No curve selected.\n");
       ecc_point_init(&THIS->pub, curve);
       ecc_scalar_init(&THIS->key, curve);
@@ -400,7 +400,7 @@ PIKECLASS ECC_Curve
     EXIT
     {
       const struct ecc_curve *curve =
-	(((const struct ECC_Curve_struct *)parent_storage(1))->curve);
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1))->curve);
       if (!curve) return;
       ecc_point_clear(&THIS->pub);
       ecc_scalar_clear(&THIS->key);
@@ -414,7 +414,7 @@ PIKECLASS ECC_Curve
     PIKEFUN string(7bit) name()
     {
       ref_push_string(MK_STRING("ECDSA("));
-      apply_external(1, f_ECC_Curve_name_fun_num, 0);
+      apply_external(1, f_Nettle_ECC_Curve_name_fun_num, 0);
       ref_push_string(MK_STRING(")"));
       f_add(3);
     }
@@ -423,7 +423,7 @@ PIKECLASS ECC_Curve
      *!
      *! Get the elliptic curve that is in use.
      */
-    PIKEFUN object(ECC_Curve) get_curve()
+    PIKEFUN object(Nettle_ECC_Curve) get_curve()
     {
       struct external_variable_context loc;
       loc.o = Pike_fp->current_object;
