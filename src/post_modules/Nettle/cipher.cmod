@@ -2480,14 +2480,14 @@ PIKECLASS GCM
 #define PAD_ZERO       4
 #define PAD_TLS        5
 
-/*! @class Proxy
+/*! @class Buffer
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that don't correspond to cipher block sizes.
  *!
  *! @note
  *!   Use @[Crypto.Buffer] instead.
  */
-PIKECLASS Proxy {
+PIKECLASS Buffer {
   /*! @decl inherit __builtin.Nettle.Cipher
    */
   INHERIT "__builtin.Nettle.Cipher";
@@ -2520,7 +2520,7 @@ PIKECLASS Proxy {
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
    *!
-   *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
+   *! Initialize the Buffer wrapper with a cipher algorithm. If it is a
    *! program, an object will be instantiated with @[args] as
    *! arguments. If it is an object that doesn't conform to the cipher
    *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
@@ -2530,7 +2530,7 @@ PIKECLASS Proxy {
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
   {
-    exit_Nettle_Proxy_struct();
+    exit_Nettle_Buffer_struct();
     THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
@@ -2550,13 +2550,13 @@ PIKECLASS Proxy {
   }
 
   /*! @decl string(0..255) name()
-   *! Returns the string @expr{"Proxy(x)"@} where x is the
+   *! Returns the string @expr{"Buffer(x)"@} where x is the
    *! encapsulated algorithm.
    */
   PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
   {
-    push_constant_text("Proxy(");
+    push_constant_text("Buffer(");
     safe_apply(THIS->object, "name", 0);
     push_constant_text(")");
     f_add(3);
@@ -2830,7 +2830,7 @@ PIKECLASS Proxy {
       args--;
     }
 
-    f_Nettle_Proxy_crypt(1);
+    f_Nettle_Buffer_crypt(1);
     if (TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("crypt() did not return string.\n");
     if (Pike_sp[-1].u.string->len != len)
