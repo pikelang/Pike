@@ -69,31 +69,22 @@ object|string recv(string data, ProtocolVersion version)
     {
       content_type = buffer[0];
       int length;
-      if (! PACKET_types[content_type] )
+      if (SUPPORT_V2 &&
+	  /* Support only short SSL2 headers */
+	  (content_type & 0x80) && (buffer[2] == 1))
       {
-	if (SUPPORT_V2)
-	{
 #ifdef SSL3_DEBUG
-	  werror("SSL.packet: Receiving SSL2 packet %O\n", buffer[..4]);
+	werror("SSL.packet: Receiving SSL2 packet %O\n", buffer[..4]);
 #endif
-
-	  content_type = PACKET_V2;
-	  if ( (!(buffer[0] & 0x80)) /* Support only short SSL2 headers */
-	       || (buffer[2] != 1))
-	    return Alert(ALERT_fatal, ALERT_unexpected_message, version);
-	  length = ((buffer[0] & 0x7f) << 8 | buffer[1]
-		    - 3);
-	  protocol_version = values(buffer[3..4]);
-	}
-	else
-	  return Alert(ALERT_fatal, ALERT_unexpected_message, version,
-		       "SSL.packet->recv: invalid type\n", backtrace());
+	content_type = PACKET_V2;
+	length = ((buffer[0] & 0x7f) << 8 | buffer[1] - 3);
+	protocol_version = values(buffer[3..4]);
       } else {
 	protocol_version = values(buffer[1..2]);
 	sscanf(buffer[3..4], "%2c", length);
-	if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       }
+      if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
+	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       if (protocol_version[0] != PROTOCOL_major)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		     sprintf("SSL.packet->send: Version %d.%d "
@@ -131,7 +122,7 @@ string send()
     error( "Version %d is not supported\n", protocol_version[0] );
 #ifdef SSL3_DEBUG
   if (protocol_version[1] > PROTOCOL_minor)
-    werror("SSL.packet->send: received version %d.%d packet\n",
+    werror("SSL.packet->send: Sending version %d.%d packet\n",
 	   @ protocol_version);
 #endif
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
