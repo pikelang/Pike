@@ -12,12 +12,13 @@ PIKECLASS PIKE_NAME
 {
   DOCSTART() @decl inherit Hash
   DOCEND()
-  INHERIT Hash;
+  INHERIT Nettle_Hash;
 
   INIT
     {
-      struct Hash_struct *hash;
-      ASSIGN_CURRENT_STORAGE(hash, struct Hash_struct, 1, Hash_program);
+      struct Nettle_Hash_struct *hash;
+      ASSIGN_CURRENT_STORAGE(hash, struct Nettle_Hash_struct, 1,
+			     Nettle_Hash_program);
 
       werror(cmod_STRFY_EVAL(PIKE_NAME) "->INIT\n");
 
@@ -62,9 +63,9 @@ PIKECLASS PIKE_NAME
 
   INIT
     {
-      struct Hash_State_struct *instance;
-      ASSIGN_CURRENT_STORAGE(instance, struct Hash_State_struct, 1,
-			     Hash_State_program);
+      struct Nettle_Hash_State_struct *instance;
+      ASSIGN_CURRENT_STORAGE(instance, struct Nettle_Hash_State_struct, 1,
+			     Nettle_Hash_State_program);
 
       werror(cmod_STRFY_EVAL(PIKE_NAME) ".State->INIT\n");
 
