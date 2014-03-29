@@ -493,8 +493,8 @@ Packet change_cipher_packet()
 string(0..255) hash_messages(string(0..255) sender)
 {
   if(version[1] == PROTOCOL_SSL_3_0) {
-    return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
-      .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
+    return .Cipher.MACmd5(session->master_secret)->hash(handshake_messages + sender) +
+      .Cipher.MACsha(session->master_secret)->hash(handshake_messages + sender);
   }
   else if(version[1] <= PROTOCOL_TLS_1_1) {
     return session->cipher_spec->prf(session->master_secret, sender,
@@ -1429,10 +1429,6 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 			    backtrace()));
 	  return -1;
 	}
-// 	session->client_challenge =
-// 	  mac_md5(session->master_secret)->hash_master(handshake_messages) +
-// 	  mac_sha(session->master_secret)->hash_master(handshake_messages);
-// 	session->client_signature = data;
       }
       handshake_messages += raw;
       handshake_state = STATE_server_wait_for_finish;
