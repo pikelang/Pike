@@ -186,9 +186,9 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
       // NB: data will have at least 64 bytes if it's not empty.
       junk += packet->fragment[<64..];
     }
-    junk = mac->hash_raw(junk);
+    junk = mac->hash(junk);
 
-    if (digest != mac->hash(packet, seq_num)[..hmac_size-1])
+    if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
       {
 #ifdef SSL3_DEBUG
 	werror("Failed MAC-verification!!\n");
@@ -197,7 +197,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	werror("Expected digest: %O\n"
 	       "Calculated digest: %O\n"
 	       "Seqence number: %O\n",
-	       digest, mac->hash(packet, seq_num), seq_num);
+	       digest, mac->hash_packet(packet, seq_num), seq_num);
 #endif
 	alert = alert || Alert(ALERT_fatal, ALERT_bad_record_mac, version);
       }
@@ -232,11 +232,9 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
   }
 
   if (mac) {
-    if (session->truncated_hmac) {
-      digest = mac->hash(packet, seq_num)[..9];
-    } else {
-      digest = mac->hash(packet, seq_num);
-    }
+    digest = mac->hash_packet(packet, seq_num);
+    if (session->truncated_hmac)
+      digest = digest[..9];
   } else
     digest = "";
 
