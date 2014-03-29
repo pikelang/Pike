@@ -45,6 +45,10 @@ class MACAlgorithm {
   //! algorithm.
   string hash(string data);
 
+  //! Creates a normal hash of the @[data] using the underlying hash
+  //! algorithm.
+  string hash_raw(string data);
+
   //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
 }
@@ -1002,15 +1006,13 @@ class MACsha
   protected Crypto.Hash algorithm = Crypto.SHA1;
   protected string secret;
 
-  //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 11;
 
-  string(0..255) hash(string(0..255) data)
+  string(0..255) hash_raw(string(0..255) data)
   {
     return algorithm->hash(data);
   }
 
-  //!
   string(0..255) hash_packet(object packet, Gmp.mpz seq_num)
   {
     string s = sprintf("%~8s%c%2c",
@@ -1021,17 +1023,15 @@ class MACsha
     h->update(pad_1);
     h->update(s);
     h->update(packet->fragment);
-    return hash(secret + pad_2 + h->digest());
+    return hash_raw(secret + pad_2 + h->digest());
   }
 
-  //!
-  string(0..255) hash_master(string(0..255) data)
+  string(0..255) hash(string(0..255) data)
   {
-    return hash(secret + pad_2 +
-		hash(data + secret + pad_1));
+    return hash_raw(secret + pad_2 +
+		hash_raw(data + secret + pad_1));
   }
 
-  //!
   protected void create (string|void s)
   {
     secret = s || "";
@@ -1057,17 +1057,21 @@ class MACmd5 {
 class MAChmac_sha {
   inherit MACAlgorithm;
 
+  protected Crypto.Hash algorithm = Crypto.SHA1;
   protected Crypto.Hash.HMAC hmac;
 
-  //! The length of the header prefixed by @[hash()].
   constant hash_header_size = 13;
+
+  string hash_raw(string data)
+  {
+    return algorithm->hash(data);
+  }
 
   string hash(string data)
   {
     return hmac(data);
   }
 
-  //!
   string hash_packet(object packet, Gmp.mpz seq_num) {
     hmac->update( sprintf("%~8s%c%{%c%}%2c",
                           "\0"*8, seq_num->digits(256),
@@ -1080,7 +1084,7 @@ class MAChmac_sha {
 
   //!
   protected void create(string|void s) {
-    hmac = Crypto.SHA1.HMAC( s||"" );
+    hmac = algorithm->HMAC( s||"" );
   }
 }
 
@@ -1089,11 +1093,7 @@ class MAChmac_sha {
 //! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_md5 {
   inherit MAChmac_sha;
-
-  //!
-  protected void create(string|void s) {
-    hmac=Crypto.MD5.HMAC( s||"" );
-  }
+  protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
 //! HMAC using SHA256.
@@ -1101,11 +1101,7 @@ class MAChmac_md5 {
 //! This is the MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha256 {
   inherit MAChmac_sha;
-
-  //!
-  protected void create(string|void s) {
-    hmac=Crypto.SHA256.HMAC( s||"" );
-  }
+  protected Crypto.Hash algorithm = Crypto.SHA256;
 }
 
 #if constant(Crypto.SHA384)
@@ -1114,11 +1110,7 @@ class MAChmac_sha256 {
 //! This is a MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha384 {
   inherit MAChmac_sha;
-
-  //!
-  protected void create(string|void s) {
-    hmac=Crypto.SHA384.HMAC( s||"" );
-  }
+  protected Crypto.Hash algorithm = Crypto.SHA384;
 }
 #endif
 
@@ -1128,11 +1120,7 @@ class MAChmac_sha384 {
 //! This is a MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha512 {
   inherit MAChmac_sha;
-
-  //!
-  protected void create(string|void s) {
-    hmac=Crypto.SHA512.HMAC( s||"" );
-  }
+  protected Crypto.Hash algorithm = Crypto.SHA512;
 }
 #endif
 

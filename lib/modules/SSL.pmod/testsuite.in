@@ -16,12 +16,8 @@ return SSL.cipher && 1;
 
 test_do( add_constant( "S", String.string2hex ) )
 test_eq( S(SSL.Cipher.MACsha("foo")->hash("bar")),
-	 "62cdb7020ff920e5aa642c3d4066950dd1f01f4d" )
-test_eq( S(SSL.Cipher.MACsha("foo")->hash_master("bar")),
 	 "2e6eda2d36d2a2f4b5d7c28c920a0b679f17d76c" )
 test_eq( S(SSL.Cipher.MACmd5("foo")->hash("bar")),
-         "37b51d194a7513e45b56f6524f2d51f2" )
-test_eq( S(SSL.Cipher.MACmd5("foo")->hash_master("bar")),
          "c413fb96a80f160c25d0e61f5b5d8078" )
 test_eq( S(SSL.Cipher.MAChmac_sha("foo")->hash("bar")),
          "46b4ec586117154dacd49d664e5d63fdc88efb51" )
