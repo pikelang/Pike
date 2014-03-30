@@ -178,6 +178,14 @@ Packet server_hello_packet()
     extensions->put_var_string("", 2);
   }
 
+  if (session->heartbeat_mode) {
+    // RFC 6520
+    ADT.struct extension = ADT.struct();
+    extension->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    extensions->put_uint(EXTENSION_heartbeat, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
   if (has_application_layer_protocol_negotiation &&
       next_protocol)
   {
@@ -271,6 +279,15 @@ Packet client_hello()
     extension->put_uint(POINT_uncompressed, 1);
     extension->put_var_string(extension->pop_data(), 1);
     extensions->put_uint(EXTENSION_ec_point_formats, 2);
+    extensions->put_var_string(extension->pop_data(), 2);
+  }
+
+  // We always attempt to enable the heartbeat extension.
+  {
+    // RFC 6420
+    ADT.struct extension = ADT.struct();
+    extension->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    extensions->put_uint(EXTENSION_heartbeat, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   }
 
@@ -973,6 +990,27 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
               }
               break;
 
+	    case EXTENSION_heartbeat:
+	      {
+		int hb_mode;
+		if (extension_data->is_empty() ||
+		    !(hb_mode = extension_data->get_uint(1)) ||
+		    !extension_data->is_empty() ||
+		    ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
+		     (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
+		  // RFC 6520 2:
+		  // Upon reception of an unknown mode, an error Alert
+		  // message using illegal_parameter as its
+		  // AlertDescription MUST be sent in response.
+		  send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+				    version[1]));
+		}
+		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
+			       fmt_constant("HEARTBEAT_MODE_", hb_mode));
+		session->heartbeat_mode = hb_mode;
+	      }
+	      break;
+
 	    default:
 #ifdef SSL3_DEBUG
               foreach([array(string)]indices(.Constants), string id)
@@ -1581,6 +1619,28 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  case EXTENSION_server_name:
 	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
             break;
+
+	  case EXTENSION_heartbeat:
+	    {
+	      int hb_mode;
+	      if (extension_data->is_empty() ||
+		  !(hb_mode = extension_data->get_uint(1)) ||
+		  !extension_data->is_empty() ||
+		  ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
+		   (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
+		// RFC 6520 2:
+		// Upon reception of an unknown mode, an error Alert
+		// message using illegal_parameter as its
+		// AlertDescription MUST be sent in response.
+		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+				  version[1]));
+	      }
+	      SSL3_DEBUG_MSG("heartbeat extension: %s\n",
+			     fmt_constant("HEARTBEAT_MODE_", hb_mode));
+	      session->heartbeat_mode = hb_mode;
+	    }
+	    break;
+
 	  default:
 	    // RFC 5246 7.4.1.4:
 	    // If a client receives an extension type in ServerHello

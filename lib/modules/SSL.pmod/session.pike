@@ -127,6 +127,9 @@ int ecc_point_format = POINT_uncompressed;
 Crypto.ECC.Curve curve;
 #endif /* Crypto.ECC.Curve */
 
+//! Heartbeat mode.
+HeartBeatModeType heartbeat_mode = HEARTBEAT_MODE_disabled;
+
 //! Indicates if this session has the required server certificate keys
 //! set. No means that no or the wrong type of certificate was sent
 //! from the server.

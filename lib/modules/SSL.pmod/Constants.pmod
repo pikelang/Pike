@@ -1076,6 +1076,17 @@ constant ECC_CURVES = ([
 #endif
 ]);
 
+enum HeartBeatModeType {
+  HEARTBEAT_MODE_disabled = 0,
+  HEARTBEAT_MODE_peer_allowed_to_send = 1,
+  HEARTBEAT_MODE_peer_not_allowed_to_send = 1,
+};
+
+enum HeartBeatMessageType {
+  HEARTBEAT_MESSAGE_request = 1,
+  HEARTBEAT_MESSAGE_response = 2,
+};
+
 protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
   pkcs_der_to_sign_alg = ([
   // RSA

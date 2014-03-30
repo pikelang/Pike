@@ -128,6 +128,7 @@ void send_packet(object packet, int|void priority)
     priority = ([ PACKET_alert : PRI_alert,
 		  PACKET_change_cipher_spec : PRI_urgent,
 	          PACKET_handshake : PRI_urgent,
+		  PACKET_heartbeat : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
   SSL3_DEBUG_MSG("SSL.connection->send_packet: type %d, desc %d, pri %d, %O\n",
 		 packet->content_type, packet->description, priority,
@@ -285,6 +286,100 @@ int handle_change_cipher(int c)
     current_read_state = pending_read_state;
     expect_change_cipher = 0;
     return 0;
+  }
+}
+
+private Crypto.AES heartbeat_encode = Crypto.AES();
+private Crypto.AES heartbeat_decode = Crypto.AES();
+
+Packet heartbeat_packet(string s)
+{
+  Packet packet = Packet();
+  packet->content_type = PACKET_heartbeat;
+  packet->fragment = s;
+  return packet;
+}
+
+void send_heartbeat()
+{
+  if (!handshake_finished ||
+      (session->heartbeat_mode != HEARTBEAT_MODE_peer_allowed_to_send)) {
+    // We're not allowed to send heartbeats.
+    return;
+  }
+
+  if (!heartbeat_encode) {
+    // NB: We encrypt the payload with a random AES key
+    //     to reduce the amount of known plaintext in
+    //     the heartbeat masseages. This is needed now
+    //     that many cipher suites (such as GCM and CCM)
+    //     use xor with a cipher stream, to reduce risk
+    //     of revealing larger segments of the stream.
+    heartbeat_encode = Crypto.AES();
+    heartbeat_decode = Crypto.AES();
+    string heartbeat_key = random_string(16);
+    heartbeat_encode->set_encrypt_key(heartbeat_key);
+    heartbeat_decode->set_decrypt_key(heartbeat_key);
+  }
+
+  ADT.struct hb_msg = ADT.struct();
+  hb_msg->put_uint(HEARTBEAT_MESSAGE_request, 1);
+  hb_msg->put_uint(16, 2);
+  int now = gethrtime();
+  hb_msg->put_fix_string(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
+  // We pad to an even 64 bytes.
+  hb_msg->put_fix_string(random_string(64 - sizeof(hb_msg)));
+  send_packet(heartbeat_packet(hb_msg->get()));
+}
+
+void handle_heartbeat(string s)
+{
+  if (sizeof(s) < 19) return;	// Minimum size for valid heartbeats.
+  ADT.struct hb_msg = ADT.struct(s);
+  int hb_type = hb_msg->get_uint(1);
+  int hb_len = hb_msg->get_uint(2);
+
+  SSL3_DEBUG_MSG("SSL.connection: Heartbeat %s (%d bytes)",
+		 fmt_constant("HEARTBEAT_MESSAGE_", hb_type), hb_len);
+
+  // RFC 6520 4:
+  // If the payload_length of a received HeartbeatMessage is too
+  // large, the received HeartbeatMessage MUST be discarded silently.
+  if ((hb_len < 0) || ((hb_len + 16) > sizeof(hb_msg))) return;
+
+  string payload = hb_msg->get_fix_string(hb_len);
+  int pad_len = sizeof(hb_msg);
+
+  switch(hb_type) {
+  case HEARTBEAT_MESSAGE_request:
+    // RFC 6520 4:
+    // When a HeartbeatRequest message is received and sending a
+    // HeartbeatResponse is not prohibited as described elsewhere in
+    // this document, the receiver MUST send a corresponding
+    // HeartbeatResponse message carrying an exact copy of the payload
+    // of the received HeartbeatRequest.
+    hb_msg = ADT.struct();
+    hb_msg->put_uint(HEARTBEAT_MESSAGE_response, 1);
+    hb_msg->put_unit(hb_len, 2);
+    hb_msg->put_fix_string(payload);
+    hb_msg->put_fix_string(random_string(pad_len));
+    send_packet(heartbeat_packet(hb_msg->get()));
+    break;
+  case HEARTBEAT_MESSAGE_response:
+    // RFC 6520 4:
+    // If a received HeartbeatResponse message does not contain the
+    // expected payload, the message MUST be discarded silently.
+    if ((sizeof(payload) == 16) && heartbeat_decode) {
+      hb_msg = ADT.struct(heartbeat_decode->crypt(payload));
+      int a = hb_msg->get_uint(8);
+      int b = hb_msg->get_uint(8);
+      if (a != b) break;
+      int delta = gethrtime() - a;
+      SSL3_DEBUG_MSG("SSL.connection: Heartbeat roundtrip: %dus", delta);
+    }
+    break;
+  default:
+    break;
   }
 }
 
@@ -448,6 +543,29 @@ string|int got_data(string|int s)
 	   return err;
        }
        break;
+      case PACKET_heartbeat:
+	{
+	  // RFC 6520.
+	  SSL3_DEBUG_MSG("SSL.connection: Heartbeat.\n");
+	  if (!handshake_finished) {
+	    // RFC 6520 3:
+	    // The receiving peer SHOULD discard the message silently,
+	    // if it arrives during the handshake.
+	    break;
+	  }
+	  if (!session->heartbeat_mode) {
+	    // RFC 6520 2:
+	    // If an endpoint that has indicated peer_not_allowed_to_send
+	    // receives a HeartbeatRequest message, the endpoint SHOULD
+	    // drop the message silently and MAY send an unexpected_message
+	    // Alert message.
+	    send_packet(Alert(ALERT_warning, ALERT_unexpected_message,
+			      version[1]));
+	    break;
+	  }
+	  handle_heartbeat(packet->fragment);
+	}
+	break;
       default:
 	if (!handshake_finished)
 	{
