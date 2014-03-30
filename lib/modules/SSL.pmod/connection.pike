@@ -289,8 +289,8 @@ int handle_change_cipher(int c)
   }
 }
 
-private Crypto.AES heartbeat_encode = Crypto.AES();
-private Crypto.AES heartbeat_decode = Crypto.AES();
+private Crypto.AES heartbeat_encode;
+private Crypto.AES heartbeat_decode;
 
 Packet heartbeat_packet(string s)
 {
