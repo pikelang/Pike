@@ -4,6 +4,9 @@ OBJS=Shuffler.o $(SOURCE_OBJS)
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
 override:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
 	@$(MAKE) SOURCE_OBJS="`cat sources_to_compile`" all

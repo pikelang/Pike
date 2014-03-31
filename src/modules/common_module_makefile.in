@@ -41,14 +41,14 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .SUFFIXES:
 .SUFFIXES: .c .o .cmod .protos .m .mmod .cc .ccmod
 
-.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike Makefile
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
-.mmod.m: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+.mmod.m: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike Makefile
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
-.ccmod.cc: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+.ccmod.cc: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike Makefile
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 
 # GCC dumps core on some files @ OSF1
