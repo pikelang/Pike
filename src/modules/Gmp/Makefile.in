@@ -8,6 +8,9 @@ PRIME_LIMIT=1024
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
 @static_module_makefile@
 
 # UnixWare make needs help to find the source file...
