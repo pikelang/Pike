@@ -31,27 +31,6 @@ void my_accept_callback(object f)
 }
 #endif
 
-string my_certificate = MIME.decode_base64(
-  "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
-  "BAgTClRodWVyaW5nZW4xEDAOBgNVBAcTB0lsbWVuYXUxEzARBgNVBAoTClRVIEls\n"
-  "bWVuYXUxDDAKBgNVBAsTA1BNSTEUMBIGA1UEAxMLZGVtbyBzZXJ2ZXIwHhcNOTYw\n"
-  "NDMwMDUzNjU4WhcNOTYwNTMwMDUzNjU5WjBtMQswCQYDVQQGEwJERTETMBEGA1UE\n"
-  "CBMKVGh1ZXJpbmdlbjEQMA4GA1UEBxMHSWxtZW5hdTETMBEGA1UEChMKVFUgSWxt\n"
-  "ZW5hdTEMMAoGA1UECxMDUE1JMRQwEgYDVQQDEwtkZW1vIHNlcnZlcjBcMA0GCSqG\n"
-  "SIb3DQEBAQUAA0sAMEgCQQDBB6T7bGJhRhRSpDESxk6FKh3iKKrpn4KcDtFM0W6s\n"
-  "16QSPz6J0Z2a00lDxudwhJfQFkarJ2w44Gdl/8b+de37AgMBAAEwDQYJKoZIhvcN\n"
-  "AQEEBQADQQB5O9VOLqt28vjLBuSP1De92uAiLURwg41idH8qXxmylD39UE/YtHnf\n"
-  "bC6QS0pqetnZpQj1yEsjRTeVfuRfANGw\n");
-
-string my_key = MIME.decode_base64(
-  "MIIBOwIBAAJBAMEHpPtsYmFGFFKkMRLGToUqHeIoqumfgpwO0UzRbqzXpBI/PonR\n"
-  "nZrTSUPG53CEl9AWRqsnbDjgZ2X/xv517fsCAwEAAQJBALzUbJmkQm1kL9dUVclH\n"
-  "A2MTe15VaDTY3N0rRaZ/LmSXb3laiOgBnrFBCz+VRIi88go3wQ3PKLD8eQ5to+SB\n"
-  "oWECIQDrmq//unoW1+/+D3JQMGC1KT4HJprhfxBsEoNrmyIhSwIhANG9c0bdpJse\n"
-  "VJA0y6nxLeB9pyoGWNZrAB4636jTOigRAiBhLQlAqhJnT6N+H7LfnkSVFDCwVFz3\n"
-  "eygz2yL3hCH8pwIhAKE6vEHuodmoYCMWorT5tGWM0hLpHCN/z3Btm38BGQSxAiAz\n"
-  "jwsOclu4b+H8zopfzpAaoB8xMcbs0heN+GNNI0h/dQ==\n");
-
 class conn {
   import Stdio;
 
@@ -186,58 +165,36 @@ int main()
   return -17;
 #else
   Crypto.Sign key;
+  string certificate;
 
-#if 0
-  SSL3_DEBUG_MSG("Cert: '%s'\n", String.string2hex(my_certificate));
-  SSL3_DEBUG_MSG("Key:  '%s'\n", String.string2hex(my_key));
-#if 0
-  array raw_key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
-  object n = raw_key[1][1];
-  object e = raw_key[2][1];
-  object d = raw_key[3][1];
-  object p = raw_key[4][1];
-  object q = raw_key[5][1];
-
-  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
-	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
-
-  key = Crypto.RSA();
-  key->set_public_key(n, e);
-  key->set_private_key(d);
-#else /* !0 */
-  // FIXME: Is this correct?
-  key = Standards.PKCS.RSA.parse_private_key(my_key);
-#endif /* 0 */
-#else
   key = Crypto.RSA()->
     set_random(Crypto.Random.random_string)->generate_key(1024);
-  my_certificate =
+  certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-#endif
-  add_cert(key, ({ my_certificate }), ({ "*" }));
+
+  add_cert(key, ({ certificate }), ({ "*" }));
 
   key = Crypto.DSA()->
     set_random(Crypto.Random.random_string)->generate_key(1024, 160);
-  my_certificate =
+  certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-  add_cert(key, ({ my_certificate }));
+  add_cert(key, ({ certificate }));
 
 #if constant(Crypto.ECC.Curve)
   key = Crypto.ECC.SECP_521R1.ECDSA()->
     set_random(Crypto.Random.random_string)->generate_key();
-  my_certificate =
+  certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-  add_cert(key, ({ my_certificate }));
+  add_cert(key, ({ certificate }));
 #endif
 
   // Make sure all cipher suites are available.
