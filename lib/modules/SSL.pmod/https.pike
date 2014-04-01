@@ -82,13 +82,14 @@ class no_random {
   protected void create(string|void secret)
   {
     if (!secret)
-      secret = sprintf("Foo!%4c", time());
-    arcfour->set_encrypt_key(Crypto.SHA1->hash(secret));
+      secret = sprintf("%s%4c", random_string(32), time());
+    arcfour->set_encrypt_key(Crypto.SHA256.hash(secret));
+    read(1000);
   }
 
   string read(int size)
   {
-    return arcfour->crypt(replace(allocate(size), 0, "\021") * "");
+    return arcfour->crypt( "\021"*size );
   }
 }
 
@@ -167,8 +168,7 @@ int main()
   Crypto.Sign key;
   string certificate;
 
-  key = Crypto.RSA()->
-    set_random(Crypto.Random.random_string)->generate_key(1024);
+  key = Crypto.RSA()->generate_key(1024);
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
@@ -177,8 +177,7 @@ int main()
 
   add_cert(key, ({ certificate }), ({ "*" }));
 
-  key = Crypto.DSA()->
-    set_random(Crypto.Random.random_string)->generate_key(1024, 160);
+  key = Crypto.DSA()->generate_key(1024, 160);
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
