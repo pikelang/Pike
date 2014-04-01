@@ -318,70 +318,8 @@ PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
   push_text(hash);
 }
 
-#if 0
-
-/* @class LFib
- * The Donald Knuth Lagged Fibonacci pseudo random number generator.
- * This is @b{not@} a source for cryptographic randomness. Use
- * @[Crypto.Yarrow] instead.
- */
-PIKECLASS LFib
-{
-  CVAR struct knuth_lfib_ctx *ctx;
-
-  INIT {
-    THIS->ctx = xalloc(sizeof(struct knuth_lfib_ctx));
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    free(THIS->ctx);
-  }
-
-  /* @decl void create(int seed)
-   * The Lfib generator must be seeded with a number.
-   */
-  PIKEFUN void create(int seed)
-    flags ID_PROTECTED;
-  {
-    knuth_lfib_init(THIS->ctx, seed);
-  }
-
-  /* @decl this_program reseed(int s)
-   * Reseed this object with seed @[s].
-   * @return
-   *   Returns the current object.
-   */
-  PIKEFUN object reseed(int s) {
-    knuth_lfib_init(THIS->ctx, s);
-    RETURN this_object();
-  }
-
-  /* Get one 32bit pseudorandom integer.
-   */
-  PIKEFUN int get() {
-    RETURN knuth_lfib_get(THIS->ctx);
-  }
-
-  /* Get a pseudorandom string of length @[len].
-   */
-  PIKEFUN string(0..255) get_string(int len) {
-    struct pike_string *s = begin_shared_string(len);
-    knuth_lfib_random(THIS->ctx, len, s->str);
-    push_string(end_shared_string(s));
-  }
-}
-
-/* @endclass
- */
-
-#endif
-
 /*! @endmodule
  */
-
-
 
 #endif /* HAVE_LIBNETTLE */
 
