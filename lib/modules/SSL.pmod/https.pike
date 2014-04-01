@@ -29,20 +29,6 @@ void my_accept_callback(object f)
   werror("Accept!\n");
   conn(accept());
 }
-
-protected string fmt_cipher_suites(array(int) s)
-{
-  String.Buffer b = String.Buffer();
-  mapping(int:string) ciphers = ([]);
-  foreach([array(string)]indices(SSL.Constants), string id)
-    if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
-	has_prefix(id, "SSL2_") )
-      ciphers[SSL.Constants[id]] = id;
-  foreach(s, int c)
-    b->sprintf("   %-6d: %010x: %s\n",
-	       c, cipher_suite_sort_key(c), ciphers[c]||"unknown");
-  return (string)b;
-}
 #endif
 
 string my_certificate = MIME.decode_base64(
@@ -256,7 +242,8 @@ int main()
 
   // Make sure all cipher suites are available.
   preferred_suites = get_suites(-1, 2);
-  SSL3_DEBUG_MSG("Cipher suites:\n%s", fmt_cipher_suites(preferred_suites));
+  SSL3_DEBUG_MSG("Cipher suites:\n%s",
+                 .Constants.fmt_cipher_suites(preferred_suites));
 
   SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
 
