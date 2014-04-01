@@ -248,15 +248,15 @@ int(0..1) is_supported_suite(int suite, int ke_mask, int version)
 //!   The SSL protocol version to use.
 //!
 //! Typical client extensions that also are used:
-//! @ul
-//!   @li @[signature_algorithms]
-//!     The set of signature algorithms tuples that
+//! @dl
+//!   @item @[signature_algorithms]
+//!     The set of signature algorithm tuples that
 //!     the client claims to support.
 //!
-//!   @li @[server_names]
+//!   @item @[server_names]
 //!     Server Name Indication extension from the client.
 //!     May be @expr{0@} (zero) if the client hasn't sent any SNI.
-//! @endul
+//! @enddl
 int select_cipher_suite(object context,
 			array(int) cipher_suites,
 			ProtocolVersion|int version)
