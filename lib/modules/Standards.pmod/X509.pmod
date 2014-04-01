@@ -967,10 +967,12 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   ADD(subjectKeyIdentifier,
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
       0);
+#if 0
   ADD(keyUsage,
       BitString()->
       set_from_ascii(sprintf("%09b", keyCertSign|cRLSign|digitalSignature)),
       1);
+#endif
   ADD(basicConstraints,
       Sequence(({Boolean(1)})),
       1);
