@@ -485,9 +485,11 @@ protected class DocParserClass {
     return "";
   }
 
-  protected mapping(string:string) itemArgHandler (string keyword, string arg)
+  protected string itemArgHandler (string keyword, string arg)
   {
-    return (["name": String.trim_all_whites (arg)]);
+    arg = String.trim_all_whites(arg);
+    if (arg == "") return "";
+    return xmlNode(arg);
   }
 
   protected mapping(string : string) standardArgHandler(string keyword, string arg)

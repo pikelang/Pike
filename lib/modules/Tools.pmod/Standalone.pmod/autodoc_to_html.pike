@@ -586,12 +586,17 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "item":
-      if(c->get_attributes()->name)
+      if(c->get_attributes()->name) {
 	ret->add("<dt>", c->get_attributes()->name, "</dt>\n");
-      if(c->count_children() &&
-	 ((flags & (Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_DEBUG)) ==
-	  Tools.AutoDoc.FLAG_DEBUG)) {
-	error( "dl item has a child.\n" );
+	if(c->count_children() &&
+	   ((flags & (Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_DEBUG)) ==
+	    Tools.AutoDoc.FLAG_DEBUG)) {
+	  error( "dl item has a child.\n" );
+	}
+      } else if (c->count_children()) {
+	ret->add("<dt>");
+	parse_text(c, ret);
+	ret->add("</dt>");
       }
       break;
 
