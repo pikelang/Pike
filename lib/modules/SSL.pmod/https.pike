@@ -186,8 +186,7 @@ int main()
   add_cert(key, ({ certificate }));
 
 #if constant(Crypto.ECC.Curve)
-  key = Crypto.ECC.SECP_521R1.ECDSA()->
-    set_random(Crypto.Random.random_string)->generate_key();
+  key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
