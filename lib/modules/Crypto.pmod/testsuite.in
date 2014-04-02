@@ -534,6 +534,7 @@ test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
 
+test_do( RSA->set_random(random_string); )
 test_eval_error( RSA->generate_key(88); )
 test_do( RSA->generate_key(128); )
 test_eval_error( RSA->generate_key(128, 6); )
@@ -570,7 +571,7 @@ test_do( DSA->set_public_key(
            "858fba33f44c06699630a76b030ee333", 16 )) )
 test_do( DSA->set_private_key(
   Gmp.mpz( "2070b3223dba372fde1c0ffc7b2e3b498b260614", 16 )) )
-test_do( DSA->set_random( Crypto.Random.random_string ) )
+test_do( DSA->set_random( random_string ) )
 test_equal( DSA->raw_sign(DSA->hash("abc", Crypto.SHA1),
          Gmp.mpz("358dad571462710f50e254cf1a376b2bdeaadfbf", 16))->digits(16),
          ({ "8bac1ab66410435cb7181f95b16ab97c92b341c0",
@@ -625,6 +626,7 @@ test_curve(SECP_224R1,"1.3.132.0.33")
 test_curve(SECP_256R1,"1.2.840.10045.3.1.7")
 test_curve(SECP_384R1,"1.3.132.0.34")
 test_curve(SECP_521R1,"1.3.132.0.35")
+test_do( Crypto.ECC.SECP_192R1.ECDSA()->generate_key())
 
 dnl Crypto.substitution
 

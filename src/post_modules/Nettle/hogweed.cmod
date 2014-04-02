@@ -395,6 +395,10 @@ PIKECLASS ECC_Curve
       if (!curve) Pike_error("No curve selected.\n");
       ecc_point_init(&THIS->pub, curve);
       ecc_scalar_init(&THIS->key, curve);
+      push_constant_text("Crypto.Random.random_string");
+      SAFE_APPLY_MASTER("resolv",1);
+      assign_svalue(&THIS->random, Pike_sp-1);
+      pop_stack();
     }
 
     EXIT
