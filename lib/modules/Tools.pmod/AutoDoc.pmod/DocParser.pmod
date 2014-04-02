@@ -485,10 +485,11 @@ protected class DocParserClass {
     return "";
   }
 
-  protected string itemArgHandler (string keyword, string arg)
+  protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
     arg = String.trim_all_whites(arg);
     if (arg == "") return "";
+    if (!has_value(arg, "@")) return ([ "name":arg ]);
     return xmlNode(arg);
   }
 
