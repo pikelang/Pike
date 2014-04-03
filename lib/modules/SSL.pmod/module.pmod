@@ -4,7 +4,7 @@
 //! RFC 2246 (TLS 1.0): "The primary goal of the TLS Protocol is to provide
 //! privacy and data integrity between two communicating applications."
 //!
-//! The clases that typical users need to use are
+//! The classes that typical users need to use are
 //! @dl
 //!   @item @[sslfile]
 //!     This is an object that attempts to behave as a @[Stdio.File]
@@ -17,7 +17,16 @@
 //!
 //!   @item @[context]
 //!     The configurated context for the @[sslfile].
+//!
+//!   @item @[Constants.CertificatePair]
+//!     A class for keeping track of certificate chains and their
+//!     private keys.
 //! @enddl
 //!
+//! The @[Constants] module also contains lots of constants that are
+//! used by the various APIs, as well as functions for formatting
+//! the constants for output.
+//!
 //! @seealso
-//!   @[sslfile], @[sslport], @[context]
+//!   @[sslfile], @[sslport], @[context], @[Constants.CertificatePair],
+//!   @[Constants]
