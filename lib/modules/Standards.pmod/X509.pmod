@@ -40,11 +40,15 @@ constant CERT_BAD_SIGNATURE = 6;
 constant CERT_UNAUTHORIZED_CA = 7;
 #endif
 
+// Bit 0 is the first bit in the BitString.
 protected enum keyUsage {
-  digitalSignature  = (1<<0),
-  nonRepudiation    = (1<<1),
-  keyCertSign       = (1<<5),
-  cRLSign           = (1<<6),
+  digitalSignature  = (1<<(7-0)),
+  nonRepudiation    = (1<<(7-1)),
+  keyEncipherment   = (1<<(7-2)),
+  dataEncipherment  = (1<<(7-3)),
+  keyAgreement      = (1<<(7-4)),
+  keyCertSign       = (1<<(7-5)),
+  cRLSign           = (1<<(7-6)),
 };
 
 
@@ -954,6 +958,7 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
 {
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
+
   Sequence dn = Certificate.build_distinguished_name(name);
 
   // Extensions mandated for Suite B Self-Signed CA Certificates, RFC
@@ -967,12 +972,9 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   ADD(subjectKeyIdentifier,
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
       0);
-#if 0
   ADD(keyUsage,
-      BitString()->
-      set_from_ascii(sprintf("%09b", keyCertSign|cRLSign|digitalSignature)),
+      BitString(Gmp.mpz(keyCertSign|cRLSign|digitalSignature)->digits(256)),
       1);
-#endif
   ADD(basicConstraints,
       Sequence(({Boolean(1)})),
       1);
