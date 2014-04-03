@@ -2,10 +2,36 @@
 #pragma strict_types
 #require constant(Crypto.Hash)
 
-//! Keeps the state that is shared by all SSL-connections for one
-//! server (or one port). It includes policy configuration, a server
-//! certificate, the server's private key(s), etc. It also includes
-//! the session cache.
+//! Keeps the state that is shared by all SSL-connections on a client,
+//! or for one port on a server. It includes policy configuration,
+//! the server or client certificate(s), the corresponding private key(s),
+//! etc. It also includes the session cache.
+//!
+//! The defaults are usually suitable for a client, but for a server
+//! some configuration is necessary.
+//!
+//! Typical use is to:
+//! @ul
+//!   @item
+//!     Call @[add_cert()] with the certificates belonging to the server
+//!     or client. Note that clients often don't have or need any
+//!     certificates, and also that certificate-less server operation is
+//!     possible, albeit discouraged and not enabled by default.
+//!
+//!     Suitable self-signed certificates can be created with
+//!     @[Standards.X509.make_selfsigned_certificate()].
+//!   @item
+//!     Optionally call @[get_suites()] to get a set of cipher_suites
+//!     to assign to @[preferred_suites]. This is only needed if the
+//!     default set of suites from @expr{get_suites(128, 1)@} isn't
+//!     satisfactory.
+//! @endul
+//!
+//! The initialized @[context] object is then passed to
+//! @[sslfile()->create()] or used as is embedded in @[sslport].
+//!
+//! @seealso
+//!   @[sslfile], @[sslport], @[Standards.X509]
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
