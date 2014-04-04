@@ -64,7 +64,6 @@ string(0..255) server_verify_data = "";
 //! The active @[Cipher.KeyExchange] (if any).
 .Cipher.KeyExchange ke;
 
-ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 array(int) version;
 array(int) client_version; /* Used to check for version roll-back attacks. */
 int reuse;
@@ -747,7 +746,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  return -1;
 	}
 	if ((client_version[0] != PROTOCOL_major) ||
-	    (client_version[1] < min_version)) {
+	    (client_version[1] < context->min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
 			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
@@ -1178,7 +1177,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
 
 	if ((client_version[0] != PROTOCOL_major) ||
-	    (client_version[1] < min_version)) {
+	    (client_version[1] < context->min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
 			 client_version[0], client_version[1]);
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
@@ -1510,7 +1509,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	return -1;
       }
 
-      if ((version[0] != PROTOCOL_major) || (version[1] < min_version)) {
+      if ((version[0] != PROTOCOL_major) ||
+	  (version[1] < context->min_version)) {
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
 		       version[0], version[1]);
 	version = client_version + ({});
@@ -1909,15 +1909,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 //!   Whether this is the server end of the connection or not.
 //! @param ctx
 //!   The context for the connection.
-//! @param min_version
-//!   Minimum version of SSL to support.
-//!   Defaults to @[Constants.PROTOCOL_SSL_3_0].
-//! @param max_version
-//!   Maximum version of SSL to support.
-//!   Defaults to @[Constants.PROTOCOL_minor].
-void create(int is_server, void|SSL.context ctx,
-	    void|ProtocolVersion min_version,
-	    void|ProtocolVersion max_version)
+void create(int is_server, void|SSL.context ctx)
 {
 
 #ifdef SSL3_PROFILING
@@ -1925,20 +1917,18 @@ void create(int is_server, void|SSL.context ctx,
   Stdio.stdout.write("New...\n");
 #endif
 
-  if (zero_type(max_version) || (max_version < PROTOCOL_SSL_3_0) ||
-      (max_version > PROTOCOL_minor)) {
-    max_version = PROTOCOL_minor;
+  if ((ctx->max_version < PROTOCOL_SSL_3_0) ||
+      (ctx->max_version > PROTOCOL_TLS_MAX)) {
+    ctx->max_version = PROTOCOL_TLS_MAX;
   }
 
-  if (zero_type(min_version) || (min_version < PROTOCOL_SSL_3_0)) {
-    min_version = PROTOCOL_SSL_3_0;
-  } else if (min_version > max_version) {
-    min_version = max_version;
+  if (ctx->min_version < PROTOCOL_SSL_3_0) {
+    ctx->min_version = PROTOCOL_SSL_3_0;
+  } else if (ctx->min_version > ctx->max_version) {
+    ctx->min_version = ctx->max_version;
   }
 
-  this_program::min_version = min_version;
-
-  version = ({ PROTOCOL_major, max_version });
+  version = ({ PROTOCOL_major, ctx->max_version });
   context = ctx;
 
   if (is_server)

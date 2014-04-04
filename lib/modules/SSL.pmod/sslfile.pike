@@ -456,9 +456,7 @@ protected THREAD_T op_thread;
   } while (0)
 
 protected void create (Stdio.File stream, SSL.context ctx,
-		       int|void is_client, int|void is_blocking,
-		       SSL.Constants.ProtocolVersion|void min_version,
-		       SSL.Constants.ProtocolVersion|void max_version)
+		       int|void is_client, int|void is_blocking)
 //! Create an SSL connection over an open @[stream].
 //!
 //! @param stream
@@ -474,14 +472,6 @@ protected void create (Stdio.File stream, SSL.context ctx,
 //! @param is_blocking
 //!   If is set then the stream is initially set in blocking
 //!   mode, nonblocking mode otherwise.
-//!
-//! @param min_version
-//!   The minimum minor version of SSL to support.
-//!   Defaults to @[PROTOCOL_SSL_3_0].
-//!
-//! @param max_version
-//!   The maximum minor version of SSL to support.
-//!   Defaults to @[PROTOCOL_minor].
 //!
 //! The backend used by @[stream] is taken over and restored after the
 //! connection is closed (see @[close] and @[shutdown]). The callbacks
@@ -522,7 +512,7 @@ protected void create (Stdio.File stream, SSL.context ctx,
     stream->set_id (1);
 
     packet_max_size = limit(1, ctx->packet_max_size, SSL.Constants.PACKET_MAX_SIZE);
-    conn = SSL.connection (!is_client, ctx, min_version, max_version);
+    conn = SSL.connection (!is_client, ctx);
 
     if(is_blocking) {
       set_blocking();
