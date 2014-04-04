@@ -248,7 +248,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE int min_magnitude(p_wchar2 c)
+static INLINE int min_magnitude(const p_wchar2 c)
 {
   if(c<0) return 2;
   if(c<256) return 0;
@@ -321,7 +321,7 @@ CONVERT(2,1)
 #define TWO_SIZES(X,Y) (((X)<<2)+(Y))
 
 void generic_memcpy(PCHARP to,
-                    PCHARP from,
+                    const PCHARP from,
                     ptrdiff_t len)
 {
 #ifdef PIKE_DEBUG
@@ -364,7 +364,7 @@ void generic_memcpy(PCHARP to,
   }
 }
 
-PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from)
+PMOD_EXPORT void pike_string_cpy(PCHARP to, const struct pike_string *from)
 {
   generic_memcpy(to,MKPCHARP_STR(from),from->len);
 }
@@ -377,7 +377,7 @@ PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from)
 #define DM(X)
 #endif
 
-PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
+PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s,
                                          ptrdiff_t pos)
 {
   if(pos > s->len || pos<0) {
@@ -436,20 +436,20 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
   DM(dump_memhdr_locations(yes,no,0));
 }
 
-static int bad_pointer(struct pike_string *s)
+static int bad_pointer(const struct pike_string *s)
 {
   return (((ptrdiff_t)s)&(sizeof(struct pike_string *)-1));
 }
 
-static int has_zero_refs(struct pike_string *s)
+static int has_zero_refs(const struct pike_string *s)
 {
   return s->refs<=0;
 }
-static int wrong_hash(struct pike_string *s)
+static int wrong_hash(const struct pike_string *s)
 {
   return s->hval != do_hash(s);
 }
-static int improper_zero_termination(struct pike_string *s)
+static int improper_zero_termination(const struct pike_string *s)
 {
   return index_shared_string(s,s->len);
 }
@@ -461,9 +461,9 @@ static int improper_zero_termination(struct pike_string *s)
  * This assumes that the string is minimized!!!! 
  */
 static struct pike_string *internal_findstring(const char *s,
-						      ptrdiff_t len,
-						      int size_shift,
-						      size_t hval)
+                                               ptrdiff_t len,
+                                               int size_shift,
+                                               size_t hval)
 {
   struct pike_string *curr;
 //,**prev, **base;
@@ -934,18 +934,6 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 
   return low_end_shared_string(s);
 }
-
-#if 0
-PMOD_EXPORT struct pike_string *defer_end_string(struct pike_string *s)
-{
-#ifdef STRING_DEFER_THRESHOLD
-  if (s->len > STRING_DEFER_THRESHOLD) {
-    return s;
-  }
-#endif
-  return end_shared_string(s);
-}
-#endif
 
 PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len)
 {
@@ -1544,8 +1532,8 @@ void dump_stralloc_strings(void)
 /*** String compare functions ***/
 
 /* does not take locale into account */
-int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
-			    char *b, ptrdiff_t blen)
+int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
+			    const char *b, ptrdiff_t blen)
 {
   int tmp;
   if(alen > blen)
