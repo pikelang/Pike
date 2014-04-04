@@ -435,7 +435,7 @@ class BitString
   }
 
   //! Sets the length of the bit string to @[len] number of bits.
-  int set_length(int len) {
+  this_program set_length(int len) {
     if (len)
     {
       value = value[..(len + 7)/8];
@@ -447,6 +447,7 @@ class BitString
       unused = 0;
       value = "";
     }
+    return this;
   }
 
   this_program decode_primitive(string(0..255) contents,
@@ -463,16 +464,6 @@ class BitString
       return 0;
     value = contents[1..];
     return this;
-  }
-
-  protected mixed cast(string to)
-  {
-    switch(to)
-    {
-    case "int":
-      return Gmp.bignum(value,256)>>unused;
-    }
-    return UNDEFINED;
   }
 
   protected string _sprintf(int t) {
