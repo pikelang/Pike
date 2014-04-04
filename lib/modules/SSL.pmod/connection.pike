@@ -48,16 +48,14 @@ inherit ADT.Queue : alert;
 inherit ADT.Queue : urgent;
 inherit ADT.Queue : application;
 
-void create(int is_server, void|SSL.context ctx,
-	    void|ProtocolVersion min_version,
-	    void|ProtocolVersion max_version)
+void create(int is_server, void|SSL.context ctx)
 {
   alert::create();
   urgent::create();
   application::create();
   current_read_state = SSL.state(this);
   current_write_state = SSL.state(this);
-  handshake::create(is_server, ctx, min_version, max_version);
+  handshake::create(is_server, ctx);
 }
 
 #if 0

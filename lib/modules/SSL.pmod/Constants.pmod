@@ -84,6 +84,8 @@ enum ProtocolVersion {
 //! Max supported SSL version.
 constant PROTOCOL_major = 3;
 constant PROTOCOL_minor = PROTOCOL_TLS_1_2;
+constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_2;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20; // RFC 5246

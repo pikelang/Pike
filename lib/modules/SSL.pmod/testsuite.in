@@ -381,8 +381,10 @@ test_do([[
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
-				     0, server_min, server_max);
+    server_ctx->min_version = server_min;
+    server_ctx->max_version = server_max;
+
+    SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED, 0);
 
     // We only have self-signed certificates, so all ECDH_RSA and
     // DH_RSA suites will fail prior to TLS 1.2, since they require
@@ -407,8 +409,9 @@ test_do([[
     SSL.context client_ctx = SSL.context();
     client_ctx->random = random_string;
     client_ctx->preferred_suites = suites;
-    SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0,
-                                     client_min, client_max);
+    client_ctx->min_version = client_min;
+    client_ctx->max_version = client_max;
+    SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0);
 
     int state;
 
