@@ -137,7 +137,7 @@ expanded code for the oldINDEX_CHARP.
   return ((p_wchar2 *)str)[pos];
 }
 
-static INLINE p_wchar2 index_shared_string(struct pike_string *s,  ptrdiff_t pos)
+static INLINE p_wchar2 index_shared_string(const struct pike_string *s,  ptrdiff_t pos)
 {
   return generic_extract(s->str,s->size_shift,pos);
 }
@@ -297,14 +297,13 @@ CONVERT(1,0)
 CONVERT(1,2)
 CONVERT(2,0)
 CONVERT(2,1)
-/*
-PMOD_EXPORT int generic_compare_strings(const void *a, ptrdiff_t alen, int asize,
-					const void *b, ptrdiff_t blen, int bsize);
-*/
+
+#undef CONVERT
+
 void generic_memcpy(PCHARP to,
-                    PCHARP from,
+                    const PCHARP from,
                     ptrdiff_t len);
-PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from);
+PMOD_EXPORT void pike_string_cpy(PCHARP to, const struct pike_string *from);
 struct pike_string *binary_findstring(const char *foo, ptrdiff_t l);
 struct pike_string *findstring(const char *foo);
 
@@ -342,8 +341,8 @@ int safe_debug_findstring(struct pike_string *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
 PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
-int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
-                            char *b, ptrdiff_t blen) ATTRIBUTE((pure));
+int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
+                            const char *b, ptrdiff_t blen) ATTRIBUTE((pure));
 ptrdiff_t generic_quick_binary_strcmp(const char *a,
                                       ptrdiff_t alen, int asize,
                                       const char *b,
@@ -547,8 +546,6 @@ static INLINE int string_has_null( struct pike_string *x )
 #define make_shared_binary_pcharp debug_make_shared_binary_pcharp
 
 #endif
-
-#undef CONVERT
 
 PMOD_EXPORT void f_sprintf(INT32 num_arg);
 void f___handle_sprintf_format(INT32 args);
