@@ -267,7 +267,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
                   int|void rounds)
 {
   function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
-  int salt_size = 16;
+  int(0..) salt_size = 16;
   int default_rounds = 5000;
 
   string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,

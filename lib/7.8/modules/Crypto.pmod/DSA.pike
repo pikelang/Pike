@@ -13,7 +13,7 @@ protected Gmp.mpz g; // Generator
 protected Gmp.mpz y; // Public key
 protected Gmp.mpz x; // Private key
 
-function(int:string) random = Crypto.Random.random_string;
+function(int(0..):string) random = Crypto.Random.random_string;
 
 
 // Accessors
@@ -52,7 +52,7 @@ this_program set_private_key(Gmp.mpz secret)
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string) r)
+this_program set_random(function(int(0..):string) r)
 {
   random = r;
   return this;
@@ -66,7 +66,7 @@ Gmp.mpz hash(string msg)
   
 protected Gmp.mpz random_number(Gmp.mpz n)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n);
+  return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)), 256) % n);
 }
 
 protected Gmp.mpz random_exponent()
