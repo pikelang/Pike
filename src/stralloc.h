@@ -143,7 +143,7 @@ static INLINE p_wchar2 index_shared_string(const struct pike_string *s,  ptrdiff
 }
 #else
 PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos);
-PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s, ptrdiff_t pos);
+PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t pos);
 #endif
 
 #define INDEX_CHARP(PTR,IND,SHIFT) generic_extract(PTR,SHIFT,IND)
