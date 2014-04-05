@@ -22,7 +22,7 @@ protected int size;
 protected Gmp.mpz p;
 protected Gmp.mpz q;
 
-protected function(int:string(8bit)) random = .Random.random_string;
+protected function(int(0..):string(8bit)) random = .Random.random_string;
 
 Gmp.mpz get_n() { return n; } //! Returns the RSA modulo (n).
 Gmp.mpz get_e() { return e; } //! Returns the RSA public exponent (e).
@@ -35,7 +35,7 @@ Gmp.mpz get_q() { return q; } //! Returns the second RSA prime (q), if known.
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string(8bit)) r)
+this_program set_random(function(int(0..):string(8bit)) r)
 {
   random = r;
   return this;
@@ -369,7 +369,7 @@ int(0..) key_size() { return [int(0..)](size*8); }
 //!       set in the object will be used.
 //!   @endint
 Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
-		function(int:string(8bit))|void random)
+		function(int(0..):string(8bit))|void random)
 {
   string(8bit) cookie = "";
 
@@ -386,7 +386,7 @@ Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
   case 2:
     if( !random ) random = this_program::random;
     do {
-      cookie += random(len-sizeof(cookie)) - "\0";
+      cookie += random([int(0..)](len-sizeof(cookie))) - "\0";
     }  while( sizeof(cookie)<len );
     break;
   default:

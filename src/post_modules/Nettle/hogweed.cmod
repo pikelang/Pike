@@ -40,7 +40,7 @@ static void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
 
 /*! @decl array(object(Gmp.mpz)) @
  *!         dsa_generate_keypair(int p_bits, int q_bits, @
- *!                              function(int:string(0..255)) rnd)
+ *!                              function(int(0..):string(0..255)) rnd)
  *!
  *! Generates a DSA key pair with @[p_bits] number of bits (sometimes
  *! referred to as L) for p, and @[q_bits] number of bits (sometimes
@@ -70,7 +70,7 @@ static void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
  *!   @endarray
  */
 PIKEFUN array(object(Gmp.mpz))
-  dsa_generate_keypair(int p_bits, int q_bits, function(int:string(0..255)) rnd)
+  dsa_generate_keypair(int p_bits, int q_bits, function(int(0..):string(0..255)) rnd)
 {
   struct dsa_public_key pub;
   struct dsa_private_key key;
@@ -106,7 +106,7 @@ PIKEFUN array(object(Gmp.mpz))
 
 /*! @decl array(object(Gmp.mpz)) @
  *!         rsa_generate_keypair(int bits, int e, @
- *!                              function(int:string(0..255)) rnd)
+ *!                              function(int(0..):string(0..255)) rnd)
  *!
  *! Generates an RSA key pair with a @[bits] sized modulus (n), using
  *! the provided value for @[e] and random function @[rnd].
@@ -124,7 +124,7 @@ PIKEFUN array(object(Gmp.mpz))
  *!   @endarray
  */
 PIKEFUN array(object(Gmp.mpz))
-  rsa_generate_keypair(int bits, int e, function(int:string(0..255)) rnd)
+  rsa_generate_keypair(int bits, int e, function(int(0..):string(0..255)) rnd)
 {
   struct rsa_public_key pub;
   struct rsa_private_key key;
@@ -246,7 +246,7 @@ PIKECLASS ECC_Curve
     push_int(THIS->field_size);
   }
 
-  /*! @decl Gmp.mpz new_scalar(function(int:string(8bit)) rnd)
+  /*! @decl Gmp.mpz new_scalar(function(int(0..):string(8bit)) rnd)
    *!
    *! @param rnd
    *!   Randomness function to use as source.
@@ -255,7 +255,7 @@ PIKECLASS ECC_Curve
    *!   Returns a random scalar suitable to use as an @[ECDSA] private key
    *!   or as an ECDH exponent.
    */
-  PIKEFUN object(Gmp.mpz) new_scalar(function(int:string(8bit)) rnd)
+  PIKEFUN object(Gmp.mpz) new_scalar(function(int(0..):string(8bit)) rnd)
   {
     struct ecc_scalar s;
     struct object *ret;
@@ -385,7 +385,7 @@ PIKECLASS ECC_Curve
     CVAR struct ecc_scalar key;
     CVAR struct ecc_point pub;
 
-    PIKEVAR function(int:string(0..255)) random
+    PIKEVAR function(int(0..):string(0..255)) random
       flags ID_PROTECTED;
 
     INIT
@@ -510,12 +510,12 @@ PIKECLASS ECC_Curve
       }
     }
 
-    /*! @decl void set_random(function(int:string(8bit)) r)
+    /*! @decl void set_random(function(int(0..):string(8bit)) r)
      *!
      *! Set the random function, used to generate keys and parameters,
      *! to the function @[r].
      */
-    PIKEFUN void set_random(function(int:string(8bit)) r)
+    PIKEFUN void set_random(function(int(0..):string(8bit)) r)
     {
       assign_svalue(&THIS->random, r);
     }

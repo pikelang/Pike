@@ -19,7 +19,7 @@ protected Gmp.mpz g; // Generator
 protected Gmp.mpz y; // Public key
 protected Gmp.mpz x; // Private key
 
-protected function(int:string(8bit)) random = .Random.random_string;
+protected function(int(0..):string(8bit)) random = .Random.random_string;
 
 Gmp.mpz get_p() { return p; } //! Returns the DSA modulo (p).
 Gmp.mpz get_q() { return q; } //! Returns the DSA group order (q).
@@ -29,7 +29,7 @@ Gmp.mpz get_x() { return x; } //! Returns the DSA private key (x).
 
 //! Sets the random function, used to generate keys and parameters, to
 //! the function @[r]. Default is @[Crypto.Random.random_string].
-this_program set_random(function(int:string(8bit)) r)
+this_program set_random(function(int(0..):string(8bit)) r)
 {
   random = r;
   return this;
@@ -332,7 +332,7 @@ Gmp.mpz hash(string(8bit) msg, .Hash h)
   
 protected Gmp.mpz random_number(Gmp.mpz n)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n);
+  return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)), 256) % n);
 }
 
 protected Gmp.mpz random_exponent()

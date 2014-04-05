@@ -163,7 +163,7 @@ Gmp.mpz rsa_pad(string message, int(1..2) type,
     if (random)
       cookie = replace(random(len), "\0", "\1");
     else
-      cookie = replace(Crypto.Random.random_string(len), "\0", "\1");
+      cookie = replace(Crypto.Random.random_string([int(0..)]len), "\0", "\1");
     break;
   default:
     error( "Unknown type.\n" );
@@ -308,7 +308,7 @@ Gmp.mpz get_prime(int bits, function(int:string) r)
 this_program generate_key(int(128..) bits, function(int:string)|void r)
 {
   if (!r)
-    r = Crypto.Random.random_string;
+    r = [function(int:string)]Crypto.Random.random_string;
   if (bits < 128)
     error( "Ridiculously small key.\n" );
 

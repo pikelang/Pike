@@ -281,7 +281,7 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
 //! default set to @[Crypto.Random.random_string].
-function(int:string(8bit)) random = Crypto.Random.random_string;
+function(int(0..):string(8bit)) random = Crypto.Random.random_string;
 
 //! The server's certificate, or a chain of X509.v3 certificates, with
 //! the server's certificate first and root certificate last.
