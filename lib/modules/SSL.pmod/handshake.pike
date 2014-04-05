@@ -121,8 +121,8 @@ Packet server_hello_packet()
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
   struct->put_uint(version, 2); /* version */
-  SSL3_DEBUG_MSG("Writing server hello, with version: %d.%d\n",
-                 version>>8, version & 0xff);
+  SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
+                 fmt_version(version));
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
@@ -729,11 +729,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
 	  compression_methods = input->get_var_uint_array(1, 1);
 	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: received hello\n"
-			 "version = %d.%d\n"
+			 "version = %s\n"
 			 "id=%O\n"
 			 "cipher suites:\n%s\n"
 			 "compression methods: %O\n",
-			 client_version>>8, client_version & 0xff,
+			 fmt_version(client_version),
 			 id, .Constants.fmt_cipher_suites(cipher_suites),
                          compression_methods);
 
@@ -747,38 +747,21 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
 	if (((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
 	    (client_version < context->min_version)) {
-	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 client_version>>8, client_version & 0xff);
+	  SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
+			 fmt_version(client_version));
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version,
 			    "SSL.handshake->handle_handshake: Unsupported version.\n",
 			    backtrace()));
 	  return -1;
 	}
 	if (client_version > version) {
-	  if (version != PROTOCOL_SSL_3_0) {
-	    SSL3_DEBUG_MSG("Falling back client from SSL 3.%d to "
-			   "SSL 3.%d (aka TLS 1.%d).\n",
-			   client_version & 0xff,
-			   version & 0xff, (version-1) & 0xff);
-	  } else {
-	    SSL3_DEBUG_MSG("Falling back client from SSL 3.%d "
-			   "(aka TLS 1.%d) to SSL 3.%d.\n",
-			   client_version & 0xff,
-			   (client_version-1) & 0xff, version & 0xff);
-	  }
+	  SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
+			 fmt_version(client_version),
+			 fmt_version(version));
 	} else if (version > client_version) {
-	  if (client_version != PROTOCOL_SSL_3_0) {
-	    SSL3_DEBUG_MSG("Falling back server from SSL 3.%d "
-			   "(aka TLS 1.%d) to "
-			   "SSL 3.%d (aka TLS 1.%d).\n",
-			   version & 0xff, (version-1) & 0xff,
-			   client_version & 0xff, (client_version-1) & 0xff);
-	  } else {
-	    SSL3_DEBUG_MSG("Falling back server from SSL 3.%d "
-			   " (aka TLS 1.%d) to SSL 3.%d.\n",
-			   version & 0xff,
-			   (version-1) & 0xff, client_version & 0xff);
-	  }
+	  SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
+			 fmt_version(version),
+			 fmt_version(client_version));
 	  version = client_version;
 	}
 
@@ -1035,9 +1018,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    // suites anyway. We attempt to fingerprint Safari 10.8
 	    // above by the set of extensions and the order it
 	    // sends them in.
-	    SSL3_DEBUG_MSG("Client version: %d.%d\n"
+	    SSL3_DEBUG_MSG("Client version: %s\n"
 			   "Number of extensions: %d\n",
-			   client_version>>8, client_version & 0xff,
+			   fmt_version(client_version),
 			   sizeof(remote_extensions));
 	    if (((client_version == PROTOCOL_TLS_1_2) &&
 		 ((sizeof(remote_extensions) != 4) ||
@@ -1183,39 +1166,21 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	if (((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
 	    (client_version < context->min_version)) {
-	  SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-			 client_version>>8, client_version & 0xff);
+	  SSL3_DEBUG_MSG("Unsupported version: %s.\n",
+			 fmt_version(client_version));
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version,
 			    "SSL.handshake->handle_handshake: Unsupported version.\n",
 			    backtrace()));
 	  return -1;
 	}
 	if (client_version > version) {
-	  if (version != PROTOCOL_SSL_3_0) {
-	    SSL3_DEBUG_MSG("Falling back client from SSL 3.%d "
-			   "(aka TLS 1.%d) to "
-			   "SSL 3.%d (aka TLS 1.%d).\n",
-			   client_version & 0xff, (client_version-1) & 0xff,
-			   version & 0xff, (version-1) & 0xff);
-	  } else {
-	    SSL3_DEBUG_MSG("Falling back client from SSL 3.%d "
-			   "(aka TLS 1.%d) to SSL 3.%d.\n",
-			   client_version & 0xff,
-			   (client_version-1) & 0xff, version & 0xff);
-	  }
+	  SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
+			 fmt_version(client_version),
+			 fmt_version(version));
 	} else if (version > client_version) {
-	  if (client_version != PROTOCOL_SSL_3_0) {
-	    SSL3_DEBUG_MSG("Falling back server from SSL 3.%d "
-			   "(aka TLS 1.%d) to "
-			   "SSL 3.%d (aka TLS 1.%d).\n",
-			   version & 0xff, (version-1) & 0xff,
-			   client_version & 0xff, (client_version-1) & 0xff);
-	  } else {
-	    SSL3_DEBUG_MSG("Falling back server from SSL 3.%d "
-			   "(aka TLS 1.%d) to SSL 3.%d.\n",
-			   version & 0xff,
-			   (version-1) & 0xff, client_version & 0xff);
-	  }
+	  SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
+			 fmt_version(version),
+			 fmt_version(client_version));
 	  version = client_version;
 	}
 
@@ -1521,8 +1486,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       if (((version & ~0xff) != PROTOCOL_SSL_3_0) ||
 	  (version < context->min_version)) {
-	SSL3_DEBUG_MSG("Unsupported version of SSL: %d.%d.\n",
-		       version >> 8, version & 0xff);
+	SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
+		       fmt_version(version));
 	version = client_version;
 	send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version,
 			  "SSL.handshake->handle_handshake: Unsupported version.\n",
@@ -1530,30 +1495,13 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	return -1;
       }
       if (client_version > version) {
-	if (version != PROTOCOL_SSL_3_0) {
-	  SSL3_DEBUG_MSG("Falling back client from SSL 3.%d "
-			 "(aka TLS 1.%d) to "
-			 "SSL 3.%d (aka TLS 1.%d).\n",
-			 client_version & 0xff, (client_version-1) & 0xff,
-			 version, (version-1) & 0xff);
-	} else {
-	  SSL3_DEBUG_MSG("Falling back client from SSL 3.%d "
-			 "(aka TLS 1.%d) to SSL 3.%d.\n",
-			 client_version & 0xff, (client_version-1) & 0xff,
-			 version & 0xff);
-	}
+	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
+		       fmt_version(client_version),
+		       fmt_version(version));
       } else if (version > client_version) {
-	if (client_version != PROTOCOL_SSL_3_0) {
-	  SSL3_DEBUG_MSG("Falling back server from SSL 3.%d (aka TLS 1.%d) to "
-			 "SSL 3.%d (aka TLS 1.%d).\n",
-			 version & 0xff, (version-1) & 0xff,
-			 client_version & 0xff, (client_version-1) & 0xff);
-	} else {
-	  SSL3_DEBUG_MSG("Falling back server from SSL 3.%d (aka TLS 1.%d) to "
-			 "SSL 3.%d.\n",
-			 version & 0xff, (version-1) & 0xff,
-			 client_version & 0xff);
-	}
+	SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
+		       fmt_version(version),
+		       fmt_version(client_version));
 	version = client_version;
       }
 
@@ -1567,11 +1515,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       }
       session->set_compression_method(compression_method);
       SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
-		     "version = %d.%d\n"
+		     "version = %s\n"
 		     "id=%O\n"
 		     "cipher suite: %O\n"
 		     "compression method: %O\n",
-		     version>>8, version & 0xff,
+		     fmt_version(version),
 		     id, cipher_suite, compression_method);
 
       int missing_secure_renegotiation = secure_renegotiation;
