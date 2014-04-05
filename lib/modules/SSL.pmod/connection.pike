@@ -87,17 +87,18 @@ protected object recv_packet(string data)
   if (left_over || !packet)
   {
     packet = Packet(2048);
-    res = packet->recv( (left_over || "")  + data, version[1]);
+    res = packet->recv( (left_over || "")  + data, version);
   }
   else
-    res = packet->recv(data, version[1]);
+    res = packet->recv(data, version);
 
   if (stringp(res))
   { /* Finished a packet */
     left_over = [string]res;
     if (current_read_state) {
-      SSL3_DEBUG_MSG("Decrypting packet.. version[1]="+version[1]+"\n");
-      return current_read_state->decrypt_packet(packet,version[1]);
+      SSL3_DEBUG_MSG("SSL.connection->recv_packet(): version=0x%x\n",
+		     version);
+      return current_read_state->decrypt_packet(packet, version);
     } else {
       SSL3_DEBUG_MSG("SSL.connection->recv_packet(): current_read_state is zero!\n");
       return 0;
@@ -173,7 +174,7 @@ string|int to_write()
     if (packet->level == ALERT_fatal)
       dying = 1;
   }
-  string res = current_write_state->encrypt_packet(packet,version[1])->send();
+  string res = current_write_state->encrypt_packet(packet, version)->send();
   if (packet->content_type == PACKET_change_cipher_spec)
     current_write_state = pending_write_state;
   return res;
@@ -182,7 +183,7 @@ string|int to_write()
 //! Initiate close.
 void send_close()
 {
-  send_packet(Alert(ALERT_warning, ALERT_close_notify, version[1]),
+  send_packet(Alert(ALERT_warning, ALERT_close_notify, version),
 	      PRI_application,);
 }
 
@@ -195,7 +196,7 @@ int send_streaming_data (string data)
   Packet packet = Packet();
   packet->content_type = PACKET_application_data;
   int size;
-  if ((!sent) && (version[1] < (PROTOCOL_TLS_1_1 & 0xff)) &&
+  if ((!sent) && (version < PROTOCOL_TLS_1_1) &&
       (current_write_state->session->cipher_spec->cipher_type ==
        CIPHER_block)) {
     // Workaround for the BEAST attack.
@@ -225,7 +226,7 @@ int handle_alert(string s)
   int description = s[1];
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		      "SSL.connection->handle_alert: invalid alert\n", backtrace()));
     return -1;
   }
@@ -251,7 +252,7 @@ int handle_alert(string s)
     } else {
       send_packet(Alert(ALERT_fatal, ((certificate_state == CERT_requested)
 			       ? ALERT_handshake_failure
-				: ALERT_unexpected_message), version[1]));
+				: ALERT_unexpected_message), version));
       return -1;
     }
   }
@@ -267,7 +268,7 @@ int handle_change_cipher(int c)
   if (!expect_change_cipher || (c != 1))
   {
     SSL3_DEBUG_MSG("SSL.connection: handle_change_cipher: Unexcepted message!");
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1]));
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version));
     return -1;
   }
   else
@@ -370,7 +371,7 @@ string|int got_data(string|int s)
 	   // For details see: http://www.g-sec.lu/practicaltls.pdf and
 	   // RFC 5746.
 	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
-			       version[1]));
+			       version));
 	   return -1;
 	 }
 	 if (expect_change_cipher)
@@ -385,7 +386,7 @@ string|int got_data(string|int s)
 	   // safe to assume that, since there might be routes past this,
 	   // maybe through the use of a version 2 hello message below.
 	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			     version[1]));
+			     version));
 	   return -1;
 	 }
 	 int err, len;
@@ -413,7 +414,7 @@ string|int got_data(string|int s)
 
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1]));
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version));
 	  return -1;
 	}
 	res += packet->fragment;
@@ -426,7 +427,7 @@ string|int got_data(string|int s)
 	   // Don't allow renegotiation using SSLv2 packets at all, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
 	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
-			       version[1]));
+			       version));
 	   return -1;
 	 }
 	 int err = handle_handshake(HANDSHAKE_hello_v2,

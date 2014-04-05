@@ -47,7 +47,8 @@ string master_secret;
 //! information about the certificate in use by the peer, such as issuing authority, and verification status.
 mapping cert_data;
 
-array(int) version;
+//! Negotiated protocol version.
+ProtocolVersion version;
 
 //! the peer certificate chain
 array(string) peer_certificate_chain;
@@ -137,8 +138,9 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-protected string generate_key_block(string client_random, string server_random,
-			  array(int) version)
+protected string generate_key_block(string client_random,
+				    string server_random,
+				    ProtocolVersion version)
 {
   int required = 2 * (
 #ifndef WEAK_CRYPTO_40BIT
@@ -194,8 +196,9 @@ protected void printKey(string name, string key) {
 //!     @elem string 5
 //!       Server write IV
 //!  @endarray
-array(string) generate_keys(string client_random, string server_random,
-			    array(int) version)
+array(string) generate_keys(string client_random,
+			    string server_random,
+			    ProtocolVersion version)
 {
   Struct key_data = Struct(generate_key_block(client_random, server_random,
 					      version));
@@ -205,7 +208,7 @@ array(string) generate_keys(string client_random, string server_random,
   werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
 	 client_random?String.string2hex(client_random):"NULL",
          server_random?String.string2hex(server_random):"NULL",
-         version[0], version[1]);
+         version>>8, version & 0xff);
 #endif
   // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
@@ -217,7 +220,7 @@ array(string) generate_keys(string client_random, string server_random,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
     // Exportable (ie weak) crypto.
-    if(version[1] == (PROTOCOL_SSL_3_0 & 0xff)) {
+    if(version == PROTOCOL_SSL_3_0) {
       // SSL 3.0
       keys[2] = Crypto.MD5.hash(key_data->get_fix_string(5) +
 				client_random + server_random)
@@ -233,7 +236,7 @@ array(string) generate_keys(string client_random, string server_random,
 				    client_random)[..cipher_spec->iv_size-1];
 	}
 
-    } else if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
+    } else if(version >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
       string client_wkey = key_data->get_fix_string(5);
       string server_wkey = key_data->get_fix_string(5);
@@ -300,12 +303,13 @@ array(string) generate_keys(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(string client_random, string server_random,
-				array(int) version)
+array(.state) new_server_states(string client_random,
+				string server_random,
+				ProtocolVersion version)
 {
   .state write_state = .state(this);
   .state read_state = .state(this);
-  array(string) keys = generate_keys(client_random, server_random,version);
+  array(string) keys = generate_keys(client_random, server_random, version);
 
   if (cipher_spec->mac_algorithm)
   {
@@ -321,7 +325,7 @@ array(.state) new_server_states(string client_random, string server_random,
     if (cipher_spec->iv_size)
     {
       if (cipher_spec->cipher_type != CIPHER_aead) {
-	if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
+	if (version >= PROTOCOL_TLS_1_1) {
 	  // TLS 1.1 and later have an explicit IV.
 	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
 	}
@@ -352,12 +356,13 @@ array(.state) new_server_states(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(string client_random, string server_random,
-				array(int) version)
+array(.state) new_client_states(string client_random,
+				string server_random,
+				ProtocolVersion version)
 {
   .state write_state = .state(this);
   .state read_state = .state(this);
-  array(string) keys = generate_keys(client_random, server_random,version);
+  array(string) keys = generate_keys(client_random, server_random, version);
   
   if (cipher_spec->mac_algorithm)
   {
@@ -373,7 +378,7 @@ array(.state) new_client_states(string client_random, string server_random,
     if (cipher_spec->iv_size)
     {
       if (cipher_spec->cipher_type != CIPHER_aead) {
-	if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
+	if (version >= PROTOCOL_TLS_1_1) {
 	  // TLS 1.1 and later have an explicit IV.
 	  read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
 	}

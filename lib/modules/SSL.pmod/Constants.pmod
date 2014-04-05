@@ -68,11 +68,11 @@
 //! @seealso
 //!   @[context], @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
 enum ProtocolVersion {
-  PROTOCOL_SSL_3_0	= 0x0300, //! SSL 3.0 - The original SSL3 draft version.
-  PROTOCOL_SSL_3_1	= 0x0301, //! SSL 3.1 - The RFC 2246 version of SSL.
-  PROTOCOL_TLS_1_0	= 0x0301, //! TLS 1.0 - The RFC 2246 version of TLS.
-  PROTOCOL_TLS_1_1	= 0x0302, //! TLS 1.1 - The RFC 4346 version of TLS.
-  PROTOCOL_TLS_1_2	= 0x0303, //! TLS 1.2 - The RFC 5246 version of TLS.
+  PROTOCOL_SSL_3_0	= 0x300, //! SSL 3.0 - The original SSL3 draft version.
+  PROTOCOL_SSL_3_1	= 0x301, //! SSL 3.1 - The RFC 2246 version of SSL.
+  PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The RFC 2246 version of TLS.
+  PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The RFC 4346 version of TLS.
+  PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The RFC 5246 version of TLS.
 }
 
 #if __BUILD__ < 931
@@ -80,16 +80,10 @@ enum ProtocolVersion {
 // they can't support TLS 1.1 and later in a reasonably simple way.
 constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_0;
 constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_0;
-constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = 1;
 #else
 //! Max supported SSL version.
 constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_2;
 constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
-
-//! Max supported SSL version.
-constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = 3;
 #endif
 
 /* Packet types */

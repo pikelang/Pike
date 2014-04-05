@@ -153,7 +153,7 @@ class TLSSigner
 
 //! KeyExchange method base class.
 class KeyExchange(object context, object session, object connection,
-		  array(int) client_version)
+		  ProtocolVersion client_version)
 {
   //! Indicates whether a certificate isn't required.
   int anonymous;
@@ -188,11 +188,14 @@ class KeyExchange(object context, object session, object connection,
   string derive_master_secret(string premaster_secret,
 			      string client_random,
 			      string server_random,
-			      array(int) version)
+			      ProtocolVersion version)
   {
     string res = "";
 
-    SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version[1]="+version[1]+"\n");
+    SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version=0x%x\n",
+		   version);
+    SSL3_DEBUG_MSG("premaster_secret: (%d bytes): %O\n",
+		   sizeof(premaster_secret), premaster_secret);
 
     res = session->cipher_spec->prf(premaster_secret, "master secret",
 				    client_random + server_random, 48);
@@ -208,7 +211,7 @@ class KeyExchange(object context, object session, object connection,
   //!   May return @expr{0@} (zero) to generate an @[ALERT_unexpected_message].
   string client_key_exchange_packet(string client_random,
 				    string server_random,
-				    array(int) version);
+				    ProtocolVersion version);
 
   //! @param data
   //!   Payload from a @[HANDSHAKE_client_key_exchange].
@@ -221,7 +224,7 @@ class KeyExchange(object context, object session, object connection,
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
-					 array(int) version);
+					 ProtocolVersion version);
 
   //! @param input
   //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
@@ -288,7 +291,7 @@ class KeyExchangeNULL
 
   string client_key_exchange_packet(string client_random,
 				    string server_random,
-				    array(int) version)
+				    ProtocolVersion version)
   {
     anonymous = 1;
     session->master_secret = "";
@@ -300,7 +303,7 @@ class KeyExchangeNULL
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
-					 array(int) version)
+					 ProtocolVersion version)
   {
     anonymous = 1;
     return "";
@@ -355,10 +358,10 @@ class KeyExchangeRSA
 
   string client_key_exchange_packet(string client_random,
 				    string server_random,
-				    array(int) version)
+				    ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version[0], version[1]);
+		   client_random, server_random, version>>8, version & 0xff);
     ADT.struct struct = ADT.struct();
     string data;
     string premaster_secret;
@@ -367,8 +370,7 @@ class KeyExchangeRSA
     // NOTE: To protect against version roll-back attacks,
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
-    struct->put_uint(client_version[0], 1);
-    struct->put_uint(client_version[1], 1);
+    struct->put_uint(client_version, 2);
     string random = context->random(46);
     struct->put_fix_string(random);
     premaster_secret = struct->pop_data();
@@ -377,7 +379,7 @@ class KeyExchangeRSA
 		   "session->rsa: %O\n", temp_key, session->rsa);
     data = (temp_key || session->rsa)->encrypt(premaster_secret);
 
-    if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff))
+    if(version >= PROTOCOL_TLS_1_0)
       data=sprintf("%2H", [string(0..255)]data);
 
     session->master_secret = derive_master_secret(premaster_secret,
@@ -392,7 +394,7 @@ class KeyExchangeRSA
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
-					 array(int) version)
+					 ProtocolVersion version)
   {
     string premaster_secret;
 
@@ -404,7 +406,7 @@ class KeyExchangeRSA
     SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
     SSL3_DEBUG_MSG("temp_key: %O\n"
 		   "session->rsa: %O\n", temp_key, session->rsa);
-    if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
+    if(version >= PROTOCOL_TLS_1_0) {
       if(sizeof(data)-2 == data[0]*256+data[1]) {
 	premaster_secret = (temp_key || session->rsa)->decrypt(data[2..]);
       }
@@ -415,7 +417,7 @@ class KeyExchangeRSA
     if (!premaster_secret
 	|| (sizeof(premaster_secret) != 48)
 	|| (premaster_secret[0] != 3)
-	|| (premaster_secret[1] != client_version[1]))
+	|| (premaster_secret[1] != (client_version & 0xff)))
     {
       /* To avoid the chosen ciphertext attack discovered by Daniel
        * Bleichenbacher, it is essential not to send any error
@@ -432,7 +434,7 @@ class KeyExchangeRSA
 	werror("SSL.handshake: Strange version (%d.%d) detected in "
 	       "key exchange message (expected %d.%d).\n",
 	       premaster_secret[0], premaster_secret[1],
-	       client_version[0], client_version[1]);
+	       client_version>>8, client_version & 0xff);
       }
 #endif
 
@@ -498,10 +500,10 @@ class KeyExchangeDH
 
   string client_key_exchange_packet(string client_random,
 				    string server_random,
-				    array(int) version)
+				    ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version[0], version[1]);
+		   client_random, server_random, version>>8, version & 0xff);
     ADT.struct struct = ADT.struct();
     string data;
     string premaster_secret;
@@ -524,7 +526,7 @@ class KeyExchangeDH
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
-					 array(int) version)
+					 ProtocolVersion version)
   {
     string premaster_secret;
 
@@ -584,7 +586,7 @@ class KeyExchangeDHE
   string|int server_derive_master_secret(string data,
 					 string client_random,
 					 string server_random,
-					 array(int) version)
+					 ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
 		   session->ke_method);
@@ -686,10 +688,10 @@ class KeyExchangeECDHE
 
   string client_key_exchange_packet(string client_random,
 				    string server_random,
-				    array(int) version)
+				    ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version[0], version[1]);
+		   client_random, server_random, version>>8, version & 0xff);
     ADT.struct struct = ADT.struct();
     string data;
     string premaster_secret;
@@ -726,10 +728,10 @@ class KeyExchangeECDHE
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
-						 array(int) version)
+  string|int server_derive_master_secret(string data,
+					 string client_random,
+					 string server_random,
+					 ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
 		   session->ke_method);
@@ -894,10 +896,10 @@ class MAChmac_sha {
   //!
   string hash(object packet, Gmp.mpz seq_num) {
 
-    string s = sprintf("%~8s%c%c%c%2c%s",
+    string s = sprintf("%~8s%c%2c%2c%s",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type,
-		       packet->protocol_version[0],packet->protocol_version[1],
+		       packet->protocol_version,
 		       sizeof(packet->fragment),
 		       packet->fragment);
 
@@ -1236,7 +1238,7 @@ class DHKeyExchange
 //!   Cipher suite to lookup.
 //!
 //! @param version
-//!   Minor version of the SSL protocol to support.
+//!   Version of the SSL/TLS protocol to support.
 //!
 //! @param signature_algorithms
 //!   The set of <hash, signature> combinations that

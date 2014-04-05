@@ -168,7 +168,8 @@ define(test_ssl, [[
       suites = ({
         SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha
       });
-      write("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 RSA server...");
+      write("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d RSA server...",
+            $1&0xff, $2&0xff, $3&0xff, $4&0xff);
     }
     else
     {
@@ -176,28 +177,29 @@ define(test_ssl, [[
       suites = ({
         SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha
       });
-      write("Testing SSL 3.$1..3.$2 client with SSL 3.$3..3.$4 DSS server...");
+      write("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d DSS server...",
+            $1&0xff, $2&0xff, $3&0xff, $4&0xff);
     }
 
     if( `==($1,$2,$3,$4) )
-      suites = server_ctx->get_suites(mode, 0, $4 + 0x300) -
-  	    (invalid_suites[expected_protocol + 0x300] || ({}));
+      suites = server_ctx->get_suites(mode, 0, $4) -
+  	    (invalid_suites[expected_protocol] || ({}));
 
     foreach(suites, int suite) {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    server_ctx->min_version = $3 + 0x300;
-    server_ctx->max_version = $4 + 0x300;
+    server_ctx->min_version = $3;
+    server_ctx->max_version = $4;
 
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED,
                                      0);
 
     SSL.context client_ctx = SSL.context();
     client_ctx->random = random_string;
-    client_ctx->min_version = $1 + 0x300;
-    client_ctx->max_version = $2 + 0x300;
+    client_ctx->min_version = $1;
+    client_ctx->max_version = $2;
     client_ctx->preferred_suites = ({ suite });
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0);
 
@@ -296,109 +298,109 @@ define(test_ssl, [[
   }]])
 ]])
 
-test_ssl(0,0,0,0,client_msg)
-test_ssl(0,1,0,0,client_msg)
-test_ssl(1,1,0,0,0)
-test_ssl(0,2,0,0,client_msg)
-test_ssl(1,2,0,0,0)
-test_ssl(2,2,0,0,0)
-test_ssl(0,3,0,0,client_msg)
-test_ssl(1,3,0,0,0)
-test_ssl(2,3,0,0,0)
-test_ssl(3,3,0,0,0)
+test_ssl(0x300,0x300,0x300,0x300,client_msg)
+test_ssl(0x300,0x301,0x300,0x300,client_msg)
+test_ssl(0x301,0x301,0x300,0x300,0)
+test_ssl(0x300,0x302,0x300,0x300,client_msg)
+test_ssl(0x301,0x302,0x300,0x300,0)
+test_ssl(0x302,0x302,0x300,0x300,0)
+test_ssl(0x300,0x303,0x300,0x300,client_msg)
+test_ssl(0x301,0x303,0x300,0x300,0)
+test_ssl(0x302,0x303,0x300,0x300,0)
+test_ssl(0x303,0x303,0x300,0x300,0)
 
-test_ssl(0,0,0,1,client_msg)
-test_ssl(0,0,1,1,0)
-test_ssl(0,1,0,1,client_msg)
-test_ssl(0,1,1,1,client_msg)
-test_ssl(1,1,0,1,client_msg)
-test_ssl(1,1,1,1,client_msg)
-test_ssl(0,2,0,1,client_msg)
-test_ssl(0,2,1,1,client_msg)
-test_ssl(1,2,0,1,client_msg)
-test_ssl(1,2,1,1,client_msg)
-test_ssl(2,2,0,1,0)
-test_ssl(2,2,1,1,0)
-test_ssl(0,3,0,1,client_msg)
-test_ssl(0,3,1,1,client_msg)
-test_ssl(1,3,0,1,client_msg)
-test_ssl(1,3,1,1,client_msg)
-test_ssl(2,3,0,1,0)
-test_ssl(2,3,1,1,0)
-test_ssl(3,3,0,1,0)
-test_ssl(3,3,1,1,0)
+test_ssl(0x300,0x300,0x300,0x301,client_msg)
+test_ssl(0x300,0x300,0x301,0x301,0)
+test_ssl(0x300,0x301,0x300,0x301,client_msg)
+test_ssl(0x300,0x301,0x301,0x301,client_msg)
+test_ssl(0x301,0x301,0x300,0x301,client_msg)
+test_ssl(0x301,0x301,0x301,0x301,client_msg)
+test_ssl(0x300,0x302,0x300,0x301,client_msg)
+test_ssl(0x300,0x302,0x301,0x301,client_msg)
+test_ssl(0x301,0x302,0x300,0x301,client_msg)
+test_ssl(0x301,0x302,0x301,0x301,client_msg)
+test_ssl(0x302,0x302,0x300,0x301,0)
+test_ssl(0x302,0x302,0x301,0x301,0)
+test_ssl(0x300,0x303,0x300,0x301,client_msg)
+test_ssl(0x300,0x303,0x301,0x301,client_msg)
+test_ssl(0x301,0x303,0x300,0x301,client_msg)
+test_ssl(0x301,0x303,0x301,0x301,client_msg)
+test_ssl(0x302,0x303,0x300,0x301,0)
+test_ssl(0x302,0x303,0x301,0x301,0)
+test_ssl(0x303,0x303,0x300,0x301,0)
+test_ssl(0x303,0x303,0x301,0x301,0)
 
-test_ssl(0,0,0,2,client_msg)
-test_ssl(0,0,1,2,0)
-test_ssl(0,0,2,2,0)
-test_ssl(0,1,0,2,client_msg)
-test_ssl(0,1,1,2,client_msg)
-test_ssl(0,1,2,2,0)
-test_ssl(1,1,0,2,client_msg)
-test_ssl(1,1,1,2,client_msg)
-test_ssl(1,1,2,2,0)
-test_ssl(0,2,0,2,client_msg)
-test_ssl(0,2,1,2,client_msg)
-test_ssl(0,2,2,2,client_msg)
-test_ssl(1,2,0,2,client_msg)
-test_ssl(1,2,1,2,client_msg)
-test_ssl(1,2,2,2,client_msg)
-test_ssl(2,2,0,2,client_msg)
-test_ssl(2,2,1,2,client_msg)
-test_ssl(2,2,2,2,client_msg)
-test_ssl(0,3,0,2,client_msg)
-test_ssl(0,3,1,2,client_msg)
-test_ssl(0,3,2,2,client_msg)
-test_ssl(1,3,0,2,client_msg)
-test_ssl(1,3,1,2,client_msg)
-test_ssl(1,3,2,2,client_msg)
-test_ssl(2,3,0,2,client_msg)
-test_ssl(2,3,1,2,client_msg)
-test_ssl(2,3,2,2,client_msg)
-test_ssl(3,3,0,2,0)
-test_ssl(3,3,1,2,0)
-test_ssl(3,3,2,2,0)
+test_ssl(0x300,0x300,0x300,0x302,client_msg)
+test_ssl(0x300,0x300,0x301,0x302,0)
+test_ssl(0x300,0x300,0x302,0x302,0)
+test_ssl(0x300,0x301,0x300,0x302,client_msg)
+test_ssl(0x300,0x301,0x301,0x302,client_msg)
+test_ssl(0x300,0x301,0x302,0x302,0)
+test_ssl(0x301,0x301,0x300,0x302,client_msg)
+test_ssl(0x301,0x301,0x301,0x302,client_msg)
+test_ssl(0x301,0x301,0x302,0x302,0)
+test_ssl(0x300,0x302,0x300,0x302,client_msg)
+test_ssl(0x300,0x302,0x301,0x302,client_msg)
+test_ssl(0x300,0x302,0x302,0x302,client_msg)
+test_ssl(0x301,0x302,0x300,0x302,client_msg)
+test_ssl(0x301,0x302,0x301,0x302,client_msg)
+test_ssl(0x301,0x302,0x302,0x302,client_msg)
+test_ssl(0x302,0x302,0x300,0x302,client_msg)
+test_ssl(0x302,0x302,0x301,0x302,client_msg)
+test_ssl(0x302,0x302,0x302,0x302,client_msg)
+test_ssl(0x300,0x303,0x300,0x302,client_msg)
+test_ssl(0x300,0x303,0x301,0x302,client_msg)
+test_ssl(0x300,0x303,0x302,0x302,client_msg)
+test_ssl(0x301,0x303,0x300,0x302,client_msg)
+test_ssl(0x301,0x303,0x301,0x302,client_msg)
+test_ssl(0x301,0x303,0x302,0x302,client_msg)
+test_ssl(0x302,0x303,0x300,0x302,client_msg)
+test_ssl(0x302,0x303,0x301,0x302,client_msg)
+test_ssl(0x302,0x303,0x302,0x302,client_msg)
+test_ssl(0x303,0x303,0x300,0x302,0)
+test_ssl(0x303,0x303,0x301,0x302,0)
+test_ssl(0x303,0x303,0x302,0x302,0)
 
-test_ssl(0,0,0,3,client_msg)
-test_ssl(0,0,1,3,0)
-test_ssl(0,0,2,3,0)
-test_ssl(0,0,3,3,0)
-test_ssl(0,1,0,3,client_msg)
-test_ssl(0,1,1,3,client_msg)
-test_ssl(0,1,2,3,0)
-test_ssl(0,1,3,3,0)
-test_ssl(1,1,0,3,client_msg)
-test_ssl(1,1,1,3,client_msg)
-test_ssl(1,1,2,3,0)
-test_ssl(1,1,3,3,0)
-test_ssl(0,2,0,3,client_msg)
-test_ssl(0,2,1,3,client_msg)
-test_ssl(0,2,2,3,client_msg)
-test_ssl(0,2,3,3,0)
-test_ssl(1,2,0,3,client_msg)
-test_ssl(1,2,1,3,client_msg)
-test_ssl(1,2,2,3,client_msg)
-test_ssl(1,2,3,3,0)
-test_ssl(2,2,0,3,client_msg)
-test_ssl(2,2,1,3,client_msg)
-test_ssl(2,2,2,3,client_msg)
-test_ssl(2,2,3,3,0)
-test_ssl(0,3,0,3,client_msg)
-test_ssl(0,3,1,3,client_msg)
-test_ssl(0,3,2,3,client_msg)
-test_ssl(0,3,3,3,client_msg)
-test_ssl(1,3,0,3,client_msg)
-test_ssl(1,3,1,3,client_msg)
-test_ssl(1,3,2,3,client_msg)
-test_ssl(1,3,3,3,client_msg)
-test_ssl(2,3,0,3,client_msg)
-test_ssl(2,3,1,3,client_msg)
-test_ssl(2,3,2,3,client_msg)
-test_ssl(2,3,3,3,client_msg)
-test_ssl(3,3,0,3,client_msg)
-test_ssl(3,3,1,3,client_msg)
-test_ssl(3,3,2,3,client_msg)
-test_ssl(3,3,3,3,client_msg)
+test_ssl(0x300,0x300,0x300,0x303,client_msg)
+test_ssl(0x300,0x300,0x301,0x303,0)
+test_ssl(0x300,0x300,0x302,0x303,0)
+test_ssl(0x300,0x300,0x303,0x303,0)
+test_ssl(0x300,0x301,0x300,0x303,client_msg)
+test_ssl(0x300,0x301,0x301,0x303,client_msg)
+test_ssl(0x300,0x301,0x302,0x303,0)
+test_ssl(0x300,0x301,0x303,0x303,0)
+test_ssl(0x301,0x301,0x300,0x303,client_msg)
+test_ssl(0x301,0x301,0x301,0x303,client_msg)
+test_ssl(0x301,0x301,0x302,0x303,0)
+test_ssl(0x301,0x301,0x303,0x303,0)
+test_ssl(0x300,0x302,0x300,0x303,client_msg)
+test_ssl(0x300,0x302,0x301,0x303,client_msg)
+test_ssl(0x300,0x302,0x302,0x303,client_msg)
+test_ssl(0x300,0x302,0x303,0x303,0)
+test_ssl(0x301,0x302,0x300,0x303,client_msg)
+test_ssl(0x301,0x302,0x301,0x303,client_msg)
+test_ssl(0x301,0x302,0x302,0x303,client_msg)
+test_ssl(0x301,0x302,0x303,0x303,0)
+test_ssl(0x302,0x302,0x300,0x303,client_msg)
+test_ssl(0x302,0x302,0x301,0x303,client_msg)
+test_ssl(0x302,0x302,0x302,0x303,client_msg)
+test_ssl(0x302,0x302,0x303,0x303,0)
+test_ssl(0x300,0x303,0x300,0x303,client_msg)
+test_ssl(0x300,0x303,0x301,0x303,client_msg)
+test_ssl(0x300,0x303,0x302,0x303,client_msg)
+test_ssl(0x300,0x303,0x303,0x303,client_msg)
+test_ssl(0x301,0x303,0x300,0x303,client_msg)
+test_ssl(0x301,0x303,0x301,0x303,client_msg)
+test_ssl(0x301,0x303,0x302,0x303,client_msg)
+test_ssl(0x301,0x303,0x303,0x303,client_msg)
+test_ssl(0x302,0x303,0x300,0x303,client_msg)
+test_ssl(0x302,0x303,0x301,0x303,client_msg)
+test_ssl(0x302,0x303,0x302,0x303,client_msg)
+test_ssl(0x302,0x303,0x303,0x303,client_msg)
+test_ssl(0x303,0x303,0x300,0x303,client_msg)
+test_ssl(0x303,0x303,0x301,0x303,client_msg)
+test_ssl(0x303,0x303,0x302,0x303,client_msg)
+test_ssl(0x303,0x303,0x303,0x303,client_msg)
 
 test_do([[
   add_constant("invalid_suites");
