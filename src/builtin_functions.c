@@ -9914,7 +9914,7 @@ void init_builtin_efuns(void)
 	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
 
   ADD_EFUN("random_string",f_random_string,
-	   tFunc(tInt,tString), OPT_EXTERNAL_DEPEND);
+	   tFunc(tInt,tStr8), OPT_EXTERNAL_DEPEND);
   
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
