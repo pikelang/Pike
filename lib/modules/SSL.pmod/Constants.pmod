@@ -95,7 +95,6 @@ constant PACKET_types = (< PACKET_change_cipher_spec,
 			   PACKET_alert,
 			   PACKET_handshake,
 			   PACKET_application_data >);
-constant PACKET_V2 = -1; /* Backwards compatibility */
 
 constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
@@ -941,7 +940,6 @@ constant CIPHER_SUITES =
 #endif /* Crypto.GCM */
 ]);
 
-constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
 constant HANDSHAKE_hello_request	= 0;  // RFC 5246
 constant HANDSHAKE_client_hello		= 1;  // RFC 5246
 constant HANDSHAKE_server_hello		= 2;  // RFC 5246
