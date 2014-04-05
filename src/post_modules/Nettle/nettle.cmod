@@ -285,6 +285,115 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
+#define INCREMENT(size, ctr)			\
+  do {						\
+    unsigned increment_i = (size) - 1;		\
+    if (++(ctr)[increment_i] == 0)		\
+      while (increment_i > 0			\
+	     && ++(ctr)[--increment_i] == 0 )	\
+	;					\
+  } while (0)
+
+/*! @class Fortuna
+ *!
+ *! Implements the Fortuna PRNG generator, designed by Niels Ferguson and
+ *! Bruce Schneier and described in Practical Cryptography. Web
+ *! published exerpt at https://www.schneier.com:443/fortuna.pdf
+ *!
+ *! This implementation uses AES256 to generate output and SHA256 to
+ *! generate keys.
+ *!
+ *! To use this class an entropy accumulator needs to be implemented
+ *! and supply the @[reseed()] method with new entopy.
+ */
+PIKECLASS Fortuna
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR struct sha256_ctx sha_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+  CVAR uint8_t *data;
+
+  DECLARE_STORAGE;
+
+  void fortuna_generate()
+  {
+    aes_encrypt(&THIS->aes_ctx, 16, THIS->data, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  void fortuna_rekey()
+  {
+    fortuna_generate();
+    MEMCPY(THIS->key, THIS->data, 16);
+    fortuna_generate();
+    MEMCPY(THIS->key+16, THIS->data, 16);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Generates new a new key based on the provided additional
+   *! entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    sha256_update(&THIS->sha_ctx, 32, THIS->key);
+    sha256_update(&THIS->sha_ctx, data->len, (const uint8_t *)data->str);
+    sha256_digest(&THIS->sha_ctx, 32, THIS->key);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. In contrast with
+   *! the Fortuna PseudoRandomData function, which only allows 2^20
+   *! bytes of random data per call, the necessary rekey operations
+   *! are here performed internally, so no such restrictions apply.
+   */
+  PIKEFUN string(8bit) random_string(int(0..) len)
+  {
+    unsigned stored = 0;
+    struct string_builder s;
+    init_string_builder_alloc(&s, len+16, 0);
+
+    while( stored < len )
+    {
+      fortuna_generate();
+      string_builder_binary_strcat(&s, (const char *)THIS->data,
+                                   MIN(16, (len-stored)));
+      stored += 16;
+      if( !(stored % (1<<20)) )
+        fortuna_rekey();
+    }
+    fortuna_rekey();
+
+    RETURN finish_string_builder(&s);
+  }
+
+  INIT
+  {
+    THIS->ctr = xalloc(16);
+    memset(THIS->ctr,0,16);
+    THIS->key = xalloc(32);
+    memset(THIS->key,0,32);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    sha256_init(&THIS->sha_ctx);
+    THIS->data = xalloc(16);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+    free(THIS->data);
+  }
+}
+
+/*! @endclass
+ */
+
 /*! @decl string(0..127) crypt_md5(string(0..255) password, @
  *!                                string(0..255) salt,@
  *!                                void|string(0..255) magic)
