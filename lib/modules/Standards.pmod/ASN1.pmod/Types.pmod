@@ -434,15 +434,14 @@ class BitString
     return this;
   }
 
-  //! Sets the length of the bit string to @[len] number of bits.
+  //! Sets the length of the bit string to @[len] number of bits. Will
+  //! only work correctly on strings longer than @[len] bits.
   this_program set_length(int len) {
     if (len)
     {
       value = value[..(len + 7)/8];
       unused = (- len) % 8;
-      value = [string(0..255)]sprintf("%s%c", value[..<1], value[-1]
-				      & ({ 0xff, 0xfe, 0xfc, 0xf8,
-					   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
+      value[-1] &= 256-(1<<unused);
     } else {
       unused = 0;
       value = "";

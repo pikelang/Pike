@@ -96,4 +96,14 @@ test_any([[
   "311d" "301b""060355040a""13144578616d706c65204f7267616e697a6174696f6e"
   "3114" "3012""060355040b""130b5465737420557365722031"
 ))
+
+test_any([[
+ object o = Standards.ASN1.Types.BitString("\xbf");
+ return o->get_der()
+]], "\3\2\0\277")
+test_any([[
+ object o = Standards.ASN1.Types.BitString("\xbf")->set_length(3);
+ return o->get_der()
+]], "\3\2\5\240")
+
 END_MARKER
