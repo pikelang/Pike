@@ -417,8 +417,29 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 
 //! Add a certificate.
 //!
+//! This function is used on both servers and clients to add
+//! a key and chain of certificates to the set of certificate
+//! candidates to use in @[find_cert()].
+//!
+//! On a server these are used in the normal initial handshake,
+//! while on a client they are only used if a server requests
+//! client certificate authentication.
+//!
 //! @param key
 //!   Private key matching the first certificate in @[certs].
+//!
+//!   Supported key types are currently:
+//!   @mixed
+//!     @type Crypto.RSA
+//!       Rivest-Shamir-Adelman.
+//!     @type Crypto.DSA
+//!       Digital Signing Algorithm.
+//!     @type Crypto.ECC.Curve.ECDSA
+//!       Elliptic Curve Digital Signing Algorithm.
+//!   @endmixed
+//!
+//!   This key MUST match the public key in the first certificate
+//!   in @[certs].
 //!
 //! @param certs
 //!   A chain of X509.v1 or X509.v3 certificates, with the local
@@ -429,8 +450,7 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 //!   this certificate should be selected for. Typically used to set
 //!   the default certificate(s) by specifying @expr{({ "*" })@}.
 //!
-//! This function adds the key and chain of certificates
-//! to the set of certificate candidates to use in @[find_cert()].
+//!   The SNI globs are only relevant for server-side certificates.
 //!
 //! @throws
 //!   The function performs various validation of the @[key]

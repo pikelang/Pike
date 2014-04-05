@@ -1134,6 +1134,11 @@ protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
 //! It also contains some derived metadata.
 class CertificatePair
 {
+  //! Cerificate type for the leaf cert.
+  //!
+  //! One of the @[AUTH_*] constants.
+  int cert_type;
+
   //! Private key.
   Crypto.Sign key;
 
@@ -1201,6 +1206,13 @@ class CertificatePair
 		    pkcs_der_to_sign_alg);
 
     if (has_value(sign_algs, 0)) error("Unknown signature algorithm.\n");
+
+    // FIXME: This probably needs to look at the leaf cert extensions!
+    this_program::cert_type = ([
+      SIGNATURE_rsa: AUTH_rsa_sign,
+      SIGNATURE_dsa: AUTH_dss_sign,
+      SIGNATURE_ecdsa: AUTH_ecdsa_sign,
+    ])[sign_algs[0][1]];
 
     globs = ({});
 
