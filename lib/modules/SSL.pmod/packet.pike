@@ -9,28 +9,23 @@
 
 import .Constants;
 
-constant SUPPORT_V2 = 1;
-
 int content_type;
 ProtocolVersion protocol_version;
 string fragment;  /* At most 2^14 */
 
 constant HEADER_SIZE = 5;
 
-private string buffer;
-private int needed_chars;
+private string buffer = "";
+private int needed_chars = HEADER_SIZE;
 
 int marginal_size;
 
 /* Circular dependence */
 program Alert = master()->resolv("SSL")["alert"];
-// #define Alert ((program) "alert")
 
-void create(void|int extra)
+protected void create(void|int extra)
 {
   marginal_size = extra;
-  buffer = "";
-  needed_chars = HEADER_SIZE;
 }
 
 object check_size(ProtocolVersion version, int|void extra)
@@ -56,12 +51,6 @@ object check_size(ProtocolVersion version, int|void extra)
 //!
 object|string recv(string data, ProtocolVersion version)
 {
-
-#ifdef SSL3_FRAGDEBUG
-  werror(" SSL.packet->recv: sizeof(data)="+sizeof(data)+"\n");
-#endif 
-
-
   buffer += data;
   while (sizeof(buffer) >= needed_chars)
   {
@@ -69,19 +58,17 @@ object|string recv(string data, ProtocolVersion version)
     {
       content_type = buffer[0];
       int length;
-      if (SUPPORT_V2 &&
-	  /* Support only short SSL2 headers */
-	  (content_type & 0x80) && (buffer[2] == 1))
+
+      /* Support only short SSL2 headers */
+      if ( (content_type & 0x80) && (buffer[2] == 1) )
       {
 #ifdef SSL3_DEBUG
 	werror("SSL.packet: Receiving SSL2 packet %O\n", buffer[..4]);
 #endif
-	content_type = PACKET_V2;
-	length = ((buffer[0] & 0x7f) << 8 | buffer[1] - 3);
-	sscanf(buffer, "%*3c%2c", protocol_version);
-      } else {
-	sscanf(buffer, "%*c%2c%2c", protocol_version, length);
+        return Alert(ALERT_fatal, ALERT_insufficient_security, version);
       }
+
+      sscanf(buffer, "%*c%2c%2c", protocol_version, length);
       if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
@@ -98,10 +85,7 @@ object|string recv(string data, ProtocolVersion version)
 
       needed_chars += length;
     } else {
-      if (content_type == PACKET_V2)
-	fragment = buffer[2 .. needed_chars - 1];
-      else
-	fragment = buffer[HEADER_SIZE .. needed_chars - 1];
+      fragment = buffer[HEADER_SIZE .. needed_chars - 1];
       return buffer[needed_chars ..];
     }
   }

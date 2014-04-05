@@ -120,9 +120,6 @@ void send_packet(object packet, int|void priority)
       packet->description == ALERT_close_notify)
     closing |= 1;
 
-#ifdef SSL3_FRAGDEBUG
-  werror(" SSL.connection->send_packet: sizeof(packet)="+sizeof(packet)+"\n");
-#endif
   if (!priority)
     priority = ([ PACKET_alert : PRI_alert,
 		  PACKET_change_cipher_spec : PRI_urgent,
@@ -522,26 +519,6 @@ string|int got_data(string|int s)
 	}
 	res += packet->fragment;
 	break;
-      case PACKET_V2:
-       {
-	 SSL3_DEBUG_MSG("SSL.connection: V2\n");
-
-	 if (handshake_finished) {
-	   // Don't allow renegotiation using SSLv2 packets at all, to address
-	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
-			       version));
-	   return -1;
-	 }
-	 int err = handle_handshake(HANDSHAKE_hello_v2,
-				    packet->fragment[1 .. ],
-				    packet->fragment);
-	 // FIXME: Can err ever be 1 here? In that case we're probably
-	 // not returning the right value below.
-	 if (err)
-	   return err;
-       }
-       break;
       case PACKET_heartbeat:
 	{
 	  // RFC 6520.
