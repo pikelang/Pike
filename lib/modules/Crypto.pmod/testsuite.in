@@ -201,7 +201,7 @@ cond_resolv( Nettle.Yarrow, [[
 ]])  
 
 // Crypto.Random
-cond_resolv( Nettle.Yarrow, [[
+cond_resolv( Nettle.Fortuna, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
@@ -551,6 +551,11 @@ test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),1), 0 )
 test_do( add_constant("RSA") )
 
 // Crypto.DSA
+
+test_any([[
+#pike 7.8
+return !!Crypto.DSA;
+]], 1)
 
 cond_resolv(Crypto.SHA1.name, [[
 test_do( add_constant("DSA", Crypto.DSA()) )
