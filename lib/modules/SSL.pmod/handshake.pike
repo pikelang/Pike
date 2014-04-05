@@ -1684,25 +1684,27 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         // we have so that we only send certificates that match what they 
         // want.
 
-        array(string(0..255)) certs =
-	  context->client_certificate_selector(context,
-					       client_cert_types,
-					       client_cert_distinguished_names);
+	array(CertificatePair) certs = [array(CertificatePair)]
+	  filter(context->find_cert(client_cert_distinguished_names, 1),
+		 lambda(CertificatePair cp, array(int)) {
+		   return has_value(client_cert_types, cp->cert_type);
+		 }, client_cert_types);
+
+	if (sizeof(certs)) {
+          session->certificate_chain = certs[0]->certs;
 #ifdef SSL3_DEBUG
-        foreach(certs, string c)
-        {
-          werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
-        }
+	  foreach(session->certificate_chain, string c)
+	  {
+	    werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
+	  }
 #endif
 
-	send_packet(certificate_packet(certs));
-        if(!sizeof(certs))
-          certificate_state = CERT_no_certificate;
-        else
-        {
+	  send_packet(certificate_packet(session->certificate_chain));
           certificate_state = CERT_received; // we use this as a way of saying "the server received our certificate"
-          session->certificate_chain = certs;
-        }
+	} else {
+	  send_packet(certificate_packet(({})));
+          certificate_state = CERT_no_certificate;
+	}
       }
 
 
