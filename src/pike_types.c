@@ -6153,9 +6153,9 @@ static int match_type_svalue(struct pike_type *type,
           if( mark == o->prog )
             res = 1;
           else if( type->car )
-            res = is_compatible( mark, o->prog );
+            res = is_compatible( o->prog, mark );
           else
-            res = implements( mark, o->prog );
+            res = implements( o->prog, mark );
         }
       }
     }
