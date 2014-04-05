@@ -72,18 +72,16 @@
 //! @seealso
 //!   @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
 enum ProtocolVersion {
-  PROTOCOL_SSL_3_0	= 0,	//! SSL 3.0 - The original SSL3 draft version.
-  PROTOCOL_SSL_3_1	= 1,	//! SSL 3.1 - The RFC 2246 version of SSL.
-  PROTOCOL_TLS_1_0	= 1,	//! TLS 1.0 - The RFC 2246 version of TLS.
-  PROTOCOL_SSL_3_2	= 2,	//! SSL 3.2 - The RFC 4346 version of SSL.
-  PROTOCOL_TLS_1_1	= 2,	//! TLS 1.1 - The RFC 4346 version of TLS.
-  PROTOCOL_SSL_3_3	= 3,	//! SSL 3.3 - The RFC 5246 version of SSL.
-  PROTOCOL_TLS_1_2	= 3,	//! TLS 1.2 - The RFC 5246 version of TLS.
+  PROTOCOL_SSL_3_0	= 0x300, //! SSL 3.0 - The original SSL3 draft version.
+  PROTOCOL_SSL_3_1	= 0x301, //! SSL 3.1 - The RFC 2246 version of SSL.
+  PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The RFC 2246 version of TLS.
+  PROTOCOL_SSL_3_2	= 0x302, //! SSL 3.2 - The RFC 4346 version of SSL.
+  PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The RFC 4346 version of TLS.
+  PROTOCOL_SSL_3_3	= 0x303, //! SSL 3.3 - The RFC 5246 version of SSL.
+  PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The RFC 5246 version of TLS.
 }
 
 //! Max supported SSL version.
-constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = PROTOCOL_TLS_1_2;
 constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_2;
 constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
 

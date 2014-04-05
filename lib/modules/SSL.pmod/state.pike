@@ -57,7 +57,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
-	 version, packet->content_type, packet->fragment);
+	 version & 0xff, packet->content_type, packet->fragment);
 #endif
 
   int hmac_size = session->truncated_hmac ? 10 :
@@ -119,10 +119,9 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	int digest_size = crypt->digest_size();
 	string digest = msg[<digest_size-1..];
 	crypt->set_iv(iv);
-	string auth_data = sprintf("%8c%c%c%c%2c",
+	string auth_data = sprintf("%8c%c%2c%2c",
 				   seq_num, packet->content_type,
-				   packet->protocol_version[0],
-				   packet->protocol_version[1],
+				   packet->protocol_version,
 				   sizeof(msg) -
 				   (session->cipher_spec->explicit_iv_size +
 				    digest_size));
@@ -222,7 +221,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 {
   string digest;
-  packet->protocol_version = ({ PROTOCOL_major, version});
+  packet->protocol_version = version;
   
   if (compress)
   {
@@ -267,10 +266,9 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
       string explicit_iv =
 	sprintf("%*c", session->cipher_spec->explicit_iv_size, seq_num);
       crypt->set_iv(salt + explicit_iv);
-      string auth_data = sprintf("%8c%c%c%c%2c",
+      string auth_data = sprintf("%8c%c%2c%2c",
 				 seq_num, packet->content_type,
-				 packet->protocol_version[0],
-				 packet->protocol_version[1],
+				 packet->protocol_version,
 				 sizeof(packet->fragment));
       crypt->update(auth_data);
       packet->fragment = explicit_iv + crypt->crypt(packet->fragment);

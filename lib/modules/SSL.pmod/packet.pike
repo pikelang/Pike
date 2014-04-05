@@ -12,7 +12,7 @@ import .Constants;
 constant SUPPORT_V2 = 1;
 
 int content_type;
-array(int) protocol_version;
+ProtocolVersion protocol_version;
 string fragment;  /* At most 2^14 */
 
 constant HEADER_SIZE = 5;
@@ -46,7 +46,7 @@ object check_size(ProtocolVersion version, int|void extra)
 //!   Raw data from the network.
 //!
 //! @param version
-//!   Minor version of the SSL 3 protocol suite to create a packet for.
+//!   Version of the SSL/TLS protocol suite to create a packet for.
 //!
 //! @returns
 //!   Returns a string of leftover data if packet is complete,
@@ -78,23 +78,22 @@ object|string recv(string data, ProtocolVersion version)
 #endif
 	content_type = PACKET_V2;
 	length = ((buffer[0] & 0x7f) << 8 | buffer[1] - 3);
-	protocol_version = values(buffer[3..4]);
+	sscanf(buffer, "%*3c%2c", protocol_version);
       } else {
-	protocol_version = values(buffer[1..2]);
-	sscanf(buffer[3..4], "%2c", length);
+	sscanf(buffer, "%*c%2c%2c", protocol_version, length);
       }
       if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
-      if (protocol_version[0] != PROTOCOL_major)
+      if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		     sprintf("SSL.packet->send: Version %d.%d "
 			     "is not supported\n",
-			     protocol_version[0], protocol_version[1]),
+			     protocol_version>>8, protocol_version & 0xff),
 		     backtrace());
 #ifdef SSL3_DEBUG
-      if (protocol_version[1] > PROTOCOL_minor)
+      if (protocol_version > PROTOCOL_TLS_MAX)
 	werror("SSL.packet->recv: received version %d.%d packet\n",
-	       @ protocol_version);
+	       protocol_version>>8, protocol_version & 0xff);
 #endif
 
       needed_chars += length;
@@ -118,16 +117,16 @@ string send()
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
   
-  if (protocol_version[0] != PROTOCOL_major)
-    error( "Version %d is not supported\n", protocol_version[0] );
+  if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
+    error( "Version %d is not supported\n", protocol_version>>8 );
 #ifdef SSL3_DEBUG
-  if (protocol_version[1] > PROTOCOL_minor)
+  if (protocol_version > PROTOCOL_TLS_MAX)
     werror("SSL.packet->send: Sending version %d.%d packet\n",
-	   @ protocol_version);
+	   protocol_version>>8, protocol_version & 0xff);
 #endif
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
     error( "Maximum packet size exceeded\n" );
 
-  return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
+  return sprintf("%c%2c%2c%s", content_type, protocol_version,
 		 sizeof(fragment), fragment);
 }
