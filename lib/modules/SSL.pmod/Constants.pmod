@@ -695,6 +695,15 @@ string fmt_signature_pairs(array(array(int)) pairs)
   return (string)b;
 }
 
+string fmt_version(ProtocolVersion version)
+{
+  if (version <= PROTOCOL_SSL_3_0) {
+    return sprintf("SSL %d.%d", version>>8, version & 0xff);
+  }
+  version -= PROTOCOL_TLS_1_0 - 0x100;
+  return sprintf("TLS %d.%d", version>>8, version & 0xff);
+}
+
 /* FIXME: Add SIGN-type element to table */
 constant CIPHER_SUITES =
 ([
