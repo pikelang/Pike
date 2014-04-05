@@ -1,12 +1,11 @@
 #pike __REAL_VERSION__
+#require constant(Crypto.Hash)
 //#pragma strict_types
 
 //! Functions to generate and validate RFC2459 style X.509 v3
 //! certificates.
 
 constant dont_dump_module = 1;
-
-#if constant(Crypto.Hash)
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
@@ -35,10 +34,9 @@ constant CERT_ROOT_UNTRUSTED = 5;
 //!
 constant CERT_BAD_SIGNATURE = 6;
 
-#if 0
 // A CA certificate does not have the CA basic constraint.
 constant CERT_UNAUTHORIZED_CA = 7;
-#endif
+
 
 // Bit 0 is the first bit in the BitString.
 protected enum keyUsage {
@@ -1112,7 +1110,7 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
     DBG("verify root: Missing id-ce-keyUsage.\n");
     return 0;
   }
-  keyUsage usage = (int)c;
+  keyUsage usage = c->value[0]; // Arguably API violation.
   if( !( usage & digitalSignature ) )
   {
     DBG("verify root: id-ce-keyUsage doesn't allow digitalSignature.\n");
@@ -1330,6 +1328,41 @@ mapping verify_certificate_chain(array(string) cert_chain,
   {
     array(Verifier)|Verifier verifiers;
 
+    if(idx != len-1) // Not the leaf
+    {
+      Object o = tbs->extensions[ Identifiers.ce_ids["basicConstraints"]->get_der() ];
+
+      // id-ce-basicConstraints is required for certificates with
+      // public key used to validate certificate signatures. RFC 3280,
+      // 4.2.1.10.
+      if( !o || o->type_name!="SEQUENCE" )
+        ERROR(CERT_INVALID);
+      Sequence s = [object(Sequence)]o;
+      if( sizeof(o)<1 || sizeof(o)>2 ||
+          s[0]->type_name!="BOOLEAN" )
+        ERROR(CERT_INVALID);
+
+      if( !s[0]->value )
+        ERROR(CERT_UNAUTHORIZED_CA);
+
+      if( sizeof(s)==2 )
+      {
+        if( s[1]->type_name!="INTEGER" || s[1]->value<0 )
+          ERROR(CERT_INVALID);
+
+        // pathLenConstraint is the maximum number of intermediate
+        // certificates. len-1-idx is the number of following
+        // certificates. Subtract one more to not count the leaf
+        // certificate.
+        if( len-1-idx-1 > s[1]->value )
+        {
+          // The error was later in the chain though, so maybe a
+          // different error should be sent.
+          ERROR(CERT_UNAUTHORIZED_CA);
+        }
+      }
+    }
+
     if(idx == 0) // The root cert
     {
       verifiers = authorities[tbs->issuer->get_der()];
@@ -1402,5 +1435,3 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
 #undef ERROR
 }
-
-#endif
