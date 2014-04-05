@@ -480,9 +480,8 @@ protected void create (Stdio.File stream, SSL.context ctx,
 //! @throws
 //!   Throws errors on handshake failure in blocking client mode.
 {
-  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O, %O, %O)\n",
-		  stream, ctx, is_client, is_blocking,
-		  min_version, max_version);
+  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O)\n",
+		  stream, ctx, is_client, is_blocking);
 
   ENTER (0, 0) {
     global::stream = stream;
