@@ -5,172 +5,46 @@
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
-#if constant(Nettle.NT)
+protected class RND
+{
+  inherit Nettle.Fortuna;
 
-class Source {
-  protected Nettle.NT.CryptContext ctx;
+  protected function(int:string(8bit)) source;
 
-  protected void create(int(0..1) no_block) {
-    ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
-				 Nettle.NT.CRYPT_VERIFYCONTEXT );
-    no_block;	// Fix warning.
-  }
-
-  string(8bit) read(int bytes) {
-    return ctx->read(bytes);
-  }
-}
-
-#else
-
-class Source {
-  protected Stdio.File f;
-  protected string(8bit) data = "";
-  protected int factor = 2; // Assume 50% entropy
-
-  protected void create(int(0..1) no_block) {
-    Stdio.File tmp = Stdio.File();
-    if(no_block) {
-      if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
-	f = tmp;
-    }
-    else {
-      if (tmp->open ("/dev/random", "r") && tmp->stat()->ischr) {
-	if (Stdio.Stat s = file_stat("/dev/urandom"))
-	  if (s->ischr)
-	    factor = 1;
-	f = tmp;
-      }
-      else if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
-	f = tmp;
-    }
-  }
-
-  string(8bit) read(int bytes)
+  protected void create()
   {
-    if(f) return f->read(bytes * factor);
-    bytes *= 4;
-    while(sizeof(data)<bytes)
-      get_data();
-    string(8bit) ret = data[..bytes-1];
-    data = data[bytes..];
-    return ret;
-  }
-
-  protected string get_data() {
-    Stdio.File f = Stdio.File();
-    Stdio.File child_pipe = f->pipe();
-    if(!child_pipe) error("Could not generate random data.\n");
-
-    // Attempt to generate some entropy by running some
-    // statistical commands.
-    mapping(string:string) env = [mapping(string:string)]getenv() + ([
-      "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
-    ]);
-    mapping(string:mixed) modifiers = ([
-      "stdin":Stdio.File("/dev/null", "rw"),
-      "stdout":child_pipe,
-      "stderr":child_pipe,
-      "env":env,
-    ]);
-    foreach(({ ({ "last", "-256" }),
-	       ({ "arp", "-a" }),
-	       ({ "netstat", "-anv" }), ({ "netstat", "-mv" }),
-	       ({ "netstat", "-sv" }),
-	       ({ "uptime" }),
-	       ({ "ps", "-fel" }), ({ "ps", "aux" }),
-	       ({ "vmstat", "-f" }), ({ "vmstat", "-s" }),
-	       ({ "vmstat", "-M" }),
-	       ({ "iostat" }), ({ "iostat", "-t" }),
-	       ({ "iostat", "-cdDItx" }),
-	       ({ "ipcs", "-a" }),
-	       ({ "pipcs", "-a" }),
-    }), array(string) cmd) {
-      catch {
-	Process.create_process(cmd, modifiers);
-      };
-    }
-    child_pipe->close();
-    destruct(child_pipe);
-    data += f->read();
-    f->close();
-  }
-}
-
-#endif
-
-protected class RND {
-  inherit Nettle.Yarrow;
-  protected int bytes_left = 32;
-
-  protected Source s;
-
-  protected int last_tick;
-  protected function(void:int) ticker;
-
-  protected void create(int(0..1) no_block) {
-    // Source 0: /dev/random or CryptGenRandom
-    // Source 1: ticker
-    // Source 2: external
-    ::create(3);
-    s = Source(no_block);
-    seed( s->read(min_seed_size()) );
-
-#if constant(System.rdtsc)
-    ticker = System.rdtsc;
-#elif constant(gethrtime)
-    ticker = gethrtime;
+#if constant(Nettle.NT)
+    source = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
+                                    Nettle.NT.CRYPT_VERIFYCONTEXT )->read;
 #else
-    ticker = time;
+    source = Stdio.File("/dev/urandom")->read;
 #endif
+
+    reseed(source(32)+predef::random_string(32));
   }
 
-  protected Thread.Mutex lock = Thread.Mutex();
-
-  string(8bit) random_string(int len) {
-    object key = lock->lock();
-    return low_random_string(len);
-    key = 0;	// Fix warning.
+  System.Timer last_seed = System.Timer();
+  void reseed(string(8bit)data)
+  {
+    last_seed->get();
+    ::reseed(data);
   }
 
-  string(8bit) low_random_string(int len) {
-    String.Buffer buf = String.Buffer(len);
-    int new_tick = ticker();
-    update( (string(8bit))(new_tick-last_tick), 1, 1 );
-    last_tick = new_tick;
-
-    while(len) {
-      int pass = min(len, bytes_left);
-      buf->add( ::random_string(pass) );
-      bytes_left -= pass;
-      len -= pass;
-      if(bytes_left - pass <= 0) {
-	update( s->read(0x1000), 0, 0x8000 );
-	bytes_left += 0x1000;
-      }
-    }
-    return (string(8bit))buf;
+  string(8bit) random_string(int(0..) len)
+  {
+    if( last_seed->peek()>0.1 )
+      reseed(source(32));
+    return ::random_string(len);
   }
-}
-
-protected string(8bit) rnd_bootstrap(int len) {
-  rnd_obj = RND(1);
-  rnd_func = rnd_obj->random_string;
-  return rnd_func(len);
 }
 
 protected RND rnd_obj;
-protected function(int:string(8bit)) rnd_func = rnd_bootstrap;
-
-protected string(8bit) rnd_block_bootstrap(int len)
-{
-  rnd_block_obj = RND(0);
-  rnd_block_func = rnd_block_obj->random_string;
-  return rnd_block_func(len);
+protected function(int(0..):string(8bit)) rnd_func = rnd_bootstrap;
+protected string(8bit) rnd_bootstrap(int(0..) len) {
+  rnd_obj = RND();
+  rnd_func = rnd_obj->random_string;
+  return rnd_func(len);
 }
-
-protected RND rnd_block_obj;
-protected function(int:string(8bit)) rnd_block_func = rnd_block_bootstrap;
 
 //! Returns a string of length @[len] with random content. The
 //! content is generated by a Yarrow random generator that is
@@ -179,34 +53,22 @@ protected function(int:string(8bit)) rnd_block_func = rnd_block_bootstrap;
 //! at least the amount of random data from its sources as it
 //! outputs, thus doing its best to give at least good pseudo-
 //! random data on operating systems with bad /dev/random.
-string(8bit) random_string(int len) {
+string(8bit) random_string(int(0..) len) {
   return rnd_func(len);
 }
 
 //! Returns a @[Gmp.mpz] object with a random value between @expr{0@}
 //! and @[top]. Uses @[random_string].
-Gmp.mpz random(int top) {
-  return [object(Gmp.mpz)]( Gmp.mpz(rnd_func( (int)ceil( log((float)top)/
-							 log(2.0) ) ),
+Gmp.mpz random(int(0..) top) {
+  return [object(Gmp.mpz)]( Gmp.mpz(rnd_func( (int(0..))ceil( log((float)top)/
+                                                              log(2.0) ) ),
 				    256) % top);
-}
-
-//! Works as @[random_string], but may block in order to gather enough
-//! entropy to make a truely random output. Using this function is
-//! probably overkill for about all applications.
-string blocking_random_string(int len) {
-  return rnd_block_func(len);
 }
 
 //! Inject additional entropy into the random generator.
 //! @param data
 //!   The random string.
-//! @param entropy
-//!   The number of bits in the random string that is
-//!   truely random.
-void add_entropy(string(8bit) data, int entropy) {
+void add_entropy(string(8bit) data) {
   if(rnd_obj)
-    rnd_obj->update(data, 2, entropy);
-  if(rnd_block_obj)
-    rnd_block_obj->update(data, 2, entropy);
+    rnd_obj->add_entropy(data);
 }
