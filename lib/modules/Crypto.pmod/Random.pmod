@@ -70,5 +70,5 @@ Gmp.mpz random(int(0..) top) {
 //!   The random string.
 void add_entropy(string(8bit) data) {
   if(rnd_obj)
-    rnd_obj->add_entropy(data);
+    rnd_obj->reseed(data);
 }
