@@ -452,6 +452,9 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 //!
 //!   The SNI globs are only relevant for server-side certificates.
 //!
+//! @param cp
+//!   An alternative is to send an initialized @[CertificatePair].
+//!
 //! @throws
 //!   The function performs various validation of the @[key]
 //!   and @[certs], and throws errors if the validation fails.
@@ -463,6 +466,12 @@ void add_cert(Crypto.Sign key, array(string(8bit)) certs,
 {
   CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
 
+  cert_pairs += ({ cp });
+
+  cert_cache = ([]);
+}
+variant void add_cert(CertificatePair cp)
+{
   cert_pairs += ({ cp });
 
   cert_cache = ([]);
