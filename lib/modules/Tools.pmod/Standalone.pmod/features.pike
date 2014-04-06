@@ -132,9 +132,22 @@ int main(int num, array(string) args) {
   M(COM.com);
 
   write("\nCrypto\n");
-  F(Crypto.CAMELLIA);
+  F(Crypto.Arctwo);
+  F(Crypto.Blowfish);
+  F(Crypto.Camellia);
+  F(Crypto.ECC.Curve);
+  F(Crypto.GCM);
+  F(Crypto.GOST94);
   F(Crypto.IDEA);
   F(Crypto.MD4);
+  F(Crypto.RIPEMD160);
+  F(Crypto.SALSA20);
+  F(Crypto.SALSA20R12);
+  F(Crypto.Serpent);
+  F(Crypto.SHA224);
+  F(Crypto.SHA384);
+  F(Crypto.SHA512);
+  F(Crypto.SHA3_512);
 
   write("\nDebug\n");
   F(Debug.assembler_debug);
