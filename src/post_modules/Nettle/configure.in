@@ -60,8 +60,13 @@ else
           "x$ac_cv_lib_nettle_md5_init" = "xyes"; then
     PIKE_FEATURE_OK(Nettle)
 
-    # md4 is available in later versions of nettle
+    # md4 is available in Nettle 1.8 and later.
+    # arctwo is available in Nettle 1.11 and later.
+    # ctr is available in Nettle 1.13 and later.
     # camellia is available in Nettle 2.1 and later.
+    # gcm is available in Nettle 2.2 and later.
+    # ripemd160 is available in Nettle 2.3 and later.
+    # sha3 and gosthash94 is available in Nettle 2.6 and later.
     AC_CHECK_HEADERS(nettle/camellia.h nettle/md4.h nettle/sha3.h \
                      nettle/arctwo.h nettle/ripemd160.h nettle/gosthash94.h \
 	             nettle/ctr.h nettle/gcm.h nettle/ecdsa.h)
