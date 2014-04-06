@@ -316,6 +316,10 @@ PIKECLASS Fortuna
 
   DECLARE_STORAGE;
 
+#ifndef AES256_KEY_SIZE
+#define AES256_KEY_SIZE	(256>>3)
+#endif
+
   void fortuna_generate()
   {
     aes_encrypt(&THIS->aes_ctx, 16, THIS->data, THIS->ctr);
