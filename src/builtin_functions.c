@@ -2583,7 +2583,7 @@ static void f___get_return_type(INT32 args)
  *!   Returns @tt{0@} (zero) if a function of the type @[fun_type]
  *!   may not be called with any argument, or if it is not callable.
  */
-static void f___get_first_arg_type(INT32 args)
+void f___get_first_arg_type(INT32 args)
 {
   struct pike_type *res;
   if (args != 1) {
