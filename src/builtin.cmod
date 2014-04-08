@@ -1004,6 +1004,26 @@ PIKEFUN string(0..255) hex2string(string hex)
   RETURN end_shared_string(s);
 }
 
+/*! @decl array(int) range(string s)
+ *! @appears String.range
+ *!
+ *! Returns the character range of a string in an array of two
+ *! elements. The first element contains the lower bound and the
+ *! second the upper. The precision is only 8 bits, so for wide
+ *! strings only character blocks are known.
+ */
+PIKEFUN array(int) string_range(string s)
+  errname String.range;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int min, max;
+  check_string_range(s, 0, &min, &max);
+  pop_n_elems(args);
+  push_int(min);
+  push_int(max);
+  f_aggregate(2);
+}
+
 /*! @decl array column(array data, mixed index)
  *!
  *! Extract a column from a two-dimensional array.
