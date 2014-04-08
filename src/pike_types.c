@@ -5458,6 +5458,21 @@ static int low_check_indexing(struct pike_type *type,
      */
     return low_match_types(type->car, index_type, 0) ? 1 : -1;
 
+  case T_FUNCTION:
+    while ((type = type->cdr) && (type->type == T_FUNCTION))
+      ;
+    if (!type) return 0;
+
+    /* FALL_THROUGH */
+
+  case T_MANY:
+    type = type->cdr;
+    if (!type || (type->type != T_OBJECT) || !type->car)
+      return 0;
+    /* function(... : object(is foo)) -- ie probably program(foo). */
+
+    /* FALL_THROUGH */
+
     case T_INT:
     case T_PROGRAM:
       return !!low_match_types(string_type_string, index_type, 0);
