@@ -6713,7 +6713,7 @@ static void f_dispatch_variant(INT32 args)
   int flags = 0;
   int best = -1;
   struct pike_type *t;
-  int expected = 0;
+  struct pike_type *expected = NULL;
 
   /* NB: The following is mostly to support a potential future
    *     case where a mixed set of protections would cause
@@ -6737,14 +6737,10 @@ static void f_dispatch_variant(INT32 args)
     /* Check whether the type is compatible with our arguments. */
     for (i = 0; i < args; i++) {
       struct pike_type *cont = check_call_svalue(t, 0, Pike_sp+i - args);
-      if (!cont && (i >= best)) {
-	if ((i > best) && expected) {
-	  pop_n_elems(expected);
-	  expected = 0;
-	}
+      if (!cont && (i > best)) {
+	if (expected) free_type(expected);
 	best = i;
-	push_type_value(t);
-	expected++;
+	expected = t;
 	t = NULL;
 	break;
       } else {
@@ -6754,24 +6750,17 @@ static void f_dispatch_variant(INT32 args)
     }
     if (!t) continue;
     ret = new_get_return_type(t, 0);
-
-    if (!ret && (i+1 >= best)) {
-      if (((i+1) > best) && expected) {
-	pop_n_elems(expected);
-	expected = 0;
-      }
+    if (!ret && (i+1 > best)) {
+      if (expected) free_type(expected);
       best = i+1;
-      push_type_value(t);
-      expected++;
+      expected = t;
       continue;
     }
     free_type(t);
     if (!ret) continue;
     free_type(ret);
 
-    if (expected) {
-      pop_n_elems(expected);
-    }
+    if (expected) free_type(expected);
 
     /* Found a function to call! */
     apply_current(fun_num, args);
@@ -6781,11 +6770,10 @@ static void f_dispatch_variant(INT32 args)
     /* No variants listed? */
     Pike_error("No variants of %S() to dispatch to!\n", name);
   }
-  if (expected > 1) {
-    f_or(expected);
-  }
-  f___get_first_arg_type(1);
-  if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+  t = get_first_arg_type(expected, 0);
+  free_type(expected);
+  if (t) {
+    push_type_value(t);
     if (best < args) {
       Pike_error("Bad argument %d to %S(). Expected %O.\n",
 		 best + 1, name, Pike_sp-1);
