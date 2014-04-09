@@ -57,48 +57,74 @@ ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 //!   This value should not be less than @[min_version].
 ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 
-//! The server's default private key.
-//!
-//! Supported key types are currently:
-//! @mixed
-//!   @type Crypto.RSA
-//!     Rivest-Shamir-Adelman.
-//!   @type Crypto.DSA
-//!     Digital Signing Algorithm.
-//!   @type Crypto.ECC.Curve.ECDSA
-//!     Elliptic Curve Digital Signing Algorithm.
-//! @endmixed
-//!
-//! This key MUST match the public key in the first certificate
-//! in @[certificates].
-//! 
-//! @note
-//!   If SNI (Server Name Indication) is used and multiple keys are
-//!   available, this key will not be used, instead the appropriate
-//!   SNI key will be used (the default implementation stores these in
-//!   @[sni_keys].
-__deprecated__ Crypto.Sign `private_key()
-{
-  if (cert_pairs) return cert_pairs[0]->key;
-}
+protected Crypto.RSA compat_rsa;
+protected array(string(8bit)) compat_certificates;
 
-#if 0
-//! Compatibility.
-//! @deprecated private_key
+//! The servers default private RSA key.
+//! 
+//! Compatibility, don't use.
+//!
+//! @deprecated find_cert
+//!
+//! @seealso
+//!   @[`certificates], @[find_cert()]
 __deprecated__ Crypto.RSA `rsa()
 {
-  return private_key && (private_key->name() == "RSA") &&
-    [object(Crypto.RSA)]private_key;
+  return compat_rsa;
 }
 
-//! Compatibility.
-//! @deprecated private_key
+//! Set the servers default private RSA key.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated add_cert
+//!
+//! @seealso
+//!   @[`certificates=], @[add_cert()]
 __deprecated__ void `rsa=(Crypto.RSA k)
 {
-  private_key = k;
+  compat_rsa = k;
+  if (k && compat_certificates) {
+    catch {
+      add_cert(k, compat_certificates);
+    };
+  }
 }
 
-#endif /* 0 */
+//! The server's certificate, or a chain of X509.v3 certificates, with
+//! the server's certificate first and root certificate last.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated find_cert
+//!
+//! @seealso
+//!   @[`rsa], @[find_cert()]
+__deprecated__ array(string(8bit)) `certificates()
+{
+  return compat_certificates;
+}
+
+//! Set the servers certificate, or a chain of X509.v3 certificates, with
+//! the servers certificate first and root certificate last.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated add_cert
+//!
+//! @seealso
+//!   @[`rsa=], @[add_cert()]
+__deprecated__ void `certificates=(array(string(8bit)) certs)
+{
+  compat_certificates = certs;
+
+  if (compat_rsa && certs) {
+    catch {
+      add_cert(compat_rsa, certs);
+    };
+  }
+}
+
 
 //! Should an SSL client include the Server Name extension?
 //!
@@ -111,25 +137,93 @@ array(string(8bit)) client_server_names = ({});
 
 /* For client authentication */
 
-#if 0
-//! Compatibility.
-//! @deprecated private_key
+//! The clients RSA private key.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated find_cert
+//!
+//! @seealso
+//!   @[`certificates], @[find_cert()]
 __deprecated__ Crypto.RSA `client_rsa()
 {
-  return rsa;
+  return compat_rsa;
 }
 
-//! Compatibility.
-//! @deprecated private_key
+//! Set the clients default private RSA key.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated add_cert
+//!
+//! @seealso
+//!   @[`client_certificates=], @[add_cert()]
 __deprecated__ void `client_rsa=(Crypto.RSA k)
 {
-  private_key = k;
+  compat_rsa = k;
+  if (k && compat_certificates) {
+    catch {
+      add_cert(k, compat_certificates);
+    };
+  }
 }
-#endif /* 0 */
 
-//! An array of certificate chains a client may present to a server
-//! when client certificate authentication is requested.
-array(array(string(8bit))) client_certificates = ({});
+//! The client's certificate, or a chain of X509.v3 certificates, with
+//! the client's certificate first and root certificate last.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated find_cert
+//!
+//! @seealso
+//!   @[`rsa], @[find_cert()]
+__deprecated__ array(array(string(8bit))) `client_certificates()
+{
+  return compat_certificates && ({ compat_certificates });
+}
+
+//! Set the client's certificate, or a chain of X509.v3 certificates, with
+//! the client's certificate first and root certificate last.
+//!
+//! Compatibility, don't use.
+//!
+//! @deprecated add_cert
+//!
+//! @seealso
+//!   @[`rsa=], @[add_cert()]
+__deprecated__ void `client_certificates=(array(array(string(8bit))) certs)
+{
+  compat_certificates = certs && (sizeof(certs)?certs[0]:({}));
+
+  if (compat_rsa && certs) {
+    foreach(certs, array(string(8bit)) chain) {
+      catch {
+	add_cert(compat_rsa, chain);
+      };
+    }
+  }
+}
+
+//! A mapping containing certificate chains for use by SNI (Server
+//! Name Indication). Each entry should consist of a key indicating
+//! the server hostname and the value containing the certificate chain
+//! for that hostname.
+//!
+//! @deprecated add_cert
+//!
+//! @seealso
+//!   @[add_cert()]
+__deprecated__ void `sni_certificates=(mapping(string:array(string(8bit))) sni)
+{
+  error("The old SNI API is not supported anymore.\n");
+}
+
+__deprecated__ mapping(string:array(string(8bit))) `sni_certificates()
+{
+  return ([]);
+}
+
+#if 0
 
 //! A function which will select an acceptable client certificate for
 //! presentation to a remote server. This function will receive the
@@ -163,6 +257,51 @@ function (.context,array(string(8bit)):array(string(8bit)))
 //! based on values contained in @[sni_keys].
 function (.context,array(string):object(Crypto.Sign)) select_server_key_func
   = internal_select_server_key;
+
+private array(string(8bit))
+  internal_select_client_certificate(.context context,
+				     array(int) acceptable_types,
+				     array(string) acceptable_authority_dns)
+{
+  if( !context->client_certificates ||
+      !sizeof(context->client_certificates) )
+    return ({});
+
+  // FIXME: Create a cache for the certificate objects.
+  array(mapping(string:mixed)) c = ({});
+  foreach(context->client_certificates; int i; array(string) chain)
+  {
+    if(sizeof(chain))
+      c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
+                "chain":i ]) });
+  }
+
+  string wantedtype;
+  mapping(int:string) cert_types = ([
+    AUTH_rsa_sign : "rsa",
+    AUTH_dss_sign : "dss",
+    AUTH_ecdsa_sign : "ecdsa",
+  ]);
+
+  foreach(acceptable_types, int t)
+  {
+    wantedtype = cert_types[t];
+
+    foreach(c, mapping(string:mixed) cert)
+    {
+      Standards.X509.TBSCertificate crt =
+        [object(Standards.X509.TBSCertificate)]cert->cert;
+      if(crt->public_key->type == wantedtype)
+        return context->client_certificates[[int]cert->chain];
+    }
+  }
+
+  // FIXME: Check acceptable_authority_dns.
+  acceptable_authority_dns;
+  return ({});
+}
+
+#endif /* 0 */
 
 //! Policy for client authentication. One of
 //! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
@@ -257,38 +396,31 @@ Crypto.RSA short_rsa;
 int long_rsa_counter;
 int short_rsa_counter;
 
-#if 0
 //! Compatibility.
-//! @deprecated private_key
+//! @deprecated get_private_key
 __deprecated__ Crypto.DSA `dsa()
 {
-  return private_key && (private_key->name() == "DSA") && 
-    [object(Crypto.DSA)]private_key;
+  return UNDEFINED;
 }
 
 //! Compatibility.
-//! @deprecated private_key
+//! @deprecated set_private_key
 __deprecated__ void `dsa=(Crypto.DSA k)
 {
-  private_key = k;
+  error("The old DSA API is not supported anymore.\n");
 }
-#endif /* 0 */
 
+#if 0
 //! Parameters for dh keyexchange.
 .Cipher.DHKeyExchange dh_ke;
+#endif
+
 
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
 //! default set to @[Crypto.Random.random_string].
 function(int(0..):string(8bit)) random = Crypto.Random.random_string;
-
-//! The server's certificate, or a chain of X509.v3 certificates, with
-//! the server's certificate first and root certificate last.
-__deprecated__ array(string(8bit)) `certificates()
-{
-  if (sizeof(cert_pairs)) return cert_pairs[0]->certs;
-}
 
 //! Certificates and their corresponding keys.
 array(CertificatePair) cert_pairs = ({});
@@ -298,22 +430,6 @@ array(CertificatePair) cert_pairs = ({});
 //!
 //! Generated on demand from @[cert_pairs].
 mapping(string(8bit):array(CertificatePair)) cert_cache = ([]);
-
-//! A mapping containing certificate chains for use by SNI (Server
-//! Name Indication). Each entry should consist of a key indicating
-//! the server hostname and the value containing the certificate chain
-//! for that hostname.
-mapping(string:array(string(8bit))) sni_certificates = ([]);
-
-//! A mapping containing private keys for use by SNI (Server Name
-//! Indication). Each entry should consist of a key indicating the
-//! server hostname and the value containing the private key object
-//! for that hostname.
-//!
-//! @note
-//!  keys objects may be generated from a decoded key string using
-//!  @[Standards.PKCS.RSA.parse_private_key()].
-mapping(string:object(Crypto.Sign)) sni_keys = ([]);
 
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
@@ -833,84 +949,6 @@ private void update_authorities()
   foreach(authorities, string a)
     authorities_cache += ({ Standards.X509.decode_certificate(a)->
                             subject->get_der() });
-}
-
-private array(string(8bit))
-  internal_select_server_certificate(.context context,
-				     array(string(8bit)) server_names)
-{
-  array(string(8bit)) certs;
-
-  if(server_names && sizeof(server_names))
-  {
-    foreach(server_names;; string(8bit) sn)
-    {
-      if(context->sni_certificates && (certs = context->sni_certificates[lower_case(sn)]))
-        return certs;
-    }
-  }
-
-  return 0;
-}
-
-private Crypto.Sign internal_select_server_key(.context context,
-                                               array(string) server_names)
-{
-  Crypto.Sign key;
-
-  if(server_names && sizeof(server_names))
-  {
-    foreach(server_names;; string sn)
-    {
-      if(context->sni_keys && (key = context->sni_keys[lower_case(sn)]))
-        return key;
-    }
-  }
-
-  return 0;
-}
-
-private array(string(8bit))
-  internal_select_client_certificate(.context context,
-				     array(int) acceptable_types,
-				     array(string) acceptable_authority_dns)
-{
-  if( !context->client_certificates ||
-      !sizeof(context->client_certificates) )
-    return ({});
-
-  // FIXME: Create a cache for the certificate objects.
-  array(mapping(string:mixed)) c = ({});
-  foreach(context->client_certificates; int i; array(string) chain)
-  {
-    if(sizeof(chain))
-      c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
-                "chain":i ]) });
-  }
-
-  string wantedtype;
-  mapping(int:string) cert_types = ([
-    AUTH_rsa_sign : "rsa",
-    AUTH_dss_sign : "dss",
-    AUTH_ecdsa_sign : "ecdsa",
-  ]);
-
-  foreach(acceptable_types, int t)
-  {
-    wantedtype = cert_types[t];
-
-    foreach(c, mapping(string:mixed) cert)
-    {
-      Standards.X509.TBSCertificate crt =
-        [object(Standards.X509.TBSCertificate)]cert->cert;
-      if(crt->public_key->type == wantedtype)
-        return context->client_certificates[[int]cert->chain];
-    }
-  }
-
-  // FIXME: Check acceptable_authority_dns.
-  acceptable_authority_dns;
-  return ({});
 }
 
 // update the cached decoded issuers list
