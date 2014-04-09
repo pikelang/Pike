@@ -851,7 +851,7 @@ __deprecated__ void dhe_dss_mode(int(0..)|void min_keylength)
 array(int) preferred_compressors =
   ({ COMPRESSION_null, COMPRESSION_deflate });
 
-//! Non-zero to enable cahing of sessions
+//! Non-zero to enable caching of sessions
 int use_cache = 1;
 
 //! Sessions are removed from the cache when they are older than this
