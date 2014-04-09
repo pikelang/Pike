@@ -822,7 +822,7 @@ void filter_weak_suites(int min_keylength)
 //!   @[dhe_dss_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
-__deprecated__ void rsa_mode(int(0..)|void min_keylength, int|void max_version)
+__deprecated__ void rsa_mode(int(0..)|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
@@ -837,7 +837,7 @@ __deprecated__ void rsa_mode(int(0..)|void min_keylength, int|void max_version)
 //!   @[rsa_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
-__deprecated__ void dhe_dss_mode(int(0..)|void min_keylength, int|void max_version)
+__deprecated__ void dhe_dss_mode(int(0..)|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
