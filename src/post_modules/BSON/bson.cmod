@@ -441,6 +441,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         push_svalue(&k->ind);
         o_cast_to_int();
         i = Pike_sp[-1].u.integer;
+        if (i < 0 || i >= asize)
+            Pike_error("invalid BSON. array index out of bounds.\n");
         pop_stack();
 	assign_svalue(ITEM(arr) + i, &k->val);
       }
