@@ -336,7 +336,7 @@ void handle_heartbeat(string s)
   int hb_len = hb_msg->get_uint(2);
 
   SSL3_DEBUG_MSG("SSL.connection: Heartbeat %s (%d bytes)",
-		 fmt_constant("HEARTBEAT_MESSAGE_", hb_type), hb_len);
+		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
   // RFC 6520 4:
   // If the payload_length of a received HeartbeatMessage is too
@@ -552,7 +552,7 @@ string|int got_data(string|int s)
 	//   If a TLS implementation receives a record type it does not
 	//   understand, it SHOULD just ignore it.
 	SSL3_DEBUG_MSG("SSL.connection: Ignoring packet of type %s\n",
-		       fmt_constant("PACKET_", packet->content_type));
+		       fmt_constant(packet->content_type, "PACKET"));
 	break;
       }
     }

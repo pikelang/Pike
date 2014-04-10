@@ -344,7 +344,7 @@ int select_cipher_suite(object context,
 
     if (!cert) {
       error("No suitable certificate for selected cipher suite: %s (%s).\n",
-	    fmt_cipher_suite(suite), fmt_constant("SIGNATURE_", sa));
+	    fmt_cipher_suite(suite), fmt_constant(sa, "SIGNATURE"));
     }
 
     private_key = cert->key;
