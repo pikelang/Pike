@@ -916,14 +916,14 @@ private array(string(8bit))
 #endif /* 0 */
 
 //! Compatibility.
-//! @deprecated get_private_key
+//! @deprecated find_cert
 __deprecated__ Crypto.DSA `dsa()
 {
   return UNDEFINED;
 }
 
 //! Compatibility.
-//! @deprecated set_private_key
+//! @deprecated add_cert
 __deprecated__ void `dsa=(Crypto.DSA k)
 {
   error("The old DSA API is not supported anymore.\n");
