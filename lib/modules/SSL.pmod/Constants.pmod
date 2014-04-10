@@ -642,6 +642,19 @@ constant TLS_psk_with_aes_128_ccm_8		= 0xc0a8;	// RFC 6655
 constant TLS_psk_with_aes_256_ccm_8		= 0xc0a9;	// RFC 6655
 constant TLS_psk_dhe_with_aes_128_ccm_8		= 0xc0aa;	// RFC 6655
 constant TLS_psk_dhe_with_aes_256_ccm_8		= 0xc0ab;	// RFC 6655
+constant TLS_ecdhe_rsa_with_chacha20_poly1305_sha256 = 0xcc13;  // draft-agl-tls-chacha20poly1305-02
+constant TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256 = 0xcc14;// draft-agl-tls-chacha20poly1305-02
+constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls-chacha20poly1305-02
+
+// Where are these defined?
+constant SSL_rsa_fips_with_des_cbc_sha        = 0xFEFE;
+constant SSL_rsa_fips_with_3des_ede_cbc_sha   = 0xFEFF;
+constant SSL_rsa_fips_with_des_cbc_sha_2      = 0xFFE1;
+constant SSL_rsa_fips_with_3des_ede_cbc_sha_2 = 0xFFE0;
+constant SSL_rsa_with_rc2_cbc_md5             = 0xFF80;
+constant SSL_rsa_with_idea_cbc_md5            = 0xFF81;
+constant SSL_rsa_with_des_cbc_md5             = 0xFF82;
+constant SSL_rsa_with_3des_ede_cbc_md5        = 0xFF83;
 
 // Constants from SSL 2.0.
 // These may appear in HANDSHAKE_hello_v2 and
@@ -692,6 +705,14 @@ string fmt_signature_pairs(array(array(int)) pairs)
   foreach(pairs, [int hash, int signature])
     b->sprintf("  <%s, %s>\n", fmt_constant("HASH",hash), fmt_constant("SIGNATURE",signature));
   return (string)b;
+}
+
+string fmt_curve(int c)
+{
+  foreach(indices(this), string id)
+    if( has_prefix(id, "CURVE_") && this[id]==c )
+      return id;
+  return sprintf("Unknown curve %d.", c);
 }
 
 string fmt_version(ProtocolVersion version)
@@ -1070,7 +1091,13 @@ constant EXTENSION_client_certificate_type      = 19;           // RFC-ietf-tls-
 constant EXTENSION_server_certificate_type      = 20;           // RFC-ietf-tls-oob-pubkey-11
 constant EXTENSION_padding                      = 21;           // TEMPORARY draft-agl-tls-padding
 constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507 / RFC 5077
+constant EXTENSION_extended_random              = 40;           // draft-rescorla-tls-extended-random
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
+constant EXTENSION_origin_bound_certificates    = 13175;
+constant EXTENSION_encrypted_client_certificates= 13180;
+constant EXTENSION_channel_id                   = 30031;
+constant EXTENSION_channel_id_new               = 30032;
+constant EXTENSION_old_padding                  = 35655;
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 
 constant ECC_CURVES = ([
@@ -1278,6 +1305,6 @@ class CertificatePair
 
   protected string _sprintf(int c)
   {
-    return sprintf("CertificatePair(({%{%O, %}}))", globs);
+    return sprintf("CertificatePair(%O, ({%{%O, %}}))", key->name(), globs);
   }
 }
