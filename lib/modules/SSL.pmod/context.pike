@@ -186,8 +186,8 @@ array(int) preferred_suites;
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
-//! List of advertised protocols using using TLS next protocol
-//! negotiation.
+//! List of advertised protocols using using TLS application level
+//! protocol negotiation.
 array(string(8bit)) advertised_protocols;
 
 //! The maximum amount of data that is sent in each SSL packet by
