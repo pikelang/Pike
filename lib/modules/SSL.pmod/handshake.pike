@@ -1688,12 +1688,13 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         // want.
 
 	array(CertificatePair) certs = [array(CertificatePair)]
-	  filter(context->find_cert(client_cert_distinguished_names, 1),
+	  filter(context->find_cert(client_cert_distinguished_names, 1) || ({}),
 		 lambda(CertificatePair cp, array(int)) {
 		   return has_value(client_cert_types, cp->cert_type);
 		 }, client_cert_types);
 
 	if (sizeof(certs)) {
+	  session->private_key = certs[0]->key;
           session->certificate_chain = certs[0]->certs;
 #ifdef SSL3_DEBUG
 	  foreach(session->certificate_chain, string c)
