@@ -829,7 +829,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      session->ecc_curves =
 		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
 		       ECC_CURVES);
-	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", map(session->ecc_curves, fmt_curve));
+	      SSL3_DEBUG_MSG("Elliptic curves: %O\n",
+			     map(session->ecc_curves, fmt_constant, "CURVE"));
 	      break;
 	    case EXTENSION_ec_point_formats:
 	      if (!remote_extensions[EXTENSION_elliptic_curves] ||
@@ -995,7 +996,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				    version));
 		}
 		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
-			       fmt_constant("HEARTBEAT_MODE_", hb_mode));
+			       fmt_constant(hb_mode, "HEARTBEAT_MODE"));
 		session->heartbeat_mode = [int(0..1)]hb_mode;
 	      }
 	      break;

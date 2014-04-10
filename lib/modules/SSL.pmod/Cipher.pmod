@@ -1629,8 +1629,9 @@ array lookup(int suite, ProtocolVersion|int version,
 	hash_id = pair[0];
       }
     }
-    SSL3_DEBUG_MSG("Selected <%s, %s>\n", fmt_constant("HASH",hash_id),
-                   fmt_constant("SIGNATURE",sign_id));
+    SSL3_DEBUG_MSG("Selected <%s, %s>\n",
+		   fmt_constant(hash_id, "HASH"),
+		   fmt_constant(sign_id, "SIGNATURE"));
     TLSSigner signer = TLSSigner(hash_id);
     res->verify = signer->verify;
 
