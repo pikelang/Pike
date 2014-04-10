@@ -344,9 +344,11 @@ test_do([[
       SSL.Constants.SSL_null_with_null_null,
     }),
     SSL.Constants.PROTOCOL_TLS_1_2: ({
+      SSL.Constants.SSL_rsa_with_idea_cbc_md5,
       SSL.Constants.SSL_rsa_with_idea_cbc_sha,
       SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha,
       SSL.Constants.SSL_dh_anon_with_des_cbc_sha,
+      SSL.Constants.SSL_rsa_with_des_cbc_md5,
       SSL.Constants.SSL_rsa_with_des_cbc_sha,
       SSL.Constants.SSL_dh_rsa_with_des_cbc_sha,
       SSL.Constants.SSL_dh_dss_with_des_cbc_sha,
@@ -691,7 +693,8 @@ array(int) a() {
     log_status("Testing ECDSA curve %O...", curve->name());
     object server_ctx = make_context(curve);
     array suites = server_ctx->get_suites(128, 2);
-    successes += test_ssl_connection(0,3,3,3,client_msg,server_ctx,suites);
+    successes += test_ssl_connection(0x300, 0x303, 0x303, 0x303,
+				     client_msg,server_ctx,suites);
     tests++;
   }
 

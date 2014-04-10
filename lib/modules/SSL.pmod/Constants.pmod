@@ -647,6 +647,10 @@ constant TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256 = 0xcc14;// draft-agl-tls
 constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls-chacha20poly1305-02
 
 // Where are these defined?
+// RFC 6101 A.6:
+//   All cipher suites whose first byte is 0xFF are considered private
+//   and can be used for defining local/experimental algorithms.
+//   Interoperability of such types is a local matter.
 constant SSL_rsa_fips_with_des_cbc_sha        = 0xFEFE;
 constant SSL_rsa_fips_with_3des_ede_cbc_sha   = 0xFEFF;
 constant SSL_rsa_fips_with_des_cbc_sha_2      = 0xFFE1;
@@ -752,8 +756,10 @@ constant CIPHER_SUITES =
    // NB: The IDEA and DES suites are obsolete in TLS 1.2 and later.
 #if constant(Crypto.IDEA)
    SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
+   SSL_rsa_with_idea_cbc_md5 :		({ KE_rsa, CIPHER_idea, HASH_md5 }),
 #endif
    SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha }),
+   SSL_rsa_with_des_cbc_md5 :		({ KE_rsa, CIPHER_des, HASH_md5 }),
    SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
    SSL_dhe_rsa_with_des_cbc_sha :	({ KE_dhe_rsa, CIPHER_des, HASH_sha }),
    SSL_dh_dss_with_des_cbc_sha :	({ KE_dh_dss, CIPHER_des, HASH_sha }),
@@ -788,6 +794,7 @@ constant CIPHER_SUITES =
    // Required by TLS 1.2 RFC 5246 9.
    TLS_rsa_with_aes_128_cbc_sha :	({ KE_rsa, CIPHER_aes, HASH_sha }),
 
+   SSL_rsa_with_3des_ede_cbc_md5 :	({ KE_rsa, CIPHER_3des, HASH_md5 }),
    SSL_dhe_rsa_with_3des_ede_cbc_sha :	({ KE_dhe_rsa, CIPHER_3des, HASH_sha }),
    SSL_dh_dss_with_3des_ede_cbc_sha :	({ KE_dh_dss, CIPHER_3des, HASH_sha }),
    SSL_dh_rsa_with_3des_ede_cbc_sha :	({ KE_dh_rsa, CIPHER_3des, HASH_sha }),
