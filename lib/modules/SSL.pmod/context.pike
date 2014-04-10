@@ -940,7 +940,7 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 //!   Minimum acceptable key length in bits.
 //!
 //! @seealso
-//!   @[dhe_dss_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
+//!   @[dhe_dss_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
 __deprecated__ void rsa_mode(int(0..)|void min_keylength)
@@ -955,7 +955,7 @@ __deprecated__ void rsa_mode(int(0..)|void min_keylength)
 //!   Minimum acceptable key length in bits.
 //!
 //! @seealso
-//!   @[rsa_mode()], @[ecdsa_mode()], @[filter_weak_suites()]
+//!   @[rsa_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
 __deprecated__ void dhe_dss_mode(int(0..)|void min_keylength)
