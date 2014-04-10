@@ -197,7 +197,6 @@ Packet server_hello_packet()
       struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
-  SSL3_DEBUG_MSG("SSL.handshake: Server hello: %O\n", data);
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
@@ -818,8 +817,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      string bytes = extension_data->get_var_string(2);
 	      // Pairs of <hash_alg, signature_alg>.
 	      session->signature_algorithms = ((array(int))bytes)/2;
-	      SSL3_DEBUG_MSG("New signature_algorithms: %O\n",
-			     session->signature_algorithms);
+	      SSL3_DEBUG_MSG("New signature_algorithms:\n"+
+			     fmt_signature_pairs(session->signature_algorithms));
 	      break;
 	    case EXTENSION_elliptic_curves:
 	      if (!remote_extensions[EXTENSION_server_name] ||
@@ -830,7 +829,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      session->ecc_curves =
 		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
 		       ECC_CURVES);
-	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", session->ecc_curves);
+	      SSL3_DEBUG_MSG("Elliptic curves: %O\n", map(session->ecc_curves, fmt_curve));
 	      break;
 	    case EXTENSION_ec_point_formats:
 	      if (!remote_extensions[EXTENSION_elliptic_curves] ||
@@ -885,6 +884,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				  version));
 		return -1;
 	      }
+              SSL3_DEBUG_MSG("Maximum frame size %O.\n", session->max_packet_size);
 	      break;
 	    case EXTENSION_truncated_hmac:
 	      // RFC 3546 3.5 "Truncated HMAC"
@@ -893,6 +893,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				  version));
 	      }
 	      session->truncated_hmac = 1;
+              SSL3_DEBUG_MSG("Trucated HMAC\n");
 	      break;
 
 	    case EXTENSION_renegotiation_info:
@@ -928,6 +929,14 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                 if( !context->advertised_protocols )
                   break;
                 multiset(string) protocols = (<>);
+                if( extension_data->get_uint(2) != sizeof(extension_data) )
+                {
+                  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+                                    version,
+                                    "SSL.handshake->handle_handshake: Length mismatch.\n",
+                                    backtrace()));
+                  return -1;
+                }
                 while (!extension_data->is_empty()) {
                   string server_name = extension_data->get_var_string(1);
                   if( sizeof(server_name)==0 )
@@ -945,7 +954,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                 if( !sizeof(protocols) )
                 {
                   // FIXME: What does an empty list mean? Ignore, no
-                  // protocol failure or handshake failure?
+                  // protocol failure or handshake failure? Currently
+                  // it will hit the no compatible protocol fatal
+                  // alert below.
                 }
 
                 // Although the protocol list is sent in client
