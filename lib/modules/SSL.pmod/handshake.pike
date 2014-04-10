@@ -403,6 +403,9 @@ Packet client_key_exchange_packet()
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
+// FIXME: The certificate code has changed, so this no longer works,
+// if it ever did.
+#if 0
 Packet certificate_verify_packet()
 {
   ADT.struct struct = ADT.struct();
@@ -416,6 +419,7 @@ Packet certificate_verify_packet()
   return handshake_packet (HANDSHAKE_certificate_verify,
 			  struct->pop_data());
 }
+#endif
 
 int(0..1) not_ecc_suite(int cipher_suite)
 {
@@ -1722,14 +1726,19 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       if (key_exchange)
 	send_packet(key_exchange);
 
+
+      // FIXME: The certificate code has changed, so this no longer
+      // works, if it every did.
+#if 0
       // FIXME: Certificate verify; we should redo this so it makes more sense
       if(certificate_state == CERT_received &&
-         sizeof(context->client_certificates) &&
+         sizeof(context->cert_pairs) &&
 	 context->private_key)
          // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
       }
+#endif
 
       send_packet(change_cipher_packet());
 
