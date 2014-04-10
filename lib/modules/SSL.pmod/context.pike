@@ -447,13 +447,6 @@ array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 //! negotiation.
 array(string(8bit)) advertised_protocols;
 
-//! Protocols to advertise during handshake using the next protocol
-//! negotiation extension. Currently only used together with spdy.
-void advertise_protocols(string(8bit) ... protos)
-{
-    advertised_protocols = protos;
-}
-
 //! The maximum amount of data that is sent in each SSL packet by
 //! @[sslfile]. A value between 1 and
 //! @[SSL.Constants.PACKET_MAX_SIZE].

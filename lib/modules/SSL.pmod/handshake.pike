@@ -81,7 +81,6 @@ constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
 
-int has_next_protocol_negotiation;
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
 
@@ -192,15 +191,6 @@ Packet server_hello_packet()
     extensions->put_uint(sizeof(next_protocol)+3, 2);
     extensions->put_uint(sizeof(next_protocol)+1, 2);
     extensions->put_var_string(next_protocol, 1);
-  }
-  else if (has_next_protocol_negotiation &&
-           context->advertised_protocols) {
-    extensions->put_uint(EXTENSION_next_protocol_negotiation, 2);
-    ADT.struct extension = ADT.struct();
-    foreach (context->advertised_protocols;; string(0..255) proto) {
-      extension->put_var_string(proto, 1);
-    }
-    extensions->put_var_string(extension->pop_data(), 2);
   }
 
   if (!extensions->is_empty())
@@ -932,17 +922,12 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
               SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
 	      break;
 
-	    case EXTENSION_next_protocol_negotiation:
-	      has_next_protocol_negotiation = 1;
-              SSL3_DEBUG_MSG("NPN extension\n");
-	      break;
-
             case EXTENSION_application_layer_protocol_negotiation:
               {
                 has_application_layer_protocol_negotiation = 1;
                 if( !context->advertised_protocols )
                   break;
-                array(string) protocols = ({});
+                multiset(string) protocols = (<>);
                 while (!extension_data->is_empty()) {
                   string server_name = extension_data->get_var_string(1);
                   if( sizeof(server_name)==0 )
@@ -954,7 +939,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                                       backtrace()));
                     return -1;
                   }
-                  protocols += ({ server_name });
+                  protocols[ server_name ] = 1;
                 }
 
                 if( !sizeof(protocols) )
@@ -968,8 +953,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                 // wins.
                 next_protocol = 0;
                 foreach(context->advertised_protocols;; string(0..255) prot)
-                  if( has_value(protocols, prot) )
+                  if( protocols[prot] )
+                  {
                     next_protocol = prot;
+                    break;
+                  }
                 if( !next_protocol )
                   send_packet(Alert(ALERT_fatal, ALERT_no_application_protocol,
                                     version,
