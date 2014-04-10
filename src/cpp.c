@@ -2268,6 +2268,9 @@ static void insert_callback_define(struct cpp *this,
 			  this->handler, this->compat_handler, 2, 0 ) &&
       TYPEOF(sp[-1]) == T_STRING ) {
     string_builder_shared_strcat(tmp, sp[-1].u.string);
+    string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
+    insert_current_file_as_string( this,def,args,tmp);
+    string_builder_putchar(tmp, '\n');
     pop_stack();
   }
 }
