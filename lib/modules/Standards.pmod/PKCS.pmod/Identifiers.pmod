@@ -224,6 +224,7 @@ mapping(string(7bit):Identifier) at_ids =
 mapping(Identifier:string(7bit)) reverse_at_ids = reverse_lookup(at_ids);
 
 Identifier ce_id = Identifier(2, 5, 29);
+// RFC 3280
 Identifier pkix_id = Identifier(1, 3, 6, 1, 5, 5, 7);
 
 
@@ -255,7 +256,7 @@ mapping(string(7bit):Identifier) qt_ids =
    "unotice" : qt_id->append(2) ]);
 
 mapping(Identifier:string(7bit)) reverse_qt_ids = reverse_lookup(qt_ids);
-  
+
 /* Key purposes */
 
 Identifier kp_id = pkix_id->append(3);
@@ -271,6 +272,10 @@ mapping(Identifier:string(7bit)) reverse_kp_ids = reverse_lookup(kp_ids);
 
 /* Private extensions */
 Identifier pe_id = pkix_id->append(1);
+
+/* RFC 4985 - Subject Alternative Name for Expression of Service Name */
+Identifier on_id = pkix_id->append(8);
+Identifier on_dnsSRV_id = on_id->append(7);
 
 /* Access descriptions */
 
