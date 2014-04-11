@@ -365,7 +365,7 @@ PIKECLASS Fortuna
     {
       fortuna_generate();
       string_builder_binary_strcat(&s, (const char *)THIS->data,
-                                   MIN(16, (len-stored)));
+                                   MINIMUM(16, (len-stored)));
       stored += 16;
       if( !(stored % (1<<20)) )
         fortuna_rekey();
