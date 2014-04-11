@@ -646,11 +646,8 @@ constant TLS_ecdhe_rsa_with_chacha20_poly1305_sha256 = 0xcc13;  // draft-agl-tls
 constant TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256 = 0xcc14;// draft-agl-tls-chacha20poly1305-02
 constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls-chacha20poly1305-02
 
-// Where are these defined?
-// RFC 6101 A.6:
-//   All cipher suites whose first byte is 0xFF are considered private
-//   and can be used for defining local/experimental algorithms.
-//   Interoperability of such types is a local matter.
+// These were introduced by Netscape while developing SSL 3.1 after
+// feedback from NIST. Eventually the feedback led to TLS 1.0.
 constant SSL_rsa_fips_with_des_cbc_sha        = 0xFEFE;
 constant SSL_rsa_fips_with_3des_ede_cbc_sha   = 0xFEFF;
 constant SSL_rsa_fips_with_des_cbc_sha_2      = 0xFFE1;
