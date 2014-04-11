@@ -204,6 +204,16 @@ int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
 array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 				 int(0..1)|void is_issuer)
 {
+  if (!sizeof(sni_or_issuer || ({}))) {
+    // Either no/empty SNI, or empty certificate_authorities list.
+
+    // RFC 4346 7.4.4
+    //   If the certificate_authorities list is empty then the client MAY
+    //   send any certificate of the appropriate ClientCertificateType,
+    //   unless there is some external arrangement to the contrary.
+    return cert_pairs;
+  }
+
   mapping(string(8bit):array(CertificatePair)) certs = ([]);
   array(string(8bit)) maybes = ({});
 
