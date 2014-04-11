@@ -1515,7 +1515,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				  version));
 	      }
 	      SSL3_DEBUG_MSG("heartbeat extension: %s\n",
-			     fmt_constant("HEARTBEAT_MODE_", hb_mode));
+			     fmt_constant(hb_mode, "HEARTBEAT_MODE"));
 	      session->heartbeat_mode = [int(0..1)]hb_mode;
 	    }
 	    break;
