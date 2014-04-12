@@ -200,11 +200,14 @@ class Curve {
     }
 
     //! Returns the PKCS-1 algorithm identifier for ECDSA and the provided
-    //! hash algorithm. Only SHA-2 based hashes are supported currently.
+    //! hash algorithm. Only SHA-1 and SHA-2 based hashes are supported
+    //! currently.
     Sequence pkcs_signature_algorithm_id(.Hash hash)
     {
       switch(hash->name())
       {
+      case "sha1":
+	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha1_id }) );
       case "sha224":
 	return Sequence( ({ Standards.PKCS.Identifiers.ecdsa_sha224_id }) );
       case "sha256":
