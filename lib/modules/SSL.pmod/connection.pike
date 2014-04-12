@@ -188,9 +188,8 @@ string|int to_write()
 //! Initiate close.
 void send_close()
 {
-  send_packet(Alert(ALERT_warning, ALERT_close_notify, version,
-		    "Closing connection.\n"),
-	      PRI_application);
+  send_packet(Alert(ALERT_warning, ALERT_close_notify,
+                    "Closing connection.\n"), PRI_application);
 }
 
 //! Send an application data packet. If the data block is too large
@@ -233,9 +232,8 @@ int handle_alert(string s)
   int description = s[1];
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
-		      "SSL.connection->handle_alert: invalid alert\n",
-		      backtrace()));
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "invalid alert\n", backtrace()));
     return -1;
   }
   if (level == ALERT_fatal)
@@ -262,7 +260,7 @@ int handle_alert(string s)
 			((certificate_state == CERT_requested)
 			 ? ALERT_handshake_failure
 			 : ALERT_unexpected_message),
-			version, "Certificate required.\n"));
+			"Certificate required.\n"));
       return -1;
     }
   }
@@ -278,7 +276,7 @@ int handle_change_cipher(int c)
   if (!expect_change_cipher || (c != 1))
   {
     SSL3_DEBUG_MSG("SSL.connection: handle_change_cipher: Unexcepted message!");
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Unexpected change cipher!\n"));
     return -1;
   }
@@ -475,7 +473,7 @@ string|int got_data(string|int s)
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
 	   // For details see: http://www.g-sec.lu/practicaltls.pdf and
 	   // RFC 5746.
-	   send_packet(Alert(ALERT_warning, ALERT_no_renegotiation, version,
+	   send_packet(Alert(ALERT_warning, ALERT_no_renegotiation,
 			     "Renegotiation not supported in unsecure mode.\n"));
 	   return -1;
 	 }
@@ -490,7 +488,7 @@ string|int got_data(string|int s)
 	   // renegotiation vulnerability mentioned above. It is however not
 	   // safe to assume that, since there might be routes past this,
 	   // maybe through the use of a version 2 hello message below.
-	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
+	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			     "Expected change cipher.\n"));
 	   return -1;
 	 }
@@ -519,7 +517,7 @@ string|int got_data(string|int s)
 
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Handshake not finished yet!\n"));
 	  return -1;
 	}
@@ -542,7 +540,7 @@ string|int got_data(string|int s)
 	    // drop the message silently and MAY send an unexpected_message
 	    // Alert message.
 	    send_packet(Alert(ALERT_warning, ALERT_unexpected_message,
-			      version, "Heart beat mode not enabled.\n"));
+			      "Heart beat mode not enabled.\n"));
 	    break;
 	  }
 	  handle_heartbeat(packet->fragment);
@@ -551,7 +549,7 @@ string|int got_data(string|int s)
       default:
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version,
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Unexpected message during handshake!\n"));
 	  return -1;
 	}
