@@ -1137,7 +1137,7 @@ static void html_add_quote_tag(INT32 args)
 	      pop_stack();
 	    }
 	    free_svalues (arr->item+i, 3, BIT_MIXED);
-	    MEMCPY (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
+	    MEMMOVE (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
 	    arr->size -= 3;
 	  }
 	else {
@@ -1165,7 +1165,7 @@ static void html_add_quote_tag(INT32 args)
 	  }
 	  else
 	    arr = val->u.array = resize_array (arr, arr->size+3);
-	  MEMCPY (arr->item+i+3, arr->item+i,
+	  MEMMOVE (arr->item+i+3, arr->item+i,
 		  (arr->size-i-3) * sizeof(struct svalue));
 	  MEMCPY (arr->item+i, sp-=3, 3 * sizeof(struct svalue));
 	  goto done;
