@@ -319,7 +319,7 @@ int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
 #undef Object
 
 //
-//  --- Below are methods for RSA applied in other standards.
+//  --- Below are methods for DSA applied in other standards.
 //
 
 
@@ -368,6 +368,10 @@ int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 	       y->powm( [object(Gmp.mpz)](w * r % q), p) % p) % q;
 }
 
+int(0..) key_size()
+{
+  return p->size();
+}
 
 //
 // --- Deprecated stuff
