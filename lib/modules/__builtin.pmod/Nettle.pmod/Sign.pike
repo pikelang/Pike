@@ -11,6 +11,9 @@
 //! Returns the printable name of the signing algorithm.
 string(7bit) name();
 
+//! Returns the number of bits in the private key.
+int(0..) key_size();
+
 //! Check whether the public key is the same in
 //! two objects.
 //!
