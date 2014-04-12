@@ -1027,7 +1027,7 @@ static void mpzmod__is_type(INT32 args)
   f_eq(2);
 }
 
-/*! @decl int size(void|int base)
+/*! @decl int(0..) size(void|int base)
  *!
  *! Return how long this mpz would be represented in the specified
  *! @[base]. The default base is 2.
@@ -2396,7 +2396,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr7), 0);	\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
-  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
+  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
   ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr7),0);\
