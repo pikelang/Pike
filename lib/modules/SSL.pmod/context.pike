@@ -57,6 +57,40 @@ ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 //!   This value should not be less than @[min_version].
 ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 
+//! @decl Alert alert_factory(SSL.connection con, int level, int description, @
+//!			      ProtocolVersion version, @
+//!			      string|void message, mixed|void trace)
+//!
+//! Alert factory.
+//!
+//! This function may be overloaded to eg obtain logging of
+//! generated alerts.
+//!
+//! @param con
+//!   Connection which caused the alert.
+//!
+//! @param level
+//!   Level of alert.
+//!
+//! @param description
+//!   Description code for the alert.
+//!
+//! @param message
+//!   Optional log message for the alert.
+//!
+//! @param trace
+//!   Optional backtrace for the alert.
+//!
+//! @note
+//!   Not all alerts are fatal, and some (eg @[ALERT_close_notify]) are used
+//!   during normal operation.
+.alert alert_factory(object con,
+		     int level, int description, ProtocolVersion version,
+		     string|void message, mixed|void trace)
+{
+  return .alert(level, description, version, message, trace);
+}
+
 //! Should an SSL client include the Server Name extension?
 //!
 //! If so, then client_server_names should specify the values to send.
