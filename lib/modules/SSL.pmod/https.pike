@@ -15,12 +15,29 @@
 
 import Stdio;
 
+class MyContext
+{
+  inherit SSL.context;
+
+  SSL.alert alert_factory(SSL.connection con,
+			  int level, int description,
+			  SSL.Constants.ProtocolVersion version,
+			  string|void message, mixed|void trace)
+  {
+    if (message) {
+      werror("ALERT [%s: %d:%d]: %s",
+	     SSL.Constants.fmt_version(version),
+	     level, description, message);
+    }
+    return ::alert_factory(con, level, description, version, message, trace);
+  }
+}
+
 #ifndef HTTPS_CLIENT
 SSL.sslport port;
 
 void my_accept_callback(object f)
 {
-  werror("Accept!\n");
   conn(port->accept());
 }
 #endif
@@ -138,7 +155,7 @@ class client
 
   protected void create(Stdio.File con)
   {
-    SSL.context ctx = SSL.context();
+    SSL.context ctx = MyContext();
     ctx->random = no_random()->read;
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
@@ -159,7 +176,7 @@ int main()
   client(con);
   return -17;
 #else
-  SSL.context ctx = SSL.context();
+  SSL.context ctx = MyContext();
 
   Crypto.Sign key;
   string certificate;
