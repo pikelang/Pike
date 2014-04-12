@@ -16,18 +16,12 @@
 import Stdio;
 
 #ifndef HTTPS_CLIENT
-inherit SSL.sslport;
-
-protected void create()
-{
-  SSL3_DEBUG_MSG("https->create\n");
-  sslport::create();
-}
+SSL.sslport port;
 
 void my_accept_callback(object f)
 {
   werror("Accept!\n");
-  conn(accept());
+  conn(port->accept());
 }
 #endif
 
@@ -165,6 +159,8 @@ int main()
   client(con);
   return -17;
 #else
+  SSL.context ctx = SSL.context();
+
   Crypto.Sign key;
   string certificate;
 
@@ -175,7 +171,7 @@ int main()
 						 "commonName" : "*",
 					       ]));
 
-  add_cert(key, ({ certificate }), ({ "*" }));
+  ctx->add_cert(key, ({ certificate }), ({ "*" }));
 
   key = Crypto.DSA()->generate_key(1024, 160);
   certificate =
@@ -183,7 +179,7 @@ int main()
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-  add_cert(key, ({ certificate }));
+  ctx->add_cert(key, ({ certificate }));
 
 #if constant(Crypto.ECC.Curve)
   key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
@@ -192,19 +188,22 @@ int main()
 						 "organizationName" : "Test",
 						 "commonName" : "*",
 					       ]));
-  add_cert(key, ({ certificate }));
+  ctx->add_cert(key, ({ certificate }));
 #endif
 
   // Make sure all cipher suites are available.
-  preferred_suites = get_suites(-1, 2);
+  ctx->preferred_suites = ctx->get_suites(-1, 2);
   SSL3_DEBUG_MSG("Cipher suites:\n%s",
-                 .Constants.fmt_cipher_suites(preferred_suites));
+                 .Constants.fmt_cipher_suites(ctx->preferred_suites));
 
-  SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
+  SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->cert_pairs);
 
-  random = no_random()->read;
+  ctx->random = no_random()->read;
+
+  port = SSL.sslport(ctx);
+
   werror("Starting\n");
-  if (!bind(PORT, my_accept_callback))
+  if (!port->bind(PORT, my_accept_callback))
   {
     perror("");
     return 17;

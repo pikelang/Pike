@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 8.0
 #require constant(SSL.Cipher)
 
 //! Interface similar to @[Stdio.Port].
@@ -6,8 +6,8 @@
 //!
 inherit Stdio.Port : socket;
 
-//! Context to use for the connections.
-.context ctx;
+//!
+inherit SSL.context;
 
 //!
 inherit ADT.Queue : accept_queue;
@@ -54,10 +54,10 @@ void finished_callback(object f, mixed|void id)
 //!   @[bind()], @[finished_callback()]
 void ssl_callback(mixed id)
 {
-  object f = socket_accept();
+  object f = id->socket_accept();
   if (f)
   {
-    sslfile(f, ctx)->set_accept_callback(finished_callback);
+    sslfile(f, this)->set_accept_callback(finished_callback);
   }
 }
 
@@ -164,12 +164,12 @@ object accept()
 //!
 //! @seealso
 //!   @[bind()], @[listen_fd()]
-void create(.context|void ctx)
+void create()
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslport->create\n");
 #endif
-  if (!ctx) ctx = .context();
-  this_program::ctx = ctx;
+  context::create();
   accept_queue::create();
+  set_id(this);
 }
