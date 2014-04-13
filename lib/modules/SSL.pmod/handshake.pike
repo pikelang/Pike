@@ -92,6 +92,25 @@ SSL.alert Alert(int level, int description, string|void message,
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
 
+string(8bit) get_signature_algorithms()
+{
+  ADT.struct sign_algs = ADT.struct();
+  foreach(sort(indices(HASH_lookup)), int h) {
+    sign_algs->put_uint(h, 1);
+    sign_algs->put_uint(SIGNATURE_rsa, 1);
+    sign_algs->put_uint(h, 1);
+    sign_algs->put_uint(SIGNATURE_dsa, 1);
+#if constant(Crypto.ECC.Curve)
+    // NB: MD5 is not supported with ECDSA signatures.
+    if (h != HASH_md5) {
+      sign_algs->put_uint(h, 1);
+      sign_algs->put_uint(SIGNATURE_ecdsa, 1);
+    }
+#endif
+  }
+  return sign_algs->pop_data();
+}
+
 #ifdef SSL3_PROFILING
 int timestamp;
 void addRecord(int t,int s) {
@@ -300,16 +319,7 @@ Packet client_hello()
 
     // We list all hashes and signature formats that we support.
     ADT.struct extension = ADT.struct();
-    string(0..255) ext =
-      (string(0..255))(map(sort(indices(HASH_lookup)),
-			   lambda(int h) {
-			     return ({
-			       h, SIGNATURE_rsa,
-			       h, SIGNATURE_dsa,
-			       h, SIGNATURE_ecdsa,
-			     });
-			   })*({}));
-    extension->put_var_string(ext, 2);
+    extension->put_var_string(get_signature_algorithms(), 2);
     extensions->put_uint(EXTENSION_signature_algorithms, 2);
     extensions->put_var_string(extension->pop_data(), 2);
   }
@@ -543,7 +553,10 @@ Packet certificate_request_packet(SSL.context context)
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-    // FIXME: TLS 1.2 has var_uint_array of hash and sign pairs here.
+    if (version >= PROTOCOL_TLS_1_2) {
+      // TLS 1.2 has var_uint_array of hash and sign pairs here.
+      struct->put_var_string(get_signature_algorithms(), 2);
+    }
     struct->put_var_string([string(0..255)]
 			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
@@ -1619,7 +1632,14 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         client_cert_types = input->get_var_uint_array(1, 1);
         client_cert_distinguished_names = ({});
 
-        // FIXME: TLS 1.2 has var_uint_array of hash and sign pairs here.
+	if (version >= PROTOCOL_TLS_1_2) {
+	  // TLS 1.2 has var_uint_array of hash and sign pairs here.
+	  string bytes = input->get_var_string(2);
+	  // Pairs of <hash_alg, signature_alg>.
+	  session->signature_algorithms = ((array(int))bytes)/2;
+	  SSL3_DEBUG_MSG("New signature_algorithms:\n"+
+			 fmt_signature_pairs(session->signature_algorithms));
+	}
 
         int num_distinguished_names = input->get_uint(2);
         if(num_distinguished_names)
