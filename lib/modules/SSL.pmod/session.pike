@@ -90,7 +90,7 @@ array(array(int)) signature_algorithms = ({
   // supports MD5 and SHA-1.
   ({ HASH_md5, SIGNATURE_rsa }),
   ({ HASH_md5, SIGNATURE_dsa }),
-  ({ HASH_md5, SIGNATURE_ecdsa }),
+  // NB: MD5 is not supported with ECDSA.
   ({ HASH_sha, SIGNATURE_rsa }),
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_ecdsa }),
