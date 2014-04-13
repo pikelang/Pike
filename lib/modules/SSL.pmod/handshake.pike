@@ -1624,23 +1624,24 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         int num_distinguished_names = input->get_uint(2);
         if(num_distinguished_names)
         {
-          ADT.struct s = ADT.struct(input->get_fix_string(num_distinguished_names));
+          ADT.struct s =
+	    ADT.struct(input->get_fix_string(num_distinguished_names));
           while(!s->is_empty())
           {
-            object asn =
-	      Standards.ASN1.Decode.simple_der_decode(s->get_var_string(2));
-            if(object_program(asn) != Standards.ASN1.Types.Sequence)
+	    string(8bit) der = s->get_var_string(2);
+	    Standards.ASN1.Types.Sequence seq =
+	      [object(Standards.ASN1.Types.Sequence)]
+	      Standards.ASN1.Decode.simple_der_decode(der);
+	    if(object_program(seq) != Standards.ASN1.Types.Sequence)
             {
-                    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-                            "Badly formed Certificate Request.\n",
-                            backtrace()));              
+	      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+				"Badly formed Certificate Request.\n",
+				backtrace()));
             }
-            Standards.ASN1.Types.Sequence seq = [object(Standards.ASN1.Types.Sequence)]asn;
-            client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string( 
-                                            seq ) }); 
+	    client_cert_distinguished_names += ({ der });
             SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
-                           client_cert_distinguished_names[-1]);
-           }
+			   Standards.PKCS.Certificate.get_dn_string( seq ));
+	  }
         }
 
       certificate_state = CERT_requested;
