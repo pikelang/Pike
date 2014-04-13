@@ -82,6 +82,12 @@ class Curve {
       return Curve::size();
     }
 
+    //! Return the size of the private key in bits.
+    int(0..) key_size()
+    {
+      return Curve::size();
+    }
+
     //! Set the private key.
     //!
     //! @note
