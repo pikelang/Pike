@@ -172,8 +172,6 @@ constant HASH_lookup = ([
 
 //! Signature algorithms from TLS 1.2.
 enum SignatureAlgorithm {
-  SIGNATURE_any         = -2,   //! All non-anonymous signatures (internal).
-  SIGNATURE_invalid	= -1,	//! Signature not supported (internal).
   SIGNATURE_anonymous	= 0,	//! No signature.
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
@@ -207,23 +205,12 @@ enum KeyExchangeType {
   KE_srp_sha_dss= 19,	//! SRP signed with DSS
 }
 
-//! Mapps from @[KeyExchangeType] to @[SignatureAlgorithm].
-constant KE_TO_SA = ([
-  KE_null:		SIGNATURE_anonymous,
-  KE_rsa:		SIGNATURE_rsa,
-  KE_dh_dss:		SIGNATURE_dsa,
-  KE_dh_rsa:		SIGNATURE_dsa,
-  KE_dhe_dss:		SIGNATURE_dsa,
-  KE_dhe_rsa:		SIGNATURE_rsa,
-  KE_dh_anon:		SIGNATURE_anonymous,
-  KE_dms:		SIGNATURE_invalid,
-  KE_fortezza:		SIGNATURE_invalid,
-  KE_ecdh_ecdsa:	SIGNATURE_ecdsa,
-  KE_ecdhe_ecdsa:	SIGNATURE_ecdsa,
-  KE_ecdh_rsa:		SIGNATURE_ecdsa,
-  KE_ecdhe_rsa:		SIGNATURE_rsa,
-  KE_ecdh_anon:		SIGNATURE_anonymous,
-]);
+//! Lists @[KeyExchangeType] that doesn't require certificates.
+constant KE_Anonymous = (<
+  KE_null,
+  KE_dh_anon,
+  KE_ecdh_anon,
+>);
 
 //! Compression methods.
 enum CompressionType {
