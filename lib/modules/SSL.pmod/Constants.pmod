@@ -94,7 +94,9 @@ constant PACKET_heartbeat          = 24; // RFC 6520
 constant PACKET_types = (< PACKET_change_cipher_spec,
 			   PACKET_alert,
 			   PACKET_handshake,
-			   PACKET_application_data >);
+			   PACKET_application_data,
+			   PACKET_heartbeat,
+>);
 
 constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
