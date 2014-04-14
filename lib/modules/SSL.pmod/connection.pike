@@ -328,7 +328,7 @@ void send_heartbeat()
   hb_msg->put_fix_string(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
   // We pad to an even 64 bytes.
   hb_msg->put_fix_string(random_string(64 - sizeof(hb_msg)));
-  send_packet(heartbeat_packet(hb_msg->get()));
+  send_packet(heartbeat_packet(hb_msg->pop_data()));
 }
 
 void handle_heartbeat(string s)
@@ -359,10 +359,10 @@ void handle_heartbeat(string s)
     // of the received HeartbeatRequest.
     hb_msg = ADT.struct();
     hb_msg->put_uint(HEARTBEAT_MESSAGE_response, 1);
-    hb_msg->put_unit(hb_len, 2);
+    hb_msg->put_uint(hb_len, 2);
     hb_msg->put_fix_string(payload);
     hb_msg->put_fix_string(random_string(pad_len));
-    send_packet(heartbeat_packet(hb_msg->get()));
+    send_packet(heartbeat_packet(hb_msg->pop_data()));
     break;
   case HEARTBEAT_MESSAGE_response:
     // RFC 6520 4:
@@ -374,7 +374,7 @@ void handle_heartbeat(string s)
       int b = hb_msg->get_uint(8);
       if (a != b) break;
       int delta = gethrtime() - a;
-      SSL3_DEBUG_MSG("SSL.connection: Heartbeat roundtrip: %dus", delta);
+      SSL3_DEBUG_MSG("SSL.connection: Heartbeat roundtrip: %dus\n", delta);
     }
     break;
   default:
