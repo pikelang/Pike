@@ -288,37 +288,12 @@ int handle_change_cipher(int c)
   }
 }
 
-private Crypto.AES heartbeat_encode;
-private Crypto.AES heartbeat_decode;
-
-Packet heartbeat_packet(string s)
-{
-  Packet packet = Packet();
-  packet->content_type = PACKET_heartbeat;
-  packet->fragment = s;
-  return packet;
-}
-
 void send_heartbeat()
 {
   if (!handshake_finished ||
       (session->heartbeat_mode != HEARTBEAT_MODE_peer_allowed_to_send)) {
     // We're not allowed to send heartbeats.
     return;
-  }
-
-  if (!heartbeat_encode) {
-    // NB: We encrypt the payload with a random AES key
-    //     to reduce the amount of known plaintext in
-    //     the heartbeat masseages. This is needed now
-    //     that many cipher suites (such as GCM and CCM)
-    //     use xor with a cipher stream, to reduce risk
-    //     of revealing larger segments of the stream.
-    heartbeat_encode = Crypto.AES();
-    heartbeat_decode = Crypto.AES();
-    string heartbeat_key = random_string(16);
-    heartbeat_encode->set_encrypt_key(heartbeat_key);
-    heartbeat_decode->set_decrypt_key(heartbeat_key);
   }
 
   ADT.struct hb_msg = ADT.struct();
@@ -341,13 +316,27 @@ void handle_heartbeat(string s)
   SSL3_DEBUG_MSG("SSL.connection: Heartbeat %s (%d bytes)",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
+  string(8bit) payload;
+  int pad_len = 16;
+
   // RFC 6520 4:
   // If the payload_length of a received HeartbeatMessage is too
   // large, the received HeartbeatMessage MUST be discarded silently.
-  if ((hb_len < 0) || ((hb_len + 16) > sizeof(hb_msg))) return;
-
-  string payload = hb_msg->get_fix_string(hb_len);
-  int pad_len = sizeof(hb_msg);
+  if ((hb_len < 0) || ((hb_len + 16) > sizeof(hb_msg))) {
+#ifdef SSL3_SIMULATE_HEARTBLEED
+    payload = hb_msg->get_rest();
+    if (sizeof(payload) < hb_len) {
+      payload = payload + random_string(hb_len - sizeof(payload));
+    } else {
+      payload = payload[..hb_len-1];
+    }
+#else
+    return;
+#endif
+  } else {
+    payload = hb_msg->get_fix_string(hb_len);
+    pad_len = sizeof(hb_msg);
+  }
 
   switch(hb_type) {
   case HEARTBEAT_MESSAGE_request:
@@ -372,7 +361,15 @@ void handle_heartbeat(string s)
       hb_msg = ADT.struct(heartbeat_decode->crypt(payload));
       int a = hb_msg->get_uint(8);
       int b = hb_msg->get_uint(8);
-      if (a != b) break;
+      if (a != b) {
+	if (!b) {
+	  // Heartbleed probe response.
+	  send_packet(Alert(ALERT_fatal, ALERT_insufficient_security,
+			    "Peer suffers from a bleeding heart.\n",
+			    backtrace()));
+	}
+	break;
+      }
       int delta = gethrtime() - a;
       SSL3_DEBUG_MSG("SSL.connection: Heartbeat roundtrip: %dus\n", delta);
     }

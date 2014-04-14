@@ -578,6 +578,53 @@ Packet certificate_packet(array(string(0..255)) certificates)
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
 }
 
+Packet heartbeat_packet(string s)
+{
+  Packet packet = Packet();
+  packet->content_type = PACKET_heartbeat;
+  packet->fragment = s;
+  return packet;
+}
+
+protected Crypto.AES heartbeat_encode;
+protected Crypto.AES heartbeat_decode;
+
+Packet heartbleed_packet()
+{
+  if (!heartbeat_encode) {
+    // NB: We encrypt the payload with a random AES key
+    //     to reduce the amount of known plaintext in
+    //     the heartbeat masseages. This is needed now
+    //     that many cipher suites (such as GCM and CCM)
+    //     use xor with a cipher stream, to reduce risk
+    //     of revealing larger segments of the stream.
+    heartbeat_encode = Crypto.AES();
+    heartbeat_decode = Crypto.AES();
+    string(8bit) heartbeat_key = random_string(16);
+    heartbeat_encode->set_encrypt_key(heartbeat_key);
+    heartbeat_decode->set_decrypt_key(heartbeat_key);
+  }
+
+  // This packet probes for the Heartbleed vulnerability (CVE-2014-0160)
+  // by crafting a heartbeat packet with insufficient (0) padding.
+  //
+  // If we get a response, the peer doesn't validate the message sizes
+  // properly, and probably suffers from the Heartbleed vulnerability.
+  //
+  // Note that we don't use negative padding (as per the actual attack),
+  // to avoid actually stealing information from the peer.
+  //
+  // Note that we detect the packet on return by it having all zeros
+  // in the second field.
+  ADT.struct hb_msg = ADT.struct();
+  hb_msg->put_uint(HEARTBEAT_MESSAGE_request, 1);
+  hb_msg->put_uint(16, 2);
+  int now = gethrtime();
+  hb_msg->put_fix_string(heartbeat_encode->crypt(sprintf("%8c%8c", now, 0)));
+  // No padding.
+  return heartbeat_packet(hb_msg->pop_data());
+}
+
 string(0..255) server_derive_master_secret(string(0..255) data)
 {
   string(0..255)|int res =
@@ -1133,6 +1180,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  else if(version >= PROTOCOL_TLS_1_0)
 	    send_packet(finished_packet("server finished"));
 
+	  if (session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+	    // Probe for the Heartbleed vulnerability (CVE-2014-0160).
+	    send_packet(heartbleed_packet());
+	  }
+
 	  expect_change_cipher = 1;
 	 
 	  handshake_state = STATE_server_wait_for_finish;
@@ -1220,6 +1272,12 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	   send_packet(finished_packet("SRVR"));
 	 else if(version >= PROTOCOL_TLS_1_0)
 	   send_packet(finished_packet("server finished"));
+
+	 if (session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+	   // Probe for the Heartbleed vulnerability (CVE-2014-0160).
+	   send_packet(heartbleed_packet());
+	 }
+
 	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
@@ -1739,6 +1797,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	send_packet(finished_packet("CLNT"));
       else if(version >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
+
+      if (session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+	// Probe for the Heartbleed vulnerability (CVE-2014-0160).
+	send_packet(heartbleed_packet());
+      }
 
       handshake_state = STATE_client_wait_for_finish;
       expect_change_cipher = 1;
