@@ -322,8 +322,7 @@ int select_cipher_suite(object context,
   int max_hash_size = 512;
 
   // Now we can select the actual cert to use.
-  SignatureAlgorithm sa = [int(0..0)|SignatureAlgorithm]KE_TO_SA[ke_method];
-  if (sa != SIGNATURE_anonymous) {
+  if ( !KE_Anonymous[ke_method] ) {
     CertificatePair cert;
 
     if (version >= PROTOCOL_TLS_1_2) {
@@ -343,8 +342,8 @@ int select_cipher_suite(object context,
     }
 
     if (!cert) {
-      error("No suitable certificate for selected cipher suite: %s (%s).\n",
-	    fmt_cipher_suite(suite), fmt_constant(sa, "SIGNATURE"));
+      error("No suitable certificate for selected cipher suite: %s.\n",
+	    fmt_cipher_suite(suite));
     }
 
     private_key = cert->key;
