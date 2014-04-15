@@ -301,10 +301,7 @@ PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr) {
     }
 found:
 
-#ifdef PIKE_DEBUG
     if (p) {
-#endif
-    {
 	struct ba_block_header * b = (struct ba_block_header*)ptr;
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
@@ -323,13 +320,12 @@ found:
                 ba_clear_page(a, p, &l);
             }
 	}
-    }
-#ifdef PIKE_DEBUG
     } else {
+#ifdef PIKE_DEBUG
 	print_allocator(a);
+#endif
 	Pike_fatal("ptr %p not in any page.\n", ptr);
     }
-#endif
     PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
 
