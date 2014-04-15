@@ -408,11 +408,15 @@ CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t tree,
 		node = CB_CHILD(node, bit);
 		continue;
 	    }
-	    if (!bit && CB_HAS_CHILD(node, 1)) {
-		WALK_FORWARD(node, {
-		    if (CB_HAS_VALUE(_)) return _;
-		});
-	    }
+
+            /* this is not very elegant */
+	    if (bit && CB_HAS_CHILD(node, 0))
+                node = cb_find_last(CB_CHILD(node, 0));
+
+            /* just find the next node */
+            WALK_FORWARD(node, {
+                if (CB_HAS_VALUE(_)) return _;
+            });
 
 	    return NULL;
 	}
