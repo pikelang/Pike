@@ -7,6 +7,26 @@
 #define PORT 25678
 #endif
 
+#ifndef CIPHER_BITS
+#define CIPHER_BITS	128
+#endif
+
+#ifndef RSA_BITS
+#define RSA_BITS	4096
+#endif
+
+#ifndef DSA_BITS
+#define DSA_BITS	2048
+#endif
+
+#ifndef KE_MODE
+#define KE_MODE		1
+#endif
+
+#ifndef HOST
+#define HOST	"127.0.0.1"
+#endif
+
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
 #else /*! SSL3_DEBUG */
@@ -169,7 +189,7 @@ int main()
 {
 #ifdef HTTPS_CLIENT
   Stdio.File con = Stdio.File();
-  if (!con->connect("127.0.0.1", PORT)) {
+  if (!con->connect(HOST, PORT)) {
     werror("Failed to connect to server: %s\n", strerror(con->errno()));
     return 17;
   }
@@ -181,35 +201,81 @@ int main()
   Crypto.Sign key;
   string certificate;
 
-  key = Crypto.RSA()->generate_key(1024);
+  string common_name = gethostname();
+  common_name = (gethostbyname(common_name) || ({ common_name }))[0];
+
+  werror("Common name: %O\n", common_name);
+
+  werror("Generating RSA certificate (%d bits)...\n", RSA_BITS);
+
+  key = Crypto.RSA()->generate_key(RSA_BITS);
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
-						 "commonName" : "*",
+						 "commonName" : common_name,
 					       ]));
-
   ctx->add_cert(key, ({ certificate }), ({ "*" }));
 
+  // Compat with OLD clients.
+  certificate =
+    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
+						 "organizationName" : "Test",
+						 "commonName" : common_name,
+					       ]), UNDEFINED,
+					       Crypto.SHA1);
+  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+
+  werror("Generating DSA certificate (%d bits)...\n", DSA_BITS);
+
+  catch {
+    // NB: Not all versions of Nettle support q sizes other than 160.
+    key = Crypto.DSA()->generate_key(DSA_BITS, 256);
+    certificate =
+      Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
+						   "organizationName" : "Test",
+						   "commonName" : common_name,
+						 ]), UNDEFINED,
+						 Crypto.SHA256);
+    ctx->add_cert(key, ({ certificate, ({ "*" }) }));
+  };
+
+  // Compat with OLD clients.
+  //
+  // The old FIPS standard maxed out at 1024 & 160 bits with SHA-1.
   key = Crypto.DSA()->generate_key(1024, 160);
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
-						 "commonName" : "*",
-					       ]));
-  ctx->add_cert(key, ({ certificate }));
+						 "commonName" : common_name,
+					       ]), UNDEFINED,
+					       Crypto.SHA1);
+  ctx->add_cert(key, ({ certificate }), ({ "*" }));
 
 #if constant(Crypto.ECC.Curve)
+  werror("Generating ECDSA certificate (%d bits)...\n", 521);
+
   key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
   certificate =
     Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
 						 "organizationName" : "Test",
-						 "commonName" : "*",
+						 "commonName" : common_name,
 					       ]));
-  ctx->add_cert(key, ({ certificate }));
+  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+
+  // Compat with OLD clients.
+  //
+  // Unlikely to be needed, but the cost is minimal.
+  certificate =
+    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
+						 "organizationName" : "Test",
+						 "commonName" : common_name,
+					       ]), UNDEFINED,
+					       Crypto.SHA1);
+  ctx->add_cert(key, ({ certificate }), ({ "*" }));
 #endif
 
   // Make sure all cipher suites are available.
-  ctx->preferred_suites = ctx->get_suites(-1, 2);
+  ctx->preferred_suites = ctx->get_suites(CIPHER_BITS, KE_MODE);
   SSL3_DEBUG_MSG("Cipher suites:\n%s",
                  .Constants.fmt_cipher_suites(ctx->preferred_suites));
 
