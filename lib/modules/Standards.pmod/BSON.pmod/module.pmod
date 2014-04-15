@@ -156,17 +156,17 @@ static void encode_value(string key, mixed value, String.Buffer buf, int|void al
      buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
    } 
    // Val.Null
-   else if(objectp(value) && value == Val.Null)
+   else if(objectp(value) && value->is_val_null)
    {
      buf->sprintf("%c%s%c", TYPE_NULL, key, 0);
    }
    // Val.True
-   else if(objectp(value) && value == Val.True)
+   else if(objectp(value) && value->is_val_true)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 1);
    }
    // Val.False
-   else if(objectp(value) && value == Val.False)
+   else if(objectp(value) && value->is_val_false)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0);
    }
