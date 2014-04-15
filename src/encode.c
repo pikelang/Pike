@@ -4393,7 +4393,7 @@ static void decode_value2(struct decode_data *data)
 		/* Expected identifier reference number */
 		decode_number(no, data);
 
-		if (no > p->num_identifier_references) {
+		if (no < 0 || no > p->num_identifier_references) {
 		  EDB (3, dump_program_tables (p, data->depth));
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
