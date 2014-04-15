@@ -87,6 +87,19 @@ define(test_loop,[[
 		    error("Key mismatch in nth() vs tree order: (%O : %O) vs (%O : %O)\n", i, key, i, nth);
 	    }
 	]])
+        test_const_loop([[
+            tree = tree->copy();
+            int i;
+
+            for (i = 1; i < sizeof(a); i += 2) m_delete(tree, a[i]);
+
+            for (i = 1; i+1 < sizeof(a); i += 2) {
+                if (tree->next(a[i]) != a[i+1])
+                    error("next(%O) == %O should be %O\n", a[i], tree->next(a[i]), a[i+1]);
+                if (tree->previous(a[i]) != a[i-1])
+                    error("previous(%O) == %O should be %O\n", a[i], tree->previous(a[i]), a[i-1]);
+            }
+        ]])
 	test_const_loop([[
 	    mixed t = GET_TREE()->first();
 	    foreach (GET_SORTED_A(); int i; mixed key) {
