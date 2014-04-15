@@ -52,7 +52,7 @@
 #define TYPE_BSON_JAVASCRIPT 0x0d
 #define TYPE_BSON_DOCUMENT 0x03
 
-// not supported.
+/* not supported. */
 #define TYPE_BSON_UNDEFINED x06 
 
 /*
@@ -236,7 +236,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         Pike_error("invalid BSON. not enough data: need %d, have %d.\n", bump, left);
       }
       n+=4;
-      val = make_shared_binary_string(n, bump-1); // length includes null.
+      val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
       push_string(val);
       f_utf8_to_string(1);
@@ -255,7 +255,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("invalid BSON. not enough data 5.\n");
       }
-      val = make_shared_binary_string(n, bump-1); // length includes null.
+      val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
       push_string(val);
       break;
@@ -294,13 +294,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       int8_t t;
       t = *(int8_t*)n;
       n++;
-      if(t == 1) // true
+      if(t == 1) /* true */
       {
         if(!True)
           True = lookup_object("Val.true");
         ref_push_object(True);
       }
-      else if(t ==0) // false
+      else if(t ==0) /* false */
       {
         if(!False)
           False = lookup_object("Val.false");
@@ -428,8 +428,10 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       doc = decode_document(d);
       free_string(d);
 
-      // arrays are encoded as mappings with indices containing 
-      // string representations of the index number.
+      /*
+       * arrays are encoded as mappings with indices containing
+       * string representations of the index number.
+       */
 
       asize = m_sizeof(doc);
       arr = allocate_array(asize);
@@ -514,7 +516,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       left = pike_slist->len - (n - slist);
       if(bump <= 0 || bump > left)
         Pike_error("invalid BSON. not enough data.\n");
-      val = make_shared_binary_string(n, bump-1); // length includes null.
+      val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
       
       if(!Javascript)
@@ -535,7 +537,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       Pike_error("Unknown field type %d.\n", type);
   }
 
-  name = make_shared_binary_string(cname, strlen(cname)); // guaranteed by spec to be a null terminated string.
+  name = make_shared_binary_string(cname, strlen(cname)); /* guaranteed by spec to be a null terminated string. */
 
   mapping_string_insert(list, name, Pike_sp-1);
   pop_stack();
