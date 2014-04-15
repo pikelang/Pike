@@ -297,14 +297,14 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       if(t == 1) // true
       {
         if(!True)
-          True = lookup_object("Val.True");
-        push_object(True);
+          True = lookup_object("Val.true");
+        ref_push_object(True);
       }
       else if(t ==0) // false
       {
         if(!False)
-          False = lookup_object("Val.False");
-        push_object(False);
+          False = lookup_object("Val.false");
+        ref_push_object(False);
       
       }
       else
@@ -318,7 +318,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       if(!MinKey)
         MinKey = lookup_object("Standards.BSON.MinKey");
-      push_object(MinKey);
+      ref_push_object(MinKey);
       break;  
     }
     
@@ -326,15 +326,15 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       if(!MaxKey)
         MaxKey = lookup_object("Standards.BSON.MaxKey");
-      push_object(MaxKey);
+      ref_push_object(MaxKey);
       break;  
     }
     
     case TYPE_BSON_NULL:
     {
       if(!Null)
-        Null = lookup_object("Val.Null");
-      push_object(Null);
+        Null = lookup_object("Val.null");
+      ref_push_object(Null);
       break;  
     }
     
@@ -372,7 +372,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       
      if(!Timestamp)
       Timestamp = lookup_program("Standards.BSON.Timestamp");
-     push_program(Timestamp);
+     ref_push_program(Timestamp);
      push_int64(sec);
      apply_svalue( Pike_sp-2, 1);
      stack_swap(); 
@@ -494,7 +494,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       if(!Regex)
         Regex = lookup_program("Standards.BSON.Regex");
         
-      push_program(Regex);
+      ref_push_program(Regex);
       push_text(reg);
       push_text(opt);
       
@@ -520,7 +520,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       if(!Javascript)
         Javascript = lookup_program("Standards.BSON.Javascript");
 
-      push_program(Javascript);
+      ref_push_program(Javascript);
       push_string(val);
       f_utf8_to_string(1);
 
