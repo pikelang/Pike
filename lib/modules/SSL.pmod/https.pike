@@ -8,7 +8,7 @@
 #endif
 
 #ifndef CIPHER_BITS
-#define CIPHER_BITS	128
+#define CIPHER_BITS	112
 #endif
 
 #ifndef RSA_BITS
