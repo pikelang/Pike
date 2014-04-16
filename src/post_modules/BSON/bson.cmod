@@ -139,6 +139,8 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   char * end;
   struct mapping * list;
 
+  check_c_stack (1024);
+
   if(pike_slist->size_shift) Pike_error("wide strings are not allowed.\n");
 
   slist = pike_slist->str;
