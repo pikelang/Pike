@@ -2,8 +2,6 @@
 //! Diffie-Hellman key-exchange related stuff.
 //!
 
-private Crypto.DSA foo;
-
 //! Diffie-Hellman parameters.
 class DHParameters
 {
