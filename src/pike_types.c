@@ -5539,7 +5539,29 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
     }
     return get_argument_type(fun->car, arg_no);
 
+  case PIKE_T_ATTRIBUTE:
+    type_stack_mark();
+    push_finished_type(get_argument_type(fun->cdr, arg_no));
+    push_type_attribute((struct pike_string *)(fun->car));
+    return pop_unfinished_type();
+
+  case PIKE_T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    fun = fun->cdr;
+    goto loop;
+
   default:
+#if 0
+    fprintf(stderr,
+	    "Failed to resolve argument type for argument %d.\n"
+	    "Type: ",
+	    arg_no);
+    simple_describe_type(fun);
+    fprintf(stderr, "\n"
+	    "Node type: %d\n",
+	    fun->type);
+#endif
     add_ref(zero_type_string);
     return zero_type_string;
   }
