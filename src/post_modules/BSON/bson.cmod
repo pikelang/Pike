@@ -169,11 +169,16 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   }
   
   list = allocate_mapping(2);
+
+  push_mapping(list);
   
   while(n < end)
   {
     n = decode_next_value(pike_slist, n, list);
   }
+
+  /* pop mapping off the stack, but keep a reference */
+  Pike_sp--;
   
   return list;
 }
@@ -427,8 +432,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       }
       
       d = make_shared_binary_string(n, len);
+      push_string(d);
       doc = decode_document(d);
-      free_string(d);
+      pop_stack();
 
       /*
        * arrays are encoded as mappings with indices containing
@@ -438,6 +444,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       asize = m_sizeof(doc);
       arr = allocate_array(asize);
       md = doc->data;
+
+      push_array(arr);
+      push_mapping(doc);
 
       NEW_MAPPING_LOOP(md)
       {
@@ -451,9 +460,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 	assign_svalue(ITEM(arr) + i, &k->val);
       }
 
-      free_mapping(doc);
+      /* pop the document off the stack */
+      pop_stack();
 
-      push_array(arr);
       n += (len);
       break;
     }
