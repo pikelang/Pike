@@ -3,6 +3,10 @@ define(test_dec,[[
           [[$2]])
 ]])
 
+define(test_enc_dec,[[
+    test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$1]] ]))
+]])
+
 test_true(Val.true)
 
 test_false(Val.false)
@@ -15,3 +19,8 @@ test_dec("\21\0\0\0\2foo\0\4\0\0\0bar\0\0", (["foo": "bar"]))
 
 test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\20" +"2\0\302\a\0\0\0\0",
   (["BSON": ({"awesome", 5.05, 1986})]))
+
+test_enc_dec(Val.null)
+test_enc_dec(Val.false)
+test_enc_dec(Val.true)
+test_enc_dec(indices(all_constants()))
