@@ -3983,7 +3983,7 @@ struct program *end_first_pass(int finish)
     free_type(id->type);
     id->type = type;
     id->opt_flags = opt_flags;
-    prog->identifier_references->id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
+    prog->identifier_references[e].id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
   next_ref:
     ;
   }
