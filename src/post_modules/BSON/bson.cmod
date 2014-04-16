@@ -82,7 +82,7 @@ struct object * lookup_object(const char * obj)
   struct object * p;
   push_text(obj);
   SAFE_APPLY_MASTER("resolv", 1 );
-  if(Pike_sp[-1].type != T_OBJECT)
+  if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
   {
     Pike_error("Unable to load object.\n");
   }
@@ -98,7 +98,7 @@ struct program * lookup_program(const char * prog)
   struct program * p;
   push_text(prog);
   SAFE_APPLY_MASTER("resolv", 1 );
-  if(Pike_sp[-1].type != T_PROGRAM)
+  if(TYPEOF(Pike_sp[-1]) != T_PROGRAM)
   {
     Pike_error("Unable to load class %s.\n", prog);
   }
@@ -114,7 +114,7 @@ struct svalue * lookup_svalue(const char * prog)
   struct svalue * p;
   push_text(prog);
   SAFE_APPLY_MASTER("resolv", 1 );
-  if(Pike_sp[-1].type == PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
   {
     Pike_error("Unable to load class %s.\n", prog);
   }
@@ -220,7 +220,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       f_reverse(1);
       push_text("%8F");
       f_sscanf(2);
-      if(Pike_sp[-1].type != PIKE_T_ARRAY)
+      if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
         Pike_error("unable to parse float.\n");
       a = Pike_sp[-1].u.array;
       push_svalue(ITEM(a));
