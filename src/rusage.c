@@ -634,8 +634,9 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
   thread_basic_info_data_t tbid;
   mach_msg_type_number_t tbid_len = THREAD_BASIC_INFO_COUNT;
 
-  //  Try to get kernel thread via special OS X extension since it's faster
-  //  (~40x on PPC G5) than the context switch caused by mach_thread_self().
+  /*  Try to get kernel thread via special OS X extension since it's faster
+   *  (~40x on PPC G5) than the context switch caused by mach_thread_self().
+   */
 #ifdef HAVE_PTHREAD_MACH_THREAD_NP
   mach_port_t self = pthread_mach_thread_np(pthread_self());
 #else
@@ -644,9 +645,10 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
   int err = thread_info (self, THREAD_BASIC_INFO,
 						 (thread_info_t) &tbid, &tbid_len);
 #ifndef HAVE_PTHREAD_MACH_THREAD_NP
-  //  Adjust refcount on new port returned from mach_thread_self(). Not
-  //  needed for pthread_mach_thread_np() since we're reusing an existing
-  //  port.
+  /*  Adjust refcount on new port returned from mach_thread_self(). Not
+   *  needed for pthread_mach_thread_np() since we're reusing an existing
+   *  port.
+   */
   mach_port_deallocate(mach_task_self(), self);
 #endif
   if (err)
