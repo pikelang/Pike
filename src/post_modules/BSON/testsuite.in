@@ -23,4 +23,5 @@ test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\
 test_enc_dec(Val.null)
 test_enc_dec(Val.false)
 test_enc_dec(Val.true)
+test_enc_dec(({ 2.15392757010452e+18, Math.e, Math.pi, Math.inf }));
 test_enc_dec(indices(all_constants()))
