@@ -641,8 +641,9 @@ constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls
 // feedback from NIST. Eventually the feedback led to TLS 1.0.
 constant SSL_rsa_fips_with_des_cbc_sha        = 0xFEFE;
 constant SSL_rsa_fips_with_3des_ede_cbc_sha   = 0xFEFF;
-constant SSL_rsa_fips_with_des_cbc_sha_2      = 0xFFE1;
-constant SSL_rsa_fips_with_3des_ede_cbc_sha_2 = 0xFFE0;
+constant SSL_rsa_oldfips_with_des_cbc_sha      = 0xFFE1;	// experimental
+constant SSL_rsa_oldfips_with_3des_ede_cbc_sha = 0xFFE0;	// experimental
+
 constant SSL_rsa_with_rc2_cbc_md5             = 0xFF80;
 constant SSL_rsa_with_idea_cbc_md5            = 0xFF81;
 constant SSL_rsa_with_des_cbc_md5             = 0xFF82;
@@ -755,8 +756,8 @@ constant CIPHER_SUITES =
    // before TLS 1.0 was released.
    SSL_rsa_fips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
    SSL_rsa_fips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
-   // SSL_rsa_fips_with_des_cbc_sha_2 :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
-   // SSL_rsa_fips_with_3des_ede_cbc_sha_2 :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
+   SSL_rsa_oldfips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
+   SSL_rsa_oldfips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
 
    // Some anonymous diffie-hellman variants.
    SSL_dh_anon_export_with_rc4_40_md5:	({ KE_dh_anon, CIPHER_rc4_40, HASH_md5 }),

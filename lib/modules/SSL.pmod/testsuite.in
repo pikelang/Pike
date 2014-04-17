@@ -83,7 +83,7 @@ test_tests([[
 	  ]),
 	]));
 
-      if ((sizeof(fields) > fno) && (fields[fno] == "fips") &&
+      if ((sizeof(fields) > fno) && (< "fips", "oldfips" >)[fields[fno]] &&
           (ke == KE_rsa)) {
         ke = KE_rsa_fips;
         fno++;
