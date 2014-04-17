@@ -209,16 +209,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {  
       struct pike_string * fstr;
       struct array * a;
-      char x[8];
       int32_t left;
       left = pike_slist->len - (n - slist);      
       if(8 > left)
         Pike_error("invalid BSON. not enough data.\n");
-      memcpy(x, n, 8);
-      fstr = make_shared_binary_string((char *)&x, 8);
+      fstr = make_shared_binary_string(n, 8);
       push_string(fstr);
-      f_reverse(1);
-      push_text("%8F");
+      push_text("%-8F");
       f_sscanf(2);
       if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
         Pike_error("unable to parse float.\n");
