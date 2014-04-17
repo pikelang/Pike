@@ -83,6 +83,12 @@ test_tests([[
 	  ]),
 	]));
 
+      if ((sizeof(fields) > fno) && (fields[fno] == "fips") &&
+          (ke == KE_rsa)) {
+        ke = KE_rsa_fips;
+        fno++;
+      }
+
       if ((sizeof(fields) > fno) &&
 	  !(<"export", "with">)[fields[fno] ]) {
 	// Probably something like "psk".

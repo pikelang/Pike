@@ -1871,6 +1871,7 @@ array lookup(int suite, ProtocolVersion|int version,
     switch(ke_method)
     {
     case KE_rsa:
+    case KE_rsa_fips:
     case KE_dhe_rsa:
     case KE_ecdhe_rsa:
       res->sign = rsa_sign;
@@ -1903,6 +1904,7 @@ array lookup(int suite, ProtocolVersion|int version,
     int sign_id;
     switch(ke_method) {
     case KE_rsa:
+    case KE_rsa_fips:
     case KE_dhe_rsa:
     case KE_ecdhe_rsa:
       sign_id = SIGNATURE_rsa;
@@ -2118,7 +2120,7 @@ array lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
-  if (version == PROTOCOL_SSL_3_0) {
+  if ((version == PROTOCOL_SSL_3_0) && (ke_method != KE_rsa_fips)) {
     res->prf = prf_ssl_3_0;
   } else if (version <= PROTOCOL_TLS_1_1) {
     res->prf = prf_tls_1_0;
