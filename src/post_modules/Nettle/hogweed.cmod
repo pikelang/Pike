@@ -72,6 +72,37 @@ static void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
 PIKEFUN array(object(Gmp.mpz))
   dsa_generate_keypair(int p_bits, int q_bits, function(int(0..):string(0..255)) rnd)
 {
+#ifdef HAVE_NETTLE_DSA_COMPAT_H
+  /* Nettle 3.0 or later. */
+  struct dsa_params params;
+  mpz_t pub;
+  mpz_t key;
+
+  dsa_params_init(&params);
+
+  if (!dsa_generate_params(&params, rnd, random_func_wrapper,
+			   NULL, NULL, p_bits, q_bits)) {
+    Pike_error("Illegal parameter value.\n");
+  }
+
+  mpz_init(pub);
+  mpz_init(key);
+
+  dsa_generate_keypair(&params, pub, key, rnd, random_func_wrapper);
+
+  push_bignum((MP_INT *)&params.p);
+  push_bignum((MP_INT *)&params.q);
+  push_bignum((MP_INT *)&params.g);
+
+  dsa_params_clear(&params);
+
+  push_bignum((MP_INT *)pub);
+  push_bignum((MP_INT *)key);
+
+  mpz_clear(key);
+  mpz_clear(pub);
+
+#else
   struct dsa_public_key pub;
   struct dsa_private_key key;
 
@@ -99,6 +130,7 @@ PIKEFUN array(object(Gmp.mpz))
 
   dsa_private_key_clear(&key);
   dsa_public_key_clear(&pub);
+#endif
 
   f_aggregate(5);
   stack_pop_n_elems_keep_top(args); /* Remove p_bits, q_bits and rnd. */
