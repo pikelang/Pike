@@ -205,6 +205,8 @@ enum KeyExchangeType {
   KE_srp_sha	= 17,	//! Secure Remote Password (SRP)
   KE_srp_sha_rsa= 18,	//! SRP signed with RSA
   KE_srp_sha_dss= 19,	//! SRP signed with DSS
+  // This was used during SSL 3.0 to test TLS 1.0.
+  KE_rsa_fips	= 20,	//! Rivest-Shamir-Adelman with FIPS keys.
 }
 
 //! Lists @[KeyExchangeType] that doesn't require certificates.
@@ -749,6 +751,13 @@ constant CIPHER_SUITES =
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    TLS_dhe_dss_with_rc4_128_sha :	({ KE_dhe_dss, CIPHER_rc4, HASH_sha }),
 
+   // These suites were used to test the TLS 1.0 key derivation
+   // before TLS 1.0 was released.
+   SSL_rsa_fips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
+   SSL_rsa_fips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
+   // SSL_rsa_fips_with_des_cbc_sha_2 :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
+   // SSL_rsa_fips_with_3des_ede_cbc_sha_2 :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
+
    // Some anonymous diffie-hellman variants.
    SSL_dh_anon_export_with_rc4_40_md5:	({ KE_dh_anon, CIPHER_rc4_40, HASH_md5 }),
    SSL_dh_anon_export_with_des40_cbc_sha: ({ KE_dh_anon, CIPHER_des40, HASH_sha }),
@@ -1250,7 +1259,8 @@ class CertificatePair
     ke_mask_invariant = 0;
     switch(sign_algs[0][1]) {
     case SIGNATURE_rsa:
-      foreach(({ KE_rsa, KE_dhe_rsa, KE_ecdhe_rsa }), KeyExchangeType ke) {
+      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa }),
+	      KeyExchangeType ke) {
 	ke_mask |= 1<<ke;
       }
       ke_mask_invariant = ke_mask;

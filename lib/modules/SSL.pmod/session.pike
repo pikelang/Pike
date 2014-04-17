@@ -393,6 +393,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
     ke_factory = .Cipher.KeyExchangeNULL;
     break;
   case KE_rsa:
+  case KE_rsa_fips:
     ke_factory = .Cipher.KeyExchangeRSA;
     break;
   case KE_dh_dss:
