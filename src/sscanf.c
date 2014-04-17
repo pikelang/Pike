@@ -17,6 +17,7 @@
 #include "pike_float.h"
 #include "pike_types.h"
 #include "sscanf.h"
+#include "bitvector.h"
 
 #define sp Pike_sp
 
@@ -463,85 +464,96 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 
 #endif
 
-#ifdef FLOAT_IS_IEEE_BIG
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      float f;					\
-	      ((char *)&f)[0] = *((INPUT));		\
-	      ((char *)&f)[1] = *((INPUT)+1);		\
-	      ((char *)&f)[2] = *((INPUT)+2);		\
-	      ((char *)&f)[3] = *((INPUT)+3);		\
-	      (SVAL).u.float_number = f;		\
-	    } while(0)
-#else
-#ifdef FLOAT_IS_IEEE_LITTLE
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      float f;					\
-	      ((char *)&f)[3] = *((INPUT));		\
-	      ((char *)&f)[2] = *((INPUT)+1);		\
-	      ((char *)&f)[1] = *((INPUT)+2);		\
-	      ((char *)&f)[0] = *((INPUT)+3);		\
-	      (SVAL).u.float_number = f;		\
-	    } while(0)
-#else
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
-	    do {							\
-	      char x[4];						\
-	      x[0] = (INPUT)[0];					\
-	      x[1] = (INPUT)[1];					\
-	      x[2] = (INPUT)[2];					\
-	      x[3] = (INPUT)[3];					\
-	      (SVAL).u.float_number = low_parse_IEEE_float(x, 4);	\
-            } while(0)
-#endif
-#endif
+static float extract_float_be(const char * x) {
+    float f;
 
-#ifdef DOUBLE_IS_IEEE_BIG
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      double d;					\
-	      ((char *)&d)[0] = *((INPUT));		\
-	      ((char *)&d)[1] = *((INPUT)+1);		\
-	      ((char *)&d)[2] = *((INPUT)+2);		\
-	      ((char *)&d)[3] = *((INPUT)+3);		\
-	      ((char *)&d)[4] = *((INPUT)+4);		\
-	      ((char *)&d)[5] = *((INPUT)+5);		\
-	      ((char *)&d)[6] = *((INPUT)+6);		\
-	      ((char *)&d)[7] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
-	    } while(0)
+#ifdef FLOAT_IS_IEEE_BIG
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_LITTLE
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
 #else
-#ifdef DOUBLE_IS_IEEE_LITTLE
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      double d;					\
-	      ((char *)&d)[7] = *((INPUT));		\
-	      ((char *)&d)[6] = *((INPUT)+1);		\
-	      ((char *)&d)[5] = *((INPUT)+2);		\
-	      ((char *)&d)[4] = *((INPUT)+3);		\
-	      ((char *)&d)[3] = *((INPUT)+4);		\
-	      ((char *)&d)[2] = *((INPUT)+5);		\
-	      ((char *)&d)[1] = *((INPUT)+6);		\
-	      ((char *)&d)[0] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
-	    } while(0)
+    f = low_parse_IEEE_float(x, 4);
+#endif
+    return f;
+}
+
+static double extract_double_be(const char * x) {
+    double f;
+
+#ifdef FLOAT_IS_IEEE_BIG
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_LITTLE
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    memcpy(&f, &tmp, sizeof(f));
 #else
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
-	    do {							\
-	      char x[8];						\
-	      x[0] = (INPUT)[0];					\
-	      x[1] = (INPUT)[1];					\
-	      x[2] = (INPUT)[2];					\
-	      x[3] = (INPUT)[3];					\
-	      x[4] = (INPUT)[4];					\
-	      x[5] = (INPUT)[5];					\
-	      x[6] = (INPUT)[6];					\
-	      x[7] = (INPUT)[7];					\
-	      (SVAL).u.float_number = low_parse_IEEE_float(x, 8);	\
-	    } while(0)
+    f = low_parse_IEEE_float(x, 8);
 #endif
+    return f;
+}
+
+static float extract_float_le(const char * x) {
+    float f;
+
+#ifdef FLOAT_IS_IEEE_LITTLE
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_BIG
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
+#else
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
 #endif
+    return f;
+}
+
+static double extract_double_le(const char * x) {
+    double f;
+
+#ifdef FLOAT_IS_IEEE_LITTLE
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_BIG
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    memcpy(&f, &tmp, sizeof(f));
+#else
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
+#endif
+    return f;
+}
+
+#define EXTRACT_FLOAT(SVAL, input, shift, fun)    do {      \
+    char x[4];                                              \
+    if (shift == 0) {                                       \
+        memcpy(x, input, sizeof(x));                        \
+    } else {                                                \
+        PCHARP tmp = MKPCHARP(input, shift);                \
+        size_t i;                                           \
+        for (i = 0; i < sizeof(x); INC_PCHARP(tmp, 1), i++) \
+            x[i] = EXTRACT_PCHARP(tmp);                     \
+    }                                                       \
+    (SVAL).u.float_number = fun(x);                         \
+} while (0)
+
+#define EXTRACT_DOUBLE(SVAL, input, shift, fun)   do {      \
+    char x[8];                                              \
+    if (shift == 0) {                                       \
+        memcpy(x, input, sizeof(x));                        \
+    } else {                                                \
+        PCHARP tmp = MKPCHARP(input, shift);                \
+        size_t i;                                           \
+        for (i = 0; i < sizeof(x); INC_PCHARP(tmp, 1), i++) \
+            x[i] = EXTRACT_PCHARP(tmp);                     \
+    }                                                       \
+    (SVAL).u.float_number = fun(x);                         \
+} while (0)
+
 
 /* Avoid some warnings about loss of precision */
 #ifdef __ECL
@@ -950,11 +962,13 @@ INPUT_IS_WIDE(								 \
 	  SET_SVAL(sval, T_FLOAT, 0, float_number, 0.0);		 \
 	  switch(field_length) {					 \
 	    case 4:							 \
-	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		 \
+              if (minus_flag) EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le);    \
+              else EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be);               \
 	      eye += 4;							 \
 	      break;							 \
 	    case 8:							 \
-	      EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT);		 \
+              if (minus_flag) EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le);    \
+              else EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be);               \
 	      eye += 8;							 \
 	      break;							 \
 	  }								 \
