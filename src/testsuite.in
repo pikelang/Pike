@@ -7720,6 +7720,20 @@ test_any([[mixed a; sscanf("a93","%s%*x",a); return a]],"")
 test_any([[mixed a; sscanf("a93","%*s%x",a); return a]],0xa93)
 test_any([[mixed a; sscanf("f","f%n",a); return a]],1)
 
+define(test_sscanf, [[
+    test_any([[$1 a = $3, b; string s = sprintf($2, a); sscanf(s, $2, b); return s == sprintf($2, b);]], 1)
+]])
+define(test_sscanf_F, [[
+    test_sscanf(float, "%8F", $1)
+    test_sscanf(float, "%-8F", $1)
+    test_sscanf(float, "%4F", $1)
+    test_sscanf(float, "%-4F", $1)
+]])
+test_sscanf_F(Math.e)
+test_sscanf_F(Math.pi)
+test_sscanf_F(Math.nan)
+test_sscanf_F(Math.inf)
+
 test_any([[mixed a; sscanf("\102\052\100\000","%F",a); return a]],42.5625)
 test_any([[mixed a; sscanf("\102\052\100\000","%4F",a); return a]],42.5625)
 test_any([[mixed a; sscanf("\100\105\110\000\0\0\0\0","%8F",a); return a]],42.5625)
