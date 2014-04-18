@@ -205,7 +205,6 @@ cond_resolv( Nettle.Fortuna, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
-dnl  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
   test_do( Crypto.Random.add_entropy("xy") )
 ]])
 
