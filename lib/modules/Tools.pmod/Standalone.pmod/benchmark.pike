@@ -8,6 +8,9 @@ Arguments:
 -h, --help
   Shows this help text.
 
+-l, --list
+  Shows a list of available tests.
+
 -s<number>, --max-seconds=<number>
   Runs a test at most <number> of seconds, rounded up to the closest
   complete test. Defaults to 3.
@@ -61,8 +64,9 @@ int(0..) main(int num, array(string) args)
      ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "maxsec",  Getopt.HAS_ARG, "-s,--max-seconds"/"," }),
      ({ "tests",   Getopt.HAS_ARG, "-t,--tests"/"," }),
-     ({ "json",    Getopt.NO_ARG, "-j,--json"/"," }),
-     ({ "compare",    Getopt.HAS_ARG, "-c,--compare"/"," }),
+     ({ "json",    Getopt.NO_ARG,  "-j,--json"/"," }),
+     ({ "compare", Getopt.HAS_ARG, "-c,--compare"/"," }),
+     ({ "list",    Getopt.NO_ARG,  "-l,--list"/"," }),
    })), array opt)
    {
     switch(opt[0])
@@ -90,6 +94,12 @@ int(0..) main(int num, array(string) args)
 	break;
       case "tests":
 	test_globs = opt[1] / ",";
+        break;
+      case "list":
+        write("Available tests:\n%{  %s\n%}",
+              sort(indices(tests)-({"Overhead"})));
+        return 0;
+        break;
     }
   }
   if( json )
