@@ -35,6 +35,9 @@ DECLARATIONS
 #include <nettle/camellia.h>
 #endif
 #include <nettle/cast128.h>
+#ifdef HAVE_NETTLE_CHACHA_H
+#include <nettle/chacha.h>
+#endif
 #include <nettle/des.h>
 #ifdef HAVE_NETTLE_SALSA20_CRYPT
 #include <nettle/salsa20.h>
@@ -702,6 +705,166 @@ pike_cast128_set_key(void *ctx,
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
+
+#ifdef HAVE_NETTLE_CHACHA_H
+
+static void
+pike_chacha_set_key(void *ctx,
+		    ptrdiff_t length, const char *key,
+		    int UNUSED(force))
+{
+  if (length != CHACHA_KEY_SIZE)
+    Pike_error("CHACHA: Bad keysize for CHACHA.\n");
+
+  chacha_set_key(ctx, (const uint8_t *)key);
+}
+
+#define pike_chacha_set_encrypt_key pike_chacha_set_key
+#define pike_chacha_set_decrypt_key pike_chacha_set_key
+#define chacha_encrypt chacha_crypt
+#define chacha_decrypt chacha_crypt
+
+/*! @class CHACHA
+ *!
+ *! Implementation of the CHACHA stream cipher.
+ *!
+ *! @note
+ *!   Note that this class is not available in all versions of Nettle.
+ *!
+ */
+PIKECLASS CHACHA
+{
+  /*! @decl inherit Cipher
+   */
+  INHERIT Nettle_Cipher;
+
+  static const struct pike_cipher pike_chacha =
+    _PIKE_CIPHER(chacha, CHACHA);
+
+  INIT
+    {
+      struct Nettle_Cipher_struct *cipher;
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+			     Nettle_Cipher_program);
+      cipher->meta = &pike_chacha;
+    }
+
+  /*! @class State
+   *!
+   *! State for CHACHA encyption.
+   *!
+   */
+  PIKECLASS State
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit Cipher::State
+     */
+
+    EXTRA
+    {
+      /* Perform an inherit of the Cipher.State class that our parent
+       * contains via its inherit of Cipher.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    CVAR struct chacha_ctx chacha;
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypts or decrypts data, using the current key. Neither the
+     *! input nor output data is automatically memory scrubbed,
+     *! unless @[String.secure] has been called on them.
+     *!
+     *! @param data
+     *!   Usually an integral number of blocks, except for the last
+     *!   segement in a run. The decoder must get partial blocks
+     *!   at the same places as the encoder, otherwise they will get
+     *!   out of sync.
+     *!
+     *! @returns
+     *!   The encrypted or decrypted data.
+     */
+    PIKEFUN string(0..255) crypt (string(0..255) data)
+      optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
+    {
+      struct pike_string *s;
+
+      NO_WIDE_STRING(data);
+
+      /* NB: Differs from default in that the block size
+       *     isn't enforced.
+       *
+       * To simplify the code we also skip the indirection
+       * via the Cipher class and its State.
+       */
+
+      s = begin_shared_string(data->len);
+      chacha_crypt(&THIS->chacha, data->len, (uint8_t *)s->str,
+		   (const uint8_t *)data->str);
+      s = end_shared_string(s);
+      push_string(s);
+    }
+
+    /*! @decl object set_iv(string(0..255) iv)
+     *!
+     *! Set the initialization vector (aka nonce) and reset
+     *! the block counter to zero.
+     *!
+     *! @param iv
+     *!   An 8-byte long string which is only to be used
+     *!   once for every key.
+     *!
+     *! @note
+     *!   This function MUST be called in addition to
+     *!   @[set_encrypt_key()] or @[set_decrypt_key()].
+     *!
+     *! @note
+     *!   The same @[iv] should NEVER be reused with the same key!
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_CIPHER_STATE);
+    {
+      NO_WIDE_STRING(iv);
+      if (iv->len != CHACHA_NONCE_SIZE)
+        Pike_error("CHACHA IV needs to be %d bytes.\n", CHACHA_NONCE_SIZE);
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      chacha_set_nonce(&THIS->chacha, (uint8_t *)iv->str);
+      push_object(this_object());
+    }
+
+    INIT
+    {
+      struct Nettle_Cipher_State_struct *state;
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
+			     Nettle_Cipher_State_program);
+      state->ctx = &THIS->chacha;
+    }
+  }
+  /*! @endclass State
+   */
+
+}
+
+/*! @endclass CHACHA
+ */
+
+#endif /* HAVE_NETTLE_CHACHA_H */
 
 static void
 pike_des_set_key(void *c,
