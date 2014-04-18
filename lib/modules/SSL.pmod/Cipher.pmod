@@ -456,9 +456,9 @@ class KeyExchangeRSA
 		   "session->private_key: %O\n",
 		   temp_key, session->private_key);
     if(version >= PROTOCOL_TLS_1_0) {
-      if(sizeof(data)-2 == data[0]*256+data[1]) {
+      if( sscanf(data, "%2H%s", data, string rest)==2 && rest=="" ) {
 	premaster_secret =
-	  (temp_key || session->private_key)->decrypt(data[2..]);
+	  (temp_key || session->private_key)->decrypt(data);
       }
     } else {
       premaster_secret = (temp_key || session->private_key)->decrypt(data);
