@@ -512,10 +512,18 @@ pike_cast128_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
 		     int force)
 {
+#ifndef CAST128_MIN_KEY_SIZE
+  /* Fixed size key in Nettle 3.0. */
+  if (length != CAST128_KEY_SIZE)
+    Pike_error("CAST128_info: Bad keysize for CAST128.\n");
+
+  cast128_set_key(ctx, (const uint8_t *)key);
+#else
   if (length < CAST128_MIN_KEY_SIZE || length > CAST128_MAX_KEY_SIZE)
     Pike_error("CAST128_info: Bad keysize for CAST128.\n");
 
   cast128_set_key(ctx, length, (const uint8_t *)key);
+#endif
 }
 #define pike_cast128_set_encrypt_key pike_cast128_set_key
 #define pike_cast128_set_decrypt_key pike_cast128_set_key
