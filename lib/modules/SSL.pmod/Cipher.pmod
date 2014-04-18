@@ -465,6 +465,9 @@ class KeyExchangeRSA
     }
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
+    // We want both branches to execute in equal time (ignoring
+    // SSL3_DEBUG in the hope it is never on in production).
+    // Workaround documented in RFC 2246.
     if ( `+( !premaster_secret,
              (sizeof(premaster_secret) != 48),
              (premaster_secret[0] != 3),
