@@ -464,10 +464,11 @@ class KeyExchangeRSA
       premaster_secret = (temp_key || session->private_key)->decrypt(data);
     }
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
-    if (!premaster_secret
-	|| (sizeof(premaster_secret) != 48)
-	|| (premaster_secret[0] != 3)
-	|| (premaster_secret[1] != (client_version & 0xff)))
+
+    if ( `+( !premaster_secret,
+             (sizeof(premaster_secret) != 48),
+             (premaster_secret[0] != 3),
+             (premaster_secret[1] != (client_version & 0xff)) ))
     {
       /* To avoid the chosen ciphertext attack discovered by Daniel
        * Bleichenbacher, it is essential not to send any error
@@ -493,6 +494,9 @@ class KeyExchangeRSA
       connection->ke = UNDEFINED;
 
     } else {
+      string timing_attack_mitigation = context->random(48);
+      message_was_bad = 0;
+      connection->ke = this;
     }
 
     return derive_master_secret(premaster_secret, client_random, server_random,
