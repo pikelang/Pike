@@ -2,8 +2,10 @@
 #pragma strict_types
 #require constant(Nettle.Fortuna)
 
-//! This module contains stuff to that tries to give you the
-//! best possible random generation.
+//! This module contains a pseudo random number generator (PRNG)
+//! designed to give you the best possible random number generation.
+//! The current design is based on the Fortuna PRNG, but uses the
+//! system random source as input.
 
 protected class RND
 {
@@ -74,7 +76,15 @@ Gmp.mpz random(int(0..) top) {
 				    256) % top);
 }
 
-//! Inject additional entropy into the random generator.
+//! Inject additional entropy into the random generator. One possible
+//! use is to persist random data between executions of an
+//! application. The internal state is approximately 256 bits, so
+//! storing 32 bytes from @[random_string()] at shutdown and injecting
+//! them through @[add_entropy()] agan at startup should carry over
+//! the entropy. Note that this doesn't affect the independent
+//! initialization that happens in the generator at startup, so the
+//! output sequence will be different than if the application had
+//! continued uninterrupted.
 //! @param data
 //!   The random string.
 void add_entropy(string(8bit) data) {
