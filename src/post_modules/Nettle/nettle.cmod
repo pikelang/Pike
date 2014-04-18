@@ -320,13 +320,13 @@ PIKECLASS Fortuna
 #define AES256_KEY_SIZE	(256>>3)
 #endif
 
-  void fortuna_generate()
+  static void fortuna_generate()
   {
     aes_encrypt(&THIS->aes_ctx, 16, THIS->data, THIS->ctr);
     INCREMENT(16, THIS->ctr);
   }
 
-  void fortuna_rekey()
+  static void fortuna_rekey()
   {
     fortuna_generate();
     MEMCPY(THIS->key, THIS->data, 16);
@@ -366,11 +366,21 @@ PIKECLASS Fortuna
       fortuna_generate();
       string_builder_binary_strcat(&s, (const char *)THIS->data,
                                    MINIMUM(16, (len-stored)));
+
+      /* This should really be MINIMUM(16, (len-stored)) instead of
+         16, but it is only less than 16 in the last round, so it
+         doesn't matter if we rekey here or not. */
       stored += 16;
+
       if( !(stored % (1<<20)) )
         fortuna_rekey();
     }
-    fortuna_rekey();
+
+    /* Inverse of the above conditional, to avoid having fortuna_rekey
+       applied twice in the rare condition that the string length is a
+       multiple of 1<<20. */
+    if( (stored % (1<<20)) )
+      fortuna_rekey();
 
     RETURN finish_string_builder(&s);
   }
