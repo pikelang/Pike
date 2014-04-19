@@ -1820,7 +1820,7 @@ class DHKeyExchange
 
   this_program new_secret(function random)
   {
-    secret = Gmp.mpz(random( (parameters->order->size() + 10 / 8)), 256)
+    secret = Gmp.mpz(random( parameters->order->size() / 8 + 16), 256)
       % (parameters->order - 1) + 1;
 
     our = parameters->g->powm(secret, parameters->p);
