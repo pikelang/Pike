@@ -2511,7 +2511,7 @@ static int do_docode2(node *n, int flags)
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
-	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
+	if(n && (n->token==F_CONSTANT) && !(n->node_info & OPT_EXTERNAL_DEPEND))
 	  emit0(F_COPY_VALUE);
       }
     }
