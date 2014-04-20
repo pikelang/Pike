@@ -4012,6 +4012,21 @@ struct program *end_first_pass(int finish)
     }
   }
 
+  if (finish == 1) {
+    if (Pike_compiler->compiler_pass == 1) {
+      /* Called from end_program(). */
+      if (Pike_compiler->init_node) {
+	/* Make sure that the __INIT symbol exists, so that
+	 * we won't get a fatal when we add the actual code
+	 * further down when we have entered pass 2.
+	 */
+	define_function(s, function_type_string, ID_PROTECTED,
+			IDENTIFIER_PIKE_FUNCTION, NULL, 0);
+      }
+    }
+    Pike_compiler->compiler_pass = 2;
+  }
+
   /*
    * Define the __INIT function, but only if there was any code
    * to initialize.
@@ -4161,7 +4176,6 @@ struct program *end_first_pass(int finish)
  */
 PMOD_EXPORT struct program *debug_end_program(void)
 {
-  Pike_compiler->compiler_pass = 2;
   return end_first_pass(1);
 }
 
