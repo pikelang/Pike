@@ -3922,7 +3922,7 @@ struct program *end_first_pass(int finish)
   struct compilation *c = THIS_COMPILATION;
   int e;
   struct program *prog = Pike_compiler->new_program;
-  struct pike_string *s;
+  struct pike_string *init_name;
   int num_refs = prog->num_identifier_references;
   union idptr dispatch_fun;
 
@@ -3991,8 +3991,7 @@ struct program *end_first_pass(int finish)
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
-  MAKE_CONST_STRING(s,"__INIT");
-
+  init_name = lfun_strings[LFUN___INIT];
 
   /* Collect references to inherited __INIT functions */
   if (!(Pike_compiler->new_program->flags & PROGRAM_AVOID_CHECK)) {
@@ -4019,9 +4018,13 @@ struct program *end_first_pass(int finish)
 	/* Make sure that the __INIT symbol exists, so that
 	 * we won't get a fatal when we add the actual code
 	 * further down when we have entered pass 2.
+	 *
+	 * Also make sure that it is marked as having side effects,
+	 * or it will be optimized away when inherited...
 	 */
-	define_function(s, function_type_string, ID_PROTECTED,
-			IDENTIFIER_PIKE_FUNCTION, NULL, 0);
+	define_function(init_name, function_type_string, ID_PROTECTED,
+			IDENTIFIER_PIKE_FUNCTION, NULL,
+			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
     }
     Pike_compiler->compiler_pass = 2;
@@ -4034,8 +4037,10 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->init_node)
   {
+    /* Inhibit this_function. */
     Pike_compiler->compiler_frame->current_function_number = -2;
-    e=dooptcode(s,
+
+    e=dooptcode(init_name,
 		mknode(F_COMMA_EXPR,
 		       Pike_compiler->init_node,
 		       mknode(F_RETURN,mkintnode(0),0)),
