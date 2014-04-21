@@ -647,14 +647,108 @@ pike_blowfish_set_key(void *ctx,
 
 #endif	/* HAVE_NETTLE_BLOWFISH_DECRYPT */
 
+#if !defined(CAMELLIA_KEY_SIZE) && defined(CAMELLIA128_KEY_SIZE)
+/* Nettle 3.0.
+ *
+ * Emulate the previous API where the Camellia variants were joined.
+ */
+
+#define CAMELLIA_KEY_SIZE	CAMELLIA256_KEY_SIZE
+
+struct camellia_ctx
+{
+  union {
+    struct camellia128_ctx ctx128;
+    struct camellia192_ctx ctx192;
+    struct camellia256_ctx ctx256;
+  } u;
+  unsigned keylen;
+};
+
+static void camellia_set_encrypt_key(void *ctx, unsigned len, const char *key)
+{
+  struct camellia_ctx *camellia_ctx = ctx;
+
+  switch(len) {
+  case CAMELLIA128_KEY_SIZE:
+    camellia128_set_encrypt_key(&camellia_ctx->u.ctx128, key);
+    break;
+  case CAMELLIA192_KEY_SIZE:
+    camellia192_set_encrypt_key(&camellia_ctx->u.ctx192, key);
+    break;
+  case CAMELLIA256_KEY_SIZE:
+    camellia256_set_encrypt_key(&camellia_ctx->u.ctx256, key);
+    break;
+  default:
+    Pike_fatal("Invalid keylength for Camellia: %d\n", len);
+    break;
+  }
+  camellia_ctx->keylen = len;
+}
+
+static void camellia_set_decrypt_key(void *ctx, unsigned len, const char *key)
+{
+  struct camellia_ctx *camellia_ctx = ctx;
+
+  switch(len) {
+  case CAMELLIA128_KEY_SIZE:
+    camellia128_set_decrypt_key(&camellia_ctx->u.ctx128, key);
+    break;
+  case CAMELLIA192_KEY_SIZE:
+    camellia192_set_decrypt_key(&camellia_ctx->u.ctx192, key);
+    break;
+  case CAMELLIA256_KEY_SIZE:
+    camellia256_set_decrypt_key(&camellia_ctx->u.ctx256, key);
+    break;
+  default:
+    Pike_fatal("Invalid keylength for Camellia: %d\n", len);
+    break;
+  }
+  camellia_ctx->keylen = len;
+}
+
+static void camellia_crypt(struct camellia_ctx *ctx, unsigned length,
+			   uint8_t *dst, const uint8_t *src)
+{
+  switch(ctx->keylen) {
+  case CAMELLIA128_KEY_SIZE:
+    camellia128_crypt(&ctx->u.ctx128, length, dst, src);
+    break;
+  case CAMELLIA192_KEY_SIZE:
+    camellia192_crypt(&ctx->u.ctx192, length, dst, src);
+    break;
+  case 0:
+  case CAMELLIA256_KEY_SIZE:
+    camellia256_crypt(&ctx->u.ctx256, length, dst, src);
+    break;
+  default:
+    Pike_fatal("Invalid keylength for Camellia: %d\n", ctx->keylen);
+    break;
+  }
+}
+
+#endif
+
 #ifdef CAMELLIA_KEY_SIZE
+
+#ifndef CAMELLIA128_KEY_SIZE
+#define CAMELLIA128_KEY_SIZE	16
+#endif
+#ifndef CAMELLIA192_KEY_SIZE
+#define CAMELLIA192_KEY_SIZE	24
+#endif
+#ifndef CAMELLIA256_KEY_SIZE
+#define CAMELLIA256_KEY_SIZE	32
+#endif
 
 static void
 pike_camellia_set_encrypt_key(void *ctx,
 			      ptrdiff_t length, const char *key,
 			      int UNUSED(force))
 {
-  if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
+  if (length != CAMELLIA128_KEY_SIZE &&
+      length != CAMELLIA256_KEY_SIZE &&
+      length != CAMELLIA192_KEY_SIZE)
     Pike_error("CAMELLIA: Bad keysize for CAMELLIA.\n");
   camellia_set_encrypt_key(ctx, length, (const uint8_t *)key);
 }
@@ -664,7 +758,9 @@ pike_camellia_set_decrypt_key(void *ctx,
 			      ptrdiff_t length, const char *key,
                               int UNUSED(force))
 {
-  if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
+  if (length != CAMELLIA128_KEY_SIZE &&
+      length != CAMELLIA256_KEY_SIZE &&
+      length != CAMELLIA192_KEY_SIZE)
     Pike_error("CAMELLIA: Bad keysize for CAMELLIA.\n");
   camellia_set_decrypt_key(ctx, length, (const uint8_t *)key);
 }
