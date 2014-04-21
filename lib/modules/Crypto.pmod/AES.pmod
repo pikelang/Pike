@@ -14,3 +14,31 @@
 //! not have any weak keys.
 
 inherit Nettle.AES;
+
+#if constant(Nettle.POLY1305_AES)
+
+//! @module POLY1305
+
+//! @ignore
+protected class Poly1305
+{
+//! @endignore
+
+  inherit Nettle.POLY1305_AES;
+
+  //! Get a POLY1305 @[State] object initialized with a password.
+  State `()(string(8bit) password)
+  {
+    return State(password);
+  }
+
+//! @ignore
+}
+
+Poly1305 POLY1305 = Poly1305();
+
+//! @endignore
+
+//! @endmodule
+
+#endif

@@ -1,0 +1,443 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+
+/* For this_object() */
+#include "object.h"
+#include "module_support.h"
+#include "pike_memory.h"
+
+#include "nettle_config.h"
+
+#ifdef HAVE_LIBNETTLE
+
+DECLARATIONS
+
+#include "nettle.h"
+
+#ifdef HAVE_NETTLE_POLY1305_H
+#include <nettle/poly1305.h>
+#endif
+#ifdef HAVE_NETTLE_UMAC_H
+#include <nettle/umac.h>
+#endif
+#include <nettle/nettle-meta.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include "fdlib.h"
+
+#if 0
+static void
+werror(const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+}
+#else
+#define werror(x)
+#endif
+
+/*! @module Nettle */
+
+typedef void (*pike_nettle_set_key_func)(void *ctx,
+					 ptrdiff_t length, const char *key);
+
+struct pike_mac
+{
+  const char *name;
+  
+  unsigned context_size;
+
+  unsigned digest_size;
+
+  unsigned block_size;
+
+  /* Suggested key size; other sizes are sometimes possible. */
+  unsigned key_size;
+
+  unsigned iv_size;
+
+  pike_nettle_set_key_func set_key;
+  pike_nettle_set_key_func set_iv;
+
+  nettle_hash_update_func *update;
+  nettle_hash_digest_func *digest;
+};
+
+#define _PIKE_MAC(name, NAME) {			\
+  #name,					\
+  sizeof(struct name##_ctx),			\
+  NAME##_DIGEST_SIZE,				\
+  NAME##_BLOCK_SIZE,				\
+  NAME##_KEY_SIZE,				\
+  NAME##_IV_SIZE,				\
+  pike_##name##_set_key,			\
+  pike_##name##_set_iv,				\
+  name##_update,				\
+  name##_digest,				\
+}
+
+/*! @class MAC
+ *!
+ *! Represents information about a MAC algorithm, such as
+ *! name, key size, digest size, and internal block size.
+ */
+PIKECLASS MAC
+{
+  /*! @decl inherit __builtin.Nettle.MAC
+   */
+  INHERIT "__builtin.Nettle.MAC";
+
+  CVAR const struct pike_mac *meta;
+
+  /*! @decl string(0..255) name(void)
+   *!
+   *! Returns a human readable name for the algorithm.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("MAC not properly initialized.\n");
+
+    push_text(THIS->meta->name);
+  }
+
+  /*! @decl int(0..) digest_size(void)
+   *!
+   *! Returns the size of a MAC digest.
+   */
+  PIKEFUN int(0..) digest_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("MAC not properly initialized.\n");
+
+    push_int(THIS->meta->digest_size);
+  }
+
+  /*! @decl int(0..) block_size(void)
+   *!
+   *! Returns the internal block size of the MAC algorithm.
+   */
+  PIKEFUN int(0..) block_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("MAC not properly initialized.\n");
+
+    push_int(THIS->meta->block_size);
+  }
+
+  /*! @decl int(0..) key_size(void)
+   *!
+   *! Returns the recommended size for the secret key for the MAC algorithm.
+   */
+  PIKEFUN int(0..) key_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("MAC not properly initialized.\n");
+
+    push_int(THIS->meta->key_size);
+  }
+
+  /*! @decl int(0..) iv_size(void)
+   *!
+   *! Returns the size of the iv/nonce of the MAC algorithm (if any).
+   *!
+   *! Returns @expr{0@} (zero) if there is no configurable iv/nonce.
+   */
+  PIKEFUN int(0..) iv_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("MAC not properly initialized.\n");
+
+    push_int(THIS->meta->iv_size);
+  }
+
+  INIT
+  {
+    THIS->meta = NULL;
+  }
+
+  /*! @class State
+   *!
+   *! Base class for MAC contexts.
+   */
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit MAC::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.MAC.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+#define GET_META(o)						\
+    ( ((struct Nettle_MAC_struct *)parent_storage(1))->meta )
+
+    CVAR void *ctx;
+
+    /*! @decl void create(string(8bit) key)
+     *!
+     *! Initialize the MAC with a password.
+     *!
+     *! It also resets any iv/nonce to it's default.
+     */
+    PIKEFUN void create(string(8bit) key)
+      flags ID_PROTECTED;
+    {
+      void *ctx = THIS->ctx;
+      const struct pike_mac *meta =
+	GET_META(Pike_fp->current_object);
+
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(key);
+
+      meta->set_key(ctx, key->len, STR0(key));
+
+      pop_n_elems(args);
+    }
+
+    /*! @decl State set_iv(string(0..255) iv)
+     *!
+     *! Set the iv/nonce (if supported) for the MAC.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_MAC_STATE);
+    {
+      void *ctx = THIS->ctx;
+      const struct pike_mac *meta =
+	GET_META(Pike_fp->current_object);
+
+      if (!ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(iv);
+      
+      if (iv->len != meta->iv_size) {
+	Pike_error("Invalid iv/nonce.\n");
+      }
+
+      meta->set_iv(ctx, iv->len, STR0(iv));
+
+      push_object(this_object());
+    }
+
+    /*! @decl State update(string(0..255) data)
+     *!
+     *! Hashes more data.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object update(string(0..255) data)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_MAC_STATE);
+    {
+      void *ctx = THIS->ctx;
+      const struct pike_mac *meta =
+	GET_META(Pike_fp->current_object);
+
+      if (!ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      NO_WIDE_STRING(data);
+      
+      /* Only thread this block for significant data size */
+      if (data->len > THREADS_ALLOW_THRESHOLD) {
+	THREADS_ALLOW();
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+	THREADS_DISALLOW();
+      } else {
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+      }
+
+      push_object(this_object());
+    }
+
+    /*! @decl string(0..255) digest(int|void length)
+     *!
+     *! Generates a digest, and resets the MAC contents.
+     *!
+     *! Also updates the iv/nonce (if any).
+     *!
+     *! @param length
+     *!   If the length argument is provided, the digest is truncated
+     *!   to the given length.
+     *!
+     *! @returns
+     *!   The digest.
+     */
+    PIKEFUN string(0..255) digest(int|void arg)
+    {
+      const struct pike_mac *meta;
+      struct pike_string *digest;
+      unsigned length;
+
+      meta = GET_META(Pike_fp->current_object);
+
+      if (!THIS->ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      if (!arg)
+	length = meta->digest_size;
+      else
+	{
+	  if (TYPEOF(*arg) != PIKE_T_INT)
+	    Pike_error("Bad argument type.\n");
+	  if (arg->u.integer < 0)
+	    Pike_error("Invalid length, must be positive.\n");
+	  if ((unsigned)arg->u.integer > meta->digest_size)
+	    Pike_error("Unsupported digest length.\n");
+
+	  length = arg->u.integer;
+	}
+      
+      digest = begin_shared_string(length);
+      meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
+      push_string(end_shared_string(digest));
+    }
+
+    /*! @decl string(8bit) `()(string(8bit) data)
+     *! Acts as the combination of @[update()] followed by @[digest()].
+     *!
+     *! @note
+     *!   Also updates the iv/nonce (if any).
+     */
+    PIKEFUN string(8bit) `()(string(8bit) data)
+    {
+      const struct pike_mac *meta;
+      struct pike_string *digest;
+
+      meta = GET_META(Pike_fp->current_object);
+
+      if (!THIS->ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      NO_WIDE_STRING(data);
+
+      meta->update(&THIS->ctx, data->len, STR0(data));
+
+      digest = begin_shared_string(meta->digest_size);
+      meta->digest(&THIS->ctx, meta->digest_size, STR0(digest));
+
+      push_string(end_shared_string(digest));
+    }
+
+    INIT
+    {
+      THIS->ctx = NULL;
+    }
+
+    EXIT
+    {
+      if (THIS->ctx)
+      {
+	const struct pike_mac *meta =
+	  GET_META(Pike_fp->current_object);
+	if (meta) {
+	  memset(THIS->ctx, 0, meta->context_size);
+	}
+      }
+    }
+  }
+
+  /*! @endclass State */
+}
+
+/*! @endclass MAC */
+
+/* The algorithm objects can be overloaded in pike. */
+
+#cmod_define TOSTR(DEF)	#DEF
+
+#ifdef HAVE_NETTLE_POLY1305_H
+
+#define poly1305_aes_set_iv	poly1305_aes_set_nonce
+#define POLY1305_AES_BLOCK_SIZE	POLY1305_BLOCK_SIZE
+#define POLY1305_AES_IV_SIZE	POLY1305_AES_NONCE_SIZE
+
+static void pike_poly1305_aes_set_key(void *ctx, unsigned len,
+				      const uint8_t *key)
+{
+  if (len != POLY1305_AES_KEY_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  poly1305_aes_set_key(ctx, key);
+}
+
+static void pike_poly1305_aes_set_iv(void *ctx, unsigned len,
+				     const uint8_t *key)
+{
+  if (len != POLY1305_AES_IV_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  poly1305_aes_set_key(ctx, key);
+}
+
+#cmod_define PIKE_NAME POLY1305_AES
+#cmod_define NETTLE_NAME poly1305_aes
+#cmod_include "mac.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
+/*! @endmodule Nettle */
+
+void
+mac_init(void)
+{
+  werror("Nettle, mac init\n");
+  INIT;
+}
+
+void
+mac_exit(void)
+{
+  werror("Nettle, mac exit\n");
+  EXIT;
+}
+
+#endif /* HAVE_LIBNETTLE */

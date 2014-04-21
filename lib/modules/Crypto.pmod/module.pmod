@@ -32,8 +32,13 @@ class Hash {
   inherit Nettle.Hash;
 }
 
+//! Abstract class for MAC algorithms.
+class MAC {
+  inherit Nettle.MAC;
+}
+
 //! Abstract class for signature algorithms. Contains some tools useful
-//! for all hashes.
+//! for all signatures.
 class Sign {
   inherit __builtin.Nettle.Sign;
 }
