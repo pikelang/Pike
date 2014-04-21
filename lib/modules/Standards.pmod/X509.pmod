@@ -388,6 +388,29 @@ class TBSCertificate
     return low_get(4);
   }
 
+  // Attempt to create a presentable string from the subject DER.
+  string subject_str()
+  {
+    Sequence subj = low_get(4);
+    mapping ids = ([]);
+    foreach(subj->elements, Compound pair)
+    {
+      if(pair->type_name!="SET" || !sizeof(pair)) continue;
+      pair = pair[0];
+      if(pair->type_name!="SEQUENCE" || sizeof(pair)!=2)
+        continue;
+      if(pair[0]->type_name=="OBJECT IDENTIFIER" &&
+         pair[1]->value && !ids[pair[0]->get_der()])
+        ids[pair[0]->get_der()] = pair[1]->value;
+    }
+
+    string res =  ids[.PKCS.Identifiers.at_ids->commonName->get_der()] ||
+      ids[.PKCS.Identifiers.at_ids->organizationName->get_der()] ||
+      ids[.PKCS.Identifiers.at_ids->organizationUnitName->get_der()];
+
+    return res;
+  }
+
   protected Verifier internal_public_key;
 
   //!
@@ -1051,11 +1074,11 @@ TBSCertificate verify_certificate(string s,
   return 0;
 }
 
-
 //! Verifies that all extensions mandated for certificate signing
 //! certificates are present and valid.
-TBSCertificate verify_root_certificate(TBSCertificate tbs)
+TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 {
+  if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;
 
   multiset crit = tbs->critical + (<>);
@@ -1077,29 +1100,22 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
       c[0]->type_name!="BOOLEAN" ||
       !c[0]->value )
   {
-    DBG("verify root: Bad or missing id-ce-basicConstraints.\n");
+    DBG("verify ca: Bad or missing id-ce-basicConstraints.\n");
     return 0;
   }
   Sequence s = [object(Sequence)]c;
-  if( sizeof(s)==2 && ( s[1]->type_name!="INTEGER" || 0 > s[1]->value ) )
+  if( sizeof(s)==2 && s[1]->type_name!="INTEGER" )
   {
-    // FIXME: Compare with actual path length and not 0.
-    DBG("verify root: Path length longer than pathLenConstraint.\n");
+    DBG("verify ca: id-ce-basicConstraints has incorrect pathLenConstraint.\n");
     return 0;
   }
 
-  // id-ce-authorityKeyIdentifier is required, unless self signed. RFC
-  // 3280 4.2.1.1
+  // id-ce-authorityKeyIdentifier is required by RFC 5759, unless self
+  // signed. Defined in RFC 3280 4.2.1.1, but there only as
+  // recommended.
   if( !lookup("authorityKeyIdentifier") && !self_signed )
   {
-    DBG("verify root: Missing id-ce-authorityKeyIdentifier.\n");
-    return 0;
-  }
-
-  // id-ce-subjectKeyIdentifier is required. RFC 3280 4.2.1.2
-  if( !lookup("subjectKeyIdentifier") )
-  {
-    DBG("verify root: Missing id-ce-subjectKeyIdentifier.\n");
+    DBG("verify ca: Missing id-ce-authorityKeyIdentifier.\n");
     return 0;
   }
 
@@ -1107,25 +1123,38 @@ TBSCertificate verify_root_certificate(TBSCertificate tbs)
   c = lookup("keyUsage");
   if( !c || c->type_name!="BIT STRING" )
   {
-    DBG("verify root: Missing id-ce-keyUsage.\n");
+    DBG("verify ca: Missing id-ce-keyUsage.\n");
     return 0;
   }
   keyUsage usage = c->value[0]; // Arguably API violation.
-  if( !( usage & digitalSignature ) )
-  {
-    DBG("verify root: id-ce-keyUsage doesn't allow digitalSignature.\n");
-    return 0;
-  }
   if( !( usage & keyCertSign ) ) // RFC 5759
   {
+    DBG("verify ca: id-ce-keyUsage doesn't allow keyCertSign.\n");
     return 0;
   }
+  // FIXME: RFC 5759 also requires CRLSign set.
+  if( usage & (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&255) )
+  {
+    DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
+   return 0;
+  }
 
+  // FIXME: In addition RFC 5759 requires policyMappings,
+  // policyConstraints and inhibitAnyPolicy to be processed in
+  // accordance with RFC 5280.
 
   // One or more critical extensions have not been processed.
   if( sizeof(crit) )
   {
-    DBG("verify root: Critical unknown extensions %O.\n", crit);
+#ifdef X509_DEBUG
+    foreach(.PKCS.Identifiers.ce_ids; string n; Object o)
+      if( crit[o->get_der()] )
+      {
+        crit[o->get_der()]=0;
+        crit[n] = 1;
+      }
+#endif
+    DBG("verify ca: Critical unknown extensions %O.\n", crit);
     return 0;
   }
 
@@ -1229,7 +1258,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
       foreach(messages->fragments, string|Standards.PEM.Message m) {
 	if (!objectp(m)) continue;
-	TBSCertificate tbs = decode_certificate(m->body);
+	TBSCertificate tbs = verify_ca_certificate(m->body);
 	if (!tbs) continue;
 	res[tbs->subject->get_der()] += ({ tbs->public_key });
       }
@@ -1246,7 +1275,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       if (!pem) continue;
       string cert = Standards.PEM.simple_decode(pem);
       if (!cert) continue;
-      TBSCertificate tbs = decode_certificate(cert);
+      TBSCertificate tbs = verify_ca_certificate(cert);
       if (!tbs) continue;
       res[tbs->subject->get_der()] += ({ tbs->public_key });
     }
