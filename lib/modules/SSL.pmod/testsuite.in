@@ -377,6 +377,8 @@ test_do([[
       SSL.Constants.SSL_rsa_with_null_sha,
       SSL.Constants.SSL_rsa_with_null_md5,
       SSL.Constants.SSL_null_with_null_null,
+      SSL.Constants.SSL_rsa_fips_with_des_cbc_sha,
+      SSL.Constants.SSL_rsa_oldfips_with_des_cbc_sha,
     }),
   ]));
 ]])
