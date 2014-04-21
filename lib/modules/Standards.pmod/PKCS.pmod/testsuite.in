@@ -1,4 +1,7 @@
 START_MARKER
+
+test_do( add_constant("PKCS", Standards.PKCS) )
+
 test_do([[
  object r = Crypto.RSA(([
    "n" : Gmp.mpz(172638464449001471794260856632944776452761322262794443556357951628647399941982332217330814054464677416598807575234720720862347748730033201660957860182434315264310811437207826303968624263889416989681358778289658174138674399061787845301799629100173916322305022090665681461036962656647167294833555103216138476839),
@@ -47,9 +50,18 @@ test_eq( Standards.PKCS.Certificate.build_distinguished_name( ({ ([ "commonName"
 test_eq( Standards.PKCS.Certificate.build_distinguished_name( ({ ([ "commonName":"*" ]), ([ "surname":Standards.ASN1.Types.PrintableString("M") ]) }) )->get_der(), "0\30""1\n0\b\6\3U\4\3\23\1*1\n0\b\6\3U\4\4\23\1M")
 
 test_true( Standards.PKCS.DSA )
-test_true( Standards.PKCS.Identifiers )
+
+test_eq( sizeof(PKCS.Identifiers.name_ids), sizeof(PKCS.Identifiers.reverse_name_ids) )
+test_eq( sizeof(PKCS.Identifiers.attribute_ids), sizeof(PKCS.Identifiers.reverse_attribute_ids) )
+test_eq( sizeof(PKCS.Identifiers.at_ids), sizeof(PKCS.Identifiers.reverse_at_ids) )
+test_eq( sizeof(PKCS.Identifiers.ce_ids), sizeof(PKCS.Identifiers.reverse_ce_ids) )
+test_eq( sizeof(PKCS.Identifiers.kp_ids), sizeof(PKCS.Identifiers.reverse_kp_ids) )
+test_eq( sizeof(PKCS.Identifiers.ad_ids), sizeof(PKCS.Identifiers.reverse_ad_ids) )
+
 test_true( Standards.PKCS.PFX )
 test_true( Standards.PKCS.RSA )
 test_true( Standards.PKCS.Signature )
+
+test_do( add_constant("PKCS") )
 
 END_MARKER
