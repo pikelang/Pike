@@ -214,7 +214,7 @@ mapping(string(7bit):Identifier) at_ids =
   "name" : at_id->append(41),
   "givenName" : at_id->append(42),
   "initials" : at_id->append(43),
-  "generationQualifier" : at_id->append(43),
+  "generationQualifier" : at_id->append(44),
   /* What does this attribute mean? */
   "dnQualifier" : at_id->append(46),
   /* Obsolete, not recommended. */
