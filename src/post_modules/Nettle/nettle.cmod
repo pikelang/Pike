@@ -455,6 +455,7 @@ PIKE_MODULE_INIT
   INIT;
 #ifdef HAVE_LIBNETTLE
   hash_init();
+  mac_init();
   cipher_init();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
@@ -474,6 +475,7 @@ PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBNETTLE
   cipher_exit();
+  mac_exit();
   hash_exit();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
