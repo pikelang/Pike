@@ -411,9 +411,9 @@ static void pike_poly1305_aes_set_iv(void *ctx, unsigned len,
 				     const uint8_t *key)
 {
   if (len != POLY1305_AES_IV_SIZE) {
-    Pike_error("Invalid key length.\n");
+    Pike_error("Invalid iv length.\n");
   }
-  poly1305_aes_set_key(ctx, key);
+  poly1305_aes_set_nonce(ctx, key);
 }
 
 #cmod_define PIKE_NAME POLY1305_AES
