@@ -153,15 +153,7 @@ mapping(Identifier:string(7bit)) short_name_ids =
   Identifier(1, 2, 840, 113549, 1, 9, 1) : "E" /* printable string */
 ]);
 
-protected mapping(Identifier:string(7bit))
-  reverse_lookup(mapping(string(7bit):Identifier) table)
-{
-  mapping(Identifier:string(7bit)) ret = ([]);
-  foreach(sort(indices(table)), string(7bit) index) {
-    ret[table[index]] = index;
-  }
-  return ret;
-}
+#define REVERSE(X) mkmapping(values(X),indices(X))
 
 mapping(string(7bit):Identifier) name_ids =
 ([  
@@ -176,7 +168,7 @@ mapping(string(7bit):Identifier) name_ids =
   "postalCode" : at_id->append(17),       /* printable string */
   ]);
 
-mapping(Identifier:string(7bit)) reverse_name_ids = reverse_lookup(name_ids);
+mapping(Identifier:string(7bit)) reverse_name_ids = REVERSE(name_ids);
 
 mapping(string(7bit):Identifier) attribute_ids =
 ([
@@ -195,7 +187,7 @@ mapping(string(7bit):Identifier) attribute_ids =
 ]);
 
 mapping(Identifier:string(7bit)) reverse_attribute_ids =
-  reverse_lookup(attribute_ids);
+  REVERSE(attribute_ids);
 
 /* From RFC 2459 */
 
@@ -221,7 +213,7 @@ mapping(string(7bit):Identifier) at_ids =
   "emailAddress" : pkcs_9_id->append(1)            /* IA5String */  
 ]);
 
-mapping(Identifier:string(7bit)) reverse_at_ids = reverse_lookup(at_ids);
+mapping(Identifier:string(7bit)) reverse_at_ids = REVERSE(at_ids);
 
 Identifier ce_id = Identifier(2, 5, 29);
 // RFC 3280
@@ -246,7 +238,7 @@ mapping(string(7bit):Identifier) ce_ids =
    "extKeyUsage"		: ce_id->append(37)
  ]);
 
-mapping(Identifier:string(7bit)) reverse_ce_ids = reverse_lookup(ce_ids);
+mapping(Identifier:string(7bit)) reverse_ce_ids = REVERSE(ce_ids);
 
 /* Policy qualifiers */
 Identifier qt_id = pkix_id->append(2);
@@ -255,7 +247,7 @@ mapping(string(7bit):Identifier) qt_ids =
 ([ "cps" : qt_id->append(1),
    "unotice" : qt_id->append(2) ]);
 
-mapping(Identifier:string(7bit)) reverse_qt_ids = reverse_lookup(qt_ids);
+mapping(Identifier:string(7bit)) reverse_qt_ids = REVERSE(qt_ids);
 
 /* Key purposes */
 
@@ -268,7 +260,7 @@ mapping(string(7bit):Identifier) kp_ids =
    "emailProtection" : kp_id->append(4),
    "timeStamping" : kp_id->append(8) ]);
 
-mapping(Identifier:string(7bit)) reverse_kp_ids = reverse_lookup(kp_ids);
+mapping(Identifier:string(7bit)) reverse_kp_ids = REVERSE(kp_ids);
 
 /* Private extensions */
 Identifier pe_id = pkix_id->append(1);
@@ -284,4 +276,4 @@ Identifier ad_id = pkix_id->append(48);
 mapping(string(7bit):Identifier) ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
 
-mapping(Identifier:string(7bit)) reverse_ad_ids = reverse_lookup(ad_ids);
+mapping(Identifier:string(7bit)) reverse_ad_ids = REVERSE(ad_ids);
