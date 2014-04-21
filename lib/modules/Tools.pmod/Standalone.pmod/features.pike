@@ -135,6 +135,7 @@ int main(int num, array(string) args) {
   F(Crypto.Arctwo);
   F(Crypto.Blowfish);
   F(Crypto.Camellia);
+  F(Crypto.ChaCha20);
   F(Crypto.ECC.Curve);
   F(Crypto.GCM);
   F(Crypto.GOST94);
