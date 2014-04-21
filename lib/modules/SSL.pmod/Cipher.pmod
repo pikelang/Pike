@@ -545,7 +545,7 @@ class KeyExchangeDH
     struct = ADT.struct();
 
     dh_state =
-      .Cipher.DHKeyExchange(Crypto.DH.DHParameters(session->private_key));
+      .Cipher.DHKeyExchange(Crypto.DH.Parameters(session->private_key));
     dh_state->secret = session->private_key->get_x();
 
     // RFC 4346 7.4.3:
@@ -572,7 +572,7 @@ class KeyExchangeDH
     anonymous = 1;
     if (!dh_state) {
       dh_state =
-	.Cipher.DHKeyExchange(Crypto.DH.DHParameters(session->peer_public_key));
+	.Cipher.DHKeyExchange(Crypto.DH.Parameters(session->peer_public_key));
       dh_state->other = session->peer_public_key->get_y();
     }
     dh_state->new_secret(context->random);
@@ -698,7 +698,7 @@ class KeyExchangeDHE
     Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
     temp_struct->put_bignum(p);
     temp_struct->put_bignum(g);
-    dh_state = .Cipher.DHKeyExchange(Crypto.DH.DHParameters(p, g, order));
+    dh_state = .Cipher.DHKeyExchange(Crypto.DH.Parameters(p, g, order));
     dh_state->set_other(input->get_bignum());
     temp_struct->put_bignum(dh_state->other);
 
@@ -1441,14 +1441,14 @@ int(0..1) anon_verify(object session, string cookie, ADT.struct struct,
 class DHKeyExchange
 {
   /* Public parameters */
-  Crypto.DH.DHParameters parameters;
+  Crypto.DH.Parameters parameters;
 
   Gmp.mpz our; /* Our value */
   Gmp.mpz other; /* Other party's value */
   Gmp.mpz secret; /* our =  g ^ secret mod p */
 
   //!
-  protected void create(Crypto.DH.DHParameters p) {
+  protected void create(Crypto.DH.Parameters p) {
     parameters = p;
   }
 
