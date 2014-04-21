@@ -2,6 +2,6 @@
 #pragma strict_types
 #require constant(Nettle.CHACHA)
 
-//! ChaCha is a stream cipher by D. J. Bernstein.
+//! ChaCha20 is a stream cipher by D. J. Bernstein.
 
 inherit Nettle.CHACHA;
