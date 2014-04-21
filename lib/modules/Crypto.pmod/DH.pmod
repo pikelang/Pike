@@ -5,6 +5,9 @@
 //! Diffie-Hellman parameters.
 class DHParameters
 {
+#if constant(Nettle.DH_Params)
+  inherit Nettle.DH_Params;
+#else
   //! Prime.
   Gmp.mpz p;
 
@@ -13,6 +16,28 @@ class DHParameters
 
   //! Subgroup size.
   Gmp.mpz q;
+
+  // FIXME: generate().
+
+  //! Generate a Diffie-Hellman key pair.
+  //!
+  //! @returns
+  //!   Returns the following array:
+  //!   @array
+  //!     @elem Gmp.mpz 0
+  //!       The generated public key.
+  //!     @rlem Gmp.mpz 1
+  //!       The corresponding private key.
+  //!   @endarray
+  array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
+  {
+    Gmp.mpz key = Gmp.mpz(rnd(q->size() / 8 + 16), 256) % (q - 1) + 1;
+
+    Gmp.mpz pub = g->powm(key, p);
+
+    return ({ pub, key });
+  }
+#endif
 
   //! Alias for @[q].
   //!

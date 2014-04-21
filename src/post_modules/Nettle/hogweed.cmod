@@ -187,6 +187,142 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
+#ifdef HAVE_NETTLE_DSA_COMPAT_H
+
+/*! @class DH_Params
+ *!
+ *! Diffie-Hellman Parameters.
+ */
+PIKECLASS DH_Params
+{
+  CVAR struct dsa_params params;
+
+  INIT {
+    dsa_params_init(&THIS->params);
+  }
+
+  EXIT {
+    dsa_params_clear(&THIS->params);
+  }
+
+  /*! @decl Gmp.mpz p
+   *!
+   *! Prime.
+   */
+
+  /*! @decl Gmp.mpz g
+   *!
+   *! Generator.
+   */
+
+  /*! @decl Gmp.mpz q
+   *!
+   *! Order.
+   */
+
+  PIKEFUN Gmp_mpz `p()
+  {
+    push_bignum(THIS->params.p);
+  }
+
+  PIKEFUN void `p=(Gmp_mpz|int p)
+  {
+    convert_svalue_to_bignum(p);
+
+    mpz_from_svalue(THIS->params.p, p);
+  }
+
+  PIKEFUN Gmp_mpz `g()
+  {
+    push_bignum(THIS->params.g);
+  }
+
+  PIKEFUN void `g=(Gmp_mpz|int g)
+  {
+    convert_svalue_to_bignum(g);
+
+    mpz_from_svalue(THIS->params.g, g);
+  }
+
+  PIKEFUN Gmp_mpz `q()
+  {
+    push_bignum(THIS->params.q);
+  }
+
+  PIKEFUN void `q=(Gmp_mpz|int q)
+  {
+    convert_svalue_to_bignum(q);
+
+    mpz_from_svalue(THIS->params.q, q);
+  }
+
+  /*! @decl void generate(int p_bits, int q_bits, @
+   *!                     function(int(0..):string(8bit)) rnd)
+   *!
+   *! Generate a new set of Diffie-Hellman parameters.
+   *!
+   *! @note
+   *!   Throws errors for unsupported parameters.
+   *!
+   *! @note
+   *!   This function is not available in all installations of Pike.
+   */
+  PIKEFUN void generate(int p_bits, int q_bits,
+			function(int(0..):string(8bit)) rnd)
+  {
+    if (!dsa_generate_params(&THIS->params, rnd, random_func_wrapper,
+			     NULL, NULL, p_bits, q_bits)) {
+      Pike_error("Illegal parameter value.\n");
+    }
+    pop_n_elems(args);
+  }
+
+  /*! @decl array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
+   *!
+   *! Generate a Diffie-Hellman key pair.
+   *!
+   *! @returns
+   *!   Returns the following array:
+   *!   @array
+   *!     @elem Gmp.mpz 0
+   *!       The generated public key.
+   *!     @rlem Gmp.mpz 1
+   *!       The corresponding private key.
+   *!   @endarray
+   */
+  PIKEFUN array(Gmp_mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
+  {
+    int psgn = mpz_sgn(THIS->params.p);
+    mpz_t pub;
+    mpz_t key;
+
+    if (!psgn) {
+      SIMPLE_DIVISION_BY_ZERO_ERROR("generate_keypair");
+    }
+    if (psgn < 0) {
+      Pike_error("The prime must be positive.\n");
+    }
+
+    mpz_init(pub);
+    mpz_init(key);
+
+    dsa_generate_keypair(&THIS->params, pub, key, rnd, random_func_wrapper);
+
+    push_bignum((MP_INT *)pub);
+    push_bignum((MP_INT *)key);
+
+    mpz_clear(key);
+    mpz_clear(pub);
+
+    f_aggregate(2);
+  }
+}
+
+/*! @endclass
+ */
+
+#endif
+
 #ifdef HAVE_NETTLE_ECDSA_H
 #include <nettle/ecc-curve.h>
 
@@ -202,6 +338,8 @@ PIKECLASS ECC_Curve
 {
   CVAR const struct ecc_curve *curve;
   CVAR int field_size;
+
+  DECLARE_STORAGE;
 
   /*! @decl void create(int(0..) family, int(0..) field_size, int(0..) revision)
    *!
