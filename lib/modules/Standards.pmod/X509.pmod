@@ -1353,6 +1353,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   // Chain is now reversed so root is first and leaf is last.
 
+  int my_time = time();
   foreach(chain_obj; int idx; TBSCertificate tbs)
   {
     array(Verifier)|Verifier verifiers;
@@ -1417,9 +1418,6 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
     else // otherwise, we make sure the chain is unbroken.
     {
-      // is the certificate in effect (time-wise)?
-      int my_time = time();
-
       // Check not_before. We want the current time to be later.
       if(my_time < tbs->not_before)
         ERROR(CERT_TOO_NEW);
