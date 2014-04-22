@@ -50,8 +50,16 @@ werror(const char *format, ...)
 
 /*! @module Nettle */
 
-typedef void (*pike_nettle_set_key_func)(void *ctx,
-					 ptrdiff_t length, const char *key);
+#ifdef HAVE_NETTLE_DSA_COMPAT_H
+/* We use the presence of <nettle/dsa-compat.h> to
+ * detect Nettle 3.0 or later.
+ */
+
+/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
+typedef size_t		pike_nettle_size_t;
+#else
+typedef unsigned	pike_nettle_size_t;
+#endif
 
 struct pike_mac
 {
@@ -68,8 +76,11 @@ struct pike_mac
 
   unsigned iv_size;
 
-  pike_nettle_set_key_func set_key;
-  pike_nettle_set_key_func set_iv;
+  /* NB: Use nettle_hash_update_func here to get both a length field,
+   *     and a const uint8_t source.
+   */
+  nettle_hash_update_func *set_key;
+  nettle_hash_update_func *set_iv;
 
   nettle_hash_update_func *update;
   nettle_hash_digest_func *digest;
@@ -254,7 +265,7 @@ PIKECLASS MAC
       iv->flags |= STRING_CLEAR_ON_EXIT;
       NO_WIDE_STRING(iv);
       
-      if (iv->len != meta->iv_size) {
+      if (iv->len != meta->iv_size || !meta->iv_size) {
 	Pike_error("Invalid iv/nonce.\n");
       }
 
@@ -398,7 +409,7 @@ PIKECLASS MAC
 #define POLY1305_AES_BLOCK_SIZE	POLY1305_BLOCK_SIZE
 #define POLY1305_AES_IV_SIZE	POLY1305_AES_NONCE_SIZE
 
-static void pike_poly1305_aes_set_key(void *ctx, unsigned len,
+static void pike_poly1305_aes_set_key(void *ctx, pike_nettle_size_t len,
 				      const uint8_t *key)
 {
   if (len != POLY1305_AES_KEY_SIZE) {
@@ -407,7 +418,7 @@ static void pike_poly1305_aes_set_key(void *ctx, unsigned len,
   poly1305_aes_set_key(ctx, key);
 }
 
-static void pike_poly1305_aes_set_iv(void *ctx, unsigned len,
+static void pike_poly1305_aes_set_iv(void *ctx, pike_nettle_size_t len,
 				     const uint8_t *key)
 {
   if (len != POLY1305_AES_IV_SIZE) {
