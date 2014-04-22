@@ -435,6 +435,98 @@ static void pike_poly1305_aes_set_iv(void *ctx, pike_nettle_size_t len,
 
 #endif
 
+#ifdef HAVE_NETTLE_UMAC_H
+
+/* These two really ought to be in the <nettle/umac.h> header file, but... */
+#ifndef UMAC_BLOCK_SIZE
+#define UMAC_BLOCK_SIZE		UMAC_DATA_SIZE
+#endif
+#ifndef UMAC_NONCE_SIZE
+#define UMAC_NONCE_SIZE		16
+#endif
+
+#define UMAC32_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC32_KEY_SIZE		UMAC_KEY_SIZE
+#define UMAC32_IV_SIZE		UMAC_NONCE_SIZE
+#define pike_umac32_set_iv	umac32_set_nonce
+
+static void pike_umac32_set_key(void *ctx, pike_nettle_size_t len,
+				const uint8_t *key)
+{
+  if (len != UMAC_KEY_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  umac32_set_key(ctx, key);
+}
+
+#cmod_define PIKE_NAME UMAC32
+#cmod_define NETTLE_NAME umac32
+#cmod_include "mac.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define UMAC64_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC64_KEY_SIZE		UMAC_KEY_SIZE
+#define UMAC64_IV_SIZE		UMAC_NONCE_SIZE
+#define pike_umac64_set_iv	umac64_set_nonce
+
+static void pike_umac64_set_key(void *ctx, pike_nettle_size_t len,
+				const uint8_t *key)
+{
+  if (len != UMAC_KEY_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  umac64_set_key(ctx, key);
+}
+
+#cmod_define PIKE_NAME UMAC64
+#cmod_define NETTLE_NAME umac64
+#cmod_include "mac.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define UMAC96_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC96_KEY_SIZE		UMAC_KEY_SIZE
+#define UMAC96_IV_SIZE		UMAC_NONCE_SIZE
+#define pike_umac96_set_iv	umac96_set_nonce
+
+static void pike_umac96_set_key(void *ctx, pike_nettle_size_t len,
+				const uint8_t *key)
+{
+  if (len != UMAC_KEY_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  umac96_set_key(ctx, key);
+}
+
+#cmod_define PIKE_NAME UMAC96
+#cmod_define NETTLE_NAME umac96
+#cmod_include "mac.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define UMAC128_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC128_KEY_SIZE	UMAC_KEY_SIZE
+#define UMAC128_IV_SIZE		UMAC_NONCE_SIZE
+#define pike_umac128_set_iv	umac128_set_nonce
+
+static void pike_umac128_set_key(void *ctx, pike_nettle_size_t len,
+				 const uint8_t *key)
+{
+  if (len != UMAC_KEY_SIZE) {
+    Pike_error("Invalid key length.\n");
+  }
+  umac128_set_key(ctx, key);
+}
+
+#cmod_define PIKE_NAME UMAC128
+#cmod_define NETTLE_NAME umac128
+#cmod_include "mac.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
 /*! @endmodule Nettle */
 
 void
