@@ -74,34 +74,34 @@ protected {
 
   mapping algorithms = ([
 #if constant(Crypto.MD2)
-    Identifiers.rsa_md2_id->get_der() : Crypto.MD2,
+    Identifiers.rsa_md2_id : Crypto.MD2,
 #endif
-    Identifiers.rsa_md5_id->get_der() : Crypto.MD5,
-    Identifiers.rsa_sha1_id->get_der() : Crypto.SHA1,
-    Identifiers.rsa_sha256_id->get_der() : Crypto.SHA256,
+    Identifiers.rsa_md5_id : Crypto.MD5,
+    Identifiers.rsa_sha1_id : Crypto.SHA1,
+    Identifiers.rsa_sha256_id : Crypto.SHA256,
 #if constant(Crypto.SHA384)
-    Identifiers.rsa_sha384_id->get_der() : Crypto.SHA384,
+    Identifiers.rsa_sha384_id : Crypto.SHA384,
 #endif
 #if constant(Crypto.SHA512)
-    Identifiers.rsa_sha512_id->get_der() : Crypto.SHA512,
+    Identifiers.rsa_sha512_id : Crypto.SHA512,
 #endif
 
-    Identifiers.dsa_sha_id->get_der() : Crypto.SHA1,
+    Identifiers.dsa_sha_id : Crypto.SHA1,
 #if constant(Crypto.SHA224)
-    Identifiers.dsa_sha224_id->get_der() : Crypto.SHA224,
+    Identifiers.dsa_sha224_id : Crypto.SHA224,
 #endif
-    Identifiers.dsa_sha256_id->get_der() : Crypto.SHA256,
+    Identifiers.dsa_sha256_id : Crypto.SHA256,
 
-    Identifiers.ecdsa_sha1_id->get_der() : Crypto.SHA1,
+    Identifiers.ecdsa_sha1_id : Crypto.SHA1,
 #if constant(Crypto.SHA224)
-    Identifiers.ecdsa_sha224_id->get_der() : Crypto.SHA224,
+    Identifiers.ecdsa_sha224_id : Crypto.SHA224,
 #endif
-    Identifiers.ecdsa_sha256_id->get_der() : Crypto.SHA256,
+    Identifiers.ecdsa_sha256_id : Crypto.SHA256,
 #if constant(Crypto.SHA384)
-    Identifiers.ecdsa_sha384_id->get_der() : Crypto.SHA384,
+    Identifiers.ecdsa_sha384_id : Crypto.SHA384,
 #endif
 #if constant(Crypto.SHA512)
-    Identifiers.ecdsa_sha512_id->get_der() : Crypto.SHA512,
+    Identifiers.ecdsa_sha512_id : Crypto.SHA512,
 #endif
   ]);
 }
@@ -117,7 +117,7 @@ class Verifier {
   int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
     DBG("Verify hash %O\n", algorithm[0]);
-    Crypto.Hash hash = algorithms[algorithm[0]->get_der()];
+    Crypto.Hash hash = algorithms[algorithm[0]];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
@@ -159,17 +159,17 @@ protected class ECDSAVerifier
   inherit Verifier;
   constant type = "ecdsa";
 
-  protected void create(string(8bit) key, string(8bit) curve_der)
+  protected void create(string(8bit) key, Identifier curve_id)
   {
     Crypto.ECC.Curve curve;
     foreach(values(Crypto.ECC), mixed c) {
       if (objectp(c) && c->pkcs_named_curve_id &&
-	  (c->pkcs_named_curve_id()->get_der() == curve_der)) {
+	  (c->pkcs_named_curve_id() == curve_id)) {
 	curve = [object(Crypto.ECC.Curve)]c;
 	break;
       }
     }
-    DBG("ECC Curve: %O (DER: %O)\n", curve, curve_der);
+    DBG("ECC Curve: %O (%O)\n", curve, curve_id);
     pkc = curve->ECDSA()->set_public_key(key);
   }
 }
@@ -220,8 +220,8 @@ protected Verifier make_verifier(Object _keyinfo)
     if( sizeof(seq)!=2 || seq[1]->type_name!="OBJECT IDENTIFIER" )
       return 0;
 
-    Sequence params = seq[1];
-    return ECDSAVerifier(str->value, params->get_der());
+    Identifier params = seq[1];
+    return ECDSAVerifier(str->value, params);
   }
 #endif
 
@@ -400,13 +400,13 @@ class TBSCertificate
       if(pair->type_name!="SEQUENCE" || sizeof(pair)!=2)
         continue;
       if(pair[0]->type_name=="OBJECT IDENTIFIER" &&
-         pair[1]->value && !ids[pair[0]->get_der()])
-        ids[pair[0]->get_der()] = pair[1]->value;
+         pair[1]->value && !ids[pair[0]])
+        ids[pair[0]] = pair[1]->value;
     }
 
-    string res =  ids[.PKCS.Identifiers.at_ids->commonName->get_der()] ||
-      ids[.PKCS.Identifiers.at_ids->organizationName->get_der()] ||
-      ids[.PKCS.Identifiers.at_ids->organizationUnitName->get_der()];
+    string res =  ids[.PKCS.Identifiers.at_ids.commonName] ||
+      ids[.PKCS.Identifiers.at_ids.organizationName] ||
+      ids[.PKCS.Identifiers.at_ids.organizationUnitName];
 
     return res;
   }
@@ -522,7 +522,7 @@ class TBSCertificate
     internal_der = UNDEFINED;
     internal_extensions = ([]);
     internal_critical = (<>);
-    mapping(string:Object) extensions = ([]);
+    mapping(Identifier:Object) extensions = ([]);
     multiset critical = (<>);
 
     if (!r) {
@@ -548,7 +548,7 @@ class TBSCertificate
 	return 0;
       }
       DBG("TBSCertificate: extension: %O\n", ext[0]);
-      string id = ext[0]->get_der();
+      Identifier id = ext[0];
 
       if( extensions[id] )
       {
@@ -584,8 +584,8 @@ class TBSCertificate
 
   //! @note
   //! optional
-  protected mapping(string:Object) internal_extensions = ([]);
-  mapping(string:Object) `extensions()
+  protected mapping(Identifier:Object) internal_extensions = ([]);
+  mapping(Identifier:Object) `extensions()
   {
     return internal_extensions;
   }
@@ -1081,13 +1081,12 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;
 
-  multiset crit = tbs->critical + (<>);
+  array crit = indices(tbs->critical);
   int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
 
-  Object lookup(string id)
+  Object lookup(Identifier id)
   {
-    id = Identifiers.ce_ids[id]->get_der();
-    crit[id]=0;
+    crit -= ({id});
     return tbs->extensions[id];
   };
 
@@ -1095,7 +1094,7 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 
   // id-ce-basicConstraints is required for certificates with public
   // key used to validate certificate signatures. RFC 3280, 4.2.1.10.
-  Object c = lookup("basicConstraints");
+  Object c = lookup(.PKCS.Identifiers.ce_ids.basicConstraints);
   if( !c || c->type_name!="SEQUENCE" || sizeof(c)<1 || sizeof(c)>2 ||
       c[0]->type_name!="BOOLEAN" ||
       !c[0]->value )
@@ -1113,14 +1112,14 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   // id-ce-authorityKeyIdentifier is required by RFC 5759, unless self
   // signed. Defined in RFC 3280 4.2.1.1, but there only as
   // recommended.
-  if( !lookup("authorityKeyIdentifier") && !self_signed )
+  if( !lookup(.PKCS.Identifiers.ce_ids.authorityKeyIdentifier) && !self_signed )
   {
     DBG("verify ca: Missing id-ce-authorityKeyIdentifier.\n");
     return 0;
   }
 
   // id-ce-keyUsage is required. RFC 3280 4.2.1.3
-  c = lookup("keyUsage");
+  c = lookup(.PKCS.Identifiers.ce_ids.keyUsage);
   if( !c || c->type_name!="BIT STRING" )
   {
     DBG("verify ca: Missing id-ce-keyUsage.\n");
@@ -1146,14 +1145,6 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   // One or more critical extensions have not been processed.
   if( sizeof(crit) )
   {
-#ifdef X509_DEBUG
-    foreach(.PKCS.Identifiers.ce_ids; string n; Object o)
-      if( crit[o->get_der()] )
-      {
-        crit[o->get_der()]=0;
-        crit[n] = 1;
-      }
-#endif
     DBG("verify ca: Critical unknown extensions %O.\n", crit);
     return 0;
   }
@@ -1360,7 +1351,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
     if(idx != len-1) // Not the leaf
     {
-      Object o = tbs->extensions[ Identifiers.ce_ids["basicConstraints"]->get_der() ];
+      Object o = tbs->extensions[ Identifiers.ce_ids.basicConstraints ];
 
       // id-ce-basicConstraints is required for certificates with
       // public key used to validate certificate signatures. RFC 3280,
