@@ -665,7 +665,8 @@ struct camellia_ctx
   unsigned keylen;
 };
 
-static void camellia_set_encrypt_key(void *ctx, unsigned len, const char *key)
+static void camellia_set_encrypt_key(void *ctx, unsigned len,
+                                     const uint8_t *key)
 {
   struct camellia_ctx *camellia_ctx = ctx;
 
@@ -686,7 +687,8 @@ static void camellia_set_encrypt_key(void *ctx, unsigned len, const char *key)
   camellia_ctx->keylen = len;
 }
 
-static void camellia_set_decrypt_key(void *ctx, unsigned len, const char *key)
+static void camellia_set_decrypt_key(void *ctx, unsigned len,
+                                     const uint8_t *key)
 {
   struct camellia_ctx *camellia_ctx = ctx;
 
