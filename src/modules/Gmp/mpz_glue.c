@@ -20,7 +20,11 @@
 #endif /* HAVE_GMP_H && HAVE_LIBGMP */
 #endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
 
-#if defined(USE_GMP) || defined(USE_GMP2)
+#if !defined(USE_GMP) && !defined(USE_GMP2)
+
+#error "Gmp is required to build Pike!"
+
+#else
 
 #include "my_gmp.h"
 
