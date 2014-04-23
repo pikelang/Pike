@@ -1,0 +1,560 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "array.h"
+#include "operators.h"
+#include "threads.h"
+
+/* For this_object() */
+#include "object.h"
+#include "module_support.h"
+
+#include "nettle_config.h"
+
+#ifdef HAVE_LIBNETTLE
+
+DECLARATIONS
+
+#include "nettle.h"
+
+#include <nettle/nettle-meta.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+
+#if 0
+static void
+werror(const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+}
+#else
+#define werror(x)
+#endif
+
+/*! @module Nettle
+ */
+
+/* Calls Pike_error on errors */
+typedef void (*pike_nettle_set_key_func)(void *ctx,
+					 ptrdiff_t length, const char *key);
+
+#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
+typedef nettle_crypt_func crypt_func;
+#else
+/* Nettle 2.0 */
+typedef nettle_crypt_func *crypt_func;
+#endif
+
+
+#ifdef HAVE_NETTLE_DSA_COMPAT_H
+/* We use the presence of <nettle/dsa-compat.h> to
+ * detect Nettle 3.0 or later.
+ */
+
+/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
+typedef size_t		pike_nettle_size_t;
+#else
+typedef unsigned	pike_nettle_size_t;
+#endif
+
+struct pike_aead
+{
+  const char *name;
+
+  unsigned context_size;
+
+  unsigned digest_size;
+
+  unsigned block_size;
+
+  /* Suggested key size; other sizes are sometimes possible. */
+  unsigned key_size;
+
+  unsigned iv_size;
+
+  pike_nettle_set_key_func set_encrypt_key;
+  pike_nettle_set_key_func set_decrypt_key;
+
+  /* NB: Use nettle_hash_update_func here to get both a length field,
+   *     and a const uint8_t source.
+   */
+  nettle_hash_update_func *set_iv;
+
+  crypt_func encrypt;
+  crypt_func decrypt;
+
+  nettle_hash_update_func *update;
+  nettle_hash_digest_func *digest;
+};
+
+#define _PIKE_CIPHER(name, NAME) {		\
+  #name,					\
+  sizeof(struct name##_ctx),			\
+  NAME##_DIGEST_SIZE,				\
+  NAME##_BLOCK_SIZE,				\
+  NAME##_KEY_SIZE,				\
+  pike_##name##_set_encrypt_key,		\
+  pike_##name##_set_decrypt_key,		\
+  (crypt_func) name##_encrypt,			\
+  (crypt_func) name##_decrypt,			\
+  pike_##name##_set_iv,				\
+  name##_update,				\
+  name##_digest,				\
+}
+
+/*! @class AEAD
+ *!
+ *! Represents information about an Authenticated Encryption with
+ *! Associated Data (AEAD) algorithm, such as name, key size, digest size,
+ *! and block size.
+ */
+PIKECLASS AEAD
+{
+  /*! @decl inherit __builtin.Nettle.AEAD
+   */
+  INHERIT "__builtin.Nettle.AEAD";
+
+  CVAR const struct pike_aead *meta;
+
+  /*! @decl string(0..255) name()
+   *!
+   *! @returns
+   *!   A human readable name for the algorithm.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
+
+    push_text(THIS->meta->name);
+  }
+
+  /*! @decl int(0..) digest_size(void)
+   *!
+   *! Returns the size of a MAC digest.
+   */
+  PIKEFUN int(0..) digest_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
+
+    push_int(THIS->meta->digest_size);
+  }
+
+  /*! @decl int(0..) key_size()
+   *!
+   *! @returns
+   *!   The recommended key size for the cipher.
+   */
+  PIKEFUN int(0..) key_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
+
+    push_int(THIS->meta->key_size);
+  }
+
+  /*! @decl int(0..) block_size()
+   *!
+   *! @returns
+   *!   The block size of the AEAD algorithm.
+   *!
+   *! @note
+   *!   Note that AEAD algorithms often support automatic padding,
+   *!   so that the last block does not need to be complete.
+   */
+  PIKEFUN int(0..) block_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("Cipher not properly initialized.\n");
+
+    push_int(THIS->meta->block_size);
+  }
+
+  /*! @decl int(0..) iv_size(void)
+   *!
+   *! Returns the size of the iv/nonce of the AEAD algorithm (if any).
+   *!
+   *! Returns @expr{0@} (zero) if there is no configurable iv/nonce.
+   */
+  PIKEFUN int(0..) iv_size()
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    if (!THIS->meta)
+      Pike_error("AEAD not properly initialized.\n");
+
+    push_int(THIS->meta->iv_size);
+  }
+
+  INIT
+  {
+    THIS->meta = NULL;
+  }
+
+  /*! @class State
+   *!
+   *! Base class for AEAD contexts.
+   */
+  PIKECLASS State
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+  {
+    DOCSTART() @decl inherit AEAD::State
+    DOCEND()
+
+    EXTRA
+    {
+      /* Perform an inherit of the State class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.AEAD.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_State_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("State"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_State_fun_num >= 0) {
+	struct program *parent_State_prog =
+	  low_program_from_function(parent_obj, parent_State_fun_num);
+	if (parent_State_prog) {
+	  low_inherit(parent_State_prog, 0,
+		      parent_State_fun_num +
+		      parent_prog->inherits[1].identifier_level,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
+
+    CVAR crypt_func crypt;
+    CVAR void *ctx;
+    CVAR int key_size;
+
+#define GET_META()	(((struct Nettle_AEAD_struct *)parent_storage(1))->meta)
+
+    /* Generate a random string of length @[size] on top of the stack. */
+    static void low_make_key(INT32 size)
+    {
+      push_text("Crypto.Random");
+      SAFE_APPLY_MASTER("resolv",1);
+      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
+	Pike_error("Failed to resolv Crypto.Random.\n");
+      push_int(size);
+      apply(Pike_sp[-2].u.object, "random_string", 1);
+      stack_swap();
+      pop_stack();
+    }
+
+    /*! @decl State set_encrypt_key(string(0..255) key)
+     *!
+     *! Initializes the object for encryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @seealso
+     *!   @[set_decrypt_key], @[crypt]
+     */
+    PIKEFUN object set_encrypt_key(string(0..255) key)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
+    {
+      struct pike_aead *meta = GET_META();
+
+      if (!THIS->ctx || !meta)
+	Pike_error("CipherState not properly initialized.\n");
+
+      NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      meta->set_encrypt_key(THIS->ctx, key->len, key->str);
+
+      THIS->crypt = meta->encrypt;
+      THIS->key_size = key->len;
+
+      RETURN this_object();
+    }
+
+    /*! @decl State set_decrypt_key(string(0..255) key)
+     *!
+     *! Initializes the object for decryption. The @[key] memory will be
+     *! cleared before released.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key], @[crypt]
+     */
+    PIKEFUN object set_decrypt_key(string(0..255) key)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
+    {
+      struct pike_aead *meta = GET_META();
+
+      if (!THIS->ctx || !meta)
+	Pike_error("CipherState not properly initialized.\n");
+
+      NO_WIDE_STRING(key);
+      key->flags |= STRING_CLEAR_ON_EXIT;
+      meta->set_decrypt_key(THIS->ctx, key->len, key->str);
+      THIS->crypt = meta->decrypt;
+      THIS->key_size = key->len;
+
+      RETURN this_object();
+    }
+
+    /*! @decl string(0..255) make_key()
+     *!
+     *! Generate a key by calling @[Crypto.Random.random_string] and
+     *! initialize this object for encryption with that key.
+     *!
+     *! @returns
+     *!   The generated key. The key memory will be cleared before
+     *!   released.
+     *!
+     *! @seealso
+     *!   @[set_encrypt_key]
+     */
+    PIKEFUN string(0..255) make_key()
+      optflags OPT_EXTERNAL_DEPEND;
+    {
+      struct pike_aead *meta = GET_META();
+
+      low_make_key(meta->key_size);
+
+      stack_dup();
+      Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
+      apply_current(f_Nettle_AEAD_State_set_encrypt_key_fun_num, 1);
+      pop_stack();
+    }
+
+    /*! @decl string(0..255) crypt(string(0..255) data)
+     *!
+     *! Encrypts or decrypts data, using the current key. Neither the
+     *! input nor output data is automatically memory scrubbed,
+     *! unless @[String.secure] has been called on them.
+     *!
+     *! @param data
+     *!   For block ciphers, data must be an integral number of blocks.
+     *!
+     *! @returns
+     *!   The encrypted or decrypted data.
+     */
+    PIKEFUN string(0..255) crypt (string(0..255) data)
+      optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
+    {
+      struct pike_aead *meta = GET_META();
+      struct pike_string *s;
+
+      if (!THIS->ctx || !THIS->crypt || !meta)
+	Pike_error("CipherState not properly initialized.\n");
+
+      NO_WIDE_STRING(data);
+
+      if (data->len % meta->block_size)
+	Pike_error("Data must be an integral number of blocks.\n");
+
+      s = begin_shared_string(data->len);
+      THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
+                  (const uint8_t *)data->str);
+      s = end_shared_string(s);
+      push_string(s);
+    }
+
+    /*! @decl string(0..255) name(void)
+     *!
+     *! @returns
+     *!   A human readable name for the algorithm.
+     *!
+     *! @note
+     *!   The default implementation just calls @[Cipher::name()]
+     *!   in the parent.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_AEAD_name_fun_num, args);
+    }
+
+    /*! @decl int(0..) key_size(void)
+     *!
+     *! @returns
+     *!   The actual key size for this cipher.
+     */
+    PIKEFUN int(0..) key_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN THIS->key_size;
+    }
+
+    /*! @decl int(0..) block_size(void)
+     *!
+     *! @returns
+     *!   The block size for this cipher.
+     *!
+     *! @note
+     *!   The default implementation just calls @[Cipher::block_size()]
+     *!   in the parent.
+     */
+    PIKEFUN int(0..) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_AEAD_block_size_fun_num, args);
+    }
+
+    /*! @decl State set_iv(string(0..255) iv)
+     *!
+     *! Set the iv/nonce (if supported) for the AEAD.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object set_iv(string(0..255) iv)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_MAC_STATE);
+    {
+      void *ctx = THIS->ctx;
+      const struct pike_aead *meta = GET_META();
+
+      if (!ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      iv->flags |= STRING_CLEAR_ON_EXIT;
+      NO_WIDE_STRING(iv);
+
+      /* NB: Check iv length here so that we can use the
+       *     Nettle implementation straight in meta->set_iv.
+       */
+      if (iv->len != meta->iv_size || !meta->iv_size) {
+	Pike_error("Invalid iv/nonce.\n");
+      }
+
+      meta->set_iv(ctx, iv->len, STR0(iv));
+
+      push_object(this_object());
+    }
+
+    /*! @decl State update(string(0..255) data)
+     *!
+     *! Add some more associated data.
+     *!
+     *! All associated data typically needs to be added before
+     *! any data to actually encrypt.
+     *!
+     *! @returns
+     *!   Returns @expr{this@} in order to simplify chaining
+     *!   of function calls.
+     */
+    PIKEFUN object update(string(0..255) data)
+      optflags OPT_SIDE_EFFECT;
+      rawtype tFunc(tStr8, tObjImpl_NETTLE_MAC_STATE);
+    {
+      void *ctx = THIS->ctx;
+      const struct pike_aead *meta = GET_META();
+
+      if (!ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      NO_WIDE_STRING(data);
+
+      /* Only thread this block for significant data size */
+      if (data->len > THREADS_ALLOW_THRESHOLD) {
+	THREADS_ALLOW();
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+	THREADS_DISALLOW();
+      } else {
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+      }
+
+      push_object(this_object());
+    }
+
+    /*! @decl string(0..255) digest(int|void length)
+     *!
+     *! Generates a digest, and resets the AEAD contents.
+     *!
+     *! Also updates the iv/nonce (if any).
+     *!
+     *! @param length
+     *!   If the length argument is provided, the digest is truncated
+     *!   to the given length.
+     *!
+     *! @returns
+     *!   The digest.
+     */
+    PIKEFUN string(0..255) digest(int|void arg)
+    {
+      const struct pike_aead *meta;
+      struct pike_string *digest;
+      unsigned length;
+
+      meta = GET_META();
+
+      if (!THIS->ctx || !meta)
+	Pike_error("State not properly initialized.\n");
+
+      if (!arg)
+	length = meta->digest_size;
+      else
+	{
+	  if (TYPEOF(*arg) != PIKE_T_INT)
+	    Pike_error("Bad argument type.\n");
+	  if (arg->u.integer < 0)
+	    Pike_error("Invalid length, must be positive.\n");
+	  if ((unsigned)arg->u.integer > meta->digest_size)
+	    Pike_error("Unsupported digest length.\n");
+
+	  length = arg->u.integer;
+	}
+
+      digest = begin_shared_string(length);
+      meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
+      push_string(end_shared_string(digest));
+    }
+
+    INIT
+    {
+      THIS->ctx = NULL;
+      THIS->crypt = NULL;
+      THIS->key_size = 0;
+    }
+
+    EXIT
+    {
+      if (THIS->ctx && Pike_fp->current_object->prog)
+      {
+	struct pike_aead *meta = GET_META();
+	assert(meta);
+	memset(THIS->ctx, 0, meta->context_size);
+      }
+    }
+  }
+  /*! @endclass State */
+}
+/*! @endclass AEAD
+ */
+
+/*! @endmodule Nettle */
+
+void
+aead_init(void)
+{
+  INIT;
+}
+
+void
+aead_exit(void)
+{
+  EXIT;
+}
+
+#endif /* HAVE_LIBNETTLE */

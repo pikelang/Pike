@@ -457,6 +457,7 @@ PIKE_MODULE_INIT
   hash_init();
   mac_init();
   cipher_init();
+  aead_init();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
   start_new_program();
@@ -474,6 +475,7 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBNETTLE
+  aead_exit();
   cipher_exit();
   mac_exit();
   hash_exit();
