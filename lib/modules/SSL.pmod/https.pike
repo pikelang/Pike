@@ -33,8 +33,6 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
-import Stdio;
-
 class MyContext
 {
   inherit SSL.context;
@@ -58,12 +56,11 @@ SSL.sslport port;
 
 void my_accept_callback(object f)
 {
-  conn(port->accept());
+  Conn(port->accept());
 }
 #endif
 
-class conn {
-  import Stdio;
+class Conn {
 
   object sslfile;
 
@@ -107,41 +104,7 @@ class conn {
   }
 }
 
-class no_random {
-  object arcfour = Crypto.Arcfour();
-  
-  protected void create(string|void secret)
-  {
-    if (!secret)
-      secret = sprintf("%s%4c", random_string(32), time());
-    arcfour->set_encrypt_key(Crypto.SHA256.hash(secret));
-    read(1000);
-  }
-
-  string read(int size)
-  {
-    return arcfour->crypt( "\021"*size );
-  }
-}
-
-/* PKCS#1 Private key structure:
-
-RSAPrivateKey ::= SEQUENCE {
-  version Version,
-  modulus INTEGER, -- n
-  publicExponent INTEGER, -- e
-  privateExponent INTEGER, -- d
-  prime1 INTEGER, -- p
-  prime2 INTEGER, -- q
-  exponent1 INTEGER, -- d mod (p-1)
-  exponent2 INTEGER, -- d mod (q-1)
-  coefficient INTEGER -- (inverse of q) mod p }
-
-Version ::= INTEGER
-
-*/
-
-class client
+class Client
 {
   constant request =
     "HEAD / HTTP/1.0\r\n"
@@ -150,33 +113,33 @@ class client
 
   SSL.sslfile ssl;
   int sent;
+
   void write_cb()
   {
     int bytes = ssl->write(request[sent..]);
     if (bytes > 0) {
       sent += bytes;
     } else if (sent < 0) {
-      werror("Failed to write data: %s\n", strerror(ssl->errno()));
-      exit(17);
+      exit(17, "Failed to write data: %s\n", strerror(ssl->errno()));
     }
     if (sent == sizeof(request)) {
       ssl->set_write_callback(UNDEFINED);
     }
   }
+
   void got_data(mixed ignored, string data)
   {
     werror("Data: %O\n", data);
   }
+
   void con_closed()
   {
-    werror("Connection closed.\n");
-    exit(0);
+    exit(0, "Connection closed.\n");
   }
 
   protected void create(Stdio.File con)
   {
     SSL.context ctx = MyContext();
-    ctx->random = no_random()->read;
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
@@ -193,7 +156,7 @@ int main()
     werror("Failed to connect to server: %s\n", strerror(con->errno()));
     return 17;
   }
-  client(con);
+  Client(con);
   return -17;
 #else
   SSL.context ctx = MyContext();
@@ -281,14 +244,12 @@ int main()
 
   SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->cert_pairs);
 
-  ctx->random = no_random()->read;
-
   port = SSL.sslport(ctx);
 
   werror("Starting\n");
   if (!port->bind(PORT, my_accept_callback))
   {
-    perror("");
+    Stdio.perror("");
     return 17;
   }
   else {
