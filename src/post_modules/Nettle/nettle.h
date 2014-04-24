@@ -20,11 +20,10 @@ extern struct program *nettle_hash_program;
 
 
 #ifdef HAVE_NETTLE_DSA_PARAMS_INIT
-/* We use the presence of <nettle/dsa-compat.h> to
- * detect Nettle 3.0 or later.
+/* We use the presence of nettle_dsa_params_init() to detect Nettle
+ * 3.0 or later. In Nettle 3.0 length fields use size_t, where earlier
+ * it was unsigned.
  */
-
-/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
 typedef size_t		pike_nettle_size_t;
 #else
 typedef unsigned	pike_nettle_size_t;
