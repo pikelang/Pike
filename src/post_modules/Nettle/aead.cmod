@@ -86,7 +86,7 @@ struct pike_aead
   nettle_hash_digest_func *digest;
 };
 
-#define _PIKE_CIPHER(name, NAME) {		\
+#define _PIKE_AEAD(name, NAME) {		\
   #name,					\
   sizeof(struct name##_ctx),			\
   NAME##_DIGEST_SIZE,				\
