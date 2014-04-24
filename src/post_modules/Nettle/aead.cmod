@@ -56,18 +56,6 @@ typedef nettle_crypt_func crypt_func;
 typedef nettle_crypt_func *crypt_func;
 #endif
 
-
-#ifdef HAVE_NETTLE_DSA_COMPAT_H
-/* We use the presence of <nettle/dsa-compat.h> to
- * detect Nettle 3.0 or later.
- */
-
-/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
-typedef size_t		pike_nettle_size_t;
-#else
-typedef unsigned	pike_nettle_size_t;
-#endif
-
 struct pike_aead
 {
   const char *name;

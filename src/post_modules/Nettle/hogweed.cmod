@@ -72,7 +72,7 @@ static void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
 PIKEFUN array(object(Gmp.mpz))
   dsa_generate_keypair(int p_bits, int q_bits, function(int(0..):string(0..255)) rnd)
 {
-#ifdef HAVE_NETTLE_DSA_COMPAT_H
+#ifdef HAVE_NETTLE_DSA_PARAMS_INIT
   /* Nettle 3.0 or later. */
   struct dsa_params params;
   mpz_t pub;
@@ -130,7 +130,7 @@ PIKEFUN array(object(Gmp.mpz))
 
   dsa_private_key_clear(&key);
   dsa_public_key_clear(&pub);
-#endif
+#endif /* HAVE_NETTLE_DSA_PARAMS_INIT */
 
   f_aggregate(5);
   stack_pop_n_elems_keep_top(args); /* Remove p_bits, q_bits and rnd. */
@@ -187,7 +187,7 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
-#ifdef HAVE_NETTLE_DSA_COMPAT_H
+#ifdef HAVE_NETTLE_DSA_PARAMS_INIT
 
 /*! @class DH_Params
  *!
@@ -321,7 +321,7 @@ PIKECLASS DH_Params
 /*! @endclass
  */
 
-#endif
+#endif /* HAVE_NETTLE_DSA_PARAMS_INIT */
 
 #ifdef HAVE_NETTLE_ECDSA_H
 #include <nettle/ecc-curve.h>

@@ -19,6 +19,18 @@ extern struct program *nettle_hash_program;
 #define THREADS_ALLOW_THRESHOLD (1024 * 1024)
 
 
+#ifdef HAVE_NETTLE_DSA_PARAMS_INIT
+/* We use the presence of <nettle/dsa-compat.h> to
+ * detect Nettle 3.0 or later.
+ */
+
+/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
+typedef size_t		pike_nettle_size_t;
+#else
+typedef unsigned	pike_nettle_size_t;
+#endif
+
+
 char *pike_crypt_md5(int pl, const char *const pw,
                      int sl, const char *const salt,
                      int ml, const char *const magic);

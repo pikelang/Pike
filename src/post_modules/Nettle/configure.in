@@ -67,12 +67,10 @@ else
     # gcm is available in Nettle 2.2 and later.
     # ripemd160 is available in Nettle 2.3 and later.
     # sha3 and gosthash94 is available in Nettle 2.6 and later.
-    # dsa-compat.h is to detect the new DSA API in Nettle 3.0 and later.
     # chacha and poly1305 will be available in Nettle 3.0 and later.
     AC_CHECK_HEADERS(nettle/camellia.h nettle/md4.h nettle/sha3.h \
                      nettle/arctwo.h nettle/ripemd160.h nettle/gosthash94.h \
 	             nettle/umac.h nettle/ctr.h nettle/gcm.h nettle/ecdsa.h \
-		     nettle/dsa-compat.h \
 		     nettle/chacha.h nettle/poly1305.h)
     AC_CHECK_FUNCS(nettle_md4_init)
 
@@ -96,6 +94,9 @@ else
 
     # These weren't present in old Nettles.
     AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init)
+
+    # This is the new DSA interface in Nettle 3.0
+    AC_CHECK_FUNCS(nettle_dsa_params_init)
 
     AC_MSG_CHECKING([for struct yarrow256_ctx.seed_file])
     AC_CACHE_VAL(pike_cv_nettle_struct_yarrow256_ctx_seed_file, [

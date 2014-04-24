@@ -50,17 +50,6 @@ werror(const char *format, ...)
 
 /*! @module Nettle */
 
-#ifdef HAVE_NETTLE_DSA_COMPAT_H
-/* We use the presence of <nettle/dsa-compat.h> to
- * detect Nettle 3.0 or later.
- */
-
-/* In Nettle 3.0 length fields use size_t, where earlier it was unsigned. */
-typedef size_t		pike_nettle_size_t;
-#else
-typedef unsigned	pike_nettle_size_t;
-#endif
-
 struct pike_mac
 {
   const char *name;
