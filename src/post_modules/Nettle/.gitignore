@@ -1,9 +1,11 @@
 /*.cmod.compiled
+/aead.c
 /cipher.c
 /configure
 /dependencies
 /hash.c
 /hogweed.c
+/mac.c
 /nettle.c
 /nettle_config.h.in
 /nt.c
