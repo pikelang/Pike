@@ -38,3 +38,11 @@ void nt_exit(void);
 void hogweed_init(void);
 
 void hogweed_exit(void);
+
+void mac_init(void);
+
+void mac_exit(void);
+
+void aead_init(void);
+
+void aead_exit(void);
