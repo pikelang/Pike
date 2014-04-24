@@ -23,6 +23,10 @@ DECLARATIONS
 
 #include "nettle.h"
 
+#ifdef HAVE_NETTLE_CHACHA_POLY1305_H
+#include <nettle/chacha-poly1305.h>
+#endif
+
 #include <nettle/nettle-meta.h>
 
 #include <stdio.h>
@@ -47,7 +51,8 @@ werror(const char *format, ...)
 
 /* Calls Pike_error on errors */
 typedef void (*pike_nettle_set_key_func)(void *ctx,
-					 ptrdiff_t length, const char *key);
+					 ptrdiff_t length,
+					 const uint8_t *key);
 
 #ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
 typedef nettle_crypt_func crypt_func;
@@ -92,8 +97,10 @@ struct pike_aead
   NAME##_DIGEST_SIZE,				\
   NAME##_BLOCK_SIZE,				\
   NAME##_KEY_SIZE,				\
+  NAME##_NONCE_SIZE,				\
   pike_##name##_set_encrypt_key,		\
   pike_##name##_set_decrypt_key,		\
+  pike_##name##_set_iv,				\
   (crypt_func) name##_encrypt,			\
   (crypt_func) name##_decrypt,			\
   pike_##name##_set_iv,				\
@@ -530,6 +537,46 @@ PIKECLASS AEAD
 }
 /*! @endclass AEAD
  */
+
+#ifdef HAVE_NETTLE_CHACHA_POLY1305_H
+
+static void pike_chacha_poly1305_set_encrypt_key(void *ctx,
+						 ptrdiff_t length,
+						 const uint8_t *key)
+{
+  if (length != CHACHA_POLY1305_KEY_SIZE) {
+    Pike_error("Bad key size.\n");
+  }
+  chacha_poly1305_set_key(ctx, key);
+}
+
+static void pike_chacha_poly1305_set_decrypt_key(void *ctx,
+						 ptrdiff_t length,
+						 const uint8_t *key)
+{
+  if (length != CHACHA_POLY1305_KEY_SIZE) {
+    Pike_error("Bad key size.\n");
+  }
+  chacha_poly1305_set_key(ctx, key);
+}
+
+static void pike_chacha_poly1305_set_iv(void *ctx,
+					pike_nettle_size_t length,
+					const uint8_t *key)
+{
+  if (length != CHACHA_POLY1305_KEY_SIZE) {
+    Pike_error("Bad key size.\n");
+  }
+  chacha_poly1305_set_nonce(ctx, key);
+}
+
+#cmod_define PIKE_NAME CHACHA_POLY1305
+#cmod_define NETTLE_NAME chacha_poly1305
+#cmod_include "aead.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* HAVE_NETTLE_CHACHA_POLY1305_H */
 
 /*! @endmodule Nettle */
 
