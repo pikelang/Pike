@@ -78,17 +78,14 @@ ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 //! @param message
 //!   Optional log message for the alert.
 //!
-//! @param trace
-//!   Optional backtrace for the alert.
-//!
 //! @note
 //!   Not all alerts are fatal, and some (eg @[ALERT_close_notify]) are used
 //!   during normal operation.
 .alert alert_factory(object con,
 		     int level, int description, ProtocolVersion version,
-		     string|void message, mixed|void trace)
+		     string|void message)
 {
-  return .alert(level, description, version, message, trace);
+  return .alert(level, description, version, message);
 }
 
 //! Should an SSL client include the Server Name extension?

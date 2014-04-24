@@ -75,8 +75,7 @@ object|string recv(string data, ProtocolVersion version)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		     sprintf("SSL.packet->send: Version %d.%d "
 			     "is not supported\n",
-			     protocol_version>>8, protocol_version & 0xff),
-		     backtrace());
+			     protocol_version>>8, protocol_version & 0xff));
 #ifdef SSL3_DEBUG
       if (protocol_version > PROTOCOL_TLS_MAX)
 	werror("SSL.packet->recv: received version %d.%d packet\n",

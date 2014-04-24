@@ -233,7 +233,7 @@ int handle_alert(string s)
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-		      "invalid alert\n", backtrace()));
+		      "invalid alert\n"));
     return -1;
   }
   if (level == ALERT_fatal)
@@ -365,8 +365,7 @@ void handle_heartbeat(string s)
 	if (!b) {
 	  // Heartbleed probe response.
 	  send_packet(Alert(ALERT_fatal, ALERT_insufficient_security,
-			    "Peer suffers from a bleeding heart.\n",
-			    backtrace()));
+			    "Peer suffers from a bleeding heart.\n"));
 	}
 	break;
       }

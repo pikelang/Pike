@@ -40,14 +40,14 @@ class MyContext
   SSL.alert alert_factory(SSL.connection con,
 			  int level, int description,
 			  SSL.Constants.ProtocolVersion version,
-			  string|void message, mixed|void trace)
+			  string|void message)
   {
     if (message) {
       werror("ALERT [%s: %d:%d]: %s",
 	     SSL.Constants.fmt_version(version),
 	     level, description, message);
     }
-    return ::alert_factory(con, level, description, version, message, trace);
+    return ::alert_factory(con, level, description, version, message);
   }
 }
 

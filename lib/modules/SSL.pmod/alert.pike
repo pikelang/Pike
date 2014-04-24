@@ -6,20 +6,18 @@
 import .Constants;
 
 //! Based on the base @[packet].
-inherit .packet : packet;
+inherit .packet;
 
 int level;
 int description;
 
 string message;
-mixed trace;
 
 constant is_alert = 1;
 
 //! @decl void create(int level, int description,@
-//!                   Protocolversion version, string|void message, @
-//!                   mixed|void trace)
-void create(int l, int d, ProtocolVersion version, string|void m, mixed|void t)
+//!                   Protocolversion version, string|void message)
+void create(int l, int d, ProtocolVersion version, string|void m)
 {
   if ((version == PROTOCOL_SSL_3_0) && (d == ALERT_no_renegotiation)) {
     // RFC 5746 4.5:
@@ -39,17 +37,14 @@ void create(int l, int d, ProtocolVersion version, string|void m, mixed|void t)
   level = l;
   description = d;
   message = m;
-  trace = t;
 
 #ifdef SSL3_DEBUG
   if(m)
     werror(m);
-  if(t)
-    werror(describe_backtrace(t));
 #endif
 
-  packet::create();
-  packet::content_type = PACKET_alert;
-  packet::protocol_version = version;
-  packet::fragment = sprintf("%c%c", level, description);
+  ::create();
+  content_type = PACKET_alert;
+  protocol_version = version;
+  fragment = sprintf("%c%c", level, description);
 }
