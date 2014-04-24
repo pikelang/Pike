@@ -18,10 +18,13 @@ extern struct program *nettle_hash_program;
    data sizes. Limit is now 1 MB. */
 #define THREADS_ALLOW_THRESHOLD (1024 * 1024)
 
-
-#ifdef HAVE_NETTLE_DSA_PARAMS_INIT
-/* We use the presence of nettle_dsa_params_init() to detect Nettle
- * 3.0 or later. In Nettle 3.0 length fields use size_t, where earlier
+#ifdef HAVE_NETTLE_DSA_H
+#include <nettle/dsa.h>
+#endif
+#ifdef dsa_params_init
+/* We use the presence of the dsa_params_init remapping to detect Nettle
+ * 3.0 or later. This is the recommended way to detect Nettle version
+ * differences. In Nettle 3.0 length fields use size_t, where earlier
  * it was unsigned.
  */
 typedef size_t		pike_nettle_size_t;
