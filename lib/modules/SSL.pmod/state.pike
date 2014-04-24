@@ -26,7 +26,7 @@ object/*(.session)*/ session;
 object compress;
 
 //! 64-bit sequence number.
-Gmp.mpz seq_num = Gmp.mpz(0);    /* Bignum, values 0, .. 2^64-1 are valid */
+int seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
 
 //!
 constant Alert = .alert;
@@ -128,7 +128,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	crypt->update(auth_data);
 	msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
 			       <digest_size]);
-	seq_num += 1;
+	seq_num++;
 	if (digest != crypt->digest()) {
 	  // Bad digest.
 #ifdef SSL3_DEBUG
@@ -198,7 +198,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #endif
 	alert = alert || Alert(ALERT_fatal, ALERT_bad_record_mac, version);
       }
-    seq_num += 1;
+    seq_num++;
   }
 
   if (compress)

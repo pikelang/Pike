@@ -39,7 +39,7 @@ class MACAlgorithm {
   //!   Sequence number for the packet in the stream.
   //! @returns
   //!   Returns the MAC hash for the @[packet].
-  string hash_packet(object packet, Gmp.mpz seq_num);
+  string hash_packet(object packet, int seq_num);
 
   //! Creates a HMAC hash of the @[data] with the underlying hash
   //! algorithm.
@@ -1001,7 +1001,7 @@ class KeyExchangeECDHE
 class mac_none
 {
   /* Dummy MAC algorithm */
-  string hash(string data, Gmp.mpz seq_num) { return ""; }
+  string hash(string data, int seq_num) { return ""; }
 }
 #endif
 
@@ -1026,10 +1026,9 @@ class MACsha
     return algorithm->hash(data);
   }
 
-  string(0..255) hash_packet(object packet, Gmp.mpz seq_num)
+  string(0..255) hash_packet(object packet, int seq_num)
   {
-    string s = sprintf("%~8s%c%2c",
-		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
+    string s = sprintf("%8c%c%2c", seq_num,
 		       packet->content_type, sizeof(packet->fragment));
     Crypto.Hash.State h = algorithm();
     h->update(secret);
@@ -1090,9 +1089,8 @@ class MAChmac_sha {
     return hmac(data);
   }
 
-  string hash_packet(object packet, Gmp.mpz seq_num) {
-    hmac->update( sprintf("%~8s%c%2c%2c",
-                          "\0"*8, seq_num->digits(256),
+  string hash_packet(object packet, int seq_num) {
+    hmac->update( sprintf("%8c%c%2c%2c", seq_num,
                           packet->content_type,
                           packet->protocol_version,
                           sizeof(packet->fragment)));
