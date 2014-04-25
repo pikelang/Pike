@@ -533,7 +533,10 @@ Decoder decoder(string name)
     return p();
   }
 
-  error("Unknown character encoding "+name+"\n");
+  if( p = master()->resolv(orig_name+".CharsetDecoder") )
+    return p();
+
+  error("Unknown character encoding "+orig_name+"\n");
 }
 
 private class ASCIIEnc
@@ -885,7 +888,7 @@ Encoder encoder(string name, string|void replacement,
     return p(replacement, repcb);
   }
 
-  error("Unknown character encoding "+name+"\n");
+  error("Unknown character encoding "+orig_name+"\n");
 }
 
 
