@@ -157,7 +157,7 @@ static const struct {
 void file_tcgetattr(INT32 args)
 {
    struct termios ti;
-   int n;
+   unsigned int n;
 
    if(FD < 0)
       Pike_error("File not open.\n");
@@ -171,7 +171,7 @@ void file_tcgetattr(INT32 args)
       return;
    }
 
-   for( n=0; n<sizeof(termiosflags)/sizeof(termiosflags[0]); n++ )
+   for( n=0; n<NELEM(termiosflags); n++ )
    {
       push_text( termiosflags[n].name );
       switch( termiosflags[n].var )
@@ -287,7 +287,7 @@ void file_tcsetattr(INT32 args)
     return;
   }
 
-  for( i=0; i<sizeof(termiosflags)/sizeof(termiosflags[0]); i++ )
+  for( i=0; i<NELEM(termiosflags); i++ )
   {
     if( (tmp=simple_mapping_string_lookup( sp[-1].u.mapping, termiosflags[i].name )) )
     {
