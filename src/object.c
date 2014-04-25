@@ -1189,7 +1189,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
 		 dummy, dummy);
 	add_ref(dummy);
       }else{
-	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       }
       break;
     }
