@@ -230,10 +230,10 @@ Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
 -----END CERTIFICATE-----";
   object o = Standards.PEM.Message(pem);
   object t = Standards.X509.decode_certificate(o->body);
-  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[2][0][1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject[2][0][1]->value, "extensions":t->extensions])
+  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm[0], "issuer":t->issuer[2][0][1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject[2][0][1]->value, "extensions":t->extensions])
 ]],[[
 ([ /* 9 elements */
-  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.5)",
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,5),
   "der": 1,
   "issuer": "Class 1 Public Primary Certification Authority",
   "extensions": ([]),
@@ -258,17 +258,17 @@ test_any_equal([[
   object t = Standards.X509.decode_certificate(c);
   mapping ext = t->extensions;
   foreach(ext; string id; object value) ext[id]=value->get_der();
-  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":sprintf("%O",t->algorithm[0]), "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":ext, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
+  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm[0], "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":ext, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
 ]],[[ ([
   "version" : 3,
   "serial" : "5",
-  "algorithm": "Standards.ASN1.Types.Identifier(1.2.840.113549.1.1.11)",
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,11),
   "issuer" : "Test",
   "subject" : "Test",
   "extensions" : ([
-      "\6\3U\35\16": "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
-      "\6\3U\35\17": "\3\2\0\206",
-      "\6\3U\35\23": "0\3\1\1\377"
+      Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+      Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\0\206",
+      Standards.ASN1.Types.Identifier(2,5,29,19): "0\3\1\1\377"
   ]),
   "public_key": 1,
 ]) ]])
