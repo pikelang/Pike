@@ -3,8 +3,7 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-
-#if constant(Crypto.Random)
+#require constant(Crypto.Random)
 
 protected Gmp.mpz p; // Modulo
 protected Gmp.mpz q; // Group order
@@ -29,17 +28,6 @@ Gmp.mpz get_x() { return x; } //! Returns the private key.
 this_program set_public_key(Gmp.mpz p_, Gmp.mpz q_, Gmp.mpz g_, Gmp.mpz y_)
 {
   p = p_; q = q_; g = g_; y = y_;
-
-#if 0
-#define D(x) ((x) ? (x)->digits() : "NULL")
-  werror("dsa->set_public_key\n"
-	 "  p = %s,\n"
-	 "  q = %s,\n"
-	 "  g = %s,\n"
-	 "  y = %s,\n",
-	 D(p), D(q), D(g), D(y));
-#endif
-  
   return this;
 }
 
@@ -275,7 +263,3 @@ int(0..1) public_key_equal (.DSA dsa)
 
 //! Returns the string @expr{"DSA"@}.
 string name() { return "DSA"; }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
