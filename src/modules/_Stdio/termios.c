@@ -122,6 +122,38 @@
 #define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
+static int termios_bauds( int speed )
+{
+    switch (speed)
+    {
+#define TERMIOS_SPEED(B,V) case B: return V;
+#include "termios_flags.h"
+#undef TERMIOS_SPEED
+    }
+    return speed;
+}
+
+
+#define c_cflag 1
+#define c_iflag 2
+#define c_oflag 3
+#define c_lflag 4
+#define TERMIOS_FLAG(where,flag,sflag) { where, flag, sflag },
+#define TERMIOS_CHAR(cc,scc)           { 0, cc, scc },
+static const struct {
+  int var;
+  int val;
+  const char *name;
+} termiosflags[] = {
+#include "termios_flags.h"
+};
+#undef TERMIOS_CHAR
+#undef TERMIOS_FLAG
+#undef c_cflag
+#undef c_iflag
+#undef c_oflag
+#undef c_lflag
+
 void file_tcgetattr(INT32 args)
 {
    struct termios ti;
@@ -139,38 +171,23 @@ void file_tcgetattr(INT32 args)
       return;
    }
 
-   n=0;
-
-#define TERMIOS_FLAG(where,flag,sflag) \
-   push_text(sflag); \
-   push_int(!!(ti.where&flag)); \
-   n++; 
-#define TERMIOS_CHAR(c,sc) \
-   push_text(sc); \
-   push_int(ti.c_cc[c]); \
-   n++; 
-
-#include "termios_flags.h"
-
-#undef TERMIOS_FLAG
-#undef TERMIOS_CHAR
+   for( n=0; n<sizeof(termiosflags)/sizeof(termiosflags[0]); n++ )
+   {
+      push_text( termiosflags[n].name );
+      switch( termiosflags[n].var )
+      {
+        case 0: push_int( ti.c_cc[termiosflags[n].val] );  break;
+        case 1: push_int( (ti.c_cflag & termiosflags[n].val) ? 1 : 0 ); break;
+        case 2: push_int( (ti.c_iflag & termiosflags[n].val) ? 1 : 0 ); break;
+        case 3: push_int( (ti.c_oflag & termiosflags[n].val) ? 1 : 0 ); break;
+        case 4: push_int( (ti.c_lflag & termiosflags[n].val) ? 1 : 0 ); break;
+      }
+   }
 
    push_text("ospeed");
-   switch (cfgetospeed(&ti))
-   {
-#define TERMIOS_SPEED(B,V) case B: push_int(V); break;
-#include "termios_flags.h"
-      default: push_int(-1);
-   }
-   n++;
-
+   push_int(termios_bauds(cfgetospeed(&ti)));
    push_text("ispeed");
-   switch (cfgetispeed(&ti))
-   {
-#include "termios_flags.h"
-#undef TERMIOS_SPEED
-      default: push_int(-1);
-   }
+   push_int(termios_bauds(cfgetispeed(&ti)));
    n++;
 
 #ifdef CSIZE
@@ -214,150 +231,143 @@ void file_tcgetattr(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
-void file_tcsetattr(INT32 args)
+
+static int termios_speed( int speed )
 {
-   struct termios ti;
-   int optional_actions=TCSANOW;
-
-   if(FD < 0)
-      Pike_error("File not open.\n");
-
-   if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("tcsetattr", 1);
-
-   if (args>1)
-   {
-      if (args>2)
-	pop_n_elems(args-2);
-      if (TYPEOF(sp[-1]) != T_STRING)
-	SIMPLE_BAD_ARG_ERROR("tcsetattr", 2, "string");
-
-      if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
-	 optional_actions=TCSANOW;
-      else if (!strcmp(sp[-1].u.string->str,"TCSADRAIN"))
-	 optional_actions=TCSADRAIN;
-      else if (!strcmp(sp[-1].u.string->str,"TCSAFLUSH"))
-	 optional_actions=TCSAFLUSH;
-      else
-	 Pike_error("illegal argument 2 to tcsetattr\n");
-
-      pop_stack();
-   }
-
-   if (TYPEOF(sp[-1]) != T_MAPPING)
-     SIMPLE_BAD_ARG_ERROR("tcsetattr", 1, "mapping");
-
-   /* read attr to edit */
-   if (tcgetattr(FD,&ti)) /* error */
-   {
-      ERRNO=errno;
-      push_int(0);
-      return;
-   }
-
-#define TERMIOS_FLAG(where,flag,sflag) \
-   stack_dup(); \
-   push_text(sflag); \
-   f_index(2); \
-   if (!IS_UNDEFINED(sp-1)) \
-   { \
-     if (TYPEOF(sp[-1]) != T_INT) \
-         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",sflag); \
-      if (sp[-1].u.integer) ti.where|=flag; else ti.where&=~flag; \
-   } \
-   pop_stack();
-
-#define TERMIOS_CHAR(cc,scc) \
-   stack_dup(); \
-   push_text(scc); \
-   f_index(2); \
-   if (!IS_UNDEFINED(sp-1)) \
-   { \
-     if (TYPEOF(sp[-1]) != T_INT) \
-         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",scc); \
-      ti.c_cc[cc]=(char)sp[-1].u.integer; \
-   } \
-   pop_stack();
-
-#include "termios_flags.h"
-
-#undef TERMIOS_FLAG
-#undef TERMIOS_CHAR
-
-#ifdef CSIZE
-   stack_dup();
-   push_text("csize");
-   f_index(2);
-
-   if (!IS_UNDEFINED(sp-1)) 
-   {
-      if (TYPEOF(sp[-1]) != T_INT)
-   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","csize");
-
-      switch (sp[-1].u.integer)
-      {
-#ifdef CS8
-	 case 8: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
-#endif
-#ifdef CS7
-	 case 7: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS7; break;
-#endif
-#ifdef CS6
-	 case 6: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS6; break;
-#endif
-#ifdef CS5
-	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS5; break;
-#endif
-	 default:
-	    Pike_error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size\n","csize");
-      }
-   }
-   pop_stack();
-
-#endif
-   
-   
-   stack_dup(); 
-   push_text("ospeed");
-   f_index(2); 
-   if (!IS_UNDEFINED(sp-1)) 
-   {
-      if (TYPEOF(sp[-1]) != T_INT)
-   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","ospeed");
-      switch (sp[-1].u.integer)
-      {
-#define TERMIOS_SPEED(B,V) case V: push_int(B); break;
-#include "termios_flags.h"
-   	 default:
-   	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
-      }
-      cfsetospeed(&ti,sp[-1].u.integer);
-      pop_stack();
-   }
-   pop_stack();
-
-   stack_dup(); 
-   push_text("ispeed");
-   f_index(2); 
-   if (!IS_UNDEFINED(sp-1)) 
-   {
-      if (TYPEOF(sp[-1]) != T_INT)
-   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
-      switch (sp[-1].u.integer)
-      {
+    switch (speed)
+    {
+#define TERMIOS_SPEED(B,V) case V: return B;
 #include "termios_flags.h"
 #undef TERMIOS_SPEED
-   	 default:
-   	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ispeed");
-      }
-      cfsetispeed(&ti,sp[-1].u.integer);
-      pop_stack();
-   }
-   pop_stack();
+    }
+    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
+}
 
-   pop_stack(); /* lose the mapping */
-   
-   push_int(!tcsetattr(FD,optional_actions,&ti));
+
+void file_tcsetattr(INT32 args)
+{
+  struct termios ti;
+  int optional_actions=TCSANOW;
+  struct svalue *tmp;
+  unsigned int i;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("tcsetattr", 1);
+
+  if (args>1)
+  {
+    if (args>2)
+      pop_n_elems(args-2);
+    if (TYPEOF(sp[-1]) != T_STRING)
+      SIMPLE_BAD_ARG_ERROR("tcsetattr", 2, "string");
+
+    if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
+      optional_actions=TCSANOW;
+    else if (!strcmp(sp[-1].u.string->str,"TCSADRAIN"))
+      optional_actions=TCSADRAIN;
+    else if (!strcmp(sp[-1].u.string->str,"TCSAFLUSH"))
+      optional_actions=TCSAFLUSH;
+    else
+      Pike_error("illegal argument 2 to tcsetattr\n");
+
+    pop_stack();
+  }
+
+  if (TYPEOF(sp[-1]) != T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR("tcsetattr", 1, "mapping");
+
+  /* read attr to edit */
+  if (tcgetattr(FD,&ti)) /* error */
+  {
+    ERRNO=errno;
+    push_int(0);
+    return;
+  }
+
+  for( i=0; i<sizeof(termiosflags)/sizeof(termiosflags[0]); i++ )
+  {
+    if( (tmp=simple_mapping_string_lookup( sp[-1].u.mapping, termiosflags[i].name )) )
+    {
+      if( TYPEOF(*tmp) != PIKE_T_INT )
+        Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",termiosflags[i].name);
+      switch( termiosflags[i].var )
+      {
+        case 0:
+          ti.c_cc[termiosflags[i].val] = tmp->u.integer;
+          break;
+        case 1:
+          if( tmp->u.integer )
+            ti.c_cflag |= termiosflags[i].val;
+          else
+            ti.c_cflag &= ~termiosflags[i].val;
+          break;
+        case 2:
+          if( tmp->u.integer )
+            ti.c_iflag |= termiosflags[i].val;
+          else
+            ti.c_iflag &= ~termiosflags[i].val;
+          break;
+        case 3:
+          if( tmp->u.integer )
+            ti.c_oflag |= termiosflags[i].val;
+          else
+            ti.c_oflag &= ~termiosflags[i].val;
+          break;
+        case 4:
+          if( tmp->u.integer )
+            ti.c_lflag |= termiosflags[i].val;
+          else
+            ti.c_lflag &= ~termiosflags[i].val;
+          break;
+      }
+    }
+  }
+
+#ifdef CSIZE
+  if ( (tmp = simple_mapping_string_lookup( sp[-1].u.mapping, "csize" )) )
+  {
+    if (TYPEOF(*tmp) != T_INT)
+      Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","csize");
+
+    switch (tmp->u.integer)
+    {
+#ifdef CS8
+      case 8: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+#endif
+#ifdef CS7
+      case 7: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS7; break;
+#endif
+#ifdef CS6
+      case 6: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS6; break;
+#endif
+#ifdef CS5
+      case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS5; break;
+#endif
+      default:
+        Pike_error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size\n","csize");
+    }
+  }
+#endif
+
+
+  if ( (tmp = simple_mapping_string_lookup( sp[-1].u.mapping, "ospeed" )) )
+  {
+    if (TYPEOF(*tmp) != T_INT)
+      Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","ospeed");
+    cfsetospeed(&ti,termios_speed(tmp->u.integer));
+  }
+
+  if ( (tmp = simple_mapping_string_lookup( sp[-1].u.mapping, "ispeed" )) )
+  {
+    if (TYPEOF(*tmp) != T_INT)
+      Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","ospeed");
+    cfsetispeed(&ti,termios_speed(tmp->u.integer));
+  }
+  pop_stack(); /* lose the mapping */
+  push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
 void file_tcflush(INT32 args)                               
