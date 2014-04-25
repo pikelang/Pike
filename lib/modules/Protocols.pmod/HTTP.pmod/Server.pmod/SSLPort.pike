@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(SSL.Cipher.CipherAlgorithm)
+#require constant(SSL.Cipher)
 
 import ".";
 
@@ -102,11 +101,10 @@ class MySSLPort
 	"commonName" : "*",
       ]);
 
-      add_cert( private_key,
-		({
-		  Standards.X509.make_selfsigned_certificate(private_key,
-							     3600*24*365, a)
-		}) );
+      string c = Standards.X509.make_selfsigned_certificate(private_key,
+                                                            3600*24*365, a);
+
+      ctx->add_cert( private_key, ({ c }) );
     }
   }
 
@@ -126,7 +124,7 @@ class MySSLPort
 #endif
       0;
     if( tmp_key && tmp_cert )
-      add_cert( tmp_key, tmp_cert );
+      ctx->add_cert( tmp_key, tmp_cert );
   }
 
   //! @deprecated add_cert
@@ -137,12 +135,10 @@ class MySSLPort
     else
       tmp_cert = ({ [string]certificate });
     if( tmp_key && tmp_cert )
-      add_cert( tmp_key, tmp_cert );
+      ctx->add_cert( tmp_key, tmp_cert );
   }
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%O:%d)", this_program, interface, portno);
 }
-
-#endif
