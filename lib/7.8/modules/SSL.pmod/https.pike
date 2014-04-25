@@ -83,40 +83,6 @@ class conn {
   }
 }
 
-class no_random {
-  object arcfour = Crypto.Arcfour();
-
-  void create(string|void secret)
-  {
-    if (!secret)
-      secret = sprintf("%s%4c", random_string(32), time());
-    arcfour->set_encrypt_key(Crypto.SHA256.hash(secret));
-    read(1000);
-  }
-
-  string read(int size)
-  {
-    return arcfour->crypt( "\021"*size );
-  }
-}
-
-/* PKCS#1 Private key structure:
-
-RSAPrivateKey ::= SEQUENCE {
-  version Version,
-  modulus INTEGER, -- n
-  publicExponent INTEGER, -- e
-  privateExponent INTEGER, -- d
-  prime1 INTEGER, -- p
-  prime2 INTEGER, -- q
-  exponent1 INTEGER, -- d mod (p-1)
-  exponent2 INTEGER, -- d mod (q-1)
-  coefficient INTEGER -- (inverse of q) mod p }
-
-Version ::= INTEGER
-
-*/
-
 void my_accept_callback(object f)
 {
   werror("Accept!\n");
@@ -162,7 +128,7 @@ int main()
 
   SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
 
-  random = no_random()->read;
+  random = Crypto.Random.random_string;
   werror("Starting\n");
   if (!bind(PORT, my_accept_callback))
   {
