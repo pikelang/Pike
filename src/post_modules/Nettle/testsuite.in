@@ -528,6 +528,17 @@ cond_resolv( Nettle.Yarrow, [[
 	  String.hex2string("49a090656a6d93782e169994f41005a3616d3cd7")})]])
 ]])
 
+test_do( add_constant("F",Nettle.Fortuna()); )
+dnl Fortuna starts with "\0"*32 as key and "\0"*16 as counter.
+test_equal( Crypto.AES()->set_encrypt_key("\0"*32)->crypt("\0"*16), F->random_string(16) )
+dnl One rekey event. Counter is 3.
+test_any([[
+  object aes=Crypto.AES()->set_encrypt_key("\0"*32);
+  string key = aes->crypt("\0"*15+"\1") + aes->crypt("\0"*15+"\2");
+  return aes->set_encrypt_key(key)->crypt("\0"*15+"\3");
+]], F->random_string(16))
+test_do( add_constant("F"); )
+
 // crypt_md5
 
 test_eq(Nettle.crypt_md5("",""), "qRPK7m23GJusamGpoGLby/")
@@ -551,7 +562,6 @@ test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
 
 // hogweed
 test_eval_error(Nettle.dsa_generate_keypair(1024,1,random_string))
-test_eval_error(Nettle.dsa_generate_keypair(511,160,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(512,4,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(512,1,random_string))
 test_eval_error(Nettle.rsa_generate_keypair(88,0x10001,random_string))
