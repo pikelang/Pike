@@ -49,6 +49,146 @@ string hash(string|Stdio.File in, int|void bytes)
   return State([string]in)->digest();
 }
 
+//! @module HMAC
+//!
+//! HMAC (Hashing for Message Authenticity Control) for the hash algorithm.
+//!
+//! RFC 2104.
+//!
+//! @seealso
+//!   @[Crypto.HMAC]
+
+//! @ignore
+private class _HMAC
+{
+//! @endignore
+
+  inherit .MAC;
+
+  int(0..) digest_size()
+  {
+    return global::digest_size();
+  }
+
+  int(1..) block_size()
+  {
+    return global::block_size();
+  }
+
+  //! Returns the block size of the encapsulated hash.
+  //!
+  //! @note
+  //!   Other key sizes are allowed, and will be expanded/compressed
+  //!   to this size.
+  int(0..) key_size()
+  {
+    return global::block_size();
+  }
+
+  //! HMAC has no modifiable iv.
+  int(0..0) iv_size()
+  {
+    return 0;
+  }
+
+  //! The HMAC hash state.
+  class State
+  {
+    inherit ::this_program;
+
+    protected string ikey; /* ipad XOR:ed with the key */
+    protected string okey; /* opad XOR:ed with the key */
+
+    protected global::State h;
+
+    //! @param passwd
+    //!   The secret password (K).
+    protected void create (string passwd, void|int b)
+    {
+      if (!b)
+	b = block_size();
+      else if (digest_size()>b)
+	error("Block size is less than hash digest size.\n");
+      if (sizeof(passwd) > b)
+	passwd = hash(passwd);
+      if (sizeof(passwd) < b)
+	passwd = passwd + "\0" * (b - sizeof(passwd));
+
+      ikey = passwd ^ ("6" * b);
+      okey = passwd ^ ("\\" * b);
+    }
+
+    string(8bit) name()
+    {
+      return [string(8bit)]sprintf("HMAC(%s)", global::name());
+    }
+
+    //! HMAC does not have a modifiable iv.
+    this_program set_iv(string(8bit) iv)
+    {
+      if (sizeof(iv)) error("Not supported for HMAC.\n");
+    }
+
+    //! Hashes the @[text] according to the HMAC algorithm and returns
+    //! the hash value.
+    //!
+    //! This works as a combined @[update()] and @[digest()].
+    string `()(string text)
+    {
+      return hash(okey + hash(ikey + text));
+    }
+
+    this_program update(string data)
+    {
+      if( !h )
+      {
+	h = global::State();
+	h->update(ikey);
+      }
+      h->update(data);
+      return this;
+    }
+
+    string digest(int|void length)
+    {
+      string res = hash(okey + h->digest());
+      h = 0;
+
+      if (length) return res[..length-1];
+      return res;
+    }
+
+    int(0..) digest_size()
+    {
+      return global::digest_size();
+    }
+
+    int(1..) block_size()
+    {
+      return global::block_size();
+    }
+
+    //! Hashes the @[text] according to the HMAC algorithm and returns
+    //! the hash value as a PKCS-1 digestinfo block.
+    string digest_info(string text)
+    {
+      return pkcs_digest(okey + hash(ikey + text));
+    }
+  }
+
+  //! Returns a new @[State] object initialized with a @[password].
+  State `()(string password, void|int b)
+  {
+    return State(password, b);
+  }
+
+//! @ignore
+}
+
+_HMAC HMAC = _HMAC();
+
+//! @endignore
+
 /* NOTE: This is NOT the MIME base64 table! */
 protected constant b64tab =
   "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -256,7 +396,7 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
 
-  HMAC hmac = HMAC(password);
+  object(_HMAC.State) hmac = HMAC(password);
   password = "CENSORED";
 
   string res = "";
@@ -324,85 +464,6 @@ string pkcs_digest(string s)
   return build_digestinfo(s, this);
 }
 
-//! HMAC (Hashing for Message Authenticity Control) for the hash algorithm.
-//!
-//! RFC 2104.
-//!
-//! @seealso
-//!   @[Crypto.HMAC]
-class HMAC
-{
-  inherit State;
-
-  protected string ikey; /* ipad XOR:ed with the key */
-  protected string okey; /* opad XOR:ed with the key */
-
-  protected State h;
-
-  //! @param passwd
-  //!   The secret password (K).
-  protected void create (string passwd, void|int b)
-  {
-    if (!b)
-      b = block_size();
-    else if (digest_size()>b)
-      error("Block size is less than hash digest size.\n");
-    if (sizeof(passwd) > b)
-      passwd = hash(passwd);
-    if (sizeof(passwd) < b)
-      passwd = passwd + "\0" * (b - sizeof(passwd));
-
-    ikey = passwd ^ ("6" * b);
-    okey = passwd ^ ("\\" * b);
-  }
-
-  //! Hashes the @[text] according to the HMAC algorithm and returns
-  //! the hash value.
-  //!
-  //! This works as a combined @[update()] and @[digest()].
-  string `()(string text)
-  {
-    return hash(okey + hash(ikey + text));
-  }
-
-  this_program update(string data)
-  {
-    if( !h )
-    {
-      h = State();
-      h->update(ikey);
-    }
-    h->update(data);
-    return this;
-  }
-
-  string digest(int|void length)
-  {
-    string res = hash(okey + h->digest());
-    h = 0;
-
-    if (length) return res[..length-1];
-    return res;
-  }
-
-  int(0..) digest_size()
-  {
-    return global::digest_size();
-  }
-
-  int(1..) block_size()
-  {
-    return global::block_size();
-  }
-
-  //! Hashes the @[text] according to the HMAC algorithm and returns
-  //! the hash value as a PKCS-1 digestinfo block.
-  string digest_info(string text)
-  {
-    return pkcs_digest(okey + hash(ikey + text));
-  }
-}
-
 //! This is the Password-Based Key Derivation Function used in TLS.
 //!
 //! @param password
@@ -418,7 +479,7 @@ class HMAC
 //!   The number of bytes to generate.
 string P_hash(string password, string salt, int rounds, int bytes)
 {
-  HMAC hmac = HMAC(password);
+  _HMAC.State hmac = HMAC(password);
   string temp = salt;
   string res="";
 
