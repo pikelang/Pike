@@ -4,6 +4,8 @@ dnl Tests from ITU-T Rec.X690 (07/2002)
 dnl (originally from A Layman's Guide to a Subset of ASN.1, BER, and
 dnl  DER)
 
+test_do( add_constant("Types", Standards.ASN1.Types); )
+
 define(test_decode,[[
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->debug_string(),$2)
 ]])
@@ -17,68 +19,57 @@ test_decode("03 81 04 06 6e 5d c0", "BIT STRING (18) 11011100101110111")
 
 
 dnl §8.8
-test_eq( Standards.ASN1.Types.Null()->get_der(), "\5\0" )
+test_eq( Types.Null()->get_der(), "\5\0" )
 
 dnl §8.9
 test_any([[
-  import Standards.ASN1.Types;
+  import Types;
   return Sequence( ({ IA5String("Smith"), Boolean(17) }) )->get_der();
 ]], "0\n\26\5Smith\1\1\xff")
 
 dnl §8.19
-test_eq(Standards.ASN1.Types.Identifier(2,100,3)->get_der(),
-  String.hex2string("0603813403"))
+test_eq(Types.Identifier(2,100,3)->get_der(), String.hex2string("0603813403"))
 
 dnl §8.21
-test_eq( Standards.ASN1.Types.VisibleString("Jones")->get_der(),
-  "\32\5Jones" )
+test_eq( Types.VisibleString("Jones")->get_der(), "\32\5Jones" )
 
-test_eq( Standards.ASN1.Types.BitString()->
-  set_from_ascii("011011100101110111")->get_der(),
+test_eq( Types.BitString()->set_from_ascii("011011100101110111")->get_der(),
   String.hex2string("0304066e5dc0") )
 
-test_eq( Standards.ASN1.Types.IA5String("test1@rsa.com")->get_der(),
+test_eq( Types.IA5String("test1@rsa.com")->get_der(),
   String.hex2string("160d7465737431407273612e636f6d") )
 
-test_eq( Standards.ASN1.Types.Integer(0)->get_der(),
-  String.hex2string("020100") )
-test_eq( Standards.ASN1.Types.Integer(127)->get_der(),
-  String.hex2string("02017f") )
-test_eq( Standards.ASN1.Types.Integer(128)->get_der(),
-  String.hex2string("02020080") )
-test_eq( Standards.ASN1.Types.Integer(256)->get_der(),
-  String.hex2string("02020100") )
-test_eq( Standards.ASN1.Types.Integer(-128)->get_der(),
-  String.hex2string("020180") )
-test_eq( Standards.ASN1.Types.Integer(-129)->get_der(),
-  String.hex2string("0202ff7f") )
+test_eq( Types.Integer(0)->get_der(), String.hex2string("020100") )
+test_eq( Types.Integer(127)->get_der(), String.hex2string("02017f") )
+test_eq( Types.Integer(128)->get_der(), String.hex2string("02020080") )
+test_eq( Types.Integer(256)->get_der(), String.hex2string("02020100") )
+test_eq( Types.Integer(-128)->get_der(), String.hex2string("020180") )
+test_eq( Types.Integer(-129)->get_der(), String.hex2string("0202ff7f") )
 
-test_eq(Standards.ASN1.Types.Identifier(1,2,840,113549)->get_der(),
+test_eq(Types.Identifier(1,2,840,113549)->get_der(),
   String.hex2string("06062a864886f70d"))
 
-test_eq(Standards.ASN1.Types.OctetString(String.hex2string("0123456789abcdef"))
-  ->get_der(),
+test_eq(Types.OctetString(String.hex2string("0123456789abcdef"))->get_der(),
   String.hex2string("04080123456789abcdef") )
 
-test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
+test_eq(Types.PrintableString("Test User 1")->get_der(),
   String.hex2string("130b5465737420557365722031"))
 
-test_eq(Standards.ASN1.Types.UTC()->set_posix(42)->get_posix(), 42)
+test_eq(Types.UTC()->set_posix(42)->get_posix(), 42)
 
-test_eq(Standards.ASN1.Types.UTC("910506214540Z")->get_der(),
+test_eq(Types.UTC("910506214540Z")->get_der(),
   String.hex2string("170d3931303530363231343534305a"))
 
-test_eq(Standards.ASN1.Types.UTC()->set_posix(673566340)->get_der(),
+test_eq(Types.UTC()->set_posix(673566340)->get_der(),
   String.hex2string("170d3931303530363231343534305a"))
 
-test_eq(Standards.ASN1.Types.UTC("910506214540Z")->get_posix(),
- 673566340)
+test_eq(Types.UTC("910506214540Z")->get_posix(), 673566340)
 
-test_eq(Standards.ASN1.Types.TeletexString("clés publiques")->get_der(),
+test_eq(Types.TeletexString("clés publiques")->get_der(),
   String.hex2string("140f636cc26573207075626c6971756573"))
 
 test_any([[
-  import Standards.ASN1.Types;
+  import Types;
   Sequence countryName = Sequence( ({ Identifier(2,5,4,6),
 	                              PrintableString("US") }) );
   Sequence organizationName = Sequence( ({ Identifier(2,5,4,10),
@@ -98,12 +89,39 @@ test_any([[
 ))
 
 test_any([[
- object o = Standards.ASN1.Types.BitString("\xbf");
+ object o = Types.BitString("\xbf");
  return o->get_der()
 ]], "\3\2\0\277")
 test_any([[
- object o = Standards.ASN1.Types.BitString("\xbf")->set_length(3);
+ object o = Types.BitString("\xbf")->set_length(3);
  return o->get_der()
 ]], "\3\2\5\240")
+
+test_eq([[ Types.Identifier(1,2,3) ]], [[ Types.Identifier(1,2,3) ]])
+test_equal([[ Types.Identifier(1,2,3) ]], [[ Types.Identifier(1,2,3) ]])
+test_eq([[ ([ Types.Identifier(1,2,3) : "x" ])[ Types.Identifier(1,2,3) ] ]], "x")
+test_eq([[ ({ Types.Identifier(1,2,3) }) - ({ Types.Identifier(1,2,3) }) ]], ({}))
+test_any([[
+  multiset m = (< Types.Identifier(1,2,3) >);
+  m[Types.Identifier(1,2,3)] = 0;
+  return sizeof(m);
+]], 0)
+test_equal([[ sort( ({
+  Types.Identifier(1,3),
+  Types.Identifier(1,2),
+  Types.Identifier(1,1),
+  Types.Identifier(1,2,1,1),
+  Types.Identifier(1,2,1),
+  Types.Identifier(1,2,2),
+})) ]], [[ ({
+  Types.Identifier(1,1),
+  Types.Identifier(1,2),
+  Types.Identifier(1,2,1),
+  Types.Identifier(1,2,1,1),
+  Types.Identifier(1,2,2),
+  Types.Identifier(1,3),
+}) ]])
+
+test_do( add_constant("Types"); )
 
 END_MARKER
