@@ -1311,11 +1311,14 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x73424954: /* sBIT */
 	  {
-	    int i;
+            struct pike_string * s = b->item[1].u.string;
+	    ptrdiff_t i;
             if(mode==MODE_IMAGE_ONLY) break;
-	    for(i=0; i<b->item[1].u.string->len; i++)
-	      push_int(b->item[1].u.string->str[i]);
-	    f_aggregate(b->item[1].u.string->len);
+            /* sBIT chunks are not longer than 4 bytes */
+            if (s->len > 4) break;
+	    for(i=0; i<s->len; i++)
+	      push_int(s->str[i]);
+	    f_aggregate(s->len);
 	    push_constant_text("sbit");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
