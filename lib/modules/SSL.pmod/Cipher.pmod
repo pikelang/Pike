@@ -1075,7 +1075,7 @@ class MAChmac_sha {
   inherit MACAlgorithm;
 
   protected Crypto.Hash algorithm = Crypto.SHA1;
-  protected Crypto.Hash.HMAC hmac;
+  protected Crypto.MAC.State hmac;
 
   constant hash_header_size = 13;
 
@@ -1148,9 +1148,9 @@ class MAChmac_sha512 {
 //! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
 protected string(0..255) P_hash(Crypto.Hash hashfn,
 				string(0..255) secret,
-				string(0..255) seed, int len) {
-   
-  Crypto.Hash.HMAC hmac=hashfn->HMAC(secret);
+				string(0..255) seed, int len)
+{
+  Crypto.MAC.State hmac=hashfn->HMAC(secret);
   string temp=seed;
   string res="";
 
