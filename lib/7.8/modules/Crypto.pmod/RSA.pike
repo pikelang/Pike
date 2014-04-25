@@ -4,8 +4,7 @@
 
 #pike 7.8
 #pragma strict_types
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 protected Gmp.mpz n;  /* modulo */
 protected Gmp.mpz e;  /* public exponent */
@@ -396,7 +395,3 @@ string crypt(string s)
 string name() {
   return "RSA";
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

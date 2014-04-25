@@ -1,6 +1,5 @@
 #pike 7.9
-
-#if constant(Crypto.Hash)
+#require constant(Crypto.Hash)
 
 //! Encryption and MAC algorithms used in SSL - Compat with Pike 7.8.
 
@@ -136,7 +135,3 @@ class DHKeyExchange
     ::create(p);
   }
 }
-
-#else // constant(Crypto.Hash)
-constant this_program_does_not_exist = 1;
-#endif
