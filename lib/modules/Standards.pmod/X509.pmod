@@ -1081,12 +1081,12 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;
 
-  array crit = indices(tbs->critical);
+  multiset crit = tbs->critical + (<>);
   int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
 
   Object lookup(Identifier id)
   {
-    crit -= ({id});
+    crit[id] = 0;
     return tbs->extensions[id];
   };
 
