@@ -33,7 +33,7 @@ class _POLY1305
 {
   //! @endignore
 
-  inherit CHACHA_POLY1305;
+  inherit Nettle.CHACHA_POLY1305;
 
   //! @ignore
 }
