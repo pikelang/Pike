@@ -581,15 +581,28 @@ class Identifier
   }
 #endif
 
-  int __hash()
+  protected int __hash()
   {
     return hash(get_der());
   }
 
-  int `==(mixed other) {
+  protected int(0..1) `==(mixed other) {
     return (objectp(other) &&
 	    (this_program == object_program(other)) &&
 	    equal(id, ([object(Identifier)]other)->id));
+  }
+
+  protected int(0..1) `<(mixed other) {
+    if( !objectp(other) ||
+        (this_program != object_program(other)) )
+      return 0;
+    array oid = ([object(Identifier)]other)->id;
+    for( int i; i<min(sizeof(id),sizeof(oid)); i++ )
+    {
+      if( id[i] < oid[i] ) return 1;
+      if( id[i] > oid[i] ) return 0;
+    }
+    return sizeof(id) < sizeof(oid);
   }
 }
 
