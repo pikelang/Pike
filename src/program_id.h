@@ -152,14 +152,21 @@
 
 /* 300 - 399 reserved for Nettle */
 #define     PROG_NETTLE_HASH_ID					0454 /* 300 */
+#define tObjImpl_NETTLE_HASH		   "\003\000\000\000\001\054"
 #define     PROG_NETTLE_HASH_STATE_ID				0455 /* 301 */
 #define tObjImpl_NETTLE_HASH_STATE	   "\003\000\000\000\001\055"
 #define     PROG_NETTLE_CIPHER_ID				0466 /* 310 */
+#define tObjImpl_NETTLE_CIPHER		   "\003\000\000\000\001\066"
 #define     PROG_NETTLE_CIPHER_STATE_ID				0467 /* 311 */
 #define tObjImpl_NETTLE_CIPHER_STATE       "\003\000\000\000\001\067"
 #define     PROG_NETTLE_MAC_ID					0500 /* 320 */
+#define tObjImpl_NETTLE_MAC                "\003\000\000\000\001\100"
 #define     PROG_NETTLE_MAC_STATE_ID				0501 /* 321 */
 #define tObjImpl_NETTLE_MAC_STATE          "\003\000\000\000\001\101"
+#define     PROG_NETTLE_AEAD_ID					0512 /* 330 */
+#define tObjImpl_NETTLE_AEAD               "\003\000\000\000\001\112"
+#define     PROG_NETTLE_AEAD_STATE_ID				0513 /* 331 */
+#define tObjImpl_NETTLE_AEAD_STATE         "\003\000\000\000\001\113"
 
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */
