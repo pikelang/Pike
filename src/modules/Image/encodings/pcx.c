@@ -252,12 +252,12 @@ static struct object *low_pcx_decode( struct pike_string *data )
     Pike_error("There is not enough data available for this to be a PCX image\n");
   pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
 #if PIKE_BYTEORDER == 1234
-  SWAP_S(pcx_header.x1);
-  SWAP_S(pcx_header.x2);
-  SWAP_S(pcx_header.y1);
-  SWAP_S(pcx_header.y2);
-  SWAP_S(pcx_header.bytesperline);
-  SWAP_S(pcx_header.color);
+  pcx_header.x1 = SWAP_S(pcx_header.x1);
+  pcx_header.x2 = SWAP_S(pcx_header.x2);
+  pcx_header.y1 = SWAP_S(pcx_header.y1);
+  pcx_header.y2 = SWAP_S(pcx_header.y2);
+  pcx_header.bytesperline = SWAP_S(pcx_header.bytesperline);
+  pcx_header.color = SWAP_S(pcx_header.color);
 #endif
 
   if((pcx_header.manufacturer != 10) || (pcx_header.reserved) ||
@@ -525,14 +525,14 @@ static struct pike_string *low_pcx_encode(struct image *data,struct options *opt
   MEMSET(pcx_header.filler, 0, 58);
   pcx_header.color = 1;
 #if PIKE_BYTEORDER == 1234
-  SWAP_S(pcx_header.hdpi);
-  SWAP_S(pcx_header.vdpi);
-  SWAP_S(pcx_header.x1);
-  SWAP_S(pcx_header.y1);
-  SWAP_S(pcx_header.x2);
-  SWAP_S(pcx_header.y2);
-  SWAP_S(pcx_header.bytesperline);
-  SWAP_S(pcx_header.color);
+  pcx_header.hdpi = SWAP_S(pcx_header.hdpi);
+  pcx_header.vdpi = SWAP_S(pcx_header.vdpi);
+  pcx_header.x1 = SWAP_S(pcx_header.x1);
+  pcx_header.y1 = SWAP_S(pcx_header.y1);
+  pcx_header.x2 = SWAP_S(pcx_header.x2);
+  pcx_header.y2 = SWAP_S(pcx_header.y2);
+  pcx_header.bytesperline = SWAP_S(pcx_header.bytesperline);
+  pcx_header.color = SWAP_S(pcx_header.color);
 #endif
   if(!opts->colortable)
     return encode_pcx_24( &pcx_header, data, opts );
