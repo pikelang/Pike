@@ -67,9 +67,6 @@ PIKECLASS PIKE_NAME
       struct Nettle_Cipher_State_struct *state;
       ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
 			     Nettle_Cipher_State_program);
-
-      fprintf(stderr, "%s: Setting state->ctx (%p) to %p\n",
-	      TOSTR(PIKE_NAME), state, &THIS->NETTLE_NAME);
       state->ctx = &THIS->NETTLE_NAME;
     }
   }
