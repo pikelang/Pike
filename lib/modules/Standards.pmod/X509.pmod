@@ -40,14 +40,42 @@ constant CERT_UNAUTHORIZED_CA = 7;
 
 // Bit 0 is the first bit in the BitString.
 protected enum keyUsage {
-  digitalSignature  = (1<<(7-0)),
-  nonRepudiation    = (1<<(7-1)),
-  keyEncipherment   = (1<<(7-2)),
-  dataEncipherment  = (1<<(7-3)),
-  keyAgreement      = (1<<(7-4)),
-  keyCertSign       = (1<<(7-5)),
-  cRLSign           = (1<<(7-6)),
+  digitalSignature  = 1<<0,
+  nonRepudiation    = 1<<1,
+  keyEncipherment   = 1<<2,
+  dataEncipherment  = 1<<3,
+  keyAgreement      = 1<<4,
+  keyCertSign       = 1<<5,
+  cRLSign           = 1<<6,
+  encipherOnly      = 1<<7,
+  decipherOnly      = 1<<8,
 };
+
+// Generates the reverse int for keyUsage.
+protected BitString build_keyUsage(keyUsage i)
+{
+  string v = "";
+  int pos=7, char;
+
+  while(i)
+  {
+    if(i&1)
+      char |= 1<<pos;
+    if( --pos < 0 )
+    {
+      pos = 7;
+      v += sprintf("%c", char);
+      char = 0;
+    }
+    i >>= 1;
+  }
+  if( char )
+    v += sprintf("%c", char);
+
+  BitString b = BitString(v);
+  b->unused = pos==7 ? 0 : pos+1;
+  return b;
+}
 
 
 //! Unique identifier for the certificate issuer.
@@ -885,26 +913,24 @@ class TBSCertificate
 
   //! Set to the value of the KeyUsage if the certificate
   //! contains the keyUsage extension. RFC3280 4.2.1.3.
-  int ext_keyUsage;
+  keyUsage ext_keyUsage;
 
   protected int(0..1) parse_keyUsage(Object o)
   {
     if( !o ) return 1;
     if( o->type_name!="BIT STRING" )
       return 0;
-#if 0
-    int bits, pos;
+
+    int pos;
     foreach(o->value;; int char)
       for(int i; i<8; i++)
       {
         int bit = !!(char & 0x80);
-        bits |= (bit << pos);
+        ext_keyUsage |= (bit << pos);
         pos++;
         char <<= 1;
       }
-#endif
-    int bits = o->value[0];
-    ext_keyUsage = bits;
+
     return 1;
   }
 
@@ -1094,7 +1120,7 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
       0);
   ADD(keyUsage,
-      BitString(Gmp.mpz(keyCertSign|cRLSign|digitalSignature)->digits(256)),
+      build_keyUsage(keyCertSign|cRLSign|digitalSignature),
       1);
   ADD(basicConstraints,
       Sequence(({Boolean(1)})),
@@ -1224,7 +1250,7 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   }
   // FIXME: RFC 5759 also requires CRLSign set.
   if( tbs->ext_keyUsage &
-      (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&255) )
+      (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&0xffff) )
   {
     DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
     return 0;
