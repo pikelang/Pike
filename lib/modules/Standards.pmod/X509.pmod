@@ -49,6 +49,7 @@ protected enum keyUsage {
   cRLSign           = 1<<6,
   encipherOnly      = 1<<7,
   decipherOnly      = 1<<8,
+  last_keyUsage     = 1<<9, // end marker
 };
 
 // Generates the reverse int for keyUsage.
@@ -1250,7 +1251,8 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   }
   // FIXME: RFC 5759 also requires CRLSign set.
   if( tbs->ext_keyUsage &
-      (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&0xffff) )
+      (~(keyCertSign | cRLSign | digitalSignature |
+         nonRepudiation)&(last_keyUsage-1)) )
   {
     DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
     return 0;
