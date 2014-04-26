@@ -424,6 +424,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
       if (!len || !ysize--)
       {
 	 if (pos) *pos=s;
+         /* this string might contain uninitialized memory */
 	 return end_shared_string(ps);
       }
       x=xsize;
@@ -517,6 +518,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 
 	    break;
 	 default:
+            free_string(ps);
 	    Pike_error("Unsupported subfilter %d (filter %d)\n", s[-1],type);
       }
    }
@@ -1010,6 +1012,8 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
                      ihdr->filter,ihdr->type,ihdr->bpp,
                      NULL);
 
+    push_string(fs);
+
     if (!_png_write_rgb(w1,wa1,
                         ihdr->type,ihdr->bpp,
                         (unsigned char*)fs->str,fs->len,
@@ -1020,7 +1024,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
       free(wa1);
       wa1=NULL;
     }
-    free_string(fs);
+    pop_stack();
     break;
 
   case 1: /* adam7 */
@@ -1057,6 +1061,8 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 			 ihdr->filter,ihdr->type,ihdr->bpp,
 			 &s0);
 
+        push_string(ds);
+
 	if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
 			   (unsigned char*)ds->str,ds->len,
 			   iwidth,
@@ -1074,7 +1080,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 	  for (x=x0; x<ihdr->width; x+=xd)
 	    t1[x+y*ihdr->width]=*(d1++);
 
-	free_string(ds);
+        pop_stack();
       }
 
       free(wa1);
@@ -1426,8 +1432,10 @@ static void img_png_decode(INT32 args, int mode)
 	    break;
 
          case 0x74524e53: /* tRNS */
+            if (trns) break;
 	    trns=b->item[1].u.string;
             add_ref(trns);
+            SET_ONERROR(err, png_free_string, trns);
 	    break;
 
          default:
@@ -1443,14 +1451,10 @@ static void img_png_decode(INT32 args, int mode)
       }
    }
 
-
    /* on stack: mapping   n×string */
 
    if ( mode != MODE_HEADER_ONLY )
    {
-     if(trns)
-       SET_ONERROR(err, png_free_string, &trns);
-
      if (ihdr.type==-1)
        PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
                   sp, args);
@@ -1473,12 +1477,12 @@ static void img_png_decode(INT32 args, int mode)
      mapping_string_insert(m, param_image, sp-1);
      pop_stack();
 
-     if(trns)
-       UNSET_ONERROR(err);
    }
 
-   if (trns)
+   if (trns) {
+     UNSET_ONERROR(err);
      png_free_string (trns);
+   }
 
    if ( mode != MODE_IMAGE_ONLY )
    {
