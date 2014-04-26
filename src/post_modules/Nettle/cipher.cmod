@@ -71,6 +71,25 @@ werror(const char *format, ...)
 /*! @module Nettle
  */
 
+/* Generic callback function for Nettle in case the crypt()
+ * function in the object isn't a Nettle function.
+ */
+static void pike_crypt_func(void *object, pike_nettle_size_t length,
+			    uint8_t *dst, const uint8_t *src)
+{
+  int args;
+  struct pike_string *str;
+  push_string(make_shared_binary_string((const char *)src, length));
+  args = safe_apply(object, "crypt", 1);
+  get_all_args("crypt", args, "%n", &str);
+  if (str->len != (ptrdiff_t)length) {
+    Pike_error("Bad string length %ld returned from crypt()\n",
+	       DO_NOT_WARN((long)str->len));
+  }
+  MEMCPY(dst, str->str, length);
+  pop_n_elems(args);
+}
+
 /* Calls Pike_error on errors */ 
 typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 ptrdiff_t length, const char *key,
@@ -405,9 +424,517 @@ PIKECLASS Cipher
     }
   }
   /*! @endclass State */
-
 }
+
 /*! @endclass Cipher
+ */
+
+/*! @class Cipher16
+ *!
+ *! This is the @[Cipher] class extended with algorithms
+ *! that require a block size of @expr{16@} bytes.
+ *!
+ *! @seealso
+ *!   @[Cipher], @[GCM]
+ */
+PIKECLASS Cipher16
+{
+  /* NOTE: MUST be first in the class to simplify access to symbols
+   *       in Cipher!
+   */
+  /*! @inherit Cipher
+   */
+  INHERIT Nettle_Cipher;
+
+#ifdef HAVE_NETTLE_GCM_H
+#include <nettle/gcm.h>
+
+  /*! @module GCM
+   *! Implementation of the Galois Counter Mode (GCM).
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[Cipher16]).
+   *!
+   *! This is a so-called authenticated encryption with associated data
+   *! (AEAD) algorithm, which in addition to encryption also provides
+   *! message digests.
+   *!
+   *! The operation of GCM is specified in
+   *! NIST Special Publication 800-38D.
+   *!
+   *! Typically accessed as @expr{Crypto.AES.GCM@} or
+   *! @expr{Crypto.Camellia.GCM@}
+   *!
+   *! @note
+   *!   Note that this module is not available in all versions of Nettle.
+   *!
+   *! @seealso
+   *!   @[CBC]
+   */
+
+  PIKEVAR object(Nettle_Cipher) GCM;
+
+  PIKECLASS _GCM
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    flags ID_PROTECTED;
+  {
+    /*! @decl inherit __builtin.Nettle.AEAD
+     */
+    INHERIT "__builtin.Nettle.AEAD";
+
+    /*! @decl string(0..255) name()
+     *! Returns the name of the base cipher with @expr{".GCM"@} appended.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".GCM");
+    }
+
+    /*! @decl int(16..16) block_size()
+     *! Returns the block size of the encapsulated cipher,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(16..16) block_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_BLOCK_SIZE;
+    }
+
+    /*! @decl int(16..16) digest_size()
+     *! Returns the size of the generated digest,
+     *! which is always @expr{16@} for GCM.
+     */
+    PIKEFUN int(16..16) digest_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_BLOCK_SIZE;
+    }
+
+    /*! @decl int(12..12) iv_size()
+     *! Returns the recommended size for the initialization vector
+     *! (ie @expr{12@}).
+     *!
+     *! Other sizes are allowed, but will be compressed or expanded
+     *! to this size using the encapsulated cipher.
+     */
+    PIKEFUN int(12..12) iv_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      RETURN GCM_IV_SIZE;
+    }
+
+    /*! @class State
+     *!
+     *! The state for a GCM instance.
+     */
+    PIKECLASS State
+      program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+    {
+      DOCSTART() @decl inherit AEAD::State
+	DOCEND()
+
+      EXTRA
+      {
+	/* Perform an inherit of the State class (if any) that our parent
+	 * may contain via its inherit of __builtin.Nettle.AEAD.
+	 */
+	struct program *parent_prog = Pike_compiler->previous->new_program;
+	struct object *parent_obj = Pike_compiler->previous->fake_object;
+	int parent_State_fun_num =
+	  really_low_find_shared_string_identifier(MK_STRING("State"),
+						   parent_prog,
+						   SEE_PROTECTED|SEE_PRIVATE);
+	if (parent_State_fun_num >= 0) {
+	  struct program *parent_State_prog =
+	    low_program_from_function(parent_obj, parent_State_fun_num);
+	  if (parent_State_prog) {
+	    low_inherit(parent_State_prog, 0,
+			parent_State_fun_num +
+			parent_prog->inherits[1].identifier_level,
+			1 + 42, 0, NULL);
+	  }
+	}
+      }
+
+      PIKEVAR object object
+	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *crypt_state;
+      CVAR INT32 mode;
+      CVAR INT32 dmode;
+      CVAR struct gcm_key gcm_key;
+      CVAR struct gcm_ctx gcm_ctx;
+
+      /* dmode flags */
+#define NO_ADATA	1	/* Disallow associated data. */
+#define NO_CDATA	2	/* Disallow crypted data. */
+
+      INIT
+      {
+	THIS->mode = -1;
+      }
+
+      EXIT
+	gc_trivial;
+      {
+	if (THIS->object) {
+	  free_object(THIS->object);
+	  THIS->object = NULL;
+	}
+      }
+
+      /*! @decl void create()
+       *!
+       *! Initialize the GCM state.
+       */
+      PIKEFUN void create()
+	flags ID_PROTECTED;
+      {
+	struct object *o;
+	struct inherit *inh;
+	int f;
+
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+	  Pike_error("Unsupported return value from Cipher::State().\n");
+	}
+	o = Pike_sp[-1].u.object;
+	if (!o->prog) {
+	  Pike_error("Cipher::State() returned destructed object.\n");
+	}
+
+	f = find_identifier("crypt", o->prog);
+	if (f < 0) {
+	  Pike_error("State object has no crypt() function.\n");
+	}
+
+	safe_apply(o, "block_size", 0);
+
+	if (TYPEOF(Pike_sp[-1]) != T_INT)
+	  Pike_error("block_size() didn't return an int.\n");
+
+	if (Pike_sp[-1].u.integer != GCM_BLOCK_SIZE)
+	  Pike_error("cipher has an invalid block size for GCM.\n");
+
+	if (THIS->object) free_object(THIS->object);
+	add_ref(THIS->object = o);
+
+	inh = INHERIT_FROM_INT(o->prog, f);
+	if (inh->prog == Nettle_Cipher_State_program) {
+	  /* crypt() is from Nettle.Cipher.State.
+	   */
+	  THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
+	    get_inherit_storage(o, inh - o->prog->inherits);
+	}
+
+	pop_n_elems(2);
+
+	THIS->mode = -1;
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the string @expr{"x.GCM"@} where x is the
+       *! encapsulated algorithm.
+       */
+      PIKEFUN string(0..255) name()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	safe_apply(THIS->object, "name", 0);
+	push_constant_text(".GCM");
+	f_add(2);
+      }
+
+      /*! @decl int(16..16) block_size()
+       *! Returns the block size of the encapsulated cipher,
+       *! which is always @expr{16@} for GCM.
+       */
+      PIKEFUN int(16..16) block_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN GCM_BLOCK_SIZE;
+      }
+
+      /*! @decl int(16..16) digest_size()
+       *! Returns the size of the generated digest,
+       *! which is always @expr{16@} for GCM.
+       */
+      PIKEFUN int(16..16) digest_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN GCM_BLOCK_SIZE;
+      }
+
+      /*! @decl int(12..12) iv_size()
+       *! Returns the recommended size for the initialization vector
+       *! (ie @expr{12@}).
+       *!
+       *! Other sizes are allowed, but will be compressed or expanded
+       *! to this size using the encapsulated cipher.
+       */
+      PIKEFUN int(12..12) iv_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN GCM_IV_SIZE;
+      }
+
+      /*! @decl int(0..) key_size()
+       *! Returns the key size of the encapsulated cipher.
+       */
+      PIKEFUN int(0..) key_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+	safe_apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for encrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_decrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	safe_apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+	gcm_set_key(&THIS->gcm_key, ctx, func);
+	THIS->mode = 0;
+
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for decrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_encrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	/* NOTE: GCM always uses the encryption function
+	 *       of the underlying cipher!
+	 */
+	safe_apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+	gcm_set_key(&THIS->gcm_key, ctx, func);
+	THIS->mode = 1;
+
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *!
+       *! Set the initialization vector to @[iv]. The @[iv] memory will be
+       *! cleared before released.
+       *!
+       *! Also resets all state needed to start a new message.
+       *!
+       *! @note
+       *!   For @[iv]s of length other than @expr{12@}, an encryption or
+       *!   decryption key must have been set first.
+       *!
+       *! @seealso
+       *!   @[set_encrypt_key()], @[set_decrypt_key()].
+       */
+      PIKEFUN object set_iv(string(0..255) iv)
+	optflags OPT_SIDE_EFFECT;
+      {
+	iv->flags |= STRING_CLEAR_ON_EXIT;
+	NO_WIDE_STRING(iv);
+	if ((THIS->mode < 0) && (iv->len != GCM_IV_SIZE))
+	  Pike_error("The key must be set to use an iv of length other than %d.\n",
+		     GCM_IV_SIZE);
+	gcm_set_iv(&THIS->gcm_ctx, &THIS->gcm_key, iv->len, STR0(iv));
+	THIS->dmode = 0;
+	RETURN this_object();
+      }
+
+      /*! @decl void update(string(0..255) public_data)
+       *!
+       *! Add @[public_data] to be authenticated.
+       *!
+       *! The length of @[public_data] MUST be a multiple of the
+       *! block size (ie @expr{16@}) for all calls except the last.
+       *!
+       *! All calls of @[update()] need to be performed before
+       *! any calls of @[crypt()].
+       */
+      PIKEFUN void update(string(0..255) data)
+      {
+	NO_WIDE_STRING(data);
+
+	if (!THIS->object || !THIS->object->prog) {
+	  Pike_error("Lookup in destructed object.\n");
+	}
+
+	if (THIS->mode < 0)
+	  Pike_error("Key schedule not initialized.\n");
+
+	if (THIS->dmode & NO_ADATA)
+	  Pike_error("Public data not allowed now.\n");
+
+	gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
+
+	if (data->len & (GCM_BLOCK_SIZE - 1))
+	  THIS->dmode |= NO_ADATA;
+
+	pop_n_elems(args);
+      }
+
+      /*! @decl string(0..255) crypt(string(0..255) data)
+       *!
+       *! Encrypt/decrypt @[data] and return the result. @[data] must
+       *! be an integral number of blocks.
+       *!
+       *! The length of @[data] MUST be a multiple of the block size
+       *! (ie @expr{16@}) for all calls except the last.
+       *!
+       *! Neither the input or output data is not automatically memory
+       *! scrubbed, unless @[String.secure] has been called on the data.
+       *!
+       *! @seealso
+       *!   @[update()], @[digest()]
+       */
+      PIKEFUN string(0..255) crypt(string(0..255) data)
+      {
+	struct pike_string *result;
+	ONERROR uwp;
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+
+	NO_WIDE_STRING(data);
+
+	if (!THIS->object || !THIS->object->prog) {
+	  Pike_error("Lookup in destructed object.\n");
+	}
+
+	if (THIS->mode < 0)
+	  Pike_error("Key schedule not initialized.\n");
+
+	if (THIS->dmode & NO_CDATA)
+	  Pike_error("More data not allowed before the iv is reset.\n");
+
+	result = begin_shared_string(data->len);
+	SET_ONERROR (uwp, do_free_string, result);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	if (!THIS->mode) {
+	  gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		      data->len, STR0(result), STR0(data));
+	} else {
+	  gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		      data->len, STR0(result), STR0(data));
+	}
+
+	THIS->dmode |= NO_ADATA;
+
+	if (data->len & (GCM_BLOCK_SIZE - 1))
+	  THIS->dmode |= NO_CDATA;
+
+	pop_n_elems(args);
+	push_string(end_shared_string(result));
+	UNSET_ONERROR(uwp);
+      }
+
+      /*! @decl string(0..255) digest()
+       *!
+       *! Generate a message digest for the data accumulated so far.
+       *!
+       *! @note
+       *!   @[set_iv()] needs to be called to start the next message.
+       *!
+       *! @seealso
+       *!   @[update()], @[digest()]
+       */
+      PIKEFUN string(0..255) digest()
+      {
+	struct pike_string *result;
+	ONERROR uwp;
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+
+	if (!THIS->object || !THIS->object->prog) {
+	  Pike_error("Lookup in destructed object.\n");
+	}
+
+	if (THIS->mode < 0)
+	  Pike_error("Key schedule not initialized.\n");
+
+	result = begin_shared_string(GCM_BLOCK_SIZE);
+	SET_ONERROR (uwp, do_free_string, result);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+		   GCM_BLOCK_SIZE, STR0(result));
+
+	THIS->dmode |= NO_ADATA | NO_CDATA;
+
+	pop_n_elems(args);
+	push_string(end_shared_string(result));
+	UNSET_ONERROR(uwp);
+      }
+    }
+    /*! @endclass
+     */
+  }
+
+  /*! @endmodule
+   */
+
+#endif /* HAVE_NETTLE_GCM_H */
+
+  INIT
+  {
+#ifdef HAVE_NETTLE_GCM_H
+    apply_current(Nettle_Cipher16_cq__GCM_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_CIPHER16->GCM = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+#endif
+  }
+}
+/*! @endclass Cipher16
  */
 
 static void
@@ -434,7 +961,7 @@ pike_aes_set_decrypt_key(void *ctx,
 
 #cmod_define PIKE_NAME AES
 #cmod_define NETTLE_NAME aes
-#cmod_include "cipher.H"
+#cmod_include "cipher16.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -772,7 +1299,7 @@ pike_camellia_set_decrypt_key(void *ctx,
 
 #cmod_define PIKE_NAME CAMELLIA
 #cmod_define NETTLE_NAME camellia
-#cmod_include "cipher.H"
+#cmod_include "cipher16.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -1549,7 +2076,7 @@ pike_serpent_set_key(void *ctx,
 
 #cmod_define PIKE_NAME SERPENT
 #cmod_define NETTLE_NAME serpent
-#cmod_include "cipher.H"
+#cmod_include "cipher16.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -1573,7 +2100,7 @@ pike_twofish_set_key(void *ctx,
 
 #cmod_define PIKE_NAME Twofish
 #cmod_define NETTLE_NAME twofish
-#cmod_include "cipher.H"
+#cmod_include "cipher16.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -1688,25 +2215,6 @@ static struct object *make_cipher_object(INT32 args) {
   return obj;
 }
 
-
-/* Generic callback function for Nettle in case the crypt()
- * function in the object isn't a Nettle function.
- */
-static void pike_crypt_func(void *object, unsigned length, uint8_t *dst,
-			    const uint8_t *src)
-{
-  int args;
-  struct pike_string *str;
-  push_string(make_shared_binary_string((const char *)src, length));
-  args = safe_apply(object, "crypt", 1);
-  get_all_args("crypt", args, "%n", &str);
-  if (str->len != (ptrdiff_t)length) {
-    Pike_error("Bad string length %ld returned from crypt()\n",
-	       DO_NOT_WARN((long)str->len));
-  }
-  MEMCPY(dst, str->str, length);
-  pop_n_elems(args);
-}
 
 /*! @class CBC
  *! Implementation of the cipher block chaining mode (CBC). Works as
@@ -2263,476 +2771,6 @@ PIKECLASS CTR
  */
 
 #endif /* HAVE_NETTLE_CTR_H */
-
-#ifdef HAVE_NETTLE_GCM_H
-#include <nettle/gcm.h>
-
-/*! @class GCM
- *! Implementation of the Galois Counter Mode (GCM). Works as
- *! a wrapper for the cipher algorithm put in create.
- *!
- *! This is a so-called authenticated encryption with associated data
- *! (AEAD) algorithm, and in addition to encryption also provides
- *! message digests.
- *!
- *! The operation of GCM is specified in
- *! NIST Special Publication 800-38D.
- *!
- *! @note
- *!   Wrapped ciphers MUST have a block size of @expr{16@}.
- *!
- *! @note
- *!   Use @[Crypto.GCM] instead.
- *!
- *! @note
- *!   Note that this class is not available in all versions of Nettle.
- *!
- *! @seealso
- *!   @[Crypto.GCM], @[CBC]
- */
-PIKECLASS GCM
-{
-  /*! @decl inherit __builtin.Nettle.AEAD
-   */
-  INHERIT "__builtin.Nettle.AEAD";
-
-  /*! @decl string(0..255) name()
-   *! Returns the string @expr{"GCM"@}.
-   */
-  PIKEFUN string(0..255) name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("GCM");
-  }
-
-  /*! @decl int(16..16) block_size()
-   *! Returns the block size of the encapsulated cipher,
-   *! which is always @expr{16@} for GCM.
-   */
-  PIKEFUN int(16..16) block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN GCM_BLOCK_SIZE;
-  }
-
-  /*! @decl int(16..16) digest_size()
-   *! Returns the size of the generated digest,
-   *! which is always @expr{16@} for GCM.
-   */
-  PIKEFUN int(16..16) digest_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN GCM_BLOCK_SIZE;
-  }
-
-  /*! @decl int(12..12) iv_size()
-   *! Returns the recommended size for the initialization vector
-   *! (ie @expr{12@}).
-   *!
-   *! Other sizes are allowed, but will be compressed or expanded
-   *! to this size using the encapsulated cipher.
-   */
-  PIKEFUN int(12..12) iv_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN GCM_IV_SIZE;
-  }
-
-  /*! @class State
-   *!
-   *! The state for a GCM instance.
-   */
-  PIKECLASS State
-    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
-  {
-    DOCSTART() @decl inherit AEAD::State
-    DOCEND()
-
-    EXTRA
-    {
-      /* Perform an inherit of the State class (if any) that our parent
-       * may contain via its inherit of __builtin.Nettle.AEAD.
-       */
-      struct program *parent_prog = Pike_compiler->previous->new_program;
-      struct object *parent_obj = Pike_compiler->previous->fake_object;
-      int parent_State_fun_num =
-	really_low_find_shared_string_identifier(MK_STRING("State"),
-						 parent_prog,
-						 SEE_PROTECTED|SEE_PRIVATE);
-      if (parent_State_fun_num >= 0) {
-	struct program *parent_State_prog =
-	  low_program_from_function(parent_obj, parent_State_fun_num);
-	if (parent_State_prog) {
-	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
-		      1 + 42, 0, NULL);
-	}
-      }
-    }
-
-    PIKEVAR object object
-      flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-    CVAR struct Nettle_Cipher_State_struct *crypt_state;
-    CVAR INT32 mode;
-    CVAR INT32 dmode;
-    CVAR struct gcm_key gcm_key;
-    CVAR struct gcm_ctx gcm_ctx;
-
-    /* dmode flags */
-#define NO_ADATA	1	/* Disallow associated data. */
-#define NO_CDATA	2	/* Disallow crypted data. */
-
-    INIT
-    {
-      THIS->mode = -1;
-    }
-
-    EXIT
-      gc_trivial;
-    {
-      if (THIS->object) {
-	free_object(THIS->object);
-	THIS->object = NULL;
-      }
-    }
-
-    /*! @decl void create(program|object|function cipher, mixed ... args)
-     *!
-     *! Initialize the GCM wrapper with a cipher algorithm. If it is a
-     *! program, an object will be instantiated with @[args] as
-     *! arguments. If it is an object that doesn't conform to the cipher
-     *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
-     *! a function, that function will be called with @[args] as
-     *! arguments.
-     *!
-     *! @note
-     *!   For correct key setup, @[set_encrypt_key()] or @[set_decrypt_key()]
-     *!   MUST be used.
-     */
-    PIKEFUN void create(program|object|function cipher, mixed ... more)
-      flags ID_PROTECTED;
-    {
-      struct object *o = make_cipher_object(args);
-      struct inherit *inh;
-      int f;
-
-      if (THIS->object) free_object(THIS->object);
-      THIS->object = o;
-
-      f = find_identifier("crypt", o->prog);
-      inh = INHERIT_FROM_INT(o->prog, f);
-      if (inh->prog == Nettle_Cipher_State_program) {
-	/* crypt() is from Nettle.Cipher.State.
-	 * Check if the context and crypt function are valid.
-	 */
-	THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
-	  get_inherit_storage(o, inh - o->prog->inherits);
-      }
-
-      safe_apply(THIS->object, "block_size", 0);
-
-      if (TYPEOF(Pike_sp[-1]) != T_INT)
-	Pike_error("block_size() didn't return an int.\n");
-
-      if (Pike_sp[-1].u.integer != GCM_BLOCK_SIZE)
-	Pike_error("cipher has an invalid block size for GCM.\n");
-
-      pop_stack();
-
-      THIS->mode = -1;
-    }
-
-    /*! @decl string(0..255) name()
-     *! Returns the string @expr{"GCM(x)"@} where x is the
-     *! encapsulated algorithm.
-     */
-    PIKEFUN string(0..255) name()
-      optflags OPT_TRY_OPTIMIZE;
-    {
-      push_constant_text("GCM(");
-      safe_apply(THIS->object, "name", 0);
-      push_constant_text(")");
-      f_add(3);
-    }
-
-    /*! @decl int(16..16) block_size()
-     *! Returns the block size of the encapsulated cipher,
-     *! which is always @expr{16@} for GCM.
-     */
-    PIKEFUN int(16..16) block_size()
-      optflags OPT_TRY_OPTIMIZE;
-    {
-      RETURN GCM_BLOCK_SIZE;
-    }
-
-    /*! @decl int(16..16) digest_size()
-     *! Returns the size of the generated digest,
-     *! which is always @expr{16@} for GCM.
-     */
-    PIKEFUN int(16..16) digest_size()
-      optflags OPT_TRY_OPTIMIZE;
-    {
-      RETURN GCM_BLOCK_SIZE;
-    }
-
-    /*! @decl int(12..12) iv_size()
-     *! Returns the recommended size for the initialization vector
-     *! (ie @expr{12@}).
-     *!
-     *! Other sizes are allowed, but will be compressed or expanded
-     *! to this size using the encapsulated cipher.
-     */
-    PIKEFUN int(12..12) iv_size()
-      optflags OPT_TRY_OPTIMIZE;
-    {
-      RETURN GCM_IV_SIZE;
-    }
-
-    /*! @decl int(0..) key_size()
-     *! Returns the key size of the encapsulated cipher.
-     */
-    PIKEFUN int(0..) key_size()
-      optflags OPT_EXTERNAL_DEPEND;
-    {
-      safe_apply(THIS->object, "key_size", args);
-    }
-
-    /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
-     *!
-     *! Prepare the cipher and the wrapper for encrypting with the given
-     *! @[key]. The @[key] memory will be cleared before released.
-     *!
-     *! @note
-     *!   Note that this operation does not by itself reset the
-     *!   context sufficiently to start a new message; @[set_iv()]
-     *!   needs to be called too.
-     *!
-     *! @seealso
-     *!   @[set_decrypt_key()], @[set_iv()]
-     */
-    PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
-      optflags OPT_SIDE_EFFECT;
-    {
-      crypt_func func = pike_crypt_func;
-      void *ctx = THIS->object;
-      key->flags |= STRING_CLEAR_ON_EXIT;
-      safe_apply(THIS->object, "set_encrypt_key", args);
-      pop_stack();
-
-      if (THIS->crypt_state && THIS->crypt_state->crypt) {
-	func = THIS->crypt_state->crypt;
-	ctx = THIS->crypt_state->ctx;
-      }
-      gcm_set_key(&THIS->gcm_key, ctx, func);
-      THIS->mode = 0;
-
-      push_object(this_object());
-    }
-
-    /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
-     *!
-     *! Prepare the cipher and the wrapper for decrypting with the given
-     *! @[key]. The @[key] memory will be cleared before released.
-     *!
-     *! @note
-     *!   Note that this operation does not by itself reset the
-     *!   context sufficiently to start a new message; @[set_iv()]
-     *!   needs to be called too.
-     *!
-     *! @seealso
-     *!   @[set_encrypt_key()], @[set_iv()]
-     */
-    PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
-      optflags OPT_SIDE_EFFECT;
-    {
-      crypt_func func = pike_crypt_func;
-      void *ctx = THIS->object;
-      key->flags |= STRING_CLEAR_ON_EXIT;
-      /* NOTE: GCM always uses the encryption function
-       *       of the underlying cipher!
-       */
-      safe_apply(THIS->object, "set_encrypt_key", args);
-      pop_stack();
-
-      if (THIS->crypt_state && THIS->crypt_state->crypt) {
-	func = THIS->crypt_state->crypt;
-	ctx = THIS->crypt_state->ctx;
-      }
-      gcm_set_key(&THIS->gcm_key, ctx, func);
-      THIS->mode = 1;
-
-      push_object(this_object());
-    }
-
-    /*! @decl this_program set_iv(string(0..255) iv)
-     *!
-     *! Set the initialization vector to @[iv]. The @[iv] memory will be
-     *! cleared before released.
-     *!
-     *! Also resets all state needed to start a new message.
-     *!
-     *! @note
-     *!   For @[iv]s of length other than @expr{12@}, an encryption or
-     *!   decryption key must have been set first.
-     *!
-     *! @seealso
-     *!   @[set_encrypt_key()], @[set_decrypt_key()].
-     */
-    PIKEFUN object set_iv(string(0..255) iv)
-      optflags OPT_SIDE_EFFECT;
-    {
-      iv->flags |= STRING_CLEAR_ON_EXIT;
-      NO_WIDE_STRING(iv);
-      if ((THIS->mode < 0) && (iv->len != GCM_IV_SIZE))
-	Pike_error("The key must be set to use an iv of length other than %d.\n",
-		   GCM_IV_SIZE);
-      gcm_set_iv(&THIS->gcm_ctx, &THIS->gcm_key, iv->len, STR0(iv));
-      THIS->dmode = 0;
-      RETURN this_object();
-    }
-
-    /*! @decl void update(string(0..255) public_data)
-     *!
-     *! Add @[public_data] to be authenticated.
-     *!
-     *! The length of @[public_data] MUST be a multiple of the
-     *! block size (ie @expr{16@}) for all calls except the last.
-     *!
-     *! All calls of @[update()] need to be performed before
-     *! any calls of @[crypt()].
-     */
-    PIKEFUN void update(string(0..255) data)
-    {
-      NO_WIDE_STRING(data);
-
-      if (!THIS->object || !THIS->object->prog) {
-	Pike_error("Lookup in destructed object.\n");
-      }
-
-      if (THIS->mode < 0)
-	Pike_error("Key schedule not initialized.\n");
-
-      if (THIS->dmode & NO_ADATA)
-	Pike_error("Public data not allowed now.\n");
-
-      gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
-
-      if (data->len & (GCM_BLOCK_SIZE - 1))
-	THIS->dmode |= NO_ADATA;
-
-      pop_n_elems(args);
-    }
-
-    /*! @decl string(0..255) crypt(string(0..255) data)
-     *!
-     *! Encrypt/decrypt @[data] and return the result. @[data] must
-     *! be an integral number of blocks.
-     *!
-     *! The length of @[data] MUST be a multiple of the block size
-     *! (ie @expr{16@}) for all calls except the last.
-     *!
-     *! Neither the input or output data is not automatically memory
-     *! scrubbed, unless @[String.secure] has been called on the data.
-     *!
-     *! @seealso
-     *!   @[update()], @[digest()]
-     */
-    PIKEFUN string(0..255) crypt(string(0..255) data)
-    {
-      struct pike_string *result;
-      ONERROR uwp;
-      crypt_func func = pike_crypt_func;
-      void *ctx = THIS->object;
-
-      NO_WIDE_STRING(data);
-
-      if (!THIS->object || !THIS->object->prog) {
-	Pike_error("Lookup in destructed object.\n");
-      }
-
-      if (THIS->mode < 0)
-	Pike_error("Key schedule not initialized.\n");
-
-      if (THIS->dmode & NO_CDATA)
-	Pike_error("More data not allowed before the iv is reset.\n");
-
-      result = begin_shared_string(data->len);
-      SET_ONERROR (uwp, do_free_string, result);
-
-      if (THIS->crypt_state && THIS->crypt_state->crypt) {
-	func = THIS->crypt_state->crypt;
-	ctx = THIS->crypt_state->ctx;
-      }
-
-      if (!THIS->mode) {
-	gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
-		    data->len, STR0(result), STR0(data));
-      } else {
-	gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
-		    data->len, STR0(result), STR0(data));
-      }
-
-      THIS->dmode |= NO_ADATA;
-
-      if (data->len & (GCM_BLOCK_SIZE - 1))
-	THIS->dmode |= NO_CDATA;
-
-      pop_n_elems(args);
-      push_string(end_shared_string(result));
-      UNSET_ONERROR(uwp);
-    }
-
-    /*! @decl string(0..255) digest()
-     *!
-     *! Generate a message digest for the data accumulated so far.
-     *!
-     *! @note
-     *!   @[set_iv()] needs to be called to start the next message.
-     *!
-     *! @seealso
-     *!   @[update()], @[digest()]
-     */
-    PIKEFUN string(0..255) digest()
-    {
-      struct pike_string *result;
-      ONERROR uwp;
-      crypt_func func = pike_crypt_func;
-      void *ctx = THIS->object;
-
-      if (!THIS->object || !THIS->object->prog) {
-	Pike_error("Lookup in destructed object.\n");
-      }
-
-      if (THIS->mode < 0)
-	Pike_error("Key schedule not initialized.\n");
-
-      result = begin_shared_string(GCM_BLOCK_SIZE);
-      SET_ONERROR (uwp, do_free_string, result);
-
-      if (THIS->crypt_state && THIS->crypt_state->crypt) {
-	func = THIS->crypt_state->crypt;
-	ctx = THIS->crypt_state->ctx;
-      }
-
-      gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
-		 GCM_BLOCK_SIZE, STR0(result));
-
-      THIS->dmode |= NO_ADATA | NO_CDATA;
-
-      pop_n_elems(args);
-      push_string(end_shared_string(result));
-      UNSET_ONERROR(uwp);
-    }
-  }
-  /*! @endclass
-   */
-}
-
-/*! @endclass
- */
-
-#endif /* HAVE_NETTLE_GCM_H */
 
 #define PAD_SSL        0
 #define PAD_ISO_10126  1
