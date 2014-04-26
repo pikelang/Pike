@@ -697,7 +697,7 @@ static struct pike_string *make_body(struct BMHD *bmhd,
   unsigned int x, y;
   int rbyt = ((bmhd->w+15)&~15)>>3;
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
-  unsigned char *line = alloca(rbyt*eplanes);
+  unsigned char *line = xcalloc(rbyt, eplanes);
   INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
   rgb_group *src = img->img;
   struct string_builder bldr;
@@ -710,7 +710,6 @@ static struct pike_string *make_body(struct BMHD *bmhd,
     ctfunc = image_colortable_index_32bit_function(ctable);
   }
 
-  memset(line, 0, rbyt*eplanes);
   init_string_builder(&bldr, 0);
   for(y=0; y<bmhd->h; y++) {
     if(ctfunc != NULL) {
@@ -732,6 +731,7 @@ static struct pike_string *make_body(struct BMHD *bmhd,
   }
   if(ctable != NULL)
     image_colortable_free_dither(&dith);
+  free(line);
   return finish_string_builder(&bldr);
 }
 

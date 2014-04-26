@@ -552,8 +552,7 @@ static void my_glGenTextures( INT32 args )
   ntexts = Pike_sp[-1].u.integer;
   pop_stack();
 
-  res = xalloc( sizeof( GLint ) * ntexts );
-  memset( res, 0, sizeof(GLint)*ntexts );
+  res = xcalloc( sizeof( GLint ), ntexts );
   glGenTextures( ntexts, res );
   a = allocate_array( ntexts );
   for( i = 0; i<ntexts; i++ )

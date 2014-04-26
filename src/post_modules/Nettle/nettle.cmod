@@ -387,10 +387,8 @@ PIKECLASS Fortuna
 
   INIT
   {
-    THIS->ctr = xalloc(16);
-    memset(THIS->ctr,0,16);
-    THIS->key = xalloc(32);
-    memset(THIS->key,0,32);
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,32);
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
     sha256_init(&THIS->sha_ctx);
     THIS->data = xalloc(16);

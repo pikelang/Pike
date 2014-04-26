@@ -177,8 +177,9 @@ PIKECLASS FFT
       p = myarray->item[1].u.array;
       n = r->size;
 
-      THIS->r_in = malloc(sizeof(fftw_real)*n);
-      memset(THIS->r_in,0,sizeof(fftw_real)*n);
+      free(THIS->r_in);
+      THIS->r_in = NULL; /* Needs to be NULL if xcalloc throws */
+      THIS->r_in = xcalloc(sizeof(fftw_real), n);
 
       for(i=0; i<=n/2; i++)
 	{
@@ -198,9 +199,9 @@ PIKECLASS FFT
 	  else Pike_error("Invalid type in array!\n");
 	}
 
-
-      THIS->r_out = malloc(sizeof(fftw_real)*n);
-      memset(THIS->r_out,0,sizeof(fftw_real)*n);
+      free(THIS->r_out);
+      THIS->r_out = NULL; /* Needs to be NULL if xcalloc throws */
+      THIS->r_out = xcalloc(sizeof(fftw_real), n);
 
       if (THIS->r_cr_plan_size!=n)
 	{
@@ -283,10 +284,8 @@ PIKECLASS FFT
 	rfftw_destroy_plan(THIS->r_cr_plan);
       if (THIS->r_rc_plan_size>0)
 	rfftw_destroy_plan(THIS->r_rc_plan);
-      if (THIS->r_out!=NULL)
-	free(THIS->r_out);
-      if (THIS->r_in!=NULL)
-	free(THIS->r_in);
+      free(THIS->r_out);
+      free(THIS->r_in);
     }
 }
 
