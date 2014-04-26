@@ -8,6 +8,11 @@
 
 inherit Crypto.Sign;
 
+protected string _sprintf(int t)
+{
+  return t=='O' && sprintf("%O(%d)", this_program, size*8);
+}
+
 //
 // --- Variables and accessors
 //
