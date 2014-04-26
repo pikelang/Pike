@@ -601,12 +601,13 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(string(0..255) client_random,
+array(.state) new_server_states(object/*(connection)*/ con,
+				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
 {
-  .state write_state = .state(this);
-  .state read_state = .state(this);
+  .state write_state = .state(con);
+  .state read_state = .state(con);
   array(string) keys = generate_keys(client_random, server_random, version);
 
   if (cipher_spec->mac_algorithm)
@@ -676,12 +677,13 @@ array(.state) new_server_states(string(0..255) client_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(string(0..255) client_random,
+array(.state) new_client_states(object/*(connection)*/ con,
+				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
 {
-  .state write_state = .state(this);
-  .state read_state = .state(this);
+  .state write_state = .state(con);
+  .state read_state = .state(con);
   array(string) keys = generate_keys(client_random, server_random, version);
   
   if (cipher_spec->mac_algorithm)

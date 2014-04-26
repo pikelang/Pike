@@ -402,7 +402,7 @@ Packet client_key_exchange_packet()
   }
 
   array(.state) res =
-    session->new_client_states(client_random, server_random, version);
+    session->new_client_states(this, client_random, server_random, version);
   pending_read_state = res[0];
   pending_write_state = res[1];
 
@@ -1159,7 +1159,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	  array(.state) res;
 	  mixed err;
-          if( err = catch(res = session->new_server_states(client_random,
+          if( err = catch(res = session->new_server_states(this,
+							   client_random,
 							   server_random,
 							   version)) )
           {
@@ -1309,7 +1310,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	// trace(1);
 	array(.state) res =
-	  session->new_server_states(client_random, server_random, version);
+	  session->new_server_states(this, client_random, server_random,
+				     version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	

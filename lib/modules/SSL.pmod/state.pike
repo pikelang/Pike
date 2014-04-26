@@ -9,13 +9,19 @@
 
 import .Constants;
 
-protected void create(object/*(.session)*/ s)
+//!
+constant Alert = .alert;
+
+function(int, int, string|void: Alert) alert;
+
+protected void create(object/*(.connection)*/ con)
 {
-  session = s;
+  connection = con;
+  alert = con->Alert;
 }
 
 //! Information about the used algorithms.
-object/*(.session)*/ session;
+object/*(.connection)*/ connection;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
@@ -27,9 +33,6 @@ object compress;
 
 //! 64-bit sequence number.
 int seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
-
-//!
-constant Alert = .alert;
 
 //! TLS IV prefix length.
 int tls_iv;
@@ -53,21 +56,21 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
    *       function, and attempt to make the same amount of work
    *       even if we have already detected a failure.
    */
-  object(Alert) alert;
+  object(Alert) fail;
 
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
 	 version & 0xff, packet->content_type, packet->fragment);
 #endif
 
-  int hmac_size = session->truncated_hmac ? 10 :
-    session->cipher_spec?->hash_size;
+  int hmac_size = mac && (connection->session->truncated_hmac ? 10 :
+			  connection->session->cipher_spec?->hash_size);
   int padding;
 
   if (crypt)
   {
 #ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.state: Trying decrypt..\n");
+    werror("SSL.state: Trying decrypt...\n");
     //    werror("SSL.state: The encrypted packet is:%O\n",packet->fragment);
     werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
 #endif
@@ -75,14 +78,16 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
     string msg = packet->fragment;
     if (!msg) {
       packet->fragment = #string "alert.pike";	// Some junk data.
-      alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
+      fail = alert(ALERT_fatal, ALERT_unexpected_message,
+		   "SSL.state: Failed to get fragment.\n");
     } else {
-      switch(session->cipher_spec->cipher_type) {
+      switch(connection->session->cipher_spec->cipher_type) {
       case CIPHER_stream:
 
         // If data is too small, we can safely abort early.
         if( sizeof(msg) < hmac_size+1 )
-          return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+          return alert(ALERT_fatal, ALERT_unexpected_message,
+		       "SSL.state: Too short message.\n");
 
 	msg = crypt->crypt(msg);
 	break;
@@ -92,21 +97,28 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
         // If data is too small or doesn't match block size, we can
         // safely abort early.
         if( sizeof(msg) < hmac_size+1 || sizeof(msg) % crypt->block_size() )
-          return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+          return alert(ALERT_fatal, ALERT_unexpected_message,
+		       "SSL.state: Too short message.\n");
 
 	if(version == PROTOCOL_SSL_3_0) {
 	  // crypt->unpad() performs decrypt.
 	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
-	    alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	    fail = alert(ALERT_fatal, ALERT_unexpected_message,
+			 "SSL.state: Invalid padding.\n");
 	} else if (version >= PROTOCOL_TLS_1_0) {
 
-	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); })
-            alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
-          else if (!msg) {
+#ifdef SSL3_DEBUG_CRYPT
+	  werror("SSL.state: Decrypted message: %O.\n", msg);
+#endif
+	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
+            fail = alert(ALERT_fatal, ALERT_unexpected_message,
+			 "SSL.state: Invalid padding.\n");
+          } else if (!msg) {
 	    // TLS 1.1 requires a bad_record_mac alert on invalid padding.
             // Note that mac will still be calculated below even if
             // padding was wrong, to mitigate Lucky Thirteen attacks.
-	    alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	    fail = alert(ALERT_fatal, ALERT_bad_record_mac,
+			 "SSL.state: Invalid padding.\n");
 	  }
 	}
 	break;
@@ -115,7 +127,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 
 	// NB: Only valid in TLS 1.2 and later.
 	// The message consists of explicit_iv + crypted-msg + digest.
-	string iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
+	string iv = salt + msg[..connection->session->cipher_spec->explicit_iv_size-1];
 	int digest_size = crypt->digest_size();
 	string digest = msg[<digest_size-1..];
 	crypt->set_iv(iv);
@@ -123,18 +135,16 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 				   seq_num, packet->content_type,
 				   packet->protocol_version,
 				   sizeof(msg) -
-				   (session->cipher_spec->explicit_iv_size +
+				   (connection->session->cipher_spec->explicit_iv_size +
 				    digest_size));
 	crypt->update(auth_data);
-	msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
+	msg = crypt->crypt(msg[connection->session->cipher_spec->explicit_iv_size..
 			       <digest_size]);
 	seq_num++;
 	if (digest != crypt->digest()) {
 	  // Bad digest.
-#ifdef SSL3_DEBUG
-	  werror("Failed AEAD-verification!!\n");
-#endif
-	  alert = Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	  fail = alert(ALERT_fatal, ALERT_bad_record_mac,
+		       "Failed AEAD-verification!!\n");
 	}
 	break;
       }
@@ -176,7 +186,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
     string pad_string = "\0"*block_size;
     string junk = pad_string[<padding-1..];
     if (!((sizeof(packet->fragment) +
-           mac->hash_header_size - session->cipher_spec->hash_size) %
+           mac->hash_header_size - connection->session->cipher_spec->hash_size) %
           block_size ) ||
         !(padding % block_size)) {
       // We're at the edge of a MAC block, so we need to
@@ -196,7 +206,8 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 	       "Seqence number: %O\n",
 	       digest, mac->hash_packet(packet, seq_num), seq_num);
 #endif
-	alert = alert || Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	fail = fail || alert(ALERT_fatal, ALERT_bad_record_mac,
+			     "Bad MAC.\n");
       }
     seq_num++;
   }
@@ -208,11 +219,12 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 #endif
     string msg = [string]compress(packet->fragment);
     if (!msg)
-      alert = alert || Alert(ALERT_fatal, ALERT_unexpected_message, version);
+      fail = fail || alert(ALERT_fatal, ALERT_unexpected_message,
+			   "Invalid compression.\n");
     packet->fragment = msg;
   }
 
-  if (alert) return alert;
+  if (fail) return fail;
 
   return [object(Alert)]packet->check_size(version) || packet;
 }
@@ -230,14 +242,14 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 
   if (mac) {
     digest = mac->hash_packet(packet, seq_num);
-    if (session->truncated_hmac)
+    if (connection->session->truncated_hmac)
       digest = digest[..9];
   } else
     digest = "";
 
   if (crypt)
   {
-    switch(session->cipher_spec->cipher_type) {
+    switch(connection->session->cipher_spec->cipher_type) {
     case CIPHER_stream:
       packet->fragment=crypt->crypt(packet->fragment + digest);
       break;
@@ -264,7 +276,8 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
       // The nonce_explicit MAY be the 64-bit sequence number.
       // FIXME: Do we need to pay attention to threads here?
       string explicit_iv =
-	sprintf("%*c", session->cipher_spec->explicit_iv_size, seq_num);
+	sprintf("%*c", connection->session->cipher_spec->explicit_iv_size,
+		seq_num);
       crypt->set_iv(salt + explicit_iv);
       string auth_data = sprintf("%8c%c%2c%2c",
 				 seq_num, packet->content_type,
