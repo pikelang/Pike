@@ -796,6 +796,15 @@ class TBSCertificate
 	  a[i][0]->type_name == "SEQUENCE") {
 	raw_extensions = a[i][0];
 	i++;
+
+#define EXT(X) if(!parse_##X(internal_extensions[ \
+                                      .PKCS.Identifiers.ce_ids.##X])) { \
+          werror("TBSCertificate: Failed to parse extension %O.\n", #X); }
+        EXT(basicConstraints);
+        EXT(authorityKeyIdentifier);
+        EXT(subjectKeyIdentifier);
+        EXT(keyUsage);
+#undef EXT
       }
     }
     internal_der = asn1->get_der();
@@ -804,6 +813,102 @@ class TBSCertificate
     /* Too many fields */
     return 0;
   }
+
+  //
+  // --- Extension code
+  //
+
+  //! Set if the certificate contains a valid basicConstraints
+  //! extension. RFC3280 4.2.1.10.
+  int(0..1) ext_basicConstraints;
+
+  //! If set, the certificate may be used as a CA certificate, i.e.
+  //! sign other certificates.
+  int(0..1) ext_basicConstraints_cA;
+
+  //! The maximum number of intermediate certificates that may follow
+  //! this certificate in a certificate chain. @exp{-1@} in case no
+  //! limit is imposed.
+  int ext_basicConstraints_pathLenConstraint = -1;
+
+  protected int(0..1) parse_basicConstraints(Object o)
+  {
+    // FIXME: This extension must be critical if certificate contains
+    // public keys use usage is to validate signatures on
+    // certificates.
+
+    if( !o || o->type_name!="SEQUENCE" )
+      return 0;
+    Sequence s = [object(Sequence)]o;
+    if( sizeof(s)<1 || sizeof(s)>2 || s[0]->type_name!="BOOLEAN" )
+      return 0;
+    if( sizeof(s)==2 )
+    {
+      if( s[1]->type_name!="INTEGER" || s[0]->value==0 || s[1]->value<0 )
+        return 0;
+      ext_basicConstraints_pathLenConstraint = s[1]->value;
+      // FIXME: pathLenConstraint is not permitted if keyCertSign
+      // isn't set in key usage.
+    }
+    ext_basicConstraints = 1;
+    ext_basicConstraints_cA = s[0]->value;
+    return 1;
+  }
+
+  //! Set if the certificate contains a valid authorityKeyIdentifier
+  //! extension. RFC3280 4.2.1.1.
+  int(0..1) ext_authorityKeyIdentifier;
+
+  protected int(0..1) parse_authorityKeyIdentifier(Object o)
+  {
+    if( !o ) return 1;
+    if( o->type_name!="SEQUENCE" )
+      return 0;
+
+    // FIXME: Actually parse this.
+    ext_authorityKeyIdentifier = 1;
+    return 1;
+  }
+
+  //! Set to the value of the SubjectKeyIdentifier if the certificate
+  //! contains the subjectKeyIdentifier extension. RFC3280 4.2.1.2.
+  string ext_subjectKeyIdentifier;
+
+  protected int(0..1) parse_subjectKeyIdentifier(Object o)
+  {
+    if( !o ) return 1;
+    if( o->type_name!="OCTET STRING" )
+      return 0;
+    ext_subjectKeyIdentifier = o->value;
+    return 1;
+  }
+
+  //! Set to the value of the KeyUsage if the certificate
+  //! contains the keyUsage extension. RFC3280 4.2.1.3.
+  int ext_keyUsage;
+
+  protected int(0..1) parse_keyUsage(Object o)
+  {
+    if( !o ) return 1;
+    if( o->type_name!="BIT STRING" )
+      return 0;
+#if 0
+    int bits, pos;
+    foreach(o->value;; int char)
+      for(int i; i<8; i++)
+      {
+        int bit = !!(char & 0x80);
+        bits |= (bit << pos);
+        pos++;
+        char <<= 1;
+      }
+#endif
+    int bits = o->value[0];
+    ext_keyUsage = bits;
+    return 1;
+  }
+
+
 }
 
 //! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
@@ -1083,58 +1188,46 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   multiset crit = tbs->critical + (<>);
   int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
 
-  Object lookup(Identifier id)
-  {
-    crit[id] = 0;
-    return tbs->extensions[id];
-  };
-
-  // FIXME: Move extension parsing into tbs.
-
   // id-ce-basicConstraints is required for certificates with public
-  // key used to validate certificate signatures. RFC 3280, 4.2.1.10.
-  Object c = lookup(.PKCS.Identifiers.ce_ids.basicConstraints);
-  if( !c || c->type_name!="SEQUENCE" || sizeof(c)<1 || sizeof(c)>2 ||
-      c[0]->type_name!="BOOLEAN" ||
-      !c[0]->value )
+  // key used to validate certificate signatures.
+  crit[.PKCS.Identifiers.ce_ids.basicConstraints]=0;
+  if( tbs->ext_basicConstraints )
+  {
+    if( !tbs->ext_basicConstraints_cA )
+    {
+      DBG("vertify ca: id-ce-basicContraints-cA is false.\n");
+      return 0;
+    }
+  }
+  else
   {
     DBG("verify ca: Bad or missing id-ce-basicConstraints.\n");
-    return 0;
-  }
-  Sequence s = [object(Sequence)]c;
-  if( sizeof(s)==2 && s[1]->type_name!="INTEGER" )
-  {
-    DBG("verify ca: id-ce-basicConstraints has incorrect pathLenConstraint.\n");
     return 0;
   }
 
   // id-ce-authorityKeyIdentifier is required by RFC 5759, unless self
   // signed. Defined in RFC 3280 4.2.1.1, but there only as
   // recommended.
-  if( !lookup(.PKCS.Identifiers.ce_ids.authorityKeyIdentifier) && !self_signed )
+  crit[.PKCS.Identifiers.ce_ids.authorityKeyIdentifier]=0;
+  if( !tbs->ext_authorityKeyIdentifier && !self_signed )
   {
     DBG("verify ca: Missing id-ce-authorityKeyIdentifier.\n");
     return 0;
   }
 
-  // id-ce-keyUsage is required. RFC 3280 4.2.1.3
-  c = lookup(.PKCS.Identifiers.ce_ids.keyUsage);
-  if( !c || c->type_name!="BIT STRING" )
-  {
-    DBG("verify ca: Missing id-ce-keyUsage.\n");
-    return 0;
-  }
-  keyUsage usage = c->value[0]; // Arguably API violation.
-  if( !( usage & keyCertSign ) ) // RFC 5759
+  // id-ce-keyUsage is required.
+  crit[.PKCS.Identifiers.ce_ids.keyUsage]=0;
+  if( !(tbs->ext_keyUsage & keyCertSign) )
   {
     DBG("verify ca: id-ce-keyUsage doesn't allow keyCertSign.\n");
     return 0;
   }
   // FIXME: RFC 5759 also requires CRLSign set.
-  if( usage & (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&255) )
+  if( tbs->ext_keyUsage &
+      (~(keyCertSign | cRLSign | digitalSignature | nonRepudiation)&255) )
   {
     DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
-   return 0;
+    return 0;
   }
 
   // FIXME: In addition RFC 5759 requires policyMappings,
@@ -1350,31 +1443,22 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
     if(idx != len-1) // Not the leaf
     {
-      Object o = tbs->extensions[ Identifiers.ce_ids.basicConstraints ];
-
       // id-ce-basicConstraints is required for certificates with
-      // public key used to validate certificate signatures. RFC 3280,
-      // 4.2.1.10.
-      if( !o || o->type_name!="SEQUENCE" )
-        ERROR(CERT_INVALID);
-      Sequence s = [object(Sequence)]o;
-      if( sizeof(o)<1 || sizeof(o)>2 ||
-          s[0]->type_name!="BOOLEAN" )
+      // public key used to validate certificate signatures.
+
+      if( !tbs->ext_basicConstraints )
         ERROR(CERT_INVALID);
 
-      if( !s[0]->value )
+      if( !tbs->ext_basicConstraints_cA )
         ERROR(CERT_UNAUTHORIZED_CA);
 
-      if( sizeof(s)==2 )
+      if( tbs->ext_basicConstraints_pathLenConstraint!=-1 )
       {
-        if( s[1]->type_name!="INTEGER" || s[1]->value<0 )
-          ERROR(CERT_INVALID);
-
         // pathLenConstraint is the maximum number of intermediate
         // certificates. len-1-idx is the number of following
         // certificates. Subtract one more to not count the leaf
         // certificate.
-        if( len-1-idx-1 > s[1]->value )
+        if( len-1-idx-1 > tbs->ext_basicConstraints_pathLenConstraint )
         {
           // The error was later in the chain though, so maybe a
           // different error should be sent.
