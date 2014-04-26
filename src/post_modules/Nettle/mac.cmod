@@ -426,12 +426,18 @@ static void pike_poly1305_aes_set_iv(void *ctx, pike_nettle_size_t len,
 
 #ifdef HAVE_NETTLE_UMAC_H
 
-/* These two really ought to be in the <nettle/umac.h> header file, but... */
+/* These really ought to be in the <nettle/umac.h> header file, but...
+ *
+ * They are now in the upcoming Nettle 3.0.
+ */
 #ifndef UMAC_BLOCK_SIZE
 #define UMAC_BLOCK_SIZE		UMAC_DATA_SIZE
 #endif
+#ifndef UMAC_MAX_NONCE_SIZE
+#define UMAC_MAX_NONCE_SIZE	16
+#endif
 #ifndef UMAC_NONCE_SIZE
-#define UMAC_NONCE_SIZE		16
+#define UMAC_NONCE_SIZE		UMAC_MAX_NONCE_SIZE
 #endif
 
 #define UMAC32_BLOCK_SIZE	UMAC_BLOCK_SIZE
