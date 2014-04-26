@@ -12092,9 +12092,10 @@ void string_builder_explain_not_implements(struct string_builder *s,
   END_CYCLIC();
 }
 
-PMOD_EXPORT void *parent_storage(int depth)
+PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
 {
   struct external_variable_context loc;
+  int i;
 
   loc.o = Pike_fp->current_object;
   loc.parent_identifier = 0;
@@ -12104,6 +12105,14 @@ PMOD_EXPORT void *parent_storage(int depth)
 
   if (!loc.o->prog)
     Pike_error ("Cannot access storage of destructed parent object.\n");
+
+  for (i = 0; i < loc.inherit->prog->num_inherits; i++) {
+    if (loc.inherit[i].prog == expected) {
+      /* Found. */
+      loc.inherit += i;
+      break;
+    }
+  }
 
   return loc.o->storage + loc.inherit->storage_offset;
 }

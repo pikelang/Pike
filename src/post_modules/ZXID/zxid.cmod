@@ -456,7 +456,7 @@ PIKECLASS Configuration {
 
     INIT
     {
-      THIS->config = parent_storage(1);
+      THIS->config = parent_storage(1, Configuration_program);
       mt_init(&THIS->session_lock);
     }
 

@@ -238,7 +238,7 @@ PIKECLASS AEAD
     CVAR void *ctx;
     CVAR int key_size;
 
-#define GET_META()	(((struct Nettle_AEAD_struct *)parent_storage(1))->meta)
+#define GET_META()	(((struct Nettle_AEAD_struct *)parent_storage(1, Nettle_AEAD_program))->meta)
 
     /* Generate a random string of length @[size] on top of the stack. */
     static void low_make_key(INT32 size)

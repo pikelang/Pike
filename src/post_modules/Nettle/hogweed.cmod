@@ -561,7 +561,7 @@ PIKECLASS ECC_Curve
     INIT
     {
       const struct ecc_curve *curve =
-	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1))->curve);
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
       if (!curve) Pike_error("No curve selected.\n");
       ecc_point_init(&THIS->pub, curve);
       ecc_scalar_init(&THIS->key, curve);
@@ -574,7 +574,7 @@ PIKECLASS ECC_Curve
     EXIT
     {
       const struct ecc_curve *curve =
-	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1))->curve);
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
       if (!curve) return;
       ecc_point_clear(&THIS->pub);
       ecc_scalar_clear(&THIS->key);
