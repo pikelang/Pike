@@ -902,7 +902,7 @@ constant CIPHER_SUITES =
    TLS_ecdhe_rsa_with_camellia_256_cbc_sha384: ({ KE_ecdhe_rsa, CIPHER_camellia256, HASH_sha384 }),
 #endif /* Crypto.Camellia */
 
-#if constant(Crypto.GCM)
+#if constant(Crypto.AES.GCM)
    // GCM Suites:
    TLS_rsa_with_aes_128_gcm_sha256:	({ KE_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dhe_rsa_with_aes_128_gcm_sha256:	({ KE_dhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
@@ -955,7 +955,7 @@ constant CIPHER_SUITES =
    TLS_ecdh_rsa_with_camellia_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_ecdh_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
 #endif /* Crypto.Camellia */
-#endif /* Crypto.GCM */
+#endif /* Crypto.AES.GCM */
 ]);
 
 constant HANDSHAKE_hello_request	= 0;  // RFC 5246

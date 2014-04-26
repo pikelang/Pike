@@ -24,17 +24,14 @@ class State
   inherit Cipher::State;
   inherit __Hash::State;
 
-  protected void create(__builtin.Nettle.Cipher|
-			program(__builtin.Nettle.Cipher)|function c,
-			mixed ... args)
+  protected void create()
   {
     /* Needed to block the default implementation in __Hash.State. */
   }
 }
 
 //! Calling `() will return a @[State] object.
-State `()(__builtin.Nettle.Cipher|program(__builtin.Nettle.Cipher)|function c,
-	  mixed ... args) {
-  return State(c, @args);
+State `()() {
+  return State();
 }
 

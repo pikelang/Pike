@@ -1335,24 +1335,6 @@ class Camellia
 }
 #endif
 
-#if constant(Crypto.GCM)
-//!
-class AES_GCM
-{
-  inherit Crypto.GCM.State;
-  protected void create() { ::create(Crypto.AES()); }
-}
-
-#if constant(Crypto.Camellia)
-//!
-class Camellia_GCM
-{
-  inherit Crypto.GCM.State;
-  protected void create() { ::create(Crypto.Camellia()); }
-}
-#endif
-#endif
-
 //! Signing using RSA.
 ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
 {
@@ -1825,13 +1807,13 @@ array lookup(int suite, ProtocolVersion|int version,
       res->mac_algorithm = 0;		// MACs are not used with AEAD.
 
       break;
-#if constant(Crypto.GCM)
+#if constant(Crypto.AES.GCM)
     case MODE_gcm:
       if (res->bulk_cipher_algorithm == AES) {
-	res->bulk_cipher_algorithm = AES_GCM;
-#if constant(Crypto.Camellia)
+	res->bulk_cipher_algorithm = Crypto.AES.GCM.State;
+#if constant(Crypto.Camellia.GCM)
       } else if (res->bulk_cipher_algorithm == Camellia) {
-	res->bulk_cipher_algorithm = Camellia_GCM;
+	res->bulk_cipher_algorithm = Crypto.Camellia.GCM.State;
 #endif
       } else {
 	// Unsupported.
