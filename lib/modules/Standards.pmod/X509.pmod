@@ -635,13 +635,6 @@ class TBSCertificate
     }
   }
 
-  protected string get_id(object asn)
-  {
-    foreach(.PKCS.Identifiers.name_ids; string name; object id)
-      if( asn==id ) return name;
-    return (array(string))asn->id*".";
-  }
-
   protected array fmt_asn1(object asn)
   {
     array i = ({});
@@ -650,7 +643,9 @@ class TBSCertificate
     foreach(asn->elements;; object o)
     {
       o = o[0];
-      string id = get_id(o[0]);
+      string id = .PKCS.Identifiers.reverse_name_ids[o[0]] ||
+      (array(string))o[0]->id*".";
+
       i += ({ ([ id : o[1]->value]) });
       if( m )
       {
@@ -1080,6 +1075,10 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 {
   if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;
+
+  int t = time();
+  if( tbs->not_after < t ) return 0;
+  if( tbs->not_before > t ) return 0;
 
   multiset crit = tbs->critical + (<>);
   int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
