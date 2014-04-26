@@ -497,7 +497,7 @@ PIKECLASS Hash
     }
 
 #define GET_META(o)						\
-    ( ((struct Nettle_Hash_struct *)parent_storage(1))->meta )
+    ( ((struct Nettle_Hash_struct *)parent_storage(1, Nettle_Hash_program))->meta )
 
     CVAR void *ctx;
 

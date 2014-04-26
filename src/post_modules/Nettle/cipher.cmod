@@ -213,7 +213,7 @@ PIKECLASS Cipher
     /* FIXME: Create should copy state from the other object, if
      * provided. */
 
-#define GET_INFO()	((struct Nettle_Cipher_struct *)parent_storage(1))
+#define GET_INFO()	((struct Nettle_Cipher_struct *)parent_storage(1, Nettle_Cipher_program))
 
     /* Generate a random string of length @[size] on top of the stack. */
     static void low_make_key(INT32 size)

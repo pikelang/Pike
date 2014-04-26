@@ -666,7 +666,7 @@ PIKECLASS Backend
 
       if (this->pos >= 0) {
 	/* Still active in the heap. DO_PIKE_CLEANUP? */
-	struct Backend_struct *me = parent_storage(1);
+	struct Backend_struct *me = parent_storage(1, Backend_program);
 	int e = this->pos;
 
 	me->num_pending_calls--;
@@ -705,7 +705,7 @@ PIKECLASS Backend
       struct array *callable;
       size_t fun_hval;
       size_t hval;
-      struct Backend_struct *me = parent_storage(1);
+      struct Backend_struct *me = parent_storage(1, Backend_program);
       struct Backend_CallOut_struct *new = THIS;
       DECLARE_PROTECT_CALL_OUTS;
 

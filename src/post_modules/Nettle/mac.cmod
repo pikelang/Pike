@@ -207,7 +207,7 @@ PIKECLASS MAC
     }
 
 #define GET_META(o)						\
-    ( ((struct Nettle_MAC_struct *)parent_storage(1))->meta )
+    ( ((struct Nettle_MAC_struct *)parent_storage(1, Nettle_MAC_program))->meta )
 
     CVAR void *ctx;
 

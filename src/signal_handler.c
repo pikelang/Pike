@@ -1983,7 +1983,7 @@ static void f_trace_process_exit(INT32 args)
 
 /* NB: No storage needed, all state is in the parent object. */
 
-#define THIS_PROC_REG_PROC_ID	((struct pid_status *)parent_storage(1))
+#define THIS_PROC_REG_PROC_ID	((struct pid_status *)parent_storage(1, pid_status_program))
 
 /*! @decl int `[](int regno)
  *!   Get the contents of register @[regno].
