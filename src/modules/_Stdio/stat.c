@@ -294,7 +294,7 @@ static void stat_push_compat(INT_TYPE n)
 
 static void stat_init (struct object *UNUSED(o))
 {
-  MEMSET ((char *) &THIS_STAT->s, 0, sizeof (THIS_STAT->s));
+  MEMSET (&THIS_STAT->s, 0, sizeof (THIS_STAT->s));
 }
 
 /*! @decl void create (void|object|array stat);

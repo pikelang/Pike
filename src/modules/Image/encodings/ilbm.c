@@ -297,7 +297,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
     if(alpha != NULL)
       switch(bmhd->masking) {
       case mskNone:
-	memset((char *)adest, ~0, bmhd->w*sizeof(*adest));
+	memset(adest, ~0, bmhd->w*sizeof(*adest));
 	adest += bmhd->w;
 	break;
       case mskHasMask:
