@@ -277,7 +277,7 @@ static INLINE void free_input(struct input *i)
 
   case I_NONE: break;
   }
-  free((char *)i);
+  free(i);
 }
 
 /* do the done_callback, then close and free everything */
@@ -528,7 +528,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
       sbuffers-=b->s->len;
       nbuffers--;
       free_string(b->s);
-      free((char *)b);
+      free(b);
 
       /* Wake up first input if it was sleeping and we
        * have room for more in the buffer.
@@ -922,7 +922,7 @@ static void pipe_output(INT32 args)
 	sbuffers-=b->s->len;
 	nbuffers--;
 	free_string(b->s);
-	free((char *)b);
+	free(b);
       }
       THIS->lastbuffer=NULL;
 
@@ -1214,7 +1214,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
       nbuffers--;
       free_string(b->s);
       b->next=NULL;
-      free((char *)b); /* Hubbe */
+      free(b); /* Hubbe */
    }
    p->lastbuffer=NULL;
 

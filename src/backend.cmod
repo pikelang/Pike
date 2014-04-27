@@ -757,7 +757,7 @@ PIKECLASS Backend
 	  if((new_hash=(struct hash_ent *)malloc(sizeof(struct hash_ent)*
 						 hashprimes[me->hash_order+1])))
 	  {
-	    free((char *)me->call_hash);
+	    free(me->call_hash);
 	    me->call_hash = new_hash;
 	    me->hash_size = hashprimes[++me->hash_order];
 	    MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
@@ -2402,9 +2402,9 @@ PIKECLASS Backend
 	free_object(CALL(e)->this);
     }
     me->num_pending_calls=0;
-    if(me->call_heap) free((char*)me->call_heap);
+    if(me->call_heap) free(me->call_heap);
     me->call_heap = NULL;
-    if(me->call_hash) free((char*)me->call_hash);
+    if(me->call_hash) free(me->call_hash);
     me->call_hash=NULL;
 
 #ifdef DO_PIKE_CLEANUP

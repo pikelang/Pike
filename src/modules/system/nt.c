@@ -771,7 +771,7 @@ static void exit_sid(struct object *o)
 {
   if(THIS_PSID)
   {
-    free((char *)THIS_PSID);
+    free(THIS_PSID);
     THIS_PSID=0;
   }
 }
@@ -837,8 +837,8 @@ static void f_sid_account(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)name);
+    free(dom);
+    free(name);
   }
   errno=GetLastError();
   pop_n_elems(args);
@@ -3000,8 +3000,8 @@ static void f_LookupAccountName(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)sid);
+    free(dom);
+    free(sid);
   }
   errno=GetLastError();
   pop_n_elems(args);

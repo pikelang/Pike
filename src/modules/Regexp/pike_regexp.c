@@ -361,7 +361,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    r->regmlen = len;
 	}
     }
-    free((char*)exp2);
+    free(exp2);
     return (r);
 }
 

@@ -133,7 +133,7 @@ static void array_free_no_free(struct array *v)
 {
   DOUBLEUNLINK (first_array, v);
 
-  free((char *)v);
+  free(v);
 
   GC_FREE(v);
 }
@@ -1882,11 +1882,11 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 		    ordera, orderb );
 
   ret=array_zip(tmpa,tmpb,zipper);
-  UNSET_ONERROR(r3);  free((char *)zipper);
+  UNSET_ONERROR(r3);  free(zipper);
   UNSET_ONERROR(r2);  free_array(tmpb);
   UNSET_ONERROR(r1);  free_array(tmpa);
-  UNSET_ONERROR(r5);  free((char *)orderb);
-  UNSET_ONERROR(r4);  free((char *)ordera);
+  UNSET_ONERROR(r5);  free(orderb);
+  UNSET_ONERROR(r4);  free(ordera);
   return ret;
 }
 
@@ -1974,13 +1974,13 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
   if(arrb != ITEM(b))
   {
     UNSET_ONERROR(r4);
-    free((char *)arrb);
+    free(arrb);
   }
 
   if(arra != ITEM(a))
   {
     UNSET_ONERROR(r3);
-    free((char *)arra);
+    free(arra);
   }
 
   UNSET_ONERROR(r2);
@@ -2007,24 +2007,24 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
 
-  if(ordera) { free((char *)ordera); ordera=0; }
-  if(orderb) { free((char *)orderb); orderb=0; }
+  if(ordera) { free(ordera); ordera=0; }
+  if(orderb) { free(orderb); orderb=0; }
 
   ordera=get_set_order(a);
   tmpa=reorder_and_copy_array(a,ordera);
-  free((char *)ordera);
+  free(ordera);
   ordera=0;
 
   orderb=get_set_order(b);
   tmpb=reorder_and_copy_array(b,orderb);
-  free((char *)orderb);
+  free(orderb);
   orderb=0;
 
   zipper=merge(tmpa,tmpb,op);
   ret=array_zip(tmpa,tmpb,zipper);
   free_array(tmpa);
   free_array(tmpb);
-  free((char *)zipper);
+  free(zipper);
   return ret;
 
 #else

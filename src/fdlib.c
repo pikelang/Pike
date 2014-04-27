@@ -1579,7 +1579,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
   if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
     errno=ENOENT;
-    free((char *)ret);
+    free(ret);
     return 0;
   }
   ret->first=1;
@@ -1607,7 +1607,7 @@ PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
 PMOD_EXPORT void closedir(DIR *dir)
 {
   FindClose(dir->h);
-  free((char *)dir);
+  free(dir);
 }
 #endif
 
@@ -1628,7 +1628,7 @@ void init_fd_mapper(struct fd_mapper *x)
 
 void exit_fd_mapper(struct fd_mapper *x)
 {
-  free((char *)x->data);
+  free(x->data);
 }
 
 void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
@@ -1673,7 +1673,7 @@ void init_fd_mapper(struct fd_mapper *x)
 
 void exit_fd_mapper(struct fd_mapper *x)
 {
-  free((char *)x->data);
+  free(x->data);
 }
 
 void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
@@ -1790,7 +1790,7 @@ void store_fd_data(FD fd, int key, void *data)
       free_blocks=old_htable[h];
     }
     if(old_htable)
-      free((char *)old_htable);
+      free(old_htable);
   }
 
 
