@@ -3725,15 +3725,14 @@ static void _image_outline(INT32 args,int mask)
    img=(struct image*)(o->storage);
    img->rgb=THIS->rgb;
 
-   tmp=malloc((THIS->xsize+width)*(THIS->ysize+height+1));
+   tmp=calloc((THIS->xsize+width),(THIS->ysize+height+1));
    if (!tmp) {
      free_object(o);
      if (matrix!=defaultmatrix) free(matrix);
      SIMPLE_OUT_OF_MEMORY_ERROR("outline",
 				(THIS->xsize+width)*(THIS->ysize+height)+1);
    }
-   MEMSET(tmp,0,(THIS->xsize+width)*(THIS->ysize+height));
- 
+
    s=THIS->img;
 
    if (!mask)

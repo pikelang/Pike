@@ -77,15 +77,13 @@ static void handle_hit( Blob **blobs,
 			int cutoff )
 {
   int i, j, k, end = 0;
-  Hit *hits = malloc( nblobs * sizeof(Hit) );
+  Hit *hits = calloc( nblobs, sizeof(Hit) );
   unsigned char *nhits = malloc( nblobs );
   unsigned char *pos = malloc( nblobs );
 
   int matrix[65][8];
 
   MEMSET(matrix, 0, sizeof(matrix) );
-  MEMSET(hits, 0, nblobs * sizeof(Hit) );
-  MEMSET(pos, 0, nblobs );
 
   for( i = 0; i<nblobs; i++ )
     nhits[i] = wf_blob_nhits( blobs[i] );

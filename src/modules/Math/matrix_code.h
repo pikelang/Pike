@@ -152,11 +152,8 @@ static void matrixX(_create)(INT32 args)
       if ((THIS->ysize=ys=Pike_sp[1-args].u.integer)<=0)
 	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int > 0");
 
-      THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
-      if (!m)
-	 SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,
-				    sizeof(FTYPE)*xs*ys);
-      
+      THIS->m=m=xcalloc(sizeof(FTYPE),xs*ys);
+
       if (args>2) {
 	 if (TYPEOF(Pike_sp[2-args]) == T_INT)
 	    z=(FTYPE)Pike_sp[2-args].u.integer;
@@ -167,7 +164,6 @@ static void matrixX(_create)(INT32 args)
 	    if (Pike_sp[2-args].u.string==s__clr)
 	    {
 	       /* internal call: don't care */
-	       MEMSET(m,0,xs*ys*sizeof(FTYPE));
 	       goto done_made;
 	    }
 	    else if (Pike_sp[2-args].u.string==s_identity)

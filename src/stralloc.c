@@ -613,8 +613,7 @@ static void stralloc_rehash(void)
 
   SET_HSIZE( ++hashprimes_entry );
 
-  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
-  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+  base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
   need_more_hash_prefix_depth = 0;
 
@@ -2225,8 +2224,8 @@ void init_shared_string_table(void)
 {
   for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
   SET_HSIZE(hashprimes_entry);
-  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
-  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+  base_table=xcalloc(sizeof(struct pike_string *), htable_size);
+
 #ifdef PIKE_RUN_UNLOCKED
   {
     int h;

@@ -8680,9 +8680,8 @@ static struct callback *pike_type_gc_callback = NULL;
 void init_types(void)
 {
   /* Initialize hashtable here. */
-  pike_type_hash = (struct pike_type **)xalloc(sizeof(struct pike_type *) *
-                                               (PIKE_TYPE_HASH_SIZE+1));
-  MEMSET(pike_type_hash, 0, sizeof(struct pike_type *) * (PIKE_TYPE_HASH_SIZE+1));
+  pike_type_hash = xcalloc(sizeof(struct pike_type *),
+                           (PIKE_TYPE_HASH_SIZE+1));
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
 
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string! */

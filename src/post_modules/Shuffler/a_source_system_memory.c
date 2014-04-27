@@ -78,8 +78,8 @@ struct source *source_system_memory_make( struct svalue *s,
     pop_stack();
   }
 
-  res = malloc( sizeof( struct sm_source ) );
-  MEMSET( res, 0, sizeof( struct sm_source ) );
+  res = calloc( 1, sizeof( struct sm_source ) );
+  if( !res ) return NULL;
 
   if( !(res->mem = (void*)get_storage( s->u.object, shm_program ) ) )
   {
