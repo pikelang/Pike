@@ -148,7 +148,7 @@ test_tests([[
 	    fno++;
 	  }
 	  break;
-#if constant(Crypto.GCM)
+#if constant(Crypto.AES.GCM)
 	case "gcm":
 	  mode = MODE_gcm;
 	  fno++;
