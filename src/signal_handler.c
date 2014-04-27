@@ -754,7 +754,7 @@ void my_signal(int sig, sigfunctype fun)
      *   where _funcptr is a union. ie sa_handler and
      *   sa_sigaction overlap.
      */
-    MEMSET((char *)&action, 0, sizeof(action));
+    MEMSET(&action, 0, sizeof(action));
     action.sa_handler = fun;
     sigfillset(&action.sa_mask);
     action.sa_flags = 0;
@@ -768,7 +768,7 @@ void my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGVEC
   {
     struct sigvec action;
-    MEMSET((char *)&action, 0, sizeof(action));
+    MEMSET(&action, 0, sizeof(action));
     action.sv_handler= fun;
     action.sv_mask=-1;
 #ifdef SV_INTERRUPT

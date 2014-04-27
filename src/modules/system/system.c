@@ -1843,7 +1843,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYNAME(X) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    MEMSET(&data,0,sizeof(data)); \
     if(gethostbyname_r((X), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1853,7 +1853,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYADDR(X,Y,Z) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    MEMSET(&data,0,sizeof(data)); \
     if(gethostbyaddr_r((X),(Y),(Z), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1886,7 +1886,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETSERVBYNAME(X,Y) \
     THREADS_ALLOW(); \
-    MEMSET((char *)&data,0,sizeof(data)); \
+    MEMSET(&data,0,sizeof(data)); \
     if(getservbyname_r((X), (Y), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1925,7 +1925,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
   int udp = inet_flags & 1;
 
-  MEMSET((char *)addr,0,sizeof(PIKE_SOCKADDR));
+  MEMSET(addr,0,sizeof(PIKE_SOCKADDR));
   if(name && !strcmp(name,"*"))
     name = NULL;
 
