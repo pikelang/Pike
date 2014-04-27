@@ -39,6 +39,13 @@ enum CertFailure
   //! A CA certificate is not allowed by basic constraints to sign
   //! another certificate.
   CERT_UNAUTHORIZED_CA = 1<<6,
+
+  //! The certificate is not allowed by it's key usage to sign data.
+  CERT_UNAUTHORIZED_SIGNING = 1<<7,
+
+  //! The certificate chain is longer than allowed by a certificate in
+  //! the chain.
+  CERT_EXCEEDED_PATH_LENGTH = 1<<8,
 }
 
 
@@ -830,9 +837,11 @@ class TBSCertificate
 	raw_extensions = a[i][0];
 	i++;
 
-#define EXT(X) if(!parse_##X(internal_extensions[ \
-                                      .PKCS.Identifiers.ce_ids.##X])) { \
-          werror("TBSCertificate: Failed to parse extension %O.\n", #X); }
+#define EXT(X) do { \
+          Object o = internal_extensions[.PKCS.Identifiers.ce_ids.##X]; \
+          if(o && !parse_##X(o)) \
+            DBG("TBSCertificate: Failed to parse extension %O.\n", #X); \
+        } while (0)
         EXT(basicConstraints);
         EXT(authorityKeyIdentifier);
         EXT(subjectKeyIdentifier);
@@ -870,7 +879,7 @@ class TBSCertificate
     // public keys use usage is to validate signatures on
     // certificates.
 
-    if( !o || o->type_name!="SEQUENCE" )
+    if( o->type_name!="SEQUENCE" )
       return 0;
     Sequence s = [object(Sequence)]o;
     if( sizeof(s)<1 || sizeof(s)>2 || s[0]->type_name!="BOOLEAN" )
@@ -894,7 +903,6 @@ class TBSCertificate
 
   protected int(0..1) parse_authorityKeyIdentifier(Object o)
   {
-    if( !o ) return 1;
     if( o->type_name!="SEQUENCE" )
       return 0;
 
@@ -909,7 +917,6 @@ class TBSCertificate
 
   protected int(0..1) parse_subjectKeyIdentifier(Object o)
   {
-    if( !o ) return 1;
     if( o->type_name!="OCTET STRING" )
       return 0;
     ext_subjectKeyIdentifier = o->value;
@@ -922,7 +929,6 @@ class TBSCertificate
 
   protected int(0..1) parse_keyUsage(Object o)
   {
-    if( !o ) return 1;
     if( o->type_name!="BIT STRING" )
       return 0;
 
@@ -938,7 +944,6 @@ class TBSCertificate
 
     return 1;
   }
-
 
 }
 
@@ -1496,9 +1501,17 @@ mapping verify_certificate_chain(array(string) cert_chain,
         {
           // The error was later in the chain though, so maybe a
           // different error should be sent.
-          ERROR(CERT_UNAUTHORIZED_CA);
+          ERROR(CERT_EXCEEDED_PATH_LENGTH);
         }
       }
+
+      if( !(tbs->ext_keyUsage & keyCertSign) )
+        ERROR(CERT_UNAUTHORIZED_CA);
+    }
+    else // The leaf
+    {
+      if( !(tbs->ext_keyUsage & digitalSignature) )
+        ERROR(CERT_UNAUTHORIZED_SIGNING);
     }
 
     if(idx == 0) // The root cert
