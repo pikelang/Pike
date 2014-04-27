@@ -16,26 +16,30 @@ import Standards.PKCS;
 #define DBG(X ...)
 #endif
 
-//!
-constant CERT_TOO_OLD = 1;
+enum CertFailure
+{
+  //!
+  CERT_TOO_OLD = 1<<0,
 
-//!
-constant CERT_TOO_NEW = 2;
+  //!
+  CERT_TOO_NEW = 1<<1,
 
-//!
-constant CERT_INVALID = 3;
+  //!
+  CERT_INVALID = 1<<2,
 
-//!
-constant CERT_CHAIN_BROKEN = 4;
+  //!
+  CERT_CHAIN_BROKEN = 1<<3,
 
-//!
-constant CERT_ROOT_UNTRUSTED = 5;
+  //!
+  CERT_ROOT_UNTRUSTED = 1<<4,
 
-//!
-constant CERT_BAD_SIGNATURE = 6;
+  //!
+  CERT_BAD_SIGNATURE = 1<<5,
 
-// A CA certificate does not have the CA basic constraint.
-constant CERT_UNAUTHORIZED_CA = 7;
+  //! A CA certificate is not allowed by basic constraints to sign
+  //! another certificate.
+  CERT_UNAUTHORIZED_CA = 1<<6,
+}
 
 
 // Bit 0 is the first bit in the BitString.
@@ -1403,10 +1407,11 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!
 //! @mapping
 //!   @member int "error_code"
-//!     Error describing type of verification failure, if verification failed.
-//!     May be one of the following: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
-//!       @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
-//!       or @[CERT_CHAIN_BROKEN]
+//!     Error describing type of verification failurew, if
+//!     verification failed. May be one of the following, OR:ed
+//!     together: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
+//!     @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
+//!     or @[CERT_CHAIN_BROKEN].
 //!   @member int "error_cert"
 //!     Index number of the certificate that caused the verification failure.
 //!   @member int(0..1) "self_signed"
@@ -1437,11 +1442,12 @@ mapping verify_certificate_chain(array(string) cert_chain,
                                  int|void require_trust)
 {
   mapping m = ([ ]);
+
 #define ERROR(X) do { \
     DBG("Error " #X "\n"); \
-    m->verified=0; m->error_code=(X); m->error_cert=idx; \
-    return m; \
+    m->verified=0; m->error_code|=(X); m->error_cert=idx; \
     } while(0)
+#define FATAL(X) do { ERROR(X); return m; } while(0)
 
   // Decode all certificates in the chain. Leaf is first and root is
   // last.
@@ -1455,7 +1461,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
      object cert = Standards.ASN1.Decode.simple_der_decode(c);
      TBSCertificate tbs = decode_certificate(cert);
      if(!tbs)
-       ERROR(CERT_INVALID);
+       FATAL(CERT_INVALID);
 
      int idx = len-idx-1;
      chain_cert[idx] = cert;
@@ -1563,4 +1569,5 @@ mapping verify_certificate_chain(array(string) cert_chain,
   return m;
 
 #undef ERROR
+#undef FATAL
 }
