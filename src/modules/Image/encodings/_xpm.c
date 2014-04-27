@@ -320,8 +320,7 @@ void f__xpm_write_rows( INT32 args )
    {
      rgba_group **p_colors;
      int i;
-     p_colors = (rgba_group **)xalloc(sizeof(rgba_group *)*65536);
-     MEMSET(p_colors, 0, sizeof(rgba_group *)*65536);
+     p_colors = xcalloc(sizeof(rgba_group *), 65536);
      for(i=0; i<colors->size; i++)
      {
        struct pike_string *c = colors->item[i].u.string;
@@ -329,8 +328,7 @@ void f__xpm_write_rows( INT32 args )
        unsigned short id = extract_short((unsigned char *)c->str);
        if(!p_colors[id])
        {
-         p_colors[id] = (rgba_group *)xalloc(sizeof(rgba_group)*128);
-         MEMSET(p_colors[id],0,sizeof(rgba_group)*128);
+         p_colors[id] = xcalloc(sizeof(rgba_group), 128);
        }
        if(ind > 127) 
        {

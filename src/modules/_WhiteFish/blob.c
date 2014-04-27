@@ -155,8 +155,7 @@ int wf_blob_docid( Blob *b )
 
 Blob *wf_blob_new( struct svalue *feed, struct pike_string *word )
 {
-  Blob *b = malloc( sizeof( Blob ) );
-  MEMSET(b, 0, sizeof(Blob) );
+  Blob *b = calloc( 1, sizeof( Blob ) );
   b->word = word;
   if( word )
     add_ref(word);

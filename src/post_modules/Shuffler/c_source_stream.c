@@ -167,9 +167,8 @@ struct source *source_stream_make( struct svalue *s,
   if (find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  res = malloc( sizeof( struct fd_source ) );
+  res = calloc( 1, sizeof( struct fd_source ) );
   if (!res) return NULL;
-  MEMSET( res, 0, sizeof( struct fd_source ) );
 
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;

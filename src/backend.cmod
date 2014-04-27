@@ -238,8 +238,7 @@ static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
       fd_map = (struct Backend_struct **)
 	realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
     } else {
-      fd_map = (struct Backend_struct **)
-	malloc(sizeof(struct Backend_struct *) * fd_map_size);
+      fd_map = calloc(sizeof(struct Backend_struct *), fd_map_size);
     }
     if(!fd_map)
       Pike_fatal("Out of memory in backend:low_set_backend_for_fd.\n"
@@ -725,20 +724,14 @@ PIKECLASS Backend
 	{
 	  if (!me->call_heap) {
 	    me->call_heap_size = 128;
-	    me->call_heap =
-	      (struct Backend_CallOut_struct **)
-	      xalloc(sizeof(struct Backend_CallOut_struct *) *
-		     me->call_heap_size);
-	    MEMSET(me->call_heap, 0, sizeof(struct Backend_CallOut_struct *) *
-		   me->call_heap_size);
+	    me->call_heap = xcalloc(sizeof(struct Backend_CallOut_struct *),
+                                    me->call_heap_size);
 	    me->num_pending_calls = 0;
 	  }
 
 	  if (!me->call_hash) {
 	    me->hash_size = hashprimes[me->hash_order];
-	    me->call_hash =
-	      (struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
-	    MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
+	    me->call_hash = xcalloc(sizeof(struct hash_ent),me->hash_size);
 	  }
 	}else{
 	  struct hash_ent *new_hash;
@@ -754,13 +747,12 @@ PIKECLASS Backend
 	  me->call_heap_size *= 2;
 	  me->call_heap = new_heap;
 
-	  if((new_hash=(struct hash_ent *)malloc(sizeof(struct hash_ent)*
-						 hashprimes[me->hash_order+1])))
+	  if((new_hash=calloc(sizeof(struct hash_ent),
+                              hashprimes[me->hash_order+1])))
 	  {
 	    free(me->call_hash);
 	    me->call_hash = new_hash;
 	    me->hash_size = hashprimes[++me->hash_order];
-	    MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
 
 	    /* Re-hash */
 	    for(e=0;e<me->num_pending_calls;e++)

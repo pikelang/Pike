@@ -201,9 +201,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
 
 struct buffer *wf_buffer_new( )
 {
-  struct buffer *b = xalloc( sizeof( struct buffer ) );
-  MEMSET( b, 0, sizeof(struct buffer) );
-  return b;
+  return xcalloc( 1, sizeof( struct buffer ) );
 }
 
 void wf_buffer_append( struct buffer *b,

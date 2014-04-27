@@ -170,8 +170,8 @@ struct source *source_pikestream_make( struct svalue *s,
       (find_identifier("set_read_callback",s->u.object->prog)==-1) )
     return 0;
   
-  res = malloc( sizeof( struct pf_source ) );
-  MEMSET( res, 0, sizeof( struct pf_source ) );
+  res = calloc( 1, sizeof( struct pf_source ) );
+  if( !res ) return NULL;
 
   res->len = len;
   res->skip = start;

@@ -3971,8 +3971,8 @@ static int* ordered_calculate_errors(int dxs,int dys)
    int xf,yf;
    int x,y;
    
-   src=malloc(sizeof(int)*dxs*dys);
-   dest=malloc(sizeof(int)*dxs*dys);
+   src=calloc(sizeof(int),dxs*dys);
+   dest=calloc(sizeof(int),dxs*dys);
 
    if (!src||!dest) 
    {
@@ -3983,8 +3983,6 @@ static int* ordered_calculate_errors(int dxs,int dys)
 
    *src=0;
    sxs=sys=1;
-   MEMSET(src,0,sizeof(int)*dxs*dys);
-   MEMSET(dest,0,sizeof(int)*dxs*dys);
 
    for (;;)
    {
