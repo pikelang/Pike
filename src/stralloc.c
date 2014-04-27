@@ -622,7 +622,7 @@ static void stralloc_rehash(void)
     rehash_string_backwards(old_base[h]);
 
   if(old_base)
-    free((char *)old_base);
+    free(old_base);
 
 #ifdef PIKE_RUN_UNLOCKED
   for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
@@ -653,7 +653,7 @@ static struct block_allocator string_allocator = BA_INIT(sizeof(struct short_pik
     if (s->flags & STRING_IS_SHORT) { \
       ba_free(&string_allocator, s);  \
     } else { \
-      debug_free((char *)s, DMALLOC_LOCATION(), 1); \
+      debug_free(s, DMALLOC_LOCATION(), 1); \
     } \
   } while(0)
 
@@ -2293,7 +2293,7 @@ void cleanup_shared_string_table(void)
     base_table[e]=0;
     UNLOCK_BUCKET(e);
   }
-  free((char *)base_table);
+  free(base_table);
   base_table=0;
   num_strings=0;
 

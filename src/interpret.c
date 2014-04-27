@@ -2056,7 +2056,7 @@ void really_free_pike_scope(struct pike_frame *scope)
   if(scope->flags & PIKE_FRAME_MALLOCED_LOCALS)
   {
     free_mixed_svalues(scope->locals,scope->num_locals);
-    free((char *)(scope->locals));
+    free(scope->locals);
 #ifdef PIKE_DEBUG
     scope->flags&=~PIKE_FRAME_MALLOCED_LOCALS;
 #endif
@@ -3539,9 +3539,9 @@ PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpret
 #endif
 
   if(interpreter->evaluator_stack)
-    free((char *)interpreter->evaluator_stack);
+    free(interpreter->evaluator_stack);
   if(interpreter->mark_stack)
-    free((char *)interpreter->mark_stack);
+    free(interpreter->mark_stack);
 
   interpreter->mark_stack = 0;
   interpreter->evaluator_stack = 0;

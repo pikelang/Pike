@@ -1125,7 +1125,7 @@ static void undefine(struct cpp *this,
   free_string(d->link.s);
   if(d->first)
     free_string(d->first);
-  free((char *)d);
+  free(d);
 }
 
 /*! @directive #define
@@ -1994,7 +1994,7 @@ static void free_one_define(struct hash_entry *h)
     free_string(d->parts[e].postfix);
   if(d->first)
     free_string(d->first);
-  free((char *)d);
+  free(d);
 }
 
 static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
@@ -2802,7 +2802,7 @@ void f__take_over_initial_predefines (INT32 args)
       free(tmp->name);
       free(tmp->value);
       first_predef=tmp->next;
-      free((char *)tmp);
+      free(tmp);
     }
     last_predef = 0;
   }
@@ -2886,10 +2886,10 @@ void exit_cpp(void)
     free(tmp->name);
     free(tmp->value);
     first_predef=tmp->next;
-    free((char *)tmp);
+    free(tmp);
   }
   free_string(defined_macro->link.s);
-  free((char *)defined_macro);
+  free(defined_macro);
 
   free_string (efun_str);
   free_string (constant_str);

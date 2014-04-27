@@ -94,7 +94,7 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
   for(e=0; e<=h->mask; e++)
     rehash_list_backwards(new,h->htable[e]);
 
-  free((char *)h);
+  free(h);
   return new;
 }
 
@@ -173,8 +173,8 @@ void free_hashtable(struct hash_table *h,
       if(free_entry)
 	free_entry(i);
       else
-	free((char *)i);
+	free(i);
     }
   }
-  free((char *)h);
+  free(h);
 }

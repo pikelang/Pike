@@ -830,7 +830,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	order = get_switch_order(Pike_sp[-2].u.array);
 	order_array(Pike_sp[-2].u.array, order);
 	order_array(Pike_sp[-1].u.array, order);
-	free((char *) order);
+	free(order);
       }
 
       code_entry(TAG_MAPPING, Pike_sp[-2].u.array->size,data);
@@ -868,7 +868,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  push_array(multiset_indices(l));
 	  order = get_switch_order(Pike_sp[-1].u.array);
 	  order_array(Pike_sp[-1].u.array, order);
-	  free((char *) order);
+	  free(order);
 	  for (i = 0; i < Pike_sp[-1].u.array->size; i++)
 	    encode_value2(ITEM(Pike_sp[-1].u.array)+i, data, 0);
 	  pop_stack();
@@ -3808,7 +3808,7 @@ static void decode_value2(struct decode_data *data)
 #endif /* PIKE_DEBUG */
 		    
 		    *ptr = l->next;
-		    free((char *)l);
+		    free(l);
 		  }else{
 		    ptr=&l->next;
 		  }
@@ -3852,7 +3852,7 @@ static void decode_value2(struct decode_data *data)
 		  *(Pike_sp++) = l->decode_arg;
 
 		  *ptr = l->next;
-		  free((char *)l);
+		  free(l);
 
 		  /* Let the codec do it's job... */
 		  apply_low(decoder_codec (data), decode_fun, 2);
@@ -5016,7 +5016,7 @@ static void free_decode_data (struct decode_data *data, int delay,
   {
     struct unfinished_prog_link *tmp=data->unfinished_programs;
     data->unfinished_programs=tmp->next;
-    free((char *)tmp);
+    free(tmp);
   }
 
   while(data->unfinished_objects)
@@ -5025,7 +5025,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     data->unfinished_objects=tmp->next;
     free_svalue(&tmp->decode_arg);
     free_object(tmp->o);
-    free((char *)tmp);
+    free(tmp);
   }
 
   while(data->unfinished_placeholders)
@@ -5033,7 +5033,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     struct unfinished_obj_link *tmp=data->unfinished_placeholders;
     data->unfinished_placeholders=tmp->next;
     free_object(tmp->o);
-    free((char *)tmp);
+    free(tmp);
   }
 
 #ifdef PIKE_THREADS

@@ -262,7 +262,7 @@ void img_ras_decode(INT32 args)
 	  if(len<3) {
 	    /* Better to proceed and make a partly black image? */
 	    if(tmpdata != NULL)
-	      free((char *)tmpdata);
+	      free(tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -284,7 +284,7 @@ void img_ras_decode(INT32 args)
 	  if(len<1) {
 	    /* Better to proceed and make a partly black image? */
 	    if(tmpdata != NULL)
-	      free((char *)tmpdata);
+	      free(tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -311,7 +311,7 @@ void img_ras_decode(INT32 args)
 	      if(len<2) {
 		/* Better to proceed and make a partly black image? */
 		if(tmpdata != NULL)
-		  free((char *)tmpdata);
+		  free(tmpdata);
 		if(ctab != NULL)
 		  free_object(ctab);
 		free_object(o);
@@ -345,7 +345,7 @@ void img_ras_decode(INT32 args)
      }
 
    if(tmpdata != NULL)
-     free((char *)tmpdata);
+     free(tmpdata);
    if(ctab != NULL)
      free_object(ctab);
    pop_n_elems(args);
@@ -486,7 +486,7 @@ static void img_ras_encode(INT32 args)
       STR0(cts)[i+n] = tmp[i*3+1];
       STR0(cts)[i+2*n] = tmp[i*3+2];
     }
-    free((char *)tmp);
+    free(tmp);
     push_string(end_shared_string(cts));
     image_colortable_initiate_dither(ct, &dith, img->xsize);
     ctfunc = image_colortable_index_8bit_function(ct);

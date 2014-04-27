@@ -140,7 +140,7 @@ static void *dlopen(const char *foo, int how)
   HINSTANCE ret;
   tmp=convert_string(foo, strlen(foo));
   ret=LoadLibrary(tmp);
-  free((char *)tmp);
+  free(tmp);
   return (void *)ret;
 }
 
@@ -704,7 +704,7 @@ void free_dynamic_load(void)
     if (tmp->module_prog)
       Pike_fatal ("There's still a program for a dynamic module.\n");
 #endif
-    free((char *)tmp);
+    free(tmp);
   }
 #endif
 }

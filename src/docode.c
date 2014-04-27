@@ -2139,7 +2139,7 @@ static int do_docode2(node *n, int flags)
     order_array(Pike_sp[-1].u.array,order);
 
     reorder((void *)(current_switch.jumptable+2),cases,sizeof(INT32)*2,order);
-    free((char *)order);
+    free(order);
 
     current_switch.jumptable[1] = current_switch.less_label;
     current_switch.jumptable[current_switch.index - 1] = current_switch.greater_label;
@@ -2158,8 +2158,8 @@ static int do_docode2(node *n, int flags)
 	       store_constant(Pike_sp-1,1,0));
 
     pop_stack();
-    free((char *)jumptable);
-    free((char *)current_switch.jumptable);
+    free(jumptable);
+    free(current_switch.jumptable);
 
     current_switch = prev_switch;
 

@@ -386,13 +386,13 @@ MATCH_IS_WIDE(							\
          order[e+1]+1 != order[e]) {				\
         free_array(set->a);					\
         set->a=0;						\
-        free((char *)order);					\
+        free(order);                                            \
 	Pike_error("Overlapping ranges in sscanf not supported.\n"); \
       }								\
     }								\
 								\
     order_array(set->a,order);					\
-    free((char *)order);					\
+    free(order);                                                \
   }								\
 )								\
   return cnt;							\

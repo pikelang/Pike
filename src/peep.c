@@ -766,7 +766,7 @@ INT32 assemble(int store_linenumbers)
     }
   }
 
-  free((char *)labels);
+  free(labels);
 
 #ifdef END_FUNCTION
   END_FUNCTION(store_linenumbers);
@@ -1112,7 +1112,7 @@ static int asm_opt(void)
     relabel |= low_asm_opt();
   }
 
-  free((char *)instructions);
+  free(instructions);
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)

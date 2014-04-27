@@ -294,7 +294,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
     free_svalue(& k->ind);
   }
 
-  free((char *) md);
+  free(md);
   GC_FREE_BLOCK(md);
 }
 
@@ -551,7 +551,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_evil(new_md, md->hash[e]);
 
-    free((char *)md);
+    free(md);
     GC_FREE_BLOCK(md);
   }
 
@@ -1771,7 +1771,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
     zipper=get_set_order(ai);
     order_array(ai, zipper);
     order_array(av, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   bi=mapping_indices(b);
@@ -1785,7 +1785,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
     zipper=get_set_order(bi);
     order_array(bi, zipper);
     order_array(bv, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   zipper=merge(ai,bi,op);
@@ -1800,7 +1800,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   UNSET_ONERROR(r2); free_array(bv);
   UNSET_ONERROR(r1); free_array(av);
 
-  free((char *)zipper);
+  free(zipper);
 
   m=mkmapping(ci, cv);
   free_array(ci);
@@ -1831,7 +1831,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
     zipper=get_set_order(ai);
     order_array(ai, zipper);
     order_array(av, zipper);
-    free((char *)zipper);
+    free(zipper);
   }
 
   switch (op) /* no elements from »b» may be selected */
@@ -1853,7 +1853,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
   UNSET_ONERROR(r2); free_array(av);
   UNSET_ONERROR(r1); free_array(ai);
   
-  free((char *)zipper);
+  free(zipper);
 
   m=mkmapping(ci, cv);
   free_array(ci);

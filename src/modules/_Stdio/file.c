@@ -5299,7 +5299,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
   low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
   num_threads--;
   mt_unlock_interpreter();
-  free((char *)p);
+  free(p);
   th_exit(0);
   return 0;
 }
@@ -5346,7 +5346,7 @@ void file_proxy(INT32 args)
   num_threads++;
   if(th_create_small(&id,proxy_thread,p))
   {
-    free((char *)p);
+    free(p);
     while (fd_close(from) && errno == EINTR) {}
     while (fd_close(to) && errno == EINTR) {}
     Pike_error("Failed to create thread.\n");

@@ -4064,7 +4064,7 @@ void free_replace_many_context(struct replace_many_context *ctx)
 	free_string(ctx->empty_repl);
       }
     }
-    free ((char *) ctx->v);
+    free (ctx->v);
     ctx->v = NULL;
   }
 }
@@ -5178,7 +5178,7 @@ PMOD_EXPORT void f_sort(INT32 args)
     order = stable_sort_array_destructively(a);
     for(e=1;e<args;e++) order_array(Pike_sp[e-args].u.array,order);
     pop_n_elems(args-1);
-    free((char *)order);
+    free(order);
   }
   else {
     /* If there are only simple types in the array we can use unstable
