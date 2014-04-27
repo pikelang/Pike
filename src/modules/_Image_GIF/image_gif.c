@@ -1682,7 +1682,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
 #define MAX_GIF_CODE 4096
 
-   c=(struct lzwc*)xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
+   c=xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
 
    for (n=0; n<clearcode; n++)
       c[n].prev=0xffff,c[n].len=1,c[n].c=n;
@@ -2569,9 +2569,9 @@ static void image_gif_lzw_decode(INT32 args)
 
    last=clearcode;
 
-   c=(struct lzwc*)xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
+   c=xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
 
-   dest0=(unsigned char*)malloc(dlen0=len*4);
+   dest0=malloc(dlen0=len*4);
    if (!dest0)
    {
       free(c);

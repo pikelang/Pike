@@ -3220,7 +3220,7 @@ void f_create_process(INT32 args)
 	if (i) {
 	  /* Don't forget stdin, stdout, and stderr */
 	  num_fds = i+3;
-	  storage.fds = fds = (int *)xalloc(sizeof(int)*(num_fds));
+	  storage.fds = fds = xalloc(sizeof(int)*(num_fds));
 	  fds[0] = fds[1] = fds[2] = -1;
 	  while (i--) {
 	    if (TYPEOF(a->item[i]) == T_OBJECT) {
@@ -3389,7 +3389,7 @@ void f_create_process(INT32 args)
 	  i=mapping_indices(m);
 	  v=mapping_values(m);
 	  
-	  storage.env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
+	  storage.env=xalloc((1+m_sizeof(m)) * sizeof(char *));
 	  for(e=0;e<i->size;e++)
 	  {
 	    if(TYPEOF(ITEM(i)[e]) == T_STRING &&

@@ -59,7 +59,7 @@ int WebPMemoryWrite(const uint8_t* data, size_t data_size,
         size_t next_max_size = 2ULL * w->max_size;
         if (next_max_size < next_size) next_max_size = next_size;
         if (next_max_size < 8192ULL) next_max_size = 8192ULL;
-        new_mem = (uint8_t*)xalloc(next_max_size);
+        new_mem = xalloc(next_max_size);
         if (w->size > 0) {
             memcpy(new_mem, w->mem, w->size);
         }
@@ -399,7 +399,7 @@ PIKEFUN string encode( object i,
         if( image_width( a ) != width || image_height( a ) != height )
             Pike_error("The alpha channel does not have the same size as the image\n");
 
-        dst = rgba = (unsigned char*)xalloc( num * 4 );
+        dst = rgba = xalloc( num * 4 );
 
         while( num-- )
         {

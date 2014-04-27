@@ -320,7 +320,7 @@ INT32 assemble(int store_linenumbers)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
 #endif
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * 4 * (max_label+2));
+  labels=xalloc(sizeof(INT32) * 4 * (max_label+2));
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
   aliases = uses + max_label + 2;

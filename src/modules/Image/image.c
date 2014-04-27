@@ -633,7 +633,7 @@ void img_read_grey(INT32 args)
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
    img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
       case 0: MEMSET(d,c1,n*sizeof(rgb_group)); break;
@@ -651,7 +651,7 @@ void img_read_rgb(INT32 args)
    img_read_get_channel(1,"red",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"green",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"blue",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    switch (m1|(m2<<4)|(m3<<4))
    {
@@ -705,7 +705,7 @@ void img_read_cmyk(INT32 args)
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
    img_read_get_channel(4,"black",args,&m4,&s4,&k);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -744,7 +744,7 @@ void img_read_adjusted_cmyk(INT32 args)
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
    img_read_get_channel(4,"black",args,&m4,&s4,&k);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -801,7 +801,7 @@ void img_read_cmy(INT32 args)
    img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -913,7 +913,7 @@ void image_create_method(INT32 args)
    {
       if (args<2) push_int(0);
 
-      THIS->img=(rgb_group*)
+      THIS->img=
 	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
       if (args>2) pop_n_elems(args-2);

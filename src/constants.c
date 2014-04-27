@@ -99,7 +99,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       optimize_fun optimize,
 					       docode_fun docode)
 {
-  struct callable *f=(struct callable*)ba_alloc(&callable_allocator);
+  struct callable *f=ba_alloc(&callable_allocator);
 #ifdef PIKE_DEBUG
   DOUBLELINK(first_callable, f);
 #endif

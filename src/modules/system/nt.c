@@ -1196,7 +1196,7 @@ static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
 #define SAFE_PUSH_SID(X) do {			\
   if(getlengthsid && (X) && sid_program) {	\
     int lentmp=getlengthsid( (X) );		\
-    PSID psidtmp=(PSID)xalloc(lentmp);		\
+    PSID psidtmp=xalloc(lentmp);		\
     struct object *o=low_clone(sid_program);	\
     MEMCPY( psidtmp, (X), lentmp);		\
     (*(PSID *)(o->storage))=psidtmp;		\
@@ -2979,7 +2979,7 @@ static void f_LookupAccountName(INT32 args)
 
   if(sidlen && domainlen)
   {
-    PSID sid=(PSID)xalloc(sidlen);
+    PSID sid=xalloc(sidlen);
     struct pike_string *dom=begin_shared_string(domainlen-1);
 
     if(lookupaccountname(sys,
@@ -3102,7 +3102,7 @@ static PACL decode_acl(struct array *arr)
     size += getlengthsid( *sid ) - sizeof(DWORD);
   }
 
-  ret=(PACL)xalloc( size );
+  ret=xalloc( size );
 
   if(!initializeacl(ret, size, ACL_REVISION))
     Pike_error("InitializeAcl failed!\n");
@@ -3597,7 +3597,7 @@ static void f_sctx_create(INT32 args)
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
   if (sctx->buf)
     free(sctx->buf);
-  sctx->buf = (PBYTE)malloc(sctx->cbMaxMessage);
+  sctx->buf = malloc(sctx->cbMaxMessage);
 
   freecontextbuffer(pkgInfo);
 

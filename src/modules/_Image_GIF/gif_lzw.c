@@ -172,7 +172,7 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->codes=(1L<<bits)+2;
    lzw->bits=bits;
    lzw->codebits=bits+1;
-   lzw->code=(struct gif_lzwc*) malloc(sizeof(struct gif_lzwc)*4096);
+   lzw->code=malloc(sizeof(struct gif_lzwc)*4096);
 
    if (!lzw->code) { lzw->broken=1; return; }
 

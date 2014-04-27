@@ -261,7 +261,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     if (exp == (char *)NULL)
 	FAIL("NULL argument");
 
-    exp2=(short*)xalloc( (strlen(exp)+1) * sizeof(short) );
+    exp2=xalloc( (strlen(exp)+1) * sizeof(short) );
     for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
@@ -316,7 +316,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 	FAIL("regexp too big");
 
     /* Allocate space. */
-    r = (regexp *) xalloc(sizeof(regexp) + (unsigned) regsize);
+    r = xalloc(sizeof(regexp) + (unsigned) regsize);
 
     /* Second pass: emit code. */
     regparse = exp2;

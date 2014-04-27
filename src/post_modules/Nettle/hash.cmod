@@ -133,7 +133,7 @@ PIKECLASS Hash
       Pike_error("Hash not properly initialized.\n");
     NO_WIDE_STRING(in);
 
-    ctx = (void *)alloca(meta->context_size);
+    ctx = alloca(meta->context_size);
     if(!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
@@ -211,13 +211,11 @@ PIKECLASS Hash
     if (!S_ISREG(st.st_mode))
       Pike_error("Non-regular file.\n");
 
-    ctx = (void *)alloca(meta->context_size);
+    ctx = alloca(meta->context_size);
     if (!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
-    read_buffer=(char *)malloc(8192);
-    if (!read_buffer)
-      SIMPLE_OUT_OF_MEMORY_ERROR("hash", 8192);
+    read_buffer=xalloc(8192);
 
     THREADS_ALLOW();
     meta->init(ctx);
@@ -303,11 +301,11 @@ PIKECLASS Hash
 
     password->flags |= STRING_CLEAR_ON_EXIT;
 
-    ctx = (void *)alloca(meta->context_size);
+    ctx = alloca(meta->context_size);
     if (!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->context_size);
 
-    abcbuf = (uint8_t *)alloca(meta->digest_size * 3);
+    abcbuf = alloca(meta->digest_size * 3);
     if (!abcbuf)
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt_hash", meta->digest_size * 3);
 

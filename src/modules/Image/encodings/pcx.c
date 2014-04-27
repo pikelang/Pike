@@ -129,7 +129,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
 static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b, 
                           rgb_group *dest )
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -157,7 +157,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
                            rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -184,7 +184,7 @@ static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                                      rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   rgb_group * palette = (rgb_group *)hdr->palette;
   int width, height;
@@ -215,7 +215,7 @@ static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                              rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   /* It's at the end of the 'file' */
   rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3)); 

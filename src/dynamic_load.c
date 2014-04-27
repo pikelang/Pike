@@ -128,7 +128,7 @@ static void dlclose(void *module)
 static TCHAR *convert_string(const char *str, ptrdiff_t len)
 {
   ptrdiff_t e;
-  TCHAR *ret=(TCHAR *)xalloc((len+1) * sizeof(TCHAR));
+  TCHAR *ret=xalloc((len+1) * sizeof(TCHAR));
   for(e=0;e<len;e++) ret[e]=EXTRACT_UCHAR(str+e);
   ret[e]=0;
   return ret;

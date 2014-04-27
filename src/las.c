@@ -462,7 +462,7 @@ void really_free_node_s(node * n) {
 
 MALLOC_FUNCTION
 node * alloc_node_s() {
-    return (node*)ba_alloc(&Pike_compiler->node_allocator);
+    return ba_alloc(&Pike_compiler->node_allocator);
 }
 
 void count_memory_in_node_ss(size_t * num, size_t * size) {
@@ -2495,7 +2495,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
   struct used_vars *ret;
   struct scope_info *src;
   struct scope_info **dst;
-  ret=(struct used_vars *)xalloc(sizeof(struct used_vars));
+  ret=xalloc(sizeof(struct used_vars));
   src = a->locals;
   dst = &(ret->locals);
   *dst = NULL;

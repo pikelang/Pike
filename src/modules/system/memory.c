@@ -464,13 +464,13 @@ static void memory_allocate(INT32 args)
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
-      mem = (unsigned char *)xalloc(size);
+      mem = xalloc(size);
       MEMSET(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
-      mem = (unsigned char *)xalloc(size);
+      mem = xalloc(size);
       MEMSET(mem,c,size);
    }
 

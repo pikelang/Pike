@@ -235,8 +235,7 @@ static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
     if(!fd_map_size) fd_map_size=64;
     while(fd >= fd_map_size) fd_map_size*=2;
     if (fd_map) {
-      fd_map = (struct Backend_struct **)
-	realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
+      fd_map = realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
     } else {
       fd_map = calloc(sizeof(struct Backend_struct *), fd_map_size);
     }
@@ -731,7 +730,7 @@ PIKECLASS Backend
 
 	  if (!me->call_hash) {
 	    me->hash_size = hashprimes[me->hash_order];
-	    me->call_hash = xcalloc(sizeof(struct hash_ent),me->hash_size);
+	    me->call_hash = xcalloc(sizeof(struct hash_ent), me->hash_size);
 	  }
 	}else{
 	  struct hash_ent *new_hash;

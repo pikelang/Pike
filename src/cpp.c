@@ -1071,8 +1071,8 @@ static struct define *alloc_empty_define(struct pike_string *name,
 					 ptrdiff_t parts)
 {
   struct define *def;
-  def=(struct define *)xalloc(sizeof(struct define)+
-			      sizeof(struct define_part) * (parts -1));
+  def=xalloc(sizeof(struct define)+
+             sizeof(struct define_part) * (parts -1));
   def->magic=0;
   def->args=-1;
   def->inside=0;
@@ -2856,17 +2856,17 @@ void add_predefine(char *s)
   char * pos=STRCHR(s,'=');
   if(pos)
   {
-    tmp->name=(char *)xalloc(pos-s+1);
+    tmp->name=xalloc(pos-s+1);
     MEMCPY(tmp->name,s,pos-s);
     tmp->name[pos-s]=0;
 
-    tmp->value=(char *)xalloc(s+strlen(s)-pos);
+    tmp->value=xalloc(s+strlen(s)-pos);
     MEMCPY(tmp->value,pos+1,s+strlen(s)-pos);
   }else{
-    tmp->name=(char *)xalloc(strlen(s)+1);
+    tmp->name=xalloc(strlen(s)+1);
     MEMCPY(tmp->name,s,strlen(s)+1);
 
-    tmp->value=(char *)xalloc(4);
+    tmp->value=xalloc(4);
     MEMCPY(tmp->value," 1 ",4);
   }
   tmp->next = NULL;

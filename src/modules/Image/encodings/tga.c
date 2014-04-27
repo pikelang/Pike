@@ -287,7 +287,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     {
       /* Allocate the state buffer if we haven't already. */
       if (!statebuf)
-        statebuf = (unsigned char *) malloc (RLE_PACKETSIZE * datasize);
+        statebuf = malloc (RLE_PACKETSIZE * datasize);
       p = statebuf;
     }
 
@@ -556,7 +556,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
 
   /* Allocate the data. */
-  data = (guchar *) malloc (ROUNDUP_DIVIDE((width * height * bpp), 8));
+  data = malloc (ROUNDUP_DIVIDE((width * height * bpp), 8));
   if(!data)
     Pike_error("TGA: malloc failed\n");
 

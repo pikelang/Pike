@@ -669,11 +669,11 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 #endif
   if (len <= SHORT_STRING_THRESHOLD)
   {
-    t=(struct pike_string *)ba_alloc(&string_allocator);
+    t=ba_alloc(&string_allocator);
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED | STRING_IS_SHORT;
   } else
   {
-    t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
+    t=xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
 #ifdef ATOMIC_SVALUE
@@ -806,11 +806,10 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
     if (shift > 2)
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
-    t=(struct pike_string *)ba_alloc(&string_allocator);
+    t=ba_alloc(&string_allocator);
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;
   } else {
-    t=(struct pike_string *)xalloc(((len + 1)<<shift) +
-				   sizeof(struct pike_string_hdr));
+    t=xalloc(((len + 1)<<shift) + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
 #ifdef ATOMIC_SVALUE
@@ -1733,9 +1732,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
       return a;
     }
   } else {
-    r=(struct pike_string *)realloc((char *)a,
-				    sizeof(struct pike_string_hdr)+
-				    ((size+1)<<a->size_shift));
+    r=realloc(a, sizeof(struct pike_string_hdr)+((size+1)<<a->size_shift));
   }
 
   if(!r)
@@ -2229,7 +2226,7 @@ void init_shared_string_table(void)
 #ifdef PIKE_RUN_UNLOCKED
   {
     int h;
-    bucket_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*BUCKET_LOCKS);
+    bucket_locks=xalloc(sizeof(PIKE_MUTEX_T)*BUCKET_LOCKS);
     for(h=0;h<BUCKET_LOCKS;h++) mt_init(bucket_locks + h);
   }
 #endif

@@ -92,8 +92,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
     Pike_error("Too large array (size %ld exceeds %ld).\n",
 	       (long)(size+extra_space-1),
 	       (long)((LONG_MAX-sizeof(struct array))/sizeof(struct svalue)) );
-  v=(struct array *)malloc(sizeof(struct array)+
-			   (size+extra_space-1)*sizeof(struct svalue));
+  v=malloc(sizeof(struct array)+
+           (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
     Pike_error(msg_out_of_mem_2, sizeof(struct array)+
 	       (size+extra_space-1)*sizeof(struct svalue));
@@ -877,7 +877,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
   if(!v->size) return 0;
 
   /* Overlow safe: ((1<<29)-4)*4 < ULONG_MAX */
-  current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
+  current_order=xalloc(v->size * sizeof(INT32));
   SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
 
@@ -1278,7 +1278,7 @@ PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
   if(!v->size) return NULL;
 
   /* Overflow safe: ((1<<29)-4)*4 < ULONG_MAX */
-  current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
+  current_order=xalloc(v->size * sizeof(INT32));
   SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
 
@@ -1545,13 +1545,13 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
     {
     case PIKE_ARRAY_OP_AND:
       /* Trivially overflow safe */
-      ret=(INT32 *)xalloc(sizeof(INT32));
+      ret=xalloc(sizeof(INT32));
       *ret=0;
       return ret;
 
     case PIKE_ARRAY_OP_SUB:
       /* Overlow safe: ((1<<29)-4+1)*4 < ULONG_MAX */
-      ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size+1));
+      ptr=ret=xalloc(sizeof(INT32)*(a->size+1));
       *(ptr++)=a->size;
       for(i=0;i<a->size;i++) *(ptr++)=i;
       return ret;
@@ -1561,7 +1561,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   /* Note: The following is integer overflow safe as long as
    *       sizeof(struct svalue) >= 2*sizeof(INT32).
    */
-  ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size + b->size + 1));
+  ptr=ret=xalloc(sizeof(INT32)*(a->size + b->size + 1));
   SET_ONERROR(r, free,ret);
   ptr++;
 
@@ -1923,7 +1923,7 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
     arra=ITEM(a);
   }else{
     /* Overlow safe: ((1<<29)-4)*8 < ULONG_MAX */
-    arra=(struct svalue *)xalloc(a->size*sizeof(struct svalue));
+    arra=xalloc(a->size*sizeof(struct svalue));
     MEMCPY(arra,ITEM(a),a->size*sizeof(struct svalue));
     SET_ONERROR(r3,free,arra);
   }
@@ -1933,7 +1933,7 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
     arrb=ITEM(b);
   }else{
     /* Overlow safe: ((1<<29)-4)*8 < ULONG_MAX */
-    arrb=(struct svalue *)xalloc(b->size*sizeof(struct svalue));
+    arrb=xalloc(b->size*sizeof(struct svalue));
     MEMCPY(arrb,ITEM(b),b->size*sizeof(struct svalue));
     SET_ONERROR(r4,free,arrb);
   }

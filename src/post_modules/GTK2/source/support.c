@@ -437,7 +437,7 @@ void push_atom(GdkAtom a) {
 void push_Xpseudo32bitstring(void *f, int nelems) {
   if (sizeof(long)!=4) {
     long *q=(long *)f;
-    int *res=(int *)xalloc(nelems*4),i;
+    int *res=xalloc(nelems*4),i;
     for (i=0; i<nelems; i++)
       res[i]=q[i];
     push_string(make_shared_binary_string2((const p_wchar2 *)res,nelems));
