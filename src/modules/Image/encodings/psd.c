@@ -206,8 +206,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
   while( count-- )
   {
     unsigned int cnt;
-    struct layer *l=
-      layer = (struct layer *)xcalloc( sizeof( struct layer ), 1);
+    struct layer *l = layer = xcalloc( sizeof( struct layer ), 1);
     layer->next = dst->first_layer;
     if(dst->first_layer) dst->first_layer->prev = layer;
     dst->first_layer = layer;

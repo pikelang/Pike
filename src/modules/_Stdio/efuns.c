@@ -1458,7 +1458,7 @@ void f_getcwd(INT32 args)
 
   size=1000;
   do {
-    tmp=(char *)xalloc(size);
+    tmp=xalloc(size);
     e = getcwd(tmp,size);
     if (e || errno!=ERANGE) break;
     free(tmp);
@@ -1559,7 +1559,7 @@ void f_exece(INT32 args)
       SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
   }
 
-  argv=(char **)xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
+  argv=xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
   
   argv[0]=sp[0-args].u.string->str;
 
@@ -1576,7 +1576,7 @@ void f_exece(INT32 args)
     INT32 e, i = 0;
     struct keypair *k;
 
-    env=(char **)malloc((1+m_sizeof(en)) * sizeof(char *));
+    env=malloc((1+m_sizeof(en)) * sizeof(char *));
     if(!env) {
       free(argv);
       SIMPLE_OUT_OF_MEMORY_ERROR("exece", (1+m_sizeof(en)*sizeof(char *)));

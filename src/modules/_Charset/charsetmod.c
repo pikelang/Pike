@@ -1275,7 +1275,7 @@ static void f_create_sjise(INT32 args)
   s->lo = 0x5c;
   s->hi = 0xfffd;
 
-  s->revtab = (p_wchar1 *)xcalloc(s->hi-s->lo, sizeof(p_wchar1));
+  s->revtab = xcalloc(s->hi-s->lo, sizeof(p_wchar1));
 
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
@@ -1343,7 +1343,7 @@ static void f_create_euce(INT32 args)
   s->lo = 128;
   s->hi = 128;
 
-  s->revtab = (p_wchar1 *)xcalloc(65536-s->lo, sizeof(p_wchar1));
+  s->revtab = xcalloc(65536-s->lo, sizeof(p_wchar1));
 
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
@@ -1400,7 +1400,7 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
   pop_n_elems(allargs);
   push_object(o);
   s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
-  s8->revtab = (p_wchar0 *)xcalloc(hi-lo, sizeof(p_wchar0));
+  s8->revtab = xcalloc(hi-lo, sizeof(p_wchar0));
   s8->lo = lo;
   s8->hi = hi;
   s8->lowtrans = 0;
@@ -1418,7 +1418,7 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   pop_n_elems(allargs);
   push_object(o);
   s16 = (struct std16e_stor *)(sp[-1].u.object->storage+std16e_stor_offs);
-  s16->revtab = (p_wchar1 *)xcalloc(hi-lo, sizeof(p_wchar1));
+  s16->revtab = xcalloc(hi-lo, sizeof(p_wchar1));
   s16->lo = lo;
   s16->hi = hi;
   s16->lowtrans = 0;

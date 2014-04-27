@@ -1390,7 +1390,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  int inherit_num = 1;
 	  struct svalue str_sval;
-	  char *id_dumped = (char *) alloca(p->num_identifiers);
+	  char *id_dumped = alloca(p->num_identifiers);
 	  int d_min = 0;
 	  MEMSET(id_dumped,0,p->num_identifiers);
 	  SET_SVAL(str_sval, T_STRING, 0, string, NULL);
@@ -3727,8 +3727,8 @@ static void decode_value2(struct decode_data *data)
 			   "Placeholder already has storage!\n");
 	    } else {
 	      placeholder->storage=p->storage_needed ?
-		(char *)xcalloc(p->storage_needed, 1) :
-		(char *)NULL;
+		xcalloc(p->storage_needed, 1) :
+		NULL;
 	      call_c_initializers(placeholder);
 	    }
 	  }

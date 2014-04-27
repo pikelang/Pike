@@ -172,7 +172,7 @@ mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit)
   if (prime_limit)
     {
       /* Compute residues modulo small odd primes */
-      moduli = (unsigned long*) alloca(prime_limit * sizeof(*moduli));
+      moduli = alloca(prime_limit * sizeof(*moduli));
       for (i = 0; i < prime_limit; i++)
 	moduli[i] = mpz_fdiv_ui(p, primes[i + 1]);
     }

@@ -4067,7 +4067,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    int n=sz;
    double q;
 
-   d=dest=(int*)malloc(sizeof(int)*sz);
+   d=dest=malloc(sizeof(int)*sz);
    if (!d) return d;
 
    if (sz!=1) q = DO_NOT_WARN(1.0/(sz-1)); else q=1.0;

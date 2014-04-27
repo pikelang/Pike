@@ -202,7 +202,7 @@ static void image_x_encode_truecolor(INT32 args)
 
    if (nct) 
    {
-      tmp=(rgb_group*)xalloc(sizeof(rgb_group)*img->xsize*img->ysize +RGB_VEC_PAD);
+      tmp=xalloc(sizeof(rgb_group)*img->xsize*img->ysize +RGB_VEC_PAD);
       if (!image_colortable_map_image(nct,img->img,tmp,
 				      img->xsize*img->ysize,img->xsize))
       {

@@ -198,7 +198,7 @@ static boolean my_jpeg_marker_parser(j_decompress_ptr cinfo)
    length-=2;
    length &= 0xffff;
 
-   mm=(struct my_marker*)xalloc(sizeof(struct my_marker)+length);
+   mm=xalloc(sizeof(struct my_marker)+length);
    mm->id=cinfo->unread_marker;
    mm->len=length;
    mm->next=mds->first_marker;
@@ -242,7 +242,7 @@ static boolean my_empty_output_buffer(struct jpeg_compress_struct *cinfo)
    char *new;
 
    pos=dm->len; /* foo! dm->len-dm->pub.free_in_buffer; */
-   new=(char*)realloc(dm->buf,dm->len+BUF_INCREMENT);
+   new=realloc(dm->buf,dm->len+BUF_INCREMENT);
    if (!new) return FALSE;
 
    dm->buf = new;

@@ -114,8 +114,8 @@ void image_dct(INT32 args)
 		   "Bad arguments to image->dct()\n");
    }
 
-   if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
-				     img->xsize*img->ysize+RGB_VEC_PAD)))
+   if (!(img->img=malloc(sizeof(rgb_group)*
+                         img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free(area);
       free(costbl);

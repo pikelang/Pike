@@ -310,9 +310,9 @@ static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
     Pike_fatal ("Allocating multiset data blocks within gc is not allowed.\n");
 #endif
 
-  msd = (struct multiset_data *) xalloc (
-    flags & MULTISET_INDVAL ?
-    NODE_OFFSET (msnode_indval, allocsize) : NODE_OFFSET (msnode_ind, allocsize));
+  msd = xalloc ( flags & MULTISET_INDVAL ?
+                 NODE_OFFSET (msnode_indval, allocsize) :
+                 NODE_OFFSET (msnode_ind, allocsize) );
   msd->refs = msd->noval_refs = 0;
   msd->root = NULL;
   msd->allocsize = allocsize;

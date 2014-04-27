@@ -66,8 +66,8 @@ static void rehash_list_backwards(struct hash_table *h,
 struct hash_table *create_hash_table(void)
 {
   struct hash_table *new;
-  new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
-				  (NEW_HASHTABLE_SIZE-1)*sizeof(struct hash_entry *));
+  new=calloc(1, sizeof(struct hash_table)+
+             (NEW_HASHTABLE_SIZE-1)*sizeof(struct hash_entry *));
   new->entries=0;
   new->mask=NEW_HASHTABLE_SIZE-1;
   return new;
@@ -86,8 +86,8 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
     Pike_fatal("Size is not a power of two! Size: 0x%08x\n", size);
 #endif
 
-  new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
-				  (size-1)*sizeof(struct hash_entry *));
+  new=calloc(1, sizeof(struct hash_table)+
+             (size-1)*sizeof(struct hash_entry *));
   new->mask = size - 1;
   new->entries = h->entries;
 

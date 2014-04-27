@@ -730,7 +730,7 @@ static void ttf_translate_8bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
@@ -747,7 +747,7 @@ static void ttf_translate_16bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)

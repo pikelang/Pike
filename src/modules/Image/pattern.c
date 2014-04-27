@@ -251,8 +251,8 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    else if (s->u.array->size<2)
       Pike_error("Colorrange array too small (meaningless) (to %s)\n",where);
 
-   vp=v=(void*)xalloc(sizeof(double)*(s->u.array->size/2+1));
-   rgbp=rgb=(void*)xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
+   vp=v=xalloc(sizeof(double)*(s->u.array->size/2+1));
+   rgbp=rgb=xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
 
    for (i=0; i<s->u.array->size-1; i+=2)
    {

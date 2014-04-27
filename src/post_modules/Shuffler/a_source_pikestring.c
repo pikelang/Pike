@@ -61,7 +61,7 @@ struct source *source_pikestring_make( struct svalue *s,
   if( s->u.string->size_shift )    return 0;
 
   res = calloc( 1, sizeof( struct ps_source ) );
-  if( !res ) retrun NULL;
+  if( !res ) return NULL;
   debug_malloc_touch( res );
   debug_malloc_touch( s );
 

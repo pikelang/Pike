@@ -2086,8 +2086,8 @@ static int do_docode2(node *n, int flags)
     current_switch.less_label=-1;
     current_switch.greater_label=-1;
     current_switch.default_label=-1;
-    current_switch.jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
-    jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
+    current_switch.jumptable=xalloc(sizeof(INT32)*(cases*2+2));
+    jumptable=xalloc(sizeof(INT32)*(cases*2+2));
 
     for(e=1; e<cases*2+2; e++)
     {

@@ -843,7 +843,7 @@ void f_setgroups(INT32 args)
 
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
-    gids = (gid_t *)alloca(arr->size * sizeof(gid_t));
+    gids = alloca(arr->size * sizeof(gid_t));
     if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
   } else {
     gids = (gid_t *)safeguard;
@@ -892,7 +892,7 @@ void f_getgroups(INT32 args)
     /* OS which doesn't understand this convention */
     numgrps = NGROUPS_MAX;
   }
-  gids = (gid_t *)xalloc(sizeof(gid_t) * numgrps);
+  gids = xalloc(sizeof(gid_t) * numgrps);
 
   numgrps = getgroups(numgrps, gids);
 

@@ -1560,7 +1560,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
 {
   ptrdiff_t len=strlen(dir);
   char *foo;
-  DIR *ret=(DIR *)malloc(sizeof(DIR) + len+5);
+  DIR *ret=malloc(sizeof(DIR) + len+5);
   if(!ret)
   {
     errno=ENOMEM;
@@ -1623,7 +1623,7 @@ struct fd_mapper
 void init_fd_mapper(struct fd_mapper *x)
 {
   x->size=64;
-  x->data=(void **)xalloc(x->size*sizeof(void *));
+  x->data=xalloc(x->size*sizeof(void *));
 }
 
 void exit_fd_mapper(struct fd_mapper *x)
@@ -1636,7 +1636,7 @@ void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
   while(fd>=x->size)
   {
     x->size*=2;
-    x->data=(void **)realloc((char *)x->data, x->size*sizeof(void *));
+    x->data=realloc(x->data, x->size*sizeof(void *));
     if(!x->data)
       Pike_fatal("Out of memory.\n");
     x->data=nd;
@@ -1667,7 +1667,7 @@ void init_fd_mapper(struct fd_mapper *x)
   int i;
   x->num=0;
   x->hsize=127;
-  x->data=(struct fd_mapper_data *)xalloc(x->hsize*sizeof(struct fd_mapper_data));
+  x->data=xalloc(x->hsize*sizeof(struct fd_mapper_data));
   for(i=0;i<x->hsize;i++) x->data[i].fd=-1;
 }
 
@@ -1686,7 +1686,7 @@ void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
     int i,old_size=x->hsize;
     x->hsize*=3;
     x->num=0;
-    x->data=(struct fd_mapper_data *)xalloc(x->size*sizeof(struct fd_mapper_data *));
+    x->data=xalloc(x->size*sizeof(struct fd_mapper_data *));
     for(i=0;i<x->size;i++) x->data[i].fd=-1;
     for(i=0;i<old_size;i++)
       if(old[i].fd!=-1)
@@ -1780,7 +1780,7 @@ void store_fd_data(FD fd, int key, void *data)
     else
       hash_size*=3;
 
-    htable=(struct fd_data_hash **)xalloc(hash_size * sizeof(struct fd_data_hash *));
+    htable=xalloc(hash_size * sizeof(struct fd_data_hash *));
     
     for(h=0;h<old_hsize;h++)
     {

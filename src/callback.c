@@ -212,7 +212,7 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func free_func)
 {
   struct callback *l;
-  l=(struct callback*)ba_alloc(&callback_allocator);
+  l=ba_alloc(&callback_allocator);
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;

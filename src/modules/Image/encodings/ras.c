@@ -236,7 +236,7 @@ void img_ras_decode(INT32 args)
 	img_sz = ((rs.ras_width+1)&~1)*3*rs.ras_height;
 	break;
      }
-     tmpdata = (unsigned char *)xalloc(img_sz);
+     tmpdata = xalloc(img_sz);
      len = unpack_rle(src, len, tmpdata, img_sz);
      src = tmpdata;
    }
@@ -479,7 +479,7 @@ static void img_ras_encode(INT32 args)
       STR0(cts)[rs.ras_maplength] = '\0';
       rs.ras_maplength++;
     }
-    tmp = (unsigned char *)xalloc(rs.ras_maplength);
+    tmp = xalloc(rs.ras_maplength);
     image_colortable_write_rgb(ct, tmp);
     for(i=0; i<n; i++) {
       STR0(cts)[i] = tmp[i*3];
@@ -556,7 +556,7 @@ static void img_ras_encode(INT32 args)
     image_colortable_free_dither(&dith);
 
   {
-    unsigned char *pkdata = (unsigned char *)xalloc(rs.ras_length+16);
+    unsigned char *pkdata = xalloc(rs.ras_length+16);
     unsigned char *pk = pkdata, *src = STR0(res2);
     ptrdiff_t pklen = 0, pkleft = rs.ras_length+16;
     for(y=0; y<img->ysize; y++) {

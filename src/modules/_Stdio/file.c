@@ -1889,8 +1889,7 @@ static void file_write(INT32 args)
       push_int(0);
       return;
     } else {
-      struct iovec *iovbase =
-	(struct iovec *)xalloc(sizeof(struct iovec)*a->size);
+      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
       struct iovec *iov = iovbase;
       int iovcnt = a->size;
 

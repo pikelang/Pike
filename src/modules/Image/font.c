@@ -343,7 +343,7 @@ void font_load(INT32 args)
 	else
 	{
 #endif
-	  fh = (struct file_head *)xalloc(size);
+	  fh = xalloc(size);
 #ifdef FONT_DEBUG
 	  fprintf(stderr,"FONT Malloced %p (%d)\n", fh, size);
 #endif
@@ -532,7 +532,7 @@ void font_write(INT32 args)
 
    maxwidth2=1;
 
-   width_of=(int *)xalloc((args+1)*sizeof(int));
+   width_of=xalloc((args+1)*sizeof(int));
    SET_ONERROR(err, free, width_of);
 
    for (j=0; j<args; j++)

@@ -1017,7 +1017,7 @@ static void sf_create(INT32 args)
     iovcnt = 2;
 #endif /* HAVE_HPUX_SENDFILE */
 
-    sf.iovs = (struct iovec *)xalloc(sizeof(struct iovec) * iovcnt);
+    sf.iovs = xalloc(sizeof(struct iovec) * iovcnt);
 
     sf.hd_iov = sf.iovs;
 #ifdef HAVE_HPUX_SENDFILE
@@ -1120,16 +1120,10 @@ static void sf_create(INT32 args)
 
   if (sf.from_file) {
     /* We may need a buffer to hold the data */
-    if (sf.iovs) {
-      ONERROR tmp;
-      SET_ONERROR(tmp, free, sf.iovs);
-
-      sf.buffer = (char *)xalloc(BUF_SIZE);
-
-      UNSET_ONERROR(tmp);
-    } else {
-      sf.buffer = (char *)xalloc(BUF_SIZE);
-    }
+    ONERROR tmp;
+    SET_ONERROR(tmp, free, sf.iovs);
+    sf.buffer = xalloc(BUF_SIZE);
+    UNSET_ONERROR(tmp);
     sf.buf_size = BUF_SIZE;
   }
 

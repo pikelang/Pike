@@ -516,7 +516,7 @@ static struct level read_level( struct buffer *buff,
   {
     struct buffer ob = *initial;
     int offset2 = read_uint( buff );
-    struct tile *tile = (struct tile *)xalloc(sizeof(struct tile));
+    struct tile *tile = xalloc(sizeof(struct tile));
     read_data( &ob, offset );
     if(last_tile)
       last_tile->next = tile;
@@ -568,7 +568,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s = (struct property *)xalloc(sizeof(struct property));
+      struct property *s = xalloc(sizeof(struct property));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -605,7 +605,7 @@ static struct channel read_channel( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s =(struct property *)xalloc( sizeof(struct property ));
+      struct property *s = xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -644,7 +644,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s=(struct property *)xalloc( sizeof(struct property ));
+      struct property *s=xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -657,7 +657,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   if(lm_offset)
   {
     struct buffer loffset = *initial;
-    struct layer_mask *m=(struct layer_mask *)xalloc(sizeof(struct layer_mask));
+    struct layer_mask *m=xalloc(sizeof(struct layer_mask));
     res.mask = m;
     read_data( &loffset, lm_offset );
     MEMSET(m, 0, sizeof( struct layer_mask ));
@@ -712,7 +712,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_property( data );
     if(tmp.type)
     {
-      struct property *s= (struct property *)xalloc( sizeof(struct property ));
+      struct property *s=xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -727,7 +727,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_layer( &layer_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct layer *s = (struct layer *)xalloc( sizeof(struct layer));
+      struct layer *s = xalloc( sizeof(struct layer));
       *s = tmp;
       s->next = res.first_layer;
       res.first_layer = s;
@@ -742,7 +742,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_channel( &channel_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct channel *s = (struct channel *)xalloc( sizeof(struct channel));
+      struct channel *s = xalloc( sizeof(struct channel));
       *s = tmp;
       s->next = res.first_channel;
       res.first_channel = s;
@@ -1239,7 +1239,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       int i;
       od.s = NULL;
       od.len = eheight*ewidth*bpp;  /* Max and only size, really */
-      df = (char *)(od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 ));
+      df = (char *)(od.str = xalloc( eheight*ewidth*bpp+1 ));
       d = od;
 
       for(i=0; i<bpp; i++)

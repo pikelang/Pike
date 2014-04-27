@@ -715,7 +715,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
       case 0:
 	{
 	  /* Extra byte added to avoid zero length allocation */
-	  jchar *newstr = (jchar *) xalloc(2 * sv->u.string->len + 1);
+	  jchar *newstr = xalloc(2 * sv->u.string->len + 1);
 	  INT32 i;
 	  p_wchar0 *p = STR0(sv->u.string);
 	  for(i=sv->u.string->len; --i>=0; )
@@ -734,7 +734,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 	{
 	  /* FIXME?: Does not make surrogates for plane 1-16 in group 0... */
 	  /* Extra byte added to avoid zero length allocation */
-	  jchar *newstr = (jchar *) xalloc(2 * sv->u.string->len + 1);
+	  jchar *newstr = xalloc(2 * sv->u.string->len + 1);
 	  INT32 i;
 	  p_wchar2 *p = STR2(sv->u.string);
 	  for(i=sv->u.string->len; --i>=0; )
@@ -823,8 +823,8 @@ static void f_call_static(INT32 args)
     return;
   }
 
-  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
+  jargs = (m->nargs>0?xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
@@ -935,8 +935,8 @@ static void f_call_virtual(INT32 args)
     return;
   }
 
-  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
+  jargs = (m->nargs>0?xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
@@ -1047,8 +1047,8 @@ static void f_call_nonvirtual(INT32 args)
     return;
   }
 
-  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
+  jargs = (m->nargs>0?xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
@@ -2604,8 +2604,7 @@ static void f_natives_create(INT32 args)
       free(n->jnms);
       n->jnms = NULL;
     }
-    n->jnms = (JNINativeMethod *)
-      xalloc(arr->size * sizeof(JNINativeMethod));
+    n->jnms = xalloc(arr->size * sizeof(JNINativeMethod));
 
     if (n->cons) {
       mexec_free(n->cons);

@@ -1153,7 +1153,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  if(index!=0 && (ttab = transltab[mode][index-0x10])!=NULL) {
 	    switch(mode) {
 	    case MODE_94:
-	      rmap = (p_wchar1 *)xcalloc(0x10000-0x100, sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ch=0; ch<94; ch++)
 		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
 		  rmap[ttab[ch]-0x100]=ch+33;
@@ -1173,7 +1173,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_96:
-	      rmap = (p_wchar1 *)xcalloc(0x10000-0x100, sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ch=0; ch<96; ch++)
 		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
 		  rmap[ttab[ch]-0x100]=ch+32;
@@ -1193,7 +1193,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_9494:
-	      rmap = (p_wchar1 *)xcalloc(0x10000-0x100, sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ttt=ttab, ch=0; ch<94; ch++)
 		for(ch2=0; ch2<94; ch2++, ttt++)
 		if(*ttt>=0x100 && *ttt!=0xfffd)
@@ -1220,7 +1220,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_9696:
-	      rmap = (p_wchar1 *)xcalloc(0x10000-0x100, sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ttt=ttab, ch=0; ch<96; ch++)
 		for(ch2=0; ch2<96; ch2++, ttt++)
 		if(*ttt>=0x100 && *ttt!=0xfffd)

@@ -74,19 +74,19 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     size_t n = l.offset + l.block_size + l.doffset;
     struct ba_page * p;
     if (l.alignment) {
-	p = (struct ba_page*)aligned_alloc(n, l.alignment);
+	p = aligned_alloc(n, l.alignment);
     } else {
 #ifdef DEBUG_MALLOC
 	/* In debug malloc mode, calling xalloc from the block alloc may result
 	 * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
 	 */
-	p = (struct ba_page*)system_malloc(n);
+	p = system_malloc(n);
 	if (!p) {
 	    fprintf(stderr, "Fatal: Out of memory.\n");
 	    exit(17);
 	}
 #else
-	p = (struct ba_page*)xalloc(n);
+	p = xalloc(n);
 #endif
     }
     ba_clear_page(a, p, &a->l);

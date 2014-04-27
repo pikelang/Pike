@@ -27,7 +27,7 @@ PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf)
       buf->bufsize*=2;
     }while(buf->s.len+space >= buf->bufsize);
 
-    buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
+    buf->s.str=realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
       Pike_fatal("Out of memory.\n");
   }
@@ -58,7 +58,7 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
 
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)
 {
-  buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
+  buf->s.str=xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
   buf->s.len=0;
 }
