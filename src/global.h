@@ -660,10 +660,10 @@ struct iovec {
 #endif
 
 #ifdef MALLOC_DECL_MISSING
-char *malloc PROT((int));
-char *realloc PROT((char *,int));
-void free PROT((char *));
-char *calloc PROT((int,int));
+void *malloc PROT((int));
+void *realloc PROT((void *,int));
+void free PROT((void *));
+void *calloc PROT((int,int));
 #endif
 
 #ifdef GETPEERNAME_DECL_MISSING
