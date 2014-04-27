@@ -199,13 +199,11 @@ static void init_mapping(struct mapping *m,
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
-    md=(struct mapping_data *)xalloc(e);
+    md=xcalloc(1,e);
 
     m->data=md;
     md->hashsize=hashsize;
-    
-    MEMSET((char *)md->hash, 0, sizeof(struct keypair *) * md->hashsize);
-    
+
     md->free_list=MD_KEYPAIRS(md, hashsize);
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
     for(e=1;e<size;e++)
@@ -214,20 +212,20 @@ static void init_mapping(struct mapping *m,
       mark_free_svalue (&md->free_list[e-1].ind);
       mark_free_svalue (&md->free_list[e-1].val);
     }
-    md->free_list[e-1].next=0;
+    /* md->free_list[e-1].next=0; */
     mark_free_svalue (&md->free_list[e-1].ind);
     mark_free_svalue (&md->free_list[e-1].val);
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
-    md->ind_types = 0;
-    md->val_types = 0;
+    /* md->ind_types = 0; */
+    /* md->val_types = 0; */
     md->flags = flags;
-    md->size = 0;
-    md->refs=0;
+    /* md->size = 0; */
+    /* md->refs=0; */
 #ifdef ATOMIC_SVALUE
     md->ref_type = T_MAPPING_DATA;
 #endif
-    md->valrefs=0;
-    md->hardlinks=0;
+    /* md->valrefs=0; */
+    /* md->hardlinks=0; */
     md->num_keypairs=size;
   }else{
     switch (flags & MAPPING_WEAK) {
