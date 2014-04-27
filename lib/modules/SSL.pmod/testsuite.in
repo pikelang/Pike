@@ -239,7 +239,26 @@ test_do([[
 ]])
 
 test_do([[
-  SSL.context ctx = SSL.context();
+  class TestContext {
+    inherit SSL.context;
+
+    int(0..1) expect_fail;
+    SSL.alert alert_factory(SSL.connection con,
+			    int level, int description,
+			    SSL.Constants.ProtocolVersion version,
+			    string|void message)
+    {
+      if (message && !expect_fail &&
+          (description != SSL.Constants.ALERT_close_notify)) {
+	log_msg("ALERT [%s: %d: %s]: %s",
+	        SSL.Constants.fmt_version(version), level,
+	        SSL.Constants.fmt_constant(description, "ALERT"), message);
+      }
+      return ::alert_factory(con, level, description, version, message);
+    }
+  };
+  add_constant("TestContext", TestContext);
+  SSL.context ctx = TestContext();
   ctx->random = random_string;
   add_constant("server_ctx", ctx);
 ]])
@@ -313,8 +332,11 @@ test_do([[
 		      string expected,
 		      array(int) suites, int state, string got)
 	       {
-		 log_msg("SSL 3.%d..3.%d client with SSL 3.%d..3.%d server failed.\n",
-			 cmin, cmax, smin, smax);
+		 log_msg("%s..%s client with %s..%s server failed.\n",
+			 SSL.Constants.fmt_version(cmin),
+			 SSL.Constants.fmt_version(cmax),
+			 SSL.Constants.fmt_version(smin),
+			 SSL.Constants.fmt_version(smax));
 		 log_msg("Cipher_suite: %s", SSL.Constants.fmt_cipher_suites(suites));
 		 if (state != 3) {
 		   log_msg("Unexpected exit state: %d.\n", state);
@@ -416,11 +438,12 @@ test_do([[
     }
 
     // A client that supports just a single cipher suite.
-    SSL.context client_ctx = SSL.context();
+    SSL.context client_ctx = TestContext();
     client_ctx->random = random_string;
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
+    server_ctx->expect_fail = client_ctx->expect_fail = !expected;
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0);
 
     int state;
@@ -670,7 +693,7 @@ test_ssl(0x303,0x303,0x303,0x303,client_msg)
 
 test_tests([[
 object make_context(Crypto.ECC.Curve curve) {
-  SSL.context ctx = SSL.context();
+  SSL.context ctx = TestContext();
   ctx->random = random_string;
   Crypto.Sign ecdsa =
     curve->ECDSA()->set_random(random_string)->generate_key();
@@ -706,7 +729,7 @@ array(int) a() {
     tests++;
   }
 
-    return ({ successes, tests-successes });
+  return ({ successes, tests-successes });
 }
 ]])
 
@@ -718,6 +741,7 @@ test_do([[
   add_constant("pem_cert");
   add_constant("pem_key");
   add_constant("test_ssl_connection");
+  add_constant("TestContext");
 ]])
 
 cond_end
