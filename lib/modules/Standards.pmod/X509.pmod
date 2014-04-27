@@ -868,10 +868,13 @@ class TBSCertificate
   //! sign other certificates.
   int(0..1) ext_basicConstraints_cA;
 
-  //! The maximum number of intermediate certificates that may follow
-  //! this certificate in a certificate chain. @exp{-1@} in case no
-  //! limit is imposed.
-  int ext_basicConstraints_pathLenConstraint = -1;
+  //! The maximum number of certificates that may follow this
+  //! certificate in a certificate chain. @exp{0@} in case no limit is
+  //! imposed. Note that this variable is off by one compared to the
+  //! RFC 3280 definition, which only counts intermediate certificates
+  //! (i.e. 0 intermediates means this variable would be 1, as in one
+  //! following certificate).
+  int ext_basicConstraints_pathLenConstraint;
 
   protected int(0..1) parse_basicConstraints(Object o)
   {
@@ -888,7 +891,7 @@ class TBSCertificate
     {
       if( s[1]->type_name!="INTEGER" || s[0]->value==0 || s[1]->value<0 )
         return 0;
-      ext_basicConstraints_pathLenConstraint = s[1]->value;
+      ext_basicConstraints_pathLenConstraint = s[1]->value + 1;
       // FIXME: pathLenConstraint is not permitted if keyCertSign
       // isn't set in key usage.
     }
@@ -1491,13 +1494,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
       if( !tbs->ext_basicConstraints_cA )
         ERROR(CERT_UNAUTHORIZED_CA);
 
-      if( tbs->ext_basicConstraints_pathLenConstraint!=-1 )
+      if( tbs->ext_basicConstraints_pathLenConstraint )
       {
-        // pathLenConstraint is the maximum number of intermediate
-        // certificates. len-1-idx is the number of following
-        // certificates. Subtract one more to not count the leaf
-        // certificate.
-        if( len-1-idx-1 > tbs->ext_basicConstraints_pathLenConstraint )
+        // len-1-idx is the number of following certificates.
+        if( len-1-idx > tbs->ext_basicConstraints_pathLenConstraint )
         {
           // The error was later in the chain though, so maybe a
           // different error should be sent.
