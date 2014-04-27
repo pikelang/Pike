@@ -1501,8 +1501,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
       return;								\
     }									\
     m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
-    tmp = mexec_realloc((void *)state->new_program->NAME,		\
-			sizeof(TYPE) * m);				\
+    tmp = mexec_realloc(state->new_program->NAME, sizeof(TYPE) * m);    \
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
@@ -1526,8 +1525,7 @@ void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
       n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
     } while (m + cnt > n);						\
     m = n;								\
-    tmp = mexec_realloc((void *)state->new_program->NAME,		\
-			sizeof(TYPE) * m);				\
+    tmp = mexec_realloc(state->new_program->NAME, sizeof(TYPE) * m);    \
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
@@ -1559,8 +1557,7 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
       n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
     } while (m + cnt > n);						\
     m = n;								\
-    tmp = realloc((void *)state->new_program->NAME,			\
-		  sizeof(TYPE) * m);					\
+    tmp = realloc(state->new_program->NAME, sizeof(TYPE) * m);		\
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
@@ -1587,8 +1584,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
       return;								\
     }									\
     m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
-    tmp = realloc((void *)state->new_program->NAME,			\
-		  sizeof(TYPE) * m);					\
+    tmp = realloc(state->new_program->NAME, sizeof(TYPE) * m);		\
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
@@ -1619,8 +1615,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
       return;								\
     }									\
     m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
-    tmp = realloc((void *)state->new_program->NAME,			\
-		  sizeof(TYPE) * m);					\
+    tmp = realloc(state->new_program->NAME, sizeof(TYPE) * m);          \
     if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\

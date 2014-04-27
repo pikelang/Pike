@@ -736,9 +736,8 @@ PIKECLASS Backend
 	  struct hash_ent *new_hash;
 	  int e;
 
-	  new_heap = (struct Backend_CallOut_struct **)
-	    realloc((char *)me->call_heap,
-		    sizeof(struct Backend_CallOut_struct *)*me->call_heap_size*2);
+	  new_heap = realloc(me->call_heap,
+	    sizeof(struct Backend_CallOut_struct *)*me->call_heap_size*2);
 	  if(!new_heap)
 	    Pike_error("Not enough memory for another call_out\n");
 	  MEMSET(new_heap + me->call_heap_size, 0,
