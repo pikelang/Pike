@@ -563,7 +563,11 @@ class TBSCertificate
 
   protected mapping extension_types = ([
     .PKCS.Identifiers.ce_ids.authorityKeyIdentifier : ([
-                                          make_combined_tag(2,0) : OctetString,
+                                          make_combined_tag(2,0) : OctetString, // keyIdentifier
+                                        ]),
+    .PKCS.Identifiers.ce_ids.subjectAltName : ([
+                                          make_combined_tag(2,2) : IA5String, // dNSName
+                                          make_combined_tag(2,7) : OctetString, // iPAddress
                                         ]),
   ]);
 
@@ -863,6 +867,7 @@ class TBSCertificate
         EXT(subjectKeyIdentifier);   // 2.5.29.14
         EXT(keyUsage);               // 2.5.29.15
         EXT(extKeyUsage);            // 2.5.29.37
+        EXT(subjectAltName);         // 2.5.29.17
 #undef EXT
       }
     }
@@ -993,8 +998,39 @@ class TBSCertificate
   {
     if( o->type_name!="SEQUENCE" )
       return 0;
+    Sequence s = [object(Sequence)]o;
 
-    ext_extKeyUsage = o->elements;
+    ext_extKeyUsage = s->elements;
+    return 1;
+  }
+
+  array(string) ext_subjectAltName_dNSName;
+
+  array(string) ext_subjectAltName_iPAddress;
+
+  protected int(0..1) parse_subjectAltName(Object o)
+  {
+    if( o->type_name!="SEQUENCE" )
+      return 0;
+    Sequence s = [object(Sequence)]o;
+
+    foreach(s->elements, Object o)
+    {
+      switch(o->type_name)
+      {
+      case "IA5STRING":
+        if(!ext_subjectAltName_dNSName)
+          ext_subjectAltName_dNSName = ({});
+        ext_subjectAltName_dNSName += ({ o->value });
+        break;
+      case "OCTET STRING":
+        if(!ext_subjectAltName_iPAddress)
+          ext_subjectAltName_iPAddress = ({});
+        ext_subjectAltName_iPAddress += ({ o->value });
+        break;
+      }
+    }
+
     return 1;
   }
 
