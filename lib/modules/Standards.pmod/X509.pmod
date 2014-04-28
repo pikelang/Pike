@@ -962,19 +962,9 @@ class TBSCertificate
       switch(o->real_tag)
       {
       case 0:
-        if( ext_authorityKeyIdentifier_keyIdentifier )
-        {
-          ext_authorityKeyIdentifier_keyIdentifier = 0;
-          return 0;
-        }
         ext_authorityKeyIdentifier_keyIdentifier = o->value;
         break;
       case 2:
-        if( ext_authorityKeyIdentifier_authorityCertSerialNumber )
-        {
-          ext_authorityKeyIdentifier_authorityCertSerialNumber = 0;
-          return 0;
-        }
         ext_authorityKeyIdentifier_authorityCertSerialNumber = o->value;
         break;
       }}
