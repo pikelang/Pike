@@ -154,7 +154,7 @@ class Verifier {
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
-  int(0..1) verify(Sequence algorithm, string msg, string signature)
+  int(0..1) verify(Sequence algorithm, string(8bit) msg, string(8bit) signature)
   {
     DBG("Verify hash %O\n", algorithm[0]);
     Crypto.Hash hash = algorithms[algorithm[0]];
@@ -350,6 +350,16 @@ class TBSCertificate
     return elements[index];
   }
 
+  protected Sequence low_get_sequence(int index)
+  {
+    return [object(Sequence)]low_get(index);
+  }
+
+  protected Integer low_get_integer(int index)
+  {
+    return [object(Integer)]low_get(index);
+  }
+
   //!
   void `serial=(Gmp.mpz|int s)
   {
@@ -357,8 +367,7 @@ class TBSCertificate
   }
   Gmp.mpz `serial()
   {
-    Integer s = low_get(0);
-    return s->value;
+    return low_get_integer(0)->value;
   }
 
   //! Algorithm Identifier.
@@ -368,7 +377,7 @@ class TBSCertificate
   }
   Sequence `algorithm()
   {
-    return low_get(1);
+    return low_get_sequence(1);
   }
 
   //! Certificate issuer.
@@ -378,7 +387,7 @@ class TBSCertificate
   }
   Sequence `issuer()
   {
-    return low_get(2);
+    return low_get_sequence(2);
   }
 
   //!
@@ -389,32 +398,32 @@ class TBSCertificate
   }
   Sequence `validity()
   {
-    return low_get(3);
+    return low_get_sequence(3);
   }
 
   //!
   void `not_before=(int t)
   {
-    Sequence validity = low_get(3);
+    Sequence validity = low_get_sequence(3);
     validity->elements[0] = UTC()->set_posix(t);
     internal_der = UNDEFINED;
   }
   int `not_before()
   {
-    Sequence validity = low_get(3);
+    Sequence validity = low_get_sequence(3);
     return validity[0]->get_posix();
   }
 
   //!
   void `not_after=(int t)
   {
-    Sequence validity = low_get(3);
+    Sequence validity = low_get_sequence(3);
     validity->elements[1] = UTC()->set_posix(t);
     internal_der = UNDEFINED;
   }
   int `not_after()
   {
-    Sequence validity = low_get(3);
+    Sequence validity = low_get_sequence(3);
     return validity[1]->get_posix();
   }
 
@@ -425,13 +434,13 @@ class TBSCertificate
   }
   Sequence `subject()
   {
-    return low_get(4);
+    return low_get_sequence(4);
   }
 
   // Attempt to create a presentable string from the subject DER.
   string subject_str()
   {
-    Sequence subj = low_get(4);
+    Sequence subj = low_get_sequence(4);
     mapping ids = ([]);
     foreach(subj->elements, Compound pair)
     {
@@ -461,7 +470,7 @@ class TBSCertificate
   }
   Sequence `keyinfo()
   {
-    return low_get(5);
+    return low_get_sequence(5);
   }
 
   //!
