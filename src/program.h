@@ -769,6 +769,8 @@ struct Supporter
 };
 
 /* Prototypes begin here */
+PMOD_EXPORT void lock_pike_compiler(void);
+PMOD_EXPORT void unlock_pike_compiler(void);
 PMOD_EXPORT void do_free_program (struct program *p);
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(int i, void (*func)(char tmp));
