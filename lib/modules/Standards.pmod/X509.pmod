@@ -561,13 +561,25 @@ class TBSCertificate
     return UNDEFINED;
   }
 
+  protected class asn1_keyIdentifier { inherit OctetString; constant real_tag = 0; }
+  protected class asn1_certSerialNo  { inherit Integer;     constant real_tag = 2; }
+  protected class asn1_rfc822Name    { inherit IA5String;   constant real_tag = 1; }
+  protected class asn1_dNSName       { inherit IA5String;   constant real_tag = 2; }
+  protected class asn1_URI           { inherit IA5String;   constant real_tag = 6; }
+  protected class asn1_iPAddress     { inherit OctetString; constant real_tag = 7; }
+  protected class asn1_registeredID  { inherit Identifier;  constant real_tag = 8; }
+
   protected mapping extension_types = ([
     .PKCS.Identifiers.ce_ids.authorityKeyIdentifier : ([
-                                          make_combined_tag(2,0) : OctetString, // keyIdentifier
+                                          make_combined_tag(2,0) : asn1_keyIdentifier,
+                                          make_combined_tag(2,2) : asn1_certSerialNo,
                                         ]),
     .PKCS.Identifiers.ce_ids.subjectAltName : ([
-                                          make_combined_tag(2,2) : IA5String, // dNSName
-                                          make_combined_tag(2,7) : OctetString, // iPAddress
+                                          make_combined_tag(2,1) : asn1_rfc822Name,
+                                          make_combined_tag(2,2) : asn1_dNSName,
+                                          make_combined_tag(2,6) : asn1_URI,
+                                          make_combined_tag(2,7) : asn1_iPAddress,
+                                          make_combined_tag(2,8) : asn1_registeredID,
                                         ]),
   ]);
 
@@ -930,25 +942,44 @@ class TBSCertificate
   //! Set to the KeyIdentifier, if set in the extension.
   string ext_authorityKeyIdentifier_keyIdentifier;
 
+  //! Set to the CertificateSerialNumber, if set in the extension.
+  Gmp.mpz ext_authorityKeyIdentifier_authorityCertSerialNumber;
+
   protected int(0..1) parse_authorityKeyIdentifier(Object o)
   {
     if( o->type_name!="SEQUENCE" )
       return 0;
     Sequence s = [object(Sequence)]o;
 
-    foreach(s->elements, Object o)
-      if( o->type_name=="OCTET STRING" )
+    // Let's assume you can only have one unique identifier of each
+    // kind.
+    array list = filter(s->elements, lambda(Object o) { return has_index(o, "real_tag"); });
+    if( sizeof(list) != sizeof(Array.uniq(list->real_tag)) )
+      return 0;
+
+    foreach(list, Object o)
+    {
+      switch(o->real_tag)
       {
+      case 0:
         if( ext_authorityKeyIdentifier_keyIdentifier )
         {
           ext_authorityKeyIdentifier_keyIdentifier = 0;
           return 0;
         }
         ext_authorityKeyIdentifier_keyIdentifier = o->value;
-      }
+        break;
+      case 2:
+        if( ext_authorityKeyIdentifier_authorityCertSerialNumber )
+        {
+          ext_authorityKeyIdentifier_authorityCertSerialNumber = 0;
+          return 0;
+        }
+        ext_authorityKeyIdentifier_authorityCertSerialNumber = o->value;
+        break;
+      }}
 
-    // FIXME: We don't parse authorityCertIssuer nor
-    // authorityCertSerialNumber yet.
+    // FIXME: We don't parse authorityCertIssuer yet.
 
     ext_authorityKeyIdentifier = 1;
     return 1;
@@ -1004,9 +1035,16 @@ class TBSCertificate
     return 1;
   }
 
+  array(string) ext_subjectAltName_rfc822Name;
+
   array(string) ext_subjectAltName_dNSName;
 
+  array(string) ext_subjectAltName_uniformResourceIdentifier;
+
   array(string) ext_subjectAltName_iPAddress;
+
+  array(Identifier) ext_subjectAltName_registeredID;
+
 
   protected int(0..1) parse_subjectAltName(Object o)
   {
@@ -1016,20 +1054,31 @@ class TBSCertificate
 
     foreach(s->elements, Object o)
     {
-      switch(o->type_name)
+      if( !has_index(o, "real_tag") ) continue;
+#define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=0; \
+        ext_subjectAltName_##X += ({ o->value }); } while(0)
+      switch(o->real_tag)
       {
-      case "IA5STRING":
-        if(!ext_subjectAltName_dNSName)
-          ext_subjectAltName_dNSName = ({});
-        ext_subjectAltName_dNSName += ({ o->value });
+      case 1:
+        CASE(rfc822Name);
         break;
-      case "OCTET STRING":
-        if(!ext_subjectAltName_iPAddress)
-          ext_subjectAltName_iPAddress = ({});
-        ext_subjectAltName_iPAddress += ({ o->value });
+      case 2:
+        CASE(dNSName);
+        break;
+      case 6:
+        CASE(uniformResourceIdentifier);
+        break;
+      case 7:
+        CASE(iPAddress);
+        break;
+      case 8:
+        CASE(registeredID);
         break;
       }
     }
+
+    // FIXME: otherName, x400Address, directoryName and ediPartyName
+    // not supported.
 
     return 1;
   }
