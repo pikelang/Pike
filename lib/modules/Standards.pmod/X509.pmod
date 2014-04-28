@@ -561,6 +561,12 @@ class TBSCertificate
     return UNDEFINED;
   }
 
+  protected mapping extension_types = ([
+    .PKCS.Identifiers.ce_ids.authorityKeyIdentifier : ([
+                                          make_combined_tag(2,0) : OctetString,
+                                        ]),
+  ]);
+
   //! The raw ASN.1 objects from which @[extensions] and @[critical]
   //! have been generated.
   //!
@@ -606,7 +612,8 @@ class TBSCertificate
       }
 
       extensions[ id ] =
-        Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value);
+        Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value,
+                                                extension_types[id]);
       if(sizeof(ext)==3)
       {
 	if( ext[1]->type_name != "BOOLEAN" ) return 0;
@@ -903,7 +910,8 @@ class TBSCertificate
         return 0;
       ext_basicConstraints_pathLenConstraint = s[1]->value + 1;
       // FIXME: pathLenConstraint is not permitted if keyCertSign
-      // isn't set in key usage.
+      // isn't set in key usage. We need to check that at a higher
+      // level though.
     }
     ext_basicConstraints = 1;
     ext_basicConstraints_cA = s[0]->value;
@@ -914,13 +922,29 @@ class TBSCertificate
   //! extension. RFC3280 4.2.1.1.
   int(0..1) ext_authorityKeyIdentifier;
 
+  //! Set to the KeyIdentifier, if set in the extension.
+  string ext_authorityKeyIdentifier_keyIdentifier;
+
   protected int(0..1) parse_authorityKeyIdentifier(Object o)
   {
     if( o->type_name!="SEQUENCE" )
       return 0;
     Sequence s = [object(Sequence)]o;
 
-    // FIXME: Actually parse this.
+    foreach(s->elements, Object o)
+      if( o->type_name=="OCTET STRING" )
+      {
+        if( ext_authorityKeyIdentifier_keyIdentifier )
+        {
+          ext_authorityKeyIdentifier_keyIdentifier = 0;
+          return 0;
+        }
+        ext_authorityKeyIdentifier_keyIdentifier = o->value;
+      }
+
+    // FIXME: We don't parse authorityCertIssuer nor
+    // authorityCertSerialNumber yet.
+
     ext_authorityKeyIdentifier = 1;
     return 1;
   }
