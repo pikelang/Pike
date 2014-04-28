@@ -1406,9 +1406,13 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
   return res;
 }
 
-//! Decodes a certificate chain, checks the signatures. Verifies that the
-//! chain is unbroken, and that all certificates are in effect  
-//! (time-wise.) 
+//! Decodes a certificate chain, oredered from leaf to root, and
+//! checks the signatures. Verifies that the chain can be decoded
+//! correctly, is unbroken, and that all certificates are in effect
+//! (time-wise.) and allowed to sign it's child certificate.
+//!
+//! No verifications are done on the leaf certificate to determine
+//! what it can and can not be used for.
 //!
 //! Returns a mapping with the following contents, depending 
 //! on the verification of the certificate chain:
@@ -1426,12 +1430,12 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!     Non-zero if the certificate is self-signed.
 //!   @member int(0..1) "verified"
 //!     Non-zero if the certificate is verified.
-//!   @member string "authority"
-//!     @[Standards.ASN1.Sequence] of the authority RDN that verified
-//!     the chain.
-//!   @member string "cn"
-//!     @[Standards.ASN1.Sequence] of the common name RDN of the leaf
-//!     certificate.
+//!   @member Standards.ASN1.Sequence "authority"
+//!     The authority RDN that verified the chain.
+//!   @member Standards.ASN1.Sequence "cn"
+//!     The common name RDN of the leaf certificate.
+//!   @member array(TBSCertificate) "certificates"
+//!     An array with the decoded certificates, ordered from root to leaf.
 //! @endmapping
 //!
 //! @param cert_chain
@@ -1475,6 +1479,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
      chain_cert[idx] = cert;
      chain_obj[idx] = tbs;
   }
+  m->certificates = chain_obj;
 
   // Chain is now reversed so root is first and leaf is last.
 
@@ -1507,11 +1512,6 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
       if( !(tbs->ext_keyUsage & keyCertSign) )
         ERROR(CERT_UNAUTHORIZED_CA);
-    }
-    else // The leaf
-    {
-      if( !(tbs->ext_keyUsage & digitalSignature) )
-        ERROR(CERT_UNAUTHORIZED_SIGNING);
     }
 
     if(idx == 0) // The root cert
