@@ -851,10 +851,11 @@ class TBSCertificate
           if(o && !parse_##X(o)) \
             DBG("TBSCertificate: Failed to parse extension %O.\n", #X); \
         } while (0)
-        EXT(basicConstraints);
-        EXT(authorityKeyIdentifier);
-        EXT(subjectKeyIdentifier);
-        EXT(keyUsage);
+        EXT(basicConstraints);       // 2.5.29.19
+        EXT(authorityKeyIdentifier); // 2.5.29.35
+        EXT(subjectKeyIdentifier);   // 2.5.29.14
+        EXT(keyUsage);               // 2.5.29.15
+        EXT(extKeyUsage);            // 2.5.29.37
 #undef EXT
       }
     }
@@ -917,6 +918,7 @@ class TBSCertificate
   {
     if( o->type_name!="SEQUENCE" )
       return 0;
+    Sequence s = [object(Sequence)]o;
 
     // FIXME: Actually parse this.
     ext_authorityKeyIdentifier = 1;
@@ -954,6 +956,21 @@ class TBSCertificate
         char <<= 1;
       }
 
+    return 1;
+  }
+
+  //! Set to the list of extended key usages from anyExtendedKeyUsage,
+  //! if the certificate contains the extKeyUsage extensions. These
+  //! Identifier objects are typically found in
+  //! @[.PKCS.Identifiers.reverse_kp_ids]. RFC3280 4.2.1.13.
+  array(Identifier) ext_extKeyUsage;
+
+  protected int(0..1) parse_extKeyUsage(Object o)
+  {
+    if( o->type_name!="SEQUENCE" )
+      return 0;
+
+    ext_extKeyUsage = o->elements;
     return 1;
   }
 
