@@ -307,13 +307,6 @@ static void code_number(ptrdiff_t num, struct encode_data *data)
 	     num >> 4, data);
 }
 
-#ifdef _REENTRANT
-static void do_enable_threads(void)
-{
-  exit_threads_disable(NULL);
-}
-#endif
-
 /* NOTE: Take care to encode it exactly as the corresponing
  *       type string would have been encoded (cf T_FUNCTION, T_MANY,
  *       T_STRING, PIKE_T_NSTRING).
@@ -3270,13 +3263,10 @@ static void decode_value2(struct decode_data *data)
 	  char *dat=0;
 	  struct program *p;
 	  struct object *placeholder=0;
-	  ONERROR err1, err2, err3, err4;
+	  ONERROR err, err1, err2, err3, err4;
 
-#ifdef _REENTRANT
-	  ONERROR err;
-	  low_init_threads_disable();
-	  SET_ONERROR(err, do_enable_threads, 0);
-#endif
+	  lock_pike_compiler();
+	  SET_ONERROR(err, unlock_pike_compiler, 0);
 
 	  fprintf (stderr, "Warning: Using old-style encoding\n");
 
@@ -3883,10 +3873,7 @@ static void decode_value2(struct decode_data *data)
 	    }
 	  }
 
-#ifdef _REENTRANT
-	  UNSET_ONERROR(err);
-	  exit_threads_disable(NULL);
-#endif
+	  CALL_AND_UNSET_ONERROR(err);
 	  goto decode_done;
 	}
 

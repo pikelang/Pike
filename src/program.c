@@ -47,6 +47,39 @@
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
+#ifdef PIKE_THREADS
+static COND_T Pike_compiler_cond;
+static THREAD_T Pike_compiler_thread;
+static int lock_depth = 0;
+
+PMOD_EXPORT void lock_pike_compiler(void)
+{
+  while (lock_depth && (Pike_compiler_thread != th_self())) {
+    co_wait_interpreter(&Pike_compiler_cond);
+  }
+  lock_depth++;
+  Pike_compiler_thread = th_self();
+}
+
+PMOD_EXPORT void unlock_pike_compiler(void)
+{
+#ifdef PIKE_DEBUG
+  if (lock_depth < 1) {
+    Pike_fatal("Pike compiler running unlocked!\n");
+  }
+#endif
+  lock_depth--;
+  co_broadcast(&Pike_compiler_cond);
+}
+#else
+PMOD_EXPORT void lock_pike_compiler(void)
+{
+}
+PMOD_EXPORT void unlock_pike_compiler(void)
+{
+}
+#endif
+
 static void low_enter_compiler(struct object *ce, int inherit);
 static void exit_program_struct(struct program *);
 static size_t add_xstorage(size_t size,
@@ -85,8 +118,8 @@ void free_all_program_blocks() {
 #ifdef COMPILER_DEBUG
 #define CDFPRINTF(X)	fprintf X
 #ifndef PIKE_THREADS
-/* The CDFPRINTF lines wants to print threads_disabled, so fake on of those */
-static const int threads_disabled = 1;
+/* The CDFPRINTF lines wants to print lock_depth, so fake one of those */
+static const int lock_depth = 1;
 #endif
 #else /* !COMPILER_DEBUG */
 #define CDFPRINTF(X)
@@ -2845,10 +2878,11 @@ void low_start_new_program(struct program *p,
 
   CHECK_COMPILER();
 
-  /* We don't want to change thread, but we don't want to
-   * wait for the other threads to complete either.
+  /* We aren't thread safe, but we are reentrant.
+   *
+   * Lock out any other threads from the compiler until we are finished.
    */
-  low_init_threads_disable();
+  lock_pike_compiler();
 
   c->compilation_depth++;
 
@@ -2893,10 +2927,10 @@ void low_start_new_program(struct program *p,
   if(idp) *idp=id;
 
   CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
-	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
+	     "pass=%d: lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), p, name ? name->str : "-",
 	     Pike_compiler->compiler_pass,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
 
   init_type_stack();
 
@@ -3126,9 +3160,9 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
 
   CDFPRINTF((stderr,
 	     "th(%ld) start_new_program(%ld, %s): "
-	     "threads_disabled:%d, compilation_depth:%d\n",
+	     "lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), (long)line, file,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
 
   low_start_new_program(0,1,0,0,0);
   store_linenumber(line,c->lex.current_file);
@@ -4152,13 +4186,13 @@ struct program *end_first_pass(int finish)
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p end_first_pass(%d): "
-	     "threads_disabled:%d, compilation_depth:%d\n",
+	     "lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), prog, finish,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
 
   c->compilation_depth--;
 
-  exit_threads_disable(NULL);
+  unlock_pike_compiler();
 
 #if 0
 #ifdef PIKE_USE_MACHINE_CODE
@@ -8986,9 +9020,9 @@ static int run_pass1(struct compilation *c)
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p run_pass1() start: "
-	     "threads_disabled:%d, compilation_depth:%d\n",
+	     "lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), Pike_compiler->new_program,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
 
   run_init2(c);
 
@@ -9075,9 +9109,9 @@ void run_pass2(struct compilation *c)
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p run_pass2() start: "
-	     "threads_disabled:%d, compilation_depth:%d\n",
+	     "lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), Pike_compiler->new_program,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
 
   verify_supporters();
 
@@ -9100,20 +9134,20 @@ static void run_cleanup(struct compilation *c, int delayed)
   debug_malloc_touch(c->placeholder);
 #if 0 /* FIXME */
 #ifdef PIKE_THREADS
-  if (threads_disabled != c->saved_threads_disabled) {
-    Pike_fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
-	  threads_disabled, c->saved_threads_disabled);
+  if (lock_depth != c->saved_lock_depth) {
+    Pike_fatal("compile(): lock_depth:%d saved_lock_depth:%d\n",
+	       lock_depth, c->saved_lock_depth);
   }
 #endif
 #endif /* PIKE_DEBUG */
 
-  exit_threads_disable(NULL);
+  unlock_pike_compiler();
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p run_cleanup(): "
-	     "threads_disabled:%d, compilation_depth:%d\n",
+	     "lock_depth:%d, compilation_depth:%d\n",
 	     (long)th_self(), c->target,
-	     threads_disabled, c->compilation_depth));
+	     lock_depth, c->compilation_depth));
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
@@ -9564,9 +9598,9 @@ static void f_compilation_compile(INT32 args)
 
   c->flags |= COMPILER_BUSY;
 
-  low_init_threads_disable();
+  lock_pike_compiler();
 #ifdef PIKE_THREADS
-  c->saved_threads_disabled = threads_disabled;
+  c->saved_lock_depth = lock_depth;
 #endif
 
   init_supporter(& c->supporter,
@@ -10524,9 +10558,9 @@ struct program *compile(struct pike_string *aprog,
   SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
 #endif
 
-  low_init_threads_disable();
+  lock_pike_compiler();
 #ifdef PIKE_THREADS
-  c->saved_threads_disabled = threads_disabled;
+  c->saved_lock_depth = lock_depth;
 #endif
 
   init_supporter(& c->supporter,
@@ -10840,6 +10874,10 @@ void init_program(void)
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
 
+#ifdef PIKE_THREADS
+  co_init(&Pike_compiler_cond);
+#endif
+
   compile_compiler();
 
   enter_compiler(NULL, 0);
@@ -10967,6 +11005,9 @@ void cleanup_program(void)
     free_program(reporter_program);
     reporter_program = 0;
   }
+#ifdef PIKE_THREADS
+  co_destroy(&Pike_compiler_cond);
+#endif
 }
 
 
