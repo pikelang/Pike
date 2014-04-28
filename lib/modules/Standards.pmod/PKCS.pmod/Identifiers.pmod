@@ -254,11 +254,13 @@ mapping(Identifier:string(7bit)) reverse_qt_ids = REVERSE(qt_ids);
 Identifier kp_id = pkix_id->append(3);
 
 mapping(string(7bit):Identifier) kp_ids =
-([ "serverAuth" : kp_id->append(1),
-   "clientAuth" : kp_id->append(2),
-   "codeSigning" : kp_id->append(3),
+([ "serverAuth"      : kp_id->append(1),
+   "clientAuth"      : kp_id->append(2),
+   "codeSigning"     : kp_id->append(3),
    "emailProtection" : kp_id->append(4),
-   "timeStamping" : kp_id->append(8) ]);
+   "timeStamping"    : kp_id->append(8),
+   "OCSPSigning"     : kp_id->append(9),
+]);
 
 mapping(Identifier:string(7bit)) reverse_kp_ids = REVERSE(kp_ids);
 
