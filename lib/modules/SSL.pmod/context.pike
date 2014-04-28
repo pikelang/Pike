@@ -772,8 +772,14 @@ private void update_trusted_issuers()
     if(!result->verified)
       error("Broken trusted issuer chain!\n");
 
-    Standards.X509.TBSCertificate cert =
-      Standards.X509.decode_certificate(i[-1]);
+    if( !tbs->ext_basicConstraints_cA || !(tbs->ext_keyUsage & keyCertSign) )
+      error("Trusted issuer not allowed to sign other certificates.\n");
+
+    // FIXME: The pathLenConstraint does not survive the cache.
+
+    // The leaf of the trusted issuer is the root to validate
+    // certificate chains against.
+    Standards.X509.TBSCertificate cert = result->certificates[-1];
 
     trusted_issuers_cache[cert->subject->get_der()] = cert->public_key;
   }
