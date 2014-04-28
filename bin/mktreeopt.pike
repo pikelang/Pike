@@ -822,7 +822,7 @@ void parse_data()
     } else if (data[pos] != ';') {
       object(node) n2 = read_node2();
       // werror(sprintf("\t%s;\n\n", n2));
-      array(string) t = [array(string)]Array.uniq(n2->used_nodes());
+      array(string) t = [array(string)]n2->used_nodes();
 
       string expr = n2->generate_code();
 
