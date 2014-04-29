@@ -198,7 +198,7 @@ protected void create (function(void:Sql.Sql) get_db,
 
   Sql.Sql conn = get_db();
 
-  query_charset = String.width (table) == 8 && "latin1";
+  query_charset = String.width (table) <= 8 && "latin1";
 
   {
     col_types = ([]);
@@ -1425,7 +1425,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
       error ("Got string value %q for %s column `%s`.\n",
 	     val, col_types[col_name], col_name);
 #endif
-    if (String.width (val) == 8)
+    if (String.width (val) <= 8)
       // _latin1 works fine for binary data since the actual charset
       // isn't significant. The only problem is for 8-bit text where
       // mysql latin1 has chars in the control range 0x80..0x9f. Since
