@@ -5648,6 +5648,8 @@ struct pike_type *check_call(struct pike_type *args,
  */
 struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
 {
+  struct pike_type *tmp;
+
  loop:
   switch(fun->type) {
   case T_OR:
@@ -5685,8 +5687,9 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
 
   case PIKE_T_ATTRIBUTE:
     type_stack_mark();
-    push_finished_type(get_argument_type(fun->cdr, arg_no));
+    push_finished_type(tmp = get_argument_type(fun->cdr, arg_no));
     push_type_attribute((struct pike_string *)(fun->car));
+    free_type(tmp);
     return pop_unfinished_type();
 
   case PIKE_T_SCOPE:
