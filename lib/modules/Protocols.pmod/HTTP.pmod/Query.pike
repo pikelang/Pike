@@ -190,16 +190,7 @@ void start_tls(int|void blocking, int|void async)
 #if constant(SSL.Cipher.CipherAlgorithm)
   if( !context )
   {
-    // Create a context
     context = SSL.context();
-    // Allow only strong crypto
-    context->preferred_suites -= ({
-      //Weaker ciphersuites.
-      SSL_rsa_export_with_rc4_40_md5,
-      SSL_rsa_export_with_rc2_cbc_40_md5,
-      SSL_rsa_export_with_des40_cbc_sha,
-    });
-    context->random = Crypto.Random.random_string;
   }
 
   if(real_host)
