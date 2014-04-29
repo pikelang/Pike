@@ -157,8 +157,16 @@ time_t TIME(time_t *);
 #define RINT rint
 #define RINTL rintl
 
+#ifndef HAVE_STRTOL
 PMOD_EXPORT long STRTOL(const char *str,char **ptr,int base);
+#else
+# define STRTOL strtol
+#endif
+#ifndef HAVE_STRTOD
 PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
+#else
+# define STRTOD strtod
+#endif
 
 #ifndef HAVE_STRCSPN
 int STRCSPN(const char *s,const char * set);

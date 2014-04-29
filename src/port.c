@@ -254,17 +254,15 @@ PMOD_EXPORT void sysleep(double left)
 
 #ifndef CONFIGURE_TEST
 
+#ifndef HAVE_WORKING_REALLOC_NULL
 PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 {
   if (!ptr) return malloc(sz);
-#ifndef HAVE_WORKING_REALLOC_NULL
 #undef realloc
-#endif	/* !HAVE_WORKING_REALLOC_NULL */
   return realloc(ptr, sz);
-#ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc((PTR),(SZ))
-#endif	/* !HAVE_WORKING_REALLOC_NULL */
 }
+#endif
 
 #endif	/* !CONFIGURE_TEST */
 
@@ -272,6 +270,7 @@ PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
+#ifndef HAVE_STRTOL
 PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
 {
   /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
@@ -346,6 +345,7 @@ PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
       return (long) val;
   }
 }
+#endif
 
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
@@ -536,6 +536,7 @@ PMOD_EXPORT char *STRCHR(char *s,int c)
 }
 #endif
 
+#ifndef HAVE_STRTOD
 /* Convert NPTR to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
@@ -691,6 +692,7 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
     *endptr = (char *) nptr;
   return 0.0;
 }
+#endif
 
 #ifndef HAVE_VSPRINTF
 PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
