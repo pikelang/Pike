@@ -50,17 +50,17 @@ enum CertFailure
 
 
 // Bit 0 is the first bit in the BitString.
-protected enum keyUsage {
-  digitalSignature  = 1<<0,
-  nonRepudiation    = 1<<1,
-  keyEncipherment   = 1<<2,
-  dataEncipherment  = 1<<3,
-  keyAgreement      = 1<<4,
-  keyCertSign       = 1<<5,
-  cRLSign           = 1<<6,
-  encipherOnly      = 1<<7,
-  decipherOnly      = 1<<8,
-  last_keyUsage     = 1<<9, // end marker
+enum keyUsage {
+  KU_digitalSignature  = 1<<0,
+  KU_nonRepudiation    = 1<<1,
+  KU_keyEncipherment   = 1<<2,
+  KU_dataEncipherment  = 1<<3,
+  KU_keyAgreement      = 1<<4,
+  KU_keyCertSign       = 1<<5,
+  KU_cRLSign           = 1<<6,
+  KU_encipherOnly      = 1<<7,
+  KU_decipherOnly      = 1<<8,
+  KU_last_keyUsage     = 1<<9, // end marker
 };
 
 // Generates the reverse int for keyUsage.
@@ -1258,7 +1258,7 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
       0);
   ADD(keyUsage,
-      build_keyUsage(keyCertSign|cRLSign|digitalSignature),
+      build_keyUsage(KU_keyCertSign|KU_cRLSign|KU_digitalSignature),
       1);
   ADD(basicConstraints,
       Sequence(({Boolean(1)})),
@@ -1381,15 +1381,15 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 
   // id-ce-keyUsage is required.
   crit[.PKCS.Identifiers.ce_ids.keyUsage]=0;
-  if( !(tbs->ext_keyUsage & keyCertSign) )
+  if( !(tbs->ext_keyUsage & KU_keyCertSign) )
   {
     DBG("verify ca: id-ce-keyUsage doesn't allow keyCertSign.\n");
     return 0;
   }
   // FIXME: RFC 5759 also requires CRLSign set.
   if( tbs->ext_keyUsage &
-      (~(keyCertSign | cRLSign | digitalSignature |
-         nonRepudiation)&(last_keyUsage-1)) )
+      (~(KU_keyCertSign | KU_cRLSign | KU_digitalSignature |
+         KU_nonRepudiation)&(KU_last_keyUsage-1)) )
   {
     DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
     return 0;
@@ -1635,7 +1635,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         }
       }
 
-      if( !(tbs->ext_keyUsage & keyCertSign) )
+      if( !(tbs->ext_keyUsage & KU_keyCertSign) )
         ERROR(CERT_UNAUTHORIZED_CA);
     }
 
