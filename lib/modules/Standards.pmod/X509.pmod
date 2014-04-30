@@ -162,6 +162,12 @@ class Verifier {
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
 
+  protected int(0..1) `==(mixed o)
+  {
+    return objectp(o) && o->pkc?->name && pkc->name()==o->pkc->name() &&
+      pkc->public_key_equal(o->pkc);
+  }
+
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O)", this_program, pkc);
@@ -1508,7 +1514,9 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 	if (!objectp(m)) continue;
 	TBSCertificate tbs = verify_ca_certificate(m->body);
 	if (!tbs) continue;
-	res[tbs->subject->get_der()] += ({ tbs->public_key });
+        string subj = tbs->subject->get_der();
+        if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+            res[subj] += ({ tbs->public_key });
       }
       continue;
     }
@@ -1525,7 +1533,9 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       if (!cert) continue;
       TBSCertificate tbs = verify_ca_certificate(cert);
       if (!tbs) continue;
-      res[tbs->subject->get_der()] += ({ tbs->public_key });
+      string subj = tbs->subject->get_der();
+      if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+        res[subj] += ({ tbs->public_key });
     }
   }
   return res;
