@@ -100,6 +100,17 @@ constant PACKET_types = (< PACKET_change_cipher_spec,
 
 constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
+/* Handshake states */
+constant STATE_server_wait_for_hello		= 1;
+constant STATE_server_wait_for_client		= 2;
+constant STATE_server_wait_for_finish		= 3;
+constant STATE_server_wait_for_verify		= 4;
+
+constant STATE_client_min			= 10;
+constant STATE_client_wait_for_hello		= 10;
+constant STATE_client_wait_for_server		= 11;
+constant STATE_client_wait_for_finish		= 12;
+
 /* Cipher specification */
 constant CIPHER_stream   = 0;
 constant CIPHER_block    = 1;

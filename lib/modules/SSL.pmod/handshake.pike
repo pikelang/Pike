@@ -30,16 +30,7 @@ import .Constants;
 
 /* State variables */
 
-constant STATE_server_wait_for_hello		= 1;
-constant STATE_server_wait_for_client		= 2;
-constant STATE_server_wait_for_finish		= 3;
-constant STATE_server_wait_for_verify		= 4;
-
-constant STATE_client_min			= 10;
-constant STATE_client_wait_for_hello		= 10;
-constant STATE_client_wait_for_server		= 11;
-constant STATE_client_wait_for_finish		= 12;
-int handshake_state;
+int handshake_state; // Constant.STATE_*
 
 int handshake_finished = 0;
 
@@ -634,32 +625,6 @@ string(0..255) server_derive_master_secret(string(0..255) data)
   return 0;
 }
 
-#ifdef SSL3_DEBUG_HANDSHAKE_STATE
-mapping state_descriptions = lambda()
-{
-  array inds = glob("STATE_*", indices(this));
-  array vals = map(inds, lambda(string ind) { return this[ind]; });
-  return mkmapping(vals, inds);
-}();
-
-mapping type_descriptions = lambda()
-{
-  array inds = glob("HANDSHAKE_*", indices(SSL.Constants));
-  array vals = map(inds, lambda(string ind) { return SSL.Constants[ind]; });
-  return mkmapping(vals, inds);
-}();
-
-string describe_state(int i)
-{
-  return state_descriptions[i] || (string)i;
-}
-
-string describe_type(int i)
-{
-  return type_descriptions[i] || (string)i;
-}
-#endif
-
 
 // verify that a certificate chain is acceptable
 //
@@ -737,7 +702,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 #endif
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
   werror("SSL.handshake: state %s, type %s\n",
-	 describe_state(handshake_state), describe_type(type));
+	 fmt_constant(handshake_state, "STATE"),
+         fmt_constant(type, "HANDSHAKE"));
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
