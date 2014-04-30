@@ -44,7 +44,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   array(string) d = dek_info/",";
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
   string method = lower_case(String.trim_all_whites(d[0]));
-  Crypto.Cipher cipher = ([
+  Crypto.AES.CBC._Buffer cipher = ([
     "des-cbc": Crypto.DES.CBC.Buffer,
     "des-ede3-cbc": Crypto.DES3.CBC.Buffer,
     "aes-128-cbc": Crypto.AES.CBC.Buffer,
