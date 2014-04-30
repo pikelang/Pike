@@ -10,8 +10,7 @@ inherit Crypto.Sign;
 
 protected string _sprintf(int t)
 {
-  return t=='O' && sprintf("%O(%d,%d)", this_program, sizeof(p->digits(2)),
-                           sizeof(q->digits(2)));
+  return t=='O' && sprintf("%O(%d,%d)", this_program, p->size(), q->size());
 }
 
 //
