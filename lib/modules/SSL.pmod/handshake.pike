@@ -833,10 +833,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    string(8bit) raw = extensions->get_var_string(2);
 	    ADT.struct extension_data = ADT.struct(raw);
 	    SSL3_DEBUG_MSG("SSL.handshake->handle_handshake: "
-			   "Got extension 0x%04x, %O (%d bytes).\n",
-			   extension_type,
-			   extension_data->buffer,
-			   sizeof(extension_data->buffer));
+			   "Got extension %s.\n",
+			   fmt_constant(extension_type, "EXTENSION"));
 	    remote_extensions[extension_type] = 1;
           extensions:
 	    switch(extension_type) {
@@ -1026,14 +1024,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	    default:
 #ifdef SSL3_DEBUG
-              foreach([array(string)]indices(.Constants), string id)
-                if(has_prefix(id, "EXTENSION_") &&
-                   .Constants[id]==extension_type)
-                {
-                  werror("Unhandled extension %s\n", id);
-                  break extensions;
-                }
-              werror("Unknown extension %O\n", extension_type);
+              werror("Unhandled extension %O (%d bytes)\n",
+                     extension_data->buffer, sizeof(extension_data->buffer));
 #endif
 	      break;
 	    }
@@ -1465,10 +1457,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  ADT.struct extension_data =
 	    ADT.struct(extensions->get_var_string(2));
 	  SSL3_DEBUG_MSG("SSL.handshake->handle_handshake: "
-			 "Got extension 0x%04x, %O (%d bytes).\n",
-			 extension_type,
-			 extension_data->buffer,
-			 sizeof(extension_data->buffer));
+			 "Got extension %s.\n",
+			 fmt_constant(extension_type, "EXTENSION"));
 	  switch(extension_type) {
 	  case EXTENSION_renegotiation_info:
 	    string renegotiated_connection = extension_data->get_var_string(1);
@@ -1509,7 +1499,6 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    }
 	    break;
 	  case EXTENSION_server_name:
-	SSL3_DEBUG_MSG("SSL.handshake: Server sent Server Name extension, ignoring.\n");
             break;
 
 	  case EXTENSION_heartbeat:
