@@ -470,7 +470,7 @@ PIKECLASS BufferedCipher
    *!
    *!     void create(string key)
    *!     {
-   *!       buffer = Crypto.AES.CBC.Buffer;
+   *!       buffer = Crypto.AES.CBC.Buffer();
    *!       buffer->set_encrypt_key(key);
    *!     }
    *!
@@ -499,6 +499,35 @@ PIKECLASS BufferedCipher
 
     /* FIXME: Add proxy functions here */
 
+    /*! @class State
+     *! Acts as a buffer so that data can be fed to the cipher in blocks
+     *! that don't correspond to cipher block sizes.
+     *!
+     *! @example
+     *!   class Encrypter
+     *!   {
+     *!     protected Crypto.Cipher buffer;
+     *!
+     *!     void create(string key)
+     *!     {
+     *!       buffer = Crypto.AES.CBC.Buffer();
+     *!       buffer->set_encrypt_key(key);
+     *!     }
+     *!
+     *!     string feed(string data)
+     *!     {
+     *!       return buffer->crypt(data);
+     *!     }
+     *!
+     *!     string drain()
+     *!     {
+     *!       return buffer->pad(Crypto.PAD_PKCS7);
+     *!     }
+     *!   }
+     *!
+     *! @seealso
+     *!   @[BlockCipher.CBC], @[BlockCipher16.GCM]
+     */
     PIKECLASS State
       program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
     {
@@ -1273,7 +1302,7 @@ PIKECLASS BlockCipher16
   /* NOTE: MUST be first in the class to simplify access to symbols
    *       in Cipher!
    */
-  /*! @inherit BlockCipher
+  /*! @decl inherit BlockCipher
    */
   INHERIT Nettle_BlockCipher;
 
