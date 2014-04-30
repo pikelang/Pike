@@ -226,8 +226,6 @@ class KeyExchange(object context, object session, object connection,
 
     SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version=0x%x\n",
 		   version);
-    SSL3_DEBUG_MSG("premaster_secret: (%d bytes): %O\n",
-		   sizeof(premaster_secret), premaster_secret);
 
     res = session->cipher_spec->prf(premaster_secret, "master secret",
 				    client_random + server_random, 48);
