@@ -26,7 +26,7 @@ class Parameters
   //!   @array
   //!     @elem Gmp.mpz 0
   //!       The generated public key.
-  //!     @rlem Gmp.mpz 1
+  //!     @elem Gmp.mpz 1
   //!       The corresponding private key.
   //!   @endarray
   array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)

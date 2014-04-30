@@ -286,7 +286,7 @@ PIKECLASS DH_Params
    *!   @array
    *!     @elem Gmp.mpz 0
    *!       The generated public key.
-   *!     @rlem Gmp.mpz 1
+   *!     @elem Gmp.mpz 1
    *!       The corresponding private key.
    *!   @endarray
    */
