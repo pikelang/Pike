@@ -1232,19 +1232,17 @@ string(0..255) prf_sha512(string(0..255) secret,
 //!
 class DES
 {
-  inherit Crypto.CBC;
-
-  protected void create() { ::create(Crypto.DES()); }
+  inherit Crypto.DES.CBC.State;
 
   this_program set_encrypt_key(string k)
   {
-    ::set_encrypt_key(Crypto.DES->fix_parity(k));
+    ::set_encrypt_key(Crypto.DES.fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    ::set_decrypt_key(Crypto.DES->fix_parity(k));
+    ::set_decrypt_key(Crypto.DES.fix_parity(k));
     return this;
   }
 }
@@ -1252,21 +1250,17 @@ class DES
 //!
 class DES3
 {
-  inherit Crypto.CBC;
-
-  protected void create() {
-    ::create(Crypto.DES3());
-  }
+  inherit Crypto.DES3.CBC.State;
 
   this_program set_encrypt_key(string k)
   {
-    ::set_encrypt_key(Crypto.DES3->fix_parity(k));
+    ::set_encrypt_key(Crypto.DES3.fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    ::set_decrypt_key(Crypto.DES3->fix_parity(k));
+    ::set_decrypt_key(Crypto.DES3.fix_parity(k));
     return this;
   }
 }
@@ -1275,8 +1269,7 @@ class DES3
 //!
 class RC2
 {
-  inherit Crypto.CBC;
-  protected void create() { ::create(Crypto.Arctwo()); }
+  inherit Crypto.Arctwo.CBC.State;
 
   this_program set_encrypt_key(string k)
   {
@@ -1291,22 +1284,6 @@ class RC2
   }
 }
 #endif /* Crypto.Arctwo */
-
-#if constant(Crypto.IDEA)
-//!
-class IDEA
-{
-  inherit Crypto.CBC;
-  protected void create() { ::create(Crypto.IDEA()); }
-}
-#endif
-
-//!
-class AES
-{
-  inherit Crypto.CBC;
-  protected void create() { ::create(Crypto.AES()); }
-}
 
 //!
 class AES_CCM
@@ -1325,15 +1302,6 @@ class AES_CCM_8
     return 8;
   }
 }
-
-#if constant(Crypto.Camellia)
-//!
-class Camellia
-{
-  inherit Crypto.CBC;
-  protected void create() { ::create(Crypto.Camellia()); }
-}
-#endif
 
 //! Signing using RSA.
 ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
@@ -1652,7 +1620,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #if constant(Crypto.IDEA)
   case CIPHER_idea:
-    res->bulk_cipher_algorithm = IDEA;
+    res->bulk_cipher_algorithm = Crypto.IDEA.CBC.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1661,7 +1629,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #endif
   case CIPHER_aes:
-    res->bulk_cipher_algorithm = AES;
+    res->bulk_cipher_algorithm = Crypto.AES.CBC.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1669,7 +1637,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 128;
     break;
   case CIPHER_aes256:
-    res->bulk_cipher_algorithm = AES;
+    res->bulk_cipher_algorithm = Crypto.AES.CBC.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
@@ -1678,7 +1646,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #if constant(Crypto.Camellia)
   case CIPHER_camellia128:
-    res->bulk_cipher_algorithm = Camellia;
+    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1686,7 +1654,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 128;
     break;
   case CIPHER_camellia256:
-    res->bulk_cipher_algorithm = Camellia;
+    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
@@ -1780,7 +1748,7 @@ array lookup(int suite, ProtocolVersion|int version,
     case MODE_cbc:
       break;
     case MODE_ccm:
-      if (res->bulk_cipher_algorithm == AES) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
 	res->bulk_cipher_algorithm = AES_CCM;
       } else {
 	// Unsupported.
@@ -1794,7 +1762,7 @@ array lookup(int suite, ProtocolVersion|int version,
 
       break;
     case MODE_ccm_8:
-      if (res->bulk_cipher_algorithm == AES) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
 	res->bulk_cipher_algorithm = AES_CCM_8;
       } else {
 	// Unsupported.
@@ -1809,10 +1777,11 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
 #if constant(Crypto.AES.GCM)
     case MODE_gcm:
-      if (res->bulk_cipher_algorithm == AES) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
 	res->bulk_cipher_algorithm = Crypto.AES.GCM.State;
 #if constant(Crypto.Camellia.GCM)
-      } else if (res->bulk_cipher_algorithm == Camellia) {
+      } else if (res->bulk_cipher_algorithm ==
+		 Crypto.Camellia.CBC.State) {
 	res->bulk_cipher_algorithm = Crypto.Camellia.GCM.State;
 #endif
       } else {
@@ -1841,14 +1810,22 @@ array lookup(int suite, ProtocolVersion|int version,
   }
 
   if (version >= PROTOCOL_TLS_1_2) {
-    if ((res->bulk_cipher_algorithm == DES) ||
-	(res->bulk_cipher_algorithm == IDEA)) {
+    if (res->bulk_cipher_algorithm == DES) {
       // RFC 5246 1.2:
       // Removed IDEA and DES cipher suites.  They are now deprecated and
       // will be documented in a separate document.
       SSL3_DEBUG_MSG("Suite not supported in TLS 1.2 and later.\n");
       return 0;
     }
+#if constant(Crypto.IDEA.CBC)
+    if (res->bulk_cipher_algorithm == Crypto.IDEA.CBC.State) {
+      // RFC 5246 1.2:
+      // Removed IDEA and DES cipher suites.  They are now deprecated and
+      // will be documented in a separate document.
+      SSL3_DEBUG_MSG("Suite not supported in TLS 1.2 and later.\n");
+      return 0;
+    }
+#endif
   } else if (res->cipher_type == CIPHER_aead) {
     // RFC 5822 4:
     // These cipher suites make use of the authenticated encryption

@@ -45,11 +45,11 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
   string method = lower_case(String.trim_all_whites(d[0]));
   object cipher = ([
-    "des-cbc": Crypto.DES,
-    "des-ede3-cbc": Crypto.DES3,
-    "aes-128-cbc": Crypto.AES,
-    "aes-192-cbc": Crypto.AES,
-    "aes-256-cbc": Crypto.AES,
+    "des-cbc": Crypto.DES.CBC,
+    "des-ede3-cbc": Crypto.DES3.CBC,
+    "aes-128-cbc": Crypto.AES.CBC,
+    "aes-192-cbc": Crypto.AES.CBC,
+    "aes-256-cbc": Crypto.AES.CBC,
   ])[method];
   if (!cipher) error("Unsupported cipher suite.\n");
   int key_size = ([
@@ -59,7 +59,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   ])[method] || 24;
   string(8bit) iv = String.hex2string(String.trim_all_whites(d[1]));
   key = derive_key(key, iv[..7], key_size);
-  Crypto.Buffer decoder = Crypto.Buffer(Crypto.CBC(cipher));
+  Crypto.Buffer decoder = Crypto.Buffer(cipher);
   decoder->set_decrypt_key(key);
   return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
 }

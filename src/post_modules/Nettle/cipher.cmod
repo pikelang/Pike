@@ -451,6 +451,281 @@ PIKECLASS BlockCipher
    */
   INHERIT Nettle_Cipher;
 
+  /*! @module CBC
+   *! Implementation of the cipher block chaining mode (CBC).
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[Cipher]).
+   *!
+   *! @seealso
+   *!   @[Crypto.CBC], @[GCM]
+   */
+  PIKEVAR object(Nettle_Cipher) CBC;
+
+  PIKECLASS _CBC
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    flags ID_PROTECTED;
+  {
+    /*! @decl inherit Cipher
+     */
+    INHERIT Nettle_Cipher;
+
+    /* FIXME: Add proxy functions here */
+
+    /*! @class State
+     */
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    {
+      DOCSTART() @decl inherit Cipher::State
+	DOCEND()
+
+      EXTRA
+      {
+	/* Perform an inherit of the State class (if any) that our parent
+	 * may contain via its inherit of __builtin.Nettle.Cipher.
+	 */
+	struct program *parent_prog = Pike_compiler->previous->new_program;
+	struct object *parent_obj = Pike_compiler->previous->fake_object;
+	int parent_State_fun_num =
+	  really_low_find_shared_string_identifier(MK_STRING("State"),
+						   parent_prog,
+						   SEE_PROTECTED|SEE_PRIVATE);
+	if (parent_State_fun_num >= 0) {
+	  struct program *parent_State_prog =
+	    low_program_from_function(parent_obj, parent_State_fun_num);
+	  if (parent_State_prog) {
+	    low_inherit(parent_State_prog, 0,
+			parent_State_fun_num +
+			parent_prog->inherits[1].identifier_level,
+			1 + 42, 0, NULL);
+	  }
+	}
+      }
+
+      PIKEVAR object object
+	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *crypt_state;
+      CVAR unsigned INT8 *iv;
+      CVAR INT32 block_size;
+      CVAR INT32 mode;
+
+      EXIT
+	gc_trivial;
+      {
+	if(THIS->object) {
+	  free_object(THIS->object);
+	  THIS->object = NULL;
+	}
+	if(THIS->iv) {
+	  guaranteed_memset(THIS->iv, 0, THIS->block_size);
+	  free(THIS->iv);
+	}
+      }
+
+      /*! @decl void create()
+       *!
+       *! Initialize the CBC state.
+       */
+      PIKEFUN void create()
+	flags ID_PROTECTED;
+      {
+	struct object *o;
+	struct inherit *inh;
+	unsigned old_block_size = THIS->block_size;
+	unsigned block_size;
+	int f;
+
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+	  Pike_error("Unsupported return value from Cipher::State().\n");
+	}
+	o = Pike_sp[-1].u.object;
+	if (!o->prog) {
+	  Pike_error("Cipher::State() returned destructed object.\n");
+	}
+
+	f = find_identifier("crypt", o->prog);
+	if (f < 0) {
+	  Pike_error("State object has no crypt() function.\n");
+	}
+
+	safe_apply(o, "block_size", 0);
+
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
+	  Pike_error("block_size() didn't return an int.\n");
+
+	block_size = Pike_sp[-1].u.integer;
+
+	if ((!block_size) || (block_size > 4096))
+	  Pike_error("Bad block size %d.\n", block_size);
+
+	if(THIS->iv) {
+	  guaranteed_memset(THIS->iv, 0, THIS->block_size);
+	  free(THIS->iv);
+	  THIS->iv = NULL;
+	}
+
+	THIS->block_size = block_size;
+
+	THIS->iv = (unsigned INT8 *)xcalloc(block_size, 1);
+
+	if (THIS->object) free_object(THIS->object);
+	add_ref(THIS->object = o);
+
+	inh = INHERIT_FROM_INT(o->prog, f);
+	if (inh->prog == Nettle_Cipher_State_program) {
+	  /* crypt() is from Nettle.Cipher.State.
+	   * Check if the context and crypt function are valid.
+	   */
+	  THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
+	    get_inherit_storage(o, inh - o->prog->inherits);
+	}
+
+	pop_n_elems(2);
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the string @expr{"CBC(x)"@} where x is the
+       *! encapsulated algorithm.
+       */
+      PIKEFUN string(0..255) name()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	push_constant_text("CBC(");
+	safe_apply(THIS->object, "name", 0);
+	push_constant_text(")");
+	f_add(3);
+      }
+
+      /*! @decl int(0..) block_size()
+       *! Returns the block size of the encapsulated cipher.
+       */
+      PIKEFUN int(0..) block_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN THIS->block_size;
+      }
+
+      /*! @decl int(0..) key_size()
+       *! Returns the key size of the encapsulated cipher.
+       */
+      PIKEFUN int(0..) key_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+	safe_apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for encrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       */
+      PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	assert(THIS->block_size);
+	THIS->mode = 0;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	safe_apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for decrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       */
+      PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	assert(THIS->block_size);
+	THIS->mode = 1;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	safe_apply(THIS->object, "set_decrypt_key", args);
+	pop_stack();
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *!
+       *! Set the initialization vector to @[iv]. The @[iv] memory will be
+       *! cleared before released.
+       */
+      PIKEFUN object set_iv(string(0..255) iv)
+	optflags OPT_SIDE_EFFECT;
+      {
+	assert(THIS->iv);
+	iv->flags |= STRING_CLEAR_ON_EXIT;
+	NO_WIDE_STRING(iv);
+	if(iv->len != THIS->block_size)
+	  Pike_error("Argument incompatible with cipher block size.\n");
+	MEMCPY(THIS->iv, iv->str, THIS->block_size);
+	RETURN this_object();
+      }
+
+      /*! @decl string(0..255) crypt(string(0..255) data)
+       *!
+       *! Encrypt/decrypt @[data] and return the result. @[data] must
+       *! be an integral number of blocks.
+       *!
+       *! Neither the input or output data is not automatically memory
+       *! scrubbed, unless @[String.secure] has been called on the data.
+       */
+      PIKEFUN string(0..255) crypt(string(0..255) data)
+      {
+	struct pike_string *result;
+	ONERROR uwp;
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+
+	NO_WIDE_STRING(data);
+
+	if(data->len % THIS->block_size)
+	  Pike_error("Data length not multiple of block size.\n");
+
+	if (!THIS->object || !THIS->object->prog) {
+	  Pike_error("Lookup in destructed object.\n");
+	}
+
+	result = begin_shared_string(data->len);
+	SET_ONERROR (uwp, do_free_string, result);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	if(THIS->mode == 0) {
+	  cbc_encrypt(ctx, func, THIS->block_size,
+		      THIS->iv, data->len, STR0(result), STR0(data));
+	}
+	else {
+	  cbc_decrypt(ctx, func, THIS->block_size,
+		      THIS->iv, data->len, STR0(result), STR0(data));
+	}
+
+	pop_n_elems(args);
+	push_string(end_shared_string(result));
+	UNSET_ONERROR(uwp);
+      }
+    }
+    /*! @endclass State
+     */
+  }
+
+  /*! @endmodule CBC
+   */
+
+  INIT
+  {
+    apply_current(Nettle_BlockCipher_cq__CBC_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BLOCKCIPHER->CBC = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+  }
 }
 /*! @endclass BlockCipher
  */
@@ -2258,226 +2533,6 @@ static struct object *make_cipher_object(INT32 args) {
 
   return obj;
 }
-
-
-/*! @class CBC
- *! Implementation of the cipher block chaining mode (CBC). Works as
- *! a wrapper for the cipher algorithm put in create.
- *!
- *! @note
- *!   Use @[Crypto.CBC] instead.
- *!
- *! @seealso
- *!   @[Crypto.CBC], @[GCM]
- */
-PIKECLASS CBC
-{
-  /*! @decl inherit __builtin.Nettle.Cipher
-   */
-  INHERIT "__builtin.Nettle.Cipher";
-
-  PIKEVAR object object
-    flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
-  CVAR struct Nettle_Cipher_State_struct *crypt_state;
-  CVAR unsigned INT8 *iv;
-  CVAR INT32 block_size;
-  CVAR INT32 mode;
-
-  EXIT
-    gc_trivial;
-  {
-    if(THIS->object) {
-      free_object(THIS->object);
-      THIS->object = NULL;
-    }
-    if(THIS->iv) {
-      guaranteed_memset(THIS->iv, 0, THIS->block_size);
-      free(THIS->iv);
-    }
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *!
-   *! Initialize the CBC wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as
-   *! arguments. If it is an object that doesn't conform to the cipher
-   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
-   *! a function, that function will be called with @[args] as
-   *! arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    struct object *o = make_cipher_object(args);
-    struct inherit *inh;
-    int old_block_size = THIS->block_size;
-    int f;
-
-    if (THIS->object) free_object(THIS->object);
-    THIS->object = o;
-
-    f = find_identifier("crypt", o->prog);
-    inh = INHERIT_FROM_INT(o->prog, f);
-    if (inh->prog == Nettle_Cipher_State_program) {
-      /* crypt() is from Nettle.Cipher.State.
-       * Check if the context and crypt function are valid.
-       */
-      THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
-	get_inherit_storage(o, inh - o->prog->inherits);
-    }
-
-    safe_apply(THIS->object, "block_size", 0);
-
-    if(TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int.\n");
-
-    if(THIS->iv) {
-      guaranteed_memset(THIS->iv, 0, old_block_size);
-      free(THIS->iv);
-      THIS->iv = NULL;
-    }
-
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %d.\n", THIS->block_size);
-
-    pop_stack();
-
-    THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
-    MEMSET(THIS->iv, 0, THIS->block_size);
-  }
-
-  /*! @decl string(0..255) name()
-   *! Returns the string @expr{"CBC(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string(0..255) name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("CBC(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int(0..) block_size()
-   *! Returns the block size of the encapsulated cipher.
-   */
-  PIKEFUN int(0..) block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int(0..) key_size()
-   *! Returns the key size of the encapsulated cipher.
-   */
-  PIKEFUN int(0..) key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
-   *!
-   *! Prepare the cipher and the wrapper for encrypting with the given
-   *! @[key]. The @[key] memory will be cleared before released.
-   */
-  PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 0;
-    key->flags |= STRING_CLEAR_ON_EXIT;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    push_object(this_object());
-  }
-
-  /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
-   *!
-   *! Prepare the cipher and the wrapper for decrypting with the given
-   *! @[key]. The @[key] memory will be cleared before released.
-   */
-  PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 1;
-    key->flags |= STRING_CLEAR_ON_EXIT;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    push_object(this_object());
-  }
-
-  /*! @decl this_program set_iv(string(0..255) iv)
-   *!
-   *! Set the initialization vector to @[iv]. The @[iv] memory will be
-   *! cleared before released.
-   */
-  PIKEFUN object set_iv(string(0..255) iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->iv);
-    iv->flags |= STRING_CLEAR_ON_EXIT;
-    NO_WIDE_STRING(iv);
-    if(iv->len != THIS->block_size)
-      Pike_error("Argument incompatible with cipher block size.\n");
-    MEMCPY(THIS->iv, iv->str, THIS->block_size);
-    RETURN this_object();
-  }
-
-  /*! @decl string(0..255) crypt(string(0..255) data)
-   *!
-   *! Encrypt/decrypt @[data] and return the result. @[data] must
-   *! be an integral number of blocks.
-   *!
-   *! Neither the input or output data is not automatically memory
-   *! scrubbed, unless @[String.secure] has been called on the data.
-   */
-  PIKEFUN string(0..255) crypt(string(0..255) data)
-  {
-    struct pike_string *result;
-    ONERROR uwp;
-    crypt_func func = pike_crypt_func;
-    void *ctx = THIS->object;
-
-    NO_WIDE_STRING(data);
-
-    if(data->len % THIS->block_size)
-      Pike_error("Data length not multiple of block size.\n");
-
-    if (!THIS->object || !THIS->object->prog) {
-      Pike_error("Lookup in destructed object.\n");
-    }
-
-    result = begin_shared_string(data->len);
-    SET_ONERROR (uwp, do_free_string, result);
-
-    if (THIS->crypt_state && THIS->crypt_state->crypt) {
-      func = THIS->crypt_state->crypt;
-      ctx = THIS->crypt_state->ctx;
-    }
-
-    if(THIS->mode == 0) {
-      cbc_encrypt(ctx, func, THIS->block_size,
-		  THIS->iv, data->len, STR0(result), STR0(data));
-    }
-    else {
-      cbc_decrypt(ctx, func, THIS->block_size,
-		  THIS->iv, data->len, STR0(result), STR0(data));
-    }
-
-    pop_n_elems(args);
-    push_string(end_shared_string(result));
-    UNSET_ONERROR(uwp);
-  }
-}
-
-/*! @endclass
- */
 
 #ifdef HAVE_NETTLE_CTR_H
 #include <nettle/ctr.h>
