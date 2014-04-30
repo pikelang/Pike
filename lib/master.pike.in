@@ -3266,7 +3266,7 @@ class CompatResolver
           if( arguments )
               args = map(
                   map(C.group(C.split(arguments))/({","}),C.simple_reconstitute),
-                  resolv("String.trim_all_whites"));
+                  Builtin.string_trim_all_whites);
           else
               args = ({});
 
