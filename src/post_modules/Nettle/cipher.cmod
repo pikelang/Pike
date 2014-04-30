@@ -132,6 +132,10 @@ struct pike_cipher
   (crypt_func) name##_decrypt,			\
 }
 
+#cmod_define STREAM_MODE	"stream"
+#cmod_define BLOCK_MODE		"block"
+#cmod_define BLOCK16_MODE	"block16"
+
 /*! @class Cipher
  *!
  *! Represents information about a cipher algorithm, such as
@@ -144,7 +148,14 @@ PIKECLASS Cipher
   INHERIT "__builtin.Nettle.Cipher";
 
   CVAR const struct pike_cipher *meta;
+
+  DECLARE_STORAGE;
   
+  INIT
+  {
+    THIS->meta = NULL;
+  }
+
   /*! @decl string(0..255) name()
    *!
    *! @returns
@@ -185,11 +196,6 @@ PIKECLASS Cipher
       Pike_error("Cipher not properly initialized.\n");
 
     push_int(THIS->meta->block_size);
-  }
-
-  INIT
-  {
-    THIS->meta = NULL;
   }
 
   /*! @class State
@@ -423,28 +429,50 @@ PIKECLASS Cipher
       }
     }
   }
-  /*! @endclass State */
+  /*! @endclass State
+   */
 }
 
 /*! @endclass Cipher
  */
 
-/*! @class Cipher16
+/*! @class BlockCipher
  *!
- *! This is the @[Cipher] class extended with algorithms
- *! that require a block size of @expr{16@} bytes.
+ *! Base class for all block ciphers.
  *!
- *! @seealso
- *!   @[Cipher], @[GCM]
+ *! Extends the @[Cipher] class with various operating modes.
  */
-PIKECLASS Cipher16
+PIKECLASS BlockCipher
 {
   /* NOTE: MUST be first in the class to simplify access to symbols
    *       in Cipher!
    */
-  /*! @inherit Cipher
+  /*! @decl inherit Cipher
    */
   INHERIT Nettle_Cipher;
+
+}
+/*! @endclass BlockCipher
+ */
+
+#define BLOCKCIPHER_CIPHER_INHERIT	(1)
+
+/*! @class BlockCipher16
+ *!
+ *! This is the @[BlockCipher] class extended with algorithms
+ *! that require a block size of @expr{16@} bytes.
+ *!
+ *! @seealso
+ *!   @[Cipher], @[BlockCipher], @[GCM]
+ */
+PIKECLASS BlockCipher16
+{
+  /* NOTE: MUST be first in the class to simplify access to symbols
+   *       in Cipher!
+   */
+  /*! @inherit BlockCipher
+   */
+  INHERIT Nettle_BlockCipher;
 
 #ifdef HAVE_NETTLE_GCM_H
 #include <nettle/gcm.h>
@@ -926,16 +954,18 @@ PIKECLASS Cipher16
   INIT
   {
 #ifdef HAVE_NETTLE_GCM_H
-    apply_current(Nettle_Cipher16_cq__GCM_program_fun_num, 0);
+    apply_current(Nettle_BlockCipher16_cq__GCM_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-      add_ref(THIS_NETTLE_CIPHER16->GCM = Pike_sp[-1].u.object);
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->GCM = Pike_sp[-1].u.object);
     }
     pop_stack();
 #endif
   }
 }
-/*! @endclass Cipher16
+/*! @endclass BlockCipher16
  */
+
+#define BLOCKCIPHER16_CIPHER_INHERIT	(BLOCKCIPHER_CIPHER_INHERIT + 1)
 
 static void
 pike_aes_set_encrypt_key(void *ctx,
@@ -959,9 +989,10 @@ pike_aes_set_decrypt_key(void *ctx,
     Pike_error("AES: Bad keysize for AES.\n");
 }
 
+#cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME AES
 #cmod_define NETTLE_NAME aes
-#cmod_include "cipher16.H"
+#cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -988,9 +1019,9 @@ static void pike_arctwo_set_key(void *ctx,
  */
 PIKECLASS ARCTWO
 {
-  /*! @decl inherit Cipher
+  /*! @decl inherit BlockCipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Nettle_BlockCipher;
 
   static const struct pike_cipher pike_arctwo =
     _PIKE_CIPHER(arctwo, ARCTWO);
@@ -998,7 +1029,8 @@ PIKECLASS ARCTWO
   INIT
     {
       struct Nettle_Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 1,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_arctwo;
     }
@@ -1145,6 +1177,7 @@ pike_arcfour_set_key(void *ctx,
 #define arcfour_decrypt arcfour_crypt
 #define ARCFOUR_BLOCK_SIZE 1
 
+#cmod_define CIPHER_MODE	STREAM_MODE
 #cmod_define PIKE_NAME ARCFOUR
 #cmod_define NETTLE_NAME arcfour
 #cmod_include "cipher.H"
@@ -1166,6 +1199,7 @@ pike_blowfish_set_key(void *ctx,
 #define pike_blowfish_set_encrypt_key pike_blowfish_set_key
 #define pike_blowfish_set_decrypt_key pike_blowfish_set_key
 
+#cmod_define CIPHER_MODE	BLOCK_MODE
 #cmod_define PIKE_NAME BLOWFISH
 #cmod_define NETTLE_NAME blowfish
 #cmod_include "cipher.H"
@@ -1297,9 +1331,10 @@ pike_camellia_set_decrypt_key(void *ctx,
 #define camellia_encrypt camellia_crypt
 #define camellia_decrypt camellia_crypt
 
+#cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME CAMELLIA
 #cmod_define NETTLE_NAME camellia
-#cmod_include "cipher16.H"
+#cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -1325,6 +1360,7 @@ pike_cast128_set_key(void *ctx,
 #define pike_cast128_set_encrypt_key pike_cast128_set_key
 #define pike_cast128_set_decrypt_key pike_cast128_set_key
 
+#cmod_define CIPHER_MODE	BLOCK_MODE
 #cmod_define PIKE_NAME CAST128
 #cmod_define NETTLE_NAME cast128
 #cmod_include "cipher.H"
@@ -1361,7 +1397,7 @@ PIKECLASS CHACHA
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Nettle_BlockCipher;
 
   static const struct pike_cipher pike_chacha =
     _PIKE_CIPHER(chacha, CHACHA);
@@ -1369,7 +1405,8 @@ PIKECLASS CHACHA
   INIT
     {
       struct Nettle_Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 1,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_chacha;
     }
@@ -1539,7 +1576,7 @@ PIKECLASS DES
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Nettle_BlockCipher;
 
   INIT
     {
@@ -1548,7 +1585,8 @@ PIKECLASS DES
        *        the current program.
        */
       struct Nettle_Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 1,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_des;
     }
@@ -1770,7 +1808,7 @@ PIKECLASS DES3
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Nettle_BlockCipher;
 
   INIT
     {
@@ -1779,7 +1817,8 @@ PIKECLASS DES3
        *        the current program.
        */
       struct Nettle_Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 1,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_des3;
     }
@@ -1925,7 +1964,7 @@ PIKECLASS SALSA20
 {
   /*! @decl inherit Cipher
    */
-  INHERIT Nettle_Cipher;
+  INHERIT Nettle_BlockCipher;
 
   static const struct pike_cipher pike_salsa20 =
     _PIKE_CIPHER(salsa20, SALSA20);
@@ -1933,7 +1972,8 @@ PIKECLASS SALSA20
   INIT
     {
       struct Nettle_Cipher_struct *cipher;
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 1,
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 1,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_salsa20;
     }
@@ -2045,8 +2085,9 @@ PIKECLASS SALSA20R12
   INIT
     {
       struct Nettle_Cipher_struct *cipher;
-      /* NB: We know that Cipher is the first inherit of SALSA20. */
-      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct, 2,
+      /* NB: We know that BlockCipher is the first inherit of SALSA20. */
+      ASSIGN_CURRENT_STORAGE(cipher, struct Nettle_Cipher_struct,
+			     BLOCKCIPHER_CIPHER_INHERIT + 2,
 			     Nettle_Cipher_program);
       cipher->meta = &pike_salsa20r12;
     }
@@ -2074,9 +2115,10 @@ pike_serpent_set_key(void *ctx,
 #define pike_serpent_set_encrypt_key pike_serpent_set_key
 #define pike_serpent_set_decrypt_key pike_serpent_set_key
 
+#cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME SERPENT
 #cmod_define NETTLE_NAME serpent
-#cmod_include "cipher16.H"
+#cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -2098,9 +2140,10 @@ pike_twofish_set_key(void *ctx,
 #define Twofish_BLOCK_SIZE	TWOFISH_BLOCK_SIZE
 #define Twofish_KEY_SIZE 	TWOFISH_KEY_SIZE
 
+#cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME Twofish
 #cmod_define NETTLE_NAME twofish
-#cmod_include "cipher16.H"
+#cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -2135,6 +2178,7 @@ pike_idea_set_decrypt_key(void *ctx_v,
 #define idea_encrypt idea_crypt_blocks
 #define idea_decrypt idea_crypt_blocks
 
+#cmod_define CIPHER_MODE	BLOCK_MODE
 #cmod_define PIKE_NAME IDEA
 #cmod_define NETTLE_NAME idea
 #cmod_include "cipher.H"

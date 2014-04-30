@@ -82,9 +82,35 @@ constant CipherState = Nettle.Cipher.State;
 
 //! Abstract class for crypto algorithms. Contains some tools useful
 //! for all ciphers.
+//!
+//! @note
+//!   Typically only inherited directly by stream ciphers.
+//!
+//! @note
+//!   It is however convenient for typing as it contains the minimum
+//!   base level API for a cipher.
+//!
+//! @seealso
+//!   @[BlockCipher], @[BlockCipher16]
 class Cipher
 {
   inherit Nettle.Cipher;
+}
+
+//! Abstract class for block cipher algorithms. Contains some tools useful
+//! for all block ciphers.
+class BlockCipher
+{
+  inherit Nettle.BlockCipher;
+}
+
+//! Abstract class for block cipher algorithms with a 16 byte block size.
+//! Contains some tools useful for all such block ciphers.
+//!
+//! Contains the @[GCM] submodule.
+class BlockCipher16
+{
+  inherit Nettle.BlockCipher16;
 }
 
 //! Implementation of the cipher block chaining mode (CBC). Works as

@@ -17,7 +17,7 @@ mac.o: $(SRCDIR)/mac.c
 nt.o: $(SRCDIR)/nt.c
 
 $(SRCDIR)/aead.c: aead.H
-$(SRCDIR)/cipher.c: cipher.H cipher16.H
+$(SRCDIR)/cipher.c: cipher.H
 $(SRCDIR)/hash.c: hash.H
 $(SRCDIR)/mac.c: mac.H
 
