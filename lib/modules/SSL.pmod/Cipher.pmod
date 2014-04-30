@@ -1232,7 +1232,7 @@ string(0..255) prf_sha512(string(0..255) secret,
 //!
 class DES
 {
-  inherit Crypto.DES.CBC.State;
+  inherit Crypto.DES.CBC.Buffer.State;
 
   this_program set_encrypt_key(string k)
   {
@@ -1250,7 +1250,7 @@ class DES
 //!
 class DES3
 {
-  inherit Crypto.DES3.CBC.State;
+  inherit Crypto.DES3.CBC.Buffer.State;
 
   this_program set_encrypt_key(string k)
   {
@@ -1269,7 +1269,7 @@ class DES3
 //!
 class RC2
 {
-  inherit Crypto.Arctwo.CBC.State;
+  inherit Crypto.Arctwo.CBC.Buffer.State;
 
   this_program set_encrypt_key(string k)
   {
@@ -1620,7 +1620,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #if constant(Crypto.IDEA)
   case CIPHER_idea:
-    res->bulk_cipher_algorithm = Crypto.IDEA.CBC.State;
+    res->bulk_cipher_algorithm = Crypto.IDEA.CBC.Buffer.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1629,7 +1629,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #endif
   case CIPHER_aes:
-    res->bulk_cipher_algorithm = Crypto.AES.CBC.State;
+    res->bulk_cipher_algorithm = Crypto.AES.CBC.Buffer.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1637,7 +1637,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 128;
     break;
   case CIPHER_aes256:
-    res->bulk_cipher_algorithm = Crypto.AES.CBC.State;
+    res->bulk_cipher_algorithm = Crypto.AES.CBC.Buffer.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
@@ -1646,7 +1646,7 @@ array lookup(int suite, ProtocolVersion|int version,
     break;
 #if constant(Crypto.Camellia)
   case CIPHER_camellia128:
-    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.State;
+    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.Buffer.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -1654,7 +1654,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 128;
     break;
   case CIPHER_camellia256:
-    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.State;
+    res->bulk_cipher_algorithm = Crypto.Camellia.CBC.Buffer.State;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 32;
@@ -1748,7 +1748,7 @@ array lookup(int suite, ProtocolVersion|int version,
     case MODE_cbc:
       break;
     case MODE_ccm:
-      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.Buffer.State) {
 	res->bulk_cipher_algorithm = AES_CCM;
       } else {
 	// Unsupported.
@@ -1762,7 +1762,7 @@ array lookup(int suite, ProtocolVersion|int version,
 
       break;
     case MODE_ccm_8:
-      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.Buffer.State) {
 	res->bulk_cipher_algorithm = AES_CCM_8;
       } else {
 	// Unsupported.
@@ -1777,11 +1777,11 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
 #if constant(Crypto.AES.GCM)
     case MODE_gcm:
-      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.State) {
+      if (res->bulk_cipher_algorithm == Crypto.AES.CBC.Buffer.State) {
 	res->bulk_cipher_algorithm = Crypto.AES.GCM.State;
 #if constant(Crypto.Camellia.GCM)
       } else if (res->bulk_cipher_algorithm ==
-		 Crypto.Camellia.CBC.State) {
+		 Crypto.Camellia.CBC.Buffer.State) {
 	res->bulk_cipher_algorithm = Crypto.Camellia.GCM.State;
 #endif
       } else {
@@ -1818,7 +1818,7 @@ array lookup(int suite, ProtocolVersion|int version,
       return 0;
     }
 #if constant(Crypto.IDEA.CBC)
-    if (res->bulk_cipher_algorithm == Crypto.IDEA.CBC.State) {
+    if (res->bulk_cipher_algorithm == Crypto.IDEA.CBC.Buffer.State) {
       // RFC 5246 1.2:
       // Removed IDEA and DES cipher suites.  They are now deprecated and
       // will be documented in a separate document.

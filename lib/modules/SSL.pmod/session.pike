@@ -621,11 +621,6 @@ array(.state) new_server_states(object/*(connection)*/ con,
     read_state->crypt->set_decrypt_key(keys[2]);
     write_state->crypt = cipher_spec->bulk_cipher_algorithm();
     write_state->crypt->set_encrypt_key(keys[3]);
-    if (cipher_spec->cipher_type == CIPHER_block)
-    { // Crypto.Buffer takes care of splitting input into blocks
-      read_state->crypt = Crypto.Buffer(read_state->crypt);
-      write_state->crypt = Crypto.Buffer(write_state->crypt);
-    }
     if (cipher_spec->cipher_type == CIPHER_aead) {
       // AEAD algorithms use other iv methods.
       read_state->tls_iv = write_state->tls_iv = 0;
@@ -695,11 +690,6 @@ array(.state) new_client_states(object/*(connection)*/ con,
     read_state->crypt->set_decrypt_key(keys[3]);
     write_state->crypt = cipher_spec->bulk_cipher_algorithm();
     write_state->crypt->set_encrypt_key(keys[2]);
-    if (cipher_spec->cipher_type == CIPHER_block)
-    { // Crypto.Buffer takes care of splitting input into blocks
-      read_state->crypt = Crypto.Buffer(read_state->crypt);
-      write_state->crypt = Crypto.Buffer(write_state->crypt);
-    }
     if (cipher_spec->cipher_type == CIPHER_aead) {
       // AEAD algorithms use other iv methods.
       read_state->tls_iv = write_state->tls_iv = 0;

@@ -12,7 +12,7 @@
 //! These are based on the @[Cipher] API; @[AES], @[Arcfour],
 //! @[Blowfish], @[CAST], @[DES], @[DES3], @[IDEA], @[Serpent],
 //! @[Twofish]. The @[Substitution] program is compatible with the
-//! CipherState. Also conforming to the API are the helper programs
+//! CipherState. Also conforming to the API are the helper modules
 //! @[Buffer], @[CBC], @[GCM] and @[Pipe].
 //!
 //! As the cryptographic services offered from this module isn't
@@ -91,10 +91,18 @@ constant CipherState = Nettle.Cipher.State;
 //!   base level API for a cipher.
 //!
 //! @seealso
-//!   @[BlockCipher], @[BlockCipher16]
+//!   @[BufferedCipher], @[BlockCipher], @[BlockCipher16]
 class Cipher
 {
   inherit Nettle.Cipher;
+}
+
+//! Abstract class for block cipher meta algorithms.
+//!
+//! Contains the @[Buffer] submodule.
+class BufferedCipher
+{
+  inherit Nettle.BufferedCipher;
 }
 
 //! Abstract class for block cipher algorithms. Contains some tools useful
@@ -113,34 +121,6 @@ class BlockCipher
 class BlockCipher16
 {
   inherit Nettle.BlockCipher16;
-}
-
-//! Acts as a buffer so that data can be fed to a cipher in blocks
-//! that don't correspond to cipher block sizes.
-//!
-//! @example
-//!   class Encrypter
-//!   {
-//!     protected Crypto.Buffer buffer;
-//!
-//!     void create(string key)
-//!     {
-//!       buffer = Crypto.Buffer(Crypto.CBC(Crypto.AES));
-//!       buffer->set_encrypt_key(key);
-//!     }
-//!
-//!     string feed(string data)
-//!     {
-//!       return buffer->crypt(data);
-//!     }
-//!
-//!     string drain()
-//!     {
-//!       return buffer->pad(Crypto.PAD_PKCS7);
-//!     }
-//!   }
-class Buffer {
-  inherit Nettle.Buffer;
 }
 
 //! @decl string(8bit) rot13(string(8bit) data)
