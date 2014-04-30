@@ -253,7 +253,7 @@ PIKECLASS Cipher
       pop_stack();
     }
 
-    /*! @decl State set_encrypt_key(string(0..255) key, void|int force)
+    /*! @decl State set_encrypt_key(string(0..255) key, void|int flags)
      *!
      *! Initializes the object for encryption. The @[key] memory will be
      *! cleared before released.
@@ -261,7 +261,7 @@ PIKECLASS Cipher
      *! @seealso
      *!   @[set_decrypt_key], @[crypt]
      */
-    PIKEFUN object set_encrypt_key(string(0..255) key, void|int force)
+    PIKEFUN object set_encrypt_key(string(0..255) key, void|int flags)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
@@ -274,7 +274,7 @@ PIKECLASS Cipher
       NO_WIDE_STRING(key);
       key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str,
-				  force ? force->u.integer : 0);
+				  flags ? flags->u.integer : 0);
 
       THIS->crypt = info->meta->encrypt;
       THIS->key_size = key->len;
@@ -282,7 +282,7 @@ PIKECLASS Cipher
       RETURN this_object();
     }
 
-    /*! @decl State set_decrypt_key(string(0..255) key, void|int force)
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int flags)
      *!
      *! Initializes the object for decryption. The @[key] memory will be
      *! cleared before released.
@@ -290,7 +290,7 @@ PIKECLASS Cipher
      *! @seealso
      *!   @[set_encrypt_key], @[crypt]
      */
-    PIKEFUN object set_decrypt_key(string(0..255) key, void|int force)
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int flags)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
@@ -303,7 +303,7 @@ PIKECLASS Cipher
       NO_WIDE_STRING(key);
       key->flags |= STRING_CLEAR_ON_EXIT;
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str,
-				  force ? force->u.integer : 0);
+				  flags ? flags->u.integer : 0);
       THIS->crypt = info->meta->decrypt;
       THIS->key_size = key->len;
 
@@ -436,13 +436,14 @@ PIKECLASS Cipher
 /*! @endclass Cipher
  */
 
-/*! @class BlockCipher
+/*! @class BufferedCipher
  *!
- *! Base class for all block ciphers.
- *!
- *! Extends the @[Cipher] class with various operating modes.
+ *! Extends the @[Cipher] class with the @[Buffer]
+ *! meta cipher. This is in turn inherited by the
+ *! @[BlockCipher] class, which is the base class
+ *! for all block ciphers.
  */
-PIKECLASS BlockCipher
+PIKECLASS BufferedCipher
 {
   /* NOTE: MUST be first in the class to simplify access to symbols
    *       in Cipher!
@@ -450,6 +451,523 @@ PIKECLASS BlockCipher
   /*! @decl inherit Cipher
    */
   INHERIT Nettle_Cipher;
+
+#define PAD_SSL        0
+#define PAD_ISO_10126  1
+#define PAD_ANSI_X923  2
+#define PAD_PKCS7      3
+#define PAD_ZERO       4
+#define PAD_TLS        5
+
+  /*! @module Buffer
+   *! Acts as a buffer so that data can be fed to the cipher in blocks
+   *! that don't correspond to cipher block sizes.
+   *!
+   *! @example
+   *!   class Encrypter
+   *!   {
+   *!     protected Crypto.Cipher buffer;
+   *!
+   *!     void create(string key)
+   *!     {
+   *!       buffer = Crypto.AES.CBC.Buffer;
+   *!       buffer->set_encrypt_key(key);
+   *!     }
+   *!
+   *!     string feed(string data)
+   *!     {
+   *!       return buffer->crypt(data);
+   *!     }
+   *!
+   *!     string drain()
+   *!     {
+   *!       return buffer->pad(Crypto.PAD_PKCS7);
+   *!     }
+   *!   }
+   *!
+   *! @seealso
+   *!   @[BlockCipher.CBC], @[BlockCipher16.GCM]
+   */
+  PIKEVAR object(Nettle_BufferedCipher_cq__Buffer) Buffer;
+
+  PIKECLASS _Buffer
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    flags ID_PROTECTED;
+  {
+    /*! @decl inherit __builtin.Nettle.Cipher
+     */
+    INHERIT "__builtin.Nettle.Cipher";
+
+    /* FIXME: Add proxy functions here */
+
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    {
+      CVAR struct object *object;
+      CVAR int block_size;
+      CVAR unsigned char *backlog;
+      CVAR int backlog_len;
+
+      INIT {
+	THIS->object = NULL;
+	THIS->block_size = 0;
+	THIS->backlog = NULL;
+	THIS->backlog_len = 0;
+      }
+
+      EXIT
+	gc_trivial;
+      {
+	if(THIS->backlog) {
+	  guaranteed_memset(THIS->backlog, 0, THIS->block_size);
+	  free(THIS->backlog);
+	  THIS->backlog = NULL;
+	}
+	if(THIS->object) {
+	  free_object(THIS->object);
+	  THIS->object = NULL;
+	}
+      }
+
+      /*! @decl void create()
+       *!
+       *! Initialize the buffer with the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN void create()
+	flags ID_PROTECTED;
+      {
+	struct object *o;
+	int block_size;
+	int f;
+
+	exit_Nettle_BufferedCipher_cq__Buffer_State_struct();
+
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+	  Pike_error("Unsupported return value from Cipher::State().\n");
+	}
+	o = Pike_sp[-1].u.object;
+	if (!o->prog) {
+	  Pike_error("Cipher::State() returned destructed object.\n");
+	}
+
+	f = find_identifier("crypt", o->prog);
+	if (f < 0) {
+	  Pike_error("State object has no crypt() function.\n");
+	}
+
+	safe_apply(o, "block_size", 0);
+
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
+	  Pike_error("block_size() didn't return an int.\n");
+
+	block_size = Pike_sp[-1].u.integer;
+
+	if ((!block_size) || (block_size > 4096))
+	  Pike_error("Bad block size %d.\n", block_size);
+
+	THIS->block_size = block_size;
+	THIS->backlog = xcalloc(1, block_size);
+	THIS->backlog_len = 0;
+
+	add_ref(THIS->object = o);
+
+	pop_n_elems(2);
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the name of the wrapped cipher with @expr{".Buffer"@}
+       *! appended.
+       */
+      PIKEFUN string(0..255) name()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	safe_apply(THIS->object, "name", 0);
+	push_constant_text(".Buffer");
+	f_add(2);
+      }
+
+      /*! @decl int(0..) block_size()
+       *!
+       *! Get the block size of the contained block crypto.
+       */
+      PIKEFUN int(0..) block_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN THIS->block_size;
+      }
+
+      /*! @decl int(0..) key_size()
+       *!
+       *! Get the key size of the contained block crypto.
+       */
+      PIKEFUN int(0..) key_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+	safe_apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl this_program set_encrypt_key(string(0..255) key, @
+       *!                                    void|int flags)
+       *!
+       *! Set the encryption key. The @[key] memory will be cleared before
+       *! released.
+       *!
+       *! @note
+       *!   As a side-effect any buffered data will be cleared.
+       */
+      PIKEFUN object set_encrypt_key(string(0..255) key, void|int flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	THIS->backlog_len = 0;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	safe_apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_decrypt_key(string(0..255) key, @
+       *!                                    void|int flags)
+       *!
+       *! Set the decryption key. The @[key] memory will be cleared before
+       *! released.
+       *!
+       *! @note
+       *!   As a side-effect any buffered data will be cleared.
+       */
+      PIKEFUN object set_decrypt_key(string(0..255) key, void|int flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	THIS->backlog_len = 0;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	safe_apply(THIS->object, "set_decrypt_key", args);
+	pop_stack();
+	push_object(this_object());
+      }
+
+      /*! @decl string(0..255) crypt(string(0..255) data)
+       *!
+       *! Encrypt or decrypt some data.
+       *!
+       *! Adds data to be en/decrypted to the buffer. If there's enough
+       *! data to en/decrypt a block, that will be done, and the result
+       *! returned. Any unprocessed data will be left in the buffer.
+       *!
+       *! Neither the input or output data is not automatically memory
+       *! scrubbed, unless @[String.secure] has been called on the data.
+       */
+      PIKEFUN string(0..255) crypt(string(0..255) data) {
+	ptrdiff_t strings = 0;
+	ptrdiff_t soffset = 0;
+	ptrdiff_t len;
+
+	if (THIS->backlog_len) {
+	  if (data->len >= (THIS->block_size - THIS->backlog_len)) {
+	    MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
+		   (THIS->block_size - THIS->backlog_len));
+	    soffset += (THIS->block_size - THIS->backlog_len);
+	    THIS->backlog_len = 0;
+	    push_string(make_shared_binary_string((char *)THIS->backlog,
+						  THIS->block_size));
+	    safe_apply(THIS->object, "crypt", 1);
+	    if (TYPEOF(Pike_sp[-1]) != T_STRING)
+	      Pike_error("crypt() did not return string\n");
+	    if (Pike_sp[-1].u.string->len != THIS->block_size)
+	      Pike_error("Unexpected string length %ld\n",
+			 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+	    strings++;
+	  } else {
+	    MEMCPY(THIS->backlog + THIS->backlog_len,
+		   data->str, data->len);
+	    THIS->backlog_len += data->len;
+	    pop_n_elems(args);
+	    push_empty_string();
+	    return;
+	  }
+	}
+
+	len = (data->len - soffset);
+	len -= len % THIS->block_size;
+
+	if (len) {
+	  push_string( string_slice( data, soffset, len ) );
+	  soffset += len;
+
+	  safe_apply(THIS->object, "crypt", 1);
+
+	  if (TYPEOF(Pike_sp[-1]) != T_STRING)
+	    Pike_error("crypt() did not return string.\n");
+	  if (Pike_sp[-1].u.string->len != len)
+	    Pike_error("crypt() Unexpected string length %ld.\n",
+		       DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+
+	  strings++;
+	}
+
+	if (soffset < data->len) {
+	  MEMCPY(THIS->backlog, data->str + soffset, data->len - soffset);
+	  THIS->backlog_len = data->len - soffset;
+	}
+
+	if( !strings )
+	  push_empty_string();
+	else if( strings > 1 )
+	  f_add( strings );
+
+	stack_pop_n_elems_keep_top(args);
+      }
+
+      /*! @decl string(0..255) pad(void|int method)
+       *!
+       *! Pad and encrypt any data left in the buffer. The output data is
+       *! not automatically memory scrubbed, unless @[String.secure] is
+       *! called on the data.
+       *!
+       *! @param method
+       *! The type of padding to apply to the buffer.
+       *! @int
+       *!   @value Crypto.PAD_ISO_10126
+       *!     Pads according to ISO 10126, which means filling all extra
+       *!     space with random data and putting the size of the
+       *!     non-payload data last.
+       *!   @value Crypto.PAD_TLS
+       *!   @value Crypto.PAD_SSL
+       *!     Pads according to RFC 5246 section 6.2.3.2, meaning that all
+       *!     extra space is filled with the size of the padding. Note
+       *!     that this size has an off by one difference to the other
+       *!     schemas, so 0 means 1 byte of padding.
+       *!   @value Crypto.PAD_ANSI_X923
+       *!     Pads according to ANSI X.923, which means filling all extra
+       *!     space with zero and putting the size of the non-payload data
+       *!     last.
+       *!   @value Crypto.PAD_PKCS7
+       *!     Pads according to PKCS7 / RFC 3852, which means filling all
+       *!     extra space with the size of the extra space.
+       *!   @value Crypto.PAD_ZERO
+       *!     Fills the extra space with null bytes. To correctly remove
+       *!     the padding the clear text data must not end with a null
+       *!     byte. In that case the data would have to be manually
+       *!     padded/unpadded before/after calling @[crypt()].
+       *! @endint
+       *! Defaults to Crypto.PAD_SSL for compatibility reasons.
+       *!
+       *! @seealso
+       *!   @[unpad()]
+       */
+      PIKEFUN string(0..255) pad(void|int method) {
+	ptrdiff_t i;
+	int m = 0;
+	int size = THIS->block_size - THIS->backlog_len;
+
+	if(method)
+	{
+	  if(TYPEOF(*method) != PIKE_T_INT)
+	    Pike_error("Bad argument type.\n");
+	  m = method->u.integer;
+	}
+
+	switch(m)
+	{
+	case PAD_SSL:
+	case PAD_TLS:
+	  size--;
+	  break;
+	case PAD_ZERO:
+	  if( THIS->backlog_len>0 &&
+	      THIS->backlog[THIS->backlog_len-1] == 0 )
+	    Pike_error("Using zero padding on a zero terminated string.\n");
+	  size = 0;
+	  break;
+	}
+
+	for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
+	  switch(m)
+	  {
+	  default:
+	    Pike_error("Unknown method.\n");
+	  case PAD_SSL:
+	  case PAD_TLS:
+	    /* TLS 1.1 and forward */
+	    THIS->backlog[i] = size;
+	    break;
+	  case PAD_ISO_10126:
+	    /* ISO 10126 */
+	    THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+	    break;
+	  case PAD_ANSI_X923:
+	    /* ANSI X.923 */
+	    THIS->backlog[i] = 0;
+	    break;
+	  case PAD_PKCS7:
+	    /* PKCS7 / RFC 3852 */
+	    THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
+	    break;
+	  case PAD_ZERO:
+	    /* Null only */
+	    THIS->backlog[i] = 0;
+	    break;
+	  }
+
+	THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
+	push_string(make_shared_binary_string((const char *)THIS->backlog, THIS->block_size));
+
+	THIS->backlog_len = 0;
+
+	safe_apply(THIS->object, "crypt", 1);
+      }
+
+      /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
+       *!
+       *! Decrypt and unpad a block of data. Neither the input or output
+       *! data is not automatically memory scrubbed, unless
+       *! @[String.secure] has been called on the data.
+       *!
+       *! This performs the reverse operation of @[pad()]. The padding
+       *! will be verified to be correct, if possible. If not, zero is
+       *! returned.
+       *!
+       *! @param method
+       *! The type of padding that was applied to the original buffer.
+       *! @int
+       *!   @value Crypto.PAD_SSL
+       *!   @value Crypto.PAD_TLS
+       *!   @value Crypto.PAD_ISO_10126
+       *!   @value Crypto.PAD_ANSI_X923
+       *!   @value Crypto.PAD_PKCS7
+       *!   @value Crypto.PAD_ZERO
+       *! @endint
+       *! Defaults to Crypto.PAD_SSL for compatibility reasons.
+       *!
+       *! @seealso
+       *!   @[pad()]
+       */
+      PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
+	ptrdiff_t len, bytes;
+	int m = 0, i, invalid = 0, padding=0;
+
+	len = str->len + THIS->backlog_len;
+	if( len % THIS->block_size)
+	  Pike_error("Total data size must be integral numbers of blocks.\n");
+
+	if( method!=NULL )
+	{
+	  m = method->u.integer;
+	  pop_stack();
+	  args--;
+	}
+
+	f_Nettle_BufferedCipher_cq__Buffer_State_crypt(1);
+	if (TYPEOF(Pike_sp[-1]) != T_STRING)
+	  Pike_error("crypt() did not return string.\n");
+	if (Pike_sp[-1].u.string->len != len)
+	  Pike_error("crypt() Unexpected string length %ld.\n",
+		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+	str = Pike_sp[-1].u.string;
+
+	bytes = str->str[len -1];
+	if( m==PAD_SSL || m==PAD_TLS ) bytes++;
+
+	/* FIXME: Shouldn't this be supported? */
+	if (bytes > THIS->block_size)
+	  Pike_error("Invalid padding (%d > %d)\n",
+		     bytes, THIS->block_size-1);
+
+	switch( m )
+	{
+	default:
+	  Pike_error("Unknown method.\n");
+	case PAD_ISO_10126:
+	case PAD_ZERO:
+	case PAD_SSL:
+	  break;
+	case PAD_ANSI_X923:
+	  padding = 0;
+	  goto do_check;
+	case PAD_TLS:
+	  padding = bytes-1;
+	  goto do_check;
+	case PAD_PKCS7:
+	  padding = bytes;
+	do_check:
+	  /* Try to be constant time here. */
+	  for(i=len-bytes; i<len-1; i++)
+	    if( str->str[i] != padding )
+	      invalid = 1;
+	  break;
+	}
+
+	if( m == PAD_ZERO )
+	{
+	  int c=THIS->block_size;
+	  while( str->str[len-1]==0 && c>0 )
+	  {
+	    c--;
+	    len--;
+	  }
+	}
+	else
+	  len -= bytes;
+
+	if (len < 0)
+	  Pike_error("String too short to unpad\n");
+
+	add_ref(str);
+	pop_stack();
+	push_string(make_shared_binary_string(str->str, len));
+	free_string(str);
+	if( invalid==1 )
+	{
+	  pop_stack();
+	  push_int(0);
+	}
+      }
+
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *! Set the initialization vector to @[iv].
+       */
+      PIKEFUN object set_iv(string(0..255) iv)
+	optflags OPT_SIDE_EFFECT;
+      {
+	apply(THIS->object, "set_iv", args);
+	args = 1;
+	RETURN this_object();
+      }
+    }
+    /*! @endclass State
+     */
+  }
+  /*! @endmodule Buffer
+   */
+
+  INIT
+  {
+    apply_current(Nettle_BufferedCipher_cq__Buffer_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BUFFEREDCIPHER->Buffer = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+  }
+}
+/*! @endclass BufferedCipher */
+
+#define BUFFEREDCIPHER_CIPHER_INHERIT	1
+
+/*! @class BlockCipher
+ *!
+ *! Base class for all block ciphers.
+ *!
+ *! Extends the @[BufferedCipher] class with various operating modes.
+ */
+PIKECLASS BlockCipher
+{
+  /* NOTE: MUST be first in the class to simplify access to symbols
+   *       in Cipher!
+   */
+  /*! @decl inherit BufferedCipher
+   */
+  INHERIT Nettle_BufferedCipher;
 
   /*! @module CBC
    *! Implementation of the cipher block chaining mode (CBC).
@@ -460,15 +978,15 @@ PIKECLASS BlockCipher
    *! @seealso
    *!   @[Crypto.CBC], @[GCM]
    */
-  PIKEVAR object(Nettle_Cipher) CBC;
+  PIKEVAR object(Nettle_BlockCipher_cq__CBC) CBC;
 
   PIKECLASS _CBC
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
     flags ID_PROTECTED;
   {
-    /*! @decl inherit Cipher
+    /*! @decl inherit BufferedCipher
      */
-    INHERIT Nettle_Cipher;
+    INHERIT Nettle_BufferedCipher;
 
     /* FIXME: Add proxy functions here */
 
@@ -730,7 +1248,7 @@ PIKECLASS BlockCipher
 /*! @endclass BlockCipher
  */
 
-#define BLOCKCIPHER_CIPHER_INHERIT	(1)
+#define BLOCKCIPHER_CIPHER_INHERIT	(BUFFEREDCIPHER_CIPHER_INHERIT + 1)
 
 /*! @class BlockCipher16
  *!
@@ -738,7 +1256,7 @@ PIKECLASS BlockCipher
  *! that require a block size of @expr{16@} bytes.
  *!
  *! @seealso
- *!   @[Cipher], @[BlockCipher], @[GCM]
+ *!   @[Cipher], @[BlockCipher], @[BufferedCipher], @[GCM]
  */
 PIKECLASS BlockCipher16
 {
@@ -2870,444 +3388,6 @@ PIKECLASS CTR
  */
 
 #endif /* HAVE_NETTLE_CTR_H */
-
-#define PAD_SSL        0
-#define PAD_ISO_10126  1
-#define PAD_ANSI_X923  2
-#define PAD_PKCS7      3
-#define PAD_ZERO       4
-#define PAD_TLS        5
-
-/*! @class Buffer
- *! Acts as a buffer so that data can be fed to a cipher in blocks
- *! that don't correspond to cipher block sizes.
- *!
- *! @note
- *!   Use @[Crypto.Buffer] instead.
- */
-PIKECLASS Buffer {
-  /*! @decl inherit __builtin.Nettle.Cipher
-   */
-  INHERIT "__builtin.Nettle.Cipher";
-
-  CVAR struct object *object;
-  CVAR int block_size;
-  CVAR unsigned char *backlog;
-  CVAR int backlog_len;
-
-  INIT {
-    THIS->object = NULL;
-    THIS->block_size = 0;
-    THIS->backlog = NULL;
-    THIS->backlog_len = 0;
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    if(THIS->backlog) {
-      guaranteed_memset(THIS->backlog, 0, THIS->block_size);
-      free(THIS->backlog);
-      THIS->backlog = NULL;
-    }
-    if(THIS->object) {
-      free_object(THIS->object);
-      THIS->object = NULL;
-    }
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *!
-   *! Initialize the Buffer wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as
-   *! arguments. If it is an object that doesn't conform to the cipher
-   *! API, but has an @[LFUN::`()], that LFUN will be called. If it is
-   *! a function, that function will be called with @[args] as
-   *! arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    exit_Nettle_Buffer_struct();
-    THIS->object = make_cipher_object(args);
-
-    safe_apply(THIS->object, "block_size", 0);
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int\n");
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    pop_stack();
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %ld\n", DO_NOT_WARN((long)THIS->block_size));
-
-    THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
-    THIS->backlog_len = 0;
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-  }
-
-  /*! @decl string(0..255) name()
-   *! Returns the string @expr{"Buffer(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string(0..255) name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("Buffer(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int(0..) block_size()
-   *!
-   *! Get the block size of the contained block crypto.
-   */
-  PIKEFUN int(0..) block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int(0..) key_size()
-   *!
-   *! Get the key size of the contained block crypto.
-   */
-  PIKEFUN int(0..) key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string(0..255) key)
-   *!
-   *! Set the encryption key. The @[key] memory will be cleared before
-   *! released.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_encrypt_key(string(0..255) key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    THIS->backlog_len = 0;
-    key->flags |= STRING_CLEAR_ON_EXIT;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    push_object(this_object());
-  }
-
-  /*! @decl this_program set_decrypt_key(string(0..255) key)
-   *!
-   *! Set the decryption key. The @[key] memory will be cleared before
-   *! released.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_decrypt_key(string(0..255) key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    THIS->backlog_len = 0;
-    key->flags |= STRING_CLEAR_ON_EXIT;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    push_object(this_object());
-  }
-
-  /*! @decl string(0..255) crypt(string(0..255) data)
-   *!
-   *! Encrypt or decrypt some data.
-   *!
-   *! Adds data to be en/decrypted to the buffer. If there's enough
-   *! data to en/decrypt a block, that will be done, and the result
-   *! returned. Any unprocessed data will be left in the buffer.
-   *!
-   *! Neither the input or output data is not automatically memory
-   *! scrubbed, unless @[String.secure] has been called on the data.
-   */
-  PIKEFUN string(0..255) crypt(string(0..255) data) {
-    ptrdiff_t strings = 0;
-    ptrdiff_t soffset = 0;
-    ptrdiff_t len;
-
-    if (THIS->backlog_len) {
-      if (data->len >= (THIS->block_size - THIS->backlog_len)) {
-	MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
-	       (THIS->block_size - THIS->backlog_len));
-	soffset += (THIS->block_size - THIS->backlog_len);
-	THIS->backlog_len = 0;
-        push_string(make_shared_binary_string((char *)THIS->backlog,
-                                       THIS->block_size));
-	safe_apply(THIS->object, "crypt", 1);
-	if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	  Pike_error("crypt() did not return string\n");
-	if (Pike_sp[-1].u.string->len != THIS->block_size)
-	  Pike_error("Unexpected string length %ld\n",
-		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-        strings++;
-      } else {
-	MEMCPY(THIS->backlog + THIS->backlog_len,
-	       data->str, data->len);
-	THIS->backlog_len += data->len;
-	pop_n_elems(args);
-	push_empty_string();
-	return;
-      }
-    }
-
-    len = (data->len - soffset);
-    len -= len % THIS->block_size;
-
-    if (len) {
-      push_string( string_slice( data, soffset, len ) );
-      soffset += len;
-
-      safe_apply(THIS->object, "crypt", 1);
-
-      if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	Pike_error("crypt() did not return string.\n");
-      if (Pike_sp[-1].u.string->len != len)
-	Pike_error("crypt() Unexpected string length %ld.\n",
-		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-      strings++;
-    }
-
-    if (soffset < data->len) {
-      MEMCPY(THIS->backlog, data->str + soffset, data->len - soffset);
-      THIS->backlog_len = data->len - soffset;
-    }
-
-    if( !strings )
-        push_empty_string();
-    else if( strings > 1 )
-        f_add( strings );
-
-    stack_pop_n_elems_keep_top(args);
-  }
-
-  /*! @decl string(0..255) pad(void|int method)
-   *!
-   *! Pad and encrypt any data left in the buffer. The output data is
-   *! not automatically memory scrubbed, unless @[String.secure] is
-   *! called on the data.
-   *!
-   *! @param method
-   *! The type of padding to apply to the buffer.
-   *! @int
-   *!   @value Crypto.PAD_ISO_10126
-   *!     Pads according to ISO 10126, which means filling all extra
-   *!     space with random data and putting the size of the
-   *!     non-payload data last.
-   *!   @value Crypto.PAD_TLS
-   *!   @value Crypto.PAD_SSL
-   *!     Pads according to RFC 5246 section 6.2.3.2, meaning that all
-   *!     extra space is filled with the size of the padding. Note
-   *!     that this size has an off by one difference to the other
-   *!     schemas, so 0 means 1 byte of padding.
-   *!   @value Crypto.PAD_ANSI_X923
-   *!     Pads according to ANSI X.923, which means filling all extra
-   *!     space with zero and putting the size of the non-payload data
-   *!     last.
-   *!   @value Crypto.PAD_PKCS7
-   *!     Pads according to PKCS7 / RFC 3852, which means filling all
-   *!     extra space with the size of the extra space.
-   *!   @value Crypto.PAD_ZERO
-   *!     Fills the extra space with null bytes. To correctly remove
-   *!     the padding the clear text data must not end with a null
-   *!     byte. In that case the data would have to be manually
-   *!     padded/unpadded before/after calling @[crypt()].
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[unpad()]
-   */
-  PIKEFUN string(0..255) pad(void|int method) {
-    ptrdiff_t i;
-    int m = 0;
-    int size = THIS->block_size - THIS->backlog_len;
-
-    if(method)
-    {
-      if(TYPEOF(*method) != PIKE_T_INT)
-        Pike_error("Bad argument type.\n");
-      m = method->u.integer;
-    }
-
-    switch(m)
-    {
-    case PAD_SSL:
-    case PAD_TLS:
-      size--;
-      break;
-    case PAD_ZERO:
-      if( THIS->backlog_len>0 &&
-          THIS->backlog[THIS->backlog_len-1] == 0 )
-        Pike_error("Using zero padding on a zero terminated string.\n");
-      size = 0;
-      break;
-    }
-
-    for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
-      switch(m)
-      {
-      default:
-        Pike_error("Unknown method.\n");
-      case PAD_SSL:
-      case PAD_TLS:
-        /* TLS 1.1 and forward */
-        THIS->backlog[i] = size;
-        break;
-      case PAD_ISO_10126:
-        /* ISO 10126 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
-        break;
-      case PAD_ANSI_X923:
-        /* ANSI X.923 */
-        THIS->backlog[i] = 0;
-        break;
-      case PAD_PKCS7:
-        /* PKCS7 / RFC 3852 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
-        break;
-      case PAD_ZERO:
-        /* Null only */
-        THIS->backlog[i] = 0;
-        break;
-      }
-
-
-    THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
-    push_string(make_shared_binary_string((const char *)THIS->backlog, THIS->block_size));
-
-    THIS->backlog_len = 0;
-
-    safe_apply(THIS->object, "crypt", 1);
-  }
-
-  /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
-   *!
-   *! Decrypt and unpad a block of data. Neither the input or output
-   *! data is not automatically memory scrubbed, unless
-   *! @[String.secure] has been called on the data.
-   *!
-   *! This performs the reverse operation of @[pad()]. The padding
-   *! will be verified to be correct, if possible. If not, zero is
-   *! returned.
-   *!
-   *! @param method
-   *! The type of padding that was applied to the original buffer.
-   *! @int
-   *!   @value Crypto.PAD_SSL
-   *!   @value Crypto.PAD_TLS
-   *!   @value Crypto.PAD_ISO_10126
-   *!   @value Crypto.PAD_ANSI_X923
-   *!   @value Crypto.PAD_PKCS7
-   *!   @value Crypto.PAD_ZERO
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[pad()]
-   */
-  PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
-    ptrdiff_t len, bytes;
-    int m = 0, i, invalid = 0, padding=0;
-
-    len = str->len + THIS->backlog_len;
-    if( len % THIS->block_size)
-      Pike_error("Total data size must be integral numbers of blocks.\n");
-
-    if( method!=NULL )
-    {
-      m = method->u.integer;
-      pop_stack();
-      args--;
-    }
-
-    f_Nettle_Buffer_crypt(1);
-    if (TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("crypt() did not return string.\n");
-    if (Pike_sp[-1].u.string->len != len)
-      Pike_error("crypt() Unexpected string length %ld.\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    str = Pike_sp[-1].u.string;
-
-    bytes = str->str[len -1];
-    if( m==PAD_SSL || m==PAD_TLS ) bytes++;
-
-    if (bytes > THIS->block_size)
-      Pike_error("Invalid padding (%d > %d)\n",
-                 bytes, THIS->block_size-1);
-
-    switch( m )
-    {
-    default:
-      Pike_error("Unknown method.\n");
-    case PAD_ISO_10126:
-    case PAD_ZERO:
-    case PAD_SSL:
-      break;
-    case PAD_ANSI_X923:
-      padding = 0;
-      goto do_check;
-    case PAD_TLS:
-      padding = bytes-1;
-      goto do_check;
-    case PAD_PKCS7:
-      padding = bytes;
-    do_check:
-      /* Try to be constant time here. */
-      for(i=len-bytes; i<len-1; i++)
-        if( str->str[i] != padding )
-          invalid = 1;
-      break;
-    }
-
-    if( m == PAD_ZERO )
-    {
-      int c=THIS->block_size;
-      while( str->str[len-1]==0 && c>0 )
-      {
-        c--;
-        len--;
-      }
-    }
-    else
-      len -= bytes;
-
-    if (len < 0)
-      Pike_error("String too short to unpad\n");
-
-    add_ref(str);
-    pop_stack();
-    push_string(make_shared_binary_string(str->str, len));
-    free_string(str);
-    if( invalid==1 )
-    {
-      pop_stack();
-      push_int(0);
-    }
-  }
-
-  /*! @decl this_program set_iv(string(0..255) iv)
-   *! Set the initialization vector to @[iv].
-   */
-  PIKEFUN object set_iv(string(0..255) iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    apply(THIS->object, "set_iv", args);
-    args = 1;
-    RETURN this_object();
-  }
-
-}
-
-/*! @endclass
- */
 
 
 /*! @endmodule Nettle */
