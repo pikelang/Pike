@@ -492,7 +492,6 @@ PIKECLASS BufferedCipher
 
   PIKECLASS _Buffer
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
-    flags ID_PROTECTED;
   {
     /*! @decl inherit __builtin.Nettle.Cipher
      */
@@ -937,6 +936,18 @@ PIKECLASS BufferedCipher
     }
     /*! @endclass State
      */
+
+    /*! @decl State `()()
+     *!
+     *! @returns
+     *!   Returns a new @[State] object.
+     */
+    PIKEFUN Nettle_BufferedCipher_cq__Buffer_State `()()
+    {
+      apply_current(Nettle_BufferedCipher_cq__Buffer_State_program_fun_num,
+		    args);
+    }
+
   }
   /*! @endmodule Buffer
    */
@@ -982,7 +993,6 @@ PIKECLASS BlockCipher
 
   PIKECLASS _CBC
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
-    flags ID_PROTECTED;
   {
     /*! @decl inherit BufferedCipher
      */
@@ -1297,7 +1307,6 @@ PIKECLASS BlockCipher16
 
   PIKECLASS _GCM
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
-    flags ID_PROTECTED;
   {
     /*! @decl inherit __builtin.Nettle.AEAD
      */
