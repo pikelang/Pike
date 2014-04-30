@@ -99,6 +99,8 @@ class Cipher
 
 //! Abstract class for block cipher algorithms. Contains some tools useful
 //! for all block ciphers.
+//!
+//! Contains the @[CBC] submodule.
 class BlockCipher
 {
   inherit Nettle.BlockCipher;
@@ -111,15 +113,6 @@ class BlockCipher
 class BlockCipher16
 {
   inherit Nettle.BlockCipher16;
-}
-
-//! Implementation of the cipher block chaining mode (CBC). Works as
-//! a wrapper for the cipher algorithm put in create.
-//!
-//! @seealso
-//!   @[GCM]
-class CBC {
-  inherit Nettle.CBC;
 }
 
 //! Acts as a buffer so that data can be fed to a cipher in blocks
