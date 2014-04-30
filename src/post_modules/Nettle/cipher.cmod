@@ -2226,7 +2226,7 @@ pike_chacha_set_key(void *ctx,
  */
 PIKECLASS CHACHA
 {
-  /*! @decl inherit Cipher
+  /*! @decl inherit BlockCipher
    */
   INHERIT Nettle_BlockCipher;
 
@@ -2405,7 +2405,7 @@ pike_des_set_key(void *c,
  */
 PIKECLASS DES
 {
-  /*! @decl inherit Cipher
+  /*! @decl inherit BlockCipher
    */
   INHERIT Nettle_BlockCipher;
 
@@ -2637,7 +2637,7 @@ pike_des3_set_key(void *c,
  */
 PIKECLASS DES3
 {
-  /*! @decl inherit Cipher
+  /*! @decl inherit BlockCipher
    */
   INHERIT Nettle_BlockCipher;
 
@@ -2793,7 +2793,7 @@ pike_salsa20_set_key(void *ctx,
  */
 PIKECLASS SALSA20
 {
-  /*! @decl inherit Cipher
+  /*! @decl inherit BlockCipher
    */
   INHERIT Nettle_BlockCipher;
 
