@@ -163,7 +163,7 @@ array(array(string)) get_trusted_issuers()
 }
 
 protected array(array(string)) trusted_issuers = ({});
-mapping(string:Standards.X509.Verifier) trusted_issuers_cache = ([]);
+mapping(string:array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
 
 //! Determines whether certificates presented by the peer are
 //! verified, or just accepted as being valid.
@@ -783,7 +783,7 @@ private void update_trusted_issuers()
         !(cert->ext_keyUsage & Standards.X509.KU_keyCertSign) )
       error("Trusted issuer not allowed to sign other certificates.\n");
 
-    trusted_issuers_cache[cert->subject->get_der()] = cert->public_key;
+    trusted_issuers_cache[cert->subject->get_der()] += ({ cert->public_key });
   }
 }
 
