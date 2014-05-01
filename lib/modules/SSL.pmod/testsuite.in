@@ -14,6 +14,8 @@ test_any([[
 return SSL.cipher && 1;
 ]], 1)
 
+test_do( SSL.https )
+
 test_do( add_constant( "S", String.string2hex ) )
 test_eq( S(SSL.Cipher.MACsha("foo")->hash("bar")),
 	 "2e6eda2d36d2a2f4b5d7c28c920a0b679f17d76c" )

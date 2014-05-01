@@ -6,7 +6,7 @@
 import .Constants;
 
 //! Based on the base @[packet].
-inherit .packet;
+inherit .Packet;
 
 int level;
 int description;
