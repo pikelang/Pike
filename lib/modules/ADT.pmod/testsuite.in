@@ -442,6 +442,7 @@ test_any([[
   if(sizeof(q)!=1) return 9;
   q->flush();
   if(sizeof(q)) return 10;
+  if(!undefinedp(q->get())) return 11;
   return 0;
 ]], 0)
 
