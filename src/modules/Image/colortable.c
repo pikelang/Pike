@@ -975,7 +975,7 @@ static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
 
    flat.numentries = str->len/3;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -999,7 +999,7 @@ static struct nct_flat _img_get_flat_from_bgr_string(struct pike_string *str)
 
    flat.numentries=str->len/3;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -1023,7 +1023,7 @@ static struct nct_flat _img_get_flat_from_bgrz_string(struct pike_string *str)
 
    flat.numentries=str->len/4;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
