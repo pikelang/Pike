@@ -44,15 +44,12 @@ constant PRI_alert = 1;
 constant PRI_urgent = 2;
 constant PRI_application = 3;
 
-inherit ADT.Queue : alert;
-inherit ADT.Queue : urgent;
-inherit ADT.Queue : application;
+protected ADT.Queue alert = ADT.Queue();
+protected ADT.Queue urgent = ADT.Queue();
+protected ADT.Queue application = ADT.Queue();
 
 void create(int is_server, void|SSL.context ctx)
 {
-  alert::create();
-  urgent::create();
-  application::create();
   current_read_state = SSL.state(this);
   current_write_state = SSL.state(this);
   handshake::create(is_server, ctx);
@@ -134,13 +131,13 @@ void send_packet(object packet, int|void priority)
   default:
     error( "Internal error\n" );
   case PRI_alert:
-    alert::put(packet);
+    alert->put(packet);
     break;
   case PRI_urgent:
-    urgent::put(packet);
+    urgent->put(packet);
     break;
   case PRI_application:
-    application::put(packet);
+    application->put(packet);
     break;
   }
 
@@ -157,7 +154,7 @@ string|int to_write()
   if (dying)
     return -1;
 
-  object packet = alert::get() || urgent::get() || application::get();
+  object packet = alert->get() || urgent->get() || application->get();
   if (!packet) {
     return closing ? 1 : "";
   }
@@ -226,8 +223,9 @@ int send_streaming_data (string data)
   return size;
 }
 
-int handle_alert(string s)
+protected int handle_alert(string s)
 {
+  // sizeof(s)==2, checked at caller.
   int level = s[0];
   int description = s[1];
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
