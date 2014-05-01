@@ -2,6 +2,7 @@
 //! A simple FIFO queue.
 
 #pike __REAL_VERSION__
+#pragma strict_types
 
 array l;
 
