@@ -1283,24 +1283,6 @@ class RC2
 }
 #endif /* Crypto.Arctwo */
 
-//!
-class AES_CCM
-{
-  inherit Crypto.CCM.State;
-  protected void create() { ::create(Crypto.AES()); }
-}
-
-//!
-class AES_CCM_8
-{
-  inherit AES_CCM;
-
-  int digest_size()
-  {
-    return 8;
-  }
-}
-
 //! Signing using RSA.
 ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
 {
@@ -1747,7 +1729,7 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
     case MODE_ccm:
       if (res->bulk_cipher_algorithm == Crypto.AES.CBC.Buffer.State) {
-	res->bulk_cipher_algorithm = AES_CCM;
+	res->bulk_cipher_algorithm = Crypto.AES.CCM.State;
       } else {
 	// Unsupported.
 	return 0;
@@ -1761,7 +1743,7 @@ array lookup(int suite, ProtocolVersion|int version,
       break;
     case MODE_ccm_8:
       if (res->bulk_cipher_algorithm == Crypto.AES.CBC.Buffer.State) {
-	res->bulk_cipher_algorithm = AES_CCM_8;
+	res->bulk_cipher_algorithm = Crypto.AES.CCM8.State;
       } else {
 	// Unsupported.
 	return 0;
