@@ -428,4 +428,21 @@ test_any([[
   return r + ":" + sizeof(s);
 ]], "x3:0")
 
+test_any([[
+  object q=ADT.Queue();
+  if(sizeof(q)) return 1;
+  if((array)q!=({})) return 2;
+  if(!q->is_empty()) return 3;
+  q->put(1,2);
+  if(sizeof(q)!=2) return 4;
+  if(!equal((array)q,({1,2}))) return 5;
+  if(!equal(values(q),({1,2}))) return 6;
+  if(q->peek()!=1) return 7;
+  if(q->get()!=1) return 8;
+  if(sizeof(q)!=1) return 9;
+  q->flush();
+  if(sizeof(q)) return 10;
+  return 0;
+]], 0)
+
 END_MARKER
