@@ -2,33 +2,28 @@
 //! A simple FIFO queue.
 
 #pike __REAL_VERSION__
-#define QUEUE_SIZE 100
 
 array l;
-int head;
-int tail;
 
 //! Creates a queue with the initial items @[args] in it.
 protected void create(mixed ...args)
 {
-  l = args + allocate(QUEUE_SIZE);
-  head = sizeof(args);
-  tail = 0;
+  l = args;
 }
 
 protected int _sizeof()
 {
-  return head - tail;
+  return sizeof(l);
 }
 
 protected array _values()
 {
-  return l[tail..head-1];
+  return values(l);
 }
 
 void write(mixed ... items)
 {
-  put(@items);
+  l += items;
 }
 
 //! @decl void write(mixed ... items)
@@ -37,16 +32,7 @@ void write(mixed ... items)
 //
 void put(mixed ... items)
 {
-  if (sizeof(items) + head > sizeof(l)) {
-    l = l[tail ..];
-    head -= tail;
-    tail = 0;
-    l += allocate(sizeof(l) + max(QUEUE_SIZE, sizeof(items)));
-  }
-  foreach (items; int n; mixed item) {
-      l[head++] = item;
-  }
-//  werror(sprintf("Queue->put: %O\n", l[tail..head-1]));
+  l += items;
 }
 
 mixed read()
@@ -60,12 +46,8 @@ mixed read()
 //
 mixed get()
 {
-//  werror(sprintf("Queue->get: %O\n", l[tail..head-1]));
-  mixed res;
-  if (tail == head)
-    return UNDEFINED;
-  res = l[tail];
-  l[tail++] = 0;
+  mixed res = l[0];
+  l = l[1..];
   return res;
 }
 
@@ -73,31 +55,31 @@ mixed get()
 //! without removing it from the queue.
 mixed peek()
 {
-  return (tail < head) && l[tail];
+  return sizeof(l) && l[0];
 }
 
 //! Returns true if the queue is empty,
 //! otherwise zero.
 int(0..1) is_empty()
 {
-  return (tail == head);
+  return !sizeof(l);
 }
 
 //! Empties the queue.
 void flush()
 {
-  create();
+  l = ({});
 }
 
 //! It is possible to cast ADT.Queue to an array.
 protected mixed cast(string to) {
   switch(to) {
   case "object": return this;
-  case "array": return l[tail..head-1];
+  case "array": return l+({});
   }
   error("Can not cast ADT.Queue to %s.\n", to);
 }
 
 protected string _sprintf(int t) {
-  return t=='O' && l && sprintf("%O%O", this_program, cast("array"));
+  return t=='O' && sprintf("%O(%O)", this_program, l);
 }
