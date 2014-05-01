@@ -47,6 +47,7 @@ mixed read()
 //
 mixed get()
 {
+  if( !sizeof(l) ) return UNDEFINED;
   mixed res = l[0];
   l = l[1..];
   return res;
