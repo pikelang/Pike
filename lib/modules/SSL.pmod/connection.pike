@@ -19,6 +19,8 @@
 // TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
 // Renegotiation	RFC 5746 "Renegotiation Indication Extension".
 
+#define Packet .Packet
+
 .state current_read_state;
 .state current_write_state;
 string left_over;

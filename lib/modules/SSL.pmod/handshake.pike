@@ -69,7 +69,7 @@ string(0..255) client_random;
 string(0..255) server_random;
 
 constant Session = SSL.session;
-constant Packet = SSL.packet;
+#define Packet .Packet
 
 SSL.alert Alert(int level, int description, string|void message)
 {

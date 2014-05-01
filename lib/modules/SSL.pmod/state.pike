@@ -11,6 +11,7 @@ import .Constants;
 
 //!
 constant Alert = .alert;
+#define Packet .Packet
 
 function(int, int, string|void: Alert) alert;
 
@@ -45,7 +46,7 @@ string salt;
 //! if needed). On success, returns the decrypted packet. On failure,
 //! returns an alert packet. These cases are distinguished by looking
 //! at the is_alert attribute of the returned packet.
-Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
+Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 {
   /* NOTE: TLS 1.1 recommends performing the hash check before
    *       sending the alerts to protect against timing attacks.
@@ -230,7 +231,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
-Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
+Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
 {
   string digest;
   packet->protocol_version = version;
