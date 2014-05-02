@@ -561,10 +561,25 @@ PIKECLASS BufferedCipher
 	}
       }
 
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
       /*! @decl void create()
        *!
-       *! Initialize the buffer with the cipher implemented
-       *! in the parent module.
+       *! Initialize the buffer with the @[Cipher::State] object
+       *! returned by @[substate_factory()]. This is usually
+       *! the State for the cipher implemented in the parent module.
        */
       PIKEFUN void create()
 	flags ID_PROTECTED;
@@ -575,7 +590,8 @@ PIKECLASS BufferedCipher
 
 	exit_Nettle_BufferedCipher_cq__Buffer_State_struct();
 
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_current(f_Nettle_BufferedCipher_cq__Buffer_State_substate_factory_fun_num,
+		      0);
 
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  Pike_error("Unsupported return value from Cipher::State().\n");
@@ -1084,9 +1100,25 @@ PIKECLASS BlockCipher
 	}
       }
 
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
       /*! @decl void create()
        *!
-       *! Initialize the CBC state.
+       *! Initialize the CBC state with the @[Cipher::State] object
+       *! returned by @[substate_factory()]. This is usually
+       *! the State for the cipher implemented in the parent module.
        */
       PIKEFUN void create()
 	flags ID_PROTECTED;
@@ -1097,7 +1129,9 @@ PIKECLASS BlockCipher
 	unsigned block_size;
 	int f;
 
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_current(f_Nettle_BlockCipher_cq__CBC_State_substate_factory_fun_num,
+		      0);
+
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  Pike_error("Unsupported return value from Cipher::State().\n");
 	}
@@ -1409,9 +1443,25 @@ PIKECLASS BlockCipher
 	}
       }
 
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
       /*! @decl void create()
        *!
-       *! Initialize the CTR wrapper with a cipher algorithm.
+       *! Initialize the CTR state with the @[Cipher::State] object
+       *! returned by @[substate_factory()]. This is usually
+       *! the State for the cipher implemented in the parent module.
        */
       PIKEFUN void create()
 	flags ID_PROTECTED;
@@ -1425,7 +1475,8 @@ PIKECLASS BlockCipher
 	if (THIS->object) free_object(THIS->object);
 	THIS->crypt_state = NULL;
 
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_current(f_Nettle_BlockCipher_cq__CTR_State_substate_factory_fun_num,
+		      0);
 
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  Pike_error("Unsupported return value from Cipher::State().\n");
@@ -2354,9 +2405,25 @@ PIKECLASS BlockCipher16
 	}
       }
 
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
       /*! @decl void create()
        *!
-       *! Initialize the GCM state.
+       *! Initialize the GCM state with the @[Cipher::State] object
+       *! returned by @[substate_factory()]. This is usually
+       *! the State for the cipher implemented in the parent module.
        */
       PIKEFUN void create()
 	flags ID_PROTECTED;
@@ -2365,7 +2432,8 @@ PIKECLASS BlockCipher16
 	struct inherit *inh;
 	int f;
 
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_current(f_Nettle_BlockCipher16_cq__GCM_State_substate_factory_fun_num,
+		      0);
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  Pike_error("Unsupported return value from Cipher::State().\n");
 	}
