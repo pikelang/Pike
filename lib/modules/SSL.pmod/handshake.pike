@@ -102,9 +102,10 @@ string(8bit) get_signature_algorithms()
 }
 
 #ifdef SSL3_PROFILING
-int timestamp;
+System.Timer timer = System.Timer();
 void addRecord(int t,int s) {
-  Stdio.stdout.write("time: %.24f  type: %d sender: %d\n",time(timestamp),t,s);
+  Stdio.stdout.write("time: %.6f sender: %d type: %s\n", timer->get(), s,
+                     fmt_constant(t, "HANDSHAKE"));
 }
 #endif
 
@@ -1798,12 +1799,6 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 //!   The context for the connection.
 void create(int is_server, void|SSL.context ctx)
 {
-
-#ifdef SSL3_PROFILING
-  timestamp=time();
-  Stdio.stdout.write("New...\n");
-#endif
-
   if ((ctx->max_version < PROTOCOL_SSL_3_0) ||
       (ctx->max_version > PROTOCOL_TLS_MAX)) {
     ctx->max_version = PROTOCOL_TLS_MAX;
