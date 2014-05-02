@@ -136,3 +136,126 @@ constant PAD_ANSI_X923 = Nettle.PAD_ANSI_X923;
 constant PAD_PKCS7     = Nettle.PAD_PKCS7;
 constant PAD_ZERO      = Nettle.PAD_ZERO;
 constant PAD_TLS       = Nettle.PAD_TLS;
+
+#pragma no_deprecation_warnings
+
+// Compatibility stuff.
+
+protected constant compat_required_methods = ({
+  "block_size",
+  "key_size",
+  "set_encrypt_key",
+  "set_decrypt_key",
+  "crypt",
+});
+
+protected void compat_assert_is_crypto_object(CipherState obj)
+{
+  foreach(compat_required_methods, string method) {
+    if (!obj[method]) error("Object is missing identifier \"%s\"\n", method);
+  }
+}
+
+//! @ignore
+protected class CompatProxy
+{
+  inherit BlockCipher;
+
+  class _CBC {
+    inherit ::this_program;
+
+    class State
+    {
+      inherit ::this_program;
+      //! @endignore
+
+      //! @class CBC
+      //!
+      //! This class has moved to submodules of the respective ciphers.
+      //!
+      //! @deprecated BlockCipher.CBC
+
+      protected CipherState proxy_obj;
+
+      protected CipherState substate_factory()
+      {
+	return proxy_obj;
+      }
+
+      //!
+      protected __deprecated__ void create(CipherState|program(CipherState) fun,
+					   mixed ... args)
+      {
+	if (callablep(fun)) {
+	  proxy_obj = [object(CipherState)]fun(@args);
+	} else if (objectp(fun)) {
+	  proxy_obj = [object(CipherState)]fun;
+	} else {
+	  error("Bad argument 1 to create(). Expected program|object|function.\n");
+	}
+	compat_assert_is_crypto_object(proxy_obj);
+	::create();
+      }
+
+      //! @endclass
+
+      //! @ignore
+    }
+  }
+
+  class _Buffer {
+    inherit ::this_program;
+
+    class State
+    {
+      inherit ::this_program;
+
+      //! @endignore
+
+      //! @class Buffer
+      //!
+      //! This class has moved to submodules of the respective ciphers.
+      //!
+      //! @deprecated BlockCipher.Buffer
+
+      protected CipherState proxy_obj;
+
+      protected CipherState substate_factory()
+      {
+	return proxy_obj;
+      }
+
+      //!
+      protected __deprecated__ void create(CipherState|program(CipherState) fun,
+					   mixed ... args)
+      {
+	if (callablep(fun)) {
+	  proxy_obj = [object(CipherState)]fun(@args);
+	} else if (objectp(fun)) {
+	  proxy_obj = [object(CipherState)]fun;
+	} else {
+	  error("Bad argument 1 to create(). Expected program|object|function.\n");
+	}
+	compat_assert_is_crypto_object(proxy_obj);
+	::create();
+      }
+
+      //! @endclass
+
+      //! @ignore
+    }
+  }
+}
+
+//! @endignore
+
+protected CompatProxy compat_proxy = CompatProxy();
+
+__deprecated__ program(CipherState) CBC =
+  [__deprecated__(program)]compat_proxy.CBC.State;
+
+//! This class has moved to submodules of the respective ciphers.
+__deprecated__ program(CipherState) Buffer =
+  [__deprecated__(program)]compat_proxy.Buffer.State;
+
+#pragma deprecation_warnings
