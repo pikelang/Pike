@@ -126,9 +126,21 @@
 # define INT16 short
 #endif
 
+#ifndef MAX_INT16
+# define MAX_UINT16 65535
+# define MAX_INT16 32767
+# define MIN_INT16 (-32768)
+#endif
+
 /* and INT8 */
 #ifndef INT8
 # define INT8 char
+#endif
+
+#ifndef MAX_INT8
+# define MAX_UINT8 255
+# define MAX_INT8 127
+# define MIN_INT8 (-128)
 #endif
 
 #ifdef INT64
