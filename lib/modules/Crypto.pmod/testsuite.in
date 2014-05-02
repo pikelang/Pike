@@ -5,17 +5,16 @@ test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
 
-cond_resolv( Nettle.CBC, [[
-  test_true( programp(Crypto.CBC) )
-  test_true( programp(Crypto.Buffer) )
+cond_resolv( Nettle.Cipher, [[
+  test_true( programp(Crypto.Cipher) )
   test_true( programp(Crypto.CipherState) )
   test_true( programp(Crypto.HashState) )
 ]])
 
-cond_resolv( Nettle.Proxy, [[
+cond_resolv( Nettle.Cipher, [[
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
-    object b2 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
+    object b2 = Crypto.AES.Buffer();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
     foreach( ({ Crypto.PAD_SSL, Crypto.PAD_ISO_10126,
@@ -38,7 +37,7 @@ cond_resolv( Nettle.Proxy, [[
     return 1;
   ]], 1)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -48,7 +47,7 @@ cond_resolv( Nettle.Proxy, [[
     return b2->crypt(x)[-1];
   ]], 13)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -58,7 +57,7 @@ cond_resolv( Nettle.Proxy, [[
     return b2->crypt(x)[-1];
   ]], 14)
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
     b->crypt("AA\0");
     b->pad(Crypto.PAD_ZERO);
@@ -66,7 +65,7 @@ cond_resolv( Nettle.Proxy, [[
 
   define(test_pad,[[
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -77,7 +76,7 @@ cond_resolv( Nettle.Proxy, [[
   ]], $2)
   ]])
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -90,7 +89,7 @@ cond_resolv( Nettle.Proxy, [[
       c[-1]==13;
   ]], 1)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -107,24 +106,24 @@ cond_resolv( Nettle.Proxy, [[
   test_pad(PAD_ZERO, "AA"+"\0"*14)
 
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
     b->crypt("A\0");
     b->pad(Crypto.PAD_ZERO);
   ]])
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
     b->pad(6);
   ]])
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_decrypt_key("A"*32);
     b->unpad("X"*(Crypto.AES.block_size()+1));
   ]])
 
   test_any([[
-    object b = Crypto.Buffer(Crypto.CBC(Crypto.AES));
+    object b = Crypto.AES.CBC.Buffer();
     b->set_encrypt_key("key "*4);
     array a = ({});
     for(int i; i<5; i++)
@@ -134,7 +133,7 @@ cond_resolv( Nettle.Proxy, [[
   ]], [[",,,\355Gn@\346\213\373\34TX@2\0o\206\372,,\322\236\277\321\332\vK\213\344""6\341\202\265\275\333e"]])
 
   test_any([[
-    object b = Crypto.Buffer(Crypto.CBC(Crypto.AES));
+    object b = Crypto.AES.CBC.Buffer();
     b->set_decrypt_key("key "*4);
     array a = ({});
     a += ({ b->crypt("\355Gn@\346\213\373\34TX") });
@@ -146,22 +145,22 @@ cond_resolv( Nettle.Proxy, [[
 ]])
 
 test_any([[
-  object b = Crypto.Buffer(Crypto.AES);
+  object b = Crypto.AES.Buffer();
   b->set_decrypt_key("A"*16);
   return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
 ]], "AA")
 test_any([[
-  object b = Crypto.Buffer(Crypto.AES);
+  object b = Crypto.AES.Buffer();
   b->set_decrypt_key("A"*16);
   return b->unpad("\225\222\355<k\b$.\327\370\317b\236p-\245", Crypto.PAD_ANSI_X923);
 ]], 0)
 test_any([[
-  object b = Crypto.Buffer(Crypto.AES);
+  object b = Crypto.AES.Buffer();
   b->set_decrypt_key("A"*16);
   return b->unpad("\362\237""7r\302% \360\276\201\316#<W4\231", Crypto.PAD_PKCS7);
 ]], 0)
 test_any([[
-  object b = Crypto.Buffer(Crypto.AES);
+  object b = Crypto.AES.Buffer();
   b->set_decrypt_key("A"*16);
   return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5", Crypto.PAD_TLS);
 ]], 0)
@@ -967,7 +966,7 @@ test_eq(
 // Rijndael CBC decrypt
 cond_resolv(Crypto.AES.name, [[
 test_any([[
-  object aes_cbc = Crypto.CBC(Crypto.AES);
+  object aes_cbc = Crypto.AES.CBC();
   aes_cbc->set_decrypt_key(String.hex2string("0"*32));
   aes_cbc->set_iv(String.hex2string("0"*32));
   string ct = String.hex2string("0"*32);

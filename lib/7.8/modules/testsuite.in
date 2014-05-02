@@ -1,0 +1,268 @@
+START_MARKER(7.8)
+
+// Crypto & Nettle
+
+cond_resolv( Crypto.Buffer, [[
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.Buffer(Crypto.AES);
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+    foreach( ({ Crypto.PAD_SSL, Crypto.PAD_ISO_10126,
+                Crypto.PAD_ANSI_X923, Crypto.PAD_PKCS7,
+                Crypto.PAD_ZERO, Crypto.PAD_TLS }), int m )
+    {
+      for(int i=1; i<Crypto.AES->block_size(); i++) {
+        string p = "x"*i;
+        if(sizeof(b1->crypt(p))) error("Data returned (%O).\n", i);
+        string u = b2->unpad(b1->pad(m),m);
+        if(u!=p) error("Data differs (%O, %O, %O, %O).\n", m,i,u,p);
+      }
+      for(int i=Crypto.AES->block_size(); i<Crypto.AES->block_size()*3; i++) {
+        string p = "y"*i;
+        string x = b1->crypt(p);
+        string u = b2->unpad(x+b1->pad(m),m);
+        if(u!=p) error("Data differs (%O, %O, %O, %O).\n", m,i,u,p);
+      }
+    }
+    return 1;
+  ]], 1)
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.AES();
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+
+    if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+    string x = b1->pad();
+    return b2->crypt(x)[-1];
+  ]], 13)
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.AES();
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+
+    if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+    string x = b1->pad(Crypto.PAD_ISO_10126);
+    return b2->crypt(x)[-1];
+  ]], 14)
+  test_eval_error([[
+    object b = Crypto.Buffer(Crypto.AES);
+    b->set_encrypt_key("A"*32);
+    b->crypt("AA\0");
+    b->pad(Crypto.PAD_ZERO);
+  ]])
+
+  define(test_pad,[[
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.AES();
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+
+    if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+    string x = b1->pad(Crypto.$1);
+    return b2->crypt(x);
+  ]], $2)
+  ]])
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.AES();
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+
+    if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+    string x = b1->pad(Crypto.PAD_SSL);
+    string c = b2->crypt(x);
+    return sizeof(c)==Crypto.AES.block_size() &&
+      c[..1]=="AA" &&
+      c[-1]==13;
+  ]], 1)
+  test_any([[
+    object b1 = Crypto.Buffer(Crypto.AES);
+    object b2 = Crypto.AES();
+    b1->set_encrypt_key("A"*32);
+    b2->set_decrypt_key("A"*32);
+
+    if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+    string x = b1->pad(Crypto.PAD_ISO_10126);
+    string c = b2->crypt(x);
+    return sizeof(c)==Crypto.AES.block_size() &&
+      c[..1]=="AA" &&
+      c[-1]==14;
+  ]], 1)
+  test_pad(PAD_ANSI_X923, "AA"+"\0"*13+"\16")
+  test_pad(PAD_PKCS7, "AA"+"\16"*14)
+  test_pad(PAD_ZERO, "AA"+"\0"*14)
+
+  test_eval_error([[
+    object b = Crypto.Buffer(Crypto.AES);
+    b->set_encrypt_key("A"*32);
+    b->crypt("A\0");
+    b->pad(Crypto.PAD_ZERO);
+  ]])
+  test_eval_error([[
+    object b = Crypto.Buffer(Crypto.AES);
+    b->set_encrypt_key("A"*32);
+    b->pad(6);
+  ]])
+  test_eval_error([[
+    object b = Crypto.Buffer(Crypto.AES);
+    b->set_decrypt_key("A"*32);
+    b->unpad("X"*(Crypto.AES.block_size()+1));
+  ]])
+
+  test_any([[
+    object b = Crypto.Buffer(Crypto.AES.CBC());
+    b->set_encrypt_key("key "*4);
+    array a = ({});
+    for(int i; i<5; i++)
+      a += ({ b->crypt("12345") });
+    a += ({ b->pad(Crypto.PAD_PKCS7) });
+    return a*",";
+  ]], [[",,,\355Gn@\346\213\373\34TX@2\0o\206\372,,\322\236\277\321\332\vK\213\344""6\341\202\265\275\333e"]])
+
+  test_any([[
+    object b = Crypto.Buffer(Crypto.AES.CBC());
+    b->set_decrypt_key("key "*4);
+    array a = ({});
+    a += ({ b->crypt("\355Gn@\346\213\373\34TX") });
+    a += ({ b->crypt("@2\0o\206\372\322\236\277\321") });
+    a += ({ b->crypt("\332\vK\213\344""6\341\202\265\275") });
+    a += ({ b->unpad("\333e", Crypto.PAD_PKCS7) });
+    return a*",";
+  ]],[[ ",1234512345123451,,234512345" ]])
+]])
+
+test_eval_error( Crypto.CBC( class{} ) )
+test_eval_error( object o=class{}(); Crypto.CBC(o); )
+test_eval_error([[
+  class A {
+    int block_size() { return 0; }
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    string crypt(string data) {}
+  };
+  Crypto.CBC(A);
+]])
+test_eval_error([[
+  class A {
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    string crypt(string data) {}
+  };
+  Crypto.CBC(A);
+]])
+test_do([[
+  class A {
+    int block_size() { return 512; }
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    int `()() { return 0; }
+    string crypt(string data) {}
+  };
+  Crypto.CBC(A);
+]])
+test_eq( Crypto.CBC(Crypto.AES())->block_size(), 16)
+test_eq( Crypto.CBC(Crypto.AES)->block_size(), 16)
+test_eq( Crypto.CBC(Crypto.AES())->key_size(), 0)
+test_eq( Crypto.CBC(Crypto.AES)->key_size(), 0)
+test_any([[
+  object cbc=Crypto.CBC(Crypto.AES());
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return cbc->key_size();]], 32)
+test_any([[
+  object cbc=Crypto.CBC(Crypto.AES);
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return cbc->key_size();]], 32)
+test_eval_error([[
+  object cbc=Crypto.CBC(Crypto.AES());
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  cbc->crypt("123");
+]])
+test_eval_error([[
+  object cbc=Crypto.CBC(Crypto.AES);
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  cbc->crypt("123");
+]])
+test_any([[
+  object cbc=Crypto.CBC(Crypto.AES());
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return String.string2hex(cbc->crypt("0123456789abcdef"));
+]], "b71a7f6d29d66bd468294ed9cfda2af1")
+test_any([[
+  object cbc=Crypto.CBC(Crypto.AES);
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return String.string2hex(cbc->crypt("0123456789abcdef"));
+]], "b71a7f6d29d66bd468294ed9cfda2af1")
+
+test_do([[
+  object x = Crypto.CBC (Crypto.AES);
+  x->set_encrypt_key ("\0" * 16);
+  x->set_iv ("\0" * 16);
+  x->crypt ("x" * 10000000);
+]])
+
+test_eval_error( Crypto.Buffer( class{} ) )
+test_eval_error( object o=class{}(); Crypto.Buffer(o); )
+test_eval_error([[
+  class A {
+    int block_size() { return 0; }
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    string crypt(string data) {}
+  };
+  Crypto.Buffer(A);
+]])
+test_eval_error([[
+  class A {
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    string crypt(string data) {}
+  };
+  Crypto.Buffer(A);
+]])
+test_do([[
+  class A {
+    int block_size() { return 512; }
+    int key_size() { return 0; }
+    void set_encrypt_key(string key) { }
+    void set_decrypt_key(string key) { }
+    int `()() { return 0; }
+    string crypt(string data) {}
+  };
+  Crypto.Buffer(A);
+]])
+test_eq( Crypto.Buffer(Crypto.AES())->block_size(), 16)
+test_eq( Crypto.Buffer(Crypto.AES)->block_size(), 16)
+test_eq( Crypto.Buffer(Crypto.AES())->key_size(), 0)
+test_eq( Crypto.Buffer(Crypto.AES)->key_size(), 0)
+test_any([[
+  object proxy=Crypto.Buffer(Crypto.AES());
+  proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return proxy->key_size();]], 32)
+test_any([[
+  object proxy=Crypto.Buffer(Crypto.AES);
+  proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return proxy->key_size();]], 32)
+test_any([[
+  object proxy=Crypto.Buffer(Crypto.AES());
+  proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  string r = "";
+  foreach( "0123456789abcdefg"/1, string str )
+    r += proxy->crypt(str);
+  return r;
+]], String.hex2string("b71a7f6d29d66bd468294ed9cfda2af1"))
+test_any([[
+  object proxy=Crypto.Buffer(Crypto.AES);
+  proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return proxy->crypt("123");
+]], "")
+
+END_MARKER
