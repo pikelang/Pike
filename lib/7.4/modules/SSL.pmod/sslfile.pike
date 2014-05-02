@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.5
 
 //! Interface similar to Stdio.File.
 
