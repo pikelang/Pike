@@ -96,43 +96,6 @@ static INLINE int DO_ ## type ## _RSH_OVERFLOW(type a, type b, type * res) {    
     return 0;                                                                           \
 }
 
-#if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow)
-#define DO_CLANG_OF(name, type, builtin)                \
-static INLINE int name(type a, type b, type * res) {    \
-    type tmp;                                           \
-    if (builtin(a, b, &tmp)) return 1;                  \
-    *res = tmp;                                         \
-    return 0;                                           \
-}
-
-DO_CLANG_OF(DO_INT32_ADD_OVERFLOW, INT32, __builtin_sadd_overflow)
-DO_CLANG_OF(DO_INT32_SUB_OVERFLOW, INT32, __builtin_ssub_overflow)
-DO_CLANG_OF(DO_INT32_MUL_OVERFLOW, INT32, __builtin_smul_overflow)
-DO_CLANG_OF(DO_UINT32_ADD_OVERFLOW, unsigned INT32, __builtin_uadd_overflow)
-DO_CLANG_OF(DO_UINT32_SUB_OVERFLOW, unsigned INT32, __builtin_usub_overflow)
-DO_CLANG_OF(DO_UINT32_MUL_OVERFLOW, unsigned INT32, __builtin_umul_overflow)
-
-GENERIC_OVERFLOW_CHECKS(INT32)
-#if defined(INT64)
-# if SIZEOF_LONG == 8
-DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddl_overflow)
-DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubl_overflow)
-DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smull_overflow)
-DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, unsigned INT64, __builtin_uaddl_overflow)
-DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, unsigned INT64, __builtin_usubl_overflow)
-DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, unsigned INT64, __builtin_umull_overflow)
-# elif SIZEOF_LONG_LONG == 8
-DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddll_overflow)
-DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubll_overflow)
-DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smulll_overflow)
-DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, unsigned INT64, __builtin_uaddll_overflow)
-DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, unsigned INT64, __builtin_usubll_overflow)
-DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, unsigned INT64, __builtin_umulll_overflow)
-#endif
-GENERIC_OVERFLOW_CHECKS(INT64)
-#endif
-
-#else
 #define _GEN_OF2(type, type2, utype2, size)                                             \
 static INLINE int DO_ ## type ## _ADD_OVERFLOW(type a, type b, type * res) {            \
     type2 tmp;                                                                          \
@@ -255,22 +218,65 @@ static INLINE int DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b
   GEN_USUB_OF(INT ## size)                              \
   _GEN_OF1(INT ## size, size)				\
   GENERIC_OVERFLOW_CHECKS(INT ## size)
-#define GEN_OF2(s1, s2)					\
+#define GEN_OF2(s1, s2, utype2)				\
   GEN_USUB_OF(INT ## s1)                                \
-  _GEN_OF2(INT ## s1, INT ## s2, UINT ## s2, s1)	\
+  _GEN_OF2(INT ## s1, INT ## s2, utype2, s1)            \
   GENERIC_OVERFLOW_CHECKS(INT ## s1)
 
+#if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow)
+#define DO_CLANG_OF(name, type, builtin)                \
+static INLINE int name(type a, type b, type * res) {    \
+    type tmp;                                           \
+    if (builtin(a, b, &tmp)) return 1;                  \
+    *res = tmp;                                         \
+    return 0;                                           \
+}
+
+DO_CLANG_OF(DO_INT32_ADD_OVERFLOW, INT32, __builtin_sadd_overflow)
+DO_CLANG_OF(DO_INT32_SUB_OVERFLOW, INT32, __builtin_ssub_overflow)
+DO_CLANG_OF(DO_INT32_MUL_OVERFLOW, INT32, __builtin_smul_overflow)
+DO_CLANG_OF(DO_UINT32_ADD_OVERFLOW, unsigned INT32, __builtin_uadd_overflow)
+DO_CLANG_OF(DO_UINT32_SUB_OVERFLOW, unsigned INT32, __builtin_usub_overflow)
+DO_CLANG_OF(DO_UINT32_MUL_OVERFLOW, unsigned INT32, __builtin_umul_overflow)
+
+GENERIC_OVERFLOW_CHECKS(INT32)
+
+#if defined(INT64)
+# if SIZEOF_LONG == 8
+DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddl_overflow)
+DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubl_overflow)
+DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smull_overflow)
+DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, UINT64, __builtin_uaddl_overflow)
+DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, UINT64, __builtin_usubl_overflow)
+DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, UINT64, __builtin_umull_overflow)
+# elif SIZEOF_LONG_LONG == 8
+DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddll_overflow)
+DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubll_overflow)
+DO_CLANG_OF(DO_INT64_MUL_OVERFLOW, INT64, __builtin_smulll_overflow)
+DO_CLANG_OF(DO_UINT64_ADD_OVERFLOW, UINT64, __builtin_uaddll_overflow)
+DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, UINT64, __builtin_usubll_overflow)
+DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, UINT64, __builtin_umulll_overflow)
+#endif
+GENERIC_OVERFLOW_CHECKS(INT64)
+#endif
+
+#else /* PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) */
+
 #if defined(INT128) && defined(UINT128)
-GEN_OF2(64, 128)
-GEN_OF2(32, 64)
+GEN_OF2(64, 128, UINT128)
+GEN_OF2(32, 64, UINT64)
 #elif defined(INT64) && defined(UINT64)
 GEN_OF1(64)
-GEN_OF2(32, 64)
+GEN_OF2(32, 64, UINT64)
 #else
 GEN_OF1(32)
 #endif
 
-#endif
+#endif /* PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) */
+
+GEN_OF2(16, 32, unsigned INT32)
+GEN_OF2(8, 32, unsigned INT32)
+
 
 /* NB: GCC 4.1.2 doesn't alias pointers to INT_TYPE and to INT32/INT64,
  *     so the DO_INT_TYPE_*_OVERFLOW variants can't just be cpp-renames
