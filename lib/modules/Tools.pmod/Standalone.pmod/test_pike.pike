@@ -870,8 +870,11 @@ int main(int argc, array(string) argv)
 	  continue;
 	}
 
-	if (pike_compat)
-	  test = "#pike " + pike_compat + "\n" + test;
+	if (pike_compat) {
+	  test = "#pike " + pike_compat + "\n" +
+	    "#pragma no_deprecation_warnings\n" +
+	    test;
+	}
 
 	if (prompt) {
 	  if (Stdio.Readline()->
