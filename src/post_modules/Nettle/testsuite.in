@@ -250,78 +250,27 @@ cond_resolv( Nettle.SALSA20 [[
  CC32B15B93784A36E56A76CC64BC8477"-"\n"-" "; ]])
 ]])
 
-cond_resolv( Nettle.CBC, [[
-  test_eval_error( Nettle.CBC( class{} ) )
-  test_eval_error( object o=class{}(); Nettle.CBC(o); )
-  test_eval_error([[
-    class A {
-      int block_size() { return 0; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_eval_error([[
-    class A {
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_do([[
-    class A {
-      int block_size() { return 512; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      int `()() { return 0; }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_eq( Nettle.CBC(Crypto.AES())->block_size(), 16)
-  test_eq( Nettle.CBC(Crypto.AES)->block_size(), 16)
-  test_eq( Nettle.CBC(Crypto.AES())->key_size(), 0)
-  test_eq( Nettle.CBC(Crypto.AES)->key_size(), 0)
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return cbc->key_size();]], 32)
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return cbc->key_size();]], 32)
-  test_eval_error([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    cbc->crypt("123");
-  ]])
-  test_eval_error([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    cbc->crypt("123");
-  ]])
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return String.string2hex(cbc->crypt("0123456789abcdef"));
-  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return String.string2hex(cbc->crypt("0123456789abcdef"));
-  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
-  
+test_eq( Crypto.AES.CBC()->block_size(), 16)
+test_eq( Crypto.AES.CBC()->key_size(), 0)
+test_any([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return cbc->key_size();]], 32)
+test_eval_error([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  cbc->crypt("123");
 ]])
+test_any([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return String.string2hex(cbc->crypt("0123456789abcdef"));
+]], "b71a7f6d29d66bd468294ed9cfda2af1")
 
 dnl key, iv, auth, plaintext, crypted, hash
 define(test_gcm, [[
   test_any([[
-    object o = Nettle.GCM()(Crypto.AES);
+    object o = Crypto.AES.GCM();
     o->set_encrypt_key(String.hex2string($1-"\n"));
     o->set_iv(String.hex2string($2-"\n"));
     o->update(String.hex2string($3-"\n"));
@@ -330,16 +279,14 @@ define(test_gcm, [[
     ]], $5-"\n"+"|"+$6)
 ]])
 
-cond_resolv( Nettle.GCM, [[
-  test_eq( Nettle.GCM()(Crypto.AES())->block_size(), 16 )
-  test_eq( Nettle.GCM()(Crypto.AES)->block_size(), 16 )
-  test_eq( Nettle.GCM()(Crypto.AES())->key_size(), 0 )
-  test_eq( Nettle.GCM()(Crypto.AES)->key_size(), 0 )
+cond_resolv( Nettle.BlockCipher16.GCM, [[
+  test_eq( Crypto.AES.GCM()->block_size(), 16 )
+  test_eq( Crypto.AES.GCM()->key_size(), 0 )
 
   dnl NIST GCM AES test vectors
 
   test_any([[
-    object o = Nettle.GCM()(Crypto.AES);
+    object o = Crypto.AES.GCM();
     o->set_encrypt_key(H("00000000000000000000000000000000"));
     o->set_iv(H("000000000000000000000000"));
     return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
@@ -441,53 +388,15 @@ test_gcm(#"00000000000000000000000000000000
 
 ]])
 
-cond_resolv( Nettle.Buffer, [[
-  test_eval_error( Nettle.Buffer( class{} ) )
-  test_eval_error( object o=class{}(); Nettle.Buffer(o); )
-  test_eval_error([[
-    class A {
-      int block_size() { return 0; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.Buffer(A);
-  ]])
-  test_eval_error([[
-    class A {
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.Buffer(A);
-  ]])
-  test_do([[
-    class A {
-      int block_size() { return 512; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      int `()() { return 0; }
-      string crypt(string data) {}
-    };
-    Nettle.Buffer(A);
-  ]])
-  test_eq( Nettle.Buffer(Crypto.AES())->block_size(), 16)
-  test_eq( Nettle.Buffer(Crypto.AES)->block_size(), 16)
-  test_eq( Nettle.Buffer(Crypto.AES())->key_size(), 0)
-  test_eq( Nettle.Buffer(Crypto.AES)->key_size(), 0)
+cond_resolv( Nettle.BlockCipher.Buffer, [[
+  test_eq( Crypto.AES.Buffer()->block_size(), 16)
+  test_eq( Crypto.AES.Buffer()->key_size(), 0)
   test_any([[
-    object proxy=Nettle.Buffer(Crypto.AES());
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->key_size();]], 32)
   test_any([[
-    object proxy=Nettle.Buffer(Crypto.AES);
-    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return proxy->key_size();]], 32)
-  test_any([[
-    object proxy=Nettle.Buffer(Crypto.AES());
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     string r = "";
     foreach( "0123456789abcdefg"/1, string str )
@@ -495,24 +404,22 @@ cond_resolv( Nettle.Buffer, [[
     return r;
   ]], String.hex2string("b71a7f6d29d66bd468294ed9cfda2af1"))
   test_any([[
-    object proxy=Nettle.Buffer(Crypto.AES);
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->crypt("123");
   ]], "")
-  
 ]])
 
 test_do([[
-  object x = Nettle.CBC (Crypto.AES);
+  object x = Crypto.AES.CBC();
   x->set_encrypt_key ("\0" * 16);
   x->set_iv ("\0" * 16);
   x->crypt ("x" * 10000000);
 ]])
-]])
 
-cond_resolv(Nettle.Buffer, [[
+cond_resolv(Nettle.BlockCipher16.Buffer, [[
   test_do([[
-    object x = Crypto.Buffer (Crypto.AES);
+    object x = Crypto.AES.Buffer();
     x->set_encrypt_key ("0" * 32);
     x->crypt ("x" * 10000000);
   ]])
