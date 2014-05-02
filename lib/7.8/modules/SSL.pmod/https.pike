@@ -1,11 +1,12 @@
-#pike 7.9
-#require constant(SSL.Cipher)
+#pike 7.8
 
-//! Dummy HTTPS server - Compat with Pike 7.8
+/*
+ * dummy https server
+ */
 
-#ifndef PORT
+//! Dummy HTTPS server
+
 #define PORT 25678
-#endif
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -13,9 +14,11 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+
 import Stdio;
 
-inherit 7.8::SSL.sslport;
+inherit SSL.sslport;
 
 string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
@@ -69,19 +72,52 @@ class conn {
     if (index == sizeof(message))
       sslfile->close();
   }
-
+  
   void read_callback(mixed id, string data)
   {
     SSL3_DEBUG_MSG("Received: '" + data + "'\n");
     sslfile->set_write_callback(write_callback);
   }
 
-  void create(object f)
+  protected void create(object f)
   {
     sslfile = f;
     sslfile->set_nonblocking(read_callback, 0, 0);
   }
 }
+
+class no_random {
+  object arcfour = Crypto.Arcfour();
+  
+  protected void create(string|void secret)
+  {
+    if (!secret)
+      secret = sprintf("Foo!%4c", time());
+    arcfour->set_encrypt_key(Crypto.SHA1->hash(secret));
+  }
+
+  string read(int size)
+  {
+    return arcfour->crypt(replace(allocate(size), 0, "\021") * "");
+  }
+}
+
+/* PKCS#1 Private key structure:
+
+RSAPrivateKey ::= SEQUENCE {
+  version Version,
+  modulus INTEGER, -- n
+  publicExponent INTEGER, -- e
+  privateExponent INTEGER, -- d
+  prime1 INTEGER, -- p
+  prime2 INTEGER, -- q
+  exponent1 INTEGER, -- d mod (p-1)
+  exponent2 INTEGER, -- d mod (q-1)
+  coefficient INTEGER -- (inverse of q) mod p }
+
+Version ::= INTEGER
+
+*/
 
 void my_accept_callback(object f)
 {
@@ -91,58 +127,45 @@ void my_accept_callback(object f)
 
 int main()
 {
-  Crypto.Sign key;
-  string certificate;
+  SSL3_DEBUG_MSG("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
+  SSL3_DEBUG_MSG("Key:  '%s'\n", Crypto.string_to_hex(my_key));
+#if 0
+  array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
+  SSL3_DEBUG_MSG("Decoded key: %O\n", key);
+  object n = key[1][1];
+  object e = key[2][1];
+  object d = key[3][1];
+  object p = key[4][1];
+  object q = key[5][1];
 
-  key = Crypto.RSA()->generate_key(1024);
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : "*",
-					       ]));
+  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
+	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
 
-  add_cert(key, ({ certificate }), ({ "*" }));
-
-  key = Crypto.DSA()->generate_key(1024, 160);
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : "*",
-					       ]));
-  add_cert(key, ({ certificate }));
-
-#if constant(Crypto.ECC.Curve)
-  key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : "*",
-					       ]));
-  add_cert(key, ({ certificate }));
-#endif
-
-  // Make sure all cipher suites are available.
-  preferred_suites = get_suites(-1, 2);
-  SSL3_DEBUG_MSG("Cipher suites:\n%s",
-                 SSL.Constants.fmt_cipher_suites(preferred_suites));
-
-  SSL3_DEBUG_MSG("Certs:\n%O\n", cert_pairs);
-
-  random = Crypto.Random.random_string;
+  rsa = Crypto.RSA();
+  rsa->set_public_key(n, e);
+  rsa->set_private_key(d);
+#else /* !0 */
+  // FIXME: Is this correct?
+  rsa = Standards.PKCS.RSA.parse_private_key(my_key);
+#endif /* 0 */
+  certificates = ({ my_certificate });
+  random = no_random()->read;
   werror("Starting\n");
   if (!bind(PORT, my_accept_callback))
   {
     perror("");
     return 17;
   }
-  else {
-    werror("Listening on port %d.\n", PORT);
+  else
     return -17;
-  }
 }
 
-void create()
+protected void create()
 {
   SSL3_DEBUG_MSG("https->create\n");
   sslport::create();
 }
+
+#else // constant(SSL.Cipher.CipherAlgorithm)
+constant this_program_does_not_exist = 1;
+#endif
