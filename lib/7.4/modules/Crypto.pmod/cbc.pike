@@ -5,8 +5,8 @@
 //!
 //! @deprecated Crypto.CBC
 
-#if constant(Nettle.CBC)
-inherit Nettle.CBC;
+#if constant(Crypto.CBC)
+inherit Crypto.CBC;
 
 protected class Wrapper(object a) {
   int block_size() { return a->query_block_size(); }
