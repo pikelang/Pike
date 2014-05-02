@@ -1,5 +1,6 @@
-#pike 8.0
-#require constant(SSL.Cipher)
+#pike 7.8
+
+#if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to @[Stdio.Port].
 
@@ -7,7 +8,7 @@
 inherit Stdio.Port : socket;
 
 //!
-inherit SSL.context;
+inherit .context;
 
 //!
 inherit ADT.Queue : accept_queue;
@@ -173,3 +174,7 @@ void create()
   accept_queue::create();
   set_id(this);
 }
+
+#else // constant(SSL.Cipher.CipherAlgorithm)
+constant this_program_does_not_exist = 1;
+#endif
