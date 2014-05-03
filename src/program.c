@@ -5031,6 +5031,16 @@ void compiler_do_inherit(node *n,
     return;
   }
 
+  fix_type_field(n);
+
+  if (!pike_types_le(n->type, inheritable_type_string) &&
+      (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+    yytype_report(REPORT_WARNING,
+		  n->current_file, n->line_number, inheritable_type_string,
+		  n->current_file, n->line_number, n->type,
+		  0, "Program required for inherit.\n");
+  }
+
   switch(n->token)
   {
     case F_IDENTIFIER:
