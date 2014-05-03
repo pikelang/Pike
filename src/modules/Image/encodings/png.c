@@ -1446,7 +1446,8 @@ static void img_png_decode(INT32 args, int mode)
 
 	    ref_push_string(b->item[1].u.string);
 	    ref_push_string(b->item[0].u.string);
-	    mapping_insert(m,sp-1,sp-2);
+            /* do not replace existing entries */
+	    low_mapping_insert(m,sp-1,sp-2,0);
 	    pop_n_elems(2);
       }
    }
