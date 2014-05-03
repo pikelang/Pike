@@ -1614,6 +1614,16 @@ void resolv_program(node *n)
 {
   check_tree(n,0);
 
+  fix_type_field(n);
+
+  if (!pike_types_le(n->type, inheritable_type_string) &&
+      (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+    yytype_report(REPORT_WARNING,
+		  n->current_file, n->line_number, inheritable_type_string,
+		  n->current_file, n->line_number, n->type,
+		  0, "Not a valid object type.\n");
+  }
+
   resolv_class(n);
   switch(TYPEOF(Pike_sp[-1]))
   {
