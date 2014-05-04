@@ -785,6 +785,60 @@ array(int) a() {
 }
 ]])
 
+dnl client_ver, client_bits, client_strict,
+dnl server_ver, server_bits, server_strict, expected_suite
+define(test_suite_b, [[
+  test_program([[
+    import SSL.Constants;
+
+    int a() {
+      int expected_protocol = min($2, $5);
+
+      log_status("Testing Suite B with %d bit %s client and %d bit %s server...",
+		 $2, fmt_version($1), $5, fmt_version($4));
+
+      server_ctx->configure_suite_b($5, $6);
+      server_ctx->max_version = $4;
+
+      SSL.context client_ctx = TestContext();
+      client_ctx->random = random_string;
+      client_ctx->configure_suite_b($2, $3);
+      client_ctx->max_version = $1;
+
+      int expected_suite = $7;
+      server_ctx->expect_fail = client_ctx->expect_fail = !expected_suite;
+
+      string fail =
+	low_test_ssl_connection(server_ctx, client_ctx,
+				client_msg, expected_suite);
+      if (fail && expected_suite) {
+	log_ssl_failure(client_ctx->min_version, client_ctx->max_version,
+			server_ctx->min_version, server_ctx->max_version,
+			fail, server_ctx->preferred_suites);
+	return 0;
+      }
+      return 1;
+    };
+  ]])
+]])
+
+test_suite_b(0x303, 192, 2, 0x303, 192, 2,
+	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
+test_suite_b(0x303, 192, 2, 0x303, 128, 2,
+	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
+test_suite_b(0x303, 128, 2, 0x303, 192, 2,
+	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
+test_suite_b(0x303, 128, 2, 0x303, 128, 2,
+	     TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256)
+test_suite_b(0x302, 192, 1, 0x302, 192, 1,
+	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
+test_suite_b(0x302, 192, 1, 0x302, 128, 1,
+	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
+test_suite_b(0x302, 128, 1, 0x302, 192, 1,
+	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
+test_suite_b(0x302, 128, 1, 0x302, 128, 1,
+	     TLS_ecdhe_ecdsa_with_aes_128_cbc_sha)
+
 test_do([[
   add_constant("invalid_suites");
   add_constant("log_ssl_failure");
