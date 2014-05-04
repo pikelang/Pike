@@ -43,8 +43,6 @@ int certificate_state;
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 			   * received */
 
-multiset(int) remote_extensions = (<>);
-
 // RFC 5746-related fields
 int secure_renegotiation;
 string(0..255) client_verify_data = "";
@@ -57,18 +55,11 @@ string(0..255) server_verify_data = "";
 
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
-int reuse;
-
-//! A few storage variables for client certificate handling on the client side.
-array(int) client_cert_types;
-array(string(0..255)) client_cert_distinguished_names;
-
 
 //! Random cookies, sent and received with the hello-messages.
 string(0..255) client_random;
 string(0..255) server_random;
 
-constant Session = SSL.session;
 #define Packet .Packet
 
 .Alert Alert(int(1..2) level, int(0..255) description, string|void message)
@@ -77,10 +68,6 @@ constant Session = SSL.session;
   return context->alert_factory(this, level, description, version,
 				message);
 }
-
-
-int has_application_layer_protocol_negotiation;
-string(0..255) next_protocol;
 
 string(8bit) get_signature_algorithms()
 {
@@ -113,7 +100,6 @@ string(0..255) handshake_messages;
 
 Packet handshake_packet(int(0..255) type, string data)
 {
-
 #ifdef SSL3_PROFILING
   addRecord(type,1);
 #endif
@@ -123,219 +109,6 @@ Packet handshake_packet(int(0..255) type, string data)
   packet->fragment = sprintf("%1c%3H", type, [string(0..255)]data);
   handshake_messages += packet->fragment;
   return packet;
-}
-
-Packet server_hello_packet()
-{
-  ADT.struct struct = ADT.struct();
-  /* Build server_hello message */
-  struct->put_uint(version, 2); /* version */
-  SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
-                 fmt_version(version));
-  struct->put_fix_string(server_random);
-  struct->put_var_string(session->identity, 1);
-  struct->put_uint(session->cipher_suite, 2);
-  struct->put_uint(session->compression_algorithm, 1);
-
-  ADT.struct extensions = ADT.struct();
-
-  if (secure_renegotiation) {
-    // RFC 5746 3.7:
-    // The server MUST include a "renegotiation_info" extension
-    // containing the saved client_verify_data and server_verify_data in
-    // the ServerHello.
-    extensions->put_uint(EXTENSION_renegotiation_info, 2);
-    ADT.struct extension = ADT.struct();
-    extension->put_var_string(client_verify_data + server_verify_data, 1);
-
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (session->max_packet_size != PACKET_MAX_SIZE) {
-    // RFC 3546 3.2.
-    ADT.struct extension = ADT.struct();
-    extension->put_uint(EXTENSION_max_fragment_length, 2);
-    switch(session->max_packet_size) {
-    case 512:  extension->put_uint(FRAGMENT_512,  1); break;
-    case 1024: extension->put_uint(FRAGMENT_1024, 1); break;
-    case 2048: extension->put_uint(FRAGMENT_2048, 1); break;
-    case 4096: extension->put_uint(FRAGMENT_4096, 1); break;
-    default:
-      return Alert(ALERT_fatal, ALERT_illegal_parameter,
-		   "Invalid fragment size.\n");
-    }
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (sizeof(session->ecc_curves) &&
-      remote_extensions[EXTENSION_ec_point_formats]) {
-    // RFC 4492 5.2:
-    // The Supported Point Formats Extension is included in a
-    // ServerHello message in response to a ClientHello message
-    // containing the Supported Point Formats Extension when
-    // negotiating an ECC cipher suite.
-    ADT.struct extension = ADT.struct();
-    extension->put_uint(POINT_uncompressed, 1);
-    extension->put_var_string(extension->pop_data(), 1);
-    extensions->put_uint(EXTENSION_ec_point_formats, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (session->truncated_hmac) {
-    // RFC 3546 3.5 "Truncated HMAC"
-    extensions->put_uint(EXTENSION_truncated_hmac, 2);
-    extensions->put_var_string("", 2);
-  }
-
-  if (session->heartbeat_mode) {
-    // RFC 6520
-    ADT.struct extension = ADT.struct();
-    extension->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
-    extensions->put_uint(EXTENSION_heartbeat, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (has_application_layer_protocol_negotiation &&
-      next_protocol)
-  {
-    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation,2);
-    extensions->put_uint(sizeof(next_protocol)+3, 2);
-    extensions->put_uint(sizeof(next_protocol)+1, 2);
-    extensions->put_var_string(next_protocol, 1);
-  }
-
-  if (!extensions->is_empty())
-      struct->put_var_string(extensions->pop_data(), 2);
-
-  string data = struct->pop_data();
-  return handshake_packet(HANDSHAKE_server_hello, data);
-}
-
-Packet server_key_exchange_packet()
-{
-  if (ke) error("KE!\n");
-  ke = session->ke_factory(context, session, this, client_version);
-  string data = ke->server_key_exchange_packet(client_random, server_random);
-  return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
-}
-
-Packet client_key_exchange_packet()
-{
-  ke = ke || session->ke_factory(context, session, this, client_version);
-  string data =
-    ke->client_key_exchange_packet(client_random, server_random, version);
-  if (!data) {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-		      "Invalid KEX.\n"));
-    return 0;
-  }
-
-  array(.state) res =
-    session->new_client_states(this, client_random, server_random, version);
-  pending_read_state = res[0];
-  pending_write_state = res[1];
-
-  return handshake_packet(HANDSHAKE_client_key_exchange, data);
-}
-
-// FIXME: The certificate code has changed, so this no longer works,
-// if it ever did.
-#if 0
-Packet certificate_verify_packet()
-{
-  ADT.struct struct = ADT.struct();
-
-  // FIXME: This temporary context is probably not needed.
-  .context cx = .context();
-  cx->private_key = context->private_key;
-
-  session->cipher_spec->sign(cx, handshake_messages, struct);
-
-  return handshake_packet (HANDSHAKE_certificate_verify,
-			  struct->pop_data());
-}
-#endif
-
-int(0..1) not_ecc_suite(int cipher_suite)
-{
-  array(int) suite = [array(int)]CIPHER_SUITES[cipher_suite];
-  return suite &&
-    !(< KE_ecdh_ecdsa, KE_ecdhe_ecdsa, KE_ecdh_rsa, KE_ecdhe_rsa >)[suite[0]];
-}
-
-int(-1..0) reply_new_session(array(int) cipher_suites,
-			     array(int) compression_methods)
-{
-  SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
-		 .Constants.fmt_cipher_suites(context->preferred_suites),
-                 .Constants.fmt_cipher_suites(cipher_suites));
-  cipher_suites = context->preferred_suites & cipher_suites;
-  SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 .Constants.fmt_cipher_suites((array(int))cipher_suites));
-
-  if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
-    // No overlapping support for ecc.
-    // Filter the ECC suites from the set.
-    SSL3_DEBUG_MSG("ECC not supported.\n");
-    cipher_suites = filter(cipher_suites, not_ecc_suite);
-  }
-
-  if (!sizeof(cipher_suites) ||
-      !session->select_cipher_suite(context, cipher_suites, version)) {
-    // No overlapping cipher suites, or obsolete cipher suite selected,
-    // or incompatible certificates.
-    SSL3_DEBUG_MSG("No common suites.\n");
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
-		      "No common suites!\n"));
-    return -1;
-  }
-
-  compression_methods = context->preferred_compressors & compression_methods;
-  if (sizeof(compression_methods))
-    session->set_compression_method(compression_methods[0]);
-  else
-  {
-    SSL3_DEBUG_MSG("Unsupported compression method.\n");
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
-		      "Unsupported compression method.\n"));
-    return -1;
-  }
-  
-  send_packet(server_hello_packet());
-
-  // Don't send any certificate in anonymous mode.
-  if (session->cipher_spec->sign != .Cipher.anon_sign) {
-    /* Send Certificate, ServerKeyExchange and CertificateRequest as
-     * appropriate, and then ServerHelloDone.
-     *
-     * NB: session->certificate_chain is set by
-     *     session->select_cipher_suite() above.
-     */
-    if (session->certificate_chain)
-    {
-      SSL3_DEBUG_MSG("Sending Certificate.\n");
-      send_packet(certificate_packet(session->certificate_chain));
-    } else {
-      // Otherwise the server will just silently send an invalid
-      // ServerHello sequence.
-      error ("Certificate(s) missing.\n");
-    }
-  }
-
-  Packet key_exchange = server_key_exchange_packet();
-
-  if (key_exchange) {
-    send_packet(key_exchange);
-  }
-  if (context->auth_level >= AUTHLEVEL_ask)
-  {
-    // we can send a certificate request packet, even if we don't have
-    // any authorized issuers.
-    send_packet(certificate_request_packet(context)); 
-    certificate_state = CERT_requested;
-  }
-  send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));
-  return 0;
 }
 
 Packet change_cipher_packet()
@@ -360,21 +133,6 @@ string(0..255) hash_messages(string(0..255) sender)
     return session->cipher_spec->prf(session->master_secret, sender,
 				     session->cipher_spec->hash->hash(handshake_messages), 12);
   }
-}
-
-Packet certificate_request_packet(SSL.context context)
-{
-    /* Send a CertificateRequest message */
-    ADT.struct struct = ADT.struct();
-    struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-    if (version >= PROTOCOL_TLS_1_2) {
-      // TLS 1.2 has var_uint_array of hash and sign pairs here.
-      struct->put_var_string(get_signature_algorithms(), 2);
-    }
-    struct->put_var_string([string(0..255)]
-			   sprintf("%{%2H%}", context->authorities_cache), 2);
-    return handshake_packet(HANDSHAKE_certificate_request,
-				 struct->pop_data());
 }
 
 Packet certificate_packet(array(string(0..255)) certificates)
@@ -438,17 +196,6 @@ Packet heartbleed_packet()
   // No padding.
   return heartbeat_packet(hb_msg->pop_data());
 }
-
-string(0..255) server_derive_master_secret(string(0..255) data)
-{
-  string(0..255)|int(0..255) res =
-    ke->server_derive_master_secret(data, client_random, server_random, version);
-  if (stringp(res)) return [string]res;
-  send_packet(Alert(ALERT_fatal, [int(0..255)]res,
-		    "Failed to derive master secret.\n"));
-  return 0;
-}
-
 
 // verify that a certificate chain is acceptable
 //

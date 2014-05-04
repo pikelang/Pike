@@ -13,6 +13,10 @@ inherit .Connection;
 
 #define Packet .Packet
 
+//! A few storage variables for client certificate handling on the client side.
+array(int) client_cert_types;
+array(string(0..255)) client_cert_distinguished_names;
+
 Packet client_hello()
 {
   ADT.struct struct = ADT.struct();
@@ -176,6 +180,43 @@ Packet finished_packet(string(0..255) sender)
   client_verify_data = hash_messages(sender);
   return handshake_packet(HANDSHAKE_finished, client_verify_data);
 }
+
+Packet client_key_exchange_packet()
+{
+  ke = ke || session->ke_factory(context, session, this, client_version);
+  string data =
+    ke->client_key_exchange_packet(client_random, server_random, version);
+  if (!data) {
+    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+		      "Invalid KEX.\n"));
+    return 0;
+  }
+
+  array(.state) res =
+    session->new_client_states(this, client_random, server_random, version);
+  pending_read_state = res[0];
+  pending_write_state = res[1];
+
+  return handshake_packet(HANDSHAKE_client_key_exchange, data);
+}
+
+// FIXME: The certificate code has changed, so this no longer works,
+// if it ever did.
+#if 0
+Packet certificate_verify_packet()
+{
+  ADT.struct struct = ADT.struct();
+
+  // FIXME: This temporary context is probably not needed.
+  .context cx = .context();
+  cx->private_key = context->private_key;
+
+  session->cipher_spec->sign(cx, handshake_messages, struct);
+
+  return handshake_packet (HANDSHAKE_certificate_verify,
+			  struct->pop_data());
+}
+#endif
 
 protected void create(.context ctx)
 {
