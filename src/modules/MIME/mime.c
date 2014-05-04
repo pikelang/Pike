@@ -209,6 +209,7 @@ static void f_decode_base64( INT32 args )
 	}
       } else if (*src=='=') {
 	/* A pad character has been encountered. */
+        break;
       }
 
     /* If data size not an even multiple of 3 bytes, output remaining data */
