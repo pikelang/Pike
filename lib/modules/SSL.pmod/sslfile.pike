@@ -2303,5 +2303,5 @@ string `->next_protocol() {
 //! Return the currently active cipher suite.
 int query_suite()
 {
-  return conn && conn->session && conn->session->cipher_suite;
+  return conn?->session?->cipher_suite;
 }
