@@ -37,7 +37,7 @@ class MyContext
 {
   inherit SSL.context;
 
-  SSL.alert alert_factory(SSL.connection con,
+  SSL.Alert alert_factory(SSL.connection con,
 			  int level, int description,
 			  SSL.Constants.ProtocolVersion version,
 			  string|void message)
