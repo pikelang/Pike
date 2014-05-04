@@ -652,6 +652,97 @@ void filter_weak_suites(int min_keylength)
 	   });
 }
 
+#if constant(Crypto.ECC.Curve) && constant(Crypto.AES.GCM) && constant(Crypto.SHA384)
+
+//! Configure the context for Suite B compliant operation.
+//!
+//! This restricts the context to the cipher suites
+//! specified by RFC 6460 in strict mode.
+//!
+//! Additional suites may be enabled, but they will only be
+//! selected if a Suite B suite isn't available.
+//!
+//! @param min_keylength
+//!   Minimum supported key length in bits. Either @expr{128@}
+//!   or @expr{192@}.
+//!
+//! @param strictness_level
+//!   Allow additional suites.
+//!   @int
+//!     @value 2..
+//!       Strict mode.
+//!
+//!       Allow only the Suite B suites from RFC 6460 and TLS 1.2.
+//!     @value 1
+//!       Transitional mode.
+//!
+//!       Also allow the transitional suites from RFC 5430 for use
+//!       with TLS 1.0 and 1.1.
+//!     @value 0
+//!       Permissive mode (default).
+//!
+//!       Also allow other suites that conform to the minimum key length.
+//!   @endint
+//!
+//! @note
+//!   This function is only present when Suite B compliant operation
+//!   is possible (ie both elliptic curves and GCM are available).
+//!
+//! @note
+//!   Note also that for Suite B server operation compliant certificates
+//!   need to be added with @[add_cert()].
+//!
+//! @seealso
+//!   @[get_suites()]
+void configure_suite_b(int(128..)|void min_keylength,
+		       int(0..)|void strictness_level)
+{
+  if (min_keylength < 128) min_keylength = 128;
+
+  if (min_keylength > 128) {
+    preferred_suites = ({
+      TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
+    });
+  } else {
+    preferred_suites = ({
+      TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256,
+      TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
+    });
+  }
+
+  max_version = PROTOCOL_TLS_MAX;
+  min_version = PROTOCOL_TLS_1_2;
+
+  if (strictness_level < 2) {
+    // Transitional or permissive mode.
+
+    // Allow TLS 1.0.
+    min_version = PROTOCOL_TLS_1_0;
+
+    // First add the transitional suites.
+    if (min_keylength > 128) {
+      // Transitional Suite B Combination 2
+      preferred_suites += ({
+	TLS_ecdhe_ecdsa_with_aes_256_cbc_sha,
+      });
+    } else {
+      // Transitional Suite B Combination 1
+      preferred_suites += ({
+	TLS_ecdhe_ecdsa_with_aes_128_cbc_sha,
+	TLS_ecdhe_ecdsa_with_aes_256_cbc_sha,
+      });
+    }
+
+    if (strictness_level < 1) {
+      // Permissive mode. Add the remaining suites of
+      // the required strength.
+      preferred_suites += get_suites(min_keylength) - preferred_suites;
+    }
+  }
+}
+
+#endif /* Crypto.ECC.Curve && Crypto.AES.GCM && Crypto.SHA384 */
+
 //! Lists the supported compression algorithms in order of preference.
 //!
 //! Defaults to @expr{({ COMPRESSION_null, COMPRESSION_deflate })@}
