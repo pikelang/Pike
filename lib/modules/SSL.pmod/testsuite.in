@@ -331,23 +331,16 @@ test_do([[
 test_do([[
   add_constant("log_ssl_failure",
 	       lambda(int cmin, int cmax, int smin, int smax,
-		      string expected,
-		      array(int) suites, int state, string got)
+		      string failure, array(int) suites)
 	       {
 		 log_msg("%s..%s client with %s..%s server failed.\n",
 			 SSL.Constants.fmt_version(cmin),
 			 SSL.Constants.fmt_version(cmax),
 			 SSL.Constants.fmt_version(smin),
 			 SSL.Constants.fmt_version(smax));
-		 log_msg("Cipher_suite: %s", SSL.Constants.fmt_cipher_suites(suites));
-		 if (state != 3) {
-		   log_msg("Unexpected exit state: %d.\n", state);
-		 } else {
-		   log_msg("Unexpected result:\n"
-			   "Got:      %O\n"
-			   "Expected: %O\n",
-			   got, expected);
-		 }
+		 log_msg("Cipher_suite: %s",
+			 SSL.Constants.fmt_cipher_suites(suites));
+		 log_msg("%s", failure);
 	       });
 ]])
 
@@ -408,49 +401,23 @@ test_do([[
 ]])
 
 test_do([[
-  int f(int client_min, int client_max, int server_min, int server_max,
-        string expected, object server_ctx, array(int) suites)
+  import SSL.Constants;
+  string f(SSL.context server_ctx, SSL.context client_ctx,
+           string expected_data, int expected_suite)
   {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    server_ctx->min_version = server_min;
-    server_ctx->max_version = server_max;
-
     SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED, 0);
 
-    // We only have self-signed certificates, so all ECDH_RSA and
-    // DH_RSA suites will fail prior to TLS 1.2, since they require
-    // the certificate to be signed with RSA.
-    if (((client_max < SSL.Constants.PROTOCOL_TLS_1_2) ||
-         (server_max < SSL.Constants.PROTOCOL_TLS_1_2)) &
-        (sizeof(suites) == 1)) {
-      if ((SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
-           SSL.Constants.KE_ecdh_rsa) ||
-          (SSL.Constants.CIPHER_SUITES[suites[0] ][0] ==
-           SSL.Constants.KE_dh_rsa)) {
-        expected = 0;
-      }
-      if (sizeof(SSL.Constants.CIPHER_SUITES[suites[0] ]) == 4) {
-        // AEAD ciphers and cipher specific prfs not supported prior
-	// to TLS 1.2.
-	expected = 0;
-      }
-    }
-
-    // A client that supports just a single cipher suite.
-    SSL.context client_ctx = TestContext();
-    client_ctx->random = random_string;
-    client_ctx->preferred_suites = suites;
-    client_ctx->min_version = client_min;
-    client_ctx->max_version = client_max;
-    server_ctx->expect_fail = client_ctx->expect_fail = !expected;
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0);
 
     int state;
 
     int trigged = 10;
+
+    string fail;
 
     string server_buf = "";
     void server_send_data()
@@ -482,6 +449,20 @@ test_do([[
       // server->close();
     };
 
+    void server_check_suite()
+    {
+      if (server->query_suite() != expected_suite) {
+        fail =
+	  sprintf("Unexpected cipher suite (server):\n"
+		  "Got:      %s\n"
+		  "Expected: %s\n",
+		  fmt_cipher_suite(server->query_suite()),
+		  fmt_cipher_suite(expected_suite));
+	return;
+      }
+      server->set_write_callback(sizeof(server_buf) && server_send_data);
+    };
+
     string client_recv_buf = "";
     string client_send_buf = client_msg;
     void client_got_data(mixed ignored, string data)
@@ -511,14 +492,30 @@ test_do([[
       // client->close();
     };
 
-    server->set_nonblocking(server_got_data, 0, server_got_close);
+    void client_check_suite()
+    {
+      if (client->query_suite() != expected_suite) {
+        fail =
+	  sprintf("Unexpected cipher suite (client):\n"
+		  "Got:      %s\n"
+		  "Expected: %s\n",
+		  fmt_cipher_suite(client->query_suite()),
+		  fmt_cipher_suite(expected_suite));
+	return;
+      }
+      client->set_write_callback(client_send_data);
+      client_send_data();
+    };
+
+    server->set_nonblocking(server_got_data, server_check_suite,
+			    server_got_close);
     server->set_alert_callback(server_alert);
-    client->set_nonblocking(client_got_data, client_send_data,
+    client->set_nonblocking(client_got_data, client_check_suite,
 			    client_got_close);
     client->set_alert_callback(client_alert);
 
     // We loop the backend while something happens...
-    while (trigged--) {
+    while (!fail && trigged--) {
       mixed err = catch {
         Pike.DefaultBackend(0.005);
       };
@@ -529,19 +526,72 @@ test_do([[
       }
     }
 
-    int ok;
-    if (!expected || ((state == 3) && (client_recv_buf == expected))) {
-      // log_status("OK: %s\n", SSL.Constants.fmt_cipher_suites(suites));
-      ok = 1;
+    if (fail) {
+    } else if (!expected_data ||
+        ((state == 3) && (client_recv_buf == expected_data))) {
+      // log_status("OK: %s\n", fmt_cipher_suites(suites));
     } else {
-      log_ssl_failure(client_min,client_max,server_min,server_max,expected,suites,state,client_recv_buf);
-      ok = 0;
+      if (state != 3) {
+	fail = sprintf("Unexpected exit state: %d\n.", state);
+      } else {
+	fail =
+	  sprintf("Unexpected result:\n"
+		  "Got:      %O\n"
+		  "Expected: %O\n",
+		  client_recv_buf, expected_data);
+      }
     }
     client->close();
     server->close();
     destruct(client);
     destruct(server);
-    return ok;
+    return fail;
+  };
+  add_constant("low_test_ssl_connection", f);
+]])
+
+test_do([[
+  import SSL.Constants;
+  int f(int client_min, int client_max, int server_min, int server_max,
+        string expected_data, object server_ctx, array(int) suites)
+  {
+    server_ctx->min_version = server_min;
+    server_ctx->max_version = server_max;
+
+    // We only have self-signed certificates, so all ECDH_RSA and
+    // DH_RSA suites will fail prior to TLS 1.2, since they require
+    // the certificate to be signed with RSA.
+    if (((client_max < PROTOCOL_TLS_1_2) ||
+         (server_max < PROTOCOL_TLS_1_2)) &
+        (sizeof(suites) == 1)) {
+      if ((CIPHER_SUITES[suites[0] ][0] == KE_ecdh_rsa) ||
+          (CIPHER_SUITES[suites[0] ][0] == KE_dh_rsa)) {
+        expected_data = 0;
+      }
+      if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
+        // AEAD ciphers and cipher specific prfs not supported prior
+	// to TLS 1.2.
+	expected_data = 0;
+      }
+    }
+
+    // A client that supports just a single cipher suite.
+    SSL.context client_ctx = TestContext();
+    client_ctx->random = random_string;
+    client_ctx->preferred_suites = suites;
+    client_ctx->min_version = client_min;
+    client_ctx->max_version = client_max;
+    server_ctx->expect_fail = client_ctx->expect_fail = !expected_data;
+
+    string fail =
+      low_test_ssl_connection(server_ctx, client_ctx, expected_data, suites[0]);
+
+    if (!fail) return 1;
+
+    log_ssl_failure(client_min, client_max, server_min, server_max,
+		    fail, suites);
+
+    return 0;
   };
   add_constant("test_ssl_connection", f);
 ]])
@@ -743,6 +793,7 @@ test_do([[
   add_constant("pem_cert");
   add_constant("pem_key");
   add_constant("test_ssl_connection");
+  add_constant("low_test_ssl_connection");
   add_constant("TestContext");
 ]])
 
