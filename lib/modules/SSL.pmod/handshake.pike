@@ -71,7 +71,7 @@ string(0..255) server_random;
 constant Session = SSL.session;
 #define Packet .Packet
 
-.Alert Alert(int level, int description, string|void message)
+.Alert Alert(int(1..2) level, int(0..255) description, string|void message)
 {
   // NB: We are always inherited by SSL.connection.
   return context->alert_factory(this, level, description, version,
@@ -114,7 +114,7 @@ void send_packet(object packet, int|void fatal);
 
 string(0..255) handshake_messages;
 
-Packet handshake_packet(int type, string data)
+Packet handshake_packet(int(0..255) type, string data)
 {
 
 #ifdef SSL3_PROFILING
@@ -123,7 +123,7 @@ Packet handshake_packet(int type, string data)
   /* Perhaps one need to split large packages? */
   Packet packet = Packet();
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%c%3H", type, [string(0..255)]data);
+  packet->fragment = sprintf("%1c%3H", type, [string(0..255)]data);
   handshake_messages += packet->fragment;
   return packet;
 }
@@ -569,7 +569,7 @@ Packet certificate_packet(array(string(0..255)) certificates)
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
 }
 
-Packet heartbeat_packet(string s)
+Packet heartbeat_packet(string(8bit) s)
 {
   Packet packet = Packet();
   packet->content_type = PACKET_heartbeat;
@@ -618,10 +618,10 @@ Packet heartbleed_packet()
 
 string(0..255) server_derive_master_secret(string(0..255) data)
 {
-  string(0..255)|int res =
+  string(0..255)|int(0..255) res =
     ke->server_derive_master_secret(data, client_random, server_random, version);
   if (stringp(res)) return [string]res;
-  send_packet(Alert(ALERT_fatal, [int]res,
+  send_packet(Alert(ALERT_fatal, [int(0..255)]res,
 		    "Failed to derive master secret.\n"));
   return 0;
 }

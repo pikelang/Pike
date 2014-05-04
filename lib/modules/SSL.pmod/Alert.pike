@@ -8,16 +8,16 @@ import .Constants;
 //! Based on the base @[packet].
 inherit .Packet;
 
-int level;
-int description;
+int(1..2) level;
+int(0..255) description;
 
 string message;
 
 constant is_alert = 1;
 
-//! @decl void create(int level, int description,@
+//! @decl void create(int(1..2) level, int(0..255) description,@
 //!                   Protocolversion version, string|void message)
-void create(int l, int d, ProtocolVersion version, string|void m)
+void create(int(1..2) l, int(0..255) d, ProtocolVersion version, string|void m)
 {
   if ((version == PROTOCOL_SSL_3_0) && (d == ALERT_no_renegotiation)) {
     // RFC 5746 4.5:
@@ -46,5 +46,5 @@ void create(int l, int d, ProtocolVersion version, string|void m)
   ::create();
   content_type = PACKET_alert;
   protocol_version = version;
-  fragment = sprintf("%c%c", level, description);
+  fragment = sprintf("%1c%1c", level, description);
 }
