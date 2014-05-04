@@ -77,79 +77,85 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 #endif
 
     string msg = packet->fragment;
-    if (!msg) {
-      packet->fragment = #string "alert.pike";	// Some junk data.
-      fail = alert(ALERT_fatal, ALERT_unexpected_message,
+
+    if (!msg)
+    {
+      // packet->fragment is zero when the packet format is illegal,
+      // so returning early is safe. We should never get to this
+      // though, as decrypt_packet isn't called from connection if the
+      // fragment isn't successfully parsed.
+      return alert(ALERT_fatal, ALERT_unexpected_message,
 		   "SSL.state: Failed to get fragment.\n");
-    } else {
-      switch(connection->session->cipher_spec->cipher_type) {
-      case CIPHER_stream:
+    }
 
-        // If data is too small, we can safely abort early.
-        if( sizeof(msg) < hmac_size+1 )
-          return alert(ALERT_fatal, ALERT_unexpected_message,
-		       "SSL.state: Too short message.\n");
+    switch(connection->session->cipher_spec->cipher_type) {
+    case CIPHER_stream:
 
-	msg = crypt->crypt(msg);
-	break;
+      // If data is too small, we can safely abort early.
+      if( sizeof(msg) < hmac_size+1 )
+        return alert(ALERT_fatal, ALERT_unexpected_message,
+                     "SSL.state: Too short message.\n");
 
-      case CIPHER_block:
+      msg = crypt->crypt(msg);
+      break;
 
-        // If data is too small or doesn't match block size, we can
-        // safely abort early.
-        if( sizeof(msg) < hmac_size+1 || sizeof(msg) % crypt->block_size() )
-          return alert(ALERT_fatal, ALERT_unexpected_message,
-		       "SSL.state: Too short message.\n");
+    case CIPHER_block:
 
-	if(version == PROTOCOL_SSL_3_0) {
-	  // crypt->unpad() performs decrypt.
-	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
-	    fail = alert(ALERT_fatal, ALERT_unexpected_message,
-			 "SSL.state: Invalid padding.\n");
-	} else if (version >= PROTOCOL_TLS_1_0) {
+      // If data is too small or doesn't match block size, we can
+      // safely abort early.
+      if( sizeof(msg) < hmac_size+1 || sizeof(msg) % crypt->block_size() )
+        return alert(ALERT_fatal, ALERT_unexpected_message,
+                     "SSL.state: Too short message.\n");
+
+      if(version == PROTOCOL_SSL_3_0) {
+        // crypt->unpad() performs decrypt.
+        if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
+          fail = alert(ALERT_fatal, ALERT_unexpected_message,
+                       "SSL.state: Invalid padding.\n");
+      } else if (version >= PROTOCOL_TLS_1_0) {
 
 #ifdef SSL3_DEBUG_CRYPT
-	  werror("SSL.state: Decrypted message: %O.\n", msg);
+        werror("SSL.state: Decrypted message: %O.\n", msg);
 #endif
-	  if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
-            fail = alert(ALERT_fatal, ALERT_unexpected_message,
-			 "SSL.state: Invalid padding.\n");
-          } else if (!msg) {
-	    // TLS 1.1 requires a bad_record_mac alert on invalid padding.
-            // Note that mac will still be calculated below even if
-            // padding was wrong, to mitigate Lucky Thirteen attacks.
-	    fail = alert(ALERT_fatal, ALERT_bad_record_mac,
-			 "SSL.state: Invalid padding.\n");
-	  }
-	}
-	break;
-
-      case CIPHER_aead:
-
-	// NB: Only valid in TLS 1.2 and later.
-	// The message consists of explicit_iv + crypted-msg + digest.
-	string iv = salt + msg[..connection->session->cipher_spec->explicit_iv_size-1];
-	int digest_size = crypt->digest_size();
-	string digest = msg[<digest_size-1..];
-	crypt->set_iv(iv);
-	string auth_data = sprintf("%8c%c%2c%2c",
-				   seq_num, packet->content_type,
-				   packet->protocol_version,
-				   sizeof(msg) -
-				   (connection->session->cipher_spec->explicit_iv_size +
-				    digest_size));
-	crypt->update(auth_data);
-	msg = crypt->crypt(msg[connection->session->cipher_spec->explicit_iv_size..
-			       <digest_size]);
-	seq_num++;
-	if (digest != crypt->digest()) {
-	  // Bad digest.
-	  fail = alert(ALERT_fatal, ALERT_bad_record_mac,
-		       "Failed AEAD-verification!!\n");
-	}
-	break;
+        if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
+          fail = alert(ALERT_fatal, ALERT_unexpected_message,
+                       "SSL.state: Invalid padding.\n");
+        } else if (!msg) {
+          // TLS 1.1 requires a bad_record_mac alert on invalid padding.
+          // Note that mac will still be calculated below even if
+          // padding was wrong, to mitigate Lucky Thirteen attacks.
+          fail = alert(ALERT_fatal, ALERT_bad_record_mac,
+                       "SSL.state: Invalid padding.\n");
+        }
       }
+      break;
+
+    case CIPHER_aead:
+
+      // NB: Only valid in TLS 1.2 and later.
+      // The message consists of explicit_iv + crypted-msg + digest.
+      string iv = salt + msg[..connection->session->cipher_spec->explicit_iv_size-1];
+      int digest_size = crypt->digest_size();
+      string digest = msg[<digest_size-1..];
+      crypt->set_iv(iv);
+      string auth_data = sprintf("%8c%c%2c%2c",
+                                 seq_num, packet->content_type,
+                                 packet->protocol_version,
+                                 sizeof(msg) -
+                                 (connection->session->cipher_spec->explicit_iv_size +
+                                  digest_size));
+      crypt->update(auth_data);
+      msg = crypt->crypt(msg[connection->session->cipher_spec->explicit_iv_size..
+                             <digest_size]);
+      seq_num++;
+      if (digest != crypt->digest()) {
+        // Bad digest.
+        fail = alert(ALERT_fatal, ALERT_bad_record_mac,
+                     "Failed AEAD-verification!!\n");
+      }
+      break;
     }
+
     if (!msg) msg = packet->fragment;
     padding = sizeof(packet->fragment) - sizeof(msg);
     packet->fragment = msg;
