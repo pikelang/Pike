@@ -13,6 +13,12 @@ constant List = __builtin.List;
 protected int item_counter;
 int get_item_id() { return item_counter++; }
 
+protected class structError
+{
+  inherit Error.Generic;
+  constant ADT_struct = 1;
+}
+
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
 class struct {
@@ -61,7 +67,7 @@ class struct {
   this_program put_uint(int i, int(0..) len)
   {
     if (i<0)
-      error("Negative argument.\n");
+      throw(structError("Negative argument.\n"));
     add_data([string(0..255)]sprintf("%*c", len, i));
     return this;
   }
@@ -81,7 +87,7 @@ class struct {
   this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
     if (i<0)
-      error("Negative argument.\n");
+      throw(structError("Negative argument.\n"));
     put_var_string(i->digits(256), len_width || 2);
     return this;
   }
@@ -117,7 +123,7 @@ class struct {
   {
     int(0..) i;
     if ( (sizeof(buffer) - index) < len)
-      error("No data.\n");
+      throw(structError("No data.\n"));
     sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
     index += len;
     return i;
@@ -127,7 +133,7 @@ class struct {
   string(0..255) get_fix_string(int len)
   {
     if ((sizeof(buffer) - index) < len)
-      error("No data\n");
+      throw(structError("No data\n"));
 
     string(0..255) res = buffer[index .. index + len - 1];
     index += len;
