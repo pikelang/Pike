@@ -251,7 +251,7 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @note
   //!   May set @[message_was_bad] and return a fake master secret.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version);
@@ -331,10 +331,10 @@ class KeyExchangeNULL
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
-						 ProtocolVersion version)
+  string(0..255) server_derive_master_secret(string(0..255) data,
+                                             string(0..255) client_random,
+                                             string(0..255) server_random,
+                                             ProtocolVersion version)
   {
     anonymous = 1;
     return "";
@@ -437,7 +437,7 @@ class KeyExchangeRSA
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version)
@@ -586,7 +586,7 @@ class KeyExchangeDH
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version)
@@ -661,7 +661,7 @@ class KeyExchangeDHE
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version)
@@ -821,7 +821,7 @@ class KeyExchangeECDH
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version)
@@ -949,7 +949,7 @@ class KeyExchangeECDHE
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
+  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
 						 string(0..255) client_random,
 						 string(0..255) server_random,
 						 ProtocolVersion version)

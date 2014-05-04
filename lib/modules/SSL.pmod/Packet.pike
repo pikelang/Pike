@@ -11,7 +11,7 @@ import .Constants;
 
 int content_type;
 ProtocolVersion protocol_version;
-string fragment;  /* At most 2^14 */
+string(8bit) fragment;  /* At most 2^14 */
 
 constant HEADER_SIZE = 5;
 
@@ -49,7 +49,7 @@ object check_size(ProtocolVersion version, int|void extra)
 //!
 //!   If there's an error, an alert object is returned.
 //!
-object|string recv(string data, ProtocolVersion version)
+string|.Packet recv(string data, ProtocolVersion version)
 {
   buffer += data;
   while (sizeof(buffer) >= needed_chars)
