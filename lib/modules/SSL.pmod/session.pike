@@ -301,9 +301,7 @@ int select_cipher_suite(object context,
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
   cipher_suites =
-    ([function(array(int):array(int))]
-     context->sort_suites)(filter(cipher_suites, is_supported_suite,
-				  ke_mask, version));
+    filter(cipher_suites, is_supported_suite, ke_mask, version);
 
   if (!sizeof(cipher_suites)) {
     SSL3_DEBUG_MSG("No suites left after certificate filtering.\n");
