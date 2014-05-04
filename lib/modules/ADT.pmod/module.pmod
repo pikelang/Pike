@@ -38,9 +38,10 @@ class struct {
   }
 
   //! Adds the data @[s] verbatim to the end of the buffer.
-  void add_data(string(0..255) s)
+  this_program add_data(string(0..255) s)
   {
     buffer += s;
+    return this;
   }
 
   //! Return all the data in the buffer and empties it.
@@ -57,52 +58,58 @@ class struct {
   //!    Unsigned integer to append.
   //!  @param len
   //!    Length of integer in bytes.
-  void put_uint(int i, int(0..) len)
+  this_program put_uint(int i, int(0..) len)
   {
     if (i<0)
       error("Negative argument.\n");
     add_data([string(0..255)]sprintf("%*c", len, i));
+    return this;
   }
 
   //! Appends a variable string @[s] preceded with an unsigned integer
   //! of the size @[len_width] declaring the length of the string. The
   //! string @[s] should be 8 bits wide.
-  void put_var_string(string(0..255) s, int(0..) len_width)
+  this_program put_var_string(string(0..255) s, int(0..) len_width)
   {
     add_data([string(0..255)]sprintf("%*H", len_width, s));
+    return this;
   }
 
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
-  void put_bignum(Gmp.mpz i, int(0..)|void len_width)
+  this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
     if (i<0)
       error("Negative argument.\n");
     put_var_string(i->digits(256), len_width || 2);
+    return this;
   }
 
   //! Appends the fix sized string @[s] to the buffer.
-  void put_fix_string(string(0..255) s)
+  this_program put_fix_string(string(0..255) s)
   {
     add_data(s);
+    return this;
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer.
-  void put_fix_uint_array(array(int) data, int(0..) item_size)
+  this_program put_fix_uint_array(array(int) data, int(0..) item_size)
   {
     foreach(data, int i)
       put_uint(i, item_size);
+    return this;
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer, preceded with an unsigned integer @[len] declaring
   //! the size of the array.
-  void put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
+  this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
     put_uint(sizeof(data), len);
     put_fix_uint_array(data, item_size);
+    return this;
   }
 
   //! Reads an unsigned integer from the buffer.
