@@ -1375,14 +1375,16 @@ basic_type:
 
 identifier_type: idents
   {
-    fix_type_field($1);
+    if ($1) {
+      fix_type_field($1);
 
-    if (!pike_types_le($1->type, typeable_type_string) &&
-	(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-      yytype_report(REPORT_WARNING,
-		    $1->current_file, $1->line_number, typeable_type_string,
-		    $1->current_file, $1->line_number, $1->type,
-		    0, "Invalid type.");
+      if (!pike_types_le($1->type, typeable_type_string) &&
+	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+	yytype_report(REPORT_WARNING,
+		      $1->current_file, $1->line_number, typeable_type_string,
+		      $1->current_file, $1->line_number, $1->type,
+		      0, "Invalid type.");
+      }
     }
 
     resolv_constant($1);
