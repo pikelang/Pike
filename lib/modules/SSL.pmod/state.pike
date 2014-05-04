@@ -9,8 +9,8 @@
 
 import .Constants;
 
-//!
-constant Alert = .alert;
+
+constant Alert = .Alert;
 #define Packet .Packet
 
 function(int, int, string|void: Alert) alert;

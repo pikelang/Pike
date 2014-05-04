@@ -71,7 +71,7 @@ string(0..255) server_random;
 constant Session = SSL.session;
 #define Packet .Packet
 
-SSL.alert Alert(int level, int description, string|void message)
+.Alert Alert(int level, int description, string|void message)
 {
   // NB: We are always inherited by SSL.connection.
   return context->alert_factory(this, level, description, version,
