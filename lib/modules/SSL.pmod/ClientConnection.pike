@@ -169,10 +169,18 @@ Packet client_hello()
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
+Packet finished_packet(string(0..255) sender)
+{
+  SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
+  // We're the client.
+  client_verify_data = hash_messages(sender);
+  return handshake_packet(HANDSHAKE_finished, client_verify_data);
+}
+
 protected void create(.context ctx)
 {
   ::create(ctx);
-  handshake_state = STATE_client_wait_for_hello;
+  handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
   session = context->new_session();
   send_packet(client_hello());
@@ -202,7 +210,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
   {
   default:
     error( "Internal error\n" );
-  case STATE_client_wait_for_hello:
+  case STATE_wait_for_hello:
     if(type != HANDSHAKE_server_hello)
     {
       send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
@@ -265,7 +273,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	return -1;
       }
       session->set_compression_method(compression_method);
-      SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
+      SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 		     "version = %s\n"
 		     "id=%O\n"
 		     "cipher suite: %O\n"
@@ -370,12 +378,12 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	return -1;
       }
 
-      handshake_state = STATE_client_wait_for_server;
+      handshake_state = STATE_wait_for_peer;
       break;
     }
     break;
 
-  case STATE_client_wait_for_server:
+  case STATE_wait_for_peer:
     handshake_messages += raw;
     switch(type)
     {
@@ -581,13 +589,13 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	send_packet(heartbleed_packet());
       }
 
-      handshake_state = STATE_client_wait_for_finish;
+      handshake_state = STATE_wait_for_finish;
       expect_change_cipher = 1;
       break;
     }
     break;
 
-  case STATE_client_wait_for_finish:
+  case STATE_wait_for_finish:
     {
     if((type) != HANDSHAKE_finished)
     {

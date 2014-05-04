@@ -18,10 +18,18 @@ Packet hello_request()
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
+Packet finished_packet(string(0..255) sender)
+{
+  SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
+  // We're the server.
+  server_verify_data = hash_messages(sender);
+  return handshake_packet(HANDSHAKE_finished, server_verify_data);
+}
+
 protected void create(.context ctx)
 {
   ::create(ctx);
-  handshake_state = STATE_server_wait_for_hello;
+  handshake_state = STATE_wait_for_hello;
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
@@ -48,7 +56,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
   {
   default:
     error( "Internal error\n" );
-  case STATE_server_wait_for_hello:
+  case STATE_wait_for_hello:
    {
      array(int) cipher_suites;
 
@@ -93,7 +101,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  cipher_len = input->get_uint(2);
 	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
 	  compression_methods = input->get_var_uint_array(1, 1);
-	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: received hello\n"
+	  SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 			 "version = %s\n"
 			 "id=%O\n"
 			 "cipher suites:\n%s\n"
@@ -480,7 +488,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
 	  expect_change_cipher = 1;
 
-	  handshake_state = STATE_server_wait_for_finish;
+	  handshake_state = STATE_wait_for_finish;
 	} else {
 	  /* New session, do full handshake. */
 
@@ -488,14 +496,14 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 					     compression_methods);
 	  if (err)
 	    return err;
-	  handshake_state = STATE_server_wait_for_client;
+	  handshake_state = STATE_wait_for_peer;
 	}
 	break;
       }
      }
      break;
    }
-  case STATE_server_wait_for_finish:
+  case STATE_wait_for_finish:
     switch(type)
     {
     default:
@@ -572,13 +580,13 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
-       handshake_state = STATE_server_wait_for_hello;
+       handshake_state = STATE_wait_for_hello;
 
        return 1;
      }
     }
     break;
-  case STATE_server_wait_for_client:
+  case STATE_wait_for_peer:
     // NB: ALERT_no_certificate can be valid in this state, and
     //     is handled directly by connection:handle_alert().
     handshake_messages += raw;
@@ -615,11 +623,11 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       // TODO: we need to determine whether the certificate has signing abilities.
       if (certificate_state == CERT_received)
       {
-	handshake_state = STATE_server_wait_for_verify;
+	handshake_state = STATE_wait_for_verify;
       }
       else
       {
-	handshake_state = STATE_server_wait_for_finish;
+	handshake_state = STATE_wait_for_finish;
 	expect_change_cipher = 1;
       }
 
@@ -673,7 +681,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
      }
     }
     break;
-  case STATE_server_wait_for_verify:
+  case STATE_wait_for_verify:
     // compute challenge first, then update handshake_messages /Sigge
     switch(type)
     {
@@ -707,7 +715,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
       }
       handshake_messages += raw;
-      handshake_state = STATE_server_wait_for_finish;
+      handshake_state = STATE_wait_for_finish;
       expect_change_cipher = 1;
       break;
     }
