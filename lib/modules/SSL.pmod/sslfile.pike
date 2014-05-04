@@ -2299,3 +2299,9 @@ protected int ssl_close_callback (int called_from_real_backend)
 string `->next_protocol() {
     return conn->next_protocol;
 }
+
+//! Return the currently active cipher suite.
+int query_suite()
+{
+  return conn && conn->session && conn->session->cipher_suite;
+}
