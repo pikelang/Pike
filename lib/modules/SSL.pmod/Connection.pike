@@ -1021,9 +1021,22 @@ string|int got_data(string|int s)
 	   sscanf(handshake_buffer, "%*c%3c", len);
 	   if (sizeof(handshake_buffer) < (len + 4))
 	     break;
-	   err = handle_handshake(handshake_buffer[0],
-				  handshake_buffer[4..len + 3],
-				  handshake_buffer[.. len + 3]);
+           mixed exception = catch {
+               err = handle_handshake(handshake_buffer[0],
+                                      handshake_buffer[4..len + 3],
+                                      handshake_buffer[.. len + 3]);
+             };
+           if( exception )
+           {
+             if( objectp(exception) && ([object]exception)->ADT_struct )
+             {
+               Error.Generic e = [object(Error.Generic)]exception;
+               send_packet(Alert(ALERT_fatal, ALERT_decode_error,
+                                 e->message()));
+               return -1;
+             }
+             throw(exception);
+           }
 	   handshake_buffer = handshake_buffer[len + 4..];
 	   if (err < 0)
 	     return err;
@@ -1064,7 +1077,22 @@ string|int got_data(string|int s)
 			      "Heart beat mode not enabled.\n"));
 	    break;
 	  }
-	  handle_heartbeat(packet->fragment);
+
+          mixed exception = catch {
+              handle_heartbeat(packet->fragment);
+            };
+          if( exception )
+          {
+            if( objectp(exception) && ([object]exception)->ADT_struct )
+            {
+              Error.Generic e = [object(Error.Generic)]exception;
+              send_packet(Alert(ALERT_fatal, ALERT_decode_error,
+                                e->message()));
+              return -1;
+            }
+            throw(exception);
+          }
+
 	}
 	break;
       default:
