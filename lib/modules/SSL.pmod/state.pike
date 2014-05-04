@@ -2,10 +2,10 @@
 // #pragma strict_types
 #require constant(SSL.Cipher)
 
-//! A connection switches from one set of state objects to another, one or
-//! more times during its lifetime. Each state object handles a one-way
-//! stream of packets, and operates in either decryption or encryption
-//! mode.
+//! The state object handles a one-way stream of packets, and operates
+//! in either decryption or encryption mode. A connection switches
+//! from one set of state objects to another, one or more times during
+//! its lifetime.
 
 import .Constants;
 
@@ -17,12 +17,12 @@ function(int, int, string|void: Alert) alert;
 
 protected void create(object/*(.connection)*/ con)
 {
-  connection = con;
+  session = con->session;
   alert = con->Alert;
 }
 
 //! Information about the used algorithms.
-object/*(.connection)*/ connection;
+object/*(.session)*/ session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
@@ -64,8 +64,8 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 	 version & 0xff, packet->content_type, packet->fragment);
 #endif
 
-  int hmac_size = mac && (connection->session->truncated_hmac ? 10 :
-			  connection->session->cipher_spec?->hash_size);
+  int hmac_size = mac && (session->truncated_hmac ? 10 :
+			  session->cipher_spec?->hash_size);
   int padding;
 
   if (crypt)
@@ -88,7 +88,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 		   "SSL.state: Failed to get fragment.\n");
     }
 
-    switch(connection->session->cipher_spec->cipher_type) {
+    switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
 
       // If data is too small, we can safely abort early.
@@ -134,7 +134,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 
       // NB: Only valid in TLS 1.2 and later.
       // The message consists of explicit_iv + crypted-msg + digest.
-      string iv = salt + msg[..connection->session->cipher_spec->explicit_iv_size-1];
+      string iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
       int digest_size = crypt->digest_size();
       string digest = msg[<digest_size-1..];
       crypt->set_iv(iv);
@@ -142,10 +142,10 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
                                  seq_num, packet->content_type,
                                  packet->protocol_version,
                                  sizeof(msg) -
-                                 (connection->session->cipher_spec->explicit_iv_size +
+                                 (session->cipher_spec->explicit_iv_size +
                                   digest_size));
       crypt->update(auth_data);
-      msg = crypt->crypt(msg[connection->session->cipher_spec->explicit_iv_size..
+      msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
                              <digest_size]);
       seq_num++;
       if (digest != crypt->digest()) {
@@ -193,7 +193,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
     string pad_string = "\0"*block_size;
     string junk = pad_string[<padding-1..];
     if (!((sizeof(packet->fragment) +
-           mac->hash_header_size - connection->session->cipher_spec->hash_size) %
+           mac->hash_header_size - session->cipher_spec->hash_size) %
           block_size ) ||
         !(padding % block_size)) {
       // We're at the edge of a MAC block, so we need to
@@ -249,14 +249,14 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
 
   if (mac) {
     digest = mac->hash_packet(packet, seq_num);
-    if (connection->session->truncated_hmac)
+    if (session->truncated_hmac)
       digest = digest[..9];
   } else
     digest = "";
 
   if (crypt)
   {
-    switch(connection->session->cipher_spec->cipher_type) {
+    switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
       packet->fragment=crypt->crypt(packet->fragment + digest);
       break;
@@ -283,7 +283,7 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
       // The nonce_explicit MAY be the 64-bit sequence number.
       // FIXME: Do we need to pay attention to threads here?
       string explicit_iv =
-	sprintf("%*c", connection->session->cipher_spec->explicit_iv_size,
+	sprintf("%*c", session->cipher_spec->explicit_iv_size,
 		seq_num);
       crypt->set_iv(salt + explicit_iv);
       string auth_data = sprintf("%8c%c%2c%2c",
