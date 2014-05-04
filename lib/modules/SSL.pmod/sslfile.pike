@@ -73,7 +73,7 @@ protected Stdio.File stream;
 protected int(-1..65535) linger_time = -1;
 // The linger behaviour set by linger().
 
-protected SSL.connection conn;
+protected .Connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
@@ -1571,7 +1571,7 @@ Stdio.File query_stream()
   return stream;
 }
 
-SSL.connection query_connection()
+.Connection query_connection()
 //! Return the SSL connection object.
 //!
 //! This returns the low-level @[SSL.connection] object.
