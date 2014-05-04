@@ -13,6 +13,7 @@ test_eq([[(MIME.parse_headers("\nBody\n\nMore Body\n")[1])]],
           "Body\n\nMore Body\n")
 
 test_eq([[MIME.decode_base64("Zm9vCg==")]],"foo\n")
+test_eq([[MIME.decode_base64("YQ==YQ==")]],"a")
 test_eq([[MIME.encode_base64("bar")]],"YmFy")
 test_eq([[MIME.encode_base64("bar ")]],"YmFyIA==")
 test_eq([[MIME.encode_base64("bar  ")]],"YmFyICA=")
