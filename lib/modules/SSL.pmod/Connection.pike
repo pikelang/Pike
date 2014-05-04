@@ -362,20 +362,6 @@ string(0..255) hash_messages(string(0..255) sender)
   }
 }
 
-Packet finished_packet(string(0..255) sender)
-{
-  SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
-  string(0..255) verify_data = hash_messages(sender);
-  if (handshake_state >= STATE_client_min) {
-    // We're the client.
-    client_verify_data = verify_data;
-  } else {
-    // We're the server.
-    server_verify_data = verify_data;
-  }
-  return handshake_packet(HANDSHAKE_finished, verify_data);
-}
-
 Packet certificate_request_packet(SSL.context context)
 {
     /* Send a CertificateRequest message */
