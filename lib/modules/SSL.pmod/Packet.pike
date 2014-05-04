@@ -57,6 +57,7 @@ object|string recv(string data, ProtocolVersion version)
     if (needed_chars == HEADER_SIZE)
     {
       content_type = buffer[0];
+      fragment = 0;
       int length;
 
       /* Support only short SSL2 headers */
