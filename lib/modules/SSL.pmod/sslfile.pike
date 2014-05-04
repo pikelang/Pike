@@ -511,7 +511,11 @@ protected void create (Stdio.File stream, SSL.context ctx,
     stream->set_id (1);
 
     packet_max_size = limit(1, ctx->packet_max_size, SSL.Constants.PACKET_MAX_SIZE);
-    conn = SSL.connection (!is_client, ctx);
+
+    if( is_client )
+      conn = .ClientConnection(ctx);
+    else
+      conn = .ServerConnection(ctx);
 
     if(is_blocking) {
       set_blocking();
