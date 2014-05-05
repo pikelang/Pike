@@ -103,7 +103,6 @@ struct pike_aead
   pike_##name##_set_iv,				\
   (crypt_func) name##_encrypt,			\
   (crypt_func) name##_decrypt,			\
-  pike_##name##_set_iv,				\
   name##_update,				\
   name##_digest,				\
 }
@@ -338,7 +337,8 @@ PIKECLASS AEAD
      *! unless @[String.secure] has been called on them.
      *!
      *! @param data
-     *!   For block ciphers, data must be an integral number of blocks.
+     *!   Data must be an integral number of blocks, except for the
+     *!   last segment.
      *!
      *! @returns
      *!   The encrypted or decrypted data.
@@ -353,9 +353,6 @@ PIKECLASS AEAD
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
-
-      if (data->len % meta->block_size)
-	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
       THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
@@ -377,6 +374,16 @@ PIKECLASS AEAD
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_AEAD_name_fun_num, args);
+    }
+
+    /*! @decl int(0..) digest_size(void)
+     *!
+     *! Returns the size of a MAC digest.
+     */
+    PIKEFUN int(0..) digest_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_AEAD_digest_size_fun_num, args);
     }
 
     /*! @decl int(0..) key_size(void)
@@ -403,6 +410,18 @@ PIKECLASS AEAD
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_AEAD_block_size_fun_num, args);
+    }
+
+    /*! @decl int(0..) iv_size(void)
+     *!
+     *! Returns the size of the iv/nonce of the AEAD algorithm (if any).
+     *!
+     *! Returns @expr{0@} (zero) if there is no configurable iv/nonce.
+     */
+    PIKEFUN int(0..) iv_size()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_AEAD_iv_size_fun_num, args);
     }
 
     /*! @decl State set_iv(string(0..255) iv)
@@ -564,8 +583,8 @@ static void pike_chacha_poly1305_set_iv(void *ctx,
 					pike_nettle_size_t length,
 					const uint8_t *key)
 {
-  if (length != CHACHA_POLY1305_KEY_SIZE) {
-    Pike_error("Bad key size.\n");
+  if (length != CHACHA_POLY1305_NONCE_SIZE) {
+    Pike_error("Bad nonce size.\n");
   }
   chacha_poly1305_set_nonce(ctx, key);
 }
