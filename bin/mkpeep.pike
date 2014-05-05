@@ -288,7 +288,7 @@ class Switch(string test) {
 
   void make_fun() {
     made_fun = ++function_serial;
-    functions += "INLINE static int _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += "static int _asm_peep_"+made_fun+"(void)\n{\n";
     functions += make_switch(2);
     functions +=
       "  return 0;\n"
@@ -493,7 +493,7 @@ int main(int argc, array(string) argv)
 
   write( functions );
 
-  write("INLINE static int low_asm_opt(void) {\n");
+  write("static int low_asm_opt(void) {\n");
   map(a->get_string(2), write);
 
   write("  return 0;\n"
