@@ -1819,26 +1819,13 @@ static void mpzmod_small_factor(INT32 args)
  */
 static void mpzmod_next_prime(INT32 args)
 {
-  INT_TYPE count = 25;
-  INT_TYPE limit = INT_MAX;
   struct object *o;
 
-  switch(args)
-  {
-  case 0:
-    break;
-  case 1:
-    get_all_args("Gmp.mpz->next_prime", args, "%i", &count);
-    break;
-  default:
-    get_all_args("Gmp.mpz->next_prime", args, "%i%i", &count, &limit);
-    break;
-  }
   pop_n_elems(args);
   
   o = fast_clone_object(THIS_PROGRAM);
-  mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
-  
+  mpz_nextprime(OBTOMPZ(o), THIS);
+
   PUSH_REDUCED(o);
 }
 
