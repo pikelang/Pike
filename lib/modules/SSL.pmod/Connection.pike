@@ -2,15 +2,26 @@
 #pragma strict_types
 #require constant(SSL.Cipher)
 
-//! SSL.handshake keeps the state relevant for SSL handshaking. This
-//! includes a pointer to a context object (which doesn't change), various
-//! buffers, a pointer to a session object (reuse or created as
-//! appropriate), and pending read and write states being negotiated.
+//! SSL.Connection keeps the state relevant for a single SSL connection.
+//! This includes the @[context] object (which doesn't change), various
+//! buffers, the @[session] object (reused or created as appropriate),
+//! and pending read and write states being negotiated.
 //!
-//! Each connection will have two sets of read and write states: The
+//! Each connection will have two sets of read and write @[state]s: The
 //! current read and write states used for encryption, and pending read
 //! and write states to be taken into use when the current keyexchange
 //! handshake is finished.
+//!
+//! @note
+//!   This class should never not be created directly, instead
+//!   one of the classes that inherits it should be used (ie either
+//!   @[ClientConnection] or @[ServerConnection]) depending on whether
+//!   this is to be a client-side or server-side connection. These
+//!   in turn are typically created by @[sslfile()->create()].
+//!
+//! @seealso
+//!   @[ClientConnection], @[ServerConnection], @[context],
+//!   @[session], @[sslfile], @[state]
 
 //#define SSL3_PROFILING
 
@@ -267,8 +278,8 @@ int verify_certificate_chain(array(string) certs)
 //! send_packet() function to transmit packets.
 int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw);
 
-//! @param is_server
-//!   Whether this is the server end of the connection or not.
+//! Initialize the connection state.
+//!
 //! @param ctx
 //!   The context for the connection.
 protected void create(SSL.context ctx)

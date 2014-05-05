@@ -2,6 +2,8 @@
 #pragma strict_types
 #require constant(SSL.Cipher)
 
+//! Client-side connection state.
+
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
 #else
