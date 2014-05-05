@@ -8698,8 +8698,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_map(args);               
 
-	 /* FIXME: Handle multisets with values like mappings. */
-	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
+	 push_multiset (mkmultiset (Pike_sp[-1].u.array));
 	 free_array (Pike_sp[-2].u.array);
 	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp[-2] = Pike_sp[-1];
@@ -9137,8 +9136,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);
 
-	 /* FIXME: Handle multisets with values like mappings. */
-	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
+	 push_multiset (mkmultiset (Pike_sp[-1].u.array));
 	 free_array (Pike_sp[-2].u.array);
 	 Pike_sp[-2] = Pike_sp[-1];
 	 dmalloc_touch_svalue(Pike_sp-1);

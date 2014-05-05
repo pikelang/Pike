@@ -138,12 +138,12 @@ struct multiset
  *    remembered even after it has been deleted.
  */
 
-/* The following are compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MULTISET_WEAK_INDICES	2
-#define MULTISET_WEAK_VALUES	4
-#define MULTISET_WEAK		6
+#define MULTISET_WEAK		2
 
-#define MULTISET_INDVAL		8
+#define MULTISET_WEAK_VALUES	0
+
+#define MULTISET_INDVAL		0
 
 extern struct multiset *first_multiset;
 extern struct multiset *gc_internal_multiset;
@@ -167,7 +167,6 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #define low_multiset_next(NODE) MULTISET_STEP_FUNC (rb_next, NODE)
 #define low_multiset_get_nth(MSD, N)					\
   ((union msnode *) rb_get_nth ((struct rb_node_hdr *) (MSD)->root, (N)))
-union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
 
 #define low_assign_multiset_index_no_free(TO, NODE) do {		\
     struct svalue *_ms_index_to_ = (TO);				\
@@ -306,11 +305,6 @@ PMOD_EXPORT union msnode *debug_check_msnode (
  */
 
 /* Returns the node offset, or -1 if no match was found. */
-PMOD_EXPORT ptrdiff_t multiset_find_eq (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key);
 PMOD_EXPORT ptrdiff_t multiset_first (struct multiset *l);
 PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l);
 PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos);
@@ -379,42 +373,22 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
 PMOD_EXPORT void do_free_multiset (struct multiset *l);
 PMOD_EXPORT void multiset_fix_type_field (struct multiset *l);
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);
-PMOD_EXPORT void multiset_set_cmp_less (struct multiset *l,
-					struct svalue *cmp_less);
 PMOD_EXPORT struct multiset *mkmultiset (struct array *indices);
-PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
-					   struct array *values,
-					   struct svalue *cmp_less);
 PMOD_EXPORT void multiset_insert (struct multiset *l,
 				  struct svalue *ind);
-PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
-					 struct svalue *ind,
-					 struct svalue *val,
-					 int replace);
-PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
-				    struct svalue *ind,
-				    struct svalue *val);
-PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
-					  ptrdiff_t node,
-					  struct svalue *ind,
-					  struct svalue *val);
 PMOD_EXPORT int multiset_delete (struct multiset *l,
 				 struct svalue *ind);
+#ifdef MULTISET_INDVAL
 PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 				   struct svalue *ind,
 				   struct svalue *removed_val);
-PMOD_EXPORT void multiset_delete_node (struct multiset *l,
-				       ptrdiff_t node);
-PMOD_EXPORT int multiset_member (struct multiset *l,
-				 struct svalue *key);
 PMOD_EXPORT struct svalue *multiset_lookup (struct multiset *l,
 					    struct svalue *key);
+#endif
+PMOD_EXPORT int multiset_member (struct multiset *l,
+				 struct svalue *key);
 struct array *multiset_indices (struct multiset *l);
 struct array *multiset_values (struct multiset *l);
-struct array *multiset_range_indices (struct multiset *l,
-				      ptrdiff_t beg, ptrdiff_t end);
-struct array *multiset_range_values (struct multiset *l,
-				     ptrdiff_t beg, ptrdiff_t end);
 PMOD_EXPORT void check_multiset_for_destruct (struct multiset *l);
 PMOD_EXPORT struct multiset *copy_multiset (struct multiset *l);
 PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
@@ -424,7 +398,6 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *argp, int count);
 PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 				  struct processing *p);
 void describe_multiset (struct multiset *l, struct processing *p, int indent);
-void simple_describe_multiset (struct multiset *l);
 int multiset_is_constant (struct multiset *l, struct processing *p);
 node *make_node_from_multiset (struct multiset *l);
 PMOD_EXPORT void f_aggregate_multiset (int args);
