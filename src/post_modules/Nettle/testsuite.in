@@ -404,6 +404,207 @@ test_aead(Crypto.AES.GCM,
 
 ]])
 
+cond_resolv( Crypto.Camellia.GCM, [[
+  test_eq( Crypto.Camellia.GCM()->block_size(), 16 )
+  test_eq( Crypto.Camellia.GCM()->key_size(), 0 )
+
+  dnl Test vectors from draft-kato-ipsec-camellia-gcm-03 section 4
+
+  dnl Spec Test Case 1 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"f5574acc3148dfcb9015200631024df9")
+
+  dnl Spec Test Case 2 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"defe3e0b5c54c94b4f2a0f5a46f6210d",
+"f672b94d192266c7c8c8dbb427cc989a")
+
+  dnl Spec Test Case 3 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"d0d94a13b632f337a0cc9955b94fa020c815f903aab12f1efaf2fe9d90f729a6"
+"cccbfa986ef2ff2c33de418d9a2529091cf18fe652c1cfde13f8260614bab815",
+"86e318012dd8329dc9dae6a170f61b24")
+
+  dnl Spec Test Case 4 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"d0d94a13b632f337a0cc9955b94fa020c815f903aab12f1efaf2fe9d90f729a6"
+"cccbfa986ef2ff2c33de418d9a2529091cf18fe652c1cfde13f82606",
+"9f458869431576ea6a095456ec6b8101")
+
+  dnl Spec Test Case 5 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"28fd7434d5cd424a5353818fc21a982460d20cf632eb1e6c4fbfca17d5abcf6a"
+"52111086162fe9570e7774c7a912aca3dfa10067ddaad40688645bdd",
+"e86f8f2e730c49d536f00fb5225d28b1")
+
+  dnl Spec Test Case 6 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"2e582b8417c93f2ff4f6f7ee3c361e4496e710ee12433baa964987d02f42953e"
+"402e6f4af407fe08cd2f35123696014c34db19128df4056faebcd647",
+"ceae5569b2af8641572622731aed3e53")
+]])
+
+cond_resolv( Crypto.Camellia.GCM, [[
+  dnl Spec Test Case 7 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"ba9ae89fddce4b51131e17c4d65ce587")
+
+  dnl Spec Test Case 8 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"8f9c0aa2549714c88bb2665e8af86d41",
+"783cff5c5aca7197320658a74279ab37")
+
+  dnl Spec Test Case 9 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"0f009e88410d84ad93c90d55efbe20ffa855492f4dfd0fb485c4f02f536feffb"
+"b4d967729e5c67f1de0750255cc500716ba483eb3b0a2bf607af28f6a60bb2e9",
+"8d645a0b0e48d3c3b60a014157cb49b4")
+
+  dnl Spec Test Case 10 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"0f009e88410d84ad93c90d55efbe20ffa855492f4dfd0fb485c4f02f536feffb"
+"b4d967729e5c67f1de0750255cc500716ba483eb3b0a2bf607af28f6",
+"01b15bb5ab6fac0c422014e91eacbf2b")
+
+  dnl Spec Test Case 11 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"678b3dcb270faa206dc5f6fbb5014996e86d6f3e35cdcdfeb03b37b9b06ff4ff"
+"2682248823bd3c84124dc76af7bde3dd440c228b5efbc795dd80dfb6",
+"f876143d933214a5035ff0bb96ff650b")
+
+  dnl Spec Test Case 12 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"9733ea567c3bad2259ccd63ef7012f5de709e50b1fdc31f1a16db02ede1b66f1"
+"1dcc4d953f2d4d4671587b65882afbf9545fdb6deab22413d091b703",
+"4b72e520b2521e63d240ed5c903216fa")
+]])
+
+cond_resolv( Crypto.Camellia.GCM, [[
+  dnl Spec Test Case 13 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"0000000000000000000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"9cdb269b5d293bc5db9c55b057d9b591")
+
+  dnl Spec Test Case 14 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"0000000000000000000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"3d4b2cde666761ba5dfb305178e667fb",
+"284b63bb143c40ce100fb4dea6bb617b")
+
+  dnl Spec Test Case 15 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"ad142c11579dd95e41f3c1f324dabc255864d920f1b65759d8f560d4948d4477"
+"58dfdcf77aa9f62581c7ff572a037f810cb1a9c4b3ca6ed638179b776549e092",
+"c912686270a2b9966415fca3be75c468")
+
+  dnl Spec Test Case 16 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"ad142c11579dd95e41f3c1f324dabc255864d920f1b65759d8f560d4948d4477"
+"58dfdcf77aa9f62581c7ff572a037f810cb1a9c4b3ca6ed638179b77",
+"4e4b178d8fe26fdc95e2e7246dd94bec")
+
+  dnl Spec Test Case 17 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"6ca95fbb7d16577a9ef2fded94dc85b5d40c629f6bef2c649888e3cbb0ededc7"
+"810c04b12c2983bbbbc482e16e45c9215ae12c15c55f2f4809d06652",
+"e6472b8ebd331bfcc7c0fa63ce094461")
+
+  dnl Spec Test Case 18 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"e0cddd7564d09c4dc522dd65949262bbf9dcdb07421cf67f3032becb7253c284"
+"a16e5bf0f556a308043f53fab9eebb526be7f7ad33d697ac77c67862",
+"5791883f822013f8bd136fc36fb9946b")
+
+]])
+
 cond_resolv( Crypto.AES.Buffer, [[
   test_eq( Crypto.AES.Buffer()->block_size(), 16)
   test_eq( Crypto.AES.Buffer()->key_size(), 0)
