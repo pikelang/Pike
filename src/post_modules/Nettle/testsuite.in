@@ -267,16 +267,24 @@ test_any([[
   return String.string2hex(cbc->crypt("0123456789abcdef"));
 ]], "b71a7f6d29d66bd468294ed9cfda2af1")
 
-dnl key, iv, auth, plaintext, crypted, hash
-define(test_gcm, [[
+dnl aead, key, iv, adata, plaintext, crypted, hash
+define(test_aead, [[
   test_any([[
-    object o = Crypto.AES.GCM();
-    o->set_encrypt_key(String.hex2string($1-"\n"));
-    o->set_iv(String.hex2string($2-"\n"));
-    o->update(String.hex2string($3-"\n"));
-    return String.string2hex(o->crypt(String.hex2string($4-"\n"))) +
+    object o = $1();
+    o->set_encrypt_key(String.hex2string($2-"\n"));
+    o->set_iv(String.hex2string($3-"\n"));
+    o->update(String.hex2string($4-"\n"));
+    return String.string2hex(o->crypt(String.hex2string($5-"\n"))) +
       "|"+String.string2hex(o->digest());
-    ]], $5-"\n"+"|"+$6)
+    ]], $6-"\n"+"|"+$7)
+  test_any([[
+    object o = $1();
+    o->set_decrypt_key(String.hex2string($2-"\n"));
+    o->set_iv(String.hex2string($3-"\n"));
+    o->update(String.hex2string($4-"\n"));
+    return String.string2hex(o->crypt(String.hex2string($6-"\n"))) +
+      "|"+String.string2hex(o->digest());
+    ]], $5-"\n"+"|"+$7)
 ]])
 
 cond_resolv( Crypto.AES.GCM, [[
@@ -292,14 +300,16 @@ cond_resolv( Crypto.AES.GCM, [[
     return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
 
 dnl 1
-test_gcm("00000000000000000000000000000000",
+test_aead(Crypto.AES.GCM,
+"00000000000000000000000000000000",
 "000000000000000000000000",
 "",
 "",
 "",
 "58e2fccefa7e3061367f1d57a4e7455a")
 
-test_gcm("00000000000000000000000000000000",
+test_aead(Crypto.AES.GCM,
+"00000000000000000000000000000000",
 "000000000000000000000000",
 "",
 "00000000000000000000000000000000",
@@ -307,7 +317,8 @@ test_gcm("00000000000000000000000000000000",
 "ab6e47d42cec13bdf53a67b21257bddf")
 
 dnl 2
-test_gcm("feffe9928665731c6d6a8f9467308308",
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
 "cafebabefacedbaddecaf888",
 "",
 #"d9313225f88406e5a55909c5aff5269a
@@ -321,7 +332,8 @@ e3aa212f2c02a4e035c17e2329aca12e
 "4d5c2af327cd64a62cf35abd2ba6fab4")
 
 dnl 3
-test_gcm("feffe9928665731c6d6a8f9467308308",
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
 "cafebabefacedbaddecaf888",
 #"feedfacedeadbeeffeedfacedeadbeef
 abaddad2",
@@ -336,7 +348,8 @@ e3aa212f2c02a4e035c17e2329aca12e
 "5bc94fbc3221a5db94fae95ae7121a47")
 
 dnl 4
-test_gcm("feffe9928665731c6d6a8f9467308308",
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
 "cafebabefacedbad",
 #"feedfacedeadbeeffeedfacedeadbeef
 abaddad2",
@@ -351,7 +364,8 @@ b16aedf5aa0de657ba637b39",
 "3612d2e79e3b0785561be14aaca2fccb")
 
 dnl 5
-test_gcm("feffe9928665731c6d6a8f9467308308",
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
 #"9313225df88406e555909c5aff5269aa
 6a7a9538534f7da1e4c303d2a318a728
 c3c0c95156809539fcf0e2429a6b5254
@@ -369,7 +383,8 @@ d62875d2aca417034c34aee5",
 "619cc5aefffe0bfa462af43c1699d050")
 
 dnl 7
-test_gcm(#"00000000000000000000000000000000
+test_aead(Crypto.AES.GCM,
+#"00000000000000000000000000000000
 0000000000000000",
 "000000000000000000000000",
 "",
@@ -378,7 +393,8 @@ test_gcm(#"00000000000000000000000000000000
 "2ff58d80033927ab8ef4d4587514f0fb")
 
 dnl 14
-test_gcm(#"00000000000000000000000000000000
+test_aead(Crypto.AES.GCM,
+#"00000000000000000000000000000000
 00000000000000000000000000000000",
 "000000000000000000000000",
 "",
