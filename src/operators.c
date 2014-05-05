@@ -852,7 +852,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    do {
 	      push_multiset_index (tmp, nodepos);
 	      o_cast(itype, run_time_itype);
-	      multiset_insert_2 (m, sp - 1, NULL, 0);
+	      multiset_insert (m, sp - 1);
 	      pop_stack();
 	    } while ((nodepos = multiset_next (tmp, nodepos)) >= 0);
 	    UNSET_ONERROR (uwp);
