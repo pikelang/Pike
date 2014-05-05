@@ -130,7 +130,7 @@ protected array(Gmp.mpz) nist_primes(int l)
 
     Gmp.mpz q = Gmp.mpz(h, 256);
 
-    if (q->small_factor() || !q->probably_prime_p())
+    if (!q->probably_prime_p())
       continue;
 
     /* q is a prime, with overwelming probability. */
@@ -152,7 +152,7 @@ protected array(Gmp.mpz) nist_primes(int l)
 
       p -= p % (2 * q) - 1;
 
-      if (!p->small_factor() && p->probably_prime_p())
+      if (p->probably_prime_p())
       {
 	/* Done */
 	return ({ p, q });
