@@ -279,7 +279,7 @@ define(test_gcm, [[
     ]], $5-"\n"+"|"+$6)
 ]])
 
-cond_resolv( Nettle.BlockCipher16.GCM, [[
+cond_resolv( Crypto.AES.GCM, [[
   test_eq( Crypto.AES.GCM()->block_size(), 16 )
   test_eq( Crypto.AES.GCM()->key_size(), 0 )
 
@@ -388,7 +388,7 @@ test_gcm(#"00000000000000000000000000000000
 
 ]])
 
-cond_resolv( Nettle.BlockCipher.Buffer, [[
+cond_resolv( Crypto.AES.Buffer, [[
   test_eq( Crypto.AES.Buffer()->block_size(), 16)
   test_eq( Crypto.AES.Buffer()->key_size(), 0)
   test_any([[
@@ -417,7 +417,7 @@ test_do([[
   x->crypt ("x" * 10000000);
 ]])
 
-cond_resolv(Nettle.BlockCipher16.Buffer, [[
+cond_resolv(Crypto.AES.Buffer, [[
   test_do([[
     object x = Crypto.AES.Buffer();
     x->set_encrypt_key ("0" * 32);
