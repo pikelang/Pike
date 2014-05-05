@@ -526,6 +526,11 @@ struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
+struct pike_string *binary_findstring_shift(const void *foo, enum size_shift shift, ptrdiff_t l)
+{
+  return internal_findstring(foo, l, shift, low_do_hash(foo,l,shift));
+}
+
 struct pike_string *findstring(const char *foo)
 {
   return binary_findstring(foo, strlen(foo));

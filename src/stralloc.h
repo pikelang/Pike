@@ -305,6 +305,7 @@ void generic_memcpy(PCHARP to,
                     ptrdiff_t len);
 PMOD_EXPORT void pike_string_cpy(PCHARP to, const struct pike_string *from);
 struct pike_string *binary_findstring(const char *foo, ptrdiff_t l);
+struct pike_string *binary_findstring_shift(const void *foo, enum size_shift shift, ptrdiff_t l);
 struct pike_string *findstring(const char *foo);
 
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len) ATTRIBUTE((malloc));
