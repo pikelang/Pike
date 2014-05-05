@@ -404,6 +404,24 @@ test_aead(Crypto.AES.GCM,
 
 ]])
 
+cond_resolv( Crypto.ChaCha20.POLY1305, [[
+  test_eq( Crypto.ChaCha20.POLY1305()->block_size(), 64 )
+  test_eq( Crypto.ChaCha20.POLY1305()->key_size(), 0 )
+
+  dnl Test vector from draft-agl-tls-chacha20poly1305-04 section 7
+  dnl Note that this vector differs from the one in the first draft.
+
+  test_aead(Crypto.ChaCha20.POLY1305,
+"4290bcb154173531f314af57f3be3b5006da371ece272afa1b5dbdd110"
+"0a1007",
+"cd7cf67be39c794a",
+"87e229d4500845a079c0",
+"86d09974840bded2a5ca",
+"e3e446f7ede9a19b62a4",
+"677dabf4e3d24b876bb284753896e1d6")
+
+]])
+
 cond_resolv( Crypto.Camellia.GCM, [[
   test_eq( Crypto.Camellia.GCM()->block_size(), 16 )
   test_eq( Crypto.Camellia.GCM()->key_size(), 0 )
