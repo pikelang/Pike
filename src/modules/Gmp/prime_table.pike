@@ -20,7 +20,7 @@ int main(int argc, array(string) argv)
 		"\n"
 		"#define NUMBER_OF_PRIMES %d\n"
 		"\n"
-		"const unsigned long primes[NUMBER_OF_PRIMES] = {",
+		"const unsigned short primes[NUMBER_OF_PRIMES] = {",
 		argv, count));
 
   Gmp.mpz prime = Gmp.mpz(1);
