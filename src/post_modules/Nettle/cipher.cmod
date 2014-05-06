@@ -1989,7 +1989,7 @@ PIKECLASS BlockCipher16
 	if (!THIS->nonce) {
 	  /* NB: Default to nonce of 13 NULs. */
 	  add_ref(THIS->nonce = nul13_string);
-	  MEMSET(THIS->ctr->iv, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+          memcpy(THIS->ctr->iv, "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
 	}
 
 	/* Save the first block from the CTR to encrypt the MAC. */
