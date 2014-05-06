@@ -700,10 +700,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
    {
       int i=int_from_32bit(os+10);
 
-      push_text("image");
-
-      if (olen-i<0)
+      if (i < 0 || olen < i)
 	 Pike_error("Image.BMP.decode: unexpected EOF in JFIF data\n");
+
+      push_text("image");
 
       push_text("Image.JPEG.decode");
       SAFE_APPLY_MASTER("resolv_or_error",1);
@@ -769,11 +769,13 @@ void i_img_bmp__decode(INT32 args,int header_only)
    img=(struct image*)get_storage(o,image_program);
    n++;
 
-   if (int_from_32bit(os+10))
-   {
-      s=os+int_from_32bit(os+10);
-      len=olen-int_from_32bit(os+10);
-   }
+   j = int_from_32bit(os+10);
+
+   if (j < 0 || j > olen)
+       Pike_error("Image.BMP.decode: unexpected EOF\n");
+
+   s=os+j;
+   len=olen-j;
 
    if (len>0) switch (bpp)
    {
