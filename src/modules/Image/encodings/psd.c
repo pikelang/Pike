@@ -199,7 +199,8 @@ static void decode_layers_and_masks( struct psd_image *dst,
   
   if( count < 0 )
   {
-    count = -count;
+    if (DO_INT16_NEG_OVERFLOW(count, &count))
+        Pike_error("overflow\n");
     first_alpha_is_magic = 1;
   } else if(count == 0)
     return;
@@ -270,7 +271,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
 static struct buffer
 packbitsdecode(struct buffer src, 
                struct buffer dst, 
-               int nbytes)
+               size_t nbytes)
 {
   int n;
 
@@ -335,12 +336,13 @@ static void f_decode_packbits_encoded(INT32 args)
   b.str = (unsigned char *)src->str;
   b.len = src->len;
   if (compression < 0) {
-    compression = (src->str[0] << 8) | src->str[1];
-    b.str += 2;
-    b.len -= 2;
+    compression = psd_read_ushort(&b);
   }
 
   pop_n_elems(args-1);
+
+  if (nelems < 0 || b.len < (size_t)nelems*2)
+    Pike_error("Not enough space for %d short integers.\n", nelems);
 
   ob = b;
   ob.str += nelems*2;
@@ -349,11 +351,12 @@ static void f_decode_packbits_encoded(INT32 args)
   switch(compression)
   {
    case 1:
-     dest = begin_shared_string( width * nelems );
-     d.str = (unsigned char *)dest->str; d.len = width*nelems;
-/*      while(nelems--) */
-     /*ob =*/ 
-     packbitsdecode( ob, d, width*nelems );
+     d.len = width * nelems;
+     dest = begin_shared_string( d.len );
+     d.str = (unsigned char *)dest->str;
+     if (ob.len < d.len)
+       Pike_error("Not enough space.\n");
+     packbitsdecode( ob, d, d.len );
      push_string( end_shared_string( dest ) );
      break;
    case 0:
