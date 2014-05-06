@@ -264,14 +264,14 @@ PIKECLASS AEAD
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
-      struct pike_aead *meta = GET_META();
+      const struct pike_aead *meta = GET_META();
 
       if (!THIS->ctx || !meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
       key->flags |= STRING_CLEAR_ON_EXIT;
-      meta->set_encrypt_key(THIS->ctx, key->len, key->str);
+      meta->set_encrypt_key(THIS->ctx, key->len, (const uint8_t*)key->str);
 
       THIS->crypt = meta->encrypt;
       THIS->key_size = key->len;
@@ -291,14 +291,14 @@ PIKECLASS AEAD
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
-      struct pike_aead *meta = GET_META();
+      const struct pike_aead *meta = GET_META();
 
       if (!THIS->ctx || !meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
       key->flags |= STRING_CLEAR_ON_EXIT;
-      meta->set_decrypt_key(THIS->ctx, key->len, key->str);
+      meta->set_decrypt_key(THIS->ctx, key->len, (const uint8_t*)key->str);
       THIS->crypt = meta->decrypt;
       THIS->key_size = key->len;
 
@@ -320,7 +320,7 @@ PIKECLASS AEAD
     PIKEFUN string(0..255) make_key()
       optflags OPT_EXTERNAL_DEPEND;
     {
-      struct pike_aead *meta = GET_META();
+      const struct pike_aead *meta = GET_META();
 
       low_make_key(meta->key_size);
 
@@ -346,7 +346,7 @@ PIKECLASS AEAD
     PIKEFUN string(0..255) crypt (string(0..255) data)
       optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     {
-      struct pike_aead *meta = GET_META();
+      const struct pike_aead *meta = GET_META();
       struct pike_string *s;
 
       if (!THIS->ctx || !THIS->crypt || !meta)
@@ -546,7 +546,7 @@ PIKECLASS AEAD
     {
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
-	struct pike_aead *meta = GET_META();
+    const struct pike_aead *meta = GET_META();
 	assert(meta);
 	memset(THIS->ctx, 0, meta->context_size);
       }
