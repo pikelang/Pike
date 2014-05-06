@@ -603,7 +603,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 n++;
 
 	 push_text("ysize");
-	 push_int(ysize=int_from_32bit(s+14+4*2));
+	 push_int(abs(ysize=int_from_32bit(s+14+4*2)));
 	 n++;
 
 	 push_text("target_planes");
@@ -658,7 +658,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 n++;
 
 	 push_text("ysize");
-	 push_int(ysize=int_from_16bit(s+14+6));
+	 push_int(abs(ysize=int_from_16bit(s+14+6)));
 	 n++;
 
 	 push_text("target_planes");
@@ -764,12 +764,12 @@ void i_img_bmp__decode(INT32 args,int header_only)
    push_text("image");
 
    push_int(xsize);
-   push_int(ysize);
+   push_int(abs(ysize));
    push_object(o=clone_object(image_program,2));
    img=(struct image*)get_storage(o,image_program);
    n++;
 
-   if (int_from_32bit(os+10)) 
+   if (int_from_32bit(os+10))
    {
       s=os+int_from_32bit(os+10);
       len=olen-int_from_32bit(os+10);
@@ -777,6 +777,27 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    if (len>0) switch (bpp)
    {
+      case 32:
+	 if (comp)
+	    Pike_error("Image.BMP.decode: can't handle compressed 32bpp BMP\n");
+
+	 j=len;
+	 y=img->ysize;
+	 while (j>2 && y--)
+	 {
+	    d = img->img+img->xsize*y;
+	    i = img->xsize;
+	    if (i*4>j) i=j/4;
+	    j -= i*4;
+	    while (i--)
+	    {
+	       d->b=*(s++);
+	       d->g=*(s++);
+	       d->r=*(s++);
+	       d++;s++;
+	    }
+	 }
+	 break;
       case 24:
 	 if (comp)
 	    Pike_error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
@@ -1061,8 +1082,20 @@ void i_img_bmp__decode(INT32 args,int header_only)
    }
 
 final:
-
    f_aggregate_mapping(n*2);
+   if( (ysize < 0) && o )
+   {
+       /* This is more expensive than actually correctly decoding the
+          image in the first place, but for now keep it like this
+          since it minimizes the needed changes. */
+       push_text("image");
+       apply(o,"mirrory",0);
+       mapping_string_insert( Pike_sp[-3].u.mapping,
+                              Pike_sp[-2].u.string,
+                              Pike_sp-1 );
+       Pike_sp--;
+       pop_stack();
+   }
    stack_swap();
    pop_stack();
 }
