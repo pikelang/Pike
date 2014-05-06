@@ -22,6 +22,7 @@
 #include "colortable.h"
 
 #include "bignum.h"
+#include "bitvector.h"
 
 #ifdef __MINGW32__
 /* encodings.a will never contain a crc32 symbol. */
@@ -1253,6 +1254,9 @@ static void img_png_decode(INT32 args, int mode)
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
 
+            if (!ihdr.width || !ihdr.height)
+              Pike_error("Image.PNG._decode: Invalid dimensions in IHDR chunk.\n");
+
             if (DO_SIZE_T_MUL_OVERFLOW(ihdr.width, ihdr.height, &bytes) ||
                 DO_SIZE_T_MUL_OVERFLOW(bytes, sizeof(rgb_group), &bytes) ||
                 bytes > INT_MAX) {
@@ -1319,7 +1323,7 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x73424954: /* sBIT */
 	  {
-	    ptrdiff_t i;
+	    size_t i;
             if(mode==MODE_IMAGE_ONLY) break;
             /* sBIT chunks are not longer than 4 bytes */
             if (len > 4) break;
@@ -1341,30 +1345,45 @@ static void img_png_decode(INT32 args, int mode)
 	    pop_n_elems(2);
 	    break;
 
-          case 0x70485973: /* pHYs */
+          case 0x70485973: { /* pHYs */
+            int tmp1, tmp2;
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=9) break;
+            tmp1 = get_unaligned_be32(data);
+            tmp2 = get_unaligned_be32(data+4);
+            /* the image dimensions are valid in the range
+             * 0 .. MAX_INT32
+             */
+            if (data[8] != 0 && data[8] != 1) break;
+            if (tmp1 < 0 || tmp2 < 0) break;
 	    push_int(data[8]);
-	    push_int(int_from_32bit(data));
-	    push_int(int_from_32bit(data+4));
+	    push_int(tmp1);
+	    push_int(tmp2);
 	    f_aggregate(3);
 	    push_constant_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
-
-          case 0x6f464673: /* oFFs */
+          }
+          case 0x6f464673: { /* oFFs */
+            int tmp1, tmp2;
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=9) break;
+            tmp1 = get_unaligned_be32(data);
+            tmp2 = get_unaligned_be32(data+4);
+            /* the oFFs image offsets are valid in the range
+             * of -MAX_INT32 .. MAX_INT32 */
+            if (data[8] != 0 && data[8] != 1) break;
+            if (tmp1 == MIN_INT32 || tmp2 == MIN_INT32) break;
 	    push_int(data[8]);
-	    push_int(int_from_32bit(data));
-	    push_int(int_from_32bit(data+4));
+	    push_int(tmp1);
+	    push_int(tmp2);
 	    f_aggregate(3);
 	    push_constant_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
-
+          }
           case 0x74494d45: /* tIME */
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=7) break;
