@@ -405,7 +405,7 @@ PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
   return 0;
 }
 
-static void locate_problem(int (*isproblem)(struct pike_string *))
+static void locate_problem(int (*isproblem)(const struct pike_string *))
 {
   unsigned INT32 e;
   struct pike_string *s;
