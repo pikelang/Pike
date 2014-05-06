@@ -992,7 +992,18 @@ PIKECLASS Backend
 	 cc->pos = -1;
 
 	 args = cc->args->size;
-	 push_array_items(cc->args);
+	 if (cc->args->refs == 1) {
+	   push_array_items(cc->args);
+	 } else {
+	   /* Somebody else also has references to the call_out id array.
+	    *
+	    * We need to clear it to reduce garbage.
+	    */
+	   add_ref(cc->args);
+	   push_array_items(cc->args);
+	   clear_array(cc->args);
+	   free_array(cc->args);
+	 }
 	 cc->args = NULL;
 	 free_object(cc->this);
 
@@ -1290,6 +1301,11 @@ PIKECLASS Backend
 	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }
+
+       /* Make sure not to keep any references in the
+	* now stale co_info array. */
+       clear_array(co_info);
+
        free_array(co_info);
        backend_verify_call_outs(me);
        UNPROTECT_CALL_OUTS();
