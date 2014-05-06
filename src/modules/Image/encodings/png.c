@@ -21,6 +21,8 @@
 #include "image.h"
 #include "colortable.h"
 
+#include "bignum.h"
+
 #ifdef __MINGW32__
 /* encodings.a will never contain a crc32 symbol. */
 #define DYNAMIC_MODULE
@@ -1241,7 +1243,8 @@ static void img_png_decode(INT32 args, int mode)
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
       {
 	 /* ------ major chunks ------------ */
-         case 0x49484452: /* IHDR */
+         case 0x49484452: { /* IHDR */
+            size_t bytes;
 	    /* header info */
 	    if (len!=13)
 	       PIKE_ERROR("Image.PNG._decode",
@@ -1250,12 +1253,12 @@ static void img_png_decode(INT32 args, int mode)
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
 
-            if( sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height >
-                (double)INT_MAX )
+            if (DO_SIZE_T_MUL_OVERFLOW(ihdr.width, ihdr.height, &bytes) ||
+                DO_SIZE_T_MUL_OVERFLOW(bytes, sizeof(rgb_group), &bytes) ||
+                bytes > INT_MAX) {
               Pike_error("Image.PNG._decode: Too large image "
-                         "(total size exceeds %d bytes (%.0f))\n", INT_MAX,
-                         sizeof(rgb_group)*
-                         (double)ihdr.width*(double)ihdr.height);
+                         "(total size exceeds %d bytes)\n", INT_MAX);
+            }
 
 	    ihdr.bpp=data[8];
 	    ihdr.type=data[9];
@@ -1263,7 +1266,7 @@ static void img_png_decode(INT32 args, int mode)
 	    ihdr.filter=data[11];
 	    ihdr.interlace=data[12];
 	    break;
-
+         }
          case 0x504c5445: /* PLTE */
 	    /* palette info, 3×n bytes */
 
