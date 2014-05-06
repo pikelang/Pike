@@ -815,30 +815,17 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       default:
 unknown_directive:
-	/* FIXME: This doesn't look all that safe...
-	 * buf isn't NUL-terminated, and it won't work on wide strings.
-	 * /grubba 1999-02-20
-	 * It also modified a shared string... ie. this code was not
-	 * good at all. Fixed.
-	 * /grubba 2000-11-19 (in Versailles)
-	 */
 	if (len < 256) {
 #if (SHIFT == 0)
 	  struct pike_string *dir =
 	    make_shared_binary_string(buf, len);
-#else /* SHIFT != 0 */
-#if (SHIFT == 1)
+#elif (SHIFT == 1)
 	  struct pike_string *dir =
 	    make_shared_binary_string1((p_wchar1 *)buf, len);
-#else /* SHIFT != 1 */
-#if (SHIFT == 2)
+#elif (SHIFT == 2)
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
-#else /* SHIFT != 2 */
-#error Unsupported SHIFT.
-#endif /* SHIFT == 2 */
-#endif /* SHIFT == 1 */
-#endif /* SHIFT == 0 */
+#endif
 	  my_yyerror("Unknown preprocessor directive %S.", dir);
 	  free_string(dir);
 	} else {
@@ -854,27 +841,47 @@ unknown_directive:
       continue;
 
     case '\'':
-      switch(c=GETC())
       {
-      case 0:
-	lex->pos -= (1<<SHIFT);
-	yyerror("Unexpected end of file\n");
-	break;
+        int l = 0;
+        INT_TYPE res = 0;
+        while(1)
+        {
+          INT32 tmp;
+          switch( (tmp=GETC()) )
+          {
+            case 0:
+              lex->pos -= (1<<SHIFT);
+              yyerror("Unexpected end of file\n");
+              goto return_char;
 
-      case '\\':
-	c = char_const(lex);
-	break;
+            case '\\':
+              tmp = char_const(lex);
+              /* fallthrough. */
+            default:
+              res <<= 8;
+              res |= tmp;
+              if( ++l > 8 )
+              {
+                yyerror("Too large character constant.");
+                /* skip the rest of the characters. */
+                do
+                  tmp = GETC();
+                while( tmp && (tmp != '\'') );
+                goto return_char;
+              }
+              break;
 
-      case '\'':
-	yyerror("Zero-length character constant.");
-	debug_malloc_pass( yylval->n=mkintnode(0) );
-	return TOK_NUMBER;
+            case '\'':
+              if( l == 0 )
+                yyerror("Zero-length character constant.");
+              goto return_char;
+          }
+        }
+      return_char:
+        debug_malloc_pass( yylval->n=mkintnode(res) );
+        return TOK_NUMBER;
       }
-      if(!GOBBLE('\''))
-	yyerror("Unterminated character constant.");
-      debug_malloc_pass( yylval->n=mkintnode(c) );
-      return TOK_NUMBER;
-	
+      /* notreached. */
     case '"':
     {
       struct pike_string *s=readstring(lex);
@@ -882,7 +889,7 @@ unknown_directive:
       free_string(s);
       return TOK_STRING;
     }
-  
+
     case ':':
       if(GOBBLE(':')) return TOK_COLON_COLON;
       return c;
