@@ -88,6 +88,54 @@ test_hash(RIPEMD160,
 e18472c9792fdc6e9dc2f46d53daee9ea60a999e,
 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc)
 
+
+dnl Mac, key, nonce, input, hash
+define(test_mac, [[
+  cond_resolv(Nettle.$1, [[
+      test_any([[
+        object state =
+	  Nettle.$1()->State(String.hex2string(#"$2" - " " - "\n"));
+	if (sizeof(#"$3" - " " - "\n")) {
+	  state->set_iv(String.hex2string(#"$3" - " " - "\n"));
+	}
+	state->update(String.hex2string(#"$4" - " " - "\n"));
+	return String.string2hex(state->digest());
+      ]],#"$5"-" "-"\n")
+  ]])
+]])
+
+dnl Test vectors from cr.yp.to/mac/poly1305-20050329.pdf
+dnl Appendix B.
+
+test_mac(POLY1305_AES,
+ec074c83 55807417 01425b62 3235add6
+851fc40c 3467ac0b e05cc204 04f3f700,
+fb447350 c4e868c5 2ac3275c f9d4327e,
+f3f6,
+f4c633c3 044fc145 f84f335c b81953de)
+
+test_mac(POLY1305_AES,
+75deaa25 c09f208e 1dc4ce6b 5cad3fbf
+a0f30800 00f46400 d0c7e907 6c834403,
+61ee0921 8d29b0aa ed7e154a 2c5509cc,,
+dd3fab22 51f11ac7 59f08871 29cc2ee7)
+
+test_mac(POLY1305_AES,
+6acb5f61 a7176dd3 20c5c1eb 2edcdc74
+48443d0b b0d21109 c89a100b 5ce2c208,
+ae212a55 39972959 5dea458b c621ff0e,
+663cea19 0ffb83d8 9593f3f4 76b6bc24
+d7e67910 7ea26adb 8caf6652 d0656136,
+0ee1c16b b73f0f4f d1988175 3c01cdbe)
+
+test_mac(POLY1305_AES,
+e1a5668a 4d5b66a5 f68cc542 4ed5982d
+12976a08 c4426d0c e8a82407 c4f48207,
+9ae831e7 43978d3a 23527c71 28149e3a,
+ab081272 4a7f1e34 2742cbed 374d94d1 36c6b879 5d45b381 9830f2c0 4491faf0
+990c62e4 8b8018b2 c3e4a0fa 3134cb67 fa83e158 c994d961 c4cb2109 5c1bf9,
+5154ad0d 2cb26e01 274fc511 48491f1b)
+
 dnl Crypto, key, plain, cipher, force/ekb
 define(test_cipher,[[
   test_eq(ifelse([[$5]],,
