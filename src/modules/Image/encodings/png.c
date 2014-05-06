@@ -1309,8 +1309,7 @@ static void img_png_decode(INT32 args, int mode)
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=32) break;
 	    for(i=0; i<32; i+=4)
-	      push_float((float)int_from_32bit((unsigned char*)b->
-                                        item[1].u.string->str+i)/100000.0);
+	      push_float((float)int_from_32bit(data+i)/100000.0);
 	    f_aggregate(8);
 	    push_text("chroma");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1320,14 +1319,13 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x73424954: /* sBIT */
 	  {
-            struct pike_string * s = b->item[1].u.string;
 	    ptrdiff_t i;
             if(mode==MODE_IMAGE_ONLY) break;
             /* sBIT chunks are not longer than 4 bytes */
-            if (s->len > 4) break;
-	    for(i=0; i<s->len; i++)
-	      push_int(s->str[i]);
-	    f_aggregate(s->len);
+            if (len > 4) break;
+	    for(i=0; i<len; i++)
+	      push_int(data[i]);
+	    f_aggregate(len);
 	    push_constant_text("sbit");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
@@ -1338,8 +1336,7 @@ static void img_png_decode(INT32 args, int mode)
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=4) break;
 	    push_constant_text("gamma");
-	    push_float((float)int_from_32bit((unsigned char*)b->
-                                      item[1].u.string->str)/100000.0);
+	    push_float((float)int_from_32bit(data)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
 	    break;
