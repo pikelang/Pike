@@ -139,6 +139,13 @@ o The && operator changed, when doing A && B, and A is false, keep A
 
 o Fixed symbol resolution with deep inherits and mixins.
 
+o Added multi-character character constants.
+
+  'ILBM' is equivalent to (('I'<<24)|('L'<<16)|('B'<<8)|'M').
+
+  Unlike how it works in some C compilers the native byte order is
+  never relevant.
+
 
 New preprocessor features
 -------------------------
