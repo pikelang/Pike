@@ -176,6 +176,18 @@ PMOD_EXPORT void do_free_array(struct array *a)
 }
 
 /**
+ *  Free all elements in an array and set them to zero.
+ */
+PMOD_EXPORT void clear_array(struct array *a)
+{
+  if (!a->size) return;
+  free_svalues(ITEM(a), a->size, a->type_field);
+  /* NB: We know that INT_T == 0. */
+  MEMSET(ITEM(a), 0, a->size * sizeof(struct svalue));
+  a->type_field = BIT_INT;
+}
+
+/**
  *  Set the flags on an array. If the array is empty then only the
  *  weak flag is significant.
  */

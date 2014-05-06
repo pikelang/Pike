@@ -112,6 +112,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
+PMOD_EXPORT void clear_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 ind);
 PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index,
