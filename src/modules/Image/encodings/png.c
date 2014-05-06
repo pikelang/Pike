@@ -1243,7 +1243,7 @@ static void img_png_decode(INT32 args, int mode)
 	 /* ------ major chunks ------------ */
          case 0x49484452: /* IHDR */
 	    /* header info */
-	    if (b->item[1].u.string->len!=13)
+	    if (len!=13)
 	       PIKE_ERROR("Image.PNG._decode",
 			  "Illegal header (IHDR chunk).\n", sp, args);
 
@@ -1304,7 +1304,7 @@ static void img_png_decode(INT32 args, int mode)
 	  {
 	    int i;
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=32) break;
+	    if(len!=32) break;
 	    for(i=0; i<32; i+=4)
 	      push_float((float)int_from_32bit((unsigned char*)b->
                                         item[1].u.string->str+i)/100000.0);
@@ -1333,7 +1333,7 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x67414d41: /* gAMA */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=4) break;
+	    if(len!=4) break;
 	    push_constant_text("gamma");
 	    push_float((float)int_from_32bit((unsigned char*)b->
                                       item[1].u.string->str)/100000.0);
@@ -1343,12 +1343,10 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x70485973: /* pHYs */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=9) break;
-	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str));
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str+4));
+	    if(len!=9) break;
+	    push_int(data[8]);
+	    push_int(int_from_32bit(data));
+	    push_int(int_from_32bit(data+4));
 	    f_aggregate(3);
 	    push_constant_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1357,12 +1355,10 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x6f464673: /* oFFs */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=9) break;
-	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str));
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str+4));
+	    if(len!=9) break;
+	    push_int(data[8]);
+	    push_int(int_from_32bit(data));
+	    push_int(int_from_32bit(data+4));
 	    f_aggregate(3);
 	    push_constant_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1371,13 +1367,13 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x74494d45: /* tIME */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=7) break;
-	    push_int(int_from_16bit(b->item[1].u.string->str));
-	    push_int(b->item[1].u.string->str[2]);
-	    push_int(b->item[1].u.string->str[3]);
-	    push_int(b->item[1].u.string->str[4]);
-	    push_int(b->item[1].u.string->str[5]);
-	    push_int(b->item[1].u.string->str[6]);
+	    if(len!=7) break;
+	    push_int(int_from_16bit(data));
+	    push_int(data[2]);
+	    push_int(data[3]);
+	    push_int(data[4]);
+	    push_int(data[5]);
+	    push_int(data[6]);
 	    f_aggregate(6);
 	    push_constant_text("time");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1390,9 +1386,9 @@ static void img_png_decode(INT32 args, int mode)
 	    {
 	       case 0:
 	       case 4:
-		  if (b->item[1].u.string->len==2)
+		  if (len==2)
 		  {
-		     int z=_png_c16(b->item[1].u.string->str[0],ihdr.bpp);
+		     int z=_png_c16(data[0],ihdr.bpp);
 		     push_int(z);
 		     push_int(z);
 		     push_int(z);
@@ -1401,25 +1397,24 @@ static void img_png_decode(INT32 args, int mode)
 		     continue;
 		  break;
 	       case 3:
-		  if (b->item[1].u.string->len!=1 ||
+		  if (len!=1 ||
 		      !ct || ct->type!=NCT_FLAT ||
-		      b->item[1].u.string->str[0] >=
-		      ct->u.flat.numentries)
+		      data[0] >= ct->u.flat.numentries)
 		     continue;
 		  else
 		  {
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.r);
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.g);
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.b);
+		     push_int(ct->u.flat.entries[data[0]].color.r);
+		     push_int(ct->u.flat.entries[data[0]].color.g);
+		     push_int(ct->u.flat.entries[data[0]].color.b);
 		  }
                   break;
 	       default:
-		  if (b->item[1].u.string->len==6)
+		  if (len==6)
 		  {
 		     int j;
 		     for (j=0; j<3; j++)
 		     {
-			int z=_png_c16(b->item[1].u.string->str[j*2],ihdr.bpp);
+			int z=_png_c16(data[j*2],ihdr.bpp);
 			push_int(z);
 		     }
 		  } else
