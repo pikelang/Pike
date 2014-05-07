@@ -1738,6 +1738,10 @@ PIKECLASS BlockCipher16
    */
   INHERIT Nettle_BlockCipher;
 
+#ifdef HAVE_NETTLE_GCM_H
+  PIKEVAR object(Nettle_AEAD) GCM;
+#endif
+
   /*! @module CCM
    *!
    *! Implementation of the Counter with Cipher Block Chaining
@@ -2269,6 +2273,7 @@ PIKECLASS BlockCipher16
    */
 
 #ifdef HAVE_NETTLE_GCM_H
+
 #include <nettle/gcm.h>
 
   /*! @module GCM
@@ -2293,8 +2298,6 @@ PIKECLASS BlockCipher16
    *! @seealso
    *!   @[CBC]
    */
-
-  PIKEVAR object(Nettle_AEAD) GCM;
 
   PIKECLASS _GCM
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
