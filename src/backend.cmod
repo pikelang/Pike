@@ -3320,8 +3320,8 @@ PIKECLASS PollDeviceBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pdb->backend, &start_time);
+    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (me->before_callback.type != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -3917,8 +3917,8 @@ PIKECLASS PollBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pb->backend, &start_time);
+    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (me->before_callback.type != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -4505,8 +4505,8 @@ PIKECLASS SelectBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(sb->backend, &start_time);
+    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (me->before_callback.type != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
