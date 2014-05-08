@@ -267,8 +267,8 @@ test_any_equal([[
   "subject" : "Test",
   "extensions" : ([
       Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
-      Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\1\206",
-      Standards.ASN1.Types.Identifier(2,5,29,19): "0\3\1\1\377"
+      Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\5\240",
+      Standards.ASN1.Types.Identifier(2,5,29,19): "0\3\1\1\0"
   ]),
   "public_key": 1,
 ]) ]])
