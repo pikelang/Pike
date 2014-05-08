@@ -1252,8 +1252,6 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
 
   Sequence dn = Certificate.build_distinguished_name(name);
 
-  // Extensions mandated for Suite B Self-Signed CA Certificates, RFC
-  // 5759 4.5.1.
 #define ADD(X,Y,Z) extensions+=({ make_extension(Identifiers.ce_ids->X,Y,Z) })
 
   if(!extensions) extensions = ({});
@@ -1264,10 +1262,10 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
       0);
   ADD(keyUsage,
-      build_keyUsage(KU_keyCertSign|KU_cRLSign|KU_digitalSignature),
+      build_keyUsage(KU_digitalSignature|KU_keyEncipherment),
       1);
   ADD(basicConstraints,
-      Sequence(({Boolean(1)})),
+      Sequence(({Boolean(0)})),
       1);
 
 #undef ADD
