@@ -366,11 +366,11 @@ static void PUSH_STRING(WCHAR *str,
   string_builder_putchar(buf, '"');
 }
 
-static INLINE ptrdiff_t find_end_brace(struct cpp *this,
+static ptrdiff_t find_end_brace(struct cpp *this,
 				       WCHAR *data,
 				       ptrdiff_t len,
 				       ptrdiff_t pos);
-static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
+static ptrdiff_t find_end_parenthesis(struct cpp *this,
 					     WCHAR *data,
 					     ptrdiff_t len,
 					     ptrdiff_t pos)
@@ -408,7 +408,7 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
   }
 }
 
-static INLINE ptrdiff_t find_end_brace(struct cpp *this,
+static ptrdiff_t find_end_brace(struct cpp *this,
 				       WCHAR *data,
 				       ptrdiff_t len,
 				       ptrdiff_t pos)
