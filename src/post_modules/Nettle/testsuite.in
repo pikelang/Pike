@@ -326,6 +326,27 @@ define(test_cipher,[[
 	  [[String.hex2string($3-" ")]])
 ]])
 
+dnl Crypto, key, iv, plain, cipher
+define(test_crypto_cipher,[[
+  cond_resolv($1, [[
+  test_true(objectp($1()));
+  test_eq(ifelse([[$3]],,
+                 [[$1()->set_encrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($4-" "))]],
+		 [[$1()->set_encrypt_key(String.hex2string($2-" "))
+		   ->set_iv(String.hex2string($3-" "))
+		   ->crypt(String.hex2string($4-" "))]]),
+	  [[String.hex2string($5-" ")]])
+  test_eq(ifelse([[$3]],,
+		 [[$1()->set_decrypt_key(String.hex2string($2-" "))
+		   ->crypt(String.hex2string($5-" "))]],
+		 [[$1()->set_decrypt_key(String.hex2string($2-" "))
+		   ->set_iv(String.hex2string($3-" "))
+		   ->crypt(String.hex2string($5-" "))]]),
+	  [[String.hex2string($4-" ")]])
+  ]])
+]])
+
 // AES
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
@@ -337,6 +358,96 @@ cond_resolv( Nettle.AES, [[
 	      "14151617191A1B1C1E1F202123242526",
 	      "5C6D71CA30DE8B8B00549984D2EC7D4B",
 	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
+
+  // AES-CTR Test vectors from RFC 3686 Section 6.
+
+  dnl Test Vector #1: Encrypting 16 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "AE6852F8 121067CC 4BF7A576 5577F39E",
+		     "00000030 00000000 00000000 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "E4095D4F B7A7B379 2D6175A3 261311B8")
+
+  dnl Test Vector #2: Encrypting 32 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7E240678 17FAE0D7 43D6CE1F 32539163",
+		     "006CB6DB C0543B59 DA48D90B 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "5104A106 168A72D9 790D41EE 8EDAD388"
+		     "EB2E1EFC 46DA57C8 FCE630DF 9141BE28")
+
+  dnl Test Vector #3: Encrypting 36 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7691BE03 5E5020A8 AC6E6185 29F9A0DC",
+		     "00E0017B 27777F3F 4A1786F0 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "C1CF48A8 9F2FFDD9 CF4652E9 EFDB72D7"
+		     "4540A42B DE6D7836 D59A5CEA AEF31053"
+		     "25B2072F")
+
+  dnl Test Vector #4: Encrypting 16 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "16AF5B14 5FC9F579 C175F93E 3BFB0EED"
+		     "863D06CC FDB78515",
+		     "00000048 36733C14 7D6D93CB 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "4B55384F E259C9C8 4E7935A0 03CBE928")
+
+  dnl Test Vector #5: Encrypting 32 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7C5CB240 1B3DC33C 19E73408 19E0F69C"
+		     "678C3DB8 E6F6A91A",
+		     "0096B03B 020C6EAD C2CB500D 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "453243FC 609B2332 7EDFAAFA 7131CD9F"
+		     "8490701C 5AD4A79C FC1FE0FF 42F4FB00")
+
+  dnl Test Vector #6: Encrypting 36 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "02BF391E E8ECB159 B959617B 0965279B"
+		     "F59B60A7 86D3E0FE",
+		     "0007BDFD 5CBD6027 8DCC0912 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "96893FC5 5E5C722F 540B7DD1 DDF7E758"
+		     "D288BC95 C6916588 4536C811 662F2188"
+		     "ABEE0935")
+
+  dnl Test Vector #7: Encrypting 16 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "776BEFF2 851DB06F 4C8A0542 C8696F6C"
+		     "6A81AF1E EC96B4D3 7FC1D689 E6C1C104",
+		     "00000060 DB5672C9 7AA8F0B2 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "145AD01D BF824EC7 560863DC 71E3E0C0")
+
+  dnl Test Vector #8: Encrypting 32 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "F6D66D6B D52D59BB 07963658 79EFF886"
+		     "C66DD51A 5B6A9974 4B50590C 87A23884",
+		     "00FAAC24 C1585EF1 5A43D875 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "F05E231B 3894612C 49EE000B 804EB2A9"
+		     "B8306B50 8F839D6A 5530831D 9344AF1C")
+
+  dnl Test Vector #9: Encrypting 36 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "FF7A617C E69148E4 F1726E2F 43581DE2"
+		     "AA62D9F8 05532EDF F1EED687 FB54153D",
+		     "001CC5B7 51A51D70 A1C11148 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "EB6C5282 1D0BBBF7 CE759446 2ACA4FAA"
+		     "B407DF86 6569FD07 F48CC0B5 83D6071F"
+		     "1EC0E6B8")
+
 ]])
 
 // ARCTWO
