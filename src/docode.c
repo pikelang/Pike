@@ -339,7 +339,7 @@ static void code_expression(node *n, int flags, char *err)
   }
 }
 
-void do_cond_jump(node *n, int label, int iftrue, int flags)
+static void do_cond_jump(node *n, int label, int iftrue, int flags)
 {
   iftrue=!!iftrue;
   if((flags & DO_POP) && node_is_tossable(n))
@@ -442,7 +442,7 @@ int generate_call_function(node *n)
   return 1;
 }
 
-static INLINE struct compiler_frame *find_local_frame(INT32 depth)
+static struct compiler_frame *find_local_frame(INT32 depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
   while(--depth>=0) f=f->previous;
