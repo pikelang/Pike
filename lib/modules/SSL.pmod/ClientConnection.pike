@@ -51,9 +51,7 @@ Packet client_hello()
                  .Constants.fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
-  int cipher_len = sizeof(cipher_suites)*2;
-  struct->put_uint(cipher_len, 2);
-  struct->put_fix_uint_array(cipher_suites, 2);
+  struct->put_var_uint_array(cipher_suites, 2, 2);
   struct->put_var_uint_array(compression_methods, 1, 1);
 
   ADT.struct extensions = ADT.struct();
@@ -124,7 +122,7 @@ Packet client_hello()
       foreach(context->client_server_names;; string(0..255) server_name)
       {
         ADT.struct hostname = ADT.struct();
-        hostname->put_uint(0, 1); // hostname
+        hostname->put_uint(0, 1); // name_time host_name(0)
         hostname->put_var_string(server_name, 2); // hostname
 
         extension->put_var_string(hostname->pop_data(), 2);

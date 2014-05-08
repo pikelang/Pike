@@ -409,9 +409,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 		  (raw != "\0\6\0\x17\0\x18\0\x19")) {
 		maybe_safari_10_8 = 0;
 	      }
-	      int sz = extension_data->get_uint(2)/2;
 	      session->ecc_curves =
-		filter(reverse(sort(extension_data->get_fix_uint_array(2, sz))),
+		filter(reverse(sort(extension_data->get_var_uint_array(2, 2))),
 		       ECC_CURVES);
 	      SSL3_DEBUG_MSG("Elliptic curves: %O\n",
 			     map(session->ecc_curves, fmt_constant, "CURVE"));
@@ -853,18 +852,16 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
        mixed e;
        if (e = catch {
 	 int certs_len = input->get_uint(3);
-#ifdef SSL3_DEBUG
-	 werror("got %d certificate bytes\n", certs_len);
-#else
-	 certs_len;	// Fix warning.
-#endif
+         SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
+
 	 array(string(8bit)) certs = ({ });
 	 while(!input->is_empty())
 	   certs += ({ input->get_var_string(3) });
 
 	  // we have the certificate chain in hand, now we must verify them.
           if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
-                     !verify_certificate_chain(certs))
+             certs_len != [int]Array.sum(map(certs, sizeof)) ||
+             !verify_certificate_chain(certs))
           {
 	    send_packet(Alert(ALERT_fatal, ALERT_bad_certificate,
 			      "Bad client certificate.\n"));
