@@ -307,7 +307,7 @@ Gmp.mpz get_prime(int bits, function(int:string) r)
 this_program generate_key(int(128..) bits, function(int:string)|void r)
 {
   if (!r)
-    r = [function(int:string)]Crypto.Random.random_string;
+    r = Crypto.Random.random_string;
   if (bits < 128)
     error( "Ridiculously small key.\n" );
 
