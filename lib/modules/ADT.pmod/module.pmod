@@ -110,10 +110,10 @@ class struct {
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer, preceded with an unsigned integer @[len] declaring
-  //! the size of the array.
+  //! the size of the array in bytes.
   this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
-    put_uint(sizeof(data), len);
+    put_uint(sizeof(data)*item_size, len);
     put_fix_uint_array(data, item_size);
     return this;
   }
@@ -174,7 +174,11 @@ class struct {
   //! from the buffer.
   array(int) get_var_uint_array(int item_size, int len)
   {
-    return get_fix_uint_array(item_size, get_uint(len));
+    int size = get_uint(len);
+    int elems = size/item_size;
+    if( elems*item_size != size )
+      throw(structError("Impossible uint array length value.\n"));
+    return get_fix_uint_array(item_size, elems);
   }
 
   //! Returns one of there is any more data to read.
