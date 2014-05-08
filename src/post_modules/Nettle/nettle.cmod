@@ -355,10 +355,12 @@ PIKECLASS Fortuna
    *! bytes of random data per call, the necessary rekey operations
    *! are here performed internally, so no such restrictions apply.
    */
-  PIKEFUN string(8bit) random_string(int(0..) len)
+  PIKEFUN string(8bit) random_string(int len)
   {
     unsigned stored = 0;
     struct string_builder s;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
     init_string_builder_alloc(&s, len+16, 0);
 
     while( stored < len )
