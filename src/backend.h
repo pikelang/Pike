@@ -119,10 +119,13 @@ struct fd_callback_box
   struct object *ref_obj;	/**< If set, it's the object containing the box.
 				 * It then acts as the ref from the backend to
 				 * the object and is refcounted by the backend
-				 * whenever any event is wanted. */
+				 * whenever any event is wanted.
+				 *
+				 * It receives a ref for each when next and/or
+				 * events are non-zero. */
   struct fd_callback_box *next;	/**< Circular list of active fds in a backend.
 				 * NULL if the fd is not active in some
-				 * backend. Note: ref_obj MUST be freed if
+				 * backend. Note: ref_obj MUST be freed when
 				 * the box is unlinked. */
   int fd;			/**< Use change_fd_for_box to change this. May
 				 * be negative, in which case only the ref

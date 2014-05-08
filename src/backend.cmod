@@ -1676,6 +1676,26 @@ PIKECLASS Backend
     if (box->ref_obj && box->events) add_ref (box->ref_obj);
   }
 
+  /**
+   * Unlink the box from the active list it is on (if any),
+   * and return 1 if it was active (and thus needs to be freed).
+   */
+  static int unlink_box(struct fd_callback_box *box)
+  {
+    if (box->next) {
+      /* The box is active in some backend. Unlink it. */
+      struct fd_callback_box *pred = box->next;
+      /* Find the predecessor. */
+      while (pred->next != box) {
+	pred = pred->next;
+      }
+      pred->next = box->next;
+      box->next = NULL;
+      return 1;
+    }
+    return 0;
+  }
+
   PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box)
   {
     /* Accept an unhooked box; can happen when we're called from an
@@ -1696,6 +1716,20 @@ PIKECLASS Backend
     /* Make sure no further callbacks are called on this box. */
     box->revents = 0;
     box->rflags = 0;
+
+    /* Unlink the box from the active list in case it is there,
+     * otherwise the active list may get cut, which could cause
+     * the remaining boxes on the list to be lost from the backend..
+     */
+    if (unlink_box(box) && box->ref_obj) {
+      /* Use gc safe method to allow calls from within the gc. */
+      /* box->ref_obj is only converted from a counted to
+       * non-counted ref, so it shouldn't be clobbered by the free. */
+      union anything u;
+      u.object = box->ref_obj;
+      gc_free_short_svalue (&u, T_OBJECT);
+    }
+
     if (box->ref_obj && box->events) {
       /* Use gc safe method to allow calls from within the gc. */
       /* box->ref_obj is only converted from a counted to
@@ -1703,6 +1737,7 @@ PIKECLASS Backend
       union anything u;
       u.object = box->ref_obj;
       gc_free_short_svalue (&u, T_OBJECT);
+      box->events = 0;
     }
   }
 
@@ -1752,16 +1787,12 @@ PIKECLASS Backend
       if (old) {
 	if (box->fd >= 0) update_fd_set (old, box->fd, box->events, 0, box->flags);
 	remove_fd_box (box);
-	if (box->next) {
-	  /* The box is active in the old backend. Unlink it. */
-	  struct fd_callback_box *pred = box->next;
-	  /* Find the predecessor. */
-	  while (pred->next != box) {
-	    pred = pred->next;
-	  }
-	  pred->next = box->next;
-	  box->next = NULL;
-	  if (box->ref_obj) free_object(box->ref_obj);
+
+	/* Unlink the box from the active in the old backend,
+	 * and free it if it was there.
+	 */
+	if (unlink_box(box) && box->ref_obj) {
+	  free_object(box->ref_obj);
 	}
       }
       box->backend = new;
@@ -1795,7 +1826,7 @@ PIKECLASS Backend
 	add_fd_box (box);
 	new_fd = box->fd;
 	box->revents = 0;
-    box->rflags = 0;
+	box->rflags = 0;
 	if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events, box->flags);
       }
 
@@ -2221,7 +2252,7 @@ PIKECLASS Backend
 	}
 
 	box->revents = 0;
-    box->rflags = 0;
+	box->rflags = 0;
 	    
 	/* We don't want to keep this fd anymore.
 	 * Note: This disables any further callbacks.
