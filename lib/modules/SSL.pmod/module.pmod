@@ -1,3 +1,6 @@
+#pike __REAL_VERSION__
+#pragma strict_types
+
 //! Secure Socket Layer (SSL) version 3.0 and
 //! Transport Layer Security (TLS) versions 1.0 - 1.2.
 //!
