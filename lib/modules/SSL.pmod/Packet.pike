@@ -20,6 +20,9 @@ private int needed_chars = HEADER_SIZE;
 
 int marginal_size;
 
+/* Circular dependence */
+program Alert = master()->resolv("SSL")["Alert"];
+
 protected void create(void|int extra)
 {
   marginal_size = extra;
@@ -29,7 +32,7 @@ object check_size(ProtocolVersion version, int|void extra)
 {
   marginal_size = extra;
   return (sizeof(fragment) > (PACKET_MAX_SIZE + extra))
-    ? .Alert(ALERT_fatal, ALERT_unexpected_message, version) : 0;
+    ? Alert(ALERT_fatal, ALERT_unexpected_message, version) : 0;
 }
 
 //! Receive data read from the network.
@@ -63,14 +66,14 @@ string|.Packet recv(string data, ProtocolVersion version)
 #ifdef SSL3_DEBUG
 	werror("SSL.packet: Receiving SSL2 packet %O\n", buffer[..4]);
 #endif
-        return .Alert(ALERT_fatal, ALERT_insufficient_security, version);
+        return Alert(ALERT_fatal, ALERT_insufficient_security, version);
       }
 
       sscanf(buffer, "%*c%2c%2c", protocol_version, length);
       if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-	return .Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
-	return .Alert(ALERT_fatal, ALERT_unexpected_message, version,
+	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		     sprintf("SSL.packet->send: Version %d.%d "
 			     "is not supported\n",
 			     protocol_version>>8, protocol_version & 0xff));
