@@ -273,130 +273,118 @@ struct sscanf_set
  */
 
 
-#define MKREADSET(SIZE)						\
-static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
-  PIKE_CONCAT(p_wchar,SIZE) *match,				\
-  ptrdiff_t cnt,						\
-  struct sscanf_set *set,					\
-  ptrdiff_t match_len, INT32 flags)				\
-{								\
-  p_wchar2 e, last = 0;						\
-  MATCH_IS_WIDE( int set_size=0; )				\
-								\
-  if(cnt>=match_len)						\
-    Pike_error("Error in sscanf format string.\n");		\
-								\
-  MEMSET(set->c, 0, sizeof(set->c));				\
-  set->a=0;							\
-								\
-  if(match[cnt]=='^' &&						\
-     (cnt+2>=match_len || match[cnt+1]!='-' ||			\
-      match[cnt+2]==']' || (flags & SSCANF_FLAG_76_COMPAT)))	\
-  {								\
-    set->neg=1;							\
-    cnt++;							\
-    if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
-  }else{							\
-    set->neg=0;							\
-  }								\
-								\
-  if(match[cnt]==']' || match[cnt]=='-')			\
-  {								\
-    set->c[last=match[cnt]]=1;					\
-    cnt++;							\
-    if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
-  }								\
-								\
-  for(;match[cnt]!=']';)					\
-  {								\
-    if(match[cnt]=='-')						\
-    {								\
-      cnt++;							\
-      if(cnt>=match_len)					\
-	Pike_error("Error in sscanf format string.\n");		\
-								\
-      if(match[cnt]==']')					\
-      {								\
-	set->c['-']=1;						\
-	break;							\
-      }								\
-								\
-      if(last > match[cnt])					\
-	Pike_error("Error in sscanf format string.\n");		\
-								\
-MATCH_IS_WIDE(							\
-      if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
-      {								\
-	if(match[cnt] < (p_wchar2)sizeof(set->c))		\
-	{							\
-)								\
-	  for(e=last;e<=match[cnt];e++) set->c[e]=1;		\
-MATCH_IS_WIDE(							\
-	}else{							\
-	  for(e=last;e<(p_wchar2)sizeof(set->c);e++)		\
-            set->c[e]=1;					\
-								\
-	  check_stack(2);					\
-	  push_int(256);					\
-	  push_int(match[cnt]);					\
-	  set_size++;						\
-	}							\
-      }								\
-      else							\
-      {								\
-	sp[-1].u.integer=match[cnt];				\
-      }								\
-)								\
-    } else {							\
-      last=match[cnt];						\
-MATCH_IS_WIDE(							\
-      if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
-)								\
-        set->c[last]=1;						\
-MATCH_IS_WIDE(							\
-      else{							\
-        if(set_size &&						\
-	   ((p_wchar2)sp[-1].u.integer) == last-1)		\
-        {							\
-	  sp[-1].u.integer++;					\
-        }else{							\
-	  check_stack(2);					\
-	  push_int(last);					\
-	  push_int(last);					\
-	  set_size++;						\
-        }							\
-      }								\
-  )								\
-    }								\
-    cnt++;							\
-    if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
-  }								\
-								\
-MATCH_IS_WIDE(							\
-  if(set_size)							\
-  {								\
-    INT32 *order;						\
-    set->a=aggregate_array(set_size*2);				\
-    order=get_switch_order(set->a);				\
-    for(e=0;e<(p_wchar2)set->a->size;e+=2)			\
-    {								\
-      if(order[e]+1 != order[e+1] &&				\
-         order[e+1]+1 != order[e]) {				\
-        free_array(set->a);					\
-        set->a=0;						\
-        free(order);                                            \
-	Pike_error("Overlapping ranges in sscanf not supported.\n"); \
-      }								\
-    }								\
-								\
-    order_array(set->a,order);					\
-    free(order);                                                \
-  }								\
-)								\
-  return cnt;							\
+static ptrdiff_t read_set(PCHARP match, ptrdiff_t cnt, struct sscanf_set *set,
+                          ptrdiff_t match_len, INT32 flags) {
+  p_wchar2 e, last = 0;
+  int set_size=0;
+
+  if(cnt>=match_len)
+    Pike_error("Error in sscanf format string.\n");
+
+  MEMSET(set->c, 0, sizeof(set->c));
+  set->a=0;
+
+  if(INDEX_PCHARP(match, cnt)=='^' &&
+     (cnt+2>=match_len || INDEX_PCHARP(match, cnt+1)!='-' ||
+      INDEX_PCHARP(match, cnt+2)==']' || (flags & SSCANF_FLAG_76_COMPAT)))
+  {
+    set->neg=1;
+    cnt++;
+    if(cnt>=match_len)
+      Pike_error("Error in sscanf format string.\n");
+  }else{
+    set->neg=0;
+  }
+
+  if(INDEX_PCHARP(match, cnt)==']' || INDEX_PCHARP(match, cnt)=='-')
+  {
+    set->c[last=INDEX_PCHARP(match, cnt)]=1;
+    cnt++;
+    if(cnt>=match_len)
+      Pike_error("Error in sscanf format string.\n");
+  }
+
+  for(;INDEX_PCHARP(match, cnt)!=']';)
+  {
+    if(INDEX_PCHARP(match, cnt)=='-')
+    {
+      cnt++;
+      if(cnt>=match_len)
+	Pike_error("Error in sscanf format string.\n");
+
+      if(INDEX_PCHARP(match, cnt)==']')
+      {
+	set->c['-']=1;
+	break;
+      }
+
+      if(last > INDEX_PCHARP(match, cnt))
+	Pike_error("Error in sscanf format string.\n");
+
+      if (!match.shift) {
+	  for(e=last;e<=INDEX_PCHARP(match, cnt);e++) set->c[e]=1;
+      } else if(last < (p_wchar2)sizeof(set->c) && last >= 0) {
+	if(INDEX_PCHARP(match, cnt) < (p_wchar2)sizeof(set->c))
+	{
+	  for(e=last;e<=INDEX_PCHARP(match, cnt);e++) set->c[e]=1;
+	}else{
+	  for(e=last;e<(p_wchar2)sizeof(set->c);e++)
+            set->c[e]=1;
+
+	  check_stack(2);
+	  push_int(256);
+	  push_int(INDEX_PCHARP(match, cnt));
+	  set_size++;
+	}
+      }
+      else
+      {
+	sp[-1].u.integer=INDEX_PCHARP(match, cnt);
+      }
+    } else {
+      last=INDEX_PCHARP(match, cnt);
+      if(!match.shift || (last < (p_wchar2)sizeof(set->c) && last >= 0)) {
+        set->c[last]=1;
+      } else {
+        if(set_size &&
+	   ((p_wchar2)sp[-1].u.integer) == last-1)
+        {
+	  sp[-1].u.integer++;
+        }else{
+	  check_stack(2);
+	  push_int(last);
+	  push_int(last);
+	  set_size++;
+        }
+      }
+    }
+    cnt++;
+    if(cnt>=match_len) {
+      Pike_error("Error in sscanf format string: %s %d\n", match.ptr, cnt);
+    }
+  }
+
+
+  if(match.shift && set_size)
+  {
+    INT32 *order;
+    set->a=aggregate_array(set_size*2);
+    order=get_switch_order(set->a);
+    for(e=0;e<(p_wchar2)set->a->size;e+=2)
+    {
+      if(order[e]+1 != order[e+1] &&
+         order[e+1]+1 != order[e]) {
+        free_array(set->a);
+        set->a=0;
+        free(order);
+	Pike_error("Overlapping ranges in sscanf not supported.\n");
+      }
+    }
+
+    order_array(set->a,order);
+    free(order);
+  }
+  return cnt;
 }
 
 
@@ -565,10 +553,10 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
 #define TO_INT32(x)	((INT32)(x))
 #endif /* __ECL */
 
-/* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
- *					 p_wchar *match, ptrdiff_t match_len,
- *					 ptrdiff_t *chars_matched,
- *					 int *success)
+/* INT32 very_low_sscanf_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
+ *				 PCHARP match, ptrdiff_t match_len,
+ *				 ptrdiff_t *chars_matched,
+ *				 int *success)
  *
  * Perform the actual parsing.
  *
@@ -587,11 +575,11 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
  * FIXME: chars_matched and success are only used internally, and
  *        should probably be gotten rid of.
  */
-#define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
-static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
+#define MK_VERY_LOW_SSCANF(INPUT_SHIFT)			                 \
+static INT32 PIKE_CONCAT(very_low_sscanf_,INPUT_SHIFT)(	         \
                          PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	 \
 			 ptrdiff_t input_len,				 \
-			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
+			 PCHARP match,	                                 \
 			 ptrdiff_t match_len,				 \
 			 ptrdiff_t *chars_matched,			 \
 			 int *success, INT32 flags)			 \
@@ -612,16 +600,16 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
   {									 \
     for(;cnt<match_len;cnt++)						 \
     {									 \
-      if(match[cnt]=='%')						 \
+      if(INDEX_PCHARP(match, cnt)=='%')					 \
       {									 \
-        if(match[cnt+1]=='%')						 \
+        if(INDEX_PCHARP(match, cnt+1)=='%')				 \
         {								 \
           cnt++;							 \
         }else{								 \
           break;							 \
         }								 \
       }									 \
-      if(eye>=input_len || input[eye]!=match[cnt])			 \
+      if(eye>=input_len || input[eye]!=INDEX_PCHARP(match, cnt))	 \
       {									 \
 	chars_matched[0]=eye;						 \
 	return matches;							 \
@@ -635,7 +623,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     }									 \
 									 \
     DO_IF_DEBUG(							 \
-    if(match[cnt]!='%' || match[cnt+1]=='%')				 \
+    if(INDEX_PCHARP(match, cnt)!='%' || INDEX_PCHARP(match, cnt+1)=='%') \
     {									 \
       Pike_fatal("Error in sscanf.\n");					 \
     }									 \
@@ -654,7 +642,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
     while(1)								 \
     {									 \
-      switch(match[cnt])						 \
+      switch(INDEX_PCHARP(match, cnt))					 \
       {									 \
 	case '*':							 \
 	  no_assign=1;							 \
@@ -667,9 +655,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	case '5': case '6': case '7': case '8': case '9':		 \
 	{								 \
 	  PCHARP t;							 \
-	  field_length = STRTOL_PCHARP(MKPCHARP(match+cnt, MATCH_SHIFT), \
-				       &t,10);				 \
-	  cnt = SUBTRACT_PCHARP(t, MKPCHARP(match, MATCH_SHIFT));	 \
+	  field_length = STRTOL_PCHARP(ADD_PCHARP(match, cnt), &t,10);   \
+	  cnt = SUBTRACT_PCHARP(t, match);                      	 \
 	  continue;							 \
 	}								 \
 									 \
@@ -699,9 +686,9 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	      Pike_error("Missing %%} in format string.\n");		 \
 	      break;		/* UNREACHED */				 \
 	    }								 \
-	    if(match[e]=='%')						 \
+	    if(INDEX_PCHARP(match, e)=='%')				 \
 	    {								 \
-	      switch(match[e+1])					 \
+	      switch(INDEX_PCHARP(match, e+1))				 \
 	      {								 \
 		case '%': e++; break;					 \
 		case '}': tmp--; break;					 \
@@ -716,10 +703,10 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  {								 \
 	    int yes;							 \
 	    struct svalue *save_sp=sp;					 \
-	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)( \
+	    PIKE_CONCAT(very_low_sscanf_, INPUT_SHIFT)( \
                          input+eye,					 \
 			 input_len-eye,					 \
-			 match+cnt+1,					 \
+			 ADD_PCHARP(match, cnt+1),			 \
 			 e-cnt-2,					 \
 			 &tmp,						 \
 			 &yes, flags);					 \
@@ -904,7 +891,7 @@ INPUT_IS_WIDE(								 \
 	    return matches;						 \
 	  }								 \
 									 \
-	  switch(match[cnt])						 \
+	  switch(INDEX_PCHARP(match, cnt))				 \
 	  {								 \
 	  case 'b': base =  2; break;					 \
 	  case 'o': base =  8; break;					 \
@@ -1008,25 +995,22 @@ INPUT_IS_WIDE(								 \
 	    eye=input_len;						 \
 	    break;							 \
 	  }else{							 \
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_start;		 \
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_end;		 \
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *s=0;			 \
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			 \
+            PCHARP end_str_start, end_str_end, s;                        \
 	    int contains_percent_percent;				 \
             ptrdiff_t start, new_eye;					 \
 									 \
 	    e = cnt;							 \
 	    start=eye;							 \
-	    end_str_start=match+cnt+1;					 \
+	    end_str_start=ADD_PCHARP(match, cnt+1);			 \
 									 \
-	    s=match+cnt+1;						 \
+	    s=end_str_start;    					 \
       test_again:							 \
-	    if(*s=='%')							 \
+	    if(EXTRACT_PCHARP(s)=='%')					 \
 	    {								 \
-	      s++;							 \
-	      if(*s=='*') s++;						 \
+	      INC_PCHARP(s, 1);						 \
+	      if(EXTRACT_PCHARP(s)=='*') INC_PCHARP(s, 1);		 \
               set.neg=0;						 \
-	      switch(*s)						 \
+	      switch(EXTRACT_PCHARP(s))					 \
 	      {								 \
                 case 0:							 \
                   /* FIXME: Should really look at the match len */	 \
@@ -1034,10 +1018,10 @@ INPUT_IS_WIDE(								 \
                   break;						 \
 									 \
 		case 'n':						 \
-		  s++;							 \
+		  INC_PCHARP(s, 1);					 \
                   /* Advance the end string start pointer */		 \
                   end_str_start = s;					 \
-		  e = s - match;					 \
+		  e = SUBTRACT_PCHARP(s, match);			 \
 	          goto test_again;					 \
 									 \
 		case 's':						 \
@@ -1075,10 +1059,8 @@ INPUT_IS_WIDE(								 \
 		  goto match_set;					 \
 									 \
 		case '[':		/* oh dear */			 \
-		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
-						    s-match+1,		 \
-						    &set,		 \
-						    match_len, flags);	 \
+		  read_set(match, SUBTRACT_PCHARP(s, match)+1,           \
+                           &set, match_len, flags);	                 \
 		  set.neg=!set.neg;					 \
 		  goto match_set;					 \
 	      }								 \
@@ -1088,9 +1070,9 @@ INPUT_IS_WIDE(								 \
 									 \
 	    for(;e<match_len;e++)					 \
 	    {								 \
-	      if(match[e]=='%')						 \
+	      if(INDEX_PCHARP(match, e)=='%')				 \
 	      {								 \
-		if(match[e+1]=='%')					 \
+		if(INDEX_PCHARP(match, e+1)=='%')			 \
 		{							 \
 		  contains_percent_percent=1;				 \
 		  e++;							 \
@@ -1100,9 +1082,9 @@ INPUT_IS_WIDE(								 \
 	      }								 \
 	    }								 \
 									 \
-	    end_str_end=match+e;					 \
+	    end_str_end=ADD_PCHARP(match, e);				 \
 									 \
-	    if (end_str_end == end_str_start) {				 \
+	    if (COMPARE_PCHARP(end_str_end, ==,  end_str_start)) {	 \
 	      if (no_assign) {						 \
 		no_assign = 2;						 \
 	      } else {							 \
@@ -1117,10 +1099,9 @@ INPUT_IS_WIDE(								 \
 	    {								 \
 	      struct pike_mem_searcher searcher;			 \
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			 \
-	      pike_init_memsearch(&searcher,				 \
-				  MKPCHARP(end_str_start, MATCH_SHIFT),	 \
-				       end_str_end - end_str_start,	 \
-				       input_len - eye);		 \
+	      pike_init_memsearch(&searcher, end_str_start,	         \
+                                  SUBTRACT_PCHARP(end_str_end, end_str_start),	 \
+                                  input_len - eye);		         \
               s2 = searcher.mojt.vtab-> PIKE_CONCAT(func,INPUT_SHIFT)	 \
                      (searcher.mojt.data, input+eye, input_len-eye);	 \
 	      if(!s2)							 \
@@ -1129,18 +1110,18 @@ INPUT_IS_WIDE(								 \
 		return matches;						 \
 	      }								 \
 	      eye=s2-input;						 \
-	      new_eye=eye+end_str_end-end_str_start;			 \
+	      new_eye=eye+SUBTRACT_PCHARP(end_str_end, end_str_start);	 \
 	    }else{							 \
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *p2 = NULL;		 \
 	      for(;eye<input_len;eye++)					 \
 	      {								 \
 		p2=input+eye;						 \
-		for(s=end_str_start;s<end_str_end;s++,p2++)		 \
+		for(s=end_str_start;COMPARE_PCHARP(s, <, end_str_end);INC_PCHARP(s, 1),p2++)		 \
 		{							 \
-		  if(*s!=*p2) break;					 \
-		  if(*s=='%') s++;					 \
+		  if(EXTRACT_PCHARP(s)!=*p2) break;			 \
+		  if(EXTRACT_PCHARP(s)=='%') INC_PCHARP(s, 1);		 \
 		}							 \
-		if(s==end_str_end)					 \
+		if(COMPARE_PCHARP(s, ==, end_str_end))			 \
 		  break;						 \
 	      }								 \
 	      if(eye==input_len)					 \
@@ -1160,14 +1141,13 @@ INPUT_IS_WIDE(								 \
 						eye-start));		 \
 	    }								 \
 									 \
-	    cnt=end_str_end-match-1;					 \
+	    cnt=SUBTRACT_PCHARP(end_str_end, match)-1;			 \
 	    eye=new_eye;						 \
 	    break;							 \
 	  }								 \
 									 \
 	case '[':							 \
-	  cnt=PIKE_CONCAT(read_set,MATCH_SHIFT)(match,cnt+1,		 \
-						&set,match_len, flags);	 \
+	  cnt=read_set(match,cnt+1, &set,match_len, flags);	         \
 									 \
 	match_set:							 \
 	  {								 \
@@ -1253,7 +1233,7 @@ INPUT_IS_WIDE(								 \
 									 \
 	default:							 \
 	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",		 \
-		match[cnt], match[cnt]);				 \
+		INDEX_PCHARP(match, cnt), INDEX_PCHARP(match, cnt));	 \
       }									 \
       break;								 \
     }									 \
@@ -1282,40 +1262,16 @@ INPUT_IS_WIDE(								 \
 /* Confusing? Yes - Hubbe */
 /* Now slightly less confusing macro names, at least. /mast */
 
-/* MATCH_IS_WIDE(X) is X if the match set is wide.
- * INPUT_IS_WIDE(X) is X if the input is wide.
- */
-#define MATCH_IS_WIDE(X)
+/* INPUT_IS_WIDE(X) is X if the input is wide.  */
 #define INPUT_IS_WIDE(X)
 
-MKREADSET(0)
-MK_VERY_LOW_SSCANF(0,0)
+MK_VERY_LOW_SSCANF(0)
 
 #undef INPUT_IS_WIDE
 #define INPUT_IS_WIDE(X) X
 
-MK_VERY_LOW_SSCANF(1,0)
-MK_VERY_LOW_SSCANF(2,0)
-
-#undef MATCH_IS_WIDE
-#define MATCH_IS_WIDE(X) X
-
-MKREADSET(1)
-MKREADSET(2)
-
-#undef INPUT_IS_WIDE
-#define INPUT_IS_WIDE(X)
-
-MK_VERY_LOW_SSCANF(0,1)
-MK_VERY_LOW_SSCANF(0,2)
-
-#undef INPUT_IS_WIDE
-#define INPUT_IS_WIDE(X) X
-
-MK_VERY_LOW_SSCANF(1,1)
-MK_VERY_LOW_SSCANF(2,1)
-MK_VERY_LOW_SSCANF(1,2)
-MK_VERY_LOW_SSCANF(2,2)
+MK_VERY_LOW_SSCANF(1)
+MK_VERY_LOW_SSCANF(2)
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
 INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags)
@@ -1323,70 +1279,33 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
   ptrdiff_t matched_chars;
   int x;
   INT32 i;
+  PCHARP match = MKPCHARP_STR(format);
 
   check_c_stack(sizeof(struct sscanf_set)*2 + 512);
 
-  switch(data->size_shift*3 + format->size_shift) {
-  default:
+  switch(data->size_shift) {
+  case 0:
+    i = very_low_sscanf_0(STR0(data), data->len,
+			  match, format->len,
+			  &matched_chars, &x, flags);
+    break;
+  case 1:
+    i = very_low_sscanf_1(STR1(data), data->len,
+			  match, format->len,
+			  &matched_chars, &x, flags);
+    break;
 #ifdef PIKE_DEBUG
+  default:
     Pike_fatal("Unsupported shift-combination to low_sscanf(): %d:%d\n",
 	       data->size_shift, format->size_shift);
     break;
-#endif
-    /* input_shift : match_shift */
-  case 0:
-    /*      0      :      0 */
-    i = very_low_sscanf_0_0(STR0(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 1:
-    /*      0      :      1 */
-    i = very_low_sscanf_0_1(STR0(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
   case 2:
-    /*      0      :      2 */
-    i = very_low_sscanf_0_2(STR0(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 3:
-    /*      1      :      0 */
-    i = very_low_sscanf_1_0(STR1(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 4:
-    /*      1      :      1 */
-    i = very_low_sscanf_1_1(STR1(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 5:
-    /*      1      :      2 */
-    i = very_low_sscanf_1_2(STR1(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 6:
-    /*      2      :      0 */
-    i = very_low_sscanf_2_0(STR2(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 7:
-    /*      2      :      1 */
-    i = very_low_sscanf_2_1(STR2(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
-    break;
-  case 8:
-    /*      2      :      2 */
-    i = very_low_sscanf_2_2(STR2(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+#else
+  default:
+#endif
+    i = very_low_sscanf_2(STR2(data), data->len,
+			  match, format->len,
+			  &matched_chars, &x, flags);
     break;
   }
   return i;
