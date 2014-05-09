@@ -2117,7 +2117,7 @@ PIKECLASS BlockCipher16
 	  blockcipher16_ccm_init_mac_mask("digest");
 	}
 
-	flags = ((bytes-2)<<2) | (14 - sizeof(THIS->nonce->len));
+	flags = ((bytes-2)<<2) | (14 - THIS->nonce->len);
 	if (THIS->abuf.s->len) {
 	  // Set the a-bit.
 	  flags |= 0x40;
@@ -2136,7 +2136,7 @@ PIKECLASS BlockCipher16
 	/* |flags|nonce|psize| */
 	ptr = buf[0] + 8;
 	for (i = 8; i--; psize >>= 8) {
-	  buf[0][i] = psize & 0xff;
+	  ptr[i] = psize & 0xff;
 	}
 	buf[0][0] = flags;
 	MEMCPY(buf[0]+1, STR0(THIS->nonce), THIS->nonce->len);
@@ -2201,6 +2201,7 @@ PIKECLASS BlockCipher16
 	}
 
 	ptr = STR0(THIS->pbuf.s);
+	psize = THIS->pbuf.s->len;
 
 	for (; psize >= 16; psize -= 16, ptr += 16) {
 	  memxor(buf[bufno], ptr, 16);
@@ -4093,9 +4094,12 @@ void
 cipher_init(void)
 {
   nul13_string = begin_shared_string(13);
+  MEMSET(STR0(nul13_string), 0, 13);
   nul13_string = end_shared_string(nul13_string);
   nul16_string = begin_shared_string(16);
+  MEMSET(STR0(nul16_string), 0, 16);
   nul16_string = end_shared_string(nul16_string);
+
   INIT;
   ADD_INT_CONSTANT("PAD_SSL",       PAD_SSL,       0);
   ADD_INT_CONSTANT("PAD_ISO_10126", PAD_ISO_10126, 0);
