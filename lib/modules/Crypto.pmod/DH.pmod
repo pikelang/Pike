@@ -35,7 +35,8 @@ class Parameters
   //!   @endarray
   array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
   {
-    Gmp.mpz key = Gmp.mpz(rnd(q->size() / 8 + 16), 256) % (q - 1) + 1;
+    Gmp.mpz key = [object(Gmp.mpz)]
+      Gmp.mpz(rnd([int(0..)](q->size() / 8 + 16)), 256) % (q - 1) + 1;
 
     Gmp.mpz pub = g->powm(key, p);
 
