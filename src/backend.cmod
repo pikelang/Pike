@@ -2391,11 +2391,7 @@ PIKECLASS Backend
 	  really_free_compat_cb_box ((struct compat_cb_box *) box);
 	}
 
-	if (box->backend) {
-	  box->backend = NULL;
-	  if (box->ref_obj && box->events)
-	    free_object (box->ref_obj);
-	}
+	unhook_fd_callback_box(box);
       }
 
       free(me->fd_boxes);
@@ -2411,11 +2407,7 @@ PIKECLASS Backend
 	  Pike_fatal ("Got inactive callback in compat interface.\n");
 #endif
 
-	if (box->backend) {
-	  box->backend = NULL;
-	  if (box->ref_obj && box->events)
-	    free_object (box->ref_obj);
-	}
+	unhook_fd_callback_box(box);
       }
 
       free(me->inactive_boxes);
