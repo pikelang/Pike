@@ -1,7 +1,7 @@
 
 #pike __REAL_VERSION__
 
-int DEBUG=1;
+int pmar_debug=1;
 
 constant version =
  sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
@@ -485,7 +485,7 @@ int untar(object source, string path, void|string cwd) {
       string dir = Stdio.append_path(path, fname);
       c++;
       cc++;
-      if (DEBUG)
+      if (pmar_debug)
         write(sprintf("creating: %s [dir]\n", dir));
       mkdir(dir);
       c += untar(source, dir, Stdio.append_path(cwd, fname));
@@ -493,7 +493,7 @@ int untar(object source, string path, void|string cwd) {
     else if (stat->isreg) {
       string file = Stdio.append_path(path, fname);
       if (mixed err = catch{
-        if (DEBUG)
+        if (pmar_debug)
           write("writing:  %s [file %d bytes]\n", file, stat->size);
           Stdio.write_file(file, t->cd(cwd)->open(fname, "r")->read());
       }) {
