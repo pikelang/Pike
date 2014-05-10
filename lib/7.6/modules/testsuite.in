@@ -7,45 +7,28 @@ test_eq(sizeof(Debug.describe_program(ADT.Struct)[0]), 6);
 test_true(functionp(Array.transpose_old))
 
 test_true(functionp(Image.Image()->select_colors))
-
 test_true(functionp(Image.Image()->map_closest))
-
 test_true(functionp(Image.Image()->map_fast))
-
 test_true(functionp(Image.Image()->map_fs))
 
 test_eq(Image.image,Image.Image)
-
 test_eq(Image.font,Image.Font)
-
 test_eq(Image.colortable,Image.Colortable)
 
 test_true(functionp(Standards.UUID.new))
-
 test_true(functionp(Standards.UUID.new_string))
 
 test_true(objectp(spider.XML()))
-
 test_true(functionp(spider.isbasechar))
-
 test_true(functionp(spider.iscombiningchar))
-
 test_true(functionp(spider.isdigit))
-
 test_true(functionp(spider.isextender))
-
 test_true(functionp(spider.isfirstnamechar))
-
 test_true(functionp(spider.ishexchar))
-
 test_true(functionp(spider.isidographic))
-
 test_true(functionp(spider.isletter))
-
 test_true(functionp(spider.isnamechar))
-
 test_true(functionp(spider.isspace))
-
 
 test_do([[
   catch {
@@ -60,5 +43,70 @@ ifefun(db,[[
 
 test_equal(array_sscanf("^^;|", "%[^-|]%s"), ({ "^^;", "|" }) );
 test_any([[mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^;")
+
+ignore_warning("Wrong return type.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : array(string).", [[
+test_program_equal([[
+  string a()
+  {
+    string|array(string) res = ({"spud"});
+    return res + ({});
+  }
+]], ({"spud"}))
+]])]])]])
+
+test_compile_error_any([[
+  class A {}
+  class B {
+    inherit A:C;
+    mixed f() {return C::this_program;}
+  }
+]])
+
+ignore_warning("Bad argument 2 to m_delete.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : int(17..17).", [[
+test_any([[
+  mapping(string:int) x = ([]);
+  return zero_type (m_delete (x, 17));
+]], 1)
+]])]])]])
+
+ignore_warning("Bad argument 3 to sscanf_76.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : int.", [[
+test_any([[
+  int foo;
+  sscanf ("11", "%s", foo);
+  return foo;
+]], "11")
+]])]])]])
+
+ignore_warning("Too many arguments to sscanf_76 (expected 2 arguments).", [[
+ignore_warning("Got     : string.", [[
+test_any([[
+  string s;
+  sscanf ("foo", "%*s", s);
+  return s;
+]], 0)
+]])]])
+
+// Some versions of Pike prior to 7.8 had unsigned characters.
+// We regard this as an implementation bug, and thus no compat.
+cond([[0]], [[
+  test_equal([[
+    #pike 7.6
+    sort(({"\Uffffffff","\0", "", "\177", "\377", "\U7fffffff"}));
+  ]], ({ "", "\0", "\177", "\377", "\U7fffffff", "\Uffffffff" }))
+]])
+
+test_any([[
+  class Y {
+    protected object x = class X {}();
+  };
+  return has_index (Y(), "X");
+]], 1)
+
 
 END_MARKER

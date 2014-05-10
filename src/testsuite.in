@@ -801,19 +801,6 @@ test_any([[
   return B()->f();
 ]], "foo")
 
-ignore_warning("Wrong return type.", [[
-ignore_warning("Expected: string.", [[
-ignore_warning("Got     : array(string).", [[
-test_program_equal([[
-#pike 7.6
-  string a()
-  {
-    string|array(string) res = ({"spud"});
-    return res + ({});
-  }
-]], ({"spud"}))
-]])]])]])
-
 // Warnings
 
 test_compile_warning([[ int *a ]])
@@ -2235,15 +2222,6 @@ test_compile_error_any([[
   class B {
     inherit A:C;
     mixed f() {return A::this_program;}
-  }
-]])
-
-test_compile_error_any([[
-#pike 7.6
-  class A {}
-  class B {
-    inherit A:C;
-    mixed f() {return C::this_program;}
   }
 ]])
 
@@ -5382,16 +5360,6 @@ test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
 
-ignore_warning("Bad argument 2 to m_delete.", [[
-ignore_warning("Expected: string.", [[
-ignore_warning("Got     : int(17..17).", [[
-test_any([[
-#pike 7.6
-  mapping(string:int) x = ([]);
-  return zero_type (m_delete (x, 17));
-]], 1)
-]])]])]])
-
 // multiset tests
 
 test_any([[multiset m=(<>);int e;
@@ -7930,27 +7898,6 @@ class Bar {
 
 test_equal( array_sscanf("^^;|", "%[^-|]%s"), ({ "^^", ";|" }) )
 test_any([[mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^")
-
-ignore_warning("Bad argument 3 to sscanf_76.", [[
-ignore_warning("Expected: string.", [[
-ignore_warning("Got     : int.", [[
-test_any([[
-#pike 7.6
-  int foo;
-  sscanf ("11", "%s", foo);
-  return foo;
-]], "11")
-]])]])]])
-
-ignore_warning("Too many arguments to sscanf_76 (expected 2 arguments).", [[
-ignore_warning("Got     : string.", [[
-test_any([[
-#pike 7.6
-  string s;
-  sscanf ("foo", "%*s", s);
-  return s;
-]], 0)
-]])]])
 
 // sscanf %O -------------------------------------------------------------
 
@@ -11601,15 +11548,6 @@ test_any_equal([[
   return sort (a);
 ]], sort(({0, "foo", "gnu"})))
 
-// Some versions of Pike prior to 7.8 had unsigned characters.
-// We regard this as an implementation bug, and thus no compat.
-cond([[0]], [[
-  test_equal([[
-    #pike 7.6
-    sort(({"\Uffffffff","\0", "", "\177", "\377", "\U7fffffff"}));
-  ]], ({ "", "\0", "\177", "\377", "\U7fffffff", "\Uffffffff" }))
-]])
-
 test_equal([[
   sort(({"\Uffffffff","\0", "", "\177", "\377", "\U7fffffff"}));
 ]], ({ "", "\Uffffffff", "\0", "\177", "\377", "\U7fffffff" }))
@@ -12899,14 +12837,6 @@ test_equal(
 indices(class {class A {int f(){}} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {local inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {inline inherit A;} class C {inherit B;}}()->C()), ({"f"}))
-
-test_any([[
-#pike 7.6
-  class Y {
-    protected object x = class X {}();
-  };
-  return has_index (Y(), "X");
-]], 1)
 
 // - modifiers, binding and redefinition properties with compile time access
 
