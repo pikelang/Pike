@@ -531,13 +531,15 @@ struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
   int in = foo.shift;
   void *tmp = NULL;
   struct pike_string *res;
+  if( !foo.shift )
+    return binary_findstring( (void*)foo.ptr, l );
   
-  if( foo.shift == 2 )
+  if( UNLIKELY(foo.shift == 2) )
     foo.shift=find_magnitude2( (void*)foo.ptr, l );
   else if( foo.shift == 1 )
     foo.shift=find_magnitude1( (void*)foo.ptr, l );
 
-  if( foo.shift != in )
+  if( UNLIKELY(foo.shift != in) )
   {
     tmp = malloc( l * (1<<foo.shift) );
     switch(in)
@@ -554,7 +556,7 @@ struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
     foo.ptr = tmp;
   }
 
-  res=internal_findstring(foo.ptr, l, foo.shift, 
+  res=internal_findstring((void*)foo.ptr, l, foo.shift, 
 			  low_do_hash(foo.ptr,l,foo.shift));
 
   if( tmp )
