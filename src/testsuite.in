@@ -1203,13 +1203,6 @@ test_compile_error( [[
   mixed x = all_constants()[undefined_identifier];
 ]])
 
-test_compile_any([[
-  #pike 7.4
-  #pragma strict_types
-  string x (string s) {return s;}
-  void y (void|string s) {x (s);}
-]])
-
 test_compile_warning([[
   #pragma strict_types
   // NB: This case used to leak the type function(:string).
@@ -11662,14 +11655,6 @@ test_search4("\34567-------------------")
 test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
 test_search4("kapit\3333333l>")
-
-// - rusage
-test_true(
-#pike 7.4
-arrayp(rusage()))
-test_true(
-#pike 7.4
-sizeof(rusage())>28)
 
 // - set_priority
 // - set_weak_flag

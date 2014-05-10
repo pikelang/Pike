@@ -36,4 +36,15 @@ test_any([[
   return num_ok;
 ]], 5)
 
+test_compile_any([[
+  #pragma strict_types
+  string x (string s) {return s;}
+  void y (void|string s) {x (s);}
+]])
+
+// - rusage
+test_true(arrayp(rusage()))
+test_true(sizeof(rusage())>28)
+
+
 END_MARKER
