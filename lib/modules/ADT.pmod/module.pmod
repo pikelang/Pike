@@ -118,6 +118,18 @@ class struct {
     return this;
   }
 
+  this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, int(0..) len)
+  {
+    string(8bit) temp = buffer;
+    buffer = "";
+    foreach(data, string(8bit) s)
+      put_var_string(s, item_size);
+    string(8bit) arr = buffer;
+    buffer = temp;
+    put_var_string(arr, len);
+    return this;
+  }
+
   //! Reads an unsigned integer from the buffer.
   int(0..) get_uint(int len)
   {
