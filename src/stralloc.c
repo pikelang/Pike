@@ -526,9 +526,40 @@ struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
-struct pike_string *binary_findstring_shift(const void *foo, enum size_shift shift, ptrdiff_t l)
+struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
 {
-  return internal_findstring(foo, l, shift, low_do_hash(foo,l,shift));
+  int in = foo.shift;
+  void *tmp = NULL;
+  struct pike_string *res;
+  
+  if( foo.shift == 2 )
+    foo.shift=find_magnitude2( (void*)foo.ptr, l );
+  else if( foo.shift == 1 )
+    foo.shift=find_magnitude1( (void*)foo.ptr, l );
+
+  if( foo.shift != in )
+  {
+    tmp = malloc( l * (1<<foo.shift) );
+    switch(in)
+    {
+      case 1:
+	convert_1_to_0( tmp, (void*)foo.ptr, l );
+	break;
+      case 2:
+	if( foo.shift == 1 )
+	  convert_2_to_1( tmp, (void*)foo.ptr, l );
+	else
+	  convert_2_to_0( tmp, (void*)foo.ptr, l );
+    }
+    foo.ptr = tmp;
+  }
+
+  res=internal_findstring(foo.ptr, l, foo.shift, 
+			  low_do_hash(foo.ptr,l,foo.shift));
+
+  if( tmp )
+    free( tmp );
+  return res;
 }
 
 struct pike_string *findstring(const char *foo)
