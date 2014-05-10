@@ -15,14 +15,14 @@ constant Alert = .Alert;
 
 function(int, int, string|void: Alert) alert;
 
-protected void create(object/*(.connection)*/ con)
+protected void create(.Connection con)
 {
   session = con->session;
   alert = con->Alert;
 }
 
 //! Information about the used algorithms.
-object/*(.session)*/ session;
+.session session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
@@ -30,7 +30,7 @@ object/*(.session)*/ session;
 //! Encryption or decryption object.
 .Cipher.CipherAlgorithm crypt;
 
-object compress;
+function(string:string) compress;
 
 //! 64-bit sequence number.
 int seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
@@ -57,7 +57,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
    *       function, and attempt to make the same amount of work
    *       even if we have already detected a failure.
    */
-  object(Alert) fail;
+  Alert fail;
 
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",

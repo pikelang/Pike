@@ -599,7 +599,7 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(object/*(connection)*/ con,
+array(.state) new_server_states(.Connection con,
 				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
@@ -668,7 +668,7 @@ array(.state) new_server_states(object/*(connection)*/ con,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(object/*(connection)*/ con,
+array(.state) new_client_states(.Connection con,
 				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
