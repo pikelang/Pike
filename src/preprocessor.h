@@ -22,16 +22,11 @@
 #if (SHIFT == 0)
 
 #define WCHAR	p_wchar0
-
-#define WC_ISSPACE	isspace
-#define WC_ISIDCHAR	isidchar
-
 /*
  * Function renaming
  */
 
 #define lower_cpp		lower_cpp0
-#define parse_esc_seq		parse_esc_seq0
 #define MAKE_BINARY_STRING	make_shared_binary_string0
 
 #define calc	calc_0
@@ -51,8 +46,6 @@
 
 #else /* SHIFT != 0 */
 
-#define WC_ISSPACE	WIDE_ISSPACE
-#define WC_ISIDCHAR	WIDE_ISIDCHAR
 
 #if (SHIFT == 1)
 
@@ -63,7 +56,6 @@
  */
 
 #define lower_cpp		lower_cpp1
-#define parse_esc_seq		parse_esc_seq1
 #define MAKE_BINARY_STRING	make_shared_binary_string1
 
 #define calc	calc_1
@@ -90,7 +82,6 @@
  */
 
 #define lower_cpp		lower_cpp2
-#define parse_esc_seq		parse_esc_seq2
 #define MAKE_BINARY_STRING	make_shared_binary_string2
 
 #define calc	calc_2
@@ -117,10 +108,10 @@
 
 #define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
 #define CHECKWORD2(X,LEN) \
- (pos + (ptrdiff_t)(LEN) <= len && !MEMCMP(X,data+pos,(LEN)<<(SHIFT)) && (pos + (ptrdiff_t)(LEN) == len || !WC_ISIDCHAR(data[pos+(LEN)])))
+  (pos + (ptrdiff_t)(LEN) <= len && begins_with(X,MKPCHARP(data+(pos<<SHIFT),SHIFT),(LEN)) && (pos + (ptrdiff_t)(LEN) == len || !WC_ISIDCHAR(data[pos+(LEN)])))
 #define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
 #define GOBBLEOP2(X) \
- (pos + (ptrdiff_t)NELEM(X) < len && ((!MEMCMP(X,data+pos,sizeof(X))) ? (pos += NELEM(X)),1 : 0))
+  (pos + (ptrdiff_t)NELEM(X) < len && ((begins_with(X,MKPCHARP(data+(pos<<SHIFT),SHIFT),sizeof(X))) ? (pos += NELEM(X)),1 : 0))
 
 /*
  * Some prototypes
@@ -130,55 +121,36 @@ static ptrdiff_t calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t, int);
 static ptrdiff_t calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t, int);
 static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
 
-
 /*
  * Functions 
  */
 #define FIND_END_OF_STRING() (pos=find_end_of_string(this,MKPCHARP(data,SHIFT),len,pos))
-
-#define FIND_END_OF_STRING2() (pos=PIKE_XCONCAT(find_end_of_string2,SHIFT)(pos,len,data,this))
-static ptrdiff_t PIKE_XCONCAT(find_end_of_string2,SHIFT)
-     ( ptrdiff_t pos, ptrdiff_t len,WCHAR *data,
-       struct cpp *this)
-{
-  while(1)
-  {
-    if(pos>=len)
-    {
-      cpp_error(this,"End of file in string.");
-      break;
-    }
-    switch(data[pos++])
-    {
-    case '\n':
-      this->current_line++;
-      PUTNL();
-      continue;
-    case '"': return pos;
-    case '\\':
-      if(data[pos]=='\n') {
-	this->current_line++;
-	PUTNL();
-      }
-      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {
-	this->current_line++;
-	pos++;
-	PUTNL();
-      }
-      pos++;
-    }
-  }
-  return pos;
-}
-
-
+#define FIND_END_OF_STRING2() (pos=find_end_of_string2(this,MKPCHARP(data,SHIFT),len,pos))
 #define FIND_END_OF_CHAR() (pos=find_end_of_char(this,MKPCHARP(data,SHIFT),len,pos))
-
 #define FIND_EOL_PRETEND() (pos=find_end_of_line(this,MKPCHARP(data,SHIFT),len,pos,0))
 #define FIND_EOL() (pos=find_end_of_line(this,MKPCHARP(data,SHIFT),len,pos,1))
 #define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,0))
 #define SKIPCOMMENT() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,1))
 #define KEEPCOMMENT(s) (pos=PIKE_XCONCAT(keepcomment,SHIFT)(pos,len,old_pos,data,(s),this))
+#define FIND_EOS() (pos=find_eos(this,MKPCHARP(data,SHIFT),len,pos))
+
+/* Skips horizontal whitespace and newlines. */
+#define SKIPWHITE() (pos=skipwhite(this,MKPCHARP(data,SHIFT),pos))
+
+/* Skips horizontal whitespace and escaped newlines. */
+#define SKIPSPACE() (pos=skipspace(this,MKPCHARP(data,SHIFT),pos,1))
+#define SKIPSPACE_PRETEND() (pos=skipspace(this,MKPCHARP(data,SHIFT),pos,0))
+
+/* pos is assumed to be at the backslash. pos it at the last char in
+ * the escape afterwards. */
+#define READCHAR(C) (C=readchar(MKPCHARP(data,SHIFT),&pos,this))
+
+/* At entry pos points past the start quote.
+ * At exit pos points past the end quote.
+ */
+#define READSTRING(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,0))
+#define READSTRING2(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,1))
+#define FIXSTRING(nf,outp) (pos=fixstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,outp))
 
 static ptrdiff_t PIKE_XCONCAT(keepcomment,SHIFT)( ptrdiff_t pos,ptrdiff_t len,ptrdiff_t old_pos,
 						  WCHAR *data,struct string_builder *s,
@@ -201,158 +173,12 @@ static ptrdiff_t PIKE_XCONCAT(keepline,SHIFT)( ptrdiff_t pos,ptrdiff_t len,ptrdi
   return pos;
 }
 
-#define FIND_EOS() (pos=PIKE_XCONCAT(find_eos,SHIFT)(pos,len,data,this))
-static ptrdiff_t PIKE_XCONCAT(find_eos,SHIFT)( ptrdiff_t pos,ptrdiff_t len,WCHAR *data, struct cpp *this)
-{
-    while(pos < len)
-    {
-      switch (data[pos++]) {
-      case '\n':
-	break;
-      case '/':
-	if (data[pos] == '/') {
-	  FIND_EOL_PRETEND();
-	  break;
-	} else if (data[pos] == '*') {
-	  SKIPCOMMENT_INC_LINES();
-	}
-	continue;
-      case '\\':
-	if (data[pos] == '\n') {
-	  pos+=1;
-	} else if ((data[pos] == '\r') &&
-		   (data[pos+1] == '\n')) {
-	  pos+=2;
-	} else {
-	    continue;
-	}
-        this->current_line++;
-      default:
-	continue;
-      }
-      this->current_line++;
-      break;
-    }
-    return pos;
-}
 
-/* Skips horizontal whitespace and newlines. */
-#define SKIPWHITE() (pos=PIKE_XCONCAT(skipwhite,SHIFT)(pos,data,this))
-static ptrdiff_t PIKE_XCONCAT(skipwhite,SHIFT)( ptrdiff_t pos,WCHAR *data, struct cpp *this)
-{
-  do 
-  {
-    if(!WC_ISSPACE(data[pos])) 
-    {
-      if (data[pos] == '\\') 
-      {
-	if (data[pos+1] == '\n') 
-	{
-	  pos += 2;
-	  PUTNL();
-	  this->current_line++;
-	  continue;
-	} else if ((data[pos+1] == '\r') &&
-		   (data[pos+2] == '\n')) {
-	  pos += 3;
-	  PUTNL();
-	  this->current_line++;
-	  continue;
-	}
-      }
-      break;
-    }
-    if(data[pos]=='\n') { PUTNL(); this->current_line++; }
-    pos++;
-  } while(1);
-  return pos;
-}
-    
-
-/* Skips horizontal whitespace and escaped newlines. */
-#define SKIPSPACE() (pos=PIKE_XCONCAT(skipspace,SHIFT)(pos,data,this))
-static ptrdiff_t PIKE_XCONCAT(skipspace,SHIFT)( ptrdiff_t pos,WCHAR *data, struct cpp *this)
-{
-  do {
-    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {
-      pos++;
-    }
-    if (data[pos] == '\\') {
-      if (data[pos+1] == '\n') {
-	pos+=2;
-      } else if ((data[pos+1] == '\r') &&
-		 (data[pos+2] == '\n')) {
-	pos+=3;
-      } else {
-	break;
-      }
-    } else {
-      break;
-    }
-    PUTNL();
-    this->current_line++;
-  } while (1);
-  return pos;
-}
-
-/* Skips horizontal whitespace and escaped newlines,
- * does not touch buffer. */
-#define SKIPSPACE_PRETEND() (pos=PIKE_XCONCAT(skipspace_p,SHIFT)(pos,data))
-static ptrdiff_t PIKE_XCONCAT(skipspace_p,SHIFT)( ptrdiff_t pos, WCHAR *data )
-{
-  do 
-  {
-    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {
-      pos++;
-    }
-    if (data[pos] == '\\') {
-      if (data[pos+1] == '\n') {
-	pos+=2;
-      } else if ((data[pos+1] == '\r') &&
-		 (data[pos+2] == '\n')) {
-	pos+=3;
-      } else {
-	break;
-      }
-    } else {
-      break;
-    }
-  } while (1);
-  return pos;
-}
-/* pos is assumed to be at the backslash. pos it at the last char in
- * the escape afterwards. */
-
-
-#define READCHAR(C) (C=readchar(MKPCHARP(data,SHIFT),&pos,this))
-
-/* At entry pos points past the start quote.
- * At exit pos points past the end quote.
- */
-#define READSTRING(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,0))
-#define READSTRING2(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,1))
-#define FIXSTRING(nf,outp) (pos=fixstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,outp))
 
 /* Gobble an identifier at the current position. */
 #define GOBBLE_IDENTIFIER()						\
   ((WC_ISIDCHAR (data[pos]) || data[pos] == '\\') ?			\
    dmalloc_touch (struct pike_string *, gobble_identifier(this,MKPCHARP(data,SHIFT), &pos)) : NULL)
-
-#if (SHIFT == 0)
-void _STRCAT(char *str, int len, int flags,struct cpp *this)
-{
-     ptrdiff_t x;
-     if(OUTP())
-       string_builder_binary_strcat(&this->buf, str, len);
-     else
-       for(x=0;x<len;x++)
-	 if(str[x]=='\n')
-	   string_builder_putchar(&this->buf, '\n');
-}
-
-#define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
-#endif /* SHIFT == 0 */
-
 
 static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
@@ -696,9 +522,6 @@ static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   while(1)
   {
-    static const WCHAR lsh_[] = { '<', '<' };
-    static const WCHAR rsh_[] = { '>', '>' };
-
     CALC_DUMPPOS("inside calc8");
     SKIPWHITE();
     if(GOBBLEOP2(lsh_))
@@ -783,9 +606,6 @@ static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   while(1)
   {
-    static const WCHAR eq_[] = { '=', '=' };
-    static const WCHAR ne_[] = { '!', '=' };
-
     CALC_DUMPPOS("inside calc7");
 
     SKIPWHITE();
@@ -871,7 +691,6 @@ static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
 static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
 {
-  static const WCHAR land_[] = { '&', '&' };
 
   CALC_DUMPPOS("before calc3");
 
@@ -900,7 +719,6 @@ static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
 static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
 {
-  static const WCHAR lor_[] = { '|', '|' };
 
   CALC_DUMPPOS("before calc2");
 
@@ -984,10 +802,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 			   int auto_convert,
 			   struct pike_string *charset)
 {
-  static const WCHAR string_recur_[] =
-    { 's', 't', 'r', 'i', 'n', 'g', '_', 'r', 'e', 'c', 'u', 'r' };
-  static const WCHAR include_recur_[] =
-   { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
   ptrdiff_t pos, tmp, e;
   int include_mode;
   INT_TYPE first_line = this->current_line;
@@ -1507,8 +1321,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     {
     case 'l':
       {
-	static const WCHAR line_[] = { 'l', 'i', 'n', 'e' };
-
 	if(WGOBBLE2(line_))
 	{
 	  /* FIXME: Why not use SKIPSPACE()? */
@@ -1577,8 +1389,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       case 's':
 	{
-	  static const WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
-
 	  if(WGOBBLE2(string_))
 	  {
 	    include_mode = 1;
@@ -1594,10 +1404,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
     case 'i': /* include, if, ifdef */
       {
-	static const WCHAR include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
-	static const WCHAR if_[] = { 'i', 'f' };
-	static const WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
-	static const WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
 	int recur = 0;
 
       if(WGOBBLE2(include_) || (recur = WGOBBLE2(include_recur_)))
@@ -1944,12 +1750,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'e': /* endif, else, elif, error */
       {
-	static const WCHAR endif_[] = { 'e', 'n', 'd', 'i', 'f' };
-	static const WCHAR else_[] = { 'e', 'l', 's', 'e' };
-	static const WCHAR elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
-	static const WCHAR elif_[] = { 'e', 'l', 'i', 'f' };
-	static const WCHAR error_[] = { 'e', 'r', 'r', 'o', 'r' };
-
       if(WGOBBLE2(endif_))
       {
 	if(!(flags & CPP_EXPECT_ENDIF))
@@ -2040,7 +1840,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
     case 'd': /* define */
       {
-	static const WCHAR define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 
       if(WGOBBLE2(define_))
 	{
@@ -2321,8 +2120,6 @@ concat_identifier:
       }
     case 'u': /* undefine */
       {
-	static const WCHAR undef_[] = { 'u', 'n', 'd', 'e', 'f' };
-	static const WCHAR undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 
 	/* NOTE: Reuses undefine_ for undef_ */
 	if(WGOBBLE2(undefine_) || WGOBBLE2(undef_))
@@ -2346,7 +2143,6 @@ concat_identifier:
       }
     case 'c': /* charset */
       {
-	static const WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 
       if (WGOBBLE2(charset_)) {
 	ptrdiff_t p;
@@ -2404,8 +2200,6 @@ concat_identifier:
       }
     case 'p': /* pragma */
       {
-	static const WCHAR pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
-	static const WCHAR pike_[] = { 'p', 'i', 'k', 'e' };
 
 	if(WGOBBLE2(pragma_))
 	{
@@ -2451,7 +2245,6 @@ concat_identifier:
       }
     case 'r': /* require */
       {
-        static const WCHAR require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
         if(WGOBBLE2(require_))
         {
           struct string_builder save, tmp;
@@ -2491,8 +2284,6 @@ concat_identifier:
       }
     case 'w': /* warning */
       {
-	static const WCHAR warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
-
 	if(WGOBBLE2(warning_))
 	{
 	  ptrdiff_t foo;
@@ -2548,13 +2339,10 @@ ADD_TO_BUFFER:
  */
 
 #undef WCHAR
-#undef WC_ISSPACE
-#undef WC_ISIDCHAR
 #undef STRCAT
 #undef MAKE_BINARY_STRING
 
 #undef lower_cpp
-#undef parse_esc_seq
 
 #undef calc
 #undef calc1
