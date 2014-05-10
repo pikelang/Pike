@@ -470,8 +470,9 @@ static void stat_index(INT32 args)
 	       }
 	       break;
 	       
-	    case STAT_MODE_STRING:
-	       switch (THIS_STAT->s.st_mode & S_IFMT)
+	    case STAT_MODE_STRING: {
+               int mode = THIS_STAT->s.st_mode;
+	       switch (mode & S_IFMT)
 	       {
 		  case S_IFREG:
 		     push_constant_text("-");
@@ -499,65 +500,65 @@ static void stat_index(INT32 args)
 		     break;
 	       }
 
-	       if ( (THIS_STAT->s.st_mode & S_IRUSR) )
+	       if ( (mode & S_IRUSR) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_IWUSR) )
+	       if ( (mode & S_IWUSR) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_ISUID) )
-		 if ( (THIS_STAT->s.st_mode & S_IXUSR) )
+	       if ( (mode & S_ISUID) )
+		 if ( (mode & S_IXUSR) )
 		   push_constant_text("s");
 		 else
 		   push_constant_text("S");
 	       else
-		 if ( (THIS_STAT->s.st_mode & S_IXUSR) )
+		 if ( (mode & S_IXUSR) )
 		   push_constant_text("x");
 		 else
 		   push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_IRGRP) )
+	       if ( (mode & S_IRGRP) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_IWGRP) )
+	       if ( (mode & S_IWGRP) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_ISGID) )
-		  if ( (THIS_STAT->s.st_mode & S_IXGRP) )
+	       if ( (mode & S_ISGID) )
+		  if ( (mode & S_IXGRP) )
 		     push_constant_text("s");
 		  else
 		     push_constant_text("S");
 	       else
-		  if ( (THIS_STAT->s.st_mode & S_IXGRP) )
+		  if ( (mode & S_IXGRP) )
 		     push_constant_text("x");
 		  else
 		     push_constant_text("-");
 
-	       if ( (THIS_STAT->s.st_mode & S_IROTH) )
+	       if ( (mode & S_IROTH) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_IWOTH) )
+	       if ( (mode & S_IWOTH) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS_STAT->s.st_mode & S_ISVTX) )
-		 if ( (THIS_STAT->s.st_mode & S_IXOTH) )
+	       if ( (mode & S_ISVTX) )
+		 if ( (mode & S_IXOTH) )
 		   push_constant_text("t");
 		 else
 		   push_constant_text("T");
 	       else
-		 if ( (THIS_STAT->s.st_mode & S_IXOTH) )
+		 if ( (mode & S_IXOTH) )
 		   push_constant_text("x");
 		 else
 		   push_constant_text("-");
@@ -565,7 +566,7 @@ static void stat_index(INT32 args)
 	       f_add(10);
 
 	       break;
-
+           }
 	   default:
 	     Pike_fatal ("stat_index is not kept up-to-date with stat_map.\n");
 	 }
