@@ -355,7 +355,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
      CFStringRef eventPath;
      struct pike_string * str;
      const char * u8s;
-	 struct EventStream_struct * eventStreamObj;
+	 struct FSEvents_EventStream_struct * eventStreamObj;
 
 	 eventPath = CFArrayGetValueAtIndex(ctx->eventPaths, (CFIndex)cnt);
 	 str = string_from_cfstring(eventPath);
@@ -363,7 +363,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
 	 f_utf8_to_string(1);
 	 push_int(ctx->eventFlags[cnt]);
 	 push_int(ctx->eventIds[cnt]);
-	 eventStreamObj = (struct EventStream_struct *)(ctx->clientCallBackInfo);
+	 eventStreamObj = (struct FSEvents_EventStream_struct *)(ctx->clientCallBackInfo);
  	 apply_svalue(&eventStreamObj->callback_func, 3);
   }
 }
