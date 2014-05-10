@@ -10165,14 +10165,6 @@ return 1;
 return 0;
 #endif
 ]],1)
-test_any([[
-#pike 7.8
-#if efun(foobar)
-return 1;
-#else
-return 0;
-#endif
-]],1)
 test_eq(foobar(),1)
 test_do(add_constant("foobar"))
 test_any([[
