@@ -8058,9 +8058,6 @@ test_true(object_program(this_object()))
 // testing !
 test_equal(!"",0)
 test_equal(!this_object(),0)
-test_equal(
-#pike 7.0
-!Simulate.this_function(),0)
 
 // testing ==
 test_true(1==1)
@@ -8068,9 +8065,6 @@ test_true(!(1==2))
 test_true(""=="")
 test_true(!(""=="foo"))
 test_true(this_object()==this_object())
-test_true(
-#pike 7.0
-Simulate.this_function()==a)
 test_true(2.0==2.0)
 test_true(({})==({}))
 
@@ -10175,13 +10169,6 @@ test_compile_warning([[
 class A {
 nomask int x;
 }
-]])
-
-
-// #include
-test_compile_any([[
-#pike 7.0
-#include <simulate.h>
 ]])
 
 // #error
@@ -12594,11 +12581,6 @@ test_do(add_constant("test"))
 test_do(add_constant("test2"))
 
 test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
-
-// - get_function (actually in simulate.pike)
-test_eq(a,
-#pike 7.0
-Simulate.get_function(this_object(),"a"))
 test_eq(a,this_object()->a)
 
 // - catch
