@@ -1,5 +1,6 @@
 #pike 7.5
 
+#pragma no_deprecation_warnings
 inherit Thread;
 
 #if constant(thread_create)
