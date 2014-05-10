@@ -46,37 +46,42 @@ Packet server_hello_packet()
   struct->put_uint(session->compression_algorithm, 1);
 
   ADT.struct extensions = ADT.struct();
+  Packet alert;
 
-  if (secure_renegotiation) {
+  void ext(int id, int condition, function(void:ADT.struct) code)
+  {
+    if(condition)
+    {
+      extensions->put_uint(id, 2);
+      extensions->put_var_string(code()->pop_data(), 2);
+    }
+  };
+
+  ext (EXTENSION_renegotiation_info, secure_renegotiation) {
     // RFC 5746 3.7:
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
     // the ServerHello.
-    extensions->put_uint(EXTENSION_renegotiation_info, 2);
-    ADT.struct extension = ADT.struct();
-    extension->put_var_string(client_verify_data + server_verify_data, 1);
+    return ADT.struct()->put_var_string(client_verify_data + server_verify_data, 1);
+  };
 
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (session->max_packet_size != PACKET_MAX_SIZE) {
+  ext (EXTENSION_max_fragment_length, session->max_packet_size != PACKET_MAX_SIZE) {
     // RFC 3546 3.2.
     ADT.struct extension = ADT.struct();
-    extension->put_uint(EXTENSION_max_fragment_length, 2);
     switch(session->max_packet_size) {
     case 512:  extension->put_uint(FRAGMENT_512,  1); break;
     case 1024: extension->put_uint(FRAGMENT_1024, 1); break;
     case 2048: extension->put_uint(FRAGMENT_2048, 1); break;
     case 4096: extension->put_uint(FRAGMENT_4096, 1); break;
     default:
-      return Alert(ALERT_fatal, ALERT_illegal_parameter,
-		   "Invalid fragment size.\n");
+      alert = Alert(ALERT_fatal, ALERT_illegal_parameter,
+                    "Invalid fragment size.\n");
     }
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return extension;
+  };
 
-  if (sizeof(session->ecc_curves) &&
-      remote_extensions[EXTENSION_ec_point_formats]) {
+  ext (EXTENSION_ec_point_formats, sizeof(session->ecc_curves) &&
+       remote_extensions[EXTENSION_ec_point_formats]) {
     // RFC 4492 5.2:
     // The Supported Point Formats Extension is included in a
     // ServerHello message in response to a ClientHello message
@@ -84,35 +89,28 @@ Packet server_hello_packet()
     // negotiating an ECC cipher suite.
     ADT.struct extension = ADT.struct();
     extension->put_uint(POINT_uncompressed, 1);
-    extension->put_var_string(extension->pop_data(), 1);
-    extensions->put_uint(EXTENSION_ec_point_formats, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return extension->put_var_string(extension->pop_data(), 1);
+  };
 
-  if (session->truncated_hmac) {
+  ext (EXTENSION_truncated_hmac, session->truncated_hmac) {
     // RFC 3546 3.5 "Truncated HMAC"
-    extensions->put_uint(EXTENSION_truncated_hmac, 2);
-    extensions->put_var_string("", 2);
-  }
+    return ADT.struct();
+  };
 
-  if (session->heartbeat_mode) {
+  ext (EXTENSION_heartbeat, session->heartbeat_mode) {
     // RFC 6520
-    ADT.struct extension = ADT.struct();
-    extension->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
-    extensions->put_uint(EXTENSION_heartbeat, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+  };
 
-  if (has_application_layer_protocol_negotiation &&
-      next_protocol)
+  ext (EXTENSION_application_layer_protocol_negotiation,
+       next_protocol && has_application_layer_protocol_negotiation)
   {
-    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation,2);
-    extensions->put_uint(sizeof(next_protocol)+3, 2);
-    extensions->put_uint(sizeof(next_protocol)+1, 2);
-    extensions->put_var_string(next_protocol, 1);
-  }
+    return ADT.struct()->put_var_string_array( ({next_protocol}), 1, 2);
+  };
 
-  if (!extensions->is_empty())
+  if (alert) return alert;
+
+  if (sizeof(extensions))
       struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
