@@ -327,36 +327,37 @@ static void stat_create (INT32 args)
       }
 
     if ((1 << TYPEOF(sp[-1])) & (BIT_PROGRAM|BIT_OBJECT|BIT_MAPPING)) {
-
-#define ASSIGN_INDEX(ENUM)						\
-      do {								\
-	stack_dup();							\
-	ref_push_string (stat_index_strs[ENUM]);			\
-	SET_SVAL_SUBTYPE(sp[-1], 1);					\
-	o_index();							\
-	if (!IS_UNDEFINED (sp-1)) {					\
-	  ref_push_string (stat_index_strs[ENUM]);			\
-	  stack_swap();							\
-	  stat_index_set (2);						\
-	}								\
-	pop_stack();							\
-      } while (0)
-
-      ASSIGN_INDEX (STAT_MODE);
-      ASSIGN_INDEX (STAT_SIZE);
-      ASSIGN_INDEX (STAT_ATIME);
-      ASSIGN_INDEX (STAT_MTIME);
-      ASSIGN_INDEX (STAT_CTIME);
-      ASSIGN_INDEX (STAT_UID);
-      ASSIGN_INDEX (STAT_GID);
-      ASSIGN_INDEX (STAT_DEV);
-      ASSIGN_INDEX (STAT_INO);
-      ASSIGN_INDEX (STAT_NLINK);
-      ASSIGN_INDEX (STAT_RDEV);
+        size_t i;
+        const enum stat_query l[] = {
+          STAT_MODE,
+          STAT_SIZE,
+          STAT_ATIME,
+          STAT_MTIME,
+          STAT_CTIME,
+          STAT_UID,
+          STAT_GID,
+          STAT_DEV,
+          STAT_INO,
+          STAT_NLINK,
+          STAT_RDEV,
 #ifdef HAVE_STRUCT_STAT_BLOCKS
-      ASSIGN_INDEX (STAT_BLKSIZE);
-      ASSIGN_INDEX (STAT_BLOCKS);
+          STAT_BLKSIZE,
+          STAT_BLOCKS
 #endif
+        };
+
+        for (i = 0; i < sizeof(l); i++) {
+            stack_dup();
+            ref_push_string (stat_index_strs[l[i]]);
+            SET_SVAL_SUBTYPE(sp[-1], 1);
+            o_index();
+            if (!IS_UNDEFINED (sp-1)) {
+              ref_push_string (stat_index_strs[l[i]]);
+              stack_swap();
+              stat_index_set (2);
+            }
+            pop_stack();
+        }
     }
 
     else if (TYPEOF(sp[-1]) == T_ARRAY) {
