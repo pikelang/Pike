@@ -1421,28 +1421,6 @@ cond([[all_constants()->thread_create]],
 
     return num_ok;
   ]], 5)
-
-  test_any([[
-    #pike 7.4
-    int num_ok = 0;
-
-    Thread.Mutex m = Thread.Mutex();
-    Thread.MutexKey l = m->lock();
-
-    void thread_fn()
-    {
-      m->lock();
-      num_ok++;
-    };
-
-    array(Thread.Thread) t = (({Thread.thread_create}) * 5) (thread_fn);
-
-    sleep (0.5); // Make sure they are waiting for the lock.
-    destruct (m); // Destructs the outstanding lock too.
-    sleep (0.5); // Wait for them to finish.
-
-    return num_ok;
-  ]], 5)
 ]])
 
 dnl - This test is disabled for now.
