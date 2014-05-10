@@ -9,10 +9,7 @@ inherit Stdio.Port : socket;
 //! Context to use for the connections.
 .context ctx;
 
-//!
-inherit ADT.Queue : accept_queue;
-
-constant sslfile = SSL.sslfile;
+protected ADT.Queue accept_queue = ADT.Queue();
 
 //!
 function(object, mixed|void:void) accept_callback;
@@ -26,18 +23,18 @@ function(object, mixed|void:void) accept_callback;
 //!
 //! This function is installed as the @[SSL.sslfile] accept
 //! callback by @[ssl_callback()], and enqueues the newly
-//! negotiated @[SSL.sslfile] on the @[accept_queue].
+//! negotiated @[SSL.sslfile] on the accept queue.
 //!
 //! If there has been an @[accept_callback] installed by
 //! @[bind()] or @[listen_fd()], it will be called with
-//! all pending @[SSL.sslfile]s on the @[accept_queue].
+//! all pending @[SSL.sslfile]s on the accept queue.
 //!
 //! If there's no @[accept_callback], then the @[SSL.sslfile]
 //! will have to be retrieved from the queue by calling @[accept()].
 void finished_callback(object f, mixed|void id)
 {
-  accept_queue::put(f);
-  while (accept_callback && !accept_queue::is_empty())
+  accept_queue->put(f);
+  while (accept_callback && sizeof(accept_queue))
   {
     accept_callback(f, id);
   }
@@ -57,7 +54,7 @@ void ssl_callback(mixed id)
   object f = socket_accept();
   if (f)
   {
-    sslfile(f, ctx)->set_accept_callback(finished_callback);
+    .sslfile(f, ctx)->set_accept_callback(finished_callback);
   }
 }
 
@@ -157,7 +154,7 @@ Stdio.File socket_accept()
 //!   and @expr{0@} (zero) if there are none.
 object accept()
 {
-  return accept_queue::get();
+  return accept_queue->get();
 }
 
 //! Create a new port for accepting SSL connections.
@@ -171,5 +168,4 @@ void create(.context|void ctx)
 #endif
   if (!ctx) ctx = .context();
   this_program::ctx = ctx;
-  accept_queue::create();
 }
