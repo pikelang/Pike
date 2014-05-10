@@ -430,6 +430,7 @@ test_any([[
 
 test_eq([[ ADT.struct()->add_data("hej")->put_uint(1,2)->put_var_string("hi",1)->put_bignum(Gmp.mpz(1),1)->put_fix_string("x")->put_fix_uint_array(({6,7}),1)->put_var_uint_array(({6,7}),1,1)->pop_data() ]], "hej\0\1\2hi\1\1x\6\7\2\6\7")
 test_eq([[ ADT.struct()->put_var_uint_array(({6,7}),2,2)->pop_data() ]], "\0\4\0\6\0\7")
+test_eq([[ ADT.struct()->put_var_string_array(({"a","b"}),2,2)->pop_data() ]], "\0\6\0\1a\0\1b")
 
 
 dnl ADT.Queue
