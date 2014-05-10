@@ -41,4 +41,116 @@ Poly1305 POLY1305 = Poly1305();
 
 //! @endmodule
 
-#endif
+#endif /* POLY1305_AES */
+
+#if constant(Nettle.UMAC32_AES)
+
+//! @module UMAC32
+
+//! @ignore
+protected class _UMAC32
+{
+//! @endignore
+
+  inherit Nettle.UMAC32_AES;
+
+  //! Get a UMAC32 @[State] object initialized with a password.
+  State `()(string(8bit) password)
+  {
+    return State(password);
+  }
+
+//! @ignore
+}
+
+_UMAC32 UMAC32 = _UMAC32();
+
+//! @endignore
+
+//! @endmodule
+
+#endif /* UMAC32_AES */
+
+#if constant(Nettle.UMAC64_AES)
+
+//! @module UMAC64
+
+//! @ignore
+protected class _UMAC64
+{
+//! @endignore
+
+  inherit Nettle.UMAC64_AES;
+
+  //! Get a UMAC64 @[State] object initialized with a password.
+  State `()(string(8bit) password)
+  {
+    return State(password);
+  }
+
+//! @ignore
+}
+
+_UMAC64 UMAC64 = _UMAC64();
+
+//! @endignore
+
+//! @endmodule
+
+#endif /* UMAC64_AES */
+
+#if constant(Nettle.UMAC96_AES)
+
+//! @module UMAC96
+
+//! @ignore
+protected class _UMAC96
+{
+//! @endignore
+
+  inherit Nettle.UMAC96_AES;
+
+  //! Get a UMAC96 @[State] object initialized with a password.
+  State `()(string(8bit) password)
+  {
+    return State(password);
+  }
+
+//! @ignore
+}
+
+_UMAC96 UMAC96 = _UMAC96();
+
+//! @endignore
+
+//! @endmodule
+
+#endif /* UMAC96_AES */
+
+#if constant(Nettle.UMAC128_AES)
+
+//! @module UMAC128
+
+//! @ignore
+protected class _UMAC128
+{
+//! @endignore
+
+  inherit Nettle.UMAC128_AES;
+
+  //! Get a UMAC128 @[State] object initialized with a password.
+  State `()(string(8bit) password)
+  {
+    return State(password);
+  }
+
+//! @ignore
+}
+
+_UMAC128 UMAC128 = _UMAC128();
+
+//! @endignore
+
+//! @endmodule
+
+#endif /* UMAC128_AES */

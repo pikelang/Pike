@@ -253,8 +253,11 @@ PIKECLASS MAC
 
       iv->flags |= STRING_CLEAR_ON_EXIT;
       NO_WIDE_STRING(iv);
-      
-      if (iv->len != meta->iv_size || !meta->iv_size) {
+
+      /* NB: Check iv length here so that we can use the
+       *     Nettle implementation straight in meta->set_iv.
+       */
+      if ((iv->len > meta->iv_size) || !meta->iv_size) {
 	Pike_error("Invalid iv/nonce.\n");
       }
 
@@ -440,9 +443,10 @@ static void pike_poly1305_aes_set_iv(void *ctx, pike_nettle_size_t len,
 #define UMAC_NONCE_SIZE		UMAC_MAX_NONCE_SIZE
 #endif
 
-#define UMAC32_BLOCK_SIZE	UMAC_BLOCK_SIZE
-#define UMAC32_KEY_SIZE		UMAC_KEY_SIZE
-#define UMAC32_IV_SIZE		UMAC_NONCE_SIZE
+#define UMAC32_AES_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC32_AES_KEY_SIZE	UMAC_KEY_SIZE
+#define UMAC32_AES_IV_SIZE	UMAC_NONCE_SIZE
+#define UMAC32_AES_DIGEST_SIZE	UMAC32_DIGEST_SIZE
 #define pike_umac32_set_iv	umac32_set_nonce
 
 static void pike_umac32_set_key(void *ctx, pike_nettle_size_t len,
@@ -454,15 +458,16 @@ static void pike_umac32_set_key(void *ctx, pike_nettle_size_t len,
   umac32_set_key(ctx, key);
 }
 
-#cmod_define PIKE_NAME UMAC32
+#cmod_define PIKE_NAME UMAC32_AES
 #cmod_define NETTLE_NAME umac32
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#define UMAC64_BLOCK_SIZE	UMAC_BLOCK_SIZE
-#define UMAC64_KEY_SIZE		UMAC_KEY_SIZE
-#define UMAC64_IV_SIZE		UMAC_NONCE_SIZE
+#define UMAC64_AES_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC64_AES_KEY_SIZE	UMAC_KEY_SIZE
+#define UMAC64_AES_IV_SIZE	UMAC_NONCE_SIZE
+#define UMAC64_AES_DIGEST_SIZE	UMAC64_DIGEST_SIZE
 #define pike_umac64_set_iv	umac64_set_nonce
 
 static void pike_umac64_set_key(void *ctx, pike_nettle_size_t len,
@@ -474,15 +479,16 @@ static void pike_umac64_set_key(void *ctx, pike_nettle_size_t len,
   umac64_set_key(ctx, key);
 }
 
-#cmod_define PIKE_NAME UMAC64
+#cmod_define PIKE_NAME UMAC64_AES
 #cmod_define NETTLE_NAME umac64
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#define UMAC96_BLOCK_SIZE	UMAC_BLOCK_SIZE
-#define UMAC96_KEY_SIZE		UMAC_KEY_SIZE
-#define UMAC96_IV_SIZE		UMAC_NONCE_SIZE
+#define UMAC96_AES_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC96_AES_KEY_SIZE	UMAC_KEY_SIZE
+#define UMAC96_AES_IV_SIZE	UMAC_NONCE_SIZE
+#define UMAC96_AES_DIGEST_SIZE	UMAC96_DIGEST_SIZE
 #define pike_umac96_set_iv	umac96_set_nonce
 
 static void pike_umac96_set_key(void *ctx, pike_nettle_size_t len,
@@ -494,15 +500,16 @@ static void pike_umac96_set_key(void *ctx, pike_nettle_size_t len,
   umac96_set_key(ctx, key);
 }
 
-#cmod_define PIKE_NAME UMAC96
+#cmod_define PIKE_NAME UMAC96_AES
 #cmod_define NETTLE_NAME umac96
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#define UMAC128_BLOCK_SIZE	UMAC_BLOCK_SIZE
-#define UMAC128_KEY_SIZE	UMAC_KEY_SIZE
-#define UMAC128_IV_SIZE		UMAC_NONCE_SIZE
+#define UMAC128_AES_BLOCK_SIZE	UMAC_BLOCK_SIZE
+#define UMAC128_AES_KEY_SIZE	UMAC_KEY_SIZE
+#define UMAC128_AES_IV_SIZE	UMAC_NONCE_SIZE
+#define UMAC128_AES_DIGEST_SIZE	UMAC128_DIGEST_SIZE
 #define pike_umac128_set_iv	umac128_set_nonce
 
 static void pike_umac128_set_key(void *ctx, pike_nettle_size_t len,
@@ -514,7 +521,7 @@ static void pike_umac128_set_key(void *ctx, pike_nettle_size_t len,
   umac128_set_key(ctx, key);
 }
 
-#cmod_define PIKE_NAME UMAC128
+#cmod_define PIKE_NAME UMAC128_AES
 #cmod_define NETTLE_NAME umac128
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME

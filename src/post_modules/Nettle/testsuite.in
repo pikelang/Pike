@@ -100,7 +100,7 @@ define(test_mac, [[
 	}
 	state->update(String.hex2string(#"$4" - " " - "\n"));
 	return String.string2hex(state->digest($6));
-      ]],#"$5"-" "-"\n")
+      ]],lower_case(#"$5"-" "-"\n"))
   ]])
 ]])
 
@@ -112,6 +112,14 @@ define(test_hmac_sha2, [[
   test_mac(Crypto.SHA256.HMAC,$1,$2,$3,$5,$8)
   test_mac(Crypto.SHA384.HMAC,$1,$2,$3,$6,$8)
   test_mac(Crypto.SHA512.HMAC,$1,$2,$3,$7,$8)
+]])
+
+dnl Cipher, key, nonce, input, umac32, umac64, umac96, umac128
+define(test_umac, [[
+  test_mac($1.UMAC32, $2, $3, $4, $5)
+  test_mac($1.UMAC64, $2, $3, $4, $6)
+  test_mac($1.UMAC96, $2, $3, $4, $7)
+  test_mac($1.UMAC128, $2, $3, $4, $8)
 ]])
 
 dnl HMAC-MD5 Test vectors from RFC 2104.
@@ -309,6 +317,22 @@ e1a5668a 4d5b66a5 f68cc542 4ed5982d
 ab081272 4a7f1e34 2742cbed 374d94d1 36c6b879 5d45b381 9830f2c0 4491faf0
 990c62e4 8b8018b2 c3e4a0fa 3134cb67 fa83e158 c994d961 c4cb2109 5c1bf9,
 5154ad0d 2cb26e01 274fc511 48491f1b)
+
+dnl UMAC-AES Test vectors from RFC 4418 Appendix.
+dnl UMAC128 results added by hand.
+
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	,
+	113145FB, 6E155FAD26900BE1, 32FEDB100C79AD58F07FF764,
+	32fedb100c79ad58f07ff7643cc60465)
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	616161,
+	3B91D102, 44B5CB542F220104, 185E4FE905CBA7BD85E4C2DC,
+	185e4fe905cba7bd85e4c2dc3d117d8d)
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	616263,
+	ABF3A3A0, D4D7B9F6BD4FBFCF, 883C3D4B97A61976FFCF2323,
+	883c3d4b97a61976ffcf232308cba5a5)
 
 dnl Crypto, key, plain, cipher, force/ekb
 define(test_cipher,[[
