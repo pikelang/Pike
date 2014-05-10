@@ -27,6 +27,16 @@
 #include "lexer2.h"
 #undef SHIFT
 
+int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len)
+{
+  if(LIKELY(buf.shift == 0))
+    return parse_esc_seq0((void*)buf.ptr,chr,len);
+  if( buf.shift == 1 )
+    return parse_esc_seq1((void*)buf.ptr,chr,len);
+  return parse_esc_seq2((void*)buf.ptr,chr,len);
+  /* UNREACHABLE */
+}
+
 int yylex(YYSTYPE *yylval)
 {
   struct lex *lex;
