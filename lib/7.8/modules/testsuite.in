@@ -265,4 +265,16 @@ test_any([[
   return proxy->crypt("123");
 ]], "")
 
+
+test_do(add_constant("foobar",lambda() { return 1; }))
+test_any([[
+#pike 7.8
+#if efun(foobar)
+return 1;
+#else
+return 0;
+#endif
+]],1)
+test_do(add_constant("foobar"))
+
 END_MARKER
