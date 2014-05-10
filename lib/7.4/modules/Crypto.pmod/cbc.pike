@@ -1,4 +1,5 @@
 #pike 7.5
+#pragma no_deprecation_warnings
 
 //! This is the Pike 7.4 compatibility implementation of
 //! the Cipher Block Chaining method.
