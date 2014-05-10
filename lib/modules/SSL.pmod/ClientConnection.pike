@@ -56,20 +56,25 @@ Packet client_hello()
 
   ADT.struct extensions = ADT.struct();
 
-  if (secure_renegotiation) {
+  void ext(int id, int condition, function(void:ADT.struct) code)
+  {
+    if(condition)
+    {
+      extensions->put_uint(id, 2);
+      extensions->put_var_string(code()->pop_data(), 2);
+    }
+  };
+
+  ext (EXTENSION_renegotiation_info, secure_renegotiation) {
     // RFC 5746 3.4:
     // The client MUST include either an empty "renegotiation_info"
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    ADT.struct extension = ADT.struct();
-    extension->put_var_string(client_verify_data, 1);
-    extensions->put_uint(EXTENSION_renegotiation_info, 2);
+    return ADT.struct()->put_var_string(client_verify_data, 1);
+  };
 
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (sizeof(context->ecc_curves)) {
+  ext (EXTENSION_elliptic_curves, sizeof(context->ecc_curves)) {
     // RFC 4492 5.1:
     // The extensions SHOULD be sent along with any ClientHello message
     // that proposes ECC cipher suites.
@@ -77,26 +82,22 @@ Packet client_hello()
     foreach(context->ecc_curves, int curve) {
       extension->put_uint(curve, 2);
     }
-    extension->put_var_string(extension->pop_data(), 2);
-    extensions->put_uint(EXTENSION_elliptic_curves, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
+    return extension->put_var_string(extension->pop_data(), 2);
+  };
 
+  ext (EXTENSION_ec_point_formats, sizeof(context->ecc_curves)) {
+    ADT.struct extension = ADT.struct();
     extension->put_uint(POINT_uncompressed, 1);
-    extension->put_var_string(extension->pop_data(), 1);
-    extensions->put_uint(EXTENSION_ec_point_formats, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return extension->put_var_string(extension->pop_data(), 1);
+  };
 
   // We always attempt to enable the heartbeat extension.
-  {
+  ext (EXTENSION_heartbeat, 1) {
     // RFC 6420
-    ADT.struct extension = ADT.struct();
-    extension->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
-    extensions->put_uint(EXTENSION_heartbeat, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+  };
 
-  if (client_version >= PROTOCOL_TLS_1_2) {
+  ext (EXTENSION_signature_algorithms, client_version >= PROTOCOL_TLS_1_2) {
     // RFC 5246 7.4.1.4.1:
     // If the client supports only the default hash and signature algorithms
     // (listed in this section), it MAY omit the signature_algorithms
@@ -108,13 +109,10 @@ Packet client_hello()
     // to accept.
 
     // We list all hashes and signature formats that we support.
-    ADT.struct extension = ADT.struct();
-    extension->put_var_string(get_signature_algorithms(), 2);
-    extensions->put_uint(EXTENSION_signature_algorithms, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return ADT.struct()->put_var_string(get_signature_algorithms(), 2);
+  };
 
-  if(context->client_use_sni)
+  ext (EXTENSION_server_name, context->client_use_sni)
   {
     ADT.struct extension = ADT.struct();
     if(context->client_server_names)
@@ -128,25 +126,13 @@ Packet client_hello()
         extension->put_var_string(hostname->pop_data(), 2);
       }
     }
+    return extension;
+  };
 
-    SSL3_DEBUG_MSG("SSL.handshake: Adding Server Name extension.\n");
-    extensions->put_uint(EXTENSION_server_name, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
-
-  if (context->advertised_protocols)
+  ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
   {
-    array(string) prots = context->advertised_protocols;
-    ADT.struct extension = ADT.struct();
-    extension->put_uint( [int]Array.sum(Array.map(prots, sizeof)) +
-                         sizeof(prots), 2);
-    foreach(context->advertised_protocols;; string(0..255) proto)
-      extension->put_var_string(proto, 1);
-
-    SSL3_DEBUG_MSG("SSL.handshake: Adding ALPN extension.\n");
-    extensions->put_uint(EXTENSION_application_layer_protocol_negotiation, 2);
-    extensions->put_var_string(extension->pop_data(), 2);
-  }
+    return ADT.struct()->put_var_string_array(context->advertised_protocols, 1, 2);
+  };
 
   // When the client HELLO packet data is in the range 256-511 bytes
   // f5 SSL terminators will intepret it as SSL2 requiring an
@@ -155,14 +141,13 @@ Packet client_hello()
   // dummy exentsion.
   // Reference: draft-agl-tls-padding
   int packet_size = sizeof(struct)+sizeof(extensions)+2;
-  if(packet_size>255 && packet_size<512)
+  ext (EXTENSION_padding, packet_size>255 && packet_size<512)
   {
     int padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
                    padding);
-    extensions->put_uint(EXTENSION_padding, 2);
-    extensions->put_var_string("\0"*padding, 2);
-  }
+    return ADT.struct()->add_data("\0"*padding);
+  };
 
   if(sizeof(extensions))
     struct->put_var_string(extensions->pop_data(), 2);
