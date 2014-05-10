@@ -10,6 +10,8 @@ test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
 
+// Hashes
+
 define(test_hash, [[
   cond_resolv(Nettle.$1, [[
       test_eq(String.string2hex(Nettle.$1()->hash("")),#"$2"-" "-"\n")
@@ -88,6 +90,20 @@ test_hash(RIPEMD160,
 e18472c9792fdc6e9dc2f46d53daee9ea60a999e,
 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc)
 
+// PBKDFs
+
+dnl Pbkdf, password, salt, rounds, bytes
+define(test_pbkdf, [[
+  cond_resolv($1, [[
+    test_eq([[
+      String.string2hex($1(String.hex2string($2-" "-"\n"),
+			   String.hex2string($3-" "-"\n"),
+			   $4, $5))
+    ]], lower_case($6-" "-"\n"))
+  ]])
+]])
+
+// MACs
 
 dnl Mac, key, nonce, input, hash, [truncation]
 define(test_mac, [[
@@ -334,6 +350,8 @@ test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
 	ABF3A3A0, D4D7B9F6BD4FBFCF, 883C3D4B97A61976FFCF2323,
 	883c3d4b97a61976ffcf232308cba5a5)
 
+// Ciphers
+
 dnl Crypto, key, plain, cipher, force/ekb
 define(test_cipher,[[
   test_eq(ifelse([[$5]],,
@@ -541,7 +559,7 @@ cond_resolv( Nettle.CAMELLIA, [[
               "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
 ]])
 
-
+// SALSA20
 dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
@@ -623,6 +641,8 @@ test_any([[
   cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
   return String.string2hex(cbc->crypt("0123456789abcdef"));
 ]], "b71a7f6d29d66bd468294ed9cfda2af1")
+
+// AEAD
 
 dnl aead, key, iv, adata, plaintext, crypted, hash, [trunc]
 define(test_aead, [[
