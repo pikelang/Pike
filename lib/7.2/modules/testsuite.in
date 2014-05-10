@@ -16,4 +16,49 @@ test_any([[
   return String.strmult("foo",4);
 ]], "foofoofoofoo")
 
+test_compile_error_any([[
+  class X {
+    int i = 17;
+    class Y {
+      constant i = 18;
+      mixed f (int i) {return ({i, Y::i, X::i});}
+    }
+  }
+]])
+
+test_program([[
+  class A {
+    int i = 17;
+  }
+  class X {
+    inherit A: Y;
+    class Y {
+      constant i = 18;
+      mixed f() {return Y::i;}
+    }
+  }
+  int a() {return X()->Y()->f() == 17;}
+]])
+
+test_eval_error([[
+  compile_string (#"
+    #pike 7.2
+    string p = \"g\";
+    mixed f (string p) {return global::p;}");
+]])
+
+test_compile_error([[
+  mixed a() {return global.Parser.HTML;}
+]], 0);
+
+test_compile_any([[
+  class X {int x; int f() {return local::x;}}
+]])
+
+// - new/clone
+test_true([[ objectp(new(compile_string("int foo() { return 17; }"))) ]])
+test_eq([[new(compile_string("int foo() { return 17; }"))->foo() ]],17)
+test_true([[ objectp(clone(compile_string("int foo() { return 17; }"))) ]])
+test_eq([[clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
+
 END_MARKER

@@ -3689,16 +3689,6 @@ test_program([[
   int a() {return equal (X()->Y()->f (19), ({19, 18, 17}));}
 ]])
 
-test_compile_error_any([[
-  #pike 7.2
-  class X {
-    int i = 17;
-    class Y {
-      constant i = 18;
-      mixed f (int i) {return ({i, Y::i, X::i});}
-    }
-  }
-]])
 
 test_compile_error_any([[
   class X {
@@ -3719,21 +3709,6 @@ test_program([[
     }
   }
   int a() {return X()->Y()->f() == 18;}
-]])
-
-test_program([[
-  #pike 7.2
-  class A {
-    int i = 17;
-  }
-  class X {
-    inherit A: Y;
-    class Y {
-      constant i = 18;
-      mixed f() {return Y::i;}
-    }
-  }
-  int a() {return X()->Y()->f() == 17;}
 ]])
 
 test_program([[
@@ -3836,13 +3811,6 @@ test_eval_error([[
     mixed f (string p) {return global::p;}");
 ]])
 
-test_eval_error([[
-  compile_string (#"
-    #pike 7.2
-    string p = \"g\";
-    mixed f (string p) {return global::p;}");
-]])
-
 test_equal([[
   compile_string (#"
     int x = 23;
@@ -3860,11 +3828,6 @@ test_equal([[
 
 test_compile([[
   mixed a() {return global.Parser.HTML;}; a;
-]], 0);
-
-test_compile_error([[
-  #pike 7.2
-  mixed a() {return global.Parser.HTML;}
 ]], 0);
 
 test_any([[
@@ -3972,10 +3935,6 @@ return blorg()->goo();
 ]],3)
 
 test_compile_error_any([[class X {int x; int f() {return local::x;}}]])
-test_compile_any([[
-  #pike 7.2
-  class X {int x; int f() {return local::x;}}
-]])
 
 // Testing the 'inline' keyword
 test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return bar()->d(); }]],0)
@@ -10489,21 +10448,6 @@ test_false( callablep( ({ ({ 0, "" }) }) ) )
 // - chown
 // - chroot
 // - cleargroups
-
-// - new/clone
-test_true([[
-#pike 7.2
-objectp(new(compile_string("int foo() { return 17; }"))) ]])
-test_eq([[
-#pike 7.2
-new(compile_string("int foo() { return 17; }"))->foo() ]],17)
-test_true([[
-#pike 7.2
-objectp(clone(compile_string("int foo() { return 17; }"))) ]])
-test_eq([[
-#pike 7.2
-clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
-
 // - closelog
 
 // - column
