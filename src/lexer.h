@@ -214,7 +214,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
       unsigned INT32 n = c-'0';
-      for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
+      for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
 	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
 	  of = 1;
 	else
