@@ -48,8 +48,7 @@ test_do([[
 test_do([[ trans->commit(); ]])
 test_eq([[ table["Buck"] ]], "Rogers")
 test_eq([[ table["Blixt"] ]], "Gordon")
-test_equal([[ indices(table) ]], [[ ({ "Blixt", "Buck" }) ]])
-test_equal([[ values(table) ]], [[ ({ "Gordon", "Rogers" }) ]])
+test_equal([[ mkmapping(indices(table),values(table)) ]], [[ ([ "Blixt":"Gordon", "Buck":"Rogers" ]) ]])
 dnl **** End transactions test
 
 test_eval_error([[ object db = Yabu.db("test.db", "wct") ]])
