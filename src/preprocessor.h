@@ -30,11 +30,8 @@
  * Function renaming
  */
 
-#define gobble_identifier	gobble_identifier0
 #define lower_cpp		lower_cpp0
 #define parse_esc_seq		parse_esc_seq0
-#define find_end_parenthesis	find_end_parenthesis0
-#define find_end_brace		find_end_brace0
 #define MAKE_BINARY_STRING	make_shared_binary_string0
 
 #define calc	calc_0
@@ -65,11 +62,8 @@
  * Function renaming
  */
 
-#define gobble_identifier	gobble_identifier1
 #define lower_cpp		lower_cpp1
 #define parse_esc_seq		parse_esc_seq1
-#define find_end_parenthesis	find_end_parenthesis1
-#define find_end_brace		find_end_brace1
 #define MAKE_BINARY_STRING	make_shared_binary_string1
 
 #define calc	calc_1
@@ -95,11 +89,8 @@
  * Function renaming
  */
 
-#define gobble_identifier	gobble_identifier2
 #define lower_cpp		lower_cpp2
 #define parse_esc_seq		parse_esc_seq2
-#define find_end_parenthesis	find_end_parenthesis2
-#define find_end_brace		find_end_brace2
 #define MAKE_BINARY_STRING	make_shared_binary_string2
 
 #define calc	calc_2
@@ -143,41 +134,7 @@ static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
 /*
  * Functions 
  */
-#define FIND_END_OF_STRING() (pos=PIKE_XCONCAT(find_end_of_string,SHIFT)(pos,len,data,this))
-static ptrdiff_t PIKE_XCONCAT(find_end_of_string,SHIFT)
-     ( ptrdiff_t pos, ptrdiff_t len,WCHAR *data,
-       struct cpp *this)
-{
-  while(1)
-  {
-    if(pos>=len)
-    {
-      cpp_error(this,"End of file in string.");
-      break;
-    }
-    switch(data[pos++])
-    {
-    case '\n':
-      cpp_error(this,"Newline in string.");
-      this->current_line++;
-      PUTNL();
-      break;
-    case '"': return pos;
-    case '\\':
-      if(data[pos]=='\n') {
-	this->current_line++;
-	PUTNL();
-      }
-      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {
-	this->current_line++;
-	pos++;
-	PUTNL();
-      }
-      pos++;
-    }
-  } 
-  return pos;
-}
+#define FIND_END_OF_STRING() (pos=find_end_of_string(this,MKPCHARP(data,SHIFT),len,pos))
 
 #define FIND_END_OF_STRING2() (pos=PIKE_XCONCAT(find_end_of_string2,SHIFT)(pos,len,data,this))
 static ptrdiff_t PIKE_XCONCAT(find_end_of_string2,SHIFT)
@@ -215,110 +172,14 @@ static ptrdiff_t PIKE_XCONCAT(find_end_of_string2,SHIFT)
 }
 
 
-#define FIND_END_OF_CHAR() (pos=PIKE_XCONCAT(find_end_of_char,SHIFT)(pos,len,data,this))
-static ptrdiff_t PIKE_XCONCAT(find_end_of_char,SHIFT)
-     ( ptrdiff_t pos, ptrdiff_t len,WCHAR *data,
-       struct cpp *this)
-{
-  int e=0;
-  while(1)
-  {
-    if(pos>=len)
-    {
-      cpp_error(this,"End of file in character constant.");
-      break;
-    }
+#define FIND_END_OF_CHAR() (pos=find_end_of_char(this,MKPCHARP(data,SHIFT),len,pos))
 
-    if(e++>32)
-    {
-      cpp_error(this,"Too long character constant.");
-      break;
-    }
-
-    switch(data[pos++])
-    {
-    case '\n':
-      cpp_error(this,"Newline in char.");
-      this->current_line++;
-      PUTNL();
-      break;
-    case '\'': 
-      return pos;
-    case '\\':
-      if(data[pos]=='\n') {
-	this->current_line++;
-	PUTNL();
-      }
-      else if ((data[pos] == '\r') && (data[pos+1] == '\n'))
-      {
-	this->current_line++;
-	pos++;
-	PUTNL();
-      }
-      pos++;
-    }
-  }
-  return pos;
-}
-
-#define FIND_EOL_PRETEND() (pos=PIKE_XCONCAT(find_eol,SHIFT)(pos,len,data,this,0))
-#define FIND_EOL() (pos=PIKE_XCONCAT(find_eol,SHIFT)(pos,len,data,this,1))
-
-static ptrdiff_t PIKE_XCONCAT(find_eol,SHIFT)( ptrdiff_t pos, ptrdiff_t len,WCHAR *data,
-					       struct cpp *this, int emit)
-{
-  while(pos < len) {
-    switch (data[pos++]) {
-    case '\n':
-      return pos-1;
-    case '\\':
-      if (data[pos] == '\n') {
-	pos+=2;
-      } else if ((data[pos] == '\r') &&
-		 (data[pos+1] == '\n')) {
-	pos+=3;
-      } else {
-	pos++;
-	continue;
-      }
-      this->current_line++;
-      if( emit ) PUTNL();
-    }
-  }
-  return pos;
-}
-
-
-#define SKIPCOMMENT() (pos=PIKE_XCONCAT(skipcomment,SHIFT)(pos,len,data,this,1))
-#define SKIPCOMMENT_INC_LINES() (pos=PIKE_XCONCAT(skipcomment,SHIFT)(pos,len,data,this,0))
-static ptrdiff_t PIKE_XCONCAT(skipcomment,SHIFT)( ptrdiff_t pos, ptrdiff_t len,WCHAR *data,
-						  struct cpp *this, int emit)
-{
-  pos++;
-
-  if(pos+2>=len)
-  {
-    cpp_error(this,"End of file in comment.");
-  }
-  while(data[pos]!='*' || data[pos+1]!='/')
-  {	
-    if(pos+2>=len)
-    {
-      cpp_error(this,"End of file in comment.");
-      break;
-    }
-
-    if(data[pos]=='\n')
-    {
-      this->current_line++;
-      if( emit )PUTNL();
-    }
-    pos++;
-  }
-  return pos + 2;
-}
-
+#define FIND_EOL_PRETEND() (pos=find_end_of_line(this,MKPCHARP(data,SHIFT),len,pos,0))
+#define FIND_EOL() (pos=find_end_of_line(this,MKPCHARP(data,SHIFT),len,pos,1))
+#define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,0))
+#define SKIPCOMMENT() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,1))
 #define KEEPCOMMENT(s) (pos=PIKE_XCONCAT(keepcomment,SHIFT)(pos,len,old_pos,data,(s),this))
+
 static ptrdiff_t PIKE_XCONCAT(keepcomment,SHIFT)( ptrdiff_t pos,ptrdiff_t len,ptrdiff_t old_pos,
 						  WCHAR *data,struct string_builder *s,
 						  struct cpp *this)
@@ -462,252 +323,20 @@ static ptrdiff_t PIKE_XCONCAT(skipspace_p,SHIFT)( ptrdiff_t pos, WCHAR *data )
 /* pos is assumed to be at the backslash. pos it at the last char in
  * the escape afterwards. */
 
-#ifndef X_readchar_common
-#define X_readchar_common
-static void readchar_common(int how, ptrdiff_t l, p_wchar2 *C, ptrdiff_t *pos, struct cpp *this )
-{
-  switch( how )
-  {
-  case 0:
-    *pos += l;
-    break;
-  case 1:
-    *C = '\r';
-    *pos += 1;
-    break;
-  case 3:
-    /* The eof will get caught in the next round. */
-    *C = 0;
-    *pos += 1;
-    break;
-  case 4: case 5: case 6:
-    cpp_warning (this, "Too large character value in escape.");
-    *C = (int) MAX_UINT32;
-    *pos += l;
-    break;
-  case 7:
-    cpp_warning (this, "Too few hex digits in \\u escape.");
-    *C = '\\';
-    break;
-  case 8:
-    cpp_warning (this, "Too few hex digits in \\U escape.");
-    *C = '\\';
-    break;
-    DO_IF_DEBUG (
-    case 2: Pike_fatal ("Not supposed to happen.\n");
-    default: Pike_fatal ("Unknown error from parse_esc_seq.\n");
-    );
-  }
-}
-#endif
 
-#define READCHAR(C) PIKE_XCONCAT(readchar,SHIFT)(&(C), data, &pos, this )
-static void PIKE_XCONCAT(readchar,SHIFT)( p_wchar2 *C, WCHAR *data, ptrdiff_t *pos, struct cpp *this )
-{
-  ptrdiff_t l;
-  int how = parse_esc_seq (data + *pos + 1, C, &l);
-  readchar_common( how, l, C, pos, this );
-}
-
-
-#define READSTRING(nf) (pos=PIKE_XCONCAT(readstring,SHIFT)(pos,data,&nf,len,this,0))
-#define READSTRING2(nf) (pos=PIKE_XCONCAT(readstring,SHIFT)(pos,data,&nf,len,this,1))
-static ptrdiff_t PIKE_XCONCAT(readstring,SHIFT)
-     ( ptrdiff_t pos, WCHAR *data, struct string_builder*nf, 
-       ptrdiff_t len, struct cpp *this, int  nl_ok)
-{
-  while(1)
-  {
-    pos++;
-    if(pos>=len)
-    {
-      cpp_error(this,"End of file in string.");
-      break;
-    }
-    switch(data[pos])
-    {
-    case '"':  break;
-    case '\\':
-      {
-	p_wchar2 tmp;
-	if(data[pos+1]=='\n')
-	{
-	  pos++;
-	  this->current_line++;
-	  PUTNL();
-	  continue;
-	}
-	if(data[pos+1]=='\r' && data[pos+2]=='\n')
-	{
-	  pos+=2;
-	  this->current_line++;
-	  PUTNL();
-	  continue;
-	}
-	READCHAR(tmp);
-	string_builder_putchar(nf, tmp);
-	continue;
-      }
-    case '\r':
-      continue; /* ignored */
-    case '\n':
-      this->current_line++;
-      if( nl_ok )
-	PUTNL();
-      else
-	cpp_error(this,"Newline in string.");
-    default:
-      string_builder_putchar(nf, data[pos]);
-      continue;
-    }
-    pos++;
-    break;
-  }
-  return pos;
-}
+#define READCHAR(C) (C=readchar(MKPCHARP(data,SHIFT),&pos,this))
 
 /* At entry pos points past the start quote.
  * At exit pos points past the end quote.
  */
-#define FIXSTRING(nf,outp) (pos=PIKE_XCONCAT(fixstring,SHIFT)(pos,data,&nf,outp,len,this))
-
-static ptrdiff_t PIKE_XCONCAT(fixstring,SHIFT)
-     ( ptrdiff_t pos,WCHAR *data, struct string_builder*nf, int outp,
-       ptrdiff_t len, struct cpp *this )
-{
-  int trailing_newlines=0;
-  if(outp) string_builder_putchar(nf, '"');
-  while(1)
-  {
-    if(pos>=len)
-    {
-      cpp_error(this,"End of file in string.");
-      break;
-    }
-
-    switch(data[pos++])
-    {
-    case '\n':
-      cpp_error(this,"Newline in string.");
-      this->current_line++;
-      break;
-    case '"':  break;
-    case '\\':
-      if(data[pos]=='\n')
-      {
-	pos++;
-	trailing_newlines++;
-	this->current_line++;
-	continue;
-      }
-      if(data[pos]=='\r' && data[pos+1]=='\n')
-      {
-	pos+=2;
-	trailing_newlines++;
-	this->current_line++;
-	continue;
-      }
-      if(outp) string_builder_putchar(nf, '\\');
-      pos++;
-      /* Fall through. */
-    default:
-      if(outp) string_builder_putchar(nf, data[pos-1]);
-      continue;
-    }
-    break;
-  }
-  if(outp) string_builder_putchar(nf, '"');
-  while(trailing_newlines--) PUTNL();
-  return pos;
-}
-
-static struct pike_string *gobble_identifier (WCHAR *data, ptrdiff_t *pos,
-					      struct cpp *this)
-{
-  ptrdiff_t p = *pos;
-  struct string_builder sb;
-  init_string_builder (&sb, SHIFT);
-
-  while (1) {
-    ptrdiff_t start = p;
-    while (WC_ISIDCHAR (data[p])) p++;
-    if (p != start)
-      PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (
-	&sb, data + start, p - start);
-
-    if (data[p] != '\\') goto past_identifier;
-
-    switch (data[p + 1]) {
-      case '\r':
-	if (data[p + 2] != '\n')
-	  goto past_identifier;
-	p++;
-	/* Fall through */
-      case '\n':
-	this->current_line++;
-	PUTNL();
-	p += 2;
-	break;
-
-      case 'u':
-      case 'U': {
-	/* Note: Code dup in parse_esc_seq in lexer.h. */
-	/* Don't have to bother checking for an even number of
-	 * preceding backslashes since they aren't valid outside
-	 * string and char literals in the lexer input. */
-	unsigned INT32 c = 0;
-	ptrdiff_t stop, q;
-	if (data[p + 2] == data[p + 1])
-	  /* A quoted \u escape means we got "\uxxxx" dequoted here,
-	   * and that can't be part of an identifier. */
-	  goto past_identifier;
-	if (data[p + 1] == 'u')
-	  stop = p + 6;
-	else
-	  stop = p + 10;
-	for (q = p + 2; q < stop; q++)
-	  switch (data[q]) {
-	    case '0': case '1': case '2': case '3': case '4':
-	    case '5': case '6': case '7': case '8': case '9':
-	      c = 16 * c + data[q] - '0';
-	      break;
-	    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	      c = 16 * c + data[q] - 'a' + 10;
-	      break;
-	    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	      c = 16 * c + data[q] - 'A' + 10;
-	      break;
-	    default:
-	      cpp_error_sprintf (this, "Too few hex digits in \\%c escape.",
-				 data[p + 1]);
-	      goto past_identifier;
-	  }
-	if (!WIDE_ISIDCHAR (c)) goto past_identifier;
-	string_builder_putchar (&sb, c);
-	p = q;
-	break;
-      }
-
-      default:
-	goto past_identifier;
-    }
-  }
-
-past_identifier:
-  if (p != *pos) {
-    *pos = p;
-    return finish_string_builder (&sb);
-  }
-  else {
-    free_string_builder (&sb);
-    return NULL;
-  }
-}
+#define READSTRING(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,0))
+#define READSTRING2(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,1))
+#define FIXSTRING(nf,outp) (pos=fixstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,outp))
 
 /* Gobble an identifier at the current position. */
 #define GOBBLE_IDENTIFIER()						\
-  (WC_ISIDCHAR (data[pos]) || data[pos] == '\\' ?			\
-   dmalloc_touch (struct pike_string *, gobble_identifier (data, &pos, this)) : NULL)
+  ((WC_ISIDCHAR (data[pos]) || data[pos] == '\\') ?			\
+   dmalloc_touch (struct pike_string *, gobble_identifier(this,MKPCHARP(data,SHIFT), &pos)) : NULL)
 
 #if (SHIFT == 0)
 void _STRCAT(char *str, int len, int flags,struct cpp *this)
@@ -724,83 +353,6 @@ void _STRCAT(char *str, int len, int flags,struct cpp *this)
 #define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
 #endif /* SHIFT == 0 */
 
-
-static ptrdiff_t find_end_brace(struct cpp *this,
-				WCHAR *data,
-				ptrdiff_t len,
-				ptrdiff_t pos);
-static ptrdiff_t find_end_parenthesis(struct cpp *this,
-				      WCHAR *data,
-				      ptrdiff_t len,
-				      ptrdiff_t pos)
-/* pos is after the open paren. Returns the position after the close paren. */
-{
-  INT_TYPE start_line = this->current_line;
-  while(1)
-  {
-    if(pos+1>=len)
-    {
-      INT_TYPE save_line = this->current_line;
-      this->current_line = start_line;
-      cpp_error(this, "End of file while looking for end parenthesis.");
-      this->current_line = save_line;
-      return pos;
-    }
-
-    switch(data[pos++])
-    {
-    case '\n': PUTNL(); this->current_line++; break;
-    case '\'': FIND_END_OF_CHAR();  break;
-    case '"':  FIND_END_OF_STRING();  break;
-    case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
-    case '{':  pos=find_end_brace(this, data, len, pos); break;
-    case ')':  return pos;
-    case '/':
-      if (data[pos] == '*') {
-	pos++;
-	SKIPCOMMENT();
-      } else if (data[pos] == '/') {
-	pos++;
-	FIND_EOL();
-      }
-    }
-  }
-}
-
-static ptrdiff_t find_end_brace(struct cpp *this,
-				WCHAR *data,
-				ptrdiff_t len,
-				ptrdiff_t pos)
-/* pos is after the open brace. Returns the position after the close brace. */
-{
-  INT_TYPE start_line = this->current_line;
-  while(1)
-  {
-    if(pos+1>=len)
-    {
-      INT_TYPE save_line = this->current_line;
-      this->current_line = start_line;
-      cpp_error(this, "End of file while looking for end brace.");
-      this->current_line = save_line;
-      return pos;
-    }
-
-    switch(data[pos++])
-    {
-    case '\n': PUTNL(); this->current_line++; break;
-    case '\'': FIND_END_OF_CHAR();  break;
-    case '"':  FIND_END_OF_STRING();  break;
-    case '{':  pos=find_end_brace(this, data, len, pos); break;
-    case '}':  return pos;
-    case '/':
-      if (data[pos] == '*') {
-	SKIPCOMMENT();
-      } else if (data[pos] == '/') {
-	FIND_EOL();
-      }
-    }
-  }
-}
 
 static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
@@ -912,7 +464,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	while (data[pos] != ')') {
 	  switch(data[pos++]) {
 	  case '(':
-	    pos = find_end_parenthesis(this, data, len, pos);
+	    pos = find_end_parenthesis(this, MKPCHARP(data,SHIFT), len, pos);
 	    break;
 	  case ',':
 	    push_string(MAKE_BINARY_STRING(data+start, end-start));
@@ -1661,11 +1213,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  continue;
 
 		case '(':
-		  pos=find_end_parenthesis(this, data, len, pos);
+		  pos=find_end_parenthesis(this, MKPCHARP(data,SHIFT), len, pos);
 		  continue;
 
 		case '{':
-		  pos=find_end_brace(this, data, len, pos);
+		  pos=find_end_brace(this, MKPCHARP(data,SHIFT), len, pos);
 		  continue;
 		  
 		case ',':
@@ -3001,11 +2553,8 @@ ADD_TO_BUFFER:
 #undef STRCAT
 #undef MAKE_BINARY_STRING
 
-#undef gobble_identifier
 #undef lower_cpp
 #undef parse_esc_seq
-#undef find_end_parenthesis
-#undef find_end_brace
 
 #undef calc
 #undef calc1
