@@ -343,12 +343,12 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
 
 	ADT.struct extensions;
-	if (!input->is_empty()) {
+	if (sizeof(input)) {
 	  extensions = ADT.struct(input->get_var_string(2));
 	}
 
 #ifdef SSL3_DEBUG
-	if (!input->is_empty())
+	if (sizeof(input))
 	  werror("SSL.handshake->handle_handshake: "
 		 "extra data in hello message ignored\n");
 
@@ -379,7 +379,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
 	  int maybe_safari_10_8 = 1;
-	  while (!extensions->is_empty()) {
+	  while (sizeof(extensions)) {
 	    int extension_type = extensions->get_uint(2);
 	    string(8bit) raw = extensions->get_var_string(2);
 	    ADT.struct extension_data = ADT.struct(raw);
@@ -437,7 +437,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      // RFC 4366 3.1 "Server Name Indication"
 	      // Example: "\0\f\0\0\tlocalhost"
 	      session->server_names = ({});
-	      while (!extension_data->is_empty()) {
+	      while (sizeof(extension_data)) {
 		ADT.struct server_name =
 		  ADT.struct(extension_data->get_var_string(2));
 		switch(server_name->get_uint(1)) {	// name_type
@@ -453,9 +453,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      break;
 	    case EXTENSION_max_fragment_length:
 	      // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
-	      int mfsz = !extension_data->is_empty() &&
+	      int mfsz = sizeof(extension_data) &&
 		extension_data->get_uint(1);
-	      if (!extension_data->is_empty()) mfsz = 0;
+	      if (sizeof(extension_data)) mfsz = 0;
 	      switch(mfsz) {
 	      case FRAGMENT_512:  session->max_packet_size = 512; break;
 	      case FRAGMENT_1024: session->max_packet_size = 1024; break;
@@ -470,7 +470,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      break;
 	    case EXTENSION_truncated_hmac:
 	      // RFC 3546 3.5 "Truncated HMAC"
-	      if (!extension_data->is_empty()) {
+	      if (sizeof(extension_data)) {
 		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid trusted HMAC extension.\n"));
 	      }
@@ -514,7 +514,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				    "ALPN: Length mismatch.\n"));
                   return -1;
                 }
-                while (!extension_data->is_empty()) {
+                while (sizeof(extension_data)) {
                   string server_name = extension_data->get_var_string(1);
                   if( sizeof(server_name)==0 )
                   {
@@ -554,9 +554,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    case EXTENSION_heartbeat:
 	      {
 		int hb_mode;
-		if (extension_data->is_empty() ||
+		if (!sizeof(extension_data) ||
 		    !(hb_mode = extension_data->get_uint(1)) ||
-		    !extension_data->is_empty() ||
+		    sizeof(extension_data) ||
 		    ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
 		     (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
 		  // RFC 6520 2:
@@ -573,10 +573,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      break;
 
 	    default:
-#ifdef SSL3_DEBUG
-              werror("Unhandled extension %O (%d bytes)\n",
-                     extension_data->buffer, sizeof(extension_data->buffer));
-#endif
+              SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
+                             extension_data->buffer,
+                             sizeof(extension_data->buffer));
 	      break;
 	    }
 	  }
@@ -646,7 +645,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
 
 #ifdef SSL3_DEBUG
-	if (!input->is_empty())
+	if (sizeof(input))
 	  werror("SSL.handshake->handle_handshake: "
 		 "extra data in hello message ignored\n");
 
@@ -732,7 +731,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	 my_digest=hash_messages("CLNT");
 	 if (catch {
 	   digest = input->get_fix_string(36);
-	 } || !input->is_empty())
+           } || sizeof(input))
 	   {
 	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			       "Invalid handshake finished message.\n"));
@@ -742,7 +741,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	 my_digest=hash_messages("client finished");
 	 if (catch {
 	   digest = input->get_fix_string(12);
-	 } || !input->is_empty())
+           } || sizeof(input))
 	   {
 	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			       "Invalid handshake finished message.\n"));
@@ -853,7 +852,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
          SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
 
 	 array(string(8bit)) certs = ({ });
-	 while(!input->is_empty())
+	 while(sizeof(input))
 	   certs += ({ input->get_var_string(3) });
 
 	  // we have the certificate chain in hand, now we must verify them.
@@ -869,7 +868,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
           {
 	    session->peer_certificate_chain = certs;
           }
-       } || !input->is_empty())
+         } || sizeof(input))
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Unexpected client cert.\n"));

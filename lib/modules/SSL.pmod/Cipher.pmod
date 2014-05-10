@@ -605,7 +605,7 @@ class KeyExchangeDH
     if (catch
       {
 	dh_state->set_other(struct->get_bignum());
-      } || !struct->is_empty())
+      } || sizeof(struct))
     {
       connection->ke = UNDEFINED;
       return ALERT_unexpected_message;
@@ -861,7 +861,7 @@ class KeyExchangeECDH
 	  sprintf("%*c",
 		  (session->curve->size() + 7)>>3,
 		  session->curve->point_mul(x, y, secret)[0]);
-      } || !struct->is_empty())
+      } || sizeof(struct))
     {
       connection->ke = UNDEFINED;
       return ALERT_unexpected_message;

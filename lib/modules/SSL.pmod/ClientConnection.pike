@@ -309,10 +309,10 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       int missing_secure_renegotiation = secure_renegotiation;
 
-      if (!input->is_empty()) {
+      if (sizeof(input)) {
 	ADT.struct extensions = ADT.struct(input->get_var_string(2));
 
-	while (!extensions->is_empty()) {
+	while (sizeof(extensions)) {
 	  int extension_type = extensions->get_uint(2);
 	  ADT.struct extension_data =
 	    ADT.struct(extensions->get_var_string(2));
@@ -364,9 +364,9 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  case EXTENSION_heartbeat:
 	    {
 	      int hb_mode;
-	      if (extension_data->is_empty() ||
+	      if (!sizeof(extension_data) ||
 		  !(hb_mode = extension_data->get_uint(1)) ||
-		  !extension_data->is_empty() ||
+		  sizeof(extension_data) ||
 		  ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
 		   (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
 		// RFC 6520 2:
@@ -428,7 +428,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
       int certs_len = input->get_uint(3); certs_len;
       array(string(8bit)) certs = ({ });
-      while(!input->is_empty())
+      while(sizeof(input))
 	certs += ({ input->get_var_string(3) });
 
       // we have the certificate chain in hand, now we must verify them.
@@ -512,7 +512,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         {
           ADT.struct s =
 	    ADT.struct(input->get_fix_string(num_distinguished_names));
-          while(!s->is_empty())
+          while(sizeof(s))
           {
 	    string(8bit) der = s->get_var_string(2);
 	    Standards.ASN1.Types.Sequence seq =
