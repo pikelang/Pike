@@ -1239,6 +1239,39 @@ static ptrdiff_t find_end_of_comment( struct cpp *this, PCHARP data, ptrdiff_t l
   return pos + 2;
 }
 
+static ptrdiff_t find_end_of_string2( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+{
+  while(1)
+  {
+    if(pos>=len)
+    {
+      cpp_error(this,"End of file in string.");
+      break;
+    }
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n':
+      this->current_line++;
+      PUTNL();
+      continue;
+    case '"': return pos;
+    case '\\':
+      if(INDEX_PCHARP(data,pos)=='\n') {
+	this->current_line++;
+	PUTNL();
+      }
+      else if ((INDEX_PCHARP(data,pos) == '\r') && (INDEX_PCHARP(data,pos+1) == '\n')) {
+	this->current_line++;
+	pos++;
+	PUTNL();
+      }
+      pos++;
+    }
+  }
+  return pos;
+}
+
+
 static ptrdiff_t find_end_of_string( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
 {
   while(1)
@@ -1393,6 +1426,15 @@ static ptrdiff_t find_end_brace(struct cpp *this,
   }
 }
 
+
+static inline int wide_isspace( int c ) {
+  return WIDE_ISSPACE(c);
+}
+
+static inline int wide_isidchar( int c ) {
+  return WIDE_ISIDCHAR(c);
+}
+
 static struct pike_string *gobble_identifier (struct cpp *this, PCHARP data, ptrdiff_t *pos)
 {
   ptrdiff_t p = *pos;
@@ -1401,7 +1443,7 @@ static struct pike_string *gobble_identifier (struct cpp *this, PCHARP data, ptr
 
   while (1) {
     ptrdiff_t start = p;
-    while (WIDE_ISIDCHAR (INDEX_PCHARP(data,p))) 
+    while (wide_isidchar (INDEX_PCHARP(data,p))) 
       p++;
     if (p != start)
     {
@@ -1459,7 +1501,7 @@ static struct pike_string *gobble_identifier (struct cpp *this, PCHARP data, ptr
 	      goto past_identifier;
 	  }
 	}
-	if (!WIDE_ISIDCHAR (c)) goto past_identifier;
+	if (!wide_isidchar (c)) goto past_identifier;
 	string_builder_putchar (&sb, c);
 	p = q;
 	break;
@@ -1923,6 +1965,10 @@ static void free_one_define(struct hash_entry *h)
 }
 
 #define PUSH_STRING0(X,Y,Z) add_quoted_string( X,Y,0,Z)
+#define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
+#define WC_ISSPACE	wide_isspace
+#define WC_ISIDCHAR	wide_isidchar
+
 static void add_quoted_string( void *str, ptrdiff_t len, int shift,
 			       struct string_builder *dst )
 {
@@ -1931,6 +1977,152 @@ static void add_quoted_string( void *str, ptrdiff_t len, int shift,
   string_builder_quote_string( dst, x, 0, 0x7fffffff, 0 );
   string_builder_putchar( dst, '"' );
   free_string(x);
+}
+
+static ptrdiff_t find_eos( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos )
+{
+    while(pos < len)
+    {
+      switch (INDEX_PCHARP(data,pos++)) {
+      case '\n':
+	break;
+      case '/':
+	if (INDEX_PCHARP(data,pos) == '/') {
+	  pos = find_end_of_line(this,data,len,pos,0);
+	  break;
+	} else if (INDEX_PCHARP(data,pos) == '*') {
+	  pos = find_end_of_comment(this,data,len,pos,0);
+	}
+	continue;
+      case '\\':
+	if (INDEX_PCHARP(data,pos) == '\n') {
+	  pos+=1;
+	} else if ((INDEX_PCHARP(data,pos) == '\r') &&
+		   (INDEX_PCHARP(data,pos+1) == '\n')) {
+	  pos+=2;
+	} else {
+	    continue;
+	}
+        this->current_line++;
+      default:
+	continue;
+      }
+      this->current_line++;
+      break;
+    }
+    return pos;
+}
+
+static ptrdiff_t skipwhite(struct cpp *this,PCHARP data, ptrdiff_t pos)
+{
+  do 
+  {
+    int c;
+    if(!wide_isspace(c=INDEX_PCHARP(data,pos)))
+    {
+      if (c == '\\') 
+      {
+	if (INDEX_PCHARP(data,pos+1) == '\n') 
+	{
+	  pos += 2;
+	  PUTNL();
+	  this->current_line++;
+	  continue;
+	} else if ((INDEX_PCHARP(data,pos+1) == '\r') &&
+		   (INDEX_PCHARP(data,pos+2) == '\n')) {
+	  pos += 3;
+	  PUTNL();
+	  this->current_line++;
+	  continue;
+	}
+      }
+      break;
+    }
+    else if(c=='\n') 
+    { 
+      PUTNL(); this->current_line++; 
+    }
+    pos++;
+  } while(1);
+  return pos;
+}
+
+static ptrdiff_t skipspace(struct cpp *this,PCHARP data, ptrdiff_t pos, int emit)
+{
+  do {
+    int c;
+    while (wide_isspace(c=INDEX_PCHARP(data,pos)) && c!='\n') {
+      pos++;
+    }
+    if (c == '\\') {
+      if (INDEX_PCHARP(data,pos+1) == '\n') {
+	pos+=2;
+      } else if ((INDEX_PCHARP(data,pos+1) == '\r') &&
+		 (INDEX_PCHARP(data,pos+2) == '\n')) {
+	pos+=3;
+      } else {
+	break;
+      }
+    } else {
+      break;
+    }
+    if( emit )
+    {
+      PUTNL();
+      this->current_line++;
+    }
+  } while (1);
+  return pos;
+}
+
+void _STRCAT(char *str, int len, int flags,struct cpp *this)
+{
+  ptrdiff_t x;
+  if(OUTP())
+    string_builder_binary_strcat(&this->buf, str, len);
+  else
+    for(x=0;x<len;x++)
+      if(str[x]=='\n')
+	string_builder_putchar(&this->buf, '\n');
+}
+
+static const char eq_[] = { '=', '=' };
+static const char ne_[] = { '!', '=' };
+static const char land_[] = { '&', '&' };
+static const char lor_[] = { '|', '|' };
+static const char string_recur_[] =
+    { 's', 't', 'r', 'i', 'n', 'g', '_', 'r', 'e', 'c', 'u', 'r' };
+static const char include_recur_[] =
+  { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
+static const char line_[] = { 'l', 'i', 'n', 'e' };
+static const char string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
+static const char include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
+static const char if_[] = { 'i', 'f' };
+static const char ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
+static const char ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
+static const char endif_[] = { 'e', 'n', 'd', 'i', 'f' };
+static const char else_[] = { 'e', 'l', 's', 'e' };
+static const char elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
+static const char elif_[] = { 'e', 'l', 'i', 'f' };
+static const char error_[] = { 'e', 'r', 'r', 'o', 'r' };
+static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
+static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
+static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
+static const char charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
+static const char pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
+static const char pike_[] = { 'p', 'i', 'k', 'e' };
+static const char require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
+static const char warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
+static const char lsh_[] = { '<', '<' };
+static const char rsh_[] = { '>', '>' };
+
+static int begins_with( const char *prefix, PCHARP stack, int len )
+{
+  int i;
+  for( i=0; i<len; i++ )
+    if( INDEX_PCHARP(stack,i) != prefix[i] )
+      return 0;
+  return 1;
 }
 
 static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
