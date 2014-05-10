@@ -83,41 +83,27 @@ test_true(1e100<=1e1000)
 test_true(1e1000<=1e10000)
 test_true(1e10000<=1e100000000000000000000000000000000000000000000000000000000000)
 
-test_compile_warning('\3434523423423523423423423423')
-test_compile_warning("\3434523423423523423423423423")
-test_compile_warning("\d109827346981234561823743412654")
-test_compile_warning("\x109a27bc69e256c83deaa34c26b4")
+test_compile_error('\3434523423423523423423423423')
+test_compile_error("\3434523423423523423423423423")
+test_compile_error("\d109827346981234561823743412654")
+test_compile_error("\x109a27bc69e256c83deaa34c26b4")
 test_compile_error('\u17fo')
-test_compile_warning("\u17fo")
-test_compile_error('\uu117f')
+test_compile_error("\u17fo")
+test_eq('\uu117f', 0x5c7531313766)
 test_eq("\uuuu17fo", "\\uuu17fo")
 test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
 test_eq("\u1117foo", "\10427foo")
 test_eq("\uuuu117foo", "\\uuu117foo")
 test_compile_error('\U117f')
-test_compile_warning("\U117f")
-test_compile_warning("\UdEaDbEaT")
+test_compile_error("\U117f")
+test_compile_error("\UdEaDbEaT")
 test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
-test_any([[
-  // Suppress warnings.
-  class handler {
-    void compile_warning (string file, int line, string err) {};
-  };
-  return compile_string("string s = \"\\3434523423423523423423423423\";",
-			"-", handler())()->s;
-]], "\37777777777")
-test_any([[
-  // Suppress warnings.
-  class handler {
-    void compile_warning (string file, int line, string err) {};
-  };
-  return compile_string("int i = '\\3434523423423523423423423423';",
-			"-", handler())()->i;
-]], -1)
+test_compile_error("\3434523423423523423423423423")
+test_compile_error('\3434523423423523423423423423')
 
 test_do([[
   // bug 2677
@@ -8004,7 +7990,11 @@ test_eq(16,"\20"[0])
 test_eq(16,"\020"[0])
 test_eq(255,"\377"[0])
 test_eq(4,'\4')
-test_true("\r"[0]!='r')
+test_eq('a',0x61)
+test_eq('ab',0x6162)
+test_eq('abc',0x616263)
+test_eq('abcd',0x61626364)
+test_true("\r"[-1]!='r')
 test_eq("\r"[0],'\r')
 test_eq("\n"[0],'\n')
 

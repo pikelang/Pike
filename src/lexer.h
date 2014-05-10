@@ -358,16 +358,16 @@ static p_wchar2 char_const(struct lex *lex)
       return 0;
     case 4: case 5: case 6:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too large character value in escape.");
+        yyerror ("Too large character value in escape.");
       c = -1;
       break;
     case 7:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\u escape.");
+        yyerror ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\U escape.");
+        yyerror ("Too few hex digits in \\U escape.");
       return '\\';
   }
   SKIPN (l);
