@@ -1031,8 +1031,6 @@ static void cpp_constant(struct cpp *this, int value)
   push_int(res);
 }
 
-/* Macro handling. */
-
 static struct mapping *initial_predefs_mapping(void)
 {
   struct pike_predef_s *def;
@@ -1047,6 +1045,438 @@ static struct mapping *initial_predefs_mapping(void)
     pop_n_elems (2);
   }
   return map;
+}
+
+static p_wchar2 readchar( PCHARP data, ptrdiff_t *pos, struct cpp *this )
+{
+  ptrdiff_t l;
+  p_wchar2 C;
+  INC_PCHARP(data,*pos);
+  switch(parse_esc_seq_pcharp (data, &C, &l))
+  {
+  case 0:
+    *pos += l;
+    break;
+  case 1:
+    C = '\r';
+    *pos += 1;
+    break;
+  case 3:
+    /* The eof will get caught in the next round. */
+    C = 0;
+    *pos += 1;
+    break;
+  case 4: case 5: case 6:
+    cpp_error (this, "Too large character value in escape.");
+    C = (int) MAX_UINT32;
+    *pos += l;
+    break;
+  case 7:
+    cpp_error (this, "Too few hex digits in \\u escape.");
+    C = '\\';
+    break;
+  case 8:
+    cpp_error (this, "Too few hex digits in \\U escape.");
+    C = '\\';
+    break;
+    DO_IF_DEBUG (
+    case 2: Pike_fatal ("Not supposed to happen.\n");
+    default: Pike_fatal ("Unknown error from parse_esc_seq.\n");
+    );
+  }
+  return C;
+}
+
+
+static ptrdiff_t readstring( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos,
+			     struct string_builder*nf, int  nl_ok)
+{
+  while(1)
+  {
+    pos++;
+    if(pos>=len)
+    {
+      cpp_error(this,"End of file in string.");
+      break;
+    }
+    switch(INDEX_PCHARP(data,pos))
+    {
+    case '"':  break;
+    case '\\':
+      {
+	pos++;
+	if(INDEX_PCHARP(data,pos)=='\n')
+	{
+	  this->current_line++;
+	  PUTNL();
+	  continue;
+	}
+	if(INDEX_PCHARP(data,pos)=='\r' && INDEX_PCHARP(data,pos+1)=='\n')
+	{
+	  pos++;
+	  this->current_line++;
+	  PUTNL();
+	  continue;
+	}
+	string_builder_putchar(nf, readchar(data,&pos,this));
+	pos--;
+	continue;
+      }
+    case '\r':
+      continue; /* ignored */
+    case '\n':
+      this->current_line++;
+      if( nl_ok )
+	PUTNL();
+      else
+	cpp_error(this,"Newline in string.");
+    default:
+      string_builder_putchar(nf, INDEX_PCHARP(data,pos));
+      continue;
+    }
+    pos++;
+    break;
+  }
+  return pos;
+}
+
+static ptrdiff_t fixstring(struct cpp *this,PCHARP data,ptrdiff_t len,
+			   ptrdiff_t pos,struct string_builder*nf, int outp)
+{
+  int trailing_newlines=0;
+  if(outp) string_builder_putchar(nf, '"');
+  while(1)
+  {
+    if(pos>=len)
+    {
+      cpp_error(this,"End of file in string.");
+      break;
+    }
+
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n':
+      cpp_error(this,"Newline in string.");
+      this->current_line++;
+      break;
+    case '"':  break;
+    case '\\':
+      if(INDEX_PCHARP(data,pos)=='\n')
+      {
+	pos++;
+	trailing_newlines++;
+	this->current_line++;
+	continue;
+      }
+      if(INDEX_PCHARP(data,pos)=='\r' && INDEX_PCHARP(data,pos+1)=='\n')
+      {
+	pos+=2;
+	trailing_newlines++;
+	this->current_line++;
+	continue;
+      }
+      if(outp) string_builder_putchar(nf, '\\');
+      pos++;
+      /* Fall through. */
+    default:
+      if(outp) string_builder_putchar(nf, INDEX_PCHARP(data,pos-1));
+      continue;
+    }
+    break;
+  }
+  if(outp) string_builder_putchar(nf, '"');
+  while(trailing_newlines--) PUTNL();
+  return pos;
+}
+
+static ptrdiff_t find_end_of_line( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos, int emit)
+{
+  while(pos < len) {
+    switch (INDEX_PCHARP(data,pos++)) {
+    case '\n':
+      return pos-1;
+    case '\\':
+      if (INDEX_PCHARP(data,pos) == '\n') {
+	pos+=2;
+      } else if ((INDEX_PCHARP(data,pos) == '\r') &&
+		 (INDEX_PCHARP(data,pos+1) == '\n')) {
+	pos+=3;
+      } else {
+	pos++;
+	continue;
+      }
+      this->current_line++;
+      if( emit ) PUTNL();
+    }
+  }
+  return pos;
+}
+
+
+static ptrdiff_t find_end_of_comment( struct cpp *this, PCHARP data, ptrdiff_t len,ptrdiff_t pos, int emit)
+{
+  pos++;
+
+  if(pos+2>=len)
+  {
+    cpp_error(this,"End of file in comment.");
+  }
+  while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
+  {	
+    if(pos+2>=len)
+    {
+      cpp_error(this,"End of file in comment.");
+      break;
+    }
+
+    if(INDEX_PCHARP(data,pos)=='\n')
+    {
+      this->current_line++;
+      if( emit )PUTNL();
+    }
+    pos++;
+  }
+  return pos + 2;
+}
+
+static ptrdiff_t find_end_of_string( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+{
+  while(1)
+  {
+    if(pos>=len)
+    {
+      cpp_error(this,"End of file in string.");
+      break;
+    }
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n':
+      cpp_error(this,"Newline in string.");
+      this->current_line++;
+      PUTNL();
+      break;
+    case '"': return pos;
+    case '\\':
+      if(INDEX_PCHARP(data,pos)=='\n') {
+	this->current_line++;
+	PUTNL();
+      }
+      else if ((INDEX_PCHARP(data,pos) == '\r') && (INDEX_PCHARP(data,pos+1) == '\n')) {
+	this->current_line++;
+	pos++;
+	PUTNL();
+      }
+      pos++;
+    }
+  } 
+  return pos;
+}
+
+static ptrdiff_t find_end_of_char( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+{
+  int e=0;
+  while(1)
+  {
+    if(pos>=len)
+    {
+      cpp_error(this,"End of file in character constant.");
+      break;
+    }
+
+    if(e++>32)
+    {
+      cpp_error(this,"Too long character constant.");
+      break;
+    }
+
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n':
+      cpp_error(this,"Newline in char.");
+      this->current_line++;
+      PUTNL();
+      break;
+    case '\'': 
+      return pos;
+    case '\\':
+      if(INDEX_PCHARP(data,pos)=='\n') {
+	this->current_line++;
+	PUTNL();
+      }
+      else if ((INDEX_PCHARP(data,pos) == '\r') && (INDEX_PCHARP(data,pos+1) == '\n'))
+      {
+	this->current_line++;
+	pos++;
+	PUTNL();
+      }
+      pos++;
+    }
+  }
+  return pos;
+}
+
+
+static ptrdiff_t find_end_brace(struct cpp *this,
+				PCHARP data,
+				ptrdiff_t len,
+				ptrdiff_t pos);
+
+static ptrdiff_t find_end_parenthesis(struct cpp *this,
+				      PCHARP data,
+				      ptrdiff_t len,
+				      ptrdiff_t pos)
+/* pos is after the open paren. Returns the position after the close paren. */
+{
+  INT_TYPE start_line = this->current_line;
+  while(1)
+  {
+    if(pos+1>=len)
+    {
+      INT_TYPE save_line = this->current_line;
+      this->current_line = start_line;
+      cpp_error(this, "End of file while looking for end parenthesis.");
+      this->current_line = save_line;
+      return pos;
+    }
+
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n': PUTNL(); this->current_line++; break;
+    case '\'': pos=find_end_of_char(this,data,len,pos);  break;
+    case '"':  pos=find_end_of_string(this,data,len,pos); break;
+    case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
+    case '{':  pos=find_end_brace(this, data, len, pos); break;
+    case ')':  return pos;
+    case '/':
+      if (INDEX_PCHARP(data,pos) == '*') {
+	pos = find_end_of_comment(this,data,len,pos+1,0);
+      } else if (INDEX_PCHARP(data,pos) == '/') {
+	pos = find_end_of_line(this,data,len,pos+1,0);
+      }
+    }
+  }
+}
+
+
+static ptrdiff_t find_end_brace(struct cpp *this,
+				PCHARP data,
+				ptrdiff_t len,
+				ptrdiff_t pos)
+/* pos is after the open brace. Returns the position after the close brace. */
+{
+  INT_TYPE start_line = this->current_line;
+  while(1)
+  {
+    if(pos+1>=len)
+    {
+      INT_TYPE save_line = this->current_line;
+      this->current_line = start_line;
+      cpp_error(this, "End of file while looking for end brace.");
+      this->current_line = save_line;
+      return pos;
+    }
+
+    switch(INDEX_PCHARP(data,pos++))
+    {
+    case '\n': PUTNL(); this->current_line++; break;
+    case '\'': pos=find_end_of_char(this,data,len,pos);  break;
+    case '"':  pos=find_end_of_string(this,data,len,pos);  break;
+    case '{':  pos=find_end_brace(this, data, len, pos); break;
+    case '}':  return pos;
+    case '/':
+      if (INDEX_PCHARP(data,pos) == '*') {
+	pos=find_end_of_comment(this,data,len,pos,0);
+      } else if (INDEX_PCHARP(data,pos) == '/') {
+	pos=find_end_of_line(this,data,len,pos,0);
+      }
+    }
+  }
+}
+
+static struct pike_string *gobble_identifier (struct cpp *this, PCHARP data, ptrdiff_t *pos)
+{
+  ptrdiff_t p = *pos;
+  struct string_builder sb;
+  init_string_builder (&sb, 0); /* in fact, 0 is more likely than data.shift */
+
+  while (1) {
+    ptrdiff_t start = p;
+    while (WIDE_ISIDCHAR (INDEX_PCHARP(data,p))) 
+      p++;
+    if (p != start)
+    {
+      PCHARP x = data;
+      INC_PCHARP(x,start);
+      string_builder_append(&sb,x, p - start);
+    }
+    if (INDEX_PCHARP(data,p) != '\\') goto past_identifier;
+
+    switch (INDEX_PCHARP(data,p + 1)) {
+      case '\r':
+	if (INDEX_PCHARP(data,p + 2) != '\n')
+	  goto past_identifier;
+	p++;
+	/* Fall through */
+      case '\n':
+	this->current_line++;
+	PUTNL();
+	p += 2;
+	break;
+
+      case 'u':
+      case 'U': {
+	/* Note: Code dup in parse_esc_seq in lexer.h. */
+	/* Don't have to bother checking for an even number of
+	 * preceding backslashes since they aren't valid outside
+	 * string and char literals in the lexer input. */
+	unsigned INT32 c = 0;
+	ptrdiff_t stop, q;
+	if (INDEX_PCHARP(data,p + 2) == INDEX_PCHARP(data,p + 1))
+	  /* A quoted \u escape means we got "\uxxxx" dequoted here,
+	   * and that can't be part of an identifier. */
+	  goto past_identifier;
+	if (INDEX_PCHARP(data,p + 1) == 'u')
+	  stop = p + 6;
+	else
+	  stop = p + 10;
+	for (q = p + 2; q < stop; q++)
+        {
+	  int tmp;
+	  switch (tmp=INDEX_PCHARP(data,q)) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+	      c = 16 * c + tmp - '0';
+	      break;
+	    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	      c = 16 * c + tmp - 'a' + 10;
+	      break;
+	    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	      c = 16 * c + tmp - 'A' + 10;
+	      break;
+	    default:
+	      cpp_error_sprintf (this, "Too few hex digits in \\%c escape.",
+				 INDEX_PCHARP(data,p + 1));
+	      goto past_identifier;
+	  }
+	}
+	if (!WIDE_ISIDCHAR (c)) goto past_identifier;
+	string_builder_putchar (&sb, c);
+	p = q;
+	break;
+      }
+
+      default:
+	goto past_identifier;
+    }
+  }
+
+past_identifier:
+  if (p != *pos) {
+    *pos = p;
+    return finish_string_builder (&sb);
+  }
+  free_string_builder (&sb);
+  return NULL;
 }
 
 /* devours one reference to 'name'! */
