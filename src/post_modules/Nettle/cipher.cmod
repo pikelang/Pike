@@ -357,9 +357,11 @@ PIKECLASS Cipher
     {
       struct Nettle_Cipher_struct *info = GET_INFO();
       struct pike_string *s;
+      crypt_func crypt;
+      void *ctx;
       assert(info);
 
-      if (!THIS->ctx || !THIS->crypt|| !info->meta)
+      if (!(ctx = THIS->ctx) || !(crypt = THIS->crypt) || !info->meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
@@ -368,8 +370,13 @@ PIKECLASS Cipher
 	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
-      THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
-                  (const uint8_t *)data->str);
+      if (data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) {
+	THREADS_ALLOW();
+	crypt(ctx, data->len, STR0(s), STR0(data));
+	THREADS_DISALLOW();
+      } else {
+	crypt(ctx, data->len, STR0(s), STR0(data));
+      }
       s = end_shared_string(s);
       push_string(s);
     }
@@ -1297,10 +1304,12 @@ PIKECLASS BlockCipher
 	ONERROR uwp;
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
+	const char *iv = THIS->iv;
+	int block_size = THIS->block_size;
 
 	NO_WIDE_STRING(data);
 
-	if(data->len % THIS->block_size)
+	if(data->len % block_size)
 	  Pike_error("Data length not multiple of block size.\n");
 
 	if (!THIS->object || !THIS->object->prog) {
@@ -1316,12 +1325,34 @@ PIKECLASS BlockCipher
 	}
 
 	if(THIS->mode == 0) {
-	  cbc_encrypt(ctx, func, THIS->block_size,
-		      THIS->iv, data->len, STR0(result), STR0(data));
+	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	      (func != pike_crypt_func)) {
+	    /* FIXME: We need to protect the iv from being freed
+	     *        by a different thread.
+	     */
+	    THREADS_ALLOW();
+	    cbc_encrypt(ctx, func, block_size, iv,
+			data->len, STR0(result), STR0(data));
+	    THREADS_DISALLOW();
+	  } else {
+	    cbc_encrypt(ctx, func, block_size, iv,
+			data->len, STR0(result), STR0(data));
+	  }
 	}
 	else {
-	  cbc_decrypt(ctx, func, THIS->block_size,
-		      THIS->iv, data->len, STR0(result), STR0(data));
+	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	      (func != pike_crypt_func)) {
+	    /* FIXME: We need to protect the iv from being freed
+	     *        by a different thread.
+	     */
+	    THREADS_ALLOW();
+	    cbc_decrypt(ctx, func, block_size, iv,
+			data->len, STR0(result), STR0(data));
+	    THREADS_DISALLOW();
+	  } else {
+	    cbc_decrypt(ctx, func, block_size, iv,
+			data->len, STR0(result), STR0(data));
+	  }
 	}
 
 	pop_n_elems(args);
@@ -1698,6 +1729,8 @@ PIKECLASS BlockCipher
 	ONERROR uwp;
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
+	const char *iv = THIS->iv;
+	int block_size = THIS->block_size;
 
 	NO_WIDE_STRING(data);
 
@@ -1713,8 +1746,19 @@ PIKECLASS BlockCipher
 	  ctx = THIS->crypt_state->ctx;
 	}
 
-	ctr_crypt(ctx, func, THIS->block_size, THIS->iv,
-		  data->len, STR0(result), STR0(data));
+	if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	    (func != pike_crypt_func)) {
+	  /* FIXME: We need to protect the iv from being freed
+	   *        by a different thread.
+	   */
+	  THREADS_ALLOW();
+	  ctr_crypt(ctx, func, block_size, iv,
+		    data->len, STR0(result), STR0(data));
+	  THREADS_DISALLOW();
+	} else {
+	  ctr_crypt(ctx, func, block_size, iv,
+		    data->len, STR0(result), STR0(data));
+	}
 
 	pop_n_elems(args);
 	push_string(end_shared_string(result));
@@ -2120,71 +2164,29 @@ PIKECLASS BlockCipher16
 		       args);
       }
 
-      /*! @decl string(8bit) digest(int(4..16)|void bytes)
-       *!
-       *! Returns the CBC-MAC digest of the specified size.
-       *!
-       *! @param bytes
-       *!   Size in bytes for the desired digest. Any even number in
-       *!   the range @expr{[4..16]@}. If not specified the value from
-       *!   calling @[digest_size()] will be used.
-       *!
-       *! @note
-       *!   Note that the digest length is folded into the digest, so
-       *!   it doesn't simply imply a truncation.
-       *!
-       *! @seealso
-       *!   @[digest_size()], @[global::digest_size()]
-       */
-      PIKEFUN string(8bit) digest(int(4..16)|void bytes_p)
+      static void pike_low_ccm_digest(struct pike_string *res,
+				      struct pike_string *nonce,
+				      struct pike_string *mac_mask,
+				      struct pike_string *astr,
+				      struct pike_string *pstr,
+				      crypt_func func,
+				      void *ctx)
       {
-	int bytes = 0;
-	int flags;
-	int psize;
-	int bufno = 0;
 	uint8_t buf[2][16];
-	uint8_t *ptr;
+	size_t bytes = res->len;
+	size_t psize = pstr->len;
 	int i;
-	crypt_func func = pike_crypt_func;
-	void *ctx = THIS->ctr->object;
-	struct pike_string *res;
+	int flags;
+	int bufno = 0;
+	uint8_t *ptr;
 
-	if (bytes_p) {
-	  bytes = bytes_p->u.integer;
-	  if (bytes & 1) {
-	    bytes++;
-	  }
-	}
-	if (!bytes) {
-	  apply_current(f_Nettle_BlockCipher16_cq__CCM_State_digest_size_fun_num,
-			0);
-	  get_all_args("digest", 1, "%d", &bytes);
-	}
-	if (bytes < 4) {
-	  bytes = 4;
-	} else if (bytes > 16) {
-	  bytes = 16;
-	}
-
-	res = begin_shared_string(bytes);
-
-	if (!THIS->pbuf.s->len) {
-	  // Unlikely, but make sure that it is initialized.
-	  blockcipher16_ccm_init_mac_mask("digest");
-	}
-
-	flags = ((bytes-2)<<2) | (14 - THIS->nonce->len);
-	if (THIS->abuf.s->len) {
+	flags = ((bytes-2)<<2) | (14 - nonce->len);
+	if (astr->len) {
 	  // Set the a-bit.
 	  flags |= 0x40;
 	}
 
-	psize = THIS->pbuf.s->len;
-
-	if (THIS->ctr->crypt_state && THIS->ctr->crypt_state->crypt) {
-	  func = THIS->ctr->crypt_state->crypt;
-	  ctx = THIS->ctr->crypt_state->ctx;
-	}
+	psize = pstr->len;
 
 	/* NB: The nonce has a minimum size of 7 bytes.
 	 *     Thus we need at most 8 bytes for the psize.
@@ -2195,14 +2197,14 @@ PIKECLASS BlockCipher16
 	  ptr[i] = psize & 0xff;
 	}
 	buf[0][0] = flags;
-	MEMCPY(buf[0]+1, STR0(THIS->nonce), THIS->nonce->len);
+	MEMCPY(buf[0]+1, STR0(nonce), nonce->len);
 
 	func(ctx, 16, buf[1], buf[0]);
 	bufno = 1;
 
-	if (THIS->abuf.s->len) {
-	  size_t asize = THIS->abuf.s->len;
-	  ptr = STR0(THIS->abuf.s);
+	if (astr->len) {
+	  size_t asize = astr->len;
+	  ptr = STR0(astr);
 	  if (asize < 0xff00) {
 	    buf[1][0] ^= (asize >> 8) & 0xff;
 	    buf[1][1] ^= asize & 0xff;
@@ -2253,11 +2255,10 @@ PIKECLASS BlockCipher16
 	    func(ctx, 16, buf[!bufno], buf[bufno]);
 	    bufno = !bufno;
 	  }
-	  reset_string_builder(&THIS->abuf);
 	}
 
-	ptr = STR0(THIS->pbuf.s);
-	psize = THIS->pbuf.s->len;
+	ptr = STR0(pstr);
+	psize = pstr->len;
 
 	for (; psize >= 16; psize -= 16, ptr += 16) {
 	  memxor(buf[bufno], ptr, 16);
@@ -2270,9 +2271,92 @@ PIKECLASS BlockCipher16
 	  bufno = !bufno;
 	}
 
-	reset_string_builder(&THIS->pbuf);
+	memxor3(STR0(res), buf[bufno], STR0(mac_mask), bytes);
+      }
 
-	memxor3(STR0(res), buf[bufno], STR0(THIS->mac_mask), bytes);
+      /*! @decl string(8bit) digest(int(4..16)|void bytes)
+       *!
+       *! Returns the CBC-MAC digest of the specified size.
+       *!
+       *! @param bytes
+       *!   Size in bytes for the desired digest. Any even number in
+       *!   the range @expr{[4..16]@}. If not specified the value from
+       *!   calling @[digest_size()] will be used.
+       *!
+       *! @note
+       *!   Note that the digest length is folded into the digest, so
+       *!   it doesn't simply imply a truncation.
+       *!
+       *! @seealso
+       *!   @[digest_size()], @[global::digest_size()]
+       */
+      PIKEFUN string(8bit) digest(int(4..16)|void bytes_p)
+      {
+	int bytes = 0;
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->ctr->object;
+	struct pike_string *res;
+	struct pike_string *nonce = THIS->nonce;
+	struct pike_string *mac_mask = THIS->mac_mask;
+	struct pike_string *astr = THIS->abuf.s;
+	struct pike_string *pstr = THIS->pbuf.s;
+
+	if (bytes_p) {
+	  bytes = bytes_p->u.integer;
+	  if (bytes & 1) {
+	    bytes++;
+	  }
+	}
+	if (!bytes) {
+	  apply_current(f_Nettle_BlockCipher16_cq__CCM_State_digest_size_fun_num,
+			0);
+	  get_all_args("digest", 1, "%d", &bytes);
+	}
+	if (bytes < 4) {
+	  bytes = 4;
+	} else if (bytes > 16) {
+	  bytes = 16;
+	}
+
+	res = begin_shared_string(bytes);
+
+	if (!pstr->len) {
+	  // Unlikely, but make sure that it is initialized.
+	  blockcipher16_ccm_init_mac_mask("digest");
+	}
+
+	if (THIS->ctr->crypt_state && THIS->ctr->crypt_state->crypt) {
+	  func = THIS->ctr->crypt_state->crypt;
+	  ctx = THIS->ctr->crypt_state->ctx;
+	}
+
+	if (((THIS->abuf.s->len + THIS->pbuf.s->len) >=
+	     CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	    (func != pike_crypt_func)) {
+	  /* NB: This is a rather expensive MAC, as it is based
+	   *     on encrypting with CBC. */
+	  /* Protect stuff in the object from being freed
+	   * by a different thread while we use them.
+	   */
+	  add_ref(nonce);
+	  add_ref(mac_mask);
+	  add_ref(astr);
+	  add_ref(pstr);
+
+	  THREADS_ALLOW();
+	  pike_low_ccm_digest(res, nonce, mac_mask, astr, pstr, func, ctx);
+	  THREADS_DISALLOW();
+
+	  free_string(pstr);
+	  free_string(astr);
+	  free_string(mac_mask);
+	  free_string(nonce);
+	} else {
+	  pike_low_ccm_digest(res, nonce, mac_mask, astr, pstr, func, ctx);
+	}
+
+	reset_string_builder(&THIS->pbuf);
+	reset_string_builder(&THIS->abuf);
 
 	push_string(end_shared_string(res));
       }
@@ -2701,6 +2785,9 @@ PIKECLASS BlockCipher16
        */
       PIKEFUN void update(string(0..255) data)
       {
+	struct gcm_ctx *gcm_ctx = &THIS->gcm_ctx;
+	struct gcm_key *gcm_key = &THIS->gcm_key;
+
 	NO_WIDE_STRING(data);
 
 	if (!THIS->object || !THIS->object->prog) {
@@ -2713,7 +2800,13 @@ PIKECLASS BlockCipher16
 	if (THIS->dmode & NO_ADATA)
 	  Pike_error("Public data not allowed now.\n");
 
-	gcm_update(&THIS->gcm_ctx, &THIS->gcm_key, data->len, STR0(data));
+	if (data->len >= HASH_THREADS_ALLOW_THRESHOLD) {
+	  THREADS_ALLOW();
+	  gcm_update(gcm_ctx, gcm_key, data->len, STR0(data));
+	  THREADS_DISALLOW();
+	} else {
+	  gcm_update(gcm_ctx, gcm_key, data->len, STR0(data));
+	}
 
 	if (data->len & (GCM_BLOCK_SIZE - 1))
 	  THIS->dmode |= NO_ADATA;
@@ -2741,6 +2834,8 @@ PIKECLASS BlockCipher16
 	ONERROR uwp;
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
+	struct gcm_ctx *gcm_ctx = &THIS->gcm_ctx;
+	struct gcm_key *gcm_key = &THIS->gcm_key;
 
 	NO_WIDE_STRING(data);
 
@@ -2763,11 +2858,27 @@ PIKECLASS BlockCipher16
 	}
 
 	if (!THIS->mode) {
-	  gcm_encrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
-		      data->len, STR0(result), STR0(data));
+	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	      (func != pike_crypt_func)) {
+	    THREADS_ALLOW();
+	    gcm_encrypt(gcm_ctx, gcm_key, ctx, func,
+			data->len, STR0(result), STR0(data));
+	    THREADS_DISALLOW();
+	  } else {
+	    gcm_encrypt(gcm_ctx, gcm_key, ctx, func,
+			data->len, STR0(result), STR0(data));
+	  }
 	} else {
-	  gcm_decrypt(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
-		      data->len, STR0(result), STR0(data));
+	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
+	      (func != pike_crypt_func)) {
+	    THREADS_ALLOW();
+	    gcm_decrypt(gcm_ctx, gcm_key, ctx, func,
+			data->len, STR0(result), STR0(data));
+	    THREADS_DISALLOW();
+	  } else {
+	    gcm_decrypt(gcm_ctx, gcm_key, ctx, func,
+			data->len, STR0(result), STR0(data));
+	  }
 	}
 
 	THIS->dmode |= NO_ADATA;

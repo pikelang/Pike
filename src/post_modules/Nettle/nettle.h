@@ -16,7 +16,10 @@ extern struct program *nettle_hash_program;
 /* Hashing methods can normally process hundreds of megabytes per second
    so it's rather wasteful to enable threads during hashing of smaller
    data sizes. Limit is now 1 MB. */
-#define THREADS_ALLOW_THRESHOLD (1024 * 1024)
+#define HASH_THREADS_ALLOW_THRESHOLD (1024 * 1024)
+
+/* Encrypt/decrypt methods are a bit more expensive. */
+#define CIPHER_THREADS_ALLOW_THRESHOLD	1024
 
 #ifdef HAVE_NETTLE_DSA_H
 #include <nettle/dsa.h>
