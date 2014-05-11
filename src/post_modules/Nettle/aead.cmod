@@ -347,18 +347,25 @@ PIKECLASS AEAD
       optflags OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     {
       const struct pike_aead *meta = GET_META();
-      struct pike_string *s;
+      struct pike_string *result;
+      crypt_func crypt = THIS->crypt;
+      void *ctx = THIS->ctx;
 
       if (!THIS->ctx || !THIS->crypt || !meta)
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
 
-      s = begin_shared_string(data->len);
-      THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
-                  (const uint8_t *)data->str);
-      s = end_shared_string(s);
-      push_string(s);
+      result = begin_shared_string(data->len);
+      if (data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) {
+	THREADS_ALLOW();
+	crypt(ctx, data->len, STR0(result), STR0(data));
+	THREADS_DISALLOW();
+      } else {
+	crypt(ctx, data->len, STR0(result), STR0(data));
+      }
+      result = end_shared_string(result);
+      push_string(result);
     }
 
     /*! @decl string(0..255) name(void)
@@ -481,7 +488,7 @@ PIKECLASS AEAD
       NO_WIDE_STRING(data);
 
       /* Only thread this block for significant data size */
-      if (data->len > THREADS_ALLOW_THRESHOLD) {
+      if (data->len > HASH_THREADS_ALLOW_THRESHOLD) {
 	THREADS_ALLOW();
 	meta->update(ctx, data->len, (const uint8_t *)data->str);
 	THREADS_DISALLOW();
@@ -546,7 +553,7 @@ PIKECLASS AEAD
     {
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
-    const struct pike_aead *meta = GET_META();
+	const struct pike_aead *meta = GET_META();
 	assert(meta);
 	memset(THIS->ctx, 0, meta->context_size);
       }
@@ -556,6 +563,8 @@ PIKECLASS AEAD
 }
 /*! @endclass AEAD
  */
+
+/* FIXME: Consider adding special cases for gcm-aes and gcm-camellia. */
 
 #ifdef HAVE_NETTLE_CHACHA_POLY1305_H
 

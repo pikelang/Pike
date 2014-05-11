@@ -87,7 +87,7 @@ PIKECLASS Hash
 
   /*! @decl int(0..) digest_size(void)
    *!
-   *! Returns the size of a hash digests.
+   *! Returns the size of a hash digest.
    */
     PIKEFUN int(0..) digest_size()
     optflags OPT_TRY_OPTIMIZE;
@@ -138,7 +138,7 @@ PIKECLASS Hash
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
     /* Only thread this block for significant data size */
-    if (in->len > THREADS_ALLOW_THRESHOLD) {
+    if (in->len > HASH_THREADS_ALLOW_THRESHOLD) {
       THREADS_ALLOW();
       meta->init(ctx);
       meta->update(ctx, in->len, (const uint8_t *)in->str);
@@ -524,7 +524,7 @@ PIKECLASS Hash
       NO_WIDE_STRING(data);
       
       /* Only thread this block for significant data size */
-      if (data->len > THREADS_ALLOW_THRESHOLD) {
+      if (data->len > HASH_THREADS_ALLOW_THRESHOLD) {
 	THREADS_ALLOW();
 	meta->update(ctx, data->len, (const uint8_t *)data->str);
 	THREADS_DISALLOW();

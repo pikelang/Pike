@@ -288,7 +288,7 @@ PIKECLASS MAC
       NO_WIDE_STRING(data);
       
       /* Only thread this block for significant data size */
-      if (data->len > THREADS_ALLOW_THRESHOLD) {
+      if (data->len > HASH_THREADS_ALLOW_THRESHOLD) {
 	THREADS_ALLOW();
 	meta->update(ctx, data->len, (const uint8_t *)data->str);
 	THREADS_DISALLOW();
