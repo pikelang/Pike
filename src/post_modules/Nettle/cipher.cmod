@@ -1047,7 +1047,28 @@ PIKECLASS BlockCipher
      */
     INHERIT Nettle_BufferedCipher;
 
-    /* FIXME: Add proxy functions here */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".CBC");
+      f_add(2);
+    }
+
+    PIKEFUN int(1..) block_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(0..) iv_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
 
     /*! @class State
      */
@@ -1374,12 +1395,29 @@ PIKECLASS BlockCipher
     INHERIT "__builtin.Nettle.Cipher";
 
     /*! @decl string(0..255) name()
-     *! Returns the string @expr{"CTR"@}.
+     *! Returns the base cipher name appended with the string @expr{".CTR"@}.
      */
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      push_constant_text("CTR");
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".CTR");
+      f_add(2);
+    }
+
+    PIKEFUN int(1..) block_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(0..) iv_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     /*! @class State
@@ -1797,12 +1835,15 @@ PIKECLASS BlockCipher16
       }
     }
 
-    /*! @decl string(7bit) name()
-     *! Returns the string @expr{"CCM"@}.
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".CCM"@} appended.
      */
-    PIKEFUN string(7bit) name()
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
     {
-      push_text("CCM");
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".CCM");
+      f_add(2);
     }
 
     /*! @decl int(4..16) digest_size()
@@ -1819,6 +1860,21 @@ PIKECLASS BlockCipher16
     PIKEFUN int(4..16) digest_size()
     {
       push_int(16);
+    }
+
+    PIKEFUN int(1..) block_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(0..) iv_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     /*! @class State
@@ -2250,12 +2306,14 @@ PIKECLASS BlockCipher16
 		  1 + 42, 0, NULL);
     }
 
-    /*! @decl string(7bit) name()
-     *! Returns the string @expr{"CCM8"@}.
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".CCM8"@} appended.
      */
     PIKEFUN string(7bit) name()
     {
-      push_text("CCM8");
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".CCM8");
+      f_add(2);
     }
 
     /*! @decl int(4..16) digest_size()
@@ -2315,6 +2373,12 @@ PIKECLASS BlockCipher16
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".GCM");
+      f_add(2);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     /*! @decl int(16..16) block_size()
