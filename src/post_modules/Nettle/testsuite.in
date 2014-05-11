@@ -117,7 +117,6 @@ test_pbkdf(Crypto.SHA1.pbkdf2,
 	"cd 1e d9 2a ce 1d 41 f0"
 	"d8 de 89 57")
 
-
 test_pbkdf(Crypto.SHA1.pbkdf2,
 	"70617373776f7264", "73616c74", 4096, 20,
 	"4b 00 79 01 b7 65 48 9a"
@@ -147,7 +146,6 @@ test_pbkdf(Crypto.SHA256.pbkdf2,
 	"43 e7 22 52 56 c4 f8 37"
 	"a8 65 48 c9 2c cc 35 48"
 	"08 05 98 7c b7 0b e1 7b")
-
 
 test_pbkdf(Crypto.SHA256.pbkdf2,
 	"70617373776f7264", "73616c74", 2, 32,
@@ -464,7 +462,26 @@ define(test_crypto_cipher,[[
   ]])
 ]])
 
+test_do(add_constant("test_data", Crypto.Random.random_string(1024)))
+
+define(test_generic_cipher,[[
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      return d->crypt(c->crypt(test_data)) == test_data;
+    ]], 1)
+  ]])
+]])
+
 // AES
+test_generic_cipher(Crypto.AES)
+test_generic_cipher(Crypto.AES.CBC)
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
   test_cipher(AES,
@@ -567,8 +584,13 @@ cond_resolv( Nettle.AES, [[
 
 ]])
 
+// ARCFOUR
+test_generic_cipher(Crypto.Arcfour)
+
 // ARCTWO
 // Test vectors from RFC 2268.
+test_generic_cipher(Crypto.Arctwo)
+test_generic_cipher(Crypto.Arctwo.CBC)
 cond_resolv( Nettle.ARCTWO, [[
   test_true([[objectp(Crypto.Arctwo.State())]])
   test_cipher(ARCTWO,
@@ -614,8 +636,14 @@ cond_resolv( Nettle.ARCTWO, [[
 	      129)
 ]])
 
+// BLOWFISH
+test_generic_cipher(Crypto.Blowfish)
+test_generic_cipher(Crypto.Blowfish.CBC)
+
 // CAMELLIA
 // Test vectors from RFC 3713. 128, 192 and 256 bits.
+test_generic_cipher(Crypto.Camellia)
+test_generic_cipher(Crypto.Camellia.CBC)
 cond_resolv( Nettle.CAMELLIA, [[
   test_true([[objectp(Nettle.CAMELLIA()())]])
   test_cipher(CAMELLIA,
@@ -634,7 +662,25 @@ cond_resolv( Nettle.CAMELLIA, [[
               "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
 ]])
 
+// CAST128
+test_generic_cipher(Crypto.CAST)
+test_generic_cipher(Crypto.CAST.CBC)
+
+// CHACHA
+test_generic_cipher(Crypto.ChaCha20)
+test_generic_cipher(Crypto.ChaCha20.CBC)
+
+// DES
+
+// DES3
+
+// IDEA
+test_generic_cipher(Crypto.IDEA)
+test_generic_cipher(Crypto.IDEA.CBC)
+
 // SALSA20
+test_generic_cipher(Crypto.SALSA20)
+test_generic_cipher(Crypto.SALSA20.CBC)
 dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
@@ -700,6 +746,20 @@ cond_resolv( Nettle.SALSA20 [[
  CC32B15B93784A36E56A76CC64BC8477"-"\n"-" "; ]])
 ]])
 
+// SALSA20 R12
+test_generic_cipher(Crypto.SALSA20R12)
+test_generic_cipher(Crypto.SALSA20R12.CBC)
+
+// SERPENT
+test_generic_cipher(Crypto.Serpent)
+test_generic_cipher(Crypto.Serpent.CBC)
+
+// Twofish
+test_generic_cipher(Crypto.Twofish)
+test_generic_cipher(Crypto.Twofish.CBC)
+
+// CBC
+
 test_eq( Crypto.AES.CBC()->block_size(), 16)
 test_eq( Crypto.AES.CBC()->key_size(), 0)
 test_any([[
@@ -718,6 +778,32 @@ test_any([[
 ]], "b71a7f6d29d66bd468294ed9cfda2af1")
 
 // AEAD
+
+test_do(add_constant("test_adata", test_data[..116]);)
+test_do(add_constant("test_data", test_data[117..]);)
+
+define(test_generic_aead,[[
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      string iv = test_data[$1.iv_size()*4..$1.iv_size()*5-1];
+      c->set_iv(iv);
+      d->set_iv(iv);
+
+      c->update(test_adata);
+      d->update(test_adata);
+
+      return (d->crypt(c->crypt(test_data)) + c->digest()) ==
+	(test_data + d->digest());
+    ]], 1)
+  ]])
+]])
 
 dnl aead, key, iv, adata, plaintext, crypted, hash, [trunc]
 define(test_aead, [[
@@ -743,6 +829,8 @@ define(test_aead, [[
 
 // AES-CCM8 Testvectors from RFC 3610.
 
+test_generic_aead(Crypto.AES.CCM)
+test_generic_aead(Crypto.AES.CCM8)
 test_aead(Crypto.AES.CCM8,
 	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
 	"00 00 00 03  02 01 00 A0  A1 A2 A3 A4  A5",
@@ -959,6 +1047,7 @@ test_aead(Crypto.AES.CCM,
 	"F3 29 05 B8  8A 64 1B 04  B9 C9 FF B5  8C C3 90 90  0F 3D A1 2A  B1",
 	"6D CE 9E 82  EF A1 6D A6  20 59", 10)
 
+test_generic_aead(Crypto.AES.GCM)
 cond_resolv( Crypto.AES.GCM, [[
   test_eq( Crypto.AES.GCM()->block_size(), 16 )
   test_eq( Crypto.AES.GCM()->key_size(), 0 )
@@ -1076,6 +1165,7 @@ test_aead(Crypto.AES.GCM,
 
 ]])
 
+test_generic_aead(Crypto.ChaCha20.POLY1305)
 cond_resolv( Crypto.ChaCha20.POLY1305, [[
   test_eq( Crypto.ChaCha20.POLY1305()->block_size(), 64 )
   test_eq( Crypto.ChaCha20.POLY1305()->key_size(), 0 )
@@ -1094,6 +1184,9 @@ cond_resolv( Crypto.ChaCha20.POLY1305, [[
 
 ]])
 
+test_generic_aead(Crypto.Camellia.CCM)
+test_generic_aead(Crypto.Camellia.CCM8)
+test_generic_aead(Crypto.Camellia.GCM)
 cond_resolv( Crypto.Camellia.GCM, [[
   test_eq( Crypto.Camellia.GCM()->block_size(), 16 )
   test_eq( Crypto.Camellia.GCM()->key_size(), 0 )
@@ -1295,6 +1388,16 @@ cond_resolv( Crypto.Camellia.GCM, [[
 
 ]])
 
+test_generic_aead(Crypto.Serpent.CCM)
+test_generic_aead(Crypto.Serpent.CCM8)
+test_generic_aead(Crypto.Serpent.GCM)
+
+test_generic_aead(Crypto.Twofish.CCM)
+test_generic_aead(Crypto.Twofish.CCM8)
+test_generic_aead(Crypto.Twofish.GCM)
+
+// Buffer
+
 cond_resolv( Crypto.AES.Buffer, [[
   test_eq( Crypto.AES.Buffer()->block_size(), 16)
   test_eq( Crypto.AES.Buffer()->key_size(), 0)
@@ -1331,6 +1434,8 @@ cond_resolv(Crypto.AES.Buffer, [[
     x->crypt ("x" * 10000000);
   ]])
 ]])
+
+// Random numbers
 
 cond_resolv( Nettle.Yarrow, [[
   test_any_equal([[
@@ -1474,6 +1579,8 @@ DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A
  97536710 1F67D1CF 9BCCBF2F 3D239534 FA509E70 AAC851AE 01AAC68D 62F86647
  2660)
 
+test_do( add_constant( "test_adata" ) )
+test_do( add_constant( "test_data" ) )
 test_do( add_constant( "T" ) )
 test_do( add_constant( "H" ) )
 test_do( add_constant( "S" ) )
