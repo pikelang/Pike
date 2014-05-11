@@ -7579,14 +7579,9 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1..1)")
 test_eq(sprintf("%O", typeof("")),"string(zero)")
-test_any([[
-  // Suppress warnings.
-  class handler {
-    void compile_warning (string file, int line, string err) {};
-  };
-  return compile_string("string s = sprintf(\"%O\", typeof(\"\"[0]));",
-			"-", handler())()->s;
-]], "zero")
+ignore_warning("Indexing the empty string.", [[
+  test_aq([[ sprintf("%O", typeof(""[0])) ]], "zero")
+]])
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
