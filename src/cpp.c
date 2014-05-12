@@ -118,7 +118,7 @@ struct define
   struct define_part parts[1];
 };
 
-#define find_define(N) \
+#define FIND_DEFINE(N) \
   (this->defines?BASEOF(hash_lookup(this->defines, N), define, link):0)
 
 struct cpp
@@ -866,7 +866,7 @@ static void check_defined(struct cpp *this,
   struct pike_string *s = NULL;
   PCHARP x = MKPCHARP(args[0].arg.ptr,args[0].arg.shift);
   s = binary_findstring_pcharp( x, args[0].len );
-  if(s && find_define(s))
+  if(s && FIND_DEFINE(s))
   {
     string_builder_binary_strcat(tmp, " 1 ", 3);
   }else{
@@ -1079,7 +1079,7 @@ static p_wchar2 readchar( PCHARP data, ptrdiff_t *pos, struct cpp *this )
 }
 
 
-static ptrdiff_t readstring( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos,
+static ptrdiff_t readstring( struct cpp *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos,
 			     struct string_builder*nf, int  nl_ok)
 {
   while(1)
@@ -1131,8 +1131,8 @@ static ptrdiff_t readstring( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdi
   return pos;
 }
 
-static ptrdiff_t fixstring(struct cpp *this,PCHARP data,ptrdiff_t len,
-			   ptrdiff_t pos,struct string_builder*nf, int outp)
+static ptrdiff_t fixstring(struct cpp *this, const PCHARP data, ptrdiff_t len,
+			   ptrdiff_t pos, struct string_builder *nf, int outp)
 {
   int trailing_newlines=0;
   if(outp) string_builder_putchar(nf, '"');
@@ -1180,7 +1180,8 @@ static ptrdiff_t fixstring(struct cpp *this,PCHARP data,ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t find_end_of_line( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos, int emit)
+static ptrdiff_t find_end_of_line( struct cpp *this, const PCHARP data,
+                                   ptrdiff_t len, ptrdiff_t pos, int emit )
 {
   while(pos < len) {
     switch (INDEX_PCHARP(data,pos++)) {
@@ -1204,7 +1205,8 @@ static ptrdiff_t find_end_of_line( struct cpp *this, PCHARP data, ptrdiff_t len,
 }
 
 
-static ptrdiff_t find_end_of_comment( struct cpp *this, PCHARP data, ptrdiff_t len,ptrdiff_t pos, int emit)
+static ptrdiff_t find_end_of_comment( struct cpp *this, const PCHARP data, ptrdiff_t len,
+                                      ptrdiff_t pos, int emit)
 {
   pos++;
 
@@ -1230,7 +1232,8 @@ static ptrdiff_t find_end_of_comment( struct cpp *this, PCHARP data, ptrdiff_t l
   return pos + 2;
 }
 
-static ptrdiff_t find_end_of_string2( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+static ptrdiff_t find_end_of_string2( struct cpp *this, const PCHARP data,
+                                      ptrdiff_t len, ptrdiff_t pos)
 {
   while(1)
   {
@@ -1263,7 +1266,8 @@ static ptrdiff_t find_end_of_string2( struct cpp *this, PCHARP data, ptrdiff_t l
 }
 
 
-static ptrdiff_t find_end_of_string( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+static ptrdiff_t find_end_of_string( struct cpp *this, const PCHARP data,
+                                     ptrdiff_t len, ptrdiff_t pos)
 {
   while(1)
   {
@@ -1296,7 +1300,7 @@ static ptrdiff_t find_end_of_string( struct cpp *this, PCHARP data, ptrdiff_t le
   return pos;
 }
 
-static ptrdiff_t find_end_of_char( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos)
+static ptrdiff_t find_end_of_char( struct cpp *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos)
 {
   int e=0;
   while(1)
@@ -1559,7 +1563,7 @@ static void undefine(struct cpp *this,
   INT32 e;
   struct define *d;
 
-  d=find_define(name);
+  d=FIND_DEFINE(name);
 
   if(!d) return;
 
@@ -1967,9 +1971,8 @@ static void free_one_define(struct hash_entry *h)
  * Generic macros
  */
 
-#define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
-#define CHECKWORD2(X,LEN) (begins_with(X,ADD_PCHARP(data,pos),(LEN),len-pos,1))
-#define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
+#define CHECK_WORD(X,LEN) (begins_with(X,ADD_PCHARP(data,pos),(LEN),len-pos,1))
+#define GOBBLE_WORD(X) (CHECK_WORD(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
 #define FIND_END_OF_STRING() (pos=find_end_of_string(this,data,len,pos))
 #define FIND_END_OF_STRING2() (pos=find_end_of_string2(this,data,len,pos))
 #define FIND_END_OF_CHAR() (pos=find_end_of_char(this,data,len,pos))
@@ -1997,7 +2000,7 @@ static void free_one_define(struct hash_entry *h)
 #define GOBBLE_IDENTIFIER() dmalloc_touch (struct pike_string *, gobble_identifier(this,data,&pos))
 #define READCHAR(C) (C=readchar(data,&pos,this))
 #define DATA(X) INDEX_PCHARP(data,X)
-#define GOBBLEOP2(X) \
+#define HAS_PREFIX(X) \
   ((begins_with(X,ADD_PCHARP(data,pos),sizeof(X),len-pos,0)) ? (pos += NELEM(X)),1 : 0)
 
 
@@ -2045,7 +2048,7 @@ static ptrdiff_t find_eos( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff
     return pos;
 }
 
-static ptrdiff_t skipwhite(struct cpp *this,PCHARP data, ptrdiff_t pos)
+static ptrdiff_t skipwhite(struct cpp *this, PCHARP data, ptrdiff_t pos)
 {
   do 
   {
@@ -2079,7 +2082,7 @@ static ptrdiff_t skipwhite(struct cpp *this,PCHARP data, ptrdiff_t pos)
   return pos;
 }
 
-static ptrdiff_t skipspace(struct cpp *this,PCHARP data, ptrdiff_t pos, int emit)
+static ptrdiff_t skipspace(struct cpp *this, PCHARP data, ptrdiff_t pos, int emit)
 {
   do {
     int c;
@@ -2105,17 +2108,6 @@ static ptrdiff_t skipspace(struct cpp *this,PCHARP data, ptrdiff_t pos, int emit
     }
   } while (1);
   return pos;
-}
-
-static void _STRCAT(char *str, int len, int flags,struct cpp *this)
-{
-  ptrdiff_t x;
-  if(OUTP())
-    string_builder_binary_strcat(&this->buf, str, len);
-  else
-    for(x=0;x<len;x++)
-      if(str[x]=='\n')
-	string_builder_putchar(&this->buf, '\n');
 }
 
 static const char eq_[] = { '=', '=' };
@@ -2531,7 +2523,7 @@ static ptrdiff_t calc8(struct cpp *this, PCHARP data, ptrdiff_t len,
   {
     CALC_DUMPPOS("inside calc8");
     SKIPWHITE();
-    if(GOBBLEOP2(lsh_))
+    if(HAS_PREFIX(lsh_))
     {
       CALC_DUMPPOS("Found <<");
       pos=calc9(this,data,len,pos,flags);
@@ -2540,7 +2532,7 @@ static ptrdiff_t calc8(struct cpp *this, PCHARP data, ptrdiff_t len,
       break;
     }
 
-    if(GOBBLEOP2(rsh_))
+    if(HAS_PREFIX(rsh_))
     {
       CALC_DUMPPOS("Found >>");
       pos=calc9(this,data,len,pos,flags);
@@ -2616,7 +2608,7 @@ static ptrdiff_t calc7(struct cpp *this, PCHARP data, ptrdiff_t len,
     CALC_DUMPPOS("inside calc7");
 
     SKIPWHITE();
-    if(GOBBLEOP2(eq_))
+    if(HAS_PREFIX(eq_))
     {
       pos=calc7b(this,data,len,pos,flags);
       if(OUTP())
@@ -2624,7 +2616,7 @@ static ptrdiff_t calc7(struct cpp *this, PCHARP data, ptrdiff_t len,
       continue;
     }
 
-    if(GOBBLEOP2(ne_))
+    if(HAS_PREFIX(ne_))
     {
       pos=calc7b(this,data,len,pos,flags);
       if(OUTP())
@@ -2704,7 +2696,7 @@ static ptrdiff_t calc3(struct cpp *this, PCHARP data, ptrdiff_t len,
   pos=calc4(this,data,len,pos,flags);
 
   SKIPWHITE();
-  while(GOBBLEOP2(land_))
+  while(HAS_PREFIX(land_))
   {
     CALC_DUMPPOS("inside calc3");
 
@@ -2732,7 +2724,7 @@ static ptrdiff_t calc2(struct cpp *this, PCHARP data, ptrdiff_t len,
   pos=calc3(this,data,len,pos,flags);
 
   SKIPWHITE();
-  while(GOBBLEOP2(lor_))
+  while(HAS_PREFIX(lor_))
   {
     CALC_DUMPPOS("inside calc2");
 
