@@ -145,6 +145,14 @@
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
 #endif
 
+/*
+ * gcc with -O3 generates very bloated code for the functions in this file. One rather extreme example
+ * is file_open, which ends up having 32 call sites of open(2).
+ */
+#ifdef __GNUC__
+#pragma GCC optimize "-Os"
+#endif
+
 /* #define SOCKETPAIR_DEBUG */
 
 struct program *file_program;
