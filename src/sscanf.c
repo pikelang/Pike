@@ -463,12 +463,6 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 
 #endif
 
-#ifdef PIKE_DEBUG
-#define DO_IF_DEBUG(X)		X
-#else /* !PIKE_DEBUG */
-#define DO_IF_DEBUG(X)
-#endif /* PIKE_DEBUG */
-
 #ifdef FLOAT_IS_IEEE_BIG
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
 	    do {					\
