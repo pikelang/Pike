@@ -1863,7 +1863,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     pop_stack();
     ref_push_string(new_str = end_shared_string(new_str));
-		
+
     /* Decode the string */
 
     if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
@@ -1963,6 +1963,43 @@ static void free_one_define(struct hash_entry *h)
 #define PUSH_STRING_SHIFT(X,Y,Z,A) add_quoted_string(X,Y,Z,A)
 #define WC_ISSPACE	wide_isspace
 #define WC_ISIDCHAR	wide_isidchar
+/*
+ * Generic macros
+ */
+
+#define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
+#define CHECKWORD2(X,LEN) (begins_with(X,ADD_PCHARP(data,pos),(LEN),len-pos,1))
+#define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
+#define FIND_END_OF_STRING() (pos=find_end_of_string(this,data,len,pos))
+#define FIND_END_OF_STRING2() (pos=find_end_of_string2(this,data,len,pos))
+#define FIND_END_OF_CHAR() (pos=find_end_of_char(this,data,len,pos))
+#define FIND_EOL_PRETEND() (pos=find_end_of_line(this,data,len,pos,0))
+#define FIND_EOL() (pos=find_end_of_line(this,data,len,pos,1))
+#define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,data,len,pos,0))
+#define SKIPCOMMENT() (pos=find_end_of_comment(this,data,len,pos,1))
+#define FIND_EOS() (pos=find_eos(this,data,len,pos))
+
+/* Skips horizontal whitespace and newlines. */
+#define SKIPWHITE() (pos=skipwhite(this,data,pos))
+
+/* Skips horizontal whitespace and escaped newlines. */
+#define SKIPSPACE() (pos=skipspace(this,data,pos,1))
+#define SKIPSPACE_PRETEND() (pos=skipspace(this,data,pos,0))
+
+/* At entry pos points past the start quote.
+ * At exit pos points past the end quote.
+ */
+#define READSTRING(nf) (pos=readstring(this,data,len,pos,&nf,0))
+#define READSTRING2(nf) (pos=readstring(this,data,len,pos,&nf,1))
+#define FIXSTRING(nf,outp) (pos=fixstring(this,data,len,pos,&nf,outp))
+
+/* Gobble an identifier at the current position. */
+#define GOBBLE_IDENTIFIER() dmalloc_touch (struct pike_string *, gobble_identifier(this,data,&pos))
+#define READCHAR(C) (C=readchar(data,&pos,this))
+#define DATA(X) INDEX_PCHARP(data,X)
+#define GOBBLEOP2(X) \
+  ((begins_with(X,ADD_PCHARP(data,pos),sizeof(X),len-pos,0)) ? (pos += NELEM(X)),1 : 0)
+
 
 static void add_quoted_string( void *str, ptrdiff_t len, int shift,
 			       struct string_builder *dst )
@@ -1978,22 +2015,22 @@ static ptrdiff_t find_eos( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff
 {
     while(pos < len)
     {
-      switch (INDEX_PCHARP(data,pos++)) {
+      switch (DATA(pos++)) {
       case '\n':
 	break;
       case '/':
-	if (INDEX_PCHARP(data,pos) == '/') {
+	if (DATA(pos) == '/') {
 	  pos = find_end_of_line(this,data,len,pos,0);
 	  break;
-	} else if (INDEX_PCHARP(data,pos) == '*') {
+	} else if (DATA(pos) == '*') {
 	  pos = find_end_of_comment(this,data,len,pos,0);
 	}
 	continue;
       case '\\':
-	if (INDEX_PCHARP(data,pos) == '\n') {
+	if (DATA(pos) == '\n') {
 	  pos+=1;
-	} else if ((INDEX_PCHARP(data,pos) == '\r') &&
-		   (INDEX_PCHARP(data,pos+1) == '\n')) {
+	} else if ((DATA(pos) == '\r') &&
+		   (DATA(pos+1) == '\n')) {
 	  pos+=2;
 	} else {
 	    continue;
@@ -2013,18 +2050,18 @@ static ptrdiff_t skipwhite(struct cpp *this,PCHARP data, ptrdiff_t pos)
   do 
   {
     int c;
-    if(!wide_isspace(c=INDEX_PCHARP(data,pos)))
+    if(!wide_isspace(c=DATA(pos)))
     {
       if (c == '\\') 
       {
-	if (INDEX_PCHARP(data,pos+1) == '\n') 
+	if (DATA(pos+1) == '\n') 
 	{
 	  pos += 2;
 	  PUTNL();
 	  this->current_line++;
 	  continue;
-	} else if ((INDEX_PCHARP(data,pos+1) == '\r') &&
-		   (INDEX_PCHARP(data,pos+2) == '\n')) {
+	} else if ((DATA(pos+1) == '\r') &&
+		   (DATA(pos+2) == '\n')) {
 	  pos += 3;
 	  PUTNL();
 	  this->current_line++;
@@ -2046,14 +2083,14 @@ static ptrdiff_t skipspace(struct cpp *this,PCHARP data, ptrdiff_t pos, int emit
 {
   do {
     int c;
-    while (wide_isspace(c=INDEX_PCHARP(data,pos)) && c!='\n') {
+    while (wide_isspace(c=DATA(pos)) && c!='\n') {
       pos++;
     }
     if (c == '\\') {
-      if (INDEX_PCHARP(data,pos+1) == '\n') {
+      if (DATA(pos+1) == '\n') {
 	pos+=2;
-      } else if ((INDEX_PCHARP(data,pos+1) == '\r') &&
-		 (INDEX_PCHARP(data,pos+2) == '\n')) {
+      } else if ((DATA(pos+1) == '\r') &&
+		 (DATA(pos+2) == '\n')) {
 	pos+=3;
       } else {
 	break;
@@ -2146,16 +2183,6 @@ static void insert_pragma(struct cpp *this,
 			  struct define_argument *args,
 			  struct string_builder *tmp);
 
-#define FIND_EOL_PRETEND() (pos=find_end_of_line(this,data,len,pos,0))
-#define FIND_EOL() (pos=find_end_of_line(this,data,len,pos,1))
-#define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,data,len,pos,0))
-#define SKIPCOMMENT() (pos=find_end_of_comment(this,data,len,pos,1))
-#define SKIPWHITE() (pos=skipwhite(this,data,pos))
-#define READCHAR(C) (C=readchar(data,&pos,this))
-#define READSTRING(nf) (pos=readstring(this,data,len,pos,&nf,0))
-#define GOBBLEOP2(X) \
-  ((begins_with(X,ADD_PCHARP(data,pos),sizeof(X),len-pos,0)) ? (pos += NELEM(X)),1 : 0)
-
 static ptrdiff_t calc1(struct cpp *this, PCHARP data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags);
 
@@ -2166,7 +2193,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 
   CALC_DUMPPOS("calcC");
 
-  switch(INDEX_PCHARP(data,pos))
+  switch(DATA(pos))
   {
   case '(':
     pos=calc1(this,data,len,pos+1,flags);
@@ -2174,9 +2201,9 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
     if(!GOBBLE(')'))
       cpp_error(this, "Missing ')'");
     break;
-    
+
   case '0':
-    if(INDEX_PCHARP(data,pos+1)=='x' || INDEX_PCHARP(data,pos+1)=='X')
+    if(DATA(pos+1)=='x' || DATA(pos+1)=='X')
     {
       PCHARP p = data;
       INC_PCHARP(p,pos + 2);
@@ -2186,7 +2213,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
       pos = SUBTRACT_PCHARP(p,data);
       break;
     }
-    
+
   case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
   {
@@ -2196,7 +2223,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
     long l;
 
     /* FIXME: Support bignums. */
-    
+
     p = ADD_PCHARP(data,pos);
     f = STRTOD_PCHARP(p, &p1);
     l = STRTOL_PCHARP(p, &p2, 0);
@@ -2215,7 +2242,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 
   case '\'':
   {
-    p_wchar2 tmp = INDEX_PCHARP(data,++pos);
+    p_wchar2 tmp = DATA(++pos);
     if (tmp == '\\') READCHAR(tmp);
     pos++;
     // FIXME: Multi char char constants here as well.
@@ -2237,18 +2264,18 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
       free_string_builder(&s);
     break;
   }
-  
+
   default: {
     struct pike_string *func_name = gobble_identifier(this,data,&pos);
-    if (func_name || INDEX_PCHARP(data,pos) == '.') {
-      /* NOTE: defined() can not be handled here, 
+    if (func_name || DATA(pos) == '.') {
+      /* NOTE: defined() can not be handled here,
        *       since the argument must not be expanded.
        */
 
       SKIPWHITE();
 
       if ( (func_name==constant_str || func_name==efun_str) &&
-           INDEX_PCHARP(data,pos) == '(')
+           DATA(pos) == '(')
       {
 	int start, end;
 	int arg = 0;
@@ -2264,8 +2291,8 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	SKIPWHITE();
 
 	start = end = pos;
-	while (INDEX_PCHARP(data,pos) != ')') {
-	  switch(INDEX_PCHARP(data,pos++)) {
+	while (DATA(pos) != ')') {
+	  switch(DATA(pos++)) {
 	  case '(':
 	    pos = find_end_parenthesis(this, data, len, pos);
 	    break;
@@ -2275,14 +2302,14 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	    start = pos;
 	    break;
 	  case '/':
-	    if (INDEX_PCHARP(data,pos) == '*') {
+	    if (DATA(pos) == '*') {
 	      pos++;
 	      if (this->keep_comments) {
 		start = pos - 2;
 	        SKIPCOMMENT_INC_LINES();
 	      } else 
 		SKIPCOMMENT();
-	    } else if (INDEX_PCHARP(data,pos) == '/') {
+	    } else if (DATA(pos) == '/') {
 	      if (this->keep_comments) {
 		start = pos - 1;
 		FIND_EOL_PRETEND();
@@ -2301,7 +2328,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	    }
 	    /* FALL_THROUGH */
 	  default:
-	    if (WC_ISSPACE(INDEX_PCHARP(data,pos-1))) {
+	    if (WC_ISSPACE(DATA(pos-1))) {
 	      SKIPWHITE();
 	      continue;
 	    }
@@ -2309,7 +2336,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	  }
 	  end = pos;
 	}
-	
+
 	if (start != end) {
 	  push_string(make_shared_binary_pcharp(ADD_PCHARP(data,start), end-start));
 	  arg++;
@@ -2336,7 +2363,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
         }
 	else
 	  pop_n_elems(arg);
-      } else if (INDEX_PCHARP(data,pos) == '.') {
+      } else if (DATA(pos) == '.') {
 	if (func_name == NULL)
 	  add_ref((func_name = empty_pike_string));
 	while (GOBBLE('.')) {
@@ -2375,7 +2402,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
     }
 
     cpp_error_sprintf(this, "Syntax error in #if bad character %c (%d).",
-		      INDEX_PCHARP(data,pos), INDEX_PCHARP(data,pos));
+		      DATA(pos), DATA(pos));
     break;
   }
   }
@@ -2403,7 +2430,7 @@ static ptrdiff_t calcB(struct cpp *this, PCHARP data, ptrdiff_t len,
   CALC_DUMPPOS("before calcB");
 
   SKIPWHITE();
-  switch(INDEX_PCHARP(data,pos))
+  switch(DATA(pos))
   {
     case '-': pos++; pos=calcB(this,data,len,pos,flags);
       if(OUTP()) o_negate(); break;
@@ -2427,11 +2454,11 @@ static ptrdiff_t calcA(struct cpp *this,PCHARP data, ptrdiff_t len,
   {
     CALC_DUMPPOS("inside calcA");
     SKIPWHITE();
-    switch(INDEX_PCHARP(data,pos))
+    switch(DATA(pos))
     {
       case '/':
-	if(INDEX_PCHARP(data,pos+1)=='/' || 
-	   INDEX_PCHARP(data,pos+1)=='*')
+	if(DATA(pos+1)=='/' ||
+	   DATA(pos+1)=='*')
 	  return pos;
 	pos++;
 	pos=calcB(this,data,len,pos,flags);
@@ -2470,7 +2497,7 @@ static ptrdiff_t calc9(struct cpp *this, PCHARP data, ptrdiff_t len,
   {
     CALC_DUMPPOS("inside calc9");
     SKIPWHITE();
-    switch(INDEX_PCHARP(data,pos))
+    switch(DATA(pos))
     {
       case '+':
 	pos++;
@@ -2539,11 +2566,11 @@ static ptrdiff_t calc7b(struct cpp *this, PCHARP data, ptrdiff_t len,
     CALC_DUMPPOS("inside calc7b");
 
     SKIPWHITE();
-    
-    switch(INDEX_PCHARP(data,pos))
+
+    switch(DATA(pos))
     {
       case '<':
-	if(INDEX_PCHARP(data,pos+1) == '<') break;
+	if(DATA(pos+1) == '<') break;
 	pos++;
 	if(GOBBLE('='))
 	{
@@ -2558,7 +2585,7 @@ static ptrdiff_t calc7b(struct cpp *this, PCHARP data, ptrdiff_t len,
 	continue;
 
       case '>':
-	if(INDEX_PCHARP(data,pos+1) == '>') break;
+	if(DATA(pos+1) == '>') break;
 	pos++;
 	if(GOBBLE('='))
 	{
@@ -2618,7 +2645,7 @@ static ptrdiff_t calc6(struct cpp *this, PCHARP data, ptrdiff_t len,
   pos=calc7(this,data,len,pos,flags);
 
   SKIPWHITE();
-  while(INDEX_PCHARP(data,pos) == '&' && INDEX_PCHARP(data,pos+1)!='&')
+  while(DATA(pos) == '&' && DATA(pos+1)!='&')
   {
     CALC_DUMPPOS("inside calc6");
 
@@ -2657,7 +2684,7 @@ static ptrdiff_t calc4(struct cpp *this, PCHARP data, ptrdiff_t len,
   pos=calc5(this,data,len,pos,flags);
 
   SKIPWHITE();
-  while(INDEX_PCHARP(data,pos) == '|' && INDEX_PCHARP(data,pos+1)!='|')
+  while(DATA(pos) == '|' && DATA(pos+1)!='|')
   {
     CALC_DUMPPOS("inside calc4");
     pos++;
