@@ -11,39 +11,6 @@
  * 1999-02-27 Henrik Grubbström
  */
 
-/*
- * Generic macros
- */
-
-#define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
-#define CHECKWORD2(X,LEN) (begins_with(X,ADD_PCHARP(data,pos),(LEN),len-pos,1))
-#define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
-#define FIND_END_OF_STRING() (pos=find_end_of_string(this,data,len,pos))
-#define FIND_END_OF_STRING2() (pos=find_end_of_string2(this,data,len,pos))
-#define FIND_END_OF_CHAR() (pos=find_end_of_char(this,data,len,pos))
-#define FIND_EOL_PRETEND() (pos=find_end_of_line(this,data,len,pos,0))
-#define FIND_EOL() (pos=find_end_of_line(this,data,len,pos,1))
-#define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,data,len,pos,0))
-#define SKIPCOMMENT() (pos=find_end_of_comment(this,data,len,pos,1))
-#define FIND_EOS() (pos=find_eos(this,data,len,pos))
-
-/* Skips horizontal whitespace and newlines. */
-#define SKIPWHITE() (pos=skipwhite(this,data,pos))
-
-/* Skips horizontal whitespace and escaped newlines. */
-#define SKIPSPACE() (pos=skipspace(this,data,pos,1))
-#define SKIPSPACE_PRETEND() (pos=skipspace(this,data,pos,0))
-
-/* At entry pos points past the start quote.
- * At exit pos points past the end quote.
- */
-#define READSTRING(nf) (pos=readstring(this,data,len,pos,&nf,0))
-#define READSTRING2(nf) (pos=readstring(this,data,len,pos,&nf,1))
-#define FIXSTRING(nf,outp) (pos=fixstring(this,data,len,pos,&nf,outp))
-
-/* Gobble an identifier at the current position. */
-#define GOBBLE_IDENTIFIER() dmalloc_touch (struct pike_string *, gobble_identifier(this,data,&pos))
-#define DATA(X) INDEX_PCHARP(data,X)
 
 static ptrdiff_t low_cpp(struct cpp *this,
                            PCHARP data,
@@ -517,10 +484,9 @@ static ptrdiff_t low_cpp(struct cpp *this,
         {
           if (this->prefix)
           {
-            if( !begins_with( this->prefix->str, ADD_PCHARP(data,pos), this->prefix->len, len-pos, 0 ) )
-              goto ADD_TO_BUFFER;
-
-            if (DATA(pos+this->prefix->len) != '_') {
+            if( !begins_with( this->prefix->str, ADD_PCHARP(data,pos), this->prefix->len, len-pos, 0 ) ||
+                DATA(pos+this->prefix->len) != '_')
+            {
               FIND_EOS();
               goto ADD_TO_BUFFER;
             }
