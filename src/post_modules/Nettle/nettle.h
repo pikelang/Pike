@@ -2,6 +2,20 @@
  *
  * Shared declarations for the various files. */
 
+#if 0
+static void
+werror(const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+}
+#else
+#define werror(x)
+#endif
+
 struct program;
 extern struct program *nettle_hash_program;
 extern struct program *hash_instance_program;
