@@ -1111,7 +1111,7 @@ PIKECLASS BlockCipher
       PIKEVAR object object
 	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
       CVAR struct Nettle_Cipher_State_struct *crypt_state;
-      CVAR unsigned INT8 *iv;
+      CVAR struct pike_string *iv;	/* NB: Not finished. */
       CVAR INT32 block_size;
       CVAR INT32 mode;
 
@@ -1123,8 +1123,8 @@ PIKECLASS BlockCipher
 	  THIS->object = NULL;
 	}
 	if(THIS->iv) {
-	  guaranteed_memset(THIS->iv, 0, THIS->block_size);
-	  free(THIS->iv);
+	  free_string(THIS->iv);
+	  THIS->iv = NULL;
 	}
       }
 
@@ -1184,14 +1184,15 @@ PIKECLASS BlockCipher
 	  Pike_error("Bad block size %d.\n", block_size);
 
 	if(THIS->iv) {
-	  guaranteed_memset(THIS->iv, 0, THIS->block_size);
-	  free(THIS->iv);
+	  free_string(THIS->iv);
 	  THIS->iv = NULL;
 	}
 
 	THIS->block_size = block_size;
 
-	THIS->iv = (unsigned INT8 *)xcalloc(block_size, 1);
+	THIS->iv = begin_shared_string(block_size);
+	MEMSET(STR0(THIS->iv), 0, block_size);
+	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	if (THIS->object) free_object(THIS->object);
 	add_ref(THIS->object = o);
@@ -1286,7 +1287,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(THIS->iv, iv->str, THIS->block_size);
+	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -1304,7 +1305,7 @@ PIKECLASS BlockCipher
 	ONERROR uwp;
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
-	const char *iv = THIS->iv;
+	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
 
 	NO_WIDE_STRING(data);
@@ -1327,30 +1328,30 @@ PIKECLASS BlockCipher
 	if(THIS->mode == 0) {
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
-	    /* FIXME: We need to protect the iv from being freed
-	     *        by a different thread.
-	     */
+	    /* Protect the iv from being freed by a different thread. */
+	    add_ref(iv);
 	    THREADS_ALLOW();
-	    cbc_encrypt(ctx, func, block_size, iv,
+	    cbc_encrypt(ctx, func, block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
+	    free_string(iv);
 	  } else {
-	    cbc_encrypt(ctx, func, block_size, iv,
+	    cbc_encrypt(ctx, func, block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	  }
 	}
 	else {
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
-	    /* FIXME: We need to protect the iv from being freed
-	     *        by a different thread.
-	     */
+	    /* Protect the iv from being freed by a different thread. */
+	    add_ref(iv);
 	    THREADS_ALLOW();
-	    cbc_decrypt(ctx, func, block_size, iv,
+	    cbc_decrypt(ctx, func, block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
+	    free_string(iv);
 	  } else {
-	    cbc_decrypt(ctx, func, block_size, iv,
+	    cbc_decrypt(ctx, func, block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	  }
 	}
@@ -1487,7 +1488,7 @@ PIKECLASS BlockCipher
       PIKEVAR object object
 	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
       CVAR struct Nettle_Cipher_State_struct *crypt_state;
-      CVAR unsigned INT8 *iv;
+      CVAR struct pike_string *iv;	/* NB: Not finished. */
       CVAR INT32 block_size;
 
       EXIT
@@ -1496,6 +1497,10 @@ PIKECLASS BlockCipher
 	if (THIS->object) {
 	  free_object(THIS->object);
 	  THIS->object = NULL;
+	}
+	if (THIS->iv) {
+	  free_string(THIS->iv);
+	  THIS->iv = NULL;
 	}
       }
 
@@ -1542,6 +1547,7 @@ PIKECLASS BlockCipher
 	int f;
 
 	if (THIS->object) free_object(THIS->object);
+	THIS->object = NULL;
 	THIS->crypt_state = NULL;
 
 	apply_current(f_Nettle_BlockCipher_cq__CTR_State_substate_factory_fun_num,
@@ -1580,12 +1586,13 @@ PIKECLASS BlockCipher
 	}
 
 	if(THIS->iv) {
-	  guaranteed_memset(THIS->iv, 0, old_block_size);
-	  free(THIS->iv);
+	  free_string(THIS->iv);
 	  THIS->iv = NULL;
 	}
 
-	THIS->iv = xcalloc(1, block_size);
+	THIS->iv = begin_shared_string(block_size);
+	MEMSET(STR0(THIS->iv), 0, block_size);
+	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	THIS->block_size = block_size;
 
@@ -1705,7 +1712,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(THIS->iv, iv->str, THIS->block_size);
+	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -1729,7 +1736,7 @@ PIKECLASS BlockCipher
 	ONERROR uwp;
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
-	const char *iv = THIS->iv;
+	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
 
 	NO_WIDE_STRING(data);
@@ -1748,15 +1755,15 @@ PIKECLASS BlockCipher
 
 	if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	    (func != pike_crypt_func)) {
-	  /* FIXME: We need to protect the iv from being freed
-	   *        by a different thread.
-	   */
+	  /* Protect the iv from being freed by a different thread. */
+	  add_ref(iv);
 	  THREADS_ALLOW();
-	  ctr_crypt(ctx, func, block_size, iv,
+	  ctr_crypt(ctx, func, block_size, STR0(iv),
 		    data->len, STR0(result), STR0(data));
 	  THREADS_DISALLOW();
+	  free_string(iv);
 	} else {
-	  ctr_crypt(ctx, func, block_size, iv,
+	  ctr_crypt(ctx, func, block_size, STR0(iv),
 		    data->len, STR0(result), STR0(data));
 	}
 
@@ -2065,7 +2072,7 @@ PIKECLASS BlockCipher16
 	  add_ref(THIS->nonce = iv);
 	}
 
-	ctr_iv = THIS->ctr->iv;
+	ctr_iv = STR0(THIS->ctr->iv);
 
 	*(ctr_iv++) = 14 - iv_len;
 
@@ -3509,7 +3516,7 @@ PIKECLASS CHACHA
       if (iv->len != CHACHA_NONCE_SIZE)
         Pike_error("CHACHA IV needs to be %d bytes.\n", CHACHA_NONCE_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
-      chacha_set_nonce(&THIS->chacha, (uint8_t *)iv->str);
+      chacha_set_nonce(&THIS->chacha, STR0(iv->str));
       push_object(this_object());
     }
 
@@ -4040,7 +4047,7 @@ PIKECLASS SALSA20
       if (iv->len != SALSA20_IV_SIZE)
         Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_IV_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
-      salsa20_set_iv(&THIS->salsa20, (uint8_t *)iv->str);
+      salsa20_set_iv(&THIS->salsa20, STR0(iv));
       push_object(this_object());
     }
 
