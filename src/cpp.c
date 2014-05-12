@@ -866,12 +866,11 @@ static void check_defined(struct cpp *this,
   struct pike_string *s = NULL;
   PCHARP x = MKPCHARP(args[0].arg.ptr,args[0].arg.shift);
   s = binary_findstring_pcharp( x, args[0].len );
+
   if(s && FIND_DEFINE(s))
-  {
     string_builder_binary_strcat(tmp, " 1 ", 3);
-  }else{
+  else
     string_builder_binary_strcat(tmp, " 0 ", 3);
-  }
 }
 
 static int do_safe_index_call(struct cpp *this, struct pike_string *s)
@@ -1070,10 +1069,10 @@ static p_wchar2 readchar( PCHARP data, ptrdiff_t *pos, struct cpp *this )
     cpp_error (this, "Too few hex digits in \\U escape.");
     C = '\\';
     break;
-    DO_IF_DEBUG (
-    case 2: Pike_fatal ("Not supposed to happen.\n");
-    default: Pike_fatal ("Unknown error from parse_esc_seq.\n");
-    );
+#ifdef PIKE_DEBUG
+  case 2: Pike_fatal ("Not supposed to happen.\n");
+  default: Pike_fatal ("Unknown error from parse_esc_seq.\n");
+#endif
   }
   return C;
 }
@@ -1210,10 +1209,6 @@ static ptrdiff_t find_end_of_comment( struct cpp *this, const PCHARP data, ptrdi
 {
   pos++;
 
-  if(pos+2>=len)
-  {
-    cpp_error(this,"End of file in comment.");
-  }
   while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
   {	
     if(pos+2>=len)
