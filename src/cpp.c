@@ -56,6 +56,9 @@ struct define_argument;
 struct define;
 struct cpp;
 
+#ifdef __GNUC__
+#pragma GCC optimize "-Os"
+#endif
 
 /* Return true if compat version is equal or less than MAJOR.MINOR */
 #define CPP_TEST_COMPAT(THIS,MAJOR,MINOR)      \
@@ -72,18 +75,6 @@ struct cpp;
 static struct pike_string *efun_str;
 static struct pike_string *constant_str;
 static struct pike_string *defined_str;
-
-/* Some string builder debug. */
-#if 0
-
-#define string_builder_putchar(X, Y)	do {				\
-    int Y_Y_ = Y;							\
-    fprintf(stderr, "%s:%d string_builder_putchar(%s, %s, '%c')\n",	\
-	    __FILE__,__LINE__, #X, #Y, Y_Y_);				\
-    string_builder_putchar(X, Y_Y_);					\
-  } while(0)
-
-#endif /* 0 */
 
 struct pike_predef_s
 {
@@ -2136,9 +2127,12 @@ static int begins_with( const char *prefix, PCHARP stack, int len, int remain, i
   return 1;
 }
 
-static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
-			 int shift, int flags, int auto_convert,
-			 struct pike_string *charset);
+static ptrdiff_t low_cpp(struct cpp *this,
+                         PCHARP data,
+                         ptrdiff_t len,
+                         int flags,
+                         int auto_convert,
+                         struct pike_string *charset);
 static void insert_callback_define(struct cpp *this,
                                    struct define *def,
                                    struct define_argument *args,
@@ -2780,51 +2774,7 @@ static ptrdiff_t calc(struct cpp *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-#undef FIND_EOL_PRETEND
-#undef FIND_EOL
-#undef SKIPCOMMENT_INC_LINES
-#undef SKIPCOMMENT
-#undef SKIPWHITE
-#undef READCHAR
-#undef READSTRING
-#undef GOBBLE
-
-#define GOBBLE(X) (data[pos]==(X)?++pos,1:0)
-
-#define SHIFT 0
 #include "preprocessor.h"
-#undef SHIFT
-
-#define SHIFT 1
-#include "preprocessor.h"
-#undef SHIFT
-
-#define SHIFT 2
-#include "preprocessor.h"
-#undef SHIFT
-
-static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
-			 int shift, int flags, int auto_convert,
-			 struct pike_string *charset)
-{
-  switch(shift) {
-  case 0:
-    return lower_cpp0(this, (p_wchar0 *)data, len,
-		      flags, auto_convert, charset);
-  case 1:
-    return lower_cpp1(this, (p_wchar1 *)data, len,
-		      flags, auto_convert, charset);
-  case 2:
-    return lower_cpp2(this, (p_wchar2 *)data, len,
-		      flags, auto_convert, charset);
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("low_cpp(): Bad shift: %d\n", shift);
-#endif
-  }
-  /* NOT_REACHED */
-  return 0;
-}
 
 /*** Magic defines ***/
 
@@ -3534,7 +3484,7 @@ void f_cpp(INT32 args)
 #endif /* PIKE_DEBUG */
 
 
-  low_cpp(&this, data->str, data->len, data->size_shift,
+  low_cpp(&this, MKPCHARP_STR(data), data->len,
 	  0, auto_convert, charset);
 
 #ifdef PIKE_DEBUG
