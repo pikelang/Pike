@@ -3256,6 +3256,7 @@ static void decode_value2(struct decode_data *data)
 	  break;
 	}
 
+#ifdef SUPPORT_OLD_STYLE_ENCODING
 	case 1:			/* Old-style encoding. */
 	{
 	  int d, in;
@@ -3876,6 +3877,7 @@ static void decode_value2(struct decode_data *data)
 	  CALL_AND_UNSET_ONERROR(err);
 	  goto decode_done;
 	}
+#endif
 
 	case 2:
 	  decode_value2(data);

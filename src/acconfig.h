@@ -73,6 +73,9 @@
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY
 
+/* Define this to enable support for old style encoding of programs */
+#undef SUPPORT_OLD_STYLE_ENCODING
+
 /* Define this to simulate dynamic module loading with static modules. */
 #undef USE_SEMIDYNAMIC_MODULES
 

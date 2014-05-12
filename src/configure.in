@@ -1588,6 +1588,9 @@ AC_ARG_WITH(security, MY_DESCR([--with-security],
 AC_ARG_WITH(deprecated-security, MY_DESCR([--with-deprecated-security],
 			       [enable internal pike security system]),
 	    [AC_DEFINE(PIKE_SECURITY)])
+AC_ARG_WITH(compat-encode, MY_DESCR([--with-compat-encode],
+			       [enable support for old style decoding of programs]),
+	    [AC_DEFINE(SUPPORT_OLD_STYLE_ENCODING)])
 dnl Shared nodes has been disabled in an ugly way. To enable it you
 dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
 dnl top of freeze_node in src/las.c. /mast
