@@ -131,7 +131,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
              */
             d = defined_macro;
           }else{
-            d=find_define(s);
+            d=FIND_DEFINE(s);
           }
 
           if(d && !(d->inside & 1))
@@ -408,7 +408,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
 
             if(s)
             {
-              if((d=find_define(s)))
+              if((d=FIND_DEFINE(s)))
                 d->inside = inside;
 
               free_string(s);
@@ -479,8 +479,8 @@ static ptrdiff_t low_cpp(struct cpp *this,
         }
         SKIPSPACE();
 
-        if (!CHECKWORD2(string_recur_, NELEM(string_recur_))
-            && !CHECKWORD2(include_recur_, NELEM(include_recur_)))
+        if (!CHECK_WORD(string_recur_, NELEM(string_recur_))
+            && !CHECK_WORD(include_recur_, NELEM(include_recur_)))
         {
           if (this->prefix)
           {
@@ -508,7 +508,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
         {
           case 'l':
             {
-              if(WGOBBLE2(line_))
+              if(GOBBLE_WORD(line_))
               {
                 /* FIXME: Why not use SKIPSPACE()? */
                 /* Because SKIPSPACE skips newlines? - Hubbe */
@@ -577,12 +577,12 @@ static ptrdiff_t low_cpp(struct cpp *this,
 
           case 's':
             {
-              if(WGOBBLE2(string_))
+              if(GOBBLE_WORD(string_))
               {
                 include_mode = 1;
                 goto do_include;
               }
-              if(WGOBBLE2(string_recur_))
+              if(GOBBLE_WORD(string_recur_))
               {
                 include_mode = 3;
                 goto do_include;
@@ -594,7 +594,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             {
               int recur = 0;
 
-              if(WGOBBLE2(include_) || (recur = WGOBBLE2(include_recur_)))
+              if(GOBBLE_WORD(include_) || (recur = GOBBLE_WORD(include_recur_)))
               {
                 if (recur) {
                   include_mode = 2;
@@ -814,7 +814,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 }
               }
 
-              if(WGOBBLE2(if_))
+              if(GOBBLE_WORD(if_))
               {
                 struct string_builder save, tmp;
                 INT32 nflags = 0;
@@ -848,7 +848,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 break;
               }
 
-              if(WGOBBLE2(ifdef_))
+              if(GOBBLE_WORD(ifdef_))
               {
                 INT32 nflags;
                 struct pike_string *s;
@@ -862,7 +862,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 if(!OUTP())
                   nflags|=CPP_REALLY_NO_OUTPUT;
                 if (s) {
-                  if(find_define(s))
+                  if(FIND_DEFINE(s))
                     nflags&=~CPP_NO_OUTPUT;
                   free_string (s);
                 }
@@ -872,7 +872,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 break;
               }
 
-              if(WGOBBLE2(ifndef_))
+              if(GOBBLE_WORD(ifndef_))
               {
                 INT32 nflags;
                 struct pike_string *s;
@@ -886,7 +886,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 if(!OUTP())
                   nflags|=CPP_REALLY_NO_OUTPUT;
                 if (s) {
-                  if(find_define(s))
+                  if(FIND_DEFINE(s))
                     nflags|=CPP_NO_OUTPUT;
                   free_string (s);
                 }
@@ -900,7 +900,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             }
           case 'e': /* endif, else, elif, error */
             {
-              if(WGOBBLE2(endif_))
+              if(GOBBLE_WORD(endif_))
               {
                 if(!(flags & CPP_EXPECT_ENDIF))
                   cpp_error(this, "Unmatched #endif.");
@@ -908,7 +908,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 return pos;
               }
 
-              if(WGOBBLE2(else_))
+              if(GOBBLE_WORD(else_))
               {
                 if(!(flags & CPP_EXPECT_ELSE))
                   cpp_error(this, "Unmatched #else.");
@@ -924,7 +924,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 break;
               }
 
-              if(WGOBBLE2(elif_) || WGOBBLE2(elseif_))
+              if(GOBBLE_WORD(elif_) || GOBBLE_WORD(elseif_))
               {
                 if(!(flags & CPP_EXPECT_ELSE))
                   cpp_error(this, "Unmatched #elif.");
@@ -956,7 +956,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                 break;
               }
 
-              if(WGOBBLE2(error_))
+              if(GOBBLE_WORD(error_))
               {
                 ptrdiff_t foo;
 
@@ -976,7 +976,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
           case 'd': /* define */
             {
 
-              if(WGOBBLE2(define_))
+              if(GOBBLE_WORD(define_))
               {
                 struct string_builder str;
                 INT32 argno=-1;
@@ -1234,7 +1234,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
 #endif
                   {
                     struct define *d;
-                    if ((d = find_define(def->link.s)) && (d->inside)) {
+                    if ((d = FIND_DEFINE(def->link.s)) && (d->inside)) {
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
                       free_one_define(&(def->link));
@@ -1255,7 +1255,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             {
 
               /* NOTE: Reuses undefine_ for undef_ */
-              if(WGOBBLE2(undefine_) || WGOBBLE2(undef_))
+              if(GOBBLE_WORD(undefine_) || GOBBLE_WORD(undef_))
               {
                 struct pike_string *s;
                 SKIPSPACE();
@@ -1277,7 +1277,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
           case 'c': /* charset */
             {
 
-              if (WGOBBLE2(charset_)) {
+              if (GOBBLE_WORD(charset_)) {
                 ptrdiff_t p;
                 struct pike_string *s;
 
@@ -1324,15 +1324,15 @@ static ptrdiff_t low_cpp(struct cpp *this,
           case 'p': /* pragma */
             {
 
-              if(WGOBBLE2(pragma_))
+              if(GOBBLE_WORD(pragma_))
               {
                 if(OUTP())
-                  STRCAT("#pragma", 7);
+                  string_builder_strcat(&this->buf, "#pragma");
                 else
                   FIND_EOL();
                 break;
               }
-              if(WGOBBLE2(pike_))
+              if(GOBBLE_WORD(pike_))
               {
                 if(OUTP())
                 {
@@ -1340,7 +1340,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                   ptrdiff_t tmp;
                   PCHARP ptr;
 
-                  STRCAT("#pike", 5);
+                  string_builder_strcat(&this->buf, "#pike");
                   tmp= this->buf.s->len;
                   pos += low_cpp(this, ADD_PCHARP(data,pos), len-pos,
                                  CPP_END_AT_NEWLINE | CPP_DO_IF,
@@ -1367,7 +1367,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             }
           case 'r': /* require */
             {
-              if(WGOBBLE2(require_))
+              if(GOBBLE_WORD(require_))
               {
                 struct string_builder save, tmp;
                 save = this->buf;
@@ -1391,7 +1391,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
             }
           case 'w': /* warning */
             {
-              if(WGOBBLE2(warning_))
+              if(GOBBLE_WORD(warning_))
               {
                 ptrdiff_t foo;
 
