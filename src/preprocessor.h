@@ -28,22 +28,6 @@
 
 #define lower_cpp		lower_cpp0
 #define MAKE_BINARY_STRING	make_shared_binary_string0
-
-#define calc	calc_0
-#define calc1	calc1_0
-#define calc2	calc2_0
-#define calc3	calc3_0
-#define calc4	calc4_0
-#define calc5	calc5_0
-#define calc6	calc6_0
-#define calc7	calc7_0
-#define calc7b	calc7b_0
-#define calc8	calc8_0
-#define calc9	calc9_0
-#define calcA	calcA_0
-#define calcB	calcB_0
-#define calcC	calcC_0
-
 #else /* SHIFT != 0 */
 
 
@@ -57,22 +41,6 @@
 
 #define lower_cpp		lower_cpp1
 #define MAKE_BINARY_STRING	make_shared_binary_string1
-
-#define calc	calc_1
-#define calc1	calc1_1
-#define calc2	calc2_1
-#define calc3	calc3_1
-#define calc4	calc4_1
-#define calc5	calc5_1
-#define calc6	calc6_1
-#define calc7	calc7_1
-#define calc7b	calc7b_1
-#define calc8	calc8_1
-#define calc9	calc9_1
-#define calcA	calcA_1
-#define calcB	calcB_1
-#define calcC	calcC_1
-
 #else /* SHIFT != 1 */
 
 #define WCHAR	p_wchar2
@@ -83,22 +51,6 @@
 
 #define lower_cpp		lower_cpp2
 #define MAKE_BINARY_STRING	make_shared_binary_string2
-
-#define calc	calc_2
-#define calc1	calc1_2
-#define calc2	calc2_2
-#define calc3	calc3_2
-#define calc4	calc4_2
-#define calc5	calc5_2
-#define calc6	calc6_2
-#define calc7	calc7_2
-#define calc7b	calc7b_2
-#define calc8	calc8_2
-#define calc9	calc9_2
-#define calcA	calcA_2
-#define calcB	calcB_2
-#define calcC	calcC_2
-
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
 
@@ -107,23 +59,8 @@
  */
 
 #define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
-#define CHECKWORD2(X,LEN) \
-  (pos + (ptrdiff_t)(LEN) <= len && begins_with(X,MKPCHARP(data+(pos<<SHIFT),SHIFT),(LEN)) && (pos + (ptrdiff_t)(LEN) == len || !WC_ISIDCHAR(data[pos+(LEN)])))
+#define CHECKWORD2(X,LEN) (begins_with(X,MKPCHARP_OFF(data,SHIFT,pos),(LEN),len-pos,1))
 #define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
-#define GOBBLEOP2(X) \
-  (pos + (ptrdiff_t)NELEM(X) < len && ((begins_with(X,MKPCHARP(data+(pos<<SHIFT),SHIFT),sizeof(X))) ? (pos += NELEM(X)),1 : 0))
-
-/*
- * Some prototypes
- */
-static ptrdiff_t calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t, int);
-static ptrdiff_t calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t, int);
-static ptrdiff_t calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t, int);
-static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
-
-/*
- * Functions 
- */
 #define FIND_END_OF_STRING() (pos=find_end_of_string(this,MKPCHARP(data,SHIFT),len,pos))
 #define FIND_END_OF_STRING2() (pos=find_end_of_string2(this,MKPCHARP(data,SHIFT),len,pos))
 #define FIND_END_OF_CHAR() (pos=find_end_of_char(this,MKPCHARP(data,SHIFT),len,pos))
@@ -131,7 +68,6 @@ static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
 #define FIND_EOL() (pos=find_end_of_line(this,MKPCHARP(data,SHIFT),len,pos,1))
 #define SKIPCOMMENT_INC_LINES() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,0))
 #define SKIPCOMMENT() (pos=find_end_of_comment(this,MKPCHARP(data,SHIFT),len,pos,1))
-#define KEEPCOMMENT(s) (pos=PIKE_XCONCAT(keepcomment,SHIFT)(pos,len,old_pos,data,(s),this))
 #define FIND_EOS() (pos=find_eos(this,MKPCHARP(data,SHIFT),len,pos))
 
 /* Skips horizontal whitespace and newlines. */
@@ -152,648 +88,8 @@ static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
 #define READSTRING2(nf) (pos=readstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,1))
 #define FIXSTRING(nf,outp) (pos=fixstring(this,MKPCHARP(data,SHIFT),len,pos,&nf,outp))
 
-static ptrdiff_t PIKE_XCONCAT(keepcomment,SHIFT)( ptrdiff_t pos,ptrdiff_t len,ptrdiff_t old_pos,
-						  WCHAR *data,struct string_builder *s,
-						  struct cpp *this)
-{
-  SKIPCOMMENT_INC_LINES();
-  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT)
-    ( s, data + old_pos, pos-old_pos );
-  return pos;
-}
-
-#define KEEPLINE(s) (pos=PIKE_XCONCAT(keepline,SHIFT)(pos,len,old_pos,data,(s),this))
-static ptrdiff_t PIKE_XCONCAT(keepline,SHIFT)( ptrdiff_t pos,ptrdiff_t len,ptrdiff_t old_pos,
-						 WCHAR *data,struct string_builder *s,
-						 struct cpp *this)
-{
-  FIND_EOL_PRETEND();
-  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT)
-    ( s, data + old_pos, pos-old_pos );
-  return pos;
-}
-
-
-
 /* Gobble an identifier at the current position. */
-#define GOBBLE_IDENTIFIER()						\
-  ((WC_ISIDCHAR (data[pos]) || data[pos] == '\\') ?			\
-   dmalloc_touch (struct pike_string *, gobble_identifier(this,MKPCHARP(data,SHIFT), &pos)) : NULL)
-
-static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  SKIPWHITE();
-
-  CALC_DUMPPOS("calcC");
-
-  switch(data[pos])
-  {
-  case '(':
-    pos=calc1(this,data,len,pos+1,flags);
-    SKIPWHITE();
-    if(!GOBBLE(')'))
-      cpp_error(this, "Missing ')'");
-    break;
-    
-  case '0':
-    if(data[pos+1]=='x' || data[pos+1]=='X')
-    {
-      void *p = data + pos + 2;
-      push_int(0);
-
-      safe_wide_string_to_svalue_inumber(Pike_sp-1, p, &p, 16, 0, SHIFT);
-
-      if(!OUTP()) pop_stack();
-
-      pos = ((WCHAR *)p) - data;
-      break;
-    }
-    
-  case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-  {
-    PCHARP p1,p2;
-    PCHARP p;
-    double f;
-    long l;
-
-    /* FIXME: Support bignums. */
-    
-    p = MKPCHARP(data+pos, SHIFT);
-    f = STRTOD_PCHARP(p, &p1);
-    l = STRTOL_PCHARP(p, &p2, 0);
-    if(COMPARE_PCHARP(p1,>,p2))
-    {
-      if(OUTP())
-	push_float(DO_NOT_WARN((FLOAT_TYPE)f));
-      pos = ((WCHAR *)p1.ptr) - data;
-    }else{
-      if(OUTP())
-	push_int(l);
-      pos = ((WCHAR *)p2.ptr) - data;
-    }
-    break;
-  }
-
-  case '\'':
-  {
-    p_wchar2 tmp = data[++pos];
-    if (tmp == '\\') READCHAR(tmp);
-    pos++;
-    // FIXME: Multi char char constants here as well.
-    if(!GOBBLE('\''))
-      cpp_error(this, "Missing end quote in character constant.");
-    if(OUTP())
-      push_int(tmp);
-    break;
-  }
-
-  case '"':
-  {
-    struct string_builder s;
-    init_string_builder(&s, 0);
-    READSTRING(s);
-    if(OUTP())
-      push_string(finish_string_builder(&s));
-    else
-      free_string_builder(&s);
-    break;
-  }
-  
-  default: {
-    struct pike_string *func_name = GOBBLE_IDENTIFIER();
-    if (func_name || data[pos] == '.') {
-      /* NOTE: defined() can not be handled here, 
-       *       since the argument must not be expanded.
-       */
-
-      SKIPWHITE();
-
-      if ( (func_name==constant_str || func_name==efun_str) &&
-           data[pos] == '(')
-      {
-	int start, end;
-	int arg = 0;
-	INT_TYPE start_line;
-
-        if( func_name==efun_str && !CPP_TEST_COMPAT(this,7,9) )
-          cpp_warning(this, "Directive efun() deprecated.");
-
-	pos++; /* GOBBLE('(') */
-
-	start_line = this->current_line;
-
-	SKIPWHITE();
-
-	start = end = pos;
-	while (data[pos] != ')') {
-	  switch(data[pos++]) {
-	  case '(':
-	    pos = find_end_parenthesis(this, MKPCHARP(data,SHIFT), len, pos);
-	    break;
-	  case ',':
-	    push_string(MAKE_BINARY_STRING(data+start, end-start));
-	    arg++;
-	    start = pos;
-	    break;
-	  case '/':
-	    if (data[pos] == '*') {
-	      pos++;
-	      if (this->keep_comments) {
-		start = pos - 2;
-	        SKIPCOMMENT_INC_LINES();
-	      } else SKIPCOMMENT();
-	    } else if (data[pos] == '/') {
-	      if (this->keep_comments) {
-		start = pos - 1;
-		FIND_EOL_PRETEND();
-	      } else FIND_EOL();
-	    }
-	    break;
-	  case '\0':
-	    if (pos > len) {
-	      INT_TYPE old_line = this->current_line;
-	      this->current_line = start_line;
-	      cpp_error_sprintf(this, "Missing ) in the meta function %S().",
-				func_name);
-	      this->current_line = old_line;
-	      free_string (func_name);
-	      return pos-1;
-	    }
-	    /* FALL_THROUGH */
-	  default:
-	    if (WC_ISSPACE(data[pos-1])) {
-	      SKIPWHITE();
-	      continue;
-	    }
-	    break;
-	  }
-	  end = pos;
-	}
-	
-	if (start != end) {
-	  push_string(MAKE_BINARY_STRING(data+start, end-start));
-	  arg++;
-	}
-
-	if(!GOBBLE(')')) {
-	  INT_TYPE old_line = this->current_line;
-	  this->current_line = start_line;
-	  cpp_error_sprintf(this, "Missing ) in the meta function %S().",
-			    func_name);
-	  this->current_line = old_line;
-	}
-	/* NOTE: cpp_func MUST protect against errors. */
-	if(OUTP())
-        {
-          if (arg != 1) {
-            cpp_error_sprintf(this, "Bad number of arguments to %S().",
-                              func_name);
-            pop_n_elems(arg);
-            push_int(0);
-          }
-          else
-            cpp_constant(this, 0);
-        }
-	else
-	  pop_n_elems(arg);
-      } else if (data[pos] == '.') {
-	if (func_name == NULL)
-	  add_ref((func_name = empty_pike_string));
-	while (GOBBLE('.')) {
-	  struct pike_string *ind_name;
-	  SKIPWHITE();
-	  ind_name = GOBBLE_IDENTIFIER();
-	  if (ind_name == NULL) {
-	    cpp_error_sprintf(this, "Syntax error in #if missing identifier after '.'.");
-	    free_string (func_name);
-	    func_name = NULL;
-	    break;
-	  }
-	  if(OUTP()) {
-	    push_string (func_name);
-	    push_text (".");
-	    push_string (ind_name);
-	    f_add(3);
-	    func_name = Pike_sp[-1].u.string;
-	    --Pike_sp;
-	  }
-	  SKIPWHITE();
-	}
-	if (func_name == NULL)
-	  break;
-	if(OUTP())
-        {
-          ref_push_string(func_name);
-          cpp_constant(this, 1);
-        }
-      } else {
-	if(OUTP())
-	  push_int(0);
-      }
-      free_string (func_name);
-      break;
-    }
-
-    cpp_error_sprintf(this, "Syntax error in #if bad character %c (%d).",
-		      data[pos], data[pos]);
-    break;
-  }
-  }
-
-  SKIPWHITE();
-
-  while(GOBBLE('['))
-  {
-    CALC_DUMPPOS("inside calcC");
-    pos=calc1(this,data,len,pos,flags);
-    if(OUTP())
-      f_index(2);
-
-    SKIPWHITE();
-    if(!GOBBLE(']'))
-      cpp_error(this, "Missing ']'.");
-  }
-  CALC_DUMPPOS("after calcC");
-  return pos;
-}
-
-static ptrdiff_t calcB(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calcB");
-
-  SKIPWHITE();
-  switch(data[pos])
-  {
-    case '-': pos++; pos=calcB(this,data,len,pos,flags);
-      if(OUTP()) o_negate(); break;
-    case '!': pos++; pos=calcB(this,data,len,pos,flags);
-      if(OUTP()) o_not(); break;
-    case '~': pos++; pos=calcB(this,data,len,pos,flags);
-      if(OUTP()) o_compl(); break;
-    default: pos=calcC(this,data,len,pos,flags);
-  }
-  CALC_DUMPPOS("after calcB");
-  return pos;
-}
-
-static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calcA");
-
-  pos=calcB(this,data,len,pos,flags);
-  while(1)
-  {
-    CALC_DUMPPOS("inside calcA");
-    SKIPWHITE();
-    switch(data[pos])
-    {
-      case '/':
-	if(data[1]=='/' || data[1]=='*') return pos;
-	pos++;
-	pos=calcB(this,data,len,pos,flags);
-	if(OUTP())
-	  o_divide();
-	continue;
-
-      case '*':
-	pos++;
-	pos=calcB(this,data,len,pos,flags);
-	if(OUTP())
-	  o_multiply();
-	continue;
-
-      case '%':
-	pos++;
-	pos=calcB(this,data,len,pos,flags);
-	if(OUTP())
-	  o_mod();
-	continue;
-    }
-    break;
-  }
-  CALC_DUMPPOS("after calcA");
-  return pos;
-}
-
-static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc9");
-
-  pos=calcA(this,data,len,pos,flags);
-
-  while(1)
-  {
-    CALC_DUMPPOS("inside calc9");
-    SKIPWHITE();
-    switch(data[pos])
-    {
-      case '+':
-	pos++;
-	pos=calcA(this,data,len,pos,flags);
-	if(OUTP())
-	  f_add(2);
-	continue;
-
-      case '-':
-	pos++;
-	pos=calcA(this,data,len,pos,flags);
-	if(OUTP())
-	  o_subtract();
-	continue;
-    }
-    break;
-  }
-
-  CALC_DUMPPOS("after calc9");
-  return pos;
-}
-
-static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc8");
-
-  pos=calc9(this,data,len,pos,flags);
-
-  while(1)
-  {
-    CALC_DUMPPOS("inside calc8");
-    SKIPWHITE();
-    if(GOBBLEOP2(lsh_))
-    {
-      CALC_DUMPPOS("Found <<");
-      pos=calc9(this,data,len,pos,flags);
-      if(OUTP())
-	o_lsh();
-      break;
-    }
-
-    if(GOBBLEOP2(rsh_))
-    {
-      CALC_DUMPPOS("Found >>");
-      pos=calc9(this,data,len,pos,flags);
-      if(OUTP())
-	o_rsh();
-      break;
-    }
-
-    break;
-  }
-  return pos;
-}
-
-static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
-			ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc7b");
-
-  pos=calc8(this,data,len,pos,flags);
-
-  while(1)
-  {
-    CALC_DUMPPOS("inside calc7b");
-
-    SKIPWHITE();
-    
-    switch(data[pos])
-    {
-      case '<':
-	if(data[pos]+1 == '<') break;
-	pos++;
-	if(GOBBLE('='))
-	{
-	   pos=calc8(this,data,len,pos,flags);
-	   if(OUTP())
-	     f_le(2);
-	}else{
-	   pos=calc8(this,data,len,pos,flags);
-	   if(OUTP())
-	     f_lt(2);
-	}
-	continue;
-
-      case '>':
-	if(data[pos]+1 == '>') break;
-	pos++;
-	if(GOBBLE('='))
-	{
-	   pos=calc8(this,data,len,pos,flags);
-	   if(OUTP())
-	     f_ge(2);
-	}else{
-	   pos=calc8(this,data,len,pos,flags);
-	   if(OUTP())
-	     f_gt(2);
-	}
-	continue;
-    }
-    break;
-  }
-  return pos;
-}
-
-static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc7");
-
-  pos=calc7b(this,data,len,pos,flags);
-
-  while(1)
-  {
-    CALC_DUMPPOS("inside calc7");
-
-    SKIPWHITE();
-    if(GOBBLEOP2(eq_))
-    {
-      pos=calc7b(this,data,len,pos,flags);
-      if(OUTP())
-	f_eq(2);
-      continue;
-    }
-
-    if(GOBBLEOP2(ne_))
-    {
-      pos=calc7b(this,data,len,pos,flags);
-      if(OUTP())
-	f_ne(2);
-      continue;
-    }
-
-    break;
-  }
-  return pos;
-}
-
-static ptrdiff_t calc6(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc6");
-
-  pos=calc7(this,data,len,pos,flags);
-
-  SKIPWHITE();
-  while(data[pos] == '&' && data[pos+1]!='&')
-  {
-    CALC_DUMPPOS("inside calc6");
-
-    pos++;
-    pos=calc7(this,data,len,pos,flags);
-    if(OUTP())
-      o_and();
-  }
-  return pos;
-}
-
-static ptrdiff_t calc5(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc5");
-
-  pos=calc6(this,data,len,pos,flags);
-
-  SKIPWHITE();
-  while(GOBBLE('^'))
-  {
-    CALC_DUMPPOS("inside calc5");
-
-    pos=calc6(this,data,len,pos,flags);
-    if(OUTP())
-      o_xor();
-  }
-  return pos;
-}
-
-static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc4");
-
-  pos=calc5(this,data,len,pos,flags);
-
-  SKIPWHITE();
-  while(data[pos] == '|' && data[pos+1]!='|')
-  {
-    CALC_DUMPPOS("inside calc4");
-    pos++;
-    pos=calc5(this,data,len,pos,flags);
-    if(OUTP())
-      o_or();
-  }
-  return pos;
-}
-
-static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-
-  CALC_DUMPPOS("before calc3");
-
-  pos=calc4(this,data,len,pos,flags);
-
-  SKIPWHITE();
-  while(GOBBLEOP2(land_))
-  {
-    CALC_DUMPPOS("inside calc3");
-
-    if(OUTP()) {
-      check_destructed(Pike_sp-1);
-      if(UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pos=calc4(this,data,len,pos,flags|CPP_REALLY_NO_OUTPUT);
-      }else{
-	pop_stack();
-	pos=calc4(this,data,len,pos,flags);
-      }
-    } else
-      pos=calc4(this,data,len,pos,flags);
-  }
-  return pos;
-}
-
-static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-
-  CALC_DUMPPOS("before calc2");
-
-  pos=calc3(this,data,len,pos,flags);
-
-  SKIPWHITE();
-  while(GOBBLEOP2(lor_))
-  {
-    CALC_DUMPPOS("inside calc2");
-
-    if(OUTP()) {
-      check_destructed(Pike_sp-1);
-      if(!UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pos=calc3(this,data,len,pos,flags|CPP_REALLY_NO_OUTPUT);
-      }else{
-	pop_stack();
-	pos=calc3(this,data,len,pos,flags);
-      }
-    } else
-      pos=calc3(this,data,len,pos,flags);
-  }
-  return pos;
-}
-
-static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
-{
-  CALC_DUMPPOS("before calc1");
-
-  pos=calc2(this,data,len,pos,flags);
-
-  SKIPWHITE();
-
-  if(GOBBLE('?'))
-  {
-    int select = -1;
-    if(OUTP()) {
-      check_destructed(Pike_sp-1);
-      select = (UNSAFE_IS_ZERO(Pike_sp-1)?0:1);
-      pop_stack();
-    }
-    pos=calc1(this,data,len,pos,(select == 1? flags:(flags|CPP_REALLY_NO_OUTPUT)));
-    if(!GOBBLE(':'))
-      cpp_error(this, "Colon expected.");
-    pos=calc1(this,data,len,pos,(select == 0? flags:(flags|CPP_REALLY_NO_OUTPUT)));
-  }
-  return pos;
-}
-
-static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
-		      ptrdiff_t tmp, int flags)
-{
-  JMP_BUF recovery;
-  ptrdiff_t pos;
-
-  CALC_DUMPPOS("Calculating");
-
-  if (SETJMP(recovery))
-  {
-    cpp_handle_exception (this, "Error evaluating expression.");
-    pos=tmp;
-    FIND_EOL();
-    push_int(0);
-  }else{
-    pos=calc1(this,data,len,tmp,flags);
-    check_destructed(Pike_sp-1);
-  }
-  UNSETJMP(recovery);
-
-  CALC_DUMPPOS("Done");
-
-  return pos;
-}
-
+#define GOBBLE_IDENTIFIER() dmalloc_touch (struct pike_string *, gobble_identifier(this,MKPCHARP(data,SHIFT),&pos))
 
 static ptrdiff_t lower_cpp(struct cpp *this,
 			   WCHAR *data,
@@ -1672,22 +968,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	tmp.s->len--;
 
 	if (!nflags) {
-	  switch(tmp.s->size_shift) {
-	  case 0:
-	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-	  case 1:
-	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-	  case 2:
-	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-#ifdef PIKE_DEBUG
-	  default:
-	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
-	    break;
-#endif
-	  }
+	  calc(this,MKPCHARP_STR(tmp.s),tmp.s->len,0,0);
 	  if(SAFE_IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
 	  pop_stack();
 	}
@@ -1699,7 +980,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
 
       if(WGOBBLE2(ifdef_))
-	{
+      {
 	  INT32 nflags;
 	  struct pike_string *s;
 	  SKIPSPACE();
@@ -1720,7 +1001,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  pos += lower_cpp(this, data+pos, len-pos, nflags,
 			   auto_convert, charset);
 	  break;
-	}
+      }
 
       if(WGOBBLE2(ifndef_))
 	{
@@ -1795,22 +1076,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  string_builder_putchar(&tmp, 0);
 	  tmp.s->len--;
 	  
-	  switch(tmp.s->size_shift) {
-	  case 0:
-	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len,0,0);
-	    break;
-	  case 1:
-	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len,0,0);
-	    break;
-	  case 2:
-	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len,0,0);
-	    break;
-#ifdef PIKE_DEBUG
-	  default:
-	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
-	    break;
-#endif
-	  }
+	  calc(this,MKPCHARP_STR(tmp.s),tmp.s->len,0,0);
 	  free_string_builder(&tmp);
 	  if(!SAFE_IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
 	  pop_stack();
@@ -1928,7 +1194,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      if(data[pos]=='/')
 	      {
 		if (this->keep_comments) {
-		  KEEPLINE(&str);
+		  FIND_EOL_PRETEND();
+		  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT)
+		    ( &str, data + old_pos, pos-old_pos );
 		  continue;
 		}
 		string_builder_putchar(&str, ' ');
@@ -1939,7 +1207,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      if(data[pos]=='*')
 	      {
 		if (this->keep_comments) {
-		  KEEPCOMMENT(&str);
+		  SKIPCOMMENT_INC_LINES();
+		  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT)
+		    ( &str, data + old_pos, pos-old_pos );
 		  continue;
 		}
 		PUTC(' ');
@@ -2258,22 +1528,7 @@ concat_identifier:
           string_builder_putchar(&tmp, 0);
           tmp.s->len--;
 
-          switch(tmp.s->size_shift) {
-	  case 0:
-	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-	  case 1:
-	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-	  case 2:
-	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0, 0);
-	    break;
-#ifdef PIKE_DEBUG
-	  default:
-	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
-	    break;
-#endif
-	  }
+	  calc(this,MKPCHARP_STR(tmp.s),tmp.s->len,0,0);
           if(SAFE_IS_ZERO(Pike_sp-1)) this->dependencies_fail=1;
           pop_stack();
           free_string_builder(&tmp);
@@ -2343,18 +1598,3 @@ ADD_TO_BUFFER:
 #undef MAKE_BINARY_STRING
 
 #undef lower_cpp
-
-#undef calc
-#undef calc1
-#undef calc2
-#undef calc3
-#undef calc4
-#undef calc5
-#undef calc6
-#undef calc7
-#undef calc7b
-#undef calc8
-#undef calc9
-#undef calcA
-#undef calcB
-#undef calcC
