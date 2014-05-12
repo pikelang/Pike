@@ -722,6 +722,7 @@ class TBSCertificate
     {
       o = o[0];
       string id = .PKCS.Identifiers.reverse_name_ids[o[0]] ||
+        .PKCS.Identifiers.reverse_attribute_ids[o[0]] ||
       (array(string))o[0]->id*".";
 
       i += ({ ([ id : o[1]->value]) });
