@@ -54,8 +54,12 @@ static int lock_depth = 0;
 
 PMOD_EXPORT void lock_pike_compiler(void)
 {
-  while (lock_depth && (Pike_compiler_thread != th_self())) {
-    co_wait_interpreter(&Pike_compiler_cond);
+  if (lock_depth && (Pike_compiler_thread != th_self())) {
+    SWAP_OUT_CURRENT_THREAD();
+    while (lock_depth && (Pike_compiler_thread != th_self())) {
+      co_wait_interpreter(&Pike_compiler_cond);
+    }
+    SWAP_IN_CURRENT_THREAD();
   }
   lock_depth++;
   Pike_compiler_thread = th_self();
