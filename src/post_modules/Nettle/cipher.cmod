@@ -3516,7 +3516,7 @@ PIKECLASS CHACHA
       if (iv->len != CHACHA_NONCE_SIZE)
         Pike_error("CHACHA IV needs to be %d bytes.\n", CHACHA_NONCE_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
-      chacha_set_nonce(&THIS->chacha, STR0(iv->str));
+      chacha_set_nonce(&THIS->chacha, STR0(iv));
       push_object(this_object());
     }
 
