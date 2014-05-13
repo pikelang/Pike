@@ -54,16 +54,12 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 }
 
 //! Get an initialized ECDSA object from an ECC curve and
-//! an ASN.1 DER encoded ec private key.
+//! an ASN.1 ec private key sequence.
 //!
 //! As specified in RFC 5915 section 3.
-Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
+Crypto.ECC.SECP_521R1.ECDSA parse_private_key(Sequence a,
 					      Crypto.ECC.Curve|void c)
 {
-  Object o =
-    Standards.ASN1.Decode.simple_der_decode(ec_private_key);
-  if (!o || o->type_name != "SEQUENCE") return UNDEFINED;
-  Sequence a = [object(Sequence)]o;
   if ((sizeof(a->elements) < 2) ||
       (a->elements[0]->type_name != "INTEGER") ||
       (a->elements[0]->value != 1) ||
@@ -85,4 +81,17 @@ Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
   Crypto.ECC.SECP_521R1.ECDSA res = c->ECDSA();
   res->set_private_key(Gmp.mpz([string(8bit)]a->elements[1]->value, 256));
   return res;
+}
+
+//! Get an initialized ECDSA object from an ECC curve and
+//! an ASN.1 DER encoded ec private key.
+//!
+//! As specified in RFC 5915 section 3.
+variant Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
+						      Crypto.ECC.Curve|void c)
+{
+  Object o =
+    Standards.ASN1.Decode.simple_der_decode(ec_private_key);
+  if (!o || o->type_name != "SEQUENCE") return UNDEFINED;
+  return parse_private_key([object(Sequence)]o, c);
 }

@@ -1718,3 +1718,31 @@ mapping verify_certificate_chain(array(string) cert_chain,
 #undef ERROR
 #undef FATAL
 }
+
+//! DWIM-parse the ASN.1-sequence for a private key.
+Crypto.Sign parse_private_key(Sequence seq)
+{
+  switch(sizeof(seq)) {
+  case 5:
+    return Standards.PKCS.DSA.parse_private_key(seq);
+  case 9:
+    return Standards.PKCS.RSA.parse_private_key(seq);
+#if constant(Nettle.ECC_Curve)
+  case 2:
+    // ECDSA, implicit curve. Not supported yet.
+    return UNDEFINED;
+  case 3:
+  case 4:
+    return Standards.PKCS.ECDSA.parse_private_key(seq);
+#endif
+  }
+  return UNDEFINED;
+}
+
+//! DWIM-parse the DER-sequence for a private key.
+variant Crypto.Sign parse_private_key(string private_key)
+{
+  Object seq = Standards.ASN1.Decode.simple_der_decode(private_key);
+  if (!seq || (seq->type_name != "SEQUENCE")) return UNDEFINED;
+  return parse_private_key([object(Sequence)]seq);
+}
