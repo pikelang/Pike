@@ -32,7 +32,8 @@ struct hash_table
 };
 
 /* Prototypes begin here */
-struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s);
+struct hash_entry *hash_lookup(const struct hash_table *h,
+                               const struct pike_string *s);
 struct hash_table *create_hash_table(void);
 struct hash_table *hash_rehash(struct hash_table *h,int size);
 struct hash_table *hash_insert(struct hash_table *h, struct hash_entry *s);

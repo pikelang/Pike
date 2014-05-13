@@ -10,7 +10,7 @@
 #include "stuff.h"
 #include "pike_error.h"
 
-static size_t gobble(struct pike_string *s)
+static size_t gobble(const struct pike_string *s)
 {
   size_t i;
   i=my_hash_string(s);
@@ -23,7 +23,8 @@ static size_t gobble(struct pike_string *s)
 /*
  * Search hash for a specific string.
  */
-struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s)
+struct hash_entry *hash_lookup(const struct hash_table *h,
+                               const struct pike_string *s)
 {
   struct hash_entry *e, **prev, **base;
 
