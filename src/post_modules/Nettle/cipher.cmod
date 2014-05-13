@@ -67,17 +67,16 @@ static struct pike_string *nul16_string = NULL;
 static void pike_crypt_func(void *object, pike_nettle_size_t length,
 			    uint8_t *dst, const uint8_t *src)
 {
-  int args;
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
-  args = safe_apply(object, "crypt", 1);
-  get_all_args("crypt", args, "%n", &str);
+  apply(object, "crypt", 1);
+  get_all_args("crypt", 1, "%n", &str);
   if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
 	       DO_NOT_WARN((long)str->len));
   }
   MEMCPY(dst, str->str, length);
-  pop_n_elems(args);
+  pop_stack();
 }
 
 /* Calls Pike_error on errors */ 
@@ -160,12 +159,12 @@ PIKECLASS Cipher
     push_text(THIS->meta->name);
   }
 
-  /*! @decl int(0..) key_size()
+  /*! @decl int(1..) key_size()
    *!
    *! @returns
    *!   The recommended key size for the cipher.
    */
-  PIKEFUN int(0..) key_size()
+  PIKEFUN int(1..) key_size()
     optflags OPT_TRY_OPTIMIZE;
   {
     if (!THIS->meta)
@@ -174,12 +173,12 @@ PIKECLASS Cipher
     push_int(THIS->meta->key_size);
   }
   
-  /*! @decl int(0..) block_size()
+  /*! @decl int(1..) block_size()
    *!
    *! @returns
    *!   The block size of the cipher (1 for stream ciphers).
    */
-  PIKEFUN int(0..) block_size()
+  PIKEFUN int(1..) block_size()
     optflags OPT_TRY_OPTIMIZE;
   {
     if (!THIS->meta)
@@ -234,7 +233,7 @@ PIKECLASS Cipher
     static void low_make_key(INT32 size)
     {
       push_text("Crypto.Random");
-      SAFE_APPLY_MASTER("resolv",1);
+      APPLY_MASTER("resolv",1);
       if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Failed to resolv Crypto.Random.\n");
       push_int(size);
@@ -382,18 +381,18 @@ PIKECLASS Cipher
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
     }
 
-    /*! @decl int(0..) key_size(void)
+    /*! @decl int(1..) key_size(void)
      *!
      *! @returns
      *!   The actual key size for this cipher.
      */
-    PIKEFUN int(0..) key_size()
+    PIKEFUN int(1..) key_size()
       optflags OPT_TRY_OPTIMIZE;
     {
       RETURN THIS->key_size;
     }
 
-    /*! @decl int(0..) block_size(void)
+    /*! @decl int(1..) block_size(void)
      *!
      *! @returns
      *!   The block size for this cipher.
@@ -402,7 +401,7 @@ PIKECLASS Cipher
      *!   The default implementation just calls @[Cipher::block_size()]
      *!   in the parent.
      */
-    PIKEFUN int(0..) block_size()
+    PIKEFUN int(1..) block_size()
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
@@ -494,7 +493,28 @@ PIKECLASS BufferedCipher
      */
     INHERIT "__builtin.Nettle.Cipher";
 
-    /* FIXME: Add proxy functions here */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".Buffer");
+      f_add(2);
+    }
+
+    PIKEFUN int(1..) block_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(0..) iv_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
 
     /*! @class State
      *! Acts as a buffer so that data can be fed to the cipher in blocks
@@ -599,7 +619,7 @@ PIKECLASS BufferedCipher
 	  Pike_error("State object has no crypt() function.\n");
 	}
 
-	safe_apply(o, "block_size", 0);
+	apply(o, "block_size", 0);
 
 	if(TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("block_size() didn't return an int.\n");
@@ -625,29 +645,39 @@ PIKECLASS BufferedCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	safe_apply(THIS->object, "name", 0);
+	apply(THIS->object, "name", 0);
 	push_constant_text(".Buffer");
 	f_add(2);
       }
 
-      /*! @decl int(0..) block_size()
+      /*! @decl int(1..) block_size()
        *!
        *! Get the block size of the contained block crypto.
        */
-      PIKEFUN int(0..) block_size()
+      PIKEFUN int(1..) block_size()
 	optflags OPT_TRY_OPTIMIZE;
       {
 	RETURN THIS->block_size;
       }
 
-      /*! @decl int(0..) key_size()
+      /*! @decl int(1..) key_size()
        *!
        *! Get the key size of the contained block crypto.
        */
-      PIKEFUN int(0..) key_size()
+      PIKEFUN int(1..) key_size()
 	optflags OPT_EXTERNAL_DEPEND;
       {
-	safe_apply(THIS->object, "key_size", args);
+	apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl int(0..) iv_size()
+       *!
+       *! Get the iv size of the contained block crypto.
+       */
+      PIKEFUN int(0..) iv_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+	apply(THIS->object, "iv_size", args);
       }
 
       /*! @decl this_program set_encrypt_key(string(0..255) key, @
@@ -664,7 +694,7 @@ PIKECLASS BufferedCipher
       {
 	THIS->backlog_len = 0;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 	push_object(this_object());
       }
@@ -683,7 +713,7 @@ PIKECLASS BufferedCipher
       {
 	THIS->backlog_len = 0;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_decrypt_key", args);
+	apply(THIS->object, "set_decrypt_key", args);
 	pop_stack();
 	push_object(this_object());
       }
@@ -712,7 +742,7 @@ PIKECLASS BufferedCipher
 	    THIS->backlog_len = 0;
 	    push_string(make_shared_binary_string((char *)THIS->backlog,
 						  THIS->block_size));
-	    safe_apply(THIS->object, "crypt", 1);
+	    apply(THIS->object, "crypt", 1);
 	    if (TYPEOF(Pike_sp[-1]) != T_STRING)
 	      Pike_error("crypt() did not return string\n");
 	    if (Pike_sp[-1].u.string->len != THIS->block_size)
@@ -736,7 +766,7 @@ PIKECLASS BufferedCipher
 	  push_string( string_slice( data, soffset, len ) );
 	  soffset += len;
 
-	  safe_apply(THIS->object, "crypt", 1);
+	  apply(THIS->object, "crypt", 1);
 
 	  if (TYPEOF(Pike_sp[-1]) != T_STRING)
 	    Pike_error("crypt() did not return string.\n");
@@ -856,7 +886,7 @@ PIKECLASS BufferedCipher
 
 	THIS->backlog_len = 0;
 
-	safe_apply(THIS->object, "crypt", 1);
+	apply(THIS->object, "crypt", 1);
       }
 
       /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
@@ -1159,7 +1189,7 @@ PIKECLASS BlockCipher
 	  Pike_error("State object has no crypt() function.\n");
 	}
 
-	safe_apply(o, "block_size", 0);
+	apply(o, "block_size", 0);
 
 	if(TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("block_size() didn't return an int.\n");
@@ -1205,27 +1235,36 @@ PIKECLASS BlockCipher
 	optflags OPT_TRY_OPTIMIZE;
       {
 	push_constant_text("CBC(");
-	safe_apply(THIS->object, "name", 0);
+	apply(THIS->object, "name", 0);
 	push_constant_text(")");
 	f_add(3);
       }
 
-      /*! @decl int(0..) block_size()
+      /*! @decl int(1..) block_size()
        *! Returns the block size of the encapsulated cipher.
        */
-      PIKEFUN int(0..) block_size()
+      PIKEFUN int(1..) block_size()
 	optflags OPT_TRY_OPTIMIZE;
       {
 	RETURN THIS->block_size;
       }
 
-      /*! @decl int(0..) key_size()
+      /*! @decl int(1..) key_size()
        *! Returns the key size of the encapsulated cipher.
        */
-      PIKEFUN int(0..) key_size()
+      PIKEFUN int(1..) key_size()
 	optflags OPT_EXTERNAL_DEPEND;
       {
-	safe_apply(THIS->object, "key_size", args);
+	apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl int(1..) iv_size()
+       *! Returns the size for the initialization vector
+       */
+      PIKEFUN int(1..) iv_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN THIS->block_size;
       }
 
       /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
@@ -1239,7 +1278,7 @@ PIKECLASS BlockCipher
 	assert(THIS->block_size);
 	THIS->mode = 0;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 	push_object(this_object());
       }
@@ -1255,7 +1294,7 @@ PIKECLASS BlockCipher
 	assert(THIS->block_size);
 	THIS->mode = 1;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_decrypt_key", args);
+	apply(THIS->object, "set_decrypt_key", args);
 	pop_stack();
 	push_object(this_object());
       }
@@ -1552,7 +1591,7 @@ PIKECLASS BlockCipher
 	  Pike_error("State object has no crypt() function.\n");
 	}
 
-	safe_apply(o, "block_size", 0);
+	apply(o, "block_size", 0);
 
 	if(TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("block_size() didn't return an int.\n");
@@ -1595,7 +1634,7 @@ PIKECLASS BlockCipher
 	optflags OPT_TRY_OPTIMIZE;
       {
 	push_constant_text("CTR(");
-	safe_apply(THIS->object, "name", 0);
+	apply(THIS->object, "name", 0);
 	push_constant_text(")");
 	f_add(3);
       }
@@ -1618,13 +1657,13 @@ PIKECLASS BlockCipher
 	RETURN THIS->block_size;
       }
 
-      /*! @decl int(0..) key_size()
+      /*! @decl int(1..) key_size()
        *! Returns the key size of the encapsulated cipher.
        */
-      PIKEFUN int(0..) key_size()
+      PIKEFUN int(1..) key_size()
 	optflags OPT_EXTERNAL_DEPEND;
       {
-	safe_apply(THIS->object, "key_size", args);
+	apply(THIS->object, "key_size", args);
       }
 
       /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
@@ -1646,7 +1685,7 @@ PIKECLASS BlockCipher
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 
 	push_object(this_object());
@@ -1674,7 +1713,7 @@ PIKECLASS BlockCipher
 	/* NOTE: CTR always uses the encryption function
 	 *       of the underlying cipher!
 	 */
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 
 	push_object(this_object());
@@ -1909,7 +1948,7 @@ PIKECLASS BlockCipher16
       apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
     }
 
-    PIKEFUN int(0..) iv_size()
+    PIKEFUN int(1..) iv_size()
     {
       apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
     }
@@ -2011,7 +2050,7 @@ PIKECLASS BlockCipher16
 
       PIKEFUN string(8bit) name()
       {
-	safe_apply(THIS->ctr->object, "name", args);
+	apply(THIS->ctr->object, "name", args);
 	push_text(".CCM");
 	f_add(2);
       }
@@ -2592,7 +2631,7 @@ PIKECLASS BlockCipher16
 	  Pike_error("State object has no crypt() function.\n");
 	}
 
-	safe_apply(o, "block_size", 0);
+	apply(o, "block_size", 0);
 
 	if (TYPEOF(Pike_sp[-1]) != T_INT)
 	  Pike_error("block_size() didn't return an int.\n");
@@ -2625,7 +2664,7 @@ PIKECLASS BlockCipher16
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	safe_apply(THIS->object, "name", 0);
+	apply(THIS->object, "name", 0);
 	push_constant_text(".GCM");
 	f_add(2);
       }
@@ -2663,13 +2702,13 @@ PIKECLASS BlockCipher16
 	RETURN GCM_IV_SIZE;
       }
 
-      /*! @decl int(0..) key_size()
+      /*! @decl int(1..) key_size()
        *! Returns the key size of the encapsulated cipher.
        */
-      PIKEFUN int(0..) key_size()
+      PIKEFUN int(1..) key_size()
 	optflags OPT_EXTERNAL_DEPEND;
       {
-	safe_apply(THIS->object, "key_size", args);
+	apply(THIS->object, "key_size", args);
       }
 
       /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
@@ -2691,7 +2730,7 @@ PIKECLASS BlockCipher16
 	crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 
 	if (THIS->crypt_state && THIS->crypt_state->crypt) {
@@ -2726,7 +2765,7 @@ PIKECLASS BlockCipher16
 	/* NOTE: GCM always uses the encryption function
 	 *       of the underlying cipher!
 	 */
-	safe_apply(THIS->object, "set_encrypt_key", args);
+	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
 
 	if (THIS->crypt_state && THIS->crypt_state->crypt) {

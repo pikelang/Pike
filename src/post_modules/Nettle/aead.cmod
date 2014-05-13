@@ -229,7 +229,7 @@ PIKECLASS AEAD
     static void low_make_key(INT32 size)
     {
       push_text("Crypto.Random");
-      SAFE_APPLY_MASTER("resolv",1);
+      APPLY_MASTER("resolv",1);
       if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Failed to resolv Crypto.Random.\n");
       push_int(size);
