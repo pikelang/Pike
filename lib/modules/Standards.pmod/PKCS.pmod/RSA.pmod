@@ -61,10 +61,28 @@ Crypto.RSA parse_public_key(string key)
       || (a->type_name != "SEQUENCE")
       || (sizeof(a->elements) != 2)
       || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
-    return 0;
+    return UNDEFINED;
 
   Crypto.RSA rsa = Crypto.RSA();
   rsa->set_public_key(a->elements[0]->value, a->elements[1]->value);
+  return rsa;
+}
+
+//! Decode a RSAPrivateKey structure
+//! @param key
+//!   RSAPrivateKey provided in ASN.1 format
+//! @returns
+//!   @[Crypto.RSA] object
+Crypto.RSA parse_private_key(Sequence seq)
+{
+  if ((sizeof(seq->elements) != 9)
+      || (sizeof(seq->elements->type_name - ({ "INTEGER" })))
+      || seq->elements[0]->value)
+    return UNDEFINED;
+  
+  Crypto.RSA rsa = Crypto.RSA();
+  rsa->set_public_key(seq->elements[1]->value, seq->elements[2]->value);
+  rsa->set_private_key(seq->elements[3]->value, seq->elements[4..]->value);
   return rsa;
 }
 
@@ -73,21 +91,13 @@ Crypto.RSA parse_public_key(string key)
 //!   RSAPrivateKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
-Crypto.RSA parse_private_key(string key)
+variant Crypto.RSA parse_private_key(string key)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
-  
-  if (!a
-      || (a->type_name != "SEQUENCE")
-      || (sizeof(a->elements) != 9)
-      || (sizeof(a->elements->type_name - ({ "INTEGER" })))
-      || a->elements[0]->value)
-    return 0;
-  
-  Crypto.RSA rsa = Crypto.RSA();
-  rsa->set_public_key(a->elements[1]->value, a->elements[2]->value);
-  rsa->set_private_key(a->elements[3]->value, a->elements[4..]->value);
-  return rsa;
+
+  if (!a || (a->type_name != "SEQUENCE"))
+    return UNDEFINED;
+  return parse_private_key([object(Sequence)]a);
 }
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[rsa]

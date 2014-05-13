@@ -61,21 +61,28 @@ Crypto.DSA parse_public_key(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
 }
 
 //!
-Crypto.DSA parse_private_key(string key)
+Crypto.DSA parse_private_key(Sequence seq)
+{
+  if ((sizeof(seq->elements) != 5)
+      || (sizeof(seq->elements->type_name - ({ "INTEGER" }))) )
+    return UNDEFINED;
+
+  Crypto.DSA dsa = Crypto.DSA();
+  dsa->set_public_key(@ seq->elements[..3]->value);
+  dsa->set_private_key(seq->elements[4]->value);
+
+  return dsa;
+}
+
+//!
+variant Crypto.DSA parse_private_key(string key)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
 
-  if (!a
-      || (a->type_name != "SEQUENCE")
-      || (sizeof(a->elements) != 5)
-      || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
-    return 0;
-
-  Crypto.DSA dsa = Crypto.DSA();
-  dsa->set_public_key(@ a->elements[..3]->value);
-  dsa->set_private_key(a->elements[4]->value);
-
-  return dsa;
+  if (!a || (a->type_name != "SEQUENCE")) {
+    return UNDEFINED;
+  }
+  return parse_private_key([object(Sequence)]a);
 }
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[dsa]
