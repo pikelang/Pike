@@ -1382,7 +1382,7 @@ static ptrdiff_t find_end_parenthesis(struct cpp *this,
 
 
 static ptrdiff_t find_end_brace(struct cpp *this,
-				PCHARP data,
+				const PCHARP data,
 				ptrdiff_t len,
 				ptrdiff_t pos)
 /* pos is after the open brace. Returns the position after the close brace. */
@@ -1425,7 +1425,7 @@ static inline int wide_isidchar( int c ) {
   return WIDE_ISIDCHAR(c);
 }
 
-static struct pike_string *gobble_identifier (struct cpp *this, PCHARP data, ptrdiff_t *pos)
+static struct pike_string *gobble_identifier (struct cpp *this, const PCHARP data, ptrdiff_t *pos)
 {
   ptrdiff_t p = *pos;
   struct string_builder sb;
@@ -1553,7 +1553,7 @@ static struct define *alloc_empty_define(struct pike_string *name,
  *!   @[#define], @[defined()]
  */
 static void undefine(struct cpp *this,
-		     struct pike_string *name)
+		     const struct pike_string *name)
 {
   INT32 e;
   struct define *d;
@@ -1604,7 +1604,7 @@ static void undefine(struct cpp *this,
  */
 
 static struct define *do_magic_define(struct cpp *this,
-				      char *name,
+				      const char *name,
 				      magic_define_fun fun)
 {
   struct define* def;
@@ -1639,8 +1639,8 @@ static void add_define(struct cpp *this,
 }
 
 static void simple_add_define(struct cpp *this,
-			    char *name,
-			    char *what)
+                              const char *name,
+                              const char *what)
 {
   struct define* def;
 
@@ -1999,7 +1999,7 @@ static void free_one_define(struct hash_entry *h)
   ((begins_with(X,ADD_PCHARP(data,pos),sizeof(X),len-pos,0)) ? (pos += NELEM(X)),1 : 0)
 
 
-static void add_quoted_string( void *str, ptrdiff_t len, int shift,
+static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
 			       struct string_builder *dst )
 {
   struct pike_string *x = make_shared_binary_pcharp( MKPCHARP(str,shift), len );
@@ -2009,7 +2009,7 @@ static void add_quoted_string( void *str, ptrdiff_t len, int shift,
   free_string(x);
 }
 
-static ptrdiff_t find_eos( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff_t pos )
+static ptrdiff_t find_eos( struct cpp *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos )
 {
     while(pos < len)
     {
@@ -2043,7 +2043,7 @@ static ptrdiff_t find_eos( struct cpp *this, PCHARP data, ptrdiff_t len, ptrdiff
     return pos;
 }
 
-static ptrdiff_t skipwhite(struct cpp *this, PCHARP data, ptrdiff_t pos)
+static ptrdiff_t skipwhite(struct cpp *this, const PCHARP data, ptrdiff_t pos)
 {
   do 
   {
@@ -2077,7 +2077,7 @@ static ptrdiff_t skipwhite(struct cpp *this, PCHARP data, ptrdiff_t pos)
   return pos;
 }
 
-static ptrdiff_t skipspace(struct cpp *this, PCHARP data, ptrdiff_t pos, int emit)
+static ptrdiff_t skipspace(struct cpp *this, const PCHARP data, ptrdiff_t pos, int emit)
 {
   do {
     int c;
@@ -2135,7 +2135,7 @@ static const char warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
 static const char lsh_[] = { '<', '<' };
 static const char rsh_[] = { '>', '>' };
 
-static int begins_with( const char *prefix, PCHARP stack, int len, int remain, int whole )
+static int begins_with( const char *prefix, const PCHARP stack, int len, int remain, int whole )
 {
   int i;
   if( len > remain )
