@@ -719,7 +719,7 @@ Stdio.File shutdown()
 	RETURN (stream);
       default:
 	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
-	if (stream->linger) stream->linger(0);
+	// if (stream->linger) stream->linger(0);
 	stream->close();
 	RETURN (0);
     }
