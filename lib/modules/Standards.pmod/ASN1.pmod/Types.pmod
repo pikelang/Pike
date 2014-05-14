@@ -1182,20 +1182,30 @@ class VisibleString {
   constant type_name = "VisibleString";
 }
 
+//! UTCTime
 //!
+//! RFC 2459 4.1.2.5.1
 class UTC
 {
   inherit String;
   constant tag = 23;
   constant type_name = "UTCTime";
 
+  //!
   this_program set_posix(int t)
   {
     object second = Calendar.ISO_UTC.Second(t);
 
-    // FIXME: What is this based on?
+    // RFC 2459 4.1.2.5.1:
+    //
+    // Where YY is greater than or equal to 50, the year shall be
+    // interpreted as 19YY; and
+    //
+    // Where YY is less than 50, the year shall be interpreted as 20YY.
     if (second->year_no() >= 2050)
       error( "Times later than 2049 not supported.\n" );
+    if (second->year_no() < 1950)
+      error( "Times earlier than 1950 not supported.\n" );
 
     value = sprintf("%02d%02d%02d%02d%02d%02dZ",
                     [int]second->year_no() % 100,
@@ -1207,6 +1217,7 @@ class UTC
     return this;
   }
 
+  //!
   int get_posix()
   {
     if( !value || sizeof(value)!=13 ) error("Data not UTC date string.\n");
