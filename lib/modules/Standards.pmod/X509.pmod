@@ -283,7 +283,7 @@ protected mapping(int:program(Object)) x509_types = ([
 //!
 //! @note
 //!   Was not compatible with @[Standards.ASN1.Types.Sequence]
-//!   Prior to Pike 8.0.
+//!   prior to Pike 8.0.
 class TBSCertificate
 {
   inherit Sequence;
@@ -910,7 +910,7 @@ class TBSCertificate
   int(0..1) ext_basicConstraints_cA;
 
   //! The maximum number of certificates that may follow this
-  //! certificate in a certificate chain. @exp{0@} in case no limit is
+  //! certificate in a certificate chain. @expr{0@} in case no limit is
   //! imposed. Note that this variable is off by one compared to the
   //! RFC 3280 definition, which only counts intermediate certificates
   //! (i.e. 0 intermediates means this variable would be 1, as in one

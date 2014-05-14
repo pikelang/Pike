@@ -6,6 +6,11 @@
 
 import Standards.ASN1.Types;
 
+// NOTE: RFC 2314 6.1 says that the tag is IMPLICIT, and
+//       RFC 2986 4.1 says that the tag is EXPLICIT!
+//
+// OpenSSL seems to use IMPLICIT tagging,
+// so this is probably correct.
 //!
 class CRIAttributes
 {
