@@ -111,7 +111,7 @@ Packet server_hello_packet()
     return ADT.struct()->put_var_string_array( ({next_protocol}), 1, 2);
   };
 
-  if (alert) return alert;
+  if (fail) return fail;
 
   if (sizeof(extensions))
       struct->put_var_string(extensions->pop_data(), 2);
