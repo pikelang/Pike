@@ -178,7 +178,7 @@ protected void close_connection()
 }
 
 #if constant(SSL.Cipher)
-SSL.context context;
+SSL.Context context;
 #endif
 
 void start_tls(int|void blocking, int|void async)
@@ -187,7 +187,7 @@ void start_tls(int|void blocking, int|void async)
 #if constant(SSL.Cipher)
   if( !context )
   {
-    context = SSL.context();
+    context = SSL.Context();
   }
 
   if(real_host)

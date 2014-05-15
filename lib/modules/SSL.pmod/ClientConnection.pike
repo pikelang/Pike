@@ -15,6 +15,7 @@ inherit .Connection;
 
 #define Packet .Packet
 #define State .State
+#define Context .Context
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
@@ -194,7 +195,7 @@ Packet certificate_verify_packet()
   ADT.struct struct = ADT.struct();
 
   // FIXME: This temporary context is probably not needed.
-  .context cx = .context();
+  Context cx = Context();
   cx->private_key = context->private_key;
 
   session->cipher_spec->sign(cx, handshake_messages, struct);
@@ -204,7 +205,7 @@ Packet certificate_verify_packet()
 }
 #endif
 
-protected void create(.context ctx)
+protected void create(Context ctx)
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;

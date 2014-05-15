@@ -242,7 +242,7 @@ test_do([[
 
 test_do([[
   class TestContext {
-    inherit SSL.context;
+    inherit SSL.Context;
 
     int(0..1) expect_fail;
     SSL.Alert alert_factory(SSL.Connection con,
@@ -260,7 +260,7 @@ test_do([[
     }
   };
   add_constant("TestContext", TestContext);
-  SSL.context ctx = TestContext();
+  SSL.Context ctx = TestContext();
   ctx->random = random_string;
   add_constant("server_ctx", ctx);
 ]])
@@ -402,7 +402,7 @@ test_do([[
 
 test_do([[
   import SSL.Constants;
-  string f(SSL.context server_ctx, SSL.context client_ctx,
+  string f(SSL.Context server_ctx, SSL.Context client_ctx,
            string expected_data, int expected_suite)
   {
     Stdio.File client_con = Stdio.File();
@@ -576,7 +576,7 @@ test_do([[
     }
 
     // A client that supports just a single cipher suite.
-    SSL.context client_ctx = TestContext();
+    SSL.Context client_ctx = TestContext();
     client_ctx->random = random_string;
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
@@ -745,7 +745,7 @@ test_ssl(0x303,0x303,0x303,0x303,client_msg)
 
 test_tests([[
 object make_context(Crypto.ECC.Curve curve) {
-  SSL.context ctx = TestContext();
+  SSL.Context ctx = TestContext();
   ctx->random = random_string;
   Crypto.Sign ecdsa =
     curve->ECDSA()->set_random(random_string)->generate_key();
@@ -800,7 +800,7 @@ define(test_suite_b, [[
       server_ctx->configure_suite_b($5, $6);
       server_ctx->max_version = $4;
 
-      SSL.context client_ctx = TestContext();
+      SSL.Context client_ctx = TestContext();
       client_ctx->random = random_string;
       client_ctx->configure_suite_b($2, $3);
       client_ctx->max_version = $1;

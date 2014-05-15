@@ -28,6 +28,7 @@
 import .Constants;
 #define State .State
 #define Session .Session
+#define Context .Context
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -36,7 +37,7 @@ import .Constants;
 #endif /* SSL3_DEBUG */
 
 Session session;
-.context context;
+Context context;
 
 State pending_read_state;
 State pending_write_state;
@@ -284,7 +285,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw);
 //!
 //! @param ctx
 //!   The context for the connection.
-protected void create(SSL.context ctx)
+protected void create(Context ctx)
 {
   current_read_state = State(this);
   current_write_state = State(this);

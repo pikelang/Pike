@@ -455,7 +455,7 @@ protected THREAD_T op_thread;
     }									\
   } while (0)
 
-protected void create (Stdio.File stream, SSL.context ctx,
+protected void create (Stdio.File stream, SSL.Context ctx,
 		       int|void is_client, int|void is_blocking)
 //! Create an SSL connection over an open @[stream].
 //!
@@ -1581,7 +1581,7 @@ Stdio.File query_stream()
   return conn;
 }
 
-SSL.context query_context()
+SSL.Context query_context()
 //! Return the SSL context object.
 {
   return conn && conn->context;

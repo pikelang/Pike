@@ -15,6 +15,7 @@ inherit .Connection;
 
 #define Packet .Packet
 #define State .State
+#define Context .Context
 
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
@@ -126,7 +127,7 @@ Packet server_key_exchange_packet()
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
-Packet certificate_request_packet(SSL.context context)
+Packet certificate_request_packet(Context context)
 {
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
@@ -233,7 +234,7 @@ string(0..255) server_derive_master_secret(string(0..255) data)
   return 0;
 }
 
-protected void create(.context ctx)
+protected void create(Context ctx)
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
