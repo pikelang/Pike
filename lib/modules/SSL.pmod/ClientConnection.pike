@@ -174,7 +174,7 @@ Packet client_key_exchange_packet()
   string data =
     ke->client_key_exchange_packet(client_random, server_random, version);
   if (!data) {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Invalid KEX.\n"));
     return 0;
   }
@@ -241,7 +241,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
   case STATE_wait_for_hello:
     if(type != HANDSHAKE_server_hello)
     {
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected server hello.\n"));
       return -1;
     }
@@ -266,7 +266,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
 	version = client_version;
-	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			  "Server selected bad suite.\n"));
 	return -1;
       }
@@ -276,7 +276,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
 		       fmt_version(version));
 	version = client_version;
-	send_packet(Alert(ALERT_fatal, ALERT_protocol_version,
+	send_packet(alert(ALERT_fatal, ALERT_protocol_version,
 			  "Unsupported version.\n"));
 	return -1;
       }
@@ -296,7 +296,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				     512)) {
 	// Unsupported or obsolete cipher suite selected.
 	SSL3_DEBUG_MSG("Unsupported or obsolete cipher suite selected.\n");
-	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			  "Unsupported or obsolete cipher suite.\n"));
 	return -1;
       }
@@ -342,7 +342,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      // already indicated it does not support secure
 	      // renegotiation, the only way that this can happen is if
 	      // the server is broken or there is an attack.)
-	      send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	      send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 				"Invalid renegotiation data.\n"));
 	      return -1;
 	    }
@@ -375,7 +375,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 		// Upon reception of an unknown mode, an error Alert
 		// message using illegal_parameter as its
 		// AlertDescription MUST be sent in response.
-		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid heartbeat extension.\n"));
 	      }
 	      SSL3_DEBUG_MSG("heartbeat extension: %s\n",
@@ -390,7 +390,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    // that it did not request in the associated ClientHello, it
 	    // MUST abort the handshake with an unsupported_extension
 	    // fatal alert.
-	    send_packet(Alert(ALERT_fatal, ALERT_unsupported_extension,
+	    send_packet(alert(ALERT_fatal, ALERT_unsupported_extension,
 			      "Unrequested extension.\n"));
 	    return -1;
 	  }
@@ -401,7 +401,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	// When a ServerHello is received, the client MUST verify that the
 	// "renegotiation_info" extension is present; if it is not, the
 	// client MUST abort the handshake.
-	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			  "Missing secure renegotiation extension.\n"));
 	return -1;
       }
@@ -416,7 +416,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Unexpected server message.\n"));
       return -1;
     case HANDSHAKE_certificate:
@@ -437,7 +437,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       if(!verify_certificate_chain(certs))
       {
         werror("Unable to verify peer certificate chain.\n");
-        send_packet(Alert(ALERT_fatal, ALERT_bad_certificate,
+        send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
 			  "Bad server certificate chain.\n"));
 	return -1;
       }
@@ -463,7 +463,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	{
 	  session->peer_certificate_chain = UNDEFINED;
           SSL3_DEBUG_MSG("Failed to decode certificate!\n");
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Failed to decode server certificate.\n"));
 	  return -1;
 	}
@@ -477,7 +477,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	if (ke) error("KE!\n");
 	ke = session->ke_factory(context, session, this, client_version);
 	if (ke->server_key_exchange(input, client_random, server_random) < 0) {
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Verification of ServerKeyExchange failed.\n"));
 	  return -1;
 	}
@@ -491,7 +491,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
         // request client authentication.
         if(ke->anonymous)
         {
-	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			    "Anonymous server requested authentication by "
 			    "certificate.\n"));
 	  return -1;
@@ -522,7 +522,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      Standards.ASN1.Decode.simple_der_decode(der);
 	    if(object_program(seq) != Standards.ASN1.Types.Sequence)
             {
-	      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 				"Badly formed Certificate Request.\n"));
             }
 	    client_cert_distinguished_names += ({ der });
@@ -581,7 +581,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
       if( !session->has_required_certificates() )
       {
         SSL3_DEBUG_MSG("Certificate message required from server.\n");
-        send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
                           "Certificate message missing.\n"));
         return -1;
       }
@@ -629,7 +629,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     {
       SSL3_DEBUG_MSG("Expected type HANDSHAKE_finished(%d), got %d\n",
 		     HANDSHAKE_finished, type);
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected handshake finished.\n"));
       return -1;
     } else {
@@ -646,7 +646,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       if (my_digest != server_verify_data) {
 	SSL3_DEBUG_MSG("Digests differ.\n");
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			  "Digests differ.\n"));
 	return -1;
       }
