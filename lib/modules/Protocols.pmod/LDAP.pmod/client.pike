@@ -672,7 +672,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
     if(!stringp(lauth->scheme) ||
        ((lauth->scheme != "ldap")
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 	&& (lauth->scheme != "ldaps")
 #endif
 	)) {
@@ -684,16 +684,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     if(!lauth->port)
       lauth += ([ "port" : lauth->scheme == "ldap" ? LDAP_DEFAULT_PORT : LDAPS_DEFAULT_PORT ]);
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
     if(lauth->scheme == "ldaps" && !context) {
       context = SSL.Context();
-      // Allow only strong crypto
-      context->preferred_suites = ({
-	SSL_rsa_with_idea_cbc_sha,
-	SSL_rsa_with_rc4_128_sha,
-	SSL_rsa_with_rc4_128_md5,
-	SSL_rsa_with_3des_ede_cbc_sha,
-      });
     }
 #endif
 
@@ -710,9 +703,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
       ERROR ("Failed to connect to LDAP server: %s\n", ldap_rem_errstr);
     }
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
     if(lauth->scheme == "ldaps") {
-      context->random = Crypto.Random.random_string;
       ::create(SSL.sslfile(low_fd, context, 1,1));
       info->tls_version = ldapfd->version;
     } else
@@ -767,7 +759,7 @@ void reset_options()
   private mixed send_starttls_op(object|void context) {
 
     object msgval;
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 
     // can we do this now?
     if(ldapfd->context) 
@@ -788,13 +780,6 @@ void reset_options()
       if(!context)
       {
         context = SSL.Context();
-        // Allow only strong crypto
-        context->preferred_suites = ({
-  	  SSL_rsa_with_idea_cbc_sha,
- 	  SSL_rsa_with_rc4_128_sha,
-	  SSL_rsa_with_rc4_128_md5,
-	  SSL_rsa_with_3des_ede_cbc_sha,
-        });
       }
     object _f = ldapfd;
     ldapfd=SSL.sslfile(_f, context, 1, 1);
@@ -813,7 +798,7 @@ void reset_options()
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
   //!
   int start_tls (void|SSL.Context context) {
-
+#if constant(SSL.Cipher)
     if(ldap_version < 3)
     {
       seterr (LDAP_PROTOCOL_ERROR);
@@ -824,6 +809,9 @@ void reset_options()
     return send_starttls_op(context||UNDEFINED);
 
     return 1;
+#else
+    return 0;
+#endif
   } // start_tls
 
    //! @decl int bind()
