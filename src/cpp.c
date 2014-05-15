@@ -3593,7 +3593,7 @@ void init_cpp()
 }
 
 
-void add_predefine(char *s)
+void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
   char * pos=STRCHR(s,'=');
