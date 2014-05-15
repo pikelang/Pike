@@ -342,7 +342,6 @@ final private object getsocket(void|int nossl)
     switch(lcon.read(1))
     { case "S":
 	SSL.Context context = SSL.Context();
-	context->random = Crypto.Random.random_string;
 	fcon=.pgsql_util.PGconnS(lcon, context);
 	if(fcon)
 	  return fcon;
