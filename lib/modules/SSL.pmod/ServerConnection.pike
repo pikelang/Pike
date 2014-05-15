@@ -14,6 +14,7 @@ import .Constants;
 inherit .Connection;
 
 #define Packet .Packet
+#define State .State
 
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
@@ -664,7 +665,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array(.state) res;
+	  array(State) res;
 	  mixed err;
           if( err = catch(res = session->new_server_states(this,
 							   client_random,
@@ -815,8 +816,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	return -1;
       } else {
 
-	// trace(1);
-	array(.state) res =
+	array(State) res =
 	  session->new_server_states(this, client_random, server_random,
 				     version);
 	pending_read_state = res[0];

@@ -14,6 +14,7 @@ import .Constants;
 inherit .Connection;
 
 #define Packet .Packet
+#define State .State
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
@@ -177,7 +178,7 @@ Packet client_key_exchange_packet()
     return 0;
   }
 
-  array(.state) res =
+  array(State) res =
     session->new_client_states(this, client_random, server_random, version);
   pending_read_state = res[0];
   pending_write_state = res[1];
