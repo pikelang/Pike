@@ -83,7 +83,7 @@ ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 //!   Not all alerts are fatal, and some (eg @[ALERT_close_notify]) are used
 //!   during normal operation.
 Alert alert_factory(object con,
-		     int(1..2) level, int(0..255) description,
+		     int(1..2) level, int(8bit) description,
                      ProtocolVersion version, string|void message)
 {
   return Alert(level, description, version, message);

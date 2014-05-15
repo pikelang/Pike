@@ -15,7 +15,7 @@ import Constants;
 inherit Connection;
 
 int has_application_layer_protocol_negotiation;
-string(0..255) next_protocol;
+string(8bit) next_protocol;
 multiset(int) remote_extensions = (<>);
 int reuse;
 
@@ -24,7 +24,7 @@ Packet hello_request()
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
-Packet finished_packet(string(0..255) sender)
+Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
   // We're the server.
@@ -133,7 +133,7 @@ Packet certificate_request_packet(Context context)
       // TLS 1.2 has var_uint_array of hash and sign pairs here.
       struct->put_var_string(get_signature_algorithms(), 2);
     }
-    struct->put_var_string([string(0..255)]
+    struct->put_var_string([string(8bit)]
 			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
@@ -221,12 +221,12 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   return 0;
 }
 
-string(0..255) server_derive_master_secret(string(0..255) data)
+string(8bit) server_derive_master_secret(string(8bit) data)
 {
-  string(0..255)|int(0..255) res =
+  string(8bit)|int(8bit) res =
     ke->server_derive_master_secret(data, client_random, server_random, version);
   if (stringp(res)) return [string]res;
-  send_packet(alert(ALERT_fatal, [int(0..255)]res,
+  send_packet(alert(ALERT_fatal, [int(8bit)]res,
 		    "Failed to derive master secret.\n"));
   return 0;
 }
@@ -244,7 +244,7 @@ protected void create(Context ctx)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
+int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 {
   ADT.struct input = ADT.struct(data);
 #ifdef SSL3_PROFILING
@@ -536,7 +536,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                 // preference order, it is the server preference that
                 // wins.
                 next_protocol = 0;
-                foreach(context->advertised_protocols;; string(0..255) prot)
+                foreach(context->advertised_protocols;; string(8bit) prot)
                   if( protocols[prot] )
                   {
                     next_protocol = prot;
@@ -721,8 +721,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
      }
     case HANDSHAKE_finished:
      {
-       string(0..255) my_digest;
-       string(0..255) digest;
+       string(8bit) my_digest;
+       string(8bit) digest;
 
        SSL3_DEBUG_MSG("SSL.handshake: FINISHED\n");
 

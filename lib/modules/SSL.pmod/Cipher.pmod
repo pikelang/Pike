@@ -95,7 +95,7 @@ class CipherSpec {
   //!
   //! @seealso
   //!   @[prf_ssl_3_0()], @[prf_tls_1_0()], @[prf_tls_1_2()]
-  function(string(0..255), string(0..255), string(0..255), int:string(0..255)) prf;
+  function(string(8bit), string(8bit), string(8bit), int:string(8bit)) prf;
 
   //! The hash algorithm for signing the handshake.
   //!
@@ -106,10 +106,10 @@ class CipherSpec {
   Crypto.Hash hash;
 
   //! The function used to sign packets.
-  function(object,string(0..255),ADT.struct:ADT.struct) sign;
+  function(object,string(8bit),ADT.struct:ADT.struct) sign;
 
   //! The function used to verify the signature for packets.
-  function(object,string(0..255),ADT.struct,ADT.struct:int(0..1)) verify;
+  function(object,string(8bit),ADT.struct,ADT.struct:int(0..1)) verify;
 }
 
 //! Class used for signing in TLS 1.2 and later.
@@ -251,9 +251,9 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @note
   //!   May set @[message_was_bad] and return a fake master secret.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version);
 
   //! @param input
@@ -331,10 +331,10 @@ class KeyExchangeNULL
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255) server_derive_master_secret(string(0..255) data,
-                                             string(0..255) client_random,
-                                             string(0..255) server_random,
-                                             ProtocolVersion version)
+  string(8bit) server_derive_master_secret(string(8bit) data,
+                                           string(8bit) client_random,
+                                           string(8bit) server_random,
+                                           ProtocolVersion version)
   {
     anonymous = 1;
     return "";
@@ -426,7 +426,7 @@ class KeyExchangeRSA
     data = (temp_key || session->peer_public_key)->encrypt(premaster_secret);
 
     if(version >= PROTOCOL_TLS_1_0)
-      data=sprintf("%2H", [string(0..255)]data);
+      data=sprintf("%2H", [string(8bit)]data);
 
     session->master_secret = derive_master_secret(premaster_secret,
 						  client_random,
@@ -437,9 +437,9 @@ class KeyExchangeRSA
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version)
   {
     string premaster_secret;
@@ -586,9 +586,9 @@ class KeyExchangeDH
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version)
   {
     string premaster_secret;
@@ -661,9 +661,9 @@ class KeyExchangeDHE
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
@@ -821,9 +821,9 @@ class KeyExchangeECDH
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
@@ -949,9 +949,9 @@ class KeyExchangeECDHE
 
   //! @returns
   //!   Master secret or alert number.
-  string(0..255)|int(0..255) server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
+  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
+						 string(8bit) client_random,
+						 string(8bit) server_random,
 						 ProtocolVersion version)
   {
     anonymous = 1;
@@ -1019,12 +1019,12 @@ class MACsha
 
   constant hash_header_size = 11;
 
-  string(0..255) hash_raw(string(0..255) data)
+  string(8bit) hash_raw(string(8bit) data)
   {
     return algorithm->hash(data);
   }
 
-  string(0..255) hash_packet(object packet, int seq_num)
+  string(8bit) hash_packet(object packet, int seq_num)
   {
     string s = sprintf("%8c%c%2c", seq_num,
 		       packet->content_type, sizeof(packet->fragment));
@@ -1036,7 +1036,7 @@ class MACsha
     return hash_raw(secret + pad_2 + h->digest());
   }
 
-  string(0..255) hash(string(0..255) data)
+  string(8bit) hash(string(8bit) data)
   {
     return hash_raw(secret + pad_2 +
 		hash_raw(data + secret + pad_1));
@@ -1144,9 +1144,9 @@ class MAChmac_sha512 {
 #endif
 
 //! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
-protected string(0..255) P_hash(Crypto.Hash hashfn,
-				string(0..255) secret,
-				string(0..255) seed, int len)
+protected string(8bit) P_hash(Crypto.Hash hashfn,
+                              string(8bit) secret,
+                              string(8bit) seed, int len)
 {
   Crypto.MAC.State hmac=hashfn->HMAC(secret);
   string temp=seed;
@@ -1164,10 +1164,10 @@ protected string(0..255) P_hash(Crypto.Hash hashfn,
 //!
 //! @note
 //!   The argument @[label] is ignored.
-string(0..255) prf_ssl_3_0(string(0..255) secret,
-			   string(0..255) label,
-			   string(0..255) seed,
-			   int len)
+string(8bit) prf_ssl_3_0(string(8bit) secret,
+                         string(8bit) label,
+                         string(8bit) seed,
+                         int len)
 {
   string res = "";
   for (int i = 1; sizeof(res) < len; i++) {
@@ -1180,10 +1180,10 @@ string(0..255) prf_ssl_3_0(string(0..255) secret,
 
 //! This Pseudo Random Function is used to derive secret keys
 //! in TLS 1.0 and 1.1.
-string(0..255) prf_tls_1_0(string(0..255) secret,
-			   string(0..255) label,
-			   string(0..255) seed,
-			   int len)
+string(8bit) prf_tls_1_0(string(8bit) secret,
+                         string(8bit) label,
+                         string(8bit) seed,
+                         int len)
 {
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
@@ -1195,10 +1195,10 @@ string(0..255) prf_tls_1_0(string(0..255) secret,
 }
 
 //! This Pseudo Random Function is used to derive secret keys in TLS 1.2.
-string(0..255) prf_tls_1_2(string(0..255) secret,
-			   string(0..255) label,
-			   string(0..255) seed,
-			   int len)
+string(8bit) prf_tls_1_2(string(8bit) secret,
+                         string(8bit) label,
+                         string(8bit) seed,
+                         int len)
 {
   return P_hash(Crypto.SHA256, secret, label + seed, len);
 }
@@ -1206,10 +1206,10 @@ string(0..255) prf_tls_1_2(string(0..255) secret,
 #if constant(Crypto.SHA384)
 //! This Pseudo Random Function is used to derive secret keys
 //! for some ciphers suites defined after TLS 1.2.
-string(0..255) prf_sha384(string(0..255) secret,
-			  string(0..255) label,
-			  string(0..255) seed,
-			  int len)
+string(8bit) prf_sha384(string(8bit) secret,
+                        string(8bit) label,
+                        string(8bit) seed,
+                        int len)
 {
   return P_hash(Crypto.SHA384, secret, label + seed, len);
 }
@@ -1218,10 +1218,10 @@ string(0..255) prf_sha384(string(0..255) secret,
 #if constant(Crypto.SHA512)
 //! This Pseudo Random Function could be used to derive secret keys
 //! for some ciphers suites defined after TLS 1.2.
-string(0..255) prf_sha512(string(0..255) secret,
-			  string(0..255) label,
-			  string(0..255) seed,
-			  int len)
+string(8bit) prf_sha512(string(8bit) secret,
+                        string(8bit) label,
+                        string(8bit) seed,
+                        int len)
 {
   return P_hash(Crypto.SHA512, secret, label + seed, len);
 }
