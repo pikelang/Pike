@@ -15,6 +15,7 @@
 
 import .Constants;
 protected constant Struct = ADT.struct;
+#define State .State
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -599,13 +600,13 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_server_states(.Connection con,
+array(State) new_server_states(.Connection con,
 				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
 {
-  .state write_state = .state(con);
-  .state read_state = .state(con);
+  State write_state = State(con);
+  State read_state = State(con);
   array(string) keys = generate_keys(client_random, server_random, version);
 
   if (cipher_spec->mac_algorithm)
@@ -668,13 +669,13 @@ array(.state) new_server_states(.Connection con,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(.state) new_client_states(.Connection con,
+array(State) new_client_states(.Connection con,
 				string(0..255) client_random,
 				string(0..255) server_random,
 				ProtocolVersion version)
 {
-  .state write_state = .state(con);
-  .state read_state = .state(con);
+  State write_state = State(con);
+  State read_state = State(con);
   array(string) keys = generate_keys(client_random, server_random, version);
   
   if (cipher_spec->mac_algorithm)

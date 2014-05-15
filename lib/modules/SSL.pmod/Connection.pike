@@ -26,6 +26,7 @@
 //#define SSL3_PROFILING
 
 import .Constants;
+#define State .State
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -36,8 +37,8 @@ import .Constants;
 .session session;
 .context context;
 
-.state pending_read_state;
-.state pending_write_state;
+State pending_read_state;
+State pending_write_state;
 
 /* State variables */
 
@@ -284,8 +285,8 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw);
 //!   The context for the connection.
 protected void create(SSL.context ctx)
 {
-  current_read_state = SSL.state(this);
-  current_write_state = SSL.state(this);
+  current_read_state = State(this);
+  current_write_state = State(this);
 
   if ((ctx->max_version < PROTOCOL_SSL_3_0) ||
       (ctx->max_version > PROTOCOL_TLS_MAX)) {
@@ -324,8 +325,8 @@ protected void create(SSL.context ctx)
 // TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
 // Renegotiation	RFC 5746 "Renegotiation Indication Extension".
 
-.state current_read_state;
-.state current_write_state;
+State current_read_state;
+State current_write_state;
 string left_over;
 Packet packet;
 
