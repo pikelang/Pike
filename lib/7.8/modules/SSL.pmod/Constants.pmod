@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.8
 
 /*
  * The SSL3 Protocol is specified in the following RFCs and drafts:
