@@ -27,6 +27,7 @@
 
 import .Constants;
 #define State .State
+#define Session .Session
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -34,7 +35,7 @@ import .Constants;
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
-.session session;
+Session session;
 .context context;
 
 State pending_read_state;
