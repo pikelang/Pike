@@ -19,7 +19,7 @@ function(int, int, string|void: Alert) alert;
 protected void create(.Connection con)
 {
   session = con->session;
-  alert = con->Alert;
+  alert = con->alert;
 }
 
 //! Information about the used algorithms.

@@ -16,6 +16,7 @@ inherit .Connection;
 #define Packet .Packet
 #define State .State
 #define Context .Context
+#define Alert .Alert
 
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
@@ -48,7 +49,7 @@ Packet server_hello_packet()
   struct->put_uint(session->compression_algorithm, 1);
 
   ADT.struct extensions = ADT.struct();
-  Packet alert;
+  Alert fail;
 
   void ext(int id, int condition, function(void:ADT.struct) code)
   {
@@ -76,8 +77,8 @@ Packet server_hello_packet()
     case 2048: extension->put_uint(FRAGMENT_2048, 1); break;
     case 4096: extension->put_uint(FRAGMENT_4096, 1); break;
     default:
-      alert = Alert(ALERT_fatal, ALERT_illegal_parameter,
-                    "Invalid fragment size.\n");
+      fail = alert(ALERT_fatal, ALERT_illegal_parameter,
+                   "Invalid fragment size.\n");
     }
     return extension;
   };
@@ -171,7 +172,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     // No overlapping cipher suites, or obsolete cipher suite selected,
     // or incompatible certificates.
     SSL3_DEBUG_MSG("No common suites.\n");
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "No common suites!\n"));
     return -1;
   }
@@ -182,7 +183,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   else
   {
     SSL3_DEBUG_MSG("Unsupported compression method.\n");
-    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "Unsupported compression method.\n"));
     return -1;
   }
@@ -229,7 +230,7 @@ string(0..255) server_derive_master_secret(string(0..255) data)
   string(0..255)|int(0..255) res =
     ke->server_derive_master_secret(data, client_random, server_random, version);
   if (stringp(res)) return [string]res;
-  send_packet(Alert(ALERT_fatal, [int(0..255)]res,
+  send_packet(alert(ALERT_fatal, [int(0..255)]res,
 		    "Failed to derive master secret.\n"));
   return 0;
 }
@@ -288,7 +289,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
      switch(type)
      {
      default:
-       send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+       send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			 "Expected client_hello.\n"));
        return -1;
      case HANDSHAKE_client_hello:
@@ -321,7 +322,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	}
 	  || (cipher_len & 1))
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Invalid client_hello.\n"));
 	  return -1;
 	}
@@ -329,7 +330,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    (client_version < context->min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
 			 fmt_version(client_version));
-	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version,
+	  send_packet(alert(ALERT_fatal, ALERT_protocol_version,
 			    "Unsupported version.\n"));
 	  return -1;
 	}
@@ -464,7 +465,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	      case FRAGMENT_2048: session->max_packet_size = 2048; break;
 	      case FRAGMENT_4096: session->max_packet_size = 4096; break;
 	      default:
-		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid fragment size.\n"));
 		return -1;
 	      }
@@ -473,7 +474,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    case EXTENSION_truncated_hmac:
 	      // RFC 3546 3.5 "Truncated HMAC"
 	      if (sizeof(extension_data)) {
-		send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid trusted HMAC extension.\n"));
 	      }
 	      session->truncated_hmac = 1;
@@ -495,7 +496,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 		// The server MUST verify that the "renegotiation_info"
 		// extension is not present; if it is, the server MUST
 		// abort the handshake.
-		send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+		send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 				  "Invalid renegotiation data.\n"));
 		return -1;
 	      }
@@ -512,7 +513,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                 multiset(string) protocols = (<>);
                 if( extension_data->get_uint(2) != sizeof(extension_data) )
                 {
-                  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+                  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 				    "ALPN: Length mismatch.\n"));
                   return -1;
                 }
@@ -520,7 +521,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                   string server_name = extension_data->get_var_string(1);
                   if( sizeof(server_name)==0 )
                   {
-                    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+                    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 				      "ALPN: Empty protocol.\n"));
                     return -1;
                   }
@@ -546,7 +547,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
                     break;
                   }
                 if( !next_protocol )
-                  send_packet(Alert(ALERT_fatal, ALERT_no_application_protocol,
+                  send_packet(alert(ALERT_fatal, ALERT_no_application_protocol,
 				    "ALPN: No compatible protocol.\n"));
                 SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
 			       protocols, next_protocol);
@@ -565,7 +566,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 		  // Upon reception of an unknown mode, an error Alert
 		  // message using illegal_parameter as its
 		  // AlertDescription MUST be sent in response.
-		  send_packet(Alert(ALERT_fatal, ALERT_illegal_parameter,
+		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Heartbeat: Invalid extension.\n"));
 		}
 		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
@@ -618,7 +619,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  // RFC 5746 3.7: (secure_renegotiation)
 	  // The server MUST verify that the "renegotiation_info" extension is
 	  // present; if it is not, the server MUST abort the handshake.
-	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			    "Missing secure renegotiation extension.\n"));
 	  return -1;
 	}
@@ -634,7 +635,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	    // that it does not contain the
 	    // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If the SCSV is
 	    // present, the server MUST abort the handshake.
-	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			      "SCSV is present.\n"));
 	    return -1;
 	  } else {
@@ -660,7 +661,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
 	  {
-	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			      "Unsupported saved session state.\n"));
 	    return -1;
 	  }
@@ -675,7 +676,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
           {
             // DES/DES3 throws an exception if a weak key is used. We
             // could possibly send ALERT_insufficient_security instead.
-            send_packet(Alert(ALERT_fatal, ALERT_internal_error,
+            send_packet(alert(ALERT_fatal, ALERT_internal_error,
 			      "Internal error.\n"));
             return -1;
           }
@@ -713,7 +714,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected next protocol or finished.\n"));
       return -1;
     case HANDSHAKE_next_protocol:
@@ -735,7 +736,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	   digest = input->get_fix_string(36);
            } || sizeof(input))
 	   {
-	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			       "Invalid handshake finished message.\n"));
 	     return -1;
 	   }
@@ -745,7 +746,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	   digest = input->get_fix_string(12);
            } || sizeof(input))
 	   {
-	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			       "Invalid handshake finished message.\n"));
 	     return -1;
 	   }
@@ -760,7 +761,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	   SSL3_DEBUG_MSG("message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Key exchange failure.\n"));
 	 return -1;
        }
@@ -799,7 +800,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected client KEX or cert.\n"));
       return -1;
     case HANDSHAKE_client_key_exchange:
@@ -807,7 +808,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
       if (certificate_state == CERT_requested)
       { /* Certificate must be sent before key exchange message */
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			  "Expected client cert.\n"));
 	return -1;
       }
@@ -843,7 +844,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 
        if (certificate_state != CERT_requested)
        {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Unexpected client cert.\n"));
 	 return -1;
        }
@@ -861,7 +862,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
              certs_len != [int]Array.sum(map(certs, sizeof)) ||
              !verify_certificate_chain(certs))
           {
-	    send_packet(Alert(ALERT_fatal, ALERT_bad_certificate,
+	    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
 			      "Bad client certificate.\n"));
 	    return -1;
           }
@@ -871,7 +872,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
           }
          } || sizeof(input))
        {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Unexpected client cert.\n"));
 	 return -1;
        }
@@ -889,7 +890,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
     switch(type)
     {
     default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected cert verify.\n"));
       return -1;
     case HANDSHAKE_certificate_verify:
@@ -912,7 +913,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 	err = UNDEFINED;	// Get rid of warning.
 	if (!verification_ok)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Verification of CertificateVerify failed.\n"));
 	  return -1;
 	}

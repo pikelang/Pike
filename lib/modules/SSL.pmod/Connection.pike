@@ -75,10 +75,11 @@ string(0..255) client_random;
 string(0..255) server_random;
 
 #define Packet .Packet
+#define Alert .Alert
 
-.Alert Alert(int(1..2) level, int(0..255) description, string|void message)
+Alert alert(int(1..2) level, int(0..255) description,
+            string|void message)
 {
-  // NB: We are always inherited by SSL.connection.
   return context->alert_factory(this, level, description, version,
 				message);
 }
@@ -342,9 +343,9 @@ constant PRI_alert = 1;
 constant PRI_urgent = 2;
 constant PRI_application = 3;
 
-protected ADT.Queue alert = ADT.Queue();
-protected ADT.Queue urgent = ADT.Queue();
-protected ADT.Queue application = ADT.Queue();
+protected ADT.Queue alert_q = ADT.Queue();
+protected ADT.Queue urgent_q = ADT.Queue();
+protected ADT.Queue application_q = ADT.Queue();
 
 //! Called with alert object, sequence number of bad packet,
 //! and raw data as arguments, if a bad packet is received.
@@ -416,13 +417,13 @@ void send_packet(object packet, int|void priority)
   default:
     error( "Internal error\n" );
   case PRI_alert:
-    alert->put(packet);
+    alert_q->put(packet);
     break;
   case PRI_urgent:
-    urgent->put(packet);
+    urgent_q->put(packet);
     break;
   case PRI_application:
-    application->put(packet);
+    application_q->put(packet);
     break;
   }
 
@@ -439,8 +440,8 @@ string|int to_write()
   if (dying)
     return -1;
 
-  Packet packet = [object(Packet)](alert->get() || urgent->get() ||
-                                   application->get());
+  Packet packet = [object(Packet)](alert_q->get() || urgent_q->get() ||
+                                   application_q->get());
   if (!packet) {
     return closing ? 1 : "";
   }
@@ -471,7 +472,7 @@ string|int to_write()
 //! Initiate close.
 void send_close()
 {
-  send_packet(Alert(ALERT_warning, ALERT_close_notify,
+  send_packet(alert(ALERT_warning, ALERT_close_notify,
                     "Closing connection.\n"), PRI_application);
 }
 
@@ -516,7 +517,7 @@ protected int handle_alert(string s)
   int description = s[1];
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "invalid alert\n"));
     return -1;
   }
@@ -540,7 +541,7 @@ protected int handle_alert(string s)
       certificate_state = CERT_no_certificate;
       return 0;
     } else {
-      send_packet(Alert(ALERT_fatal,
+      send_packet(alert(ALERT_fatal,
 			((certificate_state == CERT_requested)
 			 ? ALERT_handshake_failure
 			 : ALERT_unexpected_message),
@@ -560,7 +561,7 @@ int handle_change_cipher(int c)
   if (!expect_change_cipher || (c != 1))
   {
     SSL3_DEBUG_MSG("SSL.connection: handle_change_cipher: Unexcepted message!");
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Unexpected change cipher!\n"));
     return -1;
   }
@@ -648,7 +649,7 @@ void handle_heartbeat(string(8bit) s)
       if (a != b) {
 	if (!b) {
 	  // Heartbleed probe response.
-	  send_packet(Alert(ALERT_fatal, ALERT_insufficient_security,
+	  send_packet(alert(ALERT_fatal, ALERT_insufficient_security,
 			    "Peer suffers from a bleeding heart.\n"));
 	}
 	break;
@@ -755,7 +756,7 @@ string|int got_data(string|int s)
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
 	   // For details see: http://www.g-sec.lu/practicaltls.pdf and
 	   // RFC 5746.
-	   send_packet(Alert(ALERT_warning, ALERT_no_renegotiation,
+	   send_packet(alert(ALERT_warning, ALERT_no_renegotiation,
 			     "Renegotiation not supported in unsecure mode.\n"));
 	   return -1;
 	 }
@@ -770,7 +771,7 @@ string|int got_data(string|int s)
 	   // renegotiation vulnerability mentioned above. It is however not
 	   // safe to assume that, since there might be routes past this,
 	   // maybe through the use of a version 2 hello message below.
-	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	   send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			     "Expected change cipher.\n"));
 	   return -1;
 	 }
@@ -792,7 +793,7 @@ string|int got_data(string|int s)
              if( objectp(exception) && ([object]exception)->ADT_struct )
              {
                Error.Generic e = [object(Error.Generic)]exception;
-               send_packet(Alert(ALERT_fatal, ALERT_decode_error,
+               send_packet(alert(ALERT_fatal, ALERT_decode_error,
                                  e->message()));
                return -1;
              }
@@ -812,7 +813,7 @@ string|int got_data(string|int s)
 
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Handshake not finished yet!\n"));
 	  return -1;
 	}
@@ -834,7 +835,7 @@ string|int got_data(string|int s)
 	    // receives a HeartbeatRequest message, the endpoint SHOULD
 	    // drop the message silently and MAY send an unexpected_message
 	    // Alert message.
-	    send_packet(Alert(ALERT_warning, ALERT_unexpected_message,
+	    send_packet(alert(ALERT_warning, ALERT_unexpected_message,
 			      "Heart beat mode not enabled.\n"));
 	    break;
 	  }
@@ -847,7 +848,7 @@ string|int got_data(string|int s)
             if( objectp(exception) && ([object]exception)->ADT_struct )
             {
               Error.Generic e = [object(Error.Generic)]exception;
-              send_packet(Alert(ALERT_fatal, ALERT_decode_error,
+              send_packet(alert(ALERT_fatal, ALERT_decode_error,
                                 e->message()));
               return -1;
             }
@@ -859,7 +860,7 @@ string|int got_data(string|int s)
       default:
 	if (!handshake_finished)
 	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Unexpected message during handshake!\n"));
 	  return -1;
 	}
