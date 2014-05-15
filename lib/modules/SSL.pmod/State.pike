@@ -7,16 +7,12 @@
 //! from one set of state objects to another, one or more times during
 //! its lifetime.
 
-import .Constants;
-
-
-constant Alert = .Alert;
-#define Packet .Packet
-#define Session .Session
+import ".";
+import Constants;
 
 function(int, int, string|void: Alert) alert;
 
-protected void create(.Connection con)
+protected void create(Connection con)
 {
   session = con->session;
   alert = con->alert;
@@ -26,10 +22,10 @@ protected void create(.Connection con)
 Session session;
 
 //! Message Authentication Code
-.Cipher.MACAlgorithm mac;
+Cipher.MACAlgorithm mac;
 
 //! Encryption or decryption object.
-.Cipher.CipherAlgorithm crypt;
+Cipher.CipherAlgorithm crypt;
 
 function(string:string) compress;
 
