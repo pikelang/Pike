@@ -39,9 +39,8 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
-import .Constants;
-
-#define Session .Session
+import ".";
+import Constants;
 
 //! The minimum supported protocol version.
 //!
@@ -59,7 +58,7 @@ ProtocolVersion min_version = PROTOCOL_SSL_3_0;
 //!   This value should not be less than @[min_version].
 ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 
-//! @decl Alert alert_factory(SSL.connection con, int level, int description, @
+//! @decl Alert alert_factory(SSL.Connection con, int level, int description, @
 //!			      ProtocolVersion version, @
 //!			      string|void message, mixed|void trace)
 //!
@@ -83,11 +82,11 @@ ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 //! @note
 //!   Not all alerts are fatal, and some (eg @[ALERT_close_notify]) are used
 //!   during normal operation.
-.Alert alert_factory(object con,
+Alert alert_factory(object con,
 		     int(1..2) level, int(0..255) description,
                      ProtocolVersion version, string|void message)
 {
-  return .Alert(level, description, version, message);
+  return Alert(level, description, version, message);
 }
 
 //! Should an SSL client include the Server Name extension?
@@ -228,7 +227,7 @@ array(string(8bit)) advertised_protocols;
 //! The maximum amount of data that is sent in each SSL packet by
 //! @[sslfile]. A value between 1 and
 //! @[SSL.Constants.PACKET_MAX_SIZE].
-int packet_max_size = SSL.Constants.PACKET_MAX_SIZE;
+int packet_max_size = PACKET_MAX_SIZE;
 
 protected int cert_sort_key(CertificatePair cp)
 {
@@ -1135,7 +1134,7 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 
 #if 0
 //! Parameters for dh keyexchange.
-.Cipher.DHKeyExchange dh_ke;
+Cipher.DHKeyExchange dh_ke;
 #endif
 
 //! Set @[preferred_suites] to RSA based methods.

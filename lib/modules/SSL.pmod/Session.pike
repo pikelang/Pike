@@ -13,9 +13,9 @@
 //! It is also possible to change to a new session in the middle of a
 //! connection.
 
-import .Constants;
+import ".";
+import Constants;
 protected constant Struct = ADT.struct;
-#define State .State
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -35,13 +35,13 @@ int cipher_suite;
 
 //! Information about the encryption method derived from the
 //! cipher_suite.
-.Cipher.CipherSpec cipher_spec;
+Cipher.CipherSpec cipher_spec;
 
 //! Key exchange method, also derived from the cipher_suite.
 int ke_method;
 
 //! Key exchange factory, derived from @[ke_method].
-program(.Cipher.KeyExchange) ke_factory;
+program(Cipher.KeyExchange) ke_factory;
 
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
@@ -137,7 +137,7 @@ HeartBeatModeType heartbeat_mode = HEARTBEAT_MODE_disabled;
 //! from the server.
 int(0..1) has_required_certificates()
 {
-  if (!peer_public_key) return (cipher_spec->sign == .Cipher.anon_sign);
+  if (!peer_public_key) return (cipher_spec->sign == Cipher.anon_sign);
   return 1;
 }
 
@@ -382,37 +382,37 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 		     array(array(int)) signature_algorithms,
 		     int max_hash_size)
 {
-  array res = .Cipher.lookup(suite, version, signature_algorithms,
-			     truncated_hmac?512:max_hash_size);
+  array res = Cipher.lookup(suite, version, signature_algorithms,
+                            truncated_hmac?512:max_hash_size);
   if (!res) return 0;
   cipher_suite = suite;
   ke_method = [int]res[0];
   switch(ke_method) {
   case KE_null:
-    ke_factory = .Cipher.KeyExchangeNULL;
+    ke_factory = Cipher.KeyExchangeNULL;
     break;
   case KE_rsa:
   case KE_rsa_fips:
-    ke_factory = .Cipher.KeyExchangeRSA;
+    ke_factory = Cipher.KeyExchangeRSA;
     break;
   case KE_dh_dss:
   case KE_dh_rsa:
-    ke_factory = .Cipher.KeyExchangeDH;
+    ke_factory = Cipher.KeyExchangeDH;
     break;
   case KE_dh_anon:
   case KE_dhe_rsa:
   case KE_dhe_dss:
-    ke_factory = .Cipher.KeyExchangeDHE;
+    ke_factory = Cipher.KeyExchangeDHE;
     break;
 #if constant(SSL.Cipher.KeyExchangeECDHE)
   case KE_ecdhe_rsa:
   case KE_ecdhe_ecdsa:
   case KE_ecdh_anon:
-    ke_factory = .Cipher.KeyExchangeECDHE;
+    ke_factory = Cipher.KeyExchangeECDHE;
     break;
   case KE_ecdh_rsa:
   case KE_ecdh_ecdsa:
-    ke_factory = .Cipher.KeyExchangeECDH;
+    ke_factory = Cipher.KeyExchangeECDH;
     break;
 #endif
   default:
@@ -421,7 +421,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
     break;
   }
 
-  cipher_spec = [object(.Cipher.CipherSpec)]res[1];
+  cipher_spec = [object(Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",
 	 mkmapping(indices(cipher_spec), values(cipher_spec)));

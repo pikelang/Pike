@@ -10,13 +10,9 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif
 
-import .Constants;
-inherit .Connection;
-
-#define Packet .Packet
-#define State .State
-#define Context .Context
-#define Alert .Alert
+import ".";
+import Constants;
+inherit Connection;
 
 int has_application_layer_protocol_negotiation;
 string(0..255) next_protocol;
@@ -154,11 +150,11 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 			     array(int) compression_methods)
 {
   SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
-		 .Constants.fmt_cipher_suites(context->preferred_suites),
-                 .Constants.fmt_cipher_suites(cipher_suites));
+		 fmt_cipher_suites(context->preferred_suites),
+                 fmt_cipher_suites(cipher_suites));
   cipher_suites = context->preferred_suites & cipher_suites;
   SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 .Constants.fmt_cipher_suites((array(int))cipher_suites));
+                 fmt_cipher_suites((array(int))cipher_suites));
 
   if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
     // No overlapping support for ecc.
@@ -191,7 +187,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   send_packet(server_hello_packet());
 
   // Don't send any certificate in anonymous mode.
-  if (session->cipher_spec->sign != .Cipher.anon_sign) {
+  if (session->cipher_spec->sign != Cipher.anon_sign) {
     /* Send Certificate, ServerKeyExchange and CertificateRequest as
      * appropriate, and then ServerHelloDone.
      *
@@ -316,7 +312,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 			 "cipher suites:\n%s\n"
 			 "compression methods: %O\n",
 			 fmt_version(client_version),
-			 id, .Constants.fmt_cipher_suites(cipher_suites),
+			 id, fmt_cipher_suites(cipher_suites),
                          compression_methods);
 
 	}
@@ -611,7 +607,7 @@ int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
 				     });
 	      SSL3_DEBUG_MSG("Remaining cipher suites:\n"
 			     "%s\n",
-			     .Constants.fmt_cipher_suites(cipher_suites));
+			     fmt_cipher_suites(cipher_suites));
 	    }
 	  }
 	}

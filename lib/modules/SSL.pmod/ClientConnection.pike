@@ -10,12 +10,9 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif
 
-import .Constants;
-inherit .Connection;
-
-#define Packet .Packet
-#define State .State
-#define Context .Context
+import ".";
+import Constants;
+inherit Connection;
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
@@ -50,7 +47,7 @@ Packet client_hello()
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
   }
   SSL3_DEBUG_MSG("Client ciphers:\n%s",
-                 .Constants.fmt_cipher_suites(cipher_suites));
+                 fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
   struct->put_var_uint_array(cipher_suites, 2, 2);
