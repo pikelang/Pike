@@ -208,7 +208,7 @@ class PGconnS
   { return std::write(data);
   }
 
-  void create(Stdio.File stream, SSL.context ctx)
+  void create(Stdio.File stream, SSL.Context ctx)
   { rawstream=stream;
     std::create(stream,ctx,1,1);
     pg::create();

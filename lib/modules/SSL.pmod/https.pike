@@ -35,7 +35,7 @@
 
 class MyContext
 {
-  inherit SSL.context;
+  inherit SSL.Context;
 
   SSL.Alert alert_factory(.Connection con,
 			  int level, int description,
@@ -139,7 +139,7 @@ class Client
 
   protected void create(Stdio.File con)
   {
-    SSL.context ctx = MyContext();
+    SSL.Context ctx = MyContext();
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
@@ -159,7 +159,7 @@ int main()
   Client(con);
   return -17;
 #else
-  SSL.context ctx = MyContext();
+  SSL.Context ctx = MyContext();
 
   Crypto.Sign key;
   string certificate;

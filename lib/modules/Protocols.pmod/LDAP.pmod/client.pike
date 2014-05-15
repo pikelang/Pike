@@ -686,7 +686,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
 #if constant(SSL.Cipher.CipherAlgorithm)
     if(lauth->scheme == "ldaps" && !context) {
-      context = SSL.context();
+      context = SSL.Context();
       // Allow only strong crypto
       context->preferred_suites = ({
 	SSL_rsa_with_idea_cbc_sha,
@@ -787,7 +787,7 @@ void reset_options()
     // otherwise, we can try to negotiate.
       if(!context)
       {
-        context = SSL.context();
+        context = SSL.Context();
         // Allow only strong crypto
         context->preferred_suites = ({
   	  SSL_rsa_with_idea_cbc_sha,
@@ -812,7 +812,7 @@ void reset_options()
   //!  
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
   //!
-  int start_tls (void|SSL.context context) {
+  int start_tls (void|SSL.Context context) {
 
     if(ldap_version < 3)
     {

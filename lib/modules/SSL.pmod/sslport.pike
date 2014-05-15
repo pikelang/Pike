@@ -1,13 +1,15 @@
 #pike __REAL_VERSION__
 #require constant(SSL.Cipher)
 
+#define Context .Context
+
 //! Interface similar to @[Stdio.Port].
 
 //!
 inherit Stdio.Port : socket;
 
 //! Context to use for the connections.
-.context ctx;
+Context ctx;
 
 protected ADT.Queue accept_queue = ADT.Queue();
 
@@ -161,11 +163,11 @@ object accept()
 //!
 //! @seealso
 //!   @[bind()], @[listen_fd()]
-void create(.context|void ctx)
+void create(Context|void ctx)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslport->create\n");
 #endif
-  if (!ctx) ctx = .context();
+  if (!ctx) ctx = Context();
   this_program::ctx = ctx;
 }
