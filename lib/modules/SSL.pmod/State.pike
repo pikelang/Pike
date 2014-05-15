@@ -12,6 +12,7 @@ import .Constants;
 
 constant Alert = .Alert;
 #define Packet .Packet
+#define Session .Session
 
 function(int, int, string|void: Alert) alert;
 
@@ -22,7 +23,7 @@ protected void create(.Connection con)
 }
 
 //! Information about the used algorithms.
-.session session;
+Session session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;

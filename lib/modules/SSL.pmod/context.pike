@@ -41,6 +41,8 @@
 
 import .Constants;
 
+#define Session .Session
+
 //! The minimum supported protocol version.
 //!
 //! Defaults to @[PROTOCOL_SSL_3_0].
@@ -765,7 +767,7 @@ int max_sessions = 300;
 /* Queue of pairs (time, id), in cronological order */
 ADT.Queue active_sessions = ADT.Queue();
 
-mapping(string:.session) session_cache = ([]);
+mapping(string:Session) session_cache = ([]);
 
 int session_number; /* Incremented for each session, and used when
 		     * constructing the session id */
@@ -787,7 +789,7 @@ void forget_old_sessions()
 //! Lookup a session identifier in the cache. Returns the
 //! corresponding session, or zero if it is not found or caching is
 //! disabled.
-.session lookup_session(string id)
+Session lookup_session(string id)
 {
   if (use_cache)
   {
@@ -798,16 +800,16 @@ void forget_old_sessions()
 }
 
 //! Create a new session.
-.session new_session()
+Session new_session()
 {
-  .session s = .session();
+  Session s = Session();
   s->identity = (use_cache) ?
     sprintf("%4cPikeSSL3%4c", time(), session_number++) : "";
   return s;
 }
 
 //! Add a session to the cache (if caching is enabled).
-void record_session(.session s)
+void record_session(Session s)
 {
   if (use_cache && s->identity)
   {
@@ -826,7 +828,7 @@ void record_session(.session s)
 }
 
 //! Remove a session from the cache.
-void purge_session(.session s)
+void purge_session(Session s)
 {
   SSL3_DEBUG_MSG("SSL.context->purge_session: %O\n", s->identity || "");
   if (s->identity)
