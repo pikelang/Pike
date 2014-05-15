@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.8
 #pragma strict_types
 
 //! Alert packet.

@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 7.8
 #pragma no_deprecation_warnings
 //#pragma strict_types
 
