@@ -16,7 +16,7 @@ inherit Connection;
 
 //! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
-array(string(0..255)) client_cert_distinguished_names;
+array(string(8bit)) client_cert_distinguished_names;
 
 Packet client_hello()
 {
@@ -116,7 +116,7 @@ Packet client_hello()
     ADT.struct extension = ADT.struct();
     if(context->client_server_names)
     {
-      foreach(context->client_server_names;; string(0..255) server_name)
+      foreach(context->client_server_names;; string(8bit) server_name)
       {
         ADT.struct hostname = ADT.struct();
         hostname->put_uint(0, 1); // name_time host_name(0)
@@ -157,7 +157,7 @@ Packet client_hello()
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
-Packet finished_packet(string(0..255) sender)
+Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
   // We're the client.
@@ -218,7 +218,7 @@ protected void create(Context ctx)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw)
+int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 {
   ADT.struct input = ADT.struct(data);
 #ifdef SSL3_PROFILING

@@ -9,14 +9,14 @@ import .Constants;
 inherit .Packet;
 
 int(1..2) level;
-int(0..255) description;
+int(8bit) description;
 
 string message;
 
 constant is_alert = 1;
 
 //!
-void create(int(1..2) level, int(0..255) description,
+void create(int(1..2) level, int(8bit) description,
             ProtocolVersion version, string|void message)
 {
   if ((version == PROTOCOL_SSL_3_0) &&

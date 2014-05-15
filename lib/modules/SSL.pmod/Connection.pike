@@ -59,8 +59,8 @@ int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 
 // RFC 5746-related fields
 int secure_renegotiation;
-string(0..255) client_verify_data = "";
-string(0..255) server_verify_data = "";
+string(8bit) client_verify_data = "";
+string(8bit) server_verify_data = "";
 // 3.2: Initially of zero length for both the
 //      ClientHello and the ServerHello.
 
@@ -71,13 +71,13 @@ ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
 
 //! Random cookies, sent and received with the hello-messages.
-string(0..255) client_random;
-string(0..255) server_random;
+string(8bit) client_random;
+string(8bit) server_random;
 
 #define Packet .Packet
 #define Alert .Alert
 
-Alert alert(int(1..2) level, int(0..255) description,
+Alert alert(int(1..2) level, int(8bit) description,
             string|void message)
 {
   return context->alert_factory(this, level, description, version,
@@ -111,9 +111,9 @@ void addRecord(int t,int s) {
 }
 #endif
 
-string(0..255) handshake_messages;
+string(8bit) handshake_messages;
 
-Packet handshake_packet(int(0..255) type, string data)
+Packet handshake_packet(int(8bit) type, string data)
 {
 #ifdef SSL3_PROFILING
   addRecord(type,1);
@@ -121,7 +121,7 @@ Packet handshake_packet(int(0..255) type, string data)
   /* Perhaps one need to split large packages? */
   Packet packet = Packet();
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%1c%3H", type, [string(0..255)]data);
+  packet->fragment = sprintf("%1c%3H", type, [string(8bit)]data);
   handshake_messages += packet->fragment;
   return packet;
 }
@@ -134,7 +134,7 @@ Packet change_cipher_packet()
   return packet;
 }
 
-string(0..255) hash_messages(string(0..255) sender)
+string(8bit) hash_messages(string(8bit) sender)
 {
   if(version == PROTOCOL_SSL_3_0) {
     return .Cipher.MACmd5(session->master_secret)->hash(handshake_messages + sender) +
@@ -150,7 +150,7 @@ string(0..255) hash_messages(string(0..255) sender)
   }
 }
 
-Packet certificate_packet(array(string(0..255)) certificates)
+Packet certificate_packet(array(string(8bit)) certificates)
 {
   ADT.struct struct = ADT.struct();
   int len = 0;
@@ -159,7 +159,7 @@ Packet certificate_packet(array(string(0..255)) certificates)
     len = `+( @ Array.map(certificates, sizeof));
   //  SSL3_DEBUG_MSG("SSL.handshake: certificate_message size %d\n", len);
   struct->put_uint(len + 3 * sizeof(certificates), 3);
-  foreach(certificates, string(0..255) cert)
+  foreach(certificates, string(8bit) cert)
     struct->put_var_string(cert, 3);
 
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
@@ -280,7 +280,7 @@ int verify_certificate_chain(array(string) certs)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(0..255) data, string(0..255) raw);
+int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw);
 
 //! Initialize the connection state.
 //!

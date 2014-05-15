@@ -24,7 +24,7 @@ protected constant Struct = ADT.struct;
 #endif /* SSL3_DEBUG */
 
 //! Identifies the session to the server
-string(0..255) identity;
+string(8bit) identity;
 
 //! Always COMPRESSION_null.
 int compression_algorithm;
@@ -45,7 +45,7 @@ program(Cipher.KeyExchange) ke_factory;
 
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
-string(0..255) master_secret;
+string(8bit) master_secret;
 
 //! information about the certificate in use by the peer, such as issuing authority, and verification status.
 mapping cert_data;
@@ -77,7 +77,7 @@ int(0..1) truncated_hmac;
  */
 
 //! RFC 4366 3.1 (SNI)
-array(string(0..255)) server_names;
+array(string(8bit)) server_names;
 
 //! The set of <hash, signature> combinations supported by the other end.
 //!
@@ -444,9 +444,9 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-protected string(0..255) generate_key_block(string(0..255) client_random,
-					    string(0..255) server_random,
-					    ProtocolVersion version)
+protected string(8bit) generate_key_block(string(8bit) client_random,
+                                          string(8bit) server_random,
+                                          ProtocolVersion version)
 {
   int required = 2 * (
     cipher_spec->is_exportable ?
@@ -455,7 +455,7 @@ protected string(0..255) generate_key_block(string(0..255) client_random,
 	cipher_spec->hash_size +
 	cipher_spec->iv_size)
   );
-  string(0..255) key = "";
+  string(8bit) key = "";
 
   key = cipher_spec->prf(master_secret, "key expansion",
 			 server_random + client_random, required);
@@ -498,13 +498,13 @@ protected void printKey(string name, string key) {
 //!     @elem string 5
 //!       Server write IV
 //!  @endarray
-array(string(0..255)) generate_keys(string(0..255) client_random,
-				    string(0..255) server_random,
-				    ProtocolVersion version)
+array(string(8bit)) generate_keys(string(8bit) client_random,
+                                  string(8bit) server_random,
+                                  ProtocolVersion version)
 {
   Struct key_data = Struct(generate_key_block(client_random, server_random,
 					      version));
-  array(string(0..255)) keys = allocate(6);
+  array(string(8bit)) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
   werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
@@ -538,8 +538,8 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 
     } else if(version >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
-      string(0..255) client_wkey = key_data->get_fix_string(5);
-      string(0..255) server_wkey = key_data->get_fix_string(5);
+      string(8bit) client_wkey = key_data->get_fix_string(5);
+      string(8bit) server_wkey = key_data->get_fix_string(5);
       keys[2] = cipher_spec->prf(client_wkey, "client write key",
 				 client_random + server_random,
 				 cipher_spec->key_material);
@@ -547,7 +547,7 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 				 client_random + server_random,
 				 cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string(0..255) iv_block =
+	string(8bit) iv_block =
 	  cipher_spec->prf("", "IV block",
 			   client_random + server_random,
 			   2 * cipher_spec->iv_size);
@@ -601,8 +601,8 @@ array(string(0..255)) generate_keys(string(0..255) client_random,
 //!       Write state
 //!   @endarray
 array(State) new_server_states(.Connection con,
-				string(0..255) client_random,
-				string(0..255) server_random,
+				string(8bit) client_random,
+				string(8bit) server_random,
 				ProtocolVersion version)
 {
   State write_state = State(con);
@@ -670,8 +670,8 @@ array(State) new_server_states(.Connection con,
 //!       Write state
 //!   @endarray
 array(State) new_client_states(.Connection con,
-				string(0..255) client_random,
-				string(0..255) server_random,
+				string(8bit) client_random,
+				string(8bit) server_random,
 				ProtocolVersion version)
 {
   State write_state = State(con);
