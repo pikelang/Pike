@@ -135,6 +135,27 @@ cond_resolv( Crypto.Buffer, [[
   ]],[[ ",1234512345123451,,234512345" ]])
 ]])
 
+test_any([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
+]], "AA")
+test_any([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  return b->unpad("\225\222\355<k\b$.\327\370\317b\236p-\245", Crypto.PAD_ANSI_X923);
+]], 0)
+test_any([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  return b->unpad("\362\237""7r\302% \360\276\201\316#<W4\231", Crypto.PAD_PKCS7);
+]], 0)
+test_any([[
+  object b = Crypto.Buffer(Crypto.AES);
+  b->set_decrypt_key("A"*16);
+  return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5", Crypto.PAD_TLS);
+]], 0)
+
 test_eval_error( Crypto.CBC( class{} ) )
 test_eval_error( object o=class{}(); Crypto.CBC(o); )
 test_eval_error([[
