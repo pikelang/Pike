@@ -148,6 +148,17 @@ class Client
   }
 }
 
+string common_name;
+void make_certificate(SSL.Context ctx, Crypto.Sign key, void|Crypto.Hash hash)
+{
+  mapping attrs = ([
+    "organizationName" : "Test",
+    "commonName" : common_name,
+  ]);
+  string cert = Standards.X509.make_selfsigned_certificate(key, 3600*24, attrs, 0, hash);
+  ctx->add_cert(key, ({ cert }), ({ "*" }));
+}
+
 int main()
 {
 #ifdef HTTPS_CLIENT
@@ -164,77 +175,42 @@ int main()
   Crypto.Sign key;
   string certificate;
 
-  string common_name = gethostname();
+  common_name = gethostname();
   common_name = (gethostbyname(common_name) || ({ common_name }))[0];
-
   werror("Common name: %O\n", common_name);
 
   werror("Generating RSA certificate (%d bits)...\n", RSA_BITS);
-
   key = Crypto.RSA()->generate_key(RSA_BITS);
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : common_name,
-					       ]));
-  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+  make_certificate(ctx, key);
 
   // Compat with OLD clients.
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : common_name,
-					       ]), UNDEFINED,
-					       Crypto.SHA1);
-  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+  make_certificate(ctx, key, Crypto.SHA1);
+
 
   werror("Generating DSA certificate (%d bits)...\n", DSA_BITS);
 
   catch {
     // NB: Not all versions of Nettle support q sizes other than 160.
     key = Crypto.DSA()->generate_key(DSA_BITS, 256);
-    certificate =
-      Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						   "organizationName" : "Test",
-						   "commonName" : common_name,
-						 ]), UNDEFINED,
-						 Crypto.SHA256);
-    ctx->add_cert(key, ({ certificate, ({ "*" }) }));
+    make_certificate(ctx, key);
   };
 
   // Compat with OLD clients.
   //
   // The old FIPS standard maxed out at 1024 & 160 bits with SHA-1.
   key = Crypto.DSA()->generate_key(1024, 160);
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : common_name,
-					       ]), UNDEFINED,
-					       Crypto.SHA1);
-  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+  make_certificate(ctx, key, Crypto.SHA1);
 
 #if constant(Crypto.ECC.Curve)
   werror("Generating ECDSA certificate (%d bits)...\n", 521);
 
   key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : common_name,
-					       ]));
-  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+  make_certificate(ctx, key);
 
   // Compat with OLD clients.
   //
   // Unlikely to be needed, but the cost is minimal.
-  certificate =
-    Standards.X509.make_selfsigned_certificate(key, 3600*4, ([
-						 "organizationName" : "Test",
-						 "commonName" : common_name,
-					       ]), UNDEFINED,
-					       Crypto.SHA1);
-  ctx->add_cert(key, ({ certificate }), ({ "*" }));
+  make_certificate(ctx, key, Crypto.SHA1);
 #endif
 
   // Make sure all cipher suites are available.
