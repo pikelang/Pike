@@ -444,7 +444,7 @@ protected int cipher_suite_sort_key(int suite)
   int hash = info[2];
 
   if (sizeof(info) > 3) {
-    hash |= info[3]<<6;
+    hash |= info[3]<<5;
   }
 
   // NB: As are the cipher ids if you disregard the keylengths.
@@ -493,7 +493,7 @@ protected int cipher_suite_sort_key(int suite)
   // if (sizeof(info) > 3) keylength += 0x100;
 
   // NB: 8 bits for cipher.
-  //     8 bits for hash.
+  //     8 bits for hash + mode.
   //     8 bits for key exchange.
   //     12 bits for keylength.
   //     4 bits for auth.

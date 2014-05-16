@@ -125,6 +125,7 @@ constant CIPHER_aes	 = 9;
 constant CIPHER_aes256	 = 10;
 constant CIPHER_camellia128 = 11;
 constant CIPHER_camellia256 = 12;
+constant CIPHER_chacha20 = 13;
 
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_effective_keylengths = ([
@@ -141,6 +142,7 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_aes256:	256,
   CIPHER_camellia128:	128,
   CIPHER_camellia256:	256,
+  CIPHER_chacha20:	256,
 ]);
 
 //! Hash algorithms as per RFC 5246 7.4.1.4.1.
@@ -160,6 +162,7 @@ enum CipherModes {
   MODE_ccm_8	= 1,	//! CCM - Counter with 8 bit CBC-MAC mode.
   MODE_ccm	= 2,	//! CCM - Counter with CBC-MAC mode.
   MODE_gcm	= 3,	//! GCM - Galois Cipher Mode.
+  MODE_poly1305	= 4,	//! Poly1305 - Used only with ChaCha20.
 }
 
 //! Lookup from @[HashAlgorithm] to corresponding @[Crypto.Hash].
@@ -962,6 +965,13 @@ constant CIPHER_SUITES =
    TLS_ecdh_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
 #endif /* Crypto.Camellia */
 #endif /* Crypto.AES.GCM */
+
+#if constant(Crypto.ChaCha20.POLY1305)
+   // Draft.
+   TLS_ecdhe_rsa_with_chacha20_poly1305_sha256: ({ KE_ecdhe_rsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
+   TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256: ({ KE_ecdhe_ecdsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
+   TLS_dhe_rsa_with_chacha20_poly1305_sha256: ({ KE_dhe_rsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
+#endif /* Crypto.ChaCha20.POLY1305 */
 ]);
 
 constant HANDSHAKE_hello_request	= 0;  // RFC 5246

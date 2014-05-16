@@ -278,6 +278,10 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
     case CIPHER_aead:
       // RFC 5288 3:
       // The nonce_explicit MAY be the 64-bit sequence number.
+      //
+      // Draft ChaCha20-Poly1305 5:
+      //   When used in TLS, the "record_iv_length" is zero and the nonce is
+      //   the sequence number for the record, as an 8-byte, big-endian number.
       // FIXME: Do we need to pay attention to threads here?
       string explicit_iv =
 	sprintf("%*c", session->cipher_spec->explicit_iv_size,
