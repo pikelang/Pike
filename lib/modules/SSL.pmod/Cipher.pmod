@@ -922,7 +922,7 @@ class KeyExchangeECDHE
     int c = session->ecc_curves[0];
     session->curve = ECC_CURVES[c];
 
-    SSL3_DEBUG_MSG("Curve: %d: %O\n", c, session->curve);
+    SSL3_DEBUG_MSG("Curve: %O (%O)\n", session->curve, c);
 
     secret = session->curve->new_scalar(context->random);
     [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
@@ -976,7 +976,7 @@ class KeyExchangeECDHE
 	connection->ke = UNDEFINED;
 	error("Unsupported curve.\n");
       }
-      SSL3_DEBUG_MSG("Curve: %d: %O\n", c, session->curve);
+      SSL3_DEBUG_MSG("Curve: %O (%O)\n", session->curve, c);
       break;
     default:
       connection->ke = UNDEFINED;
