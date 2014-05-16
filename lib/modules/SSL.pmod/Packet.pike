@@ -64,7 +64,7 @@ string|.Packet recv(string data, ProtocolVersion version)
       if ( (content_type & 0x80) && (buffer[2] == 1) )
       {
 #ifdef SSL3_DEBUG
-	werror("SSL.packet: Receiving SSL2 packet %O\n", buffer[..4]);
+	werror("SSL.Packet: Receiving SSL2 packet %O\n", buffer[..4]);
 #endif
         return Alert(ALERT_fatal, ALERT_insufficient_security, version);
       }
@@ -74,12 +74,12 @@ string|.Packet recv(string data, ProtocolVersion version)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
-		     sprintf("SSL.packet->send: Version %d.%d "
+		     sprintf("SSL.Packet->send: Version %d.%d "
 			     "is not supported\n",
 			     protocol_version>>8, protocol_version & 0xff));
 #ifdef SSL3_DEBUG
       if (protocol_version > PROTOCOL_TLS_MAX)
-	werror("SSL.packet->recv: received version %d.%d packet\n",
+	werror("SSL.Packet->recv: received version %d.%d packet\n",
 	       protocol_version>>8, protocol_version & 0xff);
 #endif
 
@@ -105,7 +105,7 @@ string send()
     error( "Version %d is not supported\n", protocol_version>>8 );
 #ifdef SSL3_DEBUG
   if (protocol_version > PROTOCOL_TLS_MAX)
-    werror("SSL.packet->send: Sending version %d.%d packet\n",
+    werror("SSL.Packet->send: Sending version %d.%d packet\n",
 	   protocol_version>>8, protocol_version & 0xff);
 #endif
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))

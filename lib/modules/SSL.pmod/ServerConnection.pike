@@ -251,7 +251,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   addRecord(type,0);
 #endif
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
-  werror("SSL.handshake: state %s, type %s\n",
+  werror("SSL.ServerConnection: state %s, type %s\n",
 	 fmt_constant(handshake_state, "STATE"),
          fmt_constant(type, "HANDSHAKE"));
   werror("sizeof(data)="+sizeof(data)+"\n");
@@ -295,7 +295,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	array(int) cipher_suites;
 	array(int) compression_methods;
 
-	SSL3_DEBUG_MSG("SSL.handshake: CLIENT_HELLO\n");
+	SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
 	if (
 	  catch{
@@ -348,11 +348,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 #ifdef SSL3_DEBUG
 	if (sizeof(input))
-	  werror("SSL.handshake->handle_handshake: "
+	  werror("SSL.ServerConnection->handle_handshake: "
 		 "extra data in hello message ignored\n");
 
 	if (sizeof(id))
-	  werror("SSL.handshake: Looking up session %O\n", id);
+	  werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
 	session = sizeof(id) && context->lookup_session(id);
 	if (session &&
@@ -367,7 +367,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  // resumption request) this vector [compression_methods]
 	  // must include at least the compression_method from
 	  // that session.
-	  SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
 	  /* Reuse session */
 	  reuse = 1;
 	} else {
@@ -382,7 +382,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    int extension_type = extensions->get_uint(2);
 	    string(8bit) raw = extensions->get_var_string(2);
 	    ADT.struct extension_data = ADT.struct(raw);
-	    SSL3_DEBUG_MSG("SSL.handshake->handle_handshake: "
+	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
 			   "Got extension %s.\n",
 			   fmt_constant(extension_type, "EXTENSION"));
 	    remote_extensions[extension_type] = 1;
@@ -645,15 +645,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 #ifdef SSL3_DEBUG
 	if (sizeof(input))
-	  werror("SSL.handshake->handle_handshake: "
+	  werror("SSL.ServerConnection->handle_handshake: "
 		 "extra data in hello message ignored\n");
 
 	if (sizeof(id))
-	  werror("SSL.handshake: Looking up session %O\n", id);
+	  werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
 	if (reuse) {
 	  /* Reuse session */
-	  SSL3_DEBUG_MSG("SSL.handshake: Reusing session %O\n", id);
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
 	  {
@@ -724,7 +724,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        string(8bit) my_digest;
        string(8bit) digest;
 
-       SSL3_DEBUG_MSG("SSL.handshake: FINISHED\n");
+       SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
 
        if(version == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
@@ -800,7 +800,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			"Expected client KEX or cert.\n"));
       return -1;
     case HANDSHAKE_client_key_exchange:
-      SSL3_DEBUG_MSG("SSL.handshake: CLIENT_KEY_EXCHANGE\n");
+      SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_EXCHANGE\n");
 
       if (certificate_state == CERT_requested)
       { /* Certificate must be sent before key exchange message */
@@ -836,7 +836,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       break;
     case HANDSHAKE_certificate:
      {
-       SSL3_DEBUG_MSG("SSL.handshake: CLIENT_CERTIFICATE\n");
+       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_CERTIFICATE\n");
 
        if (certificate_state != CERT_requested)
        {
@@ -890,7 +890,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			"Expected cert verify.\n"));
       return -1;
     case HANDSHAKE_certificate_verify:
-      SSL3_DEBUG_MSG("SSL.handshake: CERTIFICATE_VERIFY\n");
+      SSL3_DEBUG_MSG("SSL.ServerConnection: CERTIFICATE_VERIFY\n");
 
       if (!ke->message_was_bad)
       {
@@ -921,6 +921,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     }
     break;
   }
-  //  SSL3_DEBUG_MSG("SSL.handshake: messages = %O\n", handshake_messages);
+  //  SSL3_DEBUG_MSG("SSL.ServerConnection: messages = %O\n", handshake_messages);
   return 0;
 }

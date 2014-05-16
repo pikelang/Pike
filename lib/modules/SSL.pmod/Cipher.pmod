@@ -283,7 +283,7 @@ class KeyExchange(object context, object session, object connection,
 			  string client_random,
 			  string server_random)
   {
-    SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
+    SSL3_DEBUG_MSG("SSL.Session: SERVER_KEY_EXCHANGE\n");
 
     ADT.struct temp_struct = parse_server_key_exchange(input);
 
@@ -480,10 +480,10 @@ class KeyExchangeRSA
       /* Also checks for version roll-back attacks.
        */
 #ifdef SSL3_DEBUG
-      werror("SSL.handshake: Invalid premaster_secret! "
+      werror("SSL.ServerConnection: Invalid premaster_secret! "
 	     "A chosen ciphertext attack?\n");
       if (premaster_secret && sizeof(premaster_secret) > 2) {
-	werror("SSL.handshake: Strange version (%d.%d) detected in "
+	werror("SSL.ServerConnection: Strange version (%d.%d) detected in "
 	       "key exchange message (expected %d.%d).\n",
 	       premaster_secret[0], premaster_secret[1],
 	       client_version>>8, client_version & 0xff);
@@ -676,7 +676,7 @@ class KeyExchangeDHE
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
        * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+      SSL3_DEBUG_MSG("SSL.ServerConnection: Client uses implicit encoding if its DH-value.\n"
 		     "               Hanging up.\n");
       connection->ke = UNDEFINED;
       return ALERT_certificate_unknown;
@@ -836,7 +836,7 @@ class KeyExchangeECDH
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
        * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-      SSL3_DEBUG_MSG("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+      SSL3_DEBUG_MSG("SSL.ServerConnection: Client uses implicit encoding if its DH-value.\n"
 		     "               Hanging up.\n");
       connection->ke = UNDEFINED;
       return ALERT_certificate_unknown;
