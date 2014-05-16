@@ -1187,11 +1187,21 @@ Sequence sign_tbs(TBSCertificate tbs,
 //! @seealso
 //!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
 string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
-                Sequence subject, int serial, int ttl, array|void extensions)
+                Sequence subject, int serial, int ttl, array|mapping|void extensions)
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
   if(serial<0) error("Serial number needs to be >=0.\n");
+
+  if( mappingp(extensions) )
+  {
+    mapping(Identifier:Sequence) m = [mapping]extensions;
+    array(Sequence) a = ({});
+    foreach( sort(indices(m)), Identifier i )
+      a += ({ m[i] });
+    extensions = a;
+  }
+
   return sign_tbs(make_tbs(issuer, algorithm_id,
 			   subject, c->pkcs_public_key(),
 			   Integer(serial), ttl, extensions),
@@ -1227,9 +1237,10 @@ Sequence make_extension(Identifier id, Object ext, void|int critical)
 //!   List of properties to create distinguished name from.
 //!
 //! @param extensions
-//!   List of extensions as ASN.1 structures. The extensions
-//!   subjectKeyIdentifier, keyUsage (flagged critical) and
-//!   basicConstraints (flagged critical) will automatically be added.
+//!   Mapping with extensions as ASN.1 structures, as produced by
+//!   @[make_extension]. The extensions subjectKeyIdentifier, keyUsage
+//!   (flagged critical) and basicConstraints (flagged critical) will
+//!   automatically be added if not present.
 //!
 //! @param h
 //!   The hash function to use for the certificate. Must be one of the
@@ -1245,7 +1256,8 @@ Sequence make_extension(Identifier id, Object ext, void|int critical)
 //! @seealso
 //!   @[sign_key()], @[sign_tbs()]
 string make_selfsigned_certificate(Crypto.Sign c, int ttl,
-                                   mapping|array name, array|void extensions,
+                                   mapping|array name,
+                                   mapping(Identifier:Sequence)|void extensions,
                                    void|Crypto.Hash h, void|int serial)
 {
   if(!serial)
@@ -1253,23 +1265,21 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
 
   Sequence dn = Certificate.build_distinguished_name(name);
 
-#define ADD(X,Y,Z) extensions+=({ make_extension(Identifiers.ce_ids->X,Y,Z) })
+  void add(string name, Object data, void|int critical)
+  {
+    Identifier id = Identifiers.ce_ids[name];
+    if(!extensions[id])
+      extensions[id] = make_extension(id, data, critical);
+  };
 
-  if(!extensions) extensions = ({});
+  if(!extensions) extensions = ([]);
 
   // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
   // STRING part of the subjectPublicKey, it is only a suggestion.
-  ADD(subjectKeyIdentifier,
-      OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ),
-      0);
-  ADD(keyUsage,
-      build_keyUsage(KU_digitalSignature|KU_keyEncipherment),
-      1);
-  ADD(basicConstraints,
-      Sequence(({Boolean(0)})),
-      1);
-
-#undef ADD
+  add("subjectKeyIdentifier",
+      OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ));
+  add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
+  add("basicConstraints", Sequence(({Boolean(0)})), 1);
 
   return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
