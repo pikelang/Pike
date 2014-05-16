@@ -173,7 +173,6 @@ int main()
   SSL.Context ctx = MyContext();
 
   Crypto.Sign key;
-  string certificate;
 
   common_name = gethostname();
   common_name = (gethostbyname(common_name) || ({ common_name }))[0];
