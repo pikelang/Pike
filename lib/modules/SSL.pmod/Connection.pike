@@ -392,7 +392,7 @@ protected Packet recv_packet(string data)
 //! Queues a packet for write. Handshake and and change cipher
 //! must use the same priority, so must application data and
 //! close_notifies.
-void send_packet(object packet, int|void priority)
+void send_packet(Packet packet, int|void priority)
 {
   if (closing & 1) {
     SSL3_DEBUG_MSG("SSL.connection->send_packet: ignoring packet after close\n");
@@ -409,9 +409,8 @@ void send_packet(object packet, int|void priority)
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_heartbeat : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
-  SSL3_DEBUG_MSG("SSL.connection->send_packet: type %d, desc %d, pri %d, %O\n",
-		 packet->content_type, packet->description, priority,
-		 packet->fragment[..5]);
+  SSL3_DEBUG_MSG("SSL.connection->send_packet: type %d, pri %d, %O\n",
+		 packet->content_type, priority, packet->fragment[..5]);
   switch (priority)
   {
   default:
