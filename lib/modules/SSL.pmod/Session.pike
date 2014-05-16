@@ -183,8 +183,7 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     // Is the ECC curve supported by the client?
     Crypto.ECC.Curve c =
       ([object(Crypto.ECC.SECP_521R1.ECDSA)]cp->key)->curve();
-    SSL3_DEBUG_MSG("Curve: %O\n"
-		   "CURVE ID: %d\n",
+    SSL3_DEBUG_MSG("Curve: %O (%O)\n",
 		   c, ECC_NAME_TO_CURVE[c->name()]);
     return has_value(ecc_curves, ECC_NAME_TO_CURVE[c->name()]);
   }
