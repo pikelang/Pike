@@ -919,7 +919,25 @@ class KeyExchangeECDHE
     struct = ADT.struct();
 
     // Select a suitable curve.
-    int c = session->ecc_curves[0];
+    int c;
+    switch(session->cipher_spec->key_bits) {
+    case 257..:
+      c = CURVE_secp521r1;
+      break;
+    case 129..256:
+      // Suite B requires SECP384r1/SHA256 for AES-256
+      c = CURVE_secp384r1;
+      break;
+    case ..128:
+      // Suite B requires SECP256r1/SHA256 for AES-128
+      c = CURVE_secp256r1;
+      break;
+    }
+
+    if (!has_value(session->ecc_curves, c)) {
+      // Preferred curve not available -- Select the strongest available.
+      c = session->ecc_curves[0];
+    }
     session->curve = ECC_CURVES[c];
 
     SSL3_DEBUG_MSG("Curve: %O (%O)\n", session->curve, c);
@@ -1431,113 +1449,6 @@ array lookup(int suite, ProtocolVersion|int version,
   if (!algorithms)
     return 0;
 
-  ke_method = algorithms[0];
-
-  if (version < PROTOCOL_TLS_1_2) {
-    switch(ke_method)
-    {
-    case KE_rsa:
-    case KE_rsa_fips:
-    case KE_dhe_rsa:
-    case KE_ecdhe_rsa:
-      res->sign = rsa_sign;
-      res->verify = rsa_verify;
-      break;
-    case KE_dh_rsa:
-    case KE_dh_dss:
-    case KE_dhe_dss:
-      res->sign = dsa_sign;
-      res->verify = dsa_verify;
-      break;
-    case KE_null:
-    case KE_dh_anon:
-    case KE_ecdh_anon:
-      res->sign = anon_sign;
-      res->verify = anon_verify;
-      break;
-#if constant(Crypto.ECC.Curve)
-    case KE_ecdh_rsa:
-    case KE_ecdh_ecdsa:
-    case KE_ecdhe_ecdsa:
-      res->sign = ecdsa_sign;
-      res->verify = ecdsa_verify;
-      break;
-#endif
-    default:
-      error( "Internal error.\n" );
-    }
-  } else {
-    int sign_id;
-    switch(ke_method) {
-    case KE_rsa:
-    case KE_rsa_fips:
-    case KE_dhe_rsa:
-    case KE_ecdhe_rsa:
-      sign_id = SIGNATURE_rsa;
-      break;
-    case KE_dh_rsa:
-    case KE_dh_dss:
-    case KE_dhe_dss:
-      sign_id = SIGNATURE_dsa;
-      break;
-    case KE_ecdh_rsa:
-    case KE_ecdh_ecdsa:
-    case KE_ecdhe_ecdsa:
-      sign_id = SIGNATURE_ecdsa;
-      break;
-    case KE_null:
-    case KE_dh_anon:
-    case KE_ecdh_anon:
-      sign_id = SIGNATURE_anonymous;
-      break;
-    default:
-      error( "Internal error.\n" );
-    }
-
-    // Select a suitable hash.
-    //
-    // Fortunately the hash identifiers have a nice order property.
-    int hash_id = HASH_sha;
-    SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
-                   max_hash_size, fmt_signature_pairs(signature_algorithms));
-    foreach(signature_algorithms || ({}), array(int) pair) {
-      if ((pair[1] == sign_id) && (pair[0] > hash_id) &&
-	  HASH_lookup[pair[0]]) {
-	if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
-	  // Eg RSA has a maximum block size and the digest is too large.
-	  continue;
-	}
-	hash_id = pair[0];
-      }
-    }
-    SSL3_DEBUG_MSG("Selected <%s, %s>\n",
-		   fmt_constant(hash_id, "HASH"),
-		   fmt_constant(sign_id, "SIGNATURE"));
-    TLSSigner signer = TLSSigner(hash_id);
-    res->verify = signer->verify;
-
-    switch(sign_id)
-    {
-    case SIGNATURE_rsa:
-      res->sign = signer->rsa_sign;
-      break;
-    case SIGNATURE_dsa:
-      res->sign = signer->dsa_sign;
-      break;
-    case SIGNATURE_anonymous:
-      res->sign = anon_sign;
-      res->verify = anon_verify;
-      break;
-#if constant(Crypto.ECC.Curve)
-    case SIGNATURE_ecdsa:
-      res->sign = signer->ecdsa_sign;
-      break;
-#endif
-    default:
-      error( "Internal error.\n" );
-    }
-  }
-
   switch(algorithms[1])
   {
 #if constant(Crypto.Arctwo)
@@ -1778,6 +1689,127 @@ array lookup(int suite, ProtocolVersion|int version,
 #endif
     default:
       return 0;
+    }
+  }
+
+  ke_method = algorithms[0];
+
+  if (version < PROTOCOL_TLS_1_2) {
+    switch(ke_method)
+    {
+    case KE_rsa:
+    case KE_rsa_fips:
+    case KE_dhe_rsa:
+    case KE_ecdhe_rsa:
+      res->sign = rsa_sign;
+      res->verify = rsa_verify;
+      break;
+    case KE_dh_rsa:
+    case KE_dh_dss:
+    case KE_dhe_dss:
+      res->sign = dsa_sign;
+      res->verify = dsa_verify;
+      break;
+    case KE_null:
+    case KE_dh_anon:
+    case KE_ecdh_anon:
+      res->sign = anon_sign;
+      res->verify = anon_verify;
+      break;
+#if constant(Crypto.ECC.Curve)
+    case KE_ecdh_rsa:
+    case KE_ecdh_ecdsa:
+    case KE_ecdhe_ecdsa:
+      res->sign = ecdsa_sign;
+      res->verify = ecdsa_verify;
+      break;
+#endif
+    default:
+      error( "Internal error.\n" );
+    }
+  } else {
+    int sign_id;
+    int wanted_hash_id;
+    switch(ke_method) {
+    case KE_rsa:
+    case KE_rsa_fips:
+    case KE_dhe_rsa:
+    case KE_ecdhe_rsa:
+      sign_id = SIGNATURE_rsa;
+      break;
+    case KE_dh_rsa:
+    case KE_dh_dss:
+    case KE_dhe_dss:
+      sign_id = SIGNATURE_dsa;
+      break;
+    case KE_ecdh_rsa:
+    case KE_ecdh_ecdsa:
+    case KE_ecdhe_ecdsa:
+      sign_id = SIGNATURE_ecdsa;
+      if (res->key_bits < 256) {
+	// Suite B requires SHA256 with AES-128.
+	wanted_hash_id = HASH_sha256;
+      } else if (res->key_bits < 384) {
+	// Suite B requires SHA384 with AES-256.
+	wanted_hash_id = HASH_sha384;
+      }
+      break;
+    case KE_null:
+    case KE_dh_anon:
+    case KE_ecdh_anon:
+      sign_id = SIGNATURE_anonymous;
+      break;
+    default:
+      error( "Internal error.\n" );
+    }
+
+    // Select a suitable hash.
+    //
+    // Fortunately the hash identifiers have a nice order property.
+    int hash_id = HASH_sha;
+    SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
+                   max_hash_size, fmt_signature_pairs(signature_algorithms));
+    foreach(signature_algorithms || ({}), array(int) pair) {
+      if ((pair[1] == sign_id) && HASH_lookup[pair[0]]) {
+	if (pair[0] == wanted_hash_id) {
+	  // Use the required hash from Suite B if available.
+	  hash_id = wanted_hash_id;
+	  break;
+	}
+	if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
+	  // Eg RSA has a maximum block size and the digest is too large.
+	  continue;
+	}
+	if (pair[0] > hash_id) {
+	  hash_id = pair[0];
+	}
+      }
+    }
+    SSL3_DEBUG_MSG("Selected <%s, %s>\n",
+		   fmt_constant(hash_id, "HASH"),
+		   fmt_constant(sign_id, "SIGNATURE"));
+    TLSSigner signer = TLSSigner(hash_id);
+    res->verify = signer->verify;
+
+    switch(sign_id)
+    {
+    case SIGNATURE_rsa:
+      res->sign = signer->rsa_sign;
+      break;
+    case SIGNATURE_dsa:
+      res->sign = signer->dsa_sign;
+      break;
+    case SIGNATURE_anonymous:
+      res->sign = anon_sign;
+      res->verify = anon_verify;
+      break;
+#if constant(Crypto.ECC.Curve)
+    case SIGNATURE_ecdsa:
+      res->sign = signer->ecdsa_sign;
+      break;
+#endif
+    default:
+      error( "Internal error.\n" );
     }
   }
 
