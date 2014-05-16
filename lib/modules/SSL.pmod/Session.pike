@@ -637,6 +637,7 @@ array(State) new_server_states(.Connection con,
 
   switch(compression_algorithm) {
   case COMPRESSION_deflate:
+#if constant(Gz)
     // FIXME: RFC 5246 6.2.2:
     //   If the decompression function encounters a TLSCompressed.fragment
     //   that would decompress to a length in excess of 2^14 bytes, it MUST
@@ -654,6 +655,7 @@ array(State) new_server_states(.Connection con,
 	  return _deflate(s, Gz.SYNC_FLUSH);
 	}
       }(Gz.deflate()->deflate)->deflate;
+#endif
     break;
   }
   return ({ read_state, write_state });

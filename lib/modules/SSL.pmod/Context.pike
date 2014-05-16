@@ -749,8 +749,12 @@ void configure_suite_b(int(128..)|void min_keylength,
 //! Defaults to @expr{({ COMPRESSION_null, COMPRESSION_deflate })@}
 //! (ie avoid compression unless the client requires it) due to
 //! SSL attacks that target compression.
-array(int) preferred_compressors =
-  ({ COMPRESSION_null, COMPRESSION_deflate });
+array(int) preferred_compressors = ({
+  COMPRESSION_null,
+#if constant(Gz)
+  COMPRESSION_deflate,
+#endif
+ });
 
 //! Non-zero to enable caching of sessions
 int use_cache = 1;
