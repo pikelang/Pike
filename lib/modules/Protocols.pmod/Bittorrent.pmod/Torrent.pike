@@ -509,7 +509,9 @@ void update_tracker(void|string event,void|int contact)
 
    object r;
 
+#if constant(Gz.File)
    http->default_headers["Accept-Encoding"]="gzip";
+#endif
 
    r=http->async_get_url(
       metainfo->announce,
@@ -535,7 +537,6 @@ void update_tracker(void|string event,void|int contact)
 
 	 if ( (< "gzip", "x-gzip" >)[ r->headers()["content-encoding"] ])
 	 {
-// 	    werror("gruk %O\n",data);
 #if constant(Gz.File)
 	    data=Gz.File(Stdio.FakeFile(data))->read();
 #else /* !constant(Gz.File) */
@@ -543,14 +544,11 @@ void update_tracker(void|string event,void|int contact)
 		    r->headers()["content-encoding"]);
 	    return;
 #endif /* constant(Gz.File) */
-// 	    werror("%O\n",data);
 	 }
 
 	 mapping m;
 	 mixed err=catch {
 	    m=decode(data);
-// 	    werror("tracker says: %O\n",m);
-// 	    werror("%O\n",r->headers());
 	 };
 	 if (err)
 	 {
@@ -631,7 +629,7 @@ void update_tracker(void|string event,void|int contact)
       lambda() // failed
       {
 	 if (errno()==0) 
-	    warning("tracker request timeout\n",strerror(errno()));
+	    warning("tracker request timeout\n");
 	 else
 	    warning("tracker request failed, %s\n",strerror(errno()));
       });
