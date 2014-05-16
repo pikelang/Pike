@@ -1553,6 +1553,24 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 256;
     break;
 #endif
+#if constant(Crypto.ChaCha20)
+  case CIPHER_chacha20:
+    if ((sizeof(algorithms) <= 3) || (algorithms[3] != MODE_poly1305)) {
+      // Unsupported.
+      return 0;
+    }
+    res->bulk_cipher_algorithm = Crypto.ChaCha20.POLY1305.State;
+    res->cipher_type = CIPHER_aead;
+    res->is_exportable = 0;
+    res->key_material = 32;
+    res->key_bits = 256;
+    res->iv_size = 0;		// Length of the salt.
+    res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
+    res->hash_size = 0;		// No need for MAC keys.
+    res->mac_algorithm = 0;	// MACs are not used with AEAD.
+
+    break;
+#endif
   default:
     return 0;
   }
@@ -1685,6 +1703,11 @@ array lookup(int suite, ProtocolVersion|int version,
       res->hash_size = 0;		// No need for MAC keys.
       res->mac_algorithm = 0;		// MACs are not used with AEAD.
 
+      break;
+#endif
+#if constant(Crypto.ChaCha20.POLY1305)
+    case MODE_poly1305:
+      res->mac_algorithm = 0;		// MACs are not used with AEAD.
       break;
 #endif
     default:

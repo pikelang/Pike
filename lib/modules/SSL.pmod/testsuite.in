@@ -32,8 +32,7 @@ test_eq( S(SSL.Cipher.MAChmac_sha384("foo")->hash("bar")),
 test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash("bar")),
          "114682914c5d017dfe59fdc804118b56a3a652a0b8870759cf9e792ed7426b08197076bf7d01640b1b0684df79e4b67e37485669e8ce98dbab60445f0db94fce" )
 
-test_tests([[
-  import SSL.Constants;
+test_do([[
   array(int) parse_fields(array(string) fields, int fno,
 			  mapping(string:mapping|int) tab)
   {
@@ -44,7 +43,12 @@ test_tests([[
       tab = val;
     }
     return ({ -1, fno });
-  }
+  };
+  add_constant("parse_fields", parse_fields);
+]])
+
+test_tests([[
+  import SSL.Constants;
   array(int) a()
   {
     // Validate the SSL.Constants.CIPHER_SUITES table.
@@ -134,6 +138,9 @@ test_tests([[
 	    "256":CIPHER_camellia256,
 	  ]),
 #endif
+#if constant(Crypto.ChaCha20)
+	  "chacha20":CIPHER_chacha20,
+#endif
 	]));
       int mode = -1;
       if (sizeof(fields) > fno) {
@@ -153,6 +160,12 @@ test_tests([[
 #if constant(Crypto.AES.GCM)
 	case "gcm":
 	  mode = MODE_gcm;
+	  fno++;
+	  break;
+#endif
+#if constant(Crypto.ChaCha20.POLY1305)
+	case "poly1305":
+	  mode = MODE_poly1305;
 	  fno++;
 	  break;
 #endif
@@ -211,6 +224,10 @@ test_tests([[
     }
     return ({ successes, tests - successes });
   }
+]])
+
+test_do([[
+  add_constant("parse_fields");
 ]])
 
 test_do([[
