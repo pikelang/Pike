@@ -422,7 +422,7 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 
   cipher_spec = [object(Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
-  werror("SSL.session: cipher_spec %O\n",
+  werror("SSL.Session: cipher_spec %O\n",
 	 mkmapping(indices(cipher_spec), values(cipher_spec)));
 #endif
   return 1;
@@ -594,9 +594,9 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
 //!
 //! @returns
 //!   @array
-//!     @elem SSL.state read_state
+//!     @elem SSL.State read_state
 //!       Read state
-//!     @elem SSL.state write_state
+//!     @elem SSL.State write_state
 //!       Write state
 //!   @endarray
 array(State) new_server_states(.Connection con,
@@ -665,9 +665,9 @@ array(State) new_server_states(.Connection con,
 //!
 //! @returns
 //!   @array
-//!     @elem SSL.state read_state
+//!     @elem SSL.State read_state
 //!       Read state
-//!     @elem SSL.state write_state
+//!     @elem SSL.State write_state
 //!       Write state
 //!   @endarray
 array(State) new_client_states(.Connection con,

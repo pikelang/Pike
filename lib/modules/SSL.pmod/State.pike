@@ -57,7 +57,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
   Alert fail;
 
 #ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
+  werror("SSL.State->decrypt_packet (3.%d, type: %d): data = %O\n",
 	 version & 0xff, packet->content_type, packet->fragment);
 #endif
 
@@ -68,8 +68,8 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
   if (crypt)
   {
 #ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.state: Trying decrypt...\n");
-    //    werror("SSL.state: The encrypted packet is:%O\n",packet->fragment);
+    werror("SSL.State: Trying decrypt...\n");
+    //    werror("SSL.State: The encrypted packet is:%O\n",packet->fragment);
     werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
 #endif
 
@@ -82,7 +82,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
       // though, as decrypt_packet isn't called from connection if the
       // fragment isn't successfully parsed.
       return alert(ALERT_fatal, ALERT_unexpected_message,
-		   "SSL.state: Failed to get fragment.\n");
+		   "SSL.State: Failed to get fragment.\n");
     }
 
     switch(session->cipher_spec->cipher_type) {
@@ -91,7 +91,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
       // If data is too small, we can safely abort early.
       if( sizeof(msg) < hmac_size+1 )
         return alert(ALERT_fatal, ALERT_unexpected_message,
-                     "SSL.state: Too short message.\n");
+                     "SSL.State: Too short message.\n");
 
       msg = crypt->crypt(msg);
       break;
@@ -102,27 +102,27 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
       // safely abort early.
       if( sizeof(msg) < hmac_size+1 || sizeof(msg) % crypt->block_size() )
         return alert(ALERT_fatal, ALERT_unexpected_message,
-                     "SSL.state: Too short message.\n");
+                     "SSL.State: Too short message.\n");
 
       if(version == PROTOCOL_SSL_3_0) {
         // crypt->unpad() performs decrypt.
         if (catch { msg = crypt->unpad(msg, Crypto.PAD_SSL); })
           fail = alert(ALERT_fatal, ALERT_unexpected_message,
-                       "SSL.state: Invalid padding.\n");
+                       "SSL.State: Invalid padding.\n");
       } else if (version >= PROTOCOL_TLS_1_0) {
 
 #ifdef SSL3_DEBUG_CRYPT
-        werror("SSL.state: Decrypted message: %O.\n", msg);
+        werror("SSL.State: Decrypted message: %O.\n", msg);
 #endif
         if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
           fail = alert(ALERT_fatal, ALERT_unexpected_message,
-                       "SSL.state: Invalid padding.\n");
+                       "SSL.State: Invalid padding.\n");
         } else if (!msg) {
           // TLS 1.1 requires a bad_record_mac alert on invalid padding.
           // Note that mac will still be calculated below even if
           // padding was wrong, to mitigate Lucky Thirteen attacks.
           fail = alert(ALERT_fatal, ALERT_bad_record_mac,
-                       "SSL.state: Invalid padding.\n");
+                       "SSL.State: Invalid padding.\n");
         }
       }
       break;
@@ -159,7 +159,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
   }
 
 #ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.state: Decrypted_packet %O\n", packet->fragment);
+  werror("SSL.State: Decrypted_packet %O\n", packet->fragment);
 #endif
 
   if (tls_iv) {
@@ -174,7 +174,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
   if (mac)
   {
 #ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.state: Trying mac verification...\n");
+    werror("SSL.State: Trying mac verification...\n");
 #endif
     int length = sizeof(packet->fragment) - hmac_size;
     string digest = packet->fragment[length ..];
@@ -219,7 +219,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
   if (compress)
   {
 #ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.state: Trying decompression...\n");
+    werror("SSL.State: Trying decompression...\n");
 #endif
     string msg = [string]compress(packet->fragment);
     if (!msg)

@@ -782,7 +782,7 @@ void forget_old_sessions()
   array pair;
   while ( (pair = [array]active_sessions->peek())
 	  && (pair[0] < t)) {
-    SSL3_DEBUG_MSG("SSL.context->forget_old_sessions: "
+    SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
                    "garbing session %O due to session_lifetime limit\n",
                    pair[1]);
     m_delete (session_cache, [string]([array]active_sessions->get())[1]);
@@ -818,12 +818,12 @@ void record_session(Session s)
   {
     while (sizeof (active_sessions) >= max_sessions) {
       array pair = [array] active_sessions->get();
-      SSL3_DEBUG_MSG("SSL.context->record_session: "
+      SSL3_DEBUG_MSG("SSL.Context->record_session: "
                      "garbing session %O due to max_sessions limit\n", pair[1]);
       m_delete (session_cache, [string]pair[1]);
     }
     forget_old_sessions();
-    SSL3_DEBUG_MSG("SSL.context->record_session: caching session %O\n",
+    SSL3_DEBUG_MSG("SSL.Context->record_session: caching session %O\n",
                    s->identity);
     active_sessions->put( ({ time(1), s->identity }) );
     session_cache[s->identity] = s;
@@ -833,7 +833,7 @@ void record_session(Session s)
 //! Remove a session from the cache.
 void purge_session(Session s)
 {
-  SSL3_DEBUG_MSG("SSL.context->purge_session: %O\n", s->identity || "");
+  SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n", s->identity || "");
   if (s->identity)
     m_delete (session_cache, s->identity);
   /* There's no need to remove the id from the active_sessions queue */
@@ -841,7 +841,7 @@ void purge_session(Session s)
 
 protected void create()
 {
-  SSL3_DEBUG_MSG("SSL.context->create\n");
+  SSL3_DEBUG_MSG("SSL.Context->create\n");
 
   /* Backwards compatibility */
   preferred_suites = get_suites(128, 1);
@@ -1152,7 +1152,7 @@ Cipher.DHKeyExchange dh_ke;
 //! @deprecated get_suites
 __deprecated__ void rsa_mode(int(0..)|void min_keylength)
 {
-  SSL3_DEBUG_MSG("SSL.context: rsa_mode()\n");
+  SSL3_DEBUG_MSG("SSL.Context: rsa_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
 }
 
@@ -1167,6 +1167,6 @@ __deprecated__ void rsa_mode(int(0..)|void min_keylength)
 //! @deprecated get_suites
 __deprecated__ void dhe_dss_mode(int(0..)|void min_keylength)
 {
-  SSL3_DEBUG_MSG("SSL.context: dhe_dss_mode()\n");
+  SSL3_DEBUG_MSG("SSL.Context: dhe_dss_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
 }

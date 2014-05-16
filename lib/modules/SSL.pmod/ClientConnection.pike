@@ -143,7 +143,7 @@ Packet client_hello()
   ext (EXTENSION_padding, packet_size>255 && packet_size<512)
   {
     int padding = max(0, 512-packet_size-4);
-    SSL3_DEBUG_MSG("SSL.handshake: Adding %d bytes of padding.\n",
+    SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
     return ADT.struct()->add_data("\0"*padding);
   };
@@ -153,7 +153,7 @@ Packet client_hello()
 
   string data = struct->pop_data();
 
-  SSL3_DEBUG_MSG("SSL.handshake: Client hello: %q\n", data);
+  SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", data);
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
@@ -225,7 +225,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   addRecord(type,0);
 #endif
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
-  werror("SSL.handshake: state %s, type %s\n",
+  werror("SSL.ClientConnection: state %s, type %s\n",
 	 fmt_constant(handshake_state, "STATE"),
          fmt_constant(type, "HANDSHAKE"));
   werror("sizeof(data)="+sizeof(data)+"\n");
@@ -244,7 +244,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     }
     else
     {
-      SSL3_DEBUG_MSG("SSL.handshake: SERVER_HELLO\n");
+      SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
       handshake_messages += raw;
       string id;
@@ -315,7 +315,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  int extension_type = extensions->get_uint(2);
 	  ADT.struct extension_data =
 	    ADT.struct(extensions->get_var_string(2));
-	  SSL3_DEBUG_MSG("SSL.handshake->handle_handshake: "
+	  SSL3_DEBUG_MSG("SSL.ClientConnection->handle_handshake: "
 			 "Got extension %s.\n",
 			 fmt_constant(extension_type, "EXTENSION"));
 	  switch(extension_type) {
@@ -418,7 +418,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       return -1;
     case HANDSHAKE_certificate:
       {
-	SSL3_DEBUG_MSG("SSL.handshake: CERTIFICATE\n");
+	SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE\n");
 
       // we're anonymous, so no certificate is requred.
       if(ke && ke->anonymous)
@@ -482,7 +482,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
     case HANDSHAKE_certificate_request:
-      SSL3_DEBUG_MSG("SSL.handshake: CERTIFICATE_REQUEST\n");
+      SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
 
         // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
@@ -532,7 +532,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       break;
 
     case HANDSHAKE_server_hello_done:
-      SSL3_DEBUG_MSG("SSL.handshake: SERVER_HELLO_DONE\n");
+      SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
       /* Send Certificate, ClientKeyExchange, CertificateVerify and
        * ChangeCipherSpec as appropriate, and then Finished.
@@ -630,7 +630,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			"Expected handshake finished.\n"));
       return -1;
     } else {
-      SSL3_DEBUG_MSG("SSL.handshake: FINISHED\n");
+      SSL3_DEBUG_MSG("SSL.ClientConnection: FINISHED\n");
 
       string my_digest;
       if (version == PROTOCOL_SSL_3_0) {
@@ -652,6 +652,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     }
     }
   }
-  //  SSL3_DEBUG_MSG("SSL.handshake: messages = %O\n", handshake_messages);
+  //  SSL3_DEBUG_MSG("SSL.ClientConnection: messages = %O\n", handshake_messages);
   return 0;
 }

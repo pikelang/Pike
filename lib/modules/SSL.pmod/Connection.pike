@@ -3,25 +3,29 @@
 #require constant(SSL.Cipher)
 
 //! SSL.Connection keeps the state relevant for a single SSL connection.
-//! This includes the @[context] object (which doesn't change), various
-//! buffers, the @[session] object (reused or created as appropriate),
+//! This includes the @[Context] object (which doesn't change), various
+//! buffers, the @[Session] object (reused or created as appropriate),
 //! and pending read and write states being negotiated.
 //!
-//! Each connection will have two sets of read and write @[state]s: The
+//! Each connection will have two sets of read and write @[State]s: The
 //! current read and write states used for encryption, and pending read
 //! and write states to be taken into use when the current keyexchange
 //! handshake is finished.
 //!
+//! This object is also responsible for managing incoming and outgoing
+//! packets. Incomiong packets are stored in queue objects and parsed
+//! in priority order.
+//!
 //! @note
-//!   This class should never not be created directly, instead
-//!   one of the classes that inherits it should be used (ie either
+//!   This class should never be created directly, instead one of the
+//!   classes that inherits it should be used (ie either
 //!   @[ClientConnection] or @[ServerConnection]) depending on whether
-//!   this is to be a client-side or server-side connection. These
-//!   in turn are typically created by @[sslfile()->create()].
+//!   this is to be a client-side or server-side connection. These in
+//!   turn are typically created by @[sslfile()->create()].
 //!
 //! @seealso
-//!   @[ClientConnection], @[ServerConnection], @[context],
-//!   @[session], @[sslfile], @[state]
+//!   @[ClientConnection], @[ServerConnection], @[Context],
+//!   @[Session], @[sslfile], @[state]
 
 //#define SSL3_PROFILING
 
@@ -157,7 +161,7 @@ Packet certificate_packet(array(string(8bit)) certificates)
 
   if(certificates && sizeof(certificates))
     len = `+( @ Array.map(certificates, sizeof));
-  //  SSL3_DEBUG_MSG("SSL.handshake: certificate_message size %d\n", len);
+  //  SSL3_DEBUG_MSG("SSL.Connection: certificate_message size %d\n", len);
   struct->put_uint(len + 3 * sizeof(certificates), 3);
   foreach(certificates, string(8bit) cert)
     struct->put_var_string(cert, 3);
@@ -311,22 +315,6 @@ protected void create(Context ctx)
 // --- Old connection.pike below
 //
 
-//! SSL packet layer.
-//!
-//! @[SSL.connection] inherits @[SSL.handshake], and in addition to the state in
-//! the handshake super class, it contains the current read and write
-//! states, packet queues. This object is responsible for receiving and
-//! sending packets, processing handshake packets, and providing clear
-//! text packets for some application.
-
-// SSL/TLS Protocol Specification documents:
-//
-// SSL 2		http://wp.netscape.com/eng/security/SSL_2.html
-// SSL 3.0		http://wp.netscape.com/eng/ssl3/draft302.txt
-//			(aka draft-freier-ssl-version3-02.txt).
-// TLS 1.0 (SSL 3.1)	RFC 2246 "The TLS Protocol Version 1.0".
-// TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
-// Renegotiation	RFC 5746 "Renegotiation Indication Extension".
 
 State current_read_state;
 State current_write_state;
@@ -362,7 +350,7 @@ protected Packet recv_packet(string data)
 {
   string|Packet res;
 
-  //  SSL3_DEBUG_MSG("SSL.connection->recv_packet(%O)\n", data);
+  //  SSL3_DEBUG_MSG("SSL.Connection->recv_packet(%O)\n", data);
   if (left_over || !packet)
   {
     packet = Packet(2048);
@@ -375,11 +363,11 @@ protected Packet recv_packet(string data)
   { /* Finished a packet */
     left_over = [string]res;
     if (current_read_state) {
-      SSL3_DEBUG_MSG("SSL.connection->recv_packet(): version=0x%x\n",
+      SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): version=0x%x\n",
 		     version);
       return current_read_state->decrypt_packet(packet, version);
     } else {
-      SSL3_DEBUG_MSG("SSL.connection->recv_packet(): current_read_state is zero!\n");
+      SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
       return 0;
     }
   }
@@ -395,7 +383,7 @@ protected Packet recv_packet(string data)
 void send_packet(Packet packet, int|void priority)
 {
   if (closing & 1) {
-    SSL3_DEBUG_MSG("SSL.connection->send_packet: ignoring packet after close\n");
+    SSL3_DEBUG_MSG("SSL.Connection->send_packet: ignoring packet after close\n");
     return;
   }
 
@@ -409,7 +397,7 @@ void send_packet(Packet packet, int|void priority)
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_heartbeat : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
-  SSL3_DEBUG_MSG("SSL.connection->send_packet: type %d, pri %d, %O\n",
+  SSL3_DEBUG_MSG("SSL.Connection->send_packet: type %d, pri %d, %O\n",
 		 packet->content_type, priority, packet->fragment[..5]);
   switch (priority)
   {
@@ -445,7 +433,7 @@ string|int to_write()
     return closing ? 1 : "";
   }
 
-  SSL3_DEBUG_MSG("SSL.connection: writing packet of type %d, %O\n",
+  SSL3_DEBUG_MSG("SSL.Connection: writing packet of type %d, %O\n",
                  packet->content_type, packet->fragment[..6]);
   if (packet->content_type == PACKET_alert)
   {
@@ -522,18 +510,18 @@ protected int handle_alert(string s)
   }
   if (level == ALERT_fatal)
   {
-    SSL3_DEBUG_MSG("SSL.connection: Fatal alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %d\n", description);
     return -1;
   }
   if (description == ALERT_close_notify)
   {
-    SSL3_DEBUG_MSG("SSL.connection: Close notify  alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: Close notify  alert %d\n", description);
     closing |= 2;
     return 1;
   }
   if (description == ALERT_no_certificate)
   {
-    SSL3_DEBUG_MSG("SSL.connection: No certificate  alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: No certificate  alert %d\n", description);
 
     if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
     {
@@ -550,7 +538,7 @@ protected int handle_alert(string s)
   }
 #ifdef SSL3_DEBUG
   else
-    werror("SSL.connection: Received warning alert %d\n", description);
+    werror("SSL.Connection: Received warning alert %d\n", description);
 #endif
   return 0;
 }
@@ -559,7 +547,7 @@ int handle_change_cipher(int c)
 {
   if (!expect_change_cipher || (c != 1))
   {
-    SSL3_DEBUG_MSG("SSL.connection: handle_change_cipher: Unexcepted message!");
+    SSL3_DEBUG_MSG("SSL.Connection: handle_change_cipher: Unexcepted message!");
     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Unexpected change cipher!\n"));
     return -1;
@@ -597,7 +585,7 @@ void handle_heartbeat(string(8bit) s)
   int hb_type = hb_msg->get_uint(1);
   int hb_len = hb_msg->get_uint(2);
 
-  SSL3_DEBUG_MSG("SSL.connection: Heartbeat %s (%d bytes)",
+  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
   string(8bit) payload;
@@ -655,7 +643,7 @@ void handle_heartbeat(string(8bit) s)
       }
 #ifdef SSL3_DEBUG
       int delta = gethrtime() - a;
-      SSL3_DEBUG_MSG("SSL.connection: Heartbeat roundtrip: %dus\n", delta);
+      SSL3_DEBUG_MSG("SSL.Connection: Heartbeat roundtrip: %dus\n", delta);
 #endif
     }
     break;
@@ -695,7 +683,7 @@ string|int got_data(string|int s)
 
     if (packet->is_alert)
     { /* Reply alert */
-      SSL3_DEBUG_MSG("SSL.connection: Bad received packet\n");
+      SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       send_packet(packet);
       if (alert_callback)
 	alert_callback(packet, current_read_state->seq_num, alert_context);
@@ -706,13 +694,13 @@ string|int got_data(string|int s)
     }
     else
     {
-      SSL3_DEBUG_MSG("SSL.connection: received packet of type %d\n",
+      SSL3_DEBUG_MSG("SSL.Connection: received packet of type %d\n",
                      packet->content_type);
       switch (packet->content_type)
       {
       case PACKET_alert:
        {
-	 SSL3_DEBUG_MSG("SSL.connection: ALERT\n");
+	 SSL3_DEBUG_MSG("SSL.Connection: ALERT\n");
 
 	 int i;
 	 int err = 0;
@@ -733,7 +721,7 @@ string|int got_data(string|int s)
        }
       case PACKET_change_cipher_spec:
        {
-	 SSL3_DEBUG_MSG("SSL.connection: CHANGE_CIPHER_SPEC\n");
+	 SSL3_DEBUG_MSG("SSL.Connection: CHANGE_CIPHER_SPEC\n");
 
 	 int i;
 	 int err;
@@ -748,7 +736,7 @@ string|int got_data(string|int s)
        }
       case PACKET_handshake:
        {
-	 SSL3_DEBUG_MSG("SSL.connection: HANDSHAKE\n");
+	 SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
 	 if (handshake_finished && !secure_renegotiation) {
 	   // Don't allow renegotiation in unsecure mode, to address
@@ -808,7 +796,7 @@ string|int got_data(string|int s)
 	 break;
        }
       case PACKET_application_data:
-	SSL3_DEBUG_MSG("SSL.connection: APPLICATION_DATA\n");
+	SSL3_DEBUG_MSG("SSL.Connection: APPLICATION_DATA\n");
 
 	if (!handshake_finished)
 	{
@@ -821,7 +809,7 @@ string|int got_data(string|int s)
       case PACKET_heartbeat:
 	{
 	  // RFC 6520.
-	  SSL3_DEBUG_MSG("SSL.connection: Heartbeat.\n");
+	  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat.\n");
 	  if (!handshake_finished) {
 	    // RFC 6520 3:
 	    // The receiving peer SHOULD discard the message silently,
@@ -866,7 +854,7 @@ string|int got_data(string|int s)
 	// RFC 4346 6:
 	//   If a TLS implementation receives a record type it does not
 	//   understand, it SHOULD just ignore it.
-	SSL3_DEBUG_MSG("SSL.connection: Ignoring packet of type %s\n",
+	SSL3_DEBUG_MSG("SSL.Connection: Ignoring packet of type %s\n",
 		       fmt_constant(packet->content_type, "PACKET"));
 	break;
       }
