@@ -458,8 +458,7 @@ protected THREAD_T op_thread;
     }									\
   } while (0)
 
-protected void create (Stdio.File stream, SSL.Context ctx,
-		       int|void is_client, int|void is_blocking)
+protected void create (Stdio.File stream, SSL.Context ctx)
 //! Create an SSL connection over an open @[stream].
 //!
 //! @param stream
@@ -472,8 +471,8 @@ protected void create (Stdio.File stream, SSL.Context ctx,
 //! connection is closed (see @[close] and @[shutdown]). The callbacks
 //! and id in @[stream] are overwritten.
 //!
-//! @throws
-//!   Throws errors on handshake failure in blocking client mode.
+//! @note
+//!   The operation mode defaults to nonblocking mode.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O)\n",
 		  stream, ctx, is_client, is_blocking);
@@ -561,7 +560,17 @@ int(1bit) accept()
   ENTER (0, 0) {
     conn = .ServerConnection(context);
 
-    // FIXME: Wait for the handshake to finish in blocking mode?
+    // Wait for the handshake to finish in blocking mode.
+    if (!nonblocking_mode) {
+      if (!direct_write()) {
+	local_errno = errno();
+	if (stream) {
+	  stream->set_callbacks(0, 0, 0, 0, 0);
+	}
+	conn = UNDEFINED;
+	return 0;
+      }
+    }
   } LEAVE;
 
   return 1;
@@ -569,6 +578,7 @@ int(1bit) accept()
 
 mixed get_server_names()
 {
+  if (!conn) error("No active conection.\n");
   return conn->session->server_names;
 }
 
@@ -576,6 +586,7 @@ mixed get_server_names()
 //!   Returns peer certificate information, if any.
 mapping get_peer_certificate_info()
 {
+  if (!conn) error("No active conection.\n");
   return conn->session->cert_data;
 }
 
@@ -583,6 +594,7 @@ mapping get_peer_certificate_info()
 //!   Returns the peer certificate chain, if any.
 array get_peer_certificates()
 {
+  if (!conn) error("No active conection.\n");
   return conn->session->peer_certificate_chain;
 }
 
@@ -711,7 +723,7 @@ protected void cleanup_on_error()
 // cb_errno.)
 {
   // The session should be purged when an error has occurred.
-  if (conn->session)
+  if (conn && conn->session)
     // Check conn->session since it doesn't exist before the
     // handshake.
     conn->context->purge_session (conn->session);
@@ -739,7 +751,7 @@ Stdio.File shutdown()
 //!   @[close], @[set_alert_callback]
 {
   ENTER (0, 0) {
-    if (!stream) {
+    if (!stream || !conn) {
       SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Already shut down\n");
       RETURN (0);
     }
@@ -1730,7 +1742,7 @@ protected int queue_write()
 // has sent a fatal alert packet (not close notify) for some reason
 // and therefore nullified the connection).
 {
-  int|string res = conn->to_write();
+  int|string res = conn && conn->to_write();
 
 #ifdef SSL3_DEBUG_TRANSPORT
   werror ("queue_write: To write: %O\n", res);
@@ -2283,7 +2295,7 @@ protected int ssl_close_callback (int called_from_real_backend)
 #endif
 
     if (!cb_errno) {
-      if (conn->closing & 2)
+      if (conn && conn->closing & 2)
 	SSL3_DEBUG_MSG ("ssl_close_callback: After clean close\n");
 
       else {
