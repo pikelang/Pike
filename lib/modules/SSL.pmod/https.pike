@@ -143,7 +143,8 @@ class Client
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
-    ssl = SSL.sslfile(con, ctx, 1);
+    ssl = SSL.sslfile(con, ctx);
+    ssl->connect();
     ssl->set_nonblocking(got_data, write_cb, con_closed);
   }
 }

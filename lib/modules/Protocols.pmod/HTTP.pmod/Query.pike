@@ -190,17 +190,19 @@ void start_tls(int|void blocking, int|void async)
     context = SSL.Context();
   }
 
-  if(real_host)
-  {
-    context->client_use_sni = 1;
-    context->client_server_names = ({real_host});
-  }
-
   object read_callback=con->query_read_callback();
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context, 1, blocking);
+  SSL.sslfile ssl = SSL.sslfile(con, context);
+  if (blocking) {
+    ssl->set_blocking();
+  }
+
+  if (!ssl->connect(real_host)) {
+    error("HTTPS connection failed.\n");
+  }
+
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);

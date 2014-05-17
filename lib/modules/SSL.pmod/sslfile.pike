@@ -73,6 +73,9 @@ protected Stdio.File stream;
 protected int(-1..65535) linger_time = -1;
 // The linger behaviour set by linger().
 
+protected .Context context;
+// The context to use.
+
 protected .Connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
@@ -193,8 +196,8 @@ protected constant epipe_errnos = (<
   ((read_callback || write_callback || close_callback || accept_callback) && \
    close_state < NORMAL_CLOSE)
 
-#define SSL_HANDSHAKING (!conn->handshake_finished &&			\
-			 close_state != ABRUPT_CLOSE)
+#define SSL_HANDSHAKING (!conn || (!conn->handshake_finished &&	\
+				   close_state != ABRUPT_CLOSE))
 #define SSL_CLOSING_OR_CLOSED						\
   (close_packet_send_state >= CLOSE_PACKET_SCHEDULED ||			\
    /* conn->closing & 2 is more accurate, but the following is quicker	\
@@ -465,14 +468,6 @@ protected void create (Stdio.File stream, SSL.Context ctx,
 //! @param ctx
 //!   The SSL context.
 //!
-//! @param is_client
-//!   If is set then a client-side connection is started,
-//!   server-side otherwise.
-//!
-//! @param is_blocking
-//!   If is set then the stream is initially set in blocking
-//!   mode, nonblocking mode otherwise.
-//!
 //! The backend used by @[stream] is taken over and restored after the
 //! connection is closed (see @[close] and @[shutdown]). The callbacks
 //! and id in @[stream] are overwritten.
@@ -485,6 +480,8 @@ protected void create (Stdio.File stream, SSL.Context ctx,
 
   ENTER (0, 0) {
     global::stream = stream;
+    global::context = ctx;
+
 #ifdef SSL3_DEBUG
     if (stream->query_fd)
       stream_descr = "fd:" + stream->query_fd();
@@ -512,25 +509,62 @@ protected void create (Stdio.File stream, SSL.Context ctx,
 
     packet_max_size = limit(1, ctx->packet_max_size, SSL.Constants.PACKET_MAX_SIZE);
 
-    if( is_client )
-      conn = .ClientConnection(ctx);
-    else
-      conn = .ServerConnection(ctx);
+    set_nonblocking();
+  } LEAVE;
+}
 
-    if(is_blocking) {
-      set_blocking();
-      if (is_client && !direct_write()) {
-	int err = errno();
-	shutdown();
-	local_errno = err;
-	error("SSL.sslfile: SSL handshake failure: %s\n", strerror(err));
-      }
+//! Configure as client and set up the connection.
+//!
+//! @param dest_addr
+//!   Optional name of the server that we are connected to.
+//!
+//! @returns
+//!   Returns @expr{0@} on handshaking failure in blocking mode,
+//!   and otherwise @expr{1@}.
+int(1bit) connect(string|array(string)|void dest_addr)
+{
+  if (conn) error("A connection is already configured!\n");
+
+  ENTER (0, 0) {
+    if (stringp(dest_addr)) {
+      dest_addr = ({ dest_addr });
     }
-    else {
-      set_nonblocking();
-      if (is_client) queue_write();
+    conn = .ClientConnection(context, dest_addr);
+
+    // Wait for the handshake to finish in blocking mode.
+    if (!nonblocking_mode) {
+      if (!direct_write()) {
+	local_errno = errno();
+	if (stream) {
+	  stream->set_callbacks(0, 0, 0, 0, 0);
+	}
+	conn = UNDEFINED;
+	return 0;
+      }
+    } else {
+      queue_write();
     }
   } LEAVE;
+
+  return 1;
+}
+
+//! Configure as server and set up the connection.
+//!
+//! @returns
+//!   Returns @expr{0@} on handshaking failure in blocking mode,
+//!   and otherwise @expr{1@}.
+int(1bit) accept()
+{
+  if (conn) error("A connection is already configured!\n");
+
+  ENTER (0, 0) {
+    conn = .ServerConnection(context);
+
+    // FIXME: Wait for the handshake to finish in blocking mode?
+  } LEAVE;
+
+  return 1;
 }
 
 mixed get_server_names()

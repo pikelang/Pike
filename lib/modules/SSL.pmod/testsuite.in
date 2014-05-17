@@ -426,9 +426,12 @@ test_do([[
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    SSL.sslfile server = SSL.sslfile(server_con, server_ctx, UNDEFINED, 0);
+    SSL.sslfile server = SSL.sslfile(server_con, server_ctx);
 
-    SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0);
+    SSL.sslfile client = SSL.sslfile(client_con, client_ctx);
+
+    if (!client->connect()) return 0;
+    if (!server->accept()) return 0;
 
     int state;
 
