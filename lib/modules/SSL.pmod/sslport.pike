@@ -56,7 +56,9 @@ void ssl_callback(mixed id)
   object f = socket_accept();
   if (f)
   {
-    .sslfile(f, ctx)->set_accept_callback(finished_callback);
+    object ssl_fd = .sslfile(f, ctx);
+    ssl_fd->accept();
+    ssl_fd->set_accept_callback(finished_callback);
   }
 }
 
