@@ -89,15 +89,6 @@ Alert alert_factory(object con,
   return Alert(level, description, version, message);
 }
 
-//! Should an SSL client include the Server Name extension?
-//!
-//! If so, then client_server_names should specify the values to send.
-int client_use_sni = 0;
-
-//! Host names to send to the server when using the Server Name
-//! extension.
-array(string(8bit)) client_server_names = ({});
-
 //! Policy for client authentication. One of
 //! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
 //! and @[SSL.Constants.AUTHLEVEL_require].
