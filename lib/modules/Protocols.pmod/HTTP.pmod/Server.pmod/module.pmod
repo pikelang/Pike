@@ -41,7 +41,7 @@ string extension_to_type(string extension)
 //! type.
 string filename_to_type(string filename)
 {
-   array v=filename/".";
+  array v=lower_case(filename)/".";
    if (sizeof(v)<2) return extension_to_type("default");
    return extension_to_type(v[-1]);
 }
