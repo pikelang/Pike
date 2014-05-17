@@ -13,8 +13,8 @@
 //! handshake is finished.
 //!
 //! This object is also responsible for managing incoming and outgoing
-//! packets. Incomiong packets are stored in queue objects and parsed
-//! in priority order.
+//! packets. Outgoing packets are stored in queue objects and sent in
+//! priority order.
 //!
 //! @note
 //!   This class should never be created directly, instead one of the
