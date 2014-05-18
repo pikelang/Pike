@@ -342,6 +342,12 @@ test_any([[
 ]], 1)
 ]])
 
+test_any([[
+  Crypto.RSA root_rsa = Crypto.RSA();
+  rsa->generate_key(512);
+  string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"*" ]));
+]], 1)
+
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
 ]]))
