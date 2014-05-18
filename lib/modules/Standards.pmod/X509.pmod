@@ -1691,6 +1691,14 @@ mapping verify_certificate_chain(array(string) cert_chain,
   {
     array(Verifier)|Verifier verifiers;
 
+    // Check not_before. We want the current time to be later.
+    if(my_time < tbs->not_before)
+      ERROR(CERT_TOO_NEW);
+
+    // Check not_after. We want the current time to be earlier.
+    if(my_time > tbs->not_after)
+      ERROR(CERT_TOO_OLD);
+
     if(idx != len-1) // Not the leaf
     {
       // id-ce-basicConstraints is required for certificates with
@@ -1733,7 +1741,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         m->self_signed = 1;
 
         // always trust our own authority first, even if it is self signed.
-        if(!verifiers) 
+        if(!verifiers)
           verifiers = ({ tbs->public_key });
       }
 
@@ -1743,14 +1751,6 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
     else // otherwise, we make sure the chain is unbroken.
     {
-      // Check not_before. We want the current time to be later.
-      if(my_time < tbs->not_before)
-        ERROR(CERT_TOO_NEW);
-
-      // Check not_after. We want the current time to be earlier.
-      if(my_time > tbs->not_after)
-        ERROR(CERT_TOO_OLD);
-
       // is the issuer of this certificate the subject of the previous
       // (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
