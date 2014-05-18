@@ -49,7 +49,7 @@ object check_size(ProtocolVersion version, int|void extra)
 //!
 //!   If there's an error, an alert object is returned.
 //!
-string|.Packet recv(string data, ProtocolVersion version)
+string(8bit)|.Packet recv(string(8bit) data, ProtocolVersion version)
 {
   buffer += data;
   while (sizeof(buffer) >= needed_chars)
