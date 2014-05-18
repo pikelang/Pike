@@ -352,9 +352,23 @@ test_any([[
   cert_rsa->generate_key(512);
   string c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, 3600, ([ "commonName":"*" ]));
 
-  mapping m = Standards.X509.verify_certificate_chain( ({ c }), ([ rtbs->subject->get_der() : rtbs->public_key ]), 1);
-  return m->verified;
+  mapping auths = ([ rtbs->subject->get_der() : rtbs->public_key ]);
+
+  mapping m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(!m->verified || m->error_code) return m;
+
+  c = Standards.X509.make_selfsigned_certificate(cert_rsa, 3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_BAD_SIGNATURE) return m;
+
+  c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, -3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(!m->verified || m->error_code!=Standards.X509.CERT_TOO_OLD) return m;
+
+  return 1;
 ]], 1)
+
+test_true(mappingp(Standards.X509.load_authorities()))
 
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
