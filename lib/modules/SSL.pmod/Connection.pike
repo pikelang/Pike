@@ -318,7 +318,7 @@ protected void create(Context ctx)
 
 State current_read_state;
 State current_write_state;
-string left_over;
+string(8bit) left_over;
 Packet packet;
 
 int sent;
@@ -346,9 +346,9 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 
 //! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
-protected Packet recv_packet(string data)
+protected Packet recv_packet(string(8bit) data)
 {
-  string|Packet res;
+  string(8bit)|Packet res;
 
   //  SSL3_DEBUG_MSG("SSL.Connection->recv_packet(%O)\n", data);
   if (left_over || !packet)
@@ -655,17 +655,47 @@ void handle_heartbeat(string(8bit) s)
 string(8bit) alert_buffer = "";
 string(8bit) handshake_buffer = "";
 
-//! Main receive handler. Returns a string of received application
-//! data, or 1 if a close was received, or -1 if an error occurred.
+//! Main receive handler.
+//!
+//! @param data
+//!   String of data received from the peer.
+//!
+//! @returns
+//!    Returns one of:
+//!    @mixed
+//!      @type string(zero)
+//!        Returns an empty string if there's neither application data
+//!        nor errors (eg during the initial handshake).
+//!      @type string(8bit)
+//!        Returns a string of received application data.
+//!      @type int(1..1)
+//!        Returns @expr{1@} if the peer has closed the connection.
+//!      @type int(-1..-1)
+//!        Returns @expr{-1@} if an error has occurred.
+//!
+//!        These are the main cases of errors:
+//!        @ul
+//!          @item
+//!            There was a low-level protocol communications failure
+//!            (the data didn't look like an SSL packet), in which case
+//!            the alert_callback will be called with the raw packet data.
+//!            This can eg be used to detect HTTP clients connecting to
+//!            an HTTPS server and similar.
+//!          @item
+//!            The peer has sent an @[Alert] packet, and @[handle_alert()]
+//!            for it has returned -1.
+//!          @item
+//!            The peer has sent an unsupported/illegal sequence of
+//!            packets, in which case a suitable @[Alert] will have been
+//!            generated and queued for sending to the peer.
+//!        @endul
+//!    @endmixed
 //!
 //! This function is intended to be called from an i/o read callback.
-string|int got_data(string|int s)
+string(8bit)|int got_data(string(8bit) data)
 {
-  if(!stringp(s)) {
-    return s;
-  }
-
   if (closing & 2) {
+    // The peer has closed the connection.
     return 1;
   }
   // If closing == 1 we continue to try to read a remote close
@@ -673,13 +703,13 @@ string|int got_data(string|int s)
   // to get the leftovers after the SSL connection.
 
   /* If alert_callback is called, this data is passed as an argument */
-  string alert_context = (left_over || "") + s;
+  string(8bit) alert_context = (left_over || "") + data;
 
-  string res = "";
+  string(8bit) res = "";
   Packet packet;
-  while (packet = recv_packet([string]s))
+  while (packet = recv_packet(data))
   {
-    s = "";
+    data = "";
 
     if (packet->is_alert)
     { /* Reply alert */
@@ -860,5 +890,7 @@ string|int got_data(string|int s)
       }
     }
   }
-  return closing & 2 ? 1 : res;
+  if (sizeof(res)) return res;
+  if (closing & 2) return 1;
+  return "";
 }
