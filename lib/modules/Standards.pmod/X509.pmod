@@ -1726,9 +1726,6 @@ mapping verify_certificate_chain(array(string) cert_chain,
       if(!verifiers && require_trust)
         ERROR(CERT_ROOT_UNTRUSTED);
 
-      if( !arrayp(verifiers) )
-        verifiers = ({ verifiers });
-
       // Is the root self signed?
       if (tbs->issuer->get_der() == tbs->subject->get_der())
       {
@@ -1738,9 +1735,10 @@ mapping verify_certificate_chain(array(string) cert_chain,
         // always trust our own authority first, even if it is self signed.
         if(!verifiers) 
           verifiers = ({ tbs->public_key });
-      } else if (objectp(verifiers)) {
-	verifiers = ({ verifiers });
       }
+
+      if (objectp(verifiers))
+	verifiers = ({ verifiers });
     }
 
     else // otherwise, we make sure the chain is unbroken.
