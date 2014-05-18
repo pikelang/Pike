@@ -316,6 +316,31 @@ test_any([[
   return 1;
 ]], 1)
 
+cond_resolv( Crypto.ECC, [[
+test_any([[
+  Crypto.Sign key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
+
+  foreach( ({ 0,
+    Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Crypto.SHA224,
+#endif
+    Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Crypto.SHA512,
+#endif
+  }), object h)
+  {
+    string s = Standards.X509.make_selfsigned_certificate(key, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
+]], 1)
+]])
 
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
