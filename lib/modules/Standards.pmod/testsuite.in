@@ -344,8 +344,16 @@ test_any([[
 
 test_any([[
   Crypto.RSA root_rsa = Crypto.RSA();
-  rsa->generate_key(512);
+  root_rsa->generate_key(512);
   string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"*" ]));
+  object rtbs = Standards.X509.decode_certificate(root);
+
+  Crypto.RSA cert_rsa = Crypto.RSA();
+  cert_rsa->generate_key(512);
+  string c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, 3600, ([ "commonName":"*" ]));
+
+  mapping m = Standards.X509.verify_certificate_chain( ({ c }), ([ rtbs->subject->get_der() : rtbs->public_key ]), 1);
+  return m->verified;
 ]], 1)
 
 define(test_cert, ([[

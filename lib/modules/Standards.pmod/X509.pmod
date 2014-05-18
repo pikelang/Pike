@@ -1149,16 +1149,21 @@ Sequence sign_tbs(TBSCertificate tbs,
 		  }));
 }
 
-//! Low-level function for creating a self-signed certificate.
+//! Low-level function for creating a signed certificate.
 //!
 //! @param issuer
 //!   Distinguished name for the issuer.
 //!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param c
-//!   RSA, DSA or ECDSA parameters for the issuer.
-//!   Both the public and the private keys need to be set.
-//!   See @[Crypto.RSA], @[Crypto.DSA] and @[Crypto.ECC.Curve.ECDSA].
+//!   RSA, DSA or ECDSA parameters for the subject. Only the public
+//!   key needs to be set. See @[Crypto.RSA], @[Crypto.DSA] and
+//!   @[Crypto.ECC.Curve.ECDSA].
+//!
+//! @param ca
+//!   RSA, DSA or ECDSA parameters for the issuer. Only the private
+//!   key needs to be set. See @[Crypto.RSA], @[Crypto.DSA] and
+//!   @[Crypto.ECC.Curve.ECDSA].
 //!
 //! @param h
 //!   The hash function to use for the certificate. Must be one of the
@@ -1186,7 +1191,7 @@ Sequence sign_tbs(TBSCertificate tbs,
 //!
 //! @seealso
 //!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
-string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
+string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Sign ca, Crypto.Hash h,
                 Sequence subject, int serial, int ttl, array|mapping|void extensions)
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
@@ -1205,7 +1210,7 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Hash h,
   return sign_tbs(make_tbs(issuer, algorithm_id,
 			   subject, c->pkcs_public_key(),
 			   Integer(serial), ttl, extensions),
-		  c, h)->get_der();
+		  ca, h)->get_der();
 }
 
 //! Creates a certificate extension with the @[id] as identifier and
@@ -1281,7 +1286,61 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
   add("basicConstraints", Sequence(({Boolean(0)})), 1);
 
-  return sign_key(dn, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+}
+
+string make_site_certificate(TBSCertificate ca, Crypto.Sign ca_key,
+                             Crypto.Sign c, int ttl, mapping|array name,
+                             mapping|void extensions,
+                             void|Crypto.Hash h, void|int serial)
+{
+  if(!serial)
+    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
+
+  Sequence dn = Certificate.build_distinguished_name(name);
+
+  void add(string name, Object data, void|int critical)
+  {
+    Identifier id = Identifiers.ce_ids[name];
+    if(!extensions[id])
+      extensions[id] = make_extension(id, data, critical);
+  };
+
+  if(!extensions) extensions = ([]);
+  // FIXME: authorityKeyIdentifier
+  add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
+  add("basicConstraints", Sequence(({Boolean(0)})), 1);
+  return sign_key(dn, c, ca_key, h||Crypto.SHA256, ca->subject, serial, ttl, extensions);
+}
+
+string make_root_certificate(Crypto.Sign c, int ttl,
+                                   mapping|array name,
+                                   mapping(Identifier:Sequence)|void extensions,
+                                   void|Crypto.Hash h, void|int serial)
+{
+  if(!serial)
+    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
+
+  Sequence dn = Certificate.build_distinguished_name(name);
+
+  void add(string name, Object data, void|int critical)
+  {
+    Identifier id = Identifiers.ce_ids[name];
+    if(!extensions[id])
+      extensions[id] = make_extension(id, data, critical);
+  };
+
+  if(!extensions) extensions = ([]);
+
+  // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
+  // STRING part of the subjectPublicKey, it is only a suggestion.
+  // FIXME: authorityKeyIdentifier
+  add("subjectKeyIdentifier",
+      OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ));
+  add("keyUsage", build_keyUsage(KU_keyCertSign|KU_cRLSign), 1);
+  add("basicConstraints", Sequence(({Boolean(1)})), 1);
+
+  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
 //! Decodes a certificate and verifies that it is structually sound.
@@ -1666,6 +1725,9 @@ mapping verify_certificate_chain(array(string) cert_chain,
       // require trust, we're done.
       if(!verifiers && require_trust)
         ERROR(CERT_ROOT_UNTRUSTED);
+
+      if( !arrayp(verifiers) )
+        verifiers = ({ verifiers });
 
       // Is the root self signed?
       if (tbs->issuer->get_der() == tbs->subject->get_der())
