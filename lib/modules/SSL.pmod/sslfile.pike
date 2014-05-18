@@ -550,15 +550,34 @@ int(1bit) connect(string|array(string)|void dest_addr)
 
 //! Configure as server and set up the connection.
 //!
+//! @param pending_data
+//!   Any data that has already been read from the stream.
+//!   This is typically used with protocols that use
+//!   START TLS or similar, where there's a risk that
+//!   "too much" data (ie part of the TLS ClientHello) has
+//!   been read from the stream before deciding that the
+//!   connection is to enter TLS-mode.
+//!
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise @expr{1@}.
-int(1bit) accept()
+int(1bit) accept(string|void pending_data)
 {
   if (conn) error("A connection is already configured!\n");
 
   ENTER (0, 0) {
     conn = .ServerConnection(context);
+
+    if (sizeof(pending_data || "")) {
+      if (intp(conn->got_data(pending_data))) {
+	local_errno = errno();
+	if (stream) {
+	  stream->set_callbacks(0, 0, 0, 0, 0);
+	}
+	conn = UNDEFINED;
+	return 0;
+      }
+    }
 
     // Wait for the handshake to finish in blocking mode.
     if (!nonblocking_mode) {
