@@ -510,18 +510,19 @@ protected int handle_alert(string s)
   }
   if (level == ALERT_fatal)
   {
-    SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %O\n",
+                   ALERT_descriptions[description]);
     return -1;
   }
   if (description == ALERT_close_notify)
   {
-    SSL3_DEBUG_MSG("SSL.Connection: Close notify  alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: %O\n", ALERT_descriptions[description]);
     closing |= 2;
     return 1;
   }
   if (description == ALERT_no_certificate)
   {
-    SSL3_DEBUG_MSG("SSL.Connection: No certificate  alert %d\n", description);
+    SSL3_DEBUG_MSG("SSL.Connection: %O\n", ALERT_descriptions[description]);
 
     if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
     {
@@ -538,7 +539,8 @@ protected int handle_alert(string s)
   }
 #ifdef SSL3_DEBUG
   else
-    werror("SSL.Connection: Received warning alert %d\n", description);
+    werror("SSL.Connection: Received warning alert %O\n",
+           ALERT_descriptions[description]);
 #endif
   return 0;
 }
