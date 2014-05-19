@@ -95,15 +95,6 @@ array(array(int)) signature_algorithms = ({
   ({ HASH_sha, SIGNATURE_rsa }),
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_ecdsa }),
-
-  ({ HASH_sha224, SIGNATURE_rsa }),
-  ({ HASH_sha224, SIGNATURE_ecdsa }),
-  ({ HASH_sha256, SIGNATURE_rsa }),
-  ({ HASH_sha256, SIGNATURE_ecdsa }),
-  ({ HASH_sha384, SIGNATURE_rsa }),
-  ({ HASH_sha384, SIGNATURE_ecdsa }),
-  ({ HASH_sha512, SIGNATURE_rsa }),
-  ({ HASH_sha512, SIGNATURE_ecdsa }),
 });
 
 //! Supported elliptical curve cipher curves in order of preference.
