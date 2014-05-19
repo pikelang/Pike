@@ -1994,7 +1994,8 @@ class Evaluator {
       case "do":
       case "while":
       case "foreach":
-	// Parse loops.
+      case "switch":
+	// Value-less statements
 	evaluate(expr->code(), 0);
 	return 0;
 
