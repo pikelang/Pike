@@ -195,6 +195,8 @@ test_hilfe("int a = 3;", "")
 test_hilfe("int b = 23;", "")
 test_hilfe("a & b;", "3")
 
+test_hilfe("switch(a) { case 2: return 1; case 3: return 2; }", "Ok.\n")
+
 test_do( add_constant("testhilfe") )
 
 test_true([[ Tools.Hilfe.StdinHilfe ]])
