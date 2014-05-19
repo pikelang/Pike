@@ -474,8 +474,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @note
 //!   The operation mode defaults to nonblocking mode.
 {
-  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O)\n",
-		  stream, ctx, is_client, is_blocking);
+  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O)\n", stream, ctx);
 
   ENTER (0, 0) {
     global::stream = stream;
