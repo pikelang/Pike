@@ -89,9 +89,6 @@ array(array(int)) signature_algorithms = ({
   // Note: this is a change from TLS 1.1 where there are no explicit
   // rules, but as a practical matter one can assume that the peer
   // supports MD5 and SHA-1.
-  ({ HASH_md5, SIGNATURE_rsa }),
-  ({ HASH_md5, SIGNATURE_dsa }),
-  // NB: MD5 is not supported with ECDSA.
   ({ HASH_sha, SIGNATURE_rsa }),
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_ecdsa }),
