@@ -130,8 +130,16 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
     case CIPHER_aead:
 
       // NB: Only valid in TLS 1.2 and later.
-      // The message consists of explicit_iv + crypted-msg + digest.
-      string iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
+      string iv;
+      if (session->cipher_spec->explicit_iv_size) {
+	// The message consists of explicit_iv + crypted-msg + digest.
+	iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
+      } else {
+	// ChaCha20-POLY1305 uses an implicit iv, and no salt,
+	// but we've generalized it here to allow for ciphers
+	// using salt and implicit iv.
+	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
+      }
       int digest_size = crypt->digest_size();
       string digest = msg[<digest_size-1..];
       crypt->set_iv(iv);
@@ -276,17 +284,24 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
       }
       break;
     case CIPHER_aead:
-      // RFC 5288 3:
-      // The nonce_explicit MAY be the 64-bit sequence number.
-      //
-      // Draft ChaCha20-Poly1305 5:
-      //   When used in TLS, the "record_iv_length" is zero and the nonce is
-      //   the sequence number for the record, as an 8-byte, big-endian number.
       // FIXME: Do we need to pay attention to threads here?
-      string explicit_iv =
-	sprintf("%*c", session->cipher_spec->explicit_iv_size,
-		seq_num);
-      crypt->set_iv(salt + explicit_iv);
+      string explicit_iv = "";
+      string iv;
+      if (session->cipher_spec->explicit_iv_size) {
+	// RFC 5288 3:
+	// The nonce_explicit MAY be the 64-bit sequence number.
+	//
+	explicit_iv = sprintf("%*c", session->cipher_spec->explicit_iv_size,
+			      seq_num);
+	iv = salt + explicit_iv;
+      } else {
+	// Draft ChaCha20-Poly1305 5:
+	//   When used in TLS, the "record_iv_length" is zero and the nonce is
+	//   the sequence number for the record, as an 8-byte, big-endian
+	//   number.
+	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
+      }
+      crypt->set_iv(iv);
       string auth_data = sprintf("%8c%c%2c%2c",
 				 seq_num, packet->content_type,
 				 packet->protocol_version,
