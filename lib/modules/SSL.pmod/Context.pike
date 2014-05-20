@@ -220,12 +220,15 @@ array(string(8bit)) advertised_protocols;
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = PACKET_MAX_SIZE;
 
+// The signature algorithms to use. According to RFC 5246 7.4.2 all
+// certificates needs to be signed by any of the supported signature
+// algorithms. This trivially means that any combinaton that doesn't
+// have a PKCS identifier isn't allowed.
 array(array(int)) signature_algorithms = ({
 #if constant(Crypto.SHA512)
 #if constant(Crypto.ECC.Curve)
   ({ HASH_sha512, SIGNATURE_ecdsa }),
 #endif
-  ({ HASH_sha512, SIGNATURE_dsa }),
   ({ HASH_sha512, SIGNATURE_rsa }),
 #endif
 #if constant(Crypto.SHA384)
