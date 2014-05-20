@@ -2333,9 +2333,11 @@ string(0..255) read_file(string filename,void|int start,void|int len)
       error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
     break;
 
-  case 2:
-    len=0x7fffffff;
   case 3:
+    if( len==0 )
+      return "";
+    // Fallthrough
+  case 2:
     while(start--) {
       if (!f->gets())
 	if (int err = f->errno())
@@ -2343,6 +2345,13 @@ string(0..255) read_file(string filename,void|int start,void|int len)
 	else
 	  return "";		// EOF reached.
     }
+
+    if( len==0 )
+    {
+      ret=f->read();
+      break;
+    }
+
     String.Buffer buf=String.Buffer();
     while(len--)
     {
@@ -2406,15 +2415,16 @@ string(0..255) read_bytes(string filename, void|int start,void|int len)
 
   switch(query_num_arg())
   {
-  case 1:
-  case 2:
-    len=0x7fffffff;
   case 3:
+    if( len==0 )
+      return "";
+    // Fallthrough
+  case 2:
     if(start)
       if (f->seek(start) < 0)
 	error ("Failed to seek in %O: %s\n", filename, strerror(f->errno()));
   }
-  ret=f->read(len);
+  ret = len ? f->read(len) : f->read();
   if (!ret)
     error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
   f->close();
