@@ -83,6 +83,11 @@ class CipherSpec {
   //! This is used by AEAD ciphers, where there's a secret part of the iv
   //! "salt" of length @[iv_size], and an explicit part that is sent in
   //! the clear.
+  //!
+  //! This is usually @expr{bulk_cipher_algorithm->iv_size() - iv_size@},
+  //! but may be set to zero to just have the sequence number expanded
+  //! to the same size as an implicit iv. This is used by the suites
+  //! with @[Crypto.ChaCha20.POLY1305].
   int explicit_iv_size;
 
   //! The effective number of bits in @[key_material].
@@ -1565,7 +1570,7 @@ array lookup(int suite, ProtocolVersion|int version,
     res->key_material = 32;
     res->key_bits = 256;
     res->iv_size = 0;		// Length of the salt.
-    res->explicit_iv_size = 8;	// Length of the explicit nonce/iv.
+    res->explicit_iv_size = 0;	// Length of the explicit nonce/iv.
     res->hash_size = 0;		// No need for MAC keys.
     res->mac_algorithm = 0;	// MACs are not used with AEAD.
 
@@ -1708,6 +1713,7 @@ array lookup(int suite, ProtocolVersion|int version,
 #if constant(Crypto.ChaCha20.POLY1305)
     case MODE_poly1305:
       res->mac_algorithm = 0;		// MACs are not used with AEAD.
+      res->hash_size = 0;
       break;
 #endif
     default:
