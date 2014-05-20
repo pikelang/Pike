@@ -3894,7 +3894,7 @@ void f_create_process(INT32 args)
       {
 	if( chroot( mchroot ) )
         {
-	  /* FIXME: Is this fprintf safe (no, it's not if we use vfork)? */
+	  /* fprintf is not safe if we use vfork. */
 	  PROC_FPRINTF((stderr,
 			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
 			getpid(), chroot, errno));
@@ -3913,7 +3913,7 @@ void f_create_process(INT32 args)
       {
         if( chdir( tmp_cwd ) )
         {
-	  /* FIXME: Is this fprintf safe (no, it's not if we use vfork)? */
+	  /* fprintf is not safe if we use vfork. */
 	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
 			getpid(), tmp_cwd, errno));
           PROCERROR(PROCE_CHDIR, 0);
@@ -4223,7 +4223,7 @@ void f_create_process(INT32 args)
 
       execvp(storage.argv[0],storage.argv);
 
-      /* FIXME: Is this fprintf safe (nope, still not safe. :))? */
+      /* fprintf is not safe if we use vfork. */
       PROC_FPRINTF((stderr,
 		    "[%d] Child: execvp(\"%s\", ...) failed\n"
 		    "errno = %d\n",
