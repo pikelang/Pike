@@ -389,227 +389,226 @@ static void stat_create (INT32 args)
 void f_min(INT32 args);
 void f_max(INT32 args);
 
+static void _stat_index(INT_TYPE code)
+{
+  if (!code) {
+    /* Fall back to a normal index on this object, in case
+     * someone inherited us. */
+    struct svalue res;
+    object_index_no_free2 (&res, fp->current_object, 0, sp-1);
+    pop_stack();
+    *sp++ = res;
+    return;
+  }
+
+  switch (code)
+  {
+    case STAT_DEV: push_int(THIS_STAT->s.st_dev); break;
+    case STAT_INO: push_int(THIS_STAT->s.st_ino); break;
+    case STAT_MODE: push_int(THIS_STAT->s.st_mode); break;
+    case STAT_NLINK: push_int(THIS_STAT->s.st_nlink); break;
+    case STAT_UID: push_int(THIS_STAT->s.st_uid); break;
+    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
+    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
+    case STAT_SIZE: push_int64(THIS_STAT->s.st_size); break;
+#ifdef HAVE_STRUCT_STAT_BLOCKS
+    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
+    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
+#endif
+    case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
+    case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
+    case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
+
+    case STAT_ISREG:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFREG); break;
+    case STAT_ISLNK:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFLNK); break;
+    case STAT_ISDIR:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFDIR); break;
+    case STAT_ISCHR:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFCHR); break;
+    case STAT_ISBLK:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFBLK); break;
+    case STAT_ISFIFO:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFIFO); break;
+    case STAT_ISSOCK:
+      push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFSOCK); break;
+
+    case STAT_TYPE:
+      switch (THIS_STAT->s.st_mode & S_IFMT)
+      {
+        case S_IFREG: ref_push_string(str_type_reg); break;
+        case S_IFDIR: ref_push_string(str_type_dir); break;
+        case S_IFLNK: ref_push_string(str_type_lnk); break;
+        case S_IFCHR: ref_push_string(str_type_chr); break;
+        case S_IFBLK: ref_push_string(str_type_blk); break;
+        case S_IFIFO: ref_push_string(str_type_fifo); break;
+        case S_IFSOCK: ref_push_string(str_type_sock); break;
+        default: ref_push_string(str_type_unknown); break;
+      }
+      break;
+
+    case STAT_MODE_STRING:
+      switch (THIS_STAT->s.st_mode & S_IFMT)
+      {
+        case S_IFREG:
+          push_constant_text("-");
+          break;
+        case S_IFDIR:
+          push_constant_text("d");
+          break;
+        case S_IFLNK:
+          push_constant_text("l");
+          break;
+        case S_IFCHR:
+          push_constant_text("c");
+          break;
+        case S_IFBLK:
+          push_constant_text("b");
+          break;
+        case S_IFIFO:
+          push_constant_text("f");
+          break;
+        case S_IFSOCK:
+          push_constant_text("s");
+          break;
+        default:
+          push_constant_text("?");
+          break;
+      }
+
+      if ( (THIS_STAT->s.st_mode & S_IRUSR) )
+        push_constant_text("r");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_IWUSR) )
+        push_constant_text("w");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_ISUID) )
+        if ( (THIS_STAT->s.st_mode & S_IXUSR) )
+          push_constant_text("s");
+        else
+          push_constant_text("S");
+      else
+        if ( (THIS_STAT->s.st_mode & S_IXUSR) )
+          push_constant_text("x");
+        else
+          push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_IRGRP) )
+        push_constant_text("r");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_IWGRP) )
+        push_constant_text("w");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_ISGID) )
+        if ( (THIS_STAT->s.st_mode & S_IXGRP) )
+          push_constant_text("s");
+        else
+          push_constant_text("S");
+      else
+        if ( (THIS_STAT->s.st_mode & S_IXGRP) )
+          push_constant_text("x");
+        else
+          push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_IROTH) )
+        push_constant_text("r");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_IWOTH) )
+        push_constant_text("w");
+      else
+        push_constant_text("-");
+
+      if ( (THIS_STAT->s.st_mode & S_ISVTX) )
+        if ( (THIS_STAT->s.st_mode & S_IXOTH) )
+          push_constant_text("t");
+        else
+          push_constant_text("T");
+      else
+        if ( (THIS_STAT->s.st_mode & S_IXOTH) )
+          push_constant_text("x");
+        else
+          push_constant_text("-");
+
+      f_add(10);
+      break;
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("stat_index is not kept up-to-date with stat_map.\n");
+#endif
+  }
+}
+
 static void stat_index(INT32 args)
 {
-   if (!args) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stat `[]",1);
-   else if (args==1)
-   {
-      if (TYPEOF(sp[-1]) == T_INT)
-      {
-	 int index = sp[-1].u.integer;
-	 pop_stack();
-	 stat_push_compat(index);
-      }
-      else if (TYPEOF(sp[-1]) == T_STRING)
-      {
-	 INT_TYPE code;
+  if( !args )
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stat `[]",1);
+  else if( args == 1 )
+  {
+    if (TYPEOF(sp[-1]) == T_INT)
+    {
+      int index = sp[-1].u.integer;
+      pop_stack();
+      stat_push_compat(index);
+    }
+    else if( TYPEOF(sp[-1]) == T_STRING )
+    {
+      struct svalue *tmp;
+      tmp = low_mapping_string_lookup( stat_map, sp[-1].u.string );
+      _stat_index( tmp ? tmp->u.integer : 0 );
+    }
+    else
+      SIMPLE_BAD_ARG_ERROR("Stat `[]",1,"int(0..6)|string");
+  }
+  else if (args>=2) /* range */
+  {
+    INT_TYPE from, to, n=0;
 
-	 ref_push_mapping(stat_map);
-	 push_svalue (sp-2);
-	 f_index(2);
-	 code = sp[-1].u.integer;	/* always integer there now */
-	 pop_stack();
+    if (args > 2) {
+      pop_n_elems(args - 2);
+      args = 2;
+    }
 
-	 if (!code) {
-	   /* Fall back to a normal index on this object, in case
-	    * someone inherited us. */
-	   struct svalue res;
-	   object_index_no_free2 (&res, fp->current_object, 0, sp-1);
-	   pop_stack();
-	   *sp++ = res;
-	   return;
-	 }
-	 pop_stack();
-	 
-	 switch (code)
-	 {
-	    case STAT_DEV: push_int(THIS_STAT->s.st_dev); break;
-	    case STAT_INO: push_int(THIS_STAT->s.st_ino); break;
-	    case STAT_MODE: push_int(THIS_STAT->s.st_mode); break;
-	    case STAT_NLINK: push_int(THIS_STAT->s.st_nlink); break;
-	    case STAT_UID: push_int(THIS_STAT->s.st_uid); break;
-	    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
-	    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
-	    case STAT_SIZE: push_int64(THIS_STAT->s.st_size); break;
-#ifdef HAVE_STRUCT_STAT_BLOCKS
-	    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
-	    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
-#endif
-	    case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
-	    case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
-	    case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
+    if (TYPEOF(sp[-2]) != T_INT &&
+        !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
+      SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
 
-	    case STAT_ISREG: 
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFREG); break;
-	    case STAT_ISLNK:
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFLNK); break;
-	    case STAT_ISDIR: 
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFDIR); break;
-	    case STAT_ISCHR: 
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFCHR); break;
-	    case STAT_ISBLK: 
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFBLK); break;
-	    case STAT_ISFIFO: 
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFIFO); break;
-	   case STAT_ISSOCK:
-	       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFSOCK); break;
+    if (TYPEOF(sp[-1]) != T_INT &&
+        !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
+      SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
 
-	    case STAT_TYPE:
-	       switch (THIS_STAT->s.st_mode & S_IFMT)
-	       {
-		  case S_IFREG: ref_push_string(str_type_reg); break;
-		  case S_IFDIR: ref_push_string(str_type_dir); break;
-		  case S_IFLNK: ref_push_string(str_type_lnk); break;
-		  case S_IFCHR: ref_push_string(str_type_chr); break;
-		  case S_IFBLK: ref_push_string(str_type_blk); break;
-		  case S_IFIFO: ref_push_string(str_type_fifo); break;
-		  case S_IFSOCK: ref_push_string(str_type_sock); break;
-		  default: ref_push_string(str_type_unknown); break;
-	       }
-	       break;
-	       
-	    case STAT_MODE_STRING:
-	       switch (THIS_STAT->s.st_mode & S_IFMT)
-	       {
-		  case S_IFREG:
-		     push_constant_text("-");
-		     break;
-		  case S_IFDIR:
-		     push_constant_text("d");
-		     break;
-		  case S_IFLNK:
-		     push_constant_text("l");
-		     break;
-		  case S_IFCHR:
-		     push_constant_text("c");
-		     break;
-		  case S_IFBLK:
-		     push_constant_text("b");
-		     break;
-		  case S_IFIFO:
-		     push_constant_text("f");
-		     break;
-		  case S_IFSOCK:
-		     push_constant_text("s");
-		     break;
-		  default:
-		     push_constant_text("?");
-		     break;
-	       }
+    /* make in range 0..6 */
+    push_int(6);
+    f_min(2);
+    stack_swap();
+    push_int(0);
+    f_max(2);
+    stack_swap();
 
-	       if ( (THIS_STAT->s.st_mode & S_IRUSR) )
-		  push_constant_text("r");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_IWUSR) )
-		  push_constant_text("w");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_ISUID) )
-		 if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-		   push_constant_text("s");
-		 else
-		   push_constant_text("S");
-	       else
-		 if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-		   push_constant_text("x");
-		 else
-		   push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_IRGRP) )
-		  push_constant_text("r");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_IWGRP) )
-		  push_constant_text("w");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_ISGID) )
-		  if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-		     push_constant_text("s");
-		  else
-		     push_constant_text("S");
-	       else
-		  if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-		     push_constant_text("x");
-		  else
-		     push_constant_text("-");
+    from = sp[-2].u.integer;
+    to = sp[-1].u.integer;
 
-	       if ( (THIS_STAT->s.st_mode & S_IROTH) )
-		  push_constant_text("r");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_IWOTH) )
-		  push_constant_text("w");
-	       else
-		  push_constant_text("-");
-		  
-	       if ( (THIS_STAT->s.st_mode & S_ISVTX) )
-		 if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-		   push_constant_text("t");
-		 else
-		   push_constant_text("T");
-	       else
-		 if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-		   push_constant_text("x");
-		 else
-		   push_constant_text("-");
-		  
-	       f_add(10);
+    pop_n_elems(args);
 
-	       break;
-
-	   default:
-	     Pike_fatal ("stat_index is not kept up-to-date with stat_map.\n");
-	 }
-      }
-      else
-	 SIMPLE_BAD_ARG_ERROR("Stat `[]",1,"int(0..6)|string");
-   }
-   else if (args>=2) /* range */
-   {
-      INT_TYPE from, to, n=0;
-
-      if (args > 2) {
-	pop_n_elems(args - 2);
-	args = 2;
-      }
-
-      if (TYPEOF(sp[-2]) != T_INT &&
-	  !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
-	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
-
-      if (TYPEOF(sp[-1]) != T_INT &&
-	  !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
-	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
-
-      /* make in range 0..6 */
-      push_int(6);
-      f_min(2);
-      stack_swap();
-      push_int(0);
-      f_max(2);
-      stack_swap();
-
-      from = sp[-2].u.integer;
-      to = sp[-1].u.integer;
-
-      pop_n_elems(args);
-      
-      while (from<=to)
-      {
-	 stat_push_compat(from++);
-	 n++;
-      }
-      f_aggregate(n);
-   }
+    while (from<=to)
+    {
+      stat_push_compat(from++);
+      n++;
+    }
+    f_aggregate(n);
+  }
 }
+
 
 static void stat_index_set (INT32 args)
 {
@@ -861,14 +860,12 @@ static void stat__sprintf(INT32 args)
    {
       case 'O':
 	 n++; push_constant_text("Stat(");
-	 
-	 ref_push_string(stat_index_strs[STAT_MODE_STRING]);
-	 n++; stat_index(1);
+
+	 n++; _stat_index(STAT_MODE_STRING);
 
 	 n++; push_constant_text(" ");
-	 
-	 ref_push_string(stat_index_strs[STAT_SIZE]);
-	 n++; stat_index(1);
+
+	 n++; _stat_index(STAT_SIZE);
 	 n++; push_constant_text("b)");
 	 f_add(n);
 	 return;
