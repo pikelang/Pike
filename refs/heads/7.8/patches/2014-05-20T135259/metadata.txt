@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: SSL linger, timezone data
 from: f562044d9b69d265a58b827a0589f7e36b7eeca0
 to: 21ad980bd68a967f1eff8c9015104441f7e983fe
 originator: wellhardh@roxen.com
@@ -9,90 +9,11 @@ Multiple fixes:
 
   * Updated to tzdata2014b.
 
-  * release number bumped to 852 by export.pike
-
-  * release number bumped to 853 by export.pike
-
-  * release number bumped to 854 by export.pike
-
-  * release number bumped to 855 by export.pike
-
-  * Parser.HTML: overlap in arguments to MEMCPY
-
-  * Compiler: Fixed type derivation for attributed getters.
-    
-    The getter/setter variable should now get the correct type even
-    when the getter/setter functions have been marked as deprecated.
-
-  * Build: Get rid of some C++-style comments.
-
-  * Nettle: Support Nettle 3.0.
-    
-    cast128_set_key() in Nettle 3.0 has a different number of arguments
-    than previous versions of Nettle.
-
-  * Optimizer: Fixed reference underflow in treeopt.
-    
-    The reference count for reused nodes needs to be bumped once
-    for every occurence...
-    
-    This bug was triggered at least by the empty loop ==> assignment rules,
-    with the effect that the free list in block alloc got corrupted.
-    
-    Example code that triggered the bug:
-    
-      int i;
-      array a;
-      for(; i < sizeof(a); i++)
-        ;
-
-  * release number bumped to 856 by export.pike
-
-  * release number bumped to 857 by export.pike
-
-  * Backend: Improve robustness of reentrancy check.
-    
-    The reentrancy protection was broken after the first detection.
-
-  * Backend: unhook_fd_callback_box() now also unlinks.
-    
-    Active fd boxes that were destructed could potentially have their
-    next link zapped, which would break the cyclic list and drop the
-    following fd boxes on the floor, and not having them get added to
-    the active fd_list any more.
-    
-    Potential fix for backend stopping notifications on some long time
-    fds, and starting to eat 100% cpu.
-
-  * release number bumped to 858 by export.pike
-
-  * release number bumped to 859 by export.pike
-
-  * release number bumped to 860 by export.pike
-
-  * release number bumped to 861 by export.pike
-
-  * Backend: Fixed potential double free on exit.
-    
-    The code that freed registered fd boxes on termination of a backend
-    did not invalidate the reference, this may have caused a reference
-    underflow for fds that still were registered in the now dead backend.
-    
-    We now use the proper unhook code to de-register the fd boxes.
-
-  * release number bumped to 862 by export.pike
-
-  * release number bumped to 863 by export.pike
-
   * SSL.sslfile: Reducing linger time to zero wasn't a good idea...
     
     Setting linger time to zero can cause data pending in the network
     buffers not to be sent, and thus cause data loss at end of stream.
     
     Fixes [bug 7126].
-
-  * release number bumped to 864 by export.pike
-
-  * release number bumped to 865 by export.pike
 
   * Updated to tzdata2014c.
