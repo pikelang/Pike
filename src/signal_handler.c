@@ -368,6 +368,22 @@
 #define SAFE_FIFO_DEBUG_END()  }while(0)
 #endif
 
+
+/* There is really no need at all to optimize this for speed.
+
+   The issue is that the loops checking EINTR etc are unrolled 32
+   times or so, which is very very pointless and makes the code size
+   explode for no good reason.
+
+   An alternative solution would be helper functions for all
+   systemcalls that can be interrupted (in reality, usually none when
+   using modern OS:es and setting the signal flags correctly, but...)
+*/
+
+#ifdef __GNUC__
+#pragma GCC optimize "-Os"
+#endif
+
 extern int fd_from_object(struct object *o);
 static int set_priority( int pid, char *to );
 
@@ -1071,7 +1087,7 @@ void forkd(int fd)
   if (fd != 3) {
     do {
       i = dup2(fd, 3);
-    } while ((i < 0) && ((errno == EINTR) || (errno == EBUSY)));
+    } while (UNLIKELY(i < 0) && UNLIKELY((errno == EINTR) || (errno == EBUSY)));
     if (i < 0) {
       write(2, "FORKD: Failed to dup fd!\n", 25);
       _exit(0);
@@ -1082,7 +1098,7 @@ void forkd(int fd)
     int j;
     do {
       j = close(i);
-    } while ((j < 0) && (errno == EINTR));
+    } while (UNLIKELY(j < 0) && UNLIKELY(errno == EINTR));
     if ((j < 0) && (errno == EBADF)) num_fail++;
   }
 
@@ -1095,7 +1111,7 @@ void forkd(int fd)
     iov.iov_len = 1;
     do {
       i = recvmsg(fd, &msg, 0);
-    } while ((i < 0) && (errno == EINTR));
+    } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
     if (!i) _exit(0);	/* Connection closed, shutdown forkd. */
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
       int ctrl_fd = NULL;
@@ -1108,7 +1124,7 @@ void forkd(int fd)
       num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
       do {
 	i = fork();
-      } while ((i < 0) && (errno == EINTR));
+      } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
       if (i < 0) {
 	/* Fork failure. */
       } else if (i) {
@@ -1119,7 +1135,7 @@ void forkd(int fd)
       }
       do {
 	i = close(ctrl_fd);
-      } while ((i < 0) && (errno == EINTR));
+      } while (UNLIKELY(i < 0) && UNLIKELY(errno == EINTR));
     }
   }
 }
@@ -1447,12 +1463,12 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 
       PROC_FPRINTF((stderr, "[%d] wait thread: pid=%d status=%d errno=%d\n",
 		    getpid(), pid, status, errno));
-    
+
 #ifdef ENODEV
       /* FreeBSD threads are broken, and sometimes
        * signals status 0, errno ENODEV on living processes.
        */
-    } while (errno == ENODEV);
+    } while (UNLIKELY(errno == ENODEV));
 #endif
 
     if(pid>0)
@@ -3495,7 +3511,7 @@ void f_create_process(INT32 args)
 #endif /* HAVE_VFORK */
 	if (pid == -1) {
 	  errnum = errno;
-	  if (errnum == EAGAIN) {
+	  if (UNLIKELY(errnum == EAGAIN)) {
 	    PROC_FPRINTF((stderr, "[%d] Fork failed with EAGAIN\n", getpid()));
 	    /* Process table full or similar.
 	     * Try sleeping for a bit.
@@ -3513,7 +3529,7 @@ void f_create_process(INT32 args)
 	      /* Try again */
 	      continue;
 	    }
-	  } else if (errnum == EINTR) {
+	  } else if (UNLIKELY(errnum == EINTR)) {
 	    PROC_FPRINTF((stderr, "[%d] Fork failed with EINTR\n", getpid()));
 	    /* Try again */
 	    continue;
@@ -3532,7 +3548,7 @@ void f_create_process(INT32 args)
 	break;
       } while(1);
 
-      while(sigprocmask(SIG_SETMASK, &old_sig, 0)) {
+      while(UNLIKELY(sigprocmask(SIG_SETMASK, &old_sig, 0))) {
 #ifdef PROC_DEBUG
 	char errcode[3] = {
 	  '0'+((errno/100)%10),
@@ -3570,17 +3586,17 @@ void f_create_process(INT32 args)
        * fork() failed
        */
 
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
-      while(close(control_pipe[1]) < 0 && errno==EINTR);
+        while(UNLIKELY(close(control_pipe[0])) < 0 && UNLIKELY(errno==EINTR));
+        while(UNLIKELY(close(control_pipe[1])) < 0 && UNLIKELY(errno==EINTR));
 
       free_perishables(&storage);
 
-      if (errnum == EAGAIN) {
+      if (UNLIKELY(errnum == EAGAIN)) {
 	Pike_error("Process.create_process(): fork() failed with EAGAIN.\n"
 		   "Process table full?\n");
       }
 #ifdef ENOMEM
-      if (errnum == ENOMEM) {
+      if (UNLIKELY(errnum == ENOMEM)) {
 	Pike_error("Process.create_process(): fork() failed with ENOMEM.\n"
 		   "Out of memory?\n");
       }
@@ -3599,7 +3615,7 @@ void f_create_process(INT32 args)
        */
 
       /* Close our child's end of the pipe. */
-      while(close(control_pipe[1]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[1]) < 0) && UNLIKELY(errno==EINTR));
 
       free_perishables(&storage);
 
@@ -3628,48 +3644,17 @@ void f_create_process(INT32 args)
       buf[0] = 0;
 
 
-      /*
-       * This code works, but seems to slow down process creation
-       * rathern than speed it up. Only tested on Linux.
-       * /Hubbe
-       */
-#if 0
-      {
-	int gnapp=0;
-	while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
-	  ;
-	THREADS_ALLOW();
-	if(e!=1) {
-	  /* Paranoia in case close() sets errno. */
-	  olderrno = errno;
-	  while(close(control_pipe[0]) < 0 && errno==EINTR);
-	  gnapp=1;
-	} else {
-	  /* Wait for exec or error */
-	  while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
-	    ;
-	  /* Paranoia in case close() sets errno. */
-	  olderrno = errno;
-
-	  while(close(control_pipe[0]) < 0 && errno==EINTR);
-	}
-	THREADS_DISALLOW();
-	if(gnapp)
-	  Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
-		     e ,olderrno);
-      }
-#else
       THREADS_ALLOW();
 
 #ifndef HAVE_VFORK
       /* The following code won't work with a real vfork(). */
       PROC_FPRINTF((stderr, "[%d] Parent: Wake up child.\n", getpid()));
-      while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
+      while (UNLIKELY(((e = write(control_pipe[0], buf, 1)) < 0)) && UNLIKELY(errno == EINTR))
 	;
       if(e!=1) {
 	/* Paranoia in case close() sets errno. */
 	olderrno = errno;
-	while(close(control_pipe[0]) < 0 && errno==EINTR)
+	while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR))
 	  ;
 	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 		   e ,olderrno);
@@ -3680,18 +3665,18 @@ void f_create_process(INT32 args)
       /* Wait for exec or error */
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) &&
-	     (errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))
+      while (UNLIKELY((e = read(control_pipe[0], buf, 3)) < 0) &&
+             LIKELY(errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))
 	;
 #else /* !EBADF || !EPIPE */
       /* This code *should* work... */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+      while (UNLIKELY((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
 #endif /* EBADF && EPIPE */
       /* Paranoia in case close() sets errno. */
       olderrno = errno;
 
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
 
       THREADS_DISALLOW();
 
@@ -3846,11 +3831,11 @@ void f_create_process(INT32 args)
       pid = getpid();
 
       /* Close our parent's end of the pipe. */
-      while(close(control_pipe[0]) < 0 && errno==EINTR);
+      while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
 
 #ifndef HAVE_VFORK
       /* Wait for parent to get ready... */
-      while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
+      while (UNLIKELY((( e = read(control_pipe[1], buf, 1)) < 0)) && UNLIKELY((errno == EINTR)))
 	;
 
 #ifdef PROC_DEBUG
@@ -4091,7 +4076,7 @@ void f_create_process(INT32 args)
 		/* NOTE: OpenBSD sets errno to EBADF if fd is > than
 		 *       any open fd.
 		 */
-	      } while (errno && (errno != EBADF));
+	      } while (UNLIKELY(errno && (errno != EBADF)));
 	      break;
 	    }
 #endif
