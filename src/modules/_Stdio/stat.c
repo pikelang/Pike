@@ -452,93 +452,93 @@ static void _stat_index(INT_TYPE code)
       switch (THIS_STAT->s.st_mode & S_IFMT)
       {
         case S_IFREG:
-          push_constant_text("-");
+          push_text("-");
           break;
         case S_IFDIR:
-          push_constant_text("d");
+          push_text("d");
           break;
         case S_IFLNK:
-          push_constant_text("l");
+          push_text("l");
           break;
         case S_IFCHR:
-          push_constant_text("c");
+          push_text("c");
           break;
         case S_IFBLK:
-          push_constant_text("b");
+          push_text("b");
           break;
         case S_IFIFO:
-          push_constant_text("f");
+          push_text("f");
           break;
         case S_IFSOCK:
-          push_constant_text("s");
+          push_text("s");
           break;
         default:
-          push_constant_text("?");
+          push_text("?");
           break;
       }
 
       if ( (THIS_STAT->s.st_mode & S_IRUSR) )
-        push_constant_text("r");
+        push_text("r");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWUSR) )
-        push_constant_text("w");
+        push_text("w");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISUID) )
         if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-          push_constant_text("s");
+          push_text("s");
         else
-          push_constant_text("S");
+          push_text("S");
       else
         if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-          push_constant_text("x");
+          push_text("x");
         else
-          push_constant_text("-");
+          push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IRGRP) )
-        push_constant_text("r");
+        push_text("r");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWGRP) )
-        push_constant_text("w");
+        push_text("w");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISGID) )
         if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-          push_constant_text("s");
+          push_text("s");
         else
-          push_constant_text("S");
+          push_text("S");
       else
         if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-          push_constant_text("x");
+          push_text("x");
         else
-          push_constant_text("-");
+          push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IROTH) )
-        push_constant_text("r");
+        push_text("r");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWOTH) )
-        push_constant_text("w");
+        push_text("w");
       else
-        push_constant_text("-");
+        push_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISVTX) )
         if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-          push_constant_text("t");
+          push_text("t");
         else
-          push_constant_text("T");
+          push_text("T");
       else
         if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-          push_constant_text("x");
+          push_text("x");
         else
-          push_constant_text("-");
+          push_text("-");
 
       f_add(10);
       break;
