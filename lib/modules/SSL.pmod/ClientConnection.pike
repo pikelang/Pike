@@ -286,7 +286,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
       if (!session->set_cipher_suite(cipher_suite, version,
-				     session->signature_algorithms,
+				     context->signature_algorithms,
 				     512)) {
 	// Unsupported or obsolete cipher suite selected.
 	SSL3_DEBUG_MSG("Unsupported or obsolete cipher suite selected.\n");

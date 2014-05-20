@@ -220,6 +220,22 @@ array(string(8bit)) advertised_protocols;
 //! @[SSL.Constants.PACKET_MAX_SIZE].
 int packet_max_size = PACKET_MAX_SIZE;
 
+array(array(int)) signature_algorithms = ({
+  ({ HASH_sha512, SIGNATURE_ecdsa }),
+  ({ HASH_sha512, SIGNATURE_dsa }),
+  ({ HASH_sha512, SIGNATURE_rsa }),
+  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  ({ HASH_sha384, SIGNATURE_rsa }),
+  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  ({ HASH_sha256, SIGNATURE_dsa }),
+  ({ HASH_sha256, SIGNATURE_rsa }),
+  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  ({ HASH_sha224, SIGNATURE_dsa }),
+  ({ HASH_sha, SIGNATURE_ecdsa }),
+  ({ HASH_sha, SIGNATURE_dsa }),
+  ({ HASH_sha, SIGNATURE_rsa }),
+});
+
 protected int cert_sort_key(CertificatePair cp)
 {
   array(HashAlgorithm|SignatureAlgorithm) sign_alg = cp->sign_algs[0];
