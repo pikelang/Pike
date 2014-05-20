@@ -91,18 +91,10 @@ Alert alert(int(1..2) level, int(8bit) description,
 string(8bit) get_signature_algorithms()
 {
   ADT.struct sign_algs = ADT.struct();
-  foreach(sort(indices(HASH_lookup)), int h) {
-    sign_algs->put_uint(h, 1);
-    sign_algs->put_uint(SIGNATURE_rsa, 1);
-    sign_algs->put_uint(h, 1);
-    sign_algs->put_uint(SIGNATURE_dsa, 1);
-#if constant(Crypto.ECC.Curve)
-    // NB: MD5 is not supported with ECDSA signatures.
-    if (h != HASH_md5) {
-      sign_algs->put_uint(h, 1);
-      sign_algs->put_uint(SIGNATURE_ecdsa, 1);
-    }
-#endif
+  foreach(context->signature_algorithms, [int hash, int sign])
+  {
+    sign_algs->put_uint(hash, 1);
+    sign_algs->put_uint(sign, 1);
   }
   return sign_algs->pop_data();
 }
