@@ -1,0 +1,9 @@
+Modified files:
+  pike/lib/modules/Calendar.pmod/TZnames.pmod
+  pike/lib/modules/Calendar.pmod/tzdata/africa
+  pike/lib/modules/Calendar.pmod/tzdata/antarctica
+  pike/lib/modules/Calendar.pmod/tzdata/asia
+  pike/lib/modules/Calendar.pmod/tzdata/australasia
+  pike/lib/modules/Calendar.pmod/tzdata/europe
+  pike/lib/modules/Calendar.pmod/tzdata/zone.tab
+  pike/lib/modules/SSL.pmod/sslfile.pike
