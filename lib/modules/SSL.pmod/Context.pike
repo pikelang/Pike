@@ -221,17 +221,33 @@ array(string(8bit)) advertised_protocols;
 int packet_max_size = PACKET_MAX_SIZE;
 
 array(array(int)) signature_algorithms = ({
+#if constant(Crypto.SHA512)
+#if constant(Crypto.ECC.Curve)
   ({ HASH_sha512, SIGNATURE_ecdsa }),
+#endif
   ({ HASH_sha512, SIGNATURE_dsa }),
   ({ HASH_sha512, SIGNATURE_rsa }),
+#endif
+#if constant(Crypto.SHA384)
+#if constant(Crypto.ECC.Curve)
   ({ HASH_sha384, SIGNATURE_ecdsa }),
+#endif
   ({ HASH_sha384, SIGNATURE_rsa }),
+#endif
+#if constant(Crypto.ECC.Curve)
   ({ HASH_sha256, SIGNATURE_ecdsa }),
+#endif
   ({ HASH_sha256, SIGNATURE_dsa }),
   ({ HASH_sha256, SIGNATURE_rsa }),
+#if constant(Crypto.SHA224)
+#if constant(Crypto.ECC.Curve)
   ({ HASH_sha224, SIGNATURE_ecdsa }),
+#endif
   ({ HASH_sha224, SIGNATURE_dsa }),
+#endif
+#if constant(Crypto.ECC.Curve)
   ({ HASH_sha, SIGNATURE_ecdsa }),
+#endif
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_rsa }),
 });
