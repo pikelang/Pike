@@ -108,7 +108,7 @@ class Client
 {
   constant request =
     "HEAD / HTTP/1.0\r\n"
-    "Host: localhost:" + PORT + "\r\n"
+    "Host: " HOST ":" + PORT + "\r\n"
     "\r\n";
 
   SSL.sslfile ssl;
