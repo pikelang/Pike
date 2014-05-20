@@ -21,7 +21,7 @@ int main (int argc, array(string) argv)
     "127.0.0.1", 36565,
     lambda (int success) {
       if (success) {
-	tlscon = SSL.sslfile (con, SSL.Context(), 1, 0);
+	tlscon = SSL.sslfile (con, SSL.Context());
 	tlscon->set_write_callback (lambda () {
 				      fail = "Handshake should not succeed.\n";
 				    });
