@@ -1411,7 +1411,7 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     perror("pthread atfork");
     exit(1);
   }
-  
+
   while(1)
   {
     WAITSTATUSTYPE status;
@@ -1424,7 +1424,7 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
     err = errno;
-    
+
     if(pid < 0 && err == ECHILD)
     {
       PROC_FPRINTF((stderr, "[%d] wait_thread: sleeping\n", getpid()));
@@ -2475,12 +2475,15 @@ void f_set_priority( INT32 args )
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage, 
-                                char *UNUSED(limit_name),
                                 int limit_resource,
                                 struct svalue *limit_value )
 {
   struct rlimit ol;
   struct pike_limit *l = NULL;
+
+  if( limit_resource < 0  )
+    return; /* Compat: Ignore unknown limits. */
+
 #ifndef RLIM_SAVED_MAX
   getrlimit( limit_resource, &ol );
 #else
@@ -2758,6 +2761,10 @@ int fd_cleanup_cb(void *data, int fd)
 #ifdef __NT__
 DEFINE_IMUTEX(handle_protection_mutex);
 #endif /* __NT__ */
+
+#ifdef HAVE_SETRLIMIT
+extern int get_limit_id( const char *limit );
+#endif
 
 void f_create_process(INT32 args)
 {
@@ -3176,7 +3183,6 @@ void f_create_process(INT32 args)
 	    wanted_gid=tmp->u.integer;
 	    gid_request=1;
 	    break;
-	    
 #if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRENT)
 	  case T_STRING:
 	  {
@@ -3193,7 +3199,6 @@ void f_create_process(INT32 args)
 	  }
 	  break;
 #endif
-	  
 	  default:
 	    Pike_error("Invalid argument for gid.\n");
 	}
@@ -3266,51 +3271,18 @@ void f_create_process(INT32 args)
       if((tmp=simple_mapping_string_lookup(optional, "rlimit")))
       {
         struct svalue *tmp2;
+        unsigned int i;
+        struct mapping *m = tmp->u.mapping;
+        struct keypair *k;
         if(TYPEOF(*tmp) != T_MAPPING)
           Pike_error("Wrong type of argument for the 'rusage' option. "
-                "Should be mapping.\n");
-
-#define ADD_LIMIT(X,Y,Z) internal_add_limit(&storage,X,Y,Z);
-          
-#ifdef RLIMIT_CORE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "core")))
-        ADD_LIMIT( "core", RLIMIT_CORE, tmp2 );
-#endif        
-#ifdef RLIMIT_CPU
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "cpu")))
-        ADD_LIMIT( "cpu", RLIMIT_CPU, tmp2 );
-#endif        
-#ifdef RLIMIT_DATA
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "data")))
-        ADD_LIMIT( "data", RLIMIT_DATA, tmp2 );
-#endif        
-#ifdef RLIMIT_FSIZE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "fsize")))
-        ADD_LIMIT( "fsize", RLIMIT_FSIZE, tmp2 );
-#endif        
-#ifdef RLIMIT_NOFILE
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "nofile")))
-        ADD_LIMIT( "nofile", RLIMIT_NOFILE, tmp2 );
-#endif        
-#ifdef RLIMIT_STACK
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "stack")))
-        ADD_LIMIT( "stack", RLIMIT_STACK, tmp2 );
-#endif        
-#ifdef RLIMIT_VMEM
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "map_mem"))
-         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "vmem")))
-        ADD_LIMIT( "map_mem", RLIMIT_VMEM, tmp2 );
-#endif        
-#ifdef RLIMIT_AS
-      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "as"))
-         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "mem")))
-        ADD_LIMIT( "mem", RLIMIT_AS, tmp2 );
-#endif        
+                     "Should be mapping.\n");
+        NEW_MAPPING_LOOP( m->data )
+          if( TYPEOF(k->ind) == PIKE_T_STRING )
+            internal_add_limit( &storage, get_limit_id(k->ind.u.string->str), &k->val );
       }
-#undef ADD_LIMIT
-#endif        
+#endif
 
-      
       if((tmp=simple_mapping_string_lookup(optional, "uid")))
       {
 	switch(TYPEOF(*tmp))
@@ -3334,7 +3306,7 @@ void f_create_process(INT32 args)
 	    }
 #endif
 	    break;
-	    
+
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWENT)
 	  case T_STRING:
 	  {
@@ -3353,7 +3325,6 @@ void f_create_process(INT32 args)
 	    break;
 	  }
 #endif
-	    
 	  default:
 	    Pike_error("Invalid argument for uid.\n");
 	}
@@ -3388,7 +3359,7 @@ void f_create_process(INT32 args)
 	  int ptr=0;
 	  i=mapping_indices(m);
 	  v=mapping_values(m);
-	  
+
 	  storage.env=xalloc((1+m_sizeof(m)) * sizeof(char *));
 	  for(e=0;e<i->size;e++)
 	  {
@@ -3481,7 +3452,7 @@ void f_create_process(INT32 args)
       do_initgroups=0;
     }
 #endif /* HAVE_SETGROUPS */
-    
+
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
     if (pike_make_pipe(control_pipe) < 0) {
@@ -3501,11 +3472,6 @@ void f_create_process(INT32 args)
     }
     num_threads++;    /* We use the interpreter lock */
 #endif
-#if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
-    init_threads_disable(NULL);
-    storage.disabled = 1;
-#endif
-
 
     th_atfork_prepare();
     {
@@ -3728,7 +3694,6 @@ void f_create_process(INT32 args)
       while(close(control_pipe[0]) < 0 && errno==EINTR);
 
       THREADS_DISALLOW();
-#endif
 
       PROC_FPRINTF((stderr, "[%d] Parent: Child init done.\n", getpid()));
 
@@ -3823,7 +3788,7 @@ void f_create_process(INT32 args)
 	    break;
 #endif /* E2BIG */
 	  }
-	  
+
 	  Pike_error("Process.create_process(): exec() failed. errno:%d\n"
 		     "File not found?\n", buf[1]);
 	  break;
@@ -3910,18 +3875,6 @@ void f_create_process(INT32 args)
 #endif /* PROC_DEBUG */
 
 #endif /* HAVE_VFORK */
-
-/* We don't call _any_ pike functions at all after this point, so
- * there is no need at all to call this callback, really.
- */
-
-/* 
-#ifdef _REENTRANT
-      num_threads=1;
-#endif
-      call_callback(&fork_child_callback, 0); 
-*/
-
       for(e=0;e<cmd->size;e++) storage.argv[e]=cmd->item[e].u.string->str;
       storage.argv[e]=0;
 
@@ -3937,7 +3890,7 @@ void f_create_process(INT32 args)
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
 
-      if (!keep_signals) 
+      if (!keep_signals)
       {
 	int i;
 	/* Restore the signals to the defaults. */
@@ -3956,7 +3909,7 @@ void f_create_process(INT32 args)
       {
 	if( chroot( mchroot ) )
         {
-	  /* FIXME: Is this fprintf safe? */
+	  /* FIXME: Is this fprintf safe (no, it's not if we use vfork)? */
 	  PROC_FPRINTF((stderr,
 			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
 			getpid(), chroot, errno));
@@ -3975,7 +3928,7 @@ void f_create_process(INT32 args)
       {
         if( chdir( tmp_cwd ) )
         {
-	  /* FIXME: Is this fprintf safe? */
+	  /* FIXME: Is this fprintf safe (no, it's not if we use vfork)? */
 	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
 			getpid(), tmp_cwd, errno));
           PROCERROR(PROCE_CHDIR, 0);
@@ -4285,7 +4238,7 @@ void f_create_process(INT32 args)
 
       execvp(storage.argv[0],storage.argv);
 
-      /* FIXME: Is this fprintf safe? */
+      /* FIXME: Is this fprintf safe (nope, still not safe. :))? */
       PROC_FPRINTF((stderr,
 		    "[%d] Child: execvp(\"%s\", ...) failed\n"
 		    "errno = %d\n",
@@ -4980,7 +4933,7 @@ PMOD_EXPORT void low_init_signals(void)
 	func = receive_sigchild;
       }
 #endif
-      my_signal(e, func);      
+      my_signal(e, func);
     }
   }
 }
