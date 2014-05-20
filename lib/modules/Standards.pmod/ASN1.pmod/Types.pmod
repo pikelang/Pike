@@ -467,9 +467,11 @@ class BitString
 
   protected string _sprintf(int t) {
     int size = sizeof(value)*8-unused;
-    return t=='O' && sprintf("%O(%d %0"+size+"s)", this_program, size,
-			     ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
-			     ->digits(2));
+    if(t!='O') return UNDEFINED;
+    if(!unused) return sprintf("%O(%d %O)", this_program, size, value);
+    return sprintf("%O(%d %0"+size+"s)", this_program, size,
+                   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
+                   ->digits(2));
   }
 
 #ifdef COMPATIBILITY
