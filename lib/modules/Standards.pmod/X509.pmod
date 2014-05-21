@@ -1170,7 +1170,7 @@ Sequence sign_tbs(TBSCertificate tbs,
 //!   standardized PKCS hashes to be used with the given Crypto.
 //!
 //! @param subject
-//!   Distinguished name for the issuer.
+//!   Distinguished name for the subject.
 //!   See @[Standards.PKCS.Certificate.build_distinguished_name].
 //!
 //! @param public_key
@@ -1310,7 +1310,7 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign ca_key,
   // FIXME: authorityKeyIdentifier
   add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
   add("basicConstraints", Sequence(({Boolean(0)})), 1);
-  return sign_key(dn, c, ca_key, h||Crypto.SHA256, ca->subject, serial, ttl, extensions);
+  return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
 string make_root_certificate(Crypto.Sign c, int ttl,
