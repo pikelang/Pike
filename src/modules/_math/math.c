@@ -33,7 +33,8 @@
 #define sp Pike_sp
 #define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
 #define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
-  if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
+  if(TYPEOF(sp[-args]) == T_INT) SET_SVAL(sp[-1],T_FLOAT,0,float_number,(FLOAT_TYPE)(sp[-1].u.integer)); \
+  else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
 #ifndef M_PI
@@ -113,7 +114,7 @@ int matherr(struct exception *exc)
 #endif /* HAVE_STRUCT_EXCEPTION */
 #endif /* !NO_MATHERR */
 
-/*! @decl float sin(float f)
+/*! @decl float sin(int|float f)
  *!
  *! Returns the sine value for @[f].
  *! @[f] should be specified in radians.
@@ -127,7 +128,7 @@ void f_sin(INT32 args)
   sp[-1].u.float_number = FL1(sin,sp[-1].u.float_number);
 }
 
-/*! @decl float asin(float f)
+/*! @decl float asin(int|float f)
  *!
  *! Return the arcus sine value for @[f].
  *! The result will be in radians.
@@ -147,7 +148,7 @@ void f_asin(INT32 args)
   }
 }
 
-/*! @decl float cos(float f)
+/*! @decl float cos(int|float f)
  *!
  *! Return the cosine value for @[f].
  *! @[f] should be specified in radians.
@@ -161,7 +162,7 @@ void f_cos(INT32 args)
   sp[-1].u.float_number = FL1(cos,sp[-1].u.float_number);
 }
 
-/*! @decl float acos(float f)
+/*! @decl float acos(int|float f)
  *!
  *! Return the arcus cosine value for @[f].
  *! The result will be in radians.
@@ -181,7 +182,7 @@ void f_acos(INT32 args)
   }
 }
 
-/*! @decl float tan(float f)
+/*! @decl float tan(int|float f)
  *!
  *! Returns the tangent value for @[f].
  *! @[f] should be specified in radians.
@@ -203,7 +204,7 @@ void f_tan(INT32 args)
   sp[-1].u.float_number = FL1(tan,sp[-1].u.float_number);
 }
 
-/*! @decl float atan(float f)
+/*! @decl float atan(int|float f)
  *!
  *! Returns the arcus tangent value for @[f].
  *! The result will be in radians.
@@ -239,9 +240,7 @@ void f_atan2(INT32 args)
   pop_stack();
 }
 
-/* insert configure test if necessary */
-#if 1 
-/*! @decl float sinh(float f)
+/*! @decl float sinh(int|float f)
  *!
  *! Returns the hyperbolic sine value for @[f].
  *!
@@ -258,7 +257,7 @@ void f_sinh(INT32 args)
     DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)-FA1(exp,-x))));
 }
 
-/*! @decl float asinh(float f)
+/*! @decl float asinh(int|float f)
  *!
  *! Return the hyperbolic arcus sine value for @[f].
  *!
@@ -275,7 +274,7 @@ void f_asinh(INT32 args)
     DO_NOT_WARN ((FLOAT_TYPE) (FA1(log,x+FA1(sqrt,1+x*x))));
 }
 
-/*! @decl float cosh(float f)
+/*! @decl float cosh(int|float f)
  *!
  *! Return the hyperbolic cosine value for @[f].
  *!
@@ -292,7 +291,7 @@ void f_cosh(INT32 args)
     DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)+FA1(exp,-x))));
 }
 
-/*! @decl float acosh(float f)
+/*! @decl float acosh(int|float f)
  *!
  *! Return the hyperbolic arcus cosine value for @[f].
  *!
@@ -309,7 +308,7 @@ void f_acosh(INT32 args)
     DO_NOT_WARN ((FLOAT_TYPE) (2*FA1(log,FA1(sqrt,0.5*(x+1))+FA1(sqrt,0.5*(x-1)))));
 }
 
-/*! @decl float tanh(float f)
+/*! @decl float tanh(int|float f)
  *!
  *! Returns the hyperbolic tangent value for @[f].
  *!
@@ -326,7 +325,7 @@ void f_tanh(INT32 args)
     DO_NOT_WARN ((FLOAT_TYPE) ((FA1(exp,x)-FA1(exp,-x))/(FA1(exp,x)+FA1(exp,-x))));
 }
 
-/*! @decl float atanh(float f)
+/*! @decl float atanh(int|float f)
  *!
  *! Returns the hyperbolic arcus tangent value for @[f].
  *!
@@ -342,8 +341,6 @@ void f_atanh(INT32 args)
   sp[-1].u.float_number =
     DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(log,1+x)-FA1(log,1-x))));
 }
-
-#endif
 
 /*! @decl float sqrt(float f)
  *! @decl int sqrt(int i)
@@ -418,7 +415,7 @@ void f_sqrt(INT32 args)
   }
 }
 
-/*! @decl float log(float f)
+/*! @decl float log(int|float f)
  *!
  *! Return the natural logarithm of @[f].
  *! @expr{exp( log(x) ) == x@} for x > 0.
@@ -445,10 +442,8 @@ void f_log(INT32 args)
  */
 void f_exp(INT32 args)
 {
-  FLOAT_TYPE f;
-  get_all_args("exp",args,"%F",&f);
-  TRIM_STACK(1);
-  SET_SVAL(sp[-1], T_FLOAT, 0, float_number, FL1(exp,f));
+  ARG_CHECK("exp");
+  SET_SVAL(sp[-1], T_FLOAT, 0, float_number, FL1(exp,sp[-1].u.float_number));
 }
 
 /*! @decl int|float pow(float|int n, float|int x)
@@ -498,7 +493,7 @@ void f_pow(INT32 args)
   }
 }
 
-/*! @decl float floor(float f)
+/*! @decl float floor(int|float f)
  *!
  *! Return the closest integer value less or equal to @[f].
  *!
@@ -515,7 +510,7 @@ void f_floor(INT32 args)
   sp[-1].u.float_number = FL1(floor,sp[-1].u.float_number);
 }
 
-/*! @decl float ceil(float f)
+/*! @decl float ceil(int|float f)
  *!
  *! Return the closest integer value greater or equal to @[f].
  *!
@@ -532,7 +527,7 @@ void f_ceil(INT32 args)
   sp[-1].u.float_number = FL1(ceil,sp[-1].u.float_number);
 }
 
-/*! @decl float round(float f)
+/*! @decl float round(int|float f)
  *!
  *! Return the closest integer value to @[f].
  *!
@@ -725,43 +720,43 @@ PIKE_MODULE_INIT
   fpsetfastmode(1);
 #endif /* HAVE_FPSETFASTMODE */
   
-/* function(float:float) */
-  ADD_EFUN("sin",f_sin,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("sin",f_sin,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("asin",f_asin,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("asin",f_asin,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("cos",f_cos,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("cos",f_cos,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("acos",f_acos,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("acos",f_acos,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("tan",f_tan,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("tan",f_tan,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("atan",f_atan,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("atan",f_atan,tFunc(tNUM,tFlt),0);
   
-/* function(float,float:float) */
+  /* function(int|float,float:float) */
   ADD_EFUN("atan2",f_atan2,tFunc(tFlt tFlt,tFlt),0);
  
-  ADD_EFUN("sinh",f_sinh,tFunc(tFlt,tFlt),0);
-  ADD_EFUN("asinh",f_asinh,tFunc(tFlt,tFlt),0);
-  ADD_EFUN("cosh",f_cosh,tFunc(tFlt,tFlt),0);
-  ADD_EFUN("acosh",f_acosh,tFunc(tFlt,tFlt),0);
-  ADD_EFUN("tanh",f_tanh,tFunc(tFlt,tFlt),0);
-  ADD_EFUN("atanh",f_atanh,tFunc(tFlt,tFlt),0);
+  ADD_EFUN("sinh",f_sinh,tFunc(tNUM,tFlt),0);
+  ADD_EFUN("asinh",f_asinh,tFunc(tNUM,tFlt),0);
+  ADD_EFUN("cosh",f_cosh,tFunc(tNUM,tFlt),0);
+  ADD_EFUN("acosh",f_acosh,tFunc(tNUM,tFlt),0);
+  ADD_EFUN("tanh",f_tanh,tFunc(tNUM,tFlt),0);
+  ADD_EFUN("atanh",f_atanh,tFunc(tNUM,tFlt),0);
  
 /* function(float:float)|function(int:int) */
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
 			      tFunc(tInt,tInt),
 			      tFunc(tObj,tMix)),0);
 
-/* function(float:float) */
-  ADD_EFUN("log",f_log,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("log",f_log,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
+  /* function(int|float:float) */
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
   
 /* function(float,float:float) */
@@ -772,14 +767,14 @@ PIKE_MODULE_INIT
 		tFunc(tInt tInt,tInt),
 		tFunc(tObj tOr3(tInt,tObj,tFlt),tMix)),0);
   
-/* function(float:float) */
-  ADD_EFUN("floor",f_floor,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("floor",f_floor,tFunc(tNUM,tFlt),0);
   
-/* function(float:float) */
-  ADD_EFUN("ceil",f_ceil,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("ceil",f_ceil,tFunc(tNUM,tFlt),0);
 
-/* function(float:float) */
-  ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
+  /* function(int|float:float) */
+  ADD_EFUN("round",f_round,tFunc(tNUM,tFlt),0);
 
 #define CMP_TYPE							\
   tOr4(tFuncV(tString,tString,tString),					\
