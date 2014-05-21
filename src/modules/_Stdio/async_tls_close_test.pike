@@ -5,6 +5,11 @@ int main (int argc, array(string) argv)
 {
   string fail;
 
+  if (argc < 3) {
+    werror("Expected at least two arguments.\n");
+    exit(1);
+  }
+
   int clean_close = argv[1] == "1";
   int block = argv[2] == "1";
 
@@ -22,6 +27,7 @@ int main (int argc, array(string) argv)
     lambda (int success) {
       if (success) {
 	tlscon = SSL.sslfile (con, SSL.Context());
+	tlscon->connect("localhost");
 	tlscon->set_write_callback (lambda () {
 				      fail = "Handshake should not succeed.\n";
 				    });
