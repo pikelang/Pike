@@ -49,7 +49,7 @@
 
 #ifdef DECLARE
 #define IMEMBER(X,Y,Z) Z,
-#define STACKMEMBER(X,Y,Z) Z,
+#define STACKMEMBER(X,Y,Z) 0,
 #define ZMEMBER(X,Y,Z) Z,
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
