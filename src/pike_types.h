@@ -96,8 +96,8 @@ void debug_free_type(struct pike_type *t);
 #endif /* DEBUG_MALLOC */
 #define CONSTTYPE(X) make_pike_type(X)
 
-extern struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
-extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
+extern struct pike_type **type_stack;
+extern struct pike_type ***pike_type_mark_stack;
 
 #ifdef DEBUG_MALLOC
 #define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass_named(T, "check_type_string"))
@@ -196,15 +196,7 @@ void debug_push_reverse_type(unsigned int type);
 #define push_reverse_type debug_push_reverse_type
 #endif /* DEBUG_MALLOC */
 
-#define type_stack_mark() do {				\
-  if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
-    Pike_fatal("Type mark stack overflow.\n");		\
-  else {						\
-    *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
-    Pike_compiler->pike_type_mark_stackp++;					\
-  }							\
-  TYPE_STACK_DEBUG("type_stack_mark");			\
-} while(0)
+extern void type_stack_mark();
 
 #define reset_type_stack() do {			\
    type_stack_pop_to_mark();			\

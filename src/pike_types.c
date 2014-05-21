@@ -687,8 +687,8 @@ void debug_check_type_string(struct pike_type *s)
 
 #endif /* PIKE_DEBUG */
 
-struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
-struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
+struct pike_type **type_stack;
+struct pike_type ***pike_type_mark_stack;
 
 ptrdiff_t pop_stack_mark(void)
 { 
@@ -721,19 +721,10 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 #if SIZEOF_INT_TYPE > 4
 /* a bit kludgy: should maybe really allow 64 bit INT_TYPE */
 /* see also extract_type_int */
-
   if (min<MIN_INT32) min=MIN_INT32;
   else if (min>MAX_INT32) min=MAX_INT32;
   if (max<MIN_INT32) max=MIN_INT32;
   else if (max>MAX_INT32) max=MAX_INT32;
-
-#if 0
-  if (min!=(INT32)min ||
-      max!=(INT32)max)
-    Pike_fatal("push_int_type(): int outside INT32 range (sorry)"
-	       " (%"PRINTPIKEINT"d..%"PRINTPIKEINT"d)\n",
-	       min,max);
-#endif
 #endif
 
 #ifdef PIKE_DEBUG
@@ -8454,6 +8445,15 @@ static void low_make_pike_type(unsigned char *type_string,
   }
 }
 
+void type_stack_mark()
+{
+  if(UNLIKELY(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + (PIKE_TYPE_STACK_SIZE>>4)))
+    Pike_fatal("Type mark stack overflow.\n");
+  *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;
+  Pike_compiler->pike_type_mark_stackp++;
+  TYPE_STACK_DEBUG("type_stack_mark");
+}
+
 /* Make a pike-type from a serialized (old-style) type. */
 struct pike_type *debug_make_pike_type(const char *serialized_type)
 {
@@ -8682,12 +8682,40 @@ static void gc_mark_external_types(struct callback *cb, void *a, void *b);
 static struct callback *pike_type_gc_callback = NULL;
 #endif /* PIKE_DEBUG */
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+static int type_stack_mmap, type_mark_stack_mmap;
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
+
 void init_types(void)
 {
   /* Initialize hashtable here. */
   pike_type_hash = xcalloc(sizeof(struct pike_type *),
                            (PIKE_TYPE_HASH_SIZE+1));
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
+
+  /* if possible, use mmap with on-demand allocation */
+#if defined(MAP_ANONYMOUS)
+  type_stack = mmap( NULL, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE,
+		     PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE,0,0);
+  if( type_stack )
+    type_stack_mmap = 1;
+  pike_type_mark_stack = mmap( NULL, sizeof(struct pike_type **)*PIKE_TYPE_STACK_SIZE>>2,
+			       PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
+  if( pike_type_mark_stack )
+    type_mark_stack_mmap = 1;
+#endif
+  if( !type_stack )
+    type_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
+  if( !pike_type_mark_stack )
+    pike_type_mark_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
+
+  Pike_compiler->type_stackp = type_stack;
+  Pike_compiler->pike_type_mark_stackp = pike_type_mark_stack;
 
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string! */
   string0_type_string = CONSTTYPE(tStr0);
@@ -8732,6 +8760,20 @@ void cleanup_pike_types(void)
     free_type(all_pike_type_locations->t);
     all_pike_type_locations = all_pike_type_locations->next;
   }
+#ifdef MAP_ANONYMOUS
+  if( type_stack_mmap )
+  {
+    munmap( type_stack, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
+    type_stack = NULL;
+  }
+  if( pike_type_mark_stack_mmap )
+  {
+    munmap( pike_type_mark_stack, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE>>2);
+    pike_type_mark_stack = NULL;
+  }
+#endif
+  free( type_stack );
+  free( pike_type_mark_stack );
 #endif /* DO_PIKE_CLEANUP */
 
   clear_markers();
