@@ -368,10 +368,6 @@ float log2(int|float x) { return log(x)/log(2.0); }
 //! The @[n]-logatirhm of @[x].
 float logn(int|float n, int|float x) { return log(x)/log(n); }
 
-
-// Only available when there is Gmp.mpz
-#if constant(Gmp.mpz)
-
 //! Factorize the integer @[x]. The returned list of factors will
 //! be sorted biggest to smallest factor.
 //!
@@ -384,6 +380,7 @@ float logn(int|float n, int|float x) { return log(x)/log(n); }
 //!   considered.
 array(int) factor(int x) {
   if (!x) return ({ 0 });
+  if (x==1) return ({ 1 });
   int f = x->small_factor();
   if(!f) {
     /* No small factors left. */
@@ -408,4 +405,3 @@ array(int) factor(int x) {
   } else
     return factor(x/f) + ({ f });
 }
-#endif
