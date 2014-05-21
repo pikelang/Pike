@@ -378,6 +378,33 @@ protected HTML entityparser_noerror =
     return p;
   }();
 
+// this routine is called to make sure that in case a URL contains characters which
+// are not valid in the UTF8 range, the invalid characters will be replaced by a
+// constant value i.e. 65533 as formal web browsers do
+string utf8_fix(string s)
+{
+   constant utf8_limit = 1114111;                      // maximum allowed value in UTF8 format
+   constant utf8_repl = "\U0000FFFD";                  // values which will exceed maximum allowed value in UTF8 format will be replaced
+   string fs = s;
+   array(int) rr = String.range(s);                    // retrieve the smallest and largest ASCII codes in a string
+
+   // if the lower limit shows an invalid char
+   if (rr[0] > utf8_limit)
+   {
+      array(string) ss = s / String.int2char(rr[0]);   // separate the string where the delimiter is an invalid char in UTF8
+      fs = map(ss, utf8_fix) * (string)utf8_repl;      // recursively fix all sub-strings and compose the new string
+   }
+
+   // if the upper limit shows an invalid char
+   if (rr[1] > utf8_limit)
+   {
+      array(string) ss = s / String.int2char(rr[1]);   // separate the string where the delimiter is an invalid char in UTF8
+      fs = map(ss, utf8_fix) * (string)utf8_repl;      // recursively fix all sub-strings and compose the new string
+   }
+
+   return fs;
+}
+
 HTML html_entity_parser(void|int noerror)
 {
    return (noerror?entityparser_noerror:entityparser)->clone();
@@ -385,7 +412,7 @@ HTML html_entity_parser(void|int noerror)
 
 string parse_html_entities(string in,void|int noerror)
 {
-   return html_entity_parser(noerror)->finish(in)->read();
+   return utf8_fix(html_entity_parser(noerror)->finish(in)->read());
 }
 
 protected mapping(int:string) rev_html_entities;
