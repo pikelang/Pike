@@ -37,8 +37,6 @@
  */
 /* #define PARANOID_INDEXING */
 
-/* #define NEW_ARG_CHECK */
-
 static node *eval(node *);
 static void optimize(node *n);
 
@@ -1393,7 +1391,6 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
     }
 
     if (n->type) {
-#ifdef NEW_ARG_CHECK
       if (!(result_type = soft_cast(type, n->type, 0))) {
 	ref_push_type_value(n->type);
 	ref_push_type_value(type);
@@ -1409,20 +1406,6 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 		      NULL, 0, NULL,
 		      2, "Soft cast of %O to %O is a noop.");
       }
-#else /* !NEW_ARG_CHECK */
-      if (!check_soft_cast(type, n->type)) {
-	ref_push_type_value(type);
-	ref_push_type_value(n->type);
-	yytype_report(REPORT_WARNING,
-		      NULL, 0, NULL,
-		      NULL, 0, NULL,
-		      2, "Soft cast to %S isn't a restriction of %S.");
-      }
-      /* FIXME: check_soft_cast() is weaker than pike_types_le()
-       * The resulting type should probably be the and between the old
-       * and the new type.
-       */
-#endif
     }
   }
 
@@ -3095,94 +3078,6 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
-#ifndef NEW_ARG_CHECK
-/* FIXME: Ought to use parent pointer to avoid recursion. */
-static void low_build_function_type(node *n)
-{
-  if(!n) return;
-  if(function_type_max++ > 999)
-  {
-    reset_type_stack();
-
-    push_type(T_MIXED);
-    push_type(T_VOID);
-    push_type(T_OR);  /* return type is void or mixed */
-
-    push_type(T_MIXED);
-    push_type(T_VOID);
-    push_type(T_OR);  /* varargs */
-
-    push_type(T_MANY);
-    return;
-  }
-  switch(n->token)
-  {
-  case F_COMMA_EXPR:
-  case F_ARG_LIST:
-    fatal_check_c_stack(16384);
-
-    low_build_function_type(CDR(n));
-    low_build_function_type(CAR(n));
-    break;
-
-  case F_PUSH_ARRAY:
-    {
-      struct pike_type *so_far;
-      struct pike_type *arg_type;
-      struct pike_type *tmp;
-
-      so_far = pop_type();
-
-      copy_pike_type(arg_type, void_type_string);
-
-      /* Convert fun(a,b,c...:d) to fun(a|b|c|void...:d)
-       */
-
-      while(so_far->type == T_FUNCTION) {
-	tmp = or_pike_types(arg_type, so_far->car, 1);
-	free_type(arg_type);
-	arg_type = tmp;
-	copy_pike_type(tmp, so_far->cdr);
-	free_type(so_far);
-	so_far = tmp;
-      }
-
-      tmp = or_pike_types(arg_type, so_far->car, 1);
-      free_type(arg_type);
-      arg_type = tmp;
-
-      push_finished_type(so_far->cdr);	/* Return type */
-
-      free_type(so_far);
-
-      so_far = index_type(CAR(n)->type, int_type_string, n);
-      tmp = or_pike_types(arg_type, so_far, 1);
-      push_finished_type(tmp);
-      if (tmp == mixed_type_string) {
-	/* Ensure "or void"... */
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      free_type(arg_type);
-      free_type(so_far);
-      free_type(tmp);
-      push_type(T_MANY);
-    }
-    return;
-
-  default:
-    if(n->type)
-    {
-      if(n->type == void_type_string) return;
-      push_finished_type(n->type);
-    }else{
-      push_type(T_MIXED);
-    }
-    push_type(T_FUNCTION);
-  }
-}
-#endif
-
 static struct pike_string *get_name_of_function(node *n)
 {
   struct pike_string *name = NULL;
@@ -3358,7 +3253,6 @@ void fix_type_field(node *n)
   {
   case F_SOFT_CAST:
     if (CAR(n) && CAR(n)->type) {
-#ifdef NEW_ARG_CHECK
       struct pike_type *soft_type = NULL;
       if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
 	  (TYPEOF(CDR(n)->u.sval) == T_TYPE)) {
@@ -3376,20 +3270,6 @@ void fix_type_field(node *n)
 		      NULL, 0, CDR(n)->type, 0,
 		      "Soft cast with non-type.");
       }
-      /* Failure: Fall through to the old code. */
-#else /* !NEW_ARG_CHECK */
-      if (!check_soft_cast(old_type, CAR(n)->type)) {
-	ref_push_type_value(old_type);
-	ref_push_type_value(CAR(n)->type);
-	yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL,
-		      2, "Soft cast to %S isn't a restriction of %S.",
-		      t1, t2);
-      }
-      /* FIXME: check_soft_cast() is weaker than pike_types_le()
-       * The resulting type should probably be the AND between the old
-       * and the new type.
-       */
-#endif /* NEW_ARG_CHECK */
     }
     /* FALL_THROUGH */
   case F_CAST:
@@ -3625,15 +3505,9 @@ void fix_type_field(node *n)
       struct pike_type *f;	/* Expected type. */
       struct pike_type *s;	/* Actual type */
       struct pike_string *name = NULL;
-#ifndef NEW_ARG_CHECK
-      char *alternate_name = NULL;
-#endif
       INT32 args;
 
-#ifdef NEW_ARG_CHECK
-
       args = 0;
-
       name = get_name_of_function(CAR(n));
 
 #ifdef PIKE_DEBUG
@@ -3689,182 +3563,6 @@ void fix_type_field(node *n)
       }
       free_type(f);
       break;
-#else /* !NEW_ARG_CHECK */
-
-      if (!match_types(CAR(n)->type, function_type_string) &&
-	  !match_types(CAR(n)->type, array_type_string)) {
-	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
-		      NULL, 0, CAR(n)->type,
-		      0, "Calling non function value.");
-	copy_pike_type(n->type, mixed_type_string);
-
-	/* print_tree(n); */
-	break;
-      }
-
-      push_type(T_MIXED); /* match any return type */
-      push_type(T_VOID);  /* even void */
-      push_type(T_OR);
-
-      push_type(T_VOID); /* not varargs */
-      push_type(T_MANY);
-      function_type_max=0;
-      low_build_function_type(CDR(n));
-      s = pop_type();
-      f = CAR(n)->type?CAR(n)->type:mixed_type_string;
-      n->type = check_call(s, f,
-			   (c->lex.pragmas & ID_STRICT_TYPES) &&
-			   !(n->node_info & OPT_WEAK_TYPE));
-      args = count_arguments(s);
-      max_args = count_arguments(f);
-      if(max_args<0) max_args = 0x7fffffff;
-
-
-      if (n->type) {
-	/* Type/argument-check OK. */
-	free_type(s);
-
-	if(n->token == F_AUTO_MAP)
-	{
-	  push_finished_type(n->type);
-	  push_type(T_ARRAY);
-	  free_type(n->type);
-	  n->type = pop_type();
-	}
-
-	break;
-      }
-
-      switch(CAR(n)->token)
-      {
-#if 0 /* FIXME */
-      case F_TRAMPOLINE:
-#endif
-      case F_IDENTIFIER:
-	name=ID_FROM_INT(Pike_compiler->new_program, CAR(n)->u.id.number)->name;
-	break;
-
-	case F_ARROW:
-	case F_INDEX:
-	  if(CDAR(n)->token == F_CONSTANT &&
-	     TYPEOF(CDAR(n)->u.sval) == T_STRING)
-	  {
-	    name=CDAR(n)->u.sval.u.string;
-	  }else{
-	    alternate_name="dynamically resolved function";
-	  }
-	  break;
-
-      case F_CONSTANT:
-	switch(TYPEOF(CAR(n)->u.sval))
-	{
-	case T_FUNCTION:
-	  if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN)
-	  {
-	    name=CAR(n)->u.sval.u.efun->name;
-	  }else{
-	    name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
-			     SUBTYPEOF(CAR(n)->u.sval))->name;
-	  }
-	  break;
-
-	case T_ARRAY:
-	  alternate_name="array call";
-	  break;
-
-	case T_PROGRAM:
-	  alternate_name="clone call";
-	  break;
-
-	default:
-	  alternate_name="`() (function call)";
-	  break;
-	}
-	break;
-
-      case F_EXTERNAL:
-      case F_GET_SET:
-	{
-	  int id_no = CAR(n)->u.integer.b;
-
-	  if (id_no == IDREF_MAGIC_THIS)
-	    alternate_name = "this";	/* Should perhaps qualify it. */
-
-	  else {
-	    int program_id = CAR(n)->u.integer.a;
-	    struct program_state *state = Pike_compiler;
-
-	    alternate_name="external symbol";
-
-	    while (state && (state->new_program->id != program_id)) {
-	      state = state->previous;
-	    }
-
-	    if (state) {
-	      struct identifier *id = ID_FROM_INT(state->new_program, id_no);
-	      if (id && id->name) {
-		name = id->name;
-#if 0
-#ifdef PIKE_DEBUG
-		/* FIXME: This test crashes on valid code because the type of the
-		 * identifier can change in pass 2 -Hubbe
-		 */
-		if(id->type != f)
-		{
-		  printf("Type of external node is not matching it's identifier.\nid->type: ");
-		  simple_describe_type(id->type);
-		  printf("\nf       : ");
-		  simple_describe_type(f);
-		  printf("\n");
-
-		  Pike_fatal("Type of external node is not matching it's identifier.\n");
-		}
-#endif
-#endif
-	      }
-	    }
-	  }
-	}
-	break;
-	  
-      default:
-	alternate_name="unknown function";
-      }
-
-      if(max_args < args)
-      {
-	if(TEST_COMPAT(0,6))
-	{
-	  free_type(s);
-	  copy_pike_type(n->type, mixed_type_string);
-	  break;
-	}
-	if (name) {
-	  my_yyerror("Too many arguments to %S.", name);
-	} else {
-	  my_yyerror("Too many arguments to %s.", alternate_name);
-	}
-      }
-      else if(max_correct_args == args)
-      {
-	if (name) {
-	  my_yyerror("Too few arguments to %S.", name);
-	} else {
-	  my_yyerror("Too few arguments to %s.", alternate_name);
-	}
-      } else if (name) {
-	my_yyerror("Bad argument %d to %S.", max_correct_args+1, name);
-      } else {
-	my_yyerror("Bad argument %d to %s.",
-		   max_correct_args+1, alternate_name);
-      }
-      
-      yytype_error(NULL, f, s, 0);
-
-      /* print_tree(n); */
-
-      free_type(s);
-#endif /* NEW_ARG_CHECK */
     }
     copy_pike_type(n->type, mixed_type_string);
     break;

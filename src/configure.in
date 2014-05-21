@@ -1595,20 +1595,11 @@ dnl AC_ARG_WITH(shared-nodes,
 dnl 		MY_DESCR([--without-shared-nodes],
 dnl 			 [disable the SHARED_NODES mode of the optimizer]),
 dnl 		[],[with_shared_nodes=yes])
-AC_ARG_WITH(typechecker, MY_DESCR([--with-typechecker=new|old],[]))
-AC_ARG_WITH(type-checker,
-	    MY_DESCR([--with-type-checker=new|old],
-		     [select type-checker behaviour]),
- 		[],[with_type_checker="${with_typechecker:-new}"])
-if test "x$with_type_checker" = "xold"; then :;
-  PIKE_MSG_WARN([Old type checker selected.])
-else
-  AC_DEFINE(NEW_ARG_CHECK)
-fi
 AC_ARG_WITH(computed-goto,
 	    MY_DESCR([--with-computed-goto],
 		     [enable use of gcc-style computed goto (EXPERIMENTAL).]),
 	    [], [with_computed_goto=no])
+
 AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
 		 [do not try to use of machine code on supported architectures.]),
