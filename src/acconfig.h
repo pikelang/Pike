@@ -85,9 +85,6 @@
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
 
-/* Define this if you want to enable the new type checker code. */
-#undef NEW_ARG_CHECK
-
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
 
