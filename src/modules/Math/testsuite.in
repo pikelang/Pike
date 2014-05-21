@@ -240,4 +240,10 @@ test_approx(Math.logn(3.0, 81.0), 4.0)
 
 test_true( floatp(Math.e) )
 test_true( floatp(Math.pi) )
+
+test_equal(Math.factor(-1), ({ -1 }))
+test_equal(Math.factor(0), ({ 0 }))
+test_equal(Math.factor(1), ({ 1 }))
+test_equal(sort(Math.factor(10003)), ({ 7, 1429 }))
+
 END_MARKER
