@@ -1952,6 +1952,66 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   push_string(out);
 }
 
+/*! @decl string(1..) string_filter_non_unicode(string s)
+ *!
+ *!  Replace the most obviously non-unicode characters from @[s] with
+ *!  the unicode replacement character.
+ *!
+ *! @note
+ *!   This will replace characters outside the ranges
+ *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}
+ *!   with 0xffea (the replacement character).
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[string_to_unicode()],
+ *!   @[unicode_to_string()], @[utf8_to_string()], @[string_to_utf8()]
+ */
+static void f_string_filter_non_unicode( INT32 args )
+{
+  struct pike_string *in;
+  INT32 min,max;
+  int i;
+  static const p_wchar1 replace = 0xfffd;
+  static const PCHARP repl_char = {(void*)&replace,1};
+
+  get_all_args("filter_non_unicode", args, "%W", &in);
+  check_string_range( in, 1, &min, &max );
+
+
+  if( !in->len || (min >= 0 && max < 0xd800) )
+      return; /* The string is obviously ok. */
+
+  if( (max < 0 || min > 0x10ffff) || (max < 0xe000 && min > 0xd7ff) )
+  {
+      /* All invalid. Could probably be optimized. */
+      debug_make_shared_binary_pcharp( repl_char, 1 );
+      push_int( in->len );
+      o_multiply();
+  }
+  else
+  {
+      /* Note: we could optimize this by not doing any string builder
+       * at all unless there is at least one character that needs to
+       * be replaced.
+       */
+      struct string_builder out;
+      /* on average shift 1 is more correct than in->size_shift, since
+       * there is usually only the one character that is outside the
+       * range.
+       */
+      init_string_builder_alloc( &out, in->len, 1 );
+      for( i=0; i<in->len; i++ )
+      {
+          p_wchar2 c = index_shared_string(in,i);
+          if( (c < 0 || c > 0x10ffff) || (c>0xd7ff && c<0xe000) )
+              string_builder_append( &out, repl_char, 1 );
+          else
+              string_builder_putchar( &out, c );
+      }
+      push_string( finish_string_builder( &out ) );
+  }
+}
+
 /*! @decl string(0..255) string_to_utf8(string s)
  *! @decl string(0..255) string_to_utf8(string s, int extended)
  *!
@@ -10062,6 +10122,9 @@ void init_builtin_efuns(void)
   
 /* function(string,int|void:string(0..255)) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
+	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("string_filter_non_unicode", f_string_filter_non_unicode,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
   
 /* function(string(0..255),int|void:string) */
