@@ -985,7 +985,6 @@ void init_stdio_stat()
      stat_index_strs[__indices[n].id]=s;
      sp[-1].u.integer = __indices[n].id;
      mapping_string_insert( stat_map, s, sp-1);
-     s->refs++;
    }
    sp--;
    dmalloc_touch_svalue(sp);
