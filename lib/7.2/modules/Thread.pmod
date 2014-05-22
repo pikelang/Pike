@@ -4,6 +4,8 @@
 // Pike 7.2 backward compatibility layer.
 //
 
+#pragma no_deprecation_warnings
+
 inherit Thread;
 
 #if constant(thread_create)
