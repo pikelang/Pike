@@ -11735,9 +11735,14 @@ static int low_implements(struct program *a, struct program *b)
   return 1;
 }
 
-#define IMPLEMENTS_CACHE_SIZE 4711
+#define IMPLEMENTS_CACHE_SIZE 1024
 struct implements_cache_s { INT32 aid, bid, ret; };
 static struct implements_cache_s implements_cache[IMPLEMENTS_CACHE_SIZE];
+
+static int implements_hval( INT32 aid, INT32 bid )
+{
+    return ((aid<<4) ^ bid ^ (aid>>4)) & (IMPLEMENTS_CACHE_SIZE-1);
+}
 
 /* returns 1 if a implements b, but faster */
 PMOD_EXPORT int implements(struct program *a, struct program *b)
@@ -11746,12 +11751,7 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
   if(!a || !b) return -1;
   if(a==b) return 1;
 
-  hval = (unsigned)a->id*9248339 + (unsigned)b->id;
-  hval %= IMPLEMENTS_CACHE_SIZE;
-#ifdef PIKE_DEBUG
-  if(hval >= IMPLEMENTS_CACHE_SIZE)
-    Pike_fatal("Implements_cache failed!\n");
-#endif
+  hval = implements_hval(a->id,b->id);
   if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
   {
     return implements_cache[hval].ret;
@@ -11831,12 +11831,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
     bid = tmp;
   }
 
-  hval = (unsigned long)aid*9248339 + (unsigned long)bid;
-  hval %= IMPLEMENTS_CACHE_SIZE;
-#ifdef PIKE_DEBUG
-  if(hval >= IMPLEMENTS_CACHE_SIZE)
-    Pike_fatal("Implements_cache failed!\n");
-#endif
+  hval = implements_hval(aid,bid);
   if(is_compatible_cache[hval].aid==aid &&
      is_compatible_cache[hval].bid==bid)
   {
@@ -11849,12 +11844,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
     /* a implements b */
     return 1;
   }
-  rhval = (unsigned long)bid*9248339 + (unsigned long)aid;
-  rhval %= IMPLEMENTS_CACHE_SIZE;
-#ifdef PIKE_DEBUG
-  if(rhval >= IMPLEMENTS_CACHE_SIZE)
-    Pike_fatal("Implements_cache failed!\n");
-#endif
+  rhval = implements_hval(bid,aid);
   if(implements_cache[rhval].aid==bid &&
      implements_cache[rhval].bid==aid &&
      implements_cache[rhval].ret)
