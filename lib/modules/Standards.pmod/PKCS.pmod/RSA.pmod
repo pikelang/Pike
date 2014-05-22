@@ -116,7 +116,7 @@ Sequence build_private_key(Crypto.RSA rsa)
   return Sequence(({
                     Integer(0), // Version
                     algorithm_identifier(),
-                    BitString( private_key(rsa) ),
+                    OctetString( private_key(rsa) ),
                   }));
 }
 
