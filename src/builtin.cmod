@@ -780,12 +780,12 @@ PIKEFUN string basetype(mixed x)
     case T_ZERO: push_constant_text("zero"); break;
     case T_VOID: push_constant_text("void"); break;
       /* The following are internal and shouldn't be applicable in normal use. */
-    case T_SVALUE_PTR: push_constant_text("svalue_ptr"); break;
-    case T_OBJ_INDEX: push_constant_text("obj_index"); break;
-    case T_MAPPING_DATA: push_constant_text("mapping_data"); break;
-    case T_PIKE_FRAME: push_constant_text("pike_frame"); break;
-    case T_MULTISET_DATA: push_constant_text("multiset_data"); break;
-    default: push_constant_text("unknown"); break;
+    case T_SVALUE_PTR: push_text("svalue_ptr"); break;
+    case T_OBJ_INDEX: push_text("obj_index"); break;
+    case T_MAPPING_DATA: push_text("mapping_data"); break;
+    case T_PIKE_FRAME: push_text("pike_frame"); break;
+    case T_MULTISET_DATA: push_text("multiset_data"); break;
+    default: push_text("unknown"); break;
   }
 }
 
@@ -1741,7 +1741,7 @@ PIKEFUN string program_defined(program p)
     push_string(tmp);
     if(line >= 1)
     {
-      push_constant_text(":");
+      push_text(":");
       push_int(line);
       f_add(3);
     }
@@ -2830,17 +2830,17 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   optflags OPT_TRY_OPTIMIZE;
 {
   pop_n_elems(args);
-  push_constant_text("bytecode_method");
-  push_constant_text(PIKE_BYTECODE_METHOD_NAME);
-  push_constant_text("abi");
+  push_text("bytecode_method");
+  push_text(PIKE_BYTECODE_METHOD_NAME);
+  push_text("abi");
   push_int(sizeof(void *) * 8);
-  push_constant_text("native_byteorder");
+  push_text("native_byteorder");
   push_int(PIKE_BYTEORDER);
-  push_constant_text("int_size");
+  push_text("int_size");
   push_int(sizeof(INT_TYPE) * 8);
-  push_constant_text("float_size");
+  push_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
-  push_constant_text("auto_bignum");
+  push_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(6*2);
 }
@@ -4488,14 +4488,14 @@ PIKECLASS Setter
   {
     struct program *prog;
     if (!THIS->o) {
-      push_constant_text("Setter()");
+      push_text("Setter()");
     } else if ((prog = THIS->o->prog)) {
-      push_constant_text("%O->`%s=");
+      push_text("%O->`%s=");
       ref_push_object(THIS->o);
       ref_push_string(ID_FROM_INT(prog, THIS->f)->name);
       f_sprintf(3);
     } else {
-      push_constant_text("Setter(destructed object)");
+      push_text("Setter(destructed object)");
     }
     stack_pop_n_elems_keep_top(args);
   }
@@ -4591,7 +4591,7 @@ PIKECLASS Null
   {
     pop_n_elems(args);
     if (fmt == 'O') {
-      push_constant_text("Val.null");
+      push_text("Val.null");
     } else {
       push_undefined();
     }
@@ -5361,33 +5361,33 @@ PIKECLASS List
     flags ID_PROTECTED;
   {
     if (!THIS->num_elems) {
-      push_constant_text("ADT.List(/* empty */)");
+      push_text("ADT.List(/* empty */)");
     } else if (c == 'O') {
       struct pike_list_node *node = THIS->head;
       if (THIS->num_elems == 1) {
-	push_constant_text("ADT.List(/* 1 element */\n");
+	push_text("ADT.List(/* 1 element */\n");
       } else {
-	push_constant_text("ADT.List(/* %d elements */\n");
+	push_text("ADT.List(/* %d elements */\n");
 	push_int(THIS->num_elems);
 	f_sprintf(2);
       }
       while (node->next) {
 	if (node->next->next) {
-	  push_constant_text("    %O,\n");
+	  push_text("    %O,\n");
 	} else {
-	  push_constant_text("    %O\n");
+	  push_text("    %O\n");
 	}
 	push_svalue(&node->val);
 	f_sprintf(2);
 	node = node->next;
       }
-      push_constant_text(")");
+      push_text(")");
       f_add(THIS->num_elems + 2);
     } else {
       if (THIS->num_elems == 1) {
-	push_constant_text("ADT.List(/* 1 element */)");
+	push_text("ADT.List(/* 1 element */)");
       } else {
-	push_constant_text("ADT.List(/* %d elements */)");
+	push_text("ADT.List(/* %d elements */)");
 	push_int(THIS->num_elems);
 	f_sprintf(2);
       }
@@ -6092,7 +6092,7 @@ static struct object *val_module;
 static void get_val_module()
 {
   assert (!val_module);
-  push_constant_text ("Val");
+  push_text ("Val");
   APPLY_MASTER ("resolv", 1);
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
     Pike_error ("\"Val\" didn't resolve to a module object.\n");

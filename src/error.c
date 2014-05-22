@@ -782,7 +782,7 @@ static void f_error__sprintf(INT32 args)
     }
   }
 
-  push_constant_text("(%O)");
+  push_text("(%O)");
   if(GENERIC_ERROR_THIS->error_message)
     ref_push_string(GENERIC_ERROR_THIS->error_message);
   else

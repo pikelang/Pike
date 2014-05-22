@@ -569,13 +569,13 @@ void f_aap_index_op(INT32 args)
   {
     struct svalue *tmp;
     pop_stack();
-    push_constant_text("roxen");
+    push_text("roxen");
     if((tmp = low_mapping_lookup(get_builtin_constants(), sp-1)) 
        && TYPEOF(*tmp) == T_OBJECT)
     {
       pop_stack( );
       ref_push_object( tmp->u.object );
-      push_constant_text( "find_supports" );
+      push_text( "find_supports" );
       f_index( 2 );
       ref_push_string(s_client);
       f_aap_index_op( 1 );

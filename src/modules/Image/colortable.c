@@ -4457,24 +4457,24 @@ static void image_colortable__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_constant_text("Image.Colortable");
+     push_text("Image.Colortable");
      return;
    case 'O':
-     push_constant_text( "Image.Colortable( %d, m=%s, d=%s )" );
+     push_text( "Image.Colortable( %d, m=%s, d=%s )" );
      push_int64( image_colortable_size( THIS ) );
      switch( THIS->type )
      {
-      case NCT_NONE: push_constant_text( "none" );   break;
-      case NCT_FLAT: push_constant_text( "flat" );   break;
-      case NCT_CUBE: push_constant_text( "cube" );   break;
+      case NCT_NONE: push_text( "none" );   break;
+      case NCT_FLAT: push_text( "flat" );   break;
+      case NCT_CUBE: push_text( "cube" );   break;
      }
      switch( THIS->dither_type )
      {
-      case NCTD_NONE: push_constant_text( "none" );   break;
-      case NCTD_FLOYD_STEINBERG:push_constant_text( "floyd-steinberg" );break;
-      case NCTD_RANDOMCUBE: push_constant_text( "randomcube" );   break;
-      case NCTD_RANDOMGREY: push_constant_text( "randomgrey" );   break;
-      case NCTD_ORDERED: push_constant_text( "ordered" );   break;
+      case NCTD_NONE: push_text( "none" );   break;
+      case NCTD_FLOYD_STEINBERG:push_text( "floyd-steinberg" );break;
+      case NCTD_RANDOMCUBE: push_text( "randomcube" );   break;
+      case NCTD_RANDOMGREY: push_text( "randomgrey" );   break;
+      case NCTD_ORDERED: push_text( "ordered" );   break;
      }
      f_sprintf( 4 );
      return;

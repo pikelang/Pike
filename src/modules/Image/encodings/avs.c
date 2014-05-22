@@ -89,9 +89,9 @@ void image_avs_f__decode(INT32 args)
     ((struct image *)ao->storage)->img[c] = apix;
   }
   pop_n_elems(args);
-  push_constant_text("image");
+  push_text("image");
   push_object( io );
-  push_constant_text("alpha");
+  push_text("alpha");
   push_object( ao );
   f_aggregate_mapping( 4 );
 }
@@ -99,7 +99,7 @@ void image_avs_f__decode(INT32 args)
 void image_avs_f_decode(INT32 args)
 {
   image_avs_f__decode(args);
-  push_constant_text("image");
+  push_text("image");
   f_index(2);
 }
 

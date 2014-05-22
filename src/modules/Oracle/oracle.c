@@ -1489,7 +1489,7 @@ static void push_inout_value(struct inout *inout,
 
       if(ret == OCI_SUCCESS) {
 	if(loblen == 0)
-	  push_constant_text("");
+          push_empty_string();
 	else
 	  push_string(make_shared_binary_string(bufp, loblen));
       }

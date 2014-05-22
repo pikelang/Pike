@@ -1234,9 +1234,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_constant_text("CBC(");
+	push_text("CBC(");
 	apply(THIS->object, "name", 0);
-	push_constant_text(")");
+	push_text(")");
 	f_add(3);
       }
 
@@ -1458,7 +1458,7 @@ PIKECLASS BlockCipher
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_constant_text(".CTR");
+      push_text(".CTR");
       f_add(2);
     }
 
@@ -1633,9 +1633,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_constant_text("CTR(");
+	push_text("CTR(");
 	apply(THIS->object, "name", 0);
-	push_constant_text(")");
+	push_text(")");
 	f_add(3);
       }
 
@@ -1918,7 +1918,7 @@ PIKECLASS BlockCipher16
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_constant_text(".CCM");
+      push_text(".CCM");
       f_add(2);
     }
 
@@ -2428,7 +2428,7 @@ PIKECLASS BlockCipher16
     PIKEFUN string(7bit) name()
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_constant_text(".CCM8");
+      push_text(".CCM8");
       f_add(2);
     }
 
@@ -2488,7 +2488,7 @@ PIKECLASS BlockCipher16
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_constant_text(".GCM");
+      push_text(".GCM");
       f_add(2);
     }
 
@@ -2665,7 +2665,7 @@ PIKECLASS BlockCipher16
 	optflags OPT_TRY_OPTIMIZE;
       {
 	apply(THIS->object, "name", 0);
-	push_constant_text(".GCM");
+	push_text(".GCM");
 	f_add(2);
       }
 

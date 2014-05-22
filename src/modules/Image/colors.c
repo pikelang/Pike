@@ -665,7 +665,7 @@ static void image_color_hex(INT32 args)
    pop_n_elems(args);
    if (i<1)
    {
-      push_constant_text("#");  /* stupid */
+      push_text("#");  /* stupid */
       return;
    }
    else if (i!=sizeof(COLORTYPE)*2)
@@ -810,13 +810,13 @@ static void image_color__sprintf(INT32 args)
 /*       case 'c': */
 /*       case 'd': */
       case 't':
-	 push_constant_text("Image.Color.Color");
+	 push_text("Image.Color.Color");
 	 return;
       case 'O':
 	 if (!THIS->name) try_find_name(THIS);
 	 if (THIS->name==no_name)
 	 {
-	    push_constant_text("Image.Color(\"");
+	    push_text("Image.Color(\"");
 	    if (prec)
 	    {
 	       push_int(prec);
@@ -824,13 +824,13 @@ static void image_color__sprintf(INT32 args)
 	    }
 	    else
 	       image_color_hex(0);
-	    push_constant_text("\")");
+	    push_text("\")");
 	    f_add(3);
 	    return;
 	 }
 	 else
 	 {
-	    push_constant_text("Image.Color.");
+	    push_text("Image.Color.");
 	    ref_push_string(THIS->name);
 	    f_add(2);
 	    return;
@@ -1423,7 +1423,7 @@ static void image_guess_color(INT32 args)
 		"Bad arguments to Image.Color->guess()\n");
    
    f_lower_case(1);
-   push_constant_text(" ");
+   push_text(" ");
    o_subtract();
 
    stack_dup();
@@ -1435,7 +1435,7 @@ static void image_guess_color(INT32 args)
       return;
    }
    pop_stack();
-   push_constant_text("#");
+   push_text("#");
    stack_swap();
    f_add(2);
 
@@ -1693,7 +1693,7 @@ static void image_make_html_color(INT32 args)
       image_get_color(1);
    else
    {
-      push_constant_text("#");
+      push_text("#");
       stack_swap();
       f_add(2);
       image_get_color(1);

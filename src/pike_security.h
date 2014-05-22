@@ -89,8 +89,8 @@ struct pike_creds
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))			\
       Pike_error(name ": Permission denied.\n");	       		\
 									\
-    push_constant_text(name);						\
-    push_constant_text(access_type);					\
+    push_text(name);						\
+    push_text(access_type);					\
 									\
     for(e=0;e<args;e++) push_svalue(base_sp+e);				\
 									\

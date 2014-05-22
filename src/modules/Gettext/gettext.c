@@ -383,11 +383,11 @@ void f_localeconv(INT32 args)
   locale = localeconv();
 
 #define MAPSTR(key) do {		\
-    push_constant_text(TOSTR(key));	\
+    push_text(TOSTR(key));	\
     push_text(locale->key);		\
   } while(0)
 #define MAPINT(key) do {		\
-    push_constant_text(TOSTR(key));	\
+    push_text(TOSTR(key));	\
     push_int(locale->key);		\
   } while(0)
 

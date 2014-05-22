@@ -847,7 +847,7 @@ static void mpzmod__sprintf(INT32 args)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 2, "mapping");
 
   push_svalue(&sp[1-args]);
-  push_constant_text("precision");
+  push_text("precision");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -855,7 +855,7 @@ static void mpzmod__sprintf(INT32 args)
   precision = (--sp)->u.integer;
   
   push_svalue(&sp[1-args]);
-  push_constant_text("width");
+  push_text("width");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -864,7 +864,7 @@ static void mpzmod__sprintf(INT32 args)
   width = (--sp)->u.integer;
 
   push_svalue(&sp[1-args]);
-  push_constant_text("flag_left");
+  push_text("flag_left");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -879,16 +879,16 @@ static void mpzmod__sprintf(INT32 args)
     case 't':
       pop_n_elems(args);
       if(THIS_PROGRAM == bignum_program)
-	push_constant_text("int");
+	push_text("int");
       else
-	push_constant_text("object");
+	push_text("object");
       return;
 
   case 'O':
     if (THIS_PROGRAM == mpzmod_program) {
-      push_constant_text ("Gmp.mpz(");
+      push_text ("Gmp.mpz(");
       push_string (low_get_mpz_digits (THIS, 10));
-      push_constant_text (")");
+      push_text (")");
       f_add (3);
       s = (--sp)->u.string;
       break;
@@ -1021,14 +1021,12 @@ static void mpzmod__sprintf(INT32 args)
  */
 static void mpzmod__is_type(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_is_type", 1);
-  if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_is_type", 1, "string");
-
-  pop_n_elems(args-1);
-  push_constant_text("int");
-  f_eq(2);
+    struct pike_string *int_t;
+    struct pike_string *str;
+    MAKE_CONST_STRING(int_t,"int");
+    get_all_args( "Gmp.mpz->_is_type", args, "%s", &str );
+    pop_n_elems(args); /* even if str is freed here the comparison is OK. */
+    push_int( str == int_t ? 1 : 0 );
 }
 
 /*! @decl int(0..) size(void|int base)

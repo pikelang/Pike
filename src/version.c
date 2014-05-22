@@ -25,7 +25,7 @@
 PMOD_EXPORT void f_version(INT32 args)
 {
   pop_n_elems(args);
-  push_constant_text ("Pike v"
+  push_text ("Pike v"
 		      DEFINETOSTR (PIKE_MAJOR_VERSION)
 		      "."
 		      DEFINETOSTR (PIKE_MINOR_VERSION)

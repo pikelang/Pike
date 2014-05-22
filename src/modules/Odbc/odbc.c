@@ -68,11 +68,9 @@ int odbc_driver_is_old_freetds(HDBC odbc_conn)
     int is_tds = 0;
     push_text(buf);
     f_lower_case(1);
-    push_constant_text("libtdsodbc");
-    f_has_value(2);
-    is_tds = !SAFE_IS_ZERO(&Pike_sp[-1]);
+    is_tds = strstr(Pike_sp[-1].u.string->str, "libtdsodbc") ? 1 : 0;
     pop_stack();
-    
+
     if(is_tds) {
       if(SQLGetInfo(odbc_conn, SQL_DRIVER_VER, buf, sizeof(buf), &len) == SQL_SUCCESS) {
 	double version = atof(buf);
@@ -344,7 +342,7 @@ static void f_create(INT32 args)
 
   if (!database || !database->len) {
     if (!server || !server->len) {
-      push_constant_text("default");
+      push_text("default");
       database = sp[-1].u.string;
       args++;
     } else {

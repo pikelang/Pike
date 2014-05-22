@@ -466,7 +466,7 @@ PIKECLASS mpq
       /* If the denominator contains other factors we still need to
        * display it. */
       if (mpz_cmp_ui (den, 1u)) {
-	push_constant_text ("/");
+	push_text ("/");
 	push_string (low_get_mpz_digits (den, 10));
 	strings += 2;
       }
@@ -478,7 +478,7 @@ PIKECLASS mpq
 
     else {
       push_string(low_get_mpz_digits(mpq_numref(mpq),10));
-      push_constant_text("/");
+      push_text("/");
       push_string(low_get_mpz_digits(mpq_denref(mpq),10));
       f_add(3);
     }
@@ -579,9 +579,9 @@ PIKECLASS mpq
 	  return;
 
 	case 'O':
-	  push_constant_text ("Gmp.mpq(");
+	  push_text ("Gmp.mpq(");
 	  format_string (THISMPQ, 1);
-	  push_constant_text (")");
+	  push_text (")");
 	  f_add (3);
 	  return;
 
@@ -612,11 +612,14 @@ PIKECLASS mpq
   
   /*! @decl static int(0..1) _is_type(string arg)
    */
-  PIKEFUN int(0..1) _is_type(string UNUSED)
+  PIKEFUN int(0..1) _is_type(string str)
     flags ID_PROTECTED;
     {
-      push_constant_text("float");
-      f_eq(2);
+      struct pike_string *float_t;
+      MAKE_CONST_STRING(float_t,"float");
+      if( str == float_t )
+          RETURN 1;
+      RETURN 0;
     }
 
   /*! @decl static int|string|float|object cast(string s)

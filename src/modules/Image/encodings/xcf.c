@@ -103,10 +103,10 @@ static void f_substring__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_constant_text("SubString");
+     push_text("SubString");
      return;
    case 'O':
-     push_constant_text("SubString( %O /* [+%d .. %d] */ )" );
+     push_text("SubString( %O /* [+%d .. %d] */ )" );
      push_text("string"); f_substring_cast( 1 );
 
      push_int64( s->len );

@@ -1957,7 +1957,7 @@ PIKECLASS Backend
    PIKEFUN string _sprintf(int type, mapping flags)
    {
      if (type == 'O') {
-       push_constant_text ("Pike.Backend(%d)");
+       push_text ("Pike.Backend(%d)");
        push_int (THIS->id);
        f_sprintf (2);
        stack_pop_n_elems_keep_top (args);

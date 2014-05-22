@@ -118,10 +118,10 @@ void img_ras__decode(INT32 args)
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("Image.RAS._decode", 1, "string");
   img_ras_decode(args);
-  push_constant_text("image");
+  push_text("image");
   stack_swap();
-  push_constant_text("format");
-  push_constant_text("image/x-sun-raster");
+  push_text("format");
+  push_text("image/x-sun-raster");
   f_aggregate_mapping(4);
 }
 

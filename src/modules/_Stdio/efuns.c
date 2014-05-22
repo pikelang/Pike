@@ -1072,7 +1072,7 @@ void f_get_dir(INT32 args)
   get_all_args("get_dir",args,".%T",&str);
 
   if(!str) {
-    push_constant_text(".");
+    push_text(".");
     str = Pike_sp[-1].u.string;
     args++;
   }
@@ -1361,7 +1361,7 @@ void f_get_dir(INT32 args)
 #if defined(__amigaos4__)
     push_empty_string();
 #else
-    push_constant_text(".");
+    push_text(".");
 #endif
     str = Pike_sp[-1].u.string;
     args++;
@@ -1584,7 +1584,7 @@ void f_exece(INT32 args)
 
     NEW_MAPPING_LOOP(en->data) {
       push_string(k->ind.u.string);
-      push_constant_text("=");
+      push_text("=");
       push_string(k->val.u.string);
       f_add(3);
       env[i++]=sp[-1].u.string->str;
@@ -1879,7 +1879,7 @@ void f_strerror(INT32 args)
   if(s)
     push_text(s);
   else {
-    push_constant_text("Error ");
+    push_text("Error ");
     push_int(err);
     f_add(2);
   }

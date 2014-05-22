@@ -842,7 +842,7 @@ static void gssapi_err_create (INT32 args)
       if(TYPEOF(Pike_sp[3-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("create",4,"void|string");
       ref_push_string (Pike_sp[3-args].u.string);
-      push_constant_text (": ");
+      push_text (": ");
       push_string (make_gss_err_message (THIS->major_status, THIS->minor_status,
 					 mech, NULL, NULL));
       f_add (3);
@@ -1063,17 +1063,17 @@ static void missing_err_events (int event)
 static void describe_services_and_push (OM_uint32 services)
 {
   int n = 0;
-  if (services & GSS_C_DELEG_FLAG)	{push_constant_text ("DEL"); n++;}
-  if (services & GSS_C_MUTUAL_FLAG)	{push_constant_text ("MUT"); n++;}
-  if (services & GSS_C_REPLAY_FLAG)	{push_constant_text ("REPL"); n++;}
-  if (services & GSS_C_SEQUENCE_FLAG)	{push_constant_text ("SEQ"); n++;}
-  if (services & GSS_C_CONF_FLAG)	{push_constant_text ("CONF"); n++;}
-  if (services & GSS_C_INTEG_FLAG)	{push_constant_text ("INTEG"); n++;}
-  if (services & GSS_C_ANON_FLAG)	{push_constant_text ("ANON"); n++;}
-  if (services & GSS_C_PROT_READY_FLAG)	{push_constant_text ("READY"); n++;}
-  if (services & GSS_C_TRANS_FLAG)	{push_constant_text ("TRANS"); n++;}
+  if (services & GSS_C_DELEG_FLAG)	{push_text ("DEL"); n++;}
+  if (services & GSS_C_MUTUAL_FLAG)	{push_text ("MUT"); n++;}
+  if (services & GSS_C_REPLAY_FLAG)	{push_text ("REPL"); n++;}
+  if (services & GSS_C_SEQUENCE_FLAG)	{push_text ("SEQ"); n++;}
+  if (services & GSS_C_CONF_FLAG)	{push_text ("CONF"); n++;}
+  if (services & GSS_C_INTEG_FLAG)	{push_text ("INTEG"); n++;}
+  if (services & GSS_C_ANON_FLAG)	{push_text ("ANON"); n++;}
+  if (services & GSS_C_PROT_READY_FLAG)	{push_text ("READY"); n++;}
+  if (services & GSS_C_TRANS_FLAG)	{push_text ("TRANS"); n++;}
   f_aggregate (n);
-  push_constant_text ("|");
+  push_text ("|");
   o_multiply();
 }
 

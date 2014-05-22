@@ -878,7 +878,7 @@ void udp_read(INT32 args)
   push_text( inet_ntoa( *SOCKADDR_IN_ADDR(from) ) );
 #endif
 
-  push_constant_text("port");
+  push_text("port");
   push_int(ntohs(from.ipv4.sin_port));
   f_aggregate_mapping( 6 );
 

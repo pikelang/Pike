@@ -7926,7 +7926,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
 
-  push_constant_text ("is_pike_master");
+  push_text ("is_pike_master");
   args++;
   object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
 
@@ -9441,7 +9441,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
           push_string(tmp);
           if(line >= 1)
           {
-              push_constant_text(":");
+              push_text(":");
               push_int(line);
               f_add(3);
           }
@@ -9470,7 +9470,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
       pop_n_elems(args);
       if (line) {
           push_string(file);
-          push_constant_text(":");
+          push_text(":");
           push_int(line);
           f_add(3);
       }
@@ -9618,7 +9618,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
       pop_n_elems(args);
       if (line) {
 	push_string(file);
-	push_constant_text(":");
+	push_text(":");
 	push_int(line);
 	f_add(3);
       }

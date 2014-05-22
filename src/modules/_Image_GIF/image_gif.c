@@ -321,7 +321,7 @@ void image_gif_header_block(INT32 args)
 void image_gif_end_block(INT32 args)
 {
    pop_n_elems(args);
-   push_constant_text("\x3b");
+   push_text("\x3b");
 }
 
 /*
@@ -2189,13 +2189,13 @@ void image_gif_decode_layers(INT32 args)
 	     
 	 if (alpha) 
 	 {
-	    push_constant_text("image");
+	    push_text("image");
 	    push_svalue(b->item+3);
-	    push_constant_text("alpha");
+	    push_text("alpha");
 	    push_svalue(b->item+4);
-	    push_constant_text("xoffset");
+	    push_text("xoffset");
 	    push_svalue(b->item+1);
-	    push_constant_text("yoffset");
+	    push_text("yoffset");
 	    push_svalue(b->item+2);
 	    f_aggregate_mapping(8);
 	    push_object(clone_object(image_layer_program,1));
@@ -2203,11 +2203,11 @@ void image_gif_decode_layers(INT32 args)
 	 }
 	 else
 	 {
-	    push_constant_text("image");
+	    push_text("image");
 	    push_svalue(b->item+3);
-	    push_constant_text("xoffset");
+	    push_text("xoffset");
 	    push_svalue(b->item+1);
-	    push_constant_text("yoffset");
+	    push_text("yoffset");
 	    push_svalue(b->item+2);
 	    f_aggregate_mapping(6);
 	    push_object(clone_object(image_layer_program,1));
@@ -2253,10 +2253,10 @@ void image_gif_decode_map(INT32 args)
 {
    image_gif_decode_layer(args);
 
-   push_constant_text("image");
-   push_constant_text("alpha");
-   push_constant_text("xsize");
-   push_constant_text("ysize");
+   push_text("image");
+   push_text("alpha");
+   push_text("xsize");
+   push_text("ysize");
    f_aggregate(4);
 #define stack_swap_behind() do { struct svalue _=sp[-2]; sp[-2]=sp[-3]; sp[-3]=_; } while(0)
    stack_dup();
@@ -2264,8 +2264,8 @@ void image_gif_decode_map(INT32 args)
    f_rows(2);
    f_call_function(1);
    f_mkmapping(2);
-   push_constant_text("type");
-   push_constant_text("image/gif");
+   push_text("type");
+   push_text("image/gif");
    f_aggregate_mapping(2);
    f_add(2);
 }

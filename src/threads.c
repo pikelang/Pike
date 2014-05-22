@@ -2685,9 +2685,9 @@ void f_thread_id__sprintf (INT32 args)
     push_undefined();
     return;
   }
-  push_constant_text ("Thread.Thread(");
+  push_text ("Thread.Thread(");
   push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
-  push_constant_text (")");
+  push_text (")");
   f_add (3);
 }
 

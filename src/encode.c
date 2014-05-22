@@ -2217,14 +2217,14 @@ static DECLSPEC(noreturn) void decode_error (
   copy_shared_string (dec->decode_string, data->data_str);
 
   if (decoding) {
-    push_constant_text ("Error while decoding "); n++;
-    push_constant_text ("%O");
+    push_text ("Error while decoding "); n++;
+    push_text ("%O");
     push_svalue (decoding);
     f_sprintf (2); n++;
-    push_constant_text (":\n"); n++;
+    push_text (":\n"); n++;
   }
   else {
-    push_constant_text ("Decode error: "); n++;
+    push_text ("Decode error: "); n++;
   }
 
   init_string_builder (&sb, 0);

@@ -491,7 +491,7 @@ static void f_list_tables(INT32 args)
   SQLLEN num_rows;
 
   if (!args) {
-    push_constant_text("%");
+    push_text("%");
     args = 1;
   } else if ((TYPEOF(Pike_sp[-args]) != T_STRING) ||
 	     (Pike_sp[-args].u.string->size_shift)) {

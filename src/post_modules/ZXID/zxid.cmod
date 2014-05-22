@@ -572,16 +572,16 @@ PIKECLASS Configuration {
       int attrs = 0;
       /* if (!idp->ed->IDPSSODescriptor) continue; */
       push_text(idp->eid);
-      push_constant_text("eid");
+      push_text("eid");
       push_text(idp->eid);
       attrs++;
       if (idp->dpy_name) {
-	push_constant_text("name");
+	push_text("name");
 	push_text(idp->dpy_name);
 	attrs++;
       }
       if (idp->sha1_name) {
-	push_constant_text("sha1_name");
+	push_text("sha1_name");
 	push_text(idp->sha1_name);
 	attrs++;
       }
