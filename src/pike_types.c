@@ -8691,7 +8691,7 @@ static struct callback *pike_type_gc_callback = NULL;
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
 
 #ifdef MAP_ANONYMOUS
-static int type_stack_mmap, type_mark_stack_mmap;
+static int type_stack_mmap, pike_type_mark_stack_mmap;
 #endif
 
 void init_types(void)
@@ -8710,7 +8710,7 @@ void init_types(void)
   pike_type_mark_stack = mmap( NULL, sizeof(struct pike_type **)*PIKE_TYPE_STACK_SIZE>>2,
 			       PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
   if( pike_type_mark_stack )
-    type_mark_stack_mmap = 1;
+    pike_type_mark_stack_mmap = 1;
 #endif
   if( !type_stack )
     type_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
