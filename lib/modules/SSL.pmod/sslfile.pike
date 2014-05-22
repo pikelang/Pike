@@ -490,15 +490,6 @@ protected void create (Stdio.File stream, SSL.Context ctx)
     read_buffer = String.Buffer();
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
-#if 0
-    // Unnecessary to init stuff to zero.
-    callback_id = 0;
-    local_backend = 0;
-    close_packet_send_state = CLOSE_PACKET_NOT_SCHEDULED;
-    local_errno = cb_errno = 0;
-    got_extra_read_call_out = 0;
-    alert_cb_called = 0;
-#endif
 
     stream->set_read_callback (0);
     stream->set_write_callback (0);
