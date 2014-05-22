@@ -8688,8 +8688,11 @@ static struct callback *pike_type_gc_callback = NULL;
 
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
-static int type_stack_mmap, type_mark_stack_mmap;
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
+
+#ifdef MAP_ANONYMOUS
+static int type_stack_mmap, type_mark_stack_mmap;
+#endif
 
 void init_types(void)
 {
