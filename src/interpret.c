@@ -3062,6 +3062,15 @@ void low_safe_apply_handler(const char *fun,
   }
 }
 
+PMOD_EXPORT push_text( const char *x )
+{
+    struct svalue *_sp_ = Pike_sp++;
+    SET_SVAL_SUBTYPE(*_sp_, 0);
+    _sp_->u.string=make_shared_string(x);
+    debug_malloc_touch(_sp_->u.string);
+    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);
+}
+
 /* NOTE: Returns 1 if result on stack, 0 otherwise. */
 PMOD_EXPORT int safe_apply_handler(const char *fun,
 				   struct object *handler,
