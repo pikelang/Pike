@@ -25,8 +25,8 @@ mapping get_child_size()
   int x, y;
   my_pop_n_elems(args);
   gtk_button_box_get_child_size( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
-  push_constant_text( "x" );  push_int( x );
-  push_constant_text( "y" );  push_int( y );
+  push_text( "x" );  push_int( x );
+  push_text( "y" );  push_int( y );
   f_aggregate_mapping( 4 );
 }
 mapping get_child_ipadding()
@@ -35,8 +35,8 @@ mapping get_child_ipadding()
   int x, y;
   my_pop_n_elems(args);
   gtk_button_box_get_child_ipadding( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
-  push_constant_text( "x" );  push_int( x );
-  push_constant_text( "y" );  push_int( y );
+  push_text( "x" );  push_int( x );
+  push_text( "y" );  push_int( y );
   f_aggregate_mapping( 4 );
 }
 

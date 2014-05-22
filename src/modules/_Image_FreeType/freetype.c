@@ -241,7 +241,7 @@ static void image_ft_face_list_encodings( INT32 args )
     if(e == ft_encoding_none)
       push_int( 0 );
     else {
-      push_constant_text( "%4c" );
+      push_text( "%4c" );
       push_int( e );
       f_sprintf( 2 );
     }

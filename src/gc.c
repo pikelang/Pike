@@ -3409,6 +3409,7 @@ static void warn_bad_cycles(void)
    * (On some architectures longjump() might restore obj_arr's original
    * value (eg if obj_arr is in a register)).
    */
+#if 0
   struct array **obj_arr_ = (struct array **)xalloc(sizeof(struct array *));
   ONERROR tmp;
 
@@ -3416,7 +3417,6 @@ static void warn_bad_cycles(void)
 
   SET_ONERROR(tmp, free_obj_arr, obj_arr_);
 
-#if 0
   {
     struct gc_pop_frame *p;
     unsigned cycle = 0;
@@ -3431,8 +3431,8 @@ static void warn_bad_cycles(void)
       p = p->next;
       if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
 	if ((*obj_arr_)->size >= 2) {
-	  push_constant_text("gc");
-	  push_constant_text("bad_cycle");
+	  push_text("gc");
+	  push_text("bad_cycle");
 	  push_array(*obj_arr_);
 	  *obj_arr_ = 0;
 	  SAFE_APPLY_MASTER("runtime_warning", 3);
@@ -3444,9 +3444,9 @@ static void warn_bad_cycles(void)
       if (!p) break;
     }
   }
-#endif
 
   CALL_AND_UNSET_ONERROR(tmp);
+#endif
 }
 
 size_t do_gc(void *UNUSED(ignored), int explicit_call)
@@ -4227,51 +4227,51 @@ void f__gc_status(INT32 args)
 
   pop_n_elems(args);
 
-  push_constant_text("num_objects");
+  push_text("num_objects");
   push_int(num_objects);
   size++;
 
-  push_constant_text("num_allocs");
+  push_text("num_allocs");
   push_int64(num_allocs);
   size++;
 
-  push_constant_text("alloc_threshold");
+  push_text("alloc_threshold");
   push_int64(alloc_threshold);
   size++;
 
-  push_constant_text("projected_garbage");
+  push_text("projected_garbage");
   push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
 				      (double) alloc_threshold)));
   size++;
 
-  push_constant_text("objects_alloced");
+  push_text("objects_alloced");
   push_int64(DO_NOT_WARN((INT64)objects_alloced));
   size++;
 
-  push_constant_text("objects_freed");
+  push_text("objects_freed");
   push_int64(DO_NOT_WARN((INT64)objects_freed));
   size++;
 
-  push_constant_text("last_garbage_ratio");
+  push_text("last_garbage_ratio");
   push_float(DO_NOT_WARN((FLOAT_TYPE) last_garbage_ratio));
   size++;
 
-  push_constant_text("non_gc_time");
+  push_text("non_gc_time");
   push_int64(DO_NOT_WARN((INT64) non_gc_time));
   size++;
 
-  push_constant_text("gc_time");
+  push_text("gc_time");
   push_int64(DO_NOT_WARN((INT64) gc_time));
   size++;
 
-  push_constant_text ("last_garbage_strategy");
+  push_text ("last_garbage_strategy");
   switch (last_garbage_strategy) {
     case GARBAGE_RATIO_LOW:
-      push_constant_text ("garbage_ratio_low"); break;
+      push_text ("garbage_ratio_low"); break;
     case GARBAGE_RATIO_HIGH:
-      push_constant_text ("garbage_ratio_high"); break;
+      push_text ("garbage_ratio_high"); break;
     case GARBAGE_MAX_INTERVAL:
-      push_constant_text ("garbage_max_interval"); break;
+      push_text ("garbage_max_interval"); break;
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
@@ -4279,11 +4279,11 @@ void f__gc_status(INT32 args)
   }
   size++;
 
-  push_constant_text("last_gc");
+  push_text("last_gc");
   push_int64(last_gc);
   size++;
 
-  push_constant_text ("total_gc_cpu_time");
+  push_text ("total_gc_cpu_time");
   push_int64 (auto_gc_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4291,7 +4291,7 @@ void f__gc_status(INT32 args)
 #endif
   size++;
 
-  push_constant_text ("total_gc_real_time");
+  push_text ("total_gc_real_time");
   push_int64 (auto_gc_real_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4300,15 +4300,15 @@ void f__gc_status(INT32 args)
   size++;
 
 #ifdef PIKE_DEBUG
-  push_constant_text ("max_rec_frames");
+  push_text ("max_rec_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
   size++;
 
-  push_constant_text ("max_link_frames");
+  push_text ("max_link_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_link_frames));
   size++;
 
-  push_constant_text ("max_free_extra_frames");
+  push_text ("max_free_extra_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_free_extra_frames));
   size++;
 #endif

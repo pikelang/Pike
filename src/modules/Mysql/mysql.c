@@ -407,9 +407,9 @@ static void connection_set_charset (struct pike_string *charset)
    * charset. We emulate it by setting the charset ourselves. Note
    * that this doesn't work with mysql_real_escape_string, but that
    * function isn't used. */
-  push_constant_text ("SET NAMES '");
+  push_text ("SET NAMES '");
   ref_push_string (charset);	/* FIXME: Quote? */
-  push_constant_text ("'");
+  push_text ("'");
   f_add (3);
   low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
   pop_stack();
@@ -793,7 +793,7 @@ static void mysql__sprintf(INT32 args)
 	f_sprintf(3);
       }
       else
-	push_constant_text ("mysql()");
+	push_text ("mysql()");
 
       return;
     }
@@ -1862,7 +1862,7 @@ static void f_get_charset (INT32 args)
   if (PIKE_MYSQL->conn_charset)
     ref_push_string (PIKE_MYSQL->conn_charset);
   else
-    push_constant_text ("latin1");
+    push_text ("latin1");
 }
 
 static void f__can_send_as_latin1 (INT32 args)

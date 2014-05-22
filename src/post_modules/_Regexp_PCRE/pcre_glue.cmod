@@ -159,7 +159,7 @@ PIKECLASS _pcre
 	    return;
 
 	 case 'O':
-	    push_constant_text ("%t(%O)");
+	    push_text ("%t(%O)");
 	    ref_push_object(Pike_fp->current_object);
 	    if (THIS->pattern)
 	       ref_push_string(THIS->pattern);

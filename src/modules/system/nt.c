@@ -3023,7 +3023,7 @@ static struct array *encode_acl(PACL acl)
       switch(((ACE_HEADER *)ace)->AceType)
       {
 	case ACCESS_ALLOWED_ACE_TYPE:
-	  push_constant_text("allow");
+	  push_text("allow");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_ALLOWED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_ALLOWED_ACE *)ace)->SidStart );
@@ -3031,7 +3031,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case ACCESS_DENIED_ACE_TYPE:
-	  push_constant_text("deny");
+	  push_text("deny");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_DENIED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_DENIED_ACE *)ace)->SidStart );
@@ -3039,7 +3039,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case SYSTEM_AUDIT_ACE_TYPE:
-	  push_constant_text("audit");
+	  push_text("audit");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((SYSTEM_AUDIT_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((SYSTEM_AUDIT_ACE *)ace)->SidStart );
@@ -3047,7 +3047,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	default:
-	  push_constant_text("unknown");
+	  push_text("unknown");
 	  f_aggregate(1);
 	  break;
 
@@ -3268,25 +3268,25 @@ static void f_GetNamedSecurityInfo(INT32 args)
 
     if(owner)
     {
-      push_constant_text("owner");
+      push_text("owner");
       SAFE_PUSH_SID(owner);
       tmp++;
     }
     if(group)
     {
-      push_constant_text("group");
+      push_text("group");
       SAFE_PUSH_SID(group);
       tmp++;
     }
     if(sacl)
     {
-      push_constant_text("sacl");
+      push_text("sacl");
       push_array( encode_acl( sacl ));
       tmp++;
     }
     if(dacl)
     {
-      push_constant_text("dacl");
+      push_text("dacl");
       push_array( encode_acl( dacl ));
       tmp++;
     }

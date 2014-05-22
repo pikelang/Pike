@@ -502,34 +502,34 @@ void low_image_tiff_decode( struct buffer *buf,
     TIFFDirectory *td = &tif->tif_dir;
     if (TIFFFieldSet(tif,FIELD_RESOLUTION)) 
     {
-      push_constant_text( "xres" );   push_float( td->td_xresolution );
-      push_constant_text( "yres" );   push_float( td->td_yresolution );
-      push_constant_text( "unit" );  
+      push_text( "xres" );   push_float( td->td_xresolution );
+      push_text( "yres" );   push_float( td->td_yresolution );
+      push_text( "unit" );  
       if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT)) 
       {
         switch(td->td_resolutionunit)
         {
          case RESUNIT_NONE:
-           push_constant_text("unitless");
+           push_text("unitless");
            break;
          case RESUNIT_INCH:
-           push_constant_text("pixels/inch");
-           push_constant_text( "xdpy" );   push_float( td->td_xresolution );
-           push_constant_text( "ydpy" );   push_float( td->td_yresolution );
+           push_text("pixels/inch");
+           push_text( "xdpy" );   push_float( td->td_xresolution );
+           push_text( "ydpy" );   push_float( td->td_yresolution );
            break;
          case RESUNIT_CENTIMETER:
-           push_constant_text("pixels/cm");
-           push_constant_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
-           push_constant_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
+           push_text("pixels/cm");
+           push_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
+           push_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
            break;
         } 
       } else
-        push_constant_text( "unitless" );  
+        push_text( "unitless" );  
     }
     if (TIFFFieldSet(tif,FIELD_POSITION))
     {
-      push_constant_text("xposition"); push_int(td->td_xposition);
-      push_constant_text("yposition"); push_int(td->td_yposition);
+      push_text("xposition"); push_int(td->td_xposition);
+      push_text("yposition"); push_int(td->td_yposition);
     }
     if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC)) 
     {
@@ -818,9 +818,9 @@ static void image_tiff__decode( INT32 args )
   buffer.offset = 0;
 
   low_image_tiff_decode( &buffer, &res, 0 );
-  push_constant_text( "image" );
+  push_text( "image" );
   push_object( res.img );
-  push_constant_text( "alpha" );
+  push_text( "alpha" );
   push_object( res.alpha );
   f_aggregate_mapping( sp-osp );
   {

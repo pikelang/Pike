@@ -320,9 +320,9 @@ PIKECLASS mpf
 	  return;
 
 	case 'O':
-	  push_constant_text ("Gmp.mpf(");
+	  push_text ("Gmp.mpf(");
 	  f_mpf_get_string(0);
-	  push_constant_text (")");
+	  push_text (")");
 	  f_add (3);
 	  return;
 
@@ -341,11 +341,14 @@ PIKECLASS mpf
    *! @fixme
    *!   Perhaps it should also return true for @expr{"object"@}?
    */
-  PIKEFUN int(0..1) _is_type(string UNUSED)
+  PIKEFUN int(0..1) _is_type(string str)
     flags ID_PROTECTED;
     {
-      push_constant_text("float");
-      f_eq(2);
+      struct pike_string *float_t;
+      MAKE_CONST_STRING(float_t,"float");
+      if( str == float_t )
+          RETURN 1;
+      RETURN 0;
     }
 
   /*! @decl static mixed cast(string to)

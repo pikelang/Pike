@@ -349,11 +349,11 @@ mapping(string:int) get_geometry()
 {
   gint x, y, w, h, d;
   gdk_window_get_geometry( (GdkWindow *)THIS->obj, &x, &y, &w, &h, &d );
-  push_constant_text( "x" ); push_int(x);
-  push_constant_text( "y" ); push_int(y);
-  push_constant_text( "width" );  push_int(w);
-  push_constant_text( "height" );  push_int(h);
-  push_constant_text( "depth" ); push_int(d);
+  push_text( "x" ); push_int(x);
+  push_text( "y" ); push_int(y);
+  push_text( "width" );  push_int(w);
+  push_text( "height" );  push_int(h);
+  push_text( "depth" ); push_int(d);
   f_aggregate_mapping( 10 );
 }
 
@@ -376,12 +376,12 @@ mapping get_pointer( int deviceid )
 				  (guint32)deviceid, 
 				  &x,&y,&pressure,&xtilt,&ytilt,&modifiers);
     my_pop_n_elems(args);
-    push_constant_text("x"); push_float(x);
-    push_constant_text("y"); push_float(y);
-    push_constant_text("pressure"); push_float(pressure);
-    push_constant_text("xtilt"); push_float(xtilt);
-    push_constant_text("ytilt"); push_float(ytilt);
-    push_constant_text("modifiers"); push_int((int)modifiers);
+    push_text("x"); push_float(x);
+    push_text("y"); push_float(y);
+    push_text("pressure"); push_float(pressure);
+    push_text("xtilt"); push_float(xtilt);
+    push_text("ytilt"); push_float(ytilt);
+    push_text("modifiers"); push_int((int)modifiers);
     f_aggregate_mapping(12);
 }
 

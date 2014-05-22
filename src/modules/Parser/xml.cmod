@@ -972,11 +972,11 @@ PIKECLASS Simple
 
   INIT
   {
-    push_constant_text("lt");    push_constant_text("&#60;");
-    push_constant_text("gt");    push_constant_text(">");
-    push_constant_text("amp");   push_constant_text("&#38;");
-    push_constant_text("apos");  push_constant_text("'");
-    push_constant_text("quot");  push_constant_text("\"");
+    push_text("lt");    push_text("&#60;");
+    push_text("gt");    push_text(">");
+    push_text("amp");   push_text("&#38;");
+    push_text("apos");  push_text("'");
+    push_text("quot");  push_text("\"");
   
     f_aggregate_mapping(10);
     THIS->entities=sp[-1].u.mapping;
@@ -1231,21 +1231,21 @@ static int gobble(char *s)
 
 #define STRIP_SPACES() do {			\
     IF_XMLDEBUG(fprintf(stderr,"STRIPPING SPACES (%s)\n",sp[-1].u.string->str));       \
-    push_constant_text("\n");			\
-    push_constant_text("\r");			\
-    push_constant_text("\t");			\
+    push_text("\n");			\
+    push_text("\r");			\
+    push_text("\t");			\
     f_aggregate(3);				\
-    push_constant_text(" ");			\
-    push_constant_text(" ");			\
-    push_constant_text(" ");			\
+    push_text(" ");			\
+    push_text(" ");			\
+    push_text(" ");			\
     f_aggregate(3);				\
     f_replace(3);				\
-    push_constant_text(" ");			\
+    push_text(" ");			\
     o_divide();					\
     push_empty_string();			\
     f_aggregate(1);                             \
     o_subtract();				\
-    push_constant_text(" ");			\
+    push_text(" ");			\
     o_multiply();				\
     IF_XMLDEBUG(fprintf(stderr,"SPACES STRIPPED (%s)\n",sp[-1].u.string->str));       \
   } while(0)
@@ -1545,7 +1545,7 @@ static void sys(void)
 
 static void xmlerror(char *desc, struct pike_string *tag_name)
 {
-  push_constant_text("error");
+  push_text("error");
   if (tag_name) {
     ref_push_string(tag_name);	/* Name of tag that triggered the error. */
   } else {
@@ -1567,7 +1567,7 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
       READ(1); /* this is '%' */
       IF_XMLDEBUG( fprintf(stderr, "SMEG reference found.\n") );
 
-      push_constant_text("%");
+      push_text("%");
       SIMPLE_READNAME();
 
       add_ref(name=sp[-1].u.string);

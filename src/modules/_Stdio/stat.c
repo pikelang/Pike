@@ -798,7 +798,7 @@ static void stat_cast(INT32 args)
 
 static void stat__sprintf(INT32 args)
 {
-   int n=0, x;
+   int x;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
@@ -811,16 +811,11 @@ static void stat__sprintf(INT32 args)
    switch (x)
    {
       case 'O':
-	 n++; push_constant_text("Stat(");
-
-	 n++; _stat_index(STAT_MODE_STRING);
-
-	 n++; push_constant_text(" ");
-
-	 n++; _stat_index(STAT_SIZE);
-	 n++; push_constant_text("b)");
-	 f_add(n);
-	 return;
+        push_text("Stat(%s %db)");
+        _stat_index(STAT_MODE_STRING);
+        _stat_index(STAT_SIZE);
+        f_sprintf(3);
+        return;
       default:
 	 push_int(0);
 	 return;

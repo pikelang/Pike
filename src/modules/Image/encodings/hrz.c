@@ -69,7 +69,7 @@ void image_hrz_f_decode(INT32 args)
 void image_hrz_f__decode(INT32 args)
 {
   image_hrz_f_decode(args);
-  push_constant_text("image");
+  push_text("image");
   stack_swap();
   f_aggregate_mapping(2);
 }

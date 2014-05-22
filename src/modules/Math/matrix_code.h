@@ -355,7 +355,7 @@ void matrixX(__sprintf)(INT32 args)
 	    return;
 	 }
 
-	 push_constant_text("Math." PNAME "( ({ ({ ");
+	 push_text("Math." PNAME "( ({ ({ ");
 	 n=1;
 	 for (y=0; y<THIS->ysize; y++)
 	 {
@@ -366,10 +366,10 @@ void matrixX(__sprintf)(INT32 args)
 	       push_text(buf); n++;
 	    }
 	    if (y<THIS->ysize-1)
-	       push_constant_text("}),\n                ({ "); 
+	       push_text("}),\n                ({ "); 
 	    n++;
 	 }
-	 push_constant_text("}) }) )"); 
+	 push_text("}) }) )"); 
 	 f_add(n);
 	 stack_pop_n_elems_keep_top(args);
 	 return;

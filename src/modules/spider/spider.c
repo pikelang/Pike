@@ -132,7 +132,7 @@ void f_parse_accessed_database(INT32 args)
   /* Pop all but the first argument */
   pop_n_elems(args-1);
 
-  push_constant_text("\n");
+  push_text("\n");
   f_divide(2);
 
   if (TYPEOF(sp[-1]) != T_ARRAY) {

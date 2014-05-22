@@ -84,9 +84,9 @@ static void f__decode( INT32 args )
       }
     }
 
-  push_constant_text( "image" );
+  push_text( "image" );
   push_object( i );
-  push_constant_text( "alpha" );
+  push_text( "alpha" );
   push_object( a );
   f_aggregate_mapping( 4 );
 }
@@ -94,7 +94,7 @@ static void f__decode( INT32 args )
 static void f_decode( INT32 args )
 {
   f__decode( args );
-  push_constant_text( "image" );
+  push_text( "image" );
   f_index( 2 );
 }
 

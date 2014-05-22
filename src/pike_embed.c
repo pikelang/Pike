@@ -573,7 +573,7 @@ static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
   if(msg->sv_GDir[0] == '\0' ||
      !strcmp(msg->sv_GDir, "ENV:")) {
     push_text(msg->sv_Name);
-    push_constant_text("=");
+    push_text("=");
     push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
     f_add(3);
   }

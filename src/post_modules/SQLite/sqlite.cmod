@@ -234,7 +234,7 @@ PIKECLASS ResObj
         push_constant_text("text");
         break;
       default:
-        push_constant_text("unknown");
+        push_text("unknown");
         break;
       }
       f_aggregate_mapping(4);
@@ -522,7 +522,7 @@ PIKECLASS ResObj
   PIKEFUN string server_info()
     optflags OPT_TRY_OPTIMIZE;
   {
-    push_constant_text(sqlite3_libversion());
+    push_text(sqlite3_libversion());
   }
 
   /*! @decl int insert_id()

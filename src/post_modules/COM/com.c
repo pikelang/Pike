@@ -835,7 +835,7 @@ static void f_cval__sprintf(INT32 args)
     Pike_error("Bad argument 2 for Com.cval->_sprintf().\n");
   
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("precision");
+  push_text("precision");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"precision\" argument to Com->_sprintf() is not an integer.\n");
@@ -843,7 +843,7 @@ static void f_cval__sprintf(INT32 args)
   precision = (--Pike_sp)->u.integer;
   
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("width");
+  push_text("width");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"width\" argument to Com->_sprintf() is not an integer.\n");
@@ -851,7 +851,7 @@ static void f_cval__sprintf(INT32 args)
   width = (--Pike_sp)->u.integer;
 
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("flag_left");
+  push_text("flag_left");
   f_index(2);
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"flag_left\" argument to Com->_sprintf() is not an integer.\n");
@@ -1891,7 +1891,7 @@ static void f_com__sprintf(INT32 args)
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
-      push_constant_text("Com()");
+      push_text("Com()");
       stack_pop_n_elems_keep_top(args);
       return;
   }

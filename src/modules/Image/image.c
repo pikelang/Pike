@@ -4563,10 +4563,10 @@ static void image__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_constant_text("Image.Image");
+     push_text("Image.Image");
      return;
    case 'O':
-     push_constant_text( "Image.Image( %d x %d /* %.1fKb */)" );
+     push_text( "Image.Image( %d x %d /* %.1fKb */)" );
      push_int( THIS->xsize );
      push_int( THIS->ysize );
      push_float( DO_NOT_WARN((FLOAT_TYPE)((THIS->xsize * THIS->ysize) /

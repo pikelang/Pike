@@ -916,12 +916,12 @@ static void cpp_constant(struct cpp *this, int value)
 
   /* FIXME: Protection against errors. */
   /* Remove extra whitespace. */
-  push_constant_text(" ");
+  push_text(" ");
   o_subtract();
-  push_constant_text("\t");
+  push_text("\t");
   o_subtract();
   /* Split on . */
-  push_constant_text(".");
+  push_text(".");
   o_divide();
 #ifdef PIKE_DEBUG
   if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {
@@ -988,7 +988,7 @@ static void cpp_constant(struct cpp *this, int value)
     }
   } else {
     /* Handle constant(.foo) */
-    push_constant_text(".");
+    push_text(".");
     ref_push_string(this->current_file);
 
     if (this->handler) {
@@ -1791,7 +1791,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     push_string(end_shared_string(new_str));
 
-    push_constant_text("ebcdic-us");
+    push_text("ebcdic-us");
 
     if (safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
 			    2, BIT_STRING)) {
@@ -3340,8 +3340,8 @@ void f_cpp(INT32 args)
       struct keypair *k;
       int e, sprintf_args = 0;
       if (TYPEOF(sp[-1]) != T_MAPPING) {
-	push_constant_text ("Invalid return value from get_predefines\n");
-	push_constant_text ("Invalid return value from get_predefines, got %O\n");
+	push_text ("Invalid return value from get_predefines\n");
+	push_text ("Invalid return value from get_predefines, got %O\n");
 	push_svalue (sp - 3);
 	sprintf_args = 2;
       }
@@ -3349,8 +3349,8 @@ void f_cpp(INT32 args)
 	predefs = copy_mapping (sp[-1].u.mapping);
 	NEW_MAPPING_LOOP (predefs->data) {
 	  if (TYPEOF(k->ind) != T_STRING || !k->ind.u.string->len) {
-	    push_constant_text ("Expected nonempty string as predefine name\n");
-	    push_constant_text ("Expected nonempty string as predefine name, got %O\n");
+	    push_text ("Expected nonempty string as predefine name\n");
+	    push_text ("Expected nonempty string as predefine name, got %O\n");
 	    push_svalue (&k->ind);
 	    sprintf_args = 2;
 	    free_mapping (predefs);
@@ -3361,9 +3361,9 @@ void f_cpp(INT32 args)
 		   && TYPEOF(k->val) != T_FUNCTION
 		   && TYPEOF(k->val) != T_OBJECT) {
 
-	     push_constant_text ("expected zero, string or function value for"
+	     push_text ("expected zero, string or function value for"
 				 " predefine\n");
-	     push_constant_text ("expected zero, string or function value for"
+	     push_text ("expected zero, string or function value for"
 				 " predefine %O\n");
 	     push_svalue (&k->ind);
 	     sprintf_args = 2;
