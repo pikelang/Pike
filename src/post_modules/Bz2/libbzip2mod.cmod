@@ -515,13 +515,13 @@ PIKECLASS Deflate
     
     switch (flush_mode){
     case BZ_FLUSH:
-      f_Deflate_read(1);
+      f_Bz2_Deflate_read(1);
       break;
     case BZ_FINISH:
-      f_Deflate_finish(1);
+      f_Bz2_Deflate_finish(1);
       break;
     case BZ_RUN:
-      f_Deflate_feed(1);
+      f_Bz2_Deflate_feed(1);
       push_empty_string();
       break;
     }
@@ -980,17 +980,17 @@ PIKECLASS File
       if (args > 1) {
 	pop_n_elems(args-1);
       }
-      f_File_read_open(1);
+      f_Bz2_File_read_open(1);
       return;
     } else {
       /* FIXME: These string comparisons should be cleaned up. */
       if (strcmp(mode->str, "w") == 0) {
 	pop_stack();
-	f_File_write_open(1);
+	f_Bz2_File_write_open(1);
       }
       else if (strcmp(mode->str, "r") == 0) {
 	pop_stack();
-	f_File_read_open(1);
+	f_Bz2_File_read_open(1);
       }
       else{
 	Pike_error("Unknown open mode for file, "
@@ -1008,7 +1008,7 @@ PIKECLASS File
 
   PIKEFUN void create(void|string file, void|string mode){
     if(THIS->file != NULL){
-      f_File_close(0);
+      f_Bz2_File_close(0);
     }
     THIS->small = 0;
     THIS->bzerror = 0;
@@ -1017,7 +1017,7 @@ PIKECLASS File
     THIS->fp = NULL;
     
     if(args != 0){
-      f_File_open(args);
+      f_Bz2_File_open(args);
     }
   }
 
