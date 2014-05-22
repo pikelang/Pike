@@ -102,7 +102,7 @@ Sequence build_private_key(Crypto.DSA dsa)
   return Sequence(({
                     Integer(0), // Version
                     algorithm_identifier(dsa),
-                    BitString( private_key(dsa) ),
+                    OctetString( private_key(dsa) ),
                   }));
 }
 
