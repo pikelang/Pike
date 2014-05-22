@@ -52,7 +52,7 @@ protected class Port {
 }
 
 //! The socket that this request came in on.
-Stdio.File my_fd;
+Stdio.NonblockingStream my_fd;
 
 Port server_port;
 .HeaderParser headerparser;
@@ -108,7 +108,7 @@ int connection_timeout_delay=180;
 function(this_program:void) request_callback;
 function(this_program,array:void) error_callback;
 
-void attach_fd(Stdio.File _fd, Port server,
+void attach_fd(Stdio.NonblockingStream _fd, Port server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data,
 	       void|function(this_program,array:void) _error_callback)
