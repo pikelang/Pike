@@ -378,9 +378,11 @@ protected HTML entityparser_noerror =
     return p;
   }();
 
-// this routine is called to make sure that in case a URL contains characters which
-// are not valid in the UTF8 range, the invalid characters will be replaced by a
-// constant value i.e. 65533 as formal web browsers do
+//! Adjust string contents to valid UTF-8.
+//!
+//! This routine is called to make sure that in case a string only contains
+//! characters which are valid in UTF8. Any characters invalid in UTF-8 are
+//! replaced by the Unicode replacement character (0xfffd).
 string utf8_fix(string s)
 {
    constant utf8_limit = 1114111;                      // maximum allowed value in UTF8 format
@@ -388,11 +390,16 @@ string utf8_fix(string s)
    string fs = s;
    array(int) rr = String.range(s);                    // retrieve the smallest and largest ASCII codes in a string
 
+   if ((rr[0] > utf8_limit) || (rr[1] < 0)) {
+     // All characters in the string are out of bounds.
+     return utf8_repl * sizeof(s);
+   }
+
    // if the lower limit shows an invalid char
-   if (rr[0] > utf8_limit)
+   if (rr[0] < 0)
    {
       array(string) ss = s / String.int2char(rr[0]);   // separate the string where the delimiter is an invalid char in UTF8
-      fs = map(ss, utf8_fix) * (string)utf8_repl;      // recursively fix all sub-strings and compose the new string
+      return map(ss, utf8_fix) * (string)utf8_repl;      // recursively fix all sub-strings and compose the new string
    }
 
    // if the upper limit shows an invalid char
