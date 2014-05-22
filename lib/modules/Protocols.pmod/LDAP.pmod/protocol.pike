@@ -38,7 +38,12 @@ import Protocols.LDAP;
   array extra_args;				// not used, yet
 //  /*private*/ int errno;
   int connected = 0;
-  Stdio.File ldapfd;			// helper fd
+
+#if constant(SSL.Cipher)
+  Stdio.Stream|SSL.sslfile ldapfd;		// helper fd
+#else
+  Stdio.Stream ldapfd;			        // helper fd
+#endif
 
 protected int last_io_time; // Timestamp when I/O on the fd was made last.
 
