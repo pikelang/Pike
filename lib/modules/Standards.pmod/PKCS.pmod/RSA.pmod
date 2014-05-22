@@ -8,8 +8,7 @@
 import Standards.ASN1.Types;
 
 //! Returns the AlgorithmIdentifier as defined in RFC5280 section
-//! 4.1.1.2. Optionally the DSA parameters are included, if a DSA
-//! object is given as argument.
+//! 4.1.1.2.
 Sequence algorithm_identifier()
 {
   return Sequence( ({ .Identifiers.rsa_id, Null() }) );
@@ -110,8 +109,20 @@ Sequence build_public_key(Crypto.RSA rsa)
                   }));
 }
 
+//! Creates a PrivateKeyInfo ASN.1 sequence for the given @[rsa]
+//! object. See RFC 5208 section 5.
+Sequence build_private_key(Crypto.RSA rsa)
+{
+  return Sequence(({
+                    Integer(0), // Version
+                    algorithm_identifier(),
+                    BitString( private_key(rsa) ),
+                  }));
+}
+
 //! Returns the PKCS-1 algorithm identifier for RSA and the provided
-//! hash algorithm. One of @[MD2], @[MD5] or @[SHA1].
+//! hash algorithm. One of @[MD2], @[MD5], @[SHA1], @[SHA256],
+//! @[SHA384] or @[SHA512].
 Sequence signature_algorithm_id(Crypto.Hash hash)
 {
   switch(hash->name())
