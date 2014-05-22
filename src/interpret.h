@@ -378,14 +378,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define push_text(T) do {						\
-    const char *_ = (T);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-    _sp_->u.string=make_shared_binary_string(_,strlen(_));		\
-    debug_malloc_touch(_sp_->u.string);					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
-  }while(0)
+PMOD_EXPORT extern void push_text( const char *x );
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp++;					\
