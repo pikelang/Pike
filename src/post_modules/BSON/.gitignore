@@ -1,5 +1,7 @@
 /*.cmod.compiled
 /bson.c
+/bson_config.h
+/bson_config.h.in
 /configure
 /dependencies
 /stamp-h.in
