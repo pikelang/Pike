@@ -210,7 +210,7 @@ class PGconnS
 
   void create(Stdio.File stream, SSL.Context ctx)
   { rawstream=stream;
-    std::create(stream,ctx,1,1);
+    std::create(stream,ctx);
     std::set_blocking();
     if (!std::connect()) {
       error("Secure connection failed.\n");
