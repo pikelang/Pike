@@ -106,6 +106,24 @@ constant STATE_wait_for_peer		= 1;
 constant STATE_wait_for_verify		= 2;
 constant STATE_wait_for_finish		= 3;
 
+//! Connection states.
+//!
+//! These are the states that a [Connection] may have.
+//!
+//! Queueing of more application data is only
+//! allowed in the states @[CONNECTION_ready] and
+//! @[CONNECTION_handshaking].
+enum ConnectionState {
+  CONNECTION_ready		= 0x0000,	//! Connection is ready for use.
+  CONNECTION_handshaking	= 0x0100,	//! Handshaking not done.
+  CONNECTION_peer_closed	= 0x0001,	//! Peer has closed the connection.
+  CONNECTION_peer_fatal		= 0x0002,	//! Peer has issued a fatal alert.
+  CONNECTION_local_closed	= 0x0010,	//! Local close packet sent.
+  CONNECTION_local_fatal	= 0x0020,	//! Fatal alert sent.
+  CONNECTION_local_closing	= 0x0040,	//! Local close packet pending.
+  CONNECTION_local_failing	= 0x0080,	//! Fatal alert pending.
+};
+
 /* Cipher specification */
 constant CIPHER_stream   = 0;
 constant CIPHER_block    = 1;

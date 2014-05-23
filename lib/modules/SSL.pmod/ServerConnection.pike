@@ -481,7 +481,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      string renegotiated_connection =
 		extension_data->get_var_string(1);
 	      if ((renegotiated_connection != client_verify_data) ||
-		  (handshake_finished && !secure_renegotiation)) {
+		  (!(state & CONNECTION_handshaking) && !secure_renegotiation)) {
 		// RFC 5746 3.7: (secure_renegotiation)
 		// The server MUST verify that the value of the
 		// "renegotiated_connection" field is equal to the saved
@@ -620,7 +620,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 	if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
-	  if (secure_renegotiation || handshake_finished) {
+	  if (secure_renegotiation || !(state & CONNECTION_handshaking)) {
 	    // RFC 5746 3.7: (secure_renegotiation)
 	    // When a ClientHello is received, the server MUST verify that it
 	    // does not contain the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If
