@@ -41,7 +41,7 @@ Packet client_hello(array(string(8bit))|void server_names)
 
   array(int) cipher_suites, compression_methods;
   cipher_suites = context->preferred_suites;
-  if (!handshake_finished && !secure_renegotiation) {
+  if ((state & CONNECTION_handshaking) && !secure_renegotiation) {
     // Initial handshake.
     // Use the backward-compat way of asking for
     // support for secure renegotiation.
@@ -320,7 +320,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    string renegotiated_connection = extension_data->get_var_string(1);
 	    if ((renegotiated_connection !=
 		 (client_verify_data + server_verify_data)) ||
-		(handshake_finished && !secure_renegotiation)) {
+		(!(state & CONNECTION_handshaking) && !secure_renegotiation)) {
 	      // RFC 5746 3.5: (secure_renegotiation)
 	      // The client MUST then verify that the first half of the
 	      // "renegotiated_connection" field is equal to the saved

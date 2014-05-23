@@ -106,6 +106,8 @@ protected int packet_max_size;
 // would be a better name). Is initialized from the context when the
 // object is created.
 
+import .Constants;
+
 protected enum CloseState {
   ABRUPT_CLOSE = -1,
   STREAM_OPEN = 0,
@@ -196,13 +198,11 @@ protected constant epipe_errnos = (<
   ((read_callback || write_callback || close_callback || accept_callback) && \
    close_state < NORMAL_CLOSE)
 
-#define SSL_HANDSHAKING (!conn || (!conn->handshake_finished &&	\
+#define SSL_HANDSHAKING (!conn || ((conn->state & CONNECTION_handshaking) && \
 				   close_state != ABRUPT_CLOSE))
 #define SSL_CLOSING_OR_CLOSED						\
   (close_packet_send_state >= CLOSE_PACKET_SCHEDULED ||			\
-   /* conn->closing & 2 is more accurate, but the following is quicker	\
-    * and only overlaps a bit with the check above. */			\
-   conn->closing)
+   conn->state & CONNECTION_local_closing)
 
 // Always wait for input during handshaking and when we expect the
 // remote end to respond to our close packet. We should also check the
@@ -211,7 +211,8 @@ protected constant epipe_errnos = (<
 #define SSL_INTERNAL_READING						\
   (SSL_HANDSHAKING ||							\
    (close_state == CLEAN_CLOSE ?					\
-    conn->closing == 1 :						\
+    ((conn->state & (CONNECTION_local_closed | CONNECTION_peer_closed)) == \
+     CONNECTION_local_closed) : \
     close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR))
 
 // Try to write when there's data in the write buffer or when we have
@@ -769,11 +770,11 @@ Stdio.File shutdown()
       // If we didn't request a clean close then we pretend to have
       // received a close message. According to the standard it's ok
       // anyway as long as the transport isn't used for anything else.
-      conn->closing |= 2;
+      conn->state |= CONNECTION_peer_closed;
 
     SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): %s\n",
 		    close_state != ABRUPT_CLOSE &&
-		    conn->closing & 2 &&
+		    conn->state & CONNECTION_peer_closed &&
 		    close_packet_send_state == CLOSE_PACKET_QUEUED_OR_DONE &&
 		    !sizeof (write_buffer) ?
 		    "Proper close" :
@@ -781,7 +782,8 @@ Stdio.File shutdown()
 		    "Not closed" :
 		    "Abrupt close");
 
-    if ((conn->closing & 2) && sizeof (conn->left_over || "")) {
+    if ((conn->state & CONNECTION_peer_closed) &&
+	sizeof (conn->left_over || "")) {
 #ifdef SSLFILE_DEBUG
       werror ("Warning: Got buffered data after close in %O: %O%s\n", this,
 	      conn->left_over[..99], sizeof (conn->left_over) > 100 ? "..." : "");
@@ -791,7 +793,7 @@ Stdio.File shutdown()
       close_state = STREAM_OPEN;
     }
 
-    int conn_closing = conn->closing;
+    int conn_state = conn->state;
     destruct (conn);		// Necessary to avoid garbage.
 
     write_buffer = ({});
@@ -816,7 +818,8 @@ Stdio.File shutdown()
 
     switch (close_state) {
       case CLEAN_CLOSE:
-	if (conn_closing == 3) {
+	if ((conn_state & (CONNECTION_peer_closed|CONNECTION_local_closed)) ==
+	    (CONNECTION_peer_closed | CONNECTION_local_closed)) {
 	  SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - "
 			  "leaving stream\n");
 	  local_errno = 0;
@@ -825,7 +828,7 @@ Stdio.File shutdown()
 	else {
 	  SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Close packets not fully "
 			  "exchanged after clean close (%d) - closing stream\n",
-			  conn_closing);
+			  conn_state);
 	  stream->close();
 	  local_errno = System.EPIPE;
 	  RETURN (0);
@@ -909,7 +912,8 @@ string read (void|int length, void|int(0..1) not_all)
     if (stream)
       if (not_all) {
 	if (!sizeof (read_buffer))
-	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) && !(conn->closing & 2), 0, 1,
+	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) &&
+			      !(conn->state & CONNECTION_peer_closed), 0, 1,
 			      if (sizeof (read_buffer)) {
 				// Got data to return first. Push the
 				// error back so it'll get reported by
@@ -922,7 +926,7 @@ string read (void|int length, void|int(0..1) not_all)
       else {
 	if (sizeof (read_buffer) < length || zero_type (length))
 	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length || zero_type (length)) &&
-			      !(conn->closing & 2),
+			      !(conn->state & CONNECTION_peer_closed),
 			      nonblocking_mode, 1,
 			      if (sizeof (read_buffer)) {
 				// Got data to return first. Push the
@@ -1097,7 +1101,7 @@ int renegotiate()
     // currently in the queue aren't affect by it.
     conn->expect_change_cipher = 0;
     conn->certificate_state = 0;
-    conn->handshake_finished = 0;
+    conn->state |= CONNECTION_handshaking;
     update_internal_state();
 
     conn->send_packet(conn->hello_request());
@@ -1594,15 +1598,24 @@ int is_open()
       // essentially doing a peek and call ssl_read_callback directly,
       // but that'd lead to subtle code duplication. (Also, peek is
       // currently not implemented on NT.)
+      ConnectionState closed = conn->state &
+	(CONNECTION_local_closed | CONNECTION_peer_closed);
       if ((close_state == CLEAN_CLOSE ?
-	   conn->closing != 3 : !conn->closing))
+	   closed != (CONNECTION_local_closed | CONNECTION_peer_closed) :
+	   !closed))
 	RUN_MAYBE_BLOCKING (
 	  action && (close_state == CLEAN_CLOSE ?
-		     conn->closing != 3 : !conn->closing),
+		     (conn->state &
+		      (CONNECTION_local_closed | CONNECTION_peer_closed)) !=
+		     (CONNECTION_local_closed | CONNECTION_peer_closed) :
+		     !(conn->state &
+		       (CONNECTION_local_closed | CONNECTION_peer_closed))),
 	  1, 1,
 	  RETURN (!epipe_errnos[local_errno]));
+      closed = conn->state &
+	(CONNECTION_local_closed | CONNECTION_peer_closed);
       RETURN (conn && (close_state == CLEAN_CLOSE ?
-		       conn->closing != 3 && 2 : !conn->closing));
+		       closed != (CONNECTION_local_closed | CONNECTION_peer_closed) && 2 : !closed));
     }
   } LEAVE;
   return 0;
@@ -1823,20 +1836,20 @@ protected int direct_write()
 protected int ssl_read_callback (int called_from_real_backend, string input)
 {
   SSL3_DEBUG_MSG ("ssl_read_callback (%O, %s): "
-		  "nonblocking mode=%d, callback mode=%d%s%s\n",
+		  "nonblocking mode=%d, callback mode=%d %s%s\n",
 		  called_from_real_backend,
 		  input ? "string[" + sizeof (input) + "]" : "0 (queued extra call)",
 		  nonblocking_mode, !!(CALLBACK_MODE),
-		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn ? conn->describe_state() : "not connected",
 		  conn && SSL_CLOSING_OR_CLOSED ?
-		  ", closing (" + conn->closing + ", " + close_state + ", " +
+		  ", closing (" + close_state + ", " +
 		  close_packet_send_state + ")" : "");
 
   ENTER (1, called_from_real_backend) {
     int call_accept_cb;
 
     if (input) {
-      int handshake_already_finished = conn->handshake_finished;
+      int handshake_already_finished = !(conn->state & CONNECTION_handshaking);
       string|int data =
 	close_state == ABRUPT_CLOSE ? -1 : conn->got_data (input);
 
@@ -1855,7 +1868,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
       else {
 	int write_res;
 	if (stringp(data) || (data > 0) ||
-	    ((data < 0) && !conn->handshake_finished)) {
+	    ((data < 0) && (conn->state & CONNECTION_handshaking))) {
 #ifdef SSLFILE_DEBUG
 	  if (!stream)
 	    error ("Got zapped stream in callback.\n");
@@ -1868,7 +1881,8 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	cb_errno = 0;
 
 	if (stringp (data)) {
-	  if (!handshake_already_finished && conn->handshake_finished) {
+	  if (!handshake_already_finished &&
+	      !(conn->state & CONNECTION_handshaking)) {
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
 	    update_internal_state();
 	    if (called_from_real_backend && accept_callback) {
@@ -1895,7 +1909,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 
 	// Don't use data > 0 here since we might have processed some
 	// application data and a close in the same got_data call.
-	if (conn->closing & 2) {
+	if (conn->state & CONNECTION_peer_closed) {
 	  if (close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR) {
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Got close packet - "
 			    "ignoring failure to send one\n");
@@ -1939,7 +1953,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	// Shouldn't get here when close_state == ABRUPT_CLOSE.
 	close_state < NORMAL_CLOSE;
       do_close_stuff =
-	!!((conn->closing & 2) || cb_errno);
+	!!((conn->state & CONNECTION_peer_closed) || cb_errno);
     }
 
     if (alert_cb_called || call_accept_cb + call_read_cb + do_close_stuff > 1) {
@@ -1998,7 +2012,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	error ("Shouldn't have more to do after close stuff.\n");
 #endif
 
-      if (conn->closing & 2 &&
+      if (conn->state & CONNECTION_peer_closed &&
 	  close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED) {
 	close_packet_send_state = CLOSE_PACKET_SCHEDULED;
 	// Deinstall read side cbs to avoid reading more and install
@@ -2052,12 +2066,12 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 protected int ssl_write_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_write_callback (%O): "
-		  "nonblocking mode=%d, callback mode=%d%s%s\n",
+		  "nonblocking mode=%d, callback mode=%d %s%s\n",
 		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
-		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn ? conn->describe_state() : "",
 		  conn && SSL_CLOSING_OR_CLOSED ?
-		  ", closing (" + conn->closing + ", " + close_state + ", " +
+		  ", closing (" + close_state + ", " +
 		  close_packet_send_state + ")" : "");
 
   int ret = 0;
@@ -2119,7 +2133,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 	    else {
 	      cb_errno = 0;
 
-	      if (conn->closing & 2)
+	      if (conn->state & CONNECTION_peer_closed)
 		SSL3_DEBUG_MSG ("ssl_write_callback: Stream closed properly "
 				"remotely - ignoring failure to send close packet\n");
 
@@ -2186,7 +2200,8 @@ protected int ssl_write_callback (int called_from_real_backend)
       if (int err = queue_write()) {
 	if (err > 0) {
 #ifdef SSLFILE_DEBUG
-	  if (!conn->closing || close_packet_send_state < CLOSE_PACKET_QUEUED_OR_DONE)
+	  if (!(conn->state & (CONNECTION_local_closed|CONNECTION_peer_closed)) ||
+	      close_packet_send_state < CLOSE_PACKET_QUEUED_OR_DONE)
 	    error ("Expected a close to be sent or received\n");
 #endif
 
@@ -2195,12 +2210,13 @@ protected int ssl_write_callback (int called_from_real_backend)
 			    "Close packet queued but not yet sent\n");
 	  else {
 #ifdef SSLFILE_DEBUG
-	    if (!(conn->closing & 1))
+	    if (!(conn->state & CONNECTION_local_closed))
 	      error ("Expected a close packet to be queued or sent.\n");
 #endif
-	    if (conn->closing == 3 || close_state != CLEAN_CLOSE) {
+	    if (conn->state & CONNECTION_peer_closed ||
+		close_state != CLEAN_CLOSE) {
 	      SSL3_DEBUG_MSG ("ssl_write_callback: %s\n",
-			      conn->closing == 3 ?
+			      conn->state & CONNECTION_peer_closed ?
 			      "Close packets exchanged" : "Close packet sent");
 	      break write_to_stream;
 	    }
@@ -2275,12 +2291,12 @@ protected int ssl_write_callback (int called_from_real_backend)
 protected int ssl_close_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_close_callback (%O): "
-		  "nonblocking mode=%d, callback mode=%d%s%s\n",
+		  "nonblocking mode=%d, callback mode=%d %s%s\n",
 		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
-		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn ? conn->describe_state() : "",
 		  conn && SSL_CLOSING_OR_CLOSED ?
-		  ", closing (" + conn->closing + ", " + close_state + ", " +
+		  ", closing (" + close_state + ", " +
 		  close_packet_send_state + ")" : "");
 
   ENTER (1, called_from_real_backend) {
@@ -2304,7 +2320,7 @@ protected int ssl_close_callback (int called_from_real_backend)
 #endif
 
     if (!cb_errno) {
-      if (conn && conn->closing & 2)
+      if (conn && conn->state & CONNECTION_peer_closed)
 	SSL3_DEBUG_MSG ("ssl_close_callback: After clean close\n");
 
       else {

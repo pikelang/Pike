@@ -50,8 +50,6 @@ State pending_write_state;
 
 int handshake_state; // Constant.STATE_*
 
-int handshake_finished = 0;
-
 constant CERT_none = 0;
 constant CERT_requested = 1;
 constant CERT_received = 2;
@@ -313,9 +311,11 @@ State current_write_state;
 string(8bit) left_over;
 Packet packet;
 
+//! Number of application data bytes sent by us.
 int sent;
-int dying;
-int closing; // Bitfield: 1 if a close is sent, 2 of one is received.
+
+//! Bitfield with the current connection state.
+ConnectionState state = CONNECTION_handshaking;
 
 function(object,int|object,string:void) alert_callback;
 
@@ -326,6 +326,31 @@ constant PRI_application = 3;
 protected ADT.Queue alert_q = ADT.Queue();
 protected ADT.Queue urgent_q = ADT.Queue();
 protected ADT.Queue application_q = ADT.Queue();
+
+//! Returns a string describing the current connection state.
+string describe_state()
+{
+  if (!state) return "ready";
+  array(string) res = ({});
+  if (state & CONNECTION_handshaking) res += ({ "handshaking" });
+  if (state & CONNECTION_local_failing) {
+    if (state & CONNECTION_local_fatal) {
+      res += ({ "local_fatal" });
+    } else {
+      res += ({ "local_failing" });
+    }
+  }
+  if (state & CONNECTION_local_closing) {
+    if (state & CONNECTION_local_closed) {
+      res += ({ "local_closed" });
+    } else {
+      res += ({ "local_closing" });
+    }
+  }
+  if (state & CONNECTION_peer_fatal) res += ({ "peer_fatal" });
+  if (state & CONNECTION_peer_closed) res += ({ "peer_closed" });
+  return res * "|";
+}
 
 //! Called with alert object, sequence number of bad packet,
 //! and raw data as arguments, if a bad packet is received.
@@ -374,14 +399,18 @@ protected Packet recv_packet(string(8bit) data)
 //! close_notifies.
 void send_packet(Packet packet, int|void priority)
 {
-  if (closing & 1) {
+  if (state & CONNECTION_local_closing) {
     SSL3_DEBUG_MSG("SSL.Connection->send_packet: ignoring packet after close\n");
     return;
   }
 
-  if (packet->content_type == PACKET_alert &&
-      packet->description == ALERT_close_notify)
-    closing |= 1;
+  if (packet->content_type == PACKET_alert) {
+    if (packet->level == ALERT_fatal) {
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_failing);
+    } else if (packet->description == ALERT_close_notify) {
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_closing);
+    }
+  }
 
   if (!priority)
     priority = ([ PACKET_alert : PRI_alert,
@@ -416,13 +445,13 @@ void send_packet(Packet packet, int|void priority)
 //! This function is intended to be called from an i/o write callback.
 string|int to_write()
 {
-  if (dying)
+  if (state & CONNECTION_local_fatal)
     return -1;
 
   Packet packet = [object(Packet)](alert_q->get() || urgent_q->get() ||
                                    application_q->get());
   if (!packet) {
-    return closing ? 1 : "";
+    return (state & CONNECTION_local_closing) ? 1 : "";
   }
 
   SSL3_DEBUG_MSG("SSL.Connection: writing packet of type %d, %O\n",
@@ -430,7 +459,7 @@ string|int to_write()
   if (packet->content_type == PACKET_alert)
   {
     if (packet->level == ALERT_fatal) {
-      dying = 1;
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal);
       // SSL3 5.4:
       // Alert messages with a level of fatal result in the immediate
       // termination of the connection. In this case, other
@@ -440,6 +469,8 @@ string|int to_write()
       if (session) {
 	context->purge_session(session);
       }
+    } else if (packet->description == ALERT_close_notify) {
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
   string res = current_write_state->encrypt_packet(packet, version)->send();
@@ -504,12 +535,13 @@ protected int handle_alert(string s)
   {
     SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %O\n",
                    ALERT_descriptions[description]);
+    state = [int(0..0)|ConnectionState](state | CONNECTION_peer_fatal);
     return -1;
   }
   if (description == ALERT_close_notify)
   {
     SSL3_DEBUG_MSG("SSL.Connection: %O\n", ALERT_descriptions[description]);
-    closing |= 2;
+    state = [int(0..0)|ConnectionState](state | CONNECTION_peer_closed);
     return 1;
   }
   if (description == ALERT_no_certificate)
@@ -556,7 +588,7 @@ int handle_change_cipher(int c)
 
 void send_heartbeat()
 {
-  if (!handshake_finished ||
+  if ((state != CONNECTION_ready) ||
       (session->heartbeat_mode != HEARTBEAT_MODE_peer_allowed_to_send)) {
     // We're not allowed to send heartbeats.
     return;
@@ -688,12 +720,12 @@ string(8bit) handshake_buffer = "";
 //! This function is intended to be called from an i/o read callback.
 string(8bit)|int got_data(string(8bit) data)
 {
-  if (closing & 2) {
+  if (state & CONNECTION_peer_closed) {
     // The peer has closed the connection.
     return 1;
   }
-  // If closing == 1 we continue to try to read a remote close
-  // message. That enables the caller to check for a clean close, and
+  // If closing we continue to try to read a remote close message.
+  // That enables the caller to check for a clean close, and
   // to get the leftovers after the SSL connection.
 
   /* If alert_callback is called, this data is passed as an argument */
@@ -762,7 +794,8 @@ string(8bit)|int got_data(string(8bit) data)
        {
 	 SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
-	 if (handshake_finished && !secure_renegotiation) {
+	 if (!(state & CONNECTION_handshaking) &&
+	     !secure_renegotiation) {
 	   // Don't allow renegotiation in unsecure mode, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
 	   // For details see: http://www.g-sec.lu/practicaltls.pdf and
@@ -814,7 +847,7 @@ string(8bit)|int got_data(string(8bit) data)
 	   if (err < 0)
 	     return err;
 	   if (err > 0) {
-	     handshake_finished = 1;
+	     state &= ~CONNECTION_handshaking;
 	   }
 	 }
 	 break;
@@ -822,7 +855,7 @@ string(8bit)|int got_data(string(8bit) data)
       case PACKET_application_data:
 	SSL3_DEBUG_MSG("SSL.Connection: APPLICATION_DATA\n");
 
-	if (!handshake_finished)
+	if (state & CONNECTION_handshaking)
 	{
 	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Handshake not finished yet!\n"));
@@ -834,7 +867,7 @@ string(8bit)|int got_data(string(8bit) data)
 	{
 	  // RFC 6520.
 	  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat.\n");
-	  if (!handshake_finished) {
+	  if (state != CONNECTION_ready) {
 	    // RFC 6520 3:
 	    // The receiving peer SHOULD discard the message silently,
 	    // if it arrives during the handshake.
@@ -869,7 +902,7 @@ string(8bit)|int got_data(string(8bit) data)
 	}
 	break;
       default:
-	if (!handshake_finished)
+	if (state & CONNECTION_handshaking)
 	{
 	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Unexpected message during handshake!\n"));
@@ -885,6 +918,6 @@ string(8bit)|int got_data(string(8bit) data)
     }
   }
   if (sizeof(res)) return res;
-  if (closing & 2) return 1;
+  if (state & CONNECTION_peer_closed) return 1;
   return "";
 }
