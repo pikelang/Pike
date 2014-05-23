@@ -3062,7 +3062,7 @@ void low_safe_apply_handler(const char *fun,
   }
 }
 
-PMOD_EXPORT push_text( const char *x )
+PMOD_EXPORT void push_text( const char *x )
 {
     struct svalue *_sp_ = Pike_sp++;
     SET_SVAL_SUBTYPE(*_sp_, 0);
