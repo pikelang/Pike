@@ -10,10 +10,6 @@
 #include "global.h"
 #include "callback.h"
 
-#ifdef TRY_USE_MMX
-extern int try_use_mmx;
-#endif /* TRY_USE_MMX */
-
 PMOD_EXPORT extern int d_flag, a_flag, l_flag, c_flag, p_flag;
 PMOD_EXPORT extern int debug_options, runtime_options;
 PMOD_EXPORT extern int default_t_flag;

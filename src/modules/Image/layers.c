@@ -31,15 +31,6 @@
 
 #include "image.h"
 
-#ifdef TRY_USE_MMX
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#else
-#include <asm/mmx.h>
-#endif
-#endif
-
-
 extern struct program *image_program;
 extern struct program *image_layer_program;
 extern struct program *image_colortable_program;

@@ -1082,28 +1082,6 @@ AC_SUBST(LC_REQ)
 
 #############################################################################
 
-AC_ARG_WITH(extra_debug_checks,
-	    MY_DESCR([--with-extra-debug-checks],
-		     [enable some extra (possibly verbose) debug checks.]),
-	    [], [
-  if test "x$pike_cv_sys_os" = "xOSF1"; then
-    # Attempt to detect the cause for test_resolv to fail on Unicode.so.
-    with_extra_debug_checks="yes"
-  elif test "x$pike_cv_sys_os" = "xOpenBSD"; then
-    # Attempt to detect cause of dmalloc failure on OpenBSD.
-    with_extra_debug_checks="yes"
-  else
-    with_extra_debug_checks=no
-  fi
-  ])
-
-if test "x$with_extra_debug_checks" = "xno"; then :; else
-  AC_MSG_WARN([Enabling extra debug checks.])
-  AC_DEFINE([PIKE_EXTRA_DEBUG])
-fi
-
-#############################################################################
-
 AC_ARG_WITH(patch_gcc, MY_DESCR([--with-patch-gcc],
 				[attempt to patch the UA32 relocation bug.]),
 	    [], [with_patch_gcc=no])
@@ -1642,14 +1620,6 @@ MY_AC_ARG_WITH(portable-bytecode,
 		 [disable portable bytecode support.]),
 	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)],[],
 	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)])
-
-MY_AC_ARG_WITH(lock,
-	       MY_DESCR([--without-lock],
-	  [enable experimental code for multicpu machines (EXPERIMENTAL).]),
-		[],[AC_DEFINE(PIKE_RUN_UNLOCKED)])
-
-AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
-				[disable struct pike_type (IGNORED).]))
 
 if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
@@ -3340,7 +3310,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 		 passwd.h group.h winsock.h signal.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
 		 float.h sys/priocntl.h sys/sched.h winbase.h errno.h \
-		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
+		 stddef.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
@@ -6177,51 +6147,6 @@ else
   AC_MSG_RESULT(not by cast)
 fi
 
-#############################################################################
-AC_ARG_WITH(mmx, MY_DESCR([--without-mmx], [disable MMX usage]), [], [with_mmx=])
-
-mmx_reason=' (no mmx.h found)'
-if test "x$with_mmx" = xno; then
-   mmx_reason=' (--without-mmx)'
-   unset pike_cv_sys_has_working_mmx
-elif test "x$ac_cv_header_mmx_h" = xyes -o "x$ac_cv_header_asm_mmx_h" = xyes; then
-  AC_MSG_CHECKING(for working MMX)
-  mmx_reason=' (mmx.h found, but mmx operations failed)'
-
-  AC_CACHE_VAL(pike_cv_sys_has_working_mmx,
-  [
-    AC_TRY_LINK([
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#endif
-#ifdef HAVE_ASM_MMX_H
-#include <asm/mmx.h>
-#endif
-    ],[
-    {
-      int try_use_mmx;
-      char a[8];
-      movq_m2r( *a, mm0 );
-      paddb_r2r( mm0, mm0 );
-      movq_r2m( mm0, *a );
-      try_use_mmx=mmx_ok();
-    }
-    ],pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
-  ])
-
-  AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
-
-  if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
-    AC_DEFINE(TRY_USE_MMX)
-    mmx_reason=''
-  else :; fi
-
-  if test "x$with_copt" = "xno"; then
-    PIKE_MSG_WARN([--without-mmx is advisable when using --without-copt.])
-  fi
-else :; fi
-
-#############################################################################
 
 AC_MSG_CHECKING(if float conversion can cause SIGFPE)
 AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe,
@@ -8762,11 +8687,6 @@ fi
 if test "x$with_dmalloc" = x; then
   with_dmalloc=no
 fi
-with_mmx=$pike_cv_sys_has_working_mmx
-if test "x$with_mmx" = x; then
-  with_mmx=no
-fi
-
 if test "x$with_copt" = xno ; then 
   opt_reasons="  ($OPT_NOT_USED turned off with --without-copt)"
 else
@@ -8852,7 +8772,6 @@ PAD_FEATURE([cdebug])$with_cdebug
 PAD_FEATURE([rtldebug])$with_rtldebug
 PAD_FEATURE([dmalloc])$with_dmalloc
 PAD_FEATURE([dlmalloc])$enable_dlmalloc
-PAD_FEATURE([mmx])$with_mmx$mmx_reason
 PAD_FEATURE([byte code format])$byte_code_format
 PAD_FEATURE([module reloc])${with_relocatable_dumped_modules:-no}
 PAD_FEATURE([use machine code])$with_machine_code
