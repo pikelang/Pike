@@ -30,16 +30,11 @@ BLOCK_ALLOC(DATA,BSIZE);					\
 extern struct DATA **PIKE_CONCAT(DATA,_hash_table);		\
 extern size_t PIKE_CONCAT(DATA,_hash_table_size);		\
 struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr);		\
-struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)			\
-		(void *ptr, PIKE_HASH_T hval);			\
 struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr);		\
 struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr);			\
 int PIKE_CONCAT3(check_,DATA,_semaphore)(void *ptr);		\
 void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr); \
-int PIKE_CONCAT(remove_,DATA)(void *ptr);			\
-void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t);		\
-void PIKE_CONCAT3(init_,DATA,_hash)(void);			\
-void PIKE_CONCAT3(exit_,DATA,_hash)(void);
+int PIKE_CONCAT(remove_,DATA)(void *ptr);
 
 #define PTR_HASH_ALLOC_FIXED(DATA,BSIZE)			\
 PTR_HASH_ALLOC(DATA,BSIZE)
