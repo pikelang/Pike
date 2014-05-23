@@ -3776,21 +3776,6 @@ PMOD_EXPORT void f_object_program(INT32 args)
     struct object *o=Pike_sp[-args].u.object;
     struct program *p = o->prog;
 
-#if 0
-    /* This'd be nice, but it doesn't work well since the returned
-     * function can't double as a program (program_from_svalue returns
-     * NULL for it). */
-    if (p == pike_trampoline_program) {
-      struct pike_trampoline *t = (struct pike_trampoline *) o->storage;
-      if (t->frame && t->frame->current_object) {
-	add_ref (o = t->frame->current_object);
-	pop_n_elems (args);
-	push_function (o, t->func);
-	return;
-      }
-    }
-#endif
-
     if(p)
     {
       if (SUBTYPEOF(Pike_sp[-args])) {
@@ -6040,17 +6025,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
     }
 #endif /* !HAVE_GMTIME && (STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF) */
 
-#if 0
-    /* Disabled since the adjustment done here with a hardcoded one
-     * hour is bogus in many time zones. mktime(3) in GNU libc is
-     * documented to normalize the date spec, which means that e.g.
-     * asking for DST time in a non-DST zone will override tm_isdst.
-     * /mast */
-    if ((isdst != -1) && (isdst != date.tm_isdst)) {
-      /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-      retval += 3600 * (isdst - date.tm_isdst);
-    }
-#endif	/* 0 */
   }
 
   pop_n_elems(args);
@@ -9736,35 +9710,10 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
   ADD_PROTOTYPE("write", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
   ADD_PROTOTYPE("werror", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-  
-  /* FIXME: Are these three actually supposed to be used?
-   * They are called by encode.c:rec_restore_value
-   *	/grubba 2000-03-13
-   */
-
-#if 0 /* they are not required - Hubbe */
-  ADD_PROTOTYPE("functionof", tFunc(tStr, tFunction), ID_OPTIONAL);
-  ADD_PROTOTYPE("objectof", tFunc(tStr, tObj), ID_OPTIONAL);
-  ADD_PROTOTYPE("programof", tFunc(tStr, tPrg(tObj)), ID_OPTIONAL);
-#endif
 
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
   ADD_PROTOTYPE("resolv",
 		tFunc(tStr tOr(tStr,tVoid) tOr(tObj,tVoid), tMix), 0);
-
-#if 0
-  /* Getenv and putenv are efuns, they do not HAVE to be defined in the
-   * master object. -Hubbe
-   */
-
-  /* These two aren't called from C-code, but are popular from other code. */
-  ADD_PROTOTYPE("getenv",
-		tOr(tFunc(tStr,tStr), tFunc(tNone, tMap(tStr, tStr))),
-		ID_OPTIONAL);
-  ADD_PROTOTYPE("putenv", tFunc(tStr tStr, tVoid), ID_OPTIONAL);
-
-#endif
-
 
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
@@ -9774,18 +9723,7 @@ void init_builtin_efuns(void)
 	   tFunc(tObj, tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("master", f_master,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-#if 0 /* FIXME: dtFunc isn't USE_PIKE_TYPE compatible */
-  ADD_EFUN_DTYPE("replace_master", f_replace_master,
-		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
-		 OPT_SIDE_EFFECT);
 
-  /* function(:object) */
-  /* FIXME: */
-  ADD_EFUN_DTYPE("master", f_master,
-		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
-		 OPT_EXTERNAL_DEPEND);
-#endif /* 0 */
-  
   /* __master still contains a reference */
   free_program(pike___master_program);
   

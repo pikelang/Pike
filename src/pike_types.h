@@ -320,63 +320,6 @@ void register_attribute_handler(struct pike_string *attr,
   visit_ref (pass_type (T), (REF_TYPE),				\
 	     (visit_thing_fn *) &visit_type, NULL)
 
-#if 0 /* FIXME: Not supported under USE_PIKE_TYPE yet. */
-/* "Dynamic types" - use with ADD_FUNCTION_DTYPE */
-#define dtStore(TYPE) {int e; for (e=0; e<CONSTANT_STRLEN(TYPE); e++) unsafe_push_type((TYPE)[e]);}
-#define dtArr(VAL) {unsafe_push_type(PIKE_T_ARRAY); {VAL}}
-#define dtArray dtArr(dtMix)
-#define dtMap(IND,VAL) {unsafe_push_type(PIKE_T_MAPPING); {VAL} {IND}}
-#define dtMapping dtMap(dtMix,dtMix)
-#define dtSet(IND) {unsafe_push_type(PIKE_T_MULTISET); {IND}}
-#define dtMultiset dtSet(dtMix)
-#define dtObjImpl(PROGRAM) {push_object_type_backwards(0, (PROGRAM)->id);}
-#define dtObjIs(PROGRAM) {push_object_type_backwards(1, (PROGRAM)->id);}
-#define dtObj dtStore(tObj)
-#define dtFuncV(ARGS,REST,RET) MagicdtFuncV(RET,REST,ARGS)
-#define dtFunc(ARGS,RET) MagicdtFunc(RET,ARGS)
-#define MagicdtFuncV(RET,REST,ARGS) {unsafe_push_type(PIKE_T_FUNCTION); {ARGS} unsafe_push_type(T_MANY); {REST} {RET}}
-#define MagicdtFunc(RET,ARGS) dtFuncV(ARGS {}, dtVoid, RET)
-#define dtFunction dtFuncV({},dtAny,dtAny)
-#define dtNone {}
-#define dtPrg {unsafe_push_type(PIKE_T_PROGRAM);}
-#define dtProgram {unsafe_push_type(PIKE_T_PROGRAM);}
-#define dtStr {unsafe_push_type(PIKE_T_STRING);}
-#define dtString {unsafe_push_type(PIKE_T_STRING);}
-#define dtType {unsafe_push_type(PIKE_T_TYPE);}
-#define dtFlt {unsafe_push_type(PIKE_T_FLOAT);}
-#define dtFloat {unsafe_push_type(PIKE_T_FLOAT);}
-#define dtIntRange(LOW,HIGH) {unsafe_push_type(PIKE_T_INT); push_type_int_backwards(LOW); push_type_int_backwards(HIGH);}
-#define dtInt dtStore(tInt)
-#define dtZero {unsafe_push_type(PIKE_T_ZERO);}
-#define dtVoid {unsafe_push_type(T_VOID);}
-#define dtVar(X) {unsafe_push_type(X);}
-#define dtSetvar(X,TYPE) {unsafe_push_type(T_ASSIGN); {TYPE}}
-#define dtNot(TYPE) {unsafe_push_type(T_NOT); {TYPE}}
-#define dtAnd(A,B) {unsafe_push_type(T_AND); {A} {B}}
-#define dtOr(A,B) {unsafe_push_type(T_OR); {A} {B}}
-#define dtOr3(A,B,C) dtOr(A,dtOr(B,C))
-#define dtOr4(A,B,C,D) dtOr(A,dtOr3(B,C,D))
-#define dtOr5(A,B,C,D,E) dtOr(A,dtOr4(B,C,D,E))
-#define dtOr6(A,B,C,D,E,F) dtOr(A,dtOr5(B,C,D,E,F))
-#define dtMix {unsafe_push_type(PIKE_T_MIXED);}
-#define dtMixed {unsafe_push_type(PIKE_T_MIXED);}
-#define dtComplex dtStore(tComplex)
-#define dtStringIndicable dtStore(tStringIndicable)
-#define dtRef dtStore(tRef)
-#define dtIfnot(A,B) dtAnd(dtNot(A),B)
-#define dtAny dtStore(tAny)
-#define DTYPE_START do {						\
-  unsafe_type_stack_mark();						\
-  unsafe_type_stack_mark();						\
-} while (0)
-#define DTYPE_END(TYPESTR) do {						\
-  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))	\
-    Pike_fatal("Type stack overflow.\n");				\
-  type_stack_reverse();							\
-  (TYPESTR)=pop_unfinished_type();					\
-} while (0)
-#endif /* 0 */
-
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))
 #define compiler_pop_type() ((struct pike_type *)debug_malloc_pass(debug_compiler_pop_type()))

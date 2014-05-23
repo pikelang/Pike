@@ -74,56 +74,11 @@ PIKECLASS TM
 #define SET_ZONE(TM, VAL)	(VAL)
 #endif
 
-#if 0
-/* This is supposed to make any timezone work.
- * However: It does not really work. And makes things even slower than
- * the calendar module.
- */
-#ifndef HAVE_EXTERNAL_TIMEZONE
-#define timezone 0
-#endif
-#define WITH_ZONE(RETURNTYPE, FUNCTION, ARGUMENTS, CALL )             \
-    static RETURNTYPE FUNCTION##_zone ARGUMENTS                       \
-    {                                                                 \
-        RETURNTYPE res;                                               \
-        int reset = 0;                                                \
-        char *old_zone = NULL;                                        \
-        if( GET_ZONE(x) )					      \
-        {                                                             \
-            reset = 1;                                                \
-            old_zone = getenv("TZ");                                  \
-            setenv("TZ", GET_ZONE(x), 1 );			      \
-            tzset();                                                  \
-            SET_GMTOFF(x, timezone);				      \
-        }                                                             \
-                                                                      \
-        res = FUNCTION CALL;                                          \
-                                                                      \
-        if( reset )                                                   \
-        {                                                             \
-            if( old_zone )                                            \
-                setenv("TZ", old_zone, 1 );                           \
-            else                                                      \
-                unsetenv( "TZ" );                                     \
-            tzset();                                                  \
-        }                                                             \
-        return res;                                                   \
-    }
-
-    WITH_ZONE(time_t,mktime,( struct tm *x ),(x));
-    WITH_ZONE(struct tm*,localtime,( time_t *t, struct tm *x ),(t));
-    WITH_ZONE(char *,asctime,( struct tm *x ),(x));
-    WITH_ZONE(int,strftime,( char *buffer, size_t max_len, char *format, struct tm *x ),(buffer,max_len,format,x));
-#ifdef HAVE_STRPTIME
-    WITH_ZONE(char *,strptime,( const char *str, const char *format, struct tm *x ),(str,format,x));
-#endif
-#else
 #define strftime_zone strftime
 #define mktime_zone mktime
 #define strptime_zone strptime
 #define asctime_zone asctime
 #define localtime_zone(X,Y) localtime(X)
-#endif
 #ifndef HAVE_EXTERNAL_TIMEZONE
 #undef timezone
 #endif
@@ -1863,12 +1818,6 @@ PIKEFUN program __empty_program(int|zero|void line, string|void file)
 {
   struct program *prog = low_allocate_program();
   if (file) ext_store_program_line (prog, line, file);
-#if 0
-  push_program (prog);
-  safe_pike_fprintf (stderr, "Creating empty program %O (%x)\n",
-		     Pike_sp - 1, Pike_sp[-1].u.program);
-  Pike_sp--;
-#endif
   RETURN prog;
 }
 

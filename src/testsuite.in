@@ -5275,29 +5275,6 @@ void test()
     t->wait();
     //werror ("%O\n", rounds);
 
-#if 0
-    // The thread yielding is really bad - even the following very
-    // weak tests trig alarms: On FreeBSD 7.1-STABLE i386 the
-    // thread_disablers do over 1000 times more rounds than the
-    // imutex_lockers. On Linux 2.6.15-1.1833_FC4 x86_64 and Linux
-    // 2.6.24-23-server i686 they do over 100 times more. On SunOS
-    // 5.11 i86pc the thread_disablers do only 1-20 rounds in total.
-
-    int minimum = min (@values (rounds)), maximum = max (@values (rounds));
-
-    if (minimum < 10) {
-      werror ("A thread got stuck: %O\n", rounds);
-      return 0;
-    }
-
-    // This span is currently very generous, since the time slicing in
-    // threads.c:check_threads can be flaky on some systems.
-    if (minimum * 100 < maximum) {
-      werror ("Too uneven distribution between threads: %O\n", rounds);
-      return 0;
-    }
-#endif
-
     return 1;
   ]], 1)
 

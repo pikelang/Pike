@@ -117,86 +117,6 @@ void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
   *pos = rbp2;
 }
 
-#if 0
-/* Disabled since these aren't tested and not currently used. */
-
-void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source)
-{
-  struct rbstack_slice *src_slice = source->slice;
-  struct rbstack_slice *tgt_slice = target->slice;
-
-#ifdef PIKE_DEBUG
-  if (target->ssp) Pike_fatal ("target rbstack not empty.\n");
-#endif
-
-  target->ssp = source->ssp;
-  source->ssp = 0;
-
-  if (src_slice->up) {
-    struct rbstack_slice *prev_slice;
-    target->slice = src_slice;
-    do {
-      prev_slice = src_slice;
-      src_slice = src_slice->up;
-    } while (src_slice->up);
-    MEMCPY ((char *) &tgt_slice->stack, (char *) &src_slice->stack,
-	    STACK_SLICE_SIZE * sizeof (struct rb_node_hdr *));
-    prev_slice->up = tgt_slice;
-    source->slice = src_slice;
-  }
-  else {
-    MEMCPY ((char *) &tgt_slice->stack, (char *) &src_slice->stack,
-	    target->ssp * sizeof (struct rb_node_hdr *));
-#ifdef RB_STATS
-    tgt_slice->maxdepth = src_slice->maxdepth;
-    tgt_slice->depth = src_slice->depth;
-#endif
-  }
-}
-
-void rbstack_copy (struct rbstack_ptr *target, struct rbstack_ptr *source)
-{
-  struct rbstack_slice *src_slice = source->slice;
-  struct rbstack_slice *tgt_stack_slice = target->slice;
-  size_t ssp = source->ssp;
-
-#ifdef PIKE_DEBUG
-  if (target->ssp) Pike_fatal ("target rbstack not empty.\n");
-#endif
-
-  target->ssp = ssp;
-
-  if (src_slice->up) {
-    struct rbstack_slice *tgt_slice =
-      target->slice = ALLOC_STRUCT (rbstack_slice);
-#ifdef RB_STATS
-    rbstack_slice_allocs++;
-#endif
-    MEMCPY ((char *) &tgt_slice->stack, (char *) &src_slice->stack,
-	    ssp * sizeof (struct rb_node_hdr *));
-    ssp = STACK_SLICE_SIZE;
-    while ((src_slice = src_slice->up)->up) {
-      tgt_slice->up = ALLOC_STRUCT (rbstack_slice);
-      tgt_slice = tgt_slice->up;
-#ifdef RB_STATS
-      rbstack_slice_allocs++;
-#endif
-      MEMCPY ((char *) &tgt_slice->stack, (char *) &src_slice->stack,
-	      STACK_SLICE_SIZE * sizeof (struct rb_node_hdr *));
-    }
-    tgt_slice->up = tgt_stack_slice;
-  }
-
-  MEMCPY ((char *) &tgt_stack_slice->stack, (char *) &src_slice->stack,
-	  ssp * sizeof (struct rb_node_hdr *));
-
-#ifdef RB_STATS
-  target->slice->maxdepth = target->slice->depth = source->slice->depth;
-#endif
-}
-
-#endif	/* Not tested or used. */
-
 /* Offsets all the rb_node_hdr pointers in rbstack from their offsets
  * relative oldbase to the same relative newbase. Useful if the memory
  * block containing the tree has been moved. */
@@ -955,25 +875,6 @@ struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
   return unlink;
 }
 
-#if 0
-struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
-					     struct rbstack_ptr *rbstack_ptr,
-					     int keep_rbstack,
-					     size_t node_size)
-{
-  struct rb_node_hdr *node = RBSTACK_PEEK (*rbstack_ptr), *next = rb_next (node);
-  struct rb_node_hdr *unlink =
-    real_low_rb_unlink_with_move (root, rbstack_ptr, 1, node_size);
-  debug_check_rbstack (*root, *rbstack_ptr);
-  if (node != unlink) next = node;
-  if (RBSTACK_PEEK (*rbstack_ptr) != next)
-    Pike_fatal ("Stack got %p on top, but next node is %p.\n",
-		RBSTACK_PEEK (*rbstack_ptr), next);
-  if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
-  return unlink;
-}
-#endif
-
 /* Like low_rb_unlink_with_move, but relinks the nodes instead of
  * moving over the data. Somewhat slower unless the size of the nodes
  * is large. */
@@ -1050,21 +951,6 @@ void low_rb_unlink_without_move (struct rb_node_hdr **root,
   if (keep_rbstack) ADJUST_STACK_TO_NEXT (rbstack, next);
   *rbstack_ptr = rbstack;
 }
-
-#if 0
-void low_rb_unlink_without_move (struct rb_node_hdr **root,
-				 struct rbstack_ptr *rbstack_ptr,
-				 int keep_rbstack)
-{
-  struct rb_node_hdr *node = RBSTACK_PEEK (*rbstack_ptr), *next = rb_next (node);
-  real_low_rb_unlink_without_move (root, rbstack_ptr, 1);
-  debug_check_rbstack (*root, *rbstack_ptr);
-  if (RBSTACK_PEEK (*rbstack_ptr) != next)
-    Pike_fatal ("Stack got %p on top, but next node is %p.\n",
-		RBSTACK_PEEK (*rbstack_ptr), next);
-  if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
-}
-#endif
 
 /* Constructs a stack from the given root down to the given node. The
  * stack is constructed at *rbstack_ptr, and it's updated so that the
@@ -1281,10 +1167,6 @@ void rb_remove_node (struct rb_node_hdr **root,
   RBSTACK_INIT (rbstack);
 #ifdef PIKE_DEBUG
   if (!node) Pike_fatal ("Tree is empty.\n");
-#if 0
-  if (find_fn (key, to_delete))
-    Pike_fatal ("Given key doesn't match the node to delete.\n");
-#endif
 #endif
   LOW_RB_TRACK_NEQ (rbstack, node, cmp_res = find_fn (key, node) >= 0 ? 1 : -1, ;, ;);
   while (node != to_delete) {
@@ -1335,10 +1217,6 @@ struct rb_node_hdr *rb_remove_node_with_move (struct rb_node_hdr **root,
   RBSTACK_INIT (rbstack);
 #ifdef PIKE_DEBUG
   if (!node) Pike_fatal ("Tree is empty.\n");
-#if 0
-  if (find_fn (key, to_delete))
-    Pike_fatal ("Given key doesn't match the node to delete.\n");
-#endif
 #endif
   LOW_RB_TRACK_NEQ (rbstack, node, cmp_res = find_fn (key, node) >= 0 ? 1 : -1, ;, ;);
   while (node != to_delete) {

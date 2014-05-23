@@ -1975,25 +1975,6 @@ static node *optimize_eq(node *n)
       Pike_fatal("Couldn't find argument!\n");
 #endif
 
-#if 0
-    /* Disabled these - boolean falsehood is not the same thing as
-     * equality with the integer 0. */
-
-    if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
-    {
-      ret=*second_arg;
-      ADD_NODE_REF(*second_arg);
-      return mkopernode("`!",ret,0);
-    }
-
-    if(node_is_false(*second_arg)  && !node_may_overload(*first_arg,LFUN_EQ))
-    {
-      ret=*first_arg;
-      ADD_NODE_REF(*first_arg);
-      return mkopernode("`!",ret,0);
-    }
-#endif
-
     if (((*second_arg)->token == F_CONSTANT) &&
 	(TYPEOF((*second_arg)->u.sval) == T_STRING) &&
 	((*first_arg)->token == F_RANGE)) {

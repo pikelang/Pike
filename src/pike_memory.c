@@ -327,25 +327,6 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
       CRC32SI(h,&p[7]);
       p+=8;
     }
-#if 0
-    while( p+3 < e )
-    {
-      CRC32SI(h,&p[0]);
-      CRC32SI(h,&p[1]);
-      CRC32SI(h,&p[2]);
-      CRC32SI(h,&p[3]);
-      p+=4;
-    }
-    while( p+1 < e )
-    {
-      CRC32SI(h,&p[0]);
-      CRC32SI(h,&p[1]);
-      p+=2;
-    }
-    while( p<e ) {
-      CRC32SI(h,p++);
-    }
-#endif
     /* include 8 bytes from the end. Note that this might be a
      * duplicate of the previous bytes.
      *
@@ -574,9 +555,6 @@ static INLINE void *mexec_do_alloc (void *start, size_t length)
 static size_t sep_allocs = 0, grow_allocs = 0, total_size = 0;
 #endif
 
-#if 0
-#define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
-#endif /* 0 */
 struct mexec_block {
   struct mexec_hdr *hdr;
   ptrdiff_t size;
@@ -822,13 +800,6 @@ PMOD_EXPORT void mexec_free(void *ptr)
       /* Join with bottom. */
       hdr->bottom = (char *)blk;
       hdr->free = blk->next;
-#if 0
-      if (hdr->bottom == (char *)(hdr + 1)) {
-	/* The entire mmapped block is free.
-	 * FIXME: Consider unmapping it.
-	 */
-      }
-#endif /* 0 */
     } else {
       hdr->free = blk;
     }
@@ -2324,32 +2295,6 @@ PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed)
   return res;
 }
 
-#if 0
-/* Disabled since it isn't used. */
-void dmalloc_check_block_free(void *p, LOCATION location,
-			      char *struct_name, describe_block_fn *describer)
-{
-  struct memhdr *mh;
-  mt_lock(&debug_malloc_mutex);
-  mh=my_find_memhdr(p,0);
-
-  if(mh && mh->size>=0)
-  {
-    if(!(mh->flags & MEM_IGNORE_LEAK))
-    {
-      fprintf(stderr, "Freeing %s still in use %p at %s.\n",
-	      struct_name ? struct_name : "small block", p, LOCATION_NAME(location));
-      if (describer) describer (p);
-      debug_malloc_dump_references(p,0,2,0);
-    }
-    mh->flags |= MEM_FREE | MEM_IGNORE_LEAK;
-    mh->size = ~mh->size;
-  }
-
-  mt_unlock(&debug_malloc_mutex);
-}
-#endif
-
 PMOD_EXPORT void dmalloc_free(void *p)
 {
   debug_free(p, DMALLOC_LOCATION(), 0);
@@ -2724,57 +2669,6 @@ static void low_search_all_memheaders_for_references(void)
       }
       if( ! ((sizeof(void *)-1) & (size_t)p ))
       {
-#if 0
-	if(m->size > 0)
-	{
-#if defined(__NT__) && !defined(__GNUC__)
-	  __try {
-#endif
-#ifdef PIKE_EXTRA_DEBUG
-	    fprintf(stderr, "PIKE_EXTRA_DEBUG:\n"
-		    "  Scanning memory block at %p, %ld bytes, "
-		    "generation %d, flags: 0x%08x\n",
-		    m->data, m->size, m->gc_generation, m->flags);
-#endif /* PIKE_EXTRA_DEBUG */
-	    for(e=0;e<m->size/sizeof(void *);e++) {
-	      void *addr = p[e];
-	      if (!addr || ((sizeof(void *)-1) & (size_t)addr)) {
-		/* No need to hunt for memhdrs for NULL or
-		 * unaligned addresses.
-		 * This also filters out memory areas that have
-		 * been cleared by block_alloc.h:really_free_*() et al.
-		 *	/grubba 2003-03-15
-		 */
-		continue;
-	      }
-	      /* NOTE: We must not use find_memhdr() here,
-	       *       since it might alter the data-structure
-	       *       we're looping over...
-	       *
-	       *       A specific case is a bucket containing two
-	       *       self-referring memhdrs, using find_memhdr()
-	       *       will then cause an infinite loop.
-	       *	/grubba 2003-03-16
-	       */
-	      if((tmp=just_find_memhdr(addr)))
-		tmp->flags |= MEM_REFERENCED;
-	    }
-#if defined(__NT__) && !defined(__GNUC__)
-	  }
-	  __except( 1 ) {
-	    fprintf(stderr,"*** DMALLOC memory access error ***\n");
-	    fprintf(stderr,"Failed to access this memory block:\n");
-	    fprintf(stderr,"Block: %p, size=%ld, gc_generation=%d, flags=%d\n",
-		    m->data,
-		    m->size,
-		    m->gc_generation,
-		    m->flags);
-	    dump_memhdr_locations(m, 0, 0);
-	    fprintf(stderr,"-----------------------------------\n");
-	  }
-#endif
-	}
-#endif
       }
     }
   }
