@@ -31,6 +31,10 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
       {
 #ifdef L_MMX_OPER
 #ifdef TRY_USE_MMX
+/* Intentionally left here.
+
+   FIXME: Switch to intrinsics
+*/
 	extern int try_use_mmx;
 	if(try_use_mmx)
 	{
@@ -38,7 +42,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	  unsigned char *source=(unsigned char *)s;
 	  unsigned char *dest=(unsigned char *)d;
 	  unsigned char *sourcel=(unsigned char *)l;
-	  
+
 	  while (num-->0 && (7&(int)dest))
 	  {
 	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
@@ -46,8 +50,8 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    sourcel++;
 	    dest++;
 	  }
-	  
-	  
+
+
 	  while(num > 16)
 	  {
 	    movq_m2r(*source, mm0);

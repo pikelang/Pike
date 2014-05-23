@@ -198,11 +198,7 @@ void *MEMSET (void *s,int c,size_t n);
 #  define MEMSET memset
 #endif
 
-#if 0 && defined(TRY_USE_MMX)
-PMOD_EXPORT void MEMCPY(void *b,const void *a,size_t s);
-# define __builtin_memcpy MEMCPY
-#else
-# ifndef HAVE_MEMCPY
+#ifndef HAVE_MEMCPY
 #  ifdef HAVE_BCOPY
 #    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
 #    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
@@ -212,7 +208,6 @@ void MEMCPY(void *b,const void *a,size_t s);
 #  endif
 # else
 #  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
-# endif
 #endif
 
 #ifndef HAVE_MEMMOVE

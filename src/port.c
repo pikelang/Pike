@@ -394,96 +394,15 @@ void *MEMSET(void *s,int c,size_t n)
 }
 #endif
 
-#if (0 && defined(TRY_USE_MMX)) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
-#ifdef TRY_USE_MMX
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#else
-#include <asm/mmx.h>
-#endif
-#endif
+#if !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
 PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
 {
   if(!s) return;
-#ifdef TRY_USE_MMX
   {
-    extern int try_use_mmx;
-    if( (s>64) && !(((int)bb)&7) && !(((int)aa)&7) && try_use_mmx )
-    {
-      unsigned char *source=(char *)aa;
-      unsigned char *dest=(char *)bb;
-
-/*       fprintf(stderr, "mmx memcpy[%d]\n",s); */
-      while( s > 64 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_m2r(*source, mm2);      source += 8;
-        movq_m2r(*source, mm3);      source += 8;
-        movq_m2r(*source, mm4);      source += 8;
-        movq_m2r(*source, mm5);      source += 8;
-        movq_m2r(*source, mm6);      source += 8;
-        movq_m2r(*source, mm7);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        movq_r2m(mm2,*dest);         dest += 8;
-        movq_r2m(mm3,*dest);         dest += 8;
-        movq_r2m(mm4,*dest);         dest += 8;
-        movq_r2m(mm5,*dest);         dest += 8;
-        movq_r2m(mm6,*dest);         dest += 8;
-        movq_r2m(mm7,*dest);         dest += 8;
-        s -= 64;
-      }
-      if( s > 31 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_m2r(*source, mm2);      source += 8;
-        movq_m2r(*source, mm3);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        movq_r2m(mm2,*dest);         dest += 8;
-        movq_r2m(mm3,*dest);         dest += 8;
-        s -= 32;
-      }
-      if( s > 15 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        s -= 16;
-      }
-      if( s > 7 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        s -= 8;
-      }
-      emms();
-      while( s )
-      {
-        *(dest++) = *(source++);
-        s-=1;
-      }
-    }
-    else 
-    {
-#endif
-#ifdef HAVE_MEMCPY
-      /*     fprintf(stderr, "plain ol' memcpy\n"); */
-      memcpy( bb, aa, s );
-#else
-      {
 	char *b=(char *)bb;
 	char *a=(char *)aa;
 	for(;s;s--) *(b++)=*(a++);
-      }
-#endif
-#ifdef TRY_USE_MMX
-    }
   }
-#endif
 }
 #endif
 
@@ -679,10 +598,6 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 
  underflow:
   /* Return an underflow error.  */
-#if 0
-  if (endptr != NULL)
-    *endptr = (char *) nptr;
-#endif
   errno = ERANGE;
   return 0.0;
   
