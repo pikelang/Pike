@@ -391,16 +391,6 @@ int main(int argc, char **argv)
     }
   }
 
-#if 0	/* Enabling this messes with the definition of EOPNOTSUP */
-#ifdef USE_OSX_TWOLEVEL_NAMESPACE
-  /* Mac OS X needs to be 10.3 or better for ld to accept
-     "-undefined dynamic_lookup" */
-  if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
-    fatal("Out of memory (8)!\n");
-  }
-#endif
-#endif
-
   if (getenv("SMARTLINK_DEBUG")) {
     int i = 0;
     fprintf(stderr, "SMARTLINK:");

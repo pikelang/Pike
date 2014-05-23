@@ -510,16 +510,6 @@ int complex_svalue_is_true( const struct svalue *s )
 	/* Uninitialized trampoline, or trampoline to destructed object. */
 	return 0;
       }
-    } else {
-#if 0
-      /* We should never get a function svalue for a prototype. */
-      struct identifier *i = ID_FROM_INT(s->u.object->prog, SUBTYPEOF(*s));
-      if (IDENTIFIER_IS_PIKE_FUNCTION(i->identifier_flags) &&
-	  (i->func.offset == -1)) {
-	/* Prototype. */
-	return 0;
-      }
-#endif
     }
     return 1;
   }
@@ -588,16 +578,6 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	/* Uninitialized trampoline, or trampoline to destructed object. */
 	return 0;
       }
-    } else {
-#if 0
-      /* We should never get a function svalue for a prototype. */
-      struct identifier *i = ID_FROM_INT(s->u.object->prog, SUBTYPEOF(*s));
-      if (IDENTIFIER_IS_PIKE_FUNCTION(i->identifier_flags) &&
-	  (i->func.offset == -1)) {
-	/* Prototype. */
-	return 0;
-      }
-#endif
     }
     return 1;
 
@@ -1004,11 +984,6 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       int fun;
 
     a_is_object:
-#if 0
-      /* safe_check_destructed should avoid this. */
-      if(!a->u.object->prog)
-	Pike_error("Comparison on destructed object.\n");
-#endif
       p = a->u.object->prog;
       if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_LT)) != -1)
       {
@@ -1041,11 +1016,6 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       struct program *p;
       int fun;
 
-#if 0
-      /* safe_check_destructed should avoid this. */
-      if(!b->u.object->prog)
-	Pike_error("Comparison on destructed object.\n");
-#endif
       p = b->u.object->prog;
 
       if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_GT)) == -1) {

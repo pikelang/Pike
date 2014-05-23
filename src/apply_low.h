@@ -10,21 +10,10 @@
       struct pike_frame *new_frame;
       struct identifier *function;
 
-#if 0
-      /* This kind of fault tolerance is braindamaged. /mast */
-      if(fun<0)
-      {
-	pop_n_elems(Pike_sp-save_sp);
-	push_undefined();
-	return 0;
-      }
-#else
 #ifdef PIKE_DEBUG
       if (fun < 0)
 	Pike_fatal ("Invalid function offset: %d.\n", fun);
 #endif
-#endif
-
       check_stack(256);
       check_mark_stack(256);
 
@@ -348,13 +337,5 @@
 	Pike_fatal("Unknown identifier type.\n");
 #endif
       }
-
-#if 0
-#ifdef PIKE_DEBUG
-      if(Pike_fp!=new_frame)
-	Pike_fatal("Frame stack out of whack!\n");
-#endif
-#endif
-      
       POP_PIKE_FRAME();
     }

@@ -2010,11 +2010,6 @@ static ptrdiff_t multiset_insert_2 (struct multiset *l,
       l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), 0);
       msd = l->msd;
     }
-#if 0
-    else
-      if (msd->size == msd->allocsize)
-	fputs ("Can't rebalance multiset tree in multiset_insert_2\n", stderr);
-#endif
 
     add_ref (msd);
     find_type = low_multiset_track_eq (msd, ind, &rbstack);
@@ -4675,10 +4670,6 @@ void test_multiset (void)
       pop_stack();
 
       l2 = l;
-#if 0
-      l2 = copy_multiset (l);
-      check_multiset (l2, 0);
-#endif
       TM_VERBOSE((stderr, "delete: "));
       for (j = 0, v = 0; j < 12; j++) {
 	TM_VERBOSE((stderr, "arr[%d]=%d ", j, arr->item[j].u.integer));
@@ -4691,9 +4682,6 @@ void test_multiset (void)
       if (v != 9 || l2->msd->root)
 	multiset_fatal (l2, "Wrong number of entries deleted: %d (%d)\n", v, i);
       TM_VERBOSE((stderr, "\n"));
-#if 0
-      free_multiset (l2);
-#endif
       free_multiset (l);
       pop_stack();
     }

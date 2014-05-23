@@ -1477,27 +1477,6 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
   return m;
 }
 
-#if 0
-PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
-{
-  INT32 e;
-  struct mapping *n;
-  struct keypair *k;
-  struct mapping_data *md;
-
-  md=m->data;
-  n=allocate_mapping(MAP_SLOTS(md->size));
-
-  md->valrefs++;
-  add_ref(md);
-  NEW_MAPPING_LOOP(md) mapping_insert(n, &k->ind, &k->val);
-  md->valrefs--;
-  free_mapping_data(md);
-  
-  return n;
-}
-#else
-
 /* deferred mapping copy! */
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
@@ -1521,8 +1500,6 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
   debug_malloc_touch(n->data);
   return n;
 }
-
-#endif
 
 /* copy_mapping() for when destructive operations are ok.
  *

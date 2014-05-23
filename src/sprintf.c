@@ -763,10 +763,6 @@ INLINE static int do_one(struct format_stack *fs,
     rest=f->b;
     for(d=0;INDEX_PCHARP(rest,d) && e;d++)
     {
-#if 0
-      if(rest != f->b)
-	fix_field(" ",1,0,1," ",1,0);
-#endif
 
       while(INDEX_PCHARP(rest,d) && INDEX_PCHARP(rest,d)!='\n')
 	d++;
@@ -802,10 +798,6 @@ INLINE static int do_one(struct format_stack *fs,
 
     for(d=0;rest.ptr && d<col;d++)
     {
-#if 0
-      if(rest != f->b)
-	fix_field(" ",1,0,1," ",1,0);
-#endif
 
       /* Find end of entry */
       for(e=0;COMPARE_PCHARP(ADD_PCHARP(rest, e),<,end) &&
@@ -1007,26 +999,6 @@ INLINE static int do_one(struct format_stack *fs,
  * recursively during the '%{ %}' parsing. The string is stored in
  * the buffer in save_objectII.c
  */
-
-#if 0
-/* Looks to me like forgotten debug code. Anyway, we can't make this
- * fatal since it might trig in _sprintf/sprintf recursions in pike
- * code. /mast */
-#undef check_c_stack
-#define check_c_stack(X) do {                                           \
-    ptrdiff_t x_= (((char *)&x_) - Pike_interpreter.stack_top) +	\
-      STACK_DIRECTION * (Pike_interpreter.c_stack_margin + (X));	\
-  x_*=STACK_DIRECTION;                                                  \
-  if(x_>0) {                                                            \
-    /*low_error(Pike_check_c_stack_errmsg);*/                           \
-    Pike_fatal("C stack overflow (%d): x_:%p &x_:%p top: %p margin: %p\n",	\
-               (X), x_, &x_, Pike_interpreter.stack_top,		\
-               Pike_interpreter.c_stack_margin);                        \
-  }                                                                     \
-  }while(0)
-#endif
-
-
 static void low_pike_sprintf(struct format_stack *fs,
 			     struct string_builder *r,
 			     PCHARP format,

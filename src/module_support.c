@@ -521,16 +521,8 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
   switch (info) {
     case ARGS_OK:
     case ARGS_OPT:
-      break;
-
     case ARGS_LONG:
-#if 0
-      /* Is this a good idea? */
-      if (!TEST_COMPAT (7, 4))
-	wrong_number_of_args_error (fname, args, ret);
-#endif
       break;
-
     case ARGS_NUL_IN_STRING:
       bad_arg_error(
 	fname, sp-args, args,
