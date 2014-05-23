@@ -1195,8 +1195,8 @@ PMOD_EXPORT void f_ne(INT32 args)
  *!     @type int
  *!       Successful iff the two integers are numerically equal.
  *!     @type float
- *!       Successful iff the two floats are numerically equal or if
- *!       both are NaN.
+ *!       Successful iff the two floats are numerically equal and
+ *!       not NaN.
  *!     @type string
  *!       Successful iff the two strings are identical, character for
  *!       character. (Since all strings are kept unique, this is
