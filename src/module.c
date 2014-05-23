@@ -350,7 +350,6 @@ static void exit_builtin_modules(void)
 
   cleanup_callbacks();
   free_all_callable_blocks();
-  exit_destroy_called_mark_hash();
 
   cleanup_pike_type_table();
   cleanup_shared_string_table();

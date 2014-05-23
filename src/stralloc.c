@@ -40,37 +40,6 @@ static unsigned INT32 htable_mask;
 #define ULONG_MAX	UINT_MAX
 #endif
 
-#if PIKE_RUN_UNLOCKED
-/* Make this bigger when we get lightweight threads */
-#define BUCKET_LOCKS 2048
-static PIKE_MUTEX_T *bucket_locks;
-
-#define BUCKETLOCK(HVAL) \
- (bucket_locks + (HMODULO(hval__) & (BUCKET_LOCKS-1)))
-
-#define LOCK_BUCKET(HVAL) do {						    \
-  size_t hval__=(HVAL);							    \
-  PIKE_MUTEX_T *bucket_lock;						    \
-  while(1)								    \
-  {									    \
-    bucket_lock=BUCKETLOCK(hval__);                                         \
-    mt_lock(bucket_lock);						    \
-    if(bucket_lock == BUCKETLOCK(hval__))                                   \
-      break;								    \
-    mt_unlock(bucket_lock);						    \
-  }									    \
-}while(0)
-
-#define UNLOCK_BUCKET(HVAL) do {			\
-  size_t hval__=(HVAL);					\
-  mt_unlock(BUCKETLOCK(hval__));                        \
-}while(0)
-
-#else
-#define LOCK_BUCKET(HVAL)
-#define UNLOCK_BUCKET(HVAL)
-#endif /* PIKE_RUN_UNLOCKED */
-
 #define BEGIN_HASH_SIZE 1024
 
 static unsigned int hash_prefix_len=64;
@@ -414,7 +383,6 @@ static void locate_problem(int (*isproblem)(const struct pike_string *))
 
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       if(isproblem(s))
@@ -426,7 +394,6 @@ static void locate_problem(int (*isproblem)(const struct pike_string *))
 	DM(add_marks_to_memhdr(no,s));
       }
     }
-    UNLOCK_BUCKET(e);
   }
 
   DM(fprintf(stderr,"Plausible problem location(s):\n"));
@@ -471,7 +438,6 @@ static struct pike_string *internal_findstring(const char *s,
   unsigned int prefix_depth=0;
 
   size_t h;
-  LOCK_BUCKET(hval);
   h=HMODULO(hval);
   for(curr = base_table[h]; curr; curr = curr->next)
   {
@@ -494,7 +460,6 @@ static struct pike_string *internal_findstring(const char *s,
       /* *prev = curr->next; */
       /* curr->next = *base; */
       /* *base = curr; */
-      UNLOCK_BUCKET(hval);
       return curr;		/* pointer to string */
     }
     depth++;
@@ -517,7 +482,6 @@ static struct pike_string *internal_findstring(const char *s,
 #endif /* 0 */
     need_more_hash_prefix_depth = prefix_depth;
   }
-  UNLOCK_BUCKET(hval);
   return 0; /* not found */
 }
 
@@ -633,22 +597,6 @@ static void stralloc_rehash(void)
   old=htable_size;
   old_base=base_table;
 
-#ifdef PIKE_RUN_UNLOCKED
-  mt_lock(bucket_locks);
-  if(old != htable_size)
-  {
-    /* Someone got here before us */
-    mt_lock(bucket_locks);
-    return;
-  }
-
-  /* Now that we have bucket zero, the hash table
-   * cannot change, go ahead and lock ALL buckets.
-   * NOTE: bucket zero is already locked
-   */
-  for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
-#endif
-
   SET_HSIZE( ++hashprimes_entry );
 
   base_table=xcalloc(sizeof(struct pike_string *), htable_size);
@@ -660,10 +608,6 @@ static void stralloc_rehash(void)
 
   if(old_base)
     free(old_base);
-
-#ifdef PIKE_RUN_UNLOCKED
-  for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
-#endif
 }
 
 /* Allocation of strings */
@@ -741,14 +685,12 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     Pike_fatal ("Got undefined contents in pike string %p.\n", s);
 #endif
 
-  LOCK_BUCKET(hval);
   h=HMODULO(hval);
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
   s->flags &= ~(STRING_NOT_HASHED|STRING_NOT_SHARED);
   num_strings++;
-  UNLOCK_BUCKET(hval);
 
   if(num_strings > htable_size) {
     stralloc_rehash();
@@ -784,25 +726,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
       need_new_hashkey_depth = 0;
     }
 
-#ifdef PIKE_RUN_UNLOCKED
-    mt_lock(bucket_locks);
-    if(need_more_hash_prefix_depth <= 4)
-    {
-      /* Someone got here before us */
-      mt_lock(bucket_locks);
-      return;
-    }
-    for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
-#endif
-
-    if (need_more_hash_prefix_depth > 4) 
-    {
+    if (need_more_hash_prefix_depth > 4)
       hash_prefix_len=hash_prefix_len*2;
-#if 0
-      fprintf(stderr, "Doubling hash_prefix_len to %d and rehashing\n",
-	      hash_prefix_len);
-#endif /* 0 */
-    }
+
     /* NOTE: No need to update to the correct values, since that will
      *       be done on demand.
      */
@@ -825,9 +751,6 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	base_table[h2]=tmp2;
       }
     }
-#ifdef PIKE_RUN_UNLOCKED
-    for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
-#endif
   }
 }
 
@@ -1136,7 +1059,6 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 static void unlink_pike_string(struct pike_string *s)
 {
   size_t h;
-  LOCK_BUCKET(s->hval);
   h= HMODULO(s->hval);
   propagate_shared_string(s,h);
 #ifdef PIKE_DEBUG
@@ -1149,7 +1071,6 @@ static void unlink_pike_string(struct pike_string *s)
   s->next=(struct pike_string *)(ptrdiff_t)-1;
 #endif
   num_strings--;
-  UNLOCK_BUCKET(s->hval);
   s->flags |= STRING_NOT_SHARED;
 }
 
@@ -1228,7 +1149,6 @@ struct pike_string *add_string_status(int verbose)
     struct pike_string *p;
     for(e=0;e<htable_size;e++)
     {
-      LOCK_BUCKET(e);
       for(p=base_table[e];p;p=p->next)
       {
 	int is_short = (p->len <= SHORT_STRING_THRESHOLD);
@@ -1245,7 +1165,6 @@ struct pike_string *add_string_status(int verbose)
 	alloced_bytes[key] +=
 	  p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
       }
-      UNLOCK_BUCKET(e);
     }
     string_builder_sprintf(&s,
 			   "\nShared string hash table:\n"
@@ -1387,7 +1306,6 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
   for(e=0;e<htable_size;e++)
   {
     h=0;
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       num++;
@@ -1433,7 +1351,6 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 	h=0;
       }
     }
-    UNLOCK_BUCKET(e);
   }
   if(num != num_strings)
     Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
@@ -1446,16 +1363,13 @@ int safe_debug_findstring(struct pike_string *foo)
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
-    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
     {
       if(p==foo)
       {
-	UNLOCK_BUCKET(e);
 	return 1;
       }
     }
-    UNLOCK_BUCKET(e);
   }
   return 0;
 }
@@ -1476,7 +1390,6 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
 	    (long)foo->len,
 	    foo->str);
 
-    LOCK_BUCKET(foo->hval);
     fprintf(stderr,"------ %p %ld\n",
 	    base_table[HMODULO(foo->hval)],
 	    foo->hval);
@@ -1488,11 +1401,9 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
 	fprintf(stderr,"%p->",tmp2);
     }
     fprintf(stderr,"0\n");
-    UNLOCK_BUCKET(foo->hval);
 
     for(e=0;e<htable_size;e++)
     {
-      LOCK_BUCKET(e);
       for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
       {
 	if(tmp2 == tmp)
@@ -1500,7 +1411,6 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
 		  (long)e,
 		  (long)HMODULO(foo->hval));
       }
-      UNLOCK_BUCKET(e);
     }
   }
 #endif /* 0 */
@@ -1551,14 +1461,12 @@ void dump_stralloc_strings(void)
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next) {
       debug_dump_pike_string(p, 70);
 #ifdef DEBUG_MALLOC
       debug_malloc_dump_references (p, 2, 1, 0);
 #endif
     }
-    UNLOCK_BUCKET(e);
   }
 }
 
@@ -2261,13 +2169,6 @@ void init_shared_string_table(void)
   SET_HSIZE(hashprimes_entry);
   base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
-#ifdef PIKE_RUN_UNLOCKED
-  {
-    int h;
-    bucket_locks=xalloc(sizeof(PIKE_MUTEX_T)*BUCKET_LOCKS);
-    for(h=0;h<BUCKET_LOCKS;h++) mt_init(bucket_locks + h);
-  }
-#endif
   empty_pike_string = make_shared_string("");
   empty_pike_string->flags |= STRING_CONTENT_CHECKED | STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
   empty_pike_string->min = empty_pike_string->max = 0;
@@ -2314,18 +2215,12 @@ void cleanup_shared_string_table(void)
 
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=next)
     {
       next=s->next;
-#ifdef REALLY_FREE
-      free_unlinked_pike_string(s);
-#else
       s->next=0;
-#endif
     }
     base_table[e]=0;
-    UNLOCK_BUCKET(e);
   }
   free(base_table);
   base_table=0;
@@ -2362,13 +2257,11 @@ void count_memory_in_strings(size_t *num, size_t *size)
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
-    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
     {
       num_++;
       size_ += memory_in_string (p);
     }
-    UNLOCK_BUCKET(e);
   }
 #ifdef PIKE_DEBUG
   if(num_strings != num_)
@@ -2427,10 +2320,8 @@ struct pike_string *next_pike_string (struct pike_string *s)
     size_t h = s->hval;
     do {
       h++;
-      LOCK_BUCKET(h);
       h = HMODULO(h);
       next = base_table[h];
-      UNLOCK_BUCKET(h);
     } while (!next);
   }
   return next;
@@ -3785,10 +3676,6 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 
  underflow:
   /* Return an underflow error.  */
-#if 0
-  if (endptr != NULL)
-    *endptr = nptr;
-#endif
   errno = ERANGE;
   return 0.0;
   

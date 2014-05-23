@@ -3279,6 +3279,8 @@ void exit_object(void)
     free_program(magic_types_program);
     magic_types_program=0;
   }
+
+  exit_destroy_called_mark_hash();
 }
 
 #ifdef PIKE_DEBUG

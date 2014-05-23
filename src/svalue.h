@@ -417,29 +417,8 @@ do{ \
 }while(0)
 
 
-#ifdef PIKE_RUN_UNLOCKED
-#define add_ref(X) pike_atomic_inc32(&(X)->refs)
-#define sub_ref(X) pike_atomic_dec_and_test32(&(X)->refs)
-
-#if 0
-#define IF_LOCAL_MUTEX(X) X
-#define USE_LOCAL_MUTEX
-#define pike_lock_data(X) mt_lock(&(X)->mutex)
-#define pike_unlock_data(X) mt_unlock(&(X)->mutex)
-#else
-#define IF_LOCAL_MUTEX(X)
-#define pike_lock_data(X) pike_lockmem((X))
-#define pike_unlock_data(X) pike_unlockmem((X))
-#endif
-
-#else
-#define IF_LOCAL_MUTEX(X)
-#define add_ref(X) (void)((X)->refs++)
+#define add_ref(X) ((void)((X)->refs++))
 #define sub_ref(X) (--(X)->refs > 0)
-#define pike_lock_data(X) (void)(X)
-#define pike_unlock_data(X) (void)(X)
-#endif
-
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
@@ -508,15 +487,8 @@ if(REFCOUNTED_TYPE(T) && (S)->refs && (S)->refs[0] <= 0) {\
 #ifdef DEBUG_MALLOC
 static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 {
-#if 0
-  /* What's this supposed to accomplish? Dmalloc tracks memory blocks,
-   * not single svalues that point to them. /mast */
-  debug_malloc_update_location(s,l);
-#endif
-#if 1
   if(s && REFCOUNTED_TYPE(TYPEOF(*s)))
     debug_malloc_update_location(s->u.refs,l);
-#endif
   return s;
 }
 
@@ -528,32 +500,20 @@ static INLINE struct svalue *dmalloc_check_svalues(struct svalue *s, size_t num,
 
 static INLINE union anything *dmalloc_check_union(union anything *u,int type, char * l)
 {
-#if 0
-  debug_malloc_update_location(u,l);
-#endif
-#if 1
   if(u && REFCOUNTED_TYPE(type))
     debug_malloc_update_location(u->refs,l);
-#endif
   return u;
 }
 
 #undef add_ref
-#undef sub_ref
-
-#ifdef PIKE_RUN_UNLOCKED
-#define add_ref(X) pike_atomic_inc32((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" add_ref")))
-#define sub_ref(X) pike_atomic_dec_and_test32((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" sub_ref")))
-#else
 #define add_ref(X) (((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" add_ref")))[0]++)
+#undef sub_ref
 #define sub_ref(X) (--((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" sub_ref")))[0] > 0)
-#endif
 
 #else  /* !DEBUG_MALLOC */
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
-
 #endif	/* !DEBUG_MALLOC */
 
 /* To be used for type checking in macros. */
@@ -620,30 +580,18 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
     );									\
   } while (0)
 
-/* This define
- * should check that the svalue address (X) is on the local stack,
- * the processor stack or in a locked memory object
- *
- * Or, it could just try to make sure it's not in an unlocked memory
- * object...
- */
-#define assert_svalue_locked(X)
-
-
-#define swap_svalues_unlocked(X,Y)  do {		\
+#define swap_svalues(X,Y)  do {		\
   struct svalue *_a=(X);				\
   struct svalue *_b=(Y);				\
   struct svalue _tmp;					\
-  assert_svalue_locked(_a); assert_svalue_locked(_b);	\
   dmalloc_touch_svalue(_a);				\
   dmalloc_touch_svalue(_b);				\
   _tmp=*_a; *_a=*_b; *_b=_tmp;				\
 }while(0)
 
 /* Handles PIKE_T_FREE. */
-#define free_svalue_unlocked(X) do {				\
+#define free_svalue(X) do {				\
   struct svalue *_s=(X);					\
-  assert_svalue_locked(_s);					\
   DO_IF_DEBUG (							\
     if (TYPEOF(*_s) != PIKE_T_FREE) {				\
       check_svalue_type(_s);					\
@@ -664,10 +612,9 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   }								\
 }while(0)
 
-#define free_short_svalue_unlocked(X,T) do {				\
+#define free_short_svalue(X,T) do {				\
   union anything *_s=(X); TYPE_T _t=(T);				\
   check_type(_t); check_refs2(_s,_t);					\
-  assert_svalue_locked(_s);						\
   if(REFCOUNTED_TYPE(_t) && _s->refs) {					\
     DO_IF_DEBUG (							\
       DO_IF_PIKE_CLEANUP (						\
@@ -680,7 +627,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 }while(0)
 
 /* Handles PIKE_T_FREE. */
-#define add_ref_svalue_unlocked(X) do {				\
+#define add_ref_svalue(X) do {				\
   struct svalue *_tmp=(X);					\
   DO_IF_DEBUG (							\
     if (TYPEOF(*_tmp) != PIKE_T_FREE) {				\
@@ -692,7 +639,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 }while(0)
 
 /* Handles PIKE_T_FREE. */
-#define assign_svalue_no_free_unlocked(X,Y) do {	\
+#define assign_svalue_no_free(X,Y) do {	\
   struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
   DO_IF_DEBUG (						\
@@ -708,7 +655,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 }while(0)
 
 /* Handles PIKE_T_FREE. */
-#define assign_svalue_unlocked(X,Y) do {	\
+#define assign_svalue(X,Y) do {	\
   struct svalue *_to2=(X);			\
   const struct svalue *_from2=(Y);		\
   if (_to2 != _from2) {				\
@@ -908,124 +855,6 @@ static INLINE TYPE_FIELD dmalloc_gc_cycle_check_svalues (struct svalue *s, size_
 
 #endif /* !NO_PIKE_SHORTHAND */
 
-#if 0 /* PIKE_RUN_UNLOCKED */
-
-#include "pike_error.h"
-
-/*#define swap_svalues swap_svalues*/
-/*#define free_svalue free_svalue_unlocked*/
-/*#define free_short_svalue free_short_svalue_unlocked */
-/*#define add_ref_svalue add_ref_svalue_unlocked*/
-
-/*
- * These don't work right now - Hubbe
- */
-#define assign_svalue_no_free assign_svalue_no_free_unlocked
-#define assign_svalue assign_svalue_unlocked
-
-/* FIXME:
- * These routines assumes that pointers are 32 bit
- * and svalues 64 bit!!!!! - Hubbe
- */
-
-#ifndef swap_svalues 
-#define swap_svalues swap_svalues_unlocked
-#endif
-
-#ifndef free_svalue
-static INLINE void free_svalue(struct svalue *s)
-{
-  INT64 tmp;
-  struct svalue zero;
-  SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-  tmp=pike_atomic_swap64((INT64 *)s, *(INT64 *)&zero);
-  free_svalue_unlocked((struct svalue *)&tmp);
-}
-#endif
-
-#ifndef free_short_svalue
-static INLINE void free_short_svalue(union anything *s, int t)
-{
-  if(REFCOUNTED_TYPE(t))
-  {
-    INT32 tmp;
-    tmp=pike_atomic_swap32((INT32 *)s, 0);
-    free_short_svalue_unlocked((union anything *)&tmp, t);
-  }
-}
-#endif
-
-#ifndef add_ref_svalue
-static INLINE void add_ref_svalue(struct svalue *s)
-{
-  INT64 sv;
-  sv=pike_atomic_get64((INT64 *)s);
-  add_ref_svalue_unlocked((struct svalue *)&sv);
-}
-#endif
-
-#ifndef assign_svalue_no_free
-void assign_svalue_no_free(struct svalue *to, const struct svalue *from)
-{
-  INT64 tmp, sv;
-  sv=pike_atomic_get64((INT64 *)from);
-#ifdef PIKE_DEBUG
-  if(sv != *(INT64*)from)
-  {
-    fprintf(stderr,"pike_atomic_get64() is broken %llx != %llx (%08x%08x)!\n",
-	    sv,
-	    *(INT64*)from,
-	    ((INT32*)from)[1], ((INT32*)from)[0]);
-    abort();
-  }
-#endif
-  add_ref_svalue_unlocked((struct svalue *)&sv);
-  pike_atomic_set64((INT64 *)to, sv);
-#ifdef PIKE_DEBUG
-  if(*(INT64*)to != *(INT64*)from)
-  {
-    fprintf(stderr,"pike_atomic_set64() is broken!\n");
-    abort();
-  }
-#endif
-}
-#endif
-
-#ifndef assign_svalue
-static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
-{
-  INT64 tmp, sv;
-  if(to != from)
-  {
-    sv=pike_atomic_get64((INT64 *)from);
-    add_ref_svalue_unlocked((struct svalue *)&sv);
-    tmp=pike_atomic_swap64((INT64 *)to, sv);
-    free_svalue_unlocked((struct svalue *)&tmp);
-  }
-}
-#endif
-
-#else /* FOO_PIKE_RUN_UNLOCKED */
-#define swap_svalues swap_svalues_unlocked
-#define free_svalue free_svalue_unlocked
-#define free_short_svalue free_short_svalue_unlocked 
-#define add_ref_svalue add_ref_svalue_unlocked
-#define assign_svalue_no_free assign_svalue_no_free_unlocked
-#define assign_svalue assign_svalue_unlocked
-#endif /* FOO_PIKE_RUN_UNLOCKED */
-
-#ifdef PIKE_RUN_UNLOCKED
-#include "pike_threadlib.h"
-#endif
-
-/* 
- * Note to self:
- * It might be better to use a static array of mutexes instead
- * and just lock mutex ptr % array_size instead.
- * That way I wouldn't need a mutex in each memory object,
- * but it would cost a couple of cycles in every lock/unlock
- * operation instead.
- */
 #ifdef ATOMIC_SVALUE
 /* Atomic svalues: Store the type in the reference types,
  * instead of on the stack. This allows for changing an
@@ -1035,7 +864,6 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
   INT32 refs;				\
   INT32 ref_type			\
   DO_IF_SECURITY(; struct object *prot) \
-  IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
 
 #ifdef PIKE_SECURITY
 #ifdef USE_LOCAL_MUTEX
@@ -1057,13 +885,11 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
   v_->refs=0;						\
   add_ref(v_); /* For DMALLOC... */			\
   DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
-  IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
 }while(0)
 #else /* !ATOMIC_SVALUE */
 #define PIKE_MEMORY_OBJECT_MEMBERS	\
   INT32 refs				\
   DO_IF_SECURITY(; struct object *prot) \
-  IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
 
 #ifdef PIKE_SECURITY
 #ifdef USE_LOCAL_MUTEX
@@ -1084,14 +910,12 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
   v_->refs=0;						\
   add_ref(v_); /* For DMALLOC... */			\
   DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
-  IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
 }while(0)
 #endif /* ATOMIC_SVALUE */
 
 #define EXIT_PIKE_MEMOBJ(X) do {		\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\
   DO_IF_SECURITY( FREE_PROT(v_) );		\
-  IF_LOCAL_MUTEX(mt_destroy(&(v_->mutex)));	\
 }while(0)
 
 

@@ -695,14 +695,7 @@ char *crypt(const char *, const char *);
 /* Compatibility... */
 #define USE_PIKE_TYPE	2
 
-#ifdef PIKE_RUN_UNLOCKED
-#define DO_IF_RUN_UNLOCKED(X) X
-#else
-#define DO_IF_RUN_UNLOCKED(X)
-#endif
-
 /* Used in more than one place, better put it here */
-
 #if defined(PROFILING)
 #define DO_IF_PROFILING(X) X
 #else

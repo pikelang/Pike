@@ -52,9 +52,6 @@ union msnode
 struct multiset_data
 {
   INT32 refs, noval_refs;
-#ifdef PIKE_RUN_UNLOCKED
-#error multiset_data has not been adapted for running unlocked.
-#endif
   union msnode *root, *free_list;
   struct svalue cmp_less;
   INT32 size, allocsize;
