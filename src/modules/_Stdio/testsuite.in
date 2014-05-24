@@ -379,10 +379,4 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEU
 cond_end
 
 
-dnl Displaced tests for SSL.sslfile.
-run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "0"}))
-run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "1"}))
-run_sub_test(({"SRCDIR/async_tls_close_test.pike", "1", "0"}))
-run_sub_test(({"SRCDIR/async_tls_close_test.pike", "1", "1"}))
-
 END_MARKER
