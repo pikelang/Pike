@@ -115,13 +115,28 @@ constant STATE_wait_for_finish		= 3;
 //! @[CONNECTION_handshaking].
 enum ConnectionState {
   CONNECTION_ready		= 0x0000,	//! Connection is ready for use.
+
+  // Handshaking.
   CONNECTION_handshaking	= 0x0100,	//! Handshaking not done.
+
+  // Peer.
   CONNECTION_peer_closed	= 0x0001,	//! Peer has closed the connection.
   CONNECTION_peer_fatal		= 0x0002,	//! Peer has issued a fatal alert.
+
+  // Local.
   CONNECTION_local_closed	= 0x0010,	//! Local close packet sent.
   CONNECTION_local_fatal	= 0x0020,	//! Fatal alert sent.
   CONNECTION_local_closing	= 0x0040,	//! Local close packet pending.
   CONNECTION_local_failing	= 0x0080,	//! Fatal alert pending.
+
+  // Some composite values.
+  CONNECTION_closed		= 0x0011,	//! Closed at both ends.
+  CONNECTION_closing		= 0x0051,	//! Connection closing mask.
+
+  CONNECTION_peer_down		= 0x000f,	//! Peer mask.
+  CONNECTION_local_down		= 0x00f0,	//! Local mask.
+
+  CONNECTION_failing		= 0x00a2,	//! Connection failing mask.
 };
 
 /* Cipher specification */

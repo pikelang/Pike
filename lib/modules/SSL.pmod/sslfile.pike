@@ -211,8 +211,7 @@ protected constant epipe_errnos = (<
 #define SSL_INTERNAL_READING						\
   (SSL_HANDSHAKING ||							\
    (close_state == CLEAN_CLOSE ?					\
-    ((conn->state & (CONNECTION_local_closed | CONNECTION_peer_closed)) == \
-     CONNECTION_local_closed) : \
+    ((conn->state & CONNECTION_closed) == CONNECTION_local_closed) : \
     close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR))
 
 // Try to write when there's data in the write buffer or when we have
@@ -818,8 +817,7 @@ Stdio.File shutdown()
 
     switch (close_state) {
       case CLEAN_CLOSE:
-	if ((conn_state & (CONNECTION_peer_closed|CONNECTION_local_closed)) ==
-	    (CONNECTION_peer_closed | CONNECTION_local_closed)) {
+	if ((conn_state & CONNECTION_closed) == CONNECTION_closed) {
 	  SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - "
 			  "leaving stream\n");
 	  local_errno = 0;
@@ -1598,24 +1596,18 @@ int is_open()
       // essentially doing a peek and call ssl_read_callback directly,
       // but that'd lead to subtle code duplication. (Also, peek is
       // currently not implemented on NT.)
-      ConnectionState closed = conn->state &
-	(CONNECTION_local_closed | CONNECTION_peer_closed);
+      ConnectionState closed = conn->state & CONNECTION_closed;
       if ((close_state == CLEAN_CLOSE ?
-	   closed != (CONNECTION_local_closed | CONNECTION_peer_closed) :
-	   !closed))
+	   closed != CONNECTION_closed : !closed))
 	RUN_MAYBE_BLOCKING (
 	  action && (close_state == CLEAN_CLOSE ?
-		     (conn->state &
-		      (CONNECTION_local_closed | CONNECTION_peer_closed)) !=
-		     (CONNECTION_local_closed | CONNECTION_peer_closed) :
-		     !(conn->state &
-		       (CONNECTION_local_closed | CONNECTION_peer_closed))),
+		     (conn->state & CONNECTION_closed) != CONNECTION_closed :
+		     !(conn->state & CONNECTION_closed)),
 	  1, 1,
 	  RETURN (!epipe_errnos[local_errno]));
-      closed = conn->state &
-	(CONNECTION_local_closed | CONNECTION_peer_closed);
+      closed = conn->state & CONNECTION_closed;
       RETURN (conn && (close_state == CLEAN_CLOSE ?
-		       closed != (CONNECTION_local_closed | CONNECTION_peer_closed) && 2 : !closed));
+		       (closed != CONNECTION_closed) && 2 : !closed));
     }
   } LEAVE;
   return 0;
@@ -2200,7 +2192,7 @@ protected int ssl_write_callback (int called_from_real_backend)
       if (int err = queue_write()) {
 	if (err > 0) {
 #ifdef SSLFILE_DEBUG
-	  if (!(conn->state & (CONNECTION_local_closed|CONNECTION_peer_closed)) ||
+	  if (!(conn->state & CONNECTION_closed) ||
 	      close_packet_send_state < CLOSE_PACKET_QUEUED_OR_DONE)
 	    error ("Expected a close to be sent or received\n");
 #endif
