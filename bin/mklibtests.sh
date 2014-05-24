@@ -33,7 +33,12 @@ recurse () {
          echo >&2 "Could not create $dest_dir$path"testsuite
 	 continue
        fi
-       "$bin_dir"mktestsuite "$src_dir$path$fn" >&5
+       if [ "$PIKE_PATH_TRANSLATE" = "" ]; then
+         "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 -DSRCDIR="$src_dir$path"
+       else
+         "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 \
+	   -DSRCDIR="`echo $src_dir$path|sed -e $PIKE_PATH_TRANSLATE|$bin_dir/../src/posix_to_native.sh`"
+       fi
        exec 5>&-
        echo "$dest_dir$path"testsuite updated.
     fi    
