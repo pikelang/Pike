@@ -148,6 +148,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void low_init_object(void);
 void init_object(void);
 void exit_object(void);
+void late_exit_object(void);
 void check_object_context(struct object *o,
 			  struct program *context_prog,
 			  char *current_storage);

@@ -348,6 +348,8 @@ static void exit_builtin_modules(void)
 
   really_clean_up_interpret();
 
+  late_exit_object();
+
   cleanup_callbacks();
   free_all_callable_blocks();
 
