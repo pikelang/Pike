@@ -30,6 +30,8 @@ struct pike_frame;
 
 #define THREAD_FLAG_SIGNAL_MASK	3	/* All of the above. */
 
+#define THREAD_FLAG_INHIBIT	4	/* Inhibit signals. */
+
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 

@@ -2748,6 +2748,9 @@ static struct callback *thread_interrupt_callback = NULL;
 static void check_thread_interrupt(struct callback *foo,
 				   void *UNUSED(bar), void *UNUSED(gazonk))
 {
+  if (Pike_interpreter.thread_state->flags & THREAD_FLAG_INHIBIT) {
+    return;
+  }
   if (Pike_interpreter.thread_state->flags & THREAD_FLAG_SIGNAL_MASK) {
     if (Pike_interpreter.thread_state->flags & THREAD_FLAG_TERM) {
       throw_severity = THROW_THREAD_EXIT;
@@ -2786,7 +2789,6 @@ static void f_thread_id_interrupt(INT32 args)
   pop_n_elems(args);
 
   if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
-    THIS_THREAD->flags |= THREAD_FLAG_INTR;
     num_pending_interrupts++;
     if (!thread_interrupt_callback) {
       thread_interrupt_callback =
@@ -2794,6 +2796,7 @@ static void f_thread_id_interrupt(INT32 args)
     }
     /* FIXME: Actually interrupt the thread. */
   }
+  THIS_THREAD->flags |= THREAD_FLAG_INTR;
   push_int(0);
 }
 
