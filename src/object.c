@@ -3279,7 +3279,10 @@ void exit_object(void)
     free_program(magic_types_program);
     magic_types_program=0;
   }
+}
 
+void late_exit_object(void)
+{
   exit_destroy_called_mark_hash();
 }
 
