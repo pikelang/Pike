@@ -82,7 +82,7 @@ void image_hrz_f_encode(INT32 args )
   int x,y;
   get_all_args( "encode", args, "%o", &io);
   
-  if(!(i = (struct image *)get_storage( io, image_program)))
+  if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.HRZ.encode\n");
   
   s = begin_shared_string( 256*240*3 );

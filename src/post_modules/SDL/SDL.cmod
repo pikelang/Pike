@@ -65,8 +65,7 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
    color = clone_object(image_color_program,0);
 
-   cs=(struct color_struct*)
-      get_storage(color, image_color_program);
+   cs= get_storage(color, image_color_program);
 
    cs->rgb.r=(COLORTYPE)r;
    cs->rgb.g=(COLORTYPE)g;

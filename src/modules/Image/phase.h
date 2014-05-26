@@ -28,7 +28,7 @@ void IMAGE_PHASE(INT32 args)
   push_int(this->xsize);
   push_int(this->ysize);
   o=clone_object(image_program,2);
-  img=(struct image*)get_storage(o,image_program);
+  img=get_storage(o,image_program);
   imgi=img->img;
 
   pop_n_elems(args);

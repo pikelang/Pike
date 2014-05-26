@@ -115,7 +115,7 @@ static struct object *load_xbm( struct pike_string *data )
   push_int( width );
   push_int( height );
   io = clone_object( image_program, 2 );
-  dest = ((struct image *)get_storage(io, image_program))->img;
+  dest = ((struct image*)get_storage(io, image_program))->img;
   /* .. the code below asumes black if the read fails.. */
   for(y=0; y<height; y++)
   {
@@ -378,8 +378,7 @@ void image_xbm_encode( INT32 args )
     Pike_error("Image.XBM.encode: too few arguments\n");
    
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-      !(img=(struct image*)
-        get_storage(Pike_sp[-args].u.object,image_program)))
+      !(img=get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.XBM.encode: illegal argument 1\n");
    
   if (!img->img)

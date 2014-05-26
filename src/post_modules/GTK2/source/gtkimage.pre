@@ -197,7 +197,7 @@ mapping(string:mixed) get_icon_name()
     PGTK_PUSH_GCHAR(icon_name);
     ref_push_string(_STR("size"));
     push_int(size);
-    f_aggregate_mapping(4);
+    f_aggregate_mapping;
   }
 }
 endrequire;

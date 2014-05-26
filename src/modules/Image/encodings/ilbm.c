@@ -459,7 +459,7 @@ static void image_ilbm__decode(INT32 args)
   push_int(bmhd.w);
   push_int(bmhd.h);
   o=clone_object(image_program,2);
-  img=(struct image*)get_storage(o,image_program);
+  img=get_storage(o,image_program);
   push_object(o);
   n++;
 
@@ -468,7 +468,7 @@ static void image_ilbm__decode(INT32 args)
     push_int(bmhd.w);
     push_int(bmhd.h);
     o=clone_object(image_program,2);
-    alpha=(struct image*)get_storage(o,image_program);
+    alpha=get_storage(o,image_program);
     push_object(o);
     n++;
   }
@@ -521,7 +521,7 @@ static void image_ilbm__decode(INT32 args)
     }
     f_aggregate(DO_NOT_WARN((INT32)ncol));
     push_object(clone_object(image_colortable_program,1));
-    ctable=(struct neo_colortable*)get_storage(sp[-1].u.object,
+    ctable=get_storage(sp[-1].u.object,
 					       image_colortable_program);
     n++;
   }
@@ -750,18 +750,18 @@ static void image_ilbm_encode(INT32 args)
   get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 
-  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+  if((img=get_storage(imgo, image_program))==NULL)
      Pike_error("Image.ILBM.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	 (alpha=get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (ct=(struct neo_colortable*)
+	 (ct=
 	  get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");
   }

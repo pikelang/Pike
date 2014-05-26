@@ -260,8 +260,8 @@ void f__xpm_write_rows( INT32 args )
   fprintf(stderr, ")\n");
 #endif /* 0 */
 
-  iimg = (struct image *)get_storage( img, image_program );
-  ialpha = (struct image *)get_storage( alpha, image_program );
+  iimg = get_storage( img, image_program );
+  ialpha = get_storage( alpha, image_program );
   if(!iimg || !ialpha)
     Pike_error("Expected images as arguments\n");
 

@@ -11,7 +11,7 @@
 **!	This submodule handles encoding and decoding of
 **!	the binary formats of X11.
 **!
-**!	
+**!
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
@@ -145,11 +145,11 @@ static void image_x_encode_truecolor(INT32 args)
       Pike_error("Image.X.encode_truecolor: too few arguments (expected 10 arguments)\n");
    
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.X.encode_truecolor: illegal argument 1 (expected image object)\n");
    if (args>10)
       if (TYPEOF(sp[10-args]) != T_OBJECT ||
-	  !(nct=(struct neo_colortable*)
+	  !(nct=
 	    get_storage(sp[10-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
 	 
@@ -416,7 +416,7 @@ static void image_x_encode_truecolor_masks(INT32 args)
       Pike_error("Image.X.encode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
    if (args>7)
-      if (TYPEOF(sp[7-args]) != T_OBJECT ||
+       if (TYPEOF(sp[7-args]) != T_OBJECT ||
 	  !get_storage(ct=sp[7-args].u.object,image_colortable_program))
 	 Pike_error("Image.X.encode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
@@ -749,10 +749,10 @@ void image_x_encode_pseudocolor(INT32 args)
    if (!alignbits) alignbits=1;
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 1 (expected image object)\n");
    if (TYPEOF(sp[4-args]) != T_OBJECT ||
-       !(nct=(struct neo_colortable*)
+       !(nct=
 	 get_storage(sp[4-args].u.object,image_colortable_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 4 (expected colortable object)\n");
 
@@ -832,7 +832,7 @@ static void image_x_decode_truecolor(INT32 args)
    if (args>12)
    {
       if (TYPEOF(sp[12-args]) != T_OBJECT ||
-	  !(nct=(struct neo_colortable*)
+	  !(nct=
 	    get_storage(sp[12-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.decode_truecolor: illegal argument 13, expected colortable\n");
       if (nct->type!=NCT_FLAT)
@@ -862,7 +862,7 @@ static void image_x_decode_truecolor(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
 
       d=img->img;
       n=width*height;
@@ -908,7 +908,7 @@ static void image_x_decode_truecolor(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
 
       if (nct)
       {
@@ -987,7 +987,7 @@ void image_x_decode_truecolor_masks(INT32 args)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
    if (args>9)
-      if (TYPEOF(sp[9-args]) != T_OBJECT ||
+       if (TYPEOF(sp[9-args]) != T_OBJECT ||
 	  !get_storage(ct=sp[9-args].u.object,image_colortable_program))
 	 Pike_error("Image.X.decode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
@@ -1048,7 +1048,7 @@ void image_x_decode_pseudocolor(INT32 args)
       if (TYPEOF(sp[i-args]) != T_INT)
 	 Pike_error("Image.X.decode_pseudocolor: illegal argument %d\n",i+1);
    if (TYPEOF(sp[6-args]) != T_OBJECT ||
-       !(nct=(struct neo_colortable*)
+       !(nct=
 	 get_storage(ncto=sp[6-args].u.object,image_colortable_program)))
       Pike_error("Image.X.decode_pseudocolor: illegal argument 7\n");
 
@@ -1077,7 +1077,7 @@ void image_x_decode_pseudocolor(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
 
       d=img->img;
       n=width*height;
@@ -1107,7 +1107,7 @@ void image_x_decode_pseudocolor(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
 
       d=img->img;
       m=height;
@@ -1157,7 +1157,7 @@ void image_x_encode_bitmap(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.X.encode_bitmap",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object");
 
    if (!img->img)

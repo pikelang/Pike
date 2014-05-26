@@ -734,8 +734,7 @@ static void image_layer_set_image(INT32 args)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
 				 "object(Image)|int(0)");
       }
-      else if ((img=(struct image*)
-		get_storage(Pike_sp[-args].u.object,image_program)))
+      else if ((img=get_storage(Pike_sp[-args].u.object,image_program)))
       {
 	 THIS->image=Pike_sp[-args].u.object;
 	 add_ref(THIS->image);
@@ -756,8 +755,7 @@ static void image_layer_set_image(INT32 args)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
 				 "object(Image)|int(0)");
       }
-      else if ((img=(struct image*)
-		get_storage(Pike_sp[1-args].u.object,image_program)))
+      else if ((img=get_storage(Pike_sp[1-args].u.object,image_program)))
       {
 	 if (THIS->img &&
 	     (img->xsize!=THIS->xsize ||
@@ -2939,7 +2937,7 @@ void image_lay(INT32 args)
    {
       if (TYPEOF(a->item[i]) == T_OBJECT)
       {
-	 if (!(l[j]=(struct layer*)get_storage(a->item[i].u.object,
+	 if (!(l[j]=get_storage(a->item[i].u.object,
 					       image_layer_program)))
 	    SIMPLE_BAD_ARG_ERROR("Image.lay",1,
 				 "array(Image.Layer|mapping)");
@@ -2949,7 +2947,7 @@ void image_lay(INT32 args)
 	 push_svalue(a->item+i);
 	 push_object(o=clone_object(image_layer_program,1));
 	 args++;
-	 l[j]=(struct layer*)get_storage(o,image_layer_program);
+	 l[j]=get_storage(o,image_layer_program);
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.lay",1,
@@ -3005,7 +3003,7 @@ void image_lay(INT32 args)
    push_int(ysize);
    push_object(o=clone_object(image_layer_program,2));
 
-   dest=(struct layer*)get_storage(o,image_layer_program);
+   dest=get_storage(o,image_layer_program);
    dest->xoffs=xoffset;
    dest->yoffs=yoffset;
 
@@ -3024,7 +3022,7 @@ void image_lay(INT32 args)
 static INLINE struct layer *push_new_layer(void)
 {
    push_object(clone_object(image_layer_program,0));
-   return (struct layer*)get_storage(Pike_sp[-1].u.object,image_layer_program);
+   return get_storage(Pike_sp[-1].u.object,image_layer_program);
 }
 
 static INLINE struct layer *clone_this_layer(void)
@@ -3118,7 +3116,7 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill.b);
       f_call_function(8);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
+	  !(img=get_storage(Pike_sp[-1].u.object,image_program)))
 	 Pike_error("No image returned from image->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from image->copy had "
@@ -3147,7 +3145,7 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill_alpha.b);
       f_call_function(8);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
+	  !(img=get_storage(Pike_sp[-1].u.object,image_program)))
 	 Pike_error("No image returned from alpha->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from alpha->copy had "

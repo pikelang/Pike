@@ -55,9 +55,7 @@ static struct program *creds_program;
 
 static int valid_creds_object(struct object *o)
 {
-  return o &&
-    get_storage(o, creds_program) == o->storage &&
-    OBJ2CREDS(o)->user;
+  return o && get_storage(o, creds_program) == o->storage && OBJ2CREDS(o)->user;
 }
 
 static void restore_creds(struct object *creds)

@@ -128,7 +128,7 @@ void shared_interpreter_cleanup(int exitcode)
     add_pike_string_constant("__embedded_resource_directory",
         master,
         strlen(master));
-								
+
     add_pike_string_constant("__master_cookie",
                              master,
                             strlen(master));
@@ -152,8 +152,7 @@ void shared_interpreter_cleanup(int exitcode)
 
 		move_svalue (Pike_sp++, &throw_value);
 		mark_free_svalue (&throw_value);
-	        err = (struct generic_error_struct *)
-	          get_storage (Pike_sp[-1].u.object, generic_error_program);
+	        err = get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	        t.type = PIKE_T_STRING;
 	        t.u.string = err->error_message;

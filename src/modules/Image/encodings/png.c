@@ -1111,7 +1111,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 
   /* Create image object and leave it on the stack */
   push_object(clone_object(image_program,0));
-  img=(struct image*)get_storage(sp[-1].u.object,image_program);
+  img=get_storage(sp[-1].u.object,image_program);
   if (img->img) free(img->img); /* protect from memleak */
   img->xsize=ihdr->width;
   img->ysize=ihdr->height;
@@ -1121,7 +1121,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   if( wa1 )
   {
     push_object(clone_object(image_program,0));
-    img=(struct image*)get_storage(sp[-1].u.object,image_program);
+    img=get_storage(sp[-1].u.object,image_program);
     if (img->img) free(img->img); /* protect from memleak */
     img->xsize=ihdr->width;
     img->ysize=ihdr->height;
@@ -1180,7 +1180,7 @@ static void img_png_decode(INT32 args, int mode)
 	 case T_STRING:
 	    push_object(clone_object(image_colortable_program,1));
 
-	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
+	    ct=get_storage(sp[-1].u.object,
 						   image_colortable_program);
 	    if (!ct)
 	       PIKE_ERROR("Image.PNG._decode",
@@ -1281,7 +1281,7 @@ static void img_png_decode(INT32 args, int mode)
 
 	    if (ihdr.type==3)
 	    {
-	       ct=(struct neo_colortable*)
+	       ct=
 		  get_storage(sp[-1].u.object,image_colortable_program);
 	       mapping_string_insert(m, param_palette, sp-1);
 	    }
@@ -1567,7 +1567,7 @@ static void image_png_encode(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)
+       !(img=
 	 get_storage(sp[-args].u.object,image_program)))
      SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
 
@@ -1587,8 +1587,7 @@ static void image_png_encode(INT32 args)
       if( s )
       {
         if( TYPEOF(*s) == T_OBJECT &&
-            (alpha=(struct image*)
-             get_storage(s->u.object,image_program)) )
+            (alpha=get_storage(s->u.object,image_program)) )
         {
           if (alpha->xsize!=img->xsize ||
               alpha->ysize!=img->ysize)
@@ -1612,7 +1611,7 @@ static void image_png_encode(INT32 args)
 
       if (s && !(TYPEOF(*s) == T_INT && s->u.integer==0))
 	 if (TYPEOF(*s) != T_OBJECT ||
-	     !(ct=(struct neo_colortable*)
+	     !(ct=
 	       get_storage(s->u.object,image_colortable_program)))
 	   PIKE_ERROR("Image.PNG.encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",

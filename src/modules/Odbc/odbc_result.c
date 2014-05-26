@@ -385,7 +385,7 @@ static void f_create(INT32 args)
   }
   if ((TYPEOF(Pike_sp[-args]) != T_OBJECT) ||
       (!(PIKE_ODBC_RES->odbc =
-	 (struct precompiled_odbc *)get_storage(Pike_sp[-args].u.object,
+	 get_storage(Pike_sp[-args].u.object,
 						odbc_program)))) {
     Pike_error("Bad argument 1 to odbc_result()\n");
   }

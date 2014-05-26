@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	err = (struct generic_error_struct *)
+	err = 
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	SET_SVAL(t, PIKE_T_STRING, 0, string, err->error_message);

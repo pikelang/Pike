@@ -9,7 +9,7 @@ typedef struct result_set
 #ifdef PIKE_DEBUG
 extern struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o );
-# define WF_RESULTSET(X) ((X&&get_storage(X,resultset_program))?X:wf_not_resultset(X))
+# define WF_RESULTSET(X) ()?X:wf_not_resultset(X))
 #else
 # define WF_RESULTSET(X) X
 #endif

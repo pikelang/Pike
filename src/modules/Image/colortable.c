@@ -2168,8 +2168,7 @@ static void image_colortable_add(INT32 args)
       if (TYPEOF(sp[-args]) == T_OBJECT)
       {
 	 struct neo_colortable *ct2;
-	 ct2=(struct neo_colortable*)
-	    get_storage(sp[-args].u.object,image_colortable_program);
+	 ct2=get_storage(sp[-args].u.object,image_colortable_program);
 	 if (ct2)
 	 {
 #ifdef COLORTABLE_DEBUG
@@ -2209,14 +2208,12 @@ static void image_colortable_add(INT32 args)
       struct neo_colortable *ct2;
       struct image *img;
 
-      if ((ct2=(struct neo_colortable*)
-	   get_storage(sp[-args].u.object,image_colortable_program)))
+      if ((ct2=get_storage(sp[-args].u.object,image_colortable_program)))
       {
 	 /* just copy that colortable */
 	 _img_copy_colortable(THIS,ct2);
       }
-      else if ((img=(struct image*)
-		get_storage(sp[-args].u.object,image_program)))
+      else if ((img=get_storage(sp[-args].u.object,image_program)))
       {
 	 /* get colors from image */
 	 if (args>=2) 
@@ -2230,8 +2227,7 @@ static void image_colortable_add(INT32 args)
 
 		  o=clone_object(image_colortable_program,args-2);
 
-		  nct=(struct neo_colortable*)
-		     get_storage(o,image_colortable_program);
+		  nct=get_storage(o,image_colortable_program);
 
 		  if (!nct) abort();
 
@@ -2385,7 +2381,7 @@ void image_colortable_reduce(INT32 args)
       numcolors=1293791; /* a lot */
    
    o=clone_object_from_object(THISOBJ,0);
-   nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+   nct=get_storage(o,image_colortable_program);
    
    switch (nct->type = THIS->type)
    {
@@ -2437,7 +2433,7 @@ void image_colortable_reduce_fs(INT32 args)
       f_index(3);
    }
    push_object(o=clone_object(image_colortable_program,1));
-   nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+   nct=get_storage(o,image_colortable_program);
    
    for (i=0; i<nct->u.flat.numentries; i++)
       nct->u.flat.entries[i].weight=WEIGHT_NEEDED;
@@ -2467,13 +2463,12 @@ void image_colortable_operator_plus(INT32 args)
 
    ref_push_object(THISOBJ);
    o=clone_object_from_object(THISOBJ,1);
-   dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
+   dest=get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
    {
       if (TYPEOF(sp[i-args]) == T_OBJECT &&
-	  (src=(struct neo_colortable*)
-	   get_storage(sp[i-args].u.object,image_colortable_program)))
+	  (src=get_storage(sp[i-args].u.object,image_colortable_program)))
       {
 	 tmpo=NULL;
       }
@@ -2483,8 +2478,7 @@ void image_colortable_operator_plus(INT32 args)
 	 struct svalue *sv=sp+i-args;
 	 push_svalue(sv);
 	 tmpo=clone_object(image_colortable_program,1);
-	 src=(struct neo_colortable*)
-	   get_storage(tmpo,image_colortable_program);
+	 src=get_storage(tmpo,image_colortable_program);
 	 if (!src) abort();
       }
       else {
@@ -2520,13 +2514,12 @@ void image_colortable_operator_minus(INT32 args)
 
    ref_push_object(THISOBJ);
    o=clone_object_from_object(THISOBJ,1);
-   dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
+   dest=get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
       if (TYPEOF(sp[i-args]) == T_OBJECT)
       {
-	 src=(struct neo_colortable*)
-	    get_storage(sp[i-args].u.object,image_colortable_program);
+	 src=get_storage(sp[i-args].u.object,image_colortable_program);
 	 if (!src) 
 	 { 
 	    free_object(o); 
@@ -3545,7 +3538,7 @@ void image_colortable_map(INT32 args)
       if (args!=3) 
 	 Pike_error("illegal number of arguments to colortable->map()\n");
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       d=img->img;
       
       n=img->xsize*img->ysize;
@@ -3604,7 +3597,7 @@ void image_colortable_map(INT32 args)
    }
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       ! (src=get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("colortable->map",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to colortable->map()\n");
 
@@ -3641,7 +3634,7 @@ void image_colortable_index_32bit(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Colortable.index",1);
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       ! (src=get_storage(sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"image object");
 
    if (!src->img) 
@@ -4324,7 +4317,7 @@ void image_colortable_image(INT32 args)
    if (THIS->type==NCT_NONE)
       return;
 
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    dest=img->img;
    
    if (THIS->type==NCT_CUBE)

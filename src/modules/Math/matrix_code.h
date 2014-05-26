@@ -222,8 +222,7 @@ done_made:
 	 /* "rotate",size,degrees,x,y,z */
 
 	 if (args>3 && TYPEOF(Pike_sp[3-args]) == T_OBJECT &&
-	     ((mx=(struct matrixX(_storage)*)
-	       get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+	     ((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
 	 {
 	    if (mx->xsize*mx->ysize!=3)
 	       SIMPLE_BAD_ARG_ERROR(PNAME,4,"Matrix of size 1x3 or 3x1");
@@ -501,8 +500,7 @@ static void matrixX(_add)(INT32 args)
    }
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("`+",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->xsize || mx->ysize != THIS->ysize)
@@ -545,8 +543,7 @@ static void matrixX(_sub)(INT32 args)
       }
 
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !((mx=(struct matrixX(_storage)*)
-	     get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+	  !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
 	 SIMPLE_BAD_ARG_ERROR("`-",1,"object(Math.Matrix)");
 
       if (mx->xsize != THIS->xsize ||
@@ -679,8 +676,7 @@ scalar_mult:
    }
 	 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("`*",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->ysize)
@@ -723,8 +719,7 @@ static void matrixX(_cross)(INT32 args)
    pop_n_elems(args-1); /* shouldn't be needed */
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("cross",1,"object(Math.Matrix)");
 
    if (mx->xsize*mx->ysize != 3 ||
@@ -758,8 +753,7 @@ static void matrixX(_dot)(INT32 args)
   pop_n_elems(args-1); 
   
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-      !((mx=(struct matrixX(_storage)*)
-	 get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+      !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
     SIMPLE_BAD_ARG_ERROR("dot_product",1,"object(Math.Matrix)");
   
   if(!(mx->xsize==THIS->xsize &&
@@ -795,8 +789,7 @@ static void matrixX(_convolve)(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("convolve",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_OBJECT ||
-       !((bmx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
+       !((bmx=get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("convolve",1,"object(Math.Matrix)");
 
    if (bmx->xsize==0 || bmx->ysize==0 ||

@@ -600,8 +600,7 @@ PIKECLASS Shuffle
     else {
       safe_apply( fd, "release_fd", 0 );
       if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
-        be = (struct Backend_struct*)
-	  get_storage(backend->u.object, Backend_program);
+        be = get_storage(backend->u.object, Backend_program);
 	if (!be) {
 	  SIMPLE_BAD_ARG_ERROR("Shuffle->create()", 4,
 			       "object(Pike.__Backend)");

@@ -584,14 +584,14 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     push_int( width );
     push_int( height );
     i.io = clone_object( image_program, 2 );
-    i.img = (struct image*)get_storage(i.io,image_program);
+    i.img = get_storage(i.io,image_program);
     push_int( width );
     push_int( height );
     push_int( 255 );
     push_int( 255 );
     push_int( 255 );
     i.ao = clone_object( image_program, 5 );
-    i.alpha = (struct image*)get_storage(i.ao,image_program);
+    i.alpha = get_storage(i.ao,image_program);
 
     id = i.img->img;
     ad = i.alpha->img;
@@ -900,8 +900,7 @@ void image_tga_encode( INT32 args )
     Pike_error("Image.TGA.encode: too few arguments\n");
 
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-      !(img=(struct image*)
-        get_storage(Pike_sp[-args].u.object,image_program)))
+      !(img=get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.TGA.encode: illegal argument 1\n");
 
   if (!img->img)
@@ -918,8 +917,7 @@ void image_tga_encode( INT32 args )
     if (!(TYPEOF(Pike_sp[-1]) == PIKE_T_INT
           && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED))
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
-          !(alpha=(struct image*)
-            get_storage(Pike_sp[-1].u.object,image_program)))
+          !(alpha=get_storage(Pike_sp[-1].u.object,image_program)))
         Pike_error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");
     pop_stack();
 

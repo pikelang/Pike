@@ -172,7 +172,7 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
   push_int( wh->width );
   push_int( wh->height );
   io = clone_object( image_program, 2 );
-  i = (struct image*)get_storage(io,image_program);
+  i = get_storage(io,image_program);
   id = i->img;
 
   white.r = 255;
@@ -398,7 +398,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("No image given to encode.\n");
 
   o = sp[-args].u.object;
-  i = (struct image*)get_storage(o,image_program);
+  i = get_storage(o,image_program);
   if(!i)
     Pike_error("Wrong type object argument\n");
   if( args == 2 )

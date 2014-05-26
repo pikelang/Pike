@@ -73,7 +73,7 @@ static int pf_getattr(const char *path, struct stat *stbuf)
     push_text( path );
     apply( global_fuse_obj, "getattr", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
-	!(st = (struct stat *)get_storage( Pike_sp[-1].u.object, stat_program)) )
+	!(st = get_storage( Pike_sp[-1].u.object, stat_program)) )
 	DEFAULT_ERRNO();
     *stbuf = *st;
     return 0;

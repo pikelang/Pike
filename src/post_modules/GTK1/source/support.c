@@ -78,7 +78,7 @@ int get_color_from_pikecolor( struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TY
     pike_color_program = program_from_svalue(--Pike_sp);
   }
 
-  col = (struct color_struct *)get_storage( o, pike_color_program );
+  col = get_storage( o, pike_color_program );
   if(!col) return 0;
   *r = col->rgbl.r/(COLORLMAX/65535);
   *g = col->rgbl.g/(COLORLMAX/65535);
@@ -304,7 +304,7 @@ GtkObject *get_pgtkobject(struct object *from, struct program *type)
 {
   struct object_wrapper * o;
   if(!from) return NULL;
-  o=(struct object_wrapper *)get_storage( from, type );
+  o=get_storage( from, type );
   if(!o) return 0;
   return o->obj;
 }
@@ -324,8 +324,7 @@ void *get_pgdkobject(struct object *from, struct program *type)
 
 void my_destruct( struct object *o )
 {
-  struct object_wrapper *ow =
-           (struct object_wrapper *)get_storage( o, pgtk_object_program );
+  struct object_wrapper *ow = get_storage( o, pgtk_object_program );
   if( ow ) /* This should always be true. But let's add a check anyway. */
     ow->obj = NULL;
   if( o->refs > 1 )

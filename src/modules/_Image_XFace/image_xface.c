@@ -401,7 +401,7 @@ static void image_xface_decode(INT32 args)
     Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   o=clone_object(image_program,0);
-  img=(struct image*)get_storage(o,image_program);
+  img=get_storage(o,image_program);
   if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
   img->img=malloc(sizeof(rgb_group)*48*48);
   if (!img->img) {
@@ -436,7 +436,7 @@ static void image_xface_encode(INT32 args)
 
   if (args<1 
       || TYPEOF(sp[-args]) != T_OBJECT
-      || !(img=(struct image*)
+      || !(img=
 	   get_storage(sp[-args].u.object,image_program))
       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
     Pike_error("Image.XFace.encode: Illegal arguments\n");

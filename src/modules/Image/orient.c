@@ -111,7 +111,7 @@ static void _image_orient(struct image *source,
       push_int(source->xsize);
       push_int(source->ysize);
       o[i]=clone_object(image_program,2);
-      img[i]=(struct image*)get_storage(o[i],image_program);
+      img[i]=get_storage(o[i],image_program);
       push_object(o[i]);
    }
 
@@ -207,12 +207,12 @@ void image_orient(INT32 args)
 	Pike_error("The images in the array given as argument 2 to image->orient have different sizes\n");
     }
     for(i=0; i<4; i++) 
-      img[i]=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
+        img[i]=get_storage(sp[1-args].u.array->item[i].u.object,image_program);
     pop_n_elems(args);
     push_int(this->xsize);
     push_int(this->ysize);
     o[4]=clone_object(image_program,2);
-    img[4]=(struct image*)get_storage(o[4],image_program);
+    img[4]=get_storage(o[4],image_program);
     push_object(o[4]);
     w=1;
   }

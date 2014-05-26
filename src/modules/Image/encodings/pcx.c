@@ -283,7 +283,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
   push_int64(height);
 
   io = clone_object( image_program, 2 );
-  dest = ((struct image *)get_storage( io, image_program ))->img;
+  dest = ((struct image*)get_storage( io, image_program ))->img;
   SET_ONERROR(onerr, do_free_object, io );
   
   switch(pcx_header.bpp)
@@ -556,7 +556,7 @@ static int parameter_colortable(struct svalue *map,struct pike_string *what,
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
    if (!v || TYPEOF(*v) != T_OBJECT) return 0;
-   if( !(*p = (struct neo_colortable *)get_storage( v->u.object, image_colortable_program )))
+   if( !(*p = get_storage( v->u.object, image_colortable_program )))
      return 0;
    return 1;
 }
@@ -570,11 +570,11 @@ void image_pcx_encode( INT32 args )
 
   get_all_args( "Image.PCX.encode", args, "%o", &i );
 
-  if(!get_storage( i, image_program ))
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
     Pike_error("Invalid object argument to Image.PCX.encode\n");
 
-  img = ((struct image *)get_storage( i, image_program ));
-  
+  img = get_storage( i, image_program );
+
   MEMSET(&c, 0, sizeof(c));
   c.hdpi = 150;
   c.vdpi = 150;

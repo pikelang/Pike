@@ -255,14 +255,14 @@ static struct my_file *get_file_storage(struct object *o)
     return ((struct my_file *)
 	    (o->storage + file_program->inherits->storage_offset));
 
-  if((f=(struct my_file *)get_storage(o,file_program)))
+  if((f=get_storage(o,file_program)))
     return f;
 
-  if((sval=(struct svalue *)get_storage(o,file_ref_program))) {
+  if((sval=get_storage(o,file_ref_program))) {
     if (TYPEOF(*sval) == PIKE_T_OBJECT) {
       ob = sval->u.object;
       /* FIXME: Use the subtype information! */
-      if(ob && (f=(struct my_file *)get_storage(ob, file_program)))
+      if(ob && (f=get_storage(ob, file_program)))
 	return f;
     }
   }
@@ -275,8 +275,7 @@ static void debug_check_internals (struct my_file *f)
 {
   size_t ev;
 
-  if (f->box.ref_obj->prog && file_program &&
-      !get_storage(f->box.ref_obj,file_program))
+  if )
     Pike_fatal ("ref_obj is not a file object.\n");
 
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)
@@ -3761,8 +3760,7 @@ static void file_set_backend (INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
-  backend = (struct Backend_struct *)
-    get_storage (Pike_sp[-args].u.object, Backend_program);
+  backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
 

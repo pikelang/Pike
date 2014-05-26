@@ -114,11 +114,11 @@ void image_avs_f_encode(INT32 args )
   rgb_group apix = {255, 255, 255};
   get_all_args( "encode", args, "%o.%o", &io, &ao);
   
-  if(!(i = (struct image *)get_storage( io, image_program)))
+  if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.AVS.encode\n");
 
   if(ao) {
-    if (!(a = (struct image *)get_storage( ao, image_program)))
+    if (!(a = get_storage( ao, image_program)))
       Pike_error("Wrong argument 2 to Image.AVS.encode\n");
     if ((a->xsize != i->xsize) || (a->ysize != i->ysize))
       Pike_error("Bad size for alpha channel to Image.AVS.encode.\n");

@@ -950,8 +950,7 @@ PIKECLASS Backend
 
        get_all_args("low_call_out", args, "%o", &co);
 
-       c = (struct Backend_CallOut_struct *)
-	 get_storage(co, Backend_CallOut_program);
+       c = get_storage(co, Backend_CallOut_program);
 
        if (!c) Pike_error("low_call_out(): Unexpected object from CallOut.\n");
 
@@ -4319,7 +4318,7 @@ static void check_set_timer(struct timeval tmp)
     
     if (!loc.o->prog)
     {
-      Pike_error ("Cannot access storage of destructed parent object.\n");
+        Pike_error("Cannot access storage of destructed parent object.\n") ;
     }
     
     _st = get_storage(loc.o, PollDeviceBackend_program);
@@ -5884,8 +5883,7 @@ void init_backend(void)
 #else
     default_backend_obj = clone_object(SelectBackend_program, 0);
 #endif
-    default_backend = (struct Backend_struct *)
-      get_storage(default_backend_obj, Backend_program);
+    default_backend = get_storage(default_backend_obj, Backend_program);
 
     mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
     

@@ -704,7 +704,7 @@ static void image_jpeg_encode(INT32 args)
    if (args<1
        || (TYPEOF(sp[-args]) != T_OBJECT && TYPEOF(sp[-args]) != T_STRING)
        || (TYPEOF(sp[-args]) == T_OBJECT &&
-	   !(img=(struct image*) get_storage(sp[-args].u.object,image_program)))
+	   !(img= get_storage(sp[-args].u.object,image_program)))
        || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
@@ -1156,7 +1156,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       bytes_per_pixel = mds.cinfo.output_components;
 
       o=clone_object(image_program,0);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
       img->img=malloc(bytes_per_pixel *
 		      mds.cinfo.output_width*mds.cinfo.output_height);
