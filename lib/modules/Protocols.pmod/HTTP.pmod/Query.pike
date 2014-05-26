@@ -254,7 +254,10 @@ protected void connect(string server,int port,int blocking)
 protected void async_close()
 {
   con->set_blocking();
-  if (ponder_answer() <= 0) {
+  int res = ponder_answer();
+  if (res == -1) {
+    async_reconnect();
+  } else if (!res) {
     async_failed();
   }
 }
@@ -267,8 +270,15 @@ protected void async_read(mixed dummy,string s)
    if (has_value(buf, "\r\n\r\n") || has_value(buf,"\n\n"))
    {
       con->set_blocking();
-      ponder_answer();
+      if (ponder_answer() == -1)
+	async_reconnect();
    }
+}
+
+protected void async_reconnect()
+{
+  close_connection();
+  dns_lookup_async(host, async_got_host, port);
 }
 
 protected void async_write()
