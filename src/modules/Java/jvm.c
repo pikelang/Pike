@@ -3354,7 +3354,7 @@ static void f_monitor_create(INT32 args)
 
   get_all_args("Java.monitor->create()", args, "%o", &obj);
 
-  if == NULL)
+  if(get_storage(obj, jobj_program) == NULL)
     Pike_error("Bad argument 1 to create().\n");
 
 #ifdef _REENTRANT

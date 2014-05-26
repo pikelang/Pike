@@ -436,8 +436,7 @@ static void image_xface_encode(INT32 args)
 
   if (args<1 
       || TYPEOF(sp[-args]) != T_OBJECT
-      || !(img=
-	   get_storage(sp[-args].u.object,image_program))
+      || !(img=get_storage(sp[-args].u.object,image_program))
       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
     Pike_error("Image.XFace.encode: Illegal arguments\n");
   

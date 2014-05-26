@@ -1191,8 +1191,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     Pike_error("Wrong type object argument 2 (image)\n");
 
   if( cmapo &&
-      !(cmap=get_storage(cmapo,
-                                                  image_colortable_program)))
+      !(cmap=get_storage(cmapo, image_colortable_program)))
     Pike_error("Wrong type object argument 4 (colortable)\n");
 
   for(l=0; l<(unsigned int)tiles->size; l++)

@@ -2372,8 +2372,7 @@ void image_color(INT32 args)
       if (args>0 && TYPEOF(sp[-args]) == T_INT)
 	 rgb.r=rgb.b=rgb.g=sp[-args].u.integer;
       else if (args>0 && TYPEOF(sp[-args]) == T_OBJECT &&
-	       (cs =get_storage(sp[-args].u.object,
-							image_color_program)))
+	       (cs =get_storage(sp[-args].u.object, image_color_program)))
 	 rgb.r=cs->rgb.r,
 	 rgb.g=cs->rgb.g,
 	 rgb.b=cs->rgb.b;

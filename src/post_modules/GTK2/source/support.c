@@ -309,7 +309,7 @@ void *get_pgdk2object(struct object *from, struct program *type) {
   void *f;
   if (!from) 
     return NULL;
-  if(type)
+  if (type)
     f=get_storage( from, type );
   else
     f=from->storage; /* Add a warning? */
@@ -319,8 +319,7 @@ void *get_pgdk2object(struct object *from, struct program *type) {
 }
 
 void pgtk2_destruct(struct object *o) {
-  struct object_wrapper *ow=
-	   get_storage(o,pg2_object_program);
+  struct object_wrapper *ow=get_storage(o,pg2_object_program);
   if (ow) /* This should always be true. But let's add a check anyway. */
     ow->obj=NULL;
   if (o->refs>1)

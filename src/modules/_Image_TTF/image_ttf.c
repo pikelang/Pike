@@ -682,8 +682,7 @@ static void image_ttf_faceinstance_create(INT32 args)
       Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(face_s=
-	 get_storage(sp[-args].u.object,image_ttf_face_program)))
+       !(face_s=get_storage(sp[-args].u.object,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
 
    if ((res=TT_New_Instance(face_s->face,&(face_i->instance))))
@@ -712,8 +711,7 @@ static void image_ttf_faceinstance_set_height(INT32 args)
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
 
-   if (!(face_s=
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    ttf_instance_setc(face_s,face_i,h,"Image.TTF.FaceInstance->set_height()");
@@ -835,8 +833,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 
    int xmin=1000,xmax=-1000,pos=0;
 
-   if (!(face_s=
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
    if (args && TYPEOF(sp[-1]) == T_INT)
@@ -989,8 +986,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    unsigned char* pixmap;
    int maxcharwidth = 0;
 
-   if (!(face_s=
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    if(!TT_Get_Kerning_Directory( face_s->face, &kerning ))

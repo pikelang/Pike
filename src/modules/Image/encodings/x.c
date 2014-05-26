@@ -149,8 +149,7 @@ static void image_x_encode_truecolor(INT32 args)
       Pike_error("Image.X.encode_truecolor: illegal argument 1 (expected image object)\n");
    if (args>10)
       if (TYPEOF(sp[10-args]) != T_OBJECT ||
-	  !(nct=
-	    get_storage(sp[10-args].u.object,image_colortable_program)))
+	  !(nct=get_storage(sp[10-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
 	 
    if (TYPEOF(sp[1-args]) != T_INT)
@@ -752,8 +751,7 @@ void image_x_encode_pseudocolor(INT32 args)
        !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 1 (expected image object)\n");
    if (TYPEOF(sp[4-args]) != T_OBJECT ||
-       !(nct=
-	 get_storage(sp[4-args].u.object,image_colortable_program)))
+       !(nct=get_storage(sp[4-args].u.object,image_colortable_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 4 (expected colortable object)\n");
 
    if (args>5) {
@@ -832,8 +830,7 @@ static void image_x_decode_truecolor(INT32 args)
    if (args>12)
    {
       if (TYPEOF(sp[12-args]) != T_OBJECT ||
-	  !(nct=
-	    get_storage(sp[12-args].u.object,image_colortable_program)))
+	  !(nct=get_storage(sp[12-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.decode_truecolor: illegal argument 13, expected colortable\n");
       if (nct->type!=NCT_FLAT)
 	 Pike_error("Image.X.decode_truecolor: illegal argument 13, expected colortable in flat mode\n");
@@ -1048,8 +1045,7 @@ void image_x_decode_pseudocolor(INT32 args)
       if (TYPEOF(sp[i-args]) != T_INT)
 	 Pike_error("Image.X.decode_pseudocolor: illegal argument %d\n",i+1);
    if (TYPEOF(sp[6-args]) != T_OBJECT ||
-       !(nct=
-	 get_storage(ncto=sp[6-args].u.object,image_colortable_program)))
+       !(nct=get_storage(ncto=sp[6-args].u.object,image_colortable_program)))
       Pike_error("Image.X.decode_pseudocolor: illegal argument 7\n");
 
    if (nct->type!=NCT_FLAT)

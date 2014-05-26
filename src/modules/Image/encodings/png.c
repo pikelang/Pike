@@ -1181,7 +1181,7 @@ static void img_png_decode(INT32 args, int mode)
 	    push_object(clone_object(image_colortable_program,1));
 
 	    ct=get_storage(sp[-1].u.object,
-						   image_colortable_program);
+                           image_colortable_program);
 	    if (!ct)
 	       PIKE_ERROR("Image.PNG._decode",
 			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
@@ -1281,8 +1281,7 @@ static void img_png_decode(INT32 args, int mode)
 
 	    if (ihdr.type==3)
 	    {
-	       ct=
-		  get_storage(sp[-1].u.object,image_colortable_program);
+	       ct=get_storage(sp[-1].u.object,image_colortable_program);
 	       mapping_string_insert(m, param_palette, sp-1);
 	    }
 	    else
@@ -1567,8 +1566,7 @@ static void image_png_encode(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=
-	 get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
      SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
 
    if (!img->img)
@@ -1611,8 +1609,7 @@ static void image_png_encode(INT32 args)
 
       if (s && !(TYPEOF(*s) == T_INT && s->u.integer==0))
 	 if (TYPEOF(*s) != T_OBJECT ||
-	     !(ct=
-	       get_storage(s->u.object,image_colortable_program)))
+	     !(ct=get_storage(s->u.object,image_colortable_program)))
 	   PIKE_ERROR("Image.PNG.encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",
 		      sp, args);
