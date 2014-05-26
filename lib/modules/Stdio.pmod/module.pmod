@@ -15,10 +15,6 @@ inherit _Stdio;
 #define BE_WERR(X)
 #endif
 
-// STDIO_DIRECT_FD is a work in progress to get rid of Stdio.Fd_ref, where
-// Stdio.File et al instead inherit Stdio.Fd directly.
-#define STDIO_DIRECT_FD
-
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
 // currently opened from (see report_file_open_places). It's used
 // primarily when debugging on NT since an opened file can't be
@@ -136,9 +132,6 @@ class BlockFile
 //! @[Stdio.FILE]
 class File
 {
-#ifndef STDIO_DIRECT_FD
-  optional inherit Fd_ref;
-#else
   optional inherit Fd;
 
   // This is needed in case we get overloaded by strange code
@@ -147,8 +140,7 @@ class File
   {
     return File()->_fd;
   }
-#endif
-  
+
 #ifdef TRACK_OPEN_FILES
   /*static*/ int open_file_id = next_open_file_id++;
 #endif
@@ -605,20 +597,14 @@ class File
       required_properties=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
     if(Fd fd = ::pipe(required_properties))
     {
-#ifndef STDIO_DIRECT_FD
-      File o=File();
-      o->_fd=fd;
-#else
       File o = function_object(fd->read);
-#endif
       o->_setup_debug( "pipe", 0 );
       register_open_file ("pipe", open_file_id, backtrace());
       register_open_file ("pipe", o->open_file_id, backtrace());
       fix_internal_callbacks();
       return o;
-    }else{
-      return 0;
     }
+    return 0;
   }
 
 #if constant(_Stdio.__HAVE_OPENAT__)
@@ -635,19 +621,13 @@ class File
       mask = 0777;
     if(Fd fd = ::openat(filename, mode, mask))
     {
-#ifndef STDIO_DIRECT_FD
-      File o=File();
-      o->_fd=fd;
-#else
       File o = function_object(fd->read);
-#endif
       string path = combine_path(debug_file||"", filename);
       o->_setup_debug(path, mode, mask);
       register_open_file(path, o->open_file_id, backtrace());
       return o;
-    }else{
-      return 0;
     }
+    return 0;
   }
 #endif
 
@@ -694,12 +674,8 @@ class File
   //! @[open()], @[connect()], @[Stdio.FILE],
   protected void create(int|string|void file,void|string mode,void|int bits)
   {
-    if (zero_type(file)) {
-#ifndef STDIO_DIRECT_FD
-      _fd = Fd();
-#endif
+    if (zero_type(file))
       return;
-    }
 
     debug_file = file;  
     debug_mode = mode;
@@ -707,48 +683,20 @@ class File
     switch(file)
     {
       case "stdin":
-#ifndef STDIO_DIRECT_FD
-	_fd=_stdin;
-#ifdef __STDIO_DEBUG
-	__closed_backtrace=0;
-#endif
-#else
 	create(0, mode, bits);
-	return;
-#endif
-	break; /* ARGH, this missing break took 6 hours to find! /Hubbe */
+	break;
 
       case "stdout":
-#ifndef STDIO_DIRECT_FD
-	_fd=_stdout;
-#ifdef __STDIO_DEBUG
-	__closed_backtrace=0;
-#endif
-#else
 	create(1, mode, bits);
-	return;
-#endif
 	break;
 	
       case "stderr":
-#ifndef STDIO_DIRECT_FD
-	_fd=_stderr;
-#ifdef __STDIO_DEBUG
-	__closed_backtrace=0;
-#endif
-#else
 	create(2, mode, bits);
-	return;
-#endif
 	break;
 
       case 0..0x7fffffff:
-	 if (!mode) mode="rw";
-#ifndef STDIO_DIRECT_FD
-	_fd=Fd(file,mode);
-#else
+        if (!mode) mode="rw";
 	::create(file, mode);
-#endif
 	register_open_file ("fd " + file, open_file_id, backtrace());
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -756,9 +704,6 @@ class File
 	break;
 
       default:
-#ifndef STDIO_DIRECT_FD
-	_fd=Fd();
-#endif
 	is_file = 1;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -769,6 +714,7 @@ class File
 	   error("Failed to open %O mode %O : %s\n",
 		 file,mode,strerror(errno()));
 	register_open_file (file, open_file_id, backtrace());
+        break;
     }
   }
 
@@ -783,24 +729,7 @@ class File
   {
     BE_WERR("assign()\n");
     is_file = o->is_file;
-#ifndef STDIO_DIRECT_FD
-    if((program)Fd == (program)object_program(o))
-    {
-      _fd = o->dup();
-    }else{
-      File _o = [object(File)]o;
-      _fd = _o->_fd;
-      set_read_callback(_o->query_read_callback());
-      set_write_callback(_o->query_write_callback());
-      set_close_callback(_o->query_close_callback());
-      set_read_oob_callback(_o->query_read_oob_callback());
-      set_write_oob_callback(_o->query_write_oob_callback());
-      set_id(_o->query_id());
-    }
-#else
     o->dup2(_fd);
-    //error("FIXME!\n");
-#endif
     return 0;
   }
 
@@ -815,22 +744,7 @@ class File
   File dup()
   {
     BE_WERR("dup()\n");
-#ifndef STDIO_DIRECT_FD
-    File to = File();
-    to->is_file = is_file;
-    to->_fd = _fd;
-
-    to->set_read_callback(query_read_callback());
-    to->set_write_callback(query_write_callback());
-    to->set_close_callback(query_close_callback());
-    to->set_read_oob_callback(query_read_oob_callback());
-    to->set_write_oob_callback(query_write_oob_callback());
-    to->_setup_debug( debug_file, debug_mode, debug_bits );
-    to->set_id(query_id());
-    return to;
-#else
     return function_object(::dup()->read);
-#endif
   }
 
 
@@ -1597,7 +1511,6 @@ class Port
 			      this_program, debug_ip||"", debug_port );
   }
 
-#ifdef STDIO_DIRECT_FD
   //! Factory creating empty @[Fd] objects.
   //!
   //! This function is called by @[accept()] when it needs to create
@@ -1606,7 +1519,6 @@ class Port
   {
     return File()->_fd;
   }
-#endif
 
   //! @decl void create()
   //! @decl void create(int|string port)
@@ -1658,12 +1570,7 @@ class Port
   {
     if(object(Fd) x=::accept())
     {
-#ifndef STDIO_DIRECT_FD
-      File y=File();
-      y->_fd=x;
-#else
       File y = function_object(x->read);
-#endif
       y->_setup_debug( "socket", x->query_address() );
       return y;
     }
@@ -1684,13 +1591,11 @@ class FILE
 {
   inherit File : file;
 
-#ifdef STDIO_DIRECT_FD
   // This is needed since it was overloaded in File above.
   protected Fd fd_factory()
   {
     return FILE()->_fd;
   }
-#endif
 
   /* Private functions / buffers etc. */
 
@@ -1718,9 +1623,8 @@ class FILE
       }
       b+=s;
       return 1;
-    } else {
-      return 0;
     }
+    return 0;
   }
  
   inline private int get_data()
@@ -1943,37 +1847,23 @@ class FILE
     return res;
   }
 
-  //! @decl File pipe(int|void flags)
+  //! Same as @[Stdio.File()->pipe()], but returns an @[Stdio.FILE]
+  //! object.
   //!
-  //! Same as @[Stdio.File()->pipe()].
-  //!
-  //! @note
-  //!   Returns an @[Stdio.File] object, NOT an @[Stdio.FILE] object.
-  //!
-  //!   In future releases of Pike this will most likely change
-  //!   to returning an @[Stdio.FILE] object. This is already
-  //!   the case if @expr{STDIO_DIRECT_FD@} has been defined.
-
-  //! @ignore
-#ifndef STDIO_DIRECT_FD
-  File
-#else
-  FILE
-#endif
-  pipe(void|int flags)
+  //! @seealso
+  //!   @[Stdio.File()->pipe()]
+  FILE pipe(void|int flags)
   {
     bpos=0; cached_lines=({}); lp=0;
     b="";
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
 
-  //! @endignore
-
 #if constant(_Stdio.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
-  //! Same as @[Stdio.File()->openat()], but returns a @[Stdio.FILE]
+  //! Same as @[Stdio.File()->openat()], but returns an @[Stdio.FILE]
   //! object.
   //!
   //! @seealso
@@ -1984,22 +1874,16 @@ class FILE
       mask = 0777;
     if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
     {
-#ifndef STDIO_DIRECT_FD
-      FILE o=FILE();
-      o->_fd=fd;
-#else
       FILE o = function_object(fd->read);
-#endif
       string path = combine_path(debug_file||"", filename);
       o->_setup_debug(path, mode, mask);
       register_open_file(path, o->open_file_id, backtrace());
       return o;
-    }else{
-      return 0;
     }
+    return 0;
   }
 #endif
-  
+
   int assign(File|FILE foo)
   {
     bpos=0; cached_lines=({}); lp=0;
