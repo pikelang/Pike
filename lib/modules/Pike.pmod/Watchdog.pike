@@ -90,7 +90,6 @@ void print_debug()
 //! used. This is not normally called manually.
 void alarm_alarm_alarm()
 {
-#if constant(System.getrusage)
     if( System.getrusage()->utime < expected_cpu_time && (time()-last_seen) < delay*2 )
     {
         float cpus = (System.getrusage()->utime - expected_cpu_time + (delay*900))/1000.0;
@@ -105,7 +104,6 @@ void alarm_alarm_alarm()
         alarm( 1 );
 #endif
     }
-#endif
     really_trigger_watchdog_promise();
 }
 
@@ -157,10 +155,8 @@ protected void update_watchdog()
     last_seen = time();
     call_out( update_watchdog, min(delay/2.0,2.0) );
 
-#if constant(System.getrusage)
     // Do not trigger if we have not been using CPU as well.
     expected_cpu_time = System.getrusage()->utime + delay*900;
-#endif
 
     foreach( probes, function(void:bool) probe )
     {
