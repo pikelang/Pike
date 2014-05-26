@@ -918,8 +918,7 @@ static void sf_create(INT32 args)
   /* Check that we're called with the right kind of objects. */
   if (sf.to_file->prog == file_program) {
     sf.to = (struct my_file *)(sf.to_file->storage);
-  } else if (!(sf.to = get_storage(sf.to_file,
-						     file_program))) {
+  } else if (!(sf.to = get_storage(sf.to_file, file_program))) {
     struct svalue *sval;
     if (!(sval = get_storage(sf.to_file, file_ref_program)) ||
 	(TYPEOF(*sval) != T_OBJECT) ||
@@ -955,11 +954,9 @@ static void sf_create(INT32 args)
   if (sf.from_file) {
     if (sf.from_file->prog == file_program) {
       sf.from = (struct my_file *)(sf.from_file->storage);
-    } else if (!(sf.from = get_storage(sf.from_file,
-							 file_program))) {
+    } else if (!(sf.from = get_storage(sf.from_file, file_program))) {
       struct svalue *sval;
-      if (!(sval = get_storage(sf.from_file,
-						file_ref_program)) ||
+      if (!(sval = get_storage(sf.from_file, file_ref_program)) ||
 	  !(TYPEOF(*sval) != T_OBJECT) ||
 	!(sf.from = get_storage(sval->u.object, file_program))) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");

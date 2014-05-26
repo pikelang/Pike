@@ -275,7 +275,8 @@ static void debug_check_internals (struct my_file *f)
 {
   size_t ev;
 
-  if )
+  if (f->box.ref_obj->prog && file_program &&
+      !get_storage(f->box.ref_obj,file_program) )
     Pike_fatal ("ref_obj is not a file object.\n");
 
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)

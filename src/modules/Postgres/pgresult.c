@@ -170,7 +170,7 @@ static void f_create (INT32 args)
 {
 	char *storage;
 	check_all_args("postgres_result->create",args,BIT_OBJECT,0);
-	pgdebug("result->f_create.\n",args);
+	pgdebug("result->f_create(%d).\n",args);
 
 	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
 	if (!storage)

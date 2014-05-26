@@ -445,8 +445,7 @@ static void img_ras_encode(INT32 args)
 
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (ct=
-	  get_storage(s->u.object, image_colortable_program))==NULL)
+	 (ct=get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");
   }
 

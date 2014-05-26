@@ -1282,7 +1282,7 @@ static void f_stream_create(INT32 args) {
 
   dvbprog = Pike_sp[-1].u.object;
   Pike_sp--;
-  if( !dvbprog || !(dvbstor =get_storage( dvbprog, dvb_program )) )
+  if( !dvbprog || !(dvbstor = get_storage( dvbprog, dvb_program )) )
     Pike_error("This class cannot be instantiated directly\n");
 
   devname = mk_devname(DVB->cardn, DEMUXDEVICE);

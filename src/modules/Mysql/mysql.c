@@ -1164,8 +1164,8 @@ static void low_query(INT32 args, char *name, int flags)
     }
 
     /* Set the result. */
-    if ((!(res = 
-	   get_storage(o, mysql_result_program))) || res->result) {
+    if ((!(res = get_storage(o, mysql_result_program))) ||
+        res->result) {
       mysql_free_result(result);
       Pike_error("%s(): Bad mysql result object!\n", name);
     }
@@ -1550,8 +1550,8 @@ static void f_list_dbs(INT32 args)
     push_object(o = clone_object(mysql_result_program, 1));
 
     /* Set the result. */
-    if ((!(res = 
-	   get_storage(o, mysql_result_program))) || res->result) {
+    if ((!(res = get_storage(o, mysql_result_program))) ||
+        res->result) {
       mysql_free_result(result);
       Pike_error("Mysql.mysql->list_dbs(): Bad mysql result object!\n");
     }
@@ -1624,8 +1624,8 @@ static void f_list_tables(INT32 args)
     push_object(o = clone_object(mysql_result_program, 1));
 
     /* Set the result. */
-    if ((!(res = 
-	   get_storage(o, mysql_result_program))) || res->result) {
+    if ((!(res = get_storage(o, mysql_result_program))) ||
+        res->result) {
       mysql_free_result(result);
       Pike_error("Mysql.mysql->list_tables(): Bad mysql result object!\n");
     }
@@ -1811,8 +1811,8 @@ static void f_list_processes(INT32 args)
     push_object(o = clone_object(mysql_result_program, 1));
 
     /* Set the result. */
-    if ((!(res = 
-	   get_storage(o, mysql_result_program))) || res->result) {
+    if ((!(res = get_storage(o, mysql_result_program))) ||
+        res->result) {
       mysql_free_result(result);
       Pike_error("Mysql.mysql->list_processes(): Bad mysql result object!\n");
     }
