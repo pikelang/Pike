@@ -466,41 +466,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   }
 }
 
-static void zap_unfinished_program(struct program *p)
-{
-  int e;
-  debug_malloc_touch(p);
-  if(p->flags & PROGRAM_FIXED) return; /* allow natural zapping */
-  debug_malloc_touch(p);
-  if(p->parent)
-  {
-    free_program(p->parent);
-    p->parent=0;
-  }
-  for(e=0;e<p->num_constants;e++)
-  {
-    free_svalue(& p->constants[e].sval);
-    mark_free_svalue (&p->constants[e].sval);
-  }
-  
-  for(e=0;e<p->num_inherits;e++)
-  {
-    if(p->inherits[e].parent)
-    {
-      free_object(p->inherits[e].parent);
-      p->inherits[e].parent=0;
-    }
-    if(e)
-    {
-      if(p->inherits[e].prog)
-      {
-	free_program(p->inherits[e].prog);
-	p->inherits[e].prog=0;
-      }
-    }
-  }
-}
-
 /* force_encode == 0: Maybe dump the thing later, and only a forward
  * reference here (applies to programs only).
  *
@@ -2054,7 +2019,7 @@ static int my_extract_char(struct decode_data *data)
 
 static DECLSPEC(noreturn) void decode_error (
   struct decode_data *data, struct svalue *decoding, const char *msg, ...)
-  ATTRIBUTE((noreturn));
+    ATTRIBUTE((noinline,noreturn));
 
 static DECLSPEC(noreturn) void decode_error (
   struct decode_data *data, struct svalue *decoding, const char *msg, ...)
@@ -2065,8 +2030,7 @@ static DECLSPEC(noreturn) void decode_error (
   struct object *o = fast_clone_object (decode_error_program);
   struct decode_error_struct *dec =
     (struct decode_error_struct *) (o->storage + decode_error_offset);
-  struct generic_error_struct *gen =
-    (struct generic_error_struct *) get_storage (o, generic_error_program);
+  struct generic_error_struct *gen = get_storage (o, generic_error_program);
 
   ASSERT_THREAD_SWAPPED_IN();
 
@@ -2449,8 +2413,6 @@ static void zap_placeholder(struct object *placeholder)
   }
   free_object(placeholder);
 }
-
-static int init_placeholder(struct object *placeholder);
 
 
 #define SETUP_DECODE_MEMOBJ(TYPE, U, VAR, ALLOCATE,SCOUR) do {		\
@@ -4163,27 +4125,6 @@ decode_done:;
   data->depth -= 2;
 #endif
 }
-
-/* Placed after to prevent inlining */
-static int init_placeholder(struct object *placeholder)
-{
-  JMP_BUF rec;
-  /* Initialize the placeholder. */
-  if(SETJMP(rec))
-  {
-    dmalloc_touch_svalue(&throw_value);
-    call_handle_error();
-    zap_placeholder(placeholder);
-    UNSETJMP(rec);
-    return 1;
-  }else{
-    call_pike_initializers(placeholder,0);
-    UNSETJMP(rec);
-    return 0;
-  }
-}
-
-
 
 static struct decode_data *current_decode = NULL;
 
