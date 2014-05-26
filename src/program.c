@@ -11460,7 +11460,7 @@ void pop_compiler_frame(void)
 }
 
 
-PMOD_EXPORT char *get_inherit_storage(struct object *o, int inherit)
+PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit)
 {
   if (!o || !o->prog) return NULL;
 #ifdef PIKE_DEBUG
@@ -11488,11 +11488,7 @@ PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
   oid=o->id;
   pid=p->id;
   hval=(unsigned)oid*9248339 + (unsigned)pid;
-  hval%=GET_STORAGE_CACHE_SIZE;
-#ifdef PIKE_DEBUG
-  if(hval>GET_STORAGE_CACHE_SIZE)
-    Pike_fatal("hval>GET_STORAGE_CACHE_SIZE\n");
-#endif
+  hval&=GET_STORAGE_CACHE_SIZE-1;
   if(get_storage_cache[hval].oid == oid &&
      get_storage_cache[hval].pid == pid)
   {
@@ -11517,7 +11513,7 @@ PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
   return offset;
 }
 
-PMOD_EXPORT char *get_storage(struct object *o, struct program *p)
+PMOD_EXPORT void *get_storage(struct object *o, struct program *p)
 {
   ptrdiff_t offset;
 
