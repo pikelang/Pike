@@ -58,7 +58,7 @@ void set_cairo_context(Cairo.Context cr, float dpi_x, float dpi_y)
     struct cairo_mod_context *cc;
 
     get_all_args("set_cairo_context",args,"%o%f%f",&o,&x,&y);
-    if (!(cc = (struct cairo_mod_context *)get_storage(o1, cairo_program)))
+    if (!(cc = get_storage(o1, cairo_program)))
       Pike_error("Object is not derived from Cairo.Context");
     gtk_print_context_set_cairo_context(GTK_PRINT_CONTEXT(THIS->obj),
 			cc->ctx,x,y);

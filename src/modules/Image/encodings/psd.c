@@ -392,7 +392,7 @@ static void f_decode_image_channel( INT32 args )
   source = (unsigned char *)s->str;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
-  dst = ((struct image *)get_storage(io,image_program))->img;
+  dst = ((struct image*)get_storage(io,image_program))->img;
   for(y=0; y<w*h; y++)
   {
     dst->r = dst->g = dst->b = *(source++);
@@ -434,7 +434,7 @@ static void f_decode_image_data( INT32 args )
   source4 = source+w*h*3;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
-  dst = ((struct image *)get_storage(io,image_program))->img;
+  dst = ((struct image*)get_storage(io,image_program))->img;
   for(y=0; y<w*h; y++)
   {
     switch( d )
@@ -777,7 +777,7 @@ static void f_apply_cmap( INT32 args )
   get_all_args( "apply_cmap", args, "%o%S", &io, &cmap );
   if(cmap->len < 256*3)
     Pike_error("Invalid colormap resource\n");
-  if(!(i = (struct image *)get_storage( io, image_program )))
+  if(!(i = get_storage( io, image_program )))
     Pike_error("Invalid image object\n");
   n = i->xsize * i->ysize;
   d = i->img;

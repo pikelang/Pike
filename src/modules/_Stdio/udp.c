@@ -1251,8 +1251,7 @@ static void udp_set_backend (INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.UDP->set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
-  backend = (struct Backend_struct *)
-    get_storage (Pike_sp[-args].u.object, Backend_program);
+  backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
 

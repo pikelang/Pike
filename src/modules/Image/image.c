@@ -603,7 +603,7 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 *m=1;
 	 break;
       case T_OBJECT:
-	 img=(struct image*)get_storage(sp[arg-args-1].u.object,image_program);
+	 img=get_storage(sp[arg-args-1].u.object,image_program);
 	 if (!img) 
 	    Pike_error("create_method: argument %d (%s channel): "
 		  "not an image object\n",arg+1,name);
@@ -929,7 +929,7 @@ void image_create_method(INT32 args)
 
    /* on stack: "string" image */
    /* want: put that image in this, crap that image */
-   img=(struct image*)get_storage(sp[-1].u.object,image_program);
+   img=get_storage(sp[-1].u.object,image_program);
    THIS->img=img->img;
    img->img=NULL;
    pop_n_elems(2);
@@ -2065,7 +2065,7 @@ static void image_gradients(INT32 args)
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    d=img->img;
 
    if (args && TYPEOF(sp[-1]) == T_FLOAT)
@@ -2372,7 +2372,7 @@ void image_color(INT32 args)
       if (args>0 && TYPEOF(sp[-args]) == T_INT)
 	 rgb.r=rgb.b=rgb.g=sp[-args].u.integer;
       else if (args>0 && TYPEOF(sp[-args]) == T_OBJECT &&
-	       (cs = (struct color_struct *)get_storage(sp[-args].u.object,
+	       (cs =get_storage(sp[-args].u.object,
 							image_color_program)))
 	 rgb.r=cs->rgb.r,
 	 rgb.g=cs->rgb.g,
@@ -4014,7 +4014,7 @@ static void image_apply_curve_3( unsigned char curve[3][256] )
   push_int( THIS->xsize );
   push_int( THIS->ysize );
   o = clone_object( image_program, 2 );
-  d = ((struct image *)get_storage( o, image_program ))->img;
+  d = ((struct image*)get_storage( o, image_program ))->img;
   i = THIS->xsize*THIS->ysize;
   
   THREADS_ALLOW();
@@ -4037,7 +4037,7 @@ static void image_apply_curve_1( unsigned char curve[256] )
   push_int( THIS->xsize );
   push_int( THIS->ysize );
   o = clone_object( image_program, 2 );
-  d = ((struct image *)get_storage( o, image_program ))->img;
+  d = ((struct image*)get_storage( o, image_program ))->img;
   i = THIS->xsize*THIS->ysize;
   THREADS_ALLOW();
   for( ; i>0; i-- )
@@ -4057,7 +4057,7 @@ static void image_apply_curve_2( struct object *o,
 {
   int i;
   rgb_group *d;
-  d = ((struct image *)get_storage(o,image_program))->img;
+  d = ((struct image*)get_storage(o,image_program))->img;
   i = THIS->xsize*THIS->ysize;
 
   THREADS_ALLOW();
@@ -4161,7 +4161,7 @@ static void image_apply_curve( INT32 args )
          push_int( THIS->xsize );
          push_int( THIS->ysize );
          o = clone_object( image_program, 2 );
-         MEMCPY( ((struct image *)get_storage(o,image_program))->img, 
+         MEMCPY( ((struct image*)get_storage(o,image_program))->img, 
                  THIS->img, 
                  THIS->xsize*THIS->ysize*sizeof(rgb_group) );
        }

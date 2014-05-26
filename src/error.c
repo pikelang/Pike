@@ -903,8 +903,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
   const char *fmt, va_list *fmt_args)
 {
-  struct generic_error_struct *err =
-    (struct generic_error_struct *) get_storage (o, generic_error_program);
+  struct generic_error_struct *err = get_storage (o, generic_error_program);
 
 #ifdef PIKE_DEBUG
   if (!err)

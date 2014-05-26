@@ -286,7 +286,7 @@ void img_tim_decode(INT32 args, int header_only)
     push_int(w);
     push_int(h);
     o=clone_object(image_program,2);
-    img=(struct image*)get_storage(o,image_program);
+    img=get_storage(o,image_program);
     push_object(o);
     n++;
     
@@ -297,7 +297,7 @@ void img_tim_decode(INT32 args, int header_only)
       push_int(w);
       push_int(h);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       push_object(o);
       n++;
       

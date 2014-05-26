@@ -186,13 +186,13 @@ void img_bmp_encode(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.encode",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(o=sp[-args].u.object,image_program)))
+       !(img=get_storage(o=sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",1,"image object");
 
    if (args>1) {
       if (TYPEOF(sp[1-args]) == T_OBJECT)
       {
-	 if (!(nct=(struct neo_colortable*)
+	 if (!(nct=
 	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
 	    SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
 	 add_ref(oc);
@@ -209,7 +209,7 @@ void img_bmp_encode(INT32 args)
 	 if (parameter(sp+1-args, colortable_string, &v))
 	 {
 	    if (TYPEOF(*v) != T_OBJECT  ||
-		!(nct=(struct neo_colortable*)
+		!(nct=
 		  get_storage(oc=v->u.object,image_colortable_program)))
 	       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object at index \"colortable\"\n");
 	    add_ref(oc);
@@ -250,7 +250,7 @@ void img_bmp_encode(INT32 args)
 	    ref_push_object(o);
 	    push_int(1<<bpp);
 	    oc = clone_object(image_colortable_program, 2);
-	    if (!(nct=(struct neo_colortable*)
+	    if (!(nct=
 		  get_storage(oc, image_colortable_program))) {
 	      free_object(oc);
 	      Pike_error("Unexpected result from clone_object().\n");
@@ -279,7 +279,7 @@ void img_bmp_encode(INT32 args)
    apply(o,"mirrory",0);
    free_object(o);
    if (TYPEOF(sp[-1]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program))) {
+       !(img=get_storage(o=sp[-1].u.object,image_program))) {
       free_object(oc);
       Pike_error("Image.BMP.encode: weird result from ->mirrory()\n");
    }
@@ -739,7 +739,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 push_string(make_shared_binary_string((char *)s,(4<<bpp)));
 	 push_int(2);
 	 push_object(o=clone_object(image_colortable_program,2));
-	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+	 nct=get_storage(o,image_colortable_program);
 
 	 s+=(4<<bpp);
 	 len-=(4<<bpp);
@@ -752,7 +752,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 push_string(make_shared_binary_string((char *)s,(3<<bpp)));
 	 push_int(1);
 	 push_object(o=clone_object(image_colortable_program,2));
-	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+	 nct=get_storage(o,image_colortable_program);
 
 	 s+=(3<<bpp);
 	 len-=(3<<bpp);
@@ -766,7 +766,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    push_int(xsize);
    push_int(abs(ysize));
    push_object(o=clone_object(image_program,2));
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    n++;
 
    j = int_from_32bit(os+10);

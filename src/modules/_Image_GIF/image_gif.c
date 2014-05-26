@@ -211,7 +211,7 @@ void image_gif_header_block(INT32 args)
       globalpalette=0;
    }
    else if (TYPEOF(sp[2-args]) == T_OBJECT &&
-	    (nct=(struct neo_colortable*)
+	    (nct=
 	        get_storage(sp[2-args].u.object,image_colortable_program)))
    {
       numcolors=image_colortable_size(nct);
@@ -733,12 +733,12 @@ CHRONO("gif render_block begin");
    if (args<2) 
       Pike_error("Image.GIF.render_block(): Too few arguments\n");
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.GIF.render_block(): Illegal argument 1 (expected image object)\n");
    else if (!img->img)
       Pike_error("Image.GIF.render_block(): given image has no image\n");
    if (TYPEOF(sp[1-args]) != T_OBJECT ||
-       !(nct=(struct neo_colortable*)
+       !(nct=
   	     get_storage(sp[1-args].u.object,image_colortable_program)))
       Pike_error("Image.GIF.render_block(): Illegal argument 2 (expected colortable object)\n");
 
@@ -771,7 +771,7 @@ CHRONO("gif render_block begin");
    if (args>=6)
    {
       if (TYPEOF(sp[5-args]) == T_OBJECT &&
-	  (alpha=(struct image*)get_storage(sp[5-args].u.object,image_program)))
+	  (alpha=get_storage(sp[5-args].u.object,image_program)))
       {
 	 if (!alpha->img)
 	    Pike_error("Image.GIF.render_block(): given alpha channel has no image\n");
@@ -1033,7 +1033,7 @@ void _image_gif_encode(INT32 args,int fs)
       Pike_error("Image.GIF.encode(): Too few arguments\n");
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(imgobj=sp[-args].u.object,
+       !(img=get_storage(imgobj=sp[-args].u.object,
 					image_program)))
       Pike_error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
    add_ref(imgobj);
@@ -1050,7 +1050,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    ref_push_object(imgobj);
 	    push_int(n);
 	    nctobj=clone_object(image_colortable_program,2);
-	    nct=(struct neo_colortable*)
+	    nct=
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
@@ -1060,7 +1060,7 @@ void _image_gif_encode(INT32 args,int fs)
       }
       else if (TYPEOF(sp[1-args]) != T_OBJECT)
 	 Pike_error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
-      else if ((nct=(struct neo_colortable*)
+      else if ((nct=
 		get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
       {
 	add_ref(nctobj);
@@ -1074,7 +1074,7 @@ void _image_gif_encode(INT32 args,int fs)
    /* check transparency arguments */
    if (args-arg>0) {
       if (TYPEOF(sp[arg-args]) == T_OBJECT &&
-	  (alpha=(struct image*)
+	  (alpha=
 	   get_storage(alphaobj=sp[arg-args].u.object,image_program)))
       {
 	add_ref(alphaobj);
@@ -1121,7 +1121,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    push_object(imgobj);
 	    push_int(256);
 	    nctobj=clone_object(image_colortable_program,2);
-	    nct=(struct neo_colortable*)
+	    nct=
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
@@ -1143,7 +1143,7 @@ void _image_gif_encode(INT32 args,int fs)
      ref_push_object(imgobj);
       if (alpha) push_int(255); else push_int(256);
       nctobj=clone_object(image_colortable_program,2);
-      nct=(struct neo_colortable*)
+      nct=
 	 get_storage(nctobj,image_colortable_program);
       if (!nct)
 	 Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
@@ -1670,7 +1670,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	s,len,obits,ncto,dest,alpha,dlen,tidx);
 #endif
 
-   nct=(struct neo_colortable*)get_storage(ncto,image_colortable_program);
+   nct=get_storage(ncto,image_colortable_program);
    if (!nct || nct->type!=NCT_FLAT) return; /* uh? */
 
    if (len<2) return;
@@ -1932,14 +1932,14 @@ void image_gif__decode(INT32 args)
 	       push_int(b->item[3].u.integer);
 	       push_int(b->item[4].u.integer);
 	       o=clone_object(image_program,2);
-	       img=(struct image*)get_storage(o,image_program);
+	       img=get_storage(o,image_program);
 	       push_object(o);
 	       if (transparency)
 	       {
 		  push_int(b->item[3].u.integer);
 		  push_int(b->item[4].u.integer);
 		  o2=clone_object(image_program,2);
-		  aimg=(struct image*)get_storage(o2,image_program);
+		  aimg=get_storage(o2,image_program);
 		  push_object(o2);
 		  if (lcto)
 		     _gif_decode_lzw((unsigned char *)
@@ -2092,11 +2092,11 @@ void image_gif_decode(INT32 args)
 	  && (b=a->item[n].u.array)->size==11
 	  && TYPEOF(b->item[0]) == T_INT 
 	  && b->item[0].u.integer==GIF_RENDER
-	  && TYPEOF(b->item[3]) == T_OBJECT
+          && TYPEOF(b->item[3]) == T_OBJECT
 	  && get_storage(b->item[3].u.object, image_program) )
       {
 	 if (TYPEOF(b->item[4]) == T_OBJECT)
-	    alpha=(struct image*)get_storage(b->item[4].u.object,
+	    alpha=get_storage(b->item[4].u.object,
 					     image_program);
 	 else
 	    alpha=NULL;
@@ -2178,11 +2178,11 @@ void image_gif_decode_layers(INT32 args)
 	  && (b=a->item[n].u.array)->size==11
 	  && TYPEOF(b->item[0]) == T_INT
 	  && b->item[0].u.integer==GIF_RENDER
-	  && TYPEOF(b->item[3]) == T_OBJECT
+          && TYPEOF(b->item[3]) == T_OBJECT
 	  && get_storage(b->item[3].u.object, image_program) )
       {
 	 if (TYPEOF(b->item[4]) == T_OBJECT)
-	    alpha=(struct image*)get_storage(b->item[4].u.object,
+	    alpha=get_storage(b->item[4].u.object,
 					     image_program);
 	 else
 	    alpha=NULL;
@@ -2311,7 +2311,7 @@ void image_gif__encode_render(INT32 args)
    {
       struct neo_colortable *nct;
 
-      nct=(struct neo_colortable*)
+      nct=
 	 get_storage(a->item[4].u.object,image_colortable_program);
       if (!nct)
       {

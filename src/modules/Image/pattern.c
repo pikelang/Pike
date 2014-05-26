@@ -531,7 +531,7 @@ void image_random(INT32 args)
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    d=img->img;
    if (args) f_random_seed(args);
 
@@ -561,7 +561,7 @@ void image_randomgrey(INT32 args)
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    d=img->img;
    if (args) f_random_seed(args);
 

@@ -81,7 +81,7 @@ struct source *source_system_memory_make( struct svalue *s,
   res = calloc( 1, sizeof( struct sm_source ) );
   if( !res ) return NULL;
 
-  if( !(res->mem = (void*)get_storage( s->u.object, shm_program ) ) )
+  if( !(res->mem = get_storage( s->u.object, shm_program ) ) )
   {
     free(res);
     return 0;

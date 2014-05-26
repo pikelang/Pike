@@ -4807,7 +4807,7 @@ static void html_clone(INT32 args)
 
    push_object(o=clone_object_from_object(THISOBJ,args));
 
-   p=(struct parser_html_storage*)get_storage(o,parser_html_program);
+   p=get_storage(o,parser_html_program);
 
    if (p->maptag) free_mapping(p->maptag);
    add_ref(p->maptag=THIS->maptag);

@@ -76,7 +76,7 @@ void pgtk2_index_stack(char *what) {
 
 int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b) {
   struct color_struct *col;
-  col=(struct color_struct *)get_storage(o,image_color_program);
+  col=get_storage(o,image_color_program);
   if (!col)
     return 0;
   *r=col->rgbl.r/(COLORLMAX/65535);
@@ -94,7 +94,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
 
   TIMER_INIT("Getting extents");
 
-  img_data=(struct image*)get_storage(img, image_program);
+  img_data=get_storage(img, image_program);
 
   /* 1a: create the actual image... */
   x = img_data->xsize;
@@ -299,7 +299,7 @@ GObject *get_pg2object(struct object *from, struct program *type) {
   struct object_wrapper * o;
   if (!from)
     return NULL;
-  o=(struct object_wrapper *)get_storage(from,type);
+  o=get_storage(from,type);
   if (!o)
     return 0;
   return o->obj;
@@ -309,7 +309,7 @@ void *get_pgdk2object(struct object *from, struct program *type) {
   void *f;
   if (!from) 
     return NULL;
-  if (type)
+  if(type)
     f=get_storage( from, type );
   else
     f=from->storage; /* Add a warning? */
@@ -320,7 +320,7 @@ void *get_pgdk2object(struct object *from, struct program *type) {
 
 void pgtk2_destruct(struct object *o) {
   struct object_wrapper *ow=
-	   (struct object_wrapper *)get_storage(o,pg2_object_program);
+	   get_storage(o,pg2_object_program);
   if (ow) /* This should always be true. But let's add a check anyway. */
     ow->obj=NULL;
   if (o->refs>1)

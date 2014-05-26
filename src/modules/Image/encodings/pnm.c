@@ -158,7 +158,7 @@ void img_pnm_decode(INT32 args)
    push_int(y);
 
    o=clone_object(image_program,2);
-   new=(struct image*)get_storage(o,image_program);
+   new=get_storage(o,image_program);
    if (!new) 
       Pike_error("Image.PNM.decode(): cloned image object isn't an image (internal)\n");
 
@@ -279,7 +279,7 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P1(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P1(): Given image is empty\n");
@@ -321,7 +321,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    struct object *o = NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+       !(img=get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P2(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P2(): Given image is empty\n");
@@ -361,7 +361,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    struct object *o = NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+       !(img=get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P3(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P3(): Given image is empty\n");
@@ -401,7 +401,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P4(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P4(): Given image is empty\n");
@@ -446,7 +446,7 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P5(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P5(): Given image is empty\n");
@@ -477,7 +477,7 @@ void img_pnm_encode_P6(INT32 args)
    struct image *img=NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P6(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P6(): Given image is empty\n");
@@ -517,7 +517,7 @@ void img_pnm_encode_ascii(INT32 args)
    void (*func)(INT32);
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_ascii(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_ascii(): Given image is empty\n");
@@ -550,7 +550,7 @@ void img_pnm_encode_binary(INT32 args)
    void (*func)(INT32);
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_binary(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_binary(): Given image is empty\n");

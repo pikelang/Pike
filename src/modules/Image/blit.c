@@ -291,7 +291,7 @@ void image_paste(INT32 args)
 
    if (args<1
        || TYPEOF(sp[-args]) != T_OBJECT
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       || !(img=get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste()\n");
    if (!THIS->img) return;
@@ -370,7 +370,7 @@ void image_paste_alpha(INT32 args)
    if (args<2
        || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
+       || !(img=get_storage(sp[-args].u.object,image_program))
        || TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste_alpha()\n");
@@ -459,11 +459,11 @@ CHRONO("image_paste_mask init");
    if (args<2)
       Pike_error("illegal number of arguments to image->paste_mask()\n");
    if (TYPEOF(sp[-args]) != T_OBJECT
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       || !(img=get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste_mask()\n");
    if (TYPEOF(sp[1-args]) != T_OBJECT
-       || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
+       || !(mask=get_storage(sp[1-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->paste_mask()\n");
    if (!THIS->img) return;
@@ -565,7 +565,7 @@ void image_paste_alpha_color(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
    if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       || !(mask=get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste_alpha_color()\n");
    if (!THIS->img) return;

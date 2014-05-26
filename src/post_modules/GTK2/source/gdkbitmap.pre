@@ -31,7 +31,7 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
     struct object *o;
     struct image *img;
     get_all_args("create",args,"%o",&o);
-    img=(struct image*)get_storage(o, image_program);
+    img=get_storage(o, image_program);
     x = img->xsize;
     y = img->ysize;
 

@@ -503,8 +503,8 @@ int complex_svalue_is_true( const struct svalue *s )
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
       /* Trampoline */
-      struct pike_trampoline *tramp = (struct pike_trampoline *)
-	get_storage(s->u.object, pike_trampoline_program);
+      struct pike_trampoline *tramp =
+        get_storage(s->u.object, pike_trampoline_program);
       if (!tramp || !tramp->frame || !tramp->frame->current_object ||
 	  !tramp->frame->current_object->prog) {
 	/* Uninitialized trampoline, or trampoline to destructed object. */
@@ -571,8 +571,8 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
       /* Trampoline */
-      struct pike_trampoline *tramp = (struct pike_trampoline *)
-	get_storage(s->u.object, pike_trampoline_program);
+      struct pike_trampoline *tramp =
+        get_storage(s->u.object, pike_trampoline_program);
       if (!tramp || !tramp->frame || !tramp->frame->current_object ||
 	  !tramp->frame->current_object->prog) {
 	/* Uninitialized trampoline, or trampoline to destructed object. */
@@ -772,9 +772,9 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	(a->u.object->prog == pike_trampoline_program) &&
 	(b->u.object->prog == pike_trampoline_program)) {
       /* Trampoline. */
-      struct pike_trampoline *a_tramp = (struct pike_trampoline *)
-	get_storage(a->u.object, pike_trampoline_program);
-      struct pike_trampoline *b_tramp = (struct pike_trampoline *)
+      struct pike_trampoline *a_tramp =
+    get_storage(a->u.object, pike_trampoline_program);
+      struct pike_trampoline *b_tramp =
 	get_storage(b->u.object, pike_trampoline_program);
       if (a_tramp == b_tramp) return 1;
       if (!a_tramp || !b_tramp) return 0;
@@ -1386,8 +1386,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  if (prog == pike_trampoline_program) {
 	    /* Trampoline */
-	    struct pike_trampoline *tramp = (struct pike_trampoline *)
-	      get_storage(obj, pike_trampoline_program);
+	    struct pike_trampoline *tramp =
+                get_storage(obj, pike_trampoline_program);
 	    if (!tramp || !tramp->frame || !tramp->frame->current_object ||
 		!tramp->frame->current_object->prog) {
 	      /* Uninitialized trampoline, or

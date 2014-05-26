@@ -582,7 +582,7 @@ void image_operator_equal(INT32 args)
    else
    {
       if (TYPEOF(sp[-args]) != T_OBJECT
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program))) {
+       || !(oper=get_storage(sp[-args].u.object,image_program))) {
 	/* `== must be able to compare anything with anything -
 	 * shouldn't throw an error here. */
 	pop_n_elems (args);
@@ -668,7 +668,7 @@ void image_operator_lesser(INT32 args)
    {
       if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       || !(oper=get_storage(sp[-args].u.object,image_program)))
 	 Pike_error("image->`<: illegal argument 2\n");
 
       if (!oper->img)
@@ -743,7 +743,7 @@ void image_operator_greater(INT32 args)
    {
       if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       || !(oper=get_storage(sp[-args].u.object,image_program)))
 	 Pike_error("image->`>: illegal argument 2\n");
 
       if (!oper->img)

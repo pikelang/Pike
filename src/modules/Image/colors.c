@@ -284,8 +284,7 @@ static void make_colors(void)
       copy_shared_string(c[i].pname,sp[-1].u.string);
 
       push_object(clone_object(image_color_program,0)); 
-      cs=(struct color_struct*)
-	 get_storage(sp[-1].u.object,image_color_program);
+      cs=get_storage(sp[-1].u.object,image_color_program);
       cs->rgb.r=(COLORTYPE)c[i].r;
       cs->rgb.g=(COLORTYPE)c[i].g;
       cs->rgb.b=(COLORTYPE)c[i].b;
@@ -954,8 +953,7 @@ static void image_color_equal(INT32 args)
    if (TYPEOF(sp[-1]) == T_OBJECT)
    {
       struct color_struct *other;
-      other=(struct color_struct*)
-	 get_storage(sp[-1].u.object,image_color_program);
+      other=get_storage(sp[-1].u.object,image_color_program);
       if (other&&
 	  other->rgbl.r==THIS->rgbl.r &&
 	  other->rgbl.g==THIS->rgbl.g &&
@@ -1179,8 +1177,7 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
 {
    if (TYPEOF(*v) == T_OBJECT)
    {
-      struct color_struct *cs=(struct color_struct*)
-	 get_storage(v->u.object,image_color_program);
+      struct color_struct *cs=get_storage(v->u.object,image_color_program);
 
       if (cs) 
       {
@@ -1207,8 +1204,7 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
       image_make_color(1);
       if (TYPEOF(sp[-1]) == T_OBJECT)
       {
-	 struct color_struct *cs=(struct color_struct*)
-	    get_storage(sp[-1].u.object,image_color_program);
+	 struct color_struct *cs=get_storage(sp[-1].u.object,image_color_program);
 	 *rgb=cs->rgb;
 	 pop_stack();
 	 return 1;
@@ -1505,8 +1501,7 @@ static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
 
    push_object(clone_object(image_color_program,0));
 
-   cs=(struct color_struct*)
-      get_storage(sp[-1].u.object,image_color_program);
+   cs=get_storage(sp[-1].u.object,image_color_program);
 
    cs->rgbl.r=(INT32)r;
    cs->rgbl.g=(INT32)g;
@@ -1552,8 +1547,7 @@ void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
    push_object(clone_object(image_color_program,0));
 
-   cs=(struct color_struct*)
-      get_storage(sp[-1].u.object,image_color_program);
+   cs=get_storage(sp[-1].u.object,image_color_program);
 
    cs->rgb.r=(COLORTYPE)r;
    cs->rgb.g=(COLORTYPE)g;

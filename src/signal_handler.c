@@ -1292,7 +1292,7 @@ static void call_pid_status_callback(struct callback *cb, void *pid, void *UNUSE
   struct pid_status *p;
   remove_callback(cb);
   if (!o) return;
-  if(!(p=(struct pid_status *)get_storage(o, pid_status_program))) {
+  if(!(p=get_storage(o, pid_status_program))) {
     free_object(o);
     return;
   }
@@ -1325,8 +1325,8 @@ static void report_child(int pid,
 	struct object *o;
 	PROC_FPRINTF((stderr, "[%d] Found pid object for pid %d: %p\n",
 		      getpid(), (int)pid, s->u.object));
-	if((p=(struct pid_status *)get_storage((o = s->u.object),
-					       pid_status_program)))
+	if((p=get_storage((o = s->u.object),
+                          pid_status_program)))
 	{
 	  if (!SAFE_IS_ZERO(&p->callback)) {
 	    /* Call the callback from a proper pike thread... */
@@ -4349,7 +4349,7 @@ void Pike_f_fork(INT32 args)
 
     o=low_clone(pid_status_program);
     call_c_initializers(o);
-    p=(struct pid_status *)get_storage(o,pid_status_program);
+    p=get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;
     push_object(o);
@@ -4591,8 +4591,8 @@ static void f_kill(INT32 args)
   case T_OBJECT:
   {
     struct pid_status *p;
-    if((p=(struct pid_status *)get_storage(Pike_sp[-args].u.object,
-					  pid_status_program)))
+    if((p=get_storage(Pike_sp[-args].u.object,
+                      pid_status_program)))
     {
       proc=p->handle;
       break;

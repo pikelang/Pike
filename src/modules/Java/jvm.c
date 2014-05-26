@@ -140,7 +140,7 @@ struct att_storage {
 
 
 #define THIS_JVM ((struct jvm_storage *)(Pike_fp->current_storage))
-#define THAT_JOBJ(o) ((struct jobj_storage *)get_storage((o),jobj_program))
+#define THAT_JOBJ(o) (get_storage((o),jobj_program))
 #define THIS_JOBJ ((struct jobj_storage *)(Pike_fp->current_storage))
 #define THIS_JARRAY ((struct jarray_storage *)(Pike_fp->current_storage+jarray_stor_offs))
 #define THIS_METHOD ((struct method_storage *)(Pike_fp->current_storage))
@@ -192,8 +192,7 @@ static const char *pike_jni_error(jint errcode)
 
 static JNIEnv *jvm_procure_env(struct object *jvm)
 {
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jvm, jvm_program);
   if(j) {
 
 #ifdef _REENTRANT
@@ -307,8 +306,7 @@ static void push_java_anyobj(jobject o, struct object *jvm, JNIEnv *env)
 {
   struct object *oo;
   struct jobj_storage *jo;
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jvm, jvm_program);
   jobject o2;
 
   if((!j)||(!o)) {
@@ -379,8 +377,7 @@ static void jobj_gc_recurse(struct object *o)
 static void f_jobj_cast(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jo->jvm, jvm_program);
   JNIEnv *env;
   jstring jstr;
 
@@ -423,7 +420,7 @@ static void f_jobj_eq(INT32 args)
   jboolean res;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jo2 = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jo2 = get_storage(Pike_sp[-args].u.object,
 					       jobj_program))==NULL) {
     pop_n_elems(args);
     push_int(0);
@@ -444,8 +441,7 @@ static void f_jobj_hash(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jo->jvm, jvm_program);
 
   pop_n_elems(args);
   if((env=jvm_procure_env(jo->jvm))) {
@@ -464,7 +460,7 @@ static void f_jobj_instance(INT32 args)
 
   get_all_args("Java.obj->is_instance_of()", args, "%o", &cls);
 
-  if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
+  if((c = get_storage(cls, jclass_program)) == NULL)
     Pike_error("Bad argument 1 to is_instance_of().\n");
 
   if((env=jvm_procure_env(jo->jvm))) {
@@ -560,7 +556,7 @@ static void f_method_create(INT32 args)
 
   get_all_args("Java.method->create()", args, "%S%S%o", &name, &sig, &class);
 
-  if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
+  if((c = get_storage(class, jclass_program)) == NULL)
     Pike_error("Bad argument 3 to create().\n");
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
@@ -748,7 +744,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
       break;
     case PIKE_T_OBJECT:
       if(*sig=='[') {
-	if(!(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
+	if(!(jo=get_storage(sv->u.object,jobj_program)))
 	  jargs_error(jvm, env);
 	else {
 	  if(i+1<args) {
@@ -760,7 +756,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 	}
       } else {
 	if(*sig++!='L' ||
-	   !(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
+	   !(jo=get_storage(sv->u.object,jobj_program)))
 	  jargs_error(jvm, env);
 	else {
 	  if(i+1<args)
@@ -925,7 +921,7 @@ static void f_call_virtual(INT32 args)
     Pike_error("wrong number of arguments for method.\n");
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jo = get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to `().\n");
 
@@ -1037,7 +1033,7 @@ static void f_call_nonvirtual(INT32 args)
     Pike_error("wrong number of arguments for method.\n");
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jo = get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to call_nonvirtual.\n");
 
@@ -1189,7 +1185,7 @@ static void f_field_create(INT32 args)
   } else
     get_all_args("Java.field->create()", args, "%S%S%o", &name, &sig, &class);
 
-  if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
+  if((c = get_storage(class, jclass_program)) == NULL)
     Pike_error("Bad argument 3 to create().\n");
 
   f->field = 0;
@@ -1241,7 +1237,7 @@ static void f_field_set(INT32 args)
     Pike_error("Incorrect number of arguments to set.\n");
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jo = get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to set.\n");
 
@@ -1301,7 +1297,7 @@ static void f_field_get(INT32 args)
   struct jobj_storage *jo;
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jo = get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to get.\n");
 
@@ -2270,8 +2266,7 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
 {
   union anything *a;
   struct generic_error_struct *gen_err;
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jvm, jvm_program);
 
   if(!j)
     return;
@@ -2588,7 +2583,7 @@ static void f_natives_create(INT32 args)
 
   get_all_args("Java.natives->create()", args, "%a%o", &arr, &cls);
 
-  if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
+  if((c = get_storage(cls, jclass_program)) == NULL)
     Pike_error("Bad argument 2 to create().\n");
 
   if(n->num_methods)
@@ -2669,7 +2664,7 @@ static void f_is_assignable_from(INT32 args)
   jboolean iaf;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-     (jc = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
+     (jc = get_storage(Pike_sp[-args].u.object,
 					      jclass_program))==NULL)
     Pike_error("illegal argument 1 to is_assignable_from\n");
 
@@ -2686,8 +2681,7 @@ static void f_is_assignable_from(INT32 args)
 static void f_throw_new(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
-  struct jvm_storage *jj =
-    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct jvm_storage *jj = get_storage(jo->jvm, jvm_program);
   JNIEnv *env;
   char *cn;
 
@@ -2728,8 +2722,7 @@ static void f_alloc(INT32 args)
 static void f_new_array(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
-  struct jvm_storage *j =
-    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct jvm_storage *j = get_storage(jo->jvm, jvm_program);
   struct object *o;
   JNIEnv *env;
   jvalue i;
@@ -2885,7 +2878,7 @@ static void javaarray_subarray(struct object *jvm, struct object *oo,
   jclass jocls, eltcls;
   struct jvm_storage *j;
 
-  if((j = (struct jvm_storage *)get_storage(jvm, jvm_program))==NULL) {
+  if((j = get_storage(jvm, jvm_program))==NULL) {
     push_int(0);
     return;
   }
@@ -3244,8 +3237,7 @@ static void exit_att_struct(struct object *o)
   struct att_storage *att = THIS_ATT;
 
   if(att->jvm) {
-    struct jvm_storage *j =
-      (struct jvm_storage *)get_storage(att->jvm, jvm_program);
+    struct jvm_storage *j = get_storage(att->jvm, jvm_program);
     if(att->env) {
       THREAD_T me = th_self();
       if(!th_equal(me, att->tid))
@@ -3288,7 +3280,7 @@ static void f_att_create(INT32 args)
 
   get_all_args("Java.attachment->create()", args, "%o", &j);
 
-  if((jvm = (struct jvm_storage *)get_storage(j, jvm_program))==NULL)
+  if((jvm = get_storage(j, jvm_program))==NULL)
     Pike_error("Bad argument 1 to create().\n");
 
   att->jvm = j;
@@ -3362,7 +3354,7 @@ static void f_monitor_create(INT32 args)
 
   get_all_args("Java.monitor->create()", args, "%o", &obj);
 
-  if(get_storage(obj, jobj_program) == NULL)
+  if == NULL)
     Pike_error("Bad argument 1 to create().\n");
 
 #ifdef _REENTRANT

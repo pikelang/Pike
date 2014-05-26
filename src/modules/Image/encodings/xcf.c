@@ -1184,14 +1184,14 @@ void image_xcf_f__decode_tiles( INT32 args )
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 
-  if( !(i = (struct image *)get_storage( io, image_program )))
+  if( !(i = get_storage( io, image_program )))
     Pike_error("Wrong type object argument 1 (image)\n");
 
-  if(ao && !(a = (struct image *)get_storage( ao, image_program )))
+  if(ao && !(a = get_storage( ao, image_program )))
     Pike_error("Wrong type object argument 2 (image)\n");
 
   if( cmapo &&
-      !(cmap=(struct neo_colortable *)get_storage(cmapo,
+      !(cmap=get_storage(cmapo,
                                                   image_colortable_program)))
     Pike_error("Wrong type object argument 4 (colortable)\n");
 

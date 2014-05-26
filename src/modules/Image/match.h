@@ -58,8 +58,7 @@ void INAME(INT32 args)
 	Pike_error("Illegal argument 1 to image->"NAME"\n");
 
       if ((TYPEOF(sp[1-args]) != T_OBJECT)
-	  || !(needle=
-	       (struct image*)get_storage(sp[1-args].u.object,image_program)))
+	  || !(needle=get_storage(sp[1-args].u.object,image_program)))
 	Pike_error("Illegal argument 2 to image->"NAME"()\n");
 
       if ((needle->xsize>haystack->xsize)||
@@ -73,8 +72,7 @@ void INAME(INT32 args)
       else
 	{
 	  if ((TYPEOF(sp[2-args]) != T_OBJECT) ||
-		   !(haystack_cert=
-		     (struct image*)get_storage(sp[2-args].u.object,image_program)))
+		   !(haystack_cert=get_storage(sp[2-args].u.object,image_program)))
 	    Pike_error("Illegal argument 3 to image->"NAME"()\n");
 	  else
 	    if ((haystack->xsize!=haystack_cert->xsize)||
@@ -89,8 +87,7 @@ void INAME(INT32 args)
 	      haystack_cert=0;
 	    }
 	  else if ((TYPEOF(sp[3-args]) != T_OBJECT) ||
-		   !(needle_cert=
-		     (struct image*)get_storage(sp[3-args].u.object,image_program)))
+		   !(needle_cert=get_storage(sp[3-args].u.object,image_program)))
 	    Pike_error("Illegal argument 4 to image->"NAME"()\n");
 	  else
 	    {
@@ -109,8 +106,7 @@ void INAME(INT32 args)
 	      else 
 		Pike_error("Illegal argument 6 to image->"NAME"()\n");
 	      if ((TYPEOF(sp[4-args]) != T_OBJECT) ||
-		  !(haystack_avoid=
-		    (struct image*)get_storage(sp[4-args].u.object,image_program)))
+		  !(haystack_avoid=get_storage(sp[4-args].u.object,image_program)))
 		Pike_error("Illegal argument 5 to image->"NAME"()\n");
 	      else
 		if ((haystack->xsize!=haystack_avoid->xsize)||
@@ -121,7 +117,7 @@ void INAME(INT32 args)
       push_int(this->xsize);
       push_int(this->ysize);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       imgi=img->img;
 
 

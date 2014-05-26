@@ -669,8 +669,7 @@ static void port_set_backend (INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.Port->set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
-  backend = (struct Backend_struct *)
-    get_storage (Pike_sp[-args].u.object, Backend_program);
+  backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
 
@@ -774,7 +773,7 @@ void init_stdio_port(void)
 
 int fd_from_portobject( struct object *p )
 {
-  struct port *po = (struct port *)get_storage( p, port_program );
+  struct port *po = get_storage( p, port_program );
   if(!po) return -1;
   return po->box.fd;
 }

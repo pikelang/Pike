@@ -585,14 +585,14 @@ void image_pvr_f_encode(INT32 args)
   get_all_args("Image.PVR.encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
 					  "%o%m":"%o"), &imgo, &optm);
 
-  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+  if((img=get_storage(imgo, image_program))==NULL)
     Pike_error("Image.PVR.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	 (alpha=get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s = simple_mapping_string_lookup(optm, "global_index"))!=NULL &&
        !IS_UNDEFINED(s)) {
@@ -1165,7 +1165,7 @@ void img_pvr_decode(INT32 args,int header_only)
      push_int(w);
      push_int(h);
      o=clone_object(image_program,2);
-     img=(struct image*)get_storage(o,image_program);
+     img=get_storage(o,image_program);
      push_object(o);
      n++;
 
@@ -1188,7 +1188,7 @@ void img_pvr_decode(INT32 args,int header_only)
        push_int(w);
        push_int(h);
        o=clone_object(image_program,2);
-       img=(struct image*)get_storage(o,image_program);
+       img=get_storage(o,image_program);
        push_object(o);
        n++;
        

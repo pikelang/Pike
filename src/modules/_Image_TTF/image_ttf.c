@@ -267,8 +267,8 @@ static void image_ttf_make(INT32 args)
 */
 
 #define THISOBJ (Pike_fp->current_object)
-#define THISf ((struct image_ttf_face_struct*)get_storage(THISOBJ,image_ttf_face_program))
-#define THISi ((struct image_ttf_faceinstance_struct*)get_storage(THISOBJ,image_ttf_faceinstance_program))
+#define THISf (get_storage(THISOBJ,image_ttf_face_program))
+#define THISi (get_storage(THISOBJ,image_ttf_faceinstance_program))
 
 static void image_ttf_face_exit(struct object *o)
 {
@@ -682,7 +682,7 @@ static void image_ttf_faceinstance_create(INT32 args)
       Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(face_s=(struct image_ttf_face_struct*)
+       !(face_s=
 	 get_storage(sp[-args].u.object,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
 
@@ -712,7 +712,7 @@ static void image_ttf_faceinstance_set_height(INT32 args)
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
+   if (!(face_s=
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
@@ -835,7 +835,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 
    int xmin=1000,xmax=-1000,pos=0;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
+   if (!(face_s=
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
@@ -989,7 +989,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    unsigned char* pixmap;
    int maxcharwidth = 0;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
+   if (!(face_s=
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
@@ -1136,7 +1136,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       d=img->img;
 
       for (a=0; a<args; a++)

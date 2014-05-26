@@ -919,7 +919,7 @@ void push_stat(PIKE_STAT_T *s)
    struct object *o;
    struct stat_storage *stor;
    o=clone_object(stat_program,0);
-   stor=(struct stat_storage*)get_storage(o,stat_program);
+   stor=get_storage(o,stat_program);
    stor->s=*s;
    push_object(o);
 }
