@@ -2483,11 +2483,7 @@ string simplify_path(string path)
 //!
 void perror(string s)
 {
-#if constant(strerror)
   stderr->write(s+": "+strerror(predef::errno())+"\n");
-#else
-  stderr->write(s+": errno: "+predef::errno()+"\n");
-#endif
 }
 
 /*
