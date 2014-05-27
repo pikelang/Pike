@@ -1068,86 +1068,6 @@ __deprecated__ mapping(string:array(string(8bit))) `sni_certificates()
   return ([]);
 }
 
-#if 0
-
-//! A function which will select an acceptable client certificate for
-//! presentation to a remote server. This function will receive the
-//! SSL context, an array of acceptable certificate types, and a list
-//! of DNs of acceptable certificate authorities. This function should
-//! return an array of strings containing a certificate chain, with
-//! the client certificate first, (and the root certificate last, if
-//! applicable.)
-function(.context,array(int),array(string(8bit)):array(string(8bit)))
-  client_certificate_selector = internal_select_client_certificate;
-
-//! A function which will select an acceptable server certificate for
-//! presentation to a client. This function will receive the SSL
-//! context, and an array of server names, if provided by the client.
-//! This function should return an array of strings containing a
-//! certificate chain, with the client certificate first, (and the
-//! root certificate last, if applicable.)
-//!
-//! The default implementation will select a certificate chain for a
-//! given server based on values contained in @[sni_certificates].
-function (.context,array(string(8bit)):array(string(8bit)))
-  select_server_certificate_func = internal_select_server_certificate;
-
-//! A function which will select an acceptable server key for
-//! presentation to a client. This function will receive the SSL
-//! context, and an array of server names, if provided by the client.
-//! This function should return an object matching the certificate for
-//! the server hostname.
-//!
-//! The default implementation will select the key for a given server
-//! based on values contained in @[sni_keys].
-function (.context,array(string):object(Crypto.Sign)) select_server_key_func
-  = internal_select_server_key;
-
-private array(string(8bit))
-  internal_select_client_certificate(.context context,
-				     array(int) acceptable_types,
-				     array(string) acceptable_authority_dns)
-{
-  if( !context->client_certificates ||
-      !sizeof(context->client_certificates) )
-    return ({});
-
-  // FIXME: Create a cache for the certificate objects.
-  array(mapping(string:mixed)) c = ({});
-  foreach(context->client_certificates; int i; array(string) chain)
-  {
-    if(sizeof(chain))
-      c += ({ (["cert":Standards.X509.decode_certificate(chain[0]),
-                "chain":i ]) });
-  }
-
-  string wantedtype;
-  mapping(int:string) cert_types = ([
-    AUTH_rsa_sign : "rsa",
-    AUTH_dss_sign : "dss",
-    AUTH_ecdsa_sign : "ecdsa",
-  ]);
-
-  foreach(acceptable_types, int t)
-  {
-    wantedtype = cert_types[t];
-
-    foreach(c, mapping(string:mixed) cert)
-    {
-      Standards.X509.TBSCertificate crt =
-        [object(Standards.X509.TBSCertificate)]cert->cert;
-      if(crt->public_key->type == wantedtype)
-        return context->client_certificates[[int]cert->chain];
-    }
-  }
-
-  // FIXME: Check acceptable_authority_dns.
-  acceptable_authority_dns;
-  return ({});
-}
-
-#endif /* 0 */
-
 //! Compatibility.
 //! @deprecated find_cert
 __deprecated__ Crypto.DSA `dsa()
@@ -1161,11 +1081,6 @@ __deprecated__ void `dsa=(Crypto.DSA k)
 {
   error("The old DSA API is not supported anymore.\n");
 }
-
-#if 0
-//! Parameters for dh keyexchange.
-Cipher.DHKeyExchange dh_ke;
-#endif
 
 //! Set @[preferred_suites] to RSA based methods.
 //!
