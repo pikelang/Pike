@@ -926,8 +926,15 @@ class TBSCertificate
     if( o->type_name!="SEQUENCE" )
       return 0;
     Sequence s = [object(Sequence)]o;
-    if( sizeof(s)<1 || sizeof(s)>2 || s[0]->type_name!="BOOLEAN" )
+    if( sizeof(s)==0 )
+    {
+      ext_basicConstraints = 1;
+      ext_basicConstraints_cA = 0;
+      return 1;
+    }
+    if( sizeof(s)>2 || s[0]->type_name!="BOOLEAN" )
       return 0;
+
     if( sizeof(s)==2 )
     {
       if( s[1]->type_name!="INTEGER" || s[0]->value==0 || s[1]->value<0 )
@@ -937,6 +944,9 @@ class TBSCertificate
       // isn't set in key usage. We need to check that at a higher
       // level though.
     }
+    else
+      ext_basicConstraints_pathLenConstraint = 0;
+
     ext_basicConstraints = 1;
     ext_basicConstraints_cA = s[0]->value;
     return 1;
@@ -1284,7 +1294,7 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   add("subjectKeyIdentifier",
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ));
   add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
-  add("basicConstraints", Sequence(({Boolean(0)})), 1);
+  add("basicConstraints", Sequence(({})), 1);
 
   return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
@@ -1309,7 +1319,7 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign ca_key,
   if(!extensions) extensions = ([]);
   // FIXME: authorityKeyIdentifier
   add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
-  add("basicConstraints", Sequence(({Boolean(0)})), 1);
+  add("basicConstraints", Sequence(({})), 1);
   return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
