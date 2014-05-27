@@ -2,6 +2,12 @@
 #pragma strict_types
 #define COMPATIBILITY
 
+#ifdef ASN1_DEBUG
+#define DBG werror
+#else
+#define DBG(X ...)
+#endif
+
 //! Decodes a DER object.
 
 //! Primitive unconstructed ASN1 data type.
@@ -102,9 +108,7 @@ class Constructed
   int len;
   string(0..255) contents;
 
-#ifdef ASN1_DEBUG
-  werror("decoding raw_tag %x\n", raw_tag);
-#endif
+  DBG("decoding raw_tag %x\n", raw_tag);
 
   if ( (raw_tag & 0x1f) == 0x1f)
     error("High tag numbers is not supported\n");
@@ -113,14 +117,10 @@ class Constructed
   if (len & 0x80)
     len = data->get_uint(len & 0x7f);
 
-#ifdef ASN1_DEBUG
-  werror("len : %d\n", len);
-#endif
+  DBG("len : %d\n", len);
   contents = data->get_fix_string(len);
 
-#ifdef ASN1_DEBUG
-  werror("contents: %O\n", contents);
-#endif
+  DBG("contents: %O\n", contents);
 
   int tag = .Types.make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
 
@@ -130,10 +130,7 @@ class Constructed
   {
     /* Constructed encoding */
 
-#ifdef ASN1_DEBUG
-    werror("Decoding constructed\n");
-#endif
-
+    DBG("Decoding constructed\n");
     array(.Types.Object) elements = ({ });
     ADT.struct struct = ADT.struct(contents);
 
@@ -145,15 +142,11 @@ class Constructed
       if (((raw_tag & 0xc0) == 0x80) && (sizeof(elements) == 1)) {
 	// Context-specific constructed compound with a single element.
 	// ==> Probably a TaggedType.
-#ifdef ASN1_DEBUG
-	werror("Probable tagged type.\n");
-#endif
+	DBG("Probable tagged type.\n");
 	return .Types.MetaExplicit(2, raw_tag & 0x1f)(elements[0]);
       }
 
-#ifdef ASN1_DEBUG
-      werror("Unknown constructed type.\n");
-#endif
+      DBG("Unknown constructed type.\n");
       return constructed(tag, contents, elements);
     }
 
@@ -166,9 +159,7 @@ class Constructed
     // record the decoded object
     for(i = 0; !struct->is_empty(); i++)
     {
-#ifdef ASN1_DEBUG
-      werror("Element %d\n", i);
-#endif
+      DBG("Element %d\n", i);
       res->decode_constructed_element
 	(i, der_decode(struct,
 		       res->element_types(i, types)));
@@ -176,9 +167,8 @@ class Constructed
     return res->end_decode_constructed(i);
   }
 
-#ifdef ASN1_DEBUG
-  werror("Decoding Primitive\n");
-#endif
+  DBG("Decoding Primitive\n");
+
   // Primitive encoding
   return p ? p()->decode_primitive(contents, this_object(), types)
     : Primitive(tag, contents);
