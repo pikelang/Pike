@@ -882,10 +882,6 @@ static void f_error_create(INT32 args)
   } while (0)
 
 
-#define ERROR_COPY_REF(STRUCT,X) \
-  add_ref( ERROR_STRUCT(STRUCT,o)->X=X )
-
-
 /* This prepares the passed object o, which is assumed to inherit
  * generic_error_program, and throws it:
  *
