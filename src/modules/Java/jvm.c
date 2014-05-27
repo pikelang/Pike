@@ -140,7 +140,7 @@ struct att_storage {
 
 
 #define THIS_JVM ((struct jvm_storage *)(Pike_fp->current_storage))
-#define THAT_JOBJ(o) (get_storage((o),jobj_program))
+#define THAT_JOBJ(o) ((struct jobj_storage *)get_storage((o),jobj_program))
 #define THIS_JOBJ ((struct jobj_storage *)(Pike_fp->current_storage))
 #define THIS_JARRAY ((struct jarray_storage *)(Pike_fp->current_storage+jarray_stor_offs))
 #define THIS_METHOD ((struct method_storage *)(Pike_fp->current_storage))
