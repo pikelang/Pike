@@ -464,9 +464,9 @@ void low_image_tiff_decode( struct buffer *buf,
     push_int(w);
     push_int(h);
     res->alpha = clone_object(image_program, 2);
-    da = get_storage(res->alpha,image_program)->img;
+    da = ((struct image *)get_storage(res->alpha,image_program))->img;
   }
-  di = get_storage(res->img,image_program)->img;
+  di = ((struct image *)get_storage(res->img,image_program))->img;
   
   for(i=0; i<h*w; i++)
   {
