@@ -225,16 +225,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   }							\
 }while(0)
 
-/* Like adddata, but allows null pointers */
-
-#define adddata3(S) do {			\
-  if(S) {					\
-    adddata(S);                                 \
-  } else {					\
-    code_entry(TAG_INT, 0, data);			\
-  }						\
-}while(0)
-
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
 #ifdef ENCODE_DEBUG
@@ -2094,13 +2084,6 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error(data, NULL, "Wrong bits (%d).\n", what & TAG_MASK);	\
     (Y)=num;								\
   } while(0);
-
-#define getdata2(S,L) do {						\
-      if(sizeof(S[0])*(L) > (size_t)(data->len - data->ptr))		\
-	decode_error(data, NULL, "String range error.\n");		\
-      MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
-      data->ptr+=sizeof(S[0])*(L);					\
-  }while(0)
 
 #if PIKE_BYTEORDER == 4321
 #define BITFLIP(S)

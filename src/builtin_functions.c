@@ -4919,7 +4919,6 @@ PMOD_EXPORT void f_sleep(INT32 args)
 }
 
 #undef FIX_LEFT
-#undef GET_TIME_ELAPSED
 #undef TIME_ELAPSED
 
 /*! @decl void delay(int|float s)
