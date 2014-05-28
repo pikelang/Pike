@@ -102,6 +102,9 @@ protected private inherit _Charset;
 //! @endul
 //!
 //! +359 more.
+//!
+//! @note
+//!   In Pike 7.8 and earlier this module was named @[Locale.Charset].
 
 //! Virtual base class for charset decoders.
 //! @example
