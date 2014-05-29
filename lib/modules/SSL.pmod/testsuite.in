@@ -447,7 +447,7 @@ test_do([[
 
     int state;
 
-    int trigged = 10;
+    int trigged = 20;
 
     string fail;
 
