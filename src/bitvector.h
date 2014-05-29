@@ -20,7 +20,7 @@ static const char logTable[256] = {
 };
 #undef LT
 
-static INLINE unsigned INT32 clz32(unsigned INT32 i) {
+static INLINE unsigned INT32 __attribute__((unused)) clz32(unsigned INT32 i) {
 #ifdef HAS___BUILTIN_CLZ
     return i ? __builtin_clz(i) : 32;
 #elif defined(HAS__BIT_SCAN_REVERSE)
@@ -51,7 +51,7 @@ static INLINE unsigned INT32 clz32(unsigned INT32 i) {
 #define clz16(i) (clz32(i) - 16)
 #define clz8(i) (clz32(i) - 24)
 
-static INLINE unsigned INT32 ctz32(unsigned INT32 i) {
+static INLINE unsigned INT32 __attribute__((unused)) ctz32(unsigned INT32 i) {
 #ifdef HAS___BUILTIN_CTZ
     return i ? __builtin_ctz(i) : 32;
 #elif defined(HAS__BIT_SCAN_FORWARD)
@@ -77,7 +77,7 @@ static INLINE unsigned INT32 ctz32(unsigned INT32 i) {
 #define ctz8(i) (i ? ctz32(i) : 8)
 
 
-static INLINE unsigned INT32 bswap32(unsigned INT32 x) {
+static INLINE unsigned INT32 __attribute__((unused)) bswap32(unsigned INT32 x) {
 #ifdef HAS___BUILTIN_BSWAP32
     return __builtin_bswap32(x);
 #elif defined(HAS__BSWAP)
@@ -92,7 +92,7 @@ static INLINE unsigned INT32 bswap32(unsigned INT32 x) {
 
 #ifdef INT64
 
-static INLINE unsigned INT32 clz64(unsigned INT64 i) {
+static INLINE unsigned INT32 __attribute__((unused)) clz64(unsigned INT64 i) {
 # if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 64;
 # elif SIZEOF_LONG_LONG == 8 && defined(HAS___BUILTIN_CLZLL)
@@ -127,7 +127,7 @@ static INLINE unsigned INT32 clz64(unsigned INT64 i) {
 # endif
 }
 
-static INLINE unsigned INT32 ctz64(unsigned INT64 i) {
+static INLINE unsigned INT32 __attribute__((unused)) ctz64(unsigned INT64 i) {
 # if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CTZL)
     return i ? __builtin_ctzl(i) : 64;
 # elif SIZEOF_LONG_LONG == 8 && defined(HAS___BUILTIN_CTZLL)
@@ -151,7 +151,7 @@ static INLINE unsigned INT32 ctz64(unsigned INT64 i) {
 # endif
 }
 
-static INLINE unsigned INT64 bswap64(unsigned INT64 x) {
+static INLINE unsigned INT64 __attribute__((unused)) bswap64(unsigned INT64 x) {
 #ifdef HAS___BUILTIN_BSWAP64
     return __builtin_bswap64(x);
 #elif defined(HAS__BSWAP64)
@@ -163,7 +163,7 @@ static INLINE unsigned INT64 bswap64(unsigned INT64 x) {
 #endif
 }
 
-static INLINE unsigned INT64 round_up64(unsigned INT64 v) {
+static INLINE unsigned INT64 __attribute__((unused)) round_up64(unsigned INT64 v) {
     unsigned INT64 i;
 
     if (!v) return 0;
@@ -171,21 +171,21 @@ static INLINE unsigned INT64 round_up64(unsigned INT64 v) {
     return (unsigned INT64)1 << (64 - clz64(v));
 }
 
-static INLINE unsigned INT32 ffs64(unsigned INT64 v) {
+static INLINE unsigned INT32 __attribute__((unused)) ffs64(unsigned INT64 v) {
     return ctz64(v) + 1;
 }
 
-static INLINE unsigned INT32 fls64(unsigned INT64 v) {
+static INLINE unsigned INT32 __attribute__((unused)) fls64(unsigned INT64 v) {
     return 64 - clz64(v);
 }
 
 /* returns -1 for 0 */
-static INLINE unsigned INT32 log2_u64(unsigned INT64 v) {
+static INLINE unsigned INT32 __attribute__((unused)) log2_u64(unsigned INT64 v) {
     return fls64(v) - 1;
 }
 #endif /* INT64 */
 
-static INLINE unsigned INT32 round_up32(unsigned INT32 v) {
+static INLINE unsigned INT32 __attribute__((unused)) round_up32(unsigned INT32 v) {
     unsigned INT32 i;
 
     if (!v) return 0;
@@ -193,16 +193,16 @@ static INLINE unsigned INT32 round_up32(unsigned INT32 v) {
     return 1U << (32 - clz32(v));
 }
 
-static INLINE unsigned INT32 ffs32(unsigned INT32 v) {
+static INLINE unsigned INT32 __attribute__((unused)) ffs32(unsigned INT32 v) {
     return ctz32(v) + 1;
 }
 
-static INLINE unsigned INT32 fls32(unsigned INT32 v) {
+static INLINE unsigned INT32 __attribute__((unused)) fls32(unsigned INT32 v) {
     return 32 - clz32(v);
 }
 
 /* returns -1 for 0 */
-static INLINE unsigned INT32 log2_u32(unsigned INT32 v) {
+static INLINE unsigned INT32 __attribute__((unused)) log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
 

@@ -644,7 +644,7 @@ struct program
 
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 #ifdef PIKE_DEBUG
-static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
+static INLINE int __attribute__((unused)) CHECK_IDREF_RANGE (int x, const struct program *p)
 {
   if (x < 0 || x >= p->num_identifier_references) {
     dump_program_tables(p, 4);
@@ -1070,7 +1070,7 @@ void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
 
-static INLINE int FIND_LFUN(struct program * p, int lfun) {
+static INLINE int __attribute__((unused)) FIND_LFUN(struct program * p, int lfun) {
 #ifdef PIKE_DEBUG
     dmalloc_touch(struct program*, p);
     if (lfun < 0) return find_lfun_fatal(p, lfun);

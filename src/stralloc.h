@@ -124,7 +124,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #ifndef PIKE_DEBUG
 static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
 
-static INLINE p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+static INLINE p_wchar2 __attribute__((unused)) generic_extract (const void *str, int size, ptrdiff_t pos)
 {
 /* this gives better code than a lot of other versions I have tested.
 
@@ -137,7 +137,7 @@ expanded code for the oldINDEX_CHARP.
   return ((p_wchar2 *)str)[pos];
 }
 
-static INLINE p_wchar2 index_shared_string(const struct pike_string *s,  ptrdiff_t pos)
+static INLINE p_wchar2 __attribute__((unused)) index_shared_string(const struct pike_string *s,  ptrdiff_t pos)
 {
   return generic_extract(s->str,s->size_shift,pos);
 }
@@ -181,7 +181,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 #define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
 #endif
 
-static INLINE PCHARP MKPCHARP(const void *ptr, int shift)
+static INLINE PCHARP __attribute__((unused)) MKPCHARP(const void *ptr, int shift)
 {
   PCHARP tmp;
   tmp.ptr=(p_wchar0 *)ptr;
@@ -473,14 +473,14 @@ PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
 /* Compat alias. */
 #define do_really_free_pike_string do_free_unlinked_pike_string
 
-static INLINE void string_builder_binary_strcat(struct string_builder *s,
+static INLINE void __attribute__((unused)) string_builder_binary_strcat(struct string_builder *s,
 						const char *str, ptrdiff_t len)
 {
   string_builder_binary_strcat0 (s, (const p_wchar0 *) str, len);
 }
 
 /* Note: Does not work 100% correctly with shift==2 strings. */
-static INLINE int string_has_null( struct pike_string *x )
+static INLINE int __attribute__((unused)) string_has_null( struct pike_string *x )
 {
     INT32 min;
     if( !x->len ) return 0;
