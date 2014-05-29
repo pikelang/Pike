@@ -152,39 +152,39 @@ struct mem_searcher
  * The purpose of this function is to avoid dead store elimination in cases when
  * sensitive data has to be cleared from memory.
  */
-static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
+static INLINE void __attribute__((unused)) * guaranteed_memset(void * p, int c, size_t n) {
     volatile char * _p = (char *)p;
     while (n--) *_p++ = c;
     return (void *)p;
 }
 
-static INLINE unsigned INT64 get_unaligned64(const void * ptr) {
+static INLINE unsigned INT64 __attribute__((unused)) get_unaligned64(const void * ptr) {
     unsigned INT64 v;
     memcpy(&v, ptr, 8);
     return v;
 }
 
-static INLINE void set_unaligned64(void * ptr, unsigned INT64 v) {
+static INLINE void __attribute__((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static INLINE unsigned INT64 get_unaligned32(const void * ptr) {
+static INLINE unsigned INT64 __attribute__((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;
 }
 
-static INLINE void set_unaligned32(void * ptr, unsigned INT32 v) {
+static INLINE void __attribute__((unused)) set_unaligned32(void * ptr, unsigned INT32 v) {
     memcpy(ptr, &v, 4);
 }
 
-static INLINE unsigned INT16 get_unaligned16(const void * ptr) {
+static INLINE unsigned INT16 __attribute__((unused)) get_unaligned16(const void * ptr) {
     unsigned INT16 v;
     memcpy(&v, ptr, 2);
     return v;
 }
 
-static INLINE void set_unaligned16(void * ptr, unsigned INT16 v) {
+static INLINE void __attribute__((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
     memcpy(ptr, &v, 2);
 }
 

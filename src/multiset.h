@@ -149,7 +149,7 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static INLINE union msnode *msnode_check (union msnode *x)
+static INLINE union msnode __attribute__((unused)) *msnode_check (union msnode *x)
   {return x;}
 PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #else
