@@ -2066,14 +2066,13 @@ protected int ssl_write_callback (int called_from_real_backend)
   write_to_stream:
     do {
       if (sizeof (write_buffer)) {
-	string output = write_buffer[0];
 	int written;
 #ifdef SIMULATE_CLOSE_PACKET_WRITE_FAILURE
 	if (conn->state & CONNECTION_local_closing)
 	  written = -1;
 	else
 #endif
-	  written = stream->write (output);
+	  written = stream->write (write_buffer);
 
 	if (written < 0
 #if 0
@@ -2148,10 +2147,16 @@ protected int ssl_write_callback (int called_from_real_backend)
 	  break write_to_stream;
 	}
 
-	if (written == sizeof (output))
-	  write_buffer = write_buffer[1..];
-	else
-	  write_buffer[0] = output[written..];
+	for (int bytes = written; bytes > 0;) {
+	  if (bytes >= sizeof(write_buffer[0])) {
+	    bytes -= sizeof(write_buffer[0]);
+	    write_buffer = write_buffer[1..];
+	  } else {
+	    write_buffer[0] = write_buffer[0][bytes..];
+	    bytes = 0;
+	    break;
+	  }
+	}
 
 	SSL3_DEBUG_MSG ("ssl_write_callback: Wrote %d bytes (%d strings left)\n",
 			written, sizeof (write_buffer));
