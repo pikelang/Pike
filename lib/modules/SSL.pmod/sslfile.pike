@@ -1737,33 +1737,42 @@ protected int queue_write()
 // has sent a fatal alert packet (not close notify) for some reason
 // and therefore nullified the connection).
 {
-  int|string res = conn && conn->to_write();
+  if (!conn) return -1;
+
+  if ((conn->state & CONNECTION_closing) && sizeof(write_buffer)) {
+    // Wait for all data to be sent before sending the close packet.
+    return 0;
+  }
+
+  int|string res = conn->to_write();
 
 #ifdef SSL3_DEBUG_TRANSPORT
   werror ("queue_write: To write: %O\n", res);
 #endif
 
-  if (stringp (res)) {
-    if (res == "")
-      SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
-		      sizeof (write_buffer));
+  if (!stringp(res)) {
+    SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
+		    res == 1 ? "normally" : "abruptly");
+    return res;
+  }
 
-    else {
-      int was_empty = !sizeof (write_buffer);
-      write_buffer += ({res});
-      SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
-		      sizeof (res), sizeof (write_buffer));
-      if (was_empty && stream)
-	update_internal_state();
-    }
-
+  if (res == "") {
+    SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
+		    sizeof (write_buffer));
     return 0;
   }
 
-  SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
-		  res == 1 ? "normally" : "abruptly");
+  int was_empty = !sizeof (write_buffer);
+  write_buffer += ({ res });
 
-  return res;
+  SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
+		  sizeof (res), sizeof (write_buffer));
+  if (was_empty && stream)
+    update_internal_state();
+  SSL3_DEBUG_MSG ("queue_write: Returning 0 (%d strings buffered)\n",
+		  sizeof(write_buffer));
+
+  return 0;
 }
 
 protected int direct_write()
