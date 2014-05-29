@@ -1018,14 +1018,6 @@ class KeyExchangeECDHE
 
 #endif /* Crypto.ECC.Curve */
 
-#if 0
-class mac_none
-{
-  /* Dummy MAC algorithm */
-  string hash(string data, int seq_num) { return ""; }
-}
-#endif
-
 //! MAC using SHA.
 //!
 //! @note

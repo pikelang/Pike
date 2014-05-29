@@ -778,13 +778,6 @@ Stdio.File shutdown()
 
     write_buffer = ({});
 
-#if 0
-    accept_callback = 0;
-    read_callback = 0;
-    write_callback = 0;
-    close_callback = 0;
-#endif
-
     if (got_extra_read_call_out > 0)
       real_backend->remove_call_out (ssl_read_callback);
     got_extra_read_call_out = 0;
@@ -1120,18 +1113,12 @@ void set_callbacks (void|function(mixed, string:int) read,
 
     if (!zero_type(read))
       read_callback = read;
+
     if (!zero_type(write))
       write_callback = write;
 
     if (!zero_type(close))
       close_callback = close;
-
-#if 0
-    if (!zero_type(read_oob))
-      read_oob_callback = read_oob;
-    if (!zero_type (write_oob_cb))
-      write_oob_callback = write_oob;
-#endif
 
     if (!zero_type(accept))
       accept_callback = accept;
@@ -2074,14 +2061,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 #endif
 	  written = stream->write (write_buffer);
 
-	if (written < 0
-#if 0
-#ifdef __NT__
-	    // You don't want to know.. (Bug observed in Pike 0.6.132.)
-	    && stream->errno() != 1
-#endif
-#endif
-	   ) {
+	if (written < 0 ) {
 #ifdef SIMULATE_CLOSE_PACKET_WRITE_FAILURE
 	  if (conn->state & CONNECTION_local_closing)
 	    cb_errno = System.EPIPE;
