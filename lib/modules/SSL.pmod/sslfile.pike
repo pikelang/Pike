@@ -1739,36 +1739,42 @@ protected int queue_write()
 {
   if (!conn) return -1;
 
-  if ((conn->state & CONNECTION_closing) && sizeof(write_buffer)) {
-    // Wait for all data to be sent before sending the close packet.
-    return 0;
-  }
+  // Estimate how much data there is in the write_buffer.
+  int got = sizeof(write_buffer) &&
+    (sizeof(write_buffer[-1]) * sizeof(write_buffer));
 
-  int|string res = conn->to_write();
+  int buffer_limit = 16384;
+  if (conn->state & CONNECTION_closing) buffer_limit = 1;
+
+  while (got < buffer_limit) {
+    int|string res = conn->to_write();
 
 #ifdef SSL3_DEBUG_TRANSPORT
-  werror ("queue_write: To write: %O\n", res);
+    werror ("queue_write: To write: %O\n", res);
 #endif
 
-  if (!stringp(res)) {
-    SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
-		    res == 1 ? "normally" : "abruptly");
-    return res;
+    if (!stringp(res)) {
+      SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
+		      res == 1 ? "normally" : "abruptly");
+      return res;
+    }
+
+    if (res == "") {
+      SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
+		      sizeof (write_buffer));
+      break;
+    }
+
+    int was_empty = !sizeof (write_buffer);
+    write_buffer += ({ res });
+    got += sizeof(res);
+
+    SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
+		    sizeof (res), sizeof (write_buffer));
+    if (was_empty && stream)
+      update_internal_state();
   }
 
-  if (res == "") {
-    SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
-		    sizeof (write_buffer));
-    return 0;
-  }
-
-  int was_empty = !sizeof (write_buffer);
-  write_buffer += ({ res });
-
-  SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
-		  sizeof (res), sizeof (write_buffer));
-  if (was_empty && stream)
-    update_internal_state();
   SSL3_DEBUG_MSG ("queue_write: Returning 0 (%d strings buffered)\n",
 		  sizeof(write_buffer));
 
