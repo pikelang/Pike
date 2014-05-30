@@ -26,20 +26,14 @@ static size_t gobble(const struct pike_string *s)
 struct hash_entry *hash_lookup(const struct hash_table *h,
                                const struct pike_string *s)
 {
-  struct hash_entry *e, **prev, **base;
+  struct hash_entry *e;
 
   if(!h) return 0;
-  base = prev = h->htable + (gobble(s) & h->mask);
-  for( ;(e = *prev); prev= &e->next)
+  e = h->htable[gobble(s) & h->mask];
+  for( ; e; e = e->next)
   {
     if(s == e->s)
     {
-      /* Teleport entry to beginning of line */
-      *prev = e->next;
-      e->next = *base;
-      *base = e;
-      /* Entry arrives in a puff of smoke. */
-
       return e;
     }
   }
