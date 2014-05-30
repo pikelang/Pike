@@ -219,6 +219,7 @@ Identifier ce_id = Identifier(2, 5, 29);
 // RFC 3280
 Identifier pkix_id = Identifier(1, 3, 6, 1, 5, 5, 7);
 
+Identifier id_pe = pkix_id->append(1);
 
 mapping(string(7bit):Identifier) ce_ids =
 ([
@@ -235,7 +236,15 @@ mapping(string(7bit):Identifier) ce_ids =
    "policyMappings"		: ce_id->append(33),
    "authorityKeyIdentifier"	: ce_id->append(35),
    "policyConstraints"		: ce_id->append(36),
-   "extKeyUsage"		: ce_id->append(37)
+   "extKeyUsage"		: ce_id->append(37),
+
+   // Private extensions (IANA security-related objects)
+   "authorityInfoAccess"        : id_pe->append(1),
+   "biometricInfo"              : id_pe->append(2),
+   "qcStatements"               : id_pe->append(3),
+   "logotype"                   : id_pe->append(12),
+
+   // 2.16.840.1.113730.1.1 Netscape Certificate type
  ]);
 
 mapping(Identifier:string(7bit)) reverse_ce_ids = REVERSE(ce_ids);
