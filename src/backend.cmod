@@ -2177,8 +2177,8 @@ PIKECLASS Backend
     IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", THR_NO, me->id));
 
 #ifdef _REENTRANT
-    THIS->set_busy = 0;
-    co_init(&THIS->set_change);
+    me->set_busy = 0;
+    co_init(&me->set_change);
 #endif /* _REENTRANT */
     me->exec_thread = 0;
 
@@ -2306,6 +2306,10 @@ PIKECLASS Backend
     me->call_buffer=NULL;
     if(me->call_hash) free((char*)me->call_hash);
     me->call_hash=NULL;
+
+#ifdef _REENTRANT
+    co_destroy(&me->set_change);
+#endif
 
 #ifdef DO_PIKE_CLEANUP
     if (!--num_active_backends) backend_cleanup();
@@ -2466,6 +2470,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
    */
   if(num_threads>1)
   {
+    SWAP_OUT_CURRENT_THREAD();
     /* Release the poll set from the backend. */
     IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n",
 		  me));
@@ -2477,6 +2482,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 		  me));
     backend_wake_up_backend(me);
     /* The backend is now waiting in wakeup_callback(). */
+    SWAP_IN_CURRENT_THREAD();
   }
 #endif /* _REENTRANT */
 
