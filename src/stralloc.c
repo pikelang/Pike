@@ -253,7 +253,7 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 }
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,
+PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,
 						       int shift)
 {
   if(a->size_shift != shift)
