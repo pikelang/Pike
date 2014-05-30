@@ -301,9 +301,15 @@ PIKECLASS Backend
   PIKEVAR function(Backend:void) before_callback;
   PIKEVAR function(Backend:void) after_callback;
 
-  /* Thread currently executing in the backend. */
 #ifdef PIKE_THREADS
+  /* Thread currently executing in the backend. */
   CVAR struct thread_state *exec_thread;
+
+  /* Signal to wake up other threads waiting on the backend. */
+  CVAR COND_T backend_signal;
+
+  /* Incremented when a backend round has called any callbacks. */
+  CVAR int done_counter;
 #else
   CVAR int exec_thread;		/* 1 if inside the backend. */
 #endif
@@ -1880,6 +1886,26 @@ PIKECLASS Backend
    *!   time spent in the backend is returned as a float. Otherwise
    *!   the integer @expr{0@} is returned.
    *!
+   *! @note
+   *!   If multiple threads concurrently call this function, then:
+   *!   @ul
+   *!     @item
+   *!       One of the threads will be the controlling thread.
+   *!     @item
+   *!       All callbacks will be called from the controlling thread.
+   *!     @item
+   *!       All threads will be woken up when the controlling thread
+   *!       is done. This may be prematurely if the controlling thread
+   *!       had a shorter timeout.
+   *!   @endul
+   *!
+   *! @note
+   *!   The backend may also be woken up prematurely if the set
+   *!   of events to monitor is changed.
+   *!
+   *! @note
+   *!   Multiple concurrent calls was not supported prior to Pike 8.0.
+   *!
    *! @seealso
    *!   @[Pike.DefaultBackend], @[main()]
    */
@@ -2021,8 +2047,16 @@ PIKECLASS Backend
     me->exec_thread = 0;
   }
 
-  static void low_backend_once_setup(struct Backend_struct *me,
-				     struct timeval *start_time)
+  /**
+   * Generic backend setup code.
+   *
+   * Returns 0 if the backend needs to be polled,
+   *         1 if a different thread has run the backend to completion,
+   *        -1 on timeout (a different thread is running the backend,
+   *           but it has not completed in time).
+   */
+  static int low_backend_once_setup(struct Backend_struct *me,
+				    struct timeval *start_time)
   {
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
@@ -2032,30 +2066,6 @@ PIKECLASS Backend
     alloca(0);			/* Do garbage collect */
 #ifdef PIKE_DEBUG
     if(d_flag > 1) do_debug();
-#endif
-
-    if(me->exec_thread) {
-#ifdef PIKE_THREADS
-      if (me->exec_thread != Pike_interpreter.thread_state)
-	Pike_error ("Backend already in use by another thread.\n");
-      else
-#endif
-	/* It's actually not a problem to make this function
-	 * reentrant, but that'd introduce a risk of races in the
-	 * callbacks (i.e. between when a read callback is called
-	 * and when it reads the data), and besides I can't think
-	 * of any sane way to use it. Also, this error can help
-	 * discover otherwise tricky bugs. /mast */
-#ifndef BACKEND_USES_CFRUNLOOP
-	Pike_error ("Backend already running - cannot reenter.\n");
-#else
-        ; /* Do nothing, as we can call setup more than once. */
-#endif
-    }
-#ifdef PIKE_THREADS
-    me->exec_thread = Pike_interpreter.thread_state;
-#else
-    me->exec_thread = 1;
 #endif
 
 #ifndef OWN_GETHRTIME
@@ -2076,6 +2086,48 @@ PIKECLASS Backend
     }
 
     *start_time = now;
+
+    if(me->exec_thread) {
+#ifdef PIKE_THREADS
+      if (me->exec_thread != Pike_interpreter.thread_state) {
+	/* The backend is busy in some other thread.
+	 *
+	 * It will wake us up with a cond-signal when it is done.
+	 */
+	int old_done_counter = me->done_counter;
+	SWAP_OUT_CURRENT_THREAD();
+	if (next_timeout->tv_sec < 0) {
+	  co_wait_interpreter(&me->backend_signal);
+	} else {
+	  co_wait_interpreter_timeout(&me->backend_signal,
+				      next_timeout->tv_sec,
+				      next_timeout->tv_usec * 1000);
+	}
+	SWAP_IN_CURRENT_THREAD();
+	if (me->done_counter == old_done_counter) {
+	  return -1;
+	}
+	return 1;
+      } else {
+#endif
+	/* It's actually not a problem to make this function
+	 * reentrant, but that'd introduce a risk of races in the
+	 * callbacks (i.e. between when a read callback is called
+	 * and when it reads the data), and besides I can't think
+	 * of any sane way to use it. Also, this error can help
+	 * discover otherwise tricky bugs. /mast */
+#ifndef BACKEND_USES_CFRUNLOOP
+	Pike_error ("Backend already running - cannot reenter.\n");
+#else
+        ; /* Do nothing, as we can call setup more than once. */
+#endif
+      }
+    }
+#ifdef PIKE_THREADS
+    me->exec_thread = Pike_interpreter.thread_state;
+#else
+    me->exec_thread = 1;
+#endif
 
     /* Call outs */
     if(me->num_pending_calls)
@@ -2110,6 +2162,8 @@ PIKECLASS Backend
       next_timeout->tv_usec = 0;
       next_timeout->tv_sec = 0;
     }
+
+    return 0;
   }
 
 
@@ -2309,6 +2363,10 @@ PIKECLASS Backend
     co_init(&me->set_change);
 #endif /* _REENTRANT */
     me->exec_thread = 0;
+#ifdef PIKE_THREADS
+    co_init(&me->backend_signal);
+    me->done_counter = 0;
+#endif
 
     me->backend_callbacks.callbacks=0;
     me->backend_callbacks.num_calls=0;
@@ -2435,6 +2493,9 @@ PIKECLASS Backend
     if(me->call_hash) free(me->call_hash);
     me->call_hash=NULL;
 
+#ifdef PIKE_THREADS
+    co_destroy(&me->backend_signal);
+#endif
 #ifdef _REENTRANT
     co_destroy(&me->set_change);
 #endif
@@ -3678,7 +3739,9 @@ static void noteEvents(CFFileDescriptorRef fdref, CFOptionFlags UNUSED(callBackT
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    low_backend_once_setup(pdb->backend, &start_time);
+    if ((done_something = low_backend_once_setup(pdb->backend, &start_time))) {
+      goto low_backend_round_done;
+    }
     SET_ONERROR(uwp, low_backend_cleanup, me);
 
     if (TYPEOF(me->before_callback) != T_INT)
@@ -4017,7 +4080,17 @@ else
     call_callback(&me->backend_callbacks, NULL);
 
   backend_round_done:
-    if (!done_something)
+
+#ifdef PIKE_THREADS
+    me->done_counter += done_something;
+
+    co_broadcast(&me->backend_signal);
+#endif
+
+    CALL_AND_UNSET_ONERROR (uwp);
+
+  low_backend_round_done:
+    if (done_something <= 0)
       timeout->tv_sec = -1;
     else {
       struct timeval now;
@@ -4026,9 +4099,6 @@ else
       timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
-	
-    me->exec_thread = 0;
-    UNSET_ONERROR (uwp);
   }
 
 #ifdef BACKEND_USES_CFRUNLOOP
@@ -4542,7 +4612,9 @@ PIKECLASS PollBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    low_backend_once_setup(pb->backend, &start_time);
+    if ((done_something = low_backend_once_setup(pb->backend, &start_time))) {
+      goto low_backend_round_done;
+    }
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
@@ -4823,7 +4895,17 @@ PIKECLASS PollBackend
     call_callback(&me->backend_callbacks, NULL);
 
   backend_round_done:
-    if (!done_something)
+
+#ifdef PIKE_THREADS
+    me->done_counter += done_something;
+
+    co_broadcast(&me->backend_signal);
+#endif
+
+    CALL_AND_UNSET_ONERROR (uwp);
+
+  low_backend_round_done:
+    if (done_something <= 0)
       timeout->tv_sec = -1;
     else {
       struct timeval now;
@@ -4832,9 +4914,6 @@ PIKECLASS PollBackend
       timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
-
-    me->exec_thread = 0;
-    UNSET_ONERROR (uwp);
   }
 
   /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
@@ -5111,7 +5190,9 @@ PIKECLASS SelectBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    low_backend_once_setup(sb->backend, &start_time);
+    if ((done_something = low_backend_once_setup(sb->backend, &start_time))) {
+      goto low_backend_round_done;
+    }
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
@@ -5348,7 +5429,18 @@ PIKECLASS SelectBackend
     call_callback(&me->backend_callbacks, NULL);
 
   backend_round_done:
-    if (!done_something)
+
+#ifdef PIKE_THREADS
+    me->done_counter += done_something;
+
+    co_broadcast(&me->backend_signal);
+#endif
+
+    CALL_AND_UNSET_ONERROR (uwp);
+
+  low_backend_round_done:
+
+    if (done_something <= 0)
       timeout->tv_sec = -1;
     else {
       struct timeval now;
@@ -5357,9 +5449,6 @@ PIKECLASS SelectBackend
       timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
-
-    me->exec_thread = 0;
-    UNSET_ONERROR (uwp);
   }
 
   /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
