@@ -21,9 +21,6 @@ define(dotest,[[
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
 
-  test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
-  test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
-
   test_true(Gz.File)
   test_any([[
     string orig = ((string) Array.enumerate(256)) * 1024;
