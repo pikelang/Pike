@@ -811,11 +811,13 @@ constant CIPHER_SUITES =
    TLS_dh_anon_with_aes_256_cbc_sha:	({ KE_dh_anon, CIPHER_aes256, HASH_sha }),
    TLS_dh_anon_with_aes_128_cbc_sha256: ({ KE_dh_anon, CIPHER_aes, HASH_sha256 }),
    TLS_dh_anon_with_aes_256_cbc_sha256: ({ KE_dh_anon, CIPHER_aes256, HASH_sha256 }),
+#if constant(Crypto.ECC.Curve)
    TLS_ecdh_anon_with_null_sha:		({ KE_ecdh_anon, 0, HASH_sha }),
    TLS_ecdh_anon_with_rc4_128_sha:	({ KE_ecdh_anon, CIPHER_rc4, HASH_sha }),
    TLS_ecdh_anon_with_3des_ede_cbc_sha:	({ KE_ecdh_anon, CIPHER_3des, HASH_sha }),
    TLS_ecdh_anon_with_aes_128_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes, HASH_sha }),
    TLS_ecdh_anon_with_aes_256_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes256, HASH_sha }),
+#endif /* Crypto.ECC.Curve */
 
    // Required by TLS 1.0 RFC 2246 9.
    SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha }),
@@ -841,6 +843,7 @@ constant CIPHER_SUITES =
    TLS_dh_dss_with_aes_256_cbc_sha :	({ KE_dh_dss, CIPHER_aes256, HASH_sha }),
    TLS_dh_rsa_with_aes_256_cbc_sha :	({ KE_dh_rsa, CIPHER_aes256, HASH_sha }),
 
+#if constant(Crypto.ECC.Curve)
    // Suites from RFC 4492 (TLSECC)
    TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, HASH_sha }),
    TLS_ecdh_ecdsa_with_rc4_128_sha : ({ KE_ecdh_ecdsa, CIPHER_rc4, HASH_sha }),
@@ -865,6 +868,7 @@ constant CIPHER_SUITES =
    TLS_ecdhe_rsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_rsa, CIPHER_3des, HASH_sha }),
    TLS_ecdhe_rsa_with_aes_128_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha }),
    TLS_ecdhe_rsa_with_aes_256_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha }),
+#endif /* Crypto.ECC.Curve */
 
 
    // Suites from RFC 5246 (TLS 1.2)
@@ -879,6 +883,7 @@ constant CIPHER_SUITES =
    TLS_dh_rsa_with_aes_256_cbc_sha256 : ({ KE_dh_rsa, CIPHER_aes256, HASH_sha256 }),
    TLS_dh_dss_with_aes_256_cbc_sha256 : ({ KE_dh_dss, CIPHER_aes256, HASH_sha256 }),
 
+#if constant(Crypto.ECC.Curve)
    // Suites from RFC 5289
    // Note that these are not valid for TLS versions prior to TLS 1.2.
    TLS_ecdhe_ecdsa_with_aes_128_cbc_sha256 : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
@@ -889,6 +894,7 @@ constant CIPHER_SUITES =
    TLS_ecdhe_rsa_with_aes_256_cbc_sha384 : ({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
    TLS_ecdh_rsa_with_aes_128_cbc_sha256 : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_cbc }),
    TLS_ecdh_rsa_with_aes_256_cbc_sha384 : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.ECC.Curve */
 
    // Suites from RFC 6655
    // These are AEAD suites, and thus not valid for TLS prior to TLS 1.2.
@@ -931,6 +937,7 @@ constant CIPHER_SUITES =
    TLS_dh_anon_with_camellia_128_cbc_sha256: ({ KE_dh_anon, CIPHER_camellia128, HASH_sha256 }),
    TLS_dh_anon_with_camellia_256_cbc_sha256: ({ KE_dh_anon, CIPHER_camellia256, HASH_sha256 }),
 
+#if constant(Crypto.ECC.Curve)
    // From RFC 6367
    // Note that this RFC explicitly allows use of these suites
    // with TLS versions prior to TLS 1.2 (RFC 6367 3.3).
@@ -942,6 +949,7 @@ constant CIPHER_SUITES =
    TLS_ecdhe_ecdsa_with_camellia_256_cbc_sha384: ({ KE_ecdhe_ecdsa, CIPHER_camellia256, HASH_sha384 }),
    TLS_ecdhe_rsa_with_camellia_128_cbc_sha256: ({ KE_ecdhe_rsa, CIPHER_camellia128, HASH_sha256 }),
    TLS_ecdhe_rsa_with_camellia_256_cbc_sha384: ({ KE_ecdhe_rsa, CIPHER_camellia256, HASH_sha384 }),
+#endif /* Crypto.ECC.Curve */
 #endif /* Crypto.Camellia */
 
 #if constant(Crypto.AES.GCM)
@@ -951,20 +959,24 @@ constant CIPHER_SUITES =
    TLS_dhe_dss_with_aes_128_gcm_sha256:	({ KE_dhe_dss, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dh_rsa_with_aes_128_gcm_sha256:	({ KE_dh_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
    TLS_dh_dss_with_aes_128_gcm_sha256:	({ KE_dh_dss, CIPHER_aes, HASH_sha256, MODE_gcm }),
-   TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
-   TLS_ecdh_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
-   TLS_ecdhe_rsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
-   TLS_ecdh_rsa_with_aes_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
 
    TLS_rsa_with_aes_256_gcm_sha384:	({ KE_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_rsa_with_aes_256_gcm_sha384:	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dhe_dss_with_aes_256_gcm_sha384:	({ KE_dhe_dss, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dh_rsa_with_aes_256_gcm_sha384:	({ KE_dh_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_dh_dss_with_aes_256_gcm_sha384:	({ KE_dh_dss, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+
+#if constant(Crypto.ECC.Curve)
+   TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_ecdsa_with_aes_128_gcm_sha256: ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_ecdhe_rsa_with_aes_128_gcm_sha256: ({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_ecdh_rsa_with_aes_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha256, MODE_gcm }),
+
    TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384: ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_ecdh_ecdsa_with_aes_256_gcm_sha384: ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_ecdhe_rsa_with_aes_256_gcm_sha384: ({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
    TLS_ecdh_rsa_with_aes_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.ECC.Curve */
 
    // Anonymous variants:
    TLS_dh_anon_with_aes_128_gcm_sha256: ({ KE_dh_anon, CIPHER_aes, HASH_sha256, MODE_gcm }),
@@ -987,6 +999,7 @@ constant CIPHER_SUITES =
    TLS_dh_anon_with_camellia_128_gcm_sha256: ({ KE_dh_anon, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_dh_anon_with_camellia_256_gcm_sha384: ({ KE_dh_anon, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
 
+#if constant(Crypto.ECC.Curve)
    // From RFC 6367
    TLS_ecdhe_ecdsa_with_camellia_128_gcm_sha256: ({ KE_ecdhe_ecdsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_ecdhe_ecdsa_with_camellia_256_gcm_sha384: ({ KE_ecdhe_ecdsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
@@ -996,13 +1009,16 @@ constant CIPHER_SUITES =
    TLS_ecdhe_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdhe_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
    TLS_ecdh_rsa_with_camellia_128_gcm_sha256: ({ KE_ecdh_rsa, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_ecdh_rsa_with_camellia_256_gcm_sha384: ({ KE_ecdh_rsa, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.ECC.Curve */
 #endif /* Crypto.Camellia */
 #endif /* Crypto.AES.GCM */
 
 #if constant(Crypto.ChaCha20.POLY1305)
+#if constant(Crypto.ECC.Curve)
    // Draft.
    TLS_ecdhe_rsa_with_chacha20_poly1305_sha256: ({ KE_ecdhe_rsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
    TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256: ({ KE_ecdhe_ecdsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
+#endif /* Crypto.ECC.Curve */
    TLS_dhe_rsa_with_chacha20_poly1305_sha256: ({ KE_dhe_rsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
 #endif /* Crypto.ChaCha20.POLY1305 */
 ]);
