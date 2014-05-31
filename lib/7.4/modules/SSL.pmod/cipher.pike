@@ -23,15 +23,6 @@ class CipherSpec {
   function verify;
 }
 
-#if 0
-class mac_none
-{
-  /* Dummy MAC algorithm */
-//  string hash_raw(string data) { return ""; }
-  string hash(string data, object seq_num) { return ""; }
-}
-#endif
-
 class mac_sha
 {
   constant pad_1 =  "6666666666666666666666666666666666666666";
@@ -271,11 +262,7 @@ class dh_parameters
 	orm96();
 	break;
       case 3:
-#if 0
-	[p, g, order] = args;
-#else
 	p = args[0]; g = args[1]; order = args[2];
-#endif
 	break;
       default:
 	error( "SSL.cipher.dh_parameters->create: "

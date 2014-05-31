@@ -47,21 +47,10 @@ int make_value(string s)
  */
 
 array(string) nonterminals = ({
-#if 0
-  "S", "A", "B",
-#else
   "E'", "E", "T", "F", "id", "value",
-#endif
 });
 
 array(array(string|int)) g_init = ({
-#if 0
-  ({ 0, 1, "" }),
-  ({ 1, 2, 1 }),
-  ({ 1 }),
-  ({ 2, "a", 2 }),
-  ({ 2, "b" }),
-#else
   ({ 0, 1, "" }),
   ({ 1, 1, "+", 2 }),
   ({ 1, 2 }),
@@ -81,7 +70,6 @@ array(array(string|int)) g_init = ({
   ({ 5, "7" }),
   ({ 5, "8" }),
   ({ 5, "9" }),
-#endif 
 });
 
 array(int|function(mixed ...:mixed)) action_init = ({
@@ -142,15 +130,9 @@ void create()
 
   g->set_symbol_to_string(symbol_to_string);
   
-#if 0
-  foreach (g_init, array(string|int) i) {
-    g->add_rule(rule(i[0], i[1..], a_init));
-  }
-#else
   foreach (indices(g_init), int i) {
     g->add_rule(rule(g_init[i][0], g_init[i][1..], action_init[i]));
   }
-#endif
 }
 
 class scan {
@@ -159,14 +141,7 @@ class scan {
    */
 
   array(string) s_init = ({
-#if 0
-    "a", "a", "a", "b",
-    "a", "a", "a", "b",
-    "b",
-    "a", "a", "b", "a",
-#else
     "1", "*", "(", "3", "+", "2", ")", "+", "2", "*", "3",
-#endif
     "",
   });
 

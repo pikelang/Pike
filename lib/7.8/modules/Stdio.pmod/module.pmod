@@ -768,25 +768,12 @@ class File
 
     if (!___read_callback) {
       if (___close_callback) {
-#if 0
-	/* This code only works for the POLL case! */
-	if ((peek(0, 1) == -1) && (errno() == System.EPIPE))
-#endif /* 0 */
 	  return __stdio_close_callback();
       }
       return 0;
     }
 
     if (!errno()) {
-#if 0
-      if (!(::mode() & PROP_IS_NONBLOCKING))
-	error ("Read callback called on blocking socket!\n"
-	       "Callbacks: %O, %O\n"
-	       "Id: %O\n",
-	       ___read_callback,
-	       ___close_callback,
-	       ___id);
-#endif /* 0 */
 
       string s;
 #ifdef STDIO_CALLBACK_TEST_MODE
@@ -843,9 +830,6 @@ class File
   protected int __stdio_close_callback()
   {
     BE_WERR ("__stdio_close_callback()");
-#if 0
-    if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
-#endif /* 0 */
 
     if (!___close_callback) return 0;
 
@@ -1398,25 +1382,13 @@ class File
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_blocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_nonblocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
    
   protected void destroy()

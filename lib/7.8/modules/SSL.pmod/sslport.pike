@@ -62,18 +62,6 @@ void ssl_callback(mixed id)
   }
 }
 
-#if 0
-void set_id(mixed id)
-{
-  error( "Not supported\n" );
-}
-
-mixed query_id()
-{
-  error( "Not supported\n" );
-}
-#endif
-
 //! @decl int bind(int port, @
 //!                function(SSL.sslfile|void, mixed|void: int) callback, @
 //!                string|void ip)

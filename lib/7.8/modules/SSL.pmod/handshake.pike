@@ -532,11 +532,6 @@ string server_derive_master_secret(string data)
   {
   default:
     error( "Internal error\n" );
-#if 0
-    /* What is this for? */
-  case 0:
-    return 0;
-#endif
   case KE_dhe_dss:
   case KE_dhe_rsa:
     if (!sizeof(data))

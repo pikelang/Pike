@@ -124,11 +124,6 @@ string extract(string filename, string imgdest, int(0..1) rootless,
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
-#if 0
-      werror("root: %{%O, %}\n"
-	     "type: %O\n"
-	     "name: %O\n", root, type, name);
-#endif /* 0 */
       if(name == "master.pike")
 	name = "/master";
       if(name == "module" && (filename/"/")[-1] != "module.pike") {

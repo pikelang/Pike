@@ -165,15 +165,6 @@ void close()
   if (is_closed || !socket) return;
   is_closed = 1;
 
-#if 0
-  if (sizeof (write_buffer) && !blocking)
-    ssl_write_callback(socket->query_id());
-
-  if(sizeof(write_buffer) && blocking) {
-    write_blocking();
-  }
-#endif
-
   send_close();
   queue_write();
   read_callback = 0;
@@ -500,16 +491,6 @@ private void ssl_write_callback(mixed id)
 #endif
     THREAD_UNLOCK;
     write_callback(id);
-#if 0
-    if (!socket || !this_object()) {
-      // We've been closed or destructed.
-      return;
-    }
-    res = queue_write();
-
-    if (strlen(write_buffer))
-      return;
-#endif
   }
 }
 
@@ -564,10 +545,6 @@ void set_read_callback(function(mixed,string:void) r)
 #endif
   THREAD_CHECK;
   read_callback = r;
-#if 0
-  if (strlen(read_buffer)&& socket)
-    ssl_read_callback(socket->query_id(), "");
-#endif
   if (socket) update_callbacks();
 }
 
@@ -631,10 +608,6 @@ void set_nonblocking(function ...args)
     THREAD_UNLOCK;
     socket->set_nonblocking();
   }
-#if 0
-  if (strlen(read_buffer))
-    ssl_read_callback(socket->query_id(), "");
-#endif
 }
 
 void set_blocking()

@@ -50,18 +50,9 @@ Standards.UUID.UUID make_version3(string name, string namespace) {
   //  /marcus 2007-08-05
 
   // step 2
-#if 0
-  namespace = reverse(namespace[0..3]) + reverse(namespace[4..5]) +
-    reverse(namespace[6..7]) + namespace[8..];
-#endif
 
   // step 3
   string ret = Crypto.MD5.hash(namespace+name);
-
-#if 0
-  ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
-    reverse(ret[6..7]) + ret[8..];
-#endif
 
   ret &=
     "\xff\xff\xff\xff"		// time_low
