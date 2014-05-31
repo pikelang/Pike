@@ -118,6 +118,9 @@ class struct {
     return this;
   }
 
+  //! Appends an array of variable length strings with @[item_size]
+  //! bytes hollerith coding, prefixed by a @[len] bytes large integer
+  //! declaring the total size of the array in bytes.
   this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, int(0..) len)
   {
     string(8bit) temp = buffer;
