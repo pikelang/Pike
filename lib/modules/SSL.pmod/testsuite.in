@@ -78,6 +78,7 @@ test_tests([[
 	    "dss":KE_dhe_dss,
 	    "rsa":KE_dhe_rsa,
 	  ]),
+#if constant(Crypto.ECC.Curve)
 	  "ecdh":([
 	    "ecdsa":KE_ecdh_ecdsa,
 	    "rsa":KE_ecdh_rsa,
@@ -87,6 +88,7 @@ test_tests([[
 	    "ecdsa":KE_ecdhe_ecdsa,
 	    "rsa":KE_ecdhe_rsa,
 	  ]),
+#endif
 	]));
 
       if ((sizeof(fields) > fno) && (< "fips", "oldfips" >)[ fields[fno] ] &&
