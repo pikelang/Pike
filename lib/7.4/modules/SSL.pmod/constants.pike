@@ -130,15 +130,6 @@ constant SSL_fortezza_dms_with_fortezza_cbc_sha	= 0x001d;
 constant SSL_fortezza_dms_with_rc4_128_sha	= 0x001e;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
-#if 0
-/* Methods for signing any server_key_exchange message */
-constant SIGN_anon = 0;
-constant SIGN_rsa = 1;
-constant SIGN_dsa = 2;
-
-/* FIXME: Add SIGN-type element to table */
-#endif
-
 constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 

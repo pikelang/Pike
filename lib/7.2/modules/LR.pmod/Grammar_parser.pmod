@@ -193,11 +193,6 @@ protected private int add_nonterminal(string id)
 protected private void add_tokens(array(string) tokens)
 {
   /* NOOP */
-#if 0
-  if (sizeof(tokens)) {
-    map(tokens, add_token);
-  }
-#endif /* 0 */
 }
 
 protected private void set_left_tokens(string ignore, int pri_val, array(string) tokens)

@@ -223,10 +223,6 @@ protected constant epipe_errnos = (<
 
 protected void thread_error (string msg, THREAD_T other_thread)
 {
-#if 0 && constant (_locate_references)
-  werror ("%s\n%O got %d refs", msg, this, _refs (this));
-  _locate_references (this);
-#endif
   error ("%s"
 	 "%s\n"
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
@@ -502,15 +498,6 @@ protected void create (Stdio.File stream, SSL.context ctx,
     read_buffer = String.Buffer();
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
-#if 0
-    // Unnecessary to init stuff to zero.
-    callback_id = 0;
-    local_backend = 0;
-    close_packet_send_state = CLOSE_PACKET_NOT_SCHEDULED;
-    local_errno = cb_errno = 0;
-    got_extra_read_call_out = 0;
-    alert_cb_called = 0;
-#endif
 
     stream->set_read_callback (0);
     stream->set_write_callback (0);
@@ -744,13 +731,6 @@ Stdio.File shutdown()
     destruct (conn);		// Necessary to avoid garbage.
 
     write_buffer = ({});
-
-#if 0
-    accept_callback = 0;
-    read_callback = 0;
-    write_callback = 0;
-    close_callback = 0;
-#endif
 
     if (got_extra_read_call_out > 0)
       real_backend->remove_call_out (ssl_read_callback);
@@ -1091,13 +1071,6 @@ void set_callbacks (void|function(mixed, string:int) read,
 
     if (!zero_type(close))
       close_callback = close;
-
-#if 0
-    if (!zero_type(read_oob))
-      read_oob_callback = read_oob;
-    if (!zero_type (write_oob_cb))
-      write_oob_callback = write_oob;
-#endif
 
     if (!zero_type(accept))
       accept_callback = accept;
@@ -2031,14 +2004,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 #endif
 	  written = stream->write (output);
 
-	if (written < 0
-#if 0
-#ifdef __NT__
-	    // You don't want to know.. (Bug observed in Pike 0.6.132.)
-	    && stream->errno() != 1
-#endif
-#endif
-	   ) {
+	if (written < 0) {
 #ifdef SIMULATE_CLOSE_PACKET_WRITE_FAILURE
 	  if (close_packet_send_state == CLOSE_PACKET_QUEUED_OR_DONE)
 	    cb_errno = System.EPIPE;

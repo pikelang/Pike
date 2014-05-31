@@ -1259,12 +1259,7 @@ class cYear
 
    protected void convert_from(TimeRange other)
    {
-#if 0
-      if (other->y)
-	 create(other->y);
-      else
-#endif
-         ::convert_from(other);
+     ::convert_from(other);
       if (other->number_of_years)
 	 n=other->number_of_years();
       else

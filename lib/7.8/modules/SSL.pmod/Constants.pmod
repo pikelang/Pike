@@ -380,16 +380,6 @@ constant TLS_ecdhe_psk_with_null_sha            = 0xc039;
 constant TLS_ecdhe_psk_with_null_sha256         = 0xc03a;
 constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;
 
-#if 0
-/* Methods for signing any server_key_exchange message (RFC 5246 7.4.1.4.1) */
-constant SIGN_anon = 0;
-constant SIGN_rsa = 1;
-constant SIGN_dsa = 2;
-constant SIGN_ecdsa = 3;
-
-/* FIXME: Add SIGN-type element to table */
-#endif
-
 constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 

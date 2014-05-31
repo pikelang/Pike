@@ -74,14 +74,6 @@ class CipherSpec {
   function(object,string,ADT.struct,Gmp.mpz:int(0..1)) verify;
 }
 
-#if 0
-class mac_none
-{
-  /* Dummy MAC algorithm */
-  string hash(string data, Gmp.mpz seq_num) { return ""; }
-}
-#endif
-
 //! MAC using SHA.
 //!
 //! @note

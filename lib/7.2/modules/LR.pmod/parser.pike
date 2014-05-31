@@ -272,13 +272,6 @@ protected private mapping(string : object(priority)) operator_priority = ([]);
 
 protected private multiset(mixed) nullable = (< >);
 
-#if 0
-protected private mapping(mixed : multiset(object(rule))) derives = ([]);
-
-/* Maps from symbol to which rules may start with that symbol */
-protected private mapping(mixed : multiset(object(rule))) begins = ([]);
-#endif /* 0 */
-
 
 /* Maps from symbol to which rules use that symbol
  * (used for finding nullable symbols)
@@ -547,64 +540,6 @@ void add_rule(object(rule) r)
   /* The info calculated from this point is not at the moment used
    * by the compiler
    */
-#if 0
-  /* Now check for symbols that may begin this rule */
-  foreach (r->symbols, symbol) {
-    if (!stringp(symbol)) {
-      multiset set = begins[symbol];
-
-      r->prefix_nonterminals |= (< symbol >);
-
-      if (set) {
-	set[r] = 1;
-      } else {
-	begins[symbol] = (< r >);
-      }
-
-      if (grammar[symbol]) {
-	foreach (grammar[symbol], object(rule) r2) {
-	  r->prefix_nonterminals |= r2->prefix_nonterminals;
-	  r->prefix_tokens |= r2->prefix_tokens;
-	
-	  foreach (indices(r2->prefix_nonterminals), mixed s2) {
-	    set = begins[s2];
-
-	    if (set) {
-	      set[r] = 1;
-	    } else {
-	      begins[s2] = (< r >);
-	    }
-	  }
-	}
-      }
-      if (!nullable[symbol]) {
-	break;
-      }
-    } else {
-      r->prefix_tokens[symbol] = 1;
-      break;
-    }
-  }
-
-  /* Scan through the rules beginning with this rule's non-terminal */
-  if (begins[r->nonterminal]) {
-    foreach (indices(begins[r->nonterminal]), object(rule) r2) {
-      r2->prefix_nonterminals |= r->prefix_nonterminals;
-      r2->prefix_tokens |= r->prefix_tokens;
-
-      /* NOTE: Might want to move values(r->prefixes) out of the loop */
-      foreach (values(r->prefix_nonterminals), symbol) {
-	multiset set = begins[symbol];
-
-	if (set) {
-	  set[r2] = 1;
-	} else {
-	  begins[symbol] = (< r2 >);
-	}
-      }
-    }
-  }
-#endif /* 0 */
 }
 
 /* Here come the functions used by the compiler */
@@ -1502,13 +1437,9 @@ mixed parse(object|function(void:string|array(string|mixed)) scanner,
 	} else {
 	  // Default action.
 	  if (sizeof(a->symbols)) {
-#if 0
-	    value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
-#else /* !0 */
 	    if (sizeof(a->symbols) > 1) {
 	      value_stack->quick_pop(sizeof(a->symbols) - 1);
 	    }
-#endif /* 0 */
 	    state = state_stack->pop(sizeof(a->symbols))[0];
 	  } else {
 	    value_stack->push(0);
@@ -1517,13 +1448,9 @@ mixed parse(object|function(void:string|array(string|mixed)) scanner,
       } else {
 	// Default action.
 	if (sizeof(a->symbols)) {
-#if 0
-	  value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
-#else /* !0 */
 	  if (sizeof(a->symbols) > 1) {
 	    value_stack->quick_pop(sizeof(a->symbols) - 1);
 	  }
-#endif /* 0 */
 	  state = state_stack->pop(sizeof(a->symbols))[0];
 	} else {
 	  value_stack->push(0);
