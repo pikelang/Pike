@@ -147,15 +147,7 @@ string(8bit) hash_messages(string(8bit) sender)
 Packet certificate_packet(array(string(8bit)) certificates)
 {
   ADT.struct struct = ADT.struct();
-  int len = 0;
-
-  if(certificates && sizeof(certificates))
-    len = `+( @ Array.map(certificates, sizeof));
-  //  SSL3_DEBUG_MSG("SSL.Connection: certificate_message size %d\n", len);
-  struct->put_uint(len + 3 * sizeof(certificates), 3);
-  foreach(certificates, string(8bit) cert)
-    struct->put_var_string(cert, 3);
-
+  struct->put_var_string_array(certificates, 3, 3);
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
 }
 
