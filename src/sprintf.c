@@ -1368,8 +1368,6 @@ cont_2:
 #ifdef PIKE_DEBUG
 	  if(fs->fsp < fs->format_info_stack)
 	    Pike_fatal("sprintf: fs->fsp out of bounds.\n");
-	  if(fs->fsp!=fsp)
-	    Pike_fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
 #endif
 	  fsp->b=MKPCHARP_STR(b.s);
 	  fsp->len=b.s->len;
