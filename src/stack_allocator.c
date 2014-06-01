@@ -41,15 +41,3 @@ void stack_alloc_destroy(struct stack_allocator * a) {
 
     a->cur = NULL;
 }
-
-size_t stack_alloc_count(struct stack_allocator * a) {
-    struct chunk * c = a->cur;
-    size_t size = 0;
-
-    while (c) {
-        size += c->size;
-        c = c->prev;
-    }
-
-    return size;
-}
