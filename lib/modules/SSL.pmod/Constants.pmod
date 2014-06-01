@@ -1313,6 +1313,17 @@ class CertificatePair
       }
     }
 
+    // Check the subjectAltName extension.
+    Standards.ASN1.Types.Object alt_names = tbss[0]->
+      extensions[Standards.PKCS.Identifiers.ce_ids.subjectAltName];
+    if (alt_names && (alt_names->type_name == "SEQUENCE")) {
+      foreach(alt_names->elements, Standards.ASN1.Types.Object alt_name) {
+	if (stringp(alt_name->value)) {
+	  globs += ({ lower_case(alt_name->value) });
+	}
+      }
+    }
+
     if (extra_name_globs) globs += map(extra_name_globs, lower_case);
 
     if (!sizeof(globs)) error("No common name.\n");
