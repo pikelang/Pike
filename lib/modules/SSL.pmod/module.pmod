@@ -9,17 +9,17 @@
 //!
 //! The classes that typical users need to use are
 //! @dl
-//!   @item @[sslfile]
+//!   @item @[File]
 //!     This is an object that attempts to behave as a @[Stdio.File]
 //!     as much as possible.
 //!
-//!   @item @[sslport]
+//!   @item @[Port]
 //!     This is an object that attempts to behave as a @[Stdio.Port]
-//!     as much as possible, with @[sslport()->accept()] returning
-//!     @[sslfile] objects.
+//!     as much as possible, with @[Port()->accept()] returning
+//!     @[File] objects.
 //!
-//!   @item @[context]
-//!     The configurated context for the @[sslfile].
+//!   @item @[Context]
+//!     The configurated context for the @[File].
 //!
 //!   @item @[Constants.CertificatePair]
 //!     A class for keeping track of certificate chains and their
@@ -31,5 +31,5 @@
 //! the constants for output.
 //!
 //! @seealso
-//!   @[sslfile], @[sslport], @[context], @[Constants.CertificatePair],
+//!   @[File], @[Port], @[Context], @[Constants.CertificatePair],
 //!   @[Constants]

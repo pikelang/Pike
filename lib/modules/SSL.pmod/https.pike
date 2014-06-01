@@ -52,7 +52,7 @@ class MyContext
 }
 
 #ifndef HTTPS_CLIENT
-SSL.sslport port;
+SSL.Port port;
 
 void my_accept_callback(object f)
 {
@@ -111,7 +111,7 @@ class Client
     "Host: " HOST ":" + PORT + "\r\n"
     "\r\n";
 
-  SSL.sslfile ssl;
+  SSL.File ssl;
   int sent;
 
   void write_cb()
@@ -143,7 +143,7 @@ class Client
     // Make sure all cipher suites are available.
     ctx->preferred_suites = ctx->get_suites(-1, 2);
     werror("Starting\n");
-    ssl = SSL.sslfile(con, ctx);
+    ssl = SSL.File(con, ctx);
     ssl->connect();
     ssl->set_nonblocking(got_data, write_cb, con_closed);
   }
@@ -220,7 +220,7 @@ int main()
 
   SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->cert_pairs);
 
-  port = SSL.sslport(ctx);
+  port = SSL.Port(ctx);
 
   werror("Starting\n");
   if (!port->bind(PORT, my_accept_callback))

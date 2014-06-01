@@ -189,16 +189,16 @@ class PGconn
   }
 }
 
-#if constant(SSL.sslfile)
+#if constant(SSL.File)
 class PGconnS
-{ inherit SSL.sslfile:std;
+{ inherit SSL.File:std;
   inherit PGassist:pg;
 
   Stdio.File rawstream;
 
   inline int(-1..1) peek(int timeout)
   { return rawstream.peek(timeout);			    // This is a kludge
-  }			 // Actually SSL.sslfile should provide a peek() method
+  }			 // Actually SSL.File should provide a peek() method
 
   inline string read(int len,void|int(0..1) not_all)
   { return std::read(len,not_all);

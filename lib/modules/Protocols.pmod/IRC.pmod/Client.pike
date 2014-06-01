@@ -15,7 +15,7 @@ mapping channels=([]);
 //! @param server
 //!   The IRC server to connect to.
 //!   If server is an object, it is assumed to be a newly established
-//!   connection to the IRC server to be used. Pass @[SSL.sslfile]
+//!   connection to the IRC server to be used. Pass @[SSL.File]
 //!   connections here to connect to SSL secured IRC networks.
 //! @param options
 //!   An optional mapping with additional IRC client options.

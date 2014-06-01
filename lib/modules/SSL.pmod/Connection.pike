@@ -21,11 +21,11 @@
 //!   classes that inherits it should be used (ie either
 //!   @[ClientConnection] or @[ServerConnection]) depending on whether
 //!   this is to be a client-side or server-side connection. These in
-//!   turn are typically created by @[sslfile()->create()].
+//!   turn are typically created by @[File()->create()].
 //!
 //! @seealso
 //!   @[ClientConnection], @[ServerConnection], @[Context],
-//!   @[Session], @[sslfile], @[state]
+//!   @[Session], @[File], @[State]
 
 //#define SSL3_PROFILING
 

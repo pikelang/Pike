@@ -40,7 +40,7 @@ import Protocols.LDAP;
   int connected = 0;
 
 #if constant(SSL.Cipher)
-  Stdio.Stream|SSL.sslfile ldapfd;		// helper fd
+  Stdio.Stream|SSL.File ldapfd;		        // helper fd
 #else
   Stdio.Stream ldapfd;			        // helper fd
 #endif

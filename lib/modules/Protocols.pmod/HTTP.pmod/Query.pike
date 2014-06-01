@@ -194,7 +194,7 @@ void start_tls(int|void blocking, int|void async)
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context);
+  SSL.File ssl = SSL.File(con, context);
   if (blocking) {
     ssl->set_blocking();
   }

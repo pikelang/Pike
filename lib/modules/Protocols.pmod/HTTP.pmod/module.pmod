@@ -195,7 +195,7 @@ constant response_codes =
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.sslfile)
+#if constant(SSL.File)
   } else if (url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -220,7 +220,7 @@ constant response_codes =
       con->start_tls(1);
     }
     proxy_headers = request_headers;
-#endif
+#endif /* constant(SSL.File) */
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
@@ -267,7 +267,7 @@ constant response_codes =
   if(!con)
     con = .Query();
 
-#if constant(SSL.sslfile) 	
+#if constant(SSL.File)
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
@@ -278,7 +278,7 @@ constant response_codes =
     error("Can't handle %O or any other protocol than HTTP "
 	  "(HTTPS requires Nettle support).\n",
 	  url->scheme);
-#endif
+#endif /* constant(SSL.File) */
 
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
@@ -403,7 +403,7 @@ void do_async_method(string method,
     error("Asynchronous httpu or httpmu not yet supported.\n");
   }
 
-#if constant(SSL.sslfile) 	
+#if constant(SSL.File)
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
@@ -413,7 +413,7 @@ void do_async_method(string method,
   if(url->scheme!="http")
     error("Can't handle %O or any other protocol than HTTP.\n",
 	  url->scheme);
-#endif
+#endif /* constant(SSL.File) */
 
   if(!request_headers)
     request_headers = ([]);
@@ -567,7 +567,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.sslfile)
+#if constant(SSL.File)
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
