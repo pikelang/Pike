@@ -238,7 +238,7 @@ define(run_sub_test, [[
   ]])
 ]])
 
-dnl Displaced tests for SSL.sslfile.
+dnl Displaced tests for SSL.File.
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "0"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "1"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "1", "0"}))
@@ -440,9 +440,9 @@ test_do([[
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    SSL.sslfile server = SSL.sslfile(server_con, server_ctx);
+    SSL.File server = SSL.File(server_con, server_ctx);
 
-    SSL.sslfile client = SSL.sslfile(client_con, client_ctx);
+    SSL.File client = SSL.File(client_con, client_ctx);
 
     if (!client->connect()) return 0;
     if (!server->accept()) return 0;

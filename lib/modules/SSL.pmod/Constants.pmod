@@ -70,7 +70,7 @@
 //! Constants for specifying the versions of SSL to use.
 //!
 //! @seealso
-//!   @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
+//!   @[Context]
 enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0x300, //! SSL 3.0 - The original SSL3 draft version.
   PROTOCOL_SSL_3_1	= 0x301, //! SSL 3.1 - The RFC 2246 version of SSL.

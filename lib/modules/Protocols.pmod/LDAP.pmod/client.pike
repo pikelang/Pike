@@ -705,7 +705,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
 #if constant(SSL.Cipher)
     if(lauth->scheme == "ldaps") {
-      SSL.sslfile ssl_fd = SSL.sslfile(low_fd, context);
+      SSL.File ssl_fd = SSL.File(low_fd, context);
       if (!ssl_fd->connect()) {
 	ERROR("Failed to connect to LDAPS server.\n");
       }
@@ -786,7 +786,7 @@ void reset_options()
         context = SSL.Context();
       }
     object _f = ldapfd;
-    ldapfd = SSL.sslfile(_f, context);
+    ldapfd = SSL.File(_f, context);
     return ldapfd->connect();
 #endif
   return 0;    

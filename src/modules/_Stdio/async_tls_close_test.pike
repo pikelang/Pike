@@ -21,12 +21,12 @@ int main (int argc, array(string) argv)
 			       });
 
   Stdio.File con = Stdio.File();
-  SSL.sslfile tlscon;
+  SSL.File tlscon;
   con->async_connect (
     "127.0.0.1", 36565,
     lambda (int success) {
       if (success) {
-	tlscon = SSL.sslfile (con, SSL.Context());
+	tlscon = SSL.File (con, SSL.Context());
 	tlscon->connect("localhost");
 	tlscon->set_write_callback (lambda () {
 				      fail = "Handshake should not succeed.\n";

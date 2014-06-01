@@ -27,11 +27,11 @@
 //!     satisfactory.
 //! @endul
 //!
-//! The initialized @[context] object is then passed to
-//! @[sslfile()->create()] or used as is embedded in @[sslport].
+//! The initialized @[Context] object is then passed to
+//! @[File()->create()] or used as is embedded in @[Port].
 //!
 //! @seealso
-//!   @[sslfile], @[sslport], @[Standards.X509]
+//!   @[File], @[Port], @[Standards.X509]
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -216,8 +216,7 @@ array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 array(string(8bit)) advertised_protocols;
 
 //! The maximum amount of data that is sent in each SSL packet by
-//! @[sslfile]. A value between 1 and
-//! @[SSL.Constants.PACKET_MAX_SIZE].
+//! @[File]. A value between 1 and @[Constants.PACKET_MAX_SIZE].
 int packet_max_size = PACKET_MAX_SIZE;
 
 // The signature algorithms to use. According to RFC 5246 7.4.2 all

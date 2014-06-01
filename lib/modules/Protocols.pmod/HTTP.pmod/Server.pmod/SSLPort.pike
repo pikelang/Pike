@@ -63,7 +63,7 @@ void destroy() { close(); }
 //! The port accept callback
 protected void new_connection()
 {
-   SSL.sslfile fd=port->accept();
+   SSL.File fd=port->accept();
    Request r=request_program();
    r->attach_fd(fd,this,callback);
 }
@@ -72,7 +72,7 @@ protected void new_connection()
 class MySSLPort
 {
 
-  inherit SSL.sslport;
+  inherit SSL.Port;
 
   //!
   void set_default_keycert()

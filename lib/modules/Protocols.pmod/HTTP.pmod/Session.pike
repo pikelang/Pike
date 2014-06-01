@@ -74,7 +74,7 @@ class Request
 	 url=Standards.URI(url);
       url_requested=url;
 
-#if constant(SSL.sslfile) 	
+#if constant(SSL.File)
       if(url->scheme!="http" && url->scheme!="https")
 	 error("Protocols.HTTP can't handle %O or any other "
 	       "protocols than HTTP or HTTPS\n",
@@ -87,7 +87,7 @@ class Request
 	 error("Protocols.HTTP can't handle %O or any other "
 	       "protocol than HTTP\n",
 	       url->scheme);
-#endif
+#endif /* constant(SSL.File) */
       mapping request_headers = copy_value(default_headers);
       if (url->referer)
 	 request_headers->referer=(string)url->referer;

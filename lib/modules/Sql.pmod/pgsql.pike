@@ -333,7 +333,7 @@ final private object getsocket(void|int nossl)
     return UNDEFINED;
 
   object fcon;
-#if constant(SSL.sslfile)
+#if constant(SSL.File)
   if(!nossl && (options->use_ssl || options->force_ssl))
   { PD("SSLRequest\n");
     { object c=.pgsql_util.PGassist();
