@@ -1104,6 +1104,7 @@ static void low_pike_sprintf(struct format_stack *fs,
             Pike_sp++;
             low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,
                              Pike_sp-1,1,nosnurkel+1, compat_mode);
+            fsp = fs->fsp;
             if(save_sp < Pike_sp) pop_stack();
           }
           fsp->b=MKPCHARP_STR(_b.s);
@@ -1361,6 +1362,7 @@ cont_2:
 	    }
 	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0,
 			     compat_mode);
+            fsp = fs->fsp;
 	    pop_n_elems(Pike_sp-s);
 	  }
 #ifdef PIKE_DEBUG
