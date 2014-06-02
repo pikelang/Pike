@@ -1392,6 +1392,202 @@ PIKECLASS BlockCipher
   /*! @endmodule CBC
    */
 
+  /*! @module PCBC
+   *! Implementation of the propagating cipher block chaining mode (PCBC).
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[Cipher]).
+   *!
+   *! @seealso
+   *!   @[CBC], @[GCM]
+   */
+  PIKEVAR object(Nettle_BlockCipher_cq__PCBC) PCBC;
+
+  PIKECLASS _PCBC
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit _CBC
+     */
+    static int f_pcbc_inh_cbc_state_program_fun_num = -1;
+
+    EXTRA
+    {
+      low_inherit(Nettle_BlockCipher_cq__CBC_program, 0,
+		  Nettle_BlockCipher_cq__CBC_program_fun_num,
+		  42 + 1,
+		  0, NULL);
+      f_pcbc_inh_cbc_state_program_fun_num =
+	really_low_reference_inherited_identifier(NULL, 1,
+		    Nettle_BlockCipher_cq__CBC_State_program_fun_num);
+    }
+
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_constant_text(".PCBC");
+      f_add(2);
+    }
+
+    /*! @class State
+     */
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    {
+      DOCSTART() @decl inherit _CBC::State
+	DOCEND()
+
+      CVAR struct pike_string *propagated;	/* NB: Not finished. */
+
+      static int f_pcbc_state_inh_cbc_state_create_fun_num = -1;
+      static int f_pcbc_state_inh_cbc_state_crypt_fun_num = -1;
+
+      EXTRA
+      {
+	low_inherit(Nettle_BlockCipher_cq__CBC_State_program, 0,
+		    f_pcbc_inh_cbc_state_program_fun_num,
+		    42 + 1,
+		    0, NULL);
+
+	/* We want to call some of our inherited functions recursively... */
+	f_pcbc_state_inh_cbc_state_create_fun_num =
+	  really_low_reference_inherited_identifier(NULL, 1,
+		    f_Nettle_BlockCipher_cq__CBC_State_create_fun_num);
+	f_pcbc_state_inh_cbc_state_crypt_fun_num =
+	  really_low_reference_inherited_identifier(NULL, 1,
+		    f_Nettle_BlockCipher_cq__CBC_State_crypt_fun_num);
+      }
+
+      EXIT
+	gc_trivial;
+      {
+	if(THIS->propagated) {
+	  free_string(THIS->propagated);
+	  THIS->propagated = NULL;
+	}
+      }
+
+      /*! @decl void create()
+       *!
+       *! Initialize the PCBC state with the @[Cipher::State] object
+       *! returned by @[substate_factory()]. This is usually
+       *! the State for the cipher implemented in the parent module.
+       */
+      PIKEFUN void create()
+	flags ID_PROTECTED;
+      {
+	struct Nettle_BlockCipher_cq__CBC_State_struct *cbc_state;
+
+	apply_current(f_pcbc_state_inh_cbc_state_create_fun_num, args);
+	args = 1;
+
+	cbc_state =
+	  get_inherited_storage(1, Nettle_BlockCipher_cq__CBC_State_program);
+
+	if(THIS->propagated) {
+	  free_string(THIS->propagated);
+	  THIS->propagated = NULL;
+	}
+
+	THIS->propagated = begin_shared_string(cbc_state->block_size);
+	MEMSET(STR0(THIS->propagated), 0, cbc_state->block_size);
+	THIS->propagated->flags |= STRING_CLEAR_ON_EXIT;
+
+	pop_stack();
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the string @expr{"PCBC(x)"@} where x is the
+       *! encapsulated algorithm.
+       */
+      PIKEFUN string(0..255) name()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	struct Nettle_BlockCipher_cq__CBC_State_struct *cbc_state =
+	  get_inherited_storage(1, Nettle_BlockCipher_cq__CBC_State_program);
+
+	push_constant_text("PCBC(");
+	apply(cbc_state->object, "name", 0);
+	push_constant_text(")");
+	f_add(3);
+      }
+
+      /*! @decl string(0..255) crypt(string(0..255) data)
+       *!
+       *! Encrypt/decrypt @[data] and return the result. @[data] must
+       *! be an integral number of blocks.
+       *!
+       *! Neither the input or output data is not automatically memory
+       *! scrubbed, unless @[String.secure] has been called on the data.
+       */
+      PIKEFUN string(0..255) crypt(string(0..255) data)
+      {
+	struct Nettle_BlockCipher_cq__CBC_State_struct *cbc_state =
+	  get_inherited_storage(1, Nettle_BlockCipher_cq__CBC_State_program);
+
+	struct pike_string *propagated;
+	ONERROR uwp;
+	int block_size = cbc_state->block_size;
+
+	NO_WIDE_STRING(data);
+
+	if(data->len % block_size) {
+	  Pike_error("Data length not multiple of block size.\n");
+	}
+
+	if (!cbc_state->object || !cbc_state->object->prog) {
+	  Pike_error("Lookup in destructed object.\n");
+	}
+
+	if (!data->len) {
+	  return;
+	}
+
+	if (cbc_state->mode == 0) {
+	  propagated = begin_shared_string(data->len);
+	  memxor3(STR0(propagated), STR0(data), STR0(THIS->propagated),
+		  block_size);
+	  if (data->len > block_size) {
+	    memxor3(STR0(propagated) + block_size, STR0(data) + block_size,
+		    STR0(data), data->len - block_size);
+	  }
+	  memset(STR0(THIS->propagated), STR0(data) + data->len - block_size,
+		 block_size);
+
+	  pop_stack();
+	  push_string(propagated);	/* NB: Not shared! */
+
+	  apply_current(f_pcbc_state_inh_cbc_state_crypt_fun_num, 1);
+	} else {
+	  const char *prev_plain;
+	  ptrdiff_t offset;
+
+	  apply_current(f_pcbc_state_inh_cbc_state_crypt_fun_num, 1);
+
+	  data = Pike_sp[-1].u.string;
+
+	  propagated = begin_shared_string(data->len);
+	  prev_plain = STR0(THIS->propagated);
+
+	  for(offset = 0; offset < data->len; offset += block_size) {
+	    memxor3(STR0(propagated) + offset, STR0(data) + offset,
+		    prev_plain, block_size);
+	    prev_plain = STR0(propagated) + offset;
+	  }
+
+	  memset(STR0(THIS->propagated), prev_plain, block_size);
+
+	  pop_stack();
+	  push_string(end_shared_string(propagated));
+	}
+      }
+    }
+    /*! @endclass State
+     */
+  }
+  /*! @endmodule PCBC
+   */
+
   /*! @module CTR
    *! Implementation of Counter Mode (CTR).
    *!
@@ -1821,6 +2017,11 @@ PIKECLASS BlockCipher
     apply_current(Nettle_BlockCipher_cq__CBC_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
       add_ref(THIS_NETTLE_BLOCKCIPHER->CBC = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+    apply_current(Nettle_BlockCipher_cq__PCBC_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BLOCKCIPHER->PCBC = Pike_sp[-1].u.object);
     }
     pop_stack();
     apply_current(Nettle_BlockCipher_cq__CTR_program_fun_num, 0);
