@@ -12150,7 +12150,30 @@ PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
     }
   }
 
+#ifdef PIKE_DEBUG
+  if (loc.inherit->prog != expected) {
+    Pike_fatal("Failed to find expected parent storage.\n");
+  }
+#endif
+
   return loc.o->storage + loc.inherit->storage_offset;
+}
+
+PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected)
+{
+  struct inherit *i = Pike_fp->context + inh;
+
+#ifdef PIKE_DEBUG
+  struct program *p = Pike_fp->current_program;
+  if (i >= (p->inherits + p->num_inherits)) {
+    Pike_fatal("Inherit out of range!\n");
+  }
+  if (i->prog != expected) {
+    Pike_fatal("Unexpected program at inherit #%d!\n", inh);
+  }
+#endif
+
+  return Pike_fp->current_object->storage + i->storage_offset;
 }
 
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
