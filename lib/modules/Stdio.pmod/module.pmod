@@ -2611,12 +2611,15 @@ int cp(string from, string to)
 //! Copies the file @[from] to the new position @[to]. If there is
 //! no system function for cp, a new file will be created and the
 //! old one copied manually in chunks of @[DATA_CHUNK_SIZE] bytes.
+//!
 //! This function can also copy directories recursively.
+//!
 //! @returns
 //!  0 on error, 1 on success
+//!
 //! @note
-//! This function keeps file and directory mode bits, unlike in Pike
-//! 7.6 and earlier.
+//!   This function keeps file and directory mode bits, unlike in Pike
+//!   7.6 and earlier.
 {
   Stat stat = file_stat(from, 1);
   if( !stat ) 
@@ -2625,6 +2628,12 @@ int cp(string from, string to)
   if(stat->isdir)
   {
     // recursive copying of directories
+    if (has_prefix(combine_path(to, "./"), combine_path(from, "./"))) {
+      // to is a subdirectory of from.
+      //
+      // This is NOT a good idea, as it often will trigger an infinite loop.
+      return 0;
+    }
     if(!mkdir(to))
       return 0;
     array(string) sub_files = get_dir(from);
@@ -2835,6 +2844,7 @@ int recursive_mv(string from, string to)
 {
   if(!cp(from, to))
     return 0;
+  // NB: We rely on cp() above failing if to is a subdirectory of from.
   return recursive_rm(from);
 }
 
