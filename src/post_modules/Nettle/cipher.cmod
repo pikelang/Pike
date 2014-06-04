@@ -1551,7 +1551,7 @@ PIKECLASS BlockCipher
 	    memxor3(STR0(propagated) + block_size, STR0(data) + block_size,
 		    STR0(data), data->len - block_size);
 	  }
-	  memset(STR0(THIS->propagated), STR0(data) + data->len - block_size,
+	  memcpy(STR0(THIS->propagated), STR0(data) + data->len - block_size,
 		 block_size);
 
 	  pop_stack();
@@ -1575,7 +1575,7 @@ PIKECLASS BlockCipher
 	    prev_plain = STR0(propagated) + offset;
 	  }
 
-	  memset(STR0(THIS->propagated), prev_plain, block_size);
+	  memcpy(STR0(THIS->propagated), prev_plain, block_size);
 
 	  pop_stack();
 	  push_string(end_shared_string(propagated));
