@@ -785,8 +785,10 @@ test_eval_error([[
 test_any([[
   object cbc=Crypto.AES.CBC();
   cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-  return String.string2hex(cbc->crypt("0123456789abcdef"));
-]], "b71a7f6d29d66bd468294ed9cfda2af1")
+  cbc->set_iv("\0"*16);
+  return String.string2hex(cbc->
+    crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+]], "b71a7f6d29d66bd468294ed9cfda2af1764fcf6942fb6a411d4ed241755b723a1ff29c680d9cc485ac01022c8eab870110ff067f03941501e53dd1a72051f63e")
 
 // AEAD
 
