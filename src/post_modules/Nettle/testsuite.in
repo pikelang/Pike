@@ -482,6 +482,7 @@ define(test_generic_cipher,[[
 // AES
 test_generic_cipher(Crypto.AES)
 test_generic_cipher(Crypto.AES.CBC)
+test_generic_cipher(Crypto.AES.PCBC)
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
   test_cipher(AES,
@@ -591,6 +592,7 @@ test_generic_cipher(Crypto.Arcfour)
 // Test vectors from RFC 2268.
 test_generic_cipher(Crypto.Arctwo)
 test_generic_cipher(Crypto.Arctwo.CBC)
+test_generic_cipher(Crypto.Arctwo.PCBC)
 cond_resolv( Nettle.ARCTWO, [[
   test_true([[objectp(Crypto.Arctwo.State())]])
   test_cipher(ARCTWO,
@@ -639,11 +641,13 @@ cond_resolv( Nettle.ARCTWO, [[
 // BLOWFISH
 test_generic_cipher(Crypto.Blowfish)
 test_generic_cipher(Crypto.Blowfish.CBC)
+test_generic_cipher(Crypto.Blowfish.PCBC)
 
 // CAMELLIA
 // Test vectors from RFC 3713. 128, 192 and 256 bits.
 test_generic_cipher(Crypto.Camellia)
 test_generic_cipher(Crypto.Camellia.CBC)
+test_generic_cipher(Crypto.Camellia.PCBC)
 cond_resolv( Nettle.CAMELLIA, [[
   test_true([[objectp(Nettle.CAMELLIA()())]])
   test_cipher(CAMELLIA,
@@ -665,10 +669,12 @@ cond_resolv( Nettle.CAMELLIA, [[
 // CAST128
 test_generic_cipher(Crypto.CAST)
 test_generic_cipher(Crypto.CAST.CBC)
+test_generic_cipher(Crypto.CAST.PCBC)
 
 // CHACHA
 test_generic_cipher(Crypto.ChaCha20)
 test_generic_cipher(Crypto.ChaCha20.CBC)
+test_generic_cipher(Crypto.ChaCha20.PCBC)
 
 // DES
 
@@ -677,10 +683,12 @@ test_generic_cipher(Crypto.ChaCha20.CBC)
 // IDEA
 test_generic_cipher(Crypto.IDEA)
 test_generic_cipher(Crypto.IDEA.CBC)
+test_generic_cipher(Crypto.IDEA.PCBC)
 
 // SALSA20
 test_generic_cipher(Crypto.SALSA20)
 test_generic_cipher(Crypto.SALSA20.CBC)
+test_generic_cipher(Crypto.SALSA20.PCBC)
 dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
@@ -749,14 +757,17 @@ cond_resolv( Nettle.SALSA20 [[
 // SALSA20 R12
 test_generic_cipher(Crypto.SALSA20R12)
 test_generic_cipher(Crypto.SALSA20R12.CBC)
+test_generic_cipher(Crypto.SALSA20R12.PCBC)
 
 // SERPENT
 test_generic_cipher(Crypto.Serpent)
 test_generic_cipher(Crypto.Serpent.CBC)
+test_generic_cipher(Crypto.Serpent.PCBC)
 
 // Twofish
 test_generic_cipher(Crypto.Twofish)
 test_generic_cipher(Crypto.Twofish.CBC)
+test_generic_cipher(Crypto.Twofish.PCBC)
 
 // CBC
 
