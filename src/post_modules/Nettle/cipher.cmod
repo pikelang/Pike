@@ -1395,6 +1395,9 @@ PIKECLASS BlockCipher
   /*! @module PCBC
    *! Implementation of the propagating cipher block chaining mode (PCBC).
    *!
+   *! This mode is also known as plaintext cipher block chaining (from
+   *! Kerberos v4).
+   *!
    *! Works as a wrapper for the cipher implemented by overloading
    *! the parent class (@[Cipher]).
    *!
