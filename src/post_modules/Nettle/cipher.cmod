@@ -1437,9 +1437,6 @@ PIKECLASS BlockCipher
       DOCSTART() @decl inherit _CBC::State
 	DOCEND()
 
-      CVAR struct pike_string *propagated;	/* NB: Not finished. */
-
-      static int f_pcbc_state_inh_cbc_state_create_fun_num = -1;
       static int f_pcbc_state_inh_cbc_state_crypt_fun_num = -1;
 
       EXTRA
@@ -1450,50 +1447,9 @@ PIKECLASS BlockCipher
 		    0, NULL);
 
 	/* We want to call some of our inherited functions recursively... */
-	f_pcbc_state_inh_cbc_state_create_fun_num =
-	  really_low_reference_inherited_identifier(NULL, 1,
-		    f_Nettle_BlockCipher_cq__CBC_State_create_fun_num);
 	f_pcbc_state_inh_cbc_state_crypt_fun_num =
 	  really_low_reference_inherited_identifier(NULL, 1,
 		    f_Nettle_BlockCipher_cq__CBC_State_crypt_fun_num);
-      }
-
-      EXIT
-	gc_trivial;
-      {
-	if(THIS->propagated) {
-	  free_string(THIS->propagated);
-	  THIS->propagated = NULL;
-	}
-      }
-
-      /*! @decl void create()
-       *!
-       *! Initialize the PCBC state with the @[Cipher::State] object
-       *! returned by @[substate_factory()]. This is usually
-       *! the State for the cipher implemented in the parent module.
-       */
-      PIKEFUN void create()
-	flags ID_PROTECTED;
-      {
-	struct Nettle_BlockCipher_cq__CBC_State_struct *cbc_state;
-
-	apply_current(f_pcbc_state_inh_cbc_state_create_fun_num, args);
-	args = 1;
-
-	cbc_state =
-	  get_inherited_storage(1, Nettle_BlockCipher_cq__CBC_State_program);
-
-	if(THIS->propagated) {
-	  free_string(THIS->propagated);
-	  THIS->propagated = NULL;
-	}
-
-	THIS->propagated = begin_shared_string(cbc_state->block_size);
-	MEMSET(STR0(THIS->propagated), 0, cbc_state->block_size);
-	THIS->propagated->flags |= STRING_CLEAR_ON_EXIT;
-
-	pop_stack();
       }
 
       /*! @decl string(0..255) name()
@@ -1545,37 +1501,41 @@ PIKECLASS BlockCipher
 
 	if (cbc_state->mode == 0) {
 	  propagated = begin_shared_string(data->len);
-	  memxor3(STR0(propagated), STR0(data), STR0(THIS->propagated),
-		  block_size);
+	  memcpy(STR0(propagated), STR0(data), block_size);
 	  if (data->len > block_size) {
 	    memxor3(STR0(propagated) + block_size, STR0(data) + block_size,
 		    STR0(data), data->len - block_size);
 	  }
-	  memcpy(STR0(THIS->propagated), STR0(data) + data->len - block_size,
-		 block_size);
 
 	  pop_stack();
 	  push_string(propagated);	/* NB: Not shared! */
 
 	  apply_current(f_pcbc_state_inh_cbc_state_crypt_fun_num, 1);
+
+	  /* Update the iv with the last block of the plaintext. */
+	  memxor(STR0(cbc_state->iv), STR0(data) + data->len - block_size,
+		 block_size);
 	} else {
-	  const char *prev_plain;
 	  ptrdiff_t offset;
 
 	  apply_current(f_pcbc_state_inh_cbc_state_crypt_fun_num, 1);
 
 	  data = Pike_sp[-1].u.string;
 
-	  propagated = begin_shared_string(data->len);
-	  prev_plain = STR0(THIS->propagated);
-
-	  for(offset = 0; offset < data->len; offset += block_size) {
-	    memxor3(STR0(propagated) + offset, STR0(data) + offset,
-		    prev_plain, block_size);
-	    prev_plain = STR0(propagated) + offset;
+	  if (data->len == block_size) {
+	    memxor(STR0(cbc_state->iv), STR0(data), block_size);
+	    return;
 	  }
 
-	  memcpy(STR0(THIS->propagated), prev_plain, block_size);
+	  propagated = begin_shared_string(data->len);
+	  memcpy(STR0(propagated), STR0(data), block_size);
+
+	  for(offset = block_size; offset < data->len; offset += block_size) {
+	    memxor3(STR0(propagated) + offset, STR0(data) + offset,
+		    STR0(propagated) + offset - block_size, block_size);
+	  }
+	  memxor(STR0(cbc_state->iv),
+		 STR0(propagated) + offset - block_size, block_size);
 
 	  pop_stack();
 	  push_string(end_shared_string(propagated));
