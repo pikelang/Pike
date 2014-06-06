@@ -476,6 +476,46 @@ define(test_generic_cipher,[[
 
       return d->crypt(c->crypt(test_data)) == test_data;
     ]], 1)
+    test_any([[
+      // Check that block handling works in encrypt-mode.
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_encrypt_key(key);
+
+      string res = "";
+      foreach(test_data/$1.block_size(), string block) {
+        // Make sure that the state isn't confused by the empty string.
+        if (c->crypt("") != "") {
+	  error("Crypt on empty string should return the empty string.\n");
+	}
+        res += c->crypt(block);
+      }
+
+      return d->crypt(test_data) == res;
+    ]], 1)
+    test_any([[
+      // Check that block handling works in decrypt-mode.
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_decrypt_key(key);
+      d->set_decrypt_key(key);
+
+      string res = "";
+      foreach(test_data/$1.block_size(), string block) {
+        // Make sure that the state isn't confused by the empty string.
+        if (c->crypt("") != "") {
+	  error("Crypt on empty string should return the empty string.\n");
+	}
+        res += c->crypt(block);
+      }
+
+      return d->crypt(test_data) == res;
+    ]], 1)
   ]])
 ]])
 
