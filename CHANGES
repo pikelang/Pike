@@ -273,6 +273,8 @@ Protocols.HTTP:
         alters the mapping. For example, future requestes may retain a
         416 error if one request uses the Range: header.
 
+     - Support async keep-alive in Protocols.HTTP.Query. Fixes [bug 7143].
+
 Protocols.SMTP: send_message() now punicodes the hostname.
 
         Potential fix for [bug 6531].
@@ -331,6 +333,8 @@ SSL:
         the close packet.
 
 Stdio: 
+
+    - cp() detects ouroboros and avoids infinite loops and file truncation.
 
     - Reduce number of system calls in mkdirhier().
 
