@@ -736,7 +736,10 @@ static int call_object_sprintf(int mode, struct object * o, ptrdiff_t fun, struc
   struct format_info *fsp = fs->fsp;
   DECLARE_CYCLIC();
 
-  if (BEGIN_CYCLIC(o, fun)) return 0;
+  if (BEGIN_CYCLIC(o, fun)) {
+      END_CYCLIC();
+      return 0;
+  }
 
   push_int(mode);
 
