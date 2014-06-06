@@ -830,6 +830,27 @@ test_any([[
     crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
 ]], "b71a7f6d29d66bd468294ed9cfda2af1764fcf6942fb6a411d4ed241755b723a1ff29c680d9cc485ac01022c8eab870110ff067f03941501e53dd1a72051f63e")
 
+// PCBC
+
+test_eq( Crypto.AES.PCBC()->block_size(), 16)
+test_eq( Crypto.AES.PCBC()->key_size(), 0)
+test_any([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return pcbc->key_size();]], 32)
+test_eval_error([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  pcbc->crypt("123");
+]])
+test_any([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  pcbc->set_iv("ABCDEFGHIJKLMNOP");
+  return String.string2hex(pcbc->
+    crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+]], "618b81a13bb1b4e2890dd9fe98017197b24e5a154bbf32c3b79734ab96f5fc33ad413014b195a85029ae55b1316dc907c9c41a5997924c75a96f6e79f9a73f7d")
+
 // AEAD
 
 test_do(add_constant("test_adata", test_data[..116]);)
