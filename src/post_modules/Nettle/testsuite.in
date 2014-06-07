@@ -523,6 +523,7 @@ define(test_generic_cipher,[[
 test_generic_cipher(Crypto.AES)
 test_generic_cipher(Crypto.AES.CBC)
 test_generic_cipher(Crypto.AES.PCBC)
+test_generic_cipher(Crypto.AES.CFB)
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
   test_cipher(AES,
@@ -622,6 +623,64 @@ cond_resolv( Nettle.AES, [[
 		     "EB6C5282 1D0BBBF7 CE759446 2ACA4FAA"
 		     "B407DF86 6569FD07 F48CC0B5 83D6071F"
 		     "1EC0E6B8")
+]])
+cond_resolv( Nettle.AES, [[
+  // AES-CFB Test vectors from NIST AESMMT:CFB128MMT128.
+
+  dnl Test Vector #0
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "085b8af6788fa6bc1a0b47dcf50fbd35",
+		     "58cb2b12bb52c6f14b56da9210524864",
+		     "4b5a872260293312eea1a570fd39c788",
+		     "e92c80e0cfb6d8b1c27fd58bc3708b16")
+
+  dnl Test Vector #1
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "701ccc4c0e36e512ce077f5af6ccb957",
+		     "5337ddeaf89a00dd4d58d860de968469",
+		     "cc1172f2f80866d0768b25f70fcf6361"
+		     "aab7c627c8488f97525d7d88949beeea",
+		     "cdcf093bb7840df225683b58a479b00d"
+		     "5de5553a7e85eae4b70bf46dc729dd31")
+
+  dnl Test Vector #2
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "0a8e8876c96cddf3223069002002c99f",
+		     "b125a20ecd79e8b5ae91af738037acf7",
+		     "4fd0ecac65bfd321c88ebca0daea35d2"
+		     "b061205d696aab08bea68320db65451a"
+		     "6d6c3679fdf633f37cf8ebcf1fa94b91",
+		     "cdd1ba252b2c009f34551a6a200602d7"
+		     "1ffbf13e684a5e60478cdf74ffe61dfd"
+		     "ed344bdc7e8000c3b0b67552917f3e4c")
+
+  dnl Test Vector #3
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "b9ba9fa32cc491d8ac2beb5f99193d57",
+		     "95511452b71e53e93afad07ba1aa4d98",
+		     "b40382705aaeea41097c309da6cd0601"
+		     "0f15e09c0130fa4b3af69cc8da109d1f"
+		     "0f0a2661f1a8b89bab7e7009dcbb8a88"
+		     "3d46254a830c45cd87981e0ea4e490fa",
+		     "800bf8840a73c9279a9cdb61436f8af2"
+		     "0ae17c5a9b95bf25e456f48cc3cc2f9d"
+		     "ffd86c48645fa187cac5becd058e4655"
+		     "4ae3b4825a1ef4467849c9d13536adfc")
+
+  dnl Test Vector #4
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "5947bbd78b06bb5ea2fc67ed7b24216e",
+		     "8e4722ad2230b15f2eea302173bc1795",
+		     "9e69423653c20c982794ed35d63c1a78"
+		     "e8ac14f37e1888ae4bf273bfe119891b"
+		     "2e4ed8ac46e7a9a463c7a710298d43b0"
+		     "2f0c5606bcfc08adceeef2ec61867f8b"
+		     "ede498e53163803f2f86fc58782fb841",
+		     "b23f0fdfc1519c408ee7a8ba46ea79f2"
+		     "cbea0032685af82f76a7e2b377741aaa"
+		     "618ef3953edbe39e8df1dd283b2e54a0"
+		     "f1327ce332188f6572574ce59428636f"
+		     "3b6e37054a4705b02bedf377e465e5f6")
 
 ]])
 
@@ -633,6 +692,7 @@ test_generic_cipher(Crypto.Arcfour)
 test_generic_cipher(Crypto.Arctwo)
 test_generic_cipher(Crypto.Arctwo.CBC)
 test_generic_cipher(Crypto.Arctwo.PCBC)
+test_generic_cipher(Crypto.Arctwo.CFB)
 cond_resolv( Nettle.ARCTWO, [[
   test_true([[objectp(Crypto.Arctwo.State())]])
   test_cipher(ARCTWO,
@@ -682,12 +742,14 @@ cond_resolv( Nettle.ARCTWO, [[
 test_generic_cipher(Crypto.Blowfish)
 test_generic_cipher(Crypto.Blowfish.CBC)
 test_generic_cipher(Crypto.Blowfish.PCBC)
+test_generic_cipher(Crypto.Blowfish.CFB)
 
 // CAMELLIA
 // Test vectors from RFC 3713. 128, 192 and 256 bits.
 test_generic_cipher(Crypto.Camellia)
 test_generic_cipher(Crypto.Camellia.CBC)
 test_generic_cipher(Crypto.Camellia.PCBC)
+test_generic_cipher(Crypto.Camellia.CFB)
 cond_resolv( Nettle.CAMELLIA, [[
   test_true([[objectp(Nettle.CAMELLIA()())]])
   test_cipher(CAMELLIA,
@@ -710,11 +772,13 @@ cond_resolv( Nettle.CAMELLIA, [[
 test_generic_cipher(Crypto.CAST)
 test_generic_cipher(Crypto.CAST.CBC)
 test_generic_cipher(Crypto.CAST.PCBC)
+test_generic_cipher(Crypto.CAST.CFB)
 
 // CHACHA
 test_generic_cipher(Crypto.ChaCha20)
 test_generic_cipher(Crypto.ChaCha20.CBC)
 test_generic_cipher(Crypto.ChaCha20.PCBC)
+test_generic_cipher(Crypto.ChaCha20.CFB)
 
 // DES
 
@@ -724,11 +788,13 @@ test_generic_cipher(Crypto.ChaCha20.PCBC)
 test_generic_cipher(Crypto.IDEA)
 test_generic_cipher(Crypto.IDEA.CBC)
 test_generic_cipher(Crypto.IDEA.PCBC)
+test_generic_cipher(Crypto.IDEA.CFB)
 
 // SALSA20
 test_generic_cipher(Crypto.SALSA20)
 test_generic_cipher(Crypto.SALSA20.CBC)
 test_generic_cipher(Crypto.SALSA20.PCBC)
+test_generic_cipher(Crypto.SALSA20.CFB)
 dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
@@ -798,16 +864,19 @@ cond_resolv( Nettle.SALSA20 [[
 test_generic_cipher(Crypto.SALSA20R12)
 test_generic_cipher(Crypto.SALSA20R12.CBC)
 test_generic_cipher(Crypto.SALSA20R12.PCBC)
+test_generic_cipher(Crypto.SALSA20R12.CFB)
 
 // SERPENT
 test_generic_cipher(Crypto.Serpent)
 test_generic_cipher(Crypto.Serpent.CBC)
 test_generic_cipher(Crypto.Serpent.PCBC)
+test_generic_cipher(Crypto.Serpent.CFB)
 
 // Twofish
 test_generic_cipher(Crypto.Twofish)
 test_generic_cipher(Crypto.Twofish.CBC)
 test_generic_cipher(Crypto.Twofish.PCBC)
+test_generic_cipher(Crypto.Twofish.CFB)
 
 // CBC
 
