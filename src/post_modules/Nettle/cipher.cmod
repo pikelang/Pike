@@ -2464,8 +2464,10 @@ PIKECLASS BlockCipher16
   /*! @module CCM
    *!
    *! Implementation of the Counter with Cipher Block Chaining
-   *! Message Authentication Code mode (CCM). Works as a wrapper
-   *! for the cipher algorithm put in create.
+   *! Message Authentication Code mode (CCM).
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[BlockCipher16]).
    *!
    *! This is a so-called authenticated encryption with associated data
    *! (AEAD) algorithm, and in addition to encryption also provides
@@ -2487,6 +2489,7 @@ PIKECLASS BlockCipher16
   PIKEVAR object(Nettle_AEAD) CCM;
 
   PIKECLASS _CCM
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
     /*! @decl inherit __builtin.Nettle.AEAD
      */
@@ -2561,6 +2564,7 @@ PIKECLASS BlockCipher16
     /*! @class State
      */
     PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
     {
       /*! @decl inherit CTR::State
        */
@@ -3015,6 +3019,7 @@ PIKECLASS BlockCipher16
   PIKEVAR object(Nettle_AEAD) CCM8;
 
   PIKECLASS _CCM8
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
     /*! @decl inherit BlockCipher16::CCM
      */
@@ -3060,7 +3065,7 @@ PIKECLASS BlockCipher16
    *! Implementation of the Galois Counter Mode (GCM).
    *!
    *! Works as a wrapper for the cipher implemented by overloading
-   *! the parent class (@[Cipher16]).
+   *! the parent class (@[BlockCipher16]).
    *!
    *! This is a so-called authenticated encryption with associated data
    *! (AEAD) algorithm, which in addition to encryption also provides
