@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
+  pike/lib/modules/Stdio.pmod/module.pmod
