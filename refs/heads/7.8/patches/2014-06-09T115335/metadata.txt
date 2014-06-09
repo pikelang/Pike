@@ -1,0 +1,41 @@
+subject: Pike 7.8: Multiple fixes:
+from: 21ad980bd68a967f1eff8c9015104441f7e983fe
+to: b2ad1778d68eee3d7f7b8da91c79672d62c34f81
+originator: wellhardh@roxen.com
+depends: 2014-05-20T135259
+restart: true
+
+Multiple fixes:
+
+  * Protocols.HTTP.Query: Support async keep-alive.
+    
+    If a Protocols.HTTP.Query instance is used with a keep-alive connection,
+    async_request fails if the remote end closed the connection.
+    
+    Fixes [bug 7143].
+
+  * Backend: Fixed stale thread state in poll devices.
+    
+    The current thread was left swapped in during co_wait_interpreter()
+    in POLL_DEVICE_SET_EVENTS().
+    
+    Also fixes condition variable leak (probably not relevant in most
+    thread implementations, but...).
+
+  * Stdio.cp: Detect ouroboros.
+    
+    Copying a directory to a subdirectory of itself would often trigger an
+    infinite loop.
+    
+    Copying a directory to itself could trigger truncation of the files.
+    
+    Note that it's still possible to trigger this behaviour by using symlinks.
+    
+    Also fixes recursive_mv(), which either hanged in cp() as above, or
+    deleted all the files if cp() succeeded in the above cases.
+
+  * CHANGES: updates for new 7.8 build.
+
+  * release number bumped to 866 by export.pike
+
+  * release number bumped to 867 by export.pike
