@@ -258,7 +258,20 @@ test_any_equal([[
   object t = Standards.X509.decode_certificate(c);
   mapping ext = t->extensions;
   foreach(ext; string id; object value) ext[id]=value->get_der();
-  return ([ "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm[0], "issuer":t->issuer[0][0][1]->value, "subject":t->subject[0][0][1]->value, "extensions":ext, "public_key":(int)t->public_key->rsa->public_key_equal(rsa) ])
+  return ([
+    "version" : t->version,
+    "serial":t->serial->digits(16),
+    "algorithm":t->algorithm[0],
+    "issuer":t->issuer[0][0][1]->value,
+    "subject":t->subject[0][0][1]->value,
+    "extensions":ext,
+    "public_key":(int)t->public_key->rsa->public_key_equal(rsa),
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_subkey" : t->ext_subjectKeyIdentifier,
+    "ext_ku" : t->ext_keyUsage,
+  ])
 ]],[[ ([
   "version" : 3,
   "serial" : "5",
@@ -271,6 +284,36 @@ test_any_equal([[
       Standards.ASN1.Types.Identifier(2,5,29,19): "0\0"
   ]),
   "public_key": 1,
+  "ext_bc" : 1,
+  "ext_bc_ca" : 0,
+  "ext_bc_len" : 0,
+  "ext_subkey" : "\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+  "ext_ku" : Standards.X509.KU_digitalSignature|Standards.X509.KU_keyEncipherment,
+]) ]])
+
+test_any_equal([[
+  object rsa = Crypto.RSA();
+  rsa->set_public_key(Gmp.mpz(10091719133288484609038014264477683817475840711323254929480453433408142690559279434827127011542800608968367637399409601909209406663819557863705925738798431), 65537);
+
+  array attrs = ({
+    ([ "organizationName" : Standards.ASN1.Types.PrintableString("Test") ]),
+    ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
+  });
+
+  string c = Standards.X509.make_root_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
+
+  object t = Standards.X509.decode_certificate(c);
+  return ([
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_ku" : t->ext_keyUsage,
+  ])
+]],[[ ([
+  "ext_bc" : 1,
+  "ext_bc_ca" : 1,
+  "ext_bc_len" : 0,
+  "ext_ku" : Standards.X509.KU_keyCertSign|Standards.X509.KU_cRLSign,
 ]) ]])
 
 test_any([[
