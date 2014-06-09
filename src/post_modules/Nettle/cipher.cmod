@@ -3057,6 +3057,456 @@ PIKECLASS BlockCipher16
   /*! @endmodule CCM8
    */
 
+#ifdef HAVE_NETTLE_EAX_H
+
+#include <nettle/eax.h>
+
+  /*! @module EAX
+   *!
+   *! Implementation of the EAX mode.
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[BlockCipher16]).
+   *!
+   *! This is a so-called authenticated encryption with associated data
+   *! (AEAD) algorithm, and in addition to encryption also provides
+   *! message digests.
+   *!
+   *! @note
+   *!   This mode of operation was specified as a reaction to the
+   *!   limitiations of the @[BlockCipher16.CCM] mode.
+   *!
+   *! @note
+   *!   Note that this module is not available in all versions of Nettle.
+   *!
+   *! @seealso
+   *!   @[CBC], @[CTR], @[BlockCipher16.CCM], @[BlockCipher16.GCM]
+   */
+  PIKEVAR object(Nettle_AEAD) EAX;
+
+  PIKECLASS _EAX
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit __builtin.Nettle.AEAD
+     */
+    INHERIT "__builtin.Nettle.AEAD";
+
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".EAX"@} appended.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_text(".EAX");
+      f_add(2);
+    }
+
+    /*! @decl int(1..) digest_size()
+     *! Default digest size.
+     *!
+     *! @returns
+     *!   Returns @[BlockCipher::block_size()], but overloading via
+     *!   inherit is supported, and may return any positive number
+     *!   @expr{<= BlockCipher::block_size()@}.
+     */
+    PIKEFUN int(1..) digest_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) block_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(1..) iv_size()
+    {
+      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+    }
+
+    /*! @class State
+     */
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    {
+      PIKEVAR object object
+	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *crypt_state;
+      CVAR int block_size;
+      CVAR int mode;
+      CVAR struct eax_key eax_key;
+      CVAR struct eax_ctx eax_ctx;
+
+      /*! @decl inherit EAX::State
+       */
+
+      EXTRA
+      {
+	/* Perform an inherit of the State class that our parent
+	 * contains via its inherit of AEAD.
+	 */
+	struct program *parent_prog = Pike_compiler->previous->new_program;
+	struct object *parent_obj = Pike_compiler->previous->fake_object;
+	int parent_State_fun_num =
+	  really_low_find_shared_string_identifier(MK_STRING("State"),
+						   parent_prog,
+						   SEE_PROTECTED|SEE_PRIVATE);
+	if (parent_State_fun_num >= 0) {
+	  struct program *parent_State_prog =
+	    low_program_from_function(parent_obj, parent_State_fun_num);
+	  if (parent_State_prog) {
+	    low_inherit(parent_State_prog, 0,
+			parent_State_fun_num +
+			parent_prog->inherits[1].identifier_level,
+			1 + 42, 0, NULL);
+	  }
+	}
+      }
+
+      EXIT
+	gc_trivial;
+      {
+	if (THIS->object) {
+	  free_object(THIS->object);
+	  THIS->object = NULL;
+	}
+      }
+
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
+      /*! @decl void create()
+       */
+      PIKEFUN void create()
+	flags ID_PROTECTED;
+      {
+	struct object *o;
+	struct inherit *inh;
+	int block_size;
+	int f;
+
+	apply_current(f_Nettle_BlockCipher16_cq__EAX_State_substate_factory_fun_num,
+		      args);
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+	  Pike_error("Unsupported return value from Cipher::State().\n");
+	}
+	o = Pike_sp[-1].u.object;
+	if (!o->prog) {
+	  Pike_error("Cipher::State() returned destructed object.\n");
+	}
+
+	f = find_identifier("crypt", o->prog);
+	if (f < 0) {
+	  Pike_error("State object has no crypt() function.\n");
+	}
+
+	apply(o, "block_size", 0);
+
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
+	  Pike_error("block_size() didn't return an int.\n");
+
+	block_size = Pike_sp[-1].u.integer;
+
+	if (block_size != EAX_BLOCK_SIZE)
+	  Pike_error("Bad block size for EAX: %d.\n", block_size);
+
+	THIS->block_size = block_size;
+
+	if (THIS->object) free_object(THIS->object);
+	add_ref(THIS->object = o);
+
+	inh = INHERIT_FROM_INT(o->prog, f);
+	if (inh->prog == Nettle_Cipher_State_program) {
+	  /* crypt() is from Nettle.Cipher.State.
+	   */
+	  THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
+	    get_inherit_storage(o, inh - o->prog->inherits);
+	} else {
+	  THIS->crypt_state = NULL;
+	}
+
+	pop_n_elems(2);
+
+	THIS->mode = 0;
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the string @expr{"x.EAX"@} where x is the
+       *! encapsulated algorithm.
+       */
+      PIKEFUN string(8bit) name()
+      {
+	apply(THIS->object, "name", args);
+	push_text(".EAX");
+	f_add(2);
+      }
+
+      /*! @decl int(16..16) block_size()
+       *! Returns the block size of the encapsulated cipher,
+       *! which is always @expr{16@} for EAX.
+       */
+      PIKEFUN int(16..16) block_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN EAX_BLOCK_SIZE;
+      }
+
+      /*! @decl int(1..16) digest_size()
+       *!
+       *! Default digest size.
+       *!
+       *! This function is used by @[digest()] to determine the digest
+       *! size if no argument was given.
+       *!
+       *! @returns
+       *!   The default implementation returns the result from calling
+       *!   @[EAX::digest_size()], but overloading via inherit is supported,
+       *!   and may return any even number in the range @expr{[1..16]@}.
+       *!
+       *! @seealso
+       *!   @[digest()], @[EAX::digest_size()]
+       */
+      PIKEFUN int(1..16) digest_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	apply_external(1, f_Nettle_BlockCipher16_cq__EAX_digest_size_fun_num, args);
+      }
+
+      /*! @decl int(16..16) iv_size()
+       *! Returns the recommended size for the initialization vector
+       *! (ie @expr{16@}).
+       *!
+       *! Other sizes are allowed, but will be compressed or expanded
+       *! to this size using the encapsulated cipher.
+       */
+      PIKEFUN int(16..16) iv_size()
+	optflags OPT_TRY_OPTIMIZE;
+      {
+	RETURN EAX_IV_SIZE;
+      }
+
+      /*! @decl int(1..) key_size()
+       *! Returns the key size of the encapsulated cipher.
+       */
+      PIKEFUN int(1..) key_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+	apply(THIS->object, "key_size", args);
+      }
+
+      /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for encrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_decrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object(Nettle_AEAD_State) set_encrypt_key(string(8bit) key,
+							int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+	eax_set_key(&THIS->eax_key, ctx, func);
+	THIS->mode = 0;
+
+	push_object(this_object());
+      }
+
+      /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for decrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_encrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object(Nettle_AEAD_State) set_decrypt_key(string(8bit) key,
+							int|void flags)
+	optflags OPT_SIDE_EFFECT;
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	key->flags |= STRING_CLEAR_ON_EXIT;
+	/* NOTE: EAX always uses the encryption function
+	 *       of the underlying cipher!
+	 */
+	apply(THIS->object, "set_encrypt_key", args);
+	pop_stack();
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+	eax_set_key(&THIS->eax_key, ctx, func);
+	THIS->mode = 1;
+
+	push_object(this_object());
+      }
+
+      PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv)
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	int iv_len = iv->len;
+	uint8_t *ctr_iv;
+
+	iv->flags |= STRING_CLEAR_ON_EXIT;
+	NO_WIDE_STRING(iv);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	eax_set_nonce(&THIS->eax_ctx, &THIS->eax_key,
+		      ctx, func, iv->len, STR0(iv));
+
+	RETURN this_object();
+      }
+
+      PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+
+	if (!public_data->len) return;
+
+	NO_WIDE_STRING(public_data);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	eax_update(&THIS->eax_ctx, &THIS->eax_key,
+		   ctx, func, public_data->len, STR0(public_data));
+
+	RETURN this_object();
+      }
+
+      PIKEFUN string(8bit) crypt(string(8bit) data)
+      {
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	struct pike_string *res;
+
+	if (!data->len) {
+	  return;
+	}
+
+	NO_WIDE_STRING(data);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	res = begin_shared_string(data->len);
+
+	if (!THIS->mode) {
+	  eax_encrypt(&THIS->eax_ctx, &THIS->eax_key,
+		      ctx, func, data->len, STR0(res), STR0(data));
+	} else {
+	  eax_decrypt(&THIS->eax_ctx, &THIS->eax_key,
+		      ctx, func, data->len, STR0(res), STR0(data));
+	}
+
+	push_string(end_shared_string(res));
+      }
+
+      /*! @decl string(8bit) digest(int(1..16)|void bytes)
+       *!
+       *! Returns the OMAC digest of the specified size.
+       *!
+       *! @param bytes
+       *!   Size in bytes for the desired digest. Any number in the
+       *!   range @expr{[1..16]@}. If not specified the value from
+       *!   calling @[digest_size()] will be used.
+       *!
+       *! @seealso
+       *!   @[digest_size()], @[global::digest_size()]
+       */
+      PIKEFUN string(8bit) digest(int(1..16)|void bytes_p)
+      {
+	int bytes = 0;
+	crypt_func func = pike_crypt_func;
+	void *ctx = THIS->object;
+	struct pike_string *res;
+
+	if (bytes_p) {
+	  bytes = bytes_p->u.integer;
+	  if (bytes & 1) {
+	    bytes++;
+	  }
+	}
+	if (!bytes) {
+	  apply_current(f_Nettle_BlockCipher16_cq__EAX_State_digest_size_fun_num,
+			0);
+	  get_all_args("digest", 1, "%d", &bytes);
+	}
+	if (bytes < 1) {
+	  bytes = 1;
+	} else if (bytes > EAX_DIGEST_SIZE) {
+	  bytes = EAX_DIGEST_SIZE;
+	}
+
+	res = begin_shared_string(bytes);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  func = THIS->crypt_state->crypt;
+	  ctx = THIS->crypt_state->ctx;
+	}
+
+	eax_digest(&THIS->eax_ctx, &THIS->eax_key,
+		   ctx, func, bytes, STR0(res));
+
+	push_string(end_shared_string(res));
+      }
+    }
+    /*! @endclass State
+     */
+  }
+  /*! @endmodule EAX
+   */
+#endif /* HAVE_NETTLE_EAX_H */
+
 #ifdef HAVE_NETTLE_GCM_H
 
 #include <nettle/gcm.h>
@@ -3584,6 +4034,11 @@ PIKECLASS BlockCipher16
 
 #endif /* HAVE_NETTLE_GCM_H */
 
+  /* NB: Declare the storage explicitly to avoid having it declared
+   *     inside the #ifdef above.
+   */
+  DECLARE_STORAGE;
+
   INIT
   {
     apply_current(Nettle_BlockCipher16_cq__CCM_program_fun_num, 0);
@@ -3596,6 +4051,13 @@ PIKECLASS BlockCipher16
       add_ref(THIS_NETTLE_BLOCKCIPHER16->CCM8 = Pike_sp[-1].u.object);
     }
     pop_stack();
+#ifdef HAVE_NETTLE_EAX_H
+    apply_current(Nettle_BlockCipher16_cq__EAX_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->EAX = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+#endif
 #ifdef HAVE_NETTLE_GCM_H
     apply_current(Nettle_BlockCipher16_cq__GCM_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
