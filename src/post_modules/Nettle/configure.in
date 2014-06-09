@@ -66,12 +66,19 @@ else
     # camellia is available in Nettle 2.1 and later.
     # gcm is available in Nettle 2.2 and later.
     # ripemd160 is available in Nettle 2.3 and later.
-    # sha3 and gosthash94 is available in Nettle 2.6 and later.
-    # chacha and poly1305 will be available in Nettle 3.0 and later.
-    AC_CHECK_HEADERS(nettle/camellia.h nettle/md4.h nettle/sha3.h nettle/dsa.h \
-                     nettle/arctwo.h nettle/ripemd160.h nettle/gosthash94.h \
-	             nettle/umac.h nettle/ctr.h nettle/gcm.h nettle/ecdsa.h \
-		     nettle/chacha.h nettle/chacha-poly1305.h nettle/poly1305.h)
+    # sha3 and gosthash94 are available in Nettle 2.6 and later.
+    # chacha, poly1305 and eax are available in Nettle 3.0 and later.
+    AC_CHECK_HEADERS(nettle/md4.h \
+		     nettle/arctwo.h \
+		     nettle/ctr.h \
+		     nettle/camellia.h \
+		     nettle/gcm.h \
+		     nettle/ripemd160.h \
+		     nettle/sha3.h nettle/gosthash94.h \
+		     nettle/chacha.h nettle/chacha-poly1305.h \
+		     nettle/poly1305.h nettle/eax.h \
+                     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
+		     )
     AC_CHECK_FUNCS(nettle_md4_init)
 
     AC_MSG_CHECKING([for idea.c])
