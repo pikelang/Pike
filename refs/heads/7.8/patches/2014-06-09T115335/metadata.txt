@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Protocols.HTTP.Query async, copy detect ouroboros
 from: 21ad980bd68a967f1eff8c9015104441f7e983fe
 to: b2ad1778d68eee3d7f7b8da91c79672d62c34f81
 originator: wellhardh@roxen.com
@@ -14,14 +14,6 @@ Multiple fixes:
     
     Fixes [bug 7143].
 
-  * Backend: Fixed stale thread state in poll devices.
-    
-    The current thread was left swapped in during co_wait_interpreter()
-    in POLL_DEVICE_SET_EVENTS().
-    
-    Also fixes condition variable leak (probably not relevant in most
-    thread implementations, but...).
-
   * Stdio.cp: Detect ouroboros.
     
     Copying a directory to a subdirectory of itself would often trigger an
@@ -33,9 +25,3 @@ Multiple fixes:
     
     Also fixes recursive_mv(), which either hanged in cp() as above, or
     deleted all the files if cp() succeeded in the above cases.
-
-  * CHANGES: updates for new 7.8 build.
-
-  * release number bumped to 866 by export.pike
-
-  * release number bumped to 867 by export.pike
