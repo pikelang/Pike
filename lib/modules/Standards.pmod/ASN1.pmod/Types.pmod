@@ -14,8 +14,6 @@
 
 // Helper functions
 
-#define MAKE_COMBINED_TAG(cls, tag) (((tag) << 2) | (cls))
-
 //! Combines tag and class as a single integer, in a somewhat arbitrary
 //! way. This works also for tags beyond 31 (although not for tags
 //! beyond 2^30.
@@ -30,7 +28,7 @@
 //!  @[Standards.ASN1.Types.extract_tag]
 //!  @[Standards.ASN1.Types.extract_cls]
 int make_combined_tag(int cls, int tag)
-{ return MAKE_COMBINED_TAG(cls, tag); }
+{ return tag << 2 | cls; }
 
 //! extract ASN1 type tag from a combined tag
 //! @seealso

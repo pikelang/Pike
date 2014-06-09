@@ -79,9 +79,8 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
 
   int cls = raw_tag >> 6;
   int tag = raw_tag & 0x1f;
-  int combined_tag = .Types.make_combined_tag(cls, tag);
 
-  program(.Types.Object) p = types[combined_tag];
+  program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
 
   if (raw_tag & 0x20)
   {
