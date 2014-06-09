@@ -48,8 +48,8 @@ int extract_cls(int i) { return i & 3; }
 //! Generic, abstract base class for ASN1 data types.
 class Object
 {
-  constant cls = 0;
-  constant tag = 0;
+  int cls = 0;
+  int tag = 0;
   constant constructed = 0;
 
   constant type_name = "";
@@ -293,7 +293,7 @@ class String
 class Boolean
 {
   inherit Object;
-  constant tag = 1;
+  int tag = 1;
   constant type_name = "BOOLEAN";
 
   //! value of object
@@ -335,7 +335,7 @@ class Boolean
 class Integer
 {
   inherit Object;
-  constant tag = 2;
+  int tag = 2;
   constant type_name = "INTEGER";
 
   //! value of object
@@ -396,7 +396,7 @@ class Integer
 class Enumerated
 {
   inherit Integer;
-  constant tag = 10;
+  int tag = 10;
   constant type_name ="ENUMERATED";
 }
 
@@ -404,7 +404,7 @@ class Enumerated
 class BitString
 {
   inherit Object;
-  constant tag = 3;
+  int tag = 3;
   constant type_name = "BIT STRING";
 
   //! value of object
@@ -488,7 +488,7 @@ class BitString
 class OctetString
 {
   inherit String;
-  constant tag = 4;
+  int tag = 4;
   constant type_name = "OCTET STRING";
 }
 
@@ -496,7 +496,7 @@ class OctetString
 class Null
 {
   inherit Object;
-  constant tag = 5;
+  int tag = 5;
   constant type_name = "NULL";
 
   string(0..255) get_der_content() { return ""; }
@@ -519,7 +519,7 @@ class Null
 class Identifier
 {
   inherit Object;
-  constant tag = 6;
+  int tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
 
   //! value of object
@@ -623,7 +623,7 @@ int(1..1) asn1_utf8_valid (string s)
 class UTF8String
 {
   inherit String;
-  constant tag = 12;
+  int tag = 12;
   constant type_name = "UTF8String";
 
   string(0..255) get_der_content()
@@ -650,7 +650,7 @@ class UTF8String
 class Sequence
 {
   inherit Compound;
-  constant tag = 16;
+  int tag = 16;
   constant type_name = "SEQUENCE";
 
   string(0..255) get_der_content()
@@ -680,7 +680,7 @@ class Sequence
 class Set
 {
   inherit Compound;
-  constant tag = 17;
+  int tag = 17;
   constant type_name = "SET";
 
   int(-1..1) compare_octet_strings(string r, string s)
@@ -721,7 +721,7 @@ int(0..1) asn1_printable_valid (string s) {
 class PrintableString
 {
   inherit String;
-  constant tag = 19;
+  int tag = 19;
   constant type_name = "PrintableString";
 }
 
@@ -773,7 +773,7 @@ int(0..1) asn1_teletex_valid (string s)
 class TeletexString
 {
   inherit String;
-  constant tag = 20;
+  int tag = 20;
   constant type_name = "TeletexString";	// Alias: T61String
 
 #define ENC_ERR(char) char
@@ -1153,7 +1153,7 @@ int(0..1) asn1_broken_teletex_valid (string s)
 class BrokenTeletexString
 {
   inherit String;
-  constant tag = 20;
+  int tag = 20;
   constant type_name = "TeletexString";	// Alias: T61String
 }
 
@@ -1173,14 +1173,14 @@ int(0..1) asn1_IA5_valid (string s)
 class IA5String
 {
   inherit String;
-  constant tag = 22;
+  int tag = 22;
   constant type_name = "IA5STRING";
 }
 
 //!
 class VisibleString {
   inherit String;
-  constant tag = 26;
+  int tag = 26;
   constant type_name = "VisibleString";
 }
 
@@ -1190,7 +1190,7 @@ class VisibleString {
 class UTC
 {
   inherit String;
-  constant tag = 23;
+  int tag = 23;
   constant type_name = "UTCTime";
 
   //!
@@ -1250,7 +1250,7 @@ int(0..0) asn1_universal_valid (string s)
 class UniversalString
 {
   inherit OctetString;
-  constant tag = 28;
+  int tag = 28;
   constant type_name = "UniversalString";
 
   string get_der_content() {
@@ -1281,7 +1281,7 @@ int(0..1) asn1_bmp_valid (string s)
 class BMPString
 {
   inherit OctetString;
-  constant tag = 30;
+  int tag = 30;
   constant type_name = "BMPString";
 
   string get_der_content() {
