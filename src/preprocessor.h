@@ -1199,6 +1199,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                     case '\n':
                       PUTNL();
                       this->current_line++;
+                      /* Fallthrough */
                     case 0:
                       break;
                   }
