@@ -19,7 +19,7 @@ array(int) client_cert_types;
 array(string(8bit)) client_cert_distinguished_names;
 
 //!
-Packet client_hello(array(string(8bit))|void server_names)
+Packet client_hello(string(8bit)|void server_name)
 {
   ADT.struct struct = ADT.struct();
   /* Build client_hello message */
@@ -112,16 +112,16 @@ Packet client_hello(array(string(8bit))|void server_names)
     return ADT.struct()->put_var_string(get_signature_algorithms(), 2);
   };
 
-  ext (EXTENSION_server_name, server_names && sizeof(server_names))
+  ext (EXTENSION_server_name, !!server_name)
   {
     ADT.struct extension = ADT.struct();
-    foreach(server_names, string(8bit) server_name) {
-      ADT.struct hostname = ADT.struct();
-      hostname->put_uint(0, 1); // name_time host_name(0)
-      hostname->put_var_string(server_name, 2); // hostname
 
-      extension->put_var_string(hostname->pop_data(), 2);
-    }
+    ADT.struct hostname = ADT.struct();
+    hostname->put_uint(0, 1); // name_time host_name(0)
+    hostname->put_var_string(server_name, 2); // hostname
+
+    extension->put_var_string(hostname->pop_data(), 2);
+
     return extension;
   };
 
@@ -199,13 +199,13 @@ Packet certificate_verify_packet()
 }
 #endif
 
-protected void create(Context ctx, array(string(8bit))|void server_names)
+protected void create(Context ctx, string(8bit)|void server_name)
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
   session = context->new_session();
-  send_packet(client_hello(server_names));
+  send_packet(client_hello(server_name));
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the

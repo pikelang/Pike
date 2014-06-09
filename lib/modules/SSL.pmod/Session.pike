@@ -76,8 +76,8 @@ int(0..1) truncated_hmac;
  * Extensions provided by the peer.
  */
 
-//! RFC 4366 3.1 (SNI)
-array(string(8bit)) server_names;
+//! RFC 6066 3.1 (SNI)
+string(8bit) server_name;
 
 //! The set of <hash, signature> combinations supported by the other end.
 //!
@@ -251,7 +251,7 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
 //!     The set of signature algorithm tuples that
 //!     the client claims to support.
 //!
-//!   @item @[server_names]
+//!   @item @[server_name]
 //!     Server Name Indication extension from the client.
 //!     May be @expr{0@} (zero) if the client hasn't sent any SNI.
 //! @enddl
@@ -264,7 +264,7 @@ int select_cipher_suite(object context,
   // First we need to check what certificate candidates we have.
   array(CertificatePair) certs =
     ([function(array(string(8bit)): array(CertificatePair))]
-     context->find_cert)(server_names);
+     context->find_cert)( server_name && ({ server_name }) );
 
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 

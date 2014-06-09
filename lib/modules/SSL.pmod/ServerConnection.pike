@@ -433,22 +433,27 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      if (sizeof(remote_extensions) != 1) {
 		maybe_safari_10_8 = 0;
 	      }
-	      // RFC 4366 3.1 "Server Name Indication"
-	      // Example: "\0\f\0\0\tlocalhost"
-	      session->server_names = ({});
+	      // RFC 6066 3.1 "Server Name Indication"
+	      session->server_name = 0;
 	      while (sizeof(extension_data)) {
 		ADT.struct server_name =
 		  ADT.struct(extension_data->get_var_string(2));
 		switch(server_name->get_uint(1)) {	// name_type
 		case 0:	// host_name
-		  session->server_names += ({ server_name->get_var_string(2) });
+                  if( session->server_name )
+                  {
+                    send_packet(alert(ALERT_fatal, ALERT_unrecognized_name,
+                                      "Multiple names given.\n"));
+                    return -1;
+                  }
+		  session->server_name = server_name->get_var_string(2);
 		  break;
 		default:
-		  // Ignore other NameTypes for now.
+		  // No other NameTypes defined yet.
 		  break;
 		}
 	      }
-              SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_names);
+              SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_name);
 	      break;
 	    case EXTENSION_max_fragment_length:
 	      // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
