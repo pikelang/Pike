@@ -567,26 +567,20 @@ class TBSCertificate
     return UNDEFINED;
   }
 
-  protected class asn1_keyIdentifier { inherit OctetString; constant real_tag = 0; }
-  protected class asn1_certSerialNo  { inherit Integer;     constant real_tag = 2; }
-  protected class asn1_rfc822Name    { inherit IA5String;   constant real_tag = 1; }
-  protected class asn1_dNSName       { inherit IA5String;   constant real_tag = 2; }
-  protected class asn1_URI           { inherit IA5String;   constant real_tag = 6; }
-  protected class asn1_iPAddress     { inherit OctetString; constant real_tag = 7; }
-  protected class asn1_registeredID  { inherit Identifier;  constant real_tag = 8; }
-
   protected mapping extension_types = ([
-    .PKCS.Identifiers.ce_ids.authorityKeyIdentifier : ([
-                                          make_combined_tag(2,0) : asn1_keyIdentifier,
-                                          make_combined_tag(2,2) : asn1_certSerialNo,
-                                        ]),
-    .PKCS.Identifiers.ce_ids.subjectAltName : ([
-                                          make_combined_tag(2,1) : asn1_rfc822Name,
-                                          make_combined_tag(2,2) : asn1_dNSName,
-                                          make_combined_tag(2,6) : asn1_URI,
-                                          make_combined_tag(2,7) : asn1_iPAddress,
-                                          make_combined_tag(2,8) : asn1_registeredID,
-                                        ]),
+    .PKCS.Identifiers.ce_ids.authorityKeyIdentifier :
+    ([
+      make_combined_tag(2,0) : OctetString, // keyIdentifier
+      make_combined_tag(2,2) : Integer,     // certSerialNo
+    ]),
+    .PKCS.Identifiers.ce_ids.subjectAltName :
+    ([
+      make_combined_tag(2,1) : IA5String,   // rfc822Name
+      make_combined_tag(2,2) : IA5String,   // dNSName
+      make_combined_tag(2,6) : IA5String,   // URI
+      make_combined_tag(2,7) : OctetString, // iPAddress
+      make_combined_tag(2,8) : Identifier,  // registeredID
+    ]),
   ]);
 
   //! The raw ASN.1 objects from which @[extensions] and @[critical]
@@ -738,6 +732,12 @@ class TBSCertificate
     }
 
     return m || i;
+  }
+
+  string fmt_extensions()
+  {
+    foreach(extensions; Identifier i; Object o)
+      write("%O : %O\n", .PKCS.Identifiers.reverse_ce_ids[i]||i, o);
   }
 
   protected string _sprintf(int t)
@@ -970,13 +970,13 @@ class TBSCertificate
 
     // Let's assume you can only have one unique identifier of each
     // kind.
-    array list = filter(s->elements, lambda(Object o) { return has_index(o, "real_tag"); });
-    if( sizeof(list) != sizeof(Array.uniq(list->real_tag)) )
+    array list = filter(s->elements, lambda(Object o) { return o->cls==2; });
+    if( sizeof(list) != sizeof(Array.uniq(list->tag)) )
       return 0;
 
     foreach(list, Object o)
     {
-      switch(o->real_tag)
+      switch(o->tag)
       {
       case 0:
         ext_authorityKeyIdentifier_keyIdentifier = o->value;
@@ -1061,10 +1061,11 @@ class TBSCertificate
 
     foreach(s->elements, Object o)
     {
-      if( !has_index(o, "real_tag") ) continue;
+      if( o->cls!=2 ) continue;
 #define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=0; \
         ext_subjectAltName_##X += ({ o->value }); } while(0)
-      switch(o->real_tag)
+
+      switch(o->tag)
       {
       case 1:
         CASE(rfc822Name);
