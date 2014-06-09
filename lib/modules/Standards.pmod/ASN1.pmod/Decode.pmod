@@ -11,78 +11,33 @@
 //! Decodes a DER object.
 
 //! Primitive unconstructed ASN1 data type.
-class Primitive
+class Primitive (int cls, int tag, string(8bit) raw)
 {
   //! @decl inherit Types.Object
   inherit .Types.Object;
 
-  constant constructed = 0;
-  int combined_tag;
-
-  string(8bit) raw;
-
   //! Get raw encoded contents of object
   string(8bit) get_der_content() { return raw; }
 
-  int get_combined_tag() { return combined_tag; }
-
-  //! get tag
-  int get_tag() { return .Types.extract_tag(combined_tag); }
-
-  int `tag() { return .Types.extract_tag(combined_tag); }
-
-  //! get class
-  int get_cls() { return .Types.extract_cls(combined_tag); }
-
-  int `cls() { return .Types.extract_cls(combined_tag); }
-
-  void create(int t, string(8bit) r) {
-    combined_tag = t;
-    raw = r;
-  }
-
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
+    return t=='O' && sprintf("%O(%d)", this_program, get_combined_tag());
   }
 
 #ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
-    return sprintf("primitive(%d)", combined_tag);
+    return sprintf("primitive(%d)", get_combined_tag());
   }
 #endif
 }
 
 //! Constructed type
-class Constructed
+class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elements)
 {
   inherit .Types.Compound;
   constant type_name = "CONSTRUCTED";
 
-  int combined_tag;
-
-  //! raw encoded  contents
-  string(8bit) raw;
-
   //! Get raw encoded contents of object
   string(8bit) get_der_content() { return raw; }
-
-  int get_combined_tag() { return combined_tag; }
-
-  //! get tag
-  int get_tag() { return .Types.extract_tag(combined_tag); }
-
-  int `tag() { return .Types.extract_tag(combined_tag); }
-
-  //! get class
-  int get_cls() { return .Types.extract_cls(combined_tag); }
-
-  int `cls() { return .Types.extract_cls(combined_tag); }
-
-  void create(int t, string(8bit) r, array(.Types.Object) e) {
-    combined_tag = t;
-    raw = r;
-    elements = e;
-  }
 }
 
 //! @param data
@@ -122,9 +77,11 @@ class Constructed
 
   DBG("contents: %O\n", contents);
 
-  int tag = .Types.make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
+  int cls = raw_tag >> 6;
+  int tag = raw_tag & 0x1f;
+  int combined_tag = .Types.make_combined_tag(cls, tag);
 
-  program(.Types.Object) p = types[tag];
+  program(.Types.Object) p = types[combined_tag];
 
   if (raw_tag & 0x20)
   {
@@ -143,14 +100,16 @@ class Constructed
 	// Context-specific constructed compound with a single element.
 	// ==> Probably a TaggedType.
 	DBG("Probable tagged type.\n");
-	return .Types.MetaExplicit(2, raw_tag & 0x1f)(elements[0]);
+	return .Types.MetaExplicit(2, tag)(elements[0]);
       }
 
       DBG("Unknown constructed type.\n");
-      return constructed(tag, contents, elements);
+      return constructed(cls, tag, contents, elements);
     }
 
     .Types.Object res = p();
+    res->cls = cls;
+    res->tag = tag;
     res->begin_decode_constructed(contents);
 
     int i;
@@ -169,9 +128,15 @@ class Constructed
 
   DBG("Decoding Primitive\n");
 
-  // Primitive encoding
-  return p ? p()->decode_primitive(contents, this_object(), types)
-    : Primitive(tag, contents);
+  if (p)
+  {
+    .Types.Object res = p();
+    res->cls = cls;
+    res->tag = tag;
+    return res->decode_primitive(contents, this_object(), types);
+  }
+
+  return Primitive(cls, tag, contents);
 }
 
 #define U(x) .Types.make_combined_tag(0, (x))
