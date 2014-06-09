@@ -486,14 +486,12 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise @expr{1@}.
-int(1bit) connect(string|array(string)|void dest_addr)
+int(1bit) connect(string|void dest_addr)
 {
   if (conn) error("A connection is already configured!\n");
 
   ENTER (0, 0) {
-    if (stringp(dest_addr)) {
-      dest_addr = ({ dest_addr });
-    }
+
     conn = .ClientConnection(context, dest_addr);
 
     // Wait for the handshake to finish in blocking mode.
@@ -561,10 +559,10 @@ int(1bit) accept(string|void pending_data)
   return 1;
 }
 
-mixed get_server_names()
+mixed get_server_name()
 {
   if (!conn) error("No active conection.\n");
-  return conn->session->server_names;
+  return conn->session->server_name;
 }
 
 //! @returns
