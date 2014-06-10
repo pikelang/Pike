@@ -2701,7 +2701,7 @@ class dirnode (string dirname, object|void compilation_handler,
 		  _cache_full?"full":"partially filled");
   }
 
-  protected protected array(string) _indices()
+  protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2711,7 +2711,7 @@ class dirnode (string dirname, object|void compilation_handler,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  protected protected array(mixed) _values()
+  protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
