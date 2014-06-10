@@ -66,16 +66,17 @@ protected array(int) read_identifier(ADT.struct data)
 }
 
 //! @param data
-//!   an instance of ADT.struct
+//!   An instance of ADT.struct containing the DER encoded data.
+//!
 //! @param types
-//!   a mapping from combined tag numbers to classes from or derived from
-//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using
-//!   @[Standards.ASN1.Types.make_combined_tag].
+//!   A mapping from combined tag numbers to classes from or derived
+//!   from @[Standards.ASN1.Types]. Combined tag numbers may be
+//!   generated using @[Standards.ASN1.Types.make_combined_tag].
 //!
 //! @returns
-//!   an object from @[Standards.ASN1.Types] or
-//!   either @[Standards.ASN1.Decode.Primitive] or
-//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+//!   An object from @[Standards.ASN1.Types] or, either
+//!   @[Standards.ASN1.Decode.Primitive] or
+//!   @[Standards.ASN1.Decode.constructed], if the type is unknown.
 //!   Throws an exception if the data could not be decoded.
 //!
 //! @fixme
@@ -89,13 +90,18 @@ protected array(int) read_identifier(ADT.struct data)
       ({"universal","application","context","private"})[cls], const, tag);
 
   int len = data->get_uint(1);
+  if( !cls && !const && !tag && !len )
+    error("End-of-contents not supported.\n");
   if (len & 0x80)
   {
     if (len == 0xff)
       error("Illegal size.\n");
+    if (len == 0x80)
+      error("Indefinite length form not supported.\n");
     len = data->get_uint(len & 0x7f);
   }
   DBG("len : %d\n", len);
+
 
   string(0..255) contents = data->get_fix_string(len);
   DBG("contents: %O\n", contents);
@@ -104,14 +110,13 @@ protected array(int) read_identifier(ADT.struct data)
 
   if (const)
   {
-    /* Constructed encoding */
-
     DBG("Decoding constructed\n");
-    array(.Types.Object) elements = ({ });
     ADT.struct struct = ADT.struct(contents);
 
     if (!p)
     {
+      array(.Types.Object) elements = ({ });
+
       while (!struct->is_empty())
 	elements += ({ der_decode(struct, types) });
 
