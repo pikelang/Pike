@@ -14,31 +14,29 @@
 
 // Helper functions
 
-//! Combines tag and class as a single integer, in a somewhat arbitrary
-//! way. This works also for tags beyond 31 (although not for tags
-//! beyond 2^30.
+//! Combines tag and class to a single integer, for intenal uses.
 //!
 //! @param cls
-//!   ASN1 type class
+//!   ASN1 type class (0..3).
 //! @param tag
-//!   ASN1 type tag
+//!   ASN1 type tag (1..).
 //! @returns
-//!   combined tag
+//!   The combined tag.
 //! @seealso
 //!  @[Standards.ASN1.Types.extract_tag]
 //!  @[Standards.ASN1.Types.extract_cls]
 int make_combined_tag(int cls, int tag)
 { return tag << 2 | cls; }
 
-//! extract ASN1 type tag from a combined tag
+//! Extract ASN1 type tag from a combined tag.
 //! @seealso
 //!  @[Standards.ASN1.Types.make_combined_tag]
 int extract_tag(int i) { return i >> 2; }
 
-//! extract ASN1 type class from a combined tag
+//! Extract ASN1 type class from a combined tag.
 //! @seealso
 //!  @[Standards.ASN1.Types.make_combined_tag]
-int extract_cls(int i) { return i & 3; }
+int(0..3) extract_cls(int i) { return [int(0..3)](i & 3); }
 
 
 // Class definitions
@@ -101,25 +99,19 @@ class Object
   }
   this_program init(mixed ... args) { return this; args; }
 
-  string(0..255) to_base_128(int n)
+  protected string(0..255) to_base_128(int n)
   {
-    if (!n)
-      return "\0";
-    /* Convert tag number to base 128 */
-    array(int) digits = ({ });
-
-    /* Array is built in reverse order, least significant digit first */
-    while(n)
+    string(0..255) ret = [string(0..127)]sprintf("%c", n&0x7f);
+    n >>= 7;
+    while( n )
     {
-      digits += ({ (n & 0x7f) | 0x80 });
+      ret = [string(0..255)]sprintf("%c", (n&0x7f) | 0x80) + ret;
       n >>= 7;
     }
-    digits[0] &= 0x7f;
-
-    return [string(0..255)]sprintf("%@c", reverse(digits));
+    return ret;
   }
 
-  string(0..255) encode_tag()
+  protected string(0..255) encode_tag()
   {
     int tag = get_tag();
     int cls = get_cls();
@@ -132,7 +124,7 @@ class Object
 				   to_base_128(tag) );
   }
 
-  string(0..255) encode_length(int|object len)
+  protected string(0..255) encode_length(int|object len)
   {
     if (len < 0x80)
       return [string(0..255)]sprintf("%c", len);
@@ -142,7 +134,7 @@ class Object
     return [string(0..255)]sprintf("%c%s", sizeof(s) | 0x80, s);
   }
 
-  string(0..255) build_der(string(0..255) contents)
+  protected string(0..255) build_der(string(0..255) contents)
   {
     string(0..255) data =
       encode_tag() + encode_length(sizeof(contents)) + contents;
