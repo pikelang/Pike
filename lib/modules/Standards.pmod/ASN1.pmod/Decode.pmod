@@ -40,6 +40,31 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   string(8bit) get_der_content() { return raw; }
 }
 
+protected int read_varint(ADT.struct data)
+{
+  int ret, byte;
+  do {
+    ret <<= 7;
+    byte = data->get_uint(1);
+    ret |= (byte & 0x7f);
+  } while (byte & 0x80);
+  return ret;
+}
+
+protected array(int) read_identifier(ADT.struct data)
+{
+  int byte = data->get_uint(1);
+
+  int cls = byte >> 6;
+  int const = (byte >> 5) & 1;
+  int tag = byte & 0x1f;
+
+  if( tag == 0x1f )
+    tag = read_varint(data);
+
+  return ({ cls, const, tag });
+}
+
 //! @param data
 //!   an instance of ADT.struct
 //! @param types
@@ -59,30 +84,25 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
 .Types.Object der_decode(ADT.struct data,
                          mapping(int:program(.Types.Object)) types)
 {
-  int raw_tag = data->get_uint(1);
-  int len;
-  string(0..255) contents;
+  [int cls, int const, int tag] = read_identifier(data);
+  DBG("class %O, construced %d, tag %d\n",
+      ({"universal","application","context","private"})[cls], const, tag);
 
-  DBG("decoding raw_tag %x\n", raw_tag);
-
-  if ( (raw_tag & 0x1f) == 0x1f)
-    error("High tag numbers is not supported\n");
-
-  len = data->get_uint(1);
+  int len = data->get_uint(1);
   if (len & 0x80)
+  {
+    if (len == 0xff)
+      error("Illegal size.\n");
     len = data->get_uint(len & 0x7f);
-
+  }
   DBG("len : %d\n", len);
-  contents = data->get_fix_string(len);
 
+  string(0..255) contents = data->get_fix_string(len);
   DBG("contents: %O\n", contents);
-
-  int cls = raw_tag >> 6;
-  int tag = raw_tag & 0x1f;
 
   program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
 
-  if (raw_tag & 0x20)
+  if (const)
   {
     /* Constructed encoding */
 
@@ -95,7 +115,8 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
       while (!struct->is_empty())
 	elements += ({ der_decode(struct, types) });
 
-      if (((raw_tag & 0xc0) == 0x80) && (sizeof(elements) == 1)) {
+      if (cls==2 && sizeof(elements)==1)
+      {
 	// Context-specific constructed compound with a single element.
 	// ==> Probably a TaggedType.
 	DBG("Probable tagged type.\n");

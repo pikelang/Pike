@@ -10,6 +10,19 @@ define(test_decode,[[
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->debug_string(),$2)
 ]])
 
+test_decode("1f 7f 00", "primitive(508)")
+test_decode("5f 7f 00", "primitive(509)")
+test_decode("9f 7f 00", "primitive(510)")
+test_decode("df 7f 00", "primitive(511)")
+test_decode("9f ff 00 00", "primitive(65026)")
+
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\xff"))
+
+test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*127)->get_der())->value,
+  "A"*127)
+test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*128)->get_der())->value,
+  "A"*128)
+
 test_decode("0500","NULL")
 
 dnl 5.4
