@@ -17,11 +17,17 @@ test_decode("df 7f 00", "primitive(511)")
 test_decode("9f ff 00 00", "primitive(65026)")
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\xff"))
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\x80"))
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\0"))
 
 test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*127)->get_der())->value,
   "A"*127)
 test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*128)->get_der())->value,
   "A"*128)
+
+test_decode("010100","FALSE")
+test_decode("010101","TRUE")
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\1\0"))
 
 test_decode("0500","NULL")
 

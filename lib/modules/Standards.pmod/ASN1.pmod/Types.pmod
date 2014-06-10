@@ -313,6 +313,7 @@ class Boolean
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
+    if( contents=="" ) error("Illegal boolean value.\n");
     value = (contents != "\0");
     return this;
   }
