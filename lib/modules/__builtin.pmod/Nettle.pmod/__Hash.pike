@@ -51,4 +51,22 @@ class State
   //! @returns
   //!   The digest.
   string digest(int|void length);
+
+  //! Returns a human readable name for the algorithm.
+  string name()
+  {
+    return global::name();
+  }
+
+  //! Returns the size of a hash digests.
+  int(0..) digest_size()
+  {
+    return global::digest_size();
+  }
+
+  //! Returns the internal block size of the hash algorithm.
+  int(1..) block_size()
+  {
+    return global::block_size();
+  }
 }

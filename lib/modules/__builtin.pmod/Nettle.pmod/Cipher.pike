@@ -72,7 +72,29 @@ class State
 
   //! @returns
   //!   The actual key size for this cipher.
-  int(0..) key_size();
+  //!
+  //! Defaults to just returning @expr{global::key_size()@}.
+  int(0..) key_size()
+  {
+    return global::key_size();
+  }
+
+  //! Returns a human readable name for the algorithm.
+  //!
+  //! Defaults to just returning @expr{global::name()@}.
+  string(8bit) name()
+  {
+    return global::name();
+  }
+
+  //! @returns
+  //!   The block size of the cipher (@expr{1@} for stream ciphers).
+  //!
+  //! Defaults to just returning @expr{global::block_size()@}.
+  int(0..) block_size()
+  {
+    return global::block_size();
+  }
 }
 
 //! Calling `() will return a @[State] object.

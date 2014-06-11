@@ -24,4 +24,19 @@ class State
   //! @param key
   //!   The secret key for the hash.
   protected void create(string key);
+
+  //! Returns the recomended size of the key.
+  int(0..) key_size()
+  {
+    return global::key_size();
+  }
+
+  //! Returns the size of the iv/nonce (if any).
+  //!
+  //! Some MACs like eg @[Crypto.SHA1.HMAC] have fixed ivs,
+  //! in which case this function will return @expr{0@}.
+  int(0..) iv_size()
+  {
+    return global::iv_size();
+  }
 }
