@@ -189,6 +189,8 @@ _HMAC HMAC = _HMAC();
 
 //! @endignore
 
+//! @endmodule HMAC
+
 /* NOTE: This is NOT the MIME base64 table! */
 protected constant b64tab =
   "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
