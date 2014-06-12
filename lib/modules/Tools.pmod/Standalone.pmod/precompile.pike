@@ -1737,12 +1737,16 @@ class ParseBlock
 
 	    mixed name=x[e+1];
 	    string define=make_unique_name("inherit",name,base,"defined");
+	    string inh_num = make_unique_name(base, name, "inh_num");
+	    string inh_offset = make_unique_name(base, name, "inh_offset");
 	    if ((string)name == "::") {
 	      e++;
 	      name = x[e+1];
 	      if ((name == "this_program") &&
 		  has_suffix(base, "_" + class_name)) {
 		define=make_unique_name("inherit",name,base,"defined");
+		inh_num = make_unique_name(base, name, "inh_num");
+		inh_offset = make_unique_name(base, name, "inh_offset");
 		name = UNDEFINED;
 		pre = ({
 		  PC.Token(
@@ -1815,14 +1819,29 @@ sprintf("        } else {\n"
 	    }
 	    addfuncs +=
 	      IFDEF(define,
-		    pre + ({
+		    ({
+		      PC.Token(
+			       sprintf("  %s = Pike_compiler->new_program->"
+				       "num_inherits;\n",
+				       inh_num),
+			       x[e]->line),
+		    }) + pre + ({
 		      PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
 				       "%s, %s, NULL);\n",
 				       indent, p, numid, offset,
 				       attributes->flags || "0"),
 			       x[e]->line),
+		      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+				       "inherits[%s].identifier_level;\n",
+				       indent, inh_offset, inh_num),
+			       x[e]->line),
 		    }) + post);
-	    ret += DEFINE(define);
+	    ret += DEFINE(define) + ({
+	      PC.Token(sprintf("static int %s = -1;\n", inh_num),
+		       x[e]->line),
+	      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
+		       x[e]->line),
+	    });
 	    e = pos;
 	    break;
 	  }
