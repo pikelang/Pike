@@ -38,6 +38,10 @@ DECLARATIONS
  *! to the C one, but using generally accepted Pike syntax.
  */
 
+/* This symbol conflicts with a definition of the same in <zxid/errmac.h>.
+ */
+#undef GETTIMEOFDAY
+
 /* These defines are needed to get the right size for the zxid_conf struct! */
 #define USE_CURL
 #define USE_PTHREAD
