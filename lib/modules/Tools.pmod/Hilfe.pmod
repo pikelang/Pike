@@ -1852,6 +1852,11 @@ class Evaluator {
 
 	    string t = expr[i];
 
+            if(t==".") {
+              i++;
+              continue;
+            }
+
             if(t=="lambda") {
               int d = expr->depth(i);
               do {
