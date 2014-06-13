@@ -1885,9 +1885,6 @@ PIKECLASS BlockCipher
 
 	NO_WIDE_STRING(data);
 
-	if(data->len % block_size)
-	  Pike_error("Data length not multiple of block size.\n");
-
 	if (!THIS->object || !THIS->object->prog) {
 	  Pike_error("Lookup in destructed object.\n");
 	}
@@ -1914,7 +1911,7 @@ PIKECLASS BlockCipher
 	    /* Protect the iv from being freed by a different thread. */
 	    add_ref(iv);
 	    THREADS_ALLOW();
-	    while (bytes) {
+	    while (bytes >= block_size) {
 	      func(ctx, block_size, STR0(iv), prev);
 	      memxor3(dst, STR0(iv), src, block_size);
 	      prev = dst;
@@ -1922,11 +1919,18 @@ PIKECLASS BlockCipher
 	      src += block_size;
 	      bytes -= block_size;
 	    }
-	    memcpy(STR0(iv), dst - block_size, block_size);
+	    if (!bytes) {
+	      memcpy(STR0(iv), dst - block_size, block_size);
+	    } else {
+	      /* Trailer partial block. */
+	      func(ctx, block_size, STR0(iv), prev);
+	      memxor3(dst, STR0(iv), src, bytes);
+	      memcpy(STR0(iv), dst, bytes);
+	    }
 	    THREADS_DISALLOW();
 	    free_string(iv);
 	  } else {
-	    while (bytes) {
+	    while (bytes >= block_size) {
 	      func(ctx, block_size, STR0(iv), prev);
 	      memxor3(dst, STR0(iv), src, block_size);
 	      prev = dst;
@@ -1934,34 +1938,61 @@ PIKECLASS BlockCipher
 	      src += block_size;
 	      bytes -= block_size;
 	    }
-	    memcpy(STR0(iv), dst - block_size, block_size);
+	    if (!bytes) {
+	      memcpy(STR0(iv), dst - block_size, block_size);
+	    } else {
+	      /* Trailer partial block. */
+	      func(ctx, block_size, STR0(iv), prev);
+	      memxor3(dst, STR0(iv), src, bytes);
+	      memcpy(STR0(iv), dst, bytes);
+	    }
 	  }
 	} else {
 	  /* Decryption. */
+	  int trailer_len = data->len % block_size;
+	  int blocked_len = data->len - trailer_len;
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
 	    /* Protect the iv from being freed by a different thread. */
 	    add_ref(iv);
 	    THREADS_ALLOW();
-	    memcpy(STR0(result), STR0(iv), block_size);
-	    if (data->len > block_size) {
-	      memcpy(STR0(result) + block_size, STR0(data),
-		     data->len - block_size);
+	    if (blocked_len) {
+	      memcpy(STR0(result), STR0(iv), block_size);
+	      if (blocked_len > block_size) {
+		memcpy(STR0(result) + block_size, STR0(data),
+		       blocked_len - block_size);
+	      }
+	      func(ctx, blocked_len, STR0(result), STR0(result));
+	      memxor(STR0(result), STR0(data), blocked_len);
+	      memcpy(STR0(iv), STR0(data) + blocked_len - block_size,
+		     block_size);
 	    }
-	    func(ctx, data->len, STR0(result), STR0(result));
-	    memxor(STR0(result), STR0(data), data->len);
-	    memcpy(STR0(iv), STR0(data) + data->len - block_size, block_size);
+	    if (trailer_len) {
+	      func(ctx, block_size, STR0(iv), STR0(iv));
+	      memxor3(STR0(result) + blocked_len, STR0(data) + blocked_len,
+		      STR0(iv), trailer_len);
+	      memcpy(STR0(iv), STR0(data) + blocked_len, trailer_len);
+	    }
 	    THREADS_DISALLOW();
 	    free_string(iv);
 	  } else {
-	    memcpy(STR0(result), STR0(iv), block_size);
-	    if (data->len > block_size) {
-	      memcpy(STR0(result) + block_size, STR0(data),
-		     data->len - block_size);
+	    if (blocked_len) {
+	      memcpy(STR0(result), STR0(iv), block_size);
+	      if (blocked_len > block_size) {
+		memcpy(STR0(result) + block_size, STR0(data),
+		       blocked_len - block_size);
+	      }
+	      func(ctx, blocked_len, STR0(result), STR0(result));
+	      memxor(STR0(result), STR0(data), blocked_len);
+	      memcpy(STR0(iv), STR0(data) + blocked_len - block_size,
+		     block_size);
 	    }
-	    func(ctx, data->len, STR0(result), STR0(result));
-	    memxor(STR0(result), STR0(data), data->len);
-	    memcpy(STR0(iv), STR0(data) + data->len - block_size, block_size);
+	    if (trailer_len) {
+	      func(ctx, block_size, STR0(iv), STR0(iv));
+	      memxor3(STR0(result) + blocked_len, STR0(data) + blocked_len,
+		      STR0(iv), trailer_len);
+	      memcpy(STR0(iv), STR0(data) + blocked_len, trailer_len);
+	    }
 	  }
 	}
 
