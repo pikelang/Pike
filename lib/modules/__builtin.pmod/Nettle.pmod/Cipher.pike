@@ -7,10 +7,13 @@
 //!
 //! Note that no actual cipher algorithm is implemented
 //! in the base class. They are implemented in classes
-//! that inherit this class.
+//! that inherit (usually via @[predef::Nettle.Cipher]) this class.
+//!
+//! @seealso
+//!   @[predef::Nettle.Cipher], @[Crypto.Cipher]
 
 //! Returns a human readable name for the algorithm.
-string(8bit) name();
+string(7bit) name();
 
 //! @returns
 //!   The recommended key size for the cipher.
@@ -82,7 +85,7 @@ class State
   //! Returns a human readable name for the algorithm.
   //!
   //! Defaults to just returning @expr{global::name()@}.
-  string(8bit) name()
+  string(7bit) name()
   {
     return global::name();
   }
