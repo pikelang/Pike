@@ -1045,9 +1045,10 @@ PIKECLASS BufferedCipher
  */
 PIKECLASS BlockCipher
 {
-  /* NOTE: MUST be first in the class to simplify access to symbols
-   *       in Cipher!
+  /*! @decl inherit __builtin.Nettle.BlockCipher
    */
+  INHERIT "__builtin.Nettle.BlockCipher";
+
   /*! @decl inherit BufferedCipher
    */
   INHERIT Nettle_BufferedCipher;
@@ -1073,24 +1074,28 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      apply_external(1, Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".CBC");
       f_add(2);
     }
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     /*! @class State
@@ -1155,7 +1160,8 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
       /*! @decl void create()
@@ -1427,7 +1433,8 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_name_fun_num, args);
       push_constant_text(".PCBC");
       f_add(2);
     }
@@ -1572,24 +1579,28 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_name_fun_num, args);
       push_text(".CFB");
       f_add(2);
     }
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     /*! @class State
@@ -1669,7 +1680,8 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		       Nettle_Cipher_State_program_fun_num, 0);
       }
 
       /*! @decl void create()
@@ -2083,24 +2095,28 @@ PIKECLASS BlockCipher
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_name_fun_num, args);
       push_text(".CTR");
       f_add(2);
     }
 
     PIKEFUN int(1..) block_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_key_size_fun_num, args);
     }
 
     PIKEFUN int(0..) iv_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     f_Nettle_Cipher_block_size_fun_num, args);
     }
 
     /*! @class State
@@ -2179,7 +2195,8 @@ PIKECLASS BlockCipher
       PIKEFUN object(Nettle_Cipher_State) substate_factory()
 	flags ID_PROTECTED;
       {
-	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+	apply_external(2,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
+		     Nettle_Cipher_State_program_fun_num, 0);
       }
 
       /*! @decl void create()
@@ -2469,7 +2486,8 @@ PIKECLASS BlockCipher
 /*! @endclass BlockCipher
  */
 
-#define BLOCKCIPHER_CIPHER_INHERIT	(BUFFEREDCIPHER_CIPHER_INHERIT + 1)
+#define BLOCKCIPHER_CIPHER_INHERIT	(BUFFEREDCIPHER_CIPHER_INHERIT + \
+					 Nettle_BlockCipher_Nettle_BufferedCipher_inh_num)
 
 /*! @class BlockCipher16
  *!
