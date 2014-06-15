@@ -519,11 +519,36 @@ define(test_generic_cipher,[[
   ]])
 ]])
 
+dnl Test cipher modes that support partial last blocks.
+define(test_generic_cipher_autopad,[[
+  test_generic_cipher($1)
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      for(int i = 0; i < 5*c->block_size(); i++) {
+        string plain = test_data[..i];
+        if (d->crypt(c->crypt(plain)) != plain) {
+	  error("Data size %d failed.\n", i);
+	}
+      }
+      return 1;
+    ]], 1)
+  ]])
+]])
+
 // AES
 test_generic_cipher(Crypto.AES)
 test_generic_cipher(Crypto.AES.CBC)
 test_generic_cipher(Crypto.AES.PCBC)
-test_generic_cipher(Crypto.AES.CFB)
+test_generic_cipher_autopad(Crypto.AES.CFB)
+test_generic_cipher_autopad(Crypto.AES.OFB)
+test_generic_cipher_autopad(Crypto.AES.CTR)
 cond_resolv( Nettle.AES, [[
   test_true([[objectp(Nettle.AES()())]])
   test_cipher(AES,
@@ -692,7 +717,9 @@ test_generic_cipher(Crypto.Arcfour)
 test_generic_cipher(Crypto.Arctwo)
 test_generic_cipher(Crypto.Arctwo.CBC)
 test_generic_cipher(Crypto.Arctwo.PCBC)
-test_generic_cipher(Crypto.Arctwo.CFB)
+test_generic_cipher_autopad(Crypto.Arctwo.CFB)
+test_generic_cipher_autopad(Crypto.Arctwo.OFB)
+test_generic_cipher_autopad(Crypto.Arctwo.CTR)
 cond_resolv( Nettle.ARCTWO, [[
   test_true([[objectp(Crypto.Arctwo.State())]])
   test_cipher(ARCTWO,
@@ -742,14 +769,18 @@ cond_resolv( Nettle.ARCTWO, [[
 test_generic_cipher(Crypto.Blowfish)
 test_generic_cipher(Crypto.Blowfish.CBC)
 test_generic_cipher(Crypto.Blowfish.PCBC)
-test_generic_cipher(Crypto.Blowfish.CFB)
+test_generic_cipher_autopad(Crypto.Blowfish.CFB)
+test_generic_cipher_autopad(Crypto.Blowfish.OFB)
+test_generic_cipher_autopad(Crypto.Blowfish.CTR)
 
 // CAMELLIA
 // Test vectors from RFC 3713. 128, 192 and 256 bits.
 test_generic_cipher(Crypto.Camellia)
 test_generic_cipher(Crypto.Camellia.CBC)
 test_generic_cipher(Crypto.Camellia.PCBC)
-test_generic_cipher(Crypto.Camellia.CFB)
+test_generic_cipher_autopad(Crypto.Camellia.CFB)
+test_generic_cipher_autopad(Crypto.Camellia.OFB)
+test_generic_cipher_autopad(Crypto.Camellia.CTR)
 cond_resolv( Nettle.CAMELLIA, [[
   test_true([[objectp(Nettle.CAMELLIA()())]])
   test_cipher(CAMELLIA,
@@ -772,13 +803,17 @@ cond_resolv( Nettle.CAMELLIA, [[
 test_generic_cipher(Crypto.CAST)
 test_generic_cipher(Crypto.CAST.CBC)
 test_generic_cipher(Crypto.CAST.PCBC)
-test_generic_cipher(Crypto.CAST.CFB)
+test_generic_cipher_autopad(Crypto.CAST.CFB)
+test_generic_cipher_autopad(Crypto.CAST.OFB)
+test_generic_cipher_autopad(Crypto.CAST.CTR)
 
 // CHACHA
 test_generic_cipher(Crypto.ChaCha20)
 test_generic_cipher(Crypto.ChaCha20.CBC)
 test_generic_cipher(Crypto.ChaCha20.PCBC)
-test_generic_cipher(Crypto.ChaCha20.CFB)
+test_generic_cipher_autopad(Crypto.ChaCha20.CFB)
+test_generic_cipher_autopad(Crypto.ChaCha20.OFB)
+test_generic_cipher_autopad(Crypto.ChaCha20.CTR)
 
 // DES
 
@@ -788,13 +823,17 @@ test_generic_cipher(Crypto.ChaCha20.CFB)
 test_generic_cipher(Crypto.IDEA)
 test_generic_cipher(Crypto.IDEA.CBC)
 test_generic_cipher(Crypto.IDEA.PCBC)
-test_generic_cipher(Crypto.IDEA.CFB)
+test_generic_cipher_autopad(Crypto.IDEA.CFB)
+test_generic_cipher_autopad(Crypto.IDEA.OFB)
+test_generic_cipher_autopad(Crypto.IDEA.CTR)
 
 // SALSA20
 test_generic_cipher(Crypto.SALSA20)
 test_generic_cipher(Crypto.SALSA20.CBC)
 test_generic_cipher(Crypto.SALSA20.PCBC)
-test_generic_cipher(Crypto.SALSA20.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20.OFB)
+test_generic_cipher_autopad(Crypto.SALSA20.CTR)
 dnl From the official ECRYPT project site SVN.
 dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
 dnl 128 bit key, 64 bit IV
@@ -864,19 +903,25 @@ cond_resolv( Nettle.SALSA20 [[
 test_generic_cipher(Crypto.SALSA20R12)
 test_generic_cipher(Crypto.SALSA20R12.CBC)
 test_generic_cipher(Crypto.SALSA20R12.PCBC)
-test_generic_cipher(Crypto.SALSA20R12.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20R12.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20R12.OFB)
+test_generic_cipher_autopad(Crypto.SALSA20R12.CTR)
 
 // SERPENT
 test_generic_cipher(Crypto.Serpent)
 test_generic_cipher(Crypto.Serpent.CBC)
 test_generic_cipher(Crypto.Serpent.PCBC)
-test_generic_cipher(Crypto.Serpent.CFB)
+test_generic_cipher_autopad(Crypto.Serpent.CFB)
+test_generic_cipher_autopad(Crypto.Serpent.OFB)
+test_generic_cipher_autopad(Crypto.Serpent.CTR)
 
 // Twofish
 test_generic_cipher(Crypto.Twofish)
 test_generic_cipher(Crypto.Twofish.CBC)
 test_generic_cipher(Crypto.Twofish.PCBC)
-test_generic_cipher(Crypto.Twofish.CFB)
+test_generic_cipher_autopad(Crypto.Twofish.CFB)
+test_generic_cipher_autopad(Crypto.Twofish.OFB)
+test_generic_cipher_autopad(Crypto.Twofish.CTR)
 
 // CBC
 
