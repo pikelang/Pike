@@ -45,20 +45,7 @@ PIKECLASS Yarrow
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
 
-  PIKEVAR string seed_file flags ID_PRIVATE|ID_STATIC;
-
   DECLARE_STORAGE;
-
-  static void pike_generate_seed_file(void)
-  {
-    struct pike_string *seed_file =
-      begin_shared_string(YARROW256_SEED_FILE_SIZE);
-    yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
-    if (THIS->seed_file) {
-      free_string(THIS->seed_file);
-    }
-    THIS->seed_file = end_shared_string(seed_file);
-  }
 
   /*! @decl void create(void|int sources)
    *! The number of entropy sources that will feed entropy to the
@@ -110,7 +97,6 @@ PIKECLASS Yarrow
 
     NO_WIDE_STRING(data);
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
-    pike_generate_seed_file();
     RETURN this_object();
   }
 
@@ -124,37 +110,6 @@ PIKECLASS Yarrow
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN YARROW256_SEED_FILE_SIZE;
-  }
-
-  /*! @decl string(0..255) get_seed()
-   *!   Returns part of the internal state so that it can
-   *!   be saved for later seeding.
-   *!
-   *! @seealso
-   *!   @[seed()], @[random_string()]
-   */
-  PIKEFUN string(0..255) get_seed()
-    optflags OPT_EXTERNAL_DEPEND;
-    rawtype tDeprecated(tFunc(tNone, tStr8));
-  {
-    if( !yarrow256_is_seeded(&THIS->ctx) )
-      Pike_error("Random generator not seeded.\n");
-
-    if (THIS->seed_file) {
-      REF_RETURN THIS->seed_file;
-    } else {
-      /*
-       * It seems somewhat unreasonable to use uninitialized memory here.
-       * Instead, I think the user should be warned. It really isnt a very
-       * good source of entropy and may lead to undefined behavior in C.
-       * Why not simply return 0 in that case?
-       *  /arne
-       */
-      struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      PIKE_MEM_RW_RANGE(s->str, YARROW256_SEED_FILE_SIZE);
-      s = end_shared_string(s);
-      RETURN s;
-    }
   }
 
   /*! @decl int(0..1) is_seeded()
@@ -189,7 +144,6 @@ PIKECLASS Yarrow
 #else
     yarrow256_force_reseed(&THIS->ctx);
 #endif
-    pike_generate_seed_file();
   }
 
   /*! @decl int(0..1) update(string(0..255) data, int source, int entropy)
@@ -214,9 +168,6 @@ PIKECLASS Yarrow
       Pike_error("Impossibly large entropy value.\n");
     ret = yarrow256_update(&THIS->ctx, source, entropy, data->len,
 			   (const uint8_t *)data->str);
-    if (ret) {
-      pike_generate_seed_file();
-    }
     RETURN ret;
   }
 
@@ -244,6 +195,23 @@ PIKECLASS Yarrow
     rnd = begin_shared_string(length);
     yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
     RETURN end_shared_string(rnd);
+  }
+
+  /*! @decl string(0..255) get_seed()
+   *!   Returns part of the internal state so that it can be saved for
+   *!   later seeding. This method is deprecated. Instead read the
+   *!   @[min_seed_size] number of bytes from the @[random_string]
+   *!   method.
+   *!
+   *! @seealso
+   *!   @[seed()], @[random_string()]
+   */
+  PIKEFUN string(0..255) get_seed()
+    optflags OPT_EXTERNAL_DEPEND;
+    rawtype tDeprecated(tFunc(tNone, tStr8));
+  {
+    push_int(YARROW256_SEED_FILE_SIZE);
+    f_Nettle_Yarrow_random_string(1);
   }
 
   INIT
