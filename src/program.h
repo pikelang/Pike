@@ -566,6 +566,9 @@ struct pike_trampoline
  * module. */
 #define PROGRAM_LIVE_OBJ 0x2000
 
+/* Clear the object storage on destruct. */
+#define PROGRAM_CLEAR_STORAGE	0x4000
+
 /* Using define instead of enum allows for ifdefs - Hubbe */
 #define PROG_EVENT_INIT 0
 #define PROG_EVENT_EXIT 1
