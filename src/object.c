@@ -952,6 +952,10 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( frame_pushed )
     POP_FRAME2();
 
+  if (o->storage && (p->flags & PROGRAM_CLEAR_STORAGE)) {
+    memset(o->storage, 0, p->storage_needed);
+  }
+
   free_object( o );
   free_program(p);
   if( destroy_called )
