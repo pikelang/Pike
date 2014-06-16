@@ -102,23 +102,6 @@ else
     # These weren't present in old Nettles.
     AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init)
 
-    AC_MSG_CHECKING([for struct yarrow256_ctx.seed_file])
-    AC_CACHE_VAL(pike_cv_nettle_struct_yarrow256_ctx_seed_file, [
-      pike_cv_nettle_struct_yarrow256_ctx_seed_file=no
-      AC_TRY_COMPILE([
-#include <nettle/yarrow.h>
-      ], [
-  struct yarrow256_ctx ctx;
-  return !sizeof(ctx.seed_file);
-      ], [
-        pike_cv_nettle_struct_yarrow256_ctx_seed_file=yes
-      ])
-    ])
-    AC_MSG_RESULT($pike_cv_nettle_struct_yarrow256_ctx_seed_file);
-    if test "x$pike_cv_nettle_struct_yarrow256_ctx_seed_file" = "xyes"; then
-      AC_DEFINE(HAVE_STRUCT_YARROW256_CTX_SEED_FILE)
-    fi
-
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no
