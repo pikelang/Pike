@@ -81,12 +81,12 @@ PIKECLASS Yarrow
    *! The random generator needs to be seeded before it can be used.
    *! The seed must be at least 32 characters long. The seed could be
    *! stored from a previous run by inserting the value returned from
-   *! @[get_seed].
+   *! previous @[random_string] call.
    *!
    *! @returns
    *!   Returns the called object.
    *! @seealso
-   *!   @[min_seed_size], @[get_seed], @[is_seeded]
+   *!   @[min_seed_size], @[is_seeded]
    */
   PIKEFUN object seed(string(0..255) data)
     optflags OPT_SIDE_EFFECT;
