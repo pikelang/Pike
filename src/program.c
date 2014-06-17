@@ -11027,7 +11027,7 @@ void cleanup_program(void)
 }
 
 
-PMOD_EXPORT void visit_program (struct program *p, int action)
+PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

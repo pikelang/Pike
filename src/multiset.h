@@ -402,7 +402,7 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 					    struct mapping *p);
 PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n);
 
-PMOD_EXPORT void visit_multiset (struct multiset *l, int action);
+PMOD_EXPORT void visit_multiset (struct multiset *l, int action, void *extra);
 unsigned gc_touch_all_multisets (void);
 void gc_check_all_multisets (void);
 void gc_mark_multiset_as_referenced (struct multiset *l);

@@ -375,7 +375,7 @@ PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
 void check_mapping(const struct mapping *m);
 void check_all_mappings(void);
 #endif
-PMOD_EXPORT void visit_mapping (struct mapping *m, int action);
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra);
 void gc_mark_mapping_as_referenced(struct mapping *m);
 void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);

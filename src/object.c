@@ -2083,7 +2083,7 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
 }
 
 
-PMOD_EXPORT void visit_object (struct object *o, int action)
+PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 {
   struct program *p = o->prog;
 

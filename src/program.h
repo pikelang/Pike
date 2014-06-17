@@ -1029,7 +1029,7 @@ void check_all_programs(void);
 void placeholder_index(INT32 args);
 void init_program(void);
 void cleanup_program(void);
-PMOD_EXPORT void visit_program (struct program *p, int action);
+PMOD_EXPORT void visit_program (struct program *p, int action, void *extra);
 void gc_mark_program_as_referenced(struct program *p);
 void real_gc_cycle_check_program(struct program *p, int weak);
 unsigned gc_touch_all_programs(void);

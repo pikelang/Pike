@@ -377,7 +377,7 @@ void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
 void count_memory_in_short_pike_strings(size_t *num, size_t *size);
 void count_memory_in_strings(size_t *num, size_t *size);
-PMOD_EXPORT void visit_string (struct pike_string *s, int action);
+PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
