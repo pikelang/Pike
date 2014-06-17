@@ -1156,9 +1156,9 @@ static INLINE int __attribute__((unused)) FIND_LFUN(struct program * p, int lfun
 
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
 
-#define visit_program_ref(P, REF_TYPE)				\
+#define visit_program_ref(P, REF_TYPE, EXTRA)			\
   visit_ref (pass_program (P), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_program, NULL)
+	     (visit_thing_fn *) &visit_program, (EXTRA))
 #define gc_cycle_check_program(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_program, (X), (WEAK))
 

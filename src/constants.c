@@ -194,7 +194,7 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
   free_string(n);
 }
 
-PMOD_EXPORT void visit_callable (struct callable *c, int action)
+PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG
@@ -210,8 +210,8 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action)
   }
 
   if (!(action & VISIT_COMPLEX_ONLY)) {
-    visit_type_ref (c->type, REF_TYPE_NORMAL);
-    visit_string_ref (c->name, REF_TYPE_NORMAL);
+    visit_type_ref (c->type, REF_TYPE_NORMAL, extra);
+    visit_string_ref (c->name, REF_TYPE_NORMAL, extra);
   }
 
   /* Looks like the c->prog isn't refcounted..? */

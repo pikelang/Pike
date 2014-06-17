@@ -4436,10 +4436,10 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
 }
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
-					   int ref_type)
+					   int ref_type, void *extra)
 {
   for (; num; num--, s++)
-    visit_svalue (s, ref_type);
+    visit_svalue (s, ref_type, extra);
   return 0;
 }
 

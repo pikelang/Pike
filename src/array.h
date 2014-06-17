@@ -219,9 +219,9 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 
 #define array_get_flags(a) ((a)->flags)
 
-#define visit_array_ref(A, REF_TYPE)					\
+#define visit_array_ref(A, REF_TYPE, EXTRA)				\
   visit_ref (pass_array (A), (REF_TYPE),				\
-	     (visit_thing_fn *) &visit_array, NULL)
+	     (visit_thing_fn *) &visit_array, (EXTRA))
 #define gc_cycle_check_array(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
 

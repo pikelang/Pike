@@ -412,9 +412,9 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak);
 void gc_cycle_check_all_multisets (void);
 size_t gc_free_all_unreferenced_multisets (void);
 
-#define visit_multiset_ref(L, REF_TYPE)				\
+#define visit_multiset_ref(L, REF_TYPE, EXTRA)			\
   visit_ref (pass_multiset (L), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_multiset, NULL)
+	     (visit_thing_fn *) &visit_multiset, (EXTRA))
 #define gc_cycle_check_multiset(X, WEAK) \
   gc_cycle_enqueue ((gc_cycle_check_cb *) real_gc_cycle_check_multiset, (X), (WEAK))
 

@@ -2113,7 +2113,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
     debug_malloc_touch (o);
     debug_malloc_touch (storage);
 
-    visit_program_ref (p, REF_TYPE_NORMAL);
+    visit_program_ref (p, REF_TYPE_NORMAL, extra);
 
     for (e = p->num_inherits - 1; e >= 0; e--) {
       struct program *inh_prog = inh[e].prog;
@@ -2148,40 +2148,40 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		s->u.object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
-	      visit_svalue (s, REF_TYPE_NORMAL);
+	      visit_svalue (s, REF_TYPE_NORMAL, extra);
 	    break;
 	  }
 
 	  case T_ARRAY:
 	    if (u->array)
-	      visit_array_ref (u->array, REF_TYPE_NORMAL);
+	      visit_array_ref (u->array, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_MAPPING:
 	    if (u->mapping)
-	      visit_mapping_ref (u->mapping, REF_TYPE_NORMAL);
+	      visit_mapping_ref (u->mapping, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_MULTISET:
 	    if (u->multiset)
-	      visit_multiset_ref (u->multiset, REF_TYPE_NORMAL);
+	      visit_multiset_ref (u->multiset, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_PROGRAM:
 	    if (u->program)
-	      visit_program_ref (u->program, REF_TYPE_NORMAL);
+	      visit_program_ref (u->program, REF_TYPE_NORMAL, extra);
 	    break;
 
 	  case T_OBJECT:
 	    if (u->object && (u->object != o ||
 			      !(id_flags & IDENTIFIER_NO_THIS_REF)))
-	      visit_object_ref (u->object, REF_TYPE_NORMAL);
+	      visit_object_ref (u->object, REF_TYPE_NORMAL, extra);
 	    break;
 
 	  case T_STRING:
 	    if (u->string && !(action & VISIT_COMPLEX_ONLY))
-	      visit_string_ref (u->string, REF_TYPE_NORMAL);
+	      visit_string_ref (u->string, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_TYPE:
 	    if (u->type && !(action & VISIT_COMPLEX_ONLY))
-	      visit_type_ref (u->type, REF_TYPE_NORMAL);
+	      visit_type_ref (u->type, REF_TYPE_NORMAL, extra);
 	    break;
 
 #ifdef PIKE_DEBUG
@@ -2208,11 +2208,12 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
     /* Strong ref follows. It must be last. */
     if (p->flags & PROGRAM_USES_PARENT)
       if (PARENT_INFO (o)->parent)
-	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG);
+	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG, extra);
   }
 }
 
-PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
+PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,
+				 void *extra)
 {
 #ifdef PIKE_DEBUG
   if (TYPEOF(*s) != T_FUNCTION)
@@ -2223,9 +2224,9 @@ PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
     /* Could avoid this if we had access to the action from the caller
      * and check if it's VISIT_COMPLEX_ONLY. However, visit_callable
      * will only return first thing. */
-    visit_callable_ref (s->u.efun, ref_type);
+    visit_callable_ref (s->u.efun, ref_type, extra);
   else
-    visit_object_ref (s->u.object, ref_type);
+    visit_object_ref (s->u.object, ref_type, extra);
 }
 
 static void gc_check_object(struct object *o);

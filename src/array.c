@@ -2816,7 +2816,7 @@ PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
     size_t e, s = a->size;
     int ref_type = a->flags & ARRAY_WEAK_FLAG ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
     for (e = 0; e < s; e++)
-      visit_svalue (ITEM (a) + e, ref_type);
+      visit_svalue (ITEM (a) + e, ref_type, extra);
   }
 }
 
