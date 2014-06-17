@@ -507,32 +507,33 @@ static INLINE int __attribute__((unused)) debug_gc_check_weak (void *a, const ch
    gc_cycle_check_svalues((S), (N)) :					\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_svalues((S), (N)) :						\
-   (visit_svalues ((S), (N), REF_TYPE_NORMAL), 0))
+   (visit_svalues ((S), (N), REF_TYPE_NORMAL, NULL), 0))
 #define gc_recurse_short_svalue(U,T)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_short_svalue((U), (T)) :					\
-   visit_short_svalue ((U), (T), REF_TYPE_NORMAL))
+   visit_short_svalue ((U), (T), REF_TYPE_NORMAL, NULL))
 #define gc_recurse_weak_svalues(S,N)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_svalues((S), (N)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_svalues((S), (N)) :					\
-   (visit_svalues ((S), (N), REF_TYPE_WEAK), 0))
+   (visit_svalues ((S), (N), REF_TYPE_WEAK, NULL), 0))
 #define gc_recurse_weak_short_svalue(U,T)				\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_short_svalue((U), (T)) :				\
-   visit_short_svalue ((U), (T), REF_TYPE_WEAK))
+   visit_short_svalue ((U), (T), REF_TYPE_WEAK, NULL))
 
 #define GC_RECURSE_THING(V, T)						\
   (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
    PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
-   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL))
+   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V),			\
+				 REF_TYPE_NORMAL, NULL))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -677,49 +678,50 @@ PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
-					   int ref_type);
+					   int ref_type, void *extra);
 
 static INLINE int __attribute__((unused)) real_visit_short_svalue (union anything *u, TYPE_T t,
-					   int ref_type)
+								   int ref_type, void *extra)
 {
   check_short_svalue (u, t);
   if (REFCOUNTED_TYPE(t))
-    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
+    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], extra);
   return 0;
 }
-#define visit_short_svalue(U, T, REF_TYPE) \
-  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
+#define visit_short_svalue(U, T, REF_TYPE, EXTRA)				\
+  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE), (EXTRA)))
 
 #ifdef DEBUG_MALLOC
 static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_visit_svalues (struct svalue *s, size_t num,
-						int ref_type, char *l)
+									int ref_type, char *l, void *extra)
 {
-  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+  return real_visit_svalues (dmalloc_check_svalues (s, num, l),
+			     num, ref_type, extra);
 }
-#define visit_svalues(S, NUM, REF_TYPE)					\
-  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
+#define visit_svalues(S, NUM, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
 static INLINE void __attribute__((unused)) dmalloc_visit_svalue (struct svalue *s,
-					 int ref_type, char *l)
+								 int ref_type, void *extra, char *l)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
   if (REFCOUNTED_TYPE(t)) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
-#define visit_svalue(S, REF_TYPE) \
-  dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
+#define visit_svalue(S, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalue ((S), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
 #else
 #define visit_svalues real_visit_svalues
-static INLINE void __attribute__((unused)) visit_svalue (struct svalue *s, int ref_type)
+static INLINE void __attribute__((unused)) visit_svalue (struct svalue *s, int ref_type, void *extra)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
   if (REFCOUNTED_TYPE(t)) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
 #endif

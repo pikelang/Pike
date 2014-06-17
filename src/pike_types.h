@@ -316,9 +316,9 @@ void register_attribute_handler(struct pike_string *attr,
 				struct svalue *handler);
 /* Prototypes end here */
 
-#define visit_type_ref(T, REF_TYPE)				\
+#define visit_type_ref(T, REF_TYPE, EXTRA)			\
   visit_ref (pass_type (T), (REF_TYPE),				\
-	     (visit_thing_fn *) &visit_type, NULL)
+	     (visit_thing_fn *) &visit_type, (EXTRA))
 
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))

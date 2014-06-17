@@ -394,9 +394,9 @@ void free_all_mapping_blocks();
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 
-#define visit_mapping_ref(M, REF_TYPE)				\
+#define visit_mapping_ref(M, REF_TYPE, EXTRA)			\
   visit_ref (pass_mapping (M), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_mapping, NULL)
+	     (visit_thing_fn *) &visit_mapping, (EXTRA))
 #define gc_cycle_check_mapping(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_mapping, (X), (WEAK))
 

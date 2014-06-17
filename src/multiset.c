@@ -3512,14 +3512,14 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
 	msd->flags & MULTISET_WEAK_VALUES ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
       do {
 	low_use_multiset_index (node, ind);
-	visit_svalue (&ind, ind_ref_type);
-	visit_svalue (&node->iv.val, val_ref_type);
+	visit_svalue (&ind, ind_ref_type, extra);
+	visit_svalue (&node->iv.val, val_ref_type, extra);
       } while ((node = low_multiset_next (node)));
     }
     else
       do {
 	low_use_multiset_index (node, ind);
-	visit_svalue (&ind, ind_ref_type);
+	visit_svalue (&ind, ind_ref_type, extra);
       } while ((node = low_multiset_next (node)));
   }
 }

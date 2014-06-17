@@ -490,9 +490,9 @@ static INLINE int __attribute__((unused)) string_has_null( struct pike_string *x
 
 #define ISCONSTSTR(X,Y) c_compare_string((X),Y,sizeof(Y)-sizeof(""))
 
-#define visit_string_ref(S, REF_TYPE)				\
+#define visit_string_ref(S, REF_TYPE, EXTRA)			\
   visit_ref (pass_string (S), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_string, NULL)
+	     (visit_thing_fn *) &visit_string, (EXTRA))
 
 #ifdef DEBUG_MALLOC
 #define make_shared_string(X) \

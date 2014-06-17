@@ -2494,8 +2494,8 @@ static void visit_mapping_data (struct mapping_data *md, int action,
     INT32 e;
     struct keypair *k;
     NEW_MAPPING_LOOP (md) {
-      visit_svalue (&k->ind, ind_ref_type);
-      visit_svalue (&k->val, val_ref_type);
+      visit_svalue (&k->ind, ind_ref_type, extra);
+      visit_svalue (&k->val, val_ref_type, extra);
     }
   }
 }

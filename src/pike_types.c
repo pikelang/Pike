@@ -8935,11 +8935,11 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
     case T_OR:
     case T_AND:
     case PIKE_T_RING:
-      visit_type_ref (t->car, REF_TYPE_INTERNAL);
+      visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
       /* FALL_THROUGH */
     case T_SCOPE:
     case T_ASSIGN:
-      visit_type_ref (t->cdr, REF_TYPE_INTERNAL);
+      visit_type_ref (t->cdr, REF_TYPE_INTERNAL, extra);
       break;
     case T_ARRAY:
     case T_MULTISET:
@@ -8947,12 +8947,13 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
     case T_TYPE:
     case T_PROGRAM:
     case T_STRING:
-      visit_type_ref (t->car, REF_TYPE_INTERNAL);
+      visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
       break;
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
-      visit_string_ref ((struct pike_string *) t->car, REF_TYPE_INTERNAL);
-      visit_type_ref (t->cdr, REF_TYPE_INTERNAL);
+      visit_string_ref ((struct pike_string *) t->car, REF_TYPE_INTERNAL,
+			extra);
+      visit_type_ref (t->cdr, REF_TYPE_INTERNAL, extra);
       break;
 #ifdef PIKE_DEBUG
     case '0':

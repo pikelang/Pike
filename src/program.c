@@ -11048,14 +11048,14 @@ PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
     struct inherit *inh = p->inherits;
 
     for (e = p->num_constants - 1; e >= 0; e--)
-      visit_svalue (&consts[e].sval, REF_TYPE_NORMAL);
+      visit_svalue (&consts[e].sval, REF_TYPE_NORMAL, extra);
 
     for (e = p->num_inherits - 1; e >= 0; e--) {
       if (inh[e].parent)
-	visit_object_ref (inh[e].parent, REF_TYPE_NORMAL);
+	visit_object_ref (inh[e].parent, REF_TYPE_NORMAL, extra);
 
       if (e && inh[e].prog)
-	visit_program_ref (inh[e].prog, REF_TYPE_NORMAL);
+	visit_program_ref (inh[e].prog, REF_TYPE_NORMAL, extra);
     }
 
     if (!(action & VISIT_COMPLEX_ONLY)) {
@@ -11064,22 +11064,22 @@ PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
 
       for (e = p->num_inherits - 1; e >= 0; e--) {
 	if (inh[e].name)
-	  visit_string_ref (inh[e].name, REF_TYPE_NORMAL);
+	  visit_string_ref (inh[e].name, REF_TYPE_NORMAL, extra);
       }
 
       for (e = p->num_identifiers - 1; e >= 0; e--) {
 	struct identifier *id = ids + e;
-	visit_string_ref (id->name, REF_TYPE_NORMAL);
-	visit_type_ref (id->type, REF_TYPE_NORMAL);
+	visit_string_ref (id->name, REF_TYPE_NORMAL, extra);
+	visit_type_ref (id->type, REF_TYPE_NORMAL, extra);
       }
 
       for (e = p->num_strings - 1; e >= 0; e--)
-	visit_string_ref (strs[e], REF_TYPE_NORMAL);
+	visit_string_ref (strs[e], REF_TYPE_NORMAL, extra);
     }
 
     /* Strong ref follows. It must be last. */
     if (p->parent)
-      visit_program_ref (p->parent, REF_TYPE_STRONG);
+      visit_program_ref (p->parent, REF_TYPE_STRONG, extra);
   }
 }
 
