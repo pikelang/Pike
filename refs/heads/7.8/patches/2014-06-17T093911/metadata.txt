@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Updated tzdata
 from: b2ad1778d68eee3d7f7b8da91c79672d62c34f81
 to: 0cdab7d984919dde228cf17b25b6398633a73551
 originator: wellhardh@roxen.com
@@ -6,19 +6,5 @@ depends: 2014-06-09T115335
 restart: true
 
 Multiple fixes:
-
-  * release number bumped to 868 by export.pike
-
-  * release number bumped to 869 by export.pike
-
-  * ZXID: Fixed warning about redefined symbol.
-    
-    GETTIMEOFDAY is defined in both port.h and <zxid/errmac.h>.
-    We don't use either in the ZXID module, so just undef the
-    first definition.
-
-  * release number bumped to 870 by export.pike
-
-  * release number bumped to 871 by export.pike
 
   * Updated to tzdata2014e.
