@@ -8911,7 +8911,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
   return NULL;
 }
 
-PMOD_EXPORT void visit_type (struct pike_type *t, int action)
+PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

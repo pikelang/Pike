@@ -199,7 +199,7 @@ void array_replace(struct array *a,
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
 #endif
-PMOD_EXPORT void visit_array (struct array *a, int action);
+PMOD_EXPORT void visit_array (struct array *a, int action, void *extra);
 void gc_mark_array_as_referenced(struct array *a);
 void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);

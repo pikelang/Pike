@@ -2470,7 +2470,7 @@ void check_all_mappings(void)
 #endif
 
 static void visit_mapping_data (struct mapping_data *md, int action,
-				struct mapping *UNUSED(m))
+				void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG
@@ -2500,7 +2500,7 @@ static void visit_mapping_data (struct mapping_data *md, int action,
   }
 }
 
-PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG
@@ -2516,7 +2516,7 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
   }
 
   visit_ref (m->data, REF_TYPE_INTERNAL,
-	     (visit_thing_fn *) &visit_mapping_data, m);
+	     (visit_thing_fn *) &visit_mapping_data, extra);
 }
 
 #ifdef MAPPING_SIZE_DEBUG

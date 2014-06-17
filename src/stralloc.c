@@ -2271,7 +2271,7 @@ void count_memory_in_strings(size_t *num, size_t *size)
   size[0]=size_;
 }
 
-PMOD_EXPORT void visit_string (struct pike_string *s, int action)
+PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
 {
   switch (action) {
 #ifdef PIKE_DEBUG
