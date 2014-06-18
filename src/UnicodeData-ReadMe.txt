@@ -1,14 +1,16 @@
 UNICODE CHARACTER DATABASE
-Version 6.3.0
+Version 7.0.0
 
- Revision           6.3.0
+ Revision           7.0.0
  Authors            Asmus Freytag and Mark Davis
- Date               2013-09-27
- This Version       http://www.unicode.org/Public/6.3.0/ucd/
- Previous Version   http://www.unicode.org/Public/6.2.0/ucd/
+ Date               2014-06-12
+ This Version       http://www.unicode.org/Public/7.0.0/ucd/
+ Previous Version   http://www.unicode.org/Public/6.3.0/ucd/
  Latest Version     http://www.unicode.org/Public/UNIDATA/
 
-          Copyright © 1991-2013 Unicode, Inc. All Rights reserved.
+          Copyright © 1991-2014 Unicode, Inc. All Rights reserved.
+	  Distributed under the Terms of Use in
+	  http://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of the Unicode data files and any associated documentation (the
@@ -17,24 +19,25 @@ a copy of the Unicode data files and any associated documentation (the
 restriction, including without limitation the rights to use, copy,
 modify, merge, publish, distribute, and/or sell copies of the Data
 Files or Software, and to permit persons to whom the Data Files or
-Software are furnished to do so, provided that (a) the above copyright
-notice(s) and this permission notice appear with all copies of the
-Data Files or Software, (b) both the above copyright notice(s) and
-this permission notice appear in associated documentation, and (c)
-there is clear notice in each modified Data File or in the Software as
-well as in the documentation associated with the Data File(s) or
-Software that the data or software has been modified.
+Software are furnished to do so, provided that
+(a) this copyright and permission notice appear with all copies of
+    the Data Files or Software,
+(b) this copyright and permission notice appear in associated
+    documentation, and
+(c) there is clear notice in each modified Data File or in the Software
+    as well as in the documentation associated with the Data File(s) or
+    Software that the data or software has been modified.
 
 THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
 ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
 WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR HOLDERS INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR
-ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA FILES OR
-SOFTWARE.
+NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
+NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
+DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THE DATA FILES OR SOFTWARE.
 
 Except as contained in this notice, the name of a copyright holder
 shall not be used in advertising or otherwise to promote the sale, use
