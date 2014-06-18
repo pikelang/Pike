@@ -355,6 +355,7 @@ size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
 void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);
+void f_identify_cycle(INT32 args);
 void cleanup_gc(void);
 
 #if defined (PIKE_DEBUG) && defined (DEBUG_MALLOC)

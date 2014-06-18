@@ -27,6 +27,7 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_threadlib.h"
 #include "gc.h"
 #include "main.h"
+#include "builtin_functions.h"
 #include "block_allocator.h"
 
 #include <math.h>
@@ -6050,4 +6051,164 @@ void f_count_memory (INT32 args)
 
   pop_n_elems (args);
   push_ulongest (return_count ? count_internal : mc_counted_bytes);
+}
+
+static struct mapping *identify_loop_reverse = NULL;
+
+void identify_loop_visit_enter(void *thing, int type, void *extra)
+{
+  if (type < T_VOID) {
+    /* Valid svalue type. */
+    SET_SVAL(*Pike_sp, type, 0, refs, thing);
+    add_ref(((struct array *)thing));
+    Pike_sp++;
+  }
+}
+
+void identify_loop_visit_ref(void *dst, int ref_type,
+			     visit_thing_fn *visit_dst,
+			     void *extra)
+{
+  int type = type_from_visit_fn(visit_dst);
+  struct mc_marker *ref_to = find_mc_marker(dst);
+  if (ref_to) {
+    /* Already visited. */
+    return;
+  }
+
+  if (type != PIKE_T_UNKNOWN) {
+    struct svalue s;
+    SET_SVAL(s, type, 0, refs, dst);
+    low_mapping_insert(identify_loop_reverse, &s, Pike_sp-1, 0);
+  }
+
+  ref_to = my_make_mc_marker(dst, visit_dst, extra);
+  mc_wq_enqueue(ref_to);
+}
+
+void identify_loop_visit_leave(void *thing, int type, void *extra)
+{
+  if (type < T_VOID) {
+    /* Valid svalue type. */
+    pop_stack();
+  }
+}
+
+/*! @decl array(mixed) identify_cycle(mixed x)
+ *!
+ *! Identify reference cycles in Pike datastructures.
+ *!
+ *! @returns
+ *!   Returns @expr{UNDEFINED@} if @[x] is not member of a reference cycle.
+ *!   Otherwise returns an array identifying a cycle with @[x] as the first
+ *!   element, and where the elements refer to each other in order, and the
+ *!   last element refers to the first.
+ */
+void f_identify_cycle(INT32 args)
+{
+  struct svalue *s;
+  struct mc_marker *m;
+  struct svalue *k;
+
+  if (args < 1) {
+    SIMPLE_TOO_FEW_ARGS_ERROR("identify_loops", 1);
+  }
+
+  if (args > 1) pop_n_elems(args-1);
+  args = 1;
+
+  s = Pike_sp - 1;
+
+  if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
+    SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+			  "array|multiset|mapping|object|program|string|type");
+  }
+  if (TYPEOF(*s) == T_FUNCTION) {
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {
+      SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+			    "array|multiset|mapping|object|program|string|type");
+    }
+    SET_SVAL_TYPE(*s, T_OBJECT);
+  }
+
+  init_mc_marker_hash();
+
+  if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
+    SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
+    MAKE_CONST_STRING (pike_cycle_depth_str.u.string, "pike_cycle_depth");
+  }
+
+  assert (mc_work_queue == NULL);
+  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  if (!mc_work_queue) {
+    exit_mc_marker_hash();
+    SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
+				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  }
+  mc_work_queue--;
+  mc_wq_size = MC_WQ_START_SIZE;
+  mc_wq_used = 1;
+  mc_lookahead = -1;
+
+  assert (!mc_pass);
+  assert (visit_enter == NULL);
+  assert (visit_ref == NULL);
+  assert (visit_leave == NULL);
+
+  /* There's a fair chance of there being lots of stuff being referenced,
+   * so preallocate a reasonable initial size.
+   */
+  identify_loop_reverse = allocate_mapping(1024);
+
+  visit_enter = identify_loop_visit_enter;
+  visit_ref = identify_loop_visit_ref;
+  visit_leave = identify_loop_visit_leave;
+
+  /* NB: This initial call will botstrap the wq_queue. */
+  visit_fn_from_type[TYPEOF(*s)](s->u.ptr, VISIT_COMPLEX_ONLY, NULL);
+
+  while ((mc_ref_from = mc_wq_dequeue())) {
+    if (mc_ref_from->flags & MC_FLAG_INT_VISITED) continue;
+
+    mc_ref_from->flags |= MC_FLAG_INT_VISITED;
+    mc_ref_from->visit_fn(mc_ref_from->thing, VISIT_COMPLEX_ONLY, NULL);
+  }
+
+  exit_mc_marker_hash();
+  free (mc_work_queue + 1);
+  mc_work_queue = NULL;
+
+  visit_enter = NULL;
+  visit_ref = NULL;
+  visit_leave = NULL;
+
+#ifdef PIKE_DEBUG
+  if (s != Pike_sp-1) {
+    Pike_fatal("Stack error in identify_loops.\n");
+  }
+#endif
+
+  while ((k = low_mapping_lookup(identify_loop_reverse, Pike_sp-1))) {
+    /* NB: Since we entered this loop, we know that there's a
+     *     reference loop involving s, as s otherwise wouldn't
+     *     have been in the mapping.
+     */
+    push_svalue(k);
+    if (k->u.refs == s->u.refs) {
+      /* Found! */
+      break;
+    }
+  }
+
+  free_mapping(identify_loop_reverse);
+
+  if (!k) {
+    push_undefined();
+  } else {
+    /* NB: We push s an extra time last above, to simplify the
+     *     reversing below.
+     */
+    f_aggregate(Pike_sp - (s + 1));
+    f_reverse(1);
+  }
 }
