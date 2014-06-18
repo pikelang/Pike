@@ -10340,6 +10340,11 @@ void init_builtin_efuns(void)
 		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
 			    tString,tType(tMix),tInt),
 		       tInt), 0);
+  ADD_FUNCTION("identify_cycle", f_identify_cycle,
+	       tFunc(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
+			  tString,tType(tMix)),
+		     tArr(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
+			       tString,tType(tMix)))), 0);
 
   ADD_INT_CONSTANT ("NATIVE_INT_MAX", MAX_INT_TYPE, 0);
   ADD_INT_CONSTANT ("NATIVE_INT_MIN", MIN_INT_TYPE, 0);
