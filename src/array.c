@@ -2797,6 +2797,7 @@ void check_all_arrays(void)
 
 PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
 {
+  visit_enter(a, T_ARRAY, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -2818,6 +2819,7 @@ PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
     for (e = 0; e < s; e++)
       visit_svalue (ITEM (a) + e, ref_type, extra);
   }
+  visit_leave(a, T_ARRAY, extra);
 }
 
 static void gc_check_array(struct array *a)

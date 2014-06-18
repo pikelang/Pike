@@ -8913,6 +8913,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
 
 PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
 {
+  visit_enter(t, PIKE_T_TYPE, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -8921,6 +8922,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
       break;
 #endif
     case VISIT_COMPLEX_ONLY:
+      visit_leave(t, PIKE_T_TYPE, extra);
       return;
     case VISIT_COUNT_BYTES:
       mc_counted_bytes += sizeof (struct pike_type);
@@ -8979,6 +8981,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
       break;
 #endif /* PIKE_DEBUG */
   }
+  visit_leave(t, PIKE_T_TYPE, extra);
 }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)

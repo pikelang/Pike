@@ -2472,6 +2472,7 @@ void check_all_mappings(void)
 static void visit_mapping_data (struct mapping_data *md, int action,
 				void *extra)
 {
+  visit_enter(md, T_MAPPING_DATA, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -2498,10 +2499,12 @@ static void visit_mapping_data (struct mapping_data *md, int action,
       visit_svalue (&k->val, val_ref_type, extra);
     }
   }
+  visit_leave(md, T_MAPPING_DATA, extra);
 }
 
 PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 {
+  visit_enter(m, T_MAPPING, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -2517,6 +2520,7 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 
   visit_ref (m->data, REF_TYPE_INTERNAL,
 	     (visit_thing_fn *) &visit_mapping_data, extra);
+  visit_leave(m, T_MAPPING, extra);
 }
 
 #ifdef MAPPING_SIZE_DEBUG

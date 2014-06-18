@@ -3485,6 +3485,7 @@ PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n)
 static void visit_multiset_data (struct multiset_data *msd, int action,
 				 void *extra)
 {
+  visit_enter(msd, T_MULTISET_DATA, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -3522,10 +3523,12 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
 	visit_svalue (&ind, ind_ref_type, extra);
       } while ((node = low_multiset_next (node)));
   }
+  visit_leave(msd, T_MULTISET_DATA, extra);
 }
 
 PMOD_EXPORT void visit_multiset (struct multiset *l, int action, void *extra)
 {
+  visit_enter(l, T_MULTISET, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -3541,6 +3544,7 @@ PMOD_EXPORT void visit_multiset (struct multiset *l, int action, void *extra)
 
   visit_ref (l->msd, REF_TYPE_INTERNAL,
 	     (visit_thing_fn *) &visit_multiset_data, extra);
+  visit_leave(l, T_MULTISET, extra);
 }
 
 unsigned gc_touch_all_multisets (void)

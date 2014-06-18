@@ -2273,6 +2273,7 @@ void count_memory_in_strings(size_t *num, size_t *size)
 
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
 {
+  visit_enter(s, T_STRING, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -2285,6 +2286,7 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
       mc_counted_bytes += memory_in_string (s);
       break;
   }
+  visit_leave(s, T_STRING, extra);
 }
 
 #ifdef PIKE_DEBUG

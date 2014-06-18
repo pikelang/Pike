@@ -196,6 +196,7 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
 
 PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 {
+  visit_enter(c, T_STRUCT_CALLABLE, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -216,6 +217,7 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 
   /* Looks like the c->prog isn't refcounted..? */
   /* visit_program_ref (c->prog, REF_TYPE_NORMAL); */
+  visit_leave(c, T_STRUCT_CALLABLE, extra);
 }
 
 #ifdef PIKE_DEBUG
