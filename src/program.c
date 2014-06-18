@@ -11029,6 +11029,7 @@ void cleanup_program(void)
 
 PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
 {
+  visit_enter(p, T_PROGRAM, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -11081,6 +11082,7 @@ PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
     if (p->parent)
       visit_program_ref (p->parent, REF_TYPE_STRONG, extra);
   }
+  visit_leave(p, T_PROGRAM, extra);
 }
 
 static void gc_check_program(struct program *p);

@@ -2089,6 +2089,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 
   if (o->next == o) return; /* Fake object used by compiler */
 
+  visit_enter(o, T_OBJECT, extra);
   switch (action) {
 #ifdef PIKE_DEBUG
     default:
@@ -2210,6 +2211,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
       if (PARENT_INFO (o)->parent)
 	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG, extra);
   }
+  visit_leave(o, T_OBJECT, extra);
 }
 
 PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,

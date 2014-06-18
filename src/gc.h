@@ -627,12 +627,17 @@ extern int gc_in_cycle_check;
  * use thread local storage when the time comes. */
 
 /* A visit_thing_fn is made for every type of refcounted block. An
- * INT32 refcounter is assumed to be first in every block. The
+ * INT32 refcounter is assumed to be first in every block.
+ * The visit_thing_fn should start by calling the visit_enter function
+ * with src_thing, the base type and extra as arguments. Then
  * visit_thing_fn should call visit_ref exactly once for every
  * refcounted ref inside src_thing, in a stable order. dst_thing is
  * then the target of the ref, ref_type describes the type of the ref
  * itself (REF_TYPE_*), visit_dst is the visit_thing_fn for the target
  * block, and extra is an arbitrary value passed along to visit_dst.
+ * After visit_ref has been called for all refcounted things, visit_leave
+ * should be called with the same arguments as the initial call of
+ * visit_enter.
  *
  * action identifies some action that the visit_thing_fn should take
  * (VISIT_*). Also, visit_ref_cb is likely to get a return value that
@@ -642,9 +647,13 @@ extern int gc_in_cycle_check;
  * immediately, queued and called later, or not called at all. */
 
 typedef void visit_thing_fn (void *src_thing, int action, void *extra);
+typedef void visit_enter_cb (void *thing, int type, void *extra);
 typedef void visit_ref_cb (void *dst_thing, int ref_type,
 			   visit_thing_fn *visit_dst, void *extra);
+typedef void visit_leave_cb (void *thing, int type, void *extra);
+PMOD_EXPORT extern visit_enter_cb *visit_enter;
 PMOD_EXPORT extern visit_ref_cb *visit_ref;
+PMOD_EXPORT extern visit_leave_cb *visit_leave;
 
 #define REF_TYPE_STRENGTH 0x03	/* Bits for normal/weak/strong. */
 #define REF_TYPE_NORMAL	0x00	/* Normal (nonweak and nonstrong) ref. */

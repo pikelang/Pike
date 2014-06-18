@@ -4399,6 +4399,8 @@ void cleanup_gc(void)
 /* Visit things API */
 
 PMOD_EXPORT visit_ref_cb *visit_ref = NULL;
+PMOD_EXPORT visit_enter_cb *visit_enter = NULL;
+PMOD_EXPORT visit_leave_cb *visit_leave = NULL;
 
 /* Be careful if extending this with internal types like
  * T_MAPPING_DATA and T_MULTISET_DATA; there's code that assumes
@@ -5283,6 +5285,14 @@ static void current_only_visit_ref (void *thing, int ref_type,
   }
 }
 
+static void ignore_visit_enter(void *thing, int type, void *extra)
+{
+}
+
+static void ignore_visit_leave(void *thing, int type, void *extra)
+{
+}
+
 PMOD_EXPORT int mc_count_bytes (void *thing)
 {
   if (mc_pass == MC_PASS_LOOKAHEAD) {
@@ -5608,7 +5618,9 @@ void f_count_memory (INT32 args)
   mc_wq_used = 1;
 
   assert (!mc_pass);
+  assert (visit_enter == NULL);
   assert (visit_ref == NULL);
+  assert (visit_leave == NULL);
 
   free_svalue (&throw_value);
   mark_free_svalue (&throw_value);
@@ -5693,8 +5705,10 @@ void f_count_memory (INT32 args)
   count_internal = count_cyclic = count_visited = 0;
   count_visits = count_revisits = count_rounds = 0;
 
+  visit_enter = ignore_visit_enter;
   visit_ref = mc_lookahead < 0 ?
     current_only_visit_ref : pass_lookahead_visit_ref;
+  visit_leave = ignore_visit_leave;
 
   do {
     count_rounds++;
@@ -6014,7 +6028,9 @@ void f_count_memory (INT32 args)
   }
 
   mc_pass = 0;
+  visit_enter = NULL;
   visit_ref = NULL;
+  visit_leave = NULL;
 
   DL_MAKE_EMPTY (mc_incomplete);
   DL_MAKE_EMPTY (mc_indirect);
