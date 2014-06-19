@@ -118,6 +118,8 @@ extern struct op_2_f {
 } *opcode_to_fcode;
 #endif /* HAVE_COMPUTED_GOTO */
 
+
+
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_stack_error[];
 #define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)Pike_fatal("%s", msg_stack_error);}while(0)
@@ -200,9 +202,9 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #endif /* PIKE_DEBUG */
 
 #ifdef __CHECKER__
-#define IF_CHECKER(X)	X
+#define SET_SVAL_TYPE_SUBTYPE_CHECKER(S,T,U) SET_SVAL_TYPE(S,Y);SET_SVAL_SUBTYPE(S,U)
 #else
-#define IF_CHECKER(X)
+#define SET_SVAL_TYPE_SUBTYPE_CHECKER(S,T,U) SET_SVAL_TYPE(S,T)
 #endif
 
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
@@ -268,52 +270,46 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define push_program(P) do{						\
     struct program *_=(P);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct svalue *_sp_ = (struct svalue*)Pike_sp++;		\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_PROGRAM,0);		\
     _sp_->u.program=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_int(I) do{							\
     INT_TYPE _=(I);							\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_NUMBER);		\
     _sp_->u.integer=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
-    SET_SVAL_SUBTYPE(*_sp_, NUMBER_NUMBER);				\
   }while(0)
 
 #define push_undefined() do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_UNDEFINED);		\
     _sp_->u.integer=0;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
-    SET_SVAL_SUBTYPE(*_sp_, NUMBER_UNDEFINED);				\
   }while(0)
 
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, T_OBJ_INDEX,0);	        \
     _sp_->u.identifier=_;						\
-    SET_SVAL_TYPE(*_sp_, T_OBJ_INDEX);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_mapping(M) do{						\
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MAPPING,0);		\
     _sp_->u.mapping=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_array(A) do{						\
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_ARRAY,0);		\
     _sp_->u.array=_ ;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_empty_array() ref_push_array(&empty_array)
@@ -322,22 +318,20 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MULTISET,0);		\
     _sp_->u.multiset=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_string(S) do {						\
     struct pike_string *_=(S);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     debug_malloc_touch(_);						\
     DO_IF_DEBUG(if(_->size_shift & ~3) {				\
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
 			     _->size_shift);				\
 		});							\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     _sp_->u.string=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_empty_string() ref_push_string(empty_pike_string)
@@ -346,45 +340,34 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_TYPE,0);		\
     _sp_->u.type=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define push_object(O) do {						\
-    struct object *_=(O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    debug_malloc_touch(_);						\
-    _sp_->u.object=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-  }while(0)
+#define push_object(O) push_object_inherit(O,0)
 
 #define push_object_inherit(O, INH_NUM) do {				\
     struct object *_ = (O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     int _inh_ = (INH_NUM);						\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT,_inh_);			\
     _sp_->u.object = _;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define push_float(F) do{						\
     FLOAT_TYPE _=(F);							\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_FLOAT,0);		\
     _sp_->u.float_number=_;						\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FLOAT);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 PMOD_EXPORT extern void push_text( const char *x );
 
 #define push_constant_text(T) do{					\
-    struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_constant_string_code(STR, CODE) do{			\
@@ -395,97 +378,80 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define push_function(OBJ, FUN) do {					\
     struct object *_=(OBJ);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));  	        \
     _sp_->u.object=_;							\
-    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define ref_push_program(P) do{						\
     struct program *_=(P);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_PROGRAM,0);		\
     _sp_->u.program=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_mapping(M) do{						\
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MAPPING,0);		\
     _sp_->u.mapping=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_array(A) do{						\
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_ARRAY,0);		\
     _sp_->u.array=_ ;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_multiset(L) do{					\
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MULTISET,0);		\
     _sp_->u.multiset=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_string(S) do{						\
     struct pike_string *_=(S);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     DO_IF_DEBUG(if(_->size_shift & ~3) {				\
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
 			     _->size_shift);				\
 		});							\
     add_ref(_);								\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     _sp_->u.string=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define ref_push_type_value(S) do{					\
     struct pike_type *_=(S);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
     _sp_->u.type=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define ref_push_object(O) do{						\
-    struct object  *_=(O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    add_ref(_);								\
-    _sp_->u.object=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-  }while(0)
+#define ref_push_object(O) ref_push_object_inherit(O,0)
 
 #define ref_push_object_inherit(O, INH_NUM) do{				\
     struct object  *_ = (O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    int _inh_ = (INH_NUM);						\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT, (INH_NUM));		\
     _sp_->u.object = _;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define ref_push_function(OBJ, FUN) do {				\
     struct object *_=(OBJ);						\
-    struct svalue *_sp_ = Pike_sp++;					\
+    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));		\
     _sp_->u.object=_;							\
-    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define push_svalue(S) do {						\
@@ -503,25 +469,31 @@ PMOD_EXPORT extern void push_text( const char *x );
     _sp_[-2]=_;								\
   } while(0)
 
+#if PIKE_T_INT+NUMBER_NUMBER==0 && defined(HAS___BUILTIN_MEMSET)
+#define push_zeroes(N) do{					\
+    ptrdiff_t num_ = (N);					\
+    __builtin_memset(Pike_sp,0,sizeof(struct svalue)*(num_));	\
+    Pike_sp+=num_;						\
+  } while(0);
+#else
 #define push_zeroes(N) do{			\
-    struct svalue *s_=Pike_sp;			\
+    struct fast_svalue *s_=(struct fast_svalue*)Pike_sp;	\
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
-      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
-      SET_SVAL_SUBTYPE(*s_, NUMBER_NUMBER);	\
+      SET_SVAL_TYPE_SUBTYPE(*s_, PIKE_T_INT,NUMBER_NUMBER);	\
       s_->u.integer=0;				\
     }						\
     Pike_sp=s_;					\
 }while(0)
+#endif
 
 #define push_undefines(N) do{			\
-    struct svalue *s_=Pike_sp;			\
+    struct fast_svalue *s_=(struct fast_svalue*)Pike_sp;	\
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
-      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
-      SET_SVAL_SUBTYPE(*s_, NUMBER_UNDEFINED);	\
+      SET_SVAL_TYPE_SUBTYPE(*s_, PIKE_T_INT,NUMBER_UNDEFINED);	\
       s_->u.integer=0;				\
     }						\
     Pike_sp=s_;					\
@@ -650,7 +622,7 @@ enum apply_type
   APPLY_STACK, /* The function is the first argument */
   APPLY_SVALUE, /* arg1 points to an svalue containing the function */
   APPLY_SVALUE_STRICT, /* Like APPLY_SVALUE, but does not return values for void functions */
-   APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
+  APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
 };
 
 #define APPLY_MASTER(FUN,ARGS) \

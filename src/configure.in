@@ -2432,6 +2432,7 @@ TEST_BUILTIN(__builtin_ia32_rdrand32_step,[&foo])
 
 TEST_BUILTIN_VOID(__builtin_unreachable,[])
 TEST_BUILTIN_VOID(__builtin_expect,[1,1])
+TEST_BUILTIN(__builtin_memset, [&foo,0,0])
 TEST_BUILTIN(__builtin_clz, 23)
 TEST_BUILTIN(__builtin_clzl, 23)
 TEST_BUILTIN(__builtin_clzll, 23)
