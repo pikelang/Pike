@@ -4267,8 +4267,10 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
        ) {
       struct svalue *res;
-      struct svalue val = SVALUE_INIT_INT (0);
+      struct svalue val = SVALUE_INIT_INT (COUNTER_START);
+#ifndef HAVE_UNION_INIT
       val.u.integer = COUNTER_START;
+#endif
       if ((res = low_mapping_lookup(data->decoded, &val))) {
 	push_svalue(res);
 	return 1;
