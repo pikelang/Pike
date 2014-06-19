@@ -621,11 +621,16 @@ struct pike_string_hdr {
 
 #define SHORT_STRING_BLOCK	256
 
-#define SHORT_STRING_THRESHOLD 15
+
+/* breakpoint at 50% overhead. This doubles the size of short strings
+   on 64-bit systems, but it only increases memory usage for short
+   strings, on average, by 25% or so. */
+
+#define SHORT_STRING_THRESHOLD ((ptrdiff_t)sizeof(struct pike_string_hdr)-1)
 
 struct short_pike_string0 {
   PIKE_STRING_CONTENTS;
-  p_wchar0 str[SHORT_STRING_THRESHOLD+1];
+  p_wchar0 str[sizeof(struct pike_string_hdr)];
 };
 
 static struct block_allocator string_allocator = BA_INIT(sizeof(struct short_pike_string0), SHORT_STRING_BLOCK);
@@ -658,9 +663,6 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     t=xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
-#ifdef ATOMIC_SVALUE
-  t->ref_type = T_STRING;
-#endif
   t->refs = 0;
   add_ref(t);	/* For DMALLOC */
   t->str[len]=0;
@@ -773,9 +775,6 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
     t=xalloc(((len + 1)<<shift) + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
-#ifdef ATOMIC_SVALUE
-  t->ref_type = T_STRING;
-#endif
   t->refs = 0;
   add_ref(t);	/* For DMALLOC */
   t->len=len;
