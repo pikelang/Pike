@@ -91,16 +91,15 @@
 #define MAXPATHLEN 32768
 #endif
 
-static char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
+static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE;
+static char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
 static void set_master(const char *file)
 {
-  if (strlen(file) >= MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE)) {
-    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
-	    file, MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE));
-    exit(1);
-  }
-  strcpy(master_location + CONSTANT_STRLEN(MASTER_COOKIE), file);
+  if( master_file_location > _master_location+CONSTANT_STRLEN(MASTER_COOKIE)
+      || master_file_location < _master_location)
+    free(master_file_location);
+  master_file_location = strdup( file );
 }
 
 #ifdef __NT__
@@ -136,10 +135,9 @@ static void get_master_key(HKEY cat)
 
 static void set_default_master(const char *bin_name)
 {
-  char *mp = master_location + CONSTANT_STRLEN (MASTER_COOKIE);
-
+#define mp master_file_location
 #ifdef HAVE_GETENV
-  if(!*mp && getenv("PIKE_MASTER")) {
+  if(getenv("PIKE_MASTER")) {
     set_master(getenv("PIKE_MASTER"));
   }
 #endif
@@ -151,11 +149,13 @@ static void set_default_master(const char *bin_name)
 
   if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5))
   {
-    SNPRINTF (mp, sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE),
+    char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
+    SNPRINTF (tmp, sizeof(tmp)-1,
 	      DEFAULT_MASTER,
 	      PIKE_MAJOR_VERSION,
 	      PIKE_MINOR_VERSION,
 	      PIKE_BUILD_VERSION);
+    set_master( tmp );
   }
 
 #ifdef __NT__
@@ -169,27 +169,26 @@ static void set_default_master(const char *bin_name)
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
       SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath, mp);
-      strncpy (mp, tmp,
-	       sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE));
+      set_master( tmp );
     }
   }
 #else
   if (!*mp) {
     /* Attempt to find a master via the path to the binary. */
     /* Note: We assume that MAXPATHLEN is > 18 characters. */
-    if (strlen(bin_name) < (2*MAXPATHLEN -
-			    CONSTANT_STRLEN(MASTER_COOKIE "master.pike"))) {
-      char *p;
-      strcpy(mp, bin_name);
-      p = strrchr(mp, '/');
-      if (!p) p = mp;
-      else p++;
-      strcpy(p, "master.pike");
-    }
+    char tmp[strlen(bin_name)];
+    char *p;
+    strcpy(tmp, bin_name);
+    p = strrchr(tmp, '/');
+    if (!p) p = tmp;
+    else p++;
+    strcpy(p, "master.pike");
+    set_master( tmp );
   }
 #endif
 
   TRACE((stderr, "Default master at \"%s\"...\n", mp));
+#undef mp
 }
 
 #ifdef LIBPIKE
@@ -270,8 +269,7 @@ static void find_lib_dir(int argc, char **argv)
   {
     char *p;
     char *dir;
-    memcpy(libpike_file, master_location + CONSTANT_STRLEN(MASTER_COOKIE),
-	   sizeof(master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
+    strcpy(libpike_file, master_file_location);
     for (p = dir = libpike_file; *p; p++) {
       if ((*p == '/')
 #ifdef __NT__
@@ -375,7 +373,7 @@ int main(int argc, char **argv)
 
   TRACE((stderr, "init_pike()\n"));
 
-  init_pike(argv, master_location + CONSTANT_STRLEN(MASTER_COOKIE));
+  init_pike(argv, master_file_location);
 
   for(e=1; e<argc; e++)
   {
@@ -630,7 +628,7 @@ int main(int argc, char **argv)
    *       the MASTER_COOKIE string in the binary.
    */
   add_pike_string_constant("__master_cookie",
-			   master_location, CONSTANT_STRLEN(MASTER_COOKIE));
+			   _master_location, CONSTANT_STRLEN(MASTER_COOKIE));
 
   if(SETJMP(back))
   {
