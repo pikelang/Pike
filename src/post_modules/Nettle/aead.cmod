@@ -191,7 +191,7 @@ PIKECLASS AEAD
    *! Base class for AEAD contexts.
    */
   PIKECLASS State
-    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
   {
     DOCSTART() @decl inherit AEAD::State
     DOCEND()

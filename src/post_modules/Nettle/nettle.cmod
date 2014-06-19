@@ -41,6 +41,7 @@ DECLARATIONS
  *! internal state of 256 bits.
  */
 PIKECLASS Yarrow
+program_flags PROGRAM_CLEAR_STORAGE;
 {
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
@@ -255,6 +256,7 @@ PIKECLASS Yarrow
  *! and supply the @[reseed()] method with new entopy.
  */
 PIKECLASS Fortuna
+program_flags PROGRAM_CLEAR_STORAGE;
 {
   CVAR struct aes_ctx aes_ctx;
   CVAR struct sha256_ctx sha_ctx;
