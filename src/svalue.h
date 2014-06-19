@@ -855,54 +855,14 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_gc_cycle_check_svalues 
 
 #endif /* !NO_PIKE_SHORTHAND */
 
-#ifdef ATOMIC_SVALUE
-/* Atomic svalues: Store the type in the reference types,
- * instead of on the stack. This allows for changing an
- * svalue in a single atomic operation.
- */
-#define PIKE_MEMORY_OBJECT_MEMBERS	\
-  INT32 refs;				\
-  INT32 ref_type			\
-  DO_IF_SECURITY(; struct object *prot) \
-
-#ifdef PIKE_SECURITY
-#ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, 0, PTHREAD_MUTEX_INITIALIZER
-#else
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, 0
-#endif
-#else
-#ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, PTHREAD_MUTEX_INITIALIZER
-#else
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type
-#endif
-#endif
-
-#define INIT_PIKE_MEMOBJ(X, TYPE) do {			\
-  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
-  v_->ref_type = (TYPE);				\
-  v_->refs=0;						\
-  add_ref(v_); /* For DMALLOC... */			\
-  DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
-}while(0)
-#else /* !ATOMIC_SVALUE */
 #define PIKE_MEMORY_OBJECT_MEMBERS	\
   INT32 refs				\
   DO_IF_SECURITY(; struct object *prot) \
 
 #ifdef PIKE_SECURITY
-#ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, 0, PTHREAD_MUTEX_INITIALIZER
-#else
 #define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, 0
-#endif
-#else
-#ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, PTHREAD_MUTEX_INITIALIZER
 #else
 #define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs
-#endif
 #endif
 
 #define INIT_PIKE_MEMOBJ(X, TYPE) do {			\
@@ -911,13 +871,11 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_gc_cycle_check_svalues 
   add_ref(v_); /* For DMALLOC... */			\
   DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
 }while(0)
-#endif /* ATOMIC_SVALUE */
 
 #define EXIT_PIKE_MEMOBJ(X) do {		\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\
   DO_IF_SECURITY( FREE_PROT(v_) );		\
 }while(0)
-
 
 struct ref_dummy
 {

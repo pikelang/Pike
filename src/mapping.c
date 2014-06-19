@@ -221,9 +221,6 @@ static void init_mapping(struct mapping *m,
     md->flags = flags;
     /* md->size = 0; */
     /* md->refs=0; */
-#ifdef ATOMIC_SVALUE
-    md->ref_type = T_MAPPING_DATA;
-#endif
     /* md->valrefs=0; */
     /* md->hardlinks=0; */
     md->num_keypairs=size;
@@ -261,9 +258,6 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
   INITIALIZE_PROT(m);
   init_mapping(m,size,0);
 
-#ifdef ATOMIC_SVALUE
-  m->ref_type = T_MAPPING;
-#endif
   m->refs = 0;
   add_ref(m);	/* For DMALLOC... */
 

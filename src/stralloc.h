@@ -22,28 +22,15 @@ enum size_shift {
     thirtytwobit=2,
 };
 
-#ifdef ATOMIC_SVALUE
-#define PIKE_STRING_CONTENTS						\
-  INT32 refs;								\
-  INT32 ref_type;							\
-  unsigned char  flags;								\
-  unsigned char  size_shift; 	\
-  unsigned char  min;								\
-  unsigned char  max; 	\
+#define PIKE_STRING_CONTENTS			    \
+  INT32 refs;					    \
+  unsigned char  flags;					  \
+  enum size_shift  size_shift:8;					\
+  unsigned char  min;							\
+  unsigned char  max;							\
   ptrdiff_t len; /* Not counting terminating NUL. */			\
   size_t hval;								\
   struct pike_string *next
-#else /* !ATOMIC_SVALUE */
-#define PIKE_STRING_CONTENTS                \
-    INT32 refs;                                     \
-    unsigned char  flags;                           \
-    enum size_shift  size_shift:8;                        \
-    unsigned char  min;								\
-    unsigned char  max;                                             \
-    ptrdiff_t len; /* Not counting terminating NUL. */              \
-    size_t hval;                                                    \
-    struct pike_string *next
-#endif
 
 struct pike_string
 {
