@@ -192,7 +192,7 @@ PIKECLASS Cipher
    *! Base class for cipher contexts.
    */
   PIKECLASS State
-    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
   {
     DOCSTART() @decl inherit Cipher::State
     DOCEND()
@@ -546,7 +546,7 @@ PIKECLASS BufferedCipher
      *!   @[BlockCipher.CBC], @[BlockCipher16.GCM]
      */
     PIKECLASS State
-      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       CVAR struct object *object;
       CVAR int block_size;
@@ -2124,7 +2124,7 @@ PIKECLASS BlockCipher
      *! The state for a CTR instance.
      */
     PIKECLASS State
-      program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+      program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       DOCSTART() @decl inherit Cipher::State
 	DOCEND()
@@ -3607,7 +3607,7 @@ PIKECLASS BlockCipher16
     /*! @class State
      */
     PIKECLASS State
-      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       PIKEVAR object object
 	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
@@ -3617,7 +3617,7 @@ PIKECLASS BlockCipher16
       CVAR struct eax_key eax_key;
       CVAR struct eax_ctx eax_ctx;
 
-      /*! @decl inherit EAX::State
+      /*! @decl inherit AEAD::State
        */
 
       EXTRA
@@ -4069,7 +4069,7 @@ PIKECLASS BlockCipher16
      *! The state for a GCM instance.
      */
     PIKECLASS State
-      program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+      program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
     {
       DOCSTART() @decl inherit AEAD::State
 	DOCEND()

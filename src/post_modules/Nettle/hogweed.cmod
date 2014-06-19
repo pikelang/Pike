@@ -194,6 +194,7 @@ PIKEFUN array(object(Gmp.mpz))
  *! Diffie-Hellman Parameters.
  */
 PIKECLASS DH_Params
+program_flags PROGRAM_CLEAR_STORAGE;
 {
   CVAR struct dsa_params params;
 
@@ -546,7 +547,7 @@ PIKECLASS ECC_Curve
    *! Elliptic Curve Digital Signing Algorithm
    */
   PIKECLASS ECDSA
-    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
   {
     /*! @decl inherit __builtin.Nettle.Sign
      */
