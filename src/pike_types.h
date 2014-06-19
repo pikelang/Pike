@@ -24,9 +24,6 @@ void TYPE_STACK_DEBUG(const char *fun);
 struct pike_type
 {
   INT32 refs;
-#ifdef ATOMIC_SVALUE
-  INT32 ref_type;
-#endif
   unsigned INT32 hash;
   struct pike_type *next;
   unsigned INT32 flags;

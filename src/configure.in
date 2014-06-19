@@ -1553,13 +1553,6 @@ MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
-MY_AC_ARG_WITH(atomic-svalue,
-               MY_DESCR([--with-atomic-svalue],
-	                [change the svalue representation to one])
-MY_DESCR([],[supporting atomic changes (EXPERIMENTAL)]),
-               [ AC_DEFINE(ATOMIC_SVALUE)
-	         PIKE_MSG_WARN([Atomic svalues enabled.])
-	       ])
 AC_ARG_WITH(security, MY_DESCR([--with-security],
 			       [enable internal pike security system]),
 	    [AC_MSG_ERROR([Pike security is deprecated. Use --with-deprecated-security to enable.])])

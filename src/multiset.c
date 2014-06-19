@@ -233,17 +233,6 @@ static struct multiset_data empty_indval_msd = {
 
 void free_multiset_data (struct multiset_data *msd);
 
-#ifdef ATOMIC_SVALUE
-#define INIT_MULTISET(L) do {						\
-    GC_ALLOC (L);							\
-    INITIALIZE_PROT (L);						\
-    L->ref_type = T_MULTISET;						\
-    L->refs = 0;							\
-    add_ref(L);	/* For DMALLOC... */					\
-    L->node_refs = 0;							\
-    DOUBLELINK (first_multiset, L);					\
-  } while (0)
-#else /* !ATOMIC_SVALUE */
 #define INIT_MULTISET(L) do {						\
     GC_ALLOC (L);							\
     INITIALIZE_PROT (L);						\
@@ -252,7 +241,6 @@ void free_multiset_data (struct multiset_data *msd);
     L->node_refs = 0;							\
     DOUBLELINK (first_multiset, L);					\
   } while (0)
-#endif
 
 static struct block_allocator multiset_allocator = BA_INIT_PAGES(sizeof(struct multiset), 2);
 
