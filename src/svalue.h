@@ -94,27 +94,42 @@ union anything
  */
 struct svalue
 {
-  unsigned INT16 type; /**< the data type, see PIKE_T_... */
-  unsigned INT16 subtype; /**< used to store the zero type, among others */
+  unsigned short type; /**< the data type, see PIKE_T_... */
+  unsigned short subtype; /**< used to store the zero type, among others */
   union anything u; /**< contains the value */
 };
 
+struct fast_svalue
+{
+  ptrdiff_t type_subtype;
+  union anything u;
+};
+
+#if PIKE_BYTEORDER == 1234
+#define TYPE_SUBTYPE(X,Y) ((X)|((Y)<<16))
+#else
+#define TYPE_SUBTYPE(X,Y) ((Y)|((X)<<16))
+#endif
+
 #define TYPEOF(SVAL)	((SVAL).type)
 #define SUBTYPEOF(SVAL)	((SVAL).subtype)
+#define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE) \
+  (((struct fast_svalue*)&(SVAL))->type_subtype=TYPE_SUBTYPE(TYPE,SUBTYPE))
+
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
+
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
-    struct svalue * __sv_ptr = &( SVAL );			\
+    struct fast_svalue * __sv_ptr = (struct fast_svalue *)&( SVAL );	\
     __sv_ptr->u.FIELD = (EXPR);				\
-    SET_SVAL_TYPE(*__sv_ptr, (TYPE));			\
-    SET_SVAL_SUBTYPE(*__sv_ptr, (SUBTYPE));		\
+    __sv_ptr->type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE);\
   } while(0)
 
 /*
 */
-#define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
+#define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_SUBTYPE(SVAL, 99,0) /* an invalid type */
 
 /* The native types.
  *
