@@ -180,23 +180,23 @@ cond_resolv( Nettle.Yarrow, [[
   test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
   test_do( Nettle.Yarrow()->needed_sources(), 2 )
   test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(0), "")
-  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), "\26")
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), " ")
   test_eq( S(Nettle.Yarrow()->seed("\0"*32)->random_string(32)),
-    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_eq( S(Nettle.Yarrow(7)->seed("\0"*32)->random_string(32)),
-    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_eq( S(Nettle.Yarrow()->seed((string)enumerate(33))->random_string(32)),
-    "2c6465cdc71b348074f7f76c484b67802b24b62d3c2191a6f89f1a9f80e8c520" )
+    "c63f6a753bf294272263e56282965dc35ef53f9799907761ecb2cd26633b4d0d" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,0);
     return S(r->random_string(32));
-  ]], "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+  ]], "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,256);
     return S(r->random_string(32));
-  ]], "62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d" )
+  ]], "c31e0ef2059db21e39ec0d0a0c1f790246eee47afc4054d752b20d64e494225d" )
 ]])  
 
 // Crypto.Random
