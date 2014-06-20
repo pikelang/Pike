@@ -20,11 +20,13 @@
 #include "snmp_globals.h"
 #include "snmp_errors.h"
 
+import Standards.ASN1.Types;
+
 #if 1
 // --- ASN.1 hack
 class asn1_application_octet_string
 {
-  inherit Standards.ASN1.Types.OctetString;
+  inherit OctetString;
   int cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
@@ -39,7 +41,7 @@ class asn1_application_octet_string
 
 class asn1_application_integer
 {
-  inherit Standards.ASN1.Types.Integer;
+  inherit Integer;
   int cls = 1;
   constant type_name = "APPLICATION INTEGER";
   int tagx;
@@ -114,19 +116,19 @@ object|mapping der_decode(object data, mapping types)
 }
 
 protected mapping snmp_type_proc =
-                    ([ 1 : Standards.ASN1.Types.asn1_boolean,
-                       2 : Standards.ASN1.Types.asn1_integer,
-                       3 : Standards.ASN1.Types.asn1_bit_string,
-                       4 : Standards.ASN1.Types.asn1_octet_string,
-                       5 : Standards.ASN1.Types.asn1_null,
-                       6 : Standards.ASN1.Types.asn1_identifier,
+                    ([ 1 : Boolean,
+                       2 : Integer,
+                       3 : BitString,
+                       4 : OctetString,
+                       5 : Null,
+                       6 : Identifier,
                        // 9 : asn1_real,
                        //10 : asn1_enumerated,
-                       16 : Standards.ASN1.Types.asn1_sequence,
-                       17 : Standards.ASN1.Types.asn1_set,
-                       19 : Standards.ASN1.Types.asn1_printable_string,
-                       20 : Standards.ASN1.Types.asn1_teletex_string,
-                       23 : Standards.ASN1.Types.asn1_utc,
+                       16 : Sequence,
+                       17 : Set,
+                       19 : PrintableString,
+                       20 : TeletexString,
+                       23 : UTC,
 
 		 	    // from RFC-1065 :
 		       64 : asn1_application_octet_string, // ipaddress
@@ -317,9 +319,9 @@ private int writemsg(string rem_addr, int rem_port, object pdu) {
   string rawd;
   int msize;
 
-  msg = Standards.ASN1.Types.asn1_sequence(({
-	   Standards.ASN1.Types.asn1_integer(snmp_version-1),
-           Standards.ASN1.Types.asn1_octet_string(snmp_community),
+  msg = Sequence(({
+	   Integer(snmp_version-1),
+           OctetString(snmp_community),
 	   pdu}));
 
   rawd = msg->get_der();
@@ -367,17 +369,16 @@ int get_request(array(string) varlist, string|void rem_addr,
   array vararr = ({});
 
   foreach(varlist, string varname)
-    vararr += ({Standards.ASN1.Types.asn1_sequence(
-	      ({Standards.ASN1.Types.asn1_identifier(
-		@(array(int))(varname/".")),
-		Standards.ASN1.Types.Null()})
+    vararr += ({Sequence(
+	        ({Identifier(@(array(int))(varname/".")),
+                  Null()})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(0,
-	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-		 Standards.ASN1.Types.asn1_integer(0), // error-status
-		 Standards.ASN1.Types.asn1_integer(0), // error-index
-		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       ({Integer(id), // request-id
+		 Integer(0), // error-status
+		 Integer(0), // error-index
+		 Sequence(vararr)})
 	       );
 
   // now we have PDU ...
@@ -387,22 +388,22 @@ int get_request(array(string) varlist, string|void rem_addr,
   return id;
 }
 
-object mk_asn1_val(string type, int|string val) {
+Object mk_asn1_val(string type, int|string val) {
 // returns appropriate ASN.1 value
 
-  object rv;
+  Object rv;
 
   switch(type) {
     case "oid":		// OID
-	rv = Standards.ASN1.Types.asn1_identifier( @(array(int))(val/".") );
+	rv = Identifier( @(array(int))(val/".") );
 	break;
 
     case "int":		// INTEGER
-	rv = Standards.ASN1.Types.asn1_integer(val);
+	rv = Integer(val);
 	break;
 
     case "str":		// STRING
-	rv = Standards.ASN1.Types.asn1_octet_string(val);
+	rv = OctetString(val);
 	break;
 
     case "ipaddr":	// ipAddress
@@ -481,18 +482,17 @@ int get_response(mapping varlist, mapping origdata, int|void errcode,
 
   foreach(indices(varlist), string varname)
     if(arrayp(varlist[varname]) || sizeof(varlist[varname]) > 1) {
-      vararr += ({Standards.ASN1.Types.asn1_sequence(
-		 ({Standards.ASN1.Types.asn1_identifier(
-		    @(array(int))(varname/".")),
+      vararr += ({Sequence(
+		 ({Identifier(@(array(int))(varname/".")),
 		   mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
     }
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(2,
-	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-		 Standards.ASN1.Types.asn1_integer(errcode), // error-status
-		 Standards.ASN1.Types.asn1_integer(erridx), // error-index
-		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       ({Integer(id), // request-id
+		 Integer(errcode), // error-status
+		 Integer(erridx), // error-index
+		 Sequence(vararr)})
 	       );
 
   // now we have PDU ...
@@ -521,17 +521,16 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
   array vararr = ({});
 
   foreach(varlist, string varname)
-    vararr += ({Standards.ASN1.Types.asn1_sequence(
-	      ({Standards.ASN1.Types.asn1_identifier(
-		 @(array(int))(varname/".")),
-		Standards.ASN1.Types.Null()})
+    vararr += ({Sequence(
+	        ({Identifier(@(array(int))(varname/".")),
+                  Null()})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(1,
-	       ({Standards.ASN1.Types.asn1_integer(id), // request-id
-		 Standards.ASN1.Types.asn1_integer(0), // error-status
-		 Standards.ASN1.Types.asn1_integer(0), // error-index
-		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	       ({Integer(id), // request-id
+		 Integer(0), // error-status
+		 Integer(0), // error-index
+		 Sequence(vararr)})
 	       );
 
   // now we have PDU ...
@@ -590,17 +589,16 @@ int set_request(mapping varlist, string|void rem_addr,
   array vararr = ({});
 
   foreach(indices(varlist), string varname)
-    vararr += ({Standards.ASN1.Types.asn1_sequence(
-	        ({Standards.ASN1.Types.asn1_identifier(
-		    @(array(int))(varname/".")),
+    vararr += ({Sequence(
+	        ({Identifier(@(array(int))(varname/".")),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
 
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(3,
-	   ({Standards.ASN1.Types.asn1_integer(id), // request-id
-		 Standards.ASN1.Types.asn1_integer(0), // error-status
-		 Standards.ASN1.Types.asn1_integer(0), // error-index
-		 Standards.ASN1.Types.asn1_sequence(vararr)})
+	   ({Integer(id), // request-id
+             Integer(0), // error-status
+             Integer(0), // error-index
+             Sequence(vararr)})
        );
 
   // now we have PDU ...
@@ -668,9 +666,8 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
   sscanf(locip, "%d.%d.%d.%d", lip[0], lip[1], lip[2], lip[3]);
 
   foreach(indices(varlist), string varname)
-    vararr += ({Standards.ASN1.Types.asn1_sequence(
-	        ({Standards.ASN1.Types.asn1_identifier(
-		    @(array(int))(varname/".")),
+    vararr += ({Sequence(
+	        ({Identifier(@(array(int))(varname/".")),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(4,
@@ -691,7 +688,7 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
 	    mk_asn1_val("tick", ticks),
 
 	    // optional vars
-	    Standards.ASN1.Types.asn1_sequence(vararr)
+	    Sequence(vararr)
 	  })
 		   
        );
