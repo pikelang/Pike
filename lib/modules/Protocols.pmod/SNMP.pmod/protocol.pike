@@ -25,7 +25,7 @@
 class asn1_application_octet_string
 {
   inherit Standards.ASN1.Types.OctetString;
-  constant cls = 1;
+  int cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
 
@@ -40,7 +40,7 @@ class asn1_application_octet_string
 class asn1_application_integer
 {
   inherit Standards.ASN1.Types.Integer;
-  constant cls = 1;
+  int cls = 1;
   constant type_name = "APPLICATION INTEGER";
   int tagx;
 
