@@ -69,8 +69,8 @@ const INT32 hashprimes[32] =
 
 PMOD_EXPORT int my_log2(size_t x)
 {
-    if( x == 0 ) return 0;
 #if (defined(__x86_64) || defined(__i386__)) && defined(__GNUC__)
+    if( x == 0 ) return 0;
 #if SIZEOF_CHAR_P > 4
     asm("bsrq %1, %0" :"+r"(x) :"rm"(x));
 #else
@@ -78,11 +78,13 @@ PMOD_EXPORT int my_log2(size_t x)
 #endif /* sizeof(char*) */
     return x+1;
 #elif defined(HAS___BUILTIN_CLZL)
+    if( x == 0 ) return 0;
     return ((sizeof(unsigned long)*8)-__builtin_clzl(x))-1;
 #elif defined(HAS___BUILTIN_CLZ)
     /* on arm32 only this one exists. Happily enough sizeof(int) is
      * sizeof(size_t).
      */
+    if( x == 0 ) return 0;
     return ((sizeof(int)*8)-__builtin_clz(x))-1;
 #else
   static const signed char bit[256] =
@@ -105,6 +107,7 @@ PMOD_EXPORT int my_log2(size_t x)
      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
   };
   register size_t tmp;
+  if( x == 0 ) return 0;
 #if SIZEOF_CHAR_P > 4
   if((tmp=(x>>32)))
   {
