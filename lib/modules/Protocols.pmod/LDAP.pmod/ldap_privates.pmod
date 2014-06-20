@@ -34,36 +34,6 @@
 
 #include "ldap_globals.h"
 
-class asn1_enumerated
-{
-  inherit Standards.ASN1.Types.Integer;
-  int tag = 10;
-  constant type_name = "ENUMERATED";
-}
-
-class asn1_boolean
-{
-  inherit Standards.ASN1.Types.Object;
-  int tag = 1;
-  constant type_name = "BOOLEAN";
-  int value;
-
-  this_program init(int n) {
-    if(n)
-      n=0xff;
-    value = n;
-    return this;
-  }
-
-  string der_encode() { return build_der(value? "\377" : "\0"); }
-
-  this_program decode_primitive(string contents) {
-    der = contents;
-    value = ( contents != "\0" );
-    return this;
-  }
-}
-
 class asn1_application_sequence
 {
   inherit Standards.ASN1.Types.Sequence;
@@ -327,14 +297,14 @@ object|mapping der_decode(object data,
 //       Standards.ASN1.Decode.universal_types.
 protected mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
   0:([
-    1 : asn1_boolean,
+    1 : Standards.ASN1.Types.Boolean,
     2 : Standards.ASN1.Types.Integer,
     3 : Standards.ASN1.Types.BitString,
     4 : Standards.ASN1.Types.OctetString,
     5 : Standards.ASN1.Types.Null,
     6 : Standards.ASN1.Types.Identifier,
     // 9 : asn1_real,
-    10 : asn1_enumerated,
+    10 : Standards.ASN1.Types.Enumerated,
     16 : Standards.ASN1.Types.Sequence,
     17 : Standards.ASN1.Types.Set,
     19 : Standards.ASN1.Types.PrintableString,

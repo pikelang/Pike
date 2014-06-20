@@ -5,9 +5,6 @@
 
 //import .ldap_privates;
 
-#define ASN1_BOOLEAN			.ldap_privates.asn1_boolean
-#define ASN1_ENUMERATED			.ldap_privates.asn1_enumerated
-
 #define ASN1_APPLICATION_SEQUENCE	.ldap_privates.asn1_application_sequence
 #define ASN1_APPLICATION_OCTET_STRING	.ldap_privates.asn1_application_octet_string
 #define ASN1_CONTEXT_SEQUENCE		.ldap_privates.asn1_context_sequence
