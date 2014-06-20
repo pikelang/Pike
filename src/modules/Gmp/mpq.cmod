@@ -47,8 +47,6 @@ DECLARATIONS
 
 #define THISMPQ (&(THIS->n))
 
-#define PUSH_REDUCED(o) push_object(o)
-
 /*! @module Gmp
  */
 
