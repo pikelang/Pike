@@ -20,113 +20,29 @@
 #include "snmp_globals.h"
 #include "snmp_errors.h"
 
+inherit Stdio.UDP : snmp;
+
 import Standards.ASN1.Types;
 
-#if 1
-// --- ASN.1 hack
-
-Object der_decode(object data, mapping types)
-{
-  int raw_tag = data->get_uint(1);
-  int len;
-  string contents;
-
-  if ( (raw_tag & 0x1f) == 0x1f)
-    error("ASN1.Decode: High tag numbers is not supported.\n");
-
-  len = data->get_uint(1);
-  if (len & 0x80)
-    len = data->get_uint(len & 0x7f);
-
-  contents = data->get_fix_string(len);
-
-  int tag = raw_tag & 0xdf; // Class and tag bits
-
-  program p = types[tag];
-
-  if (raw_tag & 0x20)
-  {
-    // Constructed encoding
-
-    array elements = ({ });
-    object struct = ADT.struct(contents);
-
-    if (!p)
-    {
-      while (!struct->is_empty())
-        elements += ({ der_decode(struct, types) });
-
-      return Standards.ASN1.Decode.constructed(tag, contents, elements);
-    }
-
-    object res = p();
-    // hop: For non-universal classes we provide tag number
-    if(tag & 0xC0)
-      res = p(tag & 0x1F, ({}));
-
-    res->begin_decode_constructed(contents);
-
-    int i;
-
-    // Ask object which types it expects for field i, decode it, and
-    // record the decoded object.
-    for(i = 0; !struct->is_empty(); i++)
-    {
-      res->decode_constructed_element
-        (i, der_decode(struct,
-                       res->element_types(i, types)));
-    }
-    return res->end_decode_constructed(i);
-  }
-  else
-  {
-    // Primitive encoding
-    return p ? p()->decode_primitive(contents)
-      : Standards.ASN1.Decode.primitive(tag, contents);
-  }
-}
-
 protected mapping snmp_type_proc =
-                    ([ 1 : Boolean,
-                       2 : Integer,
-                       3 : BitString,
-                       4 : OctetString,
-                       5 : Null,
-                       6 : Identifier,
-                       // 9 : asn1_real,
-                       //10 : asn1_enumerated,
-                       16 : Sequence,
-                       17 : Set,
-                       19 : PrintableString,
-                       20 : TeletexString,
-                       23 : UTC,
+  ([
+    // from RFC-1065 :
+    64 : OctetString, // ipaddress
+    65 : Integer,     // counter
+    66 : Integer,     // gauge
+    67 : Integer,     // timeticks
+    68 : OctetString, // opaque
 
-                       // from RFC-1065 :
-		       64 : OctetString, // ipaddress
-		       65 : Integer,     // counter
-		       66 : Integer,     // gauge
-		       67 : Integer,     // timeticks
-		       68 : OctetString, // opaque
+    // v2
+    70 : Integer,     // counter64
 
-			// v2
-		       70 : Integer,     // counter64
+    // context PDU
+    128 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+    129 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+    130 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
+    131 : Protocols.LDAP.ldap_privates.asn1_context_sequence
+  ]);
 
-			// context PDU
-                       128 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-                       129 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-                       130 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-                       131 : Protocols.LDAP.ldap_privates.asn1_context_sequence
-                    ]);
-
-Object snmp_der_decode(string data)
-{
-  return /*Standards.ASN1.Decode.*/der_decode(ADT.struct(data), snmp_type_proc);
-}
-
-// --- end of hack
-#endif
-
-inherit Stdio.UDP : snmp;
 
 //:
 //: public vars
@@ -219,7 +135,7 @@ mapping readmsg(int|float|void timeout) {
 //! decode ASN1 data, if garbaged ignore it
 mapping decode_asn1_msg(mapping rawd) {
 
-  Object xdec = snmp_der_decode(rawd->data);
+  Object xdec = Standards.ASN1.Decode.der_decode(rawd->data, snmp_type_proc);
   string msgid = (string)xdec->elements[2]->elements[0]->value;
   int errno = xdec->elements[2]->elements[1]->value;
   mapping msg = ([ "ip":rawd->ip,
