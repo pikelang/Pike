@@ -1279,11 +1279,6 @@ PIKECLASS string_split_iterator
       (s+offset, OFF-offset));					\
   } while(0)
 
-#define SIMPLE_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
-  case SHIFT:					\
-    SIMPLE_SCAN_PUSH(THIS, SHIFT, OFF);		\
-    break
-
 #define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)				\
   do {									\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 					\
@@ -1305,11 +1300,6 @@ PIKECLASS string_split_iterator
   PIKE_CONCAT(break_scan, SHIFT):					\
     ;									\
   } while(0)
-
-#define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
-  case SHIFT:						\
-    COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF);		\
-    break
 
 #define NEW_SKIP_CASE(SHIFT, FLAGS)				\
   case SHIFT:							\

@@ -1132,11 +1132,6 @@ static void xmlerror(char *desc, struct pike_string *tag_name);
 #define XMLERROR(desc) do {xmlerror(desc,NULL); READ (1);} while (0)
 #define XMLERROR_STAY(desc) xmlerror(desc,NULL)
 
-#define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
-       X;						\
-       pop_n_elems(sp-save_sp);				\
-    }while(0);
-
 #define SKIPSPACE() \
   do { while((!XMLEOF()) && (SMEG(), isSpace(PEEK(0)))) READ(1); }while(0)
 

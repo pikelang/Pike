@@ -51,8 +51,6 @@ DECLARATIONS
 #define CHAR_BITS 8
 #endif
 
-#define PUSH_REDUCED(o) push_object(o)
-
 /*! @module Gmp
  */
 

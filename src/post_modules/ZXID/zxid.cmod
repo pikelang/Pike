@@ -59,24 +59,6 @@ DECLARATIONS
 
 #include "constants.h"
 
-#define THIS_OBJ Pike_interpreter.frame_pointer->current_object
-#define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
-
-/* Fall back to a normal index on this object, in case
- * someone inherited us. */
- #define OBJ_INDEX() do { \
-      struct svalue res; \
-      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
-      pop_stack(); \
-      *Pike_sp++ = res; \
-    } while(0) \
-
-
-#define CHECK_CLASS(o, name, arg)\
-  if(o->prog != PIKE_CONCAT(name, _program)) { \
-    Pike_error("Invalid class for argument %d\n", arg); \
-  }
-
 #ifdef malloc
 /* DMALLOC or similar. */
 void *malloc_wrapper(size_t bytes)
