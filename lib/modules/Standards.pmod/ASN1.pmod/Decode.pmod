@@ -129,7 +129,7 @@ protected array(int) read_identifier(ADT.struct data)
       }
 
       DBG("Unknown constructed type.\n");
-      return constructed(cls, tag, contents, elements);
+      return Constructed(cls, tag, contents, elements);
     }
 
     .Types.Object res = p();
@@ -198,7 +198,7 @@ mapping(int:program(.Types.Object)) universal_types =
 //! @returns
 //!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.Primitive] or
-//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+//!   @[Standards.ASN1.Decode.Constructed] if the type is unknown.
 .Types.Object simple_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
@@ -208,7 +208,23 @@ mapping(int:program(.Types.Object)) universal_types =
   return der_decode(ADT.struct(data), universal_types);
 }
 
-#ifdef COMPATIBILITY
-constant primitive = Primitive;
-constant constructed = Constructed;
-#endif
+// Compat
+class constructed
+{
+  inherit Constructed;
+  protected void create(int tag_n_cls, string(8bit) raw,
+                        array(.Types.Object) elements)
+  {
+    ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw, elements);
+  }
+}
+
+class primitive
+{
+  inherit Primitive;
+
+  protected void create(int tag_n_cls, string(8bit) raw)
+  {
+    ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw);
+  }
+}
