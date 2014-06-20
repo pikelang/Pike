@@ -174,7 +174,7 @@ mapping(int:program(.Types.Object)) universal_types =
    U(5) : .Types.Null,
    U(6) : .Types.Identifier,
    // U(9) : .Types.Real,
-   // U(10) : .Types.Enumerated,
+   U(10) : .Types.Enumerated,
    U(12) : .Types.UTF8String,
    U(16) : .Types.Sequence,
    U(17) : .Types.Set,
