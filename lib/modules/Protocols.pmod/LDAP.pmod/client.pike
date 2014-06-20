@@ -1241,7 +1241,7 @@ protected object make_control (string control_type, void|string value,
 			    void|int critical)
 {
   array(object) seq = ({Standards.ASN1.Types.asn1_octet_string (control_type),
-			ASN1_BOOLEAN (critical)});
+			Standards.ASN1.Types.Boolean (critical)});
   if (value) seq += ({Standards.ASN1.Types.asn1_octet_string (value)});
   return Standards.ASN1.Types.asn1_sequence (seq);
 }
@@ -1327,11 +1327,11 @@ object get_default_filter()
 
     return ASN1_APPLICATION_SEQUENCE(3,
 		({ Standards.ASN1.Types.asn1_octet_string(basedn),
-		   ASN1_ENUMERATED(scope),
-		   ASN1_ENUMERATED(deref),
+		   Standards.ASN1.Types.Enumerated(scope),
+		   Standards.ASN1.Types.Enumerated(deref),
 		   Standards.ASN1.Types.asn1_integer(sizelimit),
 		   Standards.ASN1.Types.asn1_integer(timelimit),
-		   ASN1_BOOLEAN(attrsonly ? -1 : 0),
+		   Standards.ASN1.Types.Boolean(attrsonly ? -1 : 0),
 		   @ohlp
 		})) ;
   }
@@ -1844,7 +1844,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 //	o = Standards.ASN1.Encode.asn1_sequence(
 //		Standards.ASN1.Encode.asn1_octet_string(atype));
       oatt += ({Standards.ASN1.Types.asn1_sequence(
-		  ({ASN1_ENUMERATED((attropval[atype])[0]),
+		  ({Standards.ASN1.Types.Enumerated((attropval[atype])[0]),
 		    o
 		  }))});
     } //foreach
