@@ -21,20 +21,37 @@ Takes case_info.h as argument.
   array b = ({});
   array B = ({});
   foreach(ci; int pos; array r) {
-    a += ({ r[0] });
+    int char = r[0];
+    int delta = r[2];
+    a += ({ char });
     switch(r[1]) {
     case "CIM_NONE":
-      b += ({ r[0] });
-      B += ({ r[0] });
+      b += ({ char });
+      B += ({ char });
       break;
+
+    case "CIM_LONGLOWERDELTA":
+      if( delta < 0 )
+        delta -= 0x8000;
+      else
+        delta += 0x7fff;
+      // Fallthrough
     case "CIM_LOWERDELTA":
-      b += ({ r[0] });
-      B += ({ r[0]-r[2] });
+      b += ({ char });
+      B += ({ char-delta });
       break;
+
+    case "CIM_LONGUPPERDELTA":
+      if( delta < 0 )
+        delta -= 0x8000;
+      else
+        delta += 0x7fff;
+      // Fallthrough
     case "CIM_UPPERDELTA":
       b += ({ r[0]+r[2] });
       B += ({ r[0] });
       break;
+
     case "CIM_CASEBIT":
       b += ({ r[0]|r[2] });
       B += ({ r[0]&~r[2] });
@@ -46,6 +63,13 @@ Takes case_info.h as argument.
     default:
       exit(1, "Error in case_info.h: Unknown type %s\n", r[1]);
     }
+
+    if( B[-1]<0 )
+      exit(1, "Error in case_info.h. Negative char { %04x, %s %04x }\n",
+           @r);
+    if( b[-1]<0 )
+      exit(1, "Error in case_info.h. Negative char { %04x, %s %04x }\n",
+           @r);
   }
 
   // Insert hard coded rules
@@ -88,16 +112,16 @@ void make_test(string f, array a, array b) {
 // Part 2: 0x1000 -
 ", f, (["upper":"lower","lower":"upper"])[f] );
 
-  for(int i=pos; i<sizeof(a); i++) {
+  for(int i=pos,x=1; i<sizeof(a); i++,x++) {
     write("0x%04x, ", a[i]);
-    if(!((i+1)%8)) write("\n");
+    if(!(x%8)) write("\n");
   }
 
   write("})), (string) ({\n");
 
-  for(int i=pos; i<sizeof(b); i++) {
+  for(int i=pos,x=1; i<sizeof(b); i++,x++) {
     write("0x%04x, ", b[i]);
-    if(!((i+1)%8)) write("\n");
+    if(!(x%8)) write("\n");
   }
 
   write("}))\n");
