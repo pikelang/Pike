@@ -15,8 +15,8 @@ import Standards.ASN1.Types;
 class CRIAttributes
 {
   inherit .Certificate.Attributes;
-  constant cls = 2;
-  constant tag = 0;
+  int cls = 2;
+  int tag = 0;
 }
 
 // FIXME: Mark as deprecated!
