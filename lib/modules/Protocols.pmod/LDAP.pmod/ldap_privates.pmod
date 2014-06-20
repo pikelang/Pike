@@ -37,14 +37,14 @@
 class asn1_enumerated
 {
   inherit Standards.ASN1.Types.Integer;
-  constant tag = 10;
+  int tag = 10;
   constant type_name = "ENUMERATED";
 }
 
 class asn1_boolean
 {
   inherit Standards.ASN1.Types.Object;
-  constant tag = 1;
+  int tag = 1;
   constant type_name = "BOOLEAN";
   int value;
 
@@ -67,7 +67,7 @@ class asn1_boolean
 class asn1_application_sequence
 {
   inherit Standards.ASN1.Types.Sequence;
-  constant cls = 1;
+  int cls = 1;
   constant type_name = "APPLICATION SEQUENCE";
   int tagx;
 
@@ -87,7 +87,7 @@ class asn1_application_sequence
 class asn1_application_octet_string
 {
   inherit Standards.ASN1.Types.OctetString;
-  constant cls = 1;
+  int cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
 
@@ -107,7 +107,7 @@ class asn1_application_octet_string
 class asn1_context_boolean
 {
   inherit Standards.ASN1.Types.Boolean;
-  constant cls = 2;
+  int cls = 2;
   constant type_name = "CONTEXT BOOLEAN";
   int tagx;
 
@@ -127,7 +127,7 @@ class asn1_context_boolean
 class asn1_context_integer
 {
   inherit Standards.ASN1.Types.Integer;
-  constant cls = 2;
+  int cls = 2;
   constant type_name = "CONTEXT INTEGER";
   int tagx;
 
@@ -147,7 +147,7 @@ class asn1_context_integer
 class asn1_context_octet_string
 {
   inherit Standards.ASN1.Types.OctetString;
-  constant cls = 2;
+  int cls = 2;
   constant type_name = "CONTEXT OCTET_STRING";
   int tagx;
 
@@ -167,7 +167,7 @@ class asn1_context_octet_string
 class asn1_context_sequence
 {
   inherit Standards.ASN1.Types.Sequence;
-  constant cls = 2;
+  int cls = 2;
   constant type_name = "CONTEXT SEQUENCE";
   int tagx;
 
@@ -187,7 +187,7 @@ class asn1_context_sequence
 class asn1_context_set
 {
   inherit Standards.ASN1.Types.Set;
-  constant cls = 2;
+  int cls = 2;
   constant type_name = "CONTEXT SET";
   int tagx;
 
@@ -208,8 +208,8 @@ class asn1_sequence
 {
   inherit Standards.ASN1.Types.Sequence;
   constant type_name = "SEQUENCE";
-  constant cls = 2;
-  constant tag = 0;
+  int cls = 2;
+  int tag = 0;
 
   void init(int tagid, array arg)
   {
