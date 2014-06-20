@@ -24,37 +24,8 @@ import Standards.ASN1.Types;
 
 #if 1
 // --- ASN.1 hack
-class asn1_application_octet_string
-{
-  inherit OctetString;
-  int cls = 1;
-  constant type_name = "APPLICATION OCTET_STRING";
-  int tagx;
 
-  int get_tag() { return tagx; }
-
-  void init(int tagid, string arg) {
-    ::value = arg;
-    tagx = tagid;
-  }
-}
-
-class asn1_application_integer
-{
-  inherit Integer;
-  int cls = 1;
-  constant type_name = "APPLICATION INTEGER";
-  int tagx;
-
-  int get_tag() { return tagx; }
-
-  void init(int tagid, int arg) {
-    ::init(arg);
-    tagx = tagid;
-  }
-}
-
-object|mapping der_decode(object data, mapping types)
+Object der_decode(object data, mapping types)
 {
   int raw_tag = data->get_uint(1);
   int len;
@@ -130,15 +101,15 @@ protected mapping snmp_type_proc =
                        20 : TeletexString,
                        23 : UTC,
 
-		 	    // from RFC-1065 :
-		       64 : asn1_application_octet_string, // ipaddress
-		       65 : asn1_application_integer,      // counter
-		       66 : asn1_application_integer,      // gauge
-		       67 : asn1_application_integer,      // timeticks
-		       68 : asn1_application_octet_string,  // opaque
+                       // from RFC-1065 :
+		       64 : OctetString, // ipaddress
+		       65 : Integer,     // counter
+		       66 : Integer,     // gauge
+		       67 : Integer,     // timeticks
+		       68 : OctetString, // opaque
 
 			// v2
-		       70 : asn1_application_integer,	   // counter64
+		       70 : Integer,     // counter64
 
 			// context PDU
                        128 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
@@ -147,7 +118,7 @@ protected mapping snmp_type_proc =
                        131 : Protocols.LDAP.ldap_privates.asn1_context_sequence
                     ]);
 
-object|mapping snmp_der_decode(string data)
+Object snmp_der_decode(string data)
 {
   return /*Standards.ASN1.Decode.*/der_decode(ADT.struct(data), snmp_type_proc);
 }
@@ -248,7 +219,7 @@ mapping readmsg(int|float|void timeout) {
 //! decode ASN1 data, if garbaged ignore it
 mapping decode_asn1_msg(mapping rawd) {
 
-  object xdec = snmp_der_decode(rawd->data);
+  Object xdec = snmp_der_decode(rawd->data);
   string msgid = (string)xdec->elements[2]->elements[0]->value;
   int errno = xdec->elements[2]->elements[1]->value;
   mapping msg = ([ "ip":rawd->ip,
@@ -407,27 +378,39 @@ Object mk_asn1_val(string type, int|string val) {
 	break;
 
     case "ipaddr":	// ipAddress
-	rv = asn1_application_octet_string(0, val[..3]);
+	rv = OctetString(val[..3]);
+        rv->cls = 1;
+        rv->tag = 0;
 	break;
 
     case "count":	// COUNTER
-	rv = asn1_application_integer(1, val);
+	rv = Integer(val);
+        rv->cls = 1;
+        rv->tag = 1;
 	break;
 
     case "gauge":	// GAUGE
-	rv = asn1_application_integer(2, val);
+	rv = Integer(val);
+        rv->cls = 1;
+        rv->tag = 2;
 	break;
 
     case "tick":	// TICK
-	rv = asn1_application_integer(3, val);
+	rv = Integer(val);
+        rv->cls = 1;
+        rv->tag = 3;
 	break;
 
     case "opaque":	// OPAQUE
-	rv = asn1_application_octet_string(4, val);
+	rv = OctetString(val);
+        rv->cls = 1;
+        rv->tag = 4;
 	break;
 
     case "count64":	// COUNTER64 - v2 object
-	rv = asn1_application_integer(6, val);
+	rv = Integer(val);
+        rv->cls = 1;
+        rv->tag = 6;
 	break;
 
     default:		// bad type!
