@@ -358,47 +358,45 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
         THROW(({"LDAP: Internal error.\n",backtrace()}));
 	return -ldap_errno;
       }
-      DWRITE(sprintf("result.create: %O\n",entries[-1]));
+      DWRITE("result.create: %O\n", entries[-1]);
 
       // The last element of 'entries' is result itself
       resultcode = ASN1_RESULTCODE (entries[-1]);
-      DWRITE(sprintf("result.create: code=%d\n",resultcode));
+      DWRITE("result.create: code=%d\n", resultcode);
       resultstring = ASN1_RESULTSTRING (entries[-1]);
       if (resultstring == "")
 	resultstring = 0;
       else if (ldap_version >= 3)
 	if (mixed err = catch (resultstring = utf8_to_string (resultstring)))
-	  DWRITE (sprintf ("Failed to decode result string %O: %s",
-			   resultstring, describe_error (err)));
-      DWRITE(sprintf("result.create: str=%O\n",resultstring));
+	  DWRITE ("Failed to decode result string %O: %s",
+                  resultstring, describe_error (err));
+      DWRITE("result.create: str=%O\n", resultstring);
 #ifdef V3_REFERRALS
       // referral (v3 mode)
       if(resultcode == 10) {
         referrals = ({});
 	foreach(ASN1_RESULTREFS (entries[-1]), object ref1)
 	  referrals += ({ ref1->value });
-        DWRITE(sprintf("result.create: refs=%O\n",referrals));
+        DWRITE("result.create: refs=%O\n", referrals);
       }
 #endif
-      DWRITE(sprintf("result.create: elements=%d\n",sizeof (entries)));
-#if 0
-      DWRITE(sprintf("result.create: entries=%O\n", entries[..<1]));
-#endif
+      DWRITE("result.create: elements=%d\n", sizeof(entries));
 
       entry = decode_entries (entries[..<1]);
 
 #if 0
       // Context specific proccessing of 'entries'
       switch(stuff) {
-        case 1:	DWRITE("result.create: stuff=1\n");
-		break;
-        default:	DWRITE(sprintf("result.create: stuff=%d\n", stuff));
-
+        case 1:
+          DWRITE("result.create: stuff=1\n");
+          break;
+        default:
+          DWRITE("result.create: stuff=%d\n", stuff);
+          break;
       }
 #endif
 
       return this;
-
     }
 
     //!
@@ -725,7 +723,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
     DWRITE("client.create: connected!\n");
 
-    DWRITE(sprintf("client.create: remote = %s\n", low_fd->query_address()));
+    DWRITE("client.create: remote = %s\n", low_fd->query_address());
     DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
     reset_options();
@@ -889,7 +887,7 @@ void reset_options()
      bound_dn = dn;
      md5_password = Crypto.MD5.hash (pass);
    }
-   DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.BIND: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return !!bound_dn;
 
@@ -967,7 +965,7 @@ void reset_options()
     }
 
    last_rv = SIMPLE_RESULT (raw, 0, 0);
-   DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.DELETE: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return !last_rv->error_number();
 
@@ -1039,7 +1037,7 @@ void reset_options()
     }
 
    last_rv = SIMPLE_RESULT (raw, 0, 0);
-   DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.COMPARE: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return last_rv->error_number() == LDAP_COMPARE_TRUE;
 
@@ -1115,7 +1113,7 @@ void reset_options()
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.ADD: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
@@ -1401,7 +1399,7 @@ object get_default_filter()
     object entry;
     array(object) entries = ({});
 
-    DWRITE_HI(sprintf ("client.SEARCH: %O\n", filter));
+    DWRITE_HI("client.SEARCH: %O\n", filter);
     if (chk_ver())
       return 0;
     if (chk_binded())
@@ -1559,8 +1557,8 @@ object get_default_filter()
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
     //  rv = rv->error_number();
 
-    DWRITE_HI(sprintf("client.SEARCH: %s (entries: %d)\n",
-    			last_rv->error_string(), last_rv->num_entries()));
+    DWRITE_HI("client.SEARCH: %s (entries: %d)\n",
+              last_rv->error_string(), last_rv->num_entries());
     return last_rv;
 
   } // search
@@ -1748,7 +1746,7 @@ string get_bind_password_hash() {return md5_password;}
 	ERROR ("Invalid scope %O.\n", scope);
  
     ldap_scope = scope;
-    DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
+    DWRITE_HI("client.SET_SCOPE = %O\n", scope);
     return old_scope;
   }
 
@@ -1763,7 +1761,7 @@ string get_scope()
   //!   new value for option
   int set_option (int opttype, int value) {
 
-    DWRITE_HI("client.SET_OPTION: " + (string)opttype + " = " + (string)value + "\n");
+    DWRITE_HI("client.SET_OPTION: %O = %O\n", opttype, value);
     switch (opttype) {
 	case 1: // LDAP_OPT_DEREF
 		  //if (intp(value))
@@ -1796,7 +1794,7 @@ string get_scope()
   int get_option (int opttype) {
 
 
-    DWRITE_HI("client.GET_OPTION: " + (string)opttype + "\n");
+    DWRITE_HI("client.GET_OPTION: %O\n", opttype);
     switch (opttype) {
 	case 1: // LDAP_OPT_DEREF
 		  return ldap_deref;
@@ -1909,7 +1907,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.MODIFYDN: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
@@ -1985,7 +1983,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.MODIFY: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
