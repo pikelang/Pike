@@ -74,6 +74,8 @@ import SSL.Constants;
 
 import ".";
 
+import Standards.ASN1.Types;
+
 // ------------------------
 
 // ASN.1 decode macros
@@ -750,8 +752,8 @@ void reset_options()
     string pass = password;
     password = "censored";
 
-    vers = Standards.ASN1.Types.asn1_integer(ldap_version);
-    namedn = Standards.ASN1.Types.asn1_octet_string(name);
+    vers = Integer(ldap_version);
+    namedn = OctetString(name);
     auth = ASN1_CONTEXT_OCTET_STRING(0, pass);
     // SASL credentials ommited
 
@@ -775,7 +777,7 @@ void reset_options()
 
     
 
-    msgval = ASN1_APPLICATION_SEQUENCE(23, ({Standards.ASN1.Types.OctetString("1.3.6.1.4.1.1466.20037")}));
+    msgval = ASN1_APPLICATION_SEQUENCE(23, ({OctetString("1.3.6.1.4.1.1466.20037")}));
 
     do_op(msgval);
     int result = ASN1_RESULTCODE(.ldap_privates.ldap_der_decode (readbuf));
@@ -977,11 +979,8 @@ void reset_options()
     object msgval;
 
     msgval = ASN1_APPLICATION_SEQUENCE(14, 
-		({ Standards.ASN1.Types.asn1_octet_string(dn),
-		Standards.ASN1.Types.asn1_sequence(
-		  ({ Standards.ASN1.Types.asn1_octet_string(attr),
-		  Standards.ASN1.Types.asn1_octet_string(value)
-		  }))
+		({ OctetString(dn),
+                   Sequence( ({ OctetString(attr), OctetString(value) }) )
 		})
 	     );
 
@@ -1058,18 +1057,16 @@ void reset_options()
       array(object) ohlp = ({});
 
       foreach(values(attrs[atype]), aval)
-	ohlp += ({Standards.ASN1.Types.asn1_octet_string(aval)});
-      oatt += ({Standards.ASN1.Types.asn1_sequence(
-		({Standards.ASN1.Types.asn1_octet_string(atype),
-		  Standards.ASN1.Types.asn1_set(ohlp)
+	ohlp += ({OctetString(aval)});
+      oatt += ({Sequence(
+		({OctetString(atype),
+		  Set(ohlp)
 		}))
 	      });
     }
 
     msgval = ASN1_APPLICATION_SEQUENCE(8, 
-		({Standards.ASN1.Types.asn1_octet_string(dn),
-		  Standards.ASN1.Types.asn1_sequence(oatt)
-		}));
+		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);
   }
@@ -1240,10 +1237,10 @@ array(string) get_root_dse_attr (string attr)
 protected object make_control (string control_type, void|string value,
 			    void|int critical)
 {
-  array(object) seq = ({Standards.ASN1.Types.asn1_octet_string (control_type),
-			Standards.ASN1.Types.Boolean (critical)});
-  if (value) seq += ({Standards.ASN1.Types.asn1_octet_string (value)});
-  return Standards.ASN1.Types.asn1_sequence (seq);
+  array(object) seq = ({OctetString (control_type),
+			Boolean (critical)});
+  if (value) seq += ({OctetString (value)});
+  return Sequence (seq);
 }
 
 protected multiset(string) supported_controls;
@@ -1320,18 +1317,18 @@ object get_default_filter()
     if (arrayp(attrs)) { //explicitly defined attributes
       array(object) o2 = ({});
       foreach(attrs, string s2)
-	o2 += ({Standards.ASN1.Types.asn1_octet_string(s2)});
-      ohlp += ({Standards.ASN1.Types.asn1_sequence(o2)});
+	o2 += ({OctetString(s2)});
+      ohlp += ({Sequence(o2)});
     } else
-      ohlp += ({Standards.ASN1.Types.asn1_sequence(({}))});
+      ohlp += ({Sequence(({}))});
 
     return ASN1_APPLICATION_SEQUENCE(3,
-		({ Standards.ASN1.Types.asn1_octet_string(basedn),
-		   Standards.ASN1.Types.Enumerated(scope),
-		   Standards.ASN1.Types.Enumerated(deref),
-		   Standards.ASN1.Types.asn1_integer(sizelimit),
-		   Standards.ASN1.Types.asn1_integer(timelimit),
-		   Standards.ASN1.Types.Boolean(attrsonly ? -1 : 0),
+		({ OctetString(basedn),
+		   Enumerated(scope),
+		   Enumerated(deref),
+		   Integer(sizelimit),
+		   Integer(timelimit),
+		   Boolean(attrsonly ? -1 : 0),
 		   @ohlp
 		})) ;
   }
@@ -1460,7 +1457,7 @@ object get_default_filter()
     get_supported_controls();
 #endif
 
-    object cookie = Standards.ASN1.Types.asn1_octet_string("");
+    object cookie = OctetString("");
     do {
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
@@ -1470,10 +1467,10 @@ object get_default_filter()
 	      // RFC 2696.
 	      ctrls += ({make_control (
 			   LDAP_PAGED_RESULT_OID_STRING,
-			   Standards.ASN1.Types.asn1_sequence(
+			   Sequence(
 			     ({
 			       // size
-			       Standards.ASN1.Types.asn1_integer(0x7fffffff),
+			       Integer(0x7fffffff),
 			       cookie,			// cookie
 			     }))->get_der(),
 			   sizeof(cookie->value))});
@@ -1833,26 +1830,17 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 	return seterr(LDAP_PROTOCOL_ERROR);
       attrarr = ({});
       for(int ix=1; ix<sizeof(attropval[atype]); ix++)
-	attrarr += ({Standards.ASN1.Types.asn1_octet_string(
-			(attropval[atype])[ix])});
+	attrarr += ({ OctetString(attropval[atype][ix]) });
 //      if(sizeof(attrarr)) // attributevalue ?
-	o = Standards.ASN1.Types.asn1_sequence(
-		({Standards.ASN1.Types.asn1_octet_string(atype),
-		  Standards.ASN1.Types.asn1_set(attrarr)
-		}));
+	o = Sequence( ({OctetString(atype), Set(attrarr) }));
 //      else
 //	o = Standards.ASN1.Encode.asn1_sequence(
 //		Standards.ASN1.Encode.asn1_octet_string(atype));
-      oatt += ({Standards.ASN1.Types.asn1_sequence(
-		  ({Standards.ASN1.Types.Enumerated((attropval[atype])[0]),
-		    o
-		  }))});
+      oatt += ({ Sequence( ({Enumerated((attropval[atype])[0]), o})) });
     } //foreach
 
     msgval = ASN1_APPLICATION_SEQUENCE(6, 
-		({ Standards.ASN1.Types.asn1_octet_string(dn),
-		   Standards.ASN1.Types.asn1_sequence(oatt)
-		}));
+		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);
   }
@@ -1861,12 +1849,13 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     int deleteoldrdn, string newsuperior) {
 
     object msgval;
-    array seq=({ Standards.ASN1.Types.asn1_octet_string(dn),
-               Standards.ASN1.Types.asn1_octet_string(newrdn),
-               Standards.ASN1.Types.asn1_boolean(deleteoldrdn)
-         });
+    array seq=({
+      OctetString(dn),
+      OctetString(newrdn),
+      Boolean(deleteoldrdn)
+    });
     if(newsuperior)
-          seq+=({Standards.ASN1.Types.asn1_octet_string(newsuperior)});
+      seq+=({ OctetString(newsuperior)});
 
     msgval = ASN1_APPLICATION_SEQUENCE(12, seq);
 
