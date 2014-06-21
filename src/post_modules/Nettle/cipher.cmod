@@ -213,8 +213,7 @@ PIKECLASS Cipher
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
@@ -1122,8 +1121,7 @@ PIKECLASS BlockCipher
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -1629,8 +1627,7 @@ PIKECLASS BlockCipher
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -2145,8 +2142,7 @@ PIKECLASS BlockCipher
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -2538,8 +2534,7 @@ PIKECLASS BlockCipher
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -3064,8 +3059,7 @@ PIKECLASS BlockCipher16
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -3636,8 +3630,7 @@ PIKECLASS BlockCipher16
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -4090,8 +4083,7 @@ PIKECLASS BlockCipher16
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
 	    low_inherit(parent_State_prog, 0,
-			parent_State_fun_num +
-			parent_prog->inherits[1].identifier_level,
+			parent_State_fun_num,
 			1 + 42, 0, NULL);
 	  }
 	}
@@ -4646,8 +4638,7 @@ PIKECLASS ARCTWO
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	  f_ARCTWO_State_inherited_set_encrypt_key_fun_num =
 	    really_low_reference_inherited_identifier(NULL, 1,
@@ -5019,8 +5010,7 @@ PIKECLASS CHACHA
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
@@ -5230,8 +5220,7 @@ PIKECLASS DES
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
@@ -5468,8 +5457,7 @@ PIKECLASS DES3
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
@@ -5586,8 +5574,7 @@ PIKECLASS SALSA20
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
 	  low_inherit(parent_State_prog, 0,
-		      parent_State_fun_num +
-		      parent_prog->inherits[1].identifier_level,
+		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
       }
