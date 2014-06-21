@@ -89,8 +89,8 @@ class Object
 					 mapping(int:program(Object)):
 					 Object) decoder,
 				mapping(int:program(Object)) types);
-  this_program begin_decode_constructed(string raw);
-  this_program decode_constructed_element(int i, object e);
+  void begin_decode_constructed(string raw);
+  void decode_constructed_element(int i, object e);
   this_program end_decode_constructed(int length);
 
   mapping(int:program(Object)) element_types(int i,
@@ -188,19 +188,17 @@ class Compound
     return this;
   }
 
-  this_program begin_decode_constructed(string(0..255) raw) {
+  void begin_decode_constructed(string(0..255) raw) {
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
     record_der_contents(raw);
-    return this;
   }
 
-  this_program decode_constructed_element(int i, object e) {
+  void decode_constructed_element(int i, object e) {
     WERROR("asn1_compound[%s]->decode_constructed_element(%O)\n",
 	   type_name, e);
     if (i != sizeof(elements))
       error("Unexpected index!\n");
     elements += ({ e });
-    return this;
   }
 
   this_program end_decode_constructed(int length) {
@@ -259,6 +257,21 @@ class String
 				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
     value = contents;
+    return this;
+  }
+
+  void begin_decode_constructed(string raw)
+  {
+    value = "";
+  }
+
+  void decode_constructed_element(int i, object(this_program) e)
+  {
+    value += e->value;
+  }
+
+  this_program end_decode_constructed(int length)
+  {
     return this;
   }
 
@@ -554,6 +567,24 @@ class BitString
     if (unused >= 8)
       return 0;
     value = contents[1..];
+    return this;
+  }
+
+  void begin_decode_constructed(string raw)
+  {
+    unused = 0;
+    value = "";
+  }
+
+  void decode_constructed_element(int i, object(this_program) e)
+  {
+    if( unused ) error("Adding to a non-aligned bit stream.\n");
+    value += e->value;
+    unused = e->unused;
+  }
+
+  this_program end_decode_constructed(int length)
+  {
     return this;
   }
 
