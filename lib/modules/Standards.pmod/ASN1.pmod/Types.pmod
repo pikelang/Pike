@@ -388,7 +388,106 @@ class Enumerated
 {
   inherit Integer;
   int tag = 10;
-  constant type_name ="ENUMERATED";
+  constant type_name = "ENUMERATED";
+}
+
+class Real
+{
+  inherit Object;
+  int tag = 9;
+  constant type_name = "REAL";
+
+  float value;
+
+  string(0..255) get_der_content()
+  {
+    string v = sprintf("%F", value);
+    switch(v)
+    {
+    case "\0\0\0\0" : return ""; // 0.0
+    case "\200\0\0\0" : return "\x43"; // -0.0
+    case "\177\200\0\0" : return "\x40"; // inf
+    case "\377\200\0\0" : return "\x41"; // -inf
+
+    case "\177\300\0\0" : // nan
+    case "\377\300\0\0" : // -nan
+      return "\x42";
+    }
+
+    error("Encoding Real values not supported.\n");
+  }
+
+  this_object decode_primitive(string(0..255) contents,
+                               function(ADT.struct,
+                                        mapping(int:program(Object)):
+                                        Object) decoder,
+                               mapping(int:program(Object))|void types) {
+    if( contents=="" ) { value = 0.0; return this; }
+    int first = contents[0];
+    switch( first )
+    {
+      // SpecialRealValues
+    case 0b01000000: value = Math.inf; return this;
+    case 0b01000001: value = -Math.inf; return this;
+    case 0b01000010: value = Math.nan; return this;
+    case 0b01000011: value = -0.0; return this;
+
+      // ISO 6093
+    case 0b00000001: error("ISO 6093 NR1 not supported.\n");
+    case 0b00000010: error("ISO 6093 NR2 not supported.\n");
+    case 0b00000011: error("ISO 6093 NR3 not supported.\n");
+    }
+    switch( first & 0xc0 )
+    {
+    case 0x00:
+      error("Unknown real coding.\n");
+    case 0x40:
+      error("Unknown SpecialRealValues code.\n");
+    }
+
+    int neg = first & 0b01000000;
+    int base;
+    switch(first & 0b00110000)
+    {
+    case 0b00000000: base = 2; break;
+    case 0b00010000: base = 8; break;
+    case 0b00100000: base = 16; break;
+    default: error("Unknown real base.\n");
+    }
+
+    int scaling = (first & 0b00001100) >> 2;
+
+    int exp;
+    int num;
+    switch(first & 0b00000011)
+    {
+    case 0b00:
+      sscanf(contents, "%*1c%+1c%+"+(sizeof(contents)-2)+"c", exp, num);
+      break;
+    case 0b01:
+      sscanf(contents, "%*1c%+2c%+"+(sizeof(contents)-3)+"c", exp, num);
+      break;
+    case 0b10:
+      sscanf(contents, "%*1c%+3c%+"+(sizeof(contents)-4)+"c", exp, num);
+      break;
+    case 0b11:
+      int e_size = contents[1];
+      int n_size = sizeof(contents)-2-e_size;
+      sscanf(contents, "%*2c%+"+e_size+"c%+"+n_size+"c", exp, num);
+      break;
+    }
+
+    int mantissa = num * (1<<scaling);
+    if( neg ) mantissa = -mantissa;
+    value = mantissa * pow((float)base, exp);
+
+    return this;
+  }
+
+  __deprecated__ string debug_string()
+  {
+    return sprintf("REAL %O", value);
+  }
 }
 
 //! Bit string object
