@@ -1477,7 +1477,7 @@ object get_default_filter()
 	    },);
 	  object controls;
 	  if (sizeof(ctrls)) {
-	    controls = .ldap_privates.asn1_sequence(0, ctrls);
+	    controls = ASN1_CONTEXT_SEQUENCE(0, ctrls);
 	  }
 
 	  string|int raw;
@@ -1615,7 +1615,7 @@ mapping(string:string|array(string)) read (
       control_list[i++] =
 	make_control (type, [string] data[1], [int] data[0]);
     if (sizeof (control_list))
-      ctrls = .ldap_privates.asn1_sequence(0, control_list);
+      ctrls = ASN1_CONTEXT_SEQUENCE(0, control_list);
   }
 
   object entry;
