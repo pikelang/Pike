@@ -201,22 +201,16 @@ class asn1_sequence
 // Low-level decoder.
 // NOTE: API may change!
 object|mapping der_decode(object data,
-			  mapping(int(0..3):mapping(int:program|function)) types)
+			  mapping(int:program) types)
 {
-  //werror("LDAP:der_decode(%O)...\n", data);
   int raw_tag = data->get_uint(1);
   int len;
   string contents;
-
-  //werror("  raw_tag: 0b%08b\n", raw_tag);
 
   // raw_tag is [cls:2][constr:1][tag:5].
 
   int tag = raw_tag & 0x1f;
   int cls = (raw_tag & 0xc0)>>6;
-
-  // werror("  tag: 0x%02x\n"
-  // 	 "  cls: %d\n", tag, cls);
 
   if ( tag == 0x1f) {
     // Tag encoded in big-endian, base 128
@@ -227,26 +221,19 @@ object|mapping der_decode(object data,
       tag <<= 7;
       tag |= (val = data->get_uint(1)) & 0x7f;
     } while (val & 0x80);
-    //error("LDAP.Decode: High tag numbers is not supported (0x%02x)\n", raw_tag);
-    //werror("  Decoded high tag to 0x%08x\n", tag);
   }
 
   len = data->get_uint(1);
 
-  //werror("  len: 0x%02x\n", len);
-
   if (len & 0x80) {
     len = data->get_uint(len & 0x7f);
-    //werror("  len: 0x%08x\n", len);
   }
 
   contents = data->get_fix_string(len);
 
-  // werror("  contents: %O\n", contents);
-
   //int tag = raw_tag & 0xdf; // Class and tag bits
 
-  program p = types[cls][tag];
+  program p = types[ Standards.ASN1.Types.make_combined_tag(cls,tag) ];
 
   if (raw_tag & 0x20)
   {
@@ -292,45 +279,42 @@ object|mapping der_decode(object data,
   }
 }
 
-// Mapping from class to mapping from tag to program.
-// NOTE: Will probably change to the same layout as in
-//       Standards.ASN1.Decode.universal_types.
-protected mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
-  0:([
-    1 : Standards.ASN1.Types.Boolean,
-    2 : Standards.ASN1.Types.Integer,
-    3 : Standards.ASN1.Types.BitString,
-    4 : Standards.ASN1.Types.OctetString,
-    5 : Standards.ASN1.Types.Null,
-    6 : Standards.ASN1.Types.Identifier,
+#define U(C,T) Standards.ASN1.Types.make_combined_tag(C,T)
+
+// Mapping from class+tag to program.
+protected mapping(int:program) ldap_type_proc = ([
+
+    U(0,1) : Standards.ASN1.Types.Boolean,
+    U(0,2) : Standards.ASN1.Types.Integer,
+    U(0,3) : Standards.ASN1.Types.BitString,
+    U(0,4) : Standards.ASN1.Types.OctetString,
+    U(0,5) : Standards.ASN1.Types.Null,
+    U(0,6) : Standards.ASN1.Types.Identifier,
     // 9 : asn1_real,
-    10 : Standards.ASN1.Types.Enumerated,
-    16 : Standards.ASN1.Types.Sequence,
-    17 : Standards.ASN1.Types.Set,
-    19 : Standards.ASN1.Types.PrintableString,
-    20 : Standards.ASN1.Types.TeletexString,
-    23 : Standards.ASN1.Types.UTC,
-  ]),
-  1:([
-    1 : asn1_application_sequence,	// [1] BindResponse
-    2 : 0,				// [2] UnbindRequest
-    3 : asn1_application_sequence,	// [3] SearchRequest
-    4 : asn1_application_sequence,	// [4] SearchResultEntry
-    5 : asn1_application_sequence,	// [5] SearchResultDone
-    6 : asn1_application_sequence,	// [6] ModifyRequest
-    7 : asn1_application_sequence,	// [7] ModifyResponse
-    8 : asn1_application_sequence,	// [8] AddRequest
-    9 : asn1_application_sequence,	// [9] AddResponse
-    11 : asn1_application_sequence,	// [11] DelResponse
-    13 : asn1_application_sequence,	// [13] ModifyDNResponse
-    15 : asn1_application_sequence,	// [15] CompareResponse
-    19 : asn1_application_sequence,	// [19] SearchResultReference
-    23 : asn1_application_sequence,	// [23] ExtendedRequest
-    24 : asn1_application_sequence,	// [24] ExtendedResponse
-  ]),
-  2:([
-    0 : asn1_sequence,
-  ]),
+    U(0,10) : Standards.ASN1.Types.Enumerated,
+    U(0,16) : Standards.ASN1.Types.Sequence,
+    U(0,17) : Standards.ASN1.Types.Set,
+    U(0,19) : Standards.ASN1.Types.PrintableString,
+    U(0,20) : Standards.ASN1.Types.TeletexString,
+    U(0,23) : Standards.ASN1.Types.UTC,
+
+    U(1,1) : asn1_application_sequence,	// [1] BindResponse
+    U(1,2) : 0,				// [2] UnbindRequest
+    U(1,3) : asn1_application_sequence,	// [3] SearchRequest
+    U(1,4) : asn1_application_sequence,	// [4] SearchResultEntry
+    U(1,5) : asn1_application_sequence,	// [5] SearchResultDone
+    U(1,6) : asn1_application_sequence,	// [6] ModifyRequest
+    U(1,7) : asn1_application_sequence,	// [7] ModifyResponse
+    U(1,8) : asn1_application_sequence,	// [8] AddRequest
+    U(1,9) : asn1_application_sequence,	// [9] AddResponse
+    U(1,11) : asn1_application_sequence,	// [11] DelResponse
+    U(1,13) : asn1_application_sequence,	// [13] ModifyDNResponse
+    U(1,15) : asn1_application_sequence,	// [15] CompareResponse
+    U(1,19) : asn1_application_sequence,	// [19] SearchResultReference
+    U(1,23) : asn1_application_sequence,	// [23] ExtendedRequest
+    U(1,24) : asn1_application_sequence,	// [24] ExtendedResponse
+
+    U(2,0) : asn1_sequence,
 ]);
 
 object|mapping ldap_der_decode(string data)
