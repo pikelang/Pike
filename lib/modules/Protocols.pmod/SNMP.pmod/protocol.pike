@@ -135,7 +135,8 @@ mapping readmsg(int|float|void timeout) {
 //! decode ASN1 data, if garbaged ignore it
 mapping decode_asn1_msg(mapping rawd) {
 
-  Object xdec = Standards.ASN1.Decode.der_decode(rawd->data, snmp_type_proc);
+  Object xdec = Standards.ASN1.Decode.simple_der_decode(rawd->data,
+                                                        snmp_type_proc);
   string msgid = (string)xdec->elements[2]->elements[0]->value;
   int errno = xdec->elements[2]->elements[1]->value;
   mapping msg = ([ "ip":rawd->ip,
