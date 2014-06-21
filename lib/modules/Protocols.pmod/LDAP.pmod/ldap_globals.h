@@ -5,13 +5,13 @@
 
 //import .ldap_privates;
 
-#define ASN1_APPLICATION_SEQUENCE	.ldap_privates.asn1_application_sequence
-#define ASN1_APPLICATION_OCTET_STRING	.ldap_privates.asn1_application_octet_string
-#define ASN1_CONTEXT_SEQUENCE		.ldap_privates.asn1_context_sequence
-#define ASN1_CONTEXT_BOOLEAN		.ldap_privates.asn1_context_boolean
-#define ASN1_CONTEXT_INTEGER		.ldap_privates.asn1_context_integer
-#define ASN1_CONTEXT_OCTET_STRING	.ldap_privates.asn1_context_octet_string
-#define ASN1_CONTEXT_SET		.ldap_privates.asn1_context_set
+#define ASN1_APPLICATION_SEQUENCE(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 1, T, A)
+#define ASN1_APPLICATION_OCTET_STRING(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.OctetString, 1, T, A)
+#define ASN1_CONTEXT_SEQUENCE(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 2, T, A)
+#define ASN1_CONTEXT_BOOLEAN(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Boolean, 2, T, A)
+#define ASN1_CONTEXT_INTEGER(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Integer, 2, T, A)
+#define ASN1_CONTEXT_OCTET_STRING(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.OctetString, 2, T, A)
+#define ASN1_CONTEXT_SET(T,A)		.ldap_privates.asn1_factory(Standards.ASN1.Types.Set, 2, T, A)
 
 // ------------- end of ASN.1 API hack -----------------------------
 
