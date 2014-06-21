@@ -1565,8 +1565,8 @@ object make_filter (string filter, void|int ldap_version)
 	      res = ASN1_CONTEXT_OCTET_STRING (7, attr); // 'present'
 	    else
 	      res = ASN1_CONTEXT_SEQUENCE ( // 'substrings'
-		4, ({Standards.ASN1.Types.asn1_octet_string (attr),
-		     Standards.ASN1.Types.asn1_sequence (subs)}));
+		4, ({Standards.ASN1.Types.OctetString (attr),
+		     Standards.ASN1.Types.Sequence (subs)}));
 	  }
 
 	  else {
@@ -1581,8 +1581,8 @@ object make_filter (string filter, void|int ldap_version)
 			     "starting at %O.\n", EXCERPT (subfilter));
 	    }
 	    res = ASN1_CONTEXT_SEQUENCE (
-	      op_number, ({Standards.ASN1.Types.asn1_octet_string (attr),
-			   Standards.ASN1.Types.asn1_octet_string (val)}));
+	      op_number, ({Standards.ASN1.Types.OctetString (attr),
+			   Standards.ASN1.Types.OctetString (val)}));
 	  }
 	}
 
