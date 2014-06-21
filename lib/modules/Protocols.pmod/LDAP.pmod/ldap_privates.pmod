@@ -4,33 +4,6 @@
 //
 // Honza Petrous, hop@unibase.cz
 //
-// ----------------------------------------------------------------------
-//
-// ToDo List:
-//
-//	- v2 operations: 
-//		modify
-//
-// History:
-//
-//	v2.0  1999-02-19 Create separate file. Implementation the following
-//			 classes:
-//			  - asn1_enumerated
-//			  - asn1_boolean
-//			  - asn1_application_sequence
-//			  - asn1_application_octet_string
-//			  - asn1_context_integer
-//			  - asn1_context_octet_string
-//			  - asn1_context_sequence
-//			  - asn1_context_set
-//			  - ldap_der_decode
-//
-
-
-
-// --------------- Standards.ASN1.Types private add-on --------------------
-// This is very poor defined own ASN.1 objects (not enough time to clean it!)
-//import Standards.ASN1.Encode;
 
 #include "ldap_globals.h"
 
@@ -68,9 +41,7 @@ protected mapping(int:program) ldap_type_proc = ([
     U(2,0) : Sequence,
 ]);
 
-object ldap_der_decode(string data)
+Object ldap_der_decode(string data)
 {
   return Standards.ASN1.Decode.simple_der_decode(data, ldap_type_proc);
 }
-
-// ------------- end of ASN.1 API hack -----------------------------
