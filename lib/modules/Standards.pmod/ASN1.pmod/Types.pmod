@@ -372,8 +372,10 @@ class Integer
   }
 
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d %s)", this_program,
-			     value->size(), value->digits());
+    if(t!='O') return UNDEFINED;
+    if(!value) return sprintf("%O(0)", this_program);
+    return sprintf("%O(%d %s)", this_program,
+                   value->size(), value->digits());
   }
 
 #ifdef COMPATIBILITY
@@ -556,8 +558,9 @@ class BitString
   }
 
   protected string _sprintf(int t) {
-    int size = sizeof(value)*8-unused;
     if(t!='O') return UNDEFINED;
+    if(!value) return sprintf("%O(0)", this_program);
+    int size = sizeof(value)*8-unused;
     if(!unused) return sprintf("%O(%d %O)", this_program, size, value);
     return sprintf("%O(%d %0"+size+"s)", this_program, size,
                    ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
@@ -664,7 +667,9 @@ class Identifier
   }
 
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%s)", this_program, (array(string))id*".");
+    if(t!='O') return UNDEFINED;
+    if(!id) return sprintf("%O(0)", this_program);
+    return sprintf("%O(%s)", this_program, (array(string))id*".");
   }
 
 #ifdef COMPATIBILITY
