@@ -18,7 +18,7 @@
 /* #define PROFILE_CHECK_THREADS */
 
 #ifndef CONFIGURE_TEST
-
+#define IN_THREAD_SWITCHING
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
