@@ -708,6 +708,65 @@ cond_resolv( Nettle.AES, [[
 		     "3b6e37054a4705b02bedf377e465e5f6")
 
 ]])
+cond_resolv( Nettle.AES, [[
+  // AES-OFB Test vectors from NIST AESMMT:OFB128MMT128.
+
+  dnl Test Vector #0
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "d7d57bd847154af9722a8df096e61a42",
+		     "fdde201c91e401d9723868c2a612b77a",
+		     "81883f22165282ba6a442a8dd2a768d4",
+		     "84cc130b6867623696aa8f523d968ade")
+
+  dnl Test Vector #1
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "c9f4ce21b4c7daaa4f93e292dc605bc5",
+		     "5e5a8cf2808c720e01c1ed92d470a45d",
+		     "8e19c5cacd015a662e7f40cdecadbf79"
+		     "a68081c06d9544b41c2dd248e77633b4",
+		     "885dc48add7ee6a1839bc5c5e03beae0"
+		     "71301ecf91a0111520cde0d3a112f5d2")
+
+  dnl Test Vector #2
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "7a70cc6b261eeccb05c57117d5763197",
+		     "bb7b9667fbd76d5ee204828769a341b1",
+		     "823cbaae3760c85512a3c83fd60bb54b"
+		     "7cfc739b295b63e05ef435d86e19fd15"
+		     "368c89ff08a0f21ce89a728ffb5d75df",
+		     "f5c49aae8a026bf05e525a12ab7e195e"
+		     "ea8a1b71a8d32a5113aa8974858f2cfc"
+		     "0339805003a0cb1a7be19f376d4604eb")
+
+  dnl Test Vector #3
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "85dbd5a6e73681a51a4a7d4e93ca7d0c",
+		     "89d897c5aa9e0a5d5586d4b4664fc927",
+		     "e3dbfc6ae1a879870fd22644c8135fe0"
+		     "63355dfc0a8dad45c9c6e052e6e085cf"
+		     "717754dc1b49acb04cf340826ffb0da9"
+		     "91138f022a9c34923a6a116c98c7d3d5",
+		     "48a34bd814dd4e1b92a5aa04218136bc"
+		     "d428fd34ca151a78e0eb2c8f24d4f070"
+		     "978aacd5e1351c909c818db45d25b34f"
+		     "c21cb06a3984f969ab825ef795888da9")
+
+  dnl Test Vector #4
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "18b9887a34438fb2e759027e54e334b6",
+		     "a5be8621e58dae325c6b868fd783e2cd",
+		     "8cd659df925950b516f737fc92d2fafa"
+		     "008c008c9dfe0e75ed2d68f6ff79399f"
+		     "f2183464b8c37cf31aafc145fcbfac73"
+		     "e3f87eccb435f424bf1c6d6efb504e8e"
+		     "93e8a668a2210e3d3b4fd437ad1a5842",
+		     "82736a8fd3c07941b1173c9c51bfe0d8"
+		     "590f237ae36e7b93481b7b4ad88da9d6"
+		     "8f427305b95e4b90f7212dba00f6d6bd"
+		     "e7e39a74da702012f36c4cd0a0c27756"
+		     "052ac1bd3bf1501c86c1186a69a7296c")
+
+]])
 
 // ARCFOUR
 test_generic_cipher(Crypto.Arcfour)
