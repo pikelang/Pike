@@ -96,8 +96,7 @@ static char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_CO
 
 static void set_master(const char *file)
 {
-  if( master_file_location > _master_location+CONSTANT_STRLEN(MASTER_COOKIE)
-      || master_file_location < _master_location)
+  if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
     free(master_file_location);
   master_file_location = strdup( file );
 }
@@ -176,14 +175,16 @@ static void set_default_master(const char *bin_name)
   if (!*mp) {
     /* Attempt to find a master via the path to the binary. */
     /* Note: We assume that MAXPATHLEN is > 18 characters. */
-    char tmp[strlen(bin_name)];
-    char *p;
-    strcpy(tmp, bin_name);
-    p = strrchr(tmp, '/');
-    if (!p) p = tmp;
-    else p++;
-    strcpy(p, "master.pike");
-    set_master( tmp );
+    if (strlen(bin_name) + CONSTANT_STRLEN("master.pike") < MAXPATHLEN) {
+      char tmp[MAXPATHLEN];
+      char *p;
+      strcpy(tmp, bin_name);
+      p = strrchr(tmp, '/');
+      if (!p) p = tmp;
+      else p++;
+      strcpy(p, "master.pike");
+      set_master( tmp );
+    }
   }
 #endif
 
