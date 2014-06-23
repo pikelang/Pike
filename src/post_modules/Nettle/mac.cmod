@@ -54,11 +54,11 @@ struct pike_mac
   /* NB: Use nettle_hash_update_func here to get both a length field,
    *     and a const uint8_t source.
    */
-  nettle_hash_update_func *set_key;
-  nettle_hash_update_func *set_iv;
+  pike_nettle_hash_update_func set_key;
+  pike_nettle_hash_update_func set_iv;
 
-  nettle_hash_update_func *update;
-  nettle_hash_digest_func *digest;
+  pike_nettle_hash_update_func update;
+  pike_nettle_hash_digest_func digest;
 };
 
 #define _PIKE_MAC(name, NAME) {			\

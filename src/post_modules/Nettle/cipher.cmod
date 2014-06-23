@@ -85,13 +85,6 @@ typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 /* Force means to use key even if it is weak */
 					 int force);
 
-#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
-typedef nettle_crypt_func crypt_func;
-#else
-/* Nettle 2.0 */
-typedef nettle_crypt_func *crypt_func;
-#endif
-
 struct pike_cipher
 {
   const char *name;
@@ -106,8 +99,8 @@ struct pike_cipher
   pike_nettle_set_key_func set_encrypt_key;
   pike_nettle_set_key_func set_decrypt_key;
 
-  crypt_func encrypt;
-  crypt_func decrypt;
+  pike_nettle_crypt_func encrypt;
+  pike_nettle_crypt_func decrypt;
 };
 
 #define _PIKE_CIPHER(name, NAME) {		\
@@ -117,8 +110,8 @@ struct pike_cipher
   NAME##_KEY_SIZE,				\
   pike_##name##_set_encrypt_key,		\
   pike_##name##_set_decrypt_key,		\
-  (crypt_func) name##_encrypt,			\
-  (crypt_func) name##_decrypt,			\
+  (pike_nettle_crypt_func) name##_encrypt,	\
+  (pike_nettle_crypt_func) name##_decrypt,	\
 }
 
 #cmod_define STREAM_MODE	"stream"
@@ -219,7 +212,7 @@ PIKECLASS Cipher
       }
     }
 
-    CVAR crypt_func crypt;
+    CVAR pike_nettle_crypt_func crypt;
     CVAR void *ctx;
     CVAR int key_size;
 
@@ -341,7 +334,7 @@ PIKECLASS Cipher
     {
       struct Nettle_Cipher_struct *info = GET_INFO();
       struct pike_string *s;
-      crypt_func crypt;
+      pike_nettle_crypt_func crypt;
       void *ctx;
       assert(info);
 
@@ -1332,7 +1325,7 @@ PIKECLASS BlockCipher
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
@@ -1808,7 +1801,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
@@ -1834,7 +1827,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: CFB always uses the encryption function
@@ -1887,7 +1880,7 @@ PIKECLASS BlockCipher
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
@@ -2047,7 +2040,7 @@ PIKECLASS BlockCipher
 #include <nettle/ctr.h>
 #else
   /* Fallback implementation. */
-  void ctr_crypt(void *ctx, nettle_crypt_func *f,
+  void ctr_crypt(void *ctx, pike_nettle_crypt_func f,
 		 pike_nettle_size_t block_size, uint8_t *ctr,
 		 pike_nettle_size_t length, uint8_t *dst,
 		 const uint8_t *src)
@@ -2321,7 +2314,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
@@ -2346,7 +2339,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: CTR always uses the encryption function
@@ -2398,7 +2391,7 @@ PIKECLASS BlockCipher
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
@@ -2713,7 +2706,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
@@ -2737,7 +2730,7 @@ PIKECLASS BlockCipher
       PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: OFB always uses the encryption function
@@ -2788,7 +2781,7 @@ PIKECLASS BlockCipher
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
@@ -3278,7 +3271,7 @@ PIKECLASS BlockCipher16
 				      struct pike_string *mac_mask,
 				      struct pike_string *astr,
 				      struct pike_string *pstr,
-				      crypt_func func,
+				      pike_nettle_crypt_func func,
 				      void *ctx)
       {
 	uint8_t buf[2][16];
@@ -3402,7 +3395,7 @@ PIKECLASS BlockCipher16
       PIKEFUN string(8bit) digest(int(4..16)|void bytes_p)
       {
 	int bytes = 0;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->ctr->object;
 	struct pike_string *res;
 	struct pike_string *nonce = THIS->nonce;
@@ -3795,7 +3788,7 @@ PIKECLASS BlockCipher16
 							int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
@@ -3828,7 +3821,7 @@ PIKECLASS BlockCipher16
 							int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: EAX always uses the encryption function
@@ -3849,7 +3842,7 @@ PIKECLASS BlockCipher16
 
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv)
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	int iv_len = iv->len;
 	uint8_t *ctr_iv;
@@ -3870,7 +3863,7 @@ PIKECLASS BlockCipher16
 
       PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 
 	if (!public_data->len) return;
@@ -3890,7 +3883,7 @@ PIKECLASS BlockCipher16
 
       PIKEFUN string(8bit) crypt(string(8bit) data)
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *res;
 
@@ -3933,7 +3926,7 @@ PIKECLASS BlockCipher16
       PIKEFUN string(8bit) digest(int(1..16)|void bytes_p)
       {
 	int bytes = 0;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *res;
 
@@ -4253,7 +4246,7 @@ PIKECLASS BlockCipher16
       PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
@@ -4285,7 +4278,7 @@ PIKECLASS BlockCipher16
       PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: GCM always uses the encryption function
@@ -4390,7 +4383,7 @@ PIKECLASS BlockCipher16
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct gcm_ctx *gcm_ctx = &THIS->gcm_ctx;
 	struct gcm_key *gcm_key = &THIS->gcm_key;
@@ -4463,7 +4456,7 @@ PIKECLASS BlockCipher16
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	crypt_func func = pike_crypt_func;
+	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 
 	if (!THIS->object || !THIS->object->prog) {

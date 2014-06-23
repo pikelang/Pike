@@ -38,6 +38,7 @@ extern struct program *nettle_hash_program;
 #ifdef HAVE_NETTLE_DSA_H
 #include <nettle/dsa.h>
 #endif
+
 #ifdef dsa_params_init
 /* We use the presence of the dsa_params_init remapping to detect Nettle
  * 3.0 or later. This is the recommended way to detect Nettle version
@@ -47,6 +48,19 @@ extern struct program *nettle_hash_program;
 typedef size_t		pike_nettle_size_t;
 #else
 typedef unsigned	pike_nettle_size_t;
+#endif
+
+/* In Nettle 2.0 the nettle_*_func typedefs lost their pointers. */
+#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
+/* Nettle 1.x */
+typedef nettle_crypt_func		pike_nettle_crypt_func;
+typedef nettle_hash_digest_func		pike_nettle_hash_digest_func;
+typedef nettle_hash_update_func		pike_nettle_hash_update_func;
+#else
+/* Nettle 2.0 */
+typedef nettle_crypt_func		*pike_nettle_crypt_func;
+typedef nettle_hash_digest_func		*pike_nettle_hash_digest_func;
+typedef nettle_hash_update_func		*pike_nettle_hash_update_func;
 #endif
 
 

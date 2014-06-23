@@ -40,13 +40,6 @@ typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 ptrdiff_t length,
 					 const uint8_t *key);
 
-#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
-typedef nettle_crypt_func crypt_func;
-#else
-/* Nettle 2.0 */
-typedef nettle_crypt_func *crypt_func;
-#endif
-
 struct pike_aead
 {
   const char *name;
@@ -65,16 +58,16 @@ struct pike_aead
   pike_nettle_set_key_func set_encrypt_key;
   pike_nettle_set_key_func set_decrypt_key;
 
-  /* NB: Use nettle_hash_update_func here to get both a length field,
+  /* NB: Use pike_nettle_hash_update_func here to get both a length field,
    *     and a const uint8_t source.
    */
-  nettle_hash_update_func *set_iv;
+  pike_nettle_hash_update_func set_iv;
 
-  crypt_func encrypt;
-  crypt_func decrypt;
+  pike_nettle_crypt_func encrypt;
+  pike_nettle_crypt_func decrypt;
 
-  nettle_hash_update_func *update;
-  nettle_hash_digest_func *digest;
+  pike_nettle_hash_update_func update;
+  pike_nettle_hash_digest_func digest;
 };
 
 #define _PIKE_AEAD(name, NAME) {		\
@@ -87,8 +80,8 @@ struct pike_aead
   pike_##name##_set_encrypt_key,		\
   pike_##name##_set_decrypt_key,		\
   pike_##name##_set_iv,				\
-  (crypt_func) name##_encrypt,			\
-  (crypt_func) name##_decrypt,			\
+  (pike_nettle_crypt_func) name##_encrypt,	\
+  (pike_nettle_crypt_func) name##_decrypt,	\
   name##_update,				\
   name##_digest,				\
 }
@@ -219,7 +212,7 @@ PIKECLASS AEAD
       }
     }
 
-    CVAR crypt_func crypt;
+    CVAR pike_nettle_crypt_func crypt;
     CVAR void *ctx;
     CVAR int key_size;
 
@@ -334,7 +327,7 @@ PIKECLASS AEAD
     {
       const struct pike_aead *meta = GET_META();
       struct pike_string *result;
-      crypt_func crypt = THIS->crypt;
+      pike_nettle_crypt_func crypt = THIS->crypt;
       void *ctx = THIS->ctx;
 
       if (!THIS->ctx || !THIS->crypt || !meta)
