@@ -11697,8 +11697,14 @@ int find_child(struct program *parent, struct program *child)
 /* returns 1 if a implements b */
 static int low_implements(struct program *a, struct program *b)
 {
+  DECLARE_CYCLIC();
   int e;
+  int ret = 1;
   struct pike_string *s=findstring("__INIT");
+
+  if (BEGIN_CYCLIC(a, b)) return 1;	/* Tentatively ok, */
+  SET_CYCLIC_RET(1);
+
   for(e=0;e<b->num_identifier_references;e++)
   {
     struct identifier *bid;
@@ -11714,7 +11720,8 @@ static int low_implements(struct program *a, struct program *b)
 #if 0
       fprintf(stderr, "Missing identifier \"%s\"\n", bid->name->str);
 #endif /* 0 */
-      return 0;
+      ret = 0;
+      break;
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
@@ -11723,7 +11730,8 @@ static int low_implements(struct program *a, struct program *b)
 	fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
 		bid->name->str);
 #endif /* 0 */
-	return 0;
+	ret = 0;
+	break;
       } else {
 #if 0
 	fprintf(stderr, "Identifier \"%s\" is not strictly compatible.\n",
@@ -11732,7 +11740,9 @@ static int low_implements(struct program *a, struct program *b)
       }
     }
   }
-  return 1;
+
+  END_CYCLIC();
+  return ret;
 }
 
 #define IMPLEMENTS_CACHE_SIZE 1024
@@ -11770,8 +11780,13 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
 /* Returns 1 if a is compatible with b */
 static int low_is_compatible(struct program *a, struct program *b)
 {
+  DECLARE_CYCLIC();
   int e;
+  int ret = 1;
   struct pike_string *s=findstring("__INIT");
+
+  if (BEGIN_CYCLIC(a, b)) return 1;
+  SET_CYCLIC_RET(1);
 
   /* Optimize the loop somewhat */
   if (a->num_identifier_references < b->num_identifier_references) {
@@ -11804,10 +11819,13 @@ static int low_is_compatible(struct program *a, struct program *b)
       fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
 	      bid->name->str);
 #endif /* 0 */
-      return 0;
+      ret = 0;
+      break;
     }
   }
-  return 1;
+
+  END_CYCLIC();
+  return ret;
 }
 
 static struct implements_cache_s is_compatible_cache[IMPLEMENTS_CACHE_SIZE];
