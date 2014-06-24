@@ -7610,7 +7610,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     struct svalue *x;
     struct keypair *k;
 
-    switch( s->type )
+    switch( TYPEOF(*s) )
     {
         case PIKE_T_STRING:
             /* FIXME: This makes assumptions about the threshold for short strings. */
@@ -7636,7 +7636,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     }
 
     low_mapping_insert( *m, s, &svalue_int_one, 0 );
-    switch( s->type )
+    switch( TYPEOF(*s) )
     {
         case PIKE_T_ARRAY:
             res = sizeof( struct array );
@@ -7713,7 +7713,7 @@ static void f__size_object( INT32 UNUSED(args) )
     struct object *o;
     struct program *p;
     struct mapping *map = NULL;
-    if( Pike_sp[-1].type != PIKE_T_OBJECT )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT )
         Pike_error("Expected an object as argument\n");
     o = Pike_sp[-1].u.object;
 
@@ -7729,7 +7729,7 @@ static void f__size_object( INT32 UNUSED(args) )
     if( (fun = low_find_lfun( p, LFUN__SIZE_OBJECT)) != -1 )
     {
         apply_low( o, fun, 0 );
-        if( Pike_sp[-1].type == PIKE_T_INT )
+        if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
             sum += Pike_sp[-1].u.integer;
         pop_stack();
     }
@@ -9457,7 +9457,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   if( !(p = program_from_svalue(Pike_sp-args)) )
       Pike_error("Illegal argument 1 to defined(program,string)\n");
 
-  if( Pike_sp[-args+1].type != PIKE_T_STRING )
+  if( TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING )
       Pike_error("Illegal argument 2 to defined(program,string)\n");
   else
       ident = Pike_sp[-args+1].u.string;

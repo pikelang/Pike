@@ -96,7 +96,7 @@ PIKECLASS PGsql
     if(not_all)
       push_int(1);
     apply(THISOBJ,"read",1+!!not_all);
-    if(Pike_sp[-1].type == PIKE_T_STRING)
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)
     { i=Pike_sp[-1].u.string->len;
       memcpy(a,Pike_sp[-1].u.string->str,i);
     }
@@ -226,7 +226,7 @@ bad:
   {
 #ifdef TCP_NODELAY
     apply(THISOBJ,"query_fd",0);
-    if(Pike_sp[-1].type == PIKE_T_INT)
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
     { int fd=Pike_sp[-1].u.integer;
       int newval = 1;
       setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &newval, sizeof(newval));
@@ -336,7 +336,7 @@ outofmem: Pike_fatal("Out of memory\n");
 
     ref_push_object(portal); ref_push_string(MK_STRING("_buffer"));
     f_arrow(2);
-    if(Pike_sp[-1].type == PIKE_T_INT)
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
       buffer=Pike_sp[-1].u.integer;
     pop_stack();
 
@@ -357,7 +357,7 @@ outofmem: Pike_fatal("Out of memory\n");
 
     ref_push_object(portal); ref_push_string(MK_STRING("_rowsreceived"));
     f_arrow(2);
-    if(Pike_sp[-1].type != PIKE_T_INT)
+    if(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
       Pike_error("Driver needs to be fixed to support more than 2^31 rows\n");
     rowsreceived=Pike_sp[-1].u.integer;
     pop_stack();

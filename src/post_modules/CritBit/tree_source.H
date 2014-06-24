@@ -101,7 +101,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     {
 
 	if (args == 1) {
-	    switch (o->type) {
+	  switch (TYPEOF(*o)) {
 	    case PIKE_T_MAPPING: {
 		struct keypair *k;
 		INT32 e;
@@ -124,9 +124,9 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 		}
 		return;
 	    }
-	    }
+	  }
 ARG_ERROR:
-	    SIMPLE_BAD_ARG_ERROR("create", 1, "mapping(" cmod_STRFY_EVAL(key_ptype) ":mixed)|array");
+	  SIMPLE_BAD_ARG_ERROR("create", 1, "mapping(" cmod_STRFY_EVAL(key_ptype) ":mixed)|array");
 	}
     }
 
@@ -151,7 +151,7 @@ DOCEND()
 	    push_array(a);
 	    if (CB_HAS_VALUE(node)) {
 		s = ITEM(a)+start;
-		s->type = T_VOID;
+		SET_SVAL_TYPE(*s, T_VOID);
 		k = node->key;
 		CB_ASSIGN_SVALUE_KEY(k, s);
 		start ++;
@@ -162,7 +162,7 @@ DOCEND()
 			Pike_error("super bad!! tree has hidden entries.\n");
 		    }
 		    s = ITEM(a)+start;
-		    s->type = T_VOID;
+		    SET_SVAL_TYPE(*s, T_VOID);
 		    CB_ASSIGN_SVALUE_KEY(_->key, s);
 		    start ++;
 		}
@@ -286,7 +286,7 @@ DOCEND()
      */
     PIKEFUN mixed `[](mixed key) {
 	CB_TRANSFORM_KEY(key);
-	if ((1<<key->type) & T_KEY) {
+	if ((1 << TYPEOF(*key)) & T_KEY) {
 	    cb_node_t n;
 	    cb_key k = CB_LOW_KEY_FROM_SVALUE(key);
 	    pop_stack();
@@ -303,7 +303,7 @@ DOCEND()
     /*! @decl int(0..1) _equal(mixed o)
      */
     PIKEFUN int _equal(mixed o) {
-	if (o->type == PIKE_T_OBJECT
+	if (TYPEOF(*o) == PIKE_T_OBJECT
 	    && o->u.object->prog == Pike_fp->current_object->prog) {
 	    cb_node_t tree1, tree2;
 	    tree1 = THIS->tree.root;
@@ -339,7 +339,7 @@ DOCEND()
 	struct object * res;
 	cb_node_t node, tree = NULL;
 
-	if (o->type != PIKE_T_OBJECT || -1
+	if (TYPEOF(*o) != PIKE_T_OBJECT || -1
 	    == low_get_storage(o->u.object->prog, TREE_CLASSIFY(_program))) {
 	    SIMPLE_BAD_ARG_ERROR("`-", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
 	}
@@ -372,7 +372,7 @@ DOCEND()
     PIKEFUN mixed `+(mixed o) {
 	cb_node_t tree1, tree2;
 
-	if (o->type != PIKE_T_OBJECT || -1
+	if (TYPEOF(*o) != PIKE_T_OBJECT || -1
 	    == low_get_storage(o->u.object->prog, TREE_CLASSIFY(_program))) {
 	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(CritBit." cmod_STRFY_EVAL(tree_class) ")");
 	}

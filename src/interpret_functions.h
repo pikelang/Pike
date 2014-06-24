@@ -505,13 +505,14 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
 {
   struct svalue *dst = Pike_fp->locals+arg1;
   struct svalue *src = Pike_fp->locals+arg2;
-  if( (dst->type|src->type) == PIKE_T_INT
+  /* NB: The following test only works because PIKE_T_INT == 0! */
+  if( (TYPEOF(*dst)|TYPEOF(*src)) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
     dst->u.integer += src->u.integer;
   }
-  else if( dst->type == src->type && dst->type == PIKE_T_STRING )
+  else if(TYPEOF(*dst) == TYPEOF(*src) && TYPEOF(*dst) == PIKE_T_STRING )
   {
       struct pike_string *srcs = src->u.string;
       struct pike_string *dsts = dst->u.string;
@@ -548,7 +549,7 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
 
 OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   struct svalue *dst = Pike_fp->locals+arg1;
-  if( dst->type == PIKE_T_INT
+  if( TYPEOF(*dst) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
@@ -566,7 +567,7 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
 
 OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
   struct svalue *dst = Pike_fp->locals+arg1;
-  if( dst->type == PIKE_T_INT
+  if( TYPEOF(*dst) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
   {
     SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);

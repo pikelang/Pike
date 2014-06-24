@@ -72,7 +72,7 @@ static inline void cb_print_node(struct string_builder * buf,
 				 cb_node_t node, int depth) {
     string_builder_putchars(buf, ' ', depth);
     string_builder_sprintf(buf, "%x #%lu (%d) --> ", node,
-			   node->size, node->value.type);
+			   node->size, TYPEOF(node->value));
     string_builder_putchars(buf, ' ', MAXIMUM(0, 15-depth));
     cb_debug_print_key(buf, node->key);
     if (CB_HAS_VALUE(node)) CB_PRINT_KEY(buf, node->key);
