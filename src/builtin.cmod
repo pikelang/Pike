@@ -3457,7 +3457,7 @@ PIKECLASS multi_string_replace
       if( THIS->ctx.v )
       {
           struct svalue tmp;
-          tmp.type = PIKE_T_STRING;
+          SET_SVAL_TYPE(tmp, PIKE_T_STRING);
           for( i=0; i<THIS->ctx.num; i++ )
           {
               res += sizeof(struct replace_many_tupel);

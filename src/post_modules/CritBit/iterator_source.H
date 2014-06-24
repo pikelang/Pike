@@ -32,7 +32,7 @@
 	}
 
 	INIT {
-	    THIS->lastval.type = T_VOID;
+	    SET_SVAL_TYPE(THIS->lastval, T_VOID);
 	    THIS->lastnode = NULL;
 	    THIS->step = 1;
 	    THIS->stop.len.chars = 0;
@@ -164,7 +164,7 @@
 			    apply_low(tree, encode_fun, 1);
 			    assign_svalue(stop, Pike_sp-1);
 			    pop_stack();
-			    if (!((1<<stop->type) & T_KEY))
+			    if (!((1<<TYPEOF(*stop)) & T_KEY))
 				SIMPLE_BAD_ARG_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
 			}
 			THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
@@ -179,7 +179,7 @@
 			    apply_low(tree, encode_fun, 1);
 			    assign_svalue(start, Pike_sp-1);
 			    pop_stack();
-			    if (!((1<<start->type) & T_KEY))
+			    if (!((1<<TYPEOF(*start)) & T_KEY))
 				SIMPLE_BAD_ARG_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
 			}
 			s = CB_LOW_KEY_FROM_SVALUE(start);
