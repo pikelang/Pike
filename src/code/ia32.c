@@ -622,8 +622,8 @@ static void ia32_local_lvalue(INT32 arg)
   enum ia32_reg addr_reg = ia32_get_local_addr(arg);
 
   MEMSET(tmp, 0, sizeof(tmp));
-  tmp[0].type=T_SVALUE_PTR;
-  tmp[1].type=T_VOID;
+  SET_SVAL_TYPE(tmp[0], T_SVALUE_PTR);
+  SET_SVAL_TYPE(tmp[1], T_VOID);
 
   load_pi_reg ((1 << addr_reg)|(1 << sp_reg));
   load_sp_reg ((1 << addr_reg)|(1 << pi_reg));
@@ -692,9 +692,7 @@ static void ia32_mark(void)
 static void ia32_push_int(INT32 x)
 {
   struct svalue tmp;
-  tmp.type=PIKE_T_INT;
-  tmp.subtype=0;
-  tmp.u.integer=x;
+  SET_SVAL(tmp, PIKE_T_INT, 0, integer, x);
   ia32_push_constant(&tmp);
 }
 
@@ -1042,7 +1040,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        * /grubba 2003-12-11
        */
       if(!REFCOUNTED_TYPE(TYPEOF(Pike_compiler->new_program->constants[b].sval)) &&
-	 !Pike_compiler->new_program->constants[b].sval.subtype)
+	 !SUBTYPEOF(Pike_compiler->new_program->constants[b].sval))
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
