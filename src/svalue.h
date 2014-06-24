@@ -99,7 +99,17 @@ struct svalue
       unsigned short type; /**< the data type, see PIKE_T_... */
       unsigned short subtype; /**< used to store the zero type, among others */
     } t;
+#if PIKE_BYTEORDER == 1234
     ptrdiff_t type_subtype;
+#else
+    /* For big-endian 64-bit architectures we don't want to require
+     * 64-bit constants when setting the type_subtype field.
+     */
+    INT32 type_subtype;
+#if SIZEOF_CHAR_P == 8
+    INT32 pad__;
+#endif
+#endif
   } tu;
   union anything u; /**< contains the value */
 };
