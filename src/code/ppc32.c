@@ -173,7 +173,7 @@ void ppc32_push_constant(INT32 arg)
    * Note: The constants table may contain UNDEFINED in case of being
    *       called through decode_value() in PORTABLE_BYTECODE mode.
    */
-  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !sval->subtype) {
+  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !SUBTYPEOF(*sval)) {
     int e;
     INT32 last=0;
 
