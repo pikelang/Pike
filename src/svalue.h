@@ -94,15 +94,14 @@ union anything
  */
 struct svalue
 {
-  unsigned short type; /**< the data type, see PIKE_T_... */
-  unsigned short subtype; /**< used to store the zero type, among others */
+  union {
+    struct {
+      unsigned short type; /**< the data type, see PIKE_T_... */
+      unsigned short subtype; /**< used to store the zero type, among others */
+    } t;
+    ptrdiff_t type_subtype;
+  } tu;
   union anything u; /**< contains the value */
-};
-
-struct fast_svalue
-{
-  ptrdiff_t type_subtype;
-  union anything u;
 };
 
 #if PIKE_BYTEORDER == 1234
@@ -111,10 +110,10 @@ struct fast_svalue
 #define TYPE_SUBTYPE(X,Y) ((Y)|((X)<<16))
 #endif
 
-#define TYPEOF(SVAL)	((SVAL).type)
-#define SUBTYPEOF(SVAL)	((SVAL).subtype)
+#define TYPEOF(SVAL)	((SVAL).tu.t.type)
+#define SUBTYPEOF(SVAL)	((SVAL).tu.t.subtype)
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE) \
-  (((struct fast_svalue*)&(SVAL))->type_subtype=TYPE_SUBTYPE(TYPE,SUBTYPE))
+  ((SVAL).tu.type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE))
 
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
@@ -122,9 +121,9 @@ struct fast_svalue
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
-    struct fast_svalue * __sv_ptr = (struct fast_svalue *)&( SVAL );	\
+    struct svalue * __sv_ptr = &( SVAL );		\
     __sv_ptr->u.FIELD = (EXPR);				\
-    __sv_ptr->type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE);\
+    __sv_ptr->tu.type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE);\
   } while(0)
 
 /*
@@ -900,13 +899,13 @@ struct ref_dummy
 /* The following macro is useful to initialize static svalues. Note
  * that the value isn't always set. */
 #ifdef HAVE_UNION_INIT
-#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE, {VAL}}
-#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER, {VAL}}
-#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER, {0}}
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}, {VAL}}
+#define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}, {VAL}}
+#define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}, {0}}
 #else
-#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE}
-#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER}
-#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER}
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE, VAL}
+#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER, VAL}
+#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER, VAL}
 #endif
 
 #endif /* !SVALUE_H */
