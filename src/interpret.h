@@ -270,7 +270,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define push_program(P) do{						\
     struct program *_=(P);						\
-    struct svalue *_sp_ = (struct svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_PROGRAM,0);		\
     _sp_->u.program=_;							\
@@ -278,13 +278,13 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define push_int(I) do{							\
     INT_TYPE _=(I);							\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_NUMBER);		\
     _sp_->u.integer=_;							\
   }while(0)
 
 #define push_undefined() do{						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_UNDEFINED);		\
     _sp_->u.integer=0;							\
   }while(0)
@@ -324,7 +324,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define push_string(S) do {						\
     struct pike_string *_=(S);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     DO_IF_DEBUG(if(_->size_shift & ~3) {				\
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
@@ -348,7 +348,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 
 #define push_object_inherit(O, INH_NUM) do {				\
     struct object *_ = (O);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     int _inh_ = (INH_NUM);						\
     debug_malloc_touch(_);						\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT,_inh_);			\
@@ -365,7 +365,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 PMOD_EXPORT extern void push_text( const char *x );
 
 #define push_constant_text(T) do{					\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
   }while(0)
@@ -378,7 +378,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define push_function(OBJ, FUN) do {					\
     struct object *_=(OBJ);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));  	        \
     _sp_->u.object=_;							\
@@ -418,7 +418,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define ref_push_string(S) do{						\
     struct pike_string *_=(S);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     DO_IF_DEBUG(if(_->size_shift & ~3) {				\
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
 			     _->size_shift);				\
@@ -430,7 +430,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define ref_push_type_value(S) do{					\
     struct pike_type *_=(S);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
     _sp_->u.type=_;							\
@@ -440,7 +440,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define ref_push_object_inherit(O, INH_NUM) do{				\
     struct object  *_ = (O);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT, (INH_NUM));		\
     _sp_->u.object = _;							\
@@ -448,7 +448,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 
 #define ref_push_function(OBJ, FUN) do {				\
     struct object *_=(OBJ);						\
-    struct fast_svalue *_sp_ = (struct fast_svalue*)Pike_sp++;		\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));		\
     _sp_->u.object=_;							\
@@ -477,7 +477,7 @@ PMOD_EXPORT extern void push_text( const char *x );
   } while(0);
 #else
 #define push_zeroes(N) do{			\
-    struct fast_svalue *s_=(struct fast_svalue*)Pike_sp;	\
+    struct svalue *s_ = Pike_sp;		\
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
@@ -489,7 +489,7 @@ PMOD_EXPORT extern void push_text( const char *x );
 #endif
 
 #define push_undefines(N) do{			\
-    struct fast_svalue *s_=(struct fast_svalue*)Pike_sp;	\
+    struct svalue *s_ = Pike_sp;		\
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\

@@ -1038,11 +1038,13 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   if( reg == P_REG_RAX )
     Pike_fatal("Using RAX in push_svaluep not supported\n" );
   amd64_load_sp_reg();
-  mov_mem_reg(reg, OFFSETOF(svalue, type), P_REG_RAX);
+  mov_mem_reg(reg, OFFSETOF(svalue, tu.t.type), P_REG_RAX);
   mov_mem_reg(reg, OFFSETOF(svalue, u.refs), P_REG_RCX);
-  mov_reg_mem(P_REG_RAX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, type));
+  mov_reg_mem(P_REG_RAX, sp_reg,
+	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
   and_reg_imm(P_REG_RAX, ~(MIN_REF_TYPE - 1) & 0x1f);
-  mov_reg_mem(P_REG_RCX, sp_reg, spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
+  mov_reg_mem(P_REG_RCX, sp_reg,
+	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
   cmp_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
   jne(&label_A);
   add_imm_mem( 1, P_REG_RCX, OFFSETOF(pike_string, refs));
@@ -1058,7 +1060,7 @@ static void amd64_push_svaluep(int reg)
 static void amd64_push_int(INT64 value, int subtype)
 {
   amd64_load_sp_reg();
-  mov_imm_mem((subtype<<16) + PIKE_T_INT, sp_reg, OFFSETOF(svalue, type));
+  mov_imm_mem((subtype<<16) + PIKE_T_INT, sp_reg, OFFSETOF(svalue, tu.t.type));
   mov_imm_mem(value, sp_reg, OFFSETOF(svalue, u.integer));
   amd64_add_sp( 1 );
 }
@@ -1066,7 +1068,7 @@ static void amd64_push_int(INT64 value, int subtype)
 static void amd64_push_int_reg(enum amd64_reg reg )
 {
   amd64_load_sp_reg();
-  mov_imm_mem( PIKE_T_INT, sp_reg, OFFSETOF(svalue, type));
+  mov_imm_mem( PIKE_T_INT, sp_reg, OFFSETOF(svalue, tu.t.type));
   mov_reg_mem( reg, sp_reg, OFFSETOF(svalue, u.integer));
   amd64_add_sp( 1 );
 }
@@ -1086,7 +1088,7 @@ static void amd64_mark(int offset)
 
 static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
 {
-  mov_mem8_reg( src, OFFSETOF(svalue,type), dst);
+  mov_mem8_reg( src, OFFSETOF(svalue, tu.t.type), dst);
 /*  and_reg32_imm( dst, 0x1f );*/
 }
 
@@ -1210,7 +1212,8 @@ static void amd64_push_string(int strno, int subtype)
   mov_mem_reg(P_REG_RAX, OFFSETOF(inherit, prog), P_REG_RAX);
   mov_mem_reg(P_REG_RAX, OFFSETOF(program, strings), P_REG_RAX);
   mov_mem_reg(P_REG_RAX, strno * sizeof(struct pike_string *),  P_REG_RAX);
-  mov_imm_mem((subtype<<16) | PIKE_T_STRING, sp_reg, OFFSETOF(svalue, type));
+  mov_imm_mem((subtype<<16) | PIKE_T_STRING, sp_reg,
+	      OFFSETOF(svalue, tu.t.type));
   mov_reg_mem(P_REG_RAX, sp_reg,(INT32)OFFSETOF(svalue, u.string));
   add_imm_mem( 1, P_REG_RAX, OFFSETOF(pike_string, refs));
 
@@ -1231,7 +1234,7 @@ static void amd64_push_local_function(int fun)
   add_imm_mem( 1, P_REG_RCX,(INT32)OFFSETOF(object, refs));
   shl_reg_imm(P_REG_RAX, 16);
   add_reg_imm(P_REG_RAX, PIKE_T_FUNCTION);
-  mov_reg_mem(P_REG_RAX, sp_reg, OFFSETOF(svalue, type));
+  mov_reg_mem(P_REG_RAX, sp_reg, OFFSETOF(svalue, tu.t.type));
   amd64_add_sp(1);
 }
 
@@ -1391,7 +1394,7 @@ static void amd64_push_this_object( )
   amd64_load_fp_reg();
   amd64_load_sp_reg();
 
-  mov_imm_mem( PIKE_T_OBJECT, sp_reg, OFFSETOF(svalue,type));
+  mov_imm_mem( PIKE_T_OBJECT, sp_reg, OFFSETOF(svalue, tu.t.type));
   mov_mem_reg( fp_reg, OFFSETOF(pike_frame, current_object), P_REG_RAX );
   mov_reg_mem( P_REG_RAX, sp_reg, OFFSETOF(svalue,u.object) );
   add_mem32_imm( P_REG_RAX, (INT32)OFFSETOF(object, refs), 1);
@@ -1818,7 +1821,7 @@ void ins_f_byte(unsigned int b)
       amd64_free_svalue( P_REG_RBX, 0 );
       pop( P_REG_RAX );
       mov_reg_mem(P_REG_RAX,    P_REG_RBX, OFFSETOF(svalue, u.integer));
-      mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, type));
+      mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
     }
     return;
 
@@ -1971,14 +1974,14 @@ void ins_f_byte(unsigned int b)
   case F_CLEAR_STRING_SUBTYPE:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
-    mov_mem32_reg(sp_reg, OFFSETOF(svalue, type) - sizeof(struct svalue),
+    mov_mem32_reg(sp_reg, OFFSETOF(svalue, tu.t.type) - sizeof(struct svalue),
 		  P_REG_RAX);
     /* NB: We only care about subtype 1! */
     cmp_reg32_imm(P_REG_RAX, (1<<16)|PIKE_T_STRING);
     jne(&label_A);
     and_reg_imm(P_REG_RAX, 0x1f);
     mov_reg_mem32(P_REG_RAX,
-		  sp_reg, OFFSETOF(svalue, type) - sizeof(struct svalue));
+		  sp_reg, OFFSETOF(svalue, tu.t.type) - sizeof(struct svalue));
     LABEL_A;
     return;
   }
@@ -2654,13 +2657,13 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
     add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
     amd64_free_svalue(P_REG_RBX, 0);
-    mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, type));
+    mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
     mov_imm_mem(0, P_REG_RBX, OFFSETOF(svalue, u.integer));
     if( a == F_CLEAR_2_LOCAL )
     {
       add_reg_imm( P_REG_RBX, sizeof(struct svalue ) );
       amd64_free_svalue(P_REG_RBX, 0);
-      mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, type));
+      mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
       mov_imm_mem(0, P_REG_RBX, OFFSETOF(svalue, u.integer));
     }
     return;
@@ -2676,7 +2679,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
       jne(&label_A);
       /* Integer - Zap subtype and try just incrementing it. */
-      mov_reg_mem32(P_REG_RAX, P_REG_RCX, OFFSETOF(svalue, type));
+      mov_reg_mem32(P_REG_RAX, P_REG_RCX, OFFSETOF(svalue, tu.t.type));
       add_imm_mem(1, P_REG_RCX, OFFSETOF(svalue, u.integer));
       jno(&label_B);
       add_imm_mem(-1, P_REG_RCX, OFFSETOF(svalue, u.integer));
@@ -2710,7 +2713,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
       jne(&label_A);
       /* Integer - Zap subtype and try just decrementing it. */
-      mov_reg_mem32(P_REG_RAX, P_REG_RCX, OFFSETOF(svalue, type));
+      mov_reg_mem32(P_REG_RAX, P_REG_RCX, OFFSETOF(svalue, tu.t.type));
       add_imm_mem(-1, P_REG_RCX, OFFSETOF(svalue, u.integer));
       jno(&label_B);
       add_imm_mem(1, P_REG_RCX, OFFSETOF(svalue, u.integer));
@@ -2846,7 +2849,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
     amd64_push_this_object( );
 
-    mov_imm_mem( T_OBJ_INDEX,  sp_reg, OFFSETOF(svalue,type));
+    mov_imm_mem( T_OBJ_INDEX,  sp_reg, OFFSETOF(svalue, tu.t.type));
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, context), P_REG_RAX);
     mov_mem16_reg( P_REG_RAX,OFFSETOF(inherit, identifier_level), P_REG_RAX);
     add_reg_imm( P_REG_RAX, b );
@@ -2863,9 +2866,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), P_REG_RAX);
     add_reg_imm( P_REG_RAX, b*sizeof(struct svalue));
 
-    mov_imm_mem( T_SVALUE_PTR,  sp_reg, OFFSETOF(svalue,type));
+    mov_imm_mem( T_SVALUE_PTR,  sp_reg, OFFSETOF(svalue, tu.t.type));
     mov_reg_mem( P_REG_RAX, sp_reg, OFFSETOF(svalue,u.lval) );
-    mov_imm_mem( T_VOID,  sp_reg, OFFSETOF(svalue,type)+sizeof(struct svalue));
+    mov_imm_mem( T_VOID,  sp_reg,
+		 OFFSETOF(svalue, tu.t.type)+sizeof(struct svalue));
     amd64_add_sp( 2 );
     return;
 
@@ -2975,7 +2979,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       mov_sval_type( ARG1_REG, P_REG_RAX );
       cmp_reg32_imm( P_REG_RAX, PIKE_T_INT );
       jne(&label_A); /* Fallback */
-      mov_imm_mem( PIKE_T_INT, ARG1_REG, OFFSETOF(svalue,type));
+      mov_imm_mem( PIKE_T_INT, ARG1_REG, OFFSETOF(svalue, tu.t.type));
       add_imm_mem( c, ARG1_REG,OFFSETOF(svalue,u.integer));
       jno( &label_B);
       add_imm_mem( -c, ARG1_REG,OFFSETOF(svalue,u.integer));
@@ -3022,7 +3026,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       add_reg_mem( P_REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));
       jo( &label_A);
       /* Clear subtype */
-      mov_imm_mem( PIKE_T_INT, ARG1_REG,OFFSETOF(svalue,type));
+      mov_imm_mem( PIKE_T_INT, ARG1_REG,OFFSETOF(svalue, tu.t.type));
       mov_reg_mem( P_REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));
       jmp( &label_B );
 
@@ -3042,7 +3046,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     mov_reg_reg( ARG1_REG, P_REG_RBX );
     amd64_free_svalue(ARG1_REG, 0);
     mov_imm_mem(c, P_REG_RBX, OFFSETOF(svalue, u.integer));
-    mov_imm_mem32(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, type));
+    mov_imm_mem32(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
     return;
 
   case F_LOCAL_2_GLOBAL:
