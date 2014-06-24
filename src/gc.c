@@ -6072,18 +6072,28 @@ void identify_loop_visit_ref(void *dst, int ref_type,
   int type = type_from_visit_fn(visit_dst);
   struct mc_marker *ref_to = find_mc_marker(dst);
   if (ref_to) {
-    /* Already visited. */
+    /* Already visited or queued for visiting. */
     return;
   }
+
+  ref_to = my_make_mc_marker(dst, visit_dst, extra);
 
   if (type != PIKE_T_UNKNOWN) {
     struct svalue s;
     SET_SVAL(s, type, 0, refs, dst);
     low_mapping_insert(identify_loop_reverse, &s, Pike_sp-1, 0);
-  }
 
-  ref_to = my_make_mc_marker(dst, visit_dst, extra);
-  mc_wq_enqueue(ref_to);
+    mc_wq_enqueue(ref_to);
+  } else {
+    /* Not a valid svalue type.
+     *
+     * Probably T_MAPPING_DATA or T_MULTISET_DATA or similar.
+     *
+     * Recurse directly while we have the containing thing on the stack.
+     */
+    ref_to->flags |= MC_FLAG_INT_VISITED;
+    visit_dst(dst, VISIT_COMPLEX_ONLY, extra);
+  }
 }
 
 void identify_loop_visit_leave(void *thing, int type, void *extra)
