@@ -6177,12 +6177,20 @@ void f_identify_cycle(INT32 args)
   /* NB: This initial call will botstrap the wq_queue. */
   visit_fn_from_type[TYPEOF(*s)](s->u.ptr, VISIT_COMPLEX_ONLY, NULL);
 
+#ifdef PIKE_DEBUG
+  assert (mc_ref_from == (void *) (ptrdiff_t) -1);
+#endif
+
   while ((mc_ref_from = mc_wq_dequeue())) {
     if (mc_ref_from->flags & MC_FLAG_INT_VISITED) continue;
 
     mc_ref_from->flags |= MC_FLAG_INT_VISITED;
     mc_ref_from->visit_fn(mc_ref_from->thing, VISIT_COMPLEX_ONLY, NULL);
   }
+
+#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+  mc_ref_from = (void *) (ptrdiff_t) -1;
+#endif
 
   exit_mc_marker_hash();
   free (mc_work_queue + 1);
