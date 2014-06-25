@@ -37,10 +37,10 @@ protected mapping snmp_type_proc =
     70 : Integer,     // counter64
 
     // context PDU
-    128 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-    129 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-    130 : Protocols.LDAP.ldap_privates.asn1_context_sequence,
-    131 : Protocols.LDAP.ldap_privates.asn1_context_sequence
+    128 : Sequence,
+    129 : Sequence,
+    130 : Sequence,
+    131 : Sequence,
   ]);
 
 
@@ -262,7 +262,7 @@ int get_request(array(string) varlist, string|void rem_addr,
                   Null()})
 	      )});
 
-  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(0,
+  pdu = ASN1_CONTEXT_SEQUENCE(0,
 	       ({Integer(id), // request-id
 		 Integer(0), // error-status
 		 Integer(0), // error-index
@@ -388,7 +388,7 @@ int get_response(mapping varlist, mapping origdata, int|void errcode,
 	      )});
     }
 
-  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(2,
+  pdu = ASN1_CONTEXT_SEQUENCE(2,
 	       ({Integer(id), // request-id
 		 Integer(errcode), // error-status
 		 Integer(erridx), // error-index
@@ -426,7 +426,7 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
                   Null()})
 	      )});
 
-  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(1,
+  pdu = ASN1_CONTEXT_SEQUENCE(1,
 	       ({Integer(id), // request-id
 		 Integer(0), // error-status
 		 Integer(0), // error-index
@@ -494,7 +494,7 @@ int set_request(mapping varlist, string|void rem_addr,
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
 
-  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(3,
+  pdu = ASN1_CONTEXT_SEQUENCE(3,
 	   ({Integer(id), // request-id
              Integer(0), // error-status
              Integer(0), // error-index
@@ -570,7 +570,7 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
 	        ({Identifier(@(array(int))(varname/".")),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
-  pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(4,
+  pdu = ASN1_CONTEXT_SEQUENCE(4,
 	  ({
 	    // enterprise OID
 	    mk_asn1_val("oid", oid),
