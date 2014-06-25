@@ -1,9 +1,6 @@
 // -*- pike -*-
 
 // --------------- Standards.ASN1.Types private add-on --------------------
-// This is very poor defined own ASN.1 objects (not enough time to clean it!)
-
-//import .ldap_privates;
 
 #define ASN1_APPLICATION_SEQUENCE(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 1, T, A)
 #define ASN1_APPLICATION_OCTET_STRING(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.OctetString, 1, T, A)
@@ -44,5 +41,5 @@
 #define THROW(X)        throw(X)
 #define ERROR(X...)     predef::error (X)
 // --- Enable profiling ---
-//#define DWRITE_PROF(X,Y)        werror(sprintf("Protocols.LDAP:Profile: "+X,Y))
+//#define DWRITE_PROF(X,Y)        werror("Protocols.LDAP:Profile: "+X,Y)
 #define DWRITE_PROF(X,Y)
