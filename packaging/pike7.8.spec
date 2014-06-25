@@ -37,20 +37,20 @@
 %{?yd3:%define _without_xorg 1}
 
 %define real_name Pike
-%define real_version v7.8.700
+%define real_version v7.8.866
 %define relnum 7.8
 %define myname pike
 %define shared_docs %{_docdir}/%{myname}-%{version}
 
 Summary: General purpose programming language
 Name: pike%{relnum}
-Version: 7.8.700
+Version: 7.8.866
 Release: 1.0%{?dist}
 License: GPL/LGPL/MPL
 Group: Development/Languages
-URL: http://pike.ida.liu.se/
+URL: http://pike.lysator.liu.se/
 
-Source: http://pike.ida.liu.se/download/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
+Source: http://pike.lysator.liu.se/download/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: nettle-devel, gmp-devel, autoconf
@@ -277,6 +277,7 @@ alternatives --install %{_bindir}/%{myname} %{myname} %{_bindir}/%{name} 1
 %{_libdir}/%{name}/modules/GLUT.so
 
 %changelog
+* Wed Jun 25 2014 Bill Welliver <bill@welliver.org> - 7.8.866-1.0
 * Wed Nov 7 2012 Bill Welliver <bill@welliver.org> - 7.8.700-1.0
 - New stable pike release
 - This RPM definition is based on pike.spec from repoforge. Please
