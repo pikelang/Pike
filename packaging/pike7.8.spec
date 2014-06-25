@@ -50,7 +50,7 @@ License: GPL/LGPL/MPL
 Group: Development/Languages
 URL: http://pike.lysator.liu.se/
 
-Source: http://pike.lysator.liu.se/download/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
+Source: http://pike.lysator.liu.se/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: nettle-devel, gmp-devel, autoconf
