@@ -48,17 +48,17 @@ Takes case_info.h as argument.
         delta += 0x7fff;
       // Fallthrough
     case "CIM_UPPERDELTA":
-      b += ({ r[0]+r[2] });
-      B += ({ r[0] });
+      b += ({ char + delta });
+      B += ({ char });
       break;
 
     case "CIM_CASEBIT":
-      b += ({ r[0]|r[2] });
-      B += ({ r[0]&~r[2] });
+      b += ({ char | delta });
+      B += ({ char & ~delta });
       break;
     case "CIM_CASEBITOFF":
-      b += ({ ((r[0]-r[2])|r[2])+r[2] });
-      B += ({ ((r[0]-r[2])&~r[2])+r[2] });
+      b += ({ ((char-delta) | delta) + delta });
+      B += ({ ((char-delta) & ~delta) + delta });
       break;
     default:
       exit(1, "Error in case_info.h: Unknown type %s\n", r[1]);
