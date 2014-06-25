@@ -3361,6 +3361,7 @@ int gc_do_free(void *a)
   return !(m->flags & GC_LIVE);
 }
 
+#if 0
 static void free_obj_arr(void *oa)
 {
   struct array *obj_arr = *((struct array **)oa);
@@ -3368,6 +3369,7 @@ static void free_obj_arr(void *oa)
   if (obj_arr) free_array(obj_arr);
   free(oa);
 }
+#endif
 
 /*! @class MasterObject
  */
@@ -4415,16 +4417,16 @@ PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1] = {
   (visit_thing_fn *) (ptrdiff_t) -1,
   (visit_thing_fn *) (ptrdiff_t) -1,
   (visit_thing_fn *) (ptrdiff_t) -1,
-  &visit_array,
-  &visit_mapping,
-  &visit_multiset,
-  &visit_object,
+  (visit_thing_fn *)&visit_array,
+  (visit_thing_fn *)&visit_mapping,
+  (visit_thing_fn *)&visit_multiset,
+  (visit_thing_fn *)&visit_object,
   /* visit_function must be called with a whole svalue, so it's not
    * included here. */
   (visit_thing_fn *) (ptrdiff_t) -1,
-  &visit_program,
-  &visit_string,
-  &visit_type,
+  (visit_thing_fn *)&visit_program,
+  (visit_thing_fn *)&visit_string,
+  (visit_thing_fn *)&visit_type,
 };
 
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
