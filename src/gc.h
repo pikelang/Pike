@@ -689,7 +689,7 @@ static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
   return 0;
 }
 #define visit_short_svalue(U, T, REF_TYPE) \
-  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
+  (real_visit_short_svalue (debug_malloc_pass ((U)), (T), (REF_TYPE)))
 
 #ifdef DEBUG_MALLOC
 static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
