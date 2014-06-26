@@ -3,7 +3,6 @@
 
 #pike __REAL_VERSION__
 #pragma strict_types
-#define COMPATIBILITY
 
 #if 0
 #define WERROR werror
@@ -223,13 +222,11 @@ class Compound
     return t=='O' && sprintf("%O(%*O)", this_program, params, elements);
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
 	   type_name, elements);
     return _sprintf('O');
   }
-#endif
 }
 
 //! string object primitive
@@ -278,12 +275,10 @@ class String
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
     return _sprintf('O');
   }
-#endif
 }
 
 //! boolean object
@@ -322,11 +317,9 @@ class Boolean
     return t=='O' && sprintf("%O(%s)", this_program, (value?"TRUE":"FALSE"));
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     return value ? "TRUE" : "FALSE";
   }
-#endif
 }
 
 //! Integer object
@@ -386,11 +379,9 @@ class Integer
                    value->size(), value->digits());
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     return sprintf("INTEGER (%d) %s", value->size(), value->digits());
   }
-#endif
 }
 
 //! Enumerated object
@@ -593,14 +584,12 @@ class BitString
                    ->digits(2));
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value) * 8 - unused,
 		   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
 		   ->digits(2));
   }
-#endif
 }
 
 //! Octet string object
@@ -629,9 +618,7 @@ class Null
     return !sizeof(contents) && this;
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() { return "NULL"; }
-#endif
 }
 
 //! Object identifier object
@@ -698,11 +685,9 @@ class Identifier
     return sprintf("%O(%s)", this_program, (array(string))id*".");
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     return "IDENTIFIER " + (array(string)) id * ".";
   }
-#endif
 
   protected int __hash()
   {
@@ -830,7 +815,7 @@ class Set
   }
 }
 
-Regexp asn1_printable_invalid_chars = Regexp("([^-A-Za-z0-9 '()+,./:=?])");
+protected Regexp asn1_printable_invalid_chars = Regexp("([^-A-Za-z0-9 '()+,./:=?])");
 
 //! Checks if a Pike string can be encoded as a @[PrintableString].
 int(0..1) asn1_printable_valid (string s) {
@@ -846,7 +831,7 @@ class PrintableString
   constant type_name = "PrintableString";
 }
 
-Regexp asn1_teletex_invalid_chars = Regexp ("([\\\\{}\240®©¬¦\255Ð])");
+protected Regexp asn1_teletex_invalid_chars = Regexp ("([\\\\{}\240®©¬¦\255Ð])");
 
 //!
 int(0..1) asn1_teletex_valid (string s)
@@ -916,7 +901,7 @@ class TeletexString
 #define OG(char) "\316" char	/* Combining ogonek */
 #define CA(char) "\317" char	/* Combining caron */
 
-  constant encode_from = ({
+  protected constant encode_from = ({
     /*"#", "$",*/ "¤",		// Note 3
     "\\", "{", "}",		// Note 7
     "\240",			// No-break space (note 7)
@@ -960,7 +945,7 @@ class TeletexString
     "ý",
   });
 
-  constant encode_to = ({
+  protected constant encode_to = ({
     /*"#", "$",*/ "\250",	// Note 3
     ENC_ERR("\\"), ENC_ERR("{"), ENC_ERR("}"), // Note 7
     ENC_ERR("\240"),		// No-break space (note 7)
@@ -1004,7 +989,7 @@ class TeletexString
     GR("y"),
   });
 
-  constant decode_from = ({
+  protected constant decode_from = ({
     /*"#", "$",*/ "\244", "\246", "\250", // Note 3
     /*"^", "`", "~",*/		// Note 4
     "\251",			// Left single quotation mark (note 7)
@@ -1080,7 +1065,7 @@ class TeletexString
     "\377",			// Soft hyphen (note 7)
   });
 
-  constant decode_to = ({
+  protected constant decode_to = ({
     /*"#", "$",*/ "$", "#", "\244", // Note 3
     /*"^", "`", "~",*/		// Note 4
     DEC_ERR("\251"),		// Left single quotation mark (note 7)
@@ -1156,7 +1141,7 @@ class TeletexString
     "\255",			// Soft hyphen (note 7)
   });
 
-  constant decode_comb = ([
+  protected constant decode_comb = ([
     GR(" "): "`",
     AC(" "): "´",
     CI(" "): "^",
@@ -1278,7 +1263,7 @@ class BrokenTeletexString
   constant type_name = "TeletexString";	// Alias: T61String
 }
 
-Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
+protected Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
 
 //!
 int(0..1) asn1_IA5_valid (string s)
@@ -1496,11 +1481,9 @@ class MetaExplicit
 		     real_tag, contents);
     }
 
-#ifdef COMPATIBILITY
     __deprecated__ string debug_string() {
       return type_name + "[" + (int) real_tag + "]";
     }
-#endif
   }
 
   //!
@@ -1533,27 +1516,3 @@ MetaExplicit TaggedType0 = MetaExplicit(2, 0);
 MetaExplicit TaggedType1 = MetaExplicit(2, 1);
 MetaExplicit TaggedType2 = MetaExplicit(2, 2);
 MetaExplicit TaggedType3 = MetaExplicit(2, 3);
-
-#ifdef COMPATIBILITY
-constant meta_explicit = MetaExplicit;
-constant asn1_object = Object;
-constant asn1_compound = Compound;
-constant asn1_string = String;
-constant asn1_boolean = Boolean;
-constant asn1_integer = Integer;
-constant asn1_enumerated = Enumerated;
-constant asn1_bit_string = BitString;
-constant asn1_octet_string = OctetString;
-constant asn1_null = Null;
-constant asn1_identifier = Identifier;
-constant asn1_utf8_string = UTF8String;
-constant asn1_sequence = Sequence;
-constant asn1_set = Set;
-constant asn1_printable_string = PrintableString;
-constant asn1_teletex_string = TeletexString;
-constant asn1_broken_teletex_string = BrokenTeletexString;
-constant asn1_IA5_string = IA5String;
-constant asn1_utc = UTC;
-constant asn1_universal_string = UniversalString;
-constant asn1_bmp_string = BMPString;
-#endif
