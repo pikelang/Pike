@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-#define COMPATIBILITY
 
 #ifdef ASN1_DEBUG
 #define DBG werror
@@ -23,11 +22,9 @@ class Primitive (int cls, int tag, string(8bit) raw)
     return t=='O' && sprintf("%O(%d)", this_program, get_combined_tag());
   }
 
-#ifdef COMPATIBILITY
   __deprecated__ string debug_string() {
     return sprintf("primitive(%d)", get_combined_tag());
   }
-#endif
 }
 
 //! Constructed type
