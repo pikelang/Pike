@@ -90,10 +90,18 @@ union anything
 /* Note: At least multisets overlays the type field and uses the top 4
  * bits in it internally. */
 
+#if !defined(HAVE_UNION_INIT) && !defined(NO_COMBINED_TYPE_SUBTYPE)
+/* We can't use the tu union in this case, since we need to
+ * support static initialization of svalues.
+ */
+#define NO_COMBINED_TYPE_SUBTYPE
+#endif
+
 /**
  */
 struct svalue
 {
+#ifndef NO_COMBINED_TYPE_SUBTYPE
   union {
     struct {
       unsigned short type; /**< the data type, see PIKE_T_... */
@@ -111,29 +119,51 @@ struct svalue
 #endif
 #endif
   } tu;
+#else /* NO_COMBINED_TYPE_SUBTYPE */
+  /* Syntax-compatible with the above, but only structs,
+   * and thus no combined type_subtype field.
+   */
+  struct {
+    struct {
+      unsigned short type; /**< the data type, see PIKE_T_... */
+      unsigned short subtype; /**< used to store the zero type, among others */
+    } t;
+  } tu;
+#endif /* NO_COMBINED_TYPE_SUBTYPE */
   union anything u; /**< contains the value */
 };
 
+#define TYPEOF(SVAL)	((SVAL).tu.t.type)
+#define SUBTYPEOF(SVAL)	((SVAL).tu.t.subtype)
+
+#define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
+#define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
+
+#ifdef NO_COMBINED_TYPE_SUBTYPE
+/* Some compilers have aliasing problems with unions,
+ * so skip the optimization of setting both fields
+ * with one write with them.
+ */
+#define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE)	\
+  ((TYPEOF(SVAL) = (TYPE)),				\
+   (SUBTYPEOF(SVAL) = (SUBTYPE)))
+#else
 #if PIKE_BYTEORDER == 1234
 #define TYPE_SUBTYPE(X,Y) ((X)|((Y)<<16))
 #else
 #define TYPE_SUBTYPE(X,Y) ((Y)|((X)<<16))
 #endif
 
-#define TYPEOF(SVAL)	((SVAL).tu.t.type)
-#define SUBTYPEOF(SVAL)	((SVAL).tu.t.subtype)
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE) \
   ((SVAL).tu.type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE))
-
-#define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
-#define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
+#endif
 
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
      * svalue in case EXPR throws. */			\
     struct svalue * __sv_ptr = &( SVAL );		\
     __sv_ptr->u.FIELD = (EXPR);				\
-    __sv_ptr->tu.type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE);\
+    SET_SVAL_TYPE_SUBTYPE(*__sv_ptr, TYPE, SUBTYPE);	\
   } while(0)
 
 /*
@@ -913,9 +943,9 @@ struct ref_dummy
 #define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}, {VAL}}
 #define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}, {0}}
 #else
-#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE, VAL}
-#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER, VAL}
-#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER, VAL}
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}}
+#define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}}
+#define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}}
 #endif
 
 #endif /* !SVALUE_H */
