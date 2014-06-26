@@ -14,7 +14,7 @@
 
 // Helper functions
 
-//! Combines tag and class to a single integer, for intenal uses.
+//! Combines tag and class to a single integer, for internal uses.
 //!
 //! @param cls
 //!   ASN1 type class (0..3).
@@ -23,19 +23,18 @@
 //! @returns
 //!   The combined tag.
 //! @seealso
-//!  @[Standards.ASN1.Types.extract_tag]
-//!  @[Standards.ASN1.Types.extract_cls]
+//!  @[extract_tag], @[extract_cls]
 int make_combined_tag(int cls, int tag)
 { return tag << 2 | cls; }
 
 //! Extract ASN1 type tag from a combined tag.
 //! @seealso
-//!  @[Standards.ASN1.Types.make_combined_tag]
+//!  @[make_combined_tag]
 int extract_tag(int i) { return i >> 2; }
 
 //! Extract ASN1 type class from a combined tag.
 //! @seealso
-//!  @[Standards.ASN1.Types.make_combined_tag]
+//!  @[make_combined_tag]
 int(0..3) extract_cls(int i) { return [int(0..3)](i & 3); }
 
 
@@ -175,7 +174,7 @@ class Compound
 
   constant constructed = 1;
 
-  //! contents of compound object, elements are from @[Standards.ASN1.Types]
+  //! Contents of compound object.
   array(Object) elements = ({ });
 
   this_program init(array args) {
@@ -287,11 +286,6 @@ class String
 #endif
 }
 
-// FIXME: What is the DER-encoding of TRUE???
-// According to Jan Petrous, the LDAP spec says that 0xff is right.
-// No, every nonzero value is true according to the ASN1 spec,
-// but they use 0xff as example of a true value. /Nilsson
-
 //! boolean object
 class Boolean
 {
@@ -307,6 +301,7 @@ class Boolean
     return this;
   }
 
+  // While every non-zero value is true, the canonical true is 0xff.
   string(0..255) get_der_content()
   {
     return value ? "\377" : "\0";
