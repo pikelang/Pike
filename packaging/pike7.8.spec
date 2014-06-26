@@ -50,7 +50,7 @@ License: GPL/LGPL/MPL
 Group: Development/Languages
 URL: http://pike.lysator.liu.se/
 
-Source: http://pike.lysator.liu.se/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
+Source: http://pike.lysator.liu.se/download/pub/pike/all/%{version}/Pike-v%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: nettle-devel, gmp-devel, autoconf
@@ -190,7 +190,7 @@ chrpath --delete %{buildroot}/usr/lib/%{name}/modules/Postgres.so
 chrpath --delete %{buildroot}/usr/lib/%{name}/modules/Odbc.so
 
 %{__mkdir_p} %{buildroot}%{_bindir}
-%{__mkdir_p} %{shared_docs}
+%{__mkdir_p} %{buildroot}%{shared_docs}
 %{__rm} -rf %{buildroot}/usr/doc
 %{__mv} %{buildroot}/usr/bin/pike %{buildroot}%{_bindir}/%{name}
 %{__mv} %{buildroot}/usr/bin/pike.syms %{buildroot}%{_bindir}/%{name}.syms
@@ -206,6 +206,7 @@ cd ..
 
 cd build
 ./pike "-DPRECOMPILED_SEARCH_MORE" "-m./master.pike" -x rsif -r "/usr/local/bin/pike" "%{_bindir}/%{name}" %{buildroot} 
+./pike "-DPRECOMPILED_SEARCH_MORE" "-m./master.pike" -x rsif -r "%{buildroot}" "Q" %{buildroot} 
 
 %post
 /sbin/ldconfig 2>/dev/null
@@ -221,19 +222,19 @@ alternatives --install %{_bindir}/%{myname} %{myname} %{_bindir}/%{name} 1
 %defattr(-, root, root, 0755)
 %doc %{_mandir}/man?/*
 %{shared_docs}/*
-%exclude %{_libdir}/%{name}/modules/Odbc.so
-%exclude %{_libdir}/%{name}/modules/SDL.so
-%exclude %{_libdir}/%{name}/modules/SANE.so
-%exclude %{_libdir}/%{name}/modules/Mysql.so
-%exclude %{_libdir}/%{name}/modules/___GTK2.so
-%exclude %{_libdir}/%{name}/modules/GL.so
-%exclude %{_libdir}/%{name}/modules/GLUT.so
-%exclude %{_libdir}/%{name}/modules/_Image_SVG.so
-%exclude %{_libdir}/%{name}/modules/_Image_FreeType.so
-%exclude %{_libdir}/%{name}/modules/_Ffmpeg.so
+%exclude /usr/lib/%{name}/modules/Odbc.so
+%exclude /usr/lib/%{name}/modules/SDL.so
+%exclude /usr/lib/%{name}/modules/SANE.so
+%exclude /usr/lib/%{name}/modules/Mysql.so
+%exclude /usr/lib/%{name}/modules/___GTK2.so
+%exclude /usr/lib/%{name}/modules/GL.so
+%exclude /usr/lib/%{name}/modules/GLUT.so
+%exclude /usr/lib/%{name}/modules/_Image_SVG.so
+%exclude /usr/lib/%{name}/modules/_Image_FreeType.so
+%exclude /usr/lib/%{name}/modules/_Ffmpeg.so
 
 %{_bindir}/*
-%{_libdir}/%{name}
+/usr/lib/%{name}
 
 %files devel
 %defattr(-, root, root, 0755)
@@ -241,40 +242,40 @@ alternatives --install %{_bindir}/%{myname} %{myname} %{_bindir}/%{name} 1
 
 %files odbc
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/Odbc.so
+/usr/lib/%{name}/modules/Odbc.so
 
 %files sdl
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/SDL.so
+/usr/lib/%{name}/modules/SDL.so
 
 %files sane
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/SANE.so
+/usr/lib/%{name}/modules/SANE.so
 
 %files gtk2
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/___GTK2.so
+/usr/lib/%{name}/modules/___GTK2.so
 
 %files svg
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/_Image_SVG.so
+/usr/lib/%{name}/modules/_Image_SVG.so
 
 %files ffmpeg
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/_Ffmpeg.so
+/usr/lib/%{name}/modules/_Ffmpeg.so
 
 %files mysql
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/Mysql.so
+/usr/lib/%{name}/modules/Mysql.so
 
 %files freetype
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/_Image_FreeType.so
+/usr/lib/%{name}/modules/_Image_FreeType.so
 
 %files gl
 %defattr(-, root, root, 0755)
-%{_libdir}/%{name}/modules/GL.so
-%{_libdir}/%{name}/modules/GLUT.so
+/usr/lib/%{name}/modules/GL.so
+/usr/lib/%{name}/modules/GLUT.so
 
 %changelog
 * Wed Jun 25 2014 Bill Welliver <bill@welliver.org> - 7.8.866-1.0
