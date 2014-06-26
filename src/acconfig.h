@@ -576,8 +576,11 @@
 /* set this to the modifier type string to print INT64 if that type exists */
 #undef PRINTINT64
 
-/* Define if the compiler understand union initializations. */
+/* Define if the compiler understands union initializations. */
 #undef HAVE_UNION_INIT
+
+/* Define if the compiler has problems with union aliasing. */
+#undef NO_COMBINED_TYPE_SUBTYPE
 
 /* Define when binary --disable-binary is used. */
 #undef DISABLE_BINARY
