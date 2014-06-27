@@ -8,7 +8,7 @@
 
 inherit Nettle.MD4;
 
-Standards.ASN1.Types.Identifier asn1_id()
+Standards.ASN1.Types.Identifier pkcs_hash_id()
 {
   return Standards.PKCS.Identifiers.md4_id;
 }
