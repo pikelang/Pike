@@ -224,15 +224,15 @@ cond_resolv( Crypto.$1, [[
   test_eq(S(Crypto.$1.pbkdf1("","",1,8)),"$2"[..15])
   test_eq(Crypto.$1.pbkdf2("password","salt",1,Crypto.$1.digest_size()),
           Crypto.HMAC(Crypto.$1)("password")("salt\0\0\0\1"))
-  dnl asn1_id
+  dnl pkcs_hash_id
   test_eq(sizeof(Crypto.$1.hash("foo")),Crypto.$1.digest_size())
   test_eq(Crypto.$1.HMAC("x")->block_size(),Crypto.$1.block_size())
   test_eq(Crypto.$1.HMAC("x")->digest_size(),Crypto.$1.digest_size())
 ]])
-cond_resolv( Crypto.$1.asn1_id, [[
+cond_resolv( Crypto.$1.pkcs_hash_id, [[
   test_any([[
     return Standards.PKCS.Identifiers[lower_case("$1")+"_id"];
-  ]], Crypto.$1.asn1_id())
+  ]], Crypto.$1.pkcs_hash_id())
 ]])
 ]])
 

@@ -22,8 +22,8 @@ import Standards.ASN1.Types;
 //!   @[Crypto.RSA()->sign]
 string(0..255) build_digestinfo(string(0..255) msg, HASH hash)
 {
-  if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
-  Sequence digest_info = Sequence( ({ Sequence( ({ hash->asn1_id(),
+  if(!hash->pkcs_hash_id) error("Unknown ASN.1 id for hash.\n");
+  Sequence digest_info = Sequence( ({ Sequence( ({ hash->pkcs_hash_id(),
                                                    Null() }) ),
 				      OctetString(hash->hash(msg)) }) );
   return digest_info->get_der();
