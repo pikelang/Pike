@@ -1152,6 +1152,7 @@ constant EXTENSION_signed_certificate_timestamp = 18;           // RFC 6962
 constant EXTENSION_client_certificate_type      = 19;           // RFC-ietf-tls-oob-pubkey-11
 constant EXTENSION_server_certificate_type      = 20;           // RFC-ietf-tls-oob-pubkey-11
 constant EXTENSION_padding                      = 21;           // TEMPORARY draft-agl-tls-padding
+constant EXTENSION_encrypt_then_mac		= 22;		// TEMPORARY draft-ietf-tls-encrypt-then-mac, expires 2015-06-05.
 constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507 / RFC 5077
 constant EXTENSION_extended_random              = 40;           // draft-rescorla-tls-extended-random
 constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
