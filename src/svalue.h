@@ -147,6 +147,8 @@ struct svalue
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE)	\
   ((TYPEOF(SVAL) = (TYPE)),				\
    (SUBTYPEOF(SVAL) = (SUBTYPE)))
+/* Used when we don't care if the subtype gets set or not. */
+#define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE(SVAL, TYPE)
 #else
 #if PIKE_BYTEORDER == 1234
 #define TYPE_SUBTYPE(X,Y) ((X)|((Y)<<16))
@@ -156,6 +158,10 @@ struct svalue
 
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE) \
   ((SVAL).tu.type_subtype = TYPE_SUBTYPE(TYPE,SUBTYPE))
+/* Setting the entire type_subtype field is probably faster than
+ * just setting the type field.
+ */
+#define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, 0)
 #endif
 
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
@@ -168,7 +174,7 @@ struct svalue
 
 /*
 */
-#define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_SUBTYPE(SVAL, 99,0) /* an invalid type */
+#define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_DC(SVAL, 99) /* an invalid type */
 
 /* The native types.
  *

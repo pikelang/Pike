@@ -202,9 +202,9 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #endif /* PIKE_DEBUG */
 
 #ifdef __CHECKER__
-#define SET_SVAL_TYPE_SUBTYPE_CHECKER(S,T,U) SET_SVAL_TYPE(S,Y);SET_SVAL_SUBTYPE(S,U)
+#define SET_SVAL_TYPE_CHECKER(S,T) SET_SVAL_TYPE_SUBTYPE(S,T,0)
 #else
-#define SET_SVAL_TYPE_SUBTYPE_CHECKER(S,T,U) SET_SVAL_TYPE(S,T)
+#define SET_SVAL_TYPE_CHECKER(S,T) SET_SVAL_TYPE_DC(S,T)
 #endif
 
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
@@ -272,7 +272,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct program *_=(P);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_PROGRAM,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_PROGRAM);			\
     _sp_->u.program=_;							\
   }while(0)
 
@@ -292,7 +292,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, T_OBJ_INDEX,0);	        \
+    SET_SVAL_TYPE_CHECKER(*_sp_, T_OBJ_INDEX);				\
     _sp_->u.identifier=_;						\
   }while(0)
 
@@ -300,7 +300,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MAPPING,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MAPPING);			\
     _sp_->u.mapping=_;							\
   }while(0)
 
@@ -308,7 +308,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_ARRAY,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_ARRAY);				\
     _sp_->u.array=_ ;							\
   }while(0)
 
@@ -318,7 +318,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MULTISET,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MULTISET);			\
     _sp_->u.multiset=_;							\
   }while(0)
 
@@ -340,7 +340,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_TYPE,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);				\
     _sp_->u.type=_;							\
   }while(0)
 
@@ -358,7 +358,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_float(F) do{						\
     FLOAT_TYPE _=(F);							\
     struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_FLOAT,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_FLOAT);				\
     _sp_->u.float_number=_;						\
   }while(0)
 
@@ -388,7 +388,7 @@ PMOD_EXPORT extern void push_text( const char *x );
     struct program *_=(P);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_PROGRAM,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_PROGRAM);			\
     _sp_->u.program=_;							\
   }while(0)
 
@@ -396,7 +396,7 @@ PMOD_EXPORT extern void push_text( const char *x );
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MAPPING,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MAPPING);			\
     _sp_->u.mapping=_;							\
   }while(0)
 
@@ -404,7 +404,7 @@ PMOD_EXPORT extern void push_text( const char *x );
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_ARRAY,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_ARRAY);				\
     _sp_->u.array=_ ;							\
   }while(0)
 
@@ -412,7 +412,7 @@ PMOD_EXPORT extern void push_text( const char *x );
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE_CHECKER(*_sp_, PIKE_T_MULTISET,0);		\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MULTISET);			\
     _sp_->u.multiset=_;							\
   }while(0)
 
