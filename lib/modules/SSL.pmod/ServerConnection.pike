@@ -103,7 +103,6 @@ Packet server_hello_packet()
 
   ext (EXTENSION_encrypt_then_mac, session->encrypt_then_mac) {
     // draft-ietf-tls-encrypt-then-mac
-    werror("SERVER: ACK on Encrypt-then-MAC.\n");
     return ADT.struct();
   };
 
