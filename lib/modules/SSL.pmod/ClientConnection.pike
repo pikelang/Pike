@@ -391,10 +391,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 				    "Encrypt-then-MAC: Invalid extension.\n"));
 		  break;
 		}
-		if (((sizeof(CIPHER_SUITES[cipher_suite] == 3) &&
-		      (< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[suite][1]])) ||
-		    ((sizeof(CIPHER_SUITES[suite]) == 4) &&
-		     (CIPHER_SUITES[suite][3] != MODE_cbc))) {
+		if (((sizeof(CIPHER_SUITES[cipher_suite]) == 3) &&
+		     (< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[cipher_suite][1]]) ||
+		    ((sizeof(CIPHER_SUITES[cipher_suite]) == 4) &&
+		     (CIPHER_SUITES[cipher_suite][3] != MODE_cbc))) {
 		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Encrypt-then-MAC: Invalid for selected suite.\n"));
 		}
