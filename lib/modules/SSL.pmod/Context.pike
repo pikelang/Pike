@@ -781,6 +781,9 @@ array(int) preferred_compressors = ({
 #endif
  });
 
+//! Attempt to enable encrypt-then-mac mode.
+int encrypt_then_mac = 1;
+
 //! Non-zero to enable caching of sessions
 int use_cache = 1;
 

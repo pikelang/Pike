@@ -101,6 +101,12 @@ Packet server_hello_packet()
     return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
+  ext (EXTENSION_encrypt_then_mac, session->encrypt_then_mac) {
+    // draft-ietf-tls-encrypt-then-mac
+    werror("SERVER: ACK on Encrypt-then-MAC.\n");
+    return ADT.struct();
+  };
+
   ext (EXTENSION_application_layer_protocol_negotiation,
        next_protocol && has_application_layer_protocol_negotiation)
   {
@@ -573,6 +579,21 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
 			       fmt_constant(hb_mode, "HEARTBEAT_MODE"));
 		session->heartbeat_mode = [int(0..1)]hb_mode;
+	      }
+	      break;
+
+	    case EXTENSION_encrypt_then_mac:
+	      {
+		if (sizeof(extension_data)) {
+		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+				    "Encrypt-then-MAC: Invalid extension.\n"));
+		}
+		if (context->encrypt_then_mac) {
+		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
+		  session->encrypt_then_mac = 1;
+		} else {
+		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Rejected.\n");
+		}
 	      }
 	      break;
 

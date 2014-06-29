@@ -104,6 +104,9 @@ array(int) ecc_curves = ({});
 //!   between the server and client.
 int ecc_point_format = POINT_uncompressed;
 
+//! Negotiated encrypt-then-mac mode.
+int encrypt_then_mac = 0;
+
 /*
  * End of extensions.
  */
@@ -356,6 +359,20 @@ int select_cipher_suite(object context,
       //        RSA key when RSA is in use. With a 64 byte (512 bit) key,
       //        the block size is 61 bytes, allow for 23 bytes of overhead.
       max_hash_size = [int]private_key->block_size() - 23;
+    }
+  }
+
+  if (encrypt_then_mac) {
+    // Check if enrypt-then-mac is valid for the suite.
+    if (((sizeof(CIPHER_SUITES[suite]) == 3) &&
+	 ((< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[suite][1]])) ||
+	((sizeof(CIPHER_SUITES[suite]) == 4) &&
+	 (CIPHER_SUITES[suite][3] != MODE_cbc))) {
+      // Encrypt-then-MAC not allowed with non-CBC suites.
+      encrypt_then_mac = 0;
+      SSL3_DEBUG_MSG("Encrypt-then-MAC: Disabled (not valid for suite).\n");
+    } else {
+      SSL3_DEBUG_MSG("Encrypt-then-MAC: Enabled.\n");
     }
   }
 

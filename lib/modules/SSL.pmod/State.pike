@@ -65,6 +65,30 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 			  session->cipher_spec?->hash_size);
   int padding;
 
+  if (hmac_size && session->encrypt_then_mac) {
+    string(8bit) digest = packet->fragment[<hmac_size-1..];
+    packet->fragment = packet->fragment[..<hmac_size];
+
+    if (mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1] != digest) {
+      // Bad digest.
+#ifdef SSL3_DEBUG
+      werror("Failed MAC-verification!!\n");
+#endif
+#ifdef SSL3_DEBUG_CRYPT
+      werror("Expected digest: %O\n"
+	     "Calculated digest: %O\n"
+	     "Seqence number: %O\n",
+	     digest,
+	     mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1],
+	     seq_num);
+#endif
+      return alert(ALERT_fatal, ALERT_bad_record_mac,
+		   "Bad MAC-verification.\n");
+    }
+    seq_num++;
+    hmac_size = 0;
+  }
+
   if (crypt)
   {
 #ifdef SSL3_DEBUG_CRYPT
@@ -179,7 +203,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
     packet->fragment = packet->fragment[tls_iv..];
   }
 
-  if (mac)
+  if (hmac_size)
   {
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.State: Trying mac verification...\n");
@@ -193,6 +217,9 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
     *
     *       This is to alleviate the "Lucky Thirteen" attack:
     *       http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
+    *
+    * NB: This is not needed in encrypt-then-mac mode, since we
+    *     always MAC the entire block.
     */
     int block_size = mac->block_size();
     string pad_string = "\0"*block_size;
@@ -252,10 +279,12 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
     packet->fragment = [string]compress(packet->fragment);
   }
 
-  if (mac) {
-    digest = mac->hash_packet(packet, seq_num);
-    if (session->truncated_hmac)
-      digest = digest[..9];
+  int hmac_size = mac && (session->truncated_hmac ? 10 :
+			  session->cipher_spec?->hash_size);
+
+  if (mac && !session->encrypt_then_mac) {
+    digest = mac->hash_packet(packet, seq_num)[..hmac_size-1];
+    hmac_size = 0;
   } else
     digest = "";
 
@@ -314,7 +343,13 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
   }
   else
     packet->fragment += digest;
-  
+
+  if (hmac_size) {
+    // Encrypt-then-MAC mode.
+    digest = mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1];
+    packet->fragment += digest;
+  }
+
   seq_num++;
 
   return [object(Alert)]packet->check_size(version, 2048) || packet;
