@@ -37,9 +37,11 @@ class MACAlgorithm {
   //!   @[Packet] to generate a MAC hash for.
   //! @param seq_num
   //!   Sequence number for the packet in the stream.
+  //! @adjust_len
+  //!   Added to @tt{sizeof(packet)@} to get the packet length.
   //! @returns
   //!   Returns the MAC hash for the @[packet].
-  string hash_packet(object packet, int seq_num);
+  string hash_packet(object packet, int seq_num, int|void adjust_len);
 
   //! Creates a HMAC hash of the @[data] with the underlying hash
   //! algorithm.
@@ -1039,10 +1041,11 @@ class MACsha
     return algorithm->hash(data);
   }
 
-  string(8bit) hash_packet(object packet, int seq_num)
+  string(8bit) hash_packet(object packet, int seq_num, int|void adjust_len)
   {
     string s = sprintf("%8c%c%2c", seq_num,
-		       packet->content_type, sizeof(packet->fragment));
+		       packet->content_type,
+		       sizeof(packet->fragment) + adjust_len);
     Crypto.Hash.State h = algorithm();
     h->update(secret);
     h->update(pad_1);
@@ -1102,11 +1105,12 @@ class MAChmac_sha {
     return hmac(data);
   }
 
-  string hash_packet(object packet, int seq_num) {
+  string hash_packet(object packet, int seq_num, int|void adjust_len)
+  {
     hmac->update( sprintf("%8c%c%2c%2c", seq_num,
                           packet->content_type,
                           packet->protocol_version,
-                          sizeof(packet->fragment)));
+                          sizeof(packet->fragment) + adjust_len));
     hmac->update( packet->fragment );
     return hmac->digest();
   }
