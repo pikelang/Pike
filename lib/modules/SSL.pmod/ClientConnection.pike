@@ -97,6 +97,11 @@ Packet client_hello(string(8bit)|void server_name)
     return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
+  ext (EXTENSION_encrypt_then_mac, context->encrypt_then_mac) {
+    // draft-ietf-tls-encrypt-then-mac
+    return ADT.struct();
+  };
+
   ext (EXTENSION_signature_algorithms, client_version >= PROTOCOL_TLS_1_2) {
     // RFC 5246 7.4.1.4.1:
     // If the client supports only the default hash and signature algorithms
@@ -377,6 +382,30 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      session->heartbeat_mode = [int(0..1)]hb_mode;
 	    }
 	    break;
+
+	  case EXTENSION_encrypt_then_mac:
+	    {
+	      if (context->encrypt_then_mac) {
+		if (sizeof(extension_data)) {
+		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+				    "Encrypt-then-MAC: Invalid extension.\n"));
+		  break;
+		}
+		if (((sizeof(CIPHER_SUITES[cipher_suite] == 3) &&
+		      (< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[suite][1]])) ||
+		    ((sizeof(CIPHER_SUITES[suite]) == 4) &&
+		     (CIPHER_SUITES[suite][3] != MODE_cbc))) {
+		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+				    "Encrypt-then-MAC: Invalid for selected suite.\n"));
+		}
+
+		SSL3_DEBUG_MSG("Encrypt-then-MAC: Enabled.\n");
+		session->encrypt_then_mac = 1;
+		break;
+	      }
+	      /* We didn't request the extension, so complain loudly. */
+	    }
+	    /* FALL_THROUGH */
 
 	  default:
 	    // RFC 5246 7.4.1.4:
