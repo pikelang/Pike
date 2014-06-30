@@ -52,6 +52,7 @@
  *   Multiple Certificates	RFC 6961
  *   Certificate Transparency	RFC 6962
  *   ECC Brainpool Curves	RFC 7027
+ *   AES-CCM ECC Suites for TLS	RFC 7251
  *
  *   Next Protocol Negotiation  Google technical note: nextprotoneg
  *   Application Layer Protocol Negotiation  draft-ietf-tls-applayerprotoneg
@@ -675,6 +676,11 @@ constant TLS_psk_with_aes_128_ccm_8		= 0xc0a8;	// RFC 6655
 constant TLS_psk_with_aes_256_ccm_8		= 0xc0a9;	// RFC 6655
 constant TLS_psk_dhe_with_aes_128_ccm_8		= 0xc0aa;	// RFC 6655
 constant TLS_psk_dhe_with_aes_256_ccm_8		= 0xc0ab;	// RFC 6655
+constant TLS_ecdhe_ecdsa_with_aes_128_ccm	= 0xc0ac;	// RFC 7251
+constant TLS_ecdhe_ecdsa_with_aes_256_ccm	= 0xc0ad;	// RFC 7251
+constant TLS_ecdhe_ecdsa_with_aes_128_ccm_8	= 0xc0ae;	// RFC 7251
+constant TLS_ecdhe_ecdsa_with_aes_256_ccm_8	= 0xc0af;	// RFC 7251
+
 constant TLS_ecdhe_rsa_with_chacha20_poly1305_sha256 = 0xcc13;  // draft-agl-tls-chacha20poly1305-02
 constant TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256 = 0xcc14;// draft-agl-tls-chacha20poly1305-02
 constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls-chacha20poly1305-02
@@ -868,6 +874,14 @@ constant CIPHER_SUITES =
    TLS_ecdhe_rsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_rsa, CIPHER_3des, HASH_sha }),
    TLS_ecdhe_rsa_with_aes_128_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha }),
    TLS_ecdhe_rsa_with_aes_256_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha }),
+
+   // Suites from RFC 7251
+   // These are AEAD suites, and thus not valid for TLS prior to TLS 1.2.
+   TLS_ecdhe_ecdsa_with_aes_128_ccm :	({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_ccm }),
+TLS_ecdhe_ecdsa_with_aes_256_ccm :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha256, MODE_ccm }),
+TLS_ecdhe_ecdsa_with_aes_128_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
+TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
+
 #endif /* Crypto.ECC.Curve */
 
 

@@ -186,6 +186,7 @@ test_tests([[
       array(int) expected = UNDEFINED;
       if ((hash == -1) && (< MODE_ccm, MODE_ccm_8 >)[mode]) {
 	// RFC 6655 3.
+	// RFC 7251 2.
 	hash = HASH_sha256;
       }
       if ((ke >= 0) && (cipher >= 0) && (hash >= 0)) {
