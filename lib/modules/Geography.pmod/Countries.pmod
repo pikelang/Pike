@@ -2,7 +2,7 @@
 
 mapping _continents=
 ([ 
-   ","  "Europe":
+   "Europe":
    ({ "AD","AL","AT","BA","BE","BG","BY","CH","CZ",
       "DE","DK","EE","ES","FI","FO","FR","GB","GE","GI",
       "GR","HR","HU","IE","IS","IT","JE","LI","LT","LU",
