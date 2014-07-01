@@ -52,6 +52,7 @@
  *   Multiple Certificates	RFC 6961
  *   Certificate Transparency	RFC 6962
  *   ECC Brainpool Curves	RFC 7027
+ *   Raw Public Keys in (D)TLS	RFC 7250
  *   AES-CCM ECC Suites for TLS	RFC 7251
  *
  *   Next Protocol Negotiation  Google technical note: nextprotoneg
@@ -1143,6 +1144,13 @@ enum FragmentLength {
   FRAGMENT_2048	= 3,
   FRAGMENT_4096	= 4,
 }
+
+//! Certificate format types as per RFC 6091 and RFC 7250.
+enum CertificateType {
+  CERTTYPE_x509 = 0,		// RFC 6091
+  CERTTYPE_openpgp = 1,		// RFC 6091
+  CERTTYPE_raw_public_key = 2,	// RFC 7250
+};
 
 constant EXTENSION_server_name			= 0;		// RFC 6066
 constant EXTENSION_max_fragment_length		= 1;		// RFC 6066
