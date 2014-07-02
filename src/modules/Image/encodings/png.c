@@ -1572,7 +1572,7 @@ static void image_png_encode(INT32 args)
    if (!img->img)
       PIKE_ERROR("Image.PNG.encode", "No image.\n", sp, args);
 
-   if (args>1)
+   if ((args>1) && !IS_UNDEFINED(sp + 1-args))
    {
      struct svalue *s;
 
