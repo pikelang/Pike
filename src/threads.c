@@ -433,7 +433,6 @@ static void f__check_threads_swaps (INT32 args)
 
 #define SET_LOCKING_THREAD 0
 #define UNSET_LOCKING_THREAD 0
-static INLINE void check_interpreter_lock (DLOC_DECL) {}
 
 #endif
 
