@@ -111,19 +111,6 @@ static INLINE int getrgb(struct image *img,
 }
 
 
-static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
-{
-   INT32 i;
-   if (args-args_start<3) return 0;
-   for (i=0; i<3; i++)
-      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
-         Pike_error("Illegal r,g,b argument to %s\n",name);
-   rgb->r=sp[-args+args_start].u.integer;
-   rgb->g=sp[1-args+args_start].u.integer;
-   rgb->b=sp[2-args+args_start].u.integer;
-   return 1;
-}
-
 /** end internals **/
 
 

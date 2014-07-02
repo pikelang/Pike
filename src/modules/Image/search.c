@@ -115,7 +115,6 @@ static void chrono(char *x)
 **!	<b>experimental status</b>; may not be exact the same
 **!	output in later versions
 */
-static INLINE int sq(int a) { return a*a; }
 static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 /* phase-image creating functions */

@@ -95,7 +95,6 @@ static void chrono(char *x)
 **!	experimental status; may not be exact the same
 **!	output in later versions
 */
-static INLINE int sq(int a) { return a*a; }
 static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 static void _image_orient(struct image *source,
@@ -134,11 +133,6 @@ CHRONO("start");
      = \
   (COLORTYPE) \
      my_abs( s[(x+xd)+(y+yd)*xz].CO - s[(x-xd)+(y-yd)*xz].CO )
-
-	    /*
-	      sqrt( ( sq( s[(x-xd)+(y-yd)*xz].CO - s[x+y*xz].CO ) + \
-	      sq( s[(x+xd)+(y+yd)*xz].CO - s[x+y*xz].CO ) ) / 2.0 )
-	    */
 
 	    FOOBAR(r);
 	    FOOBAR(g);
