@@ -151,9 +151,9 @@ struct svalue
 #define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE(SVAL, TYPE)
 #else
 #if PIKE_BYTEORDER == 1234
-#define TYPE_SUBTYPE(X,Y) ((X)|((Y)<<16))
+#define TYPE_SUBTYPE(X,Y) ((unsigned int)(X)|((unsigned int)(Y)<<16))
 #else
-#define TYPE_SUBTYPE(X,Y) ((Y)|((X)<<16))
+#define TYPE_SUBTYPE(X,Y) ((unsigned int)(Y)|((unsigned int)(X)<<16))
 #endif
 
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE) \
