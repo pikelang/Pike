@@ -315,6 +315,23 @@ test_compile_any([[
   }
 ]])
 
+define(test_string_range,[[
+    test_any([[
+        string s = (string) ({ $1, $1 });
+        if (!arrayp(String.range(s))) return "huh?"; // dont optimize this, it forces string range check
+        return search(s, $1);
+    ]], 0)
+]])
+
+test_string_range(254);
+test_string_range(255);
+test_string_range((1<<16)-1);
+test_string_range((1<<16)+1);
+test_string_range((1<<29)-1);
+test_string_range((1<<29)+1);
+test_string_range((1<<31)-1);
+test_string_range(-(1<<31));
+
 dnl number of variables/scope, number of scopes, expect_compiler_error
 define(test_scopes,[[
   test_any([[
