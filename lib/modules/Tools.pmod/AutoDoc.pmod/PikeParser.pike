@@ -400,16 +400,25 @@ StringType|IntType parseRange(StringType|IntType s)
   string tk;
   if (peekToken() == "(") {
     readToken();
-    if (peekToken() != "..")
+    switch (peekToken()) {
+    case "zero":
+      eat("zero");
+      s->min = s->max = "0";
+      eat(")");
+      return s;
+    case "..":
+      break;
+    default:
       s->min = eatLiteral();
 
-    if( (<"bit","bits">)[(tk = peekToken())] )
-    {
+      if( (<"bit","bits">)[(tk = peekToken())] )
+      {
         eat(tk);
         eat(")");
         s->max = (string)((1<<(int)s->min)-1);
         s->min = "0";
         return s;
+      }
     }
 
     eat("..");
