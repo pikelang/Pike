@@ -8719,7 +8719,7 @@ void init_types(void)
   if( !type_stack )
     type_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
   if( !pike_type_mark_stack )
-    pike_type_mark_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
+    pike_type_mark_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE / 4);
 
   Pike_compiler->type_stackp = type_stack;
   Pike_compiler->pike_type_mark_stackp = pike_type_mark_stack;
