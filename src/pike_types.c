@@ -8701,13 +8701,20 @@ void init_types(void)
   /* if possible, use mmap with on-demand allocation */
 #if defined(MAP_ANONYMOUS)
   type_stack = mmap( NULL, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE,
-		     PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE,0,0);
-  if( type_stack )
+		     PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+  if( type_stack != MAP_FAILED ) {
     type_stack_mmap = 1;
-  pike_type_mark_stack = mmap( NULL, sizeof(struct pike_type **)*PIKE_TYPE_STACK_SIZE>>2,
-			       PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
-  if( pike_type_mark_stack )
+  } else {
+    type_stack = NULL;
+  }
+  pike_type_mark_stack =
+    mmap( NULL, sizeof(struct pike_type **)*PIKE_TYPE_STACK_SIZE>>2,
+	  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+  if( pike_type_mark_stack != MAP_FAILED ) {
     pike_type_mark_stack_mmap = 1;
+  } else {
+    pike_type_mark_stack = NULL;
+  }
 #endif
   if( !type_stack )
     type_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
