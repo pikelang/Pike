@@ -6107,6 +6107,7 @@ void identify_loop_visit_leave(void *thing, int type, void *extra)
 }
 
 /*! @decl array(mixed) identify_cycle(mixed x)
+ *! @belongs Pike
  *!
  *! Identify reference cycles in Pike datastructures.
  *!
