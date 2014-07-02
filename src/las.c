@@ -4941,7 +4941,10 @@ static void optimize(node *n)
 
     switch(n->token)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wparentheses-equality"
 #include "treeopt.h"
+#pragma clang diagnostic pop
     use_car:
       ADD_NODE_REF2(CAR(n), tmp1 = CAR(n));
       goto use_tmp1;
