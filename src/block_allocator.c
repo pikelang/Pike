@@ -413,7 +413,7 @@ static INLINE int bv_get(struct bitvector * bv, size_t n) {
     return !!(bv->v[c] & (BV_ONE << bit));
 }
 
-static INLINE size_t bv_ctz(struct bitvector * bv, size_t n) {
+static size_t bv_ctz(struct bitvector * bv, size_t n) {
     size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     bv_int_t * _v = bv->v + c;
@@ -436,7 +436,7 @@ RET:
 }
 
 #ifdef BA_DEBUG
-static INLINE void bv_print(struct bitvector * bv) {
+static void bv_print(struct bitvector * bv) {
     size_t i;
     for (i = 0; i < bv->length; i++) {
 	fprintf(stderr, "%d", bv_get(bv, i));
@@ -504,25 +504,29 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
     return b;
 }
 
-static INLINE void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
 #ifdef USE_VALGRIND
+static void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
     while (b && b != BA_ONE) {
         PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
         PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
         b = b->next;
     }
-#endif
 }
+#else
+#define ba_list_defined(a, b)
+#endif
 
-static INLINE void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
 #ifdef USE_VALGRIND
+static void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
     while (b && b != BA_ONE) {
         struct ba_block_header * next = b->next;
         PIKE_MEMPOOL_FREE(a, b, a->l.block_size);
         b = next;
     }
-#endif
 }
+#else
+#define ba_list_undefined(a, b)
+#endif
 
 /*
  * This function allows iteration over all allocated blocks. Some things are not allowed:
