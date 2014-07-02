@@ -54,14 +54,6 @@ static void f_fuse_cmd_process( INT32 UNUSED(args) )
     push_int(0);
 }
 
-static void push_fuse_cmd(struct fuse_cmd *cmd, struct fuse *f)
-{
-    struct object *o = clone_object( fuse_cmd_program, 0);
-    ((struct fuse_cmd_storage *)o->storage)->cmd = cmd;
-    ((struct fuse_cmd_storage *)o->storage)->f = f;
-    push_object( o );
-}
-
 static struct object *global_fuse_obj; // There Can Be Only One
 
 #define DEFAULT_ERRNO() do{if((TYPEOF(Pike_sp[-1]) == T_INT) && Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
@@ -322,7 +314,7 @@ static int pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
 }
 
 static int pf_fsync(const char *path, int isdatasync,
-                     struct fuse_file_info *fi)
+                     struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( isdatasync );
@@ -397,26 +389,6 @@ static int pf_removexattr(const char *path, const char *name)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_flush( const char *path, struct fuse_file_info *fi)
-{
-    push_text( path );
-    push_int( fi->flags );
-    apply( global_fuse_obj, "flush", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
-static int pf_opendir( const char *path, struct fuse_file_info *fi)
-{
-    push_text( path );
-    push_int( fi->flags );
-    apply( global_fuse_obj, "opendir", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
 static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     push_text( path );
@@ -438,33 +410,6 @@ static int pf_access( const char *path, int mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_releasedir( const char *path, struct fuse_file_info *UNUSED(fi))
-{
-    push_text( path );
-    apply( global_fuse_obj, "releasedir", 1 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
-static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *UNUSED(fi))
-{
-    push_text( path );
-    push_int( nometa );
-    apply( global_fuse_obj, "fsyncdir", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
-/* static int pf_readdir( const char *path,  */
-/* 		       struct fuse_fill_dir_t fill, off_t off,  */
-/* 		       struct fuse_file_info *info ) */
-/* { */
-/*     push_text( path ); */
-/*     push_int( off ); */
-    
-/* } */
 
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
@@ -485,17 +430,12 @@ static struct fuse_operations pike_fuse_oper = {
     .read	= pf_read,
     .write	= pf_write,
     .statfs	= pf_statfs,
-/*     .flush	= pf_flush, */
     .release	= pf_release,
     .fsync	= pf_fsync,
     .setxattr	= pf_setxattr,
     .getxattr	= pf_getxattr,
     .listxattr	= pf_listxattr,
     .removexattr= pf_removexattr,
-/*     .opendir    = pf_opendir, */
-/*     .readdir    = pf_readdir, */
-/*     .releasedir = pf_releasedir, */
-/*     .fsyncdir   = pf_fsyncdir, */
     .access     = pf_access,
     .create     = pf_creat, 
 };
