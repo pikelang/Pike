@@ -102,16 +102,31 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
   {
     if( str->flags & STRING_CONTENT_CHECKED )
     {
-      s_min = str->min;
-      s_max = str->max;
+      switch (str->size_shift) {
+      case eightbit:
+        s_min = str->min;
+        s_max = str->max;
+        break;
+      case sixteenbit:
+        s_min = str->min;
+        s_max = str->max;
+        s_min *= 256;
+        s_max *= 256;
+        s_max += 255;
+        break;
+      case thirtytwobit: {
+        unsigned INT32 tmp;
 
-      if( str->size_shift )
-      {
-        s_min <<= 8 * str->size_shift;
-        s_max <<= 8 * str->size_shift;
-        if( s_min )
-          s_min -= (1<<(8*str->size_shift))-1;
-        s_max += str->size_shift == 1 ? 255 : 65535;
+        tmp = str->min;
+        tmp *= (1 << 24);
+        s_min = tmp;
+
+        tmp = str->max;
+        tmp *= (1 << 24);
+        tmp += (1 << 24) - 1;
+        s_max = tmp;
+        break;
+      }
       }
     }
     else
@@ -167,8 +182,8 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
            if( *p < s_min ) s_min = *p;
          }
        }
-       str->min = (s_min+255) >> 8;
-       str->max = (s_max+255) >> 8;
+       str->min = s_min / 256;
+       str->max = s_max / 256;
        break;
 
       case 2:
@@ -180,8 +195,8 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
            if( *p < s_min ) s_min = *p;
          }
        }
-       str->min = (s_min+65535) >> 16;
-       str->max = (s_max+65535) >> 16;
+       str->min = (unsigned INT32)s_min / (1 << 24);
+       str->max = (unsigned INT32)s_max / (1 << 24);
        break;
     }
   }
