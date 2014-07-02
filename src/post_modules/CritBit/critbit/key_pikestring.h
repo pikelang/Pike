@@ -4,7 +4,7 @@
 #include "pike_int_types.h"
 
 typedef struct pike_string * CB_NAME(string);
-typedef p_wchar2 CB_NAME(char);
+typedef unsigned INT32 CB_NAME(char);
 
 #ifdef cb_string
 # undef cb_string
