@@ -235,7 +235,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
     return NULL;
 }
 
-static void jvm_vacate_env(struct object *jvm, JNIEnv *env)
+static void jvm_vacate_env(struct object *UNUSED(jvm), JNIEnv *UNUSED(env))
 {
 }
 
@@ -338,14 +338,14 @@ static void push_java_anyobj(jobject o, struct object *jvm, JNIEnv *env)
   add_ref(jvm);
 }
 
-static void init_jobj_struct(struct object *o)
+static void init_jobj_struct(struct object *UNUSED(o))
 {
   struct jobj_storage *j = THIS_JOBJ;
   j->jvm = NULL;
   j->jobj = 0;
 }
 
-static void exit_jobj_struct(struct object *o)
+static void exit_jobj_struct(struct object *UNUSED(o))
 {
   JNIEnv *env;
   struct jobj_storage *j = THIS_JOBJ;
@@ -358,7 +358,7 @@ static void exit_jobj_struct(struct object *o)
   }
 }
 
-static void jobj_gc_check(struct object *o)
+static void jobj_gc_check(struct object *UNUSED(o))
 {
   struct jobj_storage *j = THIS_JOBJ;
 
@@ -366,7 +366,7 @@ static void jobj_gc_check(struct object *o)
     gc_check(j->jvm);
 }
 
-static void jobj_gc_recurse(struct object *o)
+static void jobj_gc_recurse(struct object *UNUSED(o))
 {
   struct jobj_storage *j = THIS_JOBJ;
 
@@ -508,7 +508,7 @@ static void f_jobj_get_class(INT32 args)
 
 /* Methods */
 
-static void init_method_struct(struct object *o)
+static void init_method_struct(struct object *UNUSED(o))
 {
   struct method_storage *m=THIS_METHOD;
 
@@ -517,7 +517,7 @@ static void init_method_struct(struct object *o)
   m->sig = NULL;
 }
 
-static void exit_method_struct(struct object *o)
+static void exit_method_struct(struct object *UNUSED(o))
 {
   struct method_storage *m=THIS_METHOD;
 
@@ -529,7 +529,7 @@ static void exit_method_struct(struct object *o)
     free_object(m->class);
 }
 
-static void method_gc_check(struct object *o)
+static void method_gc_check(struct object *UNUSED(o))
 {
   struct method_storage *m = THIS_METHOD;
 
@@ -537,7 +537,7 @@ static void method_gc_check(struct object *o)
     gc_check(m->class);
 }
 
-static void method_gc_recurse(struct object *o)
+static void method_gc_recurse(struct object *UNUSED(o))
 {
   struct method_storage *m = THIS_METHOD;
 
@@ -773,8 +773,8 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
   }
 }
 
-static void free_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
-		       struct object *jvm, JNIEnv *env)
+static void free_jargs(jvalue *jargs, INT32 args, char *dorelease, char *UNUSED(sig),
+		       struct object *UNUSED(jvm), JNIEnv *env)
 {
   INT32 i;
   int do_free_jargs = 1;
@@ -1133,7 +1133,7 @@ static void f_call_nonvirtual(INT32 args)
 
 /* Fields */
 
-static void init_field_struct(struct object *o)
+static void init_field_struct(struct object *UNUSED(o))
 {
   struct field_storage *f=THIS_FIELD;
 
@@ -1142,7 +1142,7 @@ static void init_field_struct(struct object *o)
   f->sig = NULL;
 }
 
-static void exit_field_struct(struct object *o)
+static void exit_field_struct(struct object *UNUSED(o))
 {
   struct field_storage *f=THIS_FIELD;
 
@@ -1154,7 +1154,7 @@ static void exit_field_struct(struct object *o)
     free_object(f->class);
 }
 
-static void field_gc_check(struct object *o)
+static void field_gc_check(struct object *UNUSED(o))
 {
   struct field_storage *f = THIS_FIELD;
 
@@ -1162,7 +1162,7 @@ static void field_gc_check(struct object *o)
     gc_check(f->class);
 }
 
-static void field_gc_recurse(struct object *o)
+static void field_gc_recurse(struct object *UNUSED(o))
 {
   struct field_storage *f = THIS_FIELD;
 
@@ -1612,8 +1612,8 @@ static ffi_type *get_ffi_type(char p)
   }
 }
 
-static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
-		       int args, int flt_args, int dbl_args,
+static void *make_stub(struct cpu_context *ctx, void *data, int statc, int UNUSED(rt),
+		       int args, int UNUSED(flt_args), int UNUSED(dbl_args),
 		       const char *signature)
 {
   ffi_status s;
@@ -2498,7 +2498,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
 			 flt_args, dbl_args, sig->str);
 }
 
-static void init_natives_struct(struct object *o)
+static void init_natives_struct(struct object *UNUSED(o))
 {
   struct natives_storage *n = THIS_NATIVES;
 
@@ -2509,7 +2509,7 @@ static void init_natives_struct(struct object *o)
   n->jnms = NULL;
 }
 
-static void exit_natives_struct(struct object *o)
+static void exit_natives_struct(struct object *UNUSED(o))
 {
   JNIEnv *env;
   struct natives_storage *n = THIS_NATIVES;
@@ -2542,7 +2542,7 @@ static void exit_natives_struct(struct object *o)
   }
 }
 
-static void natives_gc_check(struct object *o)
+static void natives_gc_check(struct object *UNUSED(o))
 {
   struct natives_storage *n = THIS_NATIVES;
 
@@ -2557,7 +2557,7 @@ static void natives_gc_check(struct object *o)
   }
 }
 
-static void natives_gc_recurse(struct object *o)
+static void natives_gc_recurse(struct object *UNUSED(o))
 {
   struct natives_storage *n = THIS_NATIVES;
 
@@ -3224,7 +3224,7 @@ static void f_javaarray_values(INT32 args)
 
 #ifdef _REENTRANT
 
-static void init_att_struct(struct object *o)
+static void init_att_struct(struct object *UNUSED(o))
 {
   struct att_storage *att = THIS_ATT;
   att->jvm = NULL;
@@ -3232,7 +3232,7 @@ static void init_att_struct(struct object *o)
   clear_svalues(&att->thr, 1);
 }
 
-static void exit_att_struct(struct object *o)
+static void exit_att_struct(struct object *UNUSED(o))
 {
   struct att_storage *att = THIS_ATT;
 
@@ -3254,7 +3254,7 @@ static void exit_att_struct(struct object *o)
   free_svalue(&att->thr);
 }
 
-static void att_gc_check(struct object *o)
+static void att_gc_check(struct object *UNUSED(o))
 {
   struct att_storage *att = THIS_ATT;
 
@@ -3263,7 +3263,7 @@ static void att_gc_check(struct object *o)
   gc_check_svalues(&att->thr, 1);
 }
 
-static void att_gc_recurse(struct object *o)
+static void att_gc_recurse(struct object *UNUSED(o))
 {
   struct att_storage *att = THIS_ATT;
 
@@ -3303,13 +3303,13 @@ static void f_att_create(INT32 args)
 
 /* Monitor */
 
-static void init_monitor_struct(struct object *o)
+static void init_monitor_struct(struct object *UNUSED(o))
 {
   struct monitor_storage *m = THIS_MONITOR;
   m->obj = NULL;
 }
 
-static void exit_monitor_struct(struct object *o)
+static void exit_monitor_struct(struct object *UNUSED(o))
 {
   JNIEnv *env;
   struct monitor_storage *m = THIS_MONITOR;
@@ -3331,7 +3331,7 @@ static void exit_monitor_struct(struct object *o)
     free_object(m->obj);
 }
 
-static void monitor_gc_check(struct object *o)
+static void monitor_gc_check(struct object *UNUSED(o))
 {
   struct monitor_storage *m = THIS_MONITOR;
 
@@ -3339,7 +3339,7 @@ static void monitor_gc_check(struct object *o)
     gc_check(m->obj);
 }
 
-static void monitor_gc_recurse(struct object *o)
+static void monitor_gc_recurse(struct object *UNUSED(o))
 {
   struct monitor_storage *m = THIS_MONITOR;
 
@@ -3515,7 +3515,7 @@ static void f_create(INT32 args)
   push_int(0);
 }
 
-static void init_jvm_struct(struct object *o)
+static void init_jvm_struct(struct object *UNUSED(o))
 {
   struct jvm_storage *j = THIS_JVM;
 
@@ -3535,7 +3535,7 @@ static void init_jvm_struct(struct object *o)
 #endif /* _REENTRANT */
 }
 
-static void exit_jvm_struct(struct object *o)
+static void exit_jvm_struct(struct object *UNUSED(o))
 {
   struct jvm_storage *j = THIS_JVM;
   JNIEnv *env = NULL;
@@ -3578,7 +3578,7 @@ static void exit_jvm_struct(struct object *o)
 }
 
 #ifdef _REENTRANT
-static void jvm_gc_check(struct object *o)
+static void jvm_gc_check(struct object *UNUSED(o))
 {
   struct jvm_storage *j = THIS_JVM;
 
@@ -3586,7 +3586,7 @@ static void jvm_gc_check(struct object *o)
     gc_check(j->tl_env);
 }
 
-static void jvm_gc_recurse(struct object *o)
+static void jvm_gc_recurse(struct object *UNUSED(o))
 {
   struct jvm_storage *j = THIS_JVM;
 
