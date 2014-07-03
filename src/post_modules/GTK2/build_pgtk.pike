@@ -73,7 +73,6 @@ string make_c_string( string from )
      case '.':
      case 'a'..'z':
      case 'A'..'Z':
-     case 0300..0376: // 377 breaks some versions of gcc.
      case '_': case ' ':
        line += from[i..i];
        break;
