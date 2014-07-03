@@ -6111,11 +6111,21 @@ void identify_loop_visit_leave(void *thing, int type, void *extra)
  *!
  *! Identify reference cycles in Pike datastructures.
  *!
+ *! This function is typically used to identify why certain
+ *! datastructures need the @[gc] to run to be freed.
+ *!
+ *! @param x
+ *!   Value that is believed to be involved in a reference cycle.
+ *!
  *! @returns
- *!   Returns @expr{UNDEFINED@} if @[x] is not member of a reference cycle.
- *!   Otherwise returns an array identifying a cycle with @[x] as the first
- *!   element, and where the elements refer to each other in order, and the
- *!   last element refers to the first.
+ *!   @mixed
+ *!     @type zero
+ *!       Returns @expr{UNDEFINED@} if @[x] is not member of a reference cycle.
+ *!     @type array(mixed)
+ *!       Otherwise returns an array identifying a cycle with @[x] as the first
+ *!       element, and where the elements refer to each other in order, and the
+ *!       last element refers to the first.
+ *!   @endmixed
  */
 void f_identify_cycle(INT32 args)
 {
