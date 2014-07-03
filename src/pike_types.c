@@ -2530,7 +2530,7 @@ static void low_describe_type(struct pike_type *t)
       /* FIXME: Should be renumbered for correct parenthesing. */
       my_strcat("(");
       my_describe_type(t->car);
-      my_strcat(")°(");
+      my_strcat(")\260(");
       my_describe_type(t->cdr);
       my_strcat(")");
       break;
