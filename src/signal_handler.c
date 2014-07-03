@@ -1178,7 +1178,11 @@ void forkd(int fd)
 
 #ifdef USE_SIGCHILD
 
+#ifdef SIGNAL_ONESHOT
+static RETSIGTYPE receive_sigchild(int signum)
+#else
 static RETSIGTYPE receive_sigchild(int UNUSED(signum))
+#endif
 {
   pid_t pid;
   WAITSTATUSTYPE status;
