@@ -775,7 +775,10 @@ static void stat_cast(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
    if (TYPEOF(sp[-args]) == T_STRING && !sp[-args].u.string->size_shift)
    {
-      if (strcmp(sp[-args].u.string->str,"array")==0)
+      /* NB: We only look at the prefix, and let the main cast function
+       *     handle any subtypes.
+       */
+      if (!strncmp(sp[-args].u.string->str, "array", 5))
       {
 	 pop_n_elems(args);
 	 push_int(0);
@@ -783,7 +786,7 @@ static void stat_cast(INT32 args)
 	 stat_index(2);
 	 return;
       }
-      if (strcmp(sp[-args].u.string->str,"mapping")==0)
+      if (!strncmp(sp[-args].u.string->str, "mapping", 7))
       {
         stat_indices(0);
         stat_values(0);
@@ -793,7 +796,7 @@ static void stat_cast(INT32 args)
       }
    }
    SIMPLE_BAD_ARG_ERROR("Stat cast",1,
-			"string(\"array\")");
+			"string(\"array\"|\"mapping\")");
 }
 
 static void stat__sprintf(INT32 args)
