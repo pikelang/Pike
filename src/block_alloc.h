@@ -127,37 +127,6 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
   return p;								     \
 }									     \
 									     \
-static INLINE struct DATA *						     \
- PIKE_CONCAT3(just_find_,DATA,_unlocked)(void *ptr,			     \
-					 PIKE_HASH_T hval)		     \
-{									     \
-  struct DATA *p;							     \
-  p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
-  if(!p || p->PTR_HASH_ALLOC_DATA == ptr)				     \
-  {                                                                          \
-    return p;                                                                \
-  }                                                                          \
-  while((p=p->BLOCK_ALLOC_NEXT)) 	                                     \
-  {									     \
-    if(p->PTR_HASH_ALLOC_DATA==ptr) return p;				     \
-  }									     \
-  return 0;								     \
-}									     \
-									     \
-static struct DATA *PIKE_CONCAT(just_find_,DATA)(void *ptr)		     \
-{									     \
-  struct DATA *p;                                                            \
-  PIKE_HASH_T hval = ptr_hashfun(ptr);			                     \
-  if(!PIKE_CONCAT(DATA,_hash_table)) {                                       \
-    return 0;                                                                \
-  }                                                                          \
-  hval &= (PIKE_HASH_T)PIKE_CONCAT(DATA,_hash_table_size) - 1;		     \
-  p=PIKE_CONCAT3(just_find_,DATA,_unlocked)(ptr, hval);			     \
-  return p;								     \
-}									     \
-									     \
-									     \
-									     \
 struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr)				     \
 {									     \
   struct DATA *p;							     \
