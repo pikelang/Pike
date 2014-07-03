@@ -138,9 +138,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX_768); prefix+=768; DONE;
       CASE(F_PREFIX_1024); prefix+=1024; DONE;
       CASE(F_PREFIX_24BITX256);
-        prefix += (pc++)[0]<<24;
+        prefix += (unsigned INT32)(pc++)[0]<<24;
       CASE(F_PREFIX_WORDX256);
-        prefix += (pc++)[0]<<16;
+        prefix += (unsigned INT32)(pc++)[0]<<16;
       CASE(F_PREFIX_CHARX256);
         prefix += (pc++)[0]<<8;
       DONE;
@@ -151,9 +151,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX2_768); prefix2+=768; DONE;
       CASE(F_PREFIX2_1024); prefix2+=1024; DONE;
       CASE(F_PREFIX2_24BITX256);
-        prefix2 += (pc++)[0]<<24;
+        prefix2 += (unsigned INT32)(pc++)[0]<<24;
       CASE(F_PREFIX2_WORDX256);
-        prefix2 += (pc++)[0]<<16;
+        prefix2 += (unsigned INT32)(pc++)[0]<<16;
       CASE(F_PREFIX2_CHARX256);
         prefix2 += (pc++)[0]<<8;
       DONE;
