@@ -354,8 +354,6 @@ static void f_decode_packbits_encoded(INT32 args)
      d.len = width * nelems;
      dest = begin_shared_string( d.len );
      d.str = (unsigned char *)dest->str;
-     if (ob.len < d.len)
-       Pike_error("Not enough space.\n");
      packbitsdecode( ob, d, d.len );
      push_string( end_shared_string( dest ) );
      break;
