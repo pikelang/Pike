@@ -828,6 +828,11 @@ cond_resolv( Image.PNG.encode, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
 ]])
 
+cond_resolv( Image.PSD.decode, [[
+  test_true( arrayp(Image.decode_layers(Stdio.read_bytes("SRCDIR/corner2.psd"),
+					([ "crop_to_bounds":1 ]))) )
+]])
+
 dnl ACK!  cond_resolv does not nest.  But if Gz.RLE or Gz.FIXED exists, it
 dnl means the Gz module is there, and in that case Image.PNG should be too...
 cond_resolv( Gz.RLE, [[
