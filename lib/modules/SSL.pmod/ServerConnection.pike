@@ -667,6 +667,18 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    secure_renegotiation = 1;
 	  }
 	}
+	if (has_value(cipher_suites, TLS_fallback_scsv)) {
+	  // draft-ietf-tls-downgrade-scsv 3:
+	  // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites and the
+	  // highest protocol version supported by the server is higher than
+	  // the version indicated in ClientHello.client_version, the server
+	  // MUST respond with an inappropriate_fallback alert.
+	  if (client_version < context->max_version) {
+	    send_packet(alert(ALERT_fatal, ALERT_inappropriate_fallback,
+			      "Too low client version.\n"));
+	    return -1;
+	  }
+	}
 
 #ifdef SSL3_DEBUG
 	if (sizeof(input))
