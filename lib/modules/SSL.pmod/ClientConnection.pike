@@ -46,6 +46,21 @@ Packet client_hello(string(8bit)|void server_name)
     // Use the backward-compat way of asking for
     // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
+
+    if (client_version < context->max_version) {
+      // Negotiating a version lower than the max supported version.
+      //
+      // draft-ietf-tls-downgrade-scsv 4:
+      // If a client sends a ClientHello.client_version containing a lower
+      // value than the latest (highest-valued) version supported by the
+      // client, it SHOULD include the TLS_FALLBACK_SCSV cipher suite value
+      // in ClientHello.cipher_suites.  (Since the cipher suite list in the
+      // ClientHello is ordered by preference, with the client's favorite
+      // choice first, signaling cipher suite values will generally appear
+      // after all cipher suites that the client actually intends to
+      // negotiate.)
+      cipher_suites += ({ TLS_fallback_scsv });
+    }
   }
   SSL3_DEBUG_MSG("Client ciphers:\n%s",
                  fmt_cipher_suites(cipher_suites));
