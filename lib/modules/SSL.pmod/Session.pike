@@ -79,7 +79,7 @@ int(0..1) truncated_hmac;
 //! RFC 6066 3.1 (SNI)
 string(8bit) server_name;
 
-//! The set of <hash, signature> combinations supported by the other end.
+//! The set of <hash, signature> combinations supported by the peer.
 //!
 //! Only used with TLS 1.2 and later.
 //!
