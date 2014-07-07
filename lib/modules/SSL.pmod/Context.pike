@@ -219,10 +219,23 @@ array(string(8bit)) advertised_protocols;
 //! @[File]. A value between 1 and @[Constants.PACKET_MAX_SIZE].
 int packet_max_size = PACKET_MAX_SIZE;
 
-// The signature algorithms to use. According to RFC 5246 7.4.2 all
-// certificates needs to be signed by any of the supported signature
-// algorithms. This trivially means that any combinaton that doesn't
-// have a PKCS identifier isn't allowed.
+//! The set of <hash, signature> combinations to use by us.
+//!
+//! Only used with TLS 1.2 and later.
+//!
+//! Defaults to all combinations supported by Pike except for MD5.
+//!
+//! This list is typically filtered by @[get_signature_algorithms()]
+//! to get rid of combinations not supported by the runtime.
+//!
+//! @note
+//!   According to RFC 5246 7.4.2 all certificates needs to be signed
+//!   by any of the supported signature algorithms. This trivially
+//!   means that any combinaton that doesn't have a PKCS identifier
+//!   isn't allowed.
+//!
+//! @seealso
+//!   @[get_signature_algorithms()]
 array(array(int)) signature_algorithms = ({
 #if constant(Crypto.SHA512)
 #if constant(Crypto.ECC.Curve)
@@ -253,6 +266,42 @@ array(array(int)) signature_algorithms = ({
   ({ HASH_sha, SIGNATURE_dsa }),
   ({ HASH_sha, SIGNATURE_rsa }),
 });
+
+//! Get the (filtered) set of locally supported signature algorithms.
+//!
+//! @seealso
+//!   @[signature_algorithms]
+array(array(int)) get_signature_algorithms(array(array(int))|void signature_algorithms)
+{
+  if (!signature_algorithms) {
+    signature_algorithms = this_program::signature_algorithms;
+  }
+
+#if constant(Crypto.ECC.Curve) && constant(Crypto.SHA512) && \
+  constant(Crypto.SHA384) && constant(Crypto.SHA224)
+  return signature_algorithms;
+#else
+  return filter(signature_algorithms,
+		lambda(array(int) pair) {
+		  [int hash, int sign] = pair;
+#if !constant(Crypto.ECC.Curve)
+		  if (sign == SIGNATURE_ecdsa) return 0;
+#endif
+		  if ((<
+#if !constant(Crypto.SHA512)
+			HASH_sha512,
+#endif
+#if !constant(Crypto.SHA384)
+			HASH_sha384,
+#endif
+#if !constant(Crypto.SHA224)
+			HASH_sha224,
+#endif
+		      >)[hash]) return 0;
+		  return 1;
+		});
+#endif
+}
 
 protected int cert_sort_key(CertificatePair cp)
 {

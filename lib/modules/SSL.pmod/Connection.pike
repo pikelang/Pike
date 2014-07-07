@@ -89,7 +89,7 @@ Alert alert(int(1..2) level, int(8bit) description,
 string(8bit) get_signature_algorithms()
 {
   ADT.struct sign_algs = ADT.struct();
-  foreach(context->signature_algorithms, [int hash, int sign])
+  foreach(context->get_signature_algorithms(), [int hash, int sign])
   {
     sign_algs->put_uint(hash, 1);
     sign_algs->put_uint(sign, 1);
