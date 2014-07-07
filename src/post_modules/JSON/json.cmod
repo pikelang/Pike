@@ -451,13 +451,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *! @[escape_string]
  */
 PIKEFUN string encode (int|float|string|array|mapping|object val,
-		       void|int flags, void|function|object|program|string callback)
+                       void|int flags, void|function|object|program|string callback,
+                       void|int base_indent )
   optflags OPT_TRY_OPTIMIZE;
 {
   struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
-  ctx.indent = (ctx.flags & HUMAN_READABLE ? 0 : -1);
+  ctx.indent = (ctx.flags & HUMAN_READABLE ? base_indent ? base_indent->u.integer : 0 : -1);
   ctx.callback = callback;
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
