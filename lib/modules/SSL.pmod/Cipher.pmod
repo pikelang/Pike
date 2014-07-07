@@ -37,7 +37,7 @@ class MACAlgorithm {
   //!   @[Packet] to generate a MAC hash for.
   //! @param seq_num
   //!   Sequence number for the packet in the stream.
-  //! @param adjust_len
+  //! @adjust_len
   //!   Added to @tt{sizeof(packet)@} to get the packet length.
   //! @returns
   //!   Returns the MAC hash for the @[packet].
