@@ -110,6 +110,26 @@ Identifier ecc_secp521r1_id = Identifier(1, 3, 132, 0, 35);
 Identifier ecc_sect571k1_id = Identifier(1, 3, 132, 0, 38);
 Identifier ecc_sect571r1_id = Identifier(1, 3, 132, 0, 39);
 
+/* Brainpool curves from RFC 5639. */
+protected Identifier ec_sign_id = Identifier(1, 3, 36, 3, 3, 2);
+Identifier ec_std_curves_and_generation_id = ec_sign_id->append(8);
+protected Identifier ec_curve_id = ec_std_curves_and_generation_id->append(1);
+protected Identifier ec_curve_ver1_id = ec_curve_id->append(1);
+Identifier brainpool_p160r1 = ec_curve_ver1_id->append(1);
+Identifier brainpool_p160t1 = ec_curve_ver1_id->append(2);
+Identifier brainpool_p192r1 = ec_curve_ver1_id->append(3);
+Identifier brainpool_p192t1 = ec_curve_ver1_id->append(4);
+Identifier brainpool_p224r1 = ec_curve_ver1_id->append(5);
+Identifier brainpool_p224t1 = ec_curve_ver1_id->append(6);
+Identifier brainpool_p256r1 = ec_curve_ver1_id->append(7);
+Identifier brainpool_p256t1 = ec_curve_ver1_id->append(8);
+Identifier brainpool_p320r1 = ec_curve_ver1_id->append(9);
+Identifier brainpool_p320t1 = ec_curve_ver1_id->append(10);
+Identifier brainpool_p384r1 = ec_curve_ver1_id->append(11);
+Identifier brainpool_p384t1 = ec_curve_ver1_id->append(12);
+Identifier brainpool_p521r1 = ec_curve_ver1_id->append(13);
+Identifier brainpool_p521t1 = ec_curve_ver1_id->append(14);
+
 /* For public key 
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
