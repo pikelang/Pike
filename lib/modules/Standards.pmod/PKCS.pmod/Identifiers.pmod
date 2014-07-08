@@ -92,6 +92,10 @@ Identifier ecdsa_sha512_id = Identifier(1, 2, 840, 10045, 4, 3, 4);
 
 /* For public key (unrestricted) from RFC 5480. */
 Identifier ec_id = Identifier(1, 2, 840, 10045, 2, 1);
+Identifier ec_public_key_id = ec_id;
+
+Identifier ec_dh_id = Identifier(1, 3, 132, 1, 12);
+Identifier ec_mqw_id = Identifier(1, 3, 132, 1, 13);
 
 /* Elliptic Curves from RFC 5480 */
 Identifier ecc_secp192r1_id = Identifier(1, 2, 840, 10045, 3, 1, 1);
