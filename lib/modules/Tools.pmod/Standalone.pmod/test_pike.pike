@@ -784,6 +784,20 @@ int main(int argc, array(string) argv)
 	      tmp = -1;
 	    }
 
+	    if (tmp != 1) {
+	      if ((verbose > 1) && !err) {
+		log_msg("Contitional %d%s failed:\n",
+			e+1, testline?" (line "+testline+")":"");
+		print_code( condition );
+	      }
+	    } else if (verbose > 5) {
+	      log_msg("Conditional %d%s succeeded.\n",
+		      e+1, testline?" (line "+testline+")":"");
+	      if (verbose > 9) {
+		print_code( condition );
+	      }
+	    }
+
 	    if(!tmp) tmp=-1;
 	    cond_cache[condition]=tmp;
 	  }
