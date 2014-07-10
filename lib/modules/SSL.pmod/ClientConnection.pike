@@ -327,6 +327,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       if (sizeof(input)) {
 	ADT.struct extensions = ADT.struct(input->get_var_string(2));
+        multiset(int) remote_extensions = (<>);
 
 	while (sizeof(extensions)) {
 	  int extension_type = extensions->get_uint(2);
@@ -335,6 +336,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  SSL3_DEBUG_MSG("SSL.ClientConnection->handle_handshake: "
 			 "Got extension %s.\n",
 			 fmt_constant(extension_type, "EXTENSION"));
+          if( remote_extensions[extension_type] )
+          {
+            send_packet(alert(ALERT_fatal, ALERT_decode_error,
+                              "Same extension sent twice.\n"));
+            return -1;
+          }
+          else
+            remote_extensions[extension_type] = 1;
+
 	  switch(extension_type) {
 	  case EXTENSION_renegotiation_info:
 	    string renegotiated_connection = extension_data->get_var_string(1);

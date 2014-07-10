@@ -390,7 +390,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
 			   "Got extension %s.\n",
 			   fmt_constant(extension_type, "EXTENSION"));
-	    remote_extensions[extension_type] = 1;
+            if( remote_extensions[extension_type] )
+            {
+              send_packet(alert(ALERT_fatal, ALERT_decode_error,
+                                "Same extension sent twice.\n"));
+              return -1;
+            }
+            else
+              remote_extensions[extension_type] = 1;
+
           extensions:
 	    switch(extension_type) {
 	    case EXTENSION_signature_algorithms:
