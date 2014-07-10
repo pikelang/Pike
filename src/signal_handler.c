@@ -4375,11 +4375,9 @@ void Pike_f_fork(INT32 args)
 
 
 #ifdef HAVE_KILL
-/*! @decl void kill(int pid, int signal)
+/*! @decl int(0..1) kill(int pid, int signal)
  *!
- *! Send a signal to another process. Returns nonzero if it worked,
- *! zero otherwise. @[errno] may be used in the latter case to find
- *! out what went wrong.
+ *! Send a signal to another process.
  *!
  *! Some signals and their supposed purpose:
  *! @int
@@ -4454,6 +4452,14 @@ void Pike_f_fork(INT32 args)
  *!     Stack fault
  *! @endint
  *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       Success.
+ *!     @value 0
+ *!       Failure. @[errno()] is set to EINVAL, EPERM or ESRCH.
+ *!   @endint
+ *!
  *! @note
  *!   Note that you have to use signame to translate the name of a signal
  *!   to its number.
@@ -4512,14 +4518,16 @@ static void f_kill(INT32 args)
 /*! @class create_process
  */
 
-/*! @decl int kill(int signal)
+/*! @decl int(0..1) kill(int signal)
+ *!
+ *! Send a signal to the process.
  *!
  *! @returns
  *!   @int
  *!     @value 1
- *!       Success
+ *!       Success.
  *!     @value 0
- *!       Failure. errno is set to EINVAL, EPERM or ESRCH.
+ *!       Failure. @[errno()] is set to EINVAL, EPERM or ESRCH.
  *!   @endint
  *!
  *! @note
@@ -4998,7 +5006,7 @@ void init_signals(void)
   ADD_FUNCTION("pid",f_pid_status_pid,tFunc(tNone,tInt),0);
 #ifdef HAVE_KILL
   /* function(int:int) */
-  ADD_FUNCTION("kill",f_pid_status_kill,tFunc(tInt,tInt), 0);
+  ADD_FUNCTION("kill", f_pid_status_kill, tFunc(tInt,tInt01), 0);
 #endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
@@ -5046,7 +5054,7 @@ void init_signals(void)
 
 #ifdef HAVE_KILL
 /* function(int|object,int:int) */
-  ADD_EFUN("kill",f_kill,tFunc(tOr(tInt,tObj) tInt,tInt),OPT_SIDE_EFFECT);
+  ADD_EFUN("kill", f_kill, tFunc(tOr(tInt,tObj) tInt,tInt01), OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_FORK
