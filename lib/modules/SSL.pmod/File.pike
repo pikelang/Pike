@@ -939,10 +939,14 @@ int write (string|array(string) data, mixed... args)
 //! @seealso
 //!   @[read]
 {
-  if (sizeof (args))
-    data = sprintf (arrayp (data) ? data * "" : data, @args);
+  SSL3_DEBUG_MSG ("SSL.File->write (%t[%d]%{, %t%})\n",
+		  data, sizeof (data), args);
 
-  SSL3_DEBUG_MSG ("SSL.File->write (%t[%d])\n", data, sizeof (data));
+  if (sizeof (args)) {
+    data = ({ sprintf (arrayp (data) ? data * "" : data, @args) });
+  } else if (stringp(data)) {
+    data = ({ data });
+  }
 
   ENTER (0, 0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
@@ -964,65 +968,50 @@ int write (string|array(string) data, mixed... args)
 
     int written = 0;
 
-    if (arrayp (data)) {
-      int idx = 0, pos = 0;
+    int idx = 0, pos = 0;
 
-      while (idx < sizeof (data) && !sizeof (write_buffer) &&
-	     // Always stop after writing DATA_CHUNK_SIZE in
-	     // nonblocking mode, so that we don't loop here
-	     // arbitrarily long if the write is very large and the
-	     // bottleneck is in the encryption.
-	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
-	int size = sizeof (data[idx]) - pos;
-	if (size > fragment_max_size) {
-	  // send_streaming_data will pick the first fragment_max_size
-	  // bytes of the string, so do that right away in the same
+    while (idx < sizeof (data) && !sizeof (write_buffer) &&
+	   // Always stop after writing DATA_CHUNK_SIZE in
+	   // nonblocking mode, so that we don't loop here
+	   // arbitrarily long if the write is very large and the
+	   // bottleneck is in the encryption.
+	   (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
+      int size = sizeof (data[idx]) - pos;
+      if (size > fragment_max_size) {
+	// send_streaming_data will pick the first fragment_max_size
+	// bytes of the string, so do that right away in the same
 	  // range operation.
-	  int n = conn->send_streaming_data (
-	    data[idx][pos..pos + fragment_max_size - 1]);
-	  SSL3_DEBUG_MSG ("SSL.File->write: Queued data[%d][%d..%d]\n",
-			  idx, pos, pos + n - 1);
-	  written += n;
-	  pos += n;
-	}
-
-	else {
-	  // Try to fill a packet.
-	  int end;
-	  for (end = idx + 1; end < sizeof (data); end++) {
-	    int newsize = size + sizeof (data[end]);
-	    if (newsize > fragment_max_size) break;
-	    size = newsize;
-	  }
-
-	  if (conn->send_streaming_data (
-		`+ (data[idx][pos..], @data[idx+1..end-1])) < size)
-	    error ("Unexpected fragment_max_size discrepancy wrt send_streaming_data.\n");
-
-	  SSL3_DEBUG_MSG ("SSL.File->write: "
-			  "Queued data[%d][%d..%d] + data[%d..%d]\n",
-			  idx, pos, sizeof (data[idx]) - 1, idx + 1, end - 1);
-	  written += size;
-	  idx = end;
-	  pos = 0;
-	}
-
-	if (!direct_write()) RETURN (written);
-      }
-    }
-
-    else			// data is a string.
-      while (written < sizeof (data) && !sizeof (write_buffer) &&
-	     // Limit the amount written in a single call, for the
-	     // same reason as above.
-	     (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
 	int n = conn->send_streaming_data (
-	  data[written..written + fragment_max_size - 1]);
-	SSL3_DEBUG_MSG ("SSL.File->write: Queued data[%d..%d]\n",
-			written, written + n - 1);
+	  data[idx][pos..pos + fragment_max_size - 1]);
+	SSL3_DEBUG_MSG ("SSL.File->write: Queued data[%d][%d..%d]\n",
+			idx, pos, pos + n - 1);
 	written += n;
-	if (!direct_write()) RETURN (written);
+	pos += n;
       }
+
+      else {
+	// Try to fill a packet.
+	int end;
+	for (end = idx + 1; end < sizeof (data); end++) {
+	  int newsize = size + sizeof (data[end]);
+	  if (newsize > fragment_max_size) break;
+	  size = newsize;
+	}
+
+	if (conn->send_streaming_data (
+	      `+ (data[idx][pos..], @data[idx+1..end-1])) < size)
+	  error ("Unexpected fragment_max_size discrepancy wrt send_streaming_data.\n");
+
+	SSL3_DEBUG_MSG ("SSL.File->write: "
+			"Queued data[%d][%d..%d] + data[%d..%d]\n",
+			idx, pos, sizeof (data[idx]) - 1, idx + 1, end - 1);
+	written += size;
+	idx = end;
+	pos = 0;
+      }
+
+      if (!direct_write()) RETURN (written);
+    }
 
     SSL3_DEBUG_MSG ("SSL.File->write: Write %t done, accepted %d bytes\n",
 		    data, written);
