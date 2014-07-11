@@ -6154,15 +6154,29 @@ static int match_type_svalue(struct pike_type *type,
   case PIKE_T_PROGRAM:
   case PIKE_T_FUNCTION:
   case T_MANY:
-    /* Identify if sval is callable. */
-    res =
-      (TYPEOF(*sval) == T_FUNCTION) ||
-      (TYPEOF(*sval) == T_PROGRAM) ||
-      (TYPEOF(*sval) == T_ARRAY) ||
-      (TYPEOF(*sval) == T_OBJECT) ||
-      (TYPEOF(*sval) == T_TYPE);
-    /* FIXME: Check arguments */
-    /* FIXME: Check return type */
+    {
+      struct pike_type *t = NULL;
+      /* Identify if sval is callable. */
+      if (TYPEOF(*sval) == PIKE_T_OBJECT) {
+	struct program *p;
+	int f;
+	struct identifier *id;
+	if (!sval->u.object || !(p = sval->u.object->prog)) break;
+	p = p->inherits[SUBTYPEOF(*sval)].prog;
+	if ((f = FIND_LFUN(p, LFUN_CALL)) == -1) break;
+	id = ID_FROM_INT(p, f);
+	t = id->type;
+	res = 1;
+      } else {
+	res =
+	  (TYPEOF(*sval) == T_FUNCTION) ||
+	  (TYPEOF(*sval) == T_PROGRAM) ||
+	  (TYPEOF(*sval) == T_ARRAY) ||
+	  (TYPEOF(*sval) == T_TYPE);
+      }
+      /* FIXME: Check arguments */
+      /* FIXME: Check return type */
+    }
     break;
   case PIKE_T_MIXED:
     res = 1;
