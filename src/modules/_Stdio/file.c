@@ -1811,33 +1811,60 @@ static void file__disable_callbacks(INT32 args)
  *!
  *! Write data to a file or a stream.
  *!
- *! Writes @[data] and returns the number of bytes that were
- *! actually written. It can be less than the size of the given data if
- *!
- *! @ul
- *!   @item
- *!     some data was written successfully and then something went
- *!     wrong, or
- *!   @item
- *!     nonblocking mode is used and not all data could be written
- *!     without blocking.
- *! @endul
- *!
- *! -1 is returned if something went wrong and no bytes were written.
- *! If only some data was written due to an error and that error
- *! persists, then a later call to @[write()] fails and returns -1.
- *!
- *! If everything went fine, a call to @[errno()] directly afterwards
- *! returns zero.
- *!
- *! If @[data] is an array of strings, they are written in sequence.
- *!
- *! If more than one argument is given, @[sprintf()] is used to format
- *! them using @[format]. If @[format] is an array, the strings in it
- *! are concatenated and the result is used as format string.
- *!
  *! If there are any file descriptors that have been queued for sending
  *! (with @[send_fd()]), they will be sent.
+ *!
+ *! @param data
+ *!   Data to write.
+ *!
+ *!   If @[data] is an array of strings, they are written in sequence.
+ *!
+ *! @param format
+ *! @param extras
+ *!   If more than one argument is given, @[sprintf()] is used to format
+ *!   them using @[format]. If @[format] is an array, the strings in it
+ *!   are concatenated and the result is used as format string.
+ *!
+ *! @returns
+ *!   Writes @[data] and returns the number of bytes that were
+ *!   actually written.
+ *!
+ *!   @int
+ *!     @value 1..
+ *!       The number of bytes successfully written to the OS buffers.
+ *!
+ *!       This can be less than the size of the given data if eg:
+ *!       @ul
+ *!         @item
+ *!           Some data was written successfully and then something went
+ *!           wrong.
+ *!
+ *!           If only some data was written due to an error and that error
+ *!           persists, then a later call to @[write()] will fail and return
+ *!           @expr{-1@}.
+ *!
+ *!         @item
+ *!           Nonblocking mode is used and not all data could be written
+ *!           without blocking.
+ *!       @endul
+ *!
+ *!     @value 0
+ *!       No bytes were written. This may be due to
+ *!       @ul
+ *!         @item
+ *!           @[data] or the formatted data being the empty string.
+ *!
+ *!         @item
+ *!           Nonblocking mode is used and no data could be written
+ *!           without blocking.
+ *!       @endul
+ *!
+ *!     @value -1
+ *!       Something went wrong and no bytes were written.
+ *!   @endint
+ *!
+ *!   If everything went fine, a call to @[errno()] directly afterwards
+ *!   returns zero.
  *!
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
