@@ -1,14 +1,19 @@
 #pike __REAL_VERSION__
 
 /*
- * The SSL3 Protocol is specified in the following RFCs and drafts:
+ * The SSL 2.0 protocol was specified in the following document:
+ *
+ *   SSL 2.0			draft-hickman-netscape-ssl-00.txt
+ *
+ * The SSL 3.0 Protocol was specified in the following draft (later an RFC):
  *
  *   SSL 3.0			draft-freier-ssl-version3-02.txt
  *   SSL 3.0			RFC 6101
  *
+ * The TLS Protocol is specified in the following RFCs:
+ *
  *   SSL 3.1/TLS 1.0		RFC 2246
  *   Kerberos for TLS 1.0	RFC 2712
- *   56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
  *   AES Ciphers for TLS 1.0	RFC 3268
  *   Extensions for TLS 1.0	RFC 3546
  *   LZS Compression for TLS	RFC 3943
@@ -54,13 +59,18 @@
  *   ECC Brainpool Curves	RFC 7027
  *   Raw Public Keys in (D)TLS	RFC 7250
  *   AES-CCM ECC Suites for TLS	RFC 7251
+ *   TLS ALPN Extension		RFC 7301
  *
+ * Drafts (in order of age, oldest first):
+ *   56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
+ *   Chacha20Poly1305		draft-agl-tls-chacha20poly1305-02.txt
+ *   TLS Padding		draft-agl-tls-padding
+ *   TLS Encrypt-then-MAC	draft-ietf-tls-encrypt-then-mac
+ *   TLS Fallback SCSV		draft-ietf-tls-downgrade-scsv-00.txt
+ *   SSL 3.4/TLS 1.3		draft-ietf-tls-tls13-02.txt
+ *
+ * Other:
  *   Next Protocol Negotiation  Google technical note: nextprotoneg
- *   Application Layer Protocol Negotiation  draft-ietf-tls-applayerprotoneg
- *
- * The SSL 2.0 protocol was specified in the following document:
- *
- *   SSL 2.0			draft-hickman-netscape-ssl-00.txt
  *
  * The TLS parameters registry:
  *   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
