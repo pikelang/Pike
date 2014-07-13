@@ -760,9 +760,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       return -1;
     case HANDSHAKE_next_protocol:
      {
+       // draft-agl-tls-nextprotoneg-03
        next_protocol = input->get_var_string(1);
+       string padding = input->get_var_string(1);
        handshake_messages += raw;
-       return 1;
+       break;
      }
     case HANDSHAKE_finished:
      {
