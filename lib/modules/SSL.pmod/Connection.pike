@@ -429,12 +429,25 @@ void send_packet(Packet packet, int|void priority)
 
 }
 
+//! Returns the number of packets queued for writing.
+//!
+//! @returns
+//!   Returns the number of times @[to_write()] can be called before
+//!   it stops returning non-empty strings.
+int query_write_queue_size()
+{
+  return sizeof(alert_q) + sizeof(urgent_q) + sizeof(application_q);
+}
+
 //! Extracts data from the packet queues. Returns a string of data
 //! to be written, "" if there are no pending packets, 1 of the
 //! connection is being closed politely, and -1 if the connection
 //! died unexpectedly.
 //!
 //! This function is intended to be called from an i/o write callback.
+//!
+//! @seealso
+//!   @[query_write_queue_size()], @[send_streaming_data()].
 string|int to_write()
 {
   if (state & CONNECTION_local_fatal)
