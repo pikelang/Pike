@@ -432,6 +432,12 @@ test_eq([[ ADT.struct()->add_data("hej")->put_uint(1,2)->put_var_string("hi",1)-
 test_eq([[ ADT.struct()->put_var_uint_array(({6,7}),2,2)->pop_data() ]], "\0\4\0\6\0\7")
 test_eq([[ ADT.struct()->put_var_string_array(({"a","b"}),2,2)->pop_data() ]], "\0\6\0\1a\0\1b")
 
+test_any([[
+  object o = ADT.struct("abcd");
+  o->get_fix_string(1);
+  return decode_value(encode_value(o))->get_fix_string(3);
+]], "bcd")
+
 
 dnl ADT.Queue
 
