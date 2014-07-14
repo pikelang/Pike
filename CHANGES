@@ -889,12 +889,41 @@ o Crypto.Camellia
   Crypto. In addition the following cipher suites have been added to
   SSL:
 
-    TLS_rsa_with_camellia_128_cbc_sha
-    TLS_dhe_dss_with_camellia_128_cbc_sha
-    TLS_dhe_rsa_with_camellia_128_cbc_sha
-    TLS_rsa_with_camellia_256_cbc_sha
-    TLS_dhe_dss_with_camellia_256_cbc_sha
-    TLS_dhe_rsa_with_camellia_256_cbc_sha
+    TLS_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
+    TLS_dh_dss_with_camellia_{128,256}_cbc_{sha,sha256}
+    TLS_dh_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
+    TLS_dhe_dss_with_camellia_{128,256}_cbc_{sha,sha256}
+    TLS_dhe_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
+    TLS_dh_anon_with_camellia_{128,256}_cbc_{sha,sha256}
+
+    TLS_ecdhe_ecdsa_with_camellia_128_cbc_sha256
+    TLS_ecdhe_ecdsa_with_camellia_256_cbc_sha384
+    TLS_ecdh_ecdsa_with_camellia_128_cbc_sha256
+    TLS_ecdh_ecdsa_with_camellia_256_cbc_sha384
+    TLS_ecdhe_rsa_with_camellia_128_cbc_sha256
+    TLS_ecdhe_rsa_with_camellia_256_cbc_sha384
+    TLS_ecdh_rsa_with_camellia_128_cbc_sha256
+    TLS_ecdh_rsa_with_camellia_256_cbc_sha384
+    TLS_rsa_with_camellia_128_gcm_sha256
+    TLS_rsa_with_camellia_256_gcm_sha384
+    TLS_dhe_rsa_with_camellia_128_gcm_sha256
+    TLS_dhe_rsa_with_camellia_256_gcm_sha384
+    TLS_dh_rsa_with_camellia_128_gcm_sha256
+    TLS_dh_rsa_with_camellia_256_gcm_sha384
+    TLS_dhe_dss_with_camellia_128_gcm_sha256
+    TLS_dhe_dss_with_camellia_256_gcm_sha384
+    TLS_dh_dss_with_camellia_128_gcm_sha256
+    TLS_dh_dss_with_camellia_256_gcm_sha384
+    TLS_dh_anon_with_camellia_128_gcm_sha256
+    TLS_dh_anon_with_camellia_256_gcm_sha384
+    TLS_ecdhe_ecdsa_with_camellia_128_gcm_sha256
+    TLS_ecdhe_ecdsa_with_camellia_256_gcm_sha384
+    TLS_ecdh_ecdsa_with_camellia_128_gcm_sha256
+    TLS_ecdh_ecdsa_with_camellia_256_gcm_sha384
+    TLS_ecdhe_rsa_with_camellia_128_gcm_sha256
+    TLS_ecdhe_rsa_with_camellia_256_gcm_sha384
+    TLS_ecdh_rsa_with_camellia_128_gcm_sha256
+    TLS_ecdh_rsa_with_camellia_256_gcm_sha384
 
 o Crypto.SALSA20 and Crypto.SALSA20R12
 
