@@ -794,8 +794,6 @@ class TBSCertificate
     if (a[0]->type_name != "INTEGER")
       return 0;
     serial = a[0]->value;
-    if(serial<0)
-      return 0;
     DBG("TBSCertificate: serial = %s\n", (string) serial);
       
     if ((a[1]->type_name != "SEQUENCE")
@@ -1207,7 +1205,8 @@ string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Sign ca, Crypto.Hash h,
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
-  if(serial<0) error("Serial number needs to be >=0.\n");
+  if(serial<=0) error("Conforming CA serial number needs to be >0.\n");
+  if(serial>1<<142) error("Serial needs to be less than 20 bytes encoded.\n");
 
   if( mappingp(extensions) )
   {
