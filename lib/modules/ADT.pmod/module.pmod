@@ -207,6 +207,26 @@ class struct {
     return [int(0..)](sizeof(buffer)-index);
   }
 
+  array _encode()
+  {
+    return ({index, buffer});
+  }
+
+  void _decode(mixed x)
+  {
+    if( !arrayp(x) )
+      error("Illegal object encoding.\n");
+    array a = [array]x;
+    if( !sizeof(a)==2 ||
+        !intp(a[0]) ||
+        !stringp(a[1]) ||
+        String.range([string]a[1])[0]<0 ||
+        String.range([string]a[1])[1]>255 )
+      error("Illegal object encoding.\n");
+    index = [int]a[0];
+    buffer = [string(8bit)]a[1];
+  }
+
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O)", this_program, _sizeof());
