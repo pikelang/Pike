@@ -164,10 +164,6 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args);
 PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processing *p);
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 						 struct array *b, INT32 op);
-PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op);
-PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
-					struct array *b,
-					INT32 op);
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b);
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b);
 int array_is_constant(struct array *a,
