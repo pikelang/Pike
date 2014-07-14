@@ -314,8 +314,32 @@ class Switch(string test) {
     ret += sprintf("%*nswitch(%s)\n", ind, test);
     ret += sprintf("%*n{\n", ind);
 
+    mapping(string:array(string)) rev = ([]);
+    foreach(sort(indices(cases)), string c)
+    {
+      if(`+(@cases[c]->is_switch)) continue;
+      string code = cases[c]->get_string(0)*"";
+      while( sscanf(code, "%s/*%*s*/%s", code, string tail)==3 )
+        code = code+tail;
+      rev[ code ] += ({ c });
+    }
+    mapping(string:array(string)) alias = ([]);
+    foreach(rev;; array(string) cs)
+    {
+      if( sizeof(cs)>1 )
+      {
+        alias[cs[0]] = cs[1..];
+        foreach(cs[1..], string c)
+          m_delete(cases, c);
+      }
+    }
+
     foreach(sort(indices(cases)), string c) {
       ret += sprintf("%*ncase %s:\n", ind, c);
+      if( alias[c] )
+        foreach( alias[c], string c )
+          ret += sprintf("%*ncase %s:\n", ind, c);
+
       foreach(cases[c], object(Switch)|object(Breakable) b)
 	ret += b->get_string([int(0..)](ind+2));
       ret += sprintf("%*n  break;\n"
