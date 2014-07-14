@@ -2298,10 +2298,10 @@ protected int ssl_close_callback (int called_from_real_backend)
   return -1;
 }
 
-//! The next protocol chosen by the client during application layer
-//! protocol negotiation (ALPN) or next protocol negotiation (NPN).
-string `->next_protocol() {
-    return conn->next_protocol;
+//! The application protocol chosen by the client during application layer
+//! protocol negotiation (ALPN).
+string `->application_protocol() {
+    return conn->application_protocol;
 }
 
 //! Return the currently active cipher suite.
