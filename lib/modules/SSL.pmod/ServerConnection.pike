@@ -14,8 +14,10 @@ import ".";
 import Constants;
 inherit Connection;
 
+// ALPN
 int has_application_layer_protocol_negotiation;
-string(8bit) next_protocol;
+string(8bit) application_protocol;
+
 multiset(int) remote_extensions = (<>);
 int reuse;
 
@@ -107,9 +109,9 @@ Packet server_hello_packet()
   };
 
   ext (EXTENSION_application_layer_protocol_negotiation,
-       next_protocol && has_application_layer_protocol_negotiation)
+       application_protocol && has_application_layer_protocol_negotiation)
   {
-    return ADT.struct()->put_var_string_array( ({next_protocol}), 1, 2);
+    return ADT.struct()->put_var_string_array(({application_protocol}), 1, 2);
   };
 
   if (fail) return fail;
@@ -553,18 +555,18 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                 // Although the protocol list is sent in client
                 // preference order, it is the server preference that
                 // wins.
-                next_protocol = 0;
+                application_protocol = 0;
                 foreach(context->advertised_protocols;; string(8bit) prot)
                   if( protocols[prot] )
                   {
-                    next_protocol = prot;
+                    application_protocol = prot;
                     break;
                   }
-                if( !next_protocol )
+                if( !application_protocol )
                   send_packet(alert(ALERT_fatal, ALERT_no_application_protocol,
 				    "ALPN: No compatible protocol.\n"));
                 SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
-			       protocols, next_protocol);
+			       protocols, application_protocol);
               }
               break;
 
@@ -756,16 +758,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     {
     default:
       send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected next protocol or finished.\n"));
+			"Expected finished.\n"));
       return -1;
-    case HANDSHAKE_next_protocol:
-     {
-       // draft-agl-tls-nextprotoneg-03
-       next_protocol = input->get_var_string(1);
-       string padding = input->get_var_string(1);
-       handshake_messages += raw;
-       break;
-     }
     case HANDSHAKE_finished:
      {
        string(8bit) my_digest;
