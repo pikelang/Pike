@@ -966,49 +966,52 @@ int write (string|array(string) data, mixed... args)
     // Take care of any old data first.
     if (!direct_write()) RETURN (-1);
 
+    int write_limit = 0x7fffffff;
+    if (nonblocking_mode) {
+      // Always stop after writing DATA_CHUNK_SIZE in
+      // nonblocking mode, so that we don't loop here
+      // arbitrarily long if the write is very large and the
+      // bottleneck is in the encryption.
+      write_limit = Stdio.DATA_CHUNK_SIZE;
+    }
+
     int written = 0;
 
     int idx = 0, pos = 0;
-
     while (idx < sizeof (data) && !sizeof (write_buffer) &&
-	   // Always stop after writing DATA_CHUNK_SIZE in
-	   // nonblocking mode, so that we don't loop here
-	   // arbitrarily long if the write is very large and the
-	   // bottleneck is in the encryption.
-	   (!nonblocking_mode || written < Stdio.DATA_CHUNK_SIZE)) {
-      int size = sizeof (data[idx]) - pos;
-      if (size > fragment_max_size) {
-	// send_streaming_data will pick the first fragment_max_size
-	// bytes of the string, so do that right away in the same
-	  // range operation.
-	int n = conn->send_streaming_data (
-	  data[idx][pos..pos + fragment_max_size - 1]);
-	SSL3_DEBUG_MSG ("SSL.File->write: Queued data[%d][%d..%d]\n",
-			idx, pos, pos + n - 1);
-	written += n;
-	pos += n;
-      }
+	   written < write_limit) {
+#ifdef SSL3_DEBUG
+      int oidx = idx;
+      int opos = pos;
+#endif
 
-      else {
+      // send_streaming_data will pick the first fragment_max_size
+      // bytes of the string, so do that right away in the same
+      // range operation.
+      string frag = data[idx][pos..pos + fragment_max_size -1];
+      pos += fragment_max_size;
+
+      while (sizeof(frag) < fragment_max_size) {
 	// Try to fill a packet.
-	int end;
-	for (end = idx + 1; end < sizeof (data); end++) {
-	  int newsize = size + sizeof (data[end]);
-	  if (newsize > fragment_max_size) break;
-	  size = newsize;
-	}
-
-	if (conn->send_streaming_data (
-	      `+ (data[idx][pos..], @data[idx+1..end-1])) < size)
-	  error ("Unexpected fragment_max_size discrepancy wrt send_streaming_data.\n");
-
-	SSL3_DEBUG_MSG ("SSL.File->write: "
-			"Queued data[%d][%d..%d] + data[%d..%d]\n",
-			idx, pos, sizeof (data[idx]) - 1, idx + 1, end - 1);
-	written += size;
-	idx = end;
-	pos = 0;
+	if (++idx >= sizeof(data)) break;
+	pos = fragment_max_size - sizeof(frag);
+	frag += data[idx][..pos -1];
       }
+
+      int n = conn->send_streaming_data (frag);
+      if (n != sizeof(frag)) {
+	error ("Unexpected fragment_max_size discrepancy wrt send_streaming_data.\n");
+      }
+#ifdef SSL3_DEBUG
+      if (oidx == idx) {
+	SSL3_DEBUG_MSG("SSL.File->write: Queued data[%d][%d..%d]\n",
+		       idx, opos, pos - 1);
+      } else {
+	SSL3_DEBUG_MSG("SSL.File->write: Queued data[%d..%d][%d..%d]\n",
+		       oidx, idx, opos, pos - 1);
+      }
+#endif
+      written += n;
 
       if (!direct_write()) RETURN (written);
     }
