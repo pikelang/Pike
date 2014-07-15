@@ -8851,6 +8851,19 @@ test_any([[
     return v;
 ]], 4)
 
+test_any([[
+  // Check foreach with negative ranges [bug 7216]/[LysLysKOM 20892964].
+  array a = ({ -2, -1, 0, 1, 2 });
+  int total;
+  foreach(a, int start) {
+    foreach(a[start..], int val) {
+      if (!intp(val)) error("Invalid svalue!\n");
+      total += (val + 3)*(start + 3);
+    }
+  }
+  return total;
+]], 15 + 30 + 45 + 56 + 60)
+
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
 
