@@ -649,45 +649,6 @@ mapping(string(8bit):array(CertificatePair)) cert_cache = ([]);
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });
 
-protected int cert_sort_key(CertificatePair cp)
-{
-  array(HashAlgorithm|SignatureAlgorithm) sign_alg = cp->sign_algs[0];
-  int bits = cp->key->key_size();
-
-  // Adjust the bits to be comparable for the different algorithms.
-  switch(sign_alg[1]) {
-  case SIGNATURE_rsa:
-    // The normative size.
-    break;
-  case SIGNATURE_dsa:
-    // The consensus seems to be that DSA keys are about
-    // the same strength as the corresponding RSA length.
-    break;
-  case SIGNATURE_ecdsa:
-    // ECDSA size:	NIST says:		Our approximation:
-    //   160 bits	~1024 bits RSA		960 bits RSA
-    //   224 bits	~2048 bits RSA		2240 bits RSA
-    //   256 bits	~4096 bits RSA		3072 bits RSA
-    //   384 bits	~7680 bits RSA		7680 bits RSA
-    //   521 bits	~15360 bits RSA		14881 bits RSA
-    bits = (bits * (bits - 64))>>4;
-    if (bits < 0) bits = 128;
-    break;
-  }
-
-  // NB: Returns negative to get the largest values sorted first.
-  return -((bits<<16)|(sign_alg[1]<<8)|sign_alg[0]);
-}
-
-//! Order the @[cps] in priority order.
-protected array(CertificatePair) sort_certs(array(CertificatePair) cps)
-{
-  if (sizeof(cps) > 1) {
-    sort(map(cps, cert_sort_key), cps);
-  }
-  return cps;
-}
-
 //! Look up a suitable set of certificates for the specified SNI (server)
 //! or issuer (client).
 //!
@@ -698,7 +659,7 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 				 int(0..1)|void is_issuer)
 {
   if (!cert_pairs_sorted) {
-    cert_pairs = sort_certs(cert_pairs);
+    cert_pairs = sort(cert_pairs);
     cert_pairs_sorted = 1;
   }
 
@@ -782,7 +743,7 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
     return values(certs)[0];
   }
 
-  return sort_certs(values(certs) * ({}));
+  return sort(values(certs) * ({}));
 }
 
 //! Add a certificate.
