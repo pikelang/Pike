@@ -1292,6 +1292,64 @@ class CertificatePair
   //! as supported by TLS 1.2 and later.
   int(0..) ke_mask_invariant;
 
+  // Returns the comparable strength of the leaf certificate in bits.
+  protected int bit_strength(int bits, int sign)
+  {
+    // Adjust the bits to be comparable for the different algorithms.
+    switch(sign) {
+    case SIGNATURE_rsa:
+      // The normative size.
+      break;
+    case SIGNATURE_dsa:
+      // The consensus seems to be that DSA keys are about
+      // the same strength as the corresponding RSA length.
+      break;
+    case SIGNATURE_ecdsa:
+      // ECDSA size:	NIST says:		Our approximation:
+      //   160 bits	~1024 bits RSA		960 bits RSA
+      //   224 bits	~2048 bits RSA		2240 bits RSA
+      //   256 bits	~4096 bits RSA		3072 bits RSA
+      //   384 bits	~7680 bits RSA		7680 bits RSA
+      //   521 bits	~15360 bits RSA		14881 bits RSA
+      bits = (bits * (bits - 64))>>4;
+      if (bits < 0) bits = 128;
+      break;
+    }
+    return bits;
+  }
+
+  // Comparison operator that sorts the CertificatePairs according to
+  // their relative strength.
+  protected int(0..1) `<(mixed o)
+  {
+    if(!objectp(o)) return this < o;
+    if( !o->key || !o->sign_algs ) return this < o;
+
+    int s = sign_algs[0][1], os = o->sign_algs[0][1];
+
+    // FIXME: Let hash bits influence strength. The signature bits
+    // doesn't overshadow hash completely.
+
+    // FIXME: We only look at leaf certificate. We could look at
+    // weakest link in the chain.
+
+    // These tests are reversed to reverse-sort the certificates
+    // (Strongest first).
+    int bs = bit_strength(key->key_size(), s);
+    int obs = bit_strength(o->key->key_size(), os);
+    if( bs < obs ) return 0;
+    if( bs > obs ) return 1;
+
+    int h = sign_algs[0][0], oh = o->sign_algs[0][0];
+    if( h < oh ) return 0;
+    if( h > oh ) return 1;
+
+    if( s < os ) return 0;
+    return 1;
+  }
+
+  // Set the globs array based on certificate common name and subject
+  // alternative name extension.
   protected void set_globs(Standards.X509.TBSCertificate tbs,
                            array(string(8bit))|void extra)
   {
@@ -1407,6 +1465,10 @@ class CertificatePair
 
   protected string _sprintf(int c)
   {
-    return sprintf("CertificatePair(%O, ({%{%O, %}}))", key->name(), globs);
+    string k = sprintf("%O", key);
+    sscanf(k, "Crypto.%s", k);
+    string h = fmt_constant(sign_algs[0][0], "HASH");
+    sscanf(h, "HASH_%s", h);
+    return sprintf("CertificatePair(%s, %s, ({%{%O, %}}))", k, h , globs);
   }
 }
