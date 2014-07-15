@@ -1292,6 +1292,22 @@ class CertificatePair
   //! as supported by TLS 1.2 and later.
   int(0..) ke_mask_invariant;
 
+  protected void set_globs(Standards.X509.TBSCertificate tbs,
+                           array(string(8bit))|void extra)
+  {
+    globs = Standards.PKCS.Certificate.
+      decode_distinguished_name(tbs->subject)->commonName - ({ 0 });
+
+    if( tbs->ext_subjectAltName_dNSName )
+      globs += tbs->ext_subjectAltName_dNSName;
+
+    if (extra) globs += extra;
+
+    if (!sizeof(globs)) error("No common name.\n");
+
+    globs = Array.uniq( map(globs, lower_case) );
+  }
+
   //! Initializa a new @[CertificatePair].
   //!
   //! @param key
@@ -1340,32 +1356,7 @@ class CertificatePair
       SIGNATURE_ecdsa: AUTH_ecdsa_sign,
     ])[sign_algs[0][1]];
 
-    globs = ({});
-
-    string cn;
-    foreach(Standards.PKCS.Certificate.
-	    decode_distinguished_name(tbss[0]->subject)->commonName, cn) {
-      if (cn) {
-	globs += ({ lower_case(cn) });
-      }
-    }
-
-    // Check the subjectAltName extension.
-    Standards.ASN1.Types.Object alt_names = tbss[0]->
-      extensions[Standards.PKCS.Identifiers.ce_ids.subjectAltName];
-    if (alt_names && (alt_names->type_name == "SEQUENCE")) {
-      foreach(alt_names->elements, Standards.ASN1.Types.Object alt_name) {
-	if (stringp(alt_name->value)) {
-	  globs += ({ lower_case(alt_name->value) });
-	}
-      }
-    }
-
-    if (extra_name_globs) globs += map(extra_name_globs, lower_case);
-
-    if (!sizeof(globs)) error("No common name.\n");
-
-    globs = Array.uniq(globs);
+    set_globs(tbss[0], extra_name_globs);
 
     // FIXME: Ought to check certificate extensions.
     //        cf RFC 5246 7.4.2.
