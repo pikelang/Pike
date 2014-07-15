@@ -1469,6 +1469,6 @@ class CertificatePair
     sscanf(k, "Crypto.%s", k);
     string h = fmt_constant(sign_algs[0][0], "HASH");
     sscanf(h, "HASH_%s", h);
-    return sprintf("CertificatePair(%s, %s, ({%{%O, %}}))", k, h , globs);
+    return sprintf("CertificatePair(%s, %s, ({%{%O, %}}))", k, h, globs);
   }
 }
