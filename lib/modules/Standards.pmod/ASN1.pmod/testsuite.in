@@ -3,16 +3,16 @@ START_MARKER
 test_do( add_constant("Types", Standards.ASN1.Types); )
 
 define(test_decode,[[
-  test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->debug_string(),$2)
+  test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" ")))-"Standards.ASN1.",$2)
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->get_der(),
           String.hex2string($1-" "))
 ]])
 
-test_decode("1f 7f 00", "primitive(508)")
-test_decode("5f 7f 00", "primitive(509)")
-test_decode("9f 7f 00", "primitive(510)")
-test_decode("df 7f 00", "primitive(511)")
-test_decode("9f ff 00 00", "primitive(65026)")
+test_decode("1f 7f 00", "Decode.Primitive(508)")
+test_decode("5f 7f 00", "Decode.Primitive(509)")
+test_decode("9f 7f 00", "Decode.Primitive(510)")
+test_decode("df 7f 00", "Decode.Primitive(511)")
+test_decode("9f ff 00 00", "Decode.Primitive(65026)")
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\xff"))
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\0\x80"))
@@ -23,13 +23,13 @@ test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*127)->get_
 test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*128)->get_der())->value,
   "A"*128)
 
-test_decode("010100","FALSE")
-test_decode("010101","TRUE")
+test_decode("010100","Types.Boolean(FALSE)")
+test_decode("010101","Types.Boolean(TRUE)")
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\1\0"))
 
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"-" "))->debug_string(),"REAL 0.15625")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"-" "))->debug_string(),"REAL 0.15625")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"-" "))->debug_string(),"REAL 0.15625")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"-" "))),"Types.Real(0.15625)")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"-" "))),"Types.Real(0.15625)")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"-" "))),"Types.Real(0.15625)")
 
 dnl
 dnl --- START tests from
@@ -37,55 +37,55 @@ dnl A Layman's Guide to a Subset of ASN.1, BER, and DER)
 dnl
 
 dnl 5.4
-test_decode("03 04 06 6e 5d c0", "BIT STRING (18) 11011100101110111")
-test_decode("03 04 06 6e 5d e0", "BIT STRING (18) 11011100101110111")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"-" "))->debug_string(), "BIT STRING (18) 11011100101110111")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"-" "))->debug_string(), "BIT STRING (18) 11011100101110111")
+test_decode("03 04 06 6e 5d c0", "Types.BitString(18 011011100101110111)")
+test_decode("03 04 06 6e 5d e0", "Types.BitString(18 011011100101110111)")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"-" "))), "Types.BitString(18 011011100101110111)")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"-" "))), "Types.BitString(18 011011100101110111)")
 
 dnl 5.6
 test_decode("16 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d",
             "Types.IA5String(\"test1@rsa.com\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("16 81 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d"-" "))->debug_string(), "Types.IA5String(\"test1@rsa.com\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("36 13 16 05 74 65 73 74 31 16 01 40 16 07 72 73 61 2e 63 6f 6d"-" "))->debug_string(), "Types.IA5String(\"test1@rsa.com\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("16 81 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d"-" "))), "Types.IA5String(\"test1@rsa.com\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("36 13 16 05 74 65 73 74 31 16 01 40 16 07 72 73 61 2e 63 6f 6d"-" "))), "Types.IA5String(\"test1@rsa.com\")")
 
 dnl 5.6
-test_decode("02 01 00", "INTEGER (1) 0")
-test_decode("02 01 7f", "INTEGER (7) 127")
-test_decode("02 02 00 80", "INTEGER (8) 128")
-test_decode("02 02 01 00", "INTEGER (9) 256")
-test_decode("02 01 80", "INTEGER (8) -128")
-test_decode("02 02 ff 7f", "INTEGER (8) -129")
+test_decode("02 01 00", "Types.Integer(0)")
+test_decode("02 01 7f", "Types.Integer(7 127)")
+test_decode("02 02 00 80", "Types.Integer(8 128)")
+test_decode("02 02 01 00", "Types.Integer(9 256)")
+test_decode("02 01 80", "Types.Integer(8 -128)")
+test_decode("02 02 ff 7f", "Types.Integer(8 -129)")
 
 dnl 5.8
-test_decoce("05 00", "NULL")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("05 81 00"-" "))->debug_string(), "NULL")
+test_decode("05 00", "Types.Null()")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("05 81 00"-" "))), "Types.Null()")
 test_eq( Types.Null()->get_der(), "\5\0" )
 
 dnl 5.9
-test_decode("06 06 2a 86 48 86 f7 0d", "IDENTIFIER 1.2.840.113549")
+test_decode("06 06 2a 86 48 86 f7 0d", "Types.Identifier(1.2.840.113549)")
 test_eq(Types.Identifier(1,2,840,113549)->get_der(),
   String.hex2string("06062a864886f70d"))
 
 dnl 5.10
 test_decode("04 08 01 23 45 67 89 ab cd ef", "Types.OctetString(\"\\1#Eg\\211\\253\\315\\357\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("04 81 08 01 23 45 67 89 ab cd ef"-" "))->debug_string(), "Types.OctetString(\"\\1#Eg\\211\\253\\315\\357\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("24 0c 04 04 01 23 45 67 04 04 89 ab cd ef"-" "))->debug_string(), "Types.OctetString(\"\\1#Eg\\211\\253\\315\\357\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("04 81 08 01 23 45 67 89 ab cd ef"-" "))), "Types.OctetString(\"\\1#Eg\\211\\253\\315\\357\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("24 0c 04 04 01 23 45 67 04 04 89 ab cd ef"-" "))), "Types.OctetString(\"\\1#Eg\\211\\253\\315\\357\")")
 
 dnl 5.11
 test_decode("13 0b 54 65 73 74 20 55 73 65 72 20 31", "Types.PrintableString(\"Test User 1\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("13 81 0b 54 65 73 74 20 55 73 65 72 20 31"-" "))->debug_string(), "Types.PrintableString(\"Test User 1\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("33 0f 13 05 54 65 73 74 20 13 06 55 73 65 72 20 31"-" "))->debug_string(), "Types.PrintableString(\"Test User 1\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("13 81 0b 54 65 73 74 20 55 73 65 72 20 31"-" "))), "Types.PrintableString(\"Test User 1\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("33 0f 13 05 54 65 73 74 20 13 06 55 73 65 72 20 31"-" "))), "Types.PrintableString(\"Test User 1\")")
 
 dnl 5.16
 dnl FIXME: T61 is not encoded
 dnl test_decode("14 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73", "Types.TeletexString(\"cl\\351s publiques\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"-" "))->debug_string(), "Types.TeletexString(\"cl\\351s publiques\")")
-test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))->debug_string(), "Types.TeletexString(\"cl\\351s publiques\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
 
 dnl 5.17
 test_decode("17 0d 39 31 30 35 30 36 32 33 34 35 34 30 5a", "Types.UTC(\"910506234540Z\")")
 dnl FIXME: Should time be normalized?
-dnl test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string("17 11 39 31 30 35 30 36 31 36 34 35 34 30 2D 30 37 30 30"-" "))->debug_string(), "Types.UTC(\"910506234540Z\")")
+dnl test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("17 11 39 31 30 35 30 36 31 36 34 35 34 30 2D 30 37 30 30"-" "))), "Types.UTC(\"910506234540Z\")")
 
 dnl
 dnl --- END tests from
