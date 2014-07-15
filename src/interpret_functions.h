@@ -2493,6 +2493,15 @@ OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(1);
 });
 
+OPCODE2(F_CALL_BUILTIN_N, "call builtin N", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
+  DO_CALL_BUILTIN(arg2);
+});
+
+OPCODE2( F_APPLY_N, "apply N", I_UPDATE_ALL, {
+   mega_apply( APPLY_SVALUE_STRICT, arg2, &((Pike_fp->context->prog->constants + arg1)->sval), 0 );
+});
+
 OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);

@@ -2,6 +2,7 @@
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
 #define OPCODE_INLINE_RETURN
+#define USE_APPLY_N
 
 #if defined(_M_X64) && !defined(__GNUC__)
 

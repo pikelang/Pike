@@ -1902,6 +1902,7 @@ static int do_docode2(node *n, int flags)
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)
     {
+      int args = count_args(CDR(n));
       if(TYPEOF(CAR(n)->u.sval) == T_FUNCTION)
       {
 	if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) /* driver fun? */
@@ -1909,13 +1910,21 @@ static int do_docode2(node *n, int flags)
 	  if(!CAR(n)->u.sval.u.efun->docode || 
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
-	    if(count_args(CDR(n))==1)
+	    if(args==1)
 	    {
 	      do_docode(CDR(n),0);
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
 	      emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
+#ifdef USE_APPLY_N
+	    }else if(args>0){
+	      do_docode(CDR(n),0);
+	      tmp1=store_constant(& CAR(n)->u.sval,
+				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				  CAR(n)->name);
+	      emit2(F_CALL_BUILTIN_N, DO_NOT_WARN((INT32)tmp1), args);
+#endif
 	    }else{
 	      emit0(F_MARK);
 	      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
@@ -1929,23 +1938,35 @@ static int do_docode2(node *n, int flags)
 	  }
 	  if(n->type == void_type_string)
 	    return 0;
-
 	  return 1;
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
        	}
       }
-
-      emit0(F_MARK);
-      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-      do_docode(CDR(n),0);
-      tmp1=store_constant(& CAR(n)->u.sval,
-			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-			  CAR(n)->name);
-      emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
-      POP_AND_DONT_CLEANUP;
-      
+#ifdef USE_APPLY_N
+      if( args <= 1 )
+#endif
+      {
+        emit0(F_MARK);
+        PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+        do_docode(CDR(n),0);
+        tmp1=store_constant(& CAR(n)->u.sval,
+                            !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+                            CAR(n)->name);
+        emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+        POP_AND_DONT_CLEANUP;
+      }
+#ifdef USE_APPLY_N
+      else
+      {
+        do_docode(CDR(n),0);
+        tmp1=store_constant(& CAR(n)->u.sval,
+                            !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+                            CAR(n)->name);
+        emit2(F_APPLY_N, DO_NOT_WARN((INT32)tmp1), args);
+      }
+#endif
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER)
