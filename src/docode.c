@@ -1704,7 +1704,23 @@ static int do_docode2(node *n, int flags)
 	/* Optimize foreach(x[start..],y). */
 	do_docode (CAR(range), DO_NOT_COPY_TOPLEVEL);
 	do_docode (CDR(arr), DO_NOT_COPY|DO_LVALUE);
+	if ((low->token == F_CONSTANT) && (TYPEOF(low->u.sval) == PIKE_T_INT)) {
+	  if (low->u.sval.u.integer < 0) {
+	    emit0(F_CONST0);
+	    goto foreach_arg_pushed;
+	  }
+	  do_docode (CAR(low), DO_NOT_COPY);
+	  goto foreach_arg_pushed;
+	}
 	do_docode (CAR(low), DO_NOT_COPY);
+	tmp1 = alloc_label();
+	emit0(F_DUP);
+	emit0(F_CONST0);
+	do_jump(F_BRANCH_WHEN_GE, tmp1);
+	/* The value is negative. replace it with zero. */
+	emit0(F_POP_VALUE);
+	emit0(F_CONST0);
+	low_insert_label(DO_NOT_WARN((INT32)tmp1));
 	goto foreach_arg_pushed;
       }
     }
