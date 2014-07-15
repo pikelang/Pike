@@ -266,8 +266,8 @@ int select_cipher_suite(object context,
 
   // First we need to check what certificate candidates we have.
   array(CertificatePair) certs =
-    ([function(array(string(8bit)): array(CertificatePair))]
-     context->find_cert)( server_name && ({ server_name }) );
+    ([function(string(8bit): array(CertificatePair))]
+     context->find_cert_domain)( server_name );
 
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 

@@ -633,117 +633,50 @@ mapping(string:array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
 //! verified, or just accepted as being valid.
 int verify_certificates = 0;
 
-//! Certificates and their corresponding keys.
-array(CertificatePair) cert_pairs = ({});
-
-protected int(0..1) cert_pairs_sorted = 0;
-
-//! Lookup from SNI (Server Name Indication) (server), or Issuer DER
-//! (client) to an array of suitable @[CertificatePair]s.
-//!
-//! Generated on demand from @[cert_pairs].
-mapping(string(8bit):array(CertificatePair)) cert_cache = ([]);
-
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });
 
-//! Look up a suitable set of certificates for the specified SNI (server)
-//! or issuer (client).
-//!
-//! @param is_issuer
-//!   Indicates whether to @[glob]-match against the common name (server),
-//!   or against the DER for the issuer (client).
-array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
-				 int(0..1)|void is_issuer)
+// Lookup from issuer DER to an array of suitable @[CertificatePair]s,
+// sorted in order of strength.
+protected mapping(string(8bit):array(CertificatePair)) cert_chains_issuer = ([]);
+
+// Lookup from DN/SNI domain name/glob to an array of suitable
+// @[CertificatePair]s, sorted in order of strength.
+protected mapping(string(8bit):array(CertificatePair)) cert_chains_domain = ([]);
+
+//! Look up a suitable set of certificates for the specified issuer.
+//! @[UNDEFIEND] if no certificate was found.
+array(CertificatePair) find_cert_issuer(array(string) ders)
 {
-  if (!cert_pairs_sorted) {
-    cert_pairs = sort(cert_pairs);
-    cert_pairs_sorted = 1;
+  // Return the first matching issuer. FIXME: Should we merge if
+  // several matching issuers are found?
+  foreach(ders, string der)
+    if(cert_chains_issuer[der])
+      return cert_chains_issuer[der];
+
+  // We MAY return any certificate here. Let's not reveal any
+  // certificates not specifically requested.
+  return UNDEFINED;
+}
+
+//! Look up a suitable set of certificates for the specified domain.
+//! @[UNDEFINED] if no certificate was found.
+array(CertificatePair) find_cert_domain(string(8bit) domain)
+{
+  if( domain )
+  {
+    if( cert_chains_domain[domain] )
+      return cert_chains_domain[domain];
+
+    // Return first matching chain.
+    foreach(cert_chains_domain; string g; array(CertificatePair) chains)
+      if( glob(g, domain) )
+        return chains;
   }
 
-  if (!sizeof(sni_or_issuer || ({}))) {
-    // Either no/empty SNI, or empty certificate_authorities list.
-
-    if (!is_issuer) {
-      // First check if there's a set of default certs.
-      // Note: This doubles as a cache lookup of the
-      //       fallback entry set further below.
-      array(CertificatePair) res = find_cert(({ "" }), is_issuer);
-      if (res && sizeof(res)) return res;
-
-      // Fall back to returning the entire set, since
-      // they are presumably all valid for the server.
-    }
-
-    // RFC 4346 7.4.4
-    //   If the certificate_authorities list is empty then the client MAY
-    //   send any certificate of the appropriate ClientCertificateType,
-    //   unless there is some external arrangement to the contrary.
-    return cert_cache[""] = cert_pairs;
-  }
-
-  mapping(string(8bit):array(CertificatePair)) certs = ([]);
-  array(string(8bit)) maybes = ({});
-
-  if (!is_issuer) {
-    sni_or_issuer = [array(string(8bit))]map(sni_or_issuer, lower_case);
-  }
-
-  foreach(sni_or_issuer, string name) {
-    array(CertificatePair) res;
-    if (res = cert_cache[name]) {
-      certs[name] = res;
-      continue;
-    }
-    if (zero_type(res)) {
-      // Not known bad.
-      certs[name] = ({});
-      maybes += ({ name });
-    }
-  }
-
-  if (sizeof(maybes)) {
-    // There were some unknown names. Check them.
-    if (is_issuer) {
-      foreach(cert_pairs, CertificatePair cp) {
-	foreach(maybes, string(8bit) i) {
-	  if (has_value(cp->issuers, i)) {
-	    certs[i] += ({ cp });
-	  }
-	}
-      }
-    } else {
-      foreach(cert_pairs, CertificatePair cp) {
-	foreach(cp->globs, string(8bit) g) {
-	  foreach(glob(g, maybes), string name) {
-	    certs[name] += ({ cp });
-	  }
-	}
-      }
-    }
-
-    if (sizeof(cert_cache) > (sizeof(cert_pairs) * 10 + 10)) {
-      // It seems the cache has been poisoned. Clean it.
-      cert_cache = ([]);
-    }
-
-    // Update the cache.
-    foreach(maybes, string name) {
-      cert_cache[name] = certs[name];
-    }
-  }
-
-  // No certificate found.
-  if (!sizeof(certs)) return UNDEFINED;
-
-  if (sizeof(certs) == 1) {
-    // Just a single matching name.
-    return values(certs)[0];
-  }
-
-  return sort(values(certs) * ({}));
+  return cert_chains_domain["*"];
 }
 
 //! Add a certificate.
@@ -787,7 +720,7 @@ array(CertificatePair) find_cert(array(string)|void sni_or_issuer,
 //!   An alternative is to send an initialized @[CertificatePair].
 //!
 //! @throws
-//!   The function performs various validation of the @[key]
+//!   The function performs various validations of the @[key]
 //!   and @[certs], and throws errors if the validation fails.
 //!
 //! @seealso
@@ -800,9 +733,20 @@ void add_cert(Crypto.Sign key, array(string(8bit)) certs,
 }
 variant void add_cert(CertificatePair cp)
 {
-  cert_pairs += ({ cp });
-  cert_pairs_sorted = 0;
-  cert_cache = ([]);
+  void add(string what, mapping(string:array(CertificatePair)) to)
+  {
+    if( !to[what] )
+      to[what] = ({cp});
+    else
+      to[what] = sort( to[what]+({cp}) );
+  };
+
+  // Insert cp in cert_chains both under all DN/SNI names/globs and
+  // under issuer DER. Keep lists sorted by strength.
+  foreach( cp->globs, string id )
+    add(id, cert_chains_domain);
+
+  add(cp->issuers[0], cert_chains_issuer);
 }
 
 // update the cached decoded authorities list
@@ -933,6 +877,28 @@ void purge_session(Session s)
 //
 // --- Compat code below
 //
+
+array(CertificatePair) `cert_pairs()
+{
+  return [array(CertificatePair)]Array.uniq([array]Array.sum(values(cert_chains_issuer)));
+}
+
+void `cert_pairs=(array(CertificatePair) list)
+{
+  cert_chains_issuer = ([]);
+  cert_chains_domain = ([]);
+  foreach(list, CertificatePair cp)
+    add_cert(cp);
+}
+
+__deprecated__ array(CertificatePair)
+  find_cert(array(string(8bit))|void sni_or_issuer,
+            int(0..1)|void is_issuer)
+{
+  if( is_issuer )
+    return find_cert_issuer(sni_or_issuer);
+  return find_cert_domain(sni_or_issuer && sni_or_issuer[0]);
+}
 
 protected Crypto.RSA compat_rsa;
 protected array(string(8bit)) compat_certificates;

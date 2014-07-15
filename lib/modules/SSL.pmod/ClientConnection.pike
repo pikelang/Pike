@@ -551,6 +551,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (version >= PROTOCOL_TLS_1_2) {
 	  // TLS 1.2 has var_uint_array of hash and sign pairs here.
 	  string bytes = input->get_var_string(2);
+          if( sizeof(bytes)&1 )
+          {
+            send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+                              "Odd number of bytes in "
+                              "supported_signature_algorithms.\n"));
+            return -1;
+          }
 	  // Pairs of <hash_alg, signature_alg>.
 	  session->signature_algorithms = ((array(int))bytes)/2;
 	  SSL3_DEBUG_MSG("New signature_algorithms:\n"+
@@ -572,6 +579,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
             {
 	      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 				"Badly formed Certificate Request.\n"));
+              return -1;
             }
 	    client_cert_distinguished_names += ({ der });
             SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
@@ -599,7 +607,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	       map(client_cert_types, fmt_constant, "AUTH"));
 	werror("Names: %{%O, %}\n", client_cert_distinguished_names);
 	array(CertificatePair) certs = [array(CertificatePair)]
-	  filter(context->find_cert(client_cert_distinguished_names, 1) || ({}),
+	  filter(context->find_cert_issuer(client_cert_distinguished_names) || ({}),
 		 lambda(CertificatePair cp, array(int)) {
 		   werror("Cert type: %s\n",
 			  fmt_constant(cp->cert_type, "AUTH"));
