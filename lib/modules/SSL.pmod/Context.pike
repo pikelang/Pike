@@ -878,28 +878,6 @@ void purge_session(Session s)
 // --- Compat code below
 //
 
-array(CertificatePair) `cert_pairs()
-{
-  return [array(CertificatePair)]Array.uniq([array]Array.sum(values(cert_chains_issuer)));
-}
-
-void `cert_pairs=(array(CertificatePair) list)
-{
-  cert_chains_issuer = ([]);
-  cert_chains_domain = ([]);
-  foreach(list, CertificatePair cp)
-    add_cert(cp);
-}
-
-__deprecated__ array(CertificatePair)
-  find_cert(array(string(8bit))|void sni_or_issuer,
-            int(0..1)|void is_issuer)
-{
-  if( is_issuer )
-    return find_cert_issuer(sni_or_issuer);
-  return find_cert_domain(sni_or_issuer && sni_or_issuer[0]);
-}
-
 protected Crypto.RSA compat_rsa;
 protected array(string(8bit)) compat_certificates;
 
