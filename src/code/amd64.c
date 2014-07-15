@@ -547,25 +547,27 @@ static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
   low_add_mem_imm( 1, reg, offset, imm32 );
 }
 
-/* static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 ) */
-/* { */
-/*   int r2 = imm32 == -1 ? 1 : 0; */
-/*   if( !imm32 ) return; */
-/*   rex( 0, 0, 0, reg ); */
+#ifndef USE_VALGRIND
+static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
+{
+  int r2 = imm32 == -1 ? 1 : 0;
+  if( !imm32 ) return;
+  rex( 0, 0, 0, reg );
 
-/*   if( imm32 == 1 || imm32 == -1 ) */
-/*     opcode( 0xfe ); /\* INCL r/m8 *\/ */
-/*   else if( imm32 >= -128 && imm32 < 128 ) */
-/*     opcode( 0x80 ); /\* ADD imm8,r/m32 *\/ */
-/*   else */
-/*     Pike_fatal("Not sensible"); */
+  if( imm32 == 1 || imm32 == -1 )
+    opcode( 0xfe ); /* INCL r/m8 */
+  else if( imm32 >= -128 && imm32 < 128 )
+    opcode( 0x80 ); /* ADD imm8,r/m32 */
+  else
+    Pike_fatal("Not sensible");
 
-/*   offset_modrm_sib( offset, r2, reg ); */
-/*   if( imm32 != 1 && !r2 ) */
-/*   { */
-/*     ib( imm32 ); */
-/*   } */
-/* } */
+  offset_modrm_sib( offset, r2, reg );
+  if( imm32 != 1 && !r2 )
+  {
+    ib( imm32 );
+  }
+}
+#endif
 
 static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
