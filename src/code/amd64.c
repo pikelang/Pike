@@ -387,6 +387,11 @@ static void mov_imm_reg( long imm, enum amd64_reg reg )
   }
 }
 
+/* static void mov_ptr_reg( void *x, enum amd64_reg reg ) */
+/* { */
+/*     mov_imm_reg( (long)x, reg ); */
+/* } */
+
 static void mov_mem128_reg( enum amd64_reg from_reg, int offset, enum amd64_reg to_reg )
 {
   if( from_reg > 7 )
@@ -542,25 +547,25 @@ static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
   low_add_mem_imm( 1, reg, offset, imm32 );
 }
 
-static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
-{
-  int r2 = imm32 == -1 ? 1 : 0;
-  if( !imm32 ) return;
-  rex( 0, 0, 0, reg );
+/* static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 ) */
+/* { */
+/*   int r2 = imm32 == -1 ? 1 : 0; */
+/*   if( !imm32 ) return; */
+/*   rex( 0, 0, 0, reg ); */
 
-  if( imm32 == 1 || imm32 == -1 )
-    opcode( 0xfe ); /* INCL r/m8 */
-  else if( imm32 >= -128 && imm32 < 128 )
-    opcode( 0x80 ); /* ADD imm8,r/m32 */
-  else
-    Pike_fatal("Not sensible");
+/*   if( imm32 == 1 || imm32 == -1 ) */
+/*     opcode( 0xfe ); /\* INCL r/m8 *\/ */
+/*   else if( imm32 >= -128 && imm32 < 128 ) */
+/*     opcode( 0x80 ); /\* ADD imm8,r/m32 *\/ */
+/*   else */
+/*     Pike_fatal("Not sensible"); */
 
-  offset_modrm_sib( offset, r2, reg );
-  if( imm32 != 1 && !r2 )
-  {
-    ib( imm32 );
-  }
-}
+/*   offset_modrm_sib( offset, r2, reg ); */
+/*   if( imm32 != 1 && !r2 ) */
+/*   { */
+/*     ib( imm32 ); */
+/*   } */
+/* } */
 
 static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
@@ -2809,25 +2814,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       */
       mov_imm_reg( 1, ARG1_REG );
     }
+
     /* Get function pointer */
-#if 0
-    amd64_load_fp_reg();
-    /* Ok.. This is.. interresting.
-       Let's trust that the efun really is constant, ok?
-    */
-    mov_mem_reg( fp_reg, OFFSETOF(pike_frame,context), P_REG_RAX );
-    mov_mem_reg( P_REG_RAX, OFFSETOF(inherit,prog), P_REG_RAX );
-    mov_mem_reg( P_REG_RAX, OFFSETOF(program,constants), P_REG_RAX );
-    add_reg_imm( P_REG_RAX, b*sizeof(struct program_constant) +
-                 OFFSETOF(program_constant,sval) );
-    mov_mem_reg( P_REG_RAX, OFFSETOF( svalue, u.efun ), P_REG_RAX );
-    mov_mem_reg( P_REG_RAX, OFFSETOF( callable, function), P_REG_RAX );
-    call_reg( P_REG_RAX );
-    sp_reg = -1;
-#else
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
-#endif
     return;
 
   case F_CONSTANT:
@@ -3004,6 +2994,24 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABEL_C;
       return;
      }
+
+#if 0
+   /* this is a: nonworking, and b: not really all that more efficient anyway.. */
+  case F_APPLY_N:
+     mov_imm_reg( APPLY_SVALUE_STRICT, ARG1_REG );
+     mov_imm_reg( c, ARG2_REG );
+     mov_ptr_reg( &((Pike_fp->context->prog->constants + b)->sval), ARG3_REG );
+     clear_reg( ARG4_REG );
+     amd64_call_c_opcode(mega_apply, I_UPDATE_SP);
+    return;
+#endif
+  case F_CALL_BUILTIN_N:
+    mov_imm_reg( c, ARG1_REG );
+    amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
+                        I_UPDATE_SP);
+    return;
+
+
   case F_ADD_LOCALS_AND_POP:
     {
       LABELS();
