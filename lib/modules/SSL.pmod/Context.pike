@@ -835,19 +835,12 @@ void add_cert(Crypto.Sign key, array(string(8bit)) certs,
 	      array(string(8bit))|void extra_name_globs)
 {
   CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
-
-  cert_pairs += ({ cp });
-
-  cert_pairs_sorted = 0;
-
-  cert_cache = ([]);
+  add_cert(cp);
 }
 variant void add_cert(CertificatePair cp)
 {
   cert_pairs += ({ cp });
-
   cert_pairs_sorted = 0;
-
   cert_cache = ([]);
 }
 
