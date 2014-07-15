@@ -485,6 +485,11 @@ class Real
     return this;
   }
 
+  protected string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, value);
+  }
+
   __deprecated__ string debug_string()
   {
     return sprintf("REAL %O", value);
