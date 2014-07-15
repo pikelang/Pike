@@ -388,7 +388,7 @@ test_any([[
 test_any([[
   Crypto.RSA root_rsa = Crypto.RSA();
   root_rsa->generate_key(512);
-  string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"*" ]));
+  string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"DaRoot" ]));
   object rtbs = Standards.X509.decode_certificate(root);
 
   Crypto.RSA cert_rsa = Crypto.RSA();
@@ -398,15 +398,35 @@ test_any([[
   mapping auths = ([ rtbs->subject->get_der() : rtbs->public_key ]);
 
   mapping m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
-  if(!m->verified || m->error_code) return m;
+  if(!m->verified || m->error_code || m->self_signed)
+    return m+(["line":__LINE__]);
 
   c = Standards.X509.make_selfsigned_certificate(cert_rsa, 3600, ([ "commonName":"*" ]));
   m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
-  if(m->verified || m->error_code!=Standards.X509.CERT_BAD_SIGNATURE) return m;
+  if(!m->verified || m->error_code!=Standards.X509.CERT_ROOT_UNTRUSTED)
+    return m+(["line":__LINE__]);
 
   c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, -3600, ([ "commonName":"*" ]));
   m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
-  if(!m->verified || m->error_code!=Standards.X509.CERT_TOO_OLD) return m;
+  if(!m->verified || m->error_code!=Standards.X509.CERT_TOO_OLD)
+    return m+(["line":__LINE__]);
+
+  {
+    object dn = Standards.PKCS.Certificate.build_distinguished_name(
+      ([ "commonName" : "*" ]) );
+    object val = Standards.ASN1.Types.Sequence( ({
+                   Standards.ASN1.Types.UTC()->set_posix( time()+1000 ),
+                   Standards.ASN1.Types.UTC()->set_posix( time()+2000 ),
+                 }) );
+    object tbs = Standards.X509.make_tbs(rtbs->subject,
+		   cert_rsa->pkcs_signature_algorithm_id(Crypto.SHA256),
+		   dn, cert_rsa->pkcs_public_key(),
+		   Standards.ASN1.Types.Integer(1), val, 0);
+    c = Standards.X509.sign_tbs(tbs, root_rsa, Crypto.SHA256)->get_der();
+  }
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(!m->verified || m->error_code!=Standards.X509.CERT_TOO_NEW)
+    return m+(["line":__LINE__]);
 
   return 1;
 ]], 1)
