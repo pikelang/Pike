@@ -533,7 +533,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
     case HANDSHAKE_certificate_request:
-      SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
+      {
+        SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
 
         // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
@@ -564,31 +565,27 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_signature_pairs(session->signature_algorithms));
 	}
 
-        int num_distinguished_names = input->get_uint(2);
-        if(num_distinguished_names)
+        ADT.struct s = ADT.struct(input->get_var_string(2));
+        while(sizeof(s))
         {
-          ADT.struct s =
-	    ADT.struct(input->get_fix_string(num_distinguished_names));
-          while(sizeof(s))
+          string(8bit) der = s->get_var_string(2);
+          Standards.ASN1.Types.Object o =
+            Standards.ASN1.Decode.simple_der_decode(der);
+          if( o->type_name != "SEQUENCE" )
           {
-	    string(8bit) der = s->get_var_string(2);
-	    Standards.ASN1.Types.Sequence seq =
-	      [object(Standards.ASN1.Types.Sequence)]
-	      Standards.ASN1.Decode.simple_der_decode(der);
-	    if(object_program(seq) != Standards.ASN1.Types.Sequence)
-            {
-	      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-				"Badly formed Certificate Request.\n"));
-              return -1;
-            }
-	    client_cert_distinguished_names += ({ der });
-            SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
-			   Standards.PKCS.Certificate.get_dn_string( seq ));
-	  }
+            send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                              "Badly formed Certificate Request.\n"));
+            return -1;
+          }
+          client_cert_distinguished_names += ({ der });
+          SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
+                         Standards.PKCS.Certificate.get_dn_string
+                         ( [object(Standards.ASN1.Types.Sequence)]o ));
         }
 
-      certificate_state = CERT_requested;
-      break;
+        certificate_state = CERT_requested;
+        break;
+      }
 
     case HANDSHAKE_server_hello_done:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
@@ -599,18 +596,17 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       /* only send a certificate if it's been requested. */
       if(certificate_state == CERT_requested)
       {
-        // okay, we have a list of certificate types and dns that are
-        // acceptable to the remote server. we should weed out the certs
+        // Okay, we have a list of certificate types and DN:s that are
+        // acceptable to the remote server. We should weed out the certs
         // we have so that we only send certificates that match what they
         // want.
-	werror("Client cert requested! Types: %{%s %}\n",
-	       map(client_cert_types, fmt_constant, "AUTH"));
-	werror("Names: %{%O, %}\n", client_cert_distinguished_names);
-	array(CertificatePair) certs = [array(CertificatePair)]
-	  filter(context->find_cert_issuer(client_cert_distinguished_names) || ({}),
+
+	array(CertificatePair) certs = context->find_cert_issuer(client_cert_distinguished_names) || ({});
+
+	certs = [array(CertificatePair)]
+          filter(certs,
 		 lambda(CertificatePair cp, array(int)) {
-		   werror("Cert type: %s\n",
-			  fmt_constant(cp->cert_type, "AUTH"));
+                   // FIXME: Needs to look at session->signature_algorithms.
 		   return has_value(client_cert_types, cp->cert_type);
 		 }, client_cert_types);
 
@@ -618,13 +614,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  werror("Found %d client certs.\n", sizeof(certs));
 	  session->private_key = certs[0]->key;
           session->certificate_chain = certs[0]->certs;
-#ifdef SSL3_DEBUG
-	  foreach(session->certificate_chain, string c)
-	  {
-	    werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Standards.X509.decode_certificate(c)->subject) + "\n");
-	  }
-#endif
-
 	  send_packet(certificate_packet(session->certificate_chain));
           certificate_state = CERT_received; // we use this as a way of saying "the server received our certificate"
 	} else {
@@ -632,7 +621,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
           certificate_state = CERT_no_certificate;
 	}
       }
-
 
       if( !session->has_required_certificates() )
       {
