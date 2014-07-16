@@ -309,7 +309,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 				     context->signature_algorithms,
 				     512)) {
 	// Unsupported or obsolete cipher suite selected.
-	SSL3_DEBUG_MSG("Unsupported or obsolete cipher suite selected.\n");
 	send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			  "Unsupported or obsolete cipher suite.\n"));
 	return -1;
@@ -484,7 +483,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       // we have the certificate chain in hand, now we must verify them.
       if(!verify_certificate_chain(certs))
       {
-        werror("Unable to verify peer certificate chain.\n");
         send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
 			  "Bad server certificate chain.\n"));
 	return -1;
@@ -510,7 +508,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       if(error)
 	{
 	  session->peer_certificate_chain = UNDEFINED;
-          SSL3_DEBUG_MSG("Failed to decode certificate!\n");
 	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Failed to decode server certificate.\n"));
 	  return -1;
@@ -624,7 +621,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       if( !session->has_required_certificates() )
       {
-        SSL3_DEBUG_MSG("Certificate message required from server.\n");
         send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
                           "Certificate message missing.\n"));
         return -1;
@@ -669,36 +665,34 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
   case STATE_wait_for_finish:
     {
-    if((type) != HANDSHAKE_finished)
-    {
-      SSL3_DEBUG_MSG("Expected type HANDSHAKE_finished(%d), got %d\n",
-		     HANDSHAKE_finished, type);
-      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected handshake finished.\n"));
-      return -1;
-    } else {
+      if(type != HANDSHAKE_finished)
+      {
+        SSL3_DEBUG_MSG("Expected type HANDSHAKE_finished(%d), got %d\n",
+                       HANDSHAKE_finished, type);
+        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                          "Expected handshake finished.\n"));
+        return -1;
+      }
+
       SSL3_DEBUG_MSG("SSL.ClientConnection: FINISHED\n");
 
       string my_digest;
       if (version == PROTOCOL_SSL_3_0) {
-	server_verify_data = input->get_fix_string(36);
-	my_digest = hash_messages("SRVR");
+        server_verify_data = input->get_fix_string(36);
+        my_digest = hash_messages("SRVR");
       } else if (version >= PROTOCOL_TLS_1_0) {
-	server_verify_data = input->get_fix_string(12);
-	my_digest = hash_messages("server finished");
+        server_verify_data = input->get_fix_string(12);
+        my_digest = hash_messages("server finished");
       }
 
       if (my_digest != server_verify_data) {
-	SSL3_DEBUG_MSG("Digests differ.\n");
-	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			  "Digests differ.\n"));
-	return -1;
+        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                          "Digests differ.\n"));
+        return -1;
       }
 
       return 1;			// We're done shaking hands
     }
-    }
   }
-  //  SSL3_DEBUG_MSG("SSL.ClientConnection: messages = %O\n", handshake_messages);
   return 0;
 }

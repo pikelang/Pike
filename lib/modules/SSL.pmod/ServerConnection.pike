@@ -176,7 +176,6 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
                                     cipher_suites, version)) {
     // No overlapping cipher suites, or obsolete cipher suite selected,
     // or incompatible certificates.
-    SSL3_DEBUG_MSG("No common suites.\n");
     send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "No common suites!\n"));
     return -1;
@@ -187,7 +186,6 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     session->set_compression_method(compression_methods[0]);
   else
   {
-    SSL3_DEBUG_MSG("Unsupported compression method.\n");
     send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "Unsupported compression method.\n"));
     return -1;
