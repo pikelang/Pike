@@ -474,10 +474,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         if(ke && ke->anonymous)
           break;
 
-        int certs_len = input->get_uint(3); certs_len;
+        ADT.struct cert_data = ADT.struct(input->get_var_string(3));
         array(string(8bit)) certs = ({ });
-        while(sizeof(input))
-          certs += ({ input->get_var_string(3) });
+        while(sizeof(cert_data))
+          certs += ({ cert_data->get_var_string(3) });
 
         // we have the certificate chain in hand, now we must verify
         // them.
@@ -613,6 +613,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
           // We use this as a way of saying "the server received our
           // certificate"
+          // FIXME: Using the same state variable for certificates in
+          // both directions doesn't work, as they overwrite each
+          // others state.
           certificate_state = CERT_received;
 	} else {
 	  send_packet(certificate_packet(({})));
