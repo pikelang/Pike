@@ -463,7 +463,7 @@ PIKECLASS Backend
    *!   @[call_out()]
    */
   PIKECLASS CallOut
-    program_flags PROGRAM_USES_PARENT;
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
     flags ID_PROTECTED|ID_PRIVATE|ID_USED;
   {
     CVAR INT32 pos;
