@@ -561,6 +561,20 @@ void configure_suite_b(int(128..)|void min_keylength,
 // --- Certificates and authentication
 //
 
+// Unless connecting in anonymous mode the server has to have a set of
+// CertificatePair certificate chains to sign its handshake with.
+// These are stored in the cert_chains_domain mapping, where they are
+// retrieved based on domain the client is connecting to.
+//
+// If the server sends a certificate request the client has to respond
+// with a certificate matching the requested issuer der. These are
+// stored in the cert_chains_issuer mapping.
+//
+// The client/server potentially has a set of trusted issuers
+// certificate (root certificates) that are used to validate the
+// server/client sent certificate. These are stored in a cache from
+// subject der to Verifier object. FIXME: Should use key identifier.
+
 //! Policy for client authentication. One of
 //! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
 //! and @[SSL.Constants.AUTHLEVEL_require].
@@ -740,6 +754,9 @@ variant void add_cert(CertificatePair cp)
     else
       to[what] = sort( to[what]+({cp}) );
   };
+
+  // FIXME: Look at leaf flags to determine which mapping to store the
+  // chains in.
 
   // Insert cp in cert_chains both under all DN/SNI names/globs and
   // under issuer DER. Keep lists sorted by strength.
