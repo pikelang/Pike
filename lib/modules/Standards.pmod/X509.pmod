@@ -411,7 +411,7 @@ class TBSCertificate
   void `not_before=(int t)
   {
     Sequence validity = low_get_sequence(3);
-    validity->elements[0] = UTC()->set_posix(t);
+    validity->elements[0] = UTC(t);
     internal_der = UNDEFINED;
   }
   int `not_before()
@@ -424,7 +424,7 @@ class TBSCertificate
   void `not_after=(int t)
   {
     Sequence validity = low_get_sequence(3);
-    validity->elements[1] = UTC()->set_posix(t);
+    validity->elements[1] = UTC(t);
     internal_der = UNDEFINED;
   }
   int `not_after()
@@ -677,8 +677,8 @@ class TBSCertificate
       Integer(0),					// serialNumber
       Null,						// signature
       Sequence(({})),					// issuer
-      Sequence(({ UTC()->set_posix(-0x8000000),
-		  UTC()->set_posix(0x7fffffff) })),	// validity
+      Sequence(({ UTC(-0x8000000),
+		  UTC(0x7fffffff) })),	                // validity
       Sequence(({})),					// subject
       Null,						// subjectPublicKeyInfo
     });
@@ -1125,8 +1125,8 @@ variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 				array|int(0..0)|void extensions)
 {
   int now = time();
-  Sequence validity = Sequence( ({ UTC()->set_posix(now),
-                                   UTC()->set_posix(now + ttl) }) );
+  Sequence validity = Sequence( ({ UTC(now),
+                                   UTC(now + ttl) }) );
 
   return make_tbs(issuer, algorithm, subject, keyinfo,
 		  serial, validity, extensions);

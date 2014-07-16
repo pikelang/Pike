@@ -1304,6 +1304,14 @@ class UTC
   int tag = 23;
   constant type_name = "UTCTime";
 
+  this_program init(int|string t)
+  {
+    if(intp(t))
+      set_posix([int]t);
+    else
+      value = [string]t;
+  }
+
   //!
   this_program set_posix(int t)
   {
