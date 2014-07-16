@@ -171,7 +171,9 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   }
 
   if (!sizeof(cipher_suites) ||
-      !session->select_cipher_suite(context, cipher_suites, version)) {
+      !session->select_cipher_suite(context->
+                                    find_cert_domain(session->server_name),
+                                    cipher_suites, version)) {
     // No overlapping cipher suites, or obsolete cipher suite selected,
     // or incompatible certificates.
     SSL3_DEBUG_MSG("No common suites.\n");

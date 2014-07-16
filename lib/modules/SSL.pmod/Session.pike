@@ -239,8 +239,9 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
 //! Selects an apropriate certificate, authentication method
 //! and cipher suite for the parameters provided by the client.
 //!
-//! @param context
-//!   The server context.
+//! @param certs
+//!   The list of @[CertificatePair]s that are applicable to the
+//!   @[server_name] of this session.
 //!
 //! @param client_suites
 //!   The set of cipher suites that the client claims to support.
@@ -253,21 +254,12 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
 //!   @item @[signature_algorithms]
 //!     The set of signature algorithm tuples that
 //!     the client claims to support.
-//!
-//!   @item @[server_name]
-//!     Server Name Indication extension from the client.
-//!     May be @expr{0@} (zero) if the client hasn't sent any SNI.
 //! @enddl
-int select_cipher_suite(object context,
+int select_cipher_suite(array(CertificatePair) certs,
 			array(int) cipher_suites,
 			ProtocolVersion version)
 {
   if (!sizeof(cipher_suites)) return 0;
-
-  // First we need to check what certificate candidates we have.
-  array(CertificatePair) certs =
-    ([function(string(8bit): array(CertificatePair))]
-     context->find_cert_domain)( server_name );
 
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
