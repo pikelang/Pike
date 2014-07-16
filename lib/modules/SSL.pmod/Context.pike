@@ -1013,25 +1013,6 @@ __deprecated__ void `client_certificates=(array(array(string(8bit))) certs)
   }
 }
 
-//! A mapping containing certificate chains for use by SNI (Server
-//! Name Indication). Each entry should consist of a key indicating
-//! the server hostname and the value containing the certificate chain
-//! for that hostname.
-//!
-//! @deprecated add_cert
-//!
-//! @seealso
-//!   @[add_cert()]
-__deprecated__ void `sni_certificates=(mapping(string:array(string(8bit))) sni)
-{
-  error("The old SNI API is not supported anymore.\n");
-}
-
-__deprecated__ mapping(string:array(string(8bit))) `sni_certificates()
-{
-  return ([]);
-}
-
 //! Compatibility.
 //! @deprecated find_cert
 __deprecated__ Crypto.DSA `dsa()
