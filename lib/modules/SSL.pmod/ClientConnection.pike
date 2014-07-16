@@ -468,44 +468,42 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       return -1;
     case HANDSHAKE_certificate:
       {
-	SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE\n");
+	SSL3_DEBUG_MSG("SSL.ClientConnection: Certificate recevied\n");
 
-      // we're anonymous, so no certificate is requred.
-      if(ke && ke->anonymous)
-         break;
+        // we're anonymous, so no certificate is requred.
+        if(ke && ke->anonymous)
+          break;
 
-      SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
-      int certs_len = input->get_uint(3); certs_len;
-      array(string(8bit)) certs = ({ });
-      while(sizeof(input))
-	certs += ({ input->get_var_string(3) });
+        int certs_len = input->get_uint(3); certs_len;
+        array(string(8bit)) certs = ({ });
+        while(sizeof(input))
+          certs += ({ input->get_var_string(3) });
 
-      // we have the certificate chain in hand, now we must verify them.
-      if(!verify_certificate_chain(certs))
-      {
-        send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-			  "Bad server certificate chain.\n"));
-	return -1;
-      }
-      else
-      {
+        // we have the certificate chain in hand, now we must verify
+        // them.
+        if(!verify_certificate_chain(certs))
+        {
+          send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+                            "Bad server certificate chain.\n"));
+          return -1;
+        }
+
         session->peer_certificate_chain = certs;
-      }
 
-      mixed error=catch
-      {
-	session->peer_public_key = Standards.X509.decode_certificate(
+        mixed error=catch
+          {
+            session->peer_public_key = Standards.X509.decode_certificate(
                 session->peer_certificate_chain[0])->public_key->pkc;
 #if constant(Crypto.ECC.Curve)
-	if (session->peer_public_key->curve) {
-	  session->curve =
-	    ([object(Crypto.ECC.SECP_521R1.ECDSA)]session->peer_public_key)->
-	    curve();
-	}
+            if (session->peer_public_key->curve) {
+              session->curve =
+                ([object(Crypto.ECC.SECP_521R1.ECDSA)]session->peer_public_key)->
+                curve();
+            }
 #endif
-      };
+          };
 
-      if(error)
+        if(error)
 	{
 	  session->peer_certificate_chain = UNDEFINED;
 	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
@@ -513,8 +511,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 
-      certificate_state = CERT_received;
-      break;
+        certificate_state = CERT_received;
+        break;
       }
 
     case HANDSHAKE_server_key_exchange:
@@ -608,11 +606,14 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		 }, client_cert_types);
 
 	if (sizeof(certs)) {
-	  werror("Found %d client certs.\n", sizeof(certs));
+	  SSL3_DEBUG_MSG("Found %d matching client certs.\n", sizeof(certs));
 	  session->private_key = certs[0]->key;
           session->certificate_chain = certs[0]->certs;
 	  send_packet(certificate_packet(session->certificate_chain));
-          certificate_state = CERT_received; // we use this as a way of saying "the server received our certificate"
+
+          // We use this as a way of saying "the server received our
+          // certificate"
+          certificate_state = CERT_received;
 	} else {
 	  send_packet(certificate_packet(({})));
           certificate_state = CERT_no_certificate;
