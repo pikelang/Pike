@@ -578,7 +578,6 @@ int handle_change_cipher(int c)
 {
   if (!expect_change_cipher || (c != 1))
   {
-    SSL3_DEBUG_MSG("SSL.Connection: handle_change_cipher: Unexcepted message!");
     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Unexpected change cipher!\n"));
     return -1;
