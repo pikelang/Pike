@@ -855,6 +855,9 @@ protected void destroy()
 	shutdown();
     }
   } LEAVE;
+
+  // We don't want the callback to be called after we are gone...
+  if (user_cb_co) real_backend->remove_call_out(user_cb_co);
 }
 
 string read (void|int length, void|int(0..1) not_all)
@@ -1072,6 +1075,60 @@ int renegotiate()
   } LEAVE;
 }
 
+//! Check whether any callbacks need to be called.
+//!
+//! Always run via the @[real_backend].
+//!
+//! @seealso
+//!   @[schedule_poll()]
+protected void internal_poll()
+{
+  if (!this_object()) return;
+  user_cb_co = UNDEFINED;
+  SSL3_DEBUG_MSG("poll: %s\n", (conn?->describe_state()) || "CLOSED");
+  if (conn?->state & CONNECTION_local_closed) {
+    if (close_callback && cb_errno && close_state < NORMAL_CLOSE) {
+      // Better signal errors writing the close packet to the
+      // close callback.
+      FIX_ERRNOS (
+	SSL3_DEBUG_MSG("poll: Calling close callback %O "
+		       "(error %s)\n", close_callback, strerror (local_errno)),
+	0
+      );
+      close_callback(callback_id);
+      return;
+    }
+  }
+
+  SSL3_DEBUG_MSG("poll: wcb: %O, cs: %d, cbe: %d\n",
+		 write_callback, close_state, cb_errno);
+  if (!sizeof(write_buffer) && write_callback && !SSL_HANDSHAKING
+      && (close_state < NORMAL_CLOSE || cb_errno)) {
+    // errno() should return the error in the write callback - need
+    // to propagate it here.
+    FIX_ERRNOS (
+      SSL3_DEBUG_MSG("poll: Calling write callback %O "
+		     "(error %s)\n", write_callback, strerror (local_errno)),
+    );
+    write_callback(callback_id);
+    return;
+  }
+}
+
+protected mixed user_cb_co;
+
+//! Schedule calling of any relevant callbacks the next
+//! time the @[real_backend] is run.
+//!
+//! @seealso
+//!   @[internal_poll()]
+protected void schedule_poll()
+{
+  if (!user_cb_co) {
+    user_cb_co = real_backend->call_out(internal_poll, 0);
+  }
+}
+
 void set_callbacks (void|function(mixed, string:int) read,
 		    void|function(mixed:int) write,
 		    void|function(mixed:int) close,
@@ -1114,6 +1171,8 @@ void set_callbacks (void|function(mixed, string:int) read,
       accept_callback = accept;
 
     if (stream) update_internal_state();
+
+    schedule_poll();
   } LEAVE;
 }
 
@@ -1171,12 +1230,17 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
 
     if (stream) {
       stream->set_nonblocking_keep_callbacks();
+
+      schedule_poll();
+
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
       RESTORE;
       update_internal_state();
       return;
     }
+
+    schedule_poll();
   } LEAVE;
 }
 
@@ -1386,6 +1450,7 @@ void set_read_callback (function(void|mixed,void|string:int) read)
 #endif
     read_callback = read;
     if (stream) update_internal_state();
+    if (read) schedule_poll();
   } LEAVE;
 }
 
@@ -1413,6 +1478,7 @@ void set_write_callback (function(void|mixed:int) write)
 #endif
     write_callback = write;
     if (stream) update_internal_state();
+    if (write) schedule_poll();
   } LEAVE;
 }
 
@@ -1441,6 +1507,7 @@ void set_close_callback (function(void|mixed:int) close)
 #endif
     close_callback = close;
     if (stream) update_internal_state();
+    if (close) schedule_poll();
   } LEAVE;
 }
 
@@ -1750,6 +1817,13 @@ protected int queue_write()
 		    sizeof (res), sizeof (write_buffer));
     if (was_empty && stream)
       update_internal_state();
+  }
+
+  if (!sizeof(write_buffer)) {
+    if (!(conn->state & CONNECTION_handshaking)) {
+      SSL3_DEBUG_MSG("queue_write: Write buffer empty -- ask for some more data.\n");
+      schedule_poll();
+    }
   }
 
   SSL3_DEBUG_MSG ("queue_write: Returning 0 (%d strings buffered)\n",
@@ -2183,35 +2257,7 @@ protected int ssl_write_callback (int called_from_real_backend)
       }
     } while (sizeof (write_buffer));
 
-    if (called_from_real_backend) {
-      if (conn->state & CONNECTION_local_closed) {
-	if (close_callback && cb_errno && close_state < NORMAL_CLOSE) {
-	  // Better signal errors writing the close packet to the
-	  // close callback.
-	  FIX_ERRNOS (
-	    SSL3_DEBUG_MSG ("ssl_write_callback: Calling close callback %O "
-			    "(error %s)\n", close_callback, strerror (local_errno)),
-	    0
-	  );
-	  RESTORE;
-	  return close_callback (callback_id);
-	}
-      }
-
-      if (write_callback && !SSL_HANDSHAKING
-	  && (close_state < NORMAL_CLOSE || cb_errno)) {
-	// errno() should return the error in the write callback - need
-	// to propagate it here.
-	FIX_ERRNOS (
-	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O "
-			  "(error %s)\n", write_callback, strerror (local_errno)),
-	  SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
-			  write_callback)
-	);
-	RESTORE;
-	return write_callback (callback_id);
-      }
-    }
+    schedule_poll();
 
     if ((close_state >= NORMAL_CLOSE &&
 	 (conn->state & CONNECTION_local_closing)) || cb_errno) {
