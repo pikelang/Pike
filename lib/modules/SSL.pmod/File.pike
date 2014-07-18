@@ -107,6 +107,8 @@ protected int fragment_max_size;
 
 import .Constants;
 
+protected int previous_connection_state = CONNECTION_handshaking;
+
 protected enum CloseState {
   ABRUPT_CLOSE = -1,
   STREAM_OPEN = 0,
@@ -1083,10 +1085,14 @@ int renegotiate()
 //!   @[schedule_poll()]
 protected void internal_poll()
 {
-  if (!this_object()) return;
+  if (!this_object() || !conn) return;
   user_cb_co = UNDEFINED;
-  SSL3_DEBUG_MSG("poll: %s\n", (conn?->describe_state()) || "CLOSED");
-  if (conn?->state & CONNECTION_local_closed) {
+  SSL3_DEBUG_MSG("poll: %s\n", conn->describe_state());
+
+  //
+  // Close error ==> close_callback
+  //
+  if (conn->state & CONNECTION_local_closed) {
     if (close_callback && cb_errno && close_state < NORMAL_CLOSE) {
       // Better signal errors writing the close packet to the
       // close callback.
@@ -1100,6 +1106,65 @@ protected void internal_poll()
     }
   }
 
+  //
+  // Handshake completed ==> accept_callback
+  //
+  if (((previous_connection_state ^ conn->state) & CONNECTION_handshaking) &&
+      (previous_connection_state & CONNECTION_handshaking)) {
+    previous_connection_state = conn->state;
+    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+    if (accept_callback) {
+      SSL3_DEBUG_MSG ("ssl_read_callback: Calling accept callback %O\n",
+		      accept_callback);
+      accept_callback(this, callback_id);
+      return;
+    }
+  }
+  previous_connection_state = conn->state;
+
+  //
+  // read_callback & close_callback
+  //
+  if (sizeof(read_buffer)) {
+    if (read_callback) {
+      string received = read_buffer->get();
+      SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
+		      "with %d bytes\n", read_callback, sizeof (received));
+      // Never called if there's an error - no need to propagate cb_errno.
+      read_callback (callback_id, received);
+    }
+
+    // NB: Don't call the close_callback before the read_buffer is empty.
+  } else if ((conn->state &
+	      (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
+	     CONNECTION_peer_closed) {
+    // Remote close.
+
+    function(void|mixed:int) close_cb;
+    if (close_cb = close_callback) {
+      // To correctly imitate the behavior in
+      // Stdio.File (it deinstalls read side cbs whenever the close
+      // cb is called, but it's possible to reinstall the close cb
+      // later and get another call to it).
+
+      set_close_callback(0);
+
+      // errno() should return the error in the close callback - need to
+      // propagate it here.
+      FIX_ERRNOS (
+	SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O (error %s)\n",
+			close_cb, strerror(local_errno)),
+	SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O (read eof)\n",
+			close_cb)
+      );
+      close_cb(callback_id);
+      return;
+    }
+  }
+
+  //
+  // write_callback
+  //
   SSL3_DEBUG_MSG("poll: wcb: %O, cs: %d, cbe: %d\n",
 		 write_callback, close_state, cb_errno);
   if (!sizeof(write_buffer) && write_callback && !SSL_HANDSHAKING
@@ -2020,75 +2085,14 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	update_internal_state();
       }
 
+    if (conn->state & CONNECTION_peer_closed) {
+      // Deinstall read side cbs to avoid reading more.
+      stream->set_read_callback (0);
+      stream->set_close_callback (0);
+    }
+
     // Now actually do (a bit of) what should be done.
-
-    if (call_accept_cb) {
-      SSL3_DEBUG_MSG ("ssl_read_callback: Calling accept callback %O\n",
-		      accept_callback);
-      RESTORE;
-      return accept_callback (this, callback_id);
-    }
-
-    else if (call_read_cb) {
-      string received = read_buffer->get();
-      SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
-		      "with %d bytes\n", read_callback, sizeof (received));
-      // Never called if there's an error - no need to propagate cb_errno.
-      RESTORE;
-      return read_callback (callback_id, received);
-    }
-
-    else if (do_close_stuff) {
-#ifdef SSLFILE_DEBUG
-      if (got_extra_read_call_out)
-	error ("Shouldn't have more to do after close stuff.\n");
-#endif
-
-      if ((conn->state & (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
-	  CONNECTION_peer_closed) {
-	// Deinstall read side cbs to avoid reading more and install
-	// the write cb to send the close packet. Can't use
-	// update_internal_state here since we should force a
-	// deinstall of the read side cbs even when we're still in
-	// callback mode, to correctly imitate the behavior in
-	// Stdio.File (it deinstalls read side cbs whenever the close
-	// cb is called, but it's possible to reinstall the close cb
-	// later and get another call to it).
-	if (stream->query_backend() != local_backend) {
-	  stream->set_read_callback (0);
-	  stream->set_close_callback (0);
-	  stream->set_write_callback (ssl_write_callback);
-	  SSL3_DEBUG_MORE_MSG ("ssl_read_callback: Setting cbs for close [r:0 w:1]\n");
-	}
-      }
-
-      if (called_from_real_backend && close_callback) {
-	// errno() should return the error in the close callback - need to
-	// propagate it here.
-	FIX_ERRNOS (
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O (error %s)\n",
-			  close_callback, strerror (local_errno)),
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O (read eof)\n",
-			  close_callback)
-	);
-	RESTORE;
-	return close_callback (callback_id);
-      }
-
-      if (close_state >= NORMAL_CLOSE) {
-	SSL3_DEBUG_MSG ("ssl_read_callback: "
-			"In or after local close - shutting down\n");
-	shutdown();
-      }
-
-      if (cb_errno) {
-	SSL3_DEBUG_MSG ("ssl_read_callback: Returning with error\n");
-	// Make sure the local backend exits after this, so that the
-	// error isn't clobbered by later I/O.
-	RESTORE;
-	return -1;
-      }
-    }
+    schedule_poll();
 
   } LEAVE;
   return 0;
