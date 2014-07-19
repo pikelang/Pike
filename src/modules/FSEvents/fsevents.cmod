@@ -143,7 +143,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
   THIS->isRunning = 0;
   THIS->_latency = latency;
 
-  if(sinceWhen && sinceWhen->type == T_INT)
+  if(sinceWhen && TYPEOF(*sinceWhen) == T_INT)
   {
     THIS->_sinceWhen = sinceWhen->u.integer;
   }
@@ -152,7 +152,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
     THIS->_sinceWhen = kFSEventStreamEventIdSinceNow;
   }
 
-  if(flags && flags->type == T_INT)
+  if(flags && TYPEOF(*flags) == T_INT)
   {
     THIS->_flags = flags->u.integer;
   }
@@ -170,7 +170,7 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
     {
       struct svalue sv;
       CFStringRef str;
-      if(ITEM(paths)[idx].type != T_STRING) continue;
+      if(TYPEOF(ITEM(paths)[idx]) != T_STRING) continue;
       sv = ITEM(paths)[idx];
       push_svalue(&sv);
       f_string_to_utf8(1);
