@@ -153,6 +153,7 @@ int(0..1) has_required_certificates()
 //!   The set of ecc_curves supported by the peer.
 protected int(0..1) is_supported_cert(CertificatePair cp,
 				      int ke_mask,
+				      int h_max,
 				      ProtocolVersion version,
 				      array(int) ecc_curves)
 {
@@ -176,6 +177,11 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     }
   } else {
     if (!(ke_mask & cp->ke_mask)) return 0;
+
+    // GNU-TLS doesn't like eg SHA being used with SHA256 certs.
+    Crypto.Hash hash = HASH_lookup[cp->sign_algs[0][0]];
+    if (!hash) return 0;
+    if (hash->digest_size() > h_max) return 0;
   }
 
 #if constant(Crypto.ECC.Curve)
@@ -214,10 +220,13 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
   KeyExchangeType ke = [int(0..0)|KeyExchangeType]suite_info[0];
   if (!(ke_mask & (1<<ke))) return 0;
 
-  if ((version < PROTOCOL_TLS_1_2) && (sizeof(suite_info) >= 4)) {
-    // AEAD protocols are not supported prior to TLS 1.2.
-    // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
-    return 0;
+  if (version < PROTOCOL_TLS_1_2) {
+    if (sizeof(suite_info) >= 4) {
+      // AEAD protocols are not supported prior to TLS 1.2.
+      // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
+      return 0;
+    }
+    // FIXME: Check hash size >= cert hash size.
   }
 
   if ((version >= PROTOCOL_TLS_1_1) &&
@@ -263,17 +272,22 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
-  // Find the set of key exchange algorithms supported by the client.
+  // Find the set of key exchange and hash algorithms supported by the client.
   int ke_mask = 0;
+  int h_max = 0;
   foreach(cipher_suites, int suite) {
     if (CIPHER_SUITES[suite]) {
       ke_mask |= 1 << [int](CIPHER_SUITES[suite][0]);
+      Crypto.Hash hash = HASH_lookup[CIPHER_SUITES[suite][2]];
+      if (hash && (hash->digest_size() > h_max)) {
+	h_max = hash->digest_size();
+      }
     }
   }
 
   // Filter any certs that the client doesn't support.
   certs = [array(CertificatePair)]
-    filter(certs, is_supported_cert, ke_mask, version, ecc_curves);
+    filter(certs, is_supported_cert, ke_mask, h_max, version, ecc_curves);
 
   SSL3_DEBUG_MSG("Client supported certificates: %O\n", certs);
 
