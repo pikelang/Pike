@@ -362,8 +362,6 @@ protected THREAD_T op_thread;
 	}								\
 									\
 	else {								\
-	  stream->set_write_callback (SSL_INTERNAL_WRITING && ssl_write_callback); \
-									\
 	  if (ENABLE_READS) {						\
 	    stream->set_read_callback (ssl_read_callback);		\
 	    stream->set_close_callback (ssl_close_callback);		\
@@ -917,6 +915,10 @@ string read (void|int length, void|int(0..1) not_all)
     if (!zero_type (length)) {
       read_buffer->add (res[length..]);
       res = res[..length-1];
+    }
+
+    if (SSL_INTERNAL_WRITING) {
+      queue_write();
     }
 
     SSL3_DEBUG_MSG ("SSL.File->read: Read done, returning %d bytes "
@@ -1820,9 +1822,6 @@ protected void update_internal_state (void|int assume_real_backend)
       }
     }
 
-    stream->set_write_callback (install_write_cb && !got_extra_read_call_out &&
-				ssl_write_callback);
-
 #ifdef SSLFILE_DEBUG
     if (!assume_real_backend && op_thread)
       // Check that we haven't installed callbacks that might start
@@ -1855,8 +1854,9 @@ protected int queue_write()
   int buffer_limit = 16384;
   if (conn->state & CONNECTION_closing) buffer_limit = 1;
 
+  int|string res;
   while (got < buffer_limit) {
-    int|string res = conn->to_write();
+    res = conn->to_write();
 
 #ifdef SSL3_DEBUG_TRANSPORT
     werror ("queue_write: To write: %O\n", res);
@@ -1865,12 +1865,13 @@ protected int queue_write()
     if (!stringp(res)) {
       SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
 		      res == 1 ? "normally" : "abruptly");
-      return res;
+      break;
     }
 
     if (res == "") {
       SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
 		      sizeof (write_buffer));
+      res = 0;
       break;
     }
 
@@ -1882,19 +1883,24 @@ protected int queue_write()
 		    sizeof (res), sizeof (write_buffer));
     if (was_empty && stream)
       update_internal_state();
+    res = 0;
   }
 
   if (!sizeof(write_buffer)) {
+    if (stream) stream->set_write_callback(0);
     if (!(conn->state & CONNECTION_handshaking)) {
       SSL3_DEBUG_MSG("queue_write: Write buffer empty -- ask for some more data.\n");
       schedule_poll();
     }
+  } else if (stream) {
+    SSL3_DEBUG_MSG("queue_write: Install the write callback.\n");
+    stream->set_write_callback(ssl_write_callback);
   }
 
-  SSL3_DEBUG_MSG ("queue_write: Returning 0 (%d strings buffered)\n",
-		  sizeof(write_buffer));
+  SSL3_DEBUG_MSG ("queue_write: Returning %O (%d strings buffered)\n",
+		  res, sizeof(write_buffer));
 
-  return 0;
+  return res;
 }
 
 protected int direct_write()
