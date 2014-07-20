@@ -179,7 +179,7 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     if (!(ke_mask & cp->ke_mask)) return 0;
 
     // GNU-TLS doesn't like eg SHA being used with SHA256 certs.
-    Crypto.Hash hash = HASH_lookup[cp->sign_algs[0][0]];
+    Crypto.Hash hash = [object(Crypto.Hash)]HASH_lookup[cp->sign_algs[0][0]];
     if (!hash) return 0;
     if (hash->digest_size() > h_max) return 0;
   }
@@ -278,7 +278,8 @@ int select_cipher_suite(array(CertificatePair) certs,
   foreach(cipher_suites, int suite) {
     if (CIPHER_SUITES[suite]) {
       ke_mask |= 1 << [int](CIPHER_SUITES[suite][0]);
-      Crypto.Hash hash = HASH_lookup[CIPHER_SUITES[suite][2]];
+      Crypto.Hash hash =
+	[object(Crypto.Hash)]HASH_lookup[CIPHER_SUITES[suite][2]];
       if (hash && (hash->digest_size() > h_max)) {
 	h_max = hash->digest_size();
       }
