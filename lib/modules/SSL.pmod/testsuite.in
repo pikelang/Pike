@@ -270,6 +270,16 @@ test_do([[
 
   add_constant("pem_key", _key);
   add_constant("pem_cert", _cert);
+
+  // Same public key, but with SHA1.
+  add_constant("cert_sha1",
+    Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs,
+						UNDEFINED, Crypto.SHA1));
+
+  // Same public key, but with MD5.
+  add_constant("cert_md5",
+    Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs,
+						UNDEFINED, Crypto.MD5));
 ]])
 
 test_do([[
@@ -319,6 +329,10 @@ test_do([[
 
   server_ctx->add_cert(rsa, ({ cert }));
 
+  server_ctx->add_cert(rsa, ({ cert_sha1 }));
+
+  server_ctx->add_cert(rsa, ({ cert_md5 }));
+
   // FIXME: Shouldn't this be an ephemeral key?
   //        It doesn't seem to be related to the certificate.
   server_ctx->short_rsa = Crypto.RSA();
@@ -339,6 +353,11 @@ test_do([[
     3600*24, attrs);
 
   server_ctx->add_cert(dsa, ({ cert }));
+
+  cert = Standards.X509.make_selfsigned_certificate(dsa,
+    3600*24, attrs, UNDEFINED, Crypto.SHA1);
+
+  server_ctx->add_cert(dsa, ({ cert }));
 ]])
 
 test_do([[
@@ -351,6 +370,11 @@ test_do([[
   ]);
   string cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs);
+
+  server_ctx->add_cert(ecdsa, ({ cert }));
+
+  cert = Standards.X509.make_selfsigned_certificate(ecdsa,
+    3600*24, attrs, UNDEFINED, Crypto.SHA1);
 
   server_ctx->add_cert(ecdsa, ({ cert }));
 #endif
@@ -879,6 +903,8 @@ test_do([[
   add_constant("log_ssl_failure");
   add_constant("client_msg");
   add_constant("server_ctx");
+  add_constant("cert_md5");
+  add_constant("cert_sha1");
   add_constant("pem_cert");
   add_constant("pem_key");
   add_constant("test_ssl_connection");
