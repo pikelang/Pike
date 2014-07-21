@@ -861,18 +861,11 @@ PMOD_EXPORT extern int Pike_stack_size;
 struct callback;
 PMOD_EXPORT extern struct callback_list evaluator_callbacks;
 
-/* Things to try:
- * we could reduce thread swapping to a pointer operation if
- * we do something like:
- *   #define Pike_interpreter (*Pike_interpreter_pointer)
- *
- * Since global variables are usually accessed through indirection
- * anyways, it might not make any speed differance.
- *
- * The above define could also be used to facilitate dynamic loading
- * on Win32..
- */
-PMOD_EXPORT extern struct Pike_interpreter_struct *Pike_interpreter_pointer;
+PMOD_EXPORT extern struct Pike_interpreter_struct *
+#ifndef IN_THREAD_CODE
+    const
+#endif
+    Pike_interpreter_pointer;
 #define Pike_interpreter (*Pike_interpreter_pointer)
 
 #define Pike_sp Pike_interpreter.stack_pointer
