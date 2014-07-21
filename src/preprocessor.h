@@ -564,13 +564,19 @@ static ptrdiff_t low_cpp(struct cpp *this,
           case '"':
             {
               struct string_builder nf;
+              char end;
               init_string_builder(&nf, 0);
-
               READSTRING2(nf);
+              goto stringout;
+          case '(': end = ')'; goto litstring;
+          case '[': end = ']'; goto litstring;
+          case '{': end = '}';
+            litstring:
+              init_string_builder(&nf, 0);
+              READSTRING3(nf,end);
+            stringout:
               if(OUTP())
-              {
                 PUSH_STRING_SHIFT(nf.s->str, nf.s->len,nf.s->size_shift, &this->buf);
-              }
               free_string_builder(&nf);
               break;
             }

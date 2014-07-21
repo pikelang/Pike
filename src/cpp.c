@@ -1130,6 +1130,20 @@ static ptrdiff_t readstring( struct cpp *this, const PCHARP data, ptrdiff_t len,
   return pos;
 }
 
+static ptrdiff_t readstring_lit( struct cpp *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos,
+			     struct string_builder*nf, INT32 ec)
+{
+  INT32 ch;
+  while(1)
+    if(++pos>=len)
+      cpp_error(this,"End of file in string.");
+    else if((ch=INDEX_PCHARP(data,pos)) == '#' && INDEX_PCHARP(data,pos+1)==ec)
+        return pos + 2;
+    else
+        string_builder_putchar(nf, ch);
+  return pos;
+}
+
 static ptrdiff_t fixstring(struct cpp *this, const PCHARP data, ptrdiff_t len,
 			   ptrdiff_t pos, struct string_builder *nf, int outp)
 {
@@ -1989,6 +2003,7 @@ static void free_one_define(struct hash_entry *h)
  */
 #define READSTRING(nf) (pos=readstring(this,data,len,pos,&nf,0))
 #define READSTRING2(nf) (pos=readstring(this,data,len,pos,&nf,1))
+#define READSTRING3(nf,ec) (pos=readstring_lit(this,data,len,pos,&nf,ec))
 #define FIXSTRING(nf,outp) (pos=fixstring(this,data,len,pos,&nf,outp))
 
 /* Gobble an identifier at the current position. */
