@@ -18,7 +18,7 @@
 /* #define PROFILE_CHECK_THREADS */
 
 #ifndef CONFIGURE_TEST
-
+#define IN_THREAD_CODE
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
@@ -53,6 +53,14 @@
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
+
+/* This is used for strapping the interpreter before the threads
+ * are loaded, and when there's no support for threads.
+ */
+static struct Pike_interpreter_struct static_pike_interpreter;
+
+PMOD_EXPORT struct Pike_interpreter_struct *Pike_interpreter_pointer =
+  &static_pike_interpreter;
 
 #else  /* CONFIGURE_TEST */
 #include "pike_threadlib.h"
