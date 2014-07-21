@@ -179,20 +179,6 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
   Similarily int(1bit) is an alias for 'bool', and int(12bit) is
   the same as int(0..4095).
 
-o The random(), random_string() and random_seed() might be more random
-
-  On computers with a hardware pseudo random generator random() can
-  return significantly more random numbers, however, this means that
-  random_seed is a no-op on those machines.
-
-  A side-effect of this is that random_string is now actually
-  significantly faster on at least x86 cpu:s with rdrnd.
-
-  Note: If you want cryptographically random data please use
-  Crypto.Random.random_string unless you know for sure the random data
-  returned by the RDRND instruction is random enough.
-
-
 New preprocessor features
 -------------------------
 
@@ -958,6 +944,19 @@ o Most math functions (log, pow, exp sin, cos etc) can now take
   integers as arguments in addition to a floating point number.
 
   The result will still be a float, the argument will be converted.
+
+o The random(), random_string() and random_seed() might be more random
+
+  On computers with a hardware pseudo random generator random() can
+  return significantly more random numbers, however, this means that
+  random_seed is a no-op on those machines.
+
+  A side-effect of this is that random_string is now actually
+  significantly faster on at least x86 cpu:s with rdrnd.
+
+  Note: If you want cryptographically random data please use
+  Crypto.Random.random_string unless you know for sure the random data
+  returned by the RDRND instruction is random enough.
 
 Crypto and SSL
 --------------
