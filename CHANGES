@@ -146,6 +146,29 @@ o Added multi-character character constants.
   Unlike how it works in some C compilers the native byte order is
   never relevant.
 
+o Added new syntax for literal-string constats
+
+  #{, #( and #[ starts a literal string, and it is ended by the
+  corresponding end marker: #}, #) and #] respectively.
+
+  No character is modified at all inside the literal string, including
+  newlines, \ " and '.
+
+  So, the string #["\n\'##] will be equivalent to "\"\\n\\'#".
+
+  The main usecase is to write code in code:
+
+  | string code = #[
+  |  void main(int c, array v) {
+  |    string x = "";
+  |    foreach( v[1..], string elm )
+  |      x += reverse(elm)+",";
+  |    write("Testing: %s\n", reverse( x ));
+  | #];
+
+  The three different start/end markers might be useful if you write
+  code in code in code, since there is no way to quote the start/end
+  markers.
 
 New preprocessor features
 -------------------------
