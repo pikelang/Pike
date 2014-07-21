@@ -60,12 +60,15 @@ private void request_received(mapping rdata) {
            else if(oid_get_callbacks["*"])
            {
              mixed r=oid_get_callbacks["*"](oid, rv[n[0]]);
+	     // We got a different OID than the requested
+	     // one. Typically happens with REQUEST_GETNEXT requests.
+             string ret_oid = (sizeof (r) >= 4 && r[3]) || oid;
              if(r[0]==0) // we had an error
              {
-               return_error(rv, @r[1..]);
+               return_error(rv, @r[1..2]);
                return;
              }
-             else varlist[oid]=r[1..];
+             else varlist[ret_oid]=r[1..2];
             }
          }
       }
@@ -303,13 +306,18 @@ void|function get_set_oid_callback(string oid)
 //!   the function to call when oid is requested by a manager
 //!   the function should take 2 arguments: a string containing the 
 //!   requested oid and the body of the request as a mapping.
-//!   The function should return an array containing 3 elements:
+//!   The function should return an array containing 3 or 4 elements:
 //!   The first is a boolean indicating success or failure.
 //!   If success, the next 2 elements should be the SNMP data type of 
 //!   the result followed by the result itself.
 //!   If failure, the next 2 elements should be the error-status
 //!   such as @[Protocols.SNMP.ERROR_TOOBIG] and the second
-//!   is the error-index, if any.  
+//!   is the error-index, if any.
+//!   If a fourth array element is returned, it should contain the OID
+//!   that the callback actually fetched (typically different from the
+//!   requested OID for REQUEST_GETNEXT requests). This is needed for
+//!   e.g. snmpwalk to work properly.
+//!
 //! @note
 //!    there can be only one callback per object identifier.
 //!    calling this function more than once with the same oid will
