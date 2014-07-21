@@ -929,13 +929,12 @@ PIKECLASS BufferedCipher
 		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
 	str = Pike_sp[-1].u.string;
 
-	bytes = str->str[len -1];
+	bytes = STR0(str)[len - 1];
 	if( m==PAD_SSL || m==PAD_TLS ) bytes++;
 
 	/* FIXME: Shouldn't this be supported? */
-	if (bytes > THIS->block_size)
-	  Pike_error("Invalid padding (%d > %d)\n",
-		     bytes, THIS->block_size-1);
+	if (bytes > str->len)
+	  Pike_error("Invalid padding (%d > %d)\n", bytes, str->len);
 
 	switch( m )
 	{
@@ -955,9 +954,12 @@ PIKECLASS BufferedCipher
 	  padding = bytes;
 	do_check:
 	  /* Try to be constant time here. */
-	  for(i=len-bytes; i<len-1; i++)
-	    if( str->str[i] != padding )
-	      invalid = 1;
+	  invalid = 1;
+	  for(i=len-256; i<len-1; i++) {
+	    if (i < 0) i = 0;
+	    if (i == len-bytes) invalid = 0;
+	    invalid |= (STR0(str)[i] ^ padding);
+	  }
 	  break;
 	}
 
@@ -980,7 +982,7 @@ PIKECLASS BufferedCipher
 	pop_stack();
 	push_string(make_shared_binary_string(str->str, len));
 	free_string(str);
-	if( invalid==1 )
+	if( invalid )
 	{
 	  pop_stack();
 	  push_int(0);
