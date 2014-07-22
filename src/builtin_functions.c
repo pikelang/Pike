@@ -9817,9 +9817,9 @@ void init_builtin_efuns(void)
 /* function(mixed:int) */
   ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
   
-/* function(string,string:int)|function(string,string*:array(string)) */
+/* function(string,string:int(0..1))|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
-	   tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt),tFunc(tOr(tStr,tArr(tStr)) tArr(tStr),tArr(tStr))),
+           tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt01),tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
 	   OPT_TRY_OPTIMIZE);
   
 /* function(string,int|void:int) */
