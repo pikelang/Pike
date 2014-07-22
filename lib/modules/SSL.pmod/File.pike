@@ -83,6 +83,8 @@ protected .Connection conn;
 protected array(string) write_buffer; // Encrypted data to be written.
 protected String.Buffer read_buffer; // Decrypted data that has been read.
 
+protected int read_buffer_threshold;	// Max number of bytes to read.
+
 protected mixed callback_id;
 protected function(void|object,void|mixed:int) accept_callback;
 protected function(void|mixed,void|string:int) read_callback;
@@ -347,32 +349,7 @@ protected THREAD_T op_thread;
       while (1) {							\
 	float|int(0..0) action;						\
 									\
-	if (got_extra_read_call_out) {					\
-	  /* Do whatever ssl_read_callback needs to do before we	\
-	   * continue. Since the first arg is zero here it won't call	\
-	   * any user callbacks, so they are superseded as they should	\
-	   * be if we're doing an explicit read (or a write or close,	\
-	   * which legitimately might cause reading to be done). Don't	\
-	   * need to bother with the return value from ssl_read_callback \
-	   * since we'll propagate the error, if any, just below. */	\
-	  if (got_extra_read_call_out > 0)				\
-	    real_backend->remove_call_out (ssl_read_callback);		\
-	  ssl_read_callback (0, 0); /* Will clear got_extra_read_call_out. */ \
-	  action = 0.0;							\
-	}								\
-									\
-	else {								\
-	  if (ENABLE_READS) {						\
-	    stream->set_read_callback (ssl_read_callback);		\
-	    stream->set_close_callback (ssl_close_callback);		\
-	  }								\
-	  else {							\
-	    stream->set_read_callback (0);				\
-	    /* Installing a close callback without a read callback	\
-	     * currently doesn't work well in Stdio.File. */		\
-	    stream->set_close_callback (0);				\
-	  }								\
-									\
+	{								\
 	  /* When we fail to write the close packet we should check if	\
 	   * a close packet is in the input buffer before signalling	\
 	   * the error. That means installing the read callbacks	\
@@ -463,6 +440,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 #endif
     write_buffer = ({});
     read_buffer = String.Buffer();
+    read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
 
@@ -493,6 +471,11 @@ int(1bit) connect(string|void dest_addr)
   ENTER (0, 0) {
 
     conn = .ClientConnection(context, dest_addr);
+
+    SSL3_DEBUG_MSG("connect: Installing read/close callbacks.\n");
+
+    stream->set_read_callback(ssl_read_callback);
+    stream->set_close_callback(ssl_close_callback);
 
     // Wait for the handshake to finish in blocking mode.
     if (!nonblocking_mode) {
@@ -542,6 +525,11 @@ int(1bit) accept(string|void pending_data)
 	return 0;
       }
     }
+
+    SSL3_DEBUG_MSG("accept: Installing read/close callbacks.\n");
+
+    stream->set_read_callback(ssl_read_callback);
+    stream->set_close_callback(ssl_close_callback);
 
     // Wait for the handshake to finish in blocking mode.
     if (!nonblocking_mode) {
@@ -882,7 +870,17 @@ string read (void|int length, void|int(0..1) not_all)
 	RETURN (0);
       }, 0);
 
-    if (stream)
+    if (zero_type(length)) length = 0x7fffffff;
+
+    if (!nonblocking_mode && length > read_buffer_threshold) {
+      // Make sure that we read as much data as requested if possible.
+      read_buffer_threshold = length;
+    }
+
+    if (stream) {
+      SSL3_DEBUG_MSG("SSL.File->read: Installing read_callback.\n");
+      stream->set_read_callback(ssl_read_callback);
+
       if (not_all) {
 	if (!sizeof (read_buffer))
 	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) &&
@@ -910,6 +908,7 @@ string read (void|int length, void|int(0..1) not_all)
 			      }
 			      else RETURN (0););
       }
+    }
 
     string res = read_buffer->get();
     if (!zero_type (length)) {
@@ -917,13 +916,22 @@ string read (void|int length, void|int(0..1) not_all)
       res = res[..length-1];
     }
 
+    read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
+
     if (SSL_INTERNAL_WRITING) {
       queue_write();
     }
 
     SSL3_DEBUG_MSG ("SSL.File->read: Read done, returning %d bytes "
-		    "(%d still in buffer)\n",
-		    sizeof (res), sizeof (read_buffer));
+		    "(%d/%d still in buffer)\n",
+		    sizeof (res), sizeof (read_buffer), read_buffer_threshold);
+
+    if (stream) {
+      if (sizeof(read_buffer) >= read_buffer_threshold) {
+	SSL3_DEBUG_MSG("SSL.File->read: Removing read_callback.\n");
+	stream->set_read_callback(0);
+      }
+    }
     RETURN (res);
   } LEAVE;
 }
@@ -1125,7 +1133,7 @@ protected void internal_poll()
   previous_connection_state = conn->state;
 
   //
-  // read_callback & close_callback
+  // read_callback
   //
   if (sizeof(read_buffer)) {
     if (read_callback) {
@@ -1135,11 +1143,16 @@ protected void internal_poll()
       // Never called if there's an error - no need to propagate cb_errno.
       read_callback (callback_id, received);
     }
+  }
 
-    // NB: Don't call the close_callback before the read_buffer is empty.
-  } else if ((conn->state &
-	      (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
-	     CONNECTION_peer_closed) {
+  //
+  // close_callback
+  //
+  // NB: Don't call the close_callback before the read_buffer is empty.
+  if (!sizeof(read_buffer) &&
+      (conn->state &
+       (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
+      CONNECTION_peer_closed) {
     // Remote close.
 
     function(void|mixed:int) close_cb;
@@ -1149,6 +1162,7 @@ protected void internal_poll()
       // cb is called, but it's possible to reinstall the close cb
       // later and get another call to it).
 
+      SSL3_DEBUG_MSG("SSL.File->poll: Removing user close_callback.\n");
       set_close_callback(0);
 
       // errno() should return the error in the close callback - need to
@@ -1751,6 +1765,7 @@ protected void update_internal_state (void|int assume_real_backend)
 // backend anyway (necessary to avoid races when we're about to switch
 // from the local to the real backend).
 {
+#if 0
   // When the local backend is used, callbacks are set explicitly
   // before it's started.
   if (assume_real_backend || stream->query_backend() != local_backend) {
@@ -1834,6 +1849,7 @@ protected void update_internal_state (void|int assume_real_backend)
   }
 
   else
+#endif /* 0 */
     SSL3_DEBUG_MORE_MSG ("update_internal_state: "
 			 "In local backend - nothing done [rcb:%O]\n",
 			 got_extra_read_call_out);
@@ -2007,6 +2023,10 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
 			  "Got %d bytes of application data\n", sizeof (data));
 	  read_buffer->add (data);
+	  if (sizeof(read_buffer) >= read_buffer_threshold) {
+	    SSL3_DEBUG_MSG("SSL.File->rcb: Removing read_callback.\n");
+	    stream->set_read_callback(0);
+	  }
 	}
 
 	else if (data < 0 || write_res < 0) {
@@ -2093,6 +2113,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 
     if (conn->state & CONNECTION_peer_closed) {
       // Deinstall read side cbs to avoid reading more.
+      SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
       stream->set_read_callback (0);
       stream->set_close_callback (0);
     }
@@ -2246,6 +2267,9 @@ protected int ssl_write_callback (int called_from_real_backend)
 	    else {
 	      SSL3_DEBUG_MSG ("ssl_write_callback: "
 			      "Close packet sent - expecting response\n");
+	      stream->set_read_callback(ssl_read_callback);
+	      stream->set_close_callback(ssl_close_callback);
+	      schedule_poll();
 	      // Not SSL_INTERNAL_WRITING anymore.
 	      update_internal_state();
 	    }
