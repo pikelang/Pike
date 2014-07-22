@@ -960,6 +960,10 @@ PIKECLASS BufferedCipher
 	    if (i == len-bytes) invalid = 0;
 	    invalid |= (STR0(str)[i] ^ padding);
 	  }
+	  /* NB: If bytes <= 1 the loop will terminate before the
+	   *     case where invalid is reset to zero is reached.
+	   */
+	  if (bytes <= 1) invalid = 0;
 	  break;
 	}
 
