@@ -403,12 +403,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 
       s = begin_wide_shared_string(a->size, shift);
       switch(shift) {
-      default:
-#ifdef PIKE_DEBUG
-	Pike_fatal("cast: Bad shift: %d.\n", shift);
-	break;
       case 0:
-#endif
 	for(i = a->size; i--; ) {
 	  s->str[i] = (p_wchar0) a->item[i].u.integer;
 	}
