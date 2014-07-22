@@ -111,6 +111,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
 PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx);
 PMOD_EXPORT void enable_external_threads(void);
 PMOD_EXPORT void disable_external_threads(void);
+
 /* Prototypes end here */
 #else
 #define pike_thread_yield()
