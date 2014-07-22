@@ -1197,4 +1197,4 @@ o Fixed interresting bug in the constant number parsing for octal
 
 o A lot more, see the (more or less) full changelog for more info:
 
-   http://pike-librarian.lysator.liu.se/index.xml?m=pike.git&start=forever&branch=7.9&template=logonly.inc
+   http://pike-librarian.lysator.liu.se/index.xml?m=pike.git&start=forever&branch=7.9,8.0&template=logonly.inc
