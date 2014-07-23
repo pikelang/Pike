@@ -764,9 +764,10 @@ Stdio.File shutdown()
 
     write_buffer = ({});
 
-    if (got_extra_read_call_out > 0)
-      real_backend->remove_call_out (ssl_read_callback);
-    got_extra_read_call_out = 0;
+    if (user_cb_co) {
+      real_backend->remove_call_out(user_cb_co);
+      user_cb_co = UNDEFINED;
+    }
 
     Stdio.File stream = global::stream;
     global::stream = 0;
@@ -1633,17 +1634,19 @@ void set_backend (Pike.Backend backend)
   ENTER (0, 0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
+    if (user_cb_co) {
+      real_backend->remove_call_out(user_cb_co);
+      user_cb_co = UNDEFINED;
+    }
+
     if (stream) {
       if (stream->query_backend() != local_backend)
 	stream->set_backend (backend);
-
-      if (got_extra_read_call_out > 0) {
-	real_backend->remove_call_out (ssl_read_callback);
-	backend->call_out (ssl_read_callback, 0, 1, 0);
-      }
     }
 
     real_backend = backend;
+
+    schedule_poll();
   } LEAVE;
 }
 
