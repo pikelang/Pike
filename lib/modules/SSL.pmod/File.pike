@@ -130,18 +130,6 @@ protected int cb_errno;
 // Stores the errno from failed I/O in a callback so that the next
 // visible I/O operation can report it properly.
 
-protected int got_extra_read_call_out;
-// 1 when we have a call out to ssl_read_callback. We get this when we
-// need to call read_callback or close_callback but can't do that
-// right away from ssl_read_callback. See comments in that function
-// for more details. -1 if we've switched to non-callback mode and
-// therefore has removed the call out temporarily but need to restore
-// it when switching back. 0 otherwise.
-//
-// -1 is also set before a call to update_internal_state when we want
-// to schedule an extra read call out; update_internal_state will then
-// do the actual call out installation if possible.
-
 protected int alert_cb_called;
 // Need to know if the alert callback has been called in
 // ssl_read_callback since it can't continue in that case. This is
@@ -1874,11 +1862,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
       string|int data =
 	close_state == ABRUPT_CLOSE ? -1 : conn->got_data (input);
 
-#ifdef SSLFILE_DEBUG
-      if (got_extra_read_call_out)
-	error ("Got to real read callback with queued extra read call out.\n");
-#endif
-
 #ifdef SSL3_DEBUG_TRANSPORT
       werror ("ssl_read_callback: Got data: %O\n", data);
 #endif
@@ -2002,8 +1985,6 @@ protected int ssl_write_callback (int called_from_real_backend)
 #ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
-    if (got_extra_read_call_out)
-      error ("Got to write callback with queued extra read call out.\n");
 #endif
 
   write_to_stream:
@@ -2173,8 +2154,6 @@ protected int ssl_close_callback (int called_from_real_backend)
 #ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
-    if (got_extra_read_call_out)
-      error ("Got to close callback with queued extra read call out.\n");
 #endif
 
     // If we've arrived here due to an error, let it override any
