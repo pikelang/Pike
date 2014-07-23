@@ -382,7 +382,6 @@ protected THREAD_T op_thread;
 	    SSL3_DEBUG_MSG ("Local backend ended with error\n");	\
 	    if (stream) {						\
 	      stream->set_id (1);					\
-	      update_internal_state (1);				\
 	      /* Switch backend after updating the installed callbacks. */ \
 	      stream->set_backend (real_backend);			\
 	      CHECK_CB_MODE (THIS_THREAD());				\
@@ -403,7 +402,6 @@ protected THREAD_T op_thread;
       }									\
 									\
       stream->set_id (1);						\
-      update_internal_state (1);					\
       /* Switch backend after updating the installed callbacks. */	\
       stream->set_backend (real_backend);				\
       CHECK_CB_MODE (THIS_THREAD());					\
@@ -677,7 +675,6 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
       SSL3_DEBUG_MSG ("SSL.File->close: Close underway\n");
       RESTORE;
-      update_internal_state();
       return 1;
     }
     else {
@@ -1080,7 +1077,11 @@ int renegotiate()
     conn->expect_change_cipher = 0;
     conn->certificate_state = 0;
     conn->state |= CONNECTION_handshaking;
-    update_internal_state();
+
+    SSL3_DEBUG_MSG("renegotiate: Installing read/close callbacks.\n");
+
+    stream->set_read_callback(ssl_read_callback);
+    stream->set_close_callback(ssl_close_callback);
 
     conn->send_packet(conn->hello_request());
 
@@ -1252,8 +1253,6 @@ void set_callbacks (void|function(mixed, string:int) read,
     if (!zero_type(accept))
       accept_callback = accept;
 
-    if (stream) update_internal_state();
-
     schedule_poll();
   } LEAVE;
 }
@@ -1318,7 +1317,6 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
       RESTORE;
-      update_internal_state();
       return;
     }
 
@@ -1345,7 +1343,6 @@ void set_nonblocking_keep_callbacks()
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
       RESTORE;
-      update_internal_state();
       return;
     }
   } LEAVE;
@@ -1391,8 +1388,7 @@ void set_blocking()
     accept_callback = read_callback = write_callback = close_callback = 0;
 
     if (stream) {
-      update_internal_state();
-      stream->set_blocking();
+      stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
 }
@@ -1412,8 +1408,7 @@ void set_blocking_keep_callbacks()
     nonblocking_mode = 0;
 
     if (stream) {
-      update_internal_state();
-      stream->set_blocking();
+      stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
 }
@@ -1504,7 +1499,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
       error ("Doesn't have any connection.\n");
 #endif
     accept_callback = accept;
-    if (stream) update_internal_state();
+    if (accept) schedule_poll();
   } LEAVE;
 }
 
@@ -1531,7 +1526,6 @@ void set_read_callback (function(void|mixed,void|string:int) read)
       error ("Doesn't have any connection.\n");
 #endif
     read_callback = read;
-    if (stream) update_internal_state();
     if (read) schedule_poll();
   } LEAVE;
 }
@@ -1559,7 +1553,6 @@ void set_write_callback (function(void|mixed:int) write)
       error ("Doesn't have any connection.\n");
 #endif
     write_callback = write;
-    if (stream) update_internal_state();
     if (write) schedule_poll();
   } LEAVE;
 }
@@ -1588,7 +1581,6 @@ void set_close_callback (function(void|mixed:int) close)
       error ("Doesn't have any connection.\n");
 #endif
     close_callback = close;
-    if (stream) update_internal_state();
     if (close) schedule_poll();
   } LEAVE;
 }
@@ -1761,103 +1753,6 @@ string _sprintf(int t) {
 }
 
 
-protected void update_internal_state (void|int assume_real_backend)
-// Update the internal callbacks according to the current state. Does
-// nothing if the local backend is active, unless assume_real_backend
-// is set, in which case we're installing callbacks for the real
-// backend anyway (necessary to avoid races when we're about to switch
-// from the local to the real backend).
-{
-#if 0
-  // When the local backend is used, callbacks are set explicitly
-  // before it's started.
-  if (assume_real_backend || stream->query_backend() != local_backend) {
-    mixed install_read_cbs, install_write_cb;
-
-    if (nonblocking_mode &&
-	(SSL_HANDSHAKING || close_state >= NORMAL_CLOSE)) {
-      // Normally we never install our own callbacks if we aren't in
-      // callback mode, but handling a nonblocking close is an
-      // exception.
-      install_read_cbs = SSL_INTERNAL_READING;
-      install_write_cb = SSL_INTERNAL_WRITING;
-
-      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "%s [r:%O w:%O rcb:%O]\n",
-			   SSL_HANDSHAKING ? "Handshaking" : "After close",
-			   !!install_read_cbs, !!install_write_cb,
-			   got_extra_read_call_out);
-    }
-
-    // CALLBACK_MODE but slightly optimized below.
-    else if (read_callback || write_callback || close_callback || accept_callback) {
-      install_read_cbs = (read_callback || close_callback || accept_callback ||
-			  SSL_INTERNAL_READING);
-      install_write_cb = (write_callback || SSL_INTERNAL_WRITING);
-
-      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "Callback mode [r:%O w:%O rcb:%O]\n",
-			   !!install_read_cbs, !!install_write_cb,
-			   got_extra_read_call_out);
-    }
-
-    else {
-      // Not in callback mode. Can't install callbacks even though we'd
-      // "need" to - have to cope with the local backend in each
-      // operation instead.
-      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "Not in callback mode [rcb:%O]\n",
-			   got_extra_read_call_out);
-    }
-
-    if (!got_extra_read_call_out && sizeof (read_buffer) && read_callback)
-      // Got buffered read data and there's someone ready to receive it,
-      // so schedule a call to ssl_read_callback to handle it.
-      got_extra_read_call_out = -1;
-
-    // If got_extra_read_call_out is set here then we wait with all
-    // other callbacks so that the extra ssl_read_callback call is
-    // carried out before anything else.
-
-    if (install_read_cbs) {
-      if (got_extra_read_call_out < 0) {
-	real_backend->call_out (ssl_read_callback, 0, 1, 0);
-	got_extra_read_call_out = 1;
-      }
-      else {
-	stream->set_read_callback (ssl_read_callback);
-	stream->set_close_callback (ssl_close_callback);
-      }
-    }
-    else {
-      stream->set_read_callback (0);
-      // Installing a close callback without a read callback
-      // currently doesn't work well in Stdio.File.
-      stream->set_close_callback (0);
-      if (got_extra_read_call_out > 0) {
-	real_backend->remove_call_out (ssl_read_callback);
-	got_extra_read_call_out = -1;
-      }
-    }
-
-#ifdef SSLFILE_DEBUG
-    if (!assume_real_backend && op_thread)
-      // Check that we haven't installed callbacks that might start
-      // executing in parallell in another thread. That's legitimate
-      // in some cases (e.g. set_nonblocking) but in those cases we're
-      // called after RESTORE or LEAVE, which has reset op_thread, so
-      // we skip this check if op_thread is zero.
-      CHECK_CB_MODE (THIS_THREAD());
-#endif
-  }
-
-  else
-#endif /* 0 */
-    SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			 "In local backend - nothing done [rcb:%O]\n",
-			 got_extra_read_call_out);
-}
-
 protected int queue_write()
 // Return 0 if the connection is still alive, 1 if it was closed
 // politely, and -1 if it died unexpectedly (specifically, our side
@@ -1900,8 +1795,6 @@ protected int queue_write()
 
     SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
 		    sizeof (res), sizeof (write_buffer));
-    if (was_empty && stream)
-      update_internal_state();
     res = 0;
   }
 
@@ -2012,7 +1905,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	  if (!handshake_already_finished &&
 	      !(conn->state & CONNECTION_handshaking)) {
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
-	    update_internal_state();
 	    if (called_from_real_backend && accept_callback) {
 #ifdef SSLFILE_DEBUG
 	      if (close_state >= NORMAL_CLOSE)
@@ -2047,19 +1939,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
       }
     }
 
-    else {
-      // This is another call that has been queued below through a
-      // call out. That is necessary whenever we need to call several
-      // user callbacks from the same invocation: We can't do anything
-      // after calling a user callback, since the user is free to e.g.
-      // remove the callbacks and "hand over" us to another thread and
-      // do more I/O there while this one returns. We solve this
-      // problem by queuing a call out to ourselves (with zero as
-      // input) to continue.
-      got_extra_read_call_out = 0;
-      update_internal_state();
-    }
-
     // Figure out what we need to do. call_accept_cb is already set
     // from above.
     int(0..1) call_read_cb;
@@ -2087,32 +1966,11 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 #ifdef SSLFILE_DEBUG
       if (!alert_cb_called && !called_from_real_backend)
 	error ("Internal confusion.\n");
-      if (called_from_real_backend && got_extra_read_call_out < 0)
-	error ("Ended up in ssl_read_callback from real backend "
-	       "when no callbacks are supposed to be installed.\n");
 #endif
-      if (!got_extra_read_call_out) {
-	got_extra_read_call_out = -1;
-	SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O) - "
-			"scheduled another call\n", alert_cb_called, call_accept_cb,
-			call_read_cb, do_close_stuff);
-	update_internal_state();
-      }
-      else
-	SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O) - "
-			"another call already queued\n",
-			alert_cb_called, call_accept_cb, call_read_cb, do_close_stuff);
+      SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O).\n",
+		      alert_cb_called, call_accept_cb, call_read_cb, do_close_stuff);
       alert_cb_called = 0;
     }
-
-    else
-      if (got_extra_read_call_out) {
-	// Don't know if this actually can happen, but it's symmetric.
-	if (got_extra_read_call_out > 0)
-	  real_backend->remove_call_out (ssl_read_callback);
-	got_extra_read_call_out = 0;
-	update_internal_state();
-      }
 
     if (conn->state & CONNECTION_peer_closed) {
       // Deinstall read side cbs to avoid reading more.
@@ -2186,7 +2044,6 @@ protected int ssl_write_callback (int called_from_real_backend)
 		// Make sure that the connection is failing.
 		conn->send_packet(conn->alert(ALERT_fatal, ALERT_close_notify));
 	      }
-	      update_internal_state();
 	    }
 
 	    else {
@@ -2199,7 +2056,6 @@ protected int ssl_write_callback (int called_from_real_backend)
 	      else {
 		SSL3_DEBUG_MSG ("ssl_write_callback: Stream closed remotely - "
 				"checking input buffer for proper remote close\n");
-		update_internal_state();
 		if (called_from_real_backend) {
 		  // Shouldn't wait for a close packet that might
 		  // arrive later on, so we start a nonblocking local
@@ -2242,7 +2098,6 @@ protected int ssl_write_callback (int called_from_real_backend)
 	  RESTORE;
 	  return ret;
 	}
-	update_internal_state();
       }
 
       if (int err = queue_write()) {
@@ -2273,8 +2128,6 @@ protected int ssl_write_callback (int called_from_real_backend)
 	      stream->set_read_callback(ssl_read_callback);
 	      stream->set_close_callback(ssl_close_callback);
 	      schedule_poll();
-	      // Not SSL_INTERNAL_WRITING anymore.
-	      update_internal_state();
 	    }
 	  }
 
