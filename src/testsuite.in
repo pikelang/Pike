@@ -11297,11 +11297,6 @@ test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
 
 // - random_seed
 test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
-test_eq([[random_seed(17),random(20000)]],[[random_seed(17),random(20000)]])
-test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
-test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
-test_equal([[random_seed(4711),map(allocate(10,1000), random)]],
-	   [[({598,11,331,991,383,553,997,53,272,381})]])
 
 // - random_string
 test_eq( sizeof(random_string(47)), 47 )
