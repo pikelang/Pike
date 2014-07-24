@@ -20,6 +20,7 @@ constant hex2string = __builtin.hex2string;
 constant secure = __builtin.string_secure;
 constant status = __builtin.string_status;
 constant range = __builtin.string_range;
+constant filter_non_unicode = string_filter_non_unicode;
 
 constant __HAVE_SPRINTF_STAR_MAPPING__ = 1;
 constant __HAVE_SPRINTF_NEGATIVE_F__ = 1;
