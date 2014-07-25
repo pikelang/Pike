@@ -527,7 +527,7 @@ test_true( RSA->set_private_key(
 test_eq( RSA->block_size(), 61 )
 test_true( RSA->raw_verify("fl\0rpzprutt",RSA->raw_sign("fl\0rpzprutt")) )
 test_false( RSA->raw_verify("fl\0rpzputt",RSA->raw_sign("fl\0rpzprutt")) )
-test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
+test_eq( RSA->decrypt(RSA->encrypt("fl\0rpzprutt")), "fl\0rpzprutt" )
 test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
