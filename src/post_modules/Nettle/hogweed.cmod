@@ -187,6 +187,38 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
+PIKEFUN int rsa_unpad(string(0..255) data, int type)
+{
+  int i, pad=0, nonpad=0, pos=0;
+
+  NO_WIDE_STRING(data);
+
+  /* Indata is smaller than minimum size, so we can exit immediately
+     without timing issue. 1 type + 8 padding + 1 delimiter + 1 value
+     = 11 bytes. */
+  if(data->len < 11 ) RETURN 0;
+
+  for(i=data->len-1; i>0; i--)
+  {
+    switch((unsigned char)data->str[i])
+    {
+    case 0:     pos=i; break;
+    case 0xff:  pad=i; break;
+    default: nonpad=i; break;
+    }
+  }
+
+  if( data->str[0]==2 )
+  {
+    nonpad=pos+1;
+    pad=1;
+  }
+
+  if( (pad==1) + (nonpad>pos) + (data->str[0]==type) + (pos>8) == 4 )
+    RETURN pos+1;
+  RETURN 0;
+}
+
 #ifdef dsa_params_init
 
 /*! @class DH_Params

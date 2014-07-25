@@ -402,12 +402,14 @@ Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
 string(8bit) rsa_unpad(Gmp.mpz block, int type)
 {
   string(8bit) s = block->digits(256);
-  int i = search(s, "\0");
 
-  // Evaluate all error conditions for timing reasons.
-  if ( `+( (i < 9), (sizeof(s) != (size - 1)), (s[0] != type) ) )
-    return 0;
-  return s[i+1..];
+  // Content independent size information. Not timing sensitive.
+  if( sizeof(s)!=(size-1) ) return 0;
+
+  int i = Nettle.rsa_unpad(s, type);
+  if( !i ) return 0;
+
+  return s[i..];
 }
 
 //! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
