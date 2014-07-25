@@ -1,6 +1,7 @@
 Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
 ----------------------------------------------------------------------
 
+
 New language features
 ---------------------
 
@@ -178,6 +179,7 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
 
   Similarily int(1bit) is an alias for 'bool', and int(12bit) is
   the same as int(0..4095).
+
 
 New preprocessor features
 -------------------------
@@ -367,6 +369,7 @@ o Faster hash-function for strings
 
   + Also siphash24 was added and is used in case the string hash table
     becomes inefficient
+
 
 Deprecated features and modules
 -------------------------------
@@ -918,6 +921,13 @@ o Several fixes to Protocols.HTTP
     - Support if-none-match (etag:s)
     - Ignore errors in close when destroying the object
 
+o Multiple threads can now call the Backend `() function (the function
+  that waits for events).
+
+  The first thread will be the controlling thread, and all callbacks
+  will be called in it, the other threads will wake when the
+  controlling thread is done.
+
 o dtrace support (on MacOSX)
 
   Pike now supports dtrace events on function enter and leaving (and
@@ -958,48 +968,134 @@ o The random(), random_string() and random_seed() might be more random
   Crypto.Random.random_string unless you know for sure the random data
   returned by the RDRND instruction is random enough.
 
-Crypto and SSL
---------------
 
-o Several identifiers have changed name
-   SSL.sslfile -> SSL.File
-   SSL.sslport -> SSL.Port
-  ... <add more, nilsson. :))>
+SSL
+---
+
+o SSL now supports TLS 1.0 (SSL 3.1), TLS 1.1 and TLS 1.2.
+
+o Several identifiers have changed names:
+
+  SSL.alert -> SSL.Alert
+  SSL.connection + SSL.handshake -> SSL.{Client,Server,}Connection
+  SSL.context -> SSL.Context
+  SSL.packet -> SSL.Packet
+  SSL.session -> SSL.Session
+  SSL.sslfile -> SSL.File
+  SSL.sslport -> SSL.Port
+  SSL.state -> SSL.State
 
 o SSL.File: Changed client/server selection API.
 
-   Client and server operation is now selected by calling either
-   connect() (client-side) or accept() (server-side) after creating
-   the SSL.sslfile object.
+  Client and server operation is now selected by calling either
+  connect() (client-side) or accept() (server-side) after creating
+  the SSL.File object.
 
-   Blocking handshaking mode is selected by calling set_blocking()
-   before either of the above.
+  Blocking handshaking mode is selected by calling set_blocking()
+  before either of the above.
 
-o SNI client extension support for SSL (Server Name Indicator)
+o SSL.File: Redesigned I/O state machine.
 
-o Standards.PEM
+  This reduces the complexity and risk of bugs in the I/O handling.
 
-  + Added some support for encrypted PEM files
+o SSL support for lots of new cipher suites added:
+
+  + AEADs and modes:
+
+    - CCM and CCM-8
+
+    - CHACH20-POLY1305
+
+    - GCM
+
+  + Certificates
+
+    - ECDSA
+
+  + Ciphers
+
+    - AES and AES-256
+
+    - CAMELLIA and CAMELLIA-256
+
+  + Key exchange methods
+
+    - DH and DHE
+
+    - ECDH and ECDHE
+
+  + All suites currently defined consisting of combinations of the above
+    (and earlier existing) have been added (~190 suites in total).
+
+o TLS Extensions added:
+
+  + ALPN (Application Layer Protocol Negotiation) (RFC 7301).
+
+  + EC Point Formats (RFC 4492).
+
+  + Elliptic Curves (RFC 4492).
+
+  + Encrypt then MAC.
+
+  + Fallback SCSV.
+
+  + Heartbeat (RFC 6520).
+
+  + Max Fragment Length (RFC 6066).
+
+  + Padding.
+
+  + Renegotiation info (RFC 5746).
+
+  + Signature Algorithms (RFC 5246).
+
+  + SNI (Server Name Indicator) for both client and server (RFC 6066).
+
+  + Truncated HMAC (RFC 6066).
+
+o Improved protection against various SSL/TLS attacks:
+
+  + BEAST protection (aka 1/(n-1)).
+
+    Improve resilience against the BEAST client-side attack,
+    by splitting the first data packet into two, where the
+    first only contains a single byte of payload.
+
+  + Heartbleed protection.
+
+    The protocol code now probes the peer for the Heartbleed vulnerability,
+    and aborts the connection with ALERT_insufficient_protection if so.
+
+  + Lucky 13 protection.
+
+    Attempts to have HMAC calculation take the same amount of time
+    regardless of padding size.
+
+o SSL.Context: Improved cipher suite selection:
+
+  + Filtering of weak cipher suites.
+
+  + Suite B (RFC 6460).
+
+o SSL.Context: Support multiple concurrent certificates.
+
+  This allows a server to eg have both an RSA and an ECDSA certificate.
+
+
+Crypto and Nettle
+-----------------
 
 o Nettle refactored
 
   CBC cipher mode is now twice as fast.
 
+o Nettle 3.0 supported.
+
+  The new APIs in Nettle 3.0 are now detected and utilized.
+
 o Crypto.GCM
 
   GCM (Galois Counter Mode) cipher mode added.
-
-o AES support added to the SSL module
-
-  This adds support for the following cipher suites:
-    TLS_rsa_with_aes_128_cbc_sha
-    TLS_dhe_dss_with_aes_128_cbc_sha
-    TLS_dhe_rsa_with_aes_128_cbc_sha
-    TLS_rsa_with_aes_256_cbc_sha
-    TLS_dhe_dss_with_aes_256_cbc_sha
-    TLS_dhe_rsa_with_aes_256_cbc_sha
-
-o SSL now supports TLS 1.0 (SSL 3.1) and TLS 1.1
 
 o Blowfish and Serpent support fixed in Nettle
 
@@ -1017,44 +1113,12 @@ o Crypto.Arctwo
 o Crypto.Camellia
 
   The 128/256 bit cipher Camellia is now available as block cipher in
-  Crypto. In addition the following cipher suites have been added to
-  SSL:
+  Crypto.
 
-    TLS_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
-    TLS_dh_dss_with_camellia_{128,256}_cbc_{sha,sha256}
-    TLS_dh_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
-    TLS_dhe_dss_with_camellia_{128,256}_cbc_{sha,sha256}
-    TLS_dhe_rsa_with_camellia_{128,256}_cbc_{sha,sha256}
-    TLS_dh_anon_with_camellia_{128,256}_cbc_{sha,sha256}
+* Crypto.ECC
 
-    TLS_ecdhe_ecdsa_with_camellia_128_cbc_sha256
-    TLS_ecdhe_ecdsa_with_camellia_256_cbc_sha384
-    TLS_ecdh_ecdsa_with_camellia_128_cbc_sha256
-    TLS_ecdh_ecdsa_with_camellia_256_cbc_sha384
-    TLS_ecdhe_rsa_with_camellia_128_cbc_sha256
-    TLS_ecdhe_rsa_with_camellia_256_cbc_sha384
-    TLS_ecdh_rsa_with_camellia_128_cbc_sha256
-    TLS_ecdh_rsa_with_camellia_256_cbc_sha384
-    TLS_rsa_with_camellia_128_gcm_sha256
-    TLS_rsa_with_camellia_256_gcm_sha384
-    TLS_dhe_rsa_with_camellia_128_gcm_sha256
-    TLS_dhe_rsa_with_camellia_256_gcm_sha384
-    TLS_dh_rsa_with_camellia_128_gcm_sha256
-    TLS_dh_rsa_with_camellia_256_gcm_sha384
-    TLS_dhe_dss_with_camellia_128_gcm_sha256
-    TLS_dhe_dss_with_camellia_256_gcm_sha384
-    TLS_dh_dss_with_camellia_128_gcm_sha256
-    TLS_dh_dss_with_camellia_256_gcm_sha384
-    TLS_dh_anon_with_camellia_128_gcm_sha256
-    TLS_dh_anon_with_camellia_256_gcm_sha384
-    TLS_ecdhe_ecdsa_with_camellia_128_gcm_sha256
-    TLS_ecdhe_ecdsa_with_camellia_256_gcm_sha384
-    TLS_ecdh_ecdsa_with_camellia_128_gcm_sha256
-    TLS_ecdh_ecdsa_with_camellia_256_gcm_sha384
-    TLS_ecdhe_rsa_with_camellia_128_gcm_sha256
-    TLS_ecdhe_rsa_with_camellia_256_gcm_sha384
-    TLS_ecdh_rsa_with_camellia_128_gcm_sha256
-    TLS_ecdh_rsa_with_camellia_256_gcm_sha384
+  Elliptic Curve operations are now supported when compiled
+  with Nettle 3.0 or later.
 
 o Crypto.SALSA20 and Crypto.SALSA20R12
 
@@ -1080,6 +1144,10 @@ o Crypto.Hash
 
   Added support for pbkdf1 from PKCS#5v1.5 and pbkdf2 from PKCS#5v2.0.
 
+o Standards.PEM
+
+  + Added some support for encrypted PEM files
+
 o Standards.X509
 
   X509 was moved from Tools to Standards and has been refactored and
@@ -1097,18 +1165,11 @@ o Standards.X509
     DSA SHA-2-224
     DSA SHA-2-256
 
-  Note that the API has changed compared with Tools.X509 and there is
+  Note that the API has changed compared to Tools.X509 and there is
   now a single make_selfsigned_certificate() method for both RSA and
   DSA, though it takes the same arguments. In addition a hash function
   and serial number can be supplied. The hash function defaults to
   SHA-2-256.
-
-o Multiple threads can now call the Backend `() function (the function
-  that waits for events).
-
-  The first thread will be the controlling thread, and all callbacks
-  will be called in it, the other threads will wake when the
-  controlling thread is done.
 
 
 Incompatible C-level API changes
