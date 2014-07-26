@@ -1915,17 +1915,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	close_state < NORMAL_CLOSE;
     }
 
-    if (alert_cb_called || call_accept_cb + call_read_cb > 1) {
-      // Need to do a call out to ourselves; see comment above.
-#ifdef SSLFILE_DEBUG
-      if (!alert_cb_called && !called_from_real_backend)
-	error ("Internal confusion.\n");
-#endif
-      SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O).\n",
-		      alert_cb_called, call_accept_cb, call_read_cb);
-      alert_cb_called = 0;
-    }
-
     if (conn->state & CONNECTION_peer_closed) {
       // Deinstall read side cbs to avoid reading more.
       SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
