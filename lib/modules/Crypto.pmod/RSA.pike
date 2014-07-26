@@ -374,9 +374,12 @@ int(0..) key_size() { return [int(0..)](size*8); }
 Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
 		function(int(0..):string(8bit))|void random)
 {
-  string(8bit) cookie = "";
+  string(8bit) padding = "";
 
-  // Padding length. At least 8 bytes as security margin.
+  // Padding length: RSA size - message size - 3 bytes; delimiter,
+  // padding type and leading null (not explicitly coded, as Gmp.mpz
+  // does the right thing anyway). Require at least 8 bytes of padding
+  // as security margin.
   int len = size - 3 - sizeof(message);
   if (len < 8)
     error( "Block too large. (%d>%d)\n", sizeof(message), size-11 );
@@ -384,18 +387,18 @@ Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
   switch(type)
   {
   case 1:
-    cookie = sprintf("%@c", allocate(len, 0xff));
+    padding = sprintf("%@c", allocate(len, 0xff));
     break;
   case 2:
     if( !random ) random = this_program::random;
     do {
-      cookie += random([int(0..)](len-sizeof(cookie))) - "\0";
-    }  while( sizeof(cookie)<len );
+      padding += random([int(0..)](len-sizeof(padding))) - "\0";
+    }  while( sizeof(padding)<len );
     break;
   default:
     error( "Unknown type.\n" );
   }
-  return Gmp.mpz(sprintf("%c", type) + cookie + "\0" + message, 256);
+  return Gmp.mpz(sprintf("%c", type) + padding + "\0" + message, 256);
 }
 
 //! Reverse the effect of @[rsa_pad].
