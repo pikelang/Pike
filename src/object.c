@@ -127,6 +127,8 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   o=alloc_object();
 
+  o->flags = 0;
+
   o->storage=p->storage_needed ? (char *)xcalloc(p->storage_needed, 1) : (char *)NULL;
 
   GC_ALLOC(o);
