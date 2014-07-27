@@ -29,6 +29,9 @@ struct object
   char *storage;
 };
 
+/* Flags used in object->flags. */
+#define OBJECT_CLEAR_ON_EXIT	1	/* Overwrite before free. */
+
 PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
 PMOD_EXPORT extern struct object *objects_to_destruct;
