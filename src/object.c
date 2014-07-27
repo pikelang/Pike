@@ -131,6 +131,10 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   o->storage=p->storage_needed ? (char *)xcalloc(p->storage_needed, 1) : (char *)NULL;
 
+  if (p->flags & PROGRAM_CLEAR_STORAGE) {
+    o->flags |= OBJECT_CLEAR_ON_EXIT;
+  }
+
   GC_ALLOC(o);
 
 #ifdef DO_PIKE_CLEANUP
@@ -954,7 +958,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( frame_pushed )
     POP_FRAME2();
 
-  if (o->storage && (p->flags & PROGRAM_CLEAR_STORAGE)) {
+  if (o->storage && (o->flags & OBJECT_CLEAR_ON_EXIT)) {
     memset(o->storage, 0, p->storage_needed);
   }
 
