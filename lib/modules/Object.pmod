@@ -11,3 +11,5 @@ constant DESTRUCT_CLEANUP = __builtin.DESTRUCT_CLEANUP;
 //! @note
 //! @[Object.DESTRUCT_EXPLICIT] is @expr{0@} and
 //! @[Object.DESTRUCT_CLEANUP] is @expr{1@} for compatibility.
+
+constant secure = __builtin.object_secure;
