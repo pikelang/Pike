@@ -1336,7 +1336,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   RETURN mkmapping(ind, val);
 }
 
-/*! @decl void secure(string str)
+/*! @decl string secure(string str)
  *! @belongs String
  *!
  *! Marks the string as secure, which will clear the memory area
@@ -1348,6 +1348,20 @@ PIKEFUN string string_secure(string str)
 {
   str->flags |= STRING_CLEAR_ON_EXIT;
   REF_RETURN str;
+}
+
+/*! @decl object secure(object str)
+ *! @belongs Object
+ *!
+ *! Marks the object as secure, which will clear the memory area
+ *! before freeing the object.
+ */
+PIKEFUN object object_secure(object obj)
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFunc(tSetvar(0, tObj), tVar(0));
+{
+  obj->flags |= OBJECT_CLEAR_ON_EXIT;
+  REF_RETURN obj;
 }
 
 /*! @decl int count(string haystack, string needle)
