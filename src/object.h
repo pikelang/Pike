@@ -19,6 +19,7 @@
 struct object
 {
   PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
+  size_t flags;
   struct program *prog;
   struct object *next;
   struct object *prev;
