@@ -1031,7 +1031,7 @@ static void mpzmod__sprintf(INT32 args)
 
 /* protected int(0..1) _is_type(string type)
  */
-static void mpzmod__is_type(INT32 args)
+static void mpzmod__is_type(INT32 UNUSED(args))
 {
     struct pike_string *int_t;
     int is_int;
@@ -2239,36 +2239,36 @@ static void gmp_fac(INT32 args)
   PUSH_REDUCED(res);
 }
 
+#ifdef MPZ_T_HAS__MP_ALLOC
+#define LIMBS(X) THIS->_mp_alloc
+#else
+#define LIMBS(X) mpz_size(THIS)
+#endif
+
+
+static void mpzmod__size_object(INT32 UNUSED(args))
+{
+  push_int(LIMBS(THIS)*sizeof(mp_limb_t)+sizeof(mpz_t));
+}
+
 static void init_mpz_glue(struct object * UNUSED(o))
 {
-#ifdef PIKE_DEBUG
-  if(!fp) Pike_fatal("ZERO FP\n");
-  if(!THIS) Pike_fatal("ZERO THIS\n");
-#endif
   mpz_init(THIS);
 }
 
 static void exit_mpz_glue(struct object *UNUSED(o))
 {
-#ifdef PIKE_DEBUG
-  if(!fp) Pike_fatal("ZERO FP\n");
-  if(!THIS) Pike_fatal("ZERO THIS\n");
-#endif
+  if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+     memset( THIS->_mp_d, 0,LIMBS(THIS) * sizeof(mp_limb_t));
   mpz_clear(THIS);
 }
 
 static void gc_recurse_mpz (struct object *o)
 {
   if (mc_count_bytes (o))
-    mc_counted_bytes +=
-#ifdef MPZ_T_HAS__MP_ALLOC
-      THIS[0]._mp_alloc * sizeof (mp_limb_t) +
-#else
-      mpz_size (THIS) * sizeof (mp_limb_t) +
-#endif
-      sizeof (mpz_t);
+    mc_counted_bytes += LIMBS(THIS)*sizeof (mp_limb_t) + sizeof (mpz_t);
 }
-#endif
+#endif /* USE_GMP || defined(USE_GMP2) */
 
 PIKE_MODULE_EXIT
 {
@@ -2300,7 +2300,6 @@ PIKE_MODULE_EXIT
       NULL, NULL, NULL, NULL);
 #endif
 }
-
 
 static void *pike_mp_alloc (size_t alloc_size)
 {
@@ -2397,6 +2396,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr7), 0);	\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
+  ADD_FUNCTION("_size_object",mpzmod__size_object, tFunc(tVoid,tInt),0);\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\

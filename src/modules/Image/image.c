@@ -188,7 +188,12 @@ static void init_image_struct(struct object *UNUSED(obj))
 
 static void exit_image_struct(struct object *UNUSED(obj))
 {
-  if (THIS->img) { free(THIS->img); THIS->img=NULL; }
+    if (THIS->img) {
+        if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+            memset( THIS->img, 0, sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize );
+        free(THIS->img);
+        THIS->img=NULL;
+    }
 /*
   fprintf(stderr,"exit %lx (%d) %dx%d=%.1fKb\n",obj,--obj_counter,
 	  THIS->xsize,THIS->ysize,

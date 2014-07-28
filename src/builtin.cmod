@@ -3109,6 +3109,8 @@ PIKECLASS Buffer
     str2->initial = str->initial;
     if( str->str.s )
       init_string_builder_copy (&str2->str, &str->str);
+    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
+        res->flags |= OBJECT_CLEAR_ON_EXIT;
     apply( res, "add", 1 );
     RETURN res;
   }
@@ -3351,15 +3353,18 @@ PIKECLASS Buffer
 	switch( str->size_shift )
 	{
 	  case 0:
-	    RETURN make_shared_binary_string0((p_wchar0 *)d,len);
+          str=make_shared_binary_string0((p_wchar0 *)d,len);
 	    break;
 	  case 1:
-	    RETURN make_shared_binary_string1((p_wchar1 *)d,len);
+          str=make_shared_binary_string1((p_wchar1 *)d,len);
 	    break;
 	  case 2:
-	    RETURN make_shared_binary_string2((p_wchar2 *)d,len);
+          str=make_shared_binary_string2((p_wchar2 *)d,len);
 	    break;
 	}
+        if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+            str->flags |= STRING_CLEAR_ON_EXIT;
+        RETURN str;
       }
     }
     push_empty_string();
@@ -3384,6 +3389,8 @@ PIKECLASS Buffer
       struct pike_string *s = finish_string_builder( &str->str );
       str->str.malloced = 0;
       str->str.s = NULL;
+      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+          s->flags |= STRING_CLEAR_ON_EXIT;
       RETURN s;
     }
     pop_n_elems(args);
@@ -3435,7 +3442,11 @@ PIKECLASS Buffer
     {
       struct Buffer_struct *str = THIS;
       if( str->str.s )
-	free_string_builder( &str->str );
+      {
+          if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
+              memset( str->str.s->str, 0, str->str.s->len );
+          free_string_builder( &str->str );
+      }
     }
 
   GC_RECURSE
