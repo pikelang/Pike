@@ -622,10 +622,18 @@ static void mpzmod_create(INT32 args)
   switch(args)
   {
   case 1:
-    if(TYPEOF(sp[-args]) == T_STRING)
+    if(TYPEOF(sp[-args]) == T_STRING) {
+      if (sp[-args].u.string->flags & STRING_CLEAR_ON_EXIT) {
+	Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+      }
       get_mpz_from_digits(THIS, sp[-args].u.string, 0);
-    else
+    } else {
+      if ((TYPEOF(sp[-args]) == T_OBJECT) &&
+	  (sp[-args].u.object->flags & OBJECT_CLEAR_ON_EXIT)) {
+	Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+      }
       get_new_mpz(THIS, sp-args, 1, "Gmp.mpz", 1, args);
+    }
     break;
 
   case 2: /* Args are string of digits and integer base */
@@ -634,6 +642,10 @@ static void mpzmod_create(INT32 args)
 
     if (TYPEOF(sp[1-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz", 2, "int");
+
+    if (sp[-args].u.string->flags & STRING_CLEAR_ON_EXIT) {
+      Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+    }
 
     get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
     break;
