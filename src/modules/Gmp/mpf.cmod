@@ -848,20 +848,12 @@ PIKECLASS mpf
 
   INIT
     {
-#ifdef PIKE_DEBUG
-      if(!fp) Pike_fatal("ZERO FP\n");
-      if(!THISMPF) Pike_fatal("ZERO THISMPF\n");
-#endif
       mpf_init(THISMPF);
     }
-  
+
   EXIT
     gc_trivial;
     {
-#ifdef PIKE_DEBUG
-      if(!fp) Pike_fatal("ZERO FP\n");
-      if(!THISMPF) Pike_fatal("ZERO THISMPF\n");
-#endif
       mpf_clear(THISMPF);
     }
 
