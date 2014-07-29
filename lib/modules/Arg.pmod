@@ -1,4 +1,3 @@
-//
 // Argument parser
 // By Martin Nilsson
 //
@@ -6,6 +5,7 @@
 #pike __REAL_VERSION__
 
 class OptLibrary
+//!
 {
 
   //! Base class for parsing an argument. Inherit this class to create
@@ -346,18 +346,32 @@ object REST = class {
     }
   }();
 
+//! @decl constant REST = REST();
+//!
+//! Constant used by Arg.parse() to indicate the remaining objects.
+
+
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
 // FIXME: Support for type casts? ( Opt level = Integer(Opt("--level"));
 
 class LowOptions
+  //!
 {
   protected inherit OptLibrary;
 
+  //!
   protected mapping(string:Opt) opts = ([]);
+
+  //!
   protected mapping(string:int(1..1)|string) values = ([]);
+
+  //!
   protected array(string) argv;
+
+  //!
   protected string application;
 
+  //!
   protected void create(array(string) _argv, void|mapping(string:string) env)
   {
     if(!env)
@@ -410,6 +424,7 @@ class LowOptions
 
   }
 
+  //!
   protected int(0..1) unhandled_argument(array(string) argv,
                                       mapping(string:string) env)
   {
@@ -439,11 +454,13 @@ class Options
   {
     return values[id];
   }
+
   protected string|int `->(string id)
   {
     return values[id];
   }
 
+  //!
   protected int(0..1)|string unhandled_argument(array(string) argv,
                                              mapping(string:string) env)
   {
@@ -485,9 +502,12 @@ class Options
 // --- Simple interface
 
 class SimpleOptions
+//! Options parser with a unhandled_argument implementation that
+//! parses most common argument formats.
 {
   inherit LowOptions;
 
+ //! Handles arguments as described in @[Arg.parse]
   int(0..1) unhandled_argument(array(string) argv, mapping(string:string) env)
   {
     string arg = argv[0];
@@ -538,8 +558,39 @@ class SimpleOptions
 //   argv = opts[Arg.REST];
 // }
 
-
-mapping(string:string|int(1..1)) parse(array(string) argv)
+//! Convenience function for simple argument parsing.
+//!
+//! Handles the most common cases.
+//!
+//! The return value is a mapping from option name to the option value.
+//!
+//! The special index Arg.REST will be set to the remaining arguments
+//! after all options have been parsed.
+//!
+//! The following argument syntaxes are supported:
+//!
+//! @code
+//! --foo         ->  "foo":1
+//! --foo=bar     ->  "foo":"bar"
+//! -bar          ->  "b":1,"a":1,"r":1
+//! -bar=foo      ->  "b":1,"a":1,"r":"foo" (?)
+//! --foo --bar   ->  "foo":1,"bar":1
+//! --foo - --bar ->  "foo":1
+//! --foo x --bar ->  "foo":1 (?)
+//! -foo          ->  "f":1,"o":2
+//! -x -x -x      ->  "x":3
+//! @endcode
+//!
+//! @example
+//! @code
+//! void main(int n, array argv)
+//! {
+//!   mapping opts = Arg.parse(argv);
+//!   argv = opts[Arg.REST];
+//!   if( opts->help ) /*... */
+//! }
+//! @endcode
+mapping(string:string|int(1..)) parse(array(string) argv)
 {
   return (mapping)SimpleOptions(argv);
 }
