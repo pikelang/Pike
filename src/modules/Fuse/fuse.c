@@ -22,8 +22,8 @@
 #include "backend.h"
 
 #ifdef HAVE_LIBFUSE
-/* Attempt to use FUSE API version 2.6 (if possible). */
-#define FUSE_USE_VERSION 26
+/* Attempt to use FUSE API version 2.9 (if possible). */
+#define FUSE_USE_VERSION 29
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
@@ -217,6 +217,7 @@ static int pf_truncate(const char *path, off_t size)
     return -Pike_sp[-1].u.integer;
 }
 
+#if FUSE_VERSION < 26
 static int pf_utime(const char *path, struct utimbuf *buf)
 {
     push_text( path );
@@ -227,7 +228,18 @@ static int pf_utime(const char *path, struct utimbuf *buf)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
-
+#else
+static int pf_utimens(const char *path, const struct timespec tv[2])
+{
+    push_text( path );
+    push_int64( (INT64)tv[0].tv_sec*(INT64)1000000000 + (INT64)tv[0].tv_nsec );
+    push_int64( (INT64)tv[1].tv_sec*(INT64)1000000000 + (INT64)tv[1].tv_nsec );
+    apply( global_fuse_obj, "utimens", 3 );
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+#endif
 
 static int pf_open(const char *path, struct fuse_file_info *fi)
 {
@@ -246,7 +258,7 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     push_int( size );
     push_int64( offset );
     apply( global_fuse_obj, "read", 3 );
-    
+
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
@@ -410,6 +422,39 @@ static int pf_access( const char *path, int mode)
     return -Pike_sp[-1].u.integer;
 }
 
+static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct flock *lck )
+{
+  push_text( path );
+  push_int( cmd );
+
+  push_text("owner"); push_int( fi->lock_owner );
+  push_text("type");  push_int( lck->l_type );
+  push_text("whence");push_int( lck->l_whence );
+  push_text("start");   push_int( lck->l_start );
+  push_text("len");   push_int( lck->l_len );
+  push_text("pid");   push_int( lck->l_pid );
+  f_aggregate_mapping( 6 * 2 );
+  apply( global_fuse_obj, "lock", 3 );
+
+  if( TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING )
+  {
+    struct svalue *tmp;
+#define COUT(X)                                                         \
+    if((tmp=simple_mapping_string_lookup(Pike_sp[-1].u.mapping,#X))     \
+       && TYPEOF(*tmp)==PIKE_T_INT) lck->l_##X = tmp->u.integer;
+    COUT(type);  COUT(whence);
+    COUT(start);  COUT(len);
+    COUT(pid);
+#undef COUT
+    return 0;
+  }
+  else
+  {
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+      DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+  }
+}
 
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
@@ -425,7 +470,14 @@ static struct fuse_operations pike_fuse_oper = {
     .chmod	= pf_chmod,
     .chown	= pf_chown,
     .truncate	= pf_truncate,
+#if FUSE_VERSION >= 26
+    .utimens	= pf_utimens,
+#else
     .utime	= pf_utime,
+#endif
+#if FUSE_VERSION >= 26
+    .lock	= pf_lock,
+#endif
     .open	= pf_open,
     .read	= pf_read,
     .write	= pf_write,
@@ -537,6 +589,12 @@ PIKE_MODULE_EXIT
   free_program( fuse_cmd_program );
 }
 
+/*! @decl constant FUSE_MAJOR_VERSION
+ *! @decl constant FUSE_MINOR_VERSION
+ *!
+ *!  The version of FUSE
+ */
+
 PIKE_MODULE_INIT
 {
     ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr),tVoid ), 0 );
@@ -555,6 +613,12 @@ PIKE_MODULE_INIT
     }
     fuse_cmd_program = end_program();
 
+    add_integer_constant("F_RDLCK", F_GETLK, 0 );
+    add_integer_constant("F_WRLCK", F_WRLCK, 0 );
+    add_integer_constant("F_UNLCK", F_UNLCK, 0 );
+    add_integer_constant("F_GETLK", F_GETLK, 0 );
+    add_integer_constant("F_SETLK", F_SETLK, 0 );
+    add_integer_constant("F_SETLKW", F_SETLKW, 0 );
     add_integer_constant("FUSE_MAJOR_VERSION", FUSE_MAJOR_VERSION, 0);
     add_integer_constant("FUSE_MINOR_VERSION", FUSE_MINOR_VERSION, 0);
 }
