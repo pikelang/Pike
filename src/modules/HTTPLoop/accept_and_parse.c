@@ -566,11 +566,12 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
 */
 static void f_accept_with_http_parse(INT32 nargs)
 {
-/* From socket.c */
+  /* From socket.c */
   struct port 
   {
     struct fd_callback_box box;
     int my_errno;
+    unsigned int immediate_cnt;
     struct svalue accept_callback;
     struct svalue id;
   };
