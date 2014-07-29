@@ -45,7 +45,7 @@
 #endif /* HAVE_POLL */
 
 
-MUTEX_T aap_timeout_mutex;
+static MUTEX_T aap_timeout_mutex;
 
 struct timeout 
 {
@@ -60,7 +60,7 @@ struct timeout
 
 
 #define CHUNK 100
-int num_timeouts;
+static int num_timeouts;
 
 static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 {

@@ -41,14 +41,14 @@
 
 #define sp Pike_sp
 
-int num_log_entries;
-void free_log_entry( struct log_entry *le )
+static int num_log_entries;
+static void free_log_entry( struct log_entry *le )
 {
   num_log_entries--;
   free( le );
 }
 
-struct log_entry *new_log_entry(ptrdiff_t extra)
+static struct log_entry *new_log_entry(ptrdiff_t extra)
 {
   num_log_entries++;
   return malloc( sizeof( struct log_entry )+extra );
