@@ -18,7 +18,6 @@ STRING(s_if_modified_since,"if-modified-since");
 
 STRING(s_not_query,"not_query");
 STRING(s_query,"query");
-STRING(s_prestate,"prestate");
 STRING(s_time,"time");
 STRING(s_my_fd,"my_fd");
 STRING(s_prot,"prot");
@@ -36,12 +35,3 @@ STRING(s_since,"since");
 
 STRING(s_variables,"variables");
 STRING(s_rest_query,"rest_query");
-
-/* To be implemented */
-
-STRING(s_cookies,"cookies");
-/* STRING(s_config,"config"); */
-
-STRING(s_rawauth,"rawauth");
-STRING(s_realauth,"realauth");
-STRING(s_supports, "supports");
