@@ -14,7 +14,20 @@
 #define PARSE_FAILED ("HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\n\r\nRequest parsing failed.\r\n")
 
 #include "global.h"
-	  
+/*! @module HTTPLoop 
+ *!
+ *! High performance webserver optimized for somewhat static content.
+ *!
+ *! HTTPLoop is a less capable WWW-server than the
+ *! Protocols.HTTP.Server server, but for some applications it can be
+ *! preferable. It is significantly more optimized, for most uses, and
+ *! can handle a very high number of requests per second on even
+ *! low end machines.
+ */
+
+/*! @class Loop
+ */
+
 #include "bignum.h"
 #include "backend.h"
 #include "machine.h"
@@ -566,6 +579,23 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
   }
 }
 
+/*! @decl void create( Stdio.Port port, RequestProgram program, @
+ *!                    function(RequestProgram:void) request_handler, @
+ *!                    int cache_size, @
+ *!                    bool keep_log, int timeout )
+ *!
+ *! Create a new HTTPLoop.
+ *!
+ *! This will start a new thread that will listen for requests on the
+ *! port, parse them and pass on requests, instanced from the
+ *! @[program] class (which has to inherit @[RequestProgram] to the
+ *! @[request_handler] callback function.
+ *!
+ *! @[cache_size] is the maximum size of the cache, in bytes.
+ *! @[keep_log] indicates if a log of all requests should be kept.
+ *! @[timeout] if non-zero indicates a maximum time the server will wait for requests.
+ *!
+*/
 static void f_accept_with_http_parse(INT32 nargs)
 {
 /* From socket.c */
@@ -628,6 +658,55 @@ static void f_accept_with_http_parse(INT32 nargs)
   }
 }
 
+/*! @decl array(LogEntry) log_as_array()
+ *!
+ *! Return the current log as an array of LogEntry objects.
+ */
+
+/*! @decl int log_as_commonlog_to_file(Stdio.Stream fd)
+ *!
+ *! Write the current log to the specified file in a somewhat common
+ *! commonlog format.
+ *!
+ *! Will return the number of bytes written.
+ */
+
+/*! @decl bool logp()
+ *! Returns true if logging is enabled
+ */
+
+/*! @decl int log_size()
+ *!
+ *! Returns the number of entries waiting to be logged.
+ */
+
+/*! @decl mapping(string:int) cache_status()
+ *!
+ *! Returns information about the cache.
+ *! @mapping result
+ *! @member int hits
+ *!   The number of hits since start
+ *! @member int misses
+ *!   The number of misses since start
+ *! @member int stale
+ *!   The number of misses that were stale hits, and not used
+ *! @member int size
+ *!   The total current size
+ *! @member int entries
+ *!   The number of entries in the cache
+ *! @member int max_size
+ *!   The maximum size of the cache
+ *!
+ *! @member int sent_bytes
+ *!  The number of bytes sent since the last call to cache_status
+ *!
+ *! @member int received_bytes
+ *!  The number of bytes received since the last call to cache_status
+ *!
+ *! @member int num_requests
+ *!  The number of requests received since the last call to cache_status
+ *! @endmapping
+ */
 static void f_cache_status(INT32 args)
 {
   struct cache *c = LTHIS->cache;
@@ -654,22 +733,103 @@ static void f_cache_status(INT32 args)
   push_int(c->received_data);c->received_data=0;
   f_aggregate_mapping( 18 );
 }
+/*! @endclass
+ */
 
+/*! @class LogEntry
+ *!
+ *! @decl int time
+ *!
+ *! @decl int sent_bytes
+ *!
+ *! @decl int received_bytes
+ *!
+ *! @decl int reply
+ *!
+ *! @decl string raw
+ *!
+ *! @decl string url
+ *!
+ *! @decl string method
+ *!
+ *! @decl string protocol
+ *!
+ *! @decl string from
+ *!
+ *! @endclass
+ */
+
+/*! @class RequestProgram
+ *!
+ *! @decl string prot
+ *!   The protocol part of the request. As an example "HTTP/1.1"
+ *!
+ *! @decl int time
+ *!   The time_t when the request arrived to the server
+ *!
+ *! @decl string raw_url
+ *!   The raw URL received, the part after the method and before the protocol.
+ *!
+ *! @decl string not_query
+ *!   The part of the URL before the first '?'.
+ *!
+ *! @decl string query
+ *!   The part of the URL after the first '?'
+ *!
+ *! @decl string rest_query
+ *!   The part of the URL after the first '?' that does not seem to be query variables.
+ *!
+ *! @decl mapping(string:string) variables;
+ *!   Parsed query variables
+ *!
+ *! @decl string client
+ *!   The user agent
+ *!
+ *! @decl string referer
+ *!   The referer header
+ *!
+ *! @decl string since
+ *!   The get-if-not-modified, if set.
+ *!
+ *! @decl string data
+ *!   Any payload that arrived with the request
+ *!
+ *! @decl mapping(string:array(string)) headers;
+ *!   All received headers
+ *!
+ *! @decl multiset(string) pragma;
+ *!   Tokenized pragma headers
+ *!
+ *! @decl Stdio.NonblockingStream my_fd
+ *!   The filedescriptor for this request.
+ *!
+ *! @decl string remoteaddr
+ *!   The remote address
+ *!
+ *! @decl string method
+ *!   The method (GET, PUT etc)
+ *!
+ *! @decl string raw
+ *!   The full request
+ *!
+ *! @decl void output(string data)
+ *!  Send @[data] directly to the remote side.
+ *!
+ *! @decl void reply( string data )
+ *! @decl void reply( string headers, Stdio.File fd, int len )
+ *! @decl void reply( int(0..0) ignore, Stdio.File fd, int len )
+ *!   Send a reply to the remote side.
+ *!   In the first case the @[data] will be sent.
+ *!   In the second case the @[headers] will be sent, then @[len] bytes from @[fd].
+ *!   In the last case @[len] bytes from @[fd] will be sent.
+ *!
+ *! @decl void reply_with_cache( string data, int(1..) stay_time )
+ *!  Send @[data] as the reply, and keep it as a cache entry to
+ *!  requests to this URL for @[stay_time] seconds.
+ *!
+ *! @endclass
+ */
 #endif /* _REENTRANT */
-
-void f_aap_add_filesystem( INT32 args )
-{
-  INT_TYPE nosyms = 0;
-  struct pike_string *basedir, *mountpoint;
-  struct array *noparse;
-
-  if(args == 4)
-    get_all_args( "add_filesystem", args, 
-                  "%s%s%a%i", &basedir, &mountpoint, &noparse, &nosyms );
-  else
-    get_all_args( "add_filesystem", args, 
-                  "%s%s%a", &basedir, &mountpoint, &noparse );
-}
 
 
 PIKE_MODULE_INIT
@@ -690,11 +850,7 @@ PIKE_MODULE_INIT
 #endif
 
   start_new_program();
-#ifdef ADD_STORAGE
   ADD_STORAGE(struct args);
-#else
-  add_storage(sizeof(struct args));
-#endif
   add_function("create", f_accept_with_http_parse, 
 	       "function(object,program,function,mixed,int,int,int:void)", 0);
   add_function("cache_status", f_cache_status,"function(void:mapping)", 0);
@@ -705,26 +861,11 @@ PIKE_MODULE_INIT
   add_function("log_size", f_aap_log_size, "function(void:int)", 0);
   add_function("logp", f_aap_log_exists, "function(void:int)", 0);
 
-#if 0
-  add_function( "add_filesystem", f_aap_add_filesystem, 
-                "function(string,string,array(string),int|void:void)", 0);
-  add_function( "add_contenttype", f_aap_add_contenttype, 
-                "function(strign,string:void)", 0);
-#ifdef FS_STATS
-  add_function( "filesystem_stats", f_filesystem_stats,
-                "function(void:mapping)", 0);
-#endif
-#endif
-
   add_program_constant("Loop", accept_loop_program = end_program(), 0);
 
   start_new_program();
 #define OFFSET(X) (offset + OFFSETOF(log_object,X))
-#ifdef ADD_STORAGE
   offset=ADD_STORAGE(struct log_object);
-#else
-  offset=add_storage(sizeof(struct log_object));
-#endif
   map_variable("time", "int", 0, OFFSET(time), T_INT);
   map_variable("sent_bytes", "int", 0, OFFSET(sent_bytes), T_INT);
   map_variable("reply", "int", 0, OFFSET(reply), T_INT);
@@ -734,16 +875,11 @@ PIKE_MODULE_INIT
   map_variable("method", "string", 0, OFFSET(method), T_STRING);
   map_variable("protocol", "string", 0, OFFSET(protocol), T_STRING);
   map_variable("from", "string", 0, OFFSET(from), T_STRING);
-  add_program_constant("logentry", (aap_log_object_program=end_program()), 0);
+  add_program_constant("LogEntry", (aap_log_object_program=end_program()), 0);
 
 
   start_new_program();
-#ifdef ADD_STORAGE
   ADD_STORAGE(struct c_request_object);
-#else
-  add_storage(sizeof(struct c_request_object));
-#endif
-
   add_function("`[]", f_aap_index_op, "function(string:mixed)",0);
   add_function("`->", f_aap_index_op, "function(string:mixed)",0);
 
@@ -762,9 +898,9 @@ PIKE_MODULE_INIT
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
+  add_program_constant("RequestProgram", c_request_program, 0 );
 #else
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 #endif /* _REENTRANT */
 }
 
@@ -861,3 +997,4 @@ PIKE_MODULE_EXIT
   free_program(accept_loop_program);
 #endif /* _REENTRANT */
 }
+/*! @endmodule */
