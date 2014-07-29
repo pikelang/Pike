@@ -168,8 +168,8 @@ void f_aap_scan_for_query(INT32 args)
     len = THIS->request->res.url_len;
   }
 
-  /*  [http://host:port]/(pre,states)/[url[?query]] */
-  work_area = aap_malloc(len);
+  /*  [http://host:port]/[url[?query]] */
+  work_area = malloc(len);
   
   /* find '?' if any */
   for(j=i=0;i<len;i++)
@@ -190,7 +190,7 @@ void f_aap_scan_for_query(INT32 args)
 
  done:
   TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin+1);
-  aap_free(work_area);
+  free(work_area);
 
   if(i < len)
     TINSERT(THIS->misc_variables, s_query, s+i+1, (len-i)-1);
@@ -273,14 +273,14 @@ static void parse_query(void)
 
   if(TYPEOF(*q) == T_STRING)
   {
-    char *dec = aap_malloc(q->u.string->len*2+1);
+    char *dec = malloc(q->u.string->len*2+1);
     char *rest_query = dec+q->u.string->len+1, *rp=rest_query;
     decode_x_url_mixed(q->u.string->str,q->u.string->len,v,dec,rest_query,&rp);
     push_string(make_shared_binary_string(rest_query,rp-rest_query));
     push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--; pop_stack();
-    aap_free(dec);
+    free(dec);
   } else {
     push_int(0); push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
@@ -557,7 +557,7 @@ static int num_send_args;
 struct send_args *new_send_args(void)
 {
   num_send_args++;
-  return aap_malloc( sizeof( struct send_args ) );
+  return malloc( sizeof( struct send_args ) );
 }
 
 void free_send_args(struct send_args *s)
@@ -565,7 +565,7 @@ void free_send_args(struct send_args *s)
   num_send_args--;
   if( s->data )    aap_enqueue_string_to_free( s->data );
   if( s->from_fd ) fd_close( s->from_fd );
-  aap_free( s );
+  free( s );
 }
 
 /* WARNING! This function is running _without_ any stack etc. */
@@ -849,7 +849,7 @@ void f_aap_reply(INT32 args)
     safe_apply(sp[-2].u.object, "query_fd", 0);
     if((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer <= 0))
     {
-      aap_free(q);
+      free(q);
       Pike_error("Bad fileobject to request_object->reply()\n");
     }
     if((q->from_fd = fd_dup(sp[-1].u.integer)) == -1)

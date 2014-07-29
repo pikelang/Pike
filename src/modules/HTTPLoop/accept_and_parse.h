@@ -172,16 +172,3 @@ struct c_request_object
 void aap_handle_connection(struct args *arg);
 void free_args( struct args *arg );
 struct args *new_args( );
-
-
-
-#if 0
-#  define aap_malloc debug_aap_malloc
-#  define aap_free   debug_aap_free
-#else
-#  define aap_malloc malloc
-#  define aap_free   free
-#endif
-
-void *debug_aap_malloc( int nbytes );
-void debug_aap_free( void *what );

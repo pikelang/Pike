@@ -64,7 +64,7 @@ int num_timeouts;
 
 static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 {
-  struct timeout *t = aap_malloc(sizeof(struct timeout));
+  struct timeout *t = malloc(sizeof(struct timeout));
   num_timeouts++;
   t->thr = thr;
   t->raised = 0;   
@@ -88,7 +88,7 @@ static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 static void free_timeout( struct timeout *t ) /* running locked */
 {
   num_timeouts--;
-  aap_free( t );
+  free( t );
 }
 
 int *aap_add_timeout_thr(THREAD_T thr, int secs)
