@@ -158,7 +158,7 @@ void f_aap_scan_for_query(INT32 args)
   int c;
   if(args)
   {
-    get_all_args("HTTP C object->scan_for_query(string f)", args, "%S", &_s);
+    get_all_args("scan_for_query", args, "%S", &_s);
     s = (char *)_s->str;
     len = _s->len;
   }
@@ -524,11 +524,6 @@ void f_aap_index_op(INT32 args)
   }
 }
 
-/* static void f_index_equal_op(INT32 args) */
-/* { */
-
-/* } */
-
 void f_aap_end(INT32 UNUSED(args))
 {
   /* end connection. */
@@ -541,7 +536,7 @@ void f_aap_output(INT32 UNUSED(args))
 }
 
 #define BUFFER 8192
-struct thread_args *done;
+static struct thread_args *done;
 
 struct send_args
 {
@@ -554,13 +549,13 @@ struct send_args
 };
 
 static int num_send_args;
-struct send_args *new_send_args(void)
+static struct send_args *new_send_args(void)
 {
   num_send_args++;
   return malloc( sizeof( struct send_args ) );
 }
 
-void free_send_args(struct send_args *s)
+static void free_send_args(struct send_args *s)
 {
   num_send_args--;
   if( s->data )    aap_enqueue_string_to_free( s->data );
@@ -569,7 +564,7 @@ void free_send_args(struct send_args *s)
 }
 
 /* WARNING! This function is running _without_ any stack etc. */
-void actually_send(struct send_args *a)
+static void actually_send(struct send_args *a)
 {
   int first=0;
   char foo[10];
