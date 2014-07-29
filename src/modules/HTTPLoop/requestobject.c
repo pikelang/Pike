@@ -189,42 +189,9 @@ void f_aap_scan_for_query(INT32 args)
   }
 
  done:
-
-/* Now find prestates, if any */
-  j--;
-  if(j > 3 && work_area[1] == '(' && work_area[0]=='/')
-  {
-    ptrdiff_t k, n=0, last=2;
-    for(k = 2; k < j; k++)
-    {
-      switch(work_area[k])
-      {
-       case ',':
-	 push_string(make_shared_binary_string(work_area+last,k-last));
-	 n++;
-	 last = k+1;
-	 break;
-       case ')':
-	 push_string(make_shared_binary_string(work_area+last,k-last));
-	 n++;
-	 begin = k+1;
-	 f_aggregate_multiset(DO_NOT_WARN((INT32)n));
-	 goto done2;
-      }
-    }
-    pop_n_elems(DO_NOT_WARN(n));
-    f_aggregate_multiset( 0 );
-  } else {
-    f_aggregate_multiset( 0 );
-  }
- done2:
-  push_string(s_prestate);
-  mapping_insert(THIS->misc_variables, sp-1, sp-2);
-  sp--; pop_stack();
-
   TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin+1);
   aap_free(work_area);
-  
+
   if(i < len)
     TINSERT(THIS->misc_variables, s_query, s+i+1, (len-i)-1);
   else
@@ -406,7 +373,7 @@ void f_aap_index_op(INT32 args)
   if(!THIS->request) Pike_error("Reply called. No data available\n");
   get_all_args("`[]", args, "%S", &s);
   
-  if(s == s_not_query || s==s_query || s==s_prestate)
+  if(s == s_not_query || s==s_query )
   {
     f_aap_scan_for_query(0);
     f_aap_index_op(1);
@@ -479,15 +446,6 @@ void f_aap_index_op(INT32 args)
     return;
   }
 
-  /* FIXME: Not actually implemented */
-/*   if(s == s_cookies || s == s_config) */
-/*   { */
-/*     if(!THIS->headers_parsed) parse_headers(); */
-
-/*     f_aap_index_op(1); */
-/*     return; */
-/*   } */
-
   if(s == s_pragma)
   {
     struct svalue *tmp;
@@ -541,7 +499,7 @@ void f_aap_index_op(INT32 args)
     sp--;
     return;
   }
-  
+
   if(s == s_since)
   {
     struct svalue *tmp;
@@ -565,61 +523,6 @@ void f_aap_index_op(INT32 args)
     return;
   }
 
-  if( s == s_supports )
-  {
-    struct svalue *tmp;
-    pop_stack();
-    push_text("roxen");
-    if((tmp = low_mapping_lookup(get_builtin_constants(), sp-1)) 
-       && TYPEOF(*tmp) == T_OBJECT)
-    {
-      pop_stack( );
-      ref_push_object( tmp->u.object );
-      push_text( "find_supports" );
-      f_index( 2 );
-      ref_push_string(s_client);
-      f_aap_index_op( 1 );
-      push_empty_string();
-      f_multiply( 2 );
-      apply_svalue( sp-2, 1 );
-      push_string(s_supports);
-      mapping_insert(THIS->misc_variables, sp-1, sp-2);
-      sp--;
-      stack_swap();
-      pop_stack();
-
-    } else {
-      pop_stack();
-      f_aggregate_multiset( 0 );
-      push_string(s_supports);
-      mapping_insert(THIS->misc_variables, sp-1, sp-2);
-      sp--;
-    }
-
-
-
-      /* 
-         if(contents = o->misc["accept-encoding"])
-         {
-         foreach((contents-" ")/",", string e) {
-         if (lower_case(e) == "gzip") {
-         o->supports["autogunzip"] = 1;
-         }
-         }
-         }
-      */
-
-    return;
-  }
-
-
-/*   if(s == s_realauth || s == s_rawauth) */
-/*   { */
-/*     pop_stack(); */
-/*     push_int(0); */
-/*     return; */
-/*   } */
-
   if(s == s_data)
   {
     pop_stack();
@@ -642,7 +545,7 @@ void f_aap_index_op(INT32 args)
 
 /* static void f_index_equal_op(INT32 args) */
 /* { */
-  
+
 /* } */
 
 void f_aap_end(INT32 UNUSED(args))
