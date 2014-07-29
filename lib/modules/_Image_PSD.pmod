@@ -1,34 +1,48 @@
 #pike __REAL_VERSION__
 
-/* Note: I'm following the convention from Image.XCF here to not
-   document all optional arguments. Makes the functions look easier to
-   use to the casual Pike programmer, so it might be a good idea, but
-   I'm not sure. /Zino */
 
 //! @appears Image.PSD
 //! PhotoShop Document image format.
 
-//! @ignore
- inherit Image._PSD;
-//! @endignore
+inherit Image._PSD;
 
+//!
 class Layer
 {
+
   string mode, name;
+  //!
+
   int opacity;
+  //!
+
   object image;
+  //!
+
   object alpha;
-  
+  //!
+
   int flags;
+  //!
+
   int xoffset, yoffset;
+  //!
+
   int width, height;
+  //!
 
   int mask_flags;
-  int mask_xoffset, mask_yoffset;
-  int mask_width, mask_height;
-  int mask_default_color;
-}
+  //!
 
+  int mask_xoffset, mask_yoffset;
+  //!
+
+  int mask_width, mask_height;
+  //!
+
+  int mask_default_color;
+  //!
+}
 
 Layer decode_layer(mapping layer, mapping i)
 {
@@ -226,7 +240,7 @@ Layer decode_layer(mapping layer, mapping i)
 //!     Ram image data.
 //!   @member  mapping(string|int:mixed) "resources"
 //!     Additional image data. See mappping below.
-//!   @member array(mapping) "layers"
+//!   @member array(Layer) "layers"
 //!     An array with the layers of the image. See mapping below.
 //! @endmapping
 //!
@@ -260,7 +274,7 @@ Layer decode_layer(mapping layer, mapping i)
 //!     @endmapping
 //! @endmapping
 //!
-//! The layer mapping:
+//! The layer members:
 //! @mapping
 //!   @member int "top"
 //!   @member int "left"
@@ -338,7 +352,6 @@ Layer decode_layer(mapping layer, mapping i)
 //!         The image data
 //!     @endmapping
 //! @endmapping
-
 mapping __decode( mapping|string what, mapping|void options )
 {
   mapping data;
@@ -355,7 +368,6 @@ mapping __decode( mapping|string what, mapping|void options )
   return data;
 }
 
-
 array(object) decode_background( mapping data )
 {
   object img;
@@ -369,6 +381,7 @@ array(object) decode_background( mapping data )
   return ({ img, 0 });
 }
 
+//! Convert a photoshop mode name to pike @[Image.lay] mode names
 string translate_mode( string mode )
 {
   switch( mode )
@@ -414,11 +427,6 @@ string translate_mode( string mode )
 //!
 //! Decodes a PSD image to an array of Image.Layer objects
 //!
-//! Takes the same aptions mapping as @[_decode], note especially 
-//! "draw_all_layers":1, but implements "crop_to_bounds" which preserves
-//! the bounding box for the whole image (i.e. discards data that extend
-//! outside of the global bounds).
-//!
 //! The layer object have the following extra variables (to be queried
 //! using @[Image.Layer()->get_misc_value]):
 //!
@@ -430,6 +438,16 @@ string translate_mode( string mode )
 //!   @value "visible"
 //!     Is 1 of the layer is visible and 0 if it is hidden.
 //! @endstring
+//!
+//! Accepts these options:
+//! @mapping
+//! @member bool draw_all_layers
+//!   If included, all layers will be decoded, even the non-visible ones.
+//! @member bool crop_to_bounds
+//!   Remove areas that are outside the image boundaries in all layers
+//! @member Image.Color background
+//!   If included, include a solid background layer with the given color
+//! @endmapping
 array decode_layers( string|mapping what, mapping|void opts )
 {
   if(!opts) opts = ([]);
@@ -537,25 +555,25 @@ array decode_layers( string|mapping what, mapping|void opts )
 //!     Sets the background to the given color. Arrays should be in
 //!     the format ({r,g,b}).
 //!
-//!   @member int(0..1) "draw_all_layers"
+//!   @member bool "draw_all_layers"
 //!     Draw invisible layers as well.
 //!
-//!   @member int(0..1) "draw_guides"
+//!   @member bool "draw_guides"
 //!     Draw the guides.
 //!
-//!   @member int(0..1) "draw_selection"
+//!   @member bool "draw_selection"
 //!     Mark the selection using an overlay.
 //!
-//!   @member int(0..1) "ignore_unknown_layer_modes"
+//!   @member bool "ignore_unknown_layer_modes"
 //!     Do not asume 'Normal' for unknown layer modes.
 //!
-//!   @member int(0..1) "mark_layers"
+//!   @member bool "mark_layers"
 //!     Draw an outline around all (drawn) layers.
 //!
 //!   @member Image.Font "mark_layer_names"
 //!     Write the name of all layers using the font object,
 //!
-//!   @member int(0..1) "mark_active_layer"
+//!   @member bool "mark_active_layer"
 //!     Draw an outline around the active layer
 //! @endmapping
 //!

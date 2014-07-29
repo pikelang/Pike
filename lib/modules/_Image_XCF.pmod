@@ -7,28 +7,86 @@ inherit Image._XCF;
 
 #define SIGNED(X) if(X>=(1<<31)) X=-((1<<32)-X)
 
+
+//! @decl constant NORMAL_MODE;
+//! @decl constant DISSOLVE_MODE;
+//! @decl constant BEHIND_MODE;
+//! @decl constant MULTIPLY_MODE;
+//! @decl constant SCREEN_MODE;
+//! @decl constant OVERLAY_MODE;
+//! @decl constant DIFFERENCE_MODE;
+//! @decl constant ADDITION_MODE;
+//! @decl constant SUBTRACT_MODE;
+//! @decl constant DARKEN_ONLY_MODE;
+//! @decl constant LIGHTEN_ONLY_MODE;
+//! @decl constant HUE_MODE;
+//! @decl constant SATURATION_MODE;
+//! @decl constant COLOR_MODE;
+//! @decl constant VALUE_MODE;
+//! @decl constant DIVIDE_MODE;
+//! @decl constant REPLACE_MODE;
+//! @decl constant ERASE_MODE;
+//!
+//! The GIMP image layer modes
+
+//! @decl constant Red;
+//! @decl constant Green;
+//! @decl constant Blue;
+//! @decl constant Gray;
+//! @decl constant Indexed;
+//! @decl constant Auxillary;
+//!
+//! The GIMP channel types
+
+
 class PathPoint
+//! A point on a path
 {
+
   int type;
+//!
+
   float x;
   float y;
+//!
+
 }
 
 class Path
+//! A path 
 {
+
   string name;
+//!
+
   int ptype;
+//!
+
   int tattoo;
+//!
+
   int closed;
+//!
+
   int state;
+//!
+
   int locked;
+//!
+
   array (PathPoint) points = ({});
+//!
 }
 
 class Guide
+//! A single guideline
 {
   int pos;
+//!
+
   int vertical;
+//!
+
   void create(string data)
   {
     sscanf(data, "%4c%c", pos,vertical);vertical--;
@@ -36,6 +94,7 @@ class Guide
   }
 }
 
+//!
 class Parasite( string name, int flags, string data ) { }
 
 array(Parasite) decode_parasites( mixed data )
@@ -59,11 +118,12 @@ array(Parasite) decode_parasites( mixed data )
 #define INT(X,Y) case PROP_##X:  Y = p->data->get_uint( 0 ); break;
 #define SINT(X,Y) case PROP_##X: Y = p->data->get_int( 0 ); break;
 
-int id;
-
+//!
 class Hierarchy( int width, int height, int bpp, array tiles,
                  int compression, Image.Colortable ct )
 {
+
+//!
   Image.Layer get_layer( int|void shrink )
   {
     Image.Image img, alpha;
@@ -77,7 +137,6 @@ class Hierarchy( int width, int height, int bpp, array tiles,
   }
 }
 
-int iid;
 Hierarchy decode_image_data( mapping what, object i )
 {
   Hierarchy h =
@@ -87,17 +146,35 @@ Hierarchy decode_image_data( mapping what, object i )
 }
 
 class Channel
+//!
 {
   string name;
+//!
+
   int width;
   int height;
+//!
+
   int opacity;
+//!
+
   int r, g, b;
+//!
+
   int tattoo;
+//!
+
   Hierarchy image_data;
+//!
+
   object parent;
+//!
+
   mapping flags = ([]);
+//!
+
   array (Parasite) parasites;
+//!
 
   void decode_properties( array properties )
   {
@@ -144,6 +221,7 @@ class Channel
 
 
 class LayerMask
+//!
 {
   inherit Channel;
 }
@@ -151,19 +229,41 @@ class LayerMask
 //!
 class Layer
 {
+//!
   string name;
+
+//!
   int opacity;
+
+//!
   int type;
+
+//!
   int mode;
+
+//!
   int tattoo;
-  mapping flags = ([]);
+
+//!
+  mapping(string:int) flags = ([]);
+
+//!
   int width, height;
+
+//!
   int xoffset, yoffset;
+
+//!
   array (Parasite) parasites;
+
+//!
   LayerMask mask;
+
+//!
   Hierarchy image;
 
-  object parent;
+//!
+  GimpImage parent;
 
   void decode_properties( array properties )
   {
@@ -214,26 +314,56 @@ class Layer
 //!
 class GimpImage
 {
+
   int width;
   int height;
+//!
+
   int compression;
+//!
+
   int type;
+//!
+
   int tattoo_state;
+//!
+
   float xres = 72.0;
   float yres = 72.0;
+//!
+
   int res_unit;
+//!
+
   Image.Colortable colormap;
+//!
+
   Image.Colortable meta_colormap;
+//!
+
   array(Layer) layers = ({});            // bottom-to-top
+//!
+
   array(Channel) channels = ({});       // unspecified order, really
+//!
+
   array(Guide) guides = ({});
+//!
+
   array(Parasite) parasites = ({});
+//!
+
   array(Path) paths = ({});
+//!
 
   Layer active_layer;
-  Channel active_channel;
-  Channel selection;
+//!
 
+  Channel active_channel;
+//!
+
+  Channel selection;
+//!
 
   protected string read_point_bz1( string data, Path path )
   {
@@ -302,8 +432,6 @@ class GimpImage
     return res;
   }
 
-
-
   void decode_properties(array props)
   {
     foreach( props, mapping p)
@@ -367,7 +495,8 @@ GimpImage __decode( string|mapping what )
   return GimpImage(what);
 }
 
-//!
+//! Return information about the given image (xsize, ysize and type).
+//! Somewhat inefficient, it actually decodes the image completely.
 mapping decode_header( string|mapping|object(GimpImage) data )
 {
   if( !objectp(data) )
@@ -382,7 +511,7 @@ mapping decode_header( string|mapping|object(GimpImage) data )
   ]);
 }
 
-
+//! Convert a GIMP layer mode to an @[Image.Layer] layer mode
 string translate_mode( int mode )
 {
   switch( mode )
@@ -409,9 +538,44 @@ string translate_mode( int mode )
   }
 }
 
+//! @decl array(Image.Layer) decode_layers( string gimp_image_data, mapping(string:mixed)|void opts )
+//! @decl array(Image.Layer) decode_layers( GimpImage gimp_image, mapping(string:mixed)|void opts )
+//! @decl array(Image.Layer) decode_layers( mapping(string:mixed) gimp_image_chunks, mapping(string:mixed)|void opts )
 //!
-array decode_layers( string|object|mapping what, mapping|void opts, 
-                     int|void concat )
+//! Decode the image data given as the first argument. If it is a
+//! string, it is a gimp image file.
+//!
+//! If it is a mapping it is the value you get when calling @[___decode()]
+//!
+//! The options can contain one or more of these options:
+//! @mapping
+//! @member bool draw_all_layers
+//!   If included, all layers will be decoded, even the non-visible ones.
+//! @member Image.Color background
+//!   If included, include a solid background layer with the given color
+//! @member int shrink_fact
+//!   Shrink the image by a factor of X. Useful for previews.
+//! @endmapping
+//!
+//! The layers have a number of extra properties set on them:
+//!
+//! @mapping
+//! @member int image_xres
+//! @member int image_yres
+//! @member Image.Colormap image_colormap
+//! @member array(Guide) image_guides
+//! @member array(Parasite) image_parasites
+//!  Values, global to all layers, copied from the GimpImage.
+//!  Still present in all layers
+//!
+//! @member string name
+//! @member bool visible
+//! @member bool active
+//! @member int tatoo
+//! @member array(Parasite) parasites
+//! @endmapping
+array(Image.Layer) decode_layers( string|GimpImage|mapping what, mapping|void opts,
+                                  int|void concat )
 {
   if(!opts) opts = ([]);
   int shrink = (opts->shrink_fact||1);
@@ -488,8 +652,42 @@ array decode_layers( string|object|mapping what, mapping|void opts,
   return layers;
 }
 
+//! @decl mapping(string:Image.Image|string) _decode( string gimp_image_data, mapping(string:mixed)|void opts )
+//! @decl mapping(string:Image.Image|string) _decode( GimpImage gimp_image, mapping(string:mixed)|void opts )
+//! @decl mapping(string:Image.Image|string) _decode( mapping(string:mixed) gimp_image_chunks, mapping(string:mixed)|void opts )
 //!
-mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
+//! Decode the image data given as the first argument. If it is a
+//! string, it is a gimp image file.
+//!
+//! If it is a mapping it is the value you get when calling @[___decode()]
+//!
+//! The options can contain one or more of these options:
+//!
+//! @mapping
+//! @member bool draw_all_layers
+//!   If included, all layers will be decoded, even the non-visible ones.
+//! @member int shrink_fact
+//!   Shrink the image by a factor of X. Useful for previews.
+//! @member bool draw_guides
+//!   If true, draw the vertical and horizontal guides
+//! @member bool mark_layers
+//!   If true, draw boxes around layers
+//! @member bool mark_layer_names
+//!   If true, draw layer names in the image
+//! @member bool mark_active_layer
+//!   If true, highlight the active layer
+//! @endmapping
+//!
+//! The return value has this format:
+//! @mapping
+//! @member string type
+//! "image/x-gimp-image"
+//! @member Image.Image img
+//! The image
+//! @member Image.Image alpha
+//! The alpha channel
+//! @endmapping
+mapping(string:string|Image.Image) _decode( string|mapping|GimpImage what, mapping(string:mixed)|void opts )
 {
   if(!opts) opts = ([]);
   GimpImage data;
@@ -609,8 +807,9 @@ mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
   ]);
 }
 
-//! @decl Image.Image decode(string bytes, mapping|void options)
-object decode( string what,mapping|void opts )
+//! See @[_decode]. This function returns the image member of the
+//! return mapping of that function.
+Image.Image decode( string what,mapping|void opts )
 {
   return _decode( what,opts )->image;
 }
