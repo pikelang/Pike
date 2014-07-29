@@ -36,11 +36,6 @@ constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
 //! inside a pointer, which typically means that it's 64 bit on "true"
 //! 64 bit architectures.
 //!
-//! @note
-//! If Pike is compiled with the configure flag
-//! @expr{--without-bignum@} (which is discouraged), then all
-//! arithmetic operations will instead silently wrap around at these
-//! limits.
 
 //! Swaps the upper and lower byte in a word.
 //!
