@@ -48,6 +48,15 @@
  *!       Time of last data modification.
  *!     @item ctime
  *!       Time of last file status change.
+ *!     @item atime_nsec
+ *!       Time of last access in nanoseconds, added to atime to get
+ *!       sub-second time
+ *!     @item mtime_nsec
+ *!       Time of last modification in nanoseconds, added to mtime to get
+ *!       sub-second time
+ *!     @item ctime_nsec
+ *!       Time of last file status change in nanoseconds, added to ctime to
+ *!       get sub-second time
  *!     @item ino
  *!       Inode number.
  *!     @item nlink
@@ -208,6 +217,7 @@ enum stat_query
  STAT_BLKSIZE, STAT_BLOCKS,
 #endif
  STAT_ATIME, STAT_MTIME, STAT_CTIME,
+ STAT_ATIME_NSEC,STAT_MTIME_NSEC, STAT_CTIME_NSEC,
 /* is... */
  STAT_ISLNK, STAT_ISREG, STAT_ISDIR, STAT_ISCHR, 
  STAT_ISBLK, STAT_ISFIFO, STAT_ISSOCK,
@@ -262,18 +272,18 @@ static void stat_push_compat(INT_TYPE n)
    switch (n)
    {
       case 0: push_int(THIS_STAT->s.st_mode); break;
-      case 1: 
+      case 1:
 	 switch(S_IFMT & THIS_STAT->s.st_mode)
 	 {
 	    case S_IFREG:
 	       push_int64(THIS_STAT->s.st_size);
 	       break;
-    
+
 	    case S_IFDIR: push_int(-2); break;
 	    case S_IFLNK: push_int(-3); break;
 	    default:
 #ifdef DEBUG_FILE
-	       fprintf(stderr, "encode_stat(): mode:%ld\n", 
+	       fprintf(stderr, "encode_stat(): mode:%ld\n",
 		       (long)S_IFMT & THIS_STAT->s.st_mode);
 #endif /* DEBUG_FILE */
 	       push_int(-4);
@@ -346,7 +356,15 @@ static void _stat_index(INT_TYPE code)
     case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
     case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
     case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
-
+#ifdef HAVE_STRUCT_STAT_NSEC
+    case STAT_ATIME_NSEC: push_int64(THIS_STAT->s.st_atim.tv_nsec); break;
+    case STAT_MTIME_NSEC: push_int64(THIS_STAT->s.st_mtim.tv_nsec); break;
+    case STAT_CTIME_NSEC: push_int64(THIS_STAT->s.st_ctim.tv_nsec); break;
+#else
+    case STAT_ATIME_NSEC: case STAT_MTIME_NSEC:    case STAT_CTIME_NSEC:
+      push_int(0);
+      break;
+#endif
     case STAT_ISREG:
       push_int((THIS_STAT->s.st_mode & S_IFMT) == S_IFREG); break;
     case STAT_ISLNK:
@@ -702,9 +720,10 @@ static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val,
         case STAT_MTIME: THIS_STAT->s.st_mtime = DO_NOT_WARN ((time_t) int_val); break;
         case STAT_CTIME: THIS_STAT->s.st_ctime = DO_NOT_WARN ((time_t) int_val); break;
 
-#ifdef PIKE_DEBUG
-        default:
-          Pike_fatal ("stat_index_set is not kept up-to-date with stat_map.\n");
+#ifdef HAVE_STRUCT_STAT_NSEC
+        case STAT_ATIME_NSEC: THIS_STAT->s.st_atim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
+        case STAT_MTIME_NSEC: THIS_STAT->s.st_mtim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
+        case STAT_CTIME_NSEC: THIS_STAT->s.st_ctim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
 #endif
       }
   }
@@ -958,6 +977,10 @@ void init_stdio_stat()
      {"atime",STAT_ATIME},
      {"mtime",STAT_MTIME},
      {"ctime",STAT_CTIME},
+
+     {"atime_nsec",STAT_ATIME_NSEC},
+     {"mtime_nsec",STAT_MTIME_NSEC},
+     {"ctime_nsec",STAT_CTIME_NSEC},
 
      {"islnk",STAT_ISLNK},
      {"isreg",STAT_ISREG},
