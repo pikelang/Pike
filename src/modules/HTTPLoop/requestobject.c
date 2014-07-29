@@ -287,25 +287,6 @@ static void parse_query(void)
     sp--; pop_stack();
   }
 
-  if(THIS->request->res.content_len &&
-     THIS->request->res.data[1]=='O')
-  {
-    struct pstring ct;
-    int nope = 0;
-    if(aap_get_header(THIS->request, "content-type", T_STRING, &ct))
-    {
-      if(ct.str[0]=='m') /* multipart is not wanted here... */
-	nope=1;
-    }
-    if(!nope)
-    {
-      char *tmp = aap_malloc(THIS->request->res.content_len);
-      decode_x_url_mixed(THIS->request->res.data+
-			 THIS->request->res.body_start,
-			 THIS->request->res.content_len,v,tmp,0,0);
-      aap_free(tmp);
-    }
-  }
   push_mapping(v); push_string(s_variables);
   mapping_insert(THIS->misc_variables, sp-1, sp-2);
   sp--; pop_stack();
