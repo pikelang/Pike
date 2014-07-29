@@ -122,38 +122,21 @@ class CipherSpec {
 //! Class used for signing in TLS 1.2 and later.
 class TLSSigner
 {
-  //!
-  int hash_id = HASH_sha;
+  protected int hash_id = HASH_sha;
+  protected int signature_id;
 
-  //! The TLS 1.2 hash used to sign packets.
-  Crypto.Hash hash = Crypto.SHA1;
+  // The TLS 1.2 hash used to sign packets.
+  protected Crypto.Hash hash = Crypto.SHA1;
 
-  ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
+  ADT.struct sign(object session, string cookie, ADT.struct struct)
   {
+    if( signature_id == SIGNATURE_anonymous )
+      return struct;
+
     string sign =
       session->private_key->pkcs_sign(cookie + struct->contents(), hash);
     struct->put_uint(hash_id, 1);
-    struct->put_uint(SIGNATURE_rsa, 1);
-    struct->put_var_string(sign, 2);
-    return struct;
-  }
-
-  ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
-  {
-    string sign =
-      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
-    struct->put_uint(hash_id, 1);
-    struct->put_uint(SIGNATURE_dsa, 1);
-    struct->put_var_string(sign, 2);
-    return struct;
-  }
-
-  ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
-  {
-    string sign =
-      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
-    struct->put_uint(hash_id, 1);
-    struct->put_uint(SIGNATURE_ecdsa, 1);
+    struct->put_uint(signature_id, 1);
     struct->put_var_string(sign, 2);
     return struct;
   }
@@ -161,6 +144,9 @@ class TLSSigner
   int(0..1) verify(object session, string cookie, ADT.struct struct,
 		   ADT.struct input)
   {
+    if( signature_id == SIGNATURE_anonymous )
+      return 1;
+
     int hash_id = input->get_uint(1);
     int sign_id = input->get_uint(1);
     string sign = input->get_var_string(2);
@@ -175,12 +161,13 @@ class TLSSigner
 					    hash, sign);
   }
 
-  protected void create(int hash_id)
+  protected void create(int signature_id, int hash_id)
   {
     hash = HASH_lookup[hash_id];
     if (!hash) {
       error("Unsupported hash algorithm: %d\n", hash_id);
     }
+    this_program::signature_id = signature_id;
     this_program::hash_id = hash_id;
   }
 
@@ -1770,6 +1757,7 @@ array lookup(int suite, ProtocolVersion|int version,
     case KE_ecdh_rsa:
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
+      // FIXME: Can we end up here with no Crypto.ECC.Curve?
       sign_id = SIGNATURE_ecdsa;
       if (res->key_bits < 256) {
 	// Suite B requires SHA256 with AES-128.
@@ -1813,28 +1801,15 @@ array lookup(int suite, ProtocolVersion|int version,
     SSL3_DEBUG_MSG("Selected <%s, %s>\n",
 		   fmt_constant(hash_id, "HASH"),
 		   fmt_constant(sign_id, "SIGNATURE"));
-    TLSSigner signer = TLSSigner(hash_id);
+    TLSSigner signer = TLSSigner(sign_id, hash_id);
     res->verify = signer->verify;
+    res->sign = signer->sign;
 
-    switch(sign_id)
+    if( sign_id == SIGNATURE_anonymous )
     {
-    case SIGNATURE_rsa:
-      res->sign = signer->rsa_sign;
-      break;
-    case SIGNATURE_dsa:
-      res->sign = signer->dsa_sign;
-      break;
-    case SIGNATURE_anonymous:
+      // FIXME: ServerConnction->reply_new_session compare sign to
+      // Cipher.anon_sign.
       res->sign = anon_sign;
-      res->verify = anon_verify;
-      break;
-#if constant(Crypto.ECC.Curve)
-    case SIGNATURE_ecdsa:
-      res->sign = signer->ecdsa_sign;
-      break;
-#endif
-    default:
-      error( "Internal error.\n" );
     }
   }
 
