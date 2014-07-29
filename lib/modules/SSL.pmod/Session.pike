@@ -390,14 +390,19 @@ int select_cipher_suite(array(CertificatePair) certs,
 //! Sets the proper authentication method and cipher specification
 //! for the given parameters.
 //!
-//! @param client_suites
-//!   The set of cipher suites that the client claims to support.
+//! @param suite
+//!   The cipher suite to use, selected from the set that the client
+//!   claims to support.
 //!
 //! @param version
 //!   The SSL protocol version to use.
 //!
 //! @param signature_algorithms
-//!   The set of signature algorithms tuples that the client claims to support.
+//!   The set of signature algorithms tuples that the client claims to
+//!   support.
+//!
+//! @param max_hash_size
+//!
 int set_cipher_suite(int suite, ProtocolVersion|int version,
 		     array(array(int)) signature_algorithms,
 		     int max_hash_size)
