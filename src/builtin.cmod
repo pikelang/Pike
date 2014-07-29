@@ -1341,6 +1341,9 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
  *!
  *! Marks the string as secure, which will clear the memory area
  *! before freeing the string.
+ *!
+ *! @seealso
+ *!   @[Object.secure()]
  */
 PIKEFUN string string_secure(string str)
   optflags OPT_SIDE_EFFECT;
@@ -1355,6 +1358,9 @@ PIKEFUN string string_secure(string str)
  *!
  *! Marks the object as secure, which will clear the memory area
  *! before freeing the object.
+ *!
+ *! @seealso
+ *!   @[String.secure()]
  */
 PIKEFUN object object_secure(object obj)
   optflags OPT_SIDE_EFFECT;
