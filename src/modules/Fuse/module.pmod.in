@@ -8,13 +8,18 @@
 //! privileged users to create and mount their own filesystem
 //! implementations.
 //!
-//! FUSE is only available on Linux.
-//!
 //! See http://sourceforge.net/projects/fuse/ for more information
 //!
 //! This module maps the Fuse library more or less directly to pike.
 //!
-//! A tip: /usr/include/asm/errno.h can be included in pike programs on Linux.
+//! A tip: ERRNO constants are available in the System module, and if
+//! one is missing /usr/include/asm[-generic]/errno.h can be included
+//! in pike programs on Linux.
+//!
+//! In order to create a filesystem, create a subclass of the
+//! Fuse.Operations class. You do not need to implemnent all
+//! functions, but at least getattr, readdir and read are needed to do
+//! any actual file operations.
 
 #if constant(@module@.run)
 inherit @module@;
@@ -36,7 +41,7 @@ class Operations
 
     //! Character special directory entry
     final constant DT_CHR = 2;
-    
+
     //! Directory directory entry
     final constant DT_DIR = 4;
 
@@ -52,7 +57,7 @@ class Operations
     //! Socket directory entry
     final constant DT_SOCK = 12;
 
-    //! Open for append 
+    //! Open for append
     final constant O_APPEND=02000;
 
     //! Mask for read/write/rdwr
@@ -67,11 +72,20 @@ class Operations
     //! Open read/write only
     final constant O_RDWR=2;
 
+    //! lock() mode operations.
+    final constant F_GETLK = Fuse.F_GETLK;
+    final constant F_SETLK = Fuse.F_SETLK;
+    final constant F_SETLKW = Fuse.F_SETLKW;
+    final constant F_RDLCK = Fuse.F_RDLCK;
+    final constant F_WRLCK = Fuse.F_WRLCK;
+    final constant F_UNLCK = Fuse.F_UNLCK;
+
     //! Stat a file.
-    //! @note 
+    //! @note
     //! This function is required.
     //! @returns
-    //! The symlink contents or errno
+    //! A @[Stdio.Stat] object or an errno.
+    //!
     Stdio.Stat|int(1..) getattr( string path );
 
     //! Read a symlink.
@@ -79,8 +93,12 @@ class Operations
     //! The symlink contents or errno
     string|int(1..) readlink( string path );
 
-    //! Get directory contents. The callback get the filename.
-    //! @note 
+    //! Get directory contents.
+    //!
+    //! Call the callback once per file in the directory with the
+    //! filename as the argument.
+    //!
+    //! @note
     //! This function is required.
     //! @returns
     //! errno or 0
@@ -106,7 +124,7 @@ class Operations
     //! @returns
     //! errno or 0
     int rmdir( string path );
-    
+
     //! Create a symlink from source to destination.
     //! @returns
     //! errno or 0
@@ -121,26 +139,41 @@ class Operations
     //! @returns
     //! errno or 0
     int rename( string source, string destination );
-    
-    //! Change mode
+
+    //! Change the permission of a file or directory
     //! @returns
     //! errno or 0
     int chmod( string path, int mode );
-    
-    //! Change owner
+
+    //! Change the owner of a file or directory
     //! @returns
     //! errno or 0
     int chown( string path, int uid, int gid);
-    
-    //! Shrink or enlarge file
+
+    //! Shrink or enlarge a file
     //! @returns
     //! errno or 0
     int truncate( string path, int new_length);
 
-    //! Set access and modification time
+    //! Set access and modification time. The arguments are the number
+    //! of seconds since jan 1 1970 00:00.
+    //!
+    //! This function is deprecated, utimens is the recommended
+    //! method.
+    //!
     //! @returns
     //! errno or 0
     int utime( string path, int atime, int mtime );
+
+    //! Set access and modification time, with nanosecond resolution.
+    //! The arguments are the number of nanoseconds since jan 1 1970
+    //! 00:00.
+    //!
+    //! @returns
+    //! errno or 0
+    int utimens( string path, int atime, int mtime ) {
+        utime( path, atime/1000000,mtime/100000 );
+    }
 
     //! Open @[path]. @[mode] is as for the system call open.
     //! (mode & O_ACCMODE) is one of O_RDONLY, O_WRONLY and O_RDWR.
@@ -153,10 +186,11 @@ class Operations
     //! errno or 0
     int open( string path, int mode );
 
-    //! Read data from a file. You have to return at most @[len] bytes,
-    //! unless an error occurs.
+    //! Read data from a file. You have to return at most @[len]
+    //! bytes, wunless an error occurs, or there is less than len bytes
+    //! of data still left to read.
     //! @returns
-    //! errno or data
+    //! errno or the data
     string|int(1..) read( string path, int len, int offset );
 
     //! Write data to the file. Should write all data.
@@ -171,11 +205,11 @@ class Operations
     //!   is an error each time @tt{'df'@} is run.
     mapping(string:int) statfs( string path );
 
-    //! The inverse of open. 
-    //! @note 
-    //! The file might very well be openend multiple times. 
+    //! The inverse of open.
+    //! @note
+    //! The file might very well be openend multiple times.
     //! Keep reference counts.
-    int release( string path );  
+    int release( string path );
 
     //! Flush data and user-data to disk. Not required.
     //! If the @[datasync] parameter is non-zero, then only the user data
@@ -187,11 +221,11 @@ class Operations
 
     //! Remove the extended attribute @[name] from @[path]
     int removexattr(string path, string name);
-    
+
     //! Get the extended attribute @[name] on @[path]
     string getxattr( string path, string name );
 
-    //! Set the extended attribute @[name] on @[path] to @[value]
+    //! Set the extended attrbiute @[name] on @[path] to @[value]
     int setxattr(string path, string name, string value, int flags );
 
     //! Create and open or just open the given @[path]
@@ -202,12 +236,49 @@ class Operations
     //! called.
     int access( string path, int mode ); 
 
-    //! Write unwritten data. 
+    //! Lock, unlock or test for the existence of record locks (POSIX
+    //! file locking). The owner of the lock is identified by @[how->owner]
+    //!
+    //! If you only need local file-locking on the computer the
+    //! filesystem is mounted on you do not need to implement this
+    //! interface. This is only needed for network filesystems that
+    //! want locking to work over the network.
+    //!
+    //! The operation mode depends on the mode argument.
+    //!
+    //! F_SETLK
+    //!
+    //!  Acquire a lock (when @[how->type] is @[F_RDLCK] or @[F_WRLCK]) or
+    //!  release a lock (when @[how->type] is @[F_UNLCK]) on the bytes
+    //!  specified by the how->whence, how->start, and how->len fields
+    //!  of lock.  If a conflicting lock is held by another process,
+    //!  you should return EACCES or EAGAIN.
+    //!
+    //! F_SETLKW
+    //!
+    //!  Identical to SETLK, but if a lock is held on the file, wait
+    //!  for it to be released before returning. You are allowed to
+    //!  return EINTR, to signal that the waiting has been interrupted
+    //!  and must be restarted.
+    //!
+    //! F_GETLK
+    //!
+    //!  Identical to SETLK, but do not actually aquire the lock if it
+    //!  can be aquired.  If one or more incompatible locks would
+    //!  prevent this lock being placed, then fcntl() returns details
+    //!  about one of these locks in the type, whence, start, and len
+    //!  fields of @[how] and set @[pid] to be the PID of the process
+    //!  holding that lock. Then return the mapping.
+    mapping(string:int)|int lock( string path, int mode, mapping(string:int) how );
+
+    //! Write unwritten data.
     int flush( string path, int flags );
 }
 
 //! @decl void run( Operations handler, array(string) args );
-//! Start fuse. Args is as in argv in main().
+//! Start fuse. Args is as in argv in main(). This function will not
+//! return.
+//!
 //! The first argument (argv[0], program name) is used as the filesystem name.
 //! The first non-flag argument after argv[0] is used as the mountpoint.
 //! Otherwise these arguments are supported:
@@ -222,12 +293,26 @@ class Operations
 //! 
 //! Mount options:
 //! @pre{
+//!     rootmode=M             permissions of the '/' directory in the filesystem (octal)
+//!     user_id=N              user of '/' (numeric)
+//!     group_id=N             group of '/' (numeric)
 //!     default_permissions    enable permission checking
+//!
+//!  By default FUSE doesn't check file access permissions, the
+//!  filesystem is free to implement it's access policy or leave it to
+//!  the underlying file access mechanism (e.g. in case of network
+//!  filesystems).  This option enables permission checking,
+//!  restricting access based on file mode.  It is usually useful
+//!  together with the 'allow_other' mount option.
+//!
 //!     allow_other            allow access to other users
-//!     allow_root             allow access to root
-//!     kernel_cache           cache files in kernel
+//!
+//! This option overrides the security measure restricting file access
+//! to the user mounting the filesystem.  This option is by default
+//! only allowed to root, but this restriction can be removed with a
+//! (userspace) configuration option (in fuse.ini).
+//!
 //!     large_read             issue large read requests (2.4 only)
-//!     direct_io              use direct I/O
 //!     max_read=N             set maximum size of read requests (default 128K)
 //!     hard_remove            immediate removal (don't hide files)
 //!     debug                  enable debug output
