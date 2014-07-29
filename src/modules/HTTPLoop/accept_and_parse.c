@@ -95,37 +95,18 @@ static MUTEX_T arg_lock;
 static int next_free_arg, num_args;
 static struct args *free_arg_list[100];
 
-int aap_total_bytes;
-void *debug_aap_malloc(int nbytes)
-{
-  int *data;
-  aap_total_bytes += nbytes;
-  data = malloc( nbytes+16 );
-  data[0] = nbytes;
-  return ((char *)data)+16; /* keep it aligned.. */
-}
-
-void debug_aap_free( void *what )
-{
-  int *data = (void *)(((char *)what-16));
-  aap_total_bytes -= data[0];
-  fprintf( stderr, "%d Kbytes\n", aap_total_bytes/1024 );
-  free( data );
-}
-
-
 void free_args( struct args *arg )
 {
   num_args--;
 
-  if( arg->res.data ) aap_free( arg->res.data );
+  free( arg->res.data );
   if( arg->fd )       fd_close( arg->fd );
 
   mt_lock( &arg_lock );
   if( next_free_arg < 100 )
     free_arg_list[ next_free_arg++ ] = arg;
   else
-    aap_free(arg);
+    free(arg);
   mt_unlock( &arg_lock );
 }
 
@@ -137,7 +118,7 @@ struct args *new_args(void)
   if( next_free_arg )
     res = free_arg_list[--next_free_arg];
   else
-    res = aap_malloc( sizeof( struct args ) );
+    res = malloc( sizeof( struct args ) );
   mt_unlock( &arg_lock );
   return res;
 }
@@ -317,7 +298,7 @@ void aap_handle_connection(struct args *arg)
     arg->res.data=0;
   }
   else 
-    p = buffer = aap_malloc(8192);
+    p = buffer = malloc(8192);
 
   if(arg->res.leftovers && arg->res.leftovers_len)
   {
@@ -490,14 +471,14 @@ static void low_accept_loop(struct args *arg)
 	    e = e->next;
 	    t->next = 0;
 	    free_string(t->data);
-	    aap_free(t->url);
-	    aap_free(t);
+	    free(t->url);
+	    free(t);
 	  }
 	}
 	while(arg->log->log_head)
 	{
 	  struct log_entry *l = arg->log->log_head->next;
-	  aap_free(arg->log->log_head);
+	  free(arg->log->log_head);
 	  arg->log->log_head = l;
 	}
 
@@ -510,7 +491,7 @@ static void low_accept_loop(struct args *arg)
 	  else
 	    first_cache = c->next;
 	  c->gone = 1;
-	  aap_free(c);
+	  free(c);
 	}
 
 
@@ -520,11 +501,11 @@ static void low_accept_loop(struct args *arg)
 	{
 	  if(n)    n->next = l->next;
 	  else     aap_first_log = l->next;
-	  aap_free(l);
+	  free(l);
 	}
 	mt_unlock_interpreter();
-	aap_free(arg2);
-	aap_free(arg);
+	free(arg2);
+	free(arg);
 	return; /* No more accept here.. */
       }
     }
@@ -561,20 +542,7 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
     push_object( o );
     assign_svalue_no_free(sp++, &arg->args);
 
-/*     { */
-/*       JMP_BUF recovery; */
-
-/*       free_svalue(& throw_value); */
-/*       mark_free_svalue (&throw_value); */
-
-/*       if(SETJMP(recovery)) */
-/*       { */
-/*       } */
-/*       else */
-/*       { */
-        apply_svalue(&arg->cb, 2);
-/*       } */
-/*     } */
+    apply_svalue(&arg->cb, 2);
     pop_stack();
   }
 }
@@ -617,15 +585,13 @@ static void f_accept_with_http_parse(INT32 nargs)
   MEMSET(args, 0, sizeof(struct args));
   if(dolog)
   {
-    struct log *log = aap_malloc(sizeof(struct log));
-    MEMSET(log, 0, sizeof(struct log));
+    struct log *log = calloc(1, sizeof(struct log));
     mt_init(&log->log_lock);
     args->log = log;
     log->next = aap_first_log;
     aap_first_log = log;
   }
-  c = aap_malloc(sizeof(struct cache));
-  MEMSET(c, 0, sizeof(struct cache));
+  c = calloc(1, sizeof(struct cache));
   mt_init(&c->mutex);
   c->next = first_cache;
   first_cache = c;
@@ -945,7 +911,7 @@ PIKE_MODULE_EXIT
       while(log_head)
       {
 	struct log_entry *l = log_head->next;
-	aap_free(log_head);
+	free(log_head);
 	log_head = l;
       }
       log->next = NULL;
@@ -971,8 +937,8 @@ PIKE_MODULE_EXIT
 	e = e->next;
 	t->next = 0;
         free_string(t->data);
-	aap_free(t->url);
-	aap_free(t);
+	free(t->url);
+	free(t);
       }
       first_cache->htable[i]=0;
     }

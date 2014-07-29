@@ -45,13 +45,13 @@ int num_log_entries;
 void free_log_entry( struct log_entry *le )
 {
   num_log_entries--;
-  aap_free( le );
+  free( le );
 }
 
 struct log_entry *new_log_entry(ptrdiff_t extra)
 {
   num_log_entries++;
-  return aap_malloc( sizeof( struct log_entry )+extra );
+  return malloc( sizeof( struct log_entry )+extra );
 }
 
 

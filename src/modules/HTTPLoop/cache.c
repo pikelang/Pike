@@ -48,13 +48,13 @@ static void low_free_cache_entry( struct cache_entry *arg )
   num_cache_entries--;
 
   aap_enqueue_string_to_free( arg->data );
-  aap_free( arg->url ); /* host is in the same malloced area */
+  free( arg->url ); /* host is in the same malloced area */
 
   mt_lock( &cache_entry_lock );
   if( next_free_ce < 1024 )
     free_cache_entries[next_free_ce++] = arg;
   else
-    aap_free(arg);
+    free(arg);
   mt_unlock( &cache_entry_lock );
 /*   fprintf(stderr, " %d+%d args\n", num_cache_entries, next_free_ce ); */
 }
@@ -67,7 +67,7 @@ struct cache_entry *new_cache_entry( )
   if( next_free_ce )
     res = free_cache_entries[--next_free_ce];
   else
-    res = aap_malloc( sizeof( struct cache_entry ) );
+    res = malloc( sizeof( struct cache_entry ) );
   mt_unlock( &cache_entry_lock );
 /*   fprintf(stderr, " %d+%d centries\n", num_cache_entries, next_free_ce ); */
   return res;
@@ -225,10 +225,10 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
     head->data = ce->data;
     head->stale_at = ce->stale_at;
     aap_free_cache_entry( c, head, p, hv );
-    aap_free(ce);
+    free(ce);
   } else {
     c->entries++;
-    t = aap_malloc( ce->url_len + ce->host_len );
+    t = malloc( ce->url_len + ce->host_len );
     MEMCPY(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
     MEMCPY(t,ce->host,ce->host_len); ce->host = t;
     ce->next = c->htable[hv];
