@@ -41,6 +41,9 @@
 /* Define this if you have a struct stat with 'blocks' member. */
 #undef HAVE_STRUCT_STAT_BLOCKS
 
+/* Define this if your struct stat has nanosecond resolution timefields. */
+#undef HAVE_STRUCT_STAT_NSEC
+
 /* Define this if you have a struct sockaddr_un with 'sun_len' member. */
 #undef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
 

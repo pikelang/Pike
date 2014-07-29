@@ -147,6 +147,24 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(if struct stat has a st_atim member)
+AC_CACHE_VAL(pike_cv_struct_stat_atim, [
+	AC_TRY_COMPILE([
+#include <sys/stat.h>
+], [
+	struct stat s;
+        s.st_atim.tv_sec = 10;
+        s.st_atim.tv_nsec = 1000;
+],  [pike_cv_struct_stat_atim=yes],[pike_cv_struct_stat_atim=no])
+])
+
+if test "$pike_cv_struct_stat_atim" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_STRUCT_STAT_NSEC)
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
