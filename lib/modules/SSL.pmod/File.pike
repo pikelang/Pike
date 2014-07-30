@@ -341,8 +341,7 @@ protected int|float backend_once()
 
 // stream is assumed to be operational on entry but might be zero
 // afterwards.
-#define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE,		\
-			   ENABLE_READS, ERROR_CODE) do {		\
+#define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE) do {		\
   run_local_backend: {							\
       CHECK_CB_MODE (THIS_THREAD());					\
 									\
@@ -865,15 +864,13 @@ string read (void|int length, void|int(0..1) not_all)
       if (not_all) {
 	if (!sizeof (read_buffer))
 	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) &&
-			      !(conn->state & CONNECTION_peer_closed), 0, 1,
-			      ;);
+			      !(conn->state & CONNECTION_peer_closed), 0);
       }
       else {
 	if (sizeof (read_buffer) < length || zero_type (length))
 	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length || zero_type (length)) &&
 			      !(conn->state & CONNECTION_peer_closed),
-			      nonblocking_mode, 1,
-			      ;);
+			      nonblocking_mode);
       }
     }
 
@@ -1686,8 +1683,7 @@ int is_open()
 	  action && (close_state == CLEAN_CLOSE ?
 		     (conn->state & CONNECTION_closed) != CONNECTION_closed :
 		     !(conn->state & CONNECTION_closed)),
-	  1, 1,
-	  RETURN (!epipe_errnos[local_errno]));
+	  1);
       closed = conn->state & CONNECTION_closed;
       RETURN (close_state == CLEAN_CLOSE ?
 	      ((closed != CONNECTION_closed) && 2) : !closed);
@@ -1828,9 +1824,7 @@ protected int direct_write()
 
     if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING)
       RUN_MAYBE_BLOCKING (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING,
-			  nonblocking_mode, SSL_INTERNAL_READING,
-			  SSL3_DEBUG_MORE_MSG ("direct_write: Got error\n");
-			  return 0;);
+			  nonblocking_mode);
   }
 
   SSL3_DEBUG_MORE_MSG ("direct_write: Ok\n");
@@ -2026,7 +2020,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 		  // in RUN_MAYBE_BLOCKING.
 		  RUN_MAYBE_BLOCKING (
 		    (!(conn->state & CONNECTION_peer_closed)),
-		    1, 1, {});
+		    1);
 		}
 		else {
 		  // Can't start a nested local backend - skip out to
