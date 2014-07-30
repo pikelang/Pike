@@ -95,11 +95,8 @@ protected Pike.Backend real_backend;
 // The real backend for the stream.
 
 protected Pike.Backend local_backend;
-// Internally all I/O is done using callbacks. When the real backend
-// can't be used, either because we aren't in callback mode (i.e. the
-// user hasn't registered any callbacks), or because we're to do a
-// blocking operation, this local one takes its place. It's
-// created on demand.
+// Internally all I/O is done using callbacks. This backend is used
+// in blocking mode.
 
 protected int nonblocking_mode;
 
@@ -310,33 +307,49 @@ protected THREAD_T op_thread;
 
 #endif	// !SSLFILE_DEBUG
 
+//! Run one pass of the backend.
+protected int|float backend_once()
+{
+  if (nonblocking_mode) {
+    // Assume that the backend is active when is has been started.
+    if (master()->asyncp()) return 0;
+#if constant(thread_create)
+    // Only run the main backend from the backend thread.
+    if (master()->backend_thread() != this_thread()) return 0;
+#endif
+    // NB: The following happens when the real backend is run
+    //     by the user by hand (like eg the testsuite, or
+    //     when nesting several levels of SSL.File objects).
+    if (real_backend->executing_thread()) return 0;
+
+    SSL3_DEBUG_MSG("Running real backend [r:%O w:%O], zero timeout\n",
+		   !!stream->query_read_callback(),
+		   !!stream->query_write_callback());
+    return real_backend(0.0);
+  } else {
+#if constant(thread_create)
+    if (local_backend->executing_thread() == this_thread()) return 0;
+#else
+    if (local_backend->executing_thread()) return 0;
+#endif
+    SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
+		   !!stream->query_read_callback(),
+		   !!stream->query_write_callback());
+    return local_backend(0);
+  }
+}
+
 // stream is assumed to be operational on entry but might be zero
 // afterwards.
 #define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE,		\
 			   ENABLE_READS, ERROR_CODE) do {		\
   run_local_backend: {							\
       CHECK_CB_MODE (THIS_THREAD());					\
-      if (!local_backend) local_backend = Pike.SmallBackend();		\
-      stream->set_backend (local_backend);				\
-      stream->set_id (0);						\
 									\
       while (1) {							\
 	float|int(0..0) action;						\
 									\
-	{								\
-	  /* When we fail to write the close packet we should check if	\
-	   * a close packet is in the input buffer before signalling	\
-	   * the error. That means installing the read callbacks	\
-	   * without waiting in the backend. */				\
-	  int zero_timeout = NONWAITING_MODE;				\
-									\
-	  SSL3_DEBUG_MSG ("Running local backend [r:%O w:%O], %s timeout\n", \
-			  !!stream->query_read_callback(),		\
-			  !!stream->query_write_callback(),		\
-			  zero_timeout ? "zero" : "infinite");		\
-									\
-	  action = local_backend (zero_timeout ? 0.0 : 0);		\
-	}								\
+	action = backend_once();					\
 									\
 	if (NONWAITING_MODE && !action) {				\
 	  SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
@@ -363,9 +376,6 @@ protected THREAD_T op_thread;
 	}								\
       }									\
 									\
-      stream->set_id (1);						\
-      /* Switch backend after updating the installed callbacks. */	\
-      stream->set_backend (real_backend);				\
       CHECK_CB_MODE (THIS_THREAD());					\
     }									\
   } while (0)
@@ -737,9 +747,10 @@ Stdio.File shutdown()
     Stdio.File stream = global::stream;
     global::stream = 0;
 
-    stream->set_read_callback (0);
-    stream->set_write_callback (0);
-    stream->set_close_callback (0);
+    // Zapp all the callbacks.
+    stream->set_nonblocking();
+    // Restore the configured backend.
+    stream->set_backend(real_backend);
 
     switch (close_state) {
       case CLEAN_CLOSE:
@@ -761,6 +772,7 @@ Stdio.File shutdown()
 	close_state = STREAM_UNINITIALIZED;
 	SSL3_DEBUG_MSG ("SSL.File->shutdown(): Not closed - leaving stream\n");
 	local_errno = 0;
+	if (!nonblocking_mode) stream->set_blocking();
 	RETURN (stream);
       default:
 	SSL3_DEBUG_MSG ("SSL.File->shutdown(): Nonclean close - closing stream\n");
@@ -1272,6 +1284,7 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
     close_callback = close;
 
     if (stream) {
+      stream->set_backend(real_backend);
       stream->set_nonblocking_keep_callbacks();
 
       schedule_poll();
@@ -1301,6 +1314,7 @@ void set_nonblocking_keep_callbacks()
     nonblocking_mode = 1;
 
     if (stream) {
+      stream->set_backend(real_backend);
       stream->set_nonblocking_keep_callbacks();
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
@@ -1349,7 +1363,10 @@ void set_blocking()
     nonblocking_mode = 0;
     accept_callback = read_callback = write_callback = close_callback = 0;
 
+    if (!local_backend) local_backend = Pike.SmallBackend();
+
     if (stream) {
+      stream->set_backend(local_backend);
       stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
@@ -1369,7 +1386,10 @@ void set_blocking_keep_callbacks()
 
     nonblocking_mode = 0;
 
+    if (!local_backend) local_backend = Pike.SmallBackend();
+
     if (stream) {
+      stream->set_backend(local_backend);
       stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
@@ -1594,7 +1614,7 @@ void set_backend (Pike.Backend backend)
     }
 
     if (stream) {
-      if (stream->query_backend() != local_backend)
+      if (nonblocking_mode)
 	stream->set_backend (backend);
     }
 
