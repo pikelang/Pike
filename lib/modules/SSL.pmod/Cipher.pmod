@@ -112,53 +112,99 @@ class CipherSpec {
   //!   Only used in TLS 1.2 and later.
   Crypto.Hash hash;
 
+  int signature_hash = HASH_sha;
+  int signature_alg;
+
   //! The function used to sign packets.
-  function(object,string(8bit),ADT.struct:ADT.struct) sign;
-
-  //! The function used to verify the signature for packets.
-  function(object,string(8bit),ADT.struct,ADT.struct:int(0..1)) verify;
-}
-
-//! Class used for signing in TLS 1.2 and later.
-class TLSSigner
-{
-  protected int hash_id = HASH_sha;
-  int signature_id;
-
-  // The TLS 1.2 hash used to sign packets.
-  protected Crypto.Hash hash = Crypto.SHA1;
-
-  ADT.struct sign(object session, string cookie, ADT.struct struct)
+  ADT.struct sign(object session, string(8bit) cookie, ADT.struct struct)
   {
-    if( signature_id == SIGNATURE_anonymous )
+    if( signature_alg == SIGNATURE_anonymous )
       return struct;
 
-    string sign =
-      session->private_key->pkcs_sign(cookie + struct->contents(), hash);
-    struct->put_uint(hash_id, 1);
-    struct->put_uint(signature_id, 1);
-    struct->put_var_string(sign, 2);
-    return struct;
+    if( session->version >= PROTOCOL_TLS_1_2 )
+    {
+      string sign =
+        session->private_key->pkcs_sign(cookie + struct->contents(),
+                                        HASH_lookup[signature_hash]);
+      struct->put_uint(signature_hash, 1);
+      struct->put_uint(signature_alg, 1);
+      struct->put_var_string(sign, 2);
+      return struct;
+    }
+
+    switch( signature_alg )
+    {
+    case SIGNATURE_rsa:
+      {
+        // FIXME: Where is this standardized?
+        string params = cookie + struct->contents();
+        string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
+      
+        object s = session->private_key->raw_sign(digest);
+        struct->put_bignum(s);
+        return struct;
+      }
+
+    case SIGNATURE_dsa:
+    case SIGNATURE_ecdsa:
+      {
+        string s =
+          session->private_key->pkcs_sign(cookie + struct->contents(),
+                                          Crypto.SHA1);
+        struct->put_var_string(s, 2);
+        return struct;
+      }
+    }
+
+    error("Internal error");
   }
 
+  //! The function used to verify the signature for packets.
   int(0..1) verify(object session, string cookie, ADT.struct struct,
-		   ADT.struct input)
+                   ADT.struct input)
   {
-    if( signature_id == SIGNATURE_anonymous )
+    if( signature_alg == SIGNATURE_anonymous )
       return 1;
 
-    int hash_id = input->get_uint(1);
-    int sign_id = input->get_uint(1);
-    string sign = input->get_var_string(2);
+    if( session->version >= PROTOCOL_TLS_1_2 )
+    {
+      int hash_id = input->get_uint(1);
+      int sign_id = input->get_uint(1);
+      string sign = input->get_var_string(2);
 
-    Crypto.Hash hash = HASH_lookup[hash_id];
-    if (!hash) return 0;
+      Crypto.Hash hash = HASH_lookup[hash_id];
+      if (!hash) return 0;
 
-    // FIXME: Validate that the sign_id is correct.
+      // FIXME: Validate that the sign_id is correct.
 
-    return session->peer_public_key &&
-      session->peer_public_key->pkcs_verify(cookie + struct->contents(),
-					    hash, sign);
+      return session->peer_public_key &&
+        session->peer_public_key->pkcs_verify(cookie + struct->contents(),
+                                              hash, sign);
+    }
+
+    switch( signature_alg )
+    {
+    case SIGNATURE_rsa:
+      {
+        // FIXME: Where is this standardized?
+        string params = cookie + struct->contents();
+        string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
+
+        Gmp.mpz signature = input->get_bignum();
+
+        return session->peer_public_key->raw_verify(digest, signature);
+      }
+
+    case SIGNATURE_dsa:
+    case SIGNATURE_ecdsa:
+      {
+        return session->peer_public_key->
+          pkcs_verify(cookie + struct->contents(),
+                      Crypto.SHA1, input->get_var_string(2));
+      }
+    }
+
+    error("Internal error");
   }
 
   void set_hash(int max_hash_size,
@@ -167,46 +213,35 @@ class TLSSigner
   {
     // Stay with SHA1 for requests without signature algorithms
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
-    if( signature_id == SIGNATURE_anonymous || !signature_algorithms )
+    if( signature_alg == SIGNATURE_anonymous || !signature_algorithms )
       return;
 
-    hash_id = -1;
+    signature_hash = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
     foreach(signature_algorithms, array(int) pair) {
-      if ((pair[1] == signature_id) && HASH_lookup[pair[0]]) {
+      if ((pair[1] == signature_alg) && HASH_lookup[pair[0]]) {
         if (pair[0] == wanted_hash_id) {
           // Use the required hash from Suite B if available.
-          hash_id = wanted_hash_id;
+          signature_hash = wanted_hash_id;
           break;
         }
         if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
           // Eg RSA has a maximum block size and the digest is too large.
           continue;
         }
-        if (pair[0] > hash_id) {
-          hash_id = pair[0];
+        if (pair[0] > signature_hash) {
+          signature_hash = pair[0];
         }
       }
     }
 
-    if (hash_id == -1)
+    if (signature_hash == -1)
       error("No acceptable hash algorithm.\n");
-    hash = HASH_lookup[hash_id];
 
     SSL3_DEBUG_MSG("Selected <%s, %s>\n",
-                   fmt_constant(hash_id, "HASH"),
-                   fmt_constant(signature_id, "SIGNATURE"));
-  }
-
-  protected void create(int signature_id)
-  {
-    this_program::signature_id = signature_id;
-  }
-
-  protected string _sprintf(int t)
-  {
-    return t=='O' && sprintf("%O(%O)", this_program, hash);
+                   fmt_constant(signature_hash, "HASH"),
+                   fmt_constant(signature_alg, "SIGNATURE"));
   }
 }
 
@@ -1322,85 +1357,6 @@ class RC2
 }
 #endif /* Crypto.Arctwo */
 
-//! Signing using RSA.
-ADT.struct rsa_sign(object session, string cookie, ADT.struct struct)
-{
-  /* Exactly how is the signature process defined? */
-  
-  string params = cookie + struct->contents();
-  string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
-      
-  object s = session->private_key->raw_sign(digest);
-
-  struct->put_bignum(s);
-  return struct;
-}
-
-//! Verify an RSA signature.
-int(0..1) rsa_verify(object session, string cookie, ADT.struct struct,
-		     ADT.struct input)
-{
-  /* Exactly how is the signature process defined? */
-
-  string params = cookie + struct->contents();
-  string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
-
-  Gmp.mpz signature = input->get_bignum();
-
-  return session->peer_public_key->raw_verify(digest, signature);
-}
-
-//! Signing using DSA.
-ADT.struct dsa_sign(object session, string cookie, ADT.struct struct)
-{
-  /* NOTE: The details are not described in the SSL 3 spec. */
-  string s =
-    session->private_key->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
-  struct->put_var_string(s, 2); 
-  return struct;
-}
-
-//! Verify a DSA signature.
-int(0..1) dsa_verify(object session, string cookie, ADT.struct struct,
-		     ADT.struct input)
-{
-  /* NOTE: The details are not described in the SSL 3 spec. */
-  return session->peer_public_key->pkcs_verify(cookie + struct->contents(),
-					       Crypto.SHA1,
-					       input->get_var_string(2));
-}
-
-//! Signing using ECDSA.
-ADT.struct ecdsa_sign(object session, string cookie, ADT.struct struct)
-{
-  string sign =
-    session->private_key->pkcs_sign(cookie + struct->contents(), Crypto.SHA1);
-  struct->put_var_string(sign, 2);
-  return struct;
-}
-
-//! Verify a ECDSA signature.
-int(0..1) ecdsa_verify(object session, string cookie, ADT.struct struct,
-		       ADT.struct input)
-{
-  return session->peer_public_key->pkcs_verify(cookie + struct->contents(),
-					       Crypto.SHA1,
-					       input->get_var_string(2));
-}
-
-//! The NULL signing method.
-ADT.struct anon_sign(object session, string cookie, ADT.struct struct)
-{
-  return struct;
-}
-
-//! The NULL verifier.
-int(0..1) anon_verify(object session, string cookie, ADT.struct struct,
-		      ADT.struct input)
-{
-  return 1;
-}
-
 //! Implements Diffie-Hellman key-exchange.
 //!
 //! The following key exchange methods are implemented here:
@@ -1739,59 +1695,40 @@ array lookup(int suite, ProtocolVersion|int version,
 
   ke_method = algorithms[0];
 
-  if (version < PROTOCOL_TLS_1_2) {
-    switch(ke_method)
-    {
-    case KE_rsa:
-    case KE_rsa_fips:
-    case KE_dhe_rsa:
-    case KE_ecdhe_rsa:
-      res->sign = rsa_sign;
-      res->verify = rsa_verify;
-      break;
-    case KE_dh_rsa:
-    case KE_dh_dss:
-    case KE_dhe_dss:
-      res->sign = dsa_sign;
-      res->verify = dsa_verify;
-      break;
-    case KE_null:
-    case KE_dh_anon:
-    case KE_ecdh_anon:
-      res->sign = anon_sign;
-      res->verify = anon_verify;
-      break;
+  switch(ke_method)
+  {
+  case KE_rsa:
+  case KE_rsa_fips:
+  case KE_dhe_rsa:
+  case KE_ecdhe_rsa:
+    res->signature_alg = SIGNATURE_rsa;
+    break;
+  case KE_dh_rsa:
+  case KE_dh_dss:
+  case KE_dhe_dss:
+    res->signature_alg = SIGNATURE_dsa;
+    break;
+  case KE_null:
+  case KE_dh_anon:
+  case KE_ecdh_anon:
+    res->signature_alg = SIGNATURE_anonymous;
+    break;
 #if constant(Crypto.ECC.Curve)
-    case KE_ecdh_rsa:
-    case KE_ecdh_ecdsa:
-    case KE_ecdhe_ecdsa:
-      res->sign = ecdsa_sign;
-      res->verify = ecdsa_verify;
-      break;
+  case KE_ecdh_rsa:
+  case KE_ecdh_ecdsa:
+  case KE_ecdhe_ecdsa:
+    // FIXME: SIGNATURE_ecdsa used for KE_ecdh_rsa. Naming issue?
+    res->signature_alg = SIGNATURE_ecdsa;
+    break;
 #endif
-    default:
-      error( "Internal error.\n" );
-    }
-  } else {
-    TLSSigner signer;
+  default:
+    error( "Internal error.\n" );
+  }
+  if (version >= PROTOCOL_TLS_1_2)
+  {
     int wanted_hash_id;
-    switch(ke_method) {
-    case KE_rsa:
-    case KE_rsa_fips:
-    case KE_dhe_rsa:
-    case KE_ecdhe_rsa:
-      signer = TLSSigner(SIGNATURE_rsa);
-      break;
-    case KE_dh_rsa:
-    case KE_dh_dss:
-    case KE_dhe_dss:
-      signer = TLSSigner(SIGNATURE_dsa);
-      break;
-    case KE_ecdh_rsa:
-    case KE_ecdh_ecdsa:
-    case KE_ecdhe_ecdsa:
-      // FIXME: Can we end up here with no Crypto.ECC.Curve?
-      signer = TLSSigner(SIGNATURE_ecdsa);
+    if( res->signature_alg == SIGNATURE_ecdsa )
+    {
       if (res->key_bits < 256) {
 	// Suite B requires SHA256 with AES-128.
 	wanted_hash_id = HASH_sha256;
@@ -1799,26 +1736,9 @@ array lookup(int suite, ProtocolVersion|int version,
 	// Suite B requires SHA384 with AES-256.
 	wanted_hash_id = HASH_sha384;
       }
-      break;
-    case KE_null:
-    case KE_dh_anon:
-    case KE_ecdh_anon:
-      signer = TLSSigner(SIGNATURE_anonymous);
-      break;
-    default:
-      error( "Internal error.\n" );
     }
 
-    signer->set_hash(max_hash_size, signature_algorithms, wanted_hash_id);
-    res->verify = signer->verify;
-    res->sign = signer->sign;
-
-    if( signer->signature_id == SIGNATURE_anonymous )
-    {
-      // FIXME: ServerConnction->reply_new_session compare sign to
-      // Cipher.anon_sign.
-      res->sign = anon_sign;
-    }
+    res->set_hash(max_hash_size, signature_algorithms, wanted_hash_id);
   }
 
   if (res->is_exportable && (version >= PROTOCOL_TLS_1_1)) {

@@ -137,7 +137,8 @@ HeartBeatModeType heartbeat_mode = HEARTBEAT_MODE_disabled;
 //! from the server.
 int(0..1) has_required_certificates()
 {
-  if (!peer_public_key) return (cipher_spec->sign == Cipher.anon_sign);
+  if (!peer_public_key)
+    return (cipher_spec->signature_alg == SIGNATURE_anonymous);
   return 1;
 }
 
