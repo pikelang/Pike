@@ -8,8 +8,16 @@
 **! module Image
 **! submodule RAS
 **!
-**!	This submodule keep the RAS encode/decode capabilities
-**!	of the <ref>Image</ref> module.
+**!	This submodule keep the RAS (Sun Raster, files commonly use the
+**!	'sun' file extension) encode/decode capabilities of the
+**!	<ref>Image</ref> module.
+**!
+**! The format was commonly used in the 1990:s for images in reasearch
+**! papers and such, since SUN workstations was the standard computer
+**! in university settings.
+**!
+**! The format uses RLE compression, supports rgb24, 8-bit
+**! palette, grayscale and monochrome without alpha channels.
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */

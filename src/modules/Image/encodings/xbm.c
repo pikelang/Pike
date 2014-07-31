@@ -33,6 +33,12 @@ extern struct program *image_program;
 **! module Image
 **! submodule XBM
 **!
+**! Decode and encode X BitMap images.
+**!
+**! This is a monochrome format historically used in the X Window
+**! System. It is a plain text image format, mainly used for storing
+**! cursor and icon bitmaps used in the X GUI. The XBM format was
+**! officially deprecated in 1989, replaced with the XPM format.
 */
 
 

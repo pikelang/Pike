@@ -30,6 +30,16 @@
 **! module Image
 **! submodule TGA
 **!
+**! TrueVision TGA image decoding and encoding support.
+**!
+**! Truevision TGA, often referred to as TARGA, is a raster graphics
+**! file format created by Truevision Inc. It was the native format of
+**! TARGA and VISTA boards, which were the first graphic cards for
+**! IBM-compatible PCs to support Highcolor/truecolor display.
+**!
+**! @note
+**! TGA images were commonly used for screenshots in games, although
+**! since about 2010 most games have started to migrate to PNG images.
 */
 #define NO_PIKE_SHORTHAND
 

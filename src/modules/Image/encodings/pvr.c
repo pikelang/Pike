@@ -34,11 +34,11 @@ extern struct program *image_program;
 **! module Image
 **! submodule PVR
 **!
-**! 	Handle encoding and decoding of PVR images.
-**! 
-**! 	PVR is the texture format of the NEC PowerVR system
-**! 	It is a rather simple, uncompressed, truecolor
-**!     format. 
+**! Handle encoding and decoding of PVR images.
+**!
+**! PVR is the texture format of the NEC PowerVR system
+**! It is a rather simple, uncompressed, truecolor
+**! format.
 */
 
 /*
@@ -54,14 +54,14 @@ extern struct program *image_program;
 **!	<pre>
 **!        "image":object            - image object    \- not decode_header
 **!	   "alpha":object            - decoded alpha   /
-**!	   
+**!
 **!	   "type":"image/x-pvr"      - image type
 **!	   "xsize":int               - horisontal size in pixels
 **!	   "ysize":int               - vertical size in pixels
 **!	   "attr":int		     - texture attributes
 **!	   "global_index":int	     - global index (if present)
 **!	</pre>
-**!	  
+**!
 **!
 **! method string encode(object image)
 **! method string encode(object image,mapping options)
