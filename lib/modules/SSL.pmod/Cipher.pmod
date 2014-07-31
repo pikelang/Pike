@@ -112,8 +112,11 @@ class CipherSpec {
   //!   Only used in TLS 1.2 and later.
   Crypto.Hash hash;
 
-  int signature_hash = HASH_sha;
-  int signature_alg;
+  //! The hash algorithm used for key exchange signatures.
+  HashAlgorithm signature_hash = HASH_sha;
+
+  //! The signature algorithm used for key exchange signatures.
+  SignatureAlgorithm signature_alg;
 
   //! The function used to sign packets.
   ADT.struct sign(object session, string(8bit) cookie, ADT.struct struct)
@@ -121,6 +124,7 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous )
       return struct;
 
+    // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
       string sign =
@@ -132,14 +136,13 @@ class CipherSpec {
       return struct;
     }
 
+    // RFC 4346 7.4.3 (struct Signature)
+    string data = cookie + struct->contents();
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
       {
-        // FIXME: Where is this standardized?
-        string params = cookie + struct->contents();
-        string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
-      
+        string digest = Crypto.MD5->hash(data) + Crypto.SHA1->hash(data);
         object s = session->private_key->raw_sign(digest);
         struct->put_bignum(s);
         return struct;
@@ -166,6 +169,7 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous )
       return 1;
 
+    // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
       int hash_id = input->get_uint(1);
@@ -182,16 +186,14 @@ class CipherSpec {
                                               hash, sign);
     }
 
+    // RFC 4346 7.4.3 (struct Signature)
+    string data = cookie + struct->contents();
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
       {
-        // FIXME: Where is this standardized?
-        string params = cookie + struct->contents();
-        string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
-
+        string digest = Crypto.MD5->hash(data) + Crypto.SHA1->hash(data);
         Gmp.mpz signature = input->get_bignum();
-
         return session->peer_public_key->raw_verify(digest, signature);
       }
 
@@ -199,8 +201,7 @@ class CipherSpec {
     case SIGNATURE_ecdsa:
       {
         return session->peer_public_key->
-          pkcs_verify(cookie + struct->contents(),
-                      Crypto.SHA1, input->get_var_string(2));
+          pkcs_verify(data, Crypto.SHA1, input->get_var_string(2));
       }
     }
 
@@ -216,28 +217,29 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous || !signature_algorithms )
       return;
 
-    signature_hash = -1;
+    int hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
     foreach(signature_algorithms, array(int) pair) {
       if ((pair[1] == signature_alg) && HASH_lookup[pair[0]]) {
         if (pair[0] == wanted_hash_id) {
           // Use the required hash from Suite B if available.
-          signature_hash = wanted_hash_id;
+          hash_id = wanted_hash_id;
           break;
         }
         if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
           // Eg RSA has a maximum block size and the digest is too large.
           continue;
         }
-        if (pair[0] > signature_hash) {
-          signature_hash = pair[0];
+        if (pair[0] > hash_id) {
+          hash_id = pair[0];
         }
       }
     }
 
     if (signature_hash == -1)
       error("No acceptable hash algorithm.\n");
+    signature_hash = hash_id;
 
     SSL3_DEBUG_MSG("Selected <%s, %s>\n",
                    fmt_constant(signature_hash, "HASH"),
