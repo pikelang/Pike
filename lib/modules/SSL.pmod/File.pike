@@ -308,7 +308,7 @@ protected THREAD_T op_thread;
 #endif	// !SSLFILE_DEBUG
 
 //! Run one pass of the backend.
-protected int|float backend_once()
+protected int(0..0)|float backend_once()
 {
   if (nonblocking_mode) {
     // Assume that the backend is active when is has been started.
