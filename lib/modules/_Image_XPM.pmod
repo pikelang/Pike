@@ -2,6 +2,10 @@
 
 //! @appears Image.XPM
 //! X PixMap image format.
+//! Specifically, XPM3.
+//!
+//! XPM1 and XPM2 are not supported.  (XPM3 has been the standard since
+//! 1991).
 
 inherit Image._XPM;
 #if 0
@@ -20,10 +24,23 @@ int old_time,start_time;
 #endif
 
 //! @decl mapping _decode(string bytes, mapping|void options)
+//! @belongs Image.XPM
+//!
+//! Decode the given XPM image.
+//!
+//! @mapping
+//! @member Image.Image img
+//! @member Image.Image alpha
+//! @member string format
+//! @endmapping
+//!
+//! No options are currently supported.
+
 mapping _decode( string what, void|mapping opts )
 {
   array data;
   mapping retopts = ([ ]);
+  retopts->format = "image/xpm";
   if(!opts)
     opts = ([]);
   TI("Scan for header");
@@ -58,7 +75,7 @@ mapping _decode( string what, void|mapping opts )
   int height = values[1];
   if(!width || !height)
     error("Width or height == 0\n");
-  
+
   int ncolors = values[2];
   int cpp = values[3];
   if(sizeof(values)>5)
@@ -71,21 +88,14 @@ mapping _decode( string what, void|mapping opts )
     error("Too few elements in array to decode color values\n");
   array colors;
 
-// kludge? probable FIXME?
-// I can't see why the colors not always must be sorted...
-//  /Mirar 2003-01-31
-
-//   if(cpp < 4)
-//     colors = data[1..ncolors];
-//   else
-    colors = sort(data[1..ncolors]);
+  colors = sort(data[1..ncolors]);
   TD("Creating images");
   object i = Image.Image( width, height );
   object a = Image.Image( width, height,255,255,255 );
   TD("Decoding image");
-//   for(int y = 0; y<height && y<sizeof(data); y++)
+
   _xpm_write_rows( i,a,cpp,colors,data );
-//   _xpm_write_row( height, i, a, data[ncolors+y+1], cpp, colors );
+
   TD("Done");
 
   retopts->image = i;
@@ -94,8 +104,7 @@ mapping _decode( string what, void|mapping opts )
 }
 
 
-
-array ok = ({
+constant ok = ({
   "`",  ".",  "+",  "@",  "#",  "$",  "%",  "*",  "=",  "-",  ";",  ">",  ",",
   "'",  ")",  "!",  "~",  "{",  "]",  "^",  "/",  "(",  "_",  ":",  "<",  "[",
   "}",  "|",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",  "0",  "a",
@@ -105,9 +114,24 @@ array ok = ({
   "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  " ",
 });
 
-array cmap_t;
+private array cmap_t;
 
 //! @decl string encode(Image.Image image, mapping|void options)
+//! @belongs Image.XPM
+//!
+//! Encode the given image as a XPM image.
+//!
+//! This will, at least currently, always produce a
+//! 2-characters-per-pixel XPM.
+//!
+//! The supported options are:
+//! @mapping
+//! @member string(1..128) name
+//! @member Image.Colortable colortable
+//! @member Image.Image alpha
+//! @member string(1..128) comment
+//! @endmapping
+
 string encode( object what, mapping|void options )
 {
   int x,y,q;
@@ -191,6 +215,8 @@ string encode( object what, mapping|void options )
 }
 
 //! @decl Image.Image decode(string bytes)
+//! @belongs Image.XPM
+
 object decode( string what )
 {
   return _decode(what)->image;
