@@ -32,7 +32,7 @@ extern struct program *image_program;
 **! submodule TIM
 **!
 **! 	Handle decoding of TIM images.
-**! 
+**!
 **! 	TIM is the framebuffer format of the PSX game system.
 **! 	It is a simple, uncompressed, truecolor or CLUT format
 **!     with a one bit alpha channel.

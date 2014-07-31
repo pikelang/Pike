@@ -9,9 +9,8 @@
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
-**!	the binary formats of X11.
-**!
-**!
+**! the binary formats of X11, and can also be used for other
+**! non-compressed image formats.
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
@@ -367,7 +366,7 @@ static void image_x_encode_truecolor(INT32 args)
    push_string(end_shared_string(dest));
 }
 
-static INLINE void image_x_examine_mask(struct svalue *mask,
+static void image_x_examine_mask(struct svalue *mask,
 					const char *what,
 					int *bits,int *shift)
 {
@@ -640,7 +639,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
    pop_n_elems(args);
    push_string(end_shared_string(dest2));
 }
-					     
+
 static void image_x_encode_pseudocolor_2byte(INT32 args,
 					     struct image *img,
 					     struct neo_colortable *nct,
@@ -726,14 +725,14 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
    pop_n_elems(args);
    push_string(end_shared_string(dest2));
 }
-					     
+
 void image_x_encode_pseudocolor(INT32 args)
 {
    INT32 bpp,alignbits,vbpp;
    struct image *img = NULL;
    struct neo_colortable *nct = NULL;
    char *translate=NULL;
-   
+
    if (args<5) 
       Pike_error("Image.X.encode_pseudocolor: too few arguments");
    if (TYPEOF(sp[1-args]) != T_INT)
