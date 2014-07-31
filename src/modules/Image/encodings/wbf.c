@@ -33,7 +33,12 @@ extern struct program *image_program;
  */
 
 /*! @module WBMP
- *! WAP bitmap format - WBMP.
+ *! Wireless Application Protocol Bitmap Format - WAP bitmap format - WBMP.
+ *!
+ *! Wireless Application Protocol Bitmap Format (shortened to Wireless
+ *! Bitmap and with file extension .wbmp) is a monochrome graphics
+ *! file format that was optimized for the extremely low-end mobile
+ *! computing devices that were common in the early days of the mobile web.
  */
 
 struct buffer
@@ -293,10 +298,9 @@ static void low_image_f_wbf_decode( int args, int mode )
   }
 }
 
-/*! @decl object decode(string image)
+/*! @decl Image.Image decode(string image)
  *!
- *! @fixme
- *!   Document this function.
+ *! Decode the given image
  */
 
 static void image_f_wbf_decode( int args )
@@ -306,8 +310,17 @@ static void image_f_wbf_decode( int args )
 
 /*! @decl mapping _decode(string image)
  *!
- *! @fixme
- *!   Document this function.
+ *! Decode the given image
+ *! @returns
+ *!   @mapping
+ *!     @member Image.Image "img"
+ *!     @member string "format"
+ *!       The MIME type and encoding for the image, e.g. "image/x-wap.wbmp; type=0".
+ *!     @member int "xsize"
+ *!     @member int "ysize"
+ *!     @member int "fix_header_field"
+ *!     @member int "ext_header_field"
+ *!  @endmapping
  */
 
 static void image_f_wbf__decode( int args )
@@ -379,8 +392,8 @@ static void push_wap_type0_image_data( struct image *i )
 /*! @decl string encode(object image, void|mapping args)
  *! @decl string _encode(object image, void|mapping args)
  *!
- *! @fixme
- *!  Document this function.
+ *! Encode the given image as a WBMP image. All pixels that are not
+ *! black will be encoded as white.
  */
 
 static void image_f_wbf_encode( int args )
