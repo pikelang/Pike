@@ -194,7 +194,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   send_packet(server_hello_packet());
 
   // Don't send any certificate in anonymous mode.
-  if (session->cipher_spec->sign != Cipher.anon_sign) {
+  if (session->cipher_spec->signature_alg != SIGNATURE_anonymous) {
     // NB: session->certificate_chain is set by
     // session->select_cipher_suite() above.
     if (session->certificate_chain)
