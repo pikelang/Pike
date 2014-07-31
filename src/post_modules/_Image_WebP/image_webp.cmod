@@ -199,6 +199,43 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
 }
 
 
+/*! @module Image
+ *!
+ *! @module WebP
+ *!
+ *! WebP is a truecolor image format with alpha channel support
+ *! currently developed by google.
+ *!
+ *! This module supports decoding and encoding of lossy and lossless
+ *! WebP images with and without alpha channels using the libwebp library.
+ *!
+ *! WebP images are generally smaller than the same quality JPEG of
+ *! PNG image, but takes longer to encode and decode, and support in
+ *! various applications is less common.
+ *!
+ */
+
+/*! @decl mapping _decode( string data )
+ *!
+ *! Decode a WebP image.
+ *!
+ *! @returns
+ *! @mapping
+ *! @member Image.Image alpha
+ *! @member Image.Image image
+ *! @member string format
+ *! @member int(1..16384) width
+ *! @member int(1..16384) height
+ *! @endmapping
+ */
+
+/*! @decl Image.Image decode( string data )
+ *!
+ *! Decode a WebP image, like @[_decode].
+ *! @returns
+ *! The decoded image or an error
+ */
+
 PIKEFUN object decode( string data )
 {
   apply( Pike_fp->current_object, "_decode", 1 );
@@ -249,20 +286,17 @@ PIKEFUN mapping(string:object) _decode( string data )
   free( res );
 
   push_text( "image" );  push_object( i );
+  push_text( "img" );  push_object( i );
   push_text( "alpha" );
   if( a ) 
     push_object( a );
   else 
     push_undefined( );
-  push_text("format"); push_text("WebP");
+  push_text("format"); push_text("image/webp");
   push_text( "xsize" ); push_int( width );
   push_text( "ysize" ); push_int( height );
-  f_aggregate_mapping( 10 );
+  f_aggregate_mapping( 12 );
 }
-
-#ifndef TYPEOF
-#define TYPEOF(X) (X).type
-#endif
 
 static int parameter_int(struct mapping *map, const char *what, int def )
 {
@@ -291,6 +325,85 @@ static object *parameter_obj(struct mapping *map, const char *what )
    return NULL;
 }
 
+
+/*! @decl string encode( Image.Image image, mapping(string:int|float|Image.Image)|void options )
+ *!
+ *! Encode an image using the WebP format.
+ *!
+ *!  The image to encode has to be at most 16384 pixels in any direction.
+ *!
+ *! Commonly used options:
+ *!
+ *! @mapping
+ *! @member Image.Image alpha
+ *!  If present, the alpha channel for the image will be the green
+ *!  component of this image. Has to be the same size as the @[image]
+ *! @member int preset
+ *!  Initialization for the encoding options.
+ *!  One of PRESET_DEFAULT, PRESET_PICTURE, PRESET_PHOTO
+ *!  PRESET_DRAWING, PRESET_ICON and PRESET_TEXT
+ *! @member bool lossless
+ *!  If set, do lossless encoding.
+ *! @member float quality
+ *!  Between 0 and 99. If quality is 100+, lossless encoding with
+ *!  quality 70 will be used.
+ *! @endmapping
+ *!
+ *!  Additionally these advanced options are also supported:
+ *!
+ *! @mapping
+ *! @member int image_hint
+ *!   One of HINT_DEFAULT, HINT_PICTURE, HINT_PHOTO and HINT_GRAPH.
+ *!   Only used in lossless mode
+ *! @member int target_size
+ *!  If non zero, sets the desired filesize, in bytes. Takes
+ *!  precedence over quality.
+ *! @member int target_PSNR
+ *!  if non-zero, specifies the minimal distortion to try to
+ *!  achieve. Takes precedence over target_size.
+ *! @member int(1..4) segments
+ *!  maximum number of segments to use.
+ *! @member int(0..100) sns_strength
+ *!   Spatial Noise Shaping. 0=off, 100=maximum.
+ *! @member int(0..100) filter_strength
+ *!  0=off
+ *! @member int(0..7) filter_sharpness
+ *!  0=off
+ *! @member int(0..1) filter_type
+ *!   For the type, 0=simple, 1=strong.
+ *! @member bool autofilter
+ *!   If true, automatically adjust the filter strengths
+ *! @member int(0..1) alpha_compression
+ *!  Select alpha channel encoding format. Currently supported are 0: No alpha and 1: WebP lossless
+ *! @member int(0..2) alpha_filtering
+ *!  Select alpha filtering method. 0: none, 1: fast, 2: best. Default if 1.
+ *! @member int(0..100) alpha_quality
+ *!  Select the base image quality for the alpha channel.
+ *! @member int(1..10) pass
+ *!   The number of entropy analysis passes. Defaults to 1.
+ *! @member bool show_compressed
+ *! @member bool preprocessing
+ *!  If true, do preprocessing (segment-smooth)
+ *! @member int(0..3) partitions
+ *!  log2(number of token partitions). Default is set to 0 for easier
+ *!  progressive decoding.
+ *! @member int(0..100) partition_limit
+ *!  quality degradation allowed to fit the 512k limit on prediction
+ *!  modes coding (0: no degradation, 100: maximum possible
+ *!  degradation).
+ *! @member bool emulate_jpeg_size
+ *!  If true, try to map the quality setting to generate similar sizes
+ *!  when compared to jpeg.
+ *! @member int thread_level
+ *!   The maximum number of extra threads to use. Defaults to 0
+ *! @member bool low_memory
+ *!   Decrease memory usage at the cost of encoding speed
+ *! @endmapping
+ *!
+ *! @returns
+ *! Always returns the encoded image as a string or throws an error.
+ *!
+ */
 PIKEFUN string encode( object i,
 		       mapping(string:int|float|object)|void options )
 {
@@ -430,6 +543,22 @@ EXIT {
     }
 }
 
+/*
+*! @decl constant PRESET_DEFAULT
+*! @decl constant PRESET_PICTURE
+*! @decl constant PRESET_PHOTO
+*! @decl constant PRESET_DRAWING
+*! @decl constant PRESET_ICON
+*! @decl constant PRESET_TREXT
+*!  Constants used to select the default values for the various encoding options in @[encode].
+*!
+*! @decl constant HINT_DEFAULT
+*! @decl constant HINT_PICTURE
+*! @decl constant HINT_PHOTO
+*! @decl constant HINT_GRAPH
+*!  Constants used to give hints to the lossless encoder when using @[encode].
+*!  (selected automatically when using a hint.)
+*/
 
 EXTRA {
 #define CONST(X)  add_integer_constant( #X, WEBP_##X, 0 );
@@ -449,3 +578,8 @@ EXTRA {
 #undef CONST
 }
 #endif /* HAVE_LIBVPX */
+
+/*! @endmodule
+ *!
+ *! @endmodule
+ */
