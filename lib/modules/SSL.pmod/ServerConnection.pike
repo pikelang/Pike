@@ -195,12 +195,8 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 
   // Don't send any certificate in anonymous mode.
   if (session->cipher_spec->sign != Cipher.anon_sign) {
-    /* Send Certificate, ServerKeyExchange and CertificateRequest as
-     * appropriate, and then ServerHelloDone.
-     *
-     * NB: session->certificate_chain is set by
-     *     session->select_cipher_suite() above.
-     */
+    // NB: session->certificate_chain is set by
+    // session->select_cipher_suite() above.
     if (session->certificate_chain)
     {
       SSL3_DEBUG_MSG("Sending Certificate.\n");
@@ -215,13 +211,15 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   Packet key_exchange = server_key_exchange_packet();
 
   if (key_exchange) {
+    SSL3_DEBUG_MSG("Sending ServerKeyExchange.\n");
     send_packet(key_exchange);
   }
   if (context->auth_level >= AUTHLEVEL_ask)
   {
     // we can send a certificate request packet, even if we don't have
     // any authorized issuers.
-    send_packet(certificate_request_packet(context)); 
+    SSL3_DEBUG_MSG("Sending CertificateRequest.\n");
+    send_packet(certificate_request_packet(context));
     certificate_state = CERT_requested;
   }
   send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));

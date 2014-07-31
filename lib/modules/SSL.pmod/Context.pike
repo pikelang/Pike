@@ -170,9 +170,9 @@ array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 //!
 //! @note
 //!   According to RFC 5246 7.4.2 all certificates needs to be signed
-//!   by any of the supported signature algorithms. This trivially
-//!   means that any combinaton that doesn't have a PKCS identifier
-//!   isn't allowed.
+//!   by any of the supported signature algorithms. To be forward
+//!   compatible this list needs to be limited to the combinations
+//!   that have existing PKCS identifiers.
 //!
 //! @seealso
 //!   @[get_signature_algorithms()]
