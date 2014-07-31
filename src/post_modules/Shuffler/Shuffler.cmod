@@ -49,6 +49,20 @@ static void free_source( struct source *s )
 extern struct program *Shuffler_program;
 
 /*! @module Shuffler
+ *!
+ *! Module implementing sending to and from nonblocking streams and other sources.
+ *!
+ *! Most useful when implementing sending of data from strings, files and
+ *! other sources to a network connection. The module also supports
+ *! generic bandwidth throttling.
+ *!
+ *! Multiple @[Shuffler] object can be created, each optionally with
+ *! their own backend.
+ *!
+ *! This makes it easier to use more than one CPU for pure data
+ *! transmission, just have multiple backends each in their own
+ *! thread, with their own shuffle object.
+ *!
  */
 
 /*! @class Throttler
@@ -64,7 +78,8 @@ extern struct program *Shuffler_program;
  *! When data can be sent, the @[callback] function should be called
  *! with the amount of data that can be sent as the argument.
  *!
- *! @decl void give_back( Shuffle shuffle, int amount ) 
+ *! @decl void give_back( Shuffle shuffle, int amount )
+ *!
  *! This function will be called by the @[Shuffle] object to report
  *! that some data assigned to it by this throttler was unusued, and
  *! can be given to another @[Shuffle] object instead.
@@ -76,7 +91,7 @@ extern struct program *Shuffler_program;
  *! This class contains the state for one ongoing data
  *! shuffling operation. To create a @[Shuffle] instance, use the
  *! @[Shuffler()->shuffle] method.
- *! 
+ *!
  */
 
 PIKECLASS Shuffle
@@ -545,8 +560,7 @@ PIKECLASS Shuffle
       _give_back( t, amount-sent );
   }
 
-  /*! @decl void send_more_callback( int amount )
-   */
+  /* internal use.. */
   PIKEFUN void send_more_callback( int amount )
     optflags OPT_SIDE_EFFECT;
   {
@@ -560,8 +574,7 @@ PIKECLASS Shuffle
       _give_back( THIS, amount );
   }
 
-  /*! @decl void write_callback( mixed|void x )
-   */
+  /* internal use.. */
   PIKEFUN void write_callback( mixed|void x )
     optflags OPT_SIDE_EFFECT;
   {
@@ -571,6 +584,9 @@ PIKECLASS Shuffle
 
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
    *!                   mixed backend)
+   *!
+   *! This object is not normally directly, instead use
+   *! @[Shuffler()->shuffle]
    */
   PIKEFUN void create( object fd,
 		       object shuffler,
@@ -636,7 +652,7 @@ PIKECLASS Shuffle
   PIKEFUN void start()
    /*! @decl void start();
     *! Start sending data from the sources.
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -650,7 +666,7 @@ PIKECLASS Shuffle
   PIKEFUN void pause()
    /*! @decl void pause();
     *! Temporarily pause all data transmission
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -662,7 +678,7 @@ PIKECLASS Shuffle
   PIKEFUN void stop()
    /*! @decl void stop();
     *! Stop all data transmission, and then call the done callback
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -681,17 +697,17 @@ PIKECLASS Shuffle
     *!
     *! Currently supported sources
     *! @dl
-    *!   @item String
+    *!   @item string
     *!     An ordinary 8-bit wide pike string.
-    *!   @item Memory
+    *!   @item System.Memory
     *!     An initialized instance of the System.Memory class.
-    *!   @item NormalFile
+    *!   @item Stdio.File
     *!     Stdio.File instance pointing to a normal file.
-    *!   @item Stream
+    *!   @item Stdio.Stream
     *!     Stdio.File instance pointing to a stream of some kind
-    *!     (network socket, named pipe, stdin etc).
-    *!   @item Pike-stream
-    *!     Stdio.File lookalike with read callback support
+    *!     (network socket, named pipe, stdin etc). Blocking or nonblocking.
+    *!   @item Stdio.NonblockingStream|Stdio.Stream
+    *!     An object implementing the callback based reading
     *!     (set_read_callback and set_close_callback).
     *! @enddl
     */
@@ -858,9 +874,10 @@ PIKECLASS Shuffler
   }
 
   PIKEFUN object shuffle( object destination )
-    /*! @decl Shuffle shuffle( Stdio.File destination );
+    /*! @decl Shuffle shuffle( Stdio.NonblockingStream destination );
      *! Create a new @[Shuffle] object.
-     *! 
+     *!
+     *! The destination has to support nonblocking I/O.
      */
   {
     ref_push_object( Pike_fp->current_object ); /* shuffler */
@@ -900,6 +917,7 @@ PIKECLASS Shuffler
  *! @decl constant WRITE_ERROR;
  *! @decl constant READ_ERROR;
  *! @decl constant USER_ABORT;
+ *!  The state of an individual @[Shuffle] object.
  */
 
 /*! @endmodule
