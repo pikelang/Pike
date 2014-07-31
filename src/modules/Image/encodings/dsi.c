@@ -4,6 +4,20 @@
 || for more information.
 */
 
+/*! @module Image
+ *!
+ *! @module DSI
+ *!
+ *! Decode-only support for the Dream SNES image file format.
+ *!
+ *! This is a little-endian 16 bitplane image format that starts with
+ *! two 32-bit integers, width and height, followed by w*h*2 bytes of
+ *! image data.
+ *!
+ *! Each pixel is r5g6b5, a special case is the color r=31,g=0,b=31
+ *! (full red, full blue, no green), which is transparent
+ *! (chroma-keying)
+ */
 /* Dream SNES Image file */
 
 #include "global.h"
@@ -28,6 +42,12 @@
 
 extern struct program *image_program;
 
+/*! @decl mapping(string:Image.Image) _decode(string data)
+ *!  Decode the DSI image.
+ *!
+ *! This function will treat pixels with full red, full blue, no green
+ *! as transparent.
+ */
 static void f__decode( INT32 args )
 {
   int xs, ys, x, y;
@@ -91,6 +111,9 @@ static void f__decode( INT32 args )
   f_aggregate_mapping( 4 );
 }
 
+/*! @decl Image.Image decode(string data)
+ *!  Decode the DSI image, without alpha decoding.
+ */
 static void f_decode( INT32 args )
 {
   f__decode( args );
@@ -108,3 +131,7 @@ void init_image_dsi()
 void exit_image_dsi()
 {
 }
+/*! @endmodule
+ *!
+ *! @endmodule
+ */
