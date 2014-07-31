@@ -11,6 +11,19 @@
 **!	This submodule keep the ILBM encode/decode capabilities
 **!	of the <ref>Image</ref> module.
 **!
+**! ILBM is a subtype of the Interchange File Format (IFF) used for
+**! storing picture data. ILBM stands for InterLeaved BitMap which
+**! refers to the way the pictures are stored. The image data is
+**! stored as a varying number of bitplanes, each storing one bit of
+**! data for each pixel in the image. The format supports horizontal
+**! and vertical RLE (Run Length Encoding) compression.
+**!
+**! The format also natively supports images using the somewhat
+**! esoteric image modes of the original Commodore Amiga, such as HAM
+**! (Hold And Modify)
+**!
+**! The format was commonly used for images on the Amiga.
+**!
 **! see also: Image, Image.Image, Image.Colortable
 */
 #include "global.h"
