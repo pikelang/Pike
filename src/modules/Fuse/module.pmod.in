@@ -12,14 +12,15 @@
 //!
 //! This module maps the Fuse library more or less directly to pike.
 //!
+//! In order to create a filesystem, create a subclass of the
+//! @[Operations] class, clone it and pass it to the @[run] method.
+//!
+//! You do not need to implemnent all functions, but at least getattr,
+//! readdir and read are needed to make a useable filesystem.
+//!
 //! A tip: ERRNO constants are available in the System module, and if
 //! one is missing /usr/include/asm[-generic]/errno.h can be included
 //! in pike programs on Linux.
-//!
-//! In order to create a filesystem, create a subclass of the
-//! Fuse.Operations class. You do not need to implemnent all
-//! functions, but at least getattr, readdir and read are needed to do
-//! any actual file operations.
 
 #if constant(@module@.run)
 inherit @module@;
