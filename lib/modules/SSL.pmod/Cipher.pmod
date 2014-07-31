@@ -165,14 +165,15 @@ class TLSSigner
                 array(array(int)) signature_algorithms,
                 int wanted_hash_id)
   {
-    // Stay with SHA1 for anonymous.
-    if( signature_id == SIGNATURE_anonymous )
+    // Stay with SHA1 for requests without signature algorithms
+    // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
+    if( signature_id == SIGNATURE_anonymous || !signature_algorithms )
       return;
 
     hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
-    foreach(signature_algorithms || ({}), array(int) pair) {
+    foreach(signature_algorithms, array(int) pair) {
       if ((pair[1] == signature_id) && HASH_lookup[pair[0]]) {
         if (pair[0] == wanted_hash_id) {
           // Use the required hash from Suite B if available.
