@@ -35,6 +35,15 @@ extern struct program *image_program;
 **! module Image
 **! submodule PCX
 **!
+**! PCX, standing for Personal Computer Exchange, is an image file
+**! format developed by the now-defunct ZSoft Corporation of Marietta,
+**! Georgia. It was the native file format for PC Paintbrush and
+**! became one of the first widely accepted DOS imaging standards,
+**! although it has since been succeeded by more sophisticated image
+**! formats, such as BMP, JPEG, and PNG. PCX files commonly stored
+**! palette-indexed images ranging from 2 or 4 colors to 16 and 256
+**! colors, although the format has been extended to record true-color
+**! (24-bit) images as well.
 */
 
 struct buffer
@@ -325,7 +334,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
 
 /*
 **! method object decode(string data)
-**! 	Decodes a PCX image. 
+**! 	Decodes a PCX image.
 **!
 **! note
 **!	Throws upon error in data.
@@ -343,7 +352,7 @@ void image_pcx_decode( INT32 args )
 
 /*
 **! method mapping _decode(string data)
-**! 	Decodes a PCX image to a mapping. 
+**! 	Decodes a PCX image to a mapping.
 **!
 **! note
 **!	Throws upon error in data.
