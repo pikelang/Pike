@@ -1843,8 +1843,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 		  ", closing (" + close_state + ")" : "");
 
   ENTER (1, called_from_real_backend) {
-    int call_accept_cb;
-
     if (input) {
       int handshake_already_finished = !(conn->state & CONNECTION_handshaking);
       string|int data =
@@ -1876,14 +1874,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	  if (!handshake_already_finished &&
 	      !(conn->state & CONNECTION_handshaking)) {
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
-	    if (called_from_real_backend && accept_callback) {
-#ifdef SSLFILE_DEBUG
-	      if (close_state >= NORMAL_CLOSE)
-		error ("Didn't expect the connection to be "
-		       "explicitly closed already.\n");
-#endif
-	      call_accept_cb = 1;
-	    }
 	  }
 
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
@@ -1912,7 +1902,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 
     // Figure out what we need to do. call_accept_cb is already set
     // from above.
-    int(0..1) call_read_cb;
     if (alert_cb_called) {
       if (!conn) {
 	SSL3_DEBUG_MSG ("ssl_read_callback: Shut down from alert callback\n");
@@ -1921,12 +1910,6 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
       }
       // Make sure the alert is queued for writing.
       queue_write();
-    }
-    else {
-      call_read_cb =
-	called_from_real_backend && read_callback && sizeof (read_buffer) &&
-	// Shouldn't get here when close_state == ABRUPT_CLOSE.
-	close_state < NORMAL_CLOSE;
     }
 
     if (conn->state & CONNECTION_peer_closed) {
@@ -2012,22 +1995,8 @@ protected int ssl_write_callback (int called_from_real_backend)
 	      else {
 		SSL3_DEBUG_MSG ("ssl_write_callback: Stream closed remotely - "
 				"checking input buffer for proper remote close\n");
-		if (called_from_real_backend) {
-		  // Shouldn't wait for a close packet that might
-		  // arrive later on, so we start a nonblocking local
-		  // backend to check for it. If we're already in a
-		  // local backend, this is handled by special cases
-		  // in RUN_MAYBE_BLOCKING.
-		  RUN_MAYBE_BLOCKING (
-		    (!(conn->state & CONNECTION_peer_closed)),
-		    1);
-		}
-		else {
-		  // Can't start a nested local backend - skip out to
-		  // the one we're called from.
-		  RESTORE;
-		  return ret;
-		}
+		RESTORE;
+		return ret;
 	      }
 	    }
 	  }
