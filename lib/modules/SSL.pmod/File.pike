@@ -232,71 +232,7 @@ protected void thread_error (string msg, THREAD_T other_thread)
 
 #endif	// !constant (Thread.thread_create)
 
-protected THREAD_T op_thread;
-
-// FIXME: Looks like the following check can give false alarms since
-// an fd object can lose all refs even if some callbacks still are
-// registered.
-#define CHECK_CB_MODE(CUR_THREAD) do {					\
-    if (Pike.Backend backend = stream && stream->query_backend()) {	\
-      THREAD_T backend_thread = backend->executing_thread();		\
-      if (backend_thread && backend_thread != CUR_THREAD &&		\
-	  (stream->query_read_callback() ||				\
-	   stream->query_write_callback() ||				\
-	   stream->query_close_callback()))				\
-	/* NB: The other thread backtrace might not be relevant at	\
-	 * all here. */							\
-	thread_error ("In callback mode in a different backend.\n",	\
-		      backend_thread);					\
-    }									\
-  } while (0)
-
-#define LOW_CHECK(OP_THREAD, CUR_THREAD,				\
-		  IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {		\
-    if (IN_CALLBACK) {							\
-      if (CALLED_FROM_REAL_BACKEND) {					\
-	if (OP_THREAD)							\
-	  thread_error ("Called from real backend while doing an operation.\n",	\
-			OP_THREAD);					\
-      }									\
-      else								\
-	if (!OP_THREAD)							\
-	  error ("Called from local backend outside an operation.\n");	\
-    }									\
-									\
-    if (OP_THREAD && OP_THREAD != CUR_THREAD)				\
-      thread_error ("Doing operation in another thread.\n", OP_THREAD);	\
-									\
-    CHECK_CB_MODE (CUR_THREAD);						\
-  } while (0)
-
-#define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {		\
-    THREAD_T cur_thread = THIS_THREAD();				\
-    LOW_CHECK (op_thread, cur_thread, IN_CALLBACK, CALLED_FROM_REAL_BACKEND); \
-  } while (0)
-
-#define ENTER(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {		\
-    THREAD_T old_op_thread;						\
-    {									\
-      THREAD_T cur_thread = THIS_THREAD();				\
-      old_op_thread = op_thread;					\
-      /* Relying on the interpreter lock here. */			\
-      op_thread = cur_thread;						\
-    }									\
-    LOW_CHECK (old_op_thread, op_thread, IN_CALLBACK, CALLED_FROM_REAL_BACKEND); \
-    mixed _op_err = catch
-
-#define RESTORE do {op_thread = old_op_thread;} while (0)
-
-#define RETURN(RET_VAL) do {RESTORE; return (RET_VAL);} while (0)
-
-#define LEAVE								\
-  ;									\
-  RESTORE;								\
-  if (_op_err) throw (_op_err);						\
-  } while (0)
-
-#else  // !SSLFILE_DEBUG
+#endif	// !SSLFILE_DEBUG
 
 #define CHECK_CB_MODE(CUR_THREAD) do {} while (0)
 #define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {} while (0)
@@ -305,7 +241,6 @@ protected THREAD_T op_thread;
 #define RETURN(RET_VAL) return (RET_VAL)
 #define LEAVE while (0)
 
-#endif	// !SSLFILE_DEBUG
 
 //! Run one pass of the backend.
 protected int(0..0)|float backend_once()
