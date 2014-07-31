@@ -138,7 +138,6 @@ array(string) gen_func(string name, string ty)
       sscanf(ty[i..],"C(%s)",internal_args);
       if(!args)
 	error("First character after C must be '(' (%s).",ty);
-
       callback=
 	"struct svalue "+name+"_fun;\n\n"
 	"void "+name+"_cb_wrapper(";
@@ -441,16 +440,32 @@ string gen()
   }
   res += "void add_auto_funcs_glut()\n{\n";
   res += "  pre_init();\n";
+  string dres = "/*! @module GLUT\n *!\n";
   foreach(fn, string f)
+  {
     res +=
       sprintf("#ifndef MISSING_%s\n", upper_case(f)) +
       "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
       prot[f]+")\", OPT_SIDE_EFFECT);\n"
       "#endif\n";
+    string ret, args;
+    sscanf( reverse(prot[f]), "%[^:]:%s", ret,args);
+    dres += " *! @decl "+reverse(ret)+" "+f+"("+reverse(args)+")\n *!\n";
+  }
   foreach(sort(indices(constants)), string co)
-    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", ID_FINAL);\n";
+  {
+      dres += " *! @decl constant "+co+"\n*!\n";
+      res += "  add_integer_constant(\""+co+"\", "+constants[co]+", ID_FINAL);\n";
+  }
   res += "  post_init();\n";
   res += "}\n";
+  dres += " *! @endmodule\n";
+  dres += " */\n";
+  if( Stdio.read_file( combine_path(__DIR__,"autodoc.c") ) != dres )
+  {
+      werror("Updating autodoc.c\n");
+      Stdio.write_file( combine_path(__DIR__,"autodoc.c"), dres );
+  }
   return res;
 }
 
