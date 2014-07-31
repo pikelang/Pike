@@ -471,4 +471,4 @@ GOOD `()(string pattern,void|int options,void|object table)
    return GOOD(pattern,options,table);
 }
 
-#Endif // constant(_pcre)
+#endif // constant(_pcre)
