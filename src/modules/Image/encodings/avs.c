@@ -34,6 +34,11 @@ extern struct program *image_program;
 **! module Image
 **! submodule AVS
 **!
+**! An AVS file is a raw (uncompressed) 24 bit image file with alpha.
+**!
+**! The file starts with width and height as 32-bit ingegers, followed
+**! by 4 x width x height bytes of image data. The format is big
+**! endian.
 */
 
 /*
