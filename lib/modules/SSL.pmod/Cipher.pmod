@@ -123,7 +123,7 @@ class CipherSpec {
 class TLSSigner
 {
   protected int hash_id = HASH_sha;
-  protected int signature_id;
+  int signature_id;
 
   // The TLS 1.2 hash used to sign packets.
   protected Crypto.Hash hash = Crypto.SHA1;
@@ -161,14 +161,46 @@ class TLSSigner
 					    hash, sign);
   }
 
-  protected void create(int signature_id, int hash_id)
+  void set_hash(int max_hash_size,
+                array(array(int)) signature_algorithms,
+                int wanted_hash_id)
   {
-    hash = HASH_lookup[hash_id];
-    if (!hash) {
-      error("Unsupported hash algorithm: %d\n", hash_id);
+    // Stay with SHA1 for anonymous.
+    if( signature_id == SIGNATURE_anonymous )
+      return;
+
+    hash_id = -1;
+    SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
+                   max_hash_size, fmt_signature_pairs(signature_algorithms));
+    foreach(signature_algorithms || ({}), array(int) pair) {
+      if ((pair[1] == signature_id) && HASH_lookup[pair[0]]) {
+        if (pair[0] == wanted_hash_id) {
+          // Use the required hash from Suite B if available.
+          hash_id = wanted_hash_id;
+          break;
+        }
+        if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
+          // Eg RSA has a maximum block size and the digest is too large.
+          continue;
+        }
+        if (pair[0] > hash_id) {
+          hash_id = pair[0];
+        }
+      }
     }
+
+    if (hash_id == -1)
+      error("No acceptable hash algorithm.\n");
+    hash = HASH_lookup[hash_id];
+
+    SSL3_DEBUG_MSG("Selected <%s, %s>\n",
+                   fmt_constant(hash_id, "HASH"),
+                   fmt_constant(signature_id, "SIGNATURE"));
+  }
+
+  protected void create(int signature_id)
+  {
     this_program::signature_id = signature_id;
-    this_program::hash_id = hash_id;
   }
 
   protected string _sprintf(int t)
@@ -1740,25 +1772,25 @@ array lookup(int suite, ProtocolVersion|int version,
       error( "Internal error.\n" );
     }
   } else {
-    int sign_id;
+    TLSSigner signer;
     int wanted_hash_id;
     switch(ke_method) {
     case KE_rsa:
     case KE_rsa_fips:
     case KE_dhe_rsa:
     case KE_ecdhe_rsa:
-      sign_id = SIGNATURE_rsa;
+      signer = TLSSigner(SIGNATURE_rsa);
       break;
     case KE_dh_rsa:
     case KE_dh_dss:
     case KE_dhe_dss:
-      sign_id = SIGNATURE_dsa;
+      signer = TLSSigner(SIGNATURE_dsa);
       break;
     case KE_ecdh_rsa:
     case KE_ecdh_ecdsa:
     case KE_ecdhe_ecdsa:
       // FIXME: Can we end up here with no Crypto.ECC.Curve?
-      sign_id = SIGNATURE_ecdsa;
+      signer = TLSSigner(SIGNATURE_ecdsa);
       if (res->key_bits < 256) {
 	// Suite B requires SHA256 with AES-128.
 	wanted_hash_id = HASH_sha256;
@@ -1770,42 +1802,17 @@ array lookup(int suite, ProtocolVersion|int version,
     case KE_null:
     case KE_dh_anon:
     case KE_ecdh_anon:
-      sign_id = SIGNATURE_anonymous;
+      signer = TLSSigner(SIGNATURE_anonymous);
       break;
     default:
       error( "Internal error.\n" );
     }
 
-    // Select a suitable hash.
-    //
-    // Fortunately the hash identifiers have a nice order property.
-    int hash_id = HASH_sha;
-    SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
-                   max_hash_size, fmt_signature_pairs(signature_algorithms));
-    foreach(signature_algorithms || ({}), array(int) pair) {
-      if ((pair[1] == sign_id) && HASH_lookup[pair[0]]) {
-	if (pair[0] == wanted_hash_id) {
-	  // Use the required hash from Suite B if available.
-	  hash_id = wanted_hash_id;
-	  break;
-	}
-	if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
-	  // Eg RSA has a maximum block size and the digest is too large.
-	  continue;
-	}
-	if (pair[0] > hash_id) {
-	  hash_id = pair[0];
-	}
-      }
-    }
-    SSL3_DEBUG_MSG("Selected <%s, %s>\n",
-		   fmt_constant(hash_id, "HASH"),
-		   fmt_constant(sign_id, "SIGNATURE"));
-    TLSSigner signer = TLSSigner(sign_id, hash_id);
+    signer->set_hash(max_hash_size, signature_algorithms, wanted_hash_id);
     res->verify = signer->verify;
     res->sign = signer->sign;
 
-    if( sign_id == SIGNATURE_anonymous )
+    if( signer->signature_id == SIGNATURE_anonymous )
     {
       // FIXME: ServerConnction->reply_new_session compare sign to
       // Cipher.anon_sign.
