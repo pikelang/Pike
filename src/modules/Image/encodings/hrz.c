@@ -26,6 +26,11 @@ extern struct program *image_program;
 **! module Image
 **! submodule HRZ
 **!
+**! HRZ is rather trivial, and not really useful, but:
+**!
+**! The HRZ file is always 256x240 with RGB values from 0 to 63.
+**! No compression, no header, just the raw RGB data.
+**! HRZ is (was?) used for amatuer radio slow-scan TV.
 */
 
 /*
@@ -34,11 +39,6 @@ extern struct program *image_program;
 **! method string encode(object image)
 **!
 **! Handle encoding and decoding of HRZ images.
-**! HRZ is rather trivial, and not really useful, but:
-**!
-**! The HRZ file is always 256x240 with RGB values from 0 to 63.
-**! No compression, no header, just the raw RGB data.
-**! HRZ is (was?) used for amatuer radio slow-scan TV.
 */
 
 void image_hrz_f_decode(INT32 args)
