@@ -24,7 +24,7 @@
 
 /*! @module Image
  *!
- *! @module _XPM
+ *! @module XPM
  */
 
 extern struct program *image_program;
