@@ -235,8 +235,8 @@ protected void thread_error (string msg, THREAD_T other_thread)
 #endif	// !SSLFILE_DEBUG
 
 #define CHECK_CB_MODE(CUR_THREAD) do {} while (0)
-#define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {} while (0)
-#define ENTER(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do
+#define CHECK(IN_CALLBACK) do {} while (0)
+#define ENTER(IN_CALLBACK) do
 #define RESTORE do {} while (0)
 #define RETURN(RET_VAL) return (RET_VAL)
 #define LEAVE while (0)
@@ -332,7 +332,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 {
   SSL3_DEBUG_MSG ("SSL.File->create (%O, %O)\n", stream, ctx);
 
-  ENTER (0, 0) {
+  ENTER (0) {
     global::stream = stream;
     global::context = ctx;
 
@@ -351,7 +351,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
     stream->set_read_callback (0);
     stream->set_write_callback (0);
     stream->set_close_callback (0);
-    stream->set_id (1);
+    stream->set_id (0);
 
     fragment_max_size =
       limit(1, ctx->packet_max_size, PACKET_MAX_SIZE);
@@ -372,7 +372,7 @@ int(1bit) connect(string|void dest_addr)
 {
   if (conn) error("A connection is already configured!\n");
 
-  ENTER (0, 0) {
+  ENTER (0) {
 
     conn = .ClientConnection(context, dest_addr);
 
@@ -416,7 +416,7 @@ int(1bit) accept(string|void pending_data)
 {
   if (conn) error("A connection is already configured!\n");
 
-  ENTER (0, 0) {
+  ENTER (0) {
     conn = .ServerConnection(context);
 
     if (sizeof(pending_data || "")) {
@@ -535,7 +535,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 
   local_errno = 0;
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (!conn || (conn->state & CONNECTION_local_down)) {
       SSL3_DEBUG_MSG ("SSL.File->close: Already closed (%d)\n", close_state);
       RETURN (1);
@@ -633,7 +633,7 @@ Stdio.File shutdown()
 //! @seealso
 //!   @[close], @[set_alert_callback]
 {
-  ENTER (0, 0) {
+  ENTER (0) {
     if (!stream || !conn) {
       SSL3_DEBUG_MSG ("SSL.File->shutdown(): Already shut down\n");
       RETURN (0);
@@ -737,7 +737,7 @@ protected void destroy()
     // [bug 6958].
     stream->set_callbacks(0, 0, 0);
   }
-  ENTER (0, 0) {
+  ENTER (0) {
     if (stream) {
       if (close_state == STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
@@ -773,7 +773,7 @@ string read (void|int length, void|int(0..1) not_all)
 {
   SSL3_DEBUG_MSG ("SSL.File->read (%d, %d)\n", length, not_all);
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     if (read_errno && !sizeof(read_buffer)) {
@@ -867,7 +867,7 @@ int write (string|array(string) data, mixed... args)
     data = ({ data });
   }
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     if (write_errno) {
@@ -963,7 +963,7 @@ int renegotiate()
 {
   SSL3_DEBUG_MSG ("SSL.File->renegotiate()\n");
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     if (read_errno) {
@@ -1142,7 +1142,7 @@ void set_callbacks (void|function(mixed, string:int) read,
 		  read, write, close, read_oob, write_oob, accept,
 		  "" || describe_backtrace (backtrace()));
 
-  ENTER(0, 0) {
+  ENTER(0) {
 
     // Bypass the ::set_xxx_callback functions; we instead enable all
     // the event bits at once through the _enable_callbacks call at the end.
@@ -1205,7 +1205,7 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
 		  read, write, close, read_oob, write_oob, accept,
 		  "" || describe_backtrace (backtrace()));
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     nonblocking_mode = 1;
@@ -1240,7 +1240,7 @@ void set_nonblocking_keep_callbacks()
 {
   SSL3_DEBUG_MSG ("SSL.File->set_nonblocking_keep_callbacks()\n");
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     nonblocking_mode = 1;
@@ -1289,7 +1289,7 @@ void set_blocking()
   SSL3_DEBUG_MSG ("SSL.File->set_blocking()\n%s",
 		  "" || describe_backtrace (backtrace()));
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     nonblocking_mode = 0;
@@ -1313,7 +1313,7 @@ void set_blocking_keep_callbacks()
 {
   SSL3_DEBUG_MSG ("SSL.File->set_blocking_keep_callbacks()\n");
 
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     nonblocking_mode = 0;
@@ -1341,7 +1341,7 @@ int errno()
   // We don't check threads for most other query functions, but
   // looking at errno while doing I/O in another thread can't be done
   // safely.
-  CHECK (0, 0);
+  CHECK (0);
   return local_errno ? local_errno : stream && stream->errno();
 }
 
@@ -1367,7 +1367,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
 //!   @[query_alert_callback]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_alert_callback (%O)\n", alert);
-  CHECK (0, 0);
+  CHECK (0);
 #ifdef SSLFILE_DEBUG
   if (close_state == STREAM_UNINITIALIZED || !conn)
     error ("Doesn't have any connection.\n");
@@ -1407,7 +1407,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
 //!   @[query_accept_callback], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_accept_callback (%O)\n", accept);
-  ENTER (0, 0) {
+  ENTER (0) {
 #ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
@@ -1434,7 +1434,7 @@ void set_read_callback (function(void|mixed,void|string:int) read)
 //!   @[query_read_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_read_callback (%O)\n", read);
-  ENTER (0, 0) {
+  ENTER (0) {
 #ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
@@ -1461,7 +1461,7 @@ void set_write_callback (function(void|mixed:int) write)
 //!   @[query_write_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_write_callback (%O)\n", write);
-  ENTER (0, 0) {
+  ENTER (0) {
 #ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
@@ -1489,7 +1489,7 @@ void set_close_callback (function(void|mixed:int) close)
 //!   @[query_close_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_close_callback (%O)\n", close);
-  ENTER (0, 0) {
+  ENTER (0) {
 #ifdef SSLFILE_DEBUG
     if (close_state == STREAM_UNINITIALIZED)
       error ("Doesn't have any connection.\n");
@@ -1517,7 +1517,7 @@ void set_id (mixed id)
 //!   @[query_id]
 {
   SSL3_DEBUG_MSG ("SSL.File->set_id (%O)\n", id);
-  CHECK (0, 0);
+  CHECK (0);
   callback_id = id;
 }
 
@@ -1537,7 +1537,7 @@ void set_backend (Pike.Backend backend)
 //! @seealso
 //!   @[query_backend]
 {
-  ENTER (0, 0) {
+  ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
     if (user_cb_co) {
@@ -1594,7 +1594,7 @@ int is_open()
 //! above where it now returns 2.
 {
   SSL3_DEBUG_MSG ("SSL.File->is_open()\n");
-  ENTER (0, 0) {
+  ENTER (0) {
     if ((close_state == STREAM_OPEN || close_state == CLEAN_CLOSE) &&
 	stream && stream->is_open()) {
       // When close_state == STREAM_OPEN, we have to check if there's
@@ -1766,18 +1766,17 @@ protected int direct_write()
   return 1;
 }
 
-protected int ssl_read_callback (int called_from_real_backend, string input)
+protected int ssl_read_callback (int ignored, string input)
 {
-  SSL3_DEBUG_MSG ("ssl_read_callback (%O, %s): "
+  SSL3_DEBUG_MSG ("ssl_read_callback (%s): "
 		  "nonblocking mode=%d, callback mode=%d %s%s\n",
-		  called_from_real_backend,
 		  input ? "string[" + sizeof (input) + "]" : "0 (queued extra call)",
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn ? conn->describe_state() : "not connected",
 		  conn && SSL_CLOSING_OR_CLOSED ?
 		  ", closing (" + close_state + ")" : "");
 
-  ENTER (1, called_from_real_backend) {
+  ENTER (1) {
     if (input) {
       int handshake_already_finished = !(conn->state & CONNECTION_handshaking);
       string|int data =
@@ -1861,11 +1860,10 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
   return 0;
 }
 
-protected int ssl_write_callback (int called_from_real_backend)
+protected int ssl_write_callback (int ignored)
 {
-  SSL3_DEBUG_MSG ("ssl_write_callback (%O): "
+  SSL3_DEBUG_MSG ("ssl_write_callback: "
 		  "nonblocking mode=%d, callback mode=%d %s%s\n",
-		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn ? conn->describe_state() : "",
 		  conn && SSL_CLOSING_OR_CLOSED ?
@@ -1873,7 +1871,7 @@ protected int ssl_write_callback (int called_from_real_backend)
 
   int ret = 0;
 
-  ENTER (1, called_from_real_backend) {
+  ENTER (1) {
 #ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
@@ -2019,17 +2017,16 @@ protected int ssl_write_callback (int called_from_real_backend)
   return ret;
 }
 
-protected int ssl_close_callback (int called_from_real_backend)
+protected int ssl_close_callback (int ignored)
 {
-  SSL3_DEBUG_MSG ("ssl_close_callback (%O): "
+  SSL3_DEBUG_MSG ("ssl_close_callback: "
 		  "nonblocking mode=%d, callback mode=%d %s%s\n",
-		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn ? conn->describe_state() : "",
 		  conn && SSL_CLOSING_OR_CLOSED ?
 		  ", closing (" + close_state + ")" : "");
 
-  ENTER (1, called_from_real_backend) {
+  ENTER (1) {
 #ifdef SSLFILE_DEBUG
     if (!stream)
       error ("Got zapped stream in callback.\n");
