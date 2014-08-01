@@ -21,6 +21,11 @@ string(8bit) application_protocol;
 multiset(int) remote_extensions = (<>);
 int reuse;
 
+protected string _sprintf(int t)
+{
+  if (t == 'O') return sprintf("SSL.ServerConnection(%s)", describe_state());
+}
+
 Packet hello_request()
 {
   return handshake_packet(HANDSHAKE_hello_request, "");
