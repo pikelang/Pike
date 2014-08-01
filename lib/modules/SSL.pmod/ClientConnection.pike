@@ -18,6 +18,11 @@ inherit Connection;
 array(int) client_cert_types;
 array(string(8bit)) client_cert_distinguished_names;
 
+protected string _sprintf(int t)
+{
+  if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
+}
+
 //!
 Packet client_hello(string(8bit)|void server_name)
 {

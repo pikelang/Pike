@@ -344,6 +344,11 @@ string describe_state()
   return res * "|";
 }
 
+protected string _sprintf(int t)
+{
+  if (t == 'O') return sprintf("SSL.Connection(%s)", describe_state());
+}
+
 //! Called with alert object, sequence number of bad packet,
 //! and raw data as arguments, if a bad packet is received.
 //!
