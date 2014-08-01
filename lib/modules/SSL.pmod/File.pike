@@ -1661,8 +1661,10 @@ SSL.Context query_context()
   return conn && conn->context;
 }
 
-string _sprintf(int t) {
-  return t=='O' && sprintf("SSL.File(%O)", stream && stream->_fd);
+protected string _sprintf(int t)
+{
+  return t=='O' && sprintf("SSL.File(%O, %O)",
+			   stream && stream->_fd, conn);
 }
 
 
