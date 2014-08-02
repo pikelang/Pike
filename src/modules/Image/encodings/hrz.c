@@ -30,7 +30,7 @@ extern struct program *image_program;
 **!
 **! The HRZ file is always 256x240 with RGB values from 0 to 63.
 **! No compression, no header, just the raw RGB data.
-**! HRZ is (was?) used for amatuer radio slow-scan TV.
+**! HRZ is (was?) used for amateur radio slow-scan TV.
 */
 
 /*

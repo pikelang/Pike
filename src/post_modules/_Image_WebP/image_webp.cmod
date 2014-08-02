@@ -204,12 +204,12 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
  *! @module WebP
  *!
  *! WebP is a truecolor image format with alpha channel support
- *! currently developed by google.
+ *! currently developed by Google.
  *!
  *! This module supports decoding and encoding of lossy and lossless
  *! WebP images with and without alpha channels using the libwebp library.
  *!
- *! WebP images are generally smaller than the same quality JPEG of
+ *! WebP images are generally smaller than the same quality JPEG or
  *! PNG image, but takes longer to encode and decode, and support in
  *! various applications is less common.
  *!
@@ -221,11 +221,11 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
  *!
  *! @returns
  *! @mapping
- *! @member Image.Image alpha
- *! @member Image.Image image
- *! @member string format
- *! @member int(1..16384) width
- *! @member int(1..16384) height
+ *! @member Image.Image "alpha"
+ *! @member Image.Image "image"
+ *! @member string "format"
+ *! @member int(1..16384) "width"
+ *! @member int(1..16384) "height"
  *! @endmapping
  */
 
@@ -335,16 +335,16 @@ static object *parameter_obj(struct mapping *map, const char *what )
  *! Commonly used options:
  *!
  *! @mapping
- *! @member Image.Image alpha
+ *! @member Image.Image "alpha"
  *!  If present, the alpha channel for the image will be the green
  *!  component of this image. Has to be the same size as the @[image]
- *! @member int preset
+ *! @member int "preset"
  *!  Initialization for the encoding options.
  *!  One of PRESET_DEFAULT, PRESET_PICTURE, PRESET_PHOTO
  *!  PRESET_DRAWING, PRESET_ICON and PRESET_TEXT
- *! @member bool lossless
+ *! @member bool "lossless"
  *!  If set, do lossless encoding.
- *! @member float quality
+ *! @member float "quality"
  *!  Between 0 and 99. If quality is 100+, lossless encoding with
  *!  quality 70 will be used.
  *! @endmapping
@@ -352,51 +352,52 @@ static object *parameter_obj(struct mapping *map, const char *what )
  *!  Additionally these advanced options are also supported:
  *!
  *! @mapping
- *! @member int image_hint
+ *! @member int "image_hint"
  *!   One of HINT_DEFAULT, HINT_PICTURE, HINT_PHOTO and HINT_GRAPH.
  *!   Only used in lossless mode
- *! @member int target_size
+ *! @member int "target_size"
  *!  If non zero, sets the desired filesize, in bytes. Takes
  *!  precedence over quality.
- *! @member int target_PSNR
+ *! @member int "target_PSNR"
  *!  if non-zero, specifies the minimal distortion to try to
  *!  achieve. Takes precedence over target_size.
- *! @member int(1..4) segments
+ *! @member int(1..4) "segments"
  *!  maximum number of segments to use.
- *! @member int(0..100) sns_strength
+ *! @member int(0..100) "sns_strength"
  *!   Spatial Noise Shaping. 0=off, 100=maximum.
- *! @member int(0..100) filter_strength
+ *! @member int(0..100) "filter_strength"
  *!  0=off
- *! @member int(0..7) filter_sharpness
+ *! @member int(0..7) "filter_sharpness"
  *!  0=off
- *! @member int(0..1) filter_type
+ *! @member int(0..1) "filter_type"
  *!   For the type, 0=simple, 1=strong.
  *! @member bool autofilter
  *!   If true, automatically adjust the filter strengths
- *! @member int(0..1) alpha_compression
+ *! @member int(0..1) "alpha_compression"
  *!  Select alpha channel encoding format. Currently supported are 0: No alpha and 1: WebP lossless
- *! @member int(0..2) alpha_filtering
+ *! @member int(0..2) "alpha_filtering"
  *!  Select alpha filtering method. 0: none, 1: fast, 2: best. Default if 1.
- *! @member int(0..100) alpha_quality
+ *! @member int(0..100) "alpha_quality"
  *!  Select the base image quality for the alpha channel.
- *! @member int(1..10) pass
+ *! @member int(1..10) "pass"
  *!   The number of entropy analysis passes. Defaults to 1.
- *! @member bool show_compressed
- *! @member bool preprocessing
+ *! @member bool "show_compressed"
+ *!
+ *! @member bool "preprocessing"
  *!  If true, do preprocessing (segment-smooth)
- *! @member int(0..3) partitions
+ *! @member int(0..3) "partitions"
  *!  log2(number of token partitions). Default is set to 0 for easier
  *!  progressive decoding.
- *! @member int(0..100) partition_limit
+ *! @member int(0..100) "partition_limit"
  *!  quality degradation allowed to fit the 512k limit on prediction
  *!  modes coding (0: no degradation, 100: maximum possible
  *!  degradation).
- *! @member bool emulate_jpeg_size
+ *! @member bool "emulate_jpeg_size"
  *!  If true, try to map the quality setting to generate similar sizes
  *!  when compared to jpeg.
- *! @member int thread_level
+ *! @member int "thread_level"
  *!   The maximum number of extra threads to use. Defaults to 0
- *! @member bool low_memory
+ *! @member bool "low_memory"
  *!   Decrease memory usage at the cost of encoding speed
  *! @endmapping
  *!

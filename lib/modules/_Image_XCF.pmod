@@ -549,30 +549,30 @@ string translate_mode( int mode )
 //!
 //! The options can contain one or more of these options:
 //! @mapping
-//! @member bool draw_all_layers
+//! @member bool "draw_all_layers"
 //!   If included, all layers will be decoded, even the non-visible ones.
-//! @member Image.Color background
+//! @member Image.Color "background"
 //!   If included, include a solid background layer with the given color
-//! @member int shrink_fact
+//! @member int "shrink_fact"
 //!   Shrink the image by a factor of X. Useful for previews.
 //! @endmapping
 //!
 //! The layers have a number of extra properties set on them:
 //!
 //! @mapping
-//! @member int image_xres
-//! @member int image_yres
-//! @member Image.Colormap image_colormap
-//! @member array(Guide) image_guides
-//! @member array(Parasite) image_parasites
+//! @member int "image_xres"
+//! @member int "image_yres"
+//! @member Image.Colormap "image_colormap"
+//! @member array(Guide) "image_guides"
+//! @member array(Parasite) "image_parasites"
 //!  Values, global to all layers, copied from the GimpImage.
 //!  Still present in all layers
 //!
-//! @member string name
-//! @member bool visible
-//! @member bool active
-//! @member int tatoo
-//! @member array(Parasite) parasites
+//! @member string "name"
+//! @member bool "visible"
+//! @member bool "active"
+//! @member int "tatoo"
+//! @member array(Parasite) "parasites"
 //! @endmapping
 array(Image.Layer) decode_layers( string|GimpImage|mapping what, mapping|void opts,
                                   int|void concat )
@@ -664,27 +664,27 @@ array(Image.Layer) decode_layers( string|GimpImage|mapping what, mapping|void op
 //! The options can contain one or more of these options:
 //!
 //! @mapping
-//! @member bool draw_all_layers
+//! @member bool "draw_all_layers"
 //!   If included, all layers will be decoded, even the non-visible ones.
-//! @member int shrink_fact
+//! @member int "shrink_fact"
 //!   Shrink the image by a factor of X. Useful for previews.
-//! @member bool draw_guides
+//! @member bool "draw_guides"
 //!   If true, draw the vertical and horizontal guides
-//! @member bool mark_layers
+//! @member bool "mark_layers"
 //!   If true, draw boxes around layers
-//! @member bool mark_layer_names
+//! @member bool "mark_layer_names"
 //!   If true, draw layer names in the image
-//! @member bool mark_active_layer
+//! @member bool "mark_active_layer"
 //!   If true, highlight the active layer
 //! @endmapping
 //!
 //! The return value has this format:
 //! @mapping
-//! @member string type
+//! @member string "type"
 //! "image/x-gimp-image"
-//! @member Image.Image img
+//! @member Image.Image "img"
 //! The image
-//! @member Image.Image alpha
+//! @member Image.Image "alpha"
 //! The alpha channel
 //! @endmapping
 mapping(string:string|Image.Image) _decode( string|mapping|GimpImage what, mapping(string:mixed)|void opts )

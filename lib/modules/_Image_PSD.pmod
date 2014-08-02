@@ -441,11 +441,11 @@ string translate_mode( string mode )
 //!
 //! Accepts these options:
 //! @mapping
-//! @member bool draw_all_layers
+//! @member bool "draw_all_layers"
 //!   If included, all layers will be decoded, even the non-visible ones.
-//! @member bool crop_to_bounds
+//! @member bool "crop_to_bounds"
 //!   Remove areas that are outside the image boundaries in all layers
-//! @member Image.Color background
+//! @member Image.Color "background"
 //!   If included, include a solid background layer with the given color
 //! @endmapping
 array decode_layers( string|mapping what, mapping|void opts )
