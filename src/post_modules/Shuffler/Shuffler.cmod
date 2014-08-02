@@ -585,7 +585,7 @@ PIKECLASS Shuffle
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
    *!                   mixed backend)
    *!
-   *! This object is not normally directly, instead use
+   *! This object is normally not created directly, instead use
    *! @[Shuffler()->shuffle]
    */
   PIKEFUN void create( object fd,
