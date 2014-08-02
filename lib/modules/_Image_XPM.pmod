@@ -29,9 +29,9 @@ int old_time,start_time;
 //! Decode the given XPM image.
 //!
 //! @mapping
-//! @member Image.Image img
-//! @member Image.Image alpha
-//! @member string format
+//! @member Image.Image "img"
+//! @member Image.Image "alpha"
+//! @member string "format"
 //! @endmapping
 //!
 //! No options are currently supported.
@@ -126,10 +126,10 @@ private array cmap_t;
 //!
 //! The supported options are:
 //! @mapping
-//! @member string(1..128) name
-//! @member Image.Colortable colortable
-//! @member Image.Image alpha
-//! @member string(1..128) comment
+//! @member string(1..128) "name"
+//! @member Image.Colortable "colortable"
+//! @member Image.Image "alpha"
+//! @member string(1..128) "comment"
 //! @endmapping
 
 string encode( object what, mapping|void options )
