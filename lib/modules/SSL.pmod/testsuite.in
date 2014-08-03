@@ -591,7 +591,7 @@ test_do([[
       // log_status("OK: %s\n", fmt_cipher_suites(suites));
     } else {
       if (state != 3) {
-	fail = sprintf("Unexpected exit state: %d\n.", state);
+	fail = sprintf("Unexpected exit state: %d.\n", state);
       } else {
 	fail =
 	  sprintf("Unexpected result:\n"
@@ -655,8 +655,200 @@ test_do([[
   add_constant("test_ssl_connection", f);
 ]])
 
+test_do([[
+  import SSL.Constants;
+  array(string) f(SSL.Context server_ctx, SSL.Context client_ctx,
+		  string expected_data, int expected_suite)
+  {
+#if constant(thread_create)
+    Stdio.File client_con = Stdio.File();
+    Stdio.File server_con =
+      client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
+    SSL.sslfile server;
+    SSL.sslfile client;
+
+    Thread.Thread server_thread =
+      Thread.Thread(lambda(int bytes) {
+        server = SSL.sslfile(server_con, server_ctx);
+        server->set_blocking();
+	if (!server->accept()) {
+	  return expected_data && "Server accept failed.\n";
+        }
+
+        if (expected_data && (server->query_suite() != expected_suite)) {
+	  return
+	    sprintf("Unexpected cipher suite (server):\n"
+		    "Got:      %s\n"
+		    "Expected: %s\n",
+		    fmt_cipher_suite(server->query_suite()),
+		    fmt_cipher_suite(expected_suite));
+        }
+	while (bytes) {
+	  // NB: Client doesn't close connection before all data has
+	  //     been returned, so we can't just use read(1024) here.
+	  string data = server->read(min(1024, bytes));
+	  if (!data) {
+	    return expected_data && "Server failed to receive all data.\n";
+          }
+	  bytes -= sizeof(data);
+	  int sent_bytes = server->write(data);
+	}
+	server->close();
+	return 0;
+      }, sizeof(client_msg));
+
+    /* SSL.sslfile */ client = SSL.sslfile(client_con, client_ctx);
+
+    client->set_blocking();
+    if (!client->connect()) {
+      server_thread->wait();
+      return expected_data && ({ "Client failed to connect.\n" });
+    }
+    if (expected_data && (client->query_suite() != expected_suite)) {
+      return ({
+	sprintf("Unexpected cipher suite (client):\n"
+		"Got:      %s\n"
+		"Expected: %s\n",
+		fmt_cipher_suite(client->query_suite()),
+		fmt_cipher_suite(expected_suite)),
+      });
+    }
+    Thread.Thread sender_thread =
+      Thread.Thread(lambda() {
+        int bytes = client->write(client_msg);
+	if (bytes == sizeof(client_msg)) return 0;
+	return expected_data && "Client failed to write all data.\n";
+      });
+
+    Thread.Thread reader_thread =
+      Thread.Thread(lambda() {
+        string recv = client->read(sizeof(client_msg));
+	client->close();
+	if (recv == client_msg) {
+	  if (expected_data) return 0;
+	  return "Succeeded where failure expected.\n";
+	}
+	return expected_data && "Failed to read all data.\n";
+      });
+
+    array(string) failures = ({
+      sender_thread, server_thread, reader_thread,
+    })->wait() - ({ 0 });
+
+#ifdef SSL3_DEBUG
+    if (sizeof(failures)) {
+      werror("Failures: %O\n", failures);
+    }
+#endif
+    client->close();
+    server->close();
+    destruct(client);
+    destruct(server);
+    return failures;
+#endif /* constant(thread_create) */
+  };
+  add_constant("threaded_low_test_ssl_connection", f);
+]])
+
+test_do([[
+  import SSL.Constants;
+  int f(int client_min, int client_max, int server_min, int server_max,
+        string expected_data, object server_ctx, array(int) suites,
+        array(CertificatePair)|void client_certs)
+  {
+    server_ctx->min_version = server_min;
+    server_ctx->max_version = server_max;
+
+    // We only have self-signed certificates, so all ECDH_RSA and
+    // DH_RSA suites will fail prior to TLS 1.2, since they require
+    // the certificate to be signed with RSA.
+    if (((client_max < PROTOCOL_TLS_1_2) ||
+         (server_max < PROTOCOL_TLS_1_2)) &
+        (sizeof(suites) == 1)) {
+      if ((CIPHER_SUITES[suites[0] ][0] == KE_ecdh_rsa) ||
+          (CIPHER_SUITES[suites[0] ][0] == KE_dh_rsa)) {
+        expected_data = 0;
+      }
+      if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
+        // AEAD ciphers and cipher specific prfs not supported prior
+	// to TLS 1.2.
+	expected_data = 0;
+      }
+    }
+
+    // A client that supports just a single cipher suite.
+    SSL.Context client_ctx = TestContext();
+    client_ctx->random = random_string;
+    client_ctx->preferred_suites = suites;
+    client_ctx->min_version = client_min;
+    client_ctx->max_version = client_max;
+    server_ctx->expect_fail = client_ctx->expect_fail = !expected_data;
+
+    if (client_certs) {
+      // Add the certificates.
+      foreach(client_certs, CertificatePair cp) {
+        client_ctx->add_cert(cp);
+      }
+    }
+
+    array(string) failures =
+      threaded_low_test_ssl_connection(server_ctx, client_ctx,
+				       expected_data, suites[0]);
+
+    if (!sizeof(failures)) return 1;
+
+    log_ssl_failure(client_min, client_max, server_min, server_max,
+		    failures * "\n", suites);
+    return 0;
+  };
+  add_constant("threaded_test_ssl_connection", f);
+]])
+
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
+  test_tests([[array(int) a() {
+#if constant(thread_create)
+    int expected_protocol = min($2, $4);
+    int successes;
+    int tests;
+
+    log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server (threaded)...",
+	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
+
+    // Default to just testing all key exchanges with a
+    // cipher suite that is valid in all versions of SSL.
+    array(int) suites = ({
+      SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
+      SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
+      SSL.Constants.SSL_dh_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.SSL_dh_dss_with_3des_ede_cbc_sha,
+#if constant(Crypto.ECC.Curve)
+      SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
+      SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
+#endif
+    });
+
+    if( `==($1,$2,$3,$4) ) {
+      // Test all known cipher suites.
+      suites = server_ctx->get_suites(-1, 2) -
+	(invalid_suites[expected_protocol] || ({}));
+    }
+
+    foreach(suites, int suite) {
+      successes += threaded_test_ssl_connection($1,$2,$3,$4,$5,
+						server_ctx, ({suite}) );
+      tests++;
+    }
+    return ({ successes, tests-successes });
+#endif /* constant(thread_create) */
+    return ({ 0, 0 });
+  }]])
+
   test_tests([[array(int) a() {
 
     int expected_protocol = min($2, $4);
@@ -907,6 +1099,8 @@ test_do([[
   add_constant("cert_sha1");
   add_constant("pem_cert");
   add_constant("pem_key");
+  add_constant("threaded_test_ssl_connection");
+  add_constant("threaded_low_test_ssl_connection");
   add_constant("test_ssl_connection");
   add_constant("low_test_ssl_connection");
   add_constant("TestContext");
