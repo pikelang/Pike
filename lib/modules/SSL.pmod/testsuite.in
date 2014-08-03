@@ -807,13 +807,7 @@ test_do([[
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
   test_tests([[array(int) a() {
-#if constant(thread_create)
     int expected_protocol = min($2, $4);
-    int successes;
-    int tests;
-
-    log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server (threaded)...",
-	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
 
     // Default to just testing all key exchanges with a
     // cipher suite that is valid in all versions of SSL.
@@ -839,6 +833,13 @@ define(test_ssl, [[
 	(invalid_suites[expected_protocol] || ({}));
     }
 
+#if constant(thread_create)
+    int successes;
+    int tests;
+
+    log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server (threaded)...",
+	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
+
     foreach(suites, int suite) {
       successes += threaded_test_ssl_connection($1,$2,$3,$4,$5,
 						server_ctx, ({suite}) );
@@ -846,7 +847,7 @@ define(test_ssl, [[
     }
     return ({ successes, tests-successes });
 #endif /* constant(thread_create) */
-    return ({ 0, 0 });
+    return ({ 0, 0, sizeof(suites) });
   }]])
 
   test_tests([[array(int) a() {
