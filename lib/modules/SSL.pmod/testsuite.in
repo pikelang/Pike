@@ -827,11 +827,13 @@ define(test_ssl, [[
 #endif
     });
 
+#if 0
     if( `==($1,$2,$3,$4) ) {
       // Test all known cipher suites.
       suites = server_ctx->get_suites(-1, 2) -
 	(invalid_suites[expected_protocol] || ({}));
     }
+#endif
 
 #if constant(thread_create)
     int successes;
