@@ -7,14 +7,14 @@
 //! @item
 //!   Handles blocking and nonblocking mode.
 //! @item
-//!   Handles callback mode in an arbitrary backend (also in blocking
-//!   mode).
+//!   Handles callback mode in an arbitrary backend (also in blocking mode).
 //! @item
-//!   Read and write operations might each do both reading and
+//!   Read and write operations may each do both reading and
 //!   writing. In callback mode that means that installing either a
-//!   read or a write callback might install both internally. It also
-//!   means that reading in one thread while writing in another
-//!   doesn't work.
+//!   read or a write callback may install both internally.
+//! @item
+//!   In Pike 8.0 and later, blocking read and write in concurrent threads
+//!   is supported.
 //! @item
 //!   Callback changing operations like @[set_blocking] and
 //!   @[set_nonblocking] aren't atomic.
@@ -792,7 +792,7 @@ string read (void|int length, void|int(0..1) not_all)
       read_buffer_threshold = length;
     }
 
-    if (stream) {
+    if (stream && !(conn->state & CONNECTION_peer_closed)) {
       SSL3_DEBUG_MSG("SSL.File->read: Installing read_callback.\n");
       stream->set_read_callback(ssl_read_callback);
 
@@ -1001,7 +1001,7 @@ int renegotiate()
   } LEAVE;
 }
 
-//! Check whether any callbacks need to be called.
+//! Check whether any callbacks may need to be called.
 //!
 //! Always run via the @[real_backend].
 //!
