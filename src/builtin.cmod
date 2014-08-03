@@ -3450,7 +3450,7 @@ PIKECLASS Buffer
       if( str->str.s )
       {
           if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
-              memset( str->str.s->str, 0, str->str.s->len );
+              guaranteed_memset( str->str.s->str, 0, str->str.s->len );
           free_string_builder( &str->str );
       }
     }
