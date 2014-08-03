@@ -959,7 +959,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     POP_FRAME2();
 
   if (o->storage && (o->flags & OBJECT_CLEAR_ON_EXIT)) {
-    memset(o->storage, 0, p->storage_needed);
+    guaranteed_memset(o->storage, 0, p->storage_needed);
   }
 
   free_object( o );
