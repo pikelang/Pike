@@ -152,7 +152,7 @@ protected constant epipe_errnos = (<
    close_state < NORMAL_CLOSE)
 
 #define SSL_HANDSHAKING (!conn || ((conn->state & CONNECTION_handshaking) && \
-				   close_state != ABRUPT_CLOSE))
+				   (close_state != ABRUPT_CLOSE)))
 #define SSL_CLOSING_OR_CLOSED						\
   (conn->state & CONNECTION_local_closing)
 
@@ -666,6 +666,13 @@ Stdio.File shutdown()
       read_buffer = String.Buffer (sizeof (conn->left_over));
       read_buffer->add (conn->left_over);
       close_state = STREAM_OPEN;
+    }
+
+    if (conn->state & CONNECTION_local_failing) {
+      if (close_state != ABRUPT_CLOSE) {
+	SSL3_DEBUG_MSG("Local failure -- force ABRUPT CLOSE.\n");
+      }
+      close_state = ABRUPT_CLOSE;
     }
 
     .Constants.ConnectionState conn_state = conn->state;
