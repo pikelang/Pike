@@ -516,20 +516,18 @@ class KeyExchangeRSA
     SSL3_DEBUG_MSG("temp_key: %O\n"
 		   "session->private_key: %O\n",
 		   temp_key, session->private_key);
-    if(version >= PROTOCOL_TLS_1_0) {
-      if( sscanf(data, "%2H%s", data, string rest)==2 && rest=="" ) {
-	premaster_secret =
-	  (temp_key || session->private_key)->decrypt(data);
-      }
-    } else {
-      premaster_secret = (temp_key || session->private_key)->decrypt(data);
-    }
+    string rest = "";
+    if(version >= PROTOCOL_TLS_1_0)
+      sscanf(data, "%2H%s", data, rest);
+    // Decrypt, even when we know data is incorrect, for time invariance.
+    premaster_secret = (temp_key || session->private_key)->decrypt(data);
+
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( `+( !premaster_secret,
+    if ( `+( !premaster_secret, sizeof(rest),
              (sizeof(premaster_secret) != 48),
              (premaster_secret[0] != 3),
              (premaster_secret[1] != (client_version & 0xff)) ))
