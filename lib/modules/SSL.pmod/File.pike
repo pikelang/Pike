@@ -900,6 +900,12 @@ int write (string|array(string) data, mixed... args)
     // Take care of any old data first.
     if (!direct_write()) RETURN (-1);
 
+    if (conn->state & CONNECTION_peer_fatal) {
+      SSL3_DEBUG_MSG ("SSL.File->write: Connection aborted by peer.\n");
+      local_errno = write_errno = System.EIO;
+      RETURN (-1);
+    }
+
     int write_limit = 0x7fffffff;
     if (nonblocking_mode) {
       // Always stop after writing DATA_CHUNK_SIZE in
