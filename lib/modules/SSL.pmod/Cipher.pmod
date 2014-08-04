@@ -480,8 +480,7 @@ class KeyExchangeRSA
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
     struct->put_uint(client_version, 2);
-    string random = context->random(46);
-    struct->put_fix_string(random);
+    struct->put_fix_string( context->random(46) );
     premaster_secret = struct->pop_data();
 
     SSL3_DEBUG_MSG("temp_key: %O\n"
@@ -490,7 +489,7 @@ class KeyExchangeRSA
     data = (temp_key || session->peer_public_key)->encrypt(premaster_secret);
 
     if(version >= PROTOCOL_TLS_1_0)
-      data=sprintf("%2H", [string(8bit)]data);
+      data = sprintf("%2H", [string(8bit)]data);
 
     session->master_secret = derive_master_secret(premaster_secret,
 						  client_random,
@@ -502,9 +501,9 @@ class KeyExchangeRSA
   //! @returns
   //!   Master secret or alert number.
   string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
-						 ProtocolVersion version)
+                                                     string(8bit) client_random,
+                                                     string(8bit) server_random,
+                                                     ProtocolVersion version)
   {
     string premaster_secret;
 
@@ -577,10 +576,8 @@ class KeyExchangeRSA
     Gmp.mpz e = input->get_bignum();
     temp_struct->put_bignum(n);
     temp_struct->put_bignum(e);
-    Crypto.RSA rsa = Crypto.RSA();
-    rsa->set_public_key(n, e);
     if (session->cipher_spec->is_exportable) {
-      temp_key = rsa;
+      temp_key = Crypto.RSA()->set_public_key(n, e);
     }
 
     return temp_struct;
