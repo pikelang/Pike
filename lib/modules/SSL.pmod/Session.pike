@@ -448,10 +448,8 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
   }
 
   cipher_spec = [object(Cipher.CipherSpec)]res[1];
-#ifdef SSL3_DEBUG
-  werror("SSL.Session: cipher_spec %O\n",
-	 mkmapping(indices(cipher_spec), values(cipher_spec)));
-#endif
+  SSL3_DEBUG_MSG("SSL.Session: cipher_spec %O\n",
+                 mkmapping(indices(cipher_spec), values(cipher_spec)));
   return 1;
 }
 
@@ -486,24 +484,14 @@ protected string(8bit) generate_key_block(string(8bit) client_random,
   key = cipher_spec->prf(master_secret, "key expansion",
 			 server_random + client_random, required);
 
-#ifdef SSL3_DEBUG
-  werror("key_block: %O\n", key);
-#endif
+  SSL3_DEBUG_MSG("key_block: %O\n", key);
   return key;
 }
 
 #ifdef SSL3_DEBUG
-protected void printKey(string name, string key) {
-
-  string res="";
-  res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0); 
-  /* return; */
-  for(int i=0;i<sizeof(key);i++) {
-    int d=key[i];
-    res+=sprintf("%02x ",d&0xff);
-  }
-  res+="\n";
-  werror(res);
+protected void printKey(string name, string key)
+{
+  werror("%s:  len:%d \t\t%s\n", name, sizeof(key), String.string2hex(key));
 }
 #endif
 
@@ -532,12 +520,11 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
 					      version));
   array(string(8bit)) keys = allocate(6);
 
-#ifdef SSL3_DEBUG
-  werror("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
-	 client_random?String.string2hex(client_random):"NULL",
-         server_random?String.string2hex(server_random):"NULL",
-         version>>8, version & 0xff);
-#endif
+  SSL3_DEBUG_MSG("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
+                 client_random?String.string2hex(client_random):"NULL",
+                 server_random?String.string2hex(server_random):"NULL",
+                 version>>8, version & 0xff);
+
   // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
   // server_write_MAC_secret
@@ -579,10 +566,8 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
 			   2 * cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
-#ifdef SSL3_DEBUG
-	werror("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
-	       sizeof(keys[4]), sizeof(keys[4]));
-#endif
+	SSL3_DEBUG_MSG("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
+                       sizeof(keys[4]), sizeof(keys[4]));
       }
 
     }
