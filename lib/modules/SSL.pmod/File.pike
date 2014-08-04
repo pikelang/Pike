@@ -283,6 +283,11 @@ protected int(0..0)|float backend_once()
       while (1) {							\
 	float|int(0..0) action;						\
 									\
+	if (conn->state & CONNECTION_peer_fatal) {			\
+	  SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
+	  break;							\
+	}								\
+									\
 	action = backend_once();					\
 									\
 	if (NONWAITING_MODE && !action) {				\
@@ -300,7 +305,7 @@ protected int(0..0)|float backend_once()
 	}								\
 									\
 	if (!stream) {							\
-	  SSL3_DEBUG_MSG ("Local backend ended after close.\n");	\
+	  SSL3_DEBUG_MSG ("Backend ended after close.\n");		\
 	  break run_local_backend;					\
 	}								\
 									\
