@@ -767,6 +767,13 @@ string(8bit)|int got_data(string(8bit) data)
        {
 	 SSL3_DEBUG_MSG("SSL.Connection: ALERT\n");
 
+         if( !sizeof(packet->fragment) )
+         {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "Zero length Alert fragments not allowed.\n"));
+           return -1;
+         }
+
 	 int i;
 	 int err = 0;
 	 alert_buffer += packet->fragment;
@@ -788,6 +795,12 @@ string(8bit)|int got_data(string(8bit) data)
        {
 	 SSL3_DEBUG_MSG("SSL.Connection: CHANGE_CIPHER_SPEC\n");
 
+         if( !sizeof(packet->fragment) )
+         {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "Zero length ChangeCipherSpec fragments not allowed.\n"));
+           return -1;
+         }
 	 int i;
 	 int err;
 	 for (i = 0; (i < sizeof(packet->fragment)); i++)
@@ -803,6 +816,12 @@ string(8bit)|int got_data(string(8bit) data)
        {
 	 SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
+         if( !sizeof(packet->fragment) )
+         {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "Zero length Handshake fragments not allowed.\n"));
+           return -1;
+         }
 	 if (!(state & CONNECTION_handshaking) &&
 	     !secure_renegotiation) {
 	   // Don't allow renegotiation in unsecure mode, to address
