@@ -804,28 +804,21 @@ string read (void|int length, void|int(0..1) not_all)
       read_buffer_threshold = length;
     }
 
-    if (stream && !(conn->state & CONNECTION_peer_closed)) {
+    if (stream && !(conn->state & CONNECTION_peer_down)) {
       SSL3_DEBUG_MSG("SSL.File->read: Installing read_callback.\n");
       stream->set_read_callback(ssl_read_callback);
 
       if (not_all) {
 	if (!sizeof (read_buffer))
 	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) &&
-			      !(conn->state & CONNECTION_peer_closed), 0);
+			      !(conn->state & CONNECTION_peer_down), 0);
       }
       else {
 	if (sizeof (read_buffer) < length || zero_type (length))
 	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length || zero_type (length)) &&
-			      !(conn->state & CONNECTION_peer_closed),
+			      !(conn->state & CONNECTION_peer_down),
 			      nonblocking_mode);
       }
-    }
-
-    if (read_errno && !sizeof(read_buffer)) {
-      local_errno = read_errno;
-      SSL3_DEBUG_MSG ("SSL.File->read: Propagating callback error: %s\n",
-		      strerror (local_errno));
-      RETURN (0);
     }
 
     string res = read_buffer->get();
@@ -843,11 +836,34 @@ string read (void|int length, void|int(0..1) not_all)
 		    sizeof (res), sizeof (read_buffer), read_buffer_threshold);
 
     if (stream) {
-      if (sizeof(read_buffer) >= read_buffer_threshold) {
+      if ((sizeof(read_buffer) >= read_buffer_threshold) ||
+	  (conn->state & CONNECTION_peer_down)) {
 	SSL3_DEBUG_MSG("SSL.File->read: Removing read_callback.\n");
 	stream->set_read_callback(0);
       }
     }
+
+    if (res == "") {
+      if (read_errno) {
+	local_errno = read_errno;
+	SSL3_DEBUG_MSG ("SSL.File->read: Propagating callback error: %s\n",
+			strerror (local_errno));
+	RETURN (0);
+      }
+
+      if (conn->state & CONNECTION_peer_fatal) {
+	local_errno = read_errno = System.EIO;
+	SSL3_DEBUG_MSG ("SSL.File->read: Connection aborted by peer.\n");
+	RETURN (0);
+      }
+
+      if (nonblocking_mode &&
+	  !(conn->state & CONNECTION_peer_closed)) {
+	SSL3_DEBUG_MSG ("SSL.File->read: Would block.\n");
+	local_errno = System.EAGAIN;
+      }
+    }
+
     RETURN (res);
   } LEAVE;
 }
@@ -1866,7 +1882,7 @@ protected int ssl_read_callback (int ignored, string input)
       queue_write();
     }
 
-    if (conn->state & CONNECTION_peer_closed) {
+    if (!conn || (conn->state & CONNECTION_peer_closed)) {
       // Deinstall read side cbs to avoid reading more.
       SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
       stream->set_read_callback (0);
