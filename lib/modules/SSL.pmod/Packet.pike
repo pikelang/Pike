@@ -68,6 +68,8 @@ string(8bit)|.Packet recv(string(8bit) data, ProtocolVersion version)
 #endif
         return Alert(ALERT_fatal, ALERT_insufficient_security, version);
       }
+      if( !PACKET_types[content_type] )
+        return Alert(ALERT_fatal, ALERT_unexpected_message, version);
 
       sscanf(buffer, "%*c%2c%2c", protocol_version, length);
       if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
