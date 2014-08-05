@@ -408,6 +408,8 @@ int set_cipher_suite(int suite, ProtocolVersion|int version,
 		     array(array(int)) signature_algorithms,
 		     int max_hash_size)
 {
+  this_program::version = version;
+
   array res = Cipher.lookup(suite, version, signature_algorithms,
                             truncated_hmac?512:max_hash_size);
   if (!res) return 0;
