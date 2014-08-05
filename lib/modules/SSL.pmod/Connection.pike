@@ -801,11 +801,9 @@ string(8bit)|int got_data(string(8bit) data)
                              "Zero length ChangeCipherSpec fragments not allowed.\n"));
            return -1;
          }
-	 int i;
-	 int err;
-	 for (i = 0; (i < sizeof(packet->fragment)); i++)
+         foreach(packet->fragment;; int c)
 	 {
-	   err = handle_change_cipher(packet->fragment[i]);
+	   int err = handle_change_cipher(c);
            SSL3_DEBUG_MSG("tried change_cipher: %d\n", err);
 	   if (err)
 	     return err;
