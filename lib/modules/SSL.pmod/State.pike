@@ -256,10 +256,13 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.State: Trying decompression...\n");
 #endif
-    string msg = [string]compress(packet->fragment);
+    string msg = compress(packet->fragment);
     if (!msg)
       fail = fail || alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Invalid compression.\n");
+    if (sizeof(msg)>16384)
+      fail = fail || alert(ALERT_fatal, ALERT_decompression_failure,
+                           "Inflated package >16K\n");
     packet->fragment = msg;
   }
 
@@ -276,7 +279,10 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
   
   if (compress)
   {
-    packet->fragment = [string]compress(packet->fragment);
+    // RFC 5246 6.2.2. states that data growth must be at most 1024
+    // bytes. Since zlib doesn't do that, and no other implementation
+    // is defined, don't bother checking.
+    packet->fragment = compress(packet->fragment);
   }
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
