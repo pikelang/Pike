@@ -86,6 +86,11 @@ array(int) preferred_compressors = ({
 #endif
  });
 
+//! If set, the other peer will be probed for the heartbleed bug
+//! during handshake. If heartbleed is found the connection is closed
+//! with insufficient security fatal error.
+int(0..1) heartbleed_probe = 0;
+
 //! @decl Alert alert_factory(SSL.Connection con, int level, int description, @
 //!			      ProtocolVersion version, @
 //!			      string|void message, mixed|void trace)
