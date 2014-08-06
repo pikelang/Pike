@@ -79,7 +79,7 @@ protected private class ProcessLock {
       }
 
       if(!file_stat(combine_path(lock_file, "../")))
-	ERR("The database does not exist (use the `c' flag).");
+	ERR("The database does not exist (use the \"c\" flag).");
       
       /* Failed to obtain lock, now trying some obscure techniques... */
       int pid = get_locked_pid();
@@ -208,7 +208,7 @@ class Chunk {
   {
     string s = sprintf("%08x", x);
     if(sizeof(s) != 8)
-      ERR("Encoded number way too large ("+s+")");
+      ERR("Encoded number way too large (%O)", s);
     return s;
   }
 
@@ -377,7 +377,7 @@ class Chunk {
       if(attributes)
 	return 0;
       else
-	ERR("Unknown key '%O', keys: %O", key, keys);
+	ERR("Unknown key %O, keys: %O", key, keys);
     }
 
     int offset, type;
@@ -403,7 +403,7 @@ class Chunk {
     if(!write)
       ERR("Cannot free in read mode");
     if(zero_type(keys[key]))
-      ERR("Unknown key '%O'", key);
+      ERR("Unknown key %O", key);
 
     int offset, type;
     DECODE_KEY(key, offset, type);
@@ -421,7 +421,7 @@ class Chunk {
     mapping m_keys = copy_value(keys);
     foreach(almost_free||({}), string key) {
       if(zero_type(keys[key]))
-	ERR("Unknown state key '%O'", key);
+	ERR("Unknown state key %O", key);
 
       int offset, type;
       DECODE_KEY(key, offset, type);
@@ -473,9 +473,9 @@ class Chunk {
     this_program::parent = parent;
     start_time = encode_num(time());
 
-    if(search(mode, "C")+1)
+    if(has_value(mode, "C"))
       compress = 1;
-    if(search(mode, "w")+1) {
+    if(has_value(mode, "w")) {
       write = 1;
       file::create(filename, "cwr");
     } else
@@ -723,7 +723,7 @@ class Table {
   {
     LOCK();
     if(!write) ERR("Cannot delete in read mode");
-    if(!handles[handle]) ERR("Unknown handle '%O'", handle);
+    if(!handles[handle]) ERR("Unknown handle %O", handle);
 
     m_delete(handles, handle);
     if(changes)
@@ -1166,7 +1166,7 @@ class db {
   {
     LOCK();
     if(!tables[handle])
-      tables[handle] = Table(dir+"/"+handle, mode, lock_file);
+      tables[handle] = Table(combine_path(dir, handle), mode, lock_file);
     table_refs[handle]++;
     return _Table(handle, tables[handle], _table_destroyed);
     UNLOCK();
@@ -1202,7 +1202,7 @@ class db {
       f = f[..<1];
     if(Stdio.is_dir(f))
       foreach(get_dir(f)||({}), string file)
-	rm(f+"/"+file);
+	rm(combine_path(f, file));
     rm(f);
   }
 
@@ -1265,9 +1265,9 @@ class db {
     if(search(mode, "w")+1) {
       write = 1;
       if(search(mode, "c")+1)
-	Stdio.mkdirhier(dir+"/");
+	Stdio.mkdirhier(dir);
     }
-    lock_file = ProcessLock(dir+"/lock.pid", mode);
+    lock_file = ProcessLock(combine_path(dir, "lock.pid"), mode);
   }
 }
 
@@ -1292,7 +1292,7 @@ class LookupTable {
   mixed get(string handle)
   {
     LOCK();
-    return (table->get(h(handle))||([]))[handle];
+    return table->get(h(handle))[?handle];
     UNLOCK();
   }
 
@@ -1351,15 +1351,16 @@ class lookup {
   {
     LOCK();
     return (tables[handle] =
-	    tables[handle]||LookupTable(dir+"/"+handle, mode, minx));
+	    tables[handle]||LookupTable(combine_path(dir, handle), mode, minx));
     UNLOCK();
   }
 
   protected void create(string dir, string mode, mapping|void opt)
   {
     ::create(dir, (mode-"t"));
-    minx = (opt||([]))->index_size || 0x7ff;
-    if(!sscanf(Stdio.read_bytes(dir+"/hs")||"", "%4c", minx))
-      Stdio.write_file(dir+"/hs", sprintf("%4c", minx));
+    minx = opt?->index_size || 0x7ff;
+    string file = combine_path(dir, "hs");
+    if(!sscanf(Stdio.read_bytes(file)||"", "%4c", minx))
+      Stdio.write_file(file, sprintf("%4c", minx));
   }
 }
