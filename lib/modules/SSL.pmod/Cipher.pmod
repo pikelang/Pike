@@ -1417,11 +1417,12 @@ array lookup(int suite, ProtocolVersion|int version,
 	     int max_hash_size)
 {
   CipherSpec res = CipherSpec();
-  int ke_method;
-  
+
   array algorithms = CIPHER_SUITES[suite];
   if (!algorithms)
     return 0;
+
+  int ke_method = algorithms[0];
 
   switch(algorithms[1])
   {
@@ -1689,8 +1690,6 @@ array lookup(int suite, ProtocolVersion|int version,
       return 0;
     }
   }
-
-  ke_method = algorithms[0];
 
   switch(ke_method)
   {
