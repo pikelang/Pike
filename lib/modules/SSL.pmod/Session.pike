@@ -455,18 +455,13 @@ int set_cipher_suite(int suite, ProtocolVersion version,
   return 1;
 }
 
-//! Sets the compression method. Currently only @[COMPRESSION_null] is
-//! supported.
+//! Sets the compression method. Currently only @[COMPRESSION_null]
+//! and @[COMPRESSION_deflate] are supported.
 void set_compression_method(int compr)
 {
-  switch(compr) {
-  case COMPRESSION_null:
-    break;
-  case COMPRESSION_deflate:
-    break;
-  default:
+  if( !(< COMPRESSION_null, COMPRESSION_deflate >)[ compr ] )
     error( "Method not supported\n" );
-  }
+
   compression_algorithm = compr;
 }
 
