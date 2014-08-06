@@ -661,7 +661,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       else if(version >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
 
-      if (session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+      if (context->heartbleed_probe &&
+          session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
 	// Probe for the Heartbleed vulnerability (CVE-2014-0160).
 	send_packet(heartbleed_packet());
       }
