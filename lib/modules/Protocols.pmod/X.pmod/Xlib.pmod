@@ -25,7 +25,10 @@
 
 // #define XDEBUG
 
+//! Implementations of various X11 calls.
+
 constant XPORT = 6000;
+
 
 class rec_buffer
 {
@@ -48,7 +51,7 @@ class rec_buffer
   {
     return pad + expected - sizeof(buffer);
   }
-  
+
   void add_data(string data)
   {
     buffer += data;
@@ -125,25 +128,27 @@ class id_manager
     /* Could make id available for reallocation */
   }
 }
-  
+
 class Display
+//! The representation of a X display.
+//!
+//! Keeps the connection to the X server and various other information
+//! needed to use X11.
 {
   import ._Xlib;
-  
+
   inherit Stdio.File;
   inherit id_manager;
   inherit .Atom.atom_manager;
-  
 
-  
   void close_callback(mixed id);
   void read_callback(mixed id, string data);
 
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns;
-  
+
   program Struct = ADT.struct;
-  
+
   constant STATE_WAIT_CONNECT = 0;
   constant STATE_WAIT_CONNECT_DATA = 1;
   constant STATE_WAIT_CONNECT_FAILURE = 2;
@@ -156,14 +161,15 @@ class Display
   constant ACTION_EVENT = 2;
   constant ACTION_REPLY = 3;
   constant ACTION_ERROR = 4;
-  
+
+//!
   int screen_number;
 
   string buffer;
   object received;
   int state;
   int sequence_number;
-  
+
   function io_error_handler;
   function error_handler;
   function close_handler;
@@ -171,32 +177,55 @@ class Display
   function event_handler;
   function misc_event_handler;
   function reply_handler;
-  
+
   /* Information about the X server */
   int majorVersion, minorVersion;  /* Servers protocol version */
+  //!  The protocol major and minor version reported by the server
+
   int release;
+  //! Server release number
+
   int ridBase, ridMask;
+
   int motionBufferSize;
+  //!
+
   string vendor;
+  //!
+
   int maxRequestSize;
+  //!
+
   array roots;
+  //!
+
   array formats;
+  //!
+
   int imageByteOrder, bitmapBitOrder;
+  //!
+
   int bitmapScanlineUnit, bitmapScanlinePad;
+  //!
+
   int minKeyCode, maxKeyCode;
+  //!
 
   array key_mapping ;
+  //!
 
-  mapping extensions = ([]); // all available extensions.
+  mapping(string:.Extension) extensions = ([]); // all available extensions.
+  //! All extensions supported by the server and this module
 
   mapping pending_requests; /* Pending requests */
+
   object pending_actions;   /* Actions awaiting handling */
 
 #ifdef XDEBUG
   mapping debug_requests = ([ ]);
 # define DEBUGREQ(X) ((X)&0xfff)
 #endif
-  
+
   void create()
   { /* Delay initialization of id_manager */
     compose_patterns = ([]);
@@ -205,7 +234,7 @@ class Display
     };
     atom_manager::create();
   }
-  
+
   void write_callback()
   {
     if (sizeof(buffer))
@@ -244,6 +273,7 @@ class Display
   }
 
   /* This function leaves the socket in blocking mode */
+
   int flush()
   { /* FIXME: Not thread-safe */
     set_blocking();
@@ -683,6 +713,7 @@ class Display
 	break;
       }
   }
+
   void read_callback(mixed id, string data)
   {
     // werror(sprintf("Xlib: received '%s'\n", data));
@@ -712,6 +743,8 @@ class Display
     set_nonblocking(read_callback, write_callback, close_callback);
   }
 	  
+  //! Connect to the specified display. The default is to use the
+  //! value of the environment variable DISPLAY
   int open(string|void display)
   {
     int async = !!connect_handler;
@@ -845,7 +878,8 @@ class Display
     return (sequence_number++)&0xffff; // sequence number is just 2 bytes
   }
 
-  array blocking_request(object req)
+  //!
+  array blocking_request(.Requests.request req)
   {
     int success;
     mixed result = 0;
@@ -894,7 +928,8 @@ class Display
     return ({ success, result });
   }
   
-  void send_async_request(object req, function callback)
+  //!
+  void send_async_request(.Requests.request req, function callback)
   {
     int n = send_request(req);
     pending_requests[n] = async_request(req, callback);
@@ -913,11 +948,13 @@ class Display
     send_async_request(r, got_mapping);
   }
 
+  //!
   object DefaultRootWindow()
   {
     return roots[screen_number];
   }
 
+  //!
   object OpenFont_req(string name)
   {
     object req = .Requests.OpenFont();
@@ -928,6 +965,7 @@ class Display
 
   mapping (string:object) fonts = ([]);
 
+  //!
   object OpenFont(string name)
   {
     if(fonts[name]) return fonts[name];
@@ -937,6 +975,7 @@ class Display
     return fonts[name];
   }
 
+  //!
   object CreateGlyphCursor_req(object sourcefont, object maskfont,
 			       int sourcechar, int maskchar,
 			       array(int) foreground, array(int) background)
@@ -956,6 +995,7 @@ class Display
     return req;
   }
 
+  //!
   object CreateGlyphCursor(object sourcefont, int sourcechar,
 			   object|void maskfont, int|void maskchar,
 			   array(int)|void foreground,
@@ -974,6 +1014,7 @@ class Display
     return .Types.Cursor(this, req->cid);
   }
   
+  //!
   object Bell_req(int volume)
   {
     object req=.Requests.Bell();
@@ -981,6 +1022,7 @@ class Display
     return req;
   }
   
+  //!
   void Bell(int volume)
   {
     send_request(Bell_req(volume));

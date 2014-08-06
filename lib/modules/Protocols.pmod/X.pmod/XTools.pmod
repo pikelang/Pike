@@ -1,8 +1,9 @@
 /* XTools.pmod
  *
- * Various tools that are higher level than raw X, but are lower level
- * than widgets.
  */
+
+//! Various tools that are higher level than raw X, but are lower
+//! level than widgets.
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -26,23 +27,28 @@
 
 #pike __REAL_VERSION__
 
-/* Steals and processes mousebutton events */
 class Button
+//! A simple button. Steals and processes mousebutton events
+//! Can be inherited and then expanded the button_pressed function 
 {
   object window;
   constant style = 1;
+
   int pressed; // button is pressed
   int inside;  // pointer is inside window
   int button;  // The number of the mouse button used
+  //!
   
   function(object, int, mapping:void) redraw_callback;
   function(object:void) clicked_callback;
 
+  //!
   void button_exposed(mapping event)
   {
     redraw_callback(this, pressed && (!style || inside), event);
   }
   
+  //!
   mapping button_pressed(mapping event)
   {
     werror(sprintf("Button %d pressed.\n", event->detail));
@@ -58,6 +64,7 @@ class Button
       return event;
   }
 
+  //!
   mapping button_released(mapping event)
   {
     if (event->detail == button)
@@ -72,6 +79,7 @@ class Button
       return event;
   }
 
+  //!
   mapping window_entered(mapping event)
   {
     inside = 1;
@@ -80,6 +88,7 @@ class Button
     return 0;
   }
 
+  //!
   mapping window_left(mapping event)
   {
     inside = 0;
@@ -88,6 +97,7 @@ class Button
     return 0;
   }
   
+  //!
   void create(object w, int|void b)
   {
     window = w;

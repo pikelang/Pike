@@ -21,8 +21,12 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
+
+//! Varios X11 on-wire requests
+
 #pike __REAL_VERSION__
 
+//!
 class request
 {
   constant reqType = 0;
@@ -73,10 +77,13 @@ class request
 }
 
 class FreeRequest
+//!
 {
   inherit request;
+
   int id;
-  
+  //!
+
   string to_string()
   {
     return build_request(sprintf("%4c", id));
@@ -85,24 +92,28 @@ class FreeRequest
 
 
 class CloseFont
+//!
 {
   inherit FreeRequest;
   constant reqType=46;
 }
 
 class FreePixmap
+//!
 {
   inherit FreeRequest;
   constant reqType=54;
 }
 
 class FreeGC
+//!
 {
   inherit FreeRequest;
   constant reqType=60;
 }
 
 class FreeColormap
+//!
 {
   inherit FreeRequest;
   constant reqType=79;
@@ -110,18 +121,22 @@ class FreeColormap
 
 
 class FreeCursor
+//!
 {
   inherit FreeRequest;
   constant reqType=95;
 }
 
 class FreeColors
+//!
 {
   inherit request;
   constant reqType=79;
+
   array colors;
   int colormap;
   int plane_mask;
+  //!
 
   string to_string()
   {
@@ -132,6 +147,7 @@ class FreeColors
 
 
 class ResourceReq
+//!
 {
   inherit request;
   int id;
@@ -143,22 +159,28 @@ class ResourceReq
 }
 
 class CreateWindow
+//!
 {
   inherit request;
   constant reqType = 1;
 
   int depth;
+  //!
   
   int wid;
   int parent;
+  //!
 
   int x, y;
   int width, height, borderWidth;
+  //!
 
   int c_class;
   int visual;
+  //!
 
   mapping attributes = ([ ]);
+  //!
 
   string to_string()
   {
@@ -175,12 +197,14 @@ class CreateWindow
 }
 
 class ChangeWindowAttributes
+//!
 {
   inherit request;
   constant reqType = 2;
 
   int window;
   mapping attributes = ([ ]);
+  //!
 
   string to_string()
   {
@@ -192,23 +216,28 @@ class ChangeWindowAttributes
 }
 
 class MapWindow
+//!
 {
   inherit ResourceReq;
   constant reqType = 8;
 }
 
 class UnmapWindow
+//!
 {
   inherit ResourceReq;
   constant reqType = 10;
 }
 
 class GetKeyboardMapping
+//!
 {
   inherit request;
   constant reqType = 101;
+
   int first=0;
   int num=0;
+  //!
 
   string to_string()
   {
@@ -251,12 +280,15 @@ class GetKeyboardMapping
 }
 
 class ConfigureWindow
+//!
 {
   inherit request;
   constant reqType = 12;
 
   int window;
+
   mapping attributes;
+  //!
 
   string to_string()
   {
@@ -268,12 +300,14 @@ class ConfigureWindow
 }
 
 class InternAtom
+//!
 {
   inherit request;
   constant reqType = 16;
 
   int onlyIfExists;
   string name;
+  //!
 
   string to_string()
   {
@@ -303,11 +337,13 @@ class InternAtom
 }
 
 class GetAtomName
+//!
 {
   inherit request;
   constant reqType = 17;
 
   int atom;
+  //!
 
   string to_string()
   {
@@ -331,6 +367,7 @@ class GetAtomName
 }
 
 class ChangeProperty
+//!
 {
   inherit request;
   constant reqType = 18;
@@ -341,6 +378,7 @@ class ChangeProperty
   int type;
   int format;
   string|array(int) data;
+  //!
 
   string to_string()
   {
@@ -369,12 +407,14 @@ class ChangeProperty
 }
 
 class DeleteProperty
+//!
 {
   inherit request;
   constant reqType = 19;
 
   int window;
   int property;
+  //!
 
   string to_string()
   {
@@ -383,6 +423,7 @@ class DeleteProperty
 }
 
 class GetProperty
+//!
 {
   inherit request;
   constant reqType = 20;
@@ -393,6 +434,7 @@ class GetProperty
   int type;
   int longOffset = 0;
   int longLength = 1024;
+  //!
 
   string to_string()
   {
@@ -467,11 +509,13 @@ class GetProperty
 }
 
 class ListProperties
+//!
 {
   inherit request;
   constant reqType = 21;
 
   int window;
+  //!
 
   string to_string()
   {
@@ -519,6 +563,7 @@ class UnGrabPointer
 #endif
 
 class GrabButton
+//!
 {
   inherit request;
   constant reqType = 28;
@@ -532,6 +577,7 @@ class GrabButton
   int cursor;
   int button;
   int modifiers;
+  //!
 
   string to_string()
   {
@@ -552,12 +598,14 @@ class UnGrabButton
 #endif
 
 class OpenFont
+//!
 {
   inherit request;
   constant reqType = 45;
 
   int fid;
   string name;
+  //!
 
   string to_string()
   {
@@ -567,12 +615,14 @@ class OpenFont
 }
 
 class QueryTextExtents
+//!
 {
   inherit request;
   constant reqType = 48;
 
   int font;
   string str;
+  //!
 
   string to_string()
   {
@@ -592,16 +642,20 @@ class QueryTextExtents
 }
 
 class CreatePixmap
+  //!
 {
   inherit request;
   constant reqType = 53;
 
   int depth;
+  //!
   
   int pid;
   int drawable;
+  //!
 
   int width, height;
+  //!
 
   string to_string()
   {
@@ -613,6 +667,7 @@ class CreatePixmap
 }
 
 class CreateGC
+//!
 {
   inherit request;
   constant reqType = 55;
@@ -620,6 +675,7 @@ class CreateGC
   int gc;
   int drawable;
   mapping attributes = ([ ]);
+  //!
 
   string to_string()
   {
@@ -630,12 +686,14 @@ class CreateGC
 }
 
 class ChangeGC
+//!
 {
   inherit request;
   constant reqType = 56;
 
   int gc;
   mapping attributes;
+  //!
 
   string to_string()
   {
@@ -646,6 +704,7 @@ class ChangeGC
 }
 
 class ClearArea
+//!
 {
   inherit request;
   constant reqType = 61;
@@ -654,6 +713,7 @@ class ClearArea
   int window;
   int x, y;
   int width, height;
+  //!
 
   string to_string()
   {
@@ -664,6 +724,7 @@ class ClearArea
 }
 
 class PolyPoint
+//!
 {
   inherit request;
   constant reqType = 64;
@@ -672,6 +733,7 @@ class PolyPoint
   int drawable;
   int gc;
   array(object) points;
+  //!
   
   string to_string()
   {
@@ -681,12 +743,14 @@ class PolyPoint
 }
 
 class PolyLine
+//!
 {
   inherit PolyPoint;
   constant reqType = 65;
 }
 
 class FillPoly
+//!
 {
   inherit request;
   constant reqType = 69;
@@ -695,8 +759,10 @@ class FillPoly
   int gc;
   int shape;
   int coordMode;
+  //!
 
   array points;
+  //!
 
   string to_string()
   {
@@ -707,14 +773,17 @@ class FillPoly
 }
 
 class PolyFillRectangle
+//!
 {
   inherit request;
   constant reqType = 70;
 
   int drawable;
   int gc;
+  //!
 
   array rectangles;
+  //!
 
   string to_string()
   {
@@ -724,11 +793,14 @@ class PolyFillRectangle
 }
 
 class PutImage
+//!
 {
   inherit request;
   constant reqType = 72;
+
   int drawable;
   int gc;
+  //!
 
   int depth;
   int width;
@@ -737,8 +809,10 @@ class PutImage
   int dst_y;
   int left_pad = 0;
   int format = 2; // Bitmap XYPixmap ZPixmap
-  
+  //!
+
   string data;
+  //!
 
   string to_string()
   {
@@ -762,6 +836,7 @@ class PutImage
 }
 
 class ImageText8
+//!
 {
   inherit request;
   constant reqType = 76;
@@ -770,6 +845,7 @@ class ImageText8
   int gc;
   int x, y;
   string str;
+  //!
 
   string to_string()
   {
@@ -779,6 +855,7 @@ class ImageText8
 }
 
 class ImageText16
+//!
 {
   inherit request;
   constant reqType = 77;
@@ -787,6 +864,7 @@ class ImageText16
   int gc;
   int x, y;
   string str;
+  //!
 
   string to_string()
   {
@@ -796,15 +874,18 @@ class ImageText16
 }
 
 class CreateColormap
+//!
 {
   inherit request;
   constant reqType = 78;
 
   int cid;
   int alloc;
-  
+  //!
+
   int window;
   int visual;
+  //!
 
   string to_string()
   {
@@ -812,24 +893,30 @@ class CreateColormap
   }
 }
 
-class Bell {
+class Bell
+//!
+{
   inherit request;
   constant reqType = 104;
-  
+
   int percent;
+  //!
 
   string to_string() { return build_request("", percent); }
 }
 
 class CopyArea
+//!
 {
   inherit request;
   constant reqType = 62;
+
   object gc;
   object area;
   object src, dst;
   int x,y; 
-  
+  //!
+
   string to_string()
   {
     return build_request(sprintf("%4c" "%4c" "%4c" "%2c%2c" "%2c%2c" "%2c%2c",
@@ -839,11 +926,14 @@ class CopyArea
 }
 
 class CopyPlane
+//!
 {
   inherit CopyArea;
   constant reqType = 63;
+
   int plane;
-  
+  //!
+
   string to_string()
   {
     return ::to_string()+sprintf("%4c", plane);
@@ -851,13 +941,15 @@ class CopyPlane
 }
 
 class AllocColor
+//!
 {
   inherit request;
   constant reqType = 84;
-  
+
   int red, green, blue;
   int colormap;
-  
+  //!
+
   string to_string()
   {
     return build_request(sprintf("%4c%2c%2c%2c\0\0", 
@@ -878,6 +970,7 @@ class AllocColor
 }
 
 class CreateGlyphCursor
+//!
 {
   inherit request;
   constant reqType = 94;
@@ -887,6 +980,7 @@ class CreateGlyphCursor
   int sourcechar, maskchar;
   int forered, foregreen, foreblue;
   int backred, backgreen, backblue;
+  //!
 
   string to_string()
   {
@@ -898,16 +992,19 @@ class CreateGlyphCursor
 }
 
 class QueryExtension
+//!
 {
   inherit request;
   constant reqType = 98;
+
   string name;
+  //!
 
   void create(string n)
   {
     name = n;
   }
-  
+
   string to_string()
   {
     string pad="";
@@ -929,12 +1026,14 @@ class QueryExtension
 }
 
 class ExtensionRequest
+//! Base class used by extensions
 {
   int type;
   int code;
   string data;
   function handle_reply;
   function handle_error;
+  //!
 
   array build_value_list(mapping m, array(string) fields)
   {

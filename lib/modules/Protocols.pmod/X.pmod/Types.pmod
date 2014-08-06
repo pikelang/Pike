@@ -24,10 +24,15 @@
 #pike __REAL_VERSION__
 
 class XResource
+//! A resorce in the X-server
+//! Most will automatically free the resource in the server when all
+//! references is gone in your application
 {
+
   object display;
   int id;
   int autofree = 1;
+  //!
 
   void create(object d, int i)
   {
@@ -39,6 +44,7 @@ class XResource
 
   object FreeRequest() {}
 
+  //!
   void Free()
   {
     object req = FreeRequest();
@@ -53,14 +59,15 @@ class XResource
   {
     if(autofree) Free();
   }
-
 }
 
 class Font
+//!
 {
   import ".";
   inherit XResource;
 
+  //!
   object QueryTextExtents_req(string str)
   {
     object req = Requests.QueryTextExtents();
@@ -69,12 +76,14 @@ class Font
     return req;
   }
 
+  //!
   mapping(string:int) QueryTextExtents16(string str)
   {
     object req = QueryTextExtents_req(str);
     return display->blocking_request(req)[1];
   }
 
+  //!
   mapping(string:int) QueryTextExtents(string str)
   {
     return QueryTextExtents16("\0"+str/""*"\0");
@@ -93,6 +102,7 @@ class Font
     display->send_request(req);
   }
 
+  //!
   object CreateGlyphCursor(int sourcechar, array(int)|void foreground,
 			   array(int)|void background)
   {
@@ -103,16 +113,19 @@ class Font
 }
 
 class Cursor
+//!
 {
   inherit XResource;
   constant FreeRequest = .Requests.FreeCursor;
 }
 
 class Visual
+//!
 {
   inherit XResource;
 
   int depth;
+  //!
 
   int c_class;
   int bitsPerRGB;
@@ -120,6 +133,7 @@ class Visual
   int redMask;
   int greenMask;
   int blueMask;
+  //!
 
   void create(mixed ... args)
   {
@@ -129,12 +143,15 @@ class Visual
 }
 
 class GC
+//!
 {
   inherit XResource;
   constant FreeRequest = .Requests.FreeGC;
 
+  //!
   mapping(string:mixed) values;
 
+  //!
   object ChangeGC_req(mapping attributes)
   {
     object req = .Requests.ChangeGC();
@@ -143,6 +160,7 @@ class GC
     return req;
   }
 
+  //!
   void ChangeGC(mapping attributes)
   {
     object req = ChangeGC_req(attributes);
@@ -150,6 +168,7 @@ class GC
     values |= attributes;
   }
 
+  //!
   mapping(string:mixed) GetGCValues()
   {
     return values;
@@ -165,9 +184,13 @@ class GC
 }
 
 class Rectangle
+//!
 {
   int x, y;
+  //!
+
   int width, height;
+  //!
 
   void create(int ... args)
   {
@@ -194,8 +217,10 @@ class Rectangle
 }
 
 class Point
+//!
 {
   int x, y;
+  //!
 
   void create(int ... args)
   {
@@ -220,11 +245,14 @@ class Point
 }
 
 class Colormap
+//!
 {
   inherit XResource;
-  object visual;
   constant FreeRequest = .Requests.FreeColormap;
+
+  object visual;
   mapping alloced = ([]);
+  //!
 
   object FreeColors_req(int pixel)
   {
@@ -235,6 +263,7 @@ class Colormap
     return req;
   }
 
+  //!
   void FreeColor( int pixel )
   {
     display->send_request( FreeColors_req( pixel ) );
@@ -246,8 +275,7 @@ class Colormap
     ::Free();
   }
 
-    
-
+  //!
   int AllocColor(int r, int g, int b)
   {
     if(alloced[sprintf("%2c%2c%2c", r, g, b)])
@@ -275,11 +303,13 @@ class Colormap
 #define PIXMAP (_Types.get_pixmap_class())
 
 class Drawable
+//!
 {
   inherit XResource;
   int depth;
   object colormap, parent, visual;
 
+  //!
   object CopyArea_req(object gc, object src, object area, int x, int y)
   {
     object r= .Requests.CopyArea();
@@ -292,11 +322,13 @@ class Drawable
     return r;
   }
 
+  //!
   object CopyArea(object gc, object src, object area, int x, int y)
   {
     display->send_request( CopyArea_req( gc,src,area,x,y ));
   }
 
+  //!
   object CreateGC_req()
   {
     object req = .Requests.CreateGC();
@@ -307,6 +339,7 @@ class Drawable
     return req;
   }
 
+  //!
   object CreateGC(mapping|void attributes)
   {
     object req = CreateGC_req();
@@ -317,6 +350,7 @@ class Drawable
     return GC(display, req->gc);
   }
 
+  //!
   object CreatePixmap_req(int width, int height, int depth)
   {
     object req = .Requests.CreatePixmap();
@@ -329,6 +363,7 @@ class Drawable
     return req;
   }
 
+  //!
   object CreatePixmap(int width, int height, int depth)
   {
     object req = CreatePixmap_req(width, height, depth);
@@ -338,6 +373,7 @@ class Drawable
     return p;
   }
 
+  //!
   object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
   {
     object req = .Requests.FillPoly();
@@ -349,12 +385,14 @@ class Drawable
     return req;
   }
 
+  //!
   void FillPoly(object gc, int shape, int coordMode, array(object) points)
   {
     object req = FillPoly_req(gc->id, shape, coordMode, points);
     display->send_request(req);
   }
 
+  //!
   object FillRectangles_req(int gc, array(object) r)
   {
     object req = .Requests.PolyFillRectangle();
@@ -364,12 +402,14 @@ class Drawable
     return req;
   }
 
+  //!
   void FillRectangles(object gc, object ... r)
   {
     object req = FillRectangles_req(gc->id, r);
     display->send_request(req);
   }
 
+  //!
   object DrawLine_req(int gc, int coordMode, array(object) points)
   {
     object req = .Requests.PolyLine();
@@ -380,11 +420,13 @@ class Drawable
     return req;
   }
 
+  //!
   void DrawLine(object gc, int coordMode, object ... points)
   {
     display->send_request(DrawLine_req(gc->id, coordMode, points));
   }
 
+  //!
   object PutImage_req(object gc, int depth,
 		      int tx, int ty, int width, int height, string data)
   {
@@ -401,6 +443,7 @@ class Drawable
     return r;
   }
   
+  //!
   void PutImage(object gc, int depth,
 		int tx, int ty, int width, int height, string data,
 		int|void format)
@@ -410,6 +453,7 @@ class Drawable
     display->send_request( req );
   }
 
+  //!
   object ImageText8_req(int gc, int x, int y, string str)
   {
     object req = .Requests.ImageText8();
@@ -421,6 +465,7 @@ class Drawable
     return req;
   }
 
+  //!
   void ImageText8(object gc, int x, int y, string str)
   {
     if(sizeof(str)>255)
@@ -429,6 +474,7 @@ class Drawable
     display->send_request(req);    
   }
 
+  //!
   object ImageText16_req(int gc, int x, int y, string str)
   {
     object req = .Requests.ImageText16();
@@ -440,6 +486,7 @@ class Drawable
     return req;
   }
 
+  //!
   void ImageText16(object gc, int x, int y, string str)
   {
     if(sizeof(str)>510)
@@ -450,6 +497,7 @@ class Drawable
 }
 
 class Pixmap
+//!
 {
   inherit Drawable;
   constant FreeRequest = .Requests.FreePixmap;
@@ -464,13 +512,17 @@ class Pixmap
 }
 
 class Window
+//!
 {
 
   inherit .KeySyms;
   inherit Drawable;
+
   int currentInputMask;
+  //!
 
   /* Keys are event names, values are arrays of ({ priority, function }) */
+  //!
   mapping(string:array(array)) event_callbacks = ([ ]);
 
 
@@ -493,6 +545,7 @@ class Window
     }
   }
   
+  //!
   object CreateWindow_req(int x, int y, int width, int height,
 			  int border_width, int depth, object visual)
   {
@@ -515,6 +568,7 @@ class Window
     return this_program(@args);
   }
 
+  //!
   object CreateColormap(object visual, int|void alloc)
   {
     object req = .Requests.CreateColormap();
@@ -526,6 +580,7 @@ class Window
     return Colormap(display, req->cid, visual);
   }
 
+  //!
   object CreateWindow(int x, int y, int width, int height,
 		      int border_width, mapping|void attributes,
 		      object|void visual, int|void d,
@@ -554,6 +609,7 @@ class Window
     return w;
   }
     
+  //!
   object CreateSimpleWindow(int x, int y, int width, int height,
 			    int border_width,int border, int background)
   {
@@ -572,6 +628,7 @@ class Window
     return w;
   }
 
+  //!
   object ChangeAttributes_req(mapping m)
   {
     object req = .Requests.ChangeWindowAttributes();
@@ -580,12 +637,14 @@ class Window
     return req;
   }
 
+  //!
   void ChangeAttributes(mapping m)
   {
     attributes |= m;
     display->send_request(ChangeAttributes_req(m));
   }
 
+  //!
   object Configure_req(mapping m)
   {
     object req = .Requests.ConfigureWindow();
@@ -597,22 +656,26 @@ class Window
     return req;
   }
 
+  //!
   void Configure(mapping m)
   {
     display->send_request(Configure_req(m));
   }
 
+  //!
   void Raise()
   {
     Configure((["StackMode":0]));
   }
 
+  //!
   void Lower()
   {
     Configure((["StackMode":1]));
   }
 
   /* Keep callbacks sorted by decreasing priority */
+  //!
   void set_event_callback(string type, function f, int|void priority)
   {
     event_callbacks[type] =
@@ -620,6 +683,7 @@ class Window
 		   + ({ ({ priority, f }) }) ));
   }
   
+  //!
   object SelectInput_req()
   {
     object req = .Requests.ChangeWindowAttributes();
@@ -639,6 +703,7 @@ class Window
     return mask;
   }
 
+  //!
   int SelectInput(string ... types)
   {
     // int old_mask = currentInputMask;
@@ -647,6 +712,7 @@ class Window
     return currentInputMask;
   }
 
+  //!
   int DeselectInput(string ... types)
   {
     // int old_mask = currentInputMask;
@@ -656,6 +722,7 @@ class Window
     return currentInputMask;
   }
 
+  //!
   object GrabButton_req(int button, int modifiers, array(string) types)
   {
     object req = .Requests.GrabButton();
@@ -670,12 +737,14 @@ class Window
     return req;
   }
 
+  //!
   void GrabButton(int button, int modifiers, string ... types)
   {
     object req = GrabButton_req(button, modifiers, types);
     display->send_request(req);
   }
 
+  //!
   object Map_req()
   {
     object req = .Requests.MapWindow();
@@ -683,11 +752,13 @@ class Window
     return req;
   }
 
+  //!
   void Map()
   {
     display->send_request(Map_req());
   }
 
+  //!
   object Unmap_req()
   {
     object req = .Requests.UnmapWindow();
@@ -695,11 +766,13 @@ class Window
     return req;
   }
 
+  //!
   void Unmap()
   {
     display->send_request(Unmap_req());
   }
 
+  //!
   object ListProperties_req()
   {
     object req = .Requests.ListProperties();
@@ -707,6 +780,7 @@ class Window
     return req;
   }
 
+  //!
   array ListProperties()
   {
     object req = ListProperties_req();
@@ -726,6 +800,7 @@ class Window
     return a;
   }
 
+  //!
   object ChangeProperty_req(object property, object type,
 			    int format, array(int)|string data)
   {
@@ -739,12 +814,14 @@ class Window
     return req;
   }
 
+  //!
   void ChangeProperty(object property, object type,
 		      int format, array(int)|string data)
   {
     display->send_request(ChangeProperty_req(property, type, format, data));
   }
   
+  //!
   object GetProperty_req(object property, object|void type)
   {
     object req = .Requests.GetProperty();
@@ -756,6 +833,7 @@ class Window
     return req;
   }
 
+  //!
   mapping GetProperty(object property, object|void type)
   {
     object req = GetProperty_req(property, type);
@@ -772,6 +850,7 @@ class Window
     return m;
   }
 
+  //!
   object ClearArea_req(int x, int y, int width, int height, int exposures)
   {
     object req = .Requests.ClearArea();
@@ -785,12 +864,14 @@ class Window
     return req;
   }
 
+  //!
   void ClearArea(int x, int y, int width, int height, int|void exposures)
   {
     display->send_request(ClearArea_req(x, y, width, height, exposures));
   }
   
   // Shape extension
+  //!
   void ShapeRectangles( string kind, int xo, int yo, string operation,
 			array (object(Rectangle)) rectangles )
   {
@@ -806,6 +887,7 @@ class Window
       ShapeRectangles( this, xo, yo, kind, operation, rectangles );
   }
 
+  //!
   void ShapeMask( string kind, int xo, int yo, string operation,
 		  object (Pixmap) mask )
   {
@@ -821,6 +903,7 @@ class Window
       ShapeMask( this, xo, yo, kind, operation, mask );
   }
 
+  //!
   void ShapeOffset( string kind, int xo, int yo )
   {
     if(kind == "both")
@@ -847,6 +930,7 @@ class Window
 }
 
 class RootWindow
+  //!
 {
   inherit Window;
 
@@ -863,6 +947,7 @@ class RootWindow
   int saveUnders;
   int rootDepth;
   mapping depths;
+  //!
 
   void create(mixed ... args)
   {

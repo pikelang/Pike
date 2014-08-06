@@ -19,8 +19,10 @@
  */
 
 #pike __REAL_VERSION__
+//! Keep track of X11 atoms
 
 class Atom
+//!
 {
   object display;
   string name;
@@ -82,9 +84,9 @@ class pending_name_lookup
   }
 }
 
-/* Keeps track of known atoms. *
- * Is inherited into Xlib.Display */
 class atom_manager
+//! Keeps track of known atoms.
+//! Is inherited into Xlib.Display
 {
   mapping(int:object) atoms = ([ ]);
   mapping(string:object) atom_table = ([ ]);
@@ -106,8 +108,8 @@ class atom_manager
     return req;
   }
 
-  /* Looks up the atom in local cache. If it is not present,
-   * issue an asyncronous InternAtom request, and return 0 */
+    //! Looks up the atom in local cache. If it is not present,
+    //! issue an asyncronous InternAtom request, and return 0 
   object InternAtom(string name, function|void callback)
   {
     if (atom_table[name])
