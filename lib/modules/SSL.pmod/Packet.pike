@@ -18,7 +18,10 @@ constant HEADER_SIZE = 5;
 private string buffer = "";
 private int needed_chars = HEADER_SIZE;
 
-int marginal_size;
+// The packet max size is 2^14 (RFC 5246 6.2.1). Compressed packets
+// are however allowed to be 1024 bytes over (6.2.2), and Ciphertexts
+// 2048 bytes (6.2.3). State the additional headroom in this variable.
+protected int marginal_size;
 
 /* Circular dependence */
 program Alert = master()->resolv("SSL")["Alert"];
