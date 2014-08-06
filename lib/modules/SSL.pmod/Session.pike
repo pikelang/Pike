@@ -404,7 +404,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 //!
 //! @param max_hash_size
 //!
-int set_cipher_suite(int suite, ProtocolVersion|int version,
+int set_cipher_suite(int suite, ProtocolVersion version,
 		     array(array(int)) signature_algorithms,
 		     int max_hash_size)
 {
