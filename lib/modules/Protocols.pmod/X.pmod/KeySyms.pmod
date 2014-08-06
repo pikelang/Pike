@@ -27,9 +27,12 @@
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
+//!
 
   mapping attributes = ([]);
+//!
 
+//!
   mapping stringtokeysyms = ([
 "XK_script_switch":        0xFF7E  /* Alias for mode_switch */,
 "XK_dead_acute":					0xFE51,
@@ -1346,6 +1349,7 @@
 ]);
 
 
+//!
   void ReleaseKey( int sym )
   {
     switch(sym)
@@ -1366,6 +1370,7 @@
     }
   }
 
+//!
   string _LookupKeysym( int keysym )
   {
     switch(keysym)
@@ -1417,6 +1422,7 @@
     }
   } 
 
+//!
   int _LookupCharacter( string str )
   {
      if(stringtokeysyms && stringtokeysyms[str])
@@ -1428,6 +1434,7 @@
   } 
 
 
+//!
   int LookupCharacter( string str )
   {
      mapping xkm=([
@@ -1474,6 +1481,7 @@
 
   mapping keysymtokeycode=([]);
 
+//!
   void makeKeysymtoKeycode(object display)
   {
       keysymtokeycode=([]);
@@ -1492,6 +1500,7 @@
       }
   }
 
+//!
   int LookupKeycode( int keysym, object display )
   {
      int keycode;
@@ -1505,6 +1514,7 @@
      return keycode;
   }
 
+//!
   string LookupKeysym( int keysym, object display )
   {
     if(!compose_patterns) compose_patterns =  display->compose_patterns;

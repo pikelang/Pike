@@ -26,26 +26,27 @@
 // Image --> X module.
 // Needs: Pike 0.6
 
+//! Handles Image.Image to XImage conversions.
 
-// Base class.
-// FIXME: Why not inherit Image.Image directly?
-// Guess five times... /Per
+//! The @[XImage] class behaves more or less exactly like an
+//! Image.Image, but it keeps itself synchronized with the server if
+//! so needed.
+
 class Image_wrapper
+//! Wrapper for Image.Image that keeps track of the modifications done.
 {
   class funcall
   {
-    function f;
-    
     mixed `()( mixed ... args )
     {
       mixed q = f( @args );
       if(objectp(q)) set_image( q );
       return q;
     }
-    
+
     void create(function q) { f = q; }
   }
-  
+
   object image; // The real image.
 
   void clear_caches(int x, int y, int width, int height)
@@ -92,10 +93,10 @@ class Image_wrapper
       return x;
     return funcall(image[ind]);
   }
-  
 }
 
 class XImage
+//!
 {
   inherit Image_wrapper;
   import Protocols.X;
@@ -106,21 +107,26 @@ class XImage
   object /*(Types.Colormap)*/ colormap;
   Image.Colortable ccol;
   object /*(Types.GC)*/ dgc;
+  //! 
 
+  //! 
   int best;
 
   int depth, bpp;
   function converter;
   int linepad, swapbytes;
   int rmask, gmask, bmask;
+  //! 
 
   int offset_x, offset_y;
+  //! 
   
   void set_render(string type)
   {
     if(type == "best") best=1;
   }
 
+  //! 
   Image.Colortable allocate_colortable()
   {
 //     werror("Allocating colortable\n");
@@ -175,6 +181,7 @@ class XImage
     // no inteligence yet...
   }
 
+  //! 
   void redraw(int x, int y, int width, int height)
   {
     int max_pixels = ((window->display->maxRequestSize - 64)*32) / bpp;
@@ -227,11 +234,13 @@ class XImage
     }
   }
 
+  //! 
   void set_window(object w)
   {
     set_drawable(w);
   }
 
+  //! 
   void set_drawable(object w)
   {
     window = w;
@@ -312,6 +321,7 @@ class XImage
     dgc = window->CreateGC();
   }
 
+  //! 
   void set_offset(int x, int y)
   {
     offset_x = x;
@@ -319,10 +329,12 @@ class XImage
   }
 }  
   
-// Steels a few callbacks from the window.
+// Steals a few callbacks from the window.
 
 class WindowImage
+//! A version of XImage that redraws itself at need
 {
+
   inherit XImage;
 
   void exposed(mixed event)
@@ -348,6 +360,7 @@ class WindowImage
 }
 
 class PixmapImage
+//! A pixmap (much like XImage, but stored in the server)
 {
   inherit XImage;
   import Protocols.X;
@@ -359,6 +372,7 @@ class PixmapImage
   }
 }
 
+//! Convert an alpha channel to a shaped-window extension mask
 object MakeShapeMask(object in, object alpha)
 {
   object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
@@ -388,6 +402,9 @@ object SimplePixmapImage(object in, object color, int|void ocol)
   return bgpm;
 }
 
+//! Make the window @[in] display the image, with a mask shaped
+//! according to alpha, and optionally with a colored border aound the
+//! mask.
 void ShapedWindowImage(object in, object color, object|void alpha, 
 		       int|void contour)
 {

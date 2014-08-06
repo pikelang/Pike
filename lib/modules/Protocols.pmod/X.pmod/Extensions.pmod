@@ -63,6 +63,7 @@ protected class extension
 }
 
 class ScreenSaver
+  //!
 {
   inherit extension;
   constant name = "MIT-SCREEN-SAVER";
@@ -71,6 +72,7 @@ class ScreenSaver
 }
 
 class Shape
+  //!
 {
   inherit extension;
 
@@ -83,6 +85,7 @@ class Shape
   {
   }
 
+  //!
   void ShapeRectangles( object window, int xo, int yo,
 			string kind, string operation,
 			object(.Types.Rectangle)|
@@ -99,6 +102,7 @@ class Shape
     dpy->send_request( req );
   }
 
+  //!
   void ShapeMask( object window, int xo, int yo, 
 		  string kind, string operation,
 		  object|void source )
@@ -119,6 +123,7 @@ class Shape
 //    
 //   }
 
+  //!
   void ShapeOffset( object window, string kind, int xo, int yo )
   {
     int k = shape_kind[kind];
