@@ -334,6 +334,9 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //!
 //! @note
 //!   The operation mode defaults to nonblocking mode.
+//!
+//! @seealso
+//!   @[accept()], @[connect()]
 {
   SSL3_DEBUG_MSG ("SSL.File->create (%O, %O)\n", stream, ctx);
 
@@ -373,6 +376,9 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise @expr{1@}.
+//!
+//! @seealso
+//!   @[accept()]
 int(1bit) connect(string|void dest_addr)
 {
   if (conn) error("A connection is already configured!\n");
@@ -417,6 +423,9 @@ int(1bit) connect(string|void dest_addr)
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise @expr{1@}.
+//!
+//! @seealso
+//!   @[connect()]
 int(1bit) accept(string|void pending_data)
 {
   if (conn) error("A connection is already configured!\n");
