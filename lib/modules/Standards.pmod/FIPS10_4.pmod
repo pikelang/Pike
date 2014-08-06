@@ -19,6 +19,18 @@
 
 // Updated 2001-04-17 from ...bugger, lost url
 
+//! This module implements the FIPS10-4 standard for short-form codes
+//! of "Countries, Dependencies, Areas of Special Sovereignty, and
+//! Their Principal Administrative Divisions."
+//!
+//! This is a list of two-letter country codes used by the US
+//! government until 2008-10-02, when GENC, based on ISO 3166 replaced
+//! it as the prefered standard. The subdivisions are named using the
+//! main region name followed by two digits.
+//!
+//! This list is similar to, but not entirely compatible with,
+//! ISO-3166 alpha-2.
+
 #pike __REAL_VERSION__
 
 protected mapping(string:string) _region_code_to_name=0;
@@ -59,38 +71,64 @@ protected void mkregiondivisionmapping()
 
 // ----------------------------------------------------------------
 
+//! Convert a region (country etc) code to the name of the region.
+//! As an example, region_code_to_name("se") would return "SEYCHELLES".
 string region_code_to_name(string code)
 {
    if (!_region_code_to_name) mkregionmappings();
    return _region_code_to_name[upper_case(code)];
 }
 
+//! The reverse of @[region_code_to_name()],
+//! region_name_to_code("Sweden") would return "SW".
 string region_name_to_code(string code)
 {
    if (!_region_name_to_code) mkregionmappings();
    return _region_name_to_code[upper_case(code)];
 }
 
+//! Convert a division code to the information about the division.
+//! As an example division_code_to_line("sw16") would return
+//! @code
+//! ({ "SW","SW16","Ostergotlands Lan","province/lan"})
+//! @endcode
+//! @returns
+//! @array
+//!
+//! @elem string region
+//!
+//! @elem string division
+//!
+//! @elem string name
+//!
+//! @elem string type
+//!
+//! @endarray
 array(string) division_code_to_line(string code)
 {
    if (!_division_code_to_line) mkdivisionmappings();
    return _division_code_to_line[upper_case(code)];
 }
 
+//! Similar to @[division_code_to_line()], but only returns the name
 string division_code_to_name(string code)
 {
    array(string) v=division_code_to_line(code);
    return v && v[2];
 }
 
-// these aren't really useful, since they report only one division
-//
+//! Lookup a division by name.
+//!
+//! These aren't really all that useful, since there might very well
+//! be multiple divisions with the same name.
+//!
+//! @[division_guess_to_lines()] and @[division_guess_to_codes()] are
+//! more useful.
 array(string) division_name_to_line(string name)
 {
    if (!_division_name_to_line) mkdivisionmappings();
    return _division_name_to_line[name];
 }
-
 string division_name_to_code(string code)
 {
    array(string) v=division_name_to_line(code);
@@ -103,6 +141,23 @@ string division_name_to_code(string code)
 
 protected mapping(string:array(array(string))) guess_to_lines=0;
 
+//! Return an array of possible divisions given a division name.
+//! @returns
+//! @array
+//!
+//! @elem array(string) regions
+//! @array
+//!
+//! @elem string region
+//!
+//! @elem string division
+//!
+//! @elem string name
+//!
+//! @elem string type
+//!
+//! @endarray
+//! @endarray
 array(array(string)) division_guess_to_lines(string name)
 {
    array(string) guess_mangle(string v)
@@ -135,18 +190,53 @@ array(array(string)) division_guess_to_lines(string name)
    return Array.uniq(guess_to_lines[upper_case(name)] || ({}));
 }
 
+//! Return an array of possible division codes given a division name.
+//! @returns
+//! @array
+//!
+//! @elem array(string) regions
+//! @array
+//!
+//! @elem string region
+//!
+//! @elem string division
+//!
+//! @elem string name
+//!
+//! @elem string type
+//!
+//! @endarray
+//! @endarray
 array(string) division_guess_to_codes(string code)
 {
    array(array(string)) v=division_guess_to_lines(code);
    return column(v,1);
 }
 
+//! Given a region (country etc) return all divisions in that region
+//! @returns
+//! @array
+//!
+//! @elem array(string) regions
+//! @array
+//!
+//! @elem string region
+//!
+//! @elem string division
+//!
+//! @elem string name
+//!
+//! @elem string type
+//!
+//! @endarray
+//! @endarray
 array(array(string)) region_to_divisions(string region)
 {
    if (!_region_to_divisions) mkregiondivisionmapping();
    return _region_to_divisions[upper_case(region)] || ({});
 }
 
+//! Given a region (country etc) return all divisions codes in that region
 array(string) region_to_division_codes(string region)
 {
    array(array(string)) v=region_to_divisions(region);
