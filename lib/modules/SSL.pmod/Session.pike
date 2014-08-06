@@ -37,9 +37,6 @@ int cipher_suite;
 //! cipher_suite.
 Cipher.CipherSpec cipher_spec;
 
-//! Key exchange method, also derived from the cipher_suite.
-int ke_method;
-
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
 string(8bit) master_secret;
@@ -318,7 +315,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   int suite = cipher_suites[0];
 
-  ke_method = [int]CIPHER_SUITES[suite][0];
+  int ke_method = [int]CIPHER_SUITES[suite][0];
 
   SSL3_DEBUG_MSG("Selecting server key and certificate.\n");
 
