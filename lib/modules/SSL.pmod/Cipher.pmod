@@ -60,6 +60,10 @@ class MACAlgorithm {
 
 //! Cipher specification.
 class CipherSpec {
+
+  //! Key exchange factory.
+  program(KeyExchange) ke_factory;
+
   //! The algorithm to use for the bulk of the transfered data.
   program(CipherAlgorithm) bulk_cipher_algorithm;
 
@@ -1404,17 +1408,11 @@ class DHKeyExchange
 //!   The maximum hash size supported for the signature algorithm.
 //!
 //! @returns
-//!   Returns @expr{0@} (zero) for unsupported combinations.
-//!   Otherwise returns an array with the following fields:
-//!   @array
-//!     @elem KeyExchangeType 0
-//!       Key exchange method.
-//!     @elem CipherSpec 1
-//!       Initialized @[CipherSpec] for the @[suite].
-//!   @endarray
-array lookup(int suite, ProtocolVersion|int version,
-	     array(array(int)) signature_algorithms,
-	     int max_hash_size)
+//!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
+//!   returns an initialized @[CipherSpec] for the @[suite].
+CipherSpec lookup(int suite, ProtocolVersion|int version,
+                  array(array(int)) signature_algorithms,
+                  int max_hash_size)
 {
   CipherSpec res = CipherSpec();
 
@@ -1693,6 +1691,39 @@ array lookup(int suite, ProtocolVersion|int version,
 
   switch(ke_method)
   {
+  case KE_null:
+    res->ke_factory = KeyExchangeNULL;
+    break;
+  case KE_rsa:
+  case KE_rsa_fips:
+    res->ke_factory = KeyExchangeRSA;
+    break;
+  case KE_dh_dss:
+  case KE_dh_rsa:
+    res->ke_factory = KeyExchangeDH;
+    break;
+  case KE_dh_anon:
+  case KE_dhe_rsa:
+  case KE_dhe_dss:
+    res->ke_factory = KeyExchangeDHE;
+    break;
+#if constant(Crypto.ECC.Curve)
+  case KE_ecdhe_rsa:
+  case KE_ecdhe_ecdsa:
+  case KE_ecdh_anon:
+    res->ke_factory = KeyExchangeECDHE;
+    break;
+  case KE_ecdh_rsa:
+  case KE_ecdh_ecdsa:
+    res->ke_factory = KeyExchangeECDH;
+    break;
+#endif
+  default:
+    error( "Internal error.\n" );
+  }
+
+  switch(ke_method)
+  {
   case KE_rsa:
   case KE_rsa_fips:
   case KE_dhe_rsa:
@@ -1720,6 +1751,7 @@ array lookup(int suite, ProtocolVersion|int version,
   default:
     error( "Internal error.\n" );
   }
+
   if (version >= PROTOCOL_TLS_1_2)
   {
     int wanted_hash_id;
@@ -1771,5 +1803,5 @@ array lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
-  return ({ ke_method, res });
+  return res;
 }

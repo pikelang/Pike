@@ -40,9 +40,6 @@ Cipher.CipherSpec cipher_spec;
 //! Key exchange method, also derived from the cipher_suite.
 int ke_method;
 
-//! Key exchange factory, derived from @[ke_method].
-program(Cipher.KeyExchange) ke_factory;
-
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
 string(8bit) master_secret;
@@ -410,46 +407,11 @@ int set_cipher_suite(int suite, ProtocolVersion version,
 {
   this_program::version = version;
 
-  array res = Cipher.lookup(suite, version, signature_algorithms,
+  cipher_spec = Cipher.lookup(suite, version, signature_algorithms,
                             truncated_hmac?512:max_hash_size);
-  if (!res) return 0;
-  cipher_suite = suite;
-  ke_method = [int]res[0];
-  switch(ke_method) {
-  case KE_null:
-    ke_factory = Cipher.KeyExchangeNULL;
-    break;
-  case KE_rsa:
-  case KE_rsa_fips:
-    ke_factory = Cipher.KeyExchangeRSA;
-    break;
-  case KE_dh_dss:
-  case KE_dh_rsa:
-    ke_factory = Cipher.KeyExchangeDH;
-    break;
-  case KE_dh_anon:
-  case KE_dhe_rsa:
-  case KE_dhe_dss:
-    ke_factory = Cipher.KeyExchangeDHE;
-    break;
-#if constant(SSL.Cipher.KeyExchangeECDHE)
-  case KE_ecdhe_rsa:
-  case KE_ecdhe_ecdsa:
-  case KE_ecdh_anon:
-    ke_factory = Cipher.KeyExchangeECDHE;
-    break;
-  case KE_ecdh_rsa:
-  case KE_ecdh_ecdsa:
-    ke_factory = Cipher.KeyExchangeECDH;
-    break;
-#endif
-  default:
-    error("set_cipher_suite: Unsupported key exchange method: %d\n",
-	  ke_method);
-    break;
-  }
+  if (!cipher_spec) return 0;
 
-  cipher_spec = [object(Cipher.CipherSpec)]res[1];
+  cipher_suite = suite;
   SSL3_DEBUG_MSG("SSL.Session: cipher_spec %O\n",
                  mkmapping(indices(cipher_spec), values(cipher_spec)));
   return 1;

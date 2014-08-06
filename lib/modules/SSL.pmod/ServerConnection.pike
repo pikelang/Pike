@@ -131,7 +131,7 @@ Packet server_hello_packet()
 Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
-  ke = session->ke_factory(context, session, this, client_version);
+  ke = session->cipher_spec->ke_factory(context, session, this, client_version);
   string data = ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
