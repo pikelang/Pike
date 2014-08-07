@@ -5468,6 +5468,7 @@ int define_variable(struct pike_string *name,
 		    INT32 flags)
 {
   int n, run_time_type;
+  int no_this = 0;
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
@@ -5597,10 +5598,11 @@ int define_variable(struct pike_string *name,
 
     switch(run_time_type)
     {
-    case T_INT:
     case T_OBJECT:
       /* Make place for the object subtype. */
     case T_FUNCTION:
+      no_this = 1;
+    case T_INT:
     case T_PROGRAM:
       run_time_type = T_MIXED;
     }
@@ -5611,7 +5613,8 @@ int define_variable(struct pike_string *name,
 					alignof_variable(run_time_type),0),
 			run_time_type);
 
-  ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags |= IDENTIFIER_NO_THIS_REF;
+  if( no_this )
+    ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags |= IDENTIFIER_NO_THIS_REF;
 
   return n;
 }
