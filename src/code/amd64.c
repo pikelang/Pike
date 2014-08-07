@@ -1717,14 +1717,13 @@ void ins_f_byte(unsigned int b)
     {
       ins_debug_instr_prologue(b, 0, 0);
       amd64_load_sp_reg();
-      mov_mem8_reg( sp_reg, -sizeof(struct svalue)*2, P_REG_RAX );
-      shl_reg_imm( P_REG_RAX, 8 );
-      mov_mem8_reg( sp_reg,-sizeof(struct svalue), P_REG_RBX );
-     /* and_reg_imm( P_REG_RBX, 0x1f );*/
-      add_reg_reg( P_REG_RAX, P_REG_RBX );
-      /* and_reg_imm( P_REG_RAX, 0x1f1f ); */
-      cmp_reg32_imm( P_REG_RAX, (PIKE_T_INT<<8)|PIKE_T_INT );
-      jne( &label_A );
+      mov_mem_reg( sp_reg, -sizeof(struct svalue)*2, P_REG_RAX );
+      add_reg_mem( P_REG_RAX, sp_reg, -sizeof(struct svalue ) );
+#if PIKE_T_INT != 0
+#error This code assumes PIKE_T_INT is 0.
+      /* cmp_reg32_imm( P_REG_RAX, 0 ); */
+#endif
+      jnz( &label_A );
       /* So. Both are actually integers. */
       mov_mem_reg( sp_reg,
                    -sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
@@ -1732,12 +1731,13 @@ void ins_f_byte(unsigned int b)
 
       add_reg_mem( P_REG_RAX,
                    sp_reg,
-                   -sizeof(struct svalue)*2+OFFSETOF(svalue,u.integer)
-                 );
+                   -sizeof(struct svalue)*2+OFFSETOF(svalue,u.integer));
 
       jo( &label_A );
       amd64_add_sp( -1 );
-      mov_imm_mem( PIKE_T_INT,sp_reg, -sizeof(struct svalue));
+      /* the type only needs to be set if the subtype was set before.
+         It was not, since the type check before would not have
+         triggered. */
       mov_reg_mem( P_REG_RAX, sp_reg,
                    -sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
       jmp( &label_B );
