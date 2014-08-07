@@ -1284,13 +1284,6 @@ static void amd64_push_local_function(int fun)
   amd64_add_sp(1);
 }
 
-#ifdef PIKE_DEBUG
-static void amd64_stack_error(void)
-{
-  Pike_fatal("Stack error\n");
-}
-#endif
-
 void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
@@ -1326,17 +1319,6 @@ void amd64_update_pc(void)
       fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp);
 #endif
    }
-#if 0
-#ifdef PIKE_DEBUG
-  if (d_flag) {
-    /* Check that the stack keeps being 16 byte aligned. */
-    mov_reg_reg(P_REG_RSP, P_REG_RAX);
-    and_reg_imm(P_REG_RAX, 0x08);
-    AMD64_JE(0x09);
-    call_imm(amd64_stack_error);
-  }
-#endif
-#endif
 }
 
 
