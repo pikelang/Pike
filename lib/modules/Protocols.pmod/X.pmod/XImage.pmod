@@ -37,6 +37,7 @@ class Image_wrapper
 {
   class funcall
   {
+    function f;
     mixed `()( mixed ... args )
     {
       mixed q = f( @args );
