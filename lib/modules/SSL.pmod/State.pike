@@ -56,10 +56,11 @@ Alert|Packet decrypt_packet(Packet packet)
    */
   Alert fail;
   ProtocolVersion version = packet->protocol_version;
+  string data = packet->fragment;
 
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.State->decrypt_packet (3.%d, type: %d): data = %O\n",
-	 version & 0xff, packet->content_type, packet->fragment);
+	 version & 0xff, packet->content_type, data);
 #endif
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
@@ -67,8 +68,11 @@ Alert|Packet decrypt_packet(Packet packet)
   int padding;
 
   if (hmac_size && session->encrypt_then_mac) {
-    string(8bit) digest = packet->fragment[<hmac_size-1..];
-    packet->fragment = packet->fragment[..<hmac_size];
+    string(8bit) digest = data[<hmac_size-1..];
+    data = data[..<hmac_size];
+
+    // Set data without HMAC
+    packet->fragment = data;
 
     if (mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1] != digest) {
       // Bad digest.
@@ -94,11 +98,11 @@ Alert|Packet decrypt_packet(Packet packet)
   {
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.State: Trying decrypt...\n");
-    //    werror("SSL.State: The encrypted packet is:%O\n",packet->fragment);
-    werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
+    //    werror("SSL.State: The encrypted packet is:%O\n", data);
+    werror("sizeof of the encrypted packet is:"+sizeof(data)+"\n");
 #endif
 
-    string msg = packet->fragment;
+    string msg = data;
 
     if (!msg)
     {
@@ -185,13 +189,13 @@ Alert|Packet decrypt_packet(Packet packet)
       break;
     }
 
-    if (!msg) msg = packet->fragment;
-    padding = sizeof(packet->fragment) - sizeof(msg);
-    packet->fragment = msg;
+    if (!msg) msg = data;
+    padding = sizeof(data) - sizeof(msg);
+    data = msg;
   }
 
 #ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.State: Decrypted_packet %O\n", packet->fragment);
+  werror("SSL.State: Decrypted_packet %O\n", data);
 #endif
 
   if (tls_iv) {
@@ -200,17 +204,20 @@ Alert|Packet decrypt_packet(Packet packet)
     // The receiver decrypts the entire GenericBlockCipher structure and
     // then discards the first cipher block, corresponding to the IV
     // component.
-    packet->fragment = packet->fragment[tls_iv..];
+    data = data[tls_iv..];
   }
+
+  // Set decrypted data.
+  packet->fragment = data;
 
   if (hmac_size)
   {
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.State: Trying mac verification...\n");
 #endif
-    int length = sizeof(packet->fragment) - hmac_size;
-    string digest = packet->fragment[length ..];
-    packet->fragment = packet->fragment[.. length - 1];
+    int length = sizeof(data) - hmac_size;
+    string digest = data[length ..];
+    data = data[.. length - 1];
 
    /* NOTE: Perform some extra MAC operations, to avoid timing
     *       attacks on the length of the padding.
@@ -224,7 +231,7 @@ Alert|Packet decrypt_packet(Packet packet)
     int block_size = mac->block_size();
     string pad_string = "\0"*block_size;
     string junk = pad_string[<padding-1..];
-    if (!((sizeof(packet->fragment) +
+    if (!((sizeof(data) +
            mac->hash_header_size - session->cipher_spec->hash_size) %
           block_size ) ||
         !(padding % block_size)) {
@@ -233,6 +240,9 @@ Alert|Packet decrypt_packet(Packet packet)
       junk += pad_string;
     }
     junk = mac->hash_raw(junk);
+
+    // Set data without HMAC.
+    packet->fragment = data;
 
     if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
       {
@@ -256,14 +266,16 @@ Alert|Packet decrypt_packet(Packet packet)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.State: Trying decompression...\n");
 #endif
-    string msg = compress(packet->fragment);
-    if (!msg)
+    data = compress(data);
+    if (!data)
       fail = fail || alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Invalid compression.\n");
-    if (sizeof(msg)>16384)
+    if (sizeof(data)>16384)
       fail = fail || alert(ALERT_fatal, ALERT_decompression_failure,
                            "Inflated package >16K\n");
-    packet->fragment = msg;
+
+    // Set uncompressed data
+    packet->fragment = data;
   }
 
   if (fail) return fail;
@@ -275,6 +287,7 @@ Alert|Packet decrypt_packet(Packet packet)
 Alert|Packet encrypt_packet(Packet packet)
 {
   ProtocolVersion version = packet->protocol_version;
+  string data = packet->fragment;
   string digest;
 
   if (compress)
@@ -282,7 +295,10 @@ Alert|Packet encrypt_packet(Packet packet)
     // RFC 5246 6.2.2. states that data growth must be at most 1024
     // bytes. Since zlib doesn't do that, and no other implementation
     // is defined, don't bother checking.
-    packet->fragment = compress(packet->fragment);
+    data = compress(data);
+
+    // Set compressed data.
+    packet->fragment = data;
   }
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
@@ -298,12 +314,12 @@ Alert|Packet encrypt_packet(Packet packet)
   {
     switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
-      packet->fragment=crypt->crypt(packet->fragment + digest);
+      data = crypt->crypt(data + digest);
       break;
     case CIPHER_block:
       if(version == PROTOCOL_SSL_3_0) {
-	packet->fragment = crypt->crypt(packet->fragment + digest);
-	packet->fragment += crypt->pad(Crypto.PAD_SSL);
+	data = crypt->crypt(data + digest);
+	data += crypt->pad(Crypto.PAD_SSL);
       } else if (version >= PROTOCOL_TLS_1_0) {
 	if (tls_iv) {
 	  // RFC 4346 6.2.3.2.2:
@@ -312,9 +328,9 @@ Alert|Packet encrypt_packet(Packet packet)
 	  // to encryption.
 	  string iv = Crypto.Random.random_string(tls_iv);
 	  crypt->set_iv(iv);
-	  packet->fragment = iv + crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
+	  data = iv + crypt->crypt(data) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
 	} else {
-          packet->fragment = crypt->crypt(packet->fragment) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
+          data = crypt->crypt(data) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
         }
       }
       break;
@@ -339,20 +355,24 @@ Alert|Packet encrypt_packet(Packet packet)
       crypt->set_iv(iv);
       string auth_data = sprintf("%8c%c%2c%2c",
 				 seq_num, packet->content_type,
-				 version, sizeof(packet->fragment));
+				 version, sizeof(data));
       crypt->update(auth_data);
-      packet->fragment = explicit_iv + crypt->crypt(packet->fragment);
-      packet->fragment += crypt->digest();
+      data = explicit_iv + crypt->crypt(data) + crypt->digest();
       break;
     }
   }
   else
-    packet->fragment += digest;
+    data += digest;
+
+  // Set encrypted data.
+  packet->fragment = data;
 
   if (hmac_size) {
     // Encrypt-then-MAC mode.
-    digest = mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1];
-    packet->fragment += digest;
+    data += mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1];
+
+    // Set HMAC protected data.
+    packet->fragment = data;
   }
 
   seq_num++;
