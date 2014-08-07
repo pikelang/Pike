@@ -678,6 +678,46 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
   emit1 (F_RANGE, bound_types);
 }
 
+static void emit_global( int n )
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+  struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+  if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
+      && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
+      && !ref->inherit_offset
+      && id->run_time_type == PIKE_T_MIXED )
+  {
+    /* fprintf( stderr, "private global %d\n", (INT32)id->func.offset  ); */
+    emit1(F_PRIVATE_GLOBAL, id->func.offset);
+  }
+  else
+    emit1(F_GLOBAL, n);
+}
+
+static void emit_assign_global( int n, int and_pop )
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+  struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+  if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
+      && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && !ref->inherit_offset
+      && id->run_time_type == PIKE_T_MIXED )
+  {
+    /* fprintf( stderr, "assign private global and pop %d\n",  */
+    /*          (INT32)id->func.offset ); */
+    emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
+          id->func.offset);
+  }
+  else
+  {
+    emit1((and_pop?F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL), n);
+  }
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -726,7 +766,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     }else{
       code_expression(val, 0, "RHS");
       emit_multi_assign(vals, vars, no+1);
-      emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.id.number);
+      emit_assign_global( var->u.id.number, 1 );
     }
     break;
 
@@ -785,7 +825,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
       {
 	code_expression(val, 0, "RHS");
 	emit_multi_assign(vals, vars, no+1);
-	emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.integer.b);
+        emit_assign_global( var->u.integer.b, 1 );
 	break;
       }
     }
@@ -991,7 +1031,7 @@ static int do_docode2(node *n, int flags)
 	    emit1(F_CONSTANT, id->func.const_info.offset);
 	  }
 	}else{
-	  emit1(F_GLOBAL, n->u.integer.b);
+          emit_global( n->u.integer.b );
 	}
       }
     }
@@ -1270,14 +1310,15 @@ static int do_docode2(node *n, int flags)
     case F_MULTIPLY:
       if(node_is_eq(CDR(n),CAAR(n)))
       {
-	int num_args;
-	tmp1=do_docode(CDR(n),DO_LVALUE);
+        int num_args;
+	/* tmp1=do_docode(CDR(n),DO_LVALUE); */
 	if(match_types(CDR(n)->type, array_type_string) ||
 	   match_types(CDR(n)->type, string_type_string) ||
 	   match_types(CDR(n)->type, object_type_string) ||
 	   match_types(CDR(n)->type, multiset_type_string) ||
 	   match_types(CDR(n)->type, mapping_type_string))
 	{
+          do_docode(CDR(n),DO_LVALUE);
 	  num_args = do_docode(CDAR(n), 0);
 	  switch (num_args)
 	  {
@@ -1290,6 +1331,7 @@ static int do_docode2(node *n, int flags)
 #endif
 	  }
 	}else{
+          goto do_not_suboptimize_assign;
 	  emit0(F_LTOSVAL);
 	  num_args = do_docode(CDAR(n), 0);
 	}
@@ -1314,32 +1356,45 @@ static int do_docode2(node *n, int flags)
 	  node **arg = my_get_arg(&args, 0);
 	  if (arg && node_is_eq(CDR(n), *arg) &&
 	      !(args->tree_info & OPT_ASSIGNMENT)) {
-	    /* First arg is the lvalue.
-	     *
-	     * We optimize this to allow for destructive operations.
-	     */
-	    int no = 0;
-	    tmp1 = do_docode(CDR(n), DO_LVALUE);
-	    emit0(F_MARK_AND_CONST0);
-	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-	    while ((arg = my_get_arg(&args, ++no)) && *arg) {
-	      do_docode(*arg, 0);
-	    }
-	    tmp1=store_constant(&CAAR(n)->u.sval,
-				!(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-				CAAR(n)->name);
-	    emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
-	    POP_AND_DONT_CLEANUP;
-	    return 1;
-	  }
+            if(match_types(CDR(n)->type, array_type_string) ||
+               match_types(CDR(n)->type, string_type_string) ||
+               match_types(CDR(n)->type, object_type_string) ||
+               match_types(CDR(n)->type, multiset_type_string) ||
+               match_types(CDR(n)->type, mapping_type_string))
+            {
+              /* First arg is the lvalue.
+               *
+               * We optimize this to allow for destructive operations.
+               */
+              int no = 0;
+              tmp1 = do_docode(CDR(n), DO_LVALUE);
+              emit0(F_MARK_AND_CONST0);
+              PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+              while ((arg = my_get_arg(&args, ++no)) && *arg) {
+                do_docode(*arg, 0);
+              }
+              tmp1=store_constant(&CAAR(n)->u.sval,
+                                  !(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+                                  CAAR(n)->name);
+              emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
+              POP_AND_DONT_CLEANUP;
+              return 1;
+            }
+          }
 	}
       }
       /* FALL_THROUGH */
     default:
+      do_not_suboptimize_assign:
       switch(CDR(n)->token)
       {
+      case F_GLOBAL:
+  	  if(CDR(n)->u.integer.b) goto normal_assign;
+	  code_expression(CAR(n), 0, "RHS");
+          emit_assign_global( CDR(n)->u.integer.a, flags & DO_POP );
+          break;
       case F_LOCAL:
-	if(CDR(n)->u.integer.a >= 
+	if(CDR(n)->u.integer.a >=
 	   find_local_frame(CDR(n)->u.integer.b)->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
@@ -1362,8 +1417,7 @@ static int do_docode2(node *n, int flags)
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
 	  code_expression(CAR(n), 0, "RHS");
-	  emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-		CDR(n)->u.id.number);
+          emit_assign_global( CDR(n)->u.id.number, flags & DO_POP );
 	}
 	break;
 
@@ -1435,8 +1489,7 @@ static int do_docode2(node *n, int flags)
 	       IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
 	    {
 	      code_expression(CAR(n), 0, "RHS");
-	      emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-		    CDR(n)->u.integer.b);
+              emit_assign_global(CDR(n)->u.integer.b, flags & DO_POP );
 	      break;
 	    }
 	  }
@@ -2770,7 +2823,7 @@ static int do_docode2(node *n, int flags)
 	   * prototype. */
 	  emit1(F_LFUN,n->u.id.number);
 	else
-	  emit1(F_GLOBAL,n->u.id.number);
+          emit_global(n->u.id.number);
       }
     }else{
       if(flags & WANT_LVALUE)
@@ -2778,7 +2831,7 @@ static int do_docode2(node *n, int flags)
 	emit1(F_GLOBAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit1(F_GLOBAL,n->u.id.number);
+        emit_global(n->u.id.number);
       }
     }
     return 1;

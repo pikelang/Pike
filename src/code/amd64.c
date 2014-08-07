@@ -1119,6 +1119,26 @@ static void amd64_push_int_reg(enum amd64_reg reg )
   amd64_add_sp( 1 );
 }
 
+static void amd64_get_storage( enum amd64_reg reg, ptrdiff_t offset )
+{
+  amd64_load_fp_reg();
+#if 0
+  /* Note: We really should keep pike_frame->current_storage up to date instead.. */
+  mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_storage), P_REG_RAX );
+  add_reg_imm( reg, offset );
+#else
+  /* fp->current_object->storage */
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object), P_REG_RAX);
+  mov_mem_reg(P_REG_RAX, OFFSETOF(object,storage), reg );
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, context), P_REG_RAX);
+  /* + fp->context->storage_offset */
+  add_reg_mem( reg, P_REG_RAX, OFFSETOF(inherit,storage_offset) );
+  /* + offset */
+  add_reg_imm( reg, offset);
+#endif
+}
+
+
 static void amd64_mark(int offset)
 {
   amd64_load_sp_reg();
@@ -1224,25 +1244,25 @@ void amd64_ref_svalue( enum amd64_reg src, int already_have_type )
  LABEL_A;
 }
 
+void amd64_assign_svalue_no_free( enum amd64_reg dst, enum amd64_reg src, ptrdiff_t src_offset )
+{
+  if( dst == P_REG_RAX ||src == P_REG_RAX )
+    Pike_fatal( "Clobbering src/dst in amd64_assign_svalue_no_free <%d,%d>\n", dst, src);
+  /* Copy src -> dst */
+  mov_mem_reg(src, src_offset, P_REG_RAX);
+  mov_reg_mem(P_REG_RAX, dst, 0 );
+  mov_mem_reg(src, src_offset+sizeof(long), P_REG_RAX);
+  mov_reg_mem(P_REG_RAX, dst, sizeof(long) );
+}
+
 void amd64_assign_local( int b )
 {
   amd64_load_fp_reg();
   amd64_load_sp_reg();
-
-  mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-  add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
-  mov_reg_reg( ARG1_REG, P_REG_RBX );
-
-  /* Free old svalue. */
-  amd64_free_svalue(ARG1_REG, 0);
-
-  /* Copy sp[-1] -> local */
-  amd64_load_sp_reg();
-  mov_mem_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX);
-  mov_mem_reg(sp_reg, -1*sizeof(struct svalue)+sizeof(long), P_REG_RCX);
-
-  mov_reg_mem( P_REG_RAX, P_REG_RBX, 0 );
-  mov_reg_mem( P_REG_RCX, P_REG_RBX, sizeof(long) );
+  mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
+  add_reg_imm( P_REG_RBX, b*sizeof(struct svalue) );
+  amd64_free_svalue(P_REG_RBX, 0);
+  amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -1*sizeof(struct svalue));
 }
 
 static void amd64_pop_mark(void)
@@ -2576,6 +2596,25 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_add_sp(-1);
     return;
 
+  case F_ASSIGN_PRIVATE_GLOBAL_AND_POP:
+  case F_ASSIGN_PRIVATE_GLOBAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_get_storage( P_REG_RBX, b );
+    amd64_free_svalue( P_REG_RBX, 0 );
+    amd64_load_sp_reg();
+
+    if( a == F_ASSIGN_PRIVATE_GLOBAL_AND_POP )
+    {
+      amd64_add_sp(-1);
+      amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, 0);
+    }
+    else
+    {
+      amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -sizeof(struct svalue));
+      amd64_ref_svalue(P_REG_RBX,1); /* already have type in RAX (from assign_svalue) */
+    }
+    return;
+
   case F_ASSIGN_GLOBAL:
   case F_ASSIGN_GLOBAL_AND_POP:
       /* arg1: pike_fp->current obj
@@ -2645,6 +2684,22 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       /* Store result on stack */
       amd64_push_int_reg( P_REG_RAX );
     }
+    return;
+
+  case F_PRIVATE_GLOBAL:
+/*
+  This is a private (or final) global which is not a 'short' one.
+
+  It is guaranteed to be available as an svalue at
+  pike_fp->current_object->storage + pike_fp->context->storage_offset + offset
+
+  (I really wish pike_fp->current_storage was kept up to date for pike
+  function..)
+*/
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_sp_reg();
+    amd64_get_storage( P_REG_RBX, b );
+    amd64_push_svaluep( P_REG_RBX );
     return;
 
   case F_GLOBAL:
