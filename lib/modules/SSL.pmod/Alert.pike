@@ -44,8 +44,7 @@ void create(int(1..2) level, int(8bit) description,
     werror(message);
 #endif
 
-  ::create();
+  ::create(version);
   content_type = PACKET_alert;
-  protocol_version = version;
   fragment = sprintf("%1c%1c", level, description);
 }

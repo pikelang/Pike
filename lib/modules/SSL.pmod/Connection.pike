@@ -113,7 +113,7 @@ Packet handshake_packet(int(8bit) type, string data)
   addRecord(type,1);
 #endif
   /* Perhaps one need to split large packages? */
-  Packet packet = Packet();
+  Packet packet = Packet(version);
   packet->content_type = PACKET_handshake;
   packet->fragment = sprintf("%1c%3H", type, [string(8bit)]data);
   handshake_messages += packet->fragment;
@@ -122,7 +122,7 @@ Packet handshake_packet(int(8bit) type, string data)
 
 Packet change_cipher_packet()
 {
-  Packet packet = Packet();
+  Packet packet = Packet(version);
   packet->content_type = PACKET_change_cipher_spec;
   packet->fragment = "\001";
   return packet;
@@ -153,7 +153,7 @@ Packet certificate_packet(array(string(8bit)) certificates)
 
 Packet heartbeat_packet(string(8bit) s)
 {
-  Packet packet = Packet();
+  Packet packet = Packet(version);
   packet->content_type = PACKET_heartbeat;
   packet->fragment = s;
   return packet;
@@ -367,11 +367,11 @@ protected Packet recv_packet(string(8bit) data)
   //  SSL3_DEBUG_MSG("SSL.Connection->recv_packet(%O)\n", data);
   if (left_over || !packet)
   {
-    packet = Packet(2048);
-    res = packet->recv( (left_over || "")  + data, version);
+    packet = Packet(version, 2048);
+    res = packet->recv( (left_over || "")  + data);
   }
   else
-    res = packet->recv(data, version);
+    res = packet->recv(data);
 
   if (stringp(res))
   { /* Finished a packet */
@@ -379,7 +379,7 @@ protected Packet recv_packet(string(8bit) data)
     if (current_read_state) {
       SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): version=0x%x\n",
 		     version);
-      return current_read_state->decrypt_packet(packet, version);
+      return current_read_state->decrypt_packet(packet);
     } else {
       SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
       return 0;
@@ -483,7 +483,7 @@ string|int to_write()
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
-  string res = current_write_state->encrypt_packet(packet, version)->send();
+  string res = current_write_state->encrypt_packet(packet)->send();
   if (packet->content_type == PACKET_change_cipher_spec)
     current_write_state = pending_write_state;
   return res;
@@ -502,7 +502,7 @@ void send_close()
 int send_streaming_data (string(8bit) data)
 {
   if (!sizeof(data)) return 0;
-  Packet packet = Packet();
+  Packet packet = Packet(version);
   packet->content_type = PACKET_application_data;
   int max_packet_size = session->max_packet_size;
   int size;
@@ -518,7 +518,7 @@ int send_streaming_data (string(8bit) data)
       // If we have more data, take the opportunity to queue some of it too.
       send_packet(packet);
 
-      packet = Packet();
+      packet = Packet(version);
       packet->content_type = PACKET_application_data;
       size += sizeof((packet->fragment = data[1..max_packet_size-1]));
     }
