@@ -240,8 +240,11 @@ optional class Fifo {
 //! between @[Queue] and @[Fifo] is that @[Queue]
 //! will never block in write(), only allocate more memory.
 //!
+//! @fixme
+//!   Ought to be made API-compatible with @[ADT.Queue].
+//!
 //! @seealso
-//!   @[Fifo]
+//!   @[Fifo], @[ADT.Queue]
 //!
 optional class Queue {
   inherit Condition : r_cond;
