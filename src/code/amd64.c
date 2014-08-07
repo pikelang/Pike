@@ -1153,7 +1153,7 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* load type -> RAX */
   mov_sval_type( src, P_REG_RAX );
 
-  and_reg_imm(P_REG_RAX, ~(MIN_REF_TYPE - 1));
+  and_reg_imm(P_REG_RAX, (~(MIN_REF_TYPE - 1)) & 0x1f);
 
   /* if RAX != MIN_REF_TYPE */
   cmp_reg32_imm( P_REG_RAX,MIN_REF_TYPE);
