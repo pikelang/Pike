@@ -458,9 +458,21 @@ static int do_lfun_call(int id, node *args)
   struct reference *ref =
     Pike_compiler->new_program->identifier_references + id;
 
-  emit0(F_MARK);
-  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-  do_docode(args,0);
+  if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
+     ((id == Pike_compiler->compiler_frame->current_function_number) ||
+      ((!ref->inherit_offset) &&
+       (ref->identifier_offset ==
+	Pike_compiler->new_program->
+	identifier_references[Pike_compiler->compiler_frame->
+			      current_function_number].identifier_offset))) &&
+     !(Pike_compiler->new_program->
+       identifiers[ref->identifier_offset].identifier_flags &
+       (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
+     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
+  {
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    emit0(F_MARK);
+    do_docode(args,0);
 
   /* Test description:
    *
@@ -474,24 +486,12 @@ static int do_lfun_call(int id, node *args)
    *
    * * Check that the current function doesn't contain scoped functions.
    */
-  if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
-     ((id == Pike_compiler->compiler_frame->current_function_number) ||
-      ((!ref->inherit_offset) &&
-       (ref->identifier_offset ==
-	Pike_compiler->new_program->
-	identifier_references[Pike_compiler->compiler_frame->
-			      current_function_number].identifier_offset))) &&
-     !(Pike_compiler->new_program->
-       identifiers[ref->identifier_offset].identifier_flags &
-       (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
-     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
-  {
-    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & ID_INLINE))
+    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
     {
       /* Identifier is declared inline/local
        * or in inlining pass.
        */
-      if ((ref->id_flags & ID_INLINE) &&
+      if ((ref->id_flags & (ID_INLINE|ID_PRIVATE)) &&
 	  (!Pike_compiler->compiler_frame->is_inline)) {
 	/* Explicit local:: reference in first pass.
 	 *
@@ -511,10 +511,30 @@ static int do_lfun_call(int id, node *args)
       Pike_compiler->compiler_frame->recur_label =
 	do_jump(F_POINTER, Pike_compiler->compiler_frame->recur_label);
     }
-  } else {
-    emit1(F_CALL_LFUN, id);
+    POP_AND_DONT_CLEANUP;
+    return 1;
   }
-  POP_AND_DONT_CLEANUP;
+ else {
+#ifdef USE_APPLY_N
+   int nargs = count_args(args);
+    if( nargs == -1 )
+    {
+#endif
+     PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+      emit0(F_MARK);
+      do_docode(args,0);
+      emit1(F_CALL_LFUN, id);
+    POP_AND_DONT_CLEANUP;
+    return 1;
+#ifdef USE_APPLY_N
+    }
+    else
+    {
+      do_docode(args,0);
+      emit2(F_CALL_LFUN_N, id, nargs);
+    }
+#endif
+  }
   return 1;
 }
 
@@ -956,7 +976,7 @@ static int do_docode2(node *n, int flags)
 	   * prototype. */
 	  emit1(F_LFUN, n->u.integer.b);
 	} else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-		   (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
+		   (ref->id_flags & (ID_INLINE|ID_PRIVATE)) && !ref->inherit_offset &&
 		   (id->func.const_info.offset >= 0)) {
 	  /* An inline, local or final constant identifier.
 	   * No need for vtable traversal during runtime.
@@ -1384,14 +1404,22 @@ static int do_docode2(node *n, int flags)
 	      } else if (!level) {
 		f += inh->identifier_level;
 		if (flags & DO_POP) {
+#ifndef USE_APPLY_N
 		  emit0(F_MARK);
+#endif
 		  code_expression(CAR(n), 0, "RHS");
 		} else {
 		  code_expression(CAR(n), 0, "RHS");
+#ifndef USE_APPLY_N
 		  emit0(F_MARK);
+#endif
 		  emit0(F_DUP);
 		}
+#ifdef USE_APPLY_N
+		emit2(F_CALL_LFUN_N, f, 1);
+#else
 		emit1(F_CALL_LFUN, f);
+#endif
 		emit0(F_POP_VALUE);
 		return !(flags & DO_POP);
 	      }
