@@ -823,8 +823,8 @@ string read (void|int length, void|int(0..1) not_all)
 			      !(conn->state & CONNECTION_peer_down), 0);
       }
       else {
-	if (sizeof (read_buffer) < length || zero_type (length))
-	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length || zero_type (length)) &&
+	if (sizeof (read_buffer) < length)
+	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length) &&
 			      !(conn->state & CONNECTION_peer_down),
 			      nonblocking_mode);
       }
