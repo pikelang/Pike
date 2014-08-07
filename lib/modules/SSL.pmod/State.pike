@@ -71,8 +71,9 @@ Alert|Packet decrypt_packet(Packet packet)
     string(8bit) digest = data[<hmac_size-1..];
     data = data[..<hmac_size];
 
-    // Set data without HMAC
-    packet->fragment = data;
+    // Set data without HMAC. This never returns an Alert as the data
+    // is smaller.
+    packet->set_encrypted(data);
 
     if (mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1] != digest) {
       // Bad digest.
@@ -207,9 +208,6 @@ Alert|Packet decrypt_packet(Packet packet)
     data = data[tls_iv..];
   }
 
-  // Set decrypted data.
-  packet->fragment = data;
-
   if (hmac_size)
   {
 #ifdef SSL3_DEBUG_CRYPT
@@ -241,8 +239,8 @@ Alert|Packet decrypt_packet(Packet packet)
     }
     junk = mac->hash_raw(junk);
 
-    // Set data without HMAC.
-    packet->fragment = data;
+    // Set decrypted data without HMAC.
+    fail = fail || [object(Alert)]packet->set_compressed(data);
 
     if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
       {
@@ -260,6 +258,11 @@ Alert|Packet decrypt_packet(Packet packet)
       }
     seq_num++;
   }
+  else
+  {
+    // Set decrypted data.
+    fail = fail || [object(Alert)]packet->set_compressed(data);
+  }
 
   if (compress)
   {
@@ -275,12 +278,10 @@ Alert|Packet decrypt_packet(Packet packet)
                            "Inflated package >16K\n");
 
     // Set uncompressed data
-    packet->fragment = data;
+    fail = fail || [object(Alert)]packet->set_plaintext(data);
   }
 
-  if (fail) return fail;
-
-  return [object(Packet)]packet->check_size();
+  return fail || packet;
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
@@ -289,6 +290,7 @@ Alert|Packet encrypt_packet(Packet packet)
   ProtocolVersion version = packet->protocol_version;
   string data = packet->fragment;
   string digest;
+  Alert res;
 
   if (compress)
   {
@@ -298,7 +300,8 @@ Alert|Packet encrypt_packet(Packet packet)
     data = compress(data);
 
     // Set compressed data.
-    packet->fragment = data;
+    res = [object(Alert)]packet->set_compressed(data);
+    if(res) return res;
   }
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
@@ -365,17 +368,18 @@ Alert|Packet encrypt_packet(Packet packet)
     data += digest;
 
   // Set encrypted data.
-  packet->fragment = data;
+  res = [object(Alert)]packet->set_encrypted(data);
+  if(res) return res;
 
   if (hmac_size) {
     // Encrypt-then-MAC mode.
     data += mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1];
 
     // Set HMAC protected data.
-    packet->fragment = data;
+    res = [object(Alert)]packet->set_encrypted(data);
+    if(res) return res;
   }
 
   seq_num++;
-
-  return [object(Packet)]packet->check_size(2048);
+  return packet;
 }
