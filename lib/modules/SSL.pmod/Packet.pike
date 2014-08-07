@@ -18,24 +18,31 @@ constant HEADER_SIZE = 5;
 private string buffer = "";
 private int needed_chars = HEADER_SIZE;
 
-// The packet max size is 2^14 (RFC 5246 6.2.1). Compressed packets
-// are however allowed to be 1024 bytes over (6.2.2), and Ciphertexts
-// 2048 bytes (6.2.3). State the additional headroom in this variable.
+// The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed
+// fragments are however allowed to be 1024 bytes over (6.2.2), and
+// Ciphertexts 2048 bytes (6.2.3). State the additional headroom in
+// this variable.
 protected int marginal_size;
 
 /* Circular dependence */
 program Alert = master()->resolv("SSL")["Alert"];
 
-protected void create(void|int extra)
+//! @param version
+//!   The version sent packets will be created for.
+//! @param extra
+//!   Additional fragment size, over the 2^14 bytes for a plaintext
+//!   TLS fragment.
+protected void create(ProtocolVersion version, void|int extra)
 {
+  protocol_version = version;
   marginal_size = extra;
 }
 
-object check_size(ProtocolVersion version, int|void extra)
+object check_size(int|void extra)
 {
   marginal_size = extra;
   return (sizeof(fragment) > (PACKET_MAX_SIZE + extra))
-    ? Alert(ALERT_fatal, ALERT_unexpected_message, version) : 0;
+    ? Alert(ALERT_fatal, ALERT_unexpected_message, version) : this;
 }
 
 //! Receive data read from the network.
@@ -43,16 +50,13 @@ object check_size(ProtocolVersion version, int|void extra)
 //! @param data
 //!   Raw data from the network.
 //!
-//! @param version
-//!   Version of the SSL/TLS protocol suite to create a packet for.
-//!
 //! @returns
 //!   Returns a string of leftover data if packet is complete,
 //!   otherwise @expr{0@}.
 //!
 //!   If there's an error, an alert object is returned.
 //!
-string(8bit)|.Packet recv(string(8bit) data, ProtocolVersion version)
+string(8bit)|.Packet recv(string(8bit) data)
 {
   buffer += data;
   while (sizeof(buffer) >= needed_chars)
@@ -69,16 +73,16 @@ string(8bit)|.Packet recv(string(8bit) data, ProtocolVersion version)
 #ifdef SSL3_DEBUG
 	werror("SSL.Packet: Receiving SSL2 packet %O\n", buffer[..4]);
 #endif
-        return Alert(ALERT_fatal, ALERT_insufficient_security, version);
+        return Alert(ALERT_fatal, ALERT_insufficient_security, PROTOCOL_SSL_3_0);
       }
       if( !PACKET_types[content_type] )
-        return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+        return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
 
       sscanf(buffer, "%*c%2c%2c", protocol_version, length);
       if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-	return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
       if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
-	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
+	return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version,
 		     sprintf("SSL.Packet->send: Version %d.%d "
 			     "is not supported\n",
 			     protocol_version>>8, protocol_version & 0xff));

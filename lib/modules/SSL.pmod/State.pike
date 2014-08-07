@@ -43,7 +43,7 @@ string salt;
 //! if needed). On success, returns the decrypted packet. On failure,
 //! returns an alert packet. These cases are distinguished by looking
 //! at the is_alert attribute of the returned packet.
-Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
+Alert|Packet decrypt_packet(Packet packet)
 {
   /* NOTE: TLS 1.1 recommends performing the hash check before
    *       sending the alerts to protect against timing attacks.
@@ -55,6 +55,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
    *       even if we have already detected a failure.
    */
   Alert fail;
+  ProtocolVersion version = packet->protocol_version;
 
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.State->decrypt_packet (3.%d, type: %d): data = %O\n",
@@ -168,8 +169,7 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
       string digest = msg[<digest_size-1..];
       crypt->set_iv(iv);
       string auth_data = sprintf("%8c%c%2c%2c",
-                                 seq_num, packet->content_type,
-                                 packet->protocol_version,
+                                 seq_num, packet->content_type, version,
                                  sizeof(msg) -
                                  (session->cipher_spec->explicit_iv_size +
                                   digest_size));
@@ -268,15 +268,15 @@ Alert|Packet decrypt_packet(Packet packet, ProtocolVersion version)
 
   if (fail) return fail;
 
-  return [object(Alert)]packet->check_size(version) || packet;
+  return [object(Packet)]packet->check_size();
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
-Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
+Alert|Packet encrypt_packet(Packet packet)
 {
+  ProtocolVersion version = packet->protocol_version;
   string digest;
-  packet->protocol_version = version;
-  
+
   if (compress)
   {
     // RFC 5246 6.2.2. states that data growth must be at most 1024
@@ -339,8 +339,7 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
       crypt->set_iv(iv);
       string auth_data = sprintf("%8c%c%2c%2c",
 				 seq_num, packet->content_type,
-				 packet->protocol_version,
-				 sizeof(packet->fragment));
+				 version, sizeof(packet->fragment));
       crypt->update(auth_data);
       packet->fragment = explicit_iv + crypt->crypt(packet->fragment);
       packet->fragment += crypt->digest();
@@ -358,5 +357,5 @@ Alert|Packet encrypt_packet(Packet packet, ProtocolVersion version)
 
   seq_num++;
 
-  return [object(Alert)]packet->check_size(version, 2048) || packet;
+  return [object(Packet)]packet->check_size(2048);
 }
