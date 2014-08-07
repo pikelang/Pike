@@ -355,6 +355,13 @@ OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
   });
 });
 
+OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
+    struct svalue *sp;
+    sp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+    push_svalue( sp );
+    print_return_value();
+});
+
 OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
@@ -1073,6 +1080,19 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_sp-1);
   pop_stack();
+});
+
+OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP, "assign private global and pop", I_UPDATE_SP, {
+  struct svalue *tmp;
+  tmp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  free_svalue(tmp);
+  *tmp = *--Pike_sp;
+});
+
+OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
+  struct svalue *tmp;
+  tmp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  assign_svalue( tmp, Pike_sp-1 );
 });
 
 OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop", 0, {
