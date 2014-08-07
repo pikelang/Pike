@@ -7,6 +7,44 @@
 #include "object.h"
 #include "builtin_functions.h"
 
+/* These come from linux include files. */
+#ifdef REG_RBX 
+#undef REG_RAX
+#undef REG_RBX
+#undef REG_RCX
+#undef REG_RDX
+#undef REG_RSP
+#undef REG_RBP
+#undef REG_RSI
+#undef REG_RDI
+#undef REG_R8
+#undef REG_R9
+#undef REG_R10
+#undef REG_R11
+#undef REG_R12
+#undef REG_R13
+#undef REG_R14
+#undef REG_R15
+#endif
+
+
+#define REG_RAX MISSING_P_
+#define REG_RBX MISSING_P_
+#define REG_RCX MISSING_P_
+#define REG_RDX MISSING_P_
+#define REG_RSP MISSING_P_
+#define REG_RBP MISSING_P_
+#define REG_RSI MISSING_P_
+#define REG_RDI MISSING_P_
+#define REG_R8  MISSING_P_
+#define REG_R9  MISSING_P_
+#define REG_R10 MISSING_P_
+#define REG_R11 MISSING_P_
+#define REG_R12 MISSING_P_
+#define REG_R13 MISSING_P_
+#define REG_R14 MISSING_P_
+#define REG_R15 MISSING_P_
+
 
 /* Register encodings */
 enum amd64_reg {P_REG_RAX = 0, P_REG_RBX = 3, P_REG_RCX = 1, P_REG_RDX = 2,
