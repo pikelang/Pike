@@ -197,6 +197,8 @@ static void init_mapping(struct mapping *m,
   {
     hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
 
+    if (size < hashsize) size = hashsize;
+
     e=MAPPING_DATA_SIZE(hashsize, size);
 
     md=xcalloc(1,e);
