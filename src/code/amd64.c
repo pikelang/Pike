@@ -1087,11 +1087,10 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   mov_mem_reg(reg, OFFSETOF(svalue, u.refs), P_REG_RCX);
   mov_reg_mem(P_REG_RAX, sp_reg,
 	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
-  and_reg_imm(P_REG_RAX, ~(MIN_REF_TYPE - 1) & 0x1f);
   mov_reg_mem(P_REG_RCX, sp_reg,
 	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
-  cmp_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
-  jne(&label_A);
+  and_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
+  jz(&label_A);
   add_imm_mem( 1, P_REG_RCX, OFFSETOF(pike_string, refs));
  LABEL_A;
 }
@@ -1172,11 +1171,8 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* load type -> RAX */
   mov_sval_type( src, P_REG_RAX );
 
-  and_reg_imm(P_REG_RAX, (~(MIN_REF_TYPE - 1)) & 0x1f);
-
-  /* if RAX != MIN_REF_TYPE */
-  cmp_reg32_imm( P_REG_RAX,MIN_REF_TYPE);
-  jne( &label_A );
+  and_reg_imm(P_REG_RAX, MIN_REF_TYPE);
+  jz( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), P_REG_RAX);
@@ -1203,10 +1199,8 @@ static void amd64_free_svalue_type(enum amd64_reg src, enum amd64_reg type,
   if( src == P_REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
 
-  and_reg_imm(type, ~(MIN_REF_TYPE - 1));
-
-  cmp_reg32_imm(type,MIN_REF_TYPE);
-  jne( &label_A );
+  and_reg32_imm(type, MIN_REF_TYPE);
+  jz( &label_A );
 
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), P_REG_RAX);
@@ -1230,12 +1224,8 @@ void amd64_ref_svalue( enum amd64_reg src, int already_have_type )
   if( src == P_REG_RAX ) Pike_fatal("Clobbering src in ref_svalue\n");
   if( !already_have_type )
       mov_sval_type( src, P_REG_RAX );
-  else
-      and_reg_imm( P_REG_RAX, 0x1f );
-
-  /* if RAX > MIN_REF_TYPE+1 */
-  cmp_reg32_imm(P_REG_RAX, MIN_REF_TYPE );
-  jl( &label_A );
+  and_reg32_imm( P_REG_RAX, MIN_REF_TYPE );
+  jz( &label_A );
   /* Load pointer to refs -> RAX */
   mov_mem_reg( src, OFFSETOF(svalue, u.refs), P_REG_RAX);
    /* *RAX++ */
@@ -2190,9 +2180,8 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       mov_reg_mem( P_REG_RCX, P_REG_RDX, 8 );
 
       /* inc refs? */
-      and_reg_imm( P_REG_RAX, 0x1f );
-      cmp_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
-      jl( &label_B );
+      and_reg32_imm( P_REG_RAX, MIN_REF_TYPE );
+      jz( &label_B );
       add_imm_mem( 1, P_REG_RCX, OFFSETOF(pike_string, refs));
       jmp( &label_B );
 
