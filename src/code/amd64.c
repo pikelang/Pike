@@ -978,7 +978,7 @@ void amd64_ins_entry(void)
 {
   /* Push all registers that the ABI requires to be preserved. */
   push(P_REG_RBP);
-  mov_reg_reg(P_REG_RSP, P_REG_RBP);
+  /* mov_reg_reg(P_REG_RSP, P_REG_RBP); */
   push(P_REG_R15);
   push(P_REG_R14);
   push(P_REG_R13);
@@ -986,13 +986,24 @@ void amd64_ins_entry(void)
   push(P_REG_RBX);
   sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
   mov_reg_reg(ARG1_REG, Pike_interpreter_reg);
+  fp_reg = PIKE_FP_REG;
+  mov_mem_reg(Pike_interpreter_reg,OFFSETOF(Pike_interpreter_struct,frame_pointer),  fp_reg);
+
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object), ARG1_REG);
+  mov_mem_reg(ARG1_REG, OFFSETOF(object,storage), ARG1_REG );
+  /* arg1 = interpreter -> frame_pointer -> current_object -> storage */
+  mov_mem_reg( fp_reg, OFFSETOF(pike_frame, context), P_REG_RAX);
+  add_reg_mem( ARG1_REG, P_REG_RAX, OFFSETOF(inherit,storage_offset) );
+  /* arg1 += pike_frame->context->storage_offset */
+  mov_reg_mem( ARG1_REG, fp_reg, OFFSETOF(pike_frame, current_storage));
+
   amd64_flush_code_generator_state();
 }
 
 void amd64_flush_code_generator_state(void)
 {
   sp_reg = -1;
-  fp_reg = -1;
+  /* fp_reg = -1; */
   ret_for_func = 0;
   mark_sp_reg = -1;
   dirty_regs = 0;
@@ -1120,9 +1131,8 @@ static void amd64_push_int_reg(enum amd64_reg reg )
 static void amd64_get_storage( enum amd64_reg reg, ptrdiff_t offset )
 {
   amd64_load_fp_reg();
-#if 0
-  /* Note: We really should keep pike_frame->current_storage up to date instead.. */
-  mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_storage), P_REG_RAX );
+#if 1
+  mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_storage), reg );
   add_reg_imm( reg, offset );
 #else
   /* fp->current_object->storage */
