@@ -585,6 +585,7 @@ static void add_mem_imm( enum amd64_reg reg, int offset, int imm32 )
   low_add_mem_imm( 1, reg, offset, imm32 );
 }
 
+#ifndef USE_VALGRIND
 static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
 {
   int r2 = imm32 == -1 ? 1 : 0;
@@ -604,6 +605,7 @@ static void add_mem8_imm( enum amd64_reg reg, int offset, int imm32 )
     ib( imm32 );
   }
 }
+#endif
 
 static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
@@ -983,9 +985,6 @@ void amd64_ins_entry(void)
   push(P_REG_R12);
   push(P_REG_RBX);
   sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
-#ifdef USE_VALGRIND
-  mov_imm_mem32(0, P_REG_RSP, 0 ); /* clear counter used by check_threads_etc */
-#endif
   mov_reg_reg(ARG1_REG, Pike_interpreter_reg);
   amd64_flush_code_generator_state();
 }
@@ -1486,10 +1485,14 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
   {
     LABEL_A;
     /* Use C-stack for counter. We have padding added in entry */
+#ifndef USE_VALGRIND
     add_mem8_imm( P_REG_RSP, 0, 1 );
     jno( &label_B );
+#endif
     call_rel_imm32( branch_check_threads_update_etc );
+#ifndef USE_VALGRIND
    LABEL_B;
+#endif
   }
 }
 
