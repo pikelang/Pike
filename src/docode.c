@@ -1352,7 +1352,8 @@ static int do_docode2(node *n, int flags)
 	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
 	/* efuns typically don't access object variables. */
 	node *args = CDAR(n);
-	if (args) {
+	if (args && count_args(args) > 1)
+    {
 	  node **arg = my_get_arg(&args, 0);
 	  if (arg && node_is_eq(CDR(n), *arg) &&
 	      !(args->tree_info & OPT_ASSIGNMENT)) {
