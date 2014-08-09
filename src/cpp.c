@@ -3172,13 +3172,20 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!
  *! @mapping
  *! 	@member string "current_file"
+ *!             Name of the current file. It is used for generating
+ *!             #line directives and for locating include files.
  *! 	@member int|string "charset"
+ *!             Charset to use when processing @expr{data@}.
  *! 	@member object "handler"
+ *!             Compilation handler.
  *! 	@member int "compat_major"
+ *!             Sets the major pike version used for compat handling.
  *! 	@member int "compat_minor"
+ *!             Sets the minor pike version used for compat handling.
  *! 	@member int "picky_cpp"
+ *!             Generate more warnings.
  *!	@member int "keep_comments"
- *! 		This option causes @[cpp()] not to strip comments.
+ *! 		This option keeps @[cpp()] from removing comments.
  *!             Useful in combination with the prefix feature below.
  *! 	@member string "prefix"
  *! 		If a prefix is given, only prefixed directives will be
