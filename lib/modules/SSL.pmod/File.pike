@@ -2089,23 +2089,22 @@ protected int ssl_close_callback (int ignored)
       SSL3_DEBUG_MSG ("ssl_close_callback: Propagating errno from another callback\n");
 #endif
 
-    if (!close_errno) {
-      if (!conn || conn->state & CONNECTION_peer_closed)
-	SSL3_DEBUG_MSG ("ssl_close_callback: After clean close\n");
-
-      else {
-	// The remote end has closed the connection without sending a
-	// close packet.
-	//
-	// This became legal by popular demand in TLS 1.1.
-	SSL3_DEBUG_MSG ("ssl_close_callback: Did not get a remote close.\n");
-	conn->state = [int(0..0)|ConnectionState]
-	  (conn->state | CONNECTION_peer_closed);
-	SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - "
-			"simulating System.EPIPE\n");
-	cleanup_on_error();
+    if (!conn || conn->state & CONNECTION_peer_closed)
+      SSL3_DEBUG_MSG ("ssl_close_callback: After clean close\n");
+    else {
+      // The remote end has closed the connection without sending a
+      // close packet.
+      //
+      // This became legal by popular demand in TLS 1.1.
+      SSL3_DEBUG_MSG ("ssl_close_callback: Did not get a remote close.\n");
+      conn->state = [int(0..0)|ConnectionState]
+	(conn->state | CONNECTION_peer_closed);
+      SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - "
+		      "simulating System.EPIPE\n");
+      cleanup_on_error();
+      close_state = ABRUPT_CLOSE;
+      if (!close_errno) {
 	close_errno = System.EPIPE;
-	close_state = ABRUPT_CLOSE;
       }
     }
 
