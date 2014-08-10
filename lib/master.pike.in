@@ -3760,6 +3760,14 @@ void _main(array(string(0..255)) orig_argv)
     }
 
     cur_compat_ver = Version (compat_major, compat_minor);
+    if (cur_compat_ver < lowestcompat)
+    {
+      werror("This Pike only supports compatibility down to %s.\n",
+             (string)lowestcompat);
+      cur_compat_ver = lowestcompat;
+      compat_major = lowestcompat->major;
+      compat_minor = lowestcompat->minor;
+    }
     if (compat_major != -1) {
       object compat_master = get_compat_master (compat_major, compat_minor);
 
@@ -5872,6 +5880,9 @@ class Version
 
 //! Version information about the current Pike version.
 Version currentversion = Version(__REAL_MAJOR__, __REAL_MINOR__);
+
+Version lowestcompat = Version(Builtin.LOWEST_COMPAT_MAJOR,
+                               Builtin.LOWEST_COMPAT_MINOR);
 
 mapping(Version:CompatResolver) compat_handler_cache = ([
   currentversion:this_object(),
