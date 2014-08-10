@@ -414,9 +414,9 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
 /*! @endclass
  */
 
-/*! @decl string compress(string data, void|int(0..1) raw, @
- *!                       void|int(0..9) level, void|int strategy, @
- *!                       void|int(8..15) window_size)
+/*! @decl string(8bit) compress(string(8bit) data, void|int(0..1) raw, @
+ *!                             void|int(0..9) level, void|int strategy, @
+ *!                             void|int(8..15) window_size)
  *!
  *! Encodes and returns the input @[data] according to the deflate
  *! format defined in RFC 1951.
@@ -498,7 +498,7 @@ static void gz_compress(INT32 args)
 /*! @class deflate
  */
 
-/*! @decl string deflate(string data, int|void flush)
+/*! @decl string(8bit) deflate(string(8bit) data, int|void flush)
  *!
  *! This function performs gzip style compression on a string @[data] and
  *! returns the packed data. Streaming can be done by calling this
@@ -515,9 +515,6 @@ static void gz_compress(INT32 args)
  *!   @value Gz.FINISH
  *!     All input is packed and an 'end of data' marker is appended.
  *! @endint
- *!
- *! @note
- *!   Data must not be wide string.
  *!
  *! @seealso
  *! @[Gz.inflate->inflate()]
@@ -873,7 +870,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
 /*! @endclass
 */
 
-/*! @decl string uncompress(string data, void|int(0..1) raw)
+/*! @decl string(8bit) uncompress(string(8bit) data, void|int(0..1) raw)
  *!
  *! Uncompresses the @[data] and returns it. The @[raw] parameter
  *! tells the decoder that the indata lacks the data header and footer
@@ -912,7 +909,7 @@ static void gz_uncompress(INT32 args)
 /*! @class inflate
  */
 
-/*! @decl string inflate(string data)
+/*! @decl string(8bit) inflate(string(8bit) data)
  *!
  *! This function performs gzip style decompression. It can inflate
  *! a whole file at once or in blocks.
@@ -996,7 +993,7 @@ static void gz_inflate(INT32 args)
   }
 }
 
-/*! @decl string end_of_stream()
+/*! @decl string(8bit) end_of_stream()
  *!
  *! This function returns 0 if the end of stream marker has not yet
  *! been encountered, or a string (possibly empty) containg any extra data
@@ -1040,12 +1037,9 @@ static void exit_gz_inflate(struct object *UNUSED(o))
 /*! @endclass
  */
 
-/*! @decl int crc32(string data, void|int start_value)
+/*! @decl int crc32(string(8bit) data, void|int start_value)
  *!
  *!   This function calculates the standard ISO3309 Cyclic Redundancy Check.
- *!
- *! @note
- *!   Data must not be wide string.
  */
 static void gz_crc32(INT32 args)
 {
@@ -1119,8 +1113,8 @@ PIKE_MODULE_INIT
   
   /* function(int|void,int|void:void) */
   ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
-  /* function(string,int|void:string) */
-  ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
+  /* function(string(8bit),int|void:string(8bit)) */
+  ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr8 tOr(tInt,tVoid),tStr8),0);
   ADD_FUNCTION("_size_object", gz_deflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
@@ -1157,10 +1151,10 @@ PIKE_MODULE_INIT
   
   /* function(int|void:void) */
   ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tMapping,tOr(tInt,tVoid)),tVoid),0);
-  /* function(string:string) */
-  ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
-  /* function(:string) */
-  ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr),0);
+  /* function(string(8bit):string(8bit)) */
+  ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr8,tStr8),0);
+  /* function(:string(8bit)) */
+  ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr8),0);
   ADD_FUNCTION("_size_object", gz_inflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
@@ -1191,14 +1185,14 @@ PIKE_MODULE_INIT
   }
 #endif
 
-  /* function(string,void|int:int) */
-  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),0);
+  /* function(string(8bit),void|int:int) */
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tInt),tInt),0);
 
-  /* function(string,void|int(0..1),void|int,void|int:string) */
-  ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
+  /* function(string(8bit),void|int(0..1),void|int,void|int:string(8bit)) */
+  ADD_FUNCTION("compress",gz_compress,tFunc(tStr8 tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);
 
-  /* function(string,void|int(0..1):string) */
-  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr tOr(tVoid,tInt01),tStr),0);
+  /* function(string(8bit),void|int(0..1):string(8bit)) */
+  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr8 tOr(tVoid,tInt01),tStr8),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
