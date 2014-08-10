@@ -77,10 +77,14 @@ test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("
 test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("33 0f 13 05 54 65 73 74 20 13 06 55 73 65 72 20 31"-" "))), "Types.PrintableString(\"Test User 1\")")
 
 dnl 5.16
-dnl FIXME: T61 is not encoded
-dnl test_decode("14 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73", "Types.TeletexString(\"cl\\351s publiques\")")
-test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
-test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
+dnl dnl FIXME: T61 is not encoded
+dnl dnl test_decode("14 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73", "Types.TeletexString(\"cl\\351s publiques\")")
+dnl test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
+dnl test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "Types.TeletexString(\"cl\\351s publiques\")")
+dnl
+test_decode("14 0e 63 6c e9 73 20 70 75 62 6c 69 71 75 65 73", "Types.BrokenTeletexString(\"cl\\351s publiques\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0e 63 6c e9 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "Types.BrokenTeletexString(\"cl\\351s publiques\")")
+test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 14 14 04 63 6c e9 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "Types.BrokenTeletexString(\"cl\\351s publiques\")")
 
 dnl 5.17
 test_decode("17 0d 39 31 30 35 30 36 32 33 34 35 34 30 5a", "Types.UTC(\"910506234540Z\")")
@@ -124,8 +128,11 @@ test_eq(Types.UTC()->set_posix(673566340)->get_der(),
 
 test_eq(Types.UTC("910506214540Z")->get_posix(), 673566340)
 
-test_eq(Types.TeletexString("clés publiques")->get_der(),
-  String.hex2string("140f636cc26573207075626c6971756573"))
+dnl test_eq(Types.TeletexString("clés publiques")->get_der(),
+dnl   String.hex2string("140f636cc26573207075626c6971756573"))
+
+test_eq(Types.BrokenTeletexString("clés publiques")->get_der(),
+  String.hex2string("140e636ce973207075626c6971756573"))
 
 test_any([[
   import Types;
