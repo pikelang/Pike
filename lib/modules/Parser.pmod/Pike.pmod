@@ -9,10 +9,12 @@
 
 inherit "C.pmod";
 
-array(string) low_split(string data, void|mapping state)
+array(string) low_split(string data, void|mapping(string:string) state)
 {
   if(state && state->remains)
-    data = m_delete(state, "remains") + data;
+    data = (string)m_delete(state, "remains") + data;
+  // Cast to string above to work around old Pike 7.0 bug.
+
   array ret;
   string rem;
   [ret, rem] = Parser._parser._Pike.tokenize(data);
@@ -31,7 +33,7 @@ array(string) low_split(string data, void|mapping state)
 //! /**/ tokens. The @[state] argument should be an initially empty
 //! mapping, in which split will store its state between successive
 //! calls.
-array(string) split(string data, void|mapping state) {
+array(string) split(string data, void|mapping(string:string) state) {
   array r = low_split(data, state);
 
   array new = ({});
