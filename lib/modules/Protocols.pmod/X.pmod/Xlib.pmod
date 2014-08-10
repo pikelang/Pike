@@ -214,7 +214,7 @@ class Display
   array key_mapping ;
   //!
 
-  mapping(string:.Extension) extensions = ([]); // all available extensions.
+  mapping(string:.Extensions.Extension) extensions = ([]);
   //! All extensions supported by the server and this module
 
   mapping pending_requests; /* Pending requests */

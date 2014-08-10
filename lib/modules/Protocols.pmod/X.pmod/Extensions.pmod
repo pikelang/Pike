@@ -24,7 +24,7 @@
 
 //! an abstract class used to provide features for implimenting
 //! X11 extensions. Provides no useful functionality on its own.
-protected class extension
+class Extension
 {
   object dpy;
   int major, error, event;
@@ -65,7 +65,7 @@ protected class extension
 class ScreenSaver
   //!
 {
-  inherit extension;
+  inherit Extension;
   constant name = "MIT-SCREEN-SAVER";
   
 
@@ -74,7 +74,7 @@ class ScreenSaver
 class Shape
   //!
 {
-  inherit extension;
+  inherit Extension;
 
   constant name = "SHAPE";
   mapping shape_kind=([ "bounding":0, "clipping":1, "clip":1]);
@@ -164,7 +164,7 @@ class Shape
 //! Provides support for the X11 XTEST extension.
 class XTEST
 {
-  inherit extension;
+  inherit Extension;
   constant name="XTEST";
 
   mapping event_op = (["KeyPress": 2, "KeyRelease": 3, "ButtonPress": 4,
