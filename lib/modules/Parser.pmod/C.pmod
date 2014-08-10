@@ -13,7 +13,6 @@
 //! which split will store its state between successive calls.
 array(string) split(string data, void|mapping state)
 {
-  int start;
   int line=1;
   array(string) ret=({});
   int pos;
