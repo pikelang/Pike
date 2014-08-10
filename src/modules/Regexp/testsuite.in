@@ -60,12 +60,4 @@ cond_resolv(Regexp.match, [[
   test_equal([[ Regexp.replace("(a)", "abrakadabra", "·") ]], "·br·k·d·br·")
 ]])
 
-dnl Compat
-test_false([[
-#pike 0.6
-# 1 "-" // Prevent "." from being imported
-Regexp()->replace ]])
-test_true([[
-#pike 7.4
-programp(Regexp) ]])
 END_MARKER
