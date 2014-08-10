@@ -4,7 +4,6 @@ START_MARKER
 test_compile_any([[#pike 7.2]])
 test_compile_any([[#pike 7.4]])
 test_compile_any([[#pike 7.0]])
-test_compile_any([[#pike 0.6]])
 test_compile_any([[#pike 7.6]])
 test_compile_any([[#pike 7.8]])
 
