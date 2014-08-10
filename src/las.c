@@ -3725,7 +3725,7 @@ void fix_type_field(node *n)
     break;
 
   case F_CASE_RANGE:
-    if (CDR(n) && CAR(n) && !TEST_COMPAT(0,6)) {
+    if (CDR(n) && CAR(n)) {
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
       /* case 1 .. 2: */
