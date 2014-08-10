@@ -1,5 +1,5 @@
 #!/usr/local/bin/pike
-#pike 0.6
+#pike 7.0
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
@@ -25,7 +25,7 @@ protected constant known_constants = (< "PI" >);
 string fippel_path(string path)
 {
   sscanf(path,"./%s",path);
-  path=replace(path,"/","_");
+  path=predef::replace(path,"/","_");
   if(path[strlen(path)-5..]==".bmml") path=path[..strlen(path)-6];
   if(path[strlen(path)-5..]!=".html") path+=".html";
 
@@ -44,7 +44,7 @@ string even_more_magic(string block, int indent)
 {
   if(-1==search(block,"\t"))
   {
-    return replace(block,"\n","<br />\n");
+    return predef::replace(block,"\n","<br />\n");
   }else{
     int e,d;
     mixed tmp,tmp2;
@@ -137,7 +137,7 @@ string magic(string s, int quote)
   foreach(s/"\n\n",s)
   {
     sscanf(s,"\t%s",s);
-    s=replace(s,"\n\t","\n");
+    s=predef::replace(s,"\n\t","\n");
     ret += ({ more_magic(s, quote) });
   }
 
@@ -191,17 +191,17 @@ array(string) to=({"&amp;","&lt;","&gt;"});
 
 string html_quote(string s)
 {
-  return replace(s,from,to);
+  return predef::replace(s,from,to);
 }
 
 string html_unquote(string s)
 {
-  return replace(s,to, from);
+  return predef::replace(s,to, from);
 }
 
 string url_quote(string s)
 {
-  return replace(s, 
+  return predef::replace(s, 
 		 ({" ","`","\"","%"}),
 		 ({"%20","%60","%22","%37"}));
 		 
@@ -521,7 +521,7 @@ string convert_page(string path, string fname,
 
 	case "KEYWORD":
 	case "KEYWORDS":
-	  a=replace(rest,({"\n"," ","\t"}),({"","",""}))/",";
+	  a=predef::replace(rest,({"\n"," ","\t"}),({"","",""}))/",";
 	  b=({});
 	  foreach(a,a)
 	  {
@@ -533,7 +533,7 @@ string convert_page(string path, string fname,
 	  break;
 
 	case "SEE ALSO":
-	  rest=replace(rest,({"\n"," ","\t"}),({"","",""}));
+	  rest=predef::replace(rest,({"\n"," ","\t"}),({"","",""}));
 	  a=rest/",";
 	  b = map(a, lambda(string tmp) {
 		       string to = tmp;
@@ -641,7 +641,7 @@ string convert_page(string path, string fname,
     string title;
     int section;
 
-    cont=replace(cont,"$version",version());
+    cont=predef::replace(cont,"$version",version());
     cont=html_quote(cont);
     sections=cont/"\n\n";
     
@@ -665,7 +665,7 @@ string convert_page(string path, string fname,
 	
       case "  ":
 	sscanf(tmp,"  %s",tmp);
-	tmp=replace(tmp,"\n  ","\n");
+	tmp=predef::replace(tmp,"\n  ","\n");
 	tmp=more_magic(tmp,0);
 	break;
 	
@@ -759,7 +759,7 @@ string convert_page(string path, string fname,
 	    output+="<pre>\n"+tmp+"</pre>\n";
 	    break;
 	  case 0:
-	    output+="<p>" + replace(tmp,"\n\n","\n</p><p>\n") + "</p>\n";
+	    output+="<p>" + predef::replace(tmp,"\n\n","\n</p><p>\n") + "</p>\n";
 	    break;
 	  }
 	  pre=p;
@@ -769,7 +769,7 @@ string convert_page(string path, string fname,
       tmp+=line+"\n";
     }
     output=mkdocument(output,"Pike: "+
-		      replace((fname/"/")[-1],"_"," "), root);
+		      predef::replace((fname/"/")[-1],"_"," "), root);
 #else
     return "";
 #endif
