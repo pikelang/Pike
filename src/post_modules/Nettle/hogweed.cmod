@@ -216,7 +216,7 @@ PIKEFUN int rsa_unpad(string(0..255) data, int type)
     }
   }
 
-  if( *str==2 )
+  if( type==2 )
   {
     nonpad=pos+1;
     pad=1;
