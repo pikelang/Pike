@@ -157,21 +157,20 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 0.6 master compatibility interface.
+//! Pike 7.0 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! Pike 0.6.
+//! Pike 0.7 through 7.0.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_6_master
+class Pike_7_0_master
 {
-  string describe_backtrace(array(mixed) trace);
   object low_cast_to_object(string oname, string current_file);
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
@@ -273,8 +272,6 @@ protected class Pike_0_6_master
   void add_program_path(string tmp);
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
-  program cast_to_program(string pname, string current_file);
-  void handle_error(array(mixed) trace);
 
   //! Make a new instance of a class.
   //!
@@ -289,7 +286,6 @@ protected class Pike_0_6_master
   }
 
   void create();
-  program handle_inherit(string pname, string current_file);
   extern mapping(program:object) objects;
   object low_cast_to_object(string oname, string current_file);
   object cast_to_object(string oname, string current_file);
@@ -302,34 +298,6 @@ protected class Pike_0_6_master
   string trim_file_name(string s);
   void compile_error(string file,int line,string err);
   string handle_include(string f, string current_file, int local_include);
-  local __deprecated__ string stupid_describe(mixed m)
-  {
-    switch(string typ=sprintf("%t",m))
-    {
-    case "int":
-    case "float":
-      return (string)m;
-
-    case "string":
-      if(sizeof(m) < BT_MAX_STRING_LEN)
-      {
-	string t = sprintf("%O", m);
-	if (sizeof(t) < (BT_MAX_STRING_LEN + 2)) {
-	  return t;
-	}
-	t = 0;
-      }
-
-    case "array":
-    case "mapping":
-    case "multiset":
-      return typ+"["+sizeof(m)+"]";
-
-    default:
-      return typ;
-    }
-  }
-
 
   int is_absolute_path(string p);
   array(string) explode_path(string p);
@@ -344,57 +312,17 @@ protected class Pike_0_6_master
   extern object compilation_mutex;
 #endif
 
-  local constant mkmultiset = predef::mkmultiset;
   local __deprecated__(function) clone = new;
   constant master_efuns = ({});
   class joinnode {};
   extern mapping(string:mixed) fc;
-  mixed handle_import(string what, string|void current_file);
-  local protected object Pike_0_6_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_0_6_compat_handler) {
-      Pike_0_6_compat_handler = global::get_compilation_handler(0, 6);
-    }
-    return Pike_0_6_compat_handler->resolv(identifier, current_file);
-  }
   extern string _pike_file_name;
   void compile_warning(string file,int line,string err);
   string read_include(string f);
 
   string describe_program(program p);
-  string describe_backtrace(array(mixed) trace);
   class Codec {};
 
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 .. 0.6
-    if (!major && (minor < 7))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* Missing symbols:
-   *
-   * __INIT
-   */
-}
-
-//! Pike 7.0 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 0.7 through 7.0.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-class Pike_7_0_master
-{
-  inherit Pike_0_6_master;
   constant bt_max_string_len = 1;
   constant out_of_date_warning = 1;
 #ifdef PIKE_FAKEROOT
@@ -412,7 +340,6 @@ class Pike_7_0_master
   program cast_to_program(string pname, string current_file,
 			  object|void handler);
   void handle_error(array(mixed)|object trace);
-  protected private constant mkmultiset = mkmultiset;
   program handle_inherit(string pname, string current_file, object|void handler);
   mixed handle_import(string what, string|void current_file, object|void handler);
   mixed resolv_base(string identifier, string|void current_file);
@@ -512,11 +439,8 @@ class Pike_7_0_master
     int len=maxlen;
     int done=0;
 
-//  int loopcount=0;
-
     while(1)
     {
-//    if(loopcount>10000) werror("len=%d\n",len);
       array(string) z=allocate(clip);
       array(int) isclipped=allocate(clip);
       array(int) clippable=allocate(clip);
@@ -531,13 +455,12 @@ class Pike_7_0_master
 
       while(1)
       {
-//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
 	string ret = z[..clip-1]*",";
-//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
+
 	if(done || sizeof(ret)<=maxlen+1)
 	{
 	  int tmp=sizeof(x)-clip-1;
-//        if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
+
 	  clipped=`+(0,@isclipped);
 	  if(tmp>=0)
 	  {
@@ -553,16 +476,12 @@ class Pike_7_0_master
 	int clipsuggest;
 	while(1)
 	{
-//        if(loopcount++ > 20000) return "";
-//        if(!(loopcount & 0xfff)) werror("GNORK\n");
 	  int smallsize=0;
 	  int num_large=0;
 	  clipsuggest=0;
 
 	  for(int e=0;e<clip;e++)
 	  {
-//          if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
-
 	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
 	      num_large++;
 	    else
@@ -571,21 +490,16 @@ class Pike_7_0_master
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
         
-//        if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
 	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
-       
-//        if(loopcount>10000) werror("newlen=%d\n",newlen);
 
 	  if(newlen<8 || newlen >= last_newlen) break;
 	  last_newlen=newlen;
-//        if(loopcount>10000) werror("len decreased, retrying.\n");
 	}
 
 	if(newlen < 8 && clip)
 	{
 	  clip-= (clip/4) || 1;
 	  if(clip > clipsuggest) clip=clipsuggest;
-//        if(loopcount>10000) werror("clip decreased, retrying.\n");
 	}else{
 	  len=newlen;
 	  done++;
@@ -604,9 +518,7 @@ class Pike_7_0_master
 
   object get_compat_master(int major, int minor)
   {
-    if (!major && (minor < 7))
-      return Pike_0_6_master::get_compat_master(major, minor);
-    // 0.7 - 7.0
+    // 0.0 - 7.0
     if ((major < 7) || ((major == 7) && !minor))
       return this_program::this;
     return get_compat_master(major, minor);

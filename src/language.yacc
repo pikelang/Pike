@@ -778,7 +778,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($5 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($5 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while(--$5>=0) push_type(T_ARRAY);
@@ -1253,7 +1253,7 @@ soft_cast: open_bracket_with_line_info type ']'
 full_type: type4
   | full_type '*'
   {
-    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
+    if (Pike_compiler->compiler_pass == 2) {
        yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1264,7 +1264,7 @@ type6: type | identifier_type ;
 
 type: type '*'
   {
-    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
+    if (Pike_compiler->compiler_pass == 2) {
        yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1274,7 +1274,7 @@ type: type '*'
 
 type7: type7 '*'
   {
-    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
+    if (Pike_compiler->compiler_pass == 2) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1703,7 +1703,7 @@ new_name: optional_stars TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1724,7 +1724,7 @@ new_name: optional_stars TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1792,7 +1792,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1809,7 +1809,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -2417,7 +2417,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
 
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -2566,7 +2566,7 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($3 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($3 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($3--) push_type(T_ARRAY);
@@ -3261,8 +3261,7 @@ expected_colon: ':'
 
 return: TOK_RETURN expected_semicolon
   {
-    if(!TEST_COMPAT(0,6) &&
-       !match_types(Pike_compiler->compiler_frame->current_return_type,
+    if(!match_types(Pike_compiler->compiler_frame->current_return_type,
 		    void_type_string))
     {
       yytype_error("Must return a value for a non-void function.",
