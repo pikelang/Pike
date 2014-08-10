@@ -176,7 +176,7 @@ mapping(int:program(.Types.Object)) universal_types =
    U(16) : .Types.Sequence,
    U(17) : .Types.Set,
    U(19) : .Types.PrintableString,
-   U(20) : .Types.TeletexString,	// or broken_teletexString?
+   U(20) : .Types.BrokenTeletexString,
    U(22) : .Types.IA5String,
    U(23) : .Types.UTC,
    U(28) : .Types.UniversalString,
