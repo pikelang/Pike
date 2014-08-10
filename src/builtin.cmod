@@ -6118,14 +6118,14 @@ void init_builtin(void)
   SET_SVAL(gc_post_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   SET_SVAL(gc_destruct_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   SET_SVAL(gc_done_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-  INIT
+  INIT;
 }
 
 void exit_builtin(void)
 {
   struct svalue zero;
   if (val_module) free_object (val_module);
-  EXIT
+  EXIT;
   SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   assign_svalue(&gc_pre_cb, &zero);
   assign_svalue(&gc_post_cb, &zero);
