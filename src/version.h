@@ -9,7 +9,7 @@
 #define PIKE_BUILD_VERSION 3
 
 #define LOWEST_COMPAT_MAJOR 0
-#define LOWEST_COMPAT_MINOR 5
+#define LOWEST_COMPAT_MINOR 6
 
 /* Prototypes begin here */
 PMOD_EXPORT void f_version(INT32 args);

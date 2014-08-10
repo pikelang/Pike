@@ -157,30 +157,23 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 0.5 master compatibility interface.
+//! Pike 0.6 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! all pikes until Pike 0.5.
+//! Pike 0.6.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_5_master
+protected class Pike_0_6_master
 {
   string describe_backtrace(array(mixed) trace);
   object low_cast_to_object(string oname, string current_file);
   extern array(string) pike_include_path;
-  string pike_library_path =
-#if "#lib_prefix#"[0]!='#'
-    "#lib_prefix#"
-#else
-    dirname(__FILE__)
-#endif
-    ;
   extern array(string) pike_module_path;
   extern array(string) pike_program_path;
 #ifdef GETCWD_CACHE
@@ -302,14 +295,6 @@ protected class Pike_0_5_master
   object cast_to_object(string oname, string current_file);
   class dirnode {};
   object findmodule(string fullname);
-  local protected object Pike_0_5_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_0_5_compat_handler) {
-      Pike_0_5_compat_handler = global::get_compilation_handler(0, 5);
-    }
-    return Pike_0_5_compat_handler->resolv(identifier, current_file);
-  }
   extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
   extern mixed inhibit_compile_errors;
@@ -345,47 +330,12 @@ protected class Pike_0_5_master
     }
   }
 
-  string describe_backtrace(array(mixed) trace);
 
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 - 0.5
-    if (!major && (minor < 6))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* Missing symbols:
-   *
-   * __INIT
-   * __lambda_30	(Alias for mkmapping().)
-   */
-}
-
-//! Pike 0.6 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 0.6.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_6_master
-{
-  inherit Pike_0_5_master;
   int is_absolute_path(string p);
   array(string) explode_path(string p);
   string dirname(string x);
   string basename(string x);
   object low_cast_to_object(string oname, string current_file);
-#pragma no_deprecation_warnings
-  private __deprecated__(string) pike_library_path =
-    (__deprecated__(string))Pike_0_5_master::pike_library_path;
-#pragma deprecation_warnings
   extern int want_warnings;
   program compile_string(string data, void|string name);
   program compile_file(string file);
@@ -418,9 +368,7 @@ protected class Pike_0_6_master
 
   object get_compat_master(int major, int minor)
   {
-    if (!major && (minor < 6))
-      return Pike_0_5_master::get_compat_master(major, minor);
-    // 0.6
+    // 0.0 .. 0.6
     if (!major && (minor < 7))
       return this_program::this;
     return get_compat_master(major, minor);
