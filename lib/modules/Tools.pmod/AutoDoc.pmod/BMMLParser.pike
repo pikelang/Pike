@@ -306,8 +306,8 @@ string mkindex(string topic, int usehead)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-//    perror(sprintf("all pages: %O\n",sort(m_indices(pages))));
-//    perror(sprintf("pages done: %O\n",sort(m_indices(pages_done))));
+//    werror("all pages: %O\n",sort(m_indices(pages)));
+//    werror("pages done: %O\n",sort(m_indices(pages_done)));
     foreach(my_sort(m_indices(pages) - indices(pages_done) ),a)
     {
       if(a[0..4]=="index") continue;
@@ -330,7 +330,7 @@ string mkindex(string topic, int usehead)
 	ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	  "</li>\n";
       }else{
-	perror("Warning: no page for function: "+a+".\n");
+	werror("Warning: no page for function: "+a+".\n");
       }
     }
     ret+="</ul>\n";
@@ -339,7 +339,7 @@ string mkindex(string topic, int usehead)
   default:
     if(!keywords[prefix+topic])
     {
-      perror("Unknown keyword "+topic+".\n");
+      werror("Unknown keyword "+topic+".\n");
       return "";
     }
 
@@ -377,7 +377,7 @@ string convert_page(string path, string fname,
 
   cont = cont||read_bytes(path);
 
-//  perror("foo: "+path[strlen(path)-5..]+".\n");
+//  werror("foo: "+path[strlen(path)-5..]+".\n");
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short) ||
      // Both of the following are broken syntax.
      sscanf(cont,"NAME\t\n\t%s - %s\n",name,short) ||
@@ -469,7 +469,7 @@ string convert_page(string path, string fname,
 	case "NAME":
 	  if((sscanf(rest, "\t%s - %s", part_name, b)!=2) &&
 	     (sscanf(rest,"    %*[\t ]%s - %s", part_name, b) != 3))
-	    perror("Warning NAME section broken!\n");
+	    werror("Warning NAME section broken!\n");
 
 	  section_path = module_path + part_name/".";
 	  if (!partno) {
@@ -495,7 +495,7 @@ string convert_page(string path, string fname,
 	case "DIRECTIVE":
 	  if((sscanf(rest, "\t%s", part_name) != 1) &&
 	     (sscanf(rest,"    %*[\t ]%s", part_name) != 2))
-	    perror("Warning DIRECTIVE section broken!\n");
+	    werror("Warning DIRECTIVE section broken!\n");
 
 	  symbol_type = "directive";
 	  part_names = map(part_name/"\n", String.trim_all_whites);
@@ -694,7 +694,7 @@ string convert_page(string path, string fname,
 	  break;
 
 	default:
-	  perror("Unknown directive: "+pre+".\n");
+	  werror("Unknown directive: "+pre+".\n");
 	}
 
       }
@@ -775,7 +775,7 @@ string convert_page(string path, string fname,
   else
   {
     if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
-      perror("Warning: not converting "+path+".\n");
+      werror("Warning: not converting "+path+".\n");
     output="";
   }
   return output;
@@ -848,7 +848,7 @@ void traversedir(string path)
 void dodocs(string path, int module)
 {
   cd(path);
-  perror("Doing "+path+"\n");
+  werror("Doing "+path+"\n");
   if(!module)
   {
     docdir="";
@@ -887,11 +887,11 @@ int main(int argc, array(string) argv)
 
   if(argc < 3)
   {
-    perror("Usage: html_docs.pike to_path from_path [module_doc_path ...]\n");
+    werror("Usage: html_docs.pike to_path from_path [module_doc_path ...]\n");
     exit(0);
   }
 
-//  perror(sprintf("argv = %O\n",argv));
+//  werror("argv = %O\n",argv);
 
   for(e=1;e<sizeof(argv);e++)
     argv[e]=combine_path(getcwd(),argv[e]);
@@ -915,6 +915,6 @@ int main(int argc, array(string) argv)
     
   foreach(indices(keywords) - indices(indexes_done),np)
   {
-    perror("Keywords never indexed: "+np+"\n");
+    werror("Keywords never indexed: "+np+"\n");
   }
 }
