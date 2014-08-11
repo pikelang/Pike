@@ -2628,7 +2628,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     else
     {
       amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -sizeof(struct svalue));
-      amd64_ref_svalue(P_REG_RBX,1); /* already have type in RAX (from assign_svalue) */
+      amd64_ref_svalue(P_REG_RBX,0); /* already have type in RAX (from assign_svalue) */
     }
     return;
 
