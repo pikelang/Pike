@@ -1029,7 +1029,7 @@ static void flush_dirty_regs(void)
 /* NB: We load Pike_fp et al into registers that
  *     are persistent across function calls.
  */
-void amd64_load_fp_reg(void)
+static void amd64_load_fp_reg(void)
 {
   if (fp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
@@ -1039,7 +1039,7 @@ void amd64_load_fp_reg(void)
   }
 }
 
-void amd64_load_sp_reg(void)
+static void amd64_load_sp_reg(void)
 {
   if (sp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
@@ -1049,7 +1049,7 @@ void amd64_load_sp_reg(void)
   }
 }
 
-void amd64_load_mark_sp_reg(void)
+static void amd64_load_mark_sp_reg(void)
 {
   if (mark_sp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
@@ -1058,6 +1058,33 @@ void amd64_load_mark_sp_reg(void)
     mark_sp_reg = PIKE_MARK_SP_REG;
   }
 }
+
+
+static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
+{
+  mov_mem8_reg( src, OFFSETOF(svalue, tu.t.type), dst);
+/*  and_reg32_imm( dst, 0x1f );*/
+}
+
+
+static void svalue_is_referenced(enum amd64_reg in, struct label *not )
+{
+    /* bit 4 set, and no higher bit set (all with 8bit values). */
+    /* aka: type & 248 == 8. Incidentally, 248 is equal to -8 in signed 8bit*/
+    and_reg_imm(in,-8);
+    /* jz(not) -- saves one comparison in most cases, adds code size, more jumps. */
+    cmp_reg_imm(in,MIN_REF_TYPE);
+    jne( not );
+}
+
+static void mem_svalue_is_referenced(enum amd64_reg in, struct label *not )
+{
+    /* bit 4 set, and no higher bit set. */
+    if( in == P_REG_RAX ) Pike_error("RAX not supported here.\n");
+    mov_sval_type(in,P_REG_RAX);
+    svalue_is_referenced(P_REG_RAX, not );
+}
+
 
 static void update_arg1(INT32 value)
 {
@@ -1159,13 +1186,6 @@ static void amd64_mark(int offset)
   }
    amd64_add_mark_sp( 1 );
 }
-
-static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
-{
-  mov_mem8_reg( src, OFFSETOF(svalue, tu.t.type), dst);
-/*  and_reg32_imm( dst, 0x1f );*/
-}
-
 
 static void amd64_call_c_function(void *addr)
 {
