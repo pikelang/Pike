@@ -1,7 +1,7 @@
 START_MARKER
 
-test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
-test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
+test_do([[ Yabu.DB("test.db", "wct")->purge(); ]])
+test_do([[ add_constant("db", Yabu.DB("test.db", "wct")) ]])
 test_do([[ add_constant("table", db["Aces"]) ]])
 
 test_eq([[ table["Blixt"]="Gordon" ]], "Gordon")
@@ -51,7 +51,7 @@ test_eq([[ table["Blixt"] ]], "Gordon")
 test_equal([[ mkmapping(indices(table),values(table)) ]], [[ ([ "Blixt":"Gordon", "Buck":"Rogers" ]) ]])
 dnl **** End transactions test
 
-test_eval_error([[ object db = Yabu.db("test.db", "wct") ]])
+test_eval_error([[ object db = Yabu.DB("test.db", "wct") ]])
 
 define(check_db, [[ test_do([[
   for(int i = 0; i < 10; i++) {
@@ -67,11 +67,11 @@ define(check_db, [[ test_do([[
 
 check_db()
 test_do([[ destruct(db); ]])
-test_do([[ add_constant("db", Yabu.db("test.db", "w")) ]])
+test_do([[ add_constant("db", Yabu.DB("test.db", "w")) ]])
 check_db()
 test_do([[ db->reorganize(1.0); ]])
 test_do([[ destruct(db); ]])
-test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
+test_do([[ add_constant("db", Yabu.DB("test.db", "wct")) ]])
 check_db()
 
 dnl Cleanup
