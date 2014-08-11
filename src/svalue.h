@@ -224,8 +224,10 @@ struct svalue
  * NUMBER_NUMBER.
  *
  * PIKE_T_FREE svalues are recorded as BIT_INT in type hint fields.
+ *
+ * Please avoid letting pike_t_free & 8 be anything but 0.
  */
-#define PIKE_T_FREE 237
+#define PIKE_T_FREE 229
 
 #define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
 #define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
