@@ -14,7 +14,7 @@
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
 #define WARN(msg) werror(msg)
 #if constant(hash_7_0)
-#define hash 7.0::hash
+#define hash hash_7_0
 #endif
 
 #define CHECKSUM(s) (hash(s) & 0xffffffff)
@@ -31,8 +31,6 @@
 #define INHERIT_MUTEX
 #endif
 //! @endignore
-
-
 
 
 
@@ -64,7 +62,7 @@ protected private class ProcessLock {
 
     for(int tryout = 0; tryout < 3; tryout++) {
       Stdio.File f = Stdio.File();
-      
+
       if(f->open(lock_file, "cxw")) {
 	/* We're being paranoid... */
 	mixed err = catch {
@@ -74,7 +72,7 @@ protected private class ProcessLock {
 	  f->close();
 	  if(get_locked_pid() != getpid())
 	    ERR("Failed to reread lock-file");
-	  
+
 	  /* We now have the lock! */
 	  have_lock = 1;
 	  return;
@@ -85,12 +83,12 @@ protected private class ProcessLock {
 
       if(!file_stat(combine_path(lock_file, "../")))
 	ERR("The database does not exist (use the \"c\" flag).");
-      
+
       /* Failed to obtain lock, now trying some obscure techniques... */
       int pid = get_locked_pid();
       if(pid && kill(pid, 0))
 	ERR("Out-locked by PID %d", pid);
-      
+
       if(!rm(lock_file))
 	ERR("Lock removal failure (insufficient permissions?)");
 
@@ -163,7 +161,7 @@ protected private class FileIO {
     if(!file::open(filename, filemode))
       ERR(strerror(file::errno()));
   }
-  
+
   protected void create(string filename, string filemode)
   {
     file::create();
@@ -191,7 +189,7 @@ class Chunk {
 
   /* Point in file from which new chunks can be allocated. */
   private int eof = 0;
-  
+
   private mapping frees = ([]), keys = ([]);
 
   /* Escape special characters used for synchronizing
@@ -265,7 +263,7 @@ class Chunk {
     string type = encode_num(t);
     string checksum = encode_num(CHECKSUM(entry));
     string size = encode_num(sizeof(entry));
-    
+
     return ([ "type":t,
 	      "entry":("\n"+magic+type+checksum+size+entry+"%m"+magic)]);
   }
@@ -354,7 +352,7 @@ class Chunk {
 	  return 0;
     return 1;
   }
-  
+
   array(string) list_keys()
   {
     LOCK();
@@ -388,7 +386,7 @@ class Chunk {
 
     int offset, type;
     DECODE_KEY(key, offset, type);
-    
+
     mapping m = decode_chunk(file::read_at(offset, type));
     if(m->size == 0) {
       if(attributes)
@@ -464,7 +462,7 @@ class Chunk {
     file::file_open(filename);
     UNLOCK();
   }
-  
+
   protected void destroy()
   {
     if(parent && write)
@@ -525,8 +523,7 @@ class Chunk {
 }
 
 
-
-class Transaction 
+class Transaction
 //! A transaction. Created by calling transaction() in the table object.
 //!
 //! It provides the same functions the table does, in addition to
@@ -537,12 +534,12 @@ class Transaction
   private int id;
   private Table table;
   private _Table keep_ref;
-  
+
   void sync()
   {
     table->sync();
   }
-  
+
   protected void destroy()
   {
     if(table)
@@ -626,10 +623,7 @@ class Transaction
 }
 
 
-
-
-
-class Table 
+class Table
 //! The basic Yabu table
 {
   //! @ignore
@@ -678,7 +672,7 @@ class Table
   //!
   //! If @[ratio] is given it is the lowest ratio of useful/total disk
   //! usage that is allowed.
-  //! 
+  //!
   //! As an example, if ratio is 0.7 at lest 70% of the on-disk
   //! storage must be live data, if not the reoganization is done.
   int reorganize(float|void ratio)
@@ -695,10 +689,10 @@ class Table
       if(usage > ratio)
 	return 0;
     }
-    
+
     /* Remove old junk, just in case. */
     rm(filename+".opt");
-    
+
     /* Create new database. */
     Chunk opt = Chunk(filename+".opt", mode, this, ([]));
 
@@ -706,7 +700,7 @@ class Table
     mapping new_handles = ([]);
     foreach(indices(handles), string handle)
       new_handles[handle] = opt->set(db->get(handles[handle]));
-    
+
     /* Remap all transaction handles. */
     mapping new_t_handles = ([]);
     foreach(indices(t_handles), int id) {
@@ -728,11 +722,11 @@ class Table
     /* Reconstruct db and index. */
     modified();
     sync();
-    
+
     return 1;
     UNLOCK();
   }
-  
+
   private int next_magic()
   {
     return magic++;
@@ -834,7 +828,7 @@ class Table
     foreach(indices(t_changes[id]), string handle)
       if(t_changes[id][handle] < changes[handle])
 	ERR("Transaction conflict");
-    
+
     foreach(indices(t_handles[id]), string handle) {
       changes[handle] = next_magic();
       handles[handle] = t_handles[id][handle];
@@ -844,7 +838,7 @@ class Table
       changes[handle] = next_magic();
       m_delete(handles, handle);
     }
-    
+
     t_start[id] = next_magic();
     t_changes[id] = ([]);
     t_handles[id] = ([]);
@@ -888,8 +882,8 @@ class Table
   }
 
   //! @decl Transaction transaction()
-  //! Start a new transaction. 
-  
+  //! Start a new transaction.
+
   Transaction transaction(_Table|void keep_ref)
   {
     LOCK();
@@ -1065,7 +1059,7 @@ class Table
  * The shadow table.
  *
  */
-class _Table 
+class _Table
 {
   protected Table table;
   protected string handle;
@@ -1075,37 +1069,37 @@ class _Table
   {
     table->sync();
   }
-  
+
   void delete(string handle)
   {
     table->delete(handle);
   }
-  
+
   mixed set(string handle, mixed x)
   {
     return table->set(handle, x);
   }
-  
+
   mixed get(string handle)
   {
     return table->get(handle);
   }
-  
+
   array list_keys()
   {
     return table->list_keys();
   }
-  
+
   Transaction transaction()
   {
     return table->transaction(this);
   }
-  
+
   void close()
   {
     destruct(this);
   }
-  
+
   void purge()
   {
     table->purge();
@@ -1124,8 +1118,8 @@ class _Table
   protected array _indices()
   {
     return list_keys();
-  }  
-  
+  }
+
   protected array _values()
   {
     return map(_indices(), `[]);
@@ -1141,7 +1135,7 @@ class _Table
   {
     return table->reorganize(ratio);
   }
-    
+
   /*
    * Compile table statistics.
    */
@@ -1149,14 +1143,14 @@ class _Table
   {
     return sprintf("%4d", size);
   }
-  
+
   private string st_size(int size, mapping m)
   {
     return sprintf("%7.3f Mb", (float)size/(1024.0*1024.0));
-    
+
     string r = (string)size;
     int e = (int) (log((float)(size||1))/log(1024.0));
-    
+
     if(`<=(1, e, 3))
       r = sprintf("%7.2f",(float)size/(float)(((int)pow(1024.0,(float)e))||1));
     return sprintf("%s %s", r, ([ 1:"Kb", 2:"Mb", 3:"Gb" ])[e]||"b ");
@@ -1166,7 +1160,7 @@ class _Table
   {
     return sprintf("%3d %%", (int) (100.0*(float)used/(float)m->size));
   }
-  
+
   mapping(string:string|int) statistics()
   {
     return table->statistics();
@@ -1195,9 +1189,6 @@ class _Table
 }
 
 
-
-
-
 /*
  * The Yabu database object itself.
  *
@@ -1223,7 +1214,7 @@ class DB
 	o->sync();
     UNLOCK();
   }
-  
+
   protected void _table_destroyed(string handle)
   {
     LOCK();
@@ -1313,7 +1304,7 @@ class DB
   {
     destruct(this);
   }
-  
+
   //! Call @[Table.reorganize] in all tables
   int reorganize(float|void ratio)
   {
@@ -1322,7 +1313,7 @@ class DB
       r |= table(name)->reorganize(ratio);
     return r;
   }
-    
+
   //! Return information about all tables
   mapping(string:int) statistics()
   {
@@ -1331,7 +1322,7 @@ class DB
       m[name] = table(name)->statistics();
     return m;
   }
-    
+
   //! Return information about all tables in a human readable format
   string ascii_statistics()
   {
@@ -1340,7 +1331,7 @@ class DB
       r += table(name)->ascii_statistics()+"\n";
     return r;
   }
-    
+
   //! Open a new or existing databse.
   //!
   //! The @[dir] is the directory the database should be stored in.
@@ -1360,7 +1351,7 @@ class DB
   protected void create(string dir, string mode)
   {
     atexit(close);
-    
+
     this_program::dir = dir;
     this_program::mode = mode;
 
@@ -1381,12 +1372,12 @@ __deprecated__ DB db(string a,string b) {
  * Special extra bonus. This database is optimized for lots of very small
  * data records.
  */
-class LookupTable 
+class LookupTable
 {
   //! @ignore
   INHERIT_MUTEX;
   //! @endignore
-  
+
   private int minx;
   private Table table;
 
@@ -1403,7 +1394,7 @@ class LookupTable
     table->set(h(handle), m);
     UNLOCK();
   }
-  
+
   mixed get(string handle)
   {
     LOCK();
@@ -1452,7 +1443,7 @@ class LookupTable
     table->purge();
     UNLOCK();
   }
-  
+
   void sync()
   {
     LOCK();
@@ -1504,7 +1495,7 @@ class LookupDB
   //! The supported options are
   //!
   //! @mapping
-  //! @item int(1..) index_size
+  //! @member int(1..) index_size
   //! @endmapping
   protected void create(string dir, string mode, mapping|void options)
   {
