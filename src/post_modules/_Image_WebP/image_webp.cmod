@@ -236,13 +236,6 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
  *! The decoded image or an error
  */
 
-PIKEFUN object decode( string data )
-{
-  apply( Pike_fp->current_object, "_decode", 1 );
-  push_text( "image" );
-  f_index(2);
-}
-
 PIKEFUN mapping(string:object) _decode( string data )
 {
   int width, height, npix;
@@ -285,8 +278,10 @@ PIKEFUN mapping(string:object) _decode( string data )
   }
   free( res );
 
+  pop_n_elems(args);
+
   push_text( "image" );  push_object( i );
-  push_text( "img" );  push_object( i );
+  push_text( "img" );  ref_push_object( i );
   push_text( "alpha" );
   if( a ) 
     push_object( a );
@@ -296,6 +291,27 @@ PIKEFUN mapping(string:object) _decode( string data )
   push_text( "xsize" ); push_int( width );
   push_text( "ysize" ); push_int( height );
   f_aggregate_mapping( 12 );
+}
+
+PIKEFUN object decode( string data )
+{
+  struct mapping *m;
+  struct svalue *p;
+  f_cq__Image_WebP_cq__decode(args);
+
+  m = Pike_sp[-1].u.mapping;
+
+  if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
+      Pike_error("Decoding failed\n");
+
+  p = simple_mapping_string_lookup(m,"image");
+
+  if( !p || TYPEOF(*p) != PIKE_T_OBJECT )
+      Pike_error("Decoding failed\n");
+
+  ref_push_object( p->u.object );
+  stack_unlink(1);
+  fprintf(stderr, "this: %p; sp: %p\n", Pike_fp->current_object, Pike_sp);
 }
 
 static int parameter_int(struct mapping *map, const char *what, int def )
