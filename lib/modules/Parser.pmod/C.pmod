@@ -30,7 +30,8 @@ class UnterminatedStringError
   }
 }
 
-private array(string) low_split(string data, void|mapping(string:string) state)
+/* accessed from testsuite */
+/*private*/ array(string) low_split(string data, void|mapping(string:string) state)
 {
   if(state && state->remains)
     data = (string)m_delete(state, "remains") + data;
