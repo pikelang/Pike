@@ -10,6 +10,74 @@
 protected inherit "module.pmod";
 protected inherit Parser.XML.Tree;
 
+constant lfuns = ([
+  "`+": "OBJ + x",
+  "`-": "OBJ - x",
+  "`&": "OBJ & x",
+  "`|": "OBJ | x",
+  "`^": "OBJ ^ x",
+  "`<<":"OBJ << x",
+  "`>>":"OBJ >> x",
+  "`*": "OBJ * x",
+  "`/": "OBJ / x",
+  "`%": "OBJ % x",
+  "`~": "~OBJ",
+  "`==": "OBJ == x",
+  "`<": "OBJ < x",
+  "`>": "OBJ > x",
+  "__hash":"hash(OBJ)",
+  "cast":"(cast)OBJ",
+  "`!": "!OBJ",
+  "`[]":"OBJ[x]",
+  "`[]=":"OBJ[x]=y",
+  "`->":"OBJ->x",
+  "`->=":"OBJ->x=y",
+  "_sizeof":"sizeof(OBJ)",
+  "_indices":"indices(OBJ)",
+  "_values":"values(OBJ)",
+  "`()":"OBJ()",
+  "``+":"x + OBJ",
+  "``-":"x - OBJ",
+  "``&":"x & OBJ",
+  "``|":"x | OBJ",
+  "``^":"x ^ OBJ",
+  "``<<":"x << OBJ",
+  "``>>":"x >> OBJ",
+  "``*":"x * OBJ",
+  "``/":"x / OBJ",
+  "``%":"x % OBJ",
+
+  "`+=":"OBJ = OBJ + x", /* not really implemented... */
+
+  "`-=":"NOTIMPL",
+  "`&=":"NOTIMPL",
+  "`|=":"NOTIMPL",
+  "`^=":"NOTIMPL",
+  "`<<=":"NOTIMPL",
+  "`>>=":"NOTIMPL",
+  "`*=":"NOTIMPL",
+  "`/=":"NOTIMPL",
+  "`%=":"NOTIMPL",
+  "`~=":"NOTIMPL",
+  "`<=":"NOTIMPL",
+  "`>=":"NOTIMPL",
+  "`!=":"NOTIMPL",
+
+  "_is_type":"is_type(OBJ)",
+  "_sprintf":"sprintf(...,OBJ)",
+  "_equal":"equal(OBJ,x)",
+  "_m_delete":"m_delete(OBJ,x)",
+  "_get_iterator":"foreach(OBJ;...)",
+  "`[..]":"OBJ[a..b]",
+  /* NOTE: After this point there are only fake lfuns. */
+  "_search":"search(OBJ,..)",
+  "_random":"random(OBJ)",
+  /*  "_types",
+  "_serialize",
+  "_deserialize",
+  "_size_object",
+*/
+]);
 
 //========================================================================
 // REPRESENTATION OF TYPES
@@ -640,6 +708,102 @@ class _Class_or_Module {
   //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
 
+  void fixGettersSetters()
+  {
+    mapping(string:array(PikeObject)) found = ([]);
+    mapping(string:mapping(string:Documentation)) docs = ([]);
+
+    foreach( docGroups;int index; DocGroup doge )
+    {
+      foreach( doge->objects; int subindex; PikeObject o )
+      {
+	if( lfuns[o->name] == "NOTIMPL" )
+	{
+	  werror("WARNING: Dropping documentation for %s. "
+		 "There is no such operator\n"
+		 "Found in documentation for %s\n",
+		 o->name,o->position?->filename||name);
+	  doge->objects[subindex] = 0;
+	}
+	else if( o->name[0..0] == "`" && !lfuns[o->name] )
+	{
+	  string key = o->name[1..]-"=";
+	  found[key] += ({ o });
+	  doge->objects[subindex] = 0;
+	  if(!docs[key] )
+	    docs[key] = ([]);
+	  if( doge->documentation )
+	    if( o->name[-1] == '=' )
+	      docs[key]->set = doge->documentation;
+	    else
+	      docs[key]->get = doge->documentation;
+	}
+      }
+      doge->objects -= ({0});
+      if( sizeof( doge->objects ) == 0 )
+      {
+	docGroups[index]=0;
+      }
+    }
+    docGroups -= ({0});
+
+    foreach( found; string key; array(PikeObject) o )
+    {
+      Variable nvar = Variable();
+      Documentation outdoc=Documentation();
+      DocGroup ngroup = DocGroup(({nvar}),outdoc);
+      string extra;
+
+      docGroups += ({ ngroup });
+
+      if( sizeof( o ) == 1 )
+      {
+	if( o[0]->name[-1] == '=' )
+	  extra = "Write only";
+	else
+	  extra = "Read only";
+      }
+      nvar->name = key;
+      nvar->type = o[0]->returntype;
+      nvar->position = o[0]->position;
+      outdoc->position = o[0]->position;
+
+      mapping(string:Documentation) doc = docs[key];
+      if( doc?->set?->text && doc?->get?->text &&
+	  strlen(doc->set->text) && strlen(doc->get->text) &&
+	  doc->set->text != doc->get->text )
+      {
+	outdoc->text = "@dl\n"
+	  "@item getting\n"
+	  "\n"+doc->get->text+"\n\n"+
+	  "@item setting\n"+
+	  doc->get->text+"\n\n";
+      }
+      else
+      {
+	if( doc?->set?->text && strlen(doc->set->text) )
+	{
+	  outdoc->text = doc->set->text;
+	}
+	else if( doc?->get?->text && strlen(doc->get->text) )
+	{
+	  outdoc->text = doc->get->text;
+	}
+	else
+	  outdoc->text="";
+      }
+      if( extra )
+	outdoc->text += "\n@note\n"+extra;
+
+      object p = master()->resolv("Tools.AutoDoc.DocParser.Parse")
+	(outdoc->text,
+	 SourcePosition(__FILE__, __LINE__, __LINE__));
+
+      p->metadata();
+      outdoc->xml = p->doc("_method");
+    }
+  }
+
   //! @returns
   //!   Returns @expr{1@} if there is any documentation
   //!   at all for this entity.
@@ -681,7 +845,9 @@ class _Class_or_Module {
     docGroups += ({ d });
   }
 
+
   string xml(.Flags|void flags) {
+    fixGettersSetters();
     string contents = standardTags(flags);
     if (documentation && documentation->xml != "")
       contents += xmltag("doc", documentation->xml);
