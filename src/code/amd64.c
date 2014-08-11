@@ -2268,8 +2268,8 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 /*      START_JUMP();*/
       ins_debug_instr_prologue(op, 0, 0);
       amd64_load_sp_reg();
-      mov_mem16_reg( sp_reg, -sizeof(struct svalue),  P_REG_RCX );
-      mov_mem16_reg( sp_reg, -sizeof(struct svalue)*2,P_REG_RBX );
+      mov_mem8_reg( sp_reg, -sizeof(struct svalue),  P_REG_RCX );
+      mov_mem8_reg( sp_reg, -sizeof(struct svalue)*2,P_REG_RBX );
       cmp_reg_reg( P_REG_RCX, P_REG_RBX );
       jnz( &label_A ); /* Types differ */
       
