@@ -4,6 +4,10 @@
  * associated with a unique key.
  */
 
+//! Yabu is an all purpose transaction database written in pike, used
+//! to store data records associated with a unique key.
+
+//! @ignore
 #pike __REAL_VERSION__
 
 #define ERR(msg,args...) error( "(Yabu) "+msg+"\n", args )
@@ -26,6 +30,7 @@
 #define UNLOCK() } while(0)
 #define INHERIT_MUTEX
 #endif
+//! @endignore
 
 
 
@@ -102,7 +107,9 @@ protected private class ProcessLock {
  *
  */
 protected private class FileIO {
+  //! @ignore
   INHERIT_MUTEX;
+  //! @endignore
   protected private inherit Stdio.File:file;
   protected private string filename, filemode;
 
@@ -168,15 +175,14 @@ protected private class FileIO {
 }
 
 
-
-
-
 /*
  * The Yabu chunk.
  *
  */
 class Chunk {
+  //! @ignore
   INHERIT_MUTEX;
+  //! @endignore
   private inherit FileIO:file;
 
   private Table parent;
@@ -520,17 +526,18 @@ class Chunk {
 
 
 
-
-
-/*
- * The transaction table.
- *
- */
-class Transaction {
+class Transaction 
+//! A transaction. Created by calling transaction() in the table object.
+//!
+//! It provides the same functions the table does, in addition to
+//! @[commit] and @[rollback]. Changes done using the transaction
+//! object will not be in the actual table @[commit] is called in the
+//! transaction.
+{
   private int id;
   private Table table;
   private _Table keep_ref;
-
+  
   void sync()
   {
     table->sync();
@@ -541,52 +548,70 @@ class Transaction {
     if(table)
       table->t_destroy(id);
   }
-  
+
+  //! Set @[handle] to x
   mixed set(string handle, mixed x)
   {
     return table->t_set(id, handle, x);
   }
 
+  //! Get the value of @[handle]
   mixed get(string handle)
   {
     return table->t_get(id, handle);
   }
 
+  //! Delete @[handle] from the database
   void delete(string handle)
   {
     table->t_delete(id, handle);
   }
 
+  //! List all keys
   array list_keys()
   {
     return table->t_list_keys(id);
   }
 
+  //! Commit all changes done so far in the transaction to the table
   void commit()
   {
     table->t_commit(id);
   }
 
+  //! Undo all changes done so far in the transaction to the table
   void rollback()
   {
     table->t_rollback(id);
   }
 
+  //! Identical to set
   protected mixed `[]=(string handle, mixed x)
   {
     return set(handle, x);
   }
 
+  //! Identical to get
   protected mixed `[](string handle)
   {
     return get(handle);
   }
 
+  //! Identical to @[delete]
+  protected mixed _m_delete(string handle)
+  {
+    mixed val = get(handle);
+    delete(handle);
+    return val;
+  }
+
+  //! Identical to list_keys();
   protected array _indices()
   {
     return list_keys();
   }
 
+  //! Identical to get(list_keys()][*]);
   protected array _values()
   {
     return map(_indices(), `[]);
@@ -604,12 +629,12 @@ class Transaction {
 
 
 
-/*
- * The basic Yabu table.
- *
- */
-class Table {
+class Table 
+//! The basic Yabu table
+{
+  //! @ignore
   INHERIT_MUTEX;
+  //! @endignore
   private Chunk index, db;
   private ProcessLock lock_file;
 
@@ -625,6 +650,7 @@ class Table {
       sync();
   }
 
+  //! Synchronize. Usually done automatically
   void sync()
   {
     LOCK();
@@ -648,6 +674,13 @@ class Table {
     UNLOCK();
   }
 
+  //! Reorganize the on-disk storage, compacting it.
+  //!
+  //! If @[ratio] is given it is the lowest ratio of useful/total disk
+  //! usage that is allowed.
+  //! 
+  //! As an example, if ratio is 0.7 at lest 70% of the on-disk
+  //! storage must be live data, if not the reoganization is done.
   int reorganize(float|void ratio)
   {
     LOCK();
@@ -719,6 +752,7 @@ class Table {
     return handles[handle]?db->get(handles[handle])->entry:0;
   }
 
+  //! Remove a key
   void delete(string handle)
   {
     LOCK();
@@ -732,6 +766,7 @@ class Table {
     UNLOCK();
   }
 
+  //! Set a key
   mixed set(string handle, mixed x)
   {
     LOCK();
@@ -743,6 +778,7 @@ class Table {
     UNLOCK();
   }
 
+  //! Get a key
   mixed get(string handle)
   {
     LOCK();
@@ -851,6 +887,9 @@ class Table {
     UNLOCK();
   }
 
+  //! @decl Transaction transaction()
+  //! Start a new transaction. 
+  
   Transaction transaction(_Table|void keep_ref)
   {
     LOCK();
@@ -868,6 +907,7 @@ class Table {
   //
   //
 
+  //! List all keys
   array list_keys()
   {
     LOCK();
@@ -886,14 +926,24 @@ class Table {
     call_out(sync_schedule, 120);
   }
 
+  //! Equivalent to @[set]
   protected mixed `[]=(string handle, mixed x)
   {
     return set(handle, x);
   }
 
+  //! Equivalent to @[get]
   protected mixed `[](string handle)
   {
     return get(handle);
+  }
+
+  //! Equivalent to @[delete]
+  protected mixed _m_delete(string handle)
+  {
+    mixed val = get(handle);
+    delete(handle);
+    return val;
   }
 
   protected void destroy()
@@ -910,12 +960,14 @@ class Table {
     destruct(this);
   }
 
+  //! Close the table
   void close()
   {
     sync();
     _destroy();
   }
 
+  //! Close and delete the table from disk
   void purge()
   {
     LOCK();
@@ -928,16 +980,32 @@ class Table {
     UNLOCK();
   }
 
+  //! Equivalent to list_keys()
   protected array _indices()
   {
     return list_keys();
   }
 
+  //! Fetches all keys from disk
   protected array _values()
   {
     return map(_indices(), `[]);
   }
 
+
+  //! @decl string ascii_statistics()
+  //! Return information about all tables in a human redable format
+
+  //! Return information about the table.
+  //! @mapping
+  //! @member int "keys"
+  //!  The number of keys
+  //!
+  //! @member int "size"
+  //!   The on-disk space, in bytes
+  //!
+  //! @member int used
+  //! @endmapping
   mapping(string:string|int) statistics()
   {
     LOCK();
@@ -958,7 +1026,7 @@ class Table {
     return m;
     UNLOCK();
   }
-  
+
   protected void create(string filename, string mode, ProcessLock lock_file)
   {
     this_program::filename = filename;
@@ -997,7 +1065,8 @@ class Table {
  * The shadow table.
  *
  */
-class _Table {
+class _Table 
+{
   protected Table table;
   protected string handle;
   protected function table_destroyed;
@@ -1133,14 +1202,19 @@ class _Table {
  * The Yabu database object itself.
  *
  */
-class db {
+class DB
+//! A Yabu database instance
+{
+  //! @ignore
   INHERIT_MUTEX;
+  //! @endignore
 
   protected string dir, mode;
   protected mapping tables = ([]), table_refs = ([]);
   protected int write, id;
   protected ProcessLock lock_file;
 
+  //! Sync all tables
   void sync()
   {
     LOCK();
@@ -1162,6 +1236,9 @@ class db {
     UNLOCK();
   }
 
+  //! @decl Table table(string handle)
+  //! Return the Table object for the named table
+
   _Table table(string handle)
   {
     LOCK();
@@ -1172,12 +1249,14 @@ class db {
     UNLOCK();
   }
 
+  //! Equivalent to @[table]
   protected mixed `[](string handle)
   {
     return table(handle);
   }
 
-  array list_tables()
+  //! Return a list of all tables in the database
+  array(string) list_tables()
   {
     LOCK();
     return Array.map(glob("*.chk", get_dir(dir)||({})),
@@ -1185,11 +1264,13 @@ class db {
     UNLOCK();
   }
 
+  //! Return a list of all tables
   protected array _indices()
   {
     return list_tables();
   }
 
+  //! Return all tables as an array
   protected array _values()
   {
     return map(_indices(), `[]);
@@ -1206,6 +1287,7 @@ class db {
     rm(f);
   }
 
+  //! Delete the database.
   void purge()
   {
     LOCK();
@@ -1226,11 +1308,13 @@ class db {
     destruct(lock_file);
   }
 
+  //! Close the database.
   void close()
   {
     destruct(this);
   }
   
+  //! Call @[Table.reorganize] in all tables
   int reorganize(float|void ratio)
   {
     int r = 0;
@@ -1239,6 +1323,7 @@ class db {
     return r;
   }
     
+  //! Return information about all tables
   mapping(string:int) statistics()
   {
     mapping m = ([]);
@@ -1247,6 +1332,7 @@ class db {
     return m;
   }
     
+  //! Return information about all tables in a human readable format
   string ascii_statistics()
   {
     string r = "";
@@ -1255,6 +1341,22 @@ class db {
     return r;
   }
     
+  //! Open a new or existing databse.
+  //!
+  //! The @[dir] is the directory the database should be stored in.
+  //! It will be created if it does not exist.
+  //!
+  //! Only one database can be in any given directory.
+  //!
+  //! The @[mode] specifies the operation mode, and
+  //! is a string made up of the desired modes, 'r'=read, 'w'=write
+  //! and 'c'=create.
+  //!
+  //! To open an existing database in read only mode, use "r".
+  //!
+  //! To open an existing database in read/write mode, use "rw".
+  //!
+  //! To create a new database, or open an existing one in read write mode, use "rwc".
   protected void create(string dir, string mode)
   {
     atexit(close);
@@ -1271,15 +1373,19 @@ class db {
   }
 }
 
-
-
+__deprecated__ DB db(string a,string b) {
+  return DB(a,b);
+}
 
 /*
  * Special extra bonus. This database is optimized for lots of very small
  * data records.
  */
-class LookupTable {
+class LookupTable 
+{
+  //! @ignore
   INHERIT_MUTEX;
+  //! @endignore
   
   private int minx;
   private Table table;
@@ -1287,6 +1393,15 @@ class LookupTable {
   private string h(string s)
   {
     return (string)(hash(s) & minx);
+  }
+
+  void delete(string handle)
+  {
+    LOCK();
+    mapping m = table->get(h(handle))||([]);
+    m_delete(m,handle);
+    table->set(h(handle), m);
+    UNLOCK();
   }
   
   mixed get(string handle)
@@ -1315,6 +1430,22 @@ class LookupTable {
     return get(handle);
   }
 
+  protected mixed _m_delete(string handle)
+  {
+    mixed res = UNDEFINED;
+    LOCK();
+    if( mapping m = table->get(h(handle)) )
+    {
+      res = m_delete(m,handle);
+      if( sizeof( m ) )
+	table->set(h(handle), m);
+      else
+	table->delete(h(handle));
+    }
+    UNLOCK();
+    return res;
+  }
+
   void purge()
   {
     LOCK();
@@ -1328,7 +1459,7 @@ class LookupTable {
     table->sync();
     UNLOCK();
   }
-  
+
   protected void create(string filename, string mode, int minx)
   {
     this_program::minx = minx;
@@ -1337,14 +1468,21 @@ class LookupTable {
 }
 
 
+__deprecated__ LookupDB lookup(string a,string b,mapping|void c) {
+  return LookupDB(a,b,c);
+}
 
-
-/*
- * The lookup database.
- *
- */
-class lookup {
-  inherit db;
+class LookupDB 
+//! This database is optimized for lots of very small data records (a
+//! few bytes each, usually), but the API is otherwise identical to
+//! the normal @[DB] API.
+//! 
+//! It will perform badly if used with big records.
+//! You also need to know in advance aproximately how many keys there
+//! will be, the performance will degrade if way more than the
+//! expected number of keys are present.
+{
+  inherit DB;
   private int minx;
   
   Table|LookupTable table(string handle)
@@ -1355,10 +1493,23 @@ class lookup {
     UNLOCK();
   }
 
-  protected void create(string dir, string mode, mapping|void opt)
+  //! Construct a new lookup table.
+  //!
+  //! The @[options], if present, can be used to specify the index
+  //! hash size.  The bigger that number is, the less memory will be
+  //! used given a certain number of actual keys. In general, using
+  //! the expected number of entries in the database divided by
+  //! 100-1000 is reasonable.
+  //!
+  //! The supported options are
+  //!
+  //! @mapping
+  //! @item int(1..) index_size
+  //! @endmapping
+  protected void create(string dir, string mode, mapping|void options)
   {
     ::create(dir, (mode-"t"));
-    minx = opt?->index_size || 0x7ff;
+    minx = options?->index_size || 0x7ff;
     string file = combine_path(dir, "hs");
     if(!sscanf(Stdio.read_bytes(file)||"", "%4c", minx))
       Stdio.write_file(file, sprintf("%4c", minx));
