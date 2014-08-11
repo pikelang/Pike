@@ -976,6 +976,7 @@ void amd64_end_function(int UNUSED(no_pc))
  */
 void amd64_ins_entry(void)
 {
+  size_t orig_ppc = PIKE_PC;
   /* Push all registers that the ABI requires to be preserved. */
   push(P_REG_RBP);
   mov_reg_reg(P_REG_RSP, P_REG_RBP);
@@ -987,6 +988,10 @@ void amd64_ins_entry(void)
   sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
   mov_reg_reg(ARG1_REG, Pike_interpreter_reg);
   amd64_flush_code_generator_state();
+
+  if( PIKE_PC - orig_ppc != ENTRY_PROLOGUE_SIZE ) /* sanity check */
+    Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%x\n",
+               PIKE_PC-orig_ppc );
 }
 
 void amd64_flush_code_generator_state(void)
