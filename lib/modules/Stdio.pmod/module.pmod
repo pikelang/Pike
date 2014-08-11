@@ -3155,7 +3155,10 @@ protected class nb_sendfile
 		     function(int, mixed ...:void)|void cb,
 		     mixed ... a)
   {
-    if (!l) {
+    backend = (t->query_backend && t->query_backend()) ||
+      Pike.DefaultBackend;
+
+    if (!l || !f) {
       // No need for from.
       f = 0;
 
@@ -3168,13 +3171,13 @@ protected class nb_sendfile
 	}
 	tr = 0;
       }
-    }
 
-    if (!f && (!hd || !sizeof(hd - ({ "" })))) {
-      // NOOP!
-      SF_WERR("NOOP!");
-      backend->call_out(cb, 0, 0, @a);
-      return;
+      if (!hd || !sizeof(hd - ({ "" }))) {
+	// NOOP!
+	SF_WERR("NOOP!");
+	backend->call_out(cb, 0, 0, @a);
+	return;
+      }
     }
 
     if (hd)
@@ -3197,9 +3200,6 @@ protected class nb_sendfile
     to = t;
     callback = cb;
     args = a;
-
-    backend = (to->query_backend && to->query_backend()) ||
-      Pike.DefaultBackend;
 
     blocking_to = to->is_file ||
       ((!to->set_nonblocking) ||
