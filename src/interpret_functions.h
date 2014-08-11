@@ -357,7 +357,10 @@ OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
 
 OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
     struct svalue *sp;
-    sp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+    struct object *co = Pike_fp->current_object;
+    if(!co->prog) /* note: generate an error. */
+      object_low_set_index(co,0,0);
+    sp = (struct svalue *)(co->storage + Pike_fp->context->storage_offset + arg1);
     push_svalue( sp );
     print_return_value();
 });
@@ -1084,13 +1087,19 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP, "assign private global and pop", I_UPDATE_SP, {
   struct svalue *tmp;
-  tmp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  struct object *co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
+  tmp = (struct svalue *)(co->storage + Pike_fp->context->storage_offset + arg1);
   free_svalue(tmp);
   *tmp = *--Pike_sp;
 });
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
   struct svalue *tmp;
+  struct object *co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
   tmp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
   assign_svalue( tmp, Pike_sp-1 );
 });
