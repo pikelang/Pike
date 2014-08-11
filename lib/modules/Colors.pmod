@@ -11,11 +11,13 @@
 //! @[Colors.hsv_to_rgb()]
 //! @[Image.Color.Color.hsv()]
 //!
-array(int(0..255)) rgb_to_hsv(array(int(0..255))|int(0..255) r,
-			      int(0..255)|void g, int(0..255)|void b)
+array(int(0..255)) rgb_to_hsv(int(0..255) r, int(0..255) g, int(0..255) b)
 {
-  if(arrayp(r)) return Image.Color.rgb(@r)->hsv();
   return Image.Color.rgb(r,g,b)->hsv();
+}
+variant array(int(0..255)) rgb_to_hsv(array(int(0..255)) rgb)
+{
+  return Image.Color.rgb(@rgb)->hsv();
 }
 
 //! @decl array(int(0..255)) hsv_to_rgb(array(int(0..255)) hsv)
@@ -29,11 +31,13 @@ array(int(0..255)) rgb_to_hsv(array(int(0..255))|int(0..255) r,
 //! @[Colors.rgb_to_hsv()]
 //! @[Image.Color.hsv()]
 //!
-array(int(0..255)) hsv_to_rgb(array(int(0..255))|int(0..255) h,
-			      int(0..255)|void s, int(0..255)|void v)
+array(int(0..255)) hsv_to_rgb(int(0..255) h, int(0..255) s, int(0..255) v)
 {
-  if(arrayp(h)) return Image.Color.hsv(@h)->rgb();
   return Image.Color.hsv(h,s,v)->rgb();
+}
+variant array(int(0..255)) hsv_to_rgb(array(int(0..255)) hsv)
+{
+  return Image.Color.hsv(@hsv)->rgb();
 }
 
 //! @decl array(int(0..100)) rgb_to_cmyk(array(int(0..255)) rgb)
@@ -47,15 +51,13 @@ array(int(0..255)) hsv_to_rgb(array(int(0..255))|int(0..255) h,
 //! @[Colors.cmyk_to_rgb()]
 //! @[Image.Color.Color.cmyk()]
 //!
-array(int(0..100)) rgb_to_cmyk(array(int(0..255))|int(0..255) r,
-			       int(0..255)|void g, int(0..255)|void b)
+array(int(0..100)) rgb_to_cmyk(int(0..255) r, int(0..255) g, int(0..255) b)
 {
-  array(float) cmyk;
-  if(arrayp(r))
-    cmyk = Image.Color.rgb(@r)->cmyk();
-  else
-    cmyk = Image.Color.rgb(r,g,b)->cmyk();
-  return (array(int))map(cmyk, round);
+  return (array(int))map(Image.Color.rgb(r,g,b)->cmyk(), round);
+}
+variant array(int(0..100)) rgb_to_cmyk(array(int(0..255)) rgb)
+{
+  return (array(int))map(Image.Color.rgb(@rgb)->cmyk(), round);
 }
 
 //! @decl array(int(0..255)) cmyk_to_rgb(array(int(0..100)) cmyk)
@@ -69,10 +71,13 @@ array(int(0..100)) rgb_to_cmyk(array(int(0..255))|int(0..255) r,
 //! @[Colors.rgb_to_cmyk()]
 //! @[Image.Color.cmyk()]
 //!
-array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
+array(int(0..255)) cmyk_to_rgb(int c, int|void m, int|void y, int|void k)
 {
-  if(arrayp(c)) return Image.Color.cmyk(@c)->rgb();
   return Image.Color.cmyk(c,m,y,k)->rgb();
+}
+variant array(int(0..255)) cmyk_to_rgb(array(int) cmyk)
+{
+  return Image.Color.cmyk(@cmyk)->rgb();
 }
 
 //! This function returns the RGB values that corresponds to the
