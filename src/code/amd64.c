@@ -2625,7 +2625,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     test_reg(P_REG_RAX);
     jnz(&label_A);
     /* Note: will throw error ('cannot index destructed object' or similar).
-     * Note: Only arg1 is corret here (to the destructed object)
+     * Note: Only arg1 is correct here (points to the destructed object)
      */
     amd64_call_c_function(object_low_set_index);
     LABEL_A;
@@ -2644,7 +2644,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       amd64_ref_svalue(P_REG_RBX,0);
     }
   }
-    return;
+  return;
 
   case F_ASSIGN_GLOBAL:
   case F_ASSIGN_GLOBAL_AND_POP:
