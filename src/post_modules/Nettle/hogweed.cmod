@@ -187,7 +187,9 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove bits, e and rnd. */
 }
 
-/*! Unpads a message that has been padded according to
+/*! @decl int(0..) rsa_unpad(string(0..255) data, int type)
+ *!
+ *! Unpads a message that has been padded according to
  *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2. The padding
  *! method used on the original message must be provided in the
  *! @[type] parameter. All content dependent processing is done in
