@@ -805,8 +805,6 @@ test_any([[
 
 // Warnings
 
-test_compile_warning([[ int *a ]])
-test_compile_warning([[ int|float *a ]])
 test_compile_warning([[ [mixed]1 ]])
 test_compile_warning([[
  class A { int a = 6; };
