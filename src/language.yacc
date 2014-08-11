@@ -1033,7 +1033,7 @@ optional_identifier: TOK_IDENTIFIER
   | /* empty */ { $$=0; }
   ;
 
-new_arg_name: type7 optional_dot_dot_dot optional_identifier
+new_arg_name: full_type optional_dot_dot_dot optional_identifier
   {
     int i;
     if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
@@ -1245,18 +1245,9 @@ soft_cast: open_bracket_with_line_info type ']'
     }
     ;
 
-full_type: type4
-  ;
+type2: type | identifier_type ;
 
-type6: type | identifier_type ;
-
-type: type2
-  ;
-
-type7: type4
-  ;
-
-simple_type: type4
+simple_type: full_type
   {
     struct pike_type *s = compiler_pop_type();
     $$ = mktypenode(s);
@@ -1269,7 +1260,7 @@ simple_type: type4
   }
   ;
 
-simple_type2: type2
+simple_type2: type
   {
     struct pike_type *s = compiler_pop_type();
     $$ = mktypenode(s);
@@ -1295,15 +1286,15 @@ simple_identifier_type: identifier_type
   }
   ;
 
-type4: type4 '|' type8 { push_type(T_OR); }
-  | type8
+full_type: full_type '|' type3 { push_type(T_OR); }
+  | type3
   ;
 
-type2: type2 '|' type8 { push_type(T_OR); }
+type: type '|' type3 { push_type(T_OR); }
   | basic_type
   ;
 
-type8: basic_type | identifier_type ;
+type3: basic_type | identifier_type ;
 
 basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
@@ -1317,7 +1308,7 @@ basic_type:
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
-  | TOK_ATTRIBUTE_ID '(' string_constant ',' type7 ')'
+  | TOK_ATTRIBUTE_ID '(' string_constant ',' full_type ')'
   {
     push_type_attribute($3->u.sval.u.string);
     free_node($3);
@@ -1332,7 +1323,7 @@ basic_type:
   {
     push_type(T_MIXED);
   }
-  | TOK_DEPRECATED_ID '(' type7 ')'
+  | TOK_DEPRECATED_ID '(' full_type ')'
   {
     struct pike_string *deprecated_string;
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -1580,7 +1571,7 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
   ;
 
 opt_program_type:  /* Empty */ { push_object_type(0, 0); }
-  | '(' type4 ')'
+  | '(' full_type ')'
   | '(' error ')'
   {
     push_object_type(0, 0);
@@ -1610,7 +1601,7 @@ opt_function_type: '('
       push_type(T_VOID);
     }
   }
-  type7 ')'
+  full_type ')'
   {
     push_reverse_type(T_MANY);
     Pike_compiler->pike_type_mark_stackp--;
@@ -1637,24 +1628,24 @@ function_type_list: /* Empty */ optional_comma { $$=0; }
   | function_type_list2 optional_comma { $$=!$2; }
   ;
 
-function_type_list2: type7 { $$=1; }
+function_type_list2: full_type { $$=1; }
   | function_type_list2 ','
   {
   }
-  type7
+  full_type
   ;
 
-opt_array_type: '(' type7 ')'
+opt_array_type: '(' full_type ')'
   |  { push_type(T_MIXED); }
   ;
 
 opt_mapping_type: '('
   {
   }
-  type7 ':'
+  full_type ':'
   {
   }
-  type7
+  full_type
   {
     push_reverse_type(T_MAPPING);
   }
@@ -4400,7 +4391,7 @@ lvalue: expr4
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node($1);
   }
-  | type6 TOK_IDENTIFIER
+  | type2 TOK_IDENTIFIER
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     /* Note: Variable intentionally not marked as used. */
@@ -4410,7 +4401,7 @@ lvalue: expr4
       $$ = 0;
     free_node($2);
   }
-  /* FIXME: Add production for type6 ==> constant type svalue here? */
+  /* FIXME: Add production for type2 ==> constant type svalue here? */
   | bad_expr_ident
   { $$=mknewintnode(0); }
   ;
