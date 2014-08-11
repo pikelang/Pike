@@ -157,21 +157,20 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 7.0 master compatibility interface.
+//! Pike 7.2 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! Pike 0.7 through 7.0.
+//! Pike 7.2.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-class Pike_7_0_master
+protected class Pike_7_2_master
 {
-  object low_cast_to_object(string oname, string current_file);
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
   extern array(string) pike_program_path;
@@ -185,11 +184,6 @@ class Pike_7_0_master
   extern int invalidate_time;
   extern mapping(string:multiset(string)) dir_cache;
 #endif
-  local array(mixed) master_file_stat(string x)
-  {
-    Stat st = global::master_file_stat(x);
-    return st && (array)st;
-  }
 
   //! @decl mapping(string:array(string)) environment
   //!
@@ -287,10 +281,8 @@ class Pike_7_0_master
 
   void create();
   extern mapping(program:object) objects;
-  object low_cast_to_object(string oname, string current_file);
   object cast_to_object(string oname, string current_file);
   class dirnode {};
-  object findmodule(string fullname);
   extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
   extern mixed inhibit_compile_errors;
@@ -346,202 +338,15 @@ class Pike_7_0_master
 
   // FIXME: Not in 7.7!
   extern mapping resolv_cache;
-  local protected object Pike_7_0_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_0_compat_handler) {
-      Pike_7_0_compat_handler = global::get_compilation_handler(7, 0);
-    }
-    return Pike_7_0_compat_handler->resolv(identifier, current_file);
-  }
   mixed get_inhibit_compile_errors();
   string decode_charset(string data, string charset);
-  local __deprecated__(int) clipped=0;
-  local __deprecated__(int) canclip=0;
-#pragma no_deprecation_warnings
-  local __deprecated__ string stupid_describe(mixed m, int maxlen)
-  {
-    string typ;
-    if (catch (typ=sprintf("%t",m)))
-      typ = "object";		// Object with a broken _sprintf(), probably.
-    switch(typ)
-    {
-    case "int":
-    case "float":
-      return (string)m;
-      
-    case "string":
-      canclip++;
-      if(sizeof(m) < maxlen)
-      {
-	string t = sprintf("%O", m);
-	if (sizeof(t) < (maxlen + 2)) {
-	  return t;
-	}
-	t = 0;
-      }
-      clipped++;
-      if(maxlen>10)
-      {
-	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-      }else{
-	return "string["+sizeof(m)+"]";
-      }
-      
-    case "array":
-      if(!sizeof(m)) return "({})";
-      if(maxlen<5)
-      {
-	clipped++;
-	return "array["+sizeof(m)+"]";
-      }
-      canclip++;
-      return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
-      
-    case "mapping":
-      if(!sizeof(m)) return "([])";
-      return "mapping["+sizeof(m)+"]";
-      
-    case "multiset":
-      if(!sizeof(m)) return "(<>)";
-      return "multiset["+sizeof(m)+"]";
-      
-    case "function":
-      if(string tmp=describe_program(m)) return tmp;
-      if(object o=function_object(m))
-	return (describe_object(o)||"")+"->"+function_name(m);
-      else {
-	string tmp;
-	if (catch (tmp = function_name(m)))
-	  // The function object has probably been destructed.
-	  return "function";
-	return tmp || "function";
-      }
-
-    case "program":
-      if(string tmp=describe_program(m)) return tmp;
-      return typ;
-
-    default:
-      if (objectp(m))
-	if(string tmp=describe_object(m)) return tmp;
-      return typ;
-    }
-  }
-  local __deprecated__ string stupid_describe_comma_list(array x, int maxlen)
-  {
-    string ret="";
-
-    if(!sizeof(x)) return "";
-    if(maxlen<0) return ",,,"+sizeof(x);
-
-    int clip=min(maxlen/2,sizeof(x));
-    int len=maxlen;
-    int done=0;
-
-    while(1)
-    {
-      array(string) z=allocate(clip);
-      array(int) isclipped=allocate(clip);
-      array(int) clippable=allocate(clip);
-      for(int e=0;e<clip;e++)
-      {
-	clipped=0;
-	canclip=0;
-	z[e]=stupid_describe(x[e],len);
-	isclipped[e]=clipped;
-	clippable[e]=canclip;
-      }
-
-      while(1)
-      {
-	string ret = z[..clip-1]*",";
-
-	if(done || sizeof(ret)<=maxlen+1)
-	{
-	  int tmp=sizeof(x)-clip-1;
-
-	  clipped=`+(0,@isclipped);
-	  if(tmp>=0)
-	  {
-	    clipped++;
-	    ret+=",,,"+tmp;
-	  }
-	  canclip++;
-	  return ret;
-	}
-
-	int last_newlen=len;
-	int newlen;
-	int clipsuggest;
-	while(1)
-	{
-	  int smallsize=0;
-	  int num_large=0;
-	  clipsuggest=0;
-
-	  for(int e=0;e<clip;e++)
-	  {
-	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
-	      num_large++;
-	    else
-	      smallsize+=sizeof(z[e]);
-
-	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
-	  }
-        
-	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
-
-	  if(newlen<8 || newlen >= last_newlen) break;
-	  last_newlen=newlen;
-	}
-
-	if(newlen < 8 && clip)
-	{
-	  clip-= (clip/4) || 1;
-	  if(clip > clipsuggest) clip=clipsuggest;
-	}else{
-	  len=newlen;
-	  done++;
-	  break;
-	}
-      }
-    }
-
-    return ret;
-  }
-#pragma deprecation_warnings
 
   string describe_object(object o);
   string describe_backtrace(array(mixed) trace, void|int linewidth);
   string describe_error(mixed trace);
 
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 - 7.0
-    if ((major < 7) || ((major == 7) && !minor))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
+  // ---
 
-  /* No missing symbols. */
-}
-
-//! Pike 7.2 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.1 and 7.2.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_2_master
-{
-  inherit Pike_7_0_master;
 #ifdef PIKE_MODULE_RELOC
   string relocate_module(string s);
   string unrelocate_module(string s);
@@ -579,10 +384,8 @@ protected class Pike_7_2_master
   string _sprintf(int|void t);
   object get_compat_master(int major, int minor)
   {
-    if ((major < 7) || ((major == 7) && (minor < 1)))
-      return Pike_7_0_master::get_compat_master(major, minor);
-    // 7.1 & 7.2
-    if ((major == 7) && (minor < 3))
+    // 0.0 .. 7.2
+    if ((major < 7) || (major == 7) && (minor < 3))
       return this_program::this;
     return get_compat_master(major, minor);
   }

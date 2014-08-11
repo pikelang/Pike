@@ -209,15 +209,6 @@ static node *optimize_f_aggregate(node *n)
  *!   @[7.4::hash()]
  */
 
-/*! @decl __deprecated__ int hash_7_0(string s)
- *! @decl __deprecated__ int hash_7_0(string s, int max)
- *!
- *! @deprecated 7.0::hash
- *!
- *! @seealso
- *!   @[7.0::hash()]
- */
-
 /*! @namespace 7.4::
  */
 
@@ -290,9 +281,6 @@ static void f_hash_7_4(INT32 args)
 /*! @endnamespace
  */
 
-/*! @namespace 7.0::
- */
-
 ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 {
   size_t ret,c;
@@ -310,8 +298,8 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
   return ret;
 }
 
-/*! @decl int hash(string s)
- *! @decl int hash(string s, int max)
+/*! @decl int hash_7_0(string s)
+ *! @decl int hash_7_0(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes.
@@ -320,12 +308,13 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   This function is provided for backward compatibility reasons.
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.0.
  *!
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[predef::hash()], @[7.4::hash()]
+ *!   @[hash()], @[7.4::hash()]
  */
 static void f_hash_7_0( INT32 args )
 {
@@ -358,9 +347,6 @@ static void f_hash_7_0( INT32 args )
   push_int( i );
 }
 
-/*! @endnamespace
- */
-
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
  *!
@@ -385,7 +371,7 @@ static void f_hash_7_0( INT32 args )
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[7.0::hash()], @[7.4::hash()], @[hash_value]
+ *!   @[hash_7_0()], @[7.4::hash()], @[hash_value]
  */
 PMOD_EXPORT void f_hash(INT32 args)
 {
@@ -9826,7 +9812,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_0",f_hash_7_0,
-           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
            tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);

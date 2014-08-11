@@ -2533,8 +2533,6 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
     current_label->break_label=alloc_label();
-    if (TEST_COMPAT(7,0))
-      current_label->continue_label = current_label->break_label;
 
     DO_CODE_BLOCK(CAR(n));
 

@@ -4269,14 +4269,7 @@ typeof: TOK_TYPEOF '(' expr0 ')'
     optimize_node(tmp);
 
     t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
-    if(TEST_COMPAT(7,0))
-    {
-      struct pike_string *s=describe_type(t);
-      $$ = mkstrnode(s);
-      free_string(s);
-    }else{
-      $$ = mktypenode(t);
-    }
+    $$ = mktypenode(t);
     free_node(tmp);
   } 
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
@@ -4678,7 +4671,7 @@ int low_add_local_name(struct compiler_frame *frame,
 		       node *def)
 {
 
-  if (str->len && !TEST_COMPAT(7,0)) {
+  if (str->len) {
     int tmp=low_islocal(frame,str);
     if(tmp>=0 && tmp >= frame->last_block_level)
     {

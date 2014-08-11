@@ -1,14 +1,14 @@
 #!/usr/local/bin/pike
-#pike 7.0
+#pike 7.2
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
 
-#include <simulate.h>
 #include <stdio.h>
 #include <string.h>
 
-multiset efuns = mklist(indices(all_efuns())) | (<"sscanf","gauge","catch">);
+multiset efuns = mkmultiset(indices(all_constants())) |
+  (<"sscanf","gauge","catch">);
 mapping short_descs = ([]);
 mapping keywords = ([]);
 
@@ -243,10 +243,8 @@ string short(string s)
 
 inherit Regexp:is_example;
 
-//! @ignore
-list(string) indexes_done=(<>);
-list(string) pages_done=(<>);
-//! @endignore
+multiset(string) indexes_done=(<>);
+multiset(string) pages_done=(<>);
 
 void done(string a)
 {
