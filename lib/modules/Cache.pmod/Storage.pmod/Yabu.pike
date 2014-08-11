@@ -10,7 +10,7 @@
 #define CLUTTERED 200
 
 Yabu.Table db, metadb;
-Yabu.db yabudb;
+Yabu.DB yabudb;
 
 int deletion_ops=0;
 int have_dependants=0;
@@ -173,7 +173,7 @@ void delete(string key, void|int(0..1) hard) {
 
 //!
 void create(string path) {
-  yabudb=Yabu.db(path+".yabu","wcSQ"); //let's hope I got the mode right.
+  yabudb=Yabu.DB(path+".yabu","wcSQ"); //let's hope I got the mode right.
   db=yabudb["data"];
   metadb=yabudb["metadata"];
 }
