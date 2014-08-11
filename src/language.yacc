@@ -778,10 +778,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($5 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while(--$5>=0) push_type(T_ARRAY);
 
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
@@ -1226,8 +1222,7 @@ optional_attributes: /* empty */
   }
   ;
 
-optional_stars: optional_stars '*' { $$=$1 + 1; }
-  | /* empty */ { $$=0; }
+optional_stars:  /* empty */ { $$=0; }
   ;
 
 cast: open_paren_with_line_info type ')'
@@ -1251,35 +1246,14 @@ soft_cast: open_bracket_with_line_info type ']'
     ;
 
 full_type: type4
-  | full_type '*'
-  {
-    if (Pike_compiler->compiler_pass == 2) {
-       yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    push_type(T_ARRAY);
-  }
   ;
 
 type6: type | identifier_type ;
 
-type: type '*'
-  {
-    if (Pike_compiler->compiler_pass == 2) {
-       yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    push_type(T_ARRAY);
-  }
-  | type2
+type: type2
   ;
 
-type7: type7 '*'
-  {
-    if (Pike_compiler->compiler_pass == 2) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    push_type(T_ARRAY);
-  }
-  | type4
+type7: type4
   ;
 
 simple_type: type4
@@ -1703,10 +1677,6 @@ new_name: optional_stars TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
     n = Pike_compiler->current_attributes;
     while(n) {
       push_type_attribute(CDR(n)->u.sval.u.string);
@@ -1724,10 +1694,6 @@ new_name: optional_stars TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
     n = Pike_compiler->current_attributes;
     while(n) {
       push_type_attribute(CDR(n)->u.sval.u.string);
@@ -1792,10 +1758,6 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
     if (id >= 0) {
       /* FIXME: Consider using mklocalnode(id, -1). */
@@ -1809,10 +1771,6 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
     if (id >= 0) {
       if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
@@ -2417,10 +2375,6 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
 
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
 
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
@@ -2566,10 +2520,6 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($3 && (Pike_compiler->compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($3--) push_type(T_ARRAY);
     if ($4) {
       push_type(T_ARRAY);
     }
