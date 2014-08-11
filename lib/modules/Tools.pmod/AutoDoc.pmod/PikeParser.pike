@@ -859,10 +859,12 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     Type t = parseOrType();
     // only allow lfun::, predef::, :: in front of methods/variables
     string name = eatIdentifier(args["allowScopePrefix"]);
+
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
       m->modifiers = modifiers;
       m->name = name;
+      m->position = position;
       m->returntype = t;
       eat("(");
       [m->argnames, m->argtypes] = parseArgList(args["allowArgListLiterals"]);
@@ -874,6 +876,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
         Variable v = Variable();
         v->modifiers = modifiers;
         v->name = name;
+	v->position = position;
         v->type = t;
         vars += ({ v });
         skipUntil( (< ";", ",", EOF >) );  // Skip possible init expr
