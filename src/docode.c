@@ -683,8 +683,10 @@ static void emit_global( int n )
   struct compilation *c = THIS_COMPILATION;
   struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
   struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
   if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
       && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
       && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
       && !ref->inherit_offset
       && id->run_time_type == PIKE_T_MIXED )
@@ -704,11 +706,11 @@ static void emit_assign_global( int n, int and_pop )
 
   if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
       && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
+      && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
       && !ref->inherit_offset
       && id->run_time_type == PIKE_T_MIXED )
   {
-    /* fprintf( stderr, "assign private global and pop %d\n",  */
-    /*          (INT32)id->func.offset ); */
     emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
           id->func.offset);
   }
