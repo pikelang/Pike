@@ -2615,8 +2615,21 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_ASSIGN_PRIVATE_GLOBAL_AND_POP:
   case F_ASSIGN_PRIVATE_GLOBAL:
+  {
+    LABELS();
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_get_storage( P_REG_RBX, b );
+    /* do not assign if this object is destructed. */
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_object), ARG1_REG );
+    mov_mem_reg( ARG1_REG, OFFSETOF(object,prog), P_REG_RAX );
+    test_reg(P_REG_RAX);
+    jnz(&label_A);
+    /* Note: will throw error ('cannot index destructed object' or similar).
+     * Note: Only arg1 is corret here (to the destructed object)
+     */
+    amd64_call_c_function(object_low_set_index);
+    LABEL_A;
+
     amd64_free_svalue( P_REG_RBX, 0 );
     amd64_load_sp_reg();
 
@@ -2628,8 +2641,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     else
     {
       amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -sizeof(struct svalue));
-      amd64_ref_svalue(P_REG_RBX,0); /* already have type in RAX (from assign_svalue) */
+      amd64_ref_svalue(P_REG_RBX,0);
     }
+  }
     return;
 
   case F_ASSIGN_GLOBAL:
