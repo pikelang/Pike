@@ -311,7 +311,6 @@ PIKEFUN object decode( string data )
 
   ref_push_object( p->u.object );
   stack_unlink(1);
-  fprintf(stderr, "this: %p; sp: %p\n", Pike_fp->current_object, Pike_sp);
 }
 
 static int parameter_int(struct mapping *map, const char *what, int def )
