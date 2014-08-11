@@ -5,248 +5,70 @@
 // #pike __REAL_VERSION__
 //
 
+protected constant splitter = Parser._parser._Pike.tokenize;
+
+class UnterminatedStringError
+//! Error thrown when an unterminated string token is encountered.
+{
+  inherit Error.Generic;
+  constant error_type = "unterminated_string";
+  constant is_unterminated_string_error = 1;
+
+  string err_str;
+  //! The string that failed to be tokenized
+
+  protected void create(string pre, string post)
+  {
+    int line = String.count(pre, "\n")+1;
+    err_str = pre+post;
+    if( sizeof(post) > 100 )
+      ::create(sprintf("Unterminated string %O[%d] at line %d\n",
+                       post[..100], sizeof(post)-100, line));
+    else
+      ::create(sprintf("Unterminated string %O at line %d\n",
+                       post, line));
+  }
+}
+
+private array(string) low_split(string data, void|mapping(string:string) state)
+{
+  if(state && state->remains)
+    data = (string)m_delete(state, "remains") + data;
+  // Cast to string above to work around old Pike 7.0 bug.
+
+  array(string) ret;
+  string rem;
+  [ret, rem] = splitter(data);
+  if(sizeof(rem)) {
+    if(rem[0]=='"')
+      throw(UnterminatedStringError(ret*"", rem));
+    if(state) state->remains=rem;
+  }
+  return ret;
+}
+
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
 //! tokens. If the optional argument @[state] is provided the split
-//! function is able to pause and resume splitting inside /**/ tokens.
-//! The @[state] argument should be an initially empty mapping, in
-//! which split will store its state between successive calls.
-array(string) split(string data, void|mapping state)
-{
-  int line=1;
-  array(string) ret=({});
-  int pos;
-  if(data=="") return ({"\n"});
-  data += "\n\0";	/* End sentinel. */
+//! function is able to pause and resume splitting inside #"" and
+//! /**/ tokens. The @[state] argument should be an initially empty
+//! mapping, in which split will store its state between successive
+//! calls.
+array(string) split(string data, void|mapping(string:string) state) {
+  array r = low_split(data, state);
 
-  if(state && state->in_token) {
-    switch(state->remains[0..1]) {
+  array new = ({});
+  for(int i; i<sizeof(r); i++)
+    if(r[i][..1]=="//" && r[i][-1]=='\n')
+      new += ({ r[i][..<1], "\n" });
+    else
+      new += ({ r[i] });
 
-    case "/*":
-      if(sizeof(state->remains)>2 && state->remains[-1]=='*'
-	 && data[0]=='/') {
-	ret += ({ state->remains + "/" });
-	pos++;
-	m_delete(state, "remains");
-	break;
-      }
-      pos = search(data, "*/");
-      if(pos==-1) {
-	state->in_token = 1;
-	state->remains += data[..<1];
-	return ret;
-      }
-      ret += ({ state->remains + data[..pos+1] });
-      m_delete(state, "remains");
-      pos+=2;
-      break;
-    }
-    state->in_token = 0;
-  }
-
-  while(1)
-  {
-    int start=pos;
-
-    switch(data[pos])
-    {
-      case '\0':
-	return ret;
-
-      case '#':
-      {
-	pos=search(data,"\n",pos);
-	if(pos==-1)
-	  error("Failed to find end of preprocessor statement.\n");
-
-	while(data[pos-1]=='\\' || (data[pos-1]=='\r' && data[pos-2]=='\\'))
-	  pos=search(data,"\n",pos+1);
-	break;
-
-      case 'a'..'z':
-      case 'A'..'Z':
-      case 128..65536: // Lets simplify things for now...
-      case '_':
-	while(1)
-	{
-	  switch(data[pos])
-	  {
-           case '$': // allowed in some C (notably digital)
-           case 'a'..'z':
-           case 'A'..'Z':
-           case '0'..'9':
-           case 128..65536: // Lets simplify things for now...
-           case '_':
-	      pos++;
-	      continue;
-	  }
-	  break;
-	}
-	break;
-
-      case '.':
-	if(data[start..start+2]=="...")
-	{
-	  pos+=3;
-	  break;
-	}
-	if(data[start..start+1]=="..")
-	{
-	  pos+=3;
-	  break;
-	}
-
-      case '0'..'9':
-	if(data[pos]=='0' && (data[pos+1]=='x' || data[pos+1]=='X'))
-	{
-	  pos+=2;
-	  while(1)
-	  {
-	    switch(data[pos])
-	    {
-	      case '0'..'9':
-	      case 'a'..'f':
-	      case 'A'..'F':
-		pos++;
-		continue;
-	    }
-	    break;
-	  }
-	  break;
-	}
-	while(data[pos]>='0' && data[pos]<='9') pos++;
-	if(data[pos]=='.')
-	{
-	  pos++;
-	  while(data[pos]>='0' && data[pos]<='9') pos++;
-	  if(data[pos]=='e' || data[pos]=='E')
-	  {
-	    pos++;
-	    if(data[pos]=='-') pos++;
-	    while(data[pos]>='0' && data[pos]<='9') pos++;
-	  }
-	  break;
-	}
-	if(data[pos]=='e' || data[pos]=='E')
-	{
-	  pos++;
-	  while(data[pos]>='0' && data[pos]<='9') pos++;
-	}
-	break;
-
-      default:
-	error("Unknown token %O\n",data[pos..pos+20]);
-
-      case  '`':
-	while(data[pos]=='`') data[pos]++;
-
-      case '\\': pos++; continue; /* IGNORED */
-
-      case '/':
-      case '{': case '}':
-      case '[': case ']':
-      case '(': case ')':
-      case ';':
-      case ',':
-      case '*': case '%':
-      case '?': case ':':
-      case '&': case '|': case '^':
-      case '!': case '~':
-      case '=':
-      case '@':
-      case '+':
-      case '-':
-      case '<': case '>':
-	switch(data[pos..pos+1])
-	{
-	  case "//":
-	    pos=search(data,"\n",pos);
-	    break;
-
-	  case "/*":
-	    pos=search(data,"*/",pos);
-	    if(pos==-1) {
-	      if(state) {
-		state->remains = data[start..<2];
-		state->in_token = 1;
-		return ret;
-	      }
-	      error("Failed to find end of comment.\n");
-	    }
-	    pos+=2;
-	    break;
-
-	  case "<<": case ">>":
-	    if(data[pos+2]=='=') pos++;
-	  case "==": case "!=": case "<=": case ">=":
-	  case "*=": case "/=": case "%=":
-	  case "&=": case "|=": case "^=":
-	  case "+=": case "-=":
-	  case "++": case "--":
-	  case "&&": case "||":
-	  case "->":
-	    pos++;
-	  default:
-	    pos++;
-	}
-	break;
-
-
-      case ' ':
-      case '\n':
-      case '\r':
-      case '\t':
-      case '\14':
-	while(1)
-	{
-	  switch(data[pos])
-	  {
-	    case ' ':
-	    case '\n':
-	    case '\r':
-	    case '\t':
-	    case '\14':
-	      pos++;
-	      continue;
-	  }
-	  break;
-	}
-	break;
-
-	case '\'':
-	  pos++;
-	  if(data[pos]=='\\') pos+=2;
-          int end=search(data, "'", pos)+1;
-          if(!end)
-            throw( ({sprintf("Unknown token: %O\n",data[pos-1..pos+19]) }) );
-          pos=end;
-          break;
-
-	case '"':
-	{
-	  int q,s;
-	  while(1)
-	  {
-	    q=search(data,"\"",pos+1);
-	    s=search(data,"\\",pos+1);
-	    if(q==-1) q=sizeof(data)-1;
-	    if(s==-1) s=sizeof(data)-1;
-
-	    if(q<s)
-	    {
-	      pos=q+1;
-	      break;
-	    }else{
-	      pos=s+1;
-	    }
-	  }
-	  break;
-	}
-      }
-    }
-
-    ret+=({ data[start..pos-1] });
-  }
+  if(sizeof(new) && (< "\n", " " >)[new[-1]])
+    new[-1] += "\n";
+  else
+    new += ({ "\n" });
+  return new;
 }
 
 //! Represents a C token, along with a selection of associated data and
