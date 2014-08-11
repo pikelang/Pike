@@ -855,7 +855,7 @@ protected class DocParserClass {
       tokenArr = s;
     }
     else {
-      if (!position) throw(({ __FILE__,__LINE__,"position == 0"}));
+      if (!position) error("position == 0");
       tokenArr = split(s, position);
     }
     tokenArr += ({ Token(ENDTOKEN, 0, 0, 0, 0) });
