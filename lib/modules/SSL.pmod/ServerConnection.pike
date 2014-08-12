@@ -684,33 +684,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
 	Session old_session = sizeof(id) && context->lookup_session(id);
-	if (old_session &&
-	    old_session->cipher_suite == session->cipher_suite &&
-	    old_session->version == session->version &&
-	    old_session->certificate_chain == session->certificate_chain &&
-	    old_session->compression_algorithm ==
-	    session->compression_algorithm &&
-	    old_session->max_packet_size == session->max_packet_size &&
-	    old_session->truncated_hmac == session->truncated_hmac &&
-	    old_session->server_name == session->server_name &&
-	    old_session->ecc_point_format == session->ecc_point_format &&
-	    old_session->encrypt_then_mac == session->encrypt_then_mac &&
-	    equal(old_session->signature_algorithms,
-		  session->signature_algorithms) &&
-	    equal(old_session->ecc_curves, session->ecc_curves)) {
-	  // SSL3 5.6.1.2:
-	  // If the session_id field is not empty (implying a session
-	  // resumption request) this vector [cipher_suites] must
-	  // include at least the cipher_suite from that session.
-	  // ...
-	  // If the session_id field is not empty (implying a session
-	  // resumption request) this vector [compression_methods]
-	  // must include at least the compression_method from
-	  // that session.
-
-	  // We use a *much* stricter test, and only reuse the old session
-	  // if it has the same parameters as the new session.
-
+	if (old_session && old_session->reusable_as(session))
+        {
 	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
 
 	  /* Reuse session */

@@ -659,3 +659,32 @@ array(State) new_client_states(.Connection con,
   }
   return ({ read_state, write_state });
 }
+
+//! Returns true if this session object can be used in place of the
+//! session object @[other].
+int(0..1) reusable_as(Session other)
+{
+  // SSL3 5.6.1.2:
+  // If the session_id field is not empty (implying a session
+  // resumption request) this vector [cipher_suites] must
+  // include at least the cipher_suite from that session.
+  // ...
+  // If the session_id field is not empty (implying a session
+  // resumption request) this vector [compression_methods]
+  // must include at least the compression_method from
+  // that session.
+
+  // We use a *much* stricter test, and only reuse the old session
+  // if it has the same parameters as the new session.
+  return cipher_suite == other->cipher_suite &&
+    version == other->version &&
+    certificate_chain == other->certificate_chain &&
+    compression_algorithm == other->compression_algorithm &&
+    max_packet_size == other->max_packet_size &&
+    truncated_hmac == other->truncated_hmac &&
+    server_name == other->server_name &&
+    ecc_point_format == other->ecc_point_format &&
+    encrypt_then_mac == other->encrypt_then_mac &&
+    equal(signature_algorithms, other->signature_algorithms) &&
+    equal(ecc_curves, other->ecc_curves);
+}
