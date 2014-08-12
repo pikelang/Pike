@@ -773,11 +773,12 @@ class _Class_or_Module {
 	  strlen(doc->set->text) && strlen(doc->get->text) &&
 	  doc->set->text != doc->get->text )
       {
-	outdoc->text = "@dl\n"
-	  "@item getting\n"
-	  "\n"+doc->get->text+"\n\n"+
-	  "@item setting\n"+
-	  doc->get->text+"\n\n";
+        outdoc->text = "@dl\n"
+          "@item getting\n"
+          "\n"+doc->get->text+"\n\n"+
+          "@item setting\n"+
+          doc->get->text+"\n\n";
+        outdoc->text += "@enddl";
       }
       else
       {
