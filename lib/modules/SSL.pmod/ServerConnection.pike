@@ -161,41 +161,6 @@ int(0..1) not_ecc_suite(int cipher_suite)
 int(-1..0) reply_new_session(array(int) cipher_suites,
 			     array(int) compression_methods)
 {
-  SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
-		 fmt_cipher_suites(context->preferred_suites),
-                 fmt_cipher_suites(cipher_suites));
-  cipher_suites = context->preferred_suites & cipher_suites;
-  SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 fmt_cipher_suites((array(int))cipher_suites));
-
-  if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
-    // No overlapping support for ecc.
-    // Filter the ECC suites from the set.
-    SSL3_DEBUG_MSG("ECC not supported.\n");
-    cipher_suites = filter(cipher_suites, not_ecc_suite);
-  }
-
-  if (!sizeof(cipher_suites) ||
-      !session->select_cipher_suite(context->
-                                    find_cert_domain(session->server_name),
-                                    cipher_suites, version)) {
-    // No overlapping cipher suites, or obsolete cipher suite selected,
-    // or incompatible certificates.
-    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-		      "No common suites!\n"));
-    return -1;
-  }
-
-  compression_methods = context->preferred_compressors & compression_methods;
-  if (sizeof(compression_methods))
-    session->set_compression_method(compression_methods[0]);
-  else
-  {
-    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-		      "Unsupported compression method.\n"));
-    return -1;
-  }
-  
   send_packet(server_hello_packet());
 
   // Don't send any certificate in anonymous mode.
@@ -360,30 +325,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (sizeof(input))
 	  werror("SSL.ServerConnection->handle_handshake: "
 		 "extra data in hello message ignored\n");
-
-	if (sizeof(id))
-	  werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
-	session = sizeof(id) && context->lookup_session(id);
-	if (session &&
-	    has_value(cipher_suites, session->cipher_suite) &&
-	    has_value(compression_methods, session->compression_algorithm)) {
-	  // SSL3 5.6.1.2:
-	  // If the session_id field is not empty (implying a session
-	  // resumption request) this vector [cipher_suites] must
-	  // include at least the cipher_suite from that session.
-	  // ...
-	  // If the session_id field is not empty (implying a session
-	  // resumption request) this vector [compression_methods]
-	  // must include at least the compression_method from
-	  // that session.
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
-	  /* Reuse session */
-	  reuse = 1;
-	} else {
-	  session = context->new_session();
-	  reuse = 0;
-	}
+
+	session = context->new_session();
 
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
@@ -697,20 +641,80 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (sizeof(input))
 	  werror("SSL.ServerConnection->handle_handshake: "
 		 "extra data in hello message ignored\n");
+#endif
 
+	SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
+		       fmt_cipher_suites(context->preferred_suites),
+		       fmt_cipher_suites(cipher_suites));
+	cipher_suites = context->preferred_suites & cipher_suites;
+	SSL3_DEBUG_MSG("intersection:\n%s\n",
+		       fmt_cipher_suites((array(int))cipher_suites));
+
+	if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
+	  // No overlapping support for ecc.
+	  // Filter the ECC suites from the set.
+	  SSL3_DEBUG_MSG("ECC not supported.\n");
+	  cipher_suites = filter(cipher_suites, not_ecc_suite);
+	}
+
+	if (!sizeof(cipher_suites) ||
+	    !session->select_cipher_suite(context->
+					  find_cert_domain(session->server_name),
+					  cipher_suites, version)) {
+	  // No overlapping cipher suites, or obsolete cipher suite selected,
+	  // or incompatible certificates.
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			    "No common suites!\n"));
+	  return -1;
+	}
+
+	compression_methods =
+	  context->preferred_compressors & compression_methods;
+	if (sizeof(compression_methods))
+	  session->set_compression_method(compression_methods[0]);
+	else
+	{
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			    "Unsupported compression method.\n"));
+	  return -1;
+	}
+
+#ifdef SSL3_DEBUG
 	if (sizeof(id))
 	  werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
-	if (reuse) {
-	  /* Reuse session */
+	Session old_session = sizeof(id) && context->lookup_session(id);
+	if (old_session &&
+	    old_session->cipher_suite == session->cipher_suite &&
+	    old_session->version == session->version &&
+	    old_session->certificate_chain == session->certificate_chain &&
+	    old_session->compression_algorithm ==
+	    session->compression_algorithm &&
+	    old_session->max_packet_size == session->max_packet_size &&
+	    old_session->truncated_hmac == session->truncated_hmac &&
+	    old_session->server_name == session->server_name &&
+	    old_session->ecc_point_format == session->ecc_point_format &&
+	    old_session->encrypt_then_mac == session->encrypt_then_mac &&
+	    equal(old_session->signature_algorithms,
+		  session->signature_algorithms) &&
+	    equal(old_session->ecc_curves, session->ecc_curves)) {
+	  // SSL3 5.6.1.2:
+	  // If the session_id field is not empty (implying a session
+	  // resumption request) this vector [cipher_suites] must
+	  // include at least the cipher_suite from that session.
+	  // ...
+	  // If the session_id field is not empty (implying a session
+	  // resumption request) this vector [compression_methods]
+	  // must include at least the compression_method from
+	  // that session.
+
+	  // We use a *much* stricter test, and only reuse the old session
+	  // if it has the same parameters as the new session.
+
 	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
-	  if (! ( (cipher_suites & ({ session->cipher_suite }))
-		  && (compression_methods & ({ session->compression_algorithm }))))
-	  {
-	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			      "Unsupported saved session state.\n"));
-	    return -1;
-	  }
+
+	  /* Reuse session */
+	  session = old_session;
 	  send_packet(server_hello_packet());
 
 	  array(State) res;
