@@ -1105,27 +1105,27 @@ PIKE_MODULE_INIT
   pop_stack();
 
   ADD_FUNCTION("_low_program_name",f__low_program_name,
-	       tFunc(tPrg(tObj),tStr),0);
+	       tDeprecated(tFunc(tPrg(tObj),tStr)),0);
 
   /* function(int:int) */
   ADD_FUNCTION("set_start_quote",f_set_start_quote,
-	       tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+	       tDeprecated(tFunc(tInt,tInt)),OPT_EXTERNAL_DEPEND);
 
   /* function(int:int) */
   ADD_FUNCTION("set_end_quote",f_set_end_quote,
-	   tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+               tDeprecated(tFunc(tInt,tInt)),OPT_EXTERNAL_DEPEND);
 
   /* function(string:array) */
   ADD_FUNCTION("parse_accessed_database", f_parse_accessed_database,
-	       tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
+	       tDeprecated(tFunc(tStr,tArray)), OPT_TRY_OPTIMIZE);
 
   /* function(:array(array)) */
   ADD_FUNCTION("_dump_obj_table", f__dump_obj_table,
-	       tFunc(tNone,tArr(tArray)), OPT_EXTERNAL_DEPEND);
+	       tDeprecated(tFunc(tNone,tArr(tArray))), OPT_EXTERNAL_DEPEND);
 
 
   ADD_FUNCTION("parse_html",f_parse_html,
-	   tFuncV(tStr
+               tDeprecated(tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
 				       tOr(tMap(tStr,tStr),tVoid),
@@ -1138,12 +1138,12 @@ PIKE_MODULE_INIT
 				       tMix,
 				       tOr(tStr,tArr(tStr))))),
 		  tMix,
-		  tStr),
+                  tStr)),
 	   OPT_SIDE_EFFECT);
 
 
   ADD_FUNCTION("parse_html_lines",f_parse_html_lines,
-	   tFuncV(tStr
+               tDeprecated(tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
 				       tOr(tMap(tStr,tStr),tVoid)
@@ -1158,21 +1158,22 @@ PIKE_MODULE_INIT
 				       tMix,
 				       tOr(tStr,tArr(tStr))))),
 		  tMix,
-		  tStr),
+                  tStr)),
 	   0);
 
   /* function(int:array) */
-  ADD_FUNCTION("discdate", f_discdate,tFunc(tInt,tArray), 0);
+  ADD_FUNCTION("discdate", f_discdate, tDeprecated(tFunc(tInt,tArray)), 0);
 
   /* function(int,void|int:int) */
-  ADD_FUNCTION("stardate", f_stardate,tFunc(tInt tInt,tInt), 0);
+  ADD_FUNCTION("stardate", f_stardate, tDeprecated(tFunc(tInt tInt,tInt)), 0);
 
   /* function(:array(int)) */
   ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
-	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
+	       tDeprecated(tFunc(tNone,tArr(tInt))), OPT_EXTERNAL_DEPEND);
 
   /* function(int:string) */
-  ADD_FUNCTION("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION("fd_info", f_fd_info, tDeprecated(tFunc(tInt,tStr)),
+               OPT_EXTERNAL_DEPEND);
 }
 
 

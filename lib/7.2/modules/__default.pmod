@@ -97,6 +97,7 @@ object new(string|program prog, mixed ... args)
 function(string|program, mixed ... : object) clone = new;
 
 // spider
+#pragma no_deprecation_warnings
 #define SPIDER(X) constant X = spider.##X
 
 //! @ignore
