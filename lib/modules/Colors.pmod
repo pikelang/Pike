@@ -11,10 +11,12 @@
 //! @[Colors.hsv_to_rgb()]
 //! @[Image.Color.Color.hsv()]
 //!
+
 array(int(0..255)) rgb_to_hsv(int(0..255) r, int(0..255) g, int(0..255) b)
 {
   return Image.Color.rgb(r,g,b)->hsv();
 }
+
 variant array(int(0..255)) rgb_to_hsv(array(int(0..255)) rgb)
 {
   return Image.Color.rgb(@rgb)->hsv();
@@ -31,10 +33,12 @@ variant array(int(0..255)) rgb_to_hsv(array(int(0..255)) rgb)
 //! @[Colors.rgb_to_hsv()]
 //! @[Image.Color.hsv()]
 //!
+
 array(int(0..255)) hsv_to_rgb(int(0..255) h, int(0..255) s, int(0..255) v)
 {
   return Image.Color.hsv(h,s,v)->rgb();
 }
+
 variant array(int(0..255)) hsv_to_rgb(array(int(0..255)) hsv)
 {
   return Image.Color.hsv(@hsv)->rgb();
@@ -51,10 +55,12 @@ variant array(int(0..255)) hsv_to_rgb(array(int(0..255)) hsv)
 //! @[Colors.cmyk_to_rgb()]
 //! @[Image.Color.Color.cmyk()]
 //!
+
 array(int(0..100)) rgb_to_cmyk(int(0..255) r, int(0..255) g, int(0..255) b)
 {
   return (array(int))map(Image.Color.rgb(r,g,b)->cmyk(), round);
 }
+
 variant array(int(0..100)) rgb_to_cmyk(array(int(0..255)) rgb)
 {
   return (array(int))map(Image.Color.rgb(@rgb)->cmyk(), round);
@@ -71,10 +77,12 @@ variant array(int(0..100)) rgb_to_cmyk(array(int(0..255)) rgb)
 //! @[Colors.rgb_to_cmyk()]
 //! @[Image.Color.cmyk()]
 //!
+
 array(int(0..255)) cmyk_to_rgb(int c, int|void m, int|void y, int|void k)
 {
   return Image.Color.cmyk(c,m,y,k)->rgb();
 }
+
 variant array(int(0..255)) cmyk_to_rgb(array(int) cmyk)
 {
   return Image.Color.cmyk(@cmyk)->rgb();
