@@ -145,8 +145,6 @@
     <!-- The 7.0 and 7.2 module should perhaps be added to a
          compatible chapter, but it needs a modifying
          wrapper first. -->
-    <insert-move entity="7-0::"/>
-    <insert-move entity="7-2::"/>
     <insert-move entity="7-4::"/>
     <insert-move entity="_Roxen"/>
     <!-- insert-move entity="__builtin"/ -->
