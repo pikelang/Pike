@@ -9,8 +9,8 @@ number, i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches
 have an odd minor version.
 
 Keep in mind that the git versions are under heavy development and
-have not been tested nearly as well as the offcial releases.  You use
-the code AT YOUR OWN RISK.
+have not been tested nearly as well as the official releases.  You
+use the code AT YOUR OWN RISK.
 
 
 DEPENDENCIES
