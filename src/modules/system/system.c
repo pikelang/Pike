@@ -1914,15 +1914,15 @@ int my_isipv6nr(char *s)
 #endif
 #endif /* !GETSERV_DECLARE */
 
-/* this is used from modules/file, and modules/spider! */
+/* this is also used from modules/_Stdio */
 int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
-		  int inet_flags)
+                  int inet_flags)
 {
 #ifdef HAVE_GETADDRINFO
   struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
   char servnum_buf[200];
 #endif /* HAVE_GETADDRINFO */
-
+  int err;
   int udp = inet_flags & 1;
 
   MEMSET(addr,0,sizeof(PIKE_SOCKADDR));
@@ -1950,19 +1950,36 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #ifdef AI_V4MAPPED
     hints.ai_flags = AI_V4MAPPED;
 #endif
-#endif
   }
+#endif
+#ifdef AI_NUMERICHOST
+  hints.ai_flags |= AI_NUMERICHOST;
+#endif
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
   if(!service)
+  {
+#ifdef AI_NUMERICSERV
+    hints.ai_flags |= AI_NUMERICSERV;
+#endif
     sprintf(servnum_buf, "%"PRINTPIKEINT"d", (port<0? 0:port));
-  if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
+  }
+
+  if( (err=getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) )
+  {
+#ifdef AI_NUMERICHOST
+    hints.ai_flags &= ~AI_NUMERICHOST;
+    err=getaddrinfo(name, (service? service : servnum_buf), &hints, &res);
+#endif
+  }
+  if(!err)
+  {
     struct addrinfo *p, *found = NULL;
     size_t addr_len=0;
     for(p=res; p; p=p->ai_next) {
       if(p->ai_addrlen > addr_len &&
-	 p->ai_addrlen <= sizeof(*addr) &&
-	 p->ai_addr)
-	addr_len = (found = p)->ai_addrlen;
+         p->ai_addrlen <= sizeof(*addr) &&
+         p->ai_addr)
+        addr_len = (found = p)->ai_addrlen;
     }
     if(found) {
 /*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
@@ -2023,9 +2040,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
     if(!ret) {
       if (strlen(name) < 1024) {
-	Pike_error("Invalid address '%s'\n",name);
+        Pike_error("Invalid address '%s'\n",name);
       } else {
-	Pike_error("Invalid address\n");
+        Pike_error("Invalid address\n");
       }
     }
 
@@ -2033,12 +2050,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
 #ifdef HAVE_H_ADDR_LIST
     MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-	   (char *)ret->h_addr_list[0],
-	   ret->h_length);
+           (char *)ret->h_addr_list[0],
+           ret->h_length);
 #else
     MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-	   (char *)ret->h_addr,
-	   ret->h_length);
+           (char *)ret->h_addr,
+           ret->h_length);
 #endif
 #else
     if (strlen(name) < 1024) {
@@ -2057,9 +2074,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
     if(!ret) {
       if (strlen(service) < 1024) {
-	Pike_error("Invalid service '%s'\n",service);
+        Pike_error("Invalid service '%s'\n",service);
       } else {
-	Pike_error("Invalid service\n");
+        Pike_error("Invalid service\n");
       }
     }
 
