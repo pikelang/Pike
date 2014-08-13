@@ -634,6 +634,39 @@ void export_refdoc(mapping(string:array(string)) src_commit)
 		     exporter);
 }
 
+bool has_autodoc_filename( string diffline )
+{
+    string path;
+    if( sscanf( diffline, "%*s a/%[^ ]", path ) )
+    {
+        if( has_suffix( path, ".bmml" ) ) return true;
+        if( has_suffix( path, ".xml" ) && has_value( path, "refdoc" ) ) return true;
+        if( (has_value( path, "/lenna" ) || has_value( path, "image_ill.pnm"))
+            && Array.any(({"refdoc/src_images",
+                           "src/modules/Image/doc",
+                           "tutorial"}),
+                         Function.curry(has_value)(path)))
+          return true;
+    }
+}
+
+bool has_doc_commits( string commit )
+{
+    foreach( commit/"\n", string x )
+    {
+        if(!strlen(x)) continue;
+        if( x[0] == '+' || x[0] == '-' )
+        {
+            if( (has_value( x, "*!" ) || has_value(x,"//!" )) &&
+                !has_value(x, "$Id: ") )
+                return true;
+        }
+        else if( has_prefix( x, "diff ") &&  has_autodoc_filename( x ) )
+            return true;
+    }
+    return false;
+}
+
 void export_autodoc_for_ref(string ref)
 {
   string start_doc_rev;
@@ -663,7 +696,15 @@ void export_autodoc_for_ref(string ref)
       doc_refs[ref] = doc_rev;
       continue;
     }
+
     // Not previously converted.
+    if( doc_refs[ref] && !has_doc_commits(git("show",src_rev)) )
+    {
+        // Not relevant for autodoc.
+        src_to_doc[src_rev] = doc_refs[ref];
+        progress("no documentation... ");
+        continue;
+    }
 
     // Check out the source.
     if (verbose) {
@@ -741,6 +782,7 @@ void export_autodoc_for_ref(string ref)
 	exporter->reset(ref);
       }
       doc_mark = new_mark();
+      doc_refs[ref] = doc_mark;
       exporter->commit(ref, doc_mark, src_commit->author[0],
 		       src_commit->committer[0],
 		       src_commit->message*"\n",
