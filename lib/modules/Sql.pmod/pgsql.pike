@@ -1373,7 +1373,7 @@ string quotebinary(string s)
 //! @seealso
 //!   @[drop_db()]
 void create_db(string db)
-{ big_query("CREATE DATABASE :db",([":db":db]));
+{ big_query(sprintf("CREATE DATABASE %s",db));
 }
 
 //! This function destroys a database and all the data it contains (assuming
@@ -1387,7 +1387,7 @@ void create_db(string db)
 //! @seealso
 //!   @[create_db()]
 void drop_db(string db)
-{ big_query("DROP DATABASE :db",([":db":db]));
+{ big_query(sprintf("DROP DATABASE %s",db));
 }
 
 //! @returns
