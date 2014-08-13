@@ -926,16 +926,6 @@ node *debug_mknode(int token, node *a, node *b)
   case F_APPEND_ARRAY:
   case F_MULTI_ASSIGN:
   case F_ASSIGN:
-  case F_MOD_EQ:
-  case F_AND_EQ:
-  case F_MULT_EQ:
-  case F_ADD_EQ:
-  case F_SUB_EQ:
-  case F_DIV_EQ:
-  case F_LSH_EQ:
-  case F_RSH_EQ:
-  case F_XOR_EQ:
-  case F_OR_EQ:
     res->node_info |= OPT_ASSIGNMENT;
     if (a) {
       res->tree_info |= a->tree_info;
@@ -2828,16 +2818,6 @@ static void find_written_vars(node *n,
     break;
 
     case F_APPEND_ARRAY:
-    case F_AND_EQ:
-    case F_OR_EQ:
-    case F_XOR_EQ:
-    case F_LSH_EQ:
-    case F_RSH_EQ:
-    case F_ADD_EQ:
-    case F_SUB_EQ:
-    case F_MULT_EQ:
-    case F_MOD_EQ:
-    case F_DIV_EQ:
       find_written_vars(CAR(n), p, 1);
       find_written_vars(CDR(n), p, 0);
       break;
@@ -3588,102 +3568,6 @@ void fix_type_field(node *n)
     }
 
     n->type = or_pike_types(CADR(n)->type, CDDR(n)->type, 0);
-    break;
-
-  case F_AND_EQ:
-  case F_OR_EQ:
-  case F_XOR_EQ:
-  case F_LSH_EQ:
-  case F_RSH_EQ:
-  case F_ADD_EQ:
-  case F_SUB_EQ:
-  case F_MULT_EQ:
-  case F_MOD_EQ:
-  case F_DIV_EQ:
-    if (CAR(n)) {
-      struct pike_string *op_string = NULL;
-      struct pike_type *call_type;
-      node *op_node;
-
-      /* Go via var = OP(var, expr);
-       *
-       * FIXME: To restrict the type further:
-       * type = typeof(OP(var, expr)) AND typeof(var);
-       */
-      switch(n->token) {
-      case F_AND_EQ:
-	MAKE_CONST_STRING(op_string, "`&");
-	break;
-      case F_OR_EQ:
-	MAKE_CONST_STRING(op_string, "`|");
-	break;
-      case F_XOR_EQ:
-	MAKE_CONST_STRING(op_string, "`^");
-	break;
-      case F_LSH_EQ:
-	MAKE_CONST_STRING(op_string, "`<<");
-	break;
-      case F_RSH_EQ:
-	MAKE_CONST_STRING(op_string, "`>>");
-	break;
-      case F_ADD_EQ:
-	MAKE_CONST_STRING(op_string, "`+");
-	break;
-      case F_SUB_EQ:
-	MAKE_CONST_STRING(op_string, "`-");
-	break;
-      case F_MULT_EQ:
-	MAKE_CONST_STRING(op_string, "`*");
-	break;
-      case F_MOD_EQ:
-	MAKE_CONST_STRING(op_string, "`%");
-	break;
-      case F_DIV_EQ:
-	MAKE_CONST_STRING(op_string, "`/");
-	break;
-      default:
-	Pike_fatal("fix_type_field(): Unhandled token: %d\n", n->token);
-	break;
-      }
-      if (!(op_node = find_module_identifier(op_string, 0))) {
-	my_yyerror("Internally used efun undefined for token %d: %S",
-		   n->token, op_string);
-	copy_pike_type(n->type, mixed_type_string);
-	break;
-      }
-
-      if (!op_node->type) {
-	fix_type_field(op_node);
-      }
-
-      push_finished_type(CAR(n)->type);
-      push_type(T_VOID);
-      push_type(T_MANY);
-      push_finished_type(CDR(n)?CDR(n)->type:mixed_type_string);
-      push_type(T_FUNCTION);
-      push_finished_type(CAR(n)->type);
-      push_type(T_FUNCTION);
-
-      call_type = pop_type();
-
-      n->type = check_call(call_type,
-			   op_node->type ? op_node->type : mixed_type_string,
-			   (c->lex.pragmas & ID_STRICT_TYPES) &&
-			   !(op_node->node_info & OPT_WEAK_TYPE));
-      if (n->type) {
-	/* Type check ok. */
-	free_node(op_node);
-	free_type(call_type);
-	break;
-      }
-      yytype_report(REPORT_ERROR, NULL, 0,
-		    op_node->type ? op_node->type : mixed_type_string,
-		    NULL, 0, call_type,
-		    0, "Bad arguments to %S.", op_string);
-      free_node(op_node);
-      free_type(call_type);
-    }
-    copy_pike_type(n->type, mixed_type_string);
     break;
 
   case F_INC:
