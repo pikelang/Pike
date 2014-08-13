@@ -641,12 +641,26 @@ bool has_autodoc_filename( string diffline )
     {
         if( has_suffix( path, ".bmml" ) ) return true;
         if( has_suffix( path, ".xml" ) && has_value( path, "refdoc" ) ) return true;
+	if (has_prefix( path, "tutorial/" ) || has_value( path, "/doc/" )) {
+	    // BMML.
+	    return true;
+	}
         if( (has_value( path, "/lenna" ) || has_value( path, "image_ill.pnm"))
             && Array.any(({"refdoc/src_images",
                            "src/modules/Image/doc",
                            "tutorial"}),
                          Function.curry(has_value)(path)))
-          return true;
+            return true;
+	if ((has_prefix( path, "lib/" ) &&
+	     (has_suffix( path, ".pike" ) || has_suffix( path, ".pmod")) ||
+	     has_suffix( path, "/module.pmod.in" )) &&
+	    (Stdio.file_size(work_dir + "/build/" + path + ".xml") > 64)) {
+	    // NB: The shortest possible autodoc xml file (without any content)
+	    //     is ~60 bytes. Anything shorter doesn't contain any doc.
+
+	    // Edited Pike file with existing autodoc markup.
+	    return true;
+	}
     }
 }
 
@@ -660,6 +674,7 @@ bool has_doc_commits( string commit )
             if( (has_value( x, "*!" ) || has_value(x,"//!" )) &&
                 !has_value(x, "$Id: ") )
                 return true;
+	    if (has_value(x, "inherit")) return true;
         }
         else if( has_prefix( x, "diff ") &&  has_autodoc_filename( x ) )
             return true;
