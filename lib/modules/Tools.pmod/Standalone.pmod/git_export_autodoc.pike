@@ -720,7 +720,9 @@ void export_autodoc_for_ref(string ref)
     {
         // Not relevant for autodoc.
         src_to_doc[src_rev] = doc_refs[ref];
-        progress("no documentation... ");
+	if (verbose) {
+            progress("No documentation... ");
+	}
         continue;
     }
 
