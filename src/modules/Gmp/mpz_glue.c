@@ -2361,7 +2361,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("`<", mpzmod_lt,tMpz_cmpop_type, ID_PROTECTED);		\
 									\
   ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_PROTECTED);		\
-  ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_PROTECTED);		\
 									\
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_PROTECTED);	\
 									\
