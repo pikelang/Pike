@@ -1299,56 +1299,53 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
   pop_n_elems(args);							\
   PUSH_REDUCED(res);							\
 }									\
-)									\
-									\
-static void PIKE_CONCAT(name,_eq)(INT32 args)				\
-{									\
-  INT32 e;								\
-  if(THIS_PROGRAM == bignum_program)					\
-  {									\
-    double ret;								\
-    for(e=0; e<args; e++)						\
-    {									\
-      switch(TYPEOF(sp[e-args]))					\
-      {									\
-       case T_FLOAT:                                                    \
-	ret=mpz_get_d(THIS);						\
-	for(e=0; e<args; e++)						\
-	  ret = ret OP double_from_sval(sp-args);	        	\
-									\
-	pop_n_elems(args);						\
-	push_float( (FLOAT_TYPE)ret );					\
-	return;								\
-       case T_STRING:                                                   \
-        MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
-        sp++; args++;                                                   \
-	SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);				\
-        SET_SVAL(sp[-args], T_STRING, 0, string,			\
-		 low_get_mpz_digits(THIS, 10));				\
-        f_add(args);                                                    \
-	return;								\
-      }									\
-    }									\
-  }									\
-  for(e=0; e<args; e++)							\
-    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
-     get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op "=", e + 1, args);	\
-  for(e=0;e<args;e++)							\
-    if(TYPEOF(sp[e-args]) != T_INT)					\
-      fun(THIS, THIS, OBTOMPZ(sp[e-args].u.object));			\
-    else								\
-      PIKE_CONCAT(fun,_ui)(THIS,THIS, sp[e-args].u.integer);		\
-  add_ref(fp->current_object);						\
-  PUSH_REDUCED(fp->current_object);					\
-}
+)
 
 #define STRINGCONV(X) X
+
+static void mpzmod_add_eq(INT32 args)
+{
+  INT32 e;
+  if(THIS_PROGRAM == bignum_program)
+  {
+    double ret;
+    for(e=0; e<args; e++)
+    {
+      switch(TYPEOF(sp[e-args]))
+      {
+        case T_FLOAT:
+          ret=mpz_get_d(THIS);
+          for(e=0; e<args; e++)
+            ret = ret + double_from_sval(sp-args);
+          pop_n_elems(args);
+          push_float( (FLOAT_TYPE)ret );
+          return;
+        case T_STRING:
+          MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);
+          sp++; args++;
+          SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);
+          SET_SVAL(sp[-args], T_STRING, 0, string,
+                   low_get_mpz_digits(THIS, 10));
+          f_add(args);
+          return;
+      }
+    }
+  }
+  for(e=0; e<args; e++)
+    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer))
+      get_mpz(sp+e-args, 1, "Gmp.mpz->`+", e + 1, args);
+  for(e=0;e<args;e++)
+    if(TYPEOF(sp[e-args]) != T_INT)
+      mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
+    else
+      mpz_add_ui(THIS,THIS, sp[e-args].u.integer);
+  add_ref(fp->current_object);
+  PUSH_REDUCED(fp->current_object);
+}
 
 /*! @decl Gmp.mpz `+(int|float|Gmp.mpz ... x)
  */
 /*! @decl Gmp.mpz ``+(int|float|Gmp.mpz ... x)
- */
-/*! @decl Gmp.mpz `+=(int|float|Gmp.mpz ... x)
  */
 BINFUN2(mpzmod_add, "+", mpz_add, +, f_add, ADD)
 
@@ -1359,12 +1356,10 @@ BINFUN2(mpzmod_add, "+", mpz_add, +, f_add, ADD)
  */
 /*! @decl Gmp.mpz ``*(int|float|Gmp.mpz ... x)
  */
-/*! @decl Gmp.mpz `*=(int|float|Gmp.mpz ... x)
- */
 BINFUN2(mpzmod_mul, "*", mpz_mul, *, f_multiply, MULTIPLY)
 
 /*! @decl Gmp.mpz gcd(object|int|float|string... arg)
- *! 
+ *!
  *! Return the greatest common divisor between this mpz object and
  *! all the arguments.
  */
@@ -1660,7 +1655,7 @@ static void mpzmod_fac(INT32 args)
 
 #ifdef HAVE_MPZ_BIN_UI
 /*! @decl Gmp.mpz bin(int k)
- *! 
+ *!
  *! Return the binomial coefficient @expr{n@} over @[k], where
  *! @expr{n@} is the value of this mpz object. Negative values of
  *! @expr{n@} are supported using the identity
@@ -1766,21 +1761,9 @@ CMPEQU(mpzmod_gt, "Gmp.mpz->`>", >, RET_UNDEFINED)
  */
 CMPEQU(mpzmod_lt, "Gmp.mpz->`<", <, RET_UNDEFINED)
 
-/*! @decl int(0..1) `>=(mixed with)
- */
-CMPEQU(mpzmod_ge, "Gmp.mpz->`>=", >=, RET_UNDEFINED)
-
-/*! @decl int(0..1) `<=(mixed with)
- */
-CMPEQU(mpzmod_le, "Gmp.mpz->`<=", <=, RET_UNDEFINED)
-
 /*! @decl int(0..1) `==(mixed with)
  */
 CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED)
-
-/*! @decl int(0..1) `!=(mixed with)
- */
-CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1)
 
 /*! @decl int(0..1) probably_prime_p()
  *!
@@ -2357,7 +2340,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type, ID_PROTECTED);	\
   ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type, ID_PROTECTED);		\
   ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type, ID_PROTECTED);		\
-  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type, ID_PROTECTED);	\
   ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type, ID_PROTECTED);		\
   ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type, ID_PROTECTED);	\
   ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type, ID_PROTECTED);		\
@@ -2377,8 +2359,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 									\
   ADD_FUNCTION("`>", mpzmod_gt,tMpz_cmpop_type, ID_PROTECTED);		\
   ADD_FUNCTION("`<", mpzmod_lt,tMpz_cmpop_type, ID_PROTECTED);		\
-  ADD_FUNCTION("`>=",mpzmod_ge,tMpz_cmpop_type, ID_PROTECTED);		\
-  ADD_FUNCTION("`<=",mpzmod_le,tMpz_cmpop_type, ID_PROTECTED);		\
 									\
   ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_PROTECTED);		\
   ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_PROTECTED);		\
