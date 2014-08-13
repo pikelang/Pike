@@ -817,16 +817,6 @@ PIKECLASS mpq
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpq `*=(int|float|object ... a)
-   */
-  PIKEFUN object `*=(int|float|object ... UNUSED)
-    flags ID_PROTECTED;
-  {
-    mult_convert_args(args, "Gmp.mpq->`*=");
-    mult_args(THISMPQ, 0,args);
-    REF_RETURN fp->current_object;
-  }
-  
   /*! @decl static Gmp.mpq `-(int|float|object ... a)
    */
   PIKEFUN object `-(int|float|object ... UNUSED)
@@ -1021,22 +1011,6 @@ PIKECLASS mpq
       RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<", 1, args)) < 0;
     }
 
-  /*! @decl static int(0..1) `>=(mixed q)
-   */
-  PIKEFUN int(0..1) `>=(mixed q)
-    flags ID_PROTECTED;
-  {
-    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>=", 1, args)) >= 0;
-  }
-
-  /*! @decl static int(0..1) `<=(mixed q)
-   */
-  PIKEFUN int(0..1) `<=(mixed q)
-    flags ID_PROTECTED;
-  {
-    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<=", 1, args)) <= 0;
-  }
-
 
   /*! @decl static int(0..1) `==(mixed q)
    */
@@ -1045,15 +1019,6 @@ PIKECLASS mpq
   {
     MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
     RETURN arg && !mpq_cmp(THISMPQ, arg);
-  }
-
-  /*! @decl static int(0..1) `!=(mixed q)
-   */
-  PIKEFUN int(0..1) `!=(mixed q)
-    flags ID_PROTECTED;
-  {
-    MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
-    RETURN !(arg && !mpq_cmp(THISMPQ, arg));
   }
 
   /*! @decl int(-1..1) sgn()
