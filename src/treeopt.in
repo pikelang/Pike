@@ -1612,14 +1612,69 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 }
 ;
 
-// convert all X_EQ(1,2) to $1 = $1 X $2
-F_ADD_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`+", $0, $1 ), $0 ); };
-F_AND_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`&", $0, $1 ), $0 ); };
-F_OR_EQ(0,1)  : {  $$ = mknode( F_ASSIGN, mkopernode( "`|", $0, $1 ), $0 ); };
-F_XOR_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`^", $0, $1 ), $0 ); };
-F_LSH_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`<<", $0, $1 ), $0 ); };
-F_RSH_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`>>", $0, $1 ), $0 ); };
-F_SUB_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`-", $0, $1 ), $0 ); };
-F_MULT_EQ(0,1): {  $$ = mknode( F_ASSIGN, mkopernode( "`*", $0, $1 ), $0 ); };
-F_MOD_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`%", $0, $1 ), $0 ); };
-F_DIV_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`/", $0, $1 ), $0 ); };
+// convert all X_EQ(1,2) to $1 = $1 X $2 
+F_ADD_EQ(0,1) : {
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`+", $0, $1 )), $0 );
+};
+
+F_SUB_EQ(0,1) : {
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`-", $0, $1 )), $0 );
+};
+
+F_AND_EQ(0,1) : {
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`&", $0, $1 )), $0 );
+};
+
+F_OR_EQ(0,1)  : {
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`|", $0, $1 )), $0 );
+};
+
+F_XOR_EQ(0,1) :
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`^", $0, $1 )), $0 );
+};
+
+F_LSH_EQ(0,1) :
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`<<", $0, $1)), $0 );
+};
+
+F_RSH_EQ(0,1) :
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`>>", $0, $1)), $0 );
+};
+
+F_MULT_EQ(0,1):
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`*", $0, $1 )), $0 );
+};
+
+F_MOD_EQ(0,1) :
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`%", $0, $1 )), $0 );
+};
+
+F_DIV_EQ(0,1) :
+{
+  struct pike_type *type = $0->type;
+  add_ref(type);
+  $$ = mknode( F_ASSIGN, mksoftcastnode(type,mkopernode( "`/", $0, $1 )), $0 );
+};
