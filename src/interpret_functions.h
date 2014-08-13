@@ -1078,6 +1078,29 @@ OPCODE0(F_ASSIGN, "assign", I_UPDATE_SP, {
   Pike_sp-=2;
 });
 
+OPCODE1(F_ASSIGN_INDICES, "assign[]", I_UPDATE_SP, {
+  LOCAL_VAR(struct array *arr);
+  LOCAL_VAR(struct array *from);
+  LOCAL_VAR(int i);
+
+  /* Note: All thse checks are presumably fairly pointless. */
+  if(TYPEOF(Pike_sp[-2]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Destination is not an array.\n", Pike_sp, 1);
+
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Source is not an array.\n", Pike_sp-1, 1);
+
+  arr  = Pike_sp[-2].u.array;
+  from = Pike_sp[-1].u.array;
+
+  if( arr->size != from->size )
+      Pike_error("Source and destination differs in size in automap.\n");
+
+  assign_svalues(arr->item,from->item,arr->size,arr->type_field|from->type_field);
+
+  pop_stack(); /* leaves arr on stack. */
+});
+
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", I_UPDATE_SP|I_UPDATE_M_SP, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
 	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));

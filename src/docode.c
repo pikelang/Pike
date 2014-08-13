@@ -1172,6 +1172,24 @@ static int do_docode2(node *n, int flags)
     }
 
   case F_ASSIGN:
+    if( CDR(n)->token == F_AUTO_MAP_MARKER )
+    {
+        int depth = 0;
+        node *lval = CDR(n);
+        while( lval->token == F_AUTO_MAP_MARKER )
+        {
+            lval = CAR(lval);
+            depth++;
+        }
+        do_docode(lval,0); /* note: not lvalue */
+        if(do_docode(CAR(n),0)!=1)
+            yyerror("RHS is void!");
+        emit1(F_ASSIGN_INDICES,depth);
+        if( flags & DO_POP )
+            emit0( F_POP_VALUE );
+        return !(flags&DO_POP);
+    }
+
     switch(CAR(n)->token)
     {
     case F_RANGE:
@@ -2694,8 +2712,15 @@ static int do_docode2(node *n, int flags)
     return 1;
 
   case F_AUTO_MAP_MARKER:
-    yyerror("[*] not supported here.\n");
-    emit0(F_CONST0);
+    if( flags & DO_LVALUE )
+    {
+        do_docode(CAR(n),DO_LVALUE);
+    }
+    else
+    {
+        yyerror("[*] not supported here.\n");
+        emit0(F_CONST0);
+    }
     return 1;
 
   default:
