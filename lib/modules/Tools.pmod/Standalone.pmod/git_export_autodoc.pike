@@ -713,7 +713,10 @@ void export_autodoc_for_ref(string ref)
     }
 
     // Not previously converted.
-    if( doc_refs[ref] && !has_doc_commits(git("show",src_rev)) )
+    mapping(string:array(string)) src_commit = get_commit(work_git, src_rev);
+    if( doc_refs[ref] && src_commit->parent &&
+	!has_doc_commits(git("diff", "--pretty=raw",
+			     src_commit->parent[0] + ".." + src_rev)) )
     {
         // Not relevant for autodoc.
         src_to_doc[src_rev] = doc_refs[ref];
@@ -729,7 +732,6 @@ void export_autodoc_for_ref(string ref)
     git("clean", "-f", "-d", "-q", "src", "lib");
 
     // Create a corresponding commit in the documentation.
-    mapping(string:array(string)) src_commit = get_commit(work_git, src_rev);
     array(string) doc_parents = ({});
     string prev_autodoc_sha1;
     string prev_refdoc_sha1 = "";
