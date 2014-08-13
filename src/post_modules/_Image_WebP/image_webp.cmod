@@ -297,7 +297,8 @@ PIKEFUN object decode( string data )
 {
   struct mapping *m;
   struct svalue *p;
-  f_cq__Image_WebP_cq__decode(args);
+
+  apply(Pike_fp->current_object, "_decode", args);
 
   m = Pike_sp[-1].u.mapping;
 
@@ -345,7 +346,7 @@ static object *parameter_obj(struct mapping *map, const char *what )
  *!
  *! Encode an image using the WebP format.
  *!
- *!  The image to encode has to be at most 16384 pixels in any direction.
+ *! The image to encode has to be at most 16384 pixels in any direction.
  *!
  *! Commonly used options:
  *!
