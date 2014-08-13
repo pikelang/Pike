@@ -98,19 +98,6 @@ F_APPLY(0 = F_CONSTANT
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 
-// Some convenience stuff:
-F_LT(0, 1):
-  {
-    $$ = mkopernode("`<", $0, $1);
-  }
-  ;
-
-F_GT(0, 1):
-  {
-    $$ = mkopernode("`<", $0, $1);
-  }
-  ;
-		   
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_LT(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -128,7 +115,7 @@ F_LT(F_APPLY(F_CONSTANT
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
 };
-			   
+
 // search(indices(map), key) == -1)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_EQ(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -146,7 +133,7 @@ F_EQ(F_APPLY(F_CONSTANT
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
 };
-			   
+
 // search(indices(map), key) >= 0)  =>  !zero_type(map[key]) if typeof(map) <= mapping
 F_GE(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -501,7 +488,7 @@ F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT], *),
     }
   }
 }
-;			              
+;
 
 F_COMMA_EXPR(-, 0):
   $0;
@@ -1624,3 +1611,15 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
   }
 }
 ;
+
+// convert all X_EQ(1,2) to $1 = $1 X $2
+F_ADD_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`+", $0, $1 ), $0 ); };
+F_AND_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`&", $0, $1 ), $0 ); };
+F_OR_EQ(0,1)  : {  $$ = mknode( F_ASSIGN, mkopernode( "`|", $0, $1 ), $0 ); };
+F_XOR_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`^", $0, $1 ), $0 ); };
+F_LSH_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`<<", $0, $1 ), $0 ); };
+F_RSH_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`>>", $0, $1 ), $0 ); };
+F_SUB_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`-", $0, $1 ), $0 ); };
+F_MULT_EQ(0,1): {  $$ = mknode( F_ASSIGN, mkopernode( "`*", $0, $1 ), $0 ); };
+F_MOD_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`%", $0, $1 ), $0 ); };
+F_DIV_EQ(0,1) : {  $$ = mknode( F_ASSIGN, mkopernode( "`/", $0, $1 ), $0 ); };
