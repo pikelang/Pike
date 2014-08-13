@@ -1149,133 +1149,6 @@ static int do_docode2(node *n, int flags)
     current_switch.jumptable = prev_switch_jumptable;
     return adroppings;
   }
-      
-  case F_AND_EQ:
-  case F_OR_EQ:
-  case F_XOR_EQ:
-  case F_LSH_EQ:
-  case F_RSH_EQ:
-  case F_ADD_EQ:
-  case F_SUB_EQ:
-  case F_MULT_EQ:
-  case F_MOD_EQ:
-  case F_DIV_EQ:
-    if((CAR(n) && CAR(n)->token == F_AUTO_MAP_MARKER) ||
-       (CDR(n) && CDR(n)->token == F_AUTO_MAP_MARKER))
-    {
-      char *opname;
-
-      if(CAR(n)->token == F_AUTO_MAP_MARKER)
-      {
-	int depth=0;
-	node *tmp=CAR(n);
-	while(tmp->token == F_AUTO_MAP_MARKER)
-	{
-	  depth++;
-	  tmp=CAR(tmp);
-	}
-	tmp1=do_docode(tmp,DO_LVALUE);
-	emit0(F_MARK);
-	emit0(F_MARK);
-	emit0(F_LTOSVAL);
-	emit1(F_NUMBER,depth);
-	emit_apply_builtin("__builtin.automap_marker");
-      }else{
-	tmp1=do_docode(CAR(n),DO_LVALUE);
-	emit0(F_LTOSVAL);
-      }
-
-      switch(n->token)
-      {
-	case F_ADD_EQ: opname="`+"; break;
-	case F_AND_EQ: opname="`&"; break;
-	case F_OR_EQ:  opname="`|"; break;
-	case F_XOR_EQ: opname="`^"; break;
-	case F_LSH_EQ: opname="`<<"; break;
-	case F_RSH_EQ: opname="`>>"; break;
-	case F_SUB_EQ: opname="`-"; break;
-	case F_MULT_EQ:opname="`*"; break;
-	case F_MOD_EQ: opname="`%"; break;
-	case F_DIV_EQ: opname="`/"; break;
-	default:
-	  Pike_fatal("Really???\n");
-	  opname="`make gcc happy";
-      }
-
-      emit_builtin_svalue(opname);
-      emit2(F_REARRANGE,1,1);
-
-      if(CDR(n)->token == F_AUTO_MAP)
-      {
-	do_encode_automap_arg_list(CDR(n), 0);
-      }else{
-	code_expression(CDR(n), 0, "assignment");
-      }
-      emit_apply_builtin("__automap__");
-    }else{
-      tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef PIKE_DEBUG
-      if(tmp1 != 2)
-	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
-#endif
-
-      if(n->token == F_ADD_EQ && (flags & DO_POP))
-      {
-	code_expression(CDR(n), 0, "assignment");
-	emit0(F_ADD_TO_AND_POP);
-	return 0;
-      }
-      
-      if(CAR(n)->token != F_AUTO_MAP &&
-	 (match_types(CAR(n)->type, array_type_string) ||
-	  match_types(CAR(n)->type, string_type_string) ||
-	  match_types(CAR(n)->type, mapping_type_string) ||
-	  match_types(CAR(n)->type, object_type_string)))
-      {
-	code_expression(CDR(n), 0, "assignment");
-	emit0(F_LTOSVAL2_AND_FREE);
-      }else{
-	emit0(F_LTOSVAL);
-	code_expression(CDR(n), 0, "assignment");
-      }
-      
-      
-      switch(n->token)
-      {
-	case F_ADD_EQ:
-	  if(CAR(n)->type == int_type_string &&
-	     CDR(n)->type == int_type_string)
-	  {
-	    emit0(F_ADD_INTS);
-	  }
-	  else if(CAR(n)->type == float_type_string &&
-		  CDR(n)->type == float_type_string)
-	  {
-	    emit0(F_ADD_FLOATS);
-	  }else{
-	    emit0(F_ADD);
-	  }
-	  break;
-	case F_AND_EQ: emit0(F_AND); break;
-	case F_OR_EQ:  emit0(F_OR);  break;
-	case F_XOR_EQ: emit0(F_XOR); break;
-	case F_LSH_EQ: emit0(F_LSH); break;
-	case F_RSH_EQ: emit0(F_RSH); break;
-	case F_SUB_EQ: emit0(F_SUBTRACT); break;
-	case F_MULT_EQ:emit0(F_MULTIPLY);break;
-	case F_MOD_EQ: emit0(F_MOD); break;
-	case F_DIV_EQ: emit0(F_DIVIDE); break;
-      }
-    }
-    
-    if(flags & DO_POP)
-    {
-      emit0(F_ASSIGN_AND_POP);
-      return 0;
-    }else{
-      emit0(F_ASSIGN);
-      return 1;
-    }
 
   case F_MULTI_ASSIGN:
     if (flags & DO_POP) {
@@ -1302,16 +1175,6 @@ static int do_docode2(node *n, int flags)
     switch(CAR(n)->token)
     {
     case F_RANGE:
-    case F_AND:
-    case F_OR:
-    case F_XOR:
-    case F_LSH:
-    case F_RSH:
-    case F_ADD:
-    case F_MOD:
-    case F_SUBTRACT:
-    case F_DIVIDE:
-    case F_MULTIPLY:
       if(node_is_eq(CDR(n),CAAR(n)))
       {
         int num_args;
@@ -1525,27 +1388,6 @@ static int do_docode2(node *n, int flags)
       low_insert_label( DO_NOT_WARN((INT32)tmp1));
       return 1;
     }
-
-  case F_EQ:
-  case F_NE:
-  case F_ADD:
-  case F_LT:
-  case F_LE:
-  case F_GT:
-  case F_GE:
-  case F_SUBTRACT:
-  case F_MULTIPLY:
-  case F_DIVIDE:
-  case F_MOD:
-  case F_LSH:
-  case F_RSH:
-  case F_XOR:
-  case F_OR:
-  case F_AND:
-  case F_NOT:
-  case F_COMPL:
-  case F_NEGATE:
-    Pike_fatal("Optimizer error.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
