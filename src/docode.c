@@ -710,11 +710,14 @@ static void emit_assign_global( int n, int and_pop )
       && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
       && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
       && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
-      && !ref->inherit_offset
-      && id->run_time_type == PIKE_T_MIXED )
+      && !ref->inherit_offset )
   {
-    emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
-          id->func.offset);
+    if( id->run_time_type == PIKE_T_MIXED )
+        emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
+              id->func.offset);
+    else
+        emit2((and_pop?F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_TYPED_GLOBAL),
+              id->func.offset, id->run_time_type);
   }
   else
   {

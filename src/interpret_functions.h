@@ -365,7 +365,30 @@ OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
     print_return_value();
 });
 
-OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private>", I_UPDATE_SP, {
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> and pop", I_UPDATE_SP, {
+   /* lazy mode. */
+  LOCAL_VAR(union anything  *tmp);
+  LOCAL_VAR(struct object *co);
+  co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
+  tmp = (union anything *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  assign_to_short_svalue( tmp, arg2, Pike_sp-1 );
+  pop_stack();
+});
+
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
+  LOCAL_VAR(union anything  *tmp);
+  LOCAL_VAR(struct object *co);
+  co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
+  tmp = (union anything *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  assign_to_short_svalue( tmp, arg2, Pike_sp-1);
+});
+
+
+OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     LOCAL_VAR(struct object *co);
     LOCAL_VAR(void *ptr);
 
