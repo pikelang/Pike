@@ -743,6 +743,33 @@ static void emit_assign_global( int n, int and_pop )
   }
 }
 
+static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
+{
+  struct compilation *c = THIS_COMPILATION;
+  node **arg;
+  int no = 0;
+  int tmp1=store_constant(&func->u.sval,
+                          !(func->tree_info & OPT_EXTERNAL_DEPEND),
+                          func->name);
+
+
+#ifdef PIKE_DEBUG
+  arg = my_get_arg(&args,0);
+  if( !node_is_eq(*arg,lval) )
+    Pike_fatal("lval should be the same as arg1, or this will not work.\n");
+#endif
+  do_docode(lval, DO_LVALUE);
+  emit0(F_MARK);
+  emit0(F_CONST0);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  while ((arg = my_get_arg(&args, ++no)) && *arg) {
+     do_docode(*arg, 0);
+   }
+   emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
+   POP_AND_DONT_CLEANUP;
+   return 1;
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -755,7 +782,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     yyerror("Argument count mismatch for multi-assignment.\n");
     return;
   }
-  
+
   if (vars->token == F_LVALUE_LIST) {
     var = CAR(vars);
     vars = CDR(vars);
@@ -1178,7 +1205,24 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
+  {
+  case F_ASSIGN_SELF:
+    /* a special case, we know we can not really optimize.
+       car: softcast(efuncall(function,args(2)))
+    */ 
+      /* node *args=CAADR(n), *func = CAAAR(n); */
+    if( CDR(n)->token == F_AUTO_MAP_MARKER )
+      yyerror("[*] is not yet supported here\n");
+    return emit_ltosval_call_and_assign( CDR(n), CAAAR(n), CDAAR(n) );
+
   case F_ASSIGN:
+
+  /* if assign self is 1 we know this:
+     car(n) = lvalue
+     cdr(n)= softcast(apply(efun, arglist(car(n),one more arg)))
+
+     We only want to evaluate car(n) once.
+  */
     if( CDR(n)->token == F_AUTO_MAP_MARKER )
     {
         int depth = 0;
@@ -1202,8 +1246,9 @@ static int do_docode2(node *n, int flags)
           emit1(F_ASSIGN_INDICES,depth);
         }
         else
+        {
           emit1(F_ASSIGN_ALL_INDICES,depth);
-
+        }
         if( flags & DO_POP )
             emit0( F_POP_VALUE );
         return !(flags&DO_POP);
@@ -1255,10 +1300,10 @@ static int do_docode2(node *n, int flags)
 	  (CAAR(n)->u.sval.u.efun->function != f_map) &&
 	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
 	/* efuns typically don't access object variables. */
-	node *args = CDAR(n);
+        node *args = CDAR(n), **arg;
 	if (args && count_args(args) > 1)
-    {
-	  node **arg = my_get_arg(&args, 0);
+        {
+	  arg = my_get_arg(&args, 0);
 	  if (arg && node_is_eq(CDR(n), *arg) &&
 	      !(args->tree_info & OPT_ASSIGNMENT)) {
             if(match_types(CDR(n)->type, array_type_string) ||
@@ -1268,22 +1313,9 @@ static int do_docode2(node *n, int flags)
                match_types(CDR(n)->type, mapping_type_string))
             {
               /* First arg is the lvalue.
-               *
                * We optimize this to allow for destructive operations.
                */
-              int no = 0;
-              tmp1 = do_docode(CDR(n), DO_LVALUE);
-              emit0(F_MARK_AND_CONST0);
-              PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-              while ((arg = my_get_arg(&args, ++no)) && *arg) {
-                do_docode(*arg, 0);
-              }
-              tmp1=store_constant(&CAAR(n)->u.sval,
-                                  !(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-                                  CAAR(n)->name);
-              emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
-              POP_AND_DONT_CLEANUP;
-              return 1;
+              return emit_ltosval_call_and_assign( CDR(n), CAAR(n), CDAR(n) );
             }
           }
 	}
@@ -1314,7 +1346,6 @@ static int do_docode2(node *n, int flags)
 	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
 	     CDR(n)->u.integer.a );
 	break;
-
 
       case F_GET_SET:
       {
@@ -1399,6 +1430,7 @@ static int do_docode2(node *n, int flags)
       }
       return flags & DO_POP ? 0 : 1;
     }
+  }
 
   case F_LAND:
   case F_LOR:
