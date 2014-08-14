@@ -52,7 +52,7 @@ string private_key(Crypto.RSA rsa)
 //!   RSAPublicKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
-Crypto.RSA parse_public_key(string key)
+Crypto.RSA.State parse_public_key(string key)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
 
@@ -62,7 +62,7 @@ Crypto.RSA parse_public_key(string key)
       || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
     return UNDEFINED;
 
-  Crypto.RSA rsa = Crypto.RSA();
+  Crypto.RSA.State rsa = Crypto.RSA();
   rsa->set_public_key(a->elements[0]->value, a->elements[1]->value);
   return rsa;
 }
@@ -72,14 +72,14 @@ Crypto.RSA parse_public_key(string key)
 //!   RSAPrivateKey provided in ASN.1 format
 //! @returns
 //!   @[Crypto.RSA] object
-Crypto.RSA parse_private_key(Sequence seq)
+Crypto.RSA.State parse_private_key(Sequence seq)
 {
   if ((sizeof(seq->elements) != 9)
       || (sizeof(seq->elements->type_name - ({ "INTEGER" })))
       || seq->elements[0]->value)
     return UNDEFINED;
   
-  Crypto.RSA rsa = Crypto.RSA();
+  Crypto.RSA.State rsa = Crypto.RSA();
   rsa->set_public_key(seq->elements[1]->value, seq->elements[2]->value);
   rsa->set_private_key(seq->elements[3]->value, seq->elements[4..]->value);
   return rsa;
@@ -90,7 +90,7 @@ Crypto.RSA parse_private_key(Sequence seq)
 //!   RSAPrivateKey provided in ASN.1 DER-encoded format
 //! @returns
 //!   @[Crypto.RSA] object
-variant Crypto.RSA parse_private_key(string key)
+variant Crypto.RSA.State parse_private_key(string key)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
 

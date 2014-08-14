@@ -148,7 +148,7 @@ protected {
 
 class Verifier {
   constant type = "none";
-  Crypto.Sign pkc;
+  Crypto.Sign.State pkc;
   optional __deprecated__(Crypto.RSA) rsa;
   optional __deprecated__(Crypto.DSA) dsa;
 
@@ -183,7 +183,9 @@ protected class RSAVerifier
     pkc = RSA.parse_public_key(key);
   }
 
-  __deprecated__ Crypto.RSA `rsa() { return [object(Crypto.RSA)]pkc; }
+  __deprecated__ Crypto.RSA.State `rsa() {
+    return [object(Crypto.RSA.State)]pkc;
+  }
 }
 
 protected class DSAVerifier
@@ -196,7 +198,9 @@ protected class DSAVerifier
     pkc = DSA.parse_public_key(key, p, q, g);
   }
 
-  __deprecated__ Crypto.DSA `dsa() { return [object(Crypto.DSA)]pkc; }
+  __deprecated__ Crypto.DSA.State `dsa() {
+    return [object(Crypto.DSA.State)]pkc;
+  }
 }
 
 #if constant(Crypto.ECC.Curve)
@@ -1150,7 +1154,7 @@ variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 //! @seealso
 //!   @[decode_certificate()], @[make_tbs()]
 Sequence sign_tbs(TBSCertificate tbs,
-		  Crypto.Sign sign, Crypto.Hash hash)
+		  Crypto.Sign.State sign, Crypto.Hash hash)
 {
   return Sequence(({ [object(Sequence)]tbs,
 		     sign->pkcs_signature_algorithm_id(hash),
@@ -1200,8 +1204,9 @@ Sequence sign_tbs(TBSCertificate tbs,
 //!
 //! @seealso
 //!   @[make_selfsigned_certificate()], @[make_tbs()], @[sign_tbs()]
-string sign_key(Sequence issuer, Crypto.Sign c, Crypto.Sign ca, Crypto.Hash h,
-                Sequence subject, int serial, int ttl, array|mapping|void extensions)
+string sign_key(Sequence issuer, Crypto.Sign.State c, Crypto.Sign.State ca,
+		Crypto.Hash h, Sequence subject, int serial, int ttl,
+		array|mapping|void extensions)
 {
   Sequence algorithm_id = c->pkcs_signature_algorithm_id(h);
   if(!algorithm_id) error("Can't use %O for %O.\n", h, c);
@@ -1270,7 +1275,7 @@ Sequence make_extension(Identifier id, Object ext, void|int critical)
 //!
 //! @seealso
 //!   @[sign_key()], @[sign_tbs()]
-string make_selfsigned_certificate(Crypto.Sign c, int ttl,
+string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
                                    mapping|array name,
                                    mapping(Identifier:Sequence)|void extensions,
                                    void|Crypto.Hash h, void|int serial)
@@ -1299,8 +1304,8 @@ string make_selfsigned_certificate(Crypto.Sign c, int ttl,
   return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
-string make_site_certificate(TBSCertificate ca, Crypto.Sign ca_key,
-                             Crypto.Sign c, int ttl, mapping|array name,
+string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
+                             Crypto.Sign.State c, int ttl, mapping|array name,
                              mapping|void extensions,
                              void|Crypto.Hash h, void|int serial)
 {
@@ -1323,10 +1328,9 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign ca_key,
   return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
 
-string make_root_certificate(Crypto.Sign c, int ttl,
-                                   mapping|array name,
-                                   mapping(Identifier:Sequence)|void extensions,
-                                   void|Crypto.Hash h, void|int serial)
+string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
+			     mapping(Identifier:Sequence)|void extensions,
+			     void|Crypto.Hash h, void|int serial)
 {
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
@@ -1800,7 +1804,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 }
 
 //! DWIM-parse the ASN.1-sequence for a private key.
-Crypto.Sign parse_private_key(Sequence seq)
+Crypto.Sign.State parse_private_key(Sequence seq)
 {
   switch(sizeof(seq)) {
   case 5:
@@ -1820,7 +1824,7 @@ Crypto.Sign parse_private_key(Sequence seq)
 }
 
 //! DWIM-parse the DER-sequence for a private key.
-variant Crypto.Sign parse_private_key(string private_key)
+variant Crypto.Sign.State parse_private_key(string private_key)
 {
   Object seq = Standards.ASN1.Decode.simple_der_decode(private_key);
   if (!seq || (seq->type_name != "SEQUENCE")) return UNDEFINED;
