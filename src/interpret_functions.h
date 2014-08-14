@@ -1102,25 +1102,18 @@ OPCODE0(F_ASSIGN, "assign", I_UPDATE_SP, {
 });
 
 OPCODE1(F_ASSIGN_INDICES, "assign[]", I_UPDATE_SP, {
-  LOCAL_VAR(struct array *arr);
-  LOCAL_VAR(struct array *from);
-  LOCAL_VAR(int i);
-
-  /* Note: All thse checks are presumably fairly pointless. */
   if(TYPEOF(Pike_sp[-2]) != PIKE_T_ARRAY )
       PIKE_ERROR("[*]=", "Destination is not an array.\n", Pike_sp, 1);
-
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
       PIKE_ERROR("[*]=", "Source is not an array.\n", Pike_sp-1, 1);
+  assign_array_level( Pike_sp[-2].u.array, Pike_sp[-1].u.array, arg1 );
+  pop_stack(); /* leaves arr on stack. */
+});
 
-  arr  = Pike_sp[-2].u.array;
-  from = Pike_sp[-1].u.array;
-
-  if( arr->size != from->size )
-      Pike_error("Source and destination differs in size in automap.\n");
-
-  assign_svalues(arr->item,from->item,arr->size,arr->type_field|from->type_field);
-
+OPCODE1(F_ASSIGN_ALL_INDICES, "assign[*]", I_UPDATE_SP, {
+  if(TYPEOF(Pike_sp[-2]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Destination is not an array.\n", Pike_sp, 1);
+  assign_array_level_value( Pike_sp[-2].u.array, Pike_sp-1, arg1 );
   pop_stack(); /* leaves arr on stack. */
 });
 

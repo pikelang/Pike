@@ -2276,6 +2276,60 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
   return a;
 }
 
+/** Automap assignments
+ * This implements X[*] = ...[*]..
+ * Assign elements in a at @level to elements from b at the same @level.
+ * This will not actually modify any of the arrays, only change the
+ * values in them.
+ */
+void assign_array_level( struct array *a, struct array *b, int level )
+{
+    if( a->size != b->size )
+      /* this should not really happen. */
+        Pike_error("Source and destination differs in size in automap?!\n");
+
+    if( level > 1 )
+    {
+        /* recurse. */
+        unsigned int i;
+        for( i=0; i<a->size; i++ )
+        {
+            if( TYPEOF(a->item[i]) != PIKE_T_ARRAY )
+                Pike_error("Too many automap levels.\n");
+            if( TYPEOF(b->item[i]) != PIKE_T_ARRAY ) /* obscure messages much? */
+                Pike_error("Not enough levels of mapping in RHS\n");
+            assign_array_level( a->item[i].u.array, b->item[i].u.array, level-1 );
+        }
+    }
+    else
+        assign_svalues( a->item, b->item, a->size, a->type_field|b->type_field );
+}
+
+/* Assign all elemnts in a at level to b.
+ * This implements X[*] = expression without automap.
+ */
+void assign_array_level_value( struct array *a, struct svalue *b, int level )
+{
+    unsigned int i;
+    if( level > 1 )
+    {
+        /* recurse. */
+        for( i=0; i<a->size; i++ )
+        {
+            if( TYPEOF(a->item[i]) != PIKE_T_ARRAY )
+                Pike_error("Too many automap levels.\n");
+            assign_array_level_value( a->item[i].u.array, b, level-1 );
+        }
+    }
+    else
+    {
+        if( a->type_field & BIT_REF_TYPES )  free_mixed_svalues( a->item, a->size );
+        if( REFCOUNTED_TYPE(TYPEOF(*b)) )     *b->u.refs+=a->size;
+        for( i=0; i<a->size; i++)
+            a->item[i] = *b;
+    }
+}
+
 typedef char *(* explode_searchfunc)(void *,void *,size_t);
 
 /** Explode a string into an array by a delimiter.
