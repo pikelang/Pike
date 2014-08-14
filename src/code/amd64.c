@@ -3058,6 +3058,92 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte(F_MARK);
     ins_f_byte_with_2_args(F_EXTERNAL, b, c);
     return;
+
+  case F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:
+  case F_ASSIGN_PRIVATE_TYPED_GLOBAL:
+  {
+    LABELS();
+    amd64_load_sp_reg();
+
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+
+    amd64_get_storage( P_REG_RBX, b );
+
+    /* do not assign anything if this object is destructed. */
+
+    /* we really only need to redo this check after we have called
+       some other function.  It is sort of hard to know when that
+       happens while generating the code, however. Simply assigning
+       the global could in theory actually destruct this object (old
+       value includes something with a destroy that calls destruct on
+       this object...)
+
+       Note that nothing crash if we do the assign. We "just" leak the
+       variable when the storage is eventually free:d.
+
+       The generated code does look sort of silly, however.
+    */
+    mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_object), ARG1_REG );
+    mov_mem_reg( ARG1_REG, OFFSETOF(object,prog), P_REG_RAX );
+    test_reg(P_REG_RAX);
+    jnz(&label_A);
+
+    /* will not return. */
+    amd64_call_c_function(object_low_set_index);
+
+  LABEL_A;
+    /* 1: check type of argument */
+    mov_mem8_reg( sp_reg, -sizeof(struct svalue )+OFFSETOF(svalue,tu.t.type), P_REG_RAX);
+    cmp_reg32_imm( P_REG_RAX, c );
+    je( &label_B );
+
+    /* not the same type. Fall back to use C-function (for code size mainly).. */
+    mov_reg_reg( P_REG_RBX, ARG1_REG );
+    mov_imm_reg( c, ARG2_REG );
+    add_reg_imm_reg( sp_reg, -sizeof(struct svalue), ARG3_REG );
+    amd64_call_c_function(assign_to_short_svalue);
+    /* pop stack if needed. */
+    if( a == F_ASSIGN_PRIVATE_GLOBAL_AND_POP )
+    {
+      amd64_add_sp(-1);
+      /* this will either have assigned 0 or thrown an error.
+       * if we assigned 0, it was because the argument evaluated as false.
+       * However, that means that we might possibly have to free it here..
+       *
+       * We do not even know that is has at least two references.
+       */
+      amd64_free_svalue( sp_reg, 0 );
+    }
+
+    jmp( &label_E ); /* pop or not. */
+
+   LABEL_B;
+    /* at this point: o->storage + off in RBX. */
+    if( c >= MIN_REF_TYPE )
+    {
+      mov_mem_reg( P_REG_RBX, 0, P_REG_RAX );
+      test_reg(P_REG_RAX); /* old value == NULL? */
+      jz(&label_C);
+
+      /* deref. */
+      add_mem32_imm( P_REG_RAX, OFFSETOF(pike_string,refs),  -1);
+      jnz(&label_C);
+
+      mov_reg_reg( P_REG_RBX, ARG1_REG );
+      mov_imm_reg( c, ARG2_REG );
+      amd64_call_c_function(really_free_short_svalue_ptr);
+    }
+   LABEL_C; /* old value is gone. Assign new value */
+    mov_mem_reg( sp_reg, -8, P_REG_RAX );
+    mov_reg_mem( P_REG_RAX, P_REG_RBX, 0 );
+
+    if( a == F_ASSIGN_PRIVATE_GLOBAL_AND_POP )
+      amd64_add_sp( -1 );
+    else if( c >= MIN_REF_TYPE )
+      add_mem_imm( P_REG_RAX, OFFSETOF(pike_string,refs), 1 );
+   LABEL_E;
+  }
+  return;
   case F_PRIVATE_TYPED_GLOBAL:
     /* b -> off, c -> type */
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
