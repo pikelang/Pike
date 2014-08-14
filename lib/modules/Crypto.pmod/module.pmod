@@ -45,7 +45,15 @@ class MAC {
 //! Abstract class for signature algorithms. Contains some tools useful
 //! for all signatures.
 class Sign {
-  inherit __builtin.Nettle.Sign;
+  //! Returns the printable name of the signing algorithm.
+  string(7bit) name();
+
+  class State {
+    inherit __builtin.Nettle.Sign;
+  }
+
+  //! Calling `() will return a @[State] object.
+  protected State `()() { return State(); }
 }
 
 //! Hashes a @[password] together with a @[salt] with the
