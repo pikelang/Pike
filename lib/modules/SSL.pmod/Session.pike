@@ -54,10 +54,10 @@ array(string(8bit)) peer_certificate_chain;
 array(string(8bit)) certificate_chain;
 
 //! Our private key.
-Crypto.Sign private_key;
+Crypto.Sign.State private_key;
 
 //! The peer's public key (from the certificate).
-Crypto.Sign peer_public_key;
+Crypto.Sign.State peer_public_key;
 
 //! The max fragment size requested by the client.
 int max_packet_size = PACKET_MAX_SIZE;
