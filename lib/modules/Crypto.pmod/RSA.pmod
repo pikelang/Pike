@@ -249,8 +249,12 @@ class State {
   {
     function(int(0..):string(8bit)) old_rnd = random;
     random = rnd;
-    this_program res = generate_key(bits);
+    this_program res;
+    mixed err = catch {
+	res = generate_key(bits);
+      };
     random = old_rnd;
+    if (err) throw(err);
     return res;
   }
 
