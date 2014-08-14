@@ -8,6 +8,12 @@
 
 inherit Crypto.Sign;
 
+//! Returns the string @expr{"RSA"@}.
+string(8bit) name() { return "RSA"; }
+
+class State {
+  inherit ::this_program;
+
 protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(%d)", this_program, n->size());
@@ -521,4 +527,12 @@ __deprecated__ Gmp.mpz sign(string(8bit) message, .Hash h)
 __deprecated__ int(0..1) verify(string(8bit) message, .Hash h, Gmp.mpz sign)
 {
   return raw_verify(Standards.PKCS.Signature.build_digestinfo(message, h), sign);
+}
+
+}
+
+//! Calling `() will return a @[State] object.
+protected State `()(mapping(string(8bit):Gmp.mpz|int)|void params)
+{
+  return State(params);
 }

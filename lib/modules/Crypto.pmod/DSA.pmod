@@ -8,6 +8,12 @@
 
 inherit Crypto.Sign;
 
+//! Returns the string @expr{"DSA"@}.
+string(8bit) name() { return "DSA"; }
+
+class State {
+  inherit ::this_program;
+
 protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(%d,%d)", this_program, p->size(), q->size());
@@ -411,4 +417,12 @@ __deprecated__ string(8bit) sign_ssl(string(8bit) msg)
 __deprecated__ int(0..1) verify_ssl(string(8bit) msg, string(8bit) s)
 {
   return pkcs_verify(msg, .SHA1, s);
+}
+
+}
+
+//! Calling `() will return a @[State] object.
+protected State `()()
+{
+  return State();
 }
