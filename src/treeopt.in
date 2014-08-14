@@ -1613,10 +1613,17 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 ;
 
 // convert all X_EQ(1,2) to $1 = $1 X $2 
+// These are all identical except for the chosen operanodetype.
+//
+// IMPORTANT: If the generated nodes ever change, you have to
+// also change the code for F_ASSIGN_SELF in docode.c.
+//
+// It _knows_ what the nodes look like.
 F_ADD_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`+", $0, $1 )), $0 );
 };
@@ -1624,7 +1631,8 @@ F_ADD_EQ(0,1) :
 F_SUB_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`-", $0, $1 )), $0 );
 };
@@ -1632,7 +1640,8 @@ F_SUB_EQ(0,1) :
 F_AND_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`&", $0, $1 )), $0 );
 };
@@ -1640,7 +1649,8 @@ F_AND_EQ(0,1) :
 F_OR_EQ(0,1)  :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`|", $0, $1 )), $0 );
 };
@@ -1648,7 +1658,8 @@ F_OR_EQ(0,1)  :
 F_XOR_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`^", $0, $1 )), $0 );
 };
@@ -1656,14 +1667,16 @@ F_XOR_EQ(0,1) :
 F_LSH_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`<<", $0, $1)), $0 );
 };
 F_RSH_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`>>", $0, $1)), $0 );
 };
@@ -1671,7 +1684,8 @@ F_RSH_EQ(0,1) :
 F_MULT_EQ(0,1):
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`*", $0, $1 )), $0 );
 };
@@ -1679,7 +1693,8 @@ F_MULT_EQ(0,1):
 F_MOD_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`%", $0, $1 )), $0 );
 };
@@ -1687,7 +1702,8 @@ F_MOD_EQ(0,1) :
 F_DIV_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT) ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
+      ? F_ASSIGN_SELF : F_ASSIGN;
   add_ref(type);
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`/", $0, $1 )), $0 );
 };
