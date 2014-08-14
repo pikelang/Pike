@@ -264,18 +264,25 @@ class State {
 
 #define Sequence Standards.ASN1.Types.Sequence
 
+  private class PKCS_RSA_class {
+    Sequence signature_algorithm_id(.Hash);
+    Sequence build_public_key(global::State);
+  }
+  private object(PKCS_RSA_class) PKCS_RSA =
+    [object(PKCS_RSA_class)]Standards.PKCS["RSA"];
+
   //! Calls @[Standards.PKCS.RSA.signatue_algorithm_id] with the
   //! provided @[hash].
   Sequence pkcs_signature_algorithm_id(.Hash hash)
   {
-    return [object(Sequence)]Standards.PKCS.RSA->signature_algorithm_id(hash);
+    return PKCS_RSA->signature_algorithm_id(hash);
   }
 
   //! Calls @[Standards.PKCS.RSA.build_public_key] with this object as
   //! argument.
   Sequence pkcs_public_key()
   {
-    return [object(Sequence)]Standards.PKCS.RSA->build_public_key(this);
+    return PKCS_RSA->build_public_key(this);
   }
 
 #undef Sequence
