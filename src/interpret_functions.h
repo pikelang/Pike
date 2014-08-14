@@ -365,6 +365,42 @@ OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
     print_return_value();
 });
 
+OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private>", I_UPDATE_SP, {
+    LOCAL_VAR(struct object *co);
+    LOCAL_VAR(void *ptr);
+
+    co = Pike_fp->current_object;
+    ptr = (void *)(co->storage + Pike_fp->context->storage_offset + arg1);
+    if( arg2 < MIN_REF_TYPE )
+    {
+#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
+      if( UNLIKELY(arg2)==PIKE_T_INT )
+	push_integer( *(INT_TYPE*)ptr );
+      else
+	push_float( *(FLOAT_TYPE*)ptr );
+#else
+      SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
+      Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
+      Pike_sp++;
+#endif
+    }
+    else
+    {
+      INT32 *refs = *(INT32**)ptr;
+      if( !refs )
+	push_undefined();
+      else
+      {
+	struct svalue tmp;
+	SET_SVAL_TYPE_SUBTYPE(tmp,arg2,0);
+	tmp.u.refs = refs;
+	push_svalue(&tmp);
+      }
+    }
+
+    print_return_value();
+});
+
 OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
@@ -1086,8 +1122,9 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 });
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP, "assign private global and pop", I_UPDATE_SP, {
-  struct svalue *tmp;
-  struct object *co = Pike_fp->current_object;
+  LOCAL_VAR(struct svalue *tmp);
+  LOCAL_VAR(struct object *co);
+  co = Pike_fp->current_object;
   if(!co->prog) /* note: generate an error. */
     object_low_set_index(co,0,0);
   tmp = (struct svalue *)(co->storage + Pike_fp->context->storage_offset + arg1);
@@ -1096,8 +1133,9 @@ OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP, "assign private global and pop", I_UPDA
 });
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
-  struct svalue *tmp;
-  struct object *co = Pike_fp->current_object;
+  LOCAL_VAR(struct svalue *tmp);
+  LOCAL_VAR(struct object *co);
+  co = Pike_fp->current_object;
   if(!co->prog) /* note: generate an error. */
     object_low_set_index(co,0,0);
   tmp = (struct svalue *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
@@ -1105,7 +1143,7 @@ OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
 });
 
 OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop", 0, {
-  struct svalue tmp;
+  LOCAL_VAR(struct svalue tmp);
   SET_SVAL(tmp,PIKE_T_INT,0,integer,arg2);
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,

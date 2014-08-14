@@ -3058,7 +3058,37 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_f_byte(F_MARK);
     ins_f_byte_with_2_args(F_EXTERNAL, b, c);
     return;
-
+  case F_PRIVATE_TYPED_GLOBAL:
+    /* b -> off, c -> type */
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
+    amd64_load_sp_reg();
+    if( c < MIN_REF_TYPE )
+    {
+      /* really: int or float. And right now, only float */
+      amd64_get_storage( P_REG_RBX, b );
+      mov_mem_reg( P_REG_RBX, 0, P_REG_RBX );
+      mov_imm_mem( c, sp_reg, 0 );
+      mov_reg_mem( P_REG_RBX, sp_reg, 8 );
+      amd64_add_sp(1);
+    }
+    else
+    {
+      LABELS();
+      /* one of the refcounted types. */
+      amd64_get_storage( P_REG_RBX, b );
+      mov_mem_reg( P_REG_RBX, 0, P_REG_RBX );
+      test_reg( P_REG_RBX );
+      jnz(&label_A);
+      amd64_push_int(0,1);
+      jmp(&label_B);
+    LABEL_A;
+      add_mem_imm( P_REG_RBX, 0, 1 );
+      mov_imm_mem( c, sp_reg, 0 );
+      mov_reg_mem( P_REG_RBX, sp_reg, 8 );
+      amd64_add_sp(1);
+    LABEL_B;
+    }
+    return;
   case F_ADD_LOCAL_INT:
   case F_ADD_LOCAL_INT_AND_POP:
    {
