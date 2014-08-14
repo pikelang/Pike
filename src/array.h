@@ -211,6 +211,10 @@ void debug_dump_array(struct array *a);
 void count_memory_in_arrays(size_t *num_, size_t *size_);
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b);
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
+
+/* Automap internals. */
+void assign_array_level_value( struct array *a, struct svalue *b, int level );
+void assign_array_level( struct array *a, struct array *b, int level );
 /* Prototypes end here */
 
 #define array_get_flags(a) ((a)->flags)
