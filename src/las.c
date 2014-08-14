@@ -53,7 +53,6 @@ int car_is_node(node *n)
   {
   case F_EXTERNAL:
   case F_GET_SET:
-  case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
@@ -72,7 +71,6 @@ int cdr_is_node(node *n)
   {
   case F_EXTERNAL:
   case F_GET_SET:
-  case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
@@ -91,7 +89,6 @@ int node_is_leaf(node *n)
   {
   case F_EXTERNAL:
   case F_GET_SET:
-  case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
@@ -754,8 +751,6 @@ node *debug_mknode(int token, node *a, node *b)
       Pike_fatal("Attempt to create an F_CONSTANT-node with mknode()!\n");
     case F_LOCAL:
       Pike_fatal("Attempt to create an F_LOCAL-node with mknode()!\n");
-    case F_IDENTIFIER:
-      Pike_fatal("Attempt to create an F_IDENTIFIER-node with mknode()!\n");
     case F_TRAMPOLINE:
       Pike_fatal("Attempt to create an F_TRAMPOLINE-node with mknode()!\n");
     case F_EXTERNAL:
@@ -1113,35 +1108,9 @@ node *debug_mklocalnode(int var, int depth)
 
 node *debug_mkidentifiernode(int i)
 {
-#if 1
   node *res = mkexternalnode(Pike_compiler->new_program, i);
   check_tree(res,0);
   return res;
-#else
-  node *res = mkemptynode();
-  res->token = F_IDENTIFIER;
-  copy_shared_string(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
-
-  /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(Pike_compiler->new_program, i)->identifier_flags))
-  {
-    res->node_info = OPT_EXTERNAL_DEPEND;
-  }else{
-    res->node_info = OPT_NOT_CONST;
-  }
-  res->tree_info=res->node_info;
-
-#ifdef __CHECKER__
-  _CDR(res) = 0;
-#endif
-  res->u.id.number = i;
-#ifdef SHARED_NODES
-  res->u.id.prog = Pike_compiler->new_program;
-#endif /* SHARED_NODES */
-
-  check_tree(res,0);
-  return res;
-#endif
 }
 
 node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
@@ -1457,11 +1426,6 @@ void resolv_constant(node *n)
 	p = state->new_program;
 	numid=n->u.integer.b;
       }
-      break;
-
-    case F_IDENTIFIER:
-      p=Pike_compiler->new_program;
-      numid=n->u.id.number;
       break;
 
     case F_LOCAL:
@@ -1829,15 +1793,12 @@ int node_is_eq(node *a,node *b)
 #endif
     return a->u.trampoline.ident == b->u.trampoline.ident &&
       a->u.trampoline.frame == b->u.trampoline.frame;
-      
+
   case F_EXTERNAL:
   case F_GET_SET:
   case F_LOCAL:
     return a->u.integer.a == b->u.integer.a &&
       a->u.integer.b == b->u.integer.b;
-      
-  case F_IDENTIFIER:
-    return a->u.id.number == b->u.id.number;
 
   case F_CAST:
   case F_SOFT_CAST:
@@ -1982,7 +1943,6 @@ node *copy_node(node *n)
   switch(n->token)
   {
   case F_LOCAL:
-  case F_IDENTIFIER:
   case F_TRAMPOLINE:
     b=mknewintnode(0);
     if(b->type) free_type(b->type);
@@ -2185,15 +2145,6 @@ static void low_print_tree(node *foo,int needlval)
       fputs("0:0", stderr);
     }
     fputc(')', stderr);
-    break;
-
-  case F_IDENTIFIER:
-    if(needlval) fputc('&', stderr);
-    if (Pike_compiler->new_program) {
-      fprintf(stderr, "id(%s)",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
-    } else {
-      fputs("unknown identifier", stderr);
-    }
     break;
 
   case F_EXTERNAL:
@@ -2608,23 +2559,6 @@ static int find_used_variables(node *n,
 	      n->u.integer.a, n->u.integer.b);
     }
 #endif /* PIKE_DEBUG */
-    goto set_pointer;
-
-  case F_IDENTIFIER:
-    q = find_q(&(p->externals), n->u.id.number,
-	       Pike_compiler->new_program->id);
-    if(n->u.id.number > MAX_GLOBAL)
-    {
-      p->err=1;
-      return 0;
-    }
-#ifdef PIKE_DEBUG
-      if (l_flag > 2) {
-	fprintf(stderr, "external %d:%d is ",
-		Pike_compiler->new_program->id, n->u.id.number);
-      }
-#endif /* PIKE_DEBUG */
-
   set_pointer:
     if(overwrite)
     {
@@ -2749,25 +2683,6 @@ static void find_written_vars(node *n,
       }
 #endif /* PIKE_DEBUG */
       *find_q(&(p->externals), n->u.integer.b, n->u.integer.a) = VAR_USED;
-    }
-    break;
-
-  case F_IDENTIFIER:
-    if(lvalue)
-    {
-      if(n->u.id.number >= MAX_VAR)
-      {
-	p->err=1;
-	return;
-      }
-#ifdef PIKE_DEBUG
-      if (l_flag > 2) {
-	fprintf(stderr, "external %d:%d is written\n",
-		Pike_compiler->new_program->id, n->u.id.number);
-      }
-#endif /* PIKE_DEBUG */
-      *find_q(&(p->externals), n->u.id.number,
-	      Pike_compiler->new_program->id) = VAR_USED;
     }
     break;
 
@@ -3070,10 +2985,6 @@ static struct pike_string *get_name_of_function(node *n)
 #if 0 /* FIXME */
   case F_TRAMPOLINE:
 #endif
-  case F_IDENTIFIER:
-    name = ID_FROM_INT(Pike_compiler->new_program, n->u.id.number)->name;
-    break;
-
   case F_ARROW:
   case F_INDEX:
     if(!CDR(n))

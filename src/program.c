@@ -5055,12 +5055,6 @@ void compiler_do_inherit(node *n,
 
   switch(n->token)
   {
-    case F_IDENTIFIER:
-      p=Pike_compiler->new_program;
-      offset=0;
-      numid=n->u.id.number;
-      goto continue_inherit;
-
     case F_EXTERNAL:
       {
 	struct program_state *state = Pike_compiler;

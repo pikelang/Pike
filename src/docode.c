@@ -764,19 +764,6 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
     break;
 
-    /* FIXME: Make special case for F_EXTERNAL */
-  case F_IDENTIFIER:
-    if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program,
-					    var->u.id.number)->identifier_flags))
-    {
-      yyerror("Cannot assign functions or constants.\n");
-    }else{
-      code_expression(val, 0, "RHS");
-      emit_multi_assign(vals, vars, no+1);
-      emit_assign_global( var->u.id.number, 1 );
-    }
-    break;
-
   case F_GET_SET:
     {
       /* Check for the setter function. */
@@ -870,7 +857,6 @@ static int do_docode2(node *n, int flags)
       case F_LVALUE_LIST:
       case F_LOCAL:
       case F_GLOBAL:
-      case F_IDENTIFIER:
       case F_INDEX:
       case F_ARROW:
       case F_ARG_LIST:
@@ -1299,90 +1285,80 @@ static int do_docode2(node *n, int flags)
 	     CDR(n)->u.integer.a );
 	break;
 
-	/* FIXME: Make special case for F_EXTERNAL */
-      case F_IDENTIFIER:
-	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.id.number)->identifier_flags))
-	{
-	  yyerror("Cannot assign functions or constants.\n");
-	}else{
-	  code_expression(CAR(n), 0, "RHS");
-          emit_assign_global( CDR(n)->u.id.number, flags & DO_POP );
-	}
-	break;
 
-        case F_GET_SET:
-	  {
-	    /* Check for the setter function. */
-	    struct program_state *state = Pike_compiler;
-	    int program_id = CDR(n)->u.integer.a;
-	    int level = 0;
-	    while (state && (state->new_program->id != program_id)) {
-	      state = state->previous;
-	      level++;
-	    }
-	    if (!state) {
-	      yyerror("Lost parent.");
-	    } else {
-	      struct reference *ref =
-		PTR_FROM_INT(state->new_program, CDR(n)->u.integer.b);
-	      struct identifier *id =
-		ID_FROM_PTR(state->new_program, ref);
-	      struct inherit *inh =
-		INHERIT_FROM_PTR(state->new_program, ref);
-	      int f;
+      case F_GET_SET:
+      {
+        /* Check for the setter function. */
+        struct program_state *state = Pike_compiler;
+        int program_id = CDR(n)->u.integer.a;
+        int level = 0;
+        while (state && (state->new_program->id != program_id)) {
+          state = state->previous;
+          level++;
+        }
+        if (!state) {
+          yyerror("Lost parent.");
+        } else {
+          struct reference *ref =
+            PTR_FROM_INT(state->new_program, CDR(n)->u.integer.b);
+          struct identifier *id =
+            ID_FROM_PTR(state->new_program, ref);
+          struct inherit *inh =
+            INHERIT_FROM_PTR(state->new_program, ref);
+          int f;
 #ifdef PIKE_DEBUG
-	      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
-		  (id->run_time_type != PIKE_T_GET_SET)) {
-		Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
-			   "  identifier_flags: 0x%08x\n"
-			   "  run_time_type; %s (%d)\n",
-			   id->identifier_flags,
-			   get_name_of_type(id->run_time_type),
-			   id->run_time_type);
-	      }
+          if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+              (id->run_time_type != PIKE_T_GET_SET)) {
+            Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
+                       "  identifier_flags: 0x%08x\n"
+                       "  run_time_type; %s (%d)\n",
+                       id->identifier_flags,
+                       get_name_of_type(id->run_time_type),
+                       id->run_time_type);
+          }
 #endif /* PIKE_DEBUG */
-	      f = id->func.gs_info.setter;
-	      if (f == -1) {
-		yywarning("Variable %S lacks a setter.", id->name);
-	      } else if (!level) {
-		f += inh->identifier_level;
-		if (flags & DO_POP) {
+          f = id->func.gs_info.setter;
+          if (f == -1) {
+            yywarning("Variable %S lacks a setter.", id->name);
+          } else if (!level) {
+            f += inh->identifier_level;
+            if (flags & DO_POP) {
 #ifndef USE_APPLY_N
-		  emit0(F_MARK);
+              emit0(F_MARK);
 #endif
-		  code_expression(CAR(n), 0, "RHS");
-		} else {
-		  code_expression(CAR(n), 0, "RHS");
+              code_expression(CAR(n), 0, "RHS");
+            } else {
+              code_expression(CAR(n), 0, "RHS");
 #ifndef USE_APPLY_N
-		  emit0(F_MARK);
+              emit0(F_MARK);
 #endif
-		  emit0(F_DUP);
-		}
+              emit0(F_DUP);
+            }
 #ifdef USE_APPLY_N
-		emit2(F_CALL_LFUN_N, f, 1);
+            emit2(F_CALL_LFUN_N, f, 1);
 #else
-		emit1(F_CALL_LFUN, f);
+            emit1(F_CALL_LFUN, f);
 #endif
-		emit0(F_POP_VALUE);
-		return !(flags & DO_POP);
-	      }
-	    }
-	  }
-	  /* FALL_THROUGH */
-	case F_EXTERNAL:
-	  /* Check that it is in this context */
-	  if(Pike_compiler ->new_program->id == CDR(n)->u.integer.a)
-	  {
-	    /* Check that it is a variable */
-	    if(CDR(n)->u.integer.b != IDREF_MAGIC_THIS &&
-	       IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
-	    {
-	      code_expression(CAR(n), 0, "RHS");
-              emit_assign_global(CDR(n)->u.integer.b, flags & DO_POP );
-	      break;
-	    }
-	  }
-	  /* fall through */
+            emit0(F_POP_VALUE);
+            return !(flags & DO_POP);
+          }
+        }
+      }
+      /* FALL_THROUGH */
+      case F_EXTERNAL:
+        /* Check that it is in this context */
+        if(Pike_compiler ->new_program->id == CDR(n)->u.integer.a)
+        {
+          /* Check that it is a variable */
+          if(CDR(n)->u.integer.b != IDREF_MAGIC_THIS &&
+             IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, CDR(n)->u.integer.b)->identifier_flags))
+          {
+            code_expression(CAR(n), 0, "RHS");
+            emit_assign_global(CDR(n)->u.integer.b, flags & DO_POP );
+            break;
+          }
+        }
+        /* fall through */
 
       default:
       normal_assign:
@@ -1917,10 +1893,6 @@ static int do_docode2(node *n, int flags)
       }
 #endif
       return 1;
-    }
-    else if(CAR(n)->token == F_IDENTIFIER)
-    {
-      return do_lfun_call(CAR(n)->u.id.number, CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
 	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
@@ -2674,34 +2646,6 @@ static int do_docode2(node *n, int flags)
       emit2(F_TRAMPOLINE,n->u.trampoline.ident,depth);
       return 1;
     }
-
-  case F_IDENTIFIER: {
-    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, n->u.id.number);
-    if(IDENTIFIER_IS_FUNCTION(id->identifier_flags))
-    {
-      if(flags & WANT_LVALUE)
-      {
-	yyerror("Cannot assign functions.\n");
-      }else{
-	if (id->identifier_flags & IDENTIFIER_HAS_BODY)
-	  /* Only use this opcode when it's certain that the result
-	   * can't zero, i.e. when we know the function isn't just a
-	   * prototype. */
-	  emit1(F_LFUN,n->u.id.number);
-	else
-          emit_global(n->u.id.number);
-      }
-    }else{
-      if(flags & WANT_LVALUE)
-      {
-	emit1(F_GLOBAL_LVALUE,n->u.id.number);
-	return 2;
-      }else{
-        emit_global(n->u.id.number);
-      }
-    }
-    return 1;
-  }
 
   case F_VAL_LVAL:
     ret = do_docode(CAR(n),flags);

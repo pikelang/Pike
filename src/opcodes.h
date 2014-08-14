@@ -221,7 +221,6 @@ enum Pike_opcodes
   F_DO,
   F_EFUN_CALL,
   F_FOR,
-  F_IDENTIFIER,
   F_LSH_EQ,
   F_LVALUE_LIST,
   F_MOD_EQ,
