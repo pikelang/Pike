@@ -106,6 +106,10 @@ union node_data
   } integer;
 };
 
+#ifdef PIKE_DEBUG
+#include "opcodes.h"
+#endif
+
 struct node_s
 {
   unsigned INT32 refs;
@@ -118,7 +122,11 @@ struct node_s
   unsigned INT16 tree_info;
   unsigned INT16 pad;
   /* The stuff from this point on is hashed. */
+#ifdef PIKE_DEBUG
+  enum Pike_opcodes token : 16;
+#else
   unsigned INT16 token;
+#endif
   union node_data u;
 };
 
