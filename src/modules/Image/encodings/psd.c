@@ -90,6 +90,11 @@ static unsigned char psd_read_uchar( struct buffer *from )
   return res;
 }
 
+static int psd_read_schar(struct buffer *from)
+{
+  return (signed char)psd_read_uchar(from);
+}
+
 static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
@@ -277,9 +282,7 @@ packbitsdecode(struct buffer src,
 
   while( nbytes--  )
   {
-    n = psd_read_uchar( &src );
-    if(n >= 128)
-      n -= 256;
+    n = psd_read_schar( &src );
     if (n > 0)
     {
       ++n;
