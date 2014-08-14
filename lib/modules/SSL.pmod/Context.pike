@@ -141,8 +141,8 @@ Alert alert_factory(object con,
 //!
 //! When the counters reach zero, the corresponding RSA key is cleared,
 //! and a new generated on demand at which time the counter is reset.
-Crypto.RSA long_rsa;
-Crypto.RSA short_rsa;
+Crypto.RSA.State long_rsa;
+Crypto.RSA.State short_rsa;
 
 //! Counters for export RSA keys.
 int long_rsa_counter;
@@ -713,9 +713,9 @@ array(CertificatePair) find_cert_domain(string(8bit) domain)
 //!
 //!   Supported key types are currently:
 //!   @mixed
-//!     @type Crypto.RSA
+//!     @type Crypto.RSA.State
 //!       Rivest-Shamir-Adelman.
-//!     @type Crypto.DSA
+//!     @type Crypto.DSA.State
 //!       Digital Signing Algorithm.
 //!     @type Crypto.ECC.Curve.ECDSA
 //!       Elliptic Curve Digital Signing Algorithm.
@@ -744,7 +744,7 @@ array(CertificatePair) find_cert_domain(string(8bit) domain)
 //!
 //! @seealso
 //!   @[find_cert()]
-void add_cert(Crypto.Sign key, array(string(8bit)) certs,
+void add_cert(Crypto.Sign.State key, array(string(8bit)) certs,
 	      array(string(8bit))|void extra_name_globs)
 {
   CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
@@ -900,7 +900,7 @@ void purge_session(Session s)
 // --- Compat code below
 //
 
-protected Crypto.RSA compat_rsa;
+protected Crypto.RSA.State compat_rsa;
 protected array(string(8bit)) compat_certificates;
 
 //! The servers default private RSA key.
@@ -911,7 +911,7 @@ protected array(string(8bit)) compat_certificates;
 //!
 //! @seealso
 //!   @[`certificates], @[find_cert()]
-__deprecated__ Crypto.RSA `rsa()
+__deprecated__ Crypto.RSA.State `rsa()
 {
   return compat_rsa;
 }
@@ -924,7 +924,7 @@ __deprecated__ Crypto.RSA `rsa()
 //!
 //! @seealso
 //!   @[`certificates=], @[add_cert()]
-__deprecated__ void `rsa=(Crypto.RSA k)
+__deprecated__ void `rsa=(Crypto.RSA.State k)
 {
   compat_rsa = k;
   if (k && compat_certificates) {
@@ -976,7 +976,7 @@ __deprecated__ void `certificates=(array(string(8bit)) certs)
 //!
 //! @seealso
 //!   @[`certificates], @[find_cert()]
-__deprecated__ Crypto.RSA `client_rsa()
+__deprecated__ Crypto.RSA.State `client_rsa()
 {
   return compat_rsa;
 }
@@ -989,7 +989,7 @@ __deprecated__ Crypto.RSA `client_rsa()
 //!
 //! @seealso
 //!   @[`client_certificates=], @[add_cert()]
-__deprecated__ void `client_rsa=(Crypto.RSA k)
+__deprecated__ void `client_rsa=(Crypto.RSA.State k)
 {
   compat_rsa = k;
   if (k && compat_certificates) {
@@ -1037,14 +1037,14 @@ __deprecated__ void `client_certificates=(array(array(string(8bit))) certs)
 
 //! Compatibility.
 //! @deprecated find_cert
-__deprecated__ Crypto.DSA `dsa()
+__deprecated__ Crypto.DSA.State `dsa()
 {
   return UNDEFINED;
 }
 
 //! Compatibility.
 //! @deprecated add_cert
-__deprecated__ void `dsa=(Crypto.DSA k)
+__deprecated__ void `dsa=(Crypto.DSA.State k)
 {
   error("The old DSA API is not supported anymore.\n");
 }

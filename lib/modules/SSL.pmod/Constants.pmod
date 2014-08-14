@@ -1266,7 +1266,7 @@ class CertificatePair
   int cert_type;
 
   //! Private key.
-  Crypto.Sign key;
+  Crypto.Sign.State key;
 
   //! Chain of certificates, root cert last.
   array(string(8bit)) certs;
@@ -1380,7 +1380,7 @@ class CertificatePair
   //!
   //! @note
   //!   Performs various validation checks.
-  protected void create(Crypto.Sign key, array(string(8bit)) certs,
+  protected void create(Crypto.Sign.State key, array(string(8bit)) certs,
 			array(string(8bit))|void extra_name_globs)
   {
     if (!sizeof(certs)) {
