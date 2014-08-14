@@ -1207,22 +1207,21 @@ static int do_docode2(node *n, int flags)
 
   {
   case F_ASSIGN_SELF:
-    /* a special case, we know we can not really optimize.
-       car: softcast(efuncall(function,args(2)))
-    */ 
-      /* node *args=CAADR(n), *func = CAAAR(n); */
+    /* in assign self we know this:
+     *
+     * car(n) = lvalue
+     * cdr(n)= softcast(apply(efun, arglist(car(n),one more arg)))
+     *
+     * The first argument of the arglist is equal to the lvalue.
+     *
+     * We only want to evaluate car(n) once.
+     */
     if( CDR(n)->token == F_AUTO_MAP_MARKER )
       yyerror("[*] is not yet supported here\n");
     return emit_ltosval_call_and_assign( CDR(n), CAAAR(n), CDAAR(n) );
 
   case F_ASSIGN:
 
-  /* if assign self is 1 we know this:
-     car(n) = lvalue
-     cdr(n)= softcast(apply(efun, arglist(car(n),one more arg)))
-
-     We only want to evaluate car(n) once.
-  */
     if( CDR(n)->token == F_AUTO_MAP_MARKER )
     {
         int depth = 0;
