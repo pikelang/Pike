@@ -873,7 +873,7 @@ protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
 protected constant modifier = (< "extern", "final", "inline", "local",
                                  "nomask", "optional", "private", "protected",
-                                 "public", "static", "variant" >);
+                                 "public", "static", "variant", "deprecated" >);
 
 protected constant types = (< "string", "int", "float", "array", "mapping",
                               "multiset", "mixed", "object", "program",
@@ -888,7 +888,7 @@ protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=",
                               "^", "^=", "|", "|=", "~", "~=",
                               "&&", "||", "=", ".." >);
 
-// before literal but not after 
+// before literal but not after
 protected constant prefix = (< "!", "@", "(", "({", "([", "(<", "[", "{",
                                "<", ">" >);
 
@@ -2335,7 +2335,7 @@ class Evaluator {
   void evaluate(string a, int(0..1) show_result)
   {
     if(trace_level)
-      a = "\ntrace("+trace_level+");\n" + a;
+        a = "\ntrace("+trace_level+");\n"+a;
 #if constant(_debug)
     if(debug_level)
       a = "\n_debug("+debug_level+");\n" + a;
