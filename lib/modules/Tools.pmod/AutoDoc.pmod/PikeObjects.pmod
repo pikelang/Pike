@@ -947,7 +947,7 @@ class AutoDoc {
 
 //! A modifier range, e.g.:
 //! @code
-//! static private {
+//! final protected {
 //!   ...
 //!   <<declarations>>
 //!   ...
