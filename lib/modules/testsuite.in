@@ -576,6 +576,7 @@ test_equal(Array.permute( ({ 1,2 }), 2 ),
 test_equal(Array.permute( ({ 1,2,3,4,5,6,7,8,9,10 }), 3628800),
 	({ 1,2,3,4,5,6,7,8,9,10 }))
 test_equal(Array.permute( ({}), 1 ), ({}))
+test_eval_error(Array.permute( "12"/1, random(1)-2))
 
 test_equal(Array.enumerate(0), ({}))
 test_equal(Array.enumerate(1), ({ 0 }))
