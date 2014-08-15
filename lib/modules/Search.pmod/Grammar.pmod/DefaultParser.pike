@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
-static inherit .AbstractParser;
-static inherit .Lexer;
+protected inherit .AbstractParser;
+protected inherit .Lexer;
 import ".";
 
 #include "debug.h"
@@ -64,21 +64,21 @@ import ".";
 //                 | phrase
 //                 ;
 
-static array(array(Token|string)) tokens;
-static array(string) fieldstack;
+protected array(array(Token|string)) tokens;
+protected array(string) fieldstack;
 
 // fields : multiset(string)
 // implicit : "or"/"and"
 //!
 mapping(string:mixed) options;
 
-static array(Token|string) peek(void|int lookahead) {
+protected array(Token|string) peek(void|int lookahead) {
   if (lookahead >= sizeof(tokens))
     lookahead = sizeof(tokens) - 1;
   return tokens[lookahead];
 }
 
-static array advance()
+protected array advance()
 {
   array res = tokens[0];
   if (sizeof(tokens) > 1)
@@ -86,7 +86,7 @@ static array advance()
   return res;
 }
 
-static int lookingAtFieldStart(void|int offset) {
+protected int lookingAtFieldStart(void|int offset) {
   multiset(string) fields = options["fields"];
   //  SHOW(tokens);
   return peek(offset)[0] == TOKEN_TEXT
@@ -94,7 +94,7 @@ static int lookingAtFieldStart(void|int offset) {
     && peek(offset + 1)[0] == TOKEN_COLON;
 }
 
-static int lookingAtDateStart(void|int offset) {
+protected int lookingAtDateStart(void|int offset) {
   //  SHOW(tokens);
   return
     peek(offset)[0] == TOKEN_TEXT &&
@@ -105,7 +105,7 @@ static int lookingAtDateStart(void|int offset) {
 
 
 //!
-static void create(mapping(string:mixed)|void opt) {
+protected void create(mapping(string:mixed)|void opt) {
   options = opt || ([ "implicit" : "or" ]);
   if (!options["fields"])
     options["fields"] = getDefaultFields();
@@ -118,7 +118,7 @@ ParseNode parse(string q) {
   return parseQuery();
 }
 
-static ParseNode parseQuery() {
+protected ParseNode parseQuery() {
   //  TRACE;
   ParseNode or = OrNode();
   for (;;) {
@@ -136,7 +136,7 @@ static ParseNode parseQuery() {
   return or;
 }
 
-static ParseNode parseExpr0() {
+protected ParseNode parseExpr0() {
   //  TRACE;
   ParseNode and = AndNode();
   for (;;) {
@@ -156,12 +156,12 @@ static ParseNode parseExpr0() {
   return and;
 }
 
-static ParseNode parseExpr1() {
+protected ParseNode parseExpr1() {
   //  TRACE;
   return parseExpr2();
 }
 
-static ParseNode parseExpr2() {
+protected ParseNode parseExpr2() {
   //  TRACE;
 
   // field ':' expr3
@@ -195,7 +195,7 @@ static ParseNode parseExpr2() {
   return parseExpr3();
 }
 
-static ParseNode parseExpr3() {
+protected ParseNode parseExpr3() {
   //  TRACE;
   if (lookingAtFieldStart() || lookingAtDateStart())
     return 0;
@@ -216,7 +216,7 @@ static ParseNode parseExpr3() {
   return or;
 }
 
-static ParseNode parseExpr4() {
+protected ParseNode parseExpr4() {
   //  TRACE;
   ParseNode and = AndNode();
   for (;;) {
@@ -236,7 +236,7 @@ static ParseNode parseExpr4() {
   return and;
 }
 
-static ParseNode parseExpr5() {
+protected ParseNode parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
   ParseNode res;
@@ -316,7 +316,7 @@ static ParseNode parseExpr5() {
   return 0;
 }
 
-static void parseExpr6(int prefix, TextNode node) {
+protected void parseExpr6(int prefix, TextNode node) {
   //  TRACE;
 
   if (peek()[0] == TOKEN_TEXT) {
@@ -354,7 +354,7 @@ static void parseExpr6(int prefix, TextNode node) {
   }
 }
 
-static ParseNode parseDate(array operator)
+protected ParseNode parseDate(array operator)
 {
   //  TRACE;
   DateNode n = DateNode();

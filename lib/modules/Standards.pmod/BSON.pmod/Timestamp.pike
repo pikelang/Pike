@@ -2,10 +2,10 @@
 
   constant BSONTimestamp = 1;
 
-  static int timestamp;
+  protected int timestamp;
   
   //!
-  static void create(int|void _timestamp)
+  protected void create(int|void _timestamp)
   {
     timestamp = _timestamp;
   }

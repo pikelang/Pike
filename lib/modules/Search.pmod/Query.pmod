@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 
-static string debug_blob(string b)
+protected string debug_blob(string b)
 {
   if (!b)
     return "Blob(empty)";
@@ -21,7 +21,7 @@ static string debug_blob(string b)
 }
 
 
-static function(string,int,int:string) blobfeeder(Search.Database.Base db,
+protected function(string,int,int:string) blobfeeder(Search.Database.Base db,
 						  array words)
 {
   //  Create state per word and stream so multiple occurrences of the same
@@ -34,7 +34,7 @@ static function(string,int,int:string) blobfeeder(Search.Database.Base db,
          };
 }
  
-static array(string) uniq_preserve_order(array(string) a) {
+protected array(string) uniq_preserve_order(array(string) a) {
   array(string) result = ({});
   foreach (a, string s)
     if (search(result, s) < 0)
@@ -85,7 +85,7 @@ enum search_order
   RELEVANCE=1, DATE_ASC, DATE_DESC, NONE, PUBL_DATE_ASC, PUBL_DATE_DESC
 };
 
-static Search.ResultSet sort_resultset(Search.ResultSet resultset,
+protected Search.ResultSet sort_resultset(Search.ResultSet resultset,
                                        search_order order,
                                        Search.Database.Base db)
 {
@@ -134,13 +134,13 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     throw (error);
 
   array(Search.ResultSet|array(string)) res =  class {
-    static Search.RankingProfile defaultRanking;
-    static Search.Database.Base db;
+    protected Search.RankingProfile defaultRanking;
+    protected Search.Database.Base db;
 
     // Used when search is limited to another field than "any:".
-    static Search.RankingProfile specialRanking;
+    protected Search.RankingProfile specialRanking;
 
-    static void create(Search.Database.Base _db, Search.RankingProfile _defaultRanking) {
+    protected void create(Search.Database.Base _db, Search.RankingProfile _defaultRanking) {
       db = _db;
       defaultRanking = _defaultRanking;
       specialRanking = defaultRanking->copy();
@@ -148,7 +148,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
       push = stack->push;
     }
 
-    static array(array(string)) split_words(array(string) words)
+    protected array(array(string)) split_words(array(string) words)
     {
       array a=({}),b=({});
       foreach(words, string word)
@@ -159,13 +159,13 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
       return ({ a, b });
     }
     
-    static constant ParseNode = Search.Grammar.ParseNode;
+    protected constant ParseNode = Search.Grammar.ParseNode;
 
-    static array(array(string)|string) words = ({ });
-    static array(array(string)|string) glob_words = ({ });
-    static ADT.Stack stack = ADT.Stack();
-    static function(Search.ResultSet:void) push;
-    static function(void:Search.ResultSet) pop;
+    protected array(array(string)|string) words = ({ });
+    protected array(array(string)|string) glob_words = ({ });
+    protected ADT.Stack stack = ADT.Stack();
+    protected function(Search.ResultSet:void) push;
+    protected function(void:Search.ResultSet) pop;
 
     array(Search.ResultSet|array(string)) execute(ParseNode q) {
       exec(q);

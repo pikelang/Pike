@@ -29,7 +29,7 @@ public enum Token {
   TOKEN_OR,
 }
 
-static mapping(string : Token) keywords = ([
+protected mapping(string : Token) keywords = ([
   //  "not" : TOKEN_NOT,
   "and" : TOKEN_AND,
   "or" : TOKEN_OR,
@@ -37,7 +37,7 @@ static mapping(string : Token) keywords = ([
 
 // These characters cannot be part of a word, even if they are preceded by
 // word characters.
-static multiset(int) specialChars = (<
+protected multiset(int) specialChars = (<
   ':', '(', ')',
 >);
 

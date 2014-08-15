@@ -342,7 +342,7 @@ protected {
       }
     }
 
-    //static InPacket login_answer;
+    //protected InPacket login_answer;
 
     //! An outgoing packet to the TDS server.
     class Packet

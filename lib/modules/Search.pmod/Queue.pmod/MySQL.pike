@@ -22,7 +22,7 @@ Web.Crawler.Stats stats;
 Web.Crawler.Policy policy;
 Web.Crawler.RuleSet allow, deny;
 
-static string to_md5(string url)
+protected string to_md5(string url)
 {
   Crypto.MD5 md5 = Crypto.MD5();
   md5->update(string_to_utf8(url));
@@ -52,7 +52,7 @@ void create( Web.Crawler.Stats _stats,
   perhaps_create_table(  );
 }
 
-static void perhaps_create_table(  )
+protected void perhaps_create_table(  )
 {
   db->query(
 #"
@@ -74,14 +74,14 @@ static void perhaps_create_table(  )
   }
 }
   
-static mapping hascache = ([]);
+protected mapping hascache = ([]);
 
 void clear_cache()
 {
   hascache = ([]);
 }
 
-static int has_uri( string|Standards.URI uri )
+protected int has_uri( string|Standards.URI uri )
 {
   uri = (string)uri;
   if( sizeof(hascache) > 100000 )  hascache = ([]);
@@ -162,12 +162,12 @@ mapping get_extra( Standards.URI uri )
   return (sizeof(r) && r[0]) || ([ ]);
 }
 
-static int empty_count;
-static int retry_count;
+protected int empty_count;
+protected int retry_count;
   
 // cache, for performance reasons.
-static array possible=({});
-static int p_c;
+protected array possible=({});
+protected int p_c;
   
 int|Standards.URI get()
 {

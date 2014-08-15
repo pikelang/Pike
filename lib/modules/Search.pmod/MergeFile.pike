@@ -8,10 +8,9 @@ void create(Stdio.File _fd)
   fd = _fd;
 }
 
-static void write_blob(String.Buffer buf, string word, string blob,
-		       void|string blob2)
+protected void write_blob(String.Buffer buf, string word, string blob,
+                          void|string blob2)
 {
-  //  werror("%O\n", word);
   buf->add(sprintf("%4c%s%4c",
 		   sizeof(word), word,
 		   sizeof(blob) + sizeof(blob2||"")),

@@ -12,7 +12,7 @@ class NSNode {
 
   // New stuff
 
-  /* static */ string default_ns;
+  /* protected */ string default_ns;
   protected mapping(string:string) nss;
   protected string element_ns;
   protected mapping(string:mapping(string:string)) ns_attrs = ([]);

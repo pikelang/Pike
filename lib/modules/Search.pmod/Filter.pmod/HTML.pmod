@@ -17,13 +17,13 @@ constant fields = ({ "body", "title", "keywords", "description", "robots",
 #endif
 		  });
 
-static int(0..0) return_zero(mixed ... args) { return 0; }
+protected int(0..0) return_zero(mixed ... args) { return 0; }
 
-static Parser.HTML parser;
-static Parser.HTML cleaner;
-static mapping entities;
+protected Parser.HTML parser;
+protected Parser.HTML cleaner;
+protected mapping entities;
 
-static void create() {
+protected void create() {
   parser = Parser.HTML();
   parser->case_insensitive_tag(1);
   parser->lazy_entity_end(1);
@@ -70,7 +70,7 @@ static void create() {
     entities["&"+i+";"] = v;
 }
 
-static string clean(string data) {
+protected string clean(string data) {
   return cleaner->finish(data)->read();
 }
 

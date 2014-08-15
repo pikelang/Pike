@@ -59,10 +59,10 @@ class Connection {
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
 class Server {
-   static object fdport;
+   protected object fdport;
    Configuration config;
 
-   static void accept_callback()
+   protected void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
