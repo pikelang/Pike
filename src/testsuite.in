@@ -997,6 +997,10 @@ test_any([[
   return catch { Builtin.__Backtrace_Tester__(); }[1][-1][2];
 ]], Builtin.__Backtrace_Tester__)
 
+test_compile_warning([[
+  class A { static int foo = 1; int bar() { return foo; } }
+]])
+
 test_any([[
   // Test multiple inherit of same symbol,
   // where later symbol is protected.
@@ -2961,7 +2965,7 @@ test_any([[
 
   class A
   {
-    static string foo = "bar";
+    protected string foo = "bar";
   };
   
   string to_compile=#"
