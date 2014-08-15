@@ -1305,13 +1305,12 @@ static void amd64_push_local_function(int fun)
   amd64_load_fp_reg();
   amd64_load_sp_reg();
   mov_mem_reg(fp_reg, OFFSETOF(pike_frame, context), P_REG_RAX);
-  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),
-			    P_REG_RCX);
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),P_REG_RCX);
   mov_mem32_reg(P_REG_RAX, OFFSETOF(inherit, identifier_level),
-			      P_REG_RAX);
+                P_REG_RAX);
   mov_reg_mem(P_REG_RCX, sp_reg, OFFSETOF(svalue, u.object));
   add_reg_imm(P_REG_RAX, fun);
-  add_imm_mem( 1, P_REG_RCX,(INT32)OFFSETOF(object, refs));
+  add_imm_mem(1, P_REG_RCX,(INT32)OFFSETOF(object, refs));
   shl_reg_imm(P_REG_RAX, 16);
   add_reg_imm(P_REG_RAX, PIKE_T_FUNCTION);
   mov_reg_mem(P_REG_RAX, sp_reg, OFFSETOF(svalue, tu.t.type));
@@ -2379,7 +2378,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
     }
     break; /* Fallback to C-version. */
-
   case F_RETURN_LOCAL:
     /* FIXME: The C version has a trick:
        if locals+b < expendibles, pop to there
@@ -2461,7 +2459,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
      LABEL_C;
     }
     return;
-
   case F_LOCAL_INDEX:
     {
       LABELS();
@@ -3370,6 +3367,20 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     amd64_call_c_function( object_low_set_index );
     return;
 
+  case F_LEXICAL_LOCAL:
+    if( c < 5 )
+    {
+      amd64_load_fp_reg();
+      mov_reg_reg( fp_reg, P_REG_RAX );
+      while(c--)
+        mov_mem_reg( P_REG_RAX, OFFSETOF(pike_frame,scope), P_REG_RAX );
+      mov_mem_reg( P_REG_RAX, OFFSETOF(pike_frame,locals), P_REG_RAX );
+      add_reg_imm_reg( P_REG_RAX, b*sizeof(struct svalue), P_REG_RBX );
+      amd64_push_svaluep( P_REG_RBX );
+      return;
+    }
+    /* use c version. Could have a loop version here. */
+    break;
   case F_LOCAL_2_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     if( b != c )
