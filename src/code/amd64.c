@@ -3381,6 +3381,26 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     }
     /* use c version. Could have a loop version here. */
     break;
+
+  case F_LEXICAL_LOCAL_LVALUE:
+    if( c < 5 )
+    {
+      amd64_load_fp_reg();
+      amd64_load_sp_reg();
+      mov_reg_reg( fp_reg, P_REG_RAX );
+      while(c--)
+        mov_mem_reg( P_REG_RAX, OFFSETOF(pike_frame,scope), P_REG_RAX );
+      mov_mem_reg( P_REG_RAX, OFFSETOF(pike_frame,locals), P_REG_RAX );
+      add_reg_imm_reg( P_REG_RAX, b*sizeof(struct svalue), P_REG_RAX );
+      mov_imm_mem( T_SVALUE_PTR,  sp_reg, OFFSETOF(svalue, tu.t.type));
+      mov_reg_mem( P_REG_RAX, sp_reg, OFFSETOF(svalue,u.lval) );
+      mov_imm_mem( T_VOID,  sp_reg,
+                   OFFSETOF(svalue, tu.t.type)+sizeof(struct svalue));
+      amd64_add_sp( 2 );
+      return;
+    }
+    /* use c version. Could have a loop version here. */
+    break;
   case F_LOCAL_2_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     if( b != c )
