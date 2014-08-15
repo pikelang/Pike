@@ -50,9 +50,9 @@ string get_id()
   return sprintf("%4c%3c%2c%3c", timestamp, host, pid, counter);
 }
 
-string _sprintf(mixed t)
+protected string _sprintf(mixed t)
 {
-	return "ObjectId(" + String.string2hex(get_id()) + ")";
+  return "ObjectId(" + String.string2hex(get_id()) + ")";
 }
 
 protected mixed cast(string t)
