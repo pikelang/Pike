@@ -14,11 +14,11 @@ protected inherit .DocParser;
 // DOC EXTRACTION
 //========================================================================
 
-protected private class Extractor {
+private class Extractor {
   protected constant WITH_NL = .PikeParser.WITH_NL;
 
-  //  static private string filename;
-  protected private .PikeParser parser;
+  // private string filename;
+  private .PikeParser parser;
 
   protected .Flags flags;
   protected int verbosity;
@@ -594,7 +594,7 @@ protected private class Extractor {
     }
   }
 
-} // static private class Extractor
+} // private class Extractor
 
 //! Extract documentation for a Pike namespace.
 //!

@@ -29,7 +29,7 @@ object con;
 string buf="";
 
 /* outstanding calls */
-// static private
+// private
 mapping(int:function(string:void)) async=([]);
 int ref=1;
 

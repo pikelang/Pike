@@ -5,10 +5,10 @@
 //!   Ought to have support for charset conversion.
 class OutputController
 {
-  protected private .File outfd;
-  protected private .Terminfo.Termcap term;
-  protected private int xpos = 0, columns = 0;
-  protected private mapping oldattrs = 0;
+  private .File outfd;
+  private .Terminfo.Termcap term;
+  private int xpos = 0, columns = 0;
+  private mapping oldattrs = 0;
 
 #define BLINK     1
 #define BOLD      2
@@ -18,8 +18,8 @@ class OutputController
 #define STANDOUT  32
 #define UNDERLINE 64
 
-  protected private int selected_attributes = 0, needed_attributes = 0;
-  protected private int active_attributes = 0;
+  private int selected_attributes = 0, needed_attributes = 0;
+  private int active_attributes = 0;
 
   protected int low_attribute_mask(array(string) atts)
   {
@@ -437,13 +437,13 @@ class OutputController
 //!   Ought to have support for charset conversion.
 class InputController
 {
-  protected private object infd, term;
-  protected private int enabled = -1;
-  protected private function(:int) close_callback = 0;
-  protected private string prefix="";
-  protected private mapping(int:function|mapping(string:function)) bindings=([]);
-  protected private function grab_binding = 0;
-  protected private mapping oldattrs = 0;
+  private object infd, term;
+  private int enabled = -1;
+  private function(:int) close_callback = 0;
+  private string prefix="";
+  private mapping(int:function|mapping(string:function)) bindings=([]);
+  private function grab_binding = 0;
+  private mapping oldattrs = 0;
 
   int dumb=0;
 
@@ -457,7 +457,7 @@ class InputController
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
   }
 
-  protected private string process_input(string s)
+  private string process_input(string s)
   {
     int i;
 
@@ -494,7 +494,7 @@ class InputController
     return "";
   }
 
-  protected private void read_cb(mixed _, string s)
+  private void read_cb(mixed _, string s)
   {
     if (!s || s=="")
       return;
@@ -506,14 +506,14 @@ class InputController
     prefix = process_input(s);
   }
 
-  protected private void close_cb()
+  private void close_cb()
   {
     if (close_callback && close_callback())
       return;
     destruct(this);
   }
 
-  protected private int set_enabled(int e)
+  private int set_enabled(int e)
   {
     if (e != enabled)
     {
@@ -812,7 +812,7 @@ class InputController
 //!
 class DefaultEditKeys
 {
-  protected private multiset word_break_chars =
+  private multiset word_break_chars =
     mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
   protected object _readline;
 
@@ -1166,9 +1166,9 @@ class DefaultEditKeys
 //!
 class History
 {
-  protected private array(string) historylist;
-  protected private mapping(int:string) historykeep=([]);
-  protected private int minhistory, maxhistory, historynum;
+  private array(string) historylist;
+  private mapping(int:string) historykeep=([]);
+  private int minhistory, maxhistory, historynum;
 
   //!
   string encode()
@@ -1240,19 +1240,19 @@ class History
 }
 
 
-protected private OutputController output_controller;
-protected private InputController input_controller;
-protected private string prompt="";
-protected private array(string) prompt_attrs=0;
-protected private string text="", readtext;
-protected private function(string:void) newline_func;
-protected private int cursorpos = 0;
-protected private int mark = 0;
-/*static private */ History historyobj = 0;
-protected private int hide = 0;
+private OutputController output_controller;
+private InputController input_controller;
+private string prompt="";
+private array(string) prompt_attrs=0;
+private string text="", readtext;
+private function(string:void) newline_func;
+private int cursorpos = 0;
+private int mark = 0;
+/* private */ History historyobj = 0;
+private int hide = 0;
 
-protected private array(string) kill_ring=({});
-protected private int kill_ring_size=30;
+private array(string) kill_ring=({});
+private int kill_ring_size=30;
 
 //!  get current output control object
 //!  @returns
@@ -1505,7 +1505,7 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
-protected private void initline()
+private void initline()
 {
   text = "";
   cursorpos = 0;
@@ -1581,7 +1581,7 @@ void list_completions(array(string) c)
 		  c*"\n"));
 }
 
-protected private void read_newline(string s)
+private void read_newline(string s)
 {
   input_controller->disable();
   readtext = s;

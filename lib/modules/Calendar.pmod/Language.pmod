@@ -2173,7 +2173,7 @@ class cGREEK_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   private constant month_names=
    ({
      "\u0399\u03b1\u03bd\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
      "\u03a6\u03b5\u03b2\u03c1\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
@@ -2189,7 +2189,7 @@ class cGREEK_UNICODE
      "\u0394\u03b5\u03ba\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
    });
 
-   static private constant week_day_names=
+   private constant week_day_names=
    ({
      "\u0394\u03b5\u03c5\u03c4\u03ad\u03c1\u03b1",
      "\u03a4\u03c1\u03af\u03c4\u03b7",
