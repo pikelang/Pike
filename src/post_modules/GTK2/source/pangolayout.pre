@@ -252,9 +252,14 @@ mapping(string:int) xy_to_index(int x, int y)
 //! the layout).  If the X position is not within the layout, then the start
 //! or the end of the line is chosen as describe for x_to_index().  If either
 //! the x or y positions were not inside the layout, then returns 0.
-//! <p>
+//!
+//! Note that @[xy_to_char] will normally be more useful, as it returns the
+//! character, rather than byte, index.
+//!
 //! Returns:
 //! ([ "index": byte index, "trailing": where in grapheme user clicked ]).
+//! @seealso
+//! @[xy_to_char]
 {
   pgtk2_verify_inited();
   {
@@ -264,6 +269,39 @@ mapping(string:int) xy_to_index(int x, int y)
     pgtk2_pop_n_elems(args);
     res=pango_layout_xy_to_index(PANGO_LAYOUT(THIS->obj),x,y,&index,&trailing);
     if (res) {
+      ref_push_string(_STR("index")); push_int(index);
+      ref_push_string(_STR("trailing")); push_int(trailing);
+      f_aggregate_mapping(4);
+    } else {
+      push_int(0);
+    }
+  }
+}
+
+mapping(string:int) xy_to_char(int x, int y)
+//! Converts from x and y position within a layout to the codepoint index to the
+//! character at that logical position.  If the y position is not inside the
+//! layout, the closest position is chosen (the position will be clamped inside
+//! the layout).  If the X position is not within the layout, then the start
+//! or the end of the line is chosen as describe for x_to_index().  If either
+//! the x or y positions were not inside the layout, then returns 0.
+//!
+//! Returns:
+//! ([ "index": character index, "trailing": where in grapheme user clicked ]).
+//! @seealso
+//! @[xy_to_index]
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE x,y;
+    int index,trailing,res;
+    const char *text;
+    get_all_args("xy_to_char",args,"%i%i",&x,&y);
+    pgtk2_pop_n_elems(args);
+    res=pango_layout_xy_to_index(PANGO_LAYOUT(THIS->obj),x,y,&index,&trailing);
+    if (res) {
+      text=pango_layout_get_text(PANGO_LAYOUT(THIS->obj));
+      index=g_utf8_pointer_to_offset(text,text+index);
       ref_push_string(_STR("index")); push_int(index);
       ref_push_string(_STR("trailing")); push_int(trailing);
       f_aggregate_mapping(4);

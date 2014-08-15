@@ -238,6 +238,20 @@ Pango.Layout set_wrap( int wrap );
 //!
 //!
 
+mapping xy_to_char( int x, int y );
+//! Converts from x and y position within a layout to the codepoint index to the
+//! character at that logical position.  If the y position is not inside the
+//! layout, the closest position is chosen (the position will be clamped inside
+//! the layout).  If the X position is not within the layout, then the start
+//! or the end of the line is chosen as describe for x_to_index().  If either
+//! the x or y positions were not inside the layout, then returns 0.
+//!
+//! Returns:
+//! ([ "index": character index, "trailing": where in grapheme user clicked ]).
+//! @seealso
+//! @[xy_to_index]
+//
+
 mapping xy_to_index( int x, int y );
 //! Converts from x and y position within a layout to the byte index to the
 //! character at that logical position.  If the y position is not inside the
@@ -245,8 +259,12 @@ mapping xy_to_index( int x, int y );
 //! the layout).  If the X position is not within the layout, then the start
 //! or the end of the line is chosen as describe for x_to_index().  If either
 //! the x or y positions were not inside the layout, then returns 0.
-//! 
+//!
+//! Note that @[xy_to_char] will normally be more useful, as it returns the
+//! character, rather than byte, index.
+//!
 //! Returns:
 //! ([ "index": byte index, "trailing": where in grapheme user clicked ]).
-//!
-//!
+//! @seealso
+//! @[xy_to_char]
+//
