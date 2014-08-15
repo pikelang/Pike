@@ -298,4 +298,9 @@ return 0;
 ]],1)
 test_do(add_constant("foobar"))
 
+test_do([[
+  class A { static int foo = 1; int bar() { return foo; } }
+]])
+
+
 END_MARKER
