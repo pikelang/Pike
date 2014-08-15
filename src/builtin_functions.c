@@ -206,7 +206,7 @@ static node *optimize_f_aggregate(node *n)
  *! @deprecated 7.4::hash
  *!
  *! @seealso
- *!   @[7.4::hash()]
+ *!   @[7.4::hash()], @[hash()]
  */
 
 /*! @namespace 7.4::
@@ -9816,7 +9816,7 @@ void init_builtin_efuns(void)
            tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
-           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 

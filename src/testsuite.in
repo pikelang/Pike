@@ -10904,14 +10904,12 @@ test_eval_error( return hash("foo",-1) )
 
 // - hash_7_4
 define(test_hash_7_4, [[
-  ignore_warning("Calling a deprecated value.", [[
   test_any([[
     int i = hash_7_4($1);
     return ]]dnl
 ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
 [[i;
   ]], $2)
-  ]])
   test_any([[
     int i = 7.4::hash($1);
     return ]]dnl
