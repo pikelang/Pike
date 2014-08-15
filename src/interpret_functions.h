@@ -549,17 +549,11 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
   Pike_sp++;
 });
 
-OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", 0, {
-  free_mixed_svalues(Pike_fp->locals + arg1, 2);
-  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-  SET_SVAL(Pike_fp->locals[arg1+1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-});
-
-OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
+OPCODE2(F_CLEAR_N_LOCAL, "clear n local", 0, {
   struct svalue *locals = Pike_fp->locals;
   int e;
-  free_mixed_svalues(locals + arg1, 4);
-  for(e = 0; e < 4; e++)
+  free_mixed_svalues(locals + arg1, arg2);
+  for(e = 0; e < arg2; e++)
   {
     SET_SVAL(locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   }
