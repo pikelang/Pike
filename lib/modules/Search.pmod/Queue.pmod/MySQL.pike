@@ -24,9 +24,7 @@ Web.Crawler.RuleSet allow, deny;
 
 protected string to_md5(string url)
 {
-  Crypto.MD5 md5 = Crypto.MD5();
-  md5->update(string_to_utf8(url));
-  return String.string2hex(md5->digest());
+  return String.string2hex(Crypto.MD5.hash(string_to_utf8(url)));
 }
 
 //! @param _url
