@@ -83,7 +83,7 @@ class Parser {
 
     //! Parses and returns one WebSocket frame from the internal buffer. If
     //! the buffer does not contain a full frame, @expr{0@} is returned.
-    object parse() {
+    Frame parse() {
 	if (sizeof(buf) < 2) return 0;
 
 	int opcode, len, hlen = 2;
@@ -111,7 +111,7 @@ class Parser {
 
         if (sizeof(buf) < len+hlen) return 0;
 
-        object f = Frame(opcode & 15);
+        Frame f = Frame(opcode & 15);
         f->fin = opcode >> 7;
         f->mask = mask;
 
@@ -223,8 +223,7 @@ class Frame {
         } else b->putchar(!!mask << 7 | sizeof(data));
 
         if (mask) {
-            b->add(mask);
-            b->add(MASK(data, mask));
+            b->add(mask, MASK(data, mask);
         } else {
             b->add(data);
         }
@@ -244,7 +243,7 @@ class Frame {
 //!
 class Connection {
     //! An instance of @[Parser] used to parse incoming data.
-    object parser;
+    Parser parser;
 
     //! The actual client connection.
     Stdio.File stream;
@@ -358,7 +357,7 @@ class Connection {
         if (state == CLOSED) return;
         parser->feed(data);
 
-        while (object frame = parser->parse()) {
+        while (Frame frame = parser->parse()) {
 #ifdef WEBSOCKET_DEBUG
             werror("%O in %O\n", this, frame);
 #endif
@@ -525,9 +524,9 @@ class Request {
 class Port {
     inherit Protocols.HTTP.Server.Port;
 
-    void create(function(Protocols.HTTP.Server.Request:void) http_cb,
-                function(array(string), Request:void)|void ws_cb,
-                void|int portno, void|string interface) {
+    protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
+                          function(array(string), Request:void)|void ws_cb,
+                          void|int portno, void|string interface) {
 
         ::create(http_cb, portno, interface);
 
@@ -542,10 +541,10 @@ class Port {
 class SSLPort {
     inherit Protocols.HTTP.Server.SSLPort;
 
-    void create(function(Protocols.HTTP.Server.Request:void) http_cb,
-                function(array(string), Request:void)|void ws_cb,
-                void|int portno, void|string interface,
-                void|string key, void|string|array certificate) {
+    protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
+                          function(array(string), Request:void)|void ws_cb,
+                          void|int portno, void|string interface,
+                          void|string key, void|string|array certificate) {
 
         ::create(http_cb, portno, interface, key, certificate);
 
