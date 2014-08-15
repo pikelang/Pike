@@ -176,7 +176,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
                   string|void name, array(string)|void parentModules,
 		  void|.Flags flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
 
   // extract the file...
   // check if there are C style doc comments in it,
@@ -799,7 +799,7 @@ protected void recurseAppears(string namespace,
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
 void handleAppears(SimpleNode root, .Flags|void flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   tasks = ({ });
   foreach(root->get_elements("namespace"), SimpleNode namespaceNode) {
     string namespace = namespaceNode->get_attributes()->name + "::";
@@ -1502,7 +1502,7 @@ class NScopeStack
   {
     this_program::scopes = scopes;
     this_program::logfile = logfile;
-    if (zero_type(flags)) flags = .FLAG_NORMAL;
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
     this_program::flags = flags;
   }
 

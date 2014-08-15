@@ -237,7 +237,7 @@ string get_sha1_for_path(string git_dir, string tree_sha1, string path)
 array(string) get_doc_parents(string doc_sha1)
 {
   array(string) parents = doc_to_parents[doc_sha1];
-  if (!zero_type(parents)) return parents;
+  if (!undefinedp(parents)) return parents;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
   if (commit->parent) {
     doc_to_parents[doc_sha1] = commit->parent;
@@ -254,7 +254,7 @@ array(string) get_doc_parents(string doc_sha1)
 string get_autodoc_hash(string doc_sha1)
 {
   string autodoc_sha1 = autodoc_hash[doc_sha1];
-  if (!zero_type(autodoc_sha1)) return autodoc_sha1;
+  if (!undefinedp(autodoc_sha1)) return autodoc_sha1;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
   if (commit->tree) {
     autodoc_sha1 =

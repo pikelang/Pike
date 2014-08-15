@@ -375,7 +375,7 @@ void async_fetch_read(mixed dummy,string data)
    DBG("-> %d bytes of data\n",sizeof(data));
    buf+=data;
 
-   if (!zero_type (headers["content-length"]) &&
+   if (has_index(headers, "content-length") &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       remove_call_out(async_timeout); // Bug 4773
@@ -927,13 +927,13 @@ string data(int|void max_length)
    int len=(int)headers["content-length"];
    int l;
 // test if len is zero to get around zero_type bug (??!?) /Mirar
-   if(!len && zero_type( len ))
+   if(!len && undefinedp( len ))
       l=0x7fffffff;
    else {
       len -= discarded_bytes;
       l=len-sizeof(buf)+datapos;
    }
-   if(!zero_type(max_length) && l>max_length-sizeof(buf)+datapos)
+   if(!undefinedp(max_length) && l>max_length-sizeof(buf)+datapos)
      l = max_length-sizeof(buf)+datapos;
 
    DBG("fetch data: %d bytes needed, got %d, %d left\n",
@@ -967,9 +967,9 @@ string data(int|void max_length)
 	 buf += s;
      }
    }
-   if(zero_type( len ))
+   if(undefinedp( len ))
      len = sizeof( buf ) - datapos;
-   if(!zero_type(max_length) && len>max_length)
+   if(!undefinedp(max_length) && len>max_length)
      len = max_length;
    return buf[datapos..datapos+len-1];
 }
@@ -1026,7 +1026,7 @@ int total_bytes()
   if(!headers)
     return -1;
   int len=(int)headers["content-length"];
-  if(zero_type(len))
+  if(undefinedp(len))
     return -1;
   else
     return len;
@@ -1161,16 +1161,16 @@ object file(void|mapping newheader,void|mapping removeheader)
       if (hbuf=="") hbuf="\r\n";
       hbuf = protocol + " " + status + " " + status_desc + "\r\n" +
 	hbuf + "\r\n";
-      if (zero_type(headers["content-length"]))
-	 len=0x7fffffff;
-      else
+      if (has_index(headers, "content-length"))
 	 len = sizeof(hbuf)+(int)headers["content-length"];
+      else
+	 len=0x7fffffff;
       return PseudoFile(hbuf + buf[datapos..],len);
    }
-   if (zero_type(headers["content-length"]))
-      len=0x7fffffff;
-   else
+   if (has_index(headers, "content-length"))
       len=sizeof(headerbuf)+4+(int)h["content-length"];
+   else
+      len=0x7fffffff;
    return PseudoFile(headerbuf + "\r\n\r\n" + buf[datapos..], len);
 }
 
@@ -1220,13 +1220,13 @@ void close()
 //!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
-   if (!zero_type (headers["content-length"]) &&
-       sizeof(buf)-datapos>=(int)headers["content-length"])
-   {
-      // FIXME: This is triggered erroneously for chunked transfer!
-      call_out(callback, 0, this_object(), @extra);
-      return;
-   }
+  if (has_index (headers, "content-length") &&
+      sizeof(buf)-datapos>=(int)headers["content-length"])
+  {
+    // FIXME: This is triggered erroneously for chunked transfer!
+    call_out(callback, 0, this_object(), @extra);
+    return;
+  }
 
    if (!con)
    {
@@ -1254,7 +1254,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
 
-  if (!zero_type (headers["content-length"]) &&
+  if (has_index (headers, "content-length") &&
       sizeof(buf)-datapos>=(int)headers["content-length"])
   {
     call_out(ok_callback, 0, this_object(), @extra);

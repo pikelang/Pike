@@ -240,7 +240,7 @@ class File
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
-    if (zero_type(bits)) bits=0666;
+    if (undefinedp(bits)) bits=0666;
     debug_file = file;  debug_mode = mode;
     debug_bits = bits;
     if (::open(file,mode,bits)) {
@@ -674,7 +674,7 @@ class File
   //! @[open()], @[connect()], @[Stdio.FILE],
   protected void create(int|string|void file,void|string mode,void|int bits)
   {
-    if (zero_type(file))
+    if (undefinedp(file))
       return;
 
     debug_file = file;  
@@ -1198,18 +1198,18 @@ class File
     // Bypass the ::set_xxx_callback functions; we instead enable all
     // the event bits at once through the _enable_callbacks call at the end.
 
-    if (!zero_type (read_cb))
+    if (!undefinedp (read_cb))
       _SET (read_callback, read_cb);
-    if (!zero_type (write_cb))
+    if (!undefinedp (write_cb))
       _SET (write_callback, write_cb);
 
-    if (!zero_type (close_cb) &&
+    if (!undefinedp (close_cb) &&
 	(___close_callback = close_cb) && !___read_callback)
       _fd->_read_callback = __stdio_close_callback;
 
-    if (!zero_type (read_oob_cb))
+    if (!undefinedp (read_oob_cb))
       _SET (read_oob_callback, read_oob_cb);
-    if (!zero_type (write_oob_cb))
+    if (!undefinedp (write_oob_cb))
       _SET (write_oob_callback, write_oob_cb);
 
     ::_enable_callbacks();
@@ -1795,7 +1795,7 @@ class FILE
   int open_socket(int|string|void port, string|void address, int|string|void family_hint)
   {
     bpos=0;  b="";
-    if(zero_type(port))
+    if(undefinedp(port))
       return file::open_socket();
     return file::open_socket(port, address, family_hint);
   }
@@ -2334,9 +2334,8 @@ int write_file(string filename, string str, int|void access)
   int ret;
   File f = File();
 
-  if (zero_type (access)) {
+  if (undefinedp (access))
     access = 0666;
-  }
 
   if(!f->open(filename, "twc", access))
     error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
@@ -2371,9 +2370,8 @@ int append_file(string filename, string str, int|void access)
   int ret;
   File f = File();
 
-  if (zero_type (access)) {
+  if (undefinedp (access))
     access = 0666;
-  }
 
   if(!f->open(filename, "awc", access))
     error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
@@ -2777,7 +2775,7 @@ void async_cp(string from, string to,
 //!
 int mkdirhier (string pathname, void|int mode)
 {
-  if (zero_type (mode)) mode = 0777; // &'ed with umask anyway.
+  if (undefinedp (mode)) mode = 0777; // &'ed with umask anyway.
   if (!sizeof(pathname)) return 0;
   string path = "";
 #ifdef __NT__

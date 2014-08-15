@@ -141,7 +141,7 @@ class Token
 
   //! Characters and ranges may be indexed from the text contents of the token.
   int|string `[](int a, void|int b) {
-    if(zero_type(b)) return text[a];
+    if(undefinedp(b)) return text[a];
     return text[a..b];
   }
 }

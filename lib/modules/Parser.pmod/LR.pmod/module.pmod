@@ -201,9 +201,8 @@ class ErrorHandler
   //!   @[verbose]
   protected void create(int(-1..1)|void verbosity)
   {
-    if (!zero_type(verbosity)) {
+    if (!undefinedp(verbosity))
       verbose = verbosity;
-    }
   }
 }
 

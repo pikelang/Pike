@@ -127,7 +127,7 @@ class Connection
 
     if(!users)
       authorized = 1;  // No security enabled
-    else if(sizeof(userpw) && userpw[0] && !zero_type(users[userpw[0]])) {
+    else if(sizeof(userpw) && userpw[0] && has_index(users, userpw[0])) {
       if(!stringp(users[userpw[0]]))
 	authorized = 1;  // Password-less user
       else if(sizeof(userpw)>1 && userpw[1] &&

@@ -40,7 +40,7 @@ class request
 
     foreach(fields, string f)
       {
-	if (!zero_type(m[f]))
+	if (has_index(m, f))
 	  {
 	    v += ({ objectp(m[f]) ? m[f]->id : m[f] });
 	    mask |= bit;
@@ -1043,7 +1043,7 @@ class ExtensionRequest
 
     foreach(fields, string f)
       {
-	if (!zero_type(m[f]))
+	if (has_index(m, f))
 	  {
 	    v += ({ objectp(m[f]) ? m[f]->id : m[f] });
 	    mask |= bit;

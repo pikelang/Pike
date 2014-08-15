@@ -659,7 +659,7 @@ class Node
 				  _reference);
 	}
 
-	if (!zero_type(refs[resolution]) &&
+	if (has_index(refs, resolution) &&
 	    (verbosity >= Tools.AutoDoc.FLAG_VERBOSE)) {
 	  werror("Reference %O (%O) is %O!\n",
 		 _reference, resolution, refs[resolution]);

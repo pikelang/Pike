@@ -578,7 +578,7 @@ array uniq2(array a)
    return res;
 }
 
-//! Make an array of the argument, if it isn't already. A zero_type
+//! Make an array of the argument, if it isn't already. An undefined
 //! argument gives the empty array. This is useful when something is
 //! either an array or a basic datatype, for instance in headers from
 //! the MIME module or Protocols.HTTP.Server.
@@ -587,14 +587,14 @@ array uniq2(array a)
 //!   @dl
 //!     @item arrayp(x)
 //!       arrayify(x) => x
-//!     @item zero_type(x)
+//!     @item undefinedp(x)
 //!       arrayify(x) => ({})
 //!     @item otherwise
 //!       arrayify(x) => ({ x })
 //!   @enddl
 array arrayify(void|array|mixed x)
 {
-   if(zero_type(x)) return ({});
+   if(undefinedp(x)) return ({});
    if(arrayp(x)) return [array]x;
    return ({ x });
 }
@@ -697,7 +697,7 @@ array(array(array)) greedy_diff(array from, array to)
 int|mapping(mixed:int) count(array|mapping|multiset haystack,
 			     mixed|void needle)
 {
-  if(zero_type(needle))
+  if(undefinedp(needle))
   {
     mapping(mixed:int) res = ([]);
     if(mappingp(haystack))

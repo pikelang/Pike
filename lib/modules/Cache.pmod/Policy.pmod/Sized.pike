@@ -60,6 +60,6 @@ void create (int max, void|int min) {
   max_size=max;
   if (min)
     min_size=min;
-  else if (zero_type(min)) //not specified
+  else if (undefinedp(min)) //not specified
     min_size=max_size/2;
 }

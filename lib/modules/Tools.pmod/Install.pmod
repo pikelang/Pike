@@ -101,8 +101,8 @@ array(string) features()
 
   foreach (({"Regexp.PCRE.Widestring", "Java.NATIVE_METHODS"}), string symbol)
     catch {
-      if (!zero_type(all_constants()[symbol]) ||
-	  !zero_type(master()->resolv(symbol)))
+      if (has_index(all_constants(), symbol) ||
+	  !undefinedp(master()->resolv(symbol)))
 	m += ({symbol});
     };
 

@@ -129,7 +129,7 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
   if (len < 0) error("Cannot read negative number of characters.\n");
   int start=ptr;
   ptr += len;
-  if(zero_type(len) || ptr>sizeof(data))
+  if(undefinedp(len) || ptr>sizeof(data))
     ptr = sizeof(data);
 
   // FIXME: read callback

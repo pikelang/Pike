@@ -847,7 +847,7 @@ protected class DocParserClass {
 			SourcePosition|void position,
 			.Flags|void flags)
   {
-    if (zero_type(flags)) flags = .FLAG_NORMAL;
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
 
     this_program::flags = flags;
 

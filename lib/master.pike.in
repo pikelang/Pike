@@ -795,7 +795,7 @@ int newest;
 #define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
   if(autoreload_on) {							\
     mixed val = CACHE[FILE];						\
-    if(!zero_type (val) && val != no_value &&				\
+    if(!undefinedp (val) && val != no_value &&				\
        newest <= load_time[FILE]) {					\
       VAR = val;							\
     }									\
@@ -834,7 +834,7 @@ program compile_string(string source, void|string filename,
 #endif
   string code = cpp(source, filename||"-", 1, handler,
                     compat_major, compat_minor,
-                    (zero_type(_show_if_constant_errors)?
+                    (undefinedp(_show_if_constant_errors)?
                      show_if_constant_errors:
                      _show_if_constant_errors));
   program ret;
@@ -908,7 +908,7 @@ Stat master_file_stat(string x)
   }
 
   multiset(string) d = dir_cache[dir];
-  if( zero_type(d) )
+  if( undefinedp(d) )
   {
     array(string) tmp = master_get_dir(dir);
     if(tmp)
@@ -1504,7 +1504,7 @@ protected program low_findprog(string pname,
     if(!autoreload_on || load_time[fname] >= s->mtime)
 #endif
     {
-      if(!zero_type (ret=programs[fname]) && ret != no_value) {
+      if(!undefinedp (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
 	return ret;
       }
@@ -1514,7 +1514,7 @@ protected program low_findprog(string pname,
 
 #ifdef PIKE_AUTORELOAD
     if (load_time[fname] >= s->mtime)
-      if (!zero_type (ret=programs[fname]) && ret != no_value) {
+      if (!undefinedp (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
       }
@@ -1734,7 +1734,7 @@ program low_cast_to_program(string pname,
   if(IS_ABSOLUTE_PATH(pname))
   {
     program|NoValue prog = programs[pname];
-    if ((!zero_type(prog)) && (prog != no_value))
+    if ((!undefinedp(prog)) && (prog != no_value))
     { 
       return prog;
     }
@@ -1899,7 +1899,7 @@ string ldflags; // Not yet used
 protected void create()
 {
   foreach(master_efuns, string e)
-    if (!zero_type(this[e]))
+    if (has_index(this, e))
       add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
@@ -2267,7 +2267,7 @@ class dirnode (string dirname, object|void compilation_handler,
     {
       mixed o;
 //      _describe(module);
-      if(!zero_type(o=module[index]))
+      if(!undefinedp(o=module[index]))
       {
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("dirnode(%O)->ind(%O) => found %O\n",
@@ -2291,7 +2291,7 @@ class dirnode (string dirname, object|void compilation_handler,
     werror("%*nDirnode(%O) cache[%O] ?????\n",
 	   sizeof(backtrace()),dirname,index);
 #endif
-    if(!zero_type(ret=cache[index]))
+    if(!undefinedp(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
       werror("%*nDirnode(%O) cache[%O] => %O%s\n",
@@ -2317,7 +2317,7 @@ class dirnode (string dirname, object|void compilation_handler,
       return ret;
     }
 
-    cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
+    cache[index] = undefinedp(ret) ? ZERO_TYPE : ret;
     return ret;
   }
 
@@ -2481,7 +2481,7 @@ class joinnode (array(object|mapping) joined_modules,
     foreach(joined_modules, object|mapping o) 
     {
       mixed ret;
-      if (!zero_type(ret = o[index])) 
+      if (!undefinedp(ret = o[index])) 
       {
 	if (objectp(ret) &&
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
@@ -2515,7 +2515,7 @@ class joinnode (array(object|mapping) joined_modules,
   protected mixed `[](string index)
   {
     mixed ret;
-    if (!zero_type(ret = cache[index])) {
+    if (!undefinedp(ret = cache[index])) {
       if (ret != ZERO_TYPE) {
 	return ret;
       }
@@ -2527,7 +2527,7 @@ class joinnode (array(object|mapping) joined_modules,
     // which must not be cached to the second.
     if(ret == predef::__placeholder_object) return ret;
 
-    if (zero_type(ret)) {
+    if (undefinedp(ret)) {
       cache[index] = ZERO_TYPE;
     } else {
       cache[index] = ret;
@@ -2548,7 +2548,7 @@ class joinnode (array(object|mapping) joined_modules,
     }
     foreach(joined_modules, object|mapping|program o) {
       foreach(indices(o), string index) {
-	if (zero_type(cache[index])) {
+	if (!has_index(cache, index)) {
 	  `[](index);
 	}
       }
@@ -2661,7 +2661,7 @@ program|object findmodule(string fullname, object|void handler,
   program|object o;
 
   resolv_debug ("findmodule(%O)\n", fullname);
-  if(!zero_type(o=fc[fullname]) && o != no_value)
+  if(!undefinedp(o=fc[fullname]) && o != no_value)
   {
     if (objectp(o) || programp(o) || o != 0) {
       resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
@@ -3058,7 +3058,7 @@ class CompatResolver
 			void|object current_handler)
   {
     mixed res = resolv(identifier, current_file, current_handler);
-    if(zero_type(res)) error("Could not resolve %s.\n", identifier);
+    if(undefinedp(res)) error("Could not resolve %s.\n", identifier);
     return res;
   }
 
@@ -3096,7 +3096,7 @@ class CompatResolver
 	  ret = get_compilation_handler(major, minor);
 	  if (ret) {
 	    mixed mod = ret->get_default_module();
-	    if (!zero_type(mod = mod[tmp[0]])) {
+	    if (!undefinedp(mod = mod[tmp[0]])) {
 	      ret = mod;
 	    } else {
 	      ret = ret->resolv(tmp[0]);
@@ -3117,12 +3117,12 @@ class CompatResolver
       resolv_debug("indexing %O with %O...\n",
 		   ret, index);
       resolv_debug("indices(%O): %O\n", ret, indices(ret));
-      if (zero_type(ret)) break;
+      if (undefinedp(ret)) break;
       ret = ret[index];
     }
     DEC_RESOLV_MSG_DEPTH();
 #ifdef RESOLV_DEBUG
-    if (zero_type (ret))
+    if (undefinedp (ret))
       resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
     else
       resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
@@ -4057,7 +4057,7 @@ class Describer
     switch(res)
     {
     case "int":
-      if (!m && zero_type (m) == 1)
+      if (!m && undefinedp (m) == 1)
 	return "UNDEFINED";
     case "float":
       return (string)m;
@@ -4352,7 +4352,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 string describe_object(object o)
 {
   string s;
-  if(zero_type (o)) return 0;	// Destructed.
+  if(undefinedp (o)) return 0;	// Destructed.
 
   // Handled by the search of all_constants() below.
   // if (o == _static_modules) return "_static_modules";
@@ -4492,7 +4492,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	if (functionp (err_obj->message))
 	  ret = err_obj->message();
-	else if (zero_type (ret = err_obj->error_message))
+	else if (undefinedp (ret = err_obj->error_message))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  ret = err_obj[0];
@@ -4504,7 +4504,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	if (functionp (err_obj->backtrace))
 	  trace = err_obj->backtrace();
-	else if (zero_type (trace = err_obj->error_backtrace))
+	else if (undefinedp (trace = err_obj->error_backtrace))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  trace = err_obj[1];
@@ -4645,7 +4645,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
       }
 
       int dup_frame;
-      if (!zero_type(dup_frame = prev_pos[row])) {
+      if (!undefinedp(dup_frame = prev_pos[row])) {
 	dup_frame -= sizeof(frames);
 	if (!loop_start) {
 	  loop_start = dup_frame;
@@ -4721,7 +4721,7 @@ string describe_error (mixed /* object|array */ err)
 
 	if (functionp (err_obj->message))
 	  msg = err_obj->message();
-	else if (zero_type (msg = err_obj->error_message))
+	else if (undefinedp (msg = err_obj->error_message))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  msg = err_obj[0];
@@ -4767,7 +4767,7 @@ array get_backtrace (object|array err)
 
     if (functionp (err_obj->backtrace))
       bt = err_obj->backtrace();
-    else if (zero_type (bt = err_obj->error_backtrace))
+    else if (undefinedp (bt = err_obj->error_backtrace))
       // For compatibility with error objects trying to behave like
       // arrays.
       bt = err_obj[1];
@@ -4792,7 +4792,7 @@ array get_backtrace (object|array err)
 #  define ENC_RETURN(val) do {						\
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
-	  zero_type (_v__) ? "UNDEFINED" :				\
+	  undefinedp (_v__) ? "UNDEFINED" :				\
 	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
@@ -4806,7 +4806,7 @@ array get_backtrace (object|array err)
 #  define DEC_RETURN(val) do {						\
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
-	  zero_type (_v__) ? "UNDEFINED" :				\
+	  undefinedp (_v__) ? "UNDEFINED" :				\
 	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
@@ -5297,15 +5297,15 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 
     switch (what[0]) {
       case 'c':
-	if (zero_type (res = all_constants()[what[1..]]))
+	if (undefinedp (res = all_constants()[what[1..]]))
 	  error ("Cannot find global constant %O.\n", what[1..]);
 	break;
       case 's':
-	if (zero_type (res = _static_modules[what[1..]]))
+	if (undefinedp (res = _static_modules[what[1..]]))
 	  error ("Cannot find %O in _static_modules.\n", what[1..]);
 	break;
       case 'r':
-	if (zero_type (res = resolv ([string]what[1..], fname, handler)))
+	if (undefinedp (res = resolv ([string]what[1..], fname, handler)))
 	  error ("Cannot resolve %O.\n", what[1..]);
 	break;
       case 'p':
@@ -5332,7 +5332,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	  if (!programp (subres) && !objectp (subres) && !mappingp (subres))
 	    error ("Cannot subindex %O%{[%O]%} since it's a %t.\n",
 		   res, sublist[1..i-1], subres);
-	  if (zero_type (subres = ([mapping]subres)[op]))
+	  if (undefinedp (subres = ([mapping]subres)[op]))
 	    error ("Cannot find %O in %O%{[%O]%}.\n",
 		   op, res, sublist[1..i-1]);
 	  DEC_MSG ("  indexed with %O: %O\n", op, subres);
@@ -5567,7 +5567,7 @@ CompatResolver get_compilation_handler(int major, int minor)
 
   CompatResolver ret;
 
-  if(!zero_type(ret=compat_handler_cache[v])) return ret;
+  if(!undefinedp(ret=compat_handler_cache[v])) return ret;
 
   array(string) files;
   array(Version) available=({});

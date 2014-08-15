@@ -711,7 +711,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
 		   make_insert_clause (records),
 		   0, query_charset);
   if (!id_col) return 0;
-  if (zero_type (first_rec[id_col]))
+  if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
   else
     return first_rec[id_col];
@@ -734,7 +734,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
   if (!id_col) return 0;
   int last_insert_id = conn->insert_id();
   if (last_insert_id &&
-      sizeof (records) == 1 && zero_type (first_rec[id_col]))
+      sizeof (records) == 1 && !has_index (first_rec, id_col))
     // Only set the field if we got a single record. Otherwise we
     // don't really know which record it applies to.
     first_rec[id_col] = last_insert_id;
@@ -756,7 +756,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
 		   make_insert_clause (records),
 		   0, query_charset);
   if (!id_col) return 0;
-  if (zero_type (first_rec[id_col]))
+  if (!has_index (first_rec, id_col))
     return first_rec[id_col] = conn->insert_id();
   else
     return first_rec[id_col];
@@ -840,13 +840,13 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
       update_set[i++] = "`" + col + "`=VALUES(`" + col + "`)";
   }
 
-  if (prop_col_value && zero_type (real_cols[prop_col])) {
+  if (prop_col_value && !has_index (real_cols, prop_col)) {
     if (clear_other_fields)
       update_set += ({"`" + prop_col + "`=VALUES(`" + prop_col + "`)"});
     real_cols[prop_col] = prop_col_value;
   }
 
-  if (id_col && zero_type (real_cols[id_col]))
+  if (id_col && !has_index (real_cols, id_col))
     update_set += ({"`" + id_col + "`=LAST_INSERT_ID(`" + id_col + "`)"});
 
   if (clear_other_fields == 2) {
@@ -860,7 +860,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 		    "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
 		   0, query_charset);
 
-  if (id_col && zero_type (record[id_col]))
+  if (id_col && !has_index (record, id_col))
     record[id_col] = conn->insert_id();
 
   if (sizeof (other_fields) && !clear_other_fields &&
@@ -1422,7 +1422,7 @@ protected mapping(string:mixed) decode_props (string prop_val, string where)
 }
 
 protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
-// A value with zero_type is formatted as "DEFAULT".
+// An undefined value is formatted as "DEFAULT".
 {
   if (stringp (val)) {
 #ifdef MYSQL_DEBUG
@@ -1444,7 +1444,7 @@ protected void add_mysql_value (String.Buffer buf, string col_name, mixed val)
       buf->add ("_utf8\"", string_to_utf8 (quote (val)), "\"");
   }
   else if (intp (val)) {
-    if (zero_type (val))
+    if (undefinedp (val))
       buf->add ("DEFAULT");
     else {
 #ifdef MYSQL_DEBUG
@@ -1563,7 +1563,7 @@ protected string make_pk_where (mapping(string:mixed) rec)
   foreach (pk_cols, string pk_col) {
     if (first) first = 0; else buf->add (" AND ");
     mixed val = m_delete (rec, pk_col);
-    if (zero_type (val) || val == Val.null)
+    if (undefinedp (val) || val == Val.null)
       return 0;
     buf->add ("`", pk_col, "`=");
     add_mysql_value (buf, pk_col, val);

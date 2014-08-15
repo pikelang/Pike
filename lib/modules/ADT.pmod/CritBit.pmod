@@ -601,8 +601,8 @@ class MultiTree {
 	array oit, it;
 
 	void create(int step, mixed|void start, mixed|void stop) {
-	    int i = zero_type(start) ? 0 : itree(start);
-	    int j = zero_type(stop) ? sizeof(trees)-1 : itree(stop);
+	    int i = undefinedp(start) ? 0 : itree(start);
+	    int j = undefinedp(stop) ? sizeof(trees)-1 : itree(stop);
 
 	    array t = trees[i..j];
 	    j = sizeof(t);

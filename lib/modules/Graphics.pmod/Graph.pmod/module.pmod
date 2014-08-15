@@ -264,7 +264,7 @@ mapping(string:mixed) check_mapping(mapping(string:mixed) diagram_data,
     ]);
 
   foreach( md; string i; mixed v)
-    if(zero_type(diagram_data[i]))
+    if(!has_index(diagram_data, i))
       diagram_data[i]=v;
 
   switch(type)

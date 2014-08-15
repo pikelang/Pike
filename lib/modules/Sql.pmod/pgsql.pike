@@ -528,7 +528,7 @@ mapping(string:mixed) getstatistics()
 //! through the generic SQL-interface.
 int setcachedepth(void|int newdepth)
 { int olddepth=cachedepth;
-  if(!zero_type(newdepth) && newdepth>=0)
+  if(!undefinedp(newdepth) && newdepth>=0)
     cachedepth=newdepth;
   return olddepth;
 }
@@ -544,7 +544,7 @@ int setcachedepth(void|int newdepth)
 //! through the generic SQL-interface.
 int settimeout(void|int newtimeout)
 { int oldtimeout=timeout;
-  if(!zero_type(newtimeout) && newtimeout>0)
+  if(!undefinedp(newtimeout) && newtimeout>0)
     timeout=newtimeout;
   return oldtimeout;
 }
@@ -560,7 +560,7 @@ int settimeout(void|int newtimeout)
 //! through the generic SQL-interface.
 int setportalbuffersize(void|int newportalbuffersize)
 { int oldportalbuffersize=portalbuffersize;
-  if(!zero_type(newportalbuffersize) && newportalbuffersize>0)
+  if(!undefinedp(newportalbuffersize) && newportalbuffersize>0)
     portalbuffersize=newportalbuffersize;
   return oldportalbuffersize;
 }
@@ -576,7 +576,7 @@ int setportalbuffersize(void|int newportalbuffersize)
 //! through the generic SQL-interface.
 int setfetchlimit(void|int newfetchlimit)
 { int oldfetchlimit=_fetchlimit;
-  if(!zero_type(newfetchlimit) && newfetchlimit>=0)
+  if(!undefinedp(newfetchlimit) && newfetchlimit>=0)
     _fetchlimit=newfetchlimit;
   return oldfetchlimit;
 }
@@ -1083,7 +1083,7 @@ final int _decodemsg(void|state waitforstate)
       case noerror:
 	break;
     }
-    if(zero_type(waitforstate))
+    if(undefinedp(waitforstate))
       break;
   }
   PD("Found state %O\n",_mstate);
@@ -1150,7 +1150,7 @@ private int reconnect(void|int force)
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
-  options->reconnect=zero_type(options->reconnect) || options->reconnect;
+  options->reconnect=undefinedp(options->reconnect) || options->reconnect;
   foreach((options+_runtimeparameter)
     -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
        "text_query","is_superuser","server_encoding","server_version",
@@ -1790,7 +1790,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	prepstmtused++, preparedname=tp->preparedname;
       else if((tstart=tp->trun)
        && tp->tparse*FACTORPLAN>=tstart
-       && (zero_type(options->cache_autoprepared_statements)
+       && (undefinedp(options->cache_autoprepared_statements)
 	|| options->cache_autoprepared_statements))
 	preparedname=PREPSTMTPREFIX+(string)pstmtcount++;
     }
@@ -1883,7 +1883,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
             plugbuf+=({_c.plugint16(oidformat(textbin))});
           plugbuf+=({_c.plugint16(sizeof(paramValues))});
           foreach(paramValues;int i;mixed value)
-          { if(zero_type(value))
+          { if(undefinedp(value))
               plugbuf+=({_c.plugint32(-1)});				// NULL
             else if(stringp(value) && !sizeof(value))
             { int k=0;

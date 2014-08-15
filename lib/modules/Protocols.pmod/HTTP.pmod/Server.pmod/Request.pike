@@ -499,7 +499,7 @@ string make_response_header(mapping m)
    {
       case 0:
       case 200: 
-	 if (zero_type(m->start))
+         if (undefinedp(m->start))
 	    res+=({protocol+" 200 OK"}); // HTTP/1.1 when supported
 	 else
 	 {
@@ -545,7 +545,7 @@ string make_response_header(mapping m)
 
 // FIXME: insert cookies here?
 
-   if (zero_type(m->size))
+   if (undefinedp(m->size))
       if (m->data)
 	 m->size=sizeof(m->data);
       else if (m->stat)
@@ -556,7 +556,7 @@ string make_response_header(mapping m)
    if (m->size!=-1)
    {
       res+=({"Content-Length: "+m->size});
-      if (!zero_type(m->start) && m->error==206)
+      if (undefinedp(m->start) && m->error==206)
       {
 	 if (m->stop==-1) m->stop=m->size-1;
 	 if (m->start>=m->size ||
@@ -622,7 +622,7 @@ void response_and_finish(mapping m, function|void _log_cb)
    m += ([ ]);
    log_cb = _log_cb;
 
-   if (request_headers->range && !m->start && zero_type(m->error))
+   if (request_headers->range && !m->start && undefinedp(m->error))
    {
       int a,b;
       if (sscanf(request_headers->range,"bytes%*[ =]%d-%d",a,b)==3)

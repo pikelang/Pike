@@ -128,7 +128,7 @@ Headers decode_headers(string h)
       h = h[5..];
       break;
     }
-    if(zero_type(r[hi]))
+    if(!has_index(r, hi))
       r[hi] = v;
     else if(arrayp(r[hi]))
       r[hi] += ({ v });

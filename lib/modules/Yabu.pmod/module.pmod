@@ -377,7 +377,7 @@ class Chunk {
   mixed get(string key, void|int attributes)
   {
     LOCK();
-    if(!attributes && zero_type(keys[key])) {
+    if(!attributes && !has_index(keys, key)) {
       if(attributes)
 	return 0;
       else
@@ -406,7 +406,7 @@ class Chunk {
     LOCK();
     if(!write)
       ERR("Cannot free in read mode");
-    if(zero_type(keys[key]))
+    if(!has_index(keys, key))
       ERR("Unknown key %O", key);
 
     int offset, type;
@@ -424,7 +424,7 @@ class Chunk {
     mapping m_frees = copy_value(frees);
     mapping m_keys = copy_value(keys);
     foreach(almost_free||({}), string key) {
-      if(zero_type(keys[key]))
+      if(!has_index(keys, key))
 	ERR("Unknown state key %O", key);
 
       int offset, type;

@@ -432,7 +432,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
       rval=sizeof(value) ? indices(value)[0] : "";
     }
     else {
-      if(zero_type(value))
+      if(undefinedp(value))
         paramValues[pi++]=UNDEFINED;
       else {
         if(stringp(value) && String.width(value)>8)

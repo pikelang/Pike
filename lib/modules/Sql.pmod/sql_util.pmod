@@ -91,7 +91,7 @@ array(string|mapping(string|int:mixed))
       string bind_name;
       do {
 	bind_name = ":arg"+(a++);
-      } while (!zero_type (bindings[bind_name]));
+      } while (has_index (bindings, bind_name));
       args[j]=bind_name;
       bindings[bind_name] = s;
       new_bindings = 1;
@@ -134,7 +134,7 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
   function my_quote=(driver&&driver->quote?driver->quote:quote);
   v=map(values(bindings),
 	lambda(mixed m) {
-	  if(zero_type(m))
+	  if(undefinedp(m))
 	    return "NULL";
 	  if (objectp (m) && m->is_val_null)
 	    // Note: Could need bug compatibility here - in some cases

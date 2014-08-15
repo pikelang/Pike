@@ -21,12 +21,12 @@ protected int verbosity =
   lambda () {
     string v = getenv()->TEST_VERBOSITY;
     // Default to 1 in case test scripts are run standalone.
-    return zero_type (v) ? 1 : (int) v;
+    return undefinedp (v) ? 1 : (int) v;
   }();
 protected int on_tty =
   lambda () {
     string v = getenv()->TEST_ON_TTY;
-    return zero_type (v) ? 1 : (int) v;
+    return undefinedp (v) ? 1 : (int) v;
   }();
 
 protected string last_log;
@@ -39,7 +39,7 @@ protected int last_line_length;
 
 protected int last_line_inplace =
   lambda () {
-    if (verbosity == 1 && !zero_type (getenv()->TEST_VERBOSITY))
+    if (verbosity == 1 && !undefinedp (getenv()->TEST_VERBOSITY))
       // Initialize to 1 on verbosity level 1 when it looks like we're
       // being run from the main testsuite, since it typically logs an
       // "in place" message just before spawning the subtest.

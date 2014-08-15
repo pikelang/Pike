@@ -26,7 +26,7 @@ class table {
     int ap = arrayp(cs);
     if(!ap) cs = ({ cs });
     foreach(cs, string|int f)
-      if(zero_type(intp(f)?f:fieldmap[lower_case(f)])) {
+      if(undefinedp(intp(f)?f:fieldmap[lower_case(f)])) {
 	if(!forgive)
 	  TABLE_ERR("Unknown field '"+f+"'");
       } else

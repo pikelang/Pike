@@ -493,8 +493,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!   @[fetch_all]
     ResultEntry fetch(int|void idx)
     {
-
-      if (!zero_type (idx)) actnum = idx;
+      if (!undefinedp (idx)) actnum = idx;
       if (actnum >= num_entries() || actnum < 0) return 0;
 
       if (ldap_version < 3)
@@ -1179,7 +1178,7 @@ array(string) get_root_dse_attr (string attr)
 {
   attr = lower_case (attr);
 
-  if (!root_dse || zero_type (root_dse[attr])) {
+  if (!root_dse || !has_index (root_dse, attr)) {
     PROFILE("get_root_dse_attr", {
 
 	multiset(string) attrs = root_dse ? (<>) :
@@ -2451,7 +2450,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	  if (sup_descr->SUP)
 	    complete (sup_descr);
 	  foreach (indices (sup_descr), string term)
-	    if (zero_type (descr[term]))
+	    if (!has_index (descr, term))
 	      descr[term] = sup_descr[term];
 	};
 	foreach (incomplete, mapping(string:mixed) descr)

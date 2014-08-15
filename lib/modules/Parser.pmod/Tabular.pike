@@ -54,7 +54,7 @@ void
  create(void|string|Stdio.File|Stdio.FILE input,
   void|array|mapping|string|Stdio.File|Stdio.FILE format,
   void|int verbose)
-{ if(zero_type(verbose)&&intp(format))
+{ if(undefinedp(verbose)&&intp(format))
     verbose=format;
   else
     fms=stringp(format)||objectp(format)?compile(format):format;
@@ -300,7 +300,7 @@ private mapping getrecord(array fmt,int found)
     }
     if(_eol)
       throw(severity);
-    if(!zero_type(m->width))
+    if(!undefinedp(m->width))
       value=gets(m->width);
     if(m->delim)
       value=_getdelimword(m);

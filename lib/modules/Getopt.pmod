@@ -115,7 +115,7 @@ string|int(0..1) find_option(array(string) argv,
 {
   string|int(0..1) value;
 
-  int(0..1) hasarg = !zero_type(def);
+  int(0..1) hasarg = !undefinedp(def);
   if(!arrayp(longform)) longform = ({ [string]longform });
   if(!arrayp(shortform)) shortform = ({ [string]shortform });
   if(stringp(envvars)) envvars = ({ [string]envvars });

@@ -103,7 +103,7 @@ int get( int bits ) {
 //! string.
 string read( void|int bytes )
 {
-  if( zero_type(bytes) )
+  if( undefinedp(bytes) )
     bytes = _sizeof()/8;
   else
     bytes = min(bytes, _sizeof()/8);

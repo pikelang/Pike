@@ -1011,7 +1011,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 	}
       else if(tag_format=="CUSTOM") {
 	mixed res = tag_map(str,tags);
-	if(!zero_type(res))
+	if(!undefinedp(res))
 	  tags[tag_name]=res;
       }
       else

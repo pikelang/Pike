@@ -57,6 +57,6 @@ mixed pop() { return ::pop()->value; }
 mixed peek()
 {
     mixed res = ::peek();
-    if ( zero_type(res) ) return UNDEFINED;
+    if ( undefinedp(res) ) return UNDEFINED;
     else return res->value;
 }

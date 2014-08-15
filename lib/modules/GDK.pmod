@@ -51,11 +51,11 @@ mixed `[](string what)
 {
   if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;
-  if(!zero_type(INDEX("Gdk"+what)))
+  if(has_index(GTK, "Gdk"+what))
     return INDEX("Gdk"+what);
-  if(!zero_type(INDEX("GDK_"+what)))
+  if(has_index(GTK, "GDK_"+what))
     return INDEX("GDK_"+what);
-  if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
+  if(has_index(GTK, "GDK_"+upper_case(GTK->unsillycaps(what))))
     return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
   return UNDEFINED;
 //   return  GDKSupport[what];
