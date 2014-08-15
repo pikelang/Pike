@@ -619,7 +619,9 @@ A##_AND_RETURN ? DeadCodeEndCond($2o) : A##_AND_RETURN($1a) ;
 
 #define MKCALLOPTS(A)				\
 MARK A: MARK_##A($2a) ;				\
+MARK_X A: A##_N($2a,$1a);			\
 LOW_MKCALLOPTS(A);				\
+A##_N[!$1b]:MARK_##A($1a);			\
 LOW_MKCALLOPTS(MARK_##A);
 
 
