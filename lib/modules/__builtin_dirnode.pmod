@@ -1,9 +1,9 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-mapping(string:mixed) cache=([]);
+private mapping(string:mixed) cache=([]);
 
-mixed `[](string s)
+protected mixed `[](string s)
 {
   if(!zero_type(cache[s])) return cache[s];
   mixed tmp=_static_modules[s];
