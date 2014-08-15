@@ -34,7 +34,7 @@
 #define SNMP_ERR_NOTWRITEBLE		17
 #define SNMP_ERR_INCONSISTENTNAME	18
 
-/*static mapping(int:string) */ constant snmp_errlist = ([
+protected constant /* mapping(int:string) */ snmp_errlist = ([
 	SNMP_ERR_NOERROR		: SNMP_ERR_NOERROR_STR,
 	SNMP_ERR_TOOBIG			: SNMP_ERR_TOOBIG_STR,
 	SNMP_ERR_NOSUCHNAME		: SNMP_ERR_NOSUCHNAME_STR,
