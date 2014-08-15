@@ -114,8 +114,8 @@
 
 #else /* !PIKE_DEBUG */
 
-#define GET_JUMP() (/*write_to_stderr("GET_JUMP\n", 9),*/ LOW_GET_JUMP())
-#define SKIPJUMP() (/*write_to_stderr("SKIPJUMP\n", 9),*/ LOW_SKIPJUMP())
+#define GET_JUMP() (LOW_GET_JUMP())
+#define SKIPJUMP() (LOW_SKIPJUMP())
 
 #endif /* PIKE_DEBUG */
 
@@ -1271,7 +1271,6 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   OPCODE0_TAILBRANCH(F_BRANCH_WHEN_ZERO, "branch if zero", I_UPDATE_SP, {
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
-      /* write_to_stderr("foreach\n", 8); */
       DONT_BRANCH();
     }else{
       DO_BRANCH();
@@ -1330,7 +1329,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
   }
   if(TYPEOF(Pike_sp[-1]) == arg1)
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1341,7 +1339,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
 OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
   if(UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1351,7 +1348,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
 OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
   if(!UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1363,7 +1359,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
     if(Y(Pike_sp-2,Pike_sp-1)) { \
       DO_BRANCH(); \
     }else{ \
-      /* write_to_stderr("foreach\n", 8); */	\
       DONT_BRANCH(); \
     } \
     pop_2_elems(); \
@@ -1379,7 +1374,6 @@ CJUMP(F_BRANCH_WHEN_GE, "branch if >=", is_ge);
 OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1390,7 +1384,6 @@ OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
 OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1401,7 +1394,6 @@ OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
 OPCODE0_BRANCH(F_LAND, "&&", I_UPDATE_SP, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_stack();
   }else{
@@ -1412,7 +1404,6 @@ OPCODE0_BRANCH(F_LAND, "&&", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_LOR, "||", I_UPDATE_SP, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_stack();
   }else{
@@ -1423,7 +1414,6 @@ OPCODE0_BRANCH(F_LOR, "||", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_EQ_OR, "==||", I_UPDATE_SP, {
   if(!is_eq(Pike_sp-2,Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }else{
@@ -1436,7 +1426,6 @@ OPCODE0_BRANCH(F_EQ_OR, "==||", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
   if(is_eq(Pike_sp-2,Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }else{
@@ -1640,7 +1629,6 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       {									\
   	DO_BRANCH();							\
       }else{								\
-	/* write_to_stderr("loop\n", 8); */				\
   	DONT_BRANCH();							\
       }									\
     }else{								\
@@ -1652,7 +1640,6 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       {									\
   	DO_BRANCH();							\
       }else{								\
-	/* write_to_stderr("loop\n", 8); */				\
   	DONT_BRANCH();							\
       }									\
       pop_stack();							\
@@ -1682,7 +1669,6 @@ OPCODE0_BRANCH(F_LOOP, "loop", I_UPDATE_SP, { /* loopcnt */
     o_subtract();
     DO_BRANCH();
   } else {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }
@@ -1704,7 +1690,6 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
 	Pike_fatal ("Got unexpected subtype in loop variable.\n");
     );
   }else{
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }
 });
