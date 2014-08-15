@@ -2757,6 +2757,26 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_push_svaluep(P_REG_RCX);
     return;
 
+  case F_CLEAR_4_LOCAL:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
+      add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
+      mov_imm_reg(3, P_REG_R8 );
+      /* need to use a saving register for the counter. */
+
+     LABEL_A;
+      amd64_free_svalue(P_REG_RBX, 0);
+      mov_imm_mem(PIKE_T_INT, P_REG_RBX, OFFSETOF(svalue, tu.t.type));
+      mov_imm_mem(0, P_REG_RBX, OFFSETOF(svalue, u.integer));
+      add_reg_imm(P_REG_RBX, sizeof(struct svalue ) );
+      add_reg_imm(P_REG_R8,-1);
+      jnz(&label_A);
+    }
+    return;
+
   case F_CLEAR_2_LOCAL:
   case F_CLEAR_LOCAL:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
