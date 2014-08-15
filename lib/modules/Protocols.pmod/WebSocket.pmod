@@ -73,7 +73,8 @@ string describe_opcode(FRAME op) {
 
 //! Parses WebSocket frames.
 class Parser {
-    protected string buf = "";
+    //! Unparsed data.
+    string buf = "";
 
     //! Add more data to the internal parsing buffer.
     void feed(string data) {
@@ -242,9 +243,12 @@ class Frame {
 
 //!
 class Connection {
-    protected object parser;
+    //! An instance of @[Parser] used to parse incoming data.
+    object parser;
 
-    protected Stdio.File stream;
+    //! The actual client connection.
+    Stdio.File stream;
+
     protected array(string) stream_buf = ({ });
     protected int(0..1) will_write = 1;
     protected mixed id;
