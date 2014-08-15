@@ -110,7 +110,7 @@ void set(string key, mixed value,
    //maybe we could lazy-ify this
    meta=(["size":sizeof(encode_value(value)), "atime":tm,"ctime":tm]);
    if (expire_time) meta->etime=expire_time;
-   if (preciousness||!zero_type(preciousness))
+   if (preciousness||!undefinedp(preciousness))
      meta->cost=preciousness;
    else
      meta->cost=1.0;

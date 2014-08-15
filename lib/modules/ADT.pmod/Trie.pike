@@ -79,7 +79,7 @@ void merge(this_program o)
     error("Problem!\n");
   }
   if (o->offset == offset) {
-    if (!zero_type(o->value)) {
+    if (!undefinedp(o->value)) {
       value = o->value;
     }
     merge_trie(o->trie);
@@ -91,7 +91,7 @@ void merge(this_program o)
 void insert(string|array(int) key, mixed val)
 {
   this_program o;
-  if (zero_type(val)) return;
+  if (undefinedp(val)) return;
   if (sizeof(key) == offset) {
     value = val;
   } else if (!trie) {
@@ -146,8 +146,8 @@ mixed remove(string|array(int) key)
 	return UNDEFINED;
       }
     }
-    if (!zero_type(val = o->remove(key))) {
-      if (zero_type(o->value)) {
+    if (!undefinedp(val = o->remove(key))) {
+      if (undefinedp(o->value)) {
 	if (!o->trie) {
 	  m_delete(trie, key[offset]);
 	  index = 0;	// Invalidated.
@@ -189,7 +189,7 @@ string|array(int) first()
   if (!trie) return UNDEFINED;
   update_index();
   this_program o = trie[index[0]];
-  if (zero_type(o->value)) return o->first();
+  if (undefinedp(o->value)) return o->first();
   return o->path;
 }
 
@@ -204,7 +204,7 @@ string|array(int) next(string|array(int) base)
     for (int i = offset+1; i < o->offset; i++) {
       if ((i >= sizeof(base)) || (o->path[i] > base[i])) {
 	// o is a suffix to base, or is larger.
-	if (zero_type(o->value)) return o->first();
+	if (undefinedp(o->value)) return o->first();
 	return o->path;
       } else if (o->path[i] < base[i]) break;
     }
@@ -215,7 +215,7 @@ string|array(int) next(string|array(int) base)
   for (int i = 0; i < sizeof(index); i++) {
     if (index[i] > base[offset]) {
       o = trie[index[i]];
-      if (zero_type(o->value)) return o->first();
+      if (undefinedp(o->value)) return o->first();
       return o->path;
     }
   }
@@ -243,7 +243,7 @@ protected string _sprintf(int c, mapping|void attrs)
 	res += sprintf("  %O: %O,\n", key, o);
       }
     }
-    if (zero_type(value)) {
+    if (undefinedp(value)) {
       return res + "]))";
     } else {
       return res + sprintf("]): %O)", value);

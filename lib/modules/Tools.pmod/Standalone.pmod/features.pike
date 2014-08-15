@@ -36,8 +36,8 @@ void test_ipv6()
 }
 
 void f(string sym, void|string name) {
-  int x = !zero_type(all_constants()[sym]) ||
-    !zero_type(master()->resolv(sym));
+  int x = has_index(all_constants(), sym) ||
+    !undefinedp(master()->resolv(sym));
   item(name||sym, x);
 }
 
@@ -385,7 +385,7 @@ int main(int num, array(string) args) {
   write("     System.setitimer types: ");
   array itimer_types = ({});
 #define ITIMER(X) \
-  if(!zero_type(System.ITIMER_##X)) itimer_types += ({ #X })
+  if(!undefinedp(System.ITIMER_##X)) itimer_types += ({ #X })
   ITIMER(REAL);
   ITIMER(VIRTUAL);
   ITIMER(PROF);

@@ -324,7 +324,7 @@ void init(void|mapping(string:mixed) options) {
 
   start_driver(options->driver_names, options->title, options->icon_title);
 
-  if( !zero_type(options->fullscreen) ) {
+  if( !undefinedp(options->fullscreen) ) {
     fullscreen = options->fullscreen;
     if( !(< 0,1 >)[fullscreen] )
       error("options->fullscreen should be 1 or 0.\n");
@@ -986,7 +986,7 @@ class BaseTexture {
         default:
 	  error("Unknown alpha format.\n");
       }
-      if(zero_type(dx))
+      if(undefinedp(dx))
 	glTexImage2D( texture_type, ++level, mode || imode, 0, m );
       else
 	glTexSubImage2D( texture_type, ++level, dx >>= 1, dy >>= 1, m);

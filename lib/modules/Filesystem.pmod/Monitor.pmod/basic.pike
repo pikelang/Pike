@@ -1230,7 +1230,7 @@ protected void backend_check()
 void set_nonblocking(int|void t)
 {
   if (co_id) return;
-  if (zero_type(t)) {
+  if (undefinedp(t)) {
     Monitor m = monitor_queue->peek();
     t = (m && m->next_poll - time(1)) || max_dir_check_interval;
     if (t > max_dir_check_interval) t = max_dir_check_interval;

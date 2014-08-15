@@ -967,7 +967,7 @@ protected void create(string|void s,
 		      string|SourcePosition|void _filename,
 		      int|void line, .Flags|void flags)
 {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   if (s) {
     if (objectp(_filename)) {
       line = _filename->firstline;

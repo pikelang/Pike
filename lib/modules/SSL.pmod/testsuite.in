@@ -38,7 +38,7 @@ test_do([[
   {
     while (fno < sizeof(fields)) {
       int|mapping val = tab[fields[fno++] ];
-      if (!val && zero_type(val)) break;
+      if (undefinedp(val)) break;
       if (intp(val)) return ({ val, fno });
       tab = val;
     }

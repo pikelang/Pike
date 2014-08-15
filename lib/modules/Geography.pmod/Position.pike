@@ -37,10 +37,10 @@ float alt;
 void create(void|int|float|string _lat,
 	    void|int|float|string _long, void|float _alt)
 {
-   if(zero_type(_lat)) return;
+   if(undefinedp(_lat)) return;
    if (stringp(_lat))
    {
-      if (zero_type(_long))
+      if (undefinedp(_long))
       {
 	 string tmp;
 	 if (sscanf(_lat,"%sN %s",tmp,_long)==2) _lat=tmp+"N";

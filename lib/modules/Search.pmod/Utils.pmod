@@ -745,7 +745,7 @@ class Logger {
     Sql.Sql db = get_db();
     if(!db) return;
 
-    if(zero_type(log_profile))
+    if(undefinedp(log_profile))
       log_profile = profile;
 
     if(stderr_logging)

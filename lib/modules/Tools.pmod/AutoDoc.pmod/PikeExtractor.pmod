@@ -602,7 +602,7 @@ private class Extractor {
 //!   @[extractModule()], @[extractClass()]
 NameSpace extractNamespace(string s, void|string filename,
 			   void|string namespaceName, void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
   ns->name = namespaceName || filename;
@@ -620,7 +620,7 @@ NameSpace extractNamespace(string s, void|string filename,
 //!   @[extractNamespace()], @[extractClass()]
 Module extractModule(string s, void|string filename, void|string moduleName,
 		     void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Module m = Module();
   m->name = moduleName || filename;
@@ -645,7 +645,7 @@ Module extractModule(string s, void|string filename, void|string moduleName,
 //!   @[extractNamespace()], @[extractModule()]
 Class extractClass(string s, void|string filename, void|string className,
 		   void|.Flags flags) {
-  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Class c = Class();
   c->name = className || filename;

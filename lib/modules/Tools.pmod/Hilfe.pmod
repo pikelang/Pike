@@ -71,8 +71,8 @@ class CommandReset {
       e->safe_write("No symbol given as argument to reset.\n");
       return;
     }
-    if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
-       zero_type(e->functions[n]) && zero_type(e->programs[n])) {
+    if(!has_index(e->variables, n) && !has_index(e->constants, n) &&
+       !has_index(e->functions, n) && !has_index(e->programs, n)) {
       e->safe_write("Symbol %O not defined.\n", n);
       return;
     }
@@ -1610,8 +1610,8 @@ class Evaluator {
     string command = words[0];
 
     // See if first token is a command and not a defined entity.
-    if(commands[command] && zero_type(constants[command]) &&
-       zero_type(variables[command]) && zero_type(functions[command]) &&
+    if(commands[command] && !has_index(constants, command) &&
+       !has_index(variables, command) && !has_index(functions, command) &&
        (sizeof(words)==1 || words[1]!=";")) {
       commands[command]->exec(this, s, words, tokens);
       return;
@@ -1688,7 +1688,7 @@ class Evaluator {
   protected void add_hilfe_variable(string type, string code, string var) {
     int(0..1) existed;
     mixed old_value;
-    if(!zero_type(variables[var])) {
+    if(has_index(variables, var)) {
       old_value = m_delete(variables, var);
       existed = 1;
     }
@@ -2252,14 +2252,14 @@ class Evaluator {
     if(new_var=="__")
       safe_write("Hilfe Warning: History variable __ is no "
 		 "longer reachable.\n");
-    else if(zero_type(symbols["__"]) && zero_type(variables["__"])) {
+    else if(!has_index(symbols, "__") && !has_index(variables, "__")) {
       symbols["__"] = history;
     }
 
     if(new_var=="_")
       safe_write("Hilfe Warning: History variable _ is no "
 		 "longer reachable.\n");
-    else if(zero_type(symbols["_"]) && zero_type(variables["__"])
+    else if(!has_index(symbols, "_") && !has_index(variables, "__")
 	    && sizeof(history)) {
       symbols["_"] = history[-1];
     }

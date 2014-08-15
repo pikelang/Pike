@@ -812,12 +812,12 @@ class YMD
    {
       int n=number_of_years();
 
-      if (zero_type (from)) {
+      if (undefinedp (from)) {
 	from = 1;
 	to = n;
       }
       else
-	 if (zero_type (to))
+	 if (undefinedp (to))
 	    error("Illegal numbers of arguments to years()\n");
 	 else
 	 {
@@ -832,7 +832,7 @@ class YMD
 
    cYear year(void|int m)
    {
-      if (zero_type (m)) m=1;
+      if (undefinedp (m)) m=1;
 
       if (!n&&m==-1)
 	 return Year("ymd_y",rules,y,yjd,1);
@@ -854,12 +854,12 @@ class YMD
    {
       int n=number_of_days();
 
-      if (zero_type (from)) {
+      if (undefinedp (from)) {
 	from = 1;
 	to = n;
       }
       else
-	 if (zero_type (to))
+	 if (undefinedp (to))
 	    error("Illegal number of arguments to days()\n");
 	 else
 	 {
@@ -898,7 +898,7 @@ class YMD
 
    cDay day(void|int m, mixed... ignored)
    {
-      if (zero_type (m)) m=1;
+      if (undefinedp (m)) m=1;
 
       if (!n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
@@ -2927,7 +2927,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       if (m->Y) 
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
 
-      if (!zero_type(m->Y) && m->D && (int)m->M)
+      if (!undefinedp(m->Y) && m->D && (int)m->M)
 	 low=m->day=cal->Day(m->Y,(int)m->M,(int)m->D);
 
 
@@ -2951,7 +2951,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       }
       else
       {
-	 if (!zero_type(m->Y)) m->year=cal->Year(m->Y);
+	 if (!undefinedp(m->Y)) m->year=cal->Year(m->Y);
 	 else if (m->y)
 	 {
 	    if (sizeof(m->y)<3) 
@@ -2974,18 +2974,18 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 if (m->W)
 	    m->week=low=m->year->week("w"+m->W);
 
-	 if (!zero_type(m->D))
+	 if (!undefinedp(m->D))
 	    m->day=low=(m->month||(context?context->month():cal->Month()))
 	       ->day((int)m->D);
-	 else if (!zero_type(m->a))
+	 else if (!undefinedp(m->a))
 	    m->day=low=(m->month || m->year)->day(m->a);
-	 else if (!zero_type(m->e))
+	 else if (!undefinedp(m->e))
 	    m->day=low=(m->week||(context?context->week():cal->Week()))
 	       ->day(m->e);
 	 else
 	    low=m->day=context?context->day():cal->Day();
 
-	 if (m->day && zero_type(m->Y) && zero_type(m->y) && m->e)
+	 if (m->day && undefinedp(m->Y) && undefinedp(m->y) && m->e)
 	    if (m->month)
 	    {
 	 // scan for closest year that matches
@@ -3034,13 +3034,13 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       }
       else
       {
-	 if (!zero_type(m->h)) h=m->h,g="hour";
-	 if (!zero_type(m->m)) mi=m->m,g="minute";
-	 if (!zero_type(m->s)) s=m->s,g="second";
-	 if (!zero_type(m->f)) sub_second=(float)("0."+m->f+"0"*9)[..10];
+	 if (!undefinedp(m->h)) h=m->h,g="hour";
+	 if (!undefinedp(m->m)) mi=m->m,g="minute";
+	 if (!undefinedp(m->s)) s=m->s,g="second";
+	 if (!undefinedp(m->f)) sub_second=(float)("0."+m->f+"0"*9)[..10];
       }
 
-      if (!zero_type(m->p))
+      if (!undefinedp(m->p))
       {
 	 switch (lower_case(m->p)-".")
 	 {
@@ -3058,7 +3058,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 low = dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
 	 low = dwim_tod(low,g,h,mi,s);
-      else if (!zero_type(m->S))
+      else if (!undefinedp(m->S))
 	 low = Second(m->S);
       if (sub_second)
 	 low = low->fraction(sub_second);

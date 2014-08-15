@@ -179,7 +179,8 @@ class Process
 
 #if constant(Stdio.__HAVE_SEND_FD__)
     // Forkd mode requires send_fd().
-    if (zero_type(new_modifiers->forkd)) new_modifiers->forkd = forkd_default;
+    if (undefinedp(new_modifiers->forkd))
+      new_modifiers->forkd = forkd_default;
     if (new_modifiers->forkd && assert_forkd()) {
       process_fd = Stdio.File();
       forkd_pipe->
@@ -190,9 +191,9 @@ class Process
       m_delete(new_modifiers, "forkd");
       __callback = m_delete(new_modifiers, "callback");
 
-      if (zero_type(new_modifiers->uid)) {
+      if (undefinedp(new_modifiers->uid)) {
 	new_modifiers->uid = geteuid();
-	if (zero_type(new_modifiers->gid)) {
+	if (undefinedp(new_modifiers->gid)) {
 	  new_modifiers->gid = getegid();
 	}
 	if (!new_modifiers->setgroups) {

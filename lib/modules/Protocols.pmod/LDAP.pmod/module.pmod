@@ -1254,7 +1254,7 @@ protected void create()
     if (sup_descr->SUP)
       complete (sup_descr);
     foreach (indices (sup_descr), string term)
-      if (zero_type (descr[term]))
+      if (!has_index (descr, term))
 	descr[term] = sup_descr[term];
   };
   foreach (incomplete, mapping(string:mixed) descr)

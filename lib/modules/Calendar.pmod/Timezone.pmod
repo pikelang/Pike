@@ -1371,7 +1371,7 @@ class Runtime_timezone_compiler
 #endif
       if (!zone_cache) parse_all_rules();
       object ret = zone_cache[s];
-      if (!zero_type(ret)) return ret || UNDEFINED;
+      if (!undefinedp(ret)) return ret || UNDEFINED;
       Zone z;
       if (!(z = zones[s])) {
 	// Check if it's a known alias.

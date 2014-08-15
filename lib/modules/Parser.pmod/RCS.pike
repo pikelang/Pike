@@ -103,7 +103,7 @@ void create(string|void file_name, string|int(0..0)|void file_contents)
   else
   {
     rcs_file_name = file_name;
-    if(!zero_type(file_contents) && !file_contents)
+    if(!undefinedp(file_contents) && !file_contents)
       return;
     if(!file_contents)
       file_contents = Stdio.read_file(file_name);

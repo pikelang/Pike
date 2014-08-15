@@ -48,7 +48,7 @@ class PGassist
 
   final string getstring(void|int len)
   { String.Buffer acc=String.Buffer();
-    if(!zero_type(len))
+    if(!undefinedp(len))
     { string res;
       do
       { if(!flushed && !bpeek(0))

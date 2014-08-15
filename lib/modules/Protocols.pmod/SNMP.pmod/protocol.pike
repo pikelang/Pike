@@ -162,21 +162,12 @@ mapping decode_asn1_msg(mapping rawd) {
 //! decode raw pdu message and place in message pool
 void to_pool(mapping rawd) {
   //: put decoded msg to the pool
-
   msgpool += decode_asn1_msg(rawd);
-
 }
 
 mapping|int from_pool(string msgid) {
   //: get data from poll
-  mapping msg;
-
-  if(zero_type(msgpool[msgid]))
-     return 0;
-
-   msg = msgpool[msgid];
-   msgpool -= ([msgid:msg]);
-   return msg;
+  return m_delete(msgpool, msgid);
 }
 
 

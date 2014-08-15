@@ -482,15 +482,16 @@ array(array(mixed)|int) try_parse(string what)
 void got_reply(int ref,object|array what)
 {
 //   werror("got_reply(): async: %O\n",async);
-   function call=async[ref];
+   function call = m_delete(async,ref);
+
 #ifdef LYSKOM_DEBUG
 //    werror("LYSKOM removing callback %O for call %d\n",call,ref);
 #endif
-   m_delete(async,ref);
+
    if (!call)
    {
       werror("LysKOM.Raw: lost callback for call %d %s\n",ref,
-	     zero_type(call)?"(lost from mapping??!)":"(zero value in mapping)");
+	     undefinedp(call)?"(lost from mapping??!)":"(zero value in mapping)");
       werror(master()->describe_backtrace(backtrace()));
       return;
    }
@@ -510,7 +511,7 @@ void add_async_callback(string which, function what, int dont_update)
 {
    int no=.ASync.name2no[which];
    
-   if (!no && zero_type(.ASync.name2no[which]))
+   if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",
 				 which) ));
@@ -523,7 +524,7 @@ void remove_async_callback(string which, function what, void|int dont_update)
 {
    int no=.ASync.name2no[which];
    
-   if (!no && zero_type(.ASync.name2no[which]))
+   if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",
 				 which) ));

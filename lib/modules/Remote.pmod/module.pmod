@@ -415,7 +415,7 @@ class Connection {
   mixed get_result(int refno)
   {
     mixed r = finished_calls[refno];
-    if (zero_type(r))
+    if (undefinedp(r))
       error("Tried to get a result too early.\n");
     m_delete(finished_calls, refno);
     return r;
@@ -652,12 +652,12 @@ class Connection {
 #endif
       send(sprintf("%4c%s", sizeof(s), s)); // Locks write_buffer_cond_mutex.
 #if constant(thread_create)
-      while(!closed && zero_type(finished_calls[refno]))
+      while(!closed && !has_index(finished_calls, refno))
 	finished_calls_cond->wait(lock);
       lock = 0;
 #else
       con->set_blocking();
-      while(!closed && zero_type(finished_calls[refno]))
+      while(!closed && !has_index(finished_calls, refno))
 	read_once();
 #endif
       if (errors[refno]) {
@@ -679,7 +679,7 @@ class Connection {
       throw (err || err2);
     }
     //   werror("call_sync["+con->query_address()+"]["+refno+"] done\n");
-    if (zero_type(finished_calls[refno])) {
+    if (!has_index(finished_calls, refno)) {
       DEBUGMSG("connection closed in sync call " + refno + "\n");
       catch(get_result(refno));
       if (!nice)

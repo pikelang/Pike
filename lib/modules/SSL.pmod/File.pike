@@ -491,7 +491,7 @@ array get_peer_certificates()
 int(0..1) linger(int(-1..65535)|void seconds)
 {
   if (!stream) return 0;
-  if (zero_type(seconds)) seconds = -1;
+  if (undefinedp(seconds)) seconds = -1;
   if (seconds == linger_time) {
     // Noop.
     return 1;
@@ -806,7 +806,7 @@ string read (void|int length, void|int(0..1) not_all)
 
     local_errno = 0;
 
-    if (zero_type(length)) length = 0x7fffffff;
+    if (undefinedp(length)) length = 0x7fffffff;
 
     if (!nonblocking_mode && length > read_buffer_threshold) {
       // Make sure that we read as much data as requested if possible.
@@ -1190,16 +1190,16 @@ void set_callbacks (void|function(mixed, string:int) read,
     // Bypass the ::set_xxx_callback functions; we instead enable all
     // the event bits at once through the _enable_callbacks call at the end.
 
-    if (!zero_type(read))
+    if (!undefinedp(read))
       read_callback = read;
 
-    if (!zero_type(write))
+    if (!undefinedp(write))
       write_callback = write;
 
-    if (!zero_type(close))
+    if (!undefinedp(close))
       close_callback = close;
 
-    if (!zero_type(accept))
+    if (!undefinedp(accept))
       accept_callback = accept;
 
     schedule_poll();

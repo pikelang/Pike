@@ -49,14 +49,14 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   protected mixed `[](mixed ind)
   {
     mixed res = shadow[ind];
-    if (!zero_type(res)) return res;
+    if (!undefinedp(res)) return res;
     return parent[ind];
   }
 
   protected void `[]=(mixed ind, mixed val)
   {
     joined = 0;
-    if (modify_parent && zero_type(shadow[ind])) {
+    if (modify_parent && !has_index(shadow, ind)) {
       parent[ind] = val;
     } else {
       shadow[ind] = val;
@@ -82,12 +82,11 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   protected mixed _m_delete(mixed ind)
   {
     mixed res = m_delete(shadow, ind);
-    if (zero_type(res)) {
+    if (undefinedp(res))
       res = m_delete(parent, ind);
-    }
-    if (!zero_type(res)) {
+    else
       joined = 0;
-    }
+
     return res;
   }
 

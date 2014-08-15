@@ -57,7 +57,7 @@ class decoder {
     string cn = upper_case(codecname);
 
 #if 0
-    if(zero_type(codec_map[cn]) || !codec_map[cn]->decoder)
+    if(!has_index(codec_map, cn) || !codec_map[cn]->decoder)
       error("Decoder codec '"+codecname+"' isn't supported.\n");
 
     err = catch(codec = _Ffmpeg.ffmpeg(codec_map[cn]->decoder[1], 0));

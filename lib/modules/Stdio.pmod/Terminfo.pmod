@@ -627,7 +627,7 @@ class TermcapDB {
     int|string|Termcap cap;
 
     LOCK;
-    if (zero_type(cache[term]))
+    if (!has_index(cache, term))
     {
       if (!complete_index)
       {
@@ -714,7 +714,7 @@ class TerminfoDB {
       foreach (get_dir(dir), string a)
 	if (sizeof(a) == 1)
 	  foreach (get_dir(dir+a), string b)
-	    if(zero_type(cache[b]))
+	    if(!has_index(cache, b))
 	      cache[b] = 0;
       complete_index = 1;
     }
