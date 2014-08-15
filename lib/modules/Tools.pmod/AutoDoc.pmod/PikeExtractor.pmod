@@ -531,7 +531,7 @@ private class Extractor {
   void parseCreateArgList(Class c) {
     Method createMethod = Method();
     createMethod->name = "create";
-    createMethod->modifiers = ({ "static" });
+    createMethod->modifiers = ({ "protected" });
     createMethod->returntype = VoidType();
     createMethod->argnames = ({});
     createMethod->argtypes = ({});
