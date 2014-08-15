@@ -147,8 +147,8 @@ string magic(string s, int quote)
 /*
  * Magic to convert SYNTAX sections
  */
-static inherit Regexp : lastident;
-static inherit Regexp : megamagic;
+protected inherit Regexp : lastident;
+protected inherit Regexp : megamagic;
 
 string syntax_magic(string s)
 {

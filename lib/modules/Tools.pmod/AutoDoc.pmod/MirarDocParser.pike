@@ -1579,7 +1579,7 @@ void create(string image_dir, void|.Flags flags)
 #endif
   }
 
-  static string low_mktag(string name, void|mapping args) {
+  protected string low_mktag(string name, void|mapping args) {
     if(!args) args = ([]);
     string res = \"<\" + name;
     foreach(sort(indices(args)), string attr)

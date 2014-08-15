@@ -142,7 +142,7 @@ class File
   }
 
 #ifdef TRACK_OPEN_FILES
-  /*static*/ int open_file_id = next_open_file_id++;
+  /*protected*/ int open_file_id = next_open_file_id++;
 #endif
 
   int is_file;

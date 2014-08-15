@@ -8,7 +8,7 @@ inherit .Base;
 
 #define DB_MAX_WORD_SIZE 64
 
-static
+protected
 {
 // This is the database object that all queries will be made to.
   Sql.Sql db;
@@ -172,13 +172,13 @@ void clear()
 // Utility functions
 // ----------------------------------------------
 
-static array(string) get_mergefiles()
+protected array(string) get_mergefiles()
 {
   return map(glob("mergefile*.dat", get_dir(mergefile_path) || ({ })),
 	     lambda(string s) { return combine_path(mergefile_path, s);});
 }
 
-static string to_md5(string url)
+protected string to_md5(string url)
 {
 #if constant(Crypto.md5) && constant(Crypto.string_to_hex)
   return Crypto.string_to_hex( Crypto.md5()->
@@ -264,8 +264,8 @@ void remove_uri_prefix(string|Standards.URI uri)
 }
 
 #ifdef SEARCH_DEBUG
-static int docs;
-static int blobs_dirty;
+protected int docs;
+protected int blobs_dirty;
 #endif
 
 void remove_document(string|Standards.URI uri, void|string language)
@@ -323,8 +323,8 @@ void remove_document_prefix(string|Standards.URI uri)
 	    "(doc_id) VALUES (" + (ids * "),(") + ")");
 }
 
-static Search.ResultSet deleted_documents = Search.ResultSet();
-static int deleted_max, deleted_count;
+protected Search.ResultSet deleted_documents = Search.ResultSet();
+protected int deleted_max, deleted_count;
 Search.ResultSet get_deleted_documents()
 {
   // FIXME: Make something better
@@ -358,9 +358,9 @@ Search.ResultSet get_all_documents()
 // Field handling
 // ----------------------------------------------
 
-static mapping(string:int) list_fields_cache;
+protected mapping(string:int) list_fields_cache;
 
-static void init_fields()
+protected void init_fields()
 {
   if(init_done)
     return;
@@ -410,7 +410,7 @@ int allocate_field_id(string field)
   return -1;
 }
 
-static mapping field_cache = ([]);
+protected mapping field_cache = ([]);
 int get_field_id(string field, void|int do_not_create)
 {
   // The one special case.
@@ -450,7 +450,7 @@ void safe_remove_field(string field)
 // Word/blob handling
 // ----------------------------------------------
 
-static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
+protected _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
 #define MAXMEM 64*1024*1024
 
@@ -502,7 +502,7 @@ int get_padded_blob_length(int used_len)
 }
 
 
-static int blobs_per_select = 40;
+protected int blobs_per_select = 40;
 
 string get_blob(string word, int num,
 		void|mapping(string:mapping(int:string)) blobcache)
@@ -580,7 +580,7 @@ void remove_metadata(Standards.URI|string uri, void|string language)
   db->query("delete from metadata where doc_id = %d", doc_id);
 }
 
-static string make_fields_sql(void|array(string) wanted_fields)
+protected string make_fields_sql(void|array(string) wanted_fields)
 {
   if(wanted_fields && sizeof(wanted_fields))
     return " and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
@@ -689,7 +689,7 @@ void randomize_dates()
     
 }
 
-static
+protected
 {
   _WhiteFish.DateSet dateset_cache;
   int dateset_cache_max_doc_id = -1;
@@ -723,7 +723,7 @@ _WhiteFish.DateSet get_global_dateset()
   }
 }
 
-static
+protected
 {
   _WhiteFish.DateSet publ_dateset_cache;
   int publ_dateset_cache_max_doc_id = -1;
@@ -797,7 +797,7 @@ array(int) get_broken_links()
 // Sync stuff
 // ----------------------------------------------
 
-static function sync_callback;
+protected function sync_callback;
 void set_sync_callback( function f )
 {
   sync_callback = f;
@@ -814,7 +814,7 @@ void set_sync_callback( function f )
 constant max_blob_size = 512 * 1024;
 
 
-static array(array(int|string)) split_blobs(int blob_size, string blob,
+protected array(array(int|string)) split_blobs(int blob_size, string blob,
 					    int max_blob_size)
 {
   /*
@@ -847,7 +847,7 @@ static array(array(int|string)) split_blobs(int blob_size, string blob,
   return blobs;
 }
 
-static void store_to_db( void|string mergedfilename )
+protected void store_to_db( void|string mergedfilename )
 {
   Search.MergeFile mergedfile;
 
@@ -1109,13 +1109,13 @@ static void store_to_db( void|string mergedfilename )
 #endif
 }
 
-static string get_mergefilename()
+protected string get_mergefilename()
 {
   return combine_path(mergefile_path,
 		      sprintf("mergefile%03d.dat", mergefile_counter));
 }
 
-static void mergefile_sync()
+protected void mergefile_sync()
 {
 #ifdef SEARCH_DEBUG  
   System.Timer t = System.Timer();
@@ -1138,7 +1138,7 @@ static void mergefile_sync()
   blobs = _WhiteFish.Blobs();
 }
 
-static string merge_mergefiles(array(string) mergefiles)
+protected string merge_mergefiles(array(string) mergefiles)
 {
 #ifdef SEARCH_DEBUG  
   werror("merge_mergefiles( %s )\n", mergefiles*", ");
@@ -1232,7 +1232,7 @@ int get_num_deleted_documents()
   return (int)db->query("select count(*) as c from deleted_document")[0]->c;
 }
 
-static string my_denormalize(string in)
+protected string my_denormalize(string in)
 {
   return Unicode.normalize(utf8_to_string(in), "C");
 }

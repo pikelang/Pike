@@ -155,7 +155,7 @@ class TimeofDay
 
 // make base
 // needed in ymd
-/*static*/ TimeRange make_base()
+/*protected*/ TimeRange make_base()
    {
       base=Day("unix_r",ux,rules);
       if (len) base=base->range(Day("unix_r",ux+len,rules));

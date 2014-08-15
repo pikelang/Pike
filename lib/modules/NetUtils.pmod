@@ -368,7 +368,7 @@ class IpRangeLookup
 
     // Ensures that the netmask only contains 255 or 0 bytes.
     // This is used to speed up the lookup() function above.
-    static string trim_net( int net, int mask )
+    protected string trim_net( int net, int mask )
     {
         int x = (net&(((1<<(mask->size()))-1)^((1<<(mask->size()-(mask->popcount()&~7)))-1)));
 

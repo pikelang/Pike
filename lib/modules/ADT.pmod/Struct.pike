@@ -77,13 +77,13 @@ string encode() {
 
 // --- LFUN overloading.
 
-//! @decl static mixed `[](string item)
-//! @decl static mixed `->(string item)
+//! @decl protected mixed `[](string item)
+//! @decl protected mixed `->(string item)
 //! The struct can be indexed by item name to get the
 //! associated value.
 
-//! @decl static mixed `[]=(string item)
-//! @decl static mixed `->=(string item)
+//! @decl protected mixed `[]=(string item)
+//! @decl protected mixed `->=(string item)
 //! It is possible to assign a new value to a struct
 //! item by indexing it by name and assign a value.
 
@@ -329,7 +329,7 @@ class Chars {
   protected Item dynsize;
   protected string value;
 
-  //! @decl static void create(int|Item size, void|string value)
+  //! @decl protected void create(int|Item size, void|string value)
   //! @[size] is the number of bytes that are part of this struct
   //! item, or optionally an earlier Item that will be looked up in
   //! runtime.

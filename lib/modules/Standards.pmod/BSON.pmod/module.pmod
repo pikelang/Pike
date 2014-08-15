@@ -64,13 +64,13 @@ string encode(mapping m, int|void query_mode)
   return sprintf("%-4c%s%c", sizeof(buf)+5, buf->get(), 0);
 } 
 
-static string toCString(string str)
+protected string toCString(string str)
 {
 	if(has_value(str, "\0")) ERROR("String cannot contain null bytes.\n");
 	else return string_to_utf8(str) + "\0";
 }
 
-static void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
+protected void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
 {
   foreach(m; mixed key; mixed val)
   {
@@ -83,7 +83,7 @@ static void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
   }	
 }
 
-static void encode_value(string key, mixed value, String.Buffer buf, int|void allow_specials)
+protected void encode_value(string key, mixed value, String.Buffer buf, int|void allow_specials)
 {
    if(floatp(value))
    { 
@@ -218,7 +218,7 @@ mixed decode(string bson)
   return list;	
 }
 
-static string decode_next_value(string slist, mapping list)
+protected string decode_next_value(string slist, mapping list)
 {
   string key;
   mixed value;
@@ -378,7 +378,7 @@ object MinKey = class
   {
     constant BSONMinKey = 1;
 
-    static mixed cast(string type)
+    protected mixed cast(string type)
     {
       if(type == "string")
         return "MinKey";
@@ -391,7 +391,7 @@ object MaxKey = class
   {
     constant BSONMaxKey = 1;
 
-    static mixed cast(string type)
+    protected mixed cast(string type)
     {
       if(type == "string")
         return "MinKey";

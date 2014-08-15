@@ -2,11 +2,11 @@
 
   constant BSONBinary = 1;
 
-  static string data;
-  static int subtype = 0x00;
+  protected string data;
+  protected int subtype = 0x00;
   
   //!
-  static void create(string _data, int|void _subtype)
+  protected void create(string _data, int|void _subtype)
   {
      subtype = _subtype;
      if(subtype == .BINARY_OLD)
@@ -28,7 +28,7 @@
     subtype = _subtype;
   }
 
-  static int _sizeof()
+  protected int _sizeof()
   { 
     if(subtype == .BINARY_OLD)
       return sizeof(data) + 4;
@@ -36,7 +36,7 @@
       return sizeof(data);
   }
   
-  static mixed cast(string type)
+  protected mixed cast(string type)
   {
     if(type == "string")
     {

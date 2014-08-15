@@ -62,7 +62,7 @@
 #pike __REAL_VERSION__
 
 // ----------------------------------------------------------------
-// static
+// protected
 
 Calendar.Rule.Timezone UTC=Calendar.Rule.Timezone(0,"UTC");
 

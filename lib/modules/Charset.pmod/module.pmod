@@ -305,8 +305,8 @@ private class ISO6937dec {
 
 // Decode GSM 03.38.
 private class GSM03_38dec {
-  static Decoder decoder = rfc1345("gsm0338");
-  static string trailer = "";
+  protected Decoder decoder = rfc1345("gsm0338");
+  protected string trailer = "";
   string drain()
   {
     // Escape sequences for GSM 03.38.
@@ -747,8 +747,8 @@ private class ISO6937enc {
 
 // Encode GSM 03.38.
 private class GSM03_38enc {
-  static Encoder encoder;
-  static void create(string|void replacement,
+  protected Encoder encoder;
+  protected void create(string|void replacement,
 		     function(string:string)|void repcb)
   {
     encoder = rfc1345("gsm0338", 1, replacement, repcb);

@@ -17,7 +17,7 @@ class client {
   string jobtype;
   string jobname;
 
-  static int connect(string host, int port)
+  protected int connect(string host, int port)
   {
     int a=random(10);
     // try to open one of the "official" local socket ports.
@@ -29,7 +29,7 @@ class client {
     return conn->connect(host, port);
   }
 
-  static void send(string s, mixed ... args)
+  protected void send(string s, mixed ... args)
 {
 #ifdef LPD_DEBUG
   werror("LPD: sending %O\n", s);
@@ -92,7 +92,7 @@ class client {
     return res;
   }
 
-static string make_control(int jn)
+protected string make_control(int jn)
 {
   String.Buffer control = String.Buffer();
 

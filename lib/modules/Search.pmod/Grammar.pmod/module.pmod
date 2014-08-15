@@ -6,14 +6,14 @@ class ParseNode {
   array(ParseNode) children = ({});
   void addChild(ParseNode n) { if (n) children += ({ n }); }
 
-  static string indentArray(array(string) stuff, string indent) {
+  protected string indentArray(array(string) stuff, string indent) {
     return map(stuff,
                lambda(string s) {
                  return replace(s, "\n", "\n" + indent);
                }) * ("\n" + indent);
   }
 
-  static string printChildren(string indent) {
+  protected string printChildren(string indent) {
     return indentArray(children->print(), indent);
   }
 
@@ -22,7 +22,7 @@ class ParseNode {
     return sprintf("(%s %s)", op, printChildren(indent));
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && "ParseNode" + print();
   }
 }
@@ -81,7 +81,7 @@ multiset(string) getDefaultFields() {
 
 // AND merge: Can merge all nodes with - or + bef. each thing.
 // OR merge: Can merge all nodes without any - or +.
-static private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
+private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
   array(TextNode) result = ({});
   mapping(string:array(TextNode)) fields = ([]);
   foreach (a, TextNode t)
@@ -210,7 +210,7 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
   return node;
 }
 
-static private void _validate(ParseNode node, ParseNode parent) {
+private void _validate(ParseNode node, ParseNode parent) {
   map(node->children, _validate, node);
   switch (node->op) {
     case "date":
@@ -253,7 +253,7 @@ void remove_stop_words(ParseNode node, array(string) stop_words) {
   low_remove_stop_words(node, stop_words);
 }
 
-static void low_remove_stop_words(ParseNode node, array(string) stop_words) {
+protected void low_remove_stop_words(ParseNode node, array(string) stop_words) {
   switch (node->op) {
     case "or":
     case "and":

@@ -273,7 +273,7 @@ class XMLNSParser {
 //! Base class for nodes.
 class AbstractSimpleNode {
   //  Private member variables
-  /* static */ array(AbstractSimpleNode) mChildren = ({ });
+  /* protected */ array(AbstractSimpleNode) mChildren = ({ });
   
   //! Returns all the nodes children.
   array(AbstractSimpleNode) get_children() { return (mChildren); }
@@ -518,7 +518,7 @@ class AbstractSimpleNode {
 class AbstractNode {
   inherit AbstractSimpleNode;
   //  Private member variables
-  /* static */ AbstractNode           mParent = 0;
+  /* protected */ AbstractNode           mParent = 0;
 
   // Instruct Pike.count_memory to search three steps: mChildren (in
   // VirtualNode also mAttrNodes) -> array value -> mParent.
@@ -1335,7 +1335,7 @@ protected class VirtualNode {
       low_render_xml(data, this, text_quote, attribute_quote);
   }
 
-  /*static*/ void _add_to_text (string str)
+  /*protected*/ void _add_to_text (string str)
   // Only to be used internally from the parse callback.
   {
     mText += str;
