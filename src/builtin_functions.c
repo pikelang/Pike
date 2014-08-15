@@ -7225,7 +7225,7 @@ static struct array* diff_build(struct array *a,
    return aggregate_array(2);
 }
 
-/*! @decl array permute(array in, int number)
+/*! @decl array permute(array in, int(0..) number)
  *!
  *!   Give a specified permutation of an array.
  *!
@@ -7249,6 +7249,7 @@ PMOD_EXPORT void f_permute( INT32 args )
     SIMPLE_BAD_ARG_ERROR("permute", 2, "int");
 
   n  = Pike_sp[ -1 ].u.integer;
+  if( n<0 ) Pike_error("Only positive permutations are allowed.\n");
   a = copy_array( Pike_sp[ -2 ].u.array );
   pop_n_elems( args );
   q = a->size;
@@ -10177,7 +10178,7 @@ void init_builtin_efuns(void)
 		OPT_TRY_OPTIMIZE);
 
   /* Generate the n:th permutation of the array given as the first argument */
-  ADD_FUNCTION2("permute", f_permute, tFunc(tArray tInt,tArray), 0,
+  ADD_FUNCTION2("permute", f_permute, tFunc(tArray tIntPos,tArray), 0,
 		OPT_TRY_OPTIMIZE);
 
   /* function(array,array:array(int)) */
