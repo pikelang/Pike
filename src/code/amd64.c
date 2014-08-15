@@ -3189,7 +3189,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     add_reg_imm_reg( sp_reg, -sizeof(struct svalue), ARG3_REG );
     amd64_call_c_function(assign_to_short_svalue);
     /* pop stack if needed. */
-    if( a == F_ASSIGN_PRIVATE_GLOBAL_AND_POP )
+    if( a == F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP )
     {
       amd64_add_sp(-1);
       /* this will either have assigned 0 or thrown an error.
@@ -3223,7 +3223,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     mov_mem_reg( sp_reg, -8, P_REG_RAX );
     mov_reg_mem( P_REG_RAX, P_REG_RBX, 0 );
 
-    if( a == F_ASSIGN_PRIVATE_GLOBAL_AND_POP )
+    if( a == F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP )
       amd64_add_sp( -1 );
     else if( c >= MIN_REF_TYPE )
       add_mem_imm( P_REG_RAX, OFFSETOF(pike_string,refs), 1 );
