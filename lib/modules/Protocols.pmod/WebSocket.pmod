@@ -223,7 +223,7 @@ class Frame {
         } else b->putchar(!!mask << 7 | sizeof(data));
 
         if (mask) {
-            b->add(mask, MASK(data, mask);
+            b->add(mask, MASK(data, mask));
         } else {
             b->add(data);
         }
