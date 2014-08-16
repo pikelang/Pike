@@ -261,6 +261,8 @@ PMOD_EXPORT void o_cast_to_int(void)
 	Pike_error("Cast failed, wanted int, got %s\n",
 		   get_name_of_type(TYPEOF(sp[-1])));
       }
+      else if(SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
+        Pike_error("Cannot cast this object to int.\n");
     }
 
     break;
@@ -342,6 +344,8 @@ PMOD_EXPORT void o_cast_to_string(void)
 
       if(TYPEOF(sp[-1]) != PIKE_T_STRING)
       {
+        if(TYPEOF(sp[-1])==PIKE_T_INT && SUBTYPEOF(sp[-1])==NUMBER_UNDEFINED)
+           Pike_error("Cannot cast this object to string.\n");
 	if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
 	{
 	  struct object *o = sp[-1].u.object;
@@ -724,6 +728,11 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       }
     }
   }
+
+  if(TYPEOF(sp[-1]) == T_INT &&
+     SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
+    Pike_error("Cannot cast this object to %s.\n",
+               get_name_of_type(type->type));
 
   if(run_time_type != TYPEOF(sp[-1]))
   {
