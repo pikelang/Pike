@@ -358,20 +358,20 @@ test_do( add_constant("Test"); )
 
 dnl - ADT.Table
 
-test_equal(ADT.Table.table(
+test_equal((array)ADT.Table.table(
  ({ ({ "a", "b", 42 }),
     ({ "c", "b", 41 }),
     ({ "a", "a", 76 }) }),
  ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")
- ->rename(0, "fOo")->sort("foO")->cast("array"),
+ ->rename(0, "fOo")->sort("foO"),
  ({ ({ "a", 118 }),
     ({ "c", 41 }) }))
 
-test_equal(ADT.Table.table(
+test_equal((array)ADT.Table.table(
   ({ ({ "a", "5.3" }),
      ({ "b", "5.1" }),
      ({ "c", "4711" }) }), ({ "one", "two" }),
-     ({ (["type":"text"]), (["type":"num"]) }))->sort("two")->cast("array"),
+     ({ (["type":"text"]), (["type":"num"]) }))->sort("two"),
   ({ ({ "b", "5.1" }),
      ({ "a", "5.3" }),
      ({ "c", "4711" }) }))
