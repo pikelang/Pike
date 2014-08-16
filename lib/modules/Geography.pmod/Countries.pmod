@@ -378,7 +378,7 @@ class Country
    //!	@expr{country->name;@}.
    protected string cast(string to)
    {
-      if (to[..5]=="string") return name;
+      if (to=="string") return name;
       return UNDEFINED;
    }
 

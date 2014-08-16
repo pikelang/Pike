@@ -89,7 +89,7 @@ class Event
 
    protected array(Event) cast(string to)
    {
-     if (to[..4]=="array")
+     if (to=="array")
        return ({this});
      return UNDEFINED;
    }
@@ -1405,7 +1405,7 @@ class SuperEvent
 
    protected array(Event) cast(string to)
    {
-     if (to[..4]=="array")
+     if (to=="array")
        return events;
      return UNDEFINED;
    }
