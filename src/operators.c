@@ -505,7 +505,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	f_object_program(1);
 	return;
       }
-      push_string(describe_type(type));
+      push_text(get_name_of_type(type->type));
       apply_low(o, f, 1);
 
       if (run_time_type == T_PROGRAM) {

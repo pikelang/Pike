@@ -96,7 +96,7 @@ class NodeList
   protected int _sizeof() { return get_length(); }
   protected array(Node) cast(string to)
   {
-    if(to[..4] == "array")
+    if(to == "array")
       return values(this);
     return UNDEFINED;
   }
@@ -165,7 +165,7 @@ class NamedNodeMap
   protected int _sizeof() { return get_length(); }
   protected mapping(string:Node) cast(string to)
   {
-    if(to[..6] == "mapping")
+    if(to == "mapping")
       return copy_value(map);
     return UNDEFINED;
   }
