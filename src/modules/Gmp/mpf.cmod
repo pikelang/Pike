@@ -626,20 +626,6 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpf `*=(int|float|object ... a)
-   */
-  PIKEFUN object `*=(int|float|object ... UNUSED)
-    flags ID_PROTECTED;
-  {
-    unsigned long int prec;
-    prec=add_convert_args(args);
-
-    if(prec > mpf_get_prec(THISMPF))
-      mpf_set_prec(THISMPF, prec);
-
-    mult_args(THISMPF, args);
-    REF_RETURN fp->current_object;
-  }
 
   static void sub_args(MP_FLT *res,
 			INT32 args)
@@ -789,22 +775,6 @@ PIKECLASS mpf
       RETURN CMPOP(<);
     }
 
-  /*! @decl static int(0..1) `>=(mixed q)
-   */
-  PIKEFUN int(0..1) `>=(mixed q)
-    flags ID_PROTECTED;
-  {
-    RETURN CMPOP(>=);
-  }
-  
-  /*! @decl static int(0..1) `<=(mixed q)
-   */
-  PIKEFUN int(0..1) `<=(mixed q)
-    flags ID_PROTECTED;
-  {
-    RETURN CMPOP(<=);
-  }
-
 
   /*! @decl static int(0..1) `==(mixed q)
    */
@@ -817,18 +787,6 @@ PIKECLASS mpf
       RETURN mpf_cmp_si(THISMPF, q->u.integer) == 0;
     arg=get_mpf(q, 0, 0);
     RETURN (arg && !mpf_cmp(THISMPF, arg));
-  }
-
-  /*! @decl static int(0..1) `!=(mixed q)
-   */
-  PIKEFUN int `!=(mixed q)
-    flags ID_PROTECTED;
-  {
-    MP_FLT *arg;
-    if(TYPEOF(*q) == T_INT && TOOBIGTEST(0))
-      RETURN mpf_cmp_si(THISMPF, q->u.integer) != 0;
-    arg=get_mpf(q, 0, 0);
-    RETURN (!arg || mpf_cmp(THISMPF, arg));
   }
 
   /*! @decl int sgn()
