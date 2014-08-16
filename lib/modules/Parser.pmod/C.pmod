@@ -90,7 +90,7 @@ class Token
 
   //! @decl void create(string text, void|int line, void|string file,@
   //!   void|string trailing_whitespace)
-  void create(string t, void|int l, void|string f, void|string space)
+  protected void create(string t, void|int l, void|string f, void|string space)
     {
       text=t;
       line=l;
@@ -99,7 +99,7 @@ class Token
     }
 
   //! If the object is printed as %s it will only output its text contents.
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       switch(how)
       {
@@ -113,34 +113,34 @@ class Token
   //! Tokens are considered equal if the text contents are equal. It
   //! is also possible to compare the Token object with a text string
   //! directly.
-  int `==(mixed foo)
+  protected int `==(mixed foo)
     {
       return (objectp(foo) ? foo->text : foo) == text;
     }
 
   //! A string can be added to the Token, which will be added to the
   //! text contents.
-  string `+(string ... s)
+  protected string `+(string ... s)
     {
       return predef::`+(text,@s);
     }
 
   //! A string can be added to the Token, which will be added to the
   //! text contents.
-  string ``+(string ... s)
+  protected string ``+(string ... s)
     {
       return predef::`+(@s,text);
     }
 
   //! It is possible to case a Token object to a string. The text content
   //! will be returned.
-  mixed cast(string to)
+  protected mixed cast(string to)
     {
       if(to=="string") return text;
     }
 
   //! Characters and ranges may be indexed from the text contents of the token.
-  int|string `[](int a, void|int b) {
+  protected int|string `[](int a, void|int b) {
     if(undefinedp(b)) return text[a];
     return text[a..b];
   }
