@@ -244,7 +244,7 @@ array(mixed) _values()
 
 
 //! An ADT.Set can be cast to an array or a multiset.
-mixed cast(string to)
+protected mixed cast(string to)
 {
   switch(to)
   {
@@ -258,7 +258,7 @@ mixed cast(string to)
       return copy_value(set);
 
     default:
-      error("Cannot cast ADT.Set to %s.\n", to);
+      return UNDEFINED;
   }
 }
 

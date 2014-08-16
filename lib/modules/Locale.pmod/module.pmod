@@ -564,7 +564,7 @@ class DeferredLocale( protected string project,
   {
     if(to=="string") return lookup();
     if(to=="mixed" || to=="object") return this;
-    error( "Cannot cast DeferredLocale to "+to+".\n" );
+    return UNDEFINED;
   }
 
   protected int _is_type(string type) {

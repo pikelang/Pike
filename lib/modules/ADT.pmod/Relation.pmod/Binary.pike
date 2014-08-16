@@ -314,6 +314,6 @@ mixed cast(string to) {
   case "mapping":
     return copy_value(val);
   default:
-    error("Can not cast ADT.Relation.Binary to %O.\n", to);
+    return UNDEFINED;
   }
 }

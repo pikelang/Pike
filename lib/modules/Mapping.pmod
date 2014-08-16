@@ -169,7 +169,7 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
     case "mapping": return joined + ([]);
     case "array": return (array)joined;
     }
-    return joined + ([]);
+    return UNDEFINED;
   }
 
   protected mixed _search(mixed val)

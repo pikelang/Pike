@@ -79,7 +79,7 @@ protected mixed cast(string to) {
   case "object": return this;
   case "array": return l+({});
   }
-  error("Can not cast ADT.Queue to %s.\n", to);
+  return UNDEFINED;
 }
 
 protected string _sprintf(int t) {

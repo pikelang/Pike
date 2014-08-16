@@ -382,6 +382,7 @@ object MinKey = class
     {
       if(type == "string")
         return "MinKey";
+      return UNDEFINED;
     }
   }();
 
@@ -395,6 +396,7 @@ object MaxKey = class
     {
       if(type == "string")
         return "MinKey";
+      return UNDEFINED;
     }
   }();
 

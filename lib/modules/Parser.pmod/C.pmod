@@ -137,6 +137,7 @@ class Token
   protected mixed cast(string to)
     {
       if(to=="string") return text;
+      return UNDEFINED;
     }
 
   //! Characters and ranges may be indexed from the text contents of the token.

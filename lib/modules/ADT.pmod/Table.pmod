@@ -54,7 +54,7 @@ class table {
     return copy(m->table, m->fields, m->types);
   }
   
-  mixed cast(string type)
+  protected mixed cast(string type)
   {
     switch(type) {
     case "array":
@@ -62,6 +62,7 @@ class table {
     case "string":
       return ASCII->encode(this);
     }
+    return UNDEFINED;
   }
 
   //! This method returns the column names for the table. The case used when

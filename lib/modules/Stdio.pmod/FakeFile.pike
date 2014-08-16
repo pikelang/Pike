@@ -319,12 +319,12 @@ string _sprintf(int t) {
 // FakeFile specials.
 
 //! A FakeFile can be casted to a string.
-mixed cast(string to) {
+protected mixed cast(string to) {
   switch(to) {
   case "string": return data;
   case "object": return this;
   }
-  error("Can not cast object to %O.\n", to);
+  return UNDEFINED;
 }
 
 //! Sizeof on a FakeFile returns the size of its contents.

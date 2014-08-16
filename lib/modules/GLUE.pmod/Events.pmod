@@ -273,9 +273,10 @@ class Event
     return hash( sprintf( "%d %d %d", press, key, modifiers ) );
   }
 
-  string cast(string to) {
+  protected string cast(string to)
+  {
     if(to=="string") return data;
-    error("Can not cast to %s.\n", to);
+    return UNDEFINED;
   }
 
   void update_modifiers(int _modifiers) {

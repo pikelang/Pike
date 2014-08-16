@@ -141,12 +141,12 @@ this_program `+(this_program s) {
   return ns;
 }
 
-mixed cast(string to) {
+protected mixed cast(string to) {
   switch(to) {
   case "array":
       return _values();
   default:
-      error("Cannot cast to %s.\n", to);
+    return UNDEFINED;
   }
 }
 

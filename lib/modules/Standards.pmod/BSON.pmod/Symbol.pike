@@ -19,5 +19,6 @@
   {
     if(type == "string")
       return data;
+    return UNDEFINED;
   }
 

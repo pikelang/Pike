@@ -1153,7 +1153,7 @@ class Expression {
     case "array": return tokens;
     case "string": return code();
     }
-    error("Can not cast to %O\n", to);
+    return UNDEFINED;
   }
 
   protected string _sprintf(int t) {

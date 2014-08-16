@@ -1661,4 +1661,5 @@ string `()(string ext) {
 protected mixed cast(string to)
 {
   if(to=="mapping") return small_ext2type + ext2type;
+  return UNDEFINED;
 }

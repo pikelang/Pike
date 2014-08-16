@@ -246,9 +246,10 @@ int(0..1) contains(mixed x) {
 mixed beginning() { return start; }
 mixed end() { return stop; }
 
-mixed cast(string type) {
-    switch (type) {
-    case "array":
-	return ({ start, stop });
-    }
+protected mixed cast(string type) {
+  switch (type) {
+  case "array":
+    return ({ start, stop });
+  }
+  return UNDEFINED;
 }

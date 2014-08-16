@@ -141,7 +141,7 @@ protected class StringRange
     case "object":
       return this_object();
     default:
-      error("StringRange: Unsupported cast to %s.\n", type);
+      return UNDEFINED;
     }
   }
   protected int _search(string frag, int|void pos)
@@ -1190,13 +1190,13 @@ class Message {
   //!
   //! @seealso
   //! @[create()]
-  string cast( string dest_type )
+  protected string cast( string dest_type )
   {
     string data;
     object body_part;
     
     if (dest_type != "string")
-      error( "Can't cast Message to %s.\n", dest_type);
+      return UNDEFINED;
     
     data = getencoded( );
     

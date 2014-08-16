@@ -130,6 +130,7 @@ protected mixed cast(string to) {
   case "string": return encode();
   case "array": return items->encode();
   }
+  return UNDEFINED;
 }
 
 
