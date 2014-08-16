@@ -58,10 +58,10 @@
     <chapter title="Specific Datatype Modules">
       <insert-move entity="String"/>
       <insert-move entity="Array"/>
-<!--      <insert-move entity="Mapping"/> -->
-<!--      <insert-move entity="Multiset"/> -->
-<!--      <insert-move entity="Int"/> -->
-<!--      <insert-move entity="Float"/> -->
+      <insert-move entity="Mapping"/>
+      <insert-move entity="Multiset"/>
+      <insert-move entity="Int"/>
+      <insert-move entity="Float"/>
       <insert-move entity="Function"/>
       <insert-move entity="Program"/>
       <insert-move entity="ADT"/>
@@ -80,7 +80,6 @@
       <insert-move entity="Image.Layer"/>
       <insert-move entity="Image.Font"/>
       <insert-move entity="Image.Colortable"/>
-<!--      <insert-move entity="Image.Colortable"/> -->
       <insert-move entity="Image.Color"/>
       <insert-move entity="Image.ANY"/>
       <insert-move entity="Image"/>
@@ -99,24 +98,24 @@
     <chapter title="Database Access">
       <insert-move entity="Sql"/>
       <insert-move entity="Mysql"/>
+      <insert-move entity="Msql"/>
       <insert-move entity="Postgres"/>
-<!--      <insert-move entity="Oracle"/> -->
       <insert-move entity="Gdbm"/>
-<!--      <insert-move entity="Yabu"/> -->
+      <insert-move entity="Yabu"/>
     </chapter>
   </file>
   <file>
     <chapter title="Graphic User Interface">
       <insert-move entity="GTK"/>
-      <insert-move entity="GDK"/>
-      <insert-move entity="Gnome"/>
+      <insert-move entity="GTK1"/>
+      <insert-move entity="GTK2"/>
     </chapter>
   </file>
   <file>
     <chapter title="3D Vector Graphics">
       <insert-move entity="GL"/>
       <insert-move entity="GLU"/>
-<!--      <insert-move entity="GLUT"/> -->
+      <insert-move entity="GLUT"/>
     </chapter>
   </file>
   <file>
