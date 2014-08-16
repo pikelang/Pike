@@ -162,7 +162,7 @@ class Inf {
     case "float":
       return Math.inf;
     default:
-      error("Can not cast to %O.\n", to);
+      return UNDEFINED;
     }
   }
   protected string _sprintf(int t) {

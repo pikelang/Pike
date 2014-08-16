@@ -94,8 +94,11 @@ class NodeList
   }
   protected Node `[](int index) { return item(index); }
   protected int _sizeof() { return get_length(); }
-  protected array(Node) cast(string to) {
-    return to[..4] == "array" && values(this);
+  protected array(Node) cast(string to)
+  {
+    if(to[..4] == "array")
+      return values(this);
+    return UNDEFINED;
   }
 
   Node item(int index)
@@ -160,8 +163,11 @@ class NamedNodeMap
   }
 
   protected int _sizeof() { return get_length(); }
-  protected mapping(string:Node) cast(string to) {
-    return to[..6] == "mapping" && copy_value(map);
+  protected mapping(string:Node) cast(string to)
+  {
+    if(to[..6] == "mapping")
+      return copy_value(map);
+    return UNDEFINED;
   }
 
   Node item(int index)
@@ -542,7 +548,12 @@ class CharacterData
 	       substring_data(offset+count, get_length()));    
   }
 
-  string cast(string to) { return to == "string" && get_data(); }
+  protected string cast(string to)
+  {
+    if(to == "string")
+      return get_data();
+    return UNDEFINED;
+  }
 }
 
 class Attr
@@ -873,9 +884,11 @@ class Entity
   string get_notation_name() { return notation_name; }
   protected int is_readonly() { return name != 0; }
 
-  string cast(string to)
+  protected string cast(string to)
   {
-    return to == "string" && ((array(string))get_child_nodes())*"";
+    if(to == "string")
+      return ((array(string))get_child_nodes())*"";
+    return UNDEFINED;
   }
 
   protected int child_is_allowed(Node child)
@@ -913,11 +926,11 @@ class EntityReference
     return owner_document->create_entity_reference(name);
   }
 
-  string cast(string to)
+  protected string cast(string to)
   {
-    return to == "string" &&
-      (entity? (string)entity :
-       "&"+name+";");
+    if(to == "string")
+      return (entity? (string)entity : "&"+name+";");
+    return UNDEFINED;
   }
 
   NodeList get_child_nodes() { return entity && entity->get_child_nodes(); }

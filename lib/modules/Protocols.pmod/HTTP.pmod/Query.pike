@@ -1063,7 +1063,7 @@ int total_bytes()
 
 //! @decl string cast("string")
 //!	Gives back the answer as a string.
-array|mapping|string cast(string to)
+protected array|mapping|string cast(string to)
 {
    switch (to)
    {
@@ -1079,7 +1079,7 @@ array|mapping|string cast(string to)
          data();
          return buf;
    }
-   error("HTTP.Query: can't cast to "+to+"\n");
+   return UNDEFINED;
 }
 
 //! Minimal simulation of a @[Stdio.File] object.

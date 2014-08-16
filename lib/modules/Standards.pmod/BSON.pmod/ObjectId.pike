@@ -59,6 +59,5 @@ protected mixed cast(string t)
 {
   if(t == "string")
     return String.string2hex(get_id());
-  else
-    throw(Error.Generic("invalid cast of ObjectId to " + t + "\n"));
+  return UNDEFINED;
 }

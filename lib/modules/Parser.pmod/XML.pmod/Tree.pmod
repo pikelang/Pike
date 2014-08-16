@@ -1027,10 +1027,10 @@ protected class VirtualNode {
 
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
-  mixed cast(string to) {
+  protected mixed cast(string to) {
     if(to=="object") return this;
     if(to=="string") return render_xml();
-    error( "Can not case Node to "+to+".\n" );
+    return UNDEFINED;
   }
 
   // FIXME: Consider moving this to the corresponding base node classes?

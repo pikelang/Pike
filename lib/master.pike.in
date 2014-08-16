@@ -5532,13 +5532,11 @@ class Version
 
   //! The version object can be casted into a string.
   protected mixed cast(string type)
-    {
-      switch(type)
-      {
-	case "string":
-	  return sprintf("%d.%d",major,minor);
-      }
-    }
+  {
+    if( type=="string" )
+      return sprintf("%d.%d",major,minor);
+    return UNDEFINED;
+  }
 }
 
 //! Version information about the current Pike version.

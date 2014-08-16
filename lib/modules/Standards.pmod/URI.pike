@@ -452,7 +452,7 @@ mixed `[]=(string property, mixed value)
 //! When cast to mapping, return a mapping with scheme, authority,
 //! user, password, host, port, path, query, fragment, raw_uri,
 //! base_uri as documented above.
-string|mapping cast(string to)
+protected string|mapping cast(string to)
 {
   switch(to)
   {
@@ -465,6 +465,7 @@ string|mapping cast(string to)
 			   "raw_uri", "base_uri",  });
       return mkmapping(i, rows(this, i));
   }
+  return UNDEFINED;
 }
 
 //! Returns path and query part of the URI if present.

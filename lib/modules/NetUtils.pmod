@@ -260,7 +260,7 @@ class NetMask
             case "array":
                 return ({ net, mask });
             default:
-                error("Can not cast to %O\n", type );
+                return UNDEFINED;
         }
 
     }

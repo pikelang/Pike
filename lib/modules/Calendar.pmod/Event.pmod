@@ -87,12 +87,11 @@ class Event
       return (t!='O')?0:sprintf("Event(%s:%O)",id,name);
    }
 
-   array(Event) cast(string to)
+   protected array(Event) cast(string to)
    {
-      if (to[..4]=="array")
-	 return ({this});
-      else
-	 error("Can't cast to %O\n",to);
+     if (to[..4]=="array")
+       return ({this});
+     return UNDEFINED;
    }
 
   //! Returns a description of the event.
@@ -1404,12 +1403,11 @@ class SuperEvent
       return SuperEvent(res,flags&res,"?");
    }
 
-   array(Event) cast(string to)
+   protected array(Event) cast(string to)
    {
-      if (to[..4]=="array")
-	 return events;
-      else
-	 error("Can't cast to %O\n",to);
+     if (to[..4]=="array")
+       return events;
+     return UNDEFINED;
    }
 
    protected string _sprintf(int t)

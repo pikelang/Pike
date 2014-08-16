@@ -376,10 +376,10 @@ class Country
    //!	It is possible to cast a country to a string,
    //!	which will be the same as performing 
    //!	@expr{country->name;@}.
-   string cast(string to)
+   protected string cast(string to)
    {
       if (to[..5]=="string") return name;
-      error("can't cast to %O\n",to);
+      return UNDEFINED;
    }
 
    string _sprintf(int t)

@@ -629,11 +629,11 @@ class Parser
   //!
   //! @param type
   //!   Type to cast to.
-  mixed cast(string type)
+  protected mixed cast(string type)
   {
     if (type == "string")
       return _sprintf();
-    error("Cast to %s not supported\n", type);
+    return UNDEFINED;
   }
 
   /* Here come the functions that actually do some work */

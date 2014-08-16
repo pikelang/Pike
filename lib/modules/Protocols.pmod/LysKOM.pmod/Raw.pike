@@ -70,7 +70,12 @@ class Send
       request=r;
       callback=c;
    }
-   int cast(string i) { return ref; }
+   protected int cast(string type)
+   {
+     if( type=="int" )
+       return ref;
+     return UNDEFINED;
+   }
    void write()
    {
       out_req++;

@@ -231,7 +231,7 @@ class UUID {
     validate();
   }
 
-  mixed cast(string to) {
+  protected mixed cast(string to) {
     switch(to) {
     case "string": return str();
     case "mapping": return ([
@@ -240,6 +240,7 @@ class UUID {
       "time_hi_and_version" : time_hi_and_version(),
     ]);
     }
+    return UNDEFINED;
   }
 
 }

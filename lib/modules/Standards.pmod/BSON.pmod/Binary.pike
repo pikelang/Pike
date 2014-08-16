@@ -46,5 +46,6 @@
          return sprintf("%-4H", data);
        else return data;
     }
+    return UNDEFINED;
   }
 

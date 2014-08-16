@@ -147,13 +147,13 @@ class ProfileEntry {
       return this_object();
     }
 
-    mixed cast(string to) {
+    protected mixed cast(string to) {
       switch(to) {
       case "object": return this_object();
       case "array": return indices(vals);
       case "multiset": return (multiset)indices(vals);
       default:
-	error("Can not cast ADTSet to "+to+".\n");
+	return UNDEFINED;
       }
     }
   }

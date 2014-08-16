@@ -576,7 +576,7 @@ protected string|array cast(string to)
    if (to[..5]=="string")
       return latitude()+" "+longitude();
 
-   error("can't cast to %O\n",to);
+   return UNDEFINED;
 }
 
 //!

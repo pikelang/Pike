@@ -420,8 +420,10 @@ protected {
 	strings += ({ raw });
       }
 
-      mixed cast(string s)
+      protected string cast(string type)
       {
+        if( type!="string" ) return UNDEFINED;
+
 	int trailer_start = flags && 4;
 	foreach(segments, string|int seg) {
 	  trailer_start += stringp(seg)?sizeof(seg):(seg<0)?8:4;

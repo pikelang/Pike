@@ -231,12 +231,11 @@ class Frame {
         return b->get();
     }
 
-    protected string cast(string to) {
-        if (to == "string") {
-            return encode();
-        }
-
-        error("Cannot cast %O to %O\n", this, to);
+    protected string cast(string to)
+    {
+      if (to == "string")
+        return encode();
+      return UNDEFINED;
     }
 }
 

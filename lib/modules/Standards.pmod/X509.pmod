@@ -706,7 +706,7 @@ class TBSCertificate
       ]);
       break;
     default:
-      error("Can't case %O to %O\n", this_program, to);
+      return UNDEFINED;
       break;
     }
   }
