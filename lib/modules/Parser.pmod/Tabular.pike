@@ -50,11 +50,11 @@ private int recordcount=1;
 //!
 //! @seealso
 //!  @[compile()], @[setformat()], @[fetch()]
-void
- create(void|string|Stdio.File|Stdio.FILE input,
-  void|array|mapping|string|Stdio.File|Stdio.FILE format,
-  void|int verbose)
-{ if(undefinedp(verbose)&&intp(format))
+protected void create(void|string|Stdio.File|Stdio.FILE input,
+                      void|array|mapping|string|Stdio.File|Stdio.FILE format,
+                      void|int verbose)
+{
+  if(undefinedp(verbose) && intp(format))
     verbose=format;
   else
     fms=stringp(format)||objectp(format)?compile(format):format;
@@ -71,7 +71,8 @@ void
 
 #if 0			   // Currently unused function
 private int getchar()
-{ int c=_in->getchar();
+{
+  int c=_in->getchar();
   if(c<0)
     throw(severity);
   alread->putchar(c);
@@ -80,7 +81,8 @@ private int getchar()
 #endif
 
 private string read(int n)
-{ string s;
+{
+  string s;
   s=_in->read(n);
   alread->add(s);
   if(sizeof(s)!=n)
@@ -89,22 +91,27 @@ private string read(int n)
 }
 
 private string gets(int n)
-{ string s;
+{
+  string s;
   if(n)
-  { s=read(n);
+  {
+    s=read(n);
     if(has_value(s,"\n")||has_value(s,"\r"))
       throw(severity);
   }
   else
-  { s=_in->gets();
+  {
+    s=_in->gets();
     if(!s)
        throw(severity);
     if(has_value(s,"\r"))	// Retrofix \r-only line endings
-    { array t;
-      t=s/"\r";
-      s=t[0];_in->unread(t[1..]*"\n");
+    {
+      array t=s/"\r";
+      s=t[0];
+      _in->unread(t[1..]*"\n");
     }
-    alread->add(s);alread->putchar('\n');
+    alread->add(s);
+    alread->putchar('\n');
     if(has_suffix(s,"\r"))
       s=s[..<1];
     _eol=1;
@@ -113,26 +120,33 @@ private string gets(int n)
 }
 
 class _checkpoint
-{ private string oldalread;
+{
+  private string oldalread;
 
-  void create()
-  { oldalread=alread->get();
+  protected void create()
+  {
+    oldalread=alread->get();
   }
 
   final void release()
-  { string s=alread->get();
+  {
+    string s=alread->get();
     alread->add(oldalread);
     alread->add(s);
     oldalread=0;
   }
 
   protected void destroy()
-  { if(oldalread)
-    { string back=alread->get();
+  {
+    if(oldalread)
+    {
+      string back=alread->get();
       if(sizeof(back))
-      { _in->unread(back);
+      {
+        _in->unread(back);
         if(verb<0)
-        { back-="\n";
+        {
+          back-="\n";
           if(sizeof(back))
             werror("Backtracking %O\n",back);
         }
@@ -145,7 +159,8 @@ class _checkpoint
 #define FETCHAR(c,buf,i)	(catch((c)=(buf)[(i)++])?((c)=-1):(c))
 
 string _getdelimword(mapping m)
-{ multiset delim=m->delim;
+{
+  multiset delim=m->delim;
   int i,pref=m->prefetch || prefetch;
   String.Buffer word=String.Buffer(pref);
   string buf,skipclass;
@@ -153,36 +168,41 @@ string _getdelimword(mapping m)
   if(sizeof(delim-(<',',';','\t',' '>)))
 delimready:
     for(;;)
-    { i=0;
+    {
+      i=0;
       buf=_in->read(pref);
       int c;
       FETCHAR(c,buf,i);
       while(c>=0)
-      { if(delim[c])
+      {
+        if(delim[c])
           break delimready;
         else switch(c)
-        { default:
-          { string s;
+        {
+        default:
+          {
+            string s;
             sscanf(buf[--i..],skipclass,s);
             word->add(s);
             i+=sizeof(s);
             break;
           }
-          case '\n':
-  	    FETCHAR(c,buf,i);
-  	    switch(c)
-  	    { default:i--;
-  	      case '\r':case '\x1a':;
-  	    }
-            _eol=1;
-            break delimready;
-          case '\r':
-  	    FETCHAR(c,buf,i);
-   	    if(c!='\n')
-   	      i--;
-            _eol=1;
-            break delimready;
-          case '\x1a':;
+        case '\n':
+          FETCHAR(c,buf,i);
+          switch(c)
+          {
+          default:i--;
+          case '\r':case '\x1a':;
+          }
+          _eol=1;
+          break delimready;
+        case '\r':
+          FETCHAR(c,buf,i);
+          if(c!='\n')
+            i--;
+          _eol=1;
+          break delimready;
+        case '\x1a':;
         }
         FETCHAR(c,buf,i);
       }
@@ -191,62 +211,73 @@ delimready:
       alread->add(buf);
     }
   else
-  { int leadspace=1,inquotes=0;
+  {
+    int leadspace=1,inquotes=0;
 csvready:
     for(;;)
-    { i=0;
+    {
+      i=0;
       buf=_in->read(pref);
       int c;
       FETCHAR(c,buf,i);
       while(c>=0)
-      { if(delim[c])
-        { if(!inquotes)
+      {
+        if(delim[c])
+        {
+          if(!inquotes)
             break csvready;
           word->putchar(c);
         }
         else
 	  switch(c)
-          { case '"':leadspace=0;
-              if(!inquotes)
-                inquotes=1;
-              else if(FETCHAR(c,buf,i)=='"')
-                word->putchar(c);
-              else
-              { inquotes=0;
-                continue;
-              }
-              break;
-            default:leadspace=0;
-            case ' ':case '\t':
-              if(!leadspace)
-              { string s;
-                sscanf(buf[--i..],skipclass,s);
-                word->add(s);
-                i+=sizeof(s);
-              }
-              break;
-            case '\n':
-   	      FETCHAR(c,buf,i);
-   	      switch(c)
-   	      { default:i--;
-   	        case '\r':case '\x1a':;
-   	      }
-              if(!inquotes)
-              { _eol=1;
-                break csvready;
-              }
-              word->putchar('\n');
-   	      break;
-            case '\r':
-   	      FETCHAR(c,buf,i);
-   	      if(c!='\n')
-   	        i--;
-              if(!inquotes)
-              { _eol=1;
-                break csvready;
-              }
-              word->putchar('\n');
-            case '\x1a':;
+          {
+          case '"':leadspace=0;
+            if(!inquotes)
+              inquotes=1;
+            else if(FETCHAR(c,buf,i)=='"')
+              word->putchar(c);
+            else
+            {
+              inquotes=0;
+              continue;
+            }
+            break;
+          default:leadspace=0;
+          case ' ': case '\t':
+            if(!leadspace)
+            {
+              string s;
+              sscanf(buf[--i..],skipclass,s);
+              word->add(s);
+              i+=sizeof(s);
+            }
+            break;
+          case '\n':
+            FETCHAR(c,buf,i);
+            switch(c)
+            {
+            default:
+              i--;
+            case '\r':case '\x1a':;
+            }
+            if(!inquotes)
+            {
+              _eol=1;
+              break csvready;
+            }
+            word->putchar('\n');
+            break;
+          case '\r':
+            FETCHAR(c,buf,i);
+            if(c!='\n')
+              i--;
+            if(!inquotes)
+            {
+              _eol=1;
+              break csvready;
+            }
+            word->putchar('\n');
+          case '\x1a':;
           }
         FETCHAR(c,buf,i);
       }
@@ -261,9 +292,11 @@ csvready:
 }
 
 private mapping getrecord(array fmt,int found)
-{ mapping ret=([]),options;
+{
+  mapping ret=([]),options;
   if(stringp(fmt[0]))
-  { options=(["name":fmt[0]]);
+  {
+    options=(["name":fmt[0]]);
     if(fmt[1])
       options+=fmt[1];
     else
@@ -272,7 +305,8 @@ private mapping getrecord(array fmt,int found)
   else
     options=fmt[0];
   if(found)
-  { if(options->single)
+  {
+    if(options->single)
       throw(severity);			// early exit, already found one
   }
   else if(options->mandatory)
@@ -281,15 +315,18 @@ private mapping getrecord(array fmt,int found)
     werror("Checking record %d for %O\n",recordcount,options->name);
   _eol=0;
   foreach(fmt;int fi;array|mapping m)
-  { if(fi<2)
+  {
+    if(fi<2)
       continue;
     string value;
     if(arrayp(m))
-    { array field=m;
+    {
+      array field=m;
       fmt[fi]=m=(["name":field[0]]);
       mixed nm=field[1];
       if(!mappingp(nm))
-      { if(arrayp(nm))
+      {
+        if(arrayp(nm))
           ret+=getrecord(nm,found);
         else
           m+=([(intp(nm)?"width":(stringp(nm)?"match":"delim")):nm]);
@@ -305,31 +342,39 @@ private mapping getrecord(array fmt,int found)
     if(m->delim)
       value=_getdelimword(m);
     if(m->match)
-    { Regexp rgx;
+    {
+      Regexp rgx;
       if(stringp(m->match))
-      { if(!value && simple->match(m->match))
-        { m->width=sizeof(m->match);
+      {
+        if(!value && simple->match(m->match))
+        {
+          m->width=sizeof(m->match);
           value=gets(m->width);
         }
         m->match=Regexp("^("+m->match+")"+(value?"$":""));
       }
       rgx=m->match;
       if(value)
-      { if(!rgx->match(value))
-        { if(verb<-3)
+      {
+        if(!rgx->match(value))
+        {
+          if(verb<-3)
             werror(sprintf("Mismatch %O!=%O\n",value,rgx)
-             -"Regexp.SimpleRegexp");
+                   -"Regexp.SimpleRegexp");
           throw(severity);
         }
       }
       else
-      { string buf=_in->read(m->prefetch || prefetch);
-        { array spr;
+      {
+        string buf=_in->read(m->prefetch || prefetch);
+        {
+          array spr;
           if(!buf || !(spr=rgx->split(buf)))
-          { alread->add(buf);
+          {
+            alread->add(buf);
             if(verb<-3)
               werror(sprintf("Mismatch %O!=%O\n",buf[..32],rgx)
-               -"Regexp.SimpleRegexp");
+                     -"Regexp.SimpleRegexp");
             throw(severity);
           }
           _in->unread(buf[sizeof(value=spr[0])..]);
@@ -347,11 +392,14 @@ private mapping getrecord(array fmt,int found)
     throw(severity);
   severity=1;
   if(verb&&verb!=-1)
-  { array s=({options->name,"::"});
+  {
+    array s=({options->name,"::"});
     foreach(sort(indices(ret)),string name)
-    { string value=ret[name];
+    {
+      string value=ret[name];
       if(sizeof(value))
-      { if(verb<-2)
+      {
+        if(verb<-2)
           s+=({name,":"});
         s+=({value,","});
       }
@@ -368,9 +416,11 @@ private mapping getrecord(array fmt,int found)
 }
 
 private void add2map(mapping res,string name,mixed entry)
-{ mapping|array tm = res[name];
+{
+  mapping|array tm = res[name];
   if(tm)
-  { if(arrayp(tm))
+  {
+    if(arrayp(tm))
       tm+=({entry});
     else
       tm=({tm,entry});
@@ -390,11 +440,15 @@ private void add2map(mapping res,string name,mixed entry)
 //! @seealso
 //!  @[fetch()]
 int skipemptylines()
-{ string line; int eof=1;
+{
+  string line; int eof=1;
   while((line=_in->gets()) && String.width(line)==8 && emptyline->match(line))
     recordcount++;
   if(line)
-    eof=0,_in->unread(line+"\n");
+  {
+    eof=0;
+    _in->unread(line+"\n");
+  }
   return eof;
 }
 
@@ -418,35 +472,44 @@ int skipemptylines()
 //! @seealso
 //!  @[compile()], @[create()], @[setformat()], @[skipemptylines()]
 mapping fetch(void|array|mapping format)
-{ mapping ret=([]);
+{
+  mapping ret=([]);
   int skipempty=0;
   if(!format)
-  { if(skipemptylines())
+  {
+    if(skipemptylines())
       return UNDEFINED;
-    skipempty=1;format=fms;
+    skipempty=1;
+    format=fms;
   }
-ret:
-  { if(arrayp(format))
-    { mixed err=catch
-      { _checkpoint checkp=_checkpoint();
+ ret:
+  {
+    if(arrayp(format))
+    {
+      mixed err=catch
+      {
+        _checkpoint checkp=_checkpoint();
         foreach(format;;array|mapping fmt)
           if(arrayp(fmt))
             for(int found=0;;found=1)
-            { mixed err=catch
-              { _checkpoint checkp=_checkpoint();
-		mapping rec=getrecord(fmt,found);
-	        foreach(rec;string name;mixed value)
-                  add2map(ret,name,value);
-                checkp->release();
-                continue;
-              };
+            {
+              mixed err=catch
+                {
+                  _checkpoint checkp=_checkpoint();
+                  mapping rec=getrecord(fmt,found);
+                  foreach(rec;string name;mixed value)
+                    add2map(ret,name,value);
+                  checkp->release();
+                  continue;
+                };
               severity=1;
               switch(err)
-              { case 2:
-		  err=1;
-		default:
-		  throw(err);
-		case 1:;
+              {
+              case 2:
+                err=1;
+              default:
+                throw(err);
+              case 1:;
 	      }
               break;
             }
@@ -456,27 +519,33 @@ ret:
         break ret;
       };
       switch(err)
-      { default:
-          throw(err);
-        case 1:
-          return 0;
+      {
+      default:
+        throw(err);
+      case 1:
+        return 0;
       }
       if(skipempty)
         skipemptylines();
     }
     else
-    { int found;
+    {
+      int found;
       do
-      { found=0;
+      {
+        found=0;
 	if(!mappingp(format))
 	  error("Empty format definition\n");
         foreach(format;string name;array|mapping subfmt)
           for(;;)
-	  { if(verb<0)
+	  {
+            if(verb<0)
 	      werror("Trying format %O\n",name);
 	    mapping m;
 	    if(m=fetch(subfmt))
-	    { found=1;add2map(ret,name,m);
+	    {
+              found=1;
+              add2map(ret,name,m);
 	      continue;
 	    }
 	    break;
@@ -499,7 +568,8 @@ ret:
 //! @seealso
 //!  @[fetch()]
 object feed(string content)
-{ _in->unread(content);
+{
+  _in->unread(content);
   return this;
 }
 
@@ -512,7 +582,8 @@ object feed(string content)
 //! @seealso
 //!   @[compile()], @[fetch()]
 array|mapping setformat(array|mapping format)
-{ array|mapping oldfms=fms;
+{
+  array|mapping oldfms=fms;
   fms=format;
   return oldfms;
 }
@@ -669,7 +740,8 @@ private Regexp tokenise=Regexp("^[ \t]*([^ \t]+)[ \t]*(.*)$");
 //!::end                   "XXX"
 //![Tabular description end]
 array|mapping compile(string|Stdio.File|Stdio.FILE input)
-{ if(!input)
+{
+  if(!input)
     input="";
   if(stringp(input))
     input=Stdio.FakeFile(input);
@@ -687,18 +759,22 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
   int garbage=0;
 
   mapping getline()
-  { mapping m;
+  {
+    mapping m;
     if(started>=0)
       for(;;)
-      { string line=input->gets();
+      {
+        string line=input->gets();
         if(!line)
           error("Missing begin record\n");
         array res=descrx->split(line);
         lineno++;
         if(!res)
           if(!started)
-          { if(!garbage)
-            { garbage=1;
+          {
+            if(!garbage)
+            {
+              garbage=1;
               werror("Skipping garbage lines... %O\n",line);
             }
             continue;
@@ -712,21 +788,25 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
           if(m[s]&&!sizeof(m[s])||!m[s]&&intp(m[s]))
              m_delete(m,s);
         if(!started)
-        { if(!m->level&&!m->name&&m->delim&&m->delim==beginend+"begin")
+        {
+          if(!m->level&&!m->name&&m->delim&&m->delim==beginend+"begin")
             started=1;
           continue;
         }
         if(!m->level&&!m->name)
-        { if(m->delim==beginend+"end")
-          { started=-1;
+        {
+          if(m->delim==beginend+"end")
+          {
+            started=-1;
             break;
           }
 	  if(!m->comment||m->comment&&
-	   (has_prefix(m->comment,"#")||has_prefix(m->comment,";")))
+             (has_prefix(m->comment,"#")||has_prefix(m->comment,";")))
             continue;	      // skip comments and empty lines
 	}
         if(m->options)
-        { mapping options=([]);
+        {
+          mapping options=([]);
           array sp;
           string left=m->options;
           m_delete(m,"options");
@@ -737,9 +817,10 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
         if(m->match)
            m->match=parsecstring(m->match);
         if(m->delim)
-        { multiset delim=(<>);
+        {
+          multiset delim=(<>);
           foreach(parsecstring(replace(m->delim,"\"","\\\""))/"", string cs)
-          delim[cs[0]]=1;
+            delim[cs[0]]=1;
           m->delim=delim;
         }
         if(m->width)
@@ -753,7 +834,8 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
   mapping m;
 
   array|mapping getlevel()
-  { array|mapping cur=({});
+  {
+    array|mapping cur=({});
     cur=({m-(<"level">),0});
     int lastlevel=m->level+1;
     m=0;
@@ -761,10 +843,13 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
       if(lastlevel==m->level && sizeof(m&(<"delim","match","width">)))
         cur+=({m-(<"level">)}),m=0;
       else
-      { array|mapping res=getlevel();
+      {
+        array|mapping res=getlevel();
         if(mappingp(res))
-        { if(mappingp(cur[sizeof(cur)-1]))
-          { cur[sizeof(cur)-1]+=res;
+        {
+          if(mappingp(cur[sizeof(cur)-1]))
+          {
+            cur[sizeof(cur)-1]+=res;
             continue;
           }
           res=({res});
@@ -772,7 +857,8 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
         cur+=res;
       }
     catch
-    { if(arrayp(cur) && arrayp(cur[2]))
+    {
+      if(arrayp(cur) && arrayp(cur[2]))
         return ([cur[0]->name:cur[2..]]);
     };
     return ({cur});
@@ -781,9 +867,11 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
   array|mapping ret;
   m=getline();
   while(started>=0 && m)
-  { array|mapping val=getlevel();
+  {
+    array|mapping val=getlevel();
     catch
-    { ret+=val;
+    {
+      ret+=val;
       continue;
     };
     ret=val;
@@ -792,5 +880,6 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
 }
 
 private string parsecstring(string s)
-{ return compile_string("string s=\""+s+"\";")()->s;
+{
+  return compile_string("string s=\""+s+"\";")()->s;
 }
