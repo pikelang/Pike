@@ -24,7 +24,6 @@ o Added a way to access the local, and not the overloaded,
   Both Test()->b() and Test2()->b() will return 1, but Test2()->a()
   and Test2()->c() will return 42.
 
-
 o Added new syntax that can be used to return the current object as if
   it was a class it is inheriting
 
@@ -291,7 +290,8 @@ o Significantly changed x86-32 and an entirely new AMD64/x86-64
   modern GCC:s.
 
   The x86-64 backends has been rewritten so that it is easier to add
-  new instructions (x86-64) and opcodes (pike) to it.
+  new instructions (x86-64) and opcodes (pike) to it, and it is
+  significantly more complete than the x86-32 one.
 
 o Svalue type renumbering
 
@@ -390,6 +390,12 @@ o The compiler now warns about switch statements where the cases
 
 o strlen() now only accepts strings
 
+o Gdbm.gdbm is now known as Gdbm.DB
+
+o Yabu.db and Yabu.table renamed to Yabu.DB and Yabu.Table
+
+o The keyword 'static' will now generate deprecation warnings.
+
 
 Removed features and modules
 ----------------------------
@@ -411,6 +417,18 @@ o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 o Locale.Charset
 
   The charset module is now available on the top level as 'Charset'
+
+o The ancient syntax for arrays (string * was an alias for
+  array(string)) has now been removed completely.
+
+o Compatibility for pike versions before 7.2 is no longer available.
+
+o decode_value can no longer decode programs using the 'old style'
+  program encoding.
+
+  Since the format has been deprecated since feb 2003, and those
+  programs could not be decoded anyway due to other issues it is not
+  much of a loss.
 
 
 New modules
@@ -620,13 +638,6 @@ o System.TM
 o decode_value now throws the error object Error.DecodeError.
 
   Useful to catch format errors in the decode string.
-
-o decode_value can no longer decode programs using the 'old style'
-  program encoding.
-
-  Since the format has been deprecated since feb 2003, and those
-  programs could not be decoded anyway due to other issues it is not
-  much of a loss.
 
 o Process.daemon
 
