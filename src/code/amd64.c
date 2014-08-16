@@ -996,12 +996,12 @@ void amd64_ins_entry(void)
 
 void amd64_flush_code_generator_state(void)
 {
-  sp_reg = -1;
-  fp_reg = -1;
+  amd64_prev_stored_pc = -1;
   ret_for_func = 0;
+  fp_reg = -1;
+  sp_reg = -1;
   mark_sp_reg = -1;
   dirty_regs = 0;
-  amd64_prev_stored_pc = -1;
 }
 
 static void flush_dirty_regs(void)
@@ -1061,6 +1061,7 @@ static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
 }
 
 
+#if 0
 static void svalue_is_referenced(enum amd64_reg in, struct label *not )
 {
     /* bit 4 set, and no higher bit set (all with 8bit values). */
@@ -1078,7 +1079,7 @@ static void mem_svalue_is_referenced(enum amd64_reg in, struct label *not )
     mov_sval_type(in,P_REG_RAX);
     svalue_is_referenced(P_REG_RAX, not );
 }
-
+#endif
 
 static void update_arg1(INT32 value)
 {
@@ -2610,6 +2611,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_add_sp(-1);
     return;
 
+
   case F_ASSIGN_PRIVATE_GLOBAL_AND_POP:
   case F_ASSIGN_PRIVATE_GLOBAL:
   {
@@ -2741,10 +2743,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem16_reg(ARG3_REG, OFFSETOF(inherit, identifier_level),
                   ARG3_REG);
     add_reg_imm(ARG3_REG, b);
-    flush_dirty_regs();	/* In case an error is thrown. */
-    call_imm(low_object_index_no_free);
-    /* NB: We know that low_object_index_no_free() doesn't
-     *     mess with the stack pointer. */
+    amd64_call_c_function(low_object_index_no_free);
     amd64_add_sp(1);
     return;
 
@@ -3143,6 +3142,68 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
                           instrs[a-F_OFFSET].flags);
     LABEL_C;
       /* done */
+    }
+    return;
+   case F_PRIVATE_IF_DIRECT_GLOBAL:
+    {
+      LABELS();
+      amd64_load_sp_reg();
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
+      /* do not assign if this object is destructed. */
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_object), ARG2_REG );
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,context),        ARG3_REG );
+      /* if ctx->prog != arg1->prog */
+      mov_mem_reg( ARG3_REG, OFFSETOF(inherit,prog), P_REG_R8 );
+      mov_mem_reg( ARG2_REG, OFFSETOF(object,prog), P_REG_RAX );
+      cmp_reg_reg(P_REG_R8,P_REG_RAX);
+     je(&label_A);
+      mov_reg_reg(sp_reg, ARG1_REG);
+      mov_mem16_reg(ARG3_REG, OFFSETOF(inherit, identifier_level),
+		    ARG3_REG);
+      add_reg_imm(ARG3_REG, c);
+      amd64_call_c_function(low_object_index_no_free);
+      amd64_add_sp(1);
+      jmp(&label_B);
+
+     LABEL_A;
+      mov_mem_reg(ARG2_REG, OFFSETOF(object,storage), P_REG_RBX );
+      add_reg_mem(P_REG_RBX,  ARG3_REG, OFFSETOF(inherit,storage_offset));
+      add_reg_imm(P_REG_RBX, b );
+      amd64_push_svaluep( P_REG_RBX );
+     LABEL_B;
+      return;
+    }
+
+  case F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL:
+    {
+      LABELS();
+      amd64_load_sp_reg();
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
+      /* do not assign if this object is destructed. */
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,current_object), ARG1_REG );
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,context),        ARG2_REG );
+      /* if ctx->prog != arg1->prog */
+      mov_mem_reg( ARG1_REG, OFFSETOF(object,prog), P_REG_RAX );
+      mov_mem_reg( ARG2_REG, OFFSETOF(inherit,prog), P_REG_R8 );
+      cmp_reg_reg(P_REG_R8,P_REG_RAX);
+      je(&label_A);
+
+      /* arg1 = object */
+      /* arg2 = c + identifier_level */
+      /* arg3 = Pike_sp-1 */
+      mov_mem16_reg( ARG2_REG, OFFSETOF(inherit,identifier_level), ARG2_REG);
+      add_reg_imm( ARG2_REG, c );
+      add_reg_imm_reg( sp_reg, -1*sizeof(struct svalue), ARG3_REG );
+      amd64_call_c_function(object_low_set_index);
+      jmp(&label_B);
+    LABEL_A;
+      mov_mem_reg(ARG1_REG, OFFSETOF(object,storage), P_REG_RBX );
+      add_reg_mem(P_REG_RBX,  ARG2_REG, OFFSETOF(inherit,storage_offset));
+      add_reg_imm(P_REG_RBX, b );
+      amd64_free_svalue( P_REG_RBX, 0 );
+      amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -sizeof(struct svalue));
+      amd64_ref_svalue(P_REG_RBX,0);
+    LABEL_B;
     }
     return;
   case F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:
