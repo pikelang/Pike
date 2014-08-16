@@ -435,6 +435,8 @@ constant TLS_dh_anon_with_camellia_128_cbc_sha  = 0x0046;	// RFC 4132
 
 // These suites from the 56-bit draft are apparently in use
 // by some versions of MSIE.
+constant TLS_rsa_export1024_with_rc4_56_md5	= 0x0060;	// 56bit draft
+constant TLS_rsa_export1024_with_rc2_cbc_56_md5	= 0x0061;	// 56bit draft
 constant TLS_rsa_export1024_with_des_cbc_sha	= 0x0062;	// 56bit draft
 constant TLS_dhe_dss_export1024_with_des_cbc_sha= 0x0063;	// 56bit draft
 constant TLS_rsa_export1024_with_rc4_56_sha	= 0x0064;	// 56bit draft
