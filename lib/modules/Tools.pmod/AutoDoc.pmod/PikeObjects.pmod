@@ -717,7 +717,7 @@ class _Class_or_Module {
     {
       foreach( doge->objects; int subindex; PikeObject o )
       {
-	if( lfuns[o->name] == "NOTIMPL" )
+	if( lfuns[o->name] == "NOTIMPL" && objtype != "namespace")
 	{
 	  werror("WARNING: Dropping documentation for %s. "
 		 "There is no such operator\n"
@@ -773,12 +773,10 @@ class _Class_or_Module {
 	  strlen(doc->set->text) && strlen(doc->get->text) &&
 	  doc->set->text != doc->get->text )
       {
-        outdoc->text = "@dl\n"
-          "@item getting\n"
+        outdoc->text = "Getting\n\n"
           "\n"+doc->get->text+"\n\n"+
-          "@item setting\n"+
+          "Setting\n\n"+
           doc->get->text+"\n\n";
-        outdoc->text += "@enddl";
       }
       else
       {
@@ -905,7 +903,6 @@ class _Class_or_Module {
 class Class {
   //!
   inherit _Class_or_Module;
-
   //!
   constant objtype = "class";
 }
