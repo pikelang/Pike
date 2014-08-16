@@ -149,11 +149,11 @@
 //!
 //! @b{grab_notify@}
 //!
-//! @b{hierarchy_changed@}
-//!
 //! @b{hide@}
 //! Called when the widget is hidden
 //!
+//!
+//! @b{hierarchy_changed@}
 //!
 //! @b{key_press_event@}
 //! Called when a keyboard key is pressed
@@ -691,7 +691,8 @@ GTK2.GdkPixbuf render_icon( string stock_id, int size, string detail );
 //! A convenience function that uses the theme engine and rc file settings
 //! to look up stock_id and render it to a pixbuf.  stock_id should be a
 //! stock icon ID such as GTK2.STOCK_OPEN or GTK2.STOCK_OK.  size should be a
-//! size such as GTK2.ICON_SIZE_MENU.  detail should be a string that identifies//! the widget or code doing the rendering, so that theme engines can
+//! size such as GTK2.ICON_SIZE_MENU.  detail should be a string that identifies
+//! the widget or code doing the rendering, so that theme engines can
 //! special-case rendering for that widget or code.
 //! 
 //! The pixels in the returned GDK2.Pixbuf are shared with the rest of the
