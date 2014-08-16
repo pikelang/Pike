@@ -2259,7 +2259,7 @@ class Evaluator {
     if(new_var=="_")
       safe_write("Hilfe Warning: History variable _ is no "
 		 "longer reachable.\n");
-    else if(!has_index(symbols, "_") && !has_index(variables, "__")
+    else if(!has_index(symbols, "_") && !has_index(variables, "_")
 	    && sizeof(history)) {
       symbols["_"] = history[-1];
     }
