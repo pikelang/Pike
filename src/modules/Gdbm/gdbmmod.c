@@ -131,9 +131,8 @@ void gdbmmod_fatal(const char *err)
  *! key/data pairs in a database.
  *!
  *! The @[DB] class also overloads enough operators to make it behave
- *! a lot like a @ref[mapping(string(8bit):string(8bit))@], you can index it,
+ *! a lot like a @[mapping(string(8bit):string(8bit))], you can index it,
  *! assign indices and loop over it using foreach.
- *!
  *!
  */
 
