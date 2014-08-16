@@ -702,20 +702,36 @@ static void emit_global( int n )
   struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
   struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
-  if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
-      && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
-      && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
-      && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
-      && !ref->inherit_offset)
+  if(!(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+     && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
+     && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
   {
     /* fprintf( stderr, "private global %d\n", (INT32)id->func.offset  ); */
-    if(  id->run_time_type == PIKE_T_MIXED  )
-      emit1(F_PRIVATE_GLOBAL, id->func.offset);
-    else
-      emit2(F_PRIVATE_TYPED_GLOBAL, id->func.offset, id->run_time_type);
+    if( ref->id_flags & (ID_PRIVATE|ID_FINAL) )
+    {
+      if(  id->run_time_type == PIKE_T_MIXED  )
+	emit1(F_PRIVATE_GLOBAL, id->func.offset);
+      else
+	emit2(F_PRIVATE_TYPED_GLOBAL, id->func.offset, id->run_time_type);
+      return;
+    }
+
+    if( (id->func.offset < 65536) && (n<65536) )
+    {
+
+      if( id->run_time_type == PIKE_T_MIXED )
+      {
+	emit2(F_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n);
+	return;
+      }
+/*       else */
+/*       { */
+/* 	INT32 mix = id->func.offset | (n<<16); */
+/* 	emit2(F_PRIVATE_IF_DIRECT_TYPED_GLOBAL, mix, id->run_time_type); */
+    }
   }
-  else
-    emit1(F_GLOBAL, n);
+
+  emit1(F_GLOBAL, n);
 }
 
 static void emit_assign_global( int n, int and_pop )
@@ -724,23 +740,29 @@ static void emit_assign_global( int n, int and_pop )
   struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
   struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
-  if( (ref->id_flags & (ID_PRIVATE|ID_FINAL))
-      && !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+  if( !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
       && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
-      && IDENTIFIER_IS_VARIABLE(id->identifier_flags)
-      && !ref->inherit_offset )
+      && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
   {
-    if( id->run_time_type == PIKE_T_MIXED )
+    if( (ref->id_flags & (ID_PRIVATE|ID_FINAL)) )
+    {
+      if( id->run_time_type == PIKE_T_MIXED )
         emit1((and_pop?F_ASSIGN_PRIVATE_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_GLOBAL),
               id->func.offset);
-    else
+      else
         emit2((and_pop?F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:F_ASSIGN_PRIVATE_TYPED_GLOBAL),
               id->func.offset, id->run_time_type);
+      return;
+    }
+    if( id->run_time_type == PIKE_T_MIXED )
+    {
+      emit2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n );
+      if( and_pop )
+	emit0(F_POP_VALUE);
+      return;
+    }
   }
-  else
-  {
-    emit1((and_pop?F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL), n);
-  }
+  emit1((and_pop?F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL), n);
 }
 
 static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
