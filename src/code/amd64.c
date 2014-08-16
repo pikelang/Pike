@@ -1918,13 +1918,110 @@ void ins_f_byte(unsigned int b)
       shr_reg_imm( P_REG_RBX, 16 );
       /* subtype in RBX. */
       mov_imm_mem( PIKE_T_INT, sp_reg, -sizeof(struct svalue) );
-      mov_reg_mem( P_REG_RBX,    sp_reg,
+      mov_reg_mem( P_REG_RBX,  sp_reg,
                    -sizeof(struct svalue)+OFFSETOF(svalue,u.integer) );
       jmp( &label_B );
       LABEL_A;
       /* not an integer. Use C version for simplicitly.. */
       amd64_call_c_opcode( addr, flags );
       LABEL_B;
+    }
+    return;
+  case F_INC:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
+    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
+    jne(&label_A);
+    add_imm_mem(1, sp_reg, -8);
+    jno(&label_B);
+    add_imm_mem(-1, sp_reg, -8);
+    LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    LABEL_B;
+    }
+    return;
+
+  case F_ADD:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
+    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
+    add_reg_reg(P_REG_RAX,P_REG_RBX);
+    test_reg(P_REG_RAX); /* int == 0 */
+#ifdef PIKE_DEBUG
+    if( PIKE_T_INT )
+      Pike_fatal("Assertion failed\n");
+#endif
+    jnz(&label_A);
+    amd64_add_sp(-1);
+    mov_mem_reg(sp_reg, OFFSETOF(svalue,u.integer),
+		P_REG_RAX );
+    add_reg_mem(P_REG_RAX, sp_reg, 
+		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+    jno(&label_B);
+    amd64_add_sp(1);
+    sub_reg_mem(P_REG_RAX, sp_reg, 
+		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+  LABEL_A;
+    addr = f_add;
+    update_arg1(2);
+    amd64_call_c_opcode(addr, flags);
+  LABEL_B;
+    }
+    return;
+
+  case F_SUBTRACT:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
+    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
+    add_reg_reg(P_REG_RAX,P_REG_RBX);
+    test_reg(P_REG_RAX); /* int == 0 */
+    jnz(&label_A);
+
+#ifdef PIKE_DEBUG
+    if( PIKE_T_INT )
+      Pike_fatal("Assertion failed\n");
+#endif
+    mov_mem_reg(sp_reg, -1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
+		P_REG_RAX );
+    mov_mem_reg(sp_reg, -2*sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
+		P_REG_RCX );
+    sub_reg_reg(P_REG_RCX,P_REG_RAX);
+    jno(&label_B);
+  LABEL_A;
+    amd64_call_c_opcode(o_subtract, flags);
+    amd64_load_sp_reg();
+    jmp(&label_C);
+  LABEL_B;
+    mov_reg_mem( P_REG_RCX, sp_reg,
+	       -2*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+    amd64_add_sp(-1);
+  LABEL_C;
+    }
+    return;
+
+  case F_DEC:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
+    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
+    jne(&label_A);
+    add_imm_mem(-1, sp_reg, -8);
+    jno(&label_B);
+    add_imm_mem(1, sp_reg, -8);
+    LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    LABEL_B;
     }
     return;
   case F_UNDEFINED:
@@ -1955,11 +2052,6 @@ void ins_f_byte(unsigned int b)
     ins_f_byte(F_CONST0);
     ins_f_byte(F_RETURN);
     return;
-  case F_ADD:
-    ins_debug_instr_prologue(b, 0, 0);
-    update_arg1(2);
-    addr = f_add;
-    break;
   case F_MARK:
   case F_SYNCH_MARK:
     ins_debug_instr_prologue(b, 0, 0);
