@@ -2516,6 +2516,14 @@ class StdinHilfe
     exit(1);
   }
 
+  protected int do_write(string a, mixed ... args )
+  {
+    if( sizeof( args ) )
+      a = sprintf(a,@args);
+    write(a);
+    return strlen(a);
+  }
+
   //! Any hilfe statements given in the init array will be executed
   //! once .hilferc has been executed.
   protected void create(void|array(string) init)
@@ -2523,6 +2531,9 @@ class StdinHilfe
     readline = Stdio.Readline();
     write = readline->write;
     ::create();
+    
+    add_constant("werror",do_write);
+    add_constant("write",do_write);
 
     load_hilferc();
     if(init) map(init, add_buffer);
@@ -2532,7 +2543,7 @@ class StdinHilfe
       readline->enable_history(512);
     readline->get_input_controller()->bind("\t", handle_completions);
     readline->get_input_controller()->bind("\\!k1", handle_doc);
-
+    
     signal(signum("SIGINT"),signal_trap);
 
     for(;;) {
