@@ -109,17 +109,6 @@ mixed _sizeof()
   return items;
 }
 
-//! The expression `rel1 <= rel2' returns true if every relation entry
-//! in rel1 is also present in rel2.
-mixed `<=(object rel)
-{
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
-      if (!rel(left, right))
-        return 0;
-  return 1;
-}
-
 int(0..1) `==(mixed rel)
 {
   if (!objectp(rel) || !rel->is_binary_relation)
