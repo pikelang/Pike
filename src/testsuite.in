@@ -12565,6 +12565,42 @@ test_any([[
   return Test()->test();
 ]], "abcdedcba")
 
+test_any_equal([[
+  // Test code generation for private global variables.
+  // Derived from [LysLysKOM 20929878].
+  class Test {
+    private multiset ds = (< >);
+    private mapping dcv = ([ ]);
+
+    private void foo(string what)
+    {
+      what-="\r";
+      foreach(replace(what, "\\\n", " ")/"\n"-({""}), string line)
+      {
+        array(string) sups =
+          replace(line, ({"\t",","}), ({" "," "}))/" " -({ "" });
+
+	if(line[0] != '#') {
+	  if(sups[0] == "d") {
+	    array(multiset|mapping) tmp = ({(<>), (<>), ([])});
+	    ds = tmp[0] - tmp[1];
+	    dcv = tmp[2];
+	  }
+	}
+      }
+    }
+
+    public array(multiset|string) test()
+    {
+      foo("\nd\t\tu, t, c, b\n");
+
+      return ({ ds, dcv });
+    }
+  };
+
+  return Test()->test();
+]], ({ (<>), ([]) }))
+
 // - attributes
 test_compile_any(
   class A { __deprecated__ int foo(int x) { return x; } };
