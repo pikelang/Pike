@@ -1108,8 +1108,8 @@ class PikeType
 		      error("Syntax error in string subtype.\n");
 		    }
 		  } else {
-		    if(sizeof(tmp[0])) low=map(tmp[0], lambda(mixed m) { return (string)m; })*"";
-		    if(sizeof(tmp[1])) high=map(tmp[1], lambda(mixed m) { return (string)m; })*"";
+		    if(sizeof(tmp[0])) low=(array(string))tmp[0]*"";
+		    if(sizeof(tmp[1])) high=(array(string))tmp[1]*"";
 		  }
 		}
 		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
