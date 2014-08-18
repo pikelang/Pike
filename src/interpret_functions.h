@@ -2907,7 +2907,7 @@ OPCODE0_JUMP(F_BREAKPOINT, "breakpoint", 0, {
 #endif
 
 OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
-    int level;
+    LOCAL_VAR(int level);
     LOCAL_VAR(struct object *o);
     o = Pike_fp->current_object;
     for (level = 0; level < arg1; level++) {
@@ -2923,6 +2923,32 @@ OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
     }
     ref_push_object(o);
   });
+
+OPCODE0(F_UNDEFINEDP,"undefinedp",0, {
+    LOCAL_VAR(int undef);
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
+    {
+      pop_stack();
+      push_int(1);
+      return;
+    }
+    undef = SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED;
+    SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+             undef);
+});
+
+
+OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
+    if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
+       && !Pike_sp[-1].u.object->prog)
+    {
+      pop_stack();
+      push_int(1);
+      return;
+    }
+    pop_stack();
+    push_int(0);
+});
 
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   if(TYPEOF(Pike_sp[-1]) != T_INT)
